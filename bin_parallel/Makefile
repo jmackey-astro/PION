@@ -273,7 +273,6 @@ OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
 	eqns_hydro_adi_Eint.o flux_hydro_adi_Eint.o                            \
 	solver_eqn_hydro_adi_Eint.o                                            \
 	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o        \
-	test_equations.o test_integrator.o                                     \
         hydrogen_mp.o hydrogen_photoion.o                                      \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
@@ -290,7 +289,6 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o laser_ablation.o \
 	stellar_wind_BC.o \
 	microphysics_lowZ.o \
-	test_equations.o test_integrator.o HD_2D_ShockCloud.o \
         spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
@@ -482,9 +480,9 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 
 #RK5_functions.o:	header.h RK5_functions.cpp
 #RKCK_function.o:	header.h RKCK_function.cpp
-test_equations.o:	test_equations.cpp header.h ${GLOBAL}
-test_integrator.o: 	test_integrator.cpp header.h ${GLOBAL}
-HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
+#test_equations.o:	test_equations.cpp header.h ${GLOBAL}
+#test_integrator.o: 	test_integrator.cpp header.h ${GLOBAL}
+#HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
 
 ########################
 # Raytracing

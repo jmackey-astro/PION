@@ -482,19 +482,19 @@ int UniformGrid::SetupBCs(int Nbc, string typeofbc)
   c = FirstPt();
   //  cout <<"Assigning edge data.\n";
   do {
-     if (c->isedge !=0) {
-       for (int i=0;i<2*G_ndim;i++) {
-   dir = static_cast<enum direction>(i);
-   temppt=NextPt(c,dir);
-   if (temppt==0) {
-     c->ngb[dir] = BC_setupBCcells(c, dir, G_dx, 1);
-     if (c->ngb[dir]==0)
-       rep.error("Failed to set up boundary cell",c->ngb[dir]);
-   } // if dir points off the grid.
-       } // Loop over all neighbours
-     } // if an edge point.
-     // If I use internal boundaries in the future:
-     // if (c->isbd) bc->assignIntBC(c);
+    if (c->isedge !=0) {
+      for (int i=0;i<2*G_ndim;i++) {
+        dir = static_cast<enum direction>(i);
+        temppt=NextPt(c,dir);
+        if (temppt==0) {
+          c->ngb[dir] = BC_setupBCcells(c, dir, G_dx, 1);
+          if (c->ngb[dir]==0)
+            rep.error("Failed to set up boundary cell",c->ngb[dir]);
+        } // if dir points off the grid.
+      } // Loop over all neighbours
+    } // if an edge point.
+    // If I use internal boundaries in the future:
+    // if (c->isbd) bc->assignIntBC(c);
   } while ( (c=NextPt(c)) !=0);
   if (err!=0) rep.error("Failed to set up Boundary cells",err);
   // cout <<"Done.\n";

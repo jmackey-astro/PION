@@ -8,23 +8,26 @@ Date: 2010.10.11
 
 First you need to compile extra libraries.
 cd to "./extra_libraries"
-run "./install_silo.sh" and "./install_fits.sh"
-The silo tests may occasionally fail, but the installation is usually fine.
-These scripts need internet access to download libraries.
+run "bash install_all_libs.sh" to install.
+You need to manually download the Sundials library (v.2.4.0 please)
+from their website -- the install script will complain and tell you
+the link to the library.
+The script needs internet access with "wget" to work.
 
-Then cd to "./bin_serial"
-If you are on a standard linux workstation (e.g. Ubuntu, Debian,
-Fedora), then make sure that "MAKE_UNAME" in Makefile.serial.code and
-Makefile.serial.icgenerator is set to "MAKE_UNAME=standard".
-When this is set then run:
-$ make -f Makefile.serial.code; make -f Makefile.serial.icgenerator
+
+Then cd to "./bin_serial" and run "bash compile_code.sh"
+if you are lucky it will detect that you are using a standard
+workstation and will just compile.  On OS X you may need to modify
+the Makefile.  Look for "imac" in Makefile, and reset the library
+directory to wherever the extra libraries (maybe uncomment the line
+with (CURDIR)/../extra_libraries and that could work).
 
 If there are linking errors to silo (references to PDB and/or H5) or
-fits (references to ff**** functions) then the libraries must have
-failed to compile.
+fits (references to ff**** functions) or cvode/nvector then the 
+libraries must have failed to compile.
 
 If all went well, there should be no error messages and there should
-be two executable files in trunk/bin/: "icgen_serial" for generating
+be two executable files in ../bin/: "icgen_serial" for generating
 initial conditions, and "main_serial" for running the code.  Most code
 options are decided at run-time not compile-time, so you shouldn't
 have to change any #define statements in the code.
@@ -34,7 +37,8 @@ the source code, maybe due to some c++ header files not being
 installed.
 
 Either way, probably email me at jmackey@astro.uni-bonn.de and I'll
-see what I can do to help.
+see what I can do to help.  Quote the exact error message in the
+email.
 
 If you are not using Linux/UNIX then the Makefiles may need editing.
 
@@ -49,12 +53,16 @@ on this, but there is a subdirectory called
 "uniform_grid_code/trunk/test_problems".  Here you can run
 "./run_all_tests.sh" and it will run at least some tests, hopefully
 without bugging out.  (some of the tests have directories hard-coded
-to my desktop at AIfA).  The Double-Mach-Reflection is a good test,
-and should run fine, and if you have "eog" (eye-of-gnome) on your
-system, it will pop up jpeg figures automatically which you can
-compare to http://www.astro.uni-bonn.de/~jmackey/jmac/node10.html
-figures.  They should look indistinguishable to the naked eye.  If not
-something is definitely wrong.
+to my desktop at AIfA).
+First edit run_all_tests.sh so that the data_dir variable is set to 
+some directory on your computer (and not my AIfA harddisk).
+
+The Double-Mach-Reflection is a good test, and should run fine, and
+if you have "eog" (eye-of-gnome) on your system, it will pop up jpeg
+figures automatically which you can compare to
+http://www.astro.uni-bonn.de/~jmackey/jmac/node10.html figures.  They
+should look indistinguishable to the naked eye.  If not something is
+definitely wrong.
 
 Shock-tube tests will probably take a long time to run (a few hours),
 so you may as well set that running overnight.
@@ -156,10 +164,8 @@ good).
 -----------------------------
 
 The parallel compilation is in uniform_grid_code/trunk/bin_parallel
-Again there are two makefiles: Makefile.pllel.code,
-Makefile.pllel.icgenerator.  The MAKE_UNAME should be set as above,
-and then try:
-$ make -f Makefile.pllel.code; make -f Makefile.pllel.icgenerator
+Again try "bash compile_code.sh", and the same caveats for OS X and
+the Makefile apply for parallel as serial code.
 Executables should be in trunk/bin/ called gridcode_parallel and
 icgen_parallel. 
 
@@ -176,6 +182,7 @@ bin_parallel/run.sh:
 
 ********************* run.sh ****************************
 #!/bin/bash
+# run code with 4 MPI processes.
 
 sim_dir=/export/aibn129_1/jmackey/data_etc/stellar_winds/test_moving_src
 mkdir ${sim_dir}
@@ -187,7 +194,7 @@ rsync -vt IC_WIND_Md1em6_v250_noI_adv*.silo ${sim_dir}/
 rm IC_WIND_Md1em6_v250_noI_adv*.silo
 
 #
-# First run the sims for a short time:
+# First run the sims for a short time with a LOT of artificial viscosity:
 #
 mpirun -np 4 ./gridcode_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv000_0000.silo 5 1 \
 outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv000 \

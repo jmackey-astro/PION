@@ -292,8 +292,7 @@ OBJECTS = main.o \
 	eqns_hydro_adi_Eint.o \
 	flux_hydro_adi_Eint.o \
 	solver_eqn_hydro_adi_Eint.o \
-	test_equations.o test_integrator.o \
-	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
+      	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
@@ -309,7 +308,6 @@ IC_OBJ	= icgen.o \
 	eqns_base.o eqns_hydro_adiabatic.o eqns_hydro_isothermal.o \
 	eqns_mhd_adiabatic.o laser_ablation.o jet.o \
 	stellar_wind_BC.o microphysics_lowZ.o \
-	test_equations.o test_integrator.o HD_2D_ShockCloud.o \
 	spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
@@ -466,7 +464,8 @@ microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
 microphysics_v1.o: microphysics_v1.cc microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
 microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
-   microphysics_base.h ${GLOBAL} integrator.h header.h
+   microphysics_base.h ${GLOBAL} integrator.h
+#header.h
 
 hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h 
@@ -495,9 +494,9 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 
 #RK5_functions.o:	header.h RK5_functions.cpp
 #RKCK_function.o:	header.h RKCK_function.cpp
-test_equations.o:	test_equations.cpp header.h
-test_integrator.o: 	test_integrator.cpp header.h
-HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
+#test_equations.o:	test_equations.cpp header.h
+#test_integrator.o: 	test_integrator.cpp header.h
+#HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
 ########################
 
 
