@@ -1,0 +1,62 @@
+Initial Conditions Functions:
+
+Function			Purpose
+------------------------------------------------------
+uniform grid			add random noise and check for stability
+density advection		check sim can advect a clump around (periodic BCs)
+divB peak			tests stability of divB handling, cf. to dedner et al.
+orszag-tang			standard mhd test problem.
+double mach reflection		standard hd test problem.
+radiative shock test		tests cooling function (and chemistry?)
+blast wave			standard test problem, tests dynamics, 1d,2d,3d,cart/cyl coords
+shock-cloud interaction		cartesian/cylindrical coords, mhd/hd, 2d,3d tests dynamics
+shock tube			1d,2d,3d, angled to grid, standard test problem
+Jet				2d,3d, cart/cyl, hd,mhd, tests robustness.
+
+
+So I can split these up easily into a few files:
+basic_tests.cc		uniform grid, density adv., divB adv., orszag-tang, dmr.
+radiative_shock.cc	radiative shock test.
+blast_wave.cc		blast waves.
+shock_cloud.cc		shock-cloud interactions.
+shock_tube.cc		shock-tube problems.
+jet.cc			jet problems.
+
+Done:	basic_tests.cc,  blast_wave.cc, shock_cloud.cc, shock_tube.cc, jet.cc,(basic conversions)
+todo:	Makefile, radiative_shock.cc
+	clean up other files -- move refs to 'grid' to refs to 'gg'
+	Also need a function to set up microphysics with the trtype, and set the values of the
+	appropriate tracers to be the LTE values...
+
+
+shock-cloud parameters:
+coords (SET)-- cartesian or cylindrical coordinates
+ndim   (SET)-- 2d or 3d
+eqns   (SET)-- euler or mhd equations.
+dratio -- density ratio between cloud and pre-shock medium
+clrad  -- cloud radius, as fraction of the YY size of the grid.
+preshock state
+postshock state
+
+
+
+# ND Wave through simulation.
+NDWrightRO 0.125
+NDWrightPG 0.1
+NDWrightVX 0
+NDWrightVY 0
+NDWrightVZ 0
+NDWrightBX 0.75
+NDWrightBY -1.0
+NDWrightBZ 0
+NDWleftRO 1.0
+NDWleftPG 1.0
+NDWleftVX 0.0
+NDWleftVY 0.0
+NDWleftVZ 0.0
+NDWleftBX 0.75
+NDWleftBY 1.0
+NDWleftBZ 0.0
+NDWInterface 0.2
+#NDWAngle 63.435
+NDWAngle 30

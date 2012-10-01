@@ -1,0 +1,720 @@
+/** \file basic_tests.cc
+ * 
+ * File for setting up some basic test problems which won't be ever used for
+ * actual physics sims, just for testing the code.
+ *
+ * 2009-12-07 JM: added switch in calling FieldLoop test to allow it to 
+ * have a non-zero Vz, which provides a more stringent test.
+ * */
+///
+/// 2010.10.05 JM: Added ambient medium parameters to be read from paramter file
+///   for the "uniform" initial conditions.
+///
+
+#include "icgen.h"
+#include "../coord_sys/VectorOps.h"
+using namespace std;
+#include <sstream>
+
+IC_basic_tests::IC_basic_tests(){}
+IC_basic_tests::~IC_basic_tests(){}
+
+int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
+			       class GridBaseClass *ggg ///< pointer to grid
+			       )
+{
+  int err=0;
+
+  ICsetup_base::gg = ggg;
+  if (!gg) rep.error("null pointer to grid!",ggg);
+
+  ICsetup_base::rp = rrp;
+  if (!rp) rep.error("null pointer to ReadParams",rp);
+
+  IC_basic_tests::eqns = SimPM.eqntype;
+  if      (eqns==EQEUL) eqns=1;
+  else if (eqns==EQMHD ||
+	   eqns==EQGLM ||
+	   eqns==EQFCD) eqns=2;
+  else rep.error("Bad equations",eqns);
+
+  int ndim = SimPM.ndim;
+  string ics = rp->find_parameter("ics");
+
+  if (ics=="") rep.error("didn't get any ics to set up.",ics);
+  else if (ics=="Uniform" || ics=="uniform") {
+    cout <<"\t\tSetting up Uniform ICs.\n";
+    err += setup_uniformgrid(rrp,ggg);
+  }
+  else if (ics=="AdvectSineWave") {
+    cout <<"\t\tSetting up HD/MHD advection of clump with SINE WAVE variation in VY.\n";
+    err += setup_sinewave_velocity();
+  }
+  else if (ics=="Advection") {
+     cout <<"\t\tSetting up HD/MHD advection of overdense clump.\n";
+     if(ndim!=2 && ndim!=3) rep.error("only know 2d/3d advected grids",ndim);
+     err += setup_advection();
+  }
+  else if (ics=="DivBPeak") {
+    cout <<"\t\tSetting up divB peak problem.\n";
+    err += setup_divBpeak();
+  }
+  else if (ics=="FieldLoop" ||
+	   ics=="FieldLoopVz" ||
+	   ics=="FieldLoopStatic") {
+    cout <<"\t\tSetting up Advection of Magnetic Field Loop problem.\n";
+    //
+    // We pass in the z-velocity to the fieldloop problem:
+    //
+    if      (ics=="FieldLoop")   err += setup_FieldLoop(0.0);
+    else if (ics=="FieldLoopVz") err += setup_FieldLoop(1.0);
+    else                         err += setup_FieldLoop(-1.0);
+  }
+  else if (ics=="OrszagTang") {
+    cout <<"\t\tSetting up Orszag-Tang test problem.\n";
+    err += setup_OrszagTang();
+  }
+  else if (ics=="DoubleMachRef") {
+    cout <<"\t\tSetting up Double Mach Reflection test problem.\n";
+    err += setup_DoubleMachRef();
+  }
+  else if (ics=="KelvinHelmholz") {
+    cout <<"\t\tSetting up Kelvin-Helmholz Instability problems.\n";
+    err += setup_KelvinHelmholz();
+  }
+  else if (ics=="KelvinHelmholzStone") {
+    cout <<"\t\tSetting up Stone's Kelvin-Helmholz Instability problem.\n";
+    err += setup_KelvinHelmholz_Stone();
+  }
+  else rep.error("Don't know what Initial Condition is!",ics);
+   
+  // Add noise to data?  Smooth data?
+  double noise=0; int smooth=0;
+  ics = rp->find_parameter("noise");
+  if (ics!="") noise = atof(ics.c_str());
+  else noise = -1;
+  if (isnan(noise)) rep.error("noise parameter is not a number",noise);
+  if (noise>0) err+= AddNoise2Data(2,noise);
+
+  ics = rp->find_parameter("smooth");
+  if (ics!="") smooth = atoi(ics.c_str());
+  else smooth = -1;
+  if (isnan(smooth)) rep.error("Smooth parameter not a number",smooth);
+  if (smooth>0)err+= SmoothData(smooth);
+
+  return err;
+}
+ 
+
+int IC_basic_tests::setup_uniformgrid(class ReadParams *rrp,    ///< pointer to parameter list.
+				      class GridBaseClass *ggg ///< pointer to grid
+				      )
+{
+  //SimPM.typeofop=1; // text output
+  //
+  // Get ambient medium properties:
+  //
+  double Amb[SimPM.nvar];
+
+  string seek, str;
+  seek = "UNIFORM_ambRO";
+  str = rrp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  Amb[RO] = atof(str.c_str());
+
+  seek = "UNIFORM_ambPG";
+  str = rrp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  Amb[PG] = atof(str.c_str());
+
+  seek = "UNIFORM_ambVX";
+  str = rrp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  Amb[VX] = atof(str.c_str());
+
+  seek = "UNIFORM_ambVY";
+  str = rrp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  Amb[VY] = atof(str.c_str());
+
+  seek = "UNIFORM_ambVZ";
+  str = rrp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  Amb[VZ] = atof(str.c_str());
+
+  if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
+    seek = "UNIFORM_ambBX";
+    str = rrp->find_parameter(seek);
+    if (str=="") rep.error("didn't find parameter",seek);
+    Amb[BX] = atof(str.c_str());
+    
+    seek = "UNIFORM_ambBY";
+    str = rrp->find_parameter(seek);
+    if (str=="") rep.error("didn't find parameter",seek);
+    Amb[BY] = atof(str.c_str());
+    
+    seek = "UNIFORM_ambBZ";
+    str = rrp->find_parameter(seek);
+    if (str=="") rep.error("didn't find parameter",seek);
+    Amb[BZ] = atof(str.c_str());
+
+    if (SimPM.eqntype==EQGLM)
+      Amb[SI] = 0.0;
+  }
+
+  // tracer variables
+  ostringstream temp;
+  for (int t=0; t<SimPM.ntracer; t++) {
+    temp.str("");
+    temp << "UNIFORM_ambTR" << t;
+    seek = temp.str();
+    str = rrp->find_parameter(seek);
+    if (str!="") Amb[t+SimPM.ftr] = atof(str.c_str());
+    else         Amb[t+SimPM.ftr] = -1.0e99;
+  }
+
+
+  cout <<"\t\tAssigning values to data.\n";
+  class cell *cpt = ggg->FirstPt();
+  do {
+    for (int v=0;v<SimPM.nvar;v++)
+      cpt->P[v] = cpt->Ph[v] = Amb[v];
+    // Set values of primitive variables to some constant values.
+    // cpt->P[RO] = 0.123; cpt->P[PG] = 0.111;
+    // cpt->P[VX] = cpt->P[VY] = cpt->P[VZ] = 1.;
+    // if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
+    //   cpt->P[BX] = cpt->P[BY] = 0.1; cpt->P[BZ] = 1.;
+    // }
+  } while ( (cpt=ggg->NextPt(cpt))!=NULL);
+  //  cpt = ggg->FirstPt();
+  //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  ( (cpt=ggg->NextPt(cpt))!=NULL);
+  cout <<"\t\tGot through data successfully.\n";
+  return(0);
+}
+
+// ************************************************
+// ******** SINE WAVE IN VELOCITY, ADVECTION ******
+// ************************************************
+
+int IC_basic_tests::setup_sinewave_velocity()
+{
+//   string seek, str;
+//   seek = "NDadv_thetaXY";
+//   str = rp->find_parameter(seek);
+//   if (str=="") rep.error("didn't find parameter",seek);
+//   double thetaXY = M_PI/180.* atof(str.c_str());
+//   seek = "NDadv_thetaXZ";
+//   str = rp->find_parameter(seek);
+//   if (str=="") rep.error("didn't find parameter",seek);
+//   double thetaXZ = M_PI/180.* atof(str.c_str());
+
+//   cout <<"Using angle to X-Y grid of "<<thetaXY<<" radians, X-Z of "<<thetaXZ<<" radians.\n";
+//   cout <<"The X-Z angle is from the z-axis to the vector. (polar angle)\n";
+//   cout <<"The X-Y angle is from the x-axis to the projection of vector onto xy plane (azimuthal angle)\n";
+
+  int ndim=gg->Ndim(); //int nvar=gg->Nvar();
+  if(ndim!=2 && ndim!=3) rep.error("Bad ndim in setup_sinewave_velocity()",ndim);
+
+//   if (ndim==2 && !GS.equalD(thetaXZ,M_PI/2.)) {
+//     rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to zero.",0,thetaXZ);
+//     thetaXZ=M_PI/2.;
+//   }
+
+  //
+  // initial conditions:  Total velocity =1.
+  // vx = sin(xz)cos(xy), vy=sin(xz)sin(xy), vz=cos(xz)
+  // xz = angle from z-axis to vec(v), xy = angle from x-axis to v projected onto xy plane
+  //
+  double vx = 1.0; //sin(thetaXZ)*cos(thetaXY);
+  double vy = 1.0; //sin(thetaXZ)*sin(thetaXY);
+  double vz = 1.0; //cos(thetaXZ);
+  cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
+  double pin, pout; pin=pout=1.0;
+  double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
+  
+//  SimPM.typeofbc = "PERIODIC";
+//  SimPM.typeofbc = "XNinf XPinf YNinf YPinf";
+//  SimPM.typeofbc = "XNinf XPref YNinf YPref";
+  if (vx>vy) SimPM.finishtime = 3.*SimPM.Range[0]/vx;
+  else SimPM.finishtime = 5.*SimPM.Range[0]/vy;
+
+  // Circle setup
+  double centre[ndim]; for (int i=0;i<ndim;i++) centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+  double radius = (SimPM.Xmax[0]-SimPM.Xmin[0])/10.; // radius is 1/5 of box diameter in x-dir.
+  // Set up the inside_sphere class, with 100 subpoints per cell.
+  int nsub; if (ndim==2) nsub=100; else nsub=32;
+  class inside_sphere stest(centre,radius,SimPM.dx,nsub,ndim);
+  double vfrac;
+
+  // data
+  cout <<"\t\tAssigning primitive vectors.\n";
+  class cell *cpt = gg->FirstPt();
+  int ix[ndim]; for (int i=0;i<ndim;i++) ix[i]=0;
+  do {
+     // Set values of primitive variables.
+     cpt->P[RO] = rhoout; cpt->P[PG] = pout;
+     cpt->P[VX] = vx; 
+     cpt->P[VY] = vy*sin(2.0*M_PI*CI.get_dpos(cpt,YY)/SimPM.Range[YY]);
+     cpt->P[VZ] = vz; 
+     if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
+       cpt->P[BX] = vx;
+       cpt->P[BY] = vy;
+       cpt->P[BZ] = vz; // field aligned with flow
+     }
+     for (int i=0;i<SimPM.ntracer;i++) cpt->P[SimPM.ftr+i] = 1.;
+     
+     // This is where I set the state inside the overdense clump.
+     if( (vfrac=stest.volumeFraction(cpt)) >0) {
+       cpt->P[RO] = vfrac*(rhoin) + (1.-vfrac)*rhoout;
+       for (int i=0;i<SimPM.ntracer;i++)
+	 cpt->P[SimPM.ftr+i] = vfrac*(-1.) + (1.-vfrac)*1.;
+       //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
+     }
+  } while ( (cpt=gg->NextPt(cpt))!=NULL);
+  cout <<"\t\tGot through data successfully.\n";
+  // Data done.
+  
+  return 0;
+} //setup_sinewave()
+
+
+int IC_basic_tests::setup_advection()
+{
+  string seek, str;
+  seek = "NDadv_thetaXY";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  double thetaXY = M_PI/180.* atof(str.c_str());
+  seek = "NDadv_thetaXZ";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  double thetaXZ = M_PI/180.* atof(str.c_str());
+
+
+  cout <<"Using angle to X-Y grid of "<<thetaXY<<" radians, X-Z of "<<thetaXZ<<" radians.\n";
+  cout <<"The X-Z angle is from the z-axis to the vector. (polar angle)\n";
+  cout <<"The X-Y angle is from the x-axis to the projection of vector onto xy plane (azimuthal angle)\n";
+
+
+  int ndim=gg->Ndim(); //int nvar=gg->Nvar();
+  if(ndim!=2 && ndim!=3) rep.error("Bad ndim in setupNDadvectionHD",ndim);
+
+  if (ndim==2 && !GS.equalD(thetaXZ,M_PI/2.)) {
+    rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to zero.",0,thetaXZ);
+    thetaXZ=M_PI/2.;
+  }
+
+  //
+  // initial conditions:  Total velocity =1.
+  // vx = sin(xz)cos(xy), vy=sin(xz)sin(xy), vz=cos(xz)
+  // xz = angle from z-axis to vec(v), xy = angle from x-axis to v projected onto xy plane
+  //
+  double vx = sin(thetaXZ)*cos(thetaXY);
+  double vy = sin(thetaXZ)*sin(thetaXY);
+  double vz = cos(thetaXZ);
+  cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
+  double pin, pout; pin=pout=1;
+  double rhoin,rhoout; rhoin=10; rhoout=1;
+  
+//  SimPM.typeofbc = "PERIODIC";
+//  SimPM.typeofbc = "XNinf XPinf YNinf YPinf";
+//  SimPM.typeofbc = "XNinf XPref YNinf YPref";
+  if (vx>vy) SimPM.finishtime = 3.*SimPM.Range[0]/vx;
+  else SimPM.finishtime = 5.*SimPM.Range[0]/vy;
+
+  // Circle setup
+  double centre[ndim]; for (int i=0;i<ndim;i++) centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+  double radius = (SimPM.Xmax[0]-SimPM.Xmin[0])/10.; // radius is 1/5 of box diameter in x-dir.
+  // Set up the inside_sphere class, with 100 subpoints per cell.
+  int nsub; if (ndim==2) nsub=100; else nsub=32;
+  class inside_sphere stest(centre,radius,SimPM.dx,nsub,ndim);
+  double vfrac;
+
+  // data
+  cout <<"\t\tAssigning primitive vectors.\n";
+  class cell *cpt = gg->FirstPt();
+  int ix[ndim]; for (int i=0;i<ndim;i++) ix[i]=0;
+  do {
+     // Set values of primitive variables.
+     cpt->P[RO] = rhoout; cpt->P[PG] = pout;
+     cpt->P[VX] = vx; cpt->P[VY] = vy; cpt->P[VZ] = vz; 
+     if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
+       cpt->P[BX] = vx; cpt->P[BY] = vy; cpt->P[BZ] = vz; // field aligned with flow
+     }
+     for (int i=0;i<SimPM.ntracer;i++) cpt->P[SimPM.ftr+i] = 1.;
+     
+     // This is where I set the state inside the blast radius.
+     if( (vfrac=stest.volumeFraction(cpt)) >0) {
+       //       cpt->P[PG] = vfrac*(pin) + (1.-vfrac)*cpt->P[PG];
+       cpt->P[RO] = vfrac*(rhoin) + (1.-vfrac)*rhoout;
+       for (int i=0;i<SimPM.ntracer;i++)
+	 cpt->P[SimPM.ftr+i] = vfrac*(-1.) + (1.-vfrac)*1.;
+       //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
+     }
+  } while ( (cpt=gg->NextPt(cpt))!=NULL);
+  //  cpt = firstPt();
+  //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  ( (cpt=nextPt(cpt))!=NULL);
+  cout <<"\t\tGot through data successfully.\n";
+  // Data done.
+  
+  return(0);
+} //setup_advection
+
+
+
+
+/**************************************************************************/
+// Div B peak.
+/**************************************************************************/
+int IC_basic_tests::setup_divBpeak()
+{
+  // See Dedner et al. (2002) JCP, 175, 645 for details of the problem and
+  // reference results.
+  int ndim=gg->Ndim(); if (ndim!=2) rep.error("divBpeak only works in 2D",ndim);
+  int nvar=gg->Nvar();
+  double *s = new double [nvar];
+  s[RO]=1.0;
+  s[VX]=s[VY]=1.;
+  s[VZ]=0.0;
+  s[PG]=6.0;
+  s[BY]=0.0; s[BZ] = 1.;
+  s[BX]=0.;
+  
+  SimPM.typeofbc = "PERIODIC";
+  SimPM.gamma = 5./3.;
+  if(fabs(SimPM.Xmin[XX]+0.5) > 1.e-6 || fabs(SimPM.Xmax[XX]-1.5) > 1.e-6) {
+    cout <<fabs(SimPM.Xmin[XX]+0.5) <<"\t"<<fabs(SimPM.Xmax[XX]-1.5) <<endl;
+    cout <<SimPM.Xmin[XX]<<"\t"<<SimPM.Xmax[XX]<<endl;
+    rep.error("Set bounds properly for divBpeak!!! x=[-.5,1.5] y=[-.5,1.5]",SimPM.Xmin[XX]);
+  }
+  class cell *c = gg->FirstPt(); double r2=0;
+  double dpos[MAX_DIM]; CI.get_dpos(c,dpos);
+  rep.printVec("position of first cell",dpos,ndim);
+  do {
+    CI.get_dpos(c,dpos);
+    for (int v=0;v<nvar;v++) c->P[v] = s[v];
+    r2 = dpos[XX]*dpos[XX] + dpos[YY]*dpos[YY];
+     //     c->P[BX] = 1.3*exp(-r2/.01);
+     if (r2<1./8.)  r2 = 4096.*r2*r2*r2*r2 - 128.*r2*r2+1.;
+     else r2 = 0.;
+     if (r2<0.) r2=0.;
+     c->P[BX] = r2;
+  } while ( (c=gg->NextPt(c))!=0);
+  delete [] s;
+  return(0);
+}
+/**************************************************************************/
+// Div B peak.
+/**************************************************************************/
+
+
+int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
+				    )
+{
+  cout <<"\tSetting up Field Loop test, from Stone's code test page:\n";
+  cout <<"\t\thttp://www.astro.princeton.edu/~jstone/tests/field-loop/Field-loop.html\n";
+  cout <<"\tAlso see http://www.dias.ie/~fdc/MHDCodeComp/adv.html\n";
+  int ndim=SimPM.ndim;
+  if(ndim!=2) rep.error("Bad ndim in setup_FieldLoop",ndim);
+  if(SimPM.eqntype!=EQMHD && SimPM.eqntype!=EQGLM && SimPM.eqntype!=EQFCD)
+    rep.error("Advection of Field Loop must be mhd! bad eqntype",SimPM.eqntype);
+  SimPM.gamma = 5./3.; // just to make sure.
+  SimPM.typeofbc = "XNper_XPper_YNper_YPper_";
+  cout <<"\tMake sure x=[-1,1] and y=[-0.5,0.5]\n";
+  
+  double A_max=0.001; // Peak in vector potential.
+  double 
+    vel=2.0,
+    rho=1.0,
+    p_g=1.0;
+  //double flow_angle=60.0*M_PI/180.0;
+  double radius=0.3;
+  double dist=0.0;
+  double centre[ndim]; for (int v=0;v<ndim;v++) centre[v]=0.0;
+  double dpos[ndim];
+
+  if (vz<0) {
+    cout <<"\tWARNING - negative vz received, so setting up static problem!\n";
+    vel=0.0;
+    vz =0.0;
+  }
+
+  cout <<"Assigning primitive vectors.\n";
+  class cell *c = gg->FirstPt();
+  do {
+    c->P[RO] = rho; c->P[PG] = p_g;
+    c->P[VX] = vel;     //vel*sin(flow_angle);
+    c->P[VY] = vel/2.0; //vel*cos(flow_angle);
+    c->P[VZ] = vz; // If vz!=0, this tests if B_z gets contaminated.
+    CI.get_dpos(c,dpos);
+    dist = GS.distance(centre,dpos,ndim);
+
+    //
+    // poor man's b-field (has divB errors)
+    //
+    if (dist<radius) {
+      c->P[BX] =  A_max*dpos[YY]/dist;
+      c->P[BY] = -A_max*dpos[XX]/dist;
+    }
+    else {
+      c->P[BX] = 0.0;
+      c->P[BY] = 0.0;
+    }
+    c->P[BZ] = 0.0;
+    if (SimPM.eqntype==EQGLM) c->P[SI] = 0.0;
+    for (int i=0;i<SimPM.ntracer;i++) {
+      c->P[SimPM.ftr+i] = 1.;
+    }
+    //
+    // vector potential...
+    //
+    if (dist<radius) c->Ph[BZ]=A_max*(radius-dist);
+    else             c->Ph[BZ]=0.0;
+    c->Ph[BX]=c->Ph[BY]=0.0;
+  } while ( (c=gg->NextPt(c))!=0);
+  cout <<"Got through data successfully.\n";
+  // Data done.
+
+  //
+  // Take curl of vector...
+  //
+  int els[3] = {BX,BY,BZ};
+  double ans[3];
+  class VectorOps_Cart *vec = new VectorOps_Cart (ndim,gg->DX());
+  c = gg->FirstPt();
+  do {
+    if (!c->isedge) {
+      vec->Curl(c,1,els,ans);
+      c->P[BX] = ans[0];
+      c->P[BY] = ans[1];
+      c->P[BZ] = ans[2];
+    }
+    else {
+      c->P[BX] = 0;
+      c->P[BY] = 0;
+      c->P[BZ] = 0;
+    }
+  } while ( (c=gg->NextPt(c))!=0);
+  delete vec; vec=0;
+
+  return(0);
+}
+
+/** \brief Set up Orszag-Tang Vortex problem (from Dai & Woodward 1998,APJ,494,317)
+ * This assumes the grid is unit size in both directions, so it automatically works
+ * in serial and in parallel.
+ */
+int IC_basic_tests::setup_OrszagTang()
+{
+  // set plasma beta parameter (ratio of gas to magnetic pressure)
+  // set mach number of gas (hydro mach no.).
+  string seek, str;
+  seek = "OTVbeta";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  double otvbeta = atof(str.c_str());
+
+  seek = "OTVmach";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  double otvmach = atof(str.c_str());
+
+  int ndim=gg->Ndim();
+  cout <<"\tSetting up Orszag-Tang vortex problem with plasma beta = "<<otvbeta;
+  cout <<" and flow mach no. = "<<otvmach<<endl;
+  if(ndim!=2) rep.error("Bad ndim in setup_OrszagTang",ndim);
+  if(SimPM.eqntype!=EQMHD && SimPM.eqntype!=EQGLM && SimPM.eqntype!=EQFCD)
+    rep.error("O-T vortex must be mhd! bad eqntype",SimPM.eqntype);
+  
+  SimPM.gamma = 5./3.; // just to make sure.
+  double p0 = otvbeta/2.; // constant pressure.
+  double d0 = SimPM.gamma*otvmach*otvmach*p0; // constant density.
+  cout <<"Assigning primitive vectors.\n";
+  double dpos[ndim];
+  class cell *c = gg->FirstPt();
+  do {
+    CI.get_dpos(c,dpos);
+    // Set values of primitive variables.
+    c->P[RO] = d0; c->P[PG] = p0;
+    c->P[VX] = -sin(2.*M_PI*dpos[YY]);
+    c->P[VY] =  sin(2.*M_PI*dpos[XX]);
+    c->P[VZ] = 0.;
+    c->P[BX] = -sin(2.*M_PI*dpos[YY]);
+    c->P[BY] =  sin(4.*M_PI*dpos[XX]);
+    c->P[BZ] = 0.0;
+    if (SimPM.eqntype==EQGLM) c->P[SI] = 0.0;
+    for (int i=0;i<SimPM.ntracer;i++) {
+      c->P[SimPM.ftr+i] = 1.;
+    }
+  } while ( (c=gg->NextPt(c))!=0);
+  cout <<"Got through data successfully.\n";
+  // Data done.
+  return(0);
+}
+
+
+
+int IC_basic_tests::setup_DoubleMachRef()
+{
+  // Set up Woodward & Colella (1984) Double Mach Reflection.
+  // dmrmach is the mach number of the incident shock.
+  string seek, str;
+  seek = "DMRmach";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  double dmrmach = atof(str.c_str());
+
+  seek = "DMRtheta";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  double dmrtheta = atof(str.c_str());
+
+  int ndim=gg->Ndim();
+  cout <<"Setting up Double Mach Reflection problem...  ";
+  if (dmrmach<=1) rep.error("Mach number must be >1",dmrmach);
+  if (dmrtheta<0.1 || dmrtheta>89.99)
+    rep.error("Angle must be between 0 and 90 degrees",dmrtheta);
+  cout <<"with mach no. = "<<dmrmach<<" and angle "<<dmrtheta<<" degrees to x-axis.\n";
+  if (ndim!=2) rep.error("Bad ndim in setup_DoubleMachRef",ndim);
+  if (SimPM.eqntype != EQEUL) rep.error("DMR must be euler equations!",SimPM.eqntype);
+  SimPM.typeofbc = "XNinf_XPout_YNref_YPdmr_INdm2";
+  SimPM.gamma=1.4;
+  cout <<"*NB*: Assuming grid dimensions are {[0,4],[0,1]}; if not things may/will go wrong!\n";
+  
+  dmrtheta *= M_PI/180.0;
+  
+  // override mach no and theta:
+  dmrmach = 10.0;
+  dmrtheta= M_PI/3.0;
+  cout <<"Override: hardwired to mach no. = "<<dmrmach;
+  cout <<" and angle "<<dmrtheta*180./M_PI<<" degrees to x-axis.\n";
+  cout <<"If this is a problem, fix the boundary conditions in the code.!\n";
+    
+  
+  double x0 = 1./6.; // initial location of shock.
+  double ro0 = 1.4;
+  double pg0 = 1.0;
+  double vx0=0.0, vy0 = 0.0, vz0=0.0;
+  double pg1 = pg0*(2.*SimPM.gamma*dmrmach*dmrmach - SimPM.gamma +1.)/(SimPM.gamma+1.);
+  double alpha = (SimPM.gamma +1.)/(SimPM.gamma -1.);
+  double ro1 = ro0*(1.+alpha*pg1/pg0)/(alpha + pg1/pg0);
+  double vx1 = vx0 + sin(dmrtheta)*(pg1/pg0 - 1.)*sqrt(SimPM.gamma*pg0/ro0)/SimPM.gamma/dmrmach;
+  double vy1 = vy0 - cos(dmrtheta)*(pg1/pg0 - 1.)*sqrt(SimPM.gamma*pg0/ro0)/SimPM.gamma/dmrmach;
+  double vz1 = vz0;
+  cout <<"postshock state: ro="<<ro1<<", pg="<<pg1<<", vx="<<vx1<<", vy="<<vy1<<endl;
+  
+  double xs = 0.0;
+  class cell *c = gg->FirstPt();
+  double dpos[ndim];
+  do {
+    CI.get_dpos(c,dpos);
+    xs = x0 + dpos[YY]/tan(dmrtheta);
+    if (dpos[XX] <= xs) {
+      c->P[RO] = ro1; c->P[PG] = pg1; c->P[VX] = vx1; c->P[VY] = vy1; c->P[VZ] = vz1;
+    }
+    else {
+      c->P[RO] = ro0; c->P[PG] = pg0; c->P[VX] = vx0; c->P[VY] = vy0; c->P[VZ] = vz0;
+    }
+  } while ( (c=gg->NextPt(c))!=0);
+  cout <<"Got through data successfully.\n";
+  // Data done.
+  
+  return(0);
+}
+ 
+int IC_basic_tests::setup_KelvinHelmholz_Stone()
+{
+  cout <<"KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
+  int err=0;
+  int ndim=gg->Ndim();
+  if (ndim!=2) rep.error("KH needs 2D problem domain",ndim);
+
+  // The following is for Jim Stone's test at:
+  // http://www.astro.princeton.edu/~jstone/tests/kh/kh.html
+  SimPM.typeofbc = "XNper_XPper_YNper_YPper_";
+  cout <<"KH Instability: using periodic BCs everywhere.\n";
+  SimPM.gamma=1.4;
+  double pressure=2.5;
+  double vx_high = -0.5;
+  double vx_low  =  0.5;
+  double rho_high = 1.0;
+  double rho_low  = 2.0;
+  double Bx = 0.5/sqrt(4.*M_PI); // think this is right, but not sure about 4Pi
+  int seed= 975;
+#ifdef PARALLEL
+  seed += mpiPM.myrank;
+#endif
+  srand(seed);
+  double noise_amp = 0.01; // absolute amplitude of noise.
+
+  class cell *c=gg->FirstPt();
+  double dpos[ndim];
+  do {
+    CI.get_dpos(c,dpos);
+    c->P[VY] = 0.0;
+    c->P[PG] = pressure;
+    if (eqns==2) {
+      c->P[BX] = Bx; c->P[BY]=c->P[BZ]=0.0;
+    }
+    if (fabs(dpos[YY])>0.25) {
+      c->P[RO] = rho_high;
+      c->P[VX] = vx_high;
+      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = -1.;
+    }
+    else {
+      c->P[RO] = rho_low;
+      c->P[VX] = vx_low;
+      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] =  1.;
+    }
+    c->P[VX] += noise_amp*(static_cast<double>(rand())/RAND_MAX -0.5);
+    c->P[VY] += noise_amp*(static_cast<double>(rand())/RAND_MAX -0.5);
+  } while ( (c=gg->NextPt(c))!=0);
+  cout <<"Got through data successfully.\n";
+  // Data done.
+
+  return err;
+}
+
+int IC_basic_tests::setup_KelvinHelmholz()
+{
+  cout <<"KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
+  int err=0;
+  int ndim=gg->Ndim();
+  if (ndim!=2) rep.error("KH needs 2D problem domain",ndim);
+
+
+  // The following is for Frank, Jones, Ryu, \& Gaalaas, 1996, ApJ, 460, 777.
+  SimPM.typeofbc = "XNper_XPper_YNref_YPref_";
+  SimPM.gamma=5./3.;
+  double pressure= 0.6;
+  double rho = 1.0;
+  double Ux = 1.0;
+  double Bx = 0.2; // weak field is 0.2, strong is 0.4
+  double Uy_amp = 0.01; // Amplitude of velocity perturbation
+  double a = SimPM.Range[YY]/25.0; // Thickness of shear layer.
+
+  class cell *c=gg->FirstPt();
+  double dpos[ndim];
+  do {
+    CI.get_dpos(c,dpos);
+    c->P[RO] = rho;
+    c->P[PG] = pressure;
+    if (eqns==2) {
+      c->P[BX] = Bx; c->P[BY]=c->P[BZ]=0.0;
+    }
+    c->P[VX] = -0.5*Ux*tanh((dpos[YY])/a); //-0.5*SimPM.Range[YY])/a);
+    // This makes the two densities different...
+    //c->P[RO] += 0.1*rho*(c->P[VX]/Ux);
+    // This adds two sin wave perturbations with 1,2 and 15 periods in the box,
+    // exponentially damped in the y-direction.
+    c->P[VY] = 0.3333*Uy_amp*(sin(30.0*M_PI*dpos[XX]/SimPM.Range[XX])+
+			      sin( 2.0*M_PI*dpos[XX]/SimPM.Range[XX])+
+			      sin( 4.0*M_PI*dpos[XX]/SimPM.Range[XX]))
+                             *exp(-(dpos[YY]*dpos[YY])/4.0/a/a);
+    c->P[VZ] = 0.0;
+  } while ( (c=gg->NextPt(c))!=0);
+  cout <<"Got through data successfully.\n";
+  // Data done.
+
+  return err;
+}

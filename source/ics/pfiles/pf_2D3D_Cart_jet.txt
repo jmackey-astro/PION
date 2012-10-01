@@ -1,0 +1,114 @@
+# parameter file for Initial Condition Generation.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 3
+# Type of Equations to Solve {hd/euler, mhd, glm-mhd...}
+eqn glm-mhd
+# Type of coordinates: cartesian, cylindrical are options.
+coordinates cartesian
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+ics JetCart
+
+# IC filename
+ICfilename IC_3dMHDJet_n64_r10b1v10
+
+# Output FileName Base
+OutputFile 3dMHDJet_n64_r10b1v5
+
+# Number and type of tracers.
+ntracer 1
+trtype inoutmix
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1.0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  32
+NGridY  64
+NGridZ  64
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin -32.0
+Zmin -32.0
+# Max values of x,y,z
+Xmax 32.0
+Ymax 32.0
+Zmax 32.0
+
+
+# Data Output Path
+OutputPath ../results/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType fits
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 10
+
+# Start time
+StartTime 0.0
+FinishTime 3.0
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC XNjrf_XPout_YNout_YPout_ZNout_ZPout_INjet
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.666666666666666666
+
+# CFL coefficient 0<cfl<1
+CFL 0.4
+
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units SI
+# One code unit is this number of reference units.
+rhoval 1.7e-19
+lenval 1.0e11
+velval 3.1688e3
+magval 1.3e-6
+
+## Parameters specific for various problems
+JETradius 10
+JETdensity 1.0
+JETpressure 1.0
+JETvelocity 10.0
+JETambRO 1.0
+JETambPG 0.2
+JETambVX 0.0
+JETambVY 0.0
+JETambVZ 0.0
+JETambBX 1.0
+JETambBY 0.0
+JETambBZ 0.0
+
+# Reference Vector
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Anything else?  

@@ -1,0 +1,117 @@
+# parameter file for Initial Condition Generation.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 2
+# Type of Equations to Solve {hd/euler, mhd, glm-mhd...}
+eqn euler
+# Type of coordinates: cartesian, cylindrical are options.
+coordinates cartesian
+solver RS_Roe
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+ics DoubleMachRef
+
+# Which physics to use
+EP_dynamics     1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   0
+EP_rad_recombination 0
+EP_update_erg 0
+
+# IC filename
+ICfilename IC_DMRm10t60_n520
+
+# Output FileName Base
+OutputFile DMRm10t60_n520
+
+# Number and type of tracers.
+ntracer 0
+trtype none
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1.0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  520
+NGridY  160
+NGridZ  1
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin 0.0
+# Max values of x,y,z
+Xmax 3.25
+Ymax 1.0
+Zmax 1.0
+
+
+# Data Output Path
+OutputPath test_DMR/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType silo
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 0
+OutputCriterion 1
+OPfreqTime 0.05
+
+# Start time
+StartTime 0.0
+FinishTime 0.2
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC XNinf_XPout_YNref_YPdmr_INdm2
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.4
+
+# CFL coefficient 0<cfl<1
+CFL 0.7
+
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.1
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units SI
+# One code unit is this number of reference units.
+rhoval 1.0
+lenval 1.0
+velval 1.0
+magval 1.0
+
+## Parameters specific for various problems
+DMRmach 10.0
+DMRtheta 60
+
+# Reference Vector
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Anything else?  

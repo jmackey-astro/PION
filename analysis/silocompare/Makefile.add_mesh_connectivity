@@ -1,0 +1,176 @@
+# Makefile for add_mesh_connectivity code, Jonathan Mackey
+#
+# 2010-01-28 JM: Wrote template file for analysing data.
+# 2010-02-03 JM: Modified debugging flags for stokes, added uniformgridMPI
+# 2010-02-08 JM: Changed to make code to read in Silo files and rewrite them with mesh connectivity info.
+
+SHELL = /bin/sh
+.SUFFIXES:
+.SUFFIXES: .cc .o
+.SUFFIXES: .cxx .o
+srcdir = .
+
+# --------------------
+# Compile-time options
+# --------------------
+# Tell it that we're using MPI
+OPTION  = -DPARALLEL
+#IOMODE=USE_FILE_COMMS
+IOMODE=USE_MPI
+OPTION += -D$(IOMODE)
+# if using Silo
+OPTION += -DSILO
+OPTION += -DFITS
+
+#
+# This is to multi-thread the pixel calculations.
+#
+MT=NO_THREADS
+#MT=USE_THREADS
+#OPTION += -DTHREADS -D__WXGTK__
+#thread_dir='INSERT THREADS DIRECTORY HERE'
+
+MAKE_UNAME=standard
+#MAKE_UNAME=imac
+#MAKE_UNAME=epona
+#MAKE_UNAME=stokes
+#MAKE_UNAME=aurora
+
+# All machines and options need readline and maths
+LDFLAGS = -lreadline
+ifeq ($(MT), USE_THREADS)
+LDFLAGS += -pthread
+endif
+
+GLOBAL = global.h functionality_flags.h testing_flags.h
+
+
+######################################################################
+# Options for a "standard" workstation.
+# make sure cfitsio and silo are compiled in ../extra_libraries/
+######################################################################
+ifeq ($(MAKE_UNAME), standard)
+
+ifeq ($(IOMODE), USE_FILE_COMMS)
+CXX = g++
+endif
+ifeq ($(IOMODE), USE_MPI)
+CXX = mpicxx
+endif
+
+#CXXFLAGS = -O3
+#CXXFLAGS = -O3 -g
+CXXFLAGS = -O0 -Wall -g -Wno-unused-function
+
+MYLIB = ${CURDIR}/../../extra_libraries
+
+# Includes for FITS/SILO/CVODES
+INC = -I${MYLIB}/include
+
+LDFLAGS =  -lm  
+LDFLAGS +=-lreadline
+LDFLAGS += -lncurses
+
+# All libraries are in this path:
+LDFLAGS += -L${MYLIB}/lib
+# Libraries for fits, silo
+LDFLAGS += -lcfitsio
+LDFLAGS += -lsilo 
+
+endif
+
+###########################################
+# Specific Options for my imac
+###########################################
+ifeq ($(MAKE_UNAME), imac)
+ifeq ($(IOMODE), USE_FILE_COMMS)
+CXX = g++
+endif
+ifeq ($(IOMODE), USE_MPI)
+CXX = mpicxx
+endif
+
+#CXXFLAGS = -O3
+CXXFLAGS = -O0
+#CXXFLAGS += -Wall
+CXXFLAGS += -g    # enable debugging with gdb
+CXXFLAGS += -arch x86_64
+
+MYLIB = /Users/jmackey/Library/my_local_libs
+# for Silo, which can use HDF5.
+INC += -I$(MYLIB)/silo_gcc64/include
+INC += -I$(MYLIB)/cfitsio64/include
+
+# Libraries for fits, silo (with hdf5)
+LDFLAGS += -L$(MYLIB)/cfitsio64/lib/ -lcfitsio
+LDFLAGS += -L$(MYLIB)/silo_gcc64/lib/ -lsilo
+
+endif
+#############################################
+
+
+
+
+##################################################
+##################################################
+
+CXXFLAGS += $(OPTION)
+VPATH=../../source:../../source/defines
+
+OBJECTS = uniformGrid.o dataio.o readparams.o global.o \
+	dataio_utility.o dataio_silo.o dataio_silo_MPI.o dataio_fits.o uniformGridMPI.o \
+	comm_mpi.o comm_files.o utility_fits_class.o  \
+	add_mesh_connectivity.o stellar_wind_BC.o \
+        cell_interface.o VectorOps.o VectorOps_spherical.o
+
+ifeq ($(MT), USE_THREADS)
+OBJECTS += logmessages.o threadpool.o threads.o
+VPATH +=:${thread_dir}/andys_threads:${thread_dir}/andys_threads/threadpool
+endif
+
+change_nproc.out: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o change_nproc.out $(LDFLAGS)
+
+# make has rules for making objects from .cc files, so I don't need them
+# explicitly, unless I am doing something unusual.
+.cxx.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cc.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+
+################################
+# Andy's multi-threading files #
+################################
+logmessages.o: logmessages.cxx logmessages.h constants.h msvc_constants.h
+threadpool.o: threadpool.cxx threadpool.h constants.h msvc_constants.h logmessages.h
+threads.o: threads.cxx msvc_constants.h constants.h
+
+#################################
+# Stuff From my Sim Code Source #
+#################################
+global.o: 	  global.cc global.h
+uniformGrid.o: 	  uniformGrid.cc uniformGrid.h global.h
+uniformGridMPI.o: uniformGridMPI.cc uniformGrid.cc uniformGrid.h global.h comms.h
+dataio.o:	dataio.cc dataio.h global.h solver_eqn_base.h
+readparams.o:	readparams.cc readparams.h global.h
+dataio_utility.o:	dataio_utility.cc dataio_utility.h dataio_silo.h dataio.h global.h
+dataio_silo.o:	dataio_silo.cc dataio_silo.h dataio.h global.h solver_eqn_base.h
+dataio_silo_MPI.o:	dataio_silo_MPI.cc dataio_silo.h dataio.h global.h solver_eqn_base.h
+comm_mpi.o:   comm_mpi.cc comm_mpi.h comms.h
+comm_files.o: comm_files.cc comm_files.h comms.h global.h
+utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h global.h
+dataio_fits.o: dataio_fits.cc dataio_fits.h dataio.h global.h solver_eqn_base.h
+stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h global.h
+
+cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+VectorOps.o: 	VectorOps.cc VectorOps.h ${GLOBAL} uniformGrid.h
+VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
+		       ${GLOBAL} uniformGrid.h
+
+###############################
+# Stuff Specific to this code #
+###############################
+add_mesh_connectivity.o:	add_mesh_connectivity.cc global.h uniformGrid.h dataio.h
+
+clean:
+	rm -f *.o change_nproc.out

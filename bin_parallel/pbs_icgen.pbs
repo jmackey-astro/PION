@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N ic_R3d
+#PBS -l nodes=8:ppn=8
+#PBS -l walltime=0:15:00
+#PBS -r n
+#PBS -j oe
+#PBS -A dsast002b
+#PBS -V
+#PBS -M jmackey@cp.dias.ie
+#PBS -m e
+# This job's working directory
+echo Working directory is $PBS_O_WORKDIR
+cd $PBS_O_WORKDIR
+#source /etc/profile.d/modules.sh
+#module load mpich/path cfitsio
+#module load mpich/gcc
+time mpiexec ./icgen_parallel pf_R3d_b2C3_N100eE_I11.txt silo redirect=iclog
+

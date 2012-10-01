@@ -1,0 +1,156 @@
+# parameter file for Initial Condition Generation.
+# tuned for photoevaporation clump problem.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 3
+coordinates cartesian  #cylindrical
+
+# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
+eqn  euler  #glm-mhd
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+#ics PhotoEvaporatingClump
+ics PhotoEvaporatingClump2
+#ics PhotoEvap_radial
+#ics PhotoEvap_paralleltest
+
+# IC filename
+ICfilename IC_PEC2cl3d_T8k_n256small
+# Output FileName Base
+OutputFile    PEC2cl3d_T8k_n256small
+
+
+# Number and type of tracers.
+ntracer 2
+trtype onlyH_H1+___Colour #ChALL_H1+___e-____ #He1+__He2+__
+InitIons LEAVE  #NO
+Tracer0 0.99999
+Tracer1 1.0
+Tracer2 0.0
+Tracer3 0.0
+Tracer4 0.0
+
+# Which physics to use
+EP_dynamics     1
+EP_raytracing   1
+EP_phot_ionisation   1
+EP_cooling      11
+EP_chemistry    1
+EP_coll_ionisation   1
+EP_rad_recombination 1
+EP_update_erg 1
+
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1 #0.5
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  64
+NGridY  64
+NGridZ  64
+# Boundaries of Simulation box:
+Xmin  0.0 #-3.086e18
+Ymin  0.0 #-3.086e18
+Zmin  0.0 #-3.086e18
+# Max values of x,y,z
+Xmax  1.024e17
+Ymax  1.024e17
+Zmax  1.024e17
+#Xmax 0.7071067814 # For 2d square box with unit diagonal.
+
+
+# Data Output Path
+OutputPath /ichec/work/dsast002b/LimMellema2003/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType silo
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 100
+OutputCriterion 1    # output per n-years=1, per step=0
+OPfreqTime 25.0      # in years
+
+# Start time
+StartTime 0.0
+FinishTime 3.16e10
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC XNout_XPout_YNout_YPout_ZNout_ZPout_
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.666666666666666666666
+
+# CFL coefficient 0<cfl<1
+CFL 0.4
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.1
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units 
+# One code unit is this number of reference units.
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+## Parameters specific for various problems
+# ND Shock Cloud interaction problem:
+PECcloudradius 9.765625e-2 #4.88281e-2
+PECcloudTR0 1.0e-6  # cloud first tracer value
+PECcloudTR1 0.0
+PECdratio 50.0
+PECpratio 1.0
+PECBratio 1.0
+PEC_radialslope 0.0
+
+PEC_ambRO 1.67e-22 #5.34e-24
+PEC_ambPG 2.21e-10  # (8000K in ionised gas)
+PEC_ambVX 0.0
+PEC_ambVY 0.0
+PEC_ambVZ 0.0
+PEC_ambBX 0.0  #4.0e-6
+PEC_ambBY 0.0  #5.642e-6
+PEC_ambBZ 0.0
+PEC_ambTR0 0.9999
+PEC_ambTR1 1.0
+PEC_ambTR2 0.0
+PEC_ambTR3 0.0
+PEC_ambTR4 0.0
+PEC_ambTR5 0.0
+PEC_ambTR6 0.0
+
+# radiation source list
+RPnsources 1
+RPpos00  -1.0e200
+RPpos01  0.0e7
+RPpos02  0.0e7
+RPstrength0 38197186350 # ~10^28 is good in 2d, ~10^12 flux for llel rays.
+
+# Reference Vector
+refvec0 1.0e-22  # ~100 particles /cc
+refvec1 1.0e-11  # T ~ 10^3K
+refvec2 1.0e6    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 1.0e6    # v 
+refvec4 1.0e6    # v 
+refvec5 1.0e-6   # B (gauss)
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Anything else?  

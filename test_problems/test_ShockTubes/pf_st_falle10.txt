@@ -1,0 +1,133 @@
+# parameter file for Initial Condition Generation.
+# tuned for Shock-Tube problems in 1d,2d,3d.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 1
+coordinates cartesian
+gridtype 1
+
+# Type of Equations to Solve {hd, mhd, ...}
+eqn  i-mhd
+eqnndim 3
+solver RSlinear
+nvar 8
+
+ntracer 0
+#trtype ChALL_trace_H1+___e-____He1+__He2+__
+InitIons YES
+#Tracer0 1.0
+#Tracer1 1.0
+#Tracer2 0.0
+#Tracer3 0.0
+trtype None #color_trace_
+
+# extra physics
+EP_dynamics 1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   0
+EP_rad_recombination 0
+EP_update_erg 0
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+ics ShockTube
+
+# IC filename
+ICfilename IC_FalleSS
+# Output FileName Base
+OutputFile    FalleSS
+
+RIEMANN   10  # optional shock-tube problem number (<=0 for not used)
+              # Tests 1-5 are from Toro, p.225. (use gamma=1.4)
+              # Test 6 is a tricky hydro one.
+	      # Tests 7-13 are MHD tests from Sam Falle's 1998 paper.
+	      # 7=BW (gamma=2), 8=AW(not working), 9=FS, 10=SS, 11=FR,
+	      # 12=SR, 13=OFS
+	      # 14 = random noise at low level.
+	      # Tests 15-26 are the MHD tests from Ryu and Jones (1995).
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1.0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  200
+NGridY  2
+NGridZ  10
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin 0.0
+# Max values of x,y,z
+Xmax 1.0
+Ymax 0.005
+Zmax 1.0
+
+# Data Output Path
+OutputPath ../results/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType text
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputTextFile 	FalleSS
+OutputFrequency 100
+
+# Start time
+StartTime 0.0
+FinishTime 0.25
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC XNout_XPout
+#BC XNout_XPfix_YNout_YPout
+#BC XNout_XPout_YNout_YPout_ZNout_ZPout
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+#GAMMA 2.0
+GAMMA 1.666666666666666666
+#GAMMA 1.4
+
+# CFL coefficient 0<cfl<1
+CFL 0.7
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units 
+# One code unit is this number of reference units.
+# i think i should change these to length,mass,time,B
+rhoval 1.0  # 1e-21 is roughly 10^3/cm3
+velval 1.0  # should be set by sqrt(p/rho) to be consistent
+lenval 1.0  # set so that time has proper units!
+magval 1.0  # determined by plasma beta = p_g/(B^2/2)
+
+
+# Reference Vector for dimensionless Shock tubes (set all to ~1)
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Anything else?  

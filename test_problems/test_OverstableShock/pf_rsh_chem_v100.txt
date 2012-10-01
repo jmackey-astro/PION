@@ -1,0 +1,129 @@
+# parameter file for Initial Condition Generation.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 2
+# Type of Equations to Solve {hd/euler, mhd, glm-mhd...}
+eqn euler
+solver 1
+# Type of coordinates: cartesian, cylindrical are options.
+coordinates cartesian
+
+# Which ICs to set up {RadiativeShock, RadiativeShockOutflow
+ics RadiativeShock  #Outflow
+
+# IC filename
+# Output FileName Base
+ICfilename IC_RSH2D_n128_v100_chem
+OutputFile    RSH2D_n128_v100_chem
+
+RADSH_vs 100.0e5
+
+NGridX  128
+NGridY  4
+Xmax 1.28e17
+Ymax 0.04e17
+
+# Type of Boundary Condition ('INrsh_' is the left edge density limiter)
+BC XNref_XPinf_YNper_YPper_ #INrsh_ 
+
+
+# Number and type of tracers.
+ntracer 1
+trtype onlyH_H1+___
+# ntracer 4
+# trtype ChALL_e-____H1+___He1+__He2+__
+InitIons NO
+Tracer0 0.99   # only H
+# Tracer0 1.1022 # with H,He
+Tracer1 1.0
+Tracer2 0.89
+Tracer3 0.09
+
+# extra physics
+EP_dynamics     1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      1
+EP_chemistry    1
+EP_coll_ionisation   1
+EP_rad_recombination 1
+EP_update_erg 1
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at fractional level f to Data? (f<=0 means no).
+noise 0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridZ  64
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin -32.0
+# Max values of x,y,z
+Zmax 32.0
+
+
+# Data Output Path
+OutputPath ../results/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType silo
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 50
+OutputCriterion 0
+OPfreqTime 3.16e9
+
+# Start time
+StartTime 0.0
+FinishTime 3.16e11
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.6666666666666666666666
+
+# CFL coefficient 0<cfl<1
+CFL 0.4
+
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+## Parameters specific for various problems
+#RADSH_r0 2.0374e-23
+RADSH_r0 1.67e-23
+RADSH_T0 1.00e4
+RADSH_B0 0.0
+
+# Reference Vector
+refvec0 1.0e-23  # ~10 particles /cc
+refvec1 3.0e-12  # T ~ 10^4K
+refvec2 1.0e7    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 1.0e7    # v ~ 100 km/s
+refvec4 1.0e7    # v ~ 100 km/s
+refvec5 1.0e-6
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units cgs
+# One code unit is this number of reference units.
+rhoval 1.7e-19
+lenval 1.0e11
+velval 3.1688e3
+magval 1.3e-6
+
+# Anything else?  

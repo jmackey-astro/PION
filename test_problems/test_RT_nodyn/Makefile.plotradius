@@ -1,0 +1,146 @@
+# Makefile for plot_radius code, Jonathan Mackey
+#
+# 2010.10.13 JM: Updated for new code!
+# 2011.02.28 JM: Updated for new code. More files to compile.
+# 2011.10.24 JM: Got it to work with parallel files.
+
+SHELL = /bin/sh
+.SUFFIXES:
+.SUFFIXES: .cc .o
+srcdir = .
+GLOBAL = global.h functionality_flags.h testing_flags.h
+
+# --------------------
+# Compile-time options
+# --------------------
+# Tell it that we're using serial/parallel code.
+#OPTION  = -DSERIAL
+OPTION  = -DPARALLEL -DPLTEST
+#IOMODE=USE_FILE_COMMS
+IOMODE=USE_MPI
+OPTION += -D$(IOMODE)
+
+# if using Silo
+OPTION += -DSILO
+# if using FITS
+OPTION += -DFITS
+
+MAKE_UNAME=standard
+#MAKE_UNAME=epona
+#MAKE_UNAME=stokes
+
+# All machines and options need readline and maths
+LDFLAGS = -lreadline
+# display all warnings
+CXXFLAGS = -O3 
+#CXXFLAGS += -Wall
+
+######################################################################
+# Options for a "standard" workstation.
+# make sure cfitsio and silo are compiled in ../extra_libraries/
+######################################################################
+ifeq ($(MAKE_UNAME), standard)
+
+CXXFLAGS = -O3
+#CXXFLAGS = -O3 -g
+#CXXFLAGS = -O0 -Wall -g
+
+ifeq ($(IOMODE), USE_FILE_COMMS)
+CXX = g++
+endif
+ifeq ($(IOMODE), USE_MPI)
+CXX = mpicxx
+CXXFLAGS += -Wno-unused-function
+endif
+
+MYLIB = ../../extra_libraries
+
+# Includes for FITS/SILO/CVODES
+INC = -I${MYLIB}/include
+
+LDFLAGS =  -lm  -lreadline
+# All libraries are in this path:
+LDFLAGS += -L${MYLIB}/lib
+# Libraries for fits, silo
+LDFLAGS += -lcfitsio
+LDFLAGS += -lsilo 
+
+endif
+
+###################################################
+# Specific Options for epona (ubuntu 9.10 32-bit) #
+###################################################
+ifeq ($(MAKE_UNAME), epona)
+CXX = g++
+
+#CXXFLAGS = -O3
+#CXXFLAGS = -O2
+CXXFLAGS = -Wall -g
+
+MYLIB = /mnt/local/jm/local_libs
+
+# Includes for FITS/SILO
+INC = -I$(MYLIB)/cfitsio_gcc/include
+# for Silo, which may or may not use HDF5... (comment as appropriate)
+INC += -I/usr/include -fomit-frame-pointer
+#INC += -I$(MYLIB)/silo_gcc_nohdf/include
+INC += -I$(MYLIB)/silo_gcc_hdf5/include
+#INC += -I$(MYLIB)/silo_visittest/include
+
+LDFLAGS =  -lm  -lreadline
+# Libraries for fits, silo (with hdf5)
+LDFLAGS += -L$(MYLIB)/cfitsio_gcc/lib/ -lcfitsio
+#LDFLAGS += -L$(MYLIB)/silo_gcc_nohdf/lib/ -lsilo
+LDFLAGS += -L$(MYLIB)/silo_gcc_hdf5/lib/ -lsiloh5
+#LDFLAGS += -L$(MYLIB)/silo_visittest/lib/ -lsiloh5
+LDFLAGS += -L/usr/lib/ -lhdf5 -lhdf5_cpp
+LDFLAGS += -lz -lpthread
+endif
+#################################################
+
+
+##################################################
+##################################################
+
+CXXFLAGS += $(OPTION)
+VPATH = ../../source:../../source/defines
+
+OBJECTS = plot_radius.o uniformGrid.o dataio.o readparams.o global.o \
+        dataio_silo.o dataio_fits.o utility_fits_class.o \
+        VectorOps.o VectorOps_spherical.o \
+        stellar_wind_BC.o cell_interface.o comm_mpi.o comm_files.o dataio_utility.o dataio_silo_MPI.o
+
+plot_radius: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o plot_radius $(LDFLAGS)
+
+# make has rules for making objects from .cc files, so I don't need them
+# explicitly, unless I am doing something unusual.
+.cc.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+
+plot_radius.o:	plot_radius.cc global.h uniformGrid.h dataio.h dataio_silo.h dataio_fits.h
+
+stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h global.h
+
+global.o:       global.cc ${GLOBAL}
+cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+
+uniformGrid.o:  uniformGrid.cc uniformGrid.h ${GLOBAL} stellar_wind_BC.h \
+		VectorOps.h VectorOps_spherical.h
+dataio.o:       dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
+		stellar_wind_BC.h
+dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h
+dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
+        solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h
+readparams.o:   readparams.cc readparams.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
+
+comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h ${GLOBAL}
+comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+
+dataio_utility.o:	dataio_utility.cc dataio_utility.h dataio_silo.h dataio.h ${GLOBAL}
+dataio_silo_MPI.o:  dataio_silo_MPI.cc dataio_silo.h dataio.h ${GLOBAL} comms.h
+
+clean:
+	rm -f *.o plot_radius
+

@@ -1,0 +1,189 @@
+# parameter file for Initial Condition Generation.
+# tuned for Shock-Tube problems in 1d,2d,3d.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 2
+#coordinates cylindrical
+coordinates cartesian
+
+# Type of Equations to Solve {hd, mhd, ...}
+eqn  euler
+ntracer 1
+#trtype ChALL_trace_H1+___e-____He1+__He2+__
+InitIons YES
+#Tracer0 1.0
+#Tracer1 1.0
+#Tracer2 0.0
+#Tracer3 0.0
+trtype color_trace_
+
+# extra physics
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   1
+EP_rad_recombination 1
+EP_update_erg 1
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+ics ShockTube
+# IC filename
+ICfilename IC_TEST
+# Output FileName Base
+OutputFile    TEST
+STnumber   -7  # optional shock-tube problem number (<=0 for not used)
+              # Tests 1-5 are from Toro, p.225. (use gamma=1.4)
+              # Test 6 is a tricky hydro one.
+	      # Tests 7-13 are MHD tests from Sam Falle's 1998 paper.
+	      # 7=BW (gamma=2), 8=AW(not working), 9=FS, 10=SS, 11=FR,
+	      # 12=SR, 13=OFS
+	      # 14 = random noise at low level.
+	      # Tests 15-26 are the MHD tests from Ryu and Jones (1995).
+
+STshockpos 4.0e16
+Xmax 1.0e17
+FinishTime 0.4e10
+STangleXY 0.0 # shock direction
+STangleXZ 0.0 # shock direction
+
+#M25 [3.9808917197e-22, 7.8100000000e-10, 2.4167416080e+06]
+#M40 [3.9925140362e-22, 1.9997500000e-09, 3.8705627316e+06]
+#75  [3.9978678038e-22, 7.0310000000e-09, 7.2605527797e+06]
+STpostvecRO 3.9808917197e-22
+STpostvecPG 7.8100000000e-10
+STpostvecVX -8.2074451397e05
+STprevecRO 1.0e-22
+STprevecPG 1.0e-12
+STprevecVX -3.237486122e6
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1.0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  400
+NGridY  2
+NGridZ  10
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin 0.0
+# Max values of x,y,z
+Ymax 0.5e15
+Zmax 1.0
+#Xmax 0.7071067814 # For 2d square box with unit diagonal.
+#Ymax 0.7071067814
+
+
+# Data Output Path
+OutputPath ../results/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType both
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 100
+
+# Start time
+StartTime 0.0
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+#BC XNout_XPout
+BC XNout_XPfix_YNout_YPout
+#BC XNout_XPout_YNout_YPout_ZNout_ZPout
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+#GAMMA 2.0
+GAMMA 1.666666666666666666
+
+# CFL coefficient 0<cfl<1
+CFL 0.4
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units cgs
+# One code unit is this number of reference units.
+# i think i should change these to length,mass,time,B
+rhoval 1.0  # 1e-21 is roughly 10^3/cm3
+velval 1.0  # should be set by sqrt(p/rho) to be consistent
+lenval 1.0  # set so that time has proper units!
+magval 1.0  # determined by plasma beta = p_g/(B^2/2)
+
+## Parameters specific for various problems
+# ND Shock-Tube problem:
+
+STprevecVY 0.0
+STprevecVZ 0.0
+STprevecBX 0.0
+STprevecBY 0.0
+STprevecBZ 0.0
+STprevecTR0 1.0
+STprevecTR1 0.0
+STprevecTR2 0.0
+STprevecTR3 0.0
+STprevecTR4 0.0
+STprevecTR5 0.0
+STprevecTR6 0.0
+
+# data from shock_jump_conditions.txt from wave.cc
+STpostvecVY 0.0
+STpostvecVZ 0.0
+STpostvecBX 0.0
+STpostvecBY 0.0
+STpostvecBZ 0.0
+STpostvecTR0 -1.0
+STpostvecTR1 0.0
+STpostvecTR2 0.0
+STpostvecTR3 0.0
+STpostvecTR4 0.0
+STpostvecTR5 0.0
+STpostvecTR6 0.0
+
+
+# Reference Vector for dimensionless Shock tubes (set all to ~1)
+#refvec0 1.0
+#refvec1 1.0
+#refvec2 1.0
+#refvec3 1.0
+#refvec4 1.0
+#refvec5 1.0
+#refvec6 1.0
+#refvec7 1.0
+#refvec8 1.0
+#refvec9 1.0
+#refvec10 1.0
+#refvec11 1.0
+#refvec12 1.0
+#refvec13 1.0
+#refvec14 1.0
+#refvec15 1.0
+
+# Reference Vector for cgs units shock tubes.
+# modify as needed
+refvec0 1.0e-22 # rho=mu*1.67e-24*(n particles /cm^3) [g/cm3]
+refvec1 1.0e-12 # 1.0e-12 dynes [g/cm/s2] p=nkT=1.38e-11(n/100)(T/1000)
+refvec2 1.0e7   # 1.0e6 is 10 km/s
+refvec3 1.0e7
+refvec4 1.0e7
+refvec5 1.0 #e-6  # 1.0e-6 is 1 micro gauss: equipartition has p=B^2/2
+refvec6 1.0 #e-6
+refvec7 1.0 #e-6
+refvec8 1.0
+refvec9 1.0     # refvec not really needed for tracers, as they are passive.
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+# Anything else?  

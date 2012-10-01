@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l nodes=NUM_NODES_TAG:ppn=PROCS_PER_NODE_TAG
+#PBS -l walltime=1:00:00
+#PBS -A dsast002b
+#PBS -V
+#PBS -o PROGRAM_TAG-ddt.output
+#PBS -e PROGRAM_TAG-ddt.error
+PBS_O_WORKDIR=/ichec/work/dsast002b/jm_code/grid/bin_parallel
+cd $PBS_O_WORKDIR
+mpiexec -n NUM_PROCS_TAG ddt-debugger PROGRAM_ARGUMENTS_TAG
+
+#mpiexec -n NUM_PROCS_TAG ddt-debugger PROGRAM_TAG PROGRAM_ARGUMENTS_TAG

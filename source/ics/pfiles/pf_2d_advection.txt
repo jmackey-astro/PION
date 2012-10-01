@@ -1,0 +1,102 @@
+# parameter file for Initial Condition Generation.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 2
+# Type of Equations to Solve {hd, mhd, ...}
+eqn euler
+nvar 5
+ntracer 0
+coordinates cartesian
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+ics AdvectionHD
+# IC filename
+ICfilename IC_2dAdv_euler_n128x256_t45
+# Output FileName Base
+OutputFile 2dAdv_euler_n128x256_t45
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1.0
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  128
+NGridY  256
+NGridZ  10
+# Boundaries of Simulation box:
+Xmin 0.0
+Ymin 0.0
+Zmin 0.0
+# Max values of x,y,z
+Xmax 1.0
+Ymax 2.0
+Zmax 1.0
+#Xmax 0.7071067814 # For 2d square box with unit diagonal.
+#Ymax 0.7071067814
+
+
+# Data Output Path
+OutputPath ../results/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType fits
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 25
+
+# Start time
+StartTime 0.0
+FinishTime 0.25
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, REFLECTING, ...}
+BC XNper_XPper_YNper_YPper
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.666666666666666666
+#GAMMA 2.0
+# CFL coefficient 0<cfl<1
+CFL 0.4
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units 
+# One code unit is this number of reference units.
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+## Parameters specific for various problems
+
+# 2D advection, angle wrt x-axis to move clump in, in degrees.
+NDadv_thetaXY 45
+
+# Reference Vector
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+
+# Anything else?  

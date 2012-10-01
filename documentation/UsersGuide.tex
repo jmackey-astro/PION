@@ -1,0 +1,230 @@
+%%%
+%%% Code Users Guide
+%%%
+\documentclass[a4paper,11pt]{report}
+%\documentclass[a4paper,11pt,draft]{article}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{fixltx2e}
+\usepackage{morefloats}
+\usepackage{url}
+\usepackage{rotating}
+%
+% THIS GIVES TIMES NEW ROMAN FONTS:
+% http://www.terminally-incoherent.com/blog/2008/05/08/few-words-on-latex-fonts/
+%
+\usepackage[T1]{fontenc}
+\usepackage{times}
+%
+% BORDERS:
+% HORIZONTAL:	210mm - 50.8mm = 159.2mm ROUNDED TO 16cm
+% VERTICAL:	297mm - 50.8mm = 246.2mm ROUNDED TO 25cm
+%
+\setlength{\oddsidemargin}{0.0cm}
+\setlength{\textwidth}{16.0cm}
+\setlength{\topmargin}{-1.5cm}
+\setlength{\textheight}{25.0cm}
+\parindent = 0.0 truept
+\parskip = 6.0 truept
+
+\input{../../../../documentation_misc/bibtex/defs.tex}
+
+
+
+\title{User's Guide for JM's code}
+\author{Jonathan Mackey}
+\begin{document}
+\maketitle
+
+\addcontentsline{toc}{section}{Table of Contents}
+\tableofcontents
+\newpage
+
+\chapter{Quick Start Guide}
+
+\section{Overview of Code Design}
+
+
+\section{Installation}
+Installation is reasonably straightforward, but there is on library which needs to be manually downloaded because it does not have a free licence.
+The code is not really \emph{installed}, just compiled on a given computer.
+The executables can then be moved to any directory you want and run on a particular problem.
+It is quite rare that the code needs to recompiled to run a different simulation -- a guiding design principle of the code is that all options should be set at run-time and not compile-time.
+Here is how to compile the code:
+\begin{enumerate}
+\item
+  If you have a copy of JM's code as jmcode.tar.gz, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|uniform_grid_code/| should have been created there.  cd into this directory.
+\item
+  The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.4.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|uniform_grid_code/trunk/extra_libraries/|.
+\item
+  Then from \verb|uniform_grid_code/| with a standard linux workstation you should be able to run the command \verb|./install.sh|.
+  If this is successful then the \textsc{Silo}, \textsc{Fits}, and \textsc{Sundials} libraries should be installed to \verb|uniform_grid_code/trunk/extra_libraries/| and code executables should have been created in the current directory.
+  The exectuables are \verb|gridcode_serial|, \verb|gridcode_parallel|, \verb|icgen_serial|, and \verb|icgen_parallel|.
+\end{enumerate}
+
+The compile scripts will automatically detect if it is being compiled on JUROPA at J\"ulich Supercomputing Centre or PHALANX at UCL astrophysics dept., and if neither of these machines are identified then it is assumed that compilation is on a standard linux workstation.
+It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
+
+
+\subsection{Compilation on other machines}
+If you want to compile it on a machine with e.g.\ Intel compilers, then you can either email me for help or you can try editing the compile scripts.
+It is relatively straightforward to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} commands (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
+As you can see from \verb|install.sh|, you need to edit the files
+\verb|uniform_grid_code/trunk/extra_libraries/install_all_libs.sh|,
+\verb|uniform_grid_code/trunk/bin_parallel/compile_code.sh|,and
+\verb|uniform_grid_code/trunk/bin_serial/compile_code.sh|.
+
+The library install script \verb|uniform_grid_code/trunk/extra_libraries/install_all_libs.sh| detects machines by hostname, so you can add a loop for your host.
+\texttt{NCORES} and \texttt{MAKE\_UNAME} are not so important, but \texttt{CC, CXX} and \texttt{FC} need to be set to something sensible.
+
+The serial and parallel \verb|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important.
+A new section needs to be created for the new machine in the Makefiles: \texttt{Makefile.serial.code}, \texttt{Makefile.serial.icgenerator}, \texttt{Makefile.pllel.code}, and \texttt{Makefile.pllel.icgenerator}.
+This section 
+
+
+
+ 
+
+
+
+
+\section{Introduction to Code}
+%%%
+% Written in C++
+% Object-oriented
+% Logical separation of components is more important than execution speed.
+% But if code is designed correctly it should be efficient!
+% Should not be a conflict between OOP and efficient code.
+%
+
+Two executables are compiled -- an initial condition generator and the executable to run the code.
+Both are based mostly on the same source files, but the IC generator has some files only it uses, and the same for the simulation executable.
+The IC generator reads in a parameter file and uses the information in this text file to put gas on the computational grid, setup boundaries, radiation and/or stellar wind sources and anything else that needs to be set.
+It then writes all of this to a standard simulation output file, in either FITS\footnote{See \url{http://www.nasa.gov/} for details.} or SILO\footnote{See \url{http://www.llnl.gov/} for details} format.
+These output files contain a header with all of the information from the parameter file (and some extra info besides) and then the binary data stored in architecture-independent format (i.e.\ the data can be read on any computer if you have a code routine to read it).
+So the parameter file is only used by the IC generator.
+
+The simulation code then reads in the IC file, starting with the header to get the parameters of the grid and the equations to be solved (which determines the number of variables in a state vector).
+Then the command-line is parsed to see if any parameters need to be overriden, such as the time to finish the simulation, the type of Riemann solver to use, how often to output data, etc.
+It then generates the grid, reads in the data from the IC file, and finally sets up the boundaries.
+Following this, the equations solver is setup, the microphysics solver (if needed) and the raytracer (if needed).
+Once everything has been set up the time integrator is called, and timestepping proceeds until something triggers the end of the simulation.
+At this point everything is deleted and the code quits.
+
+This structure is a bit different to many codes.
+In a number of codes the initial conditions are generated by the simulation code itself, and the way the ICs are set up is determined by compile flags.
+For many codes also, everything is set at compile time, and there are no runtime parameters which can be changed.
+The idea of this is to have as small an executable as possible, but it can make for rather inflexible code.
+To be honest I have not tested whether my code runs faster when I exclude large parts of code from compilation; it is something that should be looked at eventually.
+But for sure the performance of the code is comparable to other codes, so it is not slowing things down terribly, and the advantage of flexibility is significant especially for testing and setting up problems where parameters are changed and refined many times before a simulation is started.
+It may be a good idea to put in flags to exclude modules which are not required, in order to have the production code as lean as possible.
+
+Both SILO and FITS data can be read by the VisIt visualisation software package\footnote{\url{http://visit}}.
+FITS can of course be read by SAO-DS9 or probably also IDL (although I haven't tested this).
+I'm not sure if there are other visualisation tools for SILO data, but VisIt was designed around SILO so there is probably no reason to use a different visualisation package.
+FITS data doesn't really output in parallel well (each core writes its own file), so it is not recommended, but it is good for serial data.
+For 1D and 2D serial calculations, it is often more useful to output text files which can be read by e.g.\ Gnuplot.
+This is also an option in the parameter file and can be set as a command-line option.
+
+To summarise, here is how to set up a simulation:
+\begin{itemize}
+\item Compile the code on the machine you want to run it on.
+\item Edit a parameter file so that it will set up the simulation you want.
+\item Run the IC generator with the parameter file as a command-line argument.
+\item Check that the IC file is as expected, with e.g.\ VisIt.
+\item Run the simulation code with the IC file as a command-line argument.
+\item Wait for the simulation to finish.
+\end{itemize}
+
+Of course life is not simple, so there are a few things to note.
+
+In the current setup, when running the code in parallel the same number of processes must be used for the IC generator, running the simulation code, and restarting from a checkpoint or output file.
+This is because each process writes its own grid to part of an output file, and so expects to find its own grid when it reads an input file.
+It would not be too difficult to change this so that the read function can access data written by any number of cores, but it is some way down the todo list.
+
+The error checking is not guaranteed to be the same in the IC generator and simulation code, so it is possible that the IC generator will create a valid IC file but the simulation code will not be able to run it because some parameters are missing or can only be used in combination with certain values of other parameters.
+I have tried to catch all of the possible conflicts at the IC generator stage, but still I always check that a simulation is set up correctly with a small simulation (on a coarser grid) before I submit a big job on a supercomputer.
+
+
+\section{The Parameter File}
+The paramater file is an ASCII text file containing a list of paramters and their values.
+Lines beginning with the \verb|#| key are ignored and can be used for comments.
+Blank lines are also ignored.
+Lines with parameters must begin with a single-word parameter name, followed by some white space, followed by the parameter value (no commas please! Tabs may be ok, I haven't checked).
+There are a list of allowed parameters described in Table~\ref{tab:plist}.
+
+\begin{sidewaystable}
+  \centering
+  \begin{tabular}{| p{2cm} | p{5cm} | p{5cm} | l | p{7cm} |}
+    \hline
+    Parameter Name & Description & Allowed Values & Default Value & Notes\\ 
+    \hline
+    ndim & Number of grid dimensions & 1,2,3 & n/a & Not all coordinate systems work with all dimensions, see below.
+    \\
+    coordinates & Type of coordinate system & spherical (1D), cylindrical (2D), cartesian (1-3D) & n/a & Only Cartesian works in 3D.
+    \\
+    eqn & System of Equations & euler, mhd, glm-mhd & n/a & mhd only useful in 1D, otherwise use glm-mhd which uses mixed-GLM divergence cleaning of \protect{\cite{DedKemKroEA02}}
+    \\
+    solver & Which Riemann solver & Hydro:1,2,3,4,5,6 MHD:1,4 & 1 & Hydro: 3=hybrid linear/exact solver is recommended.  MHD: 1=linear solver \citep{FalKomJoa98,RoeBal96}.
+    Both: 4=Roe conserved vars solver \citep{StoGarTeuEA08} %Athena paper
+    \\
+    ics & Type of initial conditions to set up & See below for details & n/a & See below.
+    \\
+    ICfilename & Base name of initial conditions file & any unix filename & n/a & Don't include \verb|.silo| or \verb|.fits| at the end.
+    \\
+    OutputFile & Base name of output file & any unix filename & n/a &  Don't include \verb|.silo| or \verb|.fits| at the end.
+    \\
+    ntracer  & Number of tracer variables & $0-75$ & 0 & Must be integer.
+    \\
+    trtype   & String describing chemistry and tracers & e.g.\ \verb|NONE__colour| & n/a & example means no chemistry and one colour tracer.  The first six characters determine what kind of microphysics solver we are to use (see below for further details).
+    \\
+    InitIons & How to initialise tracer values & LEAVE, \textbf{other options} & n/a & LEAVE means the microphysics solver does not do anything to the values.
+    \\
+    Tracer0 & Initial value of tracer 0 & any double-precision number & ? & This can be overriden by some problem setups; see their descriptions for details.  This parameter may end up deprecated.
+    \\
+    Tracer1 & as above, and similar for all further tracers & as above & n/a & as above
+    \\
+    ... & ... & ... & ... & ... \\
+    \hline
+  \end{tabular}
+  \caption{}
+  \label{tab:plist}
+\end{sidewaystable}
+
+
+Possible values for initial conditions parameter \verb|ics| are given in the following list.  Note that many of the problems require extra specific parameters in the parameter file in order to set up a problem correctly.  These are described in the following subsections.
+\begin{itemize}
+  \item \verb|ShockTube| -- Sets up a 1D or 2D shock-tube problem.
+  This requires additionally a number of parameters. [FILL IN].
+  \item \verb|OrszagTang| -- Sets up the 2D \citet{OrsTan79} vortex test problem.[FILL IN].
+  \item \verb|Uniform| -- Sets up uniform initial conditions.
+  \item \verb|Advection| -- Sets up a simple problem advecting a feature across a periodic domain.
+  \item \verb|AdvectSineWave| -- Can't remember! Advects a sine wave across the grid maybe.
+  \item \verb|KelvinHelmholz| -- Sets up a Kelvin-Helmholz instability test problem.
+  \item \verb|KelvinHelmholzStone| -- Sets up the version of the K-H test problem on Jim Stones code test page \url{http://www.astro.princeton.edu/~stone/FIXME}.
+  \item \verb|FieldLoop| -- Sets up a 2D MHD Field Loop advection test.
+  \item \verb|FieldLoopVz| -- Sets up a 2D Field loop advection test with a non-zero $\hat{z}$ component in the velocity.
+  \item \verb|FieldLoopStatic| -- Static version of the Field Loop advection test (to see the diffusivity of the scheme without any advection).
+  \item \verb|Jet| or \verb|JET| or \verb|jet| -- A 2D or 3D jet simulation, where the jet is injected along the symmetry axis in 2D or along the $\hat{x}$ axis in 3D.
+  \item \verb|DoubleMachRef| -- The famous double Mach reflection test of \citet{ColWoo84} [CHECK REF!].
+  \item \verb|RadiativeShock| -- Radiative shock test \citep[e.g.][]{InnGidFal87} with wall boundary condition.
+  \item \verb|RadiativeShockOutflow| -- Radiative shock with outflow downstream boundary condition instead of wall.
+  \item \verb|LaserAblationAxi| -- Ablation of a target by a laser and the subsequent hydrodynamic evolution
+  \item \verb|LaserAblation3D| -- Ablation of a target by a laser in 3D.
+  \item \verb|ShockCloud| -- Planar shock from the $-\hat{x}$ direction hitting a stationary top-hat cloud.
+  \item \verb|BlastWave| -- A blast wave test problem, in 1-3D and any of the allowed coordinate systems, with any requested microphysics.
+  \item \verb|PhotoEvaporatingClump| -- Photoionisation problem with a radiation source and a dense clump embedded in a uniform background medium.
+  \item \verb|PhotoEvaporatingClump2| -- Same as previous but with two clumps (e.g.\ for the problem in \citealt{LimMel03}).
+  \item \verb|PhotoEvap_radial| -- Photoevaporation problem with a source in an ambient medium with a density profile.
+  \item \verb|PhotoEvap_powerlaw| -- As above, with a power-law density profile.
+  \item \verb|PhotoEvap_paralleltest| -- Not sure, something to do with photoionisation [FIX THIS!].
+  \item \verb|PhotEvap_RandomClumps| or \verb|PhotEvap_RandomClumps2| or \verb|PERC| or \verb|PERC2| -- Second generation photoevaporation problem with random dense clumps placed in a uniform background and subject to ionising radiation.  Used by \citet{MacLim10} to set up calculations with randomly placed clumps.
+  \item \verb|PhotEvap_MultiClumps_FixNum| or \verb|PhotEvap_MultiClumps_FixMass| or \verb|PE_MC_FN| or \verb|PE_MC_FM| -- Third generation photoevaporation problem used for the calculations involving multiple clumps placed in strategic positions in \citet{MacLim10,MacLim11b}.  The FixNum value uses a fixed number of clumps with random properties within a specified range, whereas the FixMass value uses a fixed mass of clump material and allocates it to clumps with random properties until all of the mass is used up.
+  \item \verb|Clump_Spherical| or \verb|Clump_Axisymmetric| -- Don't know [LOOK THIS UP!].
+\end{itemize}
+
+\bibliographystyle{../../../../documentation_misc/bibtex/apj.bst}
+\bibliography{../../../../documentation_misc/bibtex/refs.bib}
+
+\end{document}

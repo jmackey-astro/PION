@@ -1,0 +1,210 @@
+\documentclass[11pt]{article}
+
+\usepackage{natbib}
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+\newcommand{\bq}{\begin{equation}}
+\newcommand{\eq}{\end{equation}}
+
+
+
+\setlength{\oddsidemargin}{-1.0cm}
+\setlength{\textwidth}{18.0cm}
+\setlength{\topmargin}{-1.0cm}
+\setlength{\textheight}{25.0cm}
+%\parskip = 6.0 truept
+\parskip = 0.1cm
+%\parindent0pt
+
+\begin{document}
+
+\title{Test Problems For My Code, and Current Status}
+\author{Jonathan Mackey}
+\maketitle
+
+\section{Introduction}
+This is for my uniform grid code.  Current features:
+\begin{itemize}
+\item Solves the following equations: Euler, Ideal MHD, Ideal MHD with
+Dedner \textit{mixed-GLM} divergence cleaning, and advection of
+passive tracers.
+\item Can be run in serial, or in parallel via MPI.
+\item Data I/O as ASCII text, FITS, and Silo data, with FITS and Silo
+also working in parallel.
+\item Module for Dynamics is fully parallel for all the equations.
+\item Module for Raytracing can handle parallel rays in serial and
+parallel mode, and point sources in serial mode only.
+\item Microphysics module doesn't know about serial or parallel, as it
+works entirely within a cell.  It can integrate rate equations, but it
+a bit rough around the edges.  Photo-ionisation of hydrogen is fairly
+robust at this stage.
+\end{itemize}
+
+\section{Test Problems}
+\vspace{0.4cm} \hrule
+\subsection{Uniform Initial Conditions, with Noise}
+This basically just tests the stability of the algorithms, and that
+the parallel version doesn't change the results at all.  If the
+algorithm is unstable, even a small level of noise will blow up into
+unphysical conditions very quickly.
+\subsubsection{Status}
+\textit{2008-09-10} This is working for text, fits, and silo I/O, in
+serial and parallel.  In parallel I have changed the seeding of the
+noise so that different processors have a different seed -- they all
+have the same basic seed, which I add the processors rank to, so the
+seed can be recovered.
+
+\vspace{0.4cm} \hrule
+\subsection{Double Mach Reflection}
+\textbf{Ref?} This tests the quality of the algorithms, as well as
+solving quite a difficult problem.  If the reflective, inflow, and
+outflow boundary conditions have problems, it will show up in this
+test.  This generates a number of shock waves and discontinuities,
+some of which should be straight lines, and which are at different
+angles to the grid axes.  If the algorithm has insufficient artificial
+viscosity, the shocks will not stay as straight lines, and in
+particular there will be problems near the reflection axis.
+\subsubsection{Status}
+\textit{2008-09-10} This is working for fits and silo I/O in serial
+and parallel.  It solves the Euler Equations and my results look great
+as far as I can tell.  If I use Sam's A-V prescription, it works fine.
+
+\vspace{0.4cm} \hrule
+\subsection{Advection of Dense Clump}
+This has a dense clump advected across a grid at a fixed velocity,
+with periodic boundary conditions, so it basically tests how well the
+code can handle contact discontinuities, and how well it can handle a
+moving grid.  Grid codes are very bad at this historically, and the
+(necessary) dissipation eventually spreads the clump out.
+\subsubsection{Status}
+\textit{2008-09-11} Works in serial mode with fits/silo I/O in 3D.
+Also in parallel in 3D.  Am assuming it works in 2D too.  This is
+glm-mhd equations testing, with one colour tracer.
+
+\vspace{0.4cm} \hrule
+\subsection{Orszag-Tang Vortex}
+This problem tests mode MHD algorithms to their limits.  A periodic 2D
+domain is set up with trans-sonic velocities.  Shock waves and
+vortices quickly form. from \textit{Dai \& Woodward 1998, ApJ, 494,
+317.}
+\subsubsection{Status}
+\textit{2008-09-11} Works fine in serial and parallel with silo, and
+previously with fits so no reason to think it is broken now.  One
+point is that Jim Stone's code test page has a movie that shows a
+strong vortex developing in the middle, and I don't get that, I think
+because I have added viscosity.  But without viscosity it bugs out and
+the results aren't reliable anyway.  I ran it today with
+$\eta_v=0.05$, and it is chugging away happily.
+
+\vspace{0.4cm} \hrule
+\subsection{Hydro Kelvin-Helmholz Instability}
+This can be set up in a number of ways: e.g.\ Jim Stone's test has
+periodic boundaries on all sides with different density fluids,
+whereas most others have same density fluids and reflective boundaries
+at the top and bottom boundaries (Frank et al., 1996, ApJ, 460, 777).
+I decided to do both setups in the ic generator, but am not too sure
+which I will use in the test suite.  For the Euler equations I'd say
+either is fine, except that Frank's situation leads to the `cat's eye'
+vortex forming at the interface, which is a stable final
+configuration, so that's nice to have.
+\subsubsection{Status}
+\textit{2008-10-13} Am going with Frank's hydro setup -- constant
+density and pressure over the whole initial state, periodic
+horizontally and reflecting vertically, with the upper boundary have
+velocity $U_x$ and the lower boundary an equal and opposite boundary.
+There is a shear boundary layer of thickness $L_y/25$, specified with
+a $\tanh()$ function.  This is run with $\eta_v=0.15$, finish time
+$=15$, CFL$=0.4$, $\gamma=1.4$, and a $128\times128$ grid.  The
+perturbations are in $v_y$ and are the sum of three sine waves with 1,
+2, and 15 wavelengths on the $x$-axis, damped with a Gaussian filter
+in the $y$-direction:
+\[ v_y = \frac{U_y}{3}\left( \sin(30\pi x/L_x) + \sin(4\pi x/L_x) +
+  \sin(2\pi x/L_x) \right)\,. \]
+I experimented and found the results don't depend much on the
+perturbations imposed, but in some cases you can get two vortices
+whereas in others they will merge eventually into a single vortex.
+
+This problem is interesting for seeing how artificial viscosity
+affects the solution.  For example switching off viscosity altogether
+produces entirely different results to having $\eta_v=0.005$, which is
+a \emph{very} small value.  for $128^2$ simulations, $\eta_v=0.15$
+severely damps the perturbations on all but the largest scales.
+Stone's test is interesting in that is is easy to see the
+perturbations start on small scales and grow as the vortices merge, so
+it might be better to use it now that I think about it.  Or else to
+use both for a while and see which one I like better in future.
+Stone's setup is periodic box of unit area centred on the origin, with
+$[\rho,p_g,v_x]=[2,2.5,0.5]$ for $|y|<0.25$ and $[1,2.5,-0.5]$ for
+$|y|>0.25$, yielding two slip surfaces.  The shear layer is sharp.  He
+uses $\gamma=1.4$ and a random perturbation in $v_y$ with min-max
+amplitude of 0.01.  He runs it to a time $t=5$.
+
+
+\vspace{0.4cm} \hrule
+\subsection{MHD Kelvin-Helmholz Instability}
+This is not as clean a test as the Hydro KHI, because it doesn't
+settle down to a stable end configuration.  Instead it settles to a
+quasi-steady sequence of rolling waves followed by tearing and
+reconnection of field lines, contained within a broad `shear layer.'
+The extent to which this happens depends on the field strength, with
+strong fields inhibiting the instability altogether.  Even very weak
+fields, however, don't reduce to the hydrodynamic limit because the
+vortices twist up the field until it becomes locally strong.  I am
+using Frank's setup for this too.  This has the same initial
+conditions as the hydro test above, but with a uniform magnetic field
+of strength $B_x=0.2$ or $0.4$ throughout the grid (note not reversed
+with the flow reversal).  Stone's version of the test is the same as
+his hydro test, but with $B_x=0.5$ (but this may be divided or
+multiplied by $\sqrt{4\pi}$, I can't tell, but from comparing my
+results to his it must be $0.5/\sqrt{4\pi}$; using 0.5 has too strong
+a field and the instability is damped).
+\subsubsection{Status}
+\textit{2008-10-13} Still working on this.  I think a $256^2$ model
+will work for Frank's weak field test, but the results are so
+sensitive to everything that a byte-for-byte file comparison won't
+really work.  I'll need to use it as a test only for visual inspection
+of the stages of growth.  The growth rate is even very resolution
+dependent from looking at Stone's webpage and Frank's figures.  I
+might want to look at Stone's test for this too, since it is again
+easier to visualise what it going on.
+
+
+\vspace{0.4cm} \hrule
+\subsection{}
+\subsubsection{Status}
+\textit{2008-09-11}
+
+\section{Non-adiabatic tests (with cooling and/or microphysics)}
+\vspace{0.4cm} \hrule
+\subsection{Radiative Shock Test}
+This is based on John Raymond's (1979) shock test problems, but I am
+doing them on a 1D grid and explicitly following the dynamics whereas
+he imposed shock jump conditions and let the post-shock gas evolve
+isobarically.  My results are very comparable to his.
+\subsubsection{Status}
+\textit{2008-10-13} Have a stable setup, just need to write it up.
+
+\vspace{0.4cm} \hrule
+\subsection{}
+\subsubsection{Status}
+\textit{2008-09-11}
+
+\section{Still to Do}
+\begin{itemize}
+\item divB peak,
+\item radiative shock test -- (1d,2d,w/cooling),
+\item blast wave -- (2d,3d,centred and reflecting,axisymmetric,mhd/euler),
+\item shock-cloud -- (2d(cart/cyl) and 3d, euler/mhd, w/cooling?)
+  shock-tubes!
+\item Jets -- 2d(cart/cyl) and 3d, euler/mhd, w/cooling, w/atomics.
+\item Ifront-cloud -- 2d(cart/cyl) and 3d, euler and mhd, w/cooling,
+  parallel/pt.src.
+\item Str\"omgren Sphere: 2d(cart/cyl) and 3d, euler/mhd, w/cooling.
+\end{itemize}
+
+
+%\subsection{}
+%\subsubsection{Status}
+%\textit{2008-09-xx}
+
+\end{document}

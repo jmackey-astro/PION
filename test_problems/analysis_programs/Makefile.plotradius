@@ -1,0 +1,125 @@
+# Makefile for plot_radius code, Jonathan Mackey
+#
+# 2010.10.13 JM: Updated for new code!
+# 2010.12.08 JM: Added cell_interface.o
+
+SHELL = /bin/sh
+.SUFFIXES:
+.SUFFIXES: .cc .o
+srcdir = .
+
+# --------------------
+# Compile-time options
+# --------------------
+# Tell it that we're using serial code.
+OPTION  = -DSERIAL
+# if using Silo
+OPTION += -DSILO
+# if using FITS
+OPTION += -DFITS
+
+MAKE_UNAME=standard
+#MAKE_UNAME=epona
+#MAKE_UNAME=stokes
+
+# All machines and options need readline and maths
+LDFLAGS = -lreadline
+# display all warnings
+CXXFLAGS = -O3 
+#CXXFLAGS += -Wall
+
+######################################################################
+# Options for a "standard" workstation.
+# make sure cfitsio and silo are compiled in ../extra_libraries/
+######################################################################
+ifeq ($(MAKE_UNAME), standard)
+CXX = g++
+CXXFLAGS = -O3
+#CXXFLAGS = -O3 -g
+#CXXFLAGS = -O0 -Wall -g
+
+MYLIB = ../../extra_libraries
+
+# Includes for FITS/SILO
+INC = -I${MYLIB}/fits_lib/include
+# for Silo, without HDF5 here
+INC += -I${MYLIB}/silo_lib/include
+
+LDFLAGS =  -lm  -lreadline
+
+## If we want static linking this is the flag for it!
+#LDFLAGS += -static
+# Libraries for fits, silo
+LDFLAGS += -L${MYLIB}/fits_lib/lib -lcfitsio
+LDFLAGS += -L${MYLIB}/silo_lib/lib -lsilo 
+endif
+
+###################################################
+# Specific Options for epona (ubuntu 9.10 32-bit) #
+###################################################
+ifeq ($(MAKE_UNAME), epona)
+CXX = g++
+
+#CXXFLAGS = -O3
+#CXXFLAGS = -O2
+CXXFLAGS = -Wall -g
+
+MYLIB = /mnt/local/jm/local_libs
+
+# Includes for FITS/SILO
+INC = -I$(MYLIB)/cfitsio_gcc/include
+# for Silo, which may or may not use HDF5... (comment as appropriate)
+INC += -I/usr/include -fomit-frame-pointer
+#INC += -I$(MYLIB)/silo_gcc_nohdf/include
+INC += -I$(MYLIB)/silo_gcc_hdf5/include
+#INC += -I$(MYLIB)/silo_visittest/include
+
+LDFLAGS =  -lm  -lreadline
+# Libraries for fits, silo (with hdf5)
+LDFLAGS += -L$(MYLIB)/cfitsio_gcc/lib/ -lcfitsio
+#LDFLAGS += -L$(MYLIB)/silo_gcc_nohdf/lib/ -lsilo
+LDFLAGS += -L$(MYLIB)/silo_gcc_hdf5/lib/ -lsiloh5
+#LDFLAGS += -L$(MYLIB)/silo_visittest/lib/ -lsiloh5
+LDFLAGS += -L/usr/lib/ -lhdf5 -lhdf5_cpp
+LDFLAGS += -lz -lpthread
+endif
+#################################################
+
+
+##################################################
+##################################################
+
+CXXFLAGS += $(OPTION)
+VPATH = ../../source
+
+OBJECTS = plot_radius.o uniformGrid.o dataio.o readparams.o global.o \
+	dataio_silo.o dataio_fits.o utility_fits_class.o \
+	VectorOps.o VectorOps_spherical.o \
+	stellar_wind_BC.o cell_interface.o
+
+plot_radius: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o plot_radius $(LDFLAGS)
+
+# make has rules for making objects from .cc files, so I don't need them
+# explicitly, unless I am doing something unusual.
+.cc.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+
+plot_radius.o:	plot_radius.cc global.h uniformGrid.h dataio.h dataio_silo.h dataio_fits.h
+global.o: 	global.cc global.h
+uniformGrid.o: 	uniformGrid.cc uniformGrid.h global.h stellar_wind_BC.h \
+		VectorOps.h VectorOps_spherical.h
+dataio.o:       dataio.cc dataio.h global.h solver_eqn_base.h readparams.h
+dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h global.h solver_eqn_base.h
+dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h global.h solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h
+readparams.o:   readparams.cc readparams.h global.h
+utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h global.h
+
+stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h global.h
+VectorOps.o:           VectorOps.cc VectorOps.h global.h uniformGrid.h
+VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
+		       global.h uniformGrid.h
+
+clean:
+	rm -f *.o plot_radius
+

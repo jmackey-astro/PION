@@ -1,0 +1,330 @@
+# parameter file for Initial Condition Generation.
+# tuned for photoevaporation clump problem.
+
+# 2011.03.01 JM: This has a diffuse RT calculation of optical depth from all
+#    domain boundaries, along with an ionising source at the centre.
+# 2011.03.02 JM: Note I added loads of tracer variables.  Not really needed.
+
+## Basic Properties
+# Dimensionality of Grid {1,2,3}
+ndim 3
+coordinates cartesian  #cylindrical
+
+# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
+eqn  euler  #glm-mhd
+solver 3
+
+# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# MHDShockCloud ShockTube...}
+#ics Uniform
+ics PhotoEvaporatingClump
+#ics PhotoEvaporatingClump2
+#ics PhotoEvap_radial
+#ics PhotoEvap_paralleltest
+
+# IC filename
+ICfilename ICTEST_rtt3D_n32_nh2_diffuseXYZ_Ionising
+# Output FileName Base
+OutputFile        rtt3D_n32_nh2_diffuseXYZ_Ionising
+
+
+# Number and type of tracers.
+ntracer 1
+trtype onlyH_H1+___ #ChALL_H1+___e-____ #He1+__He2+__
+InitIons LEAVE  #NO
+Tracer0 1.0e-12
+Tracer1 1.0e-12
+Tracer2 0.0
+Tracer3 0.0
+Tracer4 0.0
+
+# Which physics to use
+EP_dynamics     0
+EP_raytracing   1
+EP_phot_ionisation   1
+EP_cooling      0
+EP_chemistry    1
+EP_coll_ionisation   0
+EP_rad_recombination 1
+EP_update_erg 0
+EP_MP_timestep_limit 0
+EP_Min_Temperature 10.0
+EP_Max_Temperature 1.0e5
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add noise at level of f% to Data? (f<=0 means no).
+noise -1 #0.5
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX  32
+NGridY  32
+NGridZ  32
+# Boundaries of Simulation box:
+Xmin  -8.0000e17
+Ymin  -8.0000e17
+Zmin  -8.0000e17
+# Max values of x,y,z
+Xmax  8.0000e17
+Ymax  8.0000e17
+Zmax  8.0000e17
+
+# Data Output Path
+OutputPath ../results/
+# Output File Type = {text,fits,ftab,both,...}
+OutputFileType silo
+# Output data to file every nth timestep. (n=0 means only at the end).
+OutputFrequency 1
+OutputCriterion 0    # output per n-years=1, per step=0
+OPfreqTime 1000.0      # in years
+
+# Start time
+StartTime 0.0
+FinishTime 3.861e11
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC XNout_XPout_YNout_YPout_ZNout_ZPout_
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.666666666666666666666
+
+# CFL coefficient 0<cfl<1
+CFL 0.4
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 0
+EtaViscosity 0.05
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units 
+# One code unit is this number of reference units.
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+## Parameters specific for various problems
+# ND photo-evaporation problem:
+PECcloudradius 0.1  #9.765625e-2
+PECcloudTR0 1.0e-12  # cloud first tracer value
+PECdratio 1.0
+PECpratio 1.0
+PECBratio 1.0
+PEC_radialslope 0.0
+PEC_xpos 3.7715e19
+PEC_ypos 1.543e19
+PEC_zpos 1.543e19
+
+PEC_ambRO 1.67e-22
+PEC_ambPG 2.505e-11
+PEC_ambVX 0.0
+PEC_ambVY 0.0
+PEC_ambVZ 0.0
+PEC_ambBX 0.0  #4.0e-6
+PEC_ambBY 0.0  #5.642e-6
+PEC_ambBZ 0.0
+PEC_ambTR0 1.0e-12
+PEC_ambTR1 0.0
+PEC_ambTR2 0.0
+PEC_ambTR3 0.0
+PEC_ambTR4 0.0
+PEC_ambTR5 0.0
+PEC_ambTR6 0.0
+
+PEC_ambTR7 10.0
+PEC_ambTR8 20.0
+PEC_ambTR9 30.0
+PEC_ambTR10 40.0
+PEC_ambTR11 50.0
+PEC_ambTR12 60.0
+PEC_ambTR13 70.0
+PEC_ambTR14 80.0
+PEC_ambTR15 90.0
+PEC_ambTR16 01.0
+PEC_ambTR17 02.0
+PEC_ambTR18 03.0
+PEC_ambTR19 04.0
+PEC_ambTR20 05.0
+PEC_ambTR21 06.0
+PEC_ambTR22 07.0
+PEC_ambTR23 08.0
+PEC_ambTR24 09.0
+PEC_ambTR25 0.10
+PEC_ambTR26 0.20
+PEC_ambTR27 0.30
+PEC_ambTR28 0.40
+PEC_ambTR29 0.50
+PEC_ambTR30 0.60
+PEC_ambTR31 0.70
+PEC_ambTR32 0.80
+PEC_ambTR33 0.90
+PEC_ambTR34 0.01
+PEC_ambTR35 0.02
+PEC_ambTR36 0.03
+PEC_ambTR37 0.04
+PEC_ambTR38 0.05
+PEC_ambTR39 0.06
+
+# stellar wind sources:
+WIND_NSRC 0
+
+# radiation source list
+RT_Nsources 7
+
+RT_position_0_0  -2.0e200
+RT_position_0_1  0.0e18
+RT_position_0_2  0.0e18
+RT_strength_0   1.0 # in units of the standard ISRF?? sounds ok.
+RT_src_type_0    2  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_0    1  # 0=no, 1=yes.
+RT_update___0    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_OPACITY=2
+RT_effect___0    1  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__0    1  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__0    5  # variable of opacity tracer, if needed.
+
+RT_position_1_0  2.0e200
+RT_position_1_1  0.0e18
+RT_position_1_2  0.0e18
+RT_strength_1   1.0
+RT_src_type_1    2  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_1    1  # 0=no, 1=yes.
+RT_update___1    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_OPACITY=2
+RT_effect___1    1  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__1    1  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__1    5  # variable of opacity tracer, if needed.
+
+RT_position_2_0  0.0
+RT_position_2_1  -2.0e200
+RT_position_2_2  0.0e18
+RT_strength_2   1.0
+RT_src_type_2    2  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_2    1  # 0=no, 1=yes.
+RT_update___2    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_OPACITY=2
+RT_effect___2    1  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__2    1  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__2    5  # variable of opacity tracer, if needed.
+
+RT_position_3_0  0.0
+RT_position_3_1  2.0e200
+RT_position_3_2  0.0e18
+RT_strength_3   1.0
+RT_src_type_3    2  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_3    1  # 0=no, 1=yes.
+RT_update___3    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_OPACITY=2
+RT_effect___3    1  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__3    1  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__3    5  # variable of opacity tracer, if needed.
+
+RT_position_4_0  0.0
+RT_position_4_1  0.0
+RT_position_4_2  -2.0e200
+RT_strength_4   1.0
+RT_src_type_4    2  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_4    1  # 0=no, 1=yes.
+RT_update___4    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_OPACITY=2
+RT_effect___4    1  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__4    1  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__4    5  # variable of opacity tracer, if needed.
+
+RT_position_5_0  0.0
+RT_position_5_1  0.0
+RT_position_5_2  2.0e200
+RT_strength_5   1.0
+RT_src_type_5    2  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_5    1  # 0=no, 1=yes.
+RT_update___5    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_OPACITY=2
+RT_effect___5    1  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__5    1  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__5    5  # variable of opacity tracer, if needed.
+
+# The ionising source!
+RT_position_6_0  0.0
+RT_position_6_1  0.0
+RT_position_6_2  0.0
+RT_strength_6   3.0e45
+RT_src_type_6    1  # 1=monochromatic ionising src, 2=diffuse-radiation.
+RT_at_infty_6    0  # 0=no, 1=yes.
+RT_update___6    2  # RT_UPDATE_C2RAY=1, RT_UPDATE_COLUMN
+RT_effect___6    2  # RT_EFFECT_UV_HEATING=1, RT_EFFECT_PHOTO_ION=2
+RT_Tau_src__6    2  # RT_OPACITY_TOTAL=1, RT_OPACITY_H0=2, RT_OPACITY_H2=3
+RT_Tau_var__6    5  # variable of opacity tracer, if needed.
+
+
+# Reference Vector
+refvec0 1.0e-22  # ~100 particles /cc
+refvec1 1.0e-11  # T ~ 10^3K
+refvec2 1.0e6    # v ~ 100 km/s = 1.e7 cm/s
+refvec3 1.0e6    # v 
+refvec4 1.0e6    # v 
+refvec5 1.0e-6   # B (gauss)
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+refvec16 1.0
+refvec17 1.0
+refvec18 1.0
+refvec19 1.0
+refvec20 1.0
+refvec21 1.0
+refvec22 1.0
+refvec23 1.0
+refvec24 1.0
+refvec25 1.0
+refvec26 1.0
+refvec27 1.0
+refvec28 1.0
+refvec29 1.0
+refvec30 1.0
+refvec31 1.0
+refvec32 1.0
+refvec33 1.0
+refvec34 1.0
+refvec35 1.0
+refvec36 1.0
+refvec37 1.0
+refvec38 1.0
+refvec39 1.0
+refvec40 1.0
+refvec41 1.0
+refvec42 1.0
+refvec43 1.0
+refvec44 1.0
+refvec45 1.0
+refvec46 1.0
+refvec47 1.0
+refvec48 1.0
+refvec49 1.0
+refvec50 1.0
+refvec51 1.0
+refvec52 1.0
+refvec53 1.0
+refvec54 1.0
+refvec55 1.0
+refvec56 1.0
+refvec57 1.0
+refvec58 1.0
+refvec59 1.0
+refvec60 1.0
+refvec61 1.0
+refvec62 1.0
+refvec63 1.0
+refvec64 1.0
+refvec65 1.0
+refvec66 1.0
+refvec67 1.0
+refvec68 1.0
+refvec69 1.0
+
+# Anything else?  
