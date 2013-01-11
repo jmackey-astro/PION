@@ -644,7 +644,7 @@ int ParallelParams::decomposeDomain()
       int i=0, dsrc=-1;
       
       // --- Check if we are doing raytracing with a source at infinity. ---
-      if (SimPM.EP.raytracing) {
+      if (SimPM.EP.raytracing && SimPM.RS.Nsources>0) {
         //
 	// check if we have only one source at infinity, b/c then we decompose to keep
 	// rays on one processor all the time.
@@ -687,15 +687,21 @@ int ParallelParams::decomposeDomain()
           dsrc=-1;
         }
       }
+      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
+      // DOMAIN DECOMPOSITION.
+      dsrc = -1;
+      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
+      // DOMAIN DECOMPOSITION.
+
       // --- end of RT source at infinity bit ---
       
       maxrange=0.; i=0;
       while (i<SimPM.ndim) {
-	if (LocalRange[i] > maxrange && dsrc!=i) {
-	  maxrange=LocalRange[i];
-	  maxdir = static_cast<axes>(i);
-	}
-	i++;
+        if (LocalRange[i] > maxrange && dsrc!=i) {
+          maxrange=LocalRange[i];
+          maxdir = static_cast<axes>(i);
+        }
+        i++;
       }
       // Half that range and multiply nproc by 2.
       LocalRange[maxdir] /= 2.0;
@@ -1017,17 +1023,31 @@ reporting::reporting()
 
 reporting::~reporting()
 {
+#if defined (SERIAL)
   cout.rdbuf(saved_buffer_cout);   
   infomsg.close();
   //cout<<"Deleting reporting class, This should be stdout.\n";
   cerr.rdbuf(saved_buffer_cerr);   
   errmsg.close();
   //cout<<"Deleting reporting class, This should be stderr.\n";
+#elif defined (PARALLEL)
+  if (mpiPM.myrank==0) {
+    cout.rdbuf(saved_buffer_cout);   
+    infomsg.close();
+  }
+  else {
+    std::cout.clear();
+  }
+#else
+#error "Must define either SERIAL or PARALLEL (reporting::~reporting)"
+#endif
 }
 
 int reporting::redirect(const string &path)
 {
   string temp;
+
+#if defined (SERIAL)
   cout <<"(reporting::redirect): O/P goes to text files in "<<path<<"\n";
   temp = path+"errors.txt";
   errmsg.open(temp.c_str(), ios::trunc);
@@ -1035,15 +1055,48 @@ int reporting::redirect(const string &path)
   errmsg.copyfmt( cerr );
   saved_buffer_cerr = cerr.rdbuf();
   cerr.rdbuf( errmsg.rdbuf() );
-  
+
   temp = path+"info.txt";
   infomsg.open(temp.c_str(), ios::trunc);
-  if(!infomsg.is_open()) {cerr<<"Reporting: can't open info.txt for writing.\n"; exit(1);}
+  if(!infomsg.is_open()) {
+    cerr<<"Reporting: can't open info.txt for writing.\n"; exit(1);
+  }
   infomsg.copyfmt( cout );
   saved_buffer_cout = cout.rdbuf();
   cout.rdbuf( infomsg.rdbuf() );
   
   cout.setf(ios_base::scientific); cout.precision(7);
+
+#elif defined (PARALLEL)
+  //
+  // For parallel execution (production runs) we only want a single
+  // log file, and errors should be printed to stderr.
+  //
+  //cout <<"myrank="<<mpiPM.myrank<<"\n";
+  if (mpiPM.myrank==0) {
+    cout <<"(reporting::redirect): O/P goes to text files in ";
+    cout <<path<<"\n";
+    cout <<"Note: not redirecting error messages, and suppressing ";
+    cout <<"stdout from all processes except myrank=0.\n";
+    
+    temp = path+"info.txt";
+    infomsg.open(temp.c_str(), ios::trunc);
+    if(!infomsg.is_open()) {
+      cerr<<"Reporting: can't open info.txt for writing.\n"; exit(1);
+    }
+    infomsg.copyfmt( cout );
+    saved_buffer_cout = cout.rdbuf();
+    cout.rdbuf( infomsg.rdbuf() );
+    cout.setf(ios_base::scientific); cout.precision(7);
+  }
+  else {
+    //saved_buffer_cout = cout.rdbuf(); // <-- save
+    //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
+    std::cout.setstate(std::ios::failbit) ;
+  }
+#else
+#error "Must define either SERIAL or PARALLEL (reporting::redirect)"
+#endif
   return(0);
 }
 

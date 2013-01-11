@@ -32,6 +32,7 @@
 /// - 2011.06.20 JM: Got rid of non-ANSI-C exp10 functions
 /// - 2011.11.22 JM: Added t_scalefactor parameter for stellar winds.
 /// - 2011.12.01 JM: Switched from spline to linear interpolation for winds.
+/// - 2012.12.07/10 JM: Changed min. ion frac. in wind from 0 to 1e-7.
 //------------------------------------------------
 //------------ STELLAR WIND CLASS ----------------
 //------------------------------------------------
@@ -387,7 +388,7 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
   //
   // HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK!
   // Assume the first tracer variable is the H+ ion fraction, and set it so
-  // that it goes from y=1 at T>12500K to y=0 at T<10000, with linear
+  // that it goes from y=1 at T>12500K to y=1.0e-7 at T<10000, with linear
   // interpolation.
   //
 #ifdef HACK_WARNING
@@ -397,9 +398,9 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
     if      (WS->Tw >1.25e4)
       wc->p[SimPM.ftr] = 1.0;
     else if (WS->Tw <1.00e4)
-      wc->p[SimPM.ftr] = 0.0;
+      wc->p[SimPM.ftr] = 1.0e-7;
     else
-      wc->p[SimPM.ftr] = (WS->Tw-1.0e4)*4e-4;
+      wc->p[SimPM.ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
   }
   return;
 }

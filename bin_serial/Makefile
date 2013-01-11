@@ -1,4 +1,5 @@
-# Makefile for my Grid Hydro Code, Jonathan Mackey
+# Makefile for 'pion',
+# Author: Jonathan Mackey
 #
 # - 2010.06.24 JM: added section for aibn214 (2GB RAM, 2 cores)
 # - 2010.07.21 JM: fixed aibn214 section to use system HDF5
@@ -34,6 +35,8 @@
 # - 2012.02.22 JM/HD: Added section for dougal at UCL compile options.
 # - 2012.07.15 JM: some new vpath entries and changed file names.
 # - 2012.09.11 JM: Added options for SuperMUC
+# - 2013.01.10 JM: Changed name of exe to pion_serial.
+#                  Added StarBench test problems class to icgen.
 
 ############################
 ### BASIC INFO AND PATHS ###
@@ -45,6 +48,7 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 srcdir = .
 bindir = ../bin
+SRCDIR=${CURDIR}/../source
 VPATH = \
 ../source:\
 ../source/ics:\
@@ -89,6 +93,7 @@ ifeq ($(MAKE_UNAME), standard)
 
   MYLIB = $(CURDIR)/../extra_libraries
   INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   LDFLAGS =  -lm  -lreadline -lncurses
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
@@ -99,8 +104,8 @@ ifeq ($(MAKE_UNAME), standard)
   LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ######################################################################
-# Options for a "standard" workstation.
 ######################################################################
+
 
 ######################## -- JUROPA -- ################################
 # Options for the Juelich Supercomputer JUROPA
@@ -121,6 +126,7 @@ ifeq ($(MAKE_UNAME), JUROPA)
 
   MYLIB = ../extra_libraries
   INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
@@ -130,8 +136,9 @@ ifeq ($(MAKE_UNAME), JUROPA)
 
 endif
 ##################### -- JUROPA -- ###################################
+######################################################################
 
-######################## -- SuperMUC -- ################################
+######################## -- SuperMUC -- ##############################
 # Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
 ######################################################################
 ifeq ($(MAKE_UNAME), SUPERMUC)
@@ -149,6 +156,7 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
 
   MYLIB = $(CURDIR)/../extra_libraries
   INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC}
   LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
@@ -159,6 +167,8 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
 
 endif
 ##################### -- SuperMUC -- ###################################
+######################################################################
+
 
 ######################################################################
 ########## OPTIONS FOR PHALANX ICC/ICPC ##############################
@@ -171,14 +181,16 @@ ifeq ($(MAKE_UNAME), phalanx)
   endif
   MYLIB = ../extra_libraries
   INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lm
 endif
 #################### --- PHALANX --- #################################
+######################################################################
 
 ######################################################################
-########## OPTIONS FOR DOUGAL ICC/ICPC ##############################
+########### OPTIONS FOR DOUGAL ICC/ICPC ##############################
 ######################################################################
 ifeq ($(MAKE_UNAME), dougal)
   ifeq ($(JMCODE_OPTIMISE), HIGH)
@@ -188,17 +200,20 @@ ifeq ($(MAKE_UNAME), dougal)
   endif
   MYLIB = ../extra_libraries
   INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lm
 endif
-#################### --- PHALANX --- #################################
+#################### --- DOUGAL --- #################################
+######################################################################
 
 
 
-###########################################
-# Specific Options for my imac
-###########################################
+######################################################################
+####  OS X
+####  -- may need hard-coded path to work
+######################################################################
 ifeq ($(MAKE_UNAME), imac)
 CXXFLAGS = -O3
 #CXXFLAGS = -O0
@@ -208,10 +223,11 @@ CXXFLAGS += -g    # enable debugging with gdb
 
 # CURDIR may only work with GNU Make!  It gives absolute paths, so that
 # the executable can always link to shared libs.
-MYLIB = /Users/jmackey/Library/JMs_stuff
-#MYLIB = $(CURDIR)/../extra_libraries
+#MYLIB = /Users/jmackey/Library/JMs_stuff
+MYLIB = $(CURDIR)/../extra_libraries
 
 INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
 LDFLAGS  =  -lm  
 LDFLAGS +=-lreadline
 LDFLAGS += -L${MYLIB}/lib
@@ -220,49 +236,10 @@ LDFLAGS += -lsilo
 LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
 endif
+######################################################################
+######################################################################
 
 
-#############################################
-# Specific Options for Stokes - ICHEC cluster
-#############################################
-ifeq ($(MAKE_UNAME), stokes)
-CXX = icpc
-CXXFLAGS = -O3
-MYLIB = /ichec/work/dsast002b/jm_code/extra_libs
-
-INC  = -I$(MYLIB)/cfitsio/include
-INC += -I$(MYLIB)/silo_intel_nohdf/include
-LDFLAGS += -L$(MYLIB)/cfitsio/lib/ -lcfitsio
-LDFLAGS += -L$(MYLIB)/silo_intel_nohdf/lib/ -lsilo
-LDFLAGS += -lmkl_sequential -lmkl_core
-endif
-
-#############################################
-# Specific Options for ICHEC Blue Gene /L
-#############################################
-# module load bgl
-#############################################
-ifeq ($(MAKE_UNAME), bgl)
-CXX = xlc++
-
-# The following option allows stuff to compile -- MPI complains without it.
-#CXXFLAGS = -DMPICH_IGNORE_CXX_SEEK 
-CXXFLAGS = -O3  # optimised code
-#CXXFLAGS += -O0
-#CXXFLAGS += -Wall
-#CXXFLAGS += -g   # for debugging with ddt. 
-
-MYLIB = /ichec/home/users/jmackey/jm_code/extra_libs
-
-# Overwrite linking to get rid of readline, which is not on bg/l
-LDFLAGS = -lnss_files -lnss_dns -lresolv -lc -lnss_files -lnss_dns -lresolv
-LDFLAGS += -lm
-
-INC  = -I$(MYLIB)/cfitsio_bgl_xlc/include
-LDFLAGS += -L$(MYLIB)/cfitsio_bgl_xlc/lib/ -lcfitsio
-INC += -I$(MYLIB)/silo_bgl_nohdf_xlc/include
-LDFLAGS += -L$(MYLIB)/silo_bgl_nohdf_xlc/lib/ -lsilo
-endif
 
 #####################################################
 ##### LIST OF OBJECT FILES, DIRECTIVES FOR MAKE #####
@@ -311,22 +288,23 @@ IC_OBJ	= icgen.o \
 	spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
+        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
+        StarBench_test.o
 
 
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/main_serial ${bindir}/icgen_serial
+all: ${bindir}/pion_serial ${bindir}/icgen_serial
 
-${bindir}/main_serial : $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/main_serial $(LDFLAGS)
+${bindir}/pion_serial : $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/pion_serial $(LDFLAGS)
 
 ${bindir}/icgen_serial: $(IC_OBJ)
 	$(CXX) $(CXXFLAGS) $(IC_OBJ) -o ${bindir}/icgen_serial $(LDFLAGS)
 
 clean:
-	rm -f *.o ${bindir}/main_serial ${bindir}/icgen_serial
+	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial
 
 
 ####################################
@@ -542,7 +520,8 @@ shock_cloud.o: shock_cloud.cc icgen.h ${GLOBAL} inside_sphere.h
 photoevaporating_multiclumps.o: photoevaporating_multiclumps.cc icgen.h ${GLOBAL}
 laser_ablation.o:   laser_ablation.cc icgen.h ${GLOBAL}
 jet.o:		    jet.cc icgen.h ${GLOBAL}
-spherical_clump.o: spherical_clump.cc icgen.h ${GLOBAL} 
+spherical_clump.o: spherical_clump.cc icgen.h ${GLOBAL}
+StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
 #######################
 
 

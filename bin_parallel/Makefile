@@ -34,6 +34,7 @@
 # - 2012.02.22 JM/HD: Added section for dougal at UCL compile options.
 # - 2012.07.15 JM: some new vpath entries and changed file names.
 # - 2012.09.11 JM: Added options for SuperMUC
+# - 2013.01.10 JM: Changed name of exe to pion_parallel
 ##
 
 ### BASIC INFO AND PATHS ###
@@ -45,6 +46,7 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 srcdir = .
 bindir = ../bin
+SRCDIR=${CURDIR}/../source
 VPATH = \
 ../source:\
 ../source/ics:\
@@ -87,6 +89,7 @@ ifeq ($(MAKE_UNAME), standard)
 
   MYLIB = $(CURDIR)/../extra_libraries
   INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   LDFLAGS =  -lm  -lreadline -lncurses
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
@@ -118,6 +121,7 @@ ifeq ($(MAKE_UNAME), JUROPA)
 
   MYLIB = ../extra_libraries
   INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
@@ -146,6 +150,7 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
 
   MYLIB = $(CURDIR)/../extra_libraries
   INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC} ${MPI_INC}
   LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
@@ -185,6 +190,7 @@ ifeq ($(MAKE_UNAME), phalanx)
   endif
   MYLIB = ../extra_libraries
   INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lm
@@ -205,6 +211,7 @@ ifeq ($(MAKE_UNAME), dougal)
   endif
   MYLIB = ../extra_libraries
   INC += -I${MYLIB}/include
+  INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib
   LDFLAGS += -Wl,--rpath -Wl,/usr/lib64/mpich2/lib 
@@ -231,6 +238,7 @@ CXXFLAGS += -g    # enable debugging with gdb
 MYLIB = /Users/jmackey/Library/JMs_stuff
 #MYLIB = $(CURDIR)/../extra_libraries
 INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
 LDFLAGS  =  -lm  
 LDFLAGS +=-lreadline
 LDFLAGS += -L${MYLIB}/lib
@@ -292,34 +300,36 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
         spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
+        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
+        StarBench_test.o
+
 
 
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/gridcode_parallel ${bindir}/icgen_parallel
+all: ${bindir}/pion_parallel ${bindir}/icgen_parallel
 
-${bindir}/gridcode_parallel: $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/gridcode_parallel $(LDFLAGS)
+${bindir}/pion_parallel: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/pion_parallel $(LDFLAGS)
 
 ${bindir}/icgen_parallel: $(IC_OBJ)
 	$(CXX) $(CXXFLAGS) $(INC) $(IC_OBJ) -o ${bindir}/icgen_parallel $(LDFLAGS)
 
 clean:
-	rm -f *.o ${bindir}/gridcode_parallel ${bindir}/icgen_parallel
+	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
 
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-mainMPI.o: 	  mainMPI.cc grid.h ${GLOBAL} comms.h
-global.o: 	  global.cc ${GLOBAL}
+mainMPI.o: mainMPI.cc grid.h ${GLOBAL} comms.h
+global.o: global.cc ${GLOBAL}
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 
 gridMethods.o:  gridMethods.cc grid.h ${GLOBAL} solver_eqn_base.h microphysics.h \
-		dataio.h dataio_silo.h dataio_fits.h microphysics_lowZ.h \
-                microphysics_base.h mp_only_cooling.h mp_v2_aifa.h
+ dataio.h dataio_silo.h dataio_fits.h microphysics_lowZ.h \
+ microphysics_base.h mp_only_cooling.h mp_v2_aifa.h
 
 # functions for stepping forward in time
 time_integrator.o: time_integrator.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
@@ -328,55 +338,55 @@ calc_timestep.o: calc_timestep.cpp grid.h microphysics_base.h solver_eqn_base.h 
 
 gridMethodsMPI.o: gridMethodsMPI.cc grid.h ${GLOBAL} comms.h
 
-uniform_grid.o: 	  uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
+uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
 
 uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
 
-VectorOps.o: 	VectorOps.cc VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps.o: VectorOps.cc VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
-		       ${GLOBAL} uniform_grid.h
+ ${GLOBAL} uniform_grid.h
 
 
 #####################
 # EQUATIONS CLASSES #
 #####################
 
-eqns_base.o:	          eqns_base.cc eqns_base.h ${GLOBAL}
+eqns_base.o: eqns_base.cc eqns_base.h ${GLOBAL}
 
 eqns_hydro_adiabatic.o: eqns_hydro_adiabatic.cc eqns_hydro_adiabatic.h \
-			eqns_base.h ${GLOBAL}
+ eqns_base.h ${GLOBAL}
 
 eqns_hydro_isothermal.o: eqns_hydro_isothermal.cc \
-                  eqns_hydro_isothermal.h eqns_base.h ${GLOBAL}
+ eqns_hydro_isothermal.h eqns_base.h ${GLOBAL}
 
 eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cc eqns_mhd_adiabatic.h \
-		      eqns_base.h ${GLOBAL}
+ eqns_base.h ${GLOBAL}
 
 eqns_hydro_adi_Eint.o: eqns_hydro_adi_Eint.cc eqns_hydro_adi_Eint.h \
-    eqns_hydro_adiabatic.h eqns_base.h ${GLOBAL}
+ eqns_hydro_adiabatic.h eqns_base.h ${GLOBAL}
 
 ###################
 # RIEMANN SOLVERS #
 ###################
 
 riemann.o: riemann.cc riemann.h findroot.h ${GLOBAL} \
-	   eqns_hydro_adiabatic.h  eqns_base.h
+ eqns_hydro_adiabatic.h  eqns_base.h
 
 findroot.o: findroot.cc findroot.h ${GLOBAL}
 
 Riemann_FVS_hydro.o: Riemann_FVS_hydro.cc Riemann_FVS_hydro.h \
-   ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
 Roe_Hydro_ConservedVar_solver.o: Roe_Hydro_ConservedVar_solver.cc \
-   Roe_Hydro_ConservedVar_solver.h \
-   ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
+ Roe_Hydro_ConservedVar_solver.h \
+ ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
 Roe_Hydro_PrimitiveVar_solver.o: Roe_Hydro_PrimitiveVar_solver.cc \
    Roe_Hydro_PrimitiveVar_solver.h \
    ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
 riemannMHD.o: riemannMHD.cc riemannMHD.h ${GLOBAL} \
-              eqns_mhd_adiabatic.h eqns_base.h ${GLOBAL} 
+ eqns_mhd_adiabatic.h eqns_base.h ${GLOBAL} 
 
 Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cc \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
@@ -412,7 +422,7 @@ flux_hydro_adi_Eint.o: flux_hydro_adi_Eint.cc flux_hydro_adi_Eint.h \
 ###########
 
 solver_eqn_base.o: VectorOps.h solver_eqn_base.h flux_base.h \
-                   eqns_base.h ${GLOBAL} cell_interface.h
+ eqns_base.h ${GLOBAL} cell_interface.h
 
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
    solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
@@ -534,6 +544,7 @@ photoevaporating_multiclumps.o: photoevaporating_multiclumps.cc icgen.h ${GLOBAL
 laser_ablation.o:   laser_ablation.cc icgen.h ${GLOBAL}
 jet.o:		    jet.cc icgen.h ${GLOBAL}
 spherical_clump.o: spherical_clump.cc icgen.h ${GLOBAL} 
+StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
 #######################
 
 

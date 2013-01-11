@@ -13,13 +13,14 @@
 /// - 2012.02.07 JM: Added class for Harpreet's 1D to 2D mapping.
 /// - 2012.02.25 JM: Added optional velocity vector for photoevaporated clumps.
 /// - 2012.09.16 JM: Added new photoevaporating clump function+var.
+/// - 2013.01.10 JM: Added new StarBench workshop test probs class.
 
 #ifndef ICGEN_H
 #define ICGEN_H
 
 #include "inside_sphere.h"
-#include "../global.h"
-#include "../dataIO/readparams.h"
+#include "global.h"
+#include "dataIO/readparams.h"
 
 class ICsetup_base {
   public :
@@ -520,5 +521,22 @@ class IC_HD_2D_ShockCloud : public ICsetup_base {
 };
 #endif // don't EXCLUDE_HD_MODULE
 
+//
+// Class for StarBench Workshop test problems
+//
+class IC_StarBench_Tests : public ICsetup_base {
+  public:
+  IC_StarBench_Tests();
+  ~IC_StarBench_Tests();
+  int setup_data(class ReadParams *, ///< pointer to parameter list.
+		 class GridBaseClass * ///< pointer to grid
+		 );
+  protected:
+  int setup_ContactDiscontinuity(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *, ///< pointer to grid
+      string &test           ///< String with which test to run.
+      );
+};
 
 #endif //  ICGEN_H

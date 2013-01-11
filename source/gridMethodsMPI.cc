@@ -354,6 +354,11 @@ int ParallelIntUniformFV::setup_raytracing()
       }
     }
   }     // loop over sources.
+  // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
+  // DOMAIN DECOMPOSITION.
+  parallel_rays=false;
+  // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
+  // DOMAIN DECOMPOSITION.
   if (parallel_rays) {
     //
     // set up single source at infinity tracer, if appropriate

@@ -23,10 +23,14 @@
 ///    STL vector one, because the vector functions are slower by about 2.5%.
 /// - 2011.11.01 JM: changed to using Tau instead of NH0 (hopefully more
 ///    efficient by allowing smaller spline array.
-///
+/// - 2012.12.26 JM: Added some hacks to study the photoionisation
+///    cross section and Blackbody spectrum effects on results.
+
+#define HACK_MODIFY_BB ///< scale the high energy BB emission
+#define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
 
 #include "hydrogen_photoion.h"
-#include "../global.h"
+#include "global.h"
 //#include "reporting.h"
 //#include "new_Hpion.h"
 //#include <cmath>
@@ -242,8 +246,8 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_heating_rate(
 double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection_fractional(const double E)
 {
   //
-  // Sutherland & Dopita (2003,Textbook,eq.5.32) give this formula, which I 
-  // think is the same as that given in Osterbrock (1989).
+  // Sutherland & Dopita (2003,Textbook,eq.5.32) give this formula.
+  // HACK_CROSS_SECTION replaces this with Osterbrock's (1989) eq. 2.31.
   //
   // N.B. 'E' is assumed to be in cgs units (ergs).
   // This function returns the ratio of the cross-section at energy E to the
@@ -255,7 +259,11 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection_fractional(const d
 #ifdef RT_TEST_PROBS
     return 1.0;
 #else
+#ifdef HACK_CROSS_SECTION
+    return 1.34*exp(-2.99*log(E/2.1788e-11)) -0.34*exp(-3.99*log(E/2.1788e-11));
+#else
     return exp(-3.5*log(E/2.18e-11));
+#endif
 #endif
   }
 }
@@ -274,7 +282,11 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection(const double E)
 #ifdef RT_TEST_PROBS
     return 6.3042e-18;
 #else
+#ifdef HACK_CROSS_SECTION
+    return 6.3042e-18*(1.34*exp(-2.99*log(E/2.1788e-11)) -0.34*exp(-3.99*log(E/2.1788e-11)));
+#else
     return 6.3042e-18*exp(-3.5*log(E/2.18e-11));
+#endif
 #endif
   }
 }
@@ -580,6 +592,10 @@ double hydrogen_photoion::photoion_rate_source_integrand(
   // Then 1/(exp(E/kT)-1)
   //
   ans /= (exp(E/(1.38e-16*Tstar)) -1.0);
+#ifdef HACK_MODIFY_BB
+  // multiply high energy emission by exp(-(0.03(E/eV))^5)
+  ans *= exp(-pow(1.87e10*E,5));
+#endif 
   //
   // Then the prefactor: 8.pi^2.Rstar^2/(c^2.h^3)
   //

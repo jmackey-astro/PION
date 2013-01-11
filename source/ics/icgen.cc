@@ -31,6 +31,7 @@
 /// - 2012.02.07 JM: Added class for Harpreet's 1D to 2D mapping.
 /// - 2012.07.25 JM: Fixed bug where noise was added to edge cells in the
 ///    YZ-face for parallel grids.
+/// - 2013.01.10 JM: Added setup lines for StarBench Tests.
 
 #include "icgen.h"
 #include "get_sim_info.h"
@@ -107,11 +108,12 @@ int main(int argc, char **argv)
       string outpath = (args[i].substr(9));
       ostringstream path; path << outpath <<"_"<<mpiPM.myrank<<"_";
       outpath = path.str();
-      cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      if (mpiPM.myrank==0) {
+        cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }
-  cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+  //cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
 #endif //PARALLEL
 #ifdef SERIAL
   int err=0;
@@ -296,6 +298,13 @@ int main(int argc, char **argv)
   else if (ics=="HD_2D_ShockCloud")
     ic = new IC_HD_2D_ShockCloud();
 #endif
+
+  else if (ics=="StarBench_ContactDiscontinuity1" ||
+           ics=="StarBench_ContactDiscontinuity2" ||
+           ics=="StarBench_ContactDiscontinuity3" ||
+           ics=="StarBench_ContactDiscontinuity4") {
+    ic = new IC_StarBench_Tests();
+  }
 
   else rep.error("BAD IC identifier",ics);
   if (!ic) rep.error("failed to init",ics);

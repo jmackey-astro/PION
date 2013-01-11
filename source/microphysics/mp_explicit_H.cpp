@@ -96,7 +96,12 @@
 /// - 2012.04.19 JM: Added "PUREHYDROGEN" ifdef for the Iliev et al. 2009 tests.
 /// - 2012.06.22 JM: Added Wolfire+,2003,ApJ,587,278) corrections to Henney+ scheme.
 /// - 2012.06.25 JM: Added more heating/cooling from Wolfire+(2003).
-
+/// - 2012.10.03 JM: Added METALLICITY multiplier to all heating and
+///    cooling rates that depend on dust or metals, and also to the 
+///    dust opacity of the ISM to FUV radiation.  It's a crude hack,
+///    because low-Z galaxies are usually overabundant in CNO, but
+///    it's a start.
+///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,591,1220)
 ///       which is the 'proto-solar nebula' value. The photospheric value is lower
 ///       4.9e-4, and that is used by Wiersma et al. (2009,MN,393,99).
@@ -107,21 +112,28 @@
   // ================================================================
   // ================================================================
 
+
+
 // ##################################################################
 // ##################################################################
 
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_MPV3
 
 //#define MPV3_DEBUG
 
 #include "mp_explicit_H.h"
-#include "../global.h"
+#include "global.h"
 using namespace std;
 
 #define WOLFIRE  // This enables extra heating/cooling/ionisation compared to Henney.
+
+#define METALLICITY 1.0 ///< Metallicity in units of solar.
+
+//#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
+
 
 //
 // The timestep-limiting is set by ifdef in source/defines/functionality_flags.h
@@ -626,7 +638,6 @@ int mp_explicit_H::convert_prim2local(
     cout <<"x(H0)="<<p_local[lv_H0] <<", resetting to "<<Max_NeutralFrac<<"\n";
     p_local[lv_H0] = Max_NeutralFrac;
   }
-#endif
   //
   // Check for bad values:
   //
@@ -634,6 +645,7 @@ int mp_explicit_H::convert_prim2local(
     cout <<"mp_explicit_H::convert_prim2local: bad ion fraction: ";
     cout <<"x(H0)="<<p_local[lv_H0] <<", resetting to [0,1]\n";
   }
+#endif
 
   //
   // Set x(H0) to be within the required range (not too close to zero or 1).
@@ -645,10 +657,10 @@ int mp_explicit_H::convert_prim2local(
   // warning) and set to 10K if we find it.
   //
   if (p_local[lv_eint]<=0.0) {
-    cout <<"mp_explicit_H::convert_prim2local: negative pressure input: p=";
-    cout <<p_local[lv_eint]<<", setting to 10K.\n";
+    //cout <<"mp_explicit_H::convert_prim2local: negative pressure input: p=";
+    //cout <<p_local[lv_eint]<<", setting to "<<SimPM.EP.MinTemperature<<"K.\n";
     p_local[lv_eint] = (JM_NION+JM_NELEC*(1.0-p_local[lv_H0]))
-                        *mpv_nH*k_B*10.0/(gamma_minus_one);
+                        *mpv_nH*k_B*SimPM.EP.MinTemperature/(gamma_minus_one);
   }
 
 
@@ -1093,7 +1105,7 @@ void mp_explicit_H::setup_radiation_source_parameters(
   if (N_heat>0) {
     double temp=0.0;
     int i_diff=0;
-    double Av_UV = 1.9*1.086*5.0e-22/mean_mass_per_H;
+    double Av_UV = 1.9*1.086*5.0e-22*METALLICITY/mean_mass_per_H;
     double Av_IR = Av_UV*0.05/1.9;
 
     for (int v=0; v<N_heat; v++) {
@@ -1178,6 +1190,12 @@ int mp_explicit_H::ydot(
           const double *        ///< extra user-data vector (UNUSED)
           )
 {
+  //if (SimPM.simtime <3.16e12) {
+  //  NV_Ith_S(y_dot,lv_H0)   = 0.0;
+  //  NV_Ith_S(y_dot,lv_eint) = 0.0;
+  //  return 0;
+  //}
+
   //
   // fixes min-neutral-fraction to Min_NeutralFrac
   //
@@ -1205,7 +1223,7 @@ int mp_explicit_H::ydot(
   // (Sofia,1997), approximately, so I add this to the electron number density
   // with an exponential cutoff at high densities.
   //
-  ne += mpv_nH*1.5e-4*exp(-mpv_nH/1.0e4);
+  ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
 #endif //WOLFIRE
 
 //#ifndef PUREHYDROGEN
@@ -1254,6 +1272,8 @@ int mp_explicit_H::ydot(
       //
 #define PHOTON_ENERGY 2.98e-11
 #define EXCESS_ENERGY 8.01e-12
+//#define PHOTON_ENERGY 2.24e-11
+//#define EXCESS_ENERGY 0.64e-12
       temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
                                              PHOTON_ENERGY, mpv_delta_S, mpv_Vshell)*OneMinusX;
       oneminusx_dot -= temp1;
@@ -1305,16 +1325,16 @@ int mp_explicit_H::ydot(
     // and is set in set_parameters_for_current step()
     //
     //cout <<"adding diffuse heating! ";
-    Edot += 1.9e-26*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
-    //cout <<"  DfUV="<<1.9e-26*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
+    Edot += 1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
+    //cout <<"  DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
 
     //
     // IR heating (HAdCM09 eq.A6) from point source and/or diffuse radiation.
     // There is a different G0 parameter because the attenuation is according to 
     // exp(-0.05Av) rather than before where the coefficient was 1.9.
     //
-    Edot += 7.7e-32*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0);
-    //cout <<"  DfIR="<<7.7e-32*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
+    Edot += 7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0);
+    //cout <<"  DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
   }
 
   //
@@ -1347,7 +1367,7 @@ int mp_explicit_H::ydot(
   // and G_0=1.7.  I multiply by the neutral fraction OneMinusX because this
   // heating term is only calculated for warm neutral medium.
   //
-  Edot += 1.083e-25*OneMinusX/(1.0+9.77e-3*pow(sqrt(T)/ne,0.73));
+  Edot += 1.083e-25*METALLICITY*OneMinusX/(1.0+9.77e-3*pow(sqrt(T)/ne,0.73));
 #endif //WOLFIRE
   
   //
@@ -1357,21 +1377,23 @@ int mp_explicit_H::ydot(
   // I have exponentially damped this at high temperatures! This was important!
   // Oxygen abundance set to 5.81e-4 from Lodders et al. (2003,ApJ,591,1220,Tab.2).
   //
-  temp1 = 1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  temp1 = 1.69e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
 
+#ifndef WOLFIRE
   //
   // Collisionally excited lines of neutral metals: (HAdCM09 eq.A10).
   // Assumes the neutral metal fraction is the same as neutral H fraction.
   // Oxygen abundance set to 5.81e-4 from Lodders et al. (2003,ApJ,591,1220,Tab.2).
   //
-  temp1+= 2.60e-23 *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
+  temp1+= 2.60e-23*METALLICITY *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
+#endif // not WOLFIRE
 
   //
   // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
   // We take the actual cooling rate to be the max of SD93-CIE and the
   // previous two terms.
   //
-  temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH;
+  temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH*METALLICITY;
   Edot -= max(temp1,temp2);
 
 
@@ -1383,7 +1405,7 @@ int mp_explicit_H::ydot(
   // squared and also exponentially cutting off the function for T>10^5K.
   //
   temp1 = 70.0 +220.0*pow(mpv_nH/1.0e6, 0.2);
-  temp2 = 3.981e-27*pow(mpv_nH,0.6)*sqrt(T)*exp(-temp1/T);
+  temp2 = 3.981e-27*METALLICITY*pow(mpv_nH,0.6)*sqrt(T)*exp(-temp1/T);
   //
   // ********************* HACK FOR LOW DENSITY COOLING *******************
   //
@@ -1411,19 +1433,19 @@ int mp_explicit_H::ydot(
   // I have cut off equation C1 at high densities to be consistent with the 
   // ion fraction of C that I assumed above for the electron density.
   //
-  Edot -= 3.15e-27*exp(-92.0/T)*mpv_nH*OneMinusX*exp(-mpv_nH/1.0e4);
-  Edot -= 3.96e-28*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
+  Edot -= 3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX*exp(-mpv_nH/1.0e4);
+  Edot -= 3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
   //
   // This is the CII cooling by electron collisions, cutoff at high density
   // again, for consistency.
   //
-  Edot -= 1.4e-23*exp(-0.5*log(T)-92.0/T)*ne*exp(-mpv_nH/1.0e4);
+  Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne*exp(-mpv_nH/1.0e4);
   //
   // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have multiplied
   // their equation by 1.3 for the increased PAH abundance...
   //
-  //Edot -= 2.325e-30*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
-  Edot -= 3.02e-30*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
+  //Edot -= 2.325e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
+  Edot -= 3.02e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
 #endif //WOLFIRE
 #endif // not PUREHYDROGEN
 
@@ -1431,6 +1453,9 @@ int mp_explicit_H::ydot(
   // now multiply Edot by nH to get units of energy loss/gain per unit volume per second.
   //
   Edot *= mpv_nH;
+#ifdef HIGHDENS_CUTOFF
+  if (Edot<0.0) Edot *= exp(-mpv_nH*mpv_nH/1.0e6);
+#endif //HIGHDENS_CUTOFF 
 
   //
   // We want to limit cooling as we approach the minimum temperature, so we scale

@@ -1,11 +1,27 @@
 Author: Jonathan Mackey
-Version: 0.01
-Date: 2010.10.11
+Version: 0.1
+Date: 2013.01.10
+
+-------------------------------
+--- IMPORTANT INFORMATION   ---
+-------------------------------
+Please read the licence file.  Using this code implies acceptance of
+the terms of the licence for pion.  Sharing and/or publishing the
+source code can also only be done according to the licence
+conditions.
+
 
 -------------------------------
 ---- COMPILING CODE:       ----
 -------------------------------
+Stages:
+(1) compile external libraries (including manually downloading the
+SUNDIALS library).
+(2) run serial code compilation script.
+(3) run parallel code compilation script.
+(4) copy the executables to wherever you want to run the code.
 
+(1)
 First you need to compile extra libraries.
 cd to "./extra_libraries"
 run "bash install_all_libs.sh" to install.
@@ -14,13 +30,13 @@ from their website -- the install script will complain and tell you
 the link to the library.
 The script needs internet access with "wget" to work.
 
-
+(2)
 Then cd to "./bin_serial" and run "bash compile_code.sh"
 if you are lucky it will detect that you are using a standard
-workstation and will just compile.  On OS X you may need to modify
-the Makefile.  Look for "imac" in Makefile, and reset the library
-directory to wherever the extra libraries (maybe uncomment the line
-with (CURDIR)/../extra_libraries and that could work).
+workstation and will just compile.  If you are running Microsoft
+Windows it almost certainly won't compile, and I have no expertise
+to help you get it working, so "good luck".  On a UNIX/Linux
+workstation or OS X (with x-code installed) it should compile ok.
 
 If there are linking errors to silo (references to PDB and/or H5) or
 fits (references to ff**** functions) or cvode/nvector then the 
@@ -28,7 +44,7 @@ libraries must have failed to compile.
 
 If all went well, there should be no error messages and there should
 be two executable files in ../bin/: "icgen_serial" for generating
-initial conditions, and "main_serial" for running the code.  Most code
+initial conditions, and "pion_serial" for running the code.  Most code
 options are decided at run-time not compile-time, so you shouldn't
 have to change any #define statements in the code.
 
@@ -40,7 +56,21 @@ Either way, probably email me at jmackey@astro.uni-bonn.de and I'll
 see what I can do to help.  Quote the exact error message in the
 email.
 
-If you are not using Linux/UNIX then the Makefiles may need editing.
+If you are not using Linux/UNIX then the Makefile and/or
+compile_code.sh script may need editing.
+
+
+(3)
+cd to ../bin_parallel/ and run "bash compile_code.sh".
+Again, if you are lucky it will just compile.  There will probably
+be warning messages about pmpio.h from functions that are defined but
+never used; this is not a problem.  If compilation is successful
+then the files ../bin/pion_parallel and ../bin/icgen_parallel will
+exist.
+
+In the event that it doesn't compile follow the same procedure as for
+the serial version of the code.
+
 
 -------------------------------
 ----- RUNNING CODE:       -----
@@ -72,7 +102,7 @@ so you may as well set that running overnight.
 ----------------------------------------
 
 cd to uniform_grid_code/trunk/bin
-Here there are the two executables: "icgen_serial" and "main_serial".
+Here there are the two executables: "icgen_serial" and "pion_serial".
 
 "icgen_serial" will read a parameter file and based on the values read
 in, it will set up a grid with the appropriate geometry and size and
@@ -80,15 +110,15 @@ populate it with the requested data, also setting the correct boundary
 conditions for the problem.  It then writes this to a initial
 conditions file, which is identical to a restart/checkpointing file.
 
-"main_serial" will read an initial conditions file, or a
+"pion_serial" will read an initial conditions file, or a
 restart/checkpoint/output file (they are all the same) and
 start/restart the simulation and run until it gets to "finishtime", at
 which point it will output data and stop.  You can get a list of
-command-line options by typing "./main_serial" with no arguments.
+command-line options by typing "./pion_serial" with no arguments.
 
 A typical simulation run is as follows (copied from bin_serial/run.sh)
 $ ./icgen_serial pf_test_winds.txt silo
-$ ./main_serial IC_wind_test1.silo 5 1 op_criterion=1 opfreq_time=1.58e10 cooling=0 redirect=test1 outfile=/export/aibn214_1/jmackey/testing/results/wind_test1 cfl=0.1
+$ ./pion_serial IC_wind_test1.silo 5 1 op_criterion=1 opfreq_time=1.58e10 cooling=0 redirect=test1 outfile=/export/aibn214_1/jmackey/testing/results/wind_test1 cfl=0.1
 
 In icgen_serial, the first argument is the parameter-file, and the second
 tells it to write a silo file (rather than fits).
@@ -112,7 +142,7 @@ OPTIONAL ARGUMENTS:
 ---------------------
 -- Parameter files --
 ---------------------
-Have a look in uniform_grid_code/trunk/ics/pfiles for some parameter
+Have a look in source/ics/pfiles for some parameter
 files.  Some of these are out of date, but if you look at the more
 recent ones they should work ok.
 
@@ -133,7 +163,7 @@ string incorrectly.  "icgen_serial" doesn't check that it is correct
 (it should, and will eventually).  There should be exactly two entries
 for each dimension, and possibly "internal" extra boundaries.  If you
 are running in 3D with only 4 boundaries the initial condition
-generator will run, but main_serial will bug out when it tries to
+generator will run, but pion_serial will bug out when it tries to
 setup the grid.
 
 The "BC" string is a sequence of 6-character boundary specifiers.  The
@@ -153,11 +183,15 @@ spherical (r)     (1d only)
 
 "solver" is important: this is the solver to use for the flux
 calculation.  For the Euler equations (no magnetic fields) you can use
-any of 1-6.  I recommend 3, 5 or 4. (1 is bad, 2 is slow, 6 is pretty
+any of 1-6.  I recommend 3, 4 or 6. (1 is bad, 2 is slow, 6 is pretty
 good).
-3=hybrid approximation/exact solver
-4=Roe conserved variable solver
-5=Roe primitive variable solver
+1=approximate linear Riemann solver
+2=exact Riemann solver (slow!)
+3=hybrid approximate/exact Riemann solver
+4=Roe conserved variable Riemann solver
+5=Roe primitive variable Riemann solver (may have problems!)
+6=van Leer's flux vector splitting
+
 
 -----------------------------
 ---- RUNNING IN PARALLEL ----
@@ -166,7 +200,7 @@ good).
 The parallel compilation is in uniform_grid_code/trunk/bin_parallel
 Again try "bash compile_code.sh", and the same caveats for OS X and
 the Makefile apply for parallel as serial code.
-Executables should be in trunk/bin/ called gridcode_parallel and
+Executables should be in trunk/bin/ called pion_parallel and
 icgen_parallel. 
 
 This should generate a lot of warnings about "PMPIO" but no errors.
@@ -177,8 +211,7 @@ best thing is to contact me.
 
 Parallel code should always be run with the "redirect=/path/to/file"
 argument included, otherwise every process will output its info to the
-console which is messy.  A typical example run is taken from
-bin_parallel/run.sh:
+console which is messy.  A typical example script is quoted below:
 
 ********************* run.sh ****************************
 #!/bin/bash
@@ -194,17 +227,17 @@ rsync -vt IC_WIND_Md1em6_v250_noI_adv*.silo ${sim_dir}/
 rm IC_WIND_Md1em6_v250_noI_adv*.silo
 
 #
-# First run the sims for a short time with a LOT of artificial viscosity:
+# First run the sims for a short time:
 #
-mpirun -np 4 ./gridcode_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv000_0000.silo 5 1 \
+mpirun -np 4 ./pion_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv000_0000.silo 5 1 \
 outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv000 \
 redirect=${sim_dir}/run_log/msg_WIND_Md1em6_v250_noI_adv000 \
-finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.5
+finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.15
 
-mpirun -np 4 ./gridcode_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv100_0000.silo 5 1 \
+mpirun -np 4 ./pion_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv100_0000.silo 5 1 \
 outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv100 \
 redirect=${sim_dir}/run_log/msg_WIND_Md1em6_v250_noI_adv100 \
-finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.5
+finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.15
 
 ********************* run.sh ****************************
 

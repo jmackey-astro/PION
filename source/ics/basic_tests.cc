@@ -106,11 +106,12 @@ int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to paramet
 }
  
 
-int IC_basic_tests::setup_uniformgrid(class ReadParams *rrp,    ///< pointer to parameter list.
-				      class GridBaseClass *ggg ///< pointer to grid
-				      )
+int IC_basic_tests::setup_uniformgrid(
+          class ReadParams *rrp, ///< pointer to parameter list.
+          class GridBaseClass *ggg ///< pointer to grid
+          )
 {
-  //SimPM.typeofop=1; // text output
+  // SimPM.typeofop=1; // text output
   //
   // Get ambient medium properties:
   //

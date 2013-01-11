@@ -79,7 +79,9 @@ int main(int argc, char **argv)
       string outpath = (args[i].substr(9));
       ostringstream path; path << outpath <<"_"<<mpiPM.myrank<<"_";
       outpath = path.str();
-      cout <<"\tRedirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      if (mpiPM.myrank==0) {
+        cout <<"\tRedirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      }
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
     if (args[i].find("maxwalltime=") != string::npos) {
@@ -87,7 +89,9 @@ int main(int argc, char **argv)
       if (isnan(tmp) || isinf(tmp) || tmp<0.0)
 	rep.error("Don't recognise max walltime as a valid runtime!",tmp);
       mpiPM.set_max_walltime(tmp);
-      cout <<"\tResetting MAXWALLTIME to "<<mpiPM.get_max_walltime()<<" seconds, or "<<mpiPM.get_max_walltime()/3600.0<<" hours.\n";
+      if (mpiPM.myrank==0) {
+        cout <<"\tResetting MAXWALLTIME to "<<mpiPM.get_max_walltime()<<" seconds, or "<<mpiPM.get_max_walltime()/3600.0<<" hours.\n";
+      }
     }
   }
   cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
