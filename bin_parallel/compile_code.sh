@@ -11,6 +11,7 @@
 #     This script now makes the decisions about compilers and optimisation.
 # - 2012.02.22 JM/HD: Added options for Dougal at UCL
 # - 2012.09.11 JM: Added options for SuperMUC
+# - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
 #
 
 #
@@ -23,14 +24,15 @@ MAKE_UNAME=standard
 NCORES=4
 #
 # Production code options:
-export JMCODE_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
-export JMCODE_OPTIMISE=HIGH
-#export JMCODE_OPTIMISE=LOW
+#
+export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
+export PION_OPTIMISE=HIGH
 export CXX=mpicxx
 #
 # Debugging code options, using text files to communicate data:
-#export JMCODE_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
-#export JMCODE_OPTIMISE=LOW
+#
+#export PION_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
+#export PION_OPTIMISE=LOW
 #export CXX=g++
 
 
@@ -44,8 +46,8 @@ if [ "${HOST}" = 'phalanx.star.ucl.ac.uk' ]; then
   export PATH=$SGIMPT/bin:/opt/sgi/perfcatcher/bin:$PATH
   export LD_LIBRARY_PATH=$SGIMPT/lib:$LD_LIBRARY_PATH
   # -DINTEL means the code uses the intel math headers instead of gnu.
-  export JMCODE_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-  export JMCODE_OPTIMISE=HIGH
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+  export PION_OPTIMISE=HIGH
   export CXX=icpc
   echo "***** COMPILING WITH PHALANX: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=phalanx
@@ -63,8 +65,8 @@ if [ "${HOST}" = 'dougal.hpc.phys.ucl.ac.uk' ]; then
   export LD_LIBRARY_PATH=/usr/lib64/mpich2/lib:$LD_LIBRARY_PATH
   
   # -DINTEL means the code uses the intel math headers instead of gnu.
-  export JMCODE_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-  export JMCODE_OPTIMISE=HIGH
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+  export PION_OPTIMISE=HIGH
   export CXX=icpc
   echo "***** COMPILING WITH ${HOST}: COMPILER IS $CXX "  
   MAKE_UNAME=dougal
@@ -83,10 +85,9 @@ case $HOST in
     MAKE_UNAME=JUROPA
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.
-    export JMCODE_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export JMCODE_OPTIMISE=HIGH
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
     export CXX=mpicxx
-    export JMCODE_OPT="HIGH"
   ;;
 esac
 #######################
@@ -96,8 +97,8 @@ esac
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export JMCODE_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
-  export JMCODE_OPTIMISE=HIGH
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
+  export PION_OPTIMISE=HIGH
   export CXX=mpicxx
   export CC=mpicc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
@@ -118,13 +119,30 @@ case $HOST in
     export FC=mpif90
     MAKE_UNAME=SUPERMUC
     NCORES=8
-    export JMCODE_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export JMCODE_OPTIMISE=HIGH
-    #export JMCODE_OPT="HIGH"
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
   ;;
 esac
 #######################
 
+###################################
+### TEST FOR DIRAC-2-COMPLEXITY ###
+###################################
+case $HOSTNAME in
+  dirac[0-9][0-9])
+    echo "Compiling on DIRAC-Complexity"
+    #module list
+    module load intel/compilers/13.0.0 intel/mkl/11.0.0 intel/impi/4.1.0
+    module list
+    MAKE_UNAME=DIRAC
+    NCORES=8
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=LOW
+    export CXX=mpiicpc
+  ;;
+esac
+#######################
 
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"

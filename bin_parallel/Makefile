@@ -1,4 +1,5 @@
-# Makefile for my Grid Hydro/MHD Code, Jonathan Mackey
+# Makefile for the Hydro/MHD Code "pion", parallel version.
+# Author: Jonathan Mackey
 #
 # - 2009.12.18 JM: updated epona libs.
 # - 2009.02.03 JM: updated stokes debug compile flags.
@@ -35,8 +36,10 @@
 # - 2012.07.15 JM: some new vpath entries and changed file names.
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.01.10 JM: Changed name of exe to pion_parallel
-##
+# - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
+###
 
+############################
 ### BASIC INFO AND PATHS ###
 ############################
 
@@ -81,7 +84,7 @@ GLOBAL = global.h functionality_flags.h testing_flags.h
 # make sure cfitsio and silo are compiled in ../extra_libraries/
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
@@ -107,7 +110,7 @@ endif
 # Options for the Juelich Supercomputer JUROPA.  Intel Compilers!
 ######################################################################
 ifeq ($(MAKE_UNAME), JUROPA)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -O0 -Wall -g -wd981 -wd383
@@ -132,11 +135,11 @@ ifeq ($(MAKE_UNAME), JUROPA)
 endif
 ##################### -- JUROPA -- ###################################
 
-######################## -- SuperMUC -- ################################
+######################## -- SuperMUC -- ##############################
 # Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
 ######################################################################
 ifeq ($(MAKE_UNAME), SUPERMUC)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -O0 -Wall -g -wd981 -wd383
@@ -159,19 +162,8 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
   LDFLAGS += -lreadline
 
-#  MYLIB = $(CURDIR)/../extra_libraries
-#  INC = -I${MYLIB}/include
-#  LDFLAGS =  -lm  -lreadline -lncurses
-#  # All libraries are in this path:
-#  LDFLAGS += -L${MYLIB}/lib
-#  # Libraries for fits, silo
-#  LDFLAGS += -lcfitsio
-#  LDFLAGS += -lsilo
-#  # libs for CVODES
-#  LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
-
 endif
-##################### -- SuperMUC -- ###################################
+##################### -- SuperMUC -- #################################
 
 
 
@@ -183,7 +175,7 @@ ifeq ($(MAKE_UNAME), phalanx)
   # Special include for phalanx mpi libs:
   INC = -I/opt/sgi/mpt/mpt-1.26/include
   LDFLAGS = -lmpi
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -Wall -g
@@ -204,7 +196,7 @@ ifeq ($(MAKE_UNAME), dougal)
   # Special include for dougal mpi libs:
   INC = -I/usr/include/mpich2-x86_64
   LDFLAGS = -L/usr/lib64/mpich2/lib -lmpich -lmpichcxx -lopa  -lpthread   -lrt 
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -Wall -g
@@ -224,32 +216,62 @@ endif
 # Specific Options for my imac
 ###########################################
 ifeq ($(MAKE_UNAME), imac)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
-CXXFLAGS += -Wall
-CXXFLAGS += -g    # enable debugging with gdb
-#CXXFLAGS += -arch x86_64
+  #CXXFLAGS += -Wall
+  #CXXFLAGS += -g    # enable debugging with gdb
+  #CXXFLAGS += -arch x86_64
 
-# CURDIR may only work with GNU Make!  It gives absolute paths, so that
-# the executable can always link to shared libs.
-MYLIB = /Users/jmackey/Library/JMs_stuff
-#MYLIB = $(CURDIR)/../extra_libraries
-INC = -I${MYLIB}/include
+  # CURDIR may only work with GNU Make!  It gives absolute paths, so that
+  # the executable can always link to shared libs.
+  #MYLIB = /Users/jmackey/Library/JMs_stuff
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
-LDFLAGS  =  -lm  
-LDFLAGS +=-lreadline
-LDFLAGS += -L${MYLIB}/lib
-LDFLAGS += -lcfitsio
-LDFLAGS += -lsilo 
-# libs for CVODES
-LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS  = -lm  
+  LDFLAGS += -lreadline
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  # libs for CVODES
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
 endif
-#################### --- OS X Darwin --- #################################
+#################### --- OS X Darwin --- #############################
 
+
+######################################################################
+#################### -- DIRAC-COMPLEXITY -- ##########################
+# Options for the DIRAC-II Supercomputer Complexity. Intel Compilers!
+######################################################################
+ifeq ($(MAKE_UNAME), DIRAC)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+  else
+#    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+    CXXFLAGS = -O0 -Wall -g
+  endif
+
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+
+  MYLIB = ../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lm
+  LDFLAGS += -lreadline
+
+endif
+################## -- DIRAC-COMPLEXITY -- ############################
 
 
 
@@ -257,7 +279,7 @@ endif
 ##### LIST OF OBJECT FILES, DIRECTIVES FOR MAKE #####
 #####################################################
 
-CXXFLAGS += $(OPT) $(JMCODE_OPTIONS)
+CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
         time_integrator.o calc_timestep.o                                      \
@@ -300,8 +322,9 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
         spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
-        StarBench_test.o
+        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
+# \
+#        StarBench_test.o
 
 
 
@@ -318,6 +341,7 @@ ${bindir}/icgen_parallel: $(IC_OBJ)
 
 clean:
 	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
+
 
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###

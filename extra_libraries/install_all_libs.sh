@@ -82,7 +82,25 @@ case $HOST in
 esac
 #######################
 
-export MAKE_UNAME
+###################################
+### TEST FOR DIRAC-2-COMPLEXITY ###
+###################################
+case $HOSTNAME in
+  dirac[0-9][0-9])
+    echo "Compiling on DIRAC-Complexity"
+    module list
+    module load intel/compilers/13.0.0 intel/impi/4.1.0 intel/mkl/11.0.0 cfitsio
+    MAKE_UNAME=DIRAC
+    NCORES=8
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export CC=icc
+    export CXX=icpc
+    export FC=ifort
+  ;;
+esac
+#######################
+
+
 
 export MAKE_UNAME
 export NCORES
@@ -126,7 +144,7 @@ make distclean
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
-make
+make -j$NCORES
 echo "********************************"
 echo "*** RUNNING TESTS ***"
 echo "********************************"
@@ -185,7 +203,7 @@ make distclean
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
-make
+make -j$NCORES
 echo "*********************************"
 echo "*** INSTALLING CVODES LIBRARY ***"
 echo "*********************************"
@@ -230,7 +248,7 @@ make clean
 echo "*******************************"
 echo "*** RUNNING MAKE ***"
 echo "*******************************"
-make
+make -j$NCORES
 echo "*******************************"
 echo "*** INSTALLING CFITSIO ***"
 echo "*******************************"

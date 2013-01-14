@@ -35,44 +35,44 @@
 
 #include "icgen.h"
 #include "get_sim_info.h"
-#include "../dataIO/dataio.h"
+#include "dataIO/dataio.h"
 #ifdef FITS
-#include "../dataIO/dataio_fits.h"
+#include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
-#include "../dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo.h"
 #endif // if SILO
-#include "../grid/uniform_grid.h"
+#include "grid/uniform_grid.h"
 
 
-#include "../microphysics/microphysics_base.h"
+#include "microphysics/microphysics_base.h"
 
 #ifndef EXCLUDE_MPV1
-#include "../microphysics/microphysics.h"
+#include "microphysics/microphysics.h"
 #endif 
 
 #ifndef EXCLUDE_HD_MODULE
-#include "../microphysics/microphysics_lowZ.h"
+#include "microphysics/microphysics_lowZ.h"
 #endif 
 
-#include "../microphysics/mp_only_cooling.h"
+#include "microphysics/mp_only_cooling.h"
 
 #ifndef EXCLUDE_MPV2
 #ifdef MP_V2_AIFA
-#include "../microphysics/mp_v2_aifa.h"
+#include "microphysics/mp_v2_aifa.h"
 #endif
 #endif 
 
 #ifndef EXCLUDE_MPV3
-#include "../microphysics/mp_explicit_H.h"
+#include "microphysics/mp_explicit_H.h"
 #endif
 
 #ifndef EXCLUDE_MPV4
-#include "../microphysics/mp_implicit_H.h"
+#include "microphysics/mp_implicit_H.h"
 #endif 
 
 
-#include "../dataIO/readparams.h"
+#include "dataIO/readparams.h"
 
 #include <sstream>
 using namespace std;
@@ -304,7 +304,8 @@ int main(int argc, char **argv)
            ics=="StarBench_ContactDiscontinuity2" ||
            ics=="StarBench_ContactDiscontinuity3" ||
            ics=="StarBench_ContactDiscontinuity4") {
-    ic = new IC_StarBench_Tests();
+    //ic = new IC_StarBench_Tests();
+    rep.error("Please compile star bench source code",1);
   }
 
   else rep.error("BAD IC identifier",ics);
@@ -535,7 +536,11 @@ int main(int argc, char **argv)
   return err;
 }
 
-int equilibrate_MP(class GridBaseClass *gg, class MicroPhysicsBase *mp, class ReadParams *rp)
+int equilibrate_MP(
+  class GridBaseClass *gg,
+  class MicroPhysicsBase *mp,
+  class ReadParams *rp
+  )
 {
 
   if (!mp || !gg || !rp) rep.error("microphysics or grid not initialised.",mp);
