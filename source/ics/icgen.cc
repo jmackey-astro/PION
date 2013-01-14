@@ -110,6 +110,7 @@ int main(int argc, char **argv)
       outpath = path.str();
       if (mpiPM.myrank==0) {
         cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      }
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }

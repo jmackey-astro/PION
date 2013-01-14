@@ -812,6 +812,7 @@ extern class cell_interface CI;
   ///< Global Instance of cell interface class.
 
 
+#ifndef GRIDV2
 
 ///
 /// Abstract Base Class to define interface for the Grid data and
@@ -977,6 +978,7 @@ class GridBaseClass {
  * */
 extern class GridBaseClass *grid;
 /*****************************************************************/
+#endif // GRIDV2
 
 
 /**********************************************************************/

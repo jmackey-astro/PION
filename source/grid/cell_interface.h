@@ -15,16 +15,23 @@
 ///
 /// - 2010.11.15 JM: Added include global.h!
 /// - 2010.12.30 JM: Added DivV() set/get functions.
-/// - 2011.02.17 JM: Enhanced optical depth storage for multiple sources.
-/// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid now.
-/// - 2011.03.21 JM: Updated optical-depth info, multiple variables per source.
-/// - 2011.04.18 JM: Added storage for dS, path length through a cell for raytracing.
+/// - 2011.02.17 JM: Enhanced optical depth storage for multiple
+///    sources.
+/// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid
+///    now.
+/// - 2011.03.21 JM: Updated optical-depth info, multiple variables
+///    per source.
+/// - 2011.04.18 JM: Added storage for dS, path length through a cell
+///    for raytracing.
+/// - 2013.01.14 JM: Updated comments and re-arranged things.
+///    Added cell *npt_all for GRIDV2 (linked list including B.C.s).
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+// NEED AN INCLUDE TO GET struct rad_sources DECLARATION
 
 class cell_interface;
 
@@ -44,8 +51,8 @@ struct energetics {
     cooling_time, // in years
     recomb_time;  // in years
 };
-
 #endif
+
 
 ///
 /// Data Point for finite-volume grid. 
@@ -62,6 +69,10 @@ class cell {
   double *dU;  ///< Update vector to be added to U when we do the time update.
   cell **ngb;  ///< Pointers to cell's Neigbours.
   cell *npt;   ///< Pointer to next point in list, or some other cell.
+#ifdef GRIDV2
+  cell *npt_all;  ///< Pointer to next point in grid, including
+                  ///< boundary data.
+#endif
   int id;      ///< Grid point's id.
   int isedge;  ///< Integer specifying if it is an edge cell, and if so, which edge.
   bool isbd;   ///< True if cell is boundary data, false if not.
@@ -74,183 +85,265 @@ class cell {
   double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
 };
 
-  
-#include "../global.h"
+
+#ifndef GRIDV2
+#include "global.h"
+#endif
 ///
-/// Cell Interface class, so each cell doesn't need to have a list of pointers
-/// to all these functions.  This should contain non-geometry-specific and 
-/// non-grid-specific functions.
+/// Cell Interface class, so each cell doesn't need to have a list of
+/// pointers to all these functions.  This should contain
+/// non-geometry-specific and non-grid-specific functions.
 ///
 class cell_interface {
  public:
   cell_interface();
   ~cell_interface();
-  /** \brief Set code so Ph,dU are not initialised, to save memory for
-   *  analysis code. */
+  ///
+  /// Set flag so Ph,dU are not initialised, to save memory for
+  /// analysis code.
+  ///
   void set_minimal_cell_data();
+
   void unset_minimal_cell_data(); ///< Back to normal cells.
-  bool query_minimal_cells(); ///< returns true if using minimal cells.
+
+  bool query_minimal_cells(); ///< true if using minimal cells.
+
   class cell * new_cell();  ///< Create a new cell.
-  void delete_cell(cell *); ///< Delete all the dynamically allocated memory in a cell.
-  /** \brief Set cell position by passing in a double precision vector.  */
-  void set_pos(cell *,        ///< pointer to cell
-	       const double * ///< double array of size ndim, containing cell position.
-	       );
+
+  /// Delete all the dynamically allocated memory in a cell.
+  void delete_cell(cell *);
+
   ///
-  /// Set cell position using an integer vector, which is offset from
-  /// SimPM.Xmin[] and with a cell width equal to 2 units.
+  /// Copy one cell's contents to another.
   ///
-  void set_pos(cell *,     ///< pointer to cell
-	       const int * ///< int array of size ndim, containing cell integer position.
-	       );
-  /** \brief Returns double precision position of cell centre. */
-  void get_dpos(const cell *, ///< pointer to cell
-		double * ///< array to write position into.
-		);
-  /** \brief Returns double precision position of cell centre in a specified coordinate direction. */
-  double get_dpos(const cell *, ///< pointer to cell
-		  const int ///< element of position we want.
-		  );
-  /** \brief Returns integer position of cell centre. */
-  void get_ipos(const cell *, ///< pointer to cell
-		int * ///< array to write integer position into.
-		);
-  /** \brief Returns integer position of cell centre along a specified coordinate direction. */
-  int get_ipos(const cell *, ///< pointer to cell
-	       const int ///< element of position we want.
-	       );
-  /** \brief Converts a double precision physical position into an integer position. */
-  void get_ipos_vec(const double *, ///< physical position (input)
-		    int *           ///< integer position (output)
-		    );
+  void copy_cell(
+    const cell *, ///< input : copy from this cell.
+    cell *        ///< output: copy to this cell.
+    );
+
   ///
-  /// Converts a double precision physical position into its
-  /// equivalent value in internal (integer) units.
+  /// Print most of the information held by a cell.
   ///
-  void get_ipos_as_double(const double *, ///< physical position (input)
-			  double *        ///< floating pt. position in integer position units (output)
-			  );
-  /** \brief Converts from an integer position to a double precision position. */
-  void get_dpos_vec(const int *, ///< integer position  (input)
-		    double *     ///< physical position (output)
-		    );
-  void copy_cell(const cell *, ///< input : copy from this cell.
-		 cell *        ///< output: copy to this cell.
-		 );
-  void print_cell(const cell * ///< cell whose info we want to display.
-		 );
-  /** \brief returns the size of a cell in the internal integer units. */
+  void print_cell(
+    const cell * ///< cell whose info we want to display.
+    );
+
+  ///
+  /// Returns the size of a cell in the internal integer units (2).
+  ///
   inline int get_integer_cell_size() {return cell_size_int_units;}
+
   ///
   /// Return physical size of one internal unit
   ///
   inline double phys_per_int() {return dxo2;}
+  ///
+  /// Set cell position by passing in a double precision vector.
+  ///
+  void set_pos(
+    cell *,        ///< pointer to cell
+    const double * ///< double array of size ndim, cell position.
+    );
 
   ///
+  /// Set cell position using an integer vector, which is offset from
+  /// SimPM.Xmin[] and with a cell width equal to 2 units.
+  ///
+  void set_pos(
+    cell *,     ///< pointer to cell
+    const int * ///< int array of size ndim, cell integer position.
+    );
+
+  ///
+  /// Returns double precision position of cell centre (code units).
+  ///
+  void get_dpos(
+    const cell *, ///< pointer to cell
+    double *      ///< array to write position into.
+    );
+
+  ///
+  /// Returns double precision position of cell centre in a specified
+  /// coordinate direction (code units).
+  ///
+  double get_dpos(
+    const cell *, ///< pointer to cell
+    const int     ///< element of position we want.
+    );
+
+  ///
+  /// Converts a double precision physical position into an integer
+  /// position.
+  ///
+  void get_ipos_vec(
+    const double *, ///< physical position (input)
+    int *           ///< integer position (output)
+    );
+
+
+  ///
+  /// Converts from an integer position to a double precision pos.
+  ///
+  void get_dpos_vec(
+    const int *, ///< integer position  (input)
+    double *     ///< physical position (output)
+    );
+
+
+  ///
+  /// Returns integer position of cell centre.
+  ///
+  void get_ipos(
+    const cell *, ///< pointer to cell
+    int * ///< array to write integer position into.
+    );
+
+  ///
+  /// Returns integer position of cell centre along a specified
+  /// coordinate direction.
+  ///
+  int get_ipos(
+    const cell *, ///< pointer to cell
+    const int ///< element of position we want.
+    );
+
+  ///
+  /// Converts a double precision physical position into its
+  /// equivalent value in internal (integer) units.
+  ///
+  void get_ipos_as_double(
+    const double *, ///< physical position (input)
+    double *        ///< floating pt. position in integer position units (output)
+    );
+
+
+
+  // --------- EXTRA DATA FOR RAYTRACING AND H-CORRECTION -----------
+  ///
   /// Set variables for extra_data based on what we need per cell.
-  /// The H-correction needs Ndim doubles, and radiation sources need either 1, 3,
-  /// or 5 doubles each.
+  /// The H-correction needs Ndim doubles, and radiation sources need
+  /// either 1, 3, or 5 doubles each.
   /// THIS DOES NOT ALLOW THE NUMBER OF SOURCES TO CHANGE OVER TIME.
   /// THIS *MUST* BE SET BEFORE CREATING ANY CELLS ON THE GRID.
   ///
-  void setup_extra_data(const struct rad_sources &,  ///< Pointer to (SimPM.RS) ray-tracing struct.
-			const int,  ///< Flag for H-correction requirements
-			const int   ///< Flag for Div(V) variable required.
-			);
+  void setup_extra_data(
+    const struct rad_sources &, ///< Pointer to (SimPM.RS)
+                                ///< ray-tracing struct.
+    const int,  ///< Flag for H-correction requirements
+    const int   ///< Flag for Div(V) variable required.
+    );
 
-  //
-  // Return the optical depth along a ray between the source and the
-  // cell centre, from the source to the point where the ray exits the
-  // cell.  The indexing can be whatever the calling class wants it to
-  // be, running from zero to Ntau-1.
-  //
-  inline double get_col(const cell *c,  ///< current cell.
-                        const int v     ///< index of source.
-                        )
+  ///
+  /// Return the optical depth along a ray between the source and the
+  /// cell centre, from the source to the point where the ray exits the
+  /// cell.  The indexing can be whatever the calling class wants it to
+  /// be, running from zero to Ntau-1.
+  ///
+  inline double get_col(
+    const cell *c,  ///< current cell.
+    const int v     ///< index of source.
+    )
   {return c->extra_data[iTau0[v]];}
 
   ///
   /// Set the optical depth along the ray (see get_col for details)
   ///
-  inline void   set_col(cell *c,
-                        const int v,  ///< index of source.
-                        const double tau
-                        )
+  inline void   set_col(
+    cell *c,
+    const int v,     ///< index of source.
+    const double tau ///< value to set
+    )
   {c->extra_data[iTau0[v]] = tau; return;}
-
 
   ///
   /// Get cell optical depth
   ///
-  double get_cell_col(const cell *c,  ///< current cell.
-                      const int v     ///< index of source.
-                      );
+  double get_cell_col(
+    const cell *c,  ///< current cell.
+    const int v     ///< index of source.
+    );
 
   ///
   /// Set cell optical depth
   ///
-  void   set_cell_col(cell *c,
-                      const int v,  ///< index of source.
-                      const double tau
-                      );
+  void   set_cell_col(
+    cell *c,
+    const int v,  ///< index of source.
+    const double  ///< value to set
+    );
  
   ///
   /// Set cell Vshell value (for raytracing).
   ///
-  void set_cell_Vshell(cell *,
-                       const int ,  ///< index of source.
-                       const double
-                       );
+  void set_cell_Vshell(
+    cell *,
+    const int ,  ///< index of source.
+    const double ///< value to set.
+    );
   
   ///
   /// Get cell Vshell value (for raytracing).
   ///
-  double get_cell_Vshell(const cell *,  ///< current cell.
-                         const int      ///< index of source.
-                         );
+  double get_cell_Vshell(
+    const cell *,  ///< current cell.
+    const int      ///< index of source.
+    );
+
   ///
   /// Set raytracing path length through cell for source i.
   ///
-  void set_cell_deltaS(cell *,
-                       const int,   ///< index of source.
-                       const double ///< path length dS
-                       );
+  void set_cell_deltaS(
+    cell *,
+    const int,   ///< index of source.
+    const double ///< path length dS
+    );
   
   ///
   /// Get raytracing path length through cell for source i.
   ///
-  double get_cell_deltaS(const cell *,  ///< current cell.
-                         const int      ///< index of source.
-                         );
-
-
-
+  double get_cell_deltaS(
+    const cell *,  ///< current cell.
+    const int      ///< index of source.
+    );
   
-  //
-  // Get the H-correction coefficient eta for the requested cell in
-  // the requested direction (at the positive direction cell
-  // interface).
-  //
-  inline double get_Hcorr(const cell *c, const axes a)
+  ///
+  /// Get the H-correction coefficient eta for the requested cell in
+  /// the requested direction (at the positive direction cell
+  /// interface).
+  ///
+  inline double get_Hcorr(
+    const cell *c,
+    const axes a
+    )
   {return c->extra_data[iHcorr[a]];}
 
-  //
-  // Set the H-correction coefficient eta for cell in direction a
-  //
-  inline void   set_Hcorr(cell *c, const axes a, double eta)
+  ///
+  /// Set the H-correction coefficient eta for cell in direction a
+  ///
+  inline void   set_Hcorr(
+    cell *c,
+    const axes a,
+    double eta
+    )
   {c->extra_data[iHcorr[a]] = eta; return;}
 
-  //
-  // Get div(v) for a cell.
-  //
-  inline double get_DivV(const cell *c)
+  ///
+  /// Get div(v) for a cell.
+  ///
+  inline double get_DivV(
+    const cell *c
+    )
   {return c->extra_data[iDivV];}
 
-  //
-  // Set div(v) for a cell.
-  //
-  inline void   set_DivV(cell *c, double divv)
+  ///
+  /// Set div(v) for a cell.
+  ///
+  inline void   set_DivV(
+    cell *c,
+    double divv
+    )
   {c->extra_data[iDivV] = divv; return;}
+  // --------- EXTRA DATA FOR RAYTRACING AND H-CORRECTION -----------
 
  private:
   bool minimal_cell; ///< default is false, set to true if analysing sims.
