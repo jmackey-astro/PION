@@ -35,7 +35,7 @@
 // These flags disable JM's microphysics modules and (in the last case)
 // Harpreet's microphysics module.
 //
-#define EXCLUDE_MPV1       // both microphysics_v1 and H-only MP.
+//#define EXCLUDE_MPV1       // both microphysics_v1 and H-only MP.
 #define EXCLUDE_MPV2       // mp_v2_aifa
 //#define EXCLUDE_MPV3     // mp_explicit_H 
 #define EXCLUDE_MPV4     // mp_implicit_H

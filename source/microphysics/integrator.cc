@@ -15,7 +15,9 @@
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
 ///
 /// - 2011.01.14 JM: moved to microphysics/ sub-dir.
-
+/// - 2013.01.11 JM: changed stepper tolerance in adaptive substepper
+///    from 20 to 50 iterations.
+///
 #include "integrator.h"
 #include <iostream>
 using namespace std;
@@ -422,10 +424,10 @@ int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P a
       return -2;
     }
     ct++;
-  } while (maxerr>1.0 && ct<20);
+  } while (maxerr>1.0 && ct<50);
 
   if (maxerr>1.0) {
-    cout <<"stepper_RKCK() has large error estimate: ct="<<ct<<" out of max. 20 iterations. rel.err.="<<maxerr*errtol<<"\n";
+    cout <<"stepper_RKCK() has large error estimate: ct="<<ct<<" out of max. 50 iterations. rel.err.="<<maxerr*errtol<<"\n";
     rval += ct+static_cast<int>(fabs(maxerr));
   }
   

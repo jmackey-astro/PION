@@ -487,13 +487,15 @@ int MicroPhysics::convert_prim2local(const double *p_in,
       if (xi>= nvl) rep.error("more ions than variables",xi-nvl);
       p_local[xi] = p_in[ii[i]->pv_index];
       
-      if (p_local[xi]>1.0000000000001) {
+      if (p_local[xi]>1.01) {
 	rep.printVec("P",p_local,nvl);
 	cerr<<"ion fraction >1! for ion "<<ii[i]->ion<<" at value "<<p_local[xi]-1.<<"\n";
 	cout <<"neutral fraction: "<<neutral_fraction(p_local,ii[i])<<"\n";;
 	//	return 1;
-	p_local[xi] = 1.0;
+	//p_local[xi] = 1.0;
       }
+      p_local[xi] = std::max(p_local[xi],0.0);
+      p_local[xi] = std::min(p_local[xi],1.0);
     }
   }
   else if (nions==0) {

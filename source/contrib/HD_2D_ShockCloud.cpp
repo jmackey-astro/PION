@@ -7,8 +7,8 @@
 /// - 2012.02.07 JM: Started on file.
 /// 
 
-#include "icgen.h"
-#include "../coord_sys/VectorOps.h"
+#include "ics/icgen.h"
+#include "coord_sys/VectorOps.h"
 #include <sstream>
 using namespace std;
 #ifndef EXCLUDE_HD_MODULE

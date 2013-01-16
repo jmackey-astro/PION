@@ -71,7 +71,10 @@
 /// - 2011.11.22 JM: Added t_scalefactor parameter for stellar winds.
 /// - 2012.01.20 JM: Check that we have a stellar-wind source before trying to
 ///    set up the wind boundary!  (avoids seg.faults).
+/// - 2013.01.11 JM: Fiddled with radiative shock boundary to try to
+///    make it better.
 /// - 2013.01.14 JM: Added GRIDV2 ifdef to eventually retire this...
+
 
 #include "global.h"
 #include "uniform_grid.h"
@@ -1098,6 +1101,7 @@ int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
   cell *c=FirstPt();
   for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
   b->refval[RO] = c->P[RO]*10.0; // This boundary requires density to be <10x initial density.
+  b->refval[VX] = c->P[VX]*0.1; // mass flux out of domain is same as into domain.
   
   int ct=0;
   if (G_ndim==1) {

@@ -5,6 +5,7 @@
  * 2010-04-09 JM: added support for upstream and downstream tracer
  * variables in the RadiativeShockOutflow case.
  */
+/// 2013.01.11 JM: Added tracer variables for RSH test.
 
 #include "icgen.h"
 #include <sstream>
@@ -108,9 +109,26 @@ int IC_radiative_shock::setup_RadiativeShock()
 
   cout <<"\t\tSetting up radiative shock problem with v="<<vsh;
   cout <<", rho="<<rho0<<", T="<<T0<<" ...\n";
-  double mu = 1.0; //1.2; // mean mass per particle -- rough guess, good for neutral H, He.
-  double x=0.99; // initial ionisation fraction...
+  double mu = 1.27; //1.2; // mean mass per particle -- rough guess, good for neutral H, He.
+  double x=0.101; // initial ionisation fraction...
   double pg = rho0 *(1. + x)*GS.kB() *T0 /mu /GS.m_p();
+
+  //
+  // Tracer values: upstream and downstream (only upstream used for Radiative Shock)
+  //
+  int ntr = SimPM.ntracer;
+  double trup[ntr];
+  string seek, str;
+  for (int t=0; t<ntr; t++) {
+    ostringstream temp;
+    temp.str("");
+    temp << "RADSH_upTR" << t;
+    seek = temp.str();
+    str = rp->find_parameter(seek);
+    if (str!="") trup[t] = atof(str.c_str());
+    else         trup[t] = 0.5;
+  }
+
   class cell *c = gg->FirstPt();
   do {
      c->P[RO] = rho0;
@@ -122,7 +140,7 @@ int IC_radiative_shock::setup_RadiativeShock()
        c->P[BY] = B0; c->P[BX] = c->P[BZ] = 0.0;
      }
      // tracers (fractional abundances!)
-     for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = 0.5; // set later in MP.
+     for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = trup[i]; // set later in MP.
      // done.
   } while ((c=gg->NextPt(c))!=0);
   return 0;
@@ -134,7 +152,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   cout <<", rho="<<rho0<<", T="<<T0<<" ...\n";
 
   double mu = 1.22; // mean mass per particle -- rough guess, good for neutral H, He.
-  mu /=2; // for ionised gas.
+  //mu /=2.0; // for ionised gas.
   double pg = rho0 *GS.kB() *T0 /mu /GS.m_p();
   double xboundary = (SimPM.Xmax[XX]-SimPM.Xmin[XX])/5.;
   if (vsh<=1.01e7) xboundary*=2.5; //stable shock should be near centre of grid.
