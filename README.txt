@@ -43,10 +43,11 @@ fits (references to ff**** functions) or cvode/nvector then the
 libraries must have failed to compile.
 
 If all went well, there should be no error messages and there should
-be two executable files in ../bin/: "icgen_serial" for generating
-initial conditions, and "pion_serial" for running the code.  Most code
-options are decided at run-time not compile-time, so you shouldn't
-have to change any #define statements in the code.
+be two executable files in ../ (i.e. the pion root directory):
+ - "icgen_serial" for generating initial conditions, and
+ - "pion_serial" for running the code.
+Most code options are decided at run-time not compile-time, so you
+shouldn't have to change any #define statements in the code.
 
 If there are errors before linking, then there must be a problem with
 the source code, maybe due to some c++ header files not being
@@ -65,7 +66,7 @@ cd to ../bin_parallel/ and run "bash compile_code.sh".
 Again, if you are lucky it will just compile.  There will probably
 be warning messages about pmpio.h from functions that are defined but
 never used; this is not a problem.  If compilation is successful
-then the files ../bin/pion_parallel and ../bin/icgen_parallel will
+then the files ../pion_parallel and ../icgen_parallel will
 exist.
 
 In the event that it doesn't compile follow the same procedure as for

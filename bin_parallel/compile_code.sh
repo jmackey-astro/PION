@@ -12,6 +12,8 @@
 # - 2012.02.22 JM/HD: Added options for Dougal at UCL
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
+# - 2013.01.17 JM: Got rid of readline/ncurses from link line in
+#    production version of pion.
 #
 
 #
@@ -137,14 +139,37 @@ case $HOSTNAME in
     MAKE_UNAME=DIRAC
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.
+    #export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL -DTESTING"
+    #export PION_OPTIMISE=LOW
     export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export PION_OPTIMISE=LOW
+    export PION_OPTIMISE=HIGH
     export CXX=mpiicpc
   ;;
 esac
 #######################
 
+#####################################################################
+# For testing/debugging, we need to add -DTESTING to the compile   ##
+# flags, and also to add readline and maybe ncurses to the linker. ##
+#####################################################################
+if [ $PION_OPTIMISE == LOW ]
+  then
+  echo "LDFLAGS= $DLFLAGS"
+  export LDFLAGS=" -lreadline -lncurses "
+  echo "LDFLAGS= $LDFLAGS"
+  export JMCODE_OPTIONS="$JMCODE_OPTIONS -DTESTING"
+else
+  export LDFLAGS=""
+fi
+#####################################################################
+
+#####################################################################
+#### now compile the code:
+#####################################################################
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES} -f Makefile
+#####################################################################
+
+exit
 

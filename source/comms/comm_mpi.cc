@@ -1,28 +1,32 @@
-/** \file comm_mpi.cc
- *
- * \brief Contains comms class for multi-process communication using 
- * the Message Passing Interface (MPI).
- *
- * \author Jonathan Mackey
- * \date 2009-01-23.
- *
- *  - 2010-02-02 JM: comments.
- *
- *  - 2010-02-03 JM: changed variable name (used 'i' twice in
- *  function). comm_mpi::receive_double_data() wasn't checking that I
- *  got the number of elements expected either, so I fixed that.
- */ 
+/// \file comm_mpi.cc
+///
+/// \brief Contains comms class for multi-process communication using 
+/// the Message Passing Interface (MPI).
+///
+/// \author Jonathan Mackey
+/// \date 2009-01-23.
+//
+///  - 2010-02-02 JM: comments.
 ///
 /// Modifications:\n
+/// - 2010-02-03 JM: changed variable name (used 'i' twice in
+///    function). comm_mpi::receive_double_data() wasn't checking
+///    that I got the number of elements expected either, so I fixed
+///    that. 
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
-/// - 2011.03.22 JM: removed old myalloc/myfree functions with string args.
-/// - 2011.06.02 JM: initialised two vars to values to get rid of compiler warnings.
-/// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
-
+/// - 2011.03.22 JM: removed old myalloc/myfree functions with string
+///    args.
+/// - 2011.06.02 JM: initialised two vars to values to get rid of
+///    compiler warnings.
+/// - 2012.05.15 JM: Added function for global-reduce (max/min/sum)
+///    of arrays.
+/// - 2013.01.17 JM: Made class less verbose; wrapped cout in TESTING
+///    flags.
+///
 #ifdef PARALLEL
 #ifdef USE_MPI
 
-#include "../global.h"
+#include "global.h"
 #include <sstream>
 using namespace std;
 
@@ -34,7 +38,9 @@ using namespace std;
 
 comm_mpi::comm_mpi()
 {
+#ifdef TESTING
   cout <<"*** comm_mpi constructor. ***\n";
+#endif
 }
 
 
@@ -44,7 +50,9 @@ comm_mpi::comm_mpi()
 
 comm_mpi::~comm_mpi()
 {
+#ifdef TESTING
   cout <<"*** comm_mpi  destructor. ***\n";
+#endif
 }
 
 
@@ -66,7 +74,9 @@ int comm_mpi::init(int *argc,   ///< number of program arguments.
   
   err += MPI_Comm_rank(MPI_COMM_WORLD, &(mpiPM.myrank));
   err += MPI_Comm_size(MPI_COMM_WORLD, &(mpiPM.nproc));
+#ifdef TESTING
   cout << "comm_mpi::init():  rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+#endif
   return err;
 }
 
@@ -80,7 +90,9 @@ int comm_mpi::init(int *argc,   ///< number of program arguments.
 int comm_mpi::finalise()
 {
   MPI_Barrier(MPI_COMM_WORLD);
+#ifdef TESTING
   cout << "comm_mpi::finalise():  rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+#endif
   MPI_Finalize();
   return 0;
 }
@@ -233,7 +245,7 @@ int comm_mpi::send_cell_data(const int to_rank,    ///< rank to send to.
   //
   if(!id.empty()) id.erase();
   if (nc==0 || (l->empty()) ) {
-    cout <<mpiPM.myrank<<"\t Nothing to send to rank: "<<to_rank<<" !!!\n";
+    cerr <<mpiPM.myrank<<"\t Nothing to send to rank: "<<to_rank<<" !!!\n";
     return 1;
   }
   if (to_rank<0 || to_rank>mpiPM.nproc)
@@ -549,9 +561,9 @@ int comm_mpi::receive_cell_data(const int from_rank,  ///< rank of process we ar
   err = MPI_Unpack(buf, ct, &position, &ncell, 1, MPI_LONG, MPI_COMM_WORLD);
   if (err) rep.error("Unpack",err);
   if (ncell != static_cast<int>(l->size()) || (ncell !=nc)) {
-    cout <<mpiPM.myrank<<"\tcomm_mpi:recv: length of data = "<<l->size()<<" or we're told it's "<<nc<<"\n";
-    cout <<mpiPM.myrank<<"\tcomm_mpi:recv: cells received = "<<ncell<<"\n";
-    cout <<mpiPM.myrank<<"\tcomm_mpi:recv: Bugging out!\n"; return(-99);
+    cerr <<mpiPM.myrank<<"\tcomm_mpi:recv: length of data = "<<l->size()<<" or we're told it's "<<nc<<"\n";
+    cerr <<mpiPM.myrank<<"\tcomm_mpi:recv: cells received = "<<ncell<<"\n";
+    cerr <<mpiPM.myrank<<"\tcomm_mpi:recv: Bugging out!\n"; return(-99);
   }
 #ifdef TESTING
     cout <<mpiPM.myrank<<"\tcomm_mpi:recv: got "<<ncell<<" cells, as expected.\n";

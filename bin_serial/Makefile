@@ -37,7 +37,9 @@
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.01.10 JM: Changed name of exe to pion_serial.
 #                  Added StarBench test problems class to icgen.
-
+# - 2013.01.17 JM: Got rid of readline/ncurses from link line in
+#    production version of pion.
+#
 ############################
 ### BASIC INFO AND PATHS ###
 ############################
@@ -46,8 +48,7 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cc .o
 .SUFFIXES: .cpp .o
-srcdir = .
-bindir = ../bin
+bindir = ..
 SRCDIR=${CURDIR}/../source
 VPATH = \
 ../source:\
@@ -94,7 +95,7 @@ ifeq ($(MAKE_UNAME), standard)
   MYLIB = $(CURDIR)/../extra_libraries
   INC = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  LDFLAGS =  -lm  -lreadline -lncurses
+  LDFLAGS +=  -lm
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
   # Libraries for fits, silo
@@ -128,11 +129,10 @@ ifeq ($(MAKE_UNAME), JUROPA)
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
-  LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lmkl_sequential -lmkl_core
-  LDFLAGS += -lreadline
 
 endif
 ##################### -- JUROPA -- ###################################
@@ -159,11 +159,10 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC}
-  LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += ${MKL_LIB}
-  LDFLAGS += -lreadline
 
 endif
 ##################### -- SuperMUC -- ###################################
@@ -215,25 +214,24 @@ endif
 ####  -- may need hard-coded path to work
 ######################################################################
 ifeq ($(MAKE_UNAME), imac)
-CXXFLAGS = -O3
+  CXXFLAGS = -O3
 #CXXFLAGS = -O0
-CXXFLAGS += -Wall
-CXXFLAGS += -g    # enable debugging with gdb
+  CXXFLAGS += -Wall
+  CXXFLAGS += -g    # enable debugging with gdb
 #CXXFLAGS += -arch x86_64
 
 # CURDIR may only work with GNU Make!  It gives absolute paths, so that
 # the executable can always link to shared libs.
 #MYLIB = /Users/jmackey/Library/JMs_stuff
-MYLIB = $(CURDIR)/../extra_libraries
+  MYLIB = $(CURDIR)/../extra_libraries
 
-INC = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-LDFLAGS  =  -lm  
-LDFLAGS +=-lreadline
-LDFLAGS += -L${MYLIB}/lib
-LDFLAGS += -lcfitsio
-LDFLAGS += -lsilo 
-LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  INC = -I${MYLIB}/include
+    INC += -I${SRCDIR}
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
 endif
 ######################################################################

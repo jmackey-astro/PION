@@ -73,7 +73,9 @@
 /// - 2012.04.23 JM: Added option changing TauMin[] for primordial gas tests.
 /// - 2012.05.16 JM: Added OPACITY_HALPHA to calculate H-alpha emission along a
 ///    ray, including absorption by dust (which is assumed to be everywhere).
-
+/// - 2013.01.17 JM: Put some error checking in cell_cols_3D() inside
+///    an RT_TESTING flag.  Enforced column density >= 0 with max().
+///
 #include "raytracer_SC.h"
 #include "../grid/uniform_grid.h"
 #include <iostream>
@@ -2124,6 +2126,8 @@ int raytracer_USC::cell_cols_2d(const rad_source *s,
 	rep.error("Got negative column from a cell when we shouldn't have!",*Nc);
       }
 #endif // RT_TESTING
+      *Nc = std::max(*Nc, 0.0);
+
       //
       // Now we have the column, need to scale it by the changed
       // distance due to the different angle from source to cell
@@ -2243,15 +2247,31 @@ int raytracer_USC::cell_cols_3d(const rad_source *s,
       else {
         *Nc = 0.0;
       }
+
+#ifdef RT_TESTING
       if (*Nc < 0.0) {
-	cout <<"column is negative:"<<*Nc<<" coming from off grid???\n";
-	gridptr->PrintCell(c);
-	gridptr->PrintCell(ngb);
-	if (gridptr->NextPt(c,XP))
-	  gridptr->PrintCell(gridptr->NextPt(c,XP));
-	*Nc=0.0;
-	rep.error("Got negative column from a cell when we shouldn't have!",*Nc);
+        if (ngb == s->sc) {
+          cout <<"source cell has negative column density, resetting.\n";
+          *Nc=0.0;
+        }
+        else if (GS.equalD(*Nc,0.0)) {
+          cout <<"column is negative:"<<*Nc<<" but close to zero.";
+          cout <<" ... resetting to zero.\n";
+          *Nc=0;
+        }
+        else {
+          cout <<"column is negative:"<<*Nc<<" coming from off grid???\n";
+          gridptr->PrintCell(c);
+          gridptr->PrintCell(ngb);
+          if (gridptr->NextPt(c,XP))
+            gridptr->PrintCell(gridptr->NextPt(c,XP));
+          *Nc=0.0;
+          rep.error("Got negative column from a cell when we shouldn't have!",*Nc);
+        }
       }
+#endif // RT_TESTING
+      *Nc = std::max(*Nc, 0.0);
+
       //
       // Now we have the column, need to scale it by the changed
       // distance due to the different angle from source to cell

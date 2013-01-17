@@ -65,6 +65,9 @@
 ///    are multiple sources at infinity in different directions, in which case
 ///    we can't make all of them fully parallel, so at_infinity --> false.
 /// - 2012.05.15 JM: fixed the logic of decomposedomain()
+/// - 2013.01.17 JM: Changed redirect so that there are many files
+///    only when TESTING is defined; otherwise just rank 0 writes to
+///    file, and all others have stdout supressed.
 
 #include "global.h"
 #include <iostream>
@@ -1068,6 +1071,7 @@ int reporting::redirect(const string &path)
   cout.setf(ios_base::scientific); cout.precision(7);
 
 #elif defined (PARALLEL)
+#ifndef TESTING
   //
   // For parallel execution (production runs) we only want a single
   // log file, and errors should be printed to stderr.
@@ -1094,6 +1098,31 @@ int reporting::redirect(const string &path)
     //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
     std::cout.setstate(std::ios::failbit) ;
   }
+#else
+  //
+  // for testing we want all processors to have their own log file.
+  //
+  temp = path+"info.txt";
+  infomsg.open(temp.c_str(), ios::trunc);
+  if(!infomsg.is_open()) {
+    cerr<<"Reporting: can't open info.txt for writing.\n";
+    exit(1);
+  }
+  infomsg.copyfmt( cout );
+  saved_buffer_cout = cout.rdbuf();
+  cout.rdbuf( infomsg.rdbuf() );
+  cout.setf(ios_base::scientific); cout.precision(7);
+
+  temp = path+"errors.txt";
+  errmsg.open(temp.c_str(), ios::trunc);
+  if(!errmsg.is_open()) {
+    cerr<<"Reporting: can't open errors.txt for writing.\n";
+    exit(1);
+  }
+  errmsg.copyfmt( cerr );
+  saved_buffer_cerr = cerr.rdbuf();
+  cerr.rdbuf( errmsg.rdbuf() );
+#endif // TESTING
 #else
 #error "Must define either SERIAL or PARALLEL (reporting::redirect)"
 #endif

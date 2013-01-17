@@ -37,6 +37,9 @@
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.01.10 JM: Changed name of exe to pion_parallel
 # - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
+# - 2013.01.17 JM: Got rid of readline/ncurses from link line in
+#    production version of pion.
+#
 ###
 
 ############################
@@ -47,8 +50,7 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cc .o
 .SUFFIXES: .cpp .o
-srcdir = .
-bindir = ../bin
+bindir = ..
 SRCDIR=${CURDIR}/../source
 VPATH = \
 ../source:\
@@ -57,7 +59,6 @@ VPATH = \
 ../source/defines:\
 ../source/microphysics:\
 ../source/raytracing:\
-../source/microphysics/Harpreets_code:\
 ../source/grid:\
 ../source/dataIO:\
 ../source/comms:\
@@ -93,7 +94,7 @@ ifeq ($(MAKE_UNAME), standard)
   MYLIB = $(CURDIR)/../extra_libraries
   INC = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  LDFLAGS =  -lm  -lreadline -lncurses
+  LDFLAGS += -lm
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
   # Libraries for fits, silo
@@ -130,7 +131,6 @@ ifeq ($(MAKE_UNAME), JUROPA)
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lmkl_sequential -lmkl_core
-  LDFLAGS += -lreadline
 
 endif
 ##################### -- JUROPA -- ###################################
@@ -156,11 +156,10 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   INC += -I${SRCDIR}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC} ${MPI_INC}
-  LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
-  LDFLAGS += -lreadline
 
 endif
 ##################### -- SuperMUC -- #################################
@@ -174,7 +173,7 @@ endif
 ifeq ($(MAKE_UNAME), phalanx)
   # Special include for phalanx mpi libs:
   INC = -I/opt/sgi/mpt/mpt-1.26/include
-  LDFLAGS = -lmpi
+  LDFLAGS += -lmpi
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
@@ -195,7 +194,7 @@ endif
 ifeq ($(MAKE_UNAME), dougal)
   # Special include for dougal mpi libs:
   INC = -I/usr/include/mpich2-x86_64
-  LDFLAGS = -L/usr/lib64/mpich2/lib -lmpich -lmpichcxx -lopa  -lpthread   -lrt 
+  LDFLAGS += -L/usr/lib64/mpich2/lib -lmpich -lmpichcxx -lopa  -lpthread   -lrt 
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
@@ -231,8 +230,7 @@ ifeq ($(MAKE_UNAME), imac)
   MYLIB = $(CURDIR)/../extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  LDFLAGS  = -lm  
-  LDFLAGS += -lreadline
+  LDFLAGS += -lm  
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsilo 
@@ -265,10 +263,9 @@ ifeq ($(MAKE_UNAME), DIRAC)
   MYLIB = ../extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lm
-  LDFLAGS += -lreadline
 
 endif
 ################## -- DIRAC-COMPLEXITY -- ############################

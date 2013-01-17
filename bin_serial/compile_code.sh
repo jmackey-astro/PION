@@ -12,6 +12,9 @@
 # - 2012.02.22 JM/HD: Added options for Dougal at UCL
 # - 2012.03.29 JM: Added options for OS-X.
 # - 2012.09.11 JM: Added options for SuperMUC
+# - 2013.01.17 JM: Got rid of readline/ncurses from link line in
+#    production version of pion.
+#
 
 
 #
@@ -111,8 +114,31 @@ case $HOST in
 esac
 #######################
 
+#####################################################################
+# For testing/debugging, we need to add -DTESTING to the compile   ##
+# flags, and also to add readline and maybe ncurses to the linker. ##
+#####################################################################
+if [ $PION_OPTIMISE == LOW ]
+  then
+  echo "LDFLAGS= $DLFLAGS"
+  export LDFLAGS=" -lreadline -lncurses "
+  echo "LDFLAGS= $LDFLAGS"
+  export JMCODE_OPTIONS="$JMCODE_OPTIONS -DTESTING"
+else
+  export LDFLAGS=""
+fi
+#####################################################################
 
+#####################################################################
+#### now compile the code:
+#####################################################################
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES}
+#####################################################################
+
+
+exit
+
+
 
