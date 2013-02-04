@@ -72,7 +72,7 @@
 /// - 2012.01.20 JM: Check that we have a stellar-wind source before trying to
 ///    set up the wind boundary!  (avoids seg.faults).
 /// - 2013.01.11 JM: Fiddled with radiative shock boundary to try to
-///    make it better.
+///    make it better. (also 2013.01.23, and 2013.01.20).
 /// - 2013.01.14 JM: Added GRIDV2 ifdef to eventually retire this...
 
 
@@ -1100,8 +1100,16 @@ int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
   if (!b->data.empty()) rep.error("BC_assign_RADSHOCK: Not empty boundary data",b->itype);
   cell *c=FirstPt();
   for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
-  b->refval[RO] = c->P[RO]*10.0; // This boundary requires density to be <10x initial density.
-  b->refval[VX] = c->P[VX]*0.1; // mass flux out of domain is same as into domain.
+  //
+  // Try assuming that outflow will be at approx 3000 K, and shock
+  // will have cooled (with a fudge factor for lower velocity).
+  // so rho_1 = (v/(5km/s))^2 rho_0, and
+  //    v_1   = v_0 /(v/(5km/s))^2
+  //
+  double ratio = c->P[VX]*c->P[VX]/25.0e10;
+  if (fabs(c->P[VX])<55.0e5) ratio *= 0.5*fabs(c->P[VX])/50.0e5;
+  b->refval[RO] = c->P[RO]*ratio; // This boundary requires density to be M^2 times initial density.
+  b->refval[VX] = c->P[VX]/ratio; // mass flux out of domain is same as into domain.
   
   int ct=0;
   if (G_ndim==1) {
@@ -1109,7 +1117,7 @@ int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
       c->P[RO] = c->Ph[RO] = min(c->P[RO], b->refval[RO]);
       b->data.push_back(c);
       ct++;
-    } while (CI.get_dpos((c=NextPt(c)),XX) <= G_xmax[XX]/128.0);
+    } while (CI.get_dpos((c=NextPt(c)),XX) <= (G_xmin[XX] + (G_range[XX]*0.02)));
   }
   else if (G_ndim==2) {
     do {
@@ -1719,12 +1727,13 @@ int UniformGrid::BC_update_RADSHOCK(   struct boundary_data *b,
                )
 {
   // We set the density adjacent to the wall to the minimum of 
-  // the current density and 10x the original density.
+  // the current density and some reference density.
   list<cell*>::iterator c=b->data.begin();
   //double temp=0.0;
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     //temp = (*c)->Ph[RO];
     (*c)->Ph[RO] = min((*c)->Ph[RO], b->refval[RO]);
+    (*c)->Ph[VX] = max((*c)->Ph[VX], b->refval[VX]);
     if (cstep==maxstep)
       for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
     

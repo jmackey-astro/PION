@@ -86,7 +86,7 @@ GLOBAL = global.h functionality_flags.h testing_flags.h
 # make sure cfitsio and silo are compiled in ../extra_libraries/
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -O0 -Wall -g
@@ -113,7 +113,7 @@ endif
 # Intel Compilers!
 ######################################################################
 ifeq ($(MAKE_UNAME), JUROPA)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -O0 -Wall -g -wd981 -wd383
@@ -142,7 +142,7 @@ endif
 # Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
 ######################################################################
 ifeq ($(MAKE_UNAME), SUPERMUC)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -O0 -Wall -g -wd981 -wd383
@@ -173,7 +173,7 @@ endif
 ########## OPTIONS FOR PHALANX ICC/ICPC ##############################
 ######################################################################
 ifeq ($(MAKE_UNAME), phalanx)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -Wall -g
@@ -192,7 +192,7 @@ endif
 ########### OPTIONS FOR DOUGAL ICC/ICPC ##############################
 ######################################################################
 ifeq ($(MAKE_UNAME), dougal)
-  ifeq ($(JMCODE_OPTIMISE), HIGH)
+  ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
     CXXFLAGS = -Wall -g
@@ -242,7 +242,7 @@ endif
 #####################################################
 ##### LIST OF OBJECT FILES, DIRECTIVES FOR MAKE #####
 #####################################################
-CXXFLAGS += $(OPT) $(JMCODE_OPTIONS)
+CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 
 OBJECTS = main.o \

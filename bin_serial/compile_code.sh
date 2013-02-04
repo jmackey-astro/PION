@@ -25,9 +25,9 @@
 #
 MAKE_UNAME=standard
 NCORES=4
-export JMCODE_OPTIONS="-DSERIAL -DSILO -DFITS"
-export JMCODE_OPTIMISE=HIGH
-#export JMCODE_OPTIMISE=LOW
+export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+export PION_OPTIMISE=HIGH
+#export PION_OPTIMISE=LOW
 export CXX=g++
 
 #################################
@@ -40,8 +40,8 @@ if [ "${HOST}" = 'phalanx.star.ucl.ac.uk' ]; then
   export PATH=$SGIMPT/bin:/opt/sgi/perfcatcher/bin:$PATH
   export LD_LIBRARY_PATH=$SGIMPT/lib:$LD_LIBRARY_PATH
   # -DINTEL means the code uses the intel math headers instead of gnu.
-  export JMCODE_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
-  export JMCODE_OPTIMISE=HIGH
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
+  export PION_OPTIMISE=HIGH
   export CXX=icpc
   echo "***** COMPILING WITH PHALANX: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=phalanx
@@ -56,8 +56,8 @@ if [ "${HOST}" = 'dougal.hpc.phys.ucl.ac.uk' ]; then
   source /opt/intel/Compiler/11.1/046/bin/ifortvars.sh intel64
   source /opt/intel/Compiler/11.1/046/bin/iccvars.sh intel64
   # -DINTEL means the code uses the intel math headers instead of gnu.
-  export JMCODE_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
-  export JMCODE_OPTIMISE=HIGH
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
+  export PION_OPTIMISE=HIGH
   export CXX=icpc
   echo "***** COMPILING ON ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=dougal
@@ -74,8 +74,8 @@ case $HOST in
     MAKE_UNAME=JUROPA
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.
-    export JMCODE_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
-    export JMCODE_OPTIMISE=HIGH
+    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
     export CXX=icpc
     ;;
 esac
@@ -86,8 +86,8 @@ esac
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export JMCODE_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export JMCODE_OPTIMISE=HIGH
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIMISE=HIGH
   export CXX=g++
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
@@ -108,8 +108,8 @@ case $HOST in
     export FC=if90
     MAKE_UNAME=SUPERMUC
     NCORES=8
-    export JMCODE_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
-    export JMCODE_OPTIMISE=HIGH
+    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
   ;;
 esac
 #######################
@@ -123,7 +123,7 @@ if [ $PION_OPTIMISE == LOW ]
   echo "LDFLAGS= $DLFLAGS"
   export LDFLAGS=" -lreadline -lncurses "
   echo "LDFLAGS= $LDFLAGS"
-  export JMCODE_OPTIONS="$JMCODE_OPTIONS -DTESTING"
+  export PION_OPTIONS="$JMCODE_OPTIONS -DTESTING"
 else
   export LDFLAGS=""
 fi
