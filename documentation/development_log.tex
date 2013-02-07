@@ -1,0 +1,51 @@
+\documentclass[a4paper,11pt]{article}
+%\documentclass[a4paper,11pt,draft]{article}
+
+
+
+\usepackage{graphicx}
+%\usepackage[numbers,comma]{natbib}
+\usepackage{natbib}
+%\bibpunct{(}{)}{;}{a}{,}{,}
+\bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\input{../../../documentation_misc/bibtex/defs}
+
+\usepackage[T1]{fontenc}
+\usepackage{times}
+%
+% BORDERS:
+% HORIZONTAL:	210mm - 50.8mm = 159.2mm ROUNDED TO 16cm
+% VERTICAL:	297mm - 50.8mm = 246.2mm ROUNDED TO 25cm
+%
+\setlength{\oddsidemargin}{0.0cm}
+\setlength{\textwidth}{16.0cm}
+\setlength{\topmargin}{-1.5cm}
+\setlength{\textheight}{25.0cm}
+\parindent = 0.0 truept
+\parskip = 6.0 truept
+
+
+\title{Development log for \pion{}}
+\author{Jonathan Mackey (AIfA)}
+
+\begin{document}
+\maketitle
+
+\section{Preparing for Release 0.1}
+\paragraph{2013.02.07 (4 hours)}
+I added some documentation to UsersGuide.tex.
+It needs a lot of work before it will actually be useful.
+But maybe I can add a paragraph about each test problem as I update it to work with pion.
+
+Updated the stdout output from pion so that it is neater (at least for serial code, hydro, no microphysics, no raytracing).  I may need to do more work later when I run some MHD tests with RT/MP.
+
+I updated the axisymmetric blast-wave test problem so that it runs on pion.
+I still need to modify the scripts so that it produces output that would be useful for a user (e.g.\ Dominique), because at the moment it is set up for making sure the code still works after I make a change.
+
+\bibliography{../../../../documentation_misc/bibtex/refs}
+\end{document}
+
+
