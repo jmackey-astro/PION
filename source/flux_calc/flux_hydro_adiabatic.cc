@@ -61,6 +61,7 @@
 /// - 2010.12.27 JM: Enclosed Lapidus AV in an ifdef.
 ///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid now.
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 #include "flux_hydro_adiabatic.h"
 //#include "../global.h"
@@ -86,9 +87,11 @@ flux_solver_hydro_adi::flux_solver_hydro_adi(const int nv,        ///< Number of
 #endif //FUNCTION_ID
 
   eq_gamma = g;
+#ifdef TESTING
   cout <<"flux_solver_hydro_adi::flux_solver_hydro_adi() constructor: gamma="<<eq_gamma<<"\n";
   cout <<"Default solver set to "<<SimPM.solverType<<" where ";
   cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSRoe,5=Roe-PV,6=FVS.\n";
+#endif
 
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::flux_solver_hydro_adi ...returning.\n";

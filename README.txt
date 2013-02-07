@@ -10,6 +10,8 @@ the terms of the licence for pion.  Sharing and/or publishing the
 source code can also only be done according to the licence
 conditions.
 
+For more detailed information about using the code, see the Users Guide in
+pion/docs/.
 
 -------------------------------
 ---- COMPILING CODE:       ----

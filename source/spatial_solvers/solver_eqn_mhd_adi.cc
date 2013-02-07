@@ -8,17 +8,14 @@
 /// of N passive tracers.
 ///
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 /// - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
 ///   Made InterCellFlux general for all classes (moved to FV_solver_base)
-///
 /// - 2010.12.27 JM: Removed riemann_base references.  Added
 ///   function_id identifiers.
-///
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
 /// - 2011.04.15 JM: Change in UtoP() for tracers (to try to correct for negative density!).
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 
 #include "solver_eqn_mhd_adi.h"
@@ -28,23 +25,20 @@ using namespace std;
 // ***** FV SOLVER MHD Ideal Adiabatic *****
 // *****************************************
 
-FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(const int nv,
-  ///< number of variables in state vector.
-						 const int nd,
-  ///< number of space dimensions in grid.
-						 const double cflno,
-  ///< CFL number
-						 const double cellsize,
-  ///< dx, cell size.
-						 const double gam,
-  ///< gas eos gamma.
-						 double *state,
-  ///< State vector of mean values for simulation.
-						 const double avcoeff,
-  ///< Artificial Viscosity Parameter etav.
-						 const int ntr
-  ///< Number of tracer variables.
-					     )
+
+// ##################################################################
+// ##################################################################
+
+FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
+      const int nv, ///< number of variables in state vector.
+      const int nd, ///< number of space dimensions in grid.
+      const double cflno, ///< CFL number
+      const double cellsize, ///< dx, cell size.
+      const double gam, ///< gas eos gamma.
+      double *state, ///< State vector of mean values for simulation.
+      const double avcoeff, ///< Artificial Viscosity Parameter etav.
+      const int ntr ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     //riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
@@ -59,8 +53,10 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(const int nv,
   cout <<"::FV_solver_mhd_ideal_adi ...starting.\n";
 #endif //FUNCTION_ID
 
-  cout <<"::FV_solver_mhd_ideal_adi() constructor which does nothing.\n";
+#ifdef TESTING
+  cout <<"::FV_solver_mhd_ideal_adi() constructor.\n";
   //cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
+#endif
 
 #ifdef FUNCTION_ID
   cout <<"::FV_solver_mhd_ideal_adi ...returning.\n";
@@ -68,19 +64,29 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(const int nv,
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 {
 #ifdef FUNCTION_ID
   cout <<"::~FV_solver_mhd_ideal_adi ...starting.\n";
 #endif //FUNCTION_ID
 
-  cout <<"FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi() destructor which does nothing.\n";
+#ifdef TESTING
+  cout <<"FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi() destructor.\n";
+#endif
 
 #ifdef FUNCTION_ID
   cout <<"::~FV_solver_mhd_ideal_adi ...returning.\n";
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 
 void FV_solver_mhd_ideal_adi::PtoU(const double* p, double* u, const double g)
@@ -97,6 +103,10 @@ void FV_solver_mhd_ideal_adi::PtoU(const double* p, double* u, const double g)
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int FV_solver_mhd_ideal_adi::UtoP(const double *u, double *p, const double g)
 {
@@ -117,6 +127,10 @@ int FV_solver_mhd_ideal_adi::UtoP(const double *u, double *p, const double g)
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void FV_solver_mhd_ideal_adi::PUtoFlux(const double *p, const double *u, double *f)
 {
 #ifdef FUNCTION_ID
@@ -132,6 +146,10 @@ void FV_solver_mhd_ideal_adi::PUtoFlux(const double *p, const double *u, double 
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void FV_solver_mhd_ideal_adi::UtoFlux(const double *u, double *f, const double g)
 {
 #ifdef FUNCTION_ID
@@ -146,6 +164,10 @@ void FV_solver_mhd_ideal_adi::UtoFlux(const double *u, double *f, const double g
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -179,6 +201,10 @@ int FV_solver_mhd_ideal_adi::dU_Cell(cell *c,          // Current cell.
 #endif //FUNCTION_ID
   return(err);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// General Finite volume scheme for updating a cell's
@@ -243,6 +269,10 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(class cell *c, // cell to update.
   return 0;
 }
 
+
+
+// ##################################################################
+// ##################################################################
 
 
 ///
@@ -325,10 +355,18 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(const cell *c, ///< pointer to cell
 
 
 
+// ##################################################################
+// ##################################################################
+
+
 
 // ********************************************************************************
 // FV_solver_mhd_mixedGLM_adi class, for the Dedner-GLM divergence cleaning method.
 // ********************************************************************************
+
+
+// ##################################################################
+// ##################################################################
 
 FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(const int nv, ///< number of variables in state vector.
 					     const int nd, ///< number of space dimensions in grid.
@@ -356,8 +394,10 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(const int nv, ///< number
   cout <<"::FV_solver_mhd_mixedGLM_adi ...starting.\n";
 #endif //FUNCTION_ID
 
-  cout <<"FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi() constructor which does nothing.\n";
+#ifdef TESTNG
+  cout <<"FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi() constructorg.\n";
   //cout <<"FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi() gamma = "<<eq_gamma<<"\n";
+#endif
 
 #ifdef FUNCTION_ID
   cout <<"::FV_solver_mhd_mixedGLM_adi ...returning.\n";
@@ -365,13 +405,19 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(const int nv, ///< number
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 {
 #ifdef FUNCTION_ID
   cout <<"::~FV_solver_mhd_mixedGLM_adi ...starting.\n";
 #endif //FUNCTION_ID
 
-  cout <<"FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi() destructor which does nothing.\n";
+#ifdef TESTNG
+  cout <<"FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi() destructor.\n";
+#endif
 
 #ifdef FUNCTION_ID
   cout <<"::~FV_solver_mhd_mixedGLM_adi ...returning.\n";
@@ -379,24 +425,23 @@ FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// General Finite volume scheme for updating a cell's
 /// primitive state vector, for homogeneous equations.
 ///
-int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(class cell *c,
-						const double *Pin,
- // Initial State Vector.
-						double *dU,
- // Update vector dU
-						double *Pf,
- // Final state vector (can be same as initial vec.).
-						double *dE,
- // Tracks change of energy if I have to correct for negative pressure
-						const double,
- // gas EOS gamma.
-						const double
-  // Cell timestep dt.
-						)
+int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
+      class cell *c,
+      const double *Pin, // Initial State Vector.
+      double *dU, // Update vector dU
+      double *Pf, // Final state vector (can be same as initial vec.).
+      double *dE, // Tracks change of energy if I have to correct for negative pressure
+      const double, // gas EOS gamma.
+      const double // Cell timestep dt.
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::CellAdvanceTime ...starting.\n";
@@ -410,6 +455,10 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(class cell *c,
 #endif //FUNCTION_ID
   return(err);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void FV_solver_mhd_mixedGLM_adi::PtoU(const double* p, double* u, const double g)
 {
@@ -426,6 +475,10 @@ void FV_solver_mhd_mixedGLM_adi::PtoU(const double* p, double* u, const double g
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int FV_solver_mhd_mixedGLM_adi::UtoP(const double *u, double *p, const double g)
 {
 #ifdef FUNCTION_ID
@@ -441,8 +494,13 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(const double *u, double *p, const double g)
   return err;
 }
 
-void FV_solver_mhd_mixedGLM_adi::GotTimestep(const double delt ///< timestep dt.
-					     )
+
+// ##################################################################
+// ##################################################################
+
+void FV_solver_mhd_mixedGLM_adi::GotTimestep(
+        const double delt ///< timestep dt.
+	)
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep ...starting.\n";
@@ -458,6 +516,10 @@ void FV_solver_mhd_mixedGLM_adi::GotTimestep(const double delt ///< timestep dt.
 
 
 
+// ##################################################################
+// ##################################################################
+
+
 
 
 /// ---------------------------------------------------------------------
@@ -466,15 +528,20 @@ void FV_solver_mhd_mixedGLM_adi::GotTimestep(const double delt ///< timestep dt.
 
 
 
-cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(const int nv, ///< number of variables in state vector.
-					     const int nd, ///< number of space dimensions in grid.
-					     const double cflno, ///< CFL number
-					     const double cellsize, ///< dx, cell size.
-					     const double gam, ///< gas eos gamma.
-					     double *state,   ///< State vector of mean values for simulation.
-					     const double avcoeff, ///< Artificial Viscosity Parameter etav.
-					     const int ntr    ///< Number of tracer variables.
-					     )
+
+// ##################################################################
+// ##################################################################
+
+cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
+      const int nv, ///< number of variables in state vector.
+      const int nd, ///< number of space dimensions in grid.
+      const double cflno, ///< CFL number
+      const double cellsize, ///< dx, cell size.
+      const double gam, ///< gas eos gamma.
+      double *state,   ///< State vector of mean values for simulation.
+      const double avcoeff, ///< Artificial Viscosity Parameter etav.
+      const int ntr    ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     // riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
@@ -503,6 +570,10 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(const int nv, ///< numb
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 {
 #ifdef FUNCTION_ID
@@ -513,6 +584,10 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
   cout <<"::~cyl_FV_solver_mhd_ideal_adi ...returning.\n";
 #endif //FUNCTION_ID
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int cyl_FV_solver_mhd_ideal_adi::dU_Cell(cell *c, ///< Current cell.
 			      const axes d, ///< Which axis we are looking along.
@@ -555,18 +630,22 @@ int cyl_FV_solver_mhd_ideal_adi::dU_Cell(cell *c, ///< Current cell.
   return(err);
 } 
 
+
+// ##################################################################
+// ##################################################################
+
 //------------------------------------------------------------------//
-cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(const int nv, ///< number of variables in state vector.
-					 const int nd, ///< number of space dimensions in grid.
-					 const double cflno, ///< CFL number
-					 const double cellsize, ///< dx, cell size.
-					 const double gam, ///< gas eos gamma.
-					 double *state,   ///< State vector of mean values for simulation.
-					 const double avcoeff, ///< Artificial Viscosity Parameter etav.
-					 const int ntr    ///< Number of tracer variables.
-					 )
+cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
+        const int nv, ///< number of variables in state vector.
+        const int nd, ///< number of space dimensions in grid.
+        const double cflno, ///< CFL number
+        const double cellsize, ///< dx, cell size.
+        const double gam, ///< gas eos gamma.
+        double *state,   ///< State vector of mean values for simulation.
+        const double avcoeff, ///< Artificial Viscosity Parameter etav.
+        const int ntr    ///< Number of tracer variables.
+        )
   : eqns_base(nv),
-    //    riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
     eqns_mhd_ideal(nv),
@@ -586,14 +665,18 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(const int nv, ///
 
 //  cout <<"cyl_FV_solver_mhd_mixedGLM_adi CONSTRUCTOR\n";
 //  cout <<"glmMHD Equations; Riemann Solver Method; Cylindrical Coordinates.\n";
-  if (nd!=2) rep.error("Cylindrical coordinates only implemented for 2d axial symmetry \
-			 so far.  Sort it out!",nd);
+  if (nd!=2) rep.error("Cylindrical coordinates only implemented for \
+                        2d axial symmetry so far.  Sort it out!",nd);
 #ifdef FUNCTION_ID
   cout <<"::cyl_FV_solver_mhd_mixedGLM_adi ...returning.\n";
 #endif //FUNCTION_ID
   return;
 }
 
+
+
+// ##################################################################
+// ##################################################################
 
 cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 {
@@ -605,6 +688,10 @@ cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
   cout <<"::~cyl_FV_solver_mhd_mixedGLM_adi ...returning.\n";
 #endif //FUNCTION_ID
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(cell *c, ///< Current cell.
 				 const axes d, ///< Which axis we are looking along.
@@ -647,4 +734,8 @@ int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(cell *c, ///< Current cell.
 #endif //FUNCTION_ID
   return(err);
 } 
+
+
+// ##################################################################
+// ##################################################################
 

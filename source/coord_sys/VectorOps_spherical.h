@@ -15,7 +15,7 @@
 ///
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
-///
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 #ifndef VECTOROPS_SPHERICAL_H
 #define VECTOROPS_SPHERICAL_H

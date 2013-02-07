@@ -1,22 +1,21 @@
-/** \file VectorOps.cc
- * 
- * \author Jonathan Mackey
- * 
- * Function definitions for class members of the various VectorOps classes.
- * These work for a grid in which the cells are all the same size, and either 
- * square or cubic for 2 and 3D respectively.
- * 
- * Modified:\n
- *  - 2007-08-01 File Created
- *  - 2007-08-07 Axi-symmetry working (at for Euler and MHD equations).
- *  - 2007-11-30 Curl function working in cartesian coords.
- *  - 2009-09    Added MinMod slope limiter option as an ifdef (TEMPORARY)
- * */
 ///
+/// \file VectorOps.cc
+/// 
+/// \author Jonathan Mackey
+/// 
+/// Function definitions for class members of the various VectorOps classes.
+/// These work for a grid in which the cells are all the same size, and either 
+/// square or cubic for 2 and 3D respectively.
+/// 
+/// Modified:\n
+///  - 2007-08-01 File Created
+///  - 2007-08-07 Axi-symmetry working (at for Euler and MHD equations).
+///  - 2007-11-30 Curl function working in cartesian coords.
+///  - 2009-09    Added MinMod slope limiter option as an ifdef (TEMPORARY)
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 ///
 
 #include "VectorOps.h"
@@ -30,7 +29,10 @@ BaseVectorOps::~BaseVectorOps() {}
 // ##################################################################
 // ##################################################################
 
-double BaseVectorOps::AvgFalle(const double a, const double b)
+double BaseVectorOps::AvgFalle(
+        const double a,
+        const double b
+        )
 {
   // If the slopes have different signs, then set the slope to zero.
   // If the slopes are both very small, then set slope to zero.
@@ -54,10 +56,11 @@ double BaseVectorOps::AvgFalle(const double a, const double b)
 // ##################################################################
 
 
-double BaseVectorOps::DotProduct(const double *v1, // Vector 1.
-				 const double *v2, // Vector 2.
-				 const int n       // length of vectors.
-				 )
+double BaseVectorOps::DotProduct(
+        const double *v1, // Vector 1.
+        const double *v2, // Vector 2.
+        const int n       // length of vectors.
+        )
 {
   double temp=0.;
   for (int i=0;i<n;i++) temp += v1[i]*v2[i];
@@ -69,11 +72,12 @@ double BaseVectorOps::DotProduct(const double *v1, // Vector 1.
 // ##################################################################
 
 
-int BaseVectorOps::CrossProduct(const double *a, // Vector 1.
-				const double *b, // Vector 2.
-				const int n,      // length of vectors.
-				double *ans       // Result vector
-				)
+int BaseVectorOps::CrossProduct(
+        const double *a, // Vector 1.
+        const double *b, // Vector 2.
+        const int n,      // length of vectors.
+        double *ans       // Result vector
+        )
 {
   if      (n==3) {
     ans[0] = a[1]*b[2] - a[2]*b[1];
@@ -94,24 +98,35 @@ int BaseVectorOps::CrossProduct(const double *a, // Vector 1.
 // ##################################################################
 
 
-/******************************************************************
- * *************  CARTESIAN COORDINATES X,Y,Z ******************* *
- ******************************************************************/
+/// *****************************************************************
+/// *************  CARTESIAN COORDINATES X,Y,Z **********************
+/// *****************************************************************
 
 // ##################################################################
 // ##################################################################
 
 
-VectorOps_Cart::VectorOps_Cart(int n, double del)
+VectorOps_Cart::VectorOps_Cart(
+          int n,
+          double del
+          )
   : VOnd(n), VOdx(del)
 {
-  cout <<"Setting up VectorOpsCart with ndim="<<VOnd<<" and dx="<<VOdx<<"\n";
+#ifdef TESTING
+  cout <<"Setting up VectorOpsCart with ndim="<<VOnd;
+  cout <<" and dx="<<VOdx<<"\n";
+#endif
   if (VOnd>3) rep.error("Can't do more than 3D simulations!",VOnd);
-  // Surface area of interface: It is assumed extra dimensions are per unit length.
+  //
+  // Surface area of interface: It is assumed extra dimensions are
+  // per unit length.
+  //
   if (VOnd==1) VOdA = 1.; 
   else if (VOnd==2) VOdA = VOdx;
   else VOdA = VOdx*VOdx;
+  //
   // Volume of cell.
+  //
   if (VOnd==1) VOdV = VOdx;
   else if (VOnd==2) VOdV = VOdx*VOdx;
   else  VOdV = VOdx*VOdx*VOdx;
@@ -126,7 +141,9 @@ VectorOps_Cart::VectorOps_Cart(int n, double del)
 VectorOps_Cart::VectorOps_Cart(int n)
   : VOnd(n)
 {
+#ifdef TESTING
   cout <<"Setting up VectorOpsCart with ndim="<<VOnd<<"\n";
+#endif
   if (VOnd>3) rep.error("Can't do more than 3D simulations!",VOnd);
   have_set_dx=false;
 }
@@ -176,7 +193,10 @@ double VectorOps_Cart::CellVolume(const cell *)
   return(VOdV);
 }
 
-double VectorOps_Cart::CellInterface(const cell *, const direction)
+double VectorOps_Cart::CellInterface(
+          const cell *,
+          const direction
+          )
 {
   /** \section Interfaces
    * This function assumes cells are cubic, so all surfaces have the same area.
@@ -184,7 +204,11 @@ double VectorOps_Cart::CellInterface(const cell *, const direction)
   return(VOdA);
 }
 
-double VectorOps_Cart::maxGradAbs(const cell *cpt, const int sv, const int var)
+double VectorOps_Cart::maxGradAbs(
+        const cell *cpt,
+        const int sv,
+        const int var
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -218,7 +242,12 @@ double VectorOps_Cart::maxGradAbs(const cell *cpt, const int sv, const int var)
 // ##################################################################
 
 
-void VectorOps_Cart::Grad(const cell *c, const int sv, const int var, double *grad)
+void VectorOps_Cart::Grad(
+        const cell *c,
+        const int sv,
+        const int var,
+        double *grad
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -248,7 +277,11 @@ void VectorOps_Cart::Grad(const cell *c, const int sv, const int var, double *gr
 // ##################################################################
 
 
-double VectorOps_Cart::Div(const cell *c, const int sv, const int *var)
+double VectorOps_Cart::Div(
+        const cell *c, 
+        const int sv, 
+        const int *var
+        )
 { // get divergence of vector quantity.
   
 #ifdef TESTING
@@ -281,7 +314,12 @@ double VectorOps_Cart::Div(const cell *c, const int sv, const int *var)
 // ##################################################################
 
 
-void VectorOps_Cart::Curl(const cell *c, const int vec, const int *var, double *ans)
+void VectorOps_Cart::Curl(
+        const cell *c, 
+        const int vec, 
+        const int *var, 
+        double *ans
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -346,13 +384,14 @@ void VectorOps_Cart::Curl(const cell *c, const int vec, const int *var, double *
 // ##################################################################
 
 
-int VectorOps_Cart::SetEdgeState(const cell *c,      ///< Current Cell.
-				 const direction d,  ///< Add or subtract the slope depending on direction.
-				 const int nv,       ///< length of state vectors.
-				 const double *dpdx, ///< Slope vector.
-				 double *edge,       ///< vector for edge state. 
-				 const int OA        ///< Order of spatial Accuracy.
-				 )
+int VectorOps_Cart::SetEdgeState(
+        const cell *c,      ///< Current Cell.
+        const direction d,  ///< Add or subtract the slope depending on direction.
+        const int nv,       ///< length of state vectors.
+        const double *dpdx, ///< Slope vector.
+        double *edge,       ///< vector for edge state. 
+        const int OA        ///< Order of spatial Accuracy.
+        )
 {
   switch (OA) {
     
@@ -385,12 +424,13 @@ int VectorOps_Cart::SetEdgeState(const cell *c,      ///< Current Cell.
 // ##################################################################
 
 
-int VectorOps_Cart::SetSlope(const cell *c, ///< Current Cell.
-			     const axes d,   ///< Which direction to calculate slope in.
-			     const int nv,  ///< length of state vectors.
-			     double *dpdx,     ///< Slope vector to be written to.
-			     const int  OA   ///< Order of spatial Accuracy.
-			     )
+int VectorOps_Cart::SetSlope(
+        const cell *c, ///< Current Cell.
+        const axes d,  ///< Which direction to calculate slope in.
+        const int nv,  ///< length of state vectors.
+        double *dpdx,  ///< Slope vector to be written to.
+        const int  OA  ///< Order of spatial Accuracy.
+        )
 {
   if (OA==OA1){ // first order accurate so zero slope.
     for(int v=0;v<nv;v++) dpdx[v]=0.;
@@ -433,13 +473,14 @@ int VectorOps_Cart::SetSlope(const cell *c, ///< Current Cell.
 // ##################################################################
 
 
-int VectorOps_Cart::DivStateVectorComponent(const cell *c,    ///< current cell.
-					    const axes d,     ///< current coordinate axis we are looking along.
-					    const int nv,     ///< length of state vectors.
-					    const double *fn, ///< Negative direction flux.
-					    const double *fp, ///< Positive direction flux.
-					    double *dudt      ///< Vector to assign divergence component to.
-					    )
+int VectorOps_Cart::DivStateVectorComponent(
+        const cell *c,    ///< current cell.
+        const axes d,     ///< current coordinate axis we are looking along.
+        const int nv,     ///< length of state vectors.
+        const double *fn, ///< Negative direction flux.
+        const double *fp, ///< Positive direction flux.
+        double *dudt      ///< Vector to assign divergence component to.
+        )
 {
   enum direction dp;
   switch (d) {
@@ -466,9 +507,9 @@ int VectorOps_Cart::DivStateVectorComponent(const cell *c,    ///< current cell.
 
 
 
-/******************************************************************
- * ************  CYLINDRICAL COORDINATES Z,R,THETA ************** *
- ******************************************************************/
+///******************************************************************
+///************  CYLINDRICAL COORDINATES Z,R,THETA ******************
+///******************************************************************
 
 // ##################################################################
 // ##################################################################
@@ -476,7 +517,10 @@ int VectorOps_Cart::DivStateVectorComponent(const cell *c,    ///< current cell.
 VectorOps_Cyl::VectorOps_Cyl(int n, double del)
   : VectorOps_Cart(n,del), VOdR(del)
 {
-  cout <<"Setting up VectorOps_Cyl with ndim="<<VOnd<<" and dz=dR="<<VOdz<<"\n";
+#ifdef TESTING
+  cout <<"Setting up VectorOps_Cyl with ndim="<<VOnd;
+  cout <<" and dz=dR="<<VOdz<<"\n";
+#endif
   //if (VOnd!=2 && VOnd!=3) rep.error("Why use cylindrical coords in not 2 or 3D?",VOnd);
   if (VOnd>2) rep.warning("VectorOps_Cyl NOT TESTED IN 3D YET",2,VOnd);
 
@@ -487,13 +531,23 @@ VectorOps_Cyl::VectorOps_Cyl(int n, double del)
 //  VOdA = VOdz*VOdR;  
 }
 
+
+// ##################################################################
+// ##################################################################
+
 VectorOps_Cyl::VectorOps_Cyl(int n)
   : VectorOps_Cart(n)
 {
+#ifdef TESTING
   cout <<"Setting up VectorOps_Cyl with ndim="<<VOnd<<"\n";
+#endif
   //if (VOnd!=2 && VOnd!=3) rep.error("Why use cylindrical coords in not 2 or 3D?",VOnd);
   if (VOnd>2) rep.warning("VectorOps_Cyl NOT TESTED IN 3D YET",2,VOnd);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void VectorOps_Cyl::set_dx(const double x)
 {
@@ -514,7 +568,15 @@ void VectorOps_Cyl::set_dx(const double x)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 VectorOps_Cyl::~VectorOps_Cyl() {}
+
+
+// ##################################################################
+// ##################################################################
 
 double VectorOps_Cyl::CellVolume(const cell *c)
 {
@@ -527,7 +589,14 @@ double VectorOps_Cyl::CellVolume(const cell *c)
 //  return(VOdV);
 }
 
-double VectorOps_Cyl::CellInterface(const cell *c, const direction dir)
+
+// ##################################################################
+// ##################################################################
+
+double VectorOps_Cyl::CellInterface(
+        const cell *c, 
+        const direction dir
+        )
 {
   /** \brief Calculation
    * For cylindrical coordinates, different faces have different 
@@ -560,7 +629,15 @@ double VectorOps_Cyl::CellInterface(const cell *c, const direction dir)
   return(-1.0);
 }
 
-double VectorOps_Cyl::maxGradAbs(const cell *c, const int sv, const int var)
+
+// ##################################################################
+// ##################################################################
+
+double VectorOps_Cyl::maxGradAbs(
+        const cell *c, 
+        const int sv, 
+        const int var
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -621,7 +698,16 @@ double VectorOps_Cyl::maxGradAbs(const cell *c, const int sv, const int var)
 } // maxGradAbs
 
 
-void VectorOps_Cyl::Grad(const cell *c, const int sv, const int var, double *grad)
+// ##################################################################
+// ##################################################################
+
+
+void VectorOps_Cyl::Grad(
+        const cell *c, 
+        const int sv, 
+        const int var, 
+        double *grad
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -662,7 +748,15 @@ void VectorOps_Cyl::Grad(const cell *c, const int sv, const int var, double *gra
   return;
 }
 
-double VectorOps_Cyl::Div(const cell *c, const int sv, const int *var)
+
+// ##################################################################
+// ##################################################################
+
+double VectorOps_Cyl::Div(
+        const cell *c, 
+        const int sv, 
+        const int *var
+        )
 { // get divergence of vector quantity.
 
 #ifdef TESTING
@@ -718,7 +812,16 @@ double VectorOps_Cyl::Div(const cell *c, const int sv, const int *var)
   return(divv);
 } // Div
 
-void VectorOps_Cyl::Curl(const cell *c, const int vec, const int *var, double *ans)
+
+// ##################################################################
+// ##################################################################
+
+void VectorOps_Cyl::Curl(
+        const cell *c, 
+        const int vec, 
+        const int *var, 
+        double *ans
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -780,17 +883,19 @@ void VectorOps_Cyl::Curl(const cell *c, const int vec, const int *var, double *a
 }// VecCurl
 
 
-int VectorOps_Cyl::SetEdgeState(const cell *c,       ///< Current Cell.
-				const direction dir, ///< Add or subtract the slope depending on direction.
-				const int nv,        ///< length of state vectors.
-				const double *dpdx,  ///< Slope vector.
-				double *edge,        ///< vector for edge state. 
-				const int OA         ///< Order of spatial Accuracy.
-				)
+// ##################################################################
+// ##################################################################
+
+
+int VectorOps_Cyl::SetEdgeState(
+        const cell *c,       ///< Current Cell.
+        const direction dir, ///< Add or subtract the slope depending on direction.
+        const int nv,        ///< length of state vectors.
+        const double *dpdx,  ///< Slope vector.
+        double *edge,        ///< vector for edge state. 
+        const int OA         ///< Order of spatial Accuracy.
+        )
 {
-  /** \section AMR
-   * this needs rewriting if i do amr
-   * */
   if (OA==OA1) { // 1st order, constant data.
     for (int v=0;v<nv;v++) edge[v] = c->Ph[v];
   }
@@ -823,12 +928,18 @@ int VectorOps_Cyl::SetEdgeState(const cell *c,       ///< Current Cell.
   return(0);
 } // SetEdgeState
   
-int VectorOps_Cyl::SetSlope(const cell *c, ///< Current Cell.
-			    const axes d,  ///< Which direction to calculate slope in.
-			    const int nv,  ///< length of state vectors.
-			    double *dpdx,  ///< Slope vector to be written to.
-			    const int  OA  ///< Order of spatial Accuracy.
-			    )
+
+// ##################################################################
+// ##################################################################
+
+
+int VectorOps_Cyl::SetSlope(
+        const cell *c, ///< Current Cell.
+        const axes d,  ///< Which direction to calculate slope in.
+        const int nv,  ///< length of state vectors.
+        double *dpdx,  ///< Slope vector to be written to.
+        const int  OA  ///< Order of spatial Accuracy.
+        )
 {
   if (OA==OA1){ // first order accurate so zero slope.
     for(int v=0;v<nv;v++) dpdx[v]=0.;
@@ -890,13 +1001,19 @@ int VectorOps_Cyl::SetSlope(const cell *c, ///< Current Cell.
   return(0);
 } // SetSlope
 
-int VectorOps_Cyl::DivStateVectorComponent(const cell *c,    ///< current cell.
-					   const axes d,     ///< current coordinate axis we are looking along.
-					   const int nv,     ///< length of state vectors.
-					   const double *fn, ///< Negative direction flux.
-					   const double *fp, ///< Positive direction flux.
-					   double *dudt      ///< Vector to assign divergence component to.
-					   )
+
+// ##################################################################
+// ##################################################################
+
+
+int VectorOps_Cyl::DivStateVectorComponent(
+        const cell *c,    ///< current cell.
+        const axes d,     ///< current coordinate axis we are looking along.
+        const int nv,     ///< length of state vectors.
+        const double *fn, ///< Negative direction flux.
+        const double *fp, ///< Positive direction flux.
+        double *dudt      ///< Vector to assign divergence component to.
+        )
 {
   enum direction dp;
   switch (d) {
@@ -930,4 +1047,9 @@ int VectorOps_Cyl::DivStateVectorComponent(const cell *c,    ///< current cell.
   }
   return(0);
 } // DivStateVectorComponent
+
+
+// ##################################################################
+// ##################################################################
+
 

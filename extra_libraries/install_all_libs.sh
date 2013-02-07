@@ -1,7 +1,8 @@
 #!/bin/bash
 #
-# 2012.02.22 JM/HD: Added options for compiling on UCL-dougal
+# - 2012.02.22 JM/HD: Added options for compiling on UCL-dougal
 # - 2012.09.11 JM: Added options for SuperMUC
+# - 2013.02.07 JM: Updated for new library versions (all).
 
 
 mkdir include
@@ -115,10 +116,11 @@ echo "*** INSTALLING SILO LIBRARY ****"
 echo "********************************"
 #################################
 # Change these for new versions:
-FILE=silo-4.8-bsd.tar.gz
-SRC_DIR=silo-4.8-bsd
-REMOTE_URL=https://wci.llnl.gov/codes/silo/silo-4.8/silo-4.8-bsd.tar.gz
+FILE=silo-4.9-bsd.tar.gz
+SRC_DIR=silo-4.9-bsd
+REMOTE_URL=https://wci.llnl.gov/codes/silo/silo-4.9/silo-4.9-bsd.tar.gz
 #################################
+
 
 if [ -e $FILE ]; then
 	echo "*** File exists, no need to download ***"
@@ -140,7 +142,13 @@ BASE_PATH=`pwd`
 echo "***Path = $BASE_PATH ***"
 cd $SRC_DIR
 make distclean
-./configure --prefix=${BASE_PATH} --enable-hdf5=no --without-readline --enable-fortran=no --enable-silex=no
+./configure --prefix=${BASE_PATH} \
+--enable-browser \
+--disable-fortran \
+--disable-silex --with-readline
+
+#--with-readline \
+#--enable-hdf5=no
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
@@ -166,8 +174,8 @@ echo "********************************"
 
 #################################
 # Change these for new versions:
-FILE=sundials-2.4.0.tar.gz
-SRC_DIR=sundials-2.4.0
+FILE=sundials-2.5.0.tar.gz
+SRC_DIR=sundials-2.5.0
 REMOTE_URL=https://computation.llnl.gov/casc/sundials/download/download.html
 echo "********************************"
 echo "*** INSTALLING CVODES LIBRARY FILE=${FILE}****"
@@ -221,9 +229,11 @@ echo "*** INSTALLING FITS LIBRARY ***"
 echo "*******************************"
 #################################
 # Change these for new versions:
-FILE=cfitsio3250.tar.gz
+FILE=cfitsio3310.tar.gz
 SRC_DIR=cfitsio
-REMOTE_URL=ftp://heasarc.gsfc.nasa.gov/software/fitsio/c/cfitsio3250.tar.gz
+REMOTE_URL=ftp://heasarc.gsfc.nasa.gov/software/fitsio/c/cfitsio3310.tar.gz
+#################################
+
 if [ -e $FILE ]; then
 	echo "*** File exists, no need to download ***"
 else 

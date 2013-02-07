@@ -2,22 +2,25 @@
 /// \file cvode_integrator.cpp
 /// \author Jonathan Mackey
 ///
-/// This file contains a class which is intended as a general integrator of
-/// microphysics equations, which can be inherited by specific implementations
-/// with a number of species and different heating/cooling rates, and even 
-/// integration of the optical depth for the implicit C2-ray-type method.
+/// This file contains a class which is intended as a general
+/// integrator of microphysics equations, which can be inherited by
+/// specific implementations with a number of species and different
+/// heating/cooling rates, and even integration of the optical depth
+/// for the implicit C2-ray-type method.
 ///
-///
-/// The integration method uses the CVODE solver from the SUNDIALS package by
-/// (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in Physics, 10, 138) available from 
-/// https://computation.llnl.gov/casc/sundials/main.html
-/// The method is backwards differencing (i.e. implicit) with Newton iteration.
+/// The integration method uses the CVODE solver from the SUNDIALS
+/// package by (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in
+/// Physics, 10, 138) available from 
+///   https://computation.llnl.gov/casc/sundials/main.html
+/// The method is backwards differencing with Newton iteration.
 ///
 /// Modifications:
-/// - 2011.10.06 JM: Wrote file, based on old code in mp_v2_aifa.cc and a test
-///   integrator in active/code_misc/sundials/test_prog3/
+/// - 2011.10.06 JM: Wrote file, based on old code in mp_v2_aifa.cc
+///    and a test integrator in active/code_misc/sundials/test_prog3
 /// - 2011.10.17 JM: Debugging.
 /// - 2012.09.28 JM: Added separators between functions for clarity.
+/// - 2013.02.07 JM: Changed int to long int in Jacobian function for
+///    compatibility with sundials 2.5.0.
 
 #include "cvode_integrator.h"
 #include <cmath>
@@ -369,7 +372,7 @@ int Ydot_for_cvode(
 
 
 int Jacobian_for_cvode(
-          int N,         ///< N (not sure what this is for! Must be internal)
+          long int N,    ///< N (not sure what this is for! Must be internal)
           double t,      ///< time, t
           N_Vector y,    ///< y
           N_Vector yd,   ///< ydot

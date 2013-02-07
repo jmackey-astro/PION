@@ -8,29 +8,20 @@
 /// of N passive tracers.
 ///
 /// - 2009-12-18 JM: Added Axisymmetric Class (cyl_FV_solver_Hydro_Euler)
-///
-///
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
-///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
+/// - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
 /// - 2010.10.01 JM: Added spherical coordinate system.
-///
 /// - 2010.11.03 JM: Fixed source terms for spherical coordinates
 ///   (although results don't change much).
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
 ///   Made InterCellFlux general for all classes (moved to FV_solver_base)
-///
 /// - 2010.12.22 JM: Added new Riemann solver classes for Hydro.
-///
 /// - 2010.12.23 JM: Removed references to riemann_base class.
 ///    added extra variable to inviscid_flux() function.
 ///    Moved UtoP() etc. from solver to flux-solver.
-///
 /// - 2010.12.28 JM: removed some debugging comments.
-///
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 #include "solver_eqn_hydro_adi.h"
 using namespace std;
@@ -39,17 +30,21 @@ using namespace std;
 // ***** FV SOLVER HYDRO EULER *****
 // *********************************
 
-FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(const int nv, ///< number of variables in state vector.
-					     const int nd, ///< number of space dimensions in grid.
-					     const double cflno,   ///< CFL number
-					     const double cellsize,    ///< dx, cell size.
-					     const double gam,     ///< gas eos gamma.
-					     double *state,     ///< State vector of mean values for simulation.
-					     const double avcoeff, ///< Artificial Viscosity Parameter etav.
-					     const int ntr         ///< Number of tracer variables.
-					     )
+
+// ##################################################################
+// ##################################################################
+
+FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
+        const int nv, ///< number of variables in state vector.
+        const int nd, ///< number of space dimensions in grid.
+        const double cflno,   ///< CFL number
+        const double cellsize,    ///< dx, cell size.
+        const double gam,     ///< gas eos gamma.
+        double *state,     ///< State vector of mean values for simulation.
+        const double avcoeff, ///< Artificial Viscosity Parameter etav.
+        const int ntr         ///< Number of tracer variables.
+        )
   : eqns_base(nv),
-    // riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
     eqns_Euler(nv), riemann_Euler(nv,state,gam),
@@ -59,17 +54,29 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(const int nv, ///< number of variab
     flux_solver_hydro_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize)
 {
-  cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor which does nothing.\n";
-  //cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = "<<eq_gamma<<"\n";
+#ifdef TESTING
+  cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor.\n";
+  cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = "<<eq_gamma<<"\n";
+#endif
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 {
-  cout <<"FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor which does nothing.\n";
+#ifdef TESTING
+  cout <<"FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler() destructor.\n";
+#endif
   return;
 }
 
+
+
+// ##################################################################
+// ##################################################################
 
 
 ///
@@ -94,6 +101,10 @@ int FV_solver_Hydro_Euler::dU_Cell(cell *c,          // Current cell.
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// General Finite volume scheme for updating a cell's
@@ -146,6 +157,10 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(class cell *c,
 
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Given a cell, calculate the hydrodynamic timestep.
@@ -206,21 +221,29 @@ double FV_solver_Hydro_Euler::CellTimeStep(const cell *c, ///< pointer to cell
   return FV_dt;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ////////////////////////////////////////////////////////////////////////
 /// CYLINDRICAL (AXISYMMETRIC) COORDINATES
 ////////////////////////////////////////////////////////////////////////
 
-cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(const int nv, ///< number of variables in state vector.
-						     const int nd, ///< number of space dimensions in grid.
-						     const double cflno, ///< CFL number
-						     const double cellsize, ///< dx, cell size.
-						     const double gam,     ///< gas eos gamma.
-						     double *state, ///< State vector of mean values for simulation.
-						     const double avcoeff, ///< Artificial Viscosity Parameter etav.
-						     const int ntr         ///< Number of tracer variables.
-						     )
+
+// ##################################################################
+// ##################################################################
+
+cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
+        const int nv, ///< number of variables in state vector.
+        const int nd, ///< number of space dimensions in grid.
+        const double cflno, ///< CFL number
+        const double cellsize, ///< dx, cell size.
+        const double gam,     ///< gas eos gamma.
+        double *state, ///< State vector of mean values for simulation.
+        const double avcoeff, ///< Artificial Viscosity Parameter etav.
+        const int ntr         ///< Number of tracer variables.
+        )
   : eqns_base(nv),
-    //riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
     eqns_Euler(nv), riemann_Euler(nv,state,gam),
@@ -232,16 +255,28 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(const int nv, ///< number o
     FV_solver_Hydro_Euler(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
     VectorOps_Cyl(nd,cellsize)
 {
+#ifdef TESTING
   cout <<"cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler() constructor.\n";
-  if (nd!=2) rep.error("Cylindrical coordinates only implemented for 2d axial symmetry \
-                        so far.  Sort it out!",nd);
+#endif
+  if (nd!=2) rep.error("Cylindrical coordinates only implemented for \
+                        2d axial symmetry so far.  Sort it out!",nd);
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler()
 {
-  //  cout <<"cyl_FV_solver_Hydro_Euler DESTRUCTOR.\n";
+#ifdef TESTING
+  cout <<"cyl_FV_solver_Hydro_Euler DESTRUCTOR.\n";
+#endif
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int cyl_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
 				       const axes d, ///< Which axis we are looking along.
@@ -280,19 +315,28 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 ////////////////////////////////////////////////////////////////////////
 /// SPHERICAL (POLAR) COORDINATES
 ////////////////////////////////////////////////////////////////////////
 
-sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(const int nv, ///< number of variables in state vector.
-						     const int nd, ///< number of space dimensions in grid.
-						     const double cflno, ///< CFL number
-						     const double cellsize, ///< dx, cell size.
-						     const double gam,     ///< gas eos gamma.
-						     double *state, ///< State vector of mean values for simulation.
-						     const double avcoeff, ///< Artificial Viscosity Parameter etav.
-						     const int ntr         ///< Number of tracer variables.
-						     )
+
+// ##################################################################
+// ##################################################################
+
+sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
+        const int nv, ///< number of variables in state vector.
+        const int nd, ///< number of space dimensions in grid.
+        const double cflno, ///< CFL number
+        const double cellsize, ///< dx, cell size.
+        const double gam,     ///< gas eos gamma.
+        double *state, ///< State vector of mean values for simulation.
+        const double avcoeff, ///< Artificial Viscosity Parameter etav.
+        const int ntr         ///< Number of tracer variables.
+        )
   : eqns_base(nv),
     //riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
@@ -307,16 +351,26 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(const int nv, ///< number o
     VectorOps_Cyl(nd,cellsize),
     VectorOps_Sph(nd,cellsize)
 {
+#ifdef TESTING
   cout <<"sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler() constructor.\n";
-  if (nd!=1) rep.error("Spherical coordinates only implemented for 1D spherical \
-                        symmetry so far.  Sort it out!",nd);
+#endif
+  if (nd!=1) rep.error("Spherical coordinates only implemented for 1D \
+                        spherical symmetry so far.  Sort it out!",nd);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler()
 {
   //  cout <<"sph_FV_solver_Hydro_Euler DESTRUCTOR.\n";
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int sph_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
 				       const axes d, ///< Which axis we are looking along.
@@ -392,5 +446,9 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 

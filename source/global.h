@@ -9,68 +9,43 @@
 ///
 /// - 2007-06-27 Worked on Equations Class.  Changed method of
 ///   handling directional operations.
-///
 /// - 2007-07-05 Equations class, added in GLMEqn class derived from
 ///   IdealMHDEqn.
-///
 /// - 2007-07-10 Moved 'rsvars' and 'waves' enums to riemann.h; bit of
 ///   documentation of GLM Equations.
-///
 /// - 2007-07-13 got new structure working.
-///
 /// - 2007-07-13 new structure was too complex, so i simplified it,
 ///    and got it working properly.
-///
 /// - 2007-10-11 Added interactive command line interface class.
-///
 /// - 2007-10-16 Moved equations classes into equations.h
-///
-///
 ///  - 2010-01-05 JM: Added SimPM.EP.MP_timestep_limit flag: true=use
 ///  cooling/recomb times to limit the timestep.  Also added a public
 ///  microphysics function timescales() which returns the minimum of a
 ///  selection of timescales.
-///
 /// - 2010-01-19 JM: Added new #define for VERY_TINY_VALUE=1.0e-200
-///
 /// - 2010-01-22 JM: Moved #defs for (NON_)CELL_CENTRED_SRC from raytracer_SC.h
 ///     to here.
-///
 /// - 2010-01-26 JM: Added get_iXmin/iXmax/iRange() functions to gridBaseClass
 ///     to get the integer positions.
-///
 /// - 2010-02-05 JM: Added offsets to parallelparams.
-///
 /// - 2010-02-05 JM: Added function returning all abutting domains.
-///
 /// - 2010-04-11 JM: Tidied up comments to have shorter lines.
-///
 /// - 2010-04-25 JM: Added min_timestep parameter to SimPM to bug out
 ///   if dt gets too small.
-///
 /// - 2010-07-20 JM: Made OA1,OA2 into #defs, set spOOA,tmOOA to be integers.
-///
 /// - 2010-07-21 JM: rep.error() needed a mod for serial code if the
 ///    error was in the output routine, since this led to infinite loop!
-///
 /// - 2010-07-24 JM: Added stellar wind class.
-///
 /// - 2010.10.01 JM: Added spherical coordinate system.
-///
 /// - 2010.10.04 JM: Added flags for extra screen output on Blastwave and
 ///    FieldLoop test problems (moved flags from gridMethods.cc).
-///
 /// - 2010.10.05 JM: Moved stellar winds to their own file.
-///
 /// - 2010.10.13 JM: Added a function to display command-line options.
-///
 /// - 2010.11.12-15 JM: Moved cell interface to its own files; minor
 ///   changes to defines and documentation.
-///
 /// - 2010.12.04 JM: Added distance functions to base Grid class which
 ///  change with the geometry of the grid.
 ///  This is in an ifdef for now (GEOMETRIC_GRID)
-///
 /// - 2010.12.27 JM: added call to defines/functionality_flags.h.
 ///   This file defines which parts of the code get compiled and
 ///   which parts are left out.
@@ -82,12 +57,10 @@
 /// - 2011.01.06 JM: New stellar wind interface.
 /// - 2011.01.17 JM: Added checkpoint frequency to SimPM.
 /// - 2011.01.31 JM: Added min/max temperature values to SimPM.EP
-///
 /// - 2011.02.15 JM: Added extra parameters for time-varying stellar winds.
 /// - 2011.02.17 JM: Added hash-defines for types of RT.
 /// - 2011.02.24 JM: Added Struct SimPM.RS to handle radiation sources more simply.
 ///     Also added a new function to RSP so that I can query it more easily.
-///
 /// - 2011.02.25 JM: Updated interface to ray-tracing (need to move it out of this file).
 /// - 2011.02.28 JM: Got rid of ray-tracing parameters class (RSP pointer).
 /// - 2011.03.02 JM: Got rid of MAX_NTR. Increased MAX_NVAR to 70.
@@ -99,6 +72,7 @@
 /// - 2011.06.02 JM: RefVec is now a stack array rather than dynamically allocated.
 /// - 2011.10.14 JM: Commented out RT_DIFF class, added new RT interface functions.
 /// - 2011.12.01 JM: Added GeneralStuff::root_find_linear()
+///
 /// - 2012.01.14 JM: Added 'star' struct, for data from stellar evolution file.
 /// - 2012.01.16 JM: Added extra constants to GeneralStuff
 /// - 2012.05.15 JM: Added global ixmin/ixmax/irange functions to grid base class
@@ -743,7 +717,7 @@ class GeneralStuff {
   void root_find_linear(
         const double *, ///< Array of x values.
         const double *, ///< Array of y values.
-        const size_t,     ///< Array sizes
+        const size_t,   ///< Array sizes
         const double ,  ///< x we are searching for.
         double *  ///< pointer to result.
         );
@@ -760,7 +734,7 @@ class GeneralStuff {
     */
    double idistance(const int *, ///< position 1
         const int *, ///< position 2
-        const int       ///< number of spatial dimensions.
+        const int    ///< number of spatial dimensions.
         );
    /** \brief start a timer, identified by a string. If timer exists already, this
     * function assumes it has been paused and sets it counting again. 

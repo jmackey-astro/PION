@@ -1,50 +1,37 @@
-/** \file uniform_grid.cc
- * 
- * \author Jonathan Mackey
- * 
- * Function definitions for UniformGrid class
- * 
- * Modifications:\n
- *  - 2007-08-07 minor fixes to boundary conditions.
- *
- *  - 2007-11-06 changed BC setup structure.  tested and it works identically.
- *               This is for ease of use when adding parallel boundaries.
- * 
- *  - 2010-01-26 JM: Added get_iXmin/iXmax/iRange() functions to grid class to give integer positions.
- *
- *  - 2010-01-26 JM: Took out unused cstep,maxstep vars in some update_boundary functions.
- *
- *  - 2010-02-03 JM: fixed compiler warnings about re-used and unused variables.
- *
- *  - 2010-03-12 JM: Started work on one-way boundaries which allow inflow/outflow but not both.
- *    For outflow-only, this will work by checking the normal velocity.  If it is off the grid then
- *    we'll use zero gradient to set the boundary value; if it's onto the grid then we'll use 
- *    reflecting condition to set the boundary value (but what about field??? Maybe just setting the
- *    velocity to be either outflowing or zero in the boundary cells is a better method...).
- *
- *  - 2010-03-13 JM: moved BoundaryTypes enum to uniformgrid.h; added oneway-outflow boundary.
- * */
 ///
+/// \file uniform_grid.cc
+/// 
+/// \author Jonathan Mackey
+/// 
+/// Function definitions for UniformGrid class
+/// 
+/// Modifications:\n
+///  - 2007-08-07 minor fixes to boundary conditions.
+///  - 2007-11-06 changed BC setup structure.  tested and it works identically.
+///               This is for ease of use when adding parallel boundaries.
+///  - 2010-01-26 JM: Added get_iXmin/iXmax/iRange() functions to grid class to give integer positions.
+///  - 2010-01-26 JM: Took out unused cstep,maxstep vars in some update_boundary functions.
+///  - 2010-02-03 JM: fixed compiler warnings about re-used and unused variables.
+///  - 2010-03-12 JM: Started work on one-way boundaries which allow inflow/outflow but not both.
+///    For outflow-only, this will work by checking the normal velocity.  If it is off the grid then
+///    we'll use zero gradient to set the boundary value; if it's onto the grid then we'll use 
+///    reflecting condition to set the boundary value (but what about field??? Maybe just setting the
+///    velocity to be either outflowing or zero in the boundary cells is a better method...).
+///  - 2010-03-13 JM: moved BoundaryTypes enum to uniformgrid.h; added oneway-outflow boundary.
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 /// - 2010-07-24 JM: Added stellar wind class, and boundary setup/update functions.
-///
 /// - 2010-07-28 JM: Slightly changed boundary update logic -- we
 ///    check for internal and external BCs in both functions and just
 ///    do nothing for the ones we're not interested in.  Then if there
 ///    is really an unhandled boundary we report a warning.
-///
 /// - 2010-09-27 JM: fixed one comment.
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
 /// - 2010.10.04 JM: Added last-point-set flag.
 /// - 2010.10.05 JM: Added spherical coordinates to the BC_assign_STWIND()
 ///     function, since external data needs to be considered.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2010.12.04 JM: Added geometry-dependent grids, in a
 ///   GEOMETRIC_GRID ifdef.  Will probably keep it since it is the way
 ///   things will go eventually.  The new grid classes have extra
@@ -52,17 +39,13 @@
 ///   between a vertex and a cell.
 ///
 /// - 2011.01.06 JM: New stellar wind interface.
-///
 /// - 2011.01.07 JM: I debugged the geometric grid functions, and now
 ///   it works very well!  I have a nice spherical expansion for
 ///   stellar winds.
-///
 /// - 2011.02.15 JM: Added support for time-varying stellar winds.  I think
 ///   it is working now, but it needs testing.
-///
 /// - 2011.02.16 JM: Fixed a bug in spherical grid iR_cov() function, for where
 ///   the grid does not begin at the origin.
-///
 /// - 2011.02.25 JM: Set column densities in boundary data to zero in boundary
 ///    setup function.  Removed HCORR ifdef.
 /// - 2011.03.21 JM: Got rid of zero-ing of column-densities -- done in the cell constructor.
@@ -74,6 +57,7 @@
 /// - 2013.01.11 JM: Fiddled with radiative shock boundary to try to
 ///    make it better. (also 2013.01.23, and 2013.01.20).
 /// - 2013.01.14 JM: Added GRIDV2 ifdef to eventually retire this...
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 
 #include "global.h"
@@ -94,10 +78,12 @@ UniformGrid::UniformGrid(int nd, int nv, int eqt, double *xn, double *xp, int *n
 #endif // GEOMETRIC_GRID
   G_ndim(nd), G_nvar(nv), G_eqntype(eqt)
 {
+#ifdef TESTING
   cout <<"Setting up UniformGrid with G_ndim="<<G_ndim<<" and G_nvar="<<G_nvar<<"\n";
   rep.printVec("\tXmin",xn,nd);
   rep.printVec("\tXmax",xp,nd);
   rep.printVec("\tNpt ",nc,nd);
+#endif
 
   //
   // Allocate arrays for dimensions of grid.
@@ -123,33 +109,47 @@ UniformGrid::UniformGrid(int nd, int nv, int eqt, double *xn, double *xp, int *n
     G_range[i] = G_xmax[i]-G_xmin[i];
     if(G_range[i]<0.) rep.error("Negative range in direction i",i);
   }
+#ifdef TESTING
   cout <<"MIN.MAX for x = "<<G_xmin[XX]<<"\t"<<G_xmax[XX]<<"\n";
   cout <<"Setting cell size...\n";
+#endif
   setCellSize(); // Checks grid dimensions and discretisation is reasonable,
                  // and that it gives cubic cells.
 
   //
   // Now create the first cell, and then allocate data from there.
   //
+#ifdef TESTING
   cout <<" done.\n Initialising first cell...\n";
+#endif
   G_fpt = newCell(); // Safe to assume we have at least one cell.
+#ifdef TESTING
   cout <<" done.\n";
-  if(G_fpt==0) rep.error("Couldn't assign memory to first cell in grid.",G_fpt);
+#endif
+  if(G_fpt==0)
+    rep.error("Couldn't assign memory to first cell in grid.",G_fpt);
   
   // assign memory for other cells.
   // set firstptid, lastptid
+#ifdef TESTING
   cout <<"\t allocating memory for grid.\n";
+#endif
   int err = allocateGridData();
 
   //
   // assign grid structure on cells, setting positions and ngb pointers.
   //
+#ifdef TESTING
   cout <<"\t assigning pointers to neighbours.\n";
+#endif
   err += assignGridStructure();
-  if(err!=0) rep.error("Error setting up grid, allocateGridData, assignGridStructure",err);
+  if(err!=0) rep.error("Error setting up grid, allocateGridData, \
+                        assignGridStructure",err);
   
+#ifdef TESTING
   rep.printVec("\tFirst Pt. integer position",FirstPt()->pos,nd);
   rep.printVec("\tLast  Pt. integer position", LastPt()->pos,nd);
+#endif
 
   //
   // Leave boundaries uninitialised.
@@ -163,17 +163,35 @@ UniformGrid::UniformGrid(int nd, int nv, int eqt, double *xn, double *xp, int *n
   CI.get_ipos_vec(G_xmin, G_ixmin );
   CI.get_ipos_vec(G_xmax, G_ixmax );
   for (int v=0;v<G_ndim;v++) G_irange[v] = G_ixmax[v]-G_ixmin[v];
+#ifdef TESTING
   rep.printVec("iXmin ", G_ixmin, G_ndim);
   rep.printVec("iXmax ", G_ixmax, G_ndim);
   rep.printVec("iRange", G_irange,G_ndim);
+#endif
 
 #ifdef GEOMETRIC_GRID
+#ifdef TESTING
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
+#endif
   set_dx(G_dx);
 #endif // GEOMETRIC_GRID
 
+  cout <<"Setting up uniform grid with "<<G_ndim<<" dimensions ";
+  cout <<"and "<<G_nvar<<" variables in the state vector\n";
+  rep.printVec("\tXmin",xn,nd);
+  rep.printVec("\tXmax",xp,nd);
+  rep.printVec("\tNpt ",nc,nd);
+
+
+#ifdef TESTING
   cout <<"UniformGrid Constructor done.\n";
+#endif
+
 } //UniformGrid Constructor
+
+
+// ##################################################################
+// ##################################################################
 
 
 UniformGrid::~UniformGrid()
@@ -198,8 +216,14 @@ UniformGrid::~UniformGrid()
   G_ixmin  = mem.myfree(G_ixmin);
   G_ixmax  = mem.myfree(G_ixmax);
   G_irange = mem.myfree(G_irange);
+#ifdef TESTING
   cout <<"UniformGrid Destructor:\tdone.\n";
+#endif
 } // Destructor
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::assignGridStructure()
 {
@@ -234,7 +258,9 @@ int UniformGrid::assignGridStructure()
   
   for (int i=0; i<G_ndim; i++) {
     offset[i] = 2*static_cast<int>(ONE_PLUS_EPS*(G_xmin[i]-SimPM.Xmin[i])/G_dx);
+#ifdef TESTING
     cout <<"************OFFSET["<<i<<"] = "<<offset[i]<<"\n";
+#endif
   }
 
   do {
@@ -348,6 +374,10 @@ int UniformGrid::assignGridStructure()
   return(0);
 } // assignGridStructure()
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::allocateGridData()
 {
 //  cout <<"\tAllocating grid data... G_ncell="<<G_ncell<<"\n";
@@ -370,6 +400,10 @@ int UniformGrid::allocateGridData()
 //  do {printCell(cpt,G_ndim,G_nvar);} while ( (cpt=NextPt(cpt))!=0);
   return(0);
 } // allocateGridData
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::setCellSize()
 {
@@ -400,11 +434,19 @@ int UniformGrid::setCellSize()
   return(0);
 } // setCellSize
 
+
+// ##################################################################
+// ##################################################################
+
 cell * UniformGrid::newCell()
 {
   cell *c = CI.new_cell();
   return (c);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void UniformGrid::deleteCell(cell *c)
 {
@@ -412,18 +454,30 @@ void UniformGrid::deleteCell(cell *c)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void UniformGrid::CopyCell(const cell *c1, cell *c2)
 {
   CI.copy_cell(c1,c2);
   return;
 }
    
+
+// ##################################################################
+// ##################################################################
+
 void UniformGrid::PrintCell(const cell *c)
 {
   if(c==0) {cout <<"Null Pointer!\n"; return;}
   CI.print_cell(c);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 enum direction UniformGrid::OppDir(enum direction dir)
 {
@@ -436,6 +490,10 @@ enum direction UniformGrid::OppDir(enum direction dir)
   else {rep.error("Bad direction given to OppDir",dir); return(NO);}
 }
 
+
+// ##################################################################
+// ##################################################################
+
 class cell* UniformGrid::FirstPt()
 {
    /** \section Location
@@ -446,17 +504,27 @@ class cell* UniformGrid::FirstPt()
    return(G_fpt);
 } // FirstPt
 
+
+// ##################################################################
+// ##################################################################
+
 class cell* UniformGrid::LastPt()
 {
    // if G_lpt hasn't been set, then set it to the last point.  If it has, then
    // just return it.
    if (!lpt_set) {
      G_lpt = FirstPt(); do {G_lpt=NextPt(G_lpt);} while (NextPt(G_lpt)!=0);
+#ifdef TESTING
      cout <<"Last Point is :"<<G_lpt; PrintCell(G_lpt);
+#endif
      lpt_set=true;
    }
    return(G_lpt);
 } // LastPt
+
+
+// ##################################################################
+// ##################################################################
 
 class cell* UniformGrid::PrevPt(const class cell* p, enum direction dir)
 {
@@ -472,6 +540,10 @@ class cell* UniformGrid::PrevPt(const class cell* p, enum direction dir)
    //   cout <<"This function is very inefficient and probably shouldn't be used.\n";
    return(p->ngb[opp]);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::SetupBCs(int Nbc, string typeofbc)
 {
@@ -547,13 +619,21 @@ int UniformGrid::SetupBCs(int Nbc, string typeofbc)
   return(err);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_setBCtypes(string bctype)
 {
+#ifdef TESTING
   cout <<"Set BC types...\n";
+#endif
   if(bctype=="FIXED" || bctype=="PERIODIC" || bctype=="ABSORBING") {
+#ifdef TESTING
     cout <<"using old-style boundary condition specifier: "<<bctype<<" on all sides.\n";
     cout <<"Converting to new style specifier.\n";
-    
+#endif
+
     if (bctype=="FIXED") {
       bctype = "XNfix_XPfix_";
       if (G_ndim>1) bctype += "YNfix_YPfix_";
@@ -569,14 +649,19 @@ int UniformGrid::BC_setBCtypes(string bctype)
       if (G_ndim>1) bctype += "YNout_YPout_";
       if (G_ndim>2) bctype += "ZNout_ZPout_";
     }
+#ifdef TESTING
     cout <<"New bctype string = "<<bctype<<"\n";
+#endif
   }    
+
   // Set up boundary data struct.  Assumes bctype is in format "XPper XNper " etc.,
   // so that each boundary is defined by 6 characters, and number of boundaries is
   // given by length/6.
   int len = bctype.length(); len = (len+5)/6;
   if (len < 2*G_ndim) rep.error("Need boundaries on all sides!",len);
+#ifdef TESTING
   cout <<"Got "<<len<<" boundaries to set up.\n";
+#endif
   BC_bd=0;
   BC_bd = mem.myalloc(BC_bd, len);
   UniformGrid::BC_nbd = len;
@@ -603,11 +688,15 @@ int UniformGrid::BC_setBCtypes(string bctype)
     if(!BC_bd[i].data.empty())
       rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
     BC_bd[i].refval=0;
+#ifdef TESTING
     cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
+#endif
   }
   if (i<BC_nbd) {
+#ifdef TESTING
     cout <<"Got "<<i<<" boundaries, but have "<<BC_nbd<<" boundaries.\n";
     cout <<"Must have extra BCs... checking if I know what they are.\n";
+#endif
     do {
       BC_bd[i].dir = NO;
       if ( (pos=bctype.find("IN")) ==string::npos) {
@@ -630,15 +719,24 @@ int UniformGrid::BC_setBCtypes(string bctype)
       if(!BC_bd[i].data.empty())
         rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
       BC_bd[i].refval=0;
+#ifdef TESTING
       cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
+#endif
       i++;
     } while (i<BC_nbd);
   }
+#ifdef TESTING
   cout <<"BC types and data set up.\n";
-  return(0);
+#endif
+  return 0;
 }
 
-cell * UniformGrid::BC_setupBCcells(cell *edgept,
+
+// ##################################################################
+// ##################################################################
+
+cell * UniformGrid::BC_setupBCcells(
+            cell *edgept,
             const enum direction offdir, // direction off-grid
             double dx,
             int ibc)
@@ -679,6 +777,10 @@ cell * UniformGrid::BC_setupBCcells(cell *edgept,
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
 {
   enum direction offdir = b->dir;
@@ -703,6 +805,10 @@ int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
   if (ct != b->data.size()) rep.error("BC_assign_PERIODIC: missed some cells!",ct-b->data.size());
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
 {
@@ -760,6 +866,10 @@ int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_assign_ONEWAY_OUT(boundary_data *b)
 {
   //
@@ -769,6 +879,10 @@ int UniformGrid::BC_assign_ONEWAY_OUT(boundary_data *b)
   int err=BC_assign_OUTFLOW(b);
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 
 int UniformGrid::BC_assign_INFLOW(    boundary_data *b)
@@ -793,6 +907,10 @@ int UniformGrid::BC_assign_INFLOW(    boundary_data *b)
   
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_REFLECTING(boundary_data *b)
 {
@@ -845,6 +963,10 @@ int UniformGrid::BC_assign_REFLECTING(boundary_data *b)
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_assign_FIXED(     boundary_data *b)
 {
   enum direction offdir = b->dir;
@@ -871,6 +993,10 @@ int UniformGrid::BC_assign_FIXED(     boundary_data *b)
   
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_JETBC(     boundary_data *b)
 {
@@ -973,6 +1099,10 @@ int UniformGrid::BC_assign_JETBC(     boundary_data *b)
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_assign_JETREFLECT(boundary_data *b)
 {
   enum direction offdir = b->dir;
@@ -1027,6 +1157,10 @@ int UniformGrid::BC_assign_JETREFLECT(boundary_data *b)
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_assign_DMACH(     boundary_data *b)
 {
   if (b->data.empty()) rep.error("BC_assign_DMACH: empty boundary data",b->itype);
@@ -1056,6 +1190,10 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
   if (ct != b->data.size()) rep.error("BC_assign_: missed some cells!",ct-b->data.size());
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_DMACH2(    boundary_data *b) 
 {
@@ -1089,6 +1227,10 @@ int UniformGrid::BC_assign_DMACH2(    boundary_data *b)
   } while ( (c=NextPt(c,XP)) && (CI.get_dpos(c,XX)<=1./6.));
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
 {
@@ -1130,6 +1272,10 @@ int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
   cout <<"******************************************Added "<<ct<<" cells to RADSHOCK internal boundary.\n";
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_RADSH2(     boundary_data *b)
 {
@@ -1178,6 +1324,10 @@ int UniformGrid::BC_assign_RADSH2(     boundary_data *b)
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Add internal stellar wind boundaries -- these are (possibly
 /// time-varying) winds defined by a mass-loss-rate and a terminal
@@ -1193,7 +1343,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   //
   if (b->dir != NO)
     rep.error("STWIND not external boundary!",b->dir);
+#ifdef TESTING
   cout <<"Assigning data to STWIND boundary. Nsrc="<<SWP.Nsources<<"\n";
+#endif
   if (SWP.Nsources<1) {
     rep.error("UniformGrid::BC_assign_STWIND() No Wind Sources!",SWP.Nsources);
   }
@@ -1226,7 +1378,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   }
   Wind = 0;
   if (Ns>0) {
+#ifdef TESTING
     cout <<"\n------------------ SETTING UP STELLAR WIND CLASS -----------------\n";
+#endif
     if (!err) {
       Wind = new stellar_wind ();
     }
@@ -1240,7 +1394,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // Run through sources and add sources.
   //
   for (int isw=0; isw<Ns; isw++) {
+#ifdef TESTING
     cout <<"\tUniformGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
+#endif
     if (SWP.params[isw]->type==3) {
       err = Wind->add_evolving_source(
         SWP.params[isw]->dpos,
@@ -1273,7 +1429,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // loop over sources, adding cells to boundary data list in order.
   //
   for (int id=0;id<Ns;id++) {
+#ifdef TESTING
     cout <<"\tUniformGrid::BC_assign_STWIND: Adding cells to source "<<id<<"\n";
+#endif
     BC_assign_STWIND_add_cells2src(id,b);
   }
   //
@@ -1281,10 +1439,16 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // cells with their boundary values.
   //
   err += BC_update_STWIND(b,0,0);
+#ifdef TESTING
   cout <<"\tFinished setting up wind parameters\n";
   cout <<"------------- DONE SETTING UP STELLAR WIND CLASS -----------------\n\n";
+#endif
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
             struct boundary_data *b
@@ -1301,9 +1465,11 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
   Wind->get_src_ipos(id,srcpos);
   double srcrad;
   Wind->get_src_irad(id,&srcrad);
+#ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
-  //rep.printVec("src", srcpos, G_ndim);
-  //rep.printVec("pos", c->pos, G_ndim);
+  rep.printVec("src", srcpos, G_ndim);
+  rep.printVec("pos", c->pos, G_ndim);
+#endif
 
   cell *c = FirstPt();
   do {
@@ -1332,9 +1498,15 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
   } while ((c=NextPt(c))!=0);
   
   err += Wind->set_num_cells(id,ncell);
+#ifdef TESTING
   cout <<"UniformGrid: Added "<<ncell<<" cells to wind boundary for WS "<<id<<"\n";
+#endif
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Update internal stellar wind boundaries -- these are (possibly time-varying)
@@ -1377,6 +1549,10 @@ int UniformGrid::BC_update_STWIND(boundary_data *b, ///< Boundary to update.
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_printBCdata(boundary_data *b)
 {
   list<cell*>::iterator c=b->data.begin();
@@ -1385,6 +1561,10 @@ int UniformGrid::BC_printBCdata(boundary_data *b)
   }
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
 {
@@ -1412,6 +1592,10 @@ int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
   return(0);
 }
   
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
 {
   // TEMP_FIX
@@ -1447,6 +1631,10 @@ int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_update_PERIODIC(   struct boundary_data *b,
                const int cstep,
                const int maxstep
@@ -1462,6 +1650,10 @@ int UniformGrid::BC_update_PERIODIC(   struct boundary_data *b,
   } // all cells.
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_OUTFLOW(    struct boundary_data *b,
                const int cstep,
@@ -1510,17 +1702,13 @@ int UniformGrid::BC_update_OUTFLOW(    struct boundary_data *b,
     }
 #endif // GLM_NEGATIVE_BOUNDARY
 
-#ifdef TESTING
-    //if ((*c)->npt->id==5887) {
-    //  (*c)->P[SI]=(*c)->Ph[SI]=0.0;
-    //cout <<"**** bc after :";
-    //PrintCell((*c));
-    //cout <<"****************Boundary Cells********************\n";
-    //}
-#endif //TESTING
   } // all cells.
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_ONEWAY_OUT( struct boundary_data *b,
                const int cstep,
@@ -1613,6 +1801,10 @@ int UniformGrid::BC_update_ONEWAY_OUT( struct boundary_data *b,
   
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_update_INFLOW(     struct boundary_data *b,
                const int , /// current ooa step e.g. 1 (not used here)
                const int   /// overall ooa      e.g. 2 (not used here)
@@ -1625,6 +1817,10 @@ int UniformGrid::BC_update_INFLOW(     struct boundary_data *b,
   } // all cells.
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_REFLECTING( struct boundary_data *b,
                const int cstep,
@@ -1644,6 +1840,10 @@ int UniformGrid::BC_update_REFLECTING( struct boundary_data *b,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_update_FIXED(      struct boundary_data *b,
                const int , /// current ooa step e.g. 1 (not used here)
                const int   /// overall ooa      e.g. 2 (not used here)
@@ -1659,6 +1859,10 @@ int UniformGrid::BC_update_FIXED(      struct boundary_data *b,
   }    // all cells.   
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_JETREFLECT( struct boundary_data *b,
                const int cstep,
@@ -1679,6 +1883,10 @@ int UniformGrid::BC_update_JETREFLECT( struct boundary_data *b,
   } // all cells.
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_DMACH(      struct boundary_data *b,
                const int cstep,
@@ -1705,6 +1913,10 @@ int UniformGrid::BC_update_DMACH(      struct boundary_data *b,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_update_DMACH2(     struct boundary_data *b,
                const int,
                const int
@@ -1720,6 +1932,10 @@ int UniformGrid::BC_update_DMACH2(     struct boundary_data *b,
   }    // all cells.   
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_RADSHOCK(   struct boundary_data *b,
                const int cstep,
@@ -1741,6 +1957,10 @@ int UniformGrid::BC_update_RADSHOCK(   struct boundary_data *b,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_update_RADSH2(   struct boundary_data *b,
              const int cstep,
              const int maxstep
@@ -1755,6 +1975,10 @@ int UniformGrid::BC_update_RADSH2(   struct boundary_data *b,
   }
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int UniformGrid::BC_update_JETBC(      struct boundary_data *b,
                const int,
@@ -1784,9 +2008,15 @@ int UniformGrid::BC_update_JETBC(      struct boundary_data *b,
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 void UniformGrid::BC_deleteBoundaryData()
 {
+#ifdef TESTING
   cout <<"BC destructor: deleting Boundary data...\n";
+#endif
   struct boundary_data *b;
   for (int ibd=0; ibd<BC_nbd; ibd++) {
     b = &BC_bd[ibd];
@@ -1794,30 +2024,54 @@ void UniformGrid::BC_deleteBoundaryData()
       b->refval = mem.myfree(b->refval);
     }
     if (ibd<2*G_ndim) {
-      if (b->data.empty()) {cout <<"BC destructor: No boundary cells to delete.\n";}
+      if (b->data.empty()) {
+#ifdef TESTING
+        cout <<"BC destructor: No boundary cells to delete.\n";
+#endif
+        }
       else {
-  list<cell *>::iterator i=b->data.begin();
-  do {
-    deleteCell(*i);  // This seems to work in terms of actually freeing the memory.
-    b->data.erase(i);
-    i=b->data.begin();
-  }  while(i!=b->data.end());
-  if(b->data.empty()) cout <<"\t done.\n";
-  else cout <<"\t not empty list! FIX ME!!!\n";
+        list<cell *>::iterator i=b->data.begin();
+        do {
+          deleteCell(*i);  // This seems to work in terms of actually freeing the memory.
+          b->data.erase(i);
+          i=b->data.begin();
+        }  while(i!=b->data.end());
+        if (b->data.empty()) {
+#ifdef TESTING
+          cout <<"\t done.\n";
+#endif
+        }
+        else {
+#ifdef TESTING
+          cout <<"\t not empty list! FIX ME!!!\n";
+#endif
+        }
       }
     }
     else {
-      if (b->data.empty()) {cout <<"BC destructor: No boundary cells to delete.\n";}
+      if (b->data.empty()) {
+#ifdef TESTING
+        cout <<"BC destructor: No boundary cells to delete.\n";
+#endif
+      }
       else {
-  list<cell *>::iterator i=b->data.begin();
-  do {
-    // Don't need to delete the cell here because the extra boundaries just have
-    // pointers to cells initialised and listed elsewhere.
-    b->data.erase(i);
-    i=b->data.begin();
-  }  while(i!=b->data.end());
-  if(b->data.empty()) cout <<"\t done.\n";
-  else cout <<"\t not empty list! FIX ME!!!\n";
+        list<cell *>::iterator i=b->data.begin();
+        do {
+          // Don't need to delete the cell here because the extra boundaries just have
+          // pointers to cells initialised and listed elsewhere.
+          b->data.erase(i);
+          i=b->data.begin();
+        }  while(i!=b->data.end());
+        if(b->data.empty()) {
+#ifdef TESTING
+          cout <<"\t done.\n";
+#endif
+        }
+        else {
+#ifdef TESTING
+          cout <<"\t not empty list! FIX ME!!!\n";
+#endif
+        }
       }
     }
   } // loop over all boundaries.
@@ -1825,6 +2079,10 @@ void UniformGrid::BC_deleteBoundaryData()
   return;
 }
   
+
+// ##################################################################
+// ##################################################################
+
 #ifdef GEOMETRIC_GRID
 ///
 /// Calculate distance between two points, where the two position
@@ -1842,6 +2100,10 @@ double UniformGrid::distance(const double *p1, ///< position 1 (physical)
   return sqrt(temp);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between two points, where the two position
 /// are interpreted in the appropriate geometry.
@@ -1858,6 +2120,10 @@ double UniformGrid::idistance(const int *p1, ///< position 1 (integer)
   return sqrt(temp);
 }
    
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between two cell--centres (will be between
 /// centre-of-volume of cells if non-cartesian geometry).
@@ -1872,6 +2138,10 @@ double UniformGrid::distance_cell2cell(const cell *c1, ///< cell 1
     temp += pow(CI.get_dpos(c1,i)-CI.get_dpos(c2,i), 2.0);
   return sqrt(temp);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between two cell--centres (will be between
@@ -1891,6 +2161,10 @@ double UniformGrid::idistance_cell2cell(const cell *c1, ///< cell 1
   return sqrt(temp);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
 /// (will be between centre-of-volume of cells if non-cartesian
@@ -1905,6 +2179,10 @@ double UniformGrid::distance_vertex2cell(const double *v, ///< vertex (physical)
     temp += pow(v[i]-CI.get_dpos(c,i), 2.0);
   return sqrt(temp);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
@@ -1921,6 +2199,10 @@ double UniformGrid::idistance_vertex2cell(const int *v, ///< vertex (integer)
   return sqrt(temp);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// As idistance_vertex2cell(int,cell) but for a single component
 /// of the position vector, and not the absolute value.  It returns
@@ -1933,6 +2215,10 @@ double UniformGrid::idifference_vertex2cell(const int *v,  ///< vertex (integer)
 {
   return (CI.get_ipos(c,a)-v[a]);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
@@ -1948,6 +2234,10 @@ double UniformGrid::idifference_cell2cell(
   return (CI.get_ipos(c2,a)-CI.get_ipos(c1,a));
 }
 
+
+// ##################################################################
+// ##################################################################
+
 //-------------------------------------------------------------
 //------------------- CARTESIAN GRID END ----------------------
 //-------------------------------------------------------------
@@ -1956,6 +2246,10 @@ double UniformGrid::idifference_cell2cell(
 //------------------- CYLINDRICAL GRID START ------------------
 //-------------------------------------------------------------
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Constructor
 ///
@@ -1963,19 +2257,33 @@ uniform_grid_cyl::uniform_grid_cyl(int nd, int nv, int eqt, double *xn, double *
   : 
   VectorOps_Cart(nd),UniformGrid(nd,nv,eqt,xn,xp,nc),VectorOps_Cyl(nd)
 {
+#ifdef TESTING
   cout <<"Setting up cylindrical uniform grid with";
   cout <<" G_ndim="<<G_ndim<<" and G_nvar="<<G_nvar<<"\n";
+#endif
   if (G_ndim!=2)
     rep.error("Need to write code for !=2 dimensions",G_ndim);
 
+#ifdef TESTING
   cout <<"cylindrical grid: dr="<<G_dx<<"\n";
+#endif
   set_dx(G_dx);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 uniform_grid_cyl::~uniform_grid_cyl()
 {
+#ifdef TESTING
   cout <<"uniform_grid_cyl destructor. Present and correct!\n";
+#endif
 }
+
+
+// ##################################################################
+// ##################################################################
 
 double uniform_grid_cyl::iR_cov(const cell *c)
 {
@@ -1992,6 +2300,10 @@ double uniform_grid_cyl::iR_cov(const cell *c)
   return (R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rcyl];
 }
   
+
+// ##################################################################
+// ##################################################################
+
 
 ///
 /// Calculate distance between two points, where the two position
@@ -2013,6 +2325,10 @@ double uniform_grid_cyl::distance(const double *p1, ///< position 1 (physical)
   return sqrt(temp);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between two points, where the two position
 /// are interpreted in the appropriate geometry.
@@ -2033,6 +2349,10 @@ double uniform_grid_cyl::idistance(const int *p1, ///< position 1 (integer)
   return sqrt(temp);
 }
    
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between two cell--centres (will be between
 /// centre-of-volume of cells if non-cartesian geometry).
@@ -2053,6 +2373,10 @@ double uniform_grid_cyl::distance_cell2cell(const cell *c1, ///< cell 1
   d += temp*temp;
   return sqrt(d);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between two cell--centres (will be between
@@ -2077,6 +2401,10 @@ double uniform_grid_cyl::idistance_cell2cell(const cell *c1, ///< cell 1
   return sqrt(d);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
 /// (will be between centre-of-volume of cells if non-cartesian
@@ -2097,6 +2425,10 @@ double uniform_grid_cyl::distance_vertex2cell(const double *v, ///< vertex (phys
   d += temp*temp;
   return sqrt(d);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
@@ -2127,6 +2459,10 @@ double uniform_grid_cyl::idistance_vertex2cell(const int *v, ///< vertex (intege
 
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// As idistance_vertex2cell(int,cell) but for a single component
 /// of the position vector, and not the absolute value.  It returns
@@ -2149,6 +2485,10 @@ double uniform_grid_cyl::idifference_vertex2cell(const int *v,  ///< vertex (int
   return -1.0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
 /// difference between two cell positions along a given axis.
@@ -2169,6 +2509,10 @@ double uniform_grid_cyl::idifference_cell2cell(
   return -1.0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source id
                  struct boundary_data *b
                  )
@@ -2184,38 +2528,36 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
   Wind->get_src_ipos(id,srcpos);
   double srcrad;
   Wind->get_src_irad(id,&srcrad);
+#ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
+#endif
 
   cell *c = FirstPt();
   do {
     //
     // GEOMETRY: This is to centre--of--volume of cell!
     //
-#ifdef GEOMETRIC_GRID
     if (idistance_vertex2cell(srcpos,c) <= srcrad) {
-#else  // GEOMETRIC_GRID
-      if (GS.idistance(srcpos,c->pos,G_ndim) <= srcrad) {
-#endif // GEOMETRIC_GRID
-  ncell++;
-  //b->data.push_back(c); // don't need b to have a lit too.
-  err += Wind->add_cell(id,c);
-  //cout <<"CYL adding cell "<<c->id<<" to list.\n";
-  //rep.printVec("***src", srcpos, G_ndim);
-  //rep.printVec("***pos", c->pos, G_ndim);
-  //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
-  //rep.printVec("src", srcpos, G_ndim);
-  //rep.printVec("pos", c->pos, G_ndim);
-#ifdef GEOMETRIC_GRID
-      }
-#else  // GEOMETRIC_GRID
+      ncell++;
+      //b->data.push_back(c); // don't need b to have a lit too.
+      err += Wind->add_cell(id,c);
+      //cout <<"CYL adding cell "<<c->id<<" to list.\n";
+      //rep.printVec("***src", srcpos, G_ndim);
+      //rep.printVec("***pos", c->pos, G_ndim);
+      //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
+      //rep.printVec("src", srcpos, G_ndim);
+      //rep.printVec("pos", c->pos, G_ndim);
     }
-#endif // GEOMETRIC_GRID
   } while ((c=NextPt(c))!=0);
   
   err += Wind->set_num_cells(id,ncell);
 
   return err;
 }
+
+// ##################################################################
+// ##################################################################
+
 //-------------------------------------------------------------
 //------------------- CYLINDRICAL GRID END --------------------
 //-------------------------------------------------------------
@@ -2223,6 +2565,10 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
 //-------------------------------------------------------------
 //------------------- SPHERICAL GRID START --------------------
 //-------------------------------------------------------------
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Constructor
@@ -2234,19 +2580,33 @@ uniform_grid_sph::uniform_grid_sph(int nd, int nv, int eqt, double *xn, double *
   VectorOps_Cyl(nd),
   VectorOps_Sph(nd)
 {
+#ifdef TESTING
   cout <<"Setting up spherical uniform grid with";
   cout <<" G_ndim="<<G_ndim<<" and G_nvar="<<G_nvar<<"\n";
+#endif
   if (G_ndim!=1)
     rep.error("Need to write code for >1 dimension",G_ndim);
 
+#ifdef TESTING
   cout <<"spherical grid: dr="<<G_dx<<"\n";
+#endif
   set_dx(G_dx);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 uniform_grid_sph::~uniform_grid_sph()
 {
+#ifdef TESTING
   cout <<"uniform_grid_sph destructor. Present and correct!\n";
+#endif
 }
+
+
+// ##################################################################
+// ##################################################################
 
 double uniform_grid_sph::iR_cov(const cell *c)
 {
@@ -2263,6 +2623,10 @@ double uniform_grid_sph::iR_cov(const cell *c)
   return ((R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between two points, where the two position
 /// are interpreted in the appropriate geometry.
@@ -2275,6 +2639,10 @@ double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
 {
   return fabs(p1[Rsph]-p2[Rsph]);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between two points, where the two position
@@ -2289,6 +2657,10 @@ double uniform_grid_sph::idistance(const int *p1, ///< position 1 (integer)
   return fabs(static_cast<double>(p1[Rsph]-p2[Rsph]));
 }
    
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between two cell--centres (will be between
 /// centre-of-volume of cells if non-cartesian geometry).
@@ -2300,6 +2672,10 @@ double uniform_grid_sph::distance_cell2cell(const cell *c1, ///< cell 1
 {
   return fabs(R_com(c1)-R_com(c2));
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between two cell--centres (will be between
@@ -2314,6 +2690,10 @@ double uniform_grid_sph::idistance_cell2cell(const cell *c1, ///< cell 1
   return fabs(R_com(c1)-R_com(c2))/CI.phys_per_int();
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
 /// (will be between centre-of-volume of cells if non-cartesian
@@ -2325,6 +2705,10 @@ double uniform_grid_sph::distance_vertex2cell(const double *v, ///< vertex (phys
 {
   return fabs(v[Rsph] - R_com(c));
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
@@ -2340,6 +2724,10 @@ double uniform_grid_sph::idistance_vertex2cell(const int *v, ///< vertex (intege
   return
     fabs(static_cast<double>(v[Rsph]) -iR_cov(c));
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// As idistance_vertex2cell(int,cell) but for a single component
@@ -2359,6 +2747,10 @@ double uniform_grid_sph::idifference_vertex2cell(const int *v,  ///< vertex (int
   return -1.0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///
 /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
 /// difference between two cell positions along a given axis.
@@ -2376,6 +2768,10 @@ double uniform_grid_sph::idifference_cell2cell(
     rep.error("Bad axis for uniform_grid_sph::idifference_cell2cell()",a);
   return -1.0;
 }
+
+// ##################################################################
+// ##################################################################
+
 int uniform_grid_sph::BC_assign_STWIND_add_cells2src(const int id, ///< source id
                  struct boundary_data *b
                  )
@@ -2396,8 +2792,10 @@ int uniform_grid_sph::BC_assign_STWIND_add_cells2src(const int id, ///< source i
   Wind->get_src_posn(id,srcpos);
   double srcrad;
   Wind->get_src_drad(id,&srcrad);
+#ifdef TESTING
   cout <<"***SPH-1D srcrad="<<srcrad<<"\n";
   rep.printVec("***src", srcpos, G_ndim);
+#endif
 
   //
   // For spherical geometry we need to add boundary cells, so we go
@@ -2411,17 +2809,12 @@ int uniform_grid_sph::BC_assign_STWIND_add_cells2src(const int id, ///< source i
     //
     // GEOMETRY: This is to centre--of--volume of cell!
     //
-#ifdef GEOMETRIC_GRID
-    if (distance_vertex2cell(srcpos,c) <= srcrad)
-#else  // GEOMETRIC_GRID
-    double dpos[MAX_NDIM];
-    CI.get_dpos(c,dpos);
-    if (GS.distance(srcpos,dpos,G_ndim) <= srcrad)
-#endif // GEOMETRIC_GRID
-    {
+    if (distance_vertex2cell(srcpos,c) <= srcrad) {
       ncell++;
+#ifdef TESTING
       cout <<"grid-Sph1D: adding cell "<<c->id<<" to list.\n";
-        rep.printVec("cell-pos", c->pos, G_ndim);
+      rep.printVec("cell-pos", c->pos, G_ndim);
+#endif
       //b->data.push_back(c); // don't need b to have a list too.
       err += Wind->add_cell(id,c);
       //cout <<"SPH: adding cell "<<c->id<<" to list. d=";

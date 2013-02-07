@@ -2,19 +2,23 @@
 /// \file cvode_integrator.h
 /// \author Jonathan Mackey
 ///
-/// This file contains a class which is intended as a general integrator of
-/// microphysics equations, which can be inherited by specific implementations
-/// with a number of species and different heating/cooling rates, and even 
-/// integration of the optical depth for the implicit C2-ray-type method.
+/// This file contains a class which is intended as a general
+/// integrator of microphysics equations, which can be inherited by
+/// specific implementations with a number of species and different
+/// heating/cooling rates, and even integration of the optical depth
+/// for the implicit C2-ray-type method.
 ///
-/// The integration method uses the CVODE solver from the SUNDIALS package by
-/// (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in Physics, 10, 138) available from 
-/// https://computation.llnl.gov/casc/sundials/main.html
-/// The method is backwards differencing (i.e. implicit) with Newton iteration.
+/// The integration method uses the CVODE solver from the SUNDIALS
+/// package by (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in
+/// Physics, 10, 138) available from 
+///   https://computation.llnl.gov/casc/sundials/main.html
+/// The method is backwards differencing with Newton iteration.
 ///
 /// Modifications:
 /// - 2011.10.06 JM: Wrote file, based on old code in mp_v2_aifa.h and a test
 ///   integrator in active/code_misc/sundials/test_prog3/
+/// - 2013.02.07 JM: Changed int to long int in Jacobian function for
+///    compatibility with sundials 2.5.0.
 ///
 
 #ifndef CVODE_INTEGRATOR_H
@@ -52,15 +56,15 @@
 // just provide the interface to call solver::ydot();
 //
 int Ydot_for_cvode(
-          double, ///< current time
+          double,   ///< current time
           N_Vector, ///< current Y-value
-          N_Vector,  ///< vector for Y-dot values
+          N_Vector, ///< vector for Y-dot values
           void *    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
           );
 
 int Jacobian_for_cvode(
-          int,    ///< N (not sure what this is for! Must be internal)
-          double, ///< time, t
+          long int, ///< N (not sure what this is for! Must be internal)
+          double,   ///< time, t
           N_Vector, ///< y
           N_Vector, ///< ydot
           DlsMat,   ///< Jacobian matrix

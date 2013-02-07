@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# If you already have pion libraries installed somewhere else, this
+# file will link to them, just edit the path.
+
 #mkdir include
 #mkdir bin
 #mkdir lib
@@ -8,8 +11,8 @@
 #./install_cvodes.sh
 #./install_silo.sh
 
-
-ln -s ../../uniform_grid_code/trunk/extra_libraries/lib ./lib
-ln -s ../../uniform_grid_code/trunk/extra_libraries/include ./include
-ln -s ../../uniform_grid_code/trunk/extra_libraries/bin ./bin
+lib_path=../../uniform_grid_code/trunk/extra_libraries
+ln -s ${lib_path}/lib ./lib
+ln -s ${lib_path}/include ./include
+ln -s ${lib_path}/bin ./bin
 

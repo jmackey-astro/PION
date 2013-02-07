@@ -10,23 +10,22 @@
 /// 
 /// 
 /// Modifications:
-///  - 2007-06-26 Hunted for bugs, but they were in another file.
-///  - 2007-07-13 New Class structure implemented.
-///  - 2007-07-16 New Class structure works (modified from Friday a little).  Same as old, but a bit faster.
-///  - 2007-07-17 2D riemann problem initial setup improved (area averaged interface cells).
-///  - 2007-07-24 Added passive tracer variable support.
-///  - 2007-08-07 cylindrical coordinates working for 2d axi-symmetry.
-///  - 2007-10-11 Cleaning up.
-///  - 2007-11-01 Added dataio class last week, cleaning up today.
-///  - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
+/// - 2007-06-26 Hunted for bugs, but they were in another file.
+/// - 2007-07-13 New Class structure implemented.
+/// - 2007-07-16 New Class structure works (modified from Friday a little).  Same as old, but a bit faster.
+/// - 2007-07-17 2D riemann problem initial setup improved (area averaged interface cells).
+/// - 2007-07-24 Added passive tracer variable support.
+/// - 2007-08-07 cylindrical coordinates working for 2d axi-symmetry.
+/// - 2007-10-11 Cleaning up.
+/// - 2007-11-01 Added dataio class last week, cleaning up today.
+/// - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
 ///
-///  - JM 2009-12-16 Added ifdef in IntUniformFV::Time_Int() so that I
+/// - JM 2009-12-16 Added ifdef in IntUniformFV::Time_Int() so that I
 ///      can get the code to output magnetic pressure instead of
 ///      timing info every timestep.  This is purely to make a plot of
 ///      magnetic pressure for the Field Loop Advection Test and
 ///      should be switched off in general (although it makes no
 ///      difference to the running of the code!).
-///
 /// - 2009-12-18 JM: Added Axisymmetric Class
 ///    (cyl_FV_solver_Hydro_Euler) in set_equations().
 ///
@@ -34,17 +33,13 @@
 ///     calc_timestep().  This is controlled by the flag
 ///     SimPM.EP.MP_timestep_limit, which is set to true to turn it
 ///     on.
-///
 /// - 2010-01-21 JM: Added override option for SimPM.gamma, the
 ///    equation of state parameter.
-///
 /// - 2010-04-10 JM: fixed width timestep in text and fits filenames.
-///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 /// checkpoint files with fname.999999.txt/silo/fits.  Added a check
 /// for checkpointing in output_data() and removed all of the outfile
 /// string generation (moved to dataio classes).
-///
 /// - 2010-04-25 JM: Added an extra command-line parameter to set the
 ///  minimum allowed timestep.  If the step is shorter than this then
 ///  in calc_timestep() we will bug out because something has gone
@@ -55,22 +50,22 @@
 /// - 2010-07-23 JM: Swtiched checkpointing to use two files and overwrite
 ///    alternate files, ensuring there will always be at least one valid
 ///    checkpoint file to restart from.
-///  - 2010.07.23 JM: New RSP source position class interface.
-///  - 2010.09.27 JM: took out comments and old ifdefs from dU_column().
-///  - 2010.09.30 JM: Added div(V) calculation to calc_dU() function for viscosity.
-///  - 2010.10.01 JM: Spherical coordinates(1D only) for Euler equations.
+/// - 2010.07.23 JM: New RSP source position class interface.
+/// - 2010.09.27 JM: took out comments and old ifdefs from dU_column().
+/// - 2010.09.30 JM: Added div(V) calculation to calc_dU() function for viscosity.
+/// - 2010.10.01 JM: Spherical coordinates(1D only) for Euler equations.
 ///       Cut out testing myalloc/myfree
-///  - 2010.10.04 JM: Moved the field-loop magnetic pressure output to
+/// - 2010.10.04 JM: Moved the field-loop magnetic pressure output to
 ///       an ifdeffed function.  Added a new function to calculate the
 ///       1D blast wave radius in spherical coordinates (also ifdeffed).
-///  - 2010.10.05 JM: Changed boundary point timestep calculation to
+/// - 2010.10.05 JM: Changed boundary point timestep calculation to
 ///       work for all sims, not just jet sims.  Note this only works
 ///       for the XN point from the grid FirstPt(), not all boundary
 ///       points (which it really should work for!)
-///  - 2010.10.13 JM: Added option to setup new microphysics_lowZ class
+/// - 2010.10.13 JM: Added option to setup new microphysics_lowZ class
 ///       in setup_microphysics() function.
 ///       Added MP_timestep_limit override option.
-///  - 2010.11.03 JM: Changed "endl" to "\n" for JUROPA.  Added a
+/// - 2010.11.03 JM: Changed "endl" to "\n" for JUROPA.  Added a
 ///       digit to output file counters.
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
@@ -135,14 +130,13 @@
 ///    new time-integration scheme is validated/tested.
 /// - 2012.08.16 JM: Debugging.  It seems to be working well now, but
 ///    there is still more testing to do.
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 ///
+
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
-
 #include "grid.h"
 #include "dataIO/dataio.h"
-
 #include "microphysics/microphysics_base.h"
 
 #ifndef EXCLUDE_MPV1
@@ -151,7 +145,7 @@
 
 #ifndef EXCLUDE_HD_MODULE
 #include "microphysics/microphysics_lowZ.h"
-#endif 
+#endif
 
 #include "microphysics/mp_only_cooling.h"
 
@@ -223,20 +217,28 @@ IntUniformFV::IntUniformFV()
 
 IntUniformFV::~IntUniformFV()
 {
+#ifdef TESTING
   cout << "(IntUniformFV::Destructor) Deleting Grid Class..." <<"\n";
+#endif
   if(grid!=0) {
+#ifdef TESTING
     cout << "\t Deleting Grid Data..." <<"\n";
+#endif
     delete grid; grid=0;
   }
   if(eqn !=0) {
+#ifdef TESTING
     cout <<"\t Deleting Solver/Equations class...\n";
+#endif
     delete eqn; eqn=0;
   }
   if (dataio) {delete dataio; dataio=0;}
   if (textio) {delete textio; textio=0;}
   if (MP)     {delete MP; MP=0;}
   if (RT)     {delete RT; RT=0;}
+#ifdef TESTING
   cout << "(IntUniformFV::Destructor) Done." <<"\n";
+#endif
 }
 
 /*****************************************************************/
@@ -251,9 +253,9 @@ IntUniformFV::~IntUniformFV()
 
 int IntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
 {
-  cout <<"*********************************************************************\n";
-  cout <<"*********************************************************************\n";
+#ifdef TESTING
   cout <<"(UniformFV::Init) Initialising grid"<<"\n";
+#endif
   int err=0;
   
   SimPM.typeofip=typeOfFile;
@@ -325,19 +327,25 @@ int IntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
 
 
   // Now do some checks that everything is ready to start.
+#ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start? \n";
+#endif
   err = ready_to_start();
   rep.errorTest("(INIT::ready_to_start) err!=0 Something went bad",0,err);
 
+#ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start. Starting simulation."<<"\n";
+#endif
 #ifdef SERIAL
   // If outfile-type is different to infile-type, we need to delete dataio and set it up again.
   // This is ifdeffed because parallel version of init() will do it itself,
   // with parallel I/O classes.
   if (SimPM.typeofip != SimPM.typeofop) {
+#ifdef TESTING
     cout <<"(UniformFV::INIT) infile-type="<<SimPM.typeofip;
     cout <<" and outfile-type="<<SimPM.typeofop;
     cout <<", so deleting and renewing dataio.\n";
+#endif
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
     switch (SimPM.typeofop) {
@@ -379,7 +387,7 @@ int IntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
   }
-  cout <<"                                   ******************************\n";
+  cout <<"------------------------------------------------------------\n";
 #endif // SERIAL
   
   return(0);
@@ -997,7 +1005,9 @@ int IntUniformFV::setup_grid()
   //
   // Now we can setup the grid:
   //
+#ifdef TESTING
   cout <<"(UniformFV::setup_grid) Setting up grid...\n";
+#endif
   if (grid) rep.error("Grid already set up!",grid);
 
 #ifdef GEOMETRIC_GRID
@@ -1014,8 +1024,10 @@ int IntUniformFV::setup_grid()
 #endif // GEOMETRIC_GRID
 
   if (grid==0) rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
+#ifdef TESTING
   cout <<"(UniformFV::setup_grid) Done. g="<<grid<<"\n";
   cout <<"DX = "<<grid->DX()<<"\n";
+#endif
   cout <<"------------------------------------------------------\n\n";
 
   return(0);
@@ -1031,7 +1043,8 @@ int IntUniformFV::setup_grid()
 int IntUniformFV::boundary_conditions()
 {
   // For uniform fixed cartesian grid.
-//  cout <<"(UniformFV::boundary_conditions)";
+#ifdef TESTING
+  cout <<"(UniformFV::boundary_conditions)";
   
   if(SimPM.typeofbc=="FIXED") {
     cout << "\t Using fixed boundary conditions; only useful for shock tube."<<"\n";
@@ -1048,20 +1061,26 @@ int IntUniformFV::boundary_conditions()
   else {
     cout <<"\t Using the following BCs: "<<SimPM.typeofbc<<"\n";
   }
-  
+#endif
+
   // Nbc is the depth of the boundary layer.
-//  cout <<"Setting depth of boundary cells to be equal to spatial OOA.\n";
+  //  cout <<"Setting depth of boundary cells to be equal to spatial OOA.\n";
   if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
   else rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
   
   if (SimPM.solverType==FLUX_LF) {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1;} // force this if LF Method.
   
-  cout <<"Setting up BCs class in Grid with Nbc="<<SimPM.Nbc<<"\n";
+#ifdef TESTING
+  cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
+#endif
   int err = grid->SetupBCs(SimPM.Nbc,SimPM.typeofbc);
-  if (err) rep.error("IntUniformFV::boundary_conditions() Couldn't set up boundary conditions class.",err);
-//  cout <<"(IntUniformFV::boundary_conditions) Done.\n";
-  return(0);
+  if (err) rep.error("IntUniformFV::boundary_conditions() Couldn't \
+                      set up boundary conditions class.",err);
+#ifdef TESTING
+  cout <<"(IntUniformFV::boundary_conditions) Done.\n";
+#endif
+  return 0;
 }
 
 
@@ -1162,7 +1181,9 @@ int IntUniformFV::ready_to_start()
   //
   cell *c=0;
   if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
+#ifdef TESTING
     cout <<"Initial state, zero-ing glm variable.\n";
+#endif
     c = grid->FirstPt(); do {
       c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
     } while ( (c=grid->NextPt(c)) !=0);
@@ -1227,7 +1248,9 @@ int IntUniformFV::setup_evolving_RT_sources()
   int Nevo=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
     if (SimPM.RS.sources[isrc].EvoFile == "NOFILE") {
+#ifdef TESTING
       cout <<"setup_evolving_RT_sources() Source "<<isrc<<" has no evolution file.\n";
+#endif
     }
     else {
       if (SimPM.RS.sources[isrc].effect != RT_EFFECT_PION_MULTI) {
@@ -1235,7 +1258,9 @@ int IntUniformFV::setup_evolving_RT_sources()
       }
       Nevo++;
       struct star istar;
+#ifdef TESTING
       cout <<"setup_evolving_RT_sources() Source "<<isrc<<" has EvoFile "<<istar.file_name<<"\n";
+#endif
       istar.file_name = SimPM.RS.sources[isrc].EvoFile;
       istar.src_id    = isrc;
       SimPM.STAR.push_back(istar);
@@ -1459,9 +1484,9 @@ int IntUniformFV::update_evolving_RT_sources()
 
 int IntUniformFV::setup_microphysics()
 {
-  cout <<"************************************************************\n";
-  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
-  cout <<"************************************************************\n";
+  cout <<"------------------------------------------------------------\n";
+  cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
+  cout <<"------------------------------------------------------------\n";
   //
   // Setup Microphysics class, if needed.
   // First see if we want the only_cooling class (much simpler), and if
@@ -1602,9 +1627,9 @@ int IntUniformFV::setup_microphysics()
   if (err) rep.error("Setting multifreq source properties",err);
   
 
-  cout <<"************************************************************\n";
-  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
-  cout <<"************************************************************\n";
+  cout <<"------------------------------------------------------------\n";
+  cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
+  cout <<"------------------------------------------------------------\n";
   return 0;
 }
 
@@ -1628,7 +1653,7 @@ int IntUniformFV::setup_raytracing()
   // Now we are doing raytracing, so set up a raytracer and add sources to it.
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
-  cout <<"\n***************** RAYTRACER SETUP STARTING ***********************\n";
+  cout <<"\n----------------- RAYTRACER SETUP STARTING -----------------------\n";
   RT=0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
@@ -1718,7 +1743,7 @@ int IntUniformFV::setup_raytracing()
     FVI_need_column_densities_4dt = false;
   }
 
-  cout <<"***************** RAYTRACER SETUP COMPLETE ***********************\n";
+  cout <<"----------------- RAYTRACER SETUP COMPLETE -----------------------\n";
   return 0;
 }
 
@@ -1769,8 +1794,9 @@ int IntUniformFV::initial_conserved_quantities()
 /*****************************************************************/
 int IntUniformFV::Time_Int()
 {
-  cout <<"                               **************************************\n";
+  cout <<"------------------------------------------------------------\n";
   cout <<"(IntUniformFV::Time_Int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
   GS.start_timer("Time_Int"); double tsf=0;
@@ -1820,7 +1846,7 @@ int IntUniformFV::Time_Int()
   cout.precision(6);
   cout <<"\t"<<tsf<<"\t"<<tsf/static_cast<double>(SimPM.timestep);
   cout <<"\t"<<static_cast<double>(SimPM.timestep*SimPM.Ncell)/tsf<<"\n";
-  cout <<"                               **************************************\n";
+  cout <<"------------------------------------------------------------\n";
 
   return(0);
 }
@@ -1910,8 +1936,10 @@ int IntUniformFV::calc_timestep()
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt();
   t_mp  = calc_microphysics_dt();
+#ifdef TESTING
   if (t_mp<t_dyn)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
+#endif
   SimPM.dt = min(t_dyn,t_mp);
 
 #ifdef THERMAL_CONDUCTION
@@ -1923,10 +1951,12 @@ int IntUniformFV::calc_timestep()
   // later multiplication is done in eqn->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
+#ifdef TESTING
   if (t_cond<t_dyn && t_cond<t_mp) {
     cout <<"CONDUCTION IS LIMITING TIMESTEP: t_c="<<t_cond<<", t_m="<<t_mp;
     cout <<", t_dyn="<<t_dyn<<"\n";
   }
+#endif
   SimPM.dt = min(SimPM.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
@@ -2092,8 +2122,13 @@ double IntUniformFV::calc_dynamics_dt()
      c = grid->NextPt(c,XN);
      tempdt = eqn->CellTimeStep(c,SimPM.gamma,SimPM.dx);
      c = grid->NextPt(c,XP);
+#ifdef TESTING
      cout <<"\tBoundary point timestep! ";
-     dt = min(dt,tempdt); cout <<"\tdt = "<<tempdt<<"\n";  
+#endif
+     dt = min(dt,tempdt);
+#ifdef TESTING
+     cout <<"\tdt = "<<tempdt<<"\n";  
+#endif
   }
 #endif // not RT_TEST_PROBS
 
@@ -3502,13 +3537,16 @@ int IntUniformFV::check_energy_cons()
 int IntUniformFV::Finalise()
 {
   int err=0;
-  cout <<"                         *********************************************\n";
+  cout <<"------------------------------------------------------------\n";
   cout <<"(IntUniformFV::Finalise) FINALISING SIMULATION."<<"\n";
   err += check_energy_cons();
   err+= output_data();
   if (err!=0){cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";return(1);}
   cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
+#ifdef TESTING
   cout <<"(IntUniformFV::Finalise) DONE.\n";
+#endif
+  cout <<"------------------------------------------------------------\n";
   return(0);
 }
 

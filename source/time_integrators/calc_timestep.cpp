@@ -132,7 +132,7 @@
 ///
 /// - 2012.08.05 JM: Moved timestep-calculation functions from gridMethods.cc
 ///    to time_integrators/calc_timestep.cpp.
-///
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 
 #include "../defines/functionality_flags.h"
@@ -140,36 +140,10 @@
 
 #ifdef NEW_TIME_UPDATE
 
-#include "../grid.h"
-
-#include "../microphysics/microphysics_base.h"
-
-//#ifndef EXCLUDE_MPV1
-//#include "../microphysics/microphysics.h"
-//#endif 
-//#ifndef EXCLUDE_HD_MODULE
-//#include "../microphysics/microphysics_lowZ.h"
-//#endif 
-//#include "../microphysics/mp_only_cooling.h"
-//#ifndef EXCLUDE_MPV2
-//#ifdef MP_V2_AIFA
-//#include "../microphysics/mp_v2_aifa.h"
-//#endif
-//#endif 
-//#ifndef EXCLUDE_MPV3
-//#include "../microphysics/mp_explicit_H.h"
-//#endif
-//#ifndef EXCLUDE_MPV4
-//#include "../microphysics/mp_implicit_H.h"
-//#endif 
-
-#include "../raytracing/raytracer_SC.h"
-
-#include "../spatial_solvers/solver_eqn_base.h"
-//#include "../spatial_solvers/solver_eqn_hydro_adi.h"
-//#include "../spatial_solvers/solver_eqn_hydro_adi_Eint.h"
-//#include "../spatial_solvers/solver_eqn_hydro_iso.h"
-//#include "../spatial_solvers/solver_eqn_mhd_adi.h"
+#include "grid.h"
+#include "microphysics/microphysics_base.h"
+#include "raytracing/raytracer_SC.h"
+#include "spatial_solvers/solver_eqn_base.h"
 
 
 
@@ -326,8 +300,13 @@ double IntUniformFV::calc_dynamics_dt()
      c = grid->NextPt(c,XN);
      tempdt = eqn->CellTimeStep(c,SimPM.gamma,SimPM.dx);
      c = grid->NextPt(c,XP);
+#ifdef TESTING
      cout <<"\tBoundary point timestep! ";
-     dt = min(dt,tempdt); cout <<"\tdt = "<<tempdt<<"\n";  
+#endif
+     dt = min(dt,tempdt);
+#ifdef TESTING
+     cout <<"\tdt = "<<tempdt<<"\n";  
+#endif
   }
 #endif // not RT_TEST_PROBS
 

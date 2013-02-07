@@ -1,31 +1,26 @@
-/** \file eqns_hydro_adiabatic.cc
- * 
- * \brief Class definition for eqns_Euler
- * \author Jonathan Mackey
- * 
- * This file contains the class definitions for the Euler Equations.
- * 
- * Modifications:
- *  - 2007-10-16 Moved the equations classes in here from global.cc
- *  - 2009-10-20 renamed eqns_hydro_adiabatic.cc and moved all other equations classes to their own files.
- * */
 ///
+/// \file eqns_hydro_adiabatic.cc
+///  
+///  \brief Class definition for eqns_Euler
+///  \author Jonathan Mackey
+///  
+///  This file contains the class definitions for the Euler Equations.
+///  
+/// Modifications:
+/// - 2007-10-16 Moved the equations classes in here from global.cc
+/// - 2009-10-20 renamed eqns_hydro_adiabatic.cc and moved all other
+///    equations classes to their own files.
 /// - 2010.07.26 JM: added static int counters to suppress negative
-///    pressure/density messages after a certain number have been reported.
-///
+///    pressure/density messages after a certain number have been
+///    reported.
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2010.11.21 JM: Changed UtoP() so that it corrects both pressure
 ///   and density before returning!
-///
 /// - 2010.12.21 JM: Added new equations class which uses internal
 ///   energy and not total energy as a conserved variable.
-///
 /// - 2010.12.23 JM: Added SetAvgState() function to eqns_Euler class.
 ///                  (fixed bug in this 27/12)
-///
 /// - 2010.12.28 JM: moved internal energy Euler eqns to own file.
-///
 /// - 2011.01.16 JM: Added ifdef to set pressure so that temperature 
 ///   is 10K when UtoP gives a negative pressure.  This can be used 
 ///   for stellar wind. (modified 2011.01.18 so Tmin=10K). modified
@@ -35,34 +30,49 @@
 ///    for negative and "small" temperatures.
 /// - 2011.04.15 JM: UtoP() again -- added recalculation of all prim.
 ///    vars if a negative density is encountered.
-///
-#include "../global.h"
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+
+#include "global.h"
 #include "eqns_hydro_adiabatic.h"
 using namespace std;
 
 
 
-// Member function definitions for eqns_Euler class
+
+// ##################################################################
+// ##################################################################
+
 eqns_Euler::eqns_Euler(int nv)
   : eqns_base(nv)
 {
+#ifdef TESTING
   cout <<"(eqns_Euler::eqns_Euler) Setting up Euler Equations Class.\n";
-//  cout <<"\tVector lengths: "<<eqnvar<<"\n";
+  cout <<"\tVector lengths: "<<eqnvar<<"\n";
+#endif
   if(eq_nvar<5) rep.error("eqns_Euler initialised with eq_nvar<5.",eq_nvar);
   //cout <<"Setting Flux functions to X-dir: pu2f(), u2f()\n";
-//  pu2flux = &eqns_Euler::pu2f; 
-//  u2flux = &eqns_Euler::u2f;
+  //  pu2flux = &eqns_Euler::pu2f; 
+  //  u2flux = &eqns_Euler::u2f;
 
   SetDirection(XX);
   eqRO = RO; eqPG = PG;
   eqRHO=RHO; eqERG=ERG;
-  //  cout <<"(eqns_Euler::eqns_Euler) Done.\n";
 }
+
+
+// ##################################################################
+// ##################################################################
 
 eqns_Euler::~eqns_Euler()
 {
-//  cout <<"(eqns_Euler::~eqns_Euler) Deleting Euler Equations Class.\n";
+#ifdef TESTING
+  cout <<"(eqns_Euler::~eqns_Euler) Deleting Euler Equations Class.\n";
+#endif
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void eqns_Euler::PtoU(const double* p, double* u, const double gamma)
 {
@@ -76,6 +86,10 @@ void eqns_Euler::PtoU(const double* p, double* u, const double gamma)
   u[eqERG] = p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])/2.0 +p[eqPG]/(gamma-1.);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int eqns_Euler::UtoP(const double *u, double *p, const double gamma)
 {
@@ -187,12 +201,20 @@ int eqns_Euler::UtoP(const double *u, double *p, const double gamma)
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 double eqns_Euler::chydro(const double *p, ///< Pointer to primitive variables.
 			  const double g   ///< Gas constant gamma.
 			  )
 {
   return(sqrt(g*p[eqPG]/p[eqRO]));
 }
+
+
+// ##################################################################
+// ##################################################################
 
 int eqns_Euler::HydroWave(int lr, const double pp, const double *prewave, double *u, const double gamma) 
 {
@@ -226,6 +248,10 @@ int eqns_Euler::HydroWave(int lr, const double pp, const double *prewave, double
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
 						  
 int eqns_Euler::HydroWaveFull(int lr, const double pp, const double *prewave, double *u, double *rho, const double gamma)
 {
@@ -247,6 +273,10 @@ int eqns_Euler::HydroWaveFull(int lr, const double pp, const double *prewave, do
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 void eqns_Euler::PUtoFlux(const double *p, const double *u, double *f)
 {
   f[eqRHO] = u[eqMMX];
@@ -258,6 +288,10 @@ void eqns_Euler::PUtoFlux(const double *p, const double *u, double *f)
   //      cout <<"Fluxes: "<<c->F[0]<<"  "<<c->F[1]<<"  "<<c->F[2]<<"\n";
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void eqns_Euler::UtoFlux(const double *u, double *f, const double gamma)
 {
@@ -271,6 +305,10 @@ void eqns_Euler::UtoFlux(const double *u, double *f, const double gamma)
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
 ///  Returns Enthalpy (per unit mass), given primitive variable vector. 
 double eqns_Euler::Enthalpy(const double *p, ///< Primitive State Vector.
 			    const double g   ///< gas EOS gamma.
@@ -279,6 +317,10 @@ double eqns_Euler::Enthalpy(const double *p, ///< Primitive State Vector.
   //cout <<"Enthalpy!\n";
   return (0.5*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ]) +g*p[eqPG]/(g-1.0)/p[eqRO]);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///  Returns Internal Energy (per unit mass, so 'Temperature'), given primitive variable vector. 
 double eqns_Euler::eint(const double *p, ///< Primitive State Vector.
@@ -289,6 +331,10 @@ double eqns_Euler::eint(const double *p, ///< Primitive State Vector.
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 ///  Returns Total Energy (per unit volume), given primitive variable vector. 
 double eqns_Euler::Etot(const double *p, ///< State Vector.
 			const double g   ///< gas EOS gamma.
@@ -296,6 +342,10 @@ double eqns_Euler::Etot(const double *p, ///< State Vector.
 {
   return p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])/2. +p[eqPG]/(g-1.);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 ///  Returns Total Pressure (per unit Volume), given primitive variable vector. 
 double eqns_Euler::Ptot(const double *p, ///< Primitive State Vector.
@@ -305,6 +355,10 @@ double eqns_Euler::Ptot(const double *p, ///< Primitive State Vector.
   return p[eqPG];
 }
 
+
+// ##################################################################
+// ##################################################################
+
 ///  Given a pressure ratio and initial density, calculate adiabatic final density.
 double eqns_Euler::AdiabaticRho(const double pr, ///< New to Old pressure ratio
 				const double ri, ///< Old Density
@@ -313,6 +367,10 @@ double eqns_Euler::AdiabaticRho(const double pr, ///< New to Old pressure ratio
 {
   return ri*exp(log(pr)/g);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void eqns_Euler::SetAvgState(const double *ms,  ///< Mean Prim. var. state vector
 			     const double g ///< Gas constant gamma.
@@ -328,4 +386,8 @@ void eqns_Euler::SetAvgState(const double *ms,  ///< Mean Prim. var. state vecto
 
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 

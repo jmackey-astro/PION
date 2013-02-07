@@ -10,7 +10,6 @@
 /// History: Used to be in global.cc (up to SVN rev. 236).
 ///
 /// Modifications:
-
 /// - 2010.11.12 JM: Added support for H-correction speeds.  Changed
 ///   'col' to be an access function 'monochromatic_tau(cell *c)'.
 /// - 2010.11.15/19 JM: Debugged.
@@ -21,12 +20,16 @@
 /// - 2011.03.21 JM: Updated optical-depth info, multiple variables per source.
 /// - 2011.04.18 JM: Added storage for dS, path length through a cell for raytracing.
 /// - 2011.10.17 JM: Updated RT storage.
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 #include "cell_interface.h"
-//#include "../global.h"
 using namespace std;
 
 /************************* CELL INTERFACE ***********************/
+
+// ##################################################################
+// ##################################################################
+
 cell_interface::cell_interface()
 {
   minimal_cell = false;
@@ -53,6 +56,10 @@ cell_interface::cell_interface()
 
 }
 
+
+// ##################################################################
+// ##################################################################
+
 cell_interface::~cell_interface()
 {
   xmin=0;
@@ -64,11 +71,19 @@ cell_interface::~cell_interface()
   }
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::set_minimal_cell_data()
 {
   minimal_cell = true;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void cell_interface::unset_minimal_cell_data()
 {
@@ -77,17 +92,23 @@ void cell_interface::unset_minimal_cell_data()
 }
 
 
+// ##################################################################
+// ##################################################################
+
 //
 // Set variables for extra_data based on what we need per cell.
 // Currently monochromatic radiation needs one double, the
 // H-correction needs Ndim doubles, and Lapidus viscosity one double.
 //
-void cell_interface::setup_extra_data(const struct rad_sources &rsi, ///< Flag for ray-tracing
-				      const int hc_flag,  ///< Flag for H-correction
-				      const int dv_flag   ///< Flag for Div(V).
-				      )
+void cell_interface::setup_extra_data(
+        const struct rad_sources &rsi, ///< Flag for ray-tracing
+        const int hc_flag,  ///< Flag for H-correction
+        const int dv_flag   ///< Flag for Div(V).
+        )
 {
+#ifdef TESTING
   cout <<"\ncell_interface::setup_extra_data():\n";
+#endif
   //
   // Start with no extra data:
   //
@@ -126,7 +147,9 @@ void cell_interface::setup_extra_data(const struct rad_sources &rsi, ///< Flag f
       iVsh[v]  = N_extra_data; N_extra_data++;
       idS[v]   = N_extra_data; N_extra_data++;
     } // loop over radiation sources.
+#ifdef TESTING
     cout <<"\t\t Adding RT: N="<<N_extra_data<<"\n";
+#endif
   }
 
   //
@@ -141,7 +164,9 @@ void cell_interface::setup_extra_data(const struct rad_sources &rsi, ///< Flag f
       iHcorr[v] = N_extra_data;
       N_extra_data += 1;
     }
+#ifdef TESTING
     cout <<"\t\t Adding HCORR: N="<<N_extra_data<<"\n";
+#endif
   }
 
   //
@@ -151,19 +176,31 @@ void cell_interface::setup_extra_data(const struct rad_sources &rsi, ///< Flag f
     using_DivV = dv_flag;
     iDivV = N_extra_data;
     N_extra_data += 1;
+#ifdef TESTING
     cout <<"\t\t Adding DIVV: N="<<N_extra_data<<"\n";
+#endif
   }
 
 
   have_setup_extra_data = true;
+#ifdef TESTING
   cout <<"\n";
+#endif
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 
 // returns true if using minimal cells.
 bool cell_interface::query_minimal_cells()
 {return minimal_cell;}
+
+
+// ##################################################################
+// ##################################################################
 
 cell * cell_interface::new_cell()
 {
@@ -220,6 +257,10 @@ cell * cell_interface::new_cell()
   return c;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::delete_cell(cell *c)
 {
   c->pos= mem.myfree(c->pos);
@@ -235,6 +276,10 @@ void cell_interface::delete_cell(cell *c)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::set_pos(cell *c, ///< pointer to cell
 			     const double *p_in ///< double array of size ndim, containing cell position.
 			     )
@@ -249,6 +294,10 @@ void cell_interface::set_pos(cell *c, ///< pointer to cell
   //  rep.printVec("int-pos",c->pos,SimPM.ndim);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void cell_interface::set_pos(cell *c, ///< pointer to cell
 			     const int *p_in ///< integer array of size ndim, containing cell position.
@@ -267,6 +316,10 @@ void cell_interface::set_pos(cell *c, ///< pointer to cell
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::get_dpos(const cell *c, ///< pointer to cell
 			     double *p_out ///< array to write position into.
 			     )
@@ -276,12 +329,20 @@ void cell_interface::get_dpos(const cell *c, ///< pointer to cell
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 double cell_interface::get_dpos(const cell *c, ///< pointer to cell
 				const int v ///< element of position vector we want
 				)
 {
   return xmin[v] +(c->pos[v]+1)*dxo2;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void cell_interface::get_ipos(const cell *c, ///< pointer to cell
 			      int *ipos_out  ///< array to write integer position into.
@@ -292,12 +353,20 @@ void cell_interface::get_ipos(const cell *c, ///< pointer to cell
   return;
 }  
   
+
+// ##################################################################
+// ##################################################################
+
 int cell_interface::get_ipos(const cell *c, ///< pointer to cell
 			     const int v    ///< element of position we want.
 			     )
 {
   return c->pos[v];
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (input)
 				  int *p_out          ///< integer position (output)
@@ -314,6 +383,10 @@ void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (in
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::get_ipos_as_double(const double *p_in, ///< physical position (input)
 					double *p_out       ///< integer position (output)
 					)
@@ -329,6 +402,10 @@ void cell_interface::get_ipos_as_double(const double *p_in, ///< physical positi
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::get_dpos_vec(const int *p_in, ///< integer position (output)
 				  double *p_out    ///< physical position (input)
 				  )
@@ -337,6 +414,10 @@ void cell_interface::get_dpos_vec(const int *p_in, ///< integer position (output
         p_out[v] = xmin[v] +(p_in[v]+1)*dxo2;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void cell_interface::copy_cell(const cell *c1, cell *c2)
 {
@@ -355,6 +436,10 @@ void cell_interface::copy_cell(const cell *c1, cell *c2)
   return;
 }
  
+
+// ##################################################################
+// ##################################################################
+
 void cell_interface::print_cell(const cell *c)
 {
   if(c==0) {cout <<"Null Pointer!\n"; return;}
@@ -379,107 +464,140 @@ void cell_interface::print_cell(const cell *c)
   return;
 }
 
-  ///
-  /// Get cell optical depth
-  ///
-double cell_interface::get_cell_col(const cell *c,  ///< current cell.
-                             const int v     ///< index of source.
-                             )
-  {
-#ifdef RT_TESTING
-    if (iDTau0[v] <0) {
-      cout <<"source "<<v<<": ";
-      rep.error("Source has no 1st cell opacity!", iDTau0[v]);
-    }
-#endif // RT_TESTING
-    return c->extra_data[iDTau0[v]];
-  }
 
-  ///
-  /// Set cell optical depth
-  ///
-void   cell_interface::set_cell_col(cell *c,
-                             const int v,  ///< index of source.
-                             const double tau
-                             )
-  {
-#ifdef RT_TESTING
-    if (iDTau0[v] <0) {
-      cout <<"source "<<v<<": ";
-      rep.error("Source has no 1st cell opacity!", iDTau0[v]);
-    }
-#endif // RT_TESTING
-    c->extra_data[iDTau0[v]] = tau;
-    return;
-  }
+// ##################################################################
+// ##################################################################
 
-  ///
-  /// Set cell Vshell value (for raytracing).
-  ///
-void cell_interface::set_cell_Vshell(cell *c,
-                             const int v,  ///< index of source.
-                             const double Vshell
-                             )
-  {
+///
+/// Get cell optical depth
+///
+double cell_interface::get_cell_col(
+        const cell *c,  ///< current cell.
+        const int v     ///< index of source.
+        )
+{
 #ifdef RT_TESTING
-    if (iVsh[v] <0) {
-      cout <<"source "<<v<<": ";
-      rep.error("Source has no Vhsell variable", iVsh[v]);
-    }
-#endif // RT_TESTING
-    c->extra_data[iVsh[v]] = Vshell;
-    return;
+  if (iDTau0[v] <0) {
+    cout <<"source "<<v<<": ";
+    rep.error("Source has no 1st cell opacity!", iDTau0[v]);
   }
-  ///
-  /// Get cell Vshell value (for raytracing).
-  ///
-double cell_interface::get_cell_Vshell(const cell *c,  ///< current cell.
-                                const int v     ///< index of source.
-                                )
-  {
-#ifdef RT_TESTING
-    if (iVsh[v] <0) {
-      cout <<"source "<<v<<": ";
-      rep.error("Source has no Vhsell variable", iVsh[v]);
-    }
 #endif // RT_TESTING
-    return c->extra_data[iVsh[v]];
-  }
+  return c->extra_data[iDTau0[v]];
+}
 
-  ///
-  /// Set raytracing path length through cell for source v.
-  ///
-void cell_interface::set_cell_deltaS(cell *c,
-                             const int v,  ///< index of source.
-                             const double deltaS
-                             )
-  {
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Set cell optical depth
+///
+void   cell_interface::set_cell_col(
+        cell *c,
+        const int v,  ///< index of source.
+        const double tau
+        )
+{
 #ifdef RT_TESTING
-    if (idS[v] <0) {
-      cout <<"source "<<v<<": ";
-      rep.error("Source has no deltaS variable", idS[v]);
-    }
-#endif // RT_TESTING
-    c->extra_data[idS[v]] = deltaS;
-    return;
+  if (iDTau0[v] <0) {
+    cout <<"source "<<v<<": ";
+    rep.error("Source has no 1st cell opacity!", iDTau0[v]);
   }
-  ///
-  /// Get raytracing path length through cell for source v.
-  ///
+#endif // RT_TESTING
+  c->extra_data[iDTau0[v]] = tau;
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Set cell Vshell value (for raytracing).
+///
+void cell_interface::set_cell_Vshell(
+        cell *c,
+        const int v,  ///< index of source.
+        const double Vshell
+        )
+{
+#ifdef RT_TESTING
+  if (iVsh[v] <0) {
+    cout <<"source "<<v<<": ";
+    rep.error("Source has no Vhsell variable", iVsh[v]);
+  }
+#endif // RT_TESTING
+  c->extra_data[iVsh[v]] = Vshell;
+  return;
+}
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get cell Vshell value (for raytracing).
+///
+double cell_interface::get_cell_Vshell(
+        const cell *c,  ///< current cell.
+        const int v     ///< index of source.
+        )
+{
+#ifdef RT_TESTING
+  if (iVsh[v] <0) {
+    cout <<"source "<<v<<": ";
+    rep.error("Source has no Vhsell variable", iVsh[v]);
+  }
+#endif // RT_TESTING
+  return c->extra_data[iVsh[v]];
+}
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Set raytracing path length through cell for source v.
+///
+void cell_interface::set_cell_deltaS(
+        cell *c,
+        const int v,  ///< index of source.
+        const double deltaS
+        )
+{
+#ifdef RT_TESTING
+  if (idS[v] <0) {
+    cout <<"source "<<v<<": ";
+    rep.error("Source has no deltaS variable", idS[v]);
+  }
+#endif // RT_TESTING
+  c->extra_data[idS[v]] = deltaS;
+  return;
+}
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get raytracing path length through cell for source v.
+///
 double cell_interface::get_cell_deltaS(
-            const cell *c,  ///< current cell.
-            const int v     ///< index of source.
-            )
-  {
+          const cell *c,  ///< current cell.
+          const int v     ///< index of source.
+          )
+{
 #ifdef RT_TESTING
-    if (idS[v] <0) {
-      cout <<"source "<<v<<": ";
-      rep.error("Source has no Vhsell variable", idS[v]);
-    }
-#endif // RT_TESTING
-    return c->extra_data[idS[v]];
+  if (idS[v] <0) {
+    cout <<"source "<<v<<": ";
+    rep.error("Source has no Vhsell variable", idS[v]);
   }
+#endif // RT_TESTING
+  return c->extra_data[idS[v]];
+}
 
+
+
+// ##################################################################
+// ##################################################################
 
 
 

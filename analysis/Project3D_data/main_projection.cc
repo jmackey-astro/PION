@@ -39,6 +39,8 @@
 /// - 2010.12.13 JM: Added  NEW_STOKES_CALC ifdef to Makefile; the new
 ///    code in the ifdef does a different Stokes Q,U calculation and
 ///    replaces the projected Bx,By with values calculated from Q,U.
+/// - 2012.12.05 JM: Added section to subtract off mean values from
+///    projected total and neutral density.
 
 //
 // Run with e.g.: 
@@ -54,12 +56,9 @@
 #include <silo.h>
 #include <cmath>
 using namespace std;
-#include "../../source/global.h"
-#include "../../source/dataio_utility.h"
-#include "../../source/uniformGrid.h"
-//#include "../../../uniform_grid_code/tags/ET_MHD2010_r215/source/global.h"
-//#include "../../../uniform_grid_code/tags/ET_MHD2010_r215/source/dataio_utility.h"
-//#include "../../../uniform_grid_code/tags/ET_MHD2010_r215/source/uniformGrid.h"
+#include "global.h"
+#include "dataIO/dataio_utility.h"
+#include "grid/uniform_grid.h"
 
 #include "sim_projection.h"
 #include "image_io.h"
@@ -118,18 +117,19 @@ void calculate_pixelW(void *arg)
 //
 // ------------------------------------------------------------------------
 // MODIFYING MIN/MAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
-// Full X-range, Y-range=[-0.75,0.75]pc, Z-range=Y-range.
 //
 void RESET_DOMAIN()
 {
+  return;
+
+
   rep.printVec("Old Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("Old Xmax",SimPM.Xmax,SimPM.ndim);
-  SimPM.Xmin[YY] = -2.3145e18;
-  SimPM.Xmin[ZZ] = -2.3145e18;
-  SimPM.Xmax[YY] =  2.3145e18;
-  SimPM.Xmax[ZZ] =  2.3145e18;
-  SimPM.NG[YY] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[YY]*4.629e18/SimPM.Range[YY]);
-  SimPM.NG[ZZ] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[ZZ]*4.629e18/SimPM.Range[ZZ]);
+  for (int v=0;v<SimPM.ndim;v++) {
+    SimPM.Xmin[v] = -66.16384e18;
+    SimPM.NG[v] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
+    SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
+  }
   rep.printVec("New Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("New Xmax",SimPM.Xmax,SimPM.ndim);
   mpiPM.decomposeDomain();
@@ -151,8 +151,8 @@ int main(int argc, char **argv)
   tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
 #endif //THREADS
 
-  cout <<"WARNING! SIMULATION DOMAIN HARD-CODED FOR MHD ET SIMULATIONS.\n";
-  cout <<"********************* USE WITH CAUTION! ********************\n\n";
+  //cout <<"WARNING! SIMULATION DOMAIN HARD-CODED FOR MHD ET SIMULATIONS.\n";
+  //cout <<"********************* USE WITH CAUTION! ********************\n\n";
 
   //*******************************************************************
   //*******************************************************************
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
   string outfile    = argv[3];
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
-  //rep.redirect(redir.str());
+  rep.redirect(redir.str());
 
   int op_filetype = atoi(argv[4]);
   switch (op_filetype) {
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
   // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
   // Full X-range, Yrange=[-0.75,0.75]pc, Zrange=Yrange.
   //
-  //RESET_DOMAIN();
+  RESET_DOMAIN();
   //
   // ------------------------------------------------------------------------
   //
@@ -441,7 +441,7 @@ int main(int argc, char **argv)
     // also reset the domain to 1/2 the size in Y and Z.
     //
     err = dataio.ReadHeader(infile);
-    //RESET_DOMAIN();
+    RESET_DOMAIN();
     if (err) rep.error("Didn't read header",err);
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7<<" yrs for step="<<ifile<<"   ############\n";
     //
@@ -663,22 +663,56 @@ int main(int argc, char **argv)
     // Now see if we got all the mass in the simulation domain:
     //  
     tot_mass *= grid->DA();
-    cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION: "<<angle<<"\t"<<tot_mass;
-    tot_mass=0;
-      //double posIMG[3], posSIM[3];
-    cell *c=grid->FirstPt();
-    do {
-      tot_mass += c->P[RO];
-      //IMG.get_image_Ipos(c->pos,posIMG);
-      //IMG.get_sim_Dpos(posIMG, posSIM);
-      //rep.printVec("CELL POS:",c->pos,3);
-      //rep.printVec("IMG  POS:",posIMG,3);
-      //rep.printVec("SIM  POS:",posSIM,3);
-      //rep.printVec("IMG OOOO:",IMG.s_origin_img,2);
-    } while ( (c=grid->NextPt(c))!=0);
-    tot_mass *= grid->DV();
-    cout <<"\t"<<tot_mass<<endl;
+    //cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION: "<<angle<<"\t"<<tot_mass;
+    //tot_mass=0;
+    //  //double posIMG[3], posSIM[3];
+    //cell *c=grid->FirstPt();
+    //do {
+    //  tot_mass += c->P[RO];
+    //  //IMG.get_image_Ipos(c->pos,posIMG);
+    //  //IMG.get_sim_Dpos(posIMG, posSIM);
+    //  //rep.printVec("CELL POS:",c->pos,3);
+    //  //rep.printVec("IMG  POS:",posIMG,3);
+    //  //rep.printVec("SIM  POS:",posSIM,3);
+    //  //rep.printVec("IMG OOOO:",IMG.s_origin_img,2);
+    //} while ( (c=grid->NextPt(c))!=0);
+    //tot_mass *= grid->DV();
+    //cout <<"\t"<<tot_mass<<endl;
     
+    //
+    // Here we want to subtract off the mean density and neutral
+    // density from the images, to avoid linear gradients from the
+    // cubic domain being projected at an angle.
+    // We assume the "top" of the image is upstream undisturbed gas
+    // and subtract the values in the top row from all rows below.
+    //
+    switch (what_to_integrate) {
+    case I_DENSITY:
+    case I_NEUTRAL_NH:
+      //
+      // Here we just do the first (and only) image.
+      //
+      for (int iy=0; iy<npix[1]; iy++)
+        for (int ix=0; ix<npix[0]; ix++)
+          img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
+      break;
+    case I_ALL_SCALARS:
+      //
+      // Here we need to subtract from the first and second images.
+      //
+      for (int iy=0; iy<npix[1]; iy++) {
+        for (int ix=0; ix<npix[0]; ix++) {
+          img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
+          img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
+        }
+      }
+      break;
+    default:
+      // default action is to do nothing.
+      break;
+    }
+
+
     //
     // If we got a P-V data-cube, also construct a 2D image projected
     // along the perpendicular direction.

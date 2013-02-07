@@ -2,6 +2,7 @@
 #
 # 2010.12.13 JM: Changed aibn129 to standard workstation.
 #   Updated Vpath to point to the tagged release used for MHD code.
+# 2013.02.05 JM: updated to work with pion.
 #
 
 SHELL = /bin/sh
@@ -9,8 +10,11 @@ SHELL = /bin/sh
 .SUFFIXES: .cc .o
 .SUFFIXES: .cxx .o
 srcdir = .
+CODEDIR=${CURDIR}/../..
+VPATH=${CODEDIR}/source:${CODEDIR}/source/grid:${CODEDIR}/source/dataIO:${CODEDIR}/source/comms:${CODEDIR}/source/coord_sys
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+
+GLOBAL = global.h defines/functionality_flags.h defines/testing_flags.h
 
 
 # --------------------
@@ -33,9 +37,9 @@ OPTION += -DNEW_STOKES_CALC
 #
 # This is to multi-thread the pixel calculations.
 #
-#MT=USE_THREADS
-#OPTION += -DTHREADS -D__WXGTK__
-MT=NO_THREADS
+MT=USE_THREADS
+OPTION += -DTHREADS -D__WXGTK__
+#MT=NO_THREADS
 
 #MAKE_UNAME=JUROPA
 MAKE_UNAME=standard
@@ -63,14 +67,14 @@ ifeq ($(MAKE_UNAME), standard)
   ifeq ($(IOMODE), USE_MPI)
     CXX = mpicxx
   endif
-  #CXXFLAGS = -O3
-  CXXFLAGS = -O0 -Wall -g
+  CXXFLAGS = -O3
+  #CXXFLAGS = -O0 -Wall -g
   CXXFLAGS+= -Wno-unused-function
 
 
   MYLIB = $(CURDIR)/../../extra_libraries
 
-  INC = -I${MYLIB}/include
+  INC = -I${MYLIB}/include -I${CODEDIR}/source
   LDFLAGS =  -lm  -lreadline -lncurses
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
@@ -79,7 +83,7 @@ ifeq ($(MAKE_UNAME), standard)
   LDFLAGS += -lsilo
   # libs for CVODES
 
-  VPATH=../../source:../../source/defines
+  #VPATH=../../source:../../source/defines
   #VPATH=../../../uniform_grid_code/tags/ET_MHD2010_r215/source
 endif
 
@@ -111,7 +115,7 @@ ifeq ($(MAKE_UNAME), JUROPA)
   LDFLAGS += -lmkl_sequential -lmkl_core
   LDFLAGS += -lreadline
 
-  VPATH=../../source:../../source/defines
+  #VPATH=../../source:../../source/defines
 endif
 ##################### -- JUROPA -- ###################################
 
@@ -210,8 +214,8 @@ endif
 
 CXXFLAGS += $(OPTION)
 
-OBJECTS = uniformGrid.o dataio.o readparams.o global.o                          \
-	dataio_utility.o dataio_silo.o dataio_fits.o uniformGridMPI.o           \
+OBJECTS = uniform_grid.o dataio.o readparams.o global.o                         \
+	dataio_utility.o dataio_silo.o dataio_fits.o uniform_grid_pllel.o       \
 	comm_mpi.o comm_files.o utility_fits_class.o                            \
 	main_projection.o sim_projection.o image_io.o dataio_silo_MPI.o         \
         VectorOps.o VectorOps_spherical.o cell_interface.o                      \
@@ -246,39 +250,39 @@ threads.o: threads.cxx msvc_constants.h constants.h threads.h
 #################################
 global.o: 	  global.cc ${GLOBAL}
 
-cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+cell_interface.o: cell_interface.cc  grid/cell_interface.h ${GLOBAL}
 
-uniformGrid.o: 	  uniformGrid.cc uniformGrid.h ${GLOBAL} stellar_wind_BC.h
+uniform_grid.o:   uniform_grid.cc  grid/uniform_grid.h  ${GLOBAL}  grid/stellar_wind_BC.h
 
-uniformGridMPI.o: uniformGridMPI.cc uniformGrid.h ${GLOBAL} comms.h
+uniform_grid_pllel.o: uniform_grid_pllel.cc grid/uniform_grid.h ${GLOBAL} comms/comms.h
 
-VectorOps.o: 	VectorOps.cc VectorOps.h ${GLOBAL} uniformGrid.h
+VectorOps.o:  VectorOps.cc  coord_sys/VectorOps.h ${GLOBAL} grid/uniform_grid.h
 
-VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
-		       ${GLOBAL} uniformGrid.h
+VectorOps_spherical.o:  VectorOps_spherical.cc  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
+		       ${GLOBAL} grid/uniform_grid.h
 
 
-dataio.o:       dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
-		stellar_wind_BC.h
-dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h file_status.h
-dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
-		solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h file_status.h
-readparams.o:	readparams.cc readparams.h ${GLOBAL}
-dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h ${GLOBAL} comms.h file_status.h
-utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
+dataio.o:       dataio.cc  dataIO/dataio.h  ${GLOBAL}  spatial_solvers/solver_eqn_base.h  dataIO/readparams.h \
+		grid/stellar_wind_BC.h
+dataio_silo.o:  dataio_silo.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  spatial_solvers/solver_eqn_base.h  dataIO/file_status.h
+dataio_fits.o:  dataio_fits.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  spatial_solvers/solver_eqn_base.h \
+		spatial_solvers/solver_eqn_hydro_adi.h  spatial_solvers/solver_eqn_hydro_iso.h  dataIO/file_status.h
+readparams.o:	readparams.cc  dataIO/readparams.h  ${GLOBAL}
+dataio_silo_MPI.o:    dataio_silo_MPI.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  comms/comms.h  dataIO/file_status.h
+utility_fits_class.o: utility_fits_class.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}
 
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h ${GLOBAL}
-comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+comm_mpi.o:    comm_mpi.cc  comms/comm_mpi.h  comms/comms.h  ${GLOBAL}
+comm_files.o:  comm_files.cc  comms/comm_files.h  comms/comms.h  ${GLOBAL}
 
-#dataio_utility.o:	dataio_utility.cc dataio_utility.h dataio_silo.h dataio.h ${GLOBAL}
-stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h ${GLOBAL}
+dataio_utility.o:  dataio_utility.cc  dataIO/dataio_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
+stellar_wind_BC.o: stellar_wind_BC.cc  grid/stellar_wind_BC.h ${GLOBAL}
 
 ###############################
 # Stuff Specific to this code #
 ###############################
-sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} uniformGrid.h dataio.h
-main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} uniformGrid.h dataio.h ${THREAD_INCLUDE} 
-image_io.o:		image_io.cc image_io.h dataio.h dataio_fits.h ${GLOBAL}
+sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} grid/uniform_grid.h dataIO/dataio.h
+main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} grid/uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
+image_io.o:		image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 
 clean:
 	rm -f *.o projection

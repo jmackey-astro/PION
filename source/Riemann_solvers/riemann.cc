@@ -1,46 +1,47 @@
-/** \file riemann.cc
- * \brief Class definition for Hydrodynamics Riemann Solver
- * 
- *  \author Jonathan Mackey
- * 
- * This is a Hydrodynamics Riemann Solver for the Euler Equations.
- * It works by first calling a linear solver, and if the results
- * are within certain tolerances it returns the answer, but if not
- * it calls an exact solver and returns the result from that.
- * 
- * References:
- * -- Hirsch, C.,  p.206 for the shock equations.
- *    "Numerical Computation of Internal and External Flows: Volume 2" (1990, Wiley)
- * -- Toro, E.F.,  for structure of approximate/linear riemann solvers.
- *    "Riemann Solvers and Numerical Methods for Fluid Dynamics" (1999, Springer)
- * 
- * Written 2006-11-09-Thursday
- * Modified :
- *  - 2006-12-20 Testing for linear solver added.
- *  - 2007-01-12 Lots more testing added; linearOK() changed.
- *  - 2007-07-10 Added Index variables as class members, and a set-direction function.
- *  - 2009-10-20 Changed class heirarchy, changed functions, and some of the interface.
- *  - 2009-10-23 made Riemann_Euler inherit from findroot, and redefine the function to get the root of!
- * */
 ///
-/// 2010-07-27 JM: cleaned up a bit, updated comments.
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
+/// \file riemann.cc
+/// \brief Class definition for Hydrodynamics Riemann Solver
+/// 
+///  \author Jonathan Mackey
+/// 
+/// This is a Hydrodynamics Riemann Solver for the Euler Equations.
+/// It works by first calling a linear solver, and if the results
+/// are within certain tolerances it returns the answer, but if not
+/// it calls an exact solver and returns the result from that.
+/// 
+/// References:
+/// -- Hirsch, C.,  p.206 for the shock equations.
+///    "Numerical Computation of Internal and External Flows: Volume 2" (1990, Wiley)
+/// -- Toro, E.F.,  for structure of approximate/linear riemann solvers.
+///    "Riemann Solvers and Numerical Methods for Fluid Dynamics" (1999, Springer)
+/// 
+/// Written 2006-11-09-Thursday
+/// Modified :
+/// - 2006-12-20 Testing for linear solver added.
+/// - 2007-01-12 Lots more testing added; linearOK() changed.
+/// - 2007-07-10 Added Index variables as class members, and a set-direction function.
+/// - 2009-10-20 Changed class heirarchy, changed functions, and some of the interface.
+/// - 2009-10-23 made Riemann_Euler inherit from findroot, and
+///    redefine the function to get the root of!
+/// - 2010-07-27 JM: cleaned up a bit, updated comments.
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2010.12.23 JM: Got rid of last rsvar enum references.  Got rid
 ///   of RS_* arrays and made new private data rs_*[].  This will
 ///   avoid confusion in derived classes.  Inherited data arrays is 
 ///   a bad idea.
-///
 /// - 2011.03.03 JM: Added rs_nvar=5 for local state vectors.  New code versions
 ///    can handle up to 70 tracers, so it would hugely slow down the code if the
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
-///
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 #include "riemann.h"
 #include <iostream>
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
 
 // This version is specific to solving the equation in the Exact Riemann Solver.
 // Other versions could be specified, taking more or fewer parameters.
@@ -81,6 +82,10 @@ int riemann_Euler::FR_find_root(double *ans, /**< pointer to result */
   return(0);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 double riemann_Euler::FR_root_function(double pp)
 {
   //
@@ -102,6 +107,10 @@ double riemann_Euler::FR_root_function(double pp)
   return(ustarR - ustarL);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 //
 // Constructor of the riemann class: set up variables, allocate memory, etc.
 //
@@ -117,7 +126,9 @@ riemann_Euler::riemann_Euler(const int nv, ///< number of vars.
   cout <<"riemann_Euler::riemann_Euler ...starting.\n";
 #endif //FUNCTION_ID
 
+#ifdef TESTING
   cout <<"riemann_Euler::riemann_Euler: eqnvar="<<eq_nvar<<"\n";
+#endif
   if(eq_nvar<5) {
     rep.error("Problem with HD Riemann Solver... eq_nvar<5. Please use [rho,p_g,vx,vy,vz]. Quitting!!!",eq_nvar);
   }
@@ -162,6 +173,10 @@ riemann_Euler::riemann_Euler(const int nv, ///< number of vars.
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 //
 // Destructor: delete memory etc.
 //
@@ -171,7 +186,9 @@ riemann_Euler::~riemann_Euler()
   cout <<"riemann_Euler::~riemann_Euler ...starting.\n";
 #endif //FUNCTION_ID
 
+#ifdef RSTESTING
   riemann_Euler::testing();
+#endif //RSTESTING
   rs_left   = mem.myfree(rs_left);
   rs_right  = mem.myfree(rs_right);
   rs_meanp  = mem.myfree(rs_meanp);
@@ -184,6 +201,10 @@ riemann_Euler::~riemann_Euler()
   cout <<"riemann_Euler::~riemann_Euler ...returning.\n";
 #endif //FUNCTION_ID
 }
+
+// ##################################################################
+// ##################################################################
+
 
 //
 // Output diagnostic info -- how many of each type of solution we did.
@@ -200,6 +221,10 @@ void riemann_Euler::testing()
   cout <<" rarefaction:"<< failrare <<" compression:"<<failcomp <<" dratio:"<<faildens<<"\n";
 #endif //RSTESTING
 }
+
+// ##################################################################
+// ##################################################################
+
 
 
 //
@@ -508,6 +533,10 @@ int riemann_Euler::JMs_riemann_solve(const double *l,
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
 int riemann_Euler::check_wave_locations()
 {
   //
@@ -635,6 +664,10 @@ int riemann_Euler::check_wave_locations()
   return(0);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 int riemann_Euler::linearOK()
 {
   //
@@ -713,6 +746,10 @@ int riemann_Euler::linearOK()
 #endif //RSTESTING
 }
 
+// ##################################################################
+// ##################################################################
+
+
 int riemann_Euler::linear_solver()
 {
   //
@@ -789,6 +826,10 @@ int riemann_Euler::linear_solver()
   return(0);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 int riemann_Euler::exact_solver()
 {  
   int err=0;
@@ -861,6 +902,10 @@ int riemann_Euler::exact_solver()
   return(0);
 }
 
+// ##################################################################
+// ##################################################################
+
+
 int riemann_Euler::solve_rarerare()
 {
   ///
@@ -921,6 +966,10 @@ int riemann_Euler::solve_rarerare()
   // 
   return(0);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 
 int riemann_Euler::solve_cavitation()
@@ -994,6 +1043,10 @@ int riemann_Euler::solve_cavitation()
   cout <<"sound speed = "<<cl<<", "<<cr<<"\n";
   return(1);
 }
+
+
+// ##################################################################
+// ##################################################################
 
 
 

@@ -8,11 +8,11 @@
 /// Created 2010.10.01
 ///
 /// Modifications:
-///  - 2010.10.04 JM: Fixed bugs, so now it works.
-///  - 2010.11.03 JM: Changed finite diff. for divergence.
-///
+/// - 2010.10.04 JM: Fixed bugs, so now it works.
+/// - 2010.11.03 JM: Changed finite diff. for divergence.
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 ///
 
 
@@ -23,16 +23,28 @@
 #include "VectorOps_spherical.h"
 using namespace std;
 
+
+// ##################################################################
+// ##################################################################
+
 VectorOps_Sph::VectorOps_Sph(int n, double del)
   : VectorOps_Cart(n,del), VectorOps_Cyl(n,del)
 {
-  cout <<"Setting up 1D spherical coordinates with ndim="<<VOnd<<" and dR="<<VOdR<<"\n";
-  if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",VOnd);
+#ifdef TESTING
+  cout <<"Setting up 1D spherical coordinates with ndim="<<VOnd;
+  cout <<" and dR="<<VOdR<<"\n";
+#endif
+  if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",
+                          VOnd);
   
   VOdV = 4.0*M_PI*VOdR;
   VOdA = 4.0*M_PI;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 VectorOps_Sph::VectorOps_Sph(int n)
   : VectorOps_Cart(n), VectorOps_Cyl(n)
@@ -42,6 +54,10 @@ VectorOps_Sph::VectorOps_Sph(int n)
   have_set_dx=false;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
 
 void VectorOps_Sph::set_dx(const double x)
 {
@@ -58,8 +74,16 @@ void VectorOps_Sph::set_dx(const double x)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 VectorOps_Sph::~VectorOps_Sph()
 {}
+
+
+// ##################################################################
+// ##################################################################
 
 double VectorOps_Sph::CellVolume(const cell *c)
 {
@@ -72,7 +96,14 @@ double VectorOps_Sph::CellVolume(const cell *c)
   return VOdV*temp*temp;
 }
 
-double VectorOps_Sph::CellInterface(const cell *c, const direction dir)
+
+// ##################################################################
+// ##################################################################
+
+double VectorOps_Sph::CellInterface(
+        const cell *c,
+        const direction dir
+        )
 {
   double temp=0.0;
 
@@ -96,7 +127,15 @@ double VectorOps_Sph::CellInterface(const cell *c, const direction dir)
   return -1.0;
 }
     
-double VectorOps_Sph::maxGradAbs(const cell *c, const int sv, const int var)
+
+// ##################################################################
+// ##################################################################
+
+double VectorOps_Sph::maxGradAbs(
+        const cell *c,
+        const int sv,
+        const int var
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -135,7 +174,16 @@ double VectorOps_Sph::maxGradAbs(const cell *c, const int sv, const int var)
 } // maxGradAbs
 
 
-void VectorOps_Sph::Grad(const cell *c, const int sv, const int var, double *grad)
+// ##################################################################
+// ##################################################################
+
+
+void VectorOps_Sph::Grad(
+        const cell *c,
+        const int sv,
+        const int var,
+        double *grad
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -168,8 +216,16 @@ void VectorOps_Sph::Grad(const cell *c, const int sv, const int var, double *gra
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
 // get divergence of vector quantity.
-double VectorOps_Sph::Div(const cell *c, const int sv, const int *var)
+double VectorOps_Sph::Div(
+        const cell *c,
+        const int sv,
+        const int *var
+        )
 {
 
 #ifdef TESTING
@@ -207,7 +263,16 @@ double VectorOps_Sph::Div(const cell *c, const int sv, const int *var)
 } // Div
 
 
-void VectorOps_Sph::Curl(const cell *c, const int vec, const int *var, double *ans)
+// ##################################################################
+// ##################################################################
+
+
+void VectorOps_Sph::Curl(
+        const cell *c,
+        const int vec,
+        const int *var,
+        double *ans
+        )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -225,13 +290,18 @@ void VectorOps_Sph::Curl(const cell *c, const int vec, const int *var, double *a
 } // VecCurl
 
 
-int VectorOps_Sph::SetEdgeState(const cell *c,       ///< Current Cell.
-				const direction dir, ///< Add or subtract the slope depending on direction.
-				const int nv,        ///< length of state vectors.
-				const double *dpdx,  ///< Slope vector.
-				double *edge,        ///< vector for edge state. 
-				const int OA         ///< Order of spatial Accuracy.
-				)
+// ##################################################################
+// ##################################################################
+
+
+int VectorOps_Sph::SetEdgeState(
+        const cell *c,       ///< Current Cell.
+        const direction dir, ///< Add or subtract the slope depending on direction.
+        const int nv,        ///< length of state vectors.
+        const double *dpdx,  ///< Slope vector.
+        double *edge,        ///< vector for edge state. 
+        const int OA         ///< Order of spatial Accuracy.
+        )
 {
   
   if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",VOnd);
@@ -269,12 +339,17 @@ int VectorOps_Sph::SetEdgeState(const cell *c,       ///< Current Cell.
 } // SetEdgeState
 
 
-int VectorOps_Sph::SetSlope(const cell *c, ///< Current Cell.
-			    const axes d,  ///< Which direction to calculate slope in.
-			    const int nv,  ///< length of state vectors.
-			    double *dpdx,  ///< Slope vector to be written to.
-			    const int  OA  ///< Order of spatial Accuracy.
-			    )
+// ##################################################################
+// ##################################################################
+
+
+int VectorOps_Sph::SetSlope(
+        const cell *c, ///< Current Cell.
+        const axes d,  ///< Which direction to calculate slope in.
+        const int nv,  ///< length of state vectors.
+        double *dpdx,  ///< Slope vector to be written to.
+        const int  OA  ///< Order of spatial Accuracy.
+        )
 {
   //
   // first order accurate so zero slope.
@@ -338,13 +413,18 @@ int VectorOps_Sph::SetSlope(const cell *c, ///< Current Cell.
 } // SetSlope
 
 
-int VectorOps_Sph::DivStateVectorComponent(const cell *c,    ///< current cell.
-					   const axes d,     ///< current coordinate axis we are looking along.
-					   const int nv,     ///< length of state vectors.
-					   const double *fn, ///< Negative direction flux.
-					   const double *fp, ///< Positive direction flux.
-					   double *dudt      ///< Vector to assign divergence component to.
-					   )
+// ##################################################################
+// ##################################################################
+
+
+int VectorOps_Sph::DivStateVectorComponent(
+        const cell *c,    ///< current cell.
+        const axes d,     ///< current coordinate axis we are looking along.
+        const int nv,     ///< length of state vectors.
+        const double *fn, ///< Negative direction flux.
+        const double *fp, ///< Positive direction flux.
+        double *dudt      ///< Vector to assign divergence component to.
+        )
 {
   ///
   /// \section Sign
@@ -371,4 +451,8 @@ int VectorOps_Sph::DivStateVectorComponent(const cell *c,    ///< current cell.
 
   return 0;
 } // DivStateVectorComponent
+
+
+// ##################################################################
+// ##################################################################
 

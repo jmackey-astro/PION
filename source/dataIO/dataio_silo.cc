@@ -46,6 +46,7 @@
 ///
 /// - 2011.10.14 JM: commented out RT_DIFF
 /// - 2012.03.01 JM: Added spacing between functions.
+/// - 2013.02.07 JM: Made code less verbose.
 #ifdef SILO
 
 #include "dataio_silo.h"
@@ -62,7 +63,9 @@ using namespace std;
 
 dataio_silo::dataio_silo()
 {
+#ifdef TESTING
   cout <<"setting up dataio_silo class.\n";
+#endif
   dataio_silo::eqn = 0;
   dataio_silo::gp  = 0;
   silofile.erase();
@@ -92,7 +95,9 @@ dataio_silo::dataio_silo()
 
 dataio_silo::~dataio_silo()
 {
+#ifdef TESTING
   cout <<"deleting dataio_silo class.\n";
+#endif
   dataio_silo::eqn = 0;
   dataio_silo::gp  = 0;
   silofile.erase();
@@ -128,7 +133,9 @@ dataio_silo::~dataio_silo()
 
 void dataio_silo::SetSolver(FV_solver_base *solver)
 {
+#ifdef TESTING
   cout <<"dataio_silo::SetSolver() Setting solver pointer.\n";
+#endif
   dataio_silo::eqn = solver;
 }
 
@@ -271,7 +278,9 @@ int dataio_silo::ReadHeader(string infile ///< file to read from
 {
   int err=0;
   silofile=infile;
+#ifdef TESTING
   cout <<"Reading Header from file: "<<silofile<<"\n";
+#endif
 
   // Create file
   //*db_ptr=0;
@@ -286,8 +295,10 @@ int dataio_silo::ReadHeader(string infile ///< file to read from
     rep.error("dataio_silo::ReadHeader() error reading header from silo file",err);
   dataio_silo::ndim = SimPM.ndim;
 
-  DBClose(*db_ptr); //*db_ptr=0; 
+  DBClose(*db_ptr); //*db_ptr=0;
+#ifdef TESTING
   cout <<"FINISHED reading Header from file: "<<silofile<<"\n";
+#endif
   return err;
 }
 
@@ -316,10 +327,6 @@ int dataio_silo::ReadData(string infile,
       rep.error("dataio_silo::ReadData() error setting up grid_props", err);
   }
 
-  // Create file
-  //*db_ptr=0;
-
-  //  db_ptr = DBOpen(silofile.c_str(), silo_filetype, DB_READ);
   *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
   if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
 

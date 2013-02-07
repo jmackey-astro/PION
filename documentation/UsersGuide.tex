@@ -28,59 +28,116 @@
 \parindent = 0.0 truept
 \parskip = 6.0 truept
 
-\input{../../../../documentation_misc/bibtex/defs.tex}
+\input{../../../documentation_misc/bibtex/defs.tex}
 
 
 
-\title{User's Guide for JM's code}
+\title{User's Guide for \pion{} version 0.1}
 \author{Jonathan Mackey}
 \begin{document}
 \maketitle
 
+
+\section{Important Information}
+This documentation applies to \pion{} version 0.1.
+
+\pion{} is a grid-based code for astrophysical fluid dynamics.
+
+\subsection{Contact information and feedback}
+The main developer of \pion{} is Jonathan Mackey.
+You can contact him by email at
+
+\hangindent=0.5cm
+\quad \url{jmackey@astro.uni-bonn.de}
+
+or by post at:
+
+\hangindent=0.5cm
+\quad Argelander-Institut f\"ur Astronomie\\
+\quad Auf dem H\"ugel 71\\
+\quad 53121 Bonn\\
+\quad Germany.
+
+If you find a bug, please report it to J.~Mackey by email.
+Ideally, please also submit a patch to fix the bug.
+
+If you add new code segments and contribute them back to \pion{}, they are not subject to the same distribution restrictions as the rest of \pion{}, unless you want them to be, i.e.~you maintain control of the rights and restrictions to any code you write.
+
+
+\subsection{Terms of Use}
+The terms of use are noted in detail in the file \texttt{pion/LICENCE.txt}.
+Please read them, and do not use the code if you do not agree to them.
+
+One noteworthy condition is that the code \pion{} (including all of its source code) is \textbf{not freely distributed}, and the terms of use include a clause stating that you will not make any part of the code publically available or accessible, in any form.
+If you do not agree to this, you are not permitted to use \pion{} and you are not permitted to keep a copy of the code.
+The aim of this is not to keep the code secret, but rather to prevent the code from being used for purposes for which it is not intended.
+
+Another condition is that \pion{} comes with no warranty whatsoever.
+Best efforts have been made to ensure the code accurately solves the equations it claims to solve, but there is no guarantee to this effect.
+The code is developed for astrophysics, not for any practical purpose where failure or bugs might have material consequences (except for the developer's reputation and career!).
+
+\newpage
 \addcontentsline{toc}{section}{Table of Contents}
 \tableofcontents
 \newpage
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \chapter{Quick Start Guide}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Overview of Code Design}
 
 
 \section{Installation}
-Installation is reasonably straightforward, but there is on library which needs to be manually downloaded because it does not have a free licence.
+Installation is reasonably straightforward, but there is one library which needs to be manually downloaded because it does not have a free licence.
 The code is not really \emph{installed}, just compiled on a given computer.
 The executables can then be moved to any directory you want and run on a particular problem.
-It is quite rare that the code needs to recompiled to run a different simulation -- a guiding design principle of the code is that all options should be set at run-time and not compile-time.
+It is quite rare that the code needs to recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
 Here is how to compile the code:
 \begin{enumerate}
 \item
-  If you have a copy of JM's code as jmcode.tar.gz, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|uniform_grid_code/| should have been created there.  cd into this directory.
+  If you have a copy of \pion{} as \texttt{pion.0.1.tar.gz}, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
 \item
-  The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.4.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|uniform_grid_code/trunk/extra_libraries/|.
+  The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.4.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|pion/extra_libraries/|.
 \item
-  Then from \verb|uniform_grid_code/| with a standard linux workstation you should be able to run the command \verb|./install.sh|.
-  If this is successful then the \textsc{Silo}, \textsc{Fits}, and \textsc{Sundials} libraries should be installed to \verb|uniform_grid_code/trunk/extra_libraries/| and code executables should have been created in the current directory.
-  The exectuables are \verb|gridcode_serial|, \verb|gridcode_parallel|, \verb|icgen_serial|, and \verb|icgen_parallel|.
+  Then from \verb|pion/| with a standard linux workstation you should be able to run the command \verb|./install.sh|.
+  If this is successful then the \textsc{Silo}, \textsc{FITS}, and \textsc{Sundials} libraries should be installed to \verb|pion/extra_libraries/| and code executables should have been created in the current directory.
+  The exectuables are \verb|pion_serial|, \verb|pion_parallel|, \verb|icgen_serial|, and \verb|icgen_parallel|.
+\item
+  If the executables are not there, then something went wrong, and you should run the commands in install.sh one-by-one to determine where things failed (probably in the library installation).
 \end{enumerate}
 
-The compile scripts will automatically detect if it is being compiled on JUROPA at J\"ulich Supercomputing Centre or PHALANX at UCL astrophysics dept., and if neither of these machines are identified then it is assumed that compilation is on a standard linux workstation.
-It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
+The compile scripts will automatically detect if it is being compiled on the following systems:
+\begin{itemize}
+\item \emph{JUROPA} at J\"ulich Supercomputing Centre,
+\item \emph{SuperMUC} at the Leibniz Rechenzentrum (LRZ) in Munich,
+\item \emph{Phalanx} or \emph{Dougal} at UCL astrophysics dept.,
+\item \emph{Dirac-II/Complexity} at the University of Leicester,
+\item \emph{OS X 10.6}, with \emph{XCode} installed.
+\end{itemize}
+If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
+It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works without problems on Fedora/RedHat linux.
 
 
 \subsection{Compilation on other machines}
 If you want to compile it on a machine with e.g.\ Intel compilers, then you can either email me for help or you can try editing the compile scripts.
-It is relatively straightforward to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} commands (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
+It is relatively straightforward to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} environmental variables (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
 As you can see from \verb|install.sh|, you need to edit the files
-\verb|uniform_grid_code/trunk/extra_libraries/install_all_libs.sh|,
-\verb|uniform_grid_code/trunk/bin_parallel/compile_code.sh|,and
-\verb|uniform_grid_code/trunk/bin_serial/compile_code.sh|.
+\verb|pion/extra_libraries/install_all_libs.sh|,
+\verb|pion/bin_parallel/compile_code.sh|, and
+\verb|pion/bin_serial/compile_code.sh|, and maybe also \verb|Makefile| in
+\verb|pion/bin_parallel| and \verb|pion/bin_serial|.
 
-The library install script \verb|uniform_grid_code/trunk/extra_libraries/install_all_libs.sh| detects machines by hostname, so you can add a loop for your host.
+The library install script \verb|pion/extra_libraries/install_all_libs.sh| detects machines by hostname, so you can add a loop for your host.
 \texttt{NCORES} and \texttt{MAKE\_UNAME} are not so important, but \texttt{CC, CXX} and \texttt{FC} need to be set to something sensible.
 
-The serial and parallel \verb|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important.
-A new section needs to be created for the new machine in the Makefiles: \texttt{Makefile.serial.code}, \texttt{Makefile.serial.icgenerator}, \texttt{Makefile.pllel.code}, and \texttt{Makefile.pllel.icgenerator}.
-This section 
+The serial and parallel \verb|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important because the Makefiles have a section defining various quantities depending on the value of \texttt{MAKE\_UNAME}.
+A new section needs to be created for the new machine in the Makefiles in \verb|pion/bin_serial| and \verb|pion/bin_parallel|.
 
 
 
@@ -101,7 +158,7 @@ This section
 Two executables are compiled -- an initial condition generator and the executable to run the code.
 Both are based mostly on the same source files, but the IC generator has some files only it uses, and the same for the simulation executable.
 The IC generator reads in a parameter file and uses the information in this text file to put gas on the computational grid, setup boundaries, radiation and/or stellar wind sources and anything else that needs to be set.
-It then writes all of this to a standard simulation output file, in either FITS\footnote{See \url{http://www.nasa.gov/} for details.} or SILO\footnote{See \url{http://www.llnl.gov/} for details} format.
+It then writes all of this to a standard simulation output file, in either FITS\footnote{See \url{http://heasarc.gsfc.nasa.gov/fitsio/} for details.} or SILO\footnote{See \url{https://wci.llnl.gov/codes/silo/} for details} format.
 These output files contain a header with all of the information from the parameter file (and some extra info besides) and then the binary data stored in architecture-independent format (i.e.\ the data can be read on any computer if you have a code routine to read it).
 So the parameter file is only used by the IC generator.
 
@@ -224,7 +281,7 @@ Possible values for initial conditions parameter \verb|ics| are given in the fol
   \item \verb|Clump_Spherical| or \verb|Clump_Axisymmetric| -- Don't know [LOOK THIS UP!].
 \end{itemize}
 
-\bibliographystyle{../../../../documentation_misc/bibtex/apj.bst}
-\bibliography{../../../../documentation_misc/bibtex/refs.bib}
+\bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
+\bibliography{../../../documentation_misc/bibtex/refs.bib}
 
 \end{document}

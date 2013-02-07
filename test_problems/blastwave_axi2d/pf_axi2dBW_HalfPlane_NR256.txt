@@ -40,7 +40,9 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
-
+EP_MP_timestep_limit 0
+EP_Min_Temperature 1.0e-100
+EP_Max_Temperature 1.0e100
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
@@ -109,71 +111,48 @@ magval 1
 ##################
 ### BLAST WAVE ###
 ##################
-#BWradius   0.03125    # fraction of x-range (1/32)
-BWradius   0.015625    # fraction of x-range (1/64: same a spherical,
-## but for half-plane)
-BWpressure 1.38e-11    # ambient pressure (10^3K for 100 per c.c.)
-BWdensity  2.34e-22  # ambient density (~100 per c.c.)
-BWpgRatio  1.28589e7 # pressure ratio pin/pout
-BWroRatio  1.0       # density ratio rin/rout
+#
+# Supernova energy is input as thermal energy in inner grid points.
+#
+# BWpressure is the ISM pressure.
+# BWdensity is ISM density.
+#
+# BW_energy is the SN energy in ergs.
+# BW_blast_dens is the density of gas to put the SN energy into.
+# BW_nzones is the radius of the hot region in grid zones.
+# 
+# magfield refers to magnetic field, and is not used.
+# BW_amb_TRX is list of tracer values for ISM.
+#
+BWpressure 1.38e-11 # ambient pressure (10^3K for 100 per c.c.)
+BWdensity  2.34e-22 # ambient density (~100 per c.c.)
+
 BWmagfieldX 0.0   # Magnetic field strength
 BWmagfieldY 0.0   # Magnetic field strength
-BWmagfieldZ 0.0      # Magnetic field strength
+BWmagfieldZ 0.0   # Magnetic field strength
 
-#BWradius   0.1 # fraction of x-range (8 cells for N=256)
-#BWpressure 1.0 # ambient pressure
-#BWdensity  1.0 # ambient density (~10 per c.c.)
-#BWpgRatio  1.0e4 # pressure ratio pin/pout
+BW_energy 1.0e51  # energy in ergs (all thermal)
+BW_nzones 16       # Radius of hot region.
+BW_blast_dens 2.34e-22  # here same as ambient density.
 
-
-
-
-#############################
-# Ambient Medium Parameters #
-#############################
-PERCradialslope 0.0 # radial slope away from source in background density.
-PERC_ambRO 3.34e-23 # =100 per c.c.
-PERC_ambPG 1.38e-11 # P_g = rho*kT/mu/m_p
-PERC_ambVX 0.0
-PERC_ambVY 0.0
-PERC_ambVZ 0.0
-PERC_ambBX 1.0e-6
-PERC_ambBY 1.0e-6
-PERC_ambBZ 15.0e-6
-PERC_ambTR0 1.0e-6
-PERC_ambTR1 0.0
-PERC_ambTR2 0.0
-PERC_ambTR3 0.0
-PERC_ambTR4 0.0
-PERC_ambTR5 0.0
-PERC_ambTR6 0.0
+# We can have a second ISM region, but here we ignore it by setting
+# the inteface to be far beyond the end of the grid.
+BW_interface 1.0e50  
+BW_amb2_RO 0.0
+BW_amb2_PG 0.0
+BW_amb2_VX 0.0
+BW_amb2_VY 0.0
+BW_amb2_VZ 0.0
 
 #########################
 # radiation source list #
 #########################
-RPnsources 0
-RPpos00  0.0e18
-RPpos01  0.0e18
-RPpos02  0.0e18
-RPstrength0 1.0e47
+RT_Nsources 0
 
 ########################
 # stellar wind sources #
 ########################
 WIND_NSRC 0
-WIND_0_pos0  0.0e18
-WIND_0_pos1  0.0e18
-WIND_0_pos2  0.0e18
-WIND_0_radius 6.172e17
-WIND_0_type   0
-WIND_0_mdot   5.0e-6
-WIND_0_vinf   100.0
-WIND_0_temp   10000.0
-WIND_0_TR0 0.999999
-WIND_0_TR1 -1.0
-WIND_0_TR2 0.0
-WIND_0_TR3 0.0
-WIND_0_TR4 0.0
 
 ####################
 # Reference Vector #
