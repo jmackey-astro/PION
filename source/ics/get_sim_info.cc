@@ -23,6 +23,8 @@
 /// - 2011.05.02 JM: new RT params.
 /// - 2011.06.02 JM: some debugging text additions. read_radsources() always called now.
 /// - 2012.01.14 JM: Added RT_EVO_FILE_[i] (optional) for time-varying radiation source.
+/// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
+///    to make metallicity and mu into parameterfile settings.
 
 #include "get_sim_info.h"
 #include "../global.h"
@@ -661,6 +663,25 @@ int get_sim_info::read_extra_physics()
   else SimPM.EP.MaxTemperature = 1.0e100;
 
 //#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
+#ifdef NEW_METALLICITY
+  //
+  // Helium abundance (by mass) Y.
+  // Default value is from Asplund et al. (2009,ARA&A,47,481)
+  //
+  if ( (a=rp->find_parameter("EP_Helium_MassFrac")) !="")
+    SimPM.EP.Helium_MassFrac = atof(a.c_str());
+  else SimPM.EP.Helium_MassFrac = 0.2703;
+
+  //
+  // Metal abundance (by mass) Z.
+  // Default value is from Asplund et al. (2009,ARA&A,47,481)
+  //
+  if ( (a=rp->find_parameter("EP_Metal_MassFrac")) !="")
+    SimPM.EP.Metal_MassFrac = atof(a.c_str());
+  else SimPM.EP.Metal_MassFrac = 0.0142;
+#endif // NEW_METALLICITY
+
   return 0;
 }
 

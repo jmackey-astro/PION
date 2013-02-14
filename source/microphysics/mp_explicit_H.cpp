@@ -4,113 +4,144 @@
 /// \date 2011.10.06
 ///
 /// Description:
-/// This class is an update on the microphysics class used for my thesis.
-/// It uses an explicit raytracing scheme, so the photon transmission through
-/// the cell does not have to be integrated with the rate and energy equations.
+/// This class is an update on the microphysics class used for my
+/// thesis.  It uses an explicit raytracing scheme, so the photon
+/// transmission through the cell does not have to be integrated with
+/// the rate and energy equations.
 ///
-/// - It uses multi-frequency photoionisation including spectral hardening with
-///   optical depth, using the method outlined in Frank & Mellema
-///   (1994,A&A,289,937), and updated by Mellema et al. (2006,NewA,11,374).
+/// - It uses multi-frequency photoionisation including spectral
+///   hardening with optical depth, using the method outlined in
+///   Frank & Mellema (1994,A&A,289,937), and updated by Mellema et
+///   al. (2006,NewA,11,374).
 ///
-/// - It uses the Hummer (1994,MN,268,109) rates for radiative recombination and
-///   its associated cooling, and Bremsstrahlung cooling.
+/// - It uses the Hummer (1994,MN,268,109) rates for radiative
+///   recombination and its associated cooling, and Bremsstrahlung
+///   cooling.
 ///
-/// - For collisional ionisation the function of Voronov (1997,ADNDT,65,1) is used.
+/// - For collisional ionisation the function of Voronov
+///   (1997,ADNDT,65,1) is used.
 ///
-/// - Collisional excitation of neutral H, table from Raga, Mellema, & Lundqvist
-///   (1997,ApJS,109,517), using data from Aggarwal (1993).
+/// - Collisional excitation of neutral H, table from Raga, Mellema,
+///   Lundqvist (1997,ApJS,109,517), using data from Aggarwal (1993).
 ///
-/// - For cooling due to heavy elements, which are not explicitly included, we use
-/// the CIE cooling curve of Sutherland & Dopita (1993,ApJS,88,253), but this time I
-/// subtract the zero-metals curve from the solar-metallicity curve so that I only
-/// have cooling due to metals.  This eliminates the potential for double-counting
-/// which was in my previous cooling function.
+/// - For cooling due to heavy elements, which are not explicitly
+///  included, we use the CIE cooling curve of Sutherland & Dopita
+///  (1993,ApJS,88,253), but this time I subtract the zero-metals
+///  curve from the solar-metallicity curve so that I only have
+///  cooling due to metals.  This eliminates the potential for 
+///  double-counting which was in my previous cooling function.
 ///
-/// - Then I use various formulae from Henney et al. (2009,MN,398,157) for cooling due
-/// to collisional excitation of photoionised O,C,N (eq.A9), collisional excitation of
-/// neutral metals (eq.A10), and the Wiersma+2009 CIE metals-only curve.  I take the max of
-/// the WSS09 curve and the Henney et al. functions, to avoid double counting.  For 
-/// neutral gas I can use the cooling curve of Henney et al 2009 eq.A14.
+/// - Then I use various formulae from Henney et al. (2009,MN,398,
+///  157) for cooling due to collisional excitation of photoionised
+///  O,C,N (eq.A9), collisional excitation of neutral metals
+///  (eq.A10), and the Wiersma+2009 CIE metals-only curve.  I take
+///  the max of the WSS09 curve and the Henney et al. functions, to
+///  avoid double counting.  For neutral gas I can use the cooling
+///  curve of Henney et al 2009 eq.A14.
 ///
-/// - Photoheating from ionisation is discussed above.  Cosmic ray heating will use a
-/// standard value, X-ray heating is ignored.  UV heating due to the interstellar 
-/// radiation field (ISRF) is according to the optical depth from the edge of the 
-/// domain to the cell in question, using e.g. HEA09 eq.A3, if requested.  UV heating
-/// from the star uses the same equation, but with the optical depth from the 
-/// source (using a total H-nucleon column density).
+/// - Photoheating from ionisation is discussed above.  Cosmic ray
+///  heating will use a standard value, X-ray heating is ignored.
+///  UV heating due to the interstellar radiation field (ISRF) is
+///  according to the optical depth from the edge of the domain to
+///  the cell in question, using e.g. HEA09 eq.A3, if requested.  UV
+///  heating from the star uses the same equation, but with the
+///  optical depth from the source (using a total H-nucleon column
+///  density).
 ///
 ///
-/// The integration method uses the CVODES solver from the SUNDIALS package by
-/// (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in Physics, 10, 138) available from 
-/// https://computation.llnl.gov/casc/sundials/main.html
-/// The method is backwards differencing (i.e. implicit) with Newton iteration.
+/// The integration method uses the CVODES solver from the SUNDIALS
+/// package by (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in
+/// Physics, 10, 138) available from 
+///  https://computation.llnl.gov/casc/sundials/main.html
+/// The method is backwards differencing (i.e. implicit) with Newton
+/// iteration.
 ///
-/// Electrons, ions, ion fraction:  This modules makes the (crude) approximation that
-/// He is an identical atom to H -- that it is only ever singly ionised and its ionisation
-/// and recombination rates are identical to H.  But because most photons are below the
-/// ionisation potential of He0 the opacity of He0 atoms is not counted in the optical 
-/// depth of the medium to ionising photons.  This is not quite self-consistent, but it is
-/// a better approximation than assuming He absorbs 14eV photons.
+/// Electrons, ions, ion fraction:  This modules makes the (crude)
+/// approximation that He is an identical atom to H -- that it is
+/// only ever singly ionised and its ionisation and recombination
+/// rates are identical to H.  But because most photons are below the
+/// ionisation potential of He0 the opacity of He0 atoms is not
+/// counted in the optical depth of the medium to ionising photons.
+/// This is not quite self-consistent, but it is a better
+/// approximation than assuming He absorbs 14eV photons.
 ///
 /// Modifications:
 /// - 2011.03.29 JM: Wrote class mp_explicit_H() functions.
 /// - 2011.03.31 JM: Added solid angle vector for diffuse radiation.
-///                  Finished coding, fixed a lot of bugs, need to test it now.
+///    Finished coding, fixed a lot of bugs, need to test it now.
 /// - 2011.04.12 JM: Added some 'todo's.
-/// - 2011.04.14 JM: Fixed bugs; I am testing the non-RT part now.  Looks good so far.
+/// - 2011.04.14 JM: Fixed bugs; I am testing the non-RT part now.
+///    Looks good so far.
 /// - 2011.04.15 JM: Bugfixes
-/// - 2011.04.17 JM: Added ifdefs for RT_TESTING to omit various processes in dYdt().
-///     Debugging.  Added ifdef to integrate neutral fraction instead of ion fraction.
+/// - 2011.04.17 JM: Added ifdefs for RT_TESTING to omit various
+///    processes in dYdt(). Debugging.  Added ifdef to integrate
+///    neutral fraction instead of ion fraction.
 /// - 2011.04.18 JM: Bugfixes.
 /// - 2011.04.22 JM: Debugged UV/IR heating.  Disabled X-ray heating.
-/// - 2011.05.02 JM: Updated convert_prim2local to correct negative pressure/ion fraction
-///    inputs rather than bugging out.
+/// - 2011.05.02 JM: Updated convert_prim2local to correct negative
+///    pressure/ion fraction inputs rather than bugging out.
 /// - 2011.05.02 JM: Added set_multifreq_source_properties() function
-/// - 2011.05.04 JM: Added a discretised multifreq photoionisation rate with
-///    an approximation for dtau<<1.  Fixed bugs, simplified code.
-/// - 2011.05.06 JM: Set cooling limiting as T approaches SimPM.EP.MinTemperature so we
-///    don't cool to too low a temperature.
-/// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
-///    don't fight over the file and slow down the code (by a lot!)).
-/// - 2011.05.25 JM: Fixed a bad bug -- UV heating was not kicking in unless there was a 
-///    diffuse sources, so the pt-src UV flux was useless up to now.
-///    Got rid of "int-ion-frac" dydt function.  Too confusing to have two functions.
-///    If for some reason I want to integrate the ion fraction in future I can go back to
+/// - 2011.05.04 JM: Added a discretised multifreq photoionisation
+///    rate with an approximation for dtau<<1.  Fixed bugs,
+///    simplified code.
+/// - 2011.05.06 JM: Set cooling limiting as T approaches
+///    SimPM.EP.MinTemperature so we don't cool to too low a
+///    temperature.
+/// - 2011.05.10 JM: Output cooling rates only if myrank==0 for
+///    parallel (so processes don't fight over the file and slow
+///    down the code (by a lot!)).
+/// - 2011.05.25 JM: Fixed a bad bug -- UV heating was not kicking in
+///    unless there was a diffuse sources, so the pt-src UV flux was
+///    useless up to now. Got rid of "int-ion-frac" dydt function.
+///    Too confusing to have two functions.  If for some reason I
+///    want to integrate the ion fraction in future I can go back to
 ///    an older revision.
-/// - 2011.06.21 JM: Fixed bug in UV heating where Tau(FUV) was incorrectly calculated
-///    Simplified timestep-limit calculation for xdot, since 2nd order integration is more 
-///    accurate and so requires less tuning and allows larger timesteps.
-/// - 2011.07.03 JM: Changed how Helium is treated appproximately (it is not ignored in
-///    the photoionisation optical depths, which is a better approx. than including it).
-/// - 2011.07.12 JM: Fixed the timescales function to have a less restrictive timestep
-///    limitation based only on dt=0.15/|xdot|.
-/// - 2011.09.21 JM: Set the cooling to be C2 (cooling=15 in cooling.cc) for RT_TEST_PROBS
+/// - 2011.06.21 JM: Fixed bug in UV heating where Tau(FUV) was
+///    incorrectly calculated.  Simplified timestep-limit calculation
+///    for xdot, since 2nd order integration is more accurate and so
+///    requires less tuning and allows larger timesteps.
+/// - 2011.07.03 JM: Changed how Helium is treated appproximately (it
+///    is not ignored in the photoionisation optical depths, which is
+///    a better approx. than including it).
+/// - 2011.07.12 JM: Fixed the timescales function to have a less
+///    restrictive timestep limitation based only on dt=0.15/|xdot|.
+/// - 2011.09.21 JM: Set the cooling to be C2 (cooling=15 in
+///    cooling.cc) for RT_TEST_PROBS.
 ///
 /// Modifications:
-/// - 2011.10.06 JM: NEW FILE STARTED, FROM mp_v2_aifa.cc.  Uses different integrator.
-/// - 2011.10.13/14 JM: Debugging.  Fixed logic bug in evaluating G0_UV/G0_IR
+/// - 2011.10.06 JM: NEW FILE STARTED, FROM mp_v2_aifa.cc.  Uses
+///    different integrator.
+/// - 2011.10.13/14 JM: Debugging.  Fixed logic bug in evaluating
+///    G0_UV/G0_IR
 /// - 2011.10.17 JM: Debugging. (2011.10.22 also, and 2011.11.17).
-/// - 2012.01.26 JM: Minor mods.  Added "clean" version of ydot() because it
-///    was unreadable with all the ifdefs and if statements.
+/// - 2012.01.26 JM: Minor mods.  Added "clean" version of ydot()
+///    because it was unreadable with all the ifdefs and if
+///    statements.
 /// - 2012.02.27 JM: Debugging comments added/removed.
-/// - 2012.04.19 JM: Added "PUREHYDROGEN" ifdef for the Iliev et al. 2009 tests.
-/// - 2012.06.22 JM: Added Wolfire+,2003,ApJ,587,278) corrections to Henney+ scheme.
+/// - 2012.04.19 JM: Added "PUREHYDROGEN" ifdef for the Iliev et al.
+///    2009 tests.
+/// - 2012.06.22 JM: Added Wolfire+,2003,ApJ,587,278) corrections to
+///    Henney+ scheme.
 /// - 2012.06.25 JM: Added more heating/cooling from Wolfire+(2003).
 /// - 2012.10.03 JM: Added METALLICITY multiplier to all heating and
 ///    cooling rates that depend on dust or metals, and also to the 
 ///    dust opacity of the ISM to FUV radiation.  It's a crude hack,
 ///    because low-Z galaxies are usually overabundant in CNO, but
 ///    it's a start.
+/// - 2013.02.14 JM: Started modifying this to include He/Metal mass
+///    fractions as EP parameters, to make metallicity and mu into
+///    variables that can be set from the parameterfile.
 ///
-/// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,591,1220)
-///       which is the 'proto-solar nebula' value. The photospheric value is lower
-///       4.9e-4, and that is used by Wiersma et al. (2009,MN,393,99).
+/// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
+///       591,1220) which is the 'proto-solar nebula' value. The
+///       photospheric value is lower 4.9e-4, and that is used by
+///       Wiersma et al. (2009,MN,393,99).
 ///
 
-  // ----------------------------------------------------------------
-  // ----------------------------------------------------------------
-  // ================================================================
-  // ================================================================
+// ----------------------------------------------------------------
+// ----------------------------------------------------------------
+// ================================================================
+// ================================================================
 
 
 
@@ -130,14 +161,18 @@ using namespace std;
 
 #define WOLFIRE  // This enables extra heating/cooling/ionisation compared to Henney.
 
+#ifndef NEW_METALLICITY
 #define METALLICITY 1.0 ///< Metallicity in units of solar.
+#endif // not NEW_METALLICITY
 
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
 
 
 //
-// The timestep-limiting is set by ifdef in source/defines/functionality_flags.h
-// DT02 is recommended for mp_explicit_H (see Mackey,2011,A&A,submitted)
+// The timestep-limiting is set by ifdef in
+// source/defines/functionality_flags.h
+// DT02 is recommended for mp_explicit_H (see Mackey,2012,
+// A&A,539,A147)
 //
 #if   MPV3_DTLIMIT==0
   #define DTFRAC 1.0
@@ -220,6 +255,10 @@ mp_explicit_H::mp_explicit_H(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
           const std::string &trtype  ///< List of what the tracer variables mean.
+#ifdef NEW_METALLICITY
+          ,
+          struct which_physics *ephys  ///< extra physics stuff.
+#endif // NEW_METALLICITY
 	  )
 :
   nv_prim(nv)
@@ -261,16 +300,39 @@ mp_explicit_H::mp_explicit_H(
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
   // ----------------------------------------------------------------
-  setup_local_vectors();
-  gamma   = SimPM.gamma;   // Gas has a constant ratio of specific heats.
-  gamma_minus_one = SimPM.gamma -1.0;
   k_B = GS.kB();  // Boltzmann constant.
   m_p = GS.m_p(); // Proton mass.
+
+#ifdef NEW_METALLICITY
+  //
+  // Set EP to point to SimPM.EP struct passed to constructor.
+  //
+  EP = ephys;
+  //
+  // Get the mean mass per H atom from the He and Z mass fractions.
+  //
+  double X = 1.0-EP->Helium_MassFrac -EP->Metal_MassFrac;
+  mean_mass_per_H = m_p/X;
+  //
+  // Assume He is singly ionised whenever H is, and no metals exist
+  // as far as number density of electrons/ions are concerned.
+  //
+  JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
+  JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
+  METALLICITY = EP->Metal_MassFrac;
+#else // if/not NEW_METALLICITY
+
 #ifdef PUREHYDROGEN
   mean_mass_per_H = m_p;  // appropriate for a gas of 100% H.
 #else
   mean_mass_per_H = 1.40*m_p;  // appropriate for a gas of 90% H, 10% He.
 #endif
+  // JM_NION and JM_NELEC are defined as #defines in this case.
+#endif // NEW_METALLICITY
+
+  setup_local_vectors();
+  gamma   = SimPM.gamma;   // Gas has a constant ratio of specific heats.
+  gamma_minus_one = SimPM.gamma -1.0;
   Min_NeutralFrac     = JM_MINNEU;
   Max_NeutralFrac     = 1.0-JM_MINNEU;
   //
@@ -394,7 +456,7 @@ mp_explicit_H::mp_explicit_H(
     outf <<" x=0.00001, x=0.5 (n=1 per cc)\n";
     outf.setf( ios_base::scientific );
     outf.precision(6);
-    double T=SimPM.EP.MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
+    double T=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
     do {
       p[pv_Hp] = 0.99999;
       Set_Temp(p,T,junk);
@@ -419,7 +481,7 @@ mp_explicit_H::mp_explicit_H(
 
       outf << T <<"\t"<< Edi/lv_nH/lv_nH <<"  "<< Edn/lv_nH/lv_nH <<"  "<< Edpi/lv_nH/lv_nH <<"\n";
       T *=1.05;
-    } while (T<min(1.0e9,SimPM.EP.MaxTemperature));
+    } while (T<min(1.0e9,EP->MaxTemperature));
     outf.close();  
 #ifdef PARALLEL
   }
@@ -658,9 +720,9 @@ int mp_explicit_H::convert_prim2local(
   //
   if (p_local[lv_eint]<=0.0) {
     //cout <<"mp_explicit_H::convert_prim2local: negative pressure input: p=";
-    //cout <<p_local[lv_eint]<<", setting to "<<SimPM.EP.MinTemperature<<"K.\n";
+    //cout <<p_local[lv_eint]<<", setting to "<<EP->MinTemperature<<"K.\n";
     p_local[lv_eint] = (JM_NION+JM_NELEC*(1.0-p_local[lv_H0]))
-                        *mpv_nH*k_B*SimPM.EP.MinTemperature/(gamma_minus_one);
+                        *mpv_nH*k_B*EP->MinTemperature/(gamma_minus_one);
   }
 
 
@@ -712,20 +774,20 @@ int mp_explicit_H::convert_local2prim(
   // possibly corrected x(H+) from p_out[]).
   //
   double T = get_temperature(mpv_nH, p_local[lv_eint], p_out[pv_Hp]);
-  if (T>1.01*SimPM.EP.MaxTemperature) {
-    Set_Temp(p_out,SimPM.EP.MaxTemperature,0);
+  if (T>1.01*EP->MaxTemperature) {
+    Set_Temp(p_out,EP->MaxTemperature,0);
 #ifdef MPV3_DEBUG
     cout <<"mp_explicit_H::convert_local2prim() HIGH temperature encountered. ";
     cout <<"T="<<T<<", obtained from nH="<<mpv_nH<<", eint="<<p_local[lv_eint];
-    cout <<", x="<<p_out[pv_Hp]<<"...  limiting to T="<<SimPM.EP.MaxTemperature<<"\n";
+    cout <<", x="<<p_out[pv_Hp]<<"...  limiting to T="<<EP->MaxTemperature<<"\n";
 #endif // MPV3_DEBUG
   }
-  if (T<0.99*SimPM.EP.MinTemperature) {
-    Set_Temp(p_out,SimPM.EP.MinTemperature,0);
+  if (T<0.99*EP->MinTemperature) {
+    Set_Temp(p_out,EP->MinTemperature,0);
 #ifdef MPV3_DEBUG
     cout <<"mp_explicit_H::convert_local2prim() LOW  temperature encountered. ";
     cout <<"T="<<T<<", obtained from nH="<<mpv_nH<<", eint="<<p_local[lv_eint];
-    cout <<", x="<<p_out[pv_Hp]<<"...  limiting to T="<<SimPM.EP.MinTemperature<<"\n";
+    cout <<", x="<<p_out[pv_Hp]<<"...  limiting to T="<<EP->MinTemperature<<"\n";
 #endif // MPV3_DEBUG
   }
 
@@ -1461,8 +1523,8 @@ int mp_explicit_H::ydot(
   // We want to limit cooling as we approach the minimum temperature, so we scale
   // the rate to linearly approach zero as we reach Tmin.
   //
-  if (Edot<0.0 && T<2.0*SimPM.EP.MinTemperature) {
-    Edot = min(0.0, (Edot)*(T-SimPM.EP.MinTemperature)/SimPM.EP.MinTemperature);
+  if (Edot<0.0 && T<2.0*EP->MinTemperature) {
+    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
   }
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
@@ -1557,7 +1619,7 @@ int mp_explicit_H::ydot(
   double Edot=0.0; // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH at the end.
 
 #ifdef RT_TEST_PROBS
-  if (SimPM.EP.coll_ionisation) {
+  if (EP->coll_ionisation) {
 #endif 
 
     //
@@ -1636,7 +1698,7 @@ int mp_explicit_H::ydot(
   }
 
 #ifdef RT_TEST_PROBS
-  if (SimPM.EP.rad_recombination) {
+  if (EP->rad_recombination) {
     oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*x_in*mpv_nH;
     //Edot -= Hii_total_cooling(T) *x_in*x_in*mpv_nH;
     Edot -= Hii_rad_recomb_cooling(T) *x_in*x_in*mpv_nH;
@@ -1831,17 +1893,17 @@ int mp_explicit_H::ydot(
   // We want to limit cooling as we approach the minimum temperature, so we scale
   // the rate to linearly approach zero as we reach Tmin.
   //
-  if (Edot<0.0 && T<2.0*SimPM.EP.MinTemperature) {
+  if (Edot<0.0 && T<2.0*EP->MinTemperature) {
 #ifdef MPV3_DEBUG
     cout <<"limiting cooling: Edot="<<Edot<<", T="<<T;
 #endif // MPV3_DEBUG
-    Edot = min(0.0, (Edot)*(T-SimPM.EP.MinTemperature)/SimPM.EP.MinTemperature);
+    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
 #ifdef MPV3_DEBUG
     cout <<"... resetting Edot to "<<Edot<<"\n";
 #endif // MPV3_DEBUG
   }
 #ifdef RT_TEST_PROBS
-  if (!SimPM.EP.update_erg) {
+  if (!EP->update_erg) {
     Edot = 0.0;
   }
 #endif

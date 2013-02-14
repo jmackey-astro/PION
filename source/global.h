@@ -76,6 +76,8 @@
 /// - 2012.01.14 JM: Added 'star' struct, for data from stellar evolution file.
 /// - 2012.01.16 JM: Added extra constants to GeneralStuff
 /// - 2012.05.15 JM: Added global ixmin/ixmax/irange functions to grid base class
+/// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
+///    to make metallicity and mu into parameterfile settings.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -362,6 +364,18 @@ struct which_physics {
 #ifdef THERMAL_CONDUCTION
   int thermal_conduction; ///< 0 if no conductivity, 1 if using it.
 #endif // THERMAL CONDUCTION
+
+#ifdef NEW_METALLICITY
+  /// Mass fraction of He, Y, used for calculation electron/ion
+  /// densities as a function of H number density, and for setting
+  /// the mean mass per particle, mu.
+  double Helium_MassFrac;
+  /// Mass fraction of metals, Z, used for heating/cooling in
+  /// microphysics (but doesn't contribute to mean mass per particle,
+  /// mu).
+  double Metal_MassFrac;
+#endif // NEW_METALLICITY
+  
 };
 
 

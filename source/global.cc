@@ -53,6 +53,8 @@
 ///    only when TESTING is defined; otherwise just rank 0 writes to
 ///    file, and all others have stdout supressed.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
+///    to make metallicity and mu into parameterfile settings.
 
 #include "global.h"
 #include <iostream>
@@ -975,6 +977,14 @@ SimParams::SimParams()
   EP.rad_recombination = 0;
   EP.update_erg        = 1;  ///< this is effectively a boolean value.
   EP.MP_timestep_limit = false; ///< by default only use hydro limit.
+
+  EP.MinTemperature = 0.0;
+  EP.MaxTemperature = 1.0e100;
+  
+#ifdef NEW_METALLICITY
+  EP.Helium_MassFrac = 0.2703;
+  EP.Metal_MassFrac  = 0.0142;
+#endif // NEW_METALLICITY
 
   RS.Nsources = -1;
   RS.sources.clear();

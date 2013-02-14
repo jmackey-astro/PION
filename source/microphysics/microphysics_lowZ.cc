@@ -19,13 +19,14 @@
 ///     distance to source and not the shell volume from Mellema+2006), but
 ///     should be good enough for Harpreet.  Also updated timestep calculator
 ///     to deal with multiple column densities.
+/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 
 //
 // First include all the defines, to make sure that we need to compile in 
 // Harpreet's module to the final exe.
 //
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_HD_MODULE
 
 

@@ -3,13 +3,15 @@
 /// \author Jonathan Mackey
 /// \date 2011.10.12
 ///
-/// This file updates the implicit (C2-ray type) integrator in microphysics.cc
-/// with a new version based on the explicit integrator and capable of 
-/// treating multi-frequency photoionisation.
+/// This file updates the implicit (C2-ray type) integrator in
+/// microphysics.cc with a new version based on the explicit
+/// integrator and capable of treating multi-frequency
+/// photoionisation.
 ///
 /// modifications:
 /// - getting it written: mods up until 2011.10.XX
 /// - 2011.10.17 JM: Debugging.
+/// - 2013.02.14 JM: Tidied up file.
 
 
 
@@ -51,12 +53,14 @@ class mp_implicit_H
   ~mp_implicit_H();
 
   ///
-  /// This takes a copy of the primitive vector and advances it in time over
-  /// the step requested, and at the end copies the updated vector into the
-  /// destination vector.  For fully local microphysics but WITH radiative transfer,
-  /// where the column densities for diffuse and direct radiation are included as 
-  /// parameters.  The input list of column densities is ordered by the number of 
-  /// sources in each category in the vector of integers.
+  /// This takes a copy of the primitive vector and advances it in
+  /// time over the step requested, and at the end copies the updated
+  /// vector into the destination vector.  For fully local
+  /// microphysics but WITH radiative transfer, where the column
+  /// densities for diffuse and direct radiation are included as
+  /// parameters.  The input list of column densities is ordered by
+  /// the number of sources in each category in the vector of
+  /// integers.
   ///
   /// Integers refer to:
   /// - Number of diffuse ionising sources (at infinity), 
@@ -64,24 +68,25 @@ class mp_implicit_H
   /// - Number of ionising point sources,
   /// - Number of UV point sources.
   ///
-  /// Returned data is the time-averaged column density <<\delta\rho\times\delta x>>
+  /// Returned data is the time-averaged column density
+  /// <<\delta\rho\times\delta x>>
   ///
   virtual int TimeUpdateMP_RTnew(
-                   const double *, ///< Primitive Vector to be updated.
- 	           const int,      ///< Number of UV heating sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of UV-heating column densities and source properties.
-                   const int,      ///< number of ionising radiation sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of ionising src column densities and source properties.
-		   double *,       ///< Destination Vector for updated values
-		                   ///< (can be same as first Vector.
-		   const double,   ///< Time Step to advance by.
-		   const double,   ///< EOS gamma.
-		   const int, ///< Switch for what type of integration to use.
-		              ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-		   double *    ///< any returned data (final temperature?).
-		   );
+          const double *, ///< Primitive Vector to be updated.
+          const int,      ///< Number of UV heating sources.
+          const std::vector<struct rt_source_data> &,
+          ///< list of UV-heating column densities and source properties.
+          const int,      ///< number of ionising radiation sources.
+          const std::vector<struct rt_source_data> &,
+          ///< list of ionising src column densities and source properties.
+          double *,       ///< Destination Vector for updated values
+                         ///< (can be same as first Vector.
+          const double,   ///< Time Step to advance by.
+          const double,   ///< EOS gamma.
+          const int, ///< Switch for what type of integration to use.
+                    ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+          double *    ///< any returned data (final temperature?).
+          );
 
   ///
   /// This returns the minimum timescale of the times flagged in the
@@ -96,33 +101,36 @@ class mp_implicit_H
           );
 
   ///
-  /// This returns the minimum timescale of all microphysical processes, including
-  /// reaction times for each species and the total heating/cooling time for the gas.
-  /// It requires the radiation field as an input, so it has substantially greater
+  /// This returns the minimum timescale of all microphysical 
+  /// processes, including reaction times for each species and the
+  /// total heating/cooling time for the gas.  It requires the
+  /// radiation field as an input, so it has substantially greater
   /// capability than the other timescales function.
   ///
   double timescales_RT(
-                    const double *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    );
+          const double *, ///< Current cell.
+          const int,      ///< Number of UV heating sources.
+          const std::vector<struct rt_source_data> &,
+          ///< list of UV-heating column densities and source properties.
+          const int,      ///< number of ionising radiation sources.
+          const std::vector<struct rt_source_data> &,
+          ///< list of ionising src column densities and source properties.
+          const double   ///< EOS gamma.
+          );
 
   protected:
   ///
-  /// convert state vector from grid cell into local microphysics vector.
+  /// convert state vector from grid cell into local microphysics
+  /// vector.
   ///
   virtual int convert_prim2local(
-            const double *, ///< primitive vector from grid cell (length nv_prim)
-            double *        ///< local vector [x,E](n+1).
-            );
+          const double *, ///< primitive vector from grid cell (length nv_prim)
+          double *        ///< local vector [x,E](n+1).
+          );
 
   ///
-  /// Convert int(exp(-dtau)dt) into time-averaged value of rho*(1-x)*ds
+  /// Convert int(exp(-dtau)dt) into time-averaged value of
+  /// rho*(1-x)*ds
   ///
   double get_timeaveraged_rhodx(
             const double, ///< this is int(exp(-dtau)dt)
@@ -141,7 +149,7 @@ class mp_implicit_H
   //---------------------------------------------------------------------------
   public:
   ///
-  /// calculate dy/dt for the vector of y-values (NOT IMPLEMENTED HERE).
+  /// calculate dy/dt for the vector of y-values.
   ///
   virtual int ydot(
           double,         ///< current time (probably not needed for rate equations)

@@ -4,34 +4,36 @@
 /// \date 2011.10.12
 ///
 /// Description:
-/// This class is an update on the microphysics class used for my thesis.
-/// It uses the same implicit raytracing scheme, so the photon transmission
-/// through the cell is integrated with the rate and energy equations to 
-/// obtain a time-averaged value.
+/// This class is an update on the microphysics class used for JMs
+/// thesis.  It uses the same implicit raytracing scheme, so the
+/// photon transmission through the cell is integrated with the rate
+/// and energy equations to obtain a time-averaged value.
 ///
-/// The main advantage here is that we can use multi-frequency photoionisation
-/// rates which depend on the optical depth.
+/// The main advantage here is that we can use multi-frequency
+/// photoionisation rates which depend on the optical depth.
 ///
 /// Modifications:
 /// - 2011.10.13 JM: Debugging.
 /// - 2011.10.17 JM: Debugging. (2011.10.22 also).
+/// - 2013.02.14 JM: Tidied up file.
 
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_MPV4
 
 //#define MPV3_DEBUG
 
-#include "mp_implicit_H.h"
-#include "../global.h"
+#include "microphysics/mp_implicit_H.h"
+#include "global.h"
 
 using namespace std;
 
 //
-// The timestep-limiting is set by ifdef in source/defines/functionality_flags.h
-// DT05 is recommended for mp_implicit_H (see Mackey,2011,A&A,submitted), but
-// DT02 is fine for monochromatic radiation.
+// The timestep-limiting is set by ifdef in
+//  source/defines/functionality_flags.h
+// DT05 is recommended for mp_implicit_H (see Mackey,2012,
+// A&A,539,A147), but DT02 is fine for monochromatic radiation.
 //
 #if   MPV4_DTLIMIT==0
   #define DTFRAC 1.00
@@ -81,9 +83,9 @@ using namespace std;
 
 
 void mp_implicit_H::get_error_tolerances(
-                double *reltol, ///< relative error tolerance.
-                double atol[] ///< absolute error tolerances
-                )
+          double *reltol, ///< relative error tolerance.
+          double atol[] ///< absolute error tolerances
+          )
 {
   mp_explicit_H::get_error_tolerances(reltol,atol);
   //
@@ -102,9 +104,9 @@ void mp_implicit_H::get_error_tolerances(
 
 
 void mp_implicit_H::get_problem_size(
-                  int *ne, ///< number of equations
-                  int *np  ///< number of parameters in user_data vector.
-                  )
+          int *ne, ///< number of equations
+          int *np  ///< number of parameters in user_data vector.
+          )
 {
   *ne = N_equations;
   *np = N_extradata;
@@ -133,7 +135,6 @@ void mp_implicit_H::setup_local_vectors()
   lv_H0   = 0;    // x(H0) is the first element in the array
   lv_eint = 1;    // E_{int} is the second element.
   lv_dtau = 2;    // integrated photon transmission fraction.
-  //cout<< "!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
 }
 
@@ -173,8 +174,10 @@ double mp_implicit_H::get_timeaveraged_rhodx(
   //
   // Convert the integrated optical depth to a projected mass density
   // of ionised gas. (code taken mostly from microphysics.cc)
-  // Convert integrated exp(-tau) into a time-averaged optical depth to return to the code.
-  // Have to check that it is finite and positive, since log is sensitive to roundoff errors.
+  // Convert integrated exp(-tau) into a time-averaged optical depth
+  // to return to the code.
+  // Have to check that it is finite and positive, since log is
+  // sensitive to roundoff errors.
   //
   double deltau = -log(edtau/dt);
 #ifdef RT_TESTING
@@ -223,11 +226,12 @@ int mp_implicit_H::ydot(
   int err = mp_explicit_H::ydot(0,y_now,y_dot,0);
 
   //
-  // exp(-delta_Tau) = exp(-nH*(1-x)*sigma*ds), where we evaluate the cross
-  // section at 13.6 eV = 2.1787e-11 ergs, the ionisation energy of H.
+  // exp(-delta_Tau) = exp(-nH*(1-x)*sigma*ds), where we evaluate the
+  // cross section at 13.6 eV = 2.1787e-11 ergs, the ionisation
+  // energy of H.
   //
-  NV_Ith_S(y_dot,lv_dtau) =  exp(-mpv_nH *NV_Ith_S(y_now,lv_H0) *mpv_delta_S
-                                  *Hi_monochromatic_photo_ion_xsection(2.178721e-11));
+  NV_Ith_S(y_dot,lv_dtau) =  exp(-mpv_nH *NV_Ith_S(y_now,lv_H0)
+    *mpv_delta_S*Hi_monochromatic_photo_ion_xsection(2.178721e-11));
 
   return err;
 }
@@ -238,17 +242,17 @@ int mp_implicit_H::ydot(
 
 
 mp_implicit_H::mp_implicit_H(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-          const std::string &trtype  ///< List of what the tracer variables mean.
+          const int nv,             ///< Total number of variables in state vector
+          const int ntracer,        ///< Number of tracer variables in state vector.
+          const std::string &trtype ///< List of what the tracer variables mean.
 	  )
   :
   mp_explicit_H(nv,ntracer,trtype)
 {
   //
-  // All of the setup is in the explicit solver; the only changes here are
-  // that I have re-implemented some of the functions which the explicit
-  // constructor calls.
+  // All of the setup is in the explicit solver; the only changes
+  // here are that I have re-implemented some of the functions which
+  // the explicit constructor calls.
   //
   cout <<"mp_implicit_H::mp_implicit_H() constructor.\n";
   setup_local_vectors();
@@ -294,8 +298,8 @@ int mp_implicit_H::TimeUpdateMP_RTnew(
           )
 {
   //
-  // This does the integration, and leaves int(exp(-dtau)dt) in the variable
-  // NV_Ith_S(y_out,lv_dtau).
+  // This does the integration, and leaves int(exp(-dtau)dt) in the
+  // variable NV_Ith_S(y_out,lv_dtau).
   // 
   int err = mp_explicit_H::TimeUpdateMP_RTnew(p_in, N_heat, heat_src, N_ion,
                   ion_src, p_out, dt, 0, 0, dsigma);
@@ -356,7 +360,8 @@ double mp_implicit_H::timescales(
   double T = get_temperature(mpv_nH, NV_Ith_S(y_in,lv_eint), 1.0-NV_Ith_S(y_in,lv_H0));
 
   //
-  // And finally get the smallest timescale over which things are varying.
+  // And finally get the smallest timescale over which things are
+  // varying.
   //
   double tmin = HUGEVALUE;
 
@@ -401,22 +406,23 @@ double mp_implicit_H::timescales(
 
 
 ///
-/// This returns the minimum timescale of all microphysical processes, including
-/// reaction times for each species and the total heating/cooling time for the gas.
-/// It requires the radiation field as an input, so it has substantially greater
+/// This returns the minimum timescale of all microphysical
+/// processes, including reaction times for each species and the
+/// total heating/cooling time for the gas.  It requires the
+/// radiation field as an input, so it has substantially greater
 /// capability than the other timescales function.
 /// Default setting is DT05, which limits by 1.0*E/Edot and 1.0/ydot
 ///
 double mp_implicit_H::timescales_RT(
-                    const double *p_in, ///< Current cell state vector.
-                    const int N_heat,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &heat_src,
-                    ///< list of UV-heating column densities and source properties.
-                    const int N_ion,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &ion_src,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    )
+          const double *p_in, ///< Current cell state vector.
+          const int N_heat,      ///< Number of UV heating sources.
+          const std::vector<struct rt_source_data> &heat_src,
+          ///< list of UV-heating column densities and source properties.
+          const int N_ion,      ///< number of ionising radiation sources.
+          const std::vector<struct rt_source_data> &ion_src,
+          ///< list of ionising src column densities and source properties.
+          const double   ///< EOS gamma.
+          )
 {
   int err=0;
   //
@@ -444,18 +450,20 @@ double mp_implicit_H::timescales_RT(
   }
 
   //
-  // And finally get the smallest timescale over which things are varying.
+  // And finally get the smallest timescale over which things are
+  // varying.
   //
   double t=HUGEVALUE;
   //
   // First get the ionisation timescale, limited to dt = 0.25/|xdot|.
-  // Tests have shown this is good enough, and that a restriction on the energy change 
-  // (heating timescale) is not required for accurately tracking ionisation fronts 
-  // (although it may be needed for cooling!).
-  // For testing purposes there are ifdefs to allow the code to use a relative 
-  // change in neutral fraction and/or the relative change in energy as the 
-  // timestep criterion, rather than the default of absolute change in neutral
-  // fraction.
+  // Tests have shown this is good enough, and that a restriction on
+  // the energy change (heating timescale) is not required for
+  // accurately tracking ionisation fronts (although it may be needed
+  // for cooling!).
+  // For testing purposes there are ifdefs to allow the code to use a
+  // relative change in neutral fraction and/or the relative change
+  // in energy as the timestep criterion, rather than the default of
+  // absolute change in neutral fraction.
   //
 #ifdef USE_RELATIVE_NEUFRAC_DTLIMIT
   t = min(t,DTFRAC*max(5.0e-2,NV_Ith_S(y_in, lv_H0))/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE));
