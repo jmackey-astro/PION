@@ -131,11 +131,14 @@
 /// - 2013.02.14 JM: Started modifying this to include He/Metal mass
 ///    fractions as EP parameters, to make metallicity and mu into
 ///    variables that can be set from the parameterfile.
+/// - 2013.02.15 JM: Moved much ifdef stuff into new classes.
+///    Changed Oxygen abundance from Lodders2003 to Asplund+2009.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
 ///       photospheric value is lower 4.9e-4, and that is used by
 ///       Wiersma et al. (2009,MN,393,99).
+/// UPDATE: changed to 4.90e-4 to match Asplund+(2009)
 ///
 
 // ----------------------------------------------------------------
@@ -310,8 +313,9 @@ mp_explicit_H::mp_explicit_H(
   EP = ephys;
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
+  // Assume metal content is low enough to ignore it.
   //
-  double X = 1.0-EP->Helium_MassFrac -EP->Metal_MassFrac;
+  double X = 1.0-EP->Helium_MassFrac;
   mean_mass_per_H = m_p/X;
   //
   // Assume He is singly ionised whenever H is, and no metals exist
@@ -319,7 +323,7 @@ mp_explicit_H::mp_explicit_H(
   //
   JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
   JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
-  METALLICITY = EP->Metal_MassFrac;
+  METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
 #else // if/not NEW_METALLICITY
 
 #ifdef PUREHYDROGEN
@@ -627,17 +631,13 @@ int mp_explicit_H::set_multifreq_source_properties(
   if (rsi->Tstar<0 || !isfinite(rsi->Tstar))
     rep.error("Source has bad Tstar parameter", rsi->Tstar);
 
-  //double mincol=SimPM.dx*1.0e-11, maxcol=1.0e24, Emax=1000.0*1.602e-12;
-  //int Nspl=150, Nsub=800;
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  // EXPERIMENTAL CODE!!!! I THINK THIS IS OK, BUT NEED TO DO SOME MORE CHECKING TO MAKE SURE
-  //double mincol=SimPM.dx*10.0*JM_MINNEU, maxcol=1.0e24, Emax=1000.0*1.602e-12;
-  //int Nspl=100, Nsub=800;
-  // EXPERIMENTAL CODE!!!! I THINK THIS IS OK, BUT NEED TO DO SOME MORE CHECKING TO MAKE SURE
-  ///////////////////////////////////////////////////////////////////////////////////////////
+  //
+  // mincol is the minimum Tau we care about, maxcol is the max Tau
+  // we care about, Emax is the max. energy (in ergs) to integrate
+  // to in the fit.  I think 1000eV is a bit excessive...
+  //
   double mincol=1.0e-3, maxcol=1.0e6, Emax=1000.0*1.602e-12;
   int Nspl=50, Nsub=800;
-  //cout <<"#################### mp_explicit_H::set_multifreq_source_properties() MinTau="<<mincol<<"\n";
   
   //
   // Call the function in hydrogen_photoion.
@@ -658,7 +658,7 @@ int mp_explicit_H::set_multifreq_source_properties(
 
 
 double mp_explicit_H::get_temperature(
-    const double n, ///< nH (per c.c.)
+    const double nH, ///< nH (per c.c.)
     const double E, ///< E_int (per unit volume)
     const double xp  ///< x(H+)
     )
@@ -670,7 +670,7 @@ double mp_explicit_H::get_temperature(
   //
   //double ntotk = k_B*n*(JM_NION+JM_NELEC*xp);
   //cout <<"mp_explicit_H::get_temperature(): n.K="<<T<<", T="<<gamma_minus_one*E/T<<"\n";
-  return gamma_minus_one*E/(k_B*n*(JM_NION+JM_NELEC*xp));
+  return gamma_minus_one*E/(k_B*nH*(JM_NION+JM_NELEC*xp));
 }
 
 
@@ -719,8 +719,10 @@ int mp_explicit_H::convert_prim2local(
   // warning) and set to 10K if we find it.
   //
   if (p_local[lv_eint]<=0.0) {
-    //cout <<"mp_explicit_H::convert_prim2local: negative pressure input: p=";
-    //cout <<p_local[lv_eint]<<", setting to "<<EP->MinTemperature<<"K.\n";
+#ifdef MPV3_DEBUG
+    cout <<"mp_explicit_H::convert_prim2local: negative pressure input: p=";
+    cout <<p_local[lv_eint]<<", setting to "<<EP->MinTemperature<<"K.\n";
+#endif
     p_local[lv_eint] = (JM_NION+JM_NELEC*(1.0-p_local[lv_H0]))
                         *mpv_nH*k_B*EP->MinTemperature/(gamma_minus_one);
   }
@@ -810,8 +812,10 @@ double mp_explicit_H::Temperature(
     cout <<"mp_explicit_H::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
   }
+  //
+  // generate vector of (nH,y(H0),Eint), and get Temperature from it.
+  //
   double P[nvl];
-  //  cout<< "!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   convert_prim2local(pv,P);
   return get_temperature(mpv_nH, P[lv_eint], 1.0-P[lv_H0]);
 }
@@ -828,12 +832,13 @@ int mp_explicit_H::Set_Temp(
           )
 {
   //
-  // Check for negative pressure.  If density<0 then we should bug out because
-  // there is no way to set a temperature, but if p<0 we can just overwrite it.
+  // Check for negative pressure.  If density<0 then we should bug
+  // out because there is no way to set a temperature, but if p<0 we
+  // can just overwrite it.
   //
   if (p_pv[PG]<=0.0) {
     //cout <<"MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
-    p_pv[PG] = 1.0e-12;  // It doesn't matter what this is as long as p>0
+    p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
   }
   double P[nvl];
   int err = convert_prim2local(p_pv,P);
@@ -856,6 +861,9 @@ int mp_explicit_H::TimeUpdateMP(
         double *random_stuff  ///< Vector of extra data (column densities, etc.).
         )
 {
+  //
+  // Call the new update function, but with zero radiation sources.
+  //
   std::vector<struct rt_source_data> temp;
   int err = TimeUpdateMP_RTnew(p_in, 0, temp, 0, temp, p_out, dt, 0, 0, random_stuff);
   return err;
@@ -883,17 +891,22 @@ int mp_explicit_H::TimeUpdateMP_RTnew(
           double *random_stuff ///< final temperature (not strictly needed).
           )
 {
+  //
+  // First set local variables for state vector and radiation source
+  // properties.
+  //
   int err=0;
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
     rep.error("Bad input state to mp_explicit_H::TimeUpdateMP_RTnew()",err);
   }
-  setup_radiation_source_parameters(p_in,P, N_heat, heat_src, N_ion, ion_src);
+  setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
 
   //
-  // update radiation source properties, if needed (re-calculate multi-frequency
-  // photoionisation rates if the source properties have changed).
+  // update radiation source properties, if needed (re-calculate
+  // multi-frequency photoionisation rates if the source properties
+  // have changed).
   // TODO: CODE THIS SOMEWHERE!! BUT MAYBE put this somewhere else -- 
   //       update the source properties when they change,
   //       and through a different interface function!!
@@ -930,11 +943,10 @@ int mp_explicit_H::TimeUpdateMP_RTnew(
   }
 
   //
-  // Now put the result into p_out[]
+  // Now put the result into p_out[] and return.
   //
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
   err = convert_local2prim(P,p_in,p_out);
-  
   return err;
 }
 
@@ -1181,8 +1193,10 @@ void mp_explicit_H::setup_radiation_source_parameters(
         mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column);
         mpv_G0_IR += temp*exp(-Av_IR*heat_src[v].Column);
         i_diff++;
-        //cout <<"UV_diff_flux="<<temp*exp(-Av_UV*heat_src[v].Column);
-        //cout <<" Col="<<heat_src[v].Column<<" Av="<<Av_UV*heat_src[v].Column/1.9<<"\n";
+#ifdef MPV3_DEBUG
+        cout <<"UV_diff_flux="<<temp*exp(-Av_UV*heat_src[v].Column);
+        cout <<" Col="<<heat_src[v].Column<<" Av="<<Av_UV*heat_src[v].Column/1.9<<"\n";
+#endif // MPV3_DEBUG
       }
       else {
         //
@@ -1417,10 +1431,6 @@ int mp_explicit_H::ydot(
   //
   oneminusx_dot -= 1.8e-17*OneMinusX;
   //
-  // Hacked heating rate to get 1000K gas.
-  //
-  //Edot += 5e-26*OneMinusX;
-  //
   // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
   // This is a fit to the curve in the top-right panel of Fig.10.
   //Edot += 1.66e-26*pow(mpv_nH,0.2602)*OneMinusX;
@@ -1437,17 +1447,17 @@ int mp_explicit_H::ydot(
   // First forbidden line cooling of e.g. OII,OIII, dominant in HII regions.
   // This is collisionally excited lines of photoionised metals. (HAdCM09 eq.A9)
   // I have exponentially damped this at high temperatures! This was important!
-  // Oxygen abundance set to 5.81e-4 from Lodders et al. (2003,ApJ,591,1220,Tab.2).
+  // Oxygen abundance set to 4.90e-4 from Asplund+(2009,ARAA).
   //
-  temp1 = 1.69e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  temp1 = 1.42e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
 
 #ifndef WOLFIRE
   //
   // Collisionally excited lines of neutral metals: (HAdCM09 eq.A10).
   // Assumes the neutral metal fraction is the same as neutral H fraction.
-  // Oxygen abundance set to 5.81e-4 from Lodders et al. (2003,ApJ,591,1220,Tab.2).
+  // Oxygen abundance set to 4.90e-4 from Asplund+(2009,ARAA).
   //
-  temp1+= 2.60e-23*METALLICITY *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
+  temp1+= 2.19e-23*METALLICITY *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
 #endif // not WOLFIRE
 
   //
@@ -1498,8 +1508,9 @@ int mp_explicit_H::ydot(
   Edot -= 3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX*exp(-mpv_nH/1.0e4);
   Edot -= 3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
   //
-  // This is the CII cooling by electron collisions, cutoff at high density
-  // again, for consistency.
+  // This is the CII cooling by electron collisions, cutoff at high
+  // density again, for consistency, again with sqrt(100K) absorbed
+  // into the prefactor.
   //
   Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne*exp(-mpv_nH/1.0e4);
   //

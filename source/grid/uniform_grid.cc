@@ -1468,7 +1468,6 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
 #ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
   rep.printVec("src", srcpos, G_ndim);
-  rep.printVec("pos", c->pos, G_ndim);
 #endif
 
   cell *c = FirstPt();

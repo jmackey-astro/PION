@@ -379,7 +379,8 @@ class mp_explicit_H
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
 #ifdef NEW_METALLICITY
   double JM_NELEC; ///< Number of electrons per ionised H atom.
-  double JM_NION;  ///< Number of ions per ionised H atom. 
+  double JM_NION;  ///< Number of ions per ionised H atom.
+  double METALLICITY; ///< Metallicity of gas, in units of solar.
 #endif // NEW_METALLICITY
 
   const int nv_prim; ///< Number of variables in state vector.

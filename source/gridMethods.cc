@@ -131,7 +131,8 @@
 /// - 2012.08.16 JM: Debugging.  It seems to be working well now, but
 ///    there is still more testing to do.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
-///
+/// - 2013.02.15 JM: Added NEW_METALLICITY flag for testing the new
+///    microphysics classes.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -162,6 +163,14 @@
 #ifndef EXCLUDE_MPV4
 #include "microphysics/mp_implicit_H.h"
 #endif 
+
+#ifdef NEW_METALLICITY
+#include "microphysics/mpv5_molecular.h"
+#include "microphysics/mpv6_PureH.h"
+#include "microphysics/mpv7_TwoTempIso.h"
+#endif // NEW_METALLICITY
+
+
 
 #include "raytracing/raytracer_SC.h"
 
@@ -1556,7 +1565,12 @@ int IntUniformFV::setup_microphysics()
 #else
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
+
+      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype
+#ifdef NEW_METALLICITY
+      , &(SimPM.EP)
+#endif // NEW_METALLICITY
+      );
       //if (SimPM.EP.MP_timestep_limit != 1)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;
@@ -1586,6 +1600,36 @@ int IntUniformFV::setup_microphysics()
       have_set_MP=true;
     }
 #endif // exclude MPv4
+
+
+#ifdef NEW_METALLICITY
+    if (mptype=="MPv5__") {
+      cout <<"\t******* setting up mpv5_molecular module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+
+    if (mptype=="MPv6__") {
+      cout <<"\t******* setting up mpv6_PureH module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+
+    if (mptype=="MPv7__") {
+      cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+#endif // NEW_METALLICITY
+
+
+
 
 #ifndef EXCLUDE_MPV1
     //

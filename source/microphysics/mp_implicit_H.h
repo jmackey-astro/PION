@@ -19,19 +19,19 @@
 #define MP_IMPLICIT_H_H
 
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_MPV4
 
 
 #include <vector>
-#include "microphysics_base.h"
-#include "cooling_SD93_cie.h"
-#include "hydrogen_mp.h"
-#include "hydrogen_recomb_Hummer94.h"
-#include "hydrogen_photoion.h"
-#include "cvode_integrator.h"
-#include "mp_explicit_H.h"
+#include "microphysics/microphysics_base.h"
+#include "microphysics/cooling_SD93_cie.h"
+#include "microphysics/hydrogen_mp.h"
+#include "microphysics/hydrogen_recomb_Hummer94.h"
+#include "microphysics/hydrogen_photoion.h"
+#include "microphysics/cvode_integrator.h"
+#include "microphysics/mp_explicit_H.h"
 
 class mp_implicit_H
   :

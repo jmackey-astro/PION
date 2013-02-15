@@ -47,7 +47,7 @@ eqns_Euler::eqns_Euler(int nv)
 {
 #ifdef TESTING
   cout <<"(eqns_Euler::eqns_Euler) Setting up Euler Equations Class.\n";
-  cout <<"\tVector lengths: "<<eqnvar<<"\n";
+  cout <<"\tVector lengths: "<<eq_nvar<<"\n";
 #endif
   if(eq_nvar<5) rep.error("eqns_Euler initialised with eq_nvar<5.",eq_nvar);
   //cout <<"Setting Flux functions to X-dir: pu2f(), u2f()\n";

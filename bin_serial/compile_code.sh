@@ -14,7 +14,8 @@
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.01.17 JM: Got rid of readline/ncurses from link line in
 #    production version of pion.
-#
+# - 2013.02.15 JM: Added NEW_METALLICITY flag for testing the new
+#    microphysics classes.
 
 
 #
@@ -123,7 +124,7 @@ if [ $PION_OPTIMISE == LOW ]
   echo "LDFLAGS= $DLFLAGS"
   export LDFLAGS=" -lreadline -lncurses "
   echo "LDFLAGS= $LDFLAGS"
-  export PION_OPTIONS="$JMCODE_OPTIONS -DTESTING"
+  export PION_OPTIONS="$PION_OPTIONS -DTESTING"
 else
   export LDFLAGS=""
 fi
@@ -132,6 +133,7 @@ fi
 #####################################################################
 #### now compile the code:
 #####################################################################
+export PION_OPTIONS="$PION_OPTIONS -DNEW_METALLICITY"
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES}

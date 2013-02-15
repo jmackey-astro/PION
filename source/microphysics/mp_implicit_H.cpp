@@ -1,5 +1,5 @@
 ///
-/// \file mp_explicit_H.cpp
+/// \file mp_implicit_H.cpp
 /// \author Jonathan Mackey
 /// \date 2011.10.12
 ///

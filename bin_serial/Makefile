@@ -39,6 +39,8 @@
 #                  Added StarBench test problems class to icgen.
 # - 2013.01.17 JM: Got rid of readline/ncurses from link line in
 #    production version of pion.
+# - 2013.02.15 JM: Added NEW_METALLICITY flag for testing (with new
+#    source files).
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -289,6 +291,10 @@ IC_OBJ	= icgen.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
         StarBench_test.o
 
+ifneq (,$(findstring NEW_METALLICITY,$(PION_OPTIONS)))
+  OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+  IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+endif
 
 ##########################
 ### -- EXECTUTABLES -- ###
@@ -462,7 +468,14 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
 
+mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
+mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
 ########################
 # Harpreet's files

@@ -623,7 +623,7 @@ void DataIOBase::set_params()
   // Default value is from Asplund et al. (2009,ARA&A,47,481)
   //
   pm_double  *pYYY = new pm_double
-    ("EP_Helium_MassFrac", &SimPM.EP.He_MassFrac, 0.2703);
+    ("EP_Helium_MassFrac", &SimPM.EP.Helium_MassFrac, 0.2703);
   p = pYYY; p->critical=false;
   params.push_back(p);
   //
