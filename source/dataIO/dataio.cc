@@ -52,89 +52,20 @@
 ///    obselete now).
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
-///
+/// - 2013.02.19 JM: Moved file_status class definitions to new file.
 
 //
 // These tell code what to compile and what to leave out.
 //
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
-
-#include "dataio.h"
-#include "readparams.h"
-#include "../grid/stellar_wind_BC.h"
+#include "dataIO/dataio.h"
+#include "dataIO/readparams.h"
+#include "grid/stellar_wind_BC.h"
 #include <sstream>
 using namespace std;
 
-//------------------------------------------------------
-//----------- FILE_STATUS CLASS (LOCK/UNLOCK)-----------
-//------------------------------------------------------
-
-bool file_status::file_exists(string fname) 
-{
-  ifstream inf(fname.c_str());
-  if (inf) {
-//    cout <<":\t file exists.\n";
-    inf.close();
-    return true;
-  }
-  else return false;
-}
-
-bool file_status::file_is_locked(string fname) 
-{
-  fname += "_lock";
-  ifstream inf(fname.c_str());
-  if (inf) {
-//    cout <<"file_status:\t file is locked.\n";
-    inf.close();
-    return true;
-  }
-  else return false;
-}
-
-int file_status::acquire_lock(string fname)
-{
-  struct timespec waittime; waittime.tv_sec = 1; waittime.tv_nsec = 50000000;
-  while (file_is_locked(fname)) {
-    nanosleep(&waittime,0);
-//    cout <<"file_status:\t File locked... waiting\n";
-  }
-  if(file_lock(fname)) rep.error("Failed to lock file",1);
-  return(0);
-}
-int file_status::release_lock(string fname)
-{
-  file_unlock(fname);
-  return 0;
-}
-
-int file_status::file_lock(string fname)
-{
-  fname += "_lock";
-  ofstream outf(fname.c_str());
-  if(!outf) {
-    return 1;
-  }
-  outf <<"locking file"<<"\n";
-  outf.close();
-//  cout <<"file_status:\t locking file.\n";
-  return 0;  
-}
-
-void file_status::file_unlock(string fname) 
-{
-  fname += "_lock";
-  ifstream inf(fname.c_str());
-  if (!inf) {cout <<"file_status:\t File is not locked!\n"; return;}
-  inf.close();
-  if( remove(fname.c_str()) != 0 )
-    rep.error("Error deleting lock file",remove(fname.c_str()));
-  else
-//    cout<<"file_status:\t Unlocked file.\n";
-  return; 
-}
 
 // -----------------------------------------------------
 // ---------- PARAMETER CLASSES ------------------------

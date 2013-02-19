@@ -1,22 +1,24 @@
-/// \file dataio_utility.h
+/// \file dataio_silo_utility.h
 /// \author Jonathan Mackey
 /// 
 /// Utility class for reading silo files.
 ///
-///  - 2010-02-02 JM: Added support for N procs to read data written
+/// - 2010-02-02 JM: Added support for N procs to read data written
 ///     by M procs, where N not equal to M.
-///
-///  - 2010-02-03 JM: Fixed all the bugs in yesterday's work (as far
+/// - 2010-02-03 JM: Fixed all the bugs in yesterday's work (as far
 ///     as i could find).
-///
+/// - 2013.02.19 JM: Moved dataio_utility's directory-listing
+///    functions into file_status, so I deleted dataio_utility.
+///    Renamed file from dataio_utility.h to dataio_silo_utility.h
 
 #include <dirent.h>
 #include <errno.h>
 #include <list>
 using namespace std;
-#include "../global.h"
-#include "dataio.h"
-#include "dataio_silo.h"
+#include "global.h"
+#include "dataIO/file_status.h"
+#include "dataIO/dataio.h"
+#include "dataIO/dataio_silo.h"
 
 #ifndef DATAIO_UTILITY_H
 #define DATAIO_UTILITY_H
@@ -29,28 +31,8 @@ using namespace std;
 #error "Define PARALLEL so this code will work!"
 #endif
 
-class dataio_utility {
- public:
-  dataio_utility() {}
-  virtual ~dataio_utility() {}
-  //
-  // Given a directory and a string to match files to (may be blank),
-  // return sorted list of files.
-  //
-  int get_files_in_dir(const string,  ///< directory to list.
-		       const string,  ///< string that files start with
-		       list<string> * ///< list to put filenames in.
-		       );
- protected:
-  //
-  // Return list of files in a given directory.
-  //
-  int get_dir_listing (const string,   ///< directory to list.
-		       list<string> *  ///< list to put filenames in.
-		       );
-};
 
-class dataio_silo_utility : public dataio_silo_pllel, public dataio_utility  {
+class dataio_silo_utility : public dataio_silo_pllel  {
  public:
   dataio_silo_utility() {}
   ~dataio_silo_utility() {}

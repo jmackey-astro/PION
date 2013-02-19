@@ -44,6 +44,7 @@
 /// - 2012.01.16 JM: Added setup_evolving_RT_sources() and
 ///    update_evolving_RT_sources() for stellar evolution models.
 /// - 2012.08.16 JM: Added functions for new 2nd order time update.
+/// - 2013.02.19 JM: Made some initialisation functions public.
 
 #ifndef GRID_H
 #define GRID_H
@@ -89,6 +90,35 @@ class IntUniformFV : public IntegratorBaseFV
     * This function finished the simulation gracefully (hopefully!).
     * */
    int Finalise();
+
+  ///
+  /// Setup cell extra data through the cell_interface class CI.
+  ///
+  void setup_cell_extra_data();
+
+  /// \brief initialise the grid class with appropriate parameters.
+  ///
+  /// This function sets up the appropriate grid; so far I only have a 
+  /// UniformGrid class -- uniform, cartesian, finite volume grid.
+  ///
+  virtual int setup_grid();
+
+  ///
+  /// Decide if I need to setup MP class, and do it if i need to.
+  ///
+  virtual int setup_microphysics();
+
+  ///
+  /// Decide if I need to setup RT class, and do it if i need to.
+  ///
+  virtual int setup_raytracing();
+
+  ///
+  /// Check for any time-evolving radiation sources, and read the evolution
+  /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
+  ///
+  virtual int setup_evolving_RT_sources();
+
    //---------------------------------------
   protected:
    //---------------------------------------
@@ -130,17 +160,7 @@ class IntUniformFV : public IntegratorBaseFV
     * */
    int set_equations();
 
-  ///
-  /// Setup cell extra data through the cell_interface class CI.
-  ///
-  void setup_cell_extra_data();
     
-   /** \brief initialise the grid class with appropriate parameters.
-    * 
-    * This function sets up the appropriate grid; so far I only have a 
-    * UniformGrid class -- uniform, cartesian, finite volume grid.
-    * */
-   virtual int setup_grid();
    /** \brief Determines what kind of boundary conditions are needed.
     * Sets gp.Nbc to the appropriate value for the order of accuracy used.
     * \retval 0 success
@@ -151,22 +171,6 @@ class IntUniformFV : public IntegratorBaseFV
     *  */
    virtual int ready_to_start();
    
-  ///
-  /// Decide if I need to setup MP class, and do it if i need to.
-  ///
-  virtual int setup_microphysics();
-
-  ///
-  /// Decide if I need to setup RT class, and do it if i need to.
-  ///
-  virtual int setup_raytracing();
-
-  ///
-  /// Check for any time-evolving radiation sources, and read the evolution
-  /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
-  ///
-  virtual int setup_evolving_RT_sources();
-
 
 
    /********************************************************************/

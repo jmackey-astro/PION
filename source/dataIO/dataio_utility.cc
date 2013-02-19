@@ -1,124 +1,32 @@
-/// \file dataio_utility.cc
+/// \file dataio_silo_utility.cc
 /// \author Jonathan Mackey
 /// 
-/// This is code for analysing silo data files in serial mode; written so
-/// that a single function will determine if the file is serial or parallel
-/// and read in the data regardless.  It gets the parameters for the grid
-/// from the header.
+/// This is code for analysing silo data files in serial mode;
+/// written so that a single function will determine if the file is
+/// serial or parallel and read in the data regardless.  It gets the
+/// parameters for the grid from the header.
 ///
 ///
 ///  - 2010-02-02 JM: Added support for N procs to read data written
 ///     by M procs, where N not equal to M.
-///
 ///  - 2010-02-03 JM: Fixed all the bugs in yesterday's work (as far
 ///     as i could find).
-///
-///  - 2010-04-27 JM: renamed 'ngroups' to 'groupsize', and updated logic so
-///    the last file can have fewer domains.
-///
+///  - 2010-04-27 JM: renamed 'ngroups' to 'groupsize', and updated
+///    logic so the last file can have fewer domains.
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
-/// - 2011.03.02 JM: Better handling of tracer variables (up to MAX_NVAR now).
-/// - 2012.05.17 JM: Fixed bug in how pllel_read_any_data() dealt with silo
-///    databases where files don't all have the same number of meshes.
-///
-#include "dataio_utility.h"
+/// - 2011.03.02 JM: Better handling of tracer variables (up to 
+///    MAX_NVAR now).
+/// - 2012.05.17 JM: Fixed bug in how pllel_read_any_data() dealt
+///    with silo databases where files don't all have the same number
+///    of meshes.
+/// - 2013.02.19 JM: Got rid of dataio_utility class, and moved its
+///    functions into file_status class, which now has its own file.
+///    Renamed file to dataio_silo_utility.cpp from dataio_utility.cc
+
+#include "dataIO/dataio_silo_utility.h"
 #include <iostream>
 #include <sstream>
 using namespace std;
-
-
-/********************************************************/
-/*************** dataio_utility *************************/
-/********************************************************/
-
-//
-// Return list of files in a given directory.
-//
-int dataio_utility::get_dir_listing (const string dir,    ///< directory to list.
-				     list<string> *files  ///< list to put filenames in.
-				     )
-{
-  cout <<"get_dir_listing() reading directory: "<<dir<<"\n";
-  DIR *dp=0;
-  struct dirent *dirp=0;
-  if((dp  = opendir(dir.c_str())) == 0) {
-    cout << "Error(" << errno << ") opening " << dir << "\n";
-    return errno;
-  }
-  
-  while ((dirp = readdir(dp)) != 0) {
-    //string temp=dirp->d_name;files->push_back(temp);
-    files->push_back(string(dirp->d_name));
-    //cout <<"\tget_dir_listing() file: "<<string(dirp->d_name)<<"\n";
-  }
-  closedir(dp);
-  cout <<"get_dir_listing() done."<<"\n";
-  return 0;
-}
-
-//
-// Given a directory and a string to match files to (may be blank),
-// return sorted list of files.
-//
-int dataio_utility::get_files_in_dir(const string dir,    ///< directory to list.
-				     const string str,    ///< string that files start with
-				     list<string> *files  ///< list to put filenames in.
-				     )
-{
-  cout <<"get_files_in_dir(): starting.\n";
-  int err=0;
-  if (!files->empty())
-    cout <<"WARNING: list of files is not empty, adding to end of list.\n";
-
-  //
-  // get directory listing
-  //
-  err += get_dir_listing(dir,files);
-  cout <<"get_files_in_dir(): got dir listing with "<<files->size()<<" elements.\n";
-
-  //
-  // remove elements that don't begin with a given substring
-  //
-  if (!str.empty()) {
-    cout <<"get_files_in_dir(): looking for substring in filenames: "<<str<<"\n";
-    list<string>::iterator i=files->begin();
-    if (i!=files->end()) { // check that dir listing is not empty...
-      do {
-	//if ((*i).find(str) == string::npos) {
-	//
-	// If filename doesn't start with str, then delete it.
-	//
-	if ((*i).find(str) != 0) {
-	  //cout <<"removing file "<<*i<<" from list.\n";
-	  files->erase(i);
-	  //files->remove(i);
-	  i=files->begin();
-	}
-	else i++;
-      } while (i!=files->end());
-    }
-  }
-  else
-    cout <<"get_files_in_dir(): No substring, so not removing any elements. returning...\n";
-
-  //
-  // sort remaining elements.
-  //
-  files->sort();
-  cout <<"get_files_in_dir(): done.\n";
-  return err;
-}
-
-/********************************************************/
-/*************** dataio_utility *************************/
-/********************************************************/
-
-
-// ##################################################################
-// ##################################################################
-// ##################################################################
-// ##################################################################
 
 
 

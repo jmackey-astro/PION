@@ -326,6 +326,7 @@ mp_explicit_H::mp_explicit_H(
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
 #else // if/not NEW_METALLICITY
 
+  EP = &(SimPM.EP);
 #ifdef PUREHYDROGEN
   mean_mass_per_H = m_p;  // appropriate for a gas of 100% H.
 #else
@@ -1425,11 +1426,11 @@ int mp_explicit_H::ydot(
   //
   Edot += 5.0e-28*OneMinusX;
 
-#ifdef WOLFIRE
   //
   // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
   //
   oneminusx_dot -= 1.8e-17*OneMinusX;
+#ifdef WOLFIRE
   //
   // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
   // This is a fit to the curve in the top-right panel of Fig.10.

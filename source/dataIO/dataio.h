@@ -27,9 +27,9 @@
 
 #include <cstring>
 #include <list>
-#include "../global.h"
-#include "../spatial_solvers/solver_eqn_base.h"
-#include "file_status.h"
+#include "global.h"
+#include "spatial_solvers/solver_eqn_base.h"
+#include "dataIO/file_status.h"
 
 // -----------------------------------------------------------
 // -----------------------------------------------------------
