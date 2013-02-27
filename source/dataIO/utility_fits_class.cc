@@ -110,7 +110,7 @@ int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file po
 {
   int status=0, num1=0, num=0;
   fits_get_hdu_num(ff, &num );
-  cout <<"Current hdu: "<<num<<"\t and extname = "<<extname<<"\n";
+  cout <<"Current hdu: "<<num<<"\t and extname = "<<name<<"\n";
 
   char *keyval=0;
   keyval = mem.myalloc(keyval,256);
@@ -118,7 +118,7 @@ int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file po
   fits_movnam_hdu(ff,ANY_HDU,keyval,0,&status);
   if (status) fits_report_error(stderr,status);
   fits_get_hdu_num(ff, &num1);
-  cout <<"Current hdu: "<<num1<<"\t and extname = "<<extname<<"\n";
+  cout <<"Current hdu: "<<num1<<"\t and extname = "<<name<<"\n";
 
   if (num1!=num) rep.error("Not in correct hdu for given extname",name);
   fits_read_keyword(ff,"extname",keyval,0,&status);
@@ -200,7 +200,7 @@ int utility_fitsio::read_fits_image_to_data(
   if (name != "") {
     char keyval[256];
     strcpy(keyval,name.c_str());
-    int err = fits_movnam_hdu(ff, ANY_HDU, keyval, 0, &status);
+    int err = fits_movnam_hdu(ff, ANY_HDU, keyval, hdu_num, &status);
     if (err) {
       // If can't find variable, set them all to zero.
       if(status) {fits_report_error(stderr,status);}

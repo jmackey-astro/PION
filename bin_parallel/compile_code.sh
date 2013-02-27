@@ -85,7 +85,8 @@ case $HOST in
   jj[0-9][0-9]l[0-9][0-9])
     echo "Compiling on JUROPA"
     module purge
-    module load mkl/10.2.2.025 intel/11.1.059 sundials/2.4.0 parastation/mpi2-intel-5.0.25-2
+    #module load mkl/10.2.2.025 intel/11.1.059 sundials/2.4.0 parastation/mpi2-intel-5.0.25-2
+    module load mkl/10.2.5.035 intel/11.1.072 parastation/mpi2-intel-5.0.26-1
     MAKE_UNAME=JUROPA
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.

@@ -130,9 +130,9 @@ ifeq ($(MAKE_UNAME), JUROPA)
   MYLIB = ../extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  INC += -I/usr/local/sundials/2.4.0/include
+  #INC += -I/usr/local/sundials/2.4.0/include
   LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -L/usr/local/sundials/2.4.0/lib
+  #LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lmkl_sequential -lmkl_core
 
