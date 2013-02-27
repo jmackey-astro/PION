@@ -394,10 +394,14 @@ int main(int argc, char **argv)
   npix[2]=Nbins;
   for (int ii=0;ii<3;ii++) vps.npix[ii] = npix[ii];
 
+  cout <<"<----- Setting cell positions in Image ----->\n"; cout.flush();
   IMG.set_cell_positions_in_image();
+  cout <<"<----- Adding cells to pixels...       ----->\n"; cout.flush();
   IMG.add_cells_to_pixels();
+  cout <<"<----- Adding Integration points to px ----->\n"; cout.flush();
   IMG.add_integration_pts_to_pixels();
-  
+  cout <<"<----- Finished setting up pixels      ----->\n"; cout.flush();
+
   //
   // So now we have a list of pixels with their physical 3D box locations,
   // and each pixel has a list of cells that are within its box.

@@ -1,22 +1,16 @@
-/** \file icgen.cc
- * \brief Program to generate Initial Conditions for my Uniform Grid code.
- * \author Jonathan Mackey
- * 
- * Modifications:
- *  - 2007-06-28 Started to write an ND shocktube function.  Need to test it.
- *  - 2007-07-17 ND MHD shock-cloud interaction problem added to list.  Works well.
- *  - 2007-07-24 Added passive tracer variable support.
- *  - 2007-08 to 2008-02 Added more functions.
- *  - 2009-12-18 Added in Laser Ablation check.
- *
- * \todo Add Boundaries to initial conditions grid for setting divB=0 on
- * the edge cells.
- * */
-///
+/// \file icgen.cc
+/// \brief Program to generate Initial Conditions for my Uniform Grid code.
+/// \author Jonathan Mackey
+/// 
+/// Modifications:
+///  - 2007-06-28 Started to write an ND shocktube function.  Need to test it.
+///  - 2007-07-17 ND MHD shock-cloud interaction problem added to list.  Works well.
+///  - 2007-07-24 Added passive tracer variable support.
+///  - 2007-08 to 2008-02 Added more functions.
+///  - 2009-12-18 Added in Laser Ablation check.
 /// - 2010.12.04 JM: Added geometry-dependent grids, in a
 ///   GEOMETRIC_GRID ifdef. (only serial so far).
-///
-/// - 20100.01.06 JM: New stellar wind interface.
+/// - 2010.01.06 JM: New stellar wind interface.
 /// - 2011.04.14 JM: Added mp_v2_aifa microphysics integration class.
 /// - 2011.04.26 JM: removed endl statements.
 /// - 2011.04.29 JM: in AddNoise2data() and equilibrate_MP() functions, check
@@ -34,6 +28,9 @@
 /// - 2013.01.10 JM: Added setup lines for StarBench Tests.
 /// - 2013.02.15 JM: Added NEW_METALLICITY flag for testing the new
 ///    microphysics classes.
+/// - 2013.02.27 JM: Added IC_read_BBurkhart_data() class for
+///    turbulent simulations.
+/// - 2013.02.27 JM: Added class for Harpreet's 1D to 3D mapping.
 
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
@@ -51,10 +48,6 @@
 
 #ifndef EXCLUDE_MPV1
 #include "microphysics/microphysics.h"
-#endif 
-
-#ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
 #endif 
 
 #include "microphysics/mp_only_cooling.h"
@@ -78,6 +71,15 @@
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
 #endif // NEW_METALLICITY
+
+#ifdef HARPREETS_CODE_EXT
+#ifndef EXCLUDE_HD_MODULE
+#include "contrib/microphysics_lowZ.h"
+#include "contrib/header.h"
+#endif // EXCLUDE_HD_MODULE
+#endif // HARPREETS_CODE_EXT
+
+
 
 #include "dataIO/readparams.h"
 
@@ -302,11 +304,6 @@ int main(int argc, char **argv)
            ics=="Clump_Axisymmetric")
     ic = new IC_spherical_clump();
 
-#ifndef EXCLUDE_HD_MODULE
-  else if (ics=="HD_2D_ShockCloud")
-    ic = new IC_HD_2D_ShockCloud();
-#endif
-
   else if (ics=="StarBench_ContactDiscontinuity1" ||
            ics=="StarBench_ContactDiscontinuity2" ||
            ics=="StarBench_ContactDiscontinuity3" ||
@@ -314,6 +311,21 @@ int main(int argc, char **argv)
     //ic = new IC_StarBench_Tests();
     rep.error("Please compile star bench source code",1);
   }
+
+#ifdef HARPREETS_CODE_EXT
+#ifndef EXCLUDE_HD_MODULE
+  else if (ics=="HD_2D_ShockCloud")
+    ic = new IC_HD_2D_ShockCloud();
+  else if (ics=="HD_3D_ShockCloud")
+    ic = new IC_HD_3D_ShockCloud();
+#endif
+#endif // HARPREETS_CODE_EXT
+
+#ifdef BBTURBULENCE_CODE_EXT
+  else if (ics=="ReadBBTurbulence") {
+    ic = new IC_read_BBurkhart_data();
+  }
+#endif // BBTURBULENCE_CODE_EXT
 
   else rep.error("BAD IC identifier",ics);
   if (!ic) rep.error("failed to init",ics);

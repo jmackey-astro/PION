@@ -18,7 +18,7 @@
 #ifndef ICGEN_H
 #define ICGEN_H
 
-#include "inside_sphere.h"
+#include "ics/inside_sphere.h"
 #include "global.h"
 #include "dataIO/readparams.h"
 
@@ -496,7 +496,13 @@ class IC_spherical_clump : public ICsetup_base {
 };
 
 
+// ##################################################################
+// ##################################################################
 
+
+
+
+#ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE
 //
 // Class for Harpreet to map her 1D Supernova/cloud sims onto a 2D axisymmetric grid.
@@ -520,6 +526,41 @@ class IC_HD_2D_ShockCloud : public ICsetup_base {
 
 };
 #endif // don't EXCLUDE_HD_MODULE
+#endif // HARPREETS_CODE_EXT
+
+// ##################################################################
+// ##################################################################
+
+
+
+#ifdef BBTURBULENCE_CODE_EXT
+class IC_read_BBurkhart_data : public ICsetup_base {
+  public:
+  IC_read_BBurkhart_data();
+  ~IC_read_BBurkhart_data();
+  int setup_data(class ReadParams *, ///< pointer to parameter list.
+		  class GridBaseClass * ///< pointer to grid
+		  );
+  protected:
+  void read_file(
+          const string, ///< input fits file to read
+          const int,    ///< variable in state vector
+          const double, ///< optional scaling of value.
+          const double, ///< optional offset of value, after scaling.
+          class GridBaseClass * ///< pointer to grid
+          );
+
+  std::string
+    File_RO, File_PG, File_VX, File_VY, File_VZ, File_BX, File_BY,
+    File_BZ;
+  double VXoffset, VYoffset, VZoffset;
+};
+#endif // BBTURBULENCE_CODE_EXT
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Class for StarBench Workshop test problems

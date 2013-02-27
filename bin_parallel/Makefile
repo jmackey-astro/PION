@@ -39,6 +39,8 @@
 # - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
 # - 2013.01.17 JM: Got rid of readline/ncurses from link line in
 #    production version of pion.
+# - 2013.02.27 JM: Added extensions for contributed code.
+#    Added file_status.o/cpp object file. Added NEW_METALLICITY flag.
 #
 ###
 
@@ -66,7 +68,9 @@ VPATH = \
 ../source/equations:\
 ../source/flux_calc:\
 ../source/spatial_solvers:\
-../source/time_integrators
+../source/time_integrators:\
+../source/contrib
+
 
 GLOBAL = global.h functionality_flags.h testing_flags.h
 
@@ -283,6 +287,7 @@ OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
+        file_status.o                                                          \
 	dataio_silo_MPI.o gridMethodsMPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
 	comm_mpi.o comm_files.o                                                \
@@ -305,6 +310,7 @@ OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
 
 IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
+        file_status.o                                                          \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o jet.o \
@@ -323,6 +329,25 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
 # \
 #        StarBench_test.o
 
+ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
+  OBJECTS +=  microphysics_lowZ.o test_integrator.o \
+              metalfree_HD.o mp_lowZ_metalfree_photo.o 
+  IC_OBJ +=   microphysics_lowZ.o test_integrator.o \
+              metalfree_HD.o mp_lowZ_metalfree_photo.o \
+              HD_2D_ShockCloud.o HD_3D_ShockCloud.o
+endif
+
+ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
+  IC_OBJ +=   read_BBurkhart_data.o
+endif
+
+ifneq (,$(findstring NEW_METALLICITY,$(PION_OPTIONS)))
+  OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+  IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+endif
+#####################################################
+##### END OF LIST OF OBJECT FILES               #####
+#####################################################
 
 
 ##########################
@@ -504,34 +529,40 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
 
+mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
-########################
-# Harpreet's files
-########################
+mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
-#RK5_functions.o:	header.h RK5_functions.cpp
-#RKCK_function.o:	header.h RKCK_function.cpp
-#test_equations.o:	test_equations.cpp header.h ${GLOBAL}
-#test_integrator.o: 	test_integrator.cpp header.h ${GLOBAL}
-#HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
+mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
 
 ########################
 # Raytracing
 ########################
-raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} uniform_grid.h
-raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h ${GLOBAL} uniform_grid.h comms.h
+raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} \
+    uniform_grid.h
+raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h \
+    ${GLOBAL} uniform_grid.h comms.h
 
 ########################
 # Data I/O
 ########################
-dataio.o:       dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
-		stellar_wind_BC.h
-dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h file_status.h
-dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
-		solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h file_status.h
+file_status.o: file_status.cpp file_status.h
+dataio.o: dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h \
+    readparams.h stellar_wind_BC.h file_status.h
+dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} \
+    solver_eqn_base.h file_status.h
+dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} \
+    solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
+    file_status.h
 readparams.o:	readparams.cc readparams.h ${GLOBAL}
-dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h ${GLOBAL} comms.h file_status.h
-utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
+dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
+    ${GLOBAL} comms.h file_status.h
+utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h \
+    ${GLOBAL} file_status.h
 
 #######################
 # Stellar wind boundary condition
@@ -568,4 +599,18 @@ spherical_clump.o: spherical_clump.cc icgen.h ${GLOBAL}
 StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
 #######################
 
+###############################################
+## Contributed and/or project-specific code. ##
+###############################################
+read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen.h ${GLOBAL} dataio_fits.h dataio.h
+
+HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
+HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen.h ${GLOBAL}
+
+#RK5_functions.o:	header.h RK5_functions.cpp
+#RKCK_function.o:	header.h RKCK_function.cpp
+#test_equations.o:	test_equations.cpp header.h ${GLOBAL}
+#test_integrator.o: 	test_integrator.cpp header.h ${GLOBAL}
+###############################################
+###############################################
 

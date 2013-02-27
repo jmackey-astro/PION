@@ -42,6 +42,7 @@
 # - 2013.02.15 JM: Added NEW_METALLICITY flag for testing (with new
 #    source files).
 # - 2013.02.19 JM: Added file_status.o/cpp object file.
+# - 2013.02.27 JM: Added extensions for contributed code.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -68,7 +69,8 @@ VPATH = \
 ../source/equations:\
 ../source/flux_calc:\
 ../source/spatial_solvers:\
-../source/time_integrators
+../source/time_integrators:\
+../source/contrib
 
 
 GLOBAL = global.h functionality_flags.h testing_flags.h
@@ -293,10 +295,25 @@ IC_OBJ	= icgen.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
         StarBench_test.o
 
+ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
+  OBJECTS +=  microphysics_lowZ.o test_integrator.o \
+              metalfree_HD.o mp_lowZ_metalfree_photo.o 
+  IC_OBJ +=   microphysics_lowZ.o test_integrator.o \
+              metalfree_HD.o mp_lowZ_metalfree_photo.o \
+              HD_2D_ShockCloud.o HD_3D_ShockCloud.o
+endif
+
+ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
+  IC_OBJ +=   read_BBurkhart_data.o
+endif
+
 ifneq (,$(findstring NEW_METALLICITY,$(PION_OPTIONS)))
   OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
   IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
 endif
+#####################################################
+##### END OF LIST OF OBJECT FILES               #####
+#####################################################
 
 ##########################
 ### -- EXECTUTABLES -- ###
@@ -480,17 +497,8 @@ mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
   mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
 ########################
-# Harpreet's files
+# Raytracing
 ########################
-
-#RK5_functions.o:	header.h RK5_functions.cpp
-#RKCK_function.o:	header.h RKCK_function.cpp
-#test_equations.o:	test_equations.cpp header.h
-#test_integrator.o: 	test_integrator.cpp header.h
-#HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
-########################
-
-
 raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} uniform_grid.h
 
 gridMethods.o:  gridMethods.cc grid.h ${GLOBAL} solver_eqn_base.h \
@@ -503,6 +511,9 @@ time_integrator.o: time_integrator.cpp grid.h microphysics_base.h solver_eqn_bas
 # functions for calculating the timestep
 calc_timestep.o: calc_timestep.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
+########################
+# Data I/O
+########################
 file_status.o:  file_status.cpp file_status.h ${GLOBAL}
 dataio.o:       dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
 		stellar_wind_BC.h cell_interface.h
@@ -537,5 +548,19 @@ spherical_clump.o: spherical_clump.cc icgen.h ${GLOBAL}
 StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
 #######################
 
+###############################################
+## Contributed and/or project-specific code. ##
+###############################################
+read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen.h ${GLOBAL} dataio_fits.h dataio.h
+
+HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
+HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen.h ${GLOBAL}
+
+#RK5_functions.o:	header.h RK5_functions.cpp
+#RKCK_function.o:	header.h RKCK_function.cpp
+#test_equations.o:	test_equations.cpp header.h ${GLOBAL}
+#test_integrator.o: 	test_integrator.cpp header.h ${GLOBAL}
+###############################################
+###############################################
 
 

@@ -6,6 +6,7 @@
 ///
 /// - 2012.10.15 JM: Started on file.
 /// - 2012.10.16 JM: Debugged and got a stable version working. 
+/// - 2013.02.27 JM: minor tidying up.
 
 #include "ics/icgen.h"
 #include "coord_sys/VectorOps.h"
@@ -14,9 +15,28 @@
 #include <sstream>
 using namespace std;
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 IC_read_BBurkhart_data::IC_read_BBurkhart_data() {}
+
+
+// ##################################################################
+// ##################################################################
+
+
 IC_read_BBurkhart_data::~IC_read_BBurkhart_data()
 {}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int IC_read_BBurkhart_data::setup_data(
       class ReadParams *rrp,    ///< pointer to parameter list.
@@ -205,7 +225,8 @@ int IC_read_BBurkhart_data::setup_data(
     if (seek=="") offset = 0.0;
     else          offset = atof(seek.c_str());
 
-    
+    cout <<"var="<<v<<", file="<<infile<<" and offset="<<offset<<"\n";
+
     switch (v) {
       case RO:
       //
@@ -319,6 +340,12 @@ int IC_read_BBurkhart_data::setup_data(
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 void IC_read_BBurkhart_data::read_file(
           const string infile,   ///< input fits file to read
           const int    var,      ///< variable in state vector
@@ -385,6 +412,12 @@ void IC_read_BBurkhart_data::read_file(
   
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 

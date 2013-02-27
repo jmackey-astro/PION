@@ -1,29 +1,30 @@
-/** \file utility_fits_class.cc
- * This file contains the class definitions for the utility_fitsio class, which 
- * uses FITS, from http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
- * at NASA.  I have tried to make the functions atomic as much as possible,
- * so bits of code can be reused.  This is mostly used by DataIOFits class, in dataio_fits.cc, 
- * with whom it shares a header file (dataio_fits.h).  This class is intended to be
- * grid and solver independent -- i.e. it just does things with fits files and arrays
- * of data.
- *
- * FITS functions have a short name, typically ffxxxx(), and a long name, typically 
- * fits_do_some_task().  I always use the long name, except in cases where it isn't
- * defined and I had to use ffmahd(ff,1,0,&status), which is fits_move_absolute_hdu()
- * and moves to the numbered HDU in the argument.  Also ffmrhd(ff,N,0,&status) 
- * moves forward by N HDU's if possible.
- *
- * modified:\n
- *  - 2009-06-06 Split into two classes: a base utility class that knows nothing about the grid,
- *     and a DataIOFits class which interfaces with the grid.
- *
- *  - 2010-02-03 JM: made ~utility_fitsio() virtual and put in header file.  
- *    Re-named repeated variable definitions and removed unused variables.
- * */
+/// \file utility_fits_class.cc
+///
+/// This file contains the class definitions for the utility_fitsio class, which 
+/// uses FITS, from http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+/// at NASA.  I have tried to make the functions atomic as much as possible,
+/// so bits of code can be reused.  This is mostly used by DataIOFits class, in dataio_fits.cc, 
+/// with whom it shares a header file (dataio_fits.h).  This class is intended to be
+/// grid and solver independent -- i.e. it just does things with fits files and arrays
+/// of data.
+///
+/// FITS functions have a short name, typically ffxxxx(), and a long name, typically 
+/// fits_do_some_task().  I always use the long name, except in cases where it isn't
+/// defined and I had to use ffmahd(ff,1,0,&status), which is fits_move_absolute_hdu()
+/// and moves to the numbered HDU in the argument.  Also ffmrhd(ff,N,0,&status) 
+/// moves forward by N HDU's if possible.
+///
+/// modified:\n
+///  - 2009-06-06 Split into two classes: a base utility class that knows nothing about the grid,
+///     and a DataIOFits class which interfaces with the grid.
+///
+///  - 2010-02-03 JM: made ~utility_fitsio() virtual and put in header file.  
+///    Re-named repeated variable definitions and removed unused variables.
+///
 /// - 2010.10.01 JM: Got rid of testing myalloc/myfree commands.
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
+/// - 2012.10.15 JM: minor mods to reading fits data, so that I don't
+///    need the HDU's name; without a name it will default to hdu1.
 
 #ifdef FITS
 #include "dataio_fits.h"
@@ -108,17 +109,21 @@ int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file po
 						)
 {
   int status=0, num1=0, num=0;
-  fits_get_hdu_num(ff, &num ); //cout <<"Current hdu: "<<num<<"\t and extname = "<<extname<<"\n";
+  fits_get_hdu_num(ff, &num );
+  cout <<"Current hdu: "<<num<<"\t and extname = "<<extname<<"\n";
 
   char *keyval=0;
   keyval = mem.myalloc(keyval,256);
   strcpy(keyval,name.c_str());
   fits_movnam_hdu(ff,ANY_HDU,keyval,0,&status);
   if (status) fits_report_error(stderr,status);
-  fits_get_hdu_num(ff, &num1); //cout <<"Current hdu: "<<num1<<"\t and extname = "<<extname<<"\n";
+  fits_get_hdu_num(ff, &num1);
+  cout <<"Current hdu: "<<num1<<"\t and extname = "<<extname<<"\n";
+
   if (num1!=num) rep.error("Not in correct hdu for given extname",name);
   fits_read_keyword(ff,"extname",keyval,0,&status);
   if (status) fits_report_error(stderr,status);
+  printf("keyval= %s\n",keyval);
 //  string temp=keyval; cout <<"temp keyval = "<<temp<<"\n";
 //  if (extname != temp) rep.error("not in correct hdu!",(extname+=temp));
   
@@ -141,21 +146,24 @@ int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file po
 }
 
 
-int utility_fitsio::read_fits_image_to_data(fitsfile *ff, ///< fitsfile pointer.
-					    const string name,  ///< name of hdu to read from.
-					    const int ndim,        ///< dimensionality of image. 
-					    const double *l_xmin,  ///< local xmin (subdomain).
-					    const double *g_xmin,  ///< global xmin (full domain).
-					    const double pix_size, ///< pixel size
-					    const int *npt,  ///< number of pixels to read in each direction
-					    const long int ntot,  ///< total number of pixels to be read.
-					    double **data          ///< data array to write to.
-					    )
+int utility_fitsio::read_fits_image_to_data(
+    fitsfile *ff, ///< fitsfile pointer.
+    const string name,  ///< name of hdu to read from.
+    const int ndim,        ///< dimensionality of image. 
+    const double *l_xmin,  ///< local xmin (subdomain).
+    const double *g_xmin,  ///< global xmin (full domain).
+    const double pix_size, ///< pixel size
+    const int *npt,  ///< number of pixels to read in each direction
+    const long int ntot,  ///< total number of pixels to be read.
+    double **data          ///< data array to write to.
+    )
 {  
   //
   // Allocate memory for data array.
   //
   *data = mem.myalloc(*data,ntot);
+
+  int hdu_num=1; // default to the first hdu.
 
   //
   // Set first and last pixel to be read from image.
@@ -189,19 +197,23 @@ int utility_fitsio::read_fits_image_to_data(fitsfile *ff, ///< fitsfile pointer.
   // We shouldn't need to move to the hdu, b/c we should already be there, but 
   // this is just an extra layer of checking.
   //
-  char keyval[256];
-  strcpy(keyval,name.c_str());
-  int err = fits_movnam_hdu(ff, ANY_HDU, keyval, 0, &status);
-  if (err) {
-    // If can't find variable, set them all to zero.
-    if(status) {fits_report_error(stderr,status);}
-    fits_clear_errmsg(); status=0;
-    cout <<"utility_fitsio::read_fits_image() couldn't get data for variable "<< name;
-    cout <<"; will set data to zero and return error code.\n";
-    for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
-    return err;
+  if (name != "") {
+    char keyval[256];
+    strcpy(keyval,name.c_str());
+    int err = fits_movnam_hdu(ff, ANY_HDU, keyval, 0, &status);
+    if (err) {
+      // If can't find variable, set them all to zero.
+      if(status) {fits_report_error(stderr,status);}
+      fits_clear_errmsg(); status=0;
+      cout <<"utility_fitsio::read_fits_image() couldn't get data for variable "<< name;
+      cout <<"; will set data to zero and return error code.\n";
+      for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
+      return err;
+    }
   }
-
+  else {
+    int err = ffmahd(ff,hdu_num,0,&status);
+  }
 
   double nulval = -1.e99; int anynul=0;
   fits_read_subset(ff, TDOUBLE, fpix, lpix, inc, &nulval, (*data), &anynul, &status);

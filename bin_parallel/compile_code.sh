@@ -14,7 +14,9 @@
 # - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
 # - 2013.01.17 JM: Got rid of readline/ncurses from link line in
 #    production version of pion.
-#
+# - 2013.02.27 JM: Added extensions for contributed code.
+#    Added NEW_METALLICITY flag for testing the new microphysics
+#    classes.
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
@@ -162,6 +164,22 @@ else
   export LDFLAGS=""
 fi
 #####################################################################
+
+
+#####################################################################
+############ EXTRA CODE EXTENSIONS FROM CONTRIBUTED CODE ############
+#####################################################################
+# Harpreet Dhanoa's chemistry/microphysics module
+#PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
+
+# Read in turbulence simulations provided by Blakesley Burkhart
+PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
+
+export PION_OPTIONS
+export PION_OPTIONS="$PION_OPTIONS -DNEW_METALLICITY"
+echo PION_OPTIONS: $PION_OPTIONS
+#####################################################################
+
 
 #####################################################################
 #### now compile the code:
