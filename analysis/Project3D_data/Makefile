@@ -9,9 +9,31 @@ SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cc .o
 .SUFFIXES: .cxx .o
+.SUFFIXES: .cpp .o
+
+# make has rules for making objects from .cc files, so I don't need them
+# explicitly, unless I am doing something unusual.
+.cxx.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cc.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+
+
 srcdir = .
 CODEDIR=${CURDIR}/../..
-VPATH=${CODEDIR}/source:${CODEDIR}/source/grid:${CODEDIR}/source/dataIO:${CODEDIR}/source/comms:${CODEDIR}/source/coord_sys
+VPATH=${CODEDIR}/source:\
+${CODEDIR}/source/grid:\
+${CODEDIR}/source/dataIO:\
+${CODEDIR}/source/comms:\
+${CODEDIR}/source/coord_sys:\
+${CODEDIR}/source/equations:\
+${CODEDIR}/source/flux_calc:\
+${CODEDIR}/source/spatial_solvers:\
+${CODEDIR}/source/time_integrators:\
+${CODEDIR}/source/contrib
+
 
 
 GLOBAL = global.h defines/functionality_flags.h defines/testing_flags.h
@@ -72,7 +94,7 @@ ifeq ($(MAKE_UNAME), standard)
   CXXFLAGS+= -Wno-unused-function
 
 
-  MYLIB = $(CURDIR)/../../extra_libraries
+  MYLIB = ${CODEDIR}/extra_libraries
 
   INC = -I${MYLIB}/include -I${CODEDIR}/source
   LDFLAGS =  -lm  -lreadline -lncurses
@@ -125,89 +147,32 @@ endif
 # Specific Options for my imac
 ###########################################
 ifeq ($(MAKE_UNAME), imac)
-ifeq ($(IOMODE), USE_FILE_COMMS)
-CXX = g++
-endif
-ifeq ($(IOMODE), USE_MPI)
-CXX = mpicxx
-endif
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpicxx
+  endif
 
 #CXXFLAGS = -O3
-CXXFLAGS = -O0
+  CXXFLAGS = -O0
 #CXXFLAGS += -Wall
-CXXFLAGS += -g    # enable debugging with gdb
-CXXFLAGS += -arch x86_64
+  CXXFLAGS += -g    # enable debugging with gdb
+  CXXFLAGS += -arch x86_64
 
-MYLIB = /Users/jmackey/Library/my_local_libs
+  MYLIB = /Users/jmackey/Library/my_local_libs
 # for Silo, which can use HDF5.
-INC += -I$(MYLIB)/silo_gcc64/include
-INC += -I$(MYLIB)/cfitsio64/include
+  INC += -I$(MYLIB)/silo_gcc64/include
+  INC += -I$(MYLIB)/cfitsio64/include
 
 # Libraries for fits, silo (with hdf5)
-LDFLAGS += -L$(MYLIB)/cfitsio64/lib/ -lcfitsio
-LDFLAGS += -L$(MYLIB)/silo_gcc64/lib/ -lsilo
+  LDFLAGS += -L$(MYLIB)/cfitsio64/lib/ -lcfitsio
+  LDFLAGS += -L$(MYLIB)/silo_gcc64/lib/ -lsilo
 
 endif
 #############################################
 
-###########################################
-# Options for klaipedaX.astro.uni-bonn.de (Debian 64 bit)
-###########################################
-ifeq ($(MAKE_UNAME), klaipeda)
-ifeq ($(IOMODE), USE_FILE_COMMS)
-CXX = g++
-endif
-ifeq ($(IOMODE), USE_MPI)
-CXX = mpicxx
-endif
-#CXXFLAGS = -O3
-CXXFLAGS = -O3 -Wall -g
 
-MYLIB = /scratch/jmackey/extra_libraries
-
-# Includes for FITS/SILO
-INC = -I${MYLIB}/JM_cfitsio_gcc/include
-INC += -I${MYLIB}/JM_silo_gcc/include
-
-LDFLAGS =  -lm  -lreadline
-
-## If we want static linking this is the flag for it!
-#LDFLAGS += -static
-# Libraries for fits, silo (with system hdf5)
-LDFLAGS += -L${MYLIB}/JM_cfitsio_gcc/lib -lcfitsio
-LDFLAGS += -L${MYLIB}/JM_silo_gcc/lib -lsilo
-#LDFLAGS += -L${MYLIB}/hdf5/1.8.4/linux-i686_gcc-4.4/lib -lhdf5
-#LDFLAGS += -L${MYLIB}/szip/2.1/linux-i686_gcc-4.4/lib -lsz
-LDFLAGS += -lz -lpthread
-endif
-
-
-#############################################
-# Specific Options for STOKES - ICHEC cluster
-# Intel Compilers! (OR gcc -- need to choose which and comment out section below)
-#############################################
-# module load mvapich2-intel intel-cc intel-mkl valgrind ddt
-#############################################
-ifeq ($(MAKE_UNAME), stokes)
-CXX = mpicxx
-CXXFLAGS = -O3  # optimised code
-#CXXFLAGS = -O0 -Wall -g -wd981 -wd383
-CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-#CXXFLAGS += -fp-stack-check -fstack-security-check
-MYLIB = /ichec/work/dsast002b/jm_code/extra_libs
-# gcc
-#INC  = -I$(MYLIB)/cfitsio_gcc/include
-#LDFLAGS += -L$(MYLIB)/cfitsio_gcc/lib/ -lcfitsio
-#INC += -I$(MYLIB)/silo_gcc_nohdf/include
-#LDFLAGS += -L$(MYLIB)/silo_gcc_nohdf/lib/ -lsilo
-#LDFLAGS += -lm
-#intel
-INC  = -I$(MYLIB)/cfitsio/include
-LDFLAGS += -L$(MYLIB)/cfitsio/lib/ -lcfitsio
-INC += -I$(MYLIB)/silo_intel_nohdf/include
-LDFLAGS += -L$(MYLIB)/silo_intel_nohdf/lib/ -lsilo
-LDFLAGS += -lmkl_sequential -lmkl_core
-endif
 
 ##################################################
 ##################################################
@@ -215,10 +180,11 @@ endif
 CXXFLAGS += $(OPTION)
 
 OBJECTS = uniform_grid.o dataio.o readparams.o global.o                         \
-	dataio_utility.o dataio_silo.o dataio_fits.o uniform_grid_pllel.o       \
+	dataio_silo_utility.o dataio_silo.o dataio_fits.o uniform_grid_pllel.o  \
 	comm_mpi.o comm_files.o utility_fits_class.o                            \
 	main_projection.o sim_projection.o image_io.o dataio_silo_MPI.o         \
         VectorOps.o VectorOps_spherical.o cell_interface.o                      \
+        file_status.o                                                          \
         stellar_wind_BC.o 
         
 
@@ -231,12 +197,6 @@ endif
 projection: $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection $(LDFLAGS)
 
-# make has rules for making objects from .cc files, so I don't need them
-# explicitly, unless I am doing something unusual.
-.cxx.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
-.cc.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
 
 ################################
 # Andy's multi-threading files #
@@ -250,38 +210,39 @@ threads.o: threads.cxx msvc_constants.h constants.h threads.h
 #################################
 global.o: 	  global.cc ${GLOBAL}
 
-cell_interface.o: cell_interface.cc  grid/cell_interface.h ${GLOBAL}
+cell_interface.o: cell_interface.cc  cell_interface.h ${GLOBAL}
 
-uniform_grid.o:   uniform_grid.cc  grid/uniform_grid.h  ${GLOBAL}  grid/stellar_wind_BC.h
+uniform_grid.o:   uniform_grid.cc  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
 
-uniform_grid_pllel.o: uniform_grid_pllel.cc grid/uniform_grid.h ${GLOBAL} comms/comms.h
+uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
 
-VectorOps.o:  VectorOps.cc  coord_sys/VectorOps.h ${GLOBAL} grid/uniform_grid.h
+VectorOps.o:  VectorOps.cc  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
 
 VectorOps_spherical.o:  VectorOps_spherical.cc  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
-		       ${GLOBAL} grid/uniform_grid.h
+		       ${GLOBAL} uniform_grid.h
 
 
-dataio.o:       dataio.cc  dataIO/dataio.h  ${GLOBAL}  spatial_solvers/solver_eqn_base.h  dataIO/readparams.h \
-		grid/stellar_wind_BC.h
-dataio_silo.o:  dataio_silo.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  spatial_solvers/solver_eqn_base.h  dataIO/file_status.h
-dataio_fits.o:  dataio_fits.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  spatial_solvers/solver_eqn_base.h \
-		spatial_solvers/solver_eqn_hydro_adi.h  spatial_solvers/solver_eqn_hydro_iso.h  dataIO/file_status.h
-readparams.o:	readparams.cc  dataIO/readparams.h  ${GLOBAL}
-dataio_silo_MPI.o:    dataio_silo_MPI.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  comms/comms.h  dataIO/file_status.h
-utility_fits_class.o: utility_fits_class.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}
+file_status.o: dataIO/file_status.cpp dataIO/file_status.h
+dataio.o:       dataIO/dataio.cc  dataIO/dataio.h  ${GLOBAL}  solver_eqn_base.h  dataIO/readparams.h \
+		stellar_wind_BC.h dataIO/file_status.h
+dataio_silo.o:  dataIO/dataio_silo.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h  dataIO/file_status.h
+dataio_fits.o:  dataIO/dataio_fits.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h \
+		solver_eqn_hydro_adi.h  solver_eqn_hydro_iso.h  dataIO/file_status.h
+readparams.o:	dataIO/readparams.cc  dataIO/readparams.h  ${GLOBAL}
+dataio_silo_MPI.o:    dataIO/dataio_silo_MPI.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  comms.h  dataIO/file_status.h
+utility_fits_class.o: dataIO/utility_fits_class.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}
 
-comm_mpi.o:    comm_mpi.cc  comms/comm_mpi.h  comms/comms.h  ${GLOBAL}
-comm_files.o:  comm_files.cc  comms/comm_files.h  comms/comms.h  ${GLOBAL}
+comm_mpi.o:    comm_mpi.cc  comm_mpi.h  comms.h  ${GLOBAL}
+comm_files.o:  comm_files.cc  comm_files.h  comms.h  ${GLOBAL}
 
-dataio_utility.o:  dataio_utility.cc  dataIO/dataio_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
-stellar_wind_BC.o: stellar_wind_BC.cc  grid/stellar_wind_BC.h ${GLOBAL}
+dataio_silo_utility.o:  dataIO/dataio_silo_utility.cpp  dataIO/dataio_silo_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
+stellar_wind_BC.o: stellar_wind_BC.cc  stellar_wind_BC.h ${GLOBAL}
 
 ###############################
 # Stuff Specific to this code #
 ###############################
-sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} grid/uniform_grid.h dataIO/dataio.h
-main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} grid/uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
+sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h
+main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
 image_io.o:		image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 
 clean:

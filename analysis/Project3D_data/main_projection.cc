@@ -51,13 +51,26 @@
 // ./projection /mnt/projects/astrophysics/jmackey/EagleNebula/multi3d_v2/ R3dnew_n192_M9_0000.0 test2 1 1 YP ZP 40 2 20 -10.0e5 10.0e5
 //
 
+///
+/// This calls the function RESET_DOMAIN() every timestep to make the
+/// simulation domain smaller.  If not set, this does nothing.  If
+/// set, you need to hardcode the new Xmin[],Xmax[] in the function.
+///
+//#define RESET_DOMAIN
+
+///
+/// If set, this subtracts the mean density from column density
+/// images.
+///
+//#define SUBTRACT_MEAN
+
 #include <iostream>
 #include <sstream>
 #include <silo.h>
 #include <cmath>
 using namespace std;
 #include "global.h"
-#include "dataIO/dataio_utility.h"
+#include "dataIO/dataio_silo_utility.h"
 #include "grid/uniform_grid.h"
 
 #include "sim_projection.h"
@@ -105,11 +118,7 @@ void calculate_pixelW(void *arg)
 			   ta->im,
 			   ta->tot_mass
 			   );
-#ifdef TESTING
-  ta = mem.myfree(ta,"threading args");
-#else
   ta = mem.myfree(ta);
-#endif
   return;
 }
 #endif //THREADS
@@ -118,11 +127,9 @@ void calculate_pixelW(void *arg)
 // ------------------------------------------------------------------------
 // MODIFYING MIN/MAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
 //
-void RESET_DOMAIN()
+#ifdef RESET_DOMAIN
+void reset_domain()
 {
-  return;
-
-
   rep.printVec("Old Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("Old Xmax",SimPM.Xmax,SimPM.ndim);
   for (int v=0;v<SimPM.ndim;v++) {
@@ -135,6 +142,7 @@ void RESET_DOMAIN()
   mpiPM.decomposeDomain();
   return;
 }
+#endif
 //
 // ------------------------------------------------------------------------
 //
@@ -330,7 +338,9 @@ int main(int argc, char **argv)
   // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
   // Full X-range, Yrange=[-0.75,0.75]pc, Zrange=Yrange.
   //
-  RESET_DOMAIN();
+#ifdef RESET_DOMAIN
+  reset_domain();
+#endif
   //
   // ------------------------------------------------------------------------
   //
@@ -445,7 +455,9 @@ int main(int argc, char **argv)
     // also reset the domain to 1/2 the size in Y and Z.
     //
     err = dataio.ReadHeader(infile);
-    RESET_DOMAIN();
+#ifdef RESET_DOMAIN
+    reset_domain();
+#endif
     if (err) rep.error("Didn't read header",err);
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7<<" yrs for step="<<ifile<<"   ############\n";
     //
@@ -494,15 +506,9 @@ int main(int argc, char **argv)
       // Only need one image:
       //
       n_images = 1;
-#ifdef TESTING
-      im1 = mem.myalloc(im1,nels, "main: im1");
-      what2int  = mem.myalloc(what2int ,n_images,"main:what2int");
-      img_array = mem.myalloc(img_array,n_images,"main:img_array");
-#else
       im1 = mem.myalloc(im1,nels);
       what2int  = mem.myalloc(what2int ,n_images);
       img_array = mem.myalloc(img_array,n_images);
-#endif
       for (int v=0;v<nels;           v++) im1[v]=0.0;
       what2int[0] = what_to_integrate;
       img_array[0] = im1;
@@ -510,17 +516,10 @@ int main(int argc, char **argv)
     case I_VEL_LOS:
     case I_VX:
       n_images = 1;
-#ifdef TESTING
-      im1 = mem.myalloc(im1,nels, "main: im1");
-      im2 = mem.myalloc(im2,npix[0]*npix[2], "main: im2");
-      what2int  = mem.myalloc(what2int ,n_images,"main:what2int");
-      img_array = mem.myalloc(img_array,n_images,"main:img_array");
-#else
       im1 = mem.myalloc(im1,nels);
       im2 = mem.myalloc(im2,npix[0]*npix[2]);
       what2int  = mem.myalloc(what2int ,n_images);
       img_array = mem.myalloc(img_array,n_images);
-#endif
       for (int v=0;v<nels;           v++) im1[v]=0.0;
       for (int v=0;v<npix[0]*npix[2];v++) im2[v]=0.0;
       what2int[0] = what_to_integrate;
@@ -532,19 +531,6 @@ int main(int argc, char **argv)
 	n_images = 3; // No field components
       else
 	n_images = 7; // Project Stokes Q,U and BX,BT
-#ifdef TESTING
-      im1 = mem.myalloc(im1,nels, "main: im1");
-      im2 = mem.myalloc(im2,nels, "main: im2");
-      im3 = mem.myalloc(im3,nels, "main: im3");
-      if (SIMeqns==2) { 
-	im4 = mem.myalloc(im4,nels, "main: im4");
-	im5 = mem.myalloc(im5,nels, "main: im5");
-	im6 = mem.myalloc(im6,nels, "main: im6");
-	im7 = mem.myalloc(im7,nels, "main: im7");
-      }
-      what2int  = mem.myalloc(what2int ,n_images,"main:what2int");
-      img_array = mem.myalloc(img_array,n_images,"main:img_array");
-#else
       im1 = mem.myalloc(im1,nels);
       im2 = mem.myalloc(im2,nels);
       im3 = mem.myalloc(im3,nels);
@@ -556,7 +542,6 @@ int main(int argc, char **argv)
       }
       what2int  = mem.myalloc(what2int ,n_images);
       img_array = mem.myalloc(img_array,n_images);
-#endif
       for (int v=0;v<nels; v++)
 	im1[v] = im2[v] = im3[v] = 0.0;
       if (SIMeqns==2) { 
@@ -616,11 +601,7 @@ int main(int argc, char **argv)
 #endif // not THREADS
 #ifdef THREADS
 	struct calc_pix_args *ta=0;
-#ifdef TESTING
-	ta = mem.myalloc(ta,1,"threading ta");
-#else
 	ta = mem.myalloc(ta,1);
-#endif
 	ta->px = px;
 	ta->IMG = &IMG;
 	ta->what_to_integrate = w2i;
@@ -682,7 +663,8 @@ int main(int argc, char **argv)
     //} while ( (c=grid->NextPt(c))!=0);
     //tot_mass *= grid->DV();
     //cout <<"\t"<<tot_mass<<endl;
-    
+
+#ifdef SUBTRACT_MEAN
     //
     // Here we want to subtract off the mean density and neutral
     // density from the images, to avoid linear gradients from the
@@ -715,7 +697,7 @@ int main(int argc, char **argv)
       // default action is to do nothing.
       break;
     }
-
+#endif // SUBTRACT_MEAN
 
     //
     // If we got a P-V data-cube, also construct a 2D image projected
@@ -831,15 +813,6 @@ int main(int argc, char **argv)
       err = imio.close_image_file(filehandle);
       if (err) rep.error("failed to close output file",err);
     }
-#ifdef TESTING
-    im1 = mem.myfree(im1, "main: im1");
-    im2 = mem.myfree(im2, "main: im2");
-    im3 = mem.myfree(im3, "main: im3");
-    im4 = mem.myfree(im4, "main: im4");
-    im5 = mem.myfree(im5, "main: im5");
-    im6 = mem.myfree(im5, "main: im6");
-    im7 = mem.myfree(im5, "main: im7");
-#else
     im1 = mem.myfree(im1);
     im2 = mem.myfree(im2);
     im3 = mem.myfree(im3);
@@ -847,7 +820,6 @@ int main(int argc, char **argv)
     im5 = mem.myfree(im5);
     im6 = mem.myfree(im6);
     im7 = mem.myfree(im7);
-#endif
 
   } // Loop over all files.    
 

@@ -7,8 +7,7 @@
 //
 // Includes for inheritance, and fits definitions:
 //
-#include "../../source/dataio_fits.h"
-//#include "../../../uniform_grid_code/tags/ET_MHD2010_r215/source/dataio_fits.h"
+#include "dataIO/dataio_fits.h"
 #include <fitsio.h>
 
 //

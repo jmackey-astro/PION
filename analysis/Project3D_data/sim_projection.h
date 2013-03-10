@@ -27,8 +27,7 @@
 #error "Define NEW_STOKES_CALC please!"
 #endif
 
-#include "../../source/global.h"
-//#include "../../../uniform_grid_code/tags/ET_MHD2010_r215/source/global.h"
+#include "global.h"
 
 using namespace std;
 

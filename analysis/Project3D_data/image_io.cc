@@ -2,8 +2,7 @@
 
 
 #include "image_io.h"
-#include "../../source/global.h"
-//#include "../../../uniform_grid_code/tags/ET_MHD2010_r215/source/global.h"
+#include "global.h"
 #include <sstream>
 using namespace std;
 

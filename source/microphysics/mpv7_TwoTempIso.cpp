@@ -18,6 +18,7 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
+/// - 2013.03.10 JM: Changed ions/electrons so He is always neutral.
 
 #include "microphysics/mpv7_TwoTempIso.h"
 
@@ -51,13 +52,15 @@ mpv7_TwoTempIso::mpv7_TwoTempIso(
   mean_mass_per_H = m_p/X; // this is mass per nucleon.
   //
   // Number of ionised particles per ionised H nucleon.
+  // (assume He is inert, so no photons can ionise it).
   //
-  JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
+  JM_NION  = 1.0; // +0.25*EP->Helium_MassFrac/X;
 
   //
   // Number of electrons per ionised H nucleon.
+  // (assume He is inert, so no photons can ionise it).
   //
-  JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
+  JM_NELEC = 1.0; // +0.25*EP->Helium_MassFrac/X;
 
   //
   // The metal MassFrac is unused, so we use that to decide if the
