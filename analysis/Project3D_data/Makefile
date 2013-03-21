@@ -5,7 +5,7 @@
 # 2013.02.05 JM: updated to work with pion.
 #
 
-SHELL = /bin/sh
+SHELL = /bin/bash
 .SUFFIXES:
 .SUFFIXES: .cc .o
 .SUFFIXES: .cxx .o

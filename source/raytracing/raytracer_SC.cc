@@ -740,9 +740,14 @@ int raytracer_USC_infinity::ProcessCell(cell *c,                  ///< Current c
 {
   //
   // This is now a switcher function, depending on the source type.
-  // If we are doing the C2RAY type update, where the MP update is done as rays are
-  // traced, then we call the old ProcessCell function.  Otherwise we just 
-  // add the cell column to the col2cell and assign cell values.
+  // If we are doing the C2RAY type update, where the MP update is
+  // done as rays are traced, then we call the old ProcessCell 
+  // function.  Otherwise we just add the cell column to the col2cell
+  // and assign cell values.
+  //
+  // ToDo: Switch this to actually use optical depths, because
+  //   otherwise TauMin is not dimensionless, and it is confusing
+  //   to use it.
   //
   int err=0;
 
@@ -1248,7 +1253,13 @@ void raytracer_USC::set_TauMin_for_source(
            (rs.opacity_src==RT_OPACITY_MINUS) &&
            (rs.effect==RT_EFFECT_PION_MONO) ) {
     // Photoionisation, sigma=6.3e-18, Tau=sigma*NH*(1-x)
-    TauMin[rs.id] = 2.6e-7;
+    // --------------------------------------------------------------
+    // <!-HACK-!> 2013.03.21 JM: Trying to get WN08 Starbench 2D test
+    //            working correctly.
+    // --------------------------------------------------------------
+    TauMin[rs.id] = 6.1e-7;
+    //TauMin[rs.id] = 2.6e-7;
+    // --------------------------------------------------------------
   }
   else if ((rs.update==RT_UPDATE_EXPLICIT) &&
            (rs.opacity_src==RT_OPACITY_MINUS) &&
@@ -2498,25 +2509,25 @@ double raytracer_USC::col2cell_3d(const rad_source *s,            ///< source we
 /// Apply the appropriate weighting scheme to get an interpolated optical depth for 2D
 ///
 double raytracer_USC::interpolate_2D(
-						const int wt_flag, /// Flag to say what sort of weighting.
-						const int src_id, ///< source id
-			     	const double delta0, ///< delta = min(abs(dy/dx),abs(dx/dy));
-				    const double tau1, ///< first optical depth tau_1
-				    const double tau2  ///< second optical depth tau_2
-				    )
+          const int wt_flag, /// Flag to say what sort of weighting.
+          const int src_id, ///< source id
+          const double delta0, ///< delta = min(abs(dy/dx),abs(dx/dy));
+          const double tau1, ///< first optical depth tau_1
+          const double tau2  ///< second optical depth tau_2
+          )
 {
-	//if (wt_flag==0) {
-	//
-	// This is the standard weighting used in C2Ray.
-	// For other weighting schemes see raytracer_USC::col2cell_2d()
-	//
-	double w1,w2,mintau2d;
-	mintau2d=TauMin[src_id];
-	w1= (1.-delta0)/max(mintau2d,tau1);
-	w2 =     delta0/max(mintau2d,tau2);
-	mintau2d = (w1+w2);
-	w1 /= mintau2d; w2 /= mintau2d;
-	return w1*tau1 + w2*tau2;
+  //if (wt_flag==0) {
+  //
+  // This is the standard weighting used in C2Ray.
+  // For other weighting schemes see raytracer_USC::col2cell_2d()
+  //
+  double w1,w2,mintau2d;
+  mintau2d=TauMin[src_id];
+  w1= (1.-delta0)/max(mintau2d,tau1);
+  w2 =     delta0/max(mintau2d,tau2);
+  mintau2d = (w1+w2);
+  w1 /= mintau2d; w2 /= mintau2d;
+  return w1*tau1 + w2*tau2;
   // } // flag==0
 
   //else if (wt_flag==1) {
@@ -2586,30 +2597,30 @@ double raytracer_USC::interpolate_2D(
 /// Apply the appropriate weighting scheme to get an interpolated optical depth for 3D
 ///
 double raytracer_USC::interpolate_3D(
-						const int wt_flag, /// Flag to say what sort of weighting.
-						const int src_id, ///< source id
-				    const double delta0, ///< delta0 = abs(dy/dx)
-				    const double delta1, ///< delta1 = abs(dz/dx)
-				    const double tau1, ///< first optical depth tau_1
-				    const double tau2, ///< second optical depth tau_2
-				    const double tau3, ///< third optical depth tau_3
-				    const double tau4 ///< fourth optical depth tau_4
-				    )
+          const int wt_flag, /// Flag to say what sort of weighting.
+          const int src_id, ///< source id
+          const double delta0, ///< delta0 = abs(dy/dx)
+          const double delta1, ///< delta1 = abs(dz/dx)
+          const double tau1, ///< first optical depth tau_1
+          const double tau2, ///< second optical depth tau_2
+          const double tau3, ///< third optical depth tau_3
+          const double tau4 ///< fourth optical depth tau_4
+          )
 {
   //if (wt_flag==0) {
-	//
-	// This is the standard weighting used in C2Ray.
-	// (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
-	//
-	double w1,w2,w3,w4,mintau3d;
-	mintau3d=TauMin[src_id];
-	w1 = (1.-delta0)*(1.-delta1)/max(mintau3d,tau1);
-	w2 =     delta0 *(1.-delta1)/max(mintau3d,tau2);
-	w3 = (1.-delta0)*    delta1 /max(mintau3d,tau3);
-	w4 =     delta0 *    delta1 /max(mintau3d,tau4);
-	mintau3d = (w1+w2+w3+w4);
-	w1/=mintau3d; w2/=mintau3d; w3/=mintau3d; w4/=mintau3d;
-	return w1*tau1 + w2*tau2 + w3*tau3 + w4*tau4;
+  //
+  // This is the standard weighting used in C2Ray.
+  // (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
+  //
+  double w1,w2,w3,w4,mintau3d;
+  mintau3d=TauMin[src_id];
+  w1 = (1.-delta0)*(1.-delta1)/max(mintau3d,tau1);
+  w2 =     delta0 *(1.-delta1)/max(mintau3d,tau2);
+  w3 = (1.-delta0)*    delta1 /max(mintau3d,tau3);
+  w4 =     delta0 *    delta1 /max(mintau3d,tau4);
+  mintau3d = (w1+w2+w3+w4);
+  w1/=mintau3d; w2/=mintau3d; w3/=mintau3d; w4/=mintau3d;
+  return w1*tau1 + w2*tau2 + w3*tau3 + w4*tau4;
   //}
 
   //else if (wt_flag==1) {

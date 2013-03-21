@@ -162,12 +162,6 @@
 #include "global.h"
 using namespace std;
 
-#define WOLFIRE  // This enables extra heating/cooling/ionisation compared to Henney.
-
-#ifndef NEW_METALLICITY
-#define METALLICITY 1.0 ///< Metallicity in units of solar.
-#endif // not NEW_METALLICITY
-
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
 
 
@@ -257,11 +251,8 @@ void mp_explicit_H::get_problem_size(
 mp_explicit_H::mp_explicit_H(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
-          const std::string &trtype  ///< List of what the tracer variables mean.
-#ifdef NEW_METALLICITY
-          ,
+          const std::string &trtype,  ///< List of what the tracer variables mean.
           struct which_physics *ephys  ///< extra physics stuff.
-#endif // NEW_METALLICITY
 	  )
 :
   nv_prim(nv)
@@ -306,7 +297,6 @@ mp_explicit_H::mp_explicit_H(
   k_B = GS.kB();  // Boltzmann constant.
   m_p = GS.m_p(); // Proton mass.
 
-#ifdef NEW_METALLICITY
   //
   // Set EP to point to SimPM.EP struct passed to constructor.
   //
@@ -324,16 +314,6 @@ mp_explicit_H::mp_explicit_H(
   JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
   JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
-#else // if/not NEW_METALLICITY
-
-  EP = &(SimPM.EP);
-#ifdef PUREHYDROGEN
-  mean_mass_per_H = m_p;  // appropriate for a gas of 100% H.
-#else
-  mean_mass_per_H = 1.40*m_p;  // appropriate for a gas of 90% H, 10% He.
-#endif
-  // JM_NION and JM_NELEC are defined as #defines in this case.
-#endif // NEW_METALLICITY
 
   setup_local_vectors();
   gamma   = SimPM.gamma;   // Gas has a constant ratio of specific heats.
@@ -425,11 +405,7 @@ mp_explicit_H::mp_explicit_H(
   // We want to set up the CIE cooling function for metals-only from WSS09
   // (i.e. with H+He cooling subtracted out).
   // ----------------------------------------------------------------
-#ifdef RT_TEST_PROBS
-  setup_SD93_cie();
-#else
   setup_WSS09_CIE_OnlyMetals();
-#endif
   // ================================================================
   // ================================================================
 
@@ -1248,17 +1224,6 @@ void mp_explicit_H::setup_radiation_source_parameters(
 // ##################################################################
 // ##################################################################
 
-//#define RT_TESTING_YDOT
-#ifndef RT_TESTING_YDOT
-// This is the standard ydot() function.  There is another copy below with
-// lots of "cout" statements and ifdefs for diagnosing what is going on inside
-// the function, but it makes the code almost unreadable, so this is a clean
-// version.  It is sketchy to have two version of the same function, b/c I need
-// to be careful that changes are propagated between the two of them.  But it 
-// seems to be the best solution I have found.
-
-// ##################################################################
-// ##################################################################
 
 int mp_explicit_H::ydot(
           double,               ///< current time (UNUSED)
@@ -1293,7 +1258,6 @@ int mp_explicit_H::ydot(
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
   double Edot=0.0; // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH at the end.
 
-#ifdef WOLFIRE
   //
   // We set a minimum electron density based on the idea that Carbon is singly
   // ionised in low density gas.  y(C)=1.5e-4 in the gas phase (by number)
@@ -1301,9 +1265,7 @@ int mp_explicit_H::ydot(
   // with an exponential cutoff at high densities.
   //
   ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
-#endif //WOLFIRE
 
-//#ifndef PUREHYDROGEN
   //
   // collisional ionisation of H, with its associated cooling.
   // scales with n_e*nH0
@@ -1311,7 +1273,6 @@ int mp_explicit_H::ydot(
   Hi_coll_ion_rates(T, &temp1, &temp2);
   oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
   Edot -= temp2*ne*OneMinusX;
-//#endif
 
   //
   // photo-ionisation of H:
@@ -1372,15 +1333,12 @@ int mp_explicit_H::ydot(
   //
   Edot -= Hii_total_cooling(T) *x_in*ne;
 
-  // ************ HENNEY+2009 COOLING FOR REAL SIMS *************
-#ifndef PUREHYDROGEN
   //
-  // Add Helium free-free (Z^2*n(He)/n(H) = 0.4 of the H+ free-free rate)
+  // Add Helium free-free (Z^2*n(He)/n(H) = X(He)/X(H) of the H+ free-free rate)
   // The normalisation is scaled so that I multiply by ne*nHp to get the 
   // correct cooling rate (i.e. the abundance of He is included in the prefactor).
   //
-  Edot -= 6.72e-28*sqrt(T) *x_in*ne;
-#endif
+  Edot -= 1.68e-27*EP->Helium_MassFrac/(1.0-EP->Helium_MassFrac)*sqrt(T)*x_in*ne;
 
   //
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
@@ -1390,7 +1348,6 @@ int mp_explicit_H::ydot(
   //
   // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
   //
-#ifndef PUREHYDROGEN
   //
   // Now we get to the less certain elements of the cooling/heating function.
   // First we do the heating:
@@ -1430,7 +1387,6 @@ int mp_explicit_H::ydot(
   // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
   //
   oneminusx_dot -= 1.8e-17*OneMinusX;
-#ifdef WOLFIRE
   //
   // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
   // This is a fit to the curve in the top-right panel of Fig.10.
@@ -1441,7 +1397,6 @@ int mp_explicit_H::ydot(
   // heating term is only calculated for warm neutral medium.
   //
   Edot += 1.083e-25*METALLICITY*OneMinusX/(1.0+9.77e-3*pow(sqrt(T)/ne,0.73));
-#endif //WOLFIRE
   
   //
   // Now COOLING:
@@ -1452,14 +1407,6 @@ int mp_explicit_H::ydot(
   //
   temp1 = 1.42e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
 
-#ifndef WOLFIRE
-  //
-  // Collisionally excited lines of neutral metals: (HAdCM09 eq.A10).
-  // Assumes the neutral metal fraction is the same as neutral H fraction.
-  // Oxygen abundance set to 4.90e-4 from Asplund+(2009,ARAA).
-  //
-  temp1+= 2.19e-23*METALLICITY *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
-#endif // not WOLFIRE
 
   //
   // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
@@ -1470,35 +1417,6 @@ int mp_explicit_H::ydot(
   Edot -= max(temp1,temp2);
 
 
-#ifdef USE_PDR_COOLING
-#ifndef WOLFIRE
-  //
-  // Finally "molecular" or PDR cooling from (HAdCM09 eq.A14), scaling with rho^{1.6}.
-  // I have modified the Henney equation by multiplying by the neutral fraction
-  // squared and also exponentially cutting off the function for T>10^5K.
-  //
-  temp1 = 70.0 +220.0*pow(mpv_nH/1.0e6, 0.2);
-  temp2 = 3.981e-27*METALLICITY*pow(mpv_nH,0.6)*sqrt(T)*exp(-temp1/T);
-  //
-  // ********************* HACK FOR LOW DENSITY COOLING *******************
-  //
-  // This makes the cooling rate scale with nH^2 at low densities, and matches
-  // the high density nH^1.6 scaling at nH=100 per c.c., at which point the 
-  // scaling changes discontinuously (but the function is obviously continuous!).
-  // 0.1585 is 100^(-0.4).
-  //
-  if (mpv_nH<100.0) temp2 *= 0.1585*pow(mpv_nH,0.4);
-  // ********************* HACK FOR LOW DENSITY COOLING *******************
-  //
-  //
-  // This should only apply to neutral gas, so multiply it by neutral-frac
-  // squared, and also exponentially cut off the cooling above 10^5K.
-  //
-  temp2 *= OneMinusX*OneMinusX*exp(-T*T/1e10);
-  Edot -= temp2;
-#endif // not WOLFIRE
-#endif // USE_PDR_COOLING
-#ifdef WOLFIRE
   //
   // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
   // collisional cooling of CII and OI by neutral H atoms.  In eq.C3 I have
@@ -1520,8 +1438,6 @@ int mp_explicit_H::ydot(
   //
   //Edot -= 2.325e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
   Edot -= 3.02e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
-#endif //WOLFIRE
-#endif // not PUREHYDROGEN
 
   //
   // now multiply Edot by nH to get units of energy loss/gain per unit volume per second.
@@ -1544,394 +1460,6 @@ int mp_explicit_H::ydot(
   return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-#else // testing RT_TESTING_YDOT is defined 
-// ##################################################################
-// ##################################################################
-
-
-int mp_explicit_H::ydot(
-          double,               ///< current time (UNUSED)
-          const N_Vector y_now, ///< current Y-value
-          N_Vector y_dot,       ///< vector for Y-dot values
-          const double *        ///< extra user-data vector (UNUSED)
-          )
-{
-  //
-  // fixes min-neutral-fraction to Min_NeutralFrac
-  //
-  double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac);
-  double E_in      = NV_Ith_S(y_now,lv_eint);
-  double x_in      = 1.0-OneMinusX;
-  double ne        = JM_NELEC*x_in*mpv_nH;
-
-  //
-  // First get the temperature.  We assume the total particle number density
-  // is given by 1.1*nH*(1+x_in), appropriate for a gas with 10% Helium by 
-  // number, and if He is singly ionised whenever H is.
-  //
-  double T = get_temperature(mpv_nH, E_in, x_in);
-
-
-  double temp1=0.0, temp2=0.0;
-  double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
-  double Edot=0.0; // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH at the end.
-
-#ifdef RT_TEST_PROBS
-  if (EP->coll_ionisation) {
-#endif 
-
-    //
-    // collisional ionisation of H, with its associated cooling.
-    // scales with n_e*nH0
-    //
-    Hi_coll_ion_rates(T, &temp1, &temp2);
-    oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
-    Edot -= temp2*ne*OneMinusX;
-#ifdef MPV3_DEBUG
-    cout <<"\n\nT="<<T<<" x_in="<<x_in<<" E_in="<<E_in<<"    CI="<<-temp2*ne*OneMinusX<<"\n";
-#endif // MPV3_DEBUG
-
-#ifdef RT_TEST_PROBS
-  } // if coll_ionisation
-#endif
-  
-  //
-  // photo-ionisation of H:
-  // photoionisation rate uses equation 18 in Mellema et al. 2006 (C2-ray paper),
-  // noting that their Gamma is the rate per neutral H, so we multiply by 1-x, as
-  // in their equation 11.
-  //
-  if (N_ion_srcs) {
-    //
-    // set current cell dTau0
-    //
-    temp1 = mpv_nH*mpv_delta_S*OneMinusX*Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
-
-    switch (ion_src_type) {
-      case RT_EFFECT_PION_MULTI:
-      //
-      // Rather than divide the discretised rate by n(H0) and then multiply by (1-x) to
-      // get oneminusx_dot, we simply divide by n(H) since this is more numerically stable.  To
-      // do this, n(H) is passed to the rate function instead of n(H0).
-      //
-      // Also, instead of using mpv_dTau0 for the cell optical depth, we use the current
-      // optical depth (nH*mpv_delta_S*OneMinusX) so that we allow the photoionisation
-      // rate to decrease as the number of neutral atoms decreases during the timestep.
-      // This is more stable.
-      //
-      oneminusx_dot -= Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
-                                  mpv_nH, mpv_delta_S, mpv_Vshell);
-      Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
-                                  mpv_nH, mpv_delta_S, mpv_Vshell);
-#ifdef MPV3_DEBUG
-      cout<<"multifreq!   PI-rate=";
-      cout<<Hi_discrete_multifreq_photoion_rate(mpv_Tau0,temp1,mpv_nH,mpv_delta_S,mpv_Vshell)<<"     ";
-      cout<<"multifreq!   PH-rate=";
-      cout<<Hi_discrete_multifreq_photoheating_rate(mpv_Tau0,temp1,mpv_nH, mpv_delta_S, mpv_Vshell)<<"\n";
-#endif // MPV3_DEBUG
-      break;
-
-      case RT_EFFECT_PION_MONO:
-      //
-      // hardcoded for a hv-13.6eV = 5.0eV monochromatic source.
-      //
-#define PHOTON_ENERGY 2.98e-11
-#define EXCESS_ENERGY 8.01e-12
-      temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
-                                             PHOTON_ENERGY, mpv_delta_S, mpv_Vshell)*OneMinusX;
-      oneminusx_dot -= temp1;
-      Edot += temp1*EXCESS_ENERGY;
-#ifdef MPV3_DEBUG
-      cout <<"PIR: mpv_NIdot="<<mpv_NIdot<<" nH="<<mpv_nH<<" mpv_Tau0="<<mpv_Tau0;
-      cout <<" mpv_dTau0="<<mpv_dTau0<<" ds="<<mpv_delta_S<<" Vsh="<<mpv_Vshell;
-      cout <<" 1-x="<<OneMinusX<<"... RATE="<<temp1<<"\n";
-      cout <<"  oneminusx_dot_PI="<<oneminusx_dot<<"\n";
-#endif
-      break;
-
-      default:
-      rep.error("Bad ion_src_type in dYdt()",ion_src_type);
-      break;
-    } // switch
-  }
-
-#ifdef RT_TEST_PROBS
-  if (EP->rad_recombination) {
-    oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*x_in*mpv_nH;
-    //Edot -= Hii_total_cooling(T) *x_in*x_in*mpv_nH;
-    Edot -= Hii_rad_recomb_cooling(T) *x_in*x_in*mpv_nH;
-#else
-    //
-    // radiative recombination of H+
-    //
-    oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*ne;
-    //
-    // Total H+ cooling: recombination plus free-free
-    //
-    Edot -= Hii_total_cooling(T) *x_in*ne;
-#endif
-#ifdef MPV3_DEBUG
-    cout <<"  RR+FF="<<-Hii_total_cooling(T) *x_in*ne;
-#endif // MPV3_DEBUG
-
-#ifdef RT_TEST_PROBS
-  } // if rad_recombination
-  //else {
-  //  // need free-free cooling at least
-  //  Edot -= 1.68e-27*sqrt(T) *x_in*ne;
-  //}
-#endif
-
-#ifndef RT_TEST_PROBS
-  // ************ HENNEY+2009 COOLING FOR REAL SIMS *************
-  //
-  // Add Helium free-free (Z^2*n(He)/n(H) = 0.4 of the H+ free-free rate)
-  // The normalisation is scaled so that I multiply by ne*nHp to get the 
-  // correct cooling rate (i.e. the abundance of He is included in the prefactor).
-  //
-  Edot -= 6.72e-28*sqrt(T) *x_in*ne;
-#ifdef MPV3_DEBUG
-  cout <<"  He-FF="<<-6.72e-28*sqrt(T) *x_in*ne;
-#endif // MPV3_DEBUG
-
-  //
-  // collisional excitation cooling of H0 Aggarwal (1993)
-  //
-  Edot -= Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne;
-#ifdef MPV3_DEBUG
-  cout <<"  CExH0="<<-Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne;
-#endif // MPV3_DEBUG
-  //
-  // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
-  //
-  // Now we get to the sketchier elements of the cooling/heating function.
-  // First we do the heating:
-  //
-
-  if (N_diff_srcs) {
-    //
-    // UV heating due to both diffuse radiation and point source radiation.
-    // The quantity mpv_G0_UV is as defined in Henney et al. (2009) Appendix A1, Eq.A3,
-    // and is set in set_parameters_for_current step()
-    //
-    cout <<"adding diffuse heating! ";
-    Edot += 1.9e-26*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
-//#ifdef MPV3_DEBUG
-    cout <<"  DfUV="<<1.9e-26*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
-//#endif // MPV3_DEBUG
-
-    //
-    // IR heating (HAdCM09 eq.A6) from point source and/or diffuse radiation.
-    // There is a different G0 parameter because the attenuation is according to 
-    // exp(-0.05Av) rather than before where the coefficient was 1.9.
-    //
-    Edot += 7.7e-32*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0);
-//#ifdef MPV3_DEBUG
-    cout <<"  DfIR="<<7.7e-32*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
-//#endif // MPV3_DEBUG
-  }
-
-  //
-  // X-ray heating (HAdCM09 eq.A5)
-  // Massive stars have x-ray luminosities of ~1.0e32 erg/s, so use this.
-  // THIS IS A HACK JUST TO GET IT GOING! FIX IT LATER.
-  //
-  //Edot += 6.0e9*mpv_delta_S/mpv_Vshell;
-#ifdef MPV3_DEBUG
-  //cout <<"  XRay="<<6.0e9*mpv_delta_S/mpv_Vshell;
-#endif // MPV3_DEBUG
-
-  //
-  // Cosmic ray heating (HAdCM09 eq.A7)
-  //
-  Edot += 5.0e-28;
-#ifdef MPV3_DEBUG
-  cout <<"  CR="<< 5.0e-28;
-#endif // MPV3_DEBUG
-  
-  //
-  // Now COOLING:
-  // First forbidden line cooling of e.g. OII,OIII, dominant in HII regions.
-  // This is collisionally excited lines of photoionised metals. (HAdCM09 eq.A9)
-  // I have exponentially damped this at high temperatures! This was important!
-  // Oxygen abundance set to 5.81e-4 from Lodders et al. (2003,ApJ,591,1220,Tab.2).
-  //
-  temp1 = 1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne *exp(-T*T/5.0e10);
-#ifdef MPV3_DEBUG
-  cout <<"  CExMi="<<-1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne *exp(-T*T/5.0e10);
-#endif // MPV3_DEBUG
-  //
-  // Collisionally excited lines of neutral metals: (HAdCM09 eq.A10).
-  // Assumes the neutral metal fraction is the same as neutral H fraction.
-  // Oxygen abundance set to 5.81e-4 from Lodders et al. (2003,ApJ,591,1220,Tab.2).
-  //
-  temp1+= 2.60e-23 *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
-#ifdef MPV3_DEBUG
-  cout <<"  CExMn="<<-2.60e-23 *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
-#endif // MPV3_DEBUG
-
-
-  //
-  // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
-  // We take the actual cooling rate to be the max of SD93-CIE and the
-  // previous two terms.
-  //
-  temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH;
-#ifdef MPV3_DEBUG
-  cout <<"  CIEc="<<-cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH<<"\n";
-  cout <<"WSS09 ccoling rate="<<temp2<<", metal line cooling rate="<<temp1<<"\n";
-#endif // MPV3_DEBUG
-  Edot -= max(temp1,temp2);
-
-
-// HACK HACK HACK
-// HACK HACK HACK
-// HACK HACK HACK
-#ifdef USE_PDR_COOLING
-  //
-  // Finally "molecular" or PDR cooling from (HAdCM09 eq.A14), scaling with rho^{1.6}.
-  // I have modified the Henney equation by multiplying by the neutral fraction
-  // squared and also exponentially cutting off the function for T>10^5K.
-  //
-  temp1 = 70.0 +220.0*pow(mpv_nH/1.0e6, 0.2);
-  temp2 = 3.981e-27*pow(mpv_nH,0.6)*sqrt(T)*exp(-temp1/T);
-#ifdef MPV3_DEBUG
-  cout <<"Without PDR, Edot="<<(Edot)*mpv_nH<<", PDR cooling rate="<<temp2*mpv_nH<<"\n";
-#endif // MPV3_DEBUG
-  // ********************* HACK FOR LOW DENSITY COOLING *******************
-  //
-  // This makes the cooling rate scale with nH^2 at low densities, and matches
-  // the high density nH^1.6 scaling at nH=100 per c.c., at which point the 
-  // scaling changes discontinuously (but the function is obviously continuous!).
-  // 0.1585 is 100^(-0.4).
-  //
-  if (mpv_nH<100.0) temp2 *= 0.1585*pow(mpv_nH,0.4);
-  // ********************* HACK FOR LOW DENSITY COOLING *******************
-  //
-  // This should only apply to neutral gas, so multiply it by neutral-frac
-  // squared, and also exponentially cut off the cooling above 10^5K.
-  //
-  temp2 *= OneMinusX*OneMinusX*exp(-T*T/1e10);
-  Edot -= temp2;
-  //cout <<", PDR cooling rate="<<temp2*mpv_nH<<", nH="<<mpv_nH<<"\n";
-#endif // USE_PDR_COOLING
-// HACK HACK HACK
-// HACK HACK HACK
-// HACK HACK HACK
-
-
-
-#else // RT_TEST_PROBS ******************** SIMPLE C2 COOLING FOR TESTS *************
-  //
-  // SD93-CIE cooling
-  //
-  //cout <<"new C2 cooling.\n";
-  Edot -= cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH;
-  //
-  // Forbidden line cooling
-  //
-  if (T<2.0e4 && T>100.0) 
-    Edot -= 2.0e-24*(T/8000.0)*x_in*x_in*mpv_nH;
-  //
-  // Toy model corresponding to case 15 in cooling.cc
-  //
-  temp1 = max(0.0, (1.0+x_in)*(1.0-x_in)*(1.0-x_in)*k_B*(T-100.0)/(SimPM.gamma-1.0)/3.16e11 *exp(-T/1.e4) );
-  Edot -= temp1;
-  
-#endif // NOT RT_TEST_PROBS ******************** SIMPLE C2 COOLING FOR TESTS *************
-
-
-
-  //
-  // now multiply Edot by nH to get units of energy loss/gain per unit volume per second.
-  //
-  Edot *= mpv_nH;
-
-  //
-  // We want to limit cooling as we approach the minimum temperature, so we scale
-  // the rate to linearly approach zero as we reach Tmin.
-  //
-  if (Edot<0.0 && T<2.0*EP->MinTemperature) {
-#ifdef MPV3_DEBUG
-    cout <<"limiting cooling: Edot="<<Edot<<", T="<<T;
-#endif // MPV3_DEBUG
-    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
-#ifdef MPV3_DEBUG
-    cout <<"... resetting Edot to "<<Edot<<"\n";
-#endif // MPV3_DEBUG
-  }
-#ifdef RT_TEST_PROBS
-  if (!EP->update_erg) {
-    Edot = 0.0;
-  }
-#endif
-
-  NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
-  NV_Ith_S(y_dot,lv_eint) = Edot;
-#ifdef MPV3_DEBUG
-  cout <<"**** oneminusx_dot="<<NV_Ith_S(y_dot,lv_H0)<<", Edot="<<NV_Ith_S(y_dot,lv_eint)<<"\n\n";
-#endif // MPV3_DEBUG
-  return 0;
-}
-
-
-// ##################################################################
-// ##################################################################
-#endif // RT_TESTING_YDOT
 
 #endif // if not excluding MPv3
 

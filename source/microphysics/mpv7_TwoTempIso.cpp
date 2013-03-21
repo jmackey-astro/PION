@@ -305,8 +305,9 @@ int mpv7_TwoTempIso::ydot(
 #define EXCESS_ENERGY 8.01e-12
 //#define PHOTON_ENERGY 2.24e-11
 //#define EXCESS_ENERGY 0.64e-12
-      temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
-                                             PHOTON_ENERGY, mpv_delta_S, mpv_Vshell)*OneMinusX;
+      temp1 = Hi_discrete_mono_photoion_rate(
+                mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
+                PHOTON_ENERGY, mpv_delta_S, mpv_Vshell) * OneMinusX;
       oneminusx_dot -= temp1;
       break;
 

@@ -26,7 +26,7 @@
 /// - 2012.12.26 JM: Added some hacks to study the photoionisation
 ///    cross section and Blackbody spectrum effects on results.
 
-#define HACK_MODIFY_BB ///< scale the high energy BB emission
+//#define HACK_MODIFY_BB ///< scale the high energy BB emission
 #define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
 
 #include "hydrogen_photoion.h"
