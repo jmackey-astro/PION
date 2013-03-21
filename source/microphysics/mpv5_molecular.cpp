@@ -12,13 +12,14 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
+/// - 2013.03.21 JM: Fixed Helium free-free to use X(He).
+/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 
 #include "microphysics/mpv5_molecular.h"
 #include "global.h"
 
 using namespace std;
 
-#ifdef  NEW_METALLICITY
 
 
 // ##################################################################
@@ -161,11 +162,11 @@ int mpv5_molecular::ydot(
 
   // ************ HENNEY+2009 COOLING FOR REAL SIMS *************
   //
-  // Add Helium free-free (Z^2*n(He)/n(H) = 0.4 of the H+ free-free rate)
+  // Add Helium free-free (Z^2*n(He)/n(H) = X(He)/X(H) of the H+ free-free rate)
   // The normalisation is scaled so that I multiply by ne*nHp to get the 
   // correct cooling rate (i.e. the abundance of He is included in the prefactor).
   //
-  Edot -= 6.72e-28*sqrt(T) *x_in*ne;
+  Edot -= 1.68e-27*EP->Helium_MassFrac/(1.0-EP->Helium_MassFrac)*sqrt(T)*x_in*ne;
 
   //
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
@@ -287,6 +288,5 @@ int mpv5_molecular::ydot(
 }
 
 
-#endif // NEW_METALLICITY
 
 

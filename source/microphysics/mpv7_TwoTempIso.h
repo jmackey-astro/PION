@@ -14,6 +14,7 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
+/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 
 
 #ifndef MPV7_PUREH_H
@@ -21,8 +22,6 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
-#ifdef  NEW_METALLICITY
 
 #include "microphysics/mp_explicit_H.h"
 
@@ -111,12 +110,6 @@ class mpv7_TwoTempIso
   //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
   //---------------------------------------------------------------------------
 };
-
-
-
-
-
-#endif // NEW_METALLICITY
 
 #endif // MPV7_PUREH_H
 

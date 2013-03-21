@@ -22,6 +22,7 @@
 /// - 2013.02.14 JM: Started modifying this to include He/Metal mass
 ///    fractions as EP parameters, to make metallicity and mu into
 ///    variables that can be set from the parameterfile.
+/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 #ifndef MP_EXPLICIT_H_H
 #define MP_EXPLICIT_H_H
 
@@ -50,7 +51,7 @@
 /// to collisional excitation of photoionised O,C,N (eq.A9), collisional excitation of
 /// neutral metals (eq.A10), and the SD93 CIE curve.  I think I will take the max of
 /// the SD93 curve and the Henney et al. functions, to avoid double counting.  For 
-/// neutral gas I can use the cooling curve of Henney et al 2009 eq.A14.
+/// neutral gas I use heating and cooling rates from Wolfire et al. (2003).
 ///
 /// - Photoheating from ionisation is discussed above.  Cosmic ray heating will use a
 /// standard value, X-ray heating I'm not yet sure about.  UV heating due to the 
@@ -91,32 +92,10 @@
 /// iteration, which is more accurate, stable, but expensive.
 #define EULER_CUTOFF 0.05
 
-//
-#ifdef PUREHYDROGEN
-//
-#ifndef NEW_METALLICITY
-#define JM_NELEC 1.0 ///< ionised gas has 1.0 electrons per hydrogen nucleon
-#define JM_NION  1.0 ///< There are 1.0 nucleons per H nucleon.
-#endif // not NEW_METALLICITY
-
-#define JM_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
-#define JM_MINNEU 1.0e-12  ///< minimum neutral fraction i care about.
-#define JM_MINERG 1.0e-20  ///< Minimum internal energy density I care about.
-//
-#else // if PUREHYDROGEN
-//
-#ifndef NEW_METALLICITY
-#define JM_NELEC 1.1 ///< ionised gas has 1.1 electrons per hydrogen nucleon (H+,He+, no He2+!)
-#define JM_NION  1.1 ///< There are 1.1 nucleons per H nucleon (10% He by number).
-#endif // not NEW_METALLICITY
 
 #define JM_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
 #define JM_MINNEU 1.0e-12  ///< minimum neutral fraction i care about.
 #define JM_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
-//
-#endif // not PUREHYDROGEN
-//
-
 
 
 ///
@@ -140,11 +119,8 @@ class mp_explicit_H
   mp_explicit_H(
           const int,          ///< Total number of variables in state vector
 	  const int,          ///< Number of tracer variables in state vector.
-	  const std::string & ///< List of what the tracer variables mean.
-#ifdef NEW_METALLICITY
-          ,
+	  const std::string &, ///< List of what the tracer variables mean.
           struct which_physics * ///< extra physics stuff.
-#endif // NEW_METALLICITY
 	  );
 
   ///
@@ -377,11 +353,9 @@ class mp_explicit_H
   double Min_NeutralFrac; ///< minimum H0 fraction allowed (eps=1.0e-12)
   double Max_NeutralFrac; ///< Maximum H0 fraction allowed (1-eps)
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
-#ifdef NEW_METALLICITY
   double JM_NELEC; ///< Number of electrons per ionised H atom.
   double JM_NION;  ///< Number of ions per ionised H atom.
   double METALLICITY; ///< Metallicity of gas, in units of solar.
-#endif // NEW_METALLICITY
 
   const int nv_prim; ///< Number of variables in state vector.
   int       nvl;     ///< number of variables in local state vector.

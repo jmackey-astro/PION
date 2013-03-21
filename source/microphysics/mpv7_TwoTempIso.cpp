@@ -19,10 +19,10 @@
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.10 JM: Changed ions/electrons so He is always neutral.
+/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 
 #include "microphysics/mpv7_TwoTempIso.h"
 
-#ifdef  NEW_METALLICITY
 #include "global.h"
 
 using namespace std;
@@ -212,11 +212,11 @@ double mpv7_TwoTempIso::get_ntot(
     )
 {
   //
-  // This allows for molecular H neutral gas, with TTI_Nnt, which can
-  // be <1 if molecular.
+  // This allows for molecular H neutral gas, with TTI_Mol, which is
+  // 0.5 if molecular.  This is the (H0/H2) + (He) + (elect.+ions).
   //
   return
-    ((1.0-xp)*TTI_Nnt +xp*(JM_NELEC+JM_NION))*nH;
+    ((1.0-xp)*TTI_Mol +(TTI_Nnt-TTI_Mol) +xp*(JM_NELEC+JM_NION))*nH;
 }
 
 // ##################################################################
@@ -328,13 +328,16 @@ int mpv7_TwoTempIso::ydot(
   //
   //oneminusx_dot -= 1.8e-17*OneMinusX;
   
+  
+  //
+  // Set Edot to be given by n*k*Tdot/(g-1) with
+  //  Tdot=dot(1-x)*(Tlo-Thi)
+  //
+  //Edot = get_ntot(mpv_nH,x_in)*k_B*oneminusx_dot*(TTI_Tlo-TTI_Thi)/gamma_minus_one;
+  
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
   NV_Ith_S(y_dot,lv_eint) = Edot;
   return 0;
 }
-
-
-
-#endif // NEW_METALLICITY
 
 

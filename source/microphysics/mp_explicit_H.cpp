@@ -36,8 +36,8 @@
 ///  O,C,N (eq.A9), collisional excitation of neutral metals
 ///  (eq.A10), and the Wiersma+2009 CIE metals-only curve.  I take
 ///  the max of the WSS09 curve and the Henney et al. functions, to
-///  avoid double counting.  For neutral gas I can use the cooling
-///  curve of Henney et al 2009 eq.A14.
+///  avoid double counting.  For neutral gas I use heating and
+///  cooling rates from Wolfire et al. (2003).
 ///
 /// - Photoheating from ionisation is discussed above.  Cosmic ray
 ///  heating will use a standard value, X-ray heating is ignored.
@@ -133,6 +133,7 @@
 ///    variables that can be set from the parameterfile.
 /// - 2013.02.15 JM: Moved much ifdef stuff into new classes.
 ///    Changed Oxygen abundance from Lodders2003 to Asplund+2009.
+/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The

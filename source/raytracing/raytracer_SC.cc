@@ -731,12 +731,13 @@ int raytracer_USC_infinity::cell_cols_1d(const rad_source *s,
 
 
 
-int raytracer_USC_infinity::ProcessCell(cell *c,                  ///< Current cell.
-					double col2cell,          ///< Column to cell (optical depth)
-					double ds,                ///< Path length through cell.
-					const rad_source *source, ///< pointer to source struct.
-					const double dt           ///< Timestep
-					)
+int raytracer_USC_infinity::ProcessCell(
+      cell *c,                  ///< Current cell.
+      double col2cell,          ///< Column to cell (optical depth)
+      double ds,                ///< Path length through cell.
+      const rad_source *source, ///< pointer to source struct.
+      const double dt           ///< Timestep
+      )
 {
   //
   // This is now a switcher function, depending on the source type.
@@ -745,7 +746,7 @@ int raytracer_USC_infinity::ProcessCell(cell *c,                  ///< Current c
   // function.  Otherwise we just add the cell column to the col2cell
   // and assign cell values.
   //
-  // ToDo: Switch this to actually use optical depths, because
+  // TODO: Switch this to actually use optical depths, because
   //   otherwise TauMin is not dimensionless, and it is confusing
   //   to use it.
   //

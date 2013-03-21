@@ -15,10 +15,10 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
+/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 
 #include "microphysics/mpv6_PureH.h"
 
-#ifdef  NEW_METALLICITY
 #include "global.h"
 
 using namespace std;
@@ -218,6 +218,5 @@ int mpv6_PureH::ydot(
 
 
 
-#endif // NEW_METALLICITY
 
 
