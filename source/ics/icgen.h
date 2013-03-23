@@ -14,6 +14,7 @@
 /// - 2012.02.25 JM: Added optional velocity vector for photoevaporated clumps.
 /// - 2012.09.16 JM: Added new photoevaporating clump function+var.
 /// - 2013.01.10 JM: Added new StarBench workshop test probs class.
+/// - 2013.03.23 JM: Added another StarBench test.
 
 #ifndef ICGEN_H
 #define ICGEN_H
@@ -573,11 +574,26 @@ class IC_StarBench_Tests : public ICsetup_base {
 		 class GridBaseClass * ///< pointer to grid
 		 );
   protected:
+  ///
+  /// The contact discontinuity advection tests from Dale and
+  /// Wuensch.
+  ///
   int setup_ContactDiscontinuity(
       class ReadParams *,    ///< pointer to parameter list.
       class GridBaseClass *, ///< pointer to grid
       string &test           ///< String with which test to run.
       );
+  
+  ///
+  /// The planar ionisation-front instability tests A-C from Tom
+  /// Haworth.
+  ///
+  int setup_StarBench_IFI(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *, ///< pointer to grid
+      string &test           ///< String with which test to run.
+      );
+
 };
 
 #endif //  ICGEN_H

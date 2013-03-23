@@ -1593,7 +1593,7 @@ int IntUniformFV::setup_microphysics()
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
+      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
       //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);

@@ -325,9 +325,8 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
         spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
-# \
-#        StarBench_test.o
+        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
+        StarBench_test.o
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJECTS +=  microphysics_lowZ.o test_integrator.o \

@@ -242,12 +242,13 @@ int mp_implicit_H::ydot(
 
 
 mp_implicit_H::mp_implicit_H(
-          const int nv,             ///< Total number of variables in state vector
-          const int ntracer,        ///< Number of tracer variables in state vector.
-          const std::string &trtype ///< List of what the tracer variables mean.
-	  )
+        const int nv,             ///< Total number of variables in state vector
+        const int ntracer,        ///< Number of tracer variables in state vector.
+        const std::string &trtype, ///< List of what the tracer variables mean.
+        struct which_physics *ephys  ///< extra physics stuff.
+        )
   :
-  mp_explicit_H(nv,ntracer,trtype)
+  mp_explicit_H(nv,ntracer,trtype,ephys)
 {
   //
   // All of the setup is in the explicit solver; the only changes
@@ -435,6 +436,7 @@ double mp_implicit_H::timescales_RT(
   }
   NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
   NV_Ith_S(y_in,lv_eint) = P[lv_eint];
+  NV_Ith_S(y_in,lv_dtau) = P[lv_dtau];
 
   //
   // Next set the radiation properties of the current cell.
@@ -495,6 +497,12 @@ double mp_implicit_H::timescales_RT(
   cout <<" and min(t_x,t_e)="<<t<<",  "; rep.printVec("P[1-x,E]",P,nvl);
   }
 #endif // MPV3_DEBUG
+
+  //
+  // Change in Tau should be <N (here <30) per step.
+  //
+  t = min(t, 30.0/(fabs(NV_Ith_S(y_out, lv_H0)*mpv_nH*mpv_delta_S*Hi_monochromatic_photo_ion_xsection(2.178721e-11))+TINYVALUE));
+
   return t;
 }
 

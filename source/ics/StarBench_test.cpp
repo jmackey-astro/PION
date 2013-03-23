@@ -52,12 +52,40 @@ int IC_StarBench_Tests::setup_data(
     cout <<"\t\tSetting up "<<ics<<" test.\n";
     err += setup_ContactDiscontinuity(rrp,ggg,ics);
   }
+  else if (ics=="StarBench_IFI_TestA" ||
+           ics=="StarBench_IFI_TestB" ||
+           ics=="StarBench_IFI_TestC") {
+    cout <<"\t\tSetting up StarBench Planar ionisation front A.\n";
+    err += setup_StarBench_IFI(rrp,ggg,ics);
+  }
   //else if (ics=="") {
   //  cout <<"\t\tSetting up .\n";
   //  err += setup_(rrp,ggg);
   //}
   else rep.error("Don't know what Initial Condition is!",ics);
-   
+  
+  if (err) rep.error("Test setup returned error",err);
+
+  //
+  // Add noise to data?  Smooth data?
+  //
+  int smooth=0; double noise=0.0;
+  ics = rp->find_parameter("noise");
+  if (ics!="") noise = atof(ics.c_str());
+  else noise = -1;
+  if (isnan(noise)) rep.error("noise parameter is not a number",noise);
+  if (noise>0) {
+    cout <<"\t\tNOISE: Adding random adiabatic noise at fractional level = "<<noise<<endl;
+    err+= AddNoise2Data(2,noise);
+  }
+  ics = rp->find_parameter("smooth");
+  if (ics!="") smooth = atoi(ics.c_str());
+  else smooth = -1;
+  if (isnan(smooth)) rep.error("Smooth parameter not a number",smooth);
+  if (smooth>0)err+= SmoothData(smooth);
+
+
+
   return 0;
 }
 
@@ -234,10 +262,49 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
 // ##################################################################
 
 
+int IC_StarBench_Tests::setup_StarBench_IFI(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg, ///< pointer to grid
+      string &test
+      )
+{
+  
+  int id=0;
+  if      (test=="StarBench_IFI_TestA") id=1;
+  else if (test=="StarBench_IFI_TestB") id=2;
+  else if (test=="StarBench_IFI_TestC") id=3;
+  else rep.error("Bad test name",test);
+
+  cell *c=ggg->FirstPt();
+  double pos[SimPM.ndim];
+  do {
+    //CI.get_dpos(c,pos);
+
+    c->P[RO] = 44.0*GS.m_p();      // Pure H with n=44/cm3.
+    c->P[PG] = 44.0*GS.kB()*10.0; // 10K neutral gas (pure H).
+    c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
+    for (int v=0; v<SimPM.ntracer; v++)
+      c->P[SimPM.ftr+v] = 0.0;
+
+  } while ( (c=ggg->NextPt(c)) !=0);
+
+  if (id==3) {
+    double lambda = 0.125*SimPM.Range[YY];
+    double A = 0.75 *sqrt(GS.kB()*1.0e4/GS.m_p());
+    c=ggg->FirstPt();
+    do {
+      CI.get_dpos(c,pos);
+      c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda)
+                  *exp(-4.0*pow((pos[XX]-SimPM.Xmin[XX])/SimPM.Range[XX],2.0));
+    } while ( (c=ggg->NextPt(c)) !=0);
+  }
+
+  return 0;
+}
 
 
-
-
+// ##################################################################
+// ##################################################################
 
 
 

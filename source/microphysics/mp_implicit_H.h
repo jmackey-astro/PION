@@ -44,7 +44,8 @@ class mp_implicit_H
   mp_implicit_H(
           const int,          ///< Total number of variables in state vector
 	  const int,          ///< Number of tracer variables in state vector.
-	  const std::string & ///< List of what the tracer variables mean.
+	  const std::string &, ///< List of what the tracer variables mean.
+          struct which_physics * ///< extra physics stuff.
 	  );
 
   ///

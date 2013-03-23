@@ -31,6 +31,7 @@
 /// - 2013.02.27 JM: Added IC_read_BBurkhart_data() class for
 ///    turbulent simulations.
 /// - 2013.02.27 JM: Added class for Harpreet's 1D to 3D mapping.
+/// - 2013.03.23 JM: Added setup lines for StarBench Tests.
 
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
@@ -66,11 +67,9 @@
 #include "microphysics/mp_implicit_H.h"
 #endif 
 
-#ifdef NEW_METALLICITY
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
-#endif // NEW_METALLICITY
 
 #ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE
@@ -308,8 +307,13 @@ int main(int argc, char **argv)
            ics=="StarBench_ContactDiscontinuity2" ||
            ics=="StarBench_ContactDiscontinuity3" ||
            ics=="StarBench_ContactDiscontinuity4") {
-    //ic = new IC_StarBench_Tests();
-    rep.error("Please compile star bench source code",1);
+    ic = new IC_StarBench_Tests();
+  }
+
+  else if (ics=="StarBench_IFI_TestA" ||
+           ics=="StarBench_IFI_TestB" ||
+           ics=="StarBench_IFI_TestC") {
+    ic = new IC_StarBench_Tests();
   }
 
 #ifdef HARPREETS_CODE_EXT
@@ -432,7 +436,7 @@ int main(int argc, char **argv)
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
+      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
       //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
@@ -441,7 +445,6 @@ int main(int argc, char **argv)
 #endif // exclude MPv4
 
 
-#ifdef NEW_METALLICITY
     if (mptype=="MPv5__") {
       cout <<"\t******* setting up mpv5_molecular module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
@@ -465,7 +468,6 @@ int main(int argc, char **argv)
       MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       have_set_MP=true;
     }
-#endif // NEW_METALLICITY
 
 
 #ifndef EXCLUDE_MPV1
