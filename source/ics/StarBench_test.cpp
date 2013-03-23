@@ -52,9 +52,9 @@ int IC_StarBench_Tests::setup_data(
     cout <<"\t\tSetting up "<<ics<<" test.\n";
     err += setup_ContactDiscontinuity(rrp,ggg,ics);
   }
-  else if (ics=="StarBench_IFI_TestA" ||
-           ics=="StarBench_IFI_TestB" ||
-           ics=="StarBench_IFI_TestC") {
+  else if (ics=="StarBench_IFI_testA" ||
+           ics=="StarBench_IFI_testB" ||
+           ics=="StarBench_IFI_testC") {
     cout <<"\t\tSetting up StarBench Planar ionisation front A.\n";
     err += setup_StarBench_IFI(rrp,ggg,ics);
   }
@@ -270,9 +270,9 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
 {
   
   int id=0;
-  if      (test=="StarBench_IFI_TestA") id=1;
-  else if (test=="StarBench_IFI_TestB") id=2;
-  else if (test=="StarBench_IFI_TestC") id=3;
+  if      (test=="StarBench_IFI_testA") id=1;
+  else if (test=="StarBench_IFI_testB") id=2;
+  else if (test=="StarBench_IFI_testC") id=3;
   else rep.error("Bad test name",test);
 
   cell *c=ggg->FirstPt();
@@ -291,11 +291,13 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
   if (id==3) {
     double lambda = 0.125*SimPM.Range[YY];
     double A = 0.75 *sqrt(GS.kB()*1.0e4/GS.m_p());
+    double x0 = SimPM.Xmin[XX] +0.12*SimPM.Range[XX];
+    double sig= 0.05*SimPM.Range[XX];
     c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
       c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda)
-                  *exp(-4.0*pow((pos[XX]-SimPM.Xmin[XX])/SimPM.Range[XX],2.0));
+                  *exp(-0.5*pow((pos[XX]-x0)/sig,2.0));
     } while ( (c=ggg->NextPt(c)) !=0);
   }
 

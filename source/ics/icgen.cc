@@ -310,9 +310,9 @@ int main(int argc, char **argv)
     ic = new IC_StarBench_Tests();
   }
 
-  else if (ics=="StarBench_IFI_TestA" ||
-           ics=="StarBench_IFI_TestB" ||
-           ics=="StarBench_IFI_TestC") {
+  else if (ics=="StarBench_IFI_testA" ||
+           ics=="StarBench_IFI_testB" ||
+           ics=="StarBench_IFI_testC") {
     ic = new IC_StarBench_Tests();
   }
 
