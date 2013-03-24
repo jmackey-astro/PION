@@ -32,6 +32,7 @@
 ///    turbulent simulations.
 /// - 2013.02.27 JM: Added class for Harpreet's 1D to 3D mapping.
 /// - 2013.03.23 JM: Added setup lines for StarBench Tests.
+/// - 2013.03.24 JM: Added another StarBench test.
 
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
@@ -313,6 +314,10 @@ int main(int argc, char **argv)
   else if (ics=="StarBench_IFI_testA" ||
            ics=="StarBench_IFI_testB" ||
            ics=="StarBench_IFI_testC") {
+    ic = new IC_StarBench_Tests();
+  }
+  else if (ics=="StarBench_IrrCloud_Uniform" ||
+           ics=="StarBench_IrrCloud_IsoSph") {
     ic = new IC_StarBench_Tests();
   }
 

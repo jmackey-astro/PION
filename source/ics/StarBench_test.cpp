@@ -6,6 +6,8 @@
 ///
 /// - 2013.01.10 JM: Started on file.
 ///     Added Contact Discontinuity tests.
+/// - 2013.03.23-24 JM: Added Irradiated cloud and I-front
+///    instability test problems.
 
 #include "ics/icgen.h"
 #include "coord_sys/VectorOps.h"
@@ -58,6 +60,13 @@ int IC_StarBench_Tests::setup_data(
     cout <<"\t\tSetting up StarBench Planar ionisation front A.\n";
     err += setup_StarBench_IFI(rrp,ggg,ics);
   }
+  else if (ics=="StarBench_IrrCloud_Uniform" ||
+           ics=="StarBench_IrrCloud_IsoSph") {
+    cout <<"\t\tSetting up StarBench Irradiated Cloud test.\n";
+    err += setup_StarBench_IrrCl(rrp,ggg,ics);
+  }
+
+
   //else if (ics=="") {
   //  cout <<"\t\tSetting up .\n";
   //  err += setup_(rrp,ggg);
@@ -308,8 +317,90 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
 // ##################################################################
 // ##################################################################
 
+int IC_StarBench_Tests::setup_StarBench_IrrCl(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg, ///< pointer to grid
+      string &test
+      )
+{
+  
+  int id=0;
+  if      (test=="StarBench_IrrCloud_Uniform") id=1;
+  else if (test=="StarBench_IrrCloud_IsoSph")  id=2;
+  else rep.error("Bad test name",test);
+
+  cell *c=ggg->FirstPt();
+  double pos[SimPM.ndim];
+  //
+  // Run through grid and set uniform initial conditions.
+  //
+  do {
+    //CI.get_dpos(c,pos);
+
+    c->P[RO] = 50.0*GS.m_p();      // From the test document.
+    c->P[PG] = 50.0*GS.kB()*1000.0; // Just pick some temperature...
+    c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
+    for (int v=0; v<SimPM.ntracer; v++)
+      c->P[SimPM.ftr+v] = 0.0;
+  } while ( (c=ggg->NextPt(c)) !=0);
+
+  //
+  // Now run through again and add the cloud.
+  //
+  if (id==1) {
+    cout <<"\t\tAdding uniform-density cloud.\n";
+    //
+    // add a uniform density cloud with radius 1pc, centred
+    // at x=1.94 pc, y=z=0.  rho_cloud=1000*m_p
+    //
+    double radius = 3.086e18;
+    double dist=0.0;
+    double rho_cl = 1000.0*GS.m_p();
+    double cl_centre[SimPM.ndim];
+    cl_centre[XX] = 1.92*3.086e18;
+    for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
+
+    c=ggg->FirstPt();
+    do {
+      CI.get_dpos(c,pos);
+      dist = GS.distance(cl_centre,pos,SimPM.ndim);
+      if (dist<radius)
+        c->P[RO] = rho_cl;
+    } while ( (c=ggg->NextPt(c)) !=0);
+  }
+
+  else if (id==2) {
+    cout <<"\t\tAdding cutoff-isothermal-sphere cloud.\n";
+    //
+    // Add a cutoff isothermal sphere cloud with central density of
+    // rho_cloud=1000*m_p, and core radius r_c=0.223607pc.
+    //
+    double r_core = sqrt(0.05)*3.086e18;
+    double rho_cl = 1000.0*GS.m_p(), rho_cell=0.0;
+    double cl_centre[SimPM.ndim];
+    cl_centre[XX] = 1.92*3.086e18;
+    for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
+    double dist=0.0;
+
+    c=ggg->FirstPt();
+    do {
+      //
+      // calculate core density, and take max. of this value and ISM.
+      //
+      CI.get_dpos(c,pos);
+      dist = GS.distance(cl_centre,pos,SimPM.ndim);
+      rho_cell = rho_cl*r_core*r_core/(r_core*r_core +dist*dist);
+      c->P[RO] = std::max(c->P[RO],rho_cell);
+    } while ( (c=ggg->NextPt(c)) !=0);
+  }
+  else rep.error("Bad test name",test);
+
+  return 0;
+}
 
 
+// ##################################################################
+// ##################################################################
 
 
 

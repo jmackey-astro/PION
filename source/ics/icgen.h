@@ -15,6 +15,7 @@
 /// - 2012.09.16 JM: Added new photoevaporating clump function+var.
 /// - 2013.01.10 JM: Added new StarBench workshop test probs class.
 /// - 2013.03.23 JM: Added another StarBench test.
+/// - 2013.03.24 JM: Added another StarBench test.
 
 #ifndef ICGEN_H
 #define ICGEN_H
@@ -589,6 +590,15 @@ class IC_StarBench_Tests : public ICsetup_base {
   /// Haworth.
   ///
   int setup_StarBench_IFI(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *, ///< pointer to grid
+      string &test           ///< String with which test to run.
+      );
+
+  ///
+  /// The Irradiated Cloud test from Tom Haworth.
+  ///
+  int setup_StarBench_IrrCl(
       class ReadParams *,    ///< pointer to parameter list.
       class GridBaseClass *, ///< pointer to grid
       string &test           ///< String with which test to run.
