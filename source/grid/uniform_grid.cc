@@ -1466,10 +1466,10 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
   Wind->get_src_ipos(id,srcpos);
   double srcrad;
   Wind->get_src_irad(id,&srcrad);
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
   rep.printVec("src", srcpos, G_ndim);
-//#endif
+#endif
 
   cell *c = FirstPt();
   do {
@@ -2547,8 +2547,8 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
       cout <<"CYL adding cell "<<c->id<<" to list.\n";
       rep.printVec("***src", srcpos, G_ndim);
       rep.printVec("***pos", c->pos, G_ndim);
+      cout <<"*** distance="<<idistance_vertex2cell(srcpos,c)<<"\n";
 #endif
-      //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
       //rep.printVec("src", srcpos, G_ndim);
       //rep.printVec("pos", c->pos, G_ndim);
     }

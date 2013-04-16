@@ -31,9 +31,12 @@
 ///    timescales calculations.
 /// - 2011.06.20 JM: Got rid of non-ANSI-C exp10 functions
 /// - 2011.11.22 JM: Added t_scalefactor parameter for stellar winds.
-/// - 2011.12.01 JM: Switched from spline to linear interpolation for winds.
+/// - 2011.12.01 JM: Switched from spline to linear interpolation for
+///    winds.
 /// - 2012.12.07/10 JM: Changed min. ion frac. in wind from 0 to 1e-7.
 /// - 2013.04.15 JM: removed lots of comments (or put in TESTING def)
+/// - 2013.04.16 JM: Fixed bug where Set_Temp() was called when 
+///    tracer variables were still (potentially) unset in wind cells.
 //------------------------------------------------
 //------------ STELLAR WIND CLASS ----------------
 //------------------------------------------------
@@ -45,10 +48,25 @@
 #include <sstream>
 using namespace std;
 
+//#define TESTING
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 stellar_wind::stellar_wind()
 {
   nsrc=0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 stellar_wind::~stellar_wind()
 {
@@ -70,6 +88,13 @@ stellar_wind::~stellar_wind()
   }
   return;      
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 
@@ -154,10 +179,24 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 int stellar_wind::Nsources()
 {
   return nsrc;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 
@@ -175,6 +214,13 @@ void stellar_wind::get_src_ipos(
   for (int v=0;v<SimPM.ndim;v++) pos[v] = ws->ipos[v];
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 
@@ -198,6 +244,13 @@ void stellar_wind::set_integer_positions(struct wind_source *ws)
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 void stellar_wind::get_src_irad(
         const int id, ///< src id
         double *rad   ///< radius (output)
@@ -217,10 +270,17 @@ void stellar_wind::get_src_irad(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 int stellar_wind::add_cell(
-          const int id, ///< src id
-           cell *c       ///< cell to add to list.
-           )
+        const int id, ///< src id
+        cell *c       ///< cell to add to list.
+        )
 {
   if (id<0 || id>=nsrc)
     rep.error("bad src id",id);
@@ -239,11 +299,7 @@ int stellar_wind::add_cell(
   // GEOMETRY: this is a distance from a vertex to a cell--centre, so
   // we call the appropriate function here.
   //
-#ifdef GEOMETRIC_GRID
   wc->dist = grid->idistance_vertex2cell(WS->ipos, c);
-#else  // GEOMETRIC_GRID
-  wc->dist = GS.idistance(c->pos, WS->ipos, SimPM.ndim);
-#endif // GEOMETRIC_GRID
   if (wc->dist > WS->radius) {
     rep.warning("stellar_wind::add_cell() cell is outside radius",WS->radius,wc->dist);
     CI.print_cell(c);
@@ -268,16 +324,26 @@ int stellar_wind::add_cell(
 
   WS->wcells.push_back(wc);
   WS->ncell += 1;
-  //cout <<"*** dist="<<wc->dist<<". "; 
-  //rep.printVec("Wind BC cell pos",wc->c->pos,SimPM.ndim);
-  //rep.printVec("Wind BC cell values", wc->p, SimPM.nvar);
-  //cout <<" Added cell: array size="<<WS->wcells.size()<<"\tncell="<<WS->ncell<<"\n";
+#ifdef TESTING
+  cout <<"*** dist="<<wc->dist<<". "; 
+  rep.printVec("Wind BC cell pos",wc->c->pos,SimPM.ndim);
+  rep.printVec("Wind BC cell values", wc->p, SimPM.nvar);
+  cout <<" Added cell: array size="<<WS->wcells.size()<<"\tncell="<<WS->ncell<<"\n";
+#endif
   return 0;
 }
 
-void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
-                                                const struct wind_source *WS
-                                                )
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+void stellar_wind::set_wind_cell_reference_state(
+        struct wind_cell *wc,
+        const struct wind_source *WS
+        )
 {
   //
   // In this function we set the density, pressure, velocity, and tracer values
@@ -305,21 +371,7 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
     wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
     wc->p[PG]*= exp((SimPM.gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
-#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-    //
-    // Set the minimum temperature to be 10K in the wind...
-    //
-    if (MP) {
-      if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
-        MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
-      }
-    }
-    else {
-      wc->p[PG] = max(wc->p[PG], 10.0*wc->p[RO]*GS.kB()/GS.m_p());
-    }
-#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   }
-
 
   else {
     //
@@ -345,22 +397,6 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
     wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
     wc->p[PG]*= exp((SimPM.gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
-#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-    //
-    // Set the minimum temperature to be 10K in the wind...
-    //
-    if (MP) {
-      if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
-        //cout <<"resetting temperature in wind. \n";
-        MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
-      }
-    }
-    else {
-      // appropriate for a neutral medium.
-      wc->p[PG] = max(wc->p[PG], 
-        SimPM.EP.MinTemperature*wc->p[RO]*GS.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/GS.m_p());
-    }
-#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   }
 
 
@@ -405,8 +441,44 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
     else
       wc->p[SimPM.ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
   }
+
+#ifdef TESTING
+  cout << " \t\t pg=" << wc->p[PG];
+#endif
+#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+  //
+  // Set the minimum temperature to be 10K in the wind...
+  //
+  if (MP) {
+    if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
+#ifdef TESTING
+      cout <<"... resetting temperature in wind. pg=";
+#endif
+      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
+#ifdef TESTING
+      cout << wc->p[PG];
+#endif
+    }
+  }
+  else {
+    // appropriate for a neutral medium.
+    wc->p[PG] = max(wc->p[PG], 
+      SimPM.EP.MinTemperature*wc->p[RO]*GS.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/GS.m_p());
+  }
+#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+#ifdef TESTING
+  cout << "\n";
+#endif
+
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 int stellar_wind::set_num_cells(const int id, ///< src id
@@ -423,6 +495,13 @@ int stellar_wind::set_num_cells(const int id, ///< src id
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 int stellar_wind::get_num_cells(const int id ///< src id
         )
 {
@@ -430,6 +509,13 @@ int stellar_wind::get_num_cells(const int id ///< src id
     rep.error("bad src id",id);
   return wlist[id]->ncell;
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -540,21 +626,45 @@ int stellar_wind::set_cell_values(const int id,  ///< src id
   return 0;
 }
 
-void stellar_wind::get_src_posn(const int id, ///< src id
-        double *x   ///< position vector (output)
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::get_src_posn(
+        const int id, ///< src id
+        double *x     ///< position vector (output)
         )
 {
   for (int v=0;v<SimPM.ndim;v++) x[v] = wlist[id]->dpos[v];
 }
-void stellar_wind::get_src_Mdot(const int id, ///< src id
-        double *x   ///< mdot (output)
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::get_src_Mdot(
+        const int id, ///< src id
+        double *x     ///< mdot (output)
         )
 {
   *x = wlist[id]->Mdot *GS.s_per_yr()/GS.Msun();
 }
-void stellar_wind::get_src_drad(const int id, ///< src id
-             double *x   ///< radius (output)
-             )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind::get_src_drad(
+        const int id, ///< src id
+        double *x     ///< radius (output)
+        )
 {
   if (!(wlist[id]->ipos_set)) 
     *x = wlist[id]->radius;
@@ -562,24 +672,52 @@ void stellar_wind::get_src_drad(const int id, ///< src id
     *x = wlist[id]->radius *CI.phys_per_int();
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void stellar_wind::get_src_Vinf(const int id, ///< src id
         double *x   ///< Vinf (output)
         )
 {
   *x = wlist[id]->Vinf/GS.cm_per_km();
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void stellar_wind::get_src_Tw(const int id, ///< src id
             double *x   ///< Stellar Radius (output)
             )
 {
   *x = wlist[id]->Tw;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void stellar_wind::get_src_Rstar(const int id, ///< src id
          double *x   ///< Stellar radius (output)
          )
 {
   *x = wlist[id]->Rstar;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void stellar_wind::get_src_trcr(const int id, ///< src id
         double *x   ///< tracers (output)
         )
@@ -587,6 +725,13 @@ void stellar_wind::get_src_trcr(const int id, ///< src id
   for (int v=0;v<SimPM.ntracer; v++)
     x[v] = wlist[id]->tracers[v];
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void stellar_wind::get_src_type(const int id, ///< src id
         int *x   ///< type of wind (=0 for now) (output)
         )
@@ -594,6 +739,13 @@ void stellar_wind::get_src_type(const int id, ///< src id
   *x=wlist[id]->type;
 }
 //------------------------------------------------
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 // ------------------------------------------------------------------

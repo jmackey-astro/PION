@@ -285,6 +285,80 @@ Possible values for initial conditions parameter \verb|ics| are given in the fol
   \item \verb|Clump_Spherical| or \verb|Clump_Axisymmetric| -- Don't know [LOOK THIS UP!].
 \end{itemize}
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Data Input/Output}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\textsc{Fits} I/O}
+\textsc{Fits} is a flexible data format that, importantly, writes \emph{architecture-independent} files.
+This means you don't need to worry about little-endian or big-endian, or fortran-unformatted data, or binary/ascii.
+In addition, it is very well-supported by astronomical software, and there are GUI programs that can display FITS data.
+It writes binary data, so it is fast and loss-less.
+
+\pion{} can read and write \textsc{Fits} files, although the data I/O is not as simple for running in parallel as is the case for \textsc{Silo}.
+What happens is that each MPI process writes its part of the grid to its own file, and each file also contains a part of the header.
+To visualise the data afterwards you need to merge all of these files into a single \textsc{Fits} file, using the script \\
+\verb|pion/analysis/merge_fits_files/stitchfits_compile.sh|,\\
+which acts on a whole series of output files to automate the process.
+So there is one extra post-processing step with \textsc{Fits} data when running on multiple CPUs before you can look at the results.
+
+The simulation variables are writted in different HDUs (Header Data Units), depending on the physics included, and all values are in cgs units.
+First the ordering for hydrodynamics (no magnetic field):
+\begin{itemize}
+\item HDU1 is always the simulation parameters; lots of parameter-value pairs.
+\item HDU2 is gas density.
+\item HDU3 is gas pressure.
+\item HDU4 is the $x$ component of velocity
+\item HDU5 is the $y$ component of velocity (even if 1D or 2D).
+\item HDU6 is the $z$ component of velocity (even if 1D or 2D).
+\item HDU7 and upwards are tracer variables (up to 5 of them, but probably only 2).
+\item If doing radiative transfer, the next HDUs are column densities from the radiation source(s), one for each source.
+\item The final HDU is gas temperature (or specific internal energy, if no microphysics are specified).
+  For example, if not doing radiative transfer, and if we have two tracer variables, this is HDU9.
+\end{itemize}
+
+Now the ordering for MHD simulations (mostly similar, but with MHD variables in the middle):
+\begin{itemize}
+\item HDU1 is always the simulation parameters; lots of parameter-value pairs.
+\item HDU2 is gas density.
+\item HDU3 is gas pressure.
+\item HDU4-6 are the $x$, $y$, $z$ components of velocity.
+\item HDU7-9 are the $x$, $y$, $z$ components of the magnetic field. 
+\item HDU10 is the GLM-Psi variable for divergence cleaning the magnetic field, if using GLM-MHD in 2D or 3D (which you should use!).
+\item HDU11 and upwards are tracer variables (HDU10 and upwards if not using GLM-MHD).
+\item If doing radiative transfer, the next HDUs are column densities from the radiation source(s), one for each source.
+\item The third-last HDU is gas temperature (or specific internal energy, if no microphysics are specified).
+  For example, if not doing radiative transfer, and for a 2D MHD simulation with GLM method for divergence cleaning, and if we have two tracer variables, this is HDU13.
+\item The second last HDU is $\divb$, so we know what the errors are.
+\item The final HDU is the total pressure (sum of the gas pressure, $n_\mr{tot}k_\mr{\textsc{b}}T$, and magnetic pressure, $B^2/8\pi$).
+\end{itemize}
+
+Each MPI process (on each CPU) reads and writes its own file, so if you restart a simulation it must use the same number of MPI processes as the previous run.
+Also, the same number of MPI processes must be used for writing the initial conditions file as for running the simulation.
+
+
+
+\section{ASCII Text I/O}
+Text I/O only works for serial code, and is only designed for 1D and 2D simulations.
+It writes a text file for each simulation output, and each line of the file contains the variables (including position) for a cell.
+For 2D simulations, columns of constant $y$ are written in order of increasing $x$ position, and a blank line is inserted at the end of each column.
+This is so that it can be plotted simply with e.g.\ Gnuplot's 'splot' function.
+The first lines of each text file contain the simulation time (in seconds), the timestep, and the list of variables that are written.
+The ordering of variables is basically the same as for \textsc{Fits} files, except that the cell-centred positions of each cell are written in the first column for 1D or first two columns for 2D.
+
+
+\section{\textsc{Silo} I/O}
+This is the ``native'' format used by \pion{}, and is the recommended format when running on more than about 64 CPUs.
+In general supercomputer filesystems prefer a few very, large files rather than the many, small files that are produced by \textsc{Fits} I/O.
+For up to 64 or 128 CPUs the difference in performance may not be large, however.
+
+
+
 \bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
 \bibliography{../../../documentation_misc/bibtex/refs.bib}
 

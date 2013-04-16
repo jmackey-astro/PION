@@ -53,6 +53,7 @@
 ///    in different directions (must set up the parallelised raytracer then).
 /// - 2012.05.16 JM: fixed bug from last change.
 /// - 2012.08.06 JM: Added separators between functions for clarity.
+/// - 2013.04.16 JM: Fixed FITS read functions for new filename convention.
 
 #include "grid.h"
 #include "raytracing/raytracer_SC.h"
@@ -217,25 +218,27 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
     if (dataio->file_exists(infile)) {
 #ifdef TESTING
       cout <<"\t Reading from file : "<< infile<<"\n";
-      cout <<"\t Assume if filename contains \'_0.\', that it is the first of multiple files.\n";
+      cout <<"\t Assume if filename contains \'_0000.\', that it is the first of multiple files.\n";
 #endif
-      string::size_type pos =infile.find("_0.");
+      string::size_type pos =infile.find("_0000.");
       if (pos==string::npos) {
 #ifdef TESTING
-	cout <<"\t Couldn't find \'_0.\' in file, so reading from single file.\n";
+	cout <<"\t Couldn't find \'_0000.\' in file, so reading from single file.\n";
 #endif
 	mpiPM.ReadSingleFile = true;
       }
       else {
 #ifdef TESTING
-	cout <<"\t Found \'_0.\' in file, so replacing that with myrank.\n";
+	cout <<"\t Found \'_0000.\' in file, so replacing that with myrank.\n";
 #endif
 	mpiPM.ReadSingleFile = false;
 #ifdef TESTING
 	cout <<"\t Old infile: "<<infile<<"\n";
 #endif
-	ostringstream t; t.str(""); t<<"_"<<mpiPM.myrank<<"."; string t2=t.str();
-	infile.replace(pos,3,t2);
+	ostringstream t; t.str("");
+        t<<"_"; t.width(4); t.fill('0'); t<<mpiPM.myrank<<".";
+        string t2=t.str();
+	infile.replace(pos,6,t2);
 #ifdef TESTING
 	cout <<"\t New infile: "<<infile<<"\n";
 #endif

@@ -69,6 +69,8 @@
 ///    function updates a key if it exists, and creates it otherwise.  The
 ///    old function would duplicate keys, which is not good for replacing the
 ///    header.
+/// - 2013.04.16 JM: Added spacer lines between functions.
+
 #ifdef FITS
 #include "dataio_fits.h"
 #include "fitsio.h"
@@ -77,9 +79,21 @@
 #include <vector>
 using namespace std;
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //-------------------------------------------------
 //-------------  FITS DATA I/O CLASS  -------------
 //-------------------------------------------------
+
+
+// ##################################################################
+// ##################################################################
+
+
 DataIOFits::DataIOFits()
 {
   cout <<"Setting up DataIOFits class.\n";
@@ -88,6 +102,12 @@ DataIOFits::DataIOFits()
   DataIOFits::file_ptr=0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 DataIOFits::~DataIOFits()
 {
   cout <<"Deleting DataIOFits class.\n";
@@ -95,11 +115,23 @@ DataIOFits::~DataIOFits()
   DataIOFits::gp=0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void DataIOFits::SetSolver(FV_solver_base *solver)
 {
   cout <<"DataIOFits::SetSolver() Setting solver pointer.\n";
   DataIOFits::eqn = solver;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 int DataIOFits::OutputData(string outfilebase,      ///< base filename
 			   class GridBaseClass *cg, ///< pointer to data.
@@ -398,6 +430,12 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
   return err;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 int DataIOFits::ReadHeader(string infile ///< file to read from
 			   )
 {
@@ -434,6 +472,12 @@ int DataIOFits::ReadHeader(string infile ///< file to read from
 
   return (err);  
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -474,6 +518,12 @@ int DataIOFits::WriteHeader(
   if(status) {fits_report_error(stderr,status); return(err);}
   return (err);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int DataIOFits::ReadData(string infile,
@@ -616,6 +666,12 @@ int DataIOFits::ReadData(string infile,
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 ///
 /// Choose filename based on counter and base-name.
 ///
@@ -652,6 +708,12 @@ std::string DataIOFits::choose_filename(
   temp.str("");
   return outfile;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -735,6 +797,12 @@ int DataIOFits::read_header_param(class pm_base *p)
   return status;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 int DataIOFits::write_header_param(class pm_base *p)
 {
   int err=0, status=0;
@@ -803,6 +871,12 @@ int DataIOFits::write_header_param(class pm_base *p)
   // }
   return status;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 int DataIOFits::put_variable_into_data_array(const string name,   ///< variable name to put in array.
@@ -877,6 +951,12 @@ int DataIOFits::put_variable_into_data_array(const string name,   ///< variable 
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int DataIOFits::read_fits_image(fitsfile *ff, string name, double *localxmin, double *globalxmin, int *npt, long int ntot)
 {
   double *data=0;
@@ -922,6 +1002,12 @@ int DataIOFits::read_fits_image(fitsfile *ff, string name, double *localxmin, do
 
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 

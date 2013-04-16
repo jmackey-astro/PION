@@ -25,6 +25,7 @@
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2012.10.15 JM: minor mods to reading fits data, so that I don't
 ///    need the HDU's name; without a name it will default to hdu1.
+/// - 2013.04.16 JM: some debugging messages and new comments added.
 
 #ifdef FITS
 #include "dataio_fits.h"
@@ -35,9 +36,21 @@
 using namespace std;
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 utility_fitsio::utility_fitsio()
 {
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int utility_fitsio::create_fits_image(fitsfile *ff,
 				      const string name,
@@ -60,6 +73,12 @@ int utility_fitsio::create_fits_image(fitsfile *ff,
 
   return status;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 int utility_fitsio::write_fits_image(fitsfile *ff,
 				     const string,  /// This is the name of the ext, but it's not used at the mo.
@@ -102,6 +121,12 @@ int utility_fitsio::write_fits_image(fitsfile *ff,
   return status;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file pointer.
 						const string name,  ///< Name of hdu image to check
 						const int ndim,     ///< dimensionality we are expecting.
@@ -124,26 +149,38 @@ int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file po
   fits_read_keyword(ff,"extname",keyval,0,&status);
   if (status) fits_report_error(stderr,status);
   printf("keyval= %s\n",keyval);
-//  string temp=keyval; cout <<"temp keyval = "<<temp<<"\n";
-//  if (extname != temp) rep.error("not in correct hdu!",(extname+=temp));
+  //  string temp=keyval; cout <<"temp keyval = "<<temp<<"\n";
+  //  if (extname != temp) rep.error("not in correct hdu!",(extname+=temp));
   
   int bitpix=-1;
   int naxis =-1;
   long int *naxes =0;
   naxes = mem.myalloc(naxes,ndim);
   fits_get_img_param(ff,0, &bitpix,&naxis,naxes,&status);
+  //cout <<"naxis="<<naxis<<", axes=["<<naxes[0]<<", "<<naxes[1]<<"], status="<<status<<"\n";
   fits_read_keys_lng(ff,"naxis",1,naxis,naxes,&num,&status); // reads ndim keys matching naxis, returns number found.
+  //cout <<"naxis="<<naxis<<", axes=["<<naxes[0]<<", "<<naxes[1]<<"], status="<<status<<"\n";
   if (status) {fits_report_error(stderr,status); return(status);}
+  //
   // Check that the image HDU has the right size:
+  //
   if (bitpix != DOUBLE_IMG) rep.error("Bad image type",bitpix);
   if (naxis  != ndim) rep.error("Bad image dimensionality!",naxis);
-  for (int j=0;j<naxis;j++) if (naxes[j]!=npix[j])
+  for (int j=0;j<naxis;j++) if (naxes[j]!=npix[j]) {
+    //cout <<"j="<<j<<"  axes="<<naxes[j]<<" npix="<<npix[j]<<"\n";
     rep.error("Bad image length in at least one direction delta(N) follows:",naxes[j]-npix[j]);
+  }
 
   naxes = mem.myfree(naxes);
   keyval = mem.myfree(keyval);
   return status;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int utility_fitsio::read_fits_image_to_data(
@@ -221,5 +258,11 @@ int utility_fitsio::read_fits_image_to_data(
 
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 #endif // ifdef FITS
