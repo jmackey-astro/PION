@@ -58,6 +58,7 @@
 ///    make it better. (also 2013.01.23, and 2013.01.20).
 /// - 2013.01.14 JM: Added GRIDV2 ifdef to eventually retire this...
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2013.04.15 JM: Tidied up stdIO, fixed bug in iR_cov() (cyl).
 
 
 #include "global.h"
@@ -699,7 +700,7 @@ int UniformGrid::BC_setBCtypes(string bctype)
 #endif
     do {
       BC_bd[i].dir = NO;
-      if ( (pos=bctype.find("IN")) ==string::npos) {
+      if ( (pos=bctype.find("IN",i*6)) ==string::npos) {
         for (int ii=i; ii<BC_nbd; ii++)
           BC_bd[ii].refval=0;
           cout <<"\tEncountered an unrecognised boundary condition.\n";
@@ -719,9 +720,9 @@ int UniformGrid::BC_setBCtypes(string bctype)
       if(!BC_bd[i].data.empty())
         rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
       BC_bd[i].refval=0;
-#ifdef TESTING
+//#ifdef TESTING
       cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
-#endif
+//#endif
       i++;
     } while (i<BC_nbd);
   }
@@ -1378,9 +1379,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   }
   Wind = 0;
   if (Ns>0) {
-#ifdef TESTING
+//#ifdef TESTING
     cout <<"\n------------------ SETTING UP STELLAR WIND CLASS -----------------\n";
-#endif
+//#endif
     if (!err) {
       Wind = new stellar_wind ();
     }
@@ -1394,9 +1395,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // Run through sources and add sources.
   //
   for (int isw=0; isw<Ns; isw++) {
-#ifdef TESTING
+//#ifdef TESTING
     cout <<"\tUniformGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
-#endif
+//#endif
     if (SWP.params[isw]->type==3) {
       err = Wind->add_evolving_source(
         SWP.params[isw]->dpos,
@@ -1429,9 +1430,9 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // loop over sources, adding cells to boundary data list in order.
   //
   for (int id=0;id<Ns;id++) {
-#ifdef TESTING
+//#ifdef TESTING
     cout <<"\tUniformGrid::BC_assign_STWIND: Adding cells to source "<<id<<"\n";
-#endif
+//#endif
     BC_assign_STWIND_add_cells2src(id,b);
   }
   //
@@ -1439,10 +1440,10 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // cells with their boundary values.
   //
   err += BC_update_STWIND(b,0,0);
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"\tFinished setting up wind parameters\n";
   cout <<"------------- DONE SETTING UP STELLAR WIND CLASS -----------------\n\n";
-#endif
+//#endif
   return err;
 }
 
@@ -1465,10 +1466,10 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
   Wind->get_src_ipos(id,srcpos);
   double srcrad;
   Wind->get_src_irad(id,&srcrad);
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
   rep.printVec("src", srcpos, G_ndim);
-#endif
+//#endif
 
   cell *c = FirstPt();
   do {
@@ -1477,11 +1478,7 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
     // It makes no difference for Cartesian grids b/c the centre--of--
     // volume coincides the midpoint.
     //
-#ifdef GEOMETRIC_GRID
     if (idistance_vertex2cell(srcpos,c) <= srcrad) {
-#else  // GEOMETRIC_GRID
-      if (GS.idistance(srcpos,c->pos,G_ndim) <= srcrad) {
-#endif // GEOMETRIC_GRID
         ncell++;
         //b->data.push_back(c); // don't need b to have a lit too.
         err += Wind->add_cell(id,c);
@@ -1489,17 +1486,13 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
         //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
         //rep.printVec("src", srcpos, G_ndim);
         //rep.printVec("pos", c->pos, G_ndim);
-#ifdef GEOMETRIC_GRID
       }
-#else  // GEOMETRIC_GRID
-    }
-#endif // GEOMETRIC_GRID
   } while ((c=NextPt(c))!=0);
   
   err += Wind->set_num_cells(id,ncell);
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"UniformGrid: Added "<<ncell<<" cells to wind boundary for WS "<<id<<"\n";
-#endif
+//#endif
   return err;
 }
 
@@ -2296,7 +2289,7 @@ double uniform_grid_cyl::iR_cov(const cell *c)
 #endif
   //cout <<" Cell radius: "<< R_com(c)/CI.phys_per_int() +G_ixmin[Rcyl];
   //rep.printVec("  cell centre",c->pos,G_ndim);
-  return (R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rcyl];
+  return (R_com(c)-G_xmin[Rcyl])/CI.phys_per_int() +G_ixmin[Rcyl];
 }
   
 
@@ -2310,7 +2303,8 @@ double uniform_grid_cyl::iR_cov(const cell *c)
 /// This function takes input in physical units, and outputs in 
 /// physical units.
 ///
-double uniform_grid_cyl::distance(const double *p1, ///< position 1 (physical)
+double uniform_grid_cyl::distance(
+          const double *p1, ///< position 1 (physical)
           const double *p2  ///< position 2 (physical)
           )
 {
@@ -2334,9 +2328,10 @@ double uniform_grid_cyl::distance(const double *p1, ///< position 1 (physical)
 /// This function takes input in code integer units, and outputs in
 /// integer units (but obviously the answer is not an integer).
 ///
-double uniform_grid_cyl::idistance(const int *p1, ///< position 1 (integer)
-           const int *p2  ///< position 2 (integer)
-           )
+double uniform_grid_cyl::idistance(
+          const int *p1, ///< position 1 (integer)
+          const int *p2  ///< position 2 (integer)
+          )
 {
   //
   // This is the same as for cartesian as long as there is no 3rd
@@ -2409,9 +2404,10 @@ double uniform_grid_cyl::idistance_cell2cell(const cell *c1, ///< cell 1
 /// (will be between centre-of-volume of cells if non-cartesian
 /// geometry).  Here both input and output are physical units.
 ///
-double uniform_grid_cyl::distance_vertex2cell(const double *v, ///< vertex (physical)
-                const cell *c    ///< cell
-                )
+double uniform_grid_cyl::distance_vertex2cell(
+          const double *v, ///< vertex (physical)
+          const cell *c    ///< cell
+          )
 {
   //
   // The z-direction is a simple cartesian calculation, but the radial
@@ -2434,9 +2430,10 @@ double uniform_grid_cyl::distance_vertex2cell(const double *v, ///< vertex (phys
 /// (will be between centre-of-volume of cells if non-cartesian
 /// geometry).  Here both input and output are code-integer units.
 ///
-double uniform_grid_cyl::idistance_vertex2cell(const int *v, ///< vertex (integer)
-                 const cell *c ///< cell
-                 )
+double uniform_grid_cyl::idistance_vertex2cell(
+          const int *v, ///< vertex (integer)
+          const cell *c ///< cell
+          )
 {
   //
   // The z-direction is a simple cartesian calculation, but the radial
@@ -2453,7 +2450,7 @@ double uniform_grid_cyl::idistance_vertex2cell(const int *v, ///< vertex (intege
   // units.
   temp = static_cast<double>(v[Rcyl]) -iR_cov(c);
   d += temp*temp;
-  //cout <<"idist : R-dist = "<<temp<< " total dist = "<<sqrt(d)<<"\n";
+  //cout <<",  idist : R-dist = "<<temp<< " total dist = "<<sqrt(d)<<"\n";
   return sqrt(d);
 
 }
@@ -2529,6 +2526,7 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
   Wind->get_src_irad(id,&srcrad);
 #ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
+  rep.printVec("src", srcpos, G_ndim);
 #endif
 
   cell *c = FirstPt();
@@ -2536,13 +2534,20 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
     //
     // GEOMETRY: This is to centre--of--volume of cell!
     //
+    //cout <<"CYL: "<<idistance_vertex2cell(srcpos,c)<<"\n";
+    //rep.printVec("***pos", c->pos, G_ndim);
+    //rep.printVec("***src", srcpos, G_ndim);
+    //
     if (idistance_vertex2cell(srcpos,c) <= srcrad) {
+
       ncell++;
       //b->data.push_back(c); // don't need b to have a lit too.
       err += Wind->add_cell(id,c);
-      //cout <<"CYL adding cell "<<c->id<<" to list.\n";
-      //rep.printVec("***src", srcpos, G_ndim);
-      //rep.printVec("***pos", c->pos, G_ndim);
+#ifdef TESTING
+      cout <<"CYL adding cell "<<c->id<<" to list.\n";
+      rep.printVec("***src", srcpos, G_ndim);
+      rep.printVec("***pos", c->pos, G_ndim);
+#endif
       //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
       //rep.printVec("src", srcpos, G_ndim);
       //rep.printVec("pos", c->pos, G_ndim);

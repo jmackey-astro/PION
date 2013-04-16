@@ -13,26 +13,27 @@
 #include <sstream>
 #include "fitsio.h"
 using namespace std;
-#include "../testing/global.h"
-#include "../testing/dataio.h"
-#include "../testing/dataio_fits.h"
+#include "global.h"
+#include "dataIO/dataio.h"
+#include "dataIO/dataio_fits.h"
 
 int main(int argc, char **argv)
 {
   // Get an input file, an output file, and a step.
-  if (argc!=6) {
+  if (argc!=5) {
     cerr << "Error: must call as follows...\n";
-    cerr << "stitchfits: <stitchfits> <infilebase> <outfile> <nproc> <startstep> <step>\n";
+    cerr << "stitchfits: <stitchfits> <source_path> <infilebase> <outfile> <nproc>\n"; // <startstep> <step>\n";
     exit(1);
   }
-  string infilebase  = argv[1];
-  string outfilebase = argv[2];
-  mpiPM.nproc = atoi(argv[3]);
-  int start= atoi(argv[4]);
-  int step = atoi(argv[5]);
+  string input_path = argv[1];
+  string infilebase  = argv[2];
+  string outfilebase = argv[3];
+  mpiPM.nproc = atoi(argv[4]);
+  //int start= atoi(argv[5]);
+  //int step = atoi(argv[6]);
   cout <<"reading from file base "<<infilebase<<endl;
   cout <<"Writing to file "<<outfilebase<<endl;
-  cout <<"Step between outputs is "<<step<<" timesteps.\n";
+  //cout <<"Step between outputs is "<<step<<" timesteps.\n";
   cout <<"number of processors: "<<mpiPM.nproc<<endl;
   cout <<"**********************************************\n";
   // Open two input files and output file.
@@ -43,31 +44,81 @@ int main(int argc, char **argv)
   int status=0,err=0;
   ostringstream temp; string infile,outfile;
   
-  // Need to loop this over all timesteps, incrementing 'start' by 'step' each time
-  // until there are no more files to stitch together.
-  do {
-     temp<<infilebase<<"_0."<<start<<".fits";
-     infile = temp.str();
-     temp.str(""); temp <<outfilebase<<"."<<start<<".fits";
-     outfile = temp.str();
-     cout <<"\n*****************************************************\n";
-     cout <<"Opening fits files for timestep index "<<start<<"\n";
-     err = fits_open_file(&ffin, infile.c_str(), READONLY, &status);
-     if(status) {fits_report_error(stderr,status); return(err);}
-     if (fs.file_exists(outfile)) {
-       temp.str(""); temp << "!" << outfile; outfile=temp.str();
-       cout <<"Output file exists!  hopefully this is ok.\n";
-     }
-     fits_create_file(&ffout, outfile.c_str(), &status);
-     if(status) {cerr<<"outfile open went bad.\n";exit(1);}
-     cout <<"infile[0]: "<<infile<<"\nand outfile: "<<outfile<<endl;
-     
-     // This should set mpiPM.LocalXmin and SimPM.Xmin/max/range/NG
-     mpiPM.myrank = 0;
-     err = dataio.ReadHeader(infile);
-     if (err) rep.error("Didn't read header",err);
-     
-     // Outfile:
+  //*******************************************************************
+  // Get input files
+  //*******************************************************************
+  cout <<"-------------------------------------------------------\n";
+  cout <<"--------------- Getting List of Files to read ---------\n";
+  //
+  // Get list of files to read:
+  //
+  list<string> files;
+  string infile_zero=infilebase+"_0000";
+  err += dataio.get_files_in_dir(input_path, infile_zero,  &files);
+  if (err) rep.error("failed to get list of files",err);
+  for (list<string>::iterator s=files.begin(); s!=files.end(); s++)
+  cout <<"files: "<<*s<<endl;
+  size_t nfiles = files.size();
+  size_t ifile=0;
+  if (nfiles<1) rep.error("Need at least one file, but got none",nfiles);
+
+  cout <<"--------------- Got list of Files ---------------------\n";
+  cout <<"-------------------------------------------------------\n";
+  //
+  // Set up an iterator to run through all the files.
+  //
+  list<string>::iterator ff=files.begin();
+  cout <<"-------------------------------------------------------\n";
+  cout <<"--------------- Starting Loop over all input files ----\n";
+  cout <<"-------------------------------------------------------\n";
+  GS.start_timer("analyse_data");
+
+  //*******************************************************************
+  // loop over all files:
+  //*******************************************************************
+
+  for (ifile=0; ifile<nfiles; ifile++) {
+    cout.flush();
+    cout <<"------ Starting Next Loop: ifile="<<ifile<<", time so far=";
+    cout <<GS.time_so_far("analyse_data")<<" ----\n";
+
+    temp.str("");
+    temp <<input_path<<"/"<<*ff;
+    string infile = temp.str();
+    ff++;
+    
+    cout <<"\n*****************************************************\n";
+    cout <<"Opening fits file "<<infile<<"\n";
+    err = fits_open_file(&ffin, infile.c_str(), READONLY, &status);
+    if(status) {fits_report_error(stderr,status); return(err);}
+
+    //
+    // This should set mpiPM.LocalXmin and SimPM.Xmin/max/range/NG
+    //
+    mpiPM.myrank = 0;
+    err = dataio.ReadHeader(infile);
+    if (err) rep.error("Didn't read header",err);
+    mpiPM.decomposeDomain();
+
+    //
+    // Outfile:
+    //
+    temp.str(""); temp <<outfilebase<<".";
+    temp.width(8); temp.fill('0');
+    temp <<SimPM.timestep<<".fits";
+    outfile = temp.str();
+
+    if (dataio.file_exists(outfile)) {
+      temp.str(""); temp << "!" << outfile; outfile=temp.str();
+      cout <<"Output file exists!  hopefully this is ok.\n";
+    }
+    fits_create_file(&ffout, outfile.c_str(), &status);
+    if(status) {cerr<<"outfile open went bad.\n";exit(1);}
+
+
+    cout <<"infile[0]: "<<infile<<"\nand outfile: "<<outfile<<endl;
+
+
      //  - copy header from first infile.
      err = fits_copy_header(ffin,ffout,&status);
      if (status) {fits_report_error(stderr,status); return(err);}
@@ -109,13 +160,21 @@ int main(int argc, char **argv)
      for (int proc=0; proc<mpiPM.nproc; proc++) {
        cout <<"\t\tproc "<<proc<<": ";
        mpiPM.myrank = proc;
+       mpiPM.decomposeDomain();
+       //
        // read infile header to get local ng/xmin/xmax
-       temp.str("");temp<<infilebase<<"_"<<proc<<"."<<start<<".fits";
-       infile = temp.str();
-       temp.str(""); temp <<outfilebase<<"."<<start<<".fits";
+       //
+       //temp.str("");temp<<infilebase<<"_"<<proc<<"."<<start<<".fits";
+       //infile = temp.str();
+      temp.str("");
+      temp <<input_path<<"/"<<infilebase;
+      infile = dataio.choose_filename(temp.str(),SimPM.timestep);
+       //temp.str(""); temp <<outfilebase<<"."<<start<<".fits";
        if (!fs.file_exists(infile)) rep.error("infile doesn't exist",infile);
+
        err = dataio.ReadHeader(infile);
        if (err) rep.error("Didn't read header",err);
+
        err = fits_open_file(&ffin, infile.c_str(), READONLY, &status);
        if(status) {fits_report_error(stderr,status); return(err);}
        
@@ -131,7 +190,9 @@ int main(int argc, char **argv)
 	   fits_report_error(stderr,status); return(err);
 	 }
 	 cout <<" hdu"<<im;
+         //
 	 // read image from infile into array.
+         //
 	 long int *fpix = new long int [SimPM.ndim];
 	 long int *lpix = new long int [SimPM.ndim];
 	 long int *inc  = new long int [SimPM.ndim]; // I think this is the increment in num. pix. per read.
@@ -152,7 +213,9 @@ int main(int argc, char **argv)
 	 fits_read_subset(ffin, TDOUBLE, fpix, lpix, inc, &nulval, array, &anynul, &status);
 	 if (status) {fits_report_error(stderr,status); return status;}
 	 
+         //
 	 // write image into subset of output file.
+         //
 	 npix = 1;
 	 for (int i=0;i<SimPM.ndim;i++) {
 	   fpix[i] = static_cast<long int>((mpiPM.LocalXmin[i]-SimPM.Xmin[i])/dx*1.00000001) +1;
@@ -181,14 +244,9 @@ int main(int argc, char **argv)
      err += fits_close_file(ffout,&status);
      if(status) {fits_report_error(stderr,status); return(err);}
      
-     start += step;
-     temp.str("");
-     temp<<infilebase<<"_0."<<start<<".fits";
-     infile = temp.str(); temp.str("");
-  } while (fs.file_exists(infile));
-  // loop over all timesteps.
+  }  // loop over all timesteps.
   cout <<"\n***************************************************\n";
-  cout <<"couldn't find file "<<infile<<" for step "<<start<<"... assuming i'm finished!\n";
+  //cout <<"couldn't find file "<<infile<<" for step "<<start<<"... assuming i'm finished!\n";
 
   if (COMM) {delete COMM; COMM=0;}
 

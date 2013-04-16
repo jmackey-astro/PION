@@ -373,9 +373,9 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     cout <<"\t\tAdding cutoff-isothermal-sphere cloud.\n";
     //
     // Add a cutoff isothermal sphere cloud with central density of
-    // rho_cloud=1000*m_p, and core radius r_c=0.223607pc.
+    // rho_cloud=1000*m_p, and core radius r_c=0.5pc.
     //
-    double r_core = sqrt(0.05)*3.086e18;
+    double r_core = 0.5*3.086e18;
     double rho_cl = 1000.0*GS.m_p(), rho_cell=0.0;
     double cl_centre[SimPM.ndim];
     cl_centre[XX] = 1.92*3.086e18;

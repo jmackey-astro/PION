@@ -133,6 +133,9 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.02.15 JM: Added NEW_METALLICITY flag for testing the new
 ///    microphysics classes.
+/// - 2013.04.15 JM: Moved microphysics setup to early in Init from
+///    ready_to_start() function, so that the stellar wind boundary
+///    setup functions can call MP->Set_Temp().
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -307,9 +310,18 @@ int IntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
   err += get_cell_size();
   if (err!=0){cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";return(1);}
 
-  // All grid parameters are now set, so I can set up the appropriate equations/solver class.
+  //
+  // All grid parameters are now set, so I can set up the appropriate
+  // equations/solver class.
+  //
   err = set_equations();
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
+
+  //
+  // Now setup Microphysics, if needed.
+  //
+  err = setup_microphysics();
+  rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
   
   //
   // Now assign data to the grid, either from file, or via some function.
@@ -1204,10 +1216,9 @@ int IntUniformFV::ready_to_start()
   eqn->SetEOS(SimPM.gamma);
   
   //
-  // Setup Microphysics and Raytracing, if they are needed.
+  // Setup Raytracing, if they are needed.
   //
   int err=0;
-  err += setup_microphysics();
   err += setup_raytracing();
   err += setup_evolving_RT_sources();
   if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
@@ -1305,7 +1316,7 @@ int IntUniformFV::setup_evolving_RT_sources()
     iss2 >> junk >> istar->Nlines;
     //cout <<"\t\tgetting Nlines:: "<<junk<<": "<<istar->Nlines<<"\n";
     if (istar->Nlines>1000000 || istar->Nlines<2) {
-      rep.error("setup_evolving_RT_sources() Bad Nlines in stellar_wind_evolution",istar->Nlines);
+      rep.error("setup_evolving_RT_sources() Bad Nlines in stellar radiation evolution",istar->Nlines);
     }
     istar->time.resize(istar->Nlines);
     istar->Log_L.resize(istar->Nlines);

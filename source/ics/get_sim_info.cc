@@ -25,6 +25,8 @@
 /// - 2012.01.14 JM: Added RT_EVO_FILE_[i] (optional) for time-varying radiation source.
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
+/// - 2013.04.15 JM: Removed lots of cout/cerr statements to clean up
+///    std i/o messages.
 
 #include "get_sim_info.h"
 #include "../global.h"
@@ -133,16 +135,16 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   // tracer variables.
   str = rp->find_parameter("ntracer");
   if (str=="") {
-    cout <<"Not using tracer variables.\n";
+    //cout <<"Not using tracer variables.\n";
     SimPM.ntracer = 0;
     SimPM.ftr = SimPM.nvar;
   }
   else if (!isnan( SimPM.ntracer=atoi(str.c_str()) ) ) {
-    cout <<"using "<<SimPM.ntracer<<" passive tracer variables\n";
+    //cout <<"using "<<SimPM.ntracer<<" passive tracer variables\n";
     SimPM.ftr = SimPM.nvar;
     SimPM.nvar += SimPM.ntracer;
     SimPM.trtype = rp->find_parameter("trtype");
-    cout <<"using tracer(s) described as "<<SimPM.trtype<<endl;
+    //cout <<"using tracer(s) described as "<<SimPM.trtype<<endl;
   }
   else rep.error("number of tracers is not a number!",SimPM.ntracer);
   
@@ -160,41 +162,62 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
   // Domain of grid, and number of points.  These must all be present in the pfile.
   string seek;
-  seek="NGridX"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  seek="NGridX"; str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.NG[XX] =  atoi(str.c_str());
   SimPM.Ncell = SimPM.NG[XX];
-  seek="Xmin"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+
+  seek="Xmin"; str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.Xmin[XX] =  atof(str.c_str());
-  seek="Xmax"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+
+  seek="Xmax"; str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.Xmax[XX] =  atof(str.c_str());
   SimPM.Range[XX] = SimPM.Xmax[XX]-SimPM.Xmin[XX];
+
   if(ndim>1) {
-    seek="NGridY"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+    seek="NGridY"; str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.NG[YY] =  atoi(str.c_str());
     SimPM.Ncell *= SimPM.NG[YY];
-    seek="Ymin"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+
+    seek="Ymin"; str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.Xmin[YY] =  atof(str.c_str());
-    seek="Ymax"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+
+    seek="Ymax"; str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.Xmax[YY] =  atof(str.c_str());
     SimPM.Range[YY] = SimPM.Xmax[YY]-SimPM.Xmin[YY];
   }
   else {
-    SimPM.NG[YY] =1; SimPM.Xmin[YY]=SimPM.Xmax[YY]=SimPM.Range[YY]=0.;
+    SimPM.NG[YY] =1;
+    SimPM.Xmin[YY]=SimPM.Xmax[YY]=SimPM.Range[YY]=0.;
   }
+
   if(ndim>2) {
-    seek="NGridZ"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+    seek="NGridZ"; str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.NG[ZZ] =  atoi(str.c_str());
     SimPM.Ncell *= SimPM.NG[ZZ];
-    seek="Zmin"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+
+    seek="Zmin"; str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.Xmin[ZZ] =  atof(str.c_str());
-    seek="Zmax"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+
+    seek="Zmax"; str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.Xmax[ZZ] =  atof(str.c_str());
     SimPM.Range[ZZ] = SimPM.Xmax[ZZ]-SimPM.Xmin[ZZ];
   }
   else {
-    SimPM.NG[ZZ] =1; SimPM.Xmin[ZZ]=SimPM.Xmax[ZZ]=SimPM.Range[ZZ]=0.;
+    SimPM.NG[ZZ] =1;
+    SimPM.Xmin[ZZ]=SimPM.Xmax[ZZ]=SimPM.Range[ZZ]=0.;
   }
+
   SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
+
   if(ndim>1) {
     if ( fabs(SimPM.Range[1]/(SimPM.NG[1])/SimPM.dx -1.)> 100.*MACHINEACCURACY) {
       rep.error("Cells are not cubic! Set the range and number of points appropriately.",
@@ -209,17 +232,21 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   }
 
   // output info
-  str = rp->find_parameter("OutputPath"); if (str=="") rep.error("outputpath",str);
+  str = rp->find_parameter("OutputPath");
+  if (str=="") rep.error("outputpath",str);
   ostringstream temp;
   temp << str;
-  str = rp->find_parameter("OutputFile"); if (str=="") rep.error("outputfile",str);
+  str = rp->find_parameter("OutputFile");
+  if (str=="") rep.error("outputfile",str);
   temp  << str;
   SimPM.outFileBase =  temp.str();
   str = rp->find_parameter("OutputFileType");
+
   if      (str=="text") SimPM.typeofop =1;
   else if (str=="fits") SimPM.typeofop =2;
   else if (str=="ftab") { // fits table (not implemented yet.
-    SimPM.typeofop =3; rep.error("Fits Table not allowed as o/p format.. not implemented",str);
+    SimPM.typeofop =3;
+    rep.error("Fits Table not allowed as o/p format.. not implemented",str);
   }
   else if (str=="both") SimPM.typeofop =4; // Both means fits and text.
   else if (str=="silo") SimPM.typeofop =5; // Silo output.
@@ -228,15 +255,15 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   seek="OutputFrequency"; 
   str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   SimPM.opfreq   = atoi(str.c_str());
-  cout <<"\tOutFile: "<<SimPM.outFileBase<< ".xxx\t Type="<<SimPM.typeofop;
-  cout <<" every "<<SimPM.opfreq<<" timesteps."<<endl;
+  //cout <<"\tOutFile: "<<SimPM.outFileBase<< ".xxx\t Type="<<SimPM.typeofop;
+  //cout <<" every "<<SimPM.opfreq<<" timesteps."<<endl;
 
   // Optional output-by-years parameters:
   seek="OutputCriterion";
   str=rp->find_parameter(seek);
   if (str=="") {SimPM.op_criterion=0;}
   else SimPM.op_criterion = atoi(str.c_str());
-  cout <<"\top_criterion = "<<SimPM.op_criterion<<"\n";
+  //cout <<"\top_criterion = "<<SimPM.op_criterion<<"\n";
 
   seek="OPfreqTime";
   str=rp->find_parameter(seek);
@@ -247,7 +274,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     double tmp = ((SimPM.simtime/SimPM.opfreq_time)-static_cast<int>(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
     SimPM.next_optime -= tmp;
   }
-  cout <<" and opfreq="<<SimPM.opfreq_time<<" code time units.\n";
+  //cout <<" and opfreq="<<SimPM.opfreq_time<<" code time units.\n";
 
 
   
@@ -255,7 +282,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   seek="BC"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   SimPM.typeofbc = str;
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
-  cout <<"\tBoundary Conditions: "<<SimPM.typeofbc<<endl;
+  //cout <<"\tBoundary Conditions: "<<SimPM.typeofbc<<endl;
   
   // Timing
   seek="StartTime"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
@@ -289,7 +316,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SimPM.etav = atof(str.c_str());
   }
   else rep.error("\tUnknown viscosity requested... fix me.",str);
-  cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<endl;
+  //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<endl;
   // Which Physics
   err += read_extra_physics();
   if (err) rep.error("read_extra_physics",err);   
@@ -309,7 +336,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   }
   else {
     SWP.Nsources = atoi(str.c_str());
-    cout <<"\tWIND_NSRC: got "<<SWP.Nsources<<" sources.\n";
+    //cout <<"\tWIND_NSRC: got "<<SWP.Nsources<<" sources.\n";
     if (SWP.Nsources>0) {
       err += read_wind_sources();
       if (err) rep.error("read_wind_sources",err);   
@@ -359,7 +386,7 @@ int get_sim_info::read_radsources()
   if ( (a=rp->find_parameter("RT_Nsources")) !="")
     SimPM.RS.Nsources = atoi(a.c_str());
   else {
-    cout <<"no nsources in pfile... assuming there are no RT sources.\n";
+    //cout <<"no nsources in pfile... assuming there are no RT sources.\n";
     SimPM.RS.Nsources = 0;
   }
   
@@ -384,17 +411,17 @@ int get_sim_info::read_radsources()
     if ( (a=rp->find_parameter(temp2.str())) !="")
       rs_temp.Rstar = atof(a.c_str());
     else {
-			cout <<temp2.str()<<": parameter not found in pfile.  Setting to -1.0e200.\n";
-			rs_temp.Rstar = -1.0e200;
-		}
+      cout <<temp2.str()<<": parameter not found in pfile.  Setting to -1.0e200.\n";
+      rs_temp.Rstar = -1.0e200;
+    }
 
     temp2.str(""); temp2 << "RT_Tstar____" << i;
     if ( (a=rp->find_parameter(temp2.str())) !="")
       rs_temp.Tstar = atof(a.c_str());
     else {
-			cout <<temp2.str()<<": parameter not found in pfile.  Setting to -1.0e200.\n";
-			rs_temp.Tstar = -1.0e200;
-		}
+      cout <<temp2.str()<<": parameter not found in pfile.  Setting to -1.0e200.\n";
+      rs_temp.Tstar = -1.0e200;
+    }
 
     rs_temp.id = i;
 
@@ -409,7 +436,7 @@ int get_sim_info::read_radsources()
     else {
       //rep.error("no src update-method in pfile",temp2.str());
       cerr <<"*** no src update-method in pfile: " <<temp2.str();
-      cout <<"... using C2Ray method. \n";
+      cerr <<"... using C2Ray method. \n";
       rs_temp.update = RT_UPDATE_IMPLICIT;
     }
 
@@ -424,7 +451,7 @@ int get_sim_info::read_radsources()
     else {
       //rep.error("no src update-method in pfile",temp2.str());
       cerr <<"*** no src effect param in pfile: " <<temp2.str();
-      cout <<"... using monochromatic photoionisation.\n";
+      cerr <<"... using monochromatic photoionisation.\n";
       rs_temp.effect = RT_EFFECT_PION_MONO;
     }
 
@@ -444,7 +471,7 @@ int get_sim_info::read_radsources()
     else {
       //rep.error("no src update-method in pfile",temp2.str());
       cerr <<"*** no opacity variable index in pfile: " <<temp2.str();
-      cout <<"... using First tracer.\n";
+      cerr <<"... using First tracer.\n";
       rs_temp.opacity_var = SimPM.ftr;
     }
 
@@ -452,8 +479,8 @@ int get_sim_info::read_radsources()
     if ( (a=rp->find_parameter(temp2.str())) !="")
       rs_temp.EvoFile = a;
     else {
-      cout <<"*** no RS Evolution File in pfile: " <<temp2.str();
-      cout <<"... using NOFILE, i.e. constant source.\n";
+      cerr <<"*** no RS Evolution File in pfile: " <<temp2.str();
+      cerr <<"... using NOFILE, i.e. constant source.\n";
       rs_temp.EvoFile = "NOFILE";
     }
 
@@ -487,7 +514,7 @@ int get_sim_info::read_wind_sources()
   int err=0;
 
   for (int i=0; i<SWP.Nsources; i++) {
-    cout <<"\tREADING WIND SOURCE "<<i<<"\n";
+    //cout <<"\tREADING WIND SOURCE "<<i<<"\n";
     string a;
     ostringstream temp;
     double Mdot=0.0, rad=0.0, posn[MAX_DIM],
@@ -516,7 +543,7 @@ int get_sim_info::read_wind_sources()
     if ( (a=rp->find_parameter(temp.str())) !="")
       type=atoi(a.c_str());
     else rep.error("param not found in pfile",temp.str());
-    cout <<"\t*******wind type="<<type<<"\n";
+    //cout <<"\t*******wind type="<<type<<"\n";
 
     temp.str(""); temp<<"WIND_"<<i<<"_mdot";
     if ( (a=rp->find_parameter(temp.str())) !="")
@@ -599,11 +626,9 @@ int get_sim_info::read_wind_sources()
     wind->update_freq = update_freq;
     wind->t_scalefactor = time_scalefac;
 
-    cout <<"\tgot parameters, adding source! rad="<<rad<<"\n";
-    //err = SW.add_source(posn,rad,type,Mdot,Vinf,Tw,Rstar,trcr);
-    //if (err) rep.error("Error adding wind source",i);
+    //cout <<"\tgot parameters, adding source! rad="<<rad<<"\n";
     SWP.params.push_back(wind);
-    cout <<"\tadded WIND source. returning.\n";
+    //cout <<"\tadded WIND source. returning.\n";
   }
 
   return err;
@@ -653,7 +678,6 @@ int get_sim_info::read_extra_physics()
     SimPM.EP.MP_timestep_limit = atoi(a.c_str());
   else SimPM.EP.MP_timestep_limit = 1;
 
-//#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   if ( (a=rp->find_parameter("EP_Min_Temperature")) !="")
     SimPM.EP.MinTemperature = atof(a.c_str());
   else SimPM.EP.MinTemperature = 0.0;
@@ -662,9 +686,6 @@ int get_sim_info::read_extra_physics()
     SimPM.EP.MaxTemperature = atof(a.c_str());
   else SimPM.EP.MaxTemperature = 1.0e100;
 
-//#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-
-#ifdef NEW_METALLICITY
   //
   // Helium abundance (by mass) Y.
   // Default value is from Asplund et al. (2009,ARA&A,47,481)
@@ -680,7 +701,6 @@ int get_sim_info::read_extra_physics()
   if ( (a=rp->find_parameter("EP_Metal_MassFrac")) !="")
     SimPM.EP.Metal_MassFrac = atof(a.c_str());
   else SimPM.EP.Metal_MassFrac = 0.0142;
-#endif // NEW_METALLICITY
 
   return 0;
 }
@@ -727,3 +747,5 @@ int get_sim_info::read_units()
   else {rep.error("Don't recognise units system",unit);}
   return 0;
 }
+
+

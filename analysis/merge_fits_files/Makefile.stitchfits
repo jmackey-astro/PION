@@ -1,0 +1,111 @@
+#
+# Makefile for code to stitch together a bunch of fits outputs from
+# many subdomains into a single large file.
+#
+# Author: Jonathan Mackey
+# Date: Sometime in 2007
+# Modifications:
+# - 2013.04.16 JM: Updated for new pion source code.
+
+
+SHELL = /bin/sh
+.SUFFIXES:
+.SUFFIXES: .cc .o
+.SUFFIXES: .cpp .o
+bindir = ..
+SRCDIR=${CURDIR}/../../source
+
+VPATH = \
+../../source:\
+../../source/ics:\
+../../source/Riemann_solvers:\
+../../source/defines:\
+../../source/microphysics:\
+../../source/raytracing:\
+../../source/grid:\
+../../source/dataIO:\
+../../source/comms:\
+../../source/coord_sys:\
+../../source/equations:\
+../../source/flux_calc:\
+../../source/spatial_solvers:\
+../../source/time_integrators:\
+../../source/contrib
+
+GLOBAL = global.h functionality_flags.h testing_flags.h
+
+#######################
+## COMPILATION RULES ##
+#######################
+.cc.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cxx.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+#######################
+
+OPT = -DPARALLEL
+OPT += -DUSE_MPI
+OPT += -DFITS
+CXXFLAGS = $(OPT)
+
+MAKE_UNAME=standard
+
+#####################################################################
+# Options for a "standard" workstation.
+# make sure cfitsio and silo are compiled in ../extra_libraries/
+######################################################################
+ifeq ($(MAKE_UNAME), standard)
+  CXXFLAGS += -g -O3 -Wno-unused-function
+  CXX=mpicxx
+
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  # All libraries are in this path:
+  LDFLAGS += -L${MYLIB}/lib
+  # Libraries for fits, silo
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo
+  # libs for CVODES
+  LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- STANDARD WORKSTATION ---######################
+
+
+
+
+OBJECTS = stitchfits.o global.o                                     \
+        dataio.o dataio_fits.o utility_fits_class.o                 \
+        comm_files.o comm_mpi.o                                     \
+        file_status.o                                               \
+        cell_interface.o                                            \
+	readparams.o
+
+stitchfits: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o stitchfits $(LDFLAGS)
+
+stitchfits.o: stitchfits.cc ${GLOBAL} dataio.h
+global.o: global.cc ${GLOBAL}
+cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+
+########################
+# Data I/O
+########################
+file_status.o: file_status.cpp file_status.h
+readparams.o: readparams.cc readparams.h ${GLOBAL}
+dataio.o: dataio.cc dataio.h ${GLOBAL}
+dataio_fits.o: dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h \
+    ${GLOBAL} file_status.h
+
+#######################
+## MPI/files comms classes
+########################
+comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h ${GLOBAL}
+
+clean:
+	rm -f *.o stitchfits

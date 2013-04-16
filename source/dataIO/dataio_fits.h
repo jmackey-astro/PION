@@ -23,7 +23,7 @@
 ///
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
-///
+/// - 2013.04.16 JM: choose_filename() made public.
 #ifndef DATAIO_FITS_H
 #define DATAIO_FITS_H
 
@@ -109,6 +109,15 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
     * */
    void SetSolver(FV_solver_base * ///< Pointer to the solver (to get Eint,divB,Ptot)
 		  );
+
+  ///
+  /// Choose filename based on counter and base-name.
+  ///
+  std::string choose_filename(
+          const std::string, ///< filebase passed in from main code.
+          const int          ///< file counter to use (e.g. timestep).
+          );
+
    /** \brief This writes the fits header for the simulation parameters,
     * and then the data, with a separate image for each variable.
     * 
@@ -180,14 +189,6 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
 		       int *,      ///< vector npix to read in each direction.
 		       long int    ///< total npix to read.
 		       );
-
-  ///
-  /// Choose filename based on counter and base-name.
-  ///
-  std::string choose_filename(
-          const std::string, ///< filebase passed in from main code.
-          const int          ///< file counter to use (e.g. timestep).
-          );
 
 };
 

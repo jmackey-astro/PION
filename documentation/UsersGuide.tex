@@ -97,13 +97,13 @@ The code is developed for astrophysics, not for any practical purpose where fail
 Installation is reasonably straightforward, but there is one library which needs to be manually downloaded because it does not have a free licence.
 The code is not really \emph{installed}, just compiled on a given computer.
 The executables can then be moved to any directory you want and run on a particular problem.
-It is quite rare that the code needs to recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
+It is quite rare that the code needs to be recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
 Here is how to compile the code:
 \begin{enumerate}
 \item
   If you have a copy of \pion{} as \texttt{pion.0.1.tar.gz}, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
 \item
-  The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.4.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|pion/extra_libraries/|.
+  The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.5.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|pion/extra_libraries/|.
 \item
   Then from \verb|pion/| with a standard linux workstation you should be able to run the command \verb|./install.sh|.
   If this is successful then the \textsc{Silo}, \textsc{FITS}, and \textsc{Sundials} libraries should be installed to \verb|pion/extra_libraries/| and code executables should have been created in the current directory.
@@ -121,7 +121,7 @@ The compile scripts will automatically detect if it is being compiled on the fol
 \item \emph{OS X 10.6}, with \emph{XCode} installed.
 \end{itemize}
 If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
-It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works without problems on Fedora/RedHat linux.
+It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
 
 
 \subsection{Compilation on other machines}
@@ -155,32 +155,27 @@ A new section needs to be created for the new machine in the Makefiles in \verb|
 % Should not be a conflict between OOP and efficient code.
 %
 
-Two executables are compiled -- an initial condition generator and the executable to run the code.
+Two executables are compiled -- an initial condition (IC) generator and the executable to run the code.
 Both are based mostly on the same source files, but the IC generator has some files only it uses, and the same for the simulation executable.
 The IC generator reads in a parameter file and uses the information in this text file to put gas on the computational grid, setup boundaries, radiation and/or stellar wind sources and anything else that needs to be set.
 It then writes all of this to a standard simulation output file, in either FITS\footnote{See \url{http://heasarc.gsfc.nasa.gov/fitsio/} for details.} or SILO\footnote{See \url{https://wci.llnl.gov/codes/silo/} for details} format.
 These output files contain a header with all of the information from the parameter file (and some extra info besides) and then the binary data stored in architecture-independent format (i.e.\ the data can be read on any computer if you have a code routine to read it).
 So the parameter file is only used by the IC generator.
 
-The simulation code then reads in the IC file, starting with the header to get the parameters of the grid and the equations to be solved (which determines the number of variables in a state vector).
+The simulation code then reads in the IC file, starting with the header to get the parameters of the grid and the equations to be solved.
 Then the command-line is parsed to see if any parameters need to be overriden, such as the time to finish the simulation, the type of Riemann solver to use, how often to output data, etc.
 It then generates the grid, reads in the data from the IC file, and finally sets up the boundaries.
 Following this, the equations solver is setup, the microphysics solver (if needed) and the raytracer (if needed).
 Once everything has been set up the time integrator is called, and timestepping proceeds until something triggers the end of the simulation.
-At this point everything is deleted and the code quits.
+At this point the code quits.
 
-This structure is a bit different to many codes.
-In a number of codes the initial conditions are generated by the simulation code itself, and the way the ICs are set up is determined by compile flags.
-For many codes also, everything is set at compile time, and there are no runtime parameters which can be changed.
-The idea of this is to have as small an executable as possible, but it can make for rather inflexible code.
-To be honest I have not tested whether my code runs faster when I exclude large parts of code from compilation; it is something that should be looked at eventually.
-But for sure the performance of the code is comparable to other codes, so it is not slowing things down terribly, and the advantage of flexibility is significant especially for testing and setting up problems where parameters are changed and refined many times before a simulation is started.
-It may be a good idea to put in flags to exclude modules which are not required, in order to have the production code as lean as possible.
 
 Both SILO and FITS data can be read by the VisIt visualisation software package\footnote{\url{http://visit}}.
 FITS can of course be read by SAO-DS9 or probably also IDL (although I haven't tested this).
 I'm not sure if there are other visualisation tools for SILO data, but VisIt was designed around SILO so there is probably no reason to use a different visualisation package.
 FITS data doesn't really output in parallel well (each core writes its own file), so it is not recommended, but it is good for serial data.
+For running on more than a few cores, SILO output is recommended, and this can be postprocessed and converted to FITS with one of the analysis programmes that come with \pion{} \textbf{[CHECK IT WORKS!  Add a link]}.
+
 For 1D and 2D serial calculations, it is often more useful to output text files which can be read by e.g.\ Gnuplot.
 This is also an option in the parameter file and can be set as a command-line option.
 
@@ -202,6 +197,15 @@ It would not be too difficult to change this so that the read function can acces
 
 The error checking is not guaranteed to be the same in the IC generator and simulation code, so it is possible that the IC generator will create a valid IC file but the simulation code will not be able to run it because some parameters are missing or can only be used in combination with certain values of other parameters.
 I have tried to catch all of the possible conflicts at the IC generator stage, but still I always check that a simulation is set up correctly with a small simulation (on a coarser grid) before I submit a big job on a supercomputer.
+
+\subsection{Comparison to other codes}
+The code and execution sequence of \pion{} is a bit different to many codes.
+In a number of codes the initial conditions are generated by the simulation code itself, and the way the ICs are set up is determined by compile flags.
+For many codes also, everything is set at compile time, and there are no runtime parameters which can be changed.
+The idea of this is to have as small an executable as possible, but it can make for rather inflexible code.
+To be honest I have not tested whether \pion{} runs faster when I exclude large parts of code from compilation; it is something that should be looked at eventually.
+But for sure the performance of the code is comparable to other codes, so it is not slowing things down terribly, and the advantage of flexibility is significant especially for testing and setting up problems where parameters are changed and refined many times before a simulation is started.
+It may be a good idea to put in flags to exclude modules which are not required, in order to have the production code as lean as possible.
 
 
 \section{The Parameter File}
@@ -265,7 +269,7 @@ Possible values for initial conditions parameter \verb|ics| are given in the fol
   \item \verb|FieldLoopStatic| -- Static version of the Field Loop advection test (to see the diffusivity of the scheme without any advection).
   \item \verb|Jet| or \verb|JET| or \verb|jet| -- A 2D or 3D jet simulation, where the jet is injected along the symmetry axis in 2D or along the $\hat{x}$ axis in 3D.
   \item \verb|DoubleMachRef| -- The famous double Mach reflection test of \citet{ColWoo84} [CHECK REF!].
-  \item \verb|RadiativeShock| -- Radiative shock test \citep[e.g.][]{InnGidFal87} with wall boundary condition.
+  \item \verb|RadiativeShock| -- Radiative shock test \citep[e.g.][]{InnGidFal87b} with wall boundary condition.
   \item \verb|RadiativeShockOutflow| -- Radiative shock with outflow downstream boundary condition instead of wall.
   \item \verb|LaserAblationAxi| -- Ablation of a target by a laser and the subsequent hydrodynamic evolution
   \item \verb|LaserAblation3D| -- Ablation of a target by a laser in 3D.

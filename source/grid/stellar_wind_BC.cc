@@ -33,9 +33,14 @@
 /// - 2011.11.22 JM: Added t_scalefactor parameter for stellar winds.
 /// - 2011.12.01 JM: Switched from spline to linear interpolation for winds.
 /// - 2012.12.07/10 JM: Changed min. ion frac. in wind from 0 to 1e-7.
+/// - 2013.04.15 JM: removed lots of comments (or put in TESTING def)
 //------------------------------------------------
 //------------ STELLAR WIND CLASS ----------------
 //------------------------------------------------
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "stellar_wind_BC.h"
 #include <sstream>
 using namespace std;
@@ -66,6 +71,8 @@ stellar_wind::~stellar_wind()
   return;      
 }
 
+
+
 int stellar_wind::add_source(const double *pos, ///< position (physical units)
            const double  rad, ///< radius (physical units)
            const int    type, ///< type (0=fixed in time,1=slow switch on,2 switch on in radius)
@@ -85,13 +92,13 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
   ws->type = type;
   switch (type) {
   case 0: case 3:
-    cout <<"Adding constant wind source as id="<<ws->id<<"\n";
+    cout <<"\tAdding constant wind source as id="<<ws->id<<"\n";
     break;
   case 1:
-    cout <<"Adding wind source with gradual switch-on over 100kyr, as id="<<ws->id<<"\n";
+    cout <<"\tAdding wind source with gradual switch-on over 100kyr, as id="<<ws->id<<"\n";
     break;
   case 2:
-    cout <<"Adding wind source with switch on based on r<f*Vinf*t, as id="<<ws->id<<"\n";
+    cout <<"\tAdding wind source with switch on based on r<f*Vinf*t, as id="<<ws->id<<"\n";
     break;
   default:
     rep.error("What type of source is this?  add a new type?",type);
@@ -134,12 +141,14 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
     // Axisymmetry
     //
     if (!GS.equalD(ws->dpos[Rcyl],0.0))
-      rep.error("Axi-symmetry but source not at R=0!",ws->dpos[Rsph]);
+      rep.error("Axisymmetry but source not at R=0!",ws->dpos[Rcyl]);
   }
 
   wlist.push_back(ws);
-  //nsrc++;
-  cout <<" Added wind source id="<<nsrc<<" to list of "<<++nsrc<<" elements.\n";
+  nsrc++;
+//#ifdef TESTING
+  cout <<"\tAdded wind source id="<<nsrc-1<<" to list of "<<nsrc<<" elements.\n";
+//#endif // TESTING
   return ws->id;
 }
 
@@ -176,8 +185,12 @@ void stellar_wind::set_integer_positions(struct wind_source *ws)
   //
   if (!grid) rep.error("don't call me until grid is set up!",grid);
   CI.get_ipos_vec(ws->dpos, ws->ipos);
+
+#ifdef TESTING
   cout <<"<<<<set_integer_positions: source ";rep.printVec("ipos",ws->ipos,SimPM.ndim);
   cout <<"<<<<set_integer_positions: source ";rep.printVec("dpos",ws->dpos,SimPM.ndim);
+#endif // TESTING
+
   ws->radius /= CI.phys_per_int();
   ws->ipos_set = true;
   return;
@@ -338,11 +351,14 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
     //
     if (MP) {
       if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
+        //cout <<"resetting temperature in wind. \n";
         MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
       }
     }
     else {
-      wc->p[PG] = max(wc->p[PG], 12.0*wc->p[RO]*GS.kB()/GS.m_p());
+      // appropriate for a neutral medium.
+      wc->p[PG] = max(wc->p[PG], 
+        SimPM.EP.MinTemperature*wc->p[RO]*GS.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/GS.m_p());
     }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   }
@@ -354,7 +370,7 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
   // grid functions rather than GS.idistance().
   //
   cell *c = wc->c;
-#ifdef GEOMETRIC_GRID
+
   wc->p[VX] = WS->Vinf*grid->idifference_vertex2cell(WS->ipos,c,XX)/wc->dist;
   if (SimPM.ndim>1)
     wc->p[VY] = WS->Vinf*grid->idifference_vertex2cell(WS->ipos,c,YY)/wc->dist;
@@ -364,19 +380,6 @@ void stellar_wind::set_wind_cell_reference_state(struct wind_cell *wc,
     wc->p[VZ] = WS->Vinf*grid->idifference_vertex2cell(WS->ipos,c,ZZ)/wc->dist;
   else
     wc->p[VZ] = 0.0;
-
-#else  // not GEOMETRIC_GRID
-
-  wc->p[VX] = WS->Vinf*(c->pos[XX]-WS->ipos[XX])/wc->dist;
-  if (SimPM.ndim>1)
-    wc->p[VY] = WS->Vinf*(c->pos[YY]-WS->ipos[YY])/wc->dist;
-  else
-    wc->p[VY] = 0.0;
-  if (SimPM.ndim>2)
-    wc->p[VZ] = WS->Vinf*(c->pos[ZZ]-WS->ipos[ZZ])/wc->dist;
-  else
-    wc->p[VZ] = 0.0;
-#endif // GEOMETRIC_GRID
 
   if (SimPM.eqntype!=EQEUL && SimPM.eqntype!=EQEUL_EINT)
     rep.error("Need to code B into winds model!",SimPM.eqntype);
@@ -599,12 +602,17 @@ void stellar_wind::get_src_type(const int id, ///< src id
 
 stellar_wind_evolution::stellar_wind_evolution()
 {
+#ifdef TESTING
   cout <<"Stellar wind with time evolution, constructor.\n";
+#endif 
 }
 
 stellar_wind_evolution::~stellar_wind_evolution()
 {
+#ifdef TESTING
   cout <<"Stellar wind with time evolution, destructor.\n";
+#endif
+
   //
   // Delete arrays
   //
@@ -696,7 +704,10 @@ int stellar_wind_evolution::add_evolving_source(
   // First we will read the file, and see when the source should switch on in 
   // the simulation (it may not be needed for a while).
   //
+#ifdef TESTING
   cout <<"\t\tsw-evo: adding source from file "<<infile<<"\n";
+#endif
+
   ifstream wf;
   wf.open(infile.c_str());
   if (!wf.is_open()) {cerr<<"Error opening file.\n";return 1;}
@@ -713,7 +724,11 @@ int stellar_wind_evolution::add_evolving_source(
   string junk;
   int Nspl=0;
   iss2 >> junk >> Nspl;
+
+#ifdef TESTING
   cout <<"\t\tgetting Nspl:: "<<junk<<": "<<Nspl<<"\n";
+#endif
+
   if (!isfinite(Nspl) || Nspl<2) {
     rep.error("Bad Nspline in stellar_wind_evolution",Nspl);
   }
@@ -801,7 +816,11 @@ int stellar_wind_evolution::add_evolving_source(
   temp->tfinish= t[Nspl-1]  *GS.s_per_yr(); // now in seconds (already scaled)
   temp->update_freq = update_freq*GS.s_per_yr()/t_scalefactor; // now in seconds
   temp->t_next_update = max(temp->tstart,t_now);
-  cout <<"\t\t tstart="<<temp->tstart<<", next update="<<temp->t_next_update<<", and tfinish="<<temp->tfinish<<"\n";
+#ifdef TESTING
+  cout <<"\t\t tstart="<<temp->tstart;
+  cout <<", next update="<<temp->t_next_update;
+  cout <<", and tfinish="<<temp->tfinish<<"\n";
+#endif
 
   //
   // We need to decide if the wind src is active yet.  If it is, then we also set
@@ -822,7 +841,9 @@ int stellar_wind_evolution::add_evolving_source(
     GS.root_find_linear(t, Tf, Nspl, t_now/GS.s_per_yr(), &Twind);
     GS.root_find_linear(t, md, Nspl, t_now/GS.s_per_yr(), &mdot);
     GS.root_find_linear(t, vi, Nspl, t_now/GS.s_per_yr(), &vinf);
+#ifdef TESTING
     cout <<"Source is Active\n";
+#endif
   }
   else {
     cout <<"WARNING: Source is not yet active: tnow="<<t_now<<", tstart=";

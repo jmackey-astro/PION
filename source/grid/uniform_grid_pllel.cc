@@ -64,10 +64,10 @@ UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, do
 #endif // GEOMETRIC_GRID
   UniformGrid(nd,nv,eqt,xn,xp,nc)
 {
-  cout <<"UniformGridParallel constructor.\n";
-  rep.printVec("Local Xmin",xn,nd);
-  rep.printVec("Local Xmax",xp,nd);
-  rep.printVec("Local Npt ",nc,nd);
+  //cout <<"UniformGridParallel constructor.\n";
+  //rep.printVec("Local Xmin",xn,nd);
+  //rep.printVec("Local Xmax",xp,nd);
+  //rep.printVec("Local Npt ",nc,nd);
 
 #ifdef PLLEL_RT
   //RT_nbd=0;
@@ -89,9 +89,9 @@ UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, do
   CI.get_ipos_vec(SimPM.Xmax, SIM_ixmax );
   for (int v=0;v<G_ndim;v++)
     SIM_irange[v] = SIM_ixmax[v]-SIM_ixmin[v];
-  rep.printVec("SIM iXmin ", SIM_ixmin, G_ndim);
-  rep.printVec("SIM iXmax ", SIM_ixmax, G_ndim);
-  rep.printVec("SIM iRange", SIM_irange,G_ndim);
+  //rep.printVec("SIM iXmin ", SIM_ixmin, G_ndim);
+  //rep.printVec("SIM iXmax ", SIM_ixmax, G_ndim);
+  //rep.printVec("SIM iRange", SIM_irange,G_ndim);
 #endif // GEOMETRIC_GRID
 
   return;
@@ -100,7 +100,7 @@ UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, do
 UniformGridParallel::~UniformGridParallel()
 {
 #ifdef TESTING
-  cout <<"UniformGridParallel destructor.\n";
+  //cout <<"UniformGridParallel destructor.\n";
 #endif
 #ifdef PLLEL_RT
   //
@@ -438,7 +438,9 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   mpiPM.ngbprocs[i] = -999;
       }
     } // if periodic  
+#ifdef TESTING
     cout<<"Neighbouring processor in dir "<<i<<" = "<<mpiPM.ngbprocs[i]<<"\n";
+#endif // TESTING
   } // loop over directions.
   return(0);
 }

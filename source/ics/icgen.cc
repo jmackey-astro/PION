@@ -182,7 +182,6 @@ int main(int argc, char **argv)
   // Now set up the parallel uniform grid.
   //
   cout <<"(icgen::setup_grid) Setting up grid...\n";
-#ifdef GEOMETRIC_GRID
 
   if      (SimPM.coord_sys==COORD_CRT) {
     grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
@@ -202,14 +201,6 @@ int main(int argc, char **argv)
   else {
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
   }
-
-
-#else  // else not GEOMETRIC_GRID
-
-  grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
-          SimPM.eqntype, mpiPM.LocalXmin,
-          mpiPM.LocalXmax, mpiPM.LocalNG);
-#endif // if GEOMETRIC_GRID
 #endif // if PARALLEL
 
 #ifdef SERIAL

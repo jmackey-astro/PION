@@ -80,7 +80,9 @@ using namespace std;
 ParallelIntUniformFV::ParallelIntUniformFV()
   : IntUniformFV()
 {
+#ifdef TESTING
   cout <<"ParallelIntUniformFV constructor.\n";
+#endif
 }
 
 
@@ -91,7 +93,9 @@ ParallelIntUniformFV::ParallelIntUniformFV()
 
 ParallelIntUniformFV::~ParallelIntUniformFV()
 {
+#ifdef TESTING    
   cout <<"ParallelIntUniformFV destructor.\n";
+#endif
 }
 
 
@@ -103,7 +107,10 @@ ParallelIntUniformFV::~ParallelIntUniformFV()
 
 int ParallelIntUniformFV::setup_grid()
 {
+#ifdef TESTING
   cout <<"ParallelIntUniformFV: setting up parallel grid.\n";
+#endif
+
   if (SimPM.gridType!=1) {
     rep.warning("gridType not set correctly: Only know Uniform finite volume grid, so resetting to 1!",1,SimPM.gridType);
     SimPM.gridType=1;
@@ -112,7 +119,8 @@ int ParallelIntUniformFV::setup_grid()
   
   // First decompose the domain, so I know the dimensions of the local grid to set up.
   int err=0;
-  if((err=mpiPM.decomposeDomain())) rep.error("Couldn't Decompose Domain!",err);
+  if((err=mpiPM.decomposeDomain()))
+    rep.error("Couldn't Decompose Domain!",err);
   
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -124,9 +132,9 @@ int ParallelIntUniformFV::setup_grid()
   //
   // Now set up the parallel uniform grid.
   //
+#ifdef TESTING
   cout <<"(ParallelIntUniformFV::setup_grid) Setting up grid...\n";
-
-#ifdef GEOMETRIC_GRID
+#endif
 
   if      (SimPM.coord_sys==COORD_CRT) {
     grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
@@ -147,18 +155,14 @@ int ParallelIntUniformFV::setup_grid()
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
   }
 
-#else  // else not GEOMETRIC_GRID
-
-  grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
-				  SimPM.eqntype, mpiPM.LocalXmin,
-				  mpiPM.LocalXmax, mpiPM.LocalNG);
-#endif // end if GEOMETRIC_GRID
-
 
   if (grid==0) rep.error("(ParallelIntUniformFV::setup_grid) Couldn't assign data!", grid);
 
+#ifdef TESTING
   cout <<"(ParallelIntUniformFV::setup_grid) Done. grid="<<grid;//<<"\n";
   cout <<"\t DX = "<<grid->DX()<<"\n";
+#endif
+
   return(0);
 }
 
@@ -195,7 +199,9 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
      * files as much as anything else.
      */
 
+#ifdef TESTING
   cout <<"(ParallelIntUniformFV::init) Initialising grid: infile = "<<infile<<"\n";
+#endif
   int err=0;
 
   if (typeOfFile==1) {
@@ -209,21 +215,32 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
     if (!dataio) dataio = new DataIOFits();
     if (!dataio) rep.error("DataIOFits initialisation",dataio);
     if (dataio->file_exists(infile)) {
+#ifdef TESTING
       cout <<"\t Reading from file : "<< infile<<"\n";
       cout <<"\t Assume if filename contains \'_0.\', that it is the first of multiple files.\n";
+#endif
       string::size_type pos =infile.find("_0.");
       if (pos==string::npos) {
+#ifdef TESTING
 	cout <<"\t Couldn't find \'_0.\' in file, so reading from single file.\n";
+#endif
 	mpiPM.ReadSingleFile = true;
       }
       else {
+#ifdef TESTING
 	cout <<"\t Found \'_0.\' in file, so replacing that with myrank.\n";
+#endif
 	mpiPM.ReadSingleFile = false;
+#ifdef TESTING
 	cout <<"\t Old infile: "<<infile<<"\n";
+#endif
 	ostringstream t; t.str(""); t<<"_"<<mpiPM.myrank<<"."; string t2=t.str();
 	infile.replace(pos,3,t2);
+#ifdef TESTING
 	cout <<"\t New infile: "<<infile<<"\n";
-	if (!dataio->file_exists(infile)) rep.error("infile doesn't exist!",infile);
+#endif
+	if (!dataio->file_exists(infile))
+          rep.error("infile doesn't exist!",infile);
       }
     }
     else {
@@ -241,14 +258,18 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
   else if (typeOfFile==5) {
     string::size_type pos =infile.find("_0");
     if (pos==string::npos) {
+#ifdef TESTING
       cout <<"\t Couldn't find \'_0\' in file, so assume reading from single file.\n";
+#endif
       //cout <<"\t But using parallel I/O, so need parallel multimesh objects... failing!\n";
       //return 99;
       mpiPM.ReadSingleFile = true;
     }
     else {
+#ifdef TESTING
       cout <<"\t Found \'_0\' in file, so assume reading from multiple files.\n";
       cout <<"silo class knows how to get to the right file name when reading data.\n";
+#endif
       mpiPM.ReadSingleFile = false;
     }
 
@@ -266,7 +287,9 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
   else
     rep.error("Bad file type specifier for parallel grids (2=fits,5=silo) IS IT COMPILED IN???",typeOfFile);
 
+#ifdef TESTING
   cout <<"(ParallelIntUniformFV::init) Calling serial code IntUniformFV::init() on infile."<<"\n";
+#endif
   err=IntUniformFV::Init(infile,typeOfFile,narg,args);
   if (err) rep.error("failed to do serial init",err);
 
@@ -275,9 +298,12 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
   // If outfile-type is different to infile-type, we need to delete dataio and set it up again.
   // This is ifdeffed out in the serial code because parallel I/O classes need to be set up.
   if (SimPM.typeofip != SimPM.typeofop) {
+#ifdef TESTING
     cout <<"(ParallelIntUniformFV::INIT) infile-type="<<SimPM.typeofip;
     cout <<" and outfile-type="<<SimPM.typeofop;
     cout <<", so deleting and renewing dataio.\n";
+#endif
+
     if (dataio) {delete dataio; dataio=0;}
     switch (SimPM.typeofop) {
     case 1: // ascii, so do nothing.
@@ -301,7 +327,9 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
   }
   dataio->SetSolver(eqn);
   if (SimPM.timestep==0) {
+#ifdef TESTING
      cout << "(P\'LLEL INIT) Outputting initial data.\n";
+#endif
      output_data();
   }
   cout <<"                                   ******************************\n";

@@ -1,2 +1,3 @@
 #!/bin/bash
-rm -f *.o ../bin/gridcode_parallel ../bin/icgen_parallel coolingcurve.txt hummer_recomb.txt
+rm -f *.o ../pion_parallel ../icgen_parallel
+
