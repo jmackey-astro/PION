@@ -405,10 +405,7 @@ int main(int argc, char **argv)
 #else
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype
-#ifdef NEW_METALLICITY
-      , &(SimPM.EP)
-#endif // NEW_METALLICITY
+      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP)
       );
       //if (SimPM.EP.MP_timestep_limit != 1)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);

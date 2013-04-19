@@ -70,6 +70,8 @@
 ///    old function would duplicate keys, which is not good for replacing the
 ///    header.
 /// - 2013.04.16 JM: Added spacer lines between functions.
+/// - 2013.04.18 JM: wrapped column-density output in ifdef so it is
+///    not written to file by default.
 
 #ifdef FITS
 #include "dataio_fits.h"
@@ -155,17 +157,20 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
   int nvar = SimPM.nvar;
   string *extname=0;
   if (SimPM.ntracer>5) rep.error("OutputFitsData:: only handles up to 5 tracer variables! Add more if needed.",SimPM.ntracer);
+
+#ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
   if (RT!=0 && SimPM.EP.phot_ionisation) {
     nvar+=1; // for column density
   }
+#endif // RT_TESTING_OUTPUTCOL
 
   if (SimPM.eqntype==EQEUL || SimPM.eqntype==EQEUL_ISO || SimPM.eqntype==EQEUL_EINT) {
     extname=mem.myalloc(extname,nvar+1);
     string pvar[10] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","TR0","TR1","TR2","TR3","TR4"};
     for (int i=0;i<SimPM.nvar;i++) extname[i] = pvar[i];
     extname[nvar  ] = "Eint";
-    if (DataIOFits::eqn!=0) { // only write eint/divb,ptot if eqn is there to calculate it!
+    if (DataIOFits::eqn!=0 || MP!=0) { // only write eint/divb,ptot if eqn is there to calculate it!
       nvar +=1;
     }
   }
@@ -196,12 +201,13 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
     rep.error("What equations?!",SimPM.eqntype);
   }
 
+#ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
   if (RT!=0 && SimPM.EP.phot_ionisation) {
     if (extname[SimPM.nvar]!="") rep.error("Tau not able to be written!",extname[SimPM.nvar]);
     extname[SimPM.nvar] = "Tau";
   }
-
+#endif // RT_TESTING_OUTPUTCOL
 
   //
   // Choose filename based on the basename and the counter passed to

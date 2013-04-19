@@ -55,6 +55,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
+/// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 
 #include "global.h"
 #include <iostream>
@@ -981,10 +982,8 @@ SimParams::SimParams()
   EP.MinTemperature = 0.0;
   EP.MaxTemperature = 1.0e100;
   
-#ifdef NEW_METALLICITY
   EP.Helium_MassFrac = 0.2703;
   EP.Metal_MassFrac  = 0.0142;
-#endif // NEW_METALLICITY
 
   RS.Nsources = -1;
   RS.sources.clear();

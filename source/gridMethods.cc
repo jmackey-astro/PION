@@ -136,6 +136,7 @@
 /// - 2013.04.15 JM: Moved microphysics setup to early in Init from
 ///    ready_to_start() function, so that the stellar wind boundary
 ///    setup functions can call MP->Set_Temp().
+/// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -167,11 +168,9 @@
 #include "microphysics/mp_implicit_H.h"
 #endif 
 
-#ifdef NEW_METALLICITY
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
-#endif // NEW_METALLICITY
 
 
 
@@ -1577,10 +1576,7 @@ int IntUniformFV::setup_microphysics()
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
 
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype
-#ifdef NEW_METALLICITY
-      , &(SimPM.EP)
-#endif // NEW_METALLICITY
+      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP)
       );
       //if (SimPM.EP.MP_timestep_limit != 1)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
@@ -1613,7 +1609,6 @@ int IntUniformFV::setup_microphysics()
 #endif // exclude MPv4
 
 
-#ifdef NEW_METALLICITY
     if (mptype=="MPv5__") {
       cout <<"\t******* setting up mpv5_molecular module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
@@ -1637,7 +1632,6 @@ int IntUniformFV::setup_microphysics()
       MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       have_set_MP=true;
     }
-#endif // NEW_METALLICITY
 
 
 

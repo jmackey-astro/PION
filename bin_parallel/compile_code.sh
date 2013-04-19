@@ -177,7 +177,6 @@ fi
 PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 
 export PION_OPTIONS
-export PION_OPTIONS="$PION_OPTIONS -DNEW_METALLICITY"
 echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################
 

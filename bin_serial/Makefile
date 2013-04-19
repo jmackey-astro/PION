@@ -307,10 +307,10 @@ ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
   IC_OBJ +=   read_BBurkhart_data.o
 endif
 
-ifneq (,$(findstring NEW_METALLICITY,$(PION_OPTIONS)))
+# New chemistry classes.
   OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
   IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
-endif
+
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
 #####################################################

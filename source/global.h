@@ -78,6 +78,7 @@
 /// - 2012.05.15 JM: Added global ixmin/ixmax/irange functions to grid base class
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
+/// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -365,7 +366,6 @@ struct which_physics {
   int thermal_conduction; ///< 0 if no conductivity, 1 if using it.
 #endif // THERMAL CONDUCTION
 
-#ifdef NEW_METALLICITY
   /// Mass fraction of He, Y, used for calculation electron/ion
   /// densities as a function of H number density, and for setting
   /// the mean mass per particle, mu.
@@ -374,7 +374,6 @@ struct which_physics {
   /// microphysics (but doesn't contribute to mean mass per particle,
   /// mu).
   double Metal_MassFrac;
-#endif // NEW_METALLICITY
   
 };
 

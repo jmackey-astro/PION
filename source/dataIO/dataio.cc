@@ -548,7 +548,6 @@ void DataIOBase::set_params()
   params.push_back(p);
 //#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
-#ifdef NEW_METALLICITY
   //
   // Helium abundance (by mass) Y.
   // Default value is from Asplund et al. (2009,ARA&A,47,481)
@@ -565,7 +564,6 @@ void DataIOBase::set_params()
     ("EP_Metal_MassFrac", &SimPM.EP.Metal_MassFrac, 0.0142);
   p = pZZZ; p->critical=false;
   params.push_back(p);
-#endif // NEW_METALLICITY
 
   //
   // TIMESTEPS
