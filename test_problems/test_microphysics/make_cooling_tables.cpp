@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   //
   // Get command-line arguments
   //
-  if (argc!=2) {
+  if (argc!=4) {
     cout << "Use as follows:\n";
     cout << "MP-TEST <microphysics-string>";
 //    cout << " <ionising-src> <FUV-src>";
@@ -111,15 +111,20 @@ int main(int argc, char **argv)
 //    cout <<"Tstar:        Effective temperature (K) of ionising source.\n";
 //    cout <<"Lstar:        Luminosity (erg/s) of ionsing source.\n";
 //    cout <<"LFUV:         FUV photon luminosity (/s) of point source.\n";
+    cout <<"nH:  number density of Hydrogen in gas (cm^{-3}).\n";
+    cout <<"r:   distance from radiation source (parsecs).\n";
     rep.error("Bad number of args",argc);
   }
 
   string MPtype = argv[1];
+  double nH = atof(argv[2]);
+  double r  = atof(argv[3])*GS.parsec();
 //  int ion_src = atoi(argv[2]);
 //  int fuv_src = atoi(argv[3]);
 //  double Tstar = atof(argv[4]);
 //  double Lstar = atof(argv[5]);
 //  double Lfuv  = atof(argv[6]);
+
 
   // L = 4pi R^2 sigma*T^4
 //  double Rstar = sqrt(Lstar/(4.0*M_PI*GS.StefanBoltzmannConst()))/(Tstar*Tstar);
@@ -178,7 +183,10 @@ int main(int argc, char **argv)
   // label output file.
   //
   //string filehandle("");
-  string this_outfile=MPtype+"heating_cooling.txt";
+  ostringstream to;
+  to <<MPtype<<"_heating_cooling_nH"<<nH<<"_r"<<r/GS.parsec()<<".txt";
+  string this_outfile = to.str();
+
   //
   // Text File: proc 0 writes all the data.
   // 
@@ -211,7 +219,7 @@ int main(int argc, char **argv)
   // E-dot in erg/cm3/s.
   //
   double p_in[SimPM.nvar], p_out[SimPM.nvar];
-  p_in[RO] = 2.338e-24;    // n(H)=1/c.c.
+  p_in[RO] = 2.338e-24*nH;    // n(H)=1/c.c.
   p_in[PG] = 1e-12;        // arbitrary;
   p_in[VX] = p_in[VY] = p_in[VZ] = 0.0;
   p_in[SimPM.ftr] = 1.0e-3;
@@ -219,26 +227,36 @@ int main(int argc, char **argv)
   double delt = 1.0e5;   // time to integrate for.
   int nheat=1, nion=1; // number of FUV-heating, and ionising srcs.
   
+  double sf=1.0; // scaling factor for column densities
+  //double r = 3.086e19; // distance to source.
+  double dr= 0.01*r;   // thickness of shell that is being ionised.
+
+  //
+  // FUV heating from star.
+  //
   struct rt_source_data hs;
   hs.id = 0;
   hs.type = RT_SRC_SINGLE;
   hs.strength = 3.0e47;  // What i used for simulations.
-  hs.Vshell = 3.697e56;   // 4/3 pi ((r+dr)^3-r^3) r=10 pc, dr=0.01 pc.
-  hs.dS     = 3.086e16;   // 0.01 pc thickness of shell.
-  hs.Column = 7.215e-5;  // 2.338e-24 g/cm3 for 10pc, total gas column.
-  hs.DelCol = 7.215e-8;  // 0.01pc, total gas coumn.
+  hs.Vshell = 4.0*M_PI*((r+dr)*(r+dr)*(r+dr)-r*r*r)/3.0; // 3.697e56
+  hs.dS     = dr;   // 0.01 pc thickness of shell.
+  hs.Column = 7.215e-5*sf;  // 2.338e-24 g/cm3 for 10pc, total gas column.
+  hs.DelCol = 7.215e-8*sf;  // 0.01pc, total gas coumn.
   std::vector<struct rt_source_data> Vhs;
   Vhs.clear();
   Vhs.push_back(hs);
-
+  
+  //
+  // ionising radiation from star
+  //
   struct rt_source_data is;
   is.id = 0;
   is.type = RT_SRC_SINGLE;
   is.strength = 4.42134e37;  // less than zeta Oph b/c BB approx. is v. bad!
-  is.Vshell = 3.697e56;   // 4/3 pi ((r+dr)^3-r^3) r=10 pc, dr=0.01 pc.
-  is.dS     = 3.086e16;   // 0.01 pc thickness of shell.
-  is.Column = 7.215e-10;  // 2.338e-24 g/cm3 for 10pc, with 1e-5 neutral-frac.
-  is.DelCol = 7.215e-13;  // 0.01pc, at 1e-5 neutral fraction.
+  is.Vshell = 4.0*M_PI*((r+dr)*(r+dr)*(r+dr)-r*r*r)/3.0;
+  is.dS     = dr;
+  is.Column = 7.215e-10*sf;  // 2.338e-24 g/cm3 for 10pc, with 1e-5 neutral-frac.
+  is.DelCol = 7.215e-13*sf;  // 0.01pc, at 1e-5 neutral fraction.
   std::vector<struct rt_source_data> Vis;
   Vis.clear();
   Vis.push_back(is);
@@ -252,10 +270,10 @@ int main(int argc, char **argv)
   Dhs.id = 0;
   Dhs.type = RT_SRC_SINGLE;
   Dhs.strength = 3.0e47;  // What i used for simulations.
-  Dhs.Vshell = 3.697e56;   // 4/3 pi ((r+dr)^3-r^3) r=10 pc, dr=0.01 pc.
-  Dhs.dS     = 3.086e16;   // 0.01 pc thickness of shell.
-  Dhs.Column = 7.215e+2;  // 1e7*2.338e-24 g/cm3 for 10pc, total gas column.
-  Dhs.DelCol = 7.215e-1;  // 0.01pc, total gas coumn.
+  Dhs.Vshell = 4.0*M_PI*((r+dr)*(r+dr)*(r+dr)-r*r*r)/3.0;
+  Dhs.dS     = dr;
+  Dhs.Column = 7.215e+2/sf;  // 1e7*2.338e-24 g/cm3 for 10pc, total gas column.
+  Dhs.DelCol = 7.215e-1/sf;  // 0.01pc, total gas coumn.
   std::vector<struct rt_source_data> VDhs;
   VDhs.clear();
   VDhs.push_back(Dhs);
@@ -264,24 +282,79 @@ int main(int argc, char **argv)
   Dis.id = 0;
   Dis.type = RT_SRC_SINGLE;
   Dis.strength = 4.42134e37;  // less than zeta Oph b/c BB approx. is v. bad!
-  Dis.Vshell = 3.697e56;   // 4/3 pi ((r+dr)^3-r^3) r=10 pc, dr=0.01 pc.
-  Dis.dS     = 3.086e16;   // 0.01 pc thickness of shell.
-  Dis.Column = 7.215e+2;  // 1e7*2.338e-24 g/cm3 for 10pc, with 1.0 neutral-frac.
-  Dis.DelCol = 7.215e-1;  // 0.01pc, at 1.0 neutral fraction.
+  Dis.Vshell = 4.0*M_PI*((r+dr)*(r+dr)*(r+dr)-r*r*r)/3.0;
+  Dis.dS     = dr;
+  Dis.Column = 7.215e+2/sf;  // 1e7*2.338e-24 g/cm3 for 10pc, with 1.0 neutral-frac.
+  Dis.DelCol = 7.215e-1/sf;  // 0.01pc, at 1.0 neutral fraction.
   std::vector<struct rt_source_data> VDis;
   VDis.clear();
   VDis.push_back(Dis);
 
-  double T=10.0, tt=0.0;
+  //
+  // Find equilibrium ion fractions by integrating for a long time...
+  //
+  double y_eq_sh=0.02;
+  double y_eq_ns=0.99;
+  double dy=0.0;
+
+  //
+  // First for the shielded case.
+  //
+  p_in[SimPM.ftr] = y_eq_sh;
+  double T=1000.0, tt=0.0;
+  size_t count=0;
+  MP->Set_Temp(p_in,T,SimPM.gamma);
+  do {
+    delt = 0.01*MP->timescales_RT(p_in, nheat, VDhs, nion, VDis, SimPM.gamma);
+    err += MP->TimeUpdateMP_RTnew(p_in, nheat, VDhs, nion, VDis,
+                           p_out, delt, SimPM.gamma, 0, &tt);
+    //cout <<"dt="<<delt<<"\n";
+    dy = fabs(p_out[SimPM.ftr]-p_in[SimPM.ftr])/p_in[SimPM.ftr];
+    dy = std::max(dy,fabs(p_out[PG]-p_in[PG])/p_in[PG]);
+    for (int v=0;v<SimPM.nvar;v++) p_in[v]=p_out[v];
+    count ++;
+  } while (dy>1.0e-8 && count <200);
+  cout <<"y(H0)="<<1.0-p_out[SimPM.ftr]<<";  ";
+  rep.printVec("p_in", p_in, SimPM.nvar);
+  y_eq_sh = p_in[SimPM.ftr];
+
+  //
+  // Then for the unshielded case.
+  //
+  delt=1.0e5;
+  p_in[SimPM.ftr] = y_eq_ns;
+  T=5000.0; tt=0.0;
+  count =0;
+  MP->Set_Temp(p_in,T,SimPM.gamma);
+  do {
+    delt = 0.01*MP->timescales_RT(p_in, nheat, Vhs, nion, Vis, SimPM.gamma);
+    err += MP->TimeUpdateMP_RTnew(p_in, nheat, Vhs, nion, Vis,
+                           p_out, delt, SimPM.gamma, 0, &tt);
+    //cout <<"dt="<<delt<<"\n";
+    dy = fabs(p_out[SimPM.ftr]-p_in[SimPM.ftr])/p_in[SimPM.ftr];
+    dy = std::max(dy,fabs(p_out[PG]-p_in[PG])/p_in[PG]);
+    for (int v=0;v<SimPM.nvar;v++) p_in[v]=p_out[v];
+    count ++;
+  } while (dy>1.0e-8 && count <200);
+  rep.printVec("p_in", p_in, SimPM.nvar);
+  y_eq_ns = p_in[SimPM.ftr];
+
+
+
+
+  T=10.0; tt=0.0;
+  double dt_max=3.16e5;
   do {
     outf <<T<<"    ";
     //
     // first with dummy radiation sources (giant extinction).
     //
-    // y(H+)=0.002
+    // y(H+)=equilibrium value
     //
-    p_in[SimPM.ftr] = 0.002;
+    p_in[SimPM.ftr] = y_eq_sh;
     MP->Set_Temp(p_in,T,SimPM.gamma);
+    delt = 0.01*MP->timescales_RT(p_in, nheat, VDhs, nion, VDis, SimPM.gamma);
+    delt = std::min(delt,dt_max);
     err += MP->TimeUpdateMP_RTnew(p_in, nheat, VDhs, nion, VDis,
                            p_out, delt, SimPM.gamma, 0, &tt);
     outf <<(p_out[PG]-p_in[PG])/(SimPM.gamma-1.0)/delt<<"  ";
@@ -291,6 +364,8 @@ int main(int argc, char **argv)
     //
     p_in[SimPM.ftr] = 0.1;
     MP->Set_Temp(p_in,T,SimPM.gamma);
+    delt = 0.01*MP->timescales_RT(p_in, nheat, VDhs, nion, VDis, SimPM.gamma);
+    delt = std::min(delt,dt_max);
     err += MP->TimeUpdateMP_RTnew(p_in, nheat, VDhs, nion, VDis,
                            p_out, delt, SimPM.gamma, 0, &tt);
     outf <<(p_out[PG]-p_in[PG])/(SimPM.gamma-1.0)/delt<<"  ";
@@ -300,6 +375,8 @@ int main(int argc, char **argv)
     //
     p_in[SimPM.ftr] = 0.995;
     MP->Set_Temp(p_in,T,SimPM.gamma);
+    delt = 0.01*MP->timescales_RT(p_in, nheat, VDhs, nion, VDis, SimPM.gamma);
+    delt = std::min(delt,dt_max);
     err += MP->TimeUpdateMP_RTnew(p_in, nheat, VDhs, nion, VDis,
                            p_out, delt, SimPM.gamma, 0, &tt);
     outf <<(p_out[PG]-p_in[PG])/(SimPM.gamma-1.0)/delt<<"  ";
@@ -311,11 +388,13 @@ int main(int argc, char **argv)
     //
     p_in[SimPM.ftr] = 0.002;
     MP->Set_Temp(p_in,T,SimPM.gamma);
+    delt = 0.01*MP->timescales_RT(p_in, nheat, Vhs, nion, Vis, SimPM.gamma);
+    delt = std::min(delt,dt_max);
     err += MP->TimeUpdateMP_RTnew(p_in, nheat, Vhs, nion, Vis,
                            p_out, delt, SimPM.gamma, 0, &tt);
     outf <<(p_out[PG]-p_in[PG])/(SimPM.gamma-1.0)/delt<<"  ";
-    cout <<"LOW: T="<<T<<"; dp/p="<<fabs(p_in[PG]-p_out[PG])/p_in[PG];
-    cout <<",  dy/y="<<fabs(p_in[5]-p_out[5])/p_in[5] <<"\n";
+    //cout <<"LOW: T="<<T<<"; dp/p="<<fabs(p_in[PG]-p_out[PG])/p_in[PG];
+    //cout <<",  dy/y="<<fabs(p_in[5]-p_out[5])/p_in[5] <<"\n";
     //rep.printVec("p_in ",p_in ,6);
     //rep.printVec("p_out",p_out,6);
 
@@ -324,26 +403,30 @@ int main(int argc, char **argv)
     //
     p_in[SimPM.ftr] = 0.1;
     MP->Set_Temp(p_in,T,SimPM.gamma);
+    delt = 0.01*MP->timescales_RT(p_in, nheat, Vhs, nion, Vis, SimPM.gamma);
+    delt = std::min(delt,dt_max);
     err += MP->TimeUpdateMP_RTnew(p_in, nheat, Vhs, nion, Vis,
                            p_out, delt, SimPM.gamma, 0, &tt);
     outf <<(p_out[PG]-p_in[PG])/(SimPM.gamma-1.0)/delt<<"  ";
     //cout <<"T="<<T<<"; ";
-    cout <<"MED: T="<<T<<"; dp/p="<<fabs(p_in[PG]-p_out[PG])/p_in[PG];
-    cout <<",  dy/y="<<fabs(p_in[5]-p_out[5])/p_in[5] <<"\n";
+    //cout <<"MED: T="<<T<<"; dp/p="<<fabs(p_in[PG]-p_out[PG])/p_in[PG];
+    //cout <<",  dy/y="<<fabs(p_in[5]-p_out[5])/p_in[5] <<"\n";
     //rep.printVec("p_in ",p_in ,6);
     //rep.printVec("           p_out",p_out,6);
 
     //
-    // y(H+)=0.995
+    // y(H+)=equilibrium value
     //
-    p_in[SimPM.ftr] = 0.995;
+    p_in[SimPM.ftr] = y_eq_ns;
     MP->Set_Temp(p_in,T,SimPM.gamma);
+    delt = 0.01*MP->timescales_RT(p_in, nheat, Vhs, nion, Vis, SimPM.gamma);
+    delt = std::min(delt,dt_max);
     err += MP->TimeUpdateMP_RTnew(p_in, nheat, Vhs, nion, Vis,
                            p_out, delt, SimPM.gamma, 0, &tt);
     outf <<(p_out[PG]-p_in[PG])/(SimPM.gamma-1.0)/delt<<"  ";
     //cout <<"T="<<T<<"; ";
-    cout <<"HIH: T="<<T<<"; dp/p="<<fabs(p_in[PG]-p_out[PG])/p_in[PG];
-    cout <<",  dy/y="<<fabs(p_in[5]-p_out[5])/p_in[5] <<"\n";
+    //cout <<"HIH: T="<<T<<"; dp/p="<<fabs(p_in[PG]-p_out[PG])/p_in[PG];
+    //cout <<",  dy/y="<<fabs(p_in[5]-p_out[5])/p_in[5] <<"\n";
     //rep.printVec("p_in ",p_in ,6);
     //rep.printVec("           p_out",p_out,6);
 

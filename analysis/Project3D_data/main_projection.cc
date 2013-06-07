@@ -62,7 +62,7 @@
 /// If set, this subtracts the mean density from column density
 /// images.
 ///
-//#define SUBTRACT_MEAN
+#define SUBTRACT_MEAN
 
 #include <iostream>
 #include <sstream>

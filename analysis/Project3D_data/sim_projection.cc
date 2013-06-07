@@ -19,6 +19,8 @@
 /// - 2010.12.13 JM: Added  NEW_STOKES_CALC ifdef to Makefile; the new
 ///    code in the ifdef does a different Stokes Q,U calculation and
 ///    replaces the projected Bx,By with values calculated from Q,U.
+/// - 2013.05.24 JM: Modified H-alpha emission calculation to output
+///    intensity in units of erg/cm2/s/arcsec (set absorption to 0).
 
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
@@ -1863,9 +1865,10 @@ double point_velocity::get_point_density(const struct point_4cellavg *pt)
   return val;
 }
 
-double point_velocity::get_point_neutral_numberdensity(const struct point_4cellavg *pt,
-						       const int ifrac
-						       )
+double point_velocity::get_point_neutral_numberdensity(
+        const struct point_4cellavg *pt,
+        const int ifrac
+        )
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
@@ -1876,17 +1879,21 @@ double point_velocity::get_point_neutral_numberdensity(const struct point_4cella
 }
 
 ///
-/// Get the absorption and emission coefficients for hydrogen recombination
-/// radiation, according to Hummer94 and Henney et al. 2005's generic formulae
+/// Get the absorption and emission coefficients for hydrogen
+/// recombination radiation, according to Hummer94 and Henney et al.
+/// (2005)'s generic formulae.
 /// 
-/// I found emissivities according to Storey & Hummer (1995) MNRAS, 272, 41, and they
-/// drop linearly with temperature.  Not sure why that is, but it is for Ha,Hb,Hg, etc.
+/// I found emissivities according to Storey & Hummer
+/// (1995,MNRAS,272,41), and they drop linearly with temperature.
+/// Not sure why that is, but it is for Ha,Hb,Hg, etc.
+/// UPDATE: Replaced with a fit to Ostebrock (1989)'s tables.
 ///
-void   point_velocity::get_point_recomb_radiation_params(const struct point_4cellavg *pt, ///< point in question.
-							 const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-							 double *alpha,   ///< absorption coefficient (photons/cm)
-							 double *j        ///< emission coeff (phot/cm^3/s/ster)
-							 )
+void point_velocity::get_point_recomb_radiation_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (photons/cm)
+        double *j        ///< emission coeff (phot/cm^3/s/ster)
+        )
 {
   //
   // I need the ion number density, neutral number density, and temperature.
@@ -1894,19 +1901,38 @@ void   point_velocity::get_point_recomb_radiation_params(const struct point_4cel
   // 
   double T, ni, nn;
   T  = get_point_temperature(pt,ifrac);
-  nn = get_point_neutral_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)/GS.m_p();
+  //
+  // get_point_neutral_numberdensity() assume mean mass per particle
+  // is m_p(), so we multiply by the H mass fraction to get H number
+  // density.
+  // get_point_density() is mass density, so we also divide by m_p().
+  // Then the electron number density is the H+ number density times
+  // (1+X(He)/4X(H)).
+  //
+  nn = get_point_neutral_numberdensity(pt,ifrac)*(1.0-SimPM.EP.Helium_MassFrac);
+  ni = get_point_density(pt)*(1.0-SimPM.EP.Helium_MassFrac)/GS.m_p();
   ni = std::max(0.0, ni-nn);
-  
-  //if (T<1000.0 && T>5.0)
-  //  cout <<"T="<<T<<" nn="<<nn<<" ni="<<ni<<" ";
-  *alpha = (nn) *5.0e-22;       // cgs units hardcoded!
-  //*alpha = 0.0; // try with zero absorption to see if results make sense...
-  if (T<1.0)
+  //
+  // First absorption, from Henney et al. (2009) assuming the opacity
+  // is from dust
+  //
+  //*alpha = (nn) *5.0e-22; // cgs units hardcoded.
+  *alpha = 0.0; // zero absorption (cuts out simulation edges.
+  //
+  // Emissivity in H-alpha is
+  //   j = 1.12e-22*n_e*n_p/pow(T,0.9) erg/cm3/s/sr,
+  // from Osterbrock (book, edition 2006, table 4.4).
+  // Converted to per square arcsec this is
+  //   j = 2.63e-33*n_e*n_p/pow(T,0.9) erg/cm3/s/sq.arcsec.
+  //
+  if (T<1.0) {
     // can get zero temperature if point is off-grid!!!
     *j = 0.0;
-  else 
-    *j = 2.056e-14*ni*ni/T; // Emissivity scales more steeply than recombination rate
+  }
+  else {
+    *j = 2.63e-33*ni*ni*exp(-0.9*log(T));
+    // OLD VALUES *j = 2.056e-14*ni*ni/T; // Emissivity scales more steeply than recombination rate
+  }
   //if (T<1000.0 && T>5.0)
   //  cout <<"alpha = "<<*alpha<<" j="<<*j;
   return;
