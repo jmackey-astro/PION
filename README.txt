@@ -247,3 +247,7 @@ finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.15
 The first time you run parallel code there will probably be an error
 about no "mpd" host running.  Run 'mpd&' and try again.
 
+---------------------------------------------------------------------
+Written by Jonathan Mackey (C) 2006-2013  jmackey@astro.uni-bonn.de
+---------------------------------------------------------------------
+

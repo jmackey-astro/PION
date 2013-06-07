@@ -73,8 +73,6 @@ esac
 case $HOST in
   login[0-9][0-9])
     echo "Compiling on SuperMUC"
-    #module purge
-    #module load mkl/10.2.2.025 intel/11.1.059 sundials/2.4.0 parastation/mpi2-intel-5.0.25-2
     export CC=icc
     export CXX=icpc
     export FC=ifort
