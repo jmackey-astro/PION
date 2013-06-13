@@ -8,6 +8,9 @@
 ///     Added Contact Discontinuity tests.
 /// - 2013.03.23-24 JM: Added Irradiated cloud and I-front
 ///    instability test problems.
+/// - 2013.06.13 JM: Added StarBench cooling/shadowing test from
+///    Pascal Tremblin.
+///
 
 #include "ics/icgen.h"
 #include "coord_sys/VectorOps.h"
@@ -64,6 +67,10 @@ int IC_StarBench_Tests::setup_data(
            ics=="StarBench_IrrCloud_IsoSph") {
     cout <<"\t\tSetting up StarBench Irradiated Cloud test.\n";
     err += setup_StarBench_IrrCl(rrp,ggg,ics);
+  }
+  else if (ics=="StarBench_TremblinCooling") {
+    cout <<"\t\tSetting up StarBench Shadowing/Mixing/Cooling test.\n";
+    err += setup_StarBench_TremblinCooling(rrp,ggg,ics);
   }
 
 
@@ -398,6 +405,62 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg, ///< pointer to grid
+      string &test
+      )
+{
+  //
+  // Set density based on parameter (giving n(H) in cm^{-3})
+  //
+  double density=0.0, slab_dens=0.0;
+  string seek = rrp->find_parameter("StarBench_TremblinCooling_Rho");
+  if (seek=="") rep.error("Need parameter StarBench_TremblinCooling_Rho",1);
+  else density = atof(seek.c_str());
+
+  seek = rrp->find_parameter("StarBench_TremblinCooling_SlabRho");
+  if (seek=="") rep.error("Need parameter StarBench_TremblinCooling_SlabRho",1);
+  else slab_dens = atof(seek.c_str());
+
+  double dpos[SimPM.ndim];
+  cell *c=ggg->FirstPt();
+  do {
+    CI.get_dpos(c,dpos);
+    
+    //
+    // set general ISM density, pressure, and ion fraction.
+    //
+    c->P[RO] = density*GS.m_p();      // Pure H with n=0.5/cm3.
+    c->P[PG] = 2.0*c->P[RO]*GS.kB()*1.0e4/GS.m_p(); // 10000K ionised gas (pure H).
+    c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
+    for (int v=0; v<SimPM.ntracer; v++)
+      c->P[SimPM.ftr+v] = 1.0; // fully ionised
+
+    //
+    // set slab density and ion fraction.
+    //
+    if (dpos[XX]<ggg->DX() &&
+        dpos[YY]>4.3204e18 &&
+        dpos[YY]<8.0236e18) {
+      c->P[RO] = slab_dens*GS.m_p();
+      for (int v=0; v<SimPM.ntracer; v++)
+        c->P[SimPM.ftr+v] = 0.0; // fully neutral
+    }
+
+  } while ( (c=ggg->NextPt(c)) !=0);
+
+  return 0;
+}
+
+
+// ##################################################################
+// ##################################################################
 
 // ##################################################################
 // ##################################################################

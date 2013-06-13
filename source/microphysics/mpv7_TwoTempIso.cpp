@@ -263,8 +263,8 @@ int mpv7_TwoTempIso::ydot(
   // collisional ionisation of H, with its associated cooling.
   // scales with n_e*nH0.
   // 
-  Hi_coll_ion_rates(T, &temp1, &temp2);
-  oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
+  //Hi_coll_ion_rates(T, &temp1, &temp2);
+  //oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
 
   //
   // photo-ionisation of H:
@@ -320,7 +320,8 @@ int mpv7_TwoTempIso::ydot(
   //
   // radiative recombination of H+
   //
-  oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*ne;
+  //oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*ne;
+  oneminusx_dot += 2.7e-13 *x_in*ne;
 
   //
   // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar

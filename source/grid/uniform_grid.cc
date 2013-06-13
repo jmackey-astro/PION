@@ -59,6 +59,10 @@
 /// - 2013.01.14 JM: Added GRIDV2 ifdef to eventually retire this...
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.04.15 JM: Tidied up stdIO, fixed bug in iR_cov() (cyl).
+/// - 2013.06.13 JM: Added STARBENCH1 boundary to put in a wall that
+///    shields the ISM from ionising radiation, to study the thermal
+///    physics and recombination in the shadowed region.
+///
 
 
 #include "global.h"
@@ -595,6 +599,7 @@ int UniformGrid::SetupBCs(int Nbc, string typeofbc)
      case RADSHOCK:   err += BC_assign_RADSHOCK(  &BC_bd[i]); break;
      case RADSH2:     err += BC_assign_RADSH2(    &BC_bd[i]); break;
      case STWIND:     err += BC_assign_STWIND(    &BC_bd[i]); break;
+     case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
     }
@@ -716,6 +721,10 @@ int UniformGrid::BC_setBCtypes(string bctype)
       else if (BC_bd[i].type=="rsh") {BC_bd[i].itype=RADSHOCK; BC_bd[i].type="RADSHOCK";}
       else if (BC_bd[i].type=="rs2") {BC_bd[i].itype=RADSH2;   BC_bd[i].type="RADSH2";}
       else if (BC_bd[i].type=="wnd") {BC_bd[i].itype=STWIND;   BC_bd[i].type="STWIND";}
+      else if (BC_bd[i].type=="sb1") {
+        BC_bd[i].itype=STARBENCH1;
+        BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
+      }
       else rep.error("Don't know this BC type",BC_bd[i].type);
       if(!BC_bd[i].data.empty())
         rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
@@ -1545,6 +1554,128 @@ int UniformGrid::BC_update_STWIND(boundary_data *b, ///< Boundary to update.
 // ##################################################################
 // ##################################################################
 
+int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
+{
+
+  if (b->dir != NO) rep.error("RADSH2 not external boundary!",b->dir);
+
+  //
+  // should have no data in an internal boundary.
+  //
+  if (!b->data.empty())
+    rep.error("BC_assign_STARBENCH: Not empty boundary data",b->itype);
+
+  //
+  // Setup reference state vector and initialise to zero.
+  //
+  if (b->refval) 
+    rep.error("STARBENCH refval already initialised",b->refval);
+  b->refval = mem.myalloc(b->refval, G_nvar);
+  if (!b->data.empty())
+    rep.error("BC_assign_STWIND: Not empty boundary data",b->itype);
+  for (int v=0;v<G_nvar;v++)
+    b->refval[v]=0.0;
+
+  //
+  // Add cells to boundary.  We want a layer of cells against the
+  // XN boundary between y=1.4pc and y=2.6pc.
+  //
+  cell *c = FirstPt();
+  double dpos[G_ndim];
+  CI.get_dpos(c,dpos);
+  while (dpos[YY]<(4.3204e18-G_dx)) {c=NextPt(c,YP); CI.get_dpos(c,dpos);}
+
+  while (dpos[YY]<8.0236e18+G_dx) {
+    b->data.push_back(c);
+    c->isbd=true;
+    b->data.push_back(NextPt(c,XP));
+    NextPt(c,XP)->isbd=true;
+    cout <<"Added cell id "<<c->id<<" and "<<NextPt(c,XP)->id<<" with y-pos="<<dpos[YY]<<"\n";
+    cout <<"G_dx="<<G_dx<<"\n";
+    c=NextPt(c,YP);
+    CI.get_dpos(c,dpos);
+  }
+
+  //
+  // Set slab density, and set reference density/pressure/tracer.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  c=NextPt((*bpt),YP);
+  b->refval[RO] = c->P[RO];
+  b->refval[PG] = c->P[PG];
+  b->refval[SimPM.ftr] = c->P[SimPM.ftr];
+
+  //
+  // Now set values in all cells in the slab.
+  //
+  do{
+    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
+      for (int v=0;v<G_nvar;v++) {
+        (*bpt)->P[v] = (*bpt)->Ph[v] = b->refval[v];
+        (*bpt)->dU[v] = 0.;
+      }
+    }
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  return 0;
+}
+
+// ##################################################################
+// ##################################################################
+
+int UniformGrid::BC_update_STARBENCH1(
+        struct boundary_data *b,
+        const int cstep,
+        const int maxstep
+        )
+{
+  list<cell*>::iterator c=b->data.begin();
+  double dpos[G_ndim];
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    CI.get_dpos((*c),dpos);
+    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->Ph[v] = (*c)->P[v];
+        (*c)->dU[v] = 0.;
+      }
+    }
+    else if (dpos[XX]>G_dx) {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->Ph[v] = NextPt((*c),XP)->Ph[v];
+        (*c)->P[v]  = NextPt((*c),XP)->P[v];
+        (*c)->dU[v] = NextPt((*c),XP)->dU[v];
+        (*c)->P[VX] = (*c)->Ph[VX] = (*c)->dU[MMX] = 0.0;
+      }
+    }
+    else if (dpos[YY]<4.3204e18) {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->Ph[v] = NextPt((*c),YN)->Ph[v];
+        (*c)->P[v]  = NextPt((*c),YN)->P[v];
+        (*c)->dU[v] = NextPt((*c),YN)->dU[v];
+        (*c)->P[VX] = (*c)->Ph[VX] = (*c)->dU[MMX] = 0.0;
+        (*c)->P[VY] = (*c)->Ph[VY] = (*c)->dU[MMY] = 0.0;
+      }
+    }
+    else  {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->Ph[v] = NextPt((*c),YP)->Ph[v];
+        (*c)->P[v]  = NextPt((*c),YP)->P[v];
+        (*c)->dU[v] = NextPt((*c),YP)->dU[v];
+        (*c)->P[VX] = (*c)->Ph[VX] = (*c)->dU[MMX] = 0.0;
+        (*c)->P[VY] = (*c)->Ph[VY] = (*c)->dU[MMY] = 0.0;
+      }
+    }
+
+  } // all cells.
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 int UniformGrid::BC_printBCdata(boundary_data *b)
 {
   list<cell*>::iterator c=b->data.begin();
@@ -1568,6 +1699,7 @@ int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
      case RADSHOCK:   err += BC_update_RADSHOCK(   b, cstep, maxstep); break;
      case RADSH2:     err += BC_update_RADSH2(     b, cstep, maxstep); break;
      case STWIND:     err += BC_update_STWIND(     b, cstep, maxstep); break;
+     case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
     case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW: case REFLECTING:
     case FIXED: case JETBC: case JETREFLECT: case DMACH: case DMACH2: case BCMPI:
       //
@@ -1609,7 +1741,7 @@ int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
     case JETREFLECT: err += BC_update_JETREFLECT( b, cstep, maxstep); break;
     case DMACH:      err += BC_update_DMACH(      b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
-    case RADSHOCK: case RADSH2: case STWIND: case BCMPI:
+    case RADSHOCK: case RADSH2: case STWIND: case STARBENCH1: case BCMPI:
       //
       // internal bcs updated separately
       //

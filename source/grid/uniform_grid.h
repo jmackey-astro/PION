@@ -50,6 +50,7 @@
 /// - 2011.04.06 JM: Added idifference_cell2cell() function for thermal
 ///    conduction calculation.
 /// - 2012.05.15 JM: Added global iXmin,iXmax,iRange functions for parallel grids.
+/// - 2013.06.13 JM: Added STARBENCH1 internal boundary and functions.
 
 #ifndef UNIFORMGRID_H
 #define UNIFORMGRID_H
@@ -81,7 +82,8 @@ enum BoundaryTypes {
     RADSHOCK   =11, ///< Boundary condition adjacent to cold wall for radiative shock test problem.
     RADSH2     =12, ///< Outflow augmented with fixed outflow speed.
     ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
-    STWIND     =14  ///< Stellar wind sources exist, so apply internal boundaries.
+    STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
+    STARBENCH1 =15  ///< StarBench test for mixing with a solid wall.
 };
 
 
@@ -216,7 +218,27 @@ class UniformGrid
 					      boundary_data * ///< boundary ptr.
 					      );
 
-   /** \brief Updates data on a periodic boundary. */
+  ///
+  /// Add internal boundary of a solid dense wall for the StarBench
+  /// shadowing/heating/cooling test by P. Tremblin.
+  ///
+  int   BC_assign_STARBENCH1(
+          boundary_data *
+          );
+
+  ///
+  /// Update internal boundary of a solid dense wall for the StarBench
+  /// shadowing/heating/cooling test by P. Tremblin.  This just ignores
+  /// the fluxes and sets dU to zero again, because it is a fixed and
+  /// static wall.
+  ///
+  int   BC_update_STARBENCH1(
+          boundary_data *, ///< Boundary to update.
+          const int,  ///< current fractional step being taken.
+          const int   ///< final step.
+          );
+
+  /** \brief Updates data on a periodic boundary. */
    virtual int BC_update_PERIODIC(  boundary_data *, ///< Boundary to update.
 				    const int,  ///< current fractional step being taken.
 				    const int   ///< final step.

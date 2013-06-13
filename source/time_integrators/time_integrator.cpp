@@ -136,7 +136,6 @@
 ///    scheme which should be more accurate (and truly 2nd order).
 /// - 2012.08.16 JM: Debugging.  It seems to be working well now, but
 ///    there is still more testing to do.
-///
 
 
 #include "../defines/functionality_flags.h"
@@ -1169,7 +1168,6 @@ int IntUniformFV::grid_update_state_vector(
     dp.c = c;
 #endif
 //    if (c->id==80) CI.print_cell(c);
-
     err += eqn->CellAdvanceTime(c, c->P, c->dU, c->Ph, &temperg,
                                 SimPM.gamma, dt);
 #ifdef TESTING

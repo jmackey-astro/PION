@@ -603,6 +603,15 @@ class IC_StarBench_Tests : public ICsetup_base {
       class GridBaseClass *, ///< pointer to grid
       string &test           ///< String with which test to run.
       );
+  
+  ///
+  /// The shadowed region cooling/recomb test from Pascal Tremblin.
+  ///
+  int setup_StarBench_TremblinCooling(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *, ///< pointer to grid
+      string &test           ///< String with which test to run.
+      );
 
 };
 
