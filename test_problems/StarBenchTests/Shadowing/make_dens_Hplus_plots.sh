@@ -18,8 +18,8 @@ ANGLE=${13}  # ANGLE in degrees of velocity wrt -ve x-axis.
 
 mkdir $SAVEDIR
 VISITFILE=visit_${FBASE}_NVY.py
-#VISITCMD=/vol/aibn129/aibn129_1/jmackey/extra_libraries/visit_bin/bin/visit
-VISITCMD=/Applications/VisIt.app/Contents/MacOS/VisIt
+VISITCMD=/vol/aibn129/aibn129_1/jmackey/extra_libraries/visit_bin/bin/visit
+#VISITCMD=/Applications/VisIt.app/Contents/MacOS/VisIt
 
 cat <<EOF > ${VISITFILE}
 # Define expressions
