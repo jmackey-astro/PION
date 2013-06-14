@@ -1578,7 +1578,9 @@ int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
 
   //
   // Add cells to boundary.  We want a layer of cells against the
-  // XN boundary between y=1.4pc and y=2.6pc.
+  // XN boundary between y=1.4pc and y=2.6pc.  And we wrap this
+  // with a surrounding layer of background gas that doesn't react
+  // to the wall at all.
   //
   cell *c = FirstPt();
   double dpos[G_ndim];
@@ -1612,7 +1614,7 @@ int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
     if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
       for (int v=0;v<G_nvar;v++) {
         (*bpt)->P[v] = (*bpt)->Ph[v] = b->refval[v];
-        (*bpt)->dU[v] = 0.;
+        (*bpt)->dU[v] = 0.0;
       }
     }
     ++bpt;
@@ -1636,8 +1638,8 @@ int UniformGrid::BC_update_STARBENCH1(
     CI.get_dpos((*c),dpos);
     if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
       for (int v=0;v<G_nvar;v++) {
-        (*c)->Ph[v] = (*c)->P[v];
-        (*c)->dU[v] = 0.;
+        (*c)->Ph[v] = (*c)->P[v] = b->refval[v];
+        (*c)->dU[v] = 0.0;
       }
     }
     else if (dpos[XX]>G_dx) {

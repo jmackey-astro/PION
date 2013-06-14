@@ -24,7 +24,9 @@ plot "../analysis/S1Dn0080.txt" u 1:a w lp title "dx=0.2000 pc", \
      "../analysis/S1Dn0160.txt" u 1:a w lp title "dx=0.1000 pc", \
      "../analysis/S1Dn0320.txt" u 1:a w lp title "dx=0.0500 pc", \
      "../analysis/S1Dn0640.txt" u 1:a w lp title "dx=0.0250 pc", \
-     "../analysis/S1Dn1280.txt" u 1:a w lp title "dx=0.0125 pc"
+     "../analysis/S1Dn1280.txt" u 1:a w lp title "dx=0.0125 pc", \
+     "../analysis/S1Dn2560.txt" u 1:a w l lt -1 title "dx=0.01125 pc"
+
 
 set output "S1D_Shock_resolution.eps"
 set ylabel "R_{SF} (pc)" offset 2,0
@@ -33,7 +35,9 @@ plot "../analysis/S1Dn0080.txt" u 1:a w lp title "dx=0.2000 pc", \
      "../analysis/S1Dn0160.txt" u 1:a w lp title "dx=0.1000 pc", \
      "../analysis/S1Dn0320.txt" u 1:a w lp title "dx=0.0500 pc", \
      "../analysis/S1Dn0640.txt" u 1:a w lp title "dx=0.0250 pc", \
-     "../analysis/S1Dn1280.txt" u 1:a w lp title "dx=0.0125 pc"
+     "../analysis/S1Dn1280.txt" u 1:a w lp title "dx=0.0125 pc", \
+     "../analysis/S1Dn2560.txt" u 1:a w l lt -1 title "dx=0.01125 pc"
+
 
 exit
 EOF
