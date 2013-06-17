@@ -366,6 +366,10 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
     else if (BC_bd[i].type=="fix") {BC_bd[i].itype=FIXED; BC_bd[i].type="FIXED";}
     else if (BC_bd[i].type=="dmr") {BC_bd[i].itype=DMACH; BC_bd[i].type="DMACH";}
     else if (BC_bd[i].type=="mpi") {BC_bd[i].itype=BCMPI; BC_bd[i].type="BCMPI";}
+    else if (BC_bd[i].type=="sb1") {
+      BC_bd[i].itype=STARBENCH1;
+      BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
+    }
     else rep.error("Don't know this BC type",BC_bd[i].type);
     
     if(!BC_bd[i].data.empty()) rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
@@ -490,6 +494,7 @@ int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
      case DMACH2:     err += BC_assign_DMACH2(    &BC_bd[i]); break;
      case BCMPI:      err += BC_assign_BCMPI(&BC_bd[i],BC_MPItag); break;
      case STWIND:     err += BC_assign_STWIND(    &BC_bd[i]); break;
+     case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
     }
@@ -522,6 +527,7 @@ int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxste
     case DMACH:      err += BC_update_DMACH(      b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
     case BCMPI:      err += BC_update_BCMPI(      b, cstep, maxstep,BC_MPItag); break;
+    case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
     case STWIND: case RADSHOCK: case RADSH2:
       //
       // These are updated in TimeUpdateInternalBCs

@@ -1740,9 +1740,9 @@ int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
      case RADSHOCK:   err += BC_update_RADSHOCK(   b, cstep, maxstep); break;
      case RADSH2:     err += BC_update_RADSH2(     b, cstep, maxstep); break;
      case STWIND:     err += BC_update_STWIND(     b, cstep, maxstep); break;
-     case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
     case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW: case REFLECTING:
     case FIXED: case JETBC: case JETREFLECT: case DMACH: case DMACH2: case BCMPI:
+    case STARBENCH1:
       //
       // External BCs updated elsewhere
       //     
@@ -1782,7 +1782,8 @@ int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
     case JETREFLECT: err += BC_update_JETREFLECT( b, cstep, maxstep); break;
     case DMACH:      err += BC_update_DMACH(      b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
-    case RADSHOCK: case RADSH2: case STWIND: case STARBENCH1: case BCMPI:
+    case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
+    case RADSHOCK: case RADSH2: case STWIND: case BCMPI:
       //
       // internal bcs updated separately
       //

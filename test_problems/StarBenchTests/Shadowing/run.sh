@@ -5,19 +5,20 @@
 data_dir=/vol/aibn129/aibn129_1/jmackey/scratch/StarBench
 movie_dir=.
 rm ${movie_dir}/*.mp4
+rm ${data_dir}/*.silo
 
 
-#../../../icgen_serial params_TremblinMixing_D2_N064.txt silo
-#../../../icgen_serial params_TremblinMixing_D2_N064_nH5.txt silo
+../../../icgen_serial params_TremblinMixing_D2_N064_NH0p5.txt silo
+../../../icgen_serial params_TremblinMixing_D2_N064_nH5.txt silo
 
 
-#../../../pion_serial IC_TremblinMixing_D2_N064_nH5.silo 5 1 \
-# outfile=${data_dir}/TremblinMixing_D2_N064_nH5_Native 
-# redirect=${data_dir}/log_TremblinMixing_D2_N064_nH5_Native_
+../../../pion_serial IC_TremblinMixing_D2_N064_nH5.silo 5 1 \
+ outfile=${data_dir}/TremblinMixing_D2_N064_nH5_Native \
+ redirect=${data_dir}/log_TremblinMixing_D2_N064_nH5_Native_
 
-#../../../pion_serial IC_TremblinMixing_D2_N064.silo 5 1 \
-# outfile=${data_dir}/TremblinMixing_D2_N064_nH0p5_Native \
-# redirect=${data_dir}/log_TremblinMixing_D2_N064_nH0p5_Native_
+../../../pion_serial IC_TremblinMixing_D2_N064_NH0p5.silo 5 1 \
+ outfile=${data_dir}/TremblinMixing_D2_N064_nH0p5_Native \
+ redirect=${data_dir}/log_TremblinMixing_D2_N064_nH0p5_Native_
 
 
 ./make_dens_Hplus_plots.sh \
