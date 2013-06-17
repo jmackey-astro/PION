@@ -7,28 +7,31 @@ movie_dir=.
 #rm ${movie_dir}/*.mp4
 #rm ${data_dir}/*.silo
 
+NP=4
+ICG="mpirun -np $NP ../../../icgen_parallel"
+PION="mpirun -np $NP ../../../pion_parallel"
 
-../../../icgen_serial params_TremblinMixing_D2_N064_NH0p5.txt silo
-../../../icgen_serial params_TremblinMixing_D2_N064_nH5.txt silo
+$ICG params_TremblinMixing_D2_N064_NH0p5.txt silo
+$ICG params_TremblinMixing_D2_N064_nH5.txt silo
 
 
-../../../pion_serial IC_TremblinMixing_D2_N064_nH5.silo 5 1 \
+$PION IC_TremblinMixing_D2_N064_nH5_0000.silo 5 1 \
  outfile=${data_dir}/TremblinMixing_D2_N064_nH5_Native \
  redirect=${data_dir}/log_TremblinMixing_D2_N064_nH5_Native_
 
-../../../pion_serial IC_TremblinMixing_D2_N064_NH0p5.silo 5 1 \
+$PION IC_TremblinMixing_D2_N064_NH0p5_0000.silo 5 1 \
  outfile=${data_dir}/TremblinMixing_D2_N064_nH0p5_Native \
  redirect=${data_dir}/log_TremblinMixing_D2_N064_nH0p5_Native_
 
 
 ./make_dens_Hplus_plots.sh \
- ${data_dir} TremblinMixing_D2_N064_nH5_Native \
- ${data_dir} fig_TremblinMixing_D2_N064_nH5_Native \
+ ${data_dir} TremblinMixing_D2_N064_nH5_Native_0000 \
+ ${data_dir} fig_TremblinMixing_D2_N064_nH5_NativeP \
  "n(H)=5 test" 0.0 4.0 0.0 4.0  0.0 4.0  0 0
 
 ./make_dens_Hplus_plots.sh \
- ${data_dir} TremblinMixing_D2_N064_nH0p5_Native \
- ${data_dir} fig_TremblinMixing_D2_N064_nH0p5_Native \
+ ${data_dir} TremblinMixing_D2_N064_nH0p5_Native_0000 \
+ ${data_dir} fig_TremblinMixing_D2_N064_nH0p5_NativeP \
  "n(H)=5 test" 0.0 4.0 0.0 4.0  -1.0 3.0  0 0
 
 ffmpeg -f image2 -r 10.0 \
