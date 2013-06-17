@@ -1611,6 +1611,7 @@ int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
   // Now set values in all cells in the slab.
   //
   do{
+    CI.get_dpos((*bpt),dpos);
     if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
       for (int v=0;v<G_nvar;v++) {
         (*bpt)->P[v] = (*bpt)->Ph[v] = b->refval[v];
@@ -1634,15 +1635,31 @@ int UniformGrid::BC_update_STARBENCH1(
 {
   list<cell*>::iterator c=b->data.begin();
   double dpos[G_ndim];
+  //
+  // Loop over all cells.
+  //
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    //
+    // get position of cell centre.
+    //
     CI.get_dpos((*c),dpos);
+    //
+    // If in high-density layer, then set values to reference
+    // state.
+    //
     if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
+      //cout <<"updating dense slab\n";
+      //rep.printVec("ref",b->refval,G_nvar);
+      //rep.printVec("val1",(*c)->P,G_nvar);
       for (int v=0;v<G_nvar;v++) {
         (*c)->Ph[v] = (*c)->P[v] = b->refval[v];
         (*c)->dU[v] = 0.0;
       }
+      //if (SimPM.timestep>50)
+      //  rep.printVec("val2",(*c)->P,G_nvar);
     }
     else if (dpos[XX]>G_dx) {
+      //cout <<"updating second column of cells\n";
       for (int v=0;v<G_nvar;v++) {
         (*c)->Ph[v] = NextPt((*c),XP)->Ph[v];
         (*c)->P[v]  = NextPt((*c),XP)->P[v];
@@ -1651,6 +1668,7 @@ int UniformGrid::BC_update_STARBENCH1(
       }
     }
     else if (dpos[YY]<4.3204e18) {
+      //cout <<"updating bottom cell\n";
       for (int v=0;v<G_nvar;v++) {
         (*c)->Ph[v] = NextPt((*c),YN)->Ph[v];
         (*c)->P[v]  = NextPt((*c),YN)->P[v];
@@ -1660,6 +1678,7 @@ int UniformGrid::BC_update_STARBENCH1(
       }
     }
     else  {
+      //cout <<"updating top cell\n";
       for (int v=0;v<G_nvar;v++) {
         (*c)->Ph[v] = NextPt((*c),YP)->Ph[v];
         (*c)->P[v]  = NextPt((*c),YP)->P[v];
