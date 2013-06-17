@@ -10,12 +10,14 @@
 ///    instability test problems.
 /// - 2013.06.13 JM: Added StarBench cooling/shadowing test from
 ///    Pascal Tremblin.
+/// - 2013.06.17 JM: Changed cooling/shadowing boundary condition
+///    so that it is off-grid and I don't need to worry about it
+///    in this file.
 ///
 
 #include "ics/icgen.h"
 #include "coord_sys/VectorOps.h"
 #include "dataIO/dataio.h"
-//#include "dataIO/dataio_fits.h"
 #include <sstream>
 
 IC_StarBench_Tests::IC_StarBench_Tests()
@@ -419,14 +421,11 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
   //
   // Set density based on parameter (giving n(H) in cm^{-3})
   //
-  double density=0.0, slab_dens=0.0;
+  double density=0.0;
   string seek = rrp->find_parameter("StarBench_TremblinCooling_Rho");
   if (seek=="") rep.error("Need parameter StarBench_TremblinCooling_Rho",1);
   else density = atof(seek.c_str());
 
-  seek = rrp->find_parameter("StarBench_TremblinCooling_SlabRho");
-  if (seek=="") rep.error("Need parameter StarBench_TremblinCooling_SlabRho",1);
-  else slab_dens = atof(seek.c_str());
 
   double dpos[SimPM.ndim];
   cell *c=ggg->FirstPt();
@@ -442,16 +441,6 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
     for (int v=0; v<SimPM.ntracer; v++)
       c->P[SimPM.ftr+v] = 1.0; // fully ionised
 
-    //
-    // set slab density and ion fraction.
-    //
-    if (dpos[XX]<ggg->DX() &&
-        dpos[YY]>4.3204e18 &&
-        dpos[YY]<8.0236e18) {
-      c->P[RO] = slab_dens*GS.m_p();
-      for (int v=0; v<SimPM.ntracer; v++)
-        c->P[SimPM.ftr+v] = 0.0; // fully neutral
-    }
 
   } while ( (c=ggg->NextPt(c)) !=0);
 

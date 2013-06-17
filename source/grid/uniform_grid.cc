@@ -62,6 +62,8 @@
 /// - 2013.06.13 JM: Added STARBENCH1 boundary to put in a wall that
 ///    shields the ISM from ionising radiation, to study the thermal
 ///    physics and recombination in the shadowed region.
+/// - 2013.06.17 JM: Changed STARBENCH1 from internal to external BC
+///    and fixed some bugs with it.  It works well now.
 ///
 
 
@@ -689,6 +691,10 @@ int UniformGrid::BC_setBCtypes(string bctype)
     else if (BC_bd[i].type=="jrf") {BC_bd[i].itype=JETREFLECT; BC_bd[i].type="JETREFLECT";}
     else if (BC_bd[i].type=="fix") {BC_bd[i].itype=FIXED;      BC_bd[i].type="FIXED";}
     else if (BC_bd[i].type=="dmr") {BC_bd[i].itype=DMACH;      BC_bd[i].type="DMACH";}
+    else if (BC_bd[i].type=="sb1") {
+      BC_bd[i].itype=STARBENCH1;
+      BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
+    }
     else rep.error("Don't know this BC type",BC_bd[i].type);
     
     if(!BC_bd[i].data.empty())
@@ -721,10 +727,6 @@ int UniformGrid::BC_setBCtypes(string bctype)
       else if (BC_bd[i].type=="rsh") {BC_bd[i].itype=RADSHOCK; BC_bd[i].type="RADSHOCK";}
       else if (BC_bd[i].type=="rs2") {BC_bd[i].itype=RADSH2;   BC_bd[i].type="RADSH2";}
       else if (BC_bd[i].type=="wnd") {BC_bd[i].itype=STWIND;   BC_bd[i].type="STWIND";}
-      else if (BC_bd[i].type=="sb1") {
-        BC_bd[i].itype=STARBENCH1;
-        BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
-      }
       else rep.error("Don't know this BC type",BC_bd[i].type);
       if(!BC_bd[i].data.empty())
         rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
@@ -1556,71 +1558,50 @@ int UniformGrid::BC_update_STWIND(boundary_data *b, ///< Boundary to update.
 
 int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
 {
-
-  if (b->dir != NO) rep.error("RADSH2 not external boundary!",b->dir);
-
   //
-  // should have no data in an internal boundary.
+  // First set up outflow boundaries.
   //
-  if (!b->data.empty())
-    rep.error("BC_assign_STARBENCH: Not empty boundary data",b->itype);
+  int err=BC_assign_OUTFLOW(b);
+  if (err) rep.error("BC_assign_STARBENCH1 error in OUTFLOW",err);
 
   //
-  // Setup reference state vector and initialise to zero.
+  // Now do some checks, and then set the column density in the 
+  // cells that we want to shadow.
   //
-  if (b->refval) 
-    rep.error("STARBENCH refval already initialised",b->refval);
-  b->refval = mem.myalloc(b->refval, G_nvar);
-  if (!b->data.empty())
-    rep.error("BC_assign_STWIND: Not empty boundary data",b->itype);
-  for (int v=0;v<G_nvar;v++)
-    b->refval[v]=0.0;
+  if (b->dir != XN) rep.error("RADSH2 not XN boundary!",b->dir);
+  //enum direction offdir = b->dir;
+  //enum direction ondir  = OppDir(offdir);
+  if (b->data.empty())
+    rep.error("BC_assign_STARBENCH1: empty boundary data",b->itype);
 
   //
-  // Add cells to boundary.  We want a layer of cells against the
-  // XN boundary between y=1.4pc and y=2.6pc.  And we wrap this
-  // with a surrounding layer of background gas that doesn't react
-  // to the wall at all.
-  //
-  cell *c = FirstPt();
-  double dpos[G_ndim];
-  CI.get_dpos(c,dpos);
-  while (dpos[YY]<(4.3204e18-G_dx)) {c=NextPt(c,YP); CI.get_dpos(c,dpos);}
-
-  while (dpos[YY]<8.0236e18+G_dx) {
-    b->data.push_back(c);
-    c->isbd=true;
-    b->data.push_back(NextPt(c,XP));
-    NextPt(c,XP)->isbd=true;
-    cout <<"Added cell id "<<c->id<<" and "<<NextPt(c,XP)->id<<" with y-pos="<<dpos[YY]<<"\n";
-    cout <<"G_dx="<<G_dx<<"\n";
-    c=NextPt(c,YP);
-    CI.get_dpos(c,dpos);
-  }
-
-  //
-  // Set slab density, and set reference density/pressure/tracer.
+  // Set the column density (in g/cm3) to some large values in the
+  // range 1.4pc<y<2.6pc, and to zero for the others.
   //
   list<cell*>::iterator bpt=b->data.begin();
-  c=NextPt((*bpt),YP);
-  b->refval[RO] = c->P[RO];
-  b->refval[PG] = c->P[PG];
-  b->refval[SimPM.ftr] = c->P[SimPM.ftr];
-
-  //
-  // Now set values in all cells in the slab.
-  //
+  unsigned int ct=0;
+  double dpos[G_ndim];
   do{
+    //
+    // Set cell optical depth to be something big in the 
+    // relevant region for the first radiation source.
+    //
     CI.get_dpos((*bpt),dpos);
-    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
-      for (int v=0;v<G_nvar;v++) {
-        (*bpt)->P[v] = (*bpt)->Ph[v] = b->refval[v];
-        (*bpt)->dU[v] = 0.0;
-      }
+    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
+      for (int s=0; s<SimPM.RS.Nsources; s++)
+        CI.set_col((*bpt), s, 1.67e0);
     }
-    ++bpt;
-  } while (bpt !=b->data.end());
+    else {
+      for (int s=0; s<SimPM.RS.Nsources; s++)
+        CI.set_col((*bpt), s, 1.67e0);
+    }
 
+    
+    ++bpt; ct++;
+  } while (bpt !=b->data.end());
+  if (ct != b->data.size())
+    rep.error("BC_assign_STARBENCH1: missed some cells!",ct-b->data.size());
+  
   return 0;
 }
 
@@ -1633,60 +1614,99 @@ int UniformGrid::BC_update_STARBENCH1(
         const int maxstep
         )
 {
-  list<cell*>::iterator c=b->data.begin();
+  //
+  // Outflow or Absorbing BCs; boundary cells are same as edge cells.
+  // This is zeroth order outflow bcs.
+  //
+  // For the one-way boundary we set the normal velocity to be zero if
+  // the flow wants to be onto the domain.
+  //
+
+  //
+  // First get the normal velocity component, and whether the offdir is
+  // positive or negative.
+  //
+  enum direction offdir = b->dir;
+  enum primitive Vnorm = RO;
+  int norm_sign = 0;
+  switch (offdir) {
+  case XN: case XP:
+    Vnorm = VX; break;
+  case YN: case YP:
+    Vnorm = VY; break;
+  case ZN: case ZP:
+    Vnorm = VZ; break;
+  default:
+    rep.error("bad dir",offdir);
+  }
+  if (Vnorm == RO)
+    rep.error("Failed to set normal velocity component",Vnorm);
+
+  switch (offdir) {
+  case XN: case YN: case ZN:
+    norm_sign = -1; break;
+  case XP: case YP: case ZP:
+    norm_sign =  1; break;
+  default:
+    rep.error("bad dir",offdir);
+  }
+
+  //
+  // Now run through all cells in the boundary
+  //
   double dpos[G_ndim];
-  //
-  // Loop over all cells.
-  //
+  list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     //
-    // get position of cell centre.
+    //exactly same routine as for periodic and zero-gradient.
+    //
+    for (int v=0;v<G_nvar;v++) {
+      (*c)->Ph[v] = (*c)->npt->Ph[v];
+      (*c)->dU[v] = 0.;
+    }
+    //
+    // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
+    //
+    (*c)->Ph[Vnorm] = norm_sign*max(0.0, (*c)->Ph[Vnorm]*norm_sign);
+
+
+    //
+    // Set cell optical depth to be something big in the 
+    // relevant region for the first radiation source.
     //
     CI.get_dpos((*c),dpos);
-    //
-    // If in high-density layer, then set values to reference
-    // state.
-    //
-    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0236e18 && dpos[XX]<G_dx) {
-      //cout <<"updating dense slab\n";
-      //rep.printVec("ref",b->refval,G_nvar);
-      //rep.printVec("val1",(*c)->P,G_nvar);
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->Ph[v] = (*c)->P[v] = b->refval[v];
-        (*c)->dU[v] = 0.0;
-      }
-      //if (SimPM.timestep>50)
-      //  rep.printVec("val2",(*c)->P,G_nvar);
+    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
+      for (int s=0; s<SimPM.RS.Nsources; s++)
+        CI.set_col((*c), s, 1.67e0);
     }
-    else if (dpos[XX]>G_dx) {
-      //cout <<"updating second column of cells\n";
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->Ph[v] = NextPt((*c),XP)->Ph[v];
-        (*c)->P[v]  = NextPt((*c),XP)->P[v];
-        (*c)->dU[v] = NextPt((*c),XP)->dU[v];
-        (*c)->P[VX] = (*c)->Ph[VX] = (*c)->dU[MMX] = 0.0;
-      }
+    else {
+      for (int s=0; s<SimPM.RS.Nsources; s++)
+        CI.set_col((*c), s, 0.0e0);
     }
-    else if (dpos[YY]<4.3204e18) {
-      //cout <<"updating bottom cell\n";
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->Ph[v] = NextPt((*c),YN)->Ph[v];
-        (*c)->P[v]  = NextPt((*c),YN)->P[v];
-        (*c)->dU[v] = NextPt((*c),YN)->dU[v];
-        (*c)->P[VX] = (*c)->Ph[VX] = (*c)->dU[MMX] = 0.0;
-        (*c)->P[VY] = (*c)->Ph[VY] = (*c)->dU[MMY] = 0.0;
-      }
+
+
+    if (cstep==maxstep)
+      for (int v=0;v<G_nvar;v++)
+        (*c)->P[v] = (*c)->npt->P[v];
+
+#ifdef GLM_ZERO_BOUNDARY
+    if (G_eqntype==EQGLM) {
+      (*c)->P[SI]=(*c)->Ph[SI]=0.0;
     }
-    else  {
-      //cout <<"updating top cell\n";
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->Ph[v] = NextPt((*c),YP)->Ph[v];
-        (*c)->P[v]  = NextPt((*c),YP)->P[v];
-        (*c)->dU[v] = NextPt((*c),YP)->dU[v];
-        (*c)->P[VX] = (*c)->Ph[VX] = (*c)->dU[MMX] = 0.0;
-        (*c)->P[VY] = (*c)->Ph[VY] = (*c)->dU[MMY] = 0.0;
+#endif // GLM_ZERO_BOUNDARY
+#ifdef GLM_NEGATIVE_BOUNDARY
+    if (G_eqntype==EQGLM) {
+      if ((*c)->id==-1) {
+        (*c)->P[SI] =-(*c)->npt->P[SI];
+        (*c)->Ph[SI]=-(*c)->npt->Ph[SI];
       }
+      else if ((*c)->id==-2) {
+        (*c)->P[SI] =-(*c)->ngb[(*c)->isedge]->P[SI];
+        (*c)->Ph[SI]=-(*c)->ngb[(*c)->isedge]->Ph[SI];
+      }
+      else rep.error("only know 1st/2nd order bcs",(*c)->id);
     }
+#endif // GLM_NEGATIVE_BOUNDARY
 
   } // all cells.
   return 0;

@@ -1,6 +1,7 @@
 # parameter file for Initial Condition Generation.
 # 
 # 2013.06.13 JM: StarBench Shadowing Test by Pascal Tremblin.
+# 2013.06.17 JM: Updated.
 
 # Dimensionality of Grid {1,2,3}
 ndim 2
@@ -12,9 +13,9 @@ solver 3 # HYB=3, RCV=4, FVS=6
 ics StarBench_TremblinCooling
 
 # IC filename
-ICfilename IC_TremblinMixing_D2_N064
+ICfilename IC_TremblinMixing_D2_N064_NH0p5
 # Output FileName Base
-OutputFile    TremblinMixing_D2_N064
+OutputFile    TremblinMixing_D2_N064_NH0p5
 
 # Number and type of tracers.
 ntracer 1
@@ -31,10 +32,10 @@ EP_coll_ionisation   1
 EP_rad_recombination 1
 EP_update_erg 1
 EP_MP_timestep_limit 1 
-EP_Min_Temperature 0.0
+EP_Min_Temperature 10.0
 EP_Max_Temperature 1.5e4
 EP_Helium_MassFrac 0.0  # pure H
-EP_Metal_MassFrac  0.0142  # Asplund et al. (2009)
+EP_Metal_MassFrac  0.0142  # gives T_hot=7.8e4K.
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
@@ -73,7 +74,7 @@ OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNowo_XPowo_YNout_YPout_INsb1_
+BC XNsb1_XPowo_YNout_YPout_
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.6666666666666666666
@@ -96,7 +97,6 @@ magval 1
 ## Parameters specific for various problems
 # Just the H number density in cm^{-3}
 StarBench_TremblinCooling_Rho 0.5
-StarBench_TremblinCooling_SlabRho 0.5e7
 
 #
 # radiation source list
@@ -107,7 +107,7 @@ RT_Nsources 1
 RT_position_0_0 -1.0e200
 RT_position_0_1  6.172e18
 RT_position_0_2  6.172e18
-RT_strength_0    1.0e14 # photons /cm2/s.
+RT_strength_0    1.0e10 # photons /cm2/s.
 RT_Rstar____0    1.0 # Radius of star in solar radii.
 RT_Tstar____0    1.0       # Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
