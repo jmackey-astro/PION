@@ -18,7 +18,7 @@ set log x
 set xrange [10:25000]
 set yrange [1e-28:1e-20]
 set xlabel "T (K)" offset 0,0
-set ylabel "Heating/cooling [erg cm^{-3} s^{-1}]" offset 2,0
+set ylabel "Abs( Heating - cooling ) [erg cm^{-3} s^{-1}]" offset 2,0
 set output "fig_cool_MPv3.eps"
 plot   "./MPv3_heating_cooling_nH1_r10.txt" u 1:(abs(\$7)) w l lt 1 lc 0 lw 4 title "H II, n_H=1 cm^{-3},   f(H+)=0.9964", \
        "./MPv3_heating_cooling_nH1_r10.txt" u 1:7          w p pt 1 lc 0 ps 1.5 notitle, \

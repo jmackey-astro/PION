@@ -7,6 +7,25 @@ movie_dir=.
 #rm ${movie_dir}/*.mp4
 #rm ${data_dir}/*.silo
 
+./make_dens_Hplus_Temp_plots.sh \
+ ${data_dir} TremblinMixing_D2_N064_nH5_Native_0000 \
+ ${movie_dir} fig_TremblinMixing_D2_N064_nH5_NativeP \
+ "n(H)=5.0 /cm3 test" 0.0 8.0 0.0 4.0  0.0 4.0  0 0
+
+./make_dens_Hplus_Temp_plots.sh \
+ ${data_dir} TremblinMixing_D2_N064_nH0p5_Native_0000 \
+ ${movie_dir} fig_TremblinMixing_D2_N064_nH0p5_NativeP \
+ "n(H)=0.5 /cm3 test" 0.0 8.0 0.0 4.0  0.0 4.0  0 0
+
+ffmpeg -f image2 -r 10.0 \
+ -i ${movie_dir}/fig_TremblinMixing_D2_N064_nH0p5_NativeP_%03d.png \
+ -sameq -s 1701x768 ${movie_dir}/TremblinMixing_D2_N064_nH0p5_NativeP_DYT.mp4
+
+ffmpeg -f image2 -r 10.0 \
+ -i ${movie_dir}/fig_TremblinMixing_D2_N064_nH5_NativeP_%03d.png \
+ -sameq -s 1701x768 ${movie_dir}/TremblinMixing_D2_N064_nH5_NativeP_DYT.mp4
+exit
+
 NP=4
 ICG="mpirun -np $NP ../../../icgen_parallel"
 PION="mpirun -np $NP ../../../pion_parallel"
@@ -27,19 +46,19 @@ $PION IC_TremblinMixing_D2_N064_NH0p5_0000.silo 5 1 \
 ./make_dens_Hplus_plots.sh \
  ${data_dir} TremblinMixing_D2_N064_nH5_Native_0000 \
  ${data_dir} fig_TremblinMixing_D2_N064_nH5_NativeP \
- "n(H)=5 test" 0.0 4.0 0.0 4.0  0.0 4.0  0 0
+ "n(H)=5.0 /cm3 test" 0.0 4.0 0.0 4.0  0.0 4.0  0 0
 
 ./make_dens_Hplus_plots.sh \
  ${data_dir} TremblinMixing_D2_N064_nH0p5_Native_0000 \
  ${data_dir} fig_TremblinMixing_D2_N064_nH0p5_NativeP \
- "n(H)=5 test" 0.0 4.0 0.0 4.0  -1.0 3.0  0 0
+ "n(H)=0.5 /cm3 test" 0.0 4.0 0.0 4.0  -1.0 3.0  0 0
 
 ffmpeg -f image2 -r 10.0 \
- -i ${data_dir}/fig_TremblinMixing_D2_N064_nH0p5_Native_%03d.png \
- -sameq -s 938x768 ${movie_dir}/TremblinMixing_D2_N064_nH0p5_Native.mp4
+ -i ${data_dir}/fig_TremblinMixing_D2_N064_nH0p5_NativeP_%03d.png \
+ -sameq -s 938x768 ${movie_dir}/TremblinMixing_D2_N064_nH0p5_NativeP.mp4
 
 ffmpeg -f image2 -r 10.0 \
- -i ${data_dir}/fig_TremblinMixing_D2_N064_nH5_Native_%03d.png \
- -sameq -s 938x768 ${movie_dir}/TremblinMixing_D2_N064_nH5_Native.mp4
+ -i ${data_dir}/fig_TremblinMixing_D2_N064_nH5_NativeP_%03d.png \
+ -sameq -s 938x768 ${movie_dir}/TremblinMixing_D2_N064_nH5_NativeP.mp4
 
 
