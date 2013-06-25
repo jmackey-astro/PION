@@ -53,7 +53,7 @@ Xmin 0.0e18
 Ymin 0.0e18
 Zmin 0.0e18
 # Max values of x,y,z
-Xmax   49.376e18
+Xmax   3.879102e18
 Ymax   49.376e18
 Zmax   49.376e18
 
@@ -63,11 +63,11 @@ OutputPath ./data
 OutputFileType silo
 OutputFrequency 1
 OutputCriterion 1    # output per n-seconds=1, per n-steps=0
-OPfreqTime 3.16e12   # in seconds (100,000 yrs)
+OPfreqTime 3.16e10   # in seconds (1,000 yrs)
 
 # Start time
 StartTime 0.0
-FinishTime 13.43e13 # 4.25 Myr in seconds
+FinishTime 4.4556e12 # 0.141 Myr in seconds
 
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
