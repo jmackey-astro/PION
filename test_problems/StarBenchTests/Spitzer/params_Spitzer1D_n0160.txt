@@ -32,7 +32,7 @@ EP_coll_ionisation   1
 EP_rad_recombination 1
 EP_update_erg 1
 EP_MP_timestep_limit 1 
-EP_Min_Temperature 10.0
+EP_Min_Temperature 100.0
 EP_Max_Temperature 1.0e4
 EP_Helium_MassFrac 0.0    # Set by Thomas Bisbas in Test
 EP_Metal_MassFrac  0.01  # If this is >0.5, then neutral H is molecular
@@ -59,7 +59,7 @@ Zmax   49.376e18
 
 
 ### Data I/O ###
-OutputPath ./data
+OutputPath ./data/
 OutputFileType silo
 OutputFrequency 1
 OutputCriterion 1    # output per n-seconds=1, per n-steps=0
@@ -80,7 +80,7 @@ BC XNref_XPowo_
 GAMMA 1.0001
 
 # CFL coefficient 0<cfl<1
-CFL 0.1
+CFL 0.3
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.15

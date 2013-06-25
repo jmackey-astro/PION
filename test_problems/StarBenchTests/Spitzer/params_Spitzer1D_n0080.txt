@@ -81,7 +81,7 @@ BC XNref_XPowo_
 GAMMA 1.0001
 
 # CFL coefficient 0<cfl<1
-CFL 0.1
+CFL 0.3
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.15

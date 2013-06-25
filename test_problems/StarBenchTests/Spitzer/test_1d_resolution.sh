@@ -1,6 +1,7 @@
 #!/bin/bash
-
-
+#
+# 2013.06.25 JM: Script to run 1D resolution test for HII region D-type expansion.
+#
 
 ../../../icgen_serial params_Spitzer1D_n0080.txt silo
 ../../../icgen_serial params_Spitzer1D_n0160.txt silo
@@ -8,6 +9,7 @@
 ../../../icgen_serial params_Spitzer1D_n0640.txt silo
 ../../../icgen_serial params_Spitzer1D_n1280.txt silo
 ../../../icgen_serial params_Spitzer1D_n2560.txt silo
+../../../icgen_serial params_Spitzer1D_n5120.txt silo
 
 data_silo=/vol/klaipeda3/scratch/jmackey/Spitzer_silo
 data_ascii=/vol/klaipeda3/scratch/jmackey/Spitzer_ascii
@@ -34,6 +36,9 @@ rm ${data_ascii}/*.txt
 #wait
 ../../../pion_serial IC_Spitzer1D_n2560.silo 5 1 optype=silo outfile=${data_silo}/S1D_n2560 redirect=log_S1Dn2560 &
 ../../../pion_serial IC_Spitzer1D_n2560.silo 5 1 optype=text outfile=${data_ascii}/S1D_n2560 redirect=log_junk &
+#wait
+../../../pion_serial IC_Spitzer1D_n5120.silo 5 1 optype=silo outfile=${data_silo}/S1D_n5120 redirect=log_S1Dn5120 &
+../../../pion_serial IC_Spitzer1D_n5120.silo 5 1 optype=text outfile=${data_ascii}/S1D_n5120 redirect=log_junk &
 wait
 
 cd analysis
@@ -45,5 +50,6 @@ make -j8
 ./Radii ${data_silo} S1D_n0640.0 . S1Dn0640
 ./Radii ${data_silo} S1D_n1280.0 . S1Dn1280
 ./Radii ${data_silo} S1D_n2560.0 . S1Dn2560
+./Radii ${data_silo} S1D_n5120.0 . S1Dn5120
 
 
