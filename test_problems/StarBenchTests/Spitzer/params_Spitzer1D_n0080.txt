@@ -99,13 +99,13 @@ magval 1
 # ND photo-evaporation problem:
 #
 # Set cloud properties here:
-# r=14.6pc, 
+# r=1.257pc, 
 # centred on origin,
-# rho = 7.79e-22 g/cm3
+# rho = 5.21e-21 g/cm3
 # neutral
 #
-PECcloudradius 1.1  # Fraction of y-domain
-PECcloudTR0 1.0e-5  # cloud first tracer value (ion fraction)
+PECcloudradius 0.25  # Fraction of domain
+PECcloudTR0 0.999999  # cloud first tracer value (ion fraction)
 PECdratio 1.0  # constant density medium
 PECpratio 1.0 # constant pressure initial conditions
 PECBratio 1.0
