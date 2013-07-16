@@ -40,11 +40,10 @@ GLOBAL = global.h defines/functionality_flags.h defines/testing_flags.h
 OPT = -DPARALLEL
 OPT += -DUSE_MPI
 OPT += -DSILO
-OPT += -DFITS
 OPT += -DNEW_METALLICITY
 
 MAKE_UNAME=standard
-#MAKE_UNAME=OSX
+MAKE_UNAME=OSX
 #MAKE_UNAME=JUROPA
 #
 
@@ -110,7 +109,7 @@ CXXFLAGS += $(OPT)
 
 OBJECTS = cell_interface.o global.o get_sim_info.o \
 	dataio.o readparams.o dataio_silo.o  dataio_silo_MPI.o \
-        dataio_fits.o utility_fits_class.o dataio_silo_utility.o \
+        dataio_silo_utility.o \
         uniform_grid_pllel.o uniform_grid.o \
         VectorOps.o VectorOps_spherical.o stellar_wind_BC.o  \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
@@ -118,7 +117,7 @@ OBJECTS = cell_interface.o global.o get_sim_info.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o        \
 	comm_mpi.o comm_files.o                                                \
         integrator.o cooling.o microphysics.o microphysics_v1.o                \
-        microphysics_lowZ.o mp_only_cooling.o calc_radius.o \
+        microphysics_lowZ.o mp_only_cooling.o make_text_files.o \
         file_status.o
      
 ifneq (,$(findstring NEW_METALLICITY,$(OPT)))
@@ -131,8 +130,8 @@ endif
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-${bindir}/Radii : $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/Radii $(LDFLAGS)
+${bindir}/MkTxtFiles : $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/MkTxtFiles $(LDFLAGS)
 
 
 ##################################################
@@ -262,8 +261,8 @@ comm_files.o: comms/comm_files.cc comms/comm_files.h comms/comms.h \
 
 
 
-calc_radius.o: calc_radius.cpp ${GLOBAL}
+make_text_files.o: make_text_files.cpp ${GLOBAL}
 
 clean:
-	rm -f *.o ${bindir}/Radii
+	rm -f *.o ${bindir}/MkTxtFiles
 

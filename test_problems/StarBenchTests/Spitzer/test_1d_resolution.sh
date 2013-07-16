@@ -11,8 +11,23 @@
 ../../../icgen_serial params_Spitzer1D_n2560.txt silo
 ../../../icgen_serial params_Spitzer1D_n5120.txt silo
 
-data_silo=/vol/klaipeda3/scratch/jmackey/Spitzer_silo
-data_ascii=/vol/klaipeda3/scratch/jmackey/Spitzer_ascii
+data_silo=/vol/klaipeda3/scratch/jmackey/Spitzer_siloV2
+data_ascii=/vol/klaipeda3/scratch/jmackey/Spitzer_asciiV2
+
+#### TESTING ###
+cd analysis
+make -j8
+
+./Radii ${data_silo} S1D_n0080.0 . S1Dn0080
+./Radii ${data_silo} S1D_n0160.0 . S1Dn0160
+./Radii ${data_silo} S1D_n0320.0 . S1Dn0320
+./Radii ${data_silo} S1D_n0640.0 . S1Dn0640
+./Radii ${data_silo} S1D_n1280.0 . S1Dn1280
+./Radii ${data_silo} S1D_n2560.0 . S1Dn2560
+./Radii ${data_silo} S1D_n5120.0 . S1Dn5120
+exit
+#### TESTING ###
+
 
 mkdir ${data_silo}
 mkdir ${data_ascii}

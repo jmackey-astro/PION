@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DDIR=/vol/klaipeda3/scratch/jmackey/Spitzer_ascii
+DDIR=/vol/klaipeda3/scratch/jmackey/Spitzer_asciiV2
 
 n0080=`ls ${DDIR}/S1D_n0080.*.txt | head -n101 | tail -n1`
 n0160=`ls ${DDIR}/S1D_n0160.*.txt | head -n101 | tail -n1`

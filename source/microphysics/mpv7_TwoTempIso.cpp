@@ -20,6 +20,7 @@
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.10 JM: Changed ions/electrons so He is always neutral.
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2013.06.27 JM: changed T(xp) function in get_temperature.
 
 #include "microphysics/mpv7_TwoTempIso.h"
 
@@ -49,7 +50,7 @@ mpv7_TwoTempIso::mpv7_TwoTempIso(
   // Get the mean mass per H atom from the He and Z mass fractions.
   //
   double X = 1.0-EP->Helium_MassFrac;
-  mean_mass_per_H = m_p/X; // this is mass per nucleon.
+  mean_mass_per_H = m_p/X; // this is mass per H nucleon.
   //
   // Number of ionised particles per ionised H nucleon.
   // (assume He is inert, so no photons can ionise it).
@@ -196,9 +197,13 @@ double mpv7_TwoTempIso::get_temperature(
     )
 {
   //
+  // returns gas temperature according to T= (2yT_hi + (1-y)*T_lo)/(1+y),
+  //
+  return (xp*(2.0*TTI_Thi-TTI_Tlo) +TTI_Tlo)/(1.0+xp);
+  //
   // returns gas temperature according to T=lo + y*(Thi-Tlo),
   //
-  return (TTI_Tlo +xp*(TTI_Thi-TTI_Tlo));
+  //return (TTI_Tlo +xp*(TTI_Thi-TTI_Tlo));
 }
 
 

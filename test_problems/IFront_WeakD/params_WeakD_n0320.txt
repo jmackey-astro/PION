@@ -1,0 +1,189 @@
+# parameter file for Initial Condition Generation.
+# 
+# 2013.07.16 JM: Weak D-type ionisation front in 1D planar geometry.
+
+# Dimensionality of Grid {1,2,3}
+ndim 1
+coordinates cartesian
+eqn euler
+solver 3 # HYB=3, RCV=4, FVS=6
+
+# Which ICs to set up 
+ics PhotEvap_MultiClumps_FixMass
+
+# IC filename
+ICfilename IC_IF_WeakD_MPv7_n0320
+# Output FileName Base
+OutputFile    IF_WeakD_MPv7_n0320
+
+# Number and type of tracers.
+ntracer 1
+trtype MPv7__H1+___
+InitIons LEAVE
+Tracer0 1.0e-5
+
+# Which physics to use
+EP_dynamics     1
+EP_raytracing   1
+EP_phot_ionisation   1
+EP_cooling      1
+EP_chemistry    1
+EP_coll_ionisation   1
+EP_rad_recombination 1
+EP_update_erg 1
+EP_MP_timestep_limit 1 
+EP_Min_Temperature 100.0
+EP_Max_Temperature 1.0e4
+EP_Helium_MassFrac 0.0   # Pure H for simplicity
+EP_Metal_MassFrac  0.01  # If this is >0.5, then neutral H is molecular
+
+# Smooth Data by n cells? (n<=0 means no).
+smooth -1
+# Add adiabatic noise at fractional level of f to Data? (f<=0 means no).
+noise  -1
+
+## Grid Parameters
+# Number of gridpoints in each direction (note cells must be cubic!)
+# INT
+NGridX 320
+NGridY  80
+NGridZ  80
+# Boundaries of Simulation box:
+Xmin 0.0e18
+Ymin 0.0e18
+Zmin 0.0e18
+# Max values of x,y,z
+Xmax   2.0e16
+Ymax   1.0
+Zmax   1.0
+
+
+### Data I/O ###
+OutputPath ./data/
+OutputFileType silo
+OutputFrequency 1
+OutputCriterion 1    # output per n-seconds=1, per n-steps=0
+OPfreqTime 3.16e9   # in seconds (100 yrs)
+
+# Start time
+StartTime 0.0
+FinishTime 3.7e12 # 1000 recombination times.
+
+# Order of Accuracy (1=1st order; 2=2nd order)
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
+BC XNfix_XPfix_
+
+# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
+GAMMA 1.0001
+
+# CFL coefficient 0<cfl<1
+CFL 0.15
+# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
+ArtificialViscosity 1
+EtaViscosity 0.15
+
+# Code Units
+# Reference systems of units are MKS (i.e. SI), CGS, others?
+units cgs
+# One code unit is this number of reference units.
+rhoval 1
+lenval 1
+velval 1
+magval 1
+
+## Parameters specific for various problems
+#####################
+# Add Random Clumps #
+#####################
+PERC_addrandomclumps NO
+
+
+###############################
+# Strategically Placed Clumps #
+###############################
+
+PE_SC_addstrategicclumps NO
+
+
+#################################
+# 1st Ambient Medium Parameters #
+#################################
+PERCradialslope 0.0 # no radial slope.
+PERC_ambRO 4.46e-19
+PERC_ambPG 3.68e-9
+PERC_ambVX -2.77834e3
+PERC_ambVY 0.0
+PERC_ambVZ 0.0
+PERC_ambBX 0.0
+PERC_ambBY 0.0
+PERC_ambBZ 0.0
+PERC_ambTR0 1.0e-6
+
+#################################
+# 2nd Ambient Medium Parameters #
+#################################
+PERCradialslope 0.0 # no radial slope.
+PERC_ALTdivider 1.543e16  # 2nd medium at x< this value.
+PERC_ALTambRO 1.67e-21
+PERC_ALTambPG 2.76e-9
+PERC_ALTambVX -7.42e5
+PERC_ALTambVY 0.0
+PERC_ALTambVZ 0.0
+PERC_ALTambBX 0.0
+PERC_ALTambBY 0.0
+PERC_ALTambBZ 0.0
+PERC_ALTambTR0 0.999
+
+
+
+# radiation source list
+#
+RT_Nsources 1
+
+# This source has 5.0e9 monochromatic ionising photons/sec.
+RT_position_0_0 -1.0e200
+RT_position_0_1  0.0e18
+RT_position_0_2  0.0e18
+RT_strength_0    5.0e9 # photons/sec for monochromatic src.
+RT_Rstar____0    1.0 # (UNUSED) Radius of star in solar radii.
+RT_Tstar____0    1.0 # (UNUSED) Stellar effective temperature.
+RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
+RT_at_infty_0    1  # 0=no, 1=yes.
+RT_update___0    2  # 1=C2Ray update, 2=New update.
+RT_effect___0    2  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
+RT_Tau_src__0    2  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
+RT_Tau_var__0    0  # opacity variably y_i (this is its index in state vector)
+RT_EVO_FILE_0    NOFILE
+
+
+########################
+# stellar wind sources #
+########################
+WIND_NSRC 0
+
+########################
+# Reference Vector     #
+########################
+refvec0 1.0e-24  # ~1 particles /cc
+refvec1 1.0e-13  # T ~ 10^1K
+refvec2 1.0e6    # v ~ 10 km/s = 1.e6 cm/s
+refvec3 1.0e6    # v 
+refvec4 1.0e6    # v 
+refvec5 1.0e-6   # B (gauss)
+refvec6 1.0e-6
+refvec7 1.0e-6
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+
+
+
