@@ -301,10 +301,8 @@ int mpv7_TwoTempIso::ydot(
       //
       // hardcoded for a hv-13.6eV = 5.0eV monochromatic source.
       //
-#define PHOTON_ENERGY 2.98e-11
-#define EXCESS_ENERGY 8.01e-12
-//#define PHOTON_ENERGY 2.24e-11
-//#define EXCESS_ENERGY 0.64e-12
+#define PHOTON_ENERGY JUST_IONISED
+#define EXCESS_ENERGY 1.0e-14
       temp1 = Hi_discrete_mono_photoion_rate(
                 mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
                 PHOTON_ENERGY, mpv_delta_S, mpv_Vshell) * OneMinusX;

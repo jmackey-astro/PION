@@ -400,7 +400,7 @@ int main(int argc, char **argv)
     //
     vector<double> IFdist, IFy, IFc, SHdist, SHrho, SHc;
     double cpos[3];
-    double dist, vrad;
+    double dist, vrad, cvol, rp, rm, i_mass=0.0;
     double ymin=0.03, ymax=0.97;
 
 
@@ -458,6 +458,19 @@ int main(int argc, char **argv)
         SHrho.push_back(c->P[RO]);
         SHc.push_back(c->id);
       }
+
+
+      //
+      // ionised mass
+      //
+      rp = cpos[Rsph]+0.5*grid->DX();
+      rm = cpos[Rsph]-0.5*grid->DX();
+      cvol = 4.0/3.0*M_PI*(rp*rp*rp-rm*rm*rm);
+      if (c->P[tr_Hp]>1.0e-3) {
+        i_mass += c->P[RO]*c->P[tr_Hp]*cvol;
+      }
+
+
     } while ((c=grid->NextPt(c)) !=0);
 
     //
@@ -535,15 +548,16 @@ int main(int argc, char **argv)
       outf <<SimPM.simtime/Myr;
       outf <<"  " << IFwtmean;
       outf <<"  " << SHmax;
+      outf <<"  " << i_mass;
       //outf <<"  " << SHmean;
-      outf <<"      " << IFmax;
-      outf <<"  " << IFmin;
-      outf <<"  " << IFmean;
-      outf <<"  " << IFmedian;
-      outf <<"      " << SHmax;
-      outf <<"  " << SHmin;
-      outf <<"  " << SHmean;
-      outf <<"  " << SHmedian;
+      //outf <<"      " << IFmax;
+      //outf <<"  " << IFmin;
+      //outf <<"  " << IFmean;
+      //outf <<"  " << IFmedian;
+      //outf <<"      " << SHmax;
+      //outf <<"  " << SHmin;
+      //outf <<"  " << SHmean;
+      //outf <<"  " << SHmedian;
       outf <<"\n";
       outf.flush();
       

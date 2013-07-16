@@ -2010,8 +2010,8 @@ int dataio_text::output_ascii_data(string outfile
       if (MP) outf << MP->Temperature(cpt->P,SimPM.gamma);
       else    outf << eqn->eint(cpt->P,SimPM.gamma);
       // total energy, x-momentum
-      eqn->PtoU(cpt->P,Utemp,SimPM.gamma);
-      outf <<"  "<< Utemp[ERG] <<"  "<< Utemp[MMX];
+      //eqn->PtoU(cpt->P,Utemp,SimPM.gamma);
+      //outf <<"  "<< Utemp[ERG] <<"  "<< Utemp[MMX];
     }
     // mhd vars.
     if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
@@ -2020,6 +2020,14 @@ int dataio_text::output_ascii_data(string outfile
       outf <<"  "<< cpt->P[PG]+b2/2.;
       outf <<"  "<< eqn->Div(cpt,0,vars);
     }
+#ifdef RT_TESTING_OUTPUTCOL
+    if (RT) {
+      for (int v=0;v<SimPM.RS.Nsources;v++) {
+        //cout <<"hello";
+        outf <<"  "<< CI.get_col(cpt, v);
+      }
+    }
+#endif // RT_TESTING_OUTPUTCOL
     outf  <<"\n";
   } while ( (cpt=gp->NextPt(cpt))!=0);
   
