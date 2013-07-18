@@ -67,7 +67,7 @@ OPfreqTime 3.16e9   # in seconds (100 yrs)
 
 # Start time
 StartTime 0.0
-FinishTime 3.7e12 # 1000 recombination times.
+FinishTime 1.58e12 # 450 recombination times.
 
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2

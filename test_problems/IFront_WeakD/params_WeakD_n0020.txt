@@ -1,20 +1,20 @@
 # parameter file for Initial Condition Generation.
 # 
-# 2013.03.07 JM: HII region in a dense medium (StarBench Spitzer Test).
+# 2013.07.16 JM: Weak D-type ionisation front in 1D planar geometry.
 
 # Dimensionality of Grid {1,2,3}
 ndim 1
-coordinates spherical
+coordinates cartesian
 eqn euler
 solver 3 # HYB=3, RCV=4, FVS=6
 
 # Which ICs to set up 
-ics PhotoEvaporatingClump
+ics PhotEvap_MultiClumps_FixMass
 
 # IC filename
-ICfilename IC_Spitzer1D_n1280
+ICfilename IC_IF_WeakD_MPv7_n0020
 # Output FileName Base
-OutputFile    Spitzer1D_n1280
+OutputFile    IF_WeakD_MPv7_n0020
 
 # Number and type of tracers.
 ntracer 1
@@ -34,7 +34,7 @@ EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 100.0
 EP_Max_Temperature 1.0e4
-EP_Helium_MassFrac 0.0    # Set by Thomas Bisbas in Test
+EP_Helium_MassFrac 0.0   # Pure H for simplicity
 EP_Metal_MassFrac  0.01  # If this is >0.5, then neutral H is molecular
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -45,7 +45,7 @@ noise  -1
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  1280
+NGridX 20
 NGridY  80
 NGridZ  80
 # Boundaries of Simulation box:
@@ -53,9 +53,9 @@ Xmin 0.0e18
 Ymin 0.0e18
 Zmin 0.0e18
 # Max values of x,y,z
-Xmax   3.879102e18
-Ymax   49.376e18
-Zmax   49.376e18
+Xmax   2.0e16
+Ymax   1.0
+Zmax   1.0
 
 
 ### Data I/O ###
@@ -63,24 +63,24 @@ OutputPath ./data/
 OutputFileType silo
 OutputFrequency 1
 OutputCriterion 1    # output per n-seconds=1, per n-steps=0
-OPfreqTime 3.16e10   # in seconds (1,000 yrs)
+OPfreqTime 3.16e9   # in seconds (100 yrs)
 
 # Start time
 StartTime 0.0
-FinishTime 4.4556e12 # 0.141 Myr in seconds
+FinishTime 1.58e12 # 450 recombination times.
 
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNref_XPowo_
+BC XNfix_XPfix_
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.0001
 
 # CFL coefficient 0<cfl<1
-CFL 0.3
+CFL 0.15
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.15
@@ -95,51 +95,63 @@ velval 1
 magval 1
 
 ## Parameters specific for various problems
-# ND photo-evaporation problem:
-#
-# Set cloud properties here:
-# r=14.6pc, 
-# centred on origin,
-# rho = 7.79e-22 g/cm3
-# neutral
-#
-PECcloudradius 0.25  # Fraction of domain
-PECcloudTR0 0.999999  # cloud first tracer value (ion fraction)
-PECdratio 1.0  # constant density medium
-PECpratio 1.0 # constant pressure initial conditions
-PECBratio 1.0
-PEC_xpos 0.0e18
-PEC_ypos 0.0e18
-PEC_zpos 0.0e18
+#####################
+# Add Random Clumps #
+#####################
+PERC_addrandomclumps NO
 
-# These two parameters not needed here.
-PEC_radialslope 0.0  # Clump is core/envelope with this powerlaw env.
-PEC_core_radius 1.5  # units of yrange, only used if radialslope != 0
 
-PEC_ambRO 5.21e-21  # per c.c.
-PEC_ambPG 4.305e-11 # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
-PEC_ambVX  0.0e5  # 0.0 km/s
-PEC_ambVY  0.0e5  # 0.0 km/s
-PEC_ambVZ  0.0e5  # zero
-PEC_ambBX 0.00e-6 # zero 
-PEC_ambBY 0.00e-6 # zero
-PEC_ambBZ 0.00e-6 # zero
-PEC_ambTR0 1.0e-6  # neutral cloud medium.
-PEC_ambTR1 0.0
+###############################
+# Strategically Placed Clumps #
+###############################
+
+PE_SC_addstrategicclumps NO
+
+
+#################################
+# 1st Ambient Medium Parameters #
+#################################
+PERCradialslope 0.0 # no radial slope.
+PERC_ambRO 4.46e-19
+PERC_ambPG 3.68e-9
+PERC_ambVX -2.77834e3
+PERC_ambVY 0.0
+PERC_ambVZ 0.0
+PERC_ambBX 0.0
+PERC_ambBY 0.0
+PERC_ambBZ 0.0
+PERC_ambTR0 1.0e-6
+
+#################################
+# 2nd Ambient Medium Parameters #
+#################################
+PERCradialslope 0.0 # no radial slope.
+PERC_ALTdivider 1.543e16  # 2nd medium at x< this value.
+PERC_ALTambRO 1.67e-21
+PERC_ALTambPG 2.76e-9
+PERC_ALTambVX -7.42e5
+PERC_ALTambVY 0.0
+PERC_ALTambVZ 0.0
+PERC_ALTambBX 0.0
+PERC_ALTambBY 0.0
+PERC_ALTambBZ 0.0
+PERC_ALTambTR0 0.999
+
+
 
 # radiation source list
 #
 RT_Nsources 1
 
-# This source has 1e49 monochromatic ionising photons/sec.
-RT_position_0_0  0.0e18
+# This source has 5.0e9 monochromatic ionising photons/sec.
+RT_position_0_0 -1.0e200
 RT_position_0_1  0.0e18
 RT_position_0_2  0.0e18
-RT_strength_0    1.0e49 # photons/sec for monochromatic src.
+RT_strength_0    5.0e9 # photons/sec for monochromatic src.
 RT_Rstar____0    1.0 # (UNUSED) Radius of star in solar radii.
 RT_Tstar____0    1.0 # (UNUSED) Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
-RT_at_infty_0    0  # 0=no, 1=yes.
+RT_at_infty_0    1  # 0=no, 1=yes.
 RT_update___0    2  # 1=C2Ray update, 2=New update.
 RT_effect___0    2  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    2  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
