@@ -249,10 +249,12 @@ int mpv7_TwoTempIso::ydot(
   double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac);
   double x_in      = 1.0-OneMinusX;
   double ne        = JM_NELEC*x_in*mpv_nH;
-  double T = get_temperature(mpv_nH, 0.0, x_in);
+  //double T = get_temperature(mpv_nH, 0.0, x_in);
 
 
-  double temp1=0.0, temp2=0.0;
+  double temp1=0.0;
+  //double temp2=0.0;
+
   //
   // oneminusx_dot is in units of 1/s
   //
