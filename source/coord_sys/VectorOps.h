@@ -19,6 +19,9 @@
 ///
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
+/// - 2013.07.19 JM: Added TRACER_SLOPES_CONSERVED_VARS option, but
+///    it is more diffusive than primitive variables, so it is not
+///    used.
 ///
 
 
@@ -34,7 +37,24 @@
 
 #include "../global.h"
 
-//#define FIX_TRACER_SLOPES_TO_DENSITY ///< This sets tracers to have zero slope across cell.
+//
+// This sets tracers to have zero slope across cell.  This reduces
+// the probability of discretisation/integration errors producing
+// tracer values outside the allowed ranges (e.g. [0,1]), but is
+// more diffusive for ion fractions (because their gradients tend to
+// have opposite sign to density gradients) so it is not recommended.
+//
+//#define FIX_TRACER_SLOPES_TO_DENSITY
+
+
+//
+// This flag causes slopes in tracer variables to be calculated with
+// the conserved variable rho*tr(i), rather than the primitive
+// variable.  (only implemented for spherical coordinates).
+// It proved less stable and more diffusive than primitive-variable
+// slopes so it is not recommended to use it.
+//
+//#define TRACER_SLOPES_CONSERVED_VARS
 
 #define VOdz VOdx
 

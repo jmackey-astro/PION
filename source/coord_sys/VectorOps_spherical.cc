@@ -13,6 +13,9 @@
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2013.07.19 JM: Added TRACER_SLOPES_CONSERVED_VARS option, but
+///    it is more diffusive than primitive variables, so it is not
+///    used.
 ///
 
 
@@ -330,6 +333,17 @@ int VectorOps_Sph::SetEdgeState(
     } // setting del based on direction
     
     for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*del;
+
+#ifdef TRACER_SLOPES_CONSERVED_VARS
+    //
+    // with this flag, tracer slopes are set in conserved variables
+    // so that we need to divide by density in the slope term to get
+    // the right units.
+    //
+    for (int v=SimPM.ftr; v<nv; v++) {
+      edge[v] = c->Ph[v] + dpdx[v]*del/c->Ph[RO];
+    }
+#endif // TRACER_SLOPES_CONSERVED_VARS
   } // OA2
 
   else rep.error("Bad order of accuracy in SetEdgeState \
@@ -392,6 +406,19 @@ int VectorOps_Sph::SetSlope(
     default:
       rep.error("Bad axis in SetSlope",d);
     } // calculate slope in direction d.
+
+#ifdef TRACER_SLOPES_CONSERVED_VARS
+    //
+    // with this flag, tracer slopes are set in conserved variables.
+    //
+    if (SimPM.ntracer>0) {
+      for (int v=SimPM.ftr; v<nv; v++) {
+	slpn[v] = (c->Ph[v]*c->Ph[RO] -cn->Ph[v]*cn->Ph[RO])/ (R_com(c) - R_com(cn));
+	slpp[v] = (cp->Ph[v]*cp->Ph[RO]- c->Ph[v]*c->Ph[RO])/ (R_com(cp)- R_com(c) );
+	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
+      }
+    }
+#endif // TRACER_SLOPES_CONSERVED_VARS
 
 #ifdef FIX_TRACER_SLOPES_TO_DENSITY
     if (SimPM.ntracer>0) {

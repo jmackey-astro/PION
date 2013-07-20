@@ -21,6 +21,8 @@
 /// - 2013.03.10 JM: Changed ions/electrons so He is always neutral.
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2013.06.27 JM: changed T(xp) function in get_temperature.
+/// - 2013.07.20 JM: Tested a bunch of things; moved PI rate from a
+///    function call to a (faster) in-place evaluation.
 
 #include "microphysics/mpv7_TwoTempIso.h"
 
@@ -196,10 +198,28 @@ double mpv7_TwoTempIso::get_temperature(
     const double xp  ///< x(H+)
     )
 {
+
+  //if (xp>0.5)
+  //  return TTI_Thi;
+  //else
+  //  return (2.0*xp*(2.0*TTI_Thi-TTI_Tlo) +TTI_Tlo)/(1.0+2.0*xp);
+
+
   //
-  // returns gas temperature according to T= (2yT_hi + (1-y)*T_lo)/(1+y),
+  // returns gas temperature according to T=(2yT_hi+(1-y)*T_lo)/(1+y)
+  // which is RJR William's estimate of the correct temperature to
+  // get the mixed cell physics right.
   //
   return (xp*(2.0*TTI_Thi-TTI_Tlo) +TTI_Tlo)/(1.0+xp);
+
+  //
+  // This is my estimate for gas temperature to try to account for
+  // the mixed-cell physics in unresolved ionisation fronts.
+  // It smoothes out the pressure, but in the end provides a worse
+  // solution than other forms.
+  //
+  //return TTI_Tlo*TTI_Thi/(TTI_Thi-xp*(TTI_Thi-TTI_Tlo));
+
   //
   // returns gas temperature according to T=lo + y*(Thi-Tlo),
   //
@@ -306,14 +326,17 @@ int mpv7_TwoTempIso::ydot(
 
       case RT_EFFECT_PION_MONO:
       //
-      // hardcoded for a hv-13.6eV = 5.0eV monochromatic source.
-      //
-#define PHOTON_ENERGY JUST_IONISED
-#define EXCESS_ENERGY 1.0e-14
-      temp1 = Hi_discrete_mono_photoion_rate(
-                mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
-                PHOTON_ENERGY, mpv_delta_S, mpv_Vshell) * OneMinusX;
-      oneminusx_dot -= temp1;
+      // hardcoded for hv=(1+epsilon)*13.6 eV  monochromatic source.
+      // 
+      if (temp1 < 0.01) {
+        oneminusx_dot -= mpv_NIdot*exp(-mpv_Tau0)*
+                  Hi_monochromatic_photo_ion_xsection(JUST_IONISED)*
+                  mpv_delta_S*OneMinusX/mpv_Vshell;
+      }
+      else {
+        oneminusx_dot -= mpv_NIdot*exp(-mpv_Tau0)*(1.0-exp(-temp1))
+                  /mpv_Vshell/mpv_nH;
+      }
       break;
 
       default:

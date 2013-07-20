@@ -40,8 +40,8 @@ LIST=(`ls ${FBASE}*.txt`)
 for ii in $(seq 0 $((${#LIST[@]} - 1)))
 do
     cat << EOF  >> gnu.plt
-plot '${LIST[$ii]}' u 1:${VAR} w lp lt 2
-pause -0.2
+plot '${LIST[$ii]}' u 1:${VAR} w lp lt 3 lw 2
+pause 0.1
 EOF
 done
 
