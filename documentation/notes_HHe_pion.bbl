@@ -1,0 +1,50 @@
+\begin{thebibliography}{11}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{{Cantalupo} \& {Porciani}(2011)}]{CanPor11}
+{Cantalupo}, S., \& {Porciani}, C. 2011, \mnras, 411, 1678
+
+\bibitem[{{Frank} \& {Mellema}(1994)}]{FraMel94}
+{Frank}, A., \& {Mellema}, G. 1994, \aap, 289, 937
+
+\bibitem[{{Friedrich} {et~al.}(2012){Friedrich}, {Mellema}, {Iliev}, \&
+  {Shapiro}}]{FriMelIliEA12}
+{Friedrich}, M.~M., {Mellema}, G., {Iliev}, I.~T., \& {Shapiro}, P.~R. 2012,
+  \mnras, 421, 2232
+
+\bibitem[{{Henney} {et~al.}(2009){Henney}, {Arthur}, {de Colle}, \&
+  {Mellema}}]{HenArtDeCEA09}
+{Henney}, W.~J., {Arthur}, S.~J., {de Colle}, F., \& {Mellema}, G. 2009,
+  \mnras, 398, 157
+
+\bibitem[{{Marr} \& {West}(1976)}]{MarWes76}
+{Marr}, G.~V., \& {West}, J.~B. 1976, Atomic Data and Nuclear Data Tables, 18,
+  497
+
+\bibitem[{{Mellema} {et~al.}(2006){Mellema}, {Iliev}, {Alvarez}, \&
+  {Shapiro}}]{MelIliAlvEA06}
+{Mellema}, G., {Iliev}, I., {Alvarez}, M., \& {Shapiro}, P. 2006, New
+  Astronomy, 11, 374
+
+\bibitem[{{Osterbrock}(1989)}]{Ost89}
+{Osterbrock}, D.~E. 1989, {Astrophysics of gaseous nebulae and active galactic
+  nuclei} (University Science Books, Mill Valley, CA)
+
+\bibitem[{{Rodriguez-Gaspar} \& {Tenorio-Tagle}(1998)}]{RodTen98}
+{Rodriguez-Gaspar}, J.~A., \& {Tenorio-Tagle}, G. 1998, \aap, 331, 347
+
+\bibitem[{{Rybicki} \& {Lightman}(1979)}]{RybLig79}
+{Rybicki}, G.~B., \& {Lightman}, A.~P. 1979, {Radiative processes in
+  astrophysics} (New York: John Wiley \& Sons, Inc.)
+
+\bibitem[{{Tenorio-Tagle} {et~al.}(1986){Tenorio-Tagle}, {Bodenheimer}, \&
+  {Noriega-Crespo}}]{TenBodNor86}
+{Tenorio-Tagle}, G., {Bodenheimer}, P., \& {Noriega-Crespo}, A. 1986, in Model
+  Nebulae, ed. D.~{Pequignot}, 178
+
+\bibitem[{{Verner} {et~al.}(1996){Verner}, {Ferland}, {Korista}, \&
+  {Yakovlev}}]{VerFerKorEA96}
+{Verner}, D.~A., {Ferland}, G.~J., {Korista}, K.~T., \& {Yakovlev}, D.~G. 1996,
+  \apj, 465, 487
+
+\end{thebibliography}
