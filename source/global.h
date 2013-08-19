@@ -79,6 +79,10 @@
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
+/// - 2013.08.12 JM: Added RT_EFFECT_PION_EQM flag for radiation
+///    sources where I assume photoionisation equilibrium.
+/// - 2013.08.19 JM: Changed GeneralStuff constants (will remove them
+///    eventually).  Added new RT_EFFECT_HHE_MFQ flag for H-He chem.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -366,13 +370,22 @@ struct which_physics {
   int thermal_conduction; ///< 0 if no conductivity, 1 if using it.
 #endif // THERMAL CONDUCTION
 
+  ///
+  /// Mass fraction of H, X, used for calculating mean mass per
+  /// particle by assuming the rest is He.
+  ///
+  double H_MassFrac;
+  ///
   /// Mass fraction of He, Y, used for calculation electron/ion
   /// densities as a function of H number density, and for setting
   /// the mean mass per particle, mu.
+  ///
   double Helium_MassFrac;
+  ///
   /// Mass fraction of metals, Z, used for heating/cooling in
   /// microphysics (but doesn't contribute to mean mass per particle,
   /// mu).
+  ///
   double Metal_MassFrac;
   
 };
@@ -394,9 +407,11 @@ struct which_physics {
 // Effect of source:
 //
 #define RT_EFFECT_UV_HEATING 1   ///< UV heating source.
-#define RT_EFFECT_PION_MONO  2   ///< monochromatic photoionisation source.
-#define RT_EFFECT_PION_MULTI 3   ///< multifrequency photoionisation source.
-#define RT_EFFECT_PHOTODISS  4   ///< photo-dissociation of molecules.
+#define RT_EFFECT_PION_MONO  2   ///< monochromatic photoion source.
+#define RT_EFFECT_PION_MULTI 3   ///< multifrequency photoion source.
+#define RT_EFFECT_PHOTODISS  4   ///< photodissociation of molecules.
+#define RT_EFFECT_PION_EQM   5   ///< Assume photoion. equilibrium.
+#define RT_EFFECT_HHE_MFQ    6   ///< Frank&Mellema H+He p-ion scheme
 
 //
 // Source of opacity
@@ -406,6 +421,8 @@ struct which_physics {
 #define RT_OPACITY_TRACER 3 ///< opacity provided by tracer i: integrate rho*y_i*dr
 #define RT_OPACITY_VSHELL 4 ///< should never be used.  RT uses it internally to set Vshell in each cell.
 #define RT_OPACITY_HALPHA 5 ///< Used only for analysis to calculate projected H-alpha emission.
+#define RT_OPACITY_NII_FL 6 ///< Used only for analysis to calculate projected [NII] forbidden line emission.
+#define RT_OPACITY_RR     7 ///< Recombination rate (for ph-ion.eqm.)
 
 ///
 /// Star struct, for storing data from a stellar evolution file.
@@ -449,7 +466,7 @@ struct rad_src_info {
   int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
   int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
   int at_infinity; ///< set to true if source is at infinity.
-  int effect;      ///< RT_EFFECT_UV_HEATING, RT_EFFECT_PION_MONO, RT_EFFECT_PION_MULTI.
+  int effect;      ///< RT_EFFECT_UV_HEATING, RT_EFFECT_PION_MONO, RT_EFFECT_PION_MULTI, RT_EFFECT_PION_EQM
   int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
   int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
   string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
@@ -761,25 +778,20 @@ class GeneralStuff {
    /** \brief stop a timer, identified by a string, and return time in seconds. 
     * Deletes the timer. */
    double stop_timer(string);
-   inline double kB()  {return Boltzmann_Const;}
-   inline double m_p() {return Proton_Mass;}
-   inline double Ith_H() {return Hydrogen_ionisation_energy;}
-   inline double K_per_eV() {return Kelvin_per_eV;}
-   inline double s_per_yr() {return Secs_per_Year;}
-   inline double Msun() {return Solar_Mass;}
-   inline double cm_per_km() {return 1.0e5;}
+
+   inline double kB()  {return 1.381e-16;}
+   inline double m_p() {return 1.673e-24;}
+   inline double Ith_H() {return 13.59844;}
+   inline double K_per_eV() {return 1.16045e4;}
+   inline double s_per_yr() {return 3.15576e7;}
+   inline double Msun() {return 1.989e33;}
    inline double parsec() {return 3.086e18;}
    inline double Lsun() {return 1.989e33;}
    inline double Rsun() {return 6.960e10;}
    inline double StefanBoltzmannConst() {return 5.670e-5;}
    inline double ln10() {return 2.302585093;}
+   inline double c() {return 2.9979e10;}
     private:
-   const double Boltzmann_Const; ///< Boltzmann Constant in cgs units.
-   const double Proton_Mass;     ///< Proton mass in cgs units.
-   const double Hydrogen_ionisation_energy;  ///< 13.6eV
-   const double Kelvin_per_eV;  ///< 1.16e4 K/eV
-   const double Secs_per_Year;  ///< 3.16e7 s.
-   const double Solar_Mass;     ///< 1.989e33 g.
    map<string,double> timers; ///< maps a string identifier for a timer to an index in the start vector.
 };
 extern class GeneralStuff GS; ///< physical constants, utility functions.

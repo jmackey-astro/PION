@@ -57,10 +57,10 @@ LIST3=(`ls ${F3BASE}*`)
 for ii in $(seq 0 $((${#LIST1[@]} - 1)))
 do
     cat << EOF  >> gnu.plt
-plot '${LIST1[$ii]}' u 1:${VAR} w l lt 2 lw 3, \
-     '${LIST2[$ii]}' u 1:${VAR} w l lt 3 lw 2, \
-     '${LIST3[$ii]}' u 1:${VAR} w l lt 4 lw 2
-pause 0.1
+plot '${LIST1[$ii]}' u 1:${VAR} w lp lt 2 lw 3, \
+     '${LIST2[$ii]}' u 1:${VAR} w lp lt 3 lw 2, \
+     '${LIST3[$ii]}' u 1:${VAR} w lp lt 4 lw 2
+pause -1
 EOF
 done
 

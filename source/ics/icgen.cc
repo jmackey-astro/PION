@@ -75,8 +75,8 @@
 
 #ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE
-#include "contrib/microphysics_lowZ.h"
-#include "contrib/header.h"
+#include "microphysics/microphysics_lowZ.h"
+#include "contrib/HD_MetalFree.h"
 #endif // EXCLUDE_HD_MODULE
 #endif // HARPREETS_CODE_EXT
 
@@ -320,8 +320,8 @@ int main(int argc, char **argv)
 #ifndef EXCLUDE_HD_MODULE
   else if (ics=="HD_2D_ShockCloud")
     ic = new IC_HD_2D_ShockCloud();
-  else if (ics=="HD_3D_ShockCloud")
-    ic = new IC_HD_3D_ShockCloud();
+//  else if (ics=="HD_3D_ShockCloud")
+//    ic = new IC_HD_3D_ShockCloud();
 #endif
 #endif // HARPREETS_CODE_EXT
 

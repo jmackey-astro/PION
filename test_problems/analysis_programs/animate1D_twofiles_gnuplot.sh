@@ -56,7 +56,7 @@ for ii in $(seq 0 $((${#LIST1[@]} - 1)))
 do
     cat << EOF  >> gnu.plt
 plot '${LIST1[$ii]}' u 1:${VAR} w l lt 2 lw 3, '${LIST2[$ii]}' u 1:${VAR} w l lt 3 lw 2
-pause 0.2
+pause -1
 EOF
 done
 

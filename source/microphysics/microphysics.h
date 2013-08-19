@@ -16,6 +16,7 @@
 ///
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 /// - 2011.03.23 JM: Added new interface functions (they are just placeholders for now).
+/// - 2013.08.12 JM: added get_recombination_rate() public function.
 
 #ifndef MICROPHYSICS_H
 #define MICROPHYSICS_H
@@ -204,6 +205,22 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
                     ///< list of ionising src column densities and source properties.
                     const double   ///< EOS gamma.
                     ) {cout <<"Don't call timescales for old MP class!\n";return 1.0e99;}
+
+
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  double get_recombination_rate(
+          const int,      ///< ion index in tracer array (optional).
+          const double *, ///< input state vector (primitive).
+          const double    ///< EOS gamma (optional)
+          )
+  {
+    cout <<"MicroPhysics::get_recombination_rate: not written!\n";
+    return 1.0e99;
+  }
+
 
   private:
   /** \brief convert state vector from grid cell into local microphysics vector. */
@@ -494,6 +511,19 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
                     const double   ///< EOS gamma.
                     ) {cout <<"Don't call timescales for old MP class!\n";return 1.0e99;}
 
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  double get_recombination_rate(
+          const int,      ///< ion index in tracer array (optional).
+          const double *, ///< input state vector (primitive).
+          const double    ///< EOS gamma (optional)
+          )
+  {
+    cout <<"MP_Hydrogen::get_recombination_rate: not written!\n";
+    return 1.0e99;
+  }
 
  private:
   /** \brief convert state vector from grid cell into local microphysics vector. */

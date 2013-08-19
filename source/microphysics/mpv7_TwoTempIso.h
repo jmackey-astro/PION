@@ -15,6 +15,7 @@
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2013.08.12 JM: added get_recombination_rate() public function.
 
 
 #ifndef MPV7_PUREH_H
@@ -59,6 +60,16 @@ class mpv7_TwoTempIso
           const N_Vector, ///< current Y-value
           N_Vector,       ///< vector for Y-dot values
           const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+          );
+
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  double get_recombination_rate(
+          const int,      ///< ion index in tracer array (optional).
+          const double *, ///< input state vector (primitive).
+          const double    ///< EOS gamma (optional)
           );
 
   protected:

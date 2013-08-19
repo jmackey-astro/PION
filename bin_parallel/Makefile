@@ -41,6 +41,7 @@
 #    production version of pion.
 # - 2013.02.27 JM: Added extensions for contributed code.
 #    Added file_status.o/cpp object file. Added NEW_METALLICITY flag.
+# - 2013.08.19 JM: Changed filenames for Harpreet's module.
 #
 ###
 
@@ -291,7 +292,7 @@ OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
 	dataio_silo_MPI.o gridMethodsMPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
 	comm_mpi.o comm_files.o                                                \
-	stellar_wind_BC.o microphysics_lowZ.o                                  \
+	stellar_wind_BC.o                                                      \
 	eqns_base.o eqns_hydro_adiabatic.o                                     \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o                           \
 	riemann.o findroot.o riemannMHD.o                                      \
@@ -321,7 +322,6 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
 	utility_fits_class.o eqns_base.o eqns_hydro_adiabatic.o \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o laser_ablation.o \
 	stellar_wind_BC.o \
-	microphysics_lowZ.o \
         spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
@@ -329,11 +329,12 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
         StarBench_test.o
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
-  OBJECTS +=  microphysics_lowZ.o test_integrator.o \
-              metalfree_HD.o mp_lowZ_metalfree_photo.o 
-  IC_OBJ +=   microphysics_lowZ.o test_integrator.o \
-              metalfree_HD.o mp_lowZ_metalfree_photo.o \
-              HD_2D_ShockCloud.o HD_3D_ShockCloud.o
+  OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
+              HD_MetalFree_equations.o
+  IC_OBJ +=   microphysics_lowZ.o HD_MetalFree_integrator.o \
+              HD_MetalFree_equations.o \
+              HD_2D_ShockCloud.o 
+#HD_3D_ShockCloud.o
 endif
 
 ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
@@ -606,11 +607,9 @@ read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen.h ${GLOBAL} dataio_fits.h 
 
 HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
 HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen.h ${GLOBAL}
+HD_MetalFree_equations.o:  HD_MetalFree_equations.cpp HD_MetalFree.h ${GLOBAL}
+HD_MetalFree_integrator.o: HD_MetalFree_integrator.cpp HD_MetalFree.h ${GLOBAL}
 
-#RK5_functions.o:	header.h RK5_functions.cpp
-#RKCK_function.o:	header.h RKCK_function.cpp
-#test_equations.o:	test_equations.cpp header.h ${GLOBAL}
-#test_integrator.o: 	test_integrator.cpp header.h ${GLOBAL}
 ###############################################
 ###############################################
 

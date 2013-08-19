@@ -28,6 +28,8 @@
 ///    Added Wiersma et al (2009) CIE functions, full and metals-only.
 /// - 2011.06.20 JM: Got rid of non-ANSI-C exp10 functions
 /// - 2012.01.26 JM: replaced 2.303 with GS.ln10()
+/// - 2013.08.19 JM: changed all low-T extrapolations to have power
+///    law slope of 4.0;
 
 #include "cooling_SD93_cie.h"
 #include "../global.h"
@@ -125,7 +127,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
   //
   // logarithmic slope for extrapolation to lower temperatures.
   //
-  MinSlope = (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
+  MinSlope = 4.0 ; // was too shallow! (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
   //
   // logarthmic slope for extrapolation to higher temperatures.
   //
@@ -232,7 +234,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   //
   // logarithmic slope for extrapolation to lower temperatures.
   //
-  MinSlope = (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
+  MinSlope = 4.0; // was too shallow! (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
   //
   // logarthmic slope for extrapolation to higher temperatures.
   // This is set to zero, because the curve is noisy at high T due
@@ -339,7 +341,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
   //
   // logarithmic slope for extrapolation to lower temperatures.
   //
-  MinSlope = (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
+  MinSlope = 4.0; // was too shallow! (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
   //
   // logarthmic slope for extrapolation to higher temperatures.
   //
@@ -440,7 +442,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   //
   // logarithmic slope for extrapolation to lower temperatures.
   //
-  MinSlope = (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
+  MinSlope = 4.0; // was too shallow! (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
   //
   // logarthmic slope for extrapolation to higher temperatures.
   //
@@ -541,7 +543,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   //
   // logarithmic slope for extrapolation to lower temperatures.
   //
-  MinSlope = (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
+  MinSlope = 4.0; // was too shallow! (Larray[1]-Larray[0])/(Tarray[1]-Tarray[0]);
   //
   // logarthmic slope for extrapolation to higher temperatures.
   //

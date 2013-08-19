@@ -168,9 +168,11 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   double reltol=0.0;
   double *atol = NV_DATA_S(abstol);
   get_error_tolerances(&reltol,atol); // both args passed by reference.
+
   cout <<"\t\treltol="<<reltol<<", atol=["<<NV_Ith_S(abstol,0);
   for (int v=1; v<n_eq;v++) cout<<", "<<NV_Ith_S(abstol,v);
   cout <<"]\n";
+  
   err = CVodeSVtolerances(cvode_mem, reltol, abstol);
   if (err!= CV_SUCCESS) {
     cerr <<"setup_cvode_solver() CVodeSVtolerances: err="<<err<<"\n";

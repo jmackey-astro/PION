@@ -134,6 +134,7 @@
 /// - 2013.02.15 JM: Moved much ifdef stuff into new classes.
 ///    Changed Oxygen abundance from Lodders2003 to Asplund+2009.
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2013.08.12 JM: added get_recombination_rate() public function.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -1048,8 +1049,44 @@ double mp_explicit_H::timescales_RT(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
+
+double mp_explicit_H::get_recombination_rate(
+          const int,          ///< ion index in tracer array (optional).
+          const double *p_in, ///< input state vector (primitive).
+          const double g      ///< EOS gamma (optional)
+          )
+{
+#ifdef FUNCTION_ID
+  cout <<"mp_explicit_H::get_recombination_rate()\n";
+#endif // FUNCTION_ID
+  double rate=0.0;
+  double P[nvl];
+  //
+  // First convert to local variables.
+  //
+  convert_prim2local(p_in,P);
+  //
+  // Now get rate
+  //
+  rate = Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0-P[lv_H0]))
+          *mpv_nH*mpv_nH *(1.0-P[lv_H0])*(1.0-P[lv_H0]) *JM_NELEC;
+
+#ifdef FUNCTION_ID
+  cout <<"mp_explicit_H::get_recombination_rate()\n";
+#endif // FUNCTION_ID
+  return rate;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void mp_explicit_H::setup_radiation_source_parameters(

@@ -27,6 +27,7 @@
 ///    to make metallicity and mu into parameterfile settings.
 /// - 2013.04.15 JM: Removed lots of cout/cerr statements to clean up
 ///    std i/o messages.
+/// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list
 
 #include "get_sim_info.h"
 #include "../global.h"
@@ -685,6 +686,14 @@ int get_sim_info::read_extra_physics()
   if ( (a=rp->find_parameter("EP_Max_Temperature")) !="")
     SimPM.EP.MaxTemperature = atof(a.c_str());
   else SimPM.EP.MaxTemperature = 1.0e100;
+
+  //
+  // Hydrogen abundance (by mass) X.
+  // Default value is from Asplund et al. (2009,ARA&A,47,481)
+  //
+  if ( (a=rp->find_parameter("EP_Hydrogen_MassFrac")) !="")
+    SimPM.EP.H_MassFrac = atof(a.c_str());
+  else SimPM.EP.H_MassFrac = 0.7154;
 
   //
   // Helium abundance (by mass) Y.

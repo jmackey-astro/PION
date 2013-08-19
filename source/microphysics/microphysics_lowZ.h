@@ -23,20 +23,20 @@
 #ifndef MICROPHYSICS_LOWZ
 #define MICROPHYSICS_LOWZ
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_HD_MODULE
 
 
-#include "microphysics_base.h"
-#include "../global.h"
-#include "cooling.h"
+#include "microphysics/microphysics_base.h"
+#include "global.h"
+#include "microphysics/cooling.h"
 
 
 //#ifdef INCLUDE_HARPREETS_MODULE
 
 #include <vector>
-#include "Harpreets_code/header.h"
+#include "contrib/HD_MetalFree.h"
 
 //#define MP_DEBUG  ///< Use this flag to wrap debugging info and checks
 

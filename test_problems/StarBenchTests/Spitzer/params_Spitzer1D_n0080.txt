@@ -13,9 +13,9 @@ solver 3 # HYB=3, RCV=4, FVS=6
 ics PhotoEvaporatingClump
 
 # IC filename
-ICfilename IC_Spitzer1D_n0080
+ICfilename IC_Spitzer1D_n00080
 # Output FileName Base
-OutputFile    Spitzer1D_n0080
+OutputFile    Spitzer1D_n00080
 
 # Number and type of tracers.
 ntracer 1

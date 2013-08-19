@@ -53,6 +53,7 @@
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
 /// - 2013.02.19 JM: Moved file_status class definitions to new file.
+/// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list.
 
 //
 // These tell code what to compile and what to leave out.
@@ -547,6 +548,15 @@ void DataIOBase::set_params()
   p = pMXT; p->critical=false;
   params.push_back(p);
 //#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
+  //
+  // Hydrogen abundance (by mass) X.
+  // Default value is from Asplund et al. (2009,ARA&A,47,481)
+  //
+  pm_double  *pXXX = new pm_double
+    ("EP_Hydrogen_MassFrac", &SimPM.EP.H_MassFrac, 0.7154);
+  p = pXXX; p->critical=false;
+  params.push_back(p);
 
   //
   // Helium abundance (by mass) Y.

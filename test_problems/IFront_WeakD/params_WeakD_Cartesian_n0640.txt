@@ -77,7 +77,7 @@ OrderOfAccTime  2
 BC XNfix_XPfix_
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.0001
+GAMMA 1.4
 
 # CFL coefficient 0<cfl<1
 CFL 0.15

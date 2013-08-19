@@ -56,6 +56,8 @@
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
+/// - 2013.08.19 JM: Changed constants treatment in GeneralStuff.
+///    Will remove them from here eventually.
 
 #include "global.h"
 #include <iostream>
@@ -212,13 +214,6 @@ class cell_interface CI;
 //------------------------------------------------
 //--- General Stuff Class ------------------------
 GeneralStuff::GeneralStuff()
-  : 
-Boltzmann_Const(1.381e-16),
-Proton_Mass(1.67e-24),
-Hydrogen_ionisation_energy(13.59844),
-Kelvin_per_eV(1.16045e4),
-Secs_per_Year(3.16e7),
-Solar_Mass(1.989e33)
 {
   timers.clear();
 }

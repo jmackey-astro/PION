@@ -468,7 +468,7 @@ int main(int argc, char **argv)
       //
       // shell mass
       //
-      if (c->P[RO] > 5.21e-21*1.1) {
+      if (c->P[RO] > 5.21e-21*1.01) {
         sh_mass += c->P[RO]*cvol;
       }
 

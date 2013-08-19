@@ -37,6 +37,8 @@
 /// - 2013.04.15 JM: removed lots of comments (or put in TESTING def)
 /// - 2013.04.16 JM: Fixed bug where Set_Temp() was called when 
 ///    tracer variables were still (potentially) unset in wind cells.
+/// - 2013.08.19 JM: got rid of cm_per_km() function.
+
 //------------------------------------------------
 //------------ STELLAR WIND CLASS ----------------
 //------------------------------------------------
@@ -139,7 +141,7 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
   // are stored internally in cgs units.
   //
   ws->Mdot  = mdot *GS.Msun()/GS.s_per_yr();
-  ws->Vinf  = vinf *GS.cm_per_km();
+  ws->Vinf  = vinf *1.0e5;
 
   ws->Tw    = temp;
   ws->Rstar = Rstar;
@@ -683,7 +685,7 @@ void stellar_wind::get_src_Vinf(const int id, ///< src id
         double *x   ///< Vinf (output)
         )
 {
-  *x = wlist[id]->Vinf/GS.cm_per_km();
+  *x = wlist[id]->Vinf/1.0e5;
 }
 
 
@@ -1008,7 +1010,7 @@ int stellar_wind_evolution::add_evolving_source(
   // and Twind in K.
   //
   mdot = exp(GS.ln10()*mdot);
-  vinf = exp(GS.ln10()*vinf) /GS.cm_per_km();
+  vinf = exp(GS.ln10()*vinf) /1.0e5;
   Twind = exp(GS.ln10()*Twind);
   //
   // Now add source using constant wind version.

@@ -15,6 +15,8 @@
 /// - 2011.03.21 JM: Updated  RTnew() interface for more sources.  It is now simpler.
 /// - 2011.05.02 JM: Added set_multifreq_source_properties() function
 /// - 2012.01.16 JM: Tabbing.
+/// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2013.08.19 JM: added get_th_xsection() public function.
 
 #ifndef MICROPHYSICS_BASE_H
 #define MICROPHYSICS_BASE_H
@@ -32,8 +34,8 @@ struct rt_source_data {
   double strength; ///< Luminosity (or flux if source at infinity).
   double Vshell;   ///< Shell volume for discrete photo-ionisation/-heating rates.
   double dS;       ///< Path length through cell.
-  double Column;   ///< integral of density along line of sight to far edge of cell.
-  double DelCol;   ///< integral of density along line of sight through cell.
+  double *Column;  ///< integral of density along line of sight to far edge of cell.
+  double *DelCol;  ///< integral of density along line of sight through cell.
 };
 
 
@@ -188,6 +190,25 @@ class MicroPhysicsBase {
                 const struct rad_src_info *
                 ) {return -999;}
 
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  virtual double get_recombination_rate(
+          const int,      ///< ion index in tracer array (optional).
+          const double *, ///< input state vector (primitive).
+          const double    ///< EOS gamma (optional)
+          )=0;
+
+  ///
+  /// Get the ionisation cross section for an atom/ion at its
+  /// threshold frequency.
+  ///
+  virtual double get_th_xsection(
+        const int  ///< integer identifier for the ion.
+        ) {return -1.0e99;}
+
 };
 
 #endif // MICROPHYSICS_BASE_H
+

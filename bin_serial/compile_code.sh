@@ -134,7 +134,7 @@ fi
 ############ EXTRA CODE EXTENSIONS FROM CONTRIBUTED CODE ############
 #####################################################################
 # Harpreet Dhanoa's chemistry/microphysics module
-#PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
+PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
 
 # Read in turbulence simulations provided by Blakesley Burkhart
 PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"

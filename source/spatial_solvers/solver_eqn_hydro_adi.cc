@@ -22,6 +22,8 @@
 /// - 2010.12.28 JM: removed some debugging comments.
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2013.08.19 JM: tested a bunch of approximations, but nothing
+///    was an improvement so I left it the way it was.
 
 #include "solver_eqn_hydro_adi.h"
 using namespace std;
@@ -152,6 +154,15 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(class cell *c,
     UtoP(u2,Pf, eq_gamma);
 #endif //TESTING
   }
+
+//#ifdef TEST_MP7
+//  double Ta = Pf[PG]*GS.m_p()/((1.0+Pf[SimPM.ftr])*GS.kB()*Pf[RO]);
+//  double Tt = MP->Temperature(Pf,SimPM.gamma);
+//  if (fabs(Ta-Tt)/Tt >1.0e-2) {
+//    cout <<"T_now="<<Ta<<", but it should be "<<Tt<<"\n";
+//  }
+//  MP->Set_Temp(Pf,Tt,SimPM.gamma);
+//#endif // TEST_MP7
 
   //  for (int v=0;v<eq_nvar;v++) dU[v] = 0.; // Reset the dU array for the next timestep.
 
@@ -301,10 +312,24 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
   if (d==Rcyl) {
     switch (OA) {
      case OA1:
-       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]/CI.get_dpos(c,Rcyl));
+      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]/CI.get_dpos(c,Rcyl));
+      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;
+      //u1[1] = u1[0]+VOdR;
+      //u1[2] = 2.0*(u1[1]*u1[3] - u1[0]*u1[2])/(u1[1]*u1[1]-u1[0]*u1[0]);
+      //cout <<"O1: rel.diff. Src Term: "<< (c->Ph[eqPG]/CI.get_dpos(c,Rcyl) -u1[2])/u1[2];
+      //cout <<"  old = "<< FV_dt*c->Ph[eqPG]/CI.get_dpos(c,Rcyl)<<",  new = "<<FV_dt*u1[2]<<",  p="<<c->Ph[eqPG]<<"\n";
+      //c->dU[eqMMX] += FV_dt*u1[2];
       break;
      case OA2:
-       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c)))/CI.get_dpos(c,Rcyl);
+      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c)))/CI.get_dpos(c,Rcyl);
+      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;              // r-
+      //u1[1] = u1[0]+VOdR;                                // r+
+      //u1[2] = c->Ph[eqPG] +dpdx[eqPG]*(u1[0]-R_com(c));  // P-
+      //u1[3] = c->Ph[eqPG] +dpdx[eqPG]*(u1[1]-R_com(c));  // P+
+      //u1[4] = 2.0*(u1[1]*u1[3] - u1[0]*u1[2])/(u1[1]*u1[1]-u1[0]*u1[0]) -
+      //            (u1[3]-u1[2])/(u1[1]-u1[0]);
+      //c->dU[eqMMX] += FV_dt*u1[4];
+      //cout <<"O2: r-="<<u1[0]<<", r+="<<u1[1]<<", p-="<<u1[2]<<", p+="<<u1[3]<<", <p/r>="<<u1[4]<<", old p/r="<<(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c)))/CI.get_dpos(c,Rcyl)<<"\n";
       break;
      default:
       rep.error("Bad OOA in cyl_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);
@@ -396,13 +421,31 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
   //
   if (d==Rsph) {
     switch (OA) {
-     case OA1:
-       c->dU[eqMMX] += FV_dt*2.0*c->Ph[eqPG]/R3(c);
+      case OA1:
+      c->dU[eqMMX] += FV_dt*2.0*c->Ph[eqPG]/R3(c);
+      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;
+      //u1[1] = u1[0]+VOdR;
+      //u1[2] = 3.0*(u1[1]*u1[1]*c->Ph[eqPG] - u1[0]*u1[0]*c->Ph[eqPG])/(u1[1]*u1[1]*u1[1]-u1[0]*u1[0]*u1[0]);
+      //if (fabs(u1[2]-2.0*c->Ph[eqPG]/R3(c))/u1[2] >1.0e-15) {
+      //  cout <<"O1: rel.diff. Src Term: "<< (2.0*c->Ph[eqPG]/R3(c) -u1[2])/u1[2];
+      //  cout <<"  old = "<< 2.0*c->Ph[eqPG]/R3(c)<<",  new = "<<u1[2]<<",  p="<<c->Ph[eqPG]<<"\n";
+      //}
+      //c->dU[eqMMX] += FV_dt*u1[2];
       break;
-     case OA2:
-       c->dU[eqMMX] += FV_dt*2.0*
-	 ( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG] );
-       break;
+
+      case OA2:
+      c->dU[eqMMX] += FV_dt*2.0*
+       ( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG] );
+      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;              // r-
+      //u1[1] = u1[0]+VOdR;                                // r+
+      //u1[2] = c->Ph[eqPG] +dpdx[eqPG]*(u1[0]-R_com(c));  // P-
+      //u1[3] = c->Ph[eqPG] +dpdx[eqPG]*(u1[1]-R_com(c));  // P+
+      //u1[4] = 3.0*(u1[1]*u1[1]*u1[3] - u1[0]*u1[0]*u1[2])/(pow(u1[1],3.0)-pow(u1[0],3.0)) -
+      //            (u1[3]-u1[2])/(u1[1]-u1[0]);
+      //c->dU[eqMMX] += FV_dt*u1[4];
+      //if (fabs(u1[4]-2.0*((c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG]))/u1[4] >1.0e-15)
+      //  cout <<"O2: r-="<<u1[0]<<", r+="<<u1[1]<<", p-="<<u1[2]<<", p+="<<u1[3]<<", new <2p/r>="<<u1[4]<<", old <2p/r>="<<2.0*( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG] )<<"\n";
+      break;
      default:
       rep.error("Bad OOA in sph_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);
     }

@@ -75,7 +75,9 @@
 ///    ray, including absorption by dust (which is assumed to be everywhere).
 /// - 2013.01.17 JM: Put some error checking in cell_cols_3D() inside
 ///    an RT_TESTING flag.  Enforced column density >= 0 with max().
-///
+/// - 2013.08.12 JM: Added raytracing of the recombination rate for a
+///    photoionisation equilibrium calculation.
+
 #include "raytracer_SC.h"
 #include "../grid/uniform_grid.h"
 #include <iostream>
@@ -761,6 +763,7 @@ int raytracer_USC_infinity::ProcessCell(
 
   else if (source->update==RT_UPDATE_EXPLICIT) {
     double cell_col=ds; // ds is physical path length of ray through cell centre from entry to exit.
+    double temp=0.0;
 #ifdef RT_TESTING
     cout <<"\tsrc "<<source->id<<": Updating cell id="<<c->id<<" with opacity-only step.  N="<<col2cell<<"\n";
 #endif // RT_TESTING
@@ -814,19 +817,40 @@ int raytracer_USC_infinity::ProcessCell(
         // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
         // Then I(out) = S +exp(-dtau)*(I(in)-S)
         //
-        cell_col = 0.22*(c->Ph[RO]/(1.40*GS.m_p()))
+        cell_col = 0.22*(c->Ph[RO]*SimPM.EP.H_MassFrac/GS.m_p())
                   *1.1*c->Ph[source->opacity_var+SimPM.ftr]
                       *c->Ph[source->opacity_var+SimPM.ftr]
                   *pow(MP->Temperature(c->Ph,SimPM.gamma),-0.9);
-        //cell_col = 0.55*(c->Ph[RO]/(1.40*GS.m_p()))
+        //cell_col = 0.55*(c->Ph[RO]*SimPM.EP.H_MassFrac/*GS.m_p())
         //          *1.1*c->Ph[source->opacity_var+SimPM.ftr]
         //              *c->Ph[source->opacity_var+SimPM.ftr]
         //          *pow(MP->Temperature(c->Ph,SimPM.gamma),-1.0);
         // now set cell_col to be I(out)
         cell_col = cell_col
-            +exp(-(c->Ph[RO]/(1.40*GS.m_p()))*5.0e-22*ds)*(col2cell-cell_col);
+            +exp(-(c->Ph[RO]*SimPM.EP.H_MassFrac/GS.m_p())*5.0e-22*ds)*(col2cell-cell_col);
         CI.set_cell_col(c,source->id, cell_col-col2cell); // how much was added to I in cell.
         CI.set_col     (c, source->id, cell_col);
+        break;
+
+      case RT_OPACITY_RR:
+        //
+        // Get the radiative recombination rate *Vshell, for the 
+        // photoionisation eqiulibrium assumption (with caseB).
+        // For sources at infinity Vshell is ds.  In this case we
+        // have to assume the cell is fully ionised, so we set the
+        // first tracer value to 1.0 in c->Ph[] when we call the rate
+        // function, and reset it afterwards.
+        //
+        temp = c->Ph[SimPM.ftr];
+        c->Ph[SimPM.ftr] = 1.0;
+        cell_col = CI.get_cell_Vshell(c,source->id)/source->strength*
+                    MP->get_recombination_rate(0, c->Ph,SimPM.gamma);
+        // HACK:
+        //if (cell_col+col2cell>1.0 && col2cell<2.0) cell_col=0.1;
+        // HACK:
+        CI.set_cell_col(c, source->id, cell_col);
+        CI.set_col     (c, source->id, col2cell + cell_col);
+        c->Ph[SimPM.ftr] = temp;
         break;
 
       default:
@@ -1302,6 +1326,15 @@ void raytracer_USC::set_TauMin_for_source(
     // This is for Harpreet's column densities (value used is unimportant).
     rep.warning("Special case opacity for Harpreet's project!",rs.id,rs.id);
     TauMin[rs.id] = 5.0e-7;
+  }
+  else if ((rs.update==RT_UPDATE_EXPLICIT) &&
+           (rs.effect==RT_EFFECT_PION_EQM) ) {
+    //
+    // This is for photoionisation equilibrium; the variable is the
+    // fractional attenuation per cell.  So tau=0.7 corresponds to a
+    // value of (1-exp(-0.7))=0.5034
+    //
+    TauMin[rs.id] = 0.5034;
   }
 
   else rep.error("Unhandled case setting TauMin",rs.id);

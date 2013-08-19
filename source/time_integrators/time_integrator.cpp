@@ -136,6 +136,7 @@
 ///    scheme which should be more accurate (and truly 2nd order).
 /// - 2012.08.16 JM: Debugging.  It seems to be working well now, but
 ///    there is still more testing to do.
+/// - 2013.08.19 JM: Some cosmetic changes only.
 
 
 #include "../defines/functionality_flags.h"
@@ -147,26 +148,6 @@
 #include "../dataIO/dataio.h"
 
 #include "../microphysics/microphysics_base.h"
-
-//#ifndef EXCLUDE_MPV1
-//#include "../microphysics/microphysics.h"
-//#endif 
-//#ifndef EXCLUDE_HD_MODULE
-//#include "../microphysics/microphysics_lowZ.h"
-//#endif 
-//#include "../microphysics/mp_only_cooling.h"
-//#ifndef EXCLUDE_MPV2
-//#ifdef MP_V2_AIFA
-//#include "../microphysics/mp_v2_aifa.h"
-//#endif
-//#endif 
-//#ifndef EXCLUDE_MPV3
-//#include "../microphysics/mp_explicit_H.h"
-//#endif
-//#ifndef EXCLUDE_MPV4
-//#include "../microphysics/mp_implicit_H.h"
-//#endif 
-
 #include "../raytracing/raytracer_SC.h"
 
 #ifdef SILO
@@ -177,11 +158,6 @@
 #endif // if FITS
 
 #include "../spatial_solvers/solver_eqn_base.h"
-//#include "../spatial_solvers/solver_eqn_hydro_adi.h"
-//#include "../spatial_solvers/solver_eqn_hydro_adi_Eint.h"
-//#include "../spatial_solvers/solver_eqn_hydro_iso.h"
-//#include "../spatial_solvers/solver_eqn_mhd_adi.h"
-
 
 
 #include <iostream>
@@ -319,7 +295,7 @@ int IntUniformFV::first_order_update(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-  err += grid_update_state_vector(dt,OA1,ooa);
+  err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,ooa);
   if (err) 
     rep.error("first_order_update: error from state-vec update",err);
 
@@ -375,7 +351,7 @@ int IntUniformFV::second_order_update(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-  err += grid_update_state_vector(  dt, OA2, ooa);
+  err += grid_update_state_vector(  dt, TIMESTEP_FULL, ooa);
   if (err) 
     rep.error("second_order_update: error from state-vec update",err);
 
@@ -463,7 +439,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
     err += calc_microphysics_dU(dt);
     //    cout <<"done with mp.\n";
 
-    err += grid_update_state_vector(dt,OA1,OA1);
+    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA1);
     err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
     //     cout <<"updating external bcs.\n";
     err += grid->TimeUpdateExternalBCs(SimPM.tmOOA,SimPM.tmOOA);
@@ -487,7 +463,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
     eqn->Setdt(dt);
     err  = calc_dynamics_dU(dt,OA1);
 
-    err += grid_update_state_vector(dt,OA1,OA2);
+    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA2);
     err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
     err += grid->TimeUpdateExternalBCs(OA1,SimPM.tmOOA);
     if (err) rep.error("O2 half time update loop generated errors",err);
@@ -502,7 +478,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
     // Update MicroPhysics, if present
     err += calc_microphysics_dU(dt);
 
-    err += grid_update_state_vector(dt,OA2,OA2);
+    err += grid_update_state_vector(dt,TIMESTEP_FULL,OA2);
     err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
     err += grid->TimeUpdateExternalBCs(SimPM.tmOOA,SimPM.tmOOA);
 
@@ -1167,7 +1143,6 @@ int IntUniformFV::grid_update_state_vector(
     dp.ergTotChange = 0.;temperg =0.;
     dp.c = c;
 #endif
-//    if (c->id==80) CI.print_cell(c);
     err += eqn->CellAdvanceTime(c, c->P, c->dU, c->Ph, &temperg,
                                 SimPM.gamma, dt);
 #ifdef TESTING
@@ -1192,7 +1167,6 @@ int IntUniformFV::grid_update_state_vector(
       dp.initERG += dp.ergTotChange*eqn->CellVolume(c);
 #endif // TESTING
     }
-//    if (c->id==80) CI.print_cell(c);
 
   } while ( (c =grid->NextPt(c)) !=0);
 

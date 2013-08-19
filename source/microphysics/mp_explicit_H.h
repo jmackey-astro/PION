@@ -23,6 +23,8 @@
 ///    fractions as EP parameters, to make metallicity and mu into
 ///    variables that can be set from the parameterfile.
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2013.08.12 JM: added get_recombination_rate() public function.
+
 #ifndef MP_EXPLICIT_H_H
 #define MP_EXPLICIT_H_H
 
@@ -271,6 +273,15 @@ class mp_explicit_H
             const struct rad_src_info *
             );
 
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  virtual double get_recombination_rate(
+          const int,      ///< ion index in tracer array (optional).
+          const double *, ///< input state vector (primitive).
+          const double    ///< EOS gamma (optional)
+          );
   
   protected:
   ///

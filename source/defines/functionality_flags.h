@@ -37,9 +37,10 @@
 //
 //#define EXCLUDE_MPV1       // both microphysics_v1 and H-only MP.
 #define EXCLUDE_MPV2       // mp_v2_aifa
-//#define EXCLUDE_MPV3     // mp_explicit_H 
-#define EXCLUDE_MPV4     // mp_implicit_H
+//#define EXCLUDE_MPV3       // mp_explicit_H 
+#define EXCLUDE_MPV4       // mp_implicit_H
 #define EXCLUDE_HD_MODULE  // Harpreet's module.
+//#define EXCLUDE_MPV9       // mpv9_HHe module.
 
 //
 // Comment out to disable PDR cooling in mp_explicit/implicit_H.cc

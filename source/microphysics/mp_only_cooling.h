@@ -17,6 +17,7 @@
 ///    the DO_HEATING ifdef -- now we have 5 different cooling
 ///    functions.
 /// - 2013.02.14 JM: Tidied up file.
+/// - 2013.08.12 JM: added get_recombination_rate() public function.
 
 #ifndef MP_ONLY_COOLING_H
 #define MP_ONLY_COOLING_H
@@ -175,6 +176,21 @@ class mp_only_cooling
     cout <<"Don't call timescales for only-cooling class!\n";
     return 1.0e99;
   }
+
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  double get_recombination_rate(
+          const int,      ///< ion index in tracer array (optional).
+          const double *, ///< input state vector (primitive).
+          const double    ///< EOS gamma (optional)
+          )
+  {
+    cout <<"get_recombination_rate: mp_only_cooling has no ions!\n";
+    return 1.0e99;
+  }
+  
 
  private:
   int cooling_flag;
