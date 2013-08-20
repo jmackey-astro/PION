@@ -21,6 +21,8 @@
 /// - 2011.04.18 JM: Added storage for dS, path length through a cell for raytracing.
 /// - 2011.10.17 JM: Updated RT storage.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2013.08.20 JM: Moved raytracing set/get functions to header and
+///    made them inline.
 
 #include "cell_interface.h"
 using namespace std;
@@ -46,10 +48,14 @@ cell_interface::cell_interface()
   using_Hcorr = -1;
   /// Size of extra_data array (can be zero).
   N_extra_data = -1;
-  /// index of Tau in extra_data, set zero pointer initially
-  iTau0  = 0;
-  iDTau0 = 0;
-  iVsh   = 0;
+  //
+  // index arrays initialise to zero.
+  //
+  NTau  = 0;
+  iTau  = 0;
+  iDTau = 0;
+  iVsh  = 0;
+  idS   = 0;
   /// indices of Hcorrection values in extra_data [XX,YY,ZZ].
   for (int v=0; v<MAX_DIM; v++)
     iHcorr[v] = -1;
@@ -64,10 +70,11 @@ cell_interface::~cell_interface()
 {
   xmin=0;
   if (using_RT>0) {
-    iTau0  = mem.myfree(iTau0);
-    iDTau0 = mem.myfree(iDTau0);
-    iVsh   = mem.myfree(iVsh);
-    idS    = mem.myfree(idS);
+    NTau  = mem.myfree(NTau);
+    iTau  = mem.myfree(iTau);
+    iDTau = mem.myfree(iDTau);
+    iVsh  = mem.myfree(iVsh);
+    idS   = mem.myfree(idS);
   }
 }
 
@@ -110,6 +117,9 @@ void cell_interface::setup_extra_data(
   cout <<"\ncell_interface::setup_extra_data():\n";
 #endif
   //
+  // Set up a 1D array for all of the extra data that a cell needs,
+  // and set indices to access the required elements.
+  //
   // Start with no extra data:
   //
   N_extra_data=0;
@@ -126,26 +136,33 @@ void cell_interface::setup_extra_data(
     //
     using_RT = 1;
     //
-    // Each source needs either 1 or 3 variables, denoted by:
-    // iVsh[v], iTau0[v], iDTau0[v], //iTau1[v], iDTau1[v], iTau2[v], iDTau2[v].
+    // Each source, s, numbered from 0 to Nsources-1, needs a number
+    // of variables:
+    // - NTau[s]:  the number of Tau and DTau variables for source s.
+    // - iTau[s]:  index of first Tau variable in s (others follow).
+    // - iDTau[s]: index of first DTau variable in s (others follow).
+    // - iVsh[s]:  index of Vshell variable in extra_data[] for s.
+    // - idS[s]:   index of dS variable in extra_data[] for s.
     //
-    iTau0 = mem.myalloc(iTau0, rsi.Nsources);
-    //iTau1 = mem.myalloc(iTau1, rsi.Nsources);
-    //iTau2 = mem.myalloc(iTau2, rsi.Nsources);
-    iDTau0 = mem.myalloc(iDTau0, rsi.Nsources);
-    //iDTau1 = mem.myalloc(iDTau1, rsi.Nsources);
-    //iDTau2 = mem.myalloc(iDTau2, rsi.Nsources);
-    iVsh  = mem.myalloc(iVsh, rsi.Nsources);
-    idS   = mem.myalloc(idS, rsi.Nsources);
+    NTau  = mem.myalloc(NTau,  rsi.Nsources);
+    iTau  = mem.myalloc(iTau,  rsi.Nsources);
+    iDTau = mem.myalloc(iDTau, rsi.Nsources);
+    iVsh  = mem.myalloc(iVsh,  rsi.Nsources);
+    idS   = mem.myalloc(idS,   rsi.Nsources);
 
-    for (int v=0; v<rsi.Nsources; v++) {
+    for (int s=0; s<rsi.Nsources; s++) {
       //
-      // New update with rates: need 2-vars for Tau, one Vshell variable.
+      // Number of quantities traced from source:
       //
-      iTau0[v] = N_extra_data; N_extra_data++;
-      iDTau0[v]= N_extra_data; N_extra_data++;
-      iVsh[v]  = N_extra_data; N_extra_data++;
-      idS[v]   = N_extra_data; N_extra_data++;
+      NTau[s] = rsi.sources[s].NTau;
+      //
+      // New update with rates: need NTau[s] vars for Tau and DTau,
+      // one var for Vshell and dS.
+      //
+      iTau[s]  = N_extra_data; N_extra_data += NTau[s];
+      iDTau[s] = N_extra_data; N_extra_data += NTau[s];
+      iVsh[s]  = N_extra_data; N_extra_data++;
+      idS[s]   = N_extra_data; N_extra_data++;
     } // loop over radiation sources.
 #ifdef TESTING
     cout <<"\t\t Adding RT: N="<<N_extra_data<<"\n";
@@ -251,7 +268,7 @@ cell * cell_interface::new_cell()
   //  cout <<"Nxd="<<N_extra_data<<"\n";
   if (N_extra_data>=1)
     c->extra_data = mem.myalloc(c->extra_data, N_extra_data);
-  for (int v=0;v<N_extra_data;v++)
+  for (short unsigned int v=0;v<N_extra_data;v++)
     c->extra_data[v] = 0.0;
 
   return c;
@@ -464,140 +481,6 @@ void cell_interface::print_cell(const cell *c)
   return;
 }
 
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get cell optical depth
-///
-double cell_interface::get_cell_col(
-        const cell *c,  ///< current cell.
-        const int v     ///< index of source.
-        )
-{
-#ifdef RT_TESTING
-  if (iDTau0[v] <0) {
-    cout <<"source "<<v<<": ";
-    rep.error("Source has no 1st cell opacity!", iDTau0[v]);
-  }
-#endif // RT_TESTING
-  return c->extra_data[iDTau0[v]];
-}
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Set cell optical depth
-///
-void   cell_interface::set_cell_col(
-        cell *c,
-        const int v,  ///< index of source.
-        const double tau
-        )
-{
-#ifdef RT_TESTING
-  if (iDTau0[v] <0) {
-    cout <<"source "<<v<<": ";
-    rep.error("Source has no 1st cell opacity!", iDTau0[v]);
-  }
-#endif // RT_TESTING
-  c->extra_data[iDTau0[v]] = tau;
-  return;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Set cell Vshell value (for raytracing).
-///
-void cell_interface::set_cell_Vshell(
-        cell *c,
-        const int v,  ///< index of source.
-        const double Vshell
-        )
-{
-#ifdef RT_TESTING
-  if (iVsh[v] <0) {
-    cout <<"source "<<v<<": ";
-    rep.error("Source has no Vhsell variable", iVsh[v]);
-  }
-#endif // RT_TESTING
-  c->extra_data[iVsh[v]] = Vshell;
-  return;
-}
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get cell Vshell value (for raytracing).
-///
-double cell_interface::get_cell_Vshell(
-        const cell *c,  ///< current cell.
-        const int v     ///< index of source.
-        )
-{
-#ifdef RT_TESTING
-  if (iVsh[v] <0) {
-    cout <<"source "<<v<<": ";
-    rep.error("Source has no Vhsell variable", iVsh[v]);
-  }
-#endif // RT_TESTING
-  return c->extra_data[iVsh[v]];
-}
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Set raytracing path length through cell for source v.
-///
-void cell_interface::set_cell_deltaS(
-        cell *c,
-        const int v,  ///< index of source.
-        const double deltaS
-        )
-{
-#ifdef RT_TESTING
-  if (idS[v] <0) {
-    cout <<"source "<<v<<": ";
-    rep.error("Source has no deltaS variable", idS[v]);
-  }
-#endif // RT_TESTING
-  c->extra_data[idS[v]] = deltaS;
-  return;
-}
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get raytracing path length through cell for source v.
-///
-double cell_interface::get_cell_deltaS(
-          const cell *c,  ///< current cell.
-          const int v     ///< index of source.
-          )
-{
-#ifdef RT_TESTING
-  if (idS[v] <0) {
-    cout <<"source "<<v<<": ";
-    rep.error("Source has no Vhsell variable", idS[v]);
-  }
-#endif // RT_TESTING
-  return c->extra_data[idS[v]];
-}
-
-
-
-// ##################################################################
-// ##################################################################
 
 
 

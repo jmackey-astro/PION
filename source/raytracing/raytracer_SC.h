@@ -33,12 +33,15 @@
 /// - 2012.01.16 JM: Gave update_RT_source_properties() a real function.
 /// - 2012.03.31 JM: Made the Add_Source() function more modular, so I don't need the
 ///    ifdefs in the serial version for setting Vshell.
+/// - 2013.08.20 JM: Modifications so a given source can have an
+///    array of optical depths rather than a single value per source.
+///    This is tough going, and is only half-way done so far.
 
 #ifndef RAYTRACING_H
 #define RAYTRACING_H
 
 
-#include "../global.h"
+#include "global.h"
 
 #ifndef CELL_CENTRED_SRC
 #ifndef NON_CELL_CENTRED_SRC
@@ -73,18 +76,27 @@ enum Octants {OCT1=0, OCT2=1, OCT4=2, OCT3=3, OCT5=4, OCT6=5, OCT8=6, OCT7=7};
 /// Struct to hold info on radiation sources.  An extension of rad_src_info in global.h
 ///
 struct rad_source {
-  int id;   ///< source id.
+  ///
+  /// pointer to source (set to SimPM.RS.source[id]) with the basic
+  /// info about the source.
+  ///
+  struct rad_src_info *s;
+
   class cell *sc; ///< nearest cell to source.
-  double *pos;  ///< source position.
-  int *ipos;    ///< source position in integer form (grid units, dx=2).
-  double strength;  ///< source strength.
   bool src_on_grid; ///< true if source is at a grid cell.
-  bool at_infinity; ///< True if source is at infinity.
-  int type;   ///< Type of source.  RT_SRC_DIFFUSE or RT_SRC_SINGLE.
-  int effect;      ///< Either UV heating or photoionisation+heating.
-  int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
-  int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
+  int ipos[MAX_DIM];    ///< source position in integer form (grid units, dx=2).
+
+  //int id;   ///< source id.
+  //double *pos;  ///< source position.
+  //double strength;  ///< source strength.
+
+  //bool at_infinity; ///< True if source is at infinity.
+  //int type;   ///< Type of source.  RT_SRC_DIFFUSE or RT_SRC_SINGLE.
+  //int effect;      ///< Either UV heating or photoionisation+heating.
+  //int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
+  //int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
+  //int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
+
   ///
   /// This struct is used by the code to pass cell and source data
   /// to the microphysics integrator.  It contains the relevant source
@@ -125,8 +137,9 @@ class raytracer_USC_infinity : public RayTracingBase {
    * For a source at infinity, the source strength refers to the flux
    * arriving at the grid, as we can't use luminosity.
    */
-  virtual int Add_Source(const struct rad_src_info * ///< ptr to source info.
-                        );
+  virtual int Add_Source(
+        struct rad_src_info * ///< ptr to source info.
+        );
 
 
   /** \brief Processes a source's effect on the grid over a timestep.
@@ -222,31 +235,31 @@ class raytracer_USC_infinity : public RayTracingBase {
                 );
 
 
-   class GridBaseClass *gridptr; ///< pointer to grid, which should be setup
+  class GridBaseClass *gridptr; ///< pointer to grid, which should be setup
                                  ///< independently of the raytracer.
 
-   class MicroPhysicsBase *mpptr; ///< pointer to microphysics class, which 
+  class MicroPhysicsBase *mpptr; ///< pointer to microphysics class, which 
                                   ///< should be set up independently.
 
-   struct rad_source *current_src; ///< pointer to source we are currently working with.
+  struct rad_source *current_src; ///< pointer to source we are currently working with.
    
    /** \brief If a source is at infinity, we can trace each column one by one with 
     * a much simpler algorithm, so that's what this function does.
     */
-   int trace_parallel_rays(const rad_source *,   ///< source we are dealing with.
+  int trace_parallel_rays(const rad_source *,   ///< source we are dealing with.
 			   const enum direction ///< direction to source at infinity.
 			   );
    /** \brief Traces a 1D column from a starting cell, in a direction, to the edge of the grid. 
     * This function explicitly assumes rays parallel to the given direction.
     **/
-   int trace_column_parallel(const rad_source *,  ///< source we are tracing from.
+  int trace_column_parallel(const rad_source *,  ///< source we are tracing from.
 			     cell *,              ///< cell to start from.
 			     const enum direction ///< direction we are looking.
 			     );
    /** \brief Get column density to current cell from source, and path length through cell.
     * This assumes parallel rays along the column, appropriate for 1D or source at infinity.
     * */
-   int cell_cols_1d(const rad_source *, ///< pointer to source struct.
+  int cell_cols_1d(const rad_source *, ///< pointer to source struct.
 		    class cell *,       ///< Current Cell
 		    const enum direction, ///< direction to source. 
 		    double *,           ///< column to cell.
@@ -259,7 +272,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// behaviour of this function is set by rs->update and rs->opacity_src.
   ///
   virtual int ProcessCell(cell *,            ///< Current cell.
-		   double,            ///< Column to cell.
+		   double[],            ///< Column to cell.
 		   double,            ///< Path Length through cell.
 		   const rad_source *, ///< pointer to source struct.
 		   const double       ///< Timestep
@@ -272,7 +285,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// that its properties are appropriate.
   ///
   virtual void add_source_to_list(
-              const struct rad_src_info * ///< source info.
+              struct rad_src_info * ///< source info.
               );
 
   ///
@@ -302,7 +315,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   ///
   virtual int ProcessCell_TimeUpdate(
             cell *,            ///< Current cell.
-            double,            ///< Column to cell.
+            double[],            ///< Column to cell.
             double,            ///< Path Length through cell.
             const rad_source *, ///< pointer to source struct.
             const double       ///< Timestep
@@ -344,7 +357,7 @@ class raytracer_USC : public raytracer_USC_infinity {
   /// for a small number of cores, and seems to be more accurate for Cartesian
   /// grids, so it is recommended to always set this!
   ///
-  virtual int Add_Source(const struct rad_src_info * ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info * ///< ptr to source info.
 			  );
 
    /** \brief Processes a source's effect on the grid over a timestep.
@@ -358,36 +371,38 @@ class raytracer_USC : public raytracer_USC_infinity {
 
 
   /** \brief Prints list of sources with id, location, strength. */
-   void Print_SourceList();
-   /** \brief Returns the number of sources to track. */
-   int NSources();
+  void Print_SourceList();
+
+  /** \brief Returns the number of sources to track. */
+  int NSources();
    
   protected:
-   enum direction 
-     dir1[8], ///< list of x-directions for tracing octants in order.
-     dir2[8], ///< list of y-directions for tracing octants in order.
-     dir3[8]; ///< list of z-directions for tracing octants in order.
+  enum direction 
+    dir1[8], ///< list of x-directions for tracing octants in order.
+    dir2[8], ///< list of y-directions for tracing octants in order.
+    dir3[8]; ///< list of z-directions for tracing octants in order.
 
-	///
+  ///
   /// Direction from cells in question to source.  To be set
   /// for each line/quadrant/octant in RayTraceSource() function.
-	///
-	std::vector<enum direction> SrcDir;
-	///
-	/// min-Tau values for source column density interpolation, ordered by src id.
-	///
-	std::vector<double> TauMin;
+  ///
+  std::vector<enum direction> SrcDir;
+  ///
+  /// min-Tau values for source column density interpolation, ordered by src id.
+  ///
+  std::vector<double> TauMin;
   
 	
   /** \brief Find the source cell, or if the source is off the grid, find the
    * nearest cell to the source. */
   class cell * find_source_cell(double * ///< position of source.
 															 	);
+
    /** \brief Set the source position to be the centre of a cell, even if off grid.*/
-   void centre_source_on_cell(
-	 					double *, ///< position of source.
-			      enum axes              ///< axis to find source along.
-			      );
+  void centre_source_on_cell(
+          double *, ///< position of source.
+          enum axes              ///< axis to find source along.
+          );
    
    /** \brief This goes along an axis until it gets to the source location. 
     * 
@@ -396,24 +411,28 @@ class raytracer_USC : public raytracer_USC_infinity {
     * it finds the cell the source is in, and moves the source to the cell centre, if
     * it is not there already.
     * */
-   virtual class cell * find_src_on_grid(double *, ///< position of source.
-					 cell *,                ///< starting cell.
-					 enum axes              ///< axis to find source along.
-					 );
-   /** \brief This will return a pointer to the source cell, or the on-grid cell nearest the off-grid source.
-    * Works for 2D and 3D.
-    */
-   void find_closest_cell(const rad_source *, ///< pointer to source
-			  cell *,             ///< cell to move to cell nearest to source.
-			  enum direction *    ///< array to put in directions to source from cell nearest.
-			  );
+  virtual class cell * find_src_on_grid(
+        double *, ///< position of source.
+        cell *,                ///< starting cell.
+        enum axes              ///< axis to find source along.
+        );
+
+  /** \brief This will return a pointer to the source cell, or the on-grid cell nearest the off-grid source.
+   * Works for 2D and 3D.
+   */
+  void find_closest_cell(
+        const rad_source *, ///< pointer to source
+        cell *,             ///< cell to move to cell nearest to source.
+        enum direction *    ///< array to put in directions to source from cell nearest.
+        );
    /** \brief Given a source cell, assign a list of start cells for each line/quad/octant
     * we need to trace along (some may be null).
     */
-   void set_startcells(cell *,          ///< source cell, or cell nearest to source if off grid (const).
-		       cell **,         ///< list of startcells for each line/quadrant/octant (to be assigned).
-		       enum direction * ///< list of directions to source if it is off grid (const).
-		       );
+  void set_startcells(
+        cell *,          ///< source cell, or cell nearest to source if off grid (const).
+        cell **,         ///< list of startcells for each line/quadrant/octant (to be assigned).
+        enum direction * ///< list of directions to source if it is off grid (const).
+        );
 
 
    /** \brief Traces a 1D column from a starting cell, in a direction, to the edge of the grid. */
@@ -480,22 +499,30 @@ class raytracer_USC : public raytracer_USC_infinity {
 		    );
 
 
-   /** \brief Short Characteristic Method of getting column density to cell. */
-   virtual double col2cell_2d(const rad_source *,     ///< source we are working on.
-			      const cell *,           ///< cell to get column to.
-			      const enum direction,   ///< face ray enters cell through.
-			      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-			      const double *          ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-			      );
+   ///
+   /// Short Characteristic Method of getting column density to cell.
+   ///
+   virtual void col2cell_2d(
+          const rad_source *,     ///< source we are working on.
+          const cell *,           ///< cell to get column to.
+          const enum direction,   ///< face ray enters cell through.
+          const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
+          const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
+          double [], ///< Column densities.
+          );
 
 
-   /** \brief Short Characteristic Method of getting column density to cell. */
-   virtual double col2cell_3d(const rad_source *,     ///< source we are working on.
-			      const cell *,           ///< cell to get column to.
-			      const enum direction,   ///< face ray enters cell through.
-			      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-			      const double *          ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-			      );
+   ///
+   /// Short Characteristic Method of getting column density to cell.
+   ///
+   virtual void col2cell_3d(
+          const rad_source *,     ///< source we are working on.
+          const cell *,           ///< cell to get column to.
+          const enum direction,   ///< face ray enters cell through.
+          const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
+          const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
+          double [], ///< Column densities.
+          );
 
 
    ///
@@ -547,7 +574,7 @@ class raytracer_USC : public raytracer_USC_infinity {
   /// that its properties are appropriate.
   ///
   virtual void add_source_to_list(
-              const struct rad_src_info * ///< source info.
+              struct rad_src_info * ///< source info.
               );
 
   ///
@@ -595,7 +622,7 @@ class raytracer_USC_pllel : public raytracer_USC {
   /// gridptr->setup_RT_boundaries() so that the grid can decide which (if any)
   /// extra corner boundaries it needs to set up for sending and receiving data.
   ///
-  virtual int Add_Source(const struct rad_src_info * ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info * ///< ptr to source info.
                         );
 
    /** \brief Processes a source's effect on the grid over a timestep.

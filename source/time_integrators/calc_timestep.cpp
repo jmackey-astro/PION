@@ -133,7 +133,8 @@
 /// - 2012.08.05 JM: Moved timestep-calculation functions from gridMethods.cc
 ///    to time_integrators/calc_timestep.cpp.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
-
+/// - 2013.08.20 JM: Changed cell_interface for radiative transfer
+///    variables, so heating/ionising source syntax has changed.
 
 #include "../defines/functionality_flags.h"
 #include "../defines/testing_flags.h"
@@ -541,14 +542,18 @@ double IntUniformFV::get_mp_timescales_with_radiation()
       for (int v=0; v<FVI_nheat; v++) {
         FVI_heating_srcs[v].Vshell  = CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
         FVI_heating_srcs[v].dS      = CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].DelCol  = CI.get_cell_col(   c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].Column  = CI.get_col(c, FVI_heating_srcs[v].id) -FVI_heating_srcs[v].DelCol;
+        CI.get_cell_col(c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].DelCol);
+        CI.get_col(     c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].Column);
+        for (short unsigned int iC=0; iC<FVI_heating_srcs[v].NTau; iC++)
+          FVI_heating_srcs[v].Column[iC] -= FVI_heating_srcs[v].DelCol[iC];
       }
       for (int v=0; v<FVI_nion; v++) {
         FVI_ionising_srcs[v].Vshell = CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
         FVI_ionising_srcs[v].dS     = CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].DelCol = CI.get_cell_col(   c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].Column = CI.get_col(c, FVI_ionising_srcs[v].id)-FVI_ionising_srcs[v].DelCol;
+        CI.get_cell_col(c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].DelCol);
+        CI.get_col(     c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);
+        for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
+          FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
       }
       //
       // For the new update we assume we want to limit by all relevant timescales.

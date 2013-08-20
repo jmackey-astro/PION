@@ -47,6 +47,7 @@
 /// - 2011.10.14 JM: commented out RT_DIFF
 /// - 2012.03.01 JM: Added spacing between functions.
 /// - 2013.02.07 JM: Made code less verbose.
+/// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 #ifdef SILO
 
 #include "dataio_silo.h"
@@ -612,19 +613,26 @@ int dataio_silo::setup_write_variables()
   if (RT) {
     for (int v=0;v<SimPM.RS.Nsources;v++) {
       ostringstream var;
-      switch (SimPM.RS.sources[v].type) {
-      case RT_SRC_SINGLE:
-        var << "Col_Src_" << v;
-        varnames.push_back(var.str());
-        break;
-      case RT_SRC_DIFFUSE:
-        var << "ColDiff_" << v;
-        varnames.push_back(var.str());
-        break;
-      default:
-        rep.error("Bad radiation source type",SimPM.RS.sources[v].type);
-        break;
-      }
+      for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++) {
+        var.str("");
+        switch (SimPM.RS.sources[v].type) {
+          case RT_SRC_SINGLE:
+          var << "Col_Src_" << v;
+          var << "_T"<<iT;
+          varnames.push_back(var.str());
+          break;
+
+          case RT_SRC_DIFFUSE:
+          var << "ColDiff_" << v;
+          var << "_T"<<iT;
+          varnames.push_back(var.str());
+          break;
+
+          default:
+          rep.error("Bad radiation source type",SimPM.RS.sources[v].type);
+          break;
+        } // switch
+      } // loop over Tau vars for source
     } // loop over Nsources
   } // if RT
 #endif // RT_TESTING_OUTPUTCOL
@@ -1012,23 +1020,19 @@ int dataio_silo::get_scalar_data_array(string variable, ///< variable name to ge
     do {data[ct] = eqn->Ptot(c->P,SimPM.gamma); ct++;} while ( (c=gp->NextPt(c))!=0 );
   }
 
-//  else if (v==-4) { // optical depth variable
-//    //    cout <<"writing variable v="<<v<<" corresponding to "<<variable<<"\n";
-//    do {
-//      data[ct] = CI.get_col(c, 0);
-//      ct++;
-//    } while ( (c=gp->NextPt(c))!=0 );
-//  }
-
 #ifdef RT_TESTING_OUTPUTCOL
   else if (v<=-20 && v>-30) {
     // ionising-RT column density variable.
 #ifdef TESTING
     cout <<"writing variable "<<v<<" corresponding to NH0 RT variable "<<variable<<"\n";
 #endif
+    double Tau[MAX_TAU];
     int col_id=abs(v+20);
+    // which Tau variable?  get from string.
+    int iT = atoi(variable.substr(11).c_str());
     do {
-      data[ct] = CI.get_col(c, col_id);
+      CI.get_col(c, col_id, Tau);
+      data[ct] = Tau[iT];
       ct++;
     } while ( (c=gp->NextPt(c))!=0 );
   }
@@ -1037,9 +1041,13 @@ int dataio_silo::get_scalar_data_array(string variable, ///< variable name to ge
 #ifdef TESTING
     cout <<"writing variable "<<v<<" corresponding to Ntot RT variable "<<variable<<"\n";
 #endif
+    double Tau[MAX_TAU];
     int col_id=abs(v+10);
+    // which Tau variable?  get from string.
+    int iT = atoi(variable.substr(11).c_str());
     do {
-      data[ct] = CI.get_col(c, col_id);
+      CI.get_col(c, col_id, Tau);
+      data[ct] = Tau[iT];
       ct++;
     } while ( (c=gp->NextPt(c))!=0 );
   }

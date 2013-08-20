@@ -17,6 +17,8 @@
 /// - 2012.01.16 JM: Tabbing.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2013.08.19 JM: added get_th_xsection() public function.
+/// - 2013.08.20 JM: Added NTau var to rt_source_data, Column and
+///    DelCol are changed to arrays.  Added get_n_el() function.
 
 #ifndef MICROPHYSICS_BASE_H
 #define MICROPHYSICS_BASE_H
@@ -25,6 +27,10 @@
 #include "../grid/cell_interface.h"
 //#define MP_DEBUG
 
+
+
+
+#define MAX_TAU 4
 ///
 /// Radiation Source data struct, used for passing info to microphysics classes.
 ///
@@ -34,9 +40,13 @@ struct rt_source_data {
   double strength; ///< Luminosity (or flux if source at infinity).
   double Vshell;   ///< Shell volume for discrete photo-ionisation/-heating rates.
   double dS;       ///< Path length through cell.
-  double *Column;  ///< integral of density along line of sight to far edge of cell.
-  double *DelCol;  ///< integral of density along line of sight through cell.
+  short unsigned int NTau; ///< Number of LOS quantities traced for the source.
+  double Column[MAX_TAU];  ///< integral of quantities along LOS to near edge of cell.
+  double DelCol[MAX_TAU];  ///< integral of quantities along LOS through cell.
 };
+
+
+
 
 
 
@@ -206,6 +216,14 @@ class MicroPhysicsBase {
   ///
   virtual double get_th_xsection(
         const int  ///< integer identifier for the ion.
+        ) {return -1.0e99;}
+
+  ///
+  /// Return number density of a given element.
+  ///
+  virtual double get_n_el(
+        const double *, ///< primitive state vector.
+        const int       ///< integer identifier for the element.
         ) {return -1.0e99;}
 
 };

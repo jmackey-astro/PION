@@ -81,8 +81,9 @@
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 /// - 2013.08.12 JM: Added RT_EFFECT_PION_EQM flag for radiation
 ///    sources where I assume photoionisation equilibrium.
-/// - 2013.08.19 JM: Changed GeneralStuff constants (will remove them
-///    eventually).  Added new RT_EFFECT_HHE_MFQ flag for H-He chem.
+/// - 2013.08.19/20 JM: Changed GeneralStuff constants (will remove
+///    them eventually).  Added new RT_EFFECT_HHE_MFQ flag for H-He
+///    chem.  Added NTau to rad_src_info struct.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -423,6 +424,7 @@ struct which_physics {
 #define RT_OPACITY_HALPHA 5 ///< Used only for analysis to calculate projected H-alpha emission.
 #define RT_OPACITY_NII_FL 6 ///< Used only for analysis to calculate projected [NII] forbidden line emission.
 #define RT_OPACITY_RR     7 ///< Recombination rate (for ph-ion.eqm.)
+#define RT_OPACITY_HHE    9 ///< H0,He0,He+,Dust.
 
 ///
 /// Star struct, for storing data from a stellar evolution file.
@@ -458,7 +460,7 @@ struct star {
 /// Radiation source struct.
 ///
 struct rad_src_info {
-  double position[MAX_DIM]; ///< src position (physical units).
+  double pos[MAX_DIM]; ///< src position (physical units).
   double strength; ///< src strength (photons/sec, or ergs/sec for multifreq.)
   double Rstar; ///< stellar radius in solar radii (for multifreq. photoionisation).
   double Tstar; ///< stellar effective temperature (for multifreq. photoionisation).
@@ -466,7 +468,22 @@ struct rad_src_info {
   int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
   int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
   int at_infinity; ///< set to true if source is at infinity.
-  int effect;      ///< RT_EFFECT_UV_HEATING, RT_EFFECT_PION_MONO, RT_EFFECT_PION_MULTI, RT_EFFECT_PION_EQM
+  ///
+  /// "effect" is what the source does, and this defines many of its
+  /// properties implicitly.  Options are:
+  /// - RT_EFFECT_UV_HEATING,
+  /// - RT_EFFECT_PION_MONO,
+  /// - RT_EFFECT_PION_MULTI,
+  /// - RT_EFFECT_PHOTODISS, (UNUSED)
+  /// - RT_EFFECT_PION_EQM, (UNUSED--for photoionisation equilibrium)
+  /// - RT_EFFECT_HHE_MFQ
+  ///
+  int effect;
+  ///
+  /// "NTau" sets the number of quantities traced from the source.
+  ///
+  int NTau;
+
   int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
   int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
   string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
@@ -1058,7 +1075,7 @@ class RayTracingBase {
   /// struct though, so each particular class may not have consecutively 
   /// numbered sources.
   ///
-  virtual int Add_Source(const struct rad_src_info * ///< ptr to source info.
+  virtual int Add_Source(struct rad_src_info * ///< ptr to source info.
        )=0;
   ///
   /// Processes a single source's effect on the grid over a timestep.

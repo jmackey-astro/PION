@@ -28,11 +28,6 @@
 
 #include "constants.h"
 
-#define ION_H_N  0
-#define ION_He_N 1
-#define ION_He_P 2
-
-
 class HHe_photoion :
   virtual public constants
 {

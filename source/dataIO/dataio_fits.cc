@@ -40,29 +40,19 @@
  * - 2010-02-03 JM: removed unused variables; renamed some variables
  *    where i used 'i' twice in a function.
  */
-///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2010.07.21 JM: order of accuracy flags are now integers.
-///
 /// - 2010.07.22 JM: new parameter read/write routines.
-///
 /// - 2010.07.23 JM: removed obselete read_fits_header(),
 ///    write_fits_header() functions.
-///
 /// - 2010.10.01 JM: Got rid of testing myalloc/myfree commands.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
-///
 /// - 2010.11.03 JM: Added Ndigits variable for the step-counter in filename.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2011.02.25 JM: removed HCORR ifdef flags for column density.
-///
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
 ///    Replaced fits_write_key() calls with fits_update_key() calls.  The new
@@ -72,6 +62,7 @@
 /// - 2013.04.16 JM: Added spacer lines between functions.
 /// - 2013.04.18 JM: wrapped column-density output in ifdef so it is
 ///    not written to file by default.
+/// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 
 #ifdef FITS
 #include "dataio_fits.h"
@@ -160,8 +151,10 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
 
 #ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
-  if (RT!=0 && SimPM.EP.phot_ionisation) {
-    nvar+=1; // for column density
+  if (RT!=0 && SimPM.RS.Nsources>0) {
+    for (int si=0; si<SimPM.RS.Nsources; si++) {
+      nvar += SimPM.RS.sources[si].NTau; // for column densities
+    }
   }
 #endif // RT_TESTING_OUTPUTCOL
 
@@ -203,10 +196,23 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
 
 #ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
-  if (RT!=0 && SimPM.EP.phot_ionisation) {
-    if (extname[SimPM.nvar]!="") rep.error("Tau not able to be written!",extname[SimPM.nvar]);
-    extname[SimPM.nvar] = "Tau";
-  }
+  if (RT!=0 && SimPM.RS.Nsources>0) {
+    if (extname[SimPM.nvar]!="")
+      rep.error("Tau not writeable!",extname[SimPM.nvar]);
+    //
+    // Loop over all sources, and all variables for each source:
+    //
+    ostringstream var;
+    unsigned int ivar=SimPM.nvar;
+    for (int v=0;v<SimPM.RS.Nsources;v++) {
+      for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++) {
+        var.str("");
+        var << "Col_Src_" << v << "_T"<<iT;
+        extname[ivar] = var.str();
+        ivar++;
+      } // loop over Tau variables for source v.
+    } // loop over Nsources
+  } // if RT
 #endif // RT_TESTING_OUTPUTCOL
 
   //
@@ -911,7 +917,7 @@ int DataIOFits::put_variable_into_data_array(const string name,   ///< variable 
   else if (name=="Eint")     v=-1;
   else if (name=="divB")     v=-2;
   else if (name=="Ptot")     v=-3;
-  else if (name=="Tau")      v=-4;
+  else if (name.find("Col_Src") !=string::npos) v=-4;
   else rep.error("Bad variable index in fits write routine",name);
 
   long int ct=0;
@@ -942,14 +948,27 @@ int DataIOFits::put_variable_into_data_array(const string name,   ///< variable 
   }
 
   else if (v==-3) { // total pressure.
-    do {(*data)[ct] = eqn->Ptot(c->P,SimPM.gamma); ct++;} while ( (c=gp->NextPt(c))!=0 );
-  }
-  else if (v==-4) { // optical depth variable
     do {
-      (*data)[ct] = CI.get_col(c,0);
+      (*data)[ct] = eqn->Ptot(c->P,SimPM.gamma);
+      ct++;
+    } while ( (c=gp->NextPt(c))!=0 );
+  }
+
+  else if (v==-4) {
+    //
+    // optical depth variable: parse source id, and which Tau var we
+    // want to output from the variable name.
+    //
+    int Si = atoi(name.substr(8).c_str());
+    int Ti = atoi(name.substr(11).c_str());
+    double Tau[MAX_TAU];    
+    do {
+      CI.get_col(c, Si, Tau);      
+      (*data)[ct] = Tau[Ti];
       ct++; 
     } while ( (c=gp->NextPt(c))!=0 );
   }
+
   else rep.error("Don't understand what variable to write.",v);
 
   if (ct!=ntot) rep.error("Counting cells in put_variable_into_data()",ct-ntot);

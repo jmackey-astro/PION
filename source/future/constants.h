@@ -9,7 +9,7 @@
 ///
 ///
 /// Modifications:
-/// - getting it written: mods up until 2013.08.19
+/// - getting it written: mods up until 2013.08.20
 
 
 #ifndef CONSTANTS_H
@@ -49,6 +49,15 @@ class constants {
   inline double Lsun()   {return 1.989e33;}
   inline double Rsun()   {return 6.960e10;}
 };
+
+
+#define ION_DUST -1
+#define ION_H_N  0
+#define ION_HE_N 1
+#define ION_HE_P 2
+
+#define EL_H  0
+#define EL_HE 1
 
 
 #endif // CONSTANTS_H

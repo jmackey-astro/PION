@@ -25,6 +25,9 @@
 ///    for raytracing.
 /// - 2013.01.14 JM: Updated comments and re-arranged things.
 ///    Added cell *npt_all for GRIDV2 (linked list including B.C.s).
+/// - 2013.08.20 JM: Moved raytracing set/get functions to header and
+///    made them inline.  Added option for radiation sources to be
+///    associated with NTau>=1 optical depths, for flexibility.
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
@@ -137,6 +140,7 @@ class cell_interface {
   /// Return physical size of one internal unit
   ///
   inline double phys_per_int() {return dxo2;}
+
   ///
   /// Set cell position by passing in a double precision vector.
   ///
@@ -180,7 +184,6 @@ class cell_interface {
     int *           ///< integer position (output)
     );
 
-
   ///
   /// Converts from an integer position to a double precision pos.
   ///
@@ -188,7 +191,6 @@ class cell_interface {
     const int *, ///< integer position  (input)
     double *     ///< physical position (output)
     );
-
 
   ///
   /// Returns integer position of cell centre.
@@ -218,6 +220,10 @@ class cell_interface {
 
 
 
+// ##################################################################
+// ##################################################################
+
+
   // --------- EXTRA DATA FOR RAYTRACING AND H-CORRECTION -----------
   ///
   /// Set variables for extra_data based on what we need per cell.
@@ -233,79 +239,169 @@ class cell_interface {
     const int   ///< Flag for Div(V) variable required.
     );
 
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Return the optical depth along a ray between the source and the
-  /// cell centre, from the source to the point where the ray exits the
-  /// cell.  The indexing can be whatever the calling class wants it to
-  /// be, running from zero to Ntau-1.
+  /// cell centre, from the source to the point where the ray exits
+  /// the cell.  Radiation source v should already be setup at the
+  /// start of the simulation.
   ///
-  inline double get_col(
+  inline void get_col(
     const cell *c,  ///< current cell.
-    const int v     ///< index of source.
+    const int s,    ///< index of source.
+    double *tau     ///< pointer to array for optical depths.
     )
-  {return c->extra_data[iTau0[v]];}
+  {
+    for (short unsigned int v=0; v<NTau[s]; v++) {
+      tau[v] = c->extra_data[iTau[s]+v];
+    }
+    return;
+  }
+
+
+// ##################################################################
+// ##################################################################
 
   ///
   /// Set the optical depth along the ray (see get_col for details)
   ///
-  inline void   set_col(
+  inline void set_col(
     cell *c,
-    const int v,     ///< index of source.
-    const double tau ///< value to set
+    const int s,       ///< index of source.
+    const double tau[] ///< value to set
     )
-  {c->extra_data[iTau0[v]] = tau; return;}
+  {
+    for (short unsigned int v=0; v<NTau[s]; v++) {
+      c->extra_data[iTau[s]+v] = tau[v];
+    }
+    return;
+  }
+
+
+// ##################################################################
+// ##################################################################
 
   ///
   /// Get cell optical depth
   ///
-  double get_cell_col(
-    const cell *c,  ///< current cell.
-    const int v     ///< index of source.
-    );
+  inline void get_cell_col(
+    const cell *c,
+    const int s,    ///< index of source.
+    double *dtau    ///< pointer to array for optical depths.
+    )
+  {
+    for (short unsigned int v=0; v<NTau[s]; v++) {
+      dtau[v] = c->extra_data[iDTau[s]+v];
+    }
+    return;
+  }
+
+
+// ##################################################################
+// ##################################################################
 
   ///
   /// Set cell optical depth
   ///
-  void   set_cell_col(
+  inline void set_cell_col(
     cell *c,
-    const int v,  ///< index of source.
-    const double  ///< value to set
-    );
+    const int s,        ///< index of source.
+    const double dtau[] ///< value to set
+    )
+  {
+    for (short unsigned int v=0; v<NTau[s]; v++) {
+      c->extra_data[iDTau[s]+v] = dtau[v];
+    }
+    return;
+  }
  
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Set cell Vshell value (for raytracing).
   ///
-  void set_cell_Vshell(
-    cell *,
-    const int ,  ///< index of source.
-    const double ///< value to set.
-    );
+  inline void set_cell_Vshell(
+    cell *c,
+    const int s,    ///< index of source.
+    const double Vs ///< value to set.
+    )
+  {
+#ifdef RT_TESTING
+    if (iVsh[s] <0) { cout <<"source "<<s<<": ";
+      rep.error("Source has no Vhsell variable", iVsh[s]); }
+#endif // RT_TESTING
+    c->extra_data[iVsh[s]] = Vs;
+    return;
+  }
   
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Get cell Vshell value (for raytracing).
   ///
-  double get_cell_Vshell(
-    const cell *,  ///< current cell.
-    const int      ///< index of source.
-    );
+  inline double get_cell_Vshell(
+    const cell *c, ///< current cell.
+    const int s    ///< index of source.
+    )
+  {
+#ifdef RT_TESTING
+    if (iVsh[s] <0) { cout <<"source "<<s<<": ";
+      rep.error("Source has no Vhsell variable", iVsh[s]); }
+#endif // RT_TESTING
+    return c->extra_data[iVsh[s]];
+  }
+
+
+// ##################################################################
+// ##################################################################
 
   ///
   /// Set raytracing path length through cell for source i.
   ///
-  void set_cell_deltaS(
-    cell *,
-    const int,   ///< index of source.
-    const double ///< path length dS
-    );
+  inline void set_cell_deltaS(
+        cell *c,
+        const int s,  ///< index of source.
+        const double deltaS
+        )
+  {
+#ifdef RT_TESTING
+    if (idS[s] <0) { cout <<"source "<<s<<": ";
+      rep.error("Source has no deltaS variable", idS[s]); }
+#endif // RT_TESTING
+    c->extra_data[idS[s]] = deltaS;
+    return;
+  }
   
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Get raytracing path length through cell for source i.
   ///
-  double get_cell_deltaS(
-    const cell *,  ///< current cell.
-    const int      ///< index of source.
-    );
-  
+  inline double get_cell_deltaS(
+    const cell *c,  ///< current cell.
+    const int s     ///< index of source.
+    )
+  {
+#ifdef RT_TESTING
+    if (idS[s] <0) { cout <<"source "<<s<<": ";
+      rep.error("Source has no Vhsell variable", idS[s]); }
+#endif // RT_TESTING
+    return c->extra_data[idS[s]];
+  }
+    
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Get the H-correction coefficient eta for the requested cell in
   /// the requested direction (at the positive direction cell
@@ -317,6 +413,10 @@ class cell_interface {
     )
   {return c->extra_data[iHcorr[a]];}
 
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Set the H-correction coefficient eta for cell in direction a
   ///
@@ -327,6 +427,10 @@ class cell_interface {
     )
   {c->extra_data[iHcorr[a]] = eta; return;}
 
+
+// ##################################################################
+// ##################################################################
+
   ///
   /// Get div(v) for a cell.
   ///
@@ -334,6 +438,10 @@ class cell_interface {
     const cell *c
     )
   {return c->extra_data[iDivV];}
+
+
+// ##################################################################
+// ##################################################################
 
   ///
   /// Set div(v) for a cell.
@@ -343,6 +451,10 @@ class cell_interface {
     double divv
     )
   {c->extra_data[iDivV] = divv; return;}
+
+// ##################################################################
+// ##################################################################
+
   // --------- EXTRA DATA FOR RAYTRACING AND H-CORRECTION -----------
 
  private:
@@ -353,17 +465,56 @@ class cell_interface {
   int cell_size_int_units; ///< size of a cell in integer units (==2)
 
   bool have_setup_extra_data; ///< Flag checked when creating a cell!
-  int using_RT;     ///< Flag: 0=not doing RT, 1=doing RT.
-  int using_Hcorr;  ///< Flag: 0=no Hcorr, N=need N variables (Hcorr=Ndim).
-  int using_DivV;   ///< Flag: 0=don't need div(v), 1=do need div(v).
-  int N_extra_data; ///< Size of extra_data array (can be zero).
-  int *iTau0;  ///< index of First  Optical depth for source(s) in extra_data;
-  //int *iTau1;  ///< index of Second Optical depth for source(s) in extra_data;
-  int *iDTau0; ///< index of 1st cell Optical depth for source(s) in extra_data;
-  int *iVsh;  ///< index in extra_data of Vshell parameter for photon-conserving-RT.
-  int *idS;   ///< index in extra_data of path length through cell for source(s). 
-  int iHcorr[MAX_DIM]; ///< indices of Hcorrection values in extra_data [XX,YY,ZZ].
-  int iDivV;           ///< Index of Div(V) variable in extra data.
+  short unsigned int using_RT;     ///< Flag: 0=not doing RT, 1=doing RT.
+  short unsigned int using_Hcorr;  ///< Flag: 0=no Hcorr, N=need N variables (Hcorr=Ndim).
+  short unsigned int using_DivV;   ///< Flag: 0=don't need div(v), 1=do need div(v).
+  unsigned int N_extra_data; ///< Size of extra_data array (can be zero).
+
+  ///
+  /// array where the value of the 'i'th element is the number of
+  /// optical depths associated with radiation source i.
+  ///
+  short unsigned int *NTau;
+
+  ///
+  /// First optical depth for source v is contained in the iTau[v]'th
+  /// element of extra_data, i.e. extra_data[iTau[v]].
+  /// Any further optical depths are in the following elements e.g.
+  /// extra_data[iTau[v]+1], extra_data[iTau[v]+2]
+  ///
+  short unsigned int *iTau;
+
+  ///
+  /// First cell optical depth for source v is contained in the
+  /// iDTau[v]'th element of extra_data, i.e. extra_data[iDTau[v]].
+  /// Any further optical depths are in the following elements e.g.
+  /// extra_data[iDTau[v]+1], extra_data[iDTau[v]+2]
+  ///
+  short unsigned int *iDTau;
+
+  ///
+  /// Vshell parameter for photon-conserving-RT is given by value in
+  /// extra_data[iVsh[v]] for radiation source v.
+  ///
+  short unsigned int *iVsh;
+
+  ///
+  /// Path length through cell for radiation is given by the value in
+  /// extra_data[idS[v]] for radiation source v.
+  ///
+  short unsigned int *idS;
+
+  ///
+  /// indices of Hcorrection values in extra_data [XX,YY,ZZ] are
+  /// given by extra_data[iHcorr[XX/YY/ZZ]].
+  ///
+  short unsigned int iHcorr[MAX_DIM];
+
+  ///
+  /// If an algorithm needs the divergence of the velocity field in
+  /// the cell data, it is in extra_data[iDivV]].
+  ///
+  short unsigned int iDivV;
 
 };
 

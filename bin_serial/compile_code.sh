@@ -26,9 +26,10 @@
 #
 MAKE_UNAME=standard
 NCORES=4
+NCORES=1
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-export PION_OPTIMISE=HIGH
-#export PION_OPTIMISE=LOW
+#export PION_OPTIMISE=HIGH
+export PION_OPTIMISE=LOW
 export CXX=g++
 
 #################################

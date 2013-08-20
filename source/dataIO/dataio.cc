@@ -54,6 +54,7 @@
 ///    to make metallicity and mu into parameterfile settings.
 /// - 2013.02.19 JM: Moved file_status class definitions to new file.
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list.
+/// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 
 //
 // These tell code what to compile and what to leave out.
@@ -811,17 +812,25 @@ int DataIOBase::read_simulation_parameters()
       err = read_header_param(p);
       if (err && p->critical) {
         rep.error("Error reading parameter",p->name);
-        //cout <<"Error reading parameter "<<p->name<<".  Will just continue and";
-        //cout <<"hope it is not a critical RT parameter.
       }
     }
 
     //
-    // Now we have N sources in SimPM.RS.sources.  First assign ids to
-    // each of them, and make sure their data got assigned.
+    // Now we have N sources in SimPM.RS.sources.  First assign an id
+    // to each of them, and make sure their data got assigned.
     //
     for (int i=0; i<SimPM.RS.Nsources; i++) {
       SimPM.RS.sources.at(i).id = i;
+      //
+      // Set NTau based on source.effect.
+      //
+      if (SimPM.RS.sources.at(i).effect==RT_EFFECT_HHE_MFQ)
+        SimPM.RS.sources.at(i).NTau = 4;
+      else
+        SimPM.RS.sources.at(i).NTau = 1;
+      //
+      // Check for sensible values:
+      //
       if (SimPM.RS.sources.at(i).type <0) {
         rep.error("Failed to get source type for source id",i);
       }
@@ -1166,10 +1175,20 @@ void DataIOBase::set_rt_src_params()
     cout <<SimPM.RS.sources.size()<<"  "<<SimPM.RS.Nsources<<"\n";
     for (int n=0; n<SimPM.RS.Nsources; n++) {
       struct rad_src_info temp;
-      temp.id=n; temp.type=-1; temp.update=-1; temp.at_infinity=-1;
-      temp.opacity_src=-1; temp.opacity_var=-1;
-      temp.strength=-1.e200; temp.Rstar=-1.0e200; temp.Tstar=1.0e200;
+
       for (int v=0;v<MAX_DIM; v++) temp.position[v] = -1.0e200;
+      temp.strength=-1.e200;
+      temp.Rstar=-1.0e200;
+      temp.Tstar=1.0e200;
+      temp.id=n;
+      temp.type=-1;
+      temp.update=-1;
+      temp.at_infinity=-1;
+      temp.effect = -1;
+      temp.NTau = 1;
+      temp.opacity_src=-1;
+      temp.opacity_var=-1;
+
       SimPM.RS.sources.push_back(temp);
       if (SimPM.RS.sources.size() != static_cast<unsigned int>(n+1)) {
         rep.error("Radiation source list size error, DataIOBase::set_rt_src_params",n);
@@ -2034,7 +2053,9 @@ int dataio_text::output_ascii_data(string outfile
     if (RT) {
       for (int v=0;v<SimPM.RS.Nsources;v++) {
         //cout <<"hello";
-        outf <<"  "<< CI.get_col(cpt, v);
+        CI.get_col(cpt, v, Utemp);
+        for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++)
+          outf <<"  "<< Utemp[iT];
       }
     }
 #endif // RT_TESTING_OUTPUTCOL

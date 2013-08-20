@@ -64,7 +64,8 @@
 ///    physics and recombination in the shadowed region.
 /// - 2013.06.17 JM: Changed STARBENCH1 from internal to external BC
 ///    and fixed some bugs with it.  It works well now.
-///
+/// - 2013.08.20 JM: Changed cell_interface for radiative transfer
+///    variables.
 
 
 #include "global.h"
@@ -605,23 +606,6 @@ int UniformGrid::SetupBCs(int Nbc, string typeofbc)
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
     }
-    //
-    // If we are doing ray-tracing, we zero all the extra data here.
-    // All of the raytracing settings are decided and fixed before the
-    // grid is set up, so it is safe to do this now. (2011.02.25 JM)
-    // THIS IS REDUNDANT -- CELL_INTERFACE ALREADY SETS IT TO ZERO IN THE CELL CONSTRUCTOR
-    //
-    //if(SimPM.EP.raytracing) {
-    //  //
-    //  // Now run through all cells in the boundary
-    //  //
-    //  list<cell*>::iterator c=BC_bd[i].data.begin();
-    //  for (c=BC_bd[i].data.begin(); c!=BC_bd[i].data.end(); ++c) {
-    //    for (int v=0;v<SimPM.RS.Nsources;v++) {
-    //      CI.set_col(*c,v,0.0);
-    //    }
-    //  } // loop over all cells in boundary.
-    //} // if raytracing.
 
   }
   return(err);
@@ -1575,12 +1559,13 @@ int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
     rep.error("BC_assign_STARBENCH1: empty boundary data",b->itype);
 
   //
-  // Set the column density (in g/cm3) to some large values in the
+  // Set the column density (in g/cm2) to some large values in the
   // range 1.4pc<y<2.6pc, and to zero for the others.
   //
   list<cell*>::iterator bpt=b->data.begin();
   unsigned int ct=0;
   double dpos[G_ndim];
+  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
   do{
     //
     // Set cell optical depth to be something big in the 
@@ -1588,12 +1573,14 @@ int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
     //
     CI.get_dpos((*bpt),dpos);
     if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
+      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
       for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*bpt), s, 1.67e0);
+        CI.set_col((*bpt), s, &column);
     }
     else {
+      column = 0.00; // zero optical depth outside the barrier
       for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*bpt), s, 1.67e0);
+        CI.set_col((*bpt), s, &column);
     }
 
     
@@ -1655,6 +1642,7 @@ int UniformGrid::BC_update_STARBENCH1(
   // Now run through all cells in the boundary
   //
   double dpos[G_ndim];
+  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     //
@@ -1676,12 +1664,14 @@ int UniformGrid::BC_update_STARBENCH1(
     //
     CI.get_dpos((*c),dpos);
     if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
+      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
       for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*c), s, 1.67e0);
+        CI.set_col((*c), s, &column);
     }
     else {
+      column = 0.00; // zero optical depth outside the barrier
       for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*c), s, 0.0e0);
+        CI.set_col((*c), s, &column);
     }
 
 

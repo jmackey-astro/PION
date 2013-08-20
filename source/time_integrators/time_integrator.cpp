@@ -137,6 +137,7 @@
 /// - 2012.08.16 JM: Debugging.  It seems to be working well now, but
 ///    there is still more testing to do.
 /// - 2013.08.19 JM: Some cosmetic changes only.
+/// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 
 
 #include "../defines/functionality_flags.h"
@@ -425,9 +426,9 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
 
   int err=0;
 
-  int sp = OA1;
-  int tm = OA1;
-  if (SimPM.tmOOA==OA1 && SimPM.spOOA==OA2) sp = OA2;
+  //int sp = OA1;
+  //int tm = OA1;
+  //if (SimPM.tmOOA==OA1 && SimPM.spOOA==OA2) sp = OA2;
   //  cout <<"dt = "<<SimPM.dt<<"\n";
   
   double dt = SimPM.dt;
@@ -642,8 +643,10 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
       for (int v=0; v<FVI_nheat; v++) {
         FVI_heating_srcs[v].Vshell  = CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
         FVI_heating_srcs[v].dS      = CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].DelCol  = CI.get_cell_col(   c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].Column  = CI.get_col(c, FVI_heating_srcs[v].id) -FVI_heating_srcs[v].DelCol;
+        CI.get_cell_col(c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].DelCol);
+        CI.get_col(     c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].Column);
+        for (short unsigned int iC=0; iC<FVI_heating_srcs[v].NTau; iC++)
+          FVI_heating_srcs[v].Column[iC] -= FVI_heating_srcs[v].DelCol[iC];
 #ifdef TESTING
         //cout <<"HEAT: Vs="<<FVI_heating_srcs[v].Vshell<<", dS="<<FVI_heating_srcs[v].dS<<", dC="<<FVI_heating_srcs[v].DelCol<<", Col="<<FVI_heating_srcs[v].Column<<"\n";
 #endif
@@ -651,8 +654,10 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
       for (int v=0; v<FVI_nion; v++) {
         FVI_ionising_srcs[v].Vshell = CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
         FVI_ionising_srcs[v].dS     = CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].DelCol = CI.get_cell_col(   c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].Column = CI.get_col(c, FVI_ionising_srcs[v].id) -FVI_ionising_srcs[v].DelCol;
+        CI.get_cell_col(c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].DelCol);
+        CI.get_col(     c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);
+        for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
+          FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
       }
       //
       // integer 9th argument determines type of integration substepping:

@@ -28,6 +28,7 @@
 /// - 2013.04.15 JM: Removed lots of cout/cerr statements to clean up
 ///    std i/o messages.
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list
+/// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 
 #include "get_sim_info.h"
 #include "../global.h"
@@ -485,6 +486,13 @@ int get_sim_info::read_radsources()
       rs_temp.EvoFile = "NOFILE";
     }
 
+    //
+    // Set NTau based on source.effect.
+    //
+    if (rs_temp.effect==RT_EFFECT_HHE_MFQ)
+      rs_temp.NTau = 4;
+    else
+      rs_temp.NTau = 1;
 
     //
     // Add source i to SimPM.RS list.
