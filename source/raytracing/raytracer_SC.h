@@ -508,7 +508,7 @@ class raytracer_USC : public raytracer_USC_infinity {
           const enum direction,   ///< face ray enters cell through.
           const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
           const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-          double [], ///< Column densities.
+          double [] ///< Column densities.
           );
 
 
@@ -521,7 +521,7 @@ class raytracer_USC : public raytracer_USC_infinity {
           const enum direction,   ///< face ray enters cell through.
           const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
           const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-          double [], ///< Column densities.
+          double [] ///< Column densities.
           );
 
 
@@ -530,26 +530,24 @@ class raytracer_USC : public raytracer_USC_infinity {
    /// This version assumes the inputs are actually optical depths Tau1, Tau2.
    ///
    double interpolate_2D(
-	 			const int, ///< Flag to say what sort of weighting.
-				const int, ///< source id (to get TauMin value).
-			 const double, ///< delta = min(abs(dy/dx),abs(dx/dy));
-			 const double, ///< first optical depth tau_1
-			 const double  ///< second optical depth tau_2
-			 );
+            const int, ///< source id (to get TauMin value).
+            const double, ///< delta = min(abs(dy/dx),abs(dx/dy));
+            const double, ///< first optical depth tau_1
+            const double  ///< second optical depth tau_2
+            );
    
    ///
    /// Apply the appropriate weighting scheme to get an interpolated optical depth for 3D
    ///
    double interpolate_3D(
-	 			const int, /// Flag to say what sort of weighting.
-				const int, ///< source id (to get TauMin value).
-			 	const double, ///< delta0 = abs(dy/dx)
-			 	const double, ///< delta1 = abs(dz/dx)
-			 	const double, ///< first optical depth tau_1
-			 	const double, ///< second optical depth tau_2
-			 	const double, ///< third optical depth tau_3
-			 	const double  ///< fourth optical depth tau_4
-			 	);
+            const int, ///< source id (to get TauMin value).
+            const double, ///< delta0 = abs(dy/dx)
+            const double, ///< delta1 = abs(dz/dx)
+            const double, ///< first optical depth tau_1
+            const double, ///< second optical depth tau_2
+            const double, ///< third optical depth tau_3
+            const double  ///< fourth optical depth tau_4
+            );
    
 
   ///

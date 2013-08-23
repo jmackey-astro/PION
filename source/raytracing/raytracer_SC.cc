@@ -80,6 +80,7 @@
 /// - 2013.08.20 JM: Modifications so a given source can have an
 ///    array of optical depths rather than a single value per source.
 ///    This is tough going, and is only half-way done so far.
+/// - 2013.08.23 JM: Debugging new HHe module code.
 
 #include "raytracer_SC.h"
 #include "future/constants.h"
@@ -237,6 +238,7 @@ void raytracer_USC_infinity::add_source_to_list(
   rs.data.strength = rs.s->strength;
   rs.data.Vshell   = 0.0;
   rs.data.dS       = 0.0;
+  rs.data.NTau     = rs.s->NTau;
   for (unsigned short int iT=0; iT<src->NTau; iT++) {
     rs.data.DelCol[iT]   = 0.0;
     rs.data.Column[iT]   = 0.0;
@@ -928,21 +930,42 @@ int raytracer_USC_infinity::ProcessCell(
         //
         // ---------- H0 -----------
         ix = source->s->opacity_var+SimPM.ftr;
-        cell_col[ION_H_N] = ds*MP->get_n_el(c->Ph, EL_H)*
+        cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
                       MP->get_th_xsection(ION_H_N)*c->Ph[ix];
-        col2cell[ION_H_N] += cell_col[ION_H_N];
+        col2cell[0] += cell_col[0];
+        if (c->id==2) {
+        cout <<"H: ix="<<ix;
+        cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
+        cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
+        cout <<", yn = "<<c->Ph[ix];
+        cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
+        }
+#ifdef MP9_TESTING
+        cout <<"H: ix="<<ix;
+        cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
+        cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
+        cout <<", yn = "<<c->Ph[ix];
+        cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
+#endif  // MP9_TESTING
 
         // ---------- He0 -----------
         ix++;
-        cell_col[ION_HE_N] = ds*MP->get_n_el(c->Ph, EL_HE)*
+        cell_col[1] = ds*MP->get_n_el(c->Ph, EL_HE)*
                       MP->get_th_xsection(ION_HE_N)*c->Ph[ix];
-        col2cell[ION_HE_N] += cell_col[ION_HE_N];
+        col2cell[1] += cell_col[1];
+#ifdef MP9_TESTING
+        cout <<"  He: ix="<<ix;
+        cout <<", n="<<MP->get_n_el(c->Ph, EL_HE);
+        cout <<", sigma="<< MP->get_th_xsection(ION_HE_N);
+        cout <<", yn = "<<c->Ph[ix];
+        cout <<", tau= "<<cell_col[ION_HE_N]<<"\n";
+#endif  // MP9_TESTING
 
         // ---------- He+ -----------
         ix++;
-        cell_col[ION_HE_P] = ds*MP->get_n_el(c->Ph, EL_HE)*
+        cell_col[2] = ds*MP->get_n_el(c->Ph, EL_HE)*
                       MP->get_th_xsection(ION_HE_P)*c->Ph[ix];
-        col2cell[ION_HE_P] += cell_col[ION_HE_P];
+        col2cell[2] += cell_col[2];
 
         // ---------- DUST -----------
         cell_col[3] = ds*MP->get_n_el(c->Ph, EL_H)*
@@ -1250,6 +1273,13 @@ void raytracer_USC::add_source_to_list(
   // Create a new radiation source struct.
   //
   rad_source rs;
+
+  //
+  // Set pointer in rad_source to *src.  This sets the position, id,
+  // and all the parameters necessary to set up the source.
+  //
+  rs.s = src;
+
 #ifdef RT_TESTING
   cout <<"\t\t"; rep.printVec("Input Source Position",rs.s->pos,ndim);
 #endif
@@ -1263,6 +1293,8 @@ void raytracer_USC::add_source_to_list(
   rs.data.strength = rs.s->strength;
   rs.data.Vshell   = 0.0;
   rs.data.dS       = 0.0;
+  rs.data.NTau     = rs.s->NTau;
+  cout <<"***** NTAU = "<<rs.s->NTau<<"\n";
   for (unsigned short int iT=0; iT<rs.s->NTau; iT++) {
     rs.data.DelCol[iT] = 0.0;
     rs.data.Column[iT] = 0.0;
@@ -2240,7 +2272,7 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
   //
   // get column to cell, assuming cell centred source.
   //
-  *Nc = col2cell_2d(src, c, entryface, &perpface, &delta);
+  col2cell_2d(src, c, entryface, &perpface, &delta, Nc);
 #endif // CELL_CENTRED_SRC
 #ifdef NON_CELL_CENTRED_SRC
   //
@@ -2252,7 +2284,9 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
     //cout <<"Within the source column of cells! mindiff="<<mindiff<<"\n";
     if (diffx<2 && diffy<2) {
       //cout <<" effectively at the source cell! id="<<c->id<<"\n";
-      *Nc = 0.0;
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        Nc[iT] = 0.0;
+      }
     }
     else {
       //
@@ -2265,24 +2299,28 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
       // assume if neighbour doesn't exist, that the source is coming in from off grid to cell c.
       //
       if (ngb) {
-	*Nc = CI.get_col(ngb, src->s->id);
+	CI.get_col(ngb, src->s->id, Nc);
       }
       else {
-	*Nc = 0.0;
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+          Nc[iT] = 0.0;
+        }
       }
 
 #ifdef RT_TESTING
-      if (*Nc < 0.0) {
-	cout <<"column is negative:"<<*Nc<<" coming from off grid???\n";
+      if (Nc[0] < 0.0) {
+	cout <<"column is negative:"<<Nc[0]<<" coming from off grid???\n";
 	gridptr->PrintCell(c);
 	gridptr->PrintCell(ngb);
 	if (gridptr->NextPt(c,XP))
 	  gridptr->PrintCell(gridptr->NextPt(c,XP));
-	*Nc=0.0;
-	rep.error("Got negative column from a cell when we shouldn't have!",*Nc);
+	Nc[0]=0.0;
+	rep.error("Got negative column from a cell when we shouldn't have!",Nc[0]);
       }
 #endif // RT_TESTING
-      *Nc = std::max(*Nc, 0.0);
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        Nc[iT] = std::max(Nc[iT], 0.0);
+      }
 
       //
       // Now we have the column, need to scale it by the changed
@@ -2292,12 +2330,16 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
       double maxdiff = static_cast<double>(max(diffx,diffy));
       double maxmin2 = maxdiff - 2.0;
       //if (maxdiff<2.999999) rep.error("maxdiff should be >=3",maxdiff);
-      *Nc *= sqrt((maxdiff*maxdiff+1.0)/(maxmin2*maxmin2+1.0))*maxmin2/maxdiff;
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        Nc[iT] *= sqrt((maxdiff*maxdiff+1.0)/(maxmin2*maxmin2+1.0))*maxmin2/maxdiff;
+      }
     }
   } // mindiff<2
   else {
+    //
     // source is not in 1D column, so do the 2D averaging.
-    *Nc = col2cell_2d(src, c, entryface, &perpface, &delta);
+    //
+    col2cell_2d(src, c, entryface, &perpface, &delta, Nc);
   }
 #endif // NON_CELL_CENTRED_SRC
   //  cout <<"\t...\tcol = "<<*Nc<<"\t";
@@ -2311,9 +2353,9 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
 // ##################################################################
 
 
-int raytracer_USC::cell_cols_3d(const rad_source *s,
+int raytracer_USC::cell_cols_3d(const rad_source *src,
 				cell *c,
-				double *Nc,
+				double Nc[],
 				double *ds
 				)
 {
@@ -2324,251 +2366,254 @@ int raytracer_USC::cell_cols_3d(const rad_source *s,
    * */
 
   int dx[3]; // relative position vector.
-  dx[XX] = abs(CI.get_ipos(c,XX) - s->ipos[XX]);
-  dx[YY] = abs(CI.get_ipos(c,YY) - s->ipos[YY]);
-  dx[ZZ] = abs(CI.get_ipos(c,ZZ) - s->ipos[ZZ]);
+  dx[XX] = abs(CI.get_ipos(c,XX) - src->ipos[XX]);
+  dx[YY] = abs(CI.get_ipos(c,YY) - src->ipos[YY]);
+  dx[ZZ] = abs(CI.get_ipos(c,ZZ) - src->ipos[ZZ]);
 
-   int o[3]; // ordering vector.
-   o[XX]=XX; o[YY]=YY; o[ZZ]=ZZ;
-   
-   //
-   // sort the dx[] elements in decreasing order, using o[] to track which is which.
-   //
-   if (dx[o[2]]> dx[o[1]]) std::swap(o[2],o[1]);
-   if (dx[o[0]]<=dx[o[1]]) std::swap(o[0],o[1]);
-   if (dx[o[1]]<=dx[o[2]]) std::swap(o[1],o[2]);
-   //   rep.printVec("dx",dx,ndim);
-   //   rep.printVec("oo",o ,ndim);
-   
-   //
-   // now dx[o[0]] >= dx[o[1]] >= dx[0[2]]
-   // ray enters through SrcDir[o[0]], and points more in SrcDir[o[1]] than SrcDir[o[2]]
-   //
-   enum direction entryface, perpdirs[2];
-   double deltas[2];
-   entryface = SrcDir[o[0]];
-   perpdirs[0] = SrcDir[o[1]];
-   perpdirs[1] = SrcDir[o[2]];
+  int o[3]; // ordering vector.
+  o[XX]=XX; o[YY]=YY; o[ZZ]=ZZ;
 
-   deltas[0] = static_cast<double>(dx[o[1]])/static_cast<double>(dx[o[0]]);
-   deltas[1] = static_cast<double>(dx[o[2]])/static_cast<double>(dx[o[0]]);
-   //
-   // ds is in physical units
-   //
-   *ds = gridptr->DX()* sqrt(1.+ deltas[0]*deltas[0]+deltas[1]*deltas[1]);
+  //
+  // sort the dx[] elements in decreasing order, using o[] to track which is which.
+  //
+  if (dx[o[2]]> dx[o[1]]) std::swap(o[2],o[1]);
+  if (dx[o[0]]<=dx[o[1]]) std::swap(o[0],o[1]);
+  if (dx[o[1]]<=dx[o[2]]) std::swap(o[1],o[2]);
+  //   rep.printVec("dx",dx,ndim);
+  //   rep.printVec("oo",o ,ndim);
+
+  //
+  // now dx[o[0]] >= dx[o[1]] >= dx[0[2]]
+  // ray enters through SrcDir[o[0]], and points more in SrcDir[o[1]] than SrcDir[o[2]]
+  //
+  enum direction entryface, perpdirs[2];
+  double deltas[2];
+  entryface = SrcDir[o[0]];
+  perpdirs[0] = SrcDir[o[1]];
+  perpdirs[1] = SrcDir[o[2]];
+
+  deltas[0] = static_cast<double>(dx[o[1]])/static_cast<double>(dx[o[0]]);
+  deltas[1] = static_cast<double>(dx[o[2]])/static_cast<double>(dx[o[0]]);
+  //
+  // ds is in physical units
+  //
+  *ds = gridptr->DX()* sqrt(1.+ deltas[0]*deltas[0]+deltas[1]*deltas[1]);
 
 
 #ifdef CELL_CENTRED_SRC
-   *Nc = col2cell_3d(s, c, entryface, perpdirs, deltas);
+  col2cell_3d(src, c, entryface, perpdirs, deltas, Nc);
 #endif // CELL_CENTRED_SRC
 
 #ifdef NON_CELL_CENTRED_SRC
 #ifdef RT_TESTING
-   cout <<"******* Getting col2cell:\n"; //CI.print_cell(c);
-   //cout <<"******* Neighbours:";
-   //CI.print_cell(gridptr->NextPt(c,entryface));
-   //CI.print_cell(gridptr->NextPt(gridptr->NextPt(c,entryface),perpdirs[0]));
-   //CI.print_cell(gridptr->NextPt(gridptr->NextPt(c,entryface),perpdirs[1]));
-   //CI.print_cell(gridptr->NextPt(gridptr->NextPt(gridptr->NextPt(c,entryface),perpdirs[0]),perpdirs[1]));
+  cout <<"******* Getting col2cell:\n"; //CI.print_cell(c);
+  //cout <<"******* Neighbours:";
+  //CI.print_cell(gridptr->NextPt(c,entryface));
+  //CI.print_cell(gridptr->NextPt(gridptr->NextPt(c,entryface),perpdirs[0]));
+  //CI.print_cell(gridptr->NextPt(gridptr->NextPt(c,entryface),perpdirs[1]));
+  //CI.print_cell(gridptr->NextPt(gridptr->NextPt(gridptr->NextPt(c,entryface),perpdirs[0]),perpdirs[1]));
 #endif // RT_TESTING
-   //
-   // Need to do something more careful if dx[o[1]] and/or dx[o[2]]
-   // are <2 since we don't want to take an average from a neigbour
-   // which shouldn't contribute at all.
-   //
-   if (dx[o[0]]<2) {
-     //
-     // We are at the source cell, since max-dist=1, so tau=0.
-     //
+  //
+  // Need to do something more careful if dx[o[1]] and/or dx[o[2]]
+  // are <2 since we don't want to take an average from a neigbour
+  // which shouldn't contribute at all.
+  //
+  if (dx[o[0]]<2) {
+    //
+    // We are at the source cell, since max-dist=1, so tau=0.
+    //
 #ifdef RT_TESTING
-     cout <<"At the source Cell, so setting col2cell=0.0\n";
+    cout <<"At the source Cell, so setting col2cell=0.0\n";
 #endif // RT_TESTING
-     *Nc=0.0;
-   }
-   else if (dx[o[1]]<2) {
-     //
-     // We're within a cell distance in 2 of 3 directions, so we don't
-     // need to do any averaging, just the geometric change.
-     //
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+      Nc[iT]=0.0;
+    }
+  }
+  else if (dx[o[1]]<2) {
+    //
+    // We're within a cell distance in 2 of 3 directions, so we don't
+    // need to do any averaging, just the geometric change.
+    //
 #ifdef RT_TESTING
-     cout <<"In source column, so doing 1D column calculation.";
+    cout <<"In source column, so doing 1D column calculation.";
 #endif // RT_TESTING
-     cell *ngb = gridptr->NextPt(c,entryface);
-      //
-      // assume if neighbour doesn't exist, that the source is coming in from off grid to cell c.
-      //
-      if (ngb) {
-       *Nc = CI.get_col(ngb, s->id);
+    cell *ngb = gridptr->NextPt(c,entryface);
+    //
+    // assume if neighbour doesn't exist, that the source is coming in from off grid to cell c.
+    //
+    if (ngb) {
+      CI.get_col(ngb, src->s->id, Nc);
+    }
+    else {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        Nc[iT] = 0.0;
+      }
+    }
+
+#ifdef RT_TESTING
+    if (Nc[0] < 0.0) {
+      if (ngb == src->sc) {
+        cout <<"source cell has negative column density, resetting.\n";
+        Nc[0]=0.0;
+      }
+      else if (GS.equalD(Nc[0],0.0)) {
+        cout <<"column is negative:"<<Nc[0]<<" but close to zero.";
+        cout <<" ... resetting to zero.\n";
+        Nc[0]=0;
       }
       else {
-        *Nc = 0.0;
+        cout <<"column is negative:"<<Nc[0]<<" coming from off grid???\n";
+        gridptr->PrintCell(c);
+        gridptr->PrintCell(ngb);
+        if (gridptr->NextPt(c,XP))
+          gridptr->PrintCell(gridptr->NextPt(c,XP));
+        Nc[0]=0.0;
+        rep.error("Got negative column from a cell when we shouldn't have!",Nc[0]);
       }
+    }
+#endif // RT_TESTING
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+      Nc[iT] = std::max(Nc[iT], 0.0);
+    }
 
+    //
+    // Now we have the column, need to scale it by the changed
+    // distance due to the different angle from source to cell
+    // centre.  Only do this near the source.
+    //
+    if (dx[o[0]]<15) {
+      double max  = dx[o[0]];
+      double max2 = max - 2.0;
+      if (max<2.999999) rep.error("maxdiff should be >=3",max);
 #ifdef RT_TESTING
-      if (*Nc < 0.0) {
-        if (ngb == s->sc) {
-          cout <<"source cell has negative column density, resetting.\n";
-          *Nc=0.0;
-        }
-        else if (GS.equalD(*Nc,0.0)) {
-          cout <<"column is negative:"<<*Nc<<" but close to zero.";
-          cout <<" ... resetting to zero.\n";
-          *Nc=0;
-        }
-        else {
-          cout <<"column is negative:"<<*Nc<<" coming from off grid???\n";
-          gridptr->PrintCell(c);
-          gridptr->PrintCell(ngb);
-          if (gridptr->NextPt(c,XP))
-            gridptr->PrintCell(gridptr->NextPt(c,XP));
-          *Nc=0.0;
-          rep.error("Got negative column from a cell when we shouldn't have!",*Nc);
+      cout <<" tau="<<*Nc<<" scale factor="<<sqrt((max*max+2.0)/(max2*max2+2.0))*max2/max<<"\n";
+#endif // RT_TESTING
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        Nc[iT] *= sqrt((max*max+2.0)/(max2*max2+2.0))*max2/max;
+      }
+    }
+  }
+  else if (dx[o[2]]<2) {
+    //
+    // Now only one distance is <2, so we are in a plane with the
+    // source bordering it.  So we need a 2D column calculation,
+    // scaled by the distance from the source including the offset in
+    // the third direction.  i.e. the intersection with the plane
+    // dx2=1 happens closer to the source in the neighbouring cells,
+    // so we need to make the path length shorter, at least for cells
+    // close to the source.
+    //
+#ifdef RT_TESTING
+    cout <<"In source plane; doing 2D average.";
+#endif // RT_TESTING
+    col2cell_2d(src, c, entryface, perpdirs, deltas, Nc);
+#ifdef RT_TESTING
+    cout <<" tau="<<Nc[0]<<"\n";
+#endif // RT_TESTING
+    //
+    // For cells with dx0>=10, the scaling factor is >= 0.9974, so we
+    // won't bother scaling in this case.  For the cell with
+    // dx=(3,3,1), the scaling is 0.83887, and for the other cells we
+    // can do a approximation which for the (5,5,1) cell gives 0.982
+    // instead of 0.983, so it's pretty good. For (5,3,1) --> 0.9755
+    // vs 0.9733.
+    //
+    // The ratio is, for cell size 2 units, and assuming dx2=1, and r^2=dx0^2+dx1^2, 
+    // and a=(dx0-2)/dx0:
+    // ratio = a*sqrt([r^2+1]/[(ar)^2+1]) \simeq (1+1/(2r^2))(1-1/(2a^2r^2)) for ar>>1.
+    //
+    if (dx[o[0]]<10) {
+      if (dx[o[0]]==3) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+          Nc[iT] *= 0.8388704928; // hard-coded value for sqrt((1+1/18)/(1+1/2))
         }
       }
-#endif // RT_TESTING
-      *Nc = std::max(*Nc, 0.0);
-
-      //
-      // Now we have the column, need to scale it by the changed
-      // distance due to the different angle from source to cell
-      // centre.  Only do this near the source.
-      //
-      if (dx[o[0]]<15) {
-	double max  = dx[o[0]];
-	double max2 = max - 2.0;
-	if (max<2.999999) rep.error("maxdiff should be >=3",max);
+      else {
+        double one_over_r2 = 1.0/(dx[o[0]]*dx[o[0]] +dx[o[1]]*dx[o[1]]);
+        double one_over_a2r2 = static_cast<double>(dx[o[0]]*dx[o[0]])
+                        /((dx[o[0]]-2.0)*(dx[o[0]]-2.0))*one_over_r2;
 #ifdef RT_TESTING
-	cout <<" tau="<<*Nc<<" scale factor="<<sqrt((max*max+2.0)/(max2*max2+2.0))*max2/max<<"\n";
+        cout <<"source plane averaging... 1/r2="<<one_over_r2<<" 1/(ar)2="<<one_over_a2r2;
+        cout <<" Scaling factor="<<(1.0+one_over_r2)*(1.0-one_over_a2r2)<<"\n";
 #endif // RT_TESTING
-	*Nc *= sqrt((max*max+2.0)/(max2*max2+2.0))*max2/max;
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+          Nc[iT] *= (1.0+one_over_r2)*(1.0-one_over_a2r2);
+        }
       }
-   }
-   else if (dx[o[2]]<2) {
-     //
-     // Now only one distance is <2, so we are in a plane with the
-     // source bordering it.  So we need a 2D column calculation,
-     // scaled by the distance from the source including the offset in
-     // the third direction.  i.e. the intersection with the plane
-     // dx2=1 happens closer to the source in the neighbouring cells,
-     // so we need to make the path length shorter, at least for cells
-     // close to the source.
-     //
+    }
+  } // if dx2<2 (so in source plane)
+  else {
+    //
+    // Now we aren't in the source plane, so do the full 3D column calculation.
+    //
 #ifdef RT_TESTING
-     cout <<"In source plane; doing 2D average.";
+    cout <<"Not in source plane, so usual average.\n";
 #endif // RT_TESTING
-     *Nc = col2cell_2d(s, c, entryface, perpdirs, deltas);
-#ifdef RT_TESTING
-     cout <<" tau="<<*Nc<<"\n";
-#endif // RT_TESTING
-     //
-     // For cells with dx0>=10, the scaling factor is >= 0.9974, so we
-     // won't bother scaling in this case.  For the cell with
-     // dx=(3,3,1), the scaling is 0.83887, and for the other cells we
-     // can do a approximation which for the (5,5,1) cell gives 0.982
-     // instead of 0.983, so it's pretty good. For (5,3,1) --> 0.9755
-     // vs 0.9733.
-     //
-     // The ratio is, for cell size 2 units, and assuming dx2=1, and r^2=dx0^2+dx1^2, 
-     // and a=(dx0-2)/dx0:
-     // ratio = a*sqrt([r^2+1]/[(ar)^2+1]) \simeq (1+1/(2r^2))(1-1/(2a^2r^2)) for ar>>1.
-     //
-     if (dx[o[0]]<10) {
-       if (dx[o[0]]==3) {
-	 *Nc *= 0.8388704928; // hard-coded value for sqrt((1+1/18)/(1+1/2))
-       }
-       else {
-	 double one_over_r2 = 1.0/(dx[o[0]]*dx[o[0]] +dx[o[1]]*dx[o[1]]);
-	 double one_over_a2r2
-	   = static_cast<double>(dx[o[0]]*dx[o[0]])/((dx[o[0]]-2.0)*(dx[o[0]]-2.0))*one_over_r2;
-#ifdef RT_TESTING
-	 cout <<"source plane averaging... 1/r2="<<one_over_r2<<" 1/(ar)2="<<one_over_a2r2;
-	 cout <<" Scaling factor="<<(1.0+one_over_r2)*(1.0-one_over_a2r2)<<"\n";
-#endif // RT_TESTING
-	 *Nc *= (1.0+one_over_r2)*(1.0-one_over_a2r2);
-       }
-     }
-   } // if dx2<2 (so in source plane)
-   else {
-     //
-     // Now we aren't in the source plane, so do the full 3D column calculation.
-     //
-#ifdef RT_TESTING
-     cout <<"Not in source plane, so usual average.\n";
-#endif // RT_TESTING
-     *Nc = col2cell_3d(s, c, entryface, perpdirs, deltas);
-   }
+    col2cell_3d(src, c, entryface, perpdirs, deltas, Nc);
+  }
 #endif // NON_CELL_CENTRED_SRC
 
-   //   cout <<"RayTracing3D::GetCellColumns()\tcell id: "<<c->id<<"\t: col to cell = "<<*Nc<<"  ";
-   //   cout <<"\tand ds="<<*ds<<"\n";   
-   //   cout <<"\traytracer_USC::cell_cols_3d() done\n";
-   return 0;
+  //   cout <<"RayTracing3D::GetCellColumns()\tcell id: "<<c->id<<"\t: col to cell = "<<*Nc<<"  ";
+  //   cout <<"\tand ds="<<*ds<<"\n";   
+  //   cout <<"\traytracer_USC::cell_cols_3d() done\n";
+  return 0;
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
-double raytracer_USC::col2cell_2d(const rad_source *s,            ///< source we are working on.
-				  const cell *c,                  ///< cell to get column to.
-				  const enum direction entryface, ///< face ray enters cell through.
-				  const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-				  const double *delta             ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
-				  )
+
+void raytracer_USC::col2cell_2d(
+        const rad_source *src,            ///< source we are working on.
+        const cell *c,                  ///< cell to get column to.
+        const enum direction entryface, ///< face ray enters cell through.
+        const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
+        const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
+        double *Nc ///< Column densities.
+        )
 {
-  double col1=0.0, col2=0.0;
+  double col1[MAX_TAU], col2[MAX_TAU];
   cell *c1 = gridptr->NextPt(c,  entryface);
   if (!c1 || !c1->isgd) {
-    col1 = col2 = 0.0;
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+      col1[iT] = col2[iT] = 0.0;
   }
   else {
     cell *c2 = gridptr->NextPt(c1, (*perpdir) );
     if (!c2 || !c2->isgd) {
-      col1 = CI.get_col(c1, s->id);
-      col2 = 0.0;
+      CI.get_col(c1, src->s->id, col1);
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col2[iT] = 0.0;
     }
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-    else if (c2 == s->sc && s->src_on_grid ) {
+    else if (c2 == src->sc && src->src_on_grid ) {
       // Need to check if c2 is source cell, b/c if it is, the column is wrong by root2.
-      col1 = 0.0;
-      col2 = CI.get_col(c2, s->id)*sqrt(2.0);
+      CI.get_col(c2, src->s->id, col2);
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        col1[iT]  = 0.0;
+        col2[iT] *= sqrt(2.0);
+      }
     }
 #endif // CELL_CENTRED_SRC
 #endif // NO_SOURCE_CELL_GEOMETRY
     else {
-      col1 = CI.get_col(c1, s->id); col2 = CI.get_col(c2, s->id);
+      CI.get_col(c1, src->s->id, col1);
+      CI.get_col(c2, src->s->id, col2);
     }
   }
   
   //
-  //  INTERPOLATION SCHEMES -- BASICALLY ALL WERE CRAP EXCEPT C2RAY...
-  // There are different functions for the source update types because the column-density
-  // variables are normalised differently.  For C2Ray it is Tau, and for the New udpate
-  // it is the mass density integrated along the line of sight (weighted by e.g. 1-x).
-  //  
-  //  METHOD: 0: C2Ray inverse Tau with minTau=0.7: (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
-  //          1: Linear interpolation (BAD)
-  //          2: Linear interpolation in exp(-tau) (NOT GREAT -- RAYS GET ROUND SHADOWS)
-  //          3: Quadratic interpolation in exp(-tau) (VERY BAD - NO CIRCULAR I-FRONTS)
-  //          4: Quadratic interpolation in tau (VERY BAD - NO CIRCULAR I-FRONTS)
+  // INTERPOLATION SCHEMES -- BASICALLY ALL WERE CRAP EXCEPT C2RAY...
+  // 
   //
-  double col=interpolate_2D(INTERPOLATE_METHOD, s->id, *delta, col1, col2);
-  //switch (s->update) {
-  //  case RT_UPDATE_IMPLICIT:
-  //  col = interpolate_2D_TAU(INTERPOLATE_METHOD, *delta, col1, col2);
-  //  break;
-	//
-  //  case RT_UPDATE_EXPLICIT:
-  //  col = interpolate_2D_RHO(INTERPOLATE_METHOD, *delta, col1, col2);
-  //  break;
-	//
-  //  default:
-  //  rep.error("Bad source update flag in col2cell_2d",s->update);
-  //  break;
-  //}
-  return col;
+  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+    Nc[iT] = interpolate_2D(src->s->id, *delta, col1[iT], col2[iT]);
+  }
+  return;
 }
 
 
@@ -2577,60 +2622,85 @@ double raytracer_USC::col2cell_2d(const rad_source *s,            ///< source we
 
 
 
-double raytracer_USC::col2cell_3d(const rad_source *s,            ///< source we are working on.
-				  const cell *c,                  ///< cell to get column to.
-				  const enum direction entryface, ///< face ray enters cell through.
-				  const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-				  const double *dx                ///< array of tan(theta) (angle in [0,45]deg)
-				  )
+void raytracer_USC::col2cell_3d(
+        const rad_source *src,          ///< source we are working on.
+        const cell *c,                  ///< cell to get column to.
+        const enum direction entryface, ///< face ray enters cell through.
+        const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
+        const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
+        double *Nc ///< Column densities.
+        )
 {
   // Algorithm is the same as that describe in Mellema et al.,2006, NewA, 11,374,
   // appendix A.  Good for 3D cartesian geometry.
   //  cout <<"3D ShortChars:: entrydir = "<<entryface<<" and perps = ["<<perpdirs[0]<<", "<<perpdirs[1]<<"]\n";
   cell *c1=0, *c2=0, *c3=0, *c4=0;
-  double col1=0.0, col2=0.0, col3=0.0, col4=0.0;
+  double col1[MAX_TAU], col2[MAX_TAU], col3[MAX_TAU], col4[MAX_TAU];
 
   c1 = gridptr->NextPt(c,  entryface);
-  if (!c1 || !c1->isgd) {col1 = col2 = col3 = col4 = 0.0;}
+  if (!c1 || !c1->isgd) {
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+      col1[iT] = col2[iT] = col3[iT] = col4[iT] = 0.0;
+    }
+  }
   else {
-    col1 = CI.get_col(c1,s->id);
+    CI.get_col(c1,src->s->id, col1);
 
     c2 = gridptr->NextPt(c1,  perpdir[0]);
-    if (!c2 || !c2->isgd) {col2 = 0.0;}
+    if (!c2 || !c2->isgd) {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col2[iT] = 0.0;
+    }
     else {
-      col2 = CI.get_col(c2,s->id);
+      CI.get_col(c2,src->s->id, col2);
 
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-      if (c2==s->sc && s->src_on_grid ) col2 *= sqrt(2.);
+      if (c2==src->sc && src->src_on_grid ) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col2[iT] *= sqrt(2.0);
+      }
 #endif // CELL_CENTRED_SRC
 #endif // NO_SOURCE_CELL_GEOMETRY
     }
     
     c3 = gridptr->NextPt(c1,  perpdir[1]);
-    if (!c3 || !c3->isgd) {col3 = 0.0;}
+    if (!c3 || !c3->isgd) {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col3[iT] = 0.0;
+    }
     else {
-      col3 = CI.get_col(c3,s->id);
+      CI.get_col(c3, src->s->id, col3);
 
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-      if (c3==s->sc && s->src_on_grid ) col3 *= sqrt(2.);
+      if (c3==s->sc && s->src_on_grid ) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col3[iT] *= sqrt(2.);
+      }
 #endif // CELL_CENTRED_SRC
 #endif // NO_SOURCE_CELL_GEOMETRY
     }
     
     if (c2 && c2->isgd && c3 && c3->isgd) {
       c4 = gridptr->NextPt(c2, perpdir[1]);
-      if (!c4 || !c4->isgd) rep.error("lost on grid -- corner cell doesn't exist",c4);
-      col4 = CI.get_col(c4,s->id);
+      if (!c4 || !c4->isgd)
+        rep.error("lost on grid -- corner cell doesn't exist",c4);
+      CI.get_col(c4, src->s->id, col4);
 
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-      if (c4==s->sc && s->src_on_grid ) col4 *= sqrt(3.);
+      if (c4==src->sc && src->src_on_grid ) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col4[iT] *= sqrt(3.0);
+      }
 #endif // CELL_CENTRED_SRC
 #endif // NO_SOURCE_CELL_GEOMETRY
     }
-    else col4 = 0.0;
+    else {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col4[iT] = 0.0;
+    }
 
   }
   //  cout <<"3D ShortChars:: col1="<<col1<<" col2="<<col2<<" col3="<<col3<<" col4="<<col4;
@@ -2639,7 +2709,11 @@ double raytracer_USC::col2cell_3d(const rad_source *s,            ///< source we
   //
   //  0: C2Ray inverse Tau with minTau=0.7: (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
   //
-  return interpolate_3D(INTERPOLATE_METHOD, s->id, dx[0], dx[1], col1, col2, col3, col4);
+  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+    Nc[iT] = interpolate_3D(src->s->id, dx[0], dx[1], 
+                            col1[iT], col2[iT], col3[iT], col4[iT]);
+  }
+  return;
 
 }
 
@@ -2654,14 +2728,12 @@ double raytracer_USC::col2cell_3d(const rad_source *s,            ///< source we
 /// Apply the appropriate weighting scheme to get an interpolated optical depth for 2D
 ///
 double raytracer_USC::interpolate_2D(
-          const int wt_flag, /// Flag to say what sort of weighting.
           const int src_id, ///< source id
           const double delta0, ///< delta = min(abs(dy/dx),abs(dx/dy));
           const double tau1, ///< first optical depth tau_1
           const double tau2  ///< second optical depth tau_2
           )
 {
-  //if (wt_flag==0) {
   //
   // This is the standard weighting used in C2Ray.
   // For other weighting schemes see raytracer_USC::col2cell_2d()
@@ -2673,64 +2745,6 @@ double raytracer_USC::interpolate_2D(
   mintau2d = (w1+w2);
   w1 /= mintau2d; w2 /= mintau2d;
   return w1*tau1 + w2*tau2;
-  // } // flag==0
-
-  //else if (wt_flag==1) {
-    //
-    // This is purely geometric weighting, which turns out not to be great since
-    // exp(-tau) is the function we should linearly interpolate...
-    // DOESN'T WORK WELL AT ALL!
-    //
-  //  return (1.-delta0)*tau1 + delta0*tau2;
-  //}
-
-  //else if (wt_flag==2) {
-    //
-    // Geometric weighting on exp(-tau) instead of tau.
-    // DOESN'T WORK WELL AT ALL!
-    //
-  //  double tau = (1.-delta0)*exp(-tau1) +delta0*exp(-tau2); 
-  //  if (tau<VERY_TINY_VALUE)
-  //    return 460.0;  /// huge optical depth, multiplies flux by 10^{-200}
-  //  else
-  //    return -log(tau);
-  //}
-    
-  //else if (wt_flag==3) {
-    //
-    // Quadratic weighting on exp(-tau) instead of tau.
-    // DOESN'T WORK WELL AT ALL!
-    //
-  //  double w1,w2,tau;
-  //  w1 = (1.-delta0)*(1.-delta0);
-  //  w2 = delta0*delta0;
-  //  tau = w1+w2;
-  //  w1 /= tau;
-  //  w2 /= tau;
-  //  tau = w1*exp(-tau1) +w2*exp(-tau2); 
-  //  if (tau<VERY_TINY_VALUE)
-  //    return 460.0;  /// huge optical depth, multiplies flux by 10^{-200}
-  //  else
-  //    return -log(tau);
-  //}
-    
-  //else if (wt_flag==4) {
-  //  //
-  //  // Quadratic weighting on tau.
-  //  // DOESN'T WORK WELL AT ALL!
-  //  //
-  //  double w1,w2,tau;
-  //  w1 = (1.-delta0)*(1.-delta0);
-  //  w2 = delta0*delta0;
-  //  tau = w1+w2;
-  //  w1 /= tau;
-  //  w2 /= tau;
-  //  tau = w1*tau1 +w2*tau2; 
-  //  return tau;
-  //}
-  //  
-  //else rep.error("What kind of interpolation is this?",wt_flag);
-  //return -1.0e200;
 }
 
 
@@ -2742,7 +2756,6 @@ double raytracer_USC::interpolate_2D(
 /// Apply the appropriate weighting scheme to get an interpolated optical depth for 3D
 ///
 double raytracer_USC::interpolate_3D(
-          const int wt_flag, /// Flag to say what sort of weighting.
           const int src_id, ///< source id
           const double delta0, ///< delta0 = abs(dy/dx)
           const double delta1, ///< delta1 = abs(dz/dx)
@@ -2752,7 +2765,6 @@ double raytracer_USC::interpolate_3D(
           const double tau4 ///< fourth optical depth tau_4
           )
 {
-  //if (wt_flag==0) {
   //
   // This is the standard weighting used in C2Ray.
   // (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
@@ -2766,43 +2778,7 @@ double raytracer_USC::interpolate_3D(
   mintau3d = (w1+w2+w3+w4);
   w1/=mintau3d; w2/=mintau3d; w3/=mintau3d; w4/=mintau3d;
   return w1*tau1 + w2*tau2 + w3*tau3 + w4*tau4;
-  //}
 
-  //else if (wt_flag==1) {
-    //
-    // This is purely geometric weighting, which turns out not to be great since
-    // exp(-tau) is the function we should linearly interpolate...
-    // DOESN'T WORK WELL AT ALL!
-    //
-//    double tau=0.0;
-//    tau += (1.-delta0)*(1.-delta1)*tau1;
-//    tau +=     delta0 *(1.-delta1)*tau2;
-//    tau += (1.-delta0)*    delta1 *tau3;
-//    tau +=     delta0 *    delta1 *tau4;
-//    return tau;
-//  }
-//
-//  else if (wt_flag==2) {
-//    //
-//    // Geometric weighting on exp(-tau) instead of tau.
-//    // DOESN'T WORK WELL AT ALL!
-//    //
-//    double w1,w2,w3,w4,tau; 
-//    w1 = (1.-delta0)*(1.-delta1);
-//    w2 =     delta0 *(1.-delta1);
-//    w3 = (1.-delta0)*    delta1 ;
-//    w4 =     delta0 *    delta1 ;
-//    if (!GS.equalD((tau=w1+w2+w3+w4),1.0))
-//      rep.error("weights don't add to 1 in interpolate3D!",tau);
-//    tau = w1*exp(-tau1) +w2*exp(-tau2) +w3*exp(-tau3) +w4*exp(-tau4);
-//    if (tau<VERY_TINY_VALUE)
-//      return 460.0;  /// huge optical depth!
-//    else
-//      return -log(tau);
-//  }
-//
-//  else rep.error("What kind of interpolation is this?",wt_flag);
-//  return -HUGEVALUE;
 }
 
 
@@ -2825,7 +2801,7 @@ void raytracer_USC::set_Vshell_in_cell(
   //
   // If the source is at infinity then we just set Vshell=ds=delta-x
   //
-  if (source->at_infinity) {
+  if (source->s->at_infinity) {
 #ifdef RT_TESTING
     cout <<"raytracer_USC::set_Vshell_in_cell() src at infinity!\n";
 #endif // RT_TESTING
@@ -2850,7 +2826,7 @@ void raytracer_USC::set_Vshell_in_cell(
   // make any difference.
   //
   CI.get_dpos(c,c_pos);
-  rs = GS.distance(source->pos,c_pos,ndim) -0.5*ds;
+  rs = GS.distance(source->s->pos,c_pos,ndim) -0.5*ds;
 #ifdef RT_TESTING
   cout <<"\tSetting Vshell for cell id="<<c->id<<": ";
   cout <<"rs="<<rs<<" ds="<<ds<<" dx="<<gridptr->DX()<<": ";
@@ -2898,22 +2874,23 @@ void raytracer_USC::set_Vshell_in_cell(
 
 #ifdef CELL_CENTRED_SRC
 int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
-				     const rad_source *s, ///< pointer to source struct.
+				     const rad_source *src, ///< pointer to source struct.
 				     const double dt      ///< Timestep
 				     )
 {
-  if (c!= s->sc) rep.error("cell is not source!, but called ProcessSourceCell()!",c);
+  if (c!= src->sc)
+    rep.error("cell is not source!, but called ProcessSourceCell()!",c);
   /**** TESTING ****/
   //c->Ph[PG] = c->col  = 0.0; // assume fully ionised, so no column of neutral material.
   //  cout <<"SOURCE cell id: "<<c->id<<"  and col in cell = "<<c->Ph[RO] *grid->DX()/2./1.67e-24<<"\n";
   //return 0;
   /**** TESTING ****/
 
-  CI.set_col(c, s->id, 0.0); // column at source is zero.
-  double photdens, deltau, ds;
+  CI.set_col(c, src->s->id, 0.0); // column at source is zero.
+  double photdens, deltau[MAX_TAU], ds;
   ds = 0.5*gridptr->DX(); // perpendicular distance from source to cell edge.
   // get photon flux/ds
-  photdens = s->strength;
+  photdens = src->s->strength;
   if      ((ndim==3 && SimPM.coord_sys==COORD_CRT) ||
 	   (ndim==2 && SimPM.coord_sys==COORD_CYL) ||
 	   (ndim==1 && SimPM.coord_sys==COORD_SPH) ) {
@@ -2929,7 +2906,7 @@ int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
   }
   else rep.error("bad ndim/coord_sys combination in process_cell()",ndim);
 
-  deltau = 0.0;
+  //deltau = 0.0;
 
   // RTsinglesrc(p_in, p_out, dt, gamma, int-type, flux_in/ds, ds, &<dTau>);
 #ifdef COUNT_ENERGETICS
@@ -2937,14 +2914,16 @@ int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
   //cout <<"SOURCE CELL:: CE ptr="<<GLOBAL_CE<<" and pi_rate="<<GLOBAL_CE->pi_rate<<"\n";
 #endif
 
-  MP->TimeUpdate_RTsinglesrc(c->P, c->Ph, dt, gamma, 0, photdens, ds, CI.get_col(c,s->id), &deltau);
+  double col[MAX_TAU];
+  CI.get_col(c, src->s->id, col)
+  MP->TimeUpdate_RTsinglesrc(c->P, c->Ph, dt, gamma, 0, photdens, ds, col, deltau);
 
   for (int v=0;v<SimPM.nvar;v++) c->P[v]=c->Ph[v];
-  CI.set_col(c, s->id, deltau); // deltau is a time-averaged optical depth.
-  if (deltau<0.0) {
-    cout <<"\tSRCCELL: deltau: "<<deltau<<" setting to zero.\n";
+  CI.set_col(c, s->id, deltau); // deltau is time-averaged optical depth(s).
+  if (deltau[0]<0.0) {
+    cout <<"\tSRCCELL: deltau: "<<deltau[0]<<" setting to zero.\n";
     gridptr->PrintCell(c);
-    CI.set_col(c, s->id, 0.0);
+    CI.set_col(c, s->id, deltau);
     rep.error("negative tau",c->col);
   }
 

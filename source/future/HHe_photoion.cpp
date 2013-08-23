@@ -10,7 +10,7 @@
 ///
 /// Modifications:
 /// - 2013.08.19 JM: written and tested.
-///
+/// - 2013.08.23 JM: Debugging.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -20,7 +20,7 @@
 //#define TEST_HHe_PION  // for testing this class in isolation.
 
 #include "HHe_photoion.h"
-#include "grid/cell_interface.h"
+//#include "grid/cell_interface.h"
 #include "global.h"
 
 #include <iostream>
@@ -107,8 +107,9 @@ double HHe_photoion::xsection_th(
         )
 {
   if      (ion==ION_H_N)  return sigmaHN;
-  else if (ion==ION_He_N) return sigmaHeN;
-  else if (ion==ION_He_P) return sigmaHeP;
+  else if (ion==ION_HE_N) return sigmaHeN;
+  else if (ion==ION_HE_P) return sigmaHeP;
+  else if (ion==ION_DUST) return 5.0e-35;
   else                    return -1.0e99;
 }
 
@@ -140,6 +141,20 @@ HHe_photoion::~HHe_photoion()
     phrA_2    = mem.myfree(phrA_2);
     phrB_2    = mem.myfree(phrB_2);
     phrC_2    = mem.myfree(phrC_2);
+
+    iltA    = mem.myfree(iltA);
+    iltB    = mem.myfree(iltB);
+    iltC    = mem.myfree(iltC);
+    iltA_2    = mem.myfree(iltA_2);
+    iltB_2    = mem.myfree(iltB_2);
+    iltC_2    = mem.myfree(iltC_2);
+
+    hltA    = mem.myfree(hltA);
+    hltB    = mem.myfree(hltB);
+    hltC    = mem.myfree(hltC);
+    hltA_2    = mem.myfree(hltA_2);
+    hltB_2    = mem.myfree(hltB_2);
+    hltC_2    = mem.myfree(hltC_2);
   }
 }
 
@@ -703,7 +718,7 @@ int HHe_photoion::HHe_photoion_rate(
   t1 = tau_total(REGION_A,Tau0, Tau1, Tau2);
   t2 = tau_total(REGION_A,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
   get_region_HHe_integral_diff(REGION_A,t1,t2, pir0, phr0);
-
+#error "Division of photons from each bin!"
   // ----------------------------------------------------------------
   //
   // Now we add the RegionC rates to H0 and He0 rates, and add the 
@@ -738,15 +753,15 @@ int HHe_photoion::HHe_photoion_rate(
   *phr1 = std::max(*phr1,VERY_TINY_VALUE);
   *phr2 = std::max(*phr2,VERY_TINY_VALUE);
 
-#ifdef TESTING
-  cout <<"  pir0 = "<<*pir0;
-  cout <<"  pir1 = "<<*pir1;
-  cout <<"  pir2 = "<<*pir2;
-  cout <<"  phr0 = "<<*phr0;
-  cout <<"  phr1 = "<<*phr1;
-  cout <<"  phr2 = "<<*phr2;
-  cout <<"\n";
-#endif // TESTING
+#ifdef MP9_TESTING
+//  cout <<"  pir0 = "<<*pir0;
+//  cout <<"  pir1 = "<<*pir1;
+//  cout <<"  pir2 = "<<*pir2;
+//  cout <<"  phr0 = "<<*phr0;
+//  cout <<"  phr1 = "<<*phr1;
+//  cout <<"  phr2 = "<<*phr2;
+//  cout <<"\n";
+#endif // MP9_TESTING
 
   return 0;
 }
@@ -855,20 +870,20 @@ void HHe_photoion::get_region_HHe_integral_diff(
     ans = max(MinTau, min(MaxTau, t1));
     GS.splint(prTau, ia1, ia2, PI_Nspl, log10(ans), &ans);
     *pir = exp(ln10()*ans);
-#ifdef TESTING
+#ifdef MP9_TESTING
     cout.precision(10);
     double temp=exp(ln10()*ans);
     cout <<"a = "<<exp(ln10()*ans);
-#endif  // TESTING
+#endif  // MP9_TESTING
     //
     // Subtract the term for Tau+DTau.
     //
     ans = max(MinTau, min(MaxTau, t2));
     GS.splint(prTau, ia1, ia2, PI_Nspl, log10(ans), &ans);
     *pir -= exp(ln10()*ans);
-#ifdef TESTING
+#ifdef MP9_TESTING
     cout <<", b = "<<exp(ln10()*ans)<<" rel.diff="<< (temp-exp(ln10()*ans))/temp<<"\n";
-#endif  // TESTING
+#endif  // MP9_TESTING
     // -------------- PHOTOIONISATION RATES -----------------
 
     // -------------- PHOTOHEATING    RATES -----------------
@@ -878,19 +893,19 @@ void HHe_photoion::get_region_HHe_integral_diff(
     ans = max(MinTau, min(MaxTau, t1));
     GS.splint(prTau, ha1, ha2, PI_Nspl, log10(ans), &ans);
     *phr = exp(ln10()*ans);
-#ifdef TESTING
+#ifdef MP9_TESTING
     temp=exp(ln10()*ans);
     cout <<"a = "<<exp(ln10()*ans);
-#endif  // TESTING
+#endif  // MP9_TESTING
     //
     // Subtract the term for Tau+DTau.
     //
     ans = max(MinTau, min(MaxTau, t2));
     GS.splint(prTau, ha1, ha2, PI_Nspl, log10(ans), &ans);
     *phr -= exp(ln10()*ans);
-#ifdef TESTING
+#ifdef MP9_TESTING
     cout <<", b = "<<exp(ln10()*ans)<<" rel.diff="<< (temp-exp(ln10()*ans))/temp<<"\n";
-#endif  // TESTING
+#endif  // MP9_TESTING
     // -------------- PHOTOHEATING    RATES -----------------
   }
 

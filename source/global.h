@@ -412,7 +412,7 @@ struct which_physics {
 #define RT_EFFECT_PION_MULTI 3   ///< multifrequency photoion source.
 #define RT_EFFECT_PHOTODISS  4   ///< photodissociation of molecules.
 #define RT_EFFECT_PION_EQM   5   ///< Assume photoion. equilibrium.
-#define RT_EFFECT_HHE_MFQ    6   ///< Frank&Mellema H+He p-ion scheme
+#define RT_EFFECT_HHE_MFQ    9   ///< Frank&Mellema H+He p-ion scheme
 
 //
 // Source of opacity

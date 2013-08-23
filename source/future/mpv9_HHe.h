@@ -8,7 +8,7 @@
 ///
 ///
 /// Modifications:
-/// - getting it written: mods up until 2013.08.19
+/// - getting it written: mods up until 2013.08.23
 
 
 #ifndef MPV9_HHE_H
@@ -84,6 +84,14 @@ class mpv9_HHe :
           const double *, ///< input state vector (primitive).
           const double    ///< EOS gamma
           );
+
+  ///
+  /// Return number density of a given element.
+  ///
+  virtual double get_n_el(
+        const double *, ///< primitive state vector.
+        const int       ///< integer identifier for the element.
+        );
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
@@ -258,6 +266,16 @@ class mpv9_HHe :
             );
 
   ///
+  /// Interpret the input radiation sources into local optical depths
+  ///
+  void interpret_radiation_data(
+          const int,  ///< number of heating sources (UNUSED)
+          const std::vector<struct rt_source_data> &, ///< heatingsrc
+          const int,  ///< number of ionising sources (==1)
+          const std::vector<struct rt_source_data> & ///< ionisingsrc
+          );
+
+  ///
   /// returns gas temperature according to ion fraction
   ///
   virtual double get_temperature(
@@ -316,6 +334,7 @@ class mpv9_HHe :
   double *tau; ///< column densities: tau0, tau1, tau2, tauD.
   double *dtau; ///< column densities: dtau0, dtau1, dtau2.
   double Vshell; ///< Vshell in the finite difference photoion. rate.
+  double dS;     ///< column density through cell.
 
   double metallicity; ///< gas metallicity in units of solar (0.0142)
 };

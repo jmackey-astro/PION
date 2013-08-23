@@ -43,7 +43,8 @@ EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 50.0
 EP_Max_Temperature 1.0e9
-EP_Helium_MassFrac 0.2703
+EP_Hydrogen_MassFrac 0.73
+EP_Helium_MassFrac 0.27
 EP_Metal_MassFrac  0.0075
 
 
@@ -76,7 +77,7 @@ OutputFileType text
 # Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 1
 OutputCriterion 1    # output per n-seconds=1, per n-steps=0
-OPfreqTime 3.16e11   # in seconds
+OPfreqTime 1.58e10   # in seconds
 
 # Start time
 StartTime 0.0e14  # 0 Myr.

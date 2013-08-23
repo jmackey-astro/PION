@@ -26,10 +26,9 @@
 #
 MAKE_UNAME=standard
 NCORES=4
-NCORES=1
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-#export PION_OPTIMISE=HIGH
-export PION_OPTIMISE=LOW
+export PION_OPTIMISE=HIGH
+#export PION_OPTIMISE=LOW
 export CXX=g++
 
 #################################
@@ -141,6 +140,12 @@ PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
 PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 export PION_OPTIONS
 echo PION_OPTIONS: $PION_OPTIONS
+
+PION_OPTIONS+=" -DCODE_EXT_HHE"
+export PION_OPTIONS
+echo PION_OPTIONS: $PION_OPTIONS
+
+
 #####################################################################
 
 #####################################################################

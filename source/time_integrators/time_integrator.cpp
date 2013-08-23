@@ -659,6 +659,11 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
         for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
           FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
       }
+      if (c->id<=3) {
+        cout <<"*-*-*-*-*- i="<<c->id<<", --Tau="<<FVI_ionising_srcs[0].Column[0];
+        cout <<", dTau="<<FVI_ionising_srcs[0].DelCol[0];
+        cout <<", NTau="<<FVI_ionising_srcs[0].NTau<<"\n";
+      }
       //
       // integer 9th argument determines type of integration substepping:
       // 0 = adaptive RK5 Cash-Karp method (use this!).

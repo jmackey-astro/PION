@@ -22,7 +22,7 @@
 /// - 2011.05.06 JM: Added geometric grid distance calculation to photoevap-radial.
 /// - 2011.06.23 JM: Added PhotoEvap_powerlaw function.
 /// - 2012.09.16 JM: Added problem with 1/r^2 cloud profile and a top-hat clump.
-
+/// - 2013.08.23 JM: Change rad_src_info.position[] to .pos[]
 #include "icgen.h"
 #include <sstream>
 
@@ -49,11 +49,13 @@ IC_photoevaporatingclump::IC_photoevaporatingclump()
 // ##################################################################
 
 
+
 IC_photoevaporatingclump::~IC_photoevaporatingclump()
 {
   if (ambient) {delete [] ambient; ambient=0;}
   return;
 }
+
 
 
 // ##################################################################
@@ -337,6 +339,7 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
 // ##################################################################
 
 
+
 int IC_photoevaporatingclump::setup_pec2()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
@@ -465,6 +468,7 @@ int IC_photoevaporatingclump::setup_pec2()
 // ##################################################################
 
 
+
 int IC_photoevaporatingclump::setup_pec()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
@@ -500,6 +504,7 @@ int IC_photoevaporatingclump::setup_pec()
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -524,7 +529,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   //
   double srcpos[SimPM.ndim];
   for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].position[v];
+    srcpos[v] = SimPM.RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
 
@@ -557,6 +562,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
 // ##################################################################
 
 
+
 int IC_photoevaporatingclump::setup_cloud_clump()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
@@ -582,7 +588,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
   //  rep.error("Bad number of sources",SimPM.RS.Nsources);
   //}
   for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].position[v];
+    srcpos[v] = SimPM.RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
   double ISM_centre[SimPM.ndim];
@@ -643,6 +649,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -667,7 +674,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
   //  rep.error("Bad number of sources",SimPM.RS.Nsources);
   //}
   for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].position[v];
+    srcpos[v] = SimPM.RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
   rep.printVec("source position",srcpos,      SimPM.ndim);
@@ -723,6 +730,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
 // ##################################################################
 
 
+
 int IC_photoevaporatingclump::setup_paralleltest()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
@@ -732,7 +740,7 @@ int IC_photoevaporatingclump::setup_paralleltest()
   cout <<"\t\tAssigning primitive vectors.\n";
   double srcpos[SimPM.ndim];
   for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].position[v];
+    srcpos[v] = SimPM.RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
   rep.printVec("srcpos",srcpos,SimPM.ndim);

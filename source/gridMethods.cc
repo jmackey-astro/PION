@@ -137,6 +137,7 @@
 ///    ready_to_start() function, so that the stellar wind boundary
 ///    setup functions can call MP->Set_Temp().
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
+/// - 2013.08.23 JM: Added new mpv9_HHe module code.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -172,6 +173,9 @@
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
 
+#ifdef CODE_EXT_HHE
+#include "future/mpv9_HHe.h"
+#endif
 
 
 #include "raytracing/raytracer_SC.h"
@@ -1633,8 +1637,16 @@ int IntUniformFV::setup_microphysics()
       have_set_MP=true;
     }
 
-
-
+#ifdef CODE_EXT_HHE
+    if (mptype=="MPv9__") {
+      cout <<"\t******* setting up mpv9_HHe module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
+                        &(SimPM.EP), SimPM.gamma);
+      have_set_MP=true;
+    }
+#endif
 
 #ifndef EXCLUDE_MPV1
     //

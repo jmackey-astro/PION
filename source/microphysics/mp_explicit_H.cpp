@@ -532,8 +532,8 @@ void mp_explicit_H::setup_diffuse_RT_angle()
     for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
       if (SimPM.RS.sources[isrc].type==RT_SRC_DIFFUSE) {
         for (int v=0;v<SimPM.ndim;v++) {
-          if (SimPM.RS.sources[isrc].position[v] > 1.0e99) dir = 2*v+1;
-          if (SimPM.RS.sources[isrc].position[v] <-1.0e99) dir = 2*v;
+          if (SimPM.RS.sources[isrc].pos[v] > 1.0e99) dir = 2*v+1;
+          if (SimPM.RS.sources[isrc].pos[v] <-1.0e99) dir = 2*v;
         }
         if (dir<0) rep.error("Diffuse source not at infinity!",isrc);
         //
@@ -1170,8 +1170,8 @@ void mp_explicit_H::setup_radiation_source_parameters(
   //
   //
   if (N_ion>0) {
-    mpv_Tau0  = ion_src[0].Column*Hi_monochromatic_photo_ion_xsection(JUST_IONISED)/mean_mass_per_H;
-    mpv_dTau0 = ion_src[0].DelCol*Hi_monochromatic_photo_ion_xsection(JUST_IONISED)/mean_mass_per_H;
+    mpv_Tau0  = ion_src[0].Column[0]*Hi_monochromatic_photo_ion_xsection(JUST_IONISED)/mean_mass_per_H;
+    mpv_dTau0 = ion_src[0].DelCol[0]*Hi_monochromatic_photo_ion_xsection(JUST_IONISED)/mean_mass_per_H;
   }
   else {
     mpv_Tau0  = 0.0;
@@ -1201,16 +1201,16 @@ void mp_explicit_H::setup_radiation_source_parameters(
       if (heat_src[v].type == RT_SRC_DIFFUSE) {
         temp = heat_src[v].strength *diff_angle[i_diff];
 #ifdef MPV3_DEBUG
-        cout <<"setup_rad_src_params:\tdiffuse src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column;
+        cout <<"setup_rad_src_params:\tdiffuse src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
         cout <<", strength="<<heat_src[v].strength<<", angle="<<diff_angle[i_diff];
-        cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column)<<"\n";
+        cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
 #endif // MPV3_DEBUG
-        mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column);
-        mpv_G0_IR += temp*exp(-Av_IR*heat_src[v].Column);
+        mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column[0]);
+        mpv_G0_IR += temp*exp(-Av_IR*heat_src[v].Column[0]);
         i_diff++;
 #ifdef MPV3_DEBUG
-        cout <<"UV_diff_flux="<<temp*exp(-Av_UV*heat_src[v].Column);
-        cout <<" Col="<<heat_src[v].Column<<" Av="<<Av_UV*heat_src[v].Column/1.9<<"\n";
+        cout <<"UV_diff_flux="<<temp*exp(-Av_UV*heat_src[v].Column[0]);
+        cout <<" Col="<<heat_src[v].Column[0]<<" Av="<<Av_UV*heat_src[v].Column[0]/1.9<<"\n";
 #endif // MPV3_DEBUG
       }
       else {
@@ -1220,17 +1220,17 @@ void mp_explicit_H::setup_radiation_source_parameters(
         //
         temp = heat_src[v].strength*mpv_delta_S/heat_src[v].Vshell;
 #ifdef MPV3_DEBUG
-        cout <<"setup_rad_src_params:\tpoint   src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column;
+        cout <<"setup_rad_src_params:\tpoint   src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
         cout <<", strength="<<heat_src[v].strength<<", ds="<<mpv_delta_S;
         cout <<", mpv_Vshell="<<heat_src[v].Vshell;
-        cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column)<<"\n";
+        cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
 #endif // MPV3_DEBUG
-        mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column);
-        mpv_G0_IR += temp*exp(-Av_IR*heat_src[v].Column);
+        mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column[0]);
+        mpv_G0_IR += temp*exp(-Av_IR*heat_src[v].Column[0]);
 #ifdef MPV3_DEBUG
-        cout <<"UV_ptsc_flux="<<temp*exp(-Av_UV*heat_src[v].Column)<<"\n";
-        cout <<"UV_ptsc_flux="<<temp*exp(-Av_UV*heat_src[v].Column);
-        cout <<" Col="<<heat_src[v].Column<<" Av="<<Av_UV*heat_src[v].Column/1.9<<"\n";
+        cout <<"UV_ptsc_flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
+        cout <<"UV_ptsc_flux="<<temp*exp(-Av_UV*heat_src[v].Column[0]);
+        cout <<" Col="<<heat_src[v].Column[0]<<" Av="<<Av_UV*heat_src[v].Column[0]/1.9<<"\n";
 #endif // MPV3_DEBUG
       }
     } // loop over heating sources.

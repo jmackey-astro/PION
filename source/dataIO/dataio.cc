@@ -837,7 +837,7 @@ int DataIOBase::read_simulation_parameters()
       if (SimPM.RS.sources.at(i).at_infinity <0) {
         rep.error("Failed to get source_at_infty for source id",i);
       }
-      if (SimPM.RS.sources.at(i).position[XX] <-9.0e200) {
+      if (SimPM.RS.sources.at(i).pos[XX] <-9.0e200) {
         rep.error("Failed to get source position for source id",i);
       }
       if (SimPM.RS.sources.at(i).EvoFile=="NOFILE") {
@@ -1176,7 +1176,7 @@ void DataIOBase::set_rt_src_params()
     for (int n=0; n<SimPM.RS.Nsources; n++) {
       struct rad_src_info temp;
 
-      for (int v=0;v<MAX_DIM; v++) temp.position[v] = -1.0e200;
+      for (int v=0;v<MAX_DIM; v++) temp.pos[v] = -1.0e200;
       temp.strength=-1.e200;
       temp.Rstar=-1.0e200;
       temp.Tstar=1.0e200;
@@ -1220,7 +1220,7 @@ void DataIOBase::set_rt_src_params()
     ostringstream tmp12; tmp12.str(""); tmp12 << "RT_EVO_FILE_" <<n;
 
 //ADD SOURCE_EFFECT VARIABLE!
-    pm_ddimarr *rtpos = new pm_ddimarr (temp2.str(), (SimPM.RS.sources[n].position));
+    pm_ddimarr *rtpos = new pm_ddimarr (temp2.str(), (SimPM.RS.sources[n].pos));
     rt_src.push_back(rtpos);
     pm_double  *rtstr = new pm_double  (temp3.str(), &(SimPM.RS.sources[n].strength));
     rt_src.push_back(rtstr);
@@ -2015,7 +2015,7 @@ int dataio_text::output_ascii_data(string outfile
   double Utemp[SimPM.nvar];
 //  outf.setf( ios_base::fixed,ios_base::floatfield );
 //  outf.precision(6);
-  outf << "# format: x,[y,z,],rho,pg,vx,vy,vz,[Bx,By,Bz,Tr[v]],[e_int,e_tot,mmx],[p_tot,divB]\n";
+  outf << "# format: x,[y,z,],rho,pg,vx,vy,vz,[Bx,By,Bz],[Tr0,Tr1,Tr2,..],T,[Tau0,Tau1,...]\n";
   outf << "# time = "<<SimPM.simtime<<"  timestep = "<<SimPM.timestep<<"\n";
   outf.setf( ios_base::scientific );
   outf.precision(6);

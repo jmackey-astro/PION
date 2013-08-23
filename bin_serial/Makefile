@@ -71,10 +71,15 @@ VPATH = \
 ../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
-../source/contrib
+../source/contrib: \
+../source/future
 
 
 GLOBAL = global.h functionality_flags.h testing_flags.h
+
+ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
+  GLOBAL += constants.h
+endif
 
 #######################
 ## COMPILATION RULES ##
@@ -309,6 +314,11 @@ ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
   IC_OBJ +=   read_BBurkhart_data.o
 endif
 
+ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
+  OBJECTS += HHe_photoion.o mpv9_HHe.o
+  IC_OBJ += HHe_photoion.o mpv9_HHe.o
+endif
+
 # New chemistry classes.
   OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
   IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
@@ -497,6 +507,10 @@ mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
 
 mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
   mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+HHe_photoion.o: HHe_photoion.cpp HHe_photoion.h ${GLOBAL}
+mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
+  HHe_photoion.h cvode_integrator.h ${GLOBAL}
 
 ########################
 # Raytracing

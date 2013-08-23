@@ -29,6 +29,7 @@
 ///    std i/o messages.
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2013.08.23 JM: Added new mpv9_HHe module code.
 
 #include "get_sim_info.h"
 #include "../global.h"
@@ -399,10 +400,10 @@ int get_sim_info::read_radsources()
     for (int v=0;v<SimPM.ndim;v++) {
       temp2.str(""); temp2 << "RT_position_" << i <<"_"<< v;
       if ( (a=rp->find_parameter(temp2.str())) !="")
-	rs_temp.position[v] = atof(a.c_str());
+	rs_temp.pos[v] = atof(a.c_str());
       else rep.error("no src position in pfile",temp2.str());
     }
-    for (int v=SimPM.ndim;v<MAX_DIM;v++) rs_temp.position[v]=0.0;
+    for (int v=SimPM.ndim;v<MAX_DIM;v++) rs_temp.pos[v]=0.0;
 
     temp2.str(""); temp2 << "RT_strength_" << i;
     if ( (a=rp->find_parameter(temp2.str())) !="")
@@ -502,12 +503,12 @@ int get_sim_info::read_radsources()
     cout <<"\tRT-src: i="<<i<<": strength="<<rs_temp.strength;
     cout <<" type="<<rs_temp.type<<" at_inf="<<rs_temp.at_infinity;
     cout <<", update="<<rs_temp.update;
-    cout <<" and pos[]="; rep.printVec("",rs_temp.position,SimPM.ndim);
+    cout <<" and pos[]="; rep.printVec("",rs_temp.pos,SimPM.ndim);
 
     //cout <<"\tRT-src: i="<<i<<": strength="<<SimPM.RS.sources[i].strength;
     //cout <<" type="<<SimPM.RS.sources[i].type<<" at_inf="<<SimPM.RS.sources[i].at_infinity;
     //cout <<", update="<<SimPM.RS.sources[i].update;
-    //cout <<" and pos[]="; rep.printVec("",SimPM.RS.sources[i].position,SimPM.ndim);
+    //cout <<" and pos[]="; rep.printVec("",SimPM.RS.sources[i].pos,SimPM.ndim);
   }
   return 0;
 }

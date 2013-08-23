@@ -34,6 +34,7 @@
 /// - 2013.03.23 JM: Added setup lines for StarBench Tests.
 /// - 2013.03.24 JM: Added another StarBench test.
 /// - 2013.06.13 JM: Added StarBench_TremblinCooling test.
+/// - 2013.08.23 JM: Added new mpv9_HHe module code.
 
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
@@ -72,6 +73,10 @@
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
+
+#ifdef CODE_EXT_HHE
+#include "future/mpv9_HHe.h"
+#endif
 
 #ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE
@@ -466,6 +471,16 @@ int main(int argc, char **argv)
       have_set_MP=true;
     }
 
+#ifdef CODE_EXT_HHE
+    if (mptype=="MPv9__") {
+      cout <<"\t******* setting up mpv9_HHe module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
+                        &(SimPM.EP), SimPM.gamma);
+      have_set_MP=true;
+    }
+#endif
 
 #ifndef EXCLUDE_MPV1
     //

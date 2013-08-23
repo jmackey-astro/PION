@@ -24,6 +24,7 @@
 /// - 2013.07.20 JM: Tested a bunch of things; moved PI rate from a
 ///    function call to a (faster) in-place evaluation.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2013.08.23 JM: Debugging.
 
 
 
@@ -106,9 +107,9 @@ mpv9_HHe::mpv9_HHe(
   lv_He1  = 3;    // x(He1).
   nH = 0.0;
   tau =0; tau  = mem.myalloc(tau,4);
-  dtau=0; dtau = mem.myalloc(dtau,3);
+  dtau=0; dtau = mem.myalloc(dtau,4);
 
-  N_extradata = 0;
+  N_extradata = 1;
   N_equations = nvl;
   y_in  = N_VNew_Serial(N_equations);
   y_out = N_VNew_Serial(N_equations);
@@ -135,7 +136,7 @@ mpv9_HHe::mpv9_HHe(
   //
   // max and min values we allow:
   //
-  Min_Nfrac     = 0.0;
+  Min_Nfrac     = 1.0e-15;
   Max_Nfrac     = 1.0;
   // ----------------------------------------------------------------
 
@@ -281,7 +282,7 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
   }
   for (size_t v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
 
-#error "Set up something to interpret the radiation sources"
+  interpret_radiation_data(N_heat,heat_src,N_ion,ion_src);
 
   //
   // Calculate y-dot[] to see if anything is changing significantly over dt
@@ -359,12 +360,12 @@ double mpv9_HHe::get_recombination_rate(
     rate = 2.7e-13*P[lv_nH]*P[lv_nH]*(1.0-P[i])*(1.0-P[i]);
     break;
 
-    case ION_He_N:
+    case ION_HE_N:
     i = lv_He0;
     rate = 2.7e-13*P[lv_nH]*P[lv_nH]*(1.0-P[i])*(1.0-P[i]);
     break;
     
-    case ION_He_P:
+    case ION_HE_P:
     i = lv_He1;
     rate = 2.7e-13*P[lv_nH]*P[lv_nH]*(1.0-P[i])*(1.0-P[i]);
     break;
@@ -376,6 +377,39 @@ double mpv9_HHe::get_recombination_rate(
 #endif // FUNCTION_ID
   return rate;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double mpv9_HHe::get_n_el(
+        const double *pv, ///< primitive state vector.
+        const int id      ///< integer identifier for the element.
+        )
+{
+  double P[nvl];
+  double ans=0.0;
+  convert_prim2local(pv,P);
+  switch (id) {
+    case EL_H:
+    ans = nH;
+    break;
+
+    case EL_HE:
+    ans = nH*X_HE;
+    break;
+    
+    default:
+    cerr <<" mpv9_HHe::get_n_el() unknown element "<<id<<"\n";
+    ans = -1.0e99;
+    break;
+  }
+  return ans;
+}
+
 
 
 
@@ -475,7 +509,7 @@ double mpv9_HHe::timescales_RT(
   NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
   NV_Ith_S(y_in,lv_E) = P[lv_E];
 
-#error "Set up something to interpret the radiation sources"
+  interpret_radiation_data(N_heat,heat_src,N_ion,ion_src);
 
   //
   // Now calculate y-dot[]...
@@ -504,6 +538,9 @@ double mpv9_HHe::timescales_RT(
   //cout <<"using neutral fraction.\n";
   //#else
   t = min(t,0.25/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE));
+  t = min(t,0.5*X_HE/(fabs(NV_Ith_S(y_out, lv_He0))+TINYVALUE));
+  t = min(t,0.5*X_HE/(fabs(NV_Ith_S(y_out, lv_He1))+TINYVALUE));
+  //t = min(t,(NV_Ith_S(y_in, lv_H0)+TINYVALUE)/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE));
   //cout <<"limit by dx: dt="<<0.25/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE)<<"\n";
   //#endif
 
@@ -665,9 +702,9 @@ int mpv9_HHe::convert_local2prim(
   p_out[pv_H0]  = p_local[lv_H0];
   p_out[pv_H0]  = max(Min_Nfrac, min(Max_Nfrac, p_out[pv_H0]));
   p_out[pv_He0] = p_local[lv_He0];
-  p_out[pv_He0] = max(Min_Nfrac, min(Max_Nfrac, p_out[pv_He0]));
+  p_out[pv_He0] = max(Min_Nfrac, min(Max_Nfrac*X_HE, p_out[pv_He0]));
   p_out[pv_He1] = p_local[lv_He1];
-  p_out[pv_He1] = max(Min_Nfrac, min(Max_Nfrac, p_out[pv_He1]));
+  p_out[pv_He1] = max(Min_Nfrac, min(Max_Nfrac*X_HE, p_out[pv_He1]));
 
   //
   // output pressure (cvode should ensure that we don't cool/heat
@@ -699,6 +736,52 @@ int mpv9_HHe::convert_local2prim(
 //cout <<get_ntot(p_local[lv_nH],p_out[pv_Hp])<<"\n";
 #endif
   return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void mpv9_HHe::interpret_radiation_data(
+          const int N_heat,
+          const std::vector<struct rt_source_data> &heat_src,
+          const int N_ion,
+          const std::vector<struct rt_source_data> &ion_src
+          )
+{
+  //
+  // For the first ionising source we have:
+  //
+  // Tau[0] = Int nH*y(H0)*sigma0(H0) dr
+  // Tau[1] = Int nH*y(He0)*sigma0(He0) dr
+  // Tau[2] = Int nH*y(He1)*sigma0(He1) dr
+  // Tau[3] = Int nH*sigma(dust) dr
+  // Similarly for dTau[iT]
+  //
+  // So that is the only source we parse, because that is all the
+  // information we need.
+  //
+
+  if (N_ion<1) {
+    cerr <<"No rad\'n source for mpv9_HHe::interpret_radiation_data";
+    cerr <<".  setting all optical depths to zero.\n";
+    for (short unsigned int iT=0; iT<MAX_TAU; iT++) {
+      tau[iT] = 0.0;
+      dtau[iT]= 0.0;
+    }
+    Vshell  = 1.0e100;
+    return;
+  }
+
+  for (short unsigned int iT=0; iT<ion_src[0].NTau; iT++) {
+    tau[iT] = ion_src[0].Column[iT];
+    dtau[iT]= ion_src[0].DelCol[iT];
+  }
+  Vshell  = ion_src[0].Vshell;
+  dS      = ion_src[0].dS;
 }
 
 
@@ -774,6 +857,8 @@ int mpv9_HHe::ydot(
   double ne = get_ne(y);
   double T = get_temperature(y);
 
+  for (short unsigned int ie=0; ie<N_equations; ie++) ydot[ie]=0.0;
+
   double temp[7];
 
   //
@@ -785,17 +870,29 @@ int mpv9_HHe::ydot(
   ne += nH*1.5e-4*metallicity*exp(-nH/1.0e4);
 
   //
-  // photo-ionisation
+  // use current optical depths through cell to get accurate ph-ion
+  // rates.
+  //
+  dtau[0] = nH*y[0]*dS*get_th_xsection(ION_H_N);
+  dtau[1] = nH*y[1]*dS*get_th_xsection(ION_HE_N);
+  dtau[2] = nH*y[2]*dS*get_th_xsection(ION_HE_P);
+  dtau[3] = nH*     dS*get_th_xsection(ION_DUST);
+
+
+  //
+  // photo-ionisation rates.  Note that the He rates need to be
+  // divided by n(He)/n(H)=X_HE because the denominator of the 
+  // finite-volume integral has n(H) for all three integrals.
   //
   HHe_photoion_rate(tau[0],dtau[0],tau[1],dtau[1],tau[2],dtau[2],
                     nH, Vshell,
                     &(temp[0]),&(temp[1]),&(temp[2]),
                     &(temp[3]),&(temp[4]),&(temp[5]));
   temp[6] = exp(-tau[3]); // attenuation by grey dust.
-  ydot[lv_H0]  -= temp[0] *temp[6];
-  ydot[lv_He0] -= temp[1] *temp[6];
-  ydot[lv_He1] += (temp[1]-temp[2]) *temp[6];
-  ydot[lv_E]   += (temp[3] +temp[4] +temp[5]) *temp[6];
+  ydot[lv_H0]  -= temp[0]; // *temp[6];
+  ydot[lv_He0] -= temp[1]/X_HE; // *temp[6];
+  ydot[lv_He1] += (temp[1]-temp[2])/X_HE; // *temp[6];
+  ydot[lv_E]   += temp[3] +(temp[4] +temp[5])/X_HE; // *temp[6];
 
   //
   // now multiply Edot by nH to get units of energy loss/gain per
