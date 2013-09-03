@@ -67,12 +67,22 @@ class HHe_photoion :
         const double, ///< Delta-Tau(He+) through cell
         const double, ///< Local number density of H (per cm3) n(H).
         const double, ///< Shell volume (cm3).
-        double *,     ///< H0 ionisation rate (per H atom)
-        double *,     ///< He0 ionisation rate (per H atom)
-        double *,     ///< He+ ionisation rate (per H atom)
-        double *,     ///< H0 heating rate (per H atom)
-        double *,     ///< He0 heating rate (per H atom)
-        double *      ///< He+ heating rate (per H atom)
+        double *,     ///< H0, He0, He+ ionisation rates (per H atom)
+        double *      ///< H0, He0, He+ heating rates (per H atom)
+        );
+
+  protected:
+  ///
+  /// For each region, what fraction of the photons are absorbed
+  /// by each species, based on the fraction of the optical depth
+  /// in the region that is from each species.  Friedrich+,2012.
+  ///
+  void tau_frac(
+        const int,    ///< which region we are in.
+        const double, ///< optical depth to H0 at x=1.00
+        const double, ///< optical depth to He0 at x=1.81
+        const double, ///< optical depth to He+ at x=4.00
+        double []     ///< fractions for each species.
         );
 
   private:

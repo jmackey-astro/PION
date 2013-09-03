@@ -200,6 +200,48 @@ double HHe_photoion::tau_total(
 // ##################################################################
 
 
+
+void HHe_photoion::tau_frac(
+        const int r,    ///< which region we are in.
+        const double tau0, ///< optical depth to H0 at x=1.00
+        const double tau1, ///< optical depth to He0 at x=1.81
+        const double tau2, ///< optical depth to He+ at x=4.00
+        double frac[]      ///< fractions for each species.
+        )
+{
+  //
+  // Frank & Mellema (1994,A\&A,289,937) optical depth, constant term
+  // in front of the power law index.  This function returns the
+  // fractional opacity in each region for each species.
+  //
+  if      (r==REGION_A) {
+    frac[0] = 1.0;
+    frac[1] = 0.0;
+    frac[2] = 0.0;
+  }
+  else if (r==REGION_B) {
+    frac[0] = 0.4559*tau0/(0.4559*tau0 +2.7419*tau1);
+    frac[1] = 1.0-frac[0];
+    frac[2] = 0.0;
+  }
+  else if (r==REGION_C) {
+    frac[2] = tau0 +16.6439*tau1 +48.5029*tau2;
+    frac[0] = tau0/frac[2];
+    frac[1] = 16.6439*tau1/frac[2];
+    frac[2] = 1.0-frac[0]-frac[1];
+  }
+  else  {
+    cout <<"requested optical depth for non-ionising photon!\n";
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 double HHe_photoion::Ix_BB_integral_ABC(
         const int region,  ///< Spectral region we are in.
         const double tau0, ///< Tau: constant prefactor in Tau.
@@ -698,60 +740,77 @@ int HHe_photoion::HHe_photoion_rate(
         const double dTau2, ///< Delta-Tau(He+) through cell
         const double nH,    ///< Local number density of H (per cm3) n(H).
         const double Vsh,   ///< Shell volume (cm3).
-        double *pir0,  ///< H0 ionisation rate (per H atom)
-        double *pir1,  ///< He0 ionisation rate (per H atom)
-        double *pir2,  ///< He+ ionisation rate (per H atom)
-        double *phr0,  ///< H0 heating rate (per H atom)
-        double *phr1,  ///< He0 heating rate (per H atom)
-        double *phr2   ///< He+ heating rate (per H atom)
+        double pir[],  ///< ionisation rates (per H atom)
+        double phr[]   ///< heating rates (per H atom)
         )
 {
 
   double t1 = tau_total(REGION_C,Tau0, Tau1, Tau2);
   double t2 = tau_total(REGION_C,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
-  get_region_HHe_integral_diff(REGION_C,t1,t2, pir2, phr2);
+  get_region_HHe_integral_diff(REGION_C,t1,t2, &pir[2], &phr[2]);
 
   t1 = tau_total(REGION_B,Tau0, Tau1, Tau2);
   t2 = tau_total(REGION_B,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
-  get_region_HHe_integral_diff(REGION_B,t1,t2, pir1, phr1);
+  get_region_HHe_integral_diff(REGION_B,t1,t2, &pir[1], &phr[1]);
 
   t1 = tau_total(REGION_A,Tau0, Tau1, Tau2);
   t2 = tau_total(REGION_A,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
-  get_region_HHe_integral_diff(REGION_A,t1,t2, pir0, phr0);
-#error "Division of photons from each bin!"
+  get_region_HHe_integral_diff(REGION_A,t1,t2, &pir[0], &phr[0]);
+
   // ----------------------------------------------------------------
   //
   // Now we add the RegionC rates to H0 and He0 rates, and add the 
-  // RegionB rates to H0 rates.
+  // RegionB rates to H0 rates.  But we need to divide the photons
+  // between the three species in each region, with the tau_frac()
+  // function.
   //
   // ----------------------------------------------------------------
 
-  *pir1 += *pir2;
-  *pir0 += *pir2;
-  *pir0 += *pir1;
+  double frac[3];
+  //
+  // region B
+  //
+  tau_frac(REGION_B,Tau0, Tau1, Tau2, frac);
 
-  *phr1 += *phr2;
-  *phr0 += *phr2;
-  *phr0 += *phr1;
+  pir[0] += frac[0]*pir[1];  // give to H0
+  pir[1] *= frac[1];         // take from He0
+
+  phr[0] += frac[0]*phr[1];
+  phr[1] *= frac[1];
+
+
+  //
+  // region C
+  //
+  tau_frac(REGION_C,Tau0, Tau1, Tau2, frac);
+
+  pir[0] += frac[0]*pir[2];  // give to H0
+  pir[1] += frac[1]*pir[2];  // give to He0
+  pir[2] *= frac[2];         // take from He+
+
+  phr[0] += frac[0]*phr[2];
+  phr[1] *= frac[1]*phr[2];
+  phr[2] *= frac[2];
+
 
   //
   // Now divide everything by n(H)*V(shell)
   //
-  *pir0 /= nH*Vsh;
-  *pir1 /= nH*Vsh;
-  *pir2 /= nH*Vsh;
+  pir[0] /= nH*Vsh;
+  pir[1] /= nH*Vsh;
+  pir[2] /= nH*Vsh;
 
-  *phr0 /= nH*Vsh;
-  *phr1 /= nH*Vsh;
-  *phr2 /= nH*Vsh;
+  phr[0] /= nH*Vsh;
+  phr[1] /= nH*Vsh;
+  phr[2] /= nH*Vsh;
 
-  *pir0 = std::max(*pir0,VERY_TINY_VALUE);
-  *pir1 = std::max(*pir1,VERY_TINY_VALUE);
-  *pir2 = std::max(*pir2,VERY_TINY_VALUE);
+  pir[0] = std::max(pir[0],VERY_TINY_VALUE);
+  pir[1] = std::max(pir[1],VERY_TINY_VALUE);
+  pir[2] = std::max(pir[2],VERY_TINY_VALUE);
 
-  *phr0 = std::max(*phr0,VERY_TINY_VALUE);
-  *phr1 = std::max(*phr1,VERY_TINY_VALUE);
-  *phr2 = std::max(*phr2,VERY_TINY_VALUE);
+  phr[0] = std::max(phr[0],VERY_TINY_VALUE);
+  phr[1] = std::max(phr[1],VERY_TINY_VALUE);
+  phr[2] = std::max(phr[2],VERY_TINY_VALUE);
 
 #ifdef MP9_TESTING
 //  cout <<"  pir0 = "<<*pir0;

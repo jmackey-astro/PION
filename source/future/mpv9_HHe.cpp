@@ -778,7 +778,7 @@ void mpv9_HHe::interpret_radiation_data(
 
   for (short unsigned int iT=0; iT<ion_src[0].NTau; iT++) {
     tau[iT] = ion_src[0].Column[iT];
-    dtau[iT]= ion_src[0].DelCol[iT];
+    dtau[iT]= 0.0; //ion_src[0].DelCol[iT]; dtau is unused.
   }
   Vshell  = ion_src[0].Vshell;
   dS      = ion_src[0].dS;
@@ -848,6 +848,10 @@ int mpv9_HHe::ydot(
           )
 {
 
+  double pir[3];
+  double phr[3];
+  double temp;
+
   //
   // Set pointers to y, ydot arrays and get electron number density
   // and gas temperature.
@@ -856,18 +860,18 @@ int mpv9_HHe::ydot(
   double *ydot = NV_DATA_S(y_dot);
   double ne = get_ne(y);
   double T = get_temperature(y);
+  double y_He2 = std::max(0.0, std::min(X_HE, X_HE -y[1] -y[2]));
 
-  for (short unsigned int ie=0; ie<N_equations; ie++) ydot[ie]=0.0;
-
-  double temp[7];
+  //for (short unsigned int ie=0; ie<N_equations; ie++) ydot[ie]=0.0;
 
   //
-  // We set a minimum electron density based on the idea that Carbon is singly
-  // ionised in low density gas.  y(C)=1.5e-4 in the gas phase (by number)
-  // (Sofia,1997), approximately, so I add this to the electron number density
-  // with an exponential cutoff at high densities.
+  // We set a minimum electron density based on the idea that Carbon
+  // is singly ionised in low density gas.  y(C)=1.5e-4 in the gas
+  // phase (by number) (Sofia,1997), approximately, so I add this to
+  // the electron number density with an exponential cutoff at high
+  // densities.
   //
-  ne += nH*1.5e-4*metallicity*exp(-nH/1.0e4);
+  ne += nH*1.5e-4*metallicity*exp(-nH*1.0e-4);
 
   //
   // use current optical depths through cell to get accurate ph-ion
@@ -879,20 +883,106 @@ int mpv9_HHe::ydot(
   dtau[3] = nH*     dS*get_th_xsection(ION_DUST);
 
 
+  // ----------------------------------------------------------------
   //
-  // photo-ionisation rates.  Note that the He rates need to be
-  // divided by n(He)/n(H)=X_HE because the denominator of the 
-  // finite-volume integral has n(H) for all three integrals.
+  // photo-ionisation rates.  All rates are per H nucleon, which
+  // needs no modification because the species fractions are per
+  // H nucleon also (unlike Friedrich+,2012).
   //
   HHe_photoion_rate(tau[0],dtau[0],tau[1],dtau[1],tau[2],dtau[2],
                     nH, Vshell,
-                    &(temp[0]),&(temp[1]),&(temp[2]),
-                    &(temp[3]),&(temp[4]),&(temp[5]));
-  temp[6] = exp(-tau[3]); // attenuation by grey dust.
-  ydot[lv_H0]  -= temp[0]; // *temp[6];
-  ydot[lv_He0] -= temp[1]/X_HE; // *temp[6];
-  ydot[lv_He1] += (temp[1]-temp[2])/X_HE; // *temp[6];
-  ydot[lv_E]   += temp[3] +(temp[4] +temp[5])/X_HE; // *temp[6];
+                    pir, phr);
+  //temp = exp(-tau[3]); // attenuation by grey dust.
+  ydot[lv_H0]  = -pir[0]; // *temp;
+  ydot[lv_He0] = -pir[1]; // *temp;
+  ydot[lv_He1] = (pir[1]-pir[2]); // *temp;
+  ydot[lv_E]   = phr[3] +phr[4] +phr[5]; // *temp;
+  //
+  // ----------------------------------------------------------------
+
+#ifdef MPV9_REC
+  // ----------------------------------------------------------------
+  //
+  // Recombination rates.  Here we need only alpha_B for H0, but more
+  // for He0 (alpha_A, alpha_1, alpha_B) and He+ (alpha_A, alpha_B,
+  // alpha_1, alpha_2).  He+ has dielectronic recombination too, so
+  // we can't just use the radiative rates.
+  //
+  // This scheme is the coupled on-the-spot approximation of 
+  // Friedrich+,2012.
+  //
+  double a1=0.0, a2=0.0, aB=0.0, aA=0.0; // recombination coeffs.
+  //
+  // First H+ recombinations.
+  //
+  aB = H1_caseB;
+  ydot[lv_H0] += aB*ne*(1.0-y[lv_H0]);
+
+  //
+  // Now He+ recombinations, affecting the H0 and He0 fractions.
+  // - f0 = fraction of He+ case-1 photons that ionise H0.
+  // - f1 = fraction of He+ case-1 photons that ionise He0.
+  // -  p = fraction of He+ case-B photons that can ionise H0.
+  //
+  // Uncoupled OTS has f1=1, f0=0, p=0.
+  //
+  a1 = He1_case1;
+  aB = He1_caseB;
+  aA = He1_caseA;
+  tau_frac(REGION_B,dtau[0],dtau[1],dtau[2],pir); // use pir[] for f
+  phr[0] = p_factor;  // use phr[0] for "p".
+  ydot[lv_H0]  -= ne*y[lv_He1]*(a1_He1*pir[0] +aB_He1*phr[0]);
+  ydot[lv_He0] += (aA_He1-a1_He1*pir[1])*ne*y_He2;
+
+  //
+  // Now He++ recombinations, affecting H0, He0, and He1 fractions.
+  // - g0/g1/g2 = fraction of case-1 photons ionising H0/He0/He1.
+  // - v = fraction of case-B recombs that have 2-photon emission.
+  // - l = fraction of 2-photon photons that can ionise H0 (1.425)
+  // - m = fraction of 2-photon photons that can ionise He0 (0.737)
+  // - 1-v = fraction of case-B recombs that lead to He-Ly-alpha.
+  // - fe = fraction of He-Ly-alpha photons that are absorbed locally.
+  // - z/(1-z) = frac. of aborbed He-Ly-alpha photons ionising H0/He0
+  // For a single bin in Region B, z=f0, 1-z=f1
+  //
+  // Uncoupled OTS has g0=0, g1=0, g2=1, v=1, l=0, m=0
+  //
+  tau_frac(REGION_C,dtau[0],dtau[1],dtau[2],phr);  // use phr[] for g
+#define FE 1.0
+#define EL 1.425
+#define EM 0.737
+  //
+  // temp=v. Fit to table V in Hummer & Seaton (1964,MN,127,217)
+  //
+  temp = 0.1764 +2.56074e-3*pow(log10(T),2.70387);
+  a1 = He2_case1;
+  a2 = He2_case2;
+  aA = He2_caseA;
+  aB = He2_caseB;
+  //
+  // H0 loses to recombs to ground state, recombs to n=2, and also
+  // from 2-photon case-B recombinations.
+  //
+  ydot[lv_H0]  -= ne*y_He2*(a1*phr[0] +a2
+                  +aB*(temp*(EL-EM+EM*pir[0])+(1.0-temp)*FE*pir[0]));
+  //
+  // He0 loses to recombs to the ground state and 2-photon case-B
+  // recombinations.  Store in temp.var b/c there is a symmetric
+  // term in ydot(He1).
+  //
+  temp = a1*phr[1] +aB*(temp*EM*pir[1]+(1.0-temp)*FE*pir[1]);
+  ydot[lv_He0] -= ne*y_He2*(temp);
+  //
+  // He1 gains from caseA recombinations, loses from a fraction g2 of
+  // recombs to the ground state causing re-ionisation, and gains
+  // from ionisation of He0 from recombination photons.
+  //
+  ydot[lv_He1] += ne*y_He2*(aA -a1*phr[2] +temp);
+
+
+  //
+  // ----------------------------------------------------------------
+#endif // MPV9_REC
 
   //
   // now multiply Edot by nH to get units of energy loss/gain per

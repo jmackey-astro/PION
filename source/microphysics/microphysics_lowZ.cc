@@ -20,6 +20,8 @@
 ///     should be good enough for Harpreet.  Also updated timestep calculator
 ///     to deal with multiple column densities.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2013.09.02 JM: Fixed treatment of tracers so that Nspecies is
+///    not fixed to Ntracer.
 
 //
 // First include all the defines, to make sure that we need to compile in 
@@ -31,10 +33,8 @@
 
 
 
-
 #include "microphysics_lowZ.h"
 using namespace std;
-
 
 
 
@@ -74,12 +74,16 @@ microphysics_lowz::microphysics_lowz(const int nv,
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   //
-  // Set up tracer variables.  We will assume that ALL tracers are Harpreet's species, and
-  // that there are no others.
+  // Set up tracer variables.  We will get the tracers from
+  // Harpreet's module function.  This leaves open the option to have
+  // extra passive tracers for other purposes.
   //
   cout <<"\t\tSetting up Tracer Variables.";
-  microphysics_lowz::Nspecies = SimPM.ntracer;
-  microphysics_lowz::Yvector_length = Nspecies+1;
+  get_problem_size(&Yvector_length, &Nspecies);
+  Nspecies = Yvector_length-1;
+  //microphysics_lowz::Nspecies = SimPM.ntracer;
+  //microphysics_lowz::Yvector_length = Nspecies+1;
+
   //
   // Local state vector.  We have density, internal energy,
   // shielding factor, the Y-values, and that's it.
@@ -129,12 +133,8 @@ microphysics_lowz::microphysics_lowz(const int nv,
 
 
 
-
-
 // ##################################################################
 // ##################################################################
-
-
 
 
 
@@ -147,12 +147,8 @@ microphysics_lowz::~microphysics_lowz()
 
 
 
-
-
-
 // ##################################################################
 // ##################################################################
-
 
 
 
@@ -179,6 +175,7 @@ double microphysics_lowz::Temperature(const double *pv, ///< primitive vector
 
 // ##################################################################
 // ##################################################################
+
 
 
 ///
@@ -227,6 +224,7 @@ int microphysics_lowz::Set_Temp(
 // ##################################################################
 
 
+
 int microphysics_lowz::convert_prim2local(
           const double *p_in,
           const double gam
@@ -268,6 +266,7 @@ int microphysics_lowz::convert_prim2local(
 // ##################################################################
 
 
+
 int microphysics_lowz::convert_local2prim(
           const double *p_in,
           double *p_out,
@@ -306,6 +305,7 @@ int microphysics_lowz::convert_local2prim(
 
 // ##################################################################
 // ##################################################################
+
 
 
 int microphysics_lowz::TimeUpdateMP(
@@ -394,6 +394,7 @@ int microphysics_lowz::TimeUpdateMP(
 
 // ##################################################################
 // ##################################################################
+
 
 
 int microphysics_lowz::TimeUpdateMP_RTnew(
@@ -590,9 +591,10 @@ void microphysics_lowz::get_column_densities(
 
 }
 
-// ##################################################################
-// ##################################################################
 
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -621,10 +623,8 @@ int microphysics_lowz::TimeUpdate_RTsinglesrc(
 
 
 
-
 // ##################################################################
 // ##################################################################
-
 
 
 
@@ -632,12 +632,13 @@ int microphysics_lowz::TimeUpdate_RTsinglesrc(
 /// This returns the minimum timescale of the times flagged in the
 /// arguments.  Time is returned in seconds.
 ///
-double microphysics_lowz::timescales(const double *p_in,  ///< Current cell primitive vector.
-				     const double gam,    ///< EOS gamma.
-				     const bool f_cool,   ///< set to true if including cooling time.
-				     const bool f_recomb, ///< set to true if including recombination time.
-				     const bool f_photoion ///< set to true if including photo-ionsation time.
-				     )
+double microphysics_lowz::timescales(
+        const double *p_in,  ///< Current cell primitive vector.
+        const double gam,    ///< EOS gamma.
+        const bool f_cool,   ///< set to true if including cooling time.
+        const bool f_recomb, ///< set to true if including recombination time.
+        const bool f_photoion ///< set to true if including photo-ionsation time.
+        )
 {
   double mintime = 1.0e99;
   std::vector<struct rt_source_data> temp;
@@ -657,19 +658,17 @@ double microphysics_lowz::timescales(const double *p_in,  ///< Current cell prim
 
 
 
-
 // ##################################################################
 // ##################################################################
-
 
 
 
 ///
-  /// This returns the minimum timescale of all microphysical processes, including
-  /// reaction times for each species and the total heating/cooling time for the gas.
-  /// It requires the radiation field as an input, so it has substantially greater
-  /// capability than the other timescales function.
-  ///
+/// This returns the minimum timescale of all microphysical processes, including
+/// reaction times for each species and the total heating/cooling time for the gas.
+/// It requires the radiation field as an input, so it has substantially greater
+/// capability than the other timescales function.
+///
 double microphysics_lowz::timescales_RT(
           const double *p_in,  ///< Current cell primitive vector.
           const int N_heating_srcs,      ///< Number of UV heating sources.
@@ -735,11 +734,8 @@ double microphysics_lowz::timescales_RT(
 
 
 
-
 // ##################################################################
 // ##################################################################
-
-
 
 
 
@@ -759,12 +755,12 @@ int microphysics_lowz::Init_ionfractions(double *p, ///< Primitive vector to be 
   //
   Y_init(Yi);
   cout <<"Yi = [";
-  for (int v=0;v<SimPM.ntracer; v++) {
+  for (int v=0;v<Nspecies; v++) {
     cout <<Yi[v]<<", ";
   }
   cout <<"]\n";
 
-  for (int v=0;v<SimPM.ntracer; v++) {
+  for (int v=0;v<Nspecies; v++) {
     p[SimPM.ftr+v] = Yi[v];
   }
 

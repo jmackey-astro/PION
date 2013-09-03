@@ -135,6 +135,8 @@
 ///    Changed Oxygen abundance from Lodders2003 to Asplund+2009.
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2013.09.03 JM: fixed minor bug in He-Bremsstrahlung function.
+///    Added HE_INERT ifdef for case where He is always neutral.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -166,6 +168,7 @@ using namespace std;
 
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
 
+#define HE_INERT
 
 //
 // The timestep-limiting is set by ifdef in
@@ -315,6 +318,9 @@ mp_explicit_H::mp_explicit_H(
   //
   JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
   JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
+#ifdef HE_INERT
+  JM_NELEC = 1.0; // if He is always neutral.
+#endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
 
   setup_local_vectors();
@@ -617,7 +623,14 @@ int mp_explicit_H::set_multifreq_source_properties(
   //
   double mincol=1.0e-3, maxcol=1.0e6, Emax=1000.0*1.602e-12;
   int Nspl=50, Nsub=800;
-  
+
+#ifdef HE_INERT
+  //
+  // If He is always neutral, then we can't have any He-ionising
+  // photons, so just integrate up to its first ionisation energy.
+  //
+  Emax = 24.59*1.602e-12;
+#endif // HE_INERT
   //
   // Call the function in hydrogen_photoion.
   //
@@ -1372,11 +1385,15 @@ int mp_explicit_H::ydot(
   Edot -= Hii_total_cooling(T) *x_in*ne;
 
   //
-  // Add Helium free-free (Z^2*n(He)/n(H) = X(He)/X(H) of the H+ free-free rate)
+  // Add Helium free-free (Z^2*n(He)/n(H) = 0.25*X(He)/X(H) of the H+ free-free rate)
   // The normalisation is scaled so that I multiply by ne*nHp to get the 
   // correct cooling rate (i.e. the abundance of He is included in the prefactor).
   //
-  Edot -= 1.68e-27*EP->Helium_MassFrac/(1.0-EP->Helium_MassFrac)*sqrt(T)*x_in*ne;
+#ifndef HE_INERT
+  // Only if He is ionised, otherwise it has no free-free.
+  //
+  Edot -= 1.68e-27*(JM_NION-1.0)*sqrt(T)*x_in*ne;
+#endif // HE_INERT
 
   //
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).

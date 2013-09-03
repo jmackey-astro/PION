@@ -8,7 +8,7 @@ FBASE=$2
 NTR=$3
 MAG=$4
 
-IMGDIR=${FDIR}/img
+IMGDIR=${FDIR}/img2
 if [ ! -d "${IMGDIR}" ]; then
   mkdir $IMGDIR
 fi
