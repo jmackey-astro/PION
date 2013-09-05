@@ -55,6 +55,7 @@
 /// - 2013.02.19 JM: Moved file_status class definitions to new file.
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2013.09.05 JM: changed logic of writing T/Eint in ascii data.
 
 //
 // These tell code what to compile and what to leave out.
@@ -1731,6 +1732,12 @@ int dataio_text::OutputData(const string outfile,
   return err;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// set filename based on counter, outfile-base-name.
 ///
@@ -2034,10 +2041,10 @@ int dataio_text::output_ascii_data(string outfile
      // Next all primitive variables.
      for (int v=0;v<SimPM.nvar;v++) outf <<cpt->P[v]<<"  ";
 
-    if (eqn) {
       // internal energy/ temperature.
-      if (MP) outf << MP->Temperature(cpt->P,SimPM.gamma);
-      else    outf << eqn->eint(cpt->P,SimPM.gamma);
+    if      (MP) outf << MP->Temperature(cpt->P,SimPM.gamma);
+    else if (eqn) {
+      outf << eqn->eint(cpt->P,SimPM.gamma);
       // total energy, x-momentum
       //eqn->PtoU(cpt->P,Utemp,SimPM.gamma);
       //outf <<"  "<< Utemp[ERG] <<"  "<< Utemp[MMX];

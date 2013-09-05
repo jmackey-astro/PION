@@ -46,6 +46,7 @@
 /// - 2011.04.22 JM: Fixed setup_recv_boundaries() functions so that new boundary cells
 ///    are only created if they don't already exist.  It now works for multiple point
 ///    sources, and I don't think they need to be at the same place.
+/// - 2013.09.05 JM: Debugged for new get/set col functions.
 ///
 
 #include "../global.h"
@@ -56,6 +57,13 @@
 using namespace std;
 
 #ifdef PARALLEL
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, double *xp, int *nc)
   :
@@ -96,6 +104,13 @@ UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, do
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 UniformGridParallel::~UniformGridParallel()
 {
@@ -212,6 +227,12 @@ UniformGridParallel::~UniformGridParallel()
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int UniformGridParallel::BC_setBCtypes(string bctype)
@@ -449,6 +470,13 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   return(0);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
 {
   BC_nbc = Nbc;
@@ -509,6 +537,13 @@ int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
   return(err);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxstep)
 {
   struct boundary_data *b;
@@ -551,6 +586,12 @@ int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxste
 } // time update BCs.
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGridParallel::BC_assign_PERIODIC(  boundary_data *b)
 {
   // For parallel grid, periodic data is on a different processor,
@@ -568,6 +609,12 @@ int UniformGridParallel::BC_assign_PERIODIC(  boundary_data *b)
   }
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int UniformGridParallel::BC_update_PERIODIC(   struct boundary_data *b,
@@ -590,6 +637,12 @@ int UniformGridParallel::BC_update_PERIODIC(   struct boundary_data *b,
   }
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
@@ -728,6 +781,13 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
   return 0;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
            const int cstep,
            const int maxstep,
@@ -844,6 +904,13 @@ int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
   return 0;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGridParallel::comm_select_data2send(list<cell *> *l,
                  int *nc,
                  enum direction d)
@@ -927,17 +994,31 @@ int UniformGridParallel::comm_select_data2send(list<cell *> *l,
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 /***************************************************************************************/
 /***************************** RAYTRACING BOUNDARY STUFF *******************************/
 /***************************************************************************************/
 #ifdef PLLEL_RT
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
 {
 #ifdef RT_TESTING
   cout <<"UniformGridParallel::Setup_RT_Boundaries() starting!\n";
 #endif 
 
-  // ----------------------- SANITY CHECKS ----------------------------
+  // ----------------------- SANITY CHECKS --------------------------
   // processor ids are numbered from zero; if they're not (by MPI implementation)
   // then my code will bug out before it gets to here...
   //if (!RT_recv_list.empty() || !RT_send_list.empty())
@@ -952,17 +1033,19 @@ int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
   for (int v=0;v<static_cast<int>(RT_source_list.size()); v++) {
     if (RT_source_list[v].source_id == src_id) sle = v;
   }
-  if (sle>=0) rep.error("source is already present in RT_source_list!",sle);
+  if (sle>=0)
+    rep.error("source is already present in RT_source_list!",sle);
 
   //
   // Check that we are not past the correct number of sources!
   //
   if (src_id >= SimPM.RS.Nsources) {
-      rep.error("Requested RT source which does not exist",src_id-SimPM.RS.Nsources);
+      rep.error("Requested RT source which does not exist",
+                src_id-SimPM.RS.Nsources);
   }
-  // ----------------------- SANITY CHECKS ----------------------------
+  // ----------------------- SANITY CHECKS --------------------------
 
-  // ------------------------ SETUP BOUNDARIES ------------------------
+  // ------------------------ SETUP BOUNDARIES ----------------------
   //
   // Now we need to add a new send list and a new recv list for this source.
   //
@@ -1000,13 +1083,19 @@ int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
   //
   RT_source_list.push_back(this_src_comms);
 
-  // ------------------------ SETUP BOUNDARIES ------------------------
+  // ------------------------ SETUP BOUNDARIES ----------------------
 
 #ifdef RT_TESTING
   cout <<"UniformGridParallel::Setup_RT_Boundaries() finished!\n";
 #endif 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int UniformGridParallel::setup_RT_infinite_src_BD(
@@ -1035,10 +1124,12 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
   // Check that send and recv lists are empty!
   //
   if (!RT_recv_list.empty()) {
-    rep.error("diffuse radn src recv-list not empty!",RT_recv_list.size());
+    rep.error("diffuse radn src recv-list not empty!",
+              RT_recv_list.size());
   }
   if (!RT_send_list.empty()) {
-    rep.error("diffuse radn src send-list not empty!",RT_send_list.size());
+    rep.error("diffuse radn src send-list not empty!",
+              RT_send_list.size());
   }
 
   //
@@ -1052,14 +1143,15 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
   enum direction send_dir = OppDir(srcdir);
   //
   // Recv boundary in the source direction, send boundary in opp.dir.
-  // Can have only one send and one recv source, so the lists should get exactly one element.
+  // Can have only one send and one recv source, so the lists should
+  // get exactly one element.
   //
   int recv_proc = mpiPM.ngbprocs[recv_dir];
   int send_proc = mpiPM.ngbprocs[send_dir];
 
   //
-  // Set up the lone recv boundary list element.  Note we leave an empty vector
-  // if there is no neighbour domain to add.
+  // Set up the lone recv boundary list element.  Note we leave an
+  // empty vector if there is no neighbour domain to add.
   //
   struct RT_boundary_list_element tempR;
   tempR.RT_bd=0;
@@ -1071,7 +1163,8 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
     case ZN: tempR.dir = static_cast<int>(dir_ZN); break;
     case ZP: tempR.dir = static_cast<int>(dir_ZP); break;
     default:
-    cout <<"\t No processor in receive direction d="<<recv_dir<<": proc="<<recv_proc<<".\n";
+    cout <<"\t No processor in receive direction d="<<recv_dir;
+    cout <<": proc="<<recv_proc<<".\n";
     tempR.dir=-1;
     break;
   }
@@ -1079,11 +1172,13 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
   if (tempR.rank >=0) {
 #ifdef RT_TESTING
     cout <<"\t\tFound diffuse-recv-proc in dir="<<recv_dir;
+    cout <<" (R.dir="<<tempR.dir<<")";
     cout <<", rank="<<tempR.rank<<", setting up boundary data.\n";
 #endif 
     RT_recv_list.push_back(tempR);
     err = setup_RT_recv_boundary(RT_recv_list.front());
-    if (err) rep.error("failed to set up diffuse radn recv boundary",err);
+    if (err) 
+      rep.error("failed to set up diffuse radn recv boundary",err);
   }
   else {
 #ifdef RT_TESTING
@@ -1136,6 +1231,12 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 enum direction UniformGridParallel::RT_src_at_infty_direction(const int src_id)
 {
   //
@@ -1144,7 +1245,7 @@ enum direction UniformGridParallel::RT_src_at_infty_direction(const int src_id)
   //
   double srcpos[MAX_DIM];
   for (int v=0;v<G_ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[src_id].position[v];
+    srcpos[v] = SimPM.RS.sources[src_id].pos[v];
   }
   enum direction srcdir=NO;
   for (int v=0;v<G_ndim;v++) {
@@ -1157,6 +1258,12 @@ enum direction UniformGridParallel::RT_src_at_infty_direction(const int src_id)
   }
   return srcdir;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -1197,7 +1304,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   enum direction srcdir[G_ndim];
   double srcpos[G_ndim];
   for (int v=0;v<G_ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[src_id].position[v];
+    srcpos[v] = SimPM.RS.sources[src_id].pos[v];
   }
 
   for (int i=0;i<G_ndim;i++) {
@@ -1219,7 +1326,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   enum direction srcdir[G_ndim];
   double srcpos[MAX_DIM];
   for (int v=0;v<G_ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[src_id].position[v];
+    srcpos[v] = SimPM.RS.sources[src_id].pos[v];
   }
 
 
@@ -1580,6 +1687,12 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 
 class cell * UniformGridParallel::get2startcell(const enum rt_dirs d ///< direction of boundary.
             )
@@ -1611,8 +1724,15 @@ class cell * UniformGridParallel::get2startcell(const enum rt_dirs d ///< direct
 
 
 
-int UniformGridParallel::setup_RT_recv_boundary(struct RT_boundary_list_element &b ///< boundary info.
-            )
+// ##################################################################
+// ##################################################################
+
+
+
+
+int UniformGridParallel::setup_RT_recv_boundary(
+        struct RT_boundary_list_element &b ///< boundary info.
+        )
 {
 #ifdef RT_TESTING
   cout <<"UniformGridParallel::setup_RT_recv_boundary() starting (dir="<<b.dir<<").\n";
@@ -1786,6 +1906,12 @@ int UniformGridParallel::setup_RT_recv_boundary(struct RT_boundary_list_element 
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 
 int UniformGridParallel::RT_edge_cells_setup(cell *c, ///< grid corner cell.
                struct boundary_data *b, ///< pointer to boundary data.
@@ -1865,6 +1991,12 @@ int UniformGridParallel::RT_edge_cells_setup(cell *c, ///< grid corner cell.
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 class cell * UniformGridParallel::RT_new_edge_cell(const cell *c, ///< grid edge cell.
                const enum direction d1, ///< first dir
                const enum direction d2  ///< second dir
@@ -1896,8 +2028,10 @@ class cell * UniformGridParallel::RT_new_edge_cell(const cell *c, ///< grid edge
     t->isedge = -1;
     // Boundary ids are irrelevant -10 means not set, I set to something meaningful later.
     t->id = -98;
+    double tau[MAX_TAU];
+    for (short unsigned int v=0; v<MAX_TAU; v++) tau[v]=0.0;
     for (int v=0;v<SimPM.RS.Nsources;v++) {
-      CI.set_col(t,v,0.0);
+      CI.set_col(t,v,tau);
     } // no harm initialising it!!!
 
     //
@@ -1941,12 +2075,19 @@ class cell * UniformGridParallel::RT_new_edge_cell(const cell *c, ///< grid edge
 
 
 
-int UniformGridParallel::RT_connect_face_cells(struct boundary_data *b,        ///< pointer to RT boundary data.
-                 const struct boundary_data *b2, ///< pointer to BC boundary data.
-                 const enum direction offdir     ///< face dir
-                 )
+// ##################################################################
+// ##################################################################
+
+
+
+
+int UniformGridParallel::RT_connect_face_cells(
+        struct boundary_data *b,        ///< pointer to RT boundary data.
+        const struct boundary_data *b2, ///< pointer to BC boundary data.
+        const enum direction offdir     ///< face dir
+        )
 {
-  if (G_ndim==1) return 0; // no connections to make!
+  //if (G_ndim==1) return 0; // no connections to make!
   if (!b || !b2)
     rep.error("UniformGridParallel::RT_connect_face_cells() Null b/b2 pointer",b);
 
@@ -1954,6 +2095,10 @@ int UniformGridParallel::RT_connect_face_cells(struct boundary_data *b,        /
   // First set all the directions we need:
   //
   enum direction ondir=OppDir(offdir);
+#ifdef RT_TESTING
+    cout <<"RT_connect_face_cells() offdir="<< offdir;
+    cout <<",  ondir="<<ondir<<"\n";
+#endif // RT_TESTING
   enum direction dir1=NO, opp1=NO, dir2=NO, opp2=NO;
   switch (offdir) {
   case XN: case XP:
@@ -1974,25 +2119,31 @@ int UniformGridParallel::RT_connect_face_cells(struct boundary_data *b,        /
   list<cell*>::const_iterator bpt=b2->data.begin();
   cell *t=0;
   do{
+#ifdef RT_TESTING
+    cout <<"RT_connect_face_cells() cpos="<< (*bpt)->pos[0]<<"\n";
+#endif // RT_TESTING
     if (NextPt(*bpt,ondir)->isgd) {
       //
       // Add to RT list.
       //
       b->data.push_back(*bpt);
-      //
-      // Make connections to neighbouring boundary cells.
-      //
-      t=NextPt(*bpt,ondir);
-      t=NextPt(t,dir1); 
-      (*bpt)->ngb[dir1] = NextPt(t,offdir);
-      t=NextPt(NextPt(t,opp1),opp1);
-      (*bpt)->ngb[opp1] = NextPt(t,offdir);
-      if (G_ndim==3) {
-        t=NextPt(t,dir1);
-        t=NextPt(t,dir2); 
-        (*bpt)->ngb[dir2] = NextPt(t,offdir);
-        t=NextPt(NextPt(t,opp2),opp2);
-        (*bpt)->ngb[opp2] = NextPt(t,offdir);
+
+      if (G_ndim>1) {
+        //
+        // Make connections to neighbouring boundary cells.
+        //
+        t=NextPt(*bpt,ondir);
+        t=NextPt(t,dir1); 
+        (*bpt)->ngb[dir1] = NextPt(t,offdir);
+        t=NextPt(NextPt(t,opp1),opp1);
+        (*bpt)->ngb[opp1] = NextPt(t,offdir);
+        if (G_ndim==3) {
+          t=NextPt(t,dir1);
+          t=NextPt(t,dir2); 
+          (*bpt)->ngb[dir2] = NextPt(t,offdir);
+          t=NextPt(NextPt(t,opp2),opp2);
+          (*bpt)->ngb[opp2] = NextPt(t,offdir);
+        }
       }
     }
     //
@@ -2002,6 +2153,12 @@ int UniformGridParallel::RT_connect_face_cells(struct boundary_data *b,        /
   } while (bpt !=b2->data.end());
   return 0;
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -2079,6 +2236,12 @@ class cell * UniformGridParallel::RT_new_corner_cell(const cell *c, ///< grid co
 
   return t;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -2246,6 +2409,12 @@ int UniformGridParallel::setup_RT_send_boundary(struct RT_boundary_list_element 
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
                  )
 {
@@ -2348,9 +2517,15 @@ int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
       
       //
       // See how many doubles we are expecting, and allocate memory.
+      // For sources with more than one optical depth, we need to
+      // account for this.
       //
-      ct = b->data.size();
-      if (ct<1) rep.error("Empty boundary!",ct);
+      ct = b->data.size()*SimPM.RS.sources[src_id].NTau;
+      if (ct<1) {
+        cerr <<"data size = "<< b->data.size();
+        cerr <<", NTau = "<<SimPM.RS.sources[src_id].NTau<<"\n";
+        rep.error("Empty boundary!",ct);
+      }
       buf=0;
       buf = mem.myalloc(buf,ct);
 #ifdef RT_TESTING
@@ -2374,7 +2549,10 @@ int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
       //
       list<cell*>::iterator c=b->data.begin();
       int count=0;
-        for (c=b->data.begin(); c!=b->data.end(); ++c) {
+      double tau[MAX_TAU];
+      for (short unsigned int v=0; v<MAX_TAU; v++) tau[v]=0.0;
+
+      for (c=b->data.begin(); c!=b->data.end(); ++c) {
         if (count>=ct) rep.error("too many cells!!!",count-ct);
 #ifdef RT_TESTING
         if (count<32) {
@@ -2383,9 +2561,13 @@ int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
           if (SimPM.ndim>2) cout<<","<<(*c)->pos[ZZ]<<"]"<<"\n";
           else cout <<"]\n";
         }
-#endif
-        CI.set_col(*c, src_id, buf[count]);
-        count++;
+#endif  
+        for (short unsigned int v=0;
+              v<SimPM.RS.sources[src_id].NTau; v++) {
+          tau[v] = buf[count];
+          count++;
+        }
+        CI.set_col(*c, src_id, tau);
       }
       if (count != ct) rep.error("BIG ERROR!",count-ct);
       
@@ -2403,6 +2585,12 @@ int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
 #endif 
   return err;
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -2479,8 +2667,10 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
 #endif 
       //
       // How many cell column densities to send:
+      // For sources with more than one optical depth, we need to
+      // account for this.
       //
-      int nc = b->data.size();
+      int nc = b->data.size()*SimPM.RS.sources[src_id].NTau;
       data = mem.myalloc(data, nc);
 
       //
@@ -2488,12 +2678,23 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
       //
       list<cell*>::iterator c=b->data.begin();
       int count=0;
+      double tau[MAX_TAU];
+      for (short unsigned int v=0; v<MAX_TAU; v++) tau[v]=0.0;
+      
       for (c=b->data.begin(); c!=b->data.end(); ++c) {
         if (count>=nc) rep.error("too many cells!!!",count-nc);
-        data[count] = CI.get_col(*c,src_id);
+
+        CI.get_col(*c, src_id, tau);
+        for (short unsigned int v=0;
+             v<SimPM.RS.sources[src_id].NTau; v++) {
+          data[count] = tau[v];
+          count++;
+        }
 #ifdef RT_TESTING
         if (count<32) {
-          cout <<"send data ["<<i<<"]: col = "<<CI.get_col(*c,src_id)<<" for cell ";
+          cout <<"send data ["<<i<<"]: col[0] = ";
+          CI.get_col(*c,src_id,tau);
+          cout << tau[0] <<" for cell ";
           cout <<count<<": pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY];
           if (SimPM.ndim>2)cout<<","<<(*c)->pos[ZZ]<<"]\n";
           else cout <<"]\n";
@@ -2501,7 +2702,6 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
         //if (count<32)
         //  cout <<"send data ["<<i<<"]: col = "<<(*c)->col<<" for cell "<<count<<": pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY]<<","<<(*c)->pos[ZZ]<<"]\n";
 #endif 
-        count++;
       }
 
       //
@@ -2555,6 +2755,12 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 #endif // PLLEL_RT
 //-------------------------------------------------------------
 //------------------- CARTESIAN GRID END ----------------------
@@ -2565,6 +2771,12 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
 //-------------------------------------------------------------
 //------------------- CYLINDRICAL GRID START ------------------
 //-------------------------------------------------------------
+
+
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// Constructor
 ///
@@ -2595,12 +2807,24 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(int nd,
   set_dx(G_dx);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 uniform_grid_cyl_parallel::~uniform_grid_cyl_parallel()
 {
 #ifdef TESTING
   cout <<"uniform_grid_cyl_parallel destructor. Present and correct!\n";
 #endif 
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 double uniform_grid_cyl_parallel::iR_cov(const cell *c)
 {
@@ -2614,6 +2838,12 @@ double uniform_grid_cyl_parallel::iR_cov(const cell *c)
   return (R_com(c)-SimPM.Xmin[Rcyl])/CI.phys_per_int() +SIM_ixmin[Rcyl];
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 //-------------------------------------------------------------
 //------------------- CYLINDRICAL GRID END --------------------
 //-------------------------------------------------------------
@@ -2623,6 +2853,12 @@ double uniform_grid_cyl_parallel::iR_cov(const cell *c)
 //-------------------------------------------------------------
 //------------------- SPHERICAL GRID START --------------------
 //-------------------------------------------------------------
+
+
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// Constructor
 ///
@@ -2654,12 +2890,24 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(int nd,
   set_dx(G_dx);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 uniform_grid_sph_parallel::~uniform_grid_sph_parallel()
 {
 #ifdef TESTING
   cout <<"uniform_grid_sph_parallel destructor. Present and correct!\n";
 #endif 
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double uniform_grid_sph_parallel::iR_cov(const cell *c)
 {
@@ -2670,6 +2918,12 @@ double uniform_grid_sph_parallel::iR_cov(const cell *c)
   //
   return (R_com(c)-SimPM.Xmin[Rsph])/CI.phys_per_int() +SIM_ixmin[Rsph];
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 //-------------------------------------------------------------
 //-------------------- SPHERICAL GRID END ---------------------
 //-------------------------------------------------------------

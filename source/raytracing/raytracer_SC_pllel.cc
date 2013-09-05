@@ -37,6 +37,7 @@
 /// - 2012.03.31 JM: Added separators between functions.  Updated Add_Source()
 ///    function to call add_source_to_list() and set_Vshell_for_source() at the
 ///    appropriate places.
+/// - 2013.09.05 JM: Debugged for new get/set col functions.
 
 #include "../global.h"
 #include "raytracer_SC.h"
@@ -82,7 +83,7 @@ raytracer_USC_pllel::~raytracer_USC_pllel()
 
 
 
-int raytracer_USC_pllel::Add_Source(const struct rad_src_info *src ///< source info.
+int raytracer_USC_pllel::Add_Source(struct rad_src_info *src ///< source info.
                                    )
 {
   cout <<"\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n";
@@ -99,7 +100,7 @@ int raytracer_USC_pllel::Add_Source(const struct rad_src_info *src ///< source i
   else {
     add_source_to_list(src);
   }
-  int id=SourceList.back().id;
+  int id=SourceList.back().s->id;
 #ifdef RT_TESTING
   cout <<"\t**** PARALLEL Add_Source: serial version returned with id="<<id<<"\n";
 #endif
@@ -191,12 +192,14 @@ int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
 
 
 
-double raytracer_USC_pllel::col2cell_2d(const rad_source *s,            ///< source we are working on.
-					const cell *c,                  ///< cell to get column to.
-					const enum direction entryface, ///< face ray enters cell through.
-					const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-					const double *delta             ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
-					)
+void raytracer_USC_pllel::col2cell_2d(
+        const rad_source *src,          ///< source we are working on.
+        const cell *c,                  ///< cell to get column to.
+        const enum direction entryface, ///< face ray enters cell through.
+        const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
+        const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
+        double *Nc                      ///< Column densities.
+        )
 {
   //
   // Get column densities of the two cells closer to the source.
@@ -204,28 +207,34 @@ double raytracer_USC_pllel::col2cell_2d(const rad_source *s,            ///< sou
   // It is assumed that internal boundaries have cells with appropriately updated
   // column data already set up in the boundaries where they need to be.
   //
-  double col1=0.0, col2=0.0;
+  double col1[MAX_TAU], col2[MAX_TAU];
+  
   cell *c1 = gridptr->NextPt(c,  entryface);
   if (!c1) {
-    col1 = col2 = 0.0;
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+      col1[iT] = col2[iT] = 0.0;
   }
   else {
     cell *c2 = gridptr->NextPt(c1, (*perpdir) );
     if (!c2) {
-      col1 = CI.get_col(c1,s->id);
-      col2 = 0.0;
+      CI.get_col(c1, src->s->id, col1);
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col2[iT] = 0.0;
     }
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-    else if (c2 == s->sc && s->src_on_grid ) {
+    else if (c2 == src->sc && src->src_on_grid ) {
       // Need to check if c2 is source cell, b/c if it is, the column is wrong by root2.
-      col1 = 0.0;
-      col2 = CI.get_col(c2,s->id)*sqrt(2.);
+      CI.get_col(c2, src->s->id, col2);
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        col1[iT]  = 0.0;
+        col2[iT] *= sqrt(2.0);
     }
 #endif // CELL_CENTRED_SRC
 #endif // NO_SOURCE_CELL_GEOMETRY
     else {
-      col1 = CI.get_col(c1,s->id); col2 = CI.get_col(c2,s->id);
+      CI.get_col(c1, src->s->id, col1);
+      CI.get_col(c2, src->s->id, col2);
     }
   }
 
@@ -237,7 +246,10 @@ double raytracer_USC_pllel::col2cell_2d(const rad_source *s,            ///< sou
   //
   //  0: C2Ray inverse Tau with minTau=0.7: (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
   //
-  return interpolate_2D(INTERPOLATE_METHOD, s->id, *delta, col1, col2);
+  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+    Nc[iT] = interpolate_2D(src->s->id, *delta, col1[iT], col2[iT]);
+  }
+  return;
 }
 
 
@@ -248,17 +260,14 @@ double raytracer_USC_pllel::col2cell_2d(const rad_source *s,            ///< sou
 
 
 
-double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
-                        ///< source we are working on.
-                        const cell *c,
-                        ///< cell to get column to.
-                        const enum direction entryface,
-                        ///< face ray enters cell through.
-                        const enum direction *perpdir,
-                        ///< array of perp directions towards source (2 els in 3d)
-                        const double *dx
-                        ///< array of tan(theta) (angle in [0,45]deg)
-                        )
+void raytracer_USC_pllel::col2cell_3d(
+        const rad_source *src,            ///< source we are working on
+        const cell *c,                  ///< cell to get column to.
+        const enum direction entryface, ///< face ray enters cell through.
+        const enum direction *perpdir,  ///< array of perp directions towards source (2 els in 3d)
+        const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
+        double *Nc                      ///< Column densities.
+        )
 {
   //
   // Algorithm is the same as that describe in Mellema et al.,2006, NewA, 11,374,
@@ -276,33 +285,49 @@ double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
   //}
 #endif
   cell *c1=0, *c2=0, *c3=0, *c4=0;
-  double col1=0.0, col2=0.0, col3=0.0, col4=0.0;
+  double col1[MAX_TAU], col2[MAX_TAU], col3[MAX_TAU], col4[MAX_TAU];
 
   c1 = gridptr->NextPt(c,  entryface);
-  if (!c1) {col1 = col2 = col3 = col4 = 0.0;}
+  if (!c1) {
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+      col1[iT] = col2[iT] = col3[iT] = col4[iT] = 0.0;
+    }
+  }
   else {
-    col1 = CI.get_col(c1,s->id);
+    CI.get_col(c1,src->s->id, col1);
 
     c2 = gridptr->NextPt(c1,  perpdir[0]);
-    if (!c2) {col2 = 0.0;}
+    if (!c2) {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col2[iT] = 0.0;
+    }
     else {
-      col2 = CI.get_col(c2,s->id);
-
+      CI.get_col(c2,src->s->id, col2);
+      
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-      if (c2==s->sc && s->src_on_grid ) col2 *= sqrt(2.);
+      if (c2==s->sc && s->src_on_grid ) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col2[iT] *= sqrt(2.0);
+      }
 #endif // CELL_CENTRED_SRC
 #endif
     }
     
     c3 = gridptr->NextPt(c1,  perpdir[1]);
-    if (!c3) {col3 = 0.0;}
+    if (!c3) {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col3[iT] = 0.0;
+    }
     else {
-      col3 = CI.get_col(c3,s->id);
+      CI.get_col(c3, src->s->id, col3);
 
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-      if (c3==s->sc && s->src_on_grid ) col3 *= sqrt(2.);
+      if (c3==s->sc && s->src_on_grid ) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col3[iT] *= sqrt(2.);
+      }
 #endif // CELL_CENTRED_SRC
 #endif
     }
@@ -324,7 +349,8 @@ double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
 	//  else cout <<"cell c3 doesn't exist either\n.";
 	//rep.error("lost on grid -- corner cell doesn't exist",c4);
 #endif
-	col4 = 0.0;
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col4[iT] = 0.0;
 	//cout <<"...............................\n";
 #ifdef RT_TESTING
 	//	if (mpiPM.myrank==60) {
@@ -338,11 +364,14 @@ double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
 #endif
       }
       else {
-	col4 = CI.get_col(c4,s->id);
+        CI.get_col(c4, src->s->id, col4);
 
 #ifndef NO_SOURCE_CELL_GEOMETRY
 #ifdef CELL_CENTRED_SRC
-	if (c4==s->sc && s->src_on_grid ) col4 *= sqrt(3.);
+	if (c4==s->sc && s->src_on_grid ) {
+        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+          col4[iT] *= sqrt(3.0);
+        }
 #endif // CELL_CENTRED_SRC
 #endif // NO_SOURCE_CELL_GEOMETRY
 #ifdef RT_TESTING
@@ -351,7 +380,10 @@ double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
 #endif
       }
     }
-    else col4 = 0.0;
+    else {
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
+        col4[iT] = 0.0;
+    }
   }
   //  cout <<"3D ShortChars:: col1="<<col1<<" col2="<<col2<<" col3="<<col3<<" col4="<<col4;
   //  cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
@@ -359,8 +391,8 @@ double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
 #ifdef RT_TESTING
   //cout <<"3D ShortChars:: cols for cell id="<<c->id<<"\n";
   if (!GS.equalD(dx[0],0.0) && !GS.equalD(dx[1],0.0) &&
-      (col1<0.0 || col2<0.0 || col3<0.0 || col4<0.0)) {
-    cout <<"3D ShortChars:: col1="<<col1<<" col2="<<col2<<" col3="<<col3<<" col4="<<col4;
+      (col1[0]<0.0 || col2[0]<0.0 || col3[0]<0.0 || col4[0]<0.0)) {
+    cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
     cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
     gridptr->PrintCell(c);
     gridptr->PrintCell(c1);
@@ -386,38 +418,46 @@ double raytracer_USC_pllel::col2cell_3d(const rad_source *s,
     cout <<"cell with max.diff in step 1: id="<<c->id<<"\n";
     cout <<"pnt  pos="; rep.printVec("pnt",dd,SimPM.ndim);
     cout <<"cell pos="; rep.printVec("pos",dpos,SimPM.ndim);
-    cout <<"3D ShortChars:: col1="<<col1<<" col2="<<col2<<" col3="<<col3<<" col4="<<col4;
+    cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
     cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
     double w1,w2,w3,w4,mintau3d;
     mintau3d=0.7;
-    w1 = (1.-dx[0])*(1.-dx[1])/max(mintau3d,col1);
-    w2 =     dx[0] *(1.-dx[1])/max(mintau3d,col2);
-    w3 = (1.-dx[0])*    dx[1] /max(mintau3d,col3);
-    w4 =     dx[0] *    dx[1] /max(mintau3d,col4);
+    w1 = (1.-dx[0])*(1.-dx[1])/max(mintau3d,col1[0]);
+    w2 =     dx[0] *(1.-dx[1])/max(mintau3d,col2[0]);
+    w3 = (1.-dx[0])*    dx[1] /max(mintau3d,col3[0]);
+    w4 =     dx[0] *    dx[1] /max(mintau3d,col4[0]);
     mintau3d = (w1+w2+w3+w4);
     w1/=mintau3d; w2/=mintau3d; w3/=mintau3d; w4/=mintau3d;
     cout <<"col2cell = ";
-    cout<<w1*col1 + w2*col2 + w3*col3 + w4*col4<<"\n";
+    cout<<w1*col1[0] + w2*col2[0] + w3*col3[0] + w4*col4[0]<<"\n";
     cout.precision(6); cout.setf(ios_base::fixed);
   }
 #endif
 
-  if (col1<0.0) {cout <<"col1="<<col1<<", setting to zero.\n"; col1=0.0;}
-  if (col2<0.0 && !GS.equalD(dx[0],0.0))
-    {cout <<"col2="<<col2<<", setting to zero.\n"; col2=0.0;}
-  //else if (col2<0.) cout <<"dx[0]="<<dx[0]<<"\n";
-  if (col3<0.0 && !GS.equalD(dx[1],0.0))
-    {cout <<"col3="<<col3<<", setting to zero.\n"; col3=0.0;}
-  //else if (col3<0.) cout <<"dx[1]="<<dx[1]<<"\n";
-  if (col4<0.0 && !GS.equalD(dx[0],0.0)  && !GS.equalD(dx[1],0.0))
-    {cout <<"col4="<<col4<<", setting to zero.\n"; col4=0.0;}
-  //else if (col4<0.) cout <<"dx[0]="<<dx[0]<<"\tdx[1]="<<dx[1]<<"\n";
+#ifdef RT_TESTING
+  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+    if (col1[iT]<0.0) {cout <<"col1="<<col1[iT]<<", setting to zero.\n"; col1[iT]=0.0;}
+    if (col2[iT]<0.0 && !GS.equalD(dx[0],0.0))
+      {cout <<"col2="<<col2[iT]<<", setting to zero.\n"; col2[iT]=0.0;}
+    //else if (col2<0.) cout <<"dx[0]="<<dx[0]<<"\n";
+    if (col3[iT]<0.0 && !GS.equalD(dx[1],0.0))
+      {cout <<"col3="<<col3[iT]<<", setting to zero.\n"; col3[iT]=0.0;}
+    //else if (col3<0.) cout <<"dx[1]="<<dx[1]<<"\n";
+    if (col4[iT]<0.0 && !GS.equalD(dx[0],0.0)  && !GS.equalD(dx[1],0.0))
+      {cout <<"col4="<<col4[iT]<<", setting to zero.\n"; col4[iT]=0.0;}
+    //else if (col4<0.) cout <<"dx[0]="<<dx[0]<<"\tdx[1]="<<dx[1]<<"\n";
+  }
+#endif
 
 
   //
   //  0: C2Ray inverse Tau with minTau=0.7: (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
   //
-  return interpolate_3D(INTERPOLATE_METHOD, s->id, dx[0], dx[1], col1, col2, col3, col4);
+  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+    Nc[iT] = interpolate_3D(src->s->id, dx[0], dx[1], 
+                            col1[iT], col2[iT], col3[iT], col4[iT]);
+  }
+  return;
 
 }
 

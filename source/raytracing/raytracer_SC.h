@@ -637,26 +637,31 @@ class raytracer_USC_pllel : public raytracer_USC {
 
 
   protected:
-   /** \brief Short Characteristic Method of getting column density to cell. 
-    * The parallel version assumes boundary cells exist, so doesn't check that we
-    * are on the grid.
-    * */
-   virtual double col2cell_2d(const rad_source *,     ///< source we are working on.
-			      const cell *,           ///< cell to get column to.
-			      const enum direction,   ///< face ray enters cell through.
-			      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-			      const double *          ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-			      );
+  /** \brief Short Characteristic Method of getting column density to cell. 
+   * The parallel version assumes boundary cells exist, so doesn't check that we
+   * are on the grid.
+   * */
+  virtual void col2cell_2d(
+        const rad_source *,     ///< source we are working on.
+        const cell *,           ///< cell to get column to.
+        const enum direction,   ///< face ray enters cell through.
+        const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
+        const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
+        double []               ///< Column densities.
+        );
+
    /** \brief Short Characteristic Method of getting column density to cell.
     * The parallel version assumes boundary cells exist, so doesn't check that we
     * are on the grid.
     * */
-   virtual double col2cell_3d(const rad_source *,     ///< source we are working on.
-			      const cell *,           ///< cell to get column to.
-			      const enum direction,   ///< face ray enters cell through.
-			      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-			      const double *          ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-			      );
+  virtual void col2cell_3d(
+        const rad_source *,     ///< source we are working on.
+        const cell *,           ///< cell to get column to.
+        const enum direction,   ///< face ray enters cell through.
+        const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
+        const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
+        double []               ///< Column densities.
+        );
 
 };
 #endif //PARALLEL

@@ -137,12 +137,18 @@
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2013.09.03 JM: fixed minor bug in He-Bremsstrahlung function.
 ///    Added HE_INERT ifdef for case where He is always neutral.
+/// - 2013.09.05 JM: Added critical density scaling for CII cooling
+///    from electron impact excitation (Wolfire+,03,eq.C2).
+///    Changed forbidden-line cooling to fit to Raga,Mellema, &
+///    Lundqvist (1997) tables for singly ionised C,N,O.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
 ///       photospheric value is lower 4.9e-4, and that is used by
 ///       Wiersma et al. (2009,MN,393,99).
-/// UPDATE: changed to 4.90e-4 to match Asplund+(2009)
+/// UPDATE: changed to 5.37e-4 to match Asplund+(2009)
+/// UPDATE: changed to 5.37e-4*0.77 = 4.1e-4 because Lodders (2003)
+///       says that 23 per cent of O is in solid phase.
 ///
 
 // ----------------------------------------------------------------
@@ -1458,9 +1464,21 @@ int mp_explicit_H::ydot(
   // First forbidden line cooling of e.g. OII,OIII, dominant in HII regions.
   // This is collisionally excited lines of photoionised metals. (HAdCM09 eq.A9)
   // I have exponentially damped this at high temperatures! This was important!
-  // Oxygen abundance set to 4.90e-4 from Asplund+(2009,ARAA).
+  // Oxygen abundance set to 5.37e-4 from Asplund+(2009,ARAA), times
+  // 0.77 to account for 23% of O in solid dust.
   //
-  temp1 = 1.42e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  //temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  //
+  // Fit to Raga, Mellema, Lundqvist (1997) rates for CNO if all are
+  // only singly ionised, and for gas phase abundances of CNO of
+  // - n(C)/nH = 2.95e-4*0.508 = 1.5e-4 (Sofia+,1997)
+  // - n(N)/nH = 7.41e-5
+  // - n(O)/nH = 5.37e-4*0.77 (0.23 goes in solids)
+  // These are taken from Asplund et al. 2009.
+  //
+  temp1 = 3.0e-22*METALLICITY*exp(-pow(1.4e5/T,0.6))
+                            *exp(-sqrt(mpv_nH/3.0e4))
+                            *x_in*ne*exp(-T*T/5.0e10);
 
 
   //
@@ -1485,8 +1503,15 @@ int mp_explicit_H::ydot(
   // This is the CII cooling by electron collisions, cutoff at high
   // density again, for consistency, again with sqrt(100K) absorbed
   // into the prefactor.
+  // This rate has a very low critical density (Goldsmith, Langer et
+  // al., 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use
+  // their temperature scaling and divide by density according to
+  // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
   //
-  Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne*exp(-mpv_nH/1.0e4);
+  Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
+          /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
+          *exp(-mpv_nH/1.0e4);
+
   //
   // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have multiplied
   // their equation by 1.3 for the increased PAH abundance...

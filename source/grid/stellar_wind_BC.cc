@@ -39,6 +39,10 @@
 ///    tracer variables were still (potentially) unset in wind cells.
 /// - 2013.08.19 JM: got rid of cm_per_km() function.
 
+/// TODO: Get rid of ipos[] here -- it creates big bugs in 1D if the
+///       cells are not arranged exactly at 1/2 cells from the source
+
+
 //------------------------------------------------
 //------------ STELLAR WIND CLASS ----------------
 //------------------------------------------------
@@ -329,7 +333,9 @@ int stellar_wind::add_cell(
 #ifdef TESTING
   cout <<"*** dist="<<wc->dist<<". "; 
   rep.printVec("Wind BC cell pos",wc->c->pos,SimPM.ndim);
+  rep.printVec("Source ipos",WS->ipos,SimPM.ndim);
   rep.printVec("Wind BC cell values", wc->p, SimPM.nvar);
+  CI.print_cell(c);
   cout <<" Added cell: array size="<<WS->wcells.size()<<"\tncell="<<WS->ncell<<"\n";
 #endif
   return 0;

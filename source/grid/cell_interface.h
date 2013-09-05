@@ -28,13 +28,13 @@
 /// - 2013.08.20 JM: Moved raytracing set/get functions to header and
 ///    made them inline.  Added option for radiation sources to be
 ///    associated with NTau>=1 optical depths, for flexibility.
+/// - 2013.09.05 JM: modified error checking in inline functions.
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-// NEED AN INCLUDE TO GET struct rad_sources DECLARATION
 
 class cell_interface;
 
@@ -332,8 +332,11 @@ class cell_interface {
     )
   {
 #ifdef RT_TESTING
-    if (iVsh[s] <0) { cout <<"source "<<s<<": ";
-      rep.error("Source has no Vhsell variable", iVsh[s]); }
+    if (iVsh[s] <0) { 
+      cerr <<"source "<<s<<": ";
+      cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
+      return;
+    }
 #endif // RT_TESTING
     c->extra_data[iVsh[s]] = Vs;
     return;
@@ -352,8 +355,11 @@ class cell_interface {
     )
   {
 #ifdef RT_TESTING
-    if (iVsh[s] <0) { cout <<"source "<<s<<": ";
-      rep.error("Source has no Vhsell variable", iVsh[s]); }
+    if (iVsh[s] <0) { 
+      cerr <<"source "<<s<<": ";
+      cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
+      return -1.0e99;
+    }
 #endif // RT_TESTING
     return c->extra_data[iVsh[s]];
   }
@@ -372,8 +378,11 @@ class cell_interface {
         )
   {
 #ifdef RT_TESTING
-    if (idS[s] <0) { cout <<"source "<<s<<": ";
-      rep.error("Source has no deltaS variable", idS[s]); }
+    if (idS[s] <0) {
+      cerr <<"source "<<s<<": ";
+      cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
+      return;
+    }
 #endif // RT_TESTING
     c->extra_data[idS[s]] = deltaS;
     return;
@@ -392,8 +401,11 @@ class cell_interface {
     )
   {
 #ifdef RT_TESTING
-    if (idS[s] <0) { cout <<"source "<<s<<": ";
-      rep.error("Source has no Vhsell variable", idS[s]); }
+    if (idS[s] <0) {
+      cerr <<"source "<<s<<": ";
+      cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
+      return -1.0e99;
+    }
 #endif // RT_TESTING
     return c->extra_data[idS[s]];
   }

@@ -274,8 +274,8 @@ void raytracer_USC_infinity::add_source_to_list(
       else if (rs.s->pos[i] >  1.e99) dir=static_cast<direction>(2*i+1);
       else {
 #ifdef RT_TESTING
-	cout <<"Source off grid, but not at infinity!"
-        cout <<" pos="<<rs.pos[i];
+	cout <<"Source off grid, but not at infinity!";
+        cout <<" pos="<<rs.s->pos[i];
         cout <<", resetting to centre\n";
 #endif
 	rs.s->pos[i] = 0.5*(gridptr->Xmin(static_cast<axes>(i))+
@@ -1542,8 +1542,10 @@ int raytracer_USC::RayTrace_SingleSource(const int s_id,  ///< Source id
   // Testing, to make sure we assign column densities to all cells.
   //
   cell *sc = gridptr->FirstPt();
+  double tau[MAX_TAU];
+  for (unsigned short int iT=0;iT<MAX_TAU;iT++) tau[iT]=-1.0;
   do {
-    CI.set_col(sc, s_id, -1.0);
+    CI.set_col(sc, s_id, tau);
   } while ( (sc=gridptr->NextPt(sc)) !=0);
 #endif // RT_TESTING
 

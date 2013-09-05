@@ -54,6 +54,7 @@
 /// - 2012.05.16 JM: fixed bug from last change.
 /// - 2012.08.06 JM: Added separators between functions for clarity.
 /// - 2013.04.16 JM: Fixed FITS read functions for new filename convention.
+/// - 2013.09.05 JM: changed RS position[] to pos[].
 
 #include "grid.h"
 #include "raytracing/raytracer_SC.h"
@@ -378,7 +379,7 @@ int ParallelIntUniformFV::setup_raytracing()
     //
     else {
       for (int i=0;i<SimPM.ndim;i++) {
-        if (fabs(SimPM.RS.sources[isrc].position[i])>1.e99) {
+        if (fabs(SimPM.RS.sources[isrc].pos[i])>1.e99) {
           if (dir==-1) dir=i;
           else if (dir!=i) parallel_rays=false;
         }

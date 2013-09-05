@@ -58,6 +58,7 @@
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 /// - 2013.08.19 JM: Changed constants treatment in GeneralStuff.
 ///    Will remove them from here eventually.
+/// - 2013.09.05 JM: changed RS position[] to pos[].
 
 #include "global.h"
 #include <iostream>
@@ -653,7 +654,7 @@ int ParallelParams::decomposeDomain()
             if ((SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) && 
                 (SimPM.RS.sources[isrc].at_infinity) ) {
               for (int ii=0;ii<SimPM.ndim;ii++) {
-                if (fabs(SimPM.RS.sources[isrc].position[ii])>1.e99) {
+                if (fabs(SimPM.RS.sources[isrc].pos[ii])>1.e99) {
                   if (dsrc==-1) dsrc=ii;
                   // srcs at infinity in multiple directions
                   else if (dsrc!=ii) at_infinity=false;
