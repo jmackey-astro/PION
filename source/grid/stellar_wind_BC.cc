@@ -38,9 +38,10 @@
 /// - 2013.04.16 JM: Fixed bug where Set_Temp() was called when 
 ///    tracer variables were still (potentially) unset in wind cells.
 /// - 2013.08.19 JM: got rid of cm_per_km() function.
-
-/// TODO: Get rid of ipos[] here -- it creates big bugs in 1D if the
-///       cells are not arranged exactly at 1/2 cells from the source
+/// - 2013.09.06 JM: removed the slowly-expanding switch-on wind
+///    because it didn't help with anything, ever.
+///    Removed the integer positions because they created potential
+///    errors in the wind properties from rounding errors.
 
 
 //------------------------------------------------
@@ -104,20 +105,19 @@ stellar_wind::~stellar_wind()
 
 
 
-int stellar_wind::add_source(const double *pos, ///< position (physical units)
-           const double  rad, ///< radius (physical units)
-           const int    type, ///< type (0=fixed in time,1=slow switch on,2 switch on in radius)
-           const double mdot, ///< Mdot (Msun/yr)
-           const double vinf, ///< Vinf (km/s)
-           const double temp, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
-           const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-           const double *trv  ///< Tracer values of wind (if any)
-           )
+int stellar_wind::add_source(
+        const double *pos, ///< position (physical units)
+        const double  rad, ///< radius (physical units)
+        const int    type, ///< type (0=fixed in time,1=slow switch on)
+        const double mdot, ///< Mdot (Msun/yr)
+        const double vinf, ///< Vinf (km/s)
+        const double temp, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
+        const double Rstar, ///< Stellar radius (for T*-->gas pres.).
+        const double *trv  ///< Tracer values of wind (if any)
+        )
 {
   struct wind_source *ws = 0;
   ws = mem.myalloc(ws,1);
-  for (int v=0;v<MAX_DIM;v++) 
-    ws->ipos[v] = 0;
   ws->id = wlist.size();
   ws->ncell = 0;
   ws->type = type;
@@ -126,23 +126,24 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
     cout <<"\tAdding constant wind source as id="<<ws->id<<"\n";
     break;
   case 1:
-    cout <<"\tAdding wind source with gradual switch-on over 100kyr, as id="<<ws->id<<"\n";
-    break;
-  case 2:
-    cout <<"\tAdding wind source with switch on based on r<f*Vinf*t, as id="<<ws->id<<"\n";
+    cout <<"\tAdding wind source with gradual switch-on over";
+    cout <<" 100kyr, as id="<<ws->id<<"\n";
     break;
   default:
     rep.error("What type of source is this?  add a new type?",type);
     break;
   }
 
-  for (int v=0;v<SimPM.ndim;v++)       ws->dpos[v] = pos[v];
-  for (int v=SimPM.ndim;v<MAX_DIM;v++) ws->dpos[v] = VERY_LARGE_VALUE;
+  for (int v=0;v<SimPM.ndim;v++)
+    ws->dpos[v] = pos[v];
+  for (int v=SimPM.ndim;v<MAX_DIM;v++)
+    ws->dpos[v] = VERY_LARGE_VALUE;
 
   ws->radius = rad;
+
   //
-  // Mdot and Vinf are passed to the function in Msun/yr and km/s, but
-  // are stored internally in cgs units.
+  // Mdot and Vinf are passed to the function in Msun/yr and km/s,
+  // but are stored internally in cgs units.
   //
   ws->Mdot  = mdot *GS.Msun()/GS.s_per_yr();
   ws->Vinf  = vinf *1.0e5;
@@ -154,7 +155,6 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
   ws->tracers = mem.myalloc(ws->tracers,SimPM.ntracer);
   for (int v=0;v<SimPM.ntracer; v++) ws->tracers[v] = trv[v];
     
-  ws->ipos_set    = false;
   ws->cells_added = false;
 
   if (!ws->wcells.empty())
@@ -165,7 +165,8 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
   //
   if (SimPM.coord_sys==COORD_SPH) {
     if (!GS.equalD(ws->dpos[Rsph],0.0))
-      rep.error("Spherical symmetry but source not at origin!",ws->dpos[Rsph]);
+      rep.error("Spherical symmetry but source not at origin!",
+                ws->dpos[Rsph]);
   }
   if (SimPM.coord_sys==COORD_CYL && SimPM.ndim==2) {
     //
@@ -178,7 +179,8 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
   wlist.push_back(ws);
   nsrc++;
 //#ifdef TESTING
-  cout <<"\tAdded wind source id="<<nsrc-1<<" to list of "<<nsrc<<" elements.\n";
+  cout <<"\tAdded wind source id="<<nsrc-1<<" to list of ";
+  cout <<nsrc<<" elements.\n";
 //#endif // TESTING
   return ws->id;
 }
@@ -187,8 +189,6 @@ int stellar_wind::add_source(const double *pos, ///< position (physical units)
 
 // ##################################################################
 // ##################################################################
-
-
 
 
 
@@ -204,85 +204,6 @@ int stellar_wind::Nsources()
 
 
 
-
-
-void stellar_wind::get_src_ipos(
-        const int id, ///< src id
-        int *pos      ///< position vector (output)
-        )
-{
-  if (id<0 || id>=nsrc)
-    rep.error("bad src id",id);
-
-  struct wind_source *ws = wlist[id];
-  if (!(ws->ipos_set)) set_integer_positions(ws);
-
-  for (int v=0;v<SimPM.ndim;v++) pos[v] = ws->ipos[v];
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-
-void stellar_wind::set_integer_positions(struct wind_source *ws)
-{
-  //
-  // Need to set position, and convert radius to internal units too.
-  //
-  if (!grid) rep.error("don't call me until grid is set up!",grid);
-  CI.get_ipos_vec(ws->dpos, ws->ipos);
-
-#ifdef TESTING
-  cout <<"<<<<set_integer_positions: source ";rep.printVec("ipos",ws->ipos,SimPM.ndim);
-  cout <<"<<<<set_integer_positions: source ";rep.printVec("dpos",ws->dpos,SimPM.ndim);
-#endif // TESTING
-
-  ws->radius /= CI.phys_per_int();
-  ws->ipos_set = true;
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-
-void stellar_wind::get_src_irad(
-        const int id, ///< src id
-        double *rad   ///< radius (output)
-        )
-{
-  if (id<0 || id>=nsrc)
-    rep.error("bad src id",id);
-  //
-  // Make sure we've converted radius to internal units.
-  //
-  if (!(wlist[id]->ipos_set))
-    set_integer_positions(wlist[id]);
-
-  *rad = wlist[id]->radius;
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-
 int stellar_wind::add_cell(
         const int id, ///< src id
         cell *c       ///< cell to add to list.
@@ -291,10 +212,6 @@ int stellar_wind::add_cell(
   if (id<0 || id>=nsrc)
     rep.error("bad src id",id);
   struct wind_source *WS = wlist[id];
-  //
-  // Make sure we've converted radius/position to internal units.
-  //
-  if (!(WS->ipos_set)) set_integer_positions(WS);
 
   //
   // Setup a wind_cell struct
@@ -305,9 +222,10 @@ int stellar_wind::add_cell(
   // GEOMETRY: this is a distance from a vertex to a cell--centre, so
   // we call the appropriate function here.
   //
-  wc->dist = grid->idistance_vertex2cell(WS->ipos, c);
+  wc->dist = grid->distance_vertex2cell(WS->dpos, c);
   if (wc->dist > WS->radius) {
-    rep.warning("stellar_wind::add_cell() cell is outside radius",WS->radius,wc->dist);
+    rep.warning("stellar_wind::add_cell() cell is outside radius",
+                WS->radius,wc->dist);
     CI.print_cell(c);
     return 1;
   }
@@ -321,7 +239,8 @@ int stellar_wind::add_cell(
   //
   // Allocate memory for wind_cell reference state vector.
   //
-  wc->p = 0; wc->p = mem.myalloc(wc->p, SimPM.nvar);
+  wc->p = 0;
+  wc->p = mem.myalloc(wc->p, SimPM.nvar);
   
   //
   // Now assign values to the state vector:
@@ -333,7 +252,6 @@ int stellar_wind::add_cell(
 #ifdef TESTING
   cout <<"*** dist="<<wc->dist<<". "; 
   rep.printVec("Wind BC cell pos",wc->c->pos,SimPM.ndim);
-  rep.printVec("Source ipos",WS->ipos,SimPM.ndim);
   rep.printVec("Wind BC cell values", wc->p, SimPM.nvar);
   CI.print_cell(c);
   cout <<" Added cell: array size="<<WS->wcells.size()<<"\tncell="<<WS->ncell<<"\n";
@@ -367,13 +285,13 @@ void stellar_wind::set_wind_cell_reference_state(
     //
     // 2D slab symmetry --> 1/r force laws and density profile
     //
-    wc->p[RO] = WS->Mdot/(WS->Vinf*2.0*M_PI*wc->dist*CI.phys_per_int());
+    wc->p[RO] = WS->Mdot/(WS->Vinf*2.0*M_PI*wc->dist);
     //
     // Set pressure based on wind density/temperature at the stellar radius:
     // rho_star = Mdot/(2.pi.R_star.v_inf), p_star = rho_star.k.T_star/(mu.m_p)
     // and then p(r) = p_star (rho(r)/rho_star)^gamma
     // ******************************************************************************
-    // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
+    // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.27 (NEUTRAL).
     // ******************************************************************************
     //
     wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
@@ -386,7 +304,7 @@ void stellar_wind::set_wind_cell_reference_state(
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     // rho = Mdot/(4.pi.R^2.v_inf) 
     //
-    wc->p[RO] = 1.0/(wc->dist*CI.phys_per_int());
+    wc->p[RO] = 1.0/(wc->dist);
     wc->p[RO] *= wc->p[RO];
     wc->p[RO] *= WS->Mdot/(WS->Vinf*4.0*M_PI);
     //
@@ -411,17 +329,16 @@ void stellar_wind::set_wind_cell_reference_state(
   //
   // NOW VELOCITIES: These should be cell-average values, which are
   // the values at the centre-of-volume, so we call the geometry-aware
-  // grid functions rather than GS.idistance().
+  // grid functions.
   //
   cell *c = wc->c;
-
-  wc->p[VX] = WS->Vinf*grid->idifference_vertex2cell(WS->ipos,c,XX)/wc->dist;
+  wc->p[VX] = WS->Vinf*grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
   if (SimPM.ndim>1)
-    wc->p[VY] = WS->Vinf*grid->idifference_vertex2cell(WS->ipos,c,YY)/wc->dist;
+    wc->p[VY] = WS->Vinf*grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
   else
     wc->p[VY] = 0.0;
   if (SimPM.ndim>2)
-    wc->p[VZ] = WS->Vinf*grid->idifference_vertex2cell(WS->ipos,c,ZZ)/wc->dist;
+    wc->p[VZ] = WS->Vinf*grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
   else
     wc->p[VZ] = 0.0;
 
@@ -488,8 +405,8 @@ void stellar_wind::set_wind_cell_reference_state(
 
 
 
-
-int stellar_wind::set_num_cells(const int id, ///< src id
+int stellar_wind::set_num_cells(
+        const int id, ///< src id
         const int nc  ///< number of cells.
         )
 {
@@ -502,6 +419,7 @@ int stellar_wind::set_num_cells(const int id, ///< src id
   }
   return 0;
 }
+
 
 
 // ##################################################################
@@ -520,16 +438,13 @@ int stellar_wind::get_num_cells(const int id ///< src id
 
 
 
-
 // ##################################################################
 // ##################################################################
 
 
 
-
-
-
-int stellar_wind::set_cell_values(const int id,  ///< src id
+int stellar_wind::set_cell_values(
+          const int id,  ///< src id
           const double t ///< simulation time
           )
 {
@@ -590,45 +505,9 @@ int stellar_wind::set_cell_values(const int id,  ///< src id
         c->Ph[v] = c->P[v];
     }
   }
-  else if (WS->type==WINDTYPE_EXPAND) {
-    //
-    // Only apply boundary condition if r<f*v*t (where f<=1)
-    // EXPERIMENTAL CODE!!!
-    //
-    //    cout <<"UPDATING WIND -- SLOW SWITCH ON SPATIALLY ID=2\n";
-    rep.error("Don't use expanding wind -- no advantage.",WS->type);
-    cell *c=0;
-    double vt= 0.25*WS->Vinf*t/CI.phys_per_int();
-    double d2= max(2.5,min(0.5*vt,0.25*WS->radius));
-    vt = max(vt,d2);
-    //cout <<"vt="<<vt<<"\tradius="<<WS->radius<<"\n";
-    for (int i=0; i<WS->ncell; i++) {
-      c = WS->wcells[i]->c;
-      if (WS->wcells[i]->dist < vt) {
-  //if (WS->wcells[i]->dist < d2) {
-  c->P[RO] = WS->wcells[i]->p[RO];
-  c->P[PG] = WS->wcells[i]->p[PG];
-  //}
-  c->P[VX] = WS->wcells[i]->p[VX];
-  c->P[VY] = WS->wcells[i]->p[VY];
-  c->P[VZ] = WS->wcells[i]->p[VZ];
-  for (int v=SimPM.ftr;v<SimPM.nvar;v++)
-    c->P[v]  = WS->wcells[i]->p[v];
-  //
-  // Set Ph[]=P[]
-  //
-  for (int v=0;v<SimPM.nvar;v++)
-    c->Ph[v] = c->P[v];
-      }
-      // else {
-      //   c->P[VX] = WS->wcells[i]->p[VX]*vt/WS->wcells[i]->dist;
-      //   c->P[VY] = WS->wcells[i]->p[VY]*vt/WS->wcells[i]->dist;
-      //   c->P[VZ] = WS->wcells[i]->p[VZ]*vt/WS->wcells[i]->dist;
-      // }
-    }
-  }
   else {
-    rep.error("set_cell_values(): What type of source is this?  add a new type?",WS->type);
+    rep.error("set_cell_values(): What type of source is this?  add a new type?",
+              WS->type);
   }
     
   return 0;
@@ -674,10 +553,7 @@ void stellar_wind::get_src_drad(
         double *x     ///< radius (output)
         )
 {
-  if (!(wlist[id]->ipos_set)) 
-    *x = wlist[id]->radius;
-  else 
-    *x = wlist[id]->radius *CI.phys_per_int();
+  *x = wlist[id]->radius;
   return;
 }
 
@@ -735,6 +611,7 @@ void stellar_wind::get_src_trcr(const int id, ///< src id
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -755,7 +632,6 @@ void stellar_wind::get_src_type(const int id, ///< src id
 
 
 
-
 // ------------------------------------------------------------------
 // ----------  STELLAR WIND WITH STELLAR EVOLUTION ------------------
 // ------------------------------------------------------------------
@@ -767,6 +643,13 @@ stellar_wind_evolution::stellar_wind_evolution()
 #endif 
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 stellar_wind_evolution::~stellar_wind_evolution()
 {
 #ifdef TESTING
@@ -776,8 +659,8 @@ stellar_wind_evolution::~stellar_wind_evolution()
   //
   // Delete arrays
   //
-  // delete each wdata_evol[] element, making sure to delete the arrays in each
-  // element first (spline arrays, pos, tracers).
+  // delete each wdata_evol[] element, making sure to delete the
+  // arrays in each element first (spline arrays, pos, tracers).
   //
   struct evolving_wind_data *wd=0;
   while (wdata_evol.size() >0) {
@@ -794,15 +677,23 @@ stellar_wind_evolution::~stellar_wind_evolution()
   }
 }
 
-int stellar_wind_evolution::add_source(const double *pos, ///< position (physical units)
-           const double  rad, ///< radius (physical units)
-           const int    type, ///< type (0=fixed in time,1=slow switch on,2 switch on in radius)
-           const double mdot, ///< Mdot (Msun/yr)
-           const double vinf, ///< Vinf (km/s)
-           const double Twnd, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
-           const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-           const double *trv  ///< Tracer values of wind (if any)
-           )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int stellar_wind_evolution::add_source(
+        const double *pos, ///< position (physical units)
+        const double  rad, ///< radius (physical units)
+        const int    type, ///< type (0=fixed in time,1=slow switch on)
+        const double mdot, ///< Mdot (Msun/yr)
+        const double vinf, ///< Vinf (km/s)
+        const double Twnd, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
+        const double Rstar, ///< Stellar radius (for T*-->gas pres.).
+        const double *trv  ///< Tracer values of wind (if any)
+        )
 {
   //
   // This function sets up an evolving_wind_data struct to hold the 
@@ -844,6 +735,11 @@ int stellar_wind_evolution::add_source(const double *pos, ///< position (physica
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 int stellar_wind_evolution::add_evolving_source(
   const double *pos,        ///< position (physical units).
   const double  rad,        ///< radius (physical units).
@@ -858,11 +754,11 @@ int stellar_wind_evolution::add_evolving_source(
   )
 {
   if (type != WINDTYPE_EVOLVING) {
-    rep.error("Bad wind type for evolving stellar wind! If one is, all must be.",type);
+    rep.error("Bad wind type for evolving stellar wind!",type);
   }
   //
-  // First we will read the file, and see when the source should switch on in 
-  // the simulation (it may not be needed for a while).
+  // First we will read the file, and see when the source should
+  // switch on in the simulation (it may not be needed for a while).
   //
 #ifdef TESTING
   cout <<"\t\tsw-evo: adding source from file "<<infile<<"\n";
@@ -893,9 +789,9 @@ int stellar_wind_evolution::add_evolving_source(
     rep.error("Bad Nspline in stellar_wind_evolution",Nspl);
   }
   //
-  // From here on in we read in Nspl lines, and assign the values to arrays,
-  // which we now need to set up.  We need time[], vinf[], vinf2[], mdot[],
-  // mdot2[], Teff, Teff2[].
+  // From here on in we read in Nspl lines, and assign the values to
+  // arrays, which we now need to set up.  We need time[], vinf[],
+  // vinf2[], mdot[], mdot2[], Teff, Teff2[].
   //
   double *t=0, *vi=0, *vi2=0, *md=0, *md2=0, *Tf=0, *Tf2=0;
   t   = mem.myalloc(t  , Nspl);
@@ -933,13 +829,16 @@ int stellar_wind_evolution::add_evolving_source(
   }
 
   //
-  // Next we set up the spline interpolation, first modifying the time array
-  // using the time-offset so that it has the same zero offset as the simulation
-  // time.
+  // Next we set up the spline interpolation, first modifying the
+  // time array using the time-offset so that it has the same zero
+  // offset as the simulation time.
   //
   for (i=0; i<Nspl; i++) {
     //cout <<"i="<<i<<"  t[i]="<<t[i];
-    // times in the file are measured in years, so offset should be in years.
+    //
+    // times in the file are measured in years, so offset should be
+    // in years.
+    //
     t[i] += time_offset;
     // scale times by scale factor.
     t[i] /= t_scalefactor;
@@ -951,9 +850,11 @@ int stellar_wind_evolution::add_evolving_source(
 
 
   //
-  // Some properties of the wind source are specific to this module, such as the
-  // spline interpolation array, the number of points in the spline array, and
-  // the timings (offset, update frequency).  They are stored in local data.
+  // Some properties of the wind source are specific to this module,
+  // such as the spline interpolation array, the number of points in
+  // the spline array, and the timings (offset, update frequency).  
+  // They are stored in local data.
+  //
   struct evolving_wind_data *temp=0;
   temp = mem.myalloc(temp,1);
   temp->Nspl = Nspl;
@@ -983,17 +884,19 @@ int stellar_wind_evolution::add_evolving_source(
 #endif
 
   //
-  // We need to decide if the wind src is active yet.  If it is, then we also set
-  // up a constant wind source for updating its properties.  We set it to be active
-  // if the current time is within update_freq of tstart.
+  // We need to decide if the wind src is active yet.  If it is, then
+  // we also set up a constant wind source for updating its
+  // properties.  We set it to be active if the current time is
+  // within update_freq of tstart.
   //
   double mdot=0.0, vinf=0.0, Twind=0.0;
-  if (((t_now+temp->update_freq)>temp->tstart || GS.equalD(temp->tstart, t_now))
-      && t_now<temp->tfinish) {
+  if ( ((t_now+temp->update_freq)>temp->tstart ||
+        GS.equalD(temp->tstart, t_now))
+       && t_now<temp->tfinish) {
     temp->is_active = true;
     //
-    // Get the current values for mdot, vinf, Teff, and setup a wind source
-    // using the constant-wind function.
+    // Get the current values for mdot, vinf, Teff, and setup a wind
+    // source using the constant-wind function.
     //
     //GS.splint(t, Tf, Tf2, Nspl, t_now/GS.s_per_yr(), &Twind);
     //GS.splint(t, md, md2, Nspl, t_now/GS.s_per_yr(), &mdot);
@@ -1006,14 +909,15 @@ int stellar_wind_evolution::add_evolving_source(
 #endif
   }
   else {
-    cout <<"WARNING: Source is not yet active: tnow="<<t_now<<", tstart=";
+    cout <<"WARNING: Source is not yet active: tnow="<<t_now;
+    cout <<", tstart=";
     cout <<temp->tstart<<". Setting wind source to INACTIVE.\n";
     temp->is_active = false;
     mdot=-100.0; vinf=-100.0; Twind=-100.0;
   }
   //
-  // Need to convert units.  add_source expects mdot in msun/yr, vinf in km/s, 
-  // and Twind in K.
+  // Need to convert units.  add_source expects mdot in msun/yr,
+  // vinf in km/s, and Twind in K.
   //
   mdot = exp(GS.ln10()*mdot);
   vinf = exp(GS.ln10()*vinf) /1.0e5;
@@ -1025,11 +929,11 @@ int stellar_wind_evolution::add_evolving_source(
   temp->ws = wlist.back();
 
   //
-  // So now we have all of the properties of the wind source in the struct
-  // evolving_wind_data 'temp', and we have added it to the list of constant
-  // wind sources, wlist[].  We can now add temp to the list of evolving
-  // wind sources and return (so that wlist[i] and wdata_evol[i] point to the
-  // same source).
+  // So now we have all of the properties of the wind source in the
+  // struct evolving_wind_data 'temp', and we have added it to the
+  // list of constant wind sources, wlist[].  We can now add temp to
+  // the list of evolving wind sources and return (so that wlist[i]
+  // and wdata_evol[i] point to the same source).
   //
   wdata_evol.push_back(temp);
   //NSRC_TOTAL++;
@@ -1037,13 +941,21 @@ int stellar_wind_evolution::add_evolving_source(
   return 0;
 }
 
-void stellar_wind_evolution::update_source(struct evolving_wind_data *wd,
-                                           const double t_now
-                                           )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void stellar_wind_evolution::update_source(
+        struct evolving_wind_data *wd,
+        const double t_now
+        )
 {
   //
-  // We have a source that needs updating.  If it is not active, and needs
-  // activating then we set that.
+  // We have a source that needs updating.  If it is not active, and
+  // needs activating then we set that.
   //
   if (!wd->is_active) {
     cout <<"stellar_wind_evolution::update_source() activating source id=";
@@ -1073,8 +985,8 @@ void stellar_wind_evolution::update_source(struct evolving_wind_data *wd,
   GS.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
   GS.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
   //
-  // Assign new values to wd->ws (the wind source struct), converting from log10
-  // to actual values, and also unit conversions.
+  // Assign new values to wd->ws (the wind source struct), converting
+  // from log10 to actual values, and also unit conversions.
   //
   wd->ws->Mdot = exp(GS.ln10()*mdot) *GS.Msun()/GS.s_per_yr();  // this was log10(msun/yr)
   wd->ws->Vinf = exp(GS.ln10()*vinf);  // this is in log10(cm/s) already.
@@ -1084,18 +996,27 @@ void stellar_wind_evolution::update_source(struct evolving_wind_data *wd,
   //cout <<wd->ws->Mdot<<", "<<wd->ws->Vinf<<", "<<wd->ws->Tw<<"]\n";
 
   //
-  // Now re-assign state vector of each wind-boundary-cell with updated values.
+  // Now re-assign state vector of each wind-boundary-cell with
+  // updated values.
   //
   for (int i=0; i<wd->ws->ncell; i++) {
     set_wind_cell_reference_state(wd->ws->wcells[i],wd->ws);
   }
 
   //
-  // Now the source is updated, and the reference states are all set for the new
-  // values, and the next update time has been set.  So we can return.
+  // Now the source is updated, and the reference states are all set
+  // for the new values, and the next update time has been set.  So
+  // we can return.
   //
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int stellar_wind_evolution::set_cell_values(
           const int id,  ///< src id
@@ -1110,8 +1031,8 @@ int stellar_wind_evolution::set_cell_values(
   struct evolving_wind_data *wd = wdata_evol[id];
 
   //
-  // Check if the source has reached its last time, because we want to stop  
-  // the simulation in this case!
+  // Check if the source has reached its last time, because we want
+  // to stop the simulation in this case!
   //
   if (t_now >= wd->tfinish) {
     cout <<"stellar_wind_evolution::set_cell_values() reached final time.";
@@ -1119,20 +1040,21 @@ int stellar_wind_evolution::set_cell_values(
     SimPM.maxtime=true;
   }
   //
-  // Check if the source needs to be updated, and if so, update it (but only if 
-  // we haven't reached the end of the sim, b/c we could run off the end of a 
-  // spline interpolation, which can have very bad results).
-  // Not too worried about testing for equality b/c we will be at most one
-  // timestep wrong, which is not going to be serious.
+  // Check if the source needs to be updated, and if so, update it
+  // (but only if we haven't reached the end of the sim, b/c we could
+  // run off the end of a spline interpolation, which can have very
+  // bad results). Not too worried about testing for equality b/c we
+  // will be at most one timestep wrong, which is not going to be
+  // serious.
   //
   else if (t_now >= wd->t_next_update) {
     update_source(wd, t_now);
   }
 
   //
-  // So now we have an up-to-date source.  We check if it is active, and if so we
-  // update the wind cell values using the constant wind functions.  If not, then
-  // we ignore it and return.
+  // So now we have an up-to-date source.  We check if it is active,
+  // and if so we update the wind cell values using the constant wind
+  // functions.  If not, then we ignore it and return.
   //
   if (wd->is_active) {
     err += stellar_wind::set_cell_values(id,t_now);
@@ -1140,6 +1062,14 @@ int stellar_wind_evolution::set_cell_values(
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
 

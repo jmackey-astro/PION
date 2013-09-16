@@ -51,6 +51,7 @@
 ///    conduction calculation.
 /// - 2012.05.15 JM: Added global iXmin,iXmax,iRange functions for parallel grids.
 /// - 2013.06.13 JM: Added STARBENCH1 internal boundary and functions.
+/// - 2013.09.06 JM: Added difference_vertex2cell() functions.
 
 #ifndef UNIFORMGRID_H
 #define UNIFORMGRID_H
@@ -469,6 +470,17 @@ class UniformGrid
 				       const cell *    ///< cell
 				       );
 
+  ///
+  /// As distance_vertex2cell(double[],cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double difference_vertex2cell(
+        const double *,  ///< vertex (double)
+        const cell *, ///< cell
+        const axes    ///< Axis to calculate.
+        );
+
    ///
    /// Calculate distance between a cell-vertex and a cell--centres
    /// (will be between centre-of-volume of cells if non-cartesian
@@ -575,6 +587,17 @@ class uniform_grid_cyl
   virtual double distance_vertex2cell(const double *, ///< vertex (physical)
 				      const cell *    ///< cell
 				      );
+
+   ///
+   /// As distance_vertex2cell(double[],cell) but for a single component
+   /// of the position vector, and not the absolute value.  It returns
+   /// the *cell* coordinate minus the *vertex* coordinate.
+   ///
+   virtual double difference_vertex2cell(
+        const double *,  ///< vertex (double)
+        const cell *, ///< cell
+        const axes    ///< Axis to calculate.
+        );
 
   ///
   /// Calculate distance between a cell-vertex and a cell--centres
@@ -693,6 +716,17 @@ class uniform_grid_sph
 				      const cell *    ///< cell
 				      );
 
+   ///
+   /// As distance_vertex2cell(double[],cell) but for a single component
+   /// of the position vector, and not the absolute value.  It returns
+   /// the *cell* coordinate minus the *vertex* coordinate.
+   ///
+   virtual double difference_vertex2cell(
+        const double *,  ///< vertex (double)
+        const cell *, ///< cell
+        const axes    ///< Axis to calculate.
+        );
+
   ///
   /// Calculate distance between a cell-vertex and a cell--centres
   /// (will be between centre-of-volume of cells if non-cartesian
@@ -727,9 +761,10 @@ class uniform_grid_sph
    /// of cells.  This is re-defined for cylindrical and spherical
    /// coords below.
    ///
-   virtual int BC_assign_STWIND_add_cells2src(const int,    ///< source id
-					      boundary_data * ///< boundary ptr.
-					      );
+   virtual int BC_assign_STWIND_add_cells2src(
+        const int,    ///< source id
+        boundary_data * ///< boundary ptr.
+        );
 
    ///
    /// Returns the centre of volume of a cell (in the radial

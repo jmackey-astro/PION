@@ -25,6 +25,7 @@
 ///    function call to a (faster) in-place evaluation.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2013.08.23 JM: Debugging.
+/// - 2013.09.16 JM: Debugging (not finished yet!).
 
 
 
@@ -136,7 +137,7 @@ mpv9_HHe::mpv9_HHe(
   //
   // max and min values we allow:
   //
-  Min_Nfrac     = 1.0e-15;
+  Min_Nfrac     = 0.0;
   Max_Nfrac     = 1.0;
   // ----------------------------------------------------------------
 
@@ -281,6 +282,10 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
     rep.error("Bad input state to mpv9_HHe::TimeUpdateMP_RTnew()",err);
   }
   for (size_t v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
+#ifdef MPV9_DEBUG
+  rep.printVec("update: P",P,nvl);
+  rep.printVec("update: Y",NV_DATA_S(y_in),nvl);
+#endif // MPV9_DEBUG
 
   interpret_radiation_data(N_heat,heat_src,N_ion,ion_src);
 
@@ -506,8 +511,11 @@ double mpv9_HHe::timescales_RT(
   if (err) {
     rep.error("Bad input state to mpv9_HHe::timescales_RT()",err);
   }
-  NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
-  NV_Ith_S(y_in,lv_E) = P[lv_E];
+  for (size_t v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
+#ifdef MPV9_DEBUG
+  rep.printVec("update: P",P,nvl);
+  rep.printVec("update: Y",NV_DATA_S(y_in),nvl);
+#endif // MPV9_DEBUG
 
   interpret_radiation_data(N_heat,heat_src,N_ion,ion_src);
 
@@ -717,14 +725,14 @@ int mpv9_HHe::convert_local2prim(
   double T = get_temperature(p_local);
   if (T>1.0001*EP->MaxTemperature) {
     Set_Temp(p_out,EP->MaxTemperature,0);
-    cout <<"mp_explicit_H::convert_local2prim() HIGH T. ";
+    cout <<"mpv9_HHe::convert_local2prim() HIGH T. ";
     cout <<"T="<<T<<", obtained from nH="<<nH<<", eint=";
     cout <<p_local[lv_E]<<", x="<<p_out[pv_Hp]<<"... ";
     cout <<" limiting to T="<<EP->MaxTemperature<<"\n";
   }
   if (T<0.9999*EP->MinTemperature) {
     Set_Temp(p_out,EP->MinTemperature,0);
-    cout <<"mp_explicit_H::convert_local2prim() LOW  T. ";
+    cout <<"mpv9_HHe::convert_local2prim() LOW  T. ";
     cout <<"T="<<T<<", obtained from nH="<<nH<<", eint=";
     cout <<p_local[lv_E]<<", x="<<p_out[pv_Hp]<<"... ";
     cout <<" limiting to T="<<EP->MaxTemperature<<"\n";
@@ -860,7 +868,11 @@ int mpv9_HHe::ydot(
   double *ydot = NV_DATA_S(y_dot);
   double ne = get_ne(y);
   double T = get_temperature(y);
-  double y_He2 = std::max(0.0, std::min(X_HE, X_HE -y[1] -y[2]));
+  double y_He2 = std::max(0.0, std::min(X_HE, X_HE -y[lv_He0] -y[lv_He1]));
+#ifdef MPV9_DEBUG
+  cout <<"YDOT: "; rep.printVec("Ynow",y,4);
+  cout <<"YDOT: T="<<T<<", y(HE++)="<<X_HE -y[lv_He0] -y[lv_He1]<<"\n";
+#endif // MPV9_DEBUG
 
   //for (short unsigned int ie=0; ie<N_equations; ie++) ydot[ie]=0.0;
 
@@ -877,11 +889,13 @@ int mpv9_HHe::ydot(
   // use current optical depths through cell to get accurate ph-ion
   // rates.
   //
-  dtau[0] = nH*y[0]*dS*get_th_xsection(ION_H_N);
-  dtau[1] = nH*y[1]*dS*get_th_xsection(ION_HE_N);
-  dtau[2] = nH*y[2]*dS*get_th_xsection(ION_HE_P);
+  dtau[0] = nH*y[lv_H0 ]*dS*get_th_xsection(ION_H_N);
+  dtau[1] = nH*y[lv_He0]*dS*get_th_xsection(ION_HE_N);
+  dtau[2] = nH*y[lv_He1]*dS*get_th_xsection(ION_HE_P);
   dtau[3] = nH*     dS*get_th_xsection(ION_DUST);
-
+#ifdef MPV9_DEBUG
+  cout <<"YDOT: "; rep.printVec("dTau",dtau,4);
+#endif // MPV9_DEBUG
 
   // ----------------------------------------------------------------
   //
@@ -896,7 +910,19 @@ int mpv9_HHe::ydot(
   ydot[lv_H0]  = -pir[0]; // *temp;
   ydot[lv_He0] = -pir[1]; // *temp;
   ydot[lv_He1] = (pir[1]-pir[2]); // *temp;
-  ydot[lv_E]   = phr[3] +phr[4] +phr[5]; // *temp;
+  ydot[lv_E]   = phr[0] +phr[1] +phr[2]; // *temp;
+#ifdef MPV9_DEBUG
+  cout <<"** YDOT: nH="<<nH<<", Vshell="<<Vshell<<", ds="<<dS<<"\n"; 
+  cout <<"** YDOT: ionising: H0="<<-pir[0]<<", He0="<<-pir[1]<<", He1="<<-pir[2]<<"\n";
+  cout <<"** YDOT: heating:  H0="<<phr[0]<<", He0="<<phr[1]<<", He1="<<phr[2]<<"\n";
+  //
+  // Check for NAN/INF
+  //
+  for (size_t v=0;v<nvl;v++) {
+    if (!isfinite(ydot[v]))
+      rep.error("INF/NAN in mpv9_HHe ydot()",v);
+  }
+#endif // MPV9_DEBUG
   //
   // ----------------------------------------------------------------
 

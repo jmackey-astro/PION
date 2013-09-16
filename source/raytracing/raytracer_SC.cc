@@ -933,13 +933,13 @@ int raytracer_USC_infinity::ProcessCell(
         cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
                       MP->get_th_xsection(ION_H_N)*c->Ph[ix];
         col2cell[0] += cell_col[0];
-        if (c->id==2) {
-        cout <<"H: ix="<<ix;
-        cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
-        cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
-        cout <<", yn = "<<c->Ph[ix];
-        cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
-        }
+        //if (c->id==2) {
+        //  cout <<"H: ix="<<ix;
+        //  cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
+        //  cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
+        //  cout <<", yn = "<<c->Ph[ix];
+        //  cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
+        //}
 #ifdef MP9_TESTING
         cout <<"H: ix="<<ix;
         cout <<", n="<<MP->get_n_el(c->Ph, EL_H);

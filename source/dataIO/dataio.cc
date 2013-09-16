@@ -56,6 +56,7 @@
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.09.05 JM: changed logic of writing T/Eint in ascii data.
+/// - 2013.09.16 JM: Increased precision of ascii data to 14 digits.
 
 //
 // These tell code what to compile and what to leave out.
@@ -2025,7 +2026,7 @@ int dataio_text::output_ascii_data(string outfile
   outf << "# format: x,[y,z,],rho,pg,vx,vy,vz,[Bx,By,Bz],[Tr0,Tr1,Tr2,..],T,[Tau0,Tau1,...]\n";
   outf << "# time = "<<SimPM.simtime<<"  timestep = "<<SimPM.timestep<<"\n";
   outf.setf( ios_base::scientific );
-  outf.precision(6);
+  outf.precision(14);
 
   // list of B-field vector elements for calculating div(B)
   int vars[3]; vars[0] = static_cast<int>(BX);

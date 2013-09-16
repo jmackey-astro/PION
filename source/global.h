@@ -84,6 +84,8 @@
 /// - 2013.08.19/20 JM: Changed GeneralStuff constants (will remove
 ///    them eventually).  Added new RT_EFFECT_HHE_MFQ flag for H-He
 ///    chem.  Added NTau to rad_src_info struct.
+/// - 2013.09.06 JM: Added difference_vertex2cell() functions to grid
+///    base class.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -948,6 +950,17 @@ class GridBaseClass {
    virtual double distance_vertex2cell(const double *, ///< vertex (physical)
                const cell *    ///< cell
                )=0;
+
+  ///
+  /// As distance_vertex2cell(double[],cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double difference_vertex2cell(
+        const double *,  ///< vertex (double)
+        const cell *, ///< cell
+        const axes    ///< Axis to calculate.
+        )=0;
 
    ///
    /// Calculate distance between a cell-vertex and a cell--centres

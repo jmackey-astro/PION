@@ -20,6 +20,8 @@
 
 #ifndef EXCLUDE_MPV9
 
+//#define MPV9_DEBUG
+
 #ifndef INTEL
 #include <cmath>     // Header file from gcc
 #else

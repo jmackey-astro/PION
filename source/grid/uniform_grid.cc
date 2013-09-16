@@ -66,6 +66,9 @@
 ///    and fixed some bugs with it.  It works well now.
 /// - 2013.08.20 JM: Changed cell_interface for radiative transfer
 ///    variables.
+/// - 2013.09.06 JM: Added difference_vertex2cell() functions.
+///    Set stellar wind boundary conditions to use physical distances
+///    not integer distances, to avoid rounding errors.
 
 
 #include "global.h"
@@ -1446,9 +1449,10 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
 // ##################################################################
 // ##################################################################
 
-int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
-            struct boundary_data *b
-            )
+int UniformGrid::BC_assign_STWIND_add_cells2src(
+        const int id, ///< source id
+        struct boundary_data *b
+        )
 {
   //
   // this is for cartesian geometry, with cubic cells, so things are
@@ -1457,10 +1461,10 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
   //
   int err=0;
   int ncell=0;
-  int srcpos[MAX_DIM];
-  Wind->get_src_ipos(id,srcpos);
+  double srcpos[MAX_DIM];
+  Wind->get_src_posn(id,srcpos);
   double srcrad;
-  Wind->get_src_irad(id,&srcrad);
+  Wind->get_src_drad(id,&srcrad);
 #ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
   rep.printVec("src", srcpos, G_ndim);
@@ -1473,7 +1477,7 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
     // It makes no difference for Cartesian grids b/c the centre--of--
     // volume coincides the midpoint.
     //
-    if (idistance_vertex2cell(srcpos,c) <= srcrad) {
+    if (distance_vertex2cell(srcpos,c) <= srcrad) {
         ncell++;
         //b->data.push_back(c); // don't need b to have a lit too.
         err += Wind->add_cell(id,c);
@@ -1492,8 +1496,11 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Update internal stellar wind boundaries -- these are (possibly time-varying)
@@ -1501,10 +1508,11 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
 /// the wind is updated with b->refval, otherwise with a (slower) call to the 
 /// stellar wind class SW
 ///
-int UniformGrid::BC_update_STWIND(boundary_data *b, ///< Boundary to update.
-          const int ,  ///< current fractional step being taken.
-          const int    ///< final step (not needed b/c fixed BC).
-          )
+int UniformGrid::BC_update_STWIND(
+        boundary_data *b, ///< Boundary to update.
+        const int ,  ///< current fractional step being taken.
+        const int    ///< final step (not needed b/c fixed BC).
+        )
 {
   //
   // The stellar_wind class already has a list of cells to update
@@ -1517,28 +1525,16 @@ int UniformGrid::BC_update_STWIND(boundary_data *b, ///< Boundary to update.
     err += Wind->set_cell_values(id,SimPM.simtime);
     //cout <<" finished source "<<id<<"\n";
   }
-  //
-  // int Ns = Wind.Nsources();
-  // list<cell*>::iterator ci = b->data.begin();
-  // for (int id=0;id<Ns;id++) {
-  //   int ncell = Wind.get_num_cells();
-  //   int icell = 0;
-  //   do {
-  //     rep.printVec("P before: ",(*ci)->P,G_nvar);
-  //     Wind.set_cell_values(id, SimPM.simtime, (*ci));
-  //     rep.printVec("P after : ",(*ci)->P,G_nvar);
-  //     ++ci; ++icell;
-  //   } while (icell<ncell);
-  // } // loop over sources
-  // if (ci != b->data.end())
-  //   rep.error("Bad cell counting in boundary data!", (*ci));
 
   return err;
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
 {
@@ -1717,8 +1713,11 @@ int UniformGrid::BC_printBCdata(boundary_data *b)
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
 {
@@ -1748,8 +1747,11 @@ int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
 }
   
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
 {
@@ -2337,6 +2339,27 @@ double UniformGrid::distance_vertex2cell(const double *v, ///< vertex (physical)
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+///
+/// As distance_vertex2cell(double[],cell) but for a single component
+/// of the position vector, and not the absolute value.  It returns
+/// the *cell* coordinate minus the *vertex* coordinate.
+///
+double UniformGrid::difference_vertex2cell(
+      const double *v,  ///< vertex (double)
+      const cell *c, ///< cell
+      const axes a   ///< Axis to calculate.
+      )
+{
+  return (CI.get_dpos(c,a)-v[a]);
+}
+
+
+
 // ##################################################################
 // ##################################################################
 
@@ -2586,6 +2609,36 @@ double uniform_grid_cyl::distance_vertex2cell(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+///
+/// As distance_vertex2cell(double[],cell) but for a single component
+/// of the position vector, and not the absolute value.  It returns
+/// the *cell* coordinate minus the *vertex* coordinate.
+///
+double uniform_grid_cyl::difference_vertex2cell(
+      const double *v,  ///< vertex (double)
+      const cell *c, ///< cell
+      const axes a   ///< Axis to calculate.
+      )
+{
+  if      (a==Zcyl) {
+    return (CI.get_dpos(c,a)-v[a]);
+  }
+  else if (a==Rcyl) {
+    return R_com(c) - v[Rcyl];
+  }
+  else {
+    cerr <<" Requested cylindrical distance in theta dir.\n";
+    return -1.0e99;
+  }
+}
+
+
+
 // ##################################################################
 // ##################################################################
 
@@ -2670,12 +2723,16 @@ double uniform_grid_cyl::idifference_cell2cell(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
-int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source id
-                 struct boundary_data *b
-                 )
+
+
+int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(
+        const int id, ///< source id
+        struct boundary_data *b
+        )
 {
   //
   // this is for cylindrical geometry, with cubic cells, so things are
@@ -2684,10 +2741,10 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
   //
   int err=0;
   int ncell=0;
-  int srcpos[MAX_DIM];
-  Wind->get_src_ipos(id,srcpos);
+  double srcpos[MAX_DIM];
+  Wind->get_src_posn(id,srcpos);
   double srcrad;
-  Wind->get_src_irad(id,&srcrad);
+  Wind->get_src_drad(id,&srcrad);
 #ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
   rep.printVec("src", srcpos, G_ndim);
@@ -2702,7 +2759,7 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
     //rep.printVec("***pos", c->pos, G_ndim);
     //rep.printVec("***src", srcpos, G_ndim);
     //
-    if (idistance_vertex2cell(srcpos,c) <= srcrad) {
+    if (distance_vertex2cell(srcpos,c) <= srcrad) {
 
       ncell++;
       //b->data.push_back(c); // don't need b to have a lit too.
@@ -2711,7 +2768,7 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
       cout <<"CYL adding cell "<<c->id<<" to list.\n";
       rep.printVec("***src", srcpos, G_ndim);
       rep.printVec("***pos", c->pos, G_ndim);
-      cout <<"*** distance="<<idistance_vertex2cell(srcpos,c)<<"\n";
+      cout <<"*** distance="<<distance_vertex2cell(srcpos,c)<<"\n";
 #endif
       //rep.printVec("src", srcpos, G_ndim);
       //rep.printVec("pos", c->pos, G_ndim);
@@ -2722,6 +2779,8 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
 
   return err;
 }
+
+
 
 // ##################################################################
 // ##################################################################
@@ -2738,9 +2797,8 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(const int id, ///< source i
 // ##################################################################
 // ##################################################################
 
-///
-/// Constructor
-///
+
+
 uniform_grid_sph::uniform_grid_sph(int nd, int nv, int eqt, double *xn, double *xp, int *nc)
   : 
   VectorOps_Cart(nd),
@@ -2762,8 +2820,11 @@ uniform_grid_sph::uniform_grid_sph(int nd, int nv, int eqt, double *xn, double *
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 uniform_grid_sph::~uniform_grid_sph()
 {
@@ -2773,8 +2834,11 @@ uniform_grid_sph::~uniform_grid_sph()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double uniform_grid_sph::iR_cov(const cell *c)
 {
@@ -2792,8 +2856,11 @@ double uniform_grid_sph::iR_cov(const cell *c)
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Calculate distance between two points, where the two position
@@ -2809,8 +2876,11 @@ double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Calculate distance between two points, where the two position
@@ -2826,8 +2896,11 @@ double uniform_grid_sph::idistance(const int *p1, ///< position 1 (integer)
 }
    
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Calculate distance between two cell--centres (will be between
@@ -2842,8 +2915,11 @@ double uniform_grid_sph::distance_cell2cell(const cell *c1, ///< cell 1
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Calculate distance between two cell--centres (will be between
@@ -2859,8 +2935,11 @@ double uniform_grid_sph::idistance_cell2cell(const cell *c1, ///< cell 1
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
@@ -2875,8 +2954,39 @@ double uniform_grid_sph::distance_vertex2cell(const double *v, ///< vertex (phys
 }
 
 
+
+
 // ##################################################################
 // ##################################################################
+
+
+
+///
+/// As distance_vertex2cell(double[],cell) but for a single component
+/// of the position vector, and not the absolute value.  It returns
+/// the *cell* coordinate minus the *vertex* coordinate.
+///
+double uniform_grid_sph::difference_vertex2cell(
+      const double *v,  ///< vertex (double)
+      const cell *c, ///< cell
+      const axes a   ///< Axis to calculate.
+      )
+{
+  if      (a==Rsph) {
+    return R_com(c) - v[Rsph];
+  }
+  else {
+    cerr <<" Requested spherical distance in not-radial dir.\n";
+    return -1.0e99;
+  }
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 ///
 /// Calculate distance between a cell-vertex and a cell--centres
@@ -2894,8 +3004,11 @@ double uniform_grid_sph::idistance_vertex2cell(const int *v, ///< vertex (intege
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// As idistance_vertex2cell(int,cell) but for a single component
@@ -2916,8 +3029,11 @@ double uniform_grid_sph::idifference_vertex2cell(const int *v,  ///< vertex (int
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
@@ -2937,12 +3053,17 @@ double uniform_grid_sph::idifference_cell2cell(
   return -1.0;
 }
 
+
+
 // ##################################################################
 // ##################################################################
 
-int uniform_grid_sph::BC_assign_STWIND_add_cells2src(const int id, ///< source id
-                 struct boundary_data *b
-                 )
+
+
+int uniform_grid_sph::BC_assign_STWIND_add_cells2src(
+        const int id, ///< source id
+        struct boundary_data *b
+        )
 {
   //
   // this is for spherical geometry in 1D, with not necessarily equal
@@ -2996,6 +3117,14 @@ int uniform_grid_sph::BC_assign_STWIND_add_cells2src(const int id, ///< source i
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 //-------------------------------------------------------------
 //-------------------- SPHERICAL GRID END ---------------------
 //-------------------------------------------------------------

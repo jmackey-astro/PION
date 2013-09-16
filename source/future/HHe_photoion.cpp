@@ -11,6 +11,7 @@
 /// Modifications:
 /// - 2013.08.19 JM: written and tested.
 /// - 2013.08.23 JM: Debugging.
+/// - 2013.09.16 JM: Debugging (not finished yet!)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -223,16 +224,41 @@ void HHe_photoion::tau_frac(
     frac[0] = 0.4559*tau0/(0.4559*tau0 +2.7419*tau1);
     frac[1] = 1.0-frac[0];
     frac[2] = 0.0;
+    //
+    // Check for divide by zero (in which case there is no opacity
+    // and no ionisation, so just set fractions to 0.5,0.5,0.0
+    //
+    //if (tau0<0.0 && tau1>1e-50) {
+    //  cout <<"\t\t+++ Region B: divide by zero! tau=["<<tau0<<", "<<tau1<<", "<<tau2<<"]\n";
+    //  cout <<"\t\t+++ Region B: "; rep.printVec("frac",frac,3);
+    //}
+    if (!isfinite(frac[0])) {
+      //cout <<"\t*** Region B: divide by zero! tau=["<<tau0<<", "<<tau1<<", "<<tau2<<"]\n";
+      frac[0] = 0.5;
+      frac[1] = 0.5;
+      frac[2] = 0.5;
+    }
   }
   else if (r==REGION_C) {
     frac[2] = tau0 +16.6439*tau1 +48.5029*tau2;
     frac[0] = tau0/frac[2];
     frac[1] = 16.6439*tau1/frac[2];
     frac[2] = 1.0-frac[0]-frac[1];
+    //
+    // Check for divide by zero (in which case there is no opacity
+    // and no ionisation, so just set fractions to 0.33,0.33,0.34
+    //
+    if (!isfinite(frac[0])) {
+      //cout <<"\t*** Region C: divide by zero! tau=["<<tau0<<", "<<tau1<<", "<<tau2<<"]\n";
+      frac[0] = 0.33;
+      frac[1] = 0.33;
+      frac[2] = 1.0-frac[0]-frac[1];
+    }
   }
   else  {
     cout <<"requested optical depth for non-ionising photon!\n";
   }
+
   return;
 }
 
@@ -748,14 +774,30 @@ int HHe_photoion::HHe_photoion_rate(
   double t1 = tau_total(REGION_C,Tau0, Tau1, Tau2);
   double t2 = tau_total(REGION_C,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
   get_region_HHe_integral_diff(REGION_C,t1,t2, &pir[2], &phr[2]);
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate():  region C: t1="<<t1<<",t2="<<t2<<", pir="<<pir[2]<<", phr="<<phr[2]<<"\n";
+#endif // MPV9_DEBUG
 
   t1 = tau_total(REGION_B,Tau0, Tau1, Tau2);
   t2 = tau_total(REGION_B,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
   get_region_HHe_integral_diff(REGION_B,t1,t2, &pir[1], &phr[1]);
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate():  region B: t1="<<t1<<",t2="<<t2<<", pir="<<pir[1]<<", phr="<<phr[1]<<"\n";
+#endif // MPV9_DEBUG
 
   t1 = tau_total(REGION_A,Tau0, Tau1, Tau2);
   t2 = tau_total(REGION_A,Tau0+dTau0, Tau1+dTau1, Tau2+dTau2);
   get_region_HHe_integral_diff(REGION_A,t1,t2, &pir[0], &phr[0]);
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate():  region A: t1="<<t1<<",t2="<<t2<<", pir="<<pir[0]<<", phr="<<phr[0]<<"\n";
+#endif // MPV9_DEBUG
+
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate():  tau=["<<Tau0<<", "<<Tau1<<", "<<Tau2<<"]\n"; 
+  cout <<"  HHe_photoion_rate(): dtau=["<<dTau0<<", "<<dTau1<<", "<<dTau2<<"]\n"; 
+  cout <<"  HHe_photoion_rate(): "; rep.printVec("pir",pir,3);
+  cout <<"  HHe_photoion_rate(): "; rep.printVec("phr",phr,3);
+#endif // MPV9_DEBUG
 
   // ----------------------------------------------------------------
   //
@@ -770,7 +812,10 @@ int HHe_photoion::HHe_photoion_rate(
   //
   // region B
   //
-  tau_frac(REGION_B,Tau0, Tau1, Tau2, frac);
+  tau_frac(REGION_B, dTau0, dTau1, dTau2, frac);
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate(): photon division, B: ";  rep.printVec("frac",frac,3);
+#endif // MPV9_DEBUG
 
   pir[0] += frac[0]*pir[1];  // give to H0
   pir[1] *= frac[1];         // take from He0
@@ -782,14 +827,17 @@ int HHe_photoion::HHe_photoion_rate(
   //
   // region C
   //
-  tau_frac(REGION_C,Tau0, Tau1, Tau2, frac);
+  tau_frac(REGION_C, dTau0, dTau1, dTau2, frac);
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate(): photon division, C: ";  rep.printVec("frac",frac,3);
+#endif // MPV9_DEBUG
 
   pir[0] += frac[0]*pir[2];  // give to H0
   pir[1] += frac[1]*pir[2];  // give to He0
   pir[2] *= frac[2];         // take from He+
 
   phr[0] += frac[0]*phr[2];
-  phr[1] *= frac[1]*phr[2];
+  phr[1] += frac[1]*phr[2];
   phr[2] *= frac[2];
 
 
@@ -812,15 +860,10 @@ int HHe_photoion::HHe_photoion_rate(
   phr[1] = std::max(phr[1],VERY_TINY_VALUE);
   phr[2] = std::max(phr[2],VERY_TINY_VALUE);
 
-#ifdef MP9_TESTING
-//  cout <<"  pir0 = "<<*pir0;
-//  cout <<"  pir1 = "<<*pir1;
-//  cout <<"  pir2 = "<<*pir2;
-//  cout <<"  phr0 = "<<*phr0;
-//  cout <<"  phr1 = "<<*phr1;
-//  cout <<"  phr2 = "<<*phr2;
-//  cout <<"\n";
-#endif // MP9_TESTING
+#ifdef MPV9_DEBUG
+  cout <<"  HHe_photoion_rate(): "; rep.printVec("final pir",pir,3);
+  cout <<"  HHe_photoion_rate(): "; rep.printVec("final phr",phr,3);
+#endif // MPV9_DEBUG
 
   return 0;
 }
@@ -893,7 +936,7 @@ void HHe_photoion::get_region_HHe_integral_diff(
   // If we have dTau<<1, then we use the low-dtau integrals because
   // the normal integrals will subtract to give identically zero.
   //
-  if      (t2-t1<MinTau) {
+  if      (t2-t1<2.0*MinTau) {
     ans = max(MinTau, min(MaxTau, t1));
     GS.splint(prTau, il1, il2, PI_Nspl, log10(ans), &ans);
     *pir = (t2-t1)*exp(ln10()*ans);
@@ -909,6 +952,8 @@ void HHe_photoion::get_region_HHe_integral_diff(
     *pir = 0.0;
     *phr = 0.0;
   }
+  //
+  // Otherwise, if t1 is really tiny, then the 
   //
   // Otherwise, if t2>MaxTau, but t1<MaxTau, then the second term is
   // zero (no photons leave cell, all are absorbed).  But we don't
