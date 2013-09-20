@@ -23,6 +23,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.08.20 JM: Moved raytracing set/get functions to header and
 ///    made them inline.
+/// - 2013.09.20 JM: Changed initialisation of unsigned ints to zero.
 
 #include "cell_interface.h"
 using namespace std;
@@ -43,11 +44,11 @@ cell_interface::cell_interface()
   /// This must be set to true to create a cell.
   have_setup_extra_data = false;
   /// Flag: 0=not doing RT,  N>=1 = N tau values.
-  using_RT = -1;
+  using_RT = 0;
   /// Flag: 0=no Hcorr, N=need N variables (Lapidus=1,Hcorr=Ndim).
-  using_Hcorr = -1;
+  using_Hcorr = 0;
   /// Size of extra_data array (can be zero).
-  N_extra_data = -1;
+  N_extra_data = 0;
   //
   // index arrays initialise to zero.
   //
@@ -58,7 +59,7 @@ cell_interface::cell_interface()
   idS   = 0;
   /// indices of Hcorrection values in extra_data [XX,YY,ZZ].
   for (int v=0; v<MAX_DIM; v++)
-    iHcorr[v] = -1;
+    iHcorr[v] = 0;
 
 }
 

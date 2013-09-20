@@ -17,6 +17,7 @@
 # - 2013.02.27 JM: Added extensions for contributed code.
 #    Added NEW_METALLICITY flag for testing the new microphysics
 #    classes.
+# - 2013.09.20 JM: New Intel compilers for Juropa.
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
@@ -86,7 +87,8 @@ case $HOST in
     echo "Compiling on JUROPA"
     module purge
     #module load mkl/10.2.2.025 intel/11.1.059 sundials/2.4.0 parastation/mpi2-intel-5.0.25-2
-    module load mkl/10.2.5.035 intel/11.1.072 parastation/mpi2-intel-5.0.26-1
+    #module load mkl/10.2.5.035 intel/11.1.072 parastation/mpi2-intel-5.0.26-1
+    module load intel/12.1.4 parastation/mpi2-intel-5.0.26-1 sundials/2.5.0
     MAKE_UNAME=JUROPA
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.
@@ -171,10 +173,10 @@ fi
 ############ EXTRA CODE EXTENSIONS FROM CONTRIBUTED CODE ############
 #####################################################################
 # Harpreet Dhanoa's chemistry/microphysics module
-PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
+#PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
 
 # Read in turbulence simulations provided by Blakesley Burkhart
-PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
+#PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 
 export PION_OPTIONS
 echo PION_OPTIONS: $PION_OPTIONS
