@@ -131,7 +131,7 @@ The normalisation of the cross sections is as follows:
 \begin{itemize}
 \item $\sigma_0(\mr{H}^0)  = 6.304\times10^{-18}$\,cm \citep{Ost89}.
 \item $\sigma_0(\mr{He}^0) = 7.56\times10^{-18}$\,cm, from \citet{MarWes76} \citep[via][]{VerFerKorEA96}.
-\item $\sigma_0(\mr{H3}^+) = 1.576\times10^{-18}$\,cm \citep{Ost89}.
+\item $\sigma_0(\mr{He}^+) = 1.576\times10^{-18}$\,cm \citep{Ost89}.
 \end{itemize}
 These values should be accurate enough for what I need.
 
@@ -174,7 +174,7 @@ There are three limits that we need to consider:
   For $\tau_0\ll1$ we have no problem as long as $\Delta\tau_0>\tau_\mr{min}$, otherwise the two integrals in Eq.~\ref{eqn:pionFD} will be identical.
   This is the most serious issue we face in setting the limiting optical depths.
   It doesn't make sense to use the same interpolation table down to a tiny value of $\Delta\tau_0$ when we can make a better analytic approximation.
-  We can use the same approximation for all cases where $\Delta\tau_0<\tau_\mr{min}$, and it is described below.
+  We can use the same approximation for all cases where $\Delta\tau_0<\tau_\mr{min}$ (i.e.\ this case, and the one above), and it is described below.
 %
 \item
   For $\tau\gg1$ the scaling is $\log(A_{\mr{pi}})\sim K - \tau_0$ where $K$ is a constant (and ignoring the frequency integral), or in other words the rate is exponentially damped (obviously).
@@ -189,21 +189,24 @@ There are three limits that we need to consider:
   As long as the rate is not too small (i.e.~as long as $\tau_0$ is not too large) this is not a problem.
 %
 \end{itemize}
+The limits used in testing are $\tau_\mr{min}=10^{-4}$ and $\tau_\mr{max}=10^4$, and we apply the low-$\tau$ limit if $\Delta\tau_0 <2\tau_\mr{min}$.
+If $\tau>\tau_\mr{max}$, then we set the value of the integral to $10^{-200}$.
 
-\subsection{Second interpolation for $\Delta\tau_0<\tau_\mr{min}$}
+
+\subsection{Second interpolation for $\Delta\tau_0<2\tau_\mr{min}$}
 Here the finite-difference Eq.~\ref{eqn:pionFD} reduces to 
 \begin{equation}
 A_{\mr{pi}}(\tau_0,\Delta\tau_0) = 
     \frac{\Delta\tau_0}{n_{\textsc{hi}}V_{\mr{shell}}} 
-    \frac{1}{h} \int_{x=1}^{\infty}
+    \frac{1}{h} \sum_{\mr{regions}}\int_{x=x_\mr{lo}}^{x_\mr{hi}}
     L_\nu \mr{e}^{-\tau(x)} x^{-1-a} dx
   \equiv \frac{\Delta\tau_0}{n_{\textsc{hi}}V_{\mr{shell}}} I_\mr{lt}(\tau_0) \;,
 \label{eqn:pion_lowtau}
 \end{equation}
-where $a$ is the power-law frequency-dependence of the optical depth in the spectral region, and where the second equality defines the integral $I_\mr{lt}(\tau_0)$.
+where $a$ is the power-law frequency-dependence of the optical depth in the spectral region $x_\mr{lo}\leq x<x_\mr{hi}$, and where the second equality defines the integral $I_\mr{lt}(\tau_0)$.
 We similarly define a heating integral for $\Delta\tau_0<\tau_\mr{min}$ according to
 \begin{equation}
-H_\mr{lt}(\tau) = \nu_0\int_{x=1}^{\infty}
+H_\mr{lt}(\tau) = \nu_0 \sum_{\mr{regions}}\int_{x=x_\mr{lo}}^{x_\mr{hi}}
     L_\nu \mr{e}^{-\tau(x)}(x-1)x^{-1-a} dx \;.
 \label{eqn:pheat_lowtau}
 \end{equation}
@@ -217,6 +220,22 @@ In pure efficiency terms it is the latter for sure, but with parallel code it's 
 I should investigate both.
 
 I would like to make the module thread-safe, so there should be no local parameters; everything should be passed around as pointers to arrays, if possible.
+
+
+\section{Testing}
+\subsection{Photon conservation}
+The most basic test is to ensure that, in the absence of recombinations, the number of photons emitted should equal the number of electrons in the simulation.
+This can be easily tested with a uniform medium on a 1D spherical grid, with hydrodynamics switched off.
+The following equality should hold at all times:
+\begin{equation}
+\dot{N} t = \int_{r=0}^{r_\mr{max}} \left[n(\mr{H}^+)+n(\mr{He}^+)+2n(\mr{He}^{2+})\right] 4\mr{\pi}r^2dr \;,
+\end{equation}
+for a simulation domain $r\in[0,r_\mr{max}]$.
+This can further be tested species by species by setting all helium/hydrogen to be ionised so the species cannot absorb any photons.
+
+
+
+
 
 %{\footnotesize
 \bibliography{../../../documentation_misc/bibtex/refs}

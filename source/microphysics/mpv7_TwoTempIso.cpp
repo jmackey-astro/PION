@@ -204,7 +204,7 @@ double mpv7_TwoTempIso::get_temperature(
   // which is RJR William's estimate of the correct temperature to
   // get the mixed cell physics right.
   //
-  double frac=0.1;
+  double frac=1.0;
   if (xp>frac) return TTI_Thi;
   else return (xp/frac*(2.0*TTI_Thi-TTI_Tlo) +TTI_Tlo)/(1.0+xp/frac);
 
