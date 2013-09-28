@@ -14,12 +14,14 @@
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.21 JM: Fixed Helium free-free to use X(He).
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2013.09.28 JM: Changed Oxygen abundance.
 
 #include "microphysics/mpv5_molecular.h"
 #include "global.h"
 
 using namespace std;
 
+#define HE_INERT
 
 
 // ##################################################################
@@ -166,7 +168,11 @@ int mpv5_molecular::ydot(
   // The normalisation is scaled so that I multiply by ne*nHp to get the 
   // correct cooling rate (i.e. the abundance of He is included in the prefactor).
   //
+#ifndef HE_INERT
+  // Only if He is ionised, otherwise it has no free-free.
+  //
   Edot -= 1.68e-27*EP->Helium_MassFrac/(1.0-EP->Helium_MassFrac)*sqrt(T)*x_in*ne;
+#endif // HE_INERT
 
   //
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
@@ -223,14 +229,15 @@ int mpv5_molecular::ydot(
   // I have exponentially damped this at high temperatures! This was important!
   // Oxygen abundance set to 4.90e-4 from Asplund+(2009,ARAA).
   //
-  temp1 = 1.42e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
 
   //
   // Collisionally excited lines of neutral metals: (HAdCM09 eq.A10).
   // Assumes the neutral metal fraction is the same as neutral H fraction.
-  // Oxygen abundance set to 4.90e-4 from Asplund+(2009,ARAA).
+  // Oxygen abundance set to 5.37e-4 from Asplund+(2009,ARAA), times
+  // 0.77 to account for 23% of O in solid dust.
   //
-  temp1+= 2.19e-23*METALLICITY *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
+  temp1+= 1.85e-23*METALLICITY *exp(-28390.0/T -(1780.0*1780.0/T/T)) *ne*OneMinusX;
 
   //
   // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
@@ -271,7 +278,7 @@ int mpv5_molecular::ydot(
   //
   Edot *= mpv_nH;
 #ifdef HIGHDENS_CUTOFF
-  if (Edot<0.0) Edot *= exp(-mpv_nH*mpv_nH/1.0e6);
+  if (Edot<0.0) Edot *= exp(-mpv_nH*mpv_nH/1.0e12);
 #endif //HIGHDENS_CUTOFF 
 
   //
