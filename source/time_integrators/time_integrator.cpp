@@ -675,6 +675,15 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
       //
       // New state is p[], old state is c->P[].  Get dU from these.
       //
+//#define NO_COOLING_ON_AXIS
+#ifdef NO_COOLING_ON_AXIS
+      //cout <<"hello\n";
+#error "Fix HACK in time_integrator.cpp"
+      if (SimPM.coord_sys==COORD_CYL && 
+          !grid->NextPt(c,YN)->isgd &&
+          p[PG] < c->P[PG])
+        p[PG] = c->P[PG];
+#endif // NO_COOLING_ON_AXIS
       eqn->PtoU(c->P,ui,SimPM.gamma);
       eqn->PtoU(p,   uf,SimPM.gamma);
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];

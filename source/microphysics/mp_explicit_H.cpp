@@ -1467,7 +1467,7 @@ int mp_explicit_H::ydot(
   // Oxygen abundance set to 5.37e-4 from Asplund+(2009,ARAA), times
   // 0.77 to account for 23% of O in solid dust.
   //
-  //temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
   //
   // Fit to Raga, Mellema, Lundqvist (1997) rates for CNO if all are
   // only singly ionised, and for gas phase abundances of CNO of
@@ -1476,9 +1476,9 @@ int mp_explicit_H::ydot(
   // - n(O)/nH = 5.37e-4*0.77 (0.23 goes in solids)
   // These are taken from Asplund et al. 2009.
   //
-  temp1 = 3.0e-22*METALLICITY*exp(-pow(1.4e5/T,0.6))
-                            *exp(-sqrt(mpv_nH/3.0e4))
-                            *x_in*ne*exp(-T*T/5.0e10);
+  //temp1 = 3.0e-22*METALLICITY*exp(-pow(1.4e5/T,0.6))
+  //                          *exp(-sqrt(mpv_nH/3.0e4))
+  //                          *x_in*ne*exp(-T*T/5.0e10);
 
 
   //
