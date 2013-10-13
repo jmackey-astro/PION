@@ -138,6 +138,8 @@
 ///    there is still more testing to do.
 /// - 2013.08.19 JM: Some cosmetic changes only.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2013.10.13 JM: Fixed bug in dU_Column relating to internal
+///    boundaries; seems it never arose before.
 
 
 #include "../defines/functionality_flags.h"
@@ -908,10 +910,12 @@ int IntUniformFV::set_dynamics_dU(
     class cell *cpt    = grid->FirstPt();
     class cell *marker = grid->FirstPt();
     
-    //    rep.printVec("cpt",cpt->x,SimPM.ndim);
-    //    rep.printVec("+XX",(grid->NextPt(cpt,XP))->x,SimPM.ndim);
-    //    rep.printVec("+YY",(grid->NextPt(cpt,YP))->x,SimPM.ndim);
-    //    rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->x,SimPM.ndim);
+#ifdef TESTING
+    rep.printVec("cpt",cpt->pos,SimPM.ndim);
+    rep.printVec("+XX",(grid->NextPt(cpt,XP))->pos,SimPM.ndim);
+    rep.printVec("+YY",(grid->NextPt(cpt,YP))->pos,SimPM.ndim);
+    rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->pos,SimPM.ndim);
+#endif
     
     while (
       (return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
@@ -923,11 +927,13 @@ int IntUniformFV::set_dynamics_dU(
                                         space_ooa,
 #endif
                                         space_ooa)) ==0) {
-      //       cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
+      //cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
+      //rep.printVec("cpt",cpt->pos,SimPM.ndim);
       if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim]))->isgd ) {
-        //   cout <<"next dir= "<<(i+2)%SimPM.ndim<<"\n";
+        //cout <<"next dir= "<<(i+2)%SimPM.ndim<<"\n";
         if ( !(cpt=grid->NextPt(marker,posdirs[(i+2)%SimPM.ndim]))->isgd ) {
-          rep.error("Got to edge of box before last point!",cpt);
+          CI.print_cell(cpt);
+          rep.error("set_dynamics_dU: Got to edge of box before last point!",cpt);
         }
         marker = cpt;
       } // if null pointer.
@@ -1129,7 +1135,7 @@ int IntUniformFV::dynamics_dU_column
   // If it is the last column, return -1 instead of 0 to indicate this. (A positive
   // return value from errors is picked up in the calling function).
   //
-  do{} while( (cpt=grid->NextPt(cpt,negdir))->isbd );
+  do{} while( !(cpt=grid->NextPt(cpt,negdir))->isgd );
   if (cpt->id == grid->LastPt()->id) return(-1);
   else return(0);
 }

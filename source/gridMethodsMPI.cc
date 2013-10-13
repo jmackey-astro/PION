@@ -55,6 +55,7 @@
 /// - 2012.08.06 JM: Added separators between functions for clarity.
 /// - 2013.04.16 JM: Fixed FITS read functions for new filename convention.
 /// - 2013.09.05 JM: changed RS position[] to pos[].
+/// - 2013.10.13 JM: Tidied up a bit.
 
 #include "grid.h"
 #include "raytracing/raytracer_SC.h"
@@ -489,66 +490,68 @@ int ParallelIntUniformFV::setup_raytracing()
 /*****************************************************************/
 int ParallelIntUniformFV::Time_Int()
 {
-    cout <<"                               **************************************\n";
-    cout <<"(ParallelIntUniformFV::time_int) STARTING TIME INTEGRATION."<<"\n";
-    int err=0;
-    SimPM.maxtime=false;
-    GS.start_timer("time_int"); double tsf=0.0;
-    while (SimPM.maxtime==false) {
-        //
-        // Update RT sources.
-        //
-        err = update_evolving_RT_sources();
-        if (err) {
-          cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
-          return err;
-        }
+  cout <<"                               **************************************\n";
+  cout <<"(ParallelIntUniformFV::time_int) STARTING TIME INTEGRATION."<<"\n";
+  int err=0;
+  int log_freq=1;
+  SimPM.maxtime=false;
+  GS.start_timer("time_int"); double tsf=0.0;
+  while (SimPM.maxtime==false) {
+    //
+    // Update RT sources.
+    //
+    err = update_evolving_RT_sources();
+    if (err) {
+      cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
+      return err;
+    }
 
-	//GS.start_timer("advance_time");
-	err+= advance_time();
-	//cout <<"advance_time took "<<GS.stop_timer("advance_time")<<" secs.\n";
-	if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad"<<"\n";return(1);}
+    //GS.start_timer("advance_time");
+    err+= advance_time();
+    //cout <<"advance_time took "<<GS.stop_timer("advance_time")<<" secs.\n";
+    if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad"<<"\n";return(1);}
 
-	if (mpiPM.myrank==0 && (SimPM.timestep%10)==0) {
+    if (mpiPM.myrank==0 && (SimPM.timestep%log_freq)==0) {
 	  cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
 	  tsf=GS.time_so_far("time_int");
 	  cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-	}
+    //cout.flush();
+    }
 	
-        // check if we are at time limit yet.
-	double maxt = COMM->global_operation_double("MAX", tsf);
+    // check if we are at time limit yet.
+    double maxt = COMM->global_operation_double("MAX", tsf);
 
-	if (maxt > mpiPM.get_max_walltime()) {
+    if (maxt > mpiPM.get_max_walltime()) {
 	    SimPM.maxtime=true;
 	    cout <<"RUNTIME>"<<mpiPM.get_max_walltime()<<" SECS.\n";
-	}
+    }
 	
-	err+= output_data();
-	if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went bad"<<"\n";return(1);}
-	err+= check_eosim();
-	if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went bad"<<"\n";return(1);}
-    }
-    cout <<"(ParallelIntUniformFV::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
-    tsf=GS.time_so_far("time_int");
-    cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
-    cout <<", sim-time="<<SimPM.simtime;
-    cout <<", wall-time=" <<tsf;
-    cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
-    if (RT!=0) {
-      //
-      // output raytracing timing info.  Have to start and stop timers to get 
-      // the correct runtime (this is sort of a bug... there is no function to
-      // get the elapsed time of a non-running timer.  I should add that.
-      //
-      string t1="totalRT", t2="waitingRT", t3="doingRT";
-      double total=0.0, wait=0.0, run=0.0;
-      GS.start_timer(t1); total = GS.pause_timer(t1);
-      GS.start_timer(t2); wait  = GS.pause_timer(t2);
-      GS.start_timer(t3); run   = GS.pause_timer(t3);
-      cout <<"TOTALS RT#: active="<<run<<" idle="<<wait<<" total="<<total<<"\n";
-    }
-    cout <<"                               **************************************\n\n";
-    return(0);
+    err+= output_data();
+    if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went bad"<<"\n";return(1);}
+    err+= check_eosim();
+    if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went bad"<<"\n";return(1);}
+  }
+  cout <<"(ParallelIntUniformFV::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
+  tsf=GS.time_so_far("time_int");
+  cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
+  cout <<", sim-time="<<SimPM.simtime;
+  cout <<", wall-time=" <<tsf;
+  cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
+  if (RT!=0) {
+    //
+    // output raytracing timing info.  Have to start and stop timers to get 
+    // the correct runtime (this is sort of a bug... there is no function to
+    // get the elapsed time of a non-running timer.  I should add that.
+    //
+    string t1="totalRT", t2="waitingRT", t3="doingRT";
+    double total=0.0, wait=0.0, run=0.0;
+    GS.start_timer(t1); total = GS.pause_timer(t1);
+    GS.start_timer(t2); wait  = GS.pause_timer(t2);
+    GS.start_timer(t3); run   = GS.pause_timer(t3);
+    cout <<"TOTALS RT#: active="<<run<<" idle="<<wait<<" total="<<total<<"\n";
+  }
+  cout <<"                               **************************************\n\n";
+  return(0);
 }
 
 

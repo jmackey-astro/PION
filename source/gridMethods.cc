@@ -3279,17 +3279,17 @@ int IntUniformFV::calc_dU(const int csp, const int ctm)
     class cell *cpt    = grid->FirstPt();
     class cell *marker = grid->FirstPt();
     
-    //    rep.printVec("cpt",cpt->x,SimPM.ndim);
-    //    rep.printVec("+XX",(grid->NextPt(cpt,XP))->x,SimPM.ndim);
-    //    rep.printVec("+YY",(grid->NextPt(cpt,YP))->x,SimPM.ndim);
-    //    rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->x,SimPM.ndim);
+    //rep.printVec("cpt",cpt->x,SimPM.ndim);
+    //rep.printVec("+XX",(grid->NextPt(cpt,XP))->x,SimPM.ndim);
+    //rep.printVec("+YY",(grid->NextPt(cpt,YP))->x,SimPM.ndim);
+    //rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->x,SimPM.ndim);
     
     while ( (retval = dU_column(cpt,posdirs[i],negdirs[i], csp, ctm)) ==0) {
-      //       cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
+      //cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
       if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim]))->isgd ) {
-        //   cout <<"next dir= "<<(i+2)%SimPM.ndim<<"\n";
+        //cout <<"next dir= "<<(i+2)%SimPM.ndim<<"\n";
         if ( !(cpt=grid->NextPt(marker,posdirs[(i+2)%SimPM.ndim]))->isgd ) {
-          rep.error("Got to edge of box before last point!",cpt);
+          rep.error("calc_dU: Got to edge of box before last point!",cpt);
         }
         marker = cpt;
       } // if null pointer.

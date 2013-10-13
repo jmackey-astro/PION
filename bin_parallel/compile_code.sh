@@ -162,7 +162,7 @@ if [ $PION_OPTIMISE == LOW ]
   echo "LDFLAGS= $DLFLAGS"
   export LDFLAGS=" -lreadline -lncurses "
   echo "LDFLAGS= $LDFLAGS"
-  export JMCODE_OPTIONS="$JMCODE_OPTIONS -DTESTING"
+  export PION_OPTIONS="$PION_OPTIONS -DTESTING"
 else
   export LDFLAGS=""
 fi
