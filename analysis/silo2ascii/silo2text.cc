@@ -8,6 +8,7 @@
 /// - 2011.12.14 JM: converted from silocompare.cc
 /// - 2013.09.05 JM: Fixed for pion; added microphysics so ascii
 ///    files can have gas temperature written out.
+/// - 2013.10.04 JM: Added output frequency to skip silo files.
 
 #ifndef PARALLEL
 # error "define PARALLEL so this will work!"
@@ -181,14 +182,17 @@ int main(int argc, char **argv)
   //
   // Get an input file and an output file.
   //
-  if (argc!=4) {
+  if (argc!=5) {
     cerr << "Error: must call as follows...\n";
-    cerr << "silo2text: <silo2text> <source-dir> <file-base>  <output-file> \n";
+    cerr << "silo2text: <silo2text> <source-dir> <file-base>  <output-file> <op-freq>\n";
+    cerr << "  op-freq: if this is e.g. 10, we only convert every";
+    cerr << " 10th input file to a text file.\n";
     rep.error("Bad number of args",argc);
   }
   string fdir = argv[1];
   string firstfile= argv[2];
   string outfilebase =argv[3]; string outfile;
+  size_t op_freq = atoi(argv[4]);
 
   string rts("msg_"); rts += outfilebase;
   //rep.redirect(rts);
@@ -212,7 +216,7 @@ int main(int argc, char **argv)
   //
   // loop over all files: open first and write a text file.
   //
-  for (unsigned int fff=0; fff<nfiles; fff++) {
+  for (unsigned int fff=0; fff<nfiles; fff += op_freq) {
     ostringstream oo;
     oo.str(""); oo<<fdir<<"/"<<*ff; firstfile  =oo.str(); 
 
@@ -400,7 +404,8 @@ int main(int argc, char **argv)
     //
     // move onto next first and second files
     //
-    ff++;
+    for (int vv=0;vv<op_freq;vv++)
+      ff++;
   } // move onto next file
 
   //

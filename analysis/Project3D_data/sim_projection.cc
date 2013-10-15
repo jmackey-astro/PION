@@ -1,26 +1,26 @@
 ///
-/// sim_projection.cc
+/// \file sim_projection.cc
+/// \author Jonathan Mackey
 ///
-/// Jonathan Mackey
-/// 2009-06-03 Adapted from trunks.cc
-/// 2009-06-11 Adapted from map_etrunks.cc
-/// 2009-06-23 Added in Doppler Broadening for line-of-sight velocity profiles.
-/// 2009-06-25 Split into other files; main() moved to main_projection.cc
-///
+/// - 2009-06-03 Adapted from trunks.cc
+/// - 2009-06-11 Adapted from map_etrunks.cc
+/// - 2009-06-23 Added in Doppler Broadening for line-of-sight velocity profiles.
+/// - 2009-06-25 Split into other files; main() moved to main_projection.cc
 /// - 2010-03-22 JM: Moved to MHD_ET_2010, modified to also get
 ///   projected magnetic field Q and U components
-///
 /// - 2010-04-22 JM: Fixed a bug where in get_point_v_los() the call
 ///   to get_point_neutraldensity() had hardcoded the ionisation
 ///   fraction element of the state vector to be 5, rather than the
 ///   value passed to the function.  This is only a problem for MHD
 ///   runs where 5 is an incorrect value.
-/// 
 /// - 2010.12.13 JM: Added  NEW_STOKES_CALC ifdef to Makefile; the new
 ///    code in the ifdef does a different Stokes Q,U calculation and
 ///    replaces the projected Bx,By with values calculated from Q,U.
 /// - 2013.05.24 JM: Modified H-alpha emission calculation to output
 ///    intensity in units of erg/cm2/s/arcsec (set absorption to 0).
+/// - 2013.10.15 JM: Updated to use microphysics classes to get the
+///    gas temperature and n(H), and added [N II] forbidden line
+///    emission.
 
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
@@ -443,6 +443,13 @@ void coordinate_conversion::get_sim_Dpos(const double *im_pos, ///< position in 
 // *************************************************************
 // -------------------------------------------------------------
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 image::image(const enum direction los, ///< Line of sight direction
 	const int t,            ///< Angle of LOS w.r.t. los direction.
 	const enum direction perp, ///< vertical direction, which stays in image plane.
@@ -470,6 +477,12 @@ image::image(const enum direction los, ///< Line of sight direction
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 image::~image()
 {
   if (cell_positions_set)
@@ -486,6 +499,13 @@ image::~image()
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void image::add_integration_pts_to_pixels()
 {
@@ -566,6 +586,13 @@ void image::add_integration_pts_to_pixels()
   }
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void image::find_surrounding_cells(const double x[3],
 				   cell *c,
@@ -758,6 +785,12 @@ void image::find_surrounding_cells(const double x[3],
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 bool image::cell_is_in_pixel(double *cp, ///< Cell position (in image coordinates).
 			     pixel  *p  ///< pixel in question.
 			     )
@@ -776,6 +809,13 @@ bool image::cell_is_in_pixel(double *cp, ///< Cell position (in image coordinate
 
   return inside;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void image::add_cells_to_pixels()
 {
@@ -833,6 +873,11 @@ void image::add_cells_to_pixels()
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 void image::set_cell_positions_in_image()
 {
   //
@@ -868,6 +913,12 @@ void image::set_cell_positions_in_image()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void image::delete_cell_positions()
 {
   if (!cell_positions_set) {
@@ -895,6 +946,12 @@ void image::delete_cell_positions()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void image::initialise_pixels()
 {
   pixel *p=0;
@@ -914,6 +971,12 @@ void image::initialise_pixels()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void image::delete_pixel_data(pixel *p)
 {
   if (p->int_pts.p) {
@@ -926,6 +989,12 @@ void image::delete_pixel_data(pixel *p)
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 double image::get_pt_density(struct point_4cellavg *pt)
@@ -941,7 +1010,16 @@ double image::get_pt_density(struct point_4cellavg *pt)
   return val;
 }
 
-double image::get_pt_neutral_numberdensity(struct point_4cellavg *pt, int ifrac)
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double image::get_pt_neutral_numberdensity(
+        struct point_4cellavg *pt, int ifrac
+        )
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
@@ -949,11 +1027,19 @@ double image::get_pt_neutral_numberdensity(struct point_4cellavg *pt, int ifrac)
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(pt->ngb[v]->P[RO]*(1.0-pt->ngb[v]->P[ifrac]));
+    if (pt->ngb[v]) val += pt->wt[v] *(pt->ngb[v]->P[RO]
+                                      *(1.0-pt->ngb[v]->P[ifrac]));
   }
-  val /= GS.m_p();
+  val *= SimPM.EP.H_MassFrac/GS.m_p();
+  //cout <<"image::get_pt_neutral_numberdensity() n(H0) = "<<val<<"\n";
   return val;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 //#define SQRT_DENSITY
 //#define NO_DENSITY_WT
@@ -1032,6 +1118,14 @@ double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
 
   return val;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
 			     const int bx, const int by, const int bz,
 			     const int signx, const int signy, const int signz,
@@ -1108,6 +1202,13 @@ double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
   return val;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double image::get_pt_BXabs(struct point_4cellavg *pt, const int,
 			   const int bx, const int by, const int bz,
 			   const int signx, const int , const int signz,
@@ -1139,6 +1240,13 @@ double image::get_pt_BXabs(struct point_4cellavg *pt, const int,
   return val;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double image::get_pt_BYabs(struct point_4cellavg *pt, const int ,
 			   const int bx, const int by, const int bz,
 			   const int , const int , const int ,
@@ -1168,6 +1276,13 @@ double image::get_pt_BYabs(struct point_4cellavg *pt, const int ,
   }
   return val;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void image::calculate_pixel(struct pixel *px,                 ///< pointer to pixel
 			    const struct vel_prof_stuff *vps, ///< struct with info for velocity binning.
@@ -1476,7 +1591,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
   else if (what_to_integrate==I_EMISSION) {
     //
     // Set up class for calculating points.
-    // None of the paramters mean anything for calculating emission;
+    // None of the parameters mean anything for calculating emission;
     // they're just for velocity.
     //
     class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
@@ -1488,7 +1603,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     // source function, eq. 1.30, and ignores scattering.
     // 
     for (int v=0; v<npt; v++) {
-       VLOS.get_point_recomb_radiation_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+       VLOS.get_point_Halpha_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
 	 //
@@ -1509,6 +1624,43 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     im[px->ipix] = ans; ///1.0e80;
     //cout <<"\t\tans = "<<ans<<endl;
   } // I_EMISSION
+  
+  else if (what_to_integrate==I_NII6584) {
+    //
+    // Set up class for calculating points.
+    // None of the parameters mean anything for calculating [NII];
+    // they're just for velocity.
+    //
+    class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
+    double alpha=0.0, j=0.0, dtau=0.0;
+    ans=0.0;
+    //
+    // Now do an Euler Integration with forward differencing.
+    // This uses Rybicki & Lightman's basic solution for constant
+    // source function, eq. 1.30, and ignores scattering.
+    // 
+    for (int v=0; v<npt; v++) {
+       VLOS.get_point_NII6584_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+       dtau = alpha*hh;
+       if (dtau < 1e-7) {
+	 //
+	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
+	 // 
+	 ans = ans*(1.0-dtau) +j*hh;
+       }
+       else {
+	 //
+	 // Don't approximate the exponentials because absorption is quite strong
+	 // 
+	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
+	 //cout <<" dtau = "<<dtau<<endl;
+       }
+    }
+
+    *tot_mass += 0.0;  // this means nothing for emission integration...
+    im[px->ipix] = ans; ///1.0e80;
+    //cout <<"\t\tans = "<<ans<<endl;
+  } // I_NII6584
   
   else {
     rep.error("don't know what to integrate!",what_to_integrate);
@@ -1531,6 +1683,13 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
 // ******************** POINT VELOCITY CLASS *******************
 // *************************************************************
 // -------------------------------------------------------------
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 point_velocity::point_velocity(const int vx_comp,  ///< velocity component perp. to LOS direction (contributing)
 			       const int vz_comp,  ///< velocity componenet along LOS
@@ -1555,9 +1714,17 @@ point_velocity::point_velocity(const int vx_comp,  ///< velocity component perp.
   return;
 }
 
-void point_velocity::set_broadening(const int type,    ///< Type: 1=constant Gaussian broadening.
-				    const double fwhm ///< FWHM of Gaussian to smooth profile by.
-				    )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void point_velocity::set_broadening(
+        const int type,    ///< Type: 1=constant Gaussian broadening.
+        const double fwhm ///< FWHM of Gaussian to smooth profile by.
+        )
 {
   broaden = type;
   //
@@ -1574,16 +1741,24 @@ void point_velocity::set_broadening(const int type,    ///< Type: 1=constant Gau
 }
 
 
-void point_velocity::four1(double *data,         ///< length 2*nn, for nn real and nn imaginary values.
-			   unsigned long int nn, ///< half the length of the array.
-			   int isign             ///< =1 for forward transform, =-1 for inverse transform.
-			   )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void point_velocity::four1(
+        double *data,         ///< length 2*nn, for nn real and nn imaginary values.
+        unsigned long int nn, ///< half the length of the array.
+        int isign             ///< =1 for forward transform, =-1 for inverse transform.
+        )
 {
-//
-// This is the NR version of the FFT.  Instead of trying to convert it
-// all for zero-offset arrays, I copied Martin White, and access the
-// (n-1)th element of data[] whenever I need to.
-//
+  //
+  // This is the NR version of the FFT.  Instead of trying to convert it
+  // all for zero-offset arrays, I copied Martin White, and access the
+  // (n-1)th element of data[] whenever I need to.
+  //
   unsigned long int n=0, m=0, j=0, i=0, istep=0, mmax=0;
   double theta, wtemp, wr, wpr, wpi, wi;
   double tempr, tempi;
@@ -1632,6 +1807,13 @@ void point_velocity::four1(double *data,         ///< length 2*nn, for nn real a
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void point_velocity::smooth_profile_FFT(double *data ///< Array of velocity bins to smooth.
 				    )
@@ -1708,23 +1890,31 @@ void point_velocity::smooth_profile_FFT(double *data ///< Array of velocity bins
   return;
 }
 
-void point_velocity::get_point_VX_profile(const struct point_4cellavg *pt, ///< point to add to profile.
-					  double *prof, ///< Array of velocity bins to put profile into.
-					  const int ifrac ///< index of i-fraction in P.V.
-					  )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void point_velocity::get_point_VX_profile(
+        const struct point_4cellavg *pt, ///< point to add to profile.
+        double *prof, ///< Array of velocity bins to put profile into.
+        const int ifrac ///< index of i-fraction in P.V.
+        )
 {
   //
-  // Gets the velocity profile, using VX only, ignoring projection and orientation effects.
-  // This is NOT a realistic observation, but just used to give a picture of what VX is 
-  // doing along the length of a pillar.
-  // It is identical to the more realistic get_point_v_los_profile() function below except
-  // that it calls a different function to get the point's velocity.
+  // Gets the velocity profile, using VX only, ignoring projection
+  // and orientation effects.  This is NOT a realistic observation,
+  // but just used to give a picture of what VX is doing along the
+  // length of a pillar.  It is identical to the more realistic
+  // get_point_v_los_profile() function below except that it calls a
+  // different function to get the point's velocity.
   //
   double vel, norm;
   int ibin;
   vel  = get_point_VX(pt);
-  norm = get_point_neutral_numberdensity(pt,ifrac);
-  //norm = get_point_density(pt);
+  norm = get_point_neutralH_numberdensity(pt,ifrac);
   ibin = get_velocity_bin_number(vel);
   for (int v=0;v<v_Nbins;v++) prof[v] = 0.0;
   if (ibin>0 && ibin<v_Nbins)
@@ -1738,16 +1928,23 @@ void point_velocity::get_point_VX_profile(const struct point_4cellavg *pt, ///< 
   return;
 }
 
-void point_velocity::get_point_v_los_profile(const struct point_4cellavg *pt, ///< point to add to profile.
-					     double *prof, ///< Array of velocity bins to put profile into.
-					     const int ifrac ///< index of i-fraction in P.V.
-					     )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void point_velocity::get_point_v_los_profile(
+        const struct point_4cellavg *pt, ///< point to add to profile.
+        double *prof, ///< Array of velocity bins to put profile into.
+        const int ifrac ///< index of i-fraction in P.V.
+        )
 {
   double vel, norm;
   int ibin;
   vel  = get_point_los_velocity(pt);
-  norm = get_point_neutral_numberdensity(pt,ifrac);
-  //norm = get_point_density(pt);
+  norm = get_point_neutralH_numberdensity(pt,ifrac);
   ibin = get_velocity_bin_number(vel);
   for (int v=0;v<v_Nbins;v++) prof[v] = 0.0;
   if (ibin>0 && ibin<v_Nbins)
@@ -1759,6 +1956,13 @@ void point_velocity::get_point_v_los_profile(const struct point_4cellavg *pt, //
   
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point to add to profile.
 				     double *prof,    ///< velocity bins.
@@ -1832,29 +2036,56 @@ void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point
   return;
 }
 
-double point_velocity::get_point_temperature(const struct point_4cellavg *pt,
-					     const int ifrac
-					     )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double point_velocity::get_point_temperature(
+        const struct point_4cellavg *pt,
+        const int ifrac
+        )
 {
   double val = 0.0;
   //
-  // First get the mean of p/rho/(1+x)
+  // If microphysics is set up, then use MP->Temperature() to get the
+  // temperature.  Otherwise assume a pure Hydrogen gas.
   //
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      //cout <<"p,ro,if = "<<pt->ngb[v]->P[PG]<<", "<< pt->ngb[v]->P[RO] <<", "<<pt->ngb[v]->P[ifrac]<<endl;
-      val += pt->wt[v] *(pt->ngb[v]->P[PG]/pt->ngb[v]->P[RO]/(1.0+pt->ngb[v]->P[ifrac]));
+  if (MP) {
+    for (int v=0;v<4;v++) {
+      if (pt->ngb[v]) {
+        val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,SimPM.gamma);
+      }
     }
   }
-
-  //
-  // multiply by m_p/k_B = 1.67e-24/1.38e-16 = 1.21e-8
-  //
-  val *= 1.21e-8;
-  //  cout <<"Temperature="<<val<<endl;
+  else {
+    rep.error("get_point_temperature(): no microphysics class",1);
+    //  
+    // First get the mean of p/rho/(1+x)
+    //
+    for (int v=0;v<4;v++) {
+      if (pt->ngb[v]) {
+        //cout <<"p,ro,if = "<<pt->ngb[v]->P[PG]<<", "<< pt->ngb[v]->P[RO] <<", "<<pt->ngb[v]->P[ifrac]<<endl;
+        val += pt->wt[v] *(pt->ngb[v]->P[PG]/pt->ngb[v]->P[RO]/(1.0+pt->ngb[v]->P[ifrac]));
+      }
+    }
+    //
+    // multiply by m_p/k_B = 1.67e-24/1.38e-16 = 1.21e-8
+    //
+    val *= 1.21e-8;
+    //  cout <<"Temperature="<<val<<endl;
+  }
   return val;
 }
     
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double point_velocity::get_point_density(const struct point_4cellavg *pt)
 {
@@ -1865,30 +2096,53 @@ double point_velocity::get_point_density(const struct point_4cellavg *pt)
   return val;
 }
 
-double point_velocity::get_point_neutral_numberdensity(
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double point_velocity::get_point_neutralH_numberdensity(
         const struct point_4cellavg *pt,
         const int ifrac
         )
 {
   double val=0.0;
+  //
+  // First get neutral mass density.
+  //
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(pt->ngb[v]->P[RO]*(1.0-pt->ngb[v]->P[ifrac]));
+    if (pt->ngb[v]) {
+      val += pt->wt[v] *(pt->ngb[v]->P[RO]*(1.0-pt->ngb[v]->P[ifrac]));
+    }
   }
-  val /= GS.m_p();
+  //
+  // Then scale by H mass fraction and divide by mass of H.
+  //
+  val *= SimPM.EP.H_MassFrac/GS.m_p();
   return val;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 ///
-/// Get the absorption and emission coefficients for hydrogen
+/// Get the absorption and emission coefficients for H-alpha
 /// recombination radiation, according to Hummer94 and Henney et al.
 /// (2005)'s generic formulae.
 /// 
 /// I found emissivities according to Storey & Hummer
 /// (1995,MNRAS,272,41), and they drop linearly with temperature.
 /// Not sure why that is, but it is for Ha,Hb,Hg, etc.
-/// UPDATE: Replaced with a fit to Ostebrock (1989)'s tables.
 ///
-void point_velocity::get_point_recomb_radiation_params(
+/// UPDATE: Replaced with a fit to Ostebrock (1989)'s tables, which
+/// seem to be more reliable.
+///
+void point_velocity::get_point_Halpha_params(
         const struct point_4cellavg *pt, ///< point in question.
         const int ifrac, ///< index of Prim.Vector with Ion. fraction.
         double *alpha,   ///< absorption coefficient (photons/cm)
@@ -1896,34 +2150,36 @@ void point_velocity::get_point_recomb_radiation_params(
         )
 {
   //
-  // I need the ion number density, neutral number density, and temperature.
-  // ion density is calculated from (density minus neutral_density)
+  // I need the H+ number density, neutral number density, and
+  // temperature. ion density is calculated from (density minus
+  // neutral_density).
   // 
   double T, ni, nn;
   T  = get_point_temperature(pt,ifrac);
   //
-  // get_point_neutral_numberdensity() assume mean mass per particle
+  // get_point_neutralH_numberdensity() assume mean mass per particle
   // is m_p(), so we multiply by the H mass fraction to get H number
   // density.
   // get_point_density() is mass density, so we also divide by m_p().
   // Then the electron number density is the H+ number density times
   // (1+X(He)/4X(H)).
   //
-  nn = get_point_neutral_numberdensity(pt,ifrac)*(1.0-SimPM.EP.Helium_MassFrac);
-  ni = get_point_density(pt)*(1.0-SimPM.EP.Helium_MassFrac)/GS.m_p();
+  nn = get_point_neutralH_numberdensity(pt,ifrac);
+  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/GS.m_p();
   ni = std::max(0.0, ni-nn);
   //
   // First absorption, from Henney et al. (2009) assuming the opacity
-  // is from dust
+  // is from dust, so that neutrals and ions both count.
   //
-  //*alpha = (nn) *5.0e-22; // cgs units hardcoded.
-  *alpha = 0.0; // zero absorption (cuts out simulation edges.
+  *alpha = (ni+nn) *5.0e-22; // cgs units hardcoded.
+  //*alpha = 0.0; // zero absorption (cuts out simulation edges).
   //
   // Emissivity in H-alpha is
   //   j = 1.12e-22*n_e*n_p/pow(T,0.9) erg/cm3/s/sr,
   // from Osterbrock (book, edition 2006, table 4.4).
   // Converted to per square arcsec this is
   //   j = 2.63e-33*n_e*n_p/pow(T,0.9) erg/cm3/s/sq.arcsec.
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
   //
   if (T<1.0) {
     // can get zero temperature if point is off-grid!!!
@@ -1931,52 +2187,141 @@ void point_velocity::get_point_recomb_radiation_params(
   }
   else {
     *j = 2.63e-33*ni*ni*exp(-0.9*log(T));
-    // OLD VALUES *j = 2.056e-14*ni*ni/T; // Emissivity scales more steeply than recombination rate
+    // OLD VALUES *j = 2.056e-14*ni*ni/T;
+    // Emissivity scales more steeply than recombination rate
   }
-  //if (T<1000.0 && T>5.0)
-  //  cout <<"alpha = "<<*alpha<<" j="<<*j;
   return;
 }
 
 
-double point_velocity::get_point_los_velocity(const struct point_4cellavg *pt
-					      )
+
+// ##################################################################
+// ##################################################################
+
+
+
+///
+/// Get the absorption and emission coefficients for [N II] 6584AA
+/// forbidden line emission, according to the formula in Dopita 
+/// (1973,A&A,29,387)
+/// 
+void point_velocity::get_point_NII6584_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j        ///< emission coeff (erg/cm^3/s/sq.arcsec)
+        )
+{
+  //
+  // I need the H+ number density, neutral number density, and
+  // temperature. ion density is calculated from (density minus
+  // neutral_density).
+  // 
+  double T, ni, nn;
+  T  = get_point_temperature(pt,ifrac);
+  //
+  // get_point_neutralH_numberdensity() assume mean mass per particle
+  // is m_p(), so we multiply by the H mass fraction to get H number
+  // density.
+  // get_point_density() is mass density, so we also divide by m_p().
+  // Then the electron number density is the H+ number density times
+  // (1+X(He)/4X(H)).
+  //
+  nn = get_point_neutralH_numberdensity(pt,ifrac);
+  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/GS.m_p();
+  ni = std::max(0.0, ni-nn);
+  //
+  // First absorption, from Henney et al. (2009) assuming the opacity
+  // is from dust, so that neutrals and ions both count.
+  //
+  *alpha = (ni+nn) *5.0e-22; // cgs units hardcoded.
+  //*alpha = 0.0; // zero absorption (cuts out simulation edges).
+  //
+  // Emissivity in [N II] 6584AA is
+  //  j([NII] ll 6584) =
+  //   6.82e-18 n_e*n_p*f(N)*exp(-chi/kT)/(4*pi*sqrt(T))
+  // in units of erg/cm3/s/sr, and use
+  //  n_e*n_p = rho^2 y^2 (X_H/m_p)^2
+  // and we convert to erg/cm2/s/sq.arcsec.
+  //
+  // Furthermore, we assume N has its solar ISM abundance of
+  // A(N)=7.85 or f(N)=7.08e-5.
+  //
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid!!!
+    *j = 0.0;
+  }
+  else {
+    *j = 9.03e-34*ni*ni*exp(-2.1855e4/T)/sqrt(T);
+  }
+  return;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double point_velocity::get_point_los_velocity(
+        const struct point_4cellavg *pt
+        )
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*st +sz*pt->ngb[v]->P[vz]*ct);
+    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*st
+                                      +sz*pt->ngb[v]->P[vz]*ct);
   }
-  //  cout <<"sx="<<sx<<" sz="<<sz<<" ct="<<costheta<<" st="<<sintheta<<" val="<<val;
+  //  cout <<"sx="<<sx<<" sz="<<sz;
+  //  cout <<" ct="<<costheta<<" st="<<sintheta<<" val="<<val;
   //val /= 1.0e5; // convert to km/s
   //val *=15.0;
   //  cout <<" scaled val="<<val<<endl;
   //if (fabs(val)>20.0) 
-  //  cout <<"sx="<<sx<<" sz="<<sz<<" ct="<<costheta<<" st="<<sintheta<<" val="<<val<<" old_val="<<val/5.0<<endl;
+  // cout <<"sx="<<sx<<" sz="<<sz<<" ct="<<costheta;
+  // cout <<" st="<<sintheta<<" val="<<val<<" old_val="<<val/5.0<<"\n";
   return val;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double point_velocity::get_point_perp_velocity(const struct point_4cellavg *pt
 					       )
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*ct -sz*pt->ngb[v]->P[vz]*st);
+    if (pt->ngb[v]) val += pt->wt[v] *(sx*pt->ngb[v]->P[vx]*ct
+                                      -sz*pt->ngb[v]->P[vz]*st);
   }
   //cout <<"sx="<<sx<<" sz="<<sz<<" ct="<<ct<<" st="<<st<<" val="<<val;
   //val /= 1.0e5; // convert to km/s
   //val *=5.0;
-  cout <<" scaled val="<<val<<endl;
+  // cout <<" scaled val="<<val<<endl;
   return val;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double point_velocity::get_point_VX(const struct point_4cellavg *pt
 				    )
 {
   //
-  // This does the bi-linear interpolation from the four nearest cells in
-  // the plane, to the point in the centre of the pixel on the line of sight.
-  // The weights of each point are already calculated in the setup of the
-  // image with its lines of sight.
+  // This does the bi-linear interpolation from the four nearest
+  // cells in the plane, to the point in the centre of the pixel on
+  // the line of sight.  The weights of each point are already
+  // calculated in the setup of the image with its lines of sight.
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
@@ -1988,8 +2333,16 @@ double point_velocity::get_point_VX(const struct point_4cellavg *pt
   return val;
 }
 
-int point_velocity::get_velocity_bin_number(const double vel ///< point's velocity
-					    )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int point_velocity::get_velocity_bin_number(
+        const double vel ///< point's velocity
+        )
 {
   int ibin = static_cast<int>((vel - v_min)/v_binsize);
   if      (vel<v_min) {
@@ -2016,8 +2369,10 @@ int point_velocity::get_velocity_bin_number(const double vel ///< point's veloci
       //cout <<"v_min="<<v_min<<" vmax="<<v_max<<" binsize="<<v_binsize<<endl;
       ibin++;
     }
-    if ((vel < v_min+ibin*v_binsize) || (vel >= v_min+(ibin+1)*v_binsize))
+    if ((vel < v_min+ibin*v_binsize) ||
+        (vel >= v_min+(ibin+1)*v_binsize)) {
       rep.error("Can't locate velocity in a velocity bin.",vel);
+    }
   }
   return ibin;
 }

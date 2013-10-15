@@ -493,7 +493,7 @@ int ParallelIntUniformFV::Time_Int()
   cout <<"                               **************************************\n";
   cout <<"(ParallelIntUniformFV::time_int) STARTING TIME INTEGRATION."<<"\n";
   int err=0;
-  int log_freq=1;
+  int log_freq=100;
   SimPM.maxtime=false;
   GS.start_timer("time_int"); double tsf=0.0;
   while (SimPM.maxtime==false) {

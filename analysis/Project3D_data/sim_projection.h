@@ -3,11 +3,13 @@
 ///
 /// - 2010-03-22 JM: Moved to MHD_ET_2010, modified to also get
 ///   projected magnetic field Q and U components
-///
 /// - 2010.12.13 JM: Added  NEW_STOKES_CALC ifdef to Makefile; the new
 ///    code in the ifdef does a different Stokes Q,U calculation and
 ///    replaces the projected Bx,By with values calculated from Q,U.
-///
+/// - 2013.10.15 JM: Updated to use microphysics classes to get the
+///    gas temperature and n(H), and added [N II] forbidden line
+///    emission.
+
 
 #ifndef SIM_PROJECTION_H
 #define SIM_PROJECTION_H
@@ -22,6 +24,7 @@
 #define I_ALL_SCALARS 7
 #define I_BXabs 8
 #define I_BYabs 9
+#define I_NII6584    10
 
 #ifndef NEW_STOKES_CALC
 #error "Define NEW_STOKES_CALC please!"
@@ -47,10 +50,14 @@ public:
   /** \brief Returns negative direction along an axis. */
   enum direction get_negdir(const enum axes);
 };
- 
+
+
+
+
 // ------------------------------------------------------------
 // ************************************************************
 // ------------------------------------------------------------
+
 
 
 
@@ -90,9 +97,13 @@ struct pixel {
 };
 
 
+
+
 // ------------------------------------------------------------
 // ************************************************************
 // ------------------------------------------------------------
+
+
 
 class coordinate_conversion : public axes_directions {
 public:
@@ -223,8 +234,10 @@ protected:
 	     unsigned long int nn,  ///< half the length of the array (i.e. number of Cx. values).
 	     int isign              ///< =1 for forward transform, =-1 for inverse transform.
 	     );
+
   int FT_Ng; ///< number of elements in data array for FFTing.
 public:
+
   /** \brief constructor sets geometry info. */
   point_velocity(const int,    ///< velocity component perp. to LOS direction (contributing)
 		 const int,    ///< velocity componenet along LOS
@@ -235,11 +248,15 @@ public:
 		 const double, ///< maximum velocity in range
 		 const int     ///< Number of bins.
 		 );
+
   ~point_velocity() {}
+
   /** \brief Set the line broadening technique. */
-  void set_broadening(const int,    ///< Type: 1=constant Gaussian broadening.
-		      const double  ///< FWHM of Gaussian to smooth profile by.
-		      );
+  void set_broadening(
+          const int,    ///< Type: 1=constant Gaussian broadening.
+          const double  ///< FWHM of Gaussian to smooth profile by.
+          );
+
   /** \brief Returns the LOS velocity profile at the point in question, subject to
    * the parameters imposed in the constructor.
    *
@@ -248,10 +265,12 @@ public:
    * Gaussian corresponding to the Doppler broadening from the point's
    * temperature.  This is the primary useful function call for this
    * class. */
-  void get_point_v_los_profile(const struct point_4cellavg *, ///< point to add to profile.
-			       double *, ///< Array of velocity bins to put profile into.
-			       const int ///< index of ion fraction in prim.var.
-			       );
+  void get_point_v_los_profile(
+          const struct point_4cellavg *, ///< point to add to profile.
+          double *, ///< Array of velocity bins to put profile into.
+          const int ///< index of ion fraction in prim.var.
+          );
+
   /** \brief Returns the X-velocity componoent in a velocity profile at the
    * point in question, subject to the parameters imposed in the constructor.
    *
@@ -261,49 +280,85 @@ public:
    * temperature.  This is for diagnostics rather than to mimic a real 
    * observation, since Vx is not a straightforward observation.
    */
-  void get_point_VX_profile(const struct point_4cellavg *, ///< point to add to profile.
-			    double *, ///< Array of velocity bins to put profile into.
-			    const int ///< index of ion fraction in prim.var.
-			    );
+  void get_point_VX_profile(
+          const struct point_4cellavg *, ///< point to add to profile.
+          double *, ///< Array of velocity bins to put profile into.
+          const int ///< index of ion fraction in prim.var.
+          );
+
   /** \brief Smooth the profile with whatever smoothing is required.  This only has any
    * effect if using fixed-width smoothing, when it does an FFT-based smoothing with a
    * Gaussian function.
    * */
-  void smooth_profile_FFT(double * ///< Array of velocity bins to smooth.
-			  );
+  void smooth_profile_FFT(
+          double * ///< Array of velocity bins to smooth.
+          );
 
    ///
-   /// Get the absorption and emission coefficients for hydrogen recombination
-   /// radiation, according to Hummer94 and Henney et al. 2005's generic formulae
+   /// Get the absorption and emission coefficients for H-alpha
+   /// radiation, according to a fit to Osterbrock's data table for
+   /// photoionised nebulae.
    ///
-   void get_point_recomb_radiation_params(const struct point_4cellavg *, ///< point in question.
-					  const int, ///< ifrac index in prim.vec.
-					  double *,  ///< absorption coefficient (photons/cm)
-					  double *   ///< emission coeff (phot/cm^3/s/ster)
-					  );
-					  
+   void get_point_Halpha_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
+   ///
+   /// Get the absorption and emission coefficients for [N II] 6584AA
+   /// radiation, according to a fit from Dopita (1973,A&A,29,387).
+   ///
+   void get_point_NII6584_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
+
+
  protected:
+
   /** \brief Get the density at the point, based on 4 cell bilinear interpolation. */
   double get_point_density(const struct point_4cellavg *);
-  double get_point_neutral_numberdensity(const struct point_4cellavg *, // point
-					 const int // ifrac
-					 );
-  /** \brief get the temperature at a point, based on 4-cell bilinear
-   * interpolation.
-   * */
-  double get_point_temperature(const struct point_4cellavg *,
-			       const int // ifrac index in prim.vec.
-			       );
+
+  ///
+  /// Get the H^0 number density, using SimPM.MP.H_MassFrac to
+  /// convert from mass density to number density.
+  ///
+  double get_point_neutralH_numberdensity(
+          const struct point_4cellavg *, // point
+          const int // ifrac
+          );
+
+  ///
+  /// Get the temperature at a point, based on 4-cell bilinear
+  /// interpolation.  This requires a microphysics class.
+  ///
+  double get_point_temperature(
+          const struct point_4cellavg *,
+          const int // ifrac index in prim.vec.
+          );
+
   /** \brief Returns the LOS velocity at the point, based on a 4 cell bilinear average. */
-  double get_point_los_velocity(const struct point_4cellavg *
-				);
+  double get_point_los_velocity(
+          const struct point_4cellavg *
+          );
+
   /** \brief Returns the X-velocity component at the point, based on a 4 cell bilinear average. */
-  double get_point_VX(const struct point_4cellavg *
-		      );
-   double get_point_perp_velocity(const struct point_4cellavg *
-				  );
-  int get_velocity_bin_number(const double ///< point's velocity
-			      );
+  double get_point_VX(
+          const struct point_4cellavg *
+          );
+
+  double get_point_perp_velocity(
+          const struct point_4cellavg *
+          );
+
+  int get_velocity_bin_number(
+          const double ///< point's velocity
+          );
   
   /** \brief This does Doppler broadening of a single velocity point, into a 
    * temporary profile array.  Convolution is easy because the velocity is

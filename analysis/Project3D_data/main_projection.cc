@@ -41,15 +41,10 @@
 ///    replaces the projected Bx,By with values calculated from Q,U.
 /// - 2012.12.05 JM: Added section to subtract off mean values from
 ///    projected total and neutral density.
+/// - 2013.10.14 JM: Added microphysics support (for getting T, n_H,
+///    n_e, etc.).  Added geometric grid.  Added [NII] 6584AA
+///    emission calculation.  Added VTK output option.
 
-//
-// Run with e.g.: 
-// ./projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_std_0000 M110std_vprof_const 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 1
-// ./projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_std_0000 M110std_vprof_const 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 1
-// ./projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_c15_0000 vprof_c15 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 [1/2]
-// ./projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_std_0000 vprof_std 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 [1/2]
-// ./projection /mnt/projects/astrophysics/jmackey/EagleNebula/multi3d_v2/ R3dnew_n192_M9_0000.0 test2 1 1 YP ZP 40 2 20 -10.0e5 10.0e5
-//
 
 ///
 /// This calls the function RESET_DOMAIN() every timestep to make the
@@ -62,7 +57,7 @@
 /// If set, this subtracts the mean density from column density
 /// images.
 ///
-#define SUBTRACT_MEAN
+///#define SUBTRACT_MEAN
 
 #include <iostream>
 #include <sstream>
@@ -75,6 +70,41 @@ using namespace std;
 
 #include "sim_projection.h"
 #include "image_io.h"
+
+
+
+// ----------- MICROPHYSICS --------------
+#include "microphysics/microphysics_base.h"
+#ifndef EXCLUDE_MPV1
+#include "microphysics/microphysics.h"
+#endif 
+#ifndef EXCLUDE_HD_MODULE
+#include "microphysics/microphysics_lowZ.h"
+#endif 
+#include "microphysics/mp_only_cooling.h"
+#ifndef EXCLUDE_MPV2
+#ifdef MP_V2_AIFA
+#include "microphysics/mp_v2_aifa.h"
+#endif
+#endif 
+#ifndef EXCLUDE_MPV3
+#include "microphysics/mp_explicit_H.h"
+#endif
+#ifndef EXCLUDE_MPV4
+#include "microphysics/mp_implicit_H.h"
+#endif 
+#include "microphysics/mpv5_molecular.h"
+#include "microphysics/mpv6_PureH.h"
+#include "microphysics/mpv7_TwoTempIso.h"
+
+#ifdef CODE_EXT_HHE
+#include "future/mpv9_HHe.h"
+#endif
+
+#include "raytracing/raytracer_SC.h"
+// ----------- MICROPHYSICS --------------
+
+
 
 #ifdef THREADS
 #include "andys_threads/msvc_constants.h"
@@ -122,6 +152,24 @@ void calculate_pixelW(void *arg)
   return;
 }
 #endif //THREADS
+
+
+
+// ----------- MICROPHYSICS --------------
+///
+/// Reset the radiation sources in the header to correspond to projected
+/// quantities and not the sources used for the simulation.
+///
+void reset_radiation_sources(struct rad_sources *);
+
+///
+/// Function to setup the microphysics class (just so I can calculate gas
+/// temperature in a manner consistent with how it was done in the 
+/// simulation).  Function copied from gridMethods.cc
+///
+int setup_microphysics();
+// ----------- MICROPHYSICS --------------
+
 
 //
 // ------------------------------------------------------------------------
@@ -176,12 +224,12 @@ int main(int argc, char **argv)
     cout <<"input path:   path to input files.\n";
     cout <<"input file:   base filename of sequence of filesn.\n";
     cout <<"output file:  filename for output file(s).\n";
-    cout <<"op-file-type: integer. 0=text, 1=fits.\n";
+    cout <<"op-file-type: integer. 0=text, 1=fits, 3=vtk.\n";
     cout <<"muti-opfiles: integer. 0=only one output file. 1=one output file per step.\n";
     cout <<"normal-vec:   string direction for LOS viewing normal to calculate angle from: XN,XP,YN,YP,ZN,ZP.\n";
     cout <<"fixed-dir:    string direction for axis which we rotate view around (XN,XP mean same thing).\n";
     cout <<"theta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).\n"; 
-    cout <<"what2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Recombination-Emission\n";
+    cout <<"what2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha\n";
     cout <<"                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)";
     cout <<"OPTIONAL VELOCITY ARGS:\n";
     cout <<"Nbins:        integer number of bins in velocity profile.\n";
@@ -205,6 +253,9 @@ int main(int argc, char **argv)
     break;
   case 1:
     cout <<"\t\toutputting data to fits files.\n";
+    break;
+  case 3:
+    cout <<"\t\toutputting data to VTK files.\n";
     break;
   default:
     rep.error("Bad outfile format",op_filetype);
@@ -307,7 +358,7 @@ int main(int argc, char **argv)
   err += dataio.get_files_in_dir(input_path, input_file,  &files);
   if (err) rep.error("failed to get list of files",err);
   for (list<string>::iterator s=files.begin(); s!=files.end(); s++)
-  cout <<"files: "<<*s<<endl;
+  cout <<"files: "<<*s<<"\n";
   int nfiles = static_cast<int>(files.size());
   if (nfiles<1) rep.error("Need at least one file, but got none",nfiles);
 
@@ -346,20 +397,45 @@ int main(int argc, char **argv)
   //
 
   //
+  // First decompose the domain, so I know the dimensions of the local
+  // grid to set up.  If nproc==1, then this sets the local domain to
+  // be the full domain.
+  //
+  if ( (err=mpiPM.decomposeDomain()) !=0) 
+    rep.error("Couldn't Decompose Domain!",err);
+  //
   // May need to setup extra data in each cell for ray-tracing optical
   // depths and/or viscosity variables (here just set it to zero).
   //
-  SimPM.RS.Nsources=0;
+  // *****************************************************
+  // Now delete all radiation "sources" from SimPM.RS, to avoid
+  // allocating memory for column densities in the cell-data.
+  // *****************************************************
+  reset_radiation_sources(&(SimPM.RS));
   CI.setup_extra_data(SimPM.RS,0,0);
 
   if (grid) rep.error("grid already setup, so bugging out",grid);
-  try {
-    grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+  if      (SimPM.coord_sys==COORD_CRT) {
+    grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
+				    SimPM.eqntype,  mpiPM.LocalXmin,
+				    mpiPM.LocalXmax, mpiPM.LocalNG);
   }
-  catch (std::bad_alloc) {
-    rep.error("(trunks::setup_grid) Couldn't assign data!", grid);
+  else if (SimPM.coord_sys==COORD_CYL) {
+    grid = new uniform_grid_cyl_parallel (SimPM.ndim, SimPM.nvar,
+					  SimPM.eqntype,  mpiPM.LocalXmin,
+					  mpiPM.LocalXmax, mpiPM.LocalNG);
   }
-  cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<endl;
+  else if (SimPM.coord_sys==COORD_SPH) {
+    grid = new uniform_grid_sph_parallel (SimPM.ndim, SimPM.nvar,
+					  SimPM.eqntype,  mpiPM.LocalXmin,
+					  mpiPM.LocalXmax, mpiPM.LocalNG);
+  }
+  else {
+    rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
+  }
+  if (grid==0)
+    rep.error("(setup_grid) Couldn't assign data!", grid);
+  cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
 
   //
   // This code needs 3d data to project...
@@ -378,6 +454,13 @@ int main(int argc, char **argv)
 	   SIMeqns==EQGLM ||
 	   SIMeqns==EQFCD) SIMeqns=2;
   else rep.error("Bad equations",SIMeqns);
+
+  //
+  // Now setup microphysics and raytracing classes
+  //
+  err += setup_microphysics();
+  //err += setup_raytracing();
+  if (err) rep.error("Setup of microphysics and raytracing",err);
 
 
   cout <<"--------------- Finished Setting up Grid --------------\n";
@@ -459,7 +542,11 @@ int main(int argc, char **argv)
     reset_domain();
 #endif
     if (err) rep.error("Didn't read header",err);
-    cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7<<" yrs for step="<<ifile<<"   ############\n";
+    if ( (err=mpiPM.decomposeDomain()) !=0) 
+      rep.error("Couldn't Decompose Domain!",err);
+
+    cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7;
+    cout <<" yrs for step="<<ifile<<"   ############\n";
     //
     // Read data (this reader can read serial or parallel data.
     //
@@ -491,7 +578,7 @@ int main(int argc, char **argv)
     //
     // im is a pointer to one of im1/2/3/4/5
     // 
-    double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0, *im7=0;
+    double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0, *im7=0, *im8=0;
     long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
 
     int n_images=0;
@@ -528,43 +615,46 @@ int main(int argc, char **argv)
 
     case I_ALL_SCALARS:
       if (SIMeqns==1) 
-	n_images = 3; // No field components
+	n_images = 4; // No field components
       else
-	n_images = 7; // Project Stokes Q,U and BX,BT
+	n_images = 8; // Project Stokes Q,U and BX,BT
       im1 = mem.myalloc(im1,nels);
       im2 = mem.myalloc(im2,nels);
       im3 = mem.myalloc(im3,nels);
+      im4 = mem.myalloc(im4,nels);
       if (SIMeqns==2) { 
-	im4 = mem.myalloc(im4,nels);
 	im5 = mem.myalloc(im5,nels);
 	im6 = mem.myalloc(im6,nels);
 	im7 = mem.myalloc(im7,nels);
+	im8 = mem.myalloc(im8,nels);
       }
       what2int  = mem.myalloc(what2int ,n_images);
       img_array = mem.myalloc(img_array,n_images);
       for (int v=0;v<nels; v++)
-	im1[v] = im2[v] = im3[v] = 0.0;
+	im1[v] = im2[v] = im3[v] = im4[v] = 0.0;
       if (SIMeqns==2) { 
 	for (int v=0;v<nels; v++)
-	  im4[v] = im5[v] = im6[v] = im7[v] = 0.0;
+	  im5[v] = im6[v] = im7[v] = im8[v] = 0.0;
       }
       what2int[0] = I_DENSITY;
       what2int[1] = I_NEUTRAL_NH;
       what2int[2] = I_EMISSION;
+      what2int[3] = I_NII6584;
       if (SIMeqns==2) { 
-	what2int[3] = I_B_STOKESQ;
-	what2int[4] = I_B_STOKESU;
+	what2int[4] = I_B_STOKESQ;
+	what2int[5] = I_B_STOKESU;
 	what2int[5] = I_BXabs;
-	what2int[6] = I_BYabs;
+	what2int[7] = I_BYabs;
       }
       img_array[0] = im1;
       img_array[1] = im2;
       img_array[2] = im3;
+      img_array[3] = im4;
       if (SIMeqns==2) { 
-	img_array[3] = im4;
 	img_array[4] = im5;
 	img_array[5] = im6;
 	img_array[6] = im7;
+	img_array[7] = im8;
       }
       break;
     default:
@@ -594,7 +684,7 @@ int main(int argc, char **argv)
 #ifndef THREADS
 	IMG.calculate_pixel(px,       ///< pointer to pixel
 			    &vps,     ///< info for velocity profiling.
-			    w2i, ///< flag for what to integrate.
+			    w2i,      ///< flag for what to integrate.
 			    im,       ///< array of pixel data.
 			    &tot_mass ///< general purpose counter for stuff.
 			    );
@@ -619,7 +709,8 @@ int main(int argc, char **argv)
       //DbgMsg(" main(): all threads finished.");
 #endif // THREADS
       tsf=GS.time_so_far("makeimage");
-      cout <<"\t time = "<<tsf<<" secs."<<endl;
+      cout <<"\t time = "<<tsf<<" secs."<<"\n";
+      cout.flush();
       GS.stop_timer("makeimage");
     } // loop over output images
 
@@ -627,18 +718,18 @@ int main(int argc, char **argv)
 #ifdef NEW_STOKES_CALC
     // ***************************************************************
     //
-    // Replace projected |Bx|,|By| (images 5,6) with values calculated
-    // from the Stokes Q and U values in images 3,4.
+    // Replace projected |Bx|,|By| (images 6,7) with values calculated
+    // from the Stokes Q and U values in images 4,5.
     //
-    if (n_images==7) {
+    if (n_images==8) {
       double norm;
       for (int ix=0;ix<num_pixels;ix++) {
-	norm = sqrt(img_array[3][ix]*img_array[3][ix]+
-		    img_array[4][ix]*img_array[4][ix]);
-	img_array[5][ix] =
-	  norm*cos(0.5*atan2(img_array[4][ix],img_array[3][ix]));
+	norm = sqrt(img_array[4][ix]*img_array[4][ix]+
+		    img_array[5][ix]*img_array[5][ix]);
 	img_array[6][ix] =
-	  norm*sin(0.5*atan2(img_array[4][ix],img_array[3][ix]));
+	  norm*cos(0.5*atan2(img_array[5][ix],img_array[4][ix]));
+	img_array[7][ix] =
+	  norm*sin(0.5*atan2(img_array[5][ix],img_array[4][ix]));
       }
     }
     // ***************************************************************
@@ -716,6 +807,26 @@ int main(int argc, char **argv)
     cout <<"--------------- Finished Analysing this step ----------\n";
     cout <<"-------------------------------------------------------\n";
     cout <<"--------------- Writing image and getting next Im-file \n";
+    
+    //double posIMG[3], posSIM[3];
+    //IMG.get_image_Ipos(grid->FirstPt()->pos,posIMG);
+    //IMG.get_sim_Dpos(posIMG, posSIM);
+    //rep.printVec("CELL POS:",grid->FirstPt()->pos,3);
+    //rep.printVec("IMG  POS:",posIMG,3);
+    //rep.printVec("SIM  POS:",posSIM,3);
+    double im_xmin[3];
+    for (int v=0; v<3;v++) {
+      im_xmin[v] = 0.0;  //posSIM[v] - (posIMG[v]+0.5)*grid->DX();
+    }
+    double im_dx[3] = {grid->DX(), grid->DX(), grid->DX()};
+    if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
+      im_xmin[2] = v_min;
+      im_dx[2]   = bin_size;
+    }
+    rep.printVec("IMG XMIN:",im_xmin,3);
+    rep.printVec("IMG DX:  ",im_dx,3);
+
+
     //**********************
     //* Write Data to file *
     //**********************
@@ -728,41 +839,43 @@ int main(int argc, char **argv)
     
     switch (what_to_integrate) {
     case I_DENSITY:
-      t<<"mean_dens_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_Dens";
       im_name[0]=t.str();
       break;
     case I_NEUTRAL_NH:
-      t<<"neutralnh_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_NH";
       im_name[0]=t.str();
       break;
     case I_VEL_LOS:
-      t<<"los_vel_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_LOS_V";
       im_name[0]=t.str();
       break;
     case I_VX:
-      t<<"velx_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_VX";
       im_name[0]=t.str();
       break;
     case I_EMISSION:
-      t<<"emission_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_Halpha";
       im_name[0]=t.str();
       break;
     case I_ALL_SCALARS:
-      t<<"mean_dens_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_Dens";
       im_name[0]=t.str(); t.str("");
-      t<<"neutralnh_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_NH";
       im_name[1]=t.str(); t.str("");
-      t<<"emission_"; t.width(5); t<<SimPM.timestep;
+      t<<"Proj_Halpha";
       im_name[2]=t.str(); t.str("");
+      t<<"Proj_NII6584";
+      im_name[3]=t.str(); t.str("");
       if (SIMeqns==2) { 
-	t<<"b_q_"; t.width(5); t<<SimPM.timestep;
-	im_name[3]=t.str(); t.str("");
-	t<<"b_u_"; t.width(5); t<<SimPM.timestep;
+	t<<"Proj_b_q";
 	im_name[4]=t.str(); t.str("");
-	t<<"bxabs_"; t.width(5); t<<SimPM.timestep;
+	t<<"Proj_b_u";
 	im_name[5]=t.str(); t.str("");
-	t<<"byabs_"; t.width(5); t<<SimPM.timestep;
+	t<<"Proj_bxabs";
 	im_name[6]=t.str(); t.str("");
+	t<<"Proj_byabs";
+	im_name[7]=t.str(); t.str("");
       }
       break;
     default:
@@ -777,10 +890,20 @@ int main(int argc, char **argv)
 
       switch (what_to_integrate) {
       case I_DENSITY: case I_NEUTRAL_NH: case I_EMISSION: case I_ALL_SCALARS:
-	err = imio.write_image_to_file(filehandle, op_filetype, im, num_pixels,       2, npix, im_name[outputs]);
+        err = imio.write_image_to_file(filehandle, op_filetype, im,
+                                      num_pixels, 2, npix,
+                                      im_name[outputs],
+                                      im_xmin, im_dx,
+                                      SimPM.simtime, SimPM.timestep
+                                      );
 	break;
       case I_VEL_LOS: case I_VX:
-	err = imio.write_image_to_file(filehandle, op_filetype, im, num_pixels*Nbins, 3, npix, im_name[outputs]);
+        err = imio.write_image_to_file(filehandle, op_filetype, im,
+                                      num_pixels*Nbins, 3, npix,
+                                      im_name[outputs],
+                                      im_xmin, im_dx,
+                                      SimPM.simtime, SimPM.timestep
+                                      );
 	break;
       default:
 	rep.error("bad what-to-integrate integer...",what_to_integrate);
@@ -792,18 +915,22 @@ int main(int argc, char **argv)
     // Also write a 2D P-V diagram summed along the perpendicular
     // direction, if we have calculted LOS velocity or VX.
     //
-    if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
-      t.str("");
-      if (what_to_integrate==I_VEL_LOS)
-	t<<"los_vel_proj_";
-      else
-	t<<"velx_proj";
-      t.width(5); t<<SimPM.timestep;
-      im_name[0] = t.str();
-      int np[2]; np[0]=npix[0]; np[1]=npix[2];
-      err = imio.write_image_to_file(filehandle, op_filetype, im2, npix[0]*npix[2], 2, np, im_name[0]);
-      if (err) rep.error("Failed to write 2nd image to file",err);
-    }
+    //if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
+    //  t.str("");
+    //  if (what_to_integrate==I_VEL_LOS)
+    //    t<<"los_vel_proj_";
+    //  else
+    //    t<<"velx_proj";
+    //  t.width(5); t<<SimPM.timestep;
+    //  im_name[0] = t.str();
+    //  int np[2]; np[0]=npix[0]; np[1]=npix[2];
+    //  err = imio.write_image_to_file(filehandle, op_filetype, im2,
+    //                                  npix[0]*npix[2], 2, np, im_name[0],
+    //                                  im_xmin, im_dx,
+    //                                  SimPM.simtime, SimPM.timestep
+    //                                  );
+    //  if (err) rep.error("Failed to write 2nd image to file",err);
+    //}
     
     
     //*********************************************
@@ -820,7 +947,7 @@ int main(int argc, char **argv)
     im5 = mem.myfree(im5);
     im6 = mem.myfree(im6);
     im7 = mem.myfree(im7);
-
+    im8 = mem.myfree(im8);
   } // Loop over all files.    
 
   //
@@ -841,9 +968,11 @@ int main(int argc, char **argv)
 
 
   if(grid!=0) {
-    cout << "\t Deleting Grid Data..." << endl;
+    cout << "\t Deleting Grid Data..." << "\n";
     delete grid; grid=0;
   }
+  if (MP)     {delete MP; MP=0;}
+  if (RT)     {delete RT; RT=0;}
 
   COMM->finalise();
   delete COMM; COMM=0;
@@ -855,5 +984,236 @@ int main(int argc, char **argv)
 // **************** END MAIN MAIN MAIN MAIN ********************
 // *************************************************************
 // -------------------------------------------------------------
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Reset the radiation sources in the header to correspond to projected
+/// quantities and not the sources used for the simulation.
+///
+void reset_radiation_sources(struct rad_sources *rs)
+{
+  //
+  // struct rad_sources {
+  //   int Nsources;
+  //   std::vector<struct rad_src_info> sources;
+  // };
+  //
+
+  //
+  // delete any current sources
+  //
+  if (rs->Nsources!=0) {
+    rs->sources.clear();
+    rs->Nsources=0;
+  }
+  SimPM.EP.raytracing=0;
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+// stolen from gridMethods.cc
+int setup_microphysics()
+{
+  cout <<"************************************************************\n";
+  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
+  cout <<"************************************************************\n";
+  //
+  // Setup Microphysics class, if needed.
+  // First see if we want the only_cooling class (much simpler), and if
+  // not then check for the one of the bigger microphysics classes.
+  //
+  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
+    cout <<"\t******* Requested cooling but no chemistry... setting";
+    cout <<" up mp_only_cooling() class, with timestep-limiting.\n";
+    SimPM.EP.MP_timestep_limit = 1;
+    MP = new mp_only_cooling(SimPM.nvar, &(SimPM.EP));
+    if (!MP) rep.error("mp_only_cooling() init",MP);
+  }
+  else if (SimPM.EP.chemistry) {
+    //    MP = 0;
+    cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
+    string mptype;
+    if (SimPM.trtype.size() >=6)
+      mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
+    else mptype = "None";
+    bool have_set_MP=false;
+
+
+#ifndef EXCLUDE_MPV1
+    if      (mptype=="ChAH__" || mptype=="onlyH_") {
+      cout <<"\t******* setting up MP_Hydrogen microphysics module *********\n";
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY mp_implicit_H. **--**\n";
+      have_set_MP=true;
+    }
+#endif // exclude MPv1
+
+
+#ifndef EXCLUDE_HD_MODULE
+    if (mptype=="lowZ__") {
+      cout <<"\t******* setting up microphysics_lowz module *********\n";
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+#endif // exclude Harpreet's module
+
+#ifndef EXCLUDE_MPV2
+    if (mptype=="MPv2__") {
+#ifdef MP_V2_AIFA
+      cout <<"\t******* setting up mp_v2_aifa module *********\n";
+      cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mp_v2_aifa(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
+      SimPM.EP.MP_timestep_limit = 1;
+#else
+      rep.error("Enable mp_v2_aifa as an ifdef if you really want to use it",2);
+#endif
+      have_set_MP=true;
+    }
+#endif // exclude MPv2
+
+
+#ifndef EXCLUDE_MPV3
+    if (mptype=="MPv3__") {
+      cout <<"\t******* setting up mp_explicit_H module *********\n";
+#if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
+      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
+      cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+#else
+#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
+#endif
+      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      //if (SimPM.EP.MP_timestep_limit != 1)
+      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
+      have_set_MP=true;
+    }
+#endif // exclude MPv3
+
+
+#ifndef EXCLUDE_MPV4
+    if (mptype=="MPv4__") {
+      cout <<"\t******* setting up mp_implicit_H module *********\n";
+#if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
+      cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
+      cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
+      SimPM.EP.MP_timestep_limit =5;
+#elif MPV4_DTLIMIT>=0 && MPV4_DTLIMIT<=4
+      cout <<"\t******* N.B. dt00-04 Timestep limiting is enforced by #def";
+      cout <<" MPV4_DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
+      SimPM.EP.MP_timestep_limit =4;
+#else
+#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
+#endif
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
+      //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
+      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
+      have_set_MP=true;
+    }
+#endif // exclude MPv4
+
+    if (mptype=="MPv5__") {
+      cout <<"\t******* setting up mpv5_molecular module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+
+    if (mptype=="MPv6__") {
+      cout <<"\t******* setting up mpv6_PureH module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+
+    if (mptype=="MPv7__") {
+      cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+
+#ifdef CODE_EXT_HHE
+    if (mptype=="MPv9__") {
+      cout <<"\t******* setting up mpv9_HHe module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
+                        &(SimPM.EP), SimPM.gamma);
+      have_set_MP=true;
+    }
+#endif
+
+#ifndef EXCLUDE_MPV1
+    //
+    // Finally, if MP has not been set up yet, try to set up the v0
+    // microphysics integrator, which is slow, but can model a number
+    // of elements and ions.
+    //
+    if (!have_set_MP) {
+      cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
+        rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
+      have_set_MP=true;
+    }
+#endif // exclude MPv1/0
+
+    if (!MP) rep.error("microphysics init",MP);
+    if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
+  }
+  else {
+    cout <<"\t******** not doing microphysics.\n";
+    MP=0;
+  }
+
+  //
+  // If we have a multifrequency ionising source, we can set its properties here.
+  // We can only have one of these, so safe to just loop through...
+  //
+  //int err=0;
+  //for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+  //  if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
+  //      SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI &&
+  //      MP!=0
+  //      ) {
+  //    err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
+  //  }
+  //}
+  //if (err) rep.error("Setting multifreq source properties",err);
+  
+
+  cout <<"************************************************************\n";
+  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
+  cout <<"************************************************************\n";
+  return 0;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 
 
