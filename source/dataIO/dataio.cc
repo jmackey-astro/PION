@@ -1605,6 +1605,29 @@ int DataIOBase::check_header_parameters()
     cout <<"WARNING: DYNAMICS SWITCHED OFF!!! *****************************\n";
   }
 
+  //
+  // Check that Helium_MassFrac and H_MassFrac are set.
+  //
+  if (SimPM.EP.H_MassFrac <0.001  || SimPM.EP.H_MassFrac>1.0) {
+    cout <<"Warning: H_MassFrac = "<<SimPM.EP.H_MassFrac<<", ";
+    cout <<"resetting to 0.7154\n";
+    SimPM.EP.H_MassFrac = 0.7154;
+  }
+  if ((SimPM.EP.H_MassFrac+SimPM.EP.Helium_MassFrac)>1.1 ||
+      (SimPM.EP.H_MassFrac+SimPM.EP.Helium_MassFrac)<0.9) {
+    cout <<"Warning: H_MassFrac  = "<<SimPM.EP.H_MassFrac<<"\n";
+    cout <<"Warning: He_MassFrac = "<<SimPM.EP.H_MassFrac<<"\n";
+    cout <<"resetting to 0.7154 and 0.2846, respectively.\n";
+    SimPM.EP.H_MassFrac = 0.7154;
+    SimPM.EP.Helium_MassFrac = 0.2846;
+  }
+  if (SimPM.EP.Metal_MassFrac<0.0 || SimPM.EP.Metal_MassFrac>0.1) {
+    cout <<"Warning: SimPM.EP.Metal_MassFrac = ";
+    cout <<SimPM.EP.Metal_MassFrac<<" !! resetting to 0.0142.\n";
+    SimPM.EP.Metal_MassFrac= 0.0142;
+  }
+
+
   return 0;
 }
 

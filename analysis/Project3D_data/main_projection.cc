@@ -57,7 +57,7 @@
 /// If set, this subtracts the mean density from column density
 /// images.
 ///
-///#define SUBTRACT_MEAN
+#define SUBTRACT_MEAN
 
 #include <iostream>
 #include <sstream>
@@ -643,7 +643,7 @@ int main(int argc, char **argv)
       if (SIMeqns==2) { 
 	what2int[4] = I_B_STOKESQ;
 	what2int[5] = I_B_STOKESU;
-	what2int[5] = I_BXabs;
+	what2int[6] = I_BXabs;
 	what2int[7] = I_BYabs;
       }
       img_array[0] = im1;
@@ -678,6 +678,7 @@ int main(int argc, char **argv)
       GS.start_timer("makeimage"); double tsf=0.0;
 #ifdef THREADS
       cout <<"Beginning analysis: NUMTHREADS="<<NUM_THREADS_MAIN<<"... ";
+      cout <<"i="<<outputs<<", w2i = "<<w2i<<" ... ";
 #endif // THREADS
       for (int i=0;i<num_pixels;i++) {
 	px = &(IMG.pix[i]);
