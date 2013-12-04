@@ -4,12 +4,12 @@
 
 BASE_DIR=`pwd`
 
-echo "************** INSTALLING LIBRARIES **************"
-cd ${BASE_DIR}/extra_libraries/
-rm -rf bin lib include
-./install_all_libs.sh
-echo "************** ----------------------------- *************"
-echo "************** FINISHED INSTALLING LIBRARIES **************"
+#echo "************** INSTALLING LIBRARIES **************"
+#cd ${BASE_DIR}/extra_libraries/
+#rm -rf bin lib include
+#./install_all_libs.sh
+#echo "************** ----------------------------- *************"
+#echo "************** FINISHED INSTALLING LIBRARIES **************"
 echo "************** ----------------------------- *************"
 echo "COMPILING PARALLEL CODE"
 cd ${BASE_DIR}/bin_parallel

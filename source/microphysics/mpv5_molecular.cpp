@@ -21,7 +21,7 @@
 
 using namespace std;
 
-#define HE_INERT
+//#define HE_INERT
 
 
 // ##################################################################

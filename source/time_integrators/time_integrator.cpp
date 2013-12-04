@@ -140,6 +140,7 @@
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.10.13 JM: Fixed bug in dU_Column relating to internal
 ///    boundaries; seems it never arose before.
+/// - 2013.12.03 JM: Modified NO_COOLING_ON_AXIS hack.
 
 
 #include "../defines/functionality_flags.h"
@@ -674,18 +675,32 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
       err += MP->TimeUpdateMP_RTnew(c->P, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs,
                                     p, delt, SimPM.gamma, 0, &tt);
 
-      //
-      // New state is p[], old state is c->P[].  Get dU from these.
-      //
 //#define NO_COOLING_ON_AXIS
 #ifdef NO_COOLING_ON_AXIS
       //cout <<"hello\n";
-#error "Fix HACK in time_integrator.cpp"
+//#error "Fix HACK in time_integrator.cpp"
       if (SimPM.coord_sys==COORD_CYL && 
-          !grid->NextPt(c,YN)->isgd &&
-          p[PG] < c->P[PG])
+          //!grid->NextPt(c,YN)->isgd &&
+          p[RO] > 1.4e-20 &&    // density more than twice background density
+          //p[RO] > 0.77e-20 &&    // density more than 1.1x background density
+          c->pos[Rcyl] < 5 &&   // get the first three radial cells (R=0,2,4)
+          c->pos[Zcyl] > 0 &&   // only consider cells with z>0 (upstream)
+          p[PG] < c->P[PG] &&   // only consider cells that were cooled (not heated)
+          p[SimPM.ftr] < 0.5    // only consider mostly neutral gas
+          ) {
+        //tt = MP->Temperature(p,SimPM.gamma);
+        //if (tt < 1.0e3) {	
+        //  MP->Set_Temp(p,1.0e3,SimPM.gamma);
+        //}
+        // Just set the pressure equal to what it was before cooling,
+        // so that the gas is adiabatic.
         p[PG] = c->P[PG];
+      }
 #endif // NO_COOLING_ON_AXIS
+
+      //
+      // New state is p[], old state is c->P[].  Get dU from these.
+      //
       eqn->PtoU(c->P,ui,SimPM.gamma);
       eqn->PtoU(p,   uf,SimPM.gamma);
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
