@@ -18,6 +18,7 @@
 #    Added NEW_METALLICITY flag for testing the new microphysics
 #    classes.
 # - 2013.09.20 JM: New Intel compilers for Juropa.
+# - 2014.04.14 JM: Section for Judge at JSC.
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
@@ -149,6 +150,24 @@ case $HOSTNAME in
     export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
     export PION_OPTIMISE=HIGH
     export CXX=mpiicpc
+  ;;
+esac
+#######################
+
+#######################
+### TEST FOR JUDGE ###
+#######################
+case $HOST in
+  judgel[0-9])
+    echo "Compiling on JUDGE"
+    module purge
+    module load intel/11.1.072 mkl/10.2.5.035 parastation/intel
+    MAKE_UNAME=JUDGE
+    NCORES=8
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
+    export CXX=mpicxx
   ;;
 esac
 #######################

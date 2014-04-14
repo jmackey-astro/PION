@@ -3,6 +3,7 @@
 # - 2012.02.22 JM/HD: Added options for compiling on UCL-dougal
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.02.07 JM: Updated for new library versions (all).
+# - 2014.04.14 JM: Added section for JUDGE at JSC.
 
 
 mkdir include
@@ -93,6 +94,23 @@ case $HOSTNAME in
     MAKE_UNAME=DIRAC
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.
+    export CC=icc
+    export CXX=icpc
+    export FC=ifort
+  ;;
+esac
+#######################
+
+#######################
+### TEST FOR JUDGE ###
+#######################
+case $HOST in
+  judgel[0-9])
+    echo "Compiling on JUDGE"
+    module purge
+    module load intel/11.1.072 mkl/10.2.5.035 parastation/intel
+    MAKE_UNAME=JUDGE
+    NCORES=8
     export CC=icc
     export CXX=icpc
     export FC=ifort
