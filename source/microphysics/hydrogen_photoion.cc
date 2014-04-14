@@ -25,6 +25,7 @@
 ///    efficient by allowing smaller spline array.
 /// - 2012.12.26 JM: Added some hacks to study the photoionisation
 ///    cross section and Blackbody spectrum effects on results.
+/// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 
 //#define HACK_MODIFY_BB ///< scale the high energy BB emission
 #define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
@@ -294,7 +295,7 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection(const double E)
 double hydrogen_photoion::Hi_discrete_mono_photoion_rate(
                 const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
                 const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
-                const double nH0,   ///< Local number density of H0 (per cm3).
+                const double nH,   ///< Local number density of H (per cm3).
                 const double Ndot, ///< ionising photon luminosity of source
                 const double E,    ///< Energy of photons (erg)
                 const double ds,   ///< path length through cell.
@@ -303,6 +304,11 @@ double hydrogen_photoion::Hi_discrete_mono_photoion_rate(
 {
   //
   // C2Ray paper (Mellema et al. 2006,NewA,11,374).  equation 6.
+  // As for the multi-frequency case, this returns the PI rate per H
+  // atom (so no need to multiply by the neutral fraction).  It does
+  // this by dividing by the H number density instead of the H0
+  // number density, to avoid multiplying and dividing by two small
+  // numbers.
   // 
   // First scale the cross-section from the ionsation edge to energy E:
   //
@@ -310,14 +316,14 @@ double hydrogen_photoion::Hi_discrete_mono_photoion_rate(
 
   double rate = Ndot*exp(-Tau0*Hi_monochromatic_photo_ion_xsection_fractional(E))/Vshell;
   //
-  // if dtau<<1 then it is more numerically stable to approximate the (1-exp(-dtau))/nH0 term
-  // by sigma(E)*dS.  Otherwise evaluate the full expression.
+  // if dtau<<1 then it is more numerically stable to approximate the (1-exp(-dtau))/nH term
+  // by dtau/nH.  Otherwise evaluate the full expression.
   // 
-  if (dtau < 0.01) {
-    rate *= Hi_monochromatic_photo_ion_xsection(E)*ds;
+  if (dtau < 0.0001) {
+    rate *= dtau/nH;   //Hi_monochromatic_photo_ion_xsection(E)*ds;
   }
   else {
-    rate *= (1.0-exp(-dtau))/nH0;
+    rate *= (1.0-exp(-dtau))/nH;
   }
   return rate;
 }

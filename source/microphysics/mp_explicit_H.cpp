@@ -141,6 +141,7 @@
 ///    from electron impact excitation (Wolfire+,03,eq.C2).
 ///    Changed forbidden-line cooling to fit to Raga,Mellema, &
 ///    Lundqvist (1997) tables for singly ionised C,N,O.
+/// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -161,6 +162,7 @@
 // ##################################################################
 // ##################################################################
 
+//#define BETELGEUSE
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -328,12 +330,14 @@ mp_explicit_H::mp_explicit_H(
   JM_NELEC = 1.0; // if He is always neutral.
 #endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
+  //cout <<"Metallicity = "<<METALLICITY<<"\n";
 
   setup_local_vectors();
   gamma   = SimPM.gamma;   // Gas has a constant ratio of specific heats.
   gamma_minus_one = SimPM.gamma -1.0;
   Min_NeutralFrac     = JM_MINNEU;
   Max_NeutralFrac     = 1.0-JM_MINNEU;
+
   //
   // initialise all the radiation variables to values that limit their heating
   // and cooling abilities.
@@ -378,7 +382,8 @@ mp_explicit_H::mp_explicit_H(
         ion_src_type=RT_EFFECT_PION_MULTI;
     }
   }
-  cout <<"\t\tmp_explicit_H: got "<<N_diff_srcs<<" diffuse and "<<N_ion_srcs<<" ionising sources.\n";
+  cout <<"\t\tmp_explicit_H: got "<<N_diff_srcs<<" diffuse and ";
+  cout <<N_ion_srcs<<" ionising sources.\n";
   // ================================================================
   // ================================================================
 
@@ -1126,11 +1131,11 @@ void mp_explicit_H::setup_radiation_source_parameters(
   //
 #ifdef MPV3_DEBUG
   if (heat_src.size() != static_cast<unsigned int>(N_heat)) {
-    rep.error("Timescales: N_heating_srcs doesn't match vector size in Harpreet's MP integrator",
+    rep.error("Timescales: N_heating_srcs doesn't match vector size in MP3",
               heat_src.size());
   }
   if (ion_src.size() != static_cast<unsigned int>(N_ion)) {
-    rep.error("Timescales: N_ionising_srcs doesn't match vector size in Harpreet's MP integrator",
+    rep.error("Timescales: N_ionising_srcs doesn't match vector size in MP3",
               ion_src.size());
   }
 #endif // MPV3_DEBUG
@@ -1289,18 +1294,13 @@ int mp_explicit_H::ydot(
           const double *        ///< extra user-data vector (UNUSED)
           )
 {
-  //if (SimPM.simtime <3.16e12) {
-  //  NV_Ith_S(y_dot,lv_H0)   = 0.0;
-  //  NV_Ith_S(y_dot,lv_eint) = 0.0;
-  //  return 0;
-  //}
-
   //
   // fixes min-neutral-fraction to Min_NeutralFrac
   //
   double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac);
   double E_in      = NV_Ith_S(y_now,lv_eint);
   double x_in      = 1.0-OneMinusX;
+
   double ne        = JM_NELEC*x_in*mpv_nH;
 
   //
@@ -1313,7 +1313,9 @@ int mp_explicit_H::ydot(
 
   double temp1=0.0, temp2=0.0;
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
-  double Edot=0.0; // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH at the end.
+  double Edot=0.0;
+  // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH
+  // at the end.
 
   //
   // We set a minimum electron density based on the idea that Carbon is singly
@@ -1323,6 +1325,7 @@ int mp_explicit_H::ydot(
   //
   ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
 
+
   //
   // collisional ionisation of H, with its associated cooling.
   // scales with n_e*nH0
@@ -1330,49 +1333,54 @@ int mp_explicit_H::ydot(
   Hi_coll_ion_rates(T, &temp1, &temp2);
   oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
   Edot -= temp2*ne*OneMinusX;
+  //cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
 
   //
-  // photo-ionisation of H:
-  // photoionisation rate uses equation 18 in Mellema et al. 2006 (C2-ray paper),
-  // noting that their Gamma is the rate per neutral H, so we multiply by 1-x, as
-  // in their equation 11.
+  // photo-ionisation of H: photoionisation rate uses equation 18 in Mellema et
+  // al. 2006 (C2-ray paper), noting that their Gamma is the rate per neutral
+  // H, so we multiply by 1-x, as in their equation 11.
   //
   if (N_ion_srcs) {
     //
     // set current cell dTau0
     //
-    temp1 = mpv_nH*mpv_delta_S*OneMinusX*Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
+    temp1 = mpv_nH*mpv_delta_S*OneMinusX*
+            Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
 
     switch (ion_src_type) {
       case RT_EFFECT_PION_MULTI:
       //
-      // Rather than divide the discretised rate by n(H0) and then multiply by (1-x) to
-      // get oneminusx_dot, we simply divide by n(H) since this is more numerically stable.  To
-      // do this, n(H) is passed to the rate function instead of n(H0).
+      // Rather than divide the discretised rate by n(H0) and then multiply by
+      // (1-x) to get oneminusx_dot, we simply divide by n(H) since this is
+      // more numerically stable.  To do this, n(H) is passed to the rate
+      // function instead of n(H0).
       //
-      // Also, instead of using mpv_dTau0 for the cell optical depth, we use the current
-      // optical depth (nH*mpv_delta_S*OneMinusX) so that we allow the photoionisation
-      // rate to decrease as the number of neutral atoms decreases during the timestep.
-      // This is more stable.
+      // Also, instead of using mpv_dTau0 for the cell optical depth, we use
+      // the current optical depth (nH*mpv_delta_S*OneMinusX) so that we allow
+      // the photoionisation rate to decrease as the number of neutral atoms
+      // decreases during the timestep.  This is more stable.
       //
       oneminusx_dot -= Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
-                                  mpv_nH, mpv_delta_S, mpv_Vshell);
-      Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
-                                  mpv_nH, mpv_delta_S, mpv_Vshell);
+                                          mpv_nH, mpv_delta_S, mpv_Vshell);
+      Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1, mpv_nH,
+                                          mpv_delta_S, mpv_Vshell);
       break;
 
       case RT_EFFECT_PION_MONO:
       //
       // hardcoded for a hv-13.6eV = 5.0eV monochromatic source.
       //
-#define PHOTON_ENERGY 2.98e-11
+#define PHOTON_ENERGY 2.98e-11  // 5 eV
 #define EXCESS_ENERGY 8.01e-12
 //#define PHOTON_ENERGY 2.24e-11
 //#define EXCESS_ENERGY 0.64e-12
-      temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
-                                             PHOTON_ENERGY, mpv_delta_S, mpv_Vshell)*OneMinusX;
+//#define PHOTON_ENERGY 2.499e-11  // 2 eV
+//#define EXCESS_ENERGY 3.204e-12
+      temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH, mpv_NIdot, 
+                                             PHOTON_ENERGY, mpv_delta_S, mpv_Vshell);
       oneminusx_dot -= temp1;
       Edot += temp1*EXCESS_ENERGY;
+      //cout <<"PI-HR="<<temp1*EXCESS_ENERGY<<"\n";
       break;
 
       default:
@@ -1389,11 +1397,13 @@ int mp_explicit_H::ydot(
   // Total H+ cooling: recombination plus free-free
   //
   Edot -= Hii_total_cooling(T) *x_in*ne;
+  //cout <<"HII-TC="<<Hii_total_cooling(T) *x_in*ne<<"\n";
 
   //
-  // Add Helium free-free (Z^2*n(He)/n(H) = 0.25*X(He)/X(H) of the H+ free-free rate)
-  // The normalisation is scaled so that I multiply by ne*nHp to get the 
-  // correct cooling rate (i.e. the abundance of He is included in the prefactor).
+  // Add Helium free-free (Z^2*n(He)/n(H) = 0.25*X(He)/X(H) of the H+ free-free
+  // rate) The normalisation is scaled so that I multiply by ne*nHp to get the
+  // correct cooling rate (i.e. the abundance of He is included in the
+  // prefactor).
   //
 #ifndef HE_INERT
   // Only if He is ionised, otherwise it has no free-free.
@@ -1405,6 +1415,7 @@ int mp_explicit_H::ydot(
   // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
   //
   Edot -= Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne *exp(-T*T/5.0e10);
+  //cout <<"CE-CR="<<Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne *exp(-T*T/5.0e10)<<"\n";
 
   //
   // --------- END OF HYDROGEN COOLING, MOVING TO METAL COOLING --------
@@ -1416,26 +1427,27 @@ int mp_explicit_H::ydot(
   if (N_diff_srcs) {
     //
     // UV heating due to both diffuse radiation and point source radiation.
-    // The quantity mpv_G0_UV is as defined in Henney et al. (2009) Appendix A1, Eq.A3,
-    // and is set in set_parameters_for_current step()
+    // The quantity mpv_G0_UV is as defined in Henney et al. (2009) Appendix
+    // A1, Eq.A3, and is set in set_parameters_for_current step()
     //
     //cout <<"adding diffuse heating! ";
     Edot += 1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
-    //cout <<"  DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
+    //cout <<"
+    //DfUV="<<1.9e-26*METALLICITY*mpv_G0_UV/(1.0+6.4*(mpv_G0_UV/mpv_nH));
 
     //
     // IR heating (HAdCM09 eq.A6) from point source and/or diffuse radiation.
-    // There is a different G0 parameter because the attenuation is according to 
-    // exp(-0.05Av) rather than before where the coefficient was 1.9.
+    // There is a different G0 parameter because the attenuation is according
+    // to exp(-0.05Av) rather than before where the coefficient was 1.9.
     //
     Edot += 7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0);
-    //cout <<"  DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
+    //cout <<"DfIR="<<7.7e-32*METALLICITY*mpv_G0_IR/pow(1.0+3.0e4/mpv_nH,2.0)<<"\n";
   }
 
   //
-  // X-ray heating (HAdCM09 eq.A5)
-  // Massive stars have x-ray luminosities of ~1.0e32 erg/s, so use this.
-  // NOT IMPLEMENTED YET... NEEDS SOMETHING MORE CAREFUL.
+  // X-ray heating (HAdCM09 eq.A5) Massive stars have x-ray luminosities of
+  // ~1.0e32 erg/s, so use this.  NOT IMPLEMENTED YET... NEEDS SOMETHING MORE
+  // CAREFUL.
   //
   ////Edot += 6.0e9*mpv_delta_S/mpv_Vshell;
 
@@ -1443,48 +1455,58 @@ int mp_explicit_H::ydot(
   // Cosmic ray heating (HAdCM09 eq.A7).
   //
   Edot += 5.0e-28*OneMinusX;
+  //cout <<"CR-HR="<<5.0e-28*OneMinusX<<"\n";
 
   //
   // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
   //
   oneminusx_dot -= 1.8e-17*OneMinusX;
+
   //
-  // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).
-  // This is a fit to the curve in the top-right panel of Fig.10.
+  // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).  This is a fit
+  // to the curve in the top-right panel of Fig.10.
   //Edot += 1.66e-26*pow(mpv_nH,0.2602)*OneMinusX;
   //
-  // This is a better function, using the first term of eq.19, with phi_{PAH}=0.5
-  // and G_0=1.7.  I multiply by the neutral fraction OneMinusX because this
-  // heating term is only calculated for warm neutral medium.
+  // This is a better function, using the first term of eq.19, with
+  // phi_{PAH}=0.5 and G_0=1.7.  I multiply by the neutral fraction OneMinusX
+  // because this heating term is only calculated for warm neutral medium.
   //
+  // HACK!!!
+#ifndef BETELGEUSE
   Edot += 1.083e-25*METALLICITY*OneMinusX/(1.0+9.77e-3*pow(sqrt(T)/ne,0.73));
+  //cout<<"FUV-HR="<<1.083e-25*METALLICITY*OneMinusX
+  //                 /(1.0+9.77e-3*pow(sqrt(T)/ne,0.73))<<"\n";
+#endif // BETELGEUSE
   
+//#ifdef BETELGEUSE
+//  Edot -= METALLICITY*mpv_nH* (2.0e-19*exp(-1.184e5/(T+1.0e3)) +2.8e-28*sqrt(T)*exp(-92.0/T));
+//#endif // BETELGEUSE
+
+//#ifndef BETELGEUSE
   //
-  // Now COOLING:
-  // First forbidden line cooling of e.g. OII,OIII, dominant in HII regions.
-  // This is collisionally excited lines of photoionised metals. (HAdCM09 eq.A9)
-  // I have exponentially damped this at high temperatures! This was important!
-  // Oxygen abundance set to 5.37e-4 from Asplund+(2009,ARAA), times
-  // 0.77 to account for 23% of O in solid dust.
+  // Now COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
+  // HII regions.  This is collisionally excited lines of photoionised metals.
+  // (HAdCM09 eq.A9) I have exponentially damped this at high temperatures!
+  // This was important!  Oxygen abundance set to 5.37e-4 from
+  // Asplund+(2009,ARAA), times 0.77 to account for 23% of O in solid dust.
   //
-  temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T)) *x_in*ne*exp(-T*T/5.0e10);
+  temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T))
+                               *x_in*ne*exp(-T*T/5.0e10);
   //
-  // Fit to Raga, Mellema, Lundqvist (1997) rates for CNO if all are
-  // only singly ionised, and for gas phase abundances of CNO of
-  // - n(C)/nH = 2.95e-4*0.508 = 1.5e-4 (Sofia+,1997)
-  // - n(N)/nH = 7.41e-5
-  // - n(O)/nH = 5.37e-4*0.77 (0.23 goes in solids)
-  // These are taken from Asplund et al. 2009.
+  // Fit to Raga, Mellema, Lundqvist (1997) rates for CNO if all are only
+  // singly ionised, and for gas phase abundances of CNO of - n(C)/nH =
+  // 2.95e-4*0.508 = 1.5e-4 (Sofia+,1997) - n(N)/nH = 7.41e-5 - n(O)/nH =
+  // 5.37e-4*0.77 (0.23 goes in solids) These are taken from Asplund et al.
+  // 2009.
   //
   //temp1 = 3.0e-22*METALLICITY*exp(-pow(1.4e5/T,0.6))
-  //                          *exp(-sqrt(mpv_nH/3.0e4))
-  //                          *x_in*ne*exp(-T*T/5.0e10);
+  //        *exp(-sqrt(mpv_nH/3.0e4)) *x_in*ne*exp(-T*T/5.0e10);
 
 
   //
-  // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
-  // We take the actual cooling rate to be the max of SD93-CIE and the
-  // previous two terms.
+  // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.  We
+  // take the actual cooling rate to be the max of SD93-CIE and the previous
+  // two terms.
   //
   temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH*METALLICITY;
   Edot -= max(temp1,temp2);
@@ -1494,33 +1516,40 @@ int mp_explicit_H::ydot(
   // Instead of the PDR cooling from Henney, use Wolfire's eq.C1,C3 for
   // collisional cooling of CII and OI by neutral H atoms.  In eq.C3 I have
   // absorbed the (100K)^{-0.4} into the prefactor, and used x^a=exp(a*ln(x)).
-  // I have cut off equation C1 at high densities to be consistent with the 
-  // ion fraction of C that I assumed above for the electron density.
+  // I have cut off equation C1 at high densities to be consistent with the ion
+  // fraction of C that I assumed above for the electron density.
   //
   Edot -= 3.15e-27*METALLICITY*exp(-92.0/T)*mpv_nH*OneMinusX*exp(-mpv_nH/1.0e4);
   Edot -= 3.96e-28*METALLICITY*exp(0.4*log(T)-228.0/T)*mpv_nH*OneMinusX;
+
   //
-  // This is the CII cooling by electron collisions, cutoff at high
-  // density again, for consistency, again with sqrt(100K) absorbed
-  // into the prefactor.
-  // This rate has a very low critical density (Goldsmith, Langer et
-  // al., 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use
-  // their temperature scaling and divide by density according to
-  // rate = rate/(1.0 + 0.05*nH*(T/2000K)^(-0.37))
+  // This is the CII cooling by electron collisions, cutoff at high density
+  // again, for consistency, again with sqrt(100K) absorbed into the prefactor.
+  // This rate has a very low critical density (Goldsmith, Langer et al.,
+  // 2012ApJS..203...13G), at n_c=20 cm^{-3} at 1000K, so we use their
+  // temperature scaling and divide by density according to rate = rate/(1.0 +
+  // 0.05*nH*(T/2000K)^(-0.37))
   //
   Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
+          *exp(-mpv_nH/1.0e4)
+#ifndef BETELGEUSE
           /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
-          *exp(-mpv_nH/1.0e4);
+#endif // BETELGEUSE
+          ;
 
   //
   // PAH cooling: eq. 21 in Wolfire+,2003.  I think they should have multiplied
   // their equation by 1.3 for the increased PAH abundance...
   //
+#ifndef BETELGEUSE
   //Edot -= 2.325e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
   Edot -= 3.02e-30*METALLICITY*exp(0.94*log(T) +0.74*pow(T,-0.068)*log(3.4*sqrt(T)/ne))*ne;
+#endif // BETELGEUSE
+//#endif // BETELGEUSE
 
   //
-  // now multiply Edot by nH to get units of energy loss/gain per unit volume per second.
+  // now multiply Edot by nH to get units of energy loss/gain per unit volume
+  // per second.
   //
   Edot *= mpv_nH;
 #ifdef HIGHDENS_CUTOFF
@@ -1528,11 +1557,11 @@ int mp_explicit_H::ydot(
 #endif //HIGHDENS_CUTOFF 
 
   //
-  // We want to limit cooling as we approach the minimum temperature, so we scale
-  // the rate to linearly approach zero as we reach Tmin.
+  // We want to limit cooling as we approach the minimum temperature, so we
+  // scale the rate to linearly approach zero as we reach Tmin.
   //
   if (Edot<0.0 && T<2.0*EP->MinTemperature) {
-    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
+    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/EP->MinTemperature);
   }
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;

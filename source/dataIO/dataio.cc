@@ -1621,7 +1621,7 @@ int DataIOBase::check_header_parameters()
     SimPM.EP.H_MassFrac = 0.7154;
     SimPM.EP.Helium_MassFrac = 0.2846;
   }
-  if (SimPM.EP.Metal_MassFrac<0.0 || SimPM.EP.Metal_MassFrac>0.1) {
+  if (SimPM.EP.Metal_MassFrac<0.0 || SimPM.EP.Metal_MassFrac>1.0) {
     cout <<"Warning: SimPM.EP.Metal_MassFrac = ";
     cout <<SimPM.EP.Metal_MassFrac<<" !! resetting to 0.0142.\n";
     SimPM.EP.Metal_MassFrac= 0.0142;

@@ -10,6 +10,7 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2013.08.20
+/// - 2014.01.20 JM: Added more significant digits
 
 
 #ifndef CONSTANTS_H
@@ -25,11 +26,11 @@ class constants {
   // Physics
   //
   inline double pi()     {return 3.14159265358979324;}
-  inline double c()      {return 2.9979e10;}
-  inline double kB()     {return 1.381e-16;}
-  inline double h()      {return 6.626e-27;}
-  inline double StefanBoltzmannConst() {return 5.670e-5;}
-  inline double m_p()    {return 1.673e-24;}
+  inline double c()      {return 2.99792458e+10;}
+  inline double kB()     {return 1.3806488e-16;}
+  inline double h()      {return 6.62606957e-27;}
+  inline double StefanBoltzmannConst() {return 5.670373e-5;}
+  inline double m_p()    {return 1.672621777e-24;}
   //
   // Atomic data
   //
@@ -38,16 +39,17 @@ class constants {
   //
   // Unit conversion
   //
-  inline double K_per_eV() {return 1.16045e4;}
-  inline double year()     {return 3.15576e7;}
-  inline double eV()       {return 1.602e-12;}
+  inline double K_per_eV() {return 1.1604519e4;}
+  inline double year()     {return 3.1558150e7;}
+  inline double eV()       {return 1.602176565e-12;}
   //
   // Astronomy
   //
-  inline double Msun()   {return 1.989e33;}
-  inline double parsec() {return 3.086e18;}
-  inline double Lsun()   {return 1.989e33;}
-  inline double Rsun()   {return 6.960e10;}
+  inline double Msun()   {return 1.9891e33;}
+  inline double Lsun()   {return 3.839e33;}
+  inline double Rsun()   {return 6.955e10;}
+  inline double AU()     {return 1.49597870700e+13;}
+  inline double parsec() {return 3.0856776e18;}
 };
 
 

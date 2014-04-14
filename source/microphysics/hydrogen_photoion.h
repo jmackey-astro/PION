@@ -20,6 +20,7 @@
 ///    an approximation for dtau<<1.
 /// - 2011.10.08 JM: Added switch to use GS.spline/splint instead of the local
 ///    STL vector one, because the vector functions are slower by about 2.5%.
+/// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 ///
 #ifndef HYDROGEN_PHOTOION
 #define HYDROGEN_PHOTOION
@@ -140,6 +141,9 @@ class hydrogen_photoion
   ///
   /// Discretised photoionisation rate according to Eq.6 of Mellema et al.
   /// (2006,NewA,11,374) in the limit of a monochromatic ionising source.
+  ///
+  /// N.B. The result is returned as the number of ionisations per
+  /// second per H nucleon.
   ///
   double Hi_discrete_mono_photoion_rate(
                 const double, ///< Optical depth of H0 (at 13.6eV) to front edge of cell.

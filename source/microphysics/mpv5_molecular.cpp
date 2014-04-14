@@ -15,6 +15,7 @@
 /// - 2013.03.21 JM: Fixed Helium free-free to use X(He).
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2013.09.28 JM: Changed Oxygen abundance.
+/// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 
 #include "microphysics/mpv5_molecular.h"
 #include "global.h"
@@ -141,8 +142,8 @@ int mpv5_molecular::ydot(
 #define EXCESS_ENERGY 8.01e-12
 //#define PHOTON_ENERGY 2.24e-11
 //#define EXCESS_ENERGY 0.64e-12
-      temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH*OneMinusX, mpv_NIdot, 
-                                             PHOTON_ENERGY, mpv_delta_S, mpv_Vshell)*OneMinusX;
+      temp1 = Hi_discrete_mono_photoion_rate(mpv_Tau0, temp1, mpv_nH, mpv_NIdot, 
+                                             PHOTON_ENERGY, mpv_delta_S, mpv_Vshell);
       oneminusx_dot -= temp1;
       Edot += temp1*EXCESS_ENERGY;
       break;
