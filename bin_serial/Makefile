@@ -44,6 +44,7 @@
 # - 2013.02.19 JM: Added file_status.o/cpp object file.
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
+# - 2014.04.14 JM: Added options for JUDGE at JSC.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -139,15 +140,34 @@ ifeq ($(MAKE_UNAME), JUROPA)
   MYLIB = ../extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  INC += -I/usr/local/sundials/2.4.0/include
+#  INC += -I/usr/local/sundials/2.4.0/include
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -L/usr/local/sundials/2.4.0/lib
+#  LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lmkl_sequential -lmkl_core
 
 endif
 ##################### -- JUROPA -- ###################################
 ######################################################################
+
+######################## -- JUDGE -- ################################
+# Options for the Juelich Supercomputer JUDGE.  Intel Compilers!
+#####################################################################
+ifeq ($(MAKE_UNAME), JUDGE)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+  else
+    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  endif
+  MYLIB = ../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS  += -L${MYLIB}/lib -lcfitsio -lsilo
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+##################### -- JUDGE -- ###################################
+
+
 
 ######################## -- SuperMUC -- ##############################
 # Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
