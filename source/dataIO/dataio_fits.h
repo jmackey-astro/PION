@@ -84,16 +84,17 @@ class utility_fitsio {
     * are the same, and if npix is the full number of image pixels.  Alternately it
     * can read in a brick-shaped subset based on the min starting point and npix.
     * */
-   int read_fits_image_to_data(fitsfile *,     ///< fitsfile pointer.
-			       const string,   ///< name of hdu to read from.
-			       const int,      ///< dimensionality of image. 
-			       const double *, ///< local xmin (subdomain).
-			       const double *, ///< global xmin (full domain).
-			       const double,   ///< pixel size
-			       const int *,     ///< number of pixels to read in each direction
-			       const long int ,      ///< total number of pixels to be read.
-			       double **       ///< data array to write to.
-			       );
+   int read_fits_image_to_data(
+        fitsfile *,     ///< fitsfile pointer.
+        const string,   ///< name of hdu to read from.
+        const int,      ///< dimensionality of image. 
+        const double *, ///< local xmin (subdomain).
+        const double *, ///< global xmin (full domain).
+        const double,   ///< pixel size
+        const int *,     ///< number of pixels to read in each direction
+        const long int ,      ///< total number of pixels to be read.
+        double **       ///< data array to write to.
+        );
 };
 
 

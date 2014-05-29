@@ -127,11 +127,12 @@ int utility_fitsio::write_fits_image(fitsfile *ff,
 // ##################################################################
 
 
-int utility_fitsio::check_fits_image_dimensions(fitsfile *ff,       ///< file pointer.
-						const string name,  ///< Name of hdu image to check
-						const int ndim,     ///< dimensionality we are expecting.
-						const int *npix     ///< number of pixels in each direction.
-						)
+int utility_fitsio::check_fits_image_dimensions(
+        fitsfile *ff,       ///< file pointer.
+        const string name,  ///< Name of hdu image to check
+        const int ndim,     ///< dimensionality we are expecting.
+        const int *npix     ///< number of pixels in each direction.
+        )
 {
   int status=0, num1=0, num=0;
   fits_get_hdu_num(ff, &num );

@@ -86,12 +86,23 @@ OBJECTS = silo2fits.o global.o                                      \
         cell_interface.o                                            \
         uniform_grid_pllel.o uniform_grid.o                         \
         VectorOps.o VectorOps_spherical.o stellar_wind_BC.o         \
-        cooling_SD93_cie.o hydrogen_recomb_Hummer94.o               \
-        hydrogen_mp.o hydrogen_photoion.o                           \
-        mp_explicit_H.o mp_implicit_H.o mp_v2_aifa.o                \
-        cooling.o microphysics.o microphysics_v1.o                  \
-        microphysics_lowZ.o mp_only_cooling.o                       \
-        integrator.o cvode_integrator.o
+microphysics.o \
+microphysics_v1.o \
+integrator.o \
+cooling_SD93_cie.o \
+cooling.o \
+hydrogen_recomb_Hummer94.o \
+hydrogen_mp.o \
+hydrogen_photoion.o \
+mp_explicit_H.o \
+cvode_integrator.o \
+mp_implicit_H.o \
+mp_v2_aifa.o \
+microphysics_lowZ.o \
+mp_only_cooling.o \
+mpv5_molecular.o \
+mpv6_PureH.o \
+mpv7_TwoTempIso.o 
 
 
 silo2fits: $(OBJECTS)
@@ -113,6 +124,56 @@ utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h \
     ${GLOBAL} file_status.h
 dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h
+
+######################
+# MICROPHYSICS STUFF #
+######################
+
+integrator.o: integrator.cc integrator.h ${GLOBAL}
+cooling.o:    cooling.cc cooling.h ${GLOBAL}
+
+cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+
+hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
+    ${GLOBAL}
+
+mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
+   cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
+
+microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
+   ${GLOBAL} cooling.h integrator.h
+microphysics_v1.o: microphysics_v1.cc microphysics.h \
+   microphysics_base.h ${GLOBAL} cooling.h integrator.h
+microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
+   microphysics_base.h ${GLOBAL} integrator.h
+
+hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
+  hydrogen_photoion.h 
+
+hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+
+mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
+  microphysics_base.h
+
+cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
+
+mp_explicit_H.o: mp_explicit_H.cpp mp_explicit_H.h ${GLOBAL} hydrogen_mp.h \
+  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
+  microphysics_base.h
+
+mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
+  ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
+  cooling_SD93_cie.h microphysics_base.h
+
+mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
+  mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
 #######################
 ## MPI/files comms classes

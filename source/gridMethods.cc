@@ -172,6 +172,7 @@
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
+#include "microphysics/mpv8_StarBench_heatcool.h"
 
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
@@ -1634,6 +1635,15 @@ int IntUniformFV::setup_microphysics()
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
+
+    if (mptype=="MPSBHC") {
+      cout <<"\t******* setting up mpv8_StarBench_heatcool module *********\n";
+      cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       have_set_MP=true;
     }
 

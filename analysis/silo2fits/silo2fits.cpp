@@ -27,6 +27,7 @@
 /// - 2013.03.10 JM: Modified for the StarBench Spitzer test problem.
 /// - 2013.04.18 JM: Modified for pure format conversion.
 /// - 2013.04.19 JM: Added option to resize the computational domain.
+/// - 2014.05.05 JM: Fixed accounting bug in 2D data.
 
 
 #include <iostream>
@@ -72,11 +73,9 @@ using namespace std;
 #include "raytracing/raytracer_SC.h"
 
 
-#ifdef NEW_METALLICITY
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
-#endif // NEW_METALLICITY
 
 
 
@@ -121,10 +120,13 @@ void reset_domain(
   rep.printVec("Old Xmin",SimPM.Xmin, ndim);
   rep.printVec("Old Xmax",SimPM.Xmax, ndim);
 
+  SimPM.Ncell=1;
+
   for (int v=0; v<ndim; v++) {
     SimPM.Xmin[v]  = xmin[v];
     SimPM.Xmax[v]  = xmax[v];
     SimPM.NG[v]    = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
+    SimPM.Ncell *= SimPM.NG[v];
     SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
   }
 
@@ -291,8 +293,8 @@ int main(int argc, char **argv)
   // grid to set up.  If nproc==1, then this sets the local domain to
   // be the full domain.
   //
-  if ( (err=mpiPM.decomposeDomain()) !=0) 
-    rep.error("Couldn't Decompose Domain!",err);
+  //if ( (err=mpiPM.decomposeDomain()) !=0) 
+  //  rep.error("Couldn't Decompose Domain!",err);
 
   //
   // write simulation xmin/xmax and radiation source position to a
@@ -322,9 +324,9 @@ int main(int argc, char **argv)
   outf <<"#\n";
   if (SimPM.RS.Nsources>0) {
     outf <<"## RADIATION SOURCE ##\n";
-    outf <<"POS_X "<<SimPM.RS.sources[0].position[XX]<<"  cm\n";
-    outf <<"POS_Y "<<SimPM.RS.sources[0].position[YY]<<"  cm\n";
-    outf <<"POS_Z "<<SimPM.RS.sources[0].position[ZZ]<<"  cm\n";
+    outf <<"POS_X "<<SimPM.RS.sources[0].pos[XX]<<"  cm\n";
+    outf <<"POS_Y "<<SimPM.RS.sources[0].pos[YY]<<"  cm\n";
+    outf <<"POS_Z "<<SimPM.RS.sources[0].pos[ZZ]<<"  cm\n";
     outf <<"Strength "<<SimPM.RS.sources[0].strength<<" erg/s";
     outf <<  "  blackbody source\n";
     outf <<"T_star   "<<SimPM.RS.sources[0].Tstar<<" K. ";
@@ -430,6 +432,8 @@ int main(int argc, char **argv)
     // Now reset domain.
     //
     reset_domain(xmin,xmax,SimPM.ndim);
+    //if ( (err=mpiPM.decomposeDomain()) !=0) 
+    //  rep.error("Couldn't Decompose Domain!",err);
 
     //
     // Read data (this reader can read serial or parallel data.
@@ -516,9 +520,9 @@ void reset_radiation_sources(struct rad_sources *rs)
 // stolen from gridMethods.cc
 int setup_microphysics()
 {
-  cout <<"------------------------------------------------------------\n";
-  cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
-  cout <<"------------------------------------------------------------\n";
+  cout <<"************************************************************\n";
+  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
+  cout <<"************************************************************\n";
   //
   // Setup Microphysics class, if needed.
   // First see if we want the only_cooling class (much simpler), and if
@@ -613,7 +617,7 @@ int setup_microphysics()
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
+      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
       //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
@@ -622,7 +626,6 @@ int setup_microphysics()
 #endif // exclude MPv4
 
 
-#ifdef NEW_METALLICITY
     if (mptype=="MPv5__") {
       cout <<"\t******* setting up mpv5_molecular module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
@@ -646,10 +649,17 @@ int setup_microphysics()
       MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       have_set_MP=true;
     }
-#endif // NEW_METALLICITY
 
-
-
+#ifdef CODE_EXT_HHE
+    if (mptype=="MPv9__") {
+      cout <<"\t******* setting up mpv9_HHe module *********\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
+                        &(SimPM.EP), SimPM.gamma);
+      have_set_MP=true;
+    }
+#endif
 
 #ifndef EXCLUDE_MPV1
     //
@@ -675,11 +685,27 @@ int setup_microphysics()
     MP=0;
   }
 
+  //
+  // If we have a multifrequency ionising source, we can set its properties here.
+  // We can only have one of these, so safe to just loop through...
+  //
+  int err=0;
+  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+    if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
+        SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI &&
+        MP!=0
+        ) {
+      err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
+    }
+  }
+  if (err) rep.error("Setting multifreq source properties",err);
+  
   cout <<"************************************************************\n";
   cout <<"***************** MICROPHYSICS SETUP ***********************\n";
   cout <<"************************************************************\n";
   return 0;
 }
+
 
 
 // ##################################################################

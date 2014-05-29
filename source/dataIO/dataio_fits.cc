@@ -891,10 +891,11 @@ int DataIOFits::write_header_param(class pm_base *p)
 
 
 
-int DataIOFits::put_variable_into_data_array(const string name,   ///< variable name to put in array.
-					     const long int ntot, ///< size of data array to be initialised.
-					     double **data        ///< pointer to uninitialised data.
-					     )
+int DataIOFits::put_variable_into_data_array(
+      const string name,   ///< variable name to put in array.
+      const long int ntot, ///< size of data array to be initialised.
+      double **data        ///< pointer to uninitialised data.
+      )
 {
   (*data) = mem.myalloc((*data),ntot);
   
