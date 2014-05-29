@@ -37,6 +37,8 @@ mpv8_SBheatcool::mpv8_SBheatcool(
 #ifdef TESTING
   cout <<"mpv8_SBheatcool constructor setting up.\n";
 #endif
+  gamma_minus_one = SimPM.gamma -1.0;
+
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
   //
@@ -77,6 +79,7 @@ mpv8_SBheatcool::mpv8_SBheatcool(
   SBHC_EEqHi = 2.0e-19*exp(-1.184e5/(T+1.0e3)) +2.8e-28*sqrt(T)*exp(-92.0/T);
   T=EP->MinTemperature;
   SBHC_EEqLo = 2.0e-19*exp(-1.184e5/(T+1.0e3)) +2.8e-28*sqrt(T)*exp(-92.0/T);
+  cout <<"\tPI-heating="<<SBHC_EEqHi<<", NT-heating="<<SBHC_EEqLo<<"\n";
 
 #ifdef TESTING
   cout <<"mpv8_SBheatcool: Y="<< EP->Helium_MassFrac;
@@ -281,13 +284,6 @@ int mpv8_SBheatcool::ydot(
   double Edot=0.0;
 
   //
-  // collisional ionisation of H, with its associated cooling.
-  // scales with n_e*nH0.
-  // 
-  //Hi_coll_ion_rates(T, &temp1, &temp2);
-  //oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
-
-  //
   // photo-ionisation of H:
   // photoionisation rate uses equation 18 in Mellema et al. 2006 (C2-ray paper),
   // noting that their Gamma is the rate per neutral H, so we multiply by 1-x, as
@@ -314,10 +310,17 @@ int mpv8_SBheatcool::ydot(
       // the photoionisation rate to decrease as the number of neutral atoms
       // decreases during the timestep.  EEqHis is more stable.
       //
-      oneminusx_dot -= Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
+      temp1 = Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
                                           mpv_nH, mpv_delta_S, mpv_Vshell);
-      Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1, mpv_nH,
-                                          mpv_delta_S, mpv_Vshell);
+      oneminusx_dot -= temp1;
+      //
+      // Instead of doing the multifrequency heating, we heat the gas
+      // to get a specific ionized gas temperature, as for
+      // monochromatic radiation.
+      //
+      //Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1, mpv_nH,
+      //                                    mpv_delta_S, mpv_Vshell);
+      Edot += temp1*SBHC_EEqHi/2.7e-13;
       break;
 
       case RT_EFFECT_PION_MONO:
@@ -367,20 +370,20 @@ int mpv8_SBheatcool::ydot(
   // For n<10^6 per c.c.,  heating dominates for T>5K, so MinTemp is set to 5K.
   // If T<MinTemp there is no point calculating the cooling, so we skip it.
   //
-  Edot -= lv_nH*(2.0e-19*exp(-1.184e5/(T+1.0e3))
+  Edot -= mpv_nH*(2.0e-19*exp(-1.184e5/(T+1.0e3))
               +2.8e-28*sqrt(T)*exp(-92.0/T)); 
 
   //
   // Artificial heating function for cold gas, scaling with nH*nH, to
   // get a certain equilibrium temperature independent of density.
   //
-  Edot += lv_nH*SBHC_EEqLo*EP->MinTemperature/T;
+  Edot += mpv_nH*SBHC_EEqLo*EP->MinTemperature/T;
   
   //
   // now multiply Edot by nH to get units of energy loss/gain per unit volume
   // per second.
   //
-  Edot *= lv_nH;
+  Edot *= mpv_nH;
   
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
