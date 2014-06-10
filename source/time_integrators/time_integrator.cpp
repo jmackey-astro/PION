@@ -928,8 +928,8 @@ int IntUniformFV::set_dynamics_dU(
 #ifdef TESTING
     rep.printVec("cpt",cpt->pos,SimPM.ndim);
     rep.printVec("+XX",(grid->NextPt(cpt,XP))->pos,SimPM.ndim);
-    rep.printVec("+YY",(grid->NextPt(cpt,YP))->pos,SimPM.ndim);
-    rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->pos,SimPM.ndim);
+    if (SimPM.ndim>1) rep.printVec("+YY",(grid->NextPt(cpt,YP))->pos,SimPM.ndim);
+    if (SimPM.ndim>2) rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->pos,SimPM.ndim);
 #endif
     
     while (

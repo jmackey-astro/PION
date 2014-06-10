@@ -81,6 +81,9 @@
 ///    array of optical depths rather than a single value per source.
 ///    This is tough going, and is only half-way done so far.
 /// - 2013.08.23 JM: Debugging new HHe module code.
+/// - 2014.06.10 JM: Fixed bug in 1D parallel grid in spherical
+///    coordinates, where when run in parallel, the column densities
+///    from internal boundary cells were not correctly picked up.
 
 #include "raytracer_SC.h"
 #include "future/constants.h"
@@ -733,10 +736,11 @@ int raytracer_USC_infinity::cell_cols_1d(
    * */
   if (!c) rep.error("cell_cols_1d() null cell",c);
 
-  if (c==src->sc && !src->s->at_infinity) {
+  if (c==src->sc && !src->s->at_infinity && src->src_on_grid) {
     //
     // Cell is source cell (can happen for 1D spherical grids)
     //
+    cout <<"source cell!source cell!source cell!source cell!\n";
     for (unsigned short int iT=0; iT<src->s->NTau; iT++) {
       Nc[iT] = 0.0;
     }

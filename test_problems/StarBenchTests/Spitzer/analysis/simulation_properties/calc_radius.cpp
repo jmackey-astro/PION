@@ -1,5 +1,5 @@
 ///
-/// file:    make_text_files.cpp
+/// file:    calc_radius.cpp
 /// author:  Jonathan Mackey
 /// date:    2013.03.10
 ///
@@ -25,12 +25,13 @@
 ///    mass-function files to their own directory.
 ///
 /// - 2013.03.10 JM: Modified for the StarBench Spitzer test problem.
-/// - 2013.06.27 JM: Modified for the StarBench Spitzer test problem.
-
+/// - 2013.07.16 JM: Added ionised mass, shell mass to the outputs.
+/// - 2014.06.08 JM: Added mpv8 -- heating/cooling microphysics class
 
 #include <iostream>
 #include <sstream>
 #include <silo.h>
+#include <fitsio.h>
 using namespace std;
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -38,6 +39,7 @@ using namespace std;
 #include <global.h>
 #include "dataIO/dataio_silo_utility.h"
 #include "grid/uniform_grid.h"
+#include "dataIO/dataio_fits.h"
 
 #include "microphysics/microphysics_base.h"
 
@@ -68,11 +70,10 @@ using namespace std;
 #include "raytracing/raytracer_SC.h"
 
 
-#ifdef NEW_METALLICITY
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
-#endif // NEW_METALLICITY
+#include "microphysics/mpv8_StarBench_heatcool.h"
 
 
 
@@ -83,27 +84,21 @@ using namespace std;
 
 // ##################################################################
 // ##################################################################
+void SWAP_ENDIAN (void *x, const int nbytes) 
 ///
-/// set filename based on counter, outfile-base-name.
-///
-std::string set_filename(
-      const std::string outfile,
-      const long int    counter
-      )
+/// PURPOSE: Swap the byte order of x (legacy binary vtk must be big-endian!).
+/// \author Andrea Mignone (PLUTO code).
+/// 
 {
-  ostringstream temp; temp.str("");
-  temp << outfile <<".";
-  //
-  // only add timestep if counter >=0 (initial conditions get no timestep).
-  //
-  if (counter >= 0) {
-    temp.width(8); temp.fill('0');
-    temp << counter <<".";
-  }
-  temp <<"txt";
-  return temp.str();
+  if (nbytes>16) {cerr <<"swap-endian buffer is too large! Max=16bytes.\n";return;}
+  int k;
+  static char Swapped[16];
+  char *c;
+  c = (char *) x;
+  for (k = nbytes; k--; ) Swapped[k] = *(c + nbytes - 1 - k);
+  for (k = nbytes; k--; ) c[k] = Swapped[k];
+  return;
 }
-
 
 ///
 /// Reset the radiation sources in the header to correspond to projected
@@ -296,13 +291,35 @@ int main(int argc, char **argv)
   //
   //string filehandle("");
   string this_outfile;
-  this_outfile = op_path + "/" + outfile;
+  if (op_filetype==OP_TEXT) {
+    this_outfile = op_path + "/" + outfile + ".txt";
+  }
+  else {
+    rep.error("bad op_filetype",op_filetype);
+  }
   size_t ifile=0;
 
 
+  //
+  // Text File: proc 0 writes all the data.
+  // 
+  ofstream outf;
+  if (mpiPM.myrank==0) {
+    if (outf.is_open())
+      rep.error("Output text file is already open!",1);
+    outf.open(this_outfile.c_str());
+    if (!outf.is_open())
+      rep.error("Failed to open text file for writing",this_outfile);
+    outf <<"#\n# writing: time/Myr  R_if/pc  R_sh/pc";
+    outf <<"  [R_if(max)  R_if(min) R_if(mean) R_if(median)";
+    outf <<"  R_sh(max)  R_sh(min)  R_sh(mean)  R_sh(median)]\n";
+    outf <<"#\n";
+    outf.setf( ios_base::scientific );
+    outf.precision(6);
+  }
   double pc  = 3.086e18;
   double Myr = 3.16e13;
-
+  double Msun= 1.989e33;
 
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Starting Loop over all input files ----\n";
@@ -313,7 +330,7 @@ int main(int argc, char **argv)
   // loop over all files:
   //*******************************************************************
 
-  for (ifile=0; ifile<101; ifile+=5) {
+  for (ifile=0; ifile<nfiles; ifile++) {
     cout.flush();
     cout <<"------ Starting Next Loop: ifile="<<ifile<<", time so far=";
     cout <<GS.time_so_far("analyse_data")<<" ----\n";
@@ -330,7 +347,7 @@ int main(int argc, char **argv)
     temp <<input_path<<"/"<<*ff;
     string infile = temp.str();
     temp.str("");
-    std::advance(ff,5);
+    ff++;
 
     //
     // delete any current radiation sources
@@ -369,40 +386,217 @@ int main(int argc, char **argv)
     //********************
     //
 
+    //
+    // Get tracer indices in state vector.
+    //
+    int tr_Hp     = SimPM.ftr; ///< tracer for ion fraction.
+    int nd = SimPM.ndim;
+    double SrcPos[3] = {0.0, 0.0, 0.0};
+    int iSrcPos[3] = {0, 0, 0};
+    CI.get_ipos_vec(SrcPos,iSrcPos);
+
+    //
+    // Define variables we want to track
+    //
+    vector<double> IFdist, IFy, IFc, SHdist, SHrho, SHc;
+    double cpos[3];
+    double dist, vrad, cvol, rp, rm, i_mass=0.0, sh_mass=0.0;
+    double ymin=0.03, ymax=0.97;
+
+
+    cell *c=grid->FirstPt();
+    do {
+
+      dist = grid->distance_vertex2cell(SrcPos,c);
+      
+      //
+      // I-front position
+      //
+      if ((c->P[tr_Hp]>ymin) && (c->P[tr_Hp]<ymax)) {
+        if (SimPM.simtime/Myr <1.5) {
+          if (dist/pc<10.0) {
+            IFdist.push_back(dist/pc);
+            IFy.push_back(c->P[tr_Hp]);
+            IFc.push_back(c->id);
+          }
+        }
+        else {
+          IFdist.push_back(dist/pc);
+          IFy.push_back(c->P[tr_Hp]);
+          IFc.push_back(c->id);
+        }
+      }
+
+      //
+      // Shock/shell position
+      // Get radial velocity (assuming source is at origin).
+      //
+      CI.get_dpos(c,cpos);
+      if (SimPM.coord_sys==COORD_CYL) {
+        cpos[Rcyl] = grid->idifference_vertex2cell(iSrcPos,c,Rcyl)*CI.phys_per_int();
+      }
+      else if (SimPM.coord_sys==COORD_SPH) {
+        cpos[Rsph] = grid->idifference_vertex2cell(iSrcPos,c,Rsph)*CI.phys_per_int();
+      }
+      vrad = c->P[VX]*cpos[XX];
+      if (nd>1) vrad += c->P[VY]*cpos[YY];
+      if (nd>2) vrad += c->P[VZ]*cpos[ZZ];
+      vrad /= dist;
+
+      if ( (c->P[RO] > 5.21e-21*1.1) && (vrad>1.0e4) ) {
+        SHdist.push_back(dist/pc);
+        SHrho.push_back(c->P[RO]);
+        SHc.push_back(c->id);
+      }
+
+
+      //
+      // cell volume
+      //
+      if (SimPM.ndim>1)
+        rep.error("ionised/shell masses only for spherical coord",1);
+      rp = cpos[Rsph]+0.5*grid->DX();
+      rm = cpos[Rsph]-0.5*grid->DX();
+      cvol = 4.0/3.0*M_PI*(rp*rp*rp-rm*rm*rm);
+      //
+      // ionised mass
+      //
+      if (c->P[tr_Hp]>1.0e-3) {
+        i_mass += c->P[RO]*c->P[tr_Hp]*cvol;
+      }
+      
+      //
+      // shell mass
+      //
+      if (c->P[RO] > 5.21e-21*1.01) {
+        sh_mass += c->P[RO]*cvol;
+      }
+
+    } while ((c=grid->NextPt(c)) !=0);
+
+    //
+    // Now we want the max, min, mean position of each
+    //
+    double IFmean=0.0, IFmax=0.0, IFmin=0.0, IFmedian=0.0, IFwtmean=0.0, wt=0.0;
+    double SHmean=0.0, SHmax=0.0, SHmin=0.0, SHmedian=0.0;
+
+    //
+    // First the I-front
+    //
+    unsigned int NN=IFdist.size();
+    if (NN>0) {
+      double wtemp=0.0;
+      for (unsigned int v=0; v<NN; v++) {
+        wtemp = std::max(0.0, std::min(1.0, (1.0 - 2.0*fabs(IFy[v]-0.5)) ) );
+        IFwtmean += IFdist[v]*wtemp;
+        IFmean += IFdist[v];
+        wt += wtemp;
+      }
+      IFwtmean /= wt;
+      IFmean /= static_cast<double>(NN);
+
+      std::sort(IFdist.begin(),IFdist.end());
+      IFmax = IFdist.back();
+      IFmin = IFdist.front();
+      IFmedian = IFdist[static_cast<int>(NN/2.0)];
+    }
+
+    //
+    // Next the Shocked shell
+    //
+    NN=SHdist.size();
+    if (NN>0) {
+      for (unsigned int v=0; v<NN; v++) {
+        SHmean += SHdist[v];
+      }
+      SHmean /= static_cast<double>(NN);
+      std::sort(SHdist.begin(),SHdist.end());
+      SHmax = SHdist.back();
+      SHmin = SHdist.front();
+      SHmedian = SHdist[static_cast<int>(NN/2.0)];
+    }
+
+    //
+    // Comms to get max/min/mean over all cores (broken for now
+    // because i've already calculated median/mean above!)
+    //
+    //IFmax = COMM->global_operation_double("MAX", IFmax);
+    //IFmin = COMM->global_operation_double("MIN", IFmin);
+    //SHmax = COMM->global_operation_double("MAX", SHmax);
+    //SHmin = COMM->global_operation_double("MIN", SHmin);
+
+    //
+    // If we are in 1D, we just want the radius where the ion
+    // fraction drops below 0.5
+    //
+    if (SimPM.coord_sys==COORD_SPH) {
+      c=grid->FirstPt();
+      while (grid->NextPt(c)!=0 &&
+             grid->NextPt(c)->P[tr_Hp]>0.5) {
+        c=grid->NextPt(c);
+      }
+      dist = grid->distance_vertex2cell(SrcPos,c);
+      if (grid->NextPt(c)) {
+        IFwtmean = 0.5*(dist+grid->distance_vertex2cell(SrcPos,grid->NextPt(c)))/pc;
+      }
+      else {
+        IFwtmean = dist/pc;
+      }
+    }
 
     //cout <<"--------------- Finished Analysing this step ----------\n";
     //cout <<"-------------------------------------------------------\n";
     //cout <<"--------------- Writing data and getting next src-file \n";
-    
-    string tfile = set_filename(this_outfile, SimPM.timestep);
-    ofstream outf(tfile.c_str());
-    if(!outf.is_open()) {
-      cerr << "Error opening file " << tfile << " for writing.  Quitting..." <<"\n";
-      return(1);
-    }
-    
-    outf << "# format: r density pressure temperature\n";
-    outf << "# time = "<<SimPM.simtime/Myr<<" Myr.  timestep = "<<SimPM.timestep<<"\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
 
-    // Go through every point, output one line per point.
-    class cell *cpt=grid->FirstPt(); do {
-      // First positions.
-      outf << CI.get_dpos(cpt,0)/pc << "  ";
-      // Next density pressure temperature
-      outf <<cpt->P[RO]<<"  ";
-      outf <<cpt->P[PG]<<"  ";
-      if (MP) outf << MP->Temperature(cpt->P,SimPM.gamma);
-      outf  <<"\n";
-    } while ( (cpt=grid->NextPt(cpt))!=0);
-    
-    outf.setf(ios_base::fmtflags(0),ios_base::floatfield);
-    outf.precision(6);
-    outf.close();
+    if (mpiPM.myrank==0) {
+      // **********************
+      // * Write Data to file *
+      // **********************
+      outf <<SimPM.simtime/Myr;
+      outf <<"  " << IFwtmean;
+      outf <<"  " << SHmax;
+      outf <<"  " << i_mass/Msun;
+      outf <<"  " << sh_mass/Msun;
+      //outf <<"  " << SHmean;
+      //outf <<"      " << IFmax;
+      //outf <<"  " << IFmin;
+      //outf <<"  " << IFmean;
+      //outf <<"  " << IFmedian;
+      //outf <<"      " << SHmax;
+      //outf <<"  " << SHmin;
+      //outf <<"  " << SHmean;
+      //outf <<"  " << SHmedian;
+      outf <<"\n";
+      outf.flush();
+      
+      //
+      // Close output file, if multiple files.
+      //
+      if (multi_opfiles) {
+	outf.close();
+      }
 
+    } // if proc 0, write data
+    //
+    // TESTING TESTING
+    //ostringstream testfile; testfile<<"tmp_data/tmpfile_np"<<mpiPM.nproc;
+    //dataio.dataio_silo_pllel::OutputData(testfile.str(), grid);
+    // TESTING TESTING
+    //
+    IFdist.clear();
+    IFy.clear();
+    IFc.clear();
+    SHdist.clear();
+    SHrho.clear();
+    SHc.clear();
   } // Loop over all files.    
 
+  //
+  // Close file, if single file.
+  //
+  if (!multi_opfiles && mpiPM.myrank==0) {
+    outf.close();
+  }
 
   cout <<"-------------------------------------------------------\n";
   cout <<"---- Finised with all Files: time="<<GS.stop_timer("analyse_data")<<"--------\n";
@@ -572,7 +766,6 @@ int setup_microphysics()
 #endif // exclude MPv4
 
 
-#ifdef NEW_METALLICITY
     if (mptype=="MPv5__") {
       cout <<"\t******* setting up mpv5_molecular module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
@@ -596,8 +789,15 @@ int setup_microphysics()
       MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       have_set_MP=true;
     }
-#endif // NEW_METALLICITY
 
+    if (mptype=="MPSBHC") {
+      cout <<"\t******* setting up mpv8_StarBench_heatcool module *********\n";
+      cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      have_set_MP=true;
+    }
 
 
 

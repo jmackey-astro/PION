@@ -197,6 +197,7 @@ fi
 # Read in turbulence simulations provided by Blakesley Burkhart
 #PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 
+PION_OPTIONS+=" -DCODE_EXT_SBII"
 export PION_OPTIONS
 echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################

@@ -18,7 +18,7 @@ bindir=.
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 
 
-CODEDIR=${CURDIR}/../../../..
+CODEDIR=${CURDIR}/../../../../..
 
 VPATH=${CODEDIR}/source:\
 ${CODEDIR}/source/defines:\
@@ -122,7 +122,7 @@ OBJECTS = cell_interface.o global.o get_sim_info.o \
         file_status.o
      
 ifneq (,$(findstring NEW_METALLICITY,$(OPT)))
-  OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+  OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o mpv8_StarBench_heatcool.o
 endif
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -249,6 +249,11 @@ mpv6_PureH.o: microphysics/mpv6_PureH.cpp microphysics/mpv6_PureH.h \
 mpv7_TwoTempIso.o: microphysics/mpv7_TwoTempIso.cpp \
   microphysics/mpv7_TwoTempIso.h microphysics/mp_explicit_H.h \
   microphysics/microphysics_base.h ${GLOBAL}
+
+mpv8_StarBench_heatcool.o: microphysics/mpv8_StarBench_heatcool.cpp \
+  microphysics/mpv8_StarBench_heatcool.h microphysics/mp_explicit_H.h \
+  microphysics/microphysics_base.h ${GLOBAL}
+
 
 
 

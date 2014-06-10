@@ -359,6 +359,11 @@ ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
   IC_OBJ +=   read_BBurkhart_data.o
 endif
 
+ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
+  OBJECTS += mpv8_StarBench_heatcool.o
+  IC_OBJ +=  mpv8_StarBench_heatcool.o
+endif
+
 # NEW chemistry classes.
   OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
   IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
@@ -556,6 +561,11 @@ mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
 
 mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
   mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
+  mpv8_StarBench_heatcool.h mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+
 
 
 ########################
