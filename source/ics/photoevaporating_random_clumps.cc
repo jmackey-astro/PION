@@ -240,6 +240,12 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int IC_photevap_random_clumps::setup_perc_fixedmass()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
@@ -312,6 +318,12 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   return(err);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int IC_photevap_random_clumps::setup_perc()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
@@ -355,6 +367,12 @@ int IC_photevap_random_clumps::setup_perc()
   return(err);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double IC_photevap_random_clumps::random_frac()
 {
   //
@@ -362,6 +380,12 @@ double IC_photevap_random_clumps::random_frac()
   //
   return ((double) rand())/((double) RAND_MAX);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
 {
@@ -519,7 +543,13 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
   }
   return err;
 }
-    
+ 
+
+// ##################################################################
+// ##################################################################
+
+
+   
 int IC_photevap_random_clumps::clumps_random_setup()
 {
   int err=0;
@@ -609,6 +639,12 @@ int IC_photevap_random_clumps::clumps_random_setup()
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 #ifdef PARALLEL
 int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
 {
@@ -682,6 +718,12 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel_fixedmass()
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int IC_photevap_random_clumps::clumps_random_setup_pllel()
 {
   int err=0;
@@ -742,6 +784,12 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
 }
 #endif //PARALLEL
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void IC_photevap_random_clumps::print_clump(struct clump *rc)
 {
   cout <<"--clump overdensity:"<<rc->overdensity<<"  mass:"<<rc->mass<<endl;
@@ -751,6 +799,12 @@ void IC_photevap_random_clumps::print_clump(struct clump *rc)
   cout <<"-------------------\n";
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c
 						      )
@@ -814,5 +868,11 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c
   }
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 

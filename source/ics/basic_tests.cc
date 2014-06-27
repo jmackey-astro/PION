@@ -9,15 +9,35 @@
 ///
 /// 2010.10.05 JM: Added ambient medium parameters to be read from paramter file
 ///   for the "uniform" initial conditions.
-///
+/// - 2013.10.17 JM: Added optional core/radial slope isothermal 
+///    sphere for the UNIFORM medium parameters (with optional
+///    expansion velocity, for modelling winds).
 
 #include "icgen.h"
 #include "../coord_sys/VectorOps.h"
 using namespace std;
 #include <sstream>
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 IC_basic_tests::IC_basic_tests(){}
+
+
+// ##################################################################
+// ##################################################################
+
+
 IC_basic_tests::~IC_basic_tests(){}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
 			       class GridBaseClass *ggg ///< pointer to grid
@@ -106,6 +126,12 @@ int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to paramet
 }
  
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int IC_basic_tests::setup_uniformgrid(
           class ReadParams *rrp, ///< pointer to parameter list.
           class GridBaseClass *ggg ///< pointer to grid
@@ -174,24 +200,92 @@ int IC_basic_tests::setup_uniformgrid(
     else         Amb[t+SimPM.ftr] = -1.0e99;
   }
 
+  //
+  // optional radial slope in density from a central point.
+  //
+  double centre[MAX_DIM];
+  double core_radius=0.0, radial_slope=0.0, radial_vel=0.0;
+  bool use_core = true;
+
+  seek = "UNIFORM_radial_slope";
+  str = rrp->find_parameter(seek);
+  if (str=="") {
+    radial_slope = 0.0;
+    use_core     = false;
+  }
+  else {
+    radial_slope = atof(str.c_str());
+  }
+
+  seek = "UNIFORM_radial_velocity";
+  str = rrp->find_parameter(seek);
+  if (str=="") { radial_vel = 0.0; }
+  else         { radial_vel = atof(str.c_str()); }
+
+  seek = "UNIFORM_core_radius";
+  str = rrp->find_parameter(seek);
+  if (str=="") {
+    core_radius = 0.0;
+    use_core    = false;
+  }
+  else {
+    core_radius = atof(str.c_str());
+  }
+
+  seek = "UNIFORM_core_centre_XX";
+  str = rrp->find_parameter(seek);
+  if (str=="")  centre[XX] = 0.0;
+  else          centre[XX] = atof(str.c_str());
+
+  seek = "UNIFORM_core_centre_YY";
+  str = rrp->find_parameter(seek);
+  if (str=="")  centre[YY] = 0.0;
+  else          centre[YY] = atof(str.c_str());
+
+  seek = "UNIFORM_core_centre_ZZ";
+  str = rrp->find_parameter(seek);
+  if (str=="")  centre[ZZ] = 0.0;
+  else          centre[ZZ] = atof(str.c_str());
+
+  //
+  // Check that the radial slope is non-zero.  If it is zero, then
+  // switch off the core.
+  //
+  if (use_core && GS.equalD(radial_slope, 0.0)) use_core=false;
+
 
   cout <<"\t\tAssigning values to data.\n";
   class cell *cpt = ggg->FirstPt();
+  double distance, dpos[MAX_DIM];
   do {
     for (int v=0;v<SimPM.nvar;v++)
       cpt->P[v] = cpt->Ph[v] = Amb[v];
-    // Set values of primitive variables to some constant values.
-    // cpt->P[RO] = 0.123; cpt->P[PG] = 0.111;
-    // cpt->P[VX] = cpt->P[VY] = cpt->P[VZ] = 1.;
-    // if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
-    //   cpt->P[BX] = cpt->P[BY] = 0.1; cpt->P[BZ] = 1.;
-    // }
+    //
+    // If we are using a core/slope for the density, then set up
+    // an isothermal sphere with a constant density core.
+    // rho = rho_0 /(1+ (r_core/r)^slope)
+    //
+    CI.get_dpos(cpt,dpos);
+    distance = ggg->distance(centre,dpos);
+    if (use_core) {
+      cpt->P[RO] /= (1.0 + exp(radial_slope*log(core_radius/distance)));
+      cpt->P[PG] /= (1.0 + exp(radial_slope*log(core_radius/distance)));
+      cpt->P[VX] = radial_vel*(dpos[XX]-centre[XX])/distance;
+      cpt->P[VY] = radial_vel*(dpos[YY]-centre[YY])/distance;
+      cpt->P[VZ] = radial_vel*(dpos[ZZ]-centre[ZZ])/distance;
+    }
   } while ( (cpt=ggg->NextPt(cpt))!=NULL);
   //  cpt = ggg->FirstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  ( (cpt=ggg->NextPt(cpt))!=NULL);
   cout <<"\t\tGot through data successfully.\n";
   return(0);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 // ************************************************
 // ******** SINE WAVE IN VELOCITY, ADVECTION ******
@@ -279,6 +373,12 @@ int IC_basic_tests::setup_sinewave_velocity()
 } //setup_sinewave()
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int IC_basic_tests::setup_advection()
 {
   string seek, str;
@@ -364,6 +464,12 @@ int IC_basic_tests::setup_advection()
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 /**************************************************************************/
 // Div B peak.
 /**************************************************************************/
@@ -407,6 +513,12 @@ int IC_basic_tests::setup_divBpeak()
 /**************************************************************************/
 // Div B peak.
 /**************************************************************************/
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
@@ -501,6 +613,12 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 /** \brief Set up Orszag-Tang Vortex problem (from Dai & Woodward 1998,APJ,494,317)
  * This assumes the grid is unit size in both directions, so it automatically works
  * in serial and in parallel.
@@ -552,6 +670,12 @@ int IC_basic_tests::setup_OrszagTang()
   // Data done.
   return(0);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -622,6 +746,12 @@ int IC_basic_tests::setup_DoubleMachRef()
   
   return(0);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
  
 int IC_basic_tests::setup_KelvinHelmholz_Stone()
 {
@@ -676,6 +806,12 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int IC_basic_tests::setup_KelvinHelmholz()
 {
   cout <<"KH Instability: assuming x=[-0.5,0.5], y=[-0.5,0.5]\n";
@@ -719,3 +855,10 @@ int IC_basic_tests::setup_KelvinHelmholz()
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
