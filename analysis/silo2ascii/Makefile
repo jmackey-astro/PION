@@ -189,7 +189,7 @@ OBJECTS = silo2text.o uniform_grid.o dataio.o readparams.o global.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o        \
         integrator.o cooling.o microphysics.o microphysics_v1.o                \
         microphysics_lowZ.o mp_only_cooling.o                                  \
-        mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+        mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o mpv8_StarBench_heatcool.o
 
 ##########################
 ### -- EXECTUTABLES -- ###
@@ -277,6 +277,10 @@ mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
 
 mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
   mp_explicit_H.h microphysics_base.h ${GLOBAL}
+
+mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
+  mpv8_StarBench_heatcool.h mp_explicit_H.h \
+  microphysics_base.h ${GLOBAL}
 
 
 clean:
