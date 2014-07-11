@@ -35,6 +35,7 @@
 /// - 2013.03.24 JM: Added another StarBench test.
 /// - 2013.06.13 JM: Added StarBench_TremblinCooling test.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
+/// - 2014.07.11 JM: Added isothermal noise perturbation option.
 
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
@@ -883,7 +884,79 @@ int ICsetup_base::AddNoise2Data(int n, double frac)
        }
      } while ( (cpt=grid->NextPt(cpt)) !=0);
     break;
-     
+
+    //
+    // Isothermal perturbation.
+    //
+   case 4:
+    cout <<"Adding isothermal random noise to cells at fractional level of "<<frac<<"\n";
+    cpt=grid->FirstPt();
+    do {
+#ifdef SERIAL
+       if (!cpt->isedge && !cpt->isbd)
+#endif 
+#ifdef PARALLEL
+      //
+      // We want to exclude edge cells, but only those at the edge of the
+      // full domain, not the local domain.
+      //
+      true_edge=false;
+      if (cpt->isedge) {
+        //
+        // find out which direction the edge is (may be more than one!).
+        // If any edge has no neighbour process, then it must be a full-domain
+        // boundary.  If the neigbour doesn't exist, ngbproc(dir)<0.
+        //
+        //cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
+        //cout <<"  true_edge="<<true_edge<<"\n";
+        // x-dir
+        if      (cpt->isedge %3 ==1) { // XN boundary
+          //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
+          if (mpiPM.ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<mpiPM.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+        }
+        else if (cpt->isedge %3 ==2) { // XP boundary
+          if (mpiPM.ngbprocs[XP] <0) true_edge=true;
+        }
+        // y-dir
+        if (SimPM.ndim>1) {
+          if      ((cpt->isedge%9)/3 ==1) { // YN boundary
+            //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
+            if (mpiPM.ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<mpiPM.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+          }
+          else if ((cpt->isedge%9)/3 ==2) { // YP boundary
+            if (mpiPM.ngbprocs[YP] <0) true_edge=true;
+          }
+        }
+        // z-dir
+        if (SimPM.ndim>2) {
+          if      (cpt->isedge/9 ==1) { // ZN boundary
+            if (mpiPM.ngbprocs[ZN] <0) true_edge=true;
+          }
+          else if (cpt->isedge/9 ==2) { // ZP boundary
+            if (mpiPM.ngbprocs[ZP] <0) true_edge=true;
+          }
+        }
+        //cout <<"true_edge="<<true_edge<<"\n";
+      }
+      if (true_edge==false && !cpt->isbd)
+#endif
+      {
+        // Don't want to alter any edge cells.
+        double temp;
+        //
+        // final pressure = initial pressure * (1 +/- frac)
+        // final density  = initial density  * (1 +/- frac)
+        //
+        temp = 2.0*frac*(static_cast<double>(rand())/RAND_MAX -0.5);
+        cpt->P[PG] *= 1.0+temp;
+        cpt->P[RO] *= 1.0+temp;
+        //cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
+      }
+    } while ( (cpt=grid->NextPt(cpt)) !=0);
+    break;
+
     default:
     cerr <<"\t Error, don't know what type of noise corresponds to "<<n<<"...\n";
     return(1);
