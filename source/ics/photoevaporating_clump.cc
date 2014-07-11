@@ -19,10 +19,15 @@
 ///  - 2010.07.23 JM: New RSP source position class interface.
 ///
 /// - 2011.02.28 JM: Got rid of RSP class.
-/// - 2011.05.06 JM: Added geometric grid distance calculation to photoevap-radial.
+/// - 2011.05.06 JM: Added geometric grid distance calculation to
+///    photoevap-radial.
 /// - 2011.06.23 JM: Added PhotoEvap_powerlaw function.
-/// - 2012.09.16 JM: Added problem with 1/r^2 cloud profile and a top-hat clump.
+/// - 2012.09.16 JM: Added problem with 1/r^2 cloud profile and a
+///    top-hat clump.
 /// - 2013.08.23 JM: Change rad_src_info.position[] to .pos[]
+/// - 2014.07.11 JM: Changed noise from adiabatic to isothermal
+///    perturbation.
+
 #include "icgen.h"
 #include <sstream>
 
@@ -318,8 +323,9 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
   if (noise>0) {
-    cout <<"\t\tNOISE!!! Adding random adiabatic noise at fractional level = "<<noise<<endl;
-    err+= AddNoise2Data(2,noise);
+    cout <<"\t\tNOISE!!! Adding random adiabatic noise";
+    cout <<" at fractional level = "<<noise<<endl;
+    err+= AddNoise2Data(4,noise);
   }
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
