@@ -641,6 +641,8 @@ int mp_explicit_H::set_multifreq_source_properties(
   // photons, so just integrate up to its first ionisation energy.
   //
   Emax = 24.59*1.602e-12;
+#else
+  Emax = 54.41778*1.602e-12;  // assume nothing doubly-ionized He.
 #endif // HE_INERT
   //
   // Call the function in hydrogen_photoion.

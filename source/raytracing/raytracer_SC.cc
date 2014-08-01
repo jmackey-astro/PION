@@ -84,6 +84,8 @@
 /// - 2014.06.10 JM: Fixed bug in 1D parallel grid in spherical
 ///    coordinates, where when run in parallel, the column densities
 ///    from internal boundary cells were not correctly picked up.
+/// - 2014.08.01 JM: Set ipos[] to have the correct sign in the fn
+///    raytracer_USC_infinity::add_source_to_list()
 
 #include "raytracer_SC.h"
 #include "future/constants.h"
@@ -273,8 +275,14 @@ void raytracer_USC_infinity::add_source_to_list(
   for (int i=0;i<ndim;i++) {
     if (rs.s->pos[i] <= gridptr->Xmin(static_cast<axes>(i)) ||
 	rs.s->pos[i] >= gridptr->Xmax(static_cast<axes>(i))) {
-      if      (rs.s->pos[i] < -1.e99) dir=static_cast<direction>(2*i);
-      else if (rs.s->pos[i] >  1.e99) dir=static_cast<direction>(2*i+1);
+      if      (rs.s->pos[i] < -1.e99) {
+        dir=static_cast<direction>(2*i);
+        rs.ipos[i] = -10000;
+      }
+      else if (rs.s->pos[i] >  1.e99) {
+        dir=static_cast<direction>(2*i+1);
+        rs.ipos[i] = 10000;
+      }
       else {
 #ifdef RT_TESTING
 	cout <<"Source off grid, but not at infinity!";
