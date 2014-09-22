@@ -142,6 +142,8 @@
 ///    Changed forbidden-line cooling to fit to Raga,Mellema, &
 ///    Lundqvist (1997) tables for singly ionised C,N,O.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
+/// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
+///    cooling rates per cell for postprocessing.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -1081,6 +1083,42 @@ double mp_explicit_H::timescales_RT(
 
 
 
+
+double mp_explicit_H::total_cooling_rate(
+        const double *p_in, ///< primitive input state vector.
+        const int N_heat, ///< Number of UV heating sources.
+        const std::vector<struct rt_source_data> &heat_src,
+        ///< list of UV-heating column densities and source properties.
+        const int N_ion,      ///< number of ionising radiation sources.
+        const std::vector<struct rt_source_data> &ion_src,
+        ///< list of ionising src column densities and source properties.
+        const double   ///< EOS gamma.
+        )
+{
+  double P[nvl];
+  int err = convert_prim2local(p_in,P);
+  if (err) {
+    rep.error("Bad input state to mp_explicit_H::total_cooling_rate()",err);
+  }
+  NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
+  NV_Ith_S(y_in,lv_eint) = P[lv_eint];
+
+  // set the radiation properties of the current cell.
+  setup_radiation_source_parameters(p_in,P, N_heat, heat_src, N_ion, ion_src);
+  // Now calculate y-dot[]...
+  err = ydot(0, y_in, y_out, 0);
+  if (err) {
+    rep.error("dYdt(): error in mp_explicit_H::total_cooling_rate()()",err);
+  }
+  return NV_Ith_S(y_out, lv_eint);
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double mp_explicit_H::get_recombination_rate(
           const int,          ///< ion index in tracer array (optional).
           const double *p_in, ///< input state vector (primitive).
@@ -1116,15 +1154,15 @@ double mp_explicit_H::get_recombination_rate(
 
 
 void mp_explicit_H::setup_radiation_source_parameters(
-                    const double *p_in, ///< primitive input state vector.
-                    double *P,  ///< local input state vector (x_in,E_int)
-                    const int N_heat, ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &heat_src,
-                    ///< list of UV-heating column densities and source properties.
-                    const int N_ion,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &ion_src
-                    ///< list of ionising src column densities and source properties.
-                    )
+        const double *p_in, ///< primitive input state vector.
+        double *P,  ///< local input state vector (x_in,E_int)
+        const int N_heat, ///< Number of UV heating sources.
+        const std::vector<struct rt_source_data> &heat_src,
+        ///< list of UV-heating column densities and source properties.
+        const int N_ion,      ///< number of ionising radiation sources.
+        const std::vector<struct rt_source_data> &ion_src
+        ///< list of ionising src column densities and source properties.
+        )
 {
   //-------------------- RADIATION SOURCE INFO -----------------------
   //

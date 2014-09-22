@@ -19,6 +19,8 @@
 /// - 2013.08.19 JM: added get_th_xsection() public function.
 /// - 2013.08.20 JM: Added NTau var to rt_source_data, Column and
 ///    DelCol are changed to arrays.  Added get_n_el() function.
+/// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
+///    cooling rates per cell for postprocessing.
 
 #ifndef MICROPHYSICS_BASE_H
 #define MICROPHYSICS_BASE_H
@@ -199,6 +201,24 @@ class MicroPhysicsBase {
   virtual int set_multifreq_source_properties(
                 const struct rad_src_info *
                 ) {return -999;}
+
+  ///
+  /// Get the total cooling rate.  This is for postprocessing the
+  /// simulation data only -- IT IS NOT OPTIMISED FOR SPEED.  Note
+  /// that this is dE/dt, in erg/cm^3/s, so it is the difference
+  /// between heating and cooling.
+  ///
+  virtual double total_cooling_rate(
+      const double *, ///< Current cell values.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      ) {return -999.999;}
+
 
   ///
   /// Get the total recombination rate for an ion, given the input

@@ -24,6 +24,8 @@
 ///    variables that can be set from the parameterfile.
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
+///    cooling rates per cell for postprocessing.
 
 #ifndef MP_EXPLICIT_H_H
 #define MP_EXPLICIT_H_H
@@ -272,6 +274,21 @@ class mp_explicit_H
   int set_multifreq_source_properties(
             const struct rad_src_info *
             );
+
+  ///
+  /// Get the total cooling rate.  This is for postprocessing the
+  /// simulation data only -- IT IS NOT OPTIMISED FOR SPEED.
+  ///
+  virtual double total_cooling_rate(
+        const double *, ///< Current cell values.
+        const int,      ///< Number of UV heating sources.
+        const std::vector<struct rt_source_data> &,
+        ///< list of UV-heating column densities and source properties.
+        const int,      ///< number of ionising radiation sources.
+        const std::vector<struct rt_source_data> &,
+        ///< list of ionising src column densities and source properties.
+        const double   ///< EOS gamma.
+        );
 
   ///
   /// Get the total recombination rate for an ion, given the input
