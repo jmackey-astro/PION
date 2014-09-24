@@ -51,6 +51,7 @@
 #define STATIC_GRID_H
 #ifdef GRIDV2
 
+/// I should work on this more.
 
 #include <list>
 using namespace std;
