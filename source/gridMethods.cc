@@ -267,7 +267,13 @@ IntUniformFV::~IntUniformFV()
 // ##################################################################
 
 
-int IntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
+int IntUniformFV::Init(
+      string infile,
+      int typeOfFile,
+      int narg,
+      string *args,
+      class GridBaseClass *grid
+      )
 {
 #ifdef TESTING
   cout <<"(UniformFV::Init) Initialising grid"<<"\n";
@@ -308,11 +314,13 @@ int IntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
   err = override_params(narg, args);
   rep.errorTest("(INIT::override_params) err!=0 Something went bad",0,err);
   
-  // Now determine what to do at boundaries, and setup the grid structure with boundaries.
-  //  cout <<"(UniformFV::Init) Setting up grid... \n";
-  err = setup_grid();
+  // Now set up the grid structure.
+  err = setup_grid(grid);
   err += get_cell_size();
-  if (err!=0){cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";return(1);}
+  if (err!=0) {
+    cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
+    return(1);
+  }
 
   //
   // All grid parameters are now set, so I can set up the appropriate

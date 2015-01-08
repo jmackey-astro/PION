@@ -44,12 +44,37 @@
 /// - 2010.10.13 JM: Moved print_commandline_options to global function.
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
-///
+/// - 2015.01.08 JM: Moved grid definition to this file from global.h
+///    and added link to reporting class.
 
 #include <iostream>
 using namespace std;
+
+//
+// These tell code what to compile and what to leave out.
+//
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+//
+// Global variables
+//
 #include "global.h"
+
+//
+// reporting class, for dealing with stdio/stderr
+//
+#include "tools/reporting.h"
+
+//
+// grid base class
+//
+#include "grid/grid_base_class.h"
+//
+// simulation control toolkit class.
+//
 #include "grid.h"
+
 
 int main(int argc, char **argv)
 {
@@ -69,7 +94,8 @@ int main(int argc, char **argv)
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
       cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+      // Redirects cout and cerr to text files in the directory specified.
+      rep.redirect(outpath);
     }
   }
   cout <<"-------------------------------------------------------\n";
@@ -97,34 +123,42 @@ int main(int argc, char **argv)
 
   int type = atoi(argv[3]);
   if (type!=1) rep.error("Only know uniform FV solver (=1)",type);
-  
-  if (integrator)
-    rep.error("integrator already set up!",integrator);
-  integrator = new class IntUniformFV();
-  if (!integrator)
-    rep.error("(pion) Couldn't initialise IntUniformFV integrator", integrator);
+ 
+  //
+  // set up pointer to grid base class.
+  //
+  class GridBaseClass *grid = 0;
+
+  //
+  // Set up simulation controller class.
+  //
+  class IntegratorBaseFV *sim_control = 0;
+
+  sim_control = new class IntUniformFV();
+  if (!sim_control)
+    rep.error("(pion) Couldn't initialise IntUniformFV sim_control", sim_control);
 
   // inputs are infile_name, infile_type, nargs, *args[]
-  err = integrator->Init(argv[1], ft, argc, args);
+  err = sim_control->Init(argv[1], ft, argc, args, grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
-    delete integrator;
+    delete sim_control;
     return 1;
   }
-  err+= integrator->Time_Int();
+  err+= sim_control->Time_Int();
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
-    delete integrator;
+    delete sim_control;
     return 1;
   }
-  err+= integrator->Finalise();
+  err+= sim_control->Finalise();
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
-    delete integrator;
+    delete sim_control;
     return 1;
   }
 
-  delete integrator; integrator=0;
+  delete sim_control; sim_control=0;
   delete [] args; args=0;
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion v.0.1  finsihed  ---------------------\n";

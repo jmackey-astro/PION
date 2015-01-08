@@ -42,12 +42,31 @@
 ///    function.
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2013.01.17 JM: Made simulation initialisation less verbose.
+/// - 2015.01.08 JM: Moved grid definition to this file from global.h
 
 #include <iostream>
 #include <sstream>
 using namespace std;
+
+//
+// These tell code what to compile and what to leave out.
+//
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+//
+// Global variables
+//
 #include "global.h"
+//
+// grid base class
+//
+#include "grid/grid_base_class.h"
+//
+// simulation control toolkit class.
+//
 #include "grid.h"
+
 
 #ifndef PARALLEL
 # error "PARALLEL not defined, but trying to compile the mpi version!"
@@ -115,42 +134,60 @@ int main(int argc, char **argv)
 
   int ft;
   ft=atoi(argv[2]);
-  if(ft <1 || ft>5) {cerr<<"(MAIN) Bad file type specifier.\n";return(1);}
+  if(ft <1 || ft>5) {cerr<<"(PION) Bad file type specifier.\n";return(1);}
   switch (ft) {
   case 1:
-    cout <<"(MAIN) ft = "<<ft<<" so reading ICs from text parameterfile "<<argv[2]<<"\n";
+    cout <<"(PION) ft = "<<ft<<" so reading ICs from text parameterfile "<<argv[2]<<"\n";
     break;
 #ifdef FITS
   case 2:
   case 3:
-    cout <<"(MAIN) ft = "<<ft<<" so reading ICs from Fits ICfile "<<argv[2]<<"\n";
+    cout <<"(PION) ft = "<<ft<<" so reading ICs from Fits ICfile "<<argv[2]<<"\n";
     break;
 #endif // if FITS
 #ifdef SILO
   case 5:
-    cout <<"(MAIN) ft = "<<ft<<" so reading ICs from Silo ICfile "<<argv[2]<<"\n";
+    cout <<"(PION) ft = "<<ft<<" so reading ICs from Silo ICfile "<<argv[2]<<"\n";
     break;
 #endif // if SILO
   default:
     rep.error("Bad filetype input to main",ft);
   }
   
-  if (integrator) rep.error("integrator already set up!",integrator);
-  integrator = new class ParallelIntUniformFV();
-  if (!integrator) rep.error("(MAIN) Couldn't initialise ParallelIntUniformFV integrator", integrator);
-  //IntegratorBaseFV *solver=0;
-  //solver = new class ParallelIntUniformFV();
-  //if (!solver) rep.error("Couldn't initialise ParallelIntUniformFV integrator",solver);
+  //
+  // set up pointer to grid base class.
+  //
+  class GridBaseClass *grid = 0;
 
-  if(!integrator) {cerr<<"(MAIN) Error initialising grid...exiting."<<"\n";delete integrator; return(1);}
-  err = integrator->Init(argv[1], ft, argc, args);
-  if (err!=0){cerr<<"(MAIN) err!=0 Something went bad"<<"\n";delete integrator;return(1);}
-  err+= integrator->Time_Int();
-  if (err!=0){cerr<<"(MAIN) err!=0 Something went bad"<<"\n";delete integrator;return(1);}
-  err+= integrator->Finalise();
-  if (err!=0){cerr<<"(MAIN) err!=0 Something went bad"<<"\n";delete integrator;return(1);}
+  //
+  // Set up simulation controller class.
+  //
+  class IntegratorBaseFV *sim_control = 0;
 
-  delete integrator; integrator=0;
+  sim_control = new class ParallelIntUniformFV();
+  if (!sim_control)
+    rep.error("(PION) Couldn't initialise ParallelIntUniformFV sim_control", sim_control);
+
+  err = sim_control->Init(argv[1], ft, argc, args);
+  if (err!=0) {
+    cerr<<"(PION) err!=0 Something went bad"<<"\n";
+    delete sim_control;
+    return(1);
+  }
+  err+= sim_control->Time_Int();
+  if (err!=0) {
+    cerr<<"(PION) err!=0 Something went bad"<<"\n";
+    delete sim_control;
+    return(1);
+  }
+  err+= sim_control->Finalise();
+  if (err!=0) {
+    cerr<<"(PION) err!=0 Something went bad"<<"\n";
+    delete sim_control;
+    return(1);
+  }
+
+  delete sim_control; sim_control=0;
   
   COMM->finalise();
   cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";

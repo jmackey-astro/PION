@@ -45,11 +45,15 @@
 ///    update_evolving_RT_sources() for stellar evolution models.
 /// - 2012.08.16 JM: Added functions for new 2nd order time update.
 /// - 2013.02.19 JM: Made some initialisation functions public.
+/// - 2015.01.08 JM: Made some initialisation functions public. Moved
+///    grid pointer from global to main, so it now needs to be passed
+///    around in some functions.
 
 #ifndef GRID_H
 #define GRID_H
 
 #include "global.h"
+#include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"
 #include "dataIO/dataio.h"
@@ -64,21 +68,28 @@
 class IntUniformFV : public IntegratorBaseFV
 {
   public:
-   IntUniformFV();  ///< Simple constructor, initialises value.
-   ~IntUniformFV(); ///< Deletes any dynamic memory, if not already done.
-   /** \brief initialisation.
-    * This function calls a sequence of other functions to set up the grid
-    * and populate it with the initial conditions, and give it the appropriate
-    * boundary conditions.  It gets the simulation ready to start, and checks 
-    * that everything is ready to start before returning.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   virtual int Init(string, ///< Name of input file.
-		    int,    ///< Type of File (1=ASCII, 2=FITS, 3=fitstable, 4=fits and ascii, ...).
-		    int,    ///< Number of command-line arguments.
-		    string * ///< Pointer to array of command-line arguments.
-       );
+  IntUniformFV();  ///< Simple constructor, initialises value.
+  ~IntUniformFV(); ///< Deletes any dynamic memory, if not already done.
+
+  ///
+  /// initialisation.
+  ///
+  /// This function calls a sequence of other functions to set up the grid
+  /// and populate it with the initial conditions, and give it the appropriate
+  /// boundary conditions.  It gets the simulation ready to start, and checks 
+  /// that everything is ready to start before returning.
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  virtual int Init(
+        string,   ///< Name of input file.
+        int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
+        int,      ///< Number of command-line arguments.
+        string *, ///< Pointer to array of command-line arguments.
+        class GridBaseClass *  ///< pointer to computational grid.
+        );
+
    /** \brief Time integration
     * This is the main part of the code -- It does all the time integration
     * until the stopping condition is reached and then returns.
@@ -101,7 +112,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// This function sets up the appropriate grid; so far I only have a 
   /// UniformGrid class -- uniform, cartesian, finite volume grid.
   ///
-  virtual int setup_grid();
+  virtual int setup_grid(
+        class GridBaseClass *  ///< pointer to computational grid.
+        );
 
   ///
   /// Decide if I need to setup MP class, and do it if i need to.
@@ -124,10 +137,21 @@ class IntUniformFV : public IntegratorBaseFV
    //---------------------------------------
    //---------------------------------------
    // Data Variables common to all implementations.
-   class DataIOBase *dataio; ///< pointer to class for reading/writing data.
-   class DataIOBase *textio; ///< pointer to class for reading/writing textdata.
-   class FV_solver_base *eqn;  ///< Pointer to equations to solve, initialised to
-                               ///< some derived class at runtime when the equations are set.
+   //
+
+  ///
+  /// pointer to class for reading/writing data.
+  ///
+  class DataIOBase *dataio;
+  ///
+  /// pointer to class for reading/writing textdata.
+  ///
+  class DataIOBase *textio;
+  ///
+  /// Pointer to equations to solve, initialised to some derived
+  /// class at runtime when the equations are set.
+  ///
+  class FV_solver_base *eqn;
 
 #ifdef CHECK_MAGP
    ///
@@ -610,6 +634,7 @@ class ParallelIntUniformFV : public IntUniformFV
   public:
    ParallelIntUniformFV();
    ~ParallelIntUniformFV();
+
    /** \brief initialisation.
     * This function checks if we are reading from single or multiple files,
     * modifies the input file string accordingly, checks the file exists, 
@@ -619,10 +644,11 @@ class ParallelIntUniformFV : public IntUniformFV
     * \retval 1 failure
     * */
    int Init(string, ///< Name of input file.
-	    int,    ///< Type of File (1=ASCII, 2=FITS, 3=fitstable, 4=fits and ascii, ...).
+	    int,    ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
 	    int,    ///< Number of command-line arguments.
 	    string * ///< Pointer to array of command-line arguments.
        );
+
   /** \brief Time integration
     * This is the main part of the code -- It does all the time integration
     * until the stopping condition is reached and then returns.
@@ -636,7 +662,7 @@ class ParallelIntUniformFV : public IntUniformFV
     * near the end of the allowed runtime.
     * */
    int Time_Int();
-  protected:
+
    /** \brief initialise the grid class with appropriate parameters.
     * 
     * This function sets up the appropriate grid; for parallel execution
@@ -645,6 +671,10 @@ class ParallelIntUniformFV : public IntUniformFV
     * */
    int setup_grid();
 
+   /** \brief Decide if I need to setup RT class, and do it if i need to. */
+   virtual int setup_raytracing();
+
+  protected:
    /**  \brief   Calculate the appropriate timestep for all processors
     * 
     * For a uniform grid, all cells have the same timestep equal to the minimum
@@ -655,8 +685,7 @@ class ParallelIntUniformFV : public IntUniformFV
     * \retval 1 failure
     * */
    int calc_timestep();
-   /** \brief Decide if I need to setup RT class, and do it if i need to. */
-   virtual int setup_raytracing();
+
 }; // ParallelIntUniformFV
 #endif // PARALLEL
 

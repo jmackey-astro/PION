@@ -11,7 +11,7 @@
 #./install_cvodes.sh
 #./install_silo.sh
 
-lib_path=../../uniform_grid_code/trunk/extra_libraries
+lib_path=../../pion/extra_libraries
 ln -s ${lib_path}/lib ./lib
 ln -s ${lib_path}/include ./include
 ln -s ${lib_path}/bin ./bin

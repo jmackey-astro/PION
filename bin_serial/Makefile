@@ -45,6 +45,7 @@
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
 # - 2014.04.14 JM: Added options for JUDGE at JSC.
+# - 2015.01.08 JM: Added tools/reporting.h.cpp files.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -72,11 +73,12 @@ VPATH = \
 ../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
-../source/contrib: \
+../source/contrib:\
+../source/tools:\
 ../source/future
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h
 
 ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
   GLOBAL += constants.h
@@ -276,7 +278,8 @@ endif
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 
-OBJECTS = main.o \
+OBJECTS = reporting.o mem_manage.o \
+        main.o \
         uniform_grid.o cell_interface.o \
         gridMethods.o global.o \
         time_integrator.o calc_timestep.o \
@@ -303,7 +306,7 @@ OBJECTS = main.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
-IC_OBJ	= icgen.o \
+IC_OBJ	= icgen.o reporting.o \
           uniform_grid.o cell_interface.o \
           global.o readparams.o file_status.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
@@ -371,6 +374,8 @@ clean:
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
+reporting.o:   tools/reporting.cpp ${GLOBAL}
+mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 
 main.o:         main.cc grid.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}

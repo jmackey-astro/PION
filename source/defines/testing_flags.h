@@ -60,6 +60,6 @@
 //#define BLAST_WAVE_CHECK
 
 
-
+//#define GRIDV2
 
 #endif // TESTING_FLAGS_H
