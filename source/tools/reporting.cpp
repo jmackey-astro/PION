@@ -13,6 +13,8 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 
+using namespace std;
+
 ///
 /// global instance of the reporting class, for anyone that wants
 /// to use it.

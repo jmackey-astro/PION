@@ -46,6 +46,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.08 JM: Moved grid definition to this file from global.h
 ///    and added link to reporting class.
+/// - 2015.01.10 JM: Added sim_constants.h include statement.
 
 #include <iostream>
 using namespace std;
@@ -55,6 +56,8 @@ using namespace std;
 //
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
+#include "sim_constants.h"
 
 //
 // Global variables
@@ -145,13 +148,13 @@ int main(int argc, char **argv)
     delete sim_control;
     return 1;
   }
-  err+= sim_control->Time_Int();
+  err+= sim_control->Time_Int(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
     delete sim_control;
     return 1;
   }
-  err+= sim_control->Finalise();
+  err+= sim_control->Finalise(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
     delete sim_control;
@@ -159,7 +162,12 @@ int main(int argc, char **argv)
   }
 
   delete sim_control; sim_control=0;
+
+  if(grid==0) rep.error("NO GRID!", grid);
+  delete grid; grid=0;
+
   delete [] args; args=0;
+  
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion v.0.1  finsihed  ---------------------\n";
   cout <<"-------------------------------------------------------\n";

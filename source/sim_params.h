@@ -4,11 +4,15 @@
 ///
 /// Structure with simulation parameters.
 ///
+/// Modifications:
+/// - 2015.01.09 JM: Wrote file, moved stuff from global.h
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
 
-#ifdef GRIDV2
+#include <string>
+#include <vector>
+#include "sim_constants.h"
 
 ///
 /// struct with lots of flags for what extra physics we are using.
@@ -44,13 +48,29 @@ struct which_physics {
   /// - limit=4 : limit by dyn. +recomb times (NOT cooling/heating).
   ///
   int MP_timestep_limit;
-//#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   double MinTemperature; ///< Minimum temperature to allow in the simulation.
   double MaxTemperature; ///< Maximum temperature to allow in the simulation.
-//#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 #ifdef THERMAL_CONDUCTION
   int thermal_conduction; ///< 0 if no conductivity, 1 if using it.
 #endif // THERMAL CONDUCTION
+
+  ///
+  /// Mass fraction of H, X, used for calculating mean mass per
+  /// particle by assuming the rest is He.
+  ///
+  double H_MassFrac;
+  ///
+  /// Mass fraction of He, Y, used for calculation electron/ion
+  /// densities as a function of H number density, and for setting
+  /// the mean mass per particle, mu.
+  ///
+  double Helium_MassFrac;
+  ///
+  /// Mass fraction of metals, Z, used for heating/cooling in
+  /// microphysics (but doesn't contribute to mean mass per particle,
+  /// mu).
+  ///
+  double Metal_MassFrac;
 };
 
 
@@ -60,7 +80,7 @@ struct which_physics {
 /// wrong units.
 ///
 struct star {
-  string file_name;
+  std::string file_name;
     ///< Name of stellar evolution file.
   size_t
     Nlines,    ///< Number of lines in file.
@@ -69,7 +89,7 @@ struct star {
   int
     src_id; ///< ID of source in SimPM.RS
     //fuv_src_id;      ///< ID of (possible) Far-UV heating source in SimPM.RS
-  vector<double>
+  std::vector<double>
     time,  ///< Array of time, in seconds.
     Log_L, ///< log10 of Luminosity (Lsun)
     Log_T, ///< Log10 of Teff (K)
@@ -88,7 +108,7 @@ struct star {
 /// Radiation source struct.
 ///
 struct rad_src_info {
-  double position[MAX_DIM]; ///< src position (physical units).
+  double pos[MAX_DIM]; ///< src position (physical units).
   double strength; ///< src strength (photons/sec, or ergs/sec for multifreq.)
   double Rstar; ///< stellar radius in solar radii (for multifreq. photoionisation).
   double Tstar; ///< stellar effective temperature (for multifreq. photoionisation).
@@ -96,10 +116,25 @@ struct rad_src_info {
   int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
   int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
   int at_infinity; ///< set to true if source is at infinity.
-  int effect;      ///< RT_EFFECT_UV_HEATING, RT_EFFECT_PION_MONO, RT_EFFECT_PION_MULTI.
+  ///
+  /// "effect" is what the source does, and this defines many of its
+  /// properties implicitly.  Options are:
+  /// - RT_EFFECT_UV_HEATING,
+  /// - RT_EFFECT_PION_MONO,
+  /// - RT_EFFECT_PION_MULTI,
+  /// - RT_EFFECT_PHOTODISS, (UNUSED)
+  /// - RT_EFFECT_PION_EQM, (UNUSED--for photoionisation equilibrium)
+  /// - RT_EFFECT_HHE_MFQ
+  ///
+  int effect;
+  ///
+  /// "NTau" sets the number of quantities traced from the source.
+  ///
+  int NTau;
+
   int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
   int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
+  std::string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
 };
 
 ///
@@ -127,7 +162,7 @@ class SimParams {
    int nvar;       ///< Length of State Vectors (number of variables).
    int ntracer;    ///< Number of tracer variables.
    int ftr;        ///< Position of first tracer variable in state vector.
-   string trtype;  ///< String saying what type of tracer we are using.
+   std::string trtype;  ///< String saying what type of tracer we are using.
    // Timing
    double simtime;    ///< current time in simulation. 
    double starttime;  ///< initial time to start simulation at. 
@@ -146,7 +181,7 @@ class SimParams {
    double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain.
    double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells.
    // Boundary cell data.
-   string typeofbc; ///< Type of boundary condition(s).
+   std::string typeofbc; ///< Type of boundary condition(s).
    int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
    // Integration accuracy
    int spOOA;  ///< Spatial Order of Accuracy in the code.
@@ -160,13 +195,13 @@ class SimParams {
    double etav;             ///< Artificial viscosity coefficient, should be between 0.01 and 0.3
    struct which_physics EP; ///< flags for what extra physics we are going to use.
    struct rad_sources   RS; ///< list of radiation sources.
-   vector<struct star>  STAR; ///< Data from stellar evolution file(s).
+   std::vector<struct star>  STAR; ///< Data from stellar evolution file(s).
 
    // File I/O
    int typeofop;       ///< Output FileType: Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
    int typeofip;       ///< Input FileType:  Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
 
-   string outFileBase; ///< Filename, with path, to write data to.
+   std::string outFileBase; ///< Filename, with path, to write data to.
    int opfreq;         ///< Output file every 'opfreq'th timestep.
    int op_criterion;   ///< =0 for per n-steps, =1 for per n-years.
    double next_optime; ///< if op_criterion=1, then this is the next time an output will happen.
@@ -182,7 +217,6 @@ extern class SimParams SimPM;
 
 
 
-#endif // GRIDV2
 
 #endif // SIM_PARAMS_H
 

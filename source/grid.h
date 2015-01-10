@@ -90,17 +90,25 @@ class IntUniformFV : public IntegratorBaseFV
         class GridBaseClass *  ///< pointer to computational grid.
         );
 
-   /** \brief Time integration
-    * This is the main part of the code -- It does all the time integration
-    * until the stopping condition is reached and then returns.
-    * It calls a sequence of functions to advance the time by one timestep,
-    * all in a loop which runs until end-of-sim is reached.
-    * */
-   virtual int Time_Int();
-   /** \brief finalise the simulation, clean up, delete data.
-    * This function finished the simulation gracefully (hopefully!).
-    * */
-   int Finalise();
+  ///
+  /// Time integration
+  ///
+  /// This is the main part of the code -- It does all the time integration
+  /// until the stopping condition is reached and then returns.
+  /// It calls a sequence of functions to advance the time by one timestep,
+  /// all in a loop which runs until end-of-sim is reached.
+  ///
+  virtual int Time_Int(
+      class GridBaseClass * 
+      );
+
+  ///
+  /// finalise the simulation, clean up, delete data.
+  /// This function finished the simulation gracefully (hopefully!).
+  ///
+   int Finalise(
+      class GridBaseClass * 
+      );
 
   ///
   /// Setup cell extra data through the cell_interface class CI.
@@ -124,7 +132,9 @@ class IntUniformFV : public IntegratorBaseFV
   ///
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
-  virtual int setup_raytracing();
+  virtual int setup_raytracing(
+      class GridBaseClass * 
+      );
 
   ///
   /// Check for any time-evolving radiation sources, and read the evolution
@@ -134,10 +144,10 @@ class IntUniformFV : public IntegratorBaseFV
 
    //---------------------------------------
   protected:
-   //---------------------------------------
-   //---------------------------------------
-   // Data Variables common to all implementations.
-   //
+  //---------------------------------------
+  //---------------------------------------
+  // Data Variables common to all implementations.
+  //
 
   ///
   /// pointer to class for reading/writing data.
@@ -154,46 +164,61 @@ class IntUniformFV : public IntegratorBaseFV
   class FV_solver_base *eqn;
 
 #ifdef CHECK_MAGP
-   ///
-   /// This is only for a test problem -- it checks the magnetic
-   /// pressure on the full domain and outputs it to screen
-   ///
-   void calculate_magnetic_pressure();
+  ///
+  /// This is only for a test problem -- it checks the magnetic
+  /// pressure on the full domain and outputs it to screen
+  ///
+  void calculate_magnetic_pressure();
 #endif // CHECK_MAGP
 
 #ifdef BLAST_WAVE_CHECK
-   ///
-   /// If running a spherical blast wave, calculate the shock position and output to screen.
-   ///
-   void calculate_blastwave_radius();
+  ///
+  /// If running a spherical blast wave, calculate the shock
+  /// position and output to screen.
+  ///
+  void calculate_blastwave_radius();
 #endif // BLAST_WAVE_CHECK
 
-   /** \brief Get cell dimensions from UniformGrid class.
-    * 
-    * This requests the cell dimensions from UniformGrid and assigns values to 
-    * the appropriate variables in GridParams (dx,dA,dV).
-    */
-   int get_cell_size();
-   /** \brief See if any command-line arguments should override those
-    * specified in the IC file, and if so, reset the parameters.
-    * */
-   int override_params(int,      ///< Number of command-line arguments.
-		      string *  ///< Pointer to array of command-line arguments.
-		      );
-   /** \brief Initialise the correct Equations to solve, based on paramters.
-    * */
-   int set_equations();
+  ///
+  /// Get cell dimensions from UniformGrid class.
+  /// 
+  /// This requests the cell dimensions from UniformGrid and assigns values to 
+  /// the appropriate variables in GridParams (dx,dA,dV).
+  ///
+  int get_cell_size(
+      class GridBaseClass * 
+      );
+
+  ///
+  /// See if any command-line arguments should override those
+  /// specified in the IC file, and if so, reset the parameters.
+  ///
+  int override_params(
+        int,      ///< Number of command-line arguments.
+        string *  ///< Pointer to array of command-line arguments.
+        );
+  ///
+  /// Initialise the correct Equations to solve, based on paramters.
+  ///
+  int set_equations();
 
     
-   /** \brief Determines what kind of boundary conditions are needed.
-    * Sets gp.Nbc to the appropriate value for the order of accuracy used.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int boundary_conditions();
-   /** \brief Delete any init data and make sure things are ready to go.
-    *  */
-   virtual int ready_to_start();
+  ///
+  /// Determines what kind of boundary conditions are needed.
+  /// Sets gp.Nbc to the appropriate value for the order of accuracy used.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int boundary_conditions(
+      class GridBaseClass * 
+      );
+
+  ///
+  /// Delete any init data and make sure things are ready to go.
+  /// 
+  virtual int ready_to_start(
+      class GridBaseClass * 
+      );
    
 
 
@@ -476,21 +501,23 @@ class IntUniformFV : public IntegratorBaseFV
 
 
 
-   /** \brief Updates the microphysics of each cell in turn, if required.
-    * 
-    * If we aren't doing microphysics, then this returns 0;
-    * If we are not on the full timestep, this returns 0;
-    * If we are on the full timestep, and are doing microphysics, then this
-    * runs through all the cells, updating the tracers and internal energy
-    * appropriately, and then returns 0 on successful updating.
-    * 
-    * \retval 0 success.
-    * \retval 1 failure.
-    */
-   int update_microphysics(const double,   ///< timestep to take
-			   const int, ///< fraction of timestep we are on
-			   const int  ///< full no. of fractional timesteps.
-			   );
+  ///
+  /// Updates the microphysics of each cell in turn, if required.
+  /// 
+  /// If we aren't doing microphysics, then this returns 0;
+  /// If we are not on the full timestep, this returns 0;
+  /// If we are on the full timestep, and are doing microphysics, then this
+  /// runs through all the cells, updating the tracers and internal energy
+  /// appropriately, and then returns 0 on successful updating.
+  /// 
+  /// \retval 0 success.
+  /// \retval 1 failure.
+  ///
+  int update_microphysics(
+        const double,   ///< timestep to take
+        const int, ///< fraction of timestep we are on
+        const int  ///< full no. of fractional timesteps.
+        );
   
 
   ///
@@ -538,42 +565,44 @@ class IntUniformFV : public IntegratorBaseFV
    
 
 
-   /** \brief Calculate dU, rate of change of conserved variables.
-    * 
-    * This is a multidimensional routine, which identifies 1D columns of
-    * points and calls dU_column() on them all, in each grid direction.
-    * 
-    * It is a dimensionally unsplit routine, calculating updates in each 
-    * dimension and then letting advance_time() do the actual time update 
-    * later.
-    * 
-    * It uses the exact formula (if the flux calculation were exact):
-    * \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}\left[
-    *     (F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) +
-    *     (G_{j-\frac{1}{2}} -G_{j+\frac{1}{2}}) +
-    *     (H_{k-\frac{1}{2}} -H_{k+\frac{1}{2}}) \right] \f$, where it
-    * is assumed that we are in three (Cartesian) spatial dimensions.  Terms are 
-    * removed from this as appropriate for the number of dimensions specified.
-    * This formula is appropriate for cartesian geometry, but the code calculates
-    * the divergence differently if we are using cylindrical or other coordinates.
-    * I don't think it would work for non-orthonormal coords.
-    * */
+  ///
+  /// Calculate dU, rate of change of conserved variables.
+  /// 
+  /// This is a multidimensional routine, which identifies 1D columns of
+  /// points and calls dU_column() on them all, in each grid direction.
+  /// 
+  /// It is a dimensionally unsplit routine, calculating updates in each 
+  /// dimension and then letting advance_time() do the actual time update 
+  /// later.
+  /// 
+  /// It uses the exact formula (if the flux calculation were exact):
+  /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}\left[
+  ///     (F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) +
+  ///     (G_{j-\frac{1}{2}} -G_{j+\frac{1}{2}}) +
+  ///     (H_{k-\frac{1}{2}} -H_{k+\frac{1}{2}}) \right] \f$, where it
+  /// is assumed that we are in three (Cartesian) spatial dimensions.  Terms are 
+  /// removed from this as appropriate for the number of dimensions specified.
+  /// This formula is appropriate for cartesian geometry, but the code calculates
+  /// the divergence differently if we are using cylindrical or other coordinates.
+  /// I don't think it would work for non-orthonormal coords.
+  ///
    int calc_dU(const int, ///< Space order of acc for this call.
 	       const int  ///< Time order of acc for this call.
 	       );
 
-   /** \brief Calculate dU, rate of change of conserved variables, in a 1D column
-    * 
-    * This runs through every cell in a 1D column in turn, and calculates the flux
-    * between the cell in question and its neighbour to the right, by obtaining
-    * an interface flux.
-    * 
-    * It then calculates dU for each cell according to the exact formula (if the 
-    * flux calculation were exact) given by Toro eq.5.76\n
-    * \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
-    * This is for cartesian geometry, and the form is different for cylindrical.  The 
-    * code calls a different function for different geometries.
-    * */
+  ///
+  /// Calculate dU, rate of change of conserved variables, in a 1D column
+  /// 
+  /// This runs through every cell in a 1D column in turn, and calculates the flux
+  /// between the cell in question and its neighbour to the right, by obtaining
+  /// an interface flux.
+  /// 
+  /// It then calculates dU for each cell according to the exact formula (if the 
+  /// flux calculation were exact) given by Toro eq.5.76\n
+  /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
+  /// This is for cartesian geometry, and the form is different for cylindrical.  The 
+  /// code calls a different function for different geometries.
+  ///
    int dU_column(const class cell *, ///< starting point for column.
 		 const enum direction, ///< direction to traverse column in. 
 		 const enum direction, ///< opposite direction.
@@ -590,33 +619,39 @@ class IntUniformFV : public IntegratorBaseFV
   ///
   int calculate_raytracing_column_densities();
 
-   /**  \brief Output the data to file if required.
-    * This checks if I want to output data in this timestep, then
-    * checks what format to write in, and calls the appropriate 
-    * function to write the data.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   virtual int output_data();
+  ///
+  /// Output the data to file if required.
+  ///
+  /// This checks if I want to output data in this timestep, then
+  /// checks what format to write in, and calls the appropriate 
+  /// function to write the data.
+  ///
+  virtual int output_data(
+      class GridBaseClass *
+      );
 
 
 
-   /**  \brief Check if sim should stop.
-    * 
-    * For shock tube problems, I stop the simulation whenever a disturbance
-    * reaches the edge of the domain.  Most problems set the finishtime to 
-    * some value, and the end-of-sim criteria is if the current simtime has reached
-    * finishtime or not.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
+  /// Check if sim should stop.
+  /// 
+  /// For shock tube problems, I stop the simulation whenever a disturbance
+  /// reaches the edge of the domain.  Most problems set the finishtime to 
+  /// some value, and the end-of-sim criteria is if the current simtime has reached
+  /// finishtime or not.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
    int check_eosim();    // Checks for end of simulation.
 
    /** \brief Checks Total energy relative to initial value, and prints a message if not.*/
-   int check_energy_cons();
+   int check_energy_cons(
+      class GridBaseClass * 
+      );
 
    /** \brief Calculates total values of conserved quantities. */
-   int initial_conserved_quantities();
+   int initial_conserved_quantities(
+      class GridBaseClass * 
+      );
 }; // IntUniformFV
    
 /*************************************************************************/
@@ -635,55 +670,68 @@ class ParallelIntUniformFV : public IntUniformFV
    ParallelIntUniformFV();
    ~ParallelIntUniformFV();
 
-   /** \brief initialisation.
-    * This function checks if we are reading from single or multiple files,
-    * modifies the input file string accordingly, checks the file exists, 
-    * and then calls the IntUniformFV::Init() function.
-    *
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int Init(string, ///< Name of input file.
-	    int,    ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-	    int,    ///< Number of command-line arguments.
-	    string * ///< Pointer to array of command-line arguments.
-       );
+  ///
+  /// initialisation.
+  ///
+  /// This function checks if we are reading from single or multiple files,
+  /// modifies the input file string accordingly, checks the file exists, 
+  /// and then calls the IntUniformFV::Init() function.
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int Init(
+      string, ///< Name of input file.
+      int,    ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
+      int,    ///< Number of command-line arguments.
+      string * ///< Pointer to array of command-line arguments.
+      );
 
-  /** \brief Time integration
-    * This is the main part of the code -- It does all the time integration
-    * until the stopping condition is reached and then returns.
-    * It calls a sequence of functions to advance the time by one timestep,
-    * all in a loop which runs until end-of-sim is reached.
-    * 
-    * Parallel version has an AllReduce operation, where I check if the runtime of 
-    * any processor is more than a fixed walltime, and if so set eosim to true and
-    * finish.  This is because ICHEC machines have a maximum runtime limit for their
-    * simulations on some of the queues, and I want to make sure I have an output 
-    * near the end of the allowed runtime.
-    * */
-   int Time_Int();
+  ///
+  /// Time integration
+  ///
+  /// This is the main part of the code -- It does all the time integration
+  /// until the stopping condition is reached and then returns.
+  /// It calls a sequence of functions to advance the time by one timestep,
+  /// all in a loop which runs until end-of-sim is reached.
+  /// 
+  /// Parallel version has an AllReduce operation, where I check if the runtime of 
+  /// any processor is more than a fixed walltime, and if so set eosim to true and
+  /// finish.  This is because ICHEC machines have a maximum runtime limit for their
+  /// simulations on some of the queues, and I want to make sure I have an output 
+  /// near the end of the allowed runtime.
+  ///
+   int Time_Int(
+      class GridBaseClass * 
+      );
 
-   /** \brief initialise the grid class with appropriate parameters.
-    * 
-    * This function sets up the appropriate grid; for parallel execution
-    * I need to define the domain of my grid, and then pass the appropriate
-    * parameters to the UniformGrid class.
-    * */
+  ///
+  /// initialise the grid class with appropriate parameters.
+  /// 
+  /// This function sets up the appropriate grid; for parallel execution
+  /// I need to define the domain of my grid, and then pass the appropriate
+  /// parameters to the UniformGrid class.
+  ///
    int setup_grid();
 
-   /** \brief Decide if I need to setup RT class, and do it if i need to. */
-   virtual int setup_raytracing();
+  ///
+  /// Decide if I need to setup RT class, and do it if i need to.
+  ///
+  virtual int setup_raytracing(
+      class GridBaseClass * 
+      );
 
   protected:
-   /**  \brief   Calculate the appropriate timestep for all processors
-    * 
-    * For a uniform grid, all cells have the same timestep equal to the minimum
-    * of all calculated steps.  This function calls the calc_timestep() function
-    * for the local grid, and then gets the min of all processor's local
-    * timesteps, and uses that as the timestep.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
+  ///
+  /// Calculate the appropriate timestep for all processors
+  /// 
+  /// For a uniform grid, all cells have the same timestep equal to the minimum
+  /// of all calculated steps.  This function calls the calc_timestep() function
+  /// for the local grid, and then gets the min of all processor's local
+  /// timesteps, and uses that as the timestep.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
    int calc_timestep();
 
 }; // ParallelIntUniformFV

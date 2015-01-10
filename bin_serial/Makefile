@@ -78,7 +78,7 @@ VPATH = \
 ../source/future
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h
+GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h
 
 ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
   GLOBAL += constants.h

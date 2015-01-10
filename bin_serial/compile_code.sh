@@ -88,12 +88,12 @@ esac
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
   export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
+#  export PION_OPTIMISE=HIGH
   export CXX=g++
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=2
+#  NCORES=2
 fi
 #################################
 

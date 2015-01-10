@@ -12,6 +12,14 @@
 #ifndef REPORTING_H
 #define REPORTING_H
 
+#include <string>
+#include <iostream>
+#include <fstream>
+
+#include "sim_params.h"
+
+using namespace std;
+
 
 ///
 /// Global Class For Writing Error messages and Reports.
@@ -52,8 +60,8 @@ class reporting {
   SimPM.maxtime=true;
   //if (integrator) {delete integrator; integrator=0;}
   //if (grid) {delete grid; grid=0;}
-  if (MP) {delete MP; MP=0;}
-  if (RT) {delete RT; RT=0;}
+  //if (MP) {delete MP; MP=0;}
+  //if (RT) {delete RT; RT=0;}
 #ifdef PARALLEL
   if (COMM) {
     COMM->abort();

@@ -52,6 +52,7 @@
 /// - 2012.05.15 JM: Added global iXmin,iXmax,iRange functions for parallel grids.
 /// - 2013.06.13 JM: Added STARBENCH1 internal boundary and functions.
 /// - 2013.09.06 JM: Added difference_vertex2cell() functions.
+/// - 2015.01.10 JM: New include statements for new file structure.
 
 #ifndef UNIFORMGRID_H
 #define UNIFORMGRID_H
@@ -59,12 +60,15 @@
 
 #include <list>
 using namespace std;
+
+#include "sim_constants.h"
+#include "sim_params.h"
 #include "global.h"
-#include "stellar_wind_BC.h"
-#ifdef GEOMETRIC_GRID
+
+#include "grid/grid_base_class.h"
+#include "grid/stellar_wind_BC.h"
 #include "coord_sys/VectorOps.h"
 #include "coord_sys/VectorOps_spherical.h"
-#endif // GEOMETRIC_GRID
 
 #ifndef GRIDV2
 

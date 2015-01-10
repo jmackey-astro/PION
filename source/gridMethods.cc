@@ -138,9 +138,13 @@
 ///    setup functions can call MP->Set_Temp().
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
+/// - 2015.01.10 JM: New include statements for new file structure.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
+
+
 #include "grid.h"
 #include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
@@ -236,12 +240,6 @@ IntUniformFV::~IntUniformFV()
 #ifdef TESTING
   cout << "(IntUniformFV::Destructor) Deleting Grid Class..." <<"\n";
 #endif
-  if(grid!=0) {
-#ifdef TESTING
-    cout << "\t Deleting Grid Data..." <<"\n";
-#endif
-    delete grid; grid=0;
-  }
   if(eqn !=0) {
 #ifdef TESTING
     cout <<"\t Deleting Solver/Equations class...\n";
@@ -316,7 +314,7 @@ int IntUniformFV::Init(
   
   // Now set up the grid structure.
   err = setup_grid(grid);
-  err += get_cell_size();
+  err += get_cell_size(grid);
   if (err!=0) {
     cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
     return(1);
@@ -355,7 +353,7 @@ int IntUniformFV::Init(
 
   
   // Assign boundary conditions to boundary points.
-  err = boundary_conditions();
+  err = boundary_conditions(grid);
   if (err!=0){cerr<<"(INIT::boundary_conditions) err!=0 Something went bad"<<"\n";return(1);}
 
 
@@ -363,7 +361,7 @@ int IntUniformFV::Init(
 #ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start? \n";
 #endif
-  err = ready_to_start();
+  err = ready_to_start(grid);
   rep.errorTest("(INIT::ready_to_start) err!=0 Something went bad",0,err);
 
 #ifdef TESTING
@@ -416,7 +414,7 @@ int IntUniformFV::Init(
 
   if (SimPM.timestep==0) {
     cout << "(INIT) Outputting initial data.\n";
-    err=output_data();
+    err=output_data(grid);
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
   }
@@ -831,7 +829,9 @@ int IntUniformFV::override_params(int narg, string *args)
 
 
 
-int IntUniformFV::get_cell_size()
+int IntUniformFV::get_cell_size(
+      class GridBaseClass *grid 
+      )
 {
 //  cout <<"\tGetting Cell Dimensions from UniformGrid.\n";
   SimPM.dx = grid->DX();
@@ -1018,7 +1018,9 @@ void IntUniformFV::setup_cell_extra_data()
 
 
 
-int IntUniformFV::setup_grid()
+int IntUniformFV::setup_grid(
+      class GridBaseClass *grid 
+      )
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Setting up computational grid --------------\n";
@@ -1073,7 +1075,9 @@ int IntUniformFV::setup_grid()
 // ##################################################################
 
 
-int IntUniformFV::boundary_conditions()
+int IntUniformFV::boundary_conditions(
+      class GridBaseClass *grid 
+      )
 {
   // For uniform fixed cartesian grid.
 #ifdef TESTING
@@ -1125,7 +1129,9 @@ int IntUniformFV::boundary_conditions()
 
 
 
-int IntUniformFV::output_data()
+int IntUniformFV::output_data(
+      class GridBaseClass *grid
+      )
 {
   ///
   /// \section freq Output Frequency.
@@ -1207,7 +1213,9 @@ int IntUniformFV::output_data()
 
 
 
-int IntUniformFV::ready_to_start()
+int IntUniformFV::ready_to_start(
+      class GridBaseClass *grid
+      )
 {
   //
   // If I'm using the GLM method, make sure Psi variable is initialised.
@@ -1231,7 +1239,7 @@ int IntUniformFV::ready_to_start()
   // Setup Raytracing, if they are needed.
   //
   int err=0;
-  err += setup_raytracing();
+  err += setup_raytracing(grid);
   err += setup_evolving_RT_sources();
   if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
   //
@@ -1244,7 +1252,7 @@ int IntUniformFV::ready_to_start()
   //
   // If testing the code, this calculates the momentum and energy on the domain.
   //
-  initial_conserved_quantities();
+  initial_conserved_quantities(grid);
   
   //
   // If using opfreq_time, set the next output time correctly.
@@ -1719,7 +1727,9 @@ int IntUniformFV::setup_microphysics()
 
 
 
-int IntUniformFV::setup_raytracing()
+int IntUniformFV::setup_raytracing(
+      class GridBaseClass *grid
+      )
 {
   //
   // If not doing raytracing, return immediately.
@@ -1833,7 +1843,9 @@ int IntUniformFV::setup_raytracing()
 
 
 
-int IntUniformFV::initial_conserved_quantities()
+int IntUniformFV::initial_conserved_quantities(
+      class GridBaseClass *grid
+      )
 {
   // Energy, and Linear Momentum in x-direction.
 #ifdef TESTING 
@@ -1871,7 +1883,9 @@ int IntUniformFV::initial_conserved_quantities()
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int IntUniformFV::Time_Int()
+int IntUniformFV::Time_Int(
+      class GridBaseClass *grid
+      )
 {
   cout <<"------------------------------------------------------------\n";
   cout <<"(IntUniformFV::Time_Int) STARTING TIME INTEGRATION."<<"\n";
@@ -1908,7 +1922,7 @@ int IntUniformFV::Time_Int()
 #endif
 #endif
 
-    err+= output_data();
+    err+= output_data(grid);
     if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went bad\n";return(1);}
 
     err+= check_eosim();
@@ -2610,7 +2624,7 @@ int IntUniformFV::timestep_mp_dyn_second()
 #ifdef TESTING
   if (SimPM.timestep%20 ==0) {
     //    cout <<"dp.initERG = "<<dp.initERG<<"\n";
-    check_energy_cons();
+    check_energy_cons(grid);
   }
 #endif // TESTING
   //  cout <<"now dt = "<<SimPM.dt<<"\n";
@@ -2720,7 +2734,7 @@ int IntUniformFV::timestep_microphysics_then_dynamics()
 #ifdef TESTING
   if (SimPM.timestep%20 ==0) {
     //    cout <<"dp.initERG = "<<dp.initERG<<"\n";
-    check_energy_cons();
+    check_energy_cons(grid);
   }
 #endif // TESTING
   //  cout <<"now dt = "<<SimPM.dt<<"\n";
@@ -2837,7 +2851,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
 #ifdef TESTING
   if (SimPM.timestep%20 ==0) {
     //    cout <<"dp.initERG = "<<dp.initERG<<"\n";
-    check_energy_cons();
+    check_energy_cons(grid);
   }
 #endif // TESTING
   //  cout <<"now dt = "<<SimPM.dt<<"\n";
@@ -3554,7 +3568,9 @@ int IntUniformFV::check_eosim()
 
 
 
-int IntUniformFV::check_energy_cons()
+int IntUniformFV::check_energy_cons(
+      class GridBaseClass *grid
+      )
 {
 #ifdef TESTING
   // Energy, and Linear Momentum in x-direction.
@@ -3613,13 +3629,15 @@ int IntUniformFV::check_energy_cons()
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
-int IntUniformFV::Finalise()
+int IntUniformFV::Finalise(
+      class GridBaseClass *grid
+      )
 {
   int err=0;
   cout <<"------------------------------------------------------------\n";
   cout <<"(IntUniformFV::Finalise) FINALISING SIMULATION."<<"\n";
-  err += check_energy_cons();
-  err+= output_data();
+  err += check_energy_cons(grid);
+  err+= output_data(grid);
   if (err!=0){cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";return(1);}
   cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
 #ifdef TESTING

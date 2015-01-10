@@ -69,10 +69,13 @@
 /// - 2013.09.06 JM: Added difference_vertex2cell() functions.
 ///    Set stellar wind boundary conditions to use physical distances
 ///    not integer distances, to avoid rounding errors.
+/// - 2015.01.10 JM: New include statements for new file structure.
 
 
 #include "global.h"
-#include "uniform_grid.h"
+#include "grid/uniform_grid.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 #include <fstream>
 #include <iostream>
 using namespace std;

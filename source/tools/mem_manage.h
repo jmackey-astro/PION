@@ -12,6 +12,13 @@
 #ifndef MEM_MANAGE_H
 #define MEM_MANAGE_H
 
+#ifndef CHECK_NEW_EXCEP_ON
+#error "Only use memory_management with try/catch exceptions."
+#endif
+
+#include "tools/reporting.h"
+
+
 // ------------------ MEMORY MANAGEMENT -------------------
 /** \brief This class contains generic functions for dynamically allocating
  * and freeing memory.  Hopefully everywhere in the code will use this and
@@ -40,9 +47,6 @@ public:
         const long int n_el ///< number elements to initialise.
         )
   {
-#ifndef CHECK_NEW_EXCEP_ON
-#error "Only use memory_management with try/catch exceptions."
-#endif
     try {ptr = new T [n_el];}
     catch (std::bad_alloc) {
       cerr <<"mem_alloc() pointer initialisation failed.\n";

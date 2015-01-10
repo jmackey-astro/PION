@@ -24,8 +24,11 @@
 /// - 2013.08.20 JM: Moved raytracing set/get functions to header and
 ///    made them inline.
 /// - 2013.09.20 JM: Changed initialisation of unsigned ints to zero.
+/// - 2015.01.10 JM: New include statements for new file structure.
 
 #include "cell_interface.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 using namespace std;
 
 /************************* CELL INTERFACE ***********************/

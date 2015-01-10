@@ -16,12 +16,16 @@
 /// - 2011.11.22 JM: Added t_scalefactor parameter for stellar winds.
 /// - 2013.09.06 JM: Removed integer position functions, because the
 ///    rounding errors created potential errors in 1D.
+/// - 2015.01.10 JM: New include statements for new file structure.
 
 
 #ifndef STELLAR_WIND_BC_H
 #define STELLAR_WIND_BC_H
 
-#include "../global.h"
+#include "sim_constants.h"
+#include "sim_params.h"
+#include "tools/reporting.h"
+#include "global.h"
 
 //
 // Defines for type of wind:
