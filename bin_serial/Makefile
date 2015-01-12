@@ -45,7 +45,8 @@
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
 # - 2014.04.14 JM: Added options for JUDGE at JSC.
-# - 2015.01.08 JM: Added tools/reporting.h.cpp files.
+# - 2015.01.08 JM: Added tools/reporting.h.cpp and tools/mem_manage.h
+# - 2015.01.12 JM: Added command_line_interface.h.cpp.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -79,6 +80,10 @@ VPATH = \
 
 
 GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h
+
+ifneq ($(PION_OPTIMISE), HIGH)
+  GLOBAL += command_line_interface.h
+endif
 
 ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
   GLOBAL += constants.h
@@ -278,7 +283,7 @@ endif
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 
-OBJECTS = reporting.o mem_manage.o \
+OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         main.o \
         uniform_grid.o cell_interface.o \
         gridMethods.o global.o \
@@ -376,6 +381,7 @@ clean:
 
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
+command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 
 main.o:         main.cc grid.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}

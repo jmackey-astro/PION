@@ -421,7 +421,7 @@ class cell_interface {
   ///
   inline double get_Hcorr(
     const cell *c,
-    const axes a
+    const enum axes a
     )
   {return c->extra_data[iHcorr[a]];}
 
@@ -434,7 +434,7 @@ class cell_interface {
   ///
   inline void   set_Hcorr(
     cell *c,
-    const axes a,
+    const enum axes a,
     double eta
     )
   {c->extra_data[iHcorr[a]] = eta; return;}

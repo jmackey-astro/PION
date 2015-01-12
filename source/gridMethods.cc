@@ -144,8 +144,11 @@
 #include "defines/testing_flags.h"
 
 
+#include "tools/command_line_interface.h"
+#include "tools/reporting.h"
 
 #include "grid.h"
+
 #include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
 
@@ -1045,7 +1048,6 @@ int IntUniformFV::setup_grid(
 #endif
   if (grid) rep.error("Grid already set up!",grid);
 
-#ifdef GEOMETRIC_GRID
   if      (SimPM.coord_sys==COORD_CRT)
     grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
   else if (SimPM.coord_sys==COORD_CYL)
@@ -1054,14 +1056,12 @@ int IntUniformFV::setup_grid(
     grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
-#else  // GEOMETRIC_GRID
-  grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
-#endif // GEOMETRIC_GRID
 
   if (grid==0) rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
 #ifdef TESTING
   cout <<"(UniformFV::setup_grid) Done. g="<<grid<<"\n";
   cout <<"DX = "<<grid->DX()<<"\n";
+  dp.grid = grid;
 #endif
   cout <<"------------------------------------------------------\n\n";
 
