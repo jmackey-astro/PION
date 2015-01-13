@@ -63,6 +63,8 @@
 /// - 2013.04.18 JM: wrapped column-density output in ifdef so it is
 ///    not written to file by default.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2014.10.21 JM: Fixed memory leak where array was freed in the
+///    wrong place.
 
 #ifdef FITS
 #include "dataio_fits.h"
@@ -335,9 +337,9 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
 	err += put_variable_into_data_array(extname[i], mpiPM.LocalNcell, &data);
 	err += write_fits_image(ff,extname[i], mpiPM.LocalXmin, mpiPM.LocalXmin, gp->DX(), SimPM.ndim, mpiPM.LocalNG, mpiPM.LocalNcell, data);
       }
+      data = mem.myfree(data);
     }
     if (err) rep.error("DataIOFits::OutputData() Image Writing went bad",err);
-    data = mem.myfree(data);
 
     // Close file
     err += fits_close_file(ff,&status);

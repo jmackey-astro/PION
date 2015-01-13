@@ -556,9 +556,10 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
 
 
 
-int dataio_silo_utility::parallel_read_serial_silodata(string firstfile,        ///< file to read from
-						       class GridBaseClass *ggg ///< pointer to data.
-						       )
+int dataio_silo_utility::parallel_read_serial_silodata(
+        string firstfile,        ///< file to read from
+        class GridBaseClass *ggg ///< pointer to data.
+        )
 {
   int err=0;
   //
@@ -853,13 +854,14 @@ void dataio_silo_utility::get_quadmesh_integer_extents(DBfile *dbfile,        //
 
 
 
-int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to silo file.
-					  class GridBaseClass *ggg, ///< pointer to data.
-					  const string variable, ///< variable name to read.
-					  const long int,   ///< number of cells expected (defunct!)
-					  const int *iXmin, ///< integer Xmin for mesh
-					  const int *iXmax  ///< integer Xmax for mesh
-					  )
+int dataio_silo_utility::PP_read_var2grid(
+        DBfile *dbfile,        ///< pointer to silo file.
+        class GridBaseClass *ggg, ///< pointer to data.
+        const string variable, ///< variable name to read.
+        const long int,   ///< number of cells expected (defunct!)
+        const int *iXmin, ///< integer Xmin for mesh
+        const int *iXmax  ///< integer Xmax for mesh
+        )
 {
   //
   // The dbfile pointer should already be in the directory containing
@@ -979,8 +981,9 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
     while (c!=0 && c->pos[v]<iXmin[v]) {
       c=ggg->NextPt(c,posdir);
     }
-    if (!c)
+    if (!c) {
       rep.error("Went off end of grid looking for starting cell",iXmin[v]-ggg->FirstPt()->pos[v]);
+    }
   }
 
 

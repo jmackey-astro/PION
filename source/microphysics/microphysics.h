@@ -235,7 +235,7 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
 			 const double    ///< eos gamma.
 			 );
   /** \brief Calculate rate of change of local state vector. Note this is 
-   * certainly a different vector to the main code state vector, and 
+   * a different vector to the main code state vector, and 
    * consists of n_h, E_int, and if needed, x_e and all the ions x_i.
    */
   int dPdt(const int ,     ///< length of state vector (for checking).
@@ -243,7 +243,7 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
 	   double *        ///< Rate vector to write to, R=dPdt(P)
 	   );
   /** \brief Calculate rate of change of local state vector. Note this is 
-   * certainly a different vector to the main code state vector, and 
+   * a different vector to the main code state vector, and 
    * consists only of n_h, E_int.  
    *
    * Special function for when there are no ions, so we assume fully ionised

@@ -16,10 +16,9 @@
 ///    is lower than the SD93 curves, possibly because the Oxygen abundance is
 ///    now lower than it was 15 years ago (Lodders, 2003, ApJ).
 ///    Removed the DO_HEATING ifdef -- now we have 5 different cooling functions.
-///
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
-///
+/// - 2015.01.13 JM: Added some comments.
 ///
 #include "mp_only_cooling.h"
 #include "../global.h"
@@ -92,6 +91,9 @@ mp_only_cooling::mp_only_cooling(const int nv,
     setup_WSS09_CIE();
     break;
   case WSS09_CIE_LINE_HEAT_COOL:
+    cout <<"\tRequested fully ionized gas with WSS09 cooling at high";
+    cout <<" temperatures,\n\tand photoionized gas at nebular";
+    cout <<" temperatures, with T_eq approx 8000 K.\n";
     setup_WSS09_CIE_OnlyMetals();
     break;
   default:
@@ -458,10 +460,19 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
   // hence the differing multipliers on the two functions.
   //
   double rho2 = rho*rho;
-  double rate = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
-  //cout <<"M="<<rate;
-  rate = min(rate, -cooling_rate_SD93CIE(T)*rho2*inv_Mu2);
-  //cout <<", CIE="<<-cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
+  double rate = 0;
+  if (T<2.0e4) {
+    rate  = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
+  }
+  else if (T<5.0e4) {
+    rate  = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
+    //cout <<"M="<<rate;
+    rate = min(rate, -cooling_rate_SD93CIE(T)*rho2*inv_Mu2);
+    //cout <<", CIE="<<-cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
+  }
+  else {
+    rate = -cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
+  }
   //
   // Now Hydrogen cooling due to recombinations and Bremsstrahlung.
   //
