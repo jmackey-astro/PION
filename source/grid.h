@@ -99,16 +99,16 @@ class IntUniformFV : public IntegratorBaseFV
   /// all in a loop which runs until end-of-sim is reached.
   ///
   virtual int Time_Int(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
 
   ///
   /// finalise the simulation, clean up, delete data.
   /// This function finished the simulation gracefully (hopefully!).
   ///
    int Finalise(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
 
   ///
   /// Setup cell extra data through the cell_interface class CI.
@@ -133,8 +133,8 @@ class IntUniformFV : public IntegratorBaseFV
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
   virtual int setup_raytracing(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
 
   ///
   /// Check for any time-evolving radiation sources, and read the evolution
@@ -168,7 +168,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// This is only for a test problem -- it checks the magnetic
   /// pressure on the full domain and outputs it to screen
   ///
-  void calculate_magnetic_pressure();
+  void calculate_magnetic_pressure(
+        class GridBaseClass * 
+        );
 #endif // CHECK_MAGP
 
 #ifdef BLAST_WAVE_CHECK
@@ -176,7 +178,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// If running a spherical blast wave, calculate the shock
   /// position and output to screen.
   ///
-  void calculate_blastwave_radius();
+  void calculate_blastwave_radius(
+        class GridBaseClass * 
+        );
 #endif // BLAST_WAVE_CHECK
 
   ///
@@ -186,8 +190,8 @@ class IntUniformFV : public IntegratorBaseFV
   /// the appropriate variables in GridParams (dx,dA,dV).
   ///
   int get_cell_size(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
 
   ///
   /// See if any command-line arguments should override those
@@ -210,15 +214,15 @@ class IntUniformFV : public IntegratorBaseFV
   /// \retval 1 failure
   ///
   int boundary_conditions(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
 
   ///
   /// Delete any init data and make sure things are ready to go.
   /// 
   virtual int ready_to_start(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
    
 
 
@@ -250,7 +254,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// \retval 0 success
   /// \retval 1 failure
   ///
-  virtual int calc_timestep();
+  virtual int calc_timestep(
+        class GridBaseClass * 
+        );
 
   ///
   /// Check for any time-evolving radiation sources, and update source
@@ -262,24 +268,32 @@ class IntUniformFV : public IntegratorBaseFV
   /// Calculate the microphysics timestep, based on heating/cooling and reaction
   /// rates.  Returns the minimum timestep of the local grid (negative if error).
   /// 
-  double calc_microphysics_dt();
+  double calc_microphysics_dt(
+        class GridBaseClass * 
+        );
 
   ///
   /// Old microphysics timescales calculation with no radiation field.
   ///
-  double get_mp_timescales_no_radiation();
+  double get_mp_timescales_no_radiation(
+        class GridBaseClass * 
+        );
 
   ///
   /// New microphysics timescales calculation with pre-calculated radiation field.
   ///
-  double get_mp_timescales_with_radiation();
+  double get_mp_timescales_with_radiation(
+        class GridBaseClass * 
+        );
 
   ///
   /// Calculate the dynamics timestep, based on the Courant condition that
   /// the fastest signals cannot cross a full cell in a single step.  Returns
   /// the minimum timestep on the local grid, or negative if an error occurs.
   ///
-  double calc_dynamics_dt();
+  double calc_dynamics_dt(
+        class GridBaseClass * 
+        );
  
 
 #ifdef THERMAL_CONDUCTION
@@ -329,7 +343,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// \retval 0 success
   /// \retval 1 failure
   ///
-  int advance_time();
+  int advance_time(
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// This is the original time integration algorithm used for JM's PhD thesis.
@@ -342,10 +358,11 @@ class IntUniformFV : public IntegratorBaseFV
   /// This is really a legacy function now, to enable me to run the 
   /// implicit integrator if I want to.
   ///
-  int timestep_dynamics_then_microphysics();
+  int timestep_dynamics_then_microphysics(
+        class GridBaseClass * ///< grid pointer
+        );
 
 
-#ifdef NEW_TIME_UPDATE
   ///
   /// This performs a first-order-accurate (in time) timestep for
   /// dynamics, microphysics, thermal conduction, everything.
@@ -357,9 +374,10 @@ class IntUniformFV : public IntegratorBaseFV
   /// if this is a half step, you should pass 0.5*dt to the function.
   ///
   int first_order_update(
-          const double, ///< dt, time interval to advance by.
-          const int     ///< time order of accuracy OA1/OA2.
-          );
+        const double,  ///< dt, time interval to advance by.
+        const int,     ///< time order of accuracy OA1/OA2.
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// This performs a second-order-accurate (in time) timestep for
@@ -368,9 +386,10 @@ class IntUniformFV : public IntegratorBaseFV
   /// the half-step must have been already called before this one.
   ///
   int second_order_update(
-          const double, ///< dt, time interval to advance by.
-          const int     ///< time order of accuracy (must be OA2).
-          );
+        const double, ///< dt, time interval to advance by.
+        const int,    ///< time order of accuracy (must be OA2).
+        class GridBaseClass * ///< grid pointer
+        );
   
   ///
   /// This function does some checking on radiation sources to see
@@ -380,8 +399,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// calc_microphysics_dU_no_RT().
   ///
   int calc_microphysics_dU(
-            const double ///< dt, timestep to integrate MP eqns.
-            );
+        const double, ///< dt, timestep to integrate MP eqns.
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// This calculates the change in internal energy and ion fractions
@@ -392,7 +412,8 @@ class IntUniformFV : public IntegratorBaseFV
   /// radiation sources involved.
   ///
   int calc_microphysics_dU_general_RT(
-        const double   ///< dt, timestep to integrate
+        const double,   ///< dt, timestep to integrate
+        class GridBaseClass * ///< grid pointer
         );
 
 
@@ -405,8 +426,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// my old implicit photoionisation integrator based on C2-ray.
   ///
   int calc_microphysics_dU_JMs_C2ray_RT(
-          const double ///< dt, timestep to integrate
-          );
+        const double, ///< dt, timestep to integrate
+        class GridBaseClass * ///< grid pointer
+        );
 
 
   ///
@@ -419,8 +441,9 @@ class IntUniformFV : public IntegratorBaseFV
   /// processes only).
   ///
   int calc_microphysics_dU_no_RT(
-          const double ///< dt, timestep to integrate
-          );
+        const double, ///< dt, timestep to integrate
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// This calculates the change in the state vector for each point
@@ -432,9 +455,10 @@ class IntUniformFV : public IntegratorBaseFV
   /// calc_dU().
   ///
   int calc_dynamics_dU(
-          const double, ///< dt, timestep to integrate
-          const int     ///< spatial order of accuracy for update.
-          );
+        const double, ///< dt, timestep to integrate
+        const int,    ///< spatial order of accuracy for update.
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// This function used to be called calc_dU -- for every column of
@@ -445,9 +469,10 @@ class IntUniformFV : public IntegratorBaseFV
   /// grid that are active.
   ///
   int set_dynamics_dU(
-            const double,    ///< dt, timestep for this calculation
-            const int        ///< space OOA for this calculation
-            );
+        const double,    ///< dt, timestep for this calculation
+        const int,       ///< space OOA for this calculation
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// Calculate dU, rate of change of conserved variables, in a 1D
@@ -462,14 +487,15 @@ class IntUniformFV : public IntegratorBaseFV
   /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
   ///
   int dynamics_dU_column(const class cell *, ///< starting point for column.
-              const enum direction, ///< direction to traverse column in. 
-              const enum direction, ///< opposite direction.
-              const double,    ///< dt, timestep for this calculation
+        const enum direction, ///< direction to traverse column in. 
+        const enum direction, ///< opposite direction.
+        const double,    ///< dt, timestep for this calculation
 #ifdef TESTING
-              const int,       ///< Time Order of accuracy to use.
+        const int,       ///< Time Order of accuracy to use.
 #endif
-              const int        ///< Spatial Order of accuracy to use.
-              );
+        const int,        ///< Spatial Order of accuracy to use.
+        class GridBaseClass * ///< grid pointer
+        );
 
   ///
   /// This function takes the contents of each cell->dU[] vector and
@@ -477,139 +503,11 @@ class IntUniformFV : public IntegratorBaseFV
   /// also updates P[] so that it and Ph[] are identical.
   ///
   int grid_update_state_vector(
-            const double ,  ///< dt, timestep
-            const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-            const int       ///< Full order of accuracy of simulation
-            );
-#endif // NEW_TIME_UPDATE
-
-
-#ifndef NEW_TIME_UPDATE
-  ///
-  /// This is the newer time integration scheme, where column densities are
-  /// calculated for each radiation source first and stored as cell data.  This
-  /// allows a microphysics timestep to be calculated which includes ionisation
-  /// and radiative heating, so we can limit the timestep correctly.
-  /// Then the microphysics is updated, and then the dynamics is updated in a 1st
-  /// or 2nd order algorithm, as described in Falle, Kommisarov, & Joarder (1998).
-  ///
-  int timestep_microphysics_then_dynamics();
-#ifdef TEST_SECOND_ORDER
-  /// Testing second order microphysics for the raytracing.
-  int timestep_mp_dyn_second();
-#endif
-
-
-
-  ///
-  /// Updates the microphysics of each cell in turn, if required.
-  /// 
-  /// If we aren't doing microphysics, then this returns 0;
-  /// If we are not on the full timestep, this returns 0;
-  /// If we are on the full timestep, and are doing microphysics, then this
-  /// runs through all the cells, updating the tracers and internal energy
-  /// appropriately, and then returns 0 on successful updating.
-  /// 
-  /// \retval 0 success.
-  /// \retval 1 failure.
-  ///
-  int update_microphysics(
-        const double,   ///< timestep to take
-        const int, ///< fraction of timestep we are on
-        const int  ///< full no. of fractional timesteps.
+        const double ,  ///< dt, timestep
+        const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+        const int,       ///< Full order of accuracy of simulation
+        class GridBaseClass * ///< grid pointer
         );
-  
-
-  ///
-  /// microphysics update where there are no heating or ionising radiation fields
-  /// explicitly calculated.
-  ///
-  int update_microphysics_no_RT(const double, // timestep to integrate
-                                const int   ///< Whether it is TIMESTEP_FULL, TIMESTEP_FIRST_PART
-                                );
-
-  ///
-  /// microphysics update used in JM's PhD thesis, based on the C2-ray method, for a
-  /// single monochromatic source of ionising radiation, where the microphysics is
-  /// updated as the rays are traced outwards.
-  ///
-  int update_microphysics_JMs_C2ray_RT(const double, // timestep to integrate
-                                       const int   ///< Whether it is TIMESTEP_FULL, TIMESTEP_FIRST_PART
-                                       );
-
-
-  ///
-  /// General microphysics update including (for sure) at least one ionising source, and 
-  /// optionally some UV heating sources, either diffuse or associated with an ionising
-  /// source.  Diffuse and direct column densities were pre-calculated before calling
-  /// this function, so these are then organised and passed into the MPnew() interface
-  /// function.
-  ///
-  int update_microphysics_general_RT(const double, // timestep to integrate
-                                     const int   ///< Whether it is TIMESTEP_FULL, TIMESTEP_FIRST_PART
-                                     );
-
-   ///
-   /// This function encapsulates the calc_dU function and the time update.
-   ///
-   /// Called by advance_time(), calls calc_dU(),
-   /// eqn->CellAdvanceTime().  Also tracks energy and momentum
-   /// conservation properties of simulation if testing the code.  If
-   /// there is any pre- or post-processing to be done (e.g. viscosity)
-   /// then that is done in appropriately named functions called
-   /// before and after the calc_dU() function.
-   ///
-   int update_dynamics(const int, ///< Space order of acc for this call.
-		       const int  ///< Time order of acc for this call.
-		       );
-   
-
-
-  ///
-  /// Calculate dU, rate of change of conserved variables.
-  /// 
-  /// This is a multidimensional routine, which identifies 1D columns of
-  /// points and calls dU_column() on them all, in each grid direction.
-  /// 
-  /// It is a dimensionally unsplit routine, calculating updates in each 
-  /// dimension and then letting advance_time() do the actual time update 
-  /// later.
-  /// 
-  /// It uses the exact formula (if the flux calculation were exact):
-  /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}\left[
-  ///     (F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) +
-  ///     (G_{j-\frac{1}{2}} -G_{j+\frac{1}{2}}) +
-  ///     (H_{k-\frac{1}{2}} -H_{k+\frac{1}{2}}) \right] \f$, where it
-  /// is assumed that we are in three (Cartesian) spatial dimensions.  Terms are 
-  /// removed from this as appropriate for the number of dimensions specified.
-  /// This formula is appropriate for cartesian geometry, but the code calculates
-  /// the divergence differently if we are using cylindrical or other coordinates.
-  /// I don't think it would work for non-orthonormal coords.
-  ///
-   int calc_dU(const int, ///< Space order of acc for this call.
-	       const int  ///< Time order of acc for this call.
-	       );
-
-  ///
-  /// Calculate dU, rate of change of conserved variables, in a 1D column
-  /// 
-  /// This runs through every cell in a 1D column in turn, and calculates the flux
-  /// between the cell in question and its neighbour to the right, by obtaining
-  /// an interface flux.
-  /// 
-  /// It then calculates dU for each cell according to the exact formula (if the 
-  /// flux calculation were exact) given by Toro eq.5.76\n
-  /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
-  /// This is for cartesian geometry, and the form is different for cylindrical.  The 
-  /// code calls a different function for different geometries.
-  ///
-   int dU_column(const class cell *, ///< starting point for column.
-		 const enum direction, ///< direction to traverse column in. 
-		 const enum direction, ///< opposite direction.
-		 const int,       ///< Spatial Order of accuracy to use.
-		 const int        ///< Time Order of accuracy to use.
-		 );
-#endif // not NEW_TIME_UPDATE
 
 
   ///
@@ -627,8 +525,8 @@ class IntUniformFV : public IntegratorBaseFV
   /// function to write the data.
   ///
   virtual int output_data(
-      class GridBaseClass *
-      );
+        class GridBaseClass *
+        );
 
 
 
@@ -641,17 +539,22 @@ class IntUniformFV : public IntegratorBaseFV
   /// \retval 0 success
   /// \retval 1 failure
   ///
-   int check_eosim();    // Checks for end of simulation.
+  int check_eosim();    // Checks for end of simulation.
 
-   /** \brief Checks Total energy relative to initial value, and prints a message if not.*/
-   int check_energy_cons(
-      class GridBaseClass * 
-      );
+  ///
+  /// Checks Total energy relative to initial value, and prints a
+  /// message if not.
+  ///
+  int check_energy_cons(
+        class GridBaseClass * 
+        );
 
-   /** \brief Calculates total values of conserved quantities. */
-   int initial_conserved_quantities(
-      class GridBaseClass * 
-      );
+  ///
+  /// Calculates total values of conserved quantities.
+  ///
+  int initial_conserved_quantities(
+        class GridBaseClass * 
+        );
 }; // IntUniformFV
    
 /*************************************************************************/
@@ -681,11 +584,12 @@ class ParallelIntUniformFV : public IntUniformFV
   /// \retval 1 failure
   ///
   int Init(
-      string, ///< Name of input file.
-      int,    ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-      int,    ///< Number of command-line arguments.
-      string * ///< Pointer to array of command-line arguments.
-      );
+        string,   ///< Name of input file.
+        int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
+        int,      ///< Number of command-line arguments.
+        string *, ///< Pointer to array of command-line arguments.
+        class GridBaseClass * ///< grid pointer.
+        );
 
   ///
   /// Time integration
@@ -701,9 +605,9 @@ class ParallelIntUniformFV : public IntUniformFV
   /// simulations on some of the queues, and I want to make sure I have an output 
   /// near the end of the allowed runtime.
   ///
-   int Time_Int(
-      class GridBaseClass * 
-      );
+  int Time_Int(
+        class GridBaseClass * 
+        );
 
   ///
   /// initialise the grid class with appropriate parameters.
@@ -718,8 +622,8 @@ class ParallelIntUniformFV : public IntUniformFV
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
   virtual int setup_raytracing(
-      class GridBaseClass * 
-      );
+        class GridBaseClass * 
+        );
 
   protected:
   ///
@@ -732,7 +636,9 @@ class ParallelIntUniformFV : public IntUniformFV
   /// \retval 0 success
   /// \retval 1 failure
   ///
-   int calc_timestep();
+  int calc_timestep(
+        class GridBaseClass * 
+        );
 
 }; // ParallelIntUniformFV
 #endif // PARALLEL

@@ -135,18 +135,21 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.08.20 JM: Changed cell_interface for radiative transfer
 ///    variables, so heating/ionising source syntax has changed.
+/// - 2015.01.13 JM: Modified for new code structure; began adding
+///    the grid pointer everywhere.
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
-
-#ifdef NEW_TIME_UPDATE
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
 #include "spatial_solvers/solver_eqn_base.h"
-
-
 
 #include <iostream>
 #include <sstream>
@@ -270,7 +273,9 @@ void IntUniformFV::timestep_checking_and_limiting()
 // ##################################################################
 
 
-double IntUniformFV::calc_dynamics_dt()
+double IntUniformFV::calc_dynamics_dt(
+        class GridBaseClass *grid
+        )
 {
   double tempdt=0.0;
   double dt=1.e100; // Set it to very large no. initially.
@@ -344,7 +349,9 @@ double IntUniformFV::calc_dynamics_dt()
 // ##################################################################
 
 
-double IntUniformFV::calc_microphysics_dt()
+double IntUniformFV::calc_microphysics_dt(
+        class GridBaseClass *grid
+        )
 {
   //
   // If we have microphysics, we may want to limit the timestep by
@@ -378,7 +385,7 @@ double IntUniformFV::calc_microphysics_dt()
     //cout <<"calc_timestep, getting column densities.\n";
     int err = calculate_raytracing_column_densities();
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
-    dt = get_mp_timescales_with_radiation();
+    dt = get_mp_timescales_with_radiation(grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_with_radiation() returned error",dt);
   }
@@ -387,7 +394,7 @@ double IntUniformFV::calc_microphysics_dt()
     // don't need column densities, so call the no-RT version
     //
     //cout <<" getting timestep with no radiation\n";
-    dt = get_mp_timescales_no_radiation();
+    dt = get_mp_timescales_no_radiation(grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_no_radiation() returned error",dt);
   }
@@ -404,7 +411,9 @@ double IntUniformFV::calc_microphysics_dt()
 // ##################################################################
 
 
-double IntUniformFV::get_mp_timescales_no_radiation()
+double IntUniformFV::get_mp_timescales_no_radiation(
+        class GridBaseClass *grid
+        )
 {
 #ifdef TESTING
   //
@@ -502,7 +511,9 @@ double IntUniformFV::get_mp_timescales_no_radiation()
 // ##################################################################
 
 
-double IntUniformFV::get_mp_timescales_with_radiation()
+double IntUniformFV::get_mp_timescales_with_radiation(
+        class GridBaseClass *grid
+        )
 {
 #ifdef TESTING
   //
@@ -585,5 +596,5 @@ double IntUniformFV::get_mp_timescales_with_radiation()
 // ############   END OF TIMESTEP CALCULATION FUNCTIONS  ############
 // ##################################################################
 
-#endif // NEW_TIME_UPDATE
+
 

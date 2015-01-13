@@ -141,13 +141,17 @@
 /// - 2013.10.13 JM: Fixed bug in dU_Column relating to internal
 ///    boundaries; seems it never arose before.
 /// - 2013.12.03 JM: Modified NO_COOLING_ON_AXIS hack.
-/// - 2015.01.12 JM: Modified for new code structure; started adding
+/// - 2015.01.12/13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#include "reporting.h"
-#include "mem_manage.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "grid.h"
 #include "dataIO/dataio.h"
@@ -284,7 +288,7 @@ int IntUniformFV::first_order_update(
   // the timestep.
   //
   if (!FVI_need_column_densities_4dt) {
-    err += calculate_raytracing_column_densities(grid);
+    err += calculate_raytracing_column_densities();
     if (err) 
       rep.error("first_order_update: error from first calc_rt_cols()",err);
   }
@@ -341,7 +345,7 @@ int IntUniformFV::second_order_update(
   //
   // Raytracing, to get column densities for microphysics update.
   //
-  err += calculate_raytracing_column_densities(grid);
+  err += calculate_raytracing_column_densities();
   if (err) {
     rep.error("second_order_update: error from first calc_rt_cols()",err);
   }
@@ -519,7 +523,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics(
 
 
 int IntUniformFV::calculate_raytracing_column_densities(
-      class GridBaseClass *grid ///< Computational grid.
+      //class GridBaseClass *grid ///< Computational grid.
       )
 {
   int err=0;
@@ -848,8 +852,8 @@ int IntUniformFV::calc_microphysics_dU_no_RT(
   
 int IntUniformFV::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
-      const int space_ooa ///< spatial order of accuracy for update.
-      //const int time_ooa   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int space_ooa, ///< spatial order of accuracy for update.
+      //const int time_ooa,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -873,7 +877,7 @@ int IntUniformFV::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(dt, space_ooa, grid); //,time_ooa);
+  err = eqn->preprocess_data(dt, space_ooa); //,time_ooa);
 
   //
   // Now calculate the directionally-unsplit time update for the
@@ -891,7 +895,7 @@ int IntUniformFV::calc_dynamics_dU(
   // robust than e.g. Toth (2000) Field-CT method.  (well the internal
   // energy solver uses it, but it's not really worth using).
   //
-  err = eqn->PostProcess_dU(dt, space_ooa, grid); //,time_ooa);
+  err = eqn->PostProcess_dU(dt, space_ooa); //,time_ooa);
   rep.errorTest("calc_dynamics_dU() eqn->PostProcess_dU()",0,err);
 
   return 0;
@@ -956,7 +960,7 @@ int IntUniformFV::set_dynamics_dU(
       // or half step) so it is not too important.
                                         space_ooa,
 #endif
-                                        space_ooa)) ==0) {
+                                        space_ooa, grid)) ==0) {
       //cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
       //rep.printVec("cpt",cpt->pos,SimPM.ndim);
       if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim]))->isgd ) {
