@@ -27,9 +27,14 @@
 ///    fluxes are dealt with by the flux-solver classes.
 ///    For this to work I had to explicitly call the Euler Eqns class for PtoU()
 ///    and PUtoFlux(); otherwise the flux-solver class (with tracers) would be used.
-///
+/// - 2015.01.14 JM: Added new include statements for new PION version.
 
-#include "Riemann_FVS_hydro.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+
+#include "Riemann_solvers/Riemann_FVS_hydro.h"
 #include <iostream>
 using namespace std;
 

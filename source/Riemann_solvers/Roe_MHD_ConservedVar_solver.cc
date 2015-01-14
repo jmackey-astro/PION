@@ -17,11 +17,15 @@
 ///
 /// History:
 /// - 2010.12.27 JM: Moved from flux_mhd_adiabatic.h
-///
+/// - 2015.01.14 JM: Added new include statements for new PION version.
 
-#include "Roe_MHD_ConservedVar_solver.h"
-#include "riemannMHD.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
+#include "Riemann_solvers/riemannMHD.h"
+#include "global.h"
 using namespace std;
 
 // **********************************************************************************

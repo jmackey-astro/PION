@@ -7,24 +7,18 @@
 /// of N passive tracers.
 ///
 /// - 2009-12-18 JM: Added Axisymmetric Class (cyl_FV_solver_Hydro_Euler)
-///
-///
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
 /// - 2010.10.01 JM: Added spherical coordinate system.
-///
 /// - 2010.11.15 JM:
 ///   Made InterCellFlux general for all classes (moved to FV_solver_base)
-///
 /// - 2010.12.21 JM: updated documentation.
-///
 /// - 2010.12.23 JM: Removed references to riemann_base class.
 ///    added extra variable to inviscid_flux() function.
 ///    Moved UtoP() etc. from solver to flux-solver.
-///
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 
 #ifndef SOLVER_EQN_HYDRO_ADI_H
 #define SOLVER_EQN_HYDRO_ADI_H
@@ -61,15 +55,18 @@ class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux
   ///
   /// Adds the contribution from flux in the current direction to dU.
   ///
-  virtual int dU_Cell(cell *, ///< Current cell.
-		      const axes, ///< Which axis we are looking along.
-		      const double *, ///< Negative direction flux.
-		      const double *, ///< Positive direction flux.
-		      const double *, ///< slope vector for cell c.
-		      const int,      ///< spatial order of accuracy.
-		      const double, ///< cell length dx.
-		      const double  ///< cell TimeStep, dt.
-		      );
+  virtual int dU_Cell(
+        class GridBaseClass *,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        );
+
   ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.

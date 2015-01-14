@@ -8,15 +8,14 @@
 ///
 ///
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
 ///  - 2010.11.15 JM:
 ///   Made InterCellFlux general for all classes (moved to FV_solver_base)
-///
 /// - 2010.12.27 JM: Put all isothermal dynamics in an ifdef b/c I
 ///   updated the code structure which has broken everything and I
 ///   don't have time to fix isothermal stuff now...
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 ///
 
 #ifdef ISOTHERMAL_SOLVERS_ENABLED
@@ -25,8 +24,8 @@
 #ifndef SOLVER_EQN_HYDRO_ISO_H
 #define SOLVER_EQN_HYDRO_ISO_H
 
-#include "solver_eqn_base.h"
-#include "../flux_calc/flux_hydro_isothermal.h"
+#include "spatial_solvers/solver_eqn_base.h"
+#include "flux_calc/flux_hydro_isothermal.h"
 
 ///
 /// The main solver the code uses for integrating the Euler Equations (isothermal).
@@ -49,18 +48,21 @@ class FV_solver_Hydro_iso : virtual public FV_solver_base,
 		      );
   ~FV_solver_Hydro_iso();
   
-   ///
-   /// Adds the contribution from flux in the current direction to dU.
-   ///
-   virtual int dU_Cell(cell *, ///< Current cell.
-		       const axes, ///< Which axis we are looking along.
-		       const double *, ///< Negative direction flux.
-		       const double *, ///< Positive direction flux.
-		       const double *, ///< slope vector for cell c.
-		       const int,      ///< spatial order of accuracy.
-		       const double, ///< cell length dx.
-		       const double  ///< cell TimeStep, dt.
-		       );
+  ///
+  /// Adds the contribution from flux in the current direction to dU.
+  ///
+  virtual int dU_Cell(
+        class GridBaseClass *,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        );
+
    ///
    /// General Finite volume scheme for updating a cell's
    /// primitive state vector, for homogeneous equations.

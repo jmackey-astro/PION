@@ -13,6 +13,8 @@
 /// - 2011.01.03 JM: Added PostProcess_dU() for artificial viscosity.
 ///   Added functions to calculate the Q-viscosity, including a 
 ///   redefinition of preprocess_data()
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 ///
 
 #ifndef SOLVER_EQN_HYDRO_ADI_EINT_H
@@ -20,8 +22,8 @@
 
 #ifdef INCLUDE_EINT_ADI_HYDRO
 
-#include "../equations/eqns_hydro_adi_Eint.h"
-#include "../flux_calc/flux_hydro_adi_Eint.h"
+#include "equations/eqns_hydro_adi_Eint.h"
+#include "flux_calc/flux_hydro_adi_Eint.h"
 #include "solver_eqn_hydro_adi.h"
 
 //#include "../coord_sys/VectorOps.h"
@@ -67,15 +69,18 @@ class FV_solver_Hydro_Euler_Eint :
   ///
   /// Adds the contribution from flux in the current direction to dU.
   ///
-  virtual int dU_Cell(cell *, ///< Current cell.
-		      const axes, ///< Which axis we are looking along.
-		      const double *, ///< Negative direction flux.
-		      const double *, ///< Positive direction flux.
-		      const double *, ///< slope vector for cell c.
-		      const int,      ///< spatial order of accuracy.
-		      const double, ///< cell length dx.
-		      const double  ///< cell TimeStep, dt.
-		      );
+  virtual int dU_Cell(
+        class GridBaseClass *,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        );
+
   ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.

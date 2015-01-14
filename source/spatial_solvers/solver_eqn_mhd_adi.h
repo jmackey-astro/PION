@@ -8,19 +8,18 @@
 ///
 ///
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
 ///  - 2010.11.15 JM:
 ///   Made InterCellFlux general for all classes (moved to FV_solver_base)
-///
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 
 #ifndef SOLVER_EQN_MHD_ADI_H
 #define SOLVER_EQN_MHD_ADI_H
 
-#include "solver_eqn_base.h"
-#include "../flux_calc/flux_mhd_adiabatic.h"
+#include "spatial_solvers/solver_eqn_base.h"
+#include "flux_calc/flux_mhd_adiabatic.h"
 
 ///
 /// The main solver the code uses for integrating the ideal MHD Equations (adiabatic).
@@ -52,15 +51,18 @@ class FV_solver_mhd_ideal_adi
   ///
   /// Adds the contribution from flux in the current direction to dU.
   ///
-  virtual int dU_Cell(cell *, ///< Current cell.
-		      const axes, ///< Which axis we are looking along.
-		      const double *, ///< Negative direction flux.
-		      const double *, ///< Positive direction flux.
-		      const double *, ///< slope vector for cell c.
-		      const int,      ///< spatial order of accuracy.
-		      const double, ///< cell length dx.
-		      const double  ///< cell TimeStep, dt.
-		      );
+  virtual int dU_Cell(
+        class GridBaseClass *,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        );
+
   ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.

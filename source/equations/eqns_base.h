@@ -7,25 +7,20 @@
 ///  - 2007-10-16 Moved equations classes from global.h into this file.
 ///  - 2009-10-20 Changed name to eqns_base.h and moved euler and mhd equations to other files.
 ///  - 2009-12-19 JM: Added MaxSpeed() function.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV: added Cl,Cr pointers to flux 
 ///     functions for base solver class.
-///
 /// - 2010.11.15 JM: Renamed calculate_flux() to inviscid_flux() and
 ///   moved AV calculation to FV_solver_base class.
-/// 
 ///  - 2010.11.19 JM: Added H-correction eta variable to flux solver.
-///
 /// - 2010.12.23 JM: Removed riemann_base.  Moved SetAvgState to
 ///   eqns_base class.  Renamed RS_meanvec to eq_meanvec.
 ///   Moved flux_solver_base class to flux_base.h
-///
 /// - 2011.01.03 JM: Added eq_posdir and eq_negdir direction variables.
-///
+
 #ifndef EQNS_BASE_H
 #define EQNS_BASE_H
 
-#include "../global.h" // for axes enum in function arguments.
+#include "global.h" // for axes enum in function arguments.
 
 /// Abstract Base Class for equations, from which others are derived. 
 ///
@@ -121,9 +116,10 @@ class eqns_base {
   ///  Returns the fastest wavespeed for the relevant equations.
   ///  For eqns_Euler it returns the hydro speed, for MHD the fast speed.
   ///
-  virtual inline double maxspeed(const double *p, ///< Pointer to primitive variables.
-				 const double g   ///< Gas constant gamma.
-				 ) =0;
+  virtual double maxspeed(
+        const double *p, ///< Pointer to primitive variables.
+        const double g   ///< Gas constant gamma.
+        ) =0;
 
    ///  Sets the direction I'm looking, to decide which flux function to call.
    virtual void SetDirection(const enum axes ///< Direction, XX,YY or ZZ.

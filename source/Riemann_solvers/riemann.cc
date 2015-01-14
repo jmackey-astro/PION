@@ -34,8 +34,14 @@
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.14 JM: Added new include statements for new PION version.
 
-#include "riemann.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+
+#include "Riemann_solvers/riemann.h"
 #include <iostream>
 using namespace std;
 

@@ -877,7 +877,7 @@ int IntUniformFV::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(dt, space_ooa); //,time_ooa);
+  err = eqn->preprocess_data(dt, space_ooa, grid); //,time_ooa);
 
   //
   // Now calculate the directionally-unsplit time update for the
@@ -895,7 +895,7 @@ int IntUniformFV::calc_dynamics_dU(
   // robust than e.g. Toth (2000) Field-CT method.  (well the internal
   // energy solver uses it, but it's not really worth using).
   //
-  err = eqn->PostProcess_dU(dt, space_ooa); //,time_ooa);
+  err = eqn->PostProcess_dU(dt, space_ooa, grid); //,time_ooa);
   rep.errorTest("calc_dynamics_dU() eqn->PostProcess_dU()",0,err);
 
   return 0;
@@ -1065,14 +1065,14 @@ int IntUniformFV::dynamics_dU_column
     //    if (SimPM.timestep==2959 && dp.c->id==93) commandline.console("-ve density> ");
 #endif
     // Get the flux from left and right states, adding artificial viscosity if needed.
-    err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp);
-    err += eqn->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp);
-    err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp);
+    err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+    err += eqn->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
+    err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
     //    rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
     //    rep.errorTest("Edge States not obtained!",0,err);
-    err += eqn->InterCellFlux(cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
+    err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
     //    rep.printVec("Fr",Fr_this,SimPM.nvar);    rep.errorTest("Intercell Flux not obtained!",0,err);
-    err += eqn->dU_Cell(cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
+    err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
     //    rep.errorTest("dU not obtained!",0,err);
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {
@@ -1129,11 +1129,11 @@ int IntUniformFV::dynamics_dU_column
 #ifdef TESTING
   dp.c = cpt;
 #endif
-  err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp);
+  err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-  err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp);
-  err += eqn->InterCellFlux(cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
-  err += eqn->dU_Cell(cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
+  err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+  err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
+  err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
 #ifdef TESTING
   if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
     ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);

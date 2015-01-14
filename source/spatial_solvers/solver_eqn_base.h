@@ -25,25 +25,24 @@
 ///   the maximum value of eta on a given H-stencil.
 ///   Added Pre- and Post-flux viscosity functions for the
 ///   H-correction and Lapidus viscosity functions.
-///
 /// - 2010.12.27 JM: changed interface to post_calc_viscous_terms so
 ///   that it takes left[]/right[]/pstar[] as parameters.
-///
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
 /// - 2011.01.03 JM: Documented postprocess_du() function.
 ///   Moved preprocess_data() and calc_Hcorrection from gridMethods.cc
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid now.
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 
 #ifndef SOLVER_EQN_BASE_H
 #define SOLVER_EQN_BASE_H
 
 
 
-#include "../global.h"
-#include "../coord_sys/VectorOps.h"
-#include "../equations/eqns_base.h"
-#include "../flux_calc/flux_base.h"
+#include "global.h"
+#include "coord_sys/VectorOps.h"
+#include "equations/eqns_base.h"
+#include "flux_calc/flux_base.h"
 
 ///
 /// Base Class for Flux-based Finite Volume Solvers.
@@ -79,7 +78,10 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   ///
   /// Set the velocity divergence in a cell for viscosity calculation.
   ///
-  void set_div_v(cell *);
+  void set_div_v(
+        class cell *,
+        class GridBaseClass *  ///< pointer to computational grid.
+        );
 
   ///
   /// Set the H-correction eta value in a cell at the positive
@@ -111,27 +113,32 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   ///
   /// Calculate Flux between a left and right state.
   ///
-  int InterCellFlux(const cell *, ///< Left state cell pointer
-		    const cell *, ///< Right state cell pointer
-		    double *, ///< Left Primitive State Vector.
-		    double *, ///< Right Primitive State Vector.
-		    double *, ///< Flux Vector. (written to).
-		    const int,      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-		    const int,      ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
-		    const double, ///< gas EOS gamma.
-		    const double  ///< Cell size dx.
-		    );
+  int InterCellFlux(
+        class GridBaseClass *grid,
+        const cell *, ///< Left state cell pointer
+        const cell *, ///< Right state cell pointer
+        double *, ///< Left Primitive State Vector.
+        double *, ///< Right Primitive State Vector.
+        double *, ///< Flux Vector. (written to).
+        const int,      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+        const int,      ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
+        const double, ///< gas EOS gamma.
+        const double  ///< Cell size dx.
+        );
 
-  /** \brief Adds the contribution from flux in the current direction to dU. */
-  virtual int dU_Cell(cell *, ///< Current cell.
-		      const axes, ///< Which axis we are looking along.
-		      const double *, ///< Negative direction flux.
-		      const double *, ///< Positive direction flux.
-		      const double *, ///< slope vector for cell c.
-		      const int,      ///< spatial order of accuracy.
-		      const double, ///< cell length dx.
-		      const double  ///< cell TimeStep, dt.
-		      )=0;
+  /// Adds the contribution from flux in the current direction to dU.
+  virtual int dU_Cell(
+        class GridBaseClass *grid,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )=0;
+
   /** \brief General Finite volume scheme for updating a cell's
    * primitive state vector, for homogeneous equations.
    * */
@@ -156,9 +163,11 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// Lapidus viscosity and the Ndim 'eta' parameters for the
   /// H-correction viscosity.
   ///
-  virtual int preprocess_data(const int, ///< Space order of acc for this call.
-			      const int  ///< Time order of acc for this call.
-			      );
+  virtual int preprocess_data(
+        const int, ///< Space order of acc for this call.
+        const int, ///< Time order of acc for this call.
+        class GridBaseClass *  ///< pointer to computational grid.
+        );
   
 
    ///
@@ -166,9 +175,11 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
    /// for each grid point in each direction.  These values get stored
    /// in the cell data.
    /// 
-   int calc_Hcorrection(const int, ///< Space order of acc for this call.
-			const int  ///< Time order of acc for this call.
-			);
+   int calc_Hcorrection(
+        const int, ///< Space order of acc for this call.
+        const int, ///< Time order of acc for this call.
+        class GridBaseClass *  ///< pointer to computational grid.
+        );
 
 
   ///
@@ -180,9 +191,12 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// energy solver for the Euler equations.
   /// For most solvers it just returns immediately.
   ///
-  virtual int PostProcess_dU(const int, ///< Space order of acc for this call.
-			     const int  ///< Time order of acc for this call.
-			     ) {return 0;}
+  virtual int PostProcess_dU(
+        const int, ///< Space order of acc for this call.
+        const int, ///< Time order of acc for this call.
+        class GridBaseClass *  ///< pointer to computational grid.
+        ) {return 0;}
+
  protected:
   const int FV_gndim;   ///< number of spatial directions in grid.
   //  const int FV_ntr;     ///< Number of tracer Variables.
@@ -208,10 +222,12 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// Function to calculate viscosity-related quantities before the
   /// flux calculation.  So far this is only for the H-correction.
   ///
-  void pre_calc_viscous_terms(const cell *, ///< left-of-interface cell
-			      const cell *, ///< right-of-interface cell
-			      const int     ///< What kind of AV?
-			      );
+  void pre_calc_viscous_terms(
+        class GridBaseClass *,  ///< pointer to computational grid.
+        const cell *, ///< left-of-interface cell
+        const cell *, ///< right-of-interface cell
+        const int     ///< What kind of AV?
+        );
 
   ///
   /// Function to calculate viscous modifications to the flux (which
@@ -233,9 +249,11 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// eta values for the H-correction of Sanders et al
   /// (1998,JCP,14,511).  Uses Eq. 16 and Fig. 9 from paper.
   ///
-  double select_Hcorr_eta(const cell *, ///< cell to left of interface
-			  const cell *  ///< cell to right of interface
-			  );
+  double select_Hcorr_eta(
+        const cell *, ///< cell to left of interface
+        const cell *, ///< cell to right of interface
+        class GridBaseClass *  ///< pointer to computational grid.
+        );
 };
 
 

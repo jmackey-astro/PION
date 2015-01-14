@@ -31,6 +31,15 @@
 /// - 2011.04.15 JM: UtoP() again -- added recalculation of all prim.
 ///    vars if a negative density is encountered.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.14 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "global.h"
 #include "eqns_hydro_adiabatic.h"

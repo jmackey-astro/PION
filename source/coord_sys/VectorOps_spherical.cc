@@ -16,12 +16,17 @@
 /// - 2013.07.19 JM: Added TRACER_SLOPES_CONSERVED_VARS option, but
 ///    it is more diffusive than primitive variables, so it is not
 ///    used.
-///
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 
 
 /// ***************************************
 /// ******** SPHERICAL COORDINATES ********
 /// ***************************************
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
 
 #include "VectorOps_spherical.h"
 using namespace std;
@@ -137,7 +142,8 @@ double VectorOps_Sph::CellInterface(
 double VectorOps_Sph::maxGradAbs(
         const cell *c,
         const int sv,
-        const int var
+        const int var,
+        class GridBaseClass *grid
         )
 {
 #ifdef TESTING
@@ -181,10 +187,11 @@ double VectorOps_Sph::maxGradAbs(
 // ##################################################################
 
 
-void VectorOps_Sph::Grad(
+void VectorOps_Sph::Gradient(
         const cell *c,
         const int sv,
         const int var,
+        class GridBaseClass *grid,
         double *grad
         )
 {
@@ -224,10 +231,11 @@ void VectorOps_Sph::Grad(
 // ##################################################################
 
 // get divergence of vector quantity.
-double VectorOps_Sph::Div(
+double VectorOps_Sph::Divergence(
         const cell *c,
         const int sv,
-        const int *var
+        const int *var,
+        class GridBaseClass *grid
         )
 {
 
@@ -274,6 +282,7 @@ void VectorOps_Sph::Curl(
         const cell *c,
         const int vec,
         const int *var,
+        class GridBaseClass *grid,
         double *ans
         )
 {
@@ -303,7 +312,8 @@ int VectorOps_Sph::SetEdgeState(
         const int nv,        ///< length of state vectors.
         const double *dpdx,  ///< Slope vector.
         double *edge,        ///< vector for edge state. 
-        const int OA         ///< Order of spatial Accuracy.
+        const int OA,        ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   
@@ -362,7 +372,8 @@ int VectorOps_Sph::SetSlope(
         const axes d,  ///< Which direction to calculate slope in.
         const int nv,  ///< length of state vectors.
         double *dpdx,  ///< Slope vector to be written to.
-        const int  OA  ///< Order of spatial Accuracy.
+        const int  OA, ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   //
@@ -446,6 +457,7 @@ int VectorOps_Sph::SetSlope(
 
 int VectorOps_Sph::DivStateVectorComponent(
         const cell *c,    ///< current cell.
+        class GridBaseClass *,
         const axes d,     ///< current coordinate axis we are looking along.
         const int nv,     ///< length of state vectors.
         const double *fn, ///< Negative direction flux.

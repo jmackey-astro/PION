@@ -28,9 +28,14 @@
 ///    fluxes are dealt with by the flux-solver classes.
 ///    For this to work I had to explicitly call the Euler Eqns class for PtoU()
 ///    and PUtoFlux(); otherwise the flux-solver class (with tracers) would be used.
-///
-#include "Roe_Hydro_ConservedVar_solver.h"
-#include "../global.h"
+/// - 2015.01.14 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
+#include "global.h"
 using namespace std;
 
 Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(const int nv,///< Length of State Vectors, nvar

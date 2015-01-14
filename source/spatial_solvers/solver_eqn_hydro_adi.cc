@@ -24,7 +24,13 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.08.19 JM: tested a bunch of approximations, but nothing
 ///    was an improvement so I left it the way it was.
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 #include "solver_eqn_hydro_adi.h"
 using namespace std;
 
@@ -84,22 +90,24 @@ FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 ///
 /// Adds the contribution from flux in the current direction to dU.
 ///
-int FV_solver_Hydro_Euler::dU_Cell(cell *c,          // Current cell.
-				   const axes d,     // Which axis we are looking along.
-				   const double *fn, // Negative direction flux.
-				   const double *fp, // Positive direction flux.
-				   const double *,   // slope vector for cell c.
-				   const int,        // spatial order of accuracy.
-				   const double,     // cell length dx.
-				   const double      // cell TimeStep, dt.
-				   )
+int FV_solver_Hydro_Euler::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c,          // Current cell.
+        const axes d,     // Which axis we are looking along.
+        const double *fn, // Negative direction flux.
+        const double *fp, // Positive direction flux.
+        const double *,   // slope vector for cell c.
+        const int,        // spatial order of accuracy.
+        const double,     // cell length dx.
+        const double      // cell TimeStep, dt.
+        )
 {
   double u1[eq_nvar];
   //
   // This calculates -dF/dx
   //
   //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
 }

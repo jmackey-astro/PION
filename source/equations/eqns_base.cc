@@ -8,19 +8,19 @@
 ///  - 2009-12-22 JM: Added comments to rotation to make clear that we
 ///    are moving the vector quantity through +theta, NOT rotating the
 ///    coord.sys. by +theta.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to
 ///    flux functions).
-///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 /// - 2010.12.23 JM: Added eq_refvec[] to eqns_base.  Deleted
 ///   riemann_base altogether.  Moved flux_solver_base class
 ///   definitions to flux_base.cc
-///
 /// - 2011.01.03 JM: Added eq_posdir and eq_negdir direction variables.
-///
-///
+/// - 2015.01.14 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
 #include "eqns_base.h"
 using namespace std;
