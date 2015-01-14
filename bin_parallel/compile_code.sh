@@ -19,6 +19,7 @@
 #    classes.
 # - 2013.09.20 JM: New Intel compilers for Juropa.
 # - 2014.04.14 JM: Section for Judge at JSC.
+# - 2015.01.14 JM: Section for Juropatest system at JSC.
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
@@ -98,6 +99,23 @@ case $HOST in
     export CXX=mpicxx
   ;;
 esac
+#######################
+
+#######################
+### TEST FOR JUROPATEST ###
+#######################
+MACHINE=$(cat /etc/FZJ/systemname)
+if test "${MACHINE}" = "juropatest"; then
+    echo "Compiling on JUROPATEST"
+    module purge
+    module load intel-para
+    MAKE_UNAME=JUROPA
+    NCORES=8
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
+    export CXX=mpicxx
+fi
 #######################
 
 #################################

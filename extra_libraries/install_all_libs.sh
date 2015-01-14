@@ -4,7 +4,7 @@
 # - 2012.09.11 JM: Added options for SuperMUC
 # - 2013.02.07 JM: Updated for new library versions (all).
 # - 2014.04.14 JM: Added section for JUDGE at JSC.
-
+# - 2015.01.14 JM: Section for Juropatest system at JSC.
 
 mkdir include
 mkdir bin
@@ -66,6 +66,22 @@ case $HOST in
     NCORES=8
     ;;
 esac
+#######################
+
+#######################
+### TEST FOR JUROPATEST ###
+#######################
+MACHINE=$(cat /etc/FZJ/systemname)
+if test "${MACHINE}" = "juropatest"; then
+    echo "Compiling on JUROPATEST"
+    module purge
+    module load intel-para
+    export CC=icc
+    export CXX=icpc
+    export FC=ifort
+    MAKE_UNAME=JUROPA
+    NCORES=8
+fi
 #######################
 
 #######################
