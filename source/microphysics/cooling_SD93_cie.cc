@@ -30,9 +30,18 @@
 /// - 2012.01.26 JM: replaced 2.303 with GS.ln10()
 /// - 2013.08.19 JM: changed all low-T extrapolations to have power
 ///    law slope of 4.0;
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "cooling_SD93_cie.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/cooling_SD93_cie.h"
+#include "global.h"
 using namespace std;
 
 cooling_function_SD93CIE::cooling_function_SD93CIE()

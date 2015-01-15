@@ -35,7 +35,7 @@
 
 #ifdef SILO
 
-#include "dataio.h"
+#include "dataIO/dataio.h"
 #include <silo.h>
 #include <vector>
 
@@ -83,10 +83,11 @@ class dataio_silo :public DataIOBase {
     * internal energy/Temperature (and the Magnetic Field divergence
     * and total Pressure if the solver is an MHD solver).
     */
-   virtual int OutputData(const string, ///< File to write to
-			  class GridBaseClass *, ///< pointer to data.
-			  const long int ///< number to stamp file with (e.g. timestep)
-			  );
+   virtual int OutputData(
+        const string, ///< File to write to
+        class GridBaseClass *, ///< pointer to data.
+        const long int ///< number to stamp file with (e.g. timestep)
+        );
    /** \brief Reads the header from the file specified, and puts the
     * simulation parameters in the global data class declared in global.h.
     * This should be called first if we want to set up a uniform grid with
@@ -148,7 +149,9 @@ class dataio_silo :public DataIOBase {
 			       );
    /** \brief Call once to setup arrays with the properties of the grid, for
     * writing to the Silo Quadmesh. */
-   virtual int setup_grid_properties();
+   virtual int setup_grid_properties(
+        class GridBaseClass * ///< pointer to data.
+        );
    /** \brief Choose what data to write to file, based on equations being solved.*/
    virtual int setup_write_variables();
 

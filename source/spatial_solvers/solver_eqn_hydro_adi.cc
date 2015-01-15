@@ -297,22 +297,24 @@ cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler()
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
-				       const axes d, ///< Which axis we are looking along.
-				       const double *fn, ///< Negative direction flux.
-				       const double *fp, ///< Positive direction flux.
-				       const double *dpdx, ///< slope vector for cell c.
-				       const int OA,      ///< spatial order of accuracy.
-				       const double, ///< cell length dx.
-				       const double  ///< cell TimeStep, dt.
-				       )
+int cyl_FV_solver_Hydro_Euler::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c, ///< Current cell.
+        const axes d, ///< Which axis we are looking along.
+        const double *fn, ///< Negative direction flux.
+        const double *fp, ///< Positive direction flux.
+        const double *dpdx, ///< slope vector for cell c.
+        const int OA,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )
 {
   double u1[eq_nvar];
   //
   // This calculates -dF/dx
   //
   //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   //
   // Add source term for the radial direction.
@@ -405,21 +407,23 @@ sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler()
 // ##################################################################
 // ##################################################################
 
-int sph_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
-				       const axes d, ///< Which axis we are looking along.
-				       const double *fn, ///< Negative direction flux.
-				       const double *fp, ///< Positive direction flux.
-				       const double *dpdx, ///< slope vector for cell c.
-				       const int OA,      ///< spatial order of accuracy.
-				       const double, ///< cell length dx.
-				       const double  ///< cell TimeStep, dt.
-				       )
+int sph_FV_solver_Hydro_Euler::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c, ///< Current cell.
+        const axes d, ///< Which axis we are looking along.
+        const double *fn, ///< Negative direction flux.
+        const double *fp, ///< Positive direction flux.
+        const double *dpdx, ///< slope vector for cell c.
+        const int OA,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )
 {
   double u1[eq_nvar];
   //
   // This calculates the negative of the ith component of divergence
   //
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   //
   // Add source term for the radial direction (2p_g/r).

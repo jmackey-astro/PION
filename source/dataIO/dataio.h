@@ -11,12 +11,9 @@
 ///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2101-07-20/22 JM: Updated sim.file header I/O to be more general
 ///    and make it easier to add new parameters.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
-///
 /// - 2010.11.03 JM: Added Ndigits variable for naming files.
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
@@ -24,6 +21,10 @@
 
 #ifndef DATAIO_H
 #define DATAIO_H
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
 
 #include <cstring>
 #include <list>

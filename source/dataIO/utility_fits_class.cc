@@ -26,9 +26,19 @@
 /// - 2012.10.15 JM: minor mods to reading fits data, so that I don't
 ///    need the HDU's name; without a name it will default to hdu1.
 /// - 2013.04.16 JM: some debugging messages and new comments added.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
 #ifdef FITS
-#include "dataio_fits.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "dataIO/dataio_fits.h"
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>

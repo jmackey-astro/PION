@@ -8,30 +8,22 @@
 ///    This is only needed if using cgs since VisIt does single precision
 ///    calculations and seems to have trouble with small numbers.  Should
 ///    be possible to switch it off easily, but I haven't done that yet.
-///
 ///  - 2010-02-03 JM: small changes to fix compiler warnings -- use
 ///     GS.equalD() in a few places instead of testing for equality.
-///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2010-07-20/22 JM: Work on new dataio structure with a list of
 ///    parameters to read and write.  read_simulation_parameters()
 ///    function replaces read_header() so I will be able to delete a
 ///    lot of code!  Same for write_header().
-///
 /// - 2010.07.23 JM: removed obselete read_header(),
 ///    write_header() functions.
-///
 /// - 2010.10.01 JM: Spherical coordinates added.
 ///    Got rid of testing myalloc/myfree commands.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
 ///    Also replaced endl with c-style line-break for JUROPA.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data. (2010.11.15 JM fixed bug introduced here!)
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code.
 /// - 2011.03.01 JM: Added outputting of diffuse-RT column density when RT_TESTING.
 /// - 2011.03.02 JM: Better support for tracer variables (with or without names).
@@ -43,12 +35,20 @@
 ///    for parallel code.
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
-///
 /// - 2011.10.14 JM: commented out RT_DIFF
 /// - 2012.03.01 JM: Added spacing between functions.
 /// - 2013.02.07 JM: Made code less verbose.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 #ifdef SILO
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "dataio_silo.h"
 #include <cstring>
@@ -185,10 +185,11 @@ int dataio_silo::WriteHeader(
 
 
 
-int dataio_silo::OutputData(const string outfile,
-			    class GridBaseClass *cg,
-			    const long int file_counter   ///< number to stamp file with (e.g. timestep)
-			    )
+int dataio_silo::OutputData(
+        const string outfile,
+        class GridBaseClass *cg,
+        const long int file_counter   ///< number to stamp file with (e.g. timestep)
+        )
 {
   if (!cg)
     rep.error("dataio_silo::OutputData() null pointer to grid!",cg);
@@ -222,7 +223,7 @@ int dataio_silo::OutputData(const string outfile,
 
   if (!have_setup_gridinfo) {
     // set grid properties for quadmesh
-    err = dataio_silo::setup_grid_properties();
+    err = dataio_silo::setup_grid_properties(gp);
     if (err)
       rep.error("dataio_silo::OutputData() error setting up grid_props", err);
   }
@@ -323,7 +324,7 @@ int dataio_silo::ReadData(string infile,
   if (!have_setup_gridinfo) {
     // set grid properties for quadmesh,
     // also check grid pointer is not null.
-    err = dataio_silo::setup_grid_properties();
+    err = dataio_silo::setup_grid_properties(gp);
     if (err)
       rep.error("dataio_silo::ReadData() error setting up grid_props", err);
   }
@@ -444,7 +445,9 @@ int dataio_silo::choose_filename(const string codefile,
 
 
 
-int dataio_silo::setup_grid_properties()
+int dataio_silo::setup_grid_properties(
+        class GridBaseClass *grid
+        )
 {
   // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
   if (!grid)
@@ -1002,7 +1005,8 @@ int dataio_silo::get_scalar_data_array(string variable, ///< variable name to ge
     vars[0] = static_cast<int>(BX);
     vars[1] = static_cast<int>(BY);
     vars[2] = static_cast<int>(BZ);
-    do {data[ct] = eqn->Div(c,0,vars); ct++;} while ( (c=gp->NextPt(c))!=0 );
+    do {data[ct] = eqn->Divergence(c,0,vars, gp); ct++;}
+    while ( (c=gp->NextPt(c))!=0 );
   }
 
   else if (v==-5) { // CurlB (for 2D data only!)
@@ -1012,12 +1016,14 @@ int dataio_silo::get_scalar_data_array(string variable, ///< variable name to ge
     vars[1] = static_cast<int>(BY);
     vars[2] = static_cast<int>(BZ);
     double crl[3]; for (int el=0;el<3;el++) crl[el]=0.0;
-    do {eqn->Curl(c,0,vars,crl); data[ct] = crl[2]; ct++;} while ( (c=gp->NextPt(c))!=0 );
+    do {eqn->Curl(c,0,vars, gp, crl); data[ct] = crl[2]; ct++;}
+    while ( (c=gp->NextPt(c))!=0 );
   }
 
   else if (v==-3) { // total pressure.
     //    cout <<"writing variable v="<<v<<" corresponding to "<<variable<<"\n";
-    do {data[ct] = eqn->Ptot(c->P,SimPM.gamma); ct++;} while ( (c=gp->NextPt(c))!=0 );
+    do {data[ct] = eqn->Ptot(c->P,SimPM.gamma); ct++;}
+    while ( (c=gp->NextPt(c))!=0 );
   }
 
 #ifdef RT_TESTING_OUTPUTCOL

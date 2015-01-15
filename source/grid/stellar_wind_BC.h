@@ -133,6 +133,7 @@ class stellar_wind {
   /// (possibly fixed) boundary value.  Returns non-zero on error.
   ///
   int add_cell(
+      class GridBaseClass *,
       const int, ///< src id
       cell *     ///< cell to add to list.
       );
@@ -207,6 +208,7 @@ class stellar_wind {
   /// and the cell-to-source distance.
   ///
   void set_wind_cell_reference_state(
+      class GridBaseClass *,
       struct wind_cell *,
       const struct wind_source *
       );
@@ -303,6 +305,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// The state vectors P[] and Ph[] are set to wind values, if the source is active.
   ///
   int set_cell_values(
+      class GridBaseClass *,
       const int, ///< src id
       const double ///< simulation time
       );
@@ -314,6 +317,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// wind cells.
   ///
   void update_source(
+      class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
       const double ///< current simulation time.
       );

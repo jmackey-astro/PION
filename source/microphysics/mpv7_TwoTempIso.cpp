@@ -24,11 +24,18 @@
 /// - 2013.07.20 JM: Tested a bunch of things; moved PI rate from a
 ///    function call to a (faster) in-place evaluation.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "microphysics/mpv7_TwoTempIso.h"
-
 #include "global.h"
-
 using namespace std;
 
 

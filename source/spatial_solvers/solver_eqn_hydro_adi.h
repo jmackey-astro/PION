@@ -23,9 +23,9 @@
 #ifndef SOLVER_EQN_HYDRO_ADI_H
 #define SOLVER_EQN_HYDRO_ADI_H
 
-#include "solver_eqn_base.h"
-#include "../flux_calc/flux_hydro_adiabatic.h"
-#include "../coord_sys/VectorOps_spherical.h"
+#include "spatial_solvers/solver_eqn_base.h"
+#include "flux_calc/flux_hydro_adiabatic.h"
+#include "coord_sys/VectorOps_spherical.h"
 
 ///
 /// The main solver the code uses for integrating the Euler Equations (adiabatic).
@@ -111,15 +111,17 @@ class cyl_FV_solver_Hydro_Euler
   ///
   /// Adds the contribution from flux in the current direction to dU.
   ///
-  virtual int dU_Cell(cell *, ///< Current cell.
-		      const axes, ///< Which axis we are looking along.
-		      const double *, ///< Negative direction flux.
-		      const double *, ///< Positive direction flux.
-		      const double *, ///< slope vector for cell c.
-		      const int,      ///< spatial order of accuracy.
-		      const double, ///< cell length dx.
-		      const double  ///< cell TimeStep, dt.
-		      );
+  virtual int dU_Cell(
+        class GridBaseClass *,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        );
 };
 
 ///
@@ -147,15 +149,17 @@ class sph_FV_solver_Hydro_Euler
   /// Adds the contribution from flux in the current direction to dU.
   /// Includes source terms for spherical polar coordinates.
   ///
-  virtual int dU_Cell(cell *, ///< Current cell.
-		      const axes, ///< Which axis we are looking along.
-		      const double *, ///< Negative direction flux.
-		      const double *, ///< Positive direction flux.
-		      const double *, ///< slope vector for cell c.
-		      const int,      ///< spatial order of accuracy.
-		      const double, ///< cell length dx.
-		      const double  ///< cell TimeStep, dt.
-		      );
+  virtual int dU_Cell(
+        class GridBaseClass *,
+        cell *, ///< Current cell.
+        const axes, ///< Which axis we are looking along.
+        const double *, ///< Negative direction flux.
+        const double *, ///< Positive direction flux.
+        const double *, ///< slope vector for cell c.
+        const int,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        );
 };
 
 #endif // SOLVER_EQN_HYDRO_ADI_H

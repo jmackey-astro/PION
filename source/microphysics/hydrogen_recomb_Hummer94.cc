@@ -11,11 +11,19 @@
 /// - 2011.04.18 JM: Added an ifdef for RT_TEST_PROBS to return 2.59e-13 as the RRR.
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
-///
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 //#define TEST_HUMMER94_COOLING_FUNCTION
-#include "../global.h"
-#include "hydrogen_recomb_Hummer94.h"
+#include "global.h"
+#include "microphysics/hydrogen_recomb_Hummer94.h"
 using namespace std;
 
 

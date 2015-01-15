@@ -12,9 +12,18 @@
 /// - 2013.10.17 JM: Added optional core/radial slope isothermal 
 ///    sphere for the UNIFORM medium parameters (with optional
 ///    expansion velocity, for modelling winds).
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "icgen.h"
-#include "../coord_sys/VectorOps.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
+#include "coord_sys/VectorOps.h"
 using namespace std;
 #include <sstream>
 
@@ -114,7 +123,7 @@ int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to paramet
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -597,7 +606,7 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   c = gg->FirstPt();
   do {
     if (!c->isedge) {
-      vec->Curl(c,1,els,ans);
+      vec->Curl(c,1,els,gg, ans);
       c->P[BX] = ans[0];
       c->P[BY] = ans[1];
       c->P[BZ] = ans[2];

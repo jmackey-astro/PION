@@ -19,6 +19,15 @@
 ///    vars if a negative density is encountered.  Also added the
 ///    ifdef for setting negative pressure to a fixed temperature.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "eqns_mhd_adiabatic.h"
 #include <iostream>

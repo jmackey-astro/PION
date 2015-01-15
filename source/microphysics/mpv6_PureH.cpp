@@ -16,6 +16,15 @@
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "microphysics/mpv6_PureH.h"
 

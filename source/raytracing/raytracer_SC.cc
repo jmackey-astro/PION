@@ -12,25 +12,19 @@
 ///  - 2010-01-24 JM: changed for corner-centred sources: cell_cols_3D()
 ///  - 2010-01-26 JM: Debugging sources at cell-vertices in 3D.
 ///  - 2010-02-10 JM: Removed obselete treatment of RN boundary for axisymmetry.
-///
 ///  - 2010.07.23 JM: New RSP source position class interface.
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2011.02.17 JM: Moved to raytracing/ subdir, so change include for uniform_grid.
 ///     Allowed parallel rays class to have a source at infinity in the +R direction.
-///
 /// - 2011.02.25 JM: Tidied up parallel rays class a little.  Allowed col2cell_1d()
 ///    to read data from boundary cells if appropriate; so I now *MUST* make sure 
 ///    their column data are initialised to zero!
 ///    Removed NEW_RT_MP_INTERFACE flags. Should handle multiple sources now. Of course I 
 ///    need a "rates-only" update function to actually use multiple emitting sources.
 ///    Removed HCORR ifdef around new code.
-///
 /// - 2011.02.28 JM: Undid an error I introduced last week.
 ///    Put more comments in RT_TESTING.
 /// - 2011.03.02 JM: parallel rays, col1d now only treats src-cell differently if
@@ -86,8 +80,17 @@
 ///    from internal boundary cells were not correctly picked up.
 /// - 2014.08.01 JM: Set ipos[] to have the correct sign in the fn
 ///    raytracer_USC_infinity::add_source_to_list()
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "raytracer_SC.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "raytracing/raytracer_SC.h"
 #include "future/constants.h"
 #include "grid/uniform_grid.h"
 #include <iostream>

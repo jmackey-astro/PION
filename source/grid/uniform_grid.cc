@@ -1483,7 +1483,7 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
     if (distance_vertex2cell(srcpos,c) <= srcrad) {
         ncell++;
         //b->data.push_back(c); // don't need b to have a lit too.
-        err += Wind->add_cell(id,c);
+        err += Wind->add_cell(this, id,c);
         //cout <<"CART: adding cell "<<c->id<<" to list. d=";
         //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
         //rep.printVec("src", srcpos, G_ndim);
@@ -2766,7 +2766,7 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(
 
       ncell++;
       //b->data.push_back(c); // don't need b to have a lit too.
-      err += Wind->add_cell(id,c);
+      err += Wind->add_cell(this, id,c);
 #ifdef TESTING
       cout <<"CYL adding cell "<<c->id<<" to list.\n";
       rep.printVec("***src", srcpos, G_ndim);
@@ -3108,7 +3108,7 @@ int uniform_grid_sph::BC_assign_STWIND_add_cells2src(
       rep.printVec("cell-pos", c->pos, G_ndim);
 #endif
       //b->data.push_back(c); // don't need b to have a list too.
-      err += Wind->add_cell(id,c);
+      err += Wind->add_cell(this, id,c);
       //cout <<"SPH: adding cell "<<c->id<<" to list. d=";
       //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
       //rep.printVec("src", srcpos, G_ndim);

@@ -14,58 +14,51 @@
 ///   returns an ifrac>2, which would indicate something went very wrong.  In
 ///   that case I try splitting the integral into 10 subintegrals and retrying.
 //   If that fails, bug out.
-///
 /// - 2010-01-05 JM: Added in (public) function which returns timescales for heating/cooling
 ///    and recombination/ionisation etc.
-///
 /// - 2010-01-15 JM: Changed criteria for setting incoming flux to
 ///    zero in the RT update for efficiency.  It was failing for large
 ///    domains, so I tried to test for the value of a
 ///    scale-independent quantity: photons_in*ds
-///
 /// - 2010-01-19 JM: propagated same change from MP_Hydrogen:: into
 ///    Microphysics:: removed bug i introduced over the weekend,
 ///    forcing recomb rate to be 2.59e-13
-///
 /// - 2010-01-21 JM: Changed ISOTHERMAL_MP stuff to have no reference
 ///    to (1-gamma).  corrected isothermal temperature calculation.
 ///    Changed some heap arrays to stack arrays in MP_H::Temperature
 ///    and prim2local(),local2prim().
-///
 /// - 2010-02-01 JM: if parallel, told only proc 0 to write
 ///    hummer_recomb.txt file
-///
 /// - 2010-02-09 JM: Took abs.value of rates in timescales() function
 ///    (so heating doesn't give negative time!)
-///
 /// - 2010-04-10 JM: some changes to MicroPhysics() class -- allowed
 ///    double-counting of recombination cooling; put in a note to get
 ///    a better recombination cooling calculation.
-///
 /// - 2010-08-18 JM: Added cooling time calculation for MicroPhysics
-///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 /// - 2010.10.11 JM: Split microphysics.cc into two -- this file has
 ///    the original class, which doesn't work for radiative transfer.
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2011.01.14 JM: moved to microphysics/ sub-dir.
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 /// - 2012.01.20-26 JM: wrapped code in ifndef so that its compilation can
 ///    be disabled, since I never use it now.
-///
-/****************************************************************
- ************ Micro Physics Update Class ************************
- ****************************************************************/
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "../defines/functionality_flags.h"
 #include "../defines/testing_flags.h"
 #ifndef EXCLUDE_MPV1
 
-#include "../global.h"
-#include "microphysics.h"
+#include "global.h"
+#include "microphysics/microphysics.h"
 using namespace std;
 
 

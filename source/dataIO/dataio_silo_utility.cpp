@@ -22,6 +22,15 @@
 /// - 2013.02.19 JM: Got rid of dataio_utility class, and moved its
 ///    functions into file_status class, which now has its own file.
 ///    Renamed file to dataio_silo_utility.cpp from dataio_utility.cc
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "dataIO/dataio_silo_utility.h"
 #include <iostream>

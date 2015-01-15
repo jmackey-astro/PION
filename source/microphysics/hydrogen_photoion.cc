@@ -26,18 +26,21 @@
 /// - 2012.12.26 JM: Added some hacks to study the photoionisation
 ///    cross section and Blackbody spectrum effects on results.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 //#define HACK_MODIFY_BB ///< scale the high energy BB emission
 #define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
 
-#include "hydrogen_photoion.h"
+#include "microphysics/hydrogen_photoion.h"
 #include "global.h"
-//#include "reporting.h"
-//#include "new_Hpion.h"
-//#include <cmath>
-//#include <iostream>
-//#include <cstdlib>
-//#include <vector>
 using namespace std;
 
 #define LOGTEN 2.302585093

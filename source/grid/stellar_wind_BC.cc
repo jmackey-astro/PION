@@ -42,14 +42,15 @@
 ///    because it didn't help with anything, ever.
 ///    Removed the integer positions because they created potential
 ///    errors in the wind properties from rounding errors.
-
-
-//------------------------------------------------
-//------------ STELLAR WIND CLASS ----------------
-//------------------------------------------------
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "stellar_wind_BC.h"
 #include <sstream>
@@ -205,6 +206,7 @@ int stellar_wind::Nsources()
 
 
 int stellar_wind::add_cell(
+        class GridBaseClass *grid,
         const int id, ///< src id
         cell *c       ///< cell to add to list.
         )
@@ -245,7 +247,7 @@ int stellar_wind::add_cell(
   //
   // Now assign values to the state vector:
   //
-  set_wind_cell_reference_state(wc,WS);
+  set_wind_cell_reference_state(grid, wc,WS);
 
   WS->wcells.push_back(wc);
   WS->ncell += 1;
@@ -267,6 +269,7 @@ int stellar_wind::add_cell(
 
 
 void stellar_wind::set_wind_cell_reference_state(
+        class GridBaseClass *grid,
         struct wind_cell *wc,
         const struct wind_source *WS
         )
@@ -949,6 +952,7 @@ int stellar_wind_evolution::add_evolving_source(
 
 
 void stellar_wind_evolution::update_source(
+        class GridBaseClass *grid,
         struct evolving_wind_data *wd,
         const double t_now
         )
@@ -1000,7 +1004,7 @@ void stellar_wind_evolution::update_source(
   // updated values.
   //
   for (int i=0; i<wd->ws->ncell; i++) {
-    set_wind_cell_reference_state(wd->ws->wcells[i],wd->ws);
+    set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws);
   }
 
   //
@@ -1019,9 +1023,10 @@ void stellar_wind_evolution::update_source(
 
 
 int stellar_wind_evolution::set_cell_values(
-          const int id,  ///< src id
-          const double t_now ///< simulation time
-          )
+        class GridBaseClass *grid,
+        const int id,  ///< src id
+        const double t_now ///< simulation time
+        )
 {
   int err=0;
   if (id<0 || id>=nsrc) {
@@ -1048,7 +1053,7 @@ int stellar_wind_evolution::set_cell_values(
   // serious.
   //
   else if (t_now >= wd->t_next_update) {
-    update_source(wd, t_now);
+    update_source(grid, wd, t_now);
   }
 
   //

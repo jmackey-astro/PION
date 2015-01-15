@@ -36,60 +36,65 @@
 /// - 2013.06.13 JM: Added StarBench_TremblinCooling test.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2014.07.11 JM: Added isothermal noise perturbation option.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
+
 #include "dataIO/dataio.h"
+#include "dataIO/readparams.h"
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
+
+#include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
+//
+// simulation control toolkit class.
+//
+#include "grid.h"
 
 
 #include "microphysics/microphysics_base.h"
-
 #ifndef EXCLUDE_MPV1
 #include "microphysics/microphysics.h"
 #endif 
-
 #include "microphysics/mp_only_cooling.h"
-
 #ifndef EXCLUDE_MPV2
 #ifdef MP_V2_AIFA
 #include "microphysics/mp_v2_aifa.h"
 #endif
 #endif 
-
 #ifndef EXCLUDE_MPV3
 #include "microphysics/mp_explicit_H.h"
 #endif
-
 #ifndef EXCLUDE_MPV4
 #include "microphysics/mp_implicit_H.h"
 #endif 
-
 #include "microphysics/mpv5_molecular.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
 #include "microphysics/mpv8_StarBench_heatcool.h"
-
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
 #endif
-
 #ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE
 #include "microphysics/microphysics_lowZ.h"
 #include "contrib/HD_MetalFree.h"
 #endif // EXCLUDE_HD_MODULE
 #endif // HARPREETS_CODE_EXT
-
-
-
-#include "dataIO/readparams.h"
 
 #include <sstream>
 using namespace std;
@@ -185,7 +190,7 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
   err  = mpiPM.decomposeDomain();
   if (err) rep.error("main: failed to decompose domain!",err);
-  grid =0;
+  class GridBaseClass *grid =0;
   //
   // Now set up the parallel uniform grid.
   //
@@ -213,7 +218,7 @@ int main(int argc, char **argv)
 
 #ifdef SERIAL
   // Now we have read in parameters from the file, so set up a grid
-  grid = 0; // global grid pointer.
+  class GridBaseClass *grid = 0; // global grid pointer.
 #ifdef GEOMETRIC_GRID
   if      (SimPM.coord_sys==COORD_CRT)
     grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype,
@@ -702,7 +707,11 @@ int equilibrate_MP(
 
 
 
-int ICsetup_base::AddNoise2Data(int n, double frac)
+int ICsetup_base::AddNoise2Data(
+        class GridBaseClass *grid,
+        int n,
+        double frac
+        )
 {
   int seed= 975;
 #ifdef PARALLEL

@@ -85,6 +85,7 @@
 /// - 2011.09.21 JM: Set the cooling to be C2 (cooling=15 in cooling.cc) for RT_TEST_PROBS
 /// - 2011.10.13 JM: Added switch in TimeUpdate_RTnew() so that if nothing is changing
 ///    much over a timestep then just do an Euler integration.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,591,1220)
 ///       which is the 'proto-solar nebula' value. The photospheric value is lower
@@ -92,13 +93,21 @@
 ///
 
 #ifdef MP_V2_AIFA
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #ifndef EXCLUDE_MPV2
 
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
-#include "mp_v2_aifa.h"
-#include "../global.h"
+#include "microphysics/mp_v2_aifa.h"
+#include "global.h"
 using namespace std;
 
 #define JM_NELEC 1.1 ///< ionised gas has 1.1 electrons per hydrogen nucleon (H+,He+, no He2+!)

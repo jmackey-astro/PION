@@ -11,11 +11,19 @@
 ///    heating rates.
 /// - 2011.04.14 JM: Fixed bugs.
 /// - 2011.06.20 JM: Got rid of non-ANSI-C exp10 functions
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "hydrogen_mp.h"
-#include "hydrogen_recomb_Hummer94.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
+#include "microphysics/hydrogen_mp.h"
+#include "microphysics/hydrogen_recomb_Hummer94.h"
+#include "global.h"
 using namespace std;
 
 

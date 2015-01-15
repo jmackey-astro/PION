@@ -9,12 +9,20 @@
 ///    Changed interface position again, so that it's always at the 
 ///    same position at y=0.5.
 ///    Added check for negative angle, which is converted to arctan(0.5).
-///
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "icgen.h"
-#include "../equations/eqns_hydro_adiabatic.h"
-#include "../equations/eqns_hydro_isothermal.h"
-#include "../equations/eqns_mhd_adiabatic.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
+#include "equations/eqns_hydro_adiabatic.h"
+#include "equations/eqns_hydro_isothermal.h"
+#include "equations/eqns_mhd_adiabatic.h"
 #include <sstream>
 
 IC_shocktube::IC_shocktube() 
@@ -254,7 +262,7 @@ int IC_shocktube::setup_data(class ReadParams *rrp,    ///< pointer to parameter
 
 int IC_shocktube::assign_data(double *left, double *right, double interface)
 {
-  int nvar=grid->Nvar();
+  int nvar=gg->Nvar();
   if(ndim<1 || ndim>3)
     rep.error("Bad ndim in setupNDWave",ndim);
   
@@ -271,8 +279,8 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
   rep.printVec("Right: ",right,nvar); 
 
   // preshock state vector.
-  class cell *cpt = grid->FirstPt();
-  double dx=2.0*grid->DX();
+  class cell *cpt = gg->FirstPt();
+  double dx=2.0*gg->DX();
   if (ndim==1){  
      do {
        // Set values of primitive variables.
@@ -283,7 +291,7 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
        else {
 	 for (int v=0;v<nvar;v++) cpt->P[v] = 0.5*(left[v]+right[v]) +0.5*(CI.get_dpos(cpt,XX)-interface)*(right[v]-left[v])/dx;
        }
-     } while ( (cpt=grid->NextPt(cpt))!=NULL);
+     } while ( (cpt=gg->NextPt(cpt))!=NULL);
   }
   else if (ndim==2 || ndim==3) {
     //
@@ -310,28 +318,28 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
 	//  for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = cpt->Ph[v] = (left[v]+right[v])/2.;
       }
       else for (int v=0;v<nvar;v++) cpt->P[v] = cpt->Ph[v] = right[v];
-    } while( (cpt=grid->NextPt(cpt))!=0);
+    } while( (cpt=gg->NextPt(cpt))!=0);
     
     // Now enforce divB=0 if needed.
     /*    if (nvar>=8) {
-	  cell *c=grid->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; do {
+	  cell *c=gg->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; do {
 	  CI.get_dpos(cpt,dpos);
 	  c->Ph[BX] =0.;
 	  c->Ph[BY] = c->P[BZ]*dpos[XX];
 	  c->Ph[BZ] = c->P[BX]*dpos[YY] - c->P[BY]*dpos[XX];
-	  }  while( (c=grid->NextPt(c))!=0);
+	  }  while( (c=gg->NextPt(c))!=0);
 	  
 	  double temp[3];
-	  c=grid->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; do {
+	  c=gg->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; do {
 	  if (!c->isedge) {
-	  grid->VecCurl(c,2,1,temp);
+	  gg->VecCurl(c,2,1,temp);
 	  cout <<"curl A=["<<temp[0]<<", "<<temp[1]<<", "<<temp[2]<<" ]"<<endl;
 	  c->P[BX] = temp[0];
 	  c->P[BY] = temp[1];
 	  c->P[BZ] = temp[2];
 	  }
-	  }  while( (c=grid->NextPt(c))!=0);
-	  c=grid->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; 
+	  }  while( (c=gg->NextPt(c))!=0);
+	  c=gg->FirstPt(); cout <<"Bx="<<c->P[BX]<<endl; 
 	  }
 	  * */
   } // ndim==2,3
@@ -349,7 +357,7 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
       SimPM.typeofbc="XNper_XPper_";
       double len=0.3, dpos[ndim], amp=1.0;
       
-      cpt = grid->FirstPt();
+      cpt = gg->FirstPt();
       do{
 	CI.get_dpos(cpt,dpos);
 	//
@@ -365,7 +373,7 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
 	  cpt->P[BZ] = cpt->Ph[BZ] = 
 	    amp*sin(2.0*M_PI*(dpos[XX]-interface)/len);
 	}
-      } while( (cpt=grid->NextPt(cpt))!=0);
+      } while( (cpt=gg->NextPt(cpt))!=0);
     } // 1D
     else if (ndim==2) {
       //rep.error("AW test not set up in 2D yet.",ndim);
@@ -373,7 +381,7 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
       SimPM.typeofbc="XNper_XPper_YNper_YPper_";
       double theta=atan(2.0), dpos[ndim], amp=0.1;
       
-      cpt = grid->FirstPt();
+      cpt = gg->FirstPt();
       do{
 	CI.get_dpos(cpt,dpos);
 	//
@@ -388,7 +396,7 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
 	cpt->P[BY] = cpt->P[VY];
 	cpt->P[BZ] = cpt->P[VZ];
 	eqn->rotateXY(cpt->P,theta);
-      } while( (cpt=grid->NextPt(cpt))!=0);
+      } while( (cpt=gg->NextPt(cpt))!=0);
     } //2D
     else rep.error("AW test not set up in 3D yet.",ndim);
   }

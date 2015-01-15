@@ -30,9 +30,18 @@
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "get_sim_info.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/get_sim_info.h"
+#include "global.h"
 #include <sstream>
 using namespace std;
 

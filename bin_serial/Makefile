@@ -311,7 +311,8 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
-IC_OBJ	= icgen.o reporting.o \
+IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
+          icgen.o \
           uniform_grid.o cell_interface.o \
           global.o readparams.o file_status.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \

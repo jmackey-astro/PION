@@ -37,7 +37,12 @@
 ///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid now.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 #include "flux_mhd_adiabatic.h"
 using namespace std;
 

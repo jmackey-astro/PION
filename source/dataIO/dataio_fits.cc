@@ -63,9 +63,19 @@
 /// - 2013.04.18 JM: wrapped column-density output in ifdef so it is
 ///    not written to file by default.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
 #ifdef FITS
-#include "dataio_fits.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "dataIO/dataio_fits.h"
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>
@@ -944,7 +954,8 @@ int DataIOFits::put_variable_into_data_array(
     vars[0] = static_cast<int>(BX);
     vars[1] = static_cast<int>(BY);
     vars[2] = static_cast<int>(BZ);
-    do {(*data)[ct] = eqn->Div(c,0,vars); ct++;} while ( (c=gp->NextPt(c))!=0 );
+    do {(*data)[ct] = eqn->Divergence(c,0,vars, gp); ct++;}
+    while ( (c=gp->NextPt(c))!=0 );
     vars = mem.myfree(vars);
   }
 

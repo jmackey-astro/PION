@@ -16,13 +16,20 @@
 ///    is lower than the SD93 curves, possibly because the Oxygen abundance is
 ///    now lower than it was 15 years ago (Lodders, 2003, ApJ).
 ///    Removed the DO_HEATING ifdef -- now we have 5 different cooling functions.
-///
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
-///
-///
-#include "mp_only_cooling.h"
-#include "../global.h"
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/mp_only_cooling.h"
+#include "global.h"
 #include <sstream>
 using namespace std;
 

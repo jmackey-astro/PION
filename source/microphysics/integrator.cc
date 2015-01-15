@@ -17,8 +17,17 @@
 /// - 2011.01.14 JM: moved to microphysics/ sub-dir.
 /// - 2013.01.11 JM: changed stepper tolerance in adaptive substepper
 ///    from 20 to 50 iterations.
-///
-#include "integrator.h"
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/integrator.h"
 #include <iostream>
 using namespace std;
 

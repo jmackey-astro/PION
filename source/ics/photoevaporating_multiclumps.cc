@@ -21,8 +21,17 @@
 /// - 2011.01.06 JM: fixed memory leak.
 /// - 2012.02.25 JM: Added optional velocity vector for clump.
 /// - 2012.04.23 JM: Added optional density gradient in ambient medium.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "icgen.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
 #include <sstream>
 #include <algorithm>
 
@@ -403,11 +412,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(class GridBaseClass *ggg,
     // centred on the source (srcpos).  cloudcentre is set by (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (amb->radial_profile!=0) {
-#ifdef GEOMETRIC_GRID
-      dist = grid->distance_vertex2cell(cloudcentre,c);
-#else  // GEOMETRIC_GRID
-      dist = GS.distance(dpos,cloudcentre,SimPM.ndim);
-#endif // GEOMETRIC_GRID
+      dist = gg->distance_vertex2cell(cloudcentre,c);
       //cout <<"dist="<<dist<<", rad="<<amb->cloudradius<<", rho="<<c->P[RO];
       //cout <<", multiplier="<<exp(amb->radial_profile*log(amb->cloudradius/dist))<<"\n";
       //

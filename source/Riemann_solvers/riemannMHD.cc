@@ -21,14 +21,17 @@
  * */
 ///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2010.12.23 JM: Moved to Riemann_solvers/ directory.
 ///   Made RS_left/right/pstar/meanp private local data to avoid
 ///   confusing inheritance issues.  Tidied up code.  Put some tests
 ///   for finiteness in RS_TESTING ifdef.
-///
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
 #include "riemannMHD.h"
 #include <iostream>

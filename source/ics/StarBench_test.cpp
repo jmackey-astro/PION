@@ -13,7 +13,15 @@
 /// - 2013.06.17 JM: Changed cooling/shadowing boundary condition
 ///    so that it is off-grid and I don't need to worry about it
 ///    in this file.
-///
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "ics/icgen.h"
 #include "coord_sys/VectorOps.h"
@@ -94,7 +102,7 @@ int IC_StarBench_Tests::setup_data(
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
   if (noise>0) {
     cout <<"\t\tNOISE: Adding random adiabatic noise at fractional level = "<<noise<<endl;
-    err+= AddNoise2Data(2,noise);
+    err+= AddNoise2Data(gg, 2,noise);
   }
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());

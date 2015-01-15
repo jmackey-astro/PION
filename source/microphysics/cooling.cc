@@ -10,18 +10,22 @@
 ///  - 2010-01-12 JM: modified cooling==5 so that it is appropriate for the Iliev et al. tests.
 ///  - 2010-01-15 JM: comments added.
 ///  - 2010-06-24 JM: Corrected KI02 function (with typos fixed from Vaz.-Sem. et al 2007.
-///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2011.01.14 JM: moved to microphysics/ sub-dir.
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
-
-#include "../global.h"
-#include "cooling.h"
+#include "global.h"
+#include "microphysics/cooling.h"
 #include <iostream>
 using namespace std;
 
@@ -324,7 +328,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      grid->PrintCell(dp.c);
+      dp.grid->PrintCell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       GS.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
@@ -377,7 +381,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      grid->PrintCell(dp.c);
+      dp.grid->PrintCell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       GS.splint(Temp, Lamb, Lam2, Nspl, log10(MaxTemp), &rate);
@@ -474,7 +478,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       //cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      //grid->PrintCell(dp.c);
+      //dp.grid->PrintCell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       GS.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
@@ -520,7 +524,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       //cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      //grid->PrintCell(dp.c);
+      //dp.grid->PrintCell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       GS.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);

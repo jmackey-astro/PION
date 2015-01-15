@@ -20,6 +20,7 @@
 #ifndef ICGEN_H
 #define ICGEN_H
 
+#include "grid/grid_base_class.h"
 #include "ics/inside_sphere.h"
 #include "global.h"
 #include "dataIO/readparams.h"
@@ -31,9 +32,11 @@ class ICsetup_base {
 			  class GridBaseClass * ///< pointer to grid
 			  )=0;
   protected:
-   int AddNoise2Data(int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
-		     double ///< Noise level (in pressure) in fractional level.
-		     );
+   int AddNoise2Data(
+        class GridBaseClass *,
+        int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
+        double ///< Noise level (in pressure) in fractional level.
+        );
    int SmoothData(int ///< Number of cell diameters to smooth over.
 		  );
    class GridBaseClass *gg; ///< pointer to grid.

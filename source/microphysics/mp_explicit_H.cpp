@@ -144,6 +144,7 @@
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 /// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
 ///    cooling rates per cell for postprocessing.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -161,18 +162,25 @@
 
 
 
-// ##################################################################
-// ##################################################################
-
-//#define BETELGEUSE
-
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
+// ##################################################################
+// ##################################################################
+
+
 #ifndef EXCLUDE_MPV3
 
+//#define BETELGEUSE
 //#define MPV3_DEBUG
 
-#include "mp_explicit_H.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/mp_explicit_H.h"
 #include "global.h"
 using namespace std;
 

@@ -10,32 +10,21 @@
  *
  *  - 2010-02-03 JM: removed unused variables from functions.
  * */
-///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2010-07-20/22 JM: Work on new dataio structure with a list of parameters
 ///    to read and write.  read/write_simulation_parameters() functions work now.
-///
 /// - 2010-09-03 JM: analysis software tried to add new RSP source
 ///    every read, so I changed the function to only add sources if
 ///    the source list is empty.
-///
 /// - 2010.10.01 JM: Spherical coordinates added.
 ///    Got rid of testing myalloc/myfree commands.
-///
 /// - 2010.10.05 JM: Added an extra parameter "Rstar" for stellar winds.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
-///
 /// - 2010.11.03 JM: New Ndigits variable added.  Removed 'endl' statements.
-///
 /// - 2010.11.21 JM: Added more viscosity flags for dataio_text
-///
 /// - 2011.01.06 JM: New stellar wind interface.
-///
 /// - 2011.02.15 JM: Added new stellar wind parameters for evolving wind sources.
-///
 /// - 2011.02.24 JM: Added read/write for multiple radiation sources, with
 ///    additional parameters. Much simplified RT I/O by using new struct SimPM.RS.
 /// - 2011.02.25 JM: got rid of HCORR ifdef wrapper.
@@ -57,12 +46,15 @@
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.09.05 JM: changed logic of writing T/Eint in ascii data.
 /// - 2013.09.16 JM: Increased precision of ascii data to 14 digits.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-//
-// These tell code what to compile and what to leave out.
-//
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "dataIO/dataio.h"
 #include "dataIO/readparams.h"
@@ -2032,8 +2024,9 @@ int dataio_text::get_parameters(string pfile)
 
 
 
-int dataio_text::output_ascii_data(string outfile
-           )
+int dataio_text::output_ascii_data(
+        string outfile
+        )
 {
   ofstream outf(outfile.c_str());
   if(!outf.is_open()) 
@@ -2078,7 +2071,7 @@ int dataio_text::output_ascii_data(string outfile
       b2 = cpt->P[BX]*cpt->P[BX] +cpt->P[BY]*cpt->P[BY] +cpt->P[BZ]*cpt->P[BZ];
       //       outf <<"  "<< cpt->P[BX] <<"  "<< cpt->P[BY] <<"  "<< cpt->P[BZ] <<"  ";
       outf <<"  "<< cpt->P[PG]+b2/2.;
-      outf <<"  "<< eqn->Div(cpt,0,vars);
+      outf <<"  "<< eqn->Divergence(cpt,0,vars,gp);
     }
 #ifdef RT_TESTING_OUTPUTCOL
     if (RT) {

@@ -16,6 +16,7 @@
 /// - 2011.10.13 JM: Debugging.
 /// - 2011.10.17 JM: Debugging. (2011.10.22 also).
 /// - 2013.02.14 JM: Tidied up file.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
 
 #include "defines/functionality_flags.h"
@@ -24,9 +25,14 @@
 
 //#define MPV3_DEBUG
 
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
 #include "microphysics/mp_implicit_H.h"
 #include "global.h"
-
 using namespace std;
 
 //

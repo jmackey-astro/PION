@@ -7,54 +7,50 @@
 /// for writing silo files.  It uses the PMPIO interface.  Note the 
 /// #def variable SILO must be set in the Makefile.
 ///
+/// Modifications:
 /// - 2010-02-03 JM: changed a few things to fix compiler warnings;
 ///   esp. tests for equality.
-///
 ///  - 2010-02-04 JM: Added multimesh-adjacency object write so that I
 ///    can get streamlines to cross boundaries when plotting with Visit.
-///
 ///  - 2010-02-05 JM: multimesh-adjacency and MRG tree connectivity
 ///    doesn't work with VisIt.  Very annoying.
-///
 ///  - 2010-02-06 JM: Found a way to get multimesh-adjacency
 ///    connectivity working with VisIt.  Still no streamlines across
 ///    domains, but countours match (in 2D, 3D has a bug...)
-///
 ///  - 2010-02-17 JM: Set numfiles to make files with max. size of
 ///    about 1GB.  For MHD there are about 120bytes per cell in the
 ///    file.
-///
 ///  - 2010-04-11 JM: parallel class gets its own
 ///  setup_write_variables() class so that it can save disk space by
 ///  only writing primitive variables. (tidied up comments too).
-///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2010-04-25 JM: renamed parallel choose_filename to choose_pllel_filename()
-///
 /// - 2010-07-20/21 JM: Work on new dataio structure: replaced dbfile with dp_ptr
 ///    where appropriate.  Need a class pointer for the generic I/O interface.
-///
 /// - 2010.07.23 JM: removed obselete read_header(),
 ///    write_header() functions.
-///
 /// - 2010.10.01 JM: Spherical coordinates added.
-///
 /// - 2010.11.03 JM: Removed MM/Testing ifdefs for memory management
 ///    Also added Ndigits for width of counter in filename.
 ///    Also removed endl for c-style end of lines to avoid flushing o/p.
-///
 /// - 2010.11.19 JM: Got rid of testing myalloc() myfree() functions.
-///
 /// - 2011.03.02 JM: Added ability to write multiple column density data.
 ///                  Improved tracer variable handling (MAX_NVAR possible now).
-///
 /// - 2011.03.21 JM: Updated column-density variables for new cell interface functions.
 /// - 2011.03.22 JM: Removed setup_write_variables() function -- now use serial version.
 /// - 2011.10.24 JM: wrapped most of the info-reporting with ifdef-testing.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 ///
 #ifdef SILO
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #ifndef PARALLEL
 #error "PARALLEL not defined!  don't compile dataio_silo_MPI.cc without it!"
