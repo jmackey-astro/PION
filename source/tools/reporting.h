@@ -7,6 +7,7 @@
 ///
 /// Modifications:
 /// - 2015.01.08 JM: created file, moved class from global.h
+/// - 2015.01.16 JM: extra flush/endl statements in error().
 
 
 #ifndef REPORTING_H
@@ -54,8 +55,10 @@ class reporting {
         )
   {
   cerr <<msg<<"\t error code: "<<err<<" ...exiting.\n";
-  cerr <<"\t timestep="<<SimPM.timestep<<" and simtime="<<SimPM.simtime<<endl;
-  flush(cout);
+  cerr <<"\t timestep="<<SimPM.timestep;
+  cerr <<" and simtime="<<SimPM.simtime<<"\n";
+  cout.flush(); cout << endl; // try to write all to stdout/file.
+  cerr.flush(); cerr << endl; // try to write all to stderr.
   // set maxtime and then Finalise will output data in the current state.
   SimPM.maxtime=true;
   //if (integrator) {delete integrator; integrator=0;}
