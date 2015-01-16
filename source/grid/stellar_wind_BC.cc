@@ -11,16 +11,13 @@
 /// - 2010.10.05 JM: Added spherical coordinate possibility.  Also
 ///    changed pressure calculation to calculate it at the stellar
 ///    radius and scale outwards assuming adiabatic expansion.
-///
 /// - 2010.12.04 JM: Added geometry-dependent grids, in a
 ///   GEOMETRIC_GRID ifdef.  So VX,VY,VZ are now set by using calls to
 ///   distance() functions in the grid class.  It doesn't seem to help
 ///   much.
 /// - 2011.01.07 JM: I debugged the geometric grid functions, and now
 ///   it works very well!  I have a nice spherical expansion.
-///
 /// - 2011.01.18 JM: Added #def which sets pressure so that Tmin=10K
-///
 /// - 2011.02.14 JM: Added stellar_wind_evolution class for winds with 
 ///    evolving properties, determined by a stellar evolution model, and
 ///    fitted with spline functions.
@@ -52,7 +49,8 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "stellar_wind_BC.h"
+#include "grid/grid_base_class.h"
+#include "grid/stellar_wind_BC.h"
 #include <sstream>
 using namespace std;
 

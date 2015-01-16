@@ -138,7 +138,8 @@
 ///    setup functions can call MP->Set_Temp().
 /// - 2013.04.18 JM: Removed NEW_METALLICITY flag.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
-/// - 2015.01.10 JM: New include statements for new file structure.
+/// - 2015.01.(10-16) JM: New include statements for new file
+///    structure, and non-global grid class.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -272,7 +273,7 @@ int IntUniformFV::Init(
       int typeOfFile,
       int narg,
       string *args,
-      class GridBaseClass *grid
+      class GridBaseClass **grid
       )
 {
 #ifdef TESTING
@@ -315,8 +316,10 @@ int IntUniformFV::Init(
   rep.errorTest("(INIT::override_params) err!=0 Something went bad",0,err);
   
   // Now set up the grid structure.
-  err = setup_grid(grid);
-  err += get_cell_size(grid);
+  cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
+  err = setup_grid((grid));
+  cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
+  err += get_cell_size(*grid);
   if (err!=0) {
     cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
     return(1);
@@ -338,13 +341,13 @@ int IntUniformFV::Init(
   //
   // Now assign data to the grid, either from file, or via some function.
   //
-  err = dataio->ReadData(infile,grid);
+  err = dataio->ReadData(infile, *grid);
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
   //
   // Set Ph=P in every cell.
   //
-  cell *cpt = grid->FirstPt();
-  do {for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];} while ((cpt=grid->NextPt(cpt))!=0);
+  cell *cpt = (*grid)->FirstPt();
+  do {for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];} while ((cpt=(*grid)->NextPt(cpt))!=0);
 
   // If we are to add noise to data, do it.
 //  if (SimPM.addnoise >0) {
@@ -355,7 +358,7 @@ int IntUniformFV::Init(
 
   
   // Assign boundary conditions to boundary points.
-  err = boundary_conditions(grid);
+  err = boundary_conditions(*grid);
   if (err!=0){cerr<<"(INIT::boundary_conditions) err!=0 Something went bad"<<"\n";return(1);}
 
 
@@ -363,7 +366,7 @@ int IntUniformFV::Init(
 #ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start? \n";
 #endif
-  err = ready_to_start(grid);
+  err = ready_to_start(*grid);
   rep.errorTest("(INIT::ready_to_start) err!=0 Something went bad",0,err);
 
 #ifdef TESTING
@@ -416,7 +419,7 @@ int IntUniformFV::Init(
 
   if (SimPM.timestep==0) {
     cout << "(INIT) Outputting initial data.\n";
-    err=output_data(grid);
+    err=output_data(*grid);
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
   }
@@ -1021,11 +1024,14 @@ void IntUniformFV::setup_cell_extra_data()
 
 
 int IntUniformFV::setup_grid(
-      class GridBaseClass *grid 
+      class GridBaseClass **grid
       )
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Setting up computational grid --------------\n";
+#ifdef TESTING
+  cout <<"Init::setup_grid: &grid="<< grid<<", and grid="<<*grid<<"\n";
+#endif // TESTING
   if (SimPM.gridType!=1) {
     rep.warning("gridType not set correctly: Only know Uniform finite\
                  volume grid, so resetting to 1!",1,SimPM.gridType);
@@ -1045,22 +1051,22 @@ int IntUniformFV::setup_grid(
 #ifdef TESTING
   cout <<"(UniformFV::setup_grid) Setting up grid...\n";
 #endif
-  if (grid) rep.error("Grid already set up!",grid);
+  if (*grid) rep.error("Grid already set up!",*grid);
 
   if      (SimPM.coord_sys==COORD_CRT)
-    grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
   else if (SimPM.coord_sys==COORD_CYL)
-    grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
   else if (SimPM.coord_sys==COORD_SPH)
-    grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
-  if (grid==0) rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
+  if (*grid==0) rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", *grid);
 #ifdef TESTING
-  cout <<"(UniformFV::setup_grid) Done. g="<<grid<<"\n";
-  cout <<"DX = "<<grid->DX()<<"\n";
-  dp.grid = grid;
+  cout <<"(UniformFV::setup_grid) Done. &grid="<< grid<<", and grid="<<*grid<<"\n";
+  cout <<"DX = "<<(*grid)->DX()<<"\n";
+  dp.grid = (*grid);
 #endif
   cout <<"------------------------------------------------------\n\n";
 
@@ -2195,7 +2201,10 @@ int IntUniformFV::Finalise(
   cout <<"(IntUniformFV::Finalise) FINALISING SIMULATION."<<"\n";
   err += check_energy_cons(grid);
   err+= output_data(grid);
-  if (err!=0){cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";return(1);}
+  if (err!=0){
+    cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";
+    return(1);
+  }
   cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
 #ifdef TESTING
   cout <<"(IntUniformFV::Finalise) DONE.\n";

@@ -679,10 +679,10 @@ class IntegratorBaseFV
   public:
   virtual ~IntegratorBaseFV() {}
   virtual int Init(string, ///< Name of input file.
-        int,    ///< Type of File (1=ASCII, 2=FITS, 3=fitstable, 4=fits and ascii, ...).
+        int,    ///< Type of File (1=ASCII, 2=FITS, 3=fitstable, 5=SILO).
         int,    ///< Number of command-line arguments.
         string *, ///< Pointer to array of command-line arguments.
-        class GridBaseClass *  ///< pointer to computational grid.
+        class GridBaseClass **  ///< pointer to address of grid pointer.
         ) =0;
   virtual int Time_Int(
       class GridBaseClass * 

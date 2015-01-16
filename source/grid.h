@@ -87,7 +87,7 @@ class IntUniformFV : public IntegratorBaseFV
         int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
         int,      ///< Number of command-line arguments.
         string *, ///< Pointer to array of command-line arguments.
-        class GridBaseClass *  ///< pointer to computational grid.
+        class GridBaseClass **  ///< address of pointer to grid.
         );
 
   ///
@@ -99,7 +99,7 @@ class IntUniformFV : public IntegratorBaseFV
   /// all in a loop which runs until end-of-sim is reached.
   ///
   virtual int Time_Int(
-        class GridBaseClass * 
+        class GridBaseClass *  ///< pointer to grid.
         );
 
   ///
@@ -107,7 +107,7 @@ class IntUniformFV : public IntegratorBaseFV
   /// This function finished the simulation gracefully (hopefully!).
   ///
    int Finalise(
-        class GridBaseClass * 
+        class GridBaseClass *  ///< pointer to grid.
         );
 
   ///
@@ -121,7 +121,7 @@ class IntUniformFV : public IntegratorBaseFV
   /// UniformGrid class -- uniform, cartesian, finite volume grid.
   ///
   virtual int setup_grid(
-        class GridBaseClass *  ///< pointer to computational grid.
+        class GridBaseClass **  ///< address of pointer to computational grid.
         );
 
   ///
@@ -616,7 +616,9 @@ class ParallelIntUniformFV : public IntUniformFV
   /// I need to define the domain of my grid, and then pass the appropriate
   /// parameters to the UniformGrid class.
   ///
-   int setup_grid();
+  int setup_grid(
+        class GridBaseClass **  ///< address of pointer to computational grid.
+        );
 
   ///
   /// Decide if I need to setup RT class, and do it if i need to.

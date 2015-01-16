@@ -46,7 +46,8 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.08 JM: Moved grid definition to this file from global.h
 ///    and added link to reporting class.
-/// - 2015.01.10 JM: Added sim_constants.h include statement.
+/// - 2015.01.(10-16) JM: New include statements for new file
+///    structure, and non-global grid class.
 
 #include <iostream>
 using namespace std;
@@ -142,7 +143,7 @@ int main(int argc, char **argv)
     rep.error("(pion) Couldn't initialise IntUniformFV sim_control", sim_control);
 
   // inputs are infile_name, infile_type, nargs, *args[]
-  err = sim_control->Init(argv[1], ft, argc, args, grid);
+  err = sim_control->Init(argv[1], ft, argc, args, &grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
     delete sim_control;
@@ -152,19 +153,19 @@ int main(int argc, char **argv)
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
     delete sim_control;
+    delete grid;
     return 1;
   }
   err+= sim_control->Finalise(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
     delete sim_control;
+    delete grid;
     return 1;
   }
 
   delete sim_control; sim_control=0;
-
-  if(grid==0) rep.error("NO GRID!", grid);
-  delete grid; grid=0;
+  if (grid) {delete grid; grid=0;}
 
   delete [] args; args=0;
   
