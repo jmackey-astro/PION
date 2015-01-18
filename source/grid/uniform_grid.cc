@@ -1525,7 +1525,7 @@ int UniformGrid::BC_update_STWIND(
   int err=0;
   for (int id=0;id<Wind->Nsources();id++) {
     //cout <<" updating source "<<id<<"\n";
-    err += Wind->set_cell_values(id,SimPM.simtime);
+    err += Wind->set_cell_values(this, id,SimPM.simtime);
     //cout <<" finished source "<<id<<"\n";
   }
 

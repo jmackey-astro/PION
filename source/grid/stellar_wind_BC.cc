@@ -445,9 +445,10 @@ int stellar_wind::get_num_cells(const int id ///< src id
 
 
 int stellar_wind::set_cell_values(
-          const int id,  ///< src id
-          const double t ///< simulation time
-          )
+        class GridBaseClass *,
+        const int id,  ///< src id
+        const double t ///< simulation time
+        )
 {
   if (id<0 || id>=nsrc)
     rep.error("bad src id",id);
@@ -1060,7 +1061,7 @@ int stellar_wind_evolution::set_cell_values(
   // functions.  If not, then we ignore it and return.
   //
   if (wd->is_active) {
-    err += stellar_wind::set_cell_values(id,t_now);
+    err += stellar_wind::set_cell_values(grid, id,t_now);
   }
 
   return err;

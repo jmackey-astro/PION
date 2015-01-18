@@ -159,6 +159,7 @@ class stellar_wind {
   /// or return a positive value if the cell is not in the list.
   ///
   virtual int set_cell_values(
+      class GridBaseClass *,
       const int, ///< src id
       const double ///< simulation time
       );
