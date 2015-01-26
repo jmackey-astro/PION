@@ -505,14 +505,9 @@ class ParallelParams {
   ///
   void get_abutting_domains(std::vector<int> & ///< write list to this vector.
           );
-  /** \brief Set the maximum runtime to a new value. Should be set in main(). */
-  void set_max_walltime(double ///< New Max. runtime in seconds.
-      );
-  /** \brief Get the maximum runtime in seconds. */
-  double get_max_walltime();
-  //
-  // Returns the ix array for any requested rank.
-  //
+  ///
+  /// Returns the ix array for any requested rank.
+  ///
   void get_domain_ix(const int, ///< rank ix requested for.
          int *      ///< array to put ix into.
          );
@@ -520,8 +515,7 @@ class ParallelParams {
   int ix[MAX_DIM];  ///< this proc's position in the block of domains (zero offset)
   int nx[MAX_DIM];  ///< size of block of domains in each direction. (one block = one unit).
   std::vector<int> full_ngb_list; ///< list of abutting domains.
-  double max_walltime; ///< Max. walltime to run for, in seconds, after which we output data and finish.
-  /** \brief Celled by decomposeDomain() to set neighbouring processor ids.
+  /** \brief Called by decomposeDomain() to set neighbouring processor ids.
    * 
    * This works if processors are ranked from zero to n-1 in integer steps.
    * If a subdomain is on the full domain boundary, the processor neighbour
@@ -690,6 +684,19 @@ class IntegratorBaseFV
   virtual int Finalise(
       class GridBaseClass * 
       ) =0;
+  ///
+  /// Set the maximum runtime to a new value. Should be set in main()
+  ///
+  void set_max_walltime(
+        double ///< New Max. runtime in hours.
+        )=0;
+  ///
+  /// Get the maximum runtime in seconds.
+  ///
+  double get_max_walltime()=0;
+  //
+  // Returns the ix array for any requested rank.
+  //
 };
 /************************* GRID METHODS **************************/
 

@@ -384,7 +384,7 @@ reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 
-main.o:         main.cc grid.h ${GLOBAL}
+main.o:         main.cpp grid.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}
 
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}

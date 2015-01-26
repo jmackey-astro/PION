@@ -393,7 +393,7 @@ clean:
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-mainMPI.o: mainMPI.cc grid.h ${GLOBAL} comms.h
+mainMPI.o: mainMPI.cpp grid.h ${GLOBAL} comms.h
 global.o: global.cc ${GLOBAL}
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 

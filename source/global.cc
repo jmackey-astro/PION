@@ -538,23 +538,11 @@ ParallelParams::ParallelParams()
    ReadSingleFile  =true; ///< If the ICs are in a single file, set this to true.
    WriteSingleFile =false; ///< If you want all the processors to write to one file, set this (BUGGY!)
    WriteFullImage  =false; ///< If you want multiple fits files, but each one is the full domain size (bad!), set this.
-   max_walltime = 8.64e6; ///< default runtime is 10 days. Can be reset at commandline.
 }
 
 ParallelParams::~ParallelParams() {
   if (ngbprocs!=0) ngbprocs = mem.myfree(ngbprocs);
   return;
-}
-
-double ParallelParams::get_max_walltime()
-{return max_walltime;}
-
-void ParallelParams::set_max_walltime(double t ///< New Max. runtime in seconds.
-				      )
-{
-  cout <<"\tResetting max. walltime from "<<max_walltime;
-  max_walltime = t;
-  cout <<" to new value: "<<max_walltime<<"\n";
 }
 
 int ParallelParams::decomposeDomain()

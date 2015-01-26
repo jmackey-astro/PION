@@ -1,5 +1,5 @@
 ///
-/// \file main.cc
+/// \file main.cpp
 /// 
 /// \brief Main program which sets up a uniform grid and runs the simulation.
 /// 

@@ -230,6 +230,7 @@ IntUniformFV::IntUniformFV()
   FVI_heating_srcs.clear();
   FVI_ionising_srcs.clear();
   FVI_need_column_densities_4dt = false;
+  max_walltime = 1.0e100;
 }
 
 
@@ -257,6 +258,31 @@ IntUniformFV::~IntUniformFV()
   cout << "(IntUniformFV::Destructor) Done." <<"\n";
 #endif
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+double IntUniformFV::get_max_walltime()
+{
+  return max_walltime;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+void IntUniformFV::set_max_walltime(
+        double t ///< New Max. runtime in seconds.
+        )
+{
+  cout <<"\tResetting max. walltime from "<<max_walltime;
+  max_walltime = t;
+  cout <<" to new value: "<<max_walltime<<"\n";
+}
+
 
 /*****************************************************************/
 /********************* SIM. INITIALISATION ***********************/

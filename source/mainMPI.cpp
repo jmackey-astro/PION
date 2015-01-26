@@ -1,4 +1,4 @@
-/// \file mainMPI.cc
+/// \file mainMPI.cpp
 /// 
 /// \brief Main program which sets up a Parallel uniform grid and runs the simulation.
 /// 
@@ -43,6 +43,7 @@
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2013.01.17 JM: Made simulation initialisation less verbose.
 /// - 2015.01.08 JM: Moved grid definition to this file from global.h
+/// - 2015.01.26 JM: updates, moving mpiPM from global to sim_control
 
 #include <iostream>
 #include <sstream>
@@ -77,6 +78,9 @@ int main(int argc, char **argv)
 
   int err = COMM->init(&argc,&argv);
   //cout <<"argc="<<argc<<"\n";
+  
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
 
   if (argc<4) {
     print_command_line_options(argc,argv);
@@ -96,33 +100,16 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      ostringstream path; path << outpath <<"_"<<mpiPM.myrank<<"_";
+      ostringstream path; path << outpath <<"_"<<myrank<<"_";
       outpath = path.str();
-      if (mpiPM.myrank==0) {
+      if (myrank==0) {
         cout <<"\tRedirecting stdout to "<<outpath<<"info.txt"<<"\n";
       }
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }
 
-  //
-  // Reset max. walltime to run the simulation for, if needed.
-  //
-  for (int i=0;i<argc; i++) {
-    if (args[i].find("maxwalltime=") != string::npos) {
-      double tmp = atof((args[i].substr(12)).c_str());
-      if (isnan(tmp) || isinf(tmp) || tmp<0.0)
-	rep.error("Don't recognise max walltime as a valid runtime!",tmp);
-      mpiPM.set_max_walltime(tmp);
-      if (mpiPM.myrank==0) {
-        cout <<"\tResetting MAXWALLTIME to ";
-        cout <<mpiPM.get_max_walltime()<<" seconds, or ";
-        cout <<mpiPM.get_max_walltime()/3600.0<<" hours.\n";
-      }
-    }
-  }
-
-  cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+  cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   for (int i=0;i<argc;i++) {
     cout <<"arg "<<i<<" = "<<args[i]<<"\n";
   }
@@ -168,32 +155,55 @@ int main(int argc, char **argv)
   if (!sim_control)
     rep.error("(PION) Couldn't initialise ParallelIntUniformFV sim_control", sim_control);
 
-  err = sim_control->Init(argv[1], ft, argc, args);
+  //
+  // Reset max. walltime to run the simulation for, if needed.
+  // Input should be in hours.
+  //
+  for (int i=0;i<argc; i++) {
+    if (args[i].find("maxwalltime=") != string::npos) {
+      double tmp = atof((args[i].substr(12)).c_str());
+      if (isnan(tmp) || isinf(tmp) || tmp<0.0)
+	rep.error("Don't recognise max walltime as a valid runtime!",tmp);
+
+      sim_control->set_max_walltime(tmp*3600.0);
+
+      if (mpiPM.myrank==0) {
+        cout <<"\tResetting MAXWALLTIME to ";
+        cout <<sim_control->get_max_walltime()<<" seconds, or ";
+        cout <<sim_control->get_max_walltime()/3600.0<<" hours.\n";
+      }
+    }
+  }
+  
+  err = sim_control->Init(argv[1], ft, argc, args, &grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
     return(1);
   }
-  err+= sim_control->Time_Int();
+  err+= sim_control->Time_Int(grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
     return(1);
   }
-  err+= sim_control->Finalise();
+  err+= sim_control->Finalise(grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
+    delete grid;
     return(1);
   }
 
-  delete sim_control; sim_control=0;
   
+  delete sim_control; sim_control=0;
+  if (grid) {delete grid; grid=0;}
+  delete [] args; args=0;
+
   COMM->finalise();
   cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
   delete COMM; COMM=0;
 
-  delete [] args; args=0;
   return(0);
 }
 

@@ -111,6 +111,17 @@ class IntUniformFV : public IntegratorBaseFV
         );
 
   ///
+  /// Set the maximum runtime to a new value. Should be set in main()
+  ///
+  void set_max_walltime(
+        double ///< New Max. runtime in seconde.
+        );
+  ///
+  /// Get the maximum runtime in seconds.
+  ///
+  double get_max_walltime();
+
+  ///
   /// Setup cell extra data through the cell_interface class CI.
   ///
   void setup_cell_extra_data();
@@ -148,6 +159,12 @@ class IntUniformFV : public IntegratorBaseFV
   //---------------------------------------
   // Data Variables common to all implementations.
   //
+
+  ///
+  /// Max. walltime to run for, in seconds, after which we output
+  /// data and finish.
+  ///
+  double max_walltime;
 
   ///
   /// pointer to class for reading/writing data.

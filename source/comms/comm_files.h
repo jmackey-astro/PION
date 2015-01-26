@@ -11,6 +11,7 @@
  */ 
 /// Modifications:
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
+/// - 2015.01.26 JM: added get_rank_nproc() function.
 ///
 
 #ifdef PARALLEL
@@ -58,6 +59,14 @@ class comm_files : public comms_base {
   int init(int *, ///< number of program arguments.
 	   char *** ///< character list of arguments.
 	   );
+
+  ///
+  /// Get this process's rank, and total number of processes.
+  ///
+  int comm_mpi::get_rank_nproc(
+        int *, ///< rank.
+	int *   ///< nproc
+	);
 
   /** \brief Tell other processes that I am exiting, and either exit, or wait for the
    * others and then exit. */
