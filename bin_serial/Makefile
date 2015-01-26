@@ -286,7 +286,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         main.o \
         uniform_grid.o cell_interface.o \
-        gridMethods.o global.o \
+        sim_control.o global.o \
         time_integrator.o calc_timestep.o \
 	VectorOps.o VectorOps_spherical.o \
 	eqns_base.o solver_eqn_base.o \
@@ -384,7 +384,7 @@ reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 
-main.o:         main.cpp grid.h ${GLOBAL}
+main.o:         main.cpp sim_control.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}
 
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
@@ -558,15 +558,15 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} uniform_grid.h
 
-gridMethods.o:  gridMethods.cc grid.h ${GLOBAL} solver_eqn_base.h \
+sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
 		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \
 		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
                 mp_only_cooling.h mp_explicit_H.h mp_implicit_H.h
 
 # functions for stepping forward in time
-time_integrator.o: time_integrator.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 # functions for calculating the timestep
-calc_timestep.o: calc_timestep.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 ########################
 # Data I/O

@@ -46,7 +46,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.08 JM: Moved grid definition to this file from global.h
 ///    and added link to reporting class.
-/// - 2015.01.(10-16) JM: New include statements for new file
+/// - 2015.01.(10-26) JM: New include statements for new file
 ///    structure, and non-global grid class.
 
 #include <iostream>
@@ -77,7 +77,7 @@ using namespace std;
 //
 // simulation control toolkit class.
 //
-#include "grid.h"
+#include "sim_control.h"
 
 
 int main(int argc, char **argv)
@@ -136,11 +136,10 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class IntegratorBaseFV *sim_control = 0;
-
-  sim_control = new class IntUniformFV();
+  class sim_control_fixedgrid *sim_control = 0;
+  sim_control = new class sim_control_fixedgrid();
   if (!sim_control)
-    rep.error("(pion) Couldn't initialise IntUniformFV sim_control", sim_control);
+    rep.error("(pion) Couldn't initialise sim_control_fixedgrid", sim_control);
 
   // inputs are infile_name, infile_type, nargs, *args[]
   err = sim_control->Init(argv[1], ft, argc, args, &grid);

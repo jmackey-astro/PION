@@ -36,7 +36,7 @@
 /// - 2013.06.13 JM: Added StarBench_TremblinCooling test.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2014.07.11 JM: Added isothermal noise perturbation option.
-/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.01.(15-26) JM: Added new include statements for new PION version.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -63,7 +63,10 @@
 //
 // simulation control toolkit class.
 //
-#include "grid.h"
+#include "sim_control.h"
+#ifdef PARALLEL
+#include "sim_control_MPI.h"
+#endif
 
 
 #include "microphysics/microphysics_base.h"

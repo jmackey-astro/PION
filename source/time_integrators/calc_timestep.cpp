@@ -129,7 +129,6 @@
 /// - 2012.01.23 JM: Added ifdefs for microphysics classes.
 /// - 2012.07.24 JM: Changed time-update to improve stability (photoionisation
 ///    models with R-type I-fronts were developing ripples/waves in solution).
-///
 /// - 2012.08.05 JM: Moved timestep-calculation functions from gridMethods.cc
 ///    to time_integrators/calc_timestep.cpp.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
@@ -137,6 +136,7 @@
 ///    variables, so heating/ionising source syntax has changed.
 /// - 2015.01.13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
+/// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -146,7 +146,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "grid.h"
+#include "sim_control.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
 #include "spatial_solvers/solver_eqn_base.h"
@@ -173,7 +173,7 @@ using namespace std;
 
 
 #ifdef THERMAL_CONDUCTION
-double IntUniformFV::calc_conduction_dt_and_Edot()
+double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
 {
   //
   // First we need to set Edot() in every cell.  This is stored in
@@ -222,7 +222,7 @@ double IntUniformFV::calc_conduction_dt_and_Edot()
 // ##################################################################
 
 
-void IntUniformFV::timestep_checking_and_limiting()
+void sim_control_fixedgrid::timestep_checking_and_limiting()
 {
   //
   // If the timestep is less than the minimum allowed, report an error
@@ -273,7 +273,7 @@ void IntUniformFV::timestep_checking_and_limiting()
 // ##################################################################
 
 
-double IntUniformFV::calc_dynamics_dt(
+double sim_control_fixedgrid::calc_dynamics_dt(
         class GridBaseClass *grid
         )
 {
@@ -349,7 +349,7 @@ double IntUniformFV::calc_dynamics_dt(
 // ##################################################################
 
 
-double IntUniformFV::calc_microphysics_dt(
+double sim_control_fixedgrid::calc_microphysics_dt(
         class GridBaseClass *grid
         )
 {
@@ -411,7 +411,7 @@ double IntUniformFV::calc_microphysics_dt(
 // ##################################################################
 
 
-double IntUniformFV::get_mp_timescales_no_radiation(
+double sim_control_fixedgrid::get_mp_timescales_no_radiation(
         class GridBaseClass *grid
         )
 {
@@ -420,7 +420,7 @@ double IntUniformFV::get_mp_timescales_no_radiation(
   // paranoid checking...
   //
   if (SimPM.EP.MP_timestep_limit==0) {
-    cout <<"IntUniformFV::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
+    cout <<"sim_control_fixedgrid::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
     return -1.0;
   }
 #endif // TESTING
@@ -511,7 +511,7 @@ double IntUniformFV::get_mp_timescales_no_radiation(
 // ##################################################################
 
 
-double IntUniformFV::get_mp_timescales_with_radiation(
+double sim_control_fixedgrid::get_mp_timescales_with_radiation(
         class GridBaseClass *grid
         )
 {
@@ -520,10 +520,10 @@ double IntUniformFV::get_mp_timescales_with_radiation(
   // paranoid checking...
   //
   if (SimPM.EP.MP_timestep_limit==0) {
-    cout <<"IntUniformFV::get_mp_timescales_with_radiation() called, but no MP-dt limiting!\n";
+    cout <<"sim_control_fixedgrid::get_mp_timescales_with_radiation() called, but no MP-dt limiting!\n";
     return -1.0;
   }
-  if (!RT) rep.error("Called IntUniformFV::get_mp_timescales_with_radiation() but RT=0",1);
+  if (!RT) rep.error("Called sim_control_fixedgrid::get_mp_timescales_with_radiation() but RT=0",1);
 #endif // TESTING
 
   //

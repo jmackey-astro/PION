@@ -43,7 +43,7 @@
 #    Added file_status.o/cpp object file. Added NEW_METALLICITY flag.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
 # - 2014.04.14 JM: Section for Judge at JSC.
-#
+# - 2015.01.26 JM: Edited for new filenames and code structure.
 ###
 
 ############################
@@ -301,13 +301,13 @@ endif
 
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
-OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
+OBJECTS = mainMPI.o uniform_grid.o sim_control.o global.o                      \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
         file_status.o                                                          \
-	dataio_silo_MPI.o gridMethodsMPI.o uniform_grid_pllel.o                \
+	dataio_silo_MPI.o sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
 	comm_mpi.o comm_files.o                                                \
 	stellar_wind_BC.o                                                      \
@@ -393,20 +393,20 @@ clean:
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-mainMPI.o: mainMPI.cpp grid.h ${GLOBAL} comms.h
+mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
 global.o: global.cc ${GLOBAL}
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 
-gridMethods.o:  gridMethods.cc grid.h ${GLOBAL} solver_eqn_base.h microphysics.h \
+sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h microphysics.h \
  dataio.h dataio_silo.h dataio_fits.h microphysics_lowZ.h \
  microphysics_base.h mp_only_cooling.h mp_v2_aifa.h
 
 # functions for stepping forward in time
-time_integrator.o: time_integrator.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 # functions for calculating the timestep
-calc_timestep.o: calc_timestep.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
-gridMethodsMPI.o: gridMethodsMPI.cc grid.h ${GLOBAL} comms.h
+sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h sim_control.h ${GLOBAL} comms.h
 
 uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
 

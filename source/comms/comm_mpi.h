@@ -1,15 +1,14 @@
-/** \file comm_mpi.h
- *
- * \brief Contains comms class for multi-process communication using 
- * the Message Passing Interface (MPI).
- *
- * \author Jonathan Mackey
- * \date 2009-01-23.
- */ 
+/// \file comm_mpi.h
+///
+/// \brief Contains comms class for multi-process communication using 
+/// the Message Passing Interface (MPI).
+///
+/// \author Jonathan Mackey
+/// \date 2009-01-23.
+/// 
 /// Modifications:
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
 /// - 2015.01.26 JM: added get_rank_nproc() function.
-///
 
 #ifdef PARALLEL
 #ifdef USE_MPI
@@ -60,9 +59,9 @@ class comm_mpi : public comms_base {
   ///
   /// Get this process's rank, and total number of processes.
   ///
-  int comm_mpi::get_rank_nproc(
+  int get_rank_nproc(
         int *, ///< rank.
-	int *   ///< nproc
+	int *  ///< nproc
 	);
 
   /** \brief Tell other processes that I am exiting, and either exit, or wait for the

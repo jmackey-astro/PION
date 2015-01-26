@@ -1,17 +1,18 @@
-/** \file comm_files.cc
- *
- * \brief Contains comms class for multi-process communication using 
- * files (no MPI!).
- *
- * \author Jonathan Mackey
- * \date 2009-01-27.
- */ 
+/// \file comm_files.cc
 ///
+/// \brief Contains comms class for multi-process communication using 
+/// files (no MPI!).
+///
+/// \author Jonathan Mackey
+/// \date 2009-01-27.
+/// 
 /// Modifications:\n
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays,
 ///    but it is not yet implemented.  If I ever need it, I will write it...
-/// - 2015.01.26 JM: Removed mpiPM (no longer global).
+/// - 2015.01.26 JM: Removed mpiPM (no longer global), added COMM
+///    setup, and added get_rank_nproc() function
+
 #ifdef PARALLEL
 #ifdef USE_FILE_COMMS
 
@@ -25,6 +26,8 @@
 #include <sstream>
 using namespace std;
 
+
+class comms_base *COMM = new comm_files ();
 
 
 // ##################################################################

@@ -1,45 +1,36 @@
-/** \file gridMethodsMPI.cc
- * 
- * \brief Parallel Grid Methods Class Member Function definitions.
- * 
- * \author Jonathan Mackey
- * 
- * This file contains the definitions of the member functions for ParallelIntUniformFV
- * class, which is a modification of the basic 1st/2nd order Finite Volume Solver according to
- * the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
- * 
- * Modifications:
- *  - 2007-10-11 Started writing file.
- *  - 2007-11-11 Basically working with uniform grid and all sorts of boundaries.
- *  - 2010-01-05 JM: Put RT step limiting in an #ifdef so that it is not set for test problems.
- * */
-///
+/// \file sim_control_MPI.cpp
+/// 
+/// \brief Parallel Grid Methods Class Member Function definitions.
+/// 
+/// \author Jonathan Mackey
+/// 
+/// This file contains the definitions of the member functions for ParallelIntUniformFV
+/// class, which is a modification of the basic 1st/2nd order Finite Volume Solver according to
+/// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
+/// 
+/// Modifications:
+/// - 2007-10-11 Started writing file.
+/// - 2007-11-11 Basically working with uniform grid and all sorts of boundaries.
+/// - 2010-01-05 JM: Put RT step limiting in an #ifdef so that it is
+///    not set for test problems.
 /// - 2010-04-21 JM: Changed filename setup so that i can write
-///   checkpoint files with fname.999999.txt/silo/fits.  This also
-///   meant I don't need a new parallel output_data() function so I
-///   got rid of it.  All dataio classes now choose the filename
+///    checkpoint files with fname.999999.txt/silo/fits.  This also
+///    meant I don't need a new parallel output_data() function so I
+///    got rid of it.  All dataio classes now choose the filename
 ///   themselves.
-///
 /// - 2010.07.23 JM: New RSP source position class interface.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
-///   extra_data.
-///
+///    extra_data.
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2010.12.15 JM: Added CI.setup_extra_data() call in setup_grid()
 ///     function.
-///
 /// - 2011.01.12 JM: Set so only proc 0 displays RT timestep.
 ///     Commented out some stuff in calc_timestep which was used for
 ///     testing and made the code less efficient.
-///
 /// - 2011.02.17 JM: Raytracer header file moved to raytracing/ subdir.
 ///     More ray-tracing options for CI.setup_extra_data
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code. Modified setup_extra_data
 ///     for ray-tracing again.  Now we have N column-density vars for N sources.
-///
 /// - 2011.03.01 JM: fixed timings bug in time_int()
 /// - 2011.03.02 JM: Added parallelised raytracer-shielding class setup.
 /// - 2011.03.21 JM: moved cell setup_extra_data() to its own function, to save 
@@ -56,8 +47,11 @@
 /// - 2013.04.16 JM: Fixed FITS read functions for new filename convention.
 /// - 2013.09.05 JM: changed RS position[] to pos[].
 /// - 2013.10.13 JM: Tidied up a bit.
+/// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL_MPI.CPP, and
+///    added ParallelParams class, and fixing code for non-global mpiPM.
 
-#include "grid.h"
+#include "sim_control.h"
+#include "sim_control_MPI.h"
 #include "raytracing/raytracer_SC.h"
 
 #ifdef SILO
@@ -75,16 +69,394 @@ using namespace std;
 #ifdef PARALLEL
 
 
+//------------------------------------------------
+//-------------- MPI PARAMETERS ------------------
+//------------------------------------------------
 
 // ##################################################################
 // ##################################################################
 
 
-ParallelIntUniformFV::ParallelIntUniformFV()
+ParallelParams::ParallelParams()
+{
+   nproc = -1;
+   myrank = -1;
+   LocalNcell = -1;
+   for (int i=0; i<MAX_DIM; i++) {
+     LocalNG[i] = offsets[i] = ix[i] = nx[i] = -1;
+     LocalXmin[i] = LocalXmax[i] = LocalRange[i] = -1.e99;
+   }
+   ngbprocs=0;
+
+   ReadSingleFile  =true; ///< If the ICs are in a single file, set this to true.
+   WriteSingleFile =false; ///< If you want all the processors to write to one file, set this (BUGGY!)
+   WriteFullImage  =false; ///< If you want multiple fits files, but each one is the full domain size (bad!), set this.
+}
+
+ParallelParams::~ParallelParams() {
+  if (ngbprocs!=0) ngbprocs = mem.myfree(ngbprocs);
+  return;
+}
+
+// ##################################################################
+// ##################################################################
+
+int ParallelParams::decomposeDomain()
+{
+  //  cout << "---ParallelParams::decomposeDomain() decomposing domain.\n";
+
+  //
+  // We subdivide the domain in half recursively, where the axis we cut along
+  // is always the one in which the domain is longest.  In this way we minimize
+  // domain interfaces, which should minimize communication.
+  //
+  if (SimPM.ndim==1) {
+    // 1D is so simple it's worth putting in it's own section.
+    LocalRange[XX] = SimPM.Range[XX]/nproc;
+    LocalXmin[XX] = SimPM.Xmin[XX] + myrank*LocalRange[XX];
+    LocalXmax[XX] = LocalXmin[XX] + LocalRange[XX];
+    LocalNG[XX] = SimPM.NG[XX]/nproc;
+    offsets[XX] = 0;
+    LocalNcell = LocalNG[XX];
+    // Set up ngbprocs array to point to neighbouring processors
+    nx[XX] = nproc;
+    ix[XX] = myrank;
+    pointToNeighbours();
+  } // If 1D
+  
+  else if (SimPM.ndim==2 || SimPM.ndim==3) {
+    for (int i=0;i<SimPM.ndim;i++) {
+      LocalRange[i] = SimPM.Range[i];
+      LocalXmin[i]  = SimPM.Xmin[i];
+      LocalXmax[i]  = SimPM.Xmax[i];
+      LocalNG[i]    = SimPM.NG[i];
+      LocalNcell    = SimPM.Ncell;
+    }
+    double maxrange=0.;
+    enum axes maxdir=XX;
+    int npcounter=1;
+    
+    // Loop, dividing range in half n times, until npcounter=nproc.
+    if (nproc==1) { 
+      //cout <<"Only one processor!!! Use serial version...\n";
+      //rep.error("Only one processor!!! Use serial version",nproc);
+    }
+    while (npcounter < nproc) {
+      // find longest axis of subrange.
+      int i=0, dsrc=-1;
+      
+      // --- Check if we are doing raytracing with a source at infinity. ---
+      if (SimPM.EP.raytracing && SimPM.RS.Nsources>0) {
+        //
+	// check if we have only one source at infinity, b/c then we decompose to keep
+	// rays on one processor all the time.
+        //
+        bool at_infinity=true;
+        for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+          if (SimPM.RS.sources[isrc].type==RT_SRC_DIFFUSE) at_infinity=false;
+          if ((SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) &&
+              (!SimPM.RS.sources[isrc].at_infinity))       at_infinity=false;
+        }
+        //
+        // Now if at_infinity is still set, we want to get the direction along
+        // which we don't want to decompose the domain.
+        // Now also checks if there are multiple sources at infinity in
+        // different directions, in which case we can't make all of them fully
+        // parallel.
+        //
+        if (at_infinity) {
+          for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+            if ((SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) && 
+                (SimPM.RS.sources[isrc].at_infinity) ) {
+              for (int ii=0;ii<SimPM.ndim;ii++) {
+                if (fabs(SimPM.RS.sources[isrc].pos[ii])>1.e99) {
+                  if (dsrc==-1) dsrc=ii;
+                  // srcs at infinity in multiple directions
+                  else if (dsrc!=ii) at_infinity=false;
+                }
+              } // loop over directions
+            }   // if we are at the ionising source.
+          }     // loop over sources.
+        }       // if at infinity
+        
+        if (at_infinity) {
+          //cout <<"\t\tFound a source at infinity in direction "<<dsrc;
+          //cout <<", so not decomposing domain in this direction.\n";
+          if (dsrc<0) rep.error("no direction to source at infinity",dsrc);
+        }
+        else {
+          //cout <<"\t\tEither multiple or no sources at infinity.\n";
+          dsrc=-1;
+        }
+      }
+      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
+      // DOMAIN DECOMPOSITION.
+      dsrc = -1;
+      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
+      // DOMAIN DECOMPOSITION.
+
+      // --- end of RT source at infinity bit ---
+      
+      maxrange=0.; i=0;
+      while (i<SimPM.ndim) {
+        if (LocalRange[i] > maxrange && dsrc!=i) {
+          maxrange=LocalRange[i];
+          maxdir = static_cast<axes>(i);
+        }
+        i++;
+      }
+      // Half that range and multiply nproc by 2.
+      LocalRange[maxdir] /= 2.0;
+      npcounter *=2;
+    }
+    if (npcounter != nproc) rep.error("nproc not a power of 2!",nproc);
+    
+    //
+    // Now we know the range of each subcell, so calculate where I fit into
+    // the hierarchy, defined by
+    // \f[ \mbox{myrank} = n_x*n_y*i_z + n_x*i_y + i_x \f]
+    // This requires myrank to count from zero!
+    //
+    for (int i=0;i<SimPM.ndim;i++)
+      nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/LocalRange[i]);
+    int temp=myrank;
+    if (SimPM.ndim==3) {
+      ix[ZZ] = temp/nx[XX]/nx[YY];
+      temp -= ix[ZZ]*nx[XX]*nx[YY];
+    }
+    ix[YY] = temp/nx[XX];
+    temp -= ix[YY]*nx[XX];
+    ix[XX] = temp;
+    
+    LocalNcell = SimPM.Ncell;
+    for (int i=0;i<SimPM.ndim;i++) {
+      LocalXmin[i]  = SimPM.Xmin[i] +ix[i]*LocalRange[i];
+      LocalXmax[i]  = SimPM.Xmin[i] +(ix[i]+1)*LocalRange[i];
+      LocalNG[i]    = SimPM.NG[i]/nx[i];
+      LocalNcell   /= nx[i];
+      offsets[i]    = ix[i]*LocalNG[i];
+    }
+    // Set up ngbprocs array to point to neighbouring processors
+    pointToNeighbours();    
+  } // if 2D or 3D
+  
+  else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
+  
+  // Display some debugging info.
+  //  if (myrank==0) {
+  //    for (int i=0;i<SimPM.ndim;i++) {
+  //     cout <<"Sim: idim="<<i<<"  \tRange="<<SimPM.Range[i];
+  //     cout <<",\t  xmin,xmax = "<<SimPM.Xmin[i]<<", "<<SimPM.Xmax[i];
+  //     cout <<"    \t Ncell = "<<SimPM.Ncell<<"\n";
+  //   }
+  // }
+  // for (int i=0;i<SimPM.ndim;i++) {
+  //   cout <<"Proc "<<myrank<<": idim="<<i<<"  \tRange="<<LocalRange[i];
+  //   cout <<",\t  xmin,xmax = "<<LocalXmin[i]<<", "<<LocalXmax[i];
+  //   cout <<"    \t Ncell = "<<LocalNcell;
+  //   cout <<"\t neighbours : "<<ngbprocs[2*i]<<", "<<ngbprocs[2*i+1]<<"\n";
+  // }
+  // cout << "---ParallelParams::decomposeDomain() Domain decomposition done.\n\n";
+  return(0);
+}
+
+// ##################################################################
+// ##################################################################
+
+int ParallelParams::pointToNeighbours()
+{
+  /** \section PBC Periodic Boundaries
+   * Note that if there are periodic boundaries, the pointers to the 
+   * wrapped around neighbouring processors are not set here.  They are
+   * set when the grid boundaries are set up, in the function
+   * UniformGridParallel::BC_setBCtypes
+   * I'm not completely happy with this as it makes the 'modular-ness' of 
+   * the code weaker, but it is something that will work.  The neighbouring
+   * processor list is a global variable, and I don't think it's the worst
+   * thing for it to be set in two places.
+   * Here any simulation boundaries have neighbouring processor id set to 
+   * -999.
+   * */
+  int nx[SimPM.ndim];
+  for (int i=0;i<SimPM.ndim;i++) nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/LocalRange[i]);
+  // Point to neigbours
+  if (ngbprocs) {
+    //rep.error("neigbours already set up!",ngbprocs);
+    delete [] ngbprocs; ngbprocs=0;
+  }
+  ngbprocs = new int [2*SimPM.ndim];
+  if (!ngbprocs) rep.error("Memory Allocation of neighbours.",ngbprocs);
+  ngbprocs[XN] = myrank -1;
+  ngbprocs[XP] = myrank +1;
+  if (GS.equalD(LocalXmin[XX],SimPM.Xmin[XX])) ngbprocs[XN] = -999;
+  if (GS.equalD(LocalXmax[XX],SimPM.Xmax[XX])) ngbprocs[XP] = -999;
+  if (SimPM.ndim >1) {
+    ngbprocs[YN] = myrank -nx[XX];
+    ngbprocs[YP] = myrank +nx[XX];
+    if (GS.equalD(LocalXmin[YY],SimPM.Xmin[YY])) ngbprocs[YN] = -999;
+    if (GS.equalD(LocalXmax[YY],SimPM.Xmax[YY])) ngbprocs[YP] = -999;
+  }
+  if (SimPM.ndim >2) {
+    ngbprocs[ZN] = myrank -nx[XX]*nx[YY];
+    ngbprocs[ZP] = myrank +nx[XX]*nx[YY];
+    if (GS.equalD(LocalXmin[ZZ],SimPM.Xmin[ZZ])) ngbprocs[ZN] = -999;
+    if (GS.equalD(LocalXmax[ZZ],SimPM.Xmax[ZZ])) ngbprocs[ZP] = -999;
+  }
+  return(0);
+}
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get a list of all abutting domains, including corner/edge intersections.
+///
+void ParallelParams::get_abutting_domains(std::vector<int> &dl ///< write list to this vector.
+					  )
+{
+  //
+  // If we previously generated the list, then just copy elements.
+  //
+  //if (!full_ngb_list.empty()) {
+  //  for (unsigned int v=0; v<full_ngb_list.size(); v++)
+  //    dl.push_back(full_ngb_list[v]);
+  //  return;
+  //}
+  full_ngb_list.clear();
+
+  //
+  // Otherwise we generate the list and then copy.
+  //
+  //
+  // List ordering is as follows:
+  //  XN,XP,YN,YP,ZN,ZP
+  //  YNXN, YNXP, YPXN, YPXP,
+  //  ZNXN, ZNXP, ZNYN, ZNYP,
+  //  ZNYNXN, ZNYNXP, ZNYPXN, ZNYPXP
+  //  ZPXN, ZPXP, ZPYN, ZPYP,
+  //  ZPYNXN, ZPYNXP, ZPYPXN, ZPYPXP
+  //
+
+  //
+  // Find which coordinate directions have neighbours and store in a
+  // bool array.
+  //
+  bool d[2*MAX_DIM];
+  for (int v=0;v<2*MAX_DIM;v++) d[v] = false;
+  enum direction posdir, negdir;
+  for (int v=0;v<SimPM.ndim;v++) {
+    negdir = static_cast<direction>(2*v);
+    posdir = static_cast<direction>(2*v+1);
+    if (ngbprocs[negdir]>=0) d[negdir] = true;
+    if (ngbprocs[posdir]>=0) d[posdir] = true;
+  }
+
+  //
+  // Add coordinate directions to list.
+  //
+  for (int v=0; v<2*SimPM.ndim; v++) {
+    if (d[v]) full_ngb_list.push_back(ngbprocs[v]);
+  }
+
+  //
+  // X-Y plane -- can read off neighbour and add/subtract 1 from it.
+  //
+  if (d[YN] && d[XN]) full_ngb_list.push_back(ngbprocs[YN]-1);
+  if (d[YN] && d[XP]) full_ngb_list.push_back(ngbprocs[YN]+1);
+  if (d[YP] && d[XN]) full_ngb_list.push_back(ngbprocs[YP]-1);
+  if (d[YP] && d[XP]) full_ngb_list.push_back(ngbprocs[YP]+1);
+
+  //
+  // X-Y-ZN plane -- need to calculate rank since offsets are not trivial.
+  //
+  if (d[ZN]) {
+    if (d[XN]) 
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]) +(ix[XX]-1) );
+    if (d[XP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]) +(ix[XX]+1) );
+    if (d[YN])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]-1) +(ix[XX]) );
+    if (d[YP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]+1) +(ix[XX]) );
+    if (d[YN] && d[XN])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]-1) +(ix[XX]-1) );
+    if (d[YN] && d[XP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]-1) +(ix[XX]+1) );
+    if (d[YP] && d[XN])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]+1) +(ix[XX]-1) );
+    if (d[YP] && d[XP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]-1) +nx[XX]*(ix[YY]+1) +(ix[XX]+1) );
+  }
+  //
+  // X-Y-ZP plane
+  //
+  if (d[ZP]) {
+    if (d[XN]) 
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]  ) +(ix[XX]-1) );
+    if (d[XP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]  ) +(ix[XX]+1) );
+    if (d[YN])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]-1) +(ix[XX]  ) );
+    if (d[YP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]+1) +(ix[XX]  ) );
+    if (d[YN] && d[XN])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]-1) +(ix[XX]-1) );
+    if (d[YN] && d[XP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]-1) +(ix[XX]+1) );
+    if (d[YP] && d[XN])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]+1) +(ix[XX]-1) );
+    if (d[YP] && d[XP])
+      full_ngb_list.push_back( nx[XX]*nx[YY]*(ix[ZZ]+1) +nx[XX]*(ix[YY]+1) +(ix[XX]+1) );
+  }
+
+  //
+  // Copy to return vector and return.
+  //
+  for (unsigned int v=0; v<full_ngb_list.size(); v++)
+    dl.push_back(full_ngb_list[v]);
+
+  return;
+}
+
+//
+// Returns the ix array for any requested rank.
+//
+void ParallelParams::get_domain_ix(const int r, ///< rank ix requested for.
+				   int *arr     ///< array to put ix into.
+				   )
+{
+  int temp=r;
+  if (SimPM.ndim==3) {
+    arr[ZZ] = temp/nx[XX]/nx[YY];
+    temp -= arr[ZZ]*nx[XX]*nx[YY];
+  }
+  if (SimPM.ndim>1) {
+    arr[YY] = temp/nx[XX];
+    temp -= arr[YY]*nx[XX];
+  }
+  arr[XX] = temp;
+  return;
+}
+
+// ##################################################################
+// ##################################################################
+//------------------------------------------------
+//-------------- MPI PARAMETERS ------------------
+//------------------------------------------------
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+sim_control_fixedgrid_pllel::sim_control_fixedgrid_pllel()
   : IntUniformFV()
 {
 #ifdef TESTING
-  cout <<"ParallelIntUniformFV constructor.\n";
+  cout <<"sim_control_fixedgrid_pllel constructor.\n";
 #endif
 }
 
@@ -94,10 +466,10 @@ ParallelIntUniformFV::ParallelIntUniformFV()
 // ##################################################################
 
 
-ParallelIntUniformFV::~ParallelIntUniformFV()
+sim_control_fixedgrid_pllel::~sim_control_fixedgrid_pllel()
 {
 #ifdef TESTING    
-  cout <<"ParallelIntUniformFV destructor.\n";
+  cout <<"sim_control_fixedgrid_pllel destructor.\n";
 #endif
 }
 
@@ -108,10 +480,10 @@ ParallelIntUniformFV::~ParallelIntUniformFV()
 
 
 
-int ParallelIntUniformFV::setup_grid()
+int sim_control_fixedgrid_pllel::setup_grid()
 {
 #ifdef TESTING
-  cout <<"ParallelIntUniformFV: setting up parallel grid.\n";
+  cout <<"sim_control_fixedgrid_pllel: setting up parallel grid.\n";
 #endif
 
   if (SimPM.gridType!=1) {
@@ -136,7 +508,7 @@ int ParallelIntUniformFV::setup_grid()
   // Now set up the parallel uniform grid.
   //
 #ifdef TESTING
-  cout <<"(ParallelIntUniformFV::setup_grid) Setting up grid...\n";
+  cout <<"(sim_control_fixedgrid_pllel::setup_grid) Setting up grid...\n";
 #endif
 
   if      (SimPM.coord_sys==COORD_CRT) {
@@ -159,10 +531,10 @@ int ParallelIntUniformFV::setup_grid()
   }
 
 
-  if (grid==0) rep.error("(ParallelIntUniformFV::setup_grid) Couldn't assign data!", grid);
+  if (grid==0) rep.error("(sim_control_fixedgrid_pllel::setup_grid) Couldn't assign data!", grid);
 
 #ifdef TESTING
-  cout <<"(ParallelIntUniformFV::setup_grid) Done. grid="<<grid;//<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::setup_grid) Done. grid="<<grid;//<<"\n";
   cout <<"\t DX = "<<grid->DX()<<"\n";
 #endif
 
@@ -176,34 +548,45 @@ int ParallelIntUniformFV::setup_grid()
 
 
 
-int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *args)
+int sim_control_fixedgrid_pllel::Init(
+      string infile,
+      int typeOfFile,
+      int narg,
+      string *args,
+      class GridBaseClass **grid,
+      class ParallelParams &mpiPM
+      )
 {
-    /** \userguide
-     * \section icfiles Parallel IC/Restart files.
-     * [FITS IS NOT COMPILED BY DEFAULT ANYMORE; USE SILO; SEE BELOW] 
-     * When running in parallel, outputs are named according to the rank as follows:
-     * \'outfile\_\<myrank\>.\<timestep\>.fits\'. Because of this, an initial condition
-     * file should never have the string \'_\<number\>.\' in it.  This will confuse the
-     * data I/O routines.  If reading from a single initial conditions (or restart) file,
-     * this string should not be in the filename, and all processes will read from the
-     * same file.  If restarting from multiple input files, however, the given input filename
-     * should be the restart file for processor 0 (i.e. restartfile\_0.\<timestep\>.fits),
-     * and the function ParallelIntUniformFV::init() will parse the input filename and
-     * replace the \"\_0.\" with \"\_\<myrank\>.\", followed by a call to the original serial
-     * function IntUniformFV::init() with the new filename, if it exists.
-     *
-     * For Silo data I/O the model is a little different.  The number of files can be 
-     * smaller than the number of processors.  Serial files should still never have the
-     * substring "\_0" in them.  Parallel files are named in a similar way as for fits files,
-     * but each file can contain data from a number of processors, stored in different
-     * subdirectories within the file.  Also, filenames are now stored as follows: 
-     * \'ouftile\_0000.00000.silo\' where the first zeros are for the number of the file, and
-     * the second are for the timestep.  It made sense to have a fixed width number, for listing
-     * files as much as anything else.
-     */
+
+  /// \userguide \section icfiles Parallel IC/Restart files.
+  ///
+  /// [FITS IS NOT COMPILED BY DEFAULT ANYMORE; USE SILO; SEE BELOW] 
+  ///
+  /// When running in parallel, outputs are named according to the rank as
+  /// follows: \'outfile\_\<myrank\>.\<timestep\>.fits\'. Because of this, an
+  /// initial condition file should never have the string \'_\<number\>.\' in
+  /// it.  This will confuse the data I/O routines.  If reading from a single
+  /// initial conditions (or restart) file, this string should not be in the
+  /// filename, and all processes will read from the same file.  If restarting
+  /// from multiple input files, however, the given input filename should be the
+  /// restart file for processor 0 (i.e. restartfile\_0.\<timestep\>.fits), and
+  /// the function sim_control_fixedgrid_pllel::init() will parse the input
+  /// filename and replace the \"\_0.\" with \"\_\<myrank\>.\", followed by a
+  /// call to the original serial function IntUniformFV::init() with the new
+  /// filename, if it exists.
+  ///
+  /// For Silo data I/O the model is a little different.  The number of files
+  /// can be smaller than the number of processors.  Serial files should still
+  /// never have the substring "\_0" in them.  Parallel files are named in a
+  /// similar way as for fits files, but each file can contain data from a
+  /// number of processors, stored in different subdirectories within the file.
+  /// Also, filenames are now stored as follows: \'ouftile\_0000.00000.silo\'
+  /// where the first zeros are for the number of the file, and the second are
+  /// for the timestep.  It made sense to have a fixed width number, for listing
+  /// files as much as anything else.
 
 #ifdef TESTING
-  cout <<"(ParallelIntUniformFV::init) Initialising grid: infile = "<<infile<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::init) Initialising grid: infile = "<<infile<<"\n";
 #endif
   int err=0;
 
@@ -293,7 +676,7 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
     rep.error("Bad file type specifier for parallel grids (2=fits,5=silo) IS IT COMPILED IN???",typeOfFile);
 
 #ifdef TESTING
-  cout <<"(ParallelIntUniformFV::init) Calling serial code IntUniformFV::init() on infile."<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::init) Calling serial code IntUniformFV::init() on infile."<<"\n";
 #endif
   err=IntUniformFV::Init(infile,typeOfFile,narg,args);
   if (err) rep.error("failed to do serial init",err);
@@ -304,7 +687,7 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
   // This is ifdeffed out in the serial code because parallel I/O classes need to be set up.
   if (SimPM.typeofip != SimPM.typeofop) {
 #ifdef TESTING
-    cout <<"(ParallelIntUniformFV::INIT) infile-type="<<SimPM.typeofip;
+    cout <<"(sim_control_fixedgrid_pllel::INIT) infile-type="<<SimPM.typeofip;
     cout <<" and outfile-type="<<SimPM.typeofop;
     cout <<", so deleting and renewing dataio.\n";
 #endif
@@ -348,7 +731,7 @@ int ParallelIntUniformFV::Init(string infile, int typeOfFile, int narg, string *
 // ##################################################################
 
 
-int ParallelIntUniformFV::setup_raytracing()
+int sim_control_fixedgrid_pllel::setup_raytracing()
 {
   //
   // This function is basically identical to the serial setup function, except
@@ -488,10 +871,10 @@ int ParallelIntUniformFV::setup_raytracing()
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int ParallelIntUniformFV::Time_Int()
+int sim_control_fixedgrid_pllel::Time_Int()
 {
   cout <<"                               **************************************\n";
-  cout <<"(ParallelIntUniformFV::time_int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   int err=0;
   int log_freq=100;
   SimPM.maxtime=false;
@@ -512,26 +895,35 @@ int ParallelIntUniformFV::Time_Int()
     if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad"<<"\n";return(1);}
 
     if (mpiPM.myrank==0 && (SimPM.timestep%log_freq)==0) {
-	  cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
-	  tsf=GS.time_so_far("time_int");
-	  cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-    //cout.flush();
+      cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
+      tsf=GS.time_so_far("time_int");
+      cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
+      //cout.flush();
     }
 	
+    //
     // check if we are at time limit yet.
+    //
+    tsf=GS.time_so_far("time_int");
     double maxt = COMM->global_operation_double("MAX", tsf);
-
     if (maxt > mpiPM.get_max_walltime()) {
-	    SimPM.maxtime=true;
-	    cout <<"RUNTIME>"<<mpiPM.get_max_walltime()<<" SECS.\n";
+      SimPM.maxtime=true;
+      cout <<"RUNTIME>"<<mpiPM.get_max_walltime()<<" SECS.\n";
     }
 	
     err+= output_data();
-    if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went bad"<<"\n";return(1);}
+    if (err!=0){
+      cerr<<"(TIME_INT::output_data) err!=0 Something went bad"<<"\n";
+      return(1);
+    }
+
     err+= check_eosim();
-    if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went bad"<<"\n";return(1);}
+    if (err!=0) {
+      cerr<<"(TIME_INT::) err!=0 Something went bad"<<"\n";
+      return(1);
+    }
   }
-  cout <<"(ParallelIntUniformFV::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
   tsf=GS.time_so_far("time_int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
   cout <<", sim-time="<<SimPM.simtime;
@@ -560,7 +952,7 @@ int ParallelIntUniformFV::Time_Int()
 // ##################################################################
 
 
-int ParallelIntUniformFV::calc_timestep()
+int sim_control_fixedgrid_pllel::calc_timestep()
 {
   //
   // First get the local grid dynamics and microphysics timesteps.

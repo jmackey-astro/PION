@@ -22,7 +22,8 @@
 ///    of arrays.
 /// - 2013.01.17 JM: Made class less verbose; wrapped cout in TESTING
 ///    flags.
-/// - 2015.01.26 JM: removed references to mpiPM (no longer global).
+/// - 2015.01.26 JM: removed references to mpiPM (no longer global),
+///    added COMM pointer setup, added get_rank_nproc()
 
 #ifdef PARALLEL
 #ifdef USE_MPI
@@ -31,6 +32,7 @@
 #include <sstream>
 using namespace std;
 
+class comms_base *COMM = new comm_mpi ();
 
 
 // ##################################################################

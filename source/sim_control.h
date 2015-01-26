@@ -1,36 +1,29 @@
-/** \file grid.h
- * 
- * \brief Declares grid parameter class, and grid methods classes.
- * 
- * \author Jonathan Mackey
- * 
- * IntegratorBaseFV is an abstract base class for finite volume grids.
- * 
- * IntUniformFV is a 1st/2nd order accurate finite volume solver, modelled on 
- * the solver presented in Falle, Komissarov, \& Joarder (1998) MNRAS, 297, 265.
- * 
- * Modifications :\n
- *  - 2007-07-12 Started to move to new structure.
- *  - 2007-07-13 New Class structure implemented.
- *  - 2007-07-24 Added tracer variables.
- *  - 2007-10-11 Updated Documentation.
- *  - 2007-10-26 New data i/o class.
- *
- *  - 2010-04-21 JM: removed parallel output_data() function b/c not needed anymore.
- *
- * */
-///
+/// \file sim_control.h
+/// 
+/// \brief Declares grid parameter class, and grid methods classes.
+/// 
+/// \author Jonathan Mackey
+/// 
+/// IntegratorBaseFV is an abstract base class for finite volume grids.
+/// 
+/// IntUniformFV is a 1st/2nd order accurate finite volume solver, modelled on 
+/// the solver presented in Falle, Komissarov, \& Joarder (1998) MNRAS, 297, 265.
+/// 
+/// Modifications :\n
+/// - 2007-07-12 Started to move to new structure.
+/// - 2007-07-13 New Class structure implemented.
+/// - 2007-07-24 Added tracer variables.
+/// - 2007-10-11 Updated Documentation.
+/// - 2007-10-26 New data i/o class.
+/// - 2010-04-21 JM: removed parallel output_data() function b/c not needed anymore.
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 /// - 2010.10.04 JM: Moved the field-loop magnetic pressure output to
 ///     an ifdeffed function.  Added a new function to calculate the
 ///     1D blast wave radius in spherical coordinates (also ifdeffed).
-///
 /// - 2010.11.15 JM: Modified update_dynamics() so it has pre- and
 ///   post-processing functions before and after calc_dU().
 ///   Added routine to calculate the H-correction eta values for
 ///   pre-processing.
-///
 /// - 2011.01.03 JM: Moved preprocess_data() and calc_Hcorrection from
 ///   gridMethods.cc to the base FV solver.
 /// - 2011.03.21 JM: moved cell setup_extra_data() to its own function, to save 
@@ -38,7 +31,6 @@
 ///    Rewrote setup_raytracing() and atomised update_microphysics() so there are
 ///    now a few new functions to deal with the different kinds of radiative
 ///    transfer we want to do.
-///
 /// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux calculation.
 /// - 2011.10.22 JM: Added lists of heating and ionising sources as class data.
 /// - 2012.01.16 JM: Added setup_evolving_RT_sources() and
@@ -48,9 +40,12 @@
 /// - 2015.01.08 JM: Made some initialisation functions public. Moved
 ///    grid pointer from global to main, so it now needs to be passed
 ///    around in some functions.
+/// - 2015.01.26 JM: changed name to sim_control.cpp, and class names
+///    to sim_control_XX, to better reflect what the class does!
+///    Moved MPI-parallelised class to its own new file.
 
-#ifndef GRID_H
-#define GRID_H
+#ifndef SIM_CONTROL_H
+#define SIM_CONTROL_H
 
 #include "global.h"
 #include "grid/grid_base_class.h"
@@ -59,17 +54,17 @@
 #include "dataIO/dataio.h"
 
 
-/** \brief The simplest finite volume grid -- a uniform grid with cubic cells
- * in the chosen coordinates.
- * 
- * This can integrate any system of equations if given the right solver class.
- * It can solve the equations in 1st or 2nd order accuracy in space and time.
- * */
-class IntUniformFV : public IntegratorBaseFV
+/// The simplest finite volume grid -- a uniform grid with cubic cells
+/// in the chosen coordinates.
+/// 
+/// This can integrate any system of equations if given the right solver class.
+/// It can solve the equations in 1st or 2nd order accuracy in space and time.
+///
+class sim_control_fixedgrid
 {
   public:
-  IntUniformFV();  ///< Simple constructor, initialises value.
-  ~IntUniformFV(); ///< Deletes any dynamic memory, if not already done.
+  sim_control_fixedgrid();  ///< Simple constructor, initialises value.
+  virtual ~sim_control_fixedgrid(); ///< Deletes any dynamic memory, if not already done.
 
   ///
   /// initialisation.
@@ -572,94 +567,11 @@ class IntUniformFV : public IntegratorBaseFV
   int initial_conserved_quantities(
         class GridBaseClass * 
         );
-}; // IntUniformFV
+}; // sim_control_fixedgrid
    
 /*************************************************************************/
 /*************************************************************************/
 /*************************************************************************/
 
-#ifdef PARALLEL
-/** \brief The Parallel implementation of the Uniform FV Integrator.
- * 
- * This class reimplements some functions of IntUniformFV, so that they
- * work on multiple processors with the domain split between them.
- * */
-class ParallelIntUniformFV : public IntUniformFV
-{
-  public:
-   ParallelIntUniformFV();
-   ~ParallelIntUniformFV();
 
-  ///
-  /// initialisation.
-  ///
-  /// This function checks if we are reading from single or multiple files,
-  /// modifies the input file string accordingly, checks the file exists, 
-  /// and then calls the IntUniformFV::Init() function.
-  ///
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  int Init(
-        string,   ///< Name of input file.
-        int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-        int,      ///< Number of command-line arguments.
-        string *, ///< Pointer to array of command-line arguments.
-        class GridBaseClass * ///< grid pointer.
-        );
-
-  ///
-  /// Time integration
-  ///
-  /// This is the main part of the code -- It does all the time integration
-  /// until the stopping condition is reached and then returns.
-  /// It calls a sequence of functions to advance the time by one timestep,
-  /// all in a loop which runs until end-of-sim is reached.
-  /// 
-  /// Parallel version has an AllReduce operation, where I check if the runtime of 
-  /// any processor is more than a fixed walltime, and if so set eosim to true and
-  /// finish.  This is because ICHEC machines have a maximum runtime limit for their
-  /// simulations on some of the queues, and I want to make sure I have an output 
-  /// near the end of the allowed runtime.
-  ///
-  int Time_Int(
-        class GridBaseClass * 
-        );
-
-  ///
-  /// initialise the grid class with appropriate parameters.
-  /// 
-  /// This function sets up the appropriate grid; for parallel execution
-  /// I need to define the domain of my grid, and then pass the appropriate
-  /// parameters to the UniformGrid class.
-  ///
-  int setup_grid(
-        class GridBaseClass **  ///< address of pointer to computational grid.
-        );
-
-  ///
-  /// Decide if I need to setup RT class, and do it if i need to.
-  ///
-  virtual int setup_raytracing(
-        class GridBaseClass * 
-        );
-
-  protected:
-  ///
-  /// Calculate the appropriate timestep for all processors
-  /// 
-  /// For a uniform grid, all cells have the same timestep equal to the minimum
-  /// of all calculated steps.  This function calls the calc_timestep() function
-  /// for the local grid, and then gets the min of all processor's local
-  /// timesteps, and uses that as the timestep.
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  int calc_timestep(
-        class GridBaseClass * 
-        );
-
-}; // ParallelIntUniformFV
-#endif // PARALLEL
-
-#endif // if not GRID_H
+#endif // if not SIM_CONTROL_H

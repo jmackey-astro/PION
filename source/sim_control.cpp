@@ -1,10 +1,10 @@
-/// \file gridMethods.cc
+/// \file sim_control.cpp
 /// 
-/// \brief Grid Methods Class Member Function definitions.
+/// \brief Simulation Control Class Member Function definitions.
 /// 
 /// \author Jonathan Mackey
 /// 
-/// This file contains the definitions of the member functions for IntUniformFV 
+/// This file contains the definitions of the member functions for sim_control_fixedgrid 
 /// class, which is the basic 1st/2nd order Finite Volume Solver according to
 /// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
 /// 
@@ -20,7 +20,7 @@
 /// - 2007-11-01 Added dataio class last week, cleaning up today.
 /// - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
 ///
-/// - JM 2009-12-16 Added ifdef in IntUniformFV::Time_Int() so that I
+/// - JM 2009-12-16 Added ifdef in sim_control_fixedgrid::Time_Int() so that I
 ///      can get the code to output magnetic pressure instead of
 ///      timing info every timestep.  This is purely to make a plot of
 ///      magnetic pressure for the Field Loop Advection Test and
@@ -140,6 +140,7 @@
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2015.01.(10-16) JM: New include statements for new file
 ///    structure, and non-global grid class.
+/// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL.CPP
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -147,7 +148,7 @@
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
 
-#include "grid.h"
+#include "sim_control.h"
 
 #include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
@@ -220,7 +221,7 @@ using namespace std;
 // ##################################################################
 
 
-IntUniformFV::IntUniformFV()
+sim_control_fixedgrid::sim_control_fixedgrid()
 {
   eqn=0;
   dataio=0;
@@ -239,10 +240,10 @@ IntUniformFV::IntUniformFV()
 // ##################################################################
 
 
-IntUniformFV::~IntUniformFV()
+sim_control_fixedgrid::~sim_control_fixedgrid()
 {
 #ifdef TESTING
-  cout << "(IntUniformFV::Destructor) Deleting Grid Class..." <<"\n";
+  cout << "(sim_control_fixedgrid::Destructor) Deleting Grid Class..." <<"\n";
 #endif
   if(eqn !=0) {
 #ifdef TESTING
@@ -255,7 +256,7 @@ IntUniformFV::~IntUniformFV()
   if (MP)     {delete MP; MP=0;}
   if (RT)     {delete RT; RT=0;}
 #ifdef TESTING
-  cout << "(IntUniformFV::Destructor) Done." <<"\n";
+  cout << "(sim_control_fixedgrid::Destructor) Done." <<"\n";
 #endif
 }
 
@@ -264,7 +265,7 @@ IntUniformFV::~IntUniformFV()
 // ##################################################################
 
 
-double IntUniformFV::get_max_walltime()
+double sim_control_fixedgrid::get_max_walltime()
 {
   return max_walltime;
 }
@@ -274,7 +275,7 @@ double IntUniformFV::get_max_walltime()
 // ##################################################################
 
 
-void IntUniformFV::set_max_walltime(
+void sim_control_fixedgrid::set_max_walltime(
         double t ///< New Max. runtime in seconds.
         )
 {
@@ -294,7 +295,7 @@ void IntUniformFV::set_max_walltime(
 // ##################################################################
 
 
-int IntUniformFV::Init(
+int sim_control_fixedgrid::Init(
       string infile,
       int typeOfFile,
       int narg,
@@ -463,7 +464,7 @@ int IntUniformFV::Init(
 
 
 
-int IntUniformFV::override_params(int narg, string *args)
+int sim_control_fixedgrid::override_params(int narg, string *args)
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Overriding parameters if requested ---------\n";
@@ -851,7 +852,7 @@ int IntUniformFV::override_params(int narg, string *args)
   }
   cout <<"------------------------------------------------------\n\n";
   return(0);
-} // IntUniformFV::override_params
+} // sim_control_fixedgrid::override_params
 
 
 
@@ -860,7 +861,7 @@ int IntUniformFV::override_params(int narg, string *args)
 
 
 
-int IntUniformFV::get_cell_size(
+int sim_control_fixedgrid::get_cell_size(
       class GridBaseClass *grid 
       )
 {
@@ -877,7 +878,7 @@ int IntUniformFV::get_cell_size(
 // ##################################################################
 
 
-int IntUniformFV::set_equations()
+int sim_control_fixedgrid::set_equations()
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Setting up solver for eqauations------------\n";
@@ -1001,7 +1002,7 @@ int IntUniformFV::set_equations()
   // Check that we set up an equations class!
   //
   if (!eqn)
-    rep.error("IntUniformFV::set_equations() Failed to initialise an equations class.",eqn);
+    rep.error("sim_control_fixedgrid::set_equations() Failed to initialise an equations class.",eqn);
 
   cout <<"------------------------------------------------------\n\n";
   return(0);
@@ -1014,7 +1015,7 @@ int IntUniformFV::set_equations()
 
 
 
-void IntUniformFV::setup_cell_extra_data()
+void sim_control_fixedgrid::setup_cell_extra_data()
 {
   //
   // Cells can need extra data for ray-tracing optical depths, eta-values for the
@@ -1049,7 +1050,7 @@ void IntUniformFV::setup_cell_extra_data()
 
 
 
-int IntUniformFV::setup_grid(
+int sim_control_fixedgrid::setup_grid(
       class GridBaseClass **grid
       )
 {
@@ -1088,7 +1089,7 @@ int IntUniformFV::setup_grid(
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
-  if (*grid==0) rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", *grid);
+  if (*grid==0) rep.error("(sim_control_fixedgrid::setup_grid) Couldn't assign data!", *grid);
 #ifdef TESTING
   cout <<"(UniformFV::setup_grid) Done. &grid="<< grid<<", and grid="<<*grid<<"\n";
   cout <<"DX = "<<(*grid)->DX()<<"\n";
@@ -1106,7 +1107,7 @@ int IntUniformFV::setup_grid(
 // ##################################################################
 
 
-int IntUniformFV::boundary_conditions(
+int sim_control_fixedgrid::boundary_conditions(
       class GridBaseClass *grid 
       )
 {
@@ -1143,10 +1144,10 @@ int IntUniformFV::boundary_conditions(
   cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
 #endif
   int err = grid->SetupBCs(SimPM.Nbc,SimPM.typeofbc);
-  if (err) rep.error("IntUniformFV::boundary_conditions() Couldn't \
+  if (err) rep.error("sim_control_fixedgrid::boundary_conditions() Couldn't \
                       set up boundary conditions class.",err);
 #ifdef TESTING
-  cout <<"(IntUniformFV::boundary_conditions) Done.\n";
+  cout <<"(sim_control_fixedgrid::boundary_conditions) Done.\n";
 #endif
   return 0;
 }
@@ -1160,7 +1161,7 @@ int IntUniformFV::boundary_conditions(
 
 
 
-int IntUniformFV::output_data(
+int sim_control_fixedgrid::output_data(
       class GridBaseClass *grid
       )
 {
@@ -1244,7 +1245,7 @@ int IntUniformFV::output_data(
 
 
 
-int IntUniformFV::ready_to_start(
+int sim_control_fixedgrid::ready_to_start(
       class GridBaseClass *grid
       )
 {
@@ -1309,7 +1310,7 @@ int IntUniformFV::ready_to_start(
 
 
 
-int IntUniformFV::setup_evolving_RT_sources()
+int sim_control_fixedgrid::setup_evolving_RT_sources()
 {
   //
   // Loop through list of sources, and see if any of them have an evolution
@@ -1448,7 +1449,7 @@ int IntUniformFV::setup_evolving_RT_sources()
 
 
 
-int IntUniformFV::update_evolving_RT_sources()
+int sim_control_fixedgrid::update_evolving_RT_sources()
 {
   int err=0;
   bool updated=false;
@@ -1553,7 +1554,7 @@ int IntUniformFV::update_evolving_RT_sources()
 
 
 
-int IntUniformFV::setup_microphysics()
+int sim_control_fixedgrid::setup_microphysics()
 {
   cout <<"------------------------------------------------------------\n";
   cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
@@ -1758,7 +1759,7 @@ int IntUniformFV::setup_microphysics()
 
 
 
-int IntUniformFV::setup_raytracing(
+int sim_control_fixedgrid::setup_raytracing(
       class GridBaseClass *grid
       )
 {
@@ -1874,7 +1875,7 @@ int IntUniformFV::setup_raytracing(
 
 
 
-int IntUniformFV::initial_conserved_quantities(
+int sim_control_fixedgrid::initial_conserved_quantities(
       class GridBaseClass *grid
       )
 {
@@ -1914,12 +1915,12 @@ int IntUniformFV::initial_conserved_quantities(
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int IntUniformFV::Time_Int(
+int sim_control_fixedgrid::Time_Int(
       class GridBaseClass *grid
       )
 {
   cout <<"------------------------------------------------------------\n";
-  cout <<"(IntUniformFV::Time_Int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"(sim_control_fixedgrid::Time_Int) STARTING TIME INTEGRATION."<<"\n";
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
@@ -1960,7 +1961,7 @@ int IntUniformFV::Time_Int(
     if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went bad\n";return(1);}
   }
 
-  cout <<"(IntUniformFV::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
+  cout <<"(sim_control_fixedgrid::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
 
   tsf=GS.time_so_far("Time_Int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
@@ -1987,7 +1988,7 @@ int IntUniformFV::Time_Int(
 /// This is only for a test problem -- it checks the magnetic
 /// pressure on the full domain and outputs it to screen
 ///
-void IntUniformFV::calculate_magnetic_pressure(
+void sim_control_fixedgrid::calculate_magnetic_pressure(
       class GridBaseClass *grid
       )
 {
@@ -2019,7 +2020,7 @@ void IntUniformFV::calculate_magnetic_pressure(
 /// If running a spherical blast wave, calculate the shock position
 /// and output to screen.
 ///
-void IntUniformFV::calculate_blastwave_radius(
+void sim_control_fixedgrid::calculate_blastwave_radius(
       class GridBaseClass *grid
       )
 {
@@ -2055,7 +2056,7 @@ void IntUniformFV::calculate_blastwave_radius(
 
 
 
-int IntUniformFV::calc_timestep(
+int sim_control_fixedgrid::calc_timestep(
       class GridBaseClass *grid
       )
 {
@@ -2125,10 +2126,11 @@ int IntUniformFV::calc_timestep(
 
 
 
-int IntUniformFV::check_eosim()
+int sim_control_fixedgrid::check_eosim()
 {
   //  cout <<"Checking eosim.";
   //  cout <<"finishtime="<<SimPM.finishtime<<"\n";
+
   if (SimPM.finishtime >0) {
     if (SimPM.simtime >= SimPM.finishtime ) {
       SimPM.maxtime=true;
@@ -2142,10 +2144,10 @@ int IntUniformFV::check_eosim()
   }  
 
   // Diagnose boundary cells... comment out if not needed.
-//  for (int bc=0;bc<SimPM.Nbc;bc++) {
-//    rep.printVec("boundary vec, P :",bd[bc].P );
-//    rep.printVec("boundary vec, Ph:",bd[bc].Ph);
-//  }
+  //  for (int bc=0;bc<SimPM.Nbc;bc++) {
+  //    rep.printVec("boundary vec, P :",bd[bc].P );
+  //    rep.printVec("boundary vec, Ph:",bd[bc].Ph);
+  //  }
   // diagnose bcs
   return(0);
 }
@@ -2157,7 +2159,7 @@ int IntUniformFV::check_eosim()
 
 
 
-int IntUniformFV::check_energy_cons(
+int sim_control_fixedgrid::check_energy_cons(
       class GridBaseClass *grid
       )
 {
@@ -2218,13 +2220,13 @@ int IntUniformFV::check_energy_cons(
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
-int IntUniformFV::Finalise(
+int sim_control_fixedgrid::Finalise(
       class GridBaseClass *grid
       )
 {
   int err=0;
   cout <<"------------------------------------------------------------\n";
-  cout <<"(IntUniformFV::Finalise) FINALISING SIMULATION."<<"\n";
+  cout <<"(sim_control_fixedgrid::Finalise) FINALISING SIMULATION."<<"\n";
   err += check_energy_cons(grid);
   err+= output_data(grid);
   if (err!=0){
@@ -2233,7 +2235,7 @@ int IntUniformFV::Finalise(
   }
   cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
 #ifdef TESTING
-  cout <<"(IntUniformFV::Finalise) DONE.\n";
+  cout <<"(sim_control_fixedgrid::Finalise) DONE.\n";
 #endif
   cout <<"------------------------------------------------------------\n";
   return(0);

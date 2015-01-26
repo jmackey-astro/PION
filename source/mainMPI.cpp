@@ -66,7 +66,8 @@ using namespace std;
 //
 // simulation control toolkit class.
 //
-#include "grid.h"
+#include "sim_control.h"
+#include "sim_control_MPI.h"
 
 
 #ifndef PARALLEL
@@ -147,13 +148,17 @@ int main(int argc, char **argv)
   class GridBaseClass *grid = 0;
 
   //
+  // set up ParallelParams class.
+  //
+  class ParallelParams mpiPM;
+
+  //
   // Set up simulation controller class.
   //
-  class IntegratorBaseFV *sim_control = 0;
-
-  sim_control = new class ParallelIntUniformFV();
+  class sim_control_fixedgrid_pllel *sim_control = 0;
+  sim_control = new class sim_control_fixedgrid_pllel();
   if (!sim_control)
-    rep.error("(PION) Couldn't initialise ParallelIntUniformFV sim_control", sim_control);
+    rep.error("(PION) Couldn't initialise sim_control_fixedgrid_pllel", sim_control);
 
   //
   // Reset max. walltime to run the simulation for, if needed.
@@ -175,7 +180,7 @@ int main(int argc, char **argv)
     }
   }
   
-  err = sim_control->Init(argv[1], ft, argc, args, &grid);
+  err = sim_control->Init(argv[1], ft, argc, args, &grid, mpiPM);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;

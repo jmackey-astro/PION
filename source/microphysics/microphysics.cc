@@ -50,6 +50,7 @@
 ///     can have as many passive tracers as we like!
 /// - 2011.08.17 JM: timescales() limits for RT_TEST_PROBS added.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.01.26 JM: Got rid of mpiPM. call.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -206,28 +207,24 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
 
 
 #ifdef TESTING
-#ifdef PARALLEL
   //
   // can't have all procs fighting over file in parallel, so just
-  // don't write...  
+  // don't write if we are running parallel code.
   //
-  if (mpiPM.myrank==0) {
-#endif // PARALLEL
-    ofstream outf("hummer_recomb.txt");
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Hummer Recombination and Cooling Curve Data: Temperature(K) Rate(cm^3/s) Cool(erg.cm^3/s)\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double t=10.0;
-    do {
-      outf << t <<"\t"<< rad_recomb_rate(t)*sqrt(t) <<"\t"<< rad_recomb_energy(t)*sqrt(t);
-      outf <<"\t"<<rad_recomb_rate(t)<<"\t"<<rad_recomb_energy(t)<<"\t";
-      outf <<3.41202e-10*exp(-0.782991*log(t))<<"\t"<< 3.41202e-10*exp(-0.782991*log(t)) *kB*t/(2./3.) << "\n";
-      t *=1.03;
-    } while (t<1.e7);
-    outf.close();
-#ifdef PARALLEL
-  }
+#ifndef PARALLEL
+  ofstream outf("hummer_recomb.txt");
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Hummer Recombination and Cooling Curve Data: Temperature(K) Rate(cm^3/s) Cool(erg.cm^3/s)\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double t=10.0;
+  do {
+    outf << t <<"\t"<< rad_recomb_rate(t)*sqrt(t) <<"\t"<< rad_recomb_energy(t)*sqrt(t);
+    outf <<"\t"<<rad_recomb_rate(t)<<"\t"<<rad_recomb_energy(t)<<"\t";
+    outf <<3.41202e-10*exp(-0.782991*log(t))<<"\t"<< 3.41202e-10*exp(-0.782991*log(t)) *kB*t/(2./3.) << "\n";
+    t *=1.03;
+  } while (t<1.e7);
+  outf.close();
 #endif // PARALLEL
 #endif // TESTING
 #endif // HUMMER_RECOMB

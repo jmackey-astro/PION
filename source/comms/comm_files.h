@@ -1,18 +1,17 @@
-/* \file comm_files.h
- *
- * \brief Contains comms class for multi-process communication using
- * files.  This is only intended for debugging code -- all processes
- * must be started up by hand on the same machine in the same directory,
- * and this class creates and destroys files to pass information between
- * processes.
- *
- * \author Jonathan Mackey
- * \date 2009-01-27.
- */ 
+/// \file comm_files.h
+///
+/// \brief Contains comms class for multi-process communication using
+/// files.  This is only intended for debugging code -- all processes
+/// must be started up by hand on the same machine in the same directory,
+/// and this class creates and destroys files to pass information between
+/// processes.
+///
+/// \author Jonathan Mackey
+/// \date 2009-01-27.
+/// 
 /// Modifications:
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
 /// - 2015.01.26 JM: added get_rank_nproc() function.
-///
 
 #ifdef PARALLEL
 #ifdef USE_FILE_COMMS
@@ -63,9 +62,9 @@ class comm_files : public comms_base {
   ///
   /// Get this process's rank, and total number of processes.
   ///
-  int comm_mpi::get_rank_nproc(
+  int get_rank_nproc(
         int *, ///< rank.
-	int *   ///< nproc
+	int *  ///< nproc
 	);
 
   /** \brief Tell other processes that I am exiting, and either exit, or wait for the

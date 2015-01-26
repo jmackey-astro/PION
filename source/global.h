@@ -90,6 +90,9 @@
 /// - 2015.01.12 JM: moved reporting to tools/reporting.h.
 ///    Moved commandline interface to tools/command_line_interface.h.
 ///    Moved memory management to tools/mem_manage.h.
+/// - 2015.01.26 JM: removed IntegratorBaseFV (no point to this base
+///    class, as far as I can see (famous last words...))
+///    Removed ParallelParams class (to sim_control_MPI.h), and COMM.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -457,81 +460,6 @@ struct stellarwind_list {
 
 extern struct stellarwind_list SWP;
 
-//#include "stellar_wind_BC.h"
-//extern class stellar_wind SW;
-
-// *******************************************************************
-// *******************************************************************
-
-
-#ifdef PARALLEL
-
-//
-// integer flags for MPI communication labels.
-//
-#define BC_ANYtag 0 ///< works for either sort of communication.
-#define BC_MPItag 1 ///< This is an integer tag on send/receive operations, to label that this communicates MPI boundary data.
-#define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
-#define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
-
-/** \brief Class to hold parameters only relevant to parallel code.
- * 
- * For parallel processing, the domain is split between processors, so the 
- * local domain is smaller than the full domain.  That information is stored 
- * here.
- * */
-class ParallelParams {
- public:
-  ParallelParams();
-  ~ParallelParams();
-  int nproc;  ///< Number of processors.
-  int myrank; ///< Which processor am I?
-  int LocalNG[MAX_DIM];  ///< Number of 'real' grid-zones in each direction, on this processor's domain.
-  int LocalNcell;  ///< Total number of 'real' grid zones in this processor's domain.
-  int offsets[MAX_DIM]; ///< number of zones from this proc's 1st zone to the sim's 1st zone.
-  double LocalXmin[MAX_DIM];  ///< Min value of x,y,z in Processor's domain.
-  double LocalXmax[MAX_DIM];  ///< Max value of x,y,z in Processor's domain.
-  double LocalRange[MAX_DIM]; ///< Size of Processor's domain in x,y,z-direction.
-  int *ngbprocs;  ///< list with processor rank of neighbours in each direction.
-  bool ReadSingleFile; ///< If the ICs are in a single file, set this to true.
-  bool WriteSingleFile; ///< If you want all the processors to write to one file, set this (BUGGY!)
-  bool WriteFullImage;  ///< If you want multiple fits files, but each one is the full domain size (bad!)
-  /** \brief Decompose the domain into blocks for each processor, and set up
-   * a structure which contains the domain of each processor.
-   * */
-  int decomposeDomain();
-  ///
-  /// Get a list of all abutting domains, including corner/edge intersections.
-  ///
-  void get_abutting_domains(std::vector<int> & ///< write list to this vector.
-          );
-  ///
-  /// Returns the ix array for any requested rank.
-  ///
-  void get_domain_ix(const int, ///< rank ix requested for.
-         int *      ///< array to put ix into.
-         );
- protected:
-  int ix[MAX_DIM];  ///< this proc's position in the block of domains (zero offset)
-  int nx[MAX_DIM];  ///< size of block of domains in each direction. (one block = one unit).
-  std::vector<int> full_ngb_list; ///< list of abutting domains.
-  /** \brief Called by decomposeDomain() to set neighbouring processor ids.
-   * 
-   * This works if processors are ranked from zero to n-1 in integer steps.
-   * If a subdomain is on the full domain boundary, the processor neighbour
-   * in that direction is set to -999.
-   * 
-   * The rank of processor i is defined by
-   * \f[ \mbox{myrank} = n_x*n_y*i_z + n_x*i_y + i_x \f]
-   * where the 'n's refer to number of processors that span the domain
-   * in each direction, and 'i's refer to the location of the current
-   * processor along that direction.
-   * */
-  int pointToNeighbours();
-};
-extern class ParallelParams mpiPM; ///< Holds data about current processor's subdomain.
-#endif //PARALLEL
-
 
 
 
@@ -647,62 +575,23 @@ extern class cell_interface CI;
 // so I setup an abstract base class in comms.h, and implement it in either comm_mpi or
 // comm_files, and it should abstract away all the details of how the communication happens.
 //
-#ifdef PARALLEL
-#include "comms/comms.h"
+//#ifdef PARALLEL
+//#include "comms/comms.h"
+//
+//#if   defined USE_MPI
+//#include "comms/comm_mpi.h"
+//#elif defined USE_FILE_COMMS
+//#include "comms/comm_files.h"
+//#else
+//#error "MUST DEFINE EITHER USE_MPI or USE_FILE_COMMS"
+//#endif
 
-#if   defined USE_MPI
-#include "comms/comm_mpi.h"
-#elif defined USE_FILE_COMMS
-#include "comms/comm_files.h"
-#else
-#error "MUST DEFINE EITHER USE_MPI or USE_FILE_COMMS"
-#endif
-
-extern class comms_base *COMM;
-#endif // PARALLEL
+//extern class comms_base *COMM;
+//#endif // PARALLEL
 /************************ MULTI-PROCESS COMMS *************************/
 /**********************************************************************/
 
 
-
-/************************* GRID METHODS **************************/
-/** \brief Abstract base class for finite volume grids.
- * */
-class IntegratorBaseFV
-{
-  public:
-  virtual ~IntegratorBaseFV() {}
-  virtual int Init(string, ///< Name of input file.
-        int,    ///< Type of File (1=ASCII, 2=FITS, 3=fitstable, 5=SILO).
-        int,    ///< Number of command-line arguments.
-        string *, ///< Pointer to array of command-line arguments.
-        class GridBaseClass **  ///< pointer to address of grid pointer.
-        ) =0;
-  virtual int Time_Int(
-      class GridBaseClass * 
-      ) =0;
-  virtual int Finalise(
-      class GridBaseClass * 
-      ) =0;
-  ///
-  /// Set the maximum runtime to a new value. Should be set in main()
-  ///
-  void set_max_walltime(
-        double ///< New Max. runtime in hours.
-        )=0;
-  ///
-  /// Get the maximum runtime in seconds.
-  ///
-  double get_max_walltime()=0;
-  //
-  // Returns the ix array for any requested rank.
-  //
-};
-/************************* GRID METHODS **************************/
-
-
-/************************ EQN SOLVER ***************************/
-/*****************************************************************/
 
 
 

@@ -8,6 +8,7 @@
 /// Modifications:
 /// - 2015.01.08 JM: created file, moved class from global.h
 /// - 2015.01.16 JM: extra flush/endl statements in error().
+/// - 2015.01.26 JM: added include for comms and cell classes.
 
 
 #ifndef REPORTING_H
@@ -18,6 +19,12 @@
 #include <fstream>
 #include <stdlib.h> 
 #include "sim_params.h"
+
+#ifdef PARALLEL
+#include "comms/comms.h"
+//#include "comms/comm_files.h"
+//#include "comms/comm_mpi.h"
+#endif // PARALLEL
 
 using namespace std;
 

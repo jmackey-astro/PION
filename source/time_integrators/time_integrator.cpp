@@ -4,7 +4,7 @@
 /// 
 /// \author Jonathan Mackey
 /// 
-/// This file contains the definitions of the member functions for IntUniformFV 
+/// This file contains the definitions of the member functions for sim_control_fixedgrid 
 /// class, which is the basic 1st/2nd order Finite Volume Solver according to
 /// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
 /// 
@@ -20,7 +20,7 @@
 ///  - 2007-11-01 Added dataio class last week, cleaning up today.
 ///  - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
 ///
-///  - JM 2009-12-16 Added ifdef in IntUniformFV::Time_Int() so that I
+///  - JM 2009-12-16 Added ifdef in sim_control_fixedgrid::Time_Int() so that I
 ///      can get the code to output magnetic pressure instead of
 ///      timing info every timestep.  This is purely to make a plot of
 ///      magnetic pressure for the Field Loop Advection Test and
@@ -143,6 +143,7 @@
 /// - 2013.12.03 JM: Modified NO_COOLING_ON_AXIS hack.
 /// - 2015.01.12/13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
+/// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -153,7 +154,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "grid.h"
+#include "sim_control.h"
 #include "dataIO/dataio.h"
 
 #include "microphysics/microphysics_base.h"
@@ -190,7 +191,7 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int IntUniformFV::advance_time(
+int sim_control_fixedgrid::advance_time(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -270,7 +271,7 @@ int IntUniformFV::advance_time(
 
 
 
-int IntUniformFV::first_order_update(
+int sim_control_fixedgrid::first_order_update(
       const double dt,
       const int   ooa,
       class GridBaseClass *grid ///< Computational grid.
@@ -329,7 +330,7 @@ int IntUniformFV::first_order_update(
 
 
 
-int IntUniformFV::second_order_update(
+int sim_control_fixedgrid::second_order_update(
       const double dt,
       const int   ooa,
       class GridBaseClass *grid ///< Computational grid.
@@ -399,12 +400,12 @@ int IntUniformFV::second_order_update(
 
 
 
-int IntUniformFV::timestep_dynamics_then_microphysics(
+int sim_control_fixedgrid::timestep_dynamics_then_microphysics(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
 #ifdef TESTING
-  cout <<"Using  IntUniformFV::timestep_dynamics_then_microphysics() update.\n";
+  cout <<"Using  sim_control_fixedgrid::timestep_dynamics_then_microphysics() update.\n";
 #endif // TESTING
   
   // ----------------------------------------------------------------
@@ -522,7 +523,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics(
 
 
 
-int IntUniformFV::calculate_raytracing_column_densities(
+int sim_control_fixedgrid::calculate_raytracing_column_densities(
       //class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -534,7 +535,7 @@ int IntUniformFV::calculate_raytracing_column_densities(
   if (RT) {
     for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
 #ifdef RT_TESTING
-      cout <<"IntUniformFV::calc_RT_col_dens: SRC-ID: "<<isrc<<"\n";
+      cout <<"sim_control_fixedgrid::calc_RT_col_dens: SRC-ID: "<<isrc<<"\n";
 #endif
       err += RT->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
       if (err) {
@@ -552,7 +553,7 @@ int IntUniformFV::calculate_raytracing_column_densities(
 
 
 
-int IntUniformFV::calc_microphysics_dU(
+int sim_control_fixedgrid::calc_microphysics_dU(
       const double delt, ///< timestep to integrate MP eqns.
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -613,7 +614,7 @@ int IntUniformFV::calc_microphysics_dU(
 
 
 
-int IntUniformFV::calc_microphysics_dU_general_RT(
+int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
       const double delt, // timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -733,7 +734,7 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
 
 
 
-int IntUniformFV::calc_microphysics_dU_JMs_C2ray_RT(
+int sim_control_fixedgrid::calc_microphysics_dU_JMs_C2ray_RT(
       const double delt, ///< timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -788,7 +789,7 @@ int IntUniformFV::calc_microphysics_dU_JMs_C2ray_RT(
 
 
 
-int IntUniformFV::calc_microphysics_dU_no_RT(
+int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
       const double delt, ///< timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -850,7 +851,7 @@ int IntUniformFV::calc_microphysics_dU_no_RT(
 
 
   
-int IntUniformFV::calc_dynamics_dU(
+int sim_control_fixedgrid::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
       const int space_ooa, ///< spatial order of accuracy for update.
       //const int time_ooa,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
@@ -907,7 +908,7 @@ int IntUniformFV::calc_dynamics_dU(
 
 
 
-int IntUniformFV::set_dynamics_dU(
+int sim_control_fixedgrid::set_dynamics_dU(
       const double dt,     ///< timestep for this calculation
       const int space_ooa, ///< space OOA for this calculation
       class GridBaseClass *grid ///< Computational grid.
@@ -990,7 +991,7 @@ int IntUniformFV::set_dynamics_dU(
 
   
 
-int IntUniformFV::dynamics_dU_column
+int sim_control_fixedgrid::dynamics_dU_column
       (
       const class cell *startingPt, ///< sterting point of column.
       const enum direction posdir, ///< direction to trace column.
@@ -1181,7 +1182,7 @@ int IntUniformFV::dynamics_dU_column
 // ##################################################################
 
   
-int IntUniformFV::grid_update_state_vector(
+int sim_control_fixedgrid::grid_update_state_vector(
       const double dt,  ///< timestep
       const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa,   ///< Full order of accuracy of simulation
