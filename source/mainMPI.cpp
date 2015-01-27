@@ -147,10 +147,6 @@ int main(int argc, char **argv)
   //
   class GridBaseClass *grid = 0;
 
-  //
-  // set up ParallelParams class.
-  //
-  class ParallelParams mpiPM;
 
   //
   // Set up simulation controller class.
@@ -172,7 +168,7 @@ int main(int argc, char **argv)
 
       sim_control->set_max_walltime(tmp*3600.0);
 
-      if (mpiPM.myrank==0) {
+      if (myrank==0) {
         cout <<"\tResetting MAXWALLTIME to ";
         cout <<sim_control->get_max_walltime()<<" seconds, or ";
         cout <<sim_control->get_max_walltime()/3600.0<<" hours.\n";
@@ -180,7 +176,7 @@ int main(int argc, char **argv)
     }
   }
   
-  err = sim_control->Init(argv[1], ft, argc, args, &grid, mpiPM);
+  err = sim_control->Init(argv[1], ft, argc, args, &grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
@@ -206,7 +202,7 @@ int main(int argc, char **argv)
   delete [] args; args=0;
 
   COMM->finalise();
-  cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+  cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   delete COMM; COMM=0;
 
   return(0);

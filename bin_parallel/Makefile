@@ -302,6 +302,7 @@ endif
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 OBJECTS = mainMPI.o uniform_grid.o sim_control.o global.o                      \
+        MCMD_control.o \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
@@ -328,6 +329,7 @@ OBJECTS = mainMPI.o uniform_grid.o sim_control.o global.o                      \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
+        MCMD_control.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
         file_status.o                                                          \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
@@ -397,16 +399,20 @@ mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
 global.o: global.cc ${GLOBAL}
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 
+MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h microphysics.h \
  dataio.h dataio_silo.h dataio_fits.h microphysics_lowZ.h \
- microphysics_base.h mp_only_cooling.h mp_v2_aifa.h
+ microphysics_base.h mp_only_cooling.h mp_v2_aifa.h \
+ MCMD_control.h
 
 # functions for stepping forward in time
 time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 # functions for calculating the timestep
 calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
-sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h sim_control.h ${GLOBAL} comms.h
+sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
+ sim_control.h MCMD_control.h ${GLOBAL} comms.h
 
 uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
 

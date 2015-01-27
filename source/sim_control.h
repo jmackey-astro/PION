@@ -47,12 +47,15 @@
 #ifndef SIM_CONTROL_H
 #define SIM_CONTROL_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "global.h"
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"
 #include "dataIO/dataio.h"
-
+#include "MCMD_control.h"
 
 /// The simplest finite volume grid -- a uniform grid with cubic cells
 /// in the chosen coordinates.
@@ -127,7 +130,8 @@ class sim_control_fixedgrid
   /// UniformGrid class -- uniform, cartesian, finite volume grid.
   ///
   virtual int setup_grid(
-        class GridBaseClass **  ///< address of pointer to computational grid.
+        class GridBaseClass **, ///< address of pointer to computational grid.
+        class MCMDcontrol *     ///< address of MCMD controller class.
         );
 
   ///
