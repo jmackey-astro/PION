@@ -1,45 +1,31 @@
-/** \file dataio_fits.cc
- * This file contains the class definitions for the DataIOFits class, which 
- * uses FITS, from http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
- * at NASA.  I have tried to make the functions atomic as much as possible,
- * so bits of code can be reused.  When I wrote this, instead of having a 
- * parallel class derived from the serial class, I just put ifdefs in the 
- * functions.  I don't like this anymore, but it's the way it is until I get 
- * around to rewriting it, which won't happen unless I need new functionality.
- * It is robust and hasn't failed for ages, so I'm happy to say it works.
- * 
- * One thing to note is that writing to a single file in parallel
- * (from multiple processes) is broken -- there is no useful queueing
- * system to make processes take turns, so it can and probably will
- * seg.fault.  Workaround is to write multiple files and then stitch
- * them together later with grid/analysis/stitchfits.cc
- *
- * FITS functions have a short name, typically ffxxxx(), and a long
- * name, typically fits_do_some_task().  I always use the long name,
- * except in cases where it isn't defined and I had to use
- * ffmahd(ff,1,0,&status), which is fits_move_absolute_hdu() and moves
- * to the numbered HDU in the argument.  Also ffmrhd(ff,N,0,&status)
- * moves forward by N HDU's if possible.
- *
- * modified:\n 
- *
- *  - 2007-10-25 got the parallel fits-io class to compile and write
- *     data.
- *
- *  - 2007-10-26 parallel fits-io class reads data from single and
- *     multiple files. Put in serial ifdefs, so that it should work
- *     for serial code too.
- *
- *  - 2008-09-19 Renamed to dataio_fits.cc, and added in ifdefs so
- *     code can be compiled on machines without cfitsio installed.
- *
- *  - 2009-06-06 Split into two classes: a base utility class that
- *     knows nothing about the grid, and a DataIOFits class which
- *     interfaces with the grid.
- *
- * - 2010-02-03 JM: removed unused variables; renamed some variables
- *    where i used 'i' twice in a function.
- */
+/// \file dataio_fits.cc
+/// \author Jonathan Mackey
+///
+/// This file contains the class definitions for the DataIOFits class, which 
+/// uses FITS, from http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+/// at NASA.  I have tried to make the functions atomic as much as possible,
+/// so bits of code can be reused.
+/// 
+/// FITS functions have a short name, typically ffxxxx(), and a long
+/// name, typically fits_do_some_task().  I always use the long name,
+/// except in cases where it isn't defined and I had to use
+/// ffmahd(ff,1,0,&status), which is fits_move_absolute_hdu() and moves
+/// to the numbered HDU in the argument.  Also ffmrhd(ff,N,0,&status)
+/// moves forward by N HDU's if possible.
+///
+/// modified:\n 
+/// - 2007-10-25 got the parallel fits-io class to compile and write
+///     data.
+/// - 2007-10-26 parallel fits-io class reads data from single and
+///     multiple files. Put in serial ifdefs, so that it should work
+///     for serial code too.
+/// - 2008-09-19 Renamed to dataio_fits.cc, and added in ifdefs so
+///     code can be compiled on machines without cfitsio installed.
+/// - 2009-06-06 Split into two classes: a base utility class that
+///     knows nothing about the grid, and a DataIOFits class which
+///     interfaces with the grid.
+/// - 2010-02-03 JM: removed unused variables; renamed some variables
+///    where i used 'i' twice in a function.
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
 /// - 2010.07.21 JM: order of accuracy flags are now integers.
@@ -64,6 +50,7 @@
 ///    not written to file by default.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.01.28 JM: Removed parallel code, put into new class.
 
 #ifdef FITS
 
@@ -103,6 +90,7 @@ DataIOFits::DataIOFits()
   DataIOFits::eqn =0;
   DataIOFits::gp=0;
   DataIOFits::file_ptr=0;
+
 }
 
 
@@ -124,7 +112,9 @@ DataIOFits::~DataIOFits()
 
 
 
-void DataIOFits::SetSolver(FV_solver_base *solver)
+void DataIOFits::SetSolver(
+      FV_solver_base *solver
+      )
 {
   cout <<"DataIOFits::SetSolver() Setting solver pointer.\n";
   DataIOFits::eqn = solver;
@@ -136,10 +126,13 @@ void DataIOFits::SetSolver(FV_solver_base *solver)
 // ##################################################################
 
 
-int DataIOFits::OutputData(string outfilebase,      ///< base filename
-			   class GridBaseClass *cg, ///< pointer to data.
-			   const long int file_counter   ///< number to stamp file with (e.g. timestep)
-			   )
+int DataIOFits::OutputData(
+      string outfilebase,          ///< base filename
+      class GridBaseClass *cg,     ///< pointer to data.
+//      class SimParams *sim_params, ///< pointer to simulation parameters
+//      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
+      const long int file_counter  ///< number to stamp file with (e.g. timestep)
+      )
 {
   string fname="DataIOFits::OutputData";
 
@@ -233,8 +226,6 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
   ostringstream temp; temp.str("");
 
   // -------------------------------------------------------
-#if defined (SERIAL)
-  // -------------------------------------------------------
   // -------------------------------------------------------
   //cout <<"DataIOFits::OutputData() writing file.";
   //cout <<":\t writing to file "<<outfile;
@@ -290,157 +281,6 @@ int DataIOFits::OutputData(string outfilebase,      ///< base filename
   //  cout <<": file written.\n";
   // -------------------------------------------------------
   // -------------------------------------------------------
-
-
-#elif defined (PARALLEL)
-  // -------------------------------------------------------
-  // -------------------------------------------------------
-  if (!mpiPM.WriteSingleFile) {
-    // This is the default -- each process writes its own file
-    cout <<"DataIOFits::OutputData() writing multiple files.\n";
-    temp.str("");
-//    temp <<mpiPM.myrank<< "_"<< outfile <<".fits"; outfile = temp.str();
-    cout <<"Proc "<<mpiPM.myrank<<":\t writing to file "<<outfile<<"\n";
-    if (file_exists(outfile)) {
-      cout <<"Proc "<<mpiPM.myrank<<":\t file exists... overwriting!\n";
-      temp.str(""); temp <<"!"<<outfile; outfile=temp.str();
-    }
-    //    if(acquire_lock(outfile)) rep.error("Failed to lock file",err);
-
-    // Create fits file.
-    fits_create_file(&ff, outfile.c_str(), &status);
-    if(status) {cerr<<"Creating new file went bad.\n";exit(1);}
-
-    // write fits header
-    //    err += write_fits_header(ff);
-    //    if(err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
-    // --------------------------------------------------------
-    //
-    // create HDU for header
-    //
-    fits_create_img(ff,DOUBLE_IMG,0,0,&status);
-    if(status) {fits_report_error(stderr,status);}
-    //
-    // set file pointer for the header writing function.
-    //
-    file_ptr=ff;
-    err = write_simulation_parameters();
-    if (err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
-    ff=file_ptr;
-    // --------------------------------------------------------
-    
-
-    //
-    // for each image, create image and write my portion of it.
-    //
-    double *data=0;
-    for (int i=0;i<nvar;i++) {
-      if (mpiPM.WriteFullImage) { // write full image, with only local part being non-zero.
-	err += create_fits_image(ff,extname[i],SimPM.ndim, SimPM.NG);
-	err += put_variable_into_data_array(extname[i], mpiPM.LocalNcell, &data);
-	err += write_fits_image(ff,extname[i], mpiPM.LocalXmin, SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM.LocalNG, mpiPM.LocalNcell, data);
-      }
-      else { // Write only part of image that is on local grid.
-	err += create_fits_image(ff,extname[i], SimPM.ndim, mpiPM.LocalNG);
-	err += put_variable_into_data_array(extname[i], mpiPM.LocalNcell, &data);
-	err += write_fits_image(ff,extname[i], mpiPM.LocalXmin, mpiPM.LocalXmin, gp->DX(), SimPM.ndim, mpiPM.LocalNG, mpiPM.LocalNcell, data);
-      }
-    }
-    if (err) rep.error("DataIOFits::OutputData() Image Writing went bad",err);
-    data = mem.myfree(data);
-
-    // Close file
-    err += fits_close_file(ff,&status);
-    //    release_lock(outfile);
-    cout <<"Proc "<<mpiPM.myrank<<": file created, written, and unlocked. err="<<err<<"\n";
-  }
-
-  else if (mpiPM.WriteSingleFile) {
-    cout <<"WARNING! THIS IS NOT SYNCHRONOUS!  WILL FAIL RANDOMLY AND CAUSE CRASH.\n";
-    if (file_exists(outfile)) {
-      cout <<"Proc "<<mpiPM.myrank<<": file exists...";
-      // If file exists, wait for access and then lock it.
-      acquire_lock(outfile);
-    }
-    else {
-      // If file doesn't exist, lock it and create it.
-      cout <<"Proc "<<mpiPM.myrank<<": file doesn't exist, lock it and create it.\n";
-      acquire_lock(outfile);
-      // Create fits file.
-      fits_create_file(&ff, outfile.c_str(), &status);
-      if(status) {fits_report_error(stderr,status); cerr<<"Creating new file went bad.\n";exit(1);}
-
-      // write fits header
-      //      err += write_fits_header(ff);
-      //      if(err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
-      // --------------------------------------------------------
-      //
-      // create HDU for header
-      //
-      fits_create_img(ff,DOUBLE_IMG,0,0,&status);
-      if(status) {fits_report_error(stderr,status);}
-      //
-      // set file pointer for the header writing function.
-      //
-      file_ptr=ff;
-      err = write_simulation_parameters();
-      if (err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
-      ff=file_ptr;
-      // --------------------------------------------------------
-
-      //
-      // for each image, create image and write my portion of it.
-      //
-      for (int i=0;i<nvar;i++) {
-	err += create_fits_image(ff,extname[i], SimPM.ndim, SimPM.NG);
-	double *data=0;
-	err += put_variable_into_data_array(extname[i], mpiPM.LocalNcell, &data);
-	err += write_fits_image(ff,extname[i],mpiPM.LocalXmin,SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM.LocalNG,mpiPM.LocalNcell, data);
-	data = mem.myfree(data);
-      }
-      if (err) rep.error("DataIOFits::OutputData() SingleFile Image Writing went bad",err);
-      // Close file
-      err += fits_close_file(ff,&status);
-      release_lock(outfile);
-      cout <<"Proc "<<mpiPM.myrank<<": file created, written, and unlocked. err="<<err<<"\n";
-      delete [] extname; extname=0;
-      return(err);
-    }
-    //--------------------------------------------------------
-    // Now file exists, and we have access to it.
-    err = fits_open_file(&ff, outfile.c_str(), READWRITE, &status);
-    if(status) {fits_report_error(stderr,status); return(err);}
-    // Move to the right hdu image and check it is the right size.
-    char temp[256];
-    for (int i=0;i<nvar;i++) {
-      strcpy(temp,extname[i].c_str());
-      err += fits_movnam_hdu(ff,ANY_HDU,temp,0,&status);
-      if(status) {fits_report_error(stderr,status); cerr<<"Couldn't find hdu "<<temp<<".\n"; return(err);}
-      err = check_fits_image_dimensions(ff,extname[i], SimPM.ndim, SimPM.NG);
-      if (err !=0) rep.error("DataIOFits::OutputData() SingleFile: image dimensions don't match",err);
-      // write my portion of image.
-      double *data=0;
-      err += put_variable_into_data_array(extname[i], mpiPM.LocalNcell, &data);
-      err += write_fits_image(ff,extname[i],mpiPM.LocalXmin,SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM.LocalNG,mpiPM.LocalNcell, data);
-	data = mem.myfree(data);
-    }
-    if (err) rep.error("DataIOFits::OutputData() SingleFile: Error writing image",err);
-    // Close file
-    err += fits_close_file(ff,&status);
-    if(status) {
-      fits_report_error(stderr,status);
-      cerr<<"DataIOFits::OutputData() SingleFile: Error writing to existing file\n";
-      return(err);}
-    release_lock(outfile);
-  } // If write to a single file.
-
-  // -------------------------------------------------------
-  // -------------------------------------------------------
-  else rep.error("Logic Error in DataIOFits::OutputData()",mpiPM.WriteSingleFile);
-
-#else
-# error "Neither PARALLEL nor SERIAL defined!"
-#endif //PARALLEL or SERIAL
 
   extname = mem.myfree(extname);
   
@@ -628,7 +468,6 @@ int DataIOFits::ReadData(string infile,
       // Variable found, check we're at the right hdu and read data.
       fits_get_hdu_num(ff, &num);
       //cout <<"Current hdu: "<<num<<"\t i="<<i<<" and var[i] = "<<var[i]<<"\n";
-#if defined (SERIAL)
       //  cout <<"\t\tDataIOFits::ReadData() Reading fits image.\n";
       //  cout <<"\t\t reading from file "<<infile<<"\n";
       err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, SimPM.NG);
@@ -637,34 +476,6 @@ int DataIOFits::ReadData(string infile,
       err += read_fits_image(ff, var[i], SimPM.Xmin, SimPM.Xmin, SimPM.NG, SimPM.Ncell);
       if (err) rep.error("error reading image.",err);
       //  cout <<"\t\tDataIOFits::ReadData() Got fits image.\n";
-#elif defined (PARALLEL)
-      // -----------------------------------------------------------------
-      // --- Now call read function differently depending on if infile ---
-      // --- is a single file or split already between processors.     ---
-      // -----------------------------------------------------------------
-      if (!mpiPM.ReadSingleFile) {
-	// This is where each process reads from its own file.
-	cout <<"DataIOFits::ReadData() Reading from multiple files.\n";
-	cout <<"Proc "<<mpiPM.myrank<<":\t reading from file "<<infile<<"\n";
-	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, mpiPM.LocalNG);
-	if (err) rep.error("image wrong size.",err);
-	err += read_fits_image(ff, var[i], mpiPM.LocalXmin, mpiPM.LocalXmin, mpiPM.LocalNG, mpiPM.LocalNcell);
-	if (err) rep.error("error reading image.",err);
-      }
-      else if (mpiPM.ReadSingleFile) {
-	// All processes read from a single ic/restart file.
-	cout <<"DataIOFits::ReadData() Reading from single file.\n";
-	cout <<"Proc "<<mpiPM.myrank<<":\t reading from file "<<infile<<"\n";
-	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, SimPM.NG);
-	if (err) rep.error("image wrong size.",err);
-	err += read_fits_image(ff, var[i], mpiPM.LocalXmin, SimPM.Xmin, mpiPM.LocalNG, mpiPM.LocalNcell);
-	if (err) rep.error("error reading image.",err);
-      }
-      else rep.error("DataIOFits::ReadData() logic error",mpiPM.WriteSingleFile);
-      //------------------------------------------------------------------
-#else
-# error "Neither PARALLEL nor SERIAL defined!"
-#endif //PARALLEL or SERIAL
     } // got real hdu and read data.
 
   } // Loop over all Primitive Variables
@@ -709,17 +520,6 @@ std::string DataIOFits::choose_filename(
   string outfile;
   ostringstream temp; temp.str("");
   temp <<fbase;
-#if defined (PARALLEL)
-  //
-  // Add _RANK to filename if running in parallel and writing multiple
-  // files.
-  //
-  if(!mpiPM.WriteSingleFile) {
-    temp <<"_";
-    temp.width(4); temp.fill('0');
-    temp <<mpiPM.myrank;
-  }
-#endif
   temp <<".";
   if (file_counter >=0) {
     temp.width(Ndigits); temp.fill('0');

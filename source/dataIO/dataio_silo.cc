@@ -40,6 +40,8 @@
 /// - 2013.02.07 JM: Made code less verbose.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.01.28 JM: Removed parallel code (new class).
+
 #ifdef SILO
 
 #include "defines/functionality_flags.h"

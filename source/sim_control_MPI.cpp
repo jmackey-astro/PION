@@ -4,9 +4,10 @@
 /// 
 /// \author Jonathan Mackey
 /// 
-/// This file contains the definitions of the member functions for ParallelIntUniformFV
-/// class, which is a modification of the basic 1st/2nd order Finite Volume Solver according to
-/// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
+/// This file contains the definitions of the member functions for 
+/// the "sim_control_fixedgrid_pllel" class, which is a modification
+/// of the basic 1st/2nd order Finite Volume Solver according to the
+/// method outlined in Falle, Komissarov, \& Joarder (1998),MNRAS,297,265.
 /// 
 /// Modifications:
 /// - 2007-10-11 Started writing file.
@@ -47,8 +48,14 @@
 /// - 2013.04.16 JM: Fixed FITS read functions for new filename convention.
 /// - 2013.09.05 JM: changed RS position[] to pos[].
 /// - 2013.10.13 JM: Tidied up a bit.
-/// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL_MPI.CPP, and
+/// - 2015.01.[26-28] JM: CHANGED FILENAME TO SIM_CONTROL_MPI.CPP, and
 ///    added ParallelParams class, and fixing code for non-global mpiPM.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "tools/command_line_interface.h"
+#include "tools/reporting.h"
 
 #include "MCMD_control.h"
 #include "sim_control.h"
@@ -60,6 +67,7 @@
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
+#include "dataIO/dataio_fits_MPI.h"
 #endif // if FITS
 
 #include <iostream>
@@ -77,7 +85,7 @@ using namespace std;
 
 
 sim_control_fixedgrid_pllel::sim_control_fixedgrid_pllel()
-  : IntUniformFV()
+  : sim_control_fixedgrid()
 {
 #ifdef TESTING
   cout <<"sim_control_fixedgrid_pllel constructor.\n";
@@ -104,7 +112,10 @@ sim_control_fixedgrid_pllel::~sim_control_fixedgrid_pllel()
 
 
 
-int sim_control_fixedgrid_pllel::setup_grid()
+int sim_control_fixedgrid_pllel::setup_grid(
+        class GridBaseClass **grid, ///< address of pointer to computational grid.
+        class MCMDcontrol *MCMD     ///< address of MCMD controller class.
+        )
 {
 #ifdef TESTING
   cout <<"sim_control_fixedgrid_pllel: setting up parallel grid.\n";
@@ -118,7 +129,7 @@ int sim_control_fixedgrid_pllel::setup_grid()
   
   // First decompose the domain, so I know the dimensions of the local grid to set up.
   int err=0;
-  if((err=mpiPM.decomposeDomain()))
+  if((err=MCMD->decomposeDomain()))
     rep.error("Couldn't Decompose Domain!",err);
   
   //
@@ -136,30 +147,33 @@ int sim_control_fixedgrid_pllel::setup_grid()
 #endif
 
   if      (SimPM.coord_sys==COORD_CRT) {
-    grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
-				    SimPM.eqntype,  mpiPM.LocalXmin,
-				    mpiPM.LocalXmax, mpiPM.LocalNG);
+    *grid = new UniformGridParallel (
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype,
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
-    grid = new uniform_grid_cyl_parallel (SimPM.ndim, SimPM.nvar,
-					  SimPM.eqntype,  mpiPM.LocalXmin,
-					  mpiPM.LocalXmax, mpiPM.LocalNG);
+    *grid = new uniform_grid_cyl_parallel (
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype,
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
-    grid = new uniform_grid_sph_parallel (SimPM.ndim, SimPM.nvar,
-					  SimPM.eqntype,  mpiPM.LocalXmin,
-					  mpiPM.LocalXmax, mpiPM.LocalNG);
+    *grid = new uniform_grid_sph_parallel (
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype,
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG);
   }
   else {
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
   }
 
 
-  if (grid==0) rep.error("(sim_control_fixedgrid_pllel::setup_grid) Couldn't assign data!", grid);
+  if (*grid==0)
+    rep.error("(sim_control_fixedgrid_pllel::setup_grid) Couldn't assign data!", *grid);
 
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid_pllel::setup_grid) Done. grid="<<grid;//<<"\n";
-  cout <<"\t DX = "<<grid->DX()<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::setup_grid) Done. ";
+  cout <<"&grid="<<grid<<", and grid="<<*grid<<", and";//<<"\n";
+  cout <<"\t DX = "<<(*grid)->DX()<<"\n";
+  dp.grid = (*grid);
 #endif
 
   return(0);
@@ -195,7 +209,7 @@ int sim_control_fixedgrid_pllel::Init(
   /// restart file for processor 0 (i.e. restartfile\_0.\<timestep\>.fits), and
   /// the function sim_control_fixedgrid_pllel::init() will parse the input
   /// filename and replace the \"\_0.\" with \"\_\<myrank\>.\", followed by a
-  /// call to the original serial function IntUniformFV::init() with the new
+  /// call to the original serial function sim_control_fixedgrid::init() with the new
   /// filename, if it exists.
   ///
   /// For Silo data I/O the model is a little different.  The number of files
@@ -221,7 +235,7 @@ int sim_control_fixedgrid_pllel::Init(
 #ifdef FITS
   // ******** FITS FILE I/O ********
   else if (typeOfFile==2) {
-    if (!dataio) dataio = new DataIOFits();
+    if (!dataio) dataio = new DataIOFits_pllel(&mpiPM);
     if (!dataio) rep.error("DataIOFits initialisation",dataio);
     if (dataio->file_exists(infile)) {
 #ifdef TESTING
@@ -284,7 +298,7 @@ int sim_control_fixedgrid_pllel::Init(
       mpiPM.ReadSingleFile = false;
     }
 
-    if (!dataio) dataio = new dataio_silo_pllel ();
+    if (!dataio) dataio = new dataio_silo_pllel (&mpiPM);
     if (!dataio) rep.error("dataio_silo_pllel initialisation",dataio);
     if (!dataio->file_exists(infile)) {
       cout <<"\tInfile doesn't exist: failing\n";
@@ -299,9 +313,9 @@ int sim_control_fixedgrid_pllel::Init(
     rep.error("Bad file type specifier for parallel grids (2=fits,5=silo) IS IT COMPILED IN???",typeOfFile);
 
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid_pllel::init) Calling serial code IntUniformFV::init() on infile."<<"\n";
+  cout <<"(sim_control_fixedgrid_pllel::init) Calling serial code sim_control_fixedgrid::init() on infile."<<"\n";
 #endif
-  err=IntUniformFV::Init(infile,typeOfFile,narg,args);
+  err = sim_control_fixedgrid::Init(infile, typeOfFile, narg, args, grid);
   if (err) rep.error("failed to do serial init",err);
 
 
@@ -323,12 +337,12 @@ int sim_control_fixedgrid_pllel::Init(
     case 2: // fits
     case 3: // fits
     case 4: // fits +ascii
-      dataio = new DataIOFits();
+      dataio = new DataIOFits_pllel(&mpiPM);
       break;
 #endif
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo_pllel ();
+      dataio = new dataio_silo_pllel (&mpiPM);
       break;
 #endif // if SILO
     default:
@@ -341,7 +355,7 @@ int sim_control_fixedgrid_pllel::Init(
 #ifdef TESTING
      cout << "(P\'LLEL INIT) Outputting initial data.\n";
 #endif
-     output_data();
+     output_data(*grid);
   }
   cout <<"                                   ******************************\n";
 
@@ -354,7 +368,9 @@ int sim_control_fixedgrid_pllel::Init(
 // ##################################################################
 
 
-int sim_control_fixedgrid_pllel::setup_raytracing()
+int sim_control_fixedgrid_pllel::setup_raytracing(
+        class GridBaseClass *grid
+        )
 {
   //
   // This function is basically identical to the serial setup function, except
@@ -494,7 +510,9 @@ int sim_control_fixedgrid_pllel::setup_raytracing()
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int sim_control_fixedgrid_pllel::Time_Int()
+int sim_control_fixedgrid_pllel::Time_Int(
+        class GridBaseClass *grid
+        )
 {
   cout <<"                               **************************************\n";
   cout <<"(sim_control_fixedgrid_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
@@ -513,9 +531,12 @@ int sim_control_fixedgrid_pllel::Time_Int()
     }
 
     //GS.start_timer("advance_time");
-    err+= advance_time();
+    err+= advance_time(grid);
     //cout <<"advance_time took "<<GS.stop_timer("advance_time")<<" secs.\n";
-    if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad"<<"\n";return(1);}
+    if (err!=0) {
+      cerr<<"(TIME_INT::advance_time) err!=0 Something went bad"<<"\n";
+      return(1);
+      }
 
     if (mpiPM.myrank==0 && (SimPM.timestep%log_freq)==0) {
       cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
@@ -529,12 +550,12 @@ int sim_control_fixedgrid_pllel::Time_Int()
     //
     tsf=GS.time_so_far("time_int");
     double maxt = COMM->global_operation_double("MAX", tsf);
-    if (maxt > mpiPM.get_max_walltime()) {
+    if (maxt > get_max_walltime()) {
       SimPM.maxtime=true;
-      cout <<"RUNTIME>"<<mpiPM.get_max_walltime()<<" SECS.\n";
+      cout <<"RUNTIME>"<<get_max_walltime()<<" SECS.\n";
     }
 	
-    err+= output_data();
+    err+= output_data(grid);
     if (err!=0){
       cerr<<"(TIME_INT::output_data) err!=0 Something went bad"<<"\n";
       return(1);
@@ -575,14 +596,16 @@ int sim_control_fixedgrid_pllel::Time_Int()
 // ##################################################################
 
 
-int sim_control_fixedgrid_pllel::calc_timestep()
+int sim_control_fixedgrid_pllel::calc_timestep(
+        class GridBaseClass *grid
+        )
 {
   //
   // First get the local grid dynamics and microphysics timesteps.
   //
   double t_dyn=0.0, t_mp=0.0;
-  t_dyn = calc_dynamics_dt();
-  t_mp  = calc_microphysics_dt();
+  t_dyn = calc_dynamics_dt(grid);
+  t_mp  = calc_microphysics_dt(grid);
   // output step-limiting info every tenth timestep.
   if (t_mp<t_dyn && (SimPM.timestep%10)==0)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";

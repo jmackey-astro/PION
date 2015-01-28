@@ -71,6 +71,8 @@
 ///    not integer distances, to avoid rounding errors.
 /// - 2015.01.10 JM: New include statements for new file structure.
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 #include "global.h"
 #include "grid/uniform_grid.h"

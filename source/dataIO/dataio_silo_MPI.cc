@@ -41,6 +41,7 @@
 /// - 2011.03.22 JM: Removed setup_write_variables() function -- now use serial version.
 /// - 2011.10.24 JM: wrapped most of the info-reporting with ifdef-testing.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.01.28 JM: Changes for new code structure.
 ///
 #ifdef SILO
 
@@ -59,12 +60,15 @@
 #include <cstring>
 #include <sstream>
 
-dataio_silo_pllel::dataio_silo_pllel()
+dataio_silo_pllel::dataio_silo_pllel(
+      class MCMDcontrol *p
+      )
 {
 #ifdef TESTING
   cout <<"Setting up parallel Silo I/O class.\n";
 #endif
   numfiles=-1;
+  dataio_silo_pllel::mpiPM = p;
   return;
 }
 
@@ -82,10 +86,10 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   int err=0;
   silofile=infile;
 #ifdef TESTING
-  cout <<"Rank: "<<mpiPM.myrank<<"\tReading Header from file: "<<silofile<<"\n";
+  cout <<"Rank: "<<mpiPM->myrank<<"\tReading Header from file: "<<silofile<<"\n";
 #endif
   if (!file_exists(silofile))
-    rep.error("dataio_silo_pllel::ReadHeader() File not found, myrank follows",mpiPM.myrank);
+    rep.error("dataio_silo_pllel::ReadHeader() File not found, myrank follows",mpiPM->myrank);
 
   int group_rank=0, myrank_group=0;
   string file_id="read_header";
@@ -126,7 +130,7 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err",err);
 
 #ifdef TESTING
-  cout <<"Rank: "<<mpiPM.myrank<<"\tFINISHED reading Header from file: "<<silofile<<"\n";
+  cout <<"Rank: "<<mpiPM->myrank<<"\tFINISHED reading Header from file: "<<silofile<<"\n";
 #endif
   return err;
 }
@@ -142,7 +146,7 @@ int dataio_silo_pllel::ReadData(string infile,
 
   int err=0;
 #ifdef TESTING
-  cout <<"\n----Rank: "<<mpiPM.myrank<<"\tReading Data from files: "<<infile;
+  cout <<"\n----Rank: "<<mpiPM->myrank<<"\tReading Data from files: "<<infile;
 #endif
 
   // set grid properties for quadmesh 
@@ -154,7 +158,7 @@ int dataio_silo_pllel::ReadData(string infile,
   // check numfiles was read from header
   if (numfiles<0)
     rep.error("Failed to get numfiles from header! but error not detected!",numfiles);
-  //  cout <<"\tnumfiles="<<numfiles<<" and nproc="<<mpiPM.nproc<<"\n";
+  //  cout <<"\tnumfiles="<<numfiles<<" and nproc="<<mpiPM->nproc<<"\n";
 
 
   //
@@ -166,10 +170,10 @@ int dataio_silo_pllel::ReadData(string infile,
   if (err) rep.error("COMM->silo_pllel_init() returned err",err);
 
   // get group rank and index from hard-coding...
-  //int group_rank = mpiPM.myrank*numfiles/mpiPM.nproc;
-  //cout <<"myrank: "<<mpiPM.myrank<<"\tnumfiles: "<<numfiles<<"\tmy_group: "<<group_rank<<"\n";
-  //int myrank_ingroup = mpiPM.myrank % (mpiPM.nproc/numfiles);
-  //cout <<"myrank: "<<mpiPM.myrank<<"\tmy_index_in_group: "<<myrank_ingroup<<"\n";
+  //int group_rank = mpiPM->myrank*numfiles/mpiPM->nproc;
+  //cout <<"myrank: "<<mpiPM->myrank<<"\tnumfiles: "<<numfiles<<"\tmy_group: "<<group_rank<<"\n";
+  //int myrank_ingroup = mpiPM->myrank % (mpiPM->nproc/numfiles);
+  //cout <<"myrank: "<<mpiPM->myrank<<"\tmy_index_in_group: "<<myrank_ingroup<<"\n";
 
   // Choose correct filename based on numfiles.
   // Also choose correct directory name, assuming that nproc is the same as for
@@ -205,7 +209,7 @@ int dataio_silo_pllel::ReadData(string infile,
   // choose my directory name:
   //
   string mydir; temp.str("");
-  temp << "rank_"; temp.width(4); temp << mpiPM.myrank << "_domain_";
+  temp << "rank_"; temp.width(4); temp << mpiPM->myrank << "_domain_";
   temp.width(4); temp<<myrank_ingroup; mydir = temp.str(); temp.str("");
   
   *db_ptr=0;
@@ -226,7 +230,7 @@ int dataio_silo_pllel::ReadData(string infile,
   //
   temp.str(""); temp <<"unigrid";
   temp.width(4);
-  temp<<mpiPM.myrank;
+  temp<<mpiPM->myrank;
   string meshname=temp.str();
   DBquadmesh *qm = DBGetQuadmesh(*db_ptr,meshname.c_str());
   if (!qm) rep.error("failed to find quadmesh named as follows",meshname);
@@ -238,10 +242,10 @@ int dataio_silo_pllel::ReadData(string infile,
   //
   // check number of cells.
   //
-  int nn=1; for (int i=0;i<ndim;i++) nn*=mpiPM.LocalNG[i]+1;
+  int nn=1; for (int i=0;i<ndim;i++) nn*=mpiPM->LocalNG[i]+1;
   if ((n=qm->nnodes)!=nn) {
-    cerr<<"nnodes="<<n<<" and ncell="<<mpiPM.LocalNcell<<"\n";
-    rep.error("bad number of nodes",n-mpiPM.LocalNcell);
+    cerr<<"nnodes="<<n<<" and ncell="<<mpiPM->LocalNcell<<"\n";
+    rep.error("bad number of nodes",n-mpiPM->LocalNcell);
   }
   //
   // Have to reinterpret qm->coords, as they are doubles, but the interface thinks
@@ -271,7 +275,7 @@ int dataio_silo_pllel::ReadData(string infile,
   err = set_readvars(SimPM.eqntype);
   if (err) rep.error("failed to set readvars in ReadData",err);
   for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-    err = read_variable2grid(*db_ptr, meshname, (*i), mpiPM.LocalNcell);
+    err = read_variable2grid(*db_ptr, meshname, (*i), mpiPM->LocalNcell);
     if (err)
       rep.error("dataio_silo_pllel::ReadData() error reading variable",(*i));
   }
@@ -289,7 +293,7 @@ int dataio_silo_pllel::ReadData(string infile,
   COMM->barrier("dataio_silo_pllel__ReadData");
 
 #ifdef TESTING
-  cout <<"----Rank: "<<mpiPM.myrank<<"\tFINISHED reading Data from file: "<<silofile<<"\n"<<"\n";
+  cout <<"----Rank: "<<mpiPM->myrank<<"\tFINISHED reading Data from file: "<<silofile<<"\n"<<"\n";
 #endif
   return err;
 }
@@ -328,10 +332,10 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   //
   // Have to make sure that we write at most one file per process!
   //
-  if (mpiPM.nproc>threshold)
+  if (mpiPM->nproc>threshold)
     numfiles=threshold;
   else
-    numfiles=mpiPM.nproc;
+    numfiles=mpiPM->nproc;
 
   //  cout <<"----dataio_silo_pllel::OutputData() running pmpio_init\n";
   int group_rank=0, myrank_ingroup=0;
@@ -340,7 +344,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   if (err) rep.error("COMM->silo_pllel_init() returned err",err);
 
 #ifdef TESTING
-  cout <<"myrank: "<<mpiPM.myrank<<"\tnumfiles: "<<numfiles<<"\tmy_group: ";
+  cout <<"myrank: "<<mpiPM->myrank<<"\tnumfiles: "<<numfiles<<"\tmy_group: ";
   cout <<group_rank <<"\tmy_index_in_group: "<<myrank_ingroup<<"\n";
 #endif // TESTING
 
@@ -358,7 +362,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   ostringstream temp; temp.fill('0'); temp.str("");
   temp << "rank_";
   temp.width(4);
-  temp << mpiPM.myrank << "_domain_";
+  temp << mpiPM->myrank << "_domain_";
   temp.width(4);
   temp << myrank_ingroup;
   mydir = temp.str();
@@ -406,7 +410,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   //  cout <<"----dataio_silo_pllel::OutputData() generating quadmesh\n";
   temp.str(""); temp <<"unigrid";
   temp.width(4);
-  temp<<mpiPM.myrank;
+  temp<<mpiPM->myrank;
   string meshname=temp.str();
   err = generate_quadmesh(*db_ptr, meshname);
   if (err)
@@ -450,7 +454,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     //
     int dim1[1]; dim1[0]=1;
     err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles,    dim1,1,DB_INT);
-    err += DBWrite(*db_ptr,"MPI_nproc",   &mpiPM.nproc, dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"MPI_nproc",   &mpiPM->nproc, dim1,1,DB_INT);
     //    err = write_header(*db_ptr);
     err = write_simulation_parameters();
     if (err)
@@ -462,7 +466,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     //    cout <<"Finished writing header to file.\n";
   } // if root processor of *group*
 
-  if (mpiPM.myrank==0) {
+  if (mpiPM->myrank==0) {
     //
     // WRITE MULTIMESH DATA NOW TO FIRST PARTIAL FILE IF ROOT PROC.
     //
@@ -495,7 +499,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     
     
     //  string mm_name="mesh";
-    int nmesh = mpiPM.nproc;
+    int nmesh = mpiPM->nproc;
     char **mm_names=0;
     int *meshtypes=0;
     int 
@@ -559,7 +563,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     double extents[ext_size*nmesh];
     int zonecounts[nmesh];
     int externalzones[nmesh];
-    class ParallelParams pp; pp.nproc = mpiPM.nproc;
+    class MCMDcontrol pp; pp.nproc = mpiPM->nproc;
     for (int v=0; v<nmesh; v++) {
       pp.myrank = v;
       pp.decomposeDomain();
@@ -650,7 +654,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     // 
     // Now write a mulitmeshadj object (but only if nproc>1).
     // 
-    if (mpiPM.nproc>1) {
+    if (mpiPM->nproc>1) {
       err = write_multimeshadj(*db_ptr, gp, mm_name, mma_name);
       if (err) rep.error("Failed to write multimesh Adjacency Object",err);
     }
@@ -707,8 +711,8 @@ int dataio_silo_pllel::setup_grid_properties()
 {
   // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
   // This version is for the local domain of the current processor.
-  if (!grid)
-    rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
+  if (!gp)
+    rep.error("dataio_silo::setup_grid_properties() null grid pointer!",gp);
   //double dx=gp->DX();
   double dx=SimPM.dx;
   if (node_coords || nodedims || zonedims ||
@@ -728,28 +732,28 @@ int dataio_silo_pllel::setup_grid_properties()
   node_coords = mem.myalloc(node_coords, ndim);
 
   // now setup arrays with locations of nodes in coordinate directions.
-  int nn = mpiPM.LocalNG[XX]+1;
+  int nn = mpiPM->LocalNG[XX]+1;
   nodex = mem.myalloc(nodex,nn);
   for (int i=0;i<nn;i++)
-    nodex[i] = mpiPM.LocalXmin[XX]+static_cast<FAKE_DOUBLE>(i)*dx;
+    nodex[i] = mpiPM->LocalXmin[XX]+static_cast<FAKE_DOUBLE>(i)*dx;
   node_coords[0] = nodex;
   nodedims[0] = nn;
   zonedims[0] = nn-1;
 
   if (ndim>1) {
-    nn = mpiPM.LocalNG[YY]+1;
+    nn = mpiPM->LocalNG[YY]+1;
     nodey = mem.myalloc(nodey,nn);
     for (int i=0;i<nn;i++)
-      nodey[i] = mpiPM.LocalXmin[YY]+static_cast<FAKE_DOUBLE>(i)*dx;
+      nodey[i] = mpiPM->LocalXmin[YY]+static_cast<FAKE_DOUBLE>(i)*dx;
     node_coords[1] = nodey;
     nodedims[1] = nn;
     zonedims[1] = nn-1;
   }
   if (ndim>2) {
-    nn = mpiPM.LocalNG[ZZ]+1;
+    nn = mpiPM->LocalNG[ZZ]+1;
     nodez = mem.myalloc(nodez,nn);
     for (int i=0;i<nn;i++)
-      nodez[i] = mpiPM.LocalXmin[ZZ]+static_cast<FAKE_DOUBLE>(i)*dx;
+      nodez[i] = mpiPM->LocalXmin[ZZ]+static_cast<FAKE_DOUBLE>(i)*dx;
     node_coords[2] = nodez;
     nodedims[2] = nn;
     zonedims[2] = nn-1;
@@ -786,12 +790,12 @@ int dataio_silo_pllel::setup_grid_properties()
 //   // NOT SURE IF I REALLY NEED THIS!!!  I WANT TO WRITE THE FILES SO
 //   // THAT I CAN RESTART WITH A DIFFERENT NUMBER OF PROCESSORS IF
 //   // POSSIBLE, AT LEAST IF THE NUMBER DIFFERS BY A FACTOR OF 2.
-//   err += DBWrite(dbfile,"MPI_rank",   &mpiPM.myrank,    dim1,1,DB_INT);
-//   err += DBWrite(dbfile,"MPI_nproc",  &mpiPM.nproc,     dim1,1,DB_INT);
-//   err += DBWrite(dbfile,"MPI_NCell",  &mpiPM.LocalNcell,dim1,1,DB_LONG);
-//   err += DBWrite(dbfile,"MPI_NGrid",   mpiPM.LocalNG,   dim3,1,DB_INT);
-//   err += DBWrite(dbfile,"MPI_Xmin",    mpiPM.LocalXmin, dim3,1,DB_DOUBLE);
-//   err += DBWrite(dbfile,"MPI_Xmax",    mpiPM.LocalXmax, dim3,1,DB_DOUBLE);
+//   err += DBWrite(dbfile,"MPI_rank",   &mpiPM->myrank,    dim1,1,DB_INT);
+//   err += DBWrite(dbfile,"MPI_nproc",  &mpiPM->nproc,     dim1,1,DB_INT);
+//   err += DBWrite(dbfile,"MPI_NCell",  &mpiPM->LocalNcell,dim1,1,DB_LONG);
+//   err += DBWrite(dbfile,"MPI_NGrid",   mpiPM->LocalNG,   dim3,1,DB_INT);
+//   err += DBWrite(dbfile,"MPI_Xmin",    mpiPM->LocalXmin, dim3,1,DB_DOUBLE);
+//   err += DBWrite(dbfile,"MPI_Xmax",    mpiPM->LocalXmax, dim3,1,DB_DOUBLE);
 
 //   return err;
 // }
@@ -800,9 +804,9 @@ void dataio_silo_pllel::create_data_arrays()
 {
   // first check if we have the data arrays set up yet.
   // We need at least one array for a scalar, and two more for a vector.
-  //cout <<"local Ncell="<<mpiPM.LocalNcell<<" and global Ncell is "<<SimPM.Ncell<<"\n";
+  //cout <<"local Ncell="<<mpiPM->LocalNcell<<" and global Ncell is "<<SimPM.Ncell<<"\n";
   if (!data0) {
-    data0 = mem.myalloc(data0, mpiPM.LocalNcell);
+    data0 = mem.myalloc(data0, mpiPM->LocalNcell);
   }
 
   //
@@ -818,10 +822,10 @@ void dataio_silo_pllel::create_data_arrays()
   // If we need data1 and data2, and vec_data, create them too.
   //
   if ((vec_length>1) && (!data1)) {
-    data1 = mem.myalloc(data1, mpiPM.LocalNcell);
+    data1 = mem.myalloc(data1, mpiPM->LocalNcell);
   }
   if ((vec_length>2) && (!data2)) {
-    data2 = mem.myalloc(data2, mpiPM.LocalNcell);
+    data2 = mem.myalloc(data2, mpiPM->LocalNcell);
   }
 
   if ((vec_length>1) && (!vec_data)) {
@@ -851,9 +855,9 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
   //
   // Create temporary params class for repeated domain decomposition.
   //
-  class ParallelParams pp;
-  int nmesh = mpiPM.nproc;
-  pp.nproc = mpiPM.nproc;
+  class MCMDcontrol pp;
+  int nmesh = mpiPM->nproc;
+  pp.nproc = mpiPM->nproc;
   
   int meshtypes[nmesh], Nngb[nmesh], Sk[nmesh];
   for (int v=0;v<nmesh;v++) {
@@ -1176,7 +1180,7 @@ int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
   //
   DBgroupelmap gmap;
   char gmap_block[256]; strcpy(gmap_block, "gmap_block");
-  int nsegs = mpiPM.nproc;
+  int nsegs = mpiPM->nproc;
   int seg_types[nsegs];
   int seg_ids[nsegs];
   int seg_lens[nsegs];   // number of neighbours for mesh i
@@ -1191,7 +1195,7 @@ int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
   // Each seg_data[i] refers to a mesh, so we put its neighbour ids in
   // the array.
   //
-  ParallelParams pp;
+  MCMDcontrol pp;
   pp.nproc = nsegs;
   int ct=0;
   for (int v=0; v<nsegs; v++) {

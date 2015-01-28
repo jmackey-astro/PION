@@ -38,9 +38,18 @@
 ///    function to call add_source_to_list() and set_Vshell_for_source() at the
 ///    appropriate places.
 /// - 2013.09.05 JM: Debugged for new get/set col functions.
+/// - 2015.01.28 JM: New include statements for new file structure.
 
-#include "../global.h"
-#include "raytracer_SC.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "global.h"
+#include "raytracing/raytracer_SC.h"
 #include <fstream>
 #include <iostream>
 using namespace std;

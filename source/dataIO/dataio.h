@@ -1,14 +1,12 @@
-/** \file dataio.h
- * 
- * modified:\n
- *  - 2007-10-25 Got class structure that works for parallel output.
- *  - 2007-10-26 parallel fits-io class reads data from single and multiple
- *    files. Put in serial ifdefs, so that it should work for serial code too.
- *  - 2008-01-16 Documented the classes.
- *
- *  - 2010-02-03 JM: made base class virtual
- * */
-///
+/// \file dataio.h
+/// \author Jonathan Mackey
+/// 
+/// modified:\n
+/// - 2007-10-25 Got class structure that works for parallel output.
+/// - 2007-10-26 parallel fits-io class reads data from single and multiple
+///    files. Put in serial ifdefs, so that it should work for serial code too.
+/// - 2008-01-16 Documented the classes.
+/// - 2010-02-03 JM: made base class virtual
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
 /// - 2101-07-20/22 JM: Updated sim.file header I/O to be more general
@@ -277,11 +275,14 @@ class DataIOBase : public file_status {
           )=0;
   
 
-   /** \brief Output simulation data to file. */
-   virtual int OutputData(const string, ///< File to write to
-			  class GridBaseClass *, ///< pointer to data.
-			  const long int ///< number to stamp file with (e.g. timestep)
-			  )=0;
+  ///
+  /// Write simulation data to file.
+  ///
+  virtual int OutputData(
+        const string, ///< File to write to
+        class GridBaseClass *, ///< pointer to data.
+        const long int ///< number to stamp file with (e.g. timestep)
+        )=0;
 
    /** \brief Reads simulation parameters from file. */
    virtual int ReadHeader(string ///< file to read from

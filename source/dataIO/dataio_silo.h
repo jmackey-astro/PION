@@ -5,37 +5,32 @@
 /// is that it has good parallel I/O interface that lets VisIt read in 
 /// all the files as though the data were just in one file.
 /// 
-///  - 2010-02-04 JM: Added multimesh-adjacency object write so that I
+/// - 2010-02-04 JM: Added multimesh-adjacency object write so that I
 ///    can get streamlines to cross boundaries when plotting with Visit.
-///
 /// - 2010-04-11 JM: parallel class gets its own
 /// setup_write_variables() class so that it can save disk space by
 /// only writing primitive variables. (tidied up comments too).
-///
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2010-04-25 JM: renamed parallel choose_filename to choose_pllel_filename()
-///
 /// - 2010-07-20/22 JM: Work on new dataio structure with a list of parameters
 ///    to read and write.
-///
 /// - 2010.07.23 JM: removed obselete read_header(),
 ///    write_header() functions.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
 /// - 2011.03.22 JM: Removed parallel setup_write_variables() function.  There
 ///    was too much duplicate code with the serial version.
-///
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
-///
+/// - 2015.01.28 JM: Tidied up a lot, added new mpiPM pointer.
+
 #ifndef DATAIO_SILO_H
 #define DATAIO_SILO_H
 
 #ifdef SILO
 
 #include "dataIO/dataio.h"
+#include "MCMD_control.h"
 #include <silo.h>
 #include <vector>
 
@@ -61,38 +56,46 @@
 //#define SILO_FILETYPE DB_HDF5
 #define SILO_FILETYPE DB_PDB
 
-/** \brief Class for reading and writing uniform grid data to silo files. 
- *
- * see https://wci.llnl.gov/codes/visit/home.html
- **/
+///
+/// Class for reading and writing uniform grid data to silo files. 
+///
 class dataio_silo :public DataIOBase {
   public:
-   /** \brief Constructor.  */
-   dataio_silo();
-   /** \brief sets equation pointer to zero. */
-   ~dataio_silo();
-   /** \brief Class can run with or without a solver, but this function
-    * allows you to set a pointer to the solver.#
-    * */
-   void SetSolver(FV_solver_base * ///< Pointer to the solver (for Eint,divB,Ptot)
+  ///
+  /// Constructor. 
+  ///
+  dataio_silo();
+
+  ///
+  /// sets equation pointer to zero.
+  ///
+  virtual ~dataio_silo();
+
+  ///
+  /// Class can run with or without a solver, but this function
+  /// allows you to set a pointer to the solver.#
+  ///
+  void SetSolver(FV_solver_base * ///< Pointer to the solver (for Eint,divB,Ptot)
 		  );
-   /** \brief This writes the header for the simulation parameters,
-    * and then the data.
-    * 
-    * If the solver pointer is not null, it also writes data for the
-    * internal energy/Temperature (and the Magnetic Field divergence
-    * and total Pressure if the solver is an MHD solver).
-    */
+  ///
+  /// This writes the header for the simulation parameters,
+  /// and then the data.
+  /// 
+  /// If the solver pointer is not null, it also writes data for the
+  /// internal energy/Temperature (and the Magnetic Field divergence
+  /// and total Pressure if the solver is an MHD solver).
+  ///
    virtual int OutputData(
         const string, ///< File to write to
         class GridBaseClass *, ///< pointer to data.
         const long int ///< number to stamp file with (e.g. timestep)
         );
-   /** \brief Reads the header from the file specified, and puts the
-    * simulation parameters in the global data class declared in global.h.
-    * This should be called first if we want to set up a uniform grid with
-    * the right dimensions to take the data from the file.
-    * */
+  ///
+  /// Reads the header from the file specified, and puts the
+  /// simulation parameters in the global data class declared in global.h.
+  /// This should be called first if we want to set up a uniform grid with
+  /// the right dimensions to take the data from the file.
+  ///
    virtual int ReadHeader(string ///< file to read from
 			  );
 
@@ -105,10 +108,11 @@ class dataio_silo :public DataIOBase {
           );
 
 
-   /** \brief This reads the data variables in turn, and puts the data into
-    * the grid points, assuming the grid has been set up with paramters
-    * from the header, which should be read first.
-    * */
+  ///
+  /// This reads the data variables in turn, and puts the data into
+  /// the grid points, assuming the grid has been set up with paramters
+  /// from the header, which should be read first.
+  ///
    virtual int ReadData(string, ///< file to read from
 			class GridBaseClass * ///< pointer to data.
 			);
@@ -143,46 +147,68 @@ class dataio_silo :public DataIOBase {
    DBfile
      **db_ptr; ///< pointer to Silo file pointer.
 
-   /** \brief Choose a FileName to write to. */
+  ///
+  /// Choose a FileName to write to.
+  ///
    virtual int choose_filename(const string, ///< filebase passed in from main code.
 			       const int     ///< file counter to use (e.g. timestep).
 			       );
-   /** \brief Call once to setup arrays with the properties of the grid, for
-    * writing to the Silo Quadmesh. */
+  ///
+  /// Call once to setup arrays with the properties of the grid, for
+  /// writing to the Silo Quadmesh.
+  ///
    virtual int setup_grid_properties(
         class GridBaseClass * ///< pointer to data.
         );
-   /** \brief Choose what data to write to file, based on equations being solved.*/
+  ///
+  /// Choose what data to write to file, based on equations being solved.*/
+  ///
    virtual int setup_write_variables();
 
-   /** \brief Generate Quadmesh and write it to silo file. */
+  ///
+  /// Generate Quadmesh and write it to silo file.
+  ///
    int generate_quadmesh(DBfile *, ///< pointer to silo file to write to.
 			 string    ///< name of mesh to write.
 			 );
-   /** \brief Given a file, meshname, variable, write that variable to the mesh.*/
+  ///
+  /// Given a file, meshname, variable, write that variable to the mesh.*/
+  ///
    int write_variable2mesh(DBfile *, ///< pointer to silo file.
 			   string,   ///< name of mesh to write to.
 			   string    ///< variable name to write.
 			   );
-   /** \brief allocate memory for arrays used to write data to files.*/
+  ///
+  /// allocate memory for arrays used to write data to files.*/
+  ///
    virtual void create_data_arrays();
-   /** \brief deallocate memory for arrays used to write data to files.*/
+  ///
+  /// deallocate memory for arrays used to write data to files.*/
+  ///
    void delete_data_arrays();
-   /** \brief Get Scalar variable into array ready to write to file. */
+  ///
+  /// Get Scalar variable into array ready to write to file.
+  ///
    int get_scalar_data_array(string, ///< variable name to get.
 			     FAKE_DOUBLE * ///< array to write to.
 			     );
-   /** \brief Get Vector variable into 2d array ready to write to file. */
+  ///
+  /// Get Vector variable into 2d array ready to write to file.
+  ///
    int get_vector_data_array(string, ///< variable name to get.
 			     FAKE_DOUBLE ** ///< array to write to.
 			     );
-   /** \brief Writes a scalar array to the specified mesh and file. */
+  ///
+  /// Writes a scalar array to the specified mesh and file.
+  ///
    int write_scalar2mesh(DBfile *, ///< silo file pointer.
 			 string,   ///< mesh name
 			 string,   ///< variable name
 			 FAKE_DOUBLE *  ///< pointer to data array.
 			 );
-   /** \brief Writes a vector array to the specified mesh and file. */
+  ///
+  /// Writes a vector array to the specified mesh and file.
+  ///
    int write_vector2mesh(DBfile *, ///< silo file pointer.
 			 string,   ///< mesh name
 			 string,   ///< variable name
@@ -198,10 +224,14 @@ class dataio_silo :public DataIOBase {
    ///
    int write_header_param(class pm_base *);
 
-   /** \brief Set list of variable names to read, based on equations to solve. */
+  ///
+  /// Set list of variable names to read, based on equations to solve.
+  ///
    int set_readvars(int ///< SimPM.eqntype -- the type of equations we are solving.
 		    );
-   /** \brief Given a Variable and a Silo File, read the data onto the grid. */
+  ///
+  /// Given a Variable and a Silo File, read the data onto the grid.
+  ///
    int read_variable2grid(DBfile *, ///< pointer to silo file.
 			  string,   ///< name of mesh to read from.
 			  string,   ///< variable name to read.
@@ -212,84 +242,112 @@ class dataio_silo :public DataIOBase {
 
 
 #ifdef PARALLEL
-/** \brief parallel I/O using the PMPIO interface, based on serial class. */
-class dataio_silo_pllel :public dataio_silo {
+///
+/// parallel I/O using the PMPIO interface, based on serial class.
+///
+class dataio_silo_pllel : public dataio_silo {
  public:
-  dataio_silo_pllel();
-  ~dataio_silo_pllel();
-  /** \brief This writes the header and data for the simulation parameters.
-   * 
-   * If the solver pointer is not null, it also writes some derived variables
-   * such as Temperature, Div(B), etc.
-   * */
+  ///
+  /// Constructor.
+  ///
+  dataio_silo_pllel(
+      class MCMDcontrol *  ///< address of MCMD controller class.
+  );
+
+  /// Destructor (doensn't have much to do).
+  virtual ~dataio_silo_pllel();
+
+  ///
+  /// This writes the header and data for the simulation parameters.
+  /// 
+  /// If the solver pointer is not null, it also writes some derived variables
+  /// such as Temperature, Div(B), etc.
+  ///
   int OutputData(const string, ///< File to write to
 		 class GridBaseClass *, ///< pointer to data.
 		 const long int ///< number to stamp file with (e.g. timestep)
 		 );
-  /** \brief Reads the header from the file specified, and puts the
-   * simulation parameters in the global data class declared in global.h.
-   * This should be called first if we want to set up a uniform grid with
-   * the right dimensions to take the data from the file later.  This
-   * parallel version uses PMPIO to let the processes take turns to read 
-   * the header from the root file, regardless of the number of files 
-   * present.
-   * */
+
+  ///
+  /// Reads the header from the file specified, and puts the
+  /// simulation parameters in the global data class declared in global.h.
+  /// This should be called first if we want to set up a uniform grid with
+  /// the right dimensions to take the data from the file later.  This
+  /// parallel version uses PMPIO to let the processes take turns to read 
+  /// the header from the root file, regardless of the number of files 
+  /// present.
+  ///
   int ReadHeader(string ///< file to read from
 		 );
-  /** \brief This reads the data variables in turn, and puts the data into
-   * the grid points, assuming the grid has been set up with paramters
-   * from the header, which should be read first.  It also assumes the
-   * domain decomposition has been done already, and will bug out if it
-   * hasn't.  The routine uses the PMPIO interface.
-   * */
+
+  ///
+  /// This reads the data variables in turn, and puts the data into
+  /// the grid points, assuming the grid has been set up with paramters
+  /// from the header, which should be read first.  It also assumes the
+  /// domain decomposition has been done already, and will bug out if it
+  /// hasn't.  The routine uses the PMPIO interface.
+  ///
   int ReadData(string, ///< file to read from
 	       class GridBaseClass * ///< pointer to data.
 	       );
 
  protected:
+  class MCMDcontrol *mpiPM;
   ///
   /// Choose filename based on outfile, group_rank, and counter.
   ///
-  virtual int choose_pllel_filename(const string, ///< filebase passed in from main code.
-				    const int,    ///< group_rank (i.e. which file I write to)
-				    const int,    ///< file counter to use (e.g. timestep).
-				    string &      ///< string to return filename in.
-				    );
-  /** \brief Call once to setup arrays with the properties of the grid, for
-   * writing to the Silo Quadmesh.  This is for the local domain of the current
-   * processor. */
+  virtual int choose_pllel_filename(
+        const string, ///< filebase passed in from main code.
+        const int,    ///< group_rank (i.e. which file I write to)
+        const int,    ///< file counter to use (e.g. timestep).
+        string &      ///< string to return filename in.
+        );
+
+  ///
+  /// Call once to setup arrays with the properties of the grid, for
+  /// writing to the Silo Quadmesh.  This is for the local domain of the current
+  /// processor.
+  ///
   int setup_grid_properties();
 
-  /** \brief allocate memory for arrays used to write data to files.
-   * Arrays are different sizes for parallel grid -- local Ncell instead
-   * of global Ncell. */
+  ///
+  /// allocate memory for arrays used to write data to files.
+  /// Arrays are different sizes for parallel grid -- local Ncell instead
+  /// of global Ncell.
+  ///
   void create_data_arrays();
   
   int numfiles; ///< number of files to split the data into.
-   ///
-   /// Write a mulitmesh adjacency object (obsolete and doesn't work!)
-   /// 
-   int write_multimeshadj(DBfile *, ///< pointer to silo file.
-			  class GridBaseClass *, ///< pointer to data.
-			  string, ///< multimesh name
-			  string  ///< multimesh adjacency name.
-			  );
-   ///
-   /// Write an MRG tree object (replaces multimesh adjacency)
-   /// 
-   int write_MRGtree(DBfile *, ///< pointer to silo file.
-		     class GridBaseClass *, ///< pointer to data.
-		     string, ///< multimesh name
-		     string  ///< MRG tree name.
-		     );
-   ///
-   /// Write a mulitmesh object
-   /// 
-   int write_multimesh(DBfile *, ///< pointer to silo file.
-		       class GridBaseClass *, ///< pointer to data.
-		       string, ///< multimesh name
-		       string  ///< multimesh adjacency name.
-		       );
+
+  ///
+  /// Write a mulitmesh adjacency object (obsolete and doesn't work!)
+  /// 
+  int write_multimeshadj(
+        DBfile *, ///< pointer to silo file.
+        class GridBaseClass *, ///< pointer to data.
+        string, ///< multimesh name
+        string  ///< multimesh adjacency name.
+        );
+
+  ///
+  /// Write an MRG tree object (replaces multimesh adjacency)
+  /// 
+  int write_MRGtree(
+        DBfile *, ///< pointer to silo file.
+        class GridBaseClass *, ///< pointer to data.
+        string, ///< multimesh name
+        string  ///< MRG tree name.
+        );
+
+  ///
+  /// Write a mulitmesh object
+  /// 
+  int write_multimesh(
+        DBfile *, ///< pointer to silo file.
+        class GridBaseClass *, ///< pointer to data.
+        string, ///< multimesh name
+        string  ///< multimesh adjacency name.
+        );
 };
 
 #endif // if PARALLEL

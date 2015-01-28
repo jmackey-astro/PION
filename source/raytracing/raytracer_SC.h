@@ -36,10 +36,15 @@
 /// - 2013.08.20 JM: Modifications so a given source can have an
 ///    array of optical depths rather than a single value per source.
 ///    This is tough going, and is only half-way done so far.
+/// - 2015.01.28 JM: New include statements for new file structure.
 
 #ifndef RAYTRACING_H
 #define RAYTRACING_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "grid/grid_base_class.h"
 
 #include "global.h"
 

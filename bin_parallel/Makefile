@@ -43,7 +43,7 @@
 #    Added file_status.o/cpp object file. Added NEW_METALLICITY flag.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
 # - 2014.04.14 JM: Section for Judge at JSC.
-# - 2015.01.26 JM: Edited for new filenames and code structure.
+# - 2015.01.26-28 JM: Edited for new filenames and code structure.
 ###
 
 ############################
@@ -306,7 +306,8 @@ OBJECTS = mainMPI.o uniform_grid.o sim_control.o global.o                      \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
-	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
+	dataio.o readparams.o dataio_silo.o \
+        dataio_fits.o utility_fits_class.o dataio_fits_MPI.o \
         file_status.o                                                          \
 	dataio_silo_MPI.o sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
@@ -336,7 +337,8 @@ IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o jet.o \
 	photoevaporating_random_clumps.o shock_cloud.o \
-	uniform_grid_pllel.o dataio_silo_MPI.o dataio_fits.o \
+	uniform_grid_pllel.o dataio_silo_MPI.o \
+        dataio_fits.o dataio_fits_MPI.o \
 	VectorOps.o VectorOps_spherical.o  cell_interface.o \
 	comm_mpi.o comm_files.o photoevaporating_multiclumps.o \
 	utility_fits_class.o eqns_base.o eqns_hydro_adiabatic.o \
@@ -590,9 +592,16 @@ dataio.o: dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h \
     readparams.h stellar_wind_BC.h file_status.h
 dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
+
 dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} \
     solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
     file_status.h
+
+dataio_fits_MPI.o:  dataio_fits_MPI.cpp dataio_fits_MPI.h \
+    dataio_fits.h dataio.h ${GLOBAL} \
+    solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
+    file_status.h
+
 readparams.o:	readparams.cc readparams.h ${GLOBAL}
 dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h

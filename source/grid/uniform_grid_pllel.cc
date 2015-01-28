@@ -1,45 +1,32 @@
-/** \file uniform_grid_pllel.cc
- * 
- * \author Jonathan Mackey
- * 
- * Definitions for parallel uniform grid.
- * 
- * Modifications:\n
- *  - 2007-11-06 started to get it going.
- *  - 2010-01-22 JM: Changed RT source finding if we have non-cell-centred sources.
- *  - 2010-01-26 JM: Debugging 3D RT for vertex-centred sources.
- *  - 2010-02-03 JM: changed variable names in destructor ('i' was defined twice!)
- *
- *  - 2010-03-13 JM: moved BoundaryTypes enum to uniformgrid.h; Added oneway-outflow BC
- * */
-///
+/// \file uniform_grid_pllel.cc
+/// \author Jonathan Mackey
+/// 
+/// Definitions for parallel uniform grid.
+/// 
+/// Modifications:\n
+/// - 2007-11-06 started to get it going.
+/// - 2010-01-22 JM: Changed RT source finding if we have non-cell-centred sources.
+/// - 2010-01-26 JM: Debugging 3D RT for vertex-centred sources.
+/// - 2010-02-03 JM: changed variable names in destructor ('i' was defined twice!)
+/// - 2010-03-13 JM: moved BoundaryTypes enum to uniformgrid.h; Added oneway-outflow BC
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
-///
 /// - 2010.07.23 JM: New RSP source position class interface.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.  Switched 'endl' statements for '\n'.
-///
 /// - 2010.11.19 JM: Got rid of testing myalloc() myfree() functions.
-///
 /// - 2010.12.07 JM: Added geometry-dependent grids, in a
 ///   GEOMETRIC_GRID ifdef.  Will probably keep it since it is the way
 ///   things will go eventually.  The new grid classes have extra
 ///   function for the distance between two points, two cells, and
 ///   between a vertex and a cell.
-///
 /// - 2011.02.24 JM: Worked on generalising multi-source radiative transfer.
 ///    Still some way to go to getting it functional.  Wraps old setup() 
 ///    function for point sources into a new function.  The setup function now
 ///    calls either this new function, or another new one for sources at infinity.
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code. 
 ///     Added possibility of multiple sources in send/recv.
-///
 /// - 2011.02.28 JM: Got rid of RSP radiation-sources-parameters class.
-///
 /// - 2011.03.02 JM: Fixed bugs in diffuse radiation boundary comms.
-///
 /// - 2011.03.21 JM: Got rid of zero-ing of column densities.  It is done in
 ///    the cell constructor, so we don't need to worry about it.
 /// - 2011.03.22 JM: small bugfixes.
@@ -47,10 +34,18 @@
 ///    are only created if they don't already exist.  It now works for multiple point
 ///    sources, and I don't think they need to be at the same place.
 /// - 2013.09.05 JM: Debugged for new get/set col functions.
-///
+/// - 2015.01.28 JM: Removed GEOMETRIC_GRID (it is default now), and
+///    updated for the new code structure.
 
-#include "../global.h"
-#include "uniform_grid.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+
+#include "global.h"
+#include "grid/uniform_grid.h"
+#include "sim_control_MPI.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -65,11 +60,17 @@ using namespace std;
 
 
 
-UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, double *xp, int *nc)
+UniformGridParallel::UniformGridParallel(
+      int nd,
+      int nv,
+      int eqt,
+      double *xn,
+      double *xp,
+      int *nc,
+      class MCMDcontrol *p
+      )
   :
-#ifdef GEOMETRIC_GRID
   VectorOps_Cart(nd),
-#endif // GEOMETRIC_GRID
   UniformGrid(nd,nv,eqt,xn,xp,nc)
 {
   //cout <<"UniformGridParallel constructor.\n";
@@ -83,7 +84,6 @@ UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, do
   //  RT_bd=0;
 #endif // PLLEL_RT
 
-#ifdef GEOMETRIC_GRID
   //
   // If we need to know about the global size of the simulation:
   //
@@ -100,7 +100,11 @@ UniformGridParallel::UniformGridParallel(int nd, int nv, int eqt, double *xn, do
   //rep.printVec("SIM iXmin ", SIM_ixmin, G_ndim);
   //rep.printVec("SIM iXmax ", SIM_ixmax, G_ndim);
   //rep.printVec("SIM iRange", SIM_irange,G_ndim);
-#endif // GEOMETRIC_GRID
+  
+  //
+  // Set pointer to muli-core class.
+  //
+  mpiPM = p;
 
   return;
 }
@@ -219,11 +223,9 @@ UniformGridParallel::~UniformGridParallel()
   }
 #endif // PLLEL_RT
 
-#ifdef GEOMETRIC_GRID
   SIM_ixmin  = mem.myfree(SIM_ixmin);
   SIM_ixmax  = mem.myfree(SIM_ixmax);
   SIM_irange = mem.myfree(SIM_irange);
-#endif // GEOMETRIC_GRID
 
   return;
 }
@@ -291,7 +293,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
         // In 3D it's more complicated, and perhaps all processors on the XN boundary
         // should keep the jet BC, even though some might be empty.
         if (G_ndim==2) {
-          if (mpiPM.myrank !=0) {
+          if (mpiPM->myrank !=0) {
             cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
       bctype.erase(pos,6);
 #ifdef TESTING
@@ -301,7 +303,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
     }
         }
   else if (G_ndim==3) {
-    if (!GS.equalD(SimPM.Xmin[XX], mpiPM.LocalXmin[XX])) {
+    if (!GS.equalD(SimPM.Xmin[XX], mpiPM->LocalXmin[XX])) {
 #ifdef TESTING
       cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
 #endif 
@@ -318,8 +320,8 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   // This is a test problem (double mach reflection) with hard-coded
   // boundaries, and this boundary is along the YN boundary between
   // x=[0,1/6].
-  if ( (!GS.equalD(SimPM.Xmin[YY],mpiPM.LocalXmin[YY])) 
-       || (mpiPM.LocalXmin[XX]>1./6.) ) {
+  if ( (!GS.equalD(SimPM.Xmin[YY],mpiPM->LocalXmin[YY])) 
+       || (mpiPM->LocalXmin[XX]>1./6.) ) {
 #ifdef TESTING
     cout <<"Removing dmr2 bc; bctype = "<<bctype<<"\n";
 #endif 
@@ -436,35 +438,35 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   //
   int nx[SimPM.ndim];
   for (i=0;i<G_ndim;i++)
-    nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/mpiPM.LocalRange[i]);
+    nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/mpiPM->LocalRange[i]);
   for (i=0; i<2*G_ndim; i++) {
     if (BC_bd[i].itype == PERIODIC) {
       switch (i) {
        case XN:
-  mpiPM.ngbprocs[XN] = mpiPM.myrank +nx[XX] -1; break;
+  mpiPM->ngbprocs[XN] = mpiPM->myrank +nx[XX] -1; break;
        case XP:
-  mpiPM.ngbprocs[XP] = mpiPM.myrank -nx[XX] +1; break;
+  mpiPM->ngbprocs[XP] = mpiPM->myrank -nx[XX] +1; break;
        case YN:
-  mpiPM.ngbprocs[YN] = mpiPM.myrank +(nx[YY]-1)*nx[XX]; break;
+  mpiPM->ngbprocs[YN] = mpiPM->myrank +(nx[YY]-1)*nx[XX]; break;
        case YP:
-  mpiPM.ngbprocs[YP] = mpiPM.myrank -(nx[YY]-1)*nx[XX]; break;
+  mpiPM->ngbprocs[YP] = mpiPM->myrank -(nx[YY]-1)*nx[XX]; break;
        case ZN:
-  mpiPM.ngbprocs[ZN] = mpiPM.myrank +(nx[ZZ]-1)*nx[YY]*nx[XX]; break;
+  mpiPM->ngbprocs[ZN] = mpiPM->myrank +(nx[ZZ]-1)*nx[YY]*nx[XX]; break;
        case ZP:
-  mpiPM.ngbprocs[ZP] = mpiPM.myrank -(nx[ZZ]-1)*nx[YY]*nx[XX]; break;
+  mpiPM->ngbprocs[ZP] = mpiPM->myrank -(nx[ZZ]-1)*nx[YY]*nx[XX]; break;
        default:
   rep.error("UniformGridParallel::BC_setBCtypes: Bad direction",i); break;
       } // set neighbour according to direction.
-      if ( (mpiPM.ngbprocs[i]<0) || (mpiPM.ngbprocs[i]>=mpiPM.nproc) )
-  rep.error("UniformGridParallel::BC_setBCtypes: Bad periodic neighbour",mpiPM.ngbprocs[i]);
-      if (mpiPM.ngbprocs[i] == mpiPM.myrank) {
+      if ( (mpiPM->ngbprocs[i]<0) || (mpiPM->ngbprocs[i]>=mpiPM->nproc) )
+  rep.error("UniformGridParallel::BC_setBCtypes: Bad periodic neighbour",mpiPM->ngbprocs[i]);
+      if (mpiPM->ngbprocs[i] == mpiPM->myrank) {
   //  cout <<"UniformGridParallel::BC_setBCtypes: only one proc in dir [i]: "<<i<<"\n";
   //  cout <<"UniformGridParallel::BC_setBCtypes: periodic on single proc, so setting ngb to -999.\n";
-  mpiPM.ngbprocs[i] = -999;
+  mpiPM->ngbprocs[i] = -999;
       }
     } // if periodic  
 #ifdef TESTING
-    cout<<"Neighbouring processor in dir "<<i<<" = "<<mpiPM.ngbprocs[i]<<"\n";
+    cout<<"Neighbouring processor in dir "<<i<<" = "<<mpiPM->ngbprocs[i]<<"\n";
 #endif // TESTING
   } // loop over directions.
   return(0);
@@ -595,10 +597,10 @@ int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxste
 int UniformGridParallel::BC_assign_PERIODIC(  boundary_data *b)
 {
   // For parallel grid, periodic data is on a different processor,
-  // which is already pointed to by mpiPM.ngbprocs[b->dir]
+  // which is already pointed to by mpiPM->ngbprocs[b->dir]
   // So I just have to call BC_assign_BCMPI and it will do the job.
   int err=0;
-  if (mpiPM.ngbprocs[b->dir] <0) {
+  if (mpiPM->ngbprocs[b->dir] <0) {
     //    cout <<"BC_assign_PERIODIC: non comm periodic in direction "<<b->dir<<"\n";
     err = UniformGrid::BC_assign_PERIODIC(b);
   }
@@ -623,10 +625,10 @@ int UniformGridParallel::BC_update_PERIODIC(   struct boundary_data *b,
                  )
 {
   // For parallel grid, periodic data is on a different processor,
-  // which is already pointed to by mpiPM.ngbprocs[b->dir]
+  // which is already pointed to by mpiPM->ngbprocs[b->dir]
   // So I just have to call BC_update_BCMPI and it will do the job.
   int err=0;
-  if (mpiPM.ngbprocs[b->dir] <0) {
+  if (mpiPM->ngbprocs[b->dir] <0) {
     //    cout <<"BC_update_PERIODIC: non-communicating periodic BC in direction "<<b->dir<<"\n";
     err = UniformGrid::BC_update_PERIODIC(b,cstep,maxstep);
   }
@@ -670,7 +672,7 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
 #ifdef TESTING
   cout <<"BC_assign_BCMPI: sending data...\n";
 #endif 
-  err += COMM->send_cell_data(mpiPM.ngbprocs[b->dir], // to_rank
+  err += COMM->send_cell_data(mpiPM->ngbprocs[b->dir], // to_rank
             &cells,        // cells list.
             ncell,        // number of cells.
             send_id,     // identifier for send.
@@ -705,7 +707,7 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
 #endif 
   enum direction dir=NO;
   for (int i=0; i<2*G_ndim; i++) {
-    if (from_rank == mpiPM.ngbprocs[i]) {
+    if (from_rank == mpiPM->ngbprocs[i]) {
       if (dir==NO) dir = static_cast<direction>(i);
       else {
   //
@@ -718,13 +720,13 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
   //
       if (recv_tag == BC_PERtag) {
     // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
-    if      (from_rank>mpiPM.myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank<mpiPM.myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
+    if      (from_rank>mpiPM->myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
+    else if (from_rank<mpiPM->myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
   }
   else if (recv_tag == BC_MPItag) {
     // Internal boundary, so in neg.dir. from_rank should be < myrank.
-    if      (from_rank<mpiPM.myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank>mpiPM.myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
+    if      (from_rank<mpiPM->myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
+    else if (from_rank>mpiPM->myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
   }
   else rep.error("bad tag",recv_tag);
       }
@@ -732,7 +734,7 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
   }
   if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
 #ifdef TESTING
-  cout <<mpiPM.myrank<<"\tBC_assign_BCMPI: Receiving Data type ";
+  cout <<mpiPM->myrank<<"\tBC_assign_BCMPI: Receiving Data type ";
   cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
 #endif 
 
@@ -808,7 +810,7 @@ int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
   // New stuff: send the data.
   //
   string send_id;
-  err += COMM->send_cell_data(mpiPM.ngbprocs[b->dir], // to_rank
+  err += COMM->send_cell_data(mpiPM->ngbprocs[b->dir], // to_rank
             &cells,        // cells list.
             ncell,        // number of cells.
             send_id,     // identifier for send.
@@ -834,7 +836,7 @@ int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
   //
   enum direction dir=NO;
   for (int i=0; i<2*G_ndim; i++) {
-    if (from_rank == mpiPM.ngbprocs[i]) {
+    if (from_rank == mpiPM->ngbprocs[i]) {
       if (dir==NO) dir = static_cast<direction>(i);
       else {
   //
@@ -847,20 +849,20 @@ int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
   //
       if (recv_tag == BC_PERtag) {
     // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
-    if      (from_rank>mpiPM.myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank<mpiPM.myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
+    if      (from_rank>mpiPM->myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
+    else if (from_rank<mpiPM->myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
   }
   else if (recv_tag == BC_MPItag) {
     // Internal boundary, so in neg.dir. from_rank should be < myrank.
-    if      (from_rank<mpiPM.myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank>mpiPM.myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
+    if      (from_rank<mpiPM->myrank && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
+    else if (from_rank>mpiPM->myrank && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
   }
   else rep.error("bad tag",recv_tag);
       }
     }
   }
   if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
-  //  cout <<mpiPM.myrank<<"\tcomm_receive_any_data: Receiving Data type ";
+  //  cout <<mpiPM->myrank<<"\tcomm_receive_any_data: Receiving Data type ";
   //  cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
 
   //
@@ -1146,8 +1148,8 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
   // Can have only one send and one recv source, so the lists should
   // get exactly one element.
   //
-  int recv_proc = mpiPM.ngbprocs[recv_dir];
-  int send_proc = mpiPM.ngbprocs[send_dir];
+  int recv_proc = mpiPM->ngbprocs[recv_dir];
+  int send_proc = mpiPM->ngbprocs[send_dir];
 
   //
   // Set up the lone recv boundary list element.  Note we leave an
@@ -1363,7 +1365,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   //
   int nx[SimPM.ndim];
   for (int i=0;i<SimPM.ndim;i++)
-    nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/mpiPM.LocalRange[i]);
+    nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/mpiPM->LocalRange[i]);
 
   //
   // First see if direction of source off grid has a neigbour processor and
@@ -1390,12 +1392,12 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   for (int i=0;i<G_ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);
-    if (srcpos[i]>=G_xmin[i] && (!GS.equalD(mpiPM.LocalXmin[i],SimPM.Xmin[i])) )
+    if (srcpos[i]>=G_xmin[i] && (!GS.equalD(mpiPM->LocalXmin[i],SimPM.Xmin[i])) )
       send_proc_exists[negdir] = true;
     else 
       send_proc_exists[negdir] = false; // either doesn't exist, or we don't need it.
 
-    if (srcpos[i]<=G_xmax[i] && (!GS.equalD(mpiPM.LocalXmax[i],SimPM.Xmax[i])) )
+    if (srcpos[i]<=G_xmax[i] && (!GS.equalD(mpiPM->LocalXmax[i],SimPM.Xmax[i])) )
       send_proc_exists[posdir] = true;
     else 
       send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.
@@ -1436,37 +1438,37 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   struct RT_boundary_list_element temp;  temp.RT_bd=0;
   // x-dir
   if      (srcdir[XX]==XN && recv_proc_exists[XX]==true) {
-    temp.rank=mpiPM.myrank-1; temp.dir = dir_XN;
+    temp.rank=mpiPM->myrank-1; temp.dir = dir_XN;
     RT_recv_list.push_back(temp);
   }
   else if (srcdir[XX]==XP && recv_proc_exists[XX]==true) {
-    temp.rank=mpiPM.myrank+1; temp.dir = dir_XP;
+    temp.rank=mpiPM->myrank+1; temp.dir = dir_XP;
     RT_recv_list.push_back(temp);
   }
 
   // y-dir
   if (G_ndim>1) {
     if (srcdir[YY]==YN && recv_proc_exists[YY]==true) {
-      temp.rank=mpiPM.myrank-nx[XX]; temp.dir = dir_YN;
+      temp.rank=mpiPM->myrank-nx[XX]; temp.dir = dir_YN;
       RT_recv_list.push_back(temp);
       if      (srcdir[XX]==XN && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM.myrank-nx[XX]-1; temp.dir += dir_XN; //srcdir[YY]+srcdir[XX];
+  temp.rank=mpiPM->myrank-nx[XX]-1; temp.dir += dir_XN; //srcdir[YY]+srcdir[XX];
   RT_recv_list.push_back(temp);
       }
       else if (srcdir[XX]==XP && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM.myrank-nx[XX]+1; temp.dir += dir_XP; //srcdir[YY]+srcdir[XX];
+  temp.rank=mpiPM->myrank-nx[XX]+1; temp.dir += dir_XP; //srcdir[YY]+srcdir[XX];
   RT_recv_list.push_back(temp);
       }
     }
     else if (srcdir[YY]==YP && recv_proc_exists[YY]==true) {
-      temp.rank=mpiPM.myrank+nx[XX]; temp.dir = dir_YP;
+      temp.rank=mpiPM->myrank+nx[XX]; temp.dir = dir_YP;
       RT_recv_list.push_back(temp);
       if      (srcdir[XX]==XN && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM.myrank+nx[XX]-1; temp.dir += dir_XN; //srcdir[YY]+srcdir[XX];
+  temp.rank=mpiPM->myrank+nx[XX]-1; temp.dir += dir_XN; //srcdir[YY]+srcdir[XX];
   RT_recv_list.push_back(temp);
       }
       else if (srcdir[XX]==XP && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM.myrank+nx[XX]+1; temp.dir += dir_XP; //srcdir[YY]+srcdir[XX];
+  temp.rank=mpiPM->myrank+nx[XX]+1; temp.dir += dir_XP; //srcdir[YY]+srcdir[XX];
   RT_recv_list.push_back(temp);
       }
     }
@@ -1476,10 +1478,10 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   if (G_ndim>2 && recv_proc_exists[ZZ]==true && srcdir[ZZ]!=NO) {
     int rank; int dir;
     if       (srcdir[ZZ]==ZN) {
-      rank = mpiPM.myrank-nx[XX]*nx[YY]; dir = dir_ZN;
+      rank = mpiPM->myrank-nx[XX]*nx[YY]; dir = dir_ZN;
     }
     else if (srcdir[ZZ]==ZP) {
-      rank = mpiPM.myrank+nx[XX]*nx[YY]; dir = dir_ZP;
+      rank = mpiPM->myrank+nx[XX]*nx[YY]; dir = dir_ZP;
     }
     else {
       rank=999; dir=999;
@@ -1503,7 +1505,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
     }
     if (recv_proc_exists[YY] && srcdir[YY]!=NO &&
   recv_proc_exists[XX] && srcdir[XX]!=NO) {
-      // dir=srcdir[ZZ]; rank=mpiPM.myrank(+-)nx[XX]*nx[YY];
+      // dir=srcdir[ZZ]; rank=mpiPM->myrank(+-)nx[XX]*nx[YY];
       //dir = srcdir[ZZ]+srcdir[YY]+srcdir[XX];
       if      (srcdir[YY]==YN) {rank -= nx[XX]; dir += dir_YN;}
       else if (srcdir[YY]==YP) {rank += nx[XX]; dir += dir_YP;}
@@ -1519,7 +1521,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   // Choose processors I need to send data to.
   //
   // x-dir
-  int rank=mpiPM.myrank; int dir;
+  int rank=mpiPM->myrank; int dir;
   if (send_proc_exists[XN]) {
     temp.rank = rank-1; temp.dir = dir_XN; RT_send_list.push_back(temp);
   }
@@ -1529,7 +1531,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
 
   // y-dir
   if (G_ndim>1) {
-    rank=mpiPM.myrank; dir=0;
+    rank=mpiPM->myrank; dir=0;
     if (send_proc_exists[YN]) {
       rank -= nx[XX]; dir=dir_YN;
       temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
@@ -1540,7 +1542,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   temp.rank = rank+1; temp.dir=dir +dir_XP; RT_send_list.push_back(temp);
       }
     }
-    rank=mpiPM.myrank; dir=0;
+    rank=mpiPM->myrank; dir=0;
     if (send_proc_exists[YP]) {
       rank += nx[XX]; dir=dir_YP;
       temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
@@ -1554,7 +1556,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   }
   // z-dir
   if (G_ndim>2) {
-    rank=mpiPM.myrank; dir=0;
+    rank=mpiPM->myrank; dir=0;
     if (send_proc_exists[ZN]) {
       rank -= nx[XX]*nx[YY]; dir = dir_ZN;
       temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
@@ -1575,7 +1577,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
       if (send_proc_exists[YP] && send_proc_exists[XP])
   {temp.rank = rank+nx[XX]+1; temp.dir=dir +dir_YP +dir_XP; RT_send_list.push_back(temp);}
     }
-    rank=mpiPM.myrank; dir=0;
+    rank=mpiPM->myrank; dir=0;
     if (send_proc_exists[ZP]) {
       rank += nx[XX]*nx[YY]; dir = dir_ZP;
       temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
@@ -2058,7 +2060,7 @@ class cell * UniformGridParallel::RT_new_edge_cell(const cell *c, ///< grid edge
     opp = OppDir(d1); t->ngb[opp] = move;
 
 #ifdef RT_TESTING
-    if (mpiPM.myrank==60 && c->id==31) {
+    if (mpiPM->myrank==60 && c->id==31) {
       cout <<"RT_new_edge_cell() grid cell, c, new cell, t.\n";
       cout <<"d1="<<d1<<" and d2="<<d2<<"\n";
       PrintCell(c); PrintCell(t);
@@ -2780,17 +2782,19 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
 ///
 /// Constructor
 ///
-uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(int nd,
-                 int nv,
-                 int eqt,
-                 double *xn,
-                 double *xp,
-                 int *nc
-                 )
+uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
+      int nd,
+      int nv,
+      int eqt,
+      double *xn,
+      double *xp,
+      int *nc,
+      class MCMDcontrol *p
+      )
   :
   VectorOps_Cart(nd),
   UniformGrid(nd,nv,eqt,xn,xp,nc),
-  UniformGridParallel(nd,nv,eqt,xn,xp,nc),
+  UniformGridParallel(nd,nv,eqt,xn,xp,nc,p),
   VectorOps_Cyl(nd),
   uniform_grid_cyl(nd,nv,eqt,xn,xp,nc)
 {
@@ -2862,17 +2866,19 @@ double uniform_grid_cyl_parallel::iR_cov(const cell *c)
 ///
 /// Constructor
 ///
-uniform_grid_sph_parallel::uniform_grid_sph_parallel(int nd,
-                 int nv,
-                 int eqt,
-                 double *xn,
-                 double *xp,
-                 int *nc
-                 )
+uniform_grid_sph_parallel::uniform_grid_sph_parallel(
+      int nd,
+      int nv,
+      int eqt,
+      double *xn,
+      double *xp,
+      int *nc,
+      class MCMDcontrol *p
+      )
   :
   VectorOps_Cart(nd),
   UniformGrid(nd,nv,eqt,xn,xp,nc),
-  UniformGridParallel(nd,nv,eqt,xn,xp,nc),
+  UniformGridParallel(nd,nv,eqt,xn,xp,nc,p),
   VectorOps_Cyl(nd),
   VectorOps_Sph(nd),
   uniform_grid_sph(nd,nv,eqt,xn,xp,nc)
