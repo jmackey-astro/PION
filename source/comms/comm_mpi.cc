@@ -28,6 +28,15 @@
 #ifdef PARALLEL
 #ifdef USE_MPI
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "tools/command_line_interface.h"
+#include "tools/mem_manage.h"
+#include "tools/reporting.h"
+
+#include "comms/comm_mpi.h"
 #include "global.h"
 #include <sstream>
 using namespace std;

@@ -149,17 +149,17 @@ int sim_control_fixedgrid_pllel::setup_grid(
   if      (SimPM.coord_sys==COORD_CRT) {
     *grid = new UniformGridParallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG);
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG, MCMD);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
     *grid = new uniform_grid_cyl_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG);
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG, MCMD);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
     *grid = new uniform_grid_sph_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG);
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG, MCMD);
   }
   else {
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);

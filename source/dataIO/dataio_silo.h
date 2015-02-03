@@ -150,20 +150,20 @@ class dataio_silo :public DataIOBase {
   ///
   /// Choose a FileName to write to.
   ///
-   virtual int choose_filename(const string, ///< filebase passed in from main code.
+  virtual int choose_filename(const string, ///< filebase passed in from main code.
 			       const int     ///< file counter to use (e.g. timestep).
 			       );
   ///
   /// Call once to setup arrays with the properties of the grid, for
   /// writing to the Silo Quadmesh.
   ///
-   virtual int setup_grid_properties(
+  virtual int setup_grid_properties(
         class GridBaseClass * ///< pointer to data.
         );
   ///
   /// Choose what data to write to file, based on equations being solved.*/
   ///
-   virtual int setup_write_variables();
+  virtual int setup_write_variables();
 
   ///
   /// Generate Quadmesh and write it to silo file.
@@ -308,7 +308,9 @@ class dataio_silo_pllel : public dataio_silo {
   /// writing to the Silo Quadmesh.  This is for the local domain of the current
   /// processor.
   ///
-  int setup_grid_properties();
+  int setup_grid_properties(
+        class GridBaseClass * ///< pointer to data.
+        );
 
   ///
   /// allocate memory for arrays used to write data to files.

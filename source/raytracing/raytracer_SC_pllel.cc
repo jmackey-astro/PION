@@ -185,11 +185,12 @@ int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
   //cout <<"RT: Sending boundaries/Waiting for "<<GS.stop_timer(t4)<<" secs.\n";
   wait  = GS.pause_timer(t2);
   total = GS.pause_timer(t1);
-	
-  if (mpiPM.myrank==0 && (SimPM.timestep%100==0) && s_id==0) {
+
+  if ( (SimPM.timestep%100==0) && s_id==0) {
     cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
     cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";
   }
+
   return err;
 }
 

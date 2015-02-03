@@ -18,7 +18,7 @@
 
 
 #include <mpi.h>
-#include "comms.h"
+#include "comms/comms.h"
 
 #ifdef SILO
 #include <pmpio.h>

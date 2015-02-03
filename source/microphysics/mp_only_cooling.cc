@@ -107,26 +107,20 @@ mp_only_cooling::mp_only_cooling(const int nv,
     break;
   }
 
-//#ifdef TESTING
-#ifdef PARALLEL
-  if (mpiPM.myrank==0) {
-#endif 
-    ostringstream opfile; opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
-    ofstream outf(opfile.str().c_str());
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double t=1.0e0;
-    do {
-      outf << t <<"\t"<< Edot(2.34e-24,t) <<"\n";
-      t *=1.05;
-    } while (t<1.0e10);
-    outf.close();
-#ifdef PARALLEL
-  }
-#endif 
-//#endif 
+#ifdef TESTING
+  ostringstream opfile; opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
+  ofstream outf(opfile.str().c_str());
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double t=1.0e0;
+  do {
+    outf << t <<"\t"<< Edot(2.34e-24,t) <<"\n";
+    t *=1.05;
+  } while (t<1.0e10);
+  outf.close();
+#endif // TESTING
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   MaxT_allowed = ephys->MaxTemperature;

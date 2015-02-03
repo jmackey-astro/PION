@@ -106,13 +106,13 @@ esac
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
+#  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
+#  export PION_OPTIMISE=HIGH
   export CXX=mpicxx
   export CC=mpicc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=2
+#  NCORES=2
 fi
 #################################
 

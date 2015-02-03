@@ -136,9 +136,10 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
 }
 
 
-int dataio_silo_pllel::ReadData(string infile,
-				class GridBaseClass *cg
-				)
+int dataio_silo_pllel::ReadData(
+        string infile,
+	class GridBaseClass *cg
+	)
 {
   if (!cg)
     rep.error("dataio_silo_pllel::ReadData() null pointer to grid!",cg);
@@ -151,7 +152,7 @@ int dataio_silo_pllel::ReadData(string infile,
 
   // set grid properties for quadmesh 
   if (!have_setup_gridinfo) {
-    err = setup_grid_properties();
+    err = setup_grid_properties(gp);
     rep.errorTest("dataio_silo_pllel::ReadData() error setting up grid_props", 0, err);
   }
 
@@ -388,7 +389,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     // set grid properties for quadmesh 
     // CHANGED FOR MPI LOCAL GRID
     //cout <<"----dataio_silo_pllel::OutputData() setting up grid properties\n";
-    err = setup_grid_properties();
+    err = setup_grid_properties(gp);
     if (err)
       rep.error("dataio_silo_pllel::OutputData() error setting up grid_props", err);
     //cout <<"----dataio_silo_pllel::OutputData() grid props setup done\n";
@@ -707,12 +708,14 @@ int dataio_silo_pllel::choose_pllel_filename(const string fbase, ///< filebase p
   return 0;
 }
 
-int dataio_silo_pllel::setup_grid_properties()
+int dataio_silo_pllel::setup_grid_properties(
+        class GridBaseClass *grid ///< pointer to data.
+        )
 {
   // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
   // This version is for the local domain of the current processor.
-  if (!gp)
-    rep.error("dataio_silo::setup_grid_properties() null grid pointer!",gp);
+  if (!grid)
+    rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
   //double dx=gp->DX();
   double dx=SimPM.dx;
   if (node_coords || nodedims || zonedims ||

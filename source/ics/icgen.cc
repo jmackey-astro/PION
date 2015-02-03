@@ -53,6 +53,7 @@
 #include "dataIO/readparams.h"
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
+#include "dataIO/dataio_fits_MPI.h"
 #endif // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
@@ -115,6 +116,12 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
   int err = COMM->init(&argc, &argv);
   if (err) rep.error("comms init error",err);
+
+  class MCMDcontrol MCMD;
+  int r=-1, np=-1;
+  COMM->get_rank_nproc(&r,&np);
+  MCMD.myrank = r;
+  MCMD.nproc  = np;
 #endif
 
   if (argc<2) {
@@ -131,15 +138,15 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      ostringstream path; path << outpath <<"_"<<mpiPM.myrank<<"_";
+      ostringstream path; path << outpath <<"_"<<MCMD.myrank<<"_";
       outpath = path.str();
-      if (mpiPM.myrank==0) {
+      if (MCMD.myrank==0) {
         cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
       }
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }
-  //cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+  //cout << "rank: " << MCMD.myrank << " nproc: " << MCMD.nproc << "\n";
 #endif //PARALLEL
 #ifdef SERIAL
   int err=0;
@@ -191,7 +198,7 @@ int main(int argc, char **argv)
   CI.setup_extra_data(SimPM.RS, hc_flag, dv_flag);
  
 #ifdef PARALLEL
-  err  = mpiPM.decomposeDomain();
+  err  = MCMD.decomposeDomain();
   if (err) rep.error("main: failed to decompose domain!",err);
   class GridBaseClass *grid =0;
   //
@@ -201,18 +208,18 @@ int main(int argc, char **argv)
 
   if      (SimPM.coord_sys==COORD_CRT) {
     grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
-            SimPM.eqntype,  mpiPM.LocalXmin,
-            mpiPM.LocalXmax, mpiPM.LocalNG);
+            SimPM.eqntype,  MCMD.LocalXmin,
+            MCMD.LocalXmax, MCMD.LocalNG, &MCMD);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
     grid = new uniform_grid_cyl_parallel (SimPM.ndim, SimPM.nvar,
-            SimPM.eqntype,  mpiPM.LocalXmin,
-            mpiPM.LocalXmax, mpiPM.LocalNG);
+            SimPM.eqntype,  MCMD.LocalXmin,
+            MCMD.LocalXmax, MCMD.LocalNG, &MCMD);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
     grid = new uniform_grid_sph_parallel (SimPM.ndim, SimPM.nvar,
-            SimPM.eqntype,  mpiPM.LocalXmin,
-            mpiPM.LocalXmax, mpiPM.LocalNG);
+            SimPM.eqntype,  MCMD.LocalXmin,
+            MCMD.LocalXmax, MCMD.LocalNG, &MCMD);
   }
   else {
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
@@ -222,7 +229,6 @@ int main(int argc, char **argv)
 #ifdef SERIAL
   // Now we have read in parameters from the file, so set up a grid
   class GridBaseClass *grid = 0; // global grid pointer.
-#ifdef GEOMETRIC_GRID
   if      (SimPM.coord_sys==COORD_CRT)
     grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype,
           SimPM.Xmin, SimPM.Xmax, SimPM.NG);
@@ -236,10 +242,6 @@ int main(int argc, char **argv)
          SimPM.Xmax, SimPM.NG);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
-#else  // GEOMETRIC_GRID
-  grid = new UniformGrid(SimPM.ndim,SimPM.nvar,SimPM.eqntype,
-       SimPM.Xmin,SimPM.Xmax,SimPM.NG);
-#endif // GEOMETRIC_GRID
 #endif // SERIAL
 
   if (!grid) rep.error("Grid setup failed",grid);
@@ -563,7 +565,12 @@ int main(int argc, char **argv)
     cout <<"WRITING FITS FILE: ";
     outfile=icfile;
     cout << outfile << "\n";
+#ifdef SERIAL
     dataio = 0; dataio = new DataIOFits ();
+#endif // SERIAL
+#ifdef PARALLEL
+    dataio = 0; dataio = new DataIOFits_pllel (&MCMD);
+#endif // PARALLEL
   }
 #endif // if fits.
 
@@ -578,7 +585,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef PARALLEL
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo_pllel ();
+    dataio=0; dataio=new dataio_silo_pllel (&MCMD);
 #endif
   }
 #endif // if SILO defined.
@@ -612,7 +619,7 @@ int main(int argc, char **argv)
   }
 
 #ifdef PARALLEL
-  cout << "rank: " << mpiPM.myrank << " nproc: " << mpiPM.nproc << "\n";
+  cout << "rank: " << MCMD.myrank << " nproc: " << MCMD.nproc << "\n";
   COMM->finalise();
   delete COMM; COMM=0;
 #endif
@@ -718,7 +725,7 @@ int ICsetup_base::AddNoise2Data(
 {
   int seed= 975;
 #ifdef PARALLEL
-  seed += mpiPM.myrank;
+  seed += MCMD.myrank;
   bool true_edge=false;
 #endif
   srand(seed);
@@ -762,30 +769,30 @@ int ICsetup_base::AddNoise2Data(
         // x-dir
         if      (cpt->isedge %3 ==1) { // XN boundary
           //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (mpiPM.ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<mpiPM.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+          if (MCMD.ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<MCMD.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
         }
         else if (cpt->isedge %3 ==2) { // XP boundary
-          if (mpiPM.ngbprocs[XP] <0) true_edge=true;
+          if (MCMD.ngbprocs[XP] <0) true_edge=true;
         }
         // y-dir
         if (SimPM.ndim>1) {
           if      ((cpt->isedge%9)/3 ==1) { // YN boundary
             //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (mpiPM.ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<mpiPM.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+            if (MCMD.ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<MCMD.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
           }
           else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (mpiPM.ngbprocs[YP] <0) true_edge=true;
+            if (MCMD.ngbprocs[YP] <0) true_edge=true;
           }
         }
         // z-dir
         if (SimPM.ndim>2) {
           if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (mpiPM.ngbprocs[ZN] <0) true_edge=true;
+            if (MCMD.ngbprocs[ZN] <0) true_edge=true;
           }
           else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (mpiPM.ngbprocs[ZP] <0) true_edge=true;
+            if (MCMD.ngbprocs[ZP] <0) true_edge=true;
           }
         }
         //cout <<"true_edge="<<true_edge<<"\n";
@@ -824,30 +831,30 @@ int ICsetup_base::AddNoise2Data(
         // x-dir
         if      (cpt->isedge %3 ==1) { // XN boundary
           //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (mpiPM.ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<mpiPM.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+          if (MCMD.ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<MCMD.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
         }
         else if (cpt->isedge %3 ==2) { // XP boundary
-          if (mpiPM.ngbprocs[XP] <0) true_edge=true;
+          if (MCMD.ngbprocs[XP] <0) true_edge=true;
         }
         // y-dir
         if (SimPM.ndim>1) {
           if      ((cpt->isedge%9)/3 ==1) { // YN boundary
             //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (mpiPM.ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<mpiPM.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+            if (MCMD.ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<MCMD.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
           }
           else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (mpiPM.ngbprocs[YP] <0) true_edge=true;
+            if (MCMD.ngbprocs[YP] <0) true_edge=true;
           }
         }
         // z-dir
         if (SimPM.ndim>2) {
           if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (mpiPM.ngbprocs[ZN] <0) true_edge=true;
+            if (MCMD.ngbprocs[ZN] <0) true_edge=true;
           }
           else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (mpiPM.ngbprocs[ZP] <0) true_edge=true;
+            if (MCMD.ngbprocs[ZP] <0) true_edge=true;
           }
         }
         //cout <<"true_edge="<<true_edge<<"\n";
@@ -924,30 +931,30 @@ int ICsetup_base::AddNoise2Data(
         // x-dir
         if      (cpt->isedge %3 ==1) { // XN boundary
           //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (mpiPM.ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<mpiPM.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+          if (MCMD.ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<MCMD.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
         }
         else if (cpt->isedge %3 ==2) { // XP boundary
-          if (mpiPM.ngbprocs[XP] <0) true_edge=true;
+          if (MCMD.ngbprocs[XP] <0) true_edge=true;
         }
         // y-dir
         if (SimPM.ndim>1) {
           if      ((cpt->isedge%9)/3 ==1) { // YN boundary
             //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (mpiPM.ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<mpiPM.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+            if (MCMD.ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<MCMD.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
           }
           else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (mpiPM.ngbprocs[YP] <0) true_edge=true;
+            if (MCMD.ngbprocs[YP] <0) true_edge=true;
           }
         }
         // z-dir
         if (SimPM.ndim>2) {
           if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (mpiPM.ngbprocs[ZN] <0) true_edge=true;
+            if (MCMD.ngbprocs[ZN] <0) true_edge=true;
           }
           else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (mpiPM.ngbprocs[ZP] <0) true_edge=true;
+            if (MCMD.ngbprocs[ZP] <0) true_edge=true;
           }
         }
         //cout <<"true_edge="<<true_edge<<"\n";
