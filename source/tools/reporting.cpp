@@ -12,6 +12,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
+#include "comms/comms.h"
 
 using namespace std;
 
@@ -22,22 +23,40 @@ using namespace std;
 class reporting rep;
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 reporting::reporting()
 {
 //  cout <<"Default reporting Constructor. O/P goes to cout/cerr.\n";
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 reporting::~reporting()
 {
 #if defined (SERIAL)
   cout.rdbuf(saved_buffer_cout);   
   infomsg.close();
+  //
   //cout<<"Deleting reporting class, This should be stdout.\n";
+  //
   cerr.rdbuf(saved_buffer_cerr);   
   errmsg.close();
+  //
   //cout<<"Deleting reporting class, This should be stderr.\n";
+  //
 #elif defined (PARALLEL)
-  if (mpiPM.myrank==0) {
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
+  if (myrank==0) {
     cout.rdbuf(saved_buffer_cout);   
     infomsg.close();
   }
@@ -48,6 +67,12 @@ reporting::~reporting()
 #error "Must define either SERIAL or PARALLEL (reporting::~reporting)"
 #endif
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int reporting::redirect(const string &path)
 {
@@ -85,8 +110,10 @@ int reporting::redirect(const string &path)
   // For parallel execution (production runs) we only want a single
   // log file, and errors should be printed to stderr.
   //
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
   //cout <<"myrank="<<mpiPM.myrank<<"\n";
-  if (mpiPM.myrank==0) {
+  if (myrank==0) {
     cout <<"(reporting::redirect): O/P goes to text files in ";
     cout <<path<<"\n";
     cout <<"Note: not redirecting error messages, and suppressing ";
@@ -137,5 +164,11 @@ int reporting::redirect(const string &path)
 #endif
   return(0);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 

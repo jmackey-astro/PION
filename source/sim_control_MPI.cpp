@@ -48,7 +48,7 @@
 /// - 2013.04.16 JM: Fixed FITS read functions for new filename convention.
 /// - 2013.09.05 JM: changed RS position[] to pos[].
 /// - 2013.10.13 JM: Tidied up a bit.
-/// - 2015.01.[26-28] JM: CHANGED FILENAME TO SIM_CONTROL_MPI.CPP, and
+/// - 2015.[01.26-02.03] JM: CHANGED FILENAME TO SIM_CONTROL_MPI.CPP,
 ///    added ParallelParams class, and fixing code for non-global mpiPM.
 
 #include "defines/functionality_flags.h"
@@ -227,6 +227,18 @@ int sim_control_fixedgrid_pllel::Init(
 #endif
   int err=0;
 
+  //
+  // Setup the MCMDcontrol class with rank and nproc.
+  //
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
+  mpiPM.myrank = myrank;
+  mpiPM.nproc  = nproc;
+
+
+  //
+  // Now find out what kind of file we are to read, and then read it.
+  //
   if (typeOfFile==1) {
       rep.error("Don't give me text file for parallel I/O! Crazy fool!",typeOfFile);
   }

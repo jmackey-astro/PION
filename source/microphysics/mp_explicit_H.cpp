@@ -451,51 +451,47 @@ mp_explicit_H::mp_explicit_H(
   // ---------- output cooling rates for various temperatures -------
   // ----------------------------------------------------------------
 #ifdef MPV3_DEBUG
-#ifdef PARALLEL
-  if (mpiPM.myrank==0) {
-#endif
-    double p[nv_prim];
-    p[RO]=2.338e-24; p[PG]=1.0e-12;
-    p[pv_Hp] = 0.99;
-    lv_nH=1.0e0;
+  double p[nv_prim];
+  p[RO]=2.338e-24; p[PG]=1.0e-12;
+  p[pv_Hp] = 0.99;
+  lv_nH=1.0e0;
 
-    string opfile("cooling_mp_explicit_H.txt");
-    ofstream outf(opfile.c_str());
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999,";
-    outf <<" x=0.00001, x=0.5 (n=1 per cc)\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double T=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
-    do {
-      p[pv_Hp] = 0.99999;
-      Set_Temp(p,T,junk);
-      NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
-      NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
-      ydot(0,y_in,y_out,0);
-      Edi = NV_Ith_S(y_out,lv_eint);
+  string opfile("cooling_mp_explicit_H.txt");
+  ofstream outf(opfile.c_str());
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999,";
+  outf <<" x=0.00001, x=0.5 (n=1 per cc)\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double T=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
+  do {
+    p[pv_Hp] = 0.99999;
+    Set_Temp(p,T,junk);
+    NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
+    NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
+    ydot(0,y_in,y_out,0);
+    Edi = NV_Ith_S(y_out,lv_eint);
 
-      p[pv_Hp] = 0.05;
-      Set_Temp(p,T,junk);
-      NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
-      NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
-      ydot(0,y_in,y_out,0);
-      Edpi = NV_Ith_S(y_out,lv_eint);
+    p[pv_Hp] = 0.05;
+    Set_Temp(p,T,junk);
+    NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
+    NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
+    ydot(0,y_in,y_out,0);
+    Edpi = NV_Ith_S(y_out,lv_eint);
 
-      p[pv_Hp] = 0.00001;
-      Set_Temp(p,T,junk);
-      NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
-      NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
-      ydot(0,y_in,y_out,0);
-      Edn = NV_Ith_S(y_out,lv_eint);
+    p[pv_Hp] = 0.00001;
+    Set_Temp(p,T,junk);
+    NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
+    NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
+    ydot(0,y_in,y_out,0);
+    Edn = NV_Ith_S(y_out,lv_eint);
 
-      outf << T <<"\t"<< Edi/lv_nH/lv_nH <<"  "<< Edn/lv_nH/lv_nH <<"  "<< Edpi/lv_nH/lv_nH <<"\n";
-      T *=1.05;
-    } while (T<min(1.0e9,EP->MaxTemperature));
-    outf.close();  
-#ifdef PARALLEL
-  }
-#endif 
+    outf << T <<"\t"<< Edi/lv_nH/lv_nH;
+    outf <<"  "<< Edn/lv_nH/lv_nH;
+    outf <<"  "<< Edpi/lv_nH/lv_nH <<"\n";
+    T *=1.05;
+  } while (T<min(1.0e9,EP->MaxTemperature));
+  outf.close();  
 #endif //Debug
   // ================================================================
   // ================================================================

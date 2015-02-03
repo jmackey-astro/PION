@@ -111,32 +111,27 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
   //cout << "\t\tB-tot min-slope="<<MinSlope_btot<<" max-slope="<<MaxSlope_btot<<"\n";
 
 #ifdef TESTING
-#ifdef PARALLEL
-  if (mpiPM.myrank==0) {
-#endif 
-    ofstream outf("hummer_recomb.txt");
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Hummer Recombination and Cooling Curve Data: Temperature(K) ";
-    outf <<"Rate(cm^3/s) CoolB(erg.cm^3/s) Total-Cool[B+FF](erg.cm^3/s)\n";
-    outf <<"# Cols: T  alpha_B*sqrt(T)  beta_B*sqrt(T)  beta_B^tot*sqrt(T)";
-    outf <<"  alpha_B  beta_B  beta_B^tot.\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double t=10.0;
-    do {
-      outf << t <<"\t"<< Hii_rad_recomb_rate(t)*sqrt(t) <<"\t";
-      outf << Hii_rad_recomb_cooling(t)*sqrt(t) <<"\t";
-      outf << Hii_total_cooling(t)*sqrt(t) <<"\t";
-      outf << Hii_rad_recomb_rate(t) <<"\t";
-      outf << Hii_rad_recomb_cooling(t) <<"\t";
-      outf << Hii_total_cooling(t) <<"\n";
-      t *=1.1;
-    } while (t<1.0e9);
-    outf.close();
-#ifdef PARALLEL
-  }
-#endif 
+  ofstream outf("hummer_recomb.txt");
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Hummer Recombination and Cooling Curve Data: Temperature(K) ";
+  outf <<"Rate(cm^3/s) CoolB(erg.cm^3/s) Total-Cool[B+FF](erg.cm^3/s)\n";
+  outf <<"# Cols: T  alpha_B*sqrt(T)  beta_B*sqrt(T)  beta_B^tot*sqrt(T)";
+  outf <<"  alpha_B  beta_B  beta_B^tot.\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double t=10.0;
+  do {
+    outf << t <<"\t"<< Hii_rad_recomb_rate(t)*sqrt(t) <<"\t";
+    outf << Hii_rad_recomb_cooling(t)*sqrt(t) <<"\t";
+    outf << Hii_total_cooling(t)*sqrt(t) <<"\t";
+    outf << Hii_rad_recomb_rate(t) <<"\t";
+    outf << Hii_rad_recomb_cooling(t) <<"\t";
+    outf << Hii_total_cooling(t) <<"\n";
+    t *=1.1;
+  } while (t<1.0e9);
+  outf.close();
 #endif //TESTING
+
   return;
 }
 

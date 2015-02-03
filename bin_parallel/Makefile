@@ -71,7 +71,8 @@ VPATH = \
 ../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
-../source/contrib
+../source/contrib:\
+../source/tools
 
 
 GLOBAL = global.h functionality_flags.h testing_flags.h
@@ -301,7 +302,8 @@ endif
 
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
-OBJECTS = mainMPI.o uniform_grid.o sim_control.o global.o                      \
+OBJECTS = reporting.o mem_manage.o command_line_interface.o \
+        mainMPI.o uniform_grid.o sim_control.o global.o                      \
         MCMD_control.o \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
@@ -329,7 +331,9 @@ OBJECTS = mainMPI.o uniform_grid.o sim_control.o global.o                      \
         hydrogen_mp.o hydrogen_photoion.o                                      \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
-IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
+IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
+        sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o \
+        icgen.o uniform_grid.o global.o readparams.o \
         MCMD_control.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
         file_status.o                                                          \
@@ -396,6 +400,9 @@ clean:
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
+reporting.o:   tools/reporting.cpp ${GLOBAL}
+mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
+command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 
 mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
 global.o: global.cc ${GLOBAL}

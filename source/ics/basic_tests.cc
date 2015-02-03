@@ -782,7 +782,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
   double Bx = 0.5/sqrt(4.*M_PI); // think this is right, but not sure about 4Pi
   int seed= 975;
 #ifdef PARALLEL
-  seed += mpiPM.myrank;
+  seed += MCMD->myrank;
 #endif
   srand(seed);
   double noise_amp = 0.01; // absolute amplitude of noise.

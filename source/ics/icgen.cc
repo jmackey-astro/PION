@@ -37,6 +37,7 @@
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2014.07.11 JM: Added isothermal noise perturbation option.
 /// - 2015.01.(15-26) JM: Added new include statements for new PION version.
+/// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -196,7 +197,19 @@ int main(int argc, char **argv)
     hc_flag = SimPM.ndim;
   }
   CI.setup_extra_data(SimPM.RS, hc_flag, dv_flag);
- 
+
+
+  class sim_control_fixedgrid *SimControl =0;
+#if   defined (PARALLEL)
+  SimControl = new sim_control_fixedgrid_pllel();
+#elif defined (SERIAL)
+  SimControl = new sim_control_fixedgrid();
+#else
+#error "Define SERIAL or PARALLEL"
+#endif
+
+
+
 #ifdef PARALLEL
   err  = MCMD.decomposeDomain();
   if (err) rep.error("main: failed to decompose domain!",err);
@@ -351,6 +364,9 @@ int main(int argc, char **argv)
   else rep.error("BAD IC identifier",ics);
   if (!ic) rep.error("failed to init",ics);
 
+#ifdef PARALLEL
+  ic->set_MCMD_pointer(&MCMD);
+#endif // PARALLEL
 
   // call setup on the class just setup.
   err += ic->setup_data(rp,grid);
@@ -725,7 +741,7 @@ int ICsetup_base::AddNoise2Data(
 {
   int seed= 975;
 #ifdef PARALLEL
-  seed += MCMD.myrank;
+  seed += MCMD->myrank;
   bool true_edge=false;
 #endif
   srand(seed);
@@ -769,30 +785,30 @@ int ICsetup_base::AddNoise2Data(
         // x-dir
         if      (cpt->isedge %3 ==1) { // XN boundary
           //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (MCMD.ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<MCMD.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+          if (MCMD->ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<MCMD->ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
         }
         else if (cpt->isedge %3 ==2) { // XP boundary
-          if (MCMD.ngbprocs[XP] <0) true_edge=true;
+          if (MCMD->ngbprocs[XP] <0) true_edge=true;
         }
         // y-dir
         if (SimPM.ndim>1) {
           if      ((cpt->isedge%9)/3 ==1) { // YN boundary
             //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (MCMD.ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<MCMD.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+            if (MCMD->ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<MCMD->ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
           }
           else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (MCMD.ngbprocs[YP] <0) true_edge=true;
+            if (MCMD->ngbprocs[YP] <0) true_edge=true;
           }
         }
         // z-dir
         if (SimPM.ndim>2) {
           if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (MCMD.ngbprocs[ZN] <0) true_edge=true;
+            if (MCMD->ngbprocs[ZN] <0) true_edge=true;
           }
           else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (MCMD.ngbprocs[ZP] <0) true_edge=true;
+            if (MCMD->ngbprocs[ZP] <0) true_edge=true;
           }
         }
         //cout <<"true_edge="<<true_edge<<"\n";
@@ -831,30 +847,30 @@ int ICsetup_base::AddNoise2Data(
         // x-dir
         if      (cpt->isedge %3 ==1) { // XN boundary
           //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (MCMD.ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<MCMD.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+          if (MCMD->ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<MCMD->ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
         }
         else if (cpt->isedge %3 ==2) { // XP boundary
-          if (MCMD.ngbprocs[XP] <0) true_edge=true;
+          if (MCMD->ngbprocs[XP] <0) true_edge=true;
         }
         // y-dir
         if (SimPM.ndim>1) {
           if      ((cpt->isedge%9)/3 ==1) { // YN boundary
             //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (MCMD.ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<MCMD.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+            if (MCMD->ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<MCMD->ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
           }
           else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (MCMD.ngbprocs[YP] <0) true_edge=true;
+            if (MCMD->ngbprocs[YP] <0) true_edge=true;
           }
         }
         // z-dir
         if (SimPM.ndim>2) {
           if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (MCMD.ngbprocs[ZN] <0) true_edge=true;
+            if (MCMD->ngbprocs[ZN] <0) true_edge=true;
           }
           else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (MCMD.ngbprocs[ZP] <0) true_edge=true;
+            if (MCMD->ngbprocs[ZP] <0) true_edge=true;
           }
         }
         //cout <<"true_edge="<<true_edge<<"\n";
@@ -931,30 +947,30 @@ int ICsetup_base::AddNoise2Data(
         // x-dir
         if      (cpt->isedge %3 ==1) { // XN boundary
           //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (MCMD.ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<MCMD.ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
+          if (MCMD->ngbprocs[XN] <0) true_edge=true;
+          //cout <<" ngb="<<MCMD->ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
         }
         else if (cpt->isedge %3 ==2) { // XP boundary
-          if (MCMD.ngbprocs[XP] <0) true_edge=true;
+          if (MCMD->ngbprocs[XP] <0) true_edge=true;
         }
         // y-dir
         if (SimPM.ndim>1) {
           if      ((cpt->isedge%9)/3 ==1) { // YN boundary
             //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (MCMD.ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<MCMD.ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
+            if (MCMD->ngbprocs[YN] <0) true_edge=true;
+            //cout <<" ngb="<<MCMD->ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
           }
           else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (MCMD.ngbprocs[YP] <0) true_edge=true;
+            if (MCMD->ngbprocs[YP] <0) true_edge=true;
           }
         }
         // z-dir
         if (SimPM.ndim>2) {
           if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (MCMD.ngbprocs[ZN] <0) true_edge=true;
+            if (MCMD->ngbprocs[ZN] <0) true_edge=true;
           }
           else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (MCMD.ngbprocs[ZP] <0) true_edge=true;
+            if (MCMD->ngbprocs[ZP] <0) true_edge=true;
           }
         }
         //cout <<"true_edge="<<true_edge<<"\n";
