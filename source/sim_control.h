@@ -56,6 +56,7 @@
 #include "grid/uniform_grid.h"
 #include "dataIO/dataio.h"
 #include "MCMD_control.h"
+#include "setup_fixed_grid.h"
 
 /// The simplest finite volume grid -- a uniform grid with cubic cells
 /// in the chosen coordinates.
@@ -63,7 +64,7 @@
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control_fixedgrid
+class sim_control_fixedgrid : virtual public setup_fixed_grid
 {
   public:
   sim_control_fixedgrid();  ///< Simple constructor, initialises value.
@@ -122,29 +123,29 @@ class sim_control_fixedgrid
   ///
   /// Setup cell extra data through the cell_interface class CI.
   ///
-  void setup_cell_extra_data();
+  //void setup_cell_extra_data();
 
   /// \brief initialise the grid class with appropriate parameters.
   ///
   /// This function sets up the appropriate grid; so far I only have a 
   /// UniformGrid class -- uniform, cartesian, finite volume grid.
   ///
-  virtual int setup_grid(
-        class GridBaseClass **, ///< address of pointer to computational grid.
-        class MCMDcontrol *     ///< address of MCMD controller class.
-        );
+  //virtual int setup_grid(
+  //      class GridBaseClass **, ///< address of pointer to computational grid.
+  //      class MCMDcontrol *     ///< address of MCMD controller class.
+  //      );
 
   ///
   /// Decide if I need to setup MP class, and do it if i need to.
   ///
-  virtual int setup_microphysics();
+  //virtual int setup_microphysics();
 
   ///
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
-  virtual int setup_raytracing(
-        class GridBaseClass * 
-        );
+  //virtual int setup_raytracing(
+  //      class GridBaseClass * 
+  //      );
 
   ///
   /// Check for any time-evolving radiation sources, and read the evolution
@@ -229,9 +230,9 @@ class sim_control_fixedgrid
   /// \retval 0 success
   /// \retval 1 failure
   ///
-  int boundary_conditions(
-        class GridBaseClass * 
-        );
+  //int boundary_conditions(
+  //      class GridBaseClass * 
+  //      );
 
   ///
   /// Delete any init data and make sure things are ready to go.
@@ -250,14 +251,14 @@ class sim_control_fixedgrid
   // ***********************************************************************
 
   /// flag: true if timestep limit needs raytracing column densities
-  bool FVI_need_column_densities_4dt;
+  //bool FVI_need_column_densities_4dt;
 
-  int FVI_nheat; ///< number of RT heating sources
-  int FVI_nion;  ///< number of ionising sources
+  //int FVI_nheat; ///< number of RT heating sources
+  //int FVI_nion;  ///< number of ionising sources
   /// vector of RT heating sources, of size FVI_nheat
-  std::vector<struct rt_source_data> FVI_heating_srcs;
+  //std::vector<struct rt_source_data> FVI_heating_srcs;
   /// vector of RT ionising sources, of size FVI_nion
-  std::vector<struct rt_source_data> FVI_ionising_srcs;
+  //std::vector<struct rt_source_data> FVI_ionising_srcs;
 
   ///
   /// Calculate the appropriate timestep.

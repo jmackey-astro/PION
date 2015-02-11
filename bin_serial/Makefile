@@ -286,7 +286,8 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         main.o \
         uniform_grid.o cell_interface.o \
-        sim_control.o global.o \
+        setup_fixed_grid.o sim_control.o global.o \
+        MCMD_control.o \
         time_integrator.o calc_timestep.o \
 	VectorOps.o VectorOps_spherical.o \
 	eqns_base.o solver_eqn_base.o \
@@ -312,7 +313,8 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
-          icgen.o \
+          setup_fixed_grid.o icgen.o \
+        MCMD_control.o \
           uniform_grid.o cell_interface.o \
           global.o readparams.o file_status.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
@@ -328,7 +330,9 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
-        StarBench_test.o
+        StarBench_test.o \
+        raytracer_SC.o \
+        mp_only_cooling.o
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
@@ -389,12 +393,29 @@ global.o:       global.cc ${GLOBAL}
 
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 
+
 uniform_grid.o:  uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h \
 		VectorOps.h VectorOps_spherical.h
 
 VectorOps.o:           VectorOps.cc VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
+
+MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+
+setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
+    grid_base_class.h solver_eqn_base.h uniform_grid.h
+
+sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
+		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \
+		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
+                mp_only_cooling.h mp_explicit_H.h mp_implicit_H.h
+
+time_integrator.o: time_integrator.cpp sim_control.h \
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+
+calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h\
+ solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 #####################
 # EQUATIONS CLASSES #
@@ -558,15 +579,6 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} uniform_grid.h
 
-sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \
-		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
-                mp_only_cooling.h mp_explicit_H.h mp_implicit_H.h
-
-# functions for stepping forward in time
-time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
-# functions for calculating the timestep
-calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 ########################
 # Data I/O

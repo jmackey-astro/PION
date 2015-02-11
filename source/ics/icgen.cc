@@ -62,44 +62,13 @@
 
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
-//
-// simulation control toolkit class.
-//
-#include "sim_control.h"
-#ifdef PARALLEL
-#include "sim_control_MPI.h"
-#endif
 
+#include "setup_fixed_grid.h"
+#ifdef PARALLEL
+#include "setup_fixed_grid_MPI.h"
+#endif
 
 #include "microphysics/microphysics_base.h"
-#ifndef EXCLUDE_MPV1
-#include "microphysics/microphysics.h"
-#endif 
-#include "microphysics/mp_only_cooling.h"
-#ifndef EXCLUDE_MPV2
-#ifdef MP_V2_AIFA
-#include "microphysics/mp_v2_aifa.h"
-#endif
-#endif 
-#ifndef EXCLUDE_MPV3
-#include "microphysics/mp_explicit_H.h"
-#endif
-#ifndef EXCLUDE_MPV4
-#include "microphysics/mp_implicit_H.h"
-#endif 
-#include "microphysics/mpv5_molecular.h"
-#include "microphysics/mpv6_PureH.h"
-#include "microphysics/mpv7_TwoTempIso.h"
-#include "microphysics/mpv8_StarBench_heatcool.h"
-#ifdef CODE_EXT_HHE
-#include "future/mpv9_HHe.h"
-#endif
-#ifdef HARPREETS_CODE_EXT
-#ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
-#include "contrib/HD_MetalFree.h"
-#endif // EXCLUDE_HD_MODULE
-#endif // HARPREETS_CODE_EXT
 
 #include <sstream>
 using namespace std;
@@ -117,13 +86,15 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
   int err = COMM->init(&argc, &argv);
   if (err) rep.error("comms init error",err);
+#endif // PARALLEL
 
   class MCMDcontrol MCMD;
+#ifdef PARALLEL
   int r=-1, np=-1;
   COMM->get_rank_nproc(&r,&np);
   MCMD.myrank = r;
   MCMD.nproc  = np;
-#endif
+#endif // PARALLEL
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
@@ -180,92 +151,40 @@ int main(int argc, char **argv)
   err += siminfo->read_gridparams(pfile);
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
- 
-  //
-  // May need to setup extra data in each cell for ray-tracing optical
-  // depths and/or viscosity variables.
-  //
-  int hc_flag = 0, dv_flag=0;
-  if (SimPM.artviscosity==AV_LAPIDUS ||
-      SimPM.eqntype==EQEUL_EINT) {
-    // Need one var. for Div(v)
-    dv_flag = 1;
-  }
-  if (SimPM.artviscosity==AV_HCORRECTION ||
-      SimPM.artviscosity==AV_HCORR_FKJ98) {
-    // need one var for each dimension here.
-    hc_flag = SimPM.ndim;
-  }
-  CI.setup_extra_data(SimPM.RS, hc_flag, dv_flag);
 
 
-  class sim_control_fixedgrid *SimControl =0;
+  class setup_fixed_grid *SimSetup =0;
 #if   defined (PARALLEL)
-  SimControl = new sim_control_fixedgrid_pllel();
+  SimSetup = new setup_fixed_grid_pllel();
 #elif defined (SERIAL)
-  SimControl = new sim_control_fixedgrid();
+  SimSetup = new setup_fixed_grid();
 #else
 #error "Define SERIAL or PARALLEL"
 #endif
 
 
-
+  class GridBaseClass *grid = 0;
 #ifdef PARALLEL
   err  = MCMD.decomposeDomain();
   if (err) rep.error("main: failed to decompose domain!",err);
-  class GridBaseClass *grid =0;
-  //
-  // Now set up the parallel uniform grid.
-  //
-  cout <<"(icgen::setup_grid) Setting up grid...\n";
-
-  if      (SimPM.coord_sys==COORD_CRT) {
-    grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
-            SimPM.eqntype,  MCMD.LocalXmin,
-            MCMD.LocalXmax, MCMD.LocalNG, &MCMD);
-  }
-  else if (SimPM.coord_sys==COORD_CYL) {
-    grid = new uniform_grid_cyl_parallel (SimPM.ndim, SimPM.nvar,
-            SimPM.eqntype,  MCMD.LocalXmin,
-            MCMD.LocalXmax, MCMD.LocalNG, &MCMD);
-  }
-  else if (SimPM.coord_sys==COORD_SPH) {
-    grid = new uniform_grid_sph_parallel (SimPM.ndim, SimPM.nvar,
-            SimPM.eqntype,  MCMD.LocalXmin,
-            MCMD.LocalXmax, MCMD.LocalNG, &MCMD);
-  }
-  else {
-    rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
-  }
 #endif // if PARALLEL
-
-#ifdef SERIAL
-  // Now we have read in parameters from the file, so set up a grid
-  class GridBaseClass *grid = 0; // global grid pointer.
-  if      (SimPM.coord_sys==COORD_CRT)
-    grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-          SimPM.Xmin, SimPM.Xmax, SimPM.NG);
-  else if (SimPM.coord_sys==COORD_CYL)
-    grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar,
-         SimPM.eqntype, SimPM.Xmin,
-         SimPM.Xmax, SimPM.NG);
-  else if (SimPM.coord_sys==COORD_SPH)
-    grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar,
-         SimPM.eqntype, SimPM.Xmin,
-         SimPM.Xmax, SimPM.NG);
-  else 
-    rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
-#endif // SERIAL
-
+  //
+  // Now we have read in parameters from the file, so set up a grid.
+  //
+  SimSetup->setup_grid(&grid,&MCMD);
   if (!grid) rep.error("Grid setup failed",grid);
   
-
+  //
   // read in what kind of ICs we are setting up.
+  //
   rp = new ReadParams;
   if (!rp) rep.error("icgen:: initialising RP",rp);
   err += rp->read_paramfile(pfile);
   if (err) rep.error("Error reading parameterfile", pfile);
-  // Now we want to assign data to the grid, so we call whichever function is requested.
+  //
+  // Now we want to assign data to the grid, so we call whichever
+  // function is requested.
+  //
   string seek="ics";
   string ics = rp->find_parameter(seek);
   
@@ -375,10 +294,8 @@ int main(int argc, char **argv)
   // if data initialised ok, see if we need to init microphysics variables,
   // and give them an equilibrium value.
   MP=0;  // global microphysics class pointer.
+
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    cout <<"\t******* Requested cooling but no chemistry... using";
-    cout <<" up mp_only_cooling() class, with timestep-limiting.\n";
-    SimPM.EP.MP_timestep_limit = 1;
     // don't need to set up the class, because it just does cooling and
     // there is no need to equilibrate anything.
   }
@@ -389,156 +306,15 @@ int main(int argc, char **argv)
     // setting update_erg to false.
     bool uerg = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
-    string mptype;
-    if (SimPM.trtype.size() >=6)
-      mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
-    else mptype = "None";
-    
-    bool have_set_MP=false;
-#ifndef EXCLUDE_MPV1
-    if      (mptype=="ChAH__" || mptype=="onlyH_") {
-      cout <<"\t******* setting up MP_Hydrogen microphysics module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY mp_implicit_H. **--**\n";
-      have_set_MP=true;
-    }
-#endif // exclude MPv1
-
-
-#ifndef EXCLUDE_HD_MODULE
-    if (mptype=="lowZ__") {
-      cout <<"\t******* setting up microphysics_lowz module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-#endif // exclude Harpreet's module
-
-#ifndef EXCLUDE_MPV2
-    if (mptype=="MPv2__") {
-#ifdef MP_V2_AIFA
-      cout <<"\t******* setting up mp_v2_aifa module *********\n";
-      cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_v2_aifa(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
-      SimPM.EP.MP_timestep_limit = 1;
-#else
-      rep.error("Enable mp_v2_aifa as an ifdef if you really want to use it",2);
-#endif
-      have_set_MP=true;
-    }
-#endif // exclude MPv2
-
-
-#ifndef EXCLUDE_MPV3
-    if (mptype=="MPv3__") {
-      cout <<"\t******* setting up mp_explicit_H module *********\n";
-#if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP)
-      );
-      //if (SimPM.EP.MP_timestep_limit != 1)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv3
-
-
-#ifndef EXCLUDE_MPV4
-    if (mptype=="MPv4__") {
-      cout <<"\t******* setting up mp_implicit_H module *********\n";
-#if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
-      cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit =5;
-#elif MPV4_DTLIMIT>=0 && MPV4_DTLIMIT<=4
-      cout <<"\t******* N.B. dt00-04 Timestep limiting is enforced by #def";
-      cout <<" MPV4_DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit =4;
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
-      //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv4
-
-
-    if (mptype=="MPv5__") {
-      cout <<"\t******* setting up mpv5_molecular module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-    if (mptype=="MPv6__") {
-      cout <<"\t******* setting up mpv6_PureH module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-    if (mptype=="MPv7__") {
-      cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-    if (mptype=="MPSBHC") {
-      cout <<"\t******* setting up mpv8_StarBench_heatcool module *********\n";
-      cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-#ifdef CODE_EXT_HHE
-    if (mptype=="MPv9__") {
-      cout <<"\t******* setting up mpv9_HHe module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
-                        &(SimPM.EP), SimPM.gamma);
-      have_set_MP=true;
-    }
-#endif
-
-#ifndef EXCLUDE_MPV1
-    //
-    // Finally, if MP has not been set up yet, try to set up the v0
-    // microphysics integrator, which is slow, but can model a number
-    // of elements and ions.
-    //
-    if (!have_set_MP) {
-      cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
-        rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv1/0
+    //string mptype;
+    //if (SimPM.trtype.size() >=6)
+    //  mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
+    //else mptype = "None";
+    //bool have_set_MP=false;    
+    SimSetup->setup_microphysics();
 
     if (!MP) rep.error("microphysics init",MP);
-    if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
-
-
+    //if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
     err = equilibrate_MP(grid,MP,rp);
     if (err) rep.error("setting ionisation states to equilibrium failed",err);
     SimPM.EP.update_erg = uerg;
@@ -621,6 +397,7 @@ int main(int argc, char **argv)
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
   if (grid) {delete grid; grid=0;}
   if (ic)   {delete ic; ic=0;}
+  if (SimSetup) {delete SimSetup; SimSetup =0;}
 
   //
   // Also delete any dynamic memory in the stellarwind_list in
