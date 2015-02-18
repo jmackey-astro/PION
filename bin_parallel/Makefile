@@ -305,6 +305,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         mainMPI.o uniform_grid.o sim_control.o global.o                      \
         MCMD_control.o \
+        setup_fixed_grid.o setup_fixed_grid_MPI.o \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
@@ -332,9 +333,10 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
-        sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o \
         icgen.o uniform_grid.o global.o readparams.o \
         MCMD_control.o \
+        setup_fixed_grid.o setup_fixed_grid_MPI.o \
+	raytracer_SC_pllel.o raytracer_SC.o                                    \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
         file_status.o                                                          \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
@@ -349,7 +351,7 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o laser_ablation.o \
 	stellar_wind_BC.o \
         spherical_clump.o \
-        cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
+        mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
         StarBench_test.o
@@ -419,6 +421,13 @@ sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h microp
 time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 # functions for calculating the timestep
 calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+
+setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
+    grid_base_class.h uniform_grid.h
+
+setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
+    setup_fixed_grid.h ${GLOBAL} \
+    grid_base_class.h uniform_grid.h
 
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
  sim_control.h MCMD_control.h ${GLOBAL} comms.h

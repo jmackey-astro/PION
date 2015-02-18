@@ -404,7 +404,7 @@ VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h 
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
-    grid_base_class.h solver_eqn_base.h uniform_grid.h
+    grid_base_class.h uniform_grid.h
 
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
 		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \

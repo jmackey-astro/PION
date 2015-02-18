@@ -6,6 +6,7 @@
 ///
 /// Modifications :\n
 /// - 2015.01.26 JM: split off from sim_control.h
+/// - 2015.02.18 JM: moved setup functions to setup_fixed_grid_MPI.h.
 
 #ifndef SIM_CONTROL_MPI_H
 #define SIM_CONTROL_MPI_H
@@ -14,6 +15,7 @@
 #include "defines/testing_flags.h"
 
 #include "MCMD_control.h"
+#include "setup_fixed_grid_MPI.h"
 #include "sim_control.h"
 
 
@@ -25,7 +27,9 @@
 /// This class reimplements some functions of sim_control_fixedgrid, so that they
 /// work on multiple processors with the domain split between them.
 /// 
-class sim_control_fixedgrid_pllel : public sim_control_fixedgrid
+class sim_control_fixedgrid_pllel : 
+  virtual public sim_control_fixedgrid,
+  virtual public setup_fixed_grid_pllel
 {
   public:
    sim_control_fixedgrid_pllel();
@@ -64,25 +68,6 @@ class sim_control_fixedgrid_pllel : public sim_control_fixedgrid
   /// near the end of the allowed runtime.
   ///
   int Time_Int(
-        class GridBaseClass * 
-        );
-
-  ///
-  /// initialise the grid class with appropriate parameters.
-  /// 
-  /// This function sets up the appropriate grid; for parallel execution
-  /// I need to define the domain of my grid, and then pass the appropriate
-  /// parameters to the UniformGrid class.
-  ///
-  int setup_grid(
-        class GridBaseClass **, ///< address of pointer to computational grid.
-        class MCMDcontrol *     ///< address of MCMD controller class.
-        );
-
-  ///
-  /// Decide if I need to setup RT class, and do it if i need to.
-  ///
-  virtual int setup_raytracing(
         class GridBaseClass * 
         );
 
