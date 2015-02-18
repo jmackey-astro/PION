@@ -27,6 +27,13 @@
 \parindent = 0.0 truept
 \parskip = 6.0 truept
 
+\let\oldenumerate\enumerate
+\renewcommand{\enumerate}{
+  \oldenumerate
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}
 
 \title{Development log for \pion{}}
 \author{Jonathan Mackey (AIfA)}
@@ -34,7 +41,87 @@
 \begin{document}
 \maketitle
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+\section{Preparing for Release 0.2}
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+\subsection{List of Tasks}
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{First I need to deal with global.h/.cc to get rid of all the global stuff.}
+\begin{enumerate}
+\item I have already made a lot of progress since mid-January, by spending a short while every day working on \pion{} (max.~1 hour per day).
+\item JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h
+\item Stellar wind parameters class needs to go somewhere.
+\item GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/, and the constants can go into sim-constants.
+  The only thing that doesn't have an obvious home is equalD(); it is a very useful function, maybe it can be on its own somewhere?
+\item Remove the global microphysics pointer; maybe put it in sim-control?
+\item Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.
+\end{enumerate}
+
+\subsubsection{Then a few things that need fixing}
+\begin{enumerate}
+\item Change the boundary conditions setup so that each boundary has its own line in the parameter files.
+\item Change the microphysics and tracer variable setup so that each tracer variable has its own line in the parameter file (and maybe include some variables automatically when needed by microphysics?).
+\end{enumerate}
+
+\subsubsection{I need a new uniform\_grid class.}
+\begin{enumerate}
+\item look at what I did before!
+\item Change the boundaries so that the full grid (including ghost cells) is a line/square/cube without any empty corner sections.
+\item Get the new boundaries working in parallel with MPI (first without RT).
+\item Test this with 1D, 2D, 3D problems such as the DMR, advection, and blastwave tests.
+\item Get the new boundaries working in parallel with MPI including RT (this should be much simpler than the original scheme, and so the scaling should improve quite a bit).
+\item Test this with the spherical HII region expansion tests.
+\end{enumerate}
+
+\subsubsection{H-correction}
+\begin{enumerate}
+\item Make sure it still works in serial, with test problems.
+\item See if it helps with symmetry-axis problems in problems with cooling.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+\subsection{Log of Progress}
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\paragraph{2015.02.18 code structure}
+I am largely re-writing the code structure, with the goal that global.h/.cpp should be completely empty files that I can remove before v0.2 is released.
+These global pointers are starting to be problematic, and the logic of how the code is parallelised didn't really work anymore.
+So far I have:
+\begin{enumerate}
+\item removed the global grid pointer,
+\item put memory management into its own source files, 
+\item put reporting into its own source files,
+\item put the command-line interface into its own source files.
+\item added a sim\_constants.h file,
+\item split grid.h/cc into a grid setup class and a simulation control class, both with serial and parallel versions,
+\item put the ParallelParams class into new files, and renamed the class MCMDcontrol, for Multiple-Core, Multiple-Domain,
+\item put the SimParams into its own header file,
+\item changed main, mainMPI, and icgen, to use the new code structures.
+\end{enumerate}
+
+I'm not sure when to start testing the code again.
+I think I should do it now, with the DMR test, in serial and parallel, to make sure that the basic running of the code works before I start working on microphysics, raytracing, and then hacking at the uniform grid.
+I also think I should fix the BCs and TRTYPE parameters in the setup files before moving any further, because that will require changes to the setup files of all of the test problems.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
 \section{Preparing for Release 0.1}
+%%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{2013.02.07 (4 hours)}
 I added some documentation to UsersGuide.tex.
 It needs a lot of work before it will actually be useful.
@@ -45,7 +132,14 @@ Updated the stdout output from pion so that it is neater (at least for serial co
 I updated the axisymmetric blast-wave test problem so that it runs on pion.
 I still need to modify the scripts so that it produces output that would be useful for a user (e.g.\ Dominique), because at the moment it is set up for making sure the code still works after I make a change.
 
-\bibliography{../../../../documentation_misc/bibtex/refs}
+\paragraph{Other stuff\ldots}
+I guess I made a lot of other changes too, but stopped updating this doc.
+\pion{} v.0.1 was basically the version in \citet{Mac12}, with the hydrodynamics described in \citet{MacLim10}, MHD in \citet{MacLim11}, and with some extensions made in 2013, described in \citet{MacLanGva13}.
+
+
+
+
+\bibliography{../../../documentation_misc/bibtex/refs}
 \end{document}
 
 

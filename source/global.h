@@ -568,28 +568,6 @@ extern class cell_interface CI;
 
 
 
-/**********************************************************************/
-/************************ MULTI-PROCESS COMMS *************************/
-//
-// I want the communication to be independent of MPI or any other parallelisation library,
-// so I setup an abstract base class in comms.h, and implement it in either comm_mpi or
-// comm_files, and it should abstract away all the details of how the communication happens.
-//
-//#ifdef PARALLEL
-//#include "comms/comms.h"
-//
-//#if   defined USE_MPI
-//#include "comms/comm_mpi.h"
-//#elif defined USE_FILE_COMMS
-//#include "comms/comm_files.h"
-//#else
-//#error "MUST DEFINE EITHER USE_MPI or USE_FILE_COMMS"
-//#endif
-
-//extern class comms_base *COMM;
-//#endif // PARALLEL
-/************************ MULTI-PROCESS COMMS *************************/
-/**********************************************************************/
 
 
 
