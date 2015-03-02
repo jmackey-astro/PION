@@ -521,18 +521,6 @@ class GeneralStuff {
         const int *, ///< position 2
         const int    ///< number of spatial dimensions.
         );
-   /** \brief start a timer, identified by a string. If timer exists already, this
-    * function assumes it has been paused and sets it counting again. 
-    * */
-   void start_timer(string);
-   /** \brief Pause a timer, identified by a string, and return time in seconds. 
-    * Sets time value to number of seconds it has been running. */
-   double pause_timer(string);
-   /** \brief Return total time since timer started, and keep running. */
-   double time_so_far(string);
-   /** \brief stop a timer, identified by a string, and return time in seconds. 
-    * Deletes the timer. */
-   double stop_timer(string);
 
    inline double kB()  {return 1.381e-16;}
    inline double m_p() {return 1.673e-24;}
@@ -546,8 +534,6 @@ class GeneralStuff {
    inline double StefanBoltzmannConst() {return 5.670e-5;}
    inline double ln10() {return 2.302585093;}
    inline double c() {return 2.9979e10;}
-    private:
-   map<string,double> timers; ///< maps a string identifier for a timer to an index in the start vector.
 };
 extern class GeneralStuff GS; ///< physical constants, utility functions.
 

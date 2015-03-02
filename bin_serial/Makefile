@@ -284,6 +284,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
+        timer.o \
         main.o \
         uniform_grid.o cell_interface.o \
         setup_fixed_grid.o sim_control.o global.o \
@@ -313,6 +314,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
+        timer.o \
           setup_fixed_grid.o icgen.o \
         MCMD_control.o \
           uniform_grid.o cell_interface.o \
@@ -387,6 +389,7 @@ clean:
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
+timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}

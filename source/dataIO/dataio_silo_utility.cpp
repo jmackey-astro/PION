@@ -28,6 +28,8 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/timer.h"
+
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -522,7 +524,7 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
       }
     }
 
-    GS.start_timer("readdata"); double tsf=0;
+    clk.start_timer("readdata"); double tsf=0;
     for (int count=0; count<nloops; count++) {
       if ( (mpiPM.myrank+nloops)%nloops == count) {
 	cout <<"!READING DATA!!... myrank="<<mpiPM.myrank<<"  i="<<count;
@@ -533,12 +535,12 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
 	cout <<"waiting my turn... myrank="<<mpiPM.myrank<<"  i="<<count;
       }
       COMM->barrier("pllel_file_read");
-      tsf=GS.time_so_far("readdata");
+      tsf=clk.time_so_far("readdata");
       cout <<"\t time = "<<tsf<<" secs."<<"\n";
     }
-    GS.stop_timer("readdata");
+    clk.stop_timer("readdata");
 
-    //GS.start_timer("readdata"); double tsf=0;
+    //clk.start_timer("readdata"); double tsf=0;
     //for (int count=0; count<mpiPM.nproc; count++) {
     //  if (count==mpiPM.myrank) {
     //    cout <<"!READING DATA!!... myrank="<<mpiPM.myrank<<"  i="<<count;
@@ -549,10 +551,10 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
     //    cout <<"waiting my turn... myrank="<<mpiPM.myrank<<"  i="<<count;
     //  }
     //  COMM->barrier("pllel_file_read");
-    //  tsf=GS.time_so_far("readdata");
+    //  tsf=clk.time_so_far("readdata");
     //  cout <<"\t time = "<<tsf<<" secs."<<"\n";
     //}
-    //GS.stop_timer("readdata");
+    //clk.stop_timer("readdata");
   }
   //  cout <<"read data successfully.\n";
   return 0;

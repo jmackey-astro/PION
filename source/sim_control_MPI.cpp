@@ -57,6 +57,7 @@
 
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
+#include "tools/timer.h"
 
 #include "MCMD_control.h"
 #include "sim_control_MPI.h"
@@ -320,7 +321,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
   int err=0;
   int log_freq=100;
   SimPM.maxtime=false;
-  GS.start_timer("time_int"); double tsf=0.0;
+  clk.start_timer("time_int"); double tsf=0.0;
   while (SimPM.maxtime==false) {
     //
     // Update RT sources.
@@ -331,9 +332,9 @@ int sim_control_fixedgrid_pllel::Time_Int(
       return err;
     }
 
-    //GS.start_timer("advance_time");
+    //clk.start_timer("advance_time");
     err+= advance_time(grid);
-    //cout <<"advance_time took "<<GS.stop_timer("advance_time")<<" secs.\n";
+    //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0) {
       cerr<<"(TIME_INT::advance_time) err!=0 Something went bad"<<"\n";
       return(1);
@@ -341,7 +342,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
 
     if (mpiPM.myrank==0 && (SimPM.timestep%log_freq)==0) {
       cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
-      tsf=GS.time_so_far("time_int");
+      tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
       //cout.flush();
     }
@@ -349,7 +350,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
     //
     // check if we are at time limit yet.
     //
-    tsf=GS.time_so_far("time_int");
+    tsf=clk.time_so_far("time_int");
     double maxt = COMM->global_operation_double("MAX", tsf);
     if (maxt > get_max_walltime()) {
       SimPM.maxtime=true;
@@ -369,7 +370,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
     }
   }
   cout <<"(sim_control_fixedgrid_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
-  tsf=GS.time_so_far("time_int");
+  tsf=clk.time_so_far("time_int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
   cout <<", sim-time="<<SimPM.simtime;
   cout <<", wall-time=" <<tsf;
@@ -382,9 +383,9 @@ int sim_control_fixedgrid_pllel::Time_Int(
     //
     string t1="totalRT", t2="waitingRT", t3="doingRT";
     double total=0.0, wait=0.0, run=0.0;
-    GS.start_timer(t1); total = GS.pause_timer(t1);
-    GS.start_timer(t2); wait  = GS.pause_timer(t2);
-    GS.start_timer(t3); run   = GS.pause_timer(t3);
+    clk.start_timer(t1); total = clk.pause_timer(t1);
+    clk.start_timer(t2); wait  = clk.pause_timer(t2);
+    clk.start_timer(t3); run   = clk.pause_timer(t3);
     cout <<"TOTALS RT#: active="<<run<<" idle="<<wait<<" total="<<total<<"\n";
   }
   cout <<"                               **************************************\n\n";

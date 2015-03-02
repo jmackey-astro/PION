@@ -44,6 +44,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/timer.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -157,34 +158,34 @@ int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
   string t1="totalRT", t2="waitingRT", t3="doingRT", t4="tempRT";
   double total=0.0, wait=0.0, run=0.0;
 
-  GS.start_timer(t1);
+  clk.start_timer(t1);
   //
   // First Receive RT boundaries from processors nearer source.
   //
-  GS.start_timer(t2);
-  //GS.start_timer(t4);
+  clk.start_timer(t2);
+  //clk.start_timer(t4);
   err += gridptr->Receive_RT_Boundaries(s_id);
-  //cout <<"RT: waiting to receive for "<<GS.stop_timer(t4)<<" secs.\n";
-  GS.pause_timer(t2);
+  //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
+  clk.pause_timer(t2);
 
   //
   // Now we have the boundary conditions, so call the serial Raytracer.
   //
-  GS.start_timer(t3);
-  //GS.start_timer(t4);
+  clk.start_timer(t3);
+  //clk.start_timer(t4);
   err += raytracer_USC::RayTrace_SingleSource(s_id, dt, g);
-  //cout <<"RT: Tracing over domain took "<<GS.stop_timer(t4)<<" secs.\n";
-  run = GS.pause_timer(t3);
+  //cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
+  run = clk.pause_timer(t3);
 
   //
   // Finally, send the new column densities to processors further from source.
   //
-  GS.start_timer(t2);
-  //GS.start_timer(t4);
+  clk.start_timer(t2);
+  //clk.start_timer(t4);
   err += gridptr->Send_RT_Boundaries(s_id);
-  //cout <<"RT: Sending boundaries/Waiting for "<<GS.stop_timer(t4)<<" secs.\n";
-  wait  = GS.pause_timer(t2);
-  total = GS.pause_timer(t1);
+  //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
+  wait  = clk.pause_timer(t2);
+  total = clk.pause_timer(t1);
 
   if ( (SimPM.timestep%100==0) && s_id==0) {
     cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;

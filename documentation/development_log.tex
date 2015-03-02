@@ -7,11 +7,11 @@
 %\usepackage[numbers,comma]{natbib}
 \usepackage{natbib}
 %\bibpunct{(}{)}{;}{a}{,}{,}
-\bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
+\bibliographystyle{../../../active/documentation_misc/bibtex/apj.bst}
 \usepackage{amsmath}
 \usepackage{amssymb}
 
-\input{../../../documentation_misc/bibtex/defs}
+\input{../../../active/documentation_misc/bibtex/defs}
 
 \usepackage[T1]{fontenc}
 \usepackage{times}
@@ -61,7 +61,7 @@
 \item I have already made a lot of progress since mid-January, by spending a short while every day working on \pion{} (max.~1 hour per day).
 \item JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h
 \item Stellar wind parameters class needs to go somewhere.
-\item GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/, and the constants can go into sim-constants.
+\item GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/ [\textbf{DONE 02.03.15}], and the constants can go into sim-constants.
   The only thing that doesn't have an obvious home is equalD(); it is a very useful function, maybe it can be on its own somewhere?
 \item Remove the global microphysics pointer; maybe put it in sim-control?
 \item Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.
@@ -115,6 +115,10 @@ I'm not sure when to start testing the code again.
 I think I should do it now, with the DMR test, in serial and parallel, to make sure that the basic running of the code works before I start working on microphysics, raytracing, and then hacking at the uniform grid.
 I also think I should fix the BCs and TRTYPE parameters in the setup files before moving any further, because that will require changes to the setup files of all of the test problems.
 
+\paragraph{2015.03.02}
+Moved timers to their own file from GeneralStuff.
+Tested that the code compiles ok and everything seems fine.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
@@ -139,7 +143,7 @@ I guess I made a lot of other changes too, but stopped updating this doc.
 
 
 
-\bibliography{../../../documentation_misc/bibtex/refs}
+\bibliography{../../../active/documentation_misc/bibtex/refs}
 \end{document}
 
 

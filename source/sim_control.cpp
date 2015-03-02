@@ -147,6 +147,7 @@
 
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
+#include "tools/timer.h"
 
 #include "sim_control.h"
 
@@ -1411,7 +1412,7 @@ int sim_control_fixedgrid::Time_Int(
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
-  GS.start_timer("Time_Int"); double tsf=0;
+  clk.start_timer("Time_Int"); double tsf=0;
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
@@ -1428,15 +1429,15 @@ int sim_control_fixedgrid::Time_Int(
       return err;
     }
 
-    //GS.start_timer("advance_time");
+    //clk.start_timer("advance_time");
     err+= advance_time(grid);
-    //cout <<"advance_time took "<<GS.stop_timer("advance_time")<<" secs.\n";
+    //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad\n";return(1);}
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
     cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
-    tsf=GS.time_so_far("Time_Int");
+    tsf=clk.time_so_far("Time_Int");
     cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
 #endif
 #endif
@@ -1450,7 +1451,7 @@ int sim_control_fixedgrid::Time_Int(
 
   cout <<"(sim_control_fixedgrid::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
 
-  tsf=GS.time_so_far("Time_Int");
+  tsf=clk.time_so_far("Time_Int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
   cout <<tsf<<" time/step="<<tsf/static_cast<double>(SimPM.timestep)<<"\n";
   cout <<"STEPS "<<SimPM.timestep;

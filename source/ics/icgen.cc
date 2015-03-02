@@ -43,6 +43,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/timer.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -332,7 +333,7 @@ int main(int argc, char **argv)
   grid->SetupBCs(2, SimPM.typeofbc);
   
 
-  GS.start_timer("io"); double tsf=0;
+  clk.start_timer("io"); double tsf=0;
   // MPI: WRITE PARALLEL FILES HERE
   // write data to file.
   cout <<"IC file-type is "<<icftype<<"\n";
@@ -389,7 +390,7 @@ int main(int argc, char **argv)
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
   cout <<icftype<<" FILE WRITTEN in";
-  tsf=GS.stop_timer("io");
+  tsf=clk.stop_timer("io");
   cout <<" "<<tsf<<" seconds.\n";
 
   // delete everything and return
