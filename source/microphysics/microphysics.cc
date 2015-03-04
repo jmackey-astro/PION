@@ -56,6 +56,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/interpolate.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -202,8 +203,8 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
     hr_alpha2[i]= 0.0;
     hr_beta2[i] = 0.0;
   }
-  GS.spline(hr_t, hr_alpha, hr_nspl, 1.e99, 1.e99, hr_alpha2);
-  GS.spline(hr_t, hr_beta,  hr_nspl, 1.e99, 1.e99, hr_beta2 );
+  interpolate.spline(hr_t, hr_alpha, hr_nspl, 1.e99, 1.e99, hr_alpha2);
+  interpolate.spline(hr_t, hr_beta,  hr_nspl, 1.e99, 1.e99, hr_beta2 );
 
 
 #ifdef TESTING
@@ -1415,7 +1416,7 @@ double MP_Hydrogen::rad_recomb_rate(double T   ///< Precalculated Temperature.
 #ifdef HUMMER_RECOMB
   if (T>5.0e6) T=5.0e6; // To avoid runoff at the end of spline fitting.
   if (T<10.0) T=10.0;
-  GS.splint(hr_t, hr_alpha, hr_alpha2, hr_nspl, T, &r);
+  interpolate.splint(hr_t, hr_alpha, hr_alpha2, hr_nspl, T, &r);
 #endif // HUMMER_RECOMB
   return r;
 }
@@ -1430,7 +1431,7 @@ double MP_Hydrogen::rad_recomb_energy(double T   ///< Precalculated Temperature.
   double rate=0.0;
   if (T>5.0e6) T=5.0e6; // To avoid runoff at the end of spline fitting.
   if (T<10.0) T=10.0;
-  GS.splint(hr_t, hr_beta, hr_beta2, hr_nspl, T, &rate);
+  interpolate.splint(hr_t, hr_beta, hr_beta2, hr_nspl, T, &rate);
   //  if (T>2.e4) cout <<"T="<<T<<" rate="<<rate*kB*T<<"\n";
   return rate*kB*T;
 #endif // HUMMER_RECOMB

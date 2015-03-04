@@ -17,6 +17,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/interpolate.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -79,9 +80,9 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
     hr_beta2[i] = 0.0;
     hr_btot2[i]  = 0.0;
   }
-  GS.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha2);
-  GS.spline(hr_t, hr_beta,  hr_Nspl, 1.e99, 1.e99, hr_beta2 );
-  GS.spline(hr_t, hr_btot,  hr_Nspl, 1.e99, 1.e99, hr_btot2 );
+  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha2);
+  interpolate.spline(hr_t, hr_beta,  hr_Nspl, 1.e99, 1.e99, hr_beta2 );
+  interpolate.spline(hr_t, hr_btot,  hr_Nspl, 1.e99, 1.e99, hr_btot2 );
 
   MinTemp = hr_t[0];
   MaxTemp = hr_t[hr_Nspl-1];
@@ -175,7 +176,7 @@ double Hummer94_Hrecomb::Hii_rad_recomb_rate(const double T)
     rate = hr_alpha[0] *pow(T/MinTemp, MinSlope_alpha);
   }
   else {
-    GS.splint(hr_t, hr_alpha, hr_alpha2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_alpha, hr_alpha2, hr_Nspl, T, &rate);
   }
 
   return rate;
@@ -208,7 +209,7 @@ double Hummer94_Hrecomb::Hii_rad_recomb_cooling(const double T)
     rate = hr_beta[0] *pow(T/MinTemp, MinSlope_beta);
   }
   else {
-    GS.splint(hr_t, hr_beta, hr_beta2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_beta, hr_beta2, hr_Nspl, T, &rate);
   }
 
   return rate*kB*T;
@@ -241,7 +242,7 @@ double Hummer94_Hrecomb::Hii_total_cooling(const double T)
     rate = hr_btot[0] *pow(T/MinTemp, MinSlope_btot);
   }
   else {
-    GS.splint(hr_t, hr_btot, hr_btot2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_btot, hr_btot2, hr_Nspl, T, &rate);
   }
   //cout <<"TOTAL COOLING: T="<<T<<" rate="<<rate<<" kB="<<kB<<" T="<<T<<"\n";
   return rate*kB*T;

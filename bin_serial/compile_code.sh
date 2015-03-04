@@ -25,7 +25,7 @@
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
-NCORES=1
+NCORES=4
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 export PION_OPTIMISE=LOW

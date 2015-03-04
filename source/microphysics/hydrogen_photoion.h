@@ -18,7 +18,7 @@
 ///    multifreq photoionisation and photoheating rates.
 /// - 2011.05.04 JM: Added a discretised multifreq photoionisation rate with
 ///    an approximation for dtau<<1.
-/// - 2011.10.08 JM: Added switch to use GS.spline/splint instead of the local
+/// - 2011.10.08 JM: Added switch to use interpolate.spline/splint instead of the local
 ///    STL vector one, because the vector functions are slower by about 2.5%.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 ///

@@ -90,7 +90,7 @@ void CommandLineInterface::console(
       char comm1[512],*d=comm1;
       *d=0;
       while (*c&&((*(c))!=';')) {*d++=*c++;*(d+1)=0;}   // <--- (A) 
-      if (((*c)==';'))  c++;
+      if ((*c)==';')  c++;
       if (execute(comm1)) return;
     } while (*c);
   }
@@ -128,7 +128,7 @@ int CommandLineInterface::execute(char *com)
   // Executes the command in com[], Could be smarter than to hardcode the 
   //  command lengths.
   //
-  while (((*(com))==' ')) {*com++;} // strip off any leading white space
+  while ((*(com))==' ') {(*com)++;} // strip off any leading white space
   if (!(*com)) return 0;            // don't execute NULL commands!!!
   else if  (!strncmp(com,"!"     ,1))  system(com+1);
   else if  (!strncmp(com,"cmd1"  ,4))  cmd1();

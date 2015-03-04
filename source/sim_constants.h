@@ -21,6 +21,14 @@
 #define MAX_NVAR 70
 
 
+#define SMALLVALUE       1.0e-12
+#define MACHINEACCURACY  5.e-16
+#define TINYVALUE        1.0e-100
+#define VERY_TINY_VALUE  1.0e-200
+#define VERY_LARGE_VALUE 1.0e100
+#define HUGEVALUE        1.0e+200
+#define ONE_PLUS_EPS     (1.0+SMALLVALUE)
+#define ONE_MINUS_EPS    (1.0-SMALLVALUE)
 
 
 #endif // SIM_CONSTANTS_H

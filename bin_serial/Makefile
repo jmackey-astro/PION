@@ -284,7 +284,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
-        timer.o \
+        timer.o interpolate.o \
         main.o \
         uniform_grid.o cell_interface.o \
         setup_fixed_grid.o sim_control.o global.o \
@@ -314,11 +314,11 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
-        timer.o \
-          setup_fixed_grid.o icgen.o \
+        timer.o interpolate.o \
+        setup_fixed_grid.o icgen.o \
         MCMD_control.o \
-          uniform_grid.o cell_interface.o \
-          global.o readparams.o file_status.o \
+        uniform_grid.o cell_interface.o \
+        global.o readparams.o file_status.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
 	shock_tube.o radiative_shock.o blast_wave.o \
@@ -390,6 +390,7 @@ reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}
@@ -524,17 +525,19 @@ solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
 ######################
 
 integrator.o:	integrator.cc integrator.h ${GLOBAL}
-cooling.o:	cooling.cc cooling.h ${GLOBAL}
+cooling.o:	cooling.cc cooling.h tools/interpolate.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h \
+ tools/interpolate.h ${GLOBAL}
+
 hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
-    ${GLOBAL}
+   tools/interpolate.h  ${GLOBAL}
 
 mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
 microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
-   ${GLOBAL} cooling.h integrator.h
+   ${GLOBAL} cooling.h integrator.h tools/interpolate.h
 microphysics_v1.o: microphysics_v1.cc microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
 microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
@@ -542,9 +545,10 @@ microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
 #header.h
 
 hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
-  hydrogen_photoion.h 
+  hydrogen_photoion.h tools/interpolate.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h \
+  tools/interpolate.h ${GLOBAL}
 
 mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
@@ -596,7 +600,8 @@ dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.
 readparams.o:   readparams.cc readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
 
-stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h ${GLOBAL}
+stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h \
+  tools/interpolate.h ${GLOBAL}
 
 ##############################
 ##### IC GENERATOR FILES #####

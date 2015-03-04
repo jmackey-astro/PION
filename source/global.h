@@ -188,12 +188,6 @@ void print_command_line_options(int, char **);
 
 //#define MAX_NTR   5 ///< Maximum number of tracer variables (feel free to expand later!).
 
-//
-// Defines for stuff related to machine accuracy and truncation error.
-//
-#define MACHINEACCURACY 5.e-16
-///< This should be found out before running the code!
-
 ///
 /// The pressure floor for the riemann solver and cell updates. 
 /// (P_G(floor)=refvec[PG]*BASEPG)
@@ -206,32 +200,6 @@ void print_command_line_options(int, char **);
 /// For negative density, set rho=BASE_RHO*refvec[RO]
 #define BASE_RHO 1.0e-5
 
-#define SMALLVALUE 1.0e-12
-///< A small value, for comparing with something we expect to be of
-///< order unity.
-
-#define TINYVALUE 1.0e-100
-///< If any conserved or primitive variables are smaller than this,
-///< change it!!!
-
-#define VERY_TINY_VALUE 1.0e-200
-///< If any conserved or primitive variables are smaller than this,
-///< change it!!!
-
-#define VERY_LARGE_VALUE 1.0e100
-///< not quite HUGEVALUE, but still bigger than a quantity should be
-///< in most situations.
-
-#define HUGEVALUE        1.0e+200
-///< A huge number that none of my physical variables should ever
-///< approach.
-
-#define ONE_PLUS_EPS (1.0+SMALLVALUE)
-///< A number just greater than unity, for rounding doubles down to
-///< ints.
-
-#define ONE_MINUS_EPS (1.0-SMALLVALUE)
-///< A number just less than unity, for rounding doubles up to ints.
 
 /// Error code for a function which should not be called!
 #define DONT_CALL_ME 99
@@ -477,35 +445,6 @@ class GeneralStuff {
    bool equalD(const double, 
          const double
          );
-   /** \brief Sets up Cubic Spline interpolation (from Martin White's Code, from NR) */
-   void spline(const double *, ///< Array of x values.
-         const double *, ///< Array of y values.
-         const int ,     ///< Length of arrays.
-         double ,  ///< First Derivative of interpolating function at x[1] (unit offset array) (>1.e30 for natural spline)
-         double ,  ///< First Derivative of interpolating function at x[n] (unit offset array) (>1.e30 for natural spline)
-         double *  ///< Empty array to store d2y/dx2 in.
-         );
-   /** \brief Performs cubic spline interpolation to get y(x) (from Martin White's Code, from NR) */
-   void splint(const double *, ///< Array of x values.
-         const double *, ///< Array of y values.
-         const double *, ///< Array of d2y/dx2 values.
-         const int ,     ///< nspl
-         const double ,  ///< x we are searching for.
-         double *  ///< pointer to result.
-         );
-
-  ///
-  /// Given a vector of x-values, and corresponding y-values, and an input
-  /// x value, find the corresponding y-value by bisection and then linear
-  /// interopolation.
-  ///
-  void root_find_linear(
-        const double *, ///< Array of x values.
-        const double *, ///< Array of y values.
-        const size_t,   ///< Array sizes
-        const double ,  ///< x we are searching for.
-        double *  ///< pointer to result.
-        );
 
    /** \brief calculate distance between two points in n-dimensional space.
     * Assumes cartesian geometry.

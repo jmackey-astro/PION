@@ -36,6 +36,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/interpolate.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -145,7 +146,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  GS.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
 
   have_set_cooling = true;
   cout <<"\t\t----------------------------------------------------\n";
@@ -253,7 +254,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  GS.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
 
   have_set_cooling = true;
 #ifdef TESTING
@@ -359,7 +360,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  GS.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
 
   have_set_cooling = true;
   cout <<"\t\t----------------------------------------------------\n";
@@ -460,7 +461,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  GS.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
 
   have_set_cooling = true;
 #ifdef TESTING
@@ -561,7 +562,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  GS.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
 
   have_set_cooling = true;
 #ifdef TESTING
@@ -621,7 +622,7 @@ double cooling_function_SD93CIE::cooling_rate_SD93CIE(double T
     rate = Larray[0] +MinSlope*(T-MinTemp);
   }
   else {
-    GS.splint(Tarray, Larray, L2array, Nspl, T, &rate);
+    interpolate.splint(Tarray, Larray, L2array, Nspl, T, &rate);
   }
 
   return exp(GS.ln10()*rate);

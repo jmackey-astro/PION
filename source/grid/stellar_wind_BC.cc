@@ -45,6 +45,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "tools/interpolate.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -846,9 +847,9 @@ int stellar_wind_evolution::add_evolving_source(
     t[i] /= t_scalefactor;
     //cout <<" t[i]="<<t[i]<<"\n";
   }
-  //GS.spline(t,md,Nspl,1.e99,1.e99,md2);
-  //GS.spline(t,vi,Nspl,1.e99,1.e99,vi2);
-  //GS.spline(t,Tf,Nspl,1.e99,1.e99,Tf2);
+  //interpolate.spline(t,md,Nspl,1.e99,1.e99,md2);
+  //interpolate.spline(t,vi,Nspl,1.e99,1.e99,vi2);
+  //interpolate.spline(t,Tf,Nspl,1.e99,1.e99,Tf2);
 
 
   //
@@ -900,12 +901,12 @@ int stellar_wind_evolution::add_evolving_source(
     // Get the current values for mdot, vinf, Teff, and setup a wind
     // source using the constant-wind function.
     //
-    //GS.splint(t, Tf, Tf2, Nspl, t_now/GS.s_per_yr(), &Twind);
-    //GS.splint(t, md, md2, Nspl, t_now/GS.s_per_yr(), &mdot);
-    //GS.splint(t, vi, vi2, Nspl, t_now/GS.s_per_yr(), &vinf);
-    GS.root_find_linear(t, Tf, Nspl, t_now/GS.s_per_yr(), &Twind);
-    GS.root_find_linear(t, md, Nspl, t_now/GS.s_per_yr(), &mdot);
-    GS.root_find_linear(t, vi, Nspl, t_now/GS.s_per_yr(), &vinf);
+    //interpolate.splint(t, Tf, Tf2, Nspl, t_now/GS.s_per_yr(), &Twind);
+    //interpolate.splint(t, md, md2, Nspl, t_now/GS.s_per_yr(), &mdot);
+    //interpolate.splint(t, vi, vi2, Nspl, t_now/GS.s_per_yr(), &vinf);
+    interpolate.root_find_linear(t, Tf, Nspl, t_now/GS.s_per_yr(), &Twind);
+    interpolate.root_find_linear(t, md, Nspl, t_now/GS.s_per_yr(), &mdot);
+    interpolate.root_find_linear(t, vi, Nspl, t_now/GS.s_per_yr(), &vinf);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -981,12 +982,12 @@ void stellar_wind_evolution::update_source(
   // Now we update Mdot, Vinf, Teff by spline interpolation.
   //
   double mdot=0.0, vinf=0.0, Twind=0.0;
-  //GS.splint(wd->t, wd->Teff, wd->Teff2, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
-  //GS.splint(wd->t, wd->mdot, wd->mdot2, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
-  //GS.splint(wd->t, wd->vinf, wd->vinf2, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
-  GS.root_find_linear(wd->t, wd->Teff, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
-  GS.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
-  GS.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
+  //interpolate.splint(wd->t, wd->Teff, wd->Teff2, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
+  //interpolate.splint(wd->t, wd->mdot, wd->mdot2, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
+  //interpolate.splint(wd->t, wd->vinf, wd->vinf2, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
+  interpolate.root_find_linear(wd->t, wd->Teff, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
+  interpolate.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
+  interpolate.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
   //
   // Assign new values to wd->ws (the wind source struct), converting
   // from log10 to actual values, and also unit conversions.
