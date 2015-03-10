@@ -21,6 +21,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -32,7 +33,7 @@ using namespace std;
 
 CoolingFn::CoolingFn(int flag)
 {
-  kB = GS.kB();
+  kB = pconst.kB();
   Temp=0; Lamb=0; Lam2=0;
 
   string fname="CoolingFn::CoolingFn";

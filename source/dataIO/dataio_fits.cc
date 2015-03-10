@@ -58,6 +58,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -827,7 +828,7 @@ int DataIOFits::read_fits_image(fitsfile *ff, string name, double *localxmin, do
   long int ct=0; cell *c = gp->FirstPt(); 
   do {
     c->P[v] = data[ct];
-    if (GS.equalD(data[ct],nulval)) {
+    if (pconst.equalD(data[ct],nulval)) {
       cout <<"(dataio::read data: ERROR: var="<<v<<" and data="<<data[ct]<<"\n";
       rep.error("Read null value from file! pixel count follows",ct);
     }

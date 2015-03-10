@@ -24,6 +24,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -75,11 +76,11 @@ mp_only_cooling::mp_only_cooling(const int nv,
   //  n_tot \simeq 2.3 n_H (summing the previous lines).
   // So we define muH=1.4mp, mue=1.167mp, mui=1.273mp, mutot=0.609mp
   //
-  Mu =1.40*GS.m_p();
-  Mu_tot = 0.609*GS.m_p();
-  Mu_tot_over_kB = Mu_tot/GS.kB();
-  Mu_elec = 1.167*GS.m_p();
-  Mu_ion  = 1.273*GS.m_p();
+  Mu =1.40*pconst.m_p();
+  Mu_tot = 0.609*pconst.m_p();
+  Mu_tot_over_kB = Mu_tot/pconst.kB();
+  Mu_elec = 1.167*pconst.m_p();
+  Mu_ion  = 1.273*pconst.m_p();
   inv_Mu2 = 1.0/(Mu*Mu);
   inv_Mu2_elec_H = 1.0/(Mu_elec*Mu);
 

@@ -34,9 +34,16 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #include "Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
 #include "global.h"
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(const int nv,///< Length of State Vectors, nvar
 					   const double g ///< Gamma for state vector.
@@ -84,6 +91,12 @@ Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(const int nv,///< Length of State Vec
   
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV()
 {
 #ifdef FUNCTION_ID
@@ -104,6 +117,12 @@ Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV()
   cout <<"Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV ...returning.\n";
 #endif //FUNCTION_ID
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(const double *left,
@@ -204,6 +223,12 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(const double *left,
 }
 
   
+
+// ##################################################################
+// ##################################################################
+
+
+
 int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
 						   const double *right,
 						   const double g,
@@ -319,9 +344,21 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // -------------------------------------------------------------------
 // ------------------- END OF PUBLIC FUNCTIONS -----------------------
 // -------------------------------------------------------------------
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 // -------------------------------------------------------------------
@@ -357,6 +394,12 @@ int Riemann_Roe_Hydro_CV::test_left_right_equality(const double *left,
   return 0;
 }
   
+
+// ##################################################################
+// ##################################################################
+
+
+
 void Riemann_Roe_Hydro_CV::set_Roe_mean_state(const double *left,
 					      const double *right
 					      )
@@ -395,6 +438,12 @@ void Riemann_Roe_Hydro_CV::set_Roe_mean_state(const double *left,
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void Riemann_Roe_Hydro_CV::set_eigenvalues()
 {
 #ifdef FUNCTION_ID
@@ -410,7 +459,7 @@ void Riemann_Roe_Hydro_CV::set_eigenvalues()
   //
   // Paranoid test!  Make sure eta=0 if not using H-correction.
   //
-  if (SimPM.artviscosity!=3 && !GS.equalD(RCV_HC_etamax,0.0))
+  if (SimPM.artviscosity!=3 && !pconst.equalD(RCV_HC_etamax,0.0))
     rep.error("H-correction is non-zero but we're not using it!",RCV_HC_etamax);
 #endif // TESTING
 
@@ -442,6 +491,12 @@ void Riemann_Roe_Hydro_CV::set_eigenvalues()
 #endif //FUNCTION_ID
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void Riemann_Roe_Hydro_CV::set_eigenvectors()
@@ -489,6 +544,12 @@ void Riemann_Roe_Hydro_CV::set_eigenvectors()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(const double * left,
 					   const double * right
 					   )
@@ -515,6 +576,12 @@ void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(const double * left,
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void Riemann_Roe_Hydro_CV::set_wave_strengths()
 {
@@ -545,6 +612,12 @@ void Riemann_Roe_Hydro_CV::set_wave_strengths()
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(double *out_flux)
 {
@@ -592,6 +665,12 @@ void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(double *out_flux)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(double *out_pstar)
 {
 #ifdef FUNCTION_ID
@@ -615,6 +694,12 @@ void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(double *out_pstar)
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(const double *left,
 						     const double *right,
@@ -705,3 +790,10 @@ void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(const double *left,
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+

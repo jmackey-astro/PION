@@ -29,6 +29,7 @@
 #include "cell_interface.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 using namespace std;
 
 /************************* CELL INTERFACE ***********************/

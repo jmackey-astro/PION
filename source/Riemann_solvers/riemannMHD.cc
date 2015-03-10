@@ -1,24 +1,22 @@
-/** \file riemannMHD.cc
- * \brief Class Member function definitions for linear MHD Riemann Solver.
- * 
- *  \author Jonathan Mackey
- * 
- * Written 2006-11-20
- * Modified : 
- *  - 2007-02-01 Documented, added new eigenvector calculation.
- *  - 2007-07-13 New Class members for setdirection and setavgstate.
- *  - 2007-07-16 fixed problem in solver2codevars() introduced by SetDirection() on 13/7.
- *  - 2008-03-03 Fixed a few minor bugs.
- *  - 2009-10-24 New class structure so that it inherits from the MHD equations class.
- *  - 2010-02-10 JM: Replaced exit() calls with rep.error() calls so parallel code exits cleanly.
- * 
- * This is a linear MHD Riemann Solver for the ideal MHD equations.
- * It is a "Roe-type" solver (but using an arithmetic aveage instead
- * of a Roe-average, following Falle, Kommisarov and Joarder (1998)),
- * linearising the Jacobian matrix with an average state and jumping
- * across waves from the left and/or right to get to the state at x=0.
- * 
- * */
+/// \file riemannMHD.cc
+/// \brief Class Member function definitions for linear MHD Riemann Solver.
+/// 
+///  \author Jonathan Mackey
+/// 
+/// Written 2006-11-20
+/// Modified : 
+///  - 2007-02-01 Documented, added new eigenvector calculation.
+///  - 2007-07-13 New Class members for setdirection and setavgstate.
+///  - 2007-07-16 fixed problem in solver2codevars() introduced by SetDirection() on 13/7.
+///  - 2008-03-03 Fixed a few minor bugs.
+///  - 2009-10-24 New class structure so that it inherits from the MHD equations class.
+///  - 2010-02-10 JM: Replaced exit() calls with rep.error() calls so parallel code exits cleanly.
+/// 
+/// This is a linear MHD Riemann Solver for the ideal MHD equations.
+/// It is a "Roe-type" solver (but using an arithmetic aveage instead
+/// of a Roe-average, following Falle, Kommisarov and Joarder (1998)),
+/// linearising the Jacobian matrix with an average state and jumping
+/// across waves from the left and/or right to get to the state at x=0.
 ///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
@@ -32,11 +30,18 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 
 #include "riemannMHD.h"
 #include <iostream>
 using namespace std;
 //#define RS_TESTING ///< Comment this out if not testing the solver; will speed things up.
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 /// operators for the enums.
@@ -52,6 +57,12 @@ rsvars& operator++(rsvars& d)
 {
   return (d = rsvars(d+1));
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Constructor of the riemann_MHD class.
@@ -105,6 +116,12 @@ riemann_MHD::riemann_MHD(const int nv,        ///< length of state vectors.
   cout <<"(riemann_MHD::riemann_MHD) Finished Setup.\n";
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // Destructor.
 riemann_MHD::~riemann_MHD()
 {
@@ -123,6 +140,12 @@ riemann_MHD::~riemann_MHD()
 
 //  cout << "(riemann_MHD::riemann_MHD) Destructed successfully." << "\n";
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -318,8 +341,8 @@ int riemann_MHD::JMs_riemann_solve(const double *l,
   }
   
 #ifdef RS_TESTING
-  if ((!GS.equalD(RS_pstar[RBZ],0.0) && eq_dir==XX) ||
-      (!GS.equalD(RS_pstar[RBY],0.0) && eq_dir==YY)) {
+  if ((!pconst.equalD(RS_pstar[RBZ],0.0) && eq_dir==XX) ||
+      (!pconst.equalD(RS_pstar[RBY],0.0) && eq_dir==YY)) {
     cout <<"*************** eqBBZ = "<<eqBBZ<<"  BBZ="<<BBZ;
     cout <<" **********************************\n";
     rep.printVec("left : ",RS_left ,eq_nvar);
@@ -365,6 +388,12 @@ int riemann_MHD::JMs_riemann_solve(const double *l,
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void riemann_MHD::assign_data(const double* l, const double* r)
 {
   //
@@ -392,6 +421,12 @@ void riemann_MHD::assign_data(const double* l, const double* r)
   code2solvervars(RS_right);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void riemann_MHD::code2solvervars(double *statevec)
 {
@@ -452,6 +487,12 @@ void riemann_MHD::solver2codevars(double *statevec)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void riemann_MHD::failerror(int err, string text)
 {
   if (err!=0){
@@ -460,6 +501,12 @@ void riemann_MHD::failerror(int err, string text)
     rep.error(text,err);
   }
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void riemann_MHD::get_average_state()
 {
@@ -475,6 +522,12 @@ void riemann_MHD::get_average_state()
 
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int riemann_MHD::get_sound_speeds()
 {
@@ -683,6 +736,12 @@ int riemann_MHD::get_sound_speeds()
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void riemann_MHD::get_eigenvalues()
 {
   // This constructs the eigenvalues of the average matrix
@@ -702,6 +761,12 @@ void riemann_MHD::get_eigenvalues()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 inline double riemann_MHD::dot_product(double *v1, double *v2, int nd)
 {
   double temp=0.0;
@@ -710,6 +775,12 @@ inline double riemann_MHD::dot_product(double *v1, double *v2, int nd)
   }
   return(temp);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int riemann_MHD::normalise_evectors()
 {
@@ -727,6 +798,12 @@ int riemann_MHD::normalise_evectors()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void riemann_MHD::calculate_wave_strengths()
 {
   riemann_MHD::getPdiff();
@@ -739,6 +816,12 @@ void riemann_MHD::calculate_wave_strengths()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void riemann_MHD::getPdiff()
 {
   RS_pdiff[RRO] = RS_right[RRO]-RS_left[RRO];
@@ -750,6 +833,12 @@ void riemann_MHD::getPdiff()
   RS_pdiff[RBZ] = RS_right[RBZ]-RS_left[RBZ];
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int riemann_MHD::get_pstar()
 {
@@ -860,6 +949,12 @@ int riemann_MHD::get_pstar()
 
   return(0);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int riemann_MHD::RoeBalsara_evectors()
 {
@@ -1006,6 +1101,12 @@ int riemann_MHD::RoeBalsara_evectors()
   }
   return(0);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int riemann_MHD::falle_evectors()
 {
@@ -1179,6 +1280,12 @@ int riemann_MHD::falle_evectors()
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int riemann_MHD::check_evectors()
 {
   // Printing the eigenvectors to screen!
@@ -1278,4 +1385,10 @@ int riemann_MHD::check_evectors()
 
   return(0);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

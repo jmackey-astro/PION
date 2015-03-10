@@ -34,6 +34,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING

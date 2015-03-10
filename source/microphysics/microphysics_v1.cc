@@ -49,6 +49,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -69,8 +70,8 @@ MicroPhysics::MicroPhysics(const int nv,
 			   struct which_physics *ephys
 			   )
   :
-  kB(GS.kB()),
-  m_p(GS.m_p()),
+  kB(pconst.kB()),
+  m_p(pconst.m_p()),
   nv_prim(nv)
 {
   //  cout <<"\t\tMicroPhysics constructor.\n";

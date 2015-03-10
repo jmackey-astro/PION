@@ -57,6 +57,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -77,17 +78,23 @@ using namespace std;
 /***************************************************************/
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 MP_Hydrogen::MP_Hydrogen(const int nv,
 			 const int ntracer,
 			 const std::string &trtype,
 			 struct which_physics *ephys
 			 )
   :
-  kB(GS.kB()),
+  kB(pconst.kB()),
 #ifdef RT_TEST_PROBS
   m_p(2.338e-24), // this is for comparison to Krumholz,stone,gardiner(2007)
 #else
-  m_p(GS.m_p()),
+  m_p(pconst.m_p()),
 #endif
   nv_prim(nv)
 {
@@ -234,6 +241,12 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
   return;  
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 MP_Hydrogen::~MP_Hydrogen()
 {
   if (cool) {delete cool; cool=0;}
@@ -247,11 +260,23 @@ MP_Hydrogen::~MP_Hydrogen()
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 int MP_Hydrogen::Tr(string t) 
 {
   if (t=="H1+" || t=="HII" || t=="Hp") return pv_Hp;
   else return -1;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int MP_Hydrogen::Set_Temp(double *p,  ///< primitive vector.
 			  const double T, ///< temperature.
@@ -274,6 +299,12 @@ int MP_Hydrogen::Set_Temp(double *p,  ///< primitive vector.
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double MP_Hydrogen::Temperature(const double *pv, ///< primitive vector
 				const double g   ///< eos gamma
@@ -305,6 +336,12 @@ double MP_Hydrogen::Temperature(const double *pv, ///< primitive vector
   return t;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MP_Hydrogen::Init_ionfractions(double *p_prim,  ///< Primitive vector to be updated.
 				   const double gam, ///< eos gamma.
 				   const double temp ///< optional gas temperature to end up at. (negative means use pressure)
@@ -325,6 +362,12 @@ int MP_Hydrogen::Init_ionfractions(double *p_prim,  ///< Primitive vector to be 
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int MP_Hydrogen::convert_prim2local(const double *p_in,
 				    double *p_local,
@@ -383,6 +426,12 @@ int MP_Hydrogen::convert_prim2local(const double *p_in,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MP_Hydrogen::convert_local2prim(const double *p_local,
 				     const double *p_in,
 				     double *p_out,
@@ -431,6 +480,12 @@ int MP_Hydrogen::convert_local2prim(const double *p_local,
 
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int MP_Hydrogen::TimeUpdateMP(const double *p_in,
@@ -505,17 +560,24 @@ int MP_Hydrogen::TimeUpdateMP(const double *p_in,
 }
 
 
-int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vector to be updated.
-					double *p_out,        ///< Destination Vector for updated values.
-					const double dt,      ///< Time Step to advance by.
-					const double g,       ///< EOS gamma.
-					const int sw_int,     ///< Switch for what type of integration to use.
-					                      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-					const double phot_in, ///< flux in per unit length along ray (F/ds or L/dV)
-					const double ds,      ///< path length ds through cell.
-					const double tau2cell, ///< Optical depth to entry point of ray into cell.
-					double *deltau        ///< return optical depth through cell in this variable.
-					)
+// ##################################################################
+// ##################################################################
+
+
+
+
+int MP_Hydrogen::TimeUpdate_RTsinglesrc(
+      const double *p_in,   ///< Primitive Vector to be updated.
+      double *p_out,        ///< Destination Vector for updated values.
+      const double dt,      ///< Time Step to advance by.
+      const double g,       ///< EOS gamma.
+      const int sw_int,     ///< Switch for what type of integration to use.
+                            ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      const double phot_in, ///< flux in per unit length along ray (F/ds or L/dV)
+      const double ds,      ///< path length ds through cell.
+      const double tau2cell, ///< Optical depth to entry point of ray into cell.
+      double *deltau        ///< return optical depth through cell in this variable.
+      )
 {
 #ifdef RT_TESTING
   //
@@ -651,7 +713,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vec
       commandline.console("Bummer>");
 #endif
     }
-    else if (!GS.equalD(t_out,hh)) {
+    else if (!pconst.equalD(t_out,hh)) {
       t_now += t_out;
       for (int i=0;i<nvl;i++) P[i]=P2[i];
       //cout <<"Integration didn't go for full timestep.  Too much work!\n";
@@ -675,7 +737,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vec
   // so do the careful integration method.
   //
   err=0;
-  while (P[lv_Hp]<i_crit && !GS.equalD(t_now,t_final)) {
+  while (P[lv_Hp]<i_crit && !pconst.equalD(t_now,t_final)) {
     //cout <<"Doing Explicit Step:\n";
     dPdt(nvl,P,R);
     temp = max(0.1,P[lv_Hp]);
@@ -708,7 +770,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vec
 #endif
       rep.error("FAILURE of method on every level! FIX ME!",P[lv_Hp]);
     }
-    if (!GS.equalD(t_out,hh)) {
+    if (!pconst.equalD(t_out,hh)) {
       //cout <<"integration overshot, so cut short! req: "<<hh<<" did: "<<t_out<<"\n";
       //rep.printVec("p_new",P,nvl);
       //commandline.console("interr Bummer>");
@@ -728,7 +790,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vec
   //   half the timestep.
   // } while (err>0.01);
   //
-  if (t_now<t_final && !GS.equalD(t_now,t_final)) {
+  if (t_now<t_final && !pconst.equalD(t_now,t_final)) {
     //rep.printVec("begin implicit P",P,nvl);
     hh = t_final-t_now;
     err += implicit_step(nvl,hh,P,P,errtol);
@@ -739,7 +801,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vec
     }
   }
   
-  if (!GS.equalD(t_now,t_final)) {
+  if (!pconst.equalD(t_now,t_final)) {
     cout <<"irate="<<irate<<" and integration didn't go for right timestep...\n";
     cout <<"dt="<<dt<<"\tt_now="<<t_now<<"\tt_final="<<t_final<<"\n";
     rep.error("integration didn't go for right timestep!",t_now/t_final);
@@ -780,15 +842,18 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vec
 
 
 
+// ##################################################################
+// ##################################################################
 
 
 
-int MP_Hydrogen::implicit_step(const int nv,    ///< number of variables we are expecting.
-			       const double dt, ///< timestep to use.
-			       const double *P, ///< Current state vector.
-			       double *p_out,   ///< Final State Vector.
-			       const double etol ///< error tolerance
-			       )
+int MP_Hydrogen::implicit_step(
+      const int nv,    ///< number of variables we are expecting.
+      const double dt, ///< timestep to use.
+      const double *P, ///< Current state vector.
+      double *p_out,   ///< Final State Vector.
+      const double etol ///< error tolerance
+      )
 {
   //
   // Do some paranoid checking first -- right number of variables and no NAN/INF in 
@@ -978,7 +1043,7 @@ int MP_Hydrogen::implicit_step(const int nv,    ///< number of variables we are 
         // **************************************************
 	// ************** BIG ISOTHERMAL HACK!!!! ***********
 	// **************************************************
-	p_now[lv_eint] = p_now[lv_nh]*(1.0+p_now[lv_Hp])*GS.kB()*(100.0+9900.0*p_now[lv_Hp]);
+	p_now[lv_eint] = p_now[lv_nh]*(1.0+p_now[lv_Hp])*pconst.kB()*(100.0+9900.0*p_now[lv_Hp]);
         // **************************************************
 	// ************** BIG ISOTHERMAL HACK!!!! ***********
 	// **************************************************
@@ -1092,6 +1157,12 @@ int MP_Hydrogen::implicit_step(const int nv,    ///< number of variables we are 
   return ct;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MP_Hydrogen::Int_Adaptive_RKCK(const int nv,   ///< number of elements in P array.
 				   const double *p0, ///< initial state vector.
 				   const double t0,  ///< initial time
@@ -1159,7 +1230,7 @@ int MP_Hydrogen::Int_Adaptive_RKCK(const int nv,   ///< number of elements in P 
       //cout <<"s: "<<sizeof(h)<<"\ttf-t-hdid="<<*tf-t-hdid<<"\th="<<h<<"\n";
       //cout <<"\t\terr="<<err<<"\tct="<<ct<<"\tp1[lv_Hp]-i_crit="<<p1[lv_Hp]-i_crit<<"\n";
     }
-  } while (!GS.equalD(*tf,t) && (err==0) && (ct<ctmax) && p1[lv_Hp]<i_crit);
+  } while (!pconst.equalD(*tf,t) && (err==0) && (ct<ctmax) && p1[lv_Hp]<i_crit);
   
   if (err || ct>=ctmax) {
     cerr<<"MP_HYDROGEN::Int_Adaptive_RKCK() errors encountered. nstep="<<ct<<"\n";
@@ -1176,6 +1247,12 @@ int MP_Hydrogen::Int_Adaptive_RKCK(const int nv,   ///< number of elements in P 
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting.
 		      const double *P, ///< Current state vector.
@@ -1313,8 +1390,8 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
     GLOBAL_CE->tot_cooling = GLOBAL_CE->rr_cooling +GLOBAL_CE->ci_cooling +GLOBAL_CE->fn_cooling;
     GLOBAL_CE->net_heating = GLOBAL_CE->tot_heating -GLOBAL_CE->tot_cooling;
     //cout <<"calculated heating="<<GLOBAL_CE->net_heating<<" and from dpdt()="<<R[lv_eint]<<"\n";
-    GLOBAL_CE->cooling_time = P[lv_eint]/GLOBAL_CE->tot_cooling /GS.s_per_yr();
-    GLOBAL_CE->recomb_time  = P[lv_Hp]/GLOBAL_CE->rr_rate       /GS.s_per_yr();
+    GLOBAL_CE->cooling_time = P[lv_eint]/GLOBAL_CE->tot_cooling /pconst.s_per_yr();
+    GLOBAL_CE->recomb_time  = P[lv_Hp]/GLOBAL_CE->rr_rate       /pconst.s_per_yr();
   }
 #endif //COUNT_ENERGETICS
 
@@ -1339,7 +1416,7 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   // Since gamma=1 I'm leaving out the (g-1) factor everywhere in the internal energy calcs.
   //
   //cout <<"isothermal rate!!!\n";
-  R[lv_eint] = (P[lv_nh]*GS.kB())*(1.0e4+1.98e4*P[lv_Hp])*R[lv_Hp];
+  R[lv_eint] = (P[lv_nh]*pconst.kB())*(1.0e4+1.98e4*P[lv_Hp])*R[lv_Hp];
   // **************************************************
   // ************** BIG ISOTHERMAL HACK!!!! ***********
   // **************************************************
@@ -1354,10 +1431,22 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double MP_Hydrogen::phot_xsection(double T)
 {
   return 6.3e-18; // in cm^2 -- this is crude!
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double MP_Hydrogen::phot_ion_energy(double T)
 {
@@ -1372,6 +1461,12 @@ double MP_Hydrogen::phot_ion_energy(double T)
   return 1.602e-12*5.0;  // 5.0 eV per ionisations.
   //  return 1.602e-12*2.4; // 2.4 eV per ionisation.
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -1390,6 +1485,12 @@ double MP_Hydrogen::coll_ion_rate(double T   ///< Precalculated Temperature.
   return A*(1.+PP*sqrt(T))*exp(K*log(T) -T)/(X+T);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double MP_Hydrogen::coll_ion_energy(double T    ///< Precalculated Temperature.
 				    )
 {
@@ -1399,6 +1500,12 @@ double MP_Hydrogen::coll_ion_energy(double T    ///< Precalculated Temperature.
    */
   return ion_pot; // This is already in ergs.
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double MP_Hydrogen::rad_recomb_rate(double T   ///< Precalculated Temperature.
 				    )
@@ -1420,6 +1527,12 @@ double MP_Hydrogen::rad_recomb_rate(double T   ///< Precalculated Temperature.
 #endif // HUMMER_RECOMB
   return r;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double MP_Hydrogen::rad_recomb_energy(double T   ///< Precalculated Temperature.
 				      )
@@ -1444,6 +1557,12 @@ double MP_Hydrogen::rad_recomb_energy(double T   ///< Precalculated Temperature.
   return 3.41202e-10*exp(-0.782991*log(T)) *kB*T/(gamma-1.0);
 #endif // not HUMMER_RECOMB
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 ///
 /// This returns the minimum timescale of the times flagged in the
@@ -1534,6 +1653,12 @@ double MP_Hydrogen::timescales(const double *p_in,  ///< Current cell primitive 
 
   return mintime;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 #endif // if not excluding MPv1

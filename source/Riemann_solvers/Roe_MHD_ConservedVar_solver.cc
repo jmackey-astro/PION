@@ -23,6 +23,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
 #include "Riemann_solvers/riemannMHD.h"
 #include "global.h"
@@ -31,6 +32,12 @@ using namespace std;
 // **********************************************************************************
 //  ROE SOLVER FOR ADIABATIC MHD, FROM CARGO & GALLICE, (1997) JCP, 136, 446
 // **********************************************************************************
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 Riemann_Roe_MHD_CV::Riemann_Roe_MHD_CV(const int nv,
      ///< Length of State Vectors, nvar
@@ -80,6 +87,12 @@ Riemann_Roe_MHD_CV::Riemann_Roe_MHD_CV(const int nv,
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 Riemann_Roe_MHD_CV::~Riemann_Roe_MHD_CV()
 {
 #ifdef FUNCTION_ID
@@ -105,6 +118,12 @@ Riemann_Roe_MHD_CV::~Riemann_Roe_MHD_CV()
 #endif //FUNCTION_ID
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 ///
@@ -208,6 +227,12 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(const double *left,
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Roe's approximate flux solver (returning the flux calculated from
 /// a symmetric calculation (all waves contribute).
@@ -266,6 +291,12 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(const double *left,
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 double Riemann_Roe_MHD_CV::Enthalpy(const double *p, ///< primitive State Vector.
 					   const double g ///< gas EOS gamma.
 					   )
@@ -279,6 +310,12 @@ double Riemann_Roe_MHD_CV::Enthalpy(const double *p, ///< primitive State Vector
 	    +(p[eqBX]*p[eqBX] +p[eqBY]*p[eqBY] +p[eqBZ]*p[eqBZ]) 
 	    )/p[eqRO] );
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 ///
 /// Set UL[] and UR[] from PL[] and PR[].
@@ -299,6 +336,12 @@ void Riemann_Roe_MHD_CV::set_UL_and_UR(const double *left, ///< left primitive v
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 ///
 /// Set Pstar[] from Roe_meanp[] (need to replace enthalpy with
@@ -338,6 +381,12 @@ void Riemann_Roe_MHD_CV::set_pstar_from_meanp(double *out_pstar)
 #endif //FUNCTION_ID
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -406,6 +455,12 @@ int Riemann_Roe_MHD_CV::Roe_get_average_state(const double *left,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Get the Roe averages differences for the primitive and conserved variables:
 /// From Stone et al. (2009), ApJS, 178, 137, eq.65.
@@ -455,6 +510,12 @@ int Riemann_Roe_MHD_CV::Roe_get_difference_states(const double *left,
   //  rep.printVec("udiff",Roe_udiff,8);
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 ///
 /// Get the Roe-averaged wavespeeds
@@ -537,6 +598,12 @@ int Riemann_Roe_MHD_CV::Roe_get_wavespeeds()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Get the Roe-averaged eigenvalues
 ///
@@ -565,7 +632,7 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
   //
   // Paranoid test!  Make sure eta=0 if not using H-correction.
   //
-  if (SimPM.artviscosity!=3 && !GS.equalD(Hcorr_etamax,0.0))
+  if (SimPM.artviscosity!=3 && !pconst.equalD(Hcorr_etamax,0.0))
     rep.error("H-correction is non-zero but we're not using it!",Hcorr_etamax);
 #endif // TESTING
 
@@ -597,6 +664,12 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
 
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int Riemann_Roe_MHD_CV::Roe_get_wavestrengths()
 {
@@ -670,6 +743,12 @@ int Riemann_Roe_MHD_CV::Roe_get_wavestrengths()
 #endif
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 ///
@@ -799,6 +878,12 @@ int Riemann_Roe_MHD_CV::Roe_get_right_evectors()
   
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 ///
@@ -1038,6 +1123,12 @@ int Riemann_Roe_MHD_CV::Roe_get_flux_onesided(const double *left,
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int Riemann_Roe_MHD_CV::calculate_symmetric_flux(const double *left,
 						 const double *right,
 						 double *out_flux
@@ -1098,6 +1189,12 @@ int Riemann_Roe_MHD_CV::calculate_symmetric_flux(const double *left,
   return 0;
 }
   
+
+// ##################################################################
+// ##################################################################
+
+
+
 // **********************************************************************************
 //  ROE SOLVER FOR ADIABATIC MHD, FROM CARGO & GALLICE, (1997) JCP, 136, 446
 // **********************************************************************************

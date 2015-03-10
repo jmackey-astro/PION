@@ -93,6 +93,8 @@
 /// - 2015.01.26 JM: removed IntegratorBaseFV (no point to this base
 ///    class, as far as I can see (famous last words...))
 ///    Removed ParallelParams class (to sim_control_MPI.h), and COMM.
+/// - 2015.03.10 JM: Removed GeneralStuff class, to constants.h and
+///    other files.
 
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -430,51 +432,6 @@ extern struct stellarwind_list SWP;
 
 
 
-
-/** \brief General Purpose class to hold generally useful functions and data.
- * 
- * e.g. contains physical constants.  Also a function to determine if two
- * doubles are the same to within some tolerance.  Also a function to calculate
- * the distance between two vector positions.
- * */
-class GeneralStuff {
-  public:
-   GeneralStuff();
-   ~GeneralStuff();
-   /** \brief tests if two doubles are equal to an accuracy of 1e-8. */
-   bool equalD(const double, 
-         const double
-         );
-
-   /** \brief calculate distance between two points in n-dimensional space.
-    * Assumes cartesian geometry.
-    */
-   double distance(const double *, ///< position 1
-       const double *, ///< position 2
-       const int       ///< number of spatial dimensions.
-       );
-   /** \brief calculate distance between two points in n-dimensional space.
-    * Assumes cartesian geometry.
-    */
-   double idistance(const int *, ///< position 1
-        const int *, ///< position 2
-        const int    ///< number of spatial dimensions.
-        );
-
-   inline double kB()  {return 1.381e-16;}
-   inline double m_p() {return 1.673e-24;}
-   inline double Ith_H() {return 13.59844;}
-   inline double K_per_eV() {return 1.16045e4;}
-   inline double s_per_yr() {return 3.15576e7;}
-   inline double Msun() {return 1.989e33;}
-   inline double parsec() {return 3.086e18;}
-   inline double Lsun() {return 1.989e33;}
-   inline double Rsun() {return 6.960e10;}
-   inline double StefanBoltzmannConst() {return 5.670e-5;}
-   inline double ln10() {return 2.302585093;}
-   inline double c() {return 2.9979e10;}
-};
-extern class GeneralStuff GS; ///< physical constants, utility functions.
 
 
 

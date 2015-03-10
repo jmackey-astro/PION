@@ -12,6 +12,7 @@
 
 #include "tools/interpolate.h"
 #include "sim_constants.h"
+#include "constants.h"
 #include "tools/reporting.h"
 
 #ifndef INTEL

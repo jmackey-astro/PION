@@ -1,15 +1,15 @@
-/** \file dataio.cc
- * Class definitions for ASCII Text data I/O.
- * 
- * modified:\n
- *  - 2007-10-25 got the parallel fits-io class to compile and write data.
- *  - 2007-10-26 parallel fits-io class reads data from single and multiple
- *    files. Put in serial ifdefs, so that it should work for serial code too.
- *  - 2008-09-19 Moved fits I/O to dataio_fits.cc, and moved text dataio from
- *     gridMethods.cc to here in a new class dataio_text.
- *
- *  - 2010-02-03 JM: removed unused variables from functions.
- * */
+/// \file dataio.cc
+/// \author Jonathan Mackey
+/// Class definitions for ASCII Text data I/O.
+/// 
+/// modified:\n
+///  - 2007-10-25 got the parallel fits-io class to compile and write data.
+///  - 2007-10-26 parallel fits-io class reads data from single and multiple
+///    files. Put in serial ifdefs, so that it should work for serial code too.
+///  - 2008-09-19 Moved fits I/O to dataio_fits.cc, and moved text dataio from
+///     gridMethods.cc to here in a new class dataio_text.
+///
+///  - 2010-02-03 JM: removed unused variables from functions.
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
 /// - 2010-07-20/22 JM: Work on new dataio structure with a list of parameters
@@ -52,6 +52,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -61,6 +62,12 @@
 #include "grid/stellar_wind_BC.h"
 #include <sstream>
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 // -----------------------------------------------------
@@ -85,6 +92,12 @@ pm_idimarr::pm_idimarr()
  {type=MY_IDIMARR; len=MAX_DIM; defval=0;}
 pm_dvararr::pm_dvararr()
  {type=MY_DVARARR; len=MAX_NVAR; defval=0;}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // constructor with name only
@@ -121,6 +134,12 @@ pm_dvararr::pm_dvararr(const string s)
 {
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s); defval=0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // constructor with name and pointer to data
@@ -160,6 +179,12 @@ pm_dvararr::pm_dvararr(const string s, double *p)
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s);
   ptr=p; defval=0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // constructor with name, pointer to data, default value.
@@ -203,6 +228,12 @@ pm_dvararr::pm_dvararr(const string s, double *p, const double *def)
   for (int v=0;v<len;v++) defval[v] = def[v];
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // Some have destructors:
 //
@@ -218,6 +249,12 @@ pm_dvararr::~pm_dvararr() {
   if (defval) defval = mem.myfree(defval);
   ptr=0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 void pm_int::assign_val(void *val)
@@ -243,6 +280,12 @@ void pm_dvararr::assign_val(void *val)
   for (int i=0;i<len;i++) ptr[i]= (static_cast<double *>(val))[i];
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void pm_int::set_ptr(void *p) {ptr=static_cast<int *>(p);}
 void pm_double::set_ptr(void *p) {ptr=static_cast<double *>(p);}
 void pm_float::set_ptr(void *p) {ptr=static_cast<float *>(p);}
@@ -251,6 +294,12 @@ void pm_string::set_ptr(void *p) {ptr=static_cast<string *>(p);}
 void pm_ddimarr::set_ptr(void *p) {ptr=static_cast<double *>(p);}
 void pm_idimarr::set_ptr(void *p) {ptr=static_cast<int *>(p);}
 void pm_dvararr::set_ptr(void *p) {ptr=static_cast<double *>(p);}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 void pm_int::show_val() {cout<<*ptr;}
@@ -278,6 +327,12 @@ void pm_dvararr::show_val()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void pm_int::set_to_default() {*ptr=defval;}
 void pm_double::set_to_default() {*ptr=defval;}
 void pm_float::set_to_default() {*ptr=defval;}
@@ -297,6 +352,12 @@ void pm_dvararr::set_to_default() {
   else for (int i=0;i<len;i++) ptr[i] = defval[i];
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void * pm_int::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_double::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_float::get_ptr() {return static_cast<void *>(ptr);}
@@ -305,6 +366,12 @@ void * pm_string::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_ddimarr::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_idimarr::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_dvararr::get_ptr() {return static_cast<void *>(ptr);}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 

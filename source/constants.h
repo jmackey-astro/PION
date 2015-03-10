@@ -11,21 +11,45 @@
 /// Modifications:
 /// - getting it written: mods up until 2013.08.20
 /// - 2014.01.20 JM: Added more significant digits
+/// - 2015.03.10 JM: added equalD() function.
 
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+
+//
+// It's a good idea to include cmath here, since nearly every file needs it!
+//
+#ifndef INTEL
+#include <cmath>     // Header file from gcc
+#else
+#include <mathimf.h> // Header file from Intel Compiler
+#endif
+
+
+#define SMALLVALUE       1.0e-12
+#define MACHINEACCURACY  5.e-16
+#define TINYVALUE        1.0e-100
+#define VERY_TINY_VALUE  1.0e-200
+#define VERY_LARGE_VALUE 1.0e100
+#define HUGEVALUE        1.0e+200
+#define ONE_PLUS_EPS     (1.0+SMALLVALUE)
+#define ONE_MINUS_EPS    (1.0-SMALLVALUE)
+
+
 class constants {
   public:
+  constants();
+  ~constants();
   //
   // Mathematics
   //
   inline double ln10() {return 2.3025850929940459;}
+  inline double pi()     {return 3.14159265358979324;}
   //
   // Physics
   //
-  inline double pi()     {return 3.14159265358979324;}
   inline double c()      {return 2.99792458e+10;}
   inline double kB()     {return 1.3806488e-16;}
   inline double h()      {return 6.62606957e-27;}
@@ -50,8 +74,18 @@ class constants {
   inline double Rsun()   {return 6.955e10;}
   inline double AU()     {return 1.49597870700e+13;}
   inline double parsec() {return 3.0856776e18;}
+  
+  ///
+  /// tests if two doubles are equal to an accuracy of 1e-8.
+  ///
+  bool equalD(
+        const double, 
+        const double
+        );
+
 };
 
+extern class constants pconst;
 
 #define ION_DUST -1
 #define ION_H_N  0

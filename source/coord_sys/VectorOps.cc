@@ -22,6 +22,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
+#include "constants.h"
 
 #include "VectorOps.h"
 
@@ -1007,7 +1008,7 @@ int VectorOps_Cyl::SetSlope(
 #ifdef FIX_TRACER_SLOPES_TO_DENSITY
     if (SimPM.ntracer>0) {
       for (int v=SimPM.ftr; v<nv; v++) {
-	//if (!GS.equalD(dpdx[v],0.0)) 
+	//if (!pconst.equalD(dpdx[v],0.0)) 
         //  cout <<"setting dpdx["<<v<<"] from "<<dpdx[v]<<" to zero.\n";
 	dpdx[v] =0.0;
       }

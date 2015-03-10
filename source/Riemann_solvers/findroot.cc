@@ -1,51 +1,71 @@
-/** \file findroot.cc
- * 
- * \brief Rootfinding routines for Riemann Solver
- * 
- * \author Jonathan Mackey
- * 
- * 
- * Two solve options are available, solve_pos() for when you know the root
- * is positive, i.e. in \f$ [0,\infty]\f$, and solve_pm() when the root could
- * be anywhere.
- * 
- * The rootfinding algorithms implemented so far are:
- *    Bisection:  Slow(ish) but very reliable.
- *    Brent's Method: from NR, I find it fast and reliable.
- * 
- *  - 2009-10-23 made Riemann_Euler inherit from findroot, and redefine the function to get the root of!
- * So now findroot can't be set up as is, a derived class needs to define the function to get the root of.
- * */
-///
-///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
+/// \file findroot.cc
+/// 
+/// \brief Rootfinding routines for Riemann Solver
+/// 
+/// \author Jonathan Mackey
+/// 
+/// Two solve options are available, solve_pos() for when you know the root
+/// is positive, i.e. in \f$ [0,\infty]\f$, and solve_pm() when the root could
+/// be anywhere.
+/// 
+/// The rootfinding algorithms implemented so far are:
+///    Bisection:  Slow(ish) but very reliable.
+///    Brent's Method: from NR, I find it fast and reliable.
+/// 
+/// - 2009-10-23 made Riemann_Euler inherit from findroot, and
+///  redefine the function to get the root of!  So now findroot
+///  can't be set up as is, a derived class needs to define the
+///  function to get the root of.
+/// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2010.12.23 JM: Moved to Riemann_solver/ directory.
+/// - 2015.03.10 JM: Tidied up a bit.
 ///
-#include "../global.h"
+#include "global.h"
 #include "findroot.h"
+#include "constants.h"
 #include <iostream>
 using namespace std;
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 findroot::findroot()
 {
-  findroot::errtol = 1.0e-8; // This is the fractional accuracy we want to find the root to.
+  findroot::errtol = 1.0e-8;
+  // This is the fractional accuracy we want to find the root to.
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 findroot::~findroot()
 {
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // This version is specific to solving the equation in the Exact Riemann Solver.
 // Other versions could be specified, taking more or fewer parameters.
-int findroot::FR_find_root(double *ans, /**< pointer to result */
-			   const double p1,  ///< parameter 1
-			   const double p2,  ///< parameter 2
-			   const double p3,  ///< parameter 3
-			   const double p4,  ///< parameter 4
-			   const double p5   ///< parameter 5
-			   )
+int findroot::FR_find_root(
+      double *ans, ///< pointer to result
+      const double p1,  ///< parameter 1
+      const double p2,  ///< parameter 2
+      const double p3,  ///< parameter 3
+      const double p4,  ///< parameter 4
+      const double p5   ///< parameter 5
+      )
 {
 
   FR_param1 = p1;  ///< e.g. left state pressure
@@ -76,9 +96,17 @@ int findroot::FR_find_root(double *ans, /**< pointer to result */
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // This version is for testing
-int findroot::solve_test(double *ans, /**< pointer to result */
-			 const double p1   /**< pointer to parameter data.*/)
+int findroot::solve_test(
+        double *ans, ///< pointer to result
+	const double p1   ///< pointer to parameter data.
+        )
 {
   //
   // assign parameters which the test function uses (here only one function).
@@ -103,6 +131,12 @@ int findroot::solve_test(double *ans, /**< pointer to result */
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double findroot::FR_test_function(const double x)
 {
   // f(x) = x^2-gamma, where gamma is a parameter passed into the solver.
@@ -111,6 +145,12 @@ double findroot::FR_test_function(const double x)
   // use this for solving a 2D stromgen sphere (no recombs) with 1/r profile.
   return x-log(1.+x)-(FR_param1);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int findroot::solve_pos(double x1, double x2, double *ans)
@@ -134,6 +174,12 @@ int findroot::solve_pos(double x1, double x2, double *ans)
   return(0);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int findroot::solve_pm(double x1, double x2, double *ans)
 {
    //  cout << "(fr::solve) ans = " << *ans << "\n";
@@ -154,12 +200,18 @@ int findroot::solve_pm(double x1, double x2, double *ans)
   //  cout << "(fr::solve) ans = " << *ans << "\n";
   return(0);
 }
-  
+ 
 
-/** \brief Brackets a root in the range \f$ [-\infty, \infty]\f$
- * 
- * This function returns brackets around a root.
- * */
+// ##################################################################
+// ##################################################################
+
+
+ 
+
+/// Brackets a root in the range \f$ [-\infty, \infty]\f$
+/// 
+/// This function returns brackets around a root.
+///
 int findroot::bracket_root_pm(double *x1, double *x2)
 {
    // This is based on the NR root bracketing procedure.
@@ -195,6 +247,12 @@ int findroot::bracket_root_pm(double *x1, double *x2)
    *x1=*x2=0.;
    return(1);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int findroot::bracket_root_pos(double *x1, double *x2)
 {
@@ -238,6 +296,12 @@ int findroot::bracket_root_pos(double *x1, double *x2)
 }
   
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 int findroot::find_root_bisection(double *x1, double *x2, double err, double *ans)
 {
   // This is a simple bisection routine to find the root to an accuracy
@@ -266,6 +330,12 @@ int findroot::find_root_bisection(double *x1, double *x2, double err, double *an
   cerr << "(findroot) Couldn't find root after 50 bisections, failing" << "\n";
   return(1);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
 {
@@ -350,6 +420,12 @@ int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
    cerr<<"Maximum number of iterations exceeded in zbrent"<<"\n";
    return(1);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //  For testing the findroot class
 // int main (int argc, char **argv)

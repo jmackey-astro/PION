@@ -13,6 +13,7 @@
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 using namespace std;
 
 //------------------------------------------------
@@ -242,19 +243,19 @@ int MCMDcontrol::pointToNeighbours()
   if (!ngbprocs) rep.error("Memory Allocation of neighbours.",ngbprocs);
   ngbprocs[XN] = myrank -1;
   ngbprocs[XP] = myrank +1;
-  if (GS.equalD(LocalXmin[XX],SimPM.Xmin[XX])) ngbprocs[XN] = -999;
-  if (GS.equalD(LocalXmax[XX],SimPM.Xmax[XX])) ngbprocs[XP] = -999;
+  if (pconst.equalD(LocalXmin[XX],SimPM.Xmin[XX])) ngbprocs[XN] = -999;
+  if (pconst.equalD(LocalXmax[XX],SimPM.Xmax[XX])) ngbprocs[XP] = -999;
   if (SimPM.ndim >1) {
     ngbprocs[YN] = myrank -nx[XX];
     ngbprocs[YP] = myrank +nx[XX];
-    if (GS.equalD(LocalXmin[YY],SimPM.Xmin[YY])) ngbprocs[YN] = -999;
-    if (GS.equalD(LocalXmax[YY],SimPM.Xmax[YY])) ngbprocs[YP] = -999;
+    if (pconst.equalD(LocalXmin[YY],SimPM.Xmin[YY])) ngbprocs[YN] = -999;
+    if (pconst.equalD(LocalXmax[YY],SimPM.Xmax[YY])) ngbprocs[YP] = -999;
   }
   if (SimPM.ndim >2) {
     ngbprocs[ZN] = myrank -nx[XX]*nx[YY];
     ngbprocs[ZP] = myrank +nx[XX]*nx[YY];
-    if (GS.equalD(LocalXmin[ZZ],SimPM.Xmin[ZZ])) ngbprocs[ZN] = -999;
-    if (GS.equalD(LocalXmax[ZZ],SimPM.Xmax[ZZ])) ngbprocs[ZP] = -999;
+    if (pconst.equalD(LocalXmin[ZZ],SimPM.Xmin[ZZ])) ngbprocs[ZN] = -999;
+    if (pconst.equalD(LocalXmax[ZZ],SimPM.Xmax[ZZ])) ngbprocs[ZP] = -999;
   }
   return(0);
 }

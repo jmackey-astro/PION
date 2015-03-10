@@ -79,14 +79,14 @@ VPATH = \
 ../source/future
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h
+GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
 
 ifneq ($(PION_OPTIMISE), HIGH)
   GLOBAL += command_line_interface.h
 endif
 
 ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
-  GLOBAL += constants.h
+  #GLOBAL += constants.h
 endif
 
 #######################
@@ -285,6 +285,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         timer.o interpolate.o \
+        constants.o \
         main.o \
         uniform_grid.o cell_interface.o \
         setup_fixed_grid.o sim_control.o global.o \
@@ -315,6 +316,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 
 IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         timer.o interpolate.o \
+        constants.o \
         setup_fixed_grid.o icgen.o \
         MCMD_control.o \
         uniform_grid.o cell_interface.o \
@@ -391,6 +393,7 @@ mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
+constants.o: constants.cpp ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
 global.o:       global.cc ${GLOBAL}

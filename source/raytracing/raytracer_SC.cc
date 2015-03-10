@@ -86,12 +86,13 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
 #include "raytracing/raytracer_SC.h"
-#include "future/constants.h"
+#include "constants.h"
 #include "grid/uniform_grid.h"
 #include <iostream>
 #include <sstream>
@@ -299,7 +300,7 @@ void raytracer_USC_infinity::add_source_to_list(
     else {
       double centre = 0.5*(gridptr->Xmin(static_cast<axes>(i))+
                            gridptr->Xmax(static_cast<axes>(i)));
-      if (!GS.equalD(centre,rs.s->pos[i])) {
+      if (!pconst.equalD(centre,rs.s->pos[i])) {
 #ifdef RT_TESTING
 	cout <<"source not at infinity, or at centre of grid in dir";
         cout <<" "<<i<<", resetting to centre.\n";
@@ -891,11 +892,11 @@ int raytracer_USC_infinity::ProcessCell(
         // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
         // Then I(out) = S +exp(-dtau)*(I(in)-S)
         //
-        cell_col[0] = 0.22*(c->Ph[RO]*SimPM.EP.H_MassFrac/GS.m_p())
+        cell_col[0] = 0.22*(c->Ph[RO]*SimPM.EP.H_MassFrac/pconst.m_p())
                   *1.1*c->Ph[source->s->opacity_var+SimPM.ftr]
                       *c->Ph[source->s->opacity_var+SimPM.ftr]
                   *pow(MP->Temperature(c->Ph,SimPM.gamma),-0.9);
-        //cell_col = 0.55*(c->Ph[RO]*SimPM.EP.H_MassFrac/*GS.m_p())
+        //cell_col = 0.55*(c->Ph[RO]*SimPM.EP.H_MassFrac/*pconst.m_p())
         //          *1.1*c->Ph[source->s->opacity_var+SimPM.ftr]
         //              *c->Ph[source->s->opacity_var+SimPM.ftr]
         //          *pow(MP->Temperature(c->Ph,SimPM.gamma),-1.0);
@@ -904,7 +905,7 @@ int raytracer_USC_infinity::ProcessCell(
         // now set cell_col[0] to be I(out)
         //
         cell_col[0] = cell_col[0]+
-            exp(-(c->Ph[RO]*SimPM.EP.H_MassFrac/GS.m_p())*5.0e-22*ds)
+            exp(-(c->Ph[RO]*SimPM.EP.H_MassFrac/pconst.m_p())*5.0e-22*ds)
             *(col2cell[0]-cell_col[0]);
         //
         // set col2cell[0] to be I(out)-I(in)
@@ -1341,11 +1342,11 @@ void raytracer_USC::add_source_to_list(
 #ifdef CELL_CENTRED_SRC
   for (int i=0; i<ndim; i++) {
     if (rs.s->pos[i]<gridptr->Xmin(static_cast<axes>(i)) &&
-	!GS.equalD(rs.s->pos[i],gridptr->Xmin(static_cast<axes>(i)))) {
+	!pconst.equalD(rs.s->pos[i],gridptr->Xmin(static_cast<axes>(i)))) {
       rs.src_on_grid=false;
     }
     if (rs.s->pos[i]>gridptr->Xmax(static_cast<axes>(i)) &&
-	!GS.equalD(rs.s->pos[i],gridptr->Xmax(static_cast<axes>(i)))) {
+	!pconst.equalD(rs.s->pos[i],gridptr->Xmax(static_cast<axes>(i)))) {
       rs.src_on_grid=false;
     }
   }
@@ -1898,13 +1899,13 @@ cell * raytracer_USC::find_source_cell(double *pos ///< position of source.
 #ifdef RT_TESTING
     cout <<"Now have centred source on a cell, so move on grid to find it.\n";
 #endif
-    if      (pos[a]<gridptr->Xmin(a) && !GS.equalD(pos[a],gridptr->Xmin(a))) {
+    if      (pos[a]<gridptr->Xmin(a) && !pconst.equalD(pos[a],gridptr->Xmin(a))) {
 #ifdef RT_TESTING
       cout <<"don't need to do anything as we are already at most negative cell in this axis.\n";
 #endif
       // don't need to do anything as we are already at most negative cell in this axis.
     }
-    else if (pos[a]>gridptr->Xmax(a) && !GS.equalD(pos[a],gridptr->Xmax(a))) {
+    else if (pos[a]>gridptr->Xmax(a) && !pconst.equalD(pos[a],gridptr->Xmax(a))) {
 #ifdef RT_TESTING
       cout <<"source off the positive end of grid, so go to last cell.\n";
 #endif
@@ -1924,13 +1925,13 @@ cell * raytracer_USC::find_source_cell(double *pos ///< position of source.
 #ifdef RT_TESTING
     cout <<"Now have centred source on a cell vertex, so move on grid to find it.\n";
 #endif
-    if      (pos[a]<gridptr->Xmin(a) || GS.equalD(pos[a],gridptr->Xmin(a))) {
+    if      (pos[a]<gridptr->Xmin(a) || pconst.equalD(pos[a],gridptr->Xmin(a))) {
 #ifdef RT_TESTING
       cout <<"don't need to do anything as we are already at most negative cell in this axis.\n";
 #endif
       // don't need to do anything as we are already at most negative cell in this axis.
     }
-    else if (pos[a]>gridptr->Xmax(a) || GS.equalD(pos[a],gridptr->Xmax(a))) {
+    else if (pos[a]>gridptr->Xmax(a) || pconst.equalD(pos[a],gridptr->Xmax(a))) {
 #ifdef RT_TESTING
       cout <<"source off/at the positive end of grid, so go to last cell.\n";
 #endif
@@ -1989,7 +1990,7 @@ void raytracer_USC::centre_source_on_cell(double *pos,   ///< position of source
   //
   //if source is not at a cell centre, we move it to the centre of its cell.
   //
-  if (!GS.equalD(dist, 0.5*gridptr->DX())) {
+  if (!pconst.equalD(dist, 0.5*gridptr->DX())) {
     cout <<"WARNING: source is not at centre of cell, moving source to cell centre.\n";
     cout << "Old Source Location: x = "<<pos[axis]<<"\n";
     if (dist>0.0)
@@ -2012,14 +2013,14 @@ void raytracer_USC::centre_source_on_cell(double *pos,   ///< position of source
 #ifdef RT_TESTING
   cout <<", new dist="<<dist<<" in units of cell size."<<"\n";
 #endif
-  if (!GS.equalD(dist,0.0)) {
+  if (!pconst.equalD(dist,0.0)) {
     if (fabs(dist)>1.0) rep.error("didn't get distance correctly in centre_source_on_cell()",dist);
     //
     // Source is not at a cell boundary, so find the nearest one.  if
     // |dist|=0.5, then move it to the negative cell boundary, and do
     // an explicit check to make sure this happens.
     //
-    if (GS.equalD(dist,0.5)) {
+    if (pconst.equalD(dist,0.5)) {
       //cout <<"resetting position. dist="<<dist<<", dx="<<dx<<"  dist*dx="<<dist*dx<<"\n";
       if (dist>0)                    pos[axis] -=      dist *dx;
       else                           pos[axis] -= (1.0+dist)*dx;
@@ -2083,7 +2084,7 @@ cell * raytracer_USC::find_src_on_grid(double *pos,   ///< position of source.
     dist = pos[axis]-CI.get_dpos(sc,axis);
   }
   // now we could have a case where the source is at the [X/Y/Z]P edge, so maybe go one more
-  //if ((GS.equalD(dist,halfdx)) && (pos[axis]>CI.get_dpos(sc,axis)))
+  //if ((pconst.equalD(dist,halfdx)) && (pos[axis]>CI.get_dpos(sc,axis)))
   //  sc=gridptr->NextPt(sc,posdir); // Don't want sc to be a boundary cell!!!
 #ifdef RT_TESTING
   cout <<"dist="<<dist<<" and dx/2 = "<<halfdx<<"\n";
@@ -2473,7 +2474,7 @@ int raytracer_USC::cell_cols_3d(const rad_source *src,
         cout <<"source cell has negative column density, resetting.\n";
         Nc[0]=0.0;
       }
-      else if (GS.equalD(Nc[0],0.0)) {
+      else if (pconst.equalD(Nc[0],0.0)) {
         cout <<"column is negative:"<<Nc[0]<<" but close to zero.";
         cout <<" ... resetting to zero.\n";
         Nc[0]=0;
@@ -2841,9 +2842,10 @@ void raytracer_USC::set_Vshell_in_cell(
   // method horrendously complicated!!  The method is only 1st 
   // order anyway, and the position offset is 2nd order, so it shouldn't
   // make any difference.
+  // Distance is from source to entry point of ray to cell.
   //
   CI.get_dpos(c,c_pos);
-  rs = GS.distance(source->s->pos,c_pos,ndim) -0.5*ds;
+  rs = gridptr->distance(source->s->pos,c_pos) -0.5*ds;
 #ifdef RT_TESTING
   cout <<"\tSetting Vshell for cell id="<<c->id<<": ";
   cout <<"rs="<<rs<<" ds="<<ds<<" dx="<<gridptr->DX()<<": ";

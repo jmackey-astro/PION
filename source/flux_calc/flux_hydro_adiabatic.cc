@@ -56,8 +56,15 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #include "flux_hydro_adiabatic.h"
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 flux_solver_hydro_adi::flux_solver_hydro_adi(const int nv,        ///< Number of variables in state vector
 					     const double *state, ///< state vector which is 'typical' in the problem being solved. 
@@ -91,6 +98,12 @@ flux_solver_hydro_adi::flux_solver_hydro_adi(const int nv,        ///< Number of
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 flux_solver_hydro_adi::~flux_solver_hydro_adi()
 {
 #ifdef FUNCTION_ID
@@ -102,6 +115,12 @@ flux_solver_hydro_adi::~flux_solver_hydro_adi()
 #endif //FUNCTION_ID
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int flux_solver_hydro_adi::inviscid_flux(const cell *Cl, ///< Left state cell pointer
@@ -245,6 +264,12 @@ int flux_solver_hydro_adi::inviscid_flux(const cell *Cl, ///< Left state cell po
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int flux_solver_hydro_adi::AVFalle(const double *Pl,
 				   const double *Pr,
 				   const double *pstar,
@@ -303,6 +328,12 @@ int flux_solver_hydro_adi::AVFalle(const double *Pl,
 #endif //FUNCTION_ID
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 #ifdef LAPIDUS_VISCOSITY_ENABLED
 int flux_solver_hydro_adi::AVLapidus(const cell *Cl, ///< Left state cell pointer
@@ -384,6 +415,12 @@ int flux_solver_hydro_adi::AVLapidus(const cell *Cl, ///< Left state cell pointe
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 void flux_solver_hydro_adi::PtoU(const double* p, double* u, const double g)
 {
 #ifdef FUNCTION_ID
@@ -398,6 +435,12 @@ void flux_solver_hydro_adi::PtoU(const double* p, double* u, const double g)
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int flux_solver_hydro_adi::UtoP(const double *u, double *p, const double g)
 {
@@ -414,6 +457,12 @@ int flux_solver_hydro_adi::UtoP(const double *u, double *p, const double g)
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void flux_solver_hydro_adi::PUtoFlux(const double *p, const double *u, double *f)
 {
 #ifdef FUNCTION_ID
@@ -429,6 +478,12 @@ void flux_solver_hydro_adi::PUtoFlux(const double *p, const double *u, double *f
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void flux_solver_hydro_adi::UtoFlux(const double *u, double *f, const double g)
 {
 #ifdef FUNCTION_ID
@@ -443,5 +498,11 @@ void flux_solver_hydro_adi::UtoFlux(const double *u, double *f, const double g)
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 

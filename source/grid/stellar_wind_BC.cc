@@ -46,6 +46,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -145,7 +146,7 @@ int stellar_wind::add_source(
   // Mdot and Vinf are passed to the function in Msun/yr and km/s,
   // but are stored internally in cgs units.
   //
-  ws->Mdot  = mdot *GS.Msun()/GS.s_per_yr();
+  ws->Mdot  = mdot *pconst.Msun()/pconst.year();
   ws->Vinf  = vinf *1.0e5;
 
   ws->Tw    = temp;
@@ -164,7 +165,7 @@ int stellar_wind::add_source(
   // Make sure the source position is compatible with the geometry!
   //
   if (SimPM.coord_sys==COORD_SPH) {
-    if (!GS.equalD(ws->dpos[Rsph],0.0))
+    if (!pconst.equalD(ws->dpos[Rsph],0.0))
       rep.error("Spherical symmetry but source not at origin!",
                 ws->dpos[Rsph]);
   }
@@ -172,7 +173,7 @@ int stellar_wind::add_source(
     //
     // Axisymmetry
     //
-    if (!GS.equalD(ws->dpos[Rcyl],0.0))
+    if (!pconst.equalD(ws->dpos[Rcyl],0.0))
       rep.error("Axisymmetry but source not at R=0!",ws->dpos[Rcyl]);
   }
 
@@ -296,7 +297,7 @@ void stellar_wind::set_wind_cell_reference_state(
     // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.27 (NEUTRAL).
     // ******************************************************************************
     //
-    wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
+    wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
     wc->p[PG]*= exp((SimPM.gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
   }
@@ -322,7 +323,7 @@ void stellar_wind::set_wind_cell_reference_state(
     // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
     // ******************************************************************************
     //
-    wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
+    wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
     wc->p[PG]*= exp((SimPM.gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
   }
@@ -390,7 +391,7 @@ void stellar_wind::set_wind_cell_reference_state(
   else {
     // appropriate for a neutral medium.
     wc->p[PG] = max(wc->p[PG], 
-      SimPM.EP.MinTemperature*wc->p[RO]*GS.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/GS.m_p());
+      SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 #ifdef TESTING
@@ -542,7 +543,7 @@ void stellar_wind::get_src_Mdot(
         double *x     ///< mdot (output)
         )
 {
-  *x = wlist[id]->Mdot *GS.s_per_yr()/GS.Msun();
+  *x = wlist[id]->Mdot *pconst.year()/pconst.Msun();
 }
 
 
@@ -875,10 +876,10 @@ int stellar_wind_evolution::add_evolving_source(
   // years, but everything else is in seconds.  Note that the global SWP struct
   // still has times in years though.
   //
-  temp->offset = time_offset*GS.s_per_yr()/t_scalefactor; // now in seconds
-  temp->tstart = t[0]       *GS.s_per_yr(); // now in seconds (already scaled)
-  temp->tfinish= t[Nspl-1]  *GS.s_per_yr(); // now in seconds (already scaled)
-  temp->update_freq = update_freq*GS.s_per_yr()/t_scalefactor; // now in seconds
+  temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
+  temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
+  temp->tfinish= t[Nspl-1]  *pconst.year(); // now in seconds (already scaled)
+  temp->update_freq = update_freq*pconst.year()/t_scalefactor; // now in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
   cout <<"\t\t tstart="<<temp->tstart;
@@ -894,19 +895,19 @@ int stellar_wind_evolution::add_evolving_source(
   //
   double mdot=0.0, vinf=0.0, Twind=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
-        GS.equalD(temp->tstart, t_now))
+        pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
     temp->is_active = true;
     //
     // Get the current values for mdot, vinf, Teff, and setup a wind
     // source using the constant-wind function.
     //
-    //interpolate.splint(t, Tf, Tf2, Nspl, t_now/GS.s_per_yr(), &Twind);
-    //interpolate.splint(t, md, md2, Nspl, t_now/GS.s_per_yr(), &mdot);
-    //interpolate.splint(t, vi, vi2, Nspl, t_now/GS.s_per_yr(), &vinf);
-    interpolate.root_find_linear(t, Tf, Nspl, t_now/GS.s_per_yr(), &Twind);
-    interpolate.root_find_linear(t, md, Nspl, t_now/GS.s_per_yr(), &mdot);
-    interpolate.root_find_linear(t, vi, Nspl, t_now/GS.s_per_yr(), &vinf);
+    //interpolate.splint(t, Tf, Tf2, Nspl, t_now/pconst.year(), &Twind);
+    //interpolate.splint(t, md, md2, Nspl, t_now/pconst.year(), &mdot);
+    //interpolate.splint(t, vi, vi2, Nspl, t_now/pconst.year(), &vinf);
+    interpolate.root_find_linear(t, Tf, Nspl, t_now/pconst.year(), &Twind);
+    interpolate.root_find_linear(t, md, Nspl, t_now/pconst.year(), &mdot);
+    interpolate.root_find_linear(t, vi, Nspl, t_now/pconst.year(), &vinf);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -922,9 +923,9 @@ int stellar_wind_evolution::add_evolving_source(
   // Need to convert units.  add_source expects mdot in msun/yr,
   // vinf in km/s, and Twind in K.
   //
-  mdot = exp(GS.ln10()*mdot);
-  vinf = exp(GS.ln10()*vinf) /1.0e5;
-  Twind = exp(GS.ln10()*Twind);
+  mdot = exp(pconst.ln10()*mdot);
+  vinf = exp(pconst.ln10()*vinf) /1.0e5;
+  Twind = exp(pconst.ln10()*Twind);
   //
   // Now add source using constant wind version.
   //
@@ -982,19 +983,19 @@ void stellar_wind_evolution::update_source(
   // Now we update Mdot, Vinf, Teff by spline interpolation.
   //
   double mdot=0.0, vinf=0.0, Twind=0.0;
-  //interpolate.splint(wd->t, wd->Teff, wd->Teff2, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
-  //interpolate.splint(wd->t, wd->mdot, wd->mdot2, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
-  //interpolate.splint(wd->t, wd->vinf, wd->vinf2, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
-  interpolate.root_find_linear(wd->t, wd->Teff, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
-  interpolate.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
-  interpolate.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
+  //interpolate.splint(wd->t, wd->Teff, wd->Teff2, wd->Nspl, t_now/pconst.year(), &Twind);
+  //interpolate.splint(wd->t, wd->mdot, wd->mdot2, wd->Nspl, t_now/pconst.year(), &mdot);
+  //interpolate.splint(wd->t, wd->vinf, wd->vinf2, wd->Nspl, t_now/pconst.year(), &vinf);
+  interpolate.root_find_linear(wd->t, wd->Teff, wd->Nspl, t_now/pconst.year(), &Twind);
+  interpolate.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/pconst.year(), &mdot);
+  interpolate.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/pconst.year(), &vinf);
   //
   // Assign new values to wd->ws (the wind source struct), converting
   // from log10 to actual values, and also unit conversions.
   //
-  wd->ws->Mdot = exp(GS.ln10()*mdot) *GS.Msun()/GS.s_per_yr();  // this was log10(msun/yr)
-  wd->ws->Vinf = exp(GS.ln10()*vinf);  // this is in log10(cm/s) already.
-  wd->ws->Tw   = exp(GS.ln10()*Twind); // This is in log10(K).
+  wd->ws->Mdot = exp(pconst.ln10()*mdot) *pconst.Msun()/pconst.year();  // this was log10(msun/yr)
+  wd->ws->Vinf = exp(pconst.ln10()*vinf);  // this is in log10(cm/s) already.
+  wd->ws->Tw   = exp(pconst.ln10()*Twind); // This is in log10(K).
 
   //cout <<"updating source: updated [mdot,vinf,Tw]=[";
   //cout <<wd->ws->Mdot<<", "<<wd->ws->Vinf<<", "<<wd->ws->Tw<<"]\n";

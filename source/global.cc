@@ -65,6 +65,8 @@
 ///    Moved memory management to tools/mem_manage.h.
 /// - 2015.01.26 JM: Removed ParallelParams class
 ///    (to sim_control_MPI.cpp), and COMMs class stuff.
+/// - 2015.03.10 JM: Removed GeneralStuff class, to constants.h and
+///    other files.
 
 #include <iostream>
 #include <fstream>
@@ -83,7 +85,7 @@ using namespace std;
 class SimParams SimPM;
 class JetParams JP;
 class Units uc;
-class GeneralStuff GS;
+//class GeneralStuff GS;
 //class stellar_wind SW;
 struct stellarwind_list SWP;
 
@@ -213,31 +215,10 @@ class cell_interface CI;
 
 
 
-//------------------------------------------------
-//--- General Stuff Class ------------------------
-
-GeneralStuff::GeneralStuff() {}
-
-GeneralStuff::~GeneralStuff() {}
-
-bool GeneralStuff::equalD(const double a, const double b)
-{
-  if(a==b) return(true);
-  if(fabs(a)+fabs(b)<TINYVALUE) {
-    cout <<"tiny numbers in equalD(a,b); a,b <1.e-100... a="<<a<<", b="<<b<<"; returning true.\n";
-    return(true);
-  }
-  if( (fabs(a-b)/(fabs(a)+fabs(b)+TINYVALUE)) <SMALLVALUE) return(true); // true is 1
-  else return(false); // false is zero.
-}
-
-
-// ##################################################################
-// ##################################################################
 
 
 
-double GeneralStuff::idistance(const int *p1, ///< position 1
+double idistance(const int *p1, ///< position 1
 			       const int *p2, ///< position 2
 			       const int nd     ///< number of spatial dimensions.
 			       )
@@ -282,7 +263,7 @@ double GeneralStuff::idistance(const int *p1, ///< position 1
 
 
 
-double GeneralStuff::distance(const double *p1, ///< position 1
+double distance(const double *p1, ///< position 1
 			      const double *p2, ///< position 2
 			      const int nd     ///< number of spatial dimensions.
 			      )

@@ -23,6 +23,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -32,6 +33,12 @@
 using namespace std;
 
    
+
+// ##################################################################
+// ##################################################################
+
+
+
 Integrator_Base::Integrator_Base()
 {
   // parameters are from Numerical Recipes in C (1992), p717, sec.16.2.
@@ -76,6 +83,12 @@ Integrator_Base::Integrator_Base()
   int_nvar =0;
 }
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 Integrator_Base::~Integrator_Base()
 {
   k1 = mem.myfree(k1);
@@ -85,6 +98,12 @@ Integrator_Base::~Integrator_Base()
   k5 = mem.myfree(k5);
   k6 = mem.myfree(k6);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int Integrator_Base::Set_Nvar(int nv)
 {
@@ -103,6 +122,12 @@ int Integrator_Base::Set_Nvar(int nv)
   k6 = mem.myalloc(k6, int_nvar);
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int Integrator_Base::Int_Euler(const int nv,   ///< number of elements in P array.
 			       const double *p0, ///< value of P at initial value of t.
@@ -128,7 +153,7 @@ int Integrator_Base::Int_Euler(const int nv,   ///< number of elements in P arra
     for (int v=0;v<int_nvar;v++) pf[v] += h*ptemp[v];
     t += h;
   }
-  if (!GS.equalD(t,t0+dt)) {
+  if (!pconst.equalD(t,t0+dt)) {
     cout.setf( ios_base::scientific,ios_base::floatfield ); cout.precision(12);
     cout <<"t: "<< t<<" dt: "<<dt<<" t0: "<<t0<<" h: "<<h<<"\t eps: "<<(t-t0-dt)/(t+t0+dt)<<"\n";
     rep.error("Int_Euler coding error, h too small??",t-t0+dt);
@@ -137,14 +162,21 @@ int Integrator_Base::Int_Euler(const int nv,   ///< number of elements in P arra
   return err;
 }
 
-int Integrator_Base::Int_DumbAdaptive_Euler(const int nv,     ///< number of elements in P array.
-					    const double *p0, ///< value of P at initial value of t.
-					    const double t0,  ///< initial value of t.
-					    const double dt,  ///< Total step dt to take.
-					    const double errtol, ///< error tolerance per step.
-					    double *pf,       ///< pointer to final P value.
-					    double *tf        ///< pointer to final t value.
-					    )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int Integrator_Base::Int_DumbAdaptive_Euler(
+      const int nv,     ///< number of elements in P array.
+      const double *p0, ///< value of P at initial value of t.
+      const double t0,  ///< initial value of t.
+      const double dt,  ///< Total step dt to take.
+      const double errtol, ///< error tolerance per step.
+      double *pf,       ///< pointer to final P value.
+      double *tf        ///< pointer to final t value.
+      )
 {
   if (int_nvar!=nv) {
     cerr <<"Integrator_Base() nvar not equal to state vector length.\n";
@@ -193,6 +225,12 @@ int Integrator_Base::Int_DumbAdaptive_Euler(const int nv,     ///< number of ele
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int Integrator_Base::Step_RK4(const int nv,   ///< number of elements in P array.
 			      const double *p0, ///< value of P at initial value of t.
 			      const double t0,  ///< initial value of t.
@@ -233,6 +271,12 @@ int Integrator_Base::Step_RK4(const int nv,   ///< number of elements in P array
 
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int Integrator_Base::Step_RK5CK(const int nv,   ///< number of elements in P array.
 				const double *p0, ///< value of y at initial value of t
@@ -345,6 +389,12 @@ int Integrator_Base::Step_RK5CK(const int nv,   ///< number of elements in P arr
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 #define BISECTION_STEPPER
 int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P array.
@@ -478,6 +528,12 @@ int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P a
   return rval;
 }
  
+
+// ##################################################################
+// ##################################################################
+
+
+
 int Integrator_Base::Int_Adaptive_RKCK(const int nv,   ///< number of elements in P array.
 				       const double *p0, ///< initial state vector.
 				       const double t0,  ///< initial time
@@ -528,7 +584,7 @@ int Integrator_Base::Int_Adaptive_RKCK(const int nv,   ///< number of elements i
     else {
       err=ct;
       cout <<"integration took too many steps!!! ct=err="<<ct<<"\t"<<err<<"\n";
-      //if (GS.equalD(t,*tf)) {
+      //if (pconst.equalD(t,*tf)) {
       //        cout<<"took too many steps, but got to end of step, so returning normally!\n";
       //	err=0;
       //}
@@ -540,6 +596,12 @@ int Integrator_Base::Int_Adaptive_RKCK(const int nv,   ///< number of elements i
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
   
@@ -598,6 +660,12 @@ int Integrator_Base::Int_Iterative_FC(const int nv,   ///< number of elements in
   if (nc>Nmax) return nc;
   else return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int Integrator_Base::Int_Subcycle_BDF(const int nv,   ///< number of elements in P array.
 				      double *p0,   ///< value of P at initial value of t.
@@ -660,3 +728,9 @@ int Integrator_Base::Int_Subcycle_BDF(const int nv,   ///< number of elements in
   if (nc>Nmax) return nc;
   else return err;
 }
+
+// ##################################################################
+// ##################################################################
+
+
+

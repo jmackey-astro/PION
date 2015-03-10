@@ -40,6 +40,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 
 #include "Riemann_solvers/riemann.h"
 #include <iostream>
@@ -528,8 +529,8 @@ int riemann_Euler::JMs_riemann_solve(const double *l,
   // [DEBUGGING] Check that we haven't altered rs_left or rs_right!
   //
   // for (int v=0; v<rs_nvar; v++) {
-  //   if (!GS.equalD(l[v],rs_left[v] )) rep.error("changed  left state vector!",v);
-  //   if (!GS.equalD(r[v],rs_right[v])) rep.error("changed right state vector!",v);
+  //   if (!pconst.equalD(l[v],rs_left[v] )) rep.error("changed  left state vector!",v);
+  //   if (!pconst.equalD(r[v],rs_right[v])) rep.error("changed right state vector!",v);
   // }
 
 #ifdef FUNCTION_ID

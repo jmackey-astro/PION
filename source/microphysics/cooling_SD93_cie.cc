@@ -37,6 +37,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -625,6 +626,6 @@ double cooling_function_SD93CIE::cooling_rate_SD93CIE(double T
     interpolate.splint(Tarray, Larray, L2array, Nspl, T, &rate);
   }
 
-  return exp(GS.ln10()*rate);
+  return exp(pconst.ln10()*rate);
 }
 

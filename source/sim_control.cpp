@@ -148,6 +148,7 @@
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
+#include "constants.h"
 
 #include "sim_control.h"
 
@@ -1032,7 +1033,7 @@ int sim_control_fixedgrid::output_data(
   // then return.
   //
   else if (SimPM.op_criterion==1) {
-    if (!GS.equalD(SimPM.simtime,SimPM.next_optime) && (SimPM.maxtime==false))
+    if (!pconst.equalD(SimPM.simtime,SimPM.next_optime) && (SimPM.maxtime==false))
       return 0;
     else 
       // we are to output data, so advance the 'next' counter and continue.
@@ -1198,7 +1199,7 @@ int sim_control_fixedgrid::setup_evolving_RT_sources()
         //
         // Rescale time to seconds
         //
-        istar->time[i] *= GS.s_per_yr();
+        istar->time[i] *= pconst.year();
         
         //
         // For ionisation rate, we need to rescale the Blackbody luminosity so
@@ -1210,19 +1211,19 @@ int sim_control_fixedgrid::setup_evolving_RT_sources()
         // factor:
         //
         if (istar->Log_T[i]<4.55555) {
-          //cout <<"L(BB) ="<<exp(GS.ln10()*istar->Log_L[i])<<", T=";
-          //cout <<exp(GS.ln10()*istar->Log_T[i])<<", scale-factor=";
-          //cout << exp(GS.ln10()*(9.0*istar->Log_T[i] -41.0));
+          //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
+          //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
+          //cout << exp(pconst.ln10()*(9.0*istar->Log_T[i] -41.0));
           istar->Log_L[i] += 9.0*istar->Log_T[i] -41.0;
-          //cout <<", new L = "<<exp(GS.ln10()*istar->Log_L[i])<<"\n";
+          //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
         }
         //
         // calculate radius from L=4.pi.R^2.sigma.T^4 (I want to get rid of
         // this altogether soon).
         //
         istar->Log_R[i] =
-          0.5*(istar->Log_L[i]-4.0*istar->Log_T[i]+log10(GS.Lsun()/
-              (4.0*M_PI*GS.StefanBoltzmannConst()))) -log10(GS.Rsun());
+          0.5*(istar->Log_L[i]-4.0*istar->Log_T[i]+log10(pconst.Lsun()/
+              (4.0*M_PI*pconst.StefanBoltzmannConst()))) -log10(pconst.Rsun());
 
         //cout <<istar->time[i]<<"\t"<< istar->Log_L[i] <<"\t"<< istar->Log_T[i] <<"\t"<< istar->Log_R[i] <<"\t"<< istar->Log_V[i] <<"\n";
         i++;
@@ -1309,10 +1310,10 @@ int sim_control_fixedgrid::update_evolving_RT_sources()
     //
     // Now convert units (Radius is ok, but all others need conversion).
     //
-    Lnow = exp(GS.ln10()*(Lnow))*GS.Lsun();
-    Tnow = exp(GS.ln10()*(Tnow));
-    Rnow = exp(GS.ln10()*(Rnow));
-    Vnow = exp(GS.ln10()*(Vnow));
+    Lnow = exp(pconst.ln10()*(Lnow))*pconst.Lsun();
+    Tnow = exp(pconst.ln10()*(Tnow));
+    Rnow = exp(pconst.ln10()*(Rnow));
+    Vnow = exp(pconst.ln10()*(Vnow));
 
     //
     // If L or T change by more than 1% then update them; otherwise leave as they are.

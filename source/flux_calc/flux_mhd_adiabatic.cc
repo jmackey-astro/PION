@@ -43,8 +43,15 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #include "flux_mhd_adiabatic.h"
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi(
        const int nv, ///< Number of variables in state vector
@@ -71,12 +78,24 @@ flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 flux_solver_mhd_ideal_adi::~flux_solver_mhd_ideal_adi()
 {
 #ifdef TESTING
   cout <<"flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi()  destructor.\n";
 #endif
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int flux_solver_mhd_ideal_adi::inviscid_flux(
       const cell *Cl, ///< Left state cell pointer
@@ -183,7 +202,7 @@ int flux_solver_mhd_ideal_adi::inviscid_flux(
       diff += fabs(Pl[v] -l[v]);
       diff += fabs(Pr[v]-r[v]);
     }
-    if (!GS.equalD(diff,0.0)) { 
+    if (!pconst.equalD(diff,0.0)) { 
       cout <<"************ dir="<<eq_dir<<" *************************************\n";
       rep.printVec("pstar: ",pstar,eq_nvar);
       rep.printVec("left : ",Pl ,eq_nvar);
@@ -216,6 +235,12 @@ int flux_solver_mhd_ideal_adi::inviscid_flux(
   //
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int flux_solver_mhd_ideal_adi::AVFalle(const double *Pleft,
 				       const double *Pright,
@@ -386,6 +411,12 @@ int flux_solver_mhd_ideal_adi::AVFalle(const double *Pleft,
   return(0);  
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 #ifdef LAPIDUS_VISCOSITY_ENABLED
 int flux_solver_mhd_ideal_adi::AVLapidus(const cell *Cl, ///< Left state cell pointer
 					 const cell *Cr, ///< Right state cell pointer
@@ -438,6 +469,12 @@ int flux_solver_mhd_ideal_adi::AVLapidus(const cell *Cl, ///< Left state cell po
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 
 // **********************************************************************************
 // flux_solver_mhd_mixedGLM_adi class, for the Dedner-GLM divergence cleaning method.
@@ -473,6 +510,12 @@ flux_solver_mhd_mixedGLM_adi::flux_solver_mhd_mixedGLM_adi(const int nv,
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
 flux_solver_mhd_mixedGLM_adi::~flux_solver_mhd_mixedGLM_adi()
 {
 #ifdef FUNCTION_ID
@@ -484,23 +527,22 @@ flux_solver_mhd_mixedGLM_adi::~flux_solver_mhd_mixedGLM_adi()
 #endif //FUNCTION_ID
 }
 
-int flux_solver_mhd_mixedGLM_adi::inviscid_flux(const cell *Cl,
-     ///< Left state cell pointer
-						const cell *Cr,
-     ///< Right state cell pointer
-						const double *Pl,
-     ///< Left Primitive state vector.
-						const double *Pr,
-     ///< Right Primitive state vector.
-						double *flux,
-     ///< Resultant Flux state vector.
-						double *pstar,
-     ///< State vector at interface.
-						const int solve_flag,
-     ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
-						const double g
-     ///< Gas constant gamma.
-						)
+
+// ##################################################################
+// ##################################################################
+
+
+
+int flux_solver_mhd_mixedGLM_adi::inviscid_flux(
+      const cell *Cl, ///< Left state cell pointer
+      const cell *Cr, ///< Right state cell pointer
+      const double *Pl, ///< Left Primitive state vector.
+      const double *Pr, ///< Right Primitive state vector.
+      double *flux, ///< Resultant Flux state vector.
+      double *pstar, ///< State vector at interface.
+      const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
+      const double g ///< Gas constant gamma.
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_mhd_mixedGLM_adi::inviscid_flux ...starting.\n";
@@ -595,4 +637,10 @@ int flux_solver_mhd_mixedGLM_adi::inviscid_flux(const cell *Cl,
 #endif //FUNCTION_ID
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
