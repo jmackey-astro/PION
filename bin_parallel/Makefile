@@ -75,7 +75,8 @@ VPATH = \
 ../source/tools
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
 
 #######################
 ## COMPILATION RULES ##
@@ -303,7 +304,8 @@ endif
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
-        timer.o \
+        timer.o  interpolate.o \
+        constants.o \
         mainMPI.o uniform_grid.o sim_control.o global.o                      \
         MCMD_control.o \
         setup_fixed_grid.o setup_fixed_grid_MPI.o \
@@ -334,7 +336,8 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
-        timer.o \
+        timer.o  interpolate.o \
+        constants.o \
         icgen.o uniform_grid.o global.o readparams.o \
         MCMD_control.o \
         setup_fixed_grid.o setup_fixed_grid_MPI.o \
@@ -408,6 +411,8 @@ reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
+constants.o: constants.cpp ${GLOBAL}
 
 mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
 global.o: global.cc ${GLOBAL}

@@ -19,6 +19,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -306,8 +307,8 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
   do {
     //CI.get_dpos(c,pos);
 
-    c->P[RO] = 44.0*GS.m_p();      // Pure H with n=44/cm3.
-    c->P[PG] = 44.0*GS.kB()*10.0; // 10K neutral gas (pure H).
+    c->P[RO] = 44.0*pconst.m_p();      // Pure H with n=44/cm3.
+    c->P[PG] = 44.0*pconst.kB()*10.0; // 10K neutral gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM.ntracer; v++)
       c->P[SimPM.ftr+v] = 0.0;
@@ -316,7 +317,7 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
 
   if (id==3) {
     double lambda = 0.125*SimPM.Range[YY];
-    double A = 0.75 *sqrt(GS.kB()*1.0e4/GS.m_p());
+    double A = 0.75 *sqrt(pconst.kB()*1.0e4/pconst.m_p());
     double x0 = SimPM.Xmin[XX] +0.12*SimPM.Range[XX];
     double sig= 0.05*SimPM.Range[XX];
     c=ggg->FirstPt();
@@ -354,8 +355,8 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   do {
     //CI.get_dpos(c,pos);
 
-    c->P[RO] = 50.0*GS.m_p();      // From the test document.
-    c->P[PG] = 50.0*GS.kB()*1000.0; // Just pick some temperature...
+    c->P[RO] = 50.0*pconst.m_p();      // From the test document.
+    c->P[PG] = 50.0*pconst.kB()*1000.0; // Just pick some temperature...
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM.ntracer; v++)
       c->P[SimPM.ftr+v] = 0.0;
@@ -372,7 +373,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     //
     double radius = 3.086e18;
     double dist=0.0;
-    double rho_cl = 1000.0*GS.m_p();
+    double rho_cl = 1000.0*pconst.m_p();
     double cl_centre[SimPM.ndim];
     cl_centre[XX] = 1.92*3.086e18;
     for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
@@ -380,7 +381,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
-      dist = GS.distance(cl_centre,pos,SimPM.ndim);
+      dist = gg->distance(cl_centre,pos);
       if (dist<radius)
         c->P[RO] = rho_cl;
     } while ( (c=ggg->NextPt(c)) !=0);
@@ -393,7 +394,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     // rho_cloud=1000*m_p, and core radius r_c=0.5pc.
     //
     double r_core = 0.5*3.086e18;
-    double rho_cl = 1000.0*GS.m_p(), rho_cell=0.0;
+    double rho_cl = 1000.0*pconst.m_p(), rho_cell=0.0;
     double cl_centre[SimPM.ndim];
     cl_centre[XX] = 1.92*3.086e18;
     for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
@@ -405,7 +406,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
       // calculate core density, and take max. of this value and ISM.
       //
       CI.get_dpos(c,pos);
-      dist = GS.distance(cl_centre,pos,SimPM.ndim);
+      dist = gg->distance(cl_centre,pos);
       rho_cell = rho_cl*r_core*r_core/(r_core*r_core +dist*dist);
       c->P[RO] = std::max(c->P[RO],rho_cell);
     } while ( (c=ggg->NextPt(c)) !=0);
@@ -443,8 +444,8 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
     //
     // set general ISM density, pressure, and ion fraction.
     //
-    c->P[RO] = density*GS.m_p();      // Pure H with n=0.5/cm3.
-    c->P[PG] = 2.0*c->P[RO]*GS.kB()*1.0e4/GS.m_p(); // 10000K ionised gas (pure H).
+    c->P[RO] = density*pconst.m_p();      // Pure H with n=0.5/cm3.
+    c->P[PG] = 2.0*c->P[RO]*pconst.kB()*1.0e4/pconst.m_p(); // 10000K ionised gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM.ntracer; v++)
       c->P[SimPM.ftr+v] = 1.0; // fully ionised

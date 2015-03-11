@@ -33,6 +33,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -406,7 +407,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // interpolation.
     //
     CI.get_dpos(cpt,cell_pos);
-    d = GS.distance(cell_pos,cloud1,ndim);
+    d = gg->distance(cell_pos,cloud1);
     if (d < edge) {
       cpt->P[RO] = rho1;
       cpt->P[PG] = pg1;
@@ -430,7 +431,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // interpolation.
     //
     CI.get_dpos(cpt,cell_pos);
-    d = GS.distance(cell_pos,cloud2,ndim);
+    d = gg->distance(cell_pos,cloud2);
     if (d < edge) {
       cpt->P[RO] = rho1;
       cpt->P[PG] = pg1;
@@ -625,7 +626,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // Note the radial profile is measured from cloudcentre, not neccessarily
     // centred on the source (srcpos).  cloudcentre is set by (PEC_xpos,PEC_ypos,PEC_zpos).
     //
-    if (!GS.equalD(radial_slope,0.0)) {
+    if (!pconst.equalD(radial_slope,0.0)) {
       dist = gg->distance_vertex2cell(ISM_centre,cpt);
 
       //
@@ -706,7 +707,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
     // Note the radial profile is measured from cloudcentre, not neccessarily
     // centred on the source (srcpos).  cloudcentre is set by (PEC_xpos,PEC_ypos,PEC_zpos).
     //
-    if (!GS.equalD(radial_slope,0.0)) {
+    if (!pconst.equalD(radial_slope,0.0)) {
       dist = gg->distance_vertex2cell(cloudcentre,cpt);
       //
       // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if r>r0

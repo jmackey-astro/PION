@@ -33,6 +33,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING

@@ -42,6 +42,7 @@
 
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 
 #include "global.h"
 #include "grid/uniform_grid.h"
@@ -303,7 +304,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
     }
         }
   else if (G_ndim==3) {
-    if (!GS.equalD(SimPM.Xmin[XX], mpiPM->LocalXmin[XX])) {
+    if (!pconst.equalD(SimPM.Xmin[XX], mpiPM->LocalXmin[XX])) {
 #ifdef TESTING
       cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
 #endif 
@@ -320,7 +321,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   // This is a test problem (double mach reflection) with hard-coded
   // boundaries, and this boundary is along the YN boundary between
   // x=[0,1/6].
-  if ( (!GS.equalD(SimPM.Xmin[YY],mpiPM->LocalXmin[YY])) 
+  if ( (!pconst.equalD(SimPM.Xmin[YY],mpiPM->LocalXmin[YY])) 
        || (mpiPM->LocalXmin[XX]>1./6.) ) {
 #ifdef TESTING
     cout <<"Removing dmr2 bc; bctype = "<<bctype<<"\n";
@@ -349,7 +350,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   // set it to be a parallel boundary.
   for (i=0; i<G_ndim; i++) {
     dir = static_cast<axes>(i);
-    if (!GS.equalD(G_xmin[i], SimPM.Xmin[i])) {
+    if (!pconst.equalD(G_xmin[i], SimPM.Xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
       if      (dir==XX) temp = "XNmpi_";
       else if (dir==YY) temp = "YNmpi_";
@@ -357,7 +358,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
       else rep.error("Bad axis!",dir);
       bctype.replace(2*i*6,6,temp); cout <<"new bctype="<<bctype<<"\n";
     }
-    if (!GS.equalD(G_xmax[i], SimPM.Xmax[i])) {
+    if (!pconst.equalD(G_xmax[i], SimPM.Xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
       if      (dir==XX) temp = "XPmpi_";
       else if (dir==YY) temp = "YPmpi_";
@@ -741,7 +742,7 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
   //
   // Now choose the boundary data associated with boundary we are receiving:
   //
-  class boundary_data *recv_b = 0;
+  struct boundary_data *recv_b = 0;
   recv_b = &BC_bd[static_cast<int>(dir)];
 
   //
@@ -868,7 +869,7 @@ int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
   //
   // Now choose the boundary data associated with boundary we are receiving:
   //
-  class boundary_data *recv_b = 0;
+  struct boundary_data *recv_b = 0;
   recv_b = &BC_bd[static_cast<int>(dir)];
 
   //
@@ -1376,9 +1377,9 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   for (int i=0;i<G_ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);
-    if      ((srcdir[i]==negdir) && (!GS.equalD(G_xmin[i],SimPM.Xmin[i])))
+    if      ((srcdir[i]==negdir) && (!pconst.equalD(G_xmin[i],SimPM.Xmin[i])))
       recv_proc_exists[i]=true;
-    else if ((srcdir[i]==posdir) && (!GS.equalD(G_xmax[i],SimPM.Xmax[i])))
+    else if ((srcdir[i]==posdir) && (!pconst.equalD(G_xmax[i],SimPM.Xmax[i])))
       recv_proc_exists[i]=true;
     else
       recv_proc_exists[i]=false;
@@ -1392,12 +1393,12 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   for (int i=0;i<G_ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);
-    if (srcpos[i]>=G_xmin[i] && (!GS.equalD(mpiPM->LocalXmin[i],SimPM.Xmin[i])) )
+    if (srcpos[i]>=G_xmin[i] && (!pconst.equalD(mpiPM->LocalXmin[i],SimPM.Xmin[i])) )
       send_proc_exists[negdir] = true;
     else 
       send_proc_exists[negdir] = false; // either doesn't exist, or we don't need it.
 
-    if (srcpos[i]<=G_xmax[i] && (!GS.equalD(mpiPM->LocalXmax[i],SimPM.Xmax[i])) )
+    if (srcpos[i]<=G_xmax[i] && (!pconst.equalD(mpiPM->LocalXmax[i],SimPM.Xmax[i])) )
       send_proc_exists[posdir] = true;
     else 
       send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.
@@ -1419,12 +1420,12 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   for (int i=0;i<G_ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);
-    if ( (i_srcpos[i]>G_ixmin[i]) && (!GS.equalD(G_xmin[i],SimPM.Xmin[i])) )
+    if ( (i_srcpos[i]>G_ixmin[i]) && (!pconst.equalD(G_xmin[i],SimPM.Xmin[i])) )
       send_proc_exists[negdir] = true;
     else 
       send_proc_exists[negdir] = false; // either doesn't exist, or we don't need it.
 
-    if ( (i_srcpos[i]<G_ixmax[i]) && (!GS.equalD(G_xmax[i],SimPM.Xmax[i])) )
+    if ( (i_srcpos[i]<G_ixmax[i]) && (!pconst.equalD(G_xmax[i],SimPM.Xmax[i])) )
       send_proc_exists[posdir] = true;
     else 
       send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.

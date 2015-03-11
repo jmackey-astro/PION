@@ -1,6 +1,19 @@
+/// \file inside_sphere.cc
+/// \author Jonathan Mackey
+///
+/// Test if a point is inside a sphere.
+///
+/// Modifications:
+/// - 2015.03.11 JM: tidied up code.
 
-
+#include "constants.h"
 #include "inside_sphere.h"
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 inside_sphere::inside_sphere(double *cen, double r, double size, int N, int nd)
   : sr(r), clen(size), del(size/2.), nint(N), ndim(nd)
@@ -20,12 +33,24 @@ bool inside_sphere::equalD(const double a, const double b)
   else return(false); // false is zero.
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 double inside_sphere::distance(const double *d1, const double *d2, int nd)
 {
   double temp=0.;
   for (int i=0;i<nd;i++) temp+= (d1[i]-d2[i])*(d1[i]-d2[i]);
   return(sqrt(temp));
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 double inside_sphere::volumeFraction(cell *cpt)
@@ -94,4 +119,10 @@ double inside_sphere::volumeFraction(cell *cpt)
   //  cout <<"\t VOL FRAC: "<<frac<<endl;
   return(frac);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

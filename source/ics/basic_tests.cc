@@ -1,11 +1,12 @@
-/** \file basic_tests.cc
- * 
- * File for setting up some basic test problems which won't be ever used for
- * actual physics sims, just for testing the code.
- *
- * 2009-12-07 JM: added switch in calling FieldLoop test to allow it to 
- * have a non-zero Vz, which provides a more stringent test.
- * */
+/// \file basic_tests.cc
+/// \author Jonathan Mackey
+/// 
+/// File for setting up some basic test problems which won't be ever used for
+/// actual physics sims, just for testing the code.
+///
+/// 2009-12-07 JM: added switch in calling FieldLoop test to allow it to 
+/// have a non-zero Vz, which provides a more stringent test.
+///
 ///
 /// 2010.10.05 JM: Added ambient medium parameters to be read from paramter file
 ///   for the "uniform" initial conditions.
@@ -18,6 +19,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -260,7 +262,7 @@ int IC_basic_tests::setup_uniformgrid(
   // Check that the radial slope is non-zero.  If it is zero, then
   // switch off the core.
   //
-  if (use_core && GS.equalD(radial_slope, 0.0)) use_core=false;
+  if (use_core && pconst.equalD(radial_slope, 0.0)) use_core=false;
 
 
   cout <<"\t\tAssigning values to data.\n";
@@ -319,7 +321,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   int ndim=gg->Ndim(); //int nvar=gg->Nvar();
   if(ndim!=2 && ndim!=3) rep.error("Bad ndim in setup_sinewave_velocity()",ndim);
 
-//   if (ndim==2 && !GS.equalD(thetaXZ,M_PI/2.)) {
+//   if (ndim==2 && !pconst.equalD(thetaXZ,M_PI/2.)) {
 //     rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to zero.",0,thetaXZ);
 //     thetaXZ=M_PI/2.;
 //   }
@@ -409,7 +411,7 @@ int IC_basic_tests::setup_advection()
   int ndim=gg->Ndim(); //int nvar=gg->Nvar();
   if(ndim!=2 && ndim!=3) rep.error("Bad ndim in setupNDadvectionHD",ndim);
 
-  if (ndim==2 && !GS.equalD(thetaXZ,M_PI/2.)) {
+  if (ndim==2 && !pconst.equalD(thetaXZ,M_PI/2.)) {
     rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to zero.",0,thetaXZ);
     thetaXZ=M_PI/2.;
   }
@@ -569,7 +571,7 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
     c->P[VY] = vel/2.0; //vel*cos(flow_angle);
     c->P[VZ] = vz; // If vz!=0, this tests if B_z gets contaminated.
     CI.get_dpos(c,dpos);
-    dist = GS.distance(centre,dpos,ndim);
+    dist = gg->distance(centre,dpos);
 
     //
     // poor man's b-field (has divB errors)
@@ -627,11 +629,11 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
 // ##################################################################
 
 
-
-/** \brief Set up Orszag-Tang Vortex problem (from Dai & Woodward 1998,APJ,494,317)
- * This assumes the grid is unit size in both directions, so it automatically works
- * in serial and in parallel.
- */
+///
+/// Set up Orszag-Tang Vortex problem (from Dai & Woodward 1998,APJ,494,317)
+/// This assumes the grid is unit size in both directions, so it automatically works
+/// in serial and in parallel.
+///
 int IC_basic_tests::setup_OrszagTang()
 {
   // set plasma beta parameter (ratio of gas to magnetic pressure)

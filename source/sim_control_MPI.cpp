@@ -58,6 +58,7 @@
 #include "tools/command_line_interface.h"
 #include "tools/reporting.h"
 #include "tools/timer.h"
+#include "constants.h"
 
 #include "MCMD_control.h"
 #include "sim_control_MPI.h"
@@ -475,7 +476,7 @@ int sim_control_fixedgrid_pllel::calc_timestep(
   // do it when testing.
   //
   t_dyn=SimPM.dt; t_mp = COMM->global_operation_double("MIN", t_dyn);
-  if (!GS.equalD(t_dyn,t_mp))
+  if (!pconst.equalD(t_dyn,t_mp))
     rep.error("synchonisation trouble in timesteps!",t_dyn-t_mp);
 #endif // TESTING
 

@@ -1,23 +1,31 @@
-/** \file radiative_shock.cc
- * 
- * File for setting up radiative shock test problems.
- *
- * 2010-04-09 JM: added support for upstream and downstream tracer
- * variables in the RadiativeShockOutflow case.
- */
-/// 2013.01.11 JM: Added tracer variables for RSH test.
+/// \file radiative_shock.cc
+/// \author Jonathan Mackey
+///
+/// File for setting up radiative shock test problems.
+///
+/// - 2010-04-09 JM: added support for upstream and downstream tracer
+/// variables in the RadiativeShockOutflow case.
+/// - 2013.01.11 JM: Added tracer variables for RSH test.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
 #include "icgen.h"
 #include <sstream>
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 IC_radiative_shock::IC_radiative_shock() 
 {
@@ -26,10 +34,24 @@ IC_radiative_shock::IC_radiative_shock()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 IC_radiative_shock::~IC_radiative_shock()
 {
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
 int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
@@ -113,6 +135,13 @@ int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to par
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 int IC_radiative_shock::setup_RadiativeShock()
 {
 
@@ -120,7 +149,7 @@ int IC_radiative_shock::setup_RadiativeShock()
   cout <<", rho="<<rho0<<", T="<<T0<<" ...\n";
   double mu = 1.27; //1.2; // mean mass per particle -- rough guess, good for neutral H, He.
   double x=0.101; // initial ionisation fraction...
-  double pg = rho0 *(1. + x)*GS.kB() *T0 /mu /GS.m_p();
+  double pg = rho0 *(1. + x)*pconst.kB() *T0 /mu /pconst.m_p();
 
   //
   // Tracer values: upstream and downstream (only upstream used for Radiative Shock)
@@ -155,6 +184,13 @@ int IC_radiative_shock::setup_RadiativeShock()
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 int IC_radiative_shock::setup_OutflowRadiativeShock()
 {
   cout <<"\t\tSetting up OUTFLOW radiative shock problem with v="<<vsh;
@@ -162,7 +198,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
 
   double mu = 1.22; // mean mass per particle -- rough guess, good for neutral H, He.
   //mu /=2.0; // for ionised gas.
-  double pg = rho0 *GS.kB() *T0 /mu /GS.m_p();
+  double pg = rho0 *pconst.kB() *T0 /mu /pconst.m_p();
   double xboundary = (SimPM.Xmax[XX]-SimPM.Xmin[XX])/5.;
   if (vsh<=1.01e7) xboundary*=2.5; //stable shock should be near centre of grid.
   double range = (SimPM.Xmax[XX]-SimPM.Xmin[XX])*5.0/SimPM.NG[XX];
@@ -182,7 +218,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   if (str!="") divisor = atof(str.c_str());
   else         divisor = 3.0;
   if (eqns==2) rho1 /= divisor;
-  double pg1  = rho1 *GS.kB() *T0 /mu /GS.m_p();
+  double pg1  = rho1 *pconst.kB() *T0 /mu /pconst.m_p();
 
   //
   // Tracer values: upstream and downstream
@@ -265,6 +301,13 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   } while ((c=gg->NextPt(c))!=0);
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 

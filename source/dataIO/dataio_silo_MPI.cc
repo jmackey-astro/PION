@@ -49,6 +49,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -59,6 +60,12 @@
 #include "dataio_silo.h"
 #include <cstring>
 #include <sstream>
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 dataio_silo_pllel::dataio_silo_pllel(
       class MCMDcontrol *p
@@ -72,6 +79,12 @@ dataio_silo_pllel::dataio_silo_pllel(
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 dataio_silo_pllel::~dataio_silo_pllel()
 {
 #ifdef TESTING
@@ -79,6 +92,12 @@ dataio_silo_pllel::~dataio_silo_pllel()
 #endif
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
 				  )
@@ -134,6 +153,12 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
 #endif
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 int dataio_silo_pllel::ReadData(
@@ -256,14 +281,14 @@ int dataio_silo_pllel::ReadData(
   //
   // check origin of subgrid is at the right place.
   //
-  if (!GS.equalD(nodex[0],c[XX][0])) rep.error("XX mesh not at right place...",nodex[0]-c[XX][0]);
+  if (!pconst.equalD(nodex[0],c[XX][0])) rep.error("XX mesh not at right place...",nodex[0]-c[XX][0]);
   if (ndim>1)
-    if (!GS.equalD(nodey[0], c[YY][0])) {
+    if (!pconst.equalD(nodey[0], c[YY][0])) {
       cout <<"nodey = "<<nodey[0]<<" and coords[y]= "<<c[YY][0]<<"\n";
       rep.error("YY mesh not at right place...",nodey[0]-c[YY][0]);
     }
   if (ndim>2)
-    if (!GS.equalD(nodez[0], c[ZZ][0]))
+    if (!pconst.equalD(nodez[0], c[ZZ][0]))
       rep.error("ZZ mesh not at right place...",nodez[0]-c[ZZ][0]);
   //
   // this is probably enough checking! -- if all these are right then it should all be right.
@@ -298,6 +323,12 @@ int dataio_silo_pllel::ReadData(
 #endif
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int dataio_silo_pllel::OutputData(const string outfilebase,
@@ -682,11 +713,18 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   return err;
 }
 
-int dataio_silo_pllel::choose_pllel_filename(const string fbase, ///< filebase passed in from main code.
-					     const int igroup,   ///< group_rank (i.e. which file I write to)
-					     const int file_counter,  ///< file counter to use (e.g. timestep).
-					     string &outfile     ///< write filename to this string.
-					     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int dataio_silo_pllel::choose_pllel_filename(
+      const string fbase, ///< filebase passed in from main code.
+      const int igroup,   ///< group_rank (i.e. which file I write to)
+      const int file_counter,  ///< file counter to use (e.g. timestep).
+      string &outfile     ///< write filename to this string.
+      )
 {
   //  long int counter;
   //  if (file_counter<0) counter = 0;
@@ -707,6 +745,12 @@ int dataio_silo_pllel::choose_pllel_filename(const string fbase, ///< filebase p
   temp.str("");
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int dataio_silo_pllel::setup_grid_properties(
         class GridBaseClass *grid ///< pointer to data.
@@ -803,6 +847,12 @@ int dataio_silo_pllel::setup_grid_properties(
 //   return err;
 // }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void dataio_silo_pllel::create_data_arrays()
 {
   // first check if we have the data arrays set up yet.
@@ -840,6 +890,12 @@ void dataio_silo_pllel::create_data_arrays()
 
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Write a mulitmesh adjacency object
@@ -1116,6 +1172,12 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
   return 0;
 }  
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // Write a mulitmesh object
 // 
@@ -1129,6 +1191,12 @@ int dataio_silo_pllel::write_multimesh(DBfile *dbfile, ///< pointer to silo file
   rep.error("don't call me!","write_multimesh");
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Write a MRG tree object
@@ -1426,4 +1494,10 @@ int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
   DBSetDir(dbfile,datadir);
   return err;
 }
+
+// ##################################################################
+// ##################################################################
+
+
+
 #endif // if SILO

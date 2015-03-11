@@ -176,6 +176,7 @@
 
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -317,8 +318,8 @@ mp_explicit_H::mp_explicit_H(
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
   // ----------------------------------------------------------------
-  k_B = GS.kB();  // Boltzmann constant.
-  m_p = GS.m_p(); // Proton mass.
+  k_B = pconst.kB();  // Boltzmann constant.
+  m_p = pconst.m_p(); // Proton mass.
 
   //
   // Set EP to point to SimPM.EP struct passed to constructor.
