@@ -14,6 +14,7 @@
 #include <vector>
 #include "sim_constants.h"
 
+// *******************************************************************
 ///
 /// struct with lots of flags for what extra physics we are using.
 /// 
@@ -72,8 +73,10 @@ struct which_physics {
   ///
   double Metal_MassFrac;
 };
+// *******************************************************************
 
 
+// *******************************************************************
 ///
 /// Star struct, for storing data from a stellar evolution file.
 /// I need to get rid of Rstar, because it is not used, and is in the
@@ -144,11 +147,53 @@ struct rad_sources {
   int Nsources;
   std::vector<struct rad_src_info> sources;
 };
+// *******************************************************************
 
-/** \brief Simulation Parameters Class
- * 
- * This is a holder for various flags and settings for the simulation.
- * */
+
+
+// *******************************************************************
+///
+/// This struct contains global data for a stellar wind source (for
+/// reading and writing to file).  The grid setup functions should
+/// read this struct and set up the appropriate wind boundary.
+///
+struct stellarwind_params {
+  int id;    ///< if we have multiple sources, this identifies them.
+  int type;  ///< what type of stellar wind?  see stellar_wind.h
+  double dpos[MAX_DIM]; ///< position of source (physical coords).
+  double Mdot;  ///< mass loss rate in solar masses per year.
+  double Vinf;  ///< wind terminal velocity in km/s.
+  double Rstar; ///< radius at which to set pressure based on Tstar.
+  double Tstar; ///< stellar temperature (sets pressure at r=Rstar).
+  double tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
+  double radius;
+  ///< Radius out to which boundary condition is imposed (physical).
+  std::string evolving_wind_file; ///< name of file containing evolving wind data.
+  double time_offset;   ///< time offset between wind-data-file and sim-time (YEARS!).
+  double update_freq;   ///< how often to update wind-data from file info (YEARS!).
+  /// Evolution of wind happens this factor faster than normal (for factor>1)
+  /// Should probably only be used for Main Sequence evolution!
+  double t_scalefactor;
+};
+
+struct stellarwind_list {
+  std::vector<struct stellarwind_params *> params; ///< list of params.
+  int Nsources; ///< number of sources.
+};
+
+extern struct stellarwind_list SWP;
+// *******************************************************************
+
+
+
+
+
+// *******************************************************************
+///
+/// \brief Simulation Parameters Class
+/// 
+/// This is a holder for various flags and settings for the simulation.
+///
 class SimParams {
   public:
    SimParams();
@@ -214,6 +259,7 @@ class SimParams {
 };
 
 extern class SimParams SimPM;
+// *******************************************************************
 
 
 

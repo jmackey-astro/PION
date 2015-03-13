@@ -167,29 +167,6 @@ using namespace std;
 ///
 void print_command_line_options(int, char **);
 
-
-//-------------------------------------------------------
-// Defines for integer constants used to describe things.
-//--------------------------------------------------------
-
-#define EQEUL 1  ///< Equation type: 1=Euler equations.
-#define EQMHD 2  ///< Equation type: 2=Ideal MHD equations (Falle, Komissarov, Joarder, 1998). (ONLY GOOD FOR 1D!)
-#define EQGLM 3  ///< Equation type: 3=MHD equations with GLM method for divergence cleaning (Dedner etal, 2002).
-#define EQFCD 4  ///< Equation type: 4=MHD equations with Field-CD method for ensuring divB=0 (Toth,2000). (DON'T USE!!!)
-#define EQEUL_ISO 5 ///< Equation type: 5=Isothermal Hydrodynamics
-#define EQMHD_ISO 6 ///< Equation type: 6=Isothermal MHD
-#define EQGLM_ISO 7 ///< Equation type: 7=Isothermal MHD with Dedner et al. GLM method  for Divergence Cleaning
-#define EQFCD_ISO 8 ///< Equation type: 8=Isothermal MHD with Field-CD method for ensuring divB=0 (Toth,2000).
-/// Equation type: 9=Adiabatic Hydro, integrating INTERNAL and not
-/// total energy.
-#define EQEUL_EINT 9
-
-#define COORD_CRT 1 ///< Coordinates: Cartesian coordinate system.
-#define COORD_CYL 2 ///< Coordinates: Cylindrical coordinate system.
-#define COORD_SPH 3 ///< Coordinates: Spherical coordinate system.
-
-//#define MAX_NTR   5 ///< Maximum number of tracer variables (feel free to expand later!).
-
 ///
 /// The pressure floor for the riemann solver and cell updates. 
 /// (P_G(floor)=refvec[PG]*BASEPG)
@@ -205,116 +182,6 @@ void print_command_line_options(int, char **);
 
 /// Error code for a function which should not be called!
 #define DONT_CALL_ME 99
-
-///
-/// Definitions for cylindrical axes and directions w.r.t. cartesian
-/// ones.
-///
-#define Zcyl  XX
-#define Rcyl  YY
-#define Tcyl  ZZ
-#define ZNcyl  XN
-#define ZPcyl  XP
-#define RNcyl  YN
-#define RPcyl  YP
-#define TNcyl  ZN
-#define TPcyl  ZP
-
-///
-/// Definitions for Spherical coordinate axes and directions w.r.t. cartesian
-/// ones. [R,T,P] stands for [r,theta,phi]
-///
-#define Rsph  XX
-#define Tsph  YY
-#define Psph  ZZ
-#define RNsph  XN
-#define RPsph  XP
-#define TNsph  YN
-#define TPsph  YP
-#define PNsph  ZN
-#define PPsph  ZP
-
-///
-/// Type of Solver:
-///
-#define FLUX_LF       0
-#define FLUX_RSlinear 1
-#define FLUX_RSexact  2
-#define FLUX_RShybrid 3
-#define FLUX_RSroe    4
-#define FLUX_RSroe_pv 5
-#define FLUX_FVS      6
-
-/** \brief Primitive Variables Enum 
- * The code requires that the velocities follow each other in order,
- * and the same for the Magnetic Field.  I'm not sure if it will work 
- * without them being in that order, but I'm writing the code assuming 
- * they are in order.
- */
-enum primitive {
-    RO=0, ///< Density
-    PG=1, ///< Gas pressure
-    VX=2, ///< x-velocity
-    VY=3, ///< y-velocity
-    VZ=4, ///< z-velocity
-    BX=5, ///< x-magnetic field
-    BY=6, ///< y-magnetic field
-    BZ=7, ///< z-magnetic field
-    SI=8  ///< The GLM scalar field, psi.
-};
-/** \brief Conserved Variables Enum */
-enum conserved {
-    RHO=0,  ///< Density
-    ERG=1,  ///< Total Energy
-    MMX=2,  ///< x-momentum
-    MMY=3,  ///< y-momentum
-    MMZ=4,  ///< z-momentum
-    BBX=5,  ///< x-magnetic field
-    BBY=6,  ///< y-magnetic field
-    BBZ=7,  ///< z-magnetic field
-    PSI=8   ///< The GLM scalar field, psi.
-};
-
-/** \brief Enum for each Spatial Dimension. */
-enum axes {
-    XX=0, ///< X-Direction.
-    YY=1, ///< Y-Direction.
-    ZZ=2  ///< Z-Direction.
-};
-
-/** \brief Direction Vectors enum. 
- * This gets used for pointing to elements of arrays,
- * so the six real directions must comprise the numbers
- * zero to five.  They must also be arranged so that e.g.
- * XP = 2*axes.XX +1, XN = 2*axes.XX, and similarly for 
- * Y and Z directions.
- */
-enum direction{
-    NO=-1,   ///< No Direction.
-    XN=0,  ///< Negative x-direction x-
-    XP=1,  ///< Positive x-direction x+
-    YN=2,  ///< Negative y-direction y-
-    YP=3,  ///< Positive y-direction y+
-    ZN=4,  ///< Negative z-direction z-
-    ZP=5   ///< Positive z-direction z+
-}; // {x-,x+,y-,y+,z-,z+}
-
-//
-// Space and Time Integration Order of Accuracy
-//
-#define OA1 1 ///< First Order Space.
-#define OA2 2 ///< Second Order Space.
-
-//
-// Viscosity identifier flags
-//
-#define AV_NONE        0 ///< No artificial viscosity.
-#define AV_FKJ98_1D    1 ///< 1D linear viscosity of Falle, Komissarov, Joarder (1998).
-#define AV_LAPIDUS     2 ///< Lapidus-type viscosity (BROKEN).
-#define AV_HCORRECTION 3 ///< H-correction of Sanders et al. (1998).
-#define AV_HCORR_FKJ98 4 ///< combination of the H-corr + FKJ98 (not needed really).
-#define AV_VonNeuRicht 5 ///< von Neumann & Richtmeyer (1950) multi-D viscosity.
-
 
 
 //
@@ -358,10 +225,10 @@ enum direction{
 
 
 
-
-/** \brief Conversion factors between code units and physical units.  Currently
- * not used, as the code can handle physical units without much trouble.
- * */
+///
+/// Conversion factors between code units and physical units.  Currently
+/// not used, as the code can handle physical units without much trouble.
+///
 class Units {
   public:
    string unitsys; ///< Name of System of Units: code,mks,cgs,esu,etc.
@@ -379,9 +246,10 @@ extern class Units uc; ///< Unit conversion quantities from code to physical uni
 
 
 
-/** \brief If we are running a jet simulations, the physical properties of the
- * jet are stored in this function.
- * */
+///
+/// If we are running a jet simulations, the physical properties of the
+/// jet are stored in this function.
+///
 class JetParams {
   public:
    JetParams();
@@ -398,38 +266,6 @@ extern class JetParams JP;
 // *******************************************************************
 // *** Stellar winds have a rather complicated boundary condition ****
 // *******************************************************************
-
-///
-/// This struct contains global data for a stellar wind source (for
-/// reading and writing to file).  The grid setup functions should
-/// read this struct and set up the appropriate wind boundary.
-///
-struct stellarwind_params {
-  int id;    ///< if we have multiple sources, this identifies them.
-  int type;  ///< what type of stellar wind?  see stellar_wind.h
-  double dpos[MAX_DIM]; ///< position of source (physical coords).
-  double Mdot;  ///< mass loss rate in solar masses per year.
-  double Vinf;  ///< wind terminal velocity in km/s.
-  double Rstar; ///< radius at which to set pressure based on Tstar.
-  double Tstar; ///< stellar temperature (sets pressure at r=Rstar).
-  double tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
-  double radius;
-  ///< Radius out to which boundary condition is imposed (physical).
-  string evolving_wind_file; ///< name of file containing evolving wind data.
-  double time_offset;   ///< time offset between wind-data-file and sim-time (YEARS!).
-  double update_freq;   ///< how often to update wind-data from file info (YEARS!).
-  /// Evolution of wind happens this factor faster than normal (for factor>1)
-  /// Should probably only be used for Main Sequence evolution!
-  double t_scalefactor;
-};
-
-struct stellarwind_list {
-  vector<struct stellarwind_params *> params; ///< list of params.
-  int Nsources; ///< number of sources.
-};
-
-extern struct stellarwind_list SWP;
-
 
 
 
@@ -455,108 +291,15 @@ extern class cell_interface CI;
 
 
 
-/************************ MICROPHYSICS ***************************/
+// ************************ MICROPHYSICS ***************************
 #include "microphysics/microphysics_base.h"
 extern class MicroPhysicsBase *MP;
 
-/************************ MICROPHYSICS ***************************/
+// ************************ MICROPHYSICS ***************************
 
 
-/*****************************************************************/
-/************************** RAY TRACER ***************************/
-/** \brief Pure virtual ray-tracer base class. 
- *
- * This provides the interface to the raytracer, regardless of the 
- * implementation.  So far these are the functions I'll need for 
- * a uniform grid with a single source, so I may need to add more
- * later.
- * */
-class RayTracingBase {
- public:
-  virtual ~RayTracingBase() {} ///< non-virtual destructor.
-
-  ///
-  /// \brief Adds a source to the list of sources to trace.
-  /// 
-  /// Returns the sources id, which starts at zero and increases 
-  /// linearly.  So if we have 10 sources, and add another source,
-  /// its id will be 10.  Note the ID is contained in the rad_src_info
-  /// struct though, so each particular class may not have consecutively 
-  /// numbered sources.
-  ///
-  virtual int Add_Source(struct rad_src_info * ///< ptr to source info.
-       )=0;
-  ///
-  /// Processes a single source's effect on the grid over a timestep.
-  ///
-  virtual int RayTrace_SingleSource(const int, ///< Source id
-                                    const double, ///< Timestep
-                                    const double  ///< EOS Gamma.
-                                    )=0;
-  ///
-  /// Just calculate the column densities required for RT.
-  ///
-  virtual int RayTrace_Column_Density(
-                const int,    ///< Source id
-                const double, ///< Timestep
-                const double  ///< EOS Gamma.
-                )=0;
-
-  /** \brief Prints list of sources with id, location, strength. */
-  virtual void Print_SourceList()=0;
-  /** \brief Returns the number of sources to track. */
-  virtual int NSources()=0;
-
-    ///
-  /// Returns whether we are doing an implicit (==0) or an explicit (==1)
-  /// integration of the raytracing/microphysics.
-  ///
-  virtual int type_of_RT_integration()=0;
-
-  ///
-  /// This sets the number of ionising and UV heating sources of radiation,
-  /// and makes sure the rt_source_data structs are populated correctly.
-  /// It can be used to change the radiation sources if e.g. the luminosity
-  /// changes over time.
-  ///
-  virtual void update_RT_source_properties(
-                  const struct rad_src_info * ///< ptr to source info.
-                  )=0;
-
-  /// Returns the number of ionising sources
-  virtual int N_ionising_sources()=0;
-
-  /// Returns the number of UV heating sources
-  virtual int N_heating_sources()=0;
-
-  ///
-  /// This function copies the ionising source data into two
-  /// vectors of structs which are returned by reference.
-  /// If rt-testing flags are set it will check that the input vector matches
-  /// the number of sources to add to the list, but otherwise there is no
-  /// checking.
-  ///
-  virtual int populate_ionising_src_list(
-                std::vector<struct rt_source_data> & ///< list of data for ionising sources
-                )=0;
-
-  ///
-  /// This function copies the UV-heating source data into two
-  /// vectors of structs which are returned by reference.
-  /// If rt-testing flags are set it will check that the input vector matches
-  /// the number of sources to add to the list, but otherwise there is no
-  /// checking.
-  ///
-  virtual int populate_UVheating_src_list(
-                std::vector<struct rt_source_data> & ///< list of data for UV-heating sources
-                )=0;
-
-};
-
-extern class RayTracingBase *RT; ///< Raytracer for all radiation sources
-/************************** RAY TRACER ***************************/
-/*****************************************************************/
-
+// *****************************************************************
+// ************************** RAY TRACER ***************************
 
 
 
@@ -565,150 +308,150 @@ extern class RayTracingBase *RT; ///< Raytracer for all radiation sources
 #endif // GLOBAL_H
    
 
-/** \page todo Stuff I Need to Work On
- * 
- * \section Introduction
- * This page contains a list of things I need to work on in the code.  They 
- * are not bugs as such.  Every comment in the code with a "\todo" tag  will
- * show up on this page, as well as anything else I put on the page.
- * 
- * */
+/// \page todo Stuff I Need to Work On
+/// 
+/// \section Introduction
+/// This page contains a list of things I need to work on in the code.  They 
+/// are not bugs as such.  Every comment in the code with a "\todo" tag  will
+/// show up on this page, as well as anything else I put on the page.
+/// 
+///
 
-/** \mainpage 
- * \author Jonathan Mackey
- * \section Introduction
- * This is my code.
- * */
+/// \mainpage 
+/// \author Jonathan Mackey
+/// \section Introduction
+/// This is my code.
+///
 
-/** \page userguide Users Guide
- * \section Introduction
- * This is intended as a guide to using the code.
- * 
- * \section compilation Compilation
- * There are two makefiles... <tt>Makefile.serial</tt> and <tt>Makefile.parallel</tt>
- * which should be modified according to the compiler and architecture
- * you are using.  <tt>Makefile.serial</tt> compiles the serial (single processor)
- * version of the code, and produces an executable called 
- * <tt>main_serial</tt>, whereas <tt>Makefile.parallel</tt> comiles the 
- * parallel version, using some distribution of the message passing
- * interface (MPI), producing an executable called <tt>main_parallel</tt>.
- * 
- * \section tracers Tracer Variables.
- * Tracer Variables are any variable that obey a simple linear advection
- * equation in the hydrodynamics.  For example the fractional abundance of 
- * electrons is passively transported by the hydrodynamics, and then 
- * updated in the microphysics routines.  The class SimParams has three
- * members relating to the tracers:
- *  - SimParams::ntracer  This is the integer number of tracer variables
- *  - SimParams::ftr      This is the integer index of the first tracer variable.  The
- * tracers are the last <tt>ntracer</tt> elements of the primitive vector, so they are
- * indexed as <tt>[ftr, ftr+1, ftr+2, ..., ftr+ntracer-1]</tt>.
- *  - SimParams::trtype   This is a string containing information on what the
- * tracers are for.  It is split into 5 character units.  The first unit is
- * the type of chemistry we are using (ex. atomic hydrogen only), and the
- * remaining ntracer units describe each tracer.  The code parses this string
- * during setup to determine what to do with the tracer variables.  Note that 
- * the numbers must match for the code to run -- there must be exactly the 
- * right number of units in trtype to give a type to each and every tracer
- * variable.
- * 
- * The first unit of SimParams::trtype is the type of tracer we are using,
- * so if we have chemistry we need to know what kind of chemistry, and if 
- * they are just colour tracers we need to know that too.  So here is the list
- * of known values for the first string unit:
- *  - <tt>"color"</tt> corresponds to only passive colour tracers;
- *  - <tt>"chAH_"</tt> corresponds to atomic hydrogen chemistry only;
- *  - <tt>"chAMH"</tt> means atomic and molecular hydrogen chemistry;
- *  - Others will be added to this list in due course.
- * 
- * The remaining units of SimParams::trtype describe each tracer individually,
- * and here is the list so far of what they do:
- *  - <tt>"trace"</tt> non-chemistry tracer, so just advected as a colour tracer.
- *  - <tt>"e-___"</tt> electron fractional abundance.
- *  - <tt>"HI___"</tt> neutral hydrogen fractional abundance.
- *  - <tt>"HII__"</tt> ionized hydrogen fractional abundance.
- *  - <tt>"H2___"</tt> molecular hydrogen fractional abundance.
- *  - <tt>"HEI__"</tt> neutral helium fractional abundance.
- *  - <tt>"HEII_"</tt> singly ionized helium fractional abundance.
- *  - <tt>"HEIII"</tt> doubly ionized helium fractional abundance.
- *  - <tt>any others?</tt>
- * Note that tracers should be dimensionless quantities that scale with the
- * density.
- *
- * \section mpint MicroPhysics Internal Variables
- * Microphysics has its own state vector, without the extra stuff that it
- * doesn't need, elements as follows:
- *  - 0: "n_h" : hydrogen number density, obtained from p_in[RO].
- *  - 1: "Eint": Internal Energy per unit volume 
- *  (obtained from p_in[RO]/(gamma-1) ).
- *  - 2: "e-"  : electron fraction n(e-)/n(H).  From here on all variables are
- *  optional.
- *  - 3-: "ION": number fraction of ion X relative to total number density of
- *  that element.
- * */
+/// \page userguide Users Guide
+/// \section Introduction
+/// This is intended as a guide to using the code.
+/// 
+/// \section compilation Compilation
+/// There are two makefiles... <tt>Makefile.serial</tt> and <tt>Makefile.parallel</tt>
+/// which should be modified according to the compiler and architecture
+/// you are using.  <tt>Makefile.serial</tt> compiles the serial (single processor)
+/// version of the code, and produces an executable called 
+/// <tt>main_serial</tt>, whereas <tt>Makefile.parallel</tt> comiles the 
+/// parallel version, using some distribution of the message passing
+/// interface (MPI), producing an executable called <tt>main_parallel</tt>.
+/// 
+/// \section tracers Tracer Variables.
+/// Tracer Variables are any variable that obey a simple linear advection
+/// equation in the hydrodynamics.  For example the fractional abundance of 
+/// electrons is passively transported by the hydrodynamics, and then 
+/// updated in the microphysics routines.  The class SimParams has three
+/// members relating to the tracers:
+///  - SimParams::ntracer  This is the integer number of tracer variables
+///  - SimParams::ftr      This is the integer index of the first tracer variable.  The
+/// tracers are the last <tt>ntracer</tt> elements of the primitive vector, so they are
+/// indexed as <tt>[ftr, ftr+1, ftr+2, ..., ftr+ntracer-1]</tt>.
+///  - SimParams::trtype   This is a string containing information on what the
+/// tracers are for.  It is split into 5 character units.  The first unit is
+/// the type of chemistry we are using (ex. atomic hydrogen only), and the
+/// remaining ntracer units describe each tracer.  The code parses this string
+/// during setup to determine what to do with the tracer variables.  Note that 
+/// the numbers must match for the code to run -- there must be exactly the 
+/// right number of units in trtype to give a type to each and every tracer
+/// variable.
+/// 
+/// The first unit of SimParams::trtype is the type of tracer we are using,
+/// so if we have chemistry we need to know what kind of chemistry, and if 
+/// they are just colour tracers we need to know that too.  So here is the list
+/// of known values for the first string unit:
+///  - <tt>"color"</tt> corresponds to only passive colour tracers;
+///  - <tt>"chAH_"</tt> corresponds to atomic hydrogen chemistry only;
+///  - <tt>"chAMH"</tt> means atomic and molecular hydrogen chemistry;
+///  - Others will be added to this list in due course.
+/// 
+/// The remaining units of SimParams::trtype describe each tracer individually,
+/// and here is the list so far of what they do:
+///  - <tt>"trace"</tt> non-chemistry tracer, so just advected as a colour tracer.
+///  - <tt>"e-___"</tt> electron fractional abundance.
+///  - <tt>"HI___"</tt> neutral hydrogen fractional abundance.
+///  - <tt>"HII__"</tt> ionized hydrogen fractional abundance.
+///  - <tt>"H2___"</tt> molecular hydrogen fractional abundance.
+///  - <tt>"HEI__"</tt> neutral helium fractional abundance.
+///  - <tt>"HEII_"</tt> singly ionized helium fractional abundance.
+///  - <tt>"HEIII"</tt> doubly ionized helium fractional abundance.
+///  - <tt>any others?</tt>
+/// Note that tracers should be dimensionless quantities that scale with the
+/// density.
+///
+/// \section mpint MicroPhysics Internal Variables
+/// Microphysics has its own state vector, without the extra stuff that it
+/// doesn't need, elements as follows:
+///  - 0: "n_h" : hydrogen number density, obtained from p_in[RO].
+///  - 1: "Eint": Internal Energy per unit volume 
+///  (obtained from p_in[RO]/(gamma-1) ).
+///  - 2: "e-"  : electron fraction n(e-)/n(H).  From here on all variables are
+///  optional.
+///  - 3-: "ION": number fraction of ion X relative to total number density of
+///  that element.
+/// 
 
-/** \page algorithms Code Algorithms
- * 
- * \section glm GLM Method
- * The GLM method of divergence cleaning is described in Dedner, Kemm, 
- * Kroner, et al., 2002, JCP, 175, 645, and in Dedner's thesis which I 
- * downloaded from his webpage (section 8).  I am using the mixed-glm method
- * with some modifications.
- * 
- * \subsection chyp Hyperbolic Wavespeed
- * Dedner advocates using the hyperbolic wavespeed
- * as \f$c_{\mbox{hyp}} = \mbox{CFL}\times\delta x/\delta t\f$, but in 3d I
- * found that this doesn't work.  I get checkerboard instabilities developing
- * in the field (for CFL>0.35).
- * The hyperbolic wavespeed shouldn't be a problem, because if
- * the CFL number is set to give a stable scheme then it should remain stable
- * when I add in a wave with the above speed.
- * Anyway, if I modify the hyperbolic speed to be 
- * \f$c_{\mbox{hyp}} = \mbox{CFL}\times\delta x/\delta t/N_{\mbox{dim}}\f$, 
- * then it recovers most of its stability range again.  This is a hack, and
- * I'm not at all sure why this works, or even why it is a good thing to do.
- * In fact I have taken out the ndim division because I don't like it.  I suspect the
- * reduced range of stability is a problem with the method and not of my
- * implementation of it.
- * 
- * \subsection cpar Parabolic Speed
- * The parabolic component of the mixed glm method has a parabolic speed,
- * which is basically a diffusion constant, \f$c_p\f$, with units of distance
- * over square root of time.  Dedner suggests using a different constant
- * instead of setting \f$c_p\f$, where the new constant is 
- * \f$c_r \equiv c_p^2/c_h\f$, but this has units of length, so I multiply
- * it by the grid spacing \f$\delta x\f$ (this is what Andy does).  In his
- * paper he says using a value of 0.18 for \f$c_r\f$ is good, but he uses the
- * reciprocal in his thesis, and I found that the reciprocal reproduces the
- * figures in the paper whereas 0.18 doesn't.  I experimented a bit and 
- * settled on \f$c_r = 4.0\delta x\f$ as a good value.
- * In his thesis (p.121 eq.8.22) he suggests using cr as a length related 
- * to the box-size.  I tried his formula (given that it is the reciprocal of
- * what I am using), and found it gave a larger value of cr for my test problem,
- * but I don't think it scales the way it should.
- * 
- * \subsection wrap Conclusions
- *  - It looks like this Dedner method is not quite as good as claimed, but works
- * well for low CFL numbers (<0.5 for 2d and <0.35 for 3d).  This is 
- * restrictive, but maybe not prohibitively so.  
- *  - When there is an instability,
- * it starts out with a checkerboard pattern in Psi, which then appears in
- * divB, and finally appears in the field components, or else crazy pressure
- * and density values.
- *  - It would be nice to have a better scheme, but I'm not sure there is one.
- * The constrained Transport (CT) schemes seem to be
- * better, although they are very complex to look at. But they also have problems,
- * in that you are again post-processing the magnetic field after the flux updates,
- * purely in order to give a divergence free field.  You keep divB=0, but you
- * lose in other ways, as far as I can tell.
- *  - I can reduce the Psi speed to get better stability.  Not sure why I 
- * would need to do this, but I'd say it's more to do with the operator
- * splitting and coupling between the parabolic and hyperbolic components
- * than it is to do with the actual wavespeed being too fast.
- *  - Dedner says in his thesis (8.5.1, p.124) that increasing cr is better, 
- * but leads to an unstable solution, whereas he says earlier that things 
- * should be unconditionally stable for any cr.  So consequently for me, 
- * decreasing cr should decrease stability.  Things are clearly not quite as
- * good as he makes out in their paper.
- * */
+/// \page algorithms Code Algorithms
+/// 
+/// \section glm GLM Method
+/// The GLM method of divergence cleaning is described in Dedner, Kemm, 
+/// Kroner, et al., 2002, JCP, 175, 645, and in Dedner's thesis which I 
+/// downloaded from his webpage (section 8).  I am using the mixed-glm method
+/// with some modifications.
+/// 
+/// \subsection chyp Hyperbolic Wavespeed
+/// Dedner advocates using the hyperbolic wavespeed
+/// as \f$c_{\mbox{hyp}} = \mbox{CFL}\times\delta x/\delta t\f$, but in 3d I
+/// found that this doesn't work.  I get checkerboard instabilities developing
+/// in the field (for CFL>0.35).
+/// The hyperbolic wavespeed shouldn't be a problem, because if
+/// the CFL number is set to give a stable scheme then it should remain stable
+/// when I add in a wave with the above speed.
+/// Anyway, if I modify the hyperbolic speed to be 
+/// \f$c_{\mbox{hyp}} = \mbox{CFL}\times\delta x/\delta t/N_{\mbox{dim}}\f$, 
+/// then it recovers most of its stability range again.  This is a hack, and
+/// I'm not at all sure why this works, or even why it is a good thing to do.
+/// In fact I have taken out the ndim division because I don't like it.  I suspect the
+/// reduced range of stability is a problem with the method and not of my
+/// implementation of it.
+/// 
+/// \subsection cpar Parabolic Speed
+/// The parabolic component of the mixed glm method has a parabolic speed,
+/// which is basically a diffusion constant, \f$c_p\f$, with units of distance
+/// over square root of time.  Dedner suggests using a different constant
+/// instead of setting \f$c_p\f$, where the new constant is 
+/// \f$c_r \equiv c_p^2/c_h\f$, but this has units of length, so I multiply
+/// it by the grid spacing \f$\delta x\f$ (this is what Andy does).  In his
+/// paper he says using a value of 0.18 for \f$c_r\f$ is good, but he uses the
+/// reciprocal in his thesis, and I found that the reciprocal reproduces the
+/// figures in the paper whereas 0.18 doesn't.  I experimented a bit and 
+/// settled on \f$c_r = 4.0\delta x\f$ as a good value.
+/// In his thesis (p.121 eq.8.22) he suggests using cr as a length related 
+/// to the box-size.  I tried his formula (given that it is the reciprocal of
+/// what I am using), and found it gave a larger value of cr for my test problem,
+/// but I don't think it scales the way it should.
+/// 
+/// \subsection wrap Conclusions
+///  - It looks like this Dedner method is not quite as good as claimed, but works
+/// well for low CFL numbers (<0.5 for 2d and <0.35 for 3d).  This is 
+/// restrictive, but maybe not prohibitively so.  
+///  - When there is an instability,
+/// it starts out with a checkerboard pattern in Psi, which then appears in
+/// divB, and finally appears in the field components, or else crazy pressure
+/// and density values.
+///  - It would be nice to have a better scheme, but I'm not sure there is one.
+/// The constrained Transport (CT) schemes seem to be
+/// better, although they are very complex to look at. But they also have problems,
+/// in that you are again post-processing the magnetic field after the flux updates,
+/// purely in order to give a divergence free field.  You keep divB=0, but you
+/// lose in other ways, as far as I can tell.
+///  - I can reduce the Psi speed to get better stability.  Not sure why I 
+/// would need to do this, but I'd say it's more to do with the operator
+/// splitting and coupling between the parabolic and hyperbolic components
+/// than it is to do with the actual wavespeed being too fast.
+///  - Dedner says in his thesis (8.5.1, p.124) that increasing cr is better, 
+/// but leads to an unstable solution, whereas he says earlier that things 
+/// should be unconditionally stable for any cr.  So consequently for me, 
+/// decreasing cr should decrease stability.  Things are clearly not quite as
+/// good as he makes out in their paper.
+/// 
 

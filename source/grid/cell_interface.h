@@ -36,6 +36,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include "constants.h"
+
 class cell_interface;
 
 #ifdef COUNT_ENERGETICS

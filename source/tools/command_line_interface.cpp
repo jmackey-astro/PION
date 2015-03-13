@@ -13,6 +13,7 @@
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/command_line_interface.h"
+#include "constants.h"
 using namespace std;
 
 #ifdef TESTING

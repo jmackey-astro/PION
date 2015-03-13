@@ -1,31 +1,34 @@
 /// \file raytracer_SC.h
 /// \brief Contains Declaration of Short Characteristic Tracer Class.
 /// 
-/// Author: Jonathan Mackey
+/// \author Jonathan Mackey
 /// 
 /// Modifications:
-///  - 2008-03-19 Wrote file.
-///  - 2010-01-15 JM: Turned off NO_SOURCE_CELL_GEOMETRY (seems to make very little difference)
-///  - 2010-01-19 JM: put weighting schemes in new function to avoid code duplication in parallel version.
-///  - 2010-01-20 JM: comments.
-///  - 2010-01-22 JM: Moved #defs for (NON_)CELL_CENTRED_SRC from raytracer_SC.h to global.h
-///  - 2010-01-24 JM: comments only, also forced either cell or corner centring to be defined.
-///
-///  - 2010.07.23 JM: New RSP source position class interface.
-///
-/// - 2011.02.25 JM: Changed Add_Source() interface, so that all relevant parameters
-///    are passed in to function as pointer to element in SimPM.RS
-///    Removed HCORR ifdef around new code.
+/// - 2008-03-19 Wrote file.
+/// - 2010-01-15 JM: Turned off NO_SOURCE_CELL_GEOMETRY (seems to
+///   make very little difference)
+/// - 2010-01-19 JM: put weighting schemes in new function to avoid
+///   code duplication in parallel version.
+/// - 2010-01-20 JM: comments.
+/// - 2010-01-22 JM: Moved #defs for (NON_)CELL_CENTRED_SRC from
+///  raytracer_SC.h to global.h
+/// - 2010-01-24 JM: comments only, also forced either cell or
+///  corner centring to be defined.
+/// - 2010.07.23 JM: New RSP source position class interface.
+/// - 2011.02.25 JM: Changed Add_Source() interface, so that all 
+///  relevant parameters are passed in to function as pointer to 
+///  element in SimPM.RS.  Removed HCORR ifdef around new code.
 ///    Removed NEW_RT_MP_INTERFACE flags.
-///
 /// - 2011.03.21 JM: Added RayTrace_Column_Density() interface function. 
 /// - 2011.04.15 JM: Moved old ProcessCell() to ProcessCell_TimeUpdate(), and the 
 ///    new ProcessCell() function is a chooser based on source properties.  It can
 ///    just calculate column-densities, or do the TimeUpdate.
 /// - 2011.04.18 JM: Added interpolate_2D_RHO() function
-/// - 2011.04.23 JM: Added TauMin[] array of values of TauMin for each source, ordered
-///    by source id.  This removes the need for interpolate_2D_RHO() so I got rid of it.
-///    Now the interpolate functions read TauMin[src_id] and apply that to the interpolation.
+/// - 2011.04.23 JM: Added TauMin[] array of values of TauMin
+///  for each source, ordered by source id.  This removes the
+///  need for interpolate_2D_RHO() so I got rid of it.  Now the
+///  interpolate functions read TauMin[src_id] and apply that to
+///  the interpolation.
 ///
 /// - 2011.10.14 JM: Added new interface for rt_source_data structs.
 /// - 2011.10.17 JM: Debugging.  Getting new implicit integrator working.
@@ -38,8 +41,8 @@
 ///    This is tough going, and is only half-way done so far.
 /// - 2015.01.28 JM: New include statements for new file structure.
 
-#ifndef RAYTRACING_H
-#define RAYTRACING_H
+#ifndef RAYTRACER_SC_H
+#define RAYTRACER_SC_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -47,86 +50,21 @@
 #include "grid/grid_base_class.h"
 
 #include "global.h"
-
-#ifndef CELL_CENTRED_SRC
-#ifndef NON_CELL_CENTRED_SRC
-#error "MUST define one of CELL_CENTRED_SRC and NON_CELL_CENTRED_SRC in global.h"
-#endif
-#endif
-
-#ifdef CELL_CENTRED_SRC
-#error "CELL_CENTRED_SRC has not been used for a LONG time and may be buggy."
-#error "USE AT YOUR OWN RISK.  DELETE THIS ERROR IN source/raytracing/raytracer_SC.h"
-#endif
-
-#define NO_SOURCE_CELL_GEOMETRY ///< this stops the code changing tau in the
-                                ///< source cell for different angles (makes no difference)
-#define INTERPOLATE_METHOD 0 /// 0=C2Ray mintau=0.7, 1=Geometric,
-                             /// 2=Geometric in exp(-tau), 3=quadratic/exp(-tau) !!!ONLY C2-RAY IS ANY GOOD!!!
-
-/** \brief Related quadrants in x-y plane to indices for the order they are to be traversed.
- * The source is in Q1, so it comes first, then Q2, then Q4, and finally Q3.  Q2 and Q4 could
- * be interchanged, but this is the way I'm doing it.
- * */
-enum Quadrants {Q1=0, Q2=1, Q4=2, Q3=3};
-#define NQUADS 4
-/** \brief This arranges the octants in integers according to how I am tracing them.
- * The first four octants are in ZP dir, last four in ZN, and each group of four 
- * traces an anticlockwise circle in the x-y plane, starting with (XP,YP).
- * */
-enum Octants {OCT1=0, OCT2=1, OCT4=2, OCT3=3, OCT5=4, OCT6=5, OCT8=6, OCT7=7};
+#include "raytracing/raytracer_base.h"
 
 
+/// Special simpler raytracer for if we have parallel rays coming in 
+/// along one axis.  This is appropriate for a single source at infinity.
 ///
-/// Struct to hold info on radiation sources.  An extension of rad_src_info in global.h
+/// For parallel rays, the source strength is the flux entering the grid. from the
+/// direction of the source.
 ///
-struct rad_source {
-  ///
-  /// pointer to source (set to SimPM.RS.source[id]) with the basic
-  /// info about the source.
-  ///
-  struct rad_src_info *s;
-
-  class cell *sc; ///< nearest cell to source.
-  bool src_on_grid; ///< true if source is at a grid cell.
-  int ipos[MAX_DIM];    ///< source position in integer form (grid units, dx=2).
-
-  //int id;   ///< source id.
-  //double *pos;  ///< source position.
-  //double strength;  ///< source strength.
-
-  //bool at_infinity; ///< True if source is at infinity.
-  //int type;   ///< Type of source.  RT_SRC_DIFFUSE or RT_SRC_SINGLE.
-  //int effect;      ///< Either UV heating or photoionisation+heating.
-  //int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
-  //int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  //int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
-
-  ///
-  /// This struct is used by the code to pass cell and source data
-  /// to the microphysics integrator.  It contains the relevant source
-  /// information, and also some cell-source geometry information which 
-  /// must be set on a cell-by-cell basis as rays are traced.
-  /// The struct is declared in source/microphysics/microphysics_base.h
-  ///
-  struct rt_source_data data;
-};
-
-
-
-
-/** \brief Special simpler raytracer for if we have parallel rays coming in 
- * along one axis.  This is appropriate for a single source at infinity.
- *
- * For parallel rays, the source strength is the flux entering the grid. from the
- * direction of the source.
- *
- * c->col tracks the optical depth from the source, along a ray through the cell
- * centre, and up to the point the ray exits the cell.
- */
+/// c->col tracks the optical depth from the source, along a ray through the cell
+/// centre, and up to the point the ray exits the cell.
+///
 class raytracer_USC_infinity : public RayTracingBase {
  public:
-  /** \brief Constructor. */
+  /// Constructor.
   raytracer_USC_infinity(class GridBaseClass *, ///< Pointer to grid
 			 class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
 			 );
@@ -333,12 +271,11 @@ class raytracer_USC_infinity : public RayTracingBase {
 
 
 
-/** \brief More compicated RayTracer, for a source which can be on grid, off grid,
- * or at infinity in one coordinate direction.
- */
+/// More compicated RayTracer, for a source which can be on grid, off grid,
+///or at infinity in one coordinate direction.
 class raytracer_USC : public raytracer_USC_infinity {
  public:
-  /** \brief Constructor. */
+  /// Constructor.
   raytracer_USC(class GridBaseClass *, ///< Pointer to grid
 		class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
 		);
@@ -483,10 +420,10 @@ class raytracer_USC : public raytracer_USC_infinity {
 			);
 
 
-   /** \brief Get column density to current cell from source, and path length through cell.
-    * This uses interpolation for 2D grids.  Various weighting schemes have been tried, 
-    * and the best one is the one that isn't commented out!
-    * */
+  /// Get column density to current cell from source, and path length through cell.
+  /// This uses interpolation for 2D grids.  Various weighting schemes have been tried, 
+  /// and the best one is the one that isn't commented out!
+  ///
    int cell_cols_2d(const rad_source *, ///< pointer to source struct.
 		    class cell *,       ///< Current Cell
 		    double *,           ///< column to cell.
@@ -494,9 +431,9 @@ class raytracer_USC : public raytracer_USC_infinity {
 		    );
 
 
-   /** \brief Get column density to current cell from source, and path length through cell.
-    * This uses interpolation for 3D grids.
-    * */
+  /// Get column density to current cell from source, and path length through cell.
+  /// This uses interpolation for 3D grids.
+  ///
    int cell_cols_3d(const rad_source *, ///< pointer to source struct.
 		    class cell *,       ///< Current Cell
 		    double *,           ///< column to cell.
@@ -592,9 +529,9 @@ class raytracer_USC : public raytracer_USC_infinity {
             );
 
 #ifdef CELL_CENTRED_SRC
-   /** \brief Source Cell is processed differently, as there is no column density
-    * to the cell, and the column through the cell is different.
-    * */
+  /// Source Cell is processed differently, as there is no column density
+  /// to the cell, and the column through the cell is different.
+  ///
    int ProcessSourceCell(cell *,             ///< Current cell.
 			 const rad_source *, ///< pointer to source struct.
 			 const double       ///< Timestep
@@ -608,12 +545,13 @@ class raytracer_USC : public raytracer_USC_infinity {
 
 #ifdef PARALLEL
 
-/** \brief Distributed Memory Raytracer, for a source which can be on grid, off grid,
- * or at infinity in one coordinate direction.
- */
+///
+/// Distributed Memory Raytracer, for a source which can be on grid, off grid,
+///or at infinity in one coordinate direction.
+///
 class raytracer_USC_pllel : public raytracer_USC {
  public:
-  /** \brief Constructor. */
+  /// Constructor
   raytracer_USC_pllel(class GridBaseClass *, ///< Pointer to grid
 		class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
 		);
@@ -672,4 +610,4 @@ class raytracer_USC_pllel : public raytracer_USC {
 #endif //PARALLEL
 
 
-#endif // RAYTRACING_H
+#endif // RAYTRACER_SC_H

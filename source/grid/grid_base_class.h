@@ -20,6 +20,7 @@
 #error "Get rid of GEOMETRIC_GRID ifdef"
 #endif
 
+#include "constants.h"
 #include "grid/cell_interface.h"
 
 
