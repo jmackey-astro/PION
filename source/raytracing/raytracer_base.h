@@ -15,6 +15,12 @@
 
 #include "grid/grid_base_class.h"
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 #ifndef CELL_CENTRED_SRC
 #ifndef NON_CELL_CENTRED_SRC
 #error "MUST define one of CELL_CENTRED_SRC and NON_CELL_CENTRED_SRC in global.h"
@@ -32,6 +38,12 @@
 #define INTERPOLATE_METHOD 0 /// 0=C2Ray mintau=0.7, 1=Geometric,
         /// 2=Geometric in exp(-tau), 3=quadratic/exp(-tau) !!!ONLY C2-RAY IS ANY GOOD!!!
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// Related quadrants in x-y plane to indices for the order
 /// they are to be traversed.  The source is in Q1, so it comes
@@ -41,6 +53,12 @@
 enum Quadrants {Q1=0, Q2=1, Q4=2, Q3=3};
 #define NQUADS 4
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// This arranges the octants in integers according to how I
 /// am tracing them. The first four octants are in ZP dir, last
@@ -48,6 +66,12 @@ enum Quadrants {Q1=0, Q2=1, Q4=2, Q3=3};
 /// circle in the x-y plane, starting with (XP,YP).
 ///
 enum Octants {OCT1=0, OCT2=1, OCT4=2, OCT3=3, OCT5=4, OCT6=5, OCT8=6, OCT7=7};
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 ///
@@ -64,17 +88,6 @@ struct rad_source {
   bool src_on_grid; ///< true if source is at a grid cell.
   int ipos[MAX_DIM];    ///< source position in integer form (grid units, dx=2).
 
-  //int id;   ///< source id.
-  //double *pos;  ///< source position.
-  //double strength;  ///< source strength.
-
-  //bool at_infinity; ///< True if source is at infinity.
-  //int type;   ///< Type of source.  RT_SRC_DIFFUSE or RT_SRC_SINGLE.
-  //int effect;      ///< Either UV heating or photoionisation+heating.
-  //int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
-  //int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  //int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
-
   ///
   /// This struct is used by the code to pass cell and source data
   /// to the microphysics integrator.  It contains the relevant source
@@ -84,6 +97,15 @@ struct rad_source {
   ///
   struct rt_source_data data;
 };
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 
 ///
 /// Pure virtual ray-tracer base class. 
@@ -176,6 +198,12 @@ class RayTracingBase {
                 )=0;
 
 };
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 extern class RayTracingBase *RT; ///< Raytracer for all radiation sources
 // ************************** RAY TRACER ***************************
