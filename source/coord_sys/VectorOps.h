@@ -35,6 +35,7 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
+#include "constants.h"
 #include "global.h"
 
 //

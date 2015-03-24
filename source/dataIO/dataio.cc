@@ -60,6 +60,8 @@
 #include "dataIO/dataio.h"
 #include "dataIO/readparams.h"
 #include "grid/stellar_wind_BC.h"
+#include "raytracing/raytracer_base.h"
+
 #include <sstream>
 using namespace std;
 

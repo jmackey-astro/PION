@@ -200,6 +200,12 @@ double VectorOps_Cart::CellVolume(const cell *)
   return(VOdV);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double VectorOps_Cart::CellInterface(
           const cell *,
           const direction
@@ -210,6 +216,12 @@ double VectorOps_Cart::CellInterface(
    * */
   return(VOdA);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 double VectorOps_Cart::max_grad_abs(
         const cell *cpt,
@@ -426,6 +438,7 @@ int VectorOps_Cart::SetEdgeState(
     break; // O2
    default:
     cerr<<"\t(SetEdgeState) Only know 1st and 2nd order spatial accuracy!!!\n"; 
+    cerr<<"\tOA="<<OA<<"\n";
     return(1);
   } // Order of accuracy.
   return(0);

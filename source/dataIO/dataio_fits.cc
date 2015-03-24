@@ -64,6 +64,9 @@
 #endif // TESTING
 
 #include "dataIO/dataio_fits.h"
+#ifdef RT_TESTING_OUTPUTCOL
+#include "raytracing/raytracer_base.h"
+#endif // RT_TESTING_OUTPUTCOL
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>

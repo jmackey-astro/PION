@@ -50,6 +50,7 @@
 #include "tools/mem_manage.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
+#include "raytracing/raytracer_base.h"
 #endif // TESTING
 
 #include "dataio_silo.h"
