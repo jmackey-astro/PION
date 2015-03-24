@@ -6,6 +6,7 @@
 /// 
 /// Modifications:
 /// - 2015.03.04 JM: moved from global.h GeneralStuff class.
+/// - 2015.03.23 JM: added bilinear interpolation function.
 
 #ifndef INTERPOLATE_H
 #define INTERPOLATE_H
@@ -83,6 +84,19 @@ class interpolate_arrays {
         const size_t,   ///< Array sizes
         const double ,  ///< x we are searching for.
         double *  ///< pointer to result.
+        );
+
+  ///
+  /// This brackets an (x,y) value with 2 function values in each
+  /// direction, and does bilinear interpolation on them.
+  ///
+  void root_find_bilinear(
+        const double *,    ///< Array of x values.
+        const double *,    ///< Array of y values.
+        double **, ///< Array of function values
+        const size_t *,   ///< Array sizes
+        const double *,   ///< (x,y) we are searching for.
+        double *           ///< pointer to result.
         );
 };
 

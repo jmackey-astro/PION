@@ -6,14 +6,17 @@
 /// 
 /// Modifications:
 /// - 2015.03.04 JM: moved from global.h GeneralStuff class.
+/// - 2015.03.23 JM: added bilinear interolation, added bounds
+///   checking for linear/bilinear int., fixed bug in linear int.
+
+
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 #include "tools/interpolate.h"
-#include "sim_constants.h"
 #include "constants.h"
-#include "tools/reporting.h"
+#include <iostream>
 
 #ifndef INTEL
 #include <cmath>     // Header file from gcc
@@ -25,6 +28,8 @@
 /// global instance of class, defined in interpolate.cpp.
 ///
 class interpolate_arrays interpolate;
+
+
 
 // ##################################################################
 // ##################################################################
@@ -48,13 +53,14 @@ interpolate_arrays::~interpolate_arrays()
 
 
 
-void interpolate_arrays::spline(const double *x,
-			  const double *y,
-			  const int n,
-			  double yp1,
-			  double ypn,
-			  double *y2
-			  )
+void interpolate_arrays::spline(
+      const double *x,
+      const double *y,
+      const int n,
+      double yp1,
+      double ypn,
+      double *y2
+      )
 {
   int i,k;
   double p,qn,sig,un;
@@ -97,13 +103,14 @@ void interpolate_arrays::spline(const double *x,
 
 
 
-void interpolate_arrays::splint(const double xa[],
-			  const double ya[],
-			  const double y2a[],
-			  const int n,
-			  const double x,
-			  double *y
-			  )
+void interpolate_arrays::splint(
+      const double xa[],
+      const double ya[],
+      const double y2a[],
+      const int n,
+      const double x,
+      double *y
+      )
 {
   int klo,khi,k;
   double h,b,a;
@@ -121,7 +128,11 @@ void interpolate_arrays::splint(const double xa[],
   //cout <<"\t\ty2hi="<<y2a[khi]<<" y2lo="<<y2a[klo]<<"\n";
   h=xa[khi]-xa[klo];
   //if (h == 0.0) { rep.error("Bad xa input to routine splint",h); }
-  if (h < VERY_TINY_VALUE) { rep.error("Bad xa input to routine splint",h); }
+  if (h < VERY_TINY_VALUE) {
+    cerr << "Bad xa input to routine splint: h="<< h<<"\n";
+    *y = VERY_LARGE_VALUE;
+    return;
+  }
   a=(xa[khi]-x)/h;
   b=(x-xa[klo])/h;
   *y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
@@ -151,7 +162,7 @@ void interpolate_arrays::root_find_linear(
   // x-value, with bisection.
   //
   size_t
-    ihi = len,  // upper bracketing value
+    ihi = len-1,  // upper bracketing value
     ilo = 0,    // lower bracketing value
     imid= 0;    // midpoint
   //int count=0;
@@ -164,11 +175,21 @@ void interpolate_arrays::root_find_linear(
   //cout.precision(12);
   //cout <<"count="<<count<<", ihi="<<ihi<<" and ilo="<<ilo<<", x[ihi]=";
   //cout <<xarr[ihi]<<" and x[ilo]="<<xarr[ilo]<<" and xreq="<<xreq<<"\n";
+
+  //
+  // Array bounds checking: if we are extrapolating do it
+  // with zero slope (take the edge value).
+  //
+  double xval=0.0;
+  if      (xreq>xarr[ihi]) xval = xarr[ihi];
+  else if (xreq<xarr[ilo]) xval = xarr[ilo];
+  else                     xval = xreq;
+
   //
   // Now we linearly interpolate the y value between the two adjacent
   // bracketing points.
   //
-  *yreq = yarr[ilo] + (yarr[ihi]-yarr[ilo])*(xreq-xarr[ilo])/(xarr[ihi]-xarr[ilo]);
+  *yreq = yarr[ilo] + (yarr[ihi]-yarr[ilo])*(xval-xarr[ilo])/(xarr[ihi]-xarr[ilo]);
   return;
 }
 
@@ -260,10 +281,102 @@ void interpolate_arrays::splint_vec(
   //cout <<"\t\tyhi="<<ya[khi]<<" ylo="<<ya[klo];
   //cout <<"\t\ty2hi="<<y2a[khi]<<" y2lo="<<y2a[klo]<<"\n";
   h=xa[khi]-xa[klo];
-  if (h < 1.0e-150) { rep.error("Bad xa input to routine splint",h); }
+  if (h < VERY_TINY_VALUE) {
+    cerr << "Bad xa input to routine splint: h="<< h<<"\n";
+    *y = VERY_LARGE_VALUE;
+    return;
+  }
+  //if (h < 1.0e-150) { rep.error("Bad xa input to routine splint",h); }
   a=(xa[khi]-x)/h;
   b=(x-xa[klo])/h;
   *y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void interpolate_arrays::root_find_bilinear(
+        const double *x,     ///< Array of x values.
+        const double *y,     ///< Array of y values.
+        double **f,  ///< Array of function values
+        const size_t *len,  ///< Array sizes
+        const double *xreq, ///< (x,y) we are searching for.
+        double *res          ///< pointer to result.
+        )
+{
+  //
+  // Given a vector of (x,y)-values, and corresponding f-values, 
+  // and an input (x,y) value, find the corresponding f-value by
+  // bisection and then bi-linear interopolation.
+  //
+  // First we find the two x/y-points in the array which bracket the requested
+  // x/y-value, with bisection.
+  //
+  size_t
+    ihi = len[0]-1, jhi = len[1]-1,  // upper bracketing value
+    ilo = 0,      jlo=0,    // lower bracketing value
+    imid= 0,      jmid=0;    // midpoint
+  int count=0;
+  double xval=0.0, yval=0.0;
+
+  do {
+    imid = ilo + floor((ihi-ilo)/2.0);
+    if (x[imid] < xreq[0]) ilo = imid;
+    else                   ihi = imid;
+    count ++;
+  } while (ihi-ilo >1);
+  cout.precision(6);
+  //cout <<"count="<<count<<", ihi="<<ihi<<" and ilo="<<ilo<<", x[ihi]=";
+  //cout <<x[ihi]<<" and x[ilo]="<<x[ilo]<<" and xreq="<<xreq[0];
+
+  count=0;
+  do {
+    jmid = jlo + floor((jhi-jlo)/2.0);
+    if (y[jmid] < xreq[1]) jlo = jmid;
+    else                   jhi = jmid;
+    count ++;
+  } while (jhi-jlo >1);
+  //cout <<"count="<<count<<", jhi="<<jhi<<" and jlo="<<jlo<<", y[jhi]=";
+  //cout <<y[jhi]<<" and y[jlo]="<<y[jlo]<<" and yreq="<<xreq[1]<<"\n";
+
+  if (ihi-ilo != 1) {
+    cerr <<"root_find_bilinear: Couldn't bracket root i: ";
+    cerr <<ihi<<", "<<ilo<<"\n";
+  }
+
+  if (jhi-jlo != 1) {
+    cerr <<"root_find_bilinear: Couldn't bracket root j: ";
+    cerr <<jhi<<", "<<jlo<<"\n";
+  }
+
+  //
+  // Array bounds checking: if we are extrapolating do it
+  // with zero slope (take the edge value).
+  //
+  if      (xreq[0]>x[ihi]) xval = x[ihi];
+  else if (xreq[0]<x[ilo]) xval = x[ilo];
+  else                     xval = xreq[0];
+  //cout <<", xval="<<xval<<"\n";
+  if      (xreq[1]>y[jhi]) yval = y[jhi];
+  else if (xreq[1]<y[jlo]) yval = y[jlo];
+  else                     yval = xreq[1];
+
+  //
+  // Now we use bilinear interpolation to get the result
+  // f(x,y)=( f(lo,lo)(xhi-x)(yhi-y)+
+  //          f(hi,lo)(x-xlo)(yhi-y)+
+  //          f(lo,hi)(xhi-x)(y-ylo)+
+  //          f(hi,hi)(x-xlo)(y-ylo) )/(dx*dy)
+  //
+  *res = (f[ilo][jlo] * (x[ihi]-xval) * (y[jhi]-yval) +
+          f[ihi][jlo] * (xval-x[ilo]) * (y[jhi]-yval) +
+          f[ilo][jhi] * (x[ihi]-xval) * (yval-y[jlo]) +
+          f[ihi][jhi] * (xval-x[ilo]) * (yval-y[jlo]));
+  *res /= ( (x[ihi]-x[ilo]) * (y[jhi]-y[jlo]) );
   return;
 }
 
