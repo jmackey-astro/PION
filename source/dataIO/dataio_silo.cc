@@ -53,6 +53,10 @@
 #include "raytracing/raytracer_base.h"
 #endif // TESTING
 
+#ifdef RT_TESTING_OUTPUTCOL
+#include "raytracing/raytracer_base.h"
+#endif // RT_TESTING_OUTPUTCOL
+
 #include "dataio_silo.h"
 #include <cstring>
 #include <sstream>

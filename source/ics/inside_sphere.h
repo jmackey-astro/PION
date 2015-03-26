@@ -1,8 +1,17 @@
+/// \file inside_sphere.h
+/// \author Jonathan Mackey
+///
+/// Tests what fraction of a cell is within a spherical region.
+///
+/// Modifications:
+/// - 2015.03.26 JM: added include statement.
+
 
 #include <iostream>
 //#include <cmath>
 using namespace std;
-#include "../global.h"
+#include "global.h"
+#include "grid/cell_interface.h"
 
 class inside_sphere {
 public:

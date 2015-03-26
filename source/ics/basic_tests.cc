@@ -335,7 +335,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   double vy = 1.0; //sin(thetaXZ)*sin(thetaXY);
   double vz = 1.0; //cos(thetaXZ);
   cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
-  double pin, pout; pin=pout=1.0;
+  double pout; pout=1.0;
   double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
 //  SimPM.typeofbc = "PERIODIC";
@@ -345,7 +345,10 @@ int IC_basic_tests::setup_sinewave_velocity()
   else SimPM.finishtime = 5.*SimPM.Range[0]/vy;
 
   // Circle setup
-  double centre[ndim]; for (int i=0;i<ndim;i++) centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+  double centre[ndim];
+  for (int i=0;i<ndim;i++) {
+    centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+  }
   double radius = (SimPM.Xmax[0]-SimPM.Xmin[0])/10.; // radius is 1/5 of box diameter in x-dir.
   // Set up the inside_sphere class, with 100 subpoints per cell.
   int nsub; if (ndim==2) nsub=100; else nsub=32;
@@ -355,7 +358,6 @@ int IC_basic_tests::setup_sinewave_velocity()
   // data
   cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
-  int ix[ndim]; for (int i=0;i<ndim;i++) ix[i]=0;
   do {
      // Set values of primitive variables.
      cpt->P[RO] = rhoout; cpt->P[PG] = pout;
@@ -425,8 +427,8 @@ int IC_basic_tests::setup_advection()
   double vy = sin(thetaXZ)*sin(thetaXY);
   double vz = cos(thetaXZ);
   cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
-  double pin, pout; pin=pout=1;
-  double rhoin,rhoout; rhoin=10; rhoout=1;
+  double pout; pout=1.0;
+  double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
 //  SimPM.typeofbc = "PERIODIC";
 //  SimPM.typeofbc = "XNinf XPinf YNinf YPinf";
@@ -445,7 +447,6 @@ int IC_basic_tests::setup_advection()
   // data
   cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
-  int ix[ndim]; for (int i=0;i<ndim;i++) ix[i]=0;
   do {
      // Set values of primitive variables.
      cpt->P[RO] = rhoout; cpt->P[PG] = pout;
@@ -784,7 +785,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
   double Bx = 0.5/sqrt(4.*M_PI); // think this is right, but not sure about 4Pi
   int seed= 975;
 #ifdef PARALLEL
-  seed += MCMD->myrank;
+  seed += MCMD->get_myrank();
 #endif
   srand(seed);
   double noise_amp = 0.01; // absolute amplitude of noise.

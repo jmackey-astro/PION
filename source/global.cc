@@ -79,14 +79,13 @@ using namespace std;
 #include "global.h"
 #include "tools/reporting.h"
 #include "sim_constants.h"
+#include "constants.h"
 #include "sim_params.h"
 
 
 class SimParams SimPM;
 class JetParams JP;
 class Units uc;
-//class GeneralStuff GS;
-//class stellar_wind SW;
 struct stellarwind_list SWP;
 
 
@@ -177,53 +176,6 @@ void print_command_line_options(int argc, char **argv)
   return;
 }
 //---------------------------------------------------------
-
-
-/************************ MULTI-PROCESS COMMS *************************/
-//#ifdef PARALLEL
-//#if   defined USE_MPI
-//class comms_base *COMM = new comm_mpi ();
-//#elif defined USE_FILE_COMMS
-//class comms_base *COMM = new comm_files ();
-//#else
-//#error "MUST DEFINE EITHER USE_MPI or USE_FILE_COMMS"
-//#endif
-
-//#endif // PARALLEL
-
-/************************ MULTI-PROCESS COMMS *************************/
-
-/************************ MICROPHYSICS ***************************/
-class MicroPhysicsBase *MP=0;
-/************************ MICROPHYSICS ***************************/
-
-/************************  RAYTRACING  ***************************/
-class RayTracingBase *RT=0;
-/************************  RAYTRACING  ***************************/
-
-
-
-/************************* CELL INTERFACE ***********************/
-#ifdef COUNT_ENERGETICS
-struct energetics *GLOBAL_CE=0;
-///< for tracking rates in microphysics/raytracing.
-#endif
-class cell_interface CI;
-///< global class for accessing cell data, positions, neigbours.
-/************************* CELL INTERFACE ***********************/
-
-
-
-
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-//------------------------------------------------
 
 
 

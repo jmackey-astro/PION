@@ -43,7 +43,7 @@ CommandLineInterface::~CommandLineInterface()
 }
 
 void CommandLineInterface::auto_console(
-      char prompt[]
+      char *prompt
       )
 {
   cout<<"\n Welcome to the AUTOPILOT command line\n";
@@ -70,7 +70,7 @@ void CommandLineInterface::auto_console(
 
 
 void CommandLineInterface::console(
-      char prompt[]
+      char *prompt
       )
 {
   //

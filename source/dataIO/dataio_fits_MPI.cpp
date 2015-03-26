@@ -26,6 +26,9 @@
 #endif // TESTING
 
 #include "dataIO/dataio_fits_MPI.h"
+#ifdef RT_TESTING_OUTPUTCOL
+#include "raytracing/raytracer_base.h"
+#endif // RT_TESTING_OUTPUTCOL
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>
@@ -93,7 +96,7 @@ std::string DataIOFits_pllel::choose_filename(
   if(!mpiPM->WriteSingleFile) {
     temp <<"_";
     temp.width(4); temp.fill('0');
-    temp <<mpiPM->myrank;
+    temp <<mpiPM->get_myrank();
   }
   temp <<".";
   if (file_counter >=0) {
@@ -218,9 +221,9 @@ int DataIOFits_pllel::OutputData(
     // This is the default -- each process writes its own file
     cout <<"DataIOFits_pllel::OutputData() writing multiple files.\n";
     temp.str("");
-    cout <<"Proc "<<mpiPM->myrank<<":\t writing to file "<<outfile<<"\n";
+    cout <<"Proc "<<mpiPM->get_myrank()<<":\t writing to file "<<outfile<<"\n";
     if (file_exists(outfile)) {
-      cout <<"Proc "<<mpiPM->myrank<<":\t file exists... overwriting!\n";
+      cout <<"Proc "<<mpiPM->get_myrank()<<":\t file exists... overwriting!\n";
       temp.str(""); temp <<"!"<<outfile; outfile=temp.str();
     }
     //    if(acquire_lock(outfile)) rep.error("Failed to lock file",err);
@@ -270,19 +273,19 @@ int DataIOFits_pllel::OutputData(
     // Close file
     err += fits_close_file(ff,&status);
     //    release_lock(outfile);
-    cout <<"Proc "<<mpiPM->myrank<<": file created, written, and unlocked. err="<<err<<"\n";
+    cout <<"Proc "<<mpiPM->get_myrank()<<": file created, written, and unlocked. err="<<err<<"\n";
   }
 
   else if (mpiPM->WriteSingleFile) {
     cout <<"WARNING! THIS IS NOT SYNCHRONOUS!  WILL FAIL RANDOMLY AND CAUSE CRASH.\n";
     if (file_exists(outfile)) {
-      cout <<"Proc "<<mpiPM->myrank<<": file exists...";
+      cout <<"Proc "<<mpiPM->get_myrank()<<": file exists...";
       // If file exists, wait for access and then lock it.
       acquire_lock(outfile);
     }
     else {
       // If file doesn't exist, lock it and create it.
-      cout <<"Proc "<<mpiPM->myrank<<": file doesn't exist, lock it and create it.\n";
+      cout <<"Proc "<<mpiPM->get_myrank()<<": file doesn't exist, lock it and create it.\n";
       acquire_lock(outfile);
       // Create fits file.
       fits_create_file(&ff, outfile.c_str(), &status);
@@ -320,7 +323,7 @@ int DataIOFits_pllel::OutputData(
       // Close file
       err += fits_close_file(ff,&status);
       release_lock(outfile);
-      cout <<"Proc "<<mpiPM->myrank<<": file created, written, and unlocked. err="<<err<<"\n";
+      cout <<"Proc "<<mpiPM->get_myrank()<<": file created, written, and unlocked. err="<<err<<"\n";
       delete [] extname; extname=0;
       return(err);
     }
@@ -462,7 +465,7 @@ int DataIOFits_pllel::ReadData(
       if (!mpiPM->ReadSingleFile) {
 	// This is where each process reads from its own file.
 	cout <<"DataIOFits_pllel::ReadData() Reading from multiple files.\n";
-	cout <<"Proc "<<mpiPM->myrank<<":\t reading from file "<<infile<<"\n";
+	cout <<"Proc "<<mpiPM->get_myrank()<<":\t reading from file "<<infile<<"\n";
 	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, mpiPM->LocalNG);
 	if (err) rep.error("image wrong size.",err);
 	err += read_fits_image(ff, var[i], mpiPM->LocalXmin, mpiPM->LocalXmin, mpiPM->LocalNG, mpiPM->LocalNcell);
@@ -471,7 +474,7 @@ int DataIOFits_pllel::ReadData(
       else if (mpiPM->ReadSingleFile) {
 	// All processes read from a single ic/restart file.
 	cout <<"DataIOFits_pllel::ReadData() Reading from single file.\n";
-	cout <<"Proc "<<mpiPM->myrank<<":\t reading from file "<<infile<<"\n";
+	cout <<"Proc "<<mpiPM->get_myrank()<<":\t reading from file "<<infile<<"\n";
 	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, SimPM.NG);
 	if (err) rep.error("image wrong size.",err);
 	err += read_fits_image(ff, var[i], mpiPM->LocalXmin, SimPM.Xmin, mpiPM->LocalNG, mpiPM->LocalNcell);

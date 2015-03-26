@@ -302,7 +302,9 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	eqns_hydro_isothermal.o flux_hydro_isothermal.o solver_eqn_hydro_iso.o \
 	eqns_mhd_adiabatic.o riemannMHD.o flux_mhd_adiabatic.o \
 	solver_eqn_mhd_adi.o \
+        raytracer_base.o  \
 	integrator.o cooling.o microphysics.o microphysics_v1.o raytracer_SC.o \
+        microphysics_base.o  \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
         file_status.o \
 	stellar_wind_BC.o \
@@ -321,8 +323,10 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         MCMD_control.o \
         uniform_grid.o cell_interface.o \
         global.o readparams.o file_status.o \
+        raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
+        microphysics_base.o  \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o shock_cloud.o \
 	photoevaporating_random_clumps.o dataio_fits.o utility_fits_class.o \
@@ -527,6 +531,8 @@ solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
 # MICROPHYSICS STUFF #
 ######################
 
+microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
+
 integrator.o:	integrator.cc integrator.h ${GLOBAL}
 cooling.o:	cooling.cc cooling.h tools/interpolate.h ${GLOBAL}
 
@@ -587,7 +593,10 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 # Raytracing
 ########################
-raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} uniform_grid.h
+raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
+
+raytracer_SC.o: raytracer_SC.cc raytracer_SC.h raytracer_base.h \
+  ${GLOBAL} uniform_grid.h
 
 
 ########################

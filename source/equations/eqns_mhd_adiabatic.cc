@@ -30,6 +30,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
+#include "microphysics/microphysics_base.h"
 #include "eqns_mhd_adiabatic.h"
 #include <iostream>
 using namespace std;

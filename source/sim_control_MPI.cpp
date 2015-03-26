@@ -160,8 +160,8 @@ int sim_control_fixedgrid_pllel::Init(
   //
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
-  mpiPM.myrank = myrank;
-  mpiPM.nproc  = nproc;
+  mpiPM.set_myrank(myrank);
+  mpiPM.set_nproc(nproc);
 
 
   //
@@ -198,7 +198,7 @@ int sim_control_fixedgrid_pllel::Init(
 	cout <<"\t Old infile: "<<infile<<"\n";
 #endif
 	ostringstream t; t.str("");
-        t<<"_"; t.width(4); t.fill('0'); t<<mpiPM.myrank<<".";
+        t<<"_"; t.width(4); t.fill('0'); t<<mpiPM.get_myrank()<<".";
         string t2=t.str();
 	infile.replace(pos,6,t2);
 #ifdef TESTING
@@ -341,8 +341,9 @@ int sim_control_fixedgrid_pllel::Time_Int(
       return(1);
       }
 
-    if (mpiPM.myrank==0 && (SimPM.timestep%log_freq)==0) {
-      cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
+    if (mpiPM.get_myrank()==0 && (SimPM.timestep%log_freq)==0) {
+      cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
+      cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
       //cout.flush();

@@ -532,8 +532,6 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   cout <<" propagating into an ambient medium with 1/r^3 profile in Zcyl.\n";
   cout <<"WARNING: THIS FUNCTION HAS BEEN TAKEN OVER FOR A SPECIFIC PROBLEM!!\n";
   rep.printVec("ambient ",ambient, SimPM.nvar);
-  int nsub;
-  if (ndim==2) nsub=100; else nsub=32;
   
   cout <<"\t\tAssigning primitive vectors.\n";
   //double dist=0.0;
@@ -672,8 +670,6 @@ int IC_photoevaporatingclump::setup_radialprofile()
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" propagating into an ambient medium with 1/r^"<<radial_slope<<" profile.\n";
   rep.printVec("ambient ",ambient, SimPM.nvar);
-  int nsub;
-  if (ndim==2) nsub=100; else nsub=32;
   
   cout <<"\t\tAssigning primitive vectors.\n";
   double dist=0.0;

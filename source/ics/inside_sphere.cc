@@ -4,7 +4,7 @@
 /// Test if a point is inside a sphere.
 ///
 /// Modifications:
-/// - 2015.03.11 JM: tidied up code.
+/// - 2015.03.11 JM: tidied up code. (also 03.26)
 
 #include "constants.h"
 #include "inside_sphere.h"
@@ -60,24 +60,20 @@ double inside_sphere::volumeFraction(cell *cpt)
   //  printVec("Cell Centre",cpos,ndim);
 
   double pos[ndim];
-  int cdir[ndim]; // Direction of sphere centre {neg,0,pos} in each direction.  
   // First calculate nearest corner
   for (int v=0;v<ndim;v++) {
     if( (pos[v]= cpos[v]-del-spos[v]) >0) {
       pos[v] = pos[v]*pos[v];
-      cdir[v] = -1;
     }
     else if ( (pos[v]= cpos[v]+del-spos[v]) <0) {
       pos[v] = pos[v]*pos[v];
-      cdir[v] = 1;
     }
     else {
       pos[v] = 0.;
-      cdir[v] = 0;
     }
   }
-  //  printVec("cdir",cdir,2);
-  double dist=0.; for (int v=0;v<ndim;v++) dist += pos[v];
+  double dist=0.;
+  for (int v=0;v<ndim;v++) dist += pos[v];
   dist = sqrt(dist); // distance from sphere centre to nearest edge of cell.
   //  cout <<"distance to nearest corner: "<<dist<<endl;
     
@@ -92,8 +88,12 @@ double inside_sphere::volumeFraction(cell *cpt)
   }
   
   //  cout <<"Cell may cross circle... checking\n";
-  double dv = 1.; double vol=1.;
-  for (int v=0;v<ndim;v++) {dv*= clen/nint; vol*=clen;}
+  double dv = 1.;
+  double vol=1.;
+  for (int v=0;v<ndim;v++) {
+    dv*= clen/nint;
+    vol*=clen;
+  }
   double dx = clen/nint;
   double startpt[ndim];
   double frac=0.;

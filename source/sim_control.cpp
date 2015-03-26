@@ -302,8 +302,7 @@ int sim_control_fixedgrid::Init(
   
   // Now set up the grid structure.
   cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
-  class MCMDcontrol *temp = 0;
-  err = setup_grid((grid),temp);
+  err = setup_grid((grid),&mpiPM);
   cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
   err += get_cell_size(*grid);
   if (err!=0) {

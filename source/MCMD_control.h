@@ -30,9 +30,6 @@ class MCMDcontrol {
   MCMDcontrol();
   ~MCMDcontrol();
 
-  int nproc;  ///< Number of processors.
-  int myrank; ///< Which processor am I?
-
   /// Number of real grid-zones in each direction, on this
   /// processor's domain.
   int LocalNG[MAX_DIM];
@@ -72,7 +69,20 @@ class MCMDcontrol {
          int *      ///< array to put ix into.
          );
 
+  /// get my process rank
+  int get_myrank() {return myrank;}
+  /// set my process rank
+  void set_myrank(const int r) {myrank=r; return;}
+  /// get number of MPI processes
+  int get_nproc()  {return nproc;}
+  /// set number of MPI processes
+  void set_nproc(const int n)  {nproc=n; return;}
+
+
  protected:
+  int nproc;  ///< Number of processors.
+  int myrank; ///< Which processor am I?
+
   /// this proc's position in the block of domains (zero offset)
   int ix[MAX_DIM];
 

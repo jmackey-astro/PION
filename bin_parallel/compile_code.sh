@@ -23,11 +23,11 @@
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
 # we are compiling on.  If it is not a known computer it is just set to
-# "standard" which is a standard linux system, assumed to have 4 cores (for
+# "standard" which is a standard linux system, assumed to have 8 cores (for
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
-NCORES=4
+NCORES=8
 #
 # Production code options:
 #
@@ -38,8 +38,8 @@ export CXX=mpicxx
 # Debugging code options, using text files to communicate data:
 #
 #export PION_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
-export PION_OPTIMISE=LOW
-NCORES=1
+#export PION_OPTIMISE=LOW
+#NCORES=1
 #export CXX=g++
 
 

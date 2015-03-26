@@ -56,6 +56,9 @@ struct energetics {
     cooling_time, // in years
     recomb_time;  // in years
 };
+
+extern struct energetics *GLOBAL_CE;
+ ///< for tracking rates in microphysics/raytracing.
 #endif
 
 
@@ -531,5 +534,9 @@ class cell_interface {
   short unsigned int iDivV;
 
 };
+
+
+extern class cell_interface CI;
+  ///< Global Instance of cell interface class.
 
 #endif // CELL_INTERFACE_H

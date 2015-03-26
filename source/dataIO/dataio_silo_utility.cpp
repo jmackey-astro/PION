@@ -23,6 +23,7 @@
 ///    functions into file_status class, which now has its own file.
 ///    Renamed file to dataio_silo_utility.cpp from dataio_utility.cc
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2105.03.26 JM: updated for pion v0.2
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -45,7 +46,17 @@ using namespace std;
 /********************************************************/
 /*************** dataio_silo_utility ********************/
 /********************************************************/
-
+dataio_silo_utility::dataio_silo_utility(
+      class MCMDcontrol *p
+      )
+:
+dataio_silo_pllel(p)
+{
+#ifdef TESTING
+  cout <<"Setting up utility Silo I/O class.\n";
+#endif
+  return;
+}
 
 // ##################################################################
 // ##################################################################
@@ -99,7 +110,7 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname,
 
 
 bool dataio_silo_utility::SRAD_point_on_my_domain(const cell *c, ///< pointer to cell
-						  class ParallelParams *filePM ///< pointer to class with nproc.
+						  class MCMDcontrol *filePM ///< pointer to class with nproc.
 						  )
 {
   //
@@ -125,7 +136,7 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
 					    class GridBaseClass *ggg, ///< pointer to data.
 					    const string variable, ///< variable name to read.
 					    const long int npt,     ///< number of cells expected.
-					    class ParallelParams *filePM ///< pointer to class with nproc.
+					    class MCMDcontrol *filePM ///< pointer to class with nproc.
 					    )
 {
   //
@@ -301,10 +312,11 @@ void dataio_silo_utility::set_pllel_filename(std::string &fname,  ///< filename
 
 
 
-void dataio_silo_utility::set_dir_in_file(std::string &mydir,  ///< directory name.
-					  const int my_rank,       ///< myrank (global).
-					  const int my_group_rank  ///< myrank in group.
-					  )
+void dataio_silo_utility::set_dir_in_file(
+        std::string &mydir,  ///< directory name.
+        const int my_rank,       ///< myrank (global).
+        const int my_group_rank  ///< myrank in group.
+        )
 {
   ostringstream temp; temp.fill('0');
   temp.str(""); temp << "/rank_"; temp.width(4); temp << my_rank << "_domain_";
@@ -335,10 +347,10 @@ int dataio_silo_utility::serial_read_any_data(string firstfile,        ///< file
   int err = SRAD_get_nproc_numfiles(firstfile, &nproc, &numfiles);
 
   //
-  // Set up a ParallelParams class for iterating over the quadmeshes
+  // Set up a MCMDcontrol class for iterating over the quadmeshes
   //
-  class ParallelParams filePM;
-  filePM.nproc = nproc;
+  class MCMDcontrol filePM;
+  filePM.set_nproc(nproc);
 
   if (err) {
     //
@@ -379,7 +391,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(const string firstfile, ///<
 						    class GridBaseClass *ggg, ///< pointer to data.
 						    const int numfiles, ///< number of files
 						    const int groupsize, ///< number of groups
-						    class ParallelParams *filePM ///< number of processes used to write file.
+						    class MCMDcontrol *filePM ///< number of processes used to write file.
 						    )
 {
   int err=0;
@@ -401,20 +413,20 @@ int dataio_silo_utility::serial_read_pllel_silodata(const string firstfile, ///<
     // domains, so we set ng to be the minimum of groupsize or all 
     // remaining domains.
     //
-    int ng=min(filePM->nproc-ifile*groupsize, groupsize);
+    int ng=min(filePM->get_nproc()-ifile*groupsize, groupsize);
     for (int igroup=0; igroup<ng; igroup++) {
       DBSetDir(dbfile,"/");
       //
       // choose myrank, and decompose domain accordingly.
       //
-      filePM->myrank = ifile*groupsize +igroup;
+      filePM->set_myrank(ifile*groupsize +igroup);
       filePM->decomposeDomain();
       
       //
       // set directory in file.
       //
       string mydir;
-      set_dir_in_file(mydir, filePM->myrank, igroup);
+      set_dir_in_file(mydir, filePM->get_myrank(), igroup);
       DBSetDir(dbfile, mydir.c_str());
       
       //
@@ -465,7 +477,7 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
   // (THIS IS TRUE AS LONG AS WE ARE READING THE FULL DOMAIN, BUT WE
   //  MIGHT NOT BE, SO I'M RELAXING THIS FOR NOW...)
   //
-  //if (mpiPM.nproc==1) {
+  //if (mpiPM->nproc==1) {
   //  cout <<"Nproc=1 in dataio_silo_utility::parallel_read_any_data():";
   //  cout <<" calling serial_read_any_data().\n";
   //  err = serial_read_any_data(firstfile, ggg);
@@ -515,10 +527,10 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
     //
     int max_reads=16;
     int nloops=0;
-    if (mpiPM.nproc<max_reads) nloops = 1;
+    if (mpiPM->get_nproc()<max_reads) nloops = 1;
     else {
-      nloops = mpiPM.nproc/max_reads;
-      if (mpiPM.nproc%max_reads !=0) {
+      nloops = mpiPM->get_nproc()/max_reads;
+      if (mpiPM->get_nproc()%max_reads !=0) {
         nloops+=1; // this shouldn't happen, but anyway...
         cout <<"Nproc not a power of 2!  This will cause trouble.\n";
       }
@@ -526,13 +538,13 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
 
     clk.start_timer("readdata"); double tsf=0;
     for (int count=0; count<nloops; count++) {
-      if ( (mpiPM.myrank+nloops)%nloops == count) {
-	cout <<"!READING DATA!!... myrank="<<mpiPM.myrank<<"  i="<<count;
+      if ( (mpiPM->get_myrank()+nloops)%nloops == count) {
+	cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
 	err = parallel_read_parallel_silodata(firstfile, ggg, numfiles, groupsize, nproc);
 	rep.errorTest("Failed to read parallel data",0,err);
       }
       else {
-	cout <<"waiting my turn... myrank="<<mpiPM.myrank<<"  i="<<count;
+	cout <<"waiting my turn... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
       }
       COMM->barrier("pllel_file_read");
       tsf=clk.time_so_far("readdata");
@@ -541,14 +553,14 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
     clk.stop_timer("readdata");
 
     //clk.start_timer("readdata"); double tsf=0;
-    //for (int count=0; count<mpiPM.nproc; count++) {
-    //  if (count==mpiPM.myrank) {
-    //    cout <<"!READING DATA!!... myrank="<<mpiPM.myrank<<"  i="<<count;
+    //for (int count=0; count<mpiPM->nproc; count++) {
+    //  if (count==mpiPM->myrank) {
+    //    cout <<"!READING DATA!!... myrank="<<mpiPM->myrank<<"  i="<<count;
     //    err = parallel_read_parallel_silodata(firstfile, ggg, numfiles, groupsize, nproc);
     //    rep.errorTest("Failed to read parallel data",0,err);
     //  }
     //  else {
-    //    cout <<"waiting my turn... myrank="<<mpiPM.myrank<<"  i="<<count;
+    //    cout <<"waiting my turn... myrank="<<mpiPM->myrank<<"  i="<<count;
     //  }
     //  COMM->barrier("pllel_file_read");
     //  tsf=clk.time_so_far("readdata");
@@ -642,10 +654,10 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
 {
   int err=0;
   //
-  // We need a ParallelParams struct to mimic the struct used to write the file.
+  // We need a MCMDcontrol struct to mimic the struct used to write the file.
   //
-  class ParallelParams filePM;
-  filePM.nproc = nmesh;
+  class MCMDcontrol filePM;
+  filePM.set_nproc(nmesh);
 
   //
   // First loop over all files:
@@ -685,12 +697,12 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
       //
       if (R!=0) {
         if (ifile<R)
-          filePM.myrank = ifile*groupsize +igroup;
+          filePM.set_myrank(ifile*groupsize +igroup);
         else 
-          filePM.myrank = (R*groupsize) +(ifile-R)*(groupsize-1) +igroup;
+          filePM.set_myrank((R*groupsize) +(ifile-R)*(groupsize-1) +igroup);
       }
       else {
-        filePM.myrank = ifile*groupsize +igroup;
+        filePM.set_myrank(ifile*groupsize +igroup);
       }
 
       filePM.decomposeDomain();
@@ -699,7 +711,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
       // set directory in file.
       //
       string qm_dir;
-      set_dir_in_file(qm_dir, filePM.myrank, igroup);
+      set_dir_in_file(qm_dir, filePM.get_myrank(), igroup);
       DBSetDir(dbfile, qm_dir.c_str());
       
       //
@@ -707,7 +719,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
       // and called "unigridXXXX" where XXXX=filePM.myrank
       //
       string qm_name;
-      mesh_name(filePM.myrank,qm_name);
+      mesh_name(filePM.get_myrank(),qm_name);
       //cout <<"got mesh name= "<<qm_name<<" in mesh dir= "<<qm_dir<<"\n";
 
       //
@@ -1012,7 +1024,7 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
     //
     // Get number of elements in each direction for this subdomain.
     // Can read it from the quadvar struct or else we could get it
-    // from mpiPM.localNG[] I suppose...  N.B. qv->dims is the number
+    // from mpiPM->localNG[] I suppose...  N.B. qv->dims is the number
     // of data entries in each direction (by contrast quadmesh has
     // qm->dims[] = num.nodes = qv->dims[]+1).
     //

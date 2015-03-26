@@ -152,6 +152,10 @@ class reporting {
   private:
   ofstream errmsg, infomsg;//, iomsg;
   streambuf *saved_buffer_cout, *saved_buffer_cerr;
+#ifdef PARALLEL
+  int myrank; ///< rank in list of MPI processes
+  int nproc;  ///< number of MPI procs.
+#endif // PARALLEL
 };
   
 extern class reporting rep;

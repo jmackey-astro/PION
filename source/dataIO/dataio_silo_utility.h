@@ -10,6 +10,7 @@
 /// - 2013.02.19 JM: Moved dataio_utility's directory-listing
 ///    functions into file_status, so I deleted dataio_utility.
 ///    Renamed file from dataio_utility.h to dataio_silo_utility.h
+/// - 2105.03.26 JM: updated for pion v0.2
 
 #include <dirent.h>
 #include <errno.h>
@@ -19,6 +20,8 @@ using namespace std;
 #include "dataIO/file_status.h"
 #include "dataIO/dataio.h"
 #include "dataIO/dataio_silo.h"
+
+#include "MCMD_control.h"
 
 #ifndef DATAIO_UTILITY_H
 #define DATAIO_UTILITY_H
@@ -34,7 +37,7 @@ using namespace std;
 
 class dataio_silo_utility : public dataio_silo_pllel  {
  public:
-  dataio_silo_utility() {}
+  dataio_silo_utility(class MCMDcontrol *);
   ~dataio_silo_utility() {}
   int serial_read_any_data(string, ///< file to read from
 			   class GridBaseClass * ///< pointer to data.
@@ -48,7 +51,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
 				 class GridBaseClass *, ///< pointer to data.
 				 const int, ///< number of files
 				 const int, ///< number of groups
-				 class ParallelParams * ///< pointer to class with nproc.
+				 class MCMDcontrol * ///< pointer to class with nproc.
 				 );
 
   /** \brief Given a Variable and a Silo File, read the data onto the grid.
@@ -58,7 +61,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
 			 class GridBaseClass *, ///< pointer to data.
 			 const string,   ///< variable name to read.
 			 const long int,  ///< number of cells expected.
-			 class ParallelParams * ///< pointer to class with nproc.
+			 class MCMDcontrol * ///< pointer to class with nproc.
 			 );
   /** \brief get nproc and numfiles from the header, and returns an error
    * if the Silo file is a serial file (i.e. if it fails to find numfiles).
@@ -71,7 +74,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
    * Returns true if it is.
    */
   bool SRAD_point_on_my_domain(const cell *, ///< pointer to cell
-			       class ParallelParams * ///< pointer to class with nproc.
+			       class MCMDcontrol * ///< pointer to class with nproc.
 			       );
 
   ///

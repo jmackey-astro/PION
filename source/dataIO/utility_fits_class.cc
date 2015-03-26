@@ -254,14 +254,25 @@ int utility_fitsio::read_fits_image_to_data(
       // If can't find variable, set them all to zero.
       if(status) {fits_report_error(stderr,status);}
       fits_clear_errmsg(); status=0;
-      cout <<"utility_fitsio::read_fits_image() couldn't get data for variable "<< name;
-      cout <<"; will set data to zero and return error code.\n";
+      cerr <<"utility_fitsio::read_fits_image() ";
+      cerr <<"couldn't get data for variable "<< name;
+      cerr <<"; will set data to zero and return error code.\n";
       for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
       return err;
     }
   }
   else {
     int err = ffmahd(ff,hdu_num,0,&status);
+    if (err) {
+      // If can't move to a hdu, then return an error
+      if(status) {fits_report_error(stderr,status);}
+      fits_clear_errmsg(); status=0;
+      cerr <<"utility_fitsio::read_fits_image() ";
+      cerr <<"couldn't get data for HDU# "<< hdu_num;
+      cerr <<"; will set data to zero and return error code.\n";
+      for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
+      return err;
+    }
   }
 
   double nulval = -1.e99; int anynul=0;

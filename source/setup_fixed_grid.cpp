@@ -159,7 +159,7 @@ void setup_fixed_grid::setup_cell_extra_data()
 
 int setup_fixed_grid::setup_grid(
       class GridBaseClass **grid,
-      class MCMDcontrol *
+      class MCMDcontrol * ///< unused for serial code.
       )
 {
   cout <<"------------------------------------------------------\n";

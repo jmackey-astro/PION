@@ -26,18 +26,18 @@ using namespace std;
 
 MCMDcontrol::MCMDcontrol()
 {
-   nproc = -1;
-   myrank = -1;
-   LocalNcell = -1;
-   for (int i=0; i<MAX_DIM; i++) {
-     LocalNG[i] = offsets[i] = ix[i] = nx[i] = -1;
-     LocalXmin[i] = LocalXmax[i] = LocalRange[i] = -1.e99;
-   }
-   ngbprocs=0;
+  nproc = -1;
+  myrank = -1;
+  LocalNcell = -1;
+  for (int i=0; i<MAX_DIM; i++) {
+    LocalNG[i] = offsets[i] = ix[i] = nx[i] = -1;
+    LocalXmin[i] = LocalXmax[i] = LocalRange[i] = -1.e99;
+  }
+  ngbprocs=0;
 
-   ReadSingleFile  =true; ///< If the ICs are in a single file, set this to true.
-   WriteSingleFile =false; ///< If you want all the processors to write to one file, set this (BUGGY!)
-   WriteFullImage  =false; ///< If you want multiple fits files, but each one is the full domain size (bad!), set this.
+  ReadSingleFile  =true; ///< If the ICs are in a single file, set this to true.
+  WriteSingleFile =false; ///< If you want all the processors to write to one file, set this (BUGGY!)
+  WriteFullImage  =false; ///< If you want multiple fits files, but each one is the full domain size (bad!), set this.
 }
 
 // ##################################################################

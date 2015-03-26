@@ -159,6 +159,11 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   //---------------------------------------
   // Data Variables common to all implementations.
   //
+  ///
+  /// information about multi-core-multi-domain simulations, used for
+  /// MPI communication between processes.
+  ///
+  class MCMDcontrol mpiPM;
 
   ///
   /// Max. walltime to run for, in seconds, after which we output

@@ -263,44 +263,6 @@ extern class JetParams JP;
 
 
 
-// *******************************************************************
-// *** Stellar winds have a rather complicated boundary condition ****
-// *******************************************************************
-
-
-
-
-
-//
-// This contains the definition of a grid cell, and the access
-// functions for its data, position, neighbours, etc.
-//
-#include "grid/cell_interface.h"
-#ifdef COUNT_ENERGETICS
-extern struct energetics *GLOBAL_CE;
- ///< for tracking rates in microphysics/raytracing.
-#endif
-extern class cell_interface CI;
-  ///< Global Instance of cell interface class.
-
-
-
-
-
-
-
-
-
-// ************************ MICROPHYSICS ***************************
-#include "microphysics/microphysics_base.h"
-extern class MicroPhysicsBase *MP;
-
-// ************************ MICROPHYSICS ***************************
-
-
-// *****************************************************************
-// ************************** RAY TRACER ***************************
-
 
 
 

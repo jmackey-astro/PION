@@ -14,7 +14,7 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
-
+#include "microphysics/microphysics_base.h"
 
 // ##################################################################
 // ##################################################################

@@ -54,8 +54,6 @@ reporting::~reporting()
   //cout<<"Deleting reporting class, This should be stderr.\n";
   //
 #elif defined (PARALLEL)
-  int myrank = -1, nproc = -1;
-  COMM->get_rank_nproc(&myrank, &nproc);
   if (myrank==0) {
     cout.rdbuf(saved_buffer_cout);   
     infomsg.close();
@@ -110,7 +108,7 @@ int reporting::redirect(const string &path)
   // For parallel execution (production runs) we only want a single
   // log file, and errors should be printed to stderr.
   //
-  int myrank = -1, nproc = -1;
+  myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
   //cout <<"myrank="<<mpiPM.myrank<<"\n";
   if (myrank==0) {

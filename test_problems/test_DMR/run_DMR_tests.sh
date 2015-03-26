@@ -1,6 +1,9 @@
 #!/bin/bash
 #
+# Author:  Jonathan Mackey
+#
 # 2010-09-21 JM: Added FVS solver tests.
+# 2015.03.26 JM: Set up to run in parallel.
 #
 # call with ./run_DMR_tests.sh $test_dir $code_dir $data_dir
 
@@ -35,19 +38,19 @@ else
 fi
 
 ##############  TESTING  ##############
-echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-./icgen_serial ${test_dir}/params_DMR_n260.txt silo
-./icgen_serial ${test_dir}/params_DMR_n520.txt silo
-echo "DOUBLE MACH REFLECTION: RUN LOW RES"
+#echo "DOUBLE MACH REFLECTION: GENERATE ICS"
+#./icgen_serial ${test_dir}/params_DMR_n260.txt silo
+#./icgen_serial ${test_dir}/params_DMR_n520.txt silo
+#echo "DOUBLE MACH REFLECTION: RUN LOW RES"
 #./pion_serial IC_DMRm10t60_n260.silo 5 1 \
 # outfile=${data_dir}/DMRm10t60_n260_Hyb_av00 cfl=0.4 artvisc=0   \
 # redirect=${data_dir}/msg_DMRm10t60_n260_Hyb_av00 solver=3
-./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3 \
- redirect=${data_dir}/msg_DMRm10t60_n260_RCV_Hcor solver=4 &
-./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
- redirect=${data_dir}/msg_DMRm10t60_n520_RCV_Hcor solver=4 &
-wait
-exit
+#./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3 \
+# redirect=${data_dir}/msg_DMRm10t60_n260_RCV_Hcor solver=4 &
+#./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
+# redirect=${data_dir}/msg_DMRm10t60_n520_RCV_Hcor solver=4 &
+#wait
+#exit
 ##############  TESTING  ##############
 
 
@@ -56,8 +59,8 @@ exit
 # Double Mach Reflection, same as Stone et al. 2008.
 #
 echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-./icgen_serial ${test_dir}/params_DMR_n260.txt silo
-./icgen_serial ${test_dir}/params_DMR_n520.txt silo
+./icgen_serial ${test_dir}/params_DMR_n260.txt silo redirect=${data_dir}/ic_n260_
+./icgen_serial ${test_dir}/params_DMR_n520.txt silo redirect=${data_dir}/ic_n520_
 
 #./main_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_EINT_av10 cfl=0.5 \
 # redirect=${data_dir}/msg_DMRm10t60_n260_EINT_av10 solver=3 eqntype=9 AVtype=1 EtaVisc=0.1

@@ -105,10 +105,11 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   int err=0;
   silofile=infile;
 #ifdef TESTING
-  cout <<"Rank: "<<mpiPM->myrank<<"\tReading Header from file: "<<silofile<<"\n";
+  cout <<"Rank: "<<mpiPM->get_myrank();
+  cout <<"\tReading Header from file: "<<silofile<<"\n";
 #endif
   if (!file_exists(silofile))
-    rep.error("dataio_silo_pllel::ReadHeader() File not found, myrank follows",mpiPM->myrank);
+    rep.error("dataio_silo_pllel::ReadHeader() File not found, myrank follows",mpiPM->get_myrank());
 
   int group_rank=0, myrank_group=0;
   string file_id="read_header";
@@ -149,7 +150,8 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err",err);
 
 #ifdef TESTING
-  cout <<"Rank: "<<mpiPM->myrank<<"\tFINISHED reading Header from file: "<<silofile<<"\n";
+  cout <<"Rank: "<<mpiPM->get_myrank();
+  cout <<"\tFINISHED reading Header from file: "<<silofile<<"\n";
 #endif
   return err;
 }
@@ -172,7 +174,8 @@ int dataio_silo_pllel::ReadData(
 
   int err=0;
 #ifdef TESTING
-  cout <<"\n----Rank: "<<mpiPM->myrank<<"\tReading Data from files: "<<infile;
+  cout <<"\n----Rank: "<<mpiPM->get_myrank();
+  cout <<"\tReading Data from files: "<<infile;
 #endif
 
   // set grid properties for quadmesh 
@@ -194,12 +197,6 @@ int dataio_silo_pllel::ReadData(
   string file_id="read_data";
   err = COMM->silo_pllel_init(numfiles,"READ", file_id, &group_rank, &myrank_ingroup);
   if (err) rep.error("COMM->silo_pllel_init() returned err",err);
-
-  // get group rank and index from hard-coding...
-  //int group_rank = mpiPM->myrank*numfiles/mpiPM->nproc;
-  //cout <<"myrank: "<<mpiPM->myrank<<"\tnumfiles: "<<numfiles<<"\tmy_group: "<<group_rank<<"\n";
-  //int myrank_ingroup = mpiPM->myrank % (mpiPM->nproc/numfiles);
-  //cout <<"myrank: "<<mpiPM->myrank<<"\tmy_index_in_group: "<<myrank_ingroup<<"\n";
 
   // Choose correct filename based on numfiles.
   // Also choose correct directory name, assuming that nproc is the same as for
@@ -235,7 +232,7 @@ int dataio_silo_pllel::ReadData(
   // choose my directory name:
   //
   string mydir; temp.str("");
-  temp << "rank_"; temp.width(4); temp << mpiPM->myrank << "_domain_";
+  temp << "rank_"; temp.width(4); temp << mpiPM->get_myrank() << "_domain_";
   temp.width(4); temp<<myrank_ingroup; mydir = temp.str(); temp.str("");
   
   *db_ptr=0;
@@ -256,7 +253,7 @@ int dataio_silo_pllel::ReadData(
   //
   temp.str(""); temp <<"unigrid";
   temp.width(4);
-  temp<<mpiPM->myrank;
+  temp<<mpiPM->get_myrank();
   string meshname=temp.str();
   DBquadmesh *qm = DBGetQuadmesh(*db_ptr,meshname.c_str());
   if (!qm) rep.error("failed to find quadmesh named as follows",meshname);
@@ -319,7 +316,8 @@ int dataio_silo_pllel::ReadData(
   COMM->barrier("dataio_silo_pllel__ReadData");
 
 #ifdef TESTING
-  cout <<"----Rank: "<<mpiPM->myrank<<"\tFINISHED reading Data from file: "<<silofile<<"\n"<<"\n";
+  cout <<"----Rank: "<<mpiPM->get_myrank();
+  cout <<"\tFINISHED reading Data from file: "<<silofile<<"\n"<<"\n";
 #endif
   return err;
 }
@@ -364,10 +362,10 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   //
   // Have to make sure that we write at most one file per process!
   //
-  if (mpiPM->nproc>threshold)
+  if (mpiPM->get_nproc()>threshold)
     numfiles=threshold;
   else
-    numfiles=mpiPM->nproc;
+    numfiles=mpiPM->get_nproc();
 
   //  cout <<"----dataio_silo_pllel::OutputData() running pmpio_init\n";
   int group_rank=0, myrank_ingroup=0;
@@ -376,7 +374,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   if (err) rep.error("COMM->silo_pllel_init() returned err",err);
 
 #ifdef TESTING
-  cout <<"myrank: "<<mpiPM->myrank<<"\tnumfiles: "<<numfiles<<"\tmy_group: ";
+  cout <<"myrank: "<<mpiPM->get_myrank()<<"\tnumfiles: "<<numfiles<<"\tmy_group: ";
   cout <<group_rank <<"\tmy_index_in_group: "<<myrank_ingroup<<"\n";
 #endif // TESTING
 
@@ -394,7 +392,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   ostringstream temp; temp.fill('0'); temp.str("");
   temp << "rank_";
   temp.width(4);
-  temp << mpiPM->myrank << "_domain_";
+  temp << mpiPM->get_myrank() << "_domain_";
   temp.width(4);
   temp << myrank_ingroup;
   mydir = temp.str();
@@ -442,7 +440,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
   //  cout <<"----dataio_silo_pllel::OutputData() generating quadmesh\n";
   temp.str(""); temp <<"unigrid";
   temp.width(4);
-  temp<<mpiPM->myrank;
+  temp<<mpiPM->get_myrank();
   string meshname=temp.str();
   err = generate_quadmesh(*db_ptr, meshname);
   if (err)
@@ -485,8 +483,9 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     // Write Number of files to header directory of file.
     //
     int dim1[1]; dim1[0]=1;
-    err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles,    dim1,1,DB_INT);
-    err += DBWrite(*db_ptr,"MPI_nproc",   &mpiPM->nproc, dim1,1,DB_INT);
+    int nproc = mpiPM->get_nproc();
+    err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
     //    err = write_header(*db_ptr);
     err = write_simulation_parameters();
     if (err)
@@ -498,7 +497,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     //    cout <<"Finished writing header to file.\n";
   } // if root processor of *group*
 
-  if (mpiPM->myrank==0) {
+  if (mpiPM->get_myrank()==0) {
     //
     // WRITE MULTIMESH DATA NOW TO FIRST PARTIAL FILE IF ROOT PROC.
     //
@@ -531,7 +530,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     
     
     //  string mm_name="mesh";
-    int nmesh = mpiPM->nproc;
+    int nmesh = mpiPM->get_nproc();
     char **mm_names=0;
     int *meshtypes=0;
     int 
@@ -595,9 +594,10 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     double extents[ext_size*nmesh];
     int zonecounts[nmesh];
     int externalzones[nmesh];
-    class MCMDcontrol pp; pp.nproc = mpiPM->nproc;
+    class MCMDcontrol pp;
+    pp.set_nproc(mpiPM->get_nproc());
     for (int v=0; v<nmesh; v++) {
-      pp.myrank = v;
+      pp.set_myrank(v);
       pp.decomposeDomain();
       zonecounts[v] = pp.LocalNcell;
       externalzones[v] = 0; // set to 1 if domain has zones outside multimesh.
@@ -686,7 +686,7 @@ int dataio_silo_pllel::OutputData(const string outfilebase,
     // 
     // Now write a mulitmeshadj object (but only if nproc>1).
     // 
-    if (mpiPM->nproc>1) {
+    if (mpiPM->get_nproc()>1) {
       err = write_multimeshadj(*db_ptr, gp, mm_name, mma_name);
       if (err) rep.error("Failed to write multimesh Adjacency Object",err);
     }
@@ -915,8 +915,8 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
   // Create temporary params class for repeated domain decomposition.
   //
   class MCMDcontrol pp;
-  int nmesh = mpiPM->nproc;
-  pp.nproc = mpiPM->nproc;
+  int nmesh = mpiPM->get_nproc();
+  pp.set_nproc(mpiPM->get_nproc());
   
   int meshtypes[nmesh], Nngb[nmesh], Sk[nmesh];
   for (int v=0;v<nmesh;v++) {
@@ -936,7 +936,7 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
   int Stot=0;
   std::vector<int> ngb_list;
   for (int v=0;v<nmesh;v++) {
-    pp.myrank = v;
+    pp.set_myrank(v);
     pp.decomposeDomain();
     //
     // Get list of abutting domains.
@@ -995,7 +995,7 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
   //
   //long int ct=0;
   for (int v=0;v<nmesh;v++) {
-    pp.myrank = v;
+    pp.set_myrank(v);
     pp.decomposeDomain();
     long int off1 = Sk[v]; // this should be the same as ct (maybe don't need ct then!)
 
@@ -1052,7 +1052,7 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
       //
       int my_ix[MAX_DIM], ngb_ix[MAX_DIM];
       for (int ii=0;ii<MAX_DIM;ii++) my_ix[ii] = ngb_ix[ii] = -1;
-      pp.get_domain_ix(pp.myrank,my_ix);
+      pp.get_domain_ix(pp.get_myrank(),my_ix);
       pp.get_domain_ix(ngb[off1],ngb_ix);
       
       //
@@ -1251,7 +1251,7 @@ int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
   //
   DBgroupelmap gmap;
   char gmap_block[256]; strcpy(gmap_block, "gmap_block");
-  int nsegs = mpiPM->nproc;
+  int nsegs = mpiPM->get_nproc();
   int seg_types[nsegs];
   int seg_ids[nsegs];
   int seg_lens[nsegs];   // number of neighbours for mesh i
@@ -1267,10 +1267,10 @@ int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
   // the array.
   //
   MCMDcontrol pp;
-  pp.nproc = nsegs;
+  pp.set_nproc(nsegs);
   int ct=0;
   for (int v=0; v<nsegs; v++) {
-    pp.myrank = v;
+    pp.set_myrank(v);
     pp.decomposeDomain();
     //
     // Count how many neighbours we have
@@ -1361,10 +1361,10 @@ int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
   //
   // loop over domains again.
   //
-  pp.nproc = nsegs;
+  pp.set_nproc(nsegs);
   ct=0;
   for (int v=0; v<nsegs; v++) {
-    pp.myrank = v;
+    pp.set_myrank(v);
     pp.decomposeDomain();
 
     //

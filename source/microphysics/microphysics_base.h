@@ -26,7 +26,7 @@
 #define MICROPHYSICS_BASE_H
 
 #include <vector>
-#include "../grid/cell_interface.h"
+#include "grid/cell_interface.h"
 //#define MP_DEBUG
 
 
@@ -247,6 +247,11 @@ class MicroPhysicsBase {
         ) {return -1.0e99;}
 
 };
+
+///
+/// Global pointed to the microphysics class.
+///
+extern class MicroPhysicsBase *MP;
 
 #endif // MICROPHYSICS_BASE_H
 

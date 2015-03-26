@@ -312,11 +312,13 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
+        microphysics_base.o  \
 	dataio.o readparams.o dataio_silo.o \
         dataio_fits.o utility_fits_class.o dataio_fits_MPI.o \
         file_status.o                                                          \
 	dataio_silo_MPI.o sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
+        raytracer_base.o  \
 	comm_mpi.o comm_files.o                                                \
 	stellar_wind_BC.o                                                      \
 	eqns_base.o eqns_hydro_adiabatic.o                                     \
@@ -342,9 +344,11 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
         MCMD_control.o \
         setup_fixed_grid.o setup_fixed_grid_MPI.o \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
+        raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
         file_status.o                                                          \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
+        microphysics_base.o  \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o jet.o \
 	photoevaporating_random_clumps.o shock_cloud.o \
@@ -426,9 +430,9 @@ sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h microp
  MCMD_control.h
 
 # functions for stepping forward in time
-time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_base.h ${GLOBAL}
 # functions for calculating the timestep
-calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_base.h ${GLOBAL}
 
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
@@ -547,6 +551,7 @@ solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
 ######################
 # MICROPHYSICS STUFF #
 ######################
+microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
 integrator.o: integrator.cc integrator.h ${GLOBAL}
 cooling.o:    cooling.cc cooling.h ${GLOBAL}
@@ -603,10 +608,13 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 # Raytracing
 ########################
+raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
+
 raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} \
-    uniform_grid.h
+    uniform_grid.h raytracer_base.h
+
 raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h \
-    ${GLOBAL} uniform_grid.h comms.h
+    ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
 
 ########################
 # Data I/O

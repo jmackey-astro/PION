@@ -53,6 +53,7 @@
 
 #include "grid/grid_base_class.h"
 #include "grid/stellar_wind_BC.h"
+#include "microphysics/microphysics_base.h"
 #include <sstream>
 using namespace std;
 

@@ -93,8 +93,8 @@ int main(int argc, char **argv)
 #ifdef PARALLEL
   int r=-1, np=-1;
   COMM->get_rank_nproc(&r,&np);
-  MCMD.myrank = r;
-  MCMD.nproc  = np;
+  MCMD.set_myrank(r);
+  MCMD.set_nproc(np);
 #endif // PARALLEL
 
   if (argc<2) {
@@ -111,15 +111,15 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      ostringstream path; path << outpath <<"_"<<MCMD.myrank<<"_";
+      ostringstream path; path << outpath <<"_"<<MCMD.get_myrank()<<"_";
       outpath = path.str();
-      if (MCMD.myrank==0) {
+      if (MCMD.get_myrank()==0) {
         cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
       }
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }
-  //cout << "rank: " << MCMD.myrank << " nproc: " << MCMD.nproc << "\n";
+  //cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
 #endif //PARALLEL
 #ifdef SERIAL
   int err=0;
@@ -413,7 +413,7 @@ int main(int argc, char **argv)
   }
 
 #ifdef PARALLEL
-  cout << "rank: " << MCMD.myrank << " nproc: " << MCMD.nproc << "\n";
+  cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
   COMM->finalise();
   delete COMM; COMM=0;
 #endif
@@ -519,7 +519,7 @@ int ICsetup_base::AddNoise2Data(
 {
   int seed= 975;
 #ifdef PARALLEL
-  seed += MCMD->myrank;
+  seed += MCMD->get_myrank();
   bool true_edge=false;
 #endif
   srand(seed);
