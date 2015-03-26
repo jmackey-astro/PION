@@ -36,7 +36,8 @@ fi
 
 ##############  TESTING  ##############
 echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-./icgen_serial ${test_dir}/pf_DMR_n260.txt silo
+./icgen_serial ${test_dir}/params_DMR_n260.txt silo
+./icgen_serial ${test_dir}/params_DMR_n520.txt silo
 echo "DOUBLE MACH REFLECTION: RUN LOW RES"
 #./pion_serial IC_DMRm10t60_n260.silo 5 1 \
 # outfile=${data_dir}/DMRm10t60_n260_Hyb_av00 cfl=0.4 artvisc=0   \
@@ -55,8 +56,8 @@ exit
 # Double Mach Reflection, same as Stone et al. 2008.
 #
 echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-./icgen_serial ${test_dir}/pf_DMR_n260.txt silo
-./icgen_serial ${test_dir}/pf_DMR_n520.txt silo
+./icgen_serial ${test_dir}/params_DMR_n260.txt silo
+./icgen_serial ${test_dir}/params_DMR_n520.txt silo
 
 #./main_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_EINT_av10 cfl=0.5 \
 # redirect=${data_dir}/msg_DMRm10t60_n260_EINT_av10 solver=3 eqntype=9 AVtype=1 EtaVisc=0.1

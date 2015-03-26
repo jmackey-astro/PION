@@ -7,11 +7,11 @@
 %\usepackage[numbers,comma]{natbib}
 \usepackage{natbib}
 %\bibpunct{(}{)}{;}{a}{,}{,}
-\bibliographystyle{../../../active/documentation_misc/bibtex/apj.bst}
+\bibliographystyle{../../../../active/documentation_misc/bibtex/apj.bst}
 \usepackage{amsmath}
 \usepackage{amssymb}
 
-\input{../../../active/documentation_misc/bibtex/defs}
+\input{../../../../active/documentation_misc/bibtex/defs}
 
 \usepackage[T1]{fontenc}
 \usepackage{times}
@@ -59,12 +59,12 @@
 \subsubsection{First I need to deal with global.h/.cc to get rid of all the global stuff.}
 \begin{enumerate}
 \item I have already made a lot of progress since mid-January, by spending a short while every day working on \pion{} (max.~1 hour per day).
-\item JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h
-\item Stellar wind parameters class needs to go somewhere.
-\item GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/ [\textbf{DONE 02.03.15}], and the constants can go into sim-constants.
+\item XXX JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h
+\item XXX Stellar wind parameters class needs to go somewhere.
+\item XXX GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/ [\textbf{DONE 02.03.15}], and the constants can go into sim-constants.
   The only thing that doesn't have an obvious home is equalD(); it is a very useful function, maybe it can be on its own somewhere?
 \item Remove the global microphysics pointer; maybe put it in sim-control?
-\item Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.
+\item XXX Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.
 \end{enumerate}
 
 \subsubsection{Then a few things that need fixing}
@@ -143,7 +143,7 @@ I guess I made a lot of other changes too, but stopped updating this doc.
 
 
 
-\bibliography{../../../active/documentation_misc/bibtex/refs}
+\bibliography{../../../../active/documentation_misc/bibtex/refs}
 \end{document}
 
 
