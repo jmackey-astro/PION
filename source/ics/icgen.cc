@@ -374,7 +374,7 @@ int main(int argc, char **argv)
 #ifdef SERIAL
     //    outfile = icfile+".silo";
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo ("FLOAT");
+    dataio=0; dataio=new dataio_silo ("DOUBLE");
 #endif
 #ifdef PARALLEL
     cout <<outfile <<"\n";

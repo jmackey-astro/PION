@@ -1711,10 +1711,21 @@ int dataio_silo::read_variable2grid(
   //
   DBquadvar *silodata=0;
   silodata = DBGetQuadvar(dbfile,variable.c_str());
-  if (!silodata)
-    rep.error("dataio_silo::read_variable2grid() failed to read variable",variable);
-  if (silodata->nels != npt)
-    rep.error("dataio_silo::read_variable2grid() wrong number of cells",silodata->nels-SimPM.Ncell);
+  if (!silodata) {
+    rep.error("dataio_silo::read_variable2grid() failed to read variable",
+              variable);
+  }
+  if (silodata->nels != npt) {
+    rep.error("dataio_silo::read_variable2grid() wrong number of cells",
+              silodata->nels-SimPM.Ncell);
+  }
+  if (silodata->datatype != silo_dtype) {
+    cout <<"ERROR: file has datatype "<<silodata->datatype;
+    cout <<" but I am trying to read datatype "<<silo_dtype<<"\n";
+    cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    rep.error("Bad datatype in silo file",silodata->datatype);
+  }
 
   //
   // Create a pointer to the data in the silo stuct DBquadvar.  This
