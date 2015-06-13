@@ -566,7 +566,6 @@ int dataio_silo::setup_grid_properties(
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
-    //node_coords = mem.myalloc(reinterpret_cast<float **>(node_coords),ndim);
   }
   else {
     //
@@ -599,35 +598,16 @@ int dataio_silo::setup_grid_properties(
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
-    //node_coords = mem.myalloc(reinterpret_cast<double **>(node_coords),ndim);
   }
 
-
-  //nodex = mem.myalloc(nodex,nn);
-
-  //for (int i=0;i<nn;i++)
-  //  nodex[i] = SimPM.Xmin[XX]+i*dx;
-  //node_coords[0] = nodex;
   nodedims[0] = nx;
   zonedims[0] = nx-1;
 
   if (ndim>1) {
-    //nn = SimPM.NG[YY]+1;
-    //nodey = mem.myalloc(nodey,nn);
-
-    //for (int i=0;i<nn;i++)
-    //  nodey[i] = SimPM.Xmin[YY]+i*dx;
-    //node_coords[1] = nodey;
     nodedims[1] = ny;
     zonedims[1] = ny-1;
   }
   if (ndim>2) {
-    //nn = SimPM.NG[ZZ]+1;
-    //nodez = mem.myalloc(nodez,nn);
-
-    //for (int i=0;i<nn;i++)
-    //  nodez[i] = SimPM.Xmin[ZZ]+i*dx;
-    //node_coords[2] = nodez;
     nodedims[2] = nz;
     zonedims[2] = nz-1;
   }

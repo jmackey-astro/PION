@@ -23,7 +23,9 @@
 ///    functions into file_status class, which now has its own file.
 ///    Renamed file to dataio_silo_utility.cpp from dataio_utility.cc
 /// - 2015.01.15 JM: Added new include statements for new PION version.
-/// - 2105.03.26 JM: updated for pion v0.2
+/// - 2015.03.26 JM: updated for pion v0.2
+/// - 2015.06.13 JM: started updating to work with void* pointers for
+///    coordinates and data variables (they can be float or double).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -62,10 +64,11 @@ dataio_silo_pllel(p)
 // ##################################################################
 
 
-int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname,
-						 int *np,
-						 int *nf
-						 )
+int dataio_silo_utility::SRAD_get_nproc_numfiles(
+      string fname,
+      int *np,
+      int *nf
+      )
 {
   int err=0;
 
@@ -109,9 +112,10 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(string fname,
 
 
 
-bool dataio_silo_utility::SRAD_point_on_my_domain(const cell *c, ///< pointer to cell
-						  class MCMDcontrol *filePM ///< pointer to class with nproc.
-						  )
+bool dataio_silo_utility::SRAD_point_on_my_domain(
+      const cell *c, ///< pointer to cell
+      class MCMDcontrol *filePM ///< pointer to class with nproc.
+      )
 {
   //
   // Assume point is on domain, and set to false if found to be off.
@@ -132,12 +136,13 @@ bool dataio_silo_utility::SRAD_point_on_my_domain(const cell *c, ///< pointer to
 
 
 
-int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer to silo file.
-					    class GridBaseClass *ggg, ///< pointer to data.
-					    const string variable, ///< variable name to read.
-					    const long int npt,     ///< number of cells expected.
-					    class MCMDcontrol *filePM ///< pointer to class with nproc.
-					    )
+int dataio_silo_utility::SRAD_read_var2grid(
+      DBfile *dbfile,        ///< pointer to silo file.
+      class GridBaseClass *ggg, ///< pointer to data.
+      const string variable, ///< variable name to read.
+      const long int npt,     ///< number of cells expected.
+      class MCMDcontrol *filePM ///< pointer to class with nproc.
+      )
 {
   //
   // The dbfile pointer should already be in the directory containing
@@ -146,10 +151,14 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
   //
   DBquadvar *silodata=0;
   silodata = DBGetQuadvar(dbfile,variable.c_str());
-  if (!silodata)
-    rep.error("dataio_silo::read_variable2grid() failed to read variable",variable);
-  if (silodata->nels != npt)
-    rep.error("dataio_silo::read_variable2grid() wrong number of cells",silodata->nels-SimPM.Ncell);
+  if (!silodata) {
+    rep.error("dataio_silo::read_variable2grid() failed to read variable",
+              variable);
+  }
+  if (silodata->nels != npt) {
+    rep.error("dataio_silo::read_variable2grid() wrong number of cells",
+              silodata->nels-SimPM.Ncell);
+  }
 
   FAKE_DOUBLE **data = (FAKE_DOUBLE **)(silodata->vals);
 
@@ -163,15 +172,15 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
     cell *c=ggg->FirstPt(); long int ct=0;
     do {
       if (SRAD_point_on_my_domain(c,filePM)) {
-	//      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-	c->P[v1] = data[0][ct];
-	c->P[v2] = data[1][ct];
-	c->P[v3] = data[2][ct];
-	//c->P[v1] = silodata->vals[0][ct];
-	//c->P[v2] = silodata->vals[1][ct];
-	//c->P[v3] = silodata->vals[2][ct];
-	//cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-	ct++;
+        //      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
+        c->P[v1] = data[0][ct];
+        c->P[v2] = data[1][ct];
+        c->P[v3] = data[2][ct];
+        //c->P[v1] = silodata->vals[0][ct];
+        //c->P[v2] = silodata->vals[1][ct];
+        //c->P[v3] = silodata->vals[2][ct];
+        //cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
+        ct++;
       }
     } while ( (c=ggg->NextPt(c))!=0 );
     if (ct != npt) rep.error("wrong number of points read for vector variable",ct-npt);
@@ -198,38 +207,11 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
       }
       v1 = SimPM.ftr +itr;
     }
-    //
-    // The following are legacy for when I had a max of 10 tracers:
-    //
-    //else if (variable.substr(0,3)=="Tr0") {v1=SimPM.ftr;}
-    //else if (variable.substr(0,3)=="Tr1") {v1=SimPM.ftr+1;}
-    //else if (variable.substr(0,3)=="Tr2") {v1=SimPM.ftr+2;}
-    //else if (variable.substr(0,3)=="Tr3") {v1=SimPM.ftr+3;}
-    //else if (variable.substr(0,3)=="Tr4") {v1=SimPM.ftr+4;}
-    //else if (variable.substr(0,3)=="Tr5") {v1=SimPM.ftr+5;}
-    //else if (variable.substr(0,3)=="Tr6") {v1=SimPM.ftr+6;}
-    //else if (variable.substr(0,3)=="Tr7") {v1=SimPM.ftr+7;}
-    //else if (variable.substr(0,3)=="Tr8") {v1=SimPM.ftr+8;}
-    //else if (variable.substr(0,3)=="Tr9") {v1=SimPM.ftr+9;}
     else rep.error("what var to read???",variable);
     //cout <<"reading variable "<<variable<<" into element "<<v1<<" of state vec.\n";
 
     //
-    // Slow Way: SCANS EVERY CELL
-    //
-//     cell *c=ggg->FirstPt(); long int ct=0;
-//     do {
-//       if (SRAD_point_on_my_domain(c,filePM)) {
-// 	//cout <<"val="<<silodata->vals[0][ct]<<" and data="<<data[0][ct]<<"\n";
-// 	//c->P[v1] = silodata->vals[0][ct];
-// 	c->P[v1] = data[0][ct];
-// 	ct++;
-// 	//      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-//       }
-//     } while ( (c=ggg->NextPt(c))!=0 );
-//     if (ct != npt) rep.error("wrong number of points read for scalar variable",ct-npt);
-    //
-    // HOPEFULLY FASTER WAY: SCANS ONLY NEEDED CELLS.
+    // FASTER WAY: SCANS ONLY NEEDED CELLS.
     //
     // First get to start cell in local domain:
     //
@@ -237,7 +219,7 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
     cell *start=ggg->FirstPt(); long int ct=0;
     for (int i=0;i<SimPM.ndim;i++) {
       while (CI.get_dpos(start,i) < filePM->LocalXmin[i])
-	start = ggg->NextPt(start,posdir[i]);
+        start = ggg->NextPt(start,posdir[i]);
     }
     //
     // Now use nested for-loops to only go through cells in the local domain.
@@ -252,19 +234,21 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
     for (int k=0; k<filePM->LocalNG[ZZ]; k++) {
       cy=cz;
       for (int j=0; j<filePM->LocalNG[YY]; j++) {
-	cx = cy;
-	for (int i=0; i<filePM->LocalNG[XX]; i++) {
-	  if (!SRAD_point_on_my_domain(cx,filePM))
-	    rep.error("FAST READ IS IN THE WRONG PLACE!!!",cx->pos[XX]);
-	  cx->P[v1] = data[0][ct];
-	  ct++;
- 	  cx = ggg->NextPt(cx,posdir[XX]);
-	}
-	if (SimPM.ndim>1) cy = ggg->NextPt(cy,posdir[YY]);
+        cx = cy;
+        for (int i=0; i<filePM->LocalNG[XX]; i++) {
+          if (!SRAD_point_on_my_domain(cx,filePM))
+            rep.error("FAST READ IS IN THE WRONG PLACE!!!",cx->pos[XX]);
+          cx->P[v1] = data[0][ct];
+          ct++;
+          cx = ggg->NextPt(cx,posdir[XX]);
+        }
+        if (SimPM.ndim>1) cy = ggg->NextPt(cy,posdir[YY]);
       }
       if (SimPM.ndim>2) cz = ggg->NextPt(cz,posdir[ZZ]);
     }
-   if (ct != npt) rep.error("wrong number of points read for scalar variable",ct-npt);
+    if (ct != npt) {
+      rep.error("wrong number of points read for scalar variable",ct-npt);
+    }
    
   } // scalar variable
 
@@ -281,9 +265,10 @@ int dataio_silo_utility::SRAD_read_var2grid(DBfile *dbfile,        ///< pointer 
 
 
 
-void dataio_silo_utility::set_pllel_filename(std::string &fname,  ///< filename
-					     const int ifile      ///< file number to replace name with.
-					     )
+void dataio_silo_utility::set_pllel_filename(
+      std::string &fname,  ///< filename
+      const int ifile      ///< file number to replace name with.
+      )
 {
   //
   // If we have a parallel file, Parse filename, and replace file number 
@@ -333,9 +318,10 @@ void dataio_silo_utility::set_dir_in_file(
 
 
 
-int dataio_silo_utility::serial_read_any_data(string firstfile,        ///< file to read from
-					      class GridBaseClass *ggg ///< pointer to data.
-					      )
+int dataio_silo_utility::serial_read_any_data(
+      string firstfile,        ///< file to read from
+      class GridBaseClass *ggg ///< pointer to data.
+      )
 {
   if (!ggg) rep.error("null pointer to computational grid!",ggg);
 
@@ -387,12 +373,13 @@ int dataio_silo_utility::serial_read_any_data(string firstfile,        ///< file
 
 
 
-int dataio_silo_utility::serial_read_pllel_silodata(const string firstfile, ///< filename
-						    class GridBaseClass *ggg, ///< pointer to data.
-						    const int numfiles, ///< number of files
-						    const int groupsize, ///< number of groups
-						    class MCMDcontrol *filePM ///< number of processes used to write file.
-						    )
+int dataio_silo_utility::serial_read_pllel_silodata(
+      const string firstfile, ///< filename
+      class GridBaseClass *ggg, ///< pointer to data.
+      const int numfiles, ///< number of files
+      const int groupsize, ///< number of groups
+      class MCMDcontrol *filePM ///< number of processes used to write file.
+      )
 {
   int err=0;
 
@@ -440,9 +427,9 @@ int dataio_silo_utility::serial_read_pllel_silodata(const string firstfile, ///<
       // now read each variable in turn from the mesh
       //
       for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-	err = SRAD_read_var2grid(dbfile, ggg, (*i), filePM->LocalNcell, filePM);
-	if (err)
-	  rep.error("error reading variable",(*i));
+        err = SRAD_read_var2grid(dbfile, ggg, (*i), filePM->LocalNcell, filePM);
+        if (err)
+          rep.error("error reading variable",(*i));
       }
     } // loop over domains within a file.
     
@@ -464,9 +451,10 @@ int dataio_silo_utility::serial_read_pllel_silodata(const string firstfile, ///<
 
 
 
-int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< file to read from
-						class GridBaseClass *ggg ///< pointer to data.
-						)
+int dataio_silo_utility::parallel_read_any_data(
+      string firstfile,        ///< file to read from
+      class GridBaseClass *ggg ///< pointer to data.
+      )
 {
   if (!ggg) rep.error("null pointer to computational grid!",ggg);
   int err=0;
@@ -539,12 +527,12 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
     clk.start_timer("readdata"); double tsf=0;
     for (int count=0; count<nloops; count++) {
       if ( (mpiPM->get_myrank()+nloops)%nloops == count) {
-	cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
-	err = parallel_read_parallel_silodata(firstfile, ggg, numfiles, groupsize, nproc);
-	rep.errorTest("Failed to read parallel data",0,err);
+        cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
+        err = parallel_read_parallel_silodata(firstfile, ggg, numfiles, groupsize, nproc);
+        rep.errorTest("Failed to read parallel data",0,err);
       }
       else {
-	cout <<"waiting my turn... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
+        cout <<"waiting my turn... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
       }
       COMM->barrier("pllel_file_read");
       tsf=clk.time_so_far("readdata");
@@ -579,9 +567,10 @@ int dataio_silo_utility::parallel_read_any_data(string firstfile,        ///< fi
 
 
 
-int dataio_silo_utility::parallel_read_serial_silodata(string firstfile,        ///< file to read from
-						       class GridBaseClass *ggg ///< pointer to data.
-						       )
+int dataio_silo_utility::parallel_read_serial_silodata(
+      string firstfile,        ///< file to read from
+      class GridBaseClass *ggg ///< pointer to data.
+      )
 {
   int err=0;
   //
@@ -645,12 +634,13 @@ int dataio_silo_utility::parallel_read_serial_silodata(string firstfile,        
 
 
 
-int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,        ///< file to read from
-							 class GridBaseClass *ggg, ///< pointer to data.
-							 const int numfiles, ///< number of files
-							 const int groupsize, ///< number of groups
-							 const int nmesh    ///< number of domains in file.
-							 )
+int dataio_silo_utility::parallel_read_parallel_silodata(
+      string firstfile,        ///< file to read from
+      class GridBaseClass *ggg, ///< pointer to data.
+      const int numfiles, ///< number of files
+      const int groupsize, ///< number of groups
+      const int nmesh    ///< number of domains in file.
+      )
 {
   int err=0;
   //
@@ -734,8 +724,8 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
       //
       int localmin[ndim], localmax[ndim];
       for (int v=0;v<ndim;v++) {
-	localmin[v] = ggg->iXmin(static_cast<axes>(v));
-	localmax[v] = ggg->iXmax(static_cast<axes>(v));
+        localmin[v] = ggg->iXmin(static_cast<axes>(v));
+        localmax[v] = ggg->iXmax(static_cast<axes>(v));
       }
 
       //
@@ -743,30 +733,30 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
       //
       bool get_data=true;
       for (int v=0;v<ndim;v++) {
-	if ( (mesh_iXmax[v]<=localmin[v]) ||
-	     (mesh_iXmin[v]>=localmax[v]) )
-	  get_data=false;
+        if ( (mesh_iXmax[v]<=localmin[v]) ||
+             (mesh_iXmin[v]>=localmax[v]) )
+          get_data=false;
       }
 
       if (!get_data) {
-	//cout <<"*** skipping mesh "<<qm_name<<" because not on local domain.\n";
+        //cout <<"*** skipping mesh "<<qm_name<<" because not on local domain.\n";
       }
       else {
-	//cout <<"**** reading mesh "<<qm_name<<" because it is on local domain.\n";
-	//
-	// set variables to read: (ripped from dataio_silo class)
-	//
-	set_readvars(SimPM.eqntype);
-	
-	//
-	// now read each variable in turn from the mesh, using the
-	// parallel-parallel read function
-	//
-	for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-	  err = PP_read_var2grid(dbfile, ggg, (*i), filePM.LocalNcell, mesh_iXmin, mesh_iXmax);
-	  if (err)
-	    rep.error("error reading variable",(*i));
-	} // loop over variables.
+        //cout <<"**** reading mesh "<<qm_name<<" because it is on local domain.\n";
+        //
+        // set variables to read: (ripped from dataio_silo class)
+        //
+        set_readvars(SimPM.eqntype);
+        
+        //
+        // now read each variable in turn from the mesh, using the
+        // parallel-parallel read function
+        //
+        for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
+          err = PP_read_var2grid(dbfile, ggg, (*i), filePM.LocalNcell, mesh_iXmin, mesh_iXmax);
+          if (err)
+            rep.error("error reading variable",(*i));
+        } // loop over variables.
       }
     } // loop over domains within a file.
     
@@ -785,9 +775,10 @@ int dataio_silo_utility::parallel_read_parallel_silodata(string firstfile,      
 
 
 
-void dataio_silo_utility::mesh_name(const int rank, ///< rank
-				    string &mesh_name
-				    )
+void dataio_silo_utility::mesh_name(
+      const int rank, ///< rank
+      string &mesh_name
+      )
 {
   //
   // Get mesh_name from rank
@@ -805,12 +796,13 @@ void dataio_silo_utility::mesh_name(const int rank, ///< rank
 
 
 
-void dataio_silo_utility::get_quadmesh_extents(DBfile *dbfile,        ///< pointer to silo file.
-					       const string mesh_dir, ///< directory of mesh
-					       const string qm_name,  ///< name of mesh
-					       double *mesh_xmin, ///< Xmin for mesh (output)
-					       double *mesh_xmax ///< Xmax for mesh (output)
-					       )
+void dataio_silo_utility::get_quadmesh_extents(
+      DBfile *dbfile,        ///< pointer to silo file.
+      const string mesh_dir, ///< directory of mesh
+      const string qm_name,  ///< name of mesh
+      double *mesh_xmin, ///< Xmin for mesh (output)
+      double *mesh_xmax ///< Xmax for mesh (output)
+      )
 {
 
   //
@@ -845,12 +837,13 @@ void dataio_silo_utility::get_quadmesh_extents(DBfile *dbfile,        ///< point
 
 
 
-void dataio_silo_utility::get_quadmesh_integer_extents(DBfile *dbfile,        ///< pointer to silo file.
-						      const string mesh_dir, ///< directory of mesh
-						      const string qm_name,  ///< name of mesh
-						      int *iXmin, ///< integer Xmin for mesh (output)
-						      int *iXmax  ///< integer Xmax for mesh (output)
-						      )
+void dataio_silo_utility::get_quadmesh_integer_extents(
+      DBfile *dbfile,        ///< pointer to silo file.
+      const string mesh_dir, ///< directory of mesh
+      const string qm_name,  ///< name of mesh
+      int *iXmin, ///< integer Xmin for mesh (output)
+      int *iXmax  ///< integer Xmax for mesh (output)
+      )
 {
   //
   // First get the double precision extents
@@ -876,13 +869,14 @@ void dataio_silo_utility::get_quadmesh_integer_extents(DBfile *dbfile,        //
 
 
 
-int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to silo file.
-					  class GridBaseClass *ggg, ///< pointer to data.
-					  const string variable, ///< variable name to read.
-					  const long int,   ///< number of cells expected (defunct!)
-					  const int *iXmin, ///< integer Xmin for mesh
-					  const int *iXmax  ///< integer Xmax for mesh
-					  )
+int dataio_silo_utility::PP_read_var2grid(
+      DBfile *dbfile,        ///< pointer to silo file.
+      class GridBaseClass *ggg, ///< pointer to data.
+      const string variable, ///< variable name to read.
+      const long int,   ///< number of cells expected (defunct!)
+      const int *iXmin, ///< integer Xmin for mesh
+      const int *iXmax  ///< integer Xmax for mesh
+      )
 {
   //
   // The dbfile pointer should already be in the directory containing
@@ -893,48 +887,6 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
   qv = DBGetQuadvar(dbfile,variable.c_str());
   if (!qv)
     rep.error("dataio_silo::read_variable2grid() failed to read variable",variable);
-
-  //
-  // The first thing to do is see if the mesh we are reading
-  // intersects the local domain at all, so we get the mesh associated
-  // with this variable, and find its extents.
-  //
-//   DBquadmesh *qm=0;
-//   string qm_name(qv->meshname);
-//   //  cout <<"quadmesh for variable "<<variable<<" is called "<<qm_name<<" (and same?) "<<qv->meshname<<"\n";
-//   qm = DBGetQuadmesh(dbfile,qm_name.c_str());
-//   if (!qm) rep.error("failed to get quadmesh",qm_name);
-
-//   double mesh_xmin[ndim], mesh_xmax[ndim];
-//   int iXmin[ndim], iXmax[ndim], localmin[ndim], localmax[ndim];
-//   FAKE_DOUBLE *qmmin = (FAKE_DOUBLE *)(qm->min_extents);
-//   FAKE_DOUBLE *qmmax = (FAKE_DOUBLE *)(qm->max_extents);
-
-//   for (int v=0;v<ndim;v++) {
-//     mesh_xmin[v] = qmmin[v];
-//     mesh_xmax[v] = qmmax[v];
-//     //cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
-//     localmin[v] = ggg->iXmin(static_cast<axes>(v));
-//     localmax[v] = ggg->iXmax(static_cast<axes>(v));
-//   }
-//   CI.get_ipos_vec(mesh_xmin,iXmin);
-//   CI.get_ipos_vec(mesh_xmax,iXmax);
-  
-//   bool get_data=true;
-//   for (int v=0;v<ndim;v++) {
-//     if ( (iXmax[v]<=localmin[v]) ||
-// 	 (iXmin[v]>=localmax[v]) )
-//       get_data=false;
-//   }
-
-//   if (!get_data) {
-//     cout <<"this mesh not on my domain, so skipping it.\n";
-//     rep.printVec("mesh xmin", iXmin, ndim);
-//     rep.printVec("mesh xmax", iXmax, ndim);
-//     rep.printVec("grid xmin", localmin, ndim);
-//     rep.printVec("grid xmax", localmax, ndim);
-//     return 0;
-//   }
 
   //
   // So now part of the quadmesh intersects the local domain, so we
@@ -977,16 +929,6 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
       }
       v1 = SimPM.ftr +itr;
     }
-    //else if (variable.substr(0,3)=="Tr0") {v1=SimPM.ftr;}
-    //else if (variable.substr(0,3)=="Tr1") {v1=SimPM.ftr+1;}
-    //else if (variable.substr(0,3)=="Tr2") {v1=SimPM.ftr+2;}
-    //else if (variable.substr(0,3)=="Tr3") {v1=SimPM.ftr+3;}
-    //else if (variable.substr(0,3)=="Tr4") {v1=SimPM.ftr+4;}
-    //else if (variable.substr(0,3)=="Tr5") {v1=SimPM.ftr+5;}
-    //else if (variable.substr(0,3)=="Tr6") {v1=SimPM.ftr+6;}
-    //else if (variable.substr(0,3)=="Tr7") {v1=SimPM.ftr+7;}
-    //else if (variable.substr(0,3)=="Tr8") {v1=SimPM.ftr+8;}
-    //else if (variable.substr(0,3)=="Tr9") {v1=SimPM.ftr+9;}
     else rep.error("what var to read???",variable);
   }
   //cout <<"vars=["<<v1<<", "<<v2<<", "<<v3<<"]\n";
@@ -1002,8 +944,10 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
     while (c!=0 && c->pos[v]<iXmin[v]) {
       c=ggg->NextPt(c,posdir);
     }
-    if (!c)
-      rep.error("Went off end of grid looking for starting cell",iXmin[v]-ggg->FirstPt()->pos[v]);
+    if (!c) {
+      rep.error("Went off end of grid looking for starting cell",
+                iXmin[v]-ggg->FirstPt()->pos[v]);
+    }
   }
 
 
@@ -1019,7 +963,8 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
   int qm_ix[ndim], qm_NX[ndim];
   for (int v=0;v<ndim;v++) {
     qm_start[v] = (c->pos[v]-iXmin[v])/dx;
-    // cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos="<<c->pos[v]<< "xmin="<<iXmin[v]<<" dims="<<qv->dims[v]<<"\n";
+    // cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
+    // cout <<c->pos[v]<< "xmin="<<iXmin[v]<<" dims="<<qv->dims[v]<<"\n";
     qm_ix[v] = qm_start[v];
     //
     // Get number of elements in each direction for this subdomain.
@@ -1061,31 +1006,31 @@ int dataio_silo_utility::PP_read_var2grid(DBfile *dbfile,        ///< pointer to
       qv_index += qm_ix[XX];
       
       while ((cx!=0) && cx->pos[XX]<iXmax[XX]) {
-	cx->P[v1] = data[0][qv_index];
-	if (v2>0) cx->P[v2] = data[1][qv_index];
-	if (v3>0) cx->P[v3] = data[2][qv_index];
-	//rep.printVec("Cell",cx->pos,ndim);
-	cx = ggg->NextPt(cx,XP);
-	qv_index++;
-	qm_ix[XX] ++;
-	ct++;
+        cx->P[v1] = data[0][qv_index];
+        if (v2>0) cx->P[v2] = data[1][qv_index];
+        if (v3>0) cx->P[v3] = data[2][qv_index];
+        //rep.printVec("Cell",cx->pos,ndim);
+        cx = ggg->NextPt(cx,XP);
+        qv_index++;
+        qm_ix[XX] ++;
+        ct++;
       } // x-column
       
       if (ndim>1) {
-	//
-	// move to next x-column in YP direction, if it exists, and if
-	// it is on the mesh domain.  Also increment qm_ix[YY] to
-	// indicate this.
-	//
-	cy = ggg->NextPt(cy,YP);
-	if (cy!=0 && cy->pos[YY]>iXmax[YY]) cy = 0;
-	qm_ix[YY] ++;
+        //
+        // move to next x-column in YP direction, if it exists, and if
+        // it is on the mesh domain.  Also increment qm_ix[YY] to
+        // indicate this.
+        //
+        cy = ggg->NextPt(cy,YP);
+        if (cy!=0 && cy->pos[YY]>iXmax[YY]) cy = 0;
+        qm_ix[YY] ++;
       }
       else {
-	//
-	// ndim==1, so we want to break out of the y-dir loop
-	//
-	cy = 0;
+        //
+        // ndim==1, so we want to break out of the y-dir loop
+        //
+        cy = 0;
       }
 
     } // y-loop

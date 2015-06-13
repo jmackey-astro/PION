@@ -42,7 +42,8 @@
 /// - 2011.10.24 JM: wrapped most of the info-reporting with ifdef-testing.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.28 JM: Changes for new code structure.
-///
+/// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
+///    parameter, set in the constructor.
 #ifdef SILO
 
 #include "defines/functionality_flags.h"
@@ -164,9 +165,9 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
 
 
 int dataio_silo_pllel::ReadData(
-        string infile,
-	class GridBaseClass *cg
-	)
+      string infile,
+	    class GridBaseClass *cg
+	    )
 {
   if (!cg)
     rep.error("dataio_silo_pllel::ReadData() null pointer to grid!",cg);
@@ -265,30 +266,74 @@ int dataio_silo_pllel::ReadData(
   //
   // check number of cells.
   //
-  int nn=1; for (int i=0;i<ndim;i++) nn*=mpiPM->LocalNG[i]+1;
+  int nn=1;
+  for (int i=0;i<ndim;i++)
+    nn *= mpiPM->LocalNG[i]+1;
   if ((n=qm->nnodes)!=nn) {
     cerr<<"nnodes="<<n<<" and ncell="<<mpiPM->LocalNcell<<"\n";
     rep.error("bad number of nodes",n-mpiPM->LocalNcell);
   }
   //
-  // Have to reinterpret qm->coords, as they are doubles, but the interface thinks
-  // they are floats.
+  // ---------- check grid nodes are where we expect ----------
   //
-  FAKE_DOUBLE **c = reinterpret_cast<FAKE_DOUBLE **>(qm->coords);
+  // qm->coords is a <void **> pointer, so we have to reinterpret
+  // it as either float or double.
   //
-  // check origin of subgrid is at the right place.
-  //
-  if (!pconst.equalD(nodex[0],c[XX][0])) rep.error("XX mesh not at right place...",nodex[0]-c[XX][0]);
-  if (ndim>1)
-    if (!pconst.equalD(nodey[0], c[YY][0])) {
-      cout <<"nodey = "<<nodey[0]<<" and coords[y]= "<<c[YY][0]<<"\n";
-      rep.error("YY mesh not at right place...",nodey[0]-c[YY][0]);
+  //FAKE_DOUBLE **c = reinterpret_cast<FAKE_DOUBLE **>(qm->coords);
+  if (silo_dtype==DB_FLOAT) {
+    float **meshcoords = reinterpret_cast<float **>(qm->coords);
+    //
+    // check origin of subgrid is at the right place.
+    //
+    float *nx = nodex;
+    if (!pconst.equalD(nx[0],meshcoords[XX][0])) {
+      rep.error("XX mesh not at right place...",nx[0]-meshcoords[XX][0]);
     }
-  if (ndim>2)
-    if (!pconst.equalD(nodez[0], c[ZZ][0]))
-      rep.error("ZZ mesh not at right place...",nodez[0]-c[ZZ][0]);
+    if (ndim>1) {
+      nx = nodey;
+      if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
+        cout <<"nodey = "<<nx[0]<<" and coords[y]= "<<meshcoords[YY][0]<<"\n";
+        rep.error("YY mesh not at right place...",nx[0]-meshcoords[YY][0]);
+      }
+    }
+    if (ndim>2) {
+      nx = nodez;
+      if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
+        cout <<"nodez = "<<nx[0]<<" and coords[z]= "<<meshcoords[ZZ][0]<<"\n";
+        rep.error("ZZ mesh not at right place...",x[0]-meshcoords[ZZ][0]);
+      }
+    }
+  }
+  else {
+    //
+    // do the same thing for double precision.
+    //
+    double **meshcoords = reinterpret_cast<double **>(qm->coords);
+    //
+    // check origin of subgrid is at the right place.
+    //
+    double *nx = nodex;
+    if (!pconst.equalD(nx[0],meshcoords[XX][0])) {
+      rep.error("XX mesh not at right place...",nx[0]-meshcoords[XX][0]);
+    }
+    if (ndim>1) {
+      nx = nodey;
+      if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
+        cout <<"nodey = "<<nx[0]<<" and coords[y]= "<<meshcoords[YY][0]<<"\n";
+        rep.error("YY mesh not at right place...",nx[0]-meshcoords[YY][0]);
+      }
+    }
+    if (ndim>2) {
+      nx = nodez;
+      if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
+        cout <<"nodez = "<<nx[0]<<" and coords[z]= "<<meshcoords[ZZ][0]<<"\n";
+        rep.error("ZZ mesh not at right place...",x[0]-meshcoords[ZZ][0]);
+      }
+    }
+  }
   //
-  // this is probably enough checking! -- if all these are right then it should all be right.
+  // this is probably enough checking! -- if all these are right
+  // then it should all be right.
   //
   DBFreeQuadmesh(qm); //qm=0;
 
@@ -776,35 +821,122 @@ int dataio_silo_pllel::setup_grid_properties(
 
   nodedims    = mem.myalloc(nodedims,    ndim);
   zonedims    = mem.myalloc(zonedims,    ndim);
-  node_coords = mem.myalloc(node_coords, ndim);
 
+  //node_coords = mem.myalloc(node_coords, ndim);
+  //
   // now setup arrays with locations of nodes in coordinate directions.
-  int nn = mpiPM->LocalNG[XX]+1;
-  nodex = mem.myalloc(nodex,nn);
-  for (int i=0;i<nn;i++)
-    nodex[i] = mpiPM->LocalXmin[XX]+static_cast<FAKE_DOUBLE>(i)*dx;
-  node_coords[0] = nodex;
-  nodedims[0] = nn;
-  zonedims[0] = nn-1;
+  //int nn = mpiPM->LocalNG[XX]+1;
+  //nodex = mem.myalloc(nodex,nn);
+  //for (int i=0;i<nn;i++)
+  //  nodex[i] = mpiPM->LocalXmin[XX]+static_cast<FAKE_DOUBLE>(i)*dx;
+  //node_coords[0] = nodex;
+  //nodedims[0] = nn;
+  //zonedims[0] = nn-1;
+  //
+  //if (ndim>1) {
+  //  nn = mpiPM->LocalNG[YY]+1;
+  //  nodey = mem.myalloc(nodey,nn);
+  //  for (int i=0;i<nn;i++)
+  //    nodey[i] = mpiPM->LocalXmin[YY]+static_cast<FAKE_DOUBLE>(i)*dx;
+  //  node_coords[1] = nodey;
+  //  nodedims[1] = nn;
+  //  zonedims[1] = nn-1;
+  //}
+  //if (ndim>2) {
+  //  nn = mpiPM->LocalNG[ZZ]+1;
+  //  nodez = mem.myalloc(nodez,nn);
+  //  for (int i=0;i<nn;i++)
+  //    nodez[i] = mpiPM->LocalXmin[ZZ]+static_cast<FAKE_DOUBLE>(i)*dx;
+  //  node_coords[2] = nodez;
+  //  nodedims[2] = nn;
+  //  zonedims[2] = nn-1;
+  //}
 
+  //
+  // node_coords is a void pointer, so if we are writing silo data in
+  // single or double precision then we need different allocation
+  // calls.  Same for nodex, nodey, nodez.
+  //
+  // We setup arrays with locations of nodes in coordinate directions.
+  // This differs from the serial code in that we use LocalNG, not
+  // the global number of points NG.
+  //
+  int nx = mpiPM.LocalNG[XX]+1; // for N cells, have N+1 nodes.
+  int ny = mpiPM.LocalNG[YY]+1; // for N cells, have N+1 nodes.
+  int nz = mpiPM.LocalNG[ZZ]+1; // for N cells, have N+1 nodes.
+  
+  //node_coords = mem.myalloc(node_coords,ndim);
+  if (silo_dtype==DB_FLOAT) {
+    //
+    // Allocate memory for node_coords, and set pointers.
+    //
+    float **d = 0;
+    d = mem.myalloc(d,ndim);
+    node_coords = reinterpret_cast<void **>(d);
+    //
+    // Allocate memory for nodex, nodey, nodez
+    //
+    float *posx=0, *posy=0, *posz=0;
+    posx = mem.myalloc(posx,nx);
+    for (int i=0;i<nx;i++)
+      posx[i] = static_cast<float>(mpiPM->LocalXmin[XX]+i*dx);
+    nodex = reinterpret_cast<void *>(posx);
+
+    if (ndim>1) {
+      posy = mem.myalloc(posy,ny);
+      for (int i=0;i<ny;i++)
+        posy[i] = static_cast<float>(mpiPM->LocalXmin[YY]+i*dx);
+      nodey = reinterpret_cast<void *>(posy);
+    }
+    if (ndim>2) {
+      posz = mem.myalloc(posz,nz);
+      for (int i=0;i<nz;i++)
+        posz[i] = static_cast<float>(mpiPM->LocalXmin[ZZ]+i*dx);
+      nodez = reinterpret_cast<void *>(posz);
+    }
+  }
+  else {
+    //
+    // Allocate memory for node_coords, and set pointers.
+    //
+    double **d=0;
+    d = mem.myalloc(d,ndim);
+    node_coords = reinterpret_cast<void **>(d);
+    //
+    // Allocate memory for nodex, nodey, nodez
+    //
+    double *posx=0, *posy=0, *posz=0;
+    posx = mem.myalloc(posx,nx);
+    for (int i=0;i<nx;i++)
+      posx[i] = static_cast<double>(mpiPM->LocalXmin[XX]+i*dx);
+    nodex = reinterpret_cast<void *>(posx);
+
+    if (ndim>1) {
+      posy = mem.myalloc(posy,ny);
+      for (int i=0;i<ny;i++)
+        posy[i] = static_cast<double>(mpiPM->LocalXmin[YY]+i*dx);
+      nodey = reinterpret_cast<void *>(posy);
+    }
+    if (ndim>2) {
+      posz = mem.myalloc(posz,nz);
+      for (int i=0;i<nz;i++)
+        posz[i] = static_cast<double>(mpiPM->LocalXmin[ZZ]+i*dx);
+      nodez = reinterpret_cast<void *>(posz);
+    }
+  }
+
+  node_coords[XX] = nodex;
+  node_coords[YY] = nodey;
+  node_coords[ZZ] = nodez;
+
+  nodedims[0] = nx;   zonedims[0] = nx-1;
   if (ndim>1) {
-    nn = mpiPM->LocalNG[YY]+1;
-    nodey = mem.myalloc(nodey,nn);
-    for (int i=0;i<nn;i++)
-      nodey[i] = mpiPM->LocalXmin[YY]+static_cast<FAKE_DOUBLE>(i)*dx;
-    node_coords[1] = nodey;
-    nodedims[1] = nn;
-    zonedims[1] = nn-1;
+    nodedims[1] = ny; zonedims[1] = ny-1;
   }
   if (ndim>2) {
-    nn = mpiPM->LocalNG[ZZ]+1;
-    nodez = mem.myalloc(nodez,nn);
-    for (int i=0;i<nn;i++)
-      nodez[i] = mpiPM->LocalXmin[ZZ]+static_cast<FAKE_DOUBLE>(i)*dx;
-    node_coords[2] = nodez;
-    nodedims[2] = nn;
-    zonedims[2] = nn-1;
+    nodedims[2] = nz; zonedims[2] = nz-1;
   }
+
 
   int nopts=4; int csys;
   dataio_silo::GridOpts = DBMakeOptlist(nopts);
@@ -856,11 +988,31 @@ int dataio_silo_pllel::setup_grid_properties(
 void dataio_silo_pllel::create_data_arrays()
 {
   // first check if we have the data arrays set up yet.
-  // We need at least one array for a scalar, and two more for a vector.
+  // We need at least one array for a scalar, and two more for a
+  // vector.
+  // This differs from serial code in that we use LocalNcell instead
+  // of the global Ncell to allocate memory.
+  //
   //cout <<"local Ncell="<<mpiPM->LocalNcell<<" and global Ncell is "<<SimPM.Ncell<<"\n";
+  //
+  // data0 is a void pointer, so we need to do different things for
+  // float and double data (same for data1,data2).
+  //
   if (!data0) {
-    data0 = mem.myalloc(data0, mpiPM->LocalNcell);
+    if (silo_dtype==DB_FLOAT) {
+      float *d = 0;
+      d = mem.myalloc(d,mpiPM->LocalNcell);
+      data0 = reinterpret_cast<void *>(d);
+    }
+    else {
+      double *d = 0;
+      d = mem.myalloc(d,mpiPM->LocalNcell);
+      data0 = reinterpret_cast<void *>(d);
+    }
   }
+  //if (!data0) {
+  //  data0 = mem.myalloc(data0, mpiPM->LocalNcell);
+  //}
 
   //
   // If we are only writing scalar data, we don't need data1,data2,vec_data
@@ -875,14 +1027,44 @@ void dataio_silo_pllel::create_data_arrays()
   // If we need data1 and data2, and vec_data, create them too.
   //
   if ((vec_length>1) && (!data1)) {
-    data1 = mem.myalloc(data1, mpiPM->LocalNcell);
+    if (silo_dtype==DB_FLOAT) {
+      float *d = 0;
+      d = mem.myalloc(d,mpiPM->LocalNcell);
+      data1 = reinterpret_cast<void *>(d);
+    }
+    else {
+      double *d = 0;
+      d = mem.myalloc(d,mpiPM->LocalNcell);
+      data1 = reinterpret_cast<void *>(d);
+    }
+    //data1 = mem.myalloc(data1, mpiPM->LocalNcell);
   }
   if ((vec_length>2) && (!data2)) {
-    data2 = mem.myalloc(data2, mpiPM->LocalNcell);
+    if (silo_dtype==DB_FLOAT) {
+      float *d = 0;
+      d = mem.myalloc(d,mpiPM->LocalNcell);
+      data2 = reinterpret_cast<void *>(d);
+    }
+    else {
+      double *d = 0;
+      d = mem.myalloc(d,mpiPM->LocalNcell);
+      data2 = reinterpret_cast<void *>(d);
+    }
+    //data2 = mem.myalloc(data2, mpiPM->LocalNcell);
   }
 
   if ((vec_length>1) && (!vec_data)) {
-    vec_data = mem.myalloc(vec_data, vec_length);
+    if (silo_dtype==DB_FLOAT) {
+      float **d = 0;
+      d = mem.myalloc(d,vec_length);
+      vec_data = reinterpret_cast<void **>(d);
+    }
+    else {
+      double **d = 0;
+      d = mem.myalloc(d,vec_length);
+      vec_data = reinterpret_cast<void **>(d);
+    }
+    //vec_data = mem.myalloc(vec_data, vec_length);
     vec_data[0] = data0;
     if (vec_length>1) vec_data[1] = data1;
     if (vec_length>2) vec_data[2] = data2;
@@ -900,11 +1082,12 @@ void dataio_silo_pllel::create_data_arrays()
 //
 // Write a mulitmesh adjacency object
 // 
-int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo file.
-					  class GridBaseClass *ggg, ///< pointer to data.
-					  string mm_name, ///< multimesh  name
-					  string mma_name ///< multimeshadj name.
-					  )
+int dataio_silo_pllel::write_multimeshadj(
+      DBfile *dbfile, ///< pointer to silo file.
+      class GridBaseClass *ggg, ///< pointer to data.
+      string mm_name, ///< multimesh  name
+      string mma_name ///< multimeshadj name.
+      )
 {
   int err=0;
 #ifdef TESTING
@@ -1010,10 +1193,10 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
       dom2 = ngb[off1+i];
       off2 = Sk[dom2];
       if (off2 > Stot) 
-	rep.error("Counting error in loop to find back array",off2-Stot);
+        rep.error("Counting error in loop to find back array",off2-Stot);
 
       for (int s=0; s<Nngb[dom2]; s++) {
-	if (ngb[off2+s]==v) back[off1+i] = s;
+        if (ngb[off2+s]==v) back[off1+i] = s;
       } // loop over dom2's neighbours
     } // loop over dom1's neighbours
 
@@ -1031,19 +1214,19 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
     for (int i=0; i<Nngb[v]; i++) {
       off1 = Sk[v]+i;
       if (off1 > Stot) 
-	rep.error("Counting error in loop over neighbours for mesh v",off1-Stot);
+        rep.error("Counting error in loop over neighbours for mesh v",off1-Stot);
       //
       // Local nodelist is the same for all of v's nodelists.
       //
       nodelist[off1][0] = pp.offsets[XX] + 0;
       nodelist[off1][1] = pp.offsets[XX] + pp.LocalNG[XX];
       if (ndim>1) {
-	nodelist[off1][2] = pp.offsets[YY] + 0;
-	nodelist[off1][3] = pp.offsets[YY] + pp.LocalNG[YY];
+        nodelist[off1][2] = pp.offsets[YY] + 0;
+        nodelist[off1][3] = pp.offsets[YY] + pp.LocalNG[YY];
       }
       if (ndim>2) {
-	nodelist[off1][4] = pp.offsets[ZZ] + 0;
-	nodelist[off1][5] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+        nodelist[off1][4] = pp.offsets[ZZ] + 0;
+        nodelist[off1][5] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
       }
 
       //
@@ -1059,58 +1242,58 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
       // X-dir first.
       //
       if      ((my_ix[XX]-ngb_ix[XX]) == 1) {
-	nodelist[off1][6] = pp.offsets[XX];
-	nodelist[off1][7] = pp.offsets[XX];
+        nodelist[off1][6] = pp.offsets[XX];
+        nodelist[off1][7] = pp.offsets[XX];
       }
       else if ((my_ix[XX]-ngb_ix[XX]) ==-1) {
-	nodelist[off1][6] = pp.offsets[XX] + pp.LocalNG[XX];
-	nodelist[off1][7] = pp.offsets[XX] + pp.LocalNG[XX];
+        nodelist[off1][6] = pp.offsets[XX] + pp.LocalNG[XX];
+        nodelist[off1][7] = pp.offsets[XX] + pp.LocalNG[XX];
       }
       else if (my_ix[XX]==ngb_ix[XX]) {
-	nodelist[off1][6] = pp.offsets[XX];
-	nodelist[off1][7] = pp.offsets[XX] + pp.LocalNG[XX];
+        nodelist[off1][6] = pp.offsets[XX];
+        nodelist[off1][7] = pp.offsets[XX] + pp.LocalNG[XX];
       }
       else 
-	rep.error("domains don't touch (X-dir)!", my_ix[XX]-ngb_ix[XX]);
+        rep.error("domains don't touch (X-dir)!", my_ix[XX]-ngb_ix[XX]);
 
       //
       // Now Y-dir
       //
       if (ndim>1) {
-	if      ((my_ix[YY]-ngb_ix[YY]) == 1) { // neighbour below us
-	  nodelist[off1][8] = pp.offsets[YY];
-	  nodelist[off1][9] = pp.offsets[YY];
-	}
-	else if ((my_ix[YY]-ngb_ix[YY]) ==-1) { // neighbour above us
-	  nodelist[off1][8] = pp.offsets[YY] + pp.LocalNG[YY];
-	  nodelist[off1][9] = pp.offsets[YY] + pp.LocalNG[YY];
-	}
-	else if (my_ix[YY]==ngb_ix[YY])       { // neighbour level with us.
-	  nodelist[off1][8] = pp.offsets[YY];
-	  nodelist[off1][9] = pp.offsets[YY] + pp.LocalNG[YY];
-	}
-	else 
-	  rep.error("domains don't touch! (Y-dir)", my_ix[YY]-ngb_ix[YY]);
+        if      ((my_ix[YY]-ngb_ix[YY]) == 1) { // neighbour below us
+          nodelist[off1][8] = pp.offsets[YY];
+          nodelist[off1][9] = pp.offsets[YY];
+        }
+        else if ((my_ix[YY]-ngb_ix[YY]) ==-1) { // neighbour above us
+          nodelist[off1][8] = pp.offsets[YY] + pp.LocalNG[YY];
+          nodelist[off1][9] = pp.offsets[YY] + pp.LocalNG[YY];
+        }
+        else if (my_ix[YY]==ngb_ix[YY])       { // neighbour level with us.
+          nodelist[off1][8] = pp.offsets[YY];
+          nodelist[off1][9] = pp.offsets[YY] + pp.LocalNG[YY];
+        }
+        else 
+          rep.error("domains don't touch! (Y-dir)", my_ix[YY]-ngb_ix[YY]);
       } // at least 2D
 
       //
       // Now Z-dir
       //
       if (ndim>2) {
-	if      ((my_ix[ZZ]-ngb_ix[ZZ]) == 1) { // neighbour below us
-	  nodelist[off1][10] = pp.offsets[ZZ];
-	  nodelist[off1][11] = pp.offsets[ZZ];
-	}
-	else if ((my_ix[ZZ]-ngb_ix[ZZ]) ==-1) { // neighbour above us
-	  nodelist[off1][10] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
-	  nodelist[off1][11] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
-	}
-	else if (my_ix[ZZ]==ngb_ix[ZZ])       { // neighbour level with us.
-	  nodelist[off1][10] = pp.offsets[ZZ];
-	  nodelist[off1][11] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
-	}
-	else 
-	  rep.error("domains don't touch! (Z-dir)", my_ix[ZZ]-ngb_ix[ZZ]);
+        if      ((my_ix[ZZ]-ngb_ix[ZZ]) == 1) { // neighbour below us
+          nodelist[off1][10] = pp.offsets[ZZ];
+          nodelist[off1][11] = pp.offsets[ZZ];
+        }
+        else if ((my_ix[ZZ]-ngb_ix[ZZ]) ==-1) { // neighbour above us
+          nodelist[off1][10] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+          nodelist[off1][11] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+        }
+        else if (my_ix[ZZ]==ngb_ix[ZZ])       { // neighbour level with us.
+          nodelist[off1][10] = pp.offsets[ZZ];
+          nodelist[off1][11] = pp.offsets[ZZ] + pp.LocalNG[ZZ];
+        }
+        else 
+          rep.error("domains don't touch! (Z-dir)", my_ix[ZZ]-ngb_ix[ZZ]);
       } // 3D
 
       //
@@ -1181,11 +1364,12 @@ int dataio_silo_pllel::write_multimeshadj(DBfile *dbfile, ///< pointer to silo f
 //
 // Write a mulitmesh object
 // 
-int dataio_silo_pllel::write_multimesh(DBfile *dbfile, ///< pointer to silo file.
-				       class GridBaseClass *ggg, ///< pointer to data.
-				       string mm_name, ///< multimesh  name
-				       string mma_name ///< multimeshadj name.
-				       )
+int dataio_silo_pllel::write_multimesh(
+      DBfile *dbfile, ///< pointer to silo file.
+      class GridBaseClass *ggg, ///< pointer to data.
+      string mm_name, ///< multimesh  name
+      string mma_name ///< multimeshadj name.
+      )
 {
   //    cout <<"Finished writing multimesh data to file...\n";
   rep.error("don't call me!","write_multimesh");
@@ -1201,12 +1385,14 @@ int dataio_silo_pllel::write_multimesh(DBfile *dbfile, ///< pointer to silo file
 //
 // Write a MRG tree object
 // 
-int dataio_silo_pllel::write_MRGtree(DBfile *dbfile, ///< pointer to silo file.
-				     class GridBaseClass *ggg, ///< pointer to data.
-				     string mm_name, ///< multimesh  name
-				     string mrgt_name ///< MRG tree name.
-				     )
+int dataio_silo_pllel::write_MRGtree(
+      DBfile *dbfile, ///< pointer to silo file.
+      class GridBaseClass *ggg, ///< pointer to data.
+      string mm_name, ///< multimesh  name
+      string mrgt_name ///< MRG tree name.
+      )
 {
+  rep.error("MRGtree is not implemented or tested!",999);
   char datadir[strlength];
   int err= DBGetDir(dbfile,datadir);
   DBSetDir(dbfile,"/");
