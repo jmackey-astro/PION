@@ -44,7 +44,7 @@ fi
 #echo "DOUBLE MACH REFLECTION: RUN LOW RES"
 #./pion_serial IC_DMRm10t60_n260.silo 5 1 \
 # outfile=${data_dir}/DMRm10t60_n260_Hyb_av00 cfl=0.4 artvisc=0   \
-# redirect=${data_dir}/msg_DMRm10t60_n260_Hyb_av00 solver=3
+# redirect=${data_dir}/msg_DMRm10t60_n260_Hyb_av00 solver=3 &
 #./pion_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_RCV_Hcor cfl=0.4 AVtype=3 \
 # redirect=${data_dir}/msg_DMRm10t60_n260_RCV_Hcor solver=4 &
 #./pion_serial IC_DMRm10t60_n520.silo 5 1 outfile=${data_dir}/DMRm10t60_n520_RCV_Hcor cfl=0.4 AVtype=3    \
@@ -91,7 +91,7 @@ echo "DOUBLE MACH REFLECTION: RUN LOW RES"
 wait
 
 ########## TEMP #########
-#exit
+exit
 ########## TEMP #########
 
 echo "DOUBLE MACH REFLECTION: RUN HIGH RES"

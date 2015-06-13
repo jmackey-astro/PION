@@ -23,6 +23,8 @@
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
 /// - 2015.01.28 JM: Tidied up a lot, added new mpiPM pointer.
+/// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
+///    parameter, set in the constructor.
 
 #ifndef DATAIO_SILO_H
 #define DATAIO_SILO_H
@@ -38,9 +40,11 @@
 // These are here because I am initially couldn't write double
 // precision data to the silo files, but I figured it out.
 //
-//#define FAKE_DOUBLE float //#define FAKE_DATATYPE DB_FLOAT
-#define FAKE_DOUBLE double
-#define FAKE_DATATYPE DB_DOUBLE
+//#define FAKE_DOUBLE float
+//#define FAKE_DATATYPE DB_FLOAT
+//#define FAKE_DOUBLE double
+//#define FAKE_DATATYPE DB_DOUBLE
+
 
 ///
 /// write vectors (velocity,B) in component form as scalar variables
@@ -64,7 +68,9 @@ class dataio_silo :public DataIOBase {
   ///
   /// Constructor. 
   ///
-  dataio_silo();
+  dataio_silo(
+      std::string ///< read/write either FLOAT or DOUBLE to/from file
+      );
 
   ///
   /// sets equation pointer to zero.
@@ -116,35 +122,48 @@ class dataio_silo :public DataIOBase {
    virtual int ReadData(string, ///< file to read from
 			class GridBaseClass * ///< pointer to data.
 			);
+
   protected:
-   class GridBaseClass *gp; ///< pointer to computational grid.
-   class FV_solver_base *eqn; ///< pointer to the solver, which knows the equations we are solving.
-   string silofile;         ///< filename to write data to.
-   int silo_filetype;       ///< What sort of file to write, can be DB_PDB or DB_HDF5, among others.
-   int ndim;                ///< Dimensionality of Grid.
-   int vec_length;          ///< Length of Vectors (always 3d for now).
-   unsigned int strlength;  ///< length of character arrays in class.
-   FAKE_DOUBLE **node_coords; ///< Ndim array of coordinates of nodes of uniform grid (zone corners!).
-   FAKE_DOUBLE 
-     *nodex,        ///< array of x node positions (addressed through node_coords).
-     *nodey,        ///< array of y node positions (addressed through node_coords).
-     *nodez;        ///< array of z node positions (addressed through node_coords).
-   int *nodedims;   ///< ndim element array with number of nodes along each direction.
-   int *zonedims;   ///< ndim element array with number of zones/cells along each direction.
-   bool have_setup_gridinfo;     ///< false initially, set to true on first file write.
-   bool have_setup_writevars;    ///< false initially, set to true on first file write.
-   std::vector<string> varnames; ///< list of names of variables to write to file.
-   std::vector<string> readvars; ///< list of variable names to read from file when starting.
-   FAKE_DOUBLE 
+
+  class GridBaseClass *gp; ///< pointer to computational grid.
+  
+  class FV_solver_base *eqn; ///< pointer to the solver, which knows the equations we are solving.
+  
+  ///
+  /// Whether to write float or double data (DB_FLOAT or DB_DOUBLE)
+  ///
+  int silo_dtype;
+  
+  string silofile;         ///< filename to write data to.
+  int silo_filetype;       ///< What sort of file to write, can be DB_PDB or DB_HDF5, among others.
+  int ndim;                ///< Dimensionality of Grid.
+  int vec_length;          ///< Length of Vectors (always 3d for now).
+  unsigned int strlength;  ///< length of character arrays in class.
+  int *nodedims;   ///< ndim element array with number of nodes along each direction.
+  int *zonedims;   ///< ndim element array with number of zones/cells along each direction.
+  bool have_setup_gridinfo;     ///< false initially, set to true on first file write.
+  bool have_setup_writevars;    ///< false initially, set to true on first file write.
+  std::vector<string> varnames; ///< list of names of variables to write to file.
+  std::vector<string> readvars; ///< list of variable names to read from file when starting.
+
+  void 
      *data0,     ///< array for grid data to write to the mesh.
      *data1,     ///< array for grid data to write to the mesh.
      *data2,     ///< array for grid data to write to the mesh.
      **vec_data; ///< array of pointers to data for vector data.
+  ///
+  /// Ndim array of coordinates of nodes of uniform grid (zone corners!).
+  ///
+  void **node_coords;
+  void 
+     *nodex,  ///< array of x node positions (addressed through node_coords).
+     *nodey,  ///< array of y node positions (addressed through node_coords).
+     *nodez;  ///< array of z node positions (addressed through node_coords).
 
-   DBoptlist 
+  DBoptlist 
      *GridOpts; ///< List of options relating to mesh.
 
-   DBfile
+  DBfile
      **db_ptr; ///< pointer to Silo file pointer.
 
   ///
@@ -190,13 +209,13 @@ class dataio_silo :public DataIOBase {
   /// Get Scalar variable into array ready to write to file.
   ///
    int get_scalar_data_array(string, ///< variable name to get.
-			     FAKE_DOUBLE * ///< array to write to.
+			     void * ///< array to write to.
 			     );
   ///
   /// Get Vector variable into 2d array ready to write to file.
   ///
    int get_vector_data_array(string, ///< variable name to get.
-			     FAKE_DOUBLE ** ///< array to write to.
+			     void ** ///< array to write to.
 			     );
   ///
   /// Writes a scalar array to the specified mesh and file.
@@ -204,7 +223,7 @@ class dataio_silo :public DataIOBase {
    int write_scalar2mesh(DBfile *, ///< silo file pointer.
 			 string,   ///< mesh name
 			 string,   ///< variable name
-			 FAKE_DOUBLE *  ///< pointer to data array.
+			 void *  ///< pointer to data array.
 			 );
   ///
   /// Writes a vector array to the specified mesh and file.
@@ -212,7 +231,7 @@ class dataio_silo :public DataIOBase {
    int write_vector2mesh(DBfile *, ///< silo file pointer.
 			 string,   ///< mesh name
 			 string,   ///< variable name
-			 FAKE_DOUBLE **  ///< pointer to data array.
+			 void **  ///< pointer to data array.
 			 );
 
    ///

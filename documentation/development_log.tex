@@ -119,6 +119,15 @@ I also think I should fix the BCs and TRTYPE parameters in the setup files befor
 Moved timers to their own file from GeneralStuff.
 Tested that the code compiles ok and everything seems fine.
 
+\paragraph{2015.04.30}
+Moved command-line function into sim\_control class.
+
+\paragraph{2015.06.13}
+Changed silo classes so that DOUBLE/FLOAT is set in the constructor, not at compile time.
+Had to make lots of arrays into void*, and added lots of reinterpret\_cast<> calls.
+This is needed for writing a program to change the files from double to float to save on storage.
+This is debugged so that the serial code compiles, but not tested.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%

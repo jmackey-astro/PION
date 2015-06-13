@@ -162,12 +162,6 @@ using namespace std;
 //--------------------------------------------------------
 
 ///
-/// Function to output commandline options for code.  It is here to
-/// avoid code duplication in main.cc and mainMPI.cc.
-///
-void print_command_line_options(int, char **);
-
-///
 /// The pressure floor for the riemann solver and cell updates. 
 /// (P_G(floor)=refvec[PG]*BASEPG)
 /// This may need to be changed -- it should be larger than the largest
@@ -288,15 +282,6 @@ extern class JetParams JP;
 /// \page userguide Users Guide
 /// \section Introduction
 /// This is intended as a guide to using the code.
-/// 
-/// \section compilation Compilation
-/// There are two makefiles... <tt>Makefile.serial</tt> and <tt>Makefile.parallel</tt>
-/// which should be modified according to the compiler and architecture
-/// you are using.  <tt>Makefile.serial</tt> compiles the serial (single processor)
-/// version of the code, and produces an executable called 
-/// <tt>main_serial</tt>, whereas <tt>Makefile.parallel</tt> comiles the 
-/// parallel version, using some distribution of the message passing
-/// interface (MPI), producing an executable called <tt>main_parallel</tt>.
 /// 
 /// \section tracers Tracer Variables.
 /// Tracer Variables are any variable that obey a simple linear advection

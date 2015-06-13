@@ -619,7 +619,7 @@ stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h \
 ##### IC GENERATOR FILES #####
 ##############################
 icgen.o: icgen.cc icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  mp_v2_aifa.h \
-         microphysics.h microphysics_lowZ.h
+         microphysics.h microphysics_lowZ.h dataio_silo.h dataio.h dataio_fits.h
 get_sim_info.o: get_sim_info.h get_sim_info.cc ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cc inside_sphere.h ${GLOBAL}
 ########################

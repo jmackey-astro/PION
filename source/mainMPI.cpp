@@ -18,6 +18,7 @@
 /// - 2013.01.17 JM: Made simulation initialisation less verbose.
 /// - 2015.01.08 JM: Moved grid definition to this file from global.h
 /// - 2015.01.26 JM: updates, moving mpiPM from global to sim_control
+/// - 2015.04.30 JM: tidying up.
 
 #include <iostream>
 #include <sstream>
@@ -57,16 +58,29 @@ int main(int argc, char **argv)
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
 
+  //
+  // Set up simulation controller class.
+  //
+  class sim_control_fixedgrid_pllel *sim_control = 0;
+  sim_control = new class sim_control_fixedgrid_pllel();
+  if (!sim_control)
+    rep.error("(PION) Couldn't initialise sim_control_fixedgrid_pllel", sim_control);
+
+  //
+  // Check that command-line arguments are sufficient.
+  //
   if (argc<4) {
-    print_command_line_options(argc,argv);
+    sim_control->print_command_line_options(argc,argv);
     rep.error("Bad arguments",argc);
   }
 
+  //
+  // copy cmd-line args into an array of strings (for ease of use.
+  //
   string *args=0;
   args = new string [argc];
   for (int i=0;i<argc;i++) {
     args[i] = argv[i];
-    //  cout <<"arg "<<i<<" = "<<args[i]<<"\n";
   }
   
   //
@@ -80,7 +94,8 @@ int main(int argc, char **argv)
       if (myrank==0) {
         cout <<"\tRedirecting stdout to "<<outpath<<"info.txt"<<"\n";
       }
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+      // Redirects cout and cerr to text files in the directory specified.
+      rep.redirect(outpath);
     }
   }
 
@@ -89,11 +104,9 @@ int main(int argc, char **argv)
     cout <<"arg "<<i<<" = "<<args[i]<<"\n";
   }
   
-  //char *tmp = new char [3];
-  //char tmp[3];
-  //strcpy(tmp,"hi jono, hows it going");
-  //cout <<"tmp="<<tmp<<"\n";
-
+  //
+  // Check that we can read the input file type.
+  //
   int ft;
   ft=atoi(argv[2]);
   if(ft <1 || ft>5) {cerr<<"(PION) Bad file type specifier.\n";return(1);}
@@ -123,14 +136,6 @@ int main(int argc, char **argv)
 
 
   //
-  // Set up simulation controller class.
-  //
-  class sim_control_fixedgrid_pllel *sim_control = 0;
-  sim_control = new class sim_control_fixedgrid_pllel();
-  if (!sim_control)
-    rep.error("(PION) Couldn't initialise sim_control_fixedgrid_pllel", sim_control);
-
-  //
   // Reset max. walltime to run the simulation for, if needed.
   // Input should be in hours.
   //
@@ -150,18 +155,27 @@ int main(int argc, char **argv)
     }
   }
   
+  //
+  // Initialise code.
+  //
   err = sim_control->Init(argv[1], ft, argc, args, &grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
     return(1);
   }
+  //
+  // Step forward in time until the end of the simulation.
+  //
   err+= sim_control->Time_Int(grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
     return(1);
   }
+  //
+  // Finalise the simulation.
+  //
   err+= sim_control->Finalise(grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";

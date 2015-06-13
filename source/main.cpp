@@ -48,6 +48,7 @@
 ///    and added link to reporting class.
 /// - 2015.01.(10-26) JM: New include statements for new file
 ///    structure, and non-global grid class.
+/// - 2015.04.30 JM: tidying up.
 
 #include <iostream>
 using namespace std;
@@ -83,8 +84,19 @@ using namespace std;
 int main(int argc, char **argv)
 {
   
+  //
+  // Set up simulation controller class.
+  //
+  class sim_control_fixedgrid *sim_control = 0;
+  sim_control = new class sim_control_fixedgrid();
+  if (!sim_control)
+    rep.error("(pion) Couldn't initialise sim_control_fixedgrid", sim_control);
+
+  //
+  // Check that command-line arguments are sufficient.
+  //
   if (argc<4) {
-    print_command_line_options(argc,argv);
+    sim_control->print_command_line_options(argc,argv);
     rep.error("Bad arguments",argc);
   }
   
@@ -134,20 +146,18 @@ int main(int argc, char **argv)
   class GridBaseClass *grid = 0;
 
   //
-  // Set up simulation controller class.
-  //
-  class sim_control_fixedgrid *sim_control = 0;
-  sim_control = new class sim_control_fixedgrid();
-  if (!sim_control)
-    rep.error("(pion) Couldn't initialise sim_control_fixedgrid", sim_control);
-
+  // Initialise the grid.
   // inputs are infile_name, infile_type, nargs, *args[]
+  //
   err = sim_control->Init(argv[1], ft, argc, args, &grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
     delete sim_control;
     return 1;
   }
+  //
+  // Integrate forward in time until the end of the calculation.
+  //
   err+= sim_control->Time_Int(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
@@ -155,6 +165,9 @@ int main(int argc, char **argv)
     delete grid;
     return 1;
   }
+  //
+  // Finalise and exit.
+  //
   err+= sim_control->Finalise(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
@@ -164,8 +177,7 @@ int main(int argc, char **argv)
   }
 
   delete sim_control; sim_control=0;
-  if (grid) {delete grid; grid=0;}
-
+  delete grid; grid=0;
   delete [] args; args=0;
   
   cout <<"-------------------------------------------------------\n";
@@ -174,3 +186,8 @@ int main(int argc, char **argv)
 
   return 0;
 }
+
+
+
+
+

@@ -1529,8 +1529,7 @@ void raytracer_USC::Print_SourceList()
       cout <<" and cell id "<<(*i).sc->id;
     cout <<" on grid? (Y=1,N=0) "<<(*i).src_on_grid;
     cout <<".   at infinity? "<<(*i).s->at_infinity<<".  ";
-    if ((*i).ipos)
-      rep.printVec("integer posn",(*i).ipos,ndim);
+    rep.printVec("integer posn",(*i).ipos,ndim);
   }
   return;
 }

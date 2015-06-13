@@ -71,6 +71,11 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   virtual ~sim_control_fixedgrid(); ///< Deletes any dynamic memory, if not already done.
 
   ///
+  /// Function to print command-line options for PION.
+  ///
+  void print_command_line_options(int, char **);
+
+  ///
   /// initialisation.
   ///
   /// This function calls a sequence of other functions to set up the grid
