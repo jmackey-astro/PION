@@ -42,7 +42,7 @@
 /// - 2011.10.24 JM: wrapped most of the info-reporting with ifdef-testing.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.28 JM: Changes for new code structure.
-/// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
+/// - 2015.06.13/15 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
 ///    parameter, set in the constructor.
 #ifdef SILO
 
@@ -289,9 +289,9 @@ int dataio_silo_pllel::ReadData(
     //
     //float *nx = reinterpret_cast<float *>(nodex);
     float *nx = reinterpret_cast<float *>(nodex);
-    rep.printVec("DBG nx",nx,mpiPM->LocalNG[XX]+1);
-    float *ny = reinterpret_cast<float *>(nodey);
-    rep.printVec("DBG ny",ny,mpiPM->LocalNG[YY]+1);
+    //rep.printVec("DBG nx",nx,mpiPM->LocalNG[XX]+1);
+    //float *ny = reinterpret_cast<float *>(nodey);
+    //rep.printVec("DBG ny",ny,mpiPM->LocalNG[YY]+1);
 
     if (!pconst.equalD(nx[0],meshcoords[XX][0])) {
       cout <<"I think x[0]="<<nx[0];
@@ -832,36 +832,6 @@ int dataio_silo_pllel::setup_grid_properties(
   nodedims    = mem.myalloc(nodedims,    ndim);
   zonedims    = mem.myalloc(zonedims,    ndim);
 
-  //node_coords = mem.myalloc(node_coords, ndim);
-  //
-  // now setup arrays with locations of nodes in coordinate directions.
-  //int nn = mpiPM->LocalNG[XX]+1;
-  //nodex = mem.myalloc(nodex,nn);
-  //for (int i=0;i<nn;i++)
-  //  nodex[i] = mpiPM->LocalXmin[XX]+static_cast<FAKE_DOUBLE>(i)*dx;
-  //node_coords[0] = nodex;
-  //nodedims[0] = nn;
-  //zonedims[0] = nn-1;
-  //
-  //if (ndim>1) {
-  //  nn = mpiPM->LocalNG[YY]+1;
-  //  nodey = mem.myalloc(nodey,nn);
-  //  for (int i=0;i<nn;i++)
-  //    nodey[i] = mpiPM->LocalXmin[YY]+static_cast<FAKE_DOUBLE>(i)*dx;
-  //  node_coords[1] = nodey;
-  //  nodedims[1] = nn;
-  //  zonedims[1] = nn-1;
-  //}
-  //if (ndim>2) {
-  //  nn = mpiPM->LocalNG[ZZ]+1;
-  //  nodez = mem.myalloc(nodez,nn);
-  //  for (int i=0;i<nn;i++)
-  //    nodez[i] = mpiPM->LocalXmin[ZZ]+static_cast<FAKE_DOUBLE>(i)*dx;
-  //  node_coords[2] = nodez;
-  //  nodedims[2] = nn;
-  //  zonedims[2] = nn-1;
-  //}
-
   //
   // node_coords is a void pointer, so if we are writing silo data in
   // single or double precision then we need different allocation
@@ -875,7 +845,6 @@ int dataio_silo_pllel::setup_grid_properties(
   int ny = mpiPM->LocalNG[YY]+1; // for N cells, have N+1 nodes.
   int nz = mpiPM->LocalNG[ZZ]+1; // for N cells, have N+1 nodes.
   
-  //node_coords = mem.myalloc(node_coords,ndim);
   if (silo_dtype==DB_FLOAT) {
     //
     // Allocate memory for node_coords, and set pointers.
@@ -891,25 +860,27 @@ int dataio_silo_pllel::setup_grid_properties(
     for (int i=0;i<nx;i++)
       posx[i] = static_cast<float>(mpiPM->LocalXmin[XX]+i*dx);
     nodex = reinterpret_cast<void *>(posx);
-    rep.printVec("DBG nodex",posx,nx);
+    //rep.printVec("DBG nodex",posx,nx);
+
     if (ndim>1) {
       posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
         posy[i] = static_cast<float>(mpiPM->LocalXmin[YY]+i*dx);
       nodey = reinterpret_cast<void *>(posy);
-      rep.printVec("DBG nodey",posy,ny);
+      //rep.printVec("DBG nodey",posy,ny);
     }
     if (ndim>2) {
       posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
         posz[i] = static_cast<float>(mpiPM->LocalXmin[ZZ]+i*dx);
       nodez = reinterpret_cast<void *>(posz);
-      rep.printVec("DBG nodez",posz,nz);
+      //rep.printVec("DBG nodez",posz,nz);
     }
   }
   else {
     //
-    // Allocate memory for node_coords, and set pointers.
+    // Allocate double-precision memory for node_coords, and set
+    // pointers.
     //
     double **d=0;
     d = mem.myalloc(d,ndim);
@@ -937,16 +908,16 @@ int dataio_silo_pllel::setup_grid_properties(
     }
   }
 
-  node_coords[XX] = nodex;
-  node_coords[YY] = nodey;
-  node_coords[ZZ] = nodez;
-
   nodedims[0] = nx;   zonedims[0] = nx-1;
+  node_coords[XX] = nodex;
+
   if (ndim>1) {
     nodedims[1] = ny; zonedims[1] = ny-1;
+    node_coords[YY] = nodey;
   }
   if (ndim>2) {
     nodedims[2] = nz; zonedims[2] = nz-1;
+    node_coords[ZZ] = nodez;
   }
 
 
@@ -968,29 +939,6 @@ int dataio_silo_pllel::setup_grid_properties(
   return 0;
 }
  
-// int dataio_silo_pllel::write_header(DBfile *dbfile)
-// {
-//   int err = dataio_silo::write_header(dbfile);
-//   if (err) rep.error("writing serial part of header failed",err);
-
-//   // for writing a single variable.
-//   int dim1[1]; dim1[0]=1;
-//   // for writing a three element vector
-//   int dim3[1]; dim3[0]=3;
-
-//   // NOT SURE IF I REALLY NEED THIS!!!  I WANT TO WRITE THE FILES SO
-//   // THAT I CAN RESTART WITH A DIFFERENT NUMBER OF PROCESSORS IF
-//   // POSSIBLE, AT LEAST IF THE NUMBER DIFFERS BY A FACTOR OF 2.
-//   err += DBWrite(dbfile,"MPI_rank",   &mpiPM->myrank,    dim1,1,DB_INT);
-//   err += DBWrite(dbfile,"MPI_nproc",  &mpiPM->nproc,     dim1,1,DB_INT);
-//   err += DBWrite(dbfile,"MPI_NCell",  &mpiPM->LocalNcell,dim1,1,DB_LONG);
-//   err += DBWrite(dbfile,"MPI_NGrid",   mpiPM->LocalNG,   dim3,1,DB_INT);
-//   err += DBWrite(dbfile,"MPI_Xmin",    mpiPM->LocalXmin, dim3,1,DB_DOUBLE);
-//   err += DBWrite(dbfile,"MPI_Xmax",    mpiPM->LocalXmax, dim3,1,DB_DOUBLE);
-
-//   return err;
-// }
-
 
 // ##################################################################
 // ##################################################################
@@ -1005,7 +953,8 @@ void dataio_silo_pllel::create_data_arrays()
   // This differs from serial code in that we use LocalNcell instead
   // of the global Ncell to allocate memory.
   //
-  //cout <<"local Ncell="<<mpiPM->LocalNcell<<" and global Ncell is "<<SimPM.Ncell<<"\n";
+  //cout <<"local Ncell="<<mpiPM->LocalNcell;
+  //cout <<" and global Ncell is "<<SimPM.Ncell<<"\n";
   //
   // data0 is a void pointer, so we need to do different things for
   // float and double data (same for data1,data2).
@@ -1022,9 +971,6 @@ void dataio_silo_pllel::create_data_arrays()
       data0 = reinterpret_cast<void *>(d);
     }
   }
-  //if (!data0) {
-  //  data0 = mem.myalloc(data0, mpiPM->LocalNcell);
-  //}
 
   //
   // If we are only writing scalar data, we don't need data1,data2,vec_data
@@ -1049,7 +995,6 @@ void dataio_silo_pllel::create_data_arrays()
       d = mem.myalloc(d,mpiPM->LocalNcell);
       data1 = reinterpret_cast<void *>(d);
     }
-    //data1 = mem.myalloc(data1, mpiPM->LocalNcell);
   }
   if ((vec_length>2) && (!data2)) {
     if (silo_dtype==DB_FLOAT) {
@@ -1062,7 +1007,6 @@ void dataio_silo_pllel::create_data_arrays()
       d = mem.myalloc(d,mpiPM->LocalNcell);
       data2 = reinterpret_cast<void *>(d);
     }
-    //data2 = mem.myalloc(data2, mpiPM->LocalNcell);
   }
 
   if ((vec_length>1) && (!vec_data)) {
@@ -1076,7 +1020,6 @@ void dataio_silo_pllel::create_data_arrays()
       d = mem.myalloc(d,vec_length);
       vec_data = reinterpret_cast<void **>(d);
     }
-    //vec_data = mem.myalloc(vec_data, vec_length);
     vec_data[0] = data0;
     if (vec_length>1) vec_data[1] = data1;
     if (vec_length>2) vec_data[2] = data2;

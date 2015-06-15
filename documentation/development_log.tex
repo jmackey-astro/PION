@@ -135,6 +135,12 @@ I know the first row is there because it has the densest point and this shows up
 So there is a problem with the extents or node-lists.
 Also, it bugs out with 4 cores because it says the XX mesh is not at the right place\ldots I should debug this soon.
 
+2015.06.15: I fixed it: was a bug setting void pointers in 3D even if the node\_coords array was only 2D.
+So now the code plots correctly in VisIt, and restarts with n>1 cores.
+I need to get silocompare working with floats/doubles so that I can prove that the serial and parallel codes are identical (maybe also that float/double codes are as similar as they can be!).
+
+Next up: silocompare, and then writing a code that translates all the double precision silo files into single precision for long-term storage.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%

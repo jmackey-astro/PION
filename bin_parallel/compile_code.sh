@@ -38,7 +38,7 @@ export CXX=mpicxx
 # Debugging code options, using text files to communicate data:
 #
 #export PION_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
-export PION_OPTIMISE=LOW
+#export PION_OPTIMISE=LOW
 #NCORES=4
 #export CXX=g++
 
