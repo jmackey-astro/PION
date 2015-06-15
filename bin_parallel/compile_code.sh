@@ -38,8 +38,8 @@ export CXX=mpicxx
 # Debugging code options, using text files to communicate data:
 #
 #export PION_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
-#export PION_OPTIMISE=LOW
-#NCORES=1
+export PION_OPTIMISE=LOW
+#NCORES=4
 #export CXX=g++
 
 
@@ -112,7 +112,7 @@ if [ ! -z "$DDD" ]; then
   export CC=mpicc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-#  NCORES=2
+  #NCORES=1
 fi
 #################################
 

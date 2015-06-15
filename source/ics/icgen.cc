@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef PARALLEL
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo_pllel (&MCMD);
+    dataio=0; dataio=new dataio_silo_pllel ("FLOAT",&MCMD);
 #endif
   }
 #endif // if SILO defined.

@@ -270,6 +270,7 @@ class dataio_silo_pllel : public dataio_silo {
   /// Constructor.
   ///
   dataio_silo_pllel(
+      std::string,         ///< FLOAT or DOUBLE for files.
       class MCMDcontrol *  ///< address of MCMD controller class.
   );
 

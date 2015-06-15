@@ -128,6 +128,13 @@ Had to make lots of arrays into void*, and added lots of reinterpret\_cast<> cal
 This is needed for writing a program to change the files from double to float to save on storage.
 This is debugged so that the serial code compiles and runs, and checks when it reads a file to make sure that it has the datatype that is expected (to avoid reading in junk when we reinterpret the void pointer).
 
+
+\paragraph{2015.06.15}
+There is a problem with the parallel code and the DMR test when I run with floats, but it doesn't seem to occur with doubles.  The first x-row is not plotted by visit, but the second row is dublicated on top of the first.
+I know the first row is there because it has the densest point and this shows up on the max/min in the legend, but it is not shown.
+So there is a problem with the extents or node-lists.
+Also, it bugs out with 4 cores because it says the XX mesh is not at the right place\ldots I should debug this soon.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%

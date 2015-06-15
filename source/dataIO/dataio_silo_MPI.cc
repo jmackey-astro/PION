@@ -69,8 +69,10 @@
 
 
 dataio_silo_pllel::dataio_silo_pllel(
+      std::string dtype,   ///< FLOAT or DOUBLE for files.
       class MCMDcontrol *p
       )
+ : dataio_silo(dtype)
 {
 #ifdef TESTING
   cout <<"Setting up parallel Silo I/O class.\n";
@@ -285,22 +287,29 @@ int dataio_silo_pllel::ReadData(
     //
     // check origin of subgrid is at the right place.
     //
-    float *nx = nodex;
+    //float *nx = reinterpret_cast<float *>(nodex);
+    float *nx = reinterpret_cast<float *>(nodex);
+    rep.printVec("DBG nx",nx,mpiPM->LocalNG[XX]+1);
+    float *ny = reinterpret_cast<float *>(nodey);
+    rep.printVec("DBG ny",ny,mpiPM->LocalNG[YY]+1);
+
     if (!pconst.equalD(nx[0],meshcoords[XX][0])) {
+      cout <<"I think x[0]="<<nx[0];
+      cout <<", silo file says x[0]="<<meshcoords[XX][0]<<"\n";
       rep.error("XX mesh not at right place...",nx[0]-meshcoords[XX][0]);
     }
     if (ndim>1) {
-      nx = nodey;
+      nx = reinterpret_cast<float *>(nodey);
       if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
         cout <<"nodey = "<<nx[0]<<" and coords[y]= "<<meshcoords[YY][0]<<"\n";
         rep.error("YY mesh not at right place...",nx[0]-meshcoords[YY][0]);
       }
     }
     if (ndim>2) {
-      nx = nodez;
+      nx = reinterpret_cast<float *>(nodez);
       if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
         cout <<"nodez = "<<nx[0]<<" and coords[z]= "<<meshcoords[ZZ][0]<<"\n";
-        rep.error("ZZ mesh not at right place...",x[0]-meshcoords[ZZ][0]);
+        rep.error("ZZ mesh not at right place...",nx[0]-meshcoords[ZZ][0]);
       }
     }
   }
@@ -312,22 +321,22 @@ int dataio_silo_pllel::ReadData(
     //
     // check origin of subgrid is at the right place.
     //
-    double *nx = nodex;
+    double *nx = reinterpret_cast<double *>(nodex);
     if (!pconst.equalD(nx[0],meshcoords[XX][0])) {
       rep.error("XX mesh not at right place...",nx[0]-meshcoords[XX][0]);
     }
     if (ndim>1) {
-      nx = nodey;
+      nx = reinterpret_cast<double *>(nodey);
       if (!pconst.equalD(nx[0], meshcoords[YY][0])) {
         cout <<"nodey = "<<nx[0]<<" and coords[y]= "<<meshcoords[YY][0]<<"\n";
         rep.error("YY mesh not at right place...",nx[0]-meshcoords[YY][0]);
       }
     }
     if (ndim>2) {
-      nx = nodez;
+      nx = reinterpret_cast<double *>(nodez);
       if (!pconst.equalD(nx[0], meshcoords[ZZ][0])) {
         cout <<"nodez = "<<nx[0]<<" and coords[z]= "<<meshcoords[ZZ][0]<<"\n";
-        rep.error("ZZ mesh not at right place...",x[0]-meshcoords[ZZ][0]);
+        rep.error("ZZ mesh not at right place...",nx[0]-meshcoords[ZZ][0]);
       }
     }
   }
@@ -374,10 +383,11 @@ int dataio_silo_pllel::ReadData(
 
 
 
-int dataio_silo_pllel::OutputData(const string outfilebase,
-				  class GridBaseClass *cg,
-				  const long int file_counter   ///< number to stamp file with (e.g. timestep)
-				  )
+int dataio_silo_pllel::OutputData(
+      const string outfilebase,
+      class GridBaseClass *cg,
+      const long int file_counter   ///< number to stamp file with (e.g. timestep)
+      )
 {
   int err=0;
   if (!cg)
@@ -861,9 +871,9 @@ int dataio_silo_pllel::setup_grid_properties(
   // This differs from the serial code in that we use LocalNG, not
   // the global number of points NG.
   //
-  int nx = mpiPM.LocalNG[XX]+1; // for N cells, have N+1 nodes.
-  int ny = mpiPM.LocalNG[YY]+1; // for N cells, have N+1 nodes.
-  int nz = mpiPM.LocalNG[ZZ]+1; // for N cells, have N+1 nodes.
+  int nx = mpiPM->LocalNG[XX]+1; // for N cells, have N+1 nodes.
+  int ny = mpiPM->LocalNG[YY]+1; // for N cells, have N+1 nodes.
+  int nz = mpiPM->LocalNG[ZZ]+1; // for N cells, have N+1 nodes.
   
   //node_coords = mem.myalloc(node_coords,ndim);
   if (silo_dtype==DB_FLOAT) {
@@ -881,18 +891,20 @@ int dataio_silo_pllel::setup_grid_properties(
     for (int i=0;i<nx;i++)
       posx[i] = static_cast<float>(mpiPM->LocalXmin[XX]+i*dx);
     nodex = reinterpret_cast<void *>(posx);
-
+    rep.printVec("DBG nodex",posx,nx);
     if (ndim>1) {
       posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
         posy[i] = static_cast<float>(mpiPM->LocalXmin[YY]+i*dx);
       nodey = reinterpret_cast<void *>(posy);
+      rep.printVec("DBG nodey",posy,ny);
     }
     if (ndim>2) {
       posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
         posz[i] = static_cast<float>(mpiPM->LocalXmin[ZZ]+i*dx);
       nodez = reinterpret_cast<void *>(posz);
+      rep.printVec("DBG nodez",posz,nz);
     }
   }
   else {
