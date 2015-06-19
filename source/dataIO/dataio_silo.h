@@ -133,6 +133,10 @@ class dataio_silo :public DataIOBase {
   /// Whether to write float or double data (DB_FLOAT or DB_DOUBLE)
   ///
   int silo_dtype;
+  ///
+  /// what the coordinate system is DB_CARTESIAN, etc.
+  ///
+  int silo_coordsys;
   
   string silofile;         ///< filename to write data to.
   int silo_filetype;       ///< What sort of file to write, can be DB_PDB or DB_HDF5, among others.

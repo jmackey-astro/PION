@@ -70,6 +70,12 @@ int main(int argc, char **argv)
   string inputfile  = argv[2];
   string outdir = argv[3];
   string outfilebase = argv[4];
+
+  // redirect stdout if using more than one core.
+  string rts("msg_"); rts += outfilebase;
+  if (np>1) rep.redirect(rts);
+
+
   cout <<"indir="<<indir<<"\toutdir="<<outdir<<"\n";
   cout <<"input file: "<<inputfile;
   cout <<"\toutput file: "<<outfilebase<<"\n";
@@ -117,6 +123,11 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   //
+  // Set low-memory cells
+  //
+  CI.set_minimal_cell_data();
+  
+  //
   // Read the first file, and setup the grid based on its parameters.
   //
   ostringstream oo;
@@ -125,8 +136,8 @@ int main(int argc, char **argv)
   if (err) rep.error("Didn't read header",err);
 
   //
-  // get a setup_grid class, and use it to set up the grid!
-  // TODO: minimal cells!!!
+  // get a setup_grid class, and use it to set up the grid.
+  //
   class setup_fixed_grid *SimSetup =0;
   SimSetup = new setup_fixed_grid_pllel();
   class GridBaseClass *grid = 0;
@@ -148,7 +159,7 @@ int main(int argc, char **argv)
     
     oo.str(""); oo<<indir<<"/"<<*ff; inputfile  =oo.str(); 
     cout <<"\n****************************************************\n";
-    cout <<"fff="<<fff<<"\tinput file: "<<inputfile;
+    cout <<"fff="<<fff<<"\tinput file: "<<inputfile<<"\n";
 
     class file_status fstat;
     if (!fstat.file_exists(inputfile)) {
@@ -176,7 +187,7 @@ int main(int argc, char **argv)
 
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
-    cout <<"FINISHED reading file: "<<inputfile<<endl;
+    //cout <<"FINISHED reading file: "<<inputfile<<endl;
 
     // *********************************************************************
     // ********* FINISHED READING FILE, NOW WRITE REPLACEMENT *********
@@ -184,13 +195,12 @@ int main(int argc, char **argv)
     cout <<"Writing output file: "<<outfilebase<<endl;
     oo.str(""); oo<<outdir<<"/"<<outfilebase;
     io_write.OutputData(oo.str(), grid, fff);
-    cout <<"FINISHED writing output file: "<<outfilebase<<endl;
+    //cout <<"FINISHED writing output file: "<<outfilebase<<endl;
 
     //
     // move onto next first and output files
     //
     ff++;
-    cout <<"\n****************************************************\n";
   } // move onto next file
 
   //

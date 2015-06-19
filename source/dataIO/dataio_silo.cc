@@ -597,13 +597,13 @@ int dataio_silo::setup_grid_properties(
   }
 
 
-  int nopts=4; int csys;
+  int nopts=4;
   dataio_silo::GridOpts = DBMakeOptlist(nopts);
-  if      (SimPM.coord_sys==COORD_CRT) csys=DB_CARTESIAN;
-  else if (SimPM.coord_sys==COORD_CYL) csys=DB_CYLINDRICAL;
-  else if (SimPM.coord_sys==COORD_SPH) csys=DB_SPHERICAL;
+  if      (SimPM.coord_sys==COORD_CRT) silo_coordsys=DB_CARTESIAN;
+  else if (SimPM.coord_sys==COORD_CYL) silo_coordsys=DB_CYLINDRICAL;
+  else if (SimPM.coord_sys==COORD_SPH) silo_coordsys=DB_SPHERICAL;
   else rep.error("bad coord system",SimPM.coord_sys);
-  DBAddOption(GridOpts,DBOPT_COORDSYS,&csys);
+  DBAddOption(GridOpts,DBOPT_COORDSYS,&silo_coordsys);
   DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
   DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
   DBAddOption(GridOpts,DBOPT_NSPACE,&SimPM.ndim);
@@ -853,6 +853,14 @@ int dataio_silo::generate_quadmesh(DBfile *dbfile, string meshname)
   DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
   DBClearOption(GridOpts,DBOPT_CYCLE);
   DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
+  
+  //DBClearOption(GridOpts,DBOPT_COORDSYS);
+  //int csys=0;
+  //if      (SimPM.coord_sys==COORD_CRT) csys=DB_CARTESIAN;
+  //else if (SimPM.coord_sys==COORD_CYL) csys=DB_CYLINDRICAL;
+  //else if (SimPM.coord_sys==COORD_SPH) csys=DB_SPHERICAL;
+  //else rep.error("bad coord system",SimPM.coord_sys);
+  //DBAddOption(GridOpts,DBOPT_COORDSYS,&csys);
  
   //
   // set coordinate axis names.  This has to be char **, so I can't just

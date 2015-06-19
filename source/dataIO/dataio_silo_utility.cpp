@@ -857,7 +857,7 @@ void dataio_silo_utility::get_quadmesh_extents(
     for (int v=0;v<ndim;v++) {
       mesh_xmin[v] = fqmmin[v];
       mesh_xmax[v] = fqmmax[v];
-      cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+      //cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
     }
   }
   else {
@@ -866,18 +866,9 @@ void dataio_silo_utility::get_quadmesh_extents(
     for (int v=0;v<ndim;v++) {
       mesh_xmin[v] = dqmmin[v];
       mesh_xmax[v] = dqmmax[v];
-      cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+      //cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
     }
   }
-
-  //float *qmmin = qm->min_extents;
-  //float *qmmax = qm->max_extents;
-  //for (int v=0;v<ndim;v++) {
-  //  mesh_xmin[v] = qmmin[v];
-  //  mesh_xmax[v] = qmmax[v];
-  //  cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
-  //}
-
   DBFreeQuadmesh(qm); //qm=0;
   return;
 }

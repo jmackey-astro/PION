@@ -919,13 +919,13 @@ int dataio_silo_pllel::setup_grid_properties(
   }
 
 
-  int nopts=4; int csys;
+  int nopts=4;
   dataio_silo::GridOpts = DBMakeOptlist(nopts);
-  if      (SimPM.coord_sys==COORD_CRT) csys=DB_CARTESIAN;
-  else if (SimPM.coord_sys==COORD_CYL) csys=DB_CYLINDRICAL;
-  else if (SimPM.coord_sys==COORD_SPH) csys=DB_SPHERICAL;
+  if      (SimPM.coord_sys==COORD_CRT) silo_coordsys=DB_CARTESIAN;
+  else if (SimPM.coord_sys==COORD_CYL) silo_coordsys=DB_CYLINDRICAL;
+  else if (SimPM.coord_sys==COORD_SPH) silo_coordsys=DB_SPHERICAL;
   else rep.error("bad coord system",SimPM.coord_sys);
-  DBAddOption(GridOpts,DBOPT_COORDSYS,&csys);
+  DBAddOption(GridOpts,DBOPT_COORDSYS,&silo_coordsys);
   DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
   DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
   DBAddOption(GridOpts,DBOPT_NSPACE,&SimPM.ndim);
