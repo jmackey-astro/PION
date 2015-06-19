@@ -195,12 +195,9 @@ int main(int argc, char **argv)
     }
     
     //
-    // Setup first and second silo I/O classes.
+    // Setup output silo I/O classes.
     //
-    bool
-      ff_serial = true,
-      sf_serial = false;
-    class dataio_silo firstio("FLOAT");
+    class dataio_silo firstio("DOUBLE");
     
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------

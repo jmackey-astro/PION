@@ -36,6 +36,7 @@ OPT += -DSILO
 #MAKE_UNAME=aibn129
 #MAKE_UNAME=epona
 #MAKE_UNAME=stokes
+#MAKE_UNAME=osx
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -71,6 +72,36 @@ ifeq ($(MAKE_UNAME), standard)
   # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
 endif
+
+###########################################
+# Specific Options for OS-X
+###########################################
+ifeq ($(MAKE_UNAME), osx)
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
+
+  # CURDIR may only work with GNU Make!  It gives absolute paths, so that
+  # the executable can always link to shared libs.
+  #MYLIB = /Users/jmackey/Library/JMs_stuff
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  # libs for CVODES
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
+endif
+#################### --- OS X Darwin --- #############################
 
 ######################## -- JUROPA -- ################################
 # Options for the Juelich Supercomputer JUROPA

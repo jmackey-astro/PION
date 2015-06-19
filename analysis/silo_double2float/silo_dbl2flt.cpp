@@ -63,23 +63,23 @@ int main(int argc, char **argv)
   //
   if (argc!=5) {
     cerr << "Error: must call as follows...\n";
-    cerr << "silo_dbl2flt: <silo_dbl2flt> <first-dir> <first-file> <comp-dir> <comp-file> \n";
+    cerr << "silo_dbl2flt: <silo_dbl2flt> <input-dir> <input-file> <output-dir> <output-file> \n";
     rep.error("Bad number of args",argc);
   }
-  string fdir = argv[1];
-  string firstfile  = argv[2];
-  string sdir = argv[3];
-  string secondfile = argv[4];
-  cout <<"fdir="<<fdir<<"\tsdir="<<sdir<<"\n";
-  cout <<"first file: "<<firstfile;
-  cout <<"\tsecond file: "<<secondfile<<"\n";
+  string indir = argv[1];
+  string inputfile  = argv[2];
+  string outdir = argv[3];
+  string outfilebase = argv[4];
+  cout <<"indir="<<indir<<"\toutdir="<<outdir<<"\n";
+  cout <<"input file: "<<inputfile;
+  cout <<"\toutput file: "<<outfilebase<<"\n";
 
   //
   // set up dataio_utility classes, one to read double data, and the
   // other to write float data.
   //
-  class dataio_silo_utility read("DOUBLE",&MCMD);
-  class dataio_silo_pllel write("FLOAT",&MCMD);
+  class dataio_silo_utility io_read("DOUBLE",&MCMD);
+  class dataio_silo_pllel io_write("FLOAT",&MCMD);
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
   // Get list of files to read:
   //
   list<string> ffiles;
-  err += dataio.get_files_in_dir(fdir, firstfile,  &ffiles);
+  err += io_read.get_files_in_dir(indir, inputfile,  &ffiles);
   if (err) rep.error("failed to get first list of files",err);
 
   for (list<string>::iterator s=ffiles.begin(); s!=ffiles.end(); s++) {
@@ -120,8 +120,8 @@ int main(int argc, char **argv)
   // Read the first file, and setup the grid based on its parameters.
   //
   ostringstream oo;
-  oo.str(""); oo<<fdir<<"/"<<*ff; firstfile =oo.str();
-  err = dataio.ReadHeader(firstfile);
+  oo.str(""); oo<<indir<<"/"<<*ff; inputfile =oo.str();
+  err = io_read.ReadHeader(inputfile);
   if (err) rep.error("Didn't read header",err);
 
   //
@@ -142,18 +142,18 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   //
-  // loop over all files: open first+second and write the difference.
+  // loop over all files: open first+output and write the difference.
   //
   for (unsigned int fff=0; fff<nfiles; fff++) {
     
-    oo.str(""); oo<<fdir<<"/"<<*ff; firstfile  =oo.str(); 
+    oo.str(""); oo<<indir<<"/"<<*ff; inputfile  =oo.str(); 
     cout <<"\n****************************************************\n";
-    cout <<"fff="<<fff<<"\tfirst file: "<<firstfile;
+    cout <<"fff="<<fff<<"\tinput file: "<<inputfile;
 
     class file_status fstat;
-    if (!fstat.file_exists(firstfile)) {
-       cout <<"first file: "<<firstfile;
-       rep.error("First or second file doesn't exist",firstfile);
+    if (!fstat.file_exists(inputfile)) {
+       cout <<"first file: "<<inputfile;
+       rep.error("First or output file doesn't exist",inputfile);
     }
     
     // ----------------------------------------------------------------
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
     //
     // Read in first code header so i know how to setup grid.
     //
-    err = dataio.ReadHeader(firstfile);
+    err = io_read.ReadHeader(inputfile);
     if (err) rep.error("Didn't read header",err);
   
     // ----------------------------------------------------------------
@@ -171,22 +171,26 @@ int main(int argc, char **argv)
     //
     // Read data (this reader can read serial or parallel data).
     //
-    err = dataio.parallel_read_any_data(firstfile, grid);
-    rep.errorTest("(silo_dbl2flt) Failed to read firstfile",0,err);
+    err = io_read.parallel_read_any_data(inputfile, grid);
+    rep.errorTest("(silo_dbl2flt) Failed to read inputfile",0,err);
 
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
-    cout <<"FINISHED reading first file: "<<firstfile<<endl;
+    cout <<"FINISHED reading file: "<<inputfile<<endl;
 
     // *********************************************************************
     // ********* FINISHED READING FILE, NOW WRITE REPLACEMENT *********
     // *********************************************************************
-    firstio.OutputData(outfile, grid, fff);
+    cout <<"Writing output file: "<<outfilebase<<endl;
+    oo.str(""); oo<<outdir<<"/"<<outfilebase;
+    io_write.OutputData(oo.str(), grid, fff);
+    cout <<"FINISHED writing output file: "<<outfilebase<<endl;
 
     //
-    // move onto next first and second files
+    // move onto next first and output files
     //
     ff++;
+    cout <<"\n****************************************************\n";
   } // move onto next file
 
   //
