@@ -72,8 +72,8 @@ int main(int argc, char **argv)
   string outfilebase = argv[4];
 
   // redirect stdout if using more than one core.
-  string rts("msg_"); rts += outfilebase;
-  if (np>1) rep.redirect(rts);
+  //ostringstream path; path << outfilebase <<"_"<<r<<"_";
+  //if (np>1) rep.redirect(path.str());
 
 
   cout <<"indir="<<indir<<"\toutdir="<<outdir<<"\n";

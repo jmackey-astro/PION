@@ -179,6 +179,39 @@ LDFLAGS += -L$(MYLIB)/silo_intel_nohdf/lib/ -lsilo
 LDFLAGS += -lmkl_sequential -lmkl_core
 endif
 
+######################## -- SuperMUC -- ##############################
+# Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
+######################################################################
+ifeq ($(MAKE_UNAME), SUPERMUC)
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX=icc
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpiCC
+  endif
+  CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  CXXFLAGS += -DINTEL
+  #CXXFLAGS += -DTESTING
+
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  INC += -I/usr/local/sundials/2.4.0/include
+  INC += ${MKL_INC} ${MPI_INC}
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L/usr/local/sundials/2.4.0/lib
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
+
+endif
+##################### -- SuperMUC -- #################################
 
 ##################################################
 ##################################################
