@@ -238,7 +238,7 @@ int sim_control_fixedgrid_pllel::Init(
       mpiPM.ReadSingleFile = false;
     }
 
-    if (!dataio) dataio = new dataio_silo_pllel ("FLOAT", &mpiPM);
+    if (!dataio) dataio = new dataio_silo_pllel ("DOUBLE", &mpiPM);
     if (!dataio) rep.error("dataio_silo_pllel initialisation",dataio);
     if (!dataio->file_exists(infile)) {
       cout <<"\tInfile doesn't exist: failing\n";
@@ -282,7 +282,7 @@ int sim_control_fixedgrid_pllel::Init(
 #endif
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo_pllel ("FLOAT", &mpiPM);
+      dataio = new dataio_silo_pllel ("DOUBLE", &mpiPM);
       break;
 #endif // if SILO
     default:

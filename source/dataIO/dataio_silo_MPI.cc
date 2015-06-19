@@ -43,7 +43,8 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.28 JM: Changes for new code structure.
 /// - 2015.06.13/15 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
-///    parameter, set in the constructor.
+///    parameter, set in the constructor. (more 2015.06.18)
+
 #ifdef SILO
 
 #include "defines/functionality_flags.h"
@@ -129,10 +130,9 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
 
   //
-  // Now read the header, and also NUM_FILES, which tells me how many files there are for
-  // when I need to read in the data later on.
+  // Now read the header, and also NUM_FILES, which tells me how many files
+  // there are for when I need to read in the data later on.
   //
-  //  err = dataio_silo::read_header(*db_ptr);
   err = read_simulation_parameters();
   dataio_silo::ndim = SimPM.ndim;
   if (err)
@@ -143,7 +143,7 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
 #ifdef TESTING
     cout <<"Warning didn't read NUM_FILES from silo file.\n";
 #endif
-    //    rep.error("dataio_silo::ReadHeader() error reading NUM_FILES from silo file",err);
+    rep.error("dataio_silo::ReadHeader() error reading NUM_FILES from silo file",err);
   }
 
   //
@@ -168,8 +168,8 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
 
 int dataio_silo_pllel::ReadData(
       string infile,
-	    class GridBaseClass *cg
-	    )
+      class GridBaseClass *cg
+      )
 {
   if (!cg)
     rep.error("dataio_silo_pllel::ReadData() null pointer to grid!",cg);
@@ -204,10 +204,6 @@ int dataio_silo_pllel::ReadData(
   // Choose correct filename based on numfiles.
   // Also choose correct directory name, assuming that nproc is the same as for
   // when the file was generated.
-  // *** I would like to relax this requirement eventually, but it would take a lot of
-  // *** coding for the two cases of reading more than one mesh to the local domain, and reading
-  // *** parts of a larger mesh to multiple local domains.
-
   //
   // replace 0000 in filename with my group rank, based on numfiles.
   //
@@ -278,21 +274,31 @@ int dataio_silo_pllel::ReadData(
   //
   // ---------- check grid nodes are where we expect ----------
   //
+  // Check that datatype is what we are expecting!  If not, then 
+  // delete data arrays, reset datatype, and re-create data arrays.
+  //
+  if (qm->datatype != silo_dtype) {
+    cout <<"HMMM: file has datatype "<<qm->datatype;
+    cout <<" but I am trying to read datatype "<<silo_dtype<<"\n";
+    cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    cout <<"ReadData() quadmesh has type="<<qm->datatype;
+    cout <<" but expecting type="<<silo_dtype<<"\n";
+    cout <<"\t... resetting datatype for this file.\n";
+    delete_data_arrays();
+    silo_dtype = qm->datatype;
+    create_data_arrays();
+  }
+  //
   // qm->coords is a <void **> pointer, so we have to reinterpret
   // it as either float or double.
   //
-  //FAKE_DOUBLE **c = reinterpret_cast<FAKE_DOUBLE **>(qm->coords);
   if (silo_dtype==DB_FLOAT) {
     float **meshcoords = reinterpret_cast<float **>(qm->coords);
     //
     // check origin of subgrid is at the right place.
     //
-    //float *nx = reinterpret_cast<float *>(nodex);
     float *nx = reinterpret_cast<float *>(nodex);
-    //rep.printVec("DBG nx",nx,mpiPM->LocalNG[XX]+1);
-    //float *ny = reinterpret_cast<float *>(nodey);
-    //rep.printVec("DBG ny",ny,mpiPM->LocalNG[YY]+1);
-
     if (!pconst.equalD(nx[0],meshcoords[XX][0])) {
       cout <<"I think x[0]="<<nx[0];
       cout <<", silo file says x[0]="<<meshcoords[XX][0]<<"\n";
@@ -548,7 +554,6 @@ int dataio_silo_pllel::OutputData(
 
     DBSetDir(*db_ptr,"/");
     DBSetDir(*db_ptr,datadir);
-    //DBClose(*db_ptr); *db_ptr=0;
     //    cout <<"Finished writing header to file.\n";
   } // if root processor of *group*
 
@@ -566,9 +571,6 @@ int dataio_silo_pllel::OutputData(
     char datadir[strlength];
     int err = DBGetDir(*db_ptr,datadir);
     DBSetDir(*db_ptr,"/");
-    // Not putting the multimesh in its own directory anymore.
-    //    DBMkDir(*db_ptr,"mmesh");
-    //    DBSetDir(*db_ptr,"/mmesh");
     
     //
     // Strip the path from outfilebase to get just the filename; do this by 
@@ -781,10 +783,6 @@ int dataio_silo_pllel::choose_pllel_filename(
       string &outfile     ///< write filename to this string.
       )
 {
-  //  long int counter;
-  //  if (file_counter<0) counter = 0;
-  //  else counter = file_counter;
-
   ostringstream temp; temp.str(""); temp.fill('0');  
   temp << fbase   <<"_";
   temp.width(4);

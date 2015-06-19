@@ -13,8 +13,8 @@
 /// - 2010.12.07 JM: Added setup_extra_data() call to cell_interface
 ///   before setting up grid.  Need to add Geomtric grid options!
 /// - 2011.04.23 JM: new code for setup_extra_data().
-/// - 2105.03.26 JM: updated for pion v0.2
-///
+/// - 2015.03.26 JM: updated for pion v0.2
+/// - 2015.06.18 JM: updated to allow FLOAT or DOUBLE silo data.
 
 #ifndef PARALLEL
 # error "define PARALLEL so this will work!"
@@ -69,20 +69,23 @@ int main(int argc, char **argv)
   //
   // Get an input file and an output file.
   //
-  if (argc!=7) {
+  if (argc!=9) {
     cerr << "Error: must call as follows...\n";
-    cerr << "silocompare: <silocompare> <first-dir> <comp-dir> <first-file> <comp-file> <outfile> <fabs/plus-minus/L1/L2>\n";
+    cerr << "silocompare: <silocompare> <first-dir> <comp-dir> <first-file> <flt/dbl> <comp-file> <flt/dbl> <outfile> <fabs/plus-minus/L1/L2>\n";
     cerr << "\t 0: Diff image is relative error for rho/p_g (abs.val)\n";
     cerr << "\t 1: Diff image is relative error for rho/p_g (+/-)\n";
     cerr << "\t 2: Just calculate L1+L2 error, no difference image.\n";
+    cerr << "<flt/dbl>: FLOAT or DOUBLE for whether you think the file is float or double precision.\n";
     rep.error("Bad number of args",argc);
   }
   string fdir = argv[1];
   string sdir = argv[2];
   string firstfile   =argv[3];
-  string secondfile  =argv[4];
-  string outfilebase =argv[5]; string outfile;
-  int optype=atoi(argv[6]);
+  string dtype1(argv[4]);
+  string secondfile  =argv[5];
+  string dtype2(argv[6]);
+  string outfilebase =argv[7]; string outfile;
+  int optype=atoi(argv[8]);
   if (optype<0 || optype>2)
     rep.error("Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2)",optype);
   cout <<"fdir="<<fdir<<"\tsdir="<<sdir<<endl;
@@ -94,7 +97,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(&MCMD);
+  class dataio_silo_utility dataio(dtype2,&MCMD);
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -197,7 +200,7 @@ int main(int argc, char **argv)
     bool
       ff_serial = true,
       sf_serial = false;
-    class dataio_silo firstio;
+    class dataio_silo firstio("FLOAT");
     
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------

@@ -42,7 +42,7 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.28 JM: Removed parallel code (new class).
 /// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
-///    parameter, set in the constructor.
+///    parameter, set in the constructor.  (More 18.06)
 
 #ifdef SILO
 
@@ -146,29 +146,17 @@ dataio_silo::~dataio_silo()
     mem.myfree(reinterpret_cast<float *>(nodey));
     mem.myfree(reinterpret_cast<float *>(nodez));
     mem.myfree(reinterpret_cast<float **>(node_coords));
-    //mem.myfree(reinterpret_cast<float *>(data0);
-    //mem.myfree(reinterpret_cast<float *>(data1);
-    //mem.myfree(reinterpret_cast<float *>(data2);
-    //mem.myfree(reinterpret_cast<float **>(vec_data);
   }
   if (silo_dtype == DB_DOUBLE) {
     mem.myfree(reinterpret_cast<double *>(nodex));
     mem.myfree(reinterpret_cast<double *>(nodey));
     mem.myfree(reinterpret_cast<double *>(nodez));
     mem.myfree(reinterpret_cast<double **>(node_coords));
-    //mem.myfree(reinterpret_cast<double *>(data0);
-    //mem.myfree(reinterpret_cast<double *>(data1);
-    //mem.myfree(reinterpret_cast<double *>(data2);
-    //mem.myfree(reinterpret_cast<double **>(vec_data);
   }
   nodex    = 0;
   nodey    = 0;
   nodez    = 0;
   node_coords = 0;
-  //data0    = 0
-  //data1    = 0
-  //data2    = 0
-  //vec_data = 0
   delete_data_arrays();
 
   // Have to check if we used the grid options for writing data.
@@ -271,7 +259,7 @@ int dataio_silo::OutputData(
     DBSetCompression("METHOD=GZIP LEVEL=1");
     DBSetFriendlyHDF5Names(1);
   }
-  *db_ptr = DBCreate(silofile.c_str(), DB_CLOBBER, DB_LOCAL, "JM's astro code data", silo_filetype);
+  *db_ptr = DBCreate(silofile.c_str(), DB_CLOBBER, DB_LOCAL, "PION data", silo_filetype);
   if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
   //cout <<"\tdb_ptr="<<db_ptr<<"\n";
   //cout <<"\t*db_ptr="<<*db_ptr<<"\n";
@@ -445,10 +433,6 @@ int dataio_silo::ReadData(string infile,
   DBSetDir(*db_ptr,"/");
 
   DBClose(*db_ptr); //*db_ptr=0; 
-
-  // Now assign Ph to be equal to P for each cell.
-  //cell *cpt = gp->FirstPt();
-  //do {for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];} while ((cpt=gp->NextPt(cpt))!=0);
 
   return err;
 }
@@ -892,16 +876,10 @@ int dataio_silo::generate_quadmesh(DBfile *dbfile, string meshname)
   //  cout <<"gridopts:"<<GridOpts<<"\n";
 
   //
-  // DBPutQuadmesh requires the data to be (float **), even though it will allow
-  // doubles to be written and will store them correctly, so I have to reinterpret/cast
-  // the data to float ** before writing it.
+  // DBPutQuadmesh requires the data to be (void **), with the actual
+  // datatype in silo_dtype.  This is why node_coords is void **.
   //
-  //  float **nc = reinterpret_cast<float **>(node_coords);
-  // void **nc = reinterpret_cast<void **>(node_coords);
   int err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames, node_coords, nodedims, ndim, silo_dtype, DB_COLLINEAR, GridOpts);
-  //char temp[256]; strcpy(temp,meshname.c_str());
-  //int err = DBPutQuadmesh(dbfile, temp, coordnames, nc, nodedims, ndim, FAKE_DATATYPE, DB_COLLINEAR, GridOpts);
-  
 
   for (int i=0;i<ndim;i++) coordnames[i] = mem.myfree(coordnames[i]);
   coordnames = mem.myfree(coordnames);
@@ -1006,10 +984,6 @@ void dataio_silo::create_data_arrays()
 
 void dataio_silo::delete_data_arrays()
 {
-  //data0    = mem.myfree(data0   );
-  //data1    = mem.myfree(data1   );
-  //data2    = mem.myfree(data2   );
-  //vec_data = mem.myfree(vec_data);
   //
   // freeing memory for void arrays:
   //
@@ -1194,10 +1168,6 @@ int dataio_silo::get_scalar_data_array(
           ct++;
         } while ( (c=gp->NextPt(c))!=0 );
       }
-      //do {
-      //  data[ct] = MP->Temperature(c->P,SimPM.gamma);
-      //  ct++;
-      //} while ( (c=gp->NextPt(c))!=0 );
     }
     else {
       if (silo_dtype==DB_FLOAT) {
@@ -1212,10 +1182,6 @@ int dataio_silo::get_scalar_data_array(
           ct++;
         } while ( (c=gp->NextPt(c))!=0 );
       }
-      //do {
-      //  data[ct] = eqn->eint(c->P,SimPM.gamma);
-      //  ct++;
-      //} while ( (c=gp->NextPt(c))!=0 );
     }
   }
 
@@ -1236,10 +1202,6 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  data[ct] = eqn->Divergence(c,0,vars, gp);
-    //  ct++;
-    //} while ( (c=gp->NextPt(c))!=0 );
   }
 
   else if (v==-5) { // CurlB (for 2D data only!)
@@ -1262,11 +1224,6 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  eqn->Curl(c,0,vars, gp, crl);
-    //  data[ct] = crl[2];
-    //  ct++;
-    //} while ( (c=gp->NextPt(c))!=0 );
   }
 
   else if (v==-3) { // total pressure.
@@ -1282,10 +1239,6 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  data[ct] = eqn->Ptot(c->P,SimPM.gamma);
-    //  ct++;
-    //} while ( (c=gp->NextPt(c))!=0 );
   }
 
 #ifdef RT_TESTING_OUTPUTCOL
@@ -1313,11 +1266,6 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  CI.get_col(c, col_id, Tau);
-    //  data[ct] = Tau[iT];
-    //  ct++;
-    //} while ( (c=gp->NextPt(c))!=0 );
   }
 
   else if (v<=-10 && v>-20) {
@@ -1344,22 +1292,17 @@ int dataio_silo::get_scalar_data_array(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  CI.get_col(c, col_id, Tau);
-    //  data[ct] = Tau[iT];
-    //  ct++;
-    //} while ( (c=gp->NextPt(c))!=0 );
   }
 #endif // RT_TESTING_OUTPUTCOL
 
 
 #ifdef COUNT_ENERGETICS
-  //
-  // Hardcode this for double arrays (to save coding).
-  //
-  if (silo_dtype==DB_FLOAT)
-    rep.error("(silo) Use double precision for debugging!",silo_dtype);
   else if (v==-105) {
+    //
+    // Hardcode this for double arrays (to save coding).
+    //
+    if (silo_dtype==DB_FLOAT)
+      rep.error("(silo) Use double precision for debugging!",silo_dtype);
     do {darr[ct] = c->e.ci_cooling; ct++; 
     } while ( (c=gp->NextPt(c))!=0 );
   }
@@ -1412,8 +1355,6 @@ int dataio_silo::get_scalar_data_array(
 
   else rep.error("Don't understand what variable to write.",v);
 
-  // This won't work for parallel grid... b/c need mpiPM.LocalNcell...
-  //  if (ct!=SimPM.Ncell) rep.error("Counting cells error",ct-SimPM.Ncell); 
   return 0;
 }
 
@@ -1462,18 +1403,12 @@ int dataio_silo::write_scalar2mesh(DBfile *dbfile,  ///< silo file pointer.
 {
   //cout <<"writing variable "<<variable<<" to mesh.\n";
   //
-  // data has to be passed to the function as float *, even though it will
-  // store doubles correctly, so we reinterpret/cast the data first.
+  // data has to be passed to the function as void ** in recent
+  // versions of silo.  Datatype is specified with silo_dtype.
   //
-  //  float *dd = reinterpret_cast<float *>(data);
-  //  if (variable=="CurlB") cout <<"Writing curlB data!\n";
-  //void *dd = reinterpret_cast<void *>(data);
-  int err = DBPutQuadvar1(dbfile, variable.c_str(), meshname.c_str(), data, zonedims, ndim, 0,0, silo_dtype, DB_ZONECENT, 0);
-
-  //char var_str[strlength];  strcpy(var_str,variable.c_str());
-  //char mesh_str[strlength]; strcpy(mesh_str,meshname.c_str());
-  //int err = DBPutQuadvar1(dbfile, var_str, mesh_str, dd, zonedims, ndim, 0,0, FAKE_DATATYPE, DB_ZONECENT, 0);
-  //  if (err) rep.error("couldn't write density to quadmesh",err);
+  int err = DBPutQuadvar1(dbfile, variable.c_str(), meshname.c_str(),
+                          data, zonedims, ndim, 0,0, silo_dtype,
+                          DB_ZONECENT, 0);
   return err;
 }
 
@@ -1507,19 +1442,11 @@ int dataio_silo::write_vector2mesh(DBfile *dbfile,  ///< silo file pointer.
     strcpy(vnames[i],temp.c_str());
   }
 
-
   //
-  // data has to be passed to the function as float **, even though it will
-  // store doubles correctly, so we reinterpret/cast the data first.
+  // data has to be passed to the function as void ** in recent
+  // versions of silo.  Datatype is specified with silo_dtype.
   //
-  //float **dd = reinterpret_cast<float **>(data);
-  //void **dd = reinterpret_cast<void **>(data);
   err = DBPutQuadvar(dbfile, variable.c_str(), meshname.c_str(), vec_length, vnames, data, zonedims, ndim, 0,0, silo_dtype, DB_ZONECENT, 0);
-
-  //char var_str[strlength];  strcpy(var_str,variable.c_str());
-  //char mesh_str[strlength]; strcpy(mesh_str,meshname.c_str());
-  //err = DBPutQuadvar(dbfile, var_str, mesh_str, vec_length, vnames, dd, zonedims, ndim, 0,0, FAKE_DATATYPE, DB_ZONECENT, 0);
-  //  if (err) rep.error("couldn't write velocity to quadmesh",err);
 
   for (int i=0;i<ndim;i++)
     vnames[i] = mem.myfree(vnames[i]);
@@ -1699,12 +1626,21 @@ int dataio_silo::read_variable2grid(
     rep.error("dataio_silo::read_variable2grid() wrong number of cells",
               silodata->nels-SimPM.Ncell);
   }
+  //
+  // Check that datatype is what we are expecting!  If not, then 
+  // delete data arrays, reset datatype, and re-create data arrays.
+  //
   if (silodata->datatype != silo_dtype) {
-    cout <<"ERROR: file has datatype "<<silodata->datatype;
+    cout <<"HMMM: file has datatype "<<silodata->datatype;
     cout <<" but I am trying to read datatype "<<silo_dtype<<"\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
     cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
-    rep.error("Bad datatype in silo file",silodata->datatype);
+    cout <<"SRAD_read_var2grid() quadvar has type="<<silodata->datatype;
+    cout <<" but expecting type="<<silo_dtype<<"\n";
+    cout <<"\t... resetting datatype for this file.\n";
+    delete_data_arrays();
+    silo_dtype = silodata->datatype;
+    create_data_arrays();
   }
 
   //
@@ -1712,14 +1648,13 @@ int dataio_silo::read_variable2grid(
   // is a void pointer, so I have to reinterpret it to get data that
   // PION can understand.
   //
-  void **data = silodata->vals;
   float **fdata=0;
   double **ddata=0;
   if (silo_dtype==DB_FLOAT) {
-    fdata = reinterpret_cast<float **>(data);
+    fdata = reinterpret_cast<float **>(silodata->vals);
   }
   else {
-    ddata = reinterpret_cast<double **>(data);
+    ddata = reinterpret_cast<double **>(silodata->vals);
   }
   
   //
@@ -1762,17 +1697,6 @@ int dataio_silo::read_variable2grid(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  //      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-    //  c->P[v1] = data[0][ct];
-    //  c->P[v2] = data[1][ct];
-    //  c->P[v3] = data[2][ct];
-    //  //c->P[v1] = silodata->vals[0][ct];
-    //  //c->P[v2] = silodata->vals[1][ct];
-    //  //c->P[v3] = silodata->vals[2][ct];
-    //  //cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-    //  ct++;
-    //} while ( (c=gp->NextPt(c))!=0 );
     if (ct != npt) rep.error("wrong number of points read for vector variable",ct-npt);
   } // vector variable
 
@@ -1817,20 +1741,14 @@ int dataio_silo::read_variable2grid(
         ct++;
       } while ( (c=gp->NextPt(c))!=0 );
     }
-    //do {
-    //  //cout <<"val="<<silodata->vals[0][ct]<<" and data="<<data[0][ct]<<"\n";
-    //  //c->P[v1] = silodata->vals[0][ct];
-    //  c->P[v1] = data[0][ct];
-    //  ct++;
-    //  //      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-    //} while ( (c=gp->NextPt(c))!=0 );
     if (ct != npt)
       rep.error("wrong number of points read for scalar variable",ct-npt);
   } // scalar variable
 
   //  cout <<"Read variable "<<variable<<"\n";
   DBFreeQuadvar(silodata); //silodata=0;
-  data=0;
+  fdata=0;
+  ddata=0;
   return 0;
 }
 

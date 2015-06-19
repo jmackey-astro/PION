@@ -1,10 +1,6 @@
-# Makefile for silocompare code, Jonathan Mackey
+# Makefile for silo_dbl2flt code, Jonathan Mackey
 #
-# 2010.10.13 JM: Added new stellar_wind_BC.o object and new standard compile.
-# 2010.12.07 JM: Added geometric grid support, and also cell_interface object.
-# 2011.04.23 JM: now works on Juropa.
-# 2013.09.05 JM: Updated for pion.
-# 2015.03.26 JM: updated for pion v0.2.
+# - 2015.06.18 JM: Comverted from silocompare code.
 
 SHELL = /bin/sh
 .SUFFIXES:
@@ -189,7 +185,7 @@ OBJECTS = file_status.o  \
         MCMD_control.o \
         setup_fixed_grid.o \
         setup_fixed_grid_MPI.o \
-        silocompare.o \
+        silo_dbl2flt.o \
         readparams.o \
         global.o \
         dataio.o \
@@ -230,8 +226,8 @@ OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o mpv8_StarBench_heatco
 ### -- EXECTUTABLES -- ###
 ##########################
 
-silocompare: $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o silocompare $(LDFLAGS)
+silo_dbl2flt: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o silo_dbl2flt $(LDFLAGS)
 
 
 
@@ -239,7 +235,7 @@ silocompare: $(OBJECTS)
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-silocompare.o:	silocompare.cc global.h uniform_grid.h dataio.h ${GLOBAL}
+silo_dbl2flt.o:	silo_dbl2flt.cpp global.h uniform_grid.h dataio.h ${GLOBAL}
 
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
@@ -357,5 +353,5 @@ dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h\
 
 
 clean:
-	rm -f *.o silocompare
+	rm -f *.o silo_dbl2flt
 

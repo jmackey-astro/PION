@@ -49,10 +49,11 @@ using namespace std;
 /*************** dataio_silo_utility ********************/
 /********************************************************/
 dataio_silo_utility::dataio_silo_utility(
+      std::string dtype,   ///< FLOAT or DOUBLE for files.
       class MCMDcontrol *p
       )
 :
-dataio_silo_pllel(p)
+dataio_silo_pllel(dtype,p)
 {
 #ifdef TESTING
   cout <<"Setting up utility Silo I/O class.\n";
@@ -160,7 +161,35 @@ int dataio_silo_utility::SRAD_read_var2grid(
               silodata->nels-SimPM.Ncell);
   }
 
-  FAKE_DOUBLE **data = (FAKE_DOUBLE **)(silodata->vals);
+  //
+  // Check that datatype is what we are expecting!  If not, then 
+  // delete data arrays, reset datatype, and re-create data arrays.
+  //
+  if (silodata->datatype != silo_dtype) {
+    cout <<"SRAD_read_var2grid() quadvar has type="<<silodata->datatype;
+    cout <<" but expecting type="<<silo_dtype<<"\n";
+    cout <<"\t... resetting datatype for this file.\n";
+    cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    delete_data_arrays();
+    silo_dtype = silodata->datatype;
+    create_data_arrays();
+  }
+
+  //
+  // Create a pointer to the data in the silo stuct DBquadvar.  This
+  // is a void pointer, so I have to reinterpret it to get data that
+  // PION can understand.
+  //
+  void **data = silodata->vals;
+  float **fdata=0;
+  double **ddata=0;
+  if (silo_dtype==DB_FLOAT) {
+    fdata = reinterpret_cast<float **>(data);
+  }
+  else {
+    ddata = reinterpret_cast<double **>(data);
+  }
 
   if (variable=="Velocity" || variable=="MagneticField") {
     int v1,v2,v3;
@@ -173,9 +202,21 @@ int dataio_silo_utility::SRAD_read_var2grid(
     do {
       if (SRAD_point_on_my_domain(c,filePM)) {
         //      cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
-        c->P[v1] = data[0][ct];
-        c->P[v2] = data[1][ct];
-        c->P[v3] = data[2][ct];
+        if (silo_dtype==DB_FLOAT) {
+          c->P[v1] = fdata[0][ct];
+          c->P[v2] = fdata[1][ct];
+          c->P[v3] = fdata[2][ct];
+          ct++;
+        }
+        else {
+          c->P[v1] = ddata[0][ct];
+          c->P[v2] = ddata[1][ct];
+          c->P[v3] = ddata[2][ct];
+          ct++;
+        }
+        //c->P[v1] = data[0][ct];
+        //c->P[v2] = data[1][ct];
+        //c->P[v3] = data[2][ct];
         //c->P[v1] = silodata->vals[0][ct];
         //c->P[v2] = silodata->vals[1][ct];
         //c->P[v3] = silodata->vals[2][ct];
@@ -238,7 +279,12 @@ int dataio_silo_utility::SRAD_read_var2grid(
         for (int i=0; i<filePM->LocalNG[XX]; i++) {
           if (!SRAD_point_on_my_domain(cx,filePM))
             rep.error("FAST READ IS IN THE WRONG PLACE!!!",cx->pos[XX]);
-          cx->P[v1] = data[0][ct];
+          if (silo_dtype==DB_FLOAT) {
+            cx->P[v1] = fdata[0][ct];
+          }
+          else {
+            cx->P[v1] = ddata[0][ct];
+          }
           ct++;
           cx = ggg->NextPt(cx,posdir[XX]);
         }
@@ -254,7 +300,8 @@ int dataio_silo_utility::SRAD_read_var2grid(
 
   //  cout <<"Read variable "<<variable<<"\n";
   DBFreeQuadvar(silodata); //silodata=0;
-  data=0;
+  fdata=0;
+  ddata=0;
   return 0;
 }
 
@@ -460,19 +507,6 @@ int dataio_silo_utility::parallel_read_any_data(
   int err=0;
 
   //
-  // If N==1, then we are running in serial and the local domain is
-  // the full domain, so we call serial_read_any_data()
-  // (THIS IS TRUE AS LONG AS WE ARE READING THE FULL DOMAIN, BUT WE
-  //  MIGHT NOT BE, SO I'M RELAXING THIS FOR NOW...)
-  //
-  //if (mpiPM->nproc==1) {
-  //  cout <<"Nproc=1 in dataio_silo_utility::parallel_read_any_data():";
-  //  cout <<" calling serial_read_any_data().\n";
-  //  err = serial_read_any_data(firstfile, ggg);
-  //  return err;
-  //}
-
-  //
   // The idea behind this is that a program running on N cores can
   // read data written by M cores, where N and M can be any positive
   // integers (possibly powers of 2 for the domain decomposition to
@@ -540,21 +574,6 @@ int dataio_silo_utility::parallel_read_any_data(
     }
     clk.stop_timer("readdata");
 
-    //clk.start_timer("readdata"); double tsf=0;
-    //for (int count=0; count<mpiPM->nproc; count++) {
-    //  if (count==mpiPM->myrank) {
-    //    cout <<"!READING DATA!!... myrank="<<mpiPM->myrank<<"  i="<<count;
-    //    err = parallel_read_parallel_silodata(firstfile, ggg, numfiles, groupsize, nproc);
-    //    rep.errorTest("Failed to read parallel data",0,err);
-    //  }
-    //  else {
-    //    cout <<"waiting my turn... myrank="<<mpiPM->myrank<<"  i="<<count;
-    //  }
-    //  COMM->barrier("pllel_file_read");
-    //  tsf=clk.time_so_far("readdata");
-    //  cout <<"\t time = "<<tsf<<" secs."<<"\n";
-    //}
-    //clk.stop_timer("readdata");
   }
   //  cout <<"read data successfully.\n";
   return 0;
@@ -817,14 +836,47 @@ void dataio_silo_utility::get_quadmesh_extents(
   qm = DBGetQuadmesh(dbfile,qm_name.c_str());
   if (!qm) rep.error("failed to get quadmesh",qm_name);
 
-  FAKE_DOUBLE *qmmin = (FAKE_DOUBLE *)(qm->min_extents);
-  FAKE_DOUBLE *qmmax = (FAKE_DOUBLE *)(qm->max_extents);
-
-  for (int v=0;v<ndim;v++) {
-    mesh_xmin[v] = qmmin[v];
-    mesh_xmax[v] = qmmax[v];
-    //cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+  //
+  // Check that datatype is what we are expecting!  If not, then 
+  // delete data arrays, reset datatype, and re-create data arrays.
+  //
+  if (qm->datatype != silo_dtype) {
+    cout <<"SRAD_read_var2grid() quadvar has type="<<qm->datatype;
+    cout <<" but expecting type="<<silo_dtype<<"\n";
+    cout <<"\t... resetting datatype for this file.\n";
+    cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    delete_data_arrays();
+    silo_dtype = qm->datatype;
+    create_data_arrays();
   }
+
+  if (silo_dtype==DB_FLOAT) {
+    float  *fqmmin = qm->min_extents;
+    float  *fqmmax = qm->max_extents;
+    for (int v=0;v<ndim;v++) {
+      mesh_xmin[v] = fqmmin[v];
+      mesh_xmax[v] = fqmmax[v];
+      cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+    }
+  }
+  else {
+    double *dqmmin = reinterpret_cast<double *>(qm->min_extents);
+    double *dqmmax = reinterpret_cast<double *>(qm->max_extents);
+    for (int v=0;v<ndim;v++) {
+      mesh_xmin[v] = dqmmin[v];
+      mesh_xmax[v] = dqmmax[v];
+      cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+    }
+  }
+
+  //float *qmmin = qm->min_extents;
+  //float *qmmax = qm->max_extents;
+  //for (int v=0;v<ndim;v++) {
+  //  mesh_xmin[v] = qmmin[v];
+  //  mesh_xmax[v] = qmmax[v];
+  //  cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+  //}
 
   DBFreeQuadmesh(qm); //qm=0;
   return;
@@ -889,6 +941,21 @@ int dataio_silo_utility::PP_read_var2grid(
     rep.error("dataio_silo::read_variable2grid() failed to read variable",variable);
 
   //
+  // Check that datatype is what we are expecting!  If not, then 
+  // delete data arrays, reset datatype, and re-create data arrays.
+  //
+  if (qv->datatype != silo_dtype) {
+    cout <<"SRAD_read_var2grid() quadvar has type="<<qv->datatype;
+    cout <<" but expecting type="<<silo_dtype<<"\n";
+    cout <<"\t... resetting datatype for this file.\n";
+    cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    delete_data_arrays();
+    silo_dtype = qv->datatype;
+    create_data_arrays();
+  }
+  
+  //
   // So now part of the quadmesh intersects the local domain, so we
   // run through the data and pick out the ones we want.  Silo stores
   // the data in a big 1D array with elements stored in the order
@@ -897,7 +964,15 @@ int dataio_silo_utility::PP_read_var2grid(
   //
   // Set a pointer to the data in the quadmesh
   //
-  FAKE_DOUBLE **data = (FAKE_DOUBLE **)(qv->vals);
+  void **data = qv->vals;
+  float **fdata=0;
+  double **ddata=0;
+  if (silo_dtype==DB_FLOAT) {
+    fdata = reinterpret_cast<float **>(data);
+  }
+  else {
+    ddata = reinterpret_cast<double **>(data);
+  }
 
   //
   // Set variables to read, first check for vector and then scalar
@@ -1006,9 +1081,23 @@ int dataio_silo_utility::PP_read_var2grid(
       qv_index += qm_ix[XX];
       
       while ((cx!=0) && cx->pos[XX]<iXmax[XX]) {
-        cx->P[v1] = data[0][qv_index];
-        if (v2>0) cx->P[v2] = data[1][qv_index];
-        if (v3>0) cx->P[v3] = data[2][qv_index];
+        //
+        // Different pointers if float or double.
+        //
+        if (silo_dtype==DB_FLOAT) {
+          cx->P[v1] = fdata[0][qv_index];
+          if (v2>0) cx->P[v2] = fdata[1][qv_index];
+          if (v3>0) cx->P[v3] = fdata[2][qv_index];
+        }
+        else {
+          cx->P[v1] = ddata[0][qv_index];
+          if (v2>0) cx->P[v2] = ddata[1][qv_index];
+          if (v3>0) cx->P[v3] = ddata[2][qv_index];
+        }
+        //cx->P[v1] = data[0][qv_index];
+        //if (v2>0) cx->P[v2] = data[1][qv_index];
+        //if (v3>0) cx->P[v3] = data[2][qv_index];
+
         //rep.printVec("Cell",cx->pos,ndim);
         cx = ggg->NextPt(cx,XP);
         qv_index++;
@@ -1058,6 +1147,8 @@ int dataio_silo_utility::PP_read_var2grid(
   //  cout <<"Read variable "<<variable<<"\n";
   DBFreeQuadvar(qv); //qv=0;
   data=0;
+  fdata=0;
+  ddata=0;
   return 0;
 }
 
