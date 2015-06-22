@@ -6,7 +6,7 @@
 /// floating point to save disk space.
 ///
 /// Mods:
-/// - 2015.06.18 JM: started to program it.
+/// - 2015.06.18-22 JM: started to program it.
 
 #ifndef PARALLEL
 # error "define PARALLEL so this will work!"
@@ -16,7 +16,6 @@
 #include <iostream>
 #include <sstream>
 #include <silo.h>
-#include <cmath>
 using namespace std;
 
 #include "defines/functionality_flags.h"
