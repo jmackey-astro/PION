@@ -70,9 +70,9 @@ int main(int argc, char **argv)
   string outdir = argv[3];
   string outfilebase = argv[4];
 
-  // redirect stdout if using more than one core.
-  //ostringstream path; path << outfilebase <<"_"<<r<<"_";
-  //if (np>1) rep.redirect(path.str());
+  //redirect stdout if using more than one core.
+  ostringstream path; path << outfilebase <<"_"<<r<<"_";
+  if (np>1) rep.redirect(path.str());
 
 
   cout <<"indir="<<indir<<"\toutdir="<<outdir<<"\n";
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
     // *********************************************************************
     cout <<"Writing output file: "<<outfilebase<<endl;
     oo.str(""); oo<<outdir<<"/"<<outfilebase;
-    io_write.OutputData(oo.str(), grid, fff);
+    io_write.OutputData(oo.str(), grid, SimPM.timestep);
     //cout <<"FINISHED writing output file: "<<outfilebase<<endl;
 
     //

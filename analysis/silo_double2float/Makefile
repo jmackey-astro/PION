@@ -189,7 +189,8 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   ifeq ($(IOMODE), USE_MPI)
   CXX = mpiCC
   endif
-  CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  #CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  CXXFLAGE = -O3 -Wall
   CXXFLAGS += -DINTEL
   #CXXFLAGS += -DTESTING
 
@@ -280,10 +281,12 @@ OBJECTS = file_status.o  \
 	mp_v2_aifa.o \
         raytracer_base.o  \
 	raytracer_SC_pllel.o \
-        raytracer_SC.o
+        raytracer_SC.o \
+        command_line_interface.o
 
 
 OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o mpv8_StarBench_heatcool.o
+
 
 
 ##########################
@@ -305,6 +308,7 @@ reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 global.o: 	  global.cc  ${GLOBAL}
 
 comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h
