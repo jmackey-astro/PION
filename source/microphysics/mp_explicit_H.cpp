@@ -187,7 +187,7 @@ using namespace std;
 
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
 
-//#define HE_INERT
+#define HE_INERT
 
 //
 // The timestep-limiting is set by ifdef in
