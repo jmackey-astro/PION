@@ -52,7 +52,10 @@ cell_interface::cell_interface()
   minimal_cell = false;
   dxo2 = -HUGEVALUE;
   xmin = 0;
-  int_converter = ONE_PLUS_EPS;
+  //
+  // this means I can have grids with up to 5e5 zones before it fails...
+  //
+  int_converter = 1.0+2.0e-6; // ONE_PLUS_EPS;
   cell_size_int_units=2;
 
   /// This must be set to true to create a cell.

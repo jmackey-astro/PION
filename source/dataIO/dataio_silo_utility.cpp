@@ -166,11 +166,11 @@ int dataio_silo_utility::SRAD_read_var2grid(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (silodata->datatype != silo_dtype) {
-    cout <<"SRAD_read_var2grid() quadvar has type="<<silodata->datatype;
+    cout <<"\n\tSRAD_read_var2grid() quadvar has type="<<silodata->datatype;
     cout <<" but expecting type="<<silo_dtype<<"\n";
     cout <<"\t... resetting datatype for this file.\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
-    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n\n";
     delete_data_arrays();
     silo_dtype = silodata->datatype;
     create_data_arrays();
@@ -841,11 +841,11 @@ void dataio_silo_utility::get_quadmesh_extents(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (qm->datatype != silo_dtype) {
-    cout <<"SRAD_read_var2grid() quadvar has type="<<qm->datatype;
+    cout <<"\n\tget_quadmesh_extents() quadvar has type="<<qm->datatype;
     cout <<" but expecting type="<<silo_dtype<<"\n";
     cout <<"\t... resetting datatype for this file.\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
-    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n\n";
     delete_data_arrays();
     silo_dtype = qm->datatype;
     create_data_arrays();
@@ -901,6 +901,12 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   //
   CI.get_ipos_vec(mesh_xmin, iXmin);
   CI.get_ipos_vec(mesh_xmax, iXmax);
+
+  //rep.printVec("get_quadmesh_integer_extents: mesh_Xmin",mesh_xmin,ndim);
+  //rep.printVec("get_quadmesh_integer_extents: mesh_Xmax",mesh_xmax,ndim);
+  
+  //rep.printVec("get_quadmesh_integer_extents: iXmin",iXmin,ndim);
+  //rep.printVec("get_quadmesh_integer_extents: iXmax",iXmax,ndim);
   
   return;
 }
@@ -936,11 +942,11 @@ int dataio_silo_utility::PP_read_var2grid(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (qv->datatype != silo_dtype) {
-    cout <<"SRAD_read_var2grid() quadvar has type="<<qv->datatype;
+    cout <<"\n\tPP_read_var2grid() quadvar has type="<<qv->datatype;
     cout <<" but expecting type="<<silo_dtype<<"\n";
     cout <<"\t... resetting datatype for this file.\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
-    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n";
+    cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n\n";
     delete_data_arrays();
     silo_dtype = qv->datatype;
     create_data_arrays();
@@ -1029,8 +1035,8 @@ int dataio_silo_utility::PP_read_var2grid(
   int qm_ix[ndim], qm_NX[ndim];
   for (int v=0;v<ndim;v++) {
     qm_start[v] = (c->pos[v]-iXmin[v])/dx;
-    // cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
-    // cout <<c->pos[v]<< "xmin="<<iXmin[v]<<" dims="<<qv->dims[v]<<"\n";
+    //cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
+    //cout <<c->pos[v]<< ", xmin="<<iXmin[v]<<" dims="<<qv->dims[v]<<"\n";
     qm_ix[v] = qm_start[v];
     //
     // Get number of elements in each direction for this subdomain.
