@@ -23,6 +23,8 @@
 ///    emission.
 /// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
 ///    broken, so I just deleted the old code).
+/// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
+///    constants.h
 
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps

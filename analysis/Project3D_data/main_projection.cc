@@ -46,6 +46,8 @@
 ///    emission calculation.  Added VTK output option.
 /// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
 ///    broken, so I just deleted the old code).
+/// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
+///    constants.h
 
 
 ///

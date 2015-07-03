@@ -4,6 +4,7 @@
 #   Updated Vpath to point to the tagged release used for MHD code.
 # 2013.02.05 JM: updated to work with pion.
 # 2013.10.15 JM: Updated to use microphysics to get temperature/n(H).
+# 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup, constants.h
 #
 
 SHELL = /bin/bash
@@ -71,12 +72,8 @@ OPTION += -DTHREADS -D__WXGTK__
 #MT=NO_THREADS
 
 #MAKE_UNAME=JUROPA
-MAKE_UNAME=standard
+#MAKE_UNAME=standard
 #MAKE_UNAME=imac
-#MAKE_UNAME=epona
-#MAKE_UNAME=stokes
-#MAKE_UNAME=aurora
-#MAKE_UNAME=furfur
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -177,6 +174,39 @@ ifeq ($(MAKE_UNAME), imac)
 endif
 #############################################
 
+######################## -- SuperMUC -- ##############################
+# Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
+######################################################################
+ifeq ($(MAKE_UNAME), SUPERMUC)
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX=icc
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpiCC
+  endif
+  #CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  CXXFLAGE = -O3 -Wall
+  CXXFLAGS += -DINTEL
+  #CXXFLAGS += -DTESTING
+
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+  MYLIB = ${CODEDIR}/extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${srcdir}
+  INC += -I/usr/local/sundials/2.4.0/include
+  INC += ${MKL_INC} ${MPI_INC}
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L/usr/local/sundials/2.4.0/lib
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
+
+endif
+##################### -- SuperMUC -- #################################
 
 
 ##################################################
