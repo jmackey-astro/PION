@@ -21,6 +21,8 @@
 /// - 2013.10.15 JM: Updated to use microphysics classes to get the
 ///    gas temperature and n(H), and added [N II] forbidden line
 ///    emission.
+/// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
+///    broken, so I just deleted the old code).
 
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
@@ -45,7 +47,6 @@
 
 
 #include "sim_projection.h"
-#include <cmath>
 
 
 // void print_array(string name, double *arr, int nel)
@@ -612,7 +613,7 @@ void image::find_surrounding_cells(const double x[3],
     // Note sa[YY] is the axis c should be already on, so no
     // need to move in this direction, only sa[XX] and sa[ZZ]
     //
-    if (!GS.equalD(x[sa[YY]],c->pos[sa[YY]])) {
+    if (!pconst.equalD(x[sa[YY]],c->pos[sa[YY]])) {
       rep.error("WARNING: find_surrounding_cells() y-values not the same!",x[sa[YY]]-c->pos[sa[YY]]);
     }
     cell *seek=c;
@@ -1030,7 +1031,7 @@ double image::get_pt_neutral_numberdensity(
     if (pt->ngb[v]) val += pt->wt[v] *(pt->ngb[v]->P[RO]
                                       *(1.0-pt->ngb[v]->P[ifrac]));
   }
-  val *= SimPM.EP.H_MassFrac/GS.m_p();
+  val *= SimPM.EP.H_MassFrac/pconst.m_p();
   //cout <<"image::get_pt_neutral_numberdensity() n(H0) = "<<val<<"\n";
   return val;
 }
@@ -1055,7 +1056,7 @@ double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
   // Bilinear interpolation with pre-calculated weights and neighbouring
   // cells.
   //
-#ifdef NEW_STOKES_CALC
+
   //
   // New Q calculated from Bx,By according to
   // Q = sum_i wt[i]*|f(n_H)*(Bx^2-By^2)/sqrt(Bx^2+By^2)|_i
@@ -1074,11 +1075,11 @@ double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
       by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
       btot = sqrt(bx2+by2);
 #if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p())*(bx2-by2)/btot;
+      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p())*(bx2-by2)/btot;
 #elif defined (NO_DENSITY_WT)
       val += pt->wt[v] *(bx2-by2)/btot;
 #elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *(bx2-by2)/btot;
+      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *(bx2-by2)/btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -1087,34 +1088,6 @@ double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
   //
   // End of new calc
   //
-#else  // not NEW_STOKES_CALC
-  //
-  // Old calculation
-  //
-  double val=0.0, btot=0.0, bx2=0.0, by2=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      bx2 *= bx2;
-      by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  by2 +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p())*(bx2-by2)/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *(bx2-by2)/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *(bx2-by2)/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  //
-  // End of old calculation
-  //
-#endif // NEW_STOKES_CALC
 
   return val;
 }
@@ -1135,7 +1108,7 @@ double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
   // Bilinear interpolation with pre-calculated weights and neighbouring
   // cells.
   //
-#ifdef NEW_STOKES_CALC
+
   //
   // New Q calculated from Bx,By according to
   // Q = sum_i wt[i]*|f(n_H)*(2*Bx*By)/sqrt(Bx^2+By^2)|_i
@@ -1158,11 +1131,11 @@ double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
       //
       btot = sqrt(btot);
 #if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p())*2.0*bxy/btot;
+      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p())*2.0*bxy/btot;
 #elif defined (NO_DENSITY_WT)
       val += pt->wt[v] *2.0*bxy/btot;
 #elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *2.0*bxy/btot;
+      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *2.0*bxy/btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -1171,33 +1144,6 @@ double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
   //
   // End of new calc
   //
-#else  // not NEW_STOKES_CALC
-  //
-  // Old calculation
-  //
-  double val=0.0, btot=0.0, bxy=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      bxy = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      bxy *= signy*pt->ngb[v]->P[by];
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  pt->ngb[v]->P[by]*pt->ngb[v]->P[by] +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p()) *2.0*bxy/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *2.0*bxy/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *2.0*bxy/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  //
-  // End of old calculation
-  //
-#endif // NEW_STOKES_CALC
 
   return val;
 }
@@ -1227,11 +1173,11 @@ double image::get_pt_BXabs(struct point_4cellavg *pt, const int,
 		  pt->ngb[v]->P[by]*pt->ngb[v]->P[by] +
 		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
 #if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p()) *bx2/btot;
+      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p()) *bx2/btot;
 #elif defined (NO_DENSITY_WT)
       val += pt->wt[v] *bx2/btot;
 #elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *bx2/btot;
+      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *bx2/btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -1264,11 +1210,11 @@ double image::get_pt_BYabs(struct point_4cellavg *pt, const int ,
 		  by2 +
 		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
 #if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p()) *by2/btot;
+      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/pconst.m_p()) *by2/btot;
 #elif defined (NO_DENSITY_WT)
       val += pt->wt[v] *by2/btot;
 #elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *by2/btot;
+      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/pconst.m_p(),MAXDENS) *by2/btot;
 #else
 #error "try to define some sort of weighting for magnetic field!!!"
 #endif
@@ -1987,8 +1933,8 @@ void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point
   // sigma = the thermal broadening sigma in the gaussian.
   //
   double T = get_point_temperature(pt,ifrac);
-  //double ma = 27.0*GS.m_p(); // mass of 12CO molecule
-  //double sigma2 = GS.kB()*T/ma;
+  //double ma = 27.0*pconst.m_p(); // mass of 12CO molecule
+  //double sigma2 = pconst.kB()*T/ma;
   //double sigma  = sqrt(sigma2);
 
   //
@@ -2120,7 +2066,7 @@ double point_velocity::get_point_neutralH_numberdensity(
   //
   // Then scale by H mass fraction and divide by mass of H.
   //
-  val *= SimPM.EP.H_MassFrac/GS.m_p();
+  val *= SimPM.EP.H_MassFrac/pconst.m_p();
   return val;
 }
 
@@ -2165,7 +2111,7 @@ void point_velocity::get_point_Halpha_params(
   // (1+X(He)/4X(H)).
   //
   nn = get_point_neutralH_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/GS.m_p();
+  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/pconst.m_p();
   ni = std::max(0.0, ni-nn);
   //
   // First absorption, from Henney et al. (2009) assuming the opacity
@@ -2228,7 +2174,7 @@ void point_velocity::get_point_NII6584_params(
   // (1+X(He)/4X(H)).
   //
   nn = get_point_neutralH_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/GS.m_p();
+  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/pconst.m_p();
   ni = std::max(0.0, ni-nn);
   //
   // First absorption, from Henney et al. (2009) assuming the opacity

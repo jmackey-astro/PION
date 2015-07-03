@@ -12,19 +12,24 @@ SHELL = /bin/bash
 .SUFFIXES: .cxx .o
 .SUFFIXES: .cpp .o
 
-# make has rules for making objects from .cc files, so I don't need them
-# explicitly, unless I am doing something unusual.
+#######################
+## COMPILATION RULES ##
+#######################
 .cxx.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cc.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
+#######################
 
 
 srcdir = ${CURDIR}/../../source
+
 bindir=.
+
 CODEDIR=${CURDIR}/../..
+
 VPATH=${srcdir}:\
 ${srcdir}/grid:\
 ${srcdir}/defines:\
@@ -37,11 +42,13 @@ ${srcdir}/spatial_solvers:\
 ${srcdir}/time_integrators:\
 ${srcdir}/microphysics:\
 ${srcdir}/raytracing:\
-${srcdir}/contrib
+${srcdir}/contrib\
+${srcdir}/tools
 
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+GLOBAL = global.h functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
 
 
 # --------------------
@@ -55,11 +62,6 @@ OPTION += -D$(IOMODE)
 # if using Silo
 OPTION += -DSILO
 OPTION += -DFITS
-
-#
-# 2010.12.13 JM: New calculation of projected field! (Thanks to Will Henney!)
-#
-OPTION += -DNEW_STOKES_CALC
 
 #
 # This is to multi-thread the pixel calculations.
@@ -100,7 +102,7 @@ ifeq ($(MAKE_UNAME), standard)
 
 
   MYLIB = ${CODEDIR}/extra_libraries
-  INC = -I${MYLIB}/include
+  INC  = -I${MYLIB}/include
   INC += -I${srcdir}
   LDFLAGS += -lm
   # All libraries are in this path:
@@ -183,6 +185,14 @@ endif
 CXXFLAGS += $(OPTION)
 
 OBJECTS = \
+        constants.o \
+        timer.o \
+        mem_manage.o \
+        reporting.o \
+        interpolate.o \
+        MCMD_control.o \
+        setup_fixed_grid.o \
+        setup_fixed_grid_MPI.o \
 global.o \
 cell_interface.o \
 comm_mpi.o \
@@ -203,30 +213,37 @@ sim_projection.o \
 image_io.o \
 VectorOps.o \
 VectorOps_spherical.o \
- cooling_SD93_cie.o         \
- hydrogen_recomb_Hummer94.o \
- hydrogen_mp.o              \
- hydrogen_photoion.o        \
- mp_explicit_H.o            \
- cvode_integrator.o         \
- mp_implicit_H.o            \
- mp_v2_aifa.o               \
- integrator.o               \
- cooling.o                  \
- microphysics.o             \
- microphysics_v1.o          \
- microphysics_lowZ.o        \
- mp_only_cooling.o          \
- mpv5_molecular.o           \
- mpv6_PureH.o               \
- mpv7_TwoTempIso.o
+  \
+  raytracer_base.o            \
+  raytracer_SC_pllel.o        \
+  raytracer_SC.o              \
+  \
+  microphysics_base.o         \
+  cooling_SD93_cie.o          \
+  hydrogen_recomb_Hummer94.o  \
+  hydrogen_mp.o               \
+  hydrogen_photoion.o         \
+  mp_explicit_H.o             \
+  cvode_integrator.o          \
+  mp_implicit_H.o             \
+  mp_v2_aifa.o                \
+  integrator.o                \
+  cooling.o                   \
+  microphysics.o              \
+  microphysics_v1.o           \
+  microphysics_lowZ.o         \
+  mp_only_cooling.o           \
+  mpv5_molecular.o            \
+  mpv6_PureH.o                \
+  mpv7_TwoTempIso.o           \
+  mpv8_StarBench_heatcool.o
 
         
 
 ifeq ($(MT), USE_THREADS)
 OBJECTS += logmessages.o threadpool.o threads.o
 VPATH +=:./andys_threads:./andys_threads/threadpool
-THREAD_INCLUDE=threads.h msvc_constants.h constants.h
+THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/constants.h
 endif
 
 projection: $(OBJECTS)

@@ -44,6 +44,8 @@
 /// - 2013.10.14 JM: Added microphysics support (for getting T, n_H,
 ///    n_e, etc.).  Added geometric grid.  Added [NII] 6584AA
 ///    emission calculation.  Added VTK output option.
+/// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
+///    broken, so I just deleted the old code).
 
 
 ///
@@ -62,44 +64,28 @@
 #include <iostream>
 #include <sstream>
 #include <silo.h>
-#include <cmath>
 using namespace std;
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/timer.h"
+#include "constants.h"
+
 #include "global.h"
+#include "dataIO/dataio.h"
+#include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"
+
 #include "grid/uniform_grid.h"
 
 #include "sim_projection.h"
 #include "image_io.h"
 
+#include "MCMD_control.h"
+#include "setup_fixed_grid_MPI.h"
 
-
-// ----------- MICROPHYSICS --------------
-#include "microphysics/microphysics_base.h"
-#ifndef EXCLUDE_MPV1
-#include "microphysics/microphysics.h"
-#endif 
-#ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
-#endif 
-#include "microphysics/mp_only_cooling.h"
-#ifndef EXCLUDE_MPV2
-#ifdef MP_V2_AIFA
-#include "microphysics/mp_v2_aifa.h"
-#endif
-#endif 
-#ifndef EXCLUDE_MPV3
-#include "microphysics/mp_explicit_H.h"
-#endif
-#ifndef EXCLUDE_MPV4
-#include "microphysics/mp_implicit_H.h"
-#endif 
-#include "microphysics/mpv5_molecular.h"
-#include "microphysics/mpv6_PureH.h"
-#include "microphysics/mpv7_TwoTempIso.h"
-
-#ifdef CODE_EXT_HHE
-#include "future/mpv9_HHe.h"
-#endif
 
 #include "raytracing/raytracer_SC.h"
 // ----------- MICROPHYSICS --------------
@@ -162,12 +148,6 @@ void calculate_pixelW(void *arg)
 ///
 void reset_radiation_sources(struct rad_sources *);
 
-///
-/// Function to setup the microphysics class (just so I can calculate gas
-/// temperature in a manner consistent with how it was done in the 
-/// simulation).  Function copied from gridMethods.cc
-///
-int setup_microphysics();
 // ----------- MICROPHYSICS --------------
 
 
@@ -202,6 +182,14 @@ int main(int argc, char **argv)
   // piece of code.
   //
   int err = COMM->init(&argc, &argv);
+  //
+  // Also initialise the MCMD class with myrank and nproc.
+  //
+  class MCMDcontrol MCMD;
+  int r=-1, np=-1;
+  COMM->get_rank_nproc(&r,&np);
+  MCMD.set_myrank(r);
+  MCMD.set_nproc(np);
 
 #ifdef THREADS
   tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
@@ -349,7 +337,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio;
+  class dataio_silo_utility dataio("DOUBLE",&MCMD);
 
   //
   // Get list of files to read:
@@ -357,9 +345,25 @@ int main(int argc, char **argv)
   list<string> files;
   err += dataio.get_files_in_dir(input_path, input_file,  &files);
   if (err) rep.error("failed to get list of files",err);
-  for (list<string>::iterator s=files.begin(); s!=files.end(); s++)
-  cout <<"files: "<<*s<<"\n";
-  int nfiles = static_cast<int>(files.size());
+  //
+  // Remove non-SILO files from list
+  //
+  for (list<string>::iterator s=files.begin(); s!=files.end(); s++) {
+    // If file is not a .silo file, then remove it from the list.
+    if ((*s).find(".silo")==string::npos) {
+      cout <<"removing file "<<*s<<" from list.\n";
+      files.erase(s);
+    }
+    else {
+      cout <<"files: "<<*s<<endl;
+    }
+  }
+  //
+  // Set up an iterator to run through all the files.
+  //
+  list<string>::iterator ff=files.begin();
+
+  unsigned int nfiles = files.size();
   if (nfiles<1) rep.error("Need at least one file, but got none",nfiles);
 
   cout <<"--------------- Got list of Files ---------------------\n";
@@ -371,10 +375,6 @@ int main(int argc, char **argv)
   //
   CI.set_minimal_cell_data();
 
-  //
-  // Set up an iterator to run through all the files.
-  //
-  list<string>::iterator ff=files.begin();
   //
   // Open first file, read header, and setup grid
   //
@@ -401,8 +401,8 @@ int main(int argc, char **argv)
   // grid to set up.  If nproc==1, then this sets the local domain to
   // be the full domain.
   //
-  if ( (err=mpiPM.decomposeDomain()) !=0) 
-    rep.error("Couldn't Decompose Domain!",err);
+  err  = MCMD.decomposeDomain();
+  if (err) rep.error("main: failed to decompose domain!",err);
   //
   // May need to setup extra data in each cell for ray-tracing optical
   // depths and/or viscosity variables (here just set it to zero).
@@ -412,29 +412,18 @@ int main(int argc, char **argv)
   // allocating memory for column densities in the cell-data.
   // *****************************************************
   reset_radiation_sources(&(SimPM.RS));
-  CI.setup_extra_data(SimPM.RS,0,0);
 
-  if (grid) rep.error("grid already setup, so bugging out",grid);
-  if      (SimPM.coord_sys==COORD_CRT) {
-    grid = new UniformGridParallel (SimPM.ndim, SimPM.nvar,
-				    SimPM.eqntype,  mpiPM.LocalXmin,
-				    mpiPM.LocalXmax, mpiPM.LocalNG);
-  }
-  else if (SimPM.coord_sys==COORD_CYL) {
-    grid = new uniform_grid_cyl_parallel (SimPM.ndim, SimPM.nvar,
-					  SimPM.eqntype,  mpiPM.LocalXmin,
-					  mpiPM.LocalXmax, mpiPM.LocalNG);
-  }
-  else if (SimPM.coord_sys==COORD_SPH) {
-    grid = new uniform_grid_sph_parallel (SimPM.ndim, SimPM.nvar,
-					  SimPM.eqntype,  mpiPM.LocalXmin,
-					  mpiPM.LocalXmax, mpiPM.LocalNG);
-  }
-  else {
-    rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
-  }
-  if (grid==0)
-    rep.error("(setup_grid) Couldn't assign data!", grid);
+  //
+  // get a setup_grid class, and use it to set up the grid.
+  //
+  class setup_fixed_grid *SimSetup =0;
+  SimSetup = new setup_fixed_grid_pllel();
+  class GridBaseClass *grid = 0;
+  //
+  // Now we have read in parameters from the file, so set up a grid.
+  //
+  SimSetup->setup_grid(&grid,&MCMD);
+  if (!grid) rep.error("Grid setup failed",grid);
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
 
   //
@@ -458,7 +447,7 @@ int main(int argc, char **argv)
   //
   // Now setup microphysics and raytracing classes
   //
-  err += setup_microphysics();
+  err += SimSetup->setup_microphysics();
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
 
@@ -535,18 +524,20 @@ int main(int argc, char **argv)
     ff++;
     //
     // Read header to get timestep info; 
-    // also reset the domain to 1/2 the size in Y and Z.
+    // also reset the domain to 1/2 the size in Y and Z (if needed).
     //
     err = dataio.ReadHeader(infile);
 #ifdef RESET_DOMAIN
     reset_domain();
 #endif
     if (err) rep.error("Didn't read header",err);
-    if ( (err=mpiPM.decomposeDomain()) !=0) 
+    if ( (err=MCMD.decomposeDomain()) !=0) 
       rep.error("Couldn't Decompose Domain!",err);
 
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7;
     cout <<" yrs for step="<<ifile<<"   ############\n";
+    cout.flush();
+
     //
     // Read data (this reader can read serial or parallel data.
     //
@@ -675,7 +666,7 @@ int main(int argc, char **argv)
       // For each output image, loop over all pixels:
       // either multi-threaded or not...
       //
-      GS.start_timer("makeimage"); double tsf=0.0;
+      clk.start_timer("makeimage"); double tsf=0.0;
 #ifdef THREADS
       cout <<"Beginning analysis: NUMTHREADS="<<NUM_THREADS_MAIN<<"... ";
       cout <<"i="<<outputs<<", w2i = "<<w2i<<" ... ";
@@ -709,14 +700,13 @@ int main(int argc, char **argv)
       tp_waitOnFinished(&tp,num_pixels);
       //DbgMsg(" main(): all threads finished.");
 #endif // THREADS
-      tsf=GS.time_so_far("makeimage");
+      tsf=clk.time_so_far("makeimage");
       cout <<"\t time = "<<tsf<<" secs."<<"\n";
       cout.flush();
-      GS.stop_timer("makeimage");
+      clk.stop_timer("makeimage");
     } // loop over output images
 
     
-#ifdef NEW_STOKES_CALC
     // ***************************************************************
     //
     // Replace projected |Bx|,|By| (images 6,7) with values calculated
@@ -734,7 +724,6 @@ int main(int argc, char **argv)
       }
     }
     // ***************************************************************
-#endif // NEW_STOKES_CALC
 
     //
     // Now see if we got all the mass in the simulation domain:
@@ -1018,201 +1007,6 @@ void reset_radiation_sources(struct rad_sources *rs)
 
 // ##################################################################
 // ##################################################################
-
-
-
-
-// stolen from gridMethods.cc
-int setup_microphysics()
-{
-  cout <<"************************************************************\n";
-  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
-  cout <<"************************************************************\n";
-  //
-  // Setup Microphysics class, if needed.
-  // First see if we want the only_cooling class (much simpler), and if
-  // not then check for the one of the bigger microphysics classes.
-  //
-  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    cout <<"\t******* Requested cooling but no chemistry... setting";
-    cout <<" up mp_only_cooling() class, with timestep-limiting.\n";
-    SimPM.EP.MP_timestep_limit = 1;
-    MP = new mp_only_cooling(SimPM.nvar, &(SimPM.EP));
-    if (!MP) rep.error("mp_only_cooling() init",MP);
-  }
-  else if (SimPM.EP.chemistry) {
-    //    MP = 0;
-    cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
-    string mptype;
-    if (SimPM.trtype.size() >=6)
-      mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
-    else mptype = "None";
-    bool have_set_MP=false;
-
-
-#ifndef EXCLUDE_MPV1
-    if      (mptype=="ChAH__" || mptype=="onlyH_") {
-      cout <<"\t******* setting up MP_Hydrogen microphysics module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY mp_implicit_H. **--**\n";
-      have_set_MP=true;
-    }
-#endif // exclude MPv1
-
-
-#ifndef EXCLUDE_HD_MODULE
-    if (mptype=="lowZ__") {
-      cout <<"\t******* setting up microphysics_lowz module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-#endif // exclude Harpreet's module
-
-#ifndef EXCLUDE_MPV2
-    if (mptype=="MPv2__") {
-#ifdef MP_V2_AIFA
-      cout <<"\t******* setting up mp_v2_aifa module *********\n";
-      cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_v2_aifa(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
-      SimPM.EP.MP_timestep_limit = 1;
-#else
-      rep.error("Enable mp_v2_aifa as an ifdef if you really want to use it",2);
-#endif
-      have_set_MP=true;
-    }
-#endif // exclude MPv2
-
-
-#ifndef EXCLUDE_MPV3
-    if (mptype=="MPv3__") {
-      cout <<"\t******* setting up mp_explicit_H module *********\n";
-#if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      //if (SimPM.EP.MP_timestep_limit != 1)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv3
-
-
-#ifndef EXCLUDE_MPV4
-    if (mptype=="MPv4__") {
-      cout <<"\t******* setting up mp_implicit_H module *********\n";
-#if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
-      cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit =5;
-#elif MPV4_DTLIMIT>=0 && MPV4_DTLIMIT<=4
-      cout <<"\t******* N.B. dt00-04 Timestep limiting is enforced by #def";
-      cout <<" MPV4_DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit =4;
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
-      //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv4
-
-    if (mptype=="MPv5__") {
-      cout <<"\t******* setting up mpv5_molecular module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-    if (mptype=="MPv6__") {
-      cout <<"\t******* setting up mpv6_PureH module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-    if (mptype=="MPv7__") {
-      cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      have_set_MP=true;
-    }
-
-#ifdef CODE_EXT_HHE
-    if (mptype=="MPv9__") {
-      cout <<"\t******* setting up mpv9_HHe module *********\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
-                        &(SimPM.EP), SimPM.gamma);
-      have_set_MP=true;
-    }
-#endif
-
-#ifndef EXCLUDE_MPV1
-    //
-    // Finally, if MP has not been set up yet, try to set up the v0
-    // microphysics integrator, which is slow, but can model a number
-    // of elements and ions.
-    //
-    if (!have_set_MP) {
-      cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-      if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
-        rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv1/0
-
-    if (!MP) rep.error("microphysics init",MP);
-    if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
-  }
-  else {
-    cout <<"\t******** not doing microphysics.\n";
-    MP=0;
-  }
-
-  //
-  // If we have a multifrequency ionising source, we can set its properties here.
-  // We can only have one of these, so safe to just loop through...
-  //
-  //int err=0;
-  //for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-  //  if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
-  //      SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI &&
-  //      MP!=0
-  //      ) {
-  //    err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
-  //  }
-  //}
-  //if (err) rep.error("Setting multifreq source properties",err);
-  
-
-  cout <<"************************************************************\n";
-  cout <<"***************** MICROPHYSICS SETUP ***********************\n";
-  cout <<"************************************************************\n";
-  return 0;
-}
-
-
-// ##################################################################
-// ##################################################################
-
 
 
 

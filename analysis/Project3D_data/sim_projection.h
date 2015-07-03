@@ -26,11 +26,18 @@
 #define I_BYabs 9
 #define I_NII6584    10
 
-#ifndef NEW_STOKES_CALC
-#error "Define NEW_STOKES_CALC please!"
-#endif
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+//#include "tools/timer.h"
+#include "constants.h"
 #include "global.h"
+
+#include "grid/cell_interface.h"
+#include "grid/grid_base_class.h"
+#include "microphysics/microphysics_base.h"
 
 using namespace std;
 

@@ -32,7 +32,7 @@ OPT += -D$(IOMODE)
 OPT += -DSILO
 
 #MAKE_UNAME=JUROPA
-#MAKE_UNAME=standard
+MAKE_UNAME=standard
 #MAKE_UNAME=aibn129
 #MAKE_UNAME=epona
 #MAKE_UNAME=stokes
