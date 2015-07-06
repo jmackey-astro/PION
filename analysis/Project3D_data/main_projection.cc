@@ -826,7 +826,7 @@ int main(int argc, char **argv)
     err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
     if (err) rep.error("failed to open output file",err);
 
-    string im_name[n_images];
+    string *im_name = mem.myalloc(im_name, n_images);
     ostringstream t; t.fill('0');
     
     switch (what_to_integrate) {
@@ -940,6 +940,7 @@ int main(int argc, char **argv)
     im6 = mem.myfree(im6);
     im7 = mem.myfree(im7);
     im8 = mem.myfree(im8);
+    im_name = mem.myfree(im_name);
   } // Loop over all files.    
 
   //
@@ -957,7 +958,6 @@ int main(int argc, char **argv)
   // Need to delete extra cell position before deleting grid.
   //
   IMG.delete_cell_positions();
-
 
   if(grid!=0) {
     cout << "\t Deleting Grid Data..." << "\n";

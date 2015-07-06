@@ -73,7 +73,8 @@ OPTION += -DTHREADS -D__WXGTK__
 
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
-#MAKE_UNAME=imac
+#MAKE_UNAME=OSX
+#MAKE_UNAME=SUPERMUC
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -148,7 +149,7 @@ endif
 ###########################################
 # Specific Options for my imac
 ###########################################
-ifeq ($(MAKE_UNAME), imac)
+ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(IOMODE), USE_FILE_COMMS)
   CXX = g++
   endif
@@ -160,16 +161,19 @@ ifeq ($(MAKE_UNAME), imac)
   CXXFLAGS = -O0
 #CXXFLAGS += -Wall
   CXXFLAGS += -g    # enable debugging with gdb
-  CXXFLAGS += -arch x86_64
+  #CXXFLAGS += -arch x86_64
 
-  MYLIB = /Users/jmackey/Library/my_local_libs
-# for Silo, which can use HDF5.
-  INC += -I$(MYLIB)/silo_gcc64/include
-  INC += -I$(MYLIB)/cfitsio64/include
+  MYLIB = $(CURDIR)/../../extra_libraries
+  #MYLIB = /Users/jmackey/Library/my_local_libs
+  INC += -I$(MYLIB)/include
+  INC += -I${srcdir}
 
-# Libraries for fits, silo (with hdf5)
-  LDFLAGS += -L$(MYLIB)/cfitsio64/lib/ -lcfitsio
-  LDFLAGS += -L$(MYLIB)/silo_gcc64/lib/ -lsilo
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  # libs for CVODES
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
 endif
 #############################################
