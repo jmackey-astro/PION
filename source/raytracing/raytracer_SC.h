@@ -49,7 +49,6 @@
 
 #include "grid/grid_base_class.h"
 
-#include "global.h"
 #include "raytracing/raytracer_base.h"
 
 ///

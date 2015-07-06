@@ -19,6 +19,11 @@
 #ifndef READPARAMS_H
 #define READPARAMS_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include <iostream>
 #include <vector>
 using namespace std;

@@ -27,7 +27,7 @@
 #endif // TESTING
 
 #include "microphysics/mpv5_molecular.h"
-#include "global.h"
+
 
 using namespace std;
 

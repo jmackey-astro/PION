@@ -30,7 +30,7 @@
 #endif // TESTING
 
 #include "microphysics/mp_only_cooling.h"
-#include "global.h"
+
 #include <sstream>
 using namespace std;
 

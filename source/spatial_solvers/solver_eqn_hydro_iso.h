@@ -24,6 +24,10 @@
 #ifndef SOLVER_EQN_HYDRO_ISO_H
 #define SOLVER_EQN_HYDRO_ISO_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "spatial_solvers/solver_eqn_base.h"
 #include "flux_calc/flux_hydro_isothermal.h"
 

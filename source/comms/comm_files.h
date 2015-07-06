@@ -13,20 +13,25 @@
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
 /// - 2015.01.26 JM: added get_rank_nproc() function.
 
-#ifdef PARALLEL
-#ifdef USE_FILE_COMMS
-
 #ifndef COMM_FILES_H
 #define COMM_FILES_H
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#ifdef PARALLEL
+#ifdef USE_FILE_COMMS
 
 //
 // These tells code what to compile and what to leave out.
 //
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 #include "comms.h"
-#include "../dataIO/file_status.h"
+#include "dataIO/file_status.h"
 
 #define FDELAY_USECS 500000
 
@@ -229,7 +234,7 @@ class comm_files : public comms_base {
 
 
 
-#endif // COMM_FILES_H
-
 #endif // USE_FILE_COMMS
 #endif //PARALLEL
+#endif // COMM_FILES_H
+

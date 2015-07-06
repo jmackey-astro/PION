@@ -22,12 +22,14 @@
 
 #ifdef INCLUDE_EINT_ADI_HYDRO
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "equations/eqns_hydro_adi_Eint.h"
 #include "flux_calc/flux_hydro_adi_Eint.h"
 #include "solver_eqn_hydro_adi.h"
-
-//#include "../coord_sys/VectorOps.h"
-//#include "../coord_sys/VectorOps_spherical.h"
 
 
 ///

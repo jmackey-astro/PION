@@ -22,6 +22,11 @@
 #ifndef FINDROOT_H
 #define FINDROOT_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 /** \brief The findroot class: Use this to find roots of equations by various methods.
  * 
  * This class can find the roots of equations by either bisection or by Brent's method.

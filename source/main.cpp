@@ -62,11 +62,6 @@ using namespace std;
 #include "sim_constants.h"
 
 //
-// Global variables
-//
-#include "global.h"
-
-//
 // reporting class, for dealing with stdio/stderr
 //
 #include "tools/reporting.h"

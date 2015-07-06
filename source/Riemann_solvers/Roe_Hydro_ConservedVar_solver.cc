@@ -36,7 +36,7 @@
 #include "tools/mem_manage.h"
 #include "constants.h"
 #include "Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
-#include "global.h"
+
 using namespace std;
 
 

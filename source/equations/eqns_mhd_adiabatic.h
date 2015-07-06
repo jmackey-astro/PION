@@ -12,6 +12,11 @@
 #ifndef EQNS_MHD_ADIABATIC_H
 #define EQNS_MHD_ADIABATIC_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "eqns_base.h"
 
 /// Class describing the equations of Ideal MHD

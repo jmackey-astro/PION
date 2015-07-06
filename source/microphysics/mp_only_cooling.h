@@ -22,10 +22,15 @@
 #ifndef MP_ONLY_COOLING_H
 #define MP_ONLY_COOLING_H
 
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "microphysics/cooling_SD93_cie.h"
 #include "microphysics/microphysics_base.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
-#include "global.h"
+
 
 ///
 /// This is a simple microphysics class which only has heating and

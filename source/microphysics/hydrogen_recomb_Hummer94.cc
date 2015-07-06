@@ -23,7 +23,7 @@
 #endif // TESTING
 
 //#define TEST_HUMMER94_COOLING_FUNCTION
-#include "global.h"
+
 #include "microphysics/hydrogen_recomb_Hummer94.h"
 using namespace std;
 

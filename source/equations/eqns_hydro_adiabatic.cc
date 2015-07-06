@@ -41,7 +41,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "global.h"
+
 #include "microphysics/microphysics_base.h"
 #include "eqns_hydro_adiabatic.h"
 using namespace std;

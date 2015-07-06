@@ -18,6 +18,10 @@
 #ifndef SOLVER_EQN_MHD_ADI_H
 #define SOLVER_EQN_MHD_ADI_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "spatial_solvers/solver_eqn_base.h"
 #include "flux_calc/flux_mhd_adiabatic.h"
 

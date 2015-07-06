@@ -17,8 +17,13 @@
 #ifndef FLUX_BASE_H
 #define FLUX_BASE_H
 
-#include "../equations/eqns_base.h"
-#include "../grid/cell_interface.h" // to get the 'cell' class.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#include "equations/eqns_base.h"
+#include "grid/cell_interface.h" // to get the 'cell' class.
 
 ///
 /// Abstract base class for a Flux Solver Class.  This class should be

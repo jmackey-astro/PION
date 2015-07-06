@@ -67,7 +67,7 @@
 #include "defines/testing_flags.h"
 #ifndef EXCLUDE_MPV1
 
-#include "global.h"
+
 #include "microphysics/microphysics.h"
 using namespace std;
 

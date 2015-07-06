@@ -35,7 +35,7 @@
 #ifndef EXCLUDE_MPV9
 
 #include "mpv9_HHe.h"
-#include "global.h"
+
 using namespace std;
 
 

@@ -74,7 +74,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "global.h"
+
 #include "grid/uniform_grid.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"

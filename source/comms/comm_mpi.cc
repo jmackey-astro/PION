@@ -38,7 +38,7 @@
 #include "tools/reporting.h"
 
 #include "comms/comm_mpi.h"
-#include "global.h"
+
 #include <sstream>
 using namespace std;
 

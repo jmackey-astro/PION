@@ -24,7 +24,7 @@
 
 #include "microphysics/mpv8_TwoTempIso.h"
 
-#include "global.h"
+
 
 using namespace std;
 

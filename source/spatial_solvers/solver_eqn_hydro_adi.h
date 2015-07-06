@@ -23,6 +23,11 @@
 #ifndef SOLVER_EQN_HYDRO_ADI_H
 #define SOLVER_EQN_HYDRO_ADI_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "spatial_solvers/solver_eqn_base.h"
 #include "flux_calc/flux_hydro_adiabatic.h"
 #include "coord_sys/VectorOps_spherical.h"

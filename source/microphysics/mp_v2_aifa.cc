@@ -107,7 +107,7 @@
 #endif // TESTING
 
 #include "microphysics/mp_v2_aifa.h"
-#include "global.h"
+
 using namespace std;
 
 #define JM_NELEC 1.1 ///< ionised gas has 1.1 electrons per hydrogen nucleon (H+,He+, no He2+!)

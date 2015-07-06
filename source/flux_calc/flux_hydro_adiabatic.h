@@ -43,11 +43,16 @@
 #ifndef FLUX_HYDRO_ADIABATIC_H
 #define FLUX_HYDRO_ADIABATIC_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "flux_base.h"
-#include "../Riemann_solvers/riemann.h"
-#include "../Riemann_solvers/Riemann_FVS_hydro.h"
-#include "../Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.h"
-#include "../Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
+#include "Riemann_solvers/riemann.h"
+#include "Riemann_solvers/Riemann_FVS_hydro.h"
+#include "Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.h"
+#include "Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
 
 ///
 /// Flux Solver Class for Adiabatic Hydrodynamics (Euler Equations)

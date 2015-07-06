@@ -75,7 +75,7 @@ VPATH = \
 ../source/tools
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h \
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h
 
 #######################
@@ -306,7 +306,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         timer.o  interpolate.o \
         constants.o \
-        mainMPI.o uniform_grid.o sim_control.o global.o                      \
+        mainMPI.o uniform_grid.o sim_control.o sim_params.o                      \
         MCMD_control.o \
         setup_fixed_grid.o setup_fixed_grid_MPI.o \
         time_integrator.o calc_timestep.o                                      \
@@ -340,7 +340,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
         timer.o  interpolate.o \
         constants.o \
-        icgen.o uniform_grid.o global.o readparams.o \
+        icgen.o uniform_grid.o sim_params.o readparams.o \
         MCMD_control.o \
         setup_fixed_grid.o setup_fixed_grid_MPI.o \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
@@ -419,7 +419,7 @@ interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 
 mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
-global.o: global.cc ${GLOBAL}
+sim_params.o: sim_params.cpp ${GLOBAL}
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}

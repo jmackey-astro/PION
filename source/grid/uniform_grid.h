@@ -50,12 +50,17 @@
 #define UNIFORMGRID_H
 
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+
 #include <list>
 using namespace std;
 
 #include "sim_constants.h"
 #include "sim_params.h"
-#include "global.h"
+
 
 #include "grid/grid_base_class.h"
 #include "grid/stellar_wind_BC.h"

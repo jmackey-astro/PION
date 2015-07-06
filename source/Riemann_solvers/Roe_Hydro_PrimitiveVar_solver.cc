@@ -23,7 +23,7 @@
 ///
 
 #include "Roe_Hydro_PrimitiveVar_solver.h"
-#include "../global.h"
+
 using namespace std;
 
 Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(const int nv,///< Length of State Vectors, nvar

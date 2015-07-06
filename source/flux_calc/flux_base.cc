@@ -22,7 +22,7 @@
 #endif // TESTING
 
 
-#include "global.h"
+
 #include "flux_calc/flux_base.h"
 using namespace std;
 

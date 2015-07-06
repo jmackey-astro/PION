@@ -17,6 +17,11 @@
 #ifndef EQNS_HYDRO_ADIABATIC_H
 #define EQNS_HYDRO_ADIABATIC_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "eqns_base.h"
 ///
 /// Class describing the Euler Equations of Inviscid Hydrodynamics.

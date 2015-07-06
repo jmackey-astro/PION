@@ -20,7 +20,8 @@
 #ifndef EQNS_BASE_H
 #define EQNS_BASE_H
 
-#include "global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #include "constants.h"  // for axes enum in function arguments.
 
 /// Abstract Base Class for equations, from which others are derived. 

@@ -21,8 +21,8 @@
 #ifndef MICROPHYSICS_H
 #define MICROPHYSICS_H
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_MPV1
 
 #include <map>

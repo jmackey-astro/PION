@@ -13,6 +13,11 @@
 #ifndef DATAIO_FITS_MPI_H
 #define DATAIO_FITS_MPI_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #ifdef FITS
 
 #include "dataIO/dataio.h"

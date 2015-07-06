@@ -25,7 +25,12 @@
 #ifndef MICROPHYSICS_BASE_H
 #define MICROPHYSICS_BASE_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include <vector>
+#include <string>
 #include "grid/cell_interface.h"
 //#define MP_DEBUG
 
@@ -149,7 +154,7 @@ class MicroPhysicsBase {
     * \retval int>0 success: int=tracer value
     * \retval int<0 failure: string doesn't correspond to any tracer.
     * */
-   virtual int Tr(const string ///< name of tracer we are looking for.
+   virtual int Tr(const std::string ///< name of tracer we are looking for.
 		  )=0;
 
    /** \brief Sets the pressure in p-vec to be such that temperature is

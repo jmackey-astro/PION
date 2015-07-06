@@ -11,17 +11,22 @@
 ///    related to the npt_all linked list for grid+boundary data.
 /// - 2015.01.08 JM: Moved old grid (v1) definition from global.h to
 ///    this file.
+/// - 2015.07.06 JM: got rid of GEOMETRIC_GRID ifdef
 
 
 #ifndef GRID_BASE_CLASS_H
 #define GRID_BASE_CLASS_H
 
-#ifndef GEOMETRIC_GRID
-#error "Get rid of GEOMETRIC_GRID ifdef"
-#endif
+
+//
+// These tells code what to compile and what to leave out.
+//
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 #include "constants.h"
 #include "grid/cell_interface.h"
+#include <string>
 
 
 #ifndef GRIDV2
@@ -71,17 +76,15 @@ class GridBaseClass {
    virtual int iXmin(enum axes) const =0; ///< Returns x,y,z lower bounds in cell integer coordinates.
    virtual int iXmax(enum axes) const =0; ///< Returns x,y,z upper bounds in cell integer coordinates.
    virtual int iRange(enum axes) const =0; ///< Returns x,y,z range in cell integer coordinates.
-#ifdef GEOMETRIC_GRID
    virtual int SIM_iXmin(enum axes)  const =0; ///< Returns GLOBAL x,y,z lower bounds in cell integer coordinates.
    virtual int SIM_iXmax(enum axes)  const =0; ///< Returns GLOBAL x,y,z upper bounds in cell integer coordinates.
    virtual int SIM_iRange(enum axes) const =0; ///< Returns GLOBAL x,y,z range in cell integer coordinates.
-#endif // GEOMETRIC_GRID
    /** \brief Returns pointer to the first grid point. */
    virtual cell * FirstPt()=0;
    /** \brief Returns pointer to the last grid point.  */
    virtual cell * LastPt()=0;
    virtual int SetupBCs(int,   ///< Depth of Boundary cells, 1,2,etc.
-      string ///< string containing info on types of BCs on all sides.
+      std::string ///< string containing info on types of BCs on all sides.
       )=0;
 #ifdef PLLEL_RT
    /** \brief Setup lists of processors to receive data from and send data to, 
@@ -96,7 +99,6 @@ class GridBaseClass {
           )=0;
 #endif // PLLEL_RT
 
-#ifdef GEOMETRIC_GRID
    ///
    /// Calculate distance between two points, where the two position
    /// are interpreted in the appropriate geometry.
@@ -184,7 +186,6 @@ class GridBaseClass {
               const cell *, ///< cell 2
               const axes    ///< Axis.
               )=0;
-#endif // GEOMETRIC_GRID
   protected:
 };
 
@@ -330,7 +331,7 @@ class GridBaseClass {
   ///
   virtual int SetupBCs(
     const int,     ///< Depth of Boundary cells, 1,2,etc.
-    const string * ///< Array of 2*Ndim boundary condition strings.
+    const std::string * ///< Array of 2*Ndim boundary condition strings.
     )=0;
 
   ///

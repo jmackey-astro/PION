@@ -9,27 +9,20 @@
 ///  - 2010-01-22 JM: worked on sources at cell-corners to try and get it working.
 ///  - 2010-01-23 JM: made sure source cell geometry is only for cell-centred sources.
 ///  - 2010-01-26 JM: Debugging sources at cell-vertices in 3D.
-///
 ///  - 2010.07.23 JM: New RSP source position class interface.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 ///    Changed source indexing so IDs are set by SimPM.RS and not assigned locally.
 ///    Changed Add_Source() interface so that all info gets passed to class.
 ///    Should handle multiple sources now, and sources at infinity.  Of course I 
 ///    need a "rates-only" update function to actually use multiple emitting sources.
-///
 /// - 2011.03.21 JM: Added RayTrace_Column_Density() interface function.  Just a
 ///    dummy function for now.  (2011.04.15 JM: it points to the old update fn now! The
 ///    deciding of whether to update or calculate column-density is in ProcessCell()).
-///
 /// - 2011.04.22 JM: Updated Add_Source() to set Vshell in cells if Column-density
 ///    update is required.
-///
 /// - 2011.04.23 JM: Added TauMin[] array of values of TauMin for each source, ordered
 ///    by source id.  This removes the need for interpolate_2D_RHO() so I got rid of it.
 ///    Now the interpolate functions read TauMin[src_id] and apply that to the interpolation.
@@ -42,6 +35,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/timer.h"
@@ -49,7 +43,6 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "global.h"
 #include "raytracing/raytracer_SC.h"
 #include <fstream>
 #include <iostream>

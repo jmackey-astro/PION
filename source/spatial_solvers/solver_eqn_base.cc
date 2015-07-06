@@ -1,28 +1,24 @@
-/** \file solver_eqn_base.cc
- * 
- * \brief Class definition for various solvers implemented in my FV grid-code.
- * \author Jonathan Mackey
- * 
- * Modifications:
- *  - 2007-07-10 Part Way through writing it.
- *  - 2007-07-11 Still writing it and working out class heirarchy.
- *  - 2007-07-12 Got the class heirarchy working (I think...).
- *  - 2007-07-13 New Class structure implemented.
- *  - 2007-07-16 Reverted to less complicated class hierarchy.  Runs fast.
- *  - 2007-07-23 Started to add passive tracer variables
- *  - 2007-07-24 Added passive tracer variable support.
- *  - 2007-08-01 cylindrical coordinates support.
- *  - 2007-08-08 cylindrical coordinates hd/i-mhd/glm-mhd working.
- *  - 2007-11-30 Worked on Toth's Field-CD method for keeping divB=0.
- *  - 2009-10-20 New structure built on equations and flux classes...
- *  - 2009-10-24 Cut out all the old solver classes.
- * */
-///
+/// \file solver_eqn_base.cc
+/// 
+/// \brief Class definition for various solvers implemented in my FV grid-code.
+/// \author Jonathan Mackey
+/// 
+/// Modifications:
+///  - 2007-07-10 Part Way through writing it.
+///  - 2007-07-11 Still writing it and working out class heirarchy.
+///  - 2007-07-12 Got the class heirarchy working (I think...).
+///  - 2007-07-13 New Class structure implemented.
+///  - 2007-07-16 Reverted to less complicated class hierarchy.  Runs fast.
+///  - 2007-07-23 Started to add passive tracer variables
+///  - 2007-07-24 Added passive tracer variable support.
+///  - 2007-08-01 cylindrical coordinates support.
+///  - 2007-08-08 cylindrical coordinates hd/i-mhd/glm-mhd working.
+///  - 2007-11-30 Worked on Toth's Field-CD method for keeping divB=0.
+///  - 2009-10-20 New structure built on equations and flux classes...
+///  - 2009-10-24 Cut out all the old solver classes.
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added set_div_v() function for cells)
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 /// - 2010.11.15 JM: Renamed calculate_flux() to inviscid_flux() and
 ///   moved AV calculation to FV_solver_base class.  Added Pre- and 
 ///   Post-flux viscosity functions for the H-correction and Lapidus

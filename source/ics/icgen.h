@@ -27,7 +27,7 @@
 
 #include "grid/grid_base_class.h"
 #include "ics/inside_sphere.h"
-#include "global.h"
+
 #include "dataIO/readparams.h"
 #ifdef PARALLEL
 #include "MCMD_control.h"

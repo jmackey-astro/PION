@@ -22,10 +22,15 @@
 #ifndef STELLAR_WIND_BC_H
 #define STELLAR_WIND_BC_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "sim_constants.h"
 #include "sim_params.h"
 #include "tools/reporting.h"
-#include "global.h"
+
 
 //
 // Defines for type of wind:

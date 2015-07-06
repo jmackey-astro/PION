@@ -267,6 +267,64 @@ enum direction{
 #define AV_VonNeuRicht 5 ///< von Neumann & Richtmeyer (1950) multi-D viscosity.
 
 
+///
+/// The pressure floor for the riemann solver and cell updates. 
+/// (P_G(floor)=refvec[PG]*BASEPG)
+/// This may need to be changed -- it should be larger than the largest
+/// pressure ratio in the simulation you want to run.  Maybe it should 
+/// be a runtime parameter...
+///
+#define BASEPG 1.e-5
+
+/// For negative density, set rho=BASE_RHO*refvec[RO]
+#define BASE_RHO 1.0e-5
+
+
+/// Error code for a function which should not be called!
+#define DONT_CALL_ME 99
+
+
+// *******************************************************************
+// **************  Constants for Radiative Trasnfer   ****************
+// *******************************************************************
+//
+// Method of calculating opacity and updating microphysics:
+//
+#define RT_UPDATE_IMPLICIT   1 ///< C2-ray update, where time-integration happens during ray-trace.
+#define RT_UPDATE_EXPLICIT  2 ///< Only instantaneous column densities calculated during ray-trace.
+
+//
+// Types of source -- either a single source or one of 2*Ndim diffuse sources.
+//
+#define RT_SRC_DIFFUSE 2
+#define RT_SRC_SINGLE  1
+
+//
+// Effect of source:
+//
+#define RT_EFFECT_UV_HEATING 1   ///< UV heating source.
+#define RT_EFFECT_PION_MONO  2   ///< monochromatic photoion source.
+#define RT_EFFECT_PION_MULTI 3   ///< multifrequency photoion source.
+#define RT_EFFECT_PHOTODISS  4   ///< photodissociation of molecules.
+#define RT_EFFECT_PION_EQM   5   ///< Assume photoion. equilibrium.
+#define RT_EFFECT_HHE_MFQ    9   ///< Frank&Mellema H+He p-ion scheme
+
+//
+// Source of opacity
+//
+#define RT_OPACITY_TOTAL  1 ///< opacity is proportional to total mass density, so just integrate rho*dr
+#define RT_OPACITY_MINUS  2 ///< opacity provided by tracer i: integrate rho*(1-y_i)*dr
+#define RT_OPACITY_TRACER 3 ///< opacity provided by tracer i: integrate rho*y_i*dr
+#define RT_OPACITY_VSHELL 4 ///< should never be used.  RT uses it internally to set Vshell in each cell.
+#define RT_OPACITY_HALPHA 5 ///< Used only for analysis to calculate projected H-alpha emission.
+#define RT_OPACITY_NII_FL 6 ///< Used only for analysis to calculate projected [NII] forbidden line emission.
+#define RT_OPACITY_RR     7 ///< Recombination rate (for ph-ion.eqm.)
+#define RT_OPACITY_HHE    9 ///< H0,He0,He+,Dust.
+// *******************************************************************
+// **************  Constants for Radiative Trasnfer   ****************
+// *******************************************************************
+
+
 
 
 #endif // CONSTANTS_H

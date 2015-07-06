@@ -37,6 +37,7 @@
 #include "defines/testing_flags.h"
 
 #include "constants.h"
+#include "sim_constants.h"
 
 class cell_interface;
 
@@ -94,9 +95,6 @@ class cell {
 };
 
 
-#ifndef GRIDV2
-#include "global.h"
-#endif
 ///
 /// Cell Interface class, so each cell doesn't need to have a list of
 /// pointers to all these functions.  This should contain

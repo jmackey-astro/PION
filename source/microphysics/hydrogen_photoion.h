@@ -25,6 +25,11 @@
 #ifndef HYDROGEN_PHOTOION
 #define HYDROGEN_PHOTOION
 
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 //#define USE_VECTORS  // This uses STL vectors for spline interpolation.  It's 2.5% slower.
 #define JUST_IONISED 2.178721e-11 ///< This is (1.0+5e-7) times the ionisation energy of H
 

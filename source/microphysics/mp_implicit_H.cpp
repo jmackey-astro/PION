@@ -32,7 +32,7 @@
 #endif // TESTING
 
 #include "microphysics/mp_implicit_H.h"
-#include "global.h"
+
 using namespace std;
 
 //

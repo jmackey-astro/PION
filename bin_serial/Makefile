@@ -79,7 +79,7 @@ VPATH = \
 ../source/future
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
+GLOBAL = functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
 
 ifneq ($(PION_OPTIMISE), HIGH)
   GLOBAL += command_line_interface.h
@@ -286,9 +286,10 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         timer.o interpolate.o \
         constants.o \
+  sim_params.o \
         main.o \
         uniform_grid.o cell_interface.o \
-        setup_fixed_grid.o sim_control.o global.o \
+        setup_fixed_grid.o sim_control.o  \
         MCMD_control.o \
         time_integrator.o calc_timestep.o \
 	VectorOps.o VectorOps_spherical.o \
@@ -319,10 +320,11 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         timer.o interpolate.o \
         constants.o \
+  sim_params.o \
         setup_fixed_grid.o icgen.o \
         MCMD_control.o \
         uniform_grid.o cell_interface.o \
-        global.o readparams.o file_status.o \
+        readparams.o file_status.o \
         raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
@@ -398,9 +400,9 @@ command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
+sim_params.o: sim_params.cpp ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
-global.o:       global.cc ${GLOBAL}
 
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 

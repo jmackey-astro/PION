@@ -13,18 +13,23 @@
 /// - 2015.03.26 JM: updated for pion v0.2
 /// - 2015.06.13/18 JM: tidied up code.
 
+#ifndef DATAIO_UTILITY_H
+#define DATAIO_UTILITY_H
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include <dirent.h>
 #include <errno.h>
 #include <list>
 using namespace std;
-#include "global.h"
+
 #include "dataIO/file_status.h"
 #include "dataIO/dataio.h"
 #include "dataIO/dataio_silo.h"
 #include "MCMD_control.h"
-
-#ifndef DATAIO_UTILITY_H
-#define DATAIO_UTILITY_H
 
 #ifndef SILO
 #error "Define SILO so this code will work!"

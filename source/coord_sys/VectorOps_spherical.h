@@ -23,6 +23,11 @@
 #ifndef VECTOROPS_SPHERICAL_H
 #define VECTOROPS_SPHERICAL_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "VectorOps.h"
 
 class VectorOps_Sph : virtual public VectorOps_Cyl

@@ -35,7 +35,7 @@
 #endif // TESTING
 
 #include "microphysics/mpv7_TwoTempIso.h"
-#include "global.h"
+
 using namespace std;
 
 

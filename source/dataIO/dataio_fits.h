@@ -24,6 +24,11 @@
 #ifndef DATAIO_FITS_H
 #define DATAIO_FITS_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #ifdef FITS
 
 #include "defines/functionality_flags.h"

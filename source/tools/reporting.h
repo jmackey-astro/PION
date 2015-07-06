@@ -14,6 +14,11 @@
 #ifndef REPORTING_H
 #define REPORTING_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include <string>
 #include <iostream>
 #include <fstream>

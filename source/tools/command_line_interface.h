@@ -12,10 +12,19 @@
 #ifndef COMMAND_LINE_INTERFACE_H
 #define COMMAND_LINE_INTERFACE_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "grid/grid_base_class.h"
 
+#include <string>
 
 #ifdef TESTING
+
+#include <readline/readline.h>
+#include <readline/history.h>
+
+
 /// \brief class for debugging the code, tracking energy/momentum to make
 /// sure it is conserved, etc.
 /// 
@@ -81,7 +90,7 @@ class CommandLineInterface {
   ///
   void print_cell();
   
-  void next_point(const string); ///< moves to cell in direction given (XN,XP,YN,YP,ZN,ZP)
+  void next_point(const std::string); ///< moves to cell in direction given (XN,XP,YN,YP,ZN,ZP)
   
   /// moves dp.c to the first point.
   void fpt();
@@ -89,12 +98,12 @@ class CommandLineInterface {
   void lpt();
   /// moves dp.c to the edge of the grid in direction specified.
   void end_of_col(
-      const string  ///< direction string
+      const std::string  ///< direction string
       );
   void print_flux(); ///< prints flux data from intercell flux function.
 
   /// given a string of XN,YN,etc, return direction.
-  enum direction parse_dir(const string);
+  enum direction parse_dir(const std::string);
 };
 
 

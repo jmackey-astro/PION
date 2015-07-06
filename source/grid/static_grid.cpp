@@ -75,7 +75,7 @@
 
 #ifdef GRIDV2
 
-//#include "global.h"
+//
 #include "static_grid.h"
 #include <fstream>
 #include <iostream>

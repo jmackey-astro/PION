@@ -58,12 +58,13 @@
 
 \subsubsection{First I need to deal with global.h/.cc to get rid of all the global stuff.}
 \begin{enumerate}
+\item 2015.06.07: Got rid of global.h/global.cc and got serial code to compile again.
 \item I have already made a lot of progress since mid-January, by spending a short while every day working on \pion{} (max.~1 hour per day).
 \item XXX JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h
 \item XXX Stellar wind parameters class needs to go somewhere.
 \item XXX GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/ [\textbf{DONE 02.03.15}], and the constants can go into sim-constants.
   The only thing that doesn't have an obvious home is equalD(); it is a very useful function, maybe it can be on its own somewhere?
-\item Remove the global microphysics pointer; maybe put it in sim-control?
+\item XXX Remove the global microphysics pointer; maybe put it in sim-control? (in microphysics\_base.h)
 \item XXX Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.
 \end{enumerate}
 
@@ -140,6 +141,17 @@ So now the code plots correctly in VisIt, and restarts with n>1 cores.
 I need to get silocompare working with floats/doubles so that I can prove that the serial and parallel codes are identical (maybe also that float/double codes are as similar as they can be!).
 
 Next up: silocompare, and then writing a code that translates all the double precision silo files into single precision for long-term storage.
+
+\paragraph{2015.07.06}
+I have silocompare, silo\_dbl2flt, and Project3Ddata analysis codes working with the new pion structure.
+It now works great!  I should actually use dataio\_silo\_utility.cpp now in pion-parallel to read in datafiles; that way it doesn't matter how many cores the code was run with before.
+
+I moved everything from global.h/.cc to other files, and fixed up all header files so that they no longer souce global.h.
+Serial and parallel code now compiles without problems, haven't yet tested running it.
+
+Started working on the tracer code, to give each tracer its own line in the parameter file.
+It will not be trivial, but I think I can do it this week.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

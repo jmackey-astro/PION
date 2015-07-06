@@ -17,7 +17,7 @@
 #ifdef USE_FILE_COMMS
 
 
-#include "global.h"
+
 #ifdef INTEL
 #include <mathimf.h
 #else

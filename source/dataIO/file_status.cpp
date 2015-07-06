@@ -12,7 +12,7 @@
 #endif // TESTING
 
 #include "dataIO/file_status.h"
-#include "global.h"
+
 using namespace std;
 
 //------------------------------------------------------

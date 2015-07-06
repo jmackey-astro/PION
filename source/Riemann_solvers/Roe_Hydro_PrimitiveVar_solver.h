@@ -23,7 +23,11 @@
 #ifndef ROE_HYDRO_PRIMITIVEVAR_SOLVER_H
 #define ROE_HYDRO_PRIMITIVEVAR_SOLVER_H
 
-#include "../equations/eqns_hydro_adiabatic.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "equations/eqns_hydro_adiabatic.h"
 
 class Riemann_Roe_Hydro_PV : virtual public eqns_Euler 
 {

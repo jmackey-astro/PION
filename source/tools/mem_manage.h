@@ -12,6 +12,9 @@
 #ifndef MEM_MANAGE_H
 #define MEM_MANAGE_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #ifndef CHECK_NEW_EXCEP_ON
 #error "Only use memory_management with try/catch exceptions."
 #endif

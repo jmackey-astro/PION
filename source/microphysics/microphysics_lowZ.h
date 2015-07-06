@@ -29,7 +29,7 @@
 
 
 #include "microphysics/microphysics_base.h"
-#include "global.h"
+
 #include "microphysics/cooling.h"
 
 

@@ -23,7 +23,7 @@
 #endif // TESTING
 
 #include "microphysics/mpv8_StarBench_heatcool.h"
-#include "global.h"
+
 using namespace std;
 
 

@@ -50,7 +50,6 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "global.h"
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"

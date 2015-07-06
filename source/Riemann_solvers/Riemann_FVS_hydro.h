@@ -28,8 +28,12 @@
 #define RIEMANN_FVS_HYDRO_H
 
 
-#include "../global.h"
-#include "../equations/eqns_hydro_adiabatic.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#include "equations/eqns_hydro_adiabatic.h"
 
 class Riemann_FVS_Euler : virtual public eqns_Euler 
 {

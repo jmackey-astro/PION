@@ -26,7 +26,7 @@
 #include "constants.h"
 #include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
 #include "Riemann_solvers/riemannMHD.h"
-#include "global.h"
+
 using namespace std;
 
 // **********************************************************************************

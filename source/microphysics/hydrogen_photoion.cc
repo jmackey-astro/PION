@@ -42,7 +42,7 @@
 #define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
 
 #include "microphysics/hydrogen_photoion.h"
-#include "global.h"
+
 using namespace std;
 
 #define LOGTEN 2.302585093

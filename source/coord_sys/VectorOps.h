@@ -36,7 +36,6 @@
 
 #include "grid/grid_base_class.h"
 #include "constants.h"
-#include "global.h"
 
 //
 // This sets tracers to have zero slope across cell.  This reduces

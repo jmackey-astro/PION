@@ -32,9 +32,13 @@
 
 #ifndef RIEMANN_H
 #define RIEMANN_H
-#include "../global.h"
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "findroot.h"
-#include "../equations/eqns_hydro_adiabatic.h"
+#include "equations/eqns_hydro_adiabatic.h"
 //#define RSTESTING ///< If testing the Riemann Solver.
 
 
@@ -215,6 +219,7 @@ class riemann_Euler : virtual public eqns_Euler,
     * \retval 1 failure
     * */
    int solve_cavitation();
+
    /** \brief Solves for when I know we have a double rarefaction.
     * 
     * There is a condition for the left and right states which tells us that we

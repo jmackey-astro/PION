@@ -18,9 +18,14 @@
 #ifndef FLUX_MHD_ADIABATIC_H
 #define FLUX_MHD_ADIABATIC_H
 
-#include "../equations/eqns_mhd_adiabatic.h"
-#include "../Riemann_solvers/riemannMHD.h"
-#include "../Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#include "equations/eqns_mhd_adiabatic.h"
+#include "Riemann_solvers/riemannMHD.h"
+#include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
 #include "flux_base.h"
 
 ///

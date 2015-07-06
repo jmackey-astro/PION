@@ -22,7 +22,7 @@
 
 #include "HHe_photoion.h"
 //#include "grid/cell_interface.h"
-#include "global.h"
+
 
 #include <iostream>
 using namespace std;

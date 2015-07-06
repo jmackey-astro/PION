@@ -43,7 +43,7 @@
 #endif // TESTING
 
 #include "microphysics/cooling_SD93_cie.h"
-#include "global.h"
+
 using namespace std;
 
 cooling_function_SD93CIE::cooling_function_SD93CIE()

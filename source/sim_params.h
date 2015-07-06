@@ -6,13 +6,20 @@
 ///
 /// Modifications:
 /// - 2015.01.09 JM: Wrote file, moved stuff from global.h
+/// - 2015.07.03 JM: Started to change tracer setup in files.
+///    Put units and JetParams classes into this file from global.h.
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
 
 #include <string>
 #include <vector>
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "sim_constants.h"
+#include "constants.h"
 
 // *******************************************************************
 ///
@@ -207,7 +214,17 @@ class SimParams {
    int nvar;       ///< Length of State Vectors (number of variables).
    int ntracer;    ///< Number of tracer variables.
    int ftr;        ///< Position of first tracer variable in state vector.
+
+#ifdef OLD_TRACER
+
    std::string trtype;  ///< String saying what type of tracer we are using.
+
+#else  // OLD_TRACER
+
+  std::string *trtype;  ///< array of strings for the tracer type
+
+#endif // OLD_TRACER
+
    // Timing
    double simtime;    ///< current time in simulation. 
    double starttime;  ///< initial time to start simulation at. 
@@ -266,6 +283,57 @@ class SimParams {
 extern class SimParams SimPM;
 // *******************************************************************
 // *******************************************************************
+
+
+
+
+
+// *******************************************************************
+///
+/// Conversion factors between code units and physical units.  Currently
+/// not used, as the code can handle physical units without much trouble.
+///
+class Units {
+  public:
+   std::string unitsys; ///< Name of System of Units: code,mks,cgs,esu,etc.
+   std::string density, ///< Reference Density Units.
+     length,       ///< Reference Length Units.
+     velocity,     ///< Reference Velocity Units.
+     bfield;       ///< Reference B-Field Units.
+   double rhoVal,  ///< One code unit is this number of reference units.
+     lenVal,       ///< One code unit is this number of reference units.
+     velVal,       ///< One code unit is this number of reference units.
+     magVal;       ///< One code unit is this number of reference units.
+};
+
+// *******************************************************************
+// *******************************************************************
+extern class Units uc; ///< Unit conversion quantities from code to physical units.
+// *******************************************************************
+// *******************************************************************
+
+
+
+// *******************************************************************
+///
+/// If we are running a jet simulations, the physical properties of the
+/// jet are stored in this function.
+///
+class JetParams {
+  public:
+   JetParams();
+   ~JetParams();
+   int jetic;        ///< 0=not a jet sim, 1=is a jet sim
+   int jetradius;    ///< Radius of jet in units of cellsize. Jet always centred at origin of XN boundary.
+   double *jetstate; ///< State vector for jet inflow.
+};
+// *******************************************************************
+// *******************************************************************
+extern class JetParams JP;
+// *******************************************************************
+// *******************************************************************
+
+
 
 
 

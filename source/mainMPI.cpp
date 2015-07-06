@@ -31,10 +31,6 @@ using namespace std;
 #include "defines/testing_flags.h"
 
 //
-// Global variables
-//
-#include "global.h"
-//
 // grid base class
 //
 #include "grid/grid_base_class.h"

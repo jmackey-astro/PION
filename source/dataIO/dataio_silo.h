@@ -29,6 +29,11 @@
 #ifndef DATAIO_SILO_H
 #define DATAIO_SILO_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #ifdef SILO
 
 #include "dataIO/dataio.h"

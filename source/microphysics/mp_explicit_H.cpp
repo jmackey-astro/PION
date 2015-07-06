@@ -182,7 +182,7 @@
 #endif // TESTING
 
 #include "microphysics/mp_explicit_H.h"
-#include "global.h"
+
 using namespace std;
 
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)

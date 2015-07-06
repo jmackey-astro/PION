@@ -22,8 +22,11 @@
 #ifndef ROE_MHD_CONSERVEDVAR_SOLVER_H
 #define ROE_MHD_CONSERVEDVAR_SOLVER_H
 
-#include "../global.h"
-#include "../equations/eqns_mhd_adiabatic.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "equations/eqns_mhd_adiabatic.h"
 
 //
 // Flag for testing the Roe solver:

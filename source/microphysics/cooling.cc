@@ -26,7 +26,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "global.h"
+
 #include "microphysics/cooling.h"
 #include <iostream>
 using namespace std;

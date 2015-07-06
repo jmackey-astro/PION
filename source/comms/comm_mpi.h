@@ -10,12 +10,15 @@
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
 /// - 2015.01.26 JM: added get_rank_nproc() function.
 
-#ifdef PARALLEL
-#ifdef USE_MPI
-
 #ifndef COMM_MPI_H
 #define COMM_MPI_H
 
+#ifdef PARALLEL
+#ifdef USE_MPI
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 #include <mpi.h>
 #include "comms/comms.h"
@@ -202,9 +205,8 @@ class comm_mpi : public comms_base {
 };
 
 
+#endif // USE_MPI
+#endif //PARALLEL
 
 #endif // COMM_MPI_H
 
-
-#endif // USE_MPI
-#endif //PARALLEL

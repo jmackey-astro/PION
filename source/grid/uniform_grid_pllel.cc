@@ -44,7 +44,7 @@
 #include "tools/mem_manage.h"
 #include "constants.h"
 
-#include "global.h"
+
 #include "grid/uniform_grid.h"
 #include "sim_control_MPI.h"
 #include "microphysics/microphysics_base.h"

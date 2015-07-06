@@ -24,7 +24,7 @@
 
 #include "microphysics/hydrogen_mp.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
-#include "global.h"
+
 using namespace std;
 
 

@@ -20,7 +20,7 @@
 /// - 2010.12.23 JM: Moved to Riemann_solver/ directory.
 /// - 2015.03.10 JM: Tidied up a bit.
 ///
-#include "global.h"
+
 #include "findroot.h"
 #include "constants.h"
 #include <iostream>

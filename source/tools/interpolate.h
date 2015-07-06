@@ -11,6 +11,10 @@
 #ifndef INTERPOLATE_H
 #define INTERPOLATE_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include <vector>
 using namespace std;
 

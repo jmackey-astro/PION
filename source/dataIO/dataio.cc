@@ -47,6 +47,7 @@
 /// - 2013.09.05 JM: changed logic of writing T/Eint in ascii data.
 /// - 2013.09.16 JM: Increased precision of ascii data to 14 digits.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.03 JM: Started to change tracer setup in files.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -499,9 +500,6 @@ void DataIOBase::set_params()
     ("typeofbc_str",&SimPM.typeofbc);
   p = p007; p->critical=true;  
   params.push_back(p);
-  //
-  // leaving out Nbc b/c it's effectively redundant.  feel free to add in later...
-  //
 
   //
   // EQUATIONS
@@ -518,14 +516,32 @@ void DataIOBase::set_params()
     ("eqn_nvar",   &SimPM.nvar);
   p = p010; p->critical=true;  
   params.push_back(p);
+
+  //
+  // Tracers
+  //
   pm_int     *p011 = new pm_int     
     ("num_tracer", &SimPM.ntracer);
   p = p011; p->critical=true;  
   params.push_back(p);
+
+#ifdef OLD_TRACER
+
   pm_string  *p012 = new pm_string  
     ("tracer_str", &SimPM.trtype, "NEED_TRACER_VALUES!");
   p = p012; p->critical=false;  
   params.push_back(p);
+
+#else // new/old tracer
+
+  //
+  // What to do here?  I want to set parameters for N tracers, but
+  // I'm not sure at what time SimPM.trtype is set... certainly not
+  // in the constructor!
+  //
+
+#endif // OLD_TRACER
+
   pm_int     *p013 = new pm_int     
     ("solver",     &SimPM.solverType);
   p = p013; p->critical=true;  

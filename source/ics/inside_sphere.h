@@ -6,11 +6,17 @@
 /// Modifications:
 /// - 2015.03.26 JM: added include statement.
 
+#ifndef INSIDE_SPHERE_H
+#define INSIDE_SPHERE_H
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 
 #include <iostream>
 //#include <cmath>
 using namespace std;
-#include "global.h"
+
 #include "grid/cell_interface.h"
 
 class inside_sphere {
@@ -36,3 +42,4 @@ private:
   double distance(const double *, const double *, int ); ///< distance between two points.
 };
 
+#endif // INSIDE_SPHERE_H

@@ -78,8 +78,8 @@
 ///       the multi-frequency photoionising source, and the point UV source.
 ///
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 #ifndef EXCLUDE_MPV3
 
 
