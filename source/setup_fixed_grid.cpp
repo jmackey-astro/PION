@@ -69,7 +69,6 @@
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
 
 
-
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -287,11 +286,21 @@ int setup_fixed_grid::setup_microphysics()
   }
   else if (SimPM.EP.chemistry) {
     //    MP = 0;
-    cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
     string mptype;
+
+#ifdef OLD_TRACER
+
+    cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
     if (SimPM.trtype.size() >=6)
       mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
     else mptype = "None";
+
+# else
+    
+    mptype = SimPM.chem_code;
+
+#endif // OLD_TRACER
+
     bool have_set_MP=false;
 
 
@@ -429,7 +438,17 @@ int setup_fixed_grid::setup_microphysics()
     if (!have_set_MP) {
       cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
+
+#ifdef OLD_TRACER
+
       MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+
+# else
+
+      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.trtype, &(SimPM.EP));
+
+#endif // OLD_TRACER
+
       if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
         rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;

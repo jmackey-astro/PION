@@ -26,6 +26,7 @@
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
 ///    cooling rates per cell for postprocessing.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 #ifndef MP_EXPLICIT_H_H
 #define MP_EXPLICIT_H_H
@@ -121,11 +122,21 @@ class mp_explicit_H
   /// Constructor
   ///
   mp_explicit_H(
-          const int,          ///< Total number of variables in state vector
-	  const int,          ///< Number of tracer variables in state vector.
-	  const std::string &, ///< List of what the tracer variables mean.
-          struct which_physics * ///< extra physics stuff.
-	  );
+      const int,          ///< Total number of variables in state vector
+	    const int,          ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
+	    const std::string &, ///< List of what the tracer variables mean.
+
+# else
+
+	    const std::string *, ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
+      struct which_physics * ///< extra physics stuff.
+	    );
 
   ///
   /// Destructor

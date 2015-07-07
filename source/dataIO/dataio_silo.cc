@@ -43,11 +43,14 @@
 /// - 2015.01.28 JM: Removed parallel code (new class).
 /// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
 ///    parameter, set in the constructor.  (More 18.06)
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
-#ifdef SILO
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
+#ifdef SILO
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #ifdef TESTING
@@ -749,9 +752,19 @@ int dataio_silo::setup_write_variables()
       temp.str("");
       temp<< "Tr";
       temp.width(3); temp.fill('0'); temp << i;
+
+#ifdef OLD_TRACER
+
       if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
         temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
       }
+
+# else
+      
+      temp <<"_"<< SimPM.trtype[i];
+
+#endif // OLD_TRACER
+
       s=temp.str();
       // replace "+" with "p", and "-" with "m"
       string::size_type p=s.find("+");
@@ -1589,9 +1602,19 @@ int dataio_silo::set_readvars(int eqns ///< equations we are solving.
       s.erase(); temp.str("");
       temp<< "Tr";
       temp.width(3); temp.fill('0'); temp << i;
+
+#ifdef OLD_TRACER
+
       if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
         temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
       }
+
+# else
+      
+      temp <<"_"<< SimPM.trtype[i];
+
+#endif // OLD_TRACER
+
       s=temp.str();
       // replace "+" with "p", and "-" with "m"
       string::size_type p=s.find("+");

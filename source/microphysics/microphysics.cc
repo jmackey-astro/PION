@@ -51,6 +51,7 @@
 /// - 2011.08.17 JM: timescales() limits for RT_TEST_PROBS added.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.26 JM: Got rid of mpiPM. call.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -86,7 +87,17 @@ using namespace std;
 
 MP_Hydrogen::MP_Hydrogen(const int nv,
 			 const int ntracer,
+
+#ifdef OLD_TRACER
+
 			 const std::string &trtype,
+
+#else
+
+			 const std::string *trtype,
+
+#endif // OLD_TRACER
+
 			 struct which_physics *ephys
 			 )
   :
@@ -132,13 +143,23 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last "<<ntracer<<" variables in state vec.\n";
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s;
+
+#ifdef OLD_TRACER
+
   int len = (trtype.length() +5)/6 -1; // first 6 chars are the type, then list of tracers, each 6 chars long.
-    cout <<"\t\ttrtype = "<<trtype<<"\n";
-    cout <<"\t\tlen="<<len<<", ntr="<<ntracer<<"\n";
+  cout <<"\t\ttrtype = "<<trtype<<"\n";
+  cout <<"\t\tlen="<<len<<", ntr="<<ntracer<<"\n";
   if (len!=ntracer) {
     cout <<"warning: string doesn't match ntracer.  make sure this looks ok: "<<trtype<<"\n";
     //rep.error("string doesn't match ntracer",ntracer-len);
   }
+
+# else
+
+  int len = ntracer;
+
+#endif // OLD_TRACER
+
 
   MP_Hydrogen::lv_nh   = 0;
   MP_Hydrogen::lv_eint = 1;
@@ -154,6 +175,9 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
 
   // Find ionisation fraction in tracer variable list.
   MP_Hydrogen::pv_Hp=-1;
+
+#ifdef OLD_TRACER
+
   for (int i=0;i<len;i++) {
     s = trtype.substr(6*(i+1),6); // Get 'i'th tracer variable.
     if (s=="H1+___" || s=="HII__") {
@@ -162,8 +186,23 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
     }
   }
   if (pv_Hp<0)
-    rep.error("No H ionisation fraction found in tracer list",trtype);
+   rep.error("No H ionisation fraction found in tracer list",trtype);
   
+# else
+
+  for (int i=0;i<len;i++) {
+    s = trtype[i]; // Get 'i'th tracer variable.
+    if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
+      lv_Hp = 2;
+      pv_Hp = ftr+i;
+    }
+  }
+  if (pv_Hp<0)
+   rep.error("No H ionisation fraction found in tracer list",trtype[0]);
+
+#endif // OLD_TRACER
+
+ 
   ion_pot = 13.59844*1.602e-12;
 
   // error tolerance for integration of microphysics rate equation.

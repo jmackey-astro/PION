@@ -31,7 +31,7 @@
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
-/// - 2015.07.03 JM: Started to change tracer setup in files.
+/// - 2015.07.06/07 JM: Started to change tracer setup in files.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -175,19 +175,23 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 #endif
 
 #else // new/old tracer
+    //
+    // Get what type of chemistry we are doing:
+    //
+    SimPM.chem_code = rp->find_parameter("chem_code");
 
     //
     // Each tracer has its own parameter, called Tracer000, Tracer001,
     // etc., so setup a string for each in the trtype array.
     //
-    SimPM.trtype = mem.myalloc(SimPM.trype,SimPM.ntracer);
+    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
     for (int i=0;i<SimPM.ntracer;i++) {
       ostringstream temp;
       temp <<"Tracer";
       temp.width(3);
       temp.fill('0');
       temp <<i;
-      SimPM.trtype[i] = rp.find_parameter(temp.str());
+      SimPM.trtype[i] = rp->find_parameter(temp.str());
 #ifdef TESTING
       cout <<"using tracer(s) described as "<<SimPM.trtype[i]<<"\n";
 #endif

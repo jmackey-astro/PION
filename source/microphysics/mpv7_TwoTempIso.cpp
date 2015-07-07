@@ -25,6 +25,7 @@
 ///    function call to a (faster) in-place evaluation.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -47,7 +48,17 @@ using namespace std;
 mpv7_TwoTempIso::mpv7_TwoTempIso(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
           const std::string &trtype,  ///< List of what the tracer variables mean.
+
+# else
+
+          const std::string *trtype,  ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
           struct which_physics *ephys  ///< extra physics stuff.
 	  )
 :

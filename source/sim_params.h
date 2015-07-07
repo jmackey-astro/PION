@@ -221,6 +221,7 @@ class SimParams {
 
 #else  // OLD_TRACER
 
+  std::string chem_code; ///< Code for what kind of chemistry we are running.
   std::string *trtype;  ///< array of strings for the tracer type
 
 #endif // OLD_TRACER

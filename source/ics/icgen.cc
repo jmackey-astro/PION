@@ -302,22 +302,33 @@ int main(int argc, char **argv)
   }
   else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
     cout <<"MAIN: setting up microphysics module\n";
+
+#ifdef OLD_TRACER
+
     cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
+
+#else
+
+    cout <<"TRTYPE: \n";
+    for (int i=0;i<SimPM.ntracer;i++) {
+      cout <<"\t"<<i<<"\t"<<SimPM.trtype[i]<<"\n";
+    }
+
+#endif // OLD_TRACER
+
     // first avoid cooling the gas in getting to equilbrium, by
     // setting update_erg to false.
     bool uerg = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
-    //string mptype;
-    //if (SimPM.trtype.size() >=6)
-    //  mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
-    //else mptype = "None";
-    //bool have_set_MP=false;    
+
     SimSetup->setup_microphysics();
 
     if (!MP) rep.error("microphysics init",MP);
     //if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
+
     err = equilibrate_MP(grid,MP,rp);
     if (err) rep.error("setting ionisation states to equilibrium failed",err);
+
     SimPM.EP.update_erg = uerg;
   }
   else {

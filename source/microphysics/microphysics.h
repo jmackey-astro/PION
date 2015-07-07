@@ -17,6 +17,7 @@
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 /// - 2011.03.23 JM: Added new interface functions (they are just placeholders for now).
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 #ifndef MICROPHYSICS_H
 #define MICROPHYSICS_H
@@ -38,6 +39,9 @@
 
 #define NEW_RATES ///< Rates for microphysics...
 //#define RAGA_RATES ///< Rates for microphysics...
+
+
+
 
 /** \brief Assign an int to each species. */
 enum species {
@@ -73,6 +77,9 @@ enum species {
   O8p = 28
 };
 
+
+
+
 /** \brief Contains data for each ion I am using in the code.
  *
  * Includes ion's name, and its element's name, name of the lower and higher
@@ -99,6 +106,9 @@ struct ion_struct {
   bool ch_ex; ///< true if there is a charge exchange reaction with H0/H1+, false if not.
 };
 
+
+
+
 /** \brief Contains data for each element I am using in the code.
  *
  * Contains the name of the element, a vector of the names of all its
@@ -117,6 +127,9 @@ struct element_struct {
   double numfrac; ///< Number fraction of element in relation to hydrogen.
 };
 
+
+
+
 /** \brief Class to hold the info for updating the chemistry and cooling.
  * 
  * This should have only one publicly callable function, to update a 
@@ -129,11 +142,24 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
    * chemistry we are using.  The string has a specific format described in 
    * page \ref userguide.
    * */
-  MicroPhysics(const int,          ///< Total number of variables in state vector
-	       const int,          ///< Number of tracer variables in state vector.
-	       const std::string &, ///< List of what the tracer variables mean.
-	       struct which_physics * ///< pointer to extra physics flags.
-	       );
+  MicroPhysics(
+      const int,          ///< Total number of variables in state vector
+      const int,          ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
+      const std::string &, ///< List of what the tracer variables mean.
+
+# else
+
+      const std::string,  ///< type of chemistry we are running.
+      const std::string *, ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
+      struct which_physics * ///< pointer to extra physics flags.
+      );
+
   /** \brief Destructor deletes dynamically allocated member data. */
   ~MicroPhysics();
   /** \brief  This takes a copy of the primitive vector and advances it in time over
@@ -407,7 +433,16 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
    * */
   MP_Hydrogen(const int,          ///< Total number of variables in state vector
 	      const int,          ///< Number of tracer variables in state vector.
-	      const std::string &, ///< List of what the tracer variables mean.
+#ifdef OLD_TRACER
+
+	       const std::string &, ///< List of what the tracer variables mean.
+
+# else
+
+	       const std::string *, ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
 	      struct which_physics * ///< pointer to which physics flags.
 	      );
   /** \brief Destructor deletes dynamically allocated member data. */

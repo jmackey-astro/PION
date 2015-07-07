@@ -16,6 +16,7 @@
 /// Modifications:
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
 #ifndef MPV6_PUREH_H
@@ -35,11 +36,21 @@ class mpv6_PureH
   /// Constructor
   ///
   mpv6_PureH(
-          const int,           ///< Total number of variables in state vector
-	  const int,           ///< Number of tracer variables in state vector.
-	  const std::string &, ///< List of what the tracer variables mean.
-          struct which_physics * ///< extra physics stuff.
-	  );
+      const int,          ///< Total number of variables in state vector
+	    const int,          ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
+	    const std::string &, ///< List of what the tracer variables mean.
+
+# else
+
+	    const std::string *, ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
+      struct which_physics * ///< extra physics stuff.
+	    );
 
   ///
   /// Destructor

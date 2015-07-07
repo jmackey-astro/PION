@@ -44,9 +44,11 @@
 /// - 2012.01.20-26 JM: wrapped code in ifndef so that its compilation can
 ///    be disabled, since I never use it now.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "constants.h"
@@ -54,8 +56,6 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
 #ifndef EXCLUDE_MPV1
 
 
@@ -64,11 +64,23 @@ using namespace std;
 
 
 
-MicroPhysics::MicroPhysics(const int nv,
-			   const int ntracer,
-			   const std::string &trtype,
-			   struct which_physics *ephys
-			   )
+MicroPhysics::MicroPhysics(
+          const int nv,
+			    const int ntracer,
+
+#ifdef OLD_TRACER
+
+          const std::string &trtype,  ///< List of what the tracer variables mean.
+
+# else
+
+          const std::string chem_code,  ///< type of chemistry we are running.
+          const std::string *trtype,  ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
+			    struct which_physics *ephys
+			    )
   :
   kB(pconst.kB()),
   m_p(pconst.m_p()),
@@ -106,10 +118,28 @@ MicroPhysics::MicroPhysics(const int nv,
     cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last "<<ntracer<<" variables in state vec.\n";
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s;
-  int len = (trtype.length() +5)/6 -1; // first 6 chars are the type, then list of tracers, each 6 chars long.
-    cout <<"\t\ttrtype = "<<trtype<<"\n";
-    cout <<"\t\tlen="<<len<<", ntr="<<ntracer<<"\n";
-  if (len!=ntracer) rep.error("string doesn't match ntracer",ntracer-len);
+
+#ifdef OLD_TRACER
+
+  //
+  // first 6 chars are the type, then list of tracers, each 6 chars long.
+  //
+  int len = (trtype.length() +5)/6 -1;
+  cout <<"\t\ttrtype = "<<trtype<<"\n";
+  cout <<"\t\tlen="<<len<<", ntr="<<ntracer<<"\n";
+  if (len!=ntracer) {
+    cout <<"warning: string doesn't match ntracer.  ";
+    cout <<"make sure this looks ok: "<<trtype<<"\n";
+  }
+
+# else
+
+  //
+  // first 6 chars are the type, then list of tracers, each 6 chars long.
+  //
+  int len = ntracer;
+
+#endif // OLD_TRACER
 
   MicroPhysics::lvar["n_h" ] = 0; // 1st element of local vector is hydrogen number density.
   MicroPhysics::lvar["Eint"] = 1; // Second element of local state vector is internal energy/vol.
@@ -127,9 +157,20 @@ MicroPhysics::MicroPhysics(const int nv,
   int ct=0, colour=0;
   MicroPhysics::nions=0;
   MicroPhysics::nels =0;
+
   for (int i=0;i<len;i++) {
     // Now pick out the chemistry tracers and pass to microphysics constructor
+
+#ifdef OLD_TRACER
+
     s = trtype.substr(6*(i+1),6); // Get 'i'th tracer variable.
+
+# else
+
+    s = trtype[i]; // Get 'i'th tracer variable.
+
+#endif // OLD_TRACER
+
     if      (s=="e-____")               {
       s="e-";   pvar[s] = ftr+i; lvar[s] = firstion+ct; pv_elec=pvar[s]; lv_elec=lvar[s]; ct++;
     }
@@ -181,14 +222,25 @@ MicroPhysics::MicroPhysics(const int nv,
     rep.error("tracers init error",pvar.size()-static_cast<unsigned int>(ct));
   //  cout <<"\t\tset up tracers\n";
 
+
   MicroPhysics::nvl = lvar.size();
   Integrator_Base::Set_Nvar(nvl);
   //  cout <<"\t\tset int_nvar\n";
+
+
+#ifdef OLD_TRACER
 
   // Now initialize chemistry class.
   if (trtype.size() >=6)
        MicroPhysics::chemtype = trtype.substr(0,6); // Get first 6 chars for type of chemistry.
   else MicroPhysics::chemtype = "None";
+
+# else
+
+  // Now initialize chemistry class.
+  MicroPhysics::chemtype = chem_code;
+
+#endif // OLD_TRACER
 
   if (chemtype=="color_" || chemtype=="colour") chemtype = "None";
   // this has tracers, but none relating to chemistry

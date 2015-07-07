@@ -16,6 +16,7 @@
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
 #ifndef MPV7_PUREH_H
@@ -35,11 +36,21 @@ class mpv7_TwoTempIso
   /// Constructor
   ///
   mpv7_TwoTempIso(
-          const int,           ///< Total number of variables in state vector
-	  const int,           ///< Number of tracer variables in state vector.
-	  const std::string &, ///< List of what the tracer variables mean.
-          struct which_physics * ///< extra physics stuff.
-	  );
+    const int,          ///< Total number of variables in state vector
+    const int,          ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
+    const std::string &, ///< List of what the tracer variables mean.
+
+# else
+
+    const std::string *, ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
+    struct which_physics * ///< extra physics stuff.
+    );
 
   ///
   /// Destructor
@@ -56,21 +67,21 @@ class mpv7_TwoTempIso
   /// calculate dy/dt for the vector of y-values.
   ///
   virtual int ydot(
-          double,         ///< current time (probably not needed for rate equations)
-          const N_Vector, ///< current Y-value
-          N_Vector,       ///< vector for Y-dot values
-          const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          );
+    double,         ///< current time (probably not needed for rate equations)
+    const N_Vector, ///< current Y-value
+    N_Vector,       ///< vector for Y-dot values
+    const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+    );
 
   ///
   /// Get the total recombination rate for an ion, given the input
   /// state vector.
   ///
   double get_recombination_rate(
-          const int,      ///< ion index in tracer array (optional).
-          const double *, ///< input state vector (primitive).
-          const double    ///< EOS gamma (optional)
-          );
+    const int,      ///< ion index in tracer array (optional).
+    const double *, ///< input state vector (primitive).
+    const double    ///< EOS gamma (optional)
+    );
 
   protected:
 
@@ -78,19 +89,19 @@ class mpv7_TwoTempIso
   /// convert state vector from grid cell into local microphysics vector.
   ///
   virtual int convert_prim2local(
-            const double *, ///< primitive vector from grid cell (length nv_prim)
-            double *        ///< local vector [x(H0),E](n+1).
-            );
+    const double *, ///< primitive vector from grid cell (length nv_prim)
+    double *        ///< local vector [x(H0),E](n+1).
+    );
 
   ///
   /// Convert local microphysics vector into state vector for grid cell.
   /// This is the inverse of convert_prim2local.
   ///
   virtual int convert_local2prim(
-            const double *, ///< local (updated) vector [x(H0),E](n+1).
-            const double *, ///< input primitive vector from grid cell (length nv_prim)
-            double *       ///< updated primitive vector for grid cell (length nv_prim)
-            );
+    const double *, ///< local (updated) vector [x(H0),E](n+1).
+    const double *, ///< input primitive vector from grid cell (length nv_prim)
+    double *       ///< updated primitive vector for grid cell (length nv_prim)
+    );
 
   ///
   /// returns gas temperature according to ion fraction

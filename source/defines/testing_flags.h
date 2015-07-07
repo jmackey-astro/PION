@@ -27,7 +27,7 @@
 // This is for dealing with tracer variables in parameter files and
 // snapshots.
 //
-#define OLD_TRACER
+//#define OLD_TRACER
 
 //
 // Various defines for testing bits of the code.
