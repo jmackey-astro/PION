@@ -23,11 +23,6 @@
 //
 #define TEST_SECOND_ORDER
 
-//
-// This is for dealing with tracer variables in parameter files and
-// snapshots.
-//
-//#define OLD_TRACER
 
 //
 // Various defines for testing bits of the code.
@@ -67,5 +62,11 @@
 
 
 //#define GRIDV2
+
+//
+// This is for dealing with tracer variables in parameter files and
+// snapshots.  Should be unset, so that we can use new tracer naming.
+//
+//#define OLD_TRACER
 
 #endif // TESTING_FLAGS_H

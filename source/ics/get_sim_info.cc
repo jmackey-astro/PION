@@ -31,7 +31,8 @@
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
-/// - 2015.07.06/07 JM: Started to change tracer setup in files.
+/// - 2015.07.06/07 JM: Change tracer setup in files, so that each
+///    tracer has its own variable.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -165,7 +166,9 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SimPM.ftr = SimPM.nvar;
     SimPM.nvar += SimPM.ntracer;
 
+
 #ifdef OLD_TRACER
+
     //
     // all tracers in a single parameter.
     //
@@ -175,6 +178,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 #endif
 
 #else // new/old tracer
+
     //
     // Get what type of chemistry we are doing:
     //
@@ -198,6 +202,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     }
 
 #endif // OLD_TRACER
+
 
   }
   else rep.error("number of tracers is not a number!",SimPM.ntracer);

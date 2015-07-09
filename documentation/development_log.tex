@@ -152,6 +152,12 @@ Serial and parallel code now compiles without problems, haven't yet tested runni
 Started working on the tracer code, to give each tracer its own line in the parameter file.
 It will not be trivial, but I think I can do it this week.
 
+\paragraph{2015.07.[07-09]}
+Worked on the tracer variables.  It is a lot of work to change this, but I'm making progress.
+Serial code now compiles and icgen will make a silo file with the new tracer variables in it.
+Parallel code also, and I have checked that it runs identically with new and old code (for both colour tracers and H$^{+}$ with explicit MPv3).
+I have checked that it runs in serial, in parallel with 1 and 4 cores, and that it can restart from a checkpoint file for all of these cases.
+So I think it works!
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

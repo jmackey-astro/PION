@@ -47,7 +47,7 @@
 /// - 2013.09.05 JM: changed logic of writing T/Eint in ascii data.
 /// - 2013.09.16 JM: Increased precision of ascii data to 14 digits.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
-/// - 2015.07.03 JM: Started to change tracer setup in files.
+/// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -309,7 +309,7 @@ void pm_int::show_val() {cout<<*ptr;}
 void pm_double::show_val() {cout<<*ptr;}
 void pm_float::show_val() {cout<<*ptr;}
 void pm_long::show_val() {cout<<*ptr;}
-void pm_string::show_val() {cout<<*ptr;}
+void pm_string::show_val() {cout<<*ptr<<", name="<<name;}
 void pm_ddimarr::show_val()
 {
   cout <<"[";
@@ -533,12 +533,24 @@ void DataIOBase::set_params()
   params.push_back(p);
 
 #else // new/old tracer
-
+  
+  //
+  // Need a parameter for the type of chemistry we use
+  //
+  pm_string  *p012a = new pm_string  
+    ("chem_code", &SimPM.chem_code, "CHEM_CODE");
+  p = p012a; p->critical=false;  
+  params.push_back(p);
+  
   //
   // What to do here?  I want to set parameters for N tracers, but
-  // I'm not sure at what time SimPM.trtype is set... certainly not
-  // in the constructor!
+  // ntracer is not set until we read in some datafile, so we cannot
+  // know here how long the SimPM.trtype[] array is.
+  // I guess we have to leave it here and add more parameters to read
+  // once I have a number for ntracer.
   //
+  have_setup_tracers=false; // so we know to populate list later.
+
 
 #endif // OLD_TRACER
 
@@ -835,6 +847,21 @@ int DataIOBase::read_simulation_parameters()
   //
   if (SimPM.ntracer>0) SimPM.ftr = SimPM.nvar-SimPM.ntracer;
   else                 SimPM.ftr = SimPM.nvar;
+
+#ifndef OLD_TRACER
+
+  //
+  // Also set up tracer parameters, based on ntracer and read them in
+  //
+  set_tracer_params();
+  for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
+    p = (*iter);
+    err = read_header_param(p);
+    if (err) rep.error("Error reading parameter",p->name);
+  }
+
+#endif // OLD_TRACER
+
 
   //
   // Set SimPM.Range[] based on Xmin,Xmax
@@ -1148,6 +1175,49 @@ int DataIOBase::read_simulation_parameters()
 // ##################################################################
 
 
+#ifndef OLD_TRACER
+
+void DataIOBase::set_tracer_params()
+{
+  if (have_setup_tracers) {
+    rep.error("Trying to setup tracer parameters twice!",
+              have_setup_tracers);
+  }
+  if (SimPM.ntracer==0) {
+    cout <<"\t*** No tracers to set up\n";
+    have_setup_tracers = true;
+    return;
+  }
+  //
+  // So now we have tracers and we need to add them to the list.
+  //
+  if (!SimPM.trtype) {
+    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+  }
+
+  class pm_base *p;
+
+  for (int i=0;i<SimPM.ntracer;i++) {
+    ostringstream temp; temp <<"Tracer";
+    temp.width(3); temp.fill('0'); temp <<i;
+    cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
+
+    pm_string  *ptemp = new pm_string  
+      (temp.str(), &SimPM.trtype[i], "NEED_TRACER_VALUES!");
+    p = ptemp; p->critical=false;  
+    tr_pm.push_back(p);
+  }
+  have_setup_tracers = true;
+  return;
+}
+
+#endif // OLD_TRACER
+
+
+// ##################################################################
+// ##################################################################
+
+
 void DataIOBase::set_windsrc_params()
 {
   //
@@ -1378,6 +1448,24 @@ int DataIOBase::write_simulation_parameters()
     err = write_header_param(p);
     if (err) rep.error("Error writing parameter",(*iter)->name);
   }
+
+
+#ifndef OLD_TRACER
+
+  //
+  // Write tracer parameters
+  //
+  if (!have_setup_tracers) set_tracer_params();
+  cout <<"Writing tracer names.\n";
+  for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
+    p = (*iter);
+    cout <<"tracer val: "; p->show_val(); cout <<"\n";
+    err = write_header_param(p);
+    if (err) rep.error("Error reading parameter",p->name);
+  }
+
+#endif // OLD_TRACER
+
 
   //
   // Write Jet parameters if doing a JET SIM

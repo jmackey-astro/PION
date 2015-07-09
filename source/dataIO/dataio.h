@@ -16,6 +16,8 @@
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
 /// - 2011.11.22 JM: Added set_default_val() function to parameter classes.
+/// - 2015.07.09 JM: updated tracer parameters (each tracer has its
+///    own parameter name.
 
 #ifndef DATAIO_H
 #define DATAIO_H
@@ -311,6 +313,18 @@ class DataIOBase : public file_status {
    std::list<class pm_base *> rt_src;
    bool have_setup_rt_src; ///< we only want to add to the list once!
    void set_rt_src_params(); ///< add source parameters to rt_src list.
+  
+#ifndef OLD_TRACER
+
+  ///
+  /// Parameters for tracers.
+  ///
+  std::list<class pm_base *> tr_pm;
+  bool have_setup_tracers; ///< track whether we have set up tracers
+  void set_tracer_params(); ///< add tracer parameters to tr_pm list.
+
+#endif // OLD_TRACER
+
    ///
    /// parameters for any stellar wind sources.
    ///
