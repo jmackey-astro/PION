@@ -24,7 +24,6 @@ using namespace std;
 #include "tools/reporting.h"
 #include "constants.h"
 
-#include "global.h"
 #include "dataIO/dataio.h"
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"

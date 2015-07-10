@@ -12,7 +12,7 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 srcdir = .
 SRCDIR=${CURDIR}/../../source
-GLOBAL = global.h functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h
 
 #######################
@@ -222,7 +222,7 @@ OBJECTS = file_status.o  \
         setup_fixed_grid_MPI.o \
         silocompare.o \
         readparams.o \
-        global.o \
+        sim_params.o \
         dataio.o \
 	dataio_silo.o \
         dataio_silo_MPI.o \
@@ -270,13 +270,13 @@ silocompare: $(OBJECTS)
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-silocompare.o:	silocompare.cc global.h uniform_grid.h dataio.h ${GLOBAL}
+silocompare.o:	silocompare.cc sim_params.h uniform_grid.h dataio.h ${GLOBAL}
 
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
-global.o: 	  global.cc  ${GLOBAL}
+sim_params.o: 	  sim_params.cpp  ${GLOBAL}
 
 comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h
 comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}

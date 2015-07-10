@@ -8,7 +8,8 @@ SHELL = /bin/sh
 .SUFFIXES: .cpp .o
 srcdir = .
 SRCDIR=${CURDIR}/../../source
-GLOBAL = global.h functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h
 
 #######################
@@ -32,9 +33,7 @@ OPT += -D$(IOMODE)
 OPT += -DSILO
 
 #MAKE_UNAME=JUROPA
-£MAKE_UNAME=standard
-#MAKE_UNAME=aibn129
-#MAKE_UNAME=epona
+#MAKE_UNAME=standard
 #MAKE_UNAME=stokes
 #MAKE_UNAME=osx
 
@@ -243,6 +242,7 @@ VPATH = \
 
 OBJECTS = file_status.o  \
         constants.o \
+        sim_params.o \
         timer.o \
         mem_manage.o \
         reporting.o \
@@ -252,7 +252,6 @@ OBJECTS = file_status.o  \
         setup_fixed_grid_MPI.o \
         silo_dbl2flt.o \
         readparams.o \
-        global.o \
         dataio.o \
 	dataio_silo.o \
         dataio_silo_MPI.o \
@@ -302,14 +301,14 @@ silo_dbl2flt: $(OBJECTS)
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-silo_dbl2flt.o:	silo_dbl2flt.cpp global.h uniform_grid.h dataio.h ${GLOBAL}
+silo_dbl2flt.o:	silo_dbl2flt.cpp uniform_grid.h dataio.h ${GLOBAL}
 
+sim_params.o: sim_params.cpp ${GLOBAL}
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
-global.o: 	  global.cc  ${GLOBAL}
 
 comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h
 comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}

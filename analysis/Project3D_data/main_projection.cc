@@ -74,8 +74,8 @@ using namespace std;
 #include "tools/mem_manage.h"
 #include "tools/timer.h"
 #include "constants.h"
+#include "sim_params.h"
 
-#include "global.h"
 #include "dataIO/dataio.h"
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"

@@ -48,7 +48,7 @@ ${srcdir}/tools
 
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h
 
 
@@ -74,7 +74,7 @@ OPTION += -DTHREADS -D__WXGTK__
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
 #MAKE_UNAME=OSX
-#MAKE_UNAME=SUPERMUC
+MAKE_UNAME=SUPERMUC
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -227,7 +227,7 @@ OBJECTS = \
         MCMD_control.o \
         setup_fixed_grid.o \
         setup_fixed_grid_MPI.o \
-global.o \
+sim_params.o \
 cell_interface.o \
 comm_mpi.o \
 comm_files.o \
@@ -294,7 +294,7 @@ threads.o: threads.cxx msvc_constants.h constants.h threads.h
 #################################
 # Stuff From my Sim Code Source #
 #################################
-global.o: 	  global.cc ${GLOBAL}
+sim_params.o: 	  sim_params.cpp ${GLOBAL}
 
 cell_interface.o: cell_interface.cc  cell_interface.h ${GLOBAL}
 

@@ -35,7 +35,7 @@
 #include "tools/mem_manage.h"
 //#include "tools/timer.h"
 #include "constants.h"
-#include "global.h"
+#include "sim_params.h"
 
 #include "grid/cell_interface.h"
 #include "grid/grid_base_class.h"
