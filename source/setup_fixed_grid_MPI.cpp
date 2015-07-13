@@ -14,8 +14,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "tools/command_line_interface.h"
 #include "tools/reporting.h"
+#include "tools/command_line_interface.h"
 
 #include "MCMD_control.h"
 #include "setup_fixed_grid.h"

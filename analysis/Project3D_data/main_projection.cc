@@ -28,14 +28,10 @@
 ///
 /// Modifications:\n
 /// - 2009-06-25 Created file, split from sim_projection.cc
-/// 
 /// - 2010-03-22 JM: Moved to MHD_ET_2010, modified to also get projected field.
 ///    Simulation domain is hard-coded to be a subset of the 384x256x256 sims.
-///
 /// - 2010-04-17 JM: minor mods, got it working on furfur (Turlough's machine).
-/// 
 /// - 2010-09-08 JM: Updated LOS velocity so that you can smooth with a user set width (e.g. 1km/s)
-///
 /// - 2010.12.13 JM: Added  NEW_STOKES_CALC ifdef to Makefile; the new
 ///    code in the ifdef does a different Stokes Q,U calculation and
 ///    replaces the projected Bx,By with values calculated from Q,U.
@@ -48,6 +44,7 @@
 ///    broken, so I just deleted the old code).
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
+/// - 2015.07.13 JM: debugged and fixed a few things.
 
 
 ///
@@ -102,7 +99,7 @@ using namespace std;
   #include <crtdbg.h> 
   #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
 #endif
-#include "andys_threads/constants.h"
+#include "andys_threads/reefa_constants.h"
 #include "andys_threads/logmessages.h"
 #include "andys_threads/threadpool/threadpool.h"
 //
@@ -110,10 +107,7 @@ using namespace std;
 //
 threadpool_t     tp; // main threadpool
 int monsecs_gl=0;    // seconds since the start of the month
-#endif // THREADS
 
-			      
-#ifdef THREADS
 struct calc_pix_args {
   class image *IMG; ///< pointer to image class.
   struct pixel *px; ///< pointer to pixel
@@ -235,6 +229,15 @@ int main(int argc, char **argv)
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
   rep.redirect(redir.str());
+
+  //
+  // start a timer, so I can see how long each step takes.
+  //
+  clk.start_timer("mainloop"); double mltsf=0.0;
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* Starting code,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
+
 
   int op_filetype = atoi(argv[4]);
   switch (op_filetype) {
@@ -368,6 +371,9 @@ int main(int argc, char **argv)
   unsigned int nfiles = files.size();
   if (nfiles<1) rep.error("Need at least one file, but got none",nfiles);
 
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* Files read,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
   cout <<"--------------- Got list of Files ---------------------\n";
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Setting up Grid -----------------------\n";
@@ -453,6 +459,9 @@ int main(int argc, char **argv)
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
 
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* Grid setup,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
 
   cout <<"--------------- Finished Setting up Grid --------------\n";
   cout <<"-------------------------------------------------------\n";
@@ -480,10 +489,19 @@ int main(int argc, char **argv)
 
   cout <<"<----- Setting cell positions in Image ----->\n"; cout.flush();
   IMG.set_cell_positions_in_image();
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
   cout <<"<----- Adding cells to pixels...       ----->\n"; cout.flush();
   IMG.add_cells_to_pixels();
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
   cout <<"<----- Adding Integration points to px ----->\n"; cout.flush();
   IMG.add_integration_pts_to_pixels();
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* ... ,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
   cout <<"<----- Finished setting up pixels      ----->\n"; cout.flush();
 
   //
@@ -508,6 +526,7 @@ int main(int argc, char **argv)
   //*******************************************************************
   // loop over all files:
   //*******************************************************************
+
 
   for (ifile=0; ifile< static_cast<unsigned int>(nfiles); ifile++) {
     cout <<"--------------- Starting Next Loop: ifile="<<ifile<<"------\n";
@@ -660,6 +679,10 @@ int main(int argc, char **argv)
     int w2i=-1;
 
     for (int outputs=0;outputs<n_images;outputs++) {
+#ifdef TESTING
+      cout <<"starting image "<<outputs<<" calculation.\n";
+      cout.flush();
+#endif // TESTING
       im  = img_array[outputs];
       w2i =  what2int[outputs];
       tot_mass = 0.0;
@@ -672,6 +695,7 @@ int main(int argc, char **argv)
 #ifdef THREADS
       cout <<"Beginning analysis: NUMTHREADS="<<NUM_THREADS_MAIN<<"... ";
       cout <<"i="<<outputs<<", w2i = "<<w2i<<" ... ";
+      //cout.flush();
 #endif // THREADS
       for (int i=0;i<num_pixels;i++) {
 	px = &(IMG.pix[i]);
@@ -692,19 +716,31 @@ int main(int argc, char **argv)
 	ta->vps = &vps;
 	ta->im = im;
 	ta->tot_mass = &tot_mass;
+#ifdef TESTING
+        //cout <<" - -- - adding pixel "<<i<<" to work-list.\n";
+        //cout.flush();
+#endif
 	//calculate_pixelW(reinterpret_cast<void *>(ta));
 	tp_addWork(&tp,calculate_pixelW,reinterpret_cast<void *>(ta),"main()");
 #endif // THREADS
 	
       }
 #ifdef THREADS
+#ifdef TESTING
+      cout <<" - -- - waiting for "<<num_pixels<<" threads to finish.\n";
+      cout.flush();
+#endif
       //DbgMsg(" main(): waiting for %i threads...",num_pixels);
       tp_waitOnFinished(&tp,num_pixels);
       //DbgMsg(" main(): all threads finished.");
+#ifdef TESTING
+      cout <<" - -- - All threads are finished.\n";
+      cout.flush();
+#endif
 #endif // THREADS
       tsf=clk.time_so_far("makeimage");
       cout <<"\t time = "<<tsf<<" secs."<<"\n";
-      cout.flush();
+      //cout.flush();
       clk.stop_timer("makeimage");
     } // loop over output images
 
@@ -941,6 +977,12 @@ int main(int argc, char **argv)
     im7 = mem.myfree(im7);
     im8 = mem.myfree(im8);
     im_name = mem.myfree(im_name);
+
+
+    mltsf=clk.time_so_far("mainloop");
+    cout <<"*-*-*-* Loop: "<< ifile <<",\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+    cout.flush();
+
   } // Loop over all files.    
 
   //

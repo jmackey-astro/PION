@@ -52,7 +52,7 @@
 /// and disables timestep limiting in first 3 steps.
 ///
 //#define RT_TEST_PROBS
-#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
+//#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
 
 /// for the field loop advection test problem only.
 //#define CHECK_MAGP

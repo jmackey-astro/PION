@@ -11,6 +11,7 @@
 ///    emission.
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
+/// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 
 
 #ifndef SIM_PROJECTION_H
@@ -40,6 +41,27 @@
 #include "grid/cell_interface.h"
 #include "grid/grid_base_class.h"
 #include "microphysics/microphysics_base.h"
+
+#ifdef THREADS
+#include "andys_threads/msvc_constants.h"
+#if defined(_DEBUG) &&  defined(_MSC_VER) &&  defined(MSVC_DEBUG_NEW_TRACE_ON)
+  #define CRTDBG_MAP_ALLOC
+  #include <stdlib.h> 
+  #include <crtdbg.h> 
+  #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
+#endif
+#include "andys_threads/reefa_constants.h"
+#include "andys_threads/logmessages.h"
+#include "andys_threads/threadpool/threadpool.h"
+//
+// Global threading variables.
+//
+//threadpool_t     tp; // main threadpool
+extern threadpool_t     tp; // main threadpool
+//int monsecs_gl=0;    // seconds since the start of the month
+
+#endif //THREADS
+
 
 using namespace std;
 
@@ -520,16 +542,18 @@ public:
 		      const double, ///< sin(theta)
 		      const double  ///< cos(theta)
 		      );
+
+  void find_surrounding_cells(
+      const double *, ///< position of point, in simI coordinates.
+      cell *,         ///< cell in plane, move from here to point.
+      cell **,        ///< OUTPUT: list of 4 cells surrounding point
+      double *        ///< OUTPUT: list of weights for each cell.
+      );
+
 protected:
   bool cell_positions_set; ///< set to true if cell positions have been set.
   void initialise_pixels();        ///< allocate memory data in each pixel.
   void delete_pixel_data(pixel *); ///< Delete allocated memory in pixel.
-  void find_surrounding_cells(const double *, ///< position of point, in simI coordinates.
-			      cell *,         ///< cell in plane, move from here to point.
-			      cell **,        ///< OUTPUT: list of 4 cells surrounding point
-			      double *        ///< OUTPUT: list of weights for each cell.
-			      );
-
 };
 
 

@@ -25,6 +25,7 @@
 ///    broken, so I just deleted the old code).
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
+/// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
@@ -49,6 +50,8 @@
 
 
 #include "sim_projection.h"
+
+
 
 
 // void print_array(string name, double *arr, int nel)
@@ -82,6 +85,12 @@ enum direction axes_directions::get_posdir(const enum axes a)
   return static_cast<direction>(2*i+1);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 enum direction axes_directions::get_negdir(const enum axes a)
 {
   int i=static_cast<int>(a);
@@ -91,6 +100,12 @@ enum direction axes_directions::get_negdir(const enum axes a)
   }
   return static_cast<direction>(2*i);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 enum axes axes_directions::get_axis_from_dir(const enum direction dir)
 {
@@ -103,6 +118,12 @@ enum axes axes_directions::get_axis_from_dir(const enum direction dir)
   }
   return a;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 enum direction axes_directions::cross_product(const enum direction d1,
 					      const enum direction d2
@@ -253,8 +274,20 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
   return;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 coordinate_conversion::~coordinate_conversion()
 {}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 void coordinate_conversion::set_sim_extents_in_image_coords()
 {
@@ -306,6 +339,12 @@ void coordinate_conversion::set_sim_extents_in_image_coords()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 bool coordinate_conversion::point_in_Isim_domain(const double *x /// Point in sim coords (integer)
 						 )
 {
@@ -316,6 +355,12 @@ bool coordinate_conversion::point_in_Isim_domain(const double *x /// Point in si
   return inside;
 }
     
+
+
+// ##################################################################
+// ##################################################################
+
+
 void coordinate_conversion::set_npix()
 {
   //
@@ -338,12 +383,24 @@ void coordinate_conversion::set_npix()
 }  
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void coordinate_conversion::get_npix(int *n ///< 2D array to put number of pixels in each direction.
 				     )
 {
   for (int v=0;v<2;v++) n[v] = im_npix[v];
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void coordinate_conversion::get_image_Ipos(const int *spos, ///< input position, sim coords, integer units.
@@ -374,6 +431,12 @@ void coordinate_conversion::get_image_Ipos(const int *spos, ///< input position,
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void coordinate_conversion::get_image_Dpos(const double *spos, ///< input position, sim coords, integer units.
 					   double *im_pos      ///< converted position in image coords.
 					   )
@@ -401,6 +464,12 @@ void coordinate_conversion::get_image_Dpos(const double *spos, ///< input positi
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void coordinate_conversion::get_sim_Dpos(const double *im_pos, ///< position in image coordinates.
@@ -468,11 +537,7 @@ image::image(const enum direction los, ///< Line of sight direction
   // so I can initialise the image array of pixels now.
   //
   pix=0;
-#ifdef TESTING
-  pix = mem.myalloc(pix,im_npixels,"image::image() pix");
-#else
   pix = mem.myalloc(pix,im_npixels);
-#endif
 
   initialise_pixels();
 
@@ -493,11 +558,7 @@ image::~image()
 
   if (pix) {
     for (int i=0;i<im_npixels;i++) delete_pixel_data(&(pix[i]));
-#ifdef TESTING
-    mem.myfree(pix,"image::~image() pix");
-#else
     mem.myfree(pix);
-#endif
   }
 
   return;
@@ -508,6 +569,74 @@ image::~image()
 // ##################################################################
 // ##################################################################
 
+#ifdef THREADS
+
+struct pix_int_args {
+  class image *IMG; ///< pointer to image class.
+  struct pixel *px; ///< pointer to pixel
+  size_t i;      ///< pixel id
+  double sim_dxP;
+  double s_xmax_img[3];
+};
+
+//
+// void function for threading with Andy's threadpool library
+//
+void calculate_pix_integration_pts(void *arg)
+{
+  struct pix_int_args *pia = reinterpret_cast<struct pix_int_args *>(arg);
+  size_t i = pia->i;
+  pixel *p = pia->px;
+  class image *img = pia->IMG;
+  double sim_dxP = pia->sim_dxP;
+  double *s_xmax_img = pia->s_xmax_img;
+  //
+  // Set integration points dx = half the cell size.
+  //
+  double hh=0.5;
+  p->int_pts.dx      = hh;
+  p->int_pts.dx_phys = sim_dxP*hh;
+  p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
+  p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
+  //
+  // Set positions of each point along the line of sight, and 
+  // assign neighbouring cells and their associated weights.
+  //
+  struct point_4cellavg *pt;
+  double ppos_isim[3];
+  //    cell *c = (*(p->cells.begin()));
+  cell *c = p->inpixel;
+
+  for (int ipt=0;ipt<p->int_pts.npt; ipt++) {
+    pt = &(p->int_pts.p[ipt]);
+      
+    pt->pos[XX] = p->ix[XX] +0.5;
+    pt->pos[YY] = p->ix[YY] +0.5;
+    pt->pos[ZZ] = ipt*hh;
+    //
+    // Convert image position to a simulation position.
+    //
+    img->get_sim_Dpos(pt->pos, ppos_isim);
+    //
+    // pass in position, starting cell, and get out the four surrounding
+    // cells (or some nulls if it's not surrounded), and the bilinear
+    // interpolation weights associated with each cell.
+    //
+    img->find_surrounding_cells(ppos_isim, c, pt->ngb, pt->wt);
+    //
+    // Now for each point, we have set its position, neighbours, weights.
+    //
+  }
+
+  pia = mem.myfree(pia);
+  return;
+}
+#endif //THREADS
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 void image::add_integration_pts_to_pixels()
@@ -518,6 +647,21 @@ void image::add_integration_pts_to_pixels()
   pixel *p=0;
 
   for (int i=0;i<im_npixels;i++) {
+
+#ifdef THREADS
+    struct pix_int_args *pia = mem.myalloc(pia,1);
+    pia->i = static_cast<size_t>(i);
+    pia->px = &(pix[i]);
+    pia->IMG = this;
+    pia->sim_dxP = sim_dxP;
+    for (size_t v=0;v<3;v++)
+      pia->s_xmax_img[v] = s_xmax_img[v];
+    //calculate_pix_integration_pts(reinterpret_cast<void *>(pia));
+    tp_addWork(&tp,calculate_pix_integration_pts,
+                   reinterpret_cast<void *>(pia),
+                   "image::add_integration_pts_to_pixels()");
+#else // THREADS
+
     p = &(pix[i]);
     
     //
@@ -527,11 +671,7 @@ void image::add_integration_pts_to_pixels()
     p->int_pts.dx      = hh;
     p->int_pts.dx_phys = sim_dxP*hh;
     p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
-#ifdef TESTING
-    p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt, "image::add_integration_pts_to_pixels() points");
-#else
     p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
-#endif
 
     //
     // Set positions of each point along the line of sight, and 
@@ -582,6 +722,9 @@ void image::add_integration_pts_to_pixels()
 //      }
 
     }
+
+#endif // THREADS
+
     //cout <<"\t------------------- NEXT PIXEL --------------- \n";
     //
     // Now for each pixel, we have initialised its points, set npt, dx, and dx_phys
@@ -896,11 +1039,7 @@ void image::set_cell_positions_in_image()
   //
   cell *c = gptr->FirstPt();
   do {
-#ifdef TESTING
-    c->Ph = mem.myalloc(c->Ph,3,"image::set_cell_positions_in_image() Ph");
-#else
     c->Ph = mem.myalloc(c->Ph,3);
-#endif
     get_image_Ipos(c->pos, ///< input position, sim coords, integer units.
 		   c->Ph   ///< output: image coords and units.
 		   );
@@ -934,11 +1073,7 @@ void image::delete_cell_positions()
   //
   cell *c = gptr->FirstPt();
   do {
-#ifdef TESTING
-    c->Ph = mem.myfree(c->Ph,"image::set_cell_positions_in_image() Ph");
-#else
     c->Ph = mem.myfree(c->Ph);
-#endif
   } while ((c=gptr->NextPt(c))!=0);
 
   //
@@ -983,11 +1118,7 @@ void image::initialise_pixels()
 void image::delete_pixel_data(pixel *p)
 {
   if (p->int_pts.p) {
-#ifdef TESTING
-    p->int_pts.p = mem.myfree(p->int_pts.p,"image::delete_pixel_data() points");
-#else
     p->int_pts.p = mem.myfree(p->int_pts.p);
-#endif
   }
 
   return;
@@ -2326,6 +2457,12 @@ int point_velocity::get_velocity_bin_number(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // ------------------------------------------------------------
 // ************************************************************
 // ------------------------------------------------------------
@@ -2436,4 +2573,10 @@ int point_velocity::get_velocity_bin_number(
 
 //   return 0;
 // }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

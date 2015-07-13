@@ -188,8 +188,8 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   ifeq ($(IOMODE), USE_MPI)
   CXX = mpiCC
   endif
-  #CXXFLAGS = -O0 -Wall -g -wd981 -wd383
-  CXXFLAGE = -O3 -Wall
+  CXXFLAGS = -O1 -Wall -g #-wd981 -wd383
+  #CXXFLAGE = -O1 -Wall
   CXXFLAGS += -DINTEL
   #CXXFLAGS += -DTESTING
 
@@ -204,10 +204,15 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   INC += -I${srcdir}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC} ${MPI_INC}
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS = -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
+  LDFLAGS += -lreadline
+  ifeq ($(MT), USE_THREADS)
+    LDFLAGS += -pthread
+  endif
+
 
 endif
 ##################### -- SuperMUC -- #################################
@@ -223,6 +228,7 @@ OBJECTS = \
         timer.o \
         mem_manage.o \
         reporting.o \
+        command_line_interface.o \
         interpolate.o \
         MCMD_control.o \
         setup_fixed_grid.o \
@@ -277,7 +283,7 @@ VectorOps_spherical.o \
 ifeq ($(MT), USE_THREADS)
 OBJECTS += logmessages.o threadpool.o threads.o
 VPATH +=:./andys_threads:./andys_threads/threadpool
-THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/constants.h
+THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/reefa_constants.h
 endif
 
 projection: $(OBJECTS)
@@ -287,23 +293,26 @@ projection: $(OBJECTS)
 ################################
 # Andy's multi-threading files #
 ################################
-logmessages.o: logmessages.cxx logmessages.h constants.h msvc_constants.h threads.h
-threadpool.o: threadpool.cxx threadpool.h constants.h msvc_constants.h logmessages.h threads.h
-threads.o: threads.cxx msvc_constants.h constants.h threads.h
+logmessages.o: logmessages.cxx logmessages.h reefa_constants.h msvc_constants.h threads.h
+threadpool.o: threadpool.cxx threadpool.h reefa_constants.h msvc_constants.h logmessages.h threads.h
+threads.o: threads.cxx msvc_constants.h reefa_constants.h threads.h
 
 #################################
 # Stuff From my Sim Code Source #
 #################################
+
+reporting.o:   tools/reporting.cpp ${GLOBAL}
+mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
+timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+command_line_interface.o: tools/command_line_interface.cpp ${GLOBAL}
+constants.o: constants.cpp ${GLOBAL}
 sim_params.o: 	  sim_params.cpp ${GLOBAL}
 
 cell_interface.o: cell_interface.cc  cell_interface.h ${GLOBAL}
-
 uniform_grid.o:   uniform_grid.cc  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
-
 uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
 
 VectorOps.o:  VectorOps.cc  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
-
 VectorOps_spherical.o:  VectorOps_spherical.cc  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
 

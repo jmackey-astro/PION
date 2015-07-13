@@ -5,7 +5,7 @@
 #ifndef R_LOGMESSAGES_H
 #define R_LOGMESSAGES_H
 
-#include "constants.h"
+#include "reefa_constants.h"
 
 void Abort(const char *fmt, ...);
 void DbgMsg(const char *fmt, ...);

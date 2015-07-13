@@ -11,7 +11,7 @@
 // Thread and locking support - platform abstraction
 #include <assert.h>
 #include "threads.h"
-
+//#include <iostream>
 
 thread_mutex_t::thread_mutex_t() throw()
 #if defined(_WIN32) &&!defined(R_WIN32_USE_CRITICAL_SECTION)
@@ -132,7 +132,11 @@ void thread_cond_t::wait() throw()
 
 void thread_cond_t::wait(thread_mutex_t& mutex) throw()
 {
+  //std::cout <<"thread_cond_t::wait() starting \n";
+  //std::cout.flush();
   pthread_cond_wait(&cond, &mutex.mutex);
+  //std::cout <<"thread_cond_t::wait() finishing \n";
+  //std::cout.flush();
 }
 
 #endif

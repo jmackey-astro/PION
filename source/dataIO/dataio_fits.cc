@@ -59,14 +59,19 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "constants.h"
+
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
 #include "dataIO/dataio_fits.h"
+
+#include "microphysics/microphysics_base.h"
+
 #ifdef RT_TESTING_OUTPUTCOL
 #include "raytracing/raytracer_base.h"
 #endif // RT_TESTING_OUTPUTCOL
+
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>

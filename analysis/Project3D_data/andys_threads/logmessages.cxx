@@ -22,7 +22,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
-#include "constants.h"
+#include "reefa_constants.h"
 #include "logmessages.h"
 //
 #include <string>

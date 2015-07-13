@@ -58,6 +58,8 @@
 #include "raytracing/raytracer_base.h"
 #endif // TESTING
 
+#include "microphysics/microphysics_base.h"
+
 #ifdef RT_TESTING_OUTPUTCOL
 #include "raytracing/raytracer_base.h"
 #endif // RT_TESTING_OUTPUTCOL

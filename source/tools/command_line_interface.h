@@ -55,6 +55,7 @@ class DebugParams {
   double vec3[MAX_NVAR];
   double vec4[MAX_NVAR];
 };
+
 extern class DebugParams dp;
 
 /// \brief Command Line Interface for interactive debugging of code.
