@@ -530,8 +530,10 @@ int main(int argc, char **argv)
 
   for (ifile=0; ifile< static_cast<unsigned int>(nfiles); ifile++) {
     cout <<"--------------- Starting Next Loop: ifile="<<ifile<<"------\n";
+#ifdef TESTING
     cout <<"-------------------------------------------------------\n";
     cout <<"--------------- Reading Simulation data to grid -------\n";
+#endif
     //*******************
     //* Read Input Data *
     //*******************
@@ -567,9 +569,11 @@ int main(int argc, char **argv)
 					);
     rep.errorTest("(main) Failed to read data",0,err);
     
+#ifdef TESTING
     cout <<"--------------- Finished Reading Data  ----------------\n";
     cout <<"-------------------------------------------------------\n";
     cout <<"--------------- Starting Data Analysis ----------------\n";
+#endif
     //********************
     //* Analyse the Data *
     //********************
@@ -836,9 +840,11 @@ int main(int argc, char **argv)
       }
     }
 
+#ifdef TESTING
     cout <<"--------------- Finished Analysing this step ----------\n";
     cout <<"-------------------------------------------------------\n";
     cout <<"--------------- Writing image and getting next Im-file \n";
+#endif
     
     //double posIMG[3], posSIM[3];
     //IMG.get_image_Ipos(grid->FirstPt()->pos,posIMG);
@@ -855,14 +861,17 @@ int main(int argc, char **argv)
       im_xmin[2] = v_min;
       im_dx[2]   = bin_size;
     }
+#ifdef TESTING
     rep.printVec("IMG XMIN:",im_xmin,3);
     rep.printVec("IMG DX:  ",im_dx,3);
+#endif // TESTING
 
 
     //**********************
     //* Write Data to file *
     //**********************
-    this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, ifile);
+    //this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, ifile);
+    this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, SimPM.timestep);
     err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
     if (err) rep.error("failed to open output file",err);
 

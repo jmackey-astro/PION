@@ -95,7 +95,9 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(
     nproc=1; numfiles=1; //groupsize=1;
   }
   else {
+#ifdef TESTING
     cout <<"\tRead nproc="<<nproc<<"\tand numfiles="<<numfiles<<"\n";
+#endif
     //    groupsize = nproc/numfiles;
     nproc = nproc;
   }
