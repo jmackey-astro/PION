@@ -585,7 +585,7 @@ struct pix_int_args {
 void calculate_pix_integration_pts(void *arg)
 {
   struct pix_int_args *pia = reinterpret_cast<struct pix_int_args *>(arg);
-  size_t i = pia->i;
+  //size_t i = pia->i;
   pixel *p = pia->px;
   class image *img = pia->IMG;
   double sim_dxP = pia->sim_dxP;
@@ -628,7 +628,8 @@ void calculate_pix_integration_pts(void *arg)
     //
   }
 
-  pia = mem.myfree(pia);
+  delete pia; pia = 0;
+
   return;
 }
 #endif //THREADS
@@ -644,12 +645,11 @@ void image::add_integration_pts_to_pixels()
   if (!pix)
     rep.error("Can't add integration points to uninitialised pixels!",pix);
 
-  pixel *p=0;
 
   for (int i=0;i<im_npixels;i++) {
 
 #ifdef THREADS
-    struct pix_int_args *pia = mem.myalloc(pia,1);
+    struct pix_int_args *pia = new struct pix_int_args;
     pia->i = static_cast<size_t>(i);
     pia->px = &(pix[i]);
     pia->IMG = this;
@@ -662,7 +662,7 @@ void image::add_integration_pts_to_pixels()
                    "image::add_integration_pts_to_pixels()");
 #else // THREADS
 
-    p = &(pix[i]);
+    pixel *p = &(pix[i]);
     
     //
     // Set integration points dx = half the cell size.
@@ -730,6 +730,22 @@ void image::add_integration_pts_to_pixels()
     // Now for each pixel, we have initialised its points, set npt, dx, and dx_phys
     //
   }
+
+
+#ifdef THREADS
+//#ifdef TESTING
+  cout <<" - -- - waiting for "<<im_npixels<<" threads to finish.\n";
+  cout.flush();
+//#endif
+  //DbgMsg(" main(): waiting for %i threads...",num_pixels);
+  tp_waitOnFinished(&tp,im_npixels);
+  //DbgMsg(" main(): all threads finished.");
+//#ifdef TESTING
+  cout <<" - -- - All threads are finished.\n";
+  cout.flush();
+//#endif
+#endif // THREADS
+
   return;
 }
 

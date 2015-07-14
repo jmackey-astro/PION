@@ -74,7 +74,7 @@ OPTION += -DTHREADS -D__WXGTK__
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
 #MAKE_UNAME=OSX
-MAKE_UNAME=SUPERMUC
+#MAKE_UNAME=SUPERMUC
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -94,8 +94,8 @@ ifeq ($(MAKE_UNAME), standard)
   ifeq ($(IOMODE), USE_MPI)
     CXX = mpicxx
   endif
-  CXXFLAGS = -O3
-  #CXXFLAGS = -O0 -Wall -g
+  #CXXFLAGS = -O3
+  CXXFLAGS = -O1 -Wall -g
   CXXFLAGS+= -Wno-unused-function
 
 
