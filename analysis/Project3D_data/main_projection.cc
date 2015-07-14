@@ -130,7 +130,7 @@ void calculate_pixelW(void *arg)
 			   ta->im,
 			   ta->tot_mass
 			   );
-  ta = mem.myfree(ta);
+  delete ta; ta=0;
   return;
 }
 #endif //THREADS
@@ -692,13 +692,16 @@ int main(int argc, char **argv)
       // either multi-threaded or not...
       //
       clk.start_timer("makeimage"); double tsf=0.0;
+
 #ifdef THREADS
       cout <<"Beginning analysis: NUMTHREADS="<<NUM_THREADS_MAIN<<"... ";
       cout <<"i="<<outputs<<", w2i = "<<w2i<<" ... ";
       //cout.flush();
 #endif // THREADS
+
       for (int i=0;i<num_pixels;i++) {
 	px = &(IMG.pix[i]);
+
 #ifndef THREADS
 	IMG.calculate_pixel(px,       ///< pointer to pixel
 			    &vps,     ///< info for velocity profiling.
@@ -707,9 +710,10 @@ int main(int argc, char **argv)
 			    &tot_mass ///< general purpose counter for stuff.
 			    );
 #endif // not THREADS
+
 #ifdef THREADS
-	struct calc_pix_args *ta=0;
-	ta = mem.myalloc(ta,1);
+
+	struct calc_pix_args *ta = new struct calc_pix_args;
 	ta->px = px;
 	ta->IMG = &IMG;
 	ta->what_to_integrate = w2i;
