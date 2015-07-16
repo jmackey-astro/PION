@@ -143,7 +143,7 @@ class microphysics_lowz
   /// Returns the gas temperature.  This is only needed for data output, so
   /// there is no need to make it highly optimized.
   ///
-  double Temperature(const double *, ///< primitive vector
+  double Temperature(const pion_flt *, ///< primitive vector
 		     const double    ///< eos gamma
 		     );
 

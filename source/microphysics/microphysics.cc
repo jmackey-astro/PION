@@ -345,7 +345,7 @@ int MP_Hydrogen::Set_Temp(double *p,  ///< primitive vector.
 
 
 
-double MP_Hydrogen::Temperature(const double *pv, ///< primitive vector
+double MP_Hydrogen::Temperature(const pion_flt *pv, ///< primitive vector
 				const double g   ///< eos gamma
 				)
 {

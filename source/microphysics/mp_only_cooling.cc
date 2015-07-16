@@ -19,6 +19,7 @@
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -146,19 +147,14 @@ mp_only_cooling::~mp_only_cooling()
 //
 // update internal energy over full timestep.
 //
-int mp_only_cooling::TimeUpdateMP(const double *p_in,
-				  ///< Primitive Vector to be updated.
-				  double *p_out,
-				  ///< Destination Vector for updated values.
-				  const double dt,
-				  ///< Time Step to advance by.
-				  const double gamma,
-				  ///< EOS gamma.
-				  const int,
-				  ///< Switch for what type of integration to use (not used here!)
-				  double *Tf
-				  ///< final temperature.
-				  )
+int mp_only_cooling::TimeUpdateMP(
+      const pion_flt *p_in, ///< Primitive Vector to be updated
+      pion_flt *p_out, ///< Destination Vector for updated values.
+      const double dt, ///< Time Step to advance by.
+      const double gamma, ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use (not used here!)
+      double *Tf ///< final temperature.
+      )
 {
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -268,10 +264,11 @@ int mp_only_cooling::TimeUpdateMP(const double *p_in,
 //
 // Reset pressure so it corresponds to requested temperature.
 //
-int mp_only_cooling::Set_Temp(double *p_in, ///< primitive vector.
-			const double T, ///< temperature requested.
-			const double gam ///< eos gamma.
-			)
+int mp_only_cooling::Set_Temp(
+      pion_flt *p_in, ///< primitive vector.
+      const double T, ///< temperature requested.
+      const double gam ///< eos gamma.
+      )
 {
 #ifdef TESTING
   //
@@ -297,7 +294,7 @@ int mp_only_cooling::Set_Temp(double *p_in, ///< primitive vector.
 // cgs units and ionised gas with mu=0.7m_p.
 //
 double mp_only_cooling::Temperature(
-    const double *p_in, ///< primitive vector
+    const pion_flt *p_in, ///< primitive vector
     const double   ///< eos gamma
     )
 {
@@ -312,7 +309,7 @@ double mp_only_cooling::Temperature(
 // any effect here.
 //
 double mp_only_cooling::timescales(
-    const double *p_in, ///< Current cell.
+    const pion_flt *p_in, ///< Current cell.
     const double gam,   ///< EOS gamma.
     const bool, ///< set to true if including cooling time.
     const bool, ///< set to true if including recombination time.

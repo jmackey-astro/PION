@@ -29,6 +29,7 @@
 ///    made them inline.  Added option for radiation sources to be
 ///    associated with NTau>=1 optical depths, for flexibility.
 /// - 2013.09.05 JM: modified error checking in inline functions.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
@@ -73,9 +74,9 @@ extern struct energetics *GLOBAL_CE;
 class cell {
  public:
   friend class cell_interface;
-  double *P;   ///< Primitive Variables.
-  double *Ph;  ///< Primitive State vector at half timestep.
-  double *dU;  ///< Update vector to be added to U when we do the time update.
+  pion_flt *P;   ///< Primitive Variables.
+  pion_flt *Ph;  ///< Primitive State vector at half timestep.
+  pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
   cell **ngb;  ///< Pointers to cell's Neigbours.
   cell *npt;   ///< Pointer to next point in list, or some other cell.
 #ifdef GRIDV2
@@ -91,7 +92,7 @@ class cell {
 #endif
   int *pos;
   private:
-  double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
+  pion_flt *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
 };
 
 

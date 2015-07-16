@@ -26,6 +26,12 @@
 // -------------------------------------------------------------------
 
 //
+// Whether to use single or double precision
+//
+#define pion_flt double
+//#define pion_flt float
+
+//
 // This flag prevents compilation if any parts of the code are flagged as HACKs
 //
 //#define HACK_WARNING

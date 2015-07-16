@@ -40,6 +40,7 @@
 ///    Removed the integer positions because they created potential
 ///    errors in the wind properties from rounding errors.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -391,7 +392,7 @@ void stellar_wind::set_wind_cell_reference_state(
   }
   else {
     // appropriate for a neutral medium.
-    wc->p[PG] = max(wc->p[PG], 
+    wc->p[PG] = max(static_cast<double>(wc->p[PG]), 
       SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE

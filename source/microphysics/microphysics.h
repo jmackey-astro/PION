@@ -18,6 +18,7 @@
 /// - 2011.03.23 JM: Added new interface functions (they are just placeholders for now).
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #ifndef MICROPHYSICS_H
 #define MICROPHYSICS_H
@@ -166,8 +167,8 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
    * the step requested, and at the end copies the updated vector into the
    * destination vector.  For fully local microphysics (no R-T!)
    * */
-  int TimeUpdateMP(const double *, ///< Primitive Vector to be updated.
-		   double *,       ///< Destination Vector for updated values.
+  int TimeUpdateMP(const pion_flt *, ///< Primitive Vector to be updated.
+		   pion_flt *,       ///< Destination Vector for updated values.
 		   const double,   ///< Time Step to advance by.
 		   const double,   ///< EOS gamma.
 		   const int,       ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
@@ -176,8 +177,8 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   /** \brief Same as TimeUpdateMP, except that a incident photon flux is given, and photoionisation is calculated.
    * optical depth through the cell being processed is returned.
    */
-  int TimeUpdate_RTsinglesrc(const double *, ///< Primitive Vector to be updated.
-			     double *,       ///< Destination Vector for updated values.
+  int TimeUpdate_RTsinglesrc(const pion_flt *, ///< Primitive Vector to be updated.
+			     pion_flt *,       ///< Destination Vector for updated values.
 			     const double,   ///< Time Step to advance by.
 			     const double,   ///< EOS gamma.
 			     const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
@@ -190,11 +191,11 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   int Tr(string ///< tracer we want to get index for;
 	 );
   /** \brief Initialise microphysics ionisation fractions to an equilibrium value. */
-  int Init_ionfractions(double *, ///< Primitive vector to be updated.
+  int Init_ionfractions(pion_flt *, ///< Primitive vector to be updated.
 			const double, ///< eos gamma.
 			const double  ///< optional gas temperature to end up at. (negative means use pressure)
 			);
-  int Set_Temp(double *, ///< primitive vector.
+  int Set_Temp(pion_flt *, ///< primitive vector.
 	       const double, ///< temperature
 	       const double  ///< eos gamma.
 	       );
@@ -202,19 +203,21 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
     *
     * Assumes primitive vector is in cgs units.
     */
-  double Temperature(const double *, ///< primitive vector
+  double Temperature(const pion_flt *, ///< primitive vector
 		     const double    ///< eos gamma
 		     );
   ///
   /// This returns the minimum timescale of the times flagged in the
   /// arguments.  Time is returned in seconds.
   ///
-  double timescales(const double *, ///< Current cell.
-		    const double,   ///< EOS gamma.
-		    const bool, ///< set to true if including cooling time.
-		    const bool, ///< set to true if including recombination time.
-		    const bool  ///< set to true if including photo-ionsation time.
-		    );
+  double timescales(
+      const pion_flt *, ///< Current cell.
+      const double,   ///< EOS gamma.
+      const bool, ///< set to true if including cooling time.
+      const bool, ///< set to true if including recombination time.
+      const bool  ///< set to true if including photo-ionsation time.
+      );
+
   ///
   /// This returns the minimum timescale of all microphysical processes, including
   /// reaction times for each species and the total heating/cooling time for the gas.
@@ -222,15 +225,15 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   /// capability than the other timescales function.
   ///
   virtual double timescales_RT(
-                    const double *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    ) {cout <<"Don't call timescales for old MP class!\n";return 1.0e99;}
+      const pion_flt *, ///< Current cell.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      ) {cout <<"Don't call timescales for old MP class!\n";return 1.0e99;}
 
 
   ///
@@ -239,7 +242,7 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   ///
   double get_recombination_rate(
           const int,      ///< ion index in tracer array (optional).
-          const double *, ///< input state vector (primitive).
+          const pion_flt *, ///< input state vector (primitive).
           const double    ///< EOS gamma (optional)
           )
   {
@@ -250,13 +253,13 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
 
   private:
   /** \brief convert state vector from grid cell into local microphysics vector. */
-  int convert_prim2local(const double *, ///< primitive vector from grid cell (length nv_prim)
+  int convert_prim2local(const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
 			 double *,       ///< local vector (length nvl)
 			 const double    ///< eos gamma.
 			 );
   /** \brief convert local microphysics vector into state vector for grid cell. */
   int convert_local2prim(const double *, ///< local vector (length nvl)
-			 const double *, ///< input primitive vector from grid cell (length nv_prim)
+			 const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
 			 double *,       ///< updated primitive vector for grid cell (length nv_prim)
 			 const double    ///< eos gamma.
 			 );
@@ -279,6 +282,7 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
 		       const double *, ///< current state vector P.
 		       double *        ///< Rate vector to write to, R=dPdt(P)
 		       );
+
   /** \brief  This takes a copy of the primitive vector and advances it in time over
    * the step requested, and at the end copies the updated vector into the
    * destination vector.  For fully local microphysics (no R-T!).
@@ -286,13 +290,14 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
    * This function is for when we have no ions, but just do the cooling assuming the 
    * gas is fully ionised hydrogen.
    * */
-  int TimeUpdate_OnlyCooling(const double *, ///< Primitive Vector to be updated.
-			     double *,       ///< Destination Vector for updated values.
+  int TimeUpdate_OnlyCooling(const pion_flt *, ///< Primitive Vector to be updated.
+			     pion_flt *,       ///< Destination Vector for updated values.
 			     const double,   ///< Time Step to advance by.
 			     const double,   ///< EOS gamma.
 			     const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
 			     double *    ///< final temperature.
 			     );
+
   /** \brief This is for if we are solving the rate equation, and returns the
    * creation rate of some quantity. xdot=A*(1-x)-B*x, so this returns A(x).
    */
@@ -445,33 +450,39 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
 
 	      struct which_physics * ///< pointer to which physics flags.
 	      );
+
   /** \brief Destructor deletes dynamically allocated member data. */
   ~MP_Hydrogen();
+
   /** \brief  This takes a copy of the primitive vector and advances it in time over
    * the step requested, and at the end copies the updated vector into the
    * destination vector.  For fully local microphysics (no R-T!)
    * */
-  int TimeUpdateMP(const double *, ///< Primitive Vector to be updated.
-		   double *,       ///< Destination Vector for updated values.
-		   const double,   ///< Time Step to advance by.
-		   const double,   ///< EOS gamma.
-		   const int,       ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-		   double *    ///< final temperature.
-		   );
+  int TimeUpdateMP(
+      const pion_flt *, ///< Primitive Vector to be updated.
+      pion_flt *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,       ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *    ///< final temperature.
+      );
+
   /** \brief Same as TimeUpdateMP, except that a incident photon flux
    * is given, and photoionisation is calculated. optical depth
    * through the cell being processed is returned.
    */
-  int TimeUpdate_RTsinglesrc(const double *, ///< Primitive Vector to be updated.
-			     double *,       ///< Destination Vector for updated values.
-			     const double,   ///< Time Step to advance by.
-			     const double,   ///< EOS gamma.
-			     const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-			     const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-			     const double,   ///< path length ds through cell.
-			     const double,   ///< Optical depth to entry point of ray into cell.
-			     double *        ///< return optical depth through cell in this variable.
-			     );
+  int TimeUpdate_RTsinglesrc(
+      const pion_flt *, ///< Primitive Vector to be updated.
+      pion_flt *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      const double,   ///< flux in per unit length along ray (F/ds or L/dV)
+      const double,   ///< path length ds through cell.
+      const double,   ///< Optical depth to entry point of ray into cell.
+      double *        ///< return optical depth through cell in this variable.
+      );
+
   ///
   /// This takes a copy of the primitive vector and advances it in time over
   /// the step requested, and at the end copies the updated vector into the
@@ -482,52 +493,58 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
   /// THIS IS A DUMMY FUNCTION; IT JUST PRINTS A MESSAGE AND RETURNS 0
   ///
   virtual int TimeUpdateMP_RTnew(
-                    const double *, ///< Primitive Vector to be updated.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    double *,       ///< Destination Vector for updated values
-                    ///< (can be same as first Vector.
-                    const double,   ///< Time Step to advance by.
-                    const double,   ///< EOS gamma.
-                    const int, ///< Switch for what type of integration to use.
-                    ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-                    double *    ///< final temperature (not strictly needed).
-                    ) {cout <<"MP_Hydrogem::TimeUpdateMP_RTnew: I don't do anything!\n";return 0;}
+      const pion_flt *, ///< Primitive Vector to be updated.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      pion_flt *,       ///< Destination Vector for updated values
+      ///< (can be same as first Vector.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
+      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *    ///< final temperature (not strictly needed).
+        ) {cout <<"MP_Hydrogem::TimeUpdateMP_RTnew: I don't do anything!\n";return 0;}
 
   /** \brief Returns element number of named tracer variable in state vector. */
   int Tr(string ///< tracer we want to get index for;
 	 );
+
   /** \brief Initialise microphysics ionisation fractions to an equilibrium value. */
-  int Init_ionfractions(double *, ///< Primitive vector to be updated.
-			const double, ///< eos gamma.
-			const double  ///< optional gas temperature to end up at. (negative means use pressure)
-			);
+  int Init_ionfractions(
+      pion_flt *, ///< Primitive vector to be updated.
+      const double, ///< eos gamma.
+      const double  ///< optional gas temperature to end up at. (negative means use pressure)
+      );
+
   /** \brief Set the gas temperature to a specified value. */
-  int Set_Temp(double *,     ///< primitive vector.
+  int Set_Temp(pion_flt *,     ///< primitive vector.
 	       const double, ///< temperature
 	       const double  ///< eos gamma.
 	       );
+
   /** \brief Returns the gas temperature (not very optimized though) 
    *
    * Assumes primitive vector is in cgs units.
    */
-  double Temperature(const double *, ///< primitive vector
+  double Temperature(const pion_flt *, ///< primitive vector
 		     const double    ///< eos gamma
 		     );
+
   ///
   /// This returns the minimum timescale of the times flagged in the
   /// arguments.  Time is returned in seconds.
   ///
-  double timescales(const double *, ///< Current cell.
-		    const double,   ///< EOS gamma.
-		    const bool, ///< set to true if including cooling time.
-		    const bool, ///< set to true if including recombination time.
-		    const bool  ///< set to true if including photo-ionsation time.
-		    );
+  double timescales(
+      const pion_flt *, ///< Current cell.
+      const double,   ///< EOS gamma.
+      const bool, ///< set to true if including cooling time.
+      const bool, ///< set to true if including recombination time.
+      const bool  ///< set to true if including photo-ionsation time.
+      );
 
   ///
   /// This returns the minimum timescale of all microphysical processes, including
@@ -536,15 +553,15 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
   /// capability than the other timescales function.
   ///
   virtual double timescales_RT(
-                    const double *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    ) {cout <<"Don't call timescales for old MP class!\n";return 1.0e99;}
+      const pion_flt *, ///< Current cell.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      ) {cout <<"Don't call timescales for old MP class!\n";return 1.0e99;}
 
   ///
   /// Get the total recombination rate for an ion, given the input
@@ -552,7 +569,7 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
   ///
   double get_recombination_rate(
           const int,      ///< ion index in tracer array (optional).
-          const double *, ///< input state vector (primitive).
+          const pion_flt *, ///< input state vector (primitive).
           const double    ///< EOS gamma (optional)
           )
   {
@@ -562,16 +579,18 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
 
  private:
   /** \brief convert state vector from grid cell into local microphysics vector. */
-  int convert_prim2local(const double *, ///< primitive vector from grid cell (length nv_prim)
+  int convert_prim2local(const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
 			 double *,       ///< local vector (length nvl)
 			 const double    ///< eos gamma.
 			 );
+
   /** \brief convert local microphysics vector into state vector for grid cell. */
   int convert_local2prim(const double *, ///< local vector (length nvl)
-			 const double *, ///< input primitive vector from grid cell (length nv_prim)
+			 const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
 			 double *,       ///< updated primitive vector for grid cell (length nv_prim)
 			 const double    ///< eos gamma.
 			 );
+
   /** \brief Calculate rate of change of local state vector. Note this is 
    * certainly a different vector to the main code state vector, and 
    * consists of n_h, E_int, and if needed, x_e and all the ions x_i.
@@ -580,6 +599,7 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
 	   const double *, ///< current state vector P.
 	   double *        ///< Rate vector to write to, R=dPdt(P)
 	   );
+
   /** \brief Calculate rate of change of local state vector. Note this is 
    * certainly a different vector to the main code state vector, and 
    * consists only of n_h, E_int.  
@@ -591,6 +611,7 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
 		       const double *, ///< current state vector P.
 		       double *        ///< Rate vector to write to, R=dPdt(P)
 		       );
+
   /** \brief  This takes a copy of the primitive vector and advances it in time over
    * the step requested, and at the end copies the updated vector into the
    * destination vector.  For fully local microphysics (no R-T!).
@@ -598,13 +619,15 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
    * This function is for when we have no ions, but just do the cooling assuming the 
    * gas is fully ionised hydrogen.
    * */
-  int TimeUpdate_OnlyCooling(const double *, ///< Primitive Vector to be updated.
-			     double *,       ///< Destination Vector for updated values.
-			     const double,   ///< Time Step to advance by.
-			     const double,   ///< EOS gamma.
-			     const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-			     double *    ///< final temperature.
-			     );
+  int TimeUpdate_OnlyCooling(
+        const pion_flt *, ///< Primitive Vector to be updated.
+        double *,       ///< Destination Vector for updated values.
+        const double,   ///< Time Step to advance by.
+        const double,   ///< EOS gamma.
+        const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+        double *    ///< final temperature.
+        );
+
 #ifdef COUNT_ENERGETICS
   bool have_counted_ergs;
 #endif

@@ -1786,15 +1786,16 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
 
 
 
-point_velocity::point_velocity(const int vx_comp,  ///< velocity component perp. to LOS direction (contributing)
-			       const int vz_comp,  ///< velocity componenet along LOS
-			       const int signx,    ///< +1 if looking along +ve vx axis; -1 otherwise
-			       const int signz,    ///< +1 if looking along +ve vz axis; -1 otherwise
-			       const double theta, ///< Angle to LOS (radians)
-			       const double velocity_min,      ///< minimum velocity in range
-			       const double velocity_max,      ///< maximum velocity in range
-			       const int velocity_Nbins        ///< Number of bins.
-			       )
+point_velocity::point_velocity(
+      const int vx_comp,  ///< velocity component perp. to LOS direction (contributing
+      const int vz_comp,  ///< velocity componenet along LOS
+      const int signx,    ///< +1 if looking along +ve vx axis; -1 otherwise
+      const int signz,    ///< +1 if looking along +ve vz axis; -1 otherwise
+      const double theta, ///< Angle to LOS (radians)
+      const double velocity_min,      ///< minimum velocity in range
+      const double velocity_max,      ///< maximum velocity in range
+      const int velocity_Nbins        ///< Number of bins.
+      )
 {
   vx = vx_comp;
   vz = vz_comp;
@@ -1910,8 +1911,9 @@ void point_velocity::four1(
 
 
 
-void point_velocity::smooth_profile_FFT(double *data ///< Array of velocity bins to smooth.
-				    )
+void point_velocity::smooth_profile_FFT(
+      double *data ///< Array of velocity bins to smooth.
+      )
 {
   //
   // This works with Fourier Transform methods, rather than doing the convolution
@@ -2059,12 +2061,13 @@ void point_velocity::get_point_v_los_profile(
 
 
 
-void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point to add to profile.
-				     double *prof,    ///< velocity bins.
-				     const int ifrac, ///< index of i-fraction in P.V.
-				     double vel,      ///< LOS velocity of point.
-				     double norm      ///< Normalisation of profile.
-				     )
+void point_velocity::broaden_profile(
+      const struct point_4cellavg *pt, ///< point to add to profile.
+      double *prof,    ///< velocity bins.
+      const int ifrac, ///< index of i-fraction in P.V.
+      double vel,      ///< LOS velocity of point.
+      double norm      ///< Normalisation of profile.
+      )
 {
   //
   // This should be a delta-function input profile, and we will convolve this with

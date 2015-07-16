@@ -17,6 +17,7 @@
 /// - 2013.09.06 JM: Removed integer position functions, because the
 ///    rounding errors created potential errors in 1D.
 /// - 2015.01.10 JM: New include statements for new file structure.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 
 #ifndef STELLAR_WIND_BC_H
@@ -52,7 +53,7 @@
 ///
 struct wind_cell {
   class cell *c;  ///< cell we are interested in.
-  double *p; ///< primitive vector with wind properties for this cell.
+  pion_flt *p; ///< primitive vector with wind properties for this cell.
   double dist;    ///< distance of cell centre to wind src.
 };
 

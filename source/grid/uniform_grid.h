@@ -45,6 +45,7 @@
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2015.01.28 JM: updated parallel grid declaration; tidied up the
 ///    tabbing and comments.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #ifndef UNIFORMGRID_H
 #define UNIFORMGRID_H
@@ -100,7 +101,7 @@ struct boundary_data {
    string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
    int itype;  ///< Integer flag for boundary type (per=1,out=2,inf=3,ref=4,fix=5).
    list<cell *> data; ///< STL linked list for boundary data cells.
-   double *refval; ///< Optional reference state vector (e.g. for fixed BCs.).
+   pion_flt *refval; ///< Optional reference state vector (e.g. for fixed BCs.).
 };
 
 ///

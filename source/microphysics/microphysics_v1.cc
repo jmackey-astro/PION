@@ -492,7 +492,7 @@ int  MicroPhysics::Set_Temp(double *p,  ///< primitive vector.
   return err;
 }
 
-double MicroPhysics::Temperature(const double *p, ///< primitive vector
+double MicroPhysics::Temperature(const pion_flt *p, ///< primitive vector
 				 const double g   ///< eos gamma
 				 )
 {

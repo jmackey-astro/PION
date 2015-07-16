@@ -154,7 +154,7 @@ microphysics_lowz::~microphysics_lowz()
 
 
 
-double microphysics_lowz::Temperature(const double *pv, ///< primitive vector
+double microphysics_lowz::Temperature(const pion_flt *pv, ///< primitive vector
 				const double g   ///< eos gamma
 				)
 {

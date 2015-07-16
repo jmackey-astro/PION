@@ -70,6 +70,7 @@
 ///    Set stellar wind boundary conditions to use physical distances
 ///    not integer distances, to avoid rounding errors.
 /// - 2015.01.10 JM: New include statements for new file structure.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -1656,7 +1657,8 @@ int UniformGrid::BC_update_STARBENCH1(
     //
     // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
     //
-    (*c)->Ph[Vnorm] = norm_sign*max(0.0, (*c)->Ph[Vnorm]*norm_sign);
+    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                    (*c)->Ph[Vnorm]*norm_sign);
 
 
     //
@@ -1930,7 +1932,8 @@ int UniformGrid::BC_update_ONEWAY_OUT( struct boundary_data *b,
     //
     // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
     //
-    (*c)->Ph[Vnorm] = norm_sign*max(0.0, (*c)->Ph[Vnorm]*norm_sign);
+    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                    (*c)->Ph[Vnorm]*norm_sign);
 
     if (cstep==maxstep)
       for (int v=0;v<G_nvar;v++)

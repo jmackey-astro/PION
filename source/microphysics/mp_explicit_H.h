@@ -27,6 +27,7 @@
 /// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
 ///    cooling rates per cell for postprocessing.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #ifndef MP_EXPLICIT_H_H
 #define MP_EXPLICIT_H_H
@@ -154,8 +155,8 @@ class mp_explicit_H
   /// which can be the same pointer as the initial vector.
   ///
   int TimeUpdateMP(
-        const double *, ///< Primitive Vector to be updated.
-        double *,       ///< Destination Vector for updated values.
+        const pion_flt *, ///< Primitive Vector to be updated.
+        pion_flt *,       ///< Destination Vector for updated values.
         const double,   ///< Time Step to advance by.
         const double,   ///< EOS gamma.
         const int,      ///< Switch for what type of integration to use.
@@ -170,8 +171,8 @@ class mp_explicit_H
   /// UNUSED FUNCTION!!
   ///
   int TimeUpdate_RTsinglesrc(
-        const double *, ///< Primitive Vector to be updated.
-        double *,       ///< Destination Vector for updated values.
+        const pion_flt *, ///< Primitive Vector to be updated.
+        pion_flt *,       ///< Destination Vector for updated values.
         const double,   ///< Time Step to advance by.
         const double,   ///< EOS gamma.
         const int,      ///< Switch for what type of integration to use.
@@ -197,14 +198,14 @@ class mp_explicit_H
   /// - Number of UV point sources.
   ///
   virtual int TimeUpdateMP_RTnew(
-                   const double *, ///< Primitive Vector to be updated.
+                   const pion_flt *, ///< Primitive Vector to be updated.
  	           const int,      ///< Number of UV heating sources.
                    const std::vector<struct rt_source_data> &,
                    ///< list of UV-heating column densities and source properties.
                    const int,      ///< number of ionising radiation sources.
                    const std::vector<struct rt_source_data> &,
                    ///< list of ionising src column densities and source properties.
-		   double *,       ///< Destination Vector for updated values
+		   pion_flt *,       ///< Destination Vector for updated values
 		                   ///< (can be same as first Vector.
 		   const double,   ///< Time Step to advance by.
 		   const double,   ///< EOS gamma.
@@ -218,7 +219,7 @@ class mp_explicit_H
   /// there is no need to make it highly optimized.
   ///
   double Temperature(
-            const double *, ///< primitive vector
+            const pion_flt *, ///< primitive vector
             const double    ///< eos gamma
             );
 
@@ -227,7 +228,7 @@ class mp_explicit_H
   /// Again only needed if you want this feature in the initial condition generator.
   ///
   int Set_Temp(
-          double *,     ///< primitive vector.
+          pion_flt *,     ///< primitive vector.
           const double, ///< temperature
           const double  ///< eos gamma.
           );
@@ -239,7 +240,7 @@ class mp_explicit_H
   /// the newer timescales interface.
   ///
   virtual double timescales(
-          const double *, ///< Current cell.
+          const pion_flt *, ///< Current cell.
           const double,   ///< EOS gamma.
           const bool, ///< set to 'true' if including cooling time.
           const bool, ///< set to 'true' if including recombination time.
@@ -253,7 +254,7 @@ class mp_explicit_H
   /// capability than the other timescales function.
   ///
   virtual double timescales_RT(
-                    const double *, ///< Current cell.
+                    const pion_flt *, ///< Current cell.
                     const int,      ///< Number of UV heating sources.
                     const std::vector<struct rt_source_data> &,
                     ///< list of UV-heating column densities and source properties.
@@ -267,7 +268,7 @@ class mp_explicit_H
   /// This is optionally used in the initial condition generator.  Not implemented here.
   ///
   int Init_ionfractions(
-        double *, ///< Primitive vector to be updated.
+        pion_flt *, ///< Primitive vector to be updated.
         const double, ///< eos gamma.
         const double  ///< optional gas temperature to end up at. (negative means use pressure)
         )
@@ -291,7 +292,7 @@ class mp_explicit_H
   /// simulation data only -- IT IS NOT OPTIMISED FOR SPEED.
   ///
   virtual double total_cooling_rate(
-        const double *, ///< Current cell values.
+        const pion_flt *, ///< Current cell values.
         const int,      ///< Number of UV heating sources.
         const std::vector<struct rt_source_data> &,
         ///< list of UV-heating column densities and source properties.
@@ -307,7 +308,7 @@ class mp_explicit_H
   ///
   virtual double get_recombination_rate(
           const int,      ///< ion index in tracer array (optional).
-          const double *, ///< input state vector (primitive).
+          const pion_flt *, ///< input state vector (primitive).
           const double    ///< EOS gamma (optional)
           );
   
@@ -316,7 +317,7 @@ class mp_explicit_H
   /// convert state vector from grid cell into local microphysics vector.
   ///
   virtual int convert_prim2local(
-            const double *, ///< primitive vector from grid cell (length nv_prim)
+            const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
             double *        ///< local vector [x(H0),E](n+1).
             );
 
@@ -326,8 +327,8 @@ class mp_explicit_H
   ///
   virtual int convert_local2prim(
             const double *, ///< local (updated) vector [x(H0),E](n+1).
-            const double *, ///< input primitive vector from grid cell (length nv_prim)
-            double *       ///< updated primitive vector for grid cell (length nv_prim)
+            const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+            pion_flt *       ///< updated primitive vector for grid cell (length nv_prim)
             );
 
   ///
@@ -347,7 +348,7 @@ class mp_explicit_H
   /// know for both heating and ionisation sources.
   ///
   void setup_radiation_source_parameters(
-                    const double *, ///< primitive input state vector.
+                    const pion_flt *, ///< primitive input state vector.
                     double *,  ///< local input state vector (x_in,E_int)
                     const int , ///< Number of UV heating sources.
                     const std::vector<struct rt_source_data> &,

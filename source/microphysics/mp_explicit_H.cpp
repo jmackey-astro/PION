@@ -146,6 +146,7 @@
 ///    cooling rates per cell for postprocessing.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -855,7 +856,7 @@ int mp_explicit_H::convert_local2prim(
 // ##################################################################
 
 double mp_explicit_H::Temperature(
-            const double *pv, ///< primitive vector
+            const pion_flt *pv, ///< primitive vector
             const double      ///< eos gamma
             )
 {

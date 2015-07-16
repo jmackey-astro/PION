@@ -159,6 +159,16 @@ Parallel code also, and I have checked that it runs identically with new and old
 I have checked that it runs in serial, in parallel with 1 and 4 cores, and that it can restart from a checkpoint file for all of these cases.
 So I think it works!
 
+\paragraph{2015.07.16}
+3D projection code now runs faster than before because I multithreaded some of the setup code.
+It runs on SuperMUC now, and only crashes if it runs out of memory.
+I started a "float" version of pion, where in defines/functionality-flags.h you can set whether cells should use double or single precision.
+It needs a lot of changes to a lot of functions though.
+I think I need a full day to make this change, but it will be worth it in the long run, and it should allow the projection code to run bigger simulations\ldots
+If I can use $\sim50$\% less memory then I'll be able to analyse the $768^3$ sims, I think.
+So it will have to wait until after I get back from my holidays.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%

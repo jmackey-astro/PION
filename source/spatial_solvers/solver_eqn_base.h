@@ -30,6 +30,7 @@
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
 /// - 2015.07.06 JM: tidied up a bit (but much more to do!)
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #ifndef SOLVER_EQN_BASE_H
 #define SOLVER_EQN_BASE_H
@@ -88,8 +89,8 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   ///
   void set_Hcorrection(cell *,      ///< cell to assign eta value to.
 		       const axes,  ///< axis we are looking along
-		       const double *, ///< left state (from current cell).
-		       const double *, ///< right state (from next cell).
+		       const pion_flt *, ///< left state (from current cell).
+		       const pion_flt *, ///< right state (from next cell).
 		       const double  ///< EOS gamma.
 		       );
 
@@ -115,9 +116,9 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
         class GridBaseClass *grid,
         const cell *, ///< Left state cell pointer
         const cell *, ///< Right state cell pointer
-        double *, ///< Left Primitive State Vector.
-        double *, ///< Right Primitive State Vector.
-        double *, ///< Flux Vector. (written to).
+        pion_flt *, ///< Left Primitive State Vector.
+        pion_flt *, ///< Right Primitive State Vector.
+        pion_flt *, ///< Flux Vector. (written to).
         const int,   ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
         const int,   ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
         const double, ///< gas EOS gamma.
@@ -129,9 +130,9 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
         class GridBaseClass *grid,
         cell *, ///< Current cell.
         const axes, ///< Which axis we are looking along.
-        const double *, ///< Negative direction flux.
-        const double *, ///< Positive direction flux.
-        const double *, ///< slope vector for cell c.
+        const pion_flt *, ///< Negative direction flux.
+        const pion_flt *, ///< Positive direction flux.
+        const pion_flt *, ///< slope vector for cell c.
         const int,   ///< spatial order of accuracy.
         const double, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
@@ -140,19 +141,22 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// \brief General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
   /// 
-  virtual int CellAdvanceTime(class cell *, ///< cell to update.
-			      const double *, ///< Initial Primitive State Vector.
-			      double *, ///< Update vector dU
-			      double *, ///< Final Primitive state vector (can be same as initial vec.).
-			      double *,  ///< Tracks change of energy if I have to correct for negative pressure
-			      const double, ///< gas EOS gamma.
-			      const double  ///< Cell timestep dt.
-			      )=0;
+  virtual int CellAdvanceTime(
+      class cell *, ///< cell to update.
+      const pion_flt *, ///< Initial Primitive State Vector.
+      pion_flt *, ///< Update vector dU
+      pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
+      double *,  ///< Tracks change of energy if I have to correct for negative pressure
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell timestep dt.
+      )=0;
+
   /// \brief Given a cell, calculate the hydrodynamic timestep. 
-  virtual double CellTimeStep(const cell *, ///< pointer to cell
-			      const double, ///< gas EOS gamma.
-			      const double  ///< Cell size dx.
-			      ) =0;
+  virtual double CellTimeStep(
+      const cell *, ///< pointer to cell
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      ) =0;
   
   ///
   /// Pre-process the grid before calc_dU() in this function.
@@ -210,11 +214,12 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// about and don't care about.
   /// This function should work for most equations, but glm-mhd will need some extra work.
   ///
-  virtual int get_LaxFriedrichs_flux(const double *, ///< Left  Primitive var. state vector.
-				     const double *, ///< Right Primitive var. state vector.
-				     double *,    ///< Resulting Flux vector.
-				     const double  ///< gamma
-				     );
+  virtual int get_LaxFriedrichs_flux(
+      const pion_flt *, ///< Left  Primitive var. state vector.
+      const pion_flt *, ///< Right Primitive var. state vector.
+      pion_flt *,    ///< Resulting Flux vector.
+      const double  ///< gamma
+      );
 
   ///
   /// Function to calculate viscosity-related quantities before the
@@ -232,14 +237,15 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// has already been calculated).  This does nothing for the 
   /// H-correction, but everything for FKJ98 and LAPIDUS viscosities.
   ///
-  void post_calc_viscous_terms(const cell *, ///< left-of-interface cell
-			       const cell *, ///< right-of-interface cell
-			       const double *, ///< left state Prim.vec. (Pl)
-			       const double *, ///< right state Prim.vec. (Pr)
-			       const double *, ///< interface state Prim.vec. (P*)
-			       double *,  ///< flux vector.
-			       const int  ///< what kind of AV?
-			       );
+  void post_calc_viscous_terms(
+      const cell *, ///< left-of-interface cell
+      const cell *, ///< right-of-interface cell
+      const pion_flt *, ///< left state Prim.vec. (Pl)
+      const pion_flt *, ///< right state Prim.vec. (Pr)
+      const pion_flt *, ///< interface state Prim.vec. (P*)
+      pion_flt *,  ///< flux vector.
+      const int  ///< what kind of AV?
+      );
 
 
   ///
@@ -253,6 +259,22 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
         class GridBaseClass *  ///< pointer to computational grid.
         );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
