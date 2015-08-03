@@ -869,8 +869,8 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
       cout << SimPM.opfreq_time<<" units." <<"\n";
       SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
       if (SimPM.timestep>0) {
-  double tmp = ((SimPM.simtime/SimPM.opfreq_time)-static_cast<int>(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
-  SimPM.next_optime-= tmp;
+        double tmp = ((SimPM.simtime/SimPM.opfreq_time)-static_cast<int>(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
+        SimPM.next_optime-= tmp;
       }
     }
 
@@ -930,6 +930,8 @@ int sim_control_fixedgrid::get_cell_size(
 
 // ##################################################################
 // ##################################################################
+
+
 
 int sim_control_fixedgrid::set_equations()
 {
@@ -1466,7 +1468,7 @@ int sim_control_fixedgrid::initial_conserved_quantities(
   // Energy, and Linear Momentum in x-direction.
 #ifdef TESTING 
   // Only track the totals if I am testing the code.
-  double u[SimPM.nvar];
+  pion_flt u[SimPM.nvar];
   dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
   dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
   //  cout <<"initERG: "<<dp.initERG<<"\n";
@@ -1749,7 +1751,7 @@ int sim_control_fixedgrid::check_energy_cons(
 {
 #ifdef TESTING
   // Energy, and Linear Momentum in x-direction.
-  double u[SimPM.nvar];
+  pion_flt u[SimPM.nvar];
   double ergNow=0., mmxNow = 0., mmyNow = 0., mmzNow = 0.;
   class cell *cpt = grid->FirstPt();
   do {

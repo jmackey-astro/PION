@@ -13,22 +13,21 @@
 /// History:
 /// - 2010-12.22 JM: Moved functions from flux_hydro_adiabatic.h/.cc
 ///   and generated new class.
-///
 /// - 2011.01.19 JM: Simplified calculation of rho*L/R.
-///
 /// - 2011.03.03 JM: Added rs_nvar=5 for local state vectors.  New code versions
 ///    can handle up to 70 tracers, so it would hugely slow down the code if the
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
-///
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #include "Roe_Hydro_PrimitiveVar_solver.h"
 
 using namespace std;
 
-Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(const int nv,///< Length of State Vectors, nvar
-					   const double g ///< Gamma for state vector.
-					   )
+Riemann_Roe_Hydro_PV::Riemann_Roe_Hydro_PV(
+      const int nv,///< Length of State Vectors, nvar
+      const double g ///< Gamma for state vector.
+      )
   : eqns_base(nv), eqns_Euler(nv), rs_nvar(5)
 {
 #ifdef FUNCTION_ID
@@ -55,11 +54,12 @@ Riemann_Roe_Hydro_PV::~Riemann_Roe_Hydro_PV()
 }
 
 
-int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(const double *rpv_left,
-					      const double *rpv_right,
-					      const double rpv_g,
-					      double *rpv_pstar
-					      )
+int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(
+      const pion_flt *rpv_left,
+      const pion_flt *rpv_right,
+      const double rpv_g,
+      pion_flt *rpv_pstar
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_PV::Roe_prim_var_solver ...starting.\n";
@@ -97,7 +97,7 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(const double *rpv_left,
     rH = Enthalpy(rpv_right,rpv_g),
     denom = 1.0/(rl+rr),
     a_mean =0.0, v2_mean = 0.0;
-  double rpv_meanp[rs_nvar];
+  pion_flt rpv_meanp[rs_nvar];
   rpv_meanp[eqRO] = rl*rr;
   rpv_meanp[eqVX] = (rl*rpv_left[eqVX]+rr*rpv_right[eqVX])*denom;
   rpv_meanp[eqVY] = (rl*rpv_left[eqVY]+rr*rpv_right[eqVY])*denom;
@@ -181,47 +181,6 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(const double *rpv_left,
      	rpv_meanp[eqRO]*(rpv_pstar[eqVX]-rpv_right[eqVX])/a_mean; // rho_(*R)
     }
 
-
-
-
-    //
-    // Now just need to determine rho_star
-    // if (u* near zero) rho_star is mean of left and right starred state 
-    //
-    // if (fabs(rpv_pstar[eqVX]/a_mean) <= SMALLVALUE) {
-    //   //
-    //   //     cout <<"u*<<1, taking average"<<"\n";
-    //   //
-    //   rpv_pstar[eqRO] = rpv_meanp[eqRO]*
-    // 	(2.0 +(rpv_left[eqVX]-rpv_right[eqVX])/a_mean)/2.;
-    // }     
-    // else if (rpv_pstar[eqVX] >0.0) {
-    //   //
-    //   // else if(u*>0) pstar = left starred state
-    //   //
-    //   rpv_pstar[eqRO] = rpv_left[eqRO]+
-    // 	rpv_meanp[eqRO]*(rpv_left[eqVX]-rpv_pstar[eqVX])/a_mean; // rho_(*L)
-    // }
-    // else if (rpv_pstar[eqVX] <0.0) {
-    //   //
-    //   // else if(u*<0) pstar = right starred state
-    //   //
-    //   rpv_pstar[eqRO] = rpv_right[eqRO]+
-    // 	rpv_meanp[eqRO]*(rpv_pstar[eqVX]-rpv_right[eqVX])/a_mean; // rho_(*R)
-    // }
-    // else {
-    //   //
-    //   // else bug out
-    //   //
-    //   cerr <<"(Roe Linear Solver) Error in logic!!! Grave. vx="<<rpv_pstar[eqVX]<<"\n";
-    //   rep.printVec(" left",rpv_left, rs_nvar);
-    //   rep.printVec("right",rpv_right,rs_nvar);
-    //   rep.printVec("pstar",rpv_pstar,rs_nvar);
-    //   rep.printVec("meanp",rpv_meanp,rs_nvar);
-    //   err += 100;
-    // }
-
-
     //
     // Need to assign values to v_y,v_z if present.
     // They only change across the contact discontinuity.
@@ -246,3 +205,5 @@ int Riemann_Roe_Hydro_PV::Roe_prim_var_solver(const double *rpv_left,
   return err;
 
 }
+
+

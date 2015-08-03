@@ -25,6 +25,7 @@
 ///   confusing inheritance issues.  Tidied up code.  Put some tests
 ///   for finiteness in RS_TESTING ifdef.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -67,10 +68,11 @@ rsvars& operator++(rsvars& d)
 //
 // Constructor of the riemann_MHD class.
 //
-riemann_MHD::riemann_MHD(const int nv,        ///< length of state vectors.
-			 const double *state, ///< reference vector.
-			 const double g       ///< equation of state gamma.
-			 )
+riemann_MHD::riemann_MHD(
+      const int nv,        ///< length of state vectors.
+      const pion_flt *state, ///< reference vector.
+      const double g       ///< equation of state gamma.
+      )
   : eqns_base(nv), eqns_mhd_ideal(nv)
 {
   cout <<"(riemann_MHD::riemann_MHD) Initialising Riemann Solver Class.\n";
@@ -154,12 +156,13 @@ riemann_MHD::~riemann_MHD()
 // and right state, and then sets the solver going, which returns the
 // state P* in 'result'.  err_code solve(left, right, result );
 //
-int riemann_MHD::JMs_riemann_solve(const double *l,
-				   const double *r,
-				   double *ans,
-				   const int mode, 
-     ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS, 4=RoeRS)
-				   const double g)
+int riemann_MHD::JMs_riemann_solve(
+      const pion_flt *l,
+      const pion_flt *r,
+      pion_flt *ans,
+      const int mode, ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS, 4=RoeRS)
+      const double g
+      )
 {
   int err = 0;
 
@@ -394,7 +397,10 @@ int riemann_MHD::JMs_riemann_solve(const double *l,
 
 
 
-void riemann_MHD::assign_data(const double* l, const double* r)
+void riemann_MHD::assign_data(
+      const pion_flt *l,
+      const pion_flt *r
+      )
 {
   //
   // The Riemann problem has different state vector ordering, so we
@@ -428,14 +434,16 @@ void riemann_MHD::assign_data(const double* l, const double* r)
 
 
 
-void riemann_MHD::code2solvervars(double *statevec)
+void riemann_MHD::code2solvervars(
+      pion_flt *statevec
+      )
 {
   //
   // Need to re-order velocity and B-field elements.
   // The Riemann Solver should never even access elements with
   // v>7, so we can ignore them.
 
-  double temp[8];
+  pion_flt temp[8];
   temp[0] = statevec[eqRO];
   temp[1] = statevec[eqPG];
   temp[2] = statevec[eqVX];
@@ -456,9 +464,11 @@ void riemann_MHD::code2solvervars(double *statevec)
   return;
 }
 
-void riemann_MHD::solver2codevars(double *statevec)
+void riemann_MHD::solver2codevars(
+      pion_flt *statevec
+      )
 {
-  double temp[8];
+  pion_flt temp[8];
   // Density, pressure.
   // Velocities
   // B-Field
@@ -767,7 +777,11 @@ void riemann_MHD::get_eigenvalues()
 
 
 
-inline double riemann_MHD::dot_product(double *v1, double *v2, int nd)
+inline double riemann_MHD::dot_product(
+      pion_flt *v1,
+      pion_flt *v2,
+      int nd
+      )
 {
   double temp=0.0;
   for (int i=0; i<nd; i++) {

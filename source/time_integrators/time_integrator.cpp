@@ -144,6 +144,7 @@
 /// - 2015.01.12/13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
 /// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -640,8 +641,8 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
   // a non-zero error code.
   //
   cell *c = grid->FirstPt();
-  double p[SimPM.nvar]; // temporary state vector for output state.
-  double ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
+  pion_flt p[SimPM.nvar]; // temporary state vector for output state.
+  pion_flt ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
 
   double tt=0.; // temperature returned at end of microphysics step.
   do {
@@ -802,8 +803,8 @@ int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
   // so just do my original microphysics update.
   //
   cell *c = grid->FirstPt();
-  double p[SimPM.nvar]; // temporary state vector for output state.
-  double ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
+  pion_flt p[SimPM.nvar]; // temporary state vector for output state.
+  pion_flt ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
   double tt=0.; // temperature returned at end of microphysics step.
   int err=0;
   do {
@@ -1024,7 +1025,7 @@ int sim_control_fixedgrid::dynamics_dU_column
   // Calculate Flux at positive (right) boundary of cell and store in temporary arrays
   // for the current cell (Fr_this) and the negative neighbour (Fr_prev)
   // Have to do it this way b/c ISO C++ forbids re-assignment of arrays.
-  double *Fr_this=0, *Fr_prev=0, *temp=0, *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *pstar=0;
+  pion_flt *Fr_this=0, *Fr_prev=0, *temp=0, *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *pstar=0;
   Fr_prev   = mem.myalloc(Fr_prev,   SimPM.nvar);
   Fr_this   = mem.myalloc(Fr_this,   SimPM.nvar);
   slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
@@ -1193,7 +1194,7 @@ int sim_control_fixedgrid::grid_update_state_vector(
   //
   // temp variable to handle change of energy when correcting for negative pressure.
   //
-  double temperg =0.0;
+  pion_flt temperg =0.0;
 
   //
   // Loop through grid, updating Ph[] with CellAdvanceTime function.

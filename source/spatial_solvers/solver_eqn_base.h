@@ -31,6 +31,7 @@
 ///    pointer everywhere.
 /// - 2015.07.06 JM: tidied up a bit (but much more to do!)
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef SOLVER_EQN_BASE_H
 #define SOLVER_EQN_BASE_H
@@ -58,21 +59,28 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
 		 const double, ///< Artificial Viscosity Parameter etav.
 		 const int  ///< Number of tracer variables.
 		 ); ///< Constructor.
+
   ~FV_solver_base(); ///< Destructor.
+
   /// \brief Calculates GLM wave-speed -- only used by GLM-MHD equations. 
-  virtual void GotTimestep(const double ///< Current timestep value.
-			   ) {return;}
+  virtual void GotTimestep(
+      const double ///< Current timestep value.
+      ) {return;}
+
   /// \brief sets current timestep value in the solver class. 
-  virtual void Setdt(const double delt ///< Current timestep value.
-		     ) 
-   {
-     FV_dt =delt;
-   //  cout <<"dt="<<FV_dt<<endl;
-     return;
-   }
+  virtual void Setdt(
+      const double delt ///< Current timestep value.
+      ) 
+  {
+    FV_dt =delt;
+    //  cout <<"dt="<<FV_dt<<endl;
+    return;
+  }
+
   /// \brief sets value of gamma, the ideal gas EOS parameter. 
-  virtual void SetEOS(const double g ///< gas EOS gamma.
-		      ) {eq_gamma = g; return;}
+  virtual void SetEOS(
+      const double g ///< gas EOS gamma.
+      ) {eq_gamma = g; return;}
 
   ///
   /// Set the velocity divergence in a cell for viscosity calculation.
@@ -87,12 +95,13 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// boundary along a given axis, based on the previously
   /// calculated left and right edge states at the boundary.
   ///
-  void set_Hcorrection(cell *,      ///< cell to assign eta value to.
-		       const axes,  ///< axis we are looking along
-		       const pion_flt *, ///< left state (from current cell).
-		       const pion_flt *, ///< right state (from next cell).
-		       const double  ///< EOS gamma.
-		       );
+  void set_Hcorrection(
+      cell *,      ///< cell to assign eta value to.
+      const axes,  ///< axis we are looking along
+      const pion_flt *, ///< left state (from current cell).
+      const pion_flt *, ///< right state (from next cell).
+      const double  ///< EOS gamma.
+      );
 
 #ifdef THERMAL_CONDUCTION
   ///
@@ -146,7 +155,7 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
       const pion_flt *, ///< Initial Primitive State Vector.
       pion_flt *, ///< Update vector dU
       pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
-      double *,  ///< Tracks change of energy if I have to correct for negative pressure
+      pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
       const double, ///< gas EOS gamma.
       const double  ///< Cell timestep dt.
       )=0;
@@ -301,74 +310,85 @@ class BaseFVSolver : virtual public BaseEqn, virtual public BaseVectorOps
    ~BaseFVSolver() {} ///< Destructor.
 
   /// \brief Calculates GLM wave-speed -- only used by GLM-MHD equations. 
-  virtual void GotTimestep(const double delt ///< Current timestep value.
-		      ) =0;
+  virtual void GotTimestep(
+      const double delt ///< Current timestep value.
+      ) =0;
 
   /// \brief sets current timestep value in the solver class. 
-  virtual void Setdt(const double delt ///< Current timestep value.
-		      ) =0;
+  virtual void Setdt(
+      const double delt ///< Current timestep value.
+      ) =0;
 
   /// \brief sets value of gamma, the ideal gas EOS parameter. 
-  virtual void SetEOS(const double g ///< gas EOS gamma.
-		       ) =0;
+  virtual void SetEOS(
+      const double g ///< gas EOS gamma.
+      ) =0;
 
   /// \brief Sets which axes we are looking along. 
   virtual void SetDir(const enum axes d) =0;
 
   /// \brief Sets Average State Vector for anything that needs it (e.g. Riemann Solver)
-  virtual void SetAvgState(const double *mv, ///< Average primitive state vector.
-			    const double g  ///< EOS gamma.
-			    ) =0;
+  virtual void SetAvgState(
+      const pion_flt *mv, ///< Average primitive state vector.
+      const double g  ///< EOS gamma.
+      ) =0;
 
   /// \brief Returns which axes we are looking along. 
   virtual enum axes GetDir() =0;
 
   /// \brief Calculate Flux between a left and right state.
   /// 
-  virtual int InterCellFlux(double *, ///< Left Primitive State Vector.
-			     double *, ///< Right Primitive State Vector.
-			     double *, ///< Pstar Vector. (written to).
-			     double *, ///< Flux Vector. (written to).
-			     const double, ///< gas EOS gamma.
-			     const double  ///< Cell size dx.
-			     ) =0;
+  virtual int InterCellFlux(
+      pion_flt *, ///< Left Primitive State Vector.
+      pion_flt *, ///< Right Primitive State Vector.
+      pion_flt *, ///< Pstar Vector. (written to).
+      pion_flt *, ///< Flux Vector. (written to).
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      ) =0;
 
   /// \brief Adds the contribution from flux in the current direction to dU. 
-  virtual int dU_Cell(cell *, ///< Current cell.
-		       const axes, ///< Which axis we are looking along.
-		       const double *, ///< Negative direction flux.
-		       const double *, ///< Positive direction flux.
-		       const double *, ///< slope vector for cell c.
-		       const int,   ///< spatial order of accuracy.
-		       const double, ///< cell length dx.
-		       const double  ///< cell TimeStep, dt.
-		       )=0;
+  virtual int dU_Cell(
+      cell *, ///< Current cell.
+      const axes, ///< Which axis we are looking along.
+      const pion_flt *, ///< Negative direction flux.
+      const pion_flt *, ///< Positive direction flux.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,   ///< spatial order of accuracy.
+      const double, ///< cell length dx.
+      const double  ///< cell TimeStep, dt.
+      )=0;
 
   /// \brief General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
   /// 
-  virtual int CellAdvanceTime(const double *, ///< Initial Primitive State Vector.
-			       double *, ///< Update vector dU
-			       double *, ///< Final Primitive state vector (can be same as initial vec.).
-			       double *,  ///< Tracks change of energy if I have to correct for negative pressure
-			       const double, ///< gas EOS gamma.
-			       const double  ///< Cell timestep dt.
-			       )=0;
+  virtual int CellAdvanceTime(
+      const pion_flt *, ///< Initial Primitive State Vector.
+      pion_flt *, ///< Update vector dU
+      pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
+      pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell timestep dt.
+      )=0;
 
   /// \brief Given a cell, calculate the hydrodynamic timestep. 
-  virtual double CellTimeStep(const cell *, ///< pointer to cell
-			       const double, ///< gas EOS gamma.
-			       const double  ///< Cell size dx.
-			       ) =0;
+  virtual double CellTimeStep(
+      const cell *, ///< pointer to cell
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      ) =0;
 
   /// \brief This function only does anything for the Field-CD method which 
   /// processes the update vector to ensure that the B-field remains divergence free.
   /// For all other solvers it just returns immediately.
   /// 
-  virtual int PostProcess_dU(const int, ///< Space order of acc for this call.
-			      const int  ///< Time order of acc for this call.
-			      )=0;
+  virtual int PostProcess_dU(
+      const int, ///< Space order of acc for this call.
+      const int  ///< Time order of acc for this call.
+      )=0;
 };
+
+
 
 /// \brief Basic Lax-Friedrichs Solver.
 /// 
@@ -407,10 +427,10 @@ class LF_FVSolver : public BaseFVSolver
   /// \brief Lax Friedrichs Flux between a left and right state.
   /// Lax-Friedrichs Scheme, Toro (1999) p.184-185. (eqn.5.77)
   /// 
-  virtual int InterCellFlux(double *, ///< Left Primitive State Vector.
-			     double *, ///< Right Primitive State Vector.
-			     double *, ///< Pstar Vector. (written to).
-			     double *, ///< Flux Vector. (written to).
+  virtual int InterCellFlux(pion_flt *, ///< Left Primitive State Vector.
+			     pion_flt *, ///< Right Primitive State Vector.
+			     pion_flt *, ///< Pstar Vector. (written to).
+			     pion_flt *, ///< Flux Vector. (written to).
 			     const double, ///< gas EOS gamma.
 			     const double  ///< Cell size dx.
 			     );
@@ -423,10 +443,10 @@ class LF_FVSolver : public BaseFVSolver
   /// be set correctly as class variables.
   ///  - Source Terms must be added into a derived class.
   /// 
-  virtual int CellAdvanceTime(const double *, ///< Initial State Vector.
-			       double *,    ///< Update vector dU
-			       double *,    ///< Final state vector (can be same as initial vec.).
-			       double *,    ///< Tracks change of energy if I have to correct for negative pressure
+  virtual int CellAdvanceTime(const pion_flt *, ///< Initial State Vector.
+			       pion_flt *,    ///< Update vector dU
+			       pion_flt *,    ///< Final state vector (can be same as initial vec.).
+			       pion_flt *,    ///< Tracks change of energy if I have to correct for negative pressure
 			       const double,  ///< gas EOS gamma.
 			       const double  ///< Cell timestep dt.
 			       );
@@ -451,16 +471,16 @@ class LF_FVSolver : public BaseFVSolver
 
   /// \brief Sets mean values for pressure,density,velocity,B-field, etc.,
   /// for anything that needs it (e.g. Riemann Solver)
-  virtual void SetAvgState(const double *, ///< Average primitive state vector.
+  virtual void SetAvgState(const pion_flt *, ///< Average primitive state vector.
 			    const double  ///< EOS gamma.
 			    );
 
   /// \brief Adds the contribution from flux in the current direction to dU. 
   virtual int dU_Cell(cell *, ///< Current cell.
 		       const axes, ///< Which axis we are looking along.
-		       const double *, ///< Negative direction flux.
-		       const double *, ///< Positive direction flux.
-		       const double *, ///< slope vector for cell c.
+		       const pion_flt *, ///< Negative direction flux.
+		       const pion_flt *, ///< Positive direction flux.
+		       const pion_flt *, ///< slope vector for cell c.
 		       const int,   ///< spatial order of accuracy.
 		       const double, ///< cell length dx.
 		       const double  ///< cell TimeStep, dt.
@@ -473,7 +493,7 @@ class LF_FVSolver : public BaseFVSolver
    double dt;
 #ifdef USE_MM
 #else
-   double *u1, *u2, *f1, *f2;
+   pion_flt *u1, *u2, *f1, *f2;
 #endif
 };
 
@@ -490,7 +510,7 @@ class RS_FVSolver : virtual public LF_FVSolver
 	       const double, ///< CFL number
 	       const double, ///< dx, cell size.
 	       const double, ///< gas eos gamma.
-	       double *   ///< State vector of mean values for simulation.
+	       pion_flt *   ///< State vector of mean values for simulation.
 	       );
 
    ~RS_FVSolver(); ///< destructor.
@@ -499,10 +519,10 @@ class RS_FVSolver : virtual public LF_FVSolver
   /// 
   /// The axis we are looking along (normal direction) should have already been set.
   /// 
-  virtual int InterCellFlux(double *, ///< Left Primitive State Vector.
-			     double *, ///< Right Primitive State Vector.
-			     double *, ///< Pstar Vector. (written to).
-			     double *, ///< Flux Vector. (written to).
+  virtual int InterCellFlux(pion_flt *, ///< Left Primitive State Vector.
+			     pion_flt *, ///< Right Primitive State Vector.
+			     pion_flt *, ///< Pstar Vector. (written to).
+			     pion_flt *, ///< Flux Vector. (written to).
 			     const double, ///< gas EOS gamma.
 			     const double  ///< Cell size dx.
 			     );
@@ -511,14 +531,14 @@ class RS_FVSolver : virtual public LF_FVSolver
   virtual void SetDir(const enum axes);
 
   /// \brief Sets Average State Vector for Riemann Solver)
-  virtual void SetAvgState(const double *, ///< Average primitive state vector.
+  virtual void SetAvgState(const pion_flt *, ///< Average primitive state vector.
 			    const double  ///< EOS gamma.
 			    );
 
   protected:
 
    class BaseRiemann *rs; ///< pointer to the riemann solver class.
-   double *meanvec;  ///< vector of typical values for primitive variables in the simulation.
+   pion_flt *meanvec;  ///< vector of typical values for primitive variables in the simulation.
 };
 
 /// \brief Riemann solver class with Artificial Viscosity, and the ability to handle
@@ -534,7 +554,7 @@ class RS_AV_TR_FVSolver : virtual public LF_FVSolver, virtual public RS_FVSolver
 		     const double, ///< CFL number
 		     const double, ///< dx, cell size.
 		     const double, ///< gas eos gamma.
-		     double *,  ///< State vector of mean values for simulation.
+		     pion_flt *,  ///< State vector of mean values for simulation.
 		     const double, ///< Artificial Viscosity Parameter etav.
 		     const int  ///< Number of tracer variables.
 		     );
@@ -545,10 +565,10 @@ class RS_AV_TR_FVSolver : virtual public LF_FVSolver, virtual public RS_FVSolver
   /// 
   /// The axis we are looking along (normal direction) should have already been set.
   /// 
-  virtual int InterCellFlux(double *, ///< Left Primitive State Vector.
-			     double *, ///< Right Primitive State Vector.
-			     double *, ///< Pstar Vector (written to).
-			     double *, ///< Flux Vector. (written to).
+  virtual int InterCellFlux(pion_flt *, ///< Left Primitive State Vector.
+			     pion_flt *, ///< Right Primitive State Vector.
+			     pion_flt *, ///< Pstar Vector (written to).
+			     pion_flt *, ///< Flux Vector. (written to).
 			     const double, ///< gas EOS gamma.
 			     const double  ///< Cell size dx.
 			     );
@@ -585,9 +605,9 @@ class Euler_LF : virtual public LF_FVSolver, public EulerEqn, virtual public Vec
   /// \brief Adds the contribution from flux in the current direction to dU. 
   virtual int dU_Cell(cell *, ///< Current cell.
 		  const axes, ///< Which axis we are looking along.
-		  const double *, ///< Negative direction flux.
-		  const double *, ///< Positive direction flux.
-		  const double *, ///< slope vector for cell c.
+		  const pion_flt *, ///< Negative direction flux.
+		  const pion_flt *, ///< Positive direction flux.
+		  const pion_flt *, ///< slope vector for cell c.
 		  const int,   ///< spatial order of accuracy.
 		  const double, ///< cell length dx.
 		  const double  ///< cell TimeStep, dt.
@@ -607,7 +627,7 @@ class Euler_RS : virtual public Euler_LF, virtual public RS_FVSolver
 	   const double, ///< CFL number
 	   const double, ///< dx, cell size.
 	   const double, ///< gas eos gamma.
-	   double *   ///< State vector of mean values for simulation.
+	   pion_flt *   ///< State vector of mean values for simulation.
 	   );
 
    ~Euler_RS();
@@ -635,9 +655,9 @@ class IdealMHD_LF : virtual public LF_FVSolver, public IdealMHDEqn, virtual publ
   /// \brief Adds the contribution from flux in the current direction to dU. 
   virtual int dU_Cell(cell *, ///< Current cell.
 		  const axes, ///< Which axis we are looking along.
-		  const double *, ///< Negative direction flux.
-		  const double *, ///< Positive direction flux.
-		  const double *, ///< slope vector for cell c.
+		  const pion_flt *, ///< Negative direction flux.
+		  const pion_flt *, ///< Positive direction flux.
+		  const pion_flt *, ///< slope vector for cell c.
 		  const int,   ///< spatial order of accuracy.
 		  const double, ///< cell length dx.
 		  const double  ///< cell TimeStep, dt.
@@ -664,7 +684,7 @@ class IdealMHD_RS : virtual public IdealMHD_LF, virtual public RS_FVSolver
 	       const double, ///< CFL number
 	       const double, ///< dx, cell size.
 	       const double, ///< gas eos gamma.
-	       double *   ///< State vector of mean values for simulation.
+	       pion_flt *   ///< State vector of mean values for simulation.
 	       );
    ~IdealMHD_RS();
 };
@@ -692,7 +712,7 @@ class FieldCD_MHD_RS : virtual public IdealMHD_RS
 		  const double, ///< CFL number
 		  const double, ///< dx, cell size.
 		  const double, ///< gas eos gamma.
-		  double *   ///< State vector of mean values for simulation.
+		  pion_flt *   ///< State vector of mean values for simulation.
 		  );
 
    ~FieldCD_MHD_RS();
@@ -724,7 +744,7 @@ class glmMHD_RS : virtual public RS_FVSolver,
 	      const double, ///< CFL number
 	      const double, ///< dx, cell size.
 	      const double, ///< gas eos gamma.
-	      double *   ///< State vector of mean values for simulation.
+	      pion_flt *   ///< State vector of mean values for simulation.
 	      );
 
    ~glmMHD_RS();
@@ -748,10 +768,10 @@ class glmMHD_RS : virtual public RS_FVSolver,
   /// be set correctly as class variables.
   ///  - The GLM source terms is calculated from glmMHDEqn::GLMSource()
   /// 
-  virtual int CellAdvanceTime(const double *, ///< Initial State Vector.
-			       double *, ///< Update vector dU
-			       double *, ///< Final state vector (can be same as initial vec.).
-			       double *, ///< Tracks change of energy if I have to correct for negative pressure
+  virtual int CellAdvanceTime(const pion_flt *, ///< Initial State Vector.
+			       pion_flt *, ///< Update vector dU
+			       pion_flt *, ///< Final state vector (can be same as initial vec.).
+			       pion_flt *, ///< Tracks change of energy if I have to correct for negative pressure
 			       const double, ///< gas EOS gamma.
 			       const double  ///< Cell timestep dt.
 			       );
@@ -759,10 +779,10 @@ class glmMHD_RS : virtual public RS_FVSolver,
   /// \brief Riemann Solve Calculation of Flux between left and right state, including GLM solve.
   /// The axis we are looking along (normal direction) should have already been set.
   /// 
-  virtual int InterCellFlux(double *, ///< Left Primitive State Vector.
-			     double *, ///< Right Primitive State Vector.
-			     double *, ///< Pstar vector (written to).
-			     double *, ///< Flux Vector. (written to).
+  virtual int InterCellFlux(pion_flt *, ///< Left Primitive State Vector.
+			     pion_flt *, ///< Right Primitive State Vector.
+			     pion_flt *, ///< Pstar vector (written to).
+			     pion_flt *, ///< Flux Vector. (written to).
 			     const double, ///< gas EOS gamma.
 			     const double  ///< Cell size dx.
 			     );
@@ -770,9 +790,9 @@ class glmMHD_RS : virtual public RS_FVSolver,
   /// \brief Adds the contribution from flux in the current direction to dU. 
   virtual int dU_Cell(cell *, ///< Current cell.
 		  const axes, ///< Which axis we are looking along.
-		  const double *, ///< Negative direction flux.
-		  const double *, ///< Positive direction flux.
-		  const double *, ///< slope vector for cell c.
+		  const pion_flt *, ///< Negative direction flux.
+		  const pion_flt *, ///< Positive direction flux.
+		  const pion_flt *, ///< slope vector for cell c.
 		  const int,   ///< spatial order of accuracy.
 		  const double, ///< cell length dx.
 		  const double  ///< cell TimeStep, dt.
@@ -794,7 +814,7 @@ class Euler_RS_AV_TR : virtual public Euler_RS, virtual public RS_AV_TR_FVSolver
 		 const double, ///< CFL number
 		 const double, ///< dx, cell size.
 		 const double, ///< gas eos gamma.
-		 double *,  ///< State vector of mean values for simulation.
+		 pion_flt *,  ///< State vector of mean values for simulation.
 		 const double, ///< Artificial Viscosity Parameter etav.
 		 const int  ///< Number of tracer variables.
 		 );
@@ -806,8 +826,8 @@ class Euler_RS_AV_TR : virtual public Euler_RS, virtual public RS_AV_TR_FVSolver
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   /// 
-  virtual int PtoU(const double *, ///< pointer to Primitive variables.
-		    double *,    ///< pointer to conserved variables.
+  virtual int PtoU(const pion_flt *, ///< pointer to Primitive variables.
+		    pion_flt *,    ///< pointer to conserved variables.
 		    const double  ///< Gas constant gamma.
 		    );
 
@@ -817,16 +837,16 @@ class Euler_RS_AV_TR : virtual public Euler_RS, virtual public RS_AV_TR_FVSolver
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   /// 
-  virtual int UtoP(const double *, ///< pointer to conserved variables.
-		    double *, ///< pointer to Primitive variables.
+  virtual int UtoP(const pion_flt *, ///< pointer to conserved variables.
+		    pion_flt *, ///< pointer to Primitive variables.
 		    const double  ///< Gas constant gamma.
 		    );
 
   /// \brief convert direct from primitive variables to flux.
   /// Creates conserved variable array as an intermediate step, 
   /// and then calls PUtoFlux(). 
-   //  virtual int PtoFlux(const double *, ///< pointer to Primitive variables.
-   //		       double *,    ///< Pointer to flux variable.
+   //  virtual int PtoFlux(const pion_flt *, ///< pointer to Primitive variables.
+   //		       pion_flt *,    ///< Pointer to flux variable.
    //	       const double  ///< Gas constant gamma.
    //	       );  
 
@@ -836,9 +856,9 @@ class Euler_RS_AV_TR : virtual public Euler_RS, virtual public RS_AV_TR_FVSolver
   /// the value of the primitive tracer variable.  I take the left
   /// state tracer var. if the mass flux is to the right, and vice versa.
   /// 
-  virtual int PUtoFlux(const double *, ///< pointer to Primitive variables.
-			const double *, ///< pointer to conserved variables.
-			double *  ///< Pointer to flux variable.
+  virtual int PUtoFlux(const pion_flt *, ///< pointer to Primitive variables.
+			const pion_flt *, ///< pointer to conserved variables.
+			pion_flt *  ///< Pointer to flux variable.
 			);
 
   /// \brief adds conversion of tracer variables.
@@ -866,7 +886,7 @@ class cyl_Euler_RS_AV_TR
 		      const double, ///< CFL number
 		      const double, ///< dx, cell size.
 		      const double, ///< gas eos gamma.
-		      double *,  ///< State vector of mean values for simulation.
+		      pion_flt *,  ///< State vector of mean values for simulation.
 		      const double, ///< Artificial Viscosity Parameter etav.
 		      const int  ///< Number of tracer variables.
 		      );
@@ -875,9 +895,9 @@ class cyl_Euler_RS_AV_TR
   /// \brief Adds the contribution from flux in the current direction to dU. 
   virtual int dU_Cell(cell *, ///< Current cell.
 		  const axes, ///< Which axis we are looking along.
-		  const double *, ///< Negative direction flux.
-		  const double *, ///< Positive direction flux.
-		  const double *, ///< slope vector for cell c.
+		  const pion_flt *, ///< Negative direction flux.
+		  const pion_flt *, ///< Positive direction flux.
+		  const pion_flt *, ///< slope vector for cell c.
 		  const int,   ///< spatial order of accuracy.
 		  const double, ///< cell length dx.
 		  const double  ///< cell TimeStep, dt.
@@ -894,7 +914,7 @@ class IdealMHD_RS_AV_TR : virtual public IdealMHD_RS, virtual public RS_AV_TR_FV
 		 const double, ///< CFL number
 		 const double, ///< dx, cell size.
 		 const double, ///< gas eos gamma.
-		 double *,  ///< State vector of mean values for simulation.
+		 pion_flt *,  ///< State vector of mean values for simulation.
 		 const double, ///< Artificial Viscosity Parameter etav.
 		 const int  ///< Number of tracer variables.
 		 );
@@ -906,8 +926,8 @@ class IdealMHD_RS_AV_TR : virtual public IdealMHD_RS, virtual public RS_AV_TR_FV
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   /// 
-  virtual int PtoU(const double *, ///< pointer to Primitive variables.
-		    double *,    ///< pointer to conserved variables.
+  virtual int PtoU(const pion_flt *, ///< pointer to Primitive variables.
+		    pion_flt *,    ///< pointer to conserved variables.
 		    const double  ///< Gas constant gamma.
 		    );
 
@@ -917,16 +937,16 @@ class IdealMHD_RS_AV_TR : virtual public IdealMHD_RS, virtual public RS_AV_TR_FV
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   /// 
-  virtual int UtoP(const double *, ///< pointer to conserved variables.
-		    double *, ///< pointer to Primitive variables.
+  virtual int UtoP(const pion_flt *, ///< pointer to conserved variables.
+		    pion_flt *, ///< pointer to Primitive variables.
 		    const double  ///< Gas constant gamma.
 		    );
 
   /// \brief convert direct from primitive variables to flux.
   /// Creates conserved variable array as an intermediate step, 
   /// and then calls PUtoFlux(). 
-   //  virtual int PtoFlux(const double *, ///< pointer to Primitive variables.
-   //	       double *,    ///< Pointer to flux variable.
+   //  virtual int PtoFlux(const pion_flt *, ///< pointer to Primitive variables.
+   //	       pion_flt *,    ///< Pointer to flux variable.
    //	       const double  ///< Gas constant gamma.
    //	       );
 
@@ -937,9 +957,9 @@ class IdealMHD_RS_AV_TR : virtual public IdealMHD_RS, virtual public RS_AV_TR_FV
   /// the value of the primitive tracer variable.  I take the left
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
-  virtual int PUtoFlux(const double *, ///< pointer to Primitive variables.
-			const double *, ///< pointer to conserved variables.
-			double *  ///< Pointer to flux variable.
+  virtual int PUtoFlux(const pion_flt *, ///< pointer to Primitive variables.
+			const pion_flt *, ///< pointer to conserved variables.
+			pion_flt *  ///< Pointer to flux variable.
 			);
 
   /// \brief adds conversion of tracer variables.
@@ -967,7 +987,7 @@ class cyl_IdealMHD_RS_AV_TR
 		      const double, ///< CFL number
 		      const double, ///< dx, cell size.
 		      const double, ///< gas eos gamma.
-		      double *,  ///< State vector of mean values for simulation.
+		      pion_flt *,  ///< State vector of mean values for simulation.
 		      const double, ///< Artificial Viscosity Parameter etav.
 		      const int  ///< Number of tracer variables.
 		      );
@@ -980,9 +1000,9 @@ class cyl_IdealMHD_RS_AV_TR
   ////
   virtual int dU_Cell(cell *, ///< Current cell.
 		  const axes, ///< Which axis we are looking along.
-		  const double *, ///< Negative direction flux.
-		  const double *, ///< Positive direction flux.
-		  const double *, ///< slope vector for cell c.
+		  const pion_flt *, ///< Negative direction flux.
+		  const pion_flt *, ///< Positive direction flux.
+		  const pion_flt *, ///< slope vector for cell c.
 		  const int,   ///< spatial order of accuracy.
 		  const double, ///< cell length dx.
 		  const double  ///< cell TimeStep, dt.
@@ -1005,7 +1025,7 @@ class FieldCD_MHD_RS_AV_TR
 			const double, ///< CFL number
 			const double, ///< dx, cell size.
 			const double, ///< gas eos gamma.
-			double *,  ///< State vector of mean values for simulation.
+			pion_flt *,  ///< State vector of mean values for simulation.
 			const double, ///< Artificial Viscosity Parameter etav.
 			const int  ///< Number of tracer variables.
 			);
@@ -1026,7 +1046,7 @@ class glmMHD_RS_AV_TR : virtual public glmMHD_RS, virtual public RS_AV_TR_FVSolv
 		 const double, ///< CFL number
 		 const double, ///< dx, cell size.
 		 const double, ///< gas eos gamma.
-		 double *,  ///< State vector of mean values for simulation.
+		 pion_flt *,  ///< State vector of mean values for simulation.
 		 const double, ///< Artificial Viscosity Parameter etav.
 		 const int  ///< Number of tracer variables.
 		 );
@@ -1038,8 +1058,8 @@ class glmMHD_RS_AV_TR : virtual public glmMHD_RS, virtual public RS_AV_TR_FVSolv
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
-  virtual int PtoU(const double *, ///< pointer to Primitive variables.
-		    double *,    ///< pointer to conserved variables.
+  virtual int PtoU(const pion_flt *, ///< pointer to Primitive variables.
+		    pion_flt *,    ///< pointer to conserved variables.
 		    const double  ///< Gas constant gamma.
 		    );
 
@@ -1049,16 +1069,16 @@ class glmMHD_RS_AV_TR : virtual public glmMHD_RS, virtual public RS_AV_TR_FVSolv
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
-  virtual int UtoP(const double *, ///< pointer to conserved variables.
-		    double *, ///< pointer to Primitive variables.
+  virtual int UtoP(const pion_flt *, ///< pointer to conserved variables.
+		    pion_flt *, ///< pointer to Primitive variables.
 		    const double  ///< Gas constant gamma.
 		    );
 
   /// \brief convert direct from primitive variables to flux.
   /// Creates conserved variable array as an intermediate step, 
   /// and then calls PUtoFlux(). 
-   //  virtual int PtoFlux(const double *, ///< pointer to Primitive variables.
-   //	       double *,    ///< Pointer to flux variable.
+   //  virtual int PtoFlux(const pion_flt *, ///< pointer to Primitive variables.
+   //	       pion_flt *,    ///< Pointer to flux variable.
    //	       const double  ///< Gas constant gamma.
    //	       );   
 
@@ -1068,9 +1088,9 @@ class glmMHD_RS_AV_TR : virtual public glmMHD_RS, virtual public RS_AV_TR_FVSolv
   /// the value of the primitive tracer variable.  I take the left
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
-  virtual int PUtoFlux(const double *, ///< pointer to Primitive variables.
-			const double *, ///< pointer to conserved variables.
-			double *  ///< Pointer to flux variable.
+  virtual int PUtoFlux(const pion_flt *, ///< pointer to Primitive variables.
+			const pion_flt *, ///< pointer to conserved variables.
+			pion_flt *  ///< Pointer to flux variable.
 			);
 
   /// \brief adds conversion of tracer variables.
@@ -1092,10 +1112,10 @@ class glmMHD_RS_AV_TR : virtual public glmMHD_RS, virtual public RS_AV_TR_FVSolv
   /// viscosity, and then calculates the tracer flux according to the sign
   /// of the mass flux.
   ///
-  virtual int InterCellFlux(double *, ///< Left Primitive State Vector.
-			     double *, ///< Right Primitive State Vector.
-			     double *, ///< Pstar Vector. (written to).
-			     double *, ///< Flux Vector. (written to).
+  virtual int InterCellFlux(pion_flt *, ///< Left Primitive State Vector.
+			     pion_flt *, ///< Right Primitive State Vector.
+			     pion_flt *, ///< Pstar Vector. (written to).
+			     pion_flt *, ///< Flux Vector. (written to).
 			     const double, ///< gas EOS gamma.
 			     const double  ///< Cell size dx.
 			     );
@@ -1114,7 +1134,7 @@ class cyl_glmMHD_RS_AV_TR
 		      const double, ///< CFL number
 		      const double, ///< dx, cell size.
 		      const double, ///< gas eos gamma.
-		      double *,  ///< State vector of mean values for simulation.
+		      pion_flt *,  ///< State vector of mean values for simulation.
 		      const double, ///< Artificial Viscosity Parameter etav.
 		      const int  ///< Number of tracer variables.
 		      );
@@ -1127,9 +1147,9 @@ class cyl_glmMHD_RS_AV_TR
   ///
   virtual int dU_Cell(cell *, ///< Current cell.
 		  const axes, ///< Which axis we are looking along.
-		  const double *, ///< Negative direction flux.
-		  const double *, ///< Positive direction flux.
-		  const double *, ///< slope vector for cell c.
+		  const pion_flt *, ///< Negative direction flux.
+		  const pion_flt *, ///< Positive direction flux.
+		  const pion_flt *, ///< slope vector for cell c.
 		  const int,   ///< spatial order of accuracy.
 		  const double, ///< cell length dx.
 		  const double  ///< cell TimeStep, dt.

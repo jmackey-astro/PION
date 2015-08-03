@@ -16,14 +16,10 @@
 ///
 /// History:
 ///  - 2009-10-20 Started on the file
-///
 ///  - 2010-07-31 JM: Added Primitive variable linear solver with Roe average.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
 /// - 2010.11.15 JM: Renamed calculate_flux() to inviscid_flux() and
 ///   moved AV calculation to FV_solver_base class.
-///
 /// - 2010.11.21 JM: Added symmetric version of the Roe conserved
 ///   variables flux solver, called Roe_flux_solver_symmetric().  It
 ///   is MUCH BETTER than the one-sided one, which I have renamed to
@@ -31,14 +27,12 @@
 ///   with the H-correction, the one-sided solver developed spikes at
 ///   90 degree intervals, but the symmetric solver is perfectly
 ///   clean.  SO, DON'T USE ONE-SIDED ROE FLUX SOLVER ANYMORE!
-///
 /// - 2010.12.22 JM: Moved Roe PV and CV solvers to Riemann_solvers/
 ///   directory.  Got rid of the ROE_CV_MEANP ifdef (it is default).
-///
 /// - 2010.12.23 JM: Moved UtoP() etc. from solver to flux-solver.
 ///   Now all tracer stuff is dealt with here.
-///
 /// - 2010.12.27 JM: Enclosed Lapidus AV in ifdef.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef FLUX_HYDRO_ADIABATIC_H
 #define FLUX_HYDRO_ADIABATIC_H
@@ -73,26 +67,28 @@ public:
 
   /// Constructor: Allocates memory for arrays, and sets a state vector of typical values for
   /// primitive variables (can be overwritten later).
-  flux_solver_hydro_adi(const int,      ///< Number of variables in state vector
-			const double *, ///< state vector which is 'typical' in the problem being solved. 
-			const double,   ///< coefficient of artificial viscosity
-			const double,    ///< gamma (EOS).
-			const int     ///< Number of tracer variables.
-			);
+  flux_solver_hydro_adi(
+      const int,      ///< Number of variables in state vector
+      const pion_flt *, ///< state vector which is 'typical' in the problem being solved. 
+      const double,   ///< coefficient of artificial viscosity
+      const double,    ///< gamma (EOS).
+      const int     ///< Number of tracer variables.
+      );
 
   /// Deletes any arrays.
   ~flux_solver_hydro_adi();
 
   /// Calculates Flux based on a left and right state vector (primitive).
-  int inviscid_flux(const cell *, ///< Left state cell pointer
-		    const cell *, ///< Right state cell pointer
-		    const double *, ///< Left Primitive state vector.
-		    const double *, ///< Right Primitive state vector.
-		    double *,       ///< Resultant Flux state vector.
-		    double *,      ///< Resultant Pstar state vector.
-		    const int,      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-		    const double    ///< Gas constant gamma.
-		    );
+  int inviscid_flux(
+      const cell *, ///< Left state cell pointer
+      const cell *, ///< Right state cell pointer
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      pion_flt *,       ///< Resultant Flux state vector.
+      pion_flt *,      ///< Resultant Pstar state vector.
+      const int,      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// This calls the original version and then adds conversion of tracer variables.
@@ -101,10 +97,11 @@ public:
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
-  virtual void PtoU(const double *, ///< pointer to Primitive variables.
-		    double *,       ///< pointer to conserved variables.
-		    const double    ///< Gas constant gamma.
-		    );
+  virtual void PtoU(
+      const pion_flt *, ///< pointer to Primitive variables.
+      pion_flt *,       ///< pointer to conserved variables.
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// This calls the original version and then adds conversion of tracer variables.
@@ -113,10 +110,11 @@ public:
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
-  virtual int UtoP(const double *, ///< pointer to conserved variables.
-		   double *, ///< pointer to Primitive variables.
-		   const double    ///< Gas constant gamma.
-		   );
+  virtual int UtoP(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// This calls the original version and then adds conversion of tracer variables.
@@ -125,10 +123,11 @@ public:
   /// the value of the primitive tracer variable.  I take the left
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
-  virtual void PUtoFlux(const double *, ///< pointer to Primitive variables.
-			const double *, ///< pointer to conserved variables.
-			double *  ///< Pointer to flux variable.
-			);
+  virtual void PUtoFlux(
+      const pion_flt *, ///< pointer to Primitive variables.
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *  ///< Pointer to flux variable.
+      );
 
   ///
   /// This calls the original version and then adds conversion of tracer variables.
@@ -137,22 +136,24 @@ public:
   /// the value of the primitive tracer variable.  I take the left
   /// state tracer var. if the mass flux is to the right, and vice versa.
   ///
-  virtual void UtoFlux(const double*, ///< Pointer to conserved variables state vector.
-		       double*,       ///< Pointer to flux variable state vector.
-		       const double   ///< Gas constant gamma.
-		       );
+  virtual void UtoFlux(
+      const pion_flt *, ///< Pointer to conserved variables state vector.
+      pion_flt *,       ///< Pointer to flux variable state vector.
+      const double   ///< Gas constant gamma.
+      );
 
 protected:
   ///
   /// Sam Falle's Artificial Viscosity Calculation.
   ///
-  int AVFalle(const double *, ///< Left Primitive state vector.
-	      const double *, ///< Right Primitive state vector.
-	      const double *, ///< Resolved (P*) state vector.
-	      double *, ///< Pointer to associated Flux Vector.
-	      const double, ///< Artificial Viscosity parameter, etav.
-	      const double  ///< gamma
-	      );
+  int AVFalle(
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      const pion_flt *, ///< Resolved (P*) state vector.
+      pion_flt *, ///< Pointer to associated Flux Vector.
+      const double, ///< Artificial Viscosity parameter, etav.
+      const double  ///< gamma
+      );
 
 #ifdef LAPIDUS_VISCOSITY_ENABLED
   ///
@@ -161,14 +162,15 @@ protected:
   /// the flux \f$ F = F + \eta \mbox{div}(v)(U_R-U_L) \f$.
   /// THIS DOESN'T WORK! I STOPPED WRITING IT BEFORE I GOT IT WORKING.
   ///
-  int AVLapidus(const cell *, ///< Left state cell pointer
-		const cell *, ///< Right state cell pointer
-		const double *, ///< Left Primitive state vector.
-		const double *, ///< Right Primitive state vector.
-		double *,       ///< Pointer to associated Flux Vector.
-		const double, ///< Artificial Viscosity parameter, etav.
-		const double  ///< gamma
-		);
+  int AVLapidus(
+      const cell *, ///< Left state cell pointer
+      const cell *, ///< Right state cell pointer
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      pion_flt *,       ///< Pointer to associated Flux Vector.
+      const double, ///< Artificial Viscosity parameter, etav.
+      const double  ///< gamma
+      );
 #endif // LAPIDUS_VISCOSITY_ENABLED
 
  private:

@@ -8,6 +8,7 @@
 /// - 2015.01.09 JM: Wrote file, moved stuff from global.h
 /// - 2015.07.03 JM: Started to change tracer setup in files.
 ///    Put units and JetParams classes into this file from global.h.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
@@ -273,7 +274,7 @@ class SimParams {
 
    // Initial Conditions.
    double addnoise; ///< Whether to add noise or not, 0=no, 1-3 are for different types of noise.
-   double RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
+   pion_flt RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
 };
 
 

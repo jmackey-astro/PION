@@ -41,6 +41,7 @@
 ///    Thermal Conduction module is unusable now, needs re-writing.
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -59,14 +60,15 @@ using namespace std;
 // ##################################################################
 
 
-FV_solver_base::FV_solver_base(const int nv, ///< number of variables in state vector.
-			       const int nd, ///< number of space dimensions in grid.
-			       const double cflno,   ///< CFL number
-			       const double delx,    ///< dx, cell size.
-			       const double gam,     ///< gas eos gamma.
-			       const double avcoeff, ///< Artificial Viscosity Parameter etav.
-			       const int ntr         ///< Number of tracer variables.
-			       )
+FV_solver_base::FV_solver_base(
+      const int nv, ///< number of variables in state vector.
+      const int nd, ///< number of space dimensions in grid.
+      const double cflno,   ///< CFL number
+      const double delx,    ///< dx, cell size.
+      const double gam,     ///< gas eos gamma.
+      const double avcoeff, ///< Artificial Viscosity Parameter etav.
+      const int ntr         ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     // riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
@@ -94,16 +96,17 @@ FV_solver_base::~FV_solver_base()
 // ##################################################################
 
 
-int FV_solver_base::get_LaxFriedrichs_flux(const double *l,
-					   const double *r,
-					   double *f,
-					   const double
-					   )
+int FV_solver_base::get_LaxFriedrichs_flux(
+      const pion_flt *l,
+      const pion_flt *r,
+      pion_flt *f,
+      const double
+      )
 {
   //
   // This has to be in this solver because we need dx,dt,ndim
   //
-  double u1[eq_nvar], u2[eq_nvar], f1[eq_nvar], f2[eq_nvar];
+  pion_flt u1[eq_nvar], u2[eq_nvar], f1[eq_nvar], f2[eq_nvar];
   PtoU(l, u1, eq_gamma);   PtoU(r, u2, eq_gamma);
   UtoFlux(u1, f1, eq_gamma);  UtoFlux(u2, f2, eq_gamma);
   // Then get inter-cell flux from this.
@@ -151,9 +154,9 @@ int FV_solver_base::InterCellFlux(
         class GridBaseClass *grid,
         const cell *Cl, ///< Left state cell pointer
         const cell *Cr, ///< Right state cell pointer
-        double *lp, ///< Left Primitive State Vector.
-        double *rp, ///< Right Primitive State Vector.
-        double *f, ///< Flux Vector. (written to).
+        pion_flt *lp, ///< Left Primitive State Vector.
+        pion_flt *rp, ///< Right Primitive State Vector.
+        pion_flt *f, ///< Flux Vector. (written to).
         const int solve_flag,    ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
         const int av_flag,    ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
         const double g, ///< gas EOS gamma.
@@ -162,7 +165,7 @@ int FV_solver_base::InterCellFlux(
 {
   //cout <<"FV_solver_base::InterCellFlux() gamma="<<eq_gamma<<" and passed in was g="<<g<<"\n";
   eq_gamma=g;
-  double pstar[eq_nvar];
+  pion_flt pstar[eq_nvar];
 
   //
   // Pre-calcualate anything needed for the viscosity (H-correction).
@@ -230,14 +233,15 @@ void FV_solver_base::pre_calc_viscous_terms(
 
 
 
-void FV_solver_base::post_calc_viscous_terms(const cell *cl, ///< left-of-interface cell
-					     const cell *cr, ///< right-of-interface cell
-					     const double *Pl,
-					     const double *Pr,
-					     const double *Pstar,
-					     double *flux,   ///< flux vector
-					     const int av_flag ///< what kind of AV?
-					     )
+void FV_solver_base::post_calc_viscous_terms(
+      const cell *cl, ///< left-of-interface cell
+      const cell *cr, ///< right-of-interface cell
+      const pion_flt *Pl,
+      const pion_flt *Pr,
+      const pion_flt *Pstar,
+      pion_flt *flux,   ///< flux vector
+      const int av_flag ///< what kind of AV?
+      )
 {
   //  cout <<"etav="<<FS_etav<<"\t";  rep.printVec("flux",flux,eq_nvar);
   //  rep.printVec("flux",flux,eq_nvar);
@@ -381,7 +385,7 @@ int FV_solver_base::calc_Hcorrection(
   // each cell had a slope vector for each direction), but obviously
   // this would increase the memory overhead hugely.
   //
-  double *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *temp=0;
+  pion_flt *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *temp=0;
   slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
   slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
   edgeL     = mem.myalloc(edgeL,     SimPM.nvar);
@@ -516,12 +520,13 @@ int FV_solver_base::calc_Hcorrection(
 // ##################################################################
 
 
-void FV_solver_base::set_Hcorrection(cell *c, ///< cell to operate on
-				     const axes axis, ///< axis normal to interface.
-				     const double *edgeL, ///< Left state
-				     const double *edgeR, ///< right state
-				     const double g       ///< gamma
-				     )
+void FV_solver_base::set_Hcorrection(
+      cell *c, ///< cell to operate on
+      const axes axis, ///< axis normal to interface.
+      const pion_flt *edgeL, ///< Left state
+      const pion_flt *edgeR, ///< right state
+      const double g       ///< gamma
+      )
 {
   if (axis != GetDirection()) {
     cout <<GetDirection()<<"\t";

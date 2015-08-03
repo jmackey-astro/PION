@@ -94,7 +94,7 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
         const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
         class GridBaseClass *,  ///< pointer to computational grid.
-        double *      ///< Pointer to array to put gradient vector.
+        pion_flt *      ///< Pointer to array to put gradient vector.
         );
   
   ///
@@ -124,7 +124,7 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                       ///< Should contain 3 elements, ordered as x,y,z components.
         class GridBaseClass *,  ///< pointer to computational grid.
-        double *      ///< Pointer to array to put curl vector.
+        pion_flt *      ///< Pointer to array to put curl vector.
         );
 
   ///
@@ -143,8 +143,8 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         const cell *,    ///< Current Cell.
         const direction, ///< Add or subtract the slope depending on direction.
         const int,       ///< length of state vectors.
-        const double *,  ///< Slope vector.
-        double *,        ///< vector for edge state. 
+        const pion_flt *,  ///< Slope vector.
+        pion_flt *,        ///< vector for edge state. 
         const int,       ///< Order of spatial Accuracy.
         class GridBaseClass *  ///< pointer to computational grid.
         );
@@ -156,7 +156,7 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         const cell *, ///< Current Cell.
         const axes,   ///< Which direction to calculate slope in.
         const int ,   ///< length of state vectors.
-        double *,     ///< Slope vector to be written to.
+        pion_flt *,     ///< Slope vector to be written to.
         const int,    ///< Order of spatial Accuracy.
         class GridBaseClass *  ///< pointer to computational grid.
         );
@@ -170,9 +170,9 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         class GridBaseClass *,  ///< pointer to computational grid.
         const axes, ///< current coordinate axis we are looking along.
         const int,  ///< length of state vectors.
-        const double *, ///< Negative direction flux.
-        const double *, ///< Positive direction flux.
-        double * ///< Vector to assign divergence component to.
+        const pion_flt *, ///< Negative direction flux.
+        const pion_flt *, ///< Positive direction flux.
+        pion_flt * ///< Vector to assign divergence component to.
         );
 
  protected:

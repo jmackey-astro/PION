@@ -25,10 +25,11 @@
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
-NCORES=8
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-export PION_OPTIMISE=HIGH
+#export PION_OPTIMISE=HIGH
+#NCORES=8
 export PION_OPTIMISE=LOW
+NCORES=1
 export CXX=g++
 
 #################################

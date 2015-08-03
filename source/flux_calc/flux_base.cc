@@ -30,10 +30,17 @@ using namespace std;
 // ***** BASE FLUX SOLVER CLASS *****
 // **********************************
 
-flux_solver_base::flux_solver_base(const int nv,    ///< length of state vector.
-				   const double eta, ///< coefficient of artificial viscosity.
-				   const int ntr     ///< Number of tracer variables.
-				   )
+
+// ##################################################################
+// ##################################################################
+
+
+
+flux_solver_base::flux_solver_base(
+      const int nv,    ///< length of state vector.
+      const double eta, ///< coefficient of artificial viscosity.
+      const int ntr     ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     //    riemann_base(nv),
     FS_etav(eta), FS_etaB(eta), FS_ntr(ntr)
@@ -53,6 +60,12 @@ flux_solver_base::flux_solver_base(const int nv,    ///< length of state vector.
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 flux_solver_base::~flux_solver_base()
 {
   //
@@ -64,11 +77,18 @@ flux_solver_base::~flux_solver_base()
   return;
 }
 
-int flux_solver_base::get_LaxFriedrichs_flux(const double *l,
-					     const double *r,
-					     double *f,
-					     const double gamma
-					     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int flux_solver_base::get_LaxFriedrichs_flux(
+      const pion_flt *l,
+      const pion_flt *r,
+      pion_flt *f,
+      const double gamma
+      )
 {
   //
   // Need some temporary arrays:
@@ -77,13 +97,20 @@ int flux_solver_base::get_LaxFriedrichs_flux(const double *l,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 #ifdef LAPIDUS_VISCOSITY_ENABLED
-int flux_solver_base::AVLapidus(const cell *Cl, ///< Left state cell pointer
-				const cell *Cr, ///< Right state cell pointer
-				double *flux, 
-				const double etav,
-				const double gamma
-				)
+int flux_solver_base::AVLapidus(
+      const cell *Cl, ///< Left state cell pointer
+      const cell *Cr, ///< Right state cell pointer
+      pion_flt *flux, 
+      const double etav,
+      const double gamma
+      )
 {
   /// This is not working! Don't use it!
   rep.error("Fix Lapidus Viscosity!",99);
@@ -91,10 +118,17 @@ int flux_solver_base::AVLapidus(const cell *Cl, ///< Left state cell pointer
 }
 #endif // LAPIDUS_VISCOSITY_ENABLED
 
-void flux_solver_base::set_interface_tracer_flux(const double *left, //prim.var.
-						 const double *right,//prim.var.
-						 double *flux
-						 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void flux_solver_base::set_interface_tracer_flux(
+      const pion_flt *left, //prim.var.
+      const pion_flt *right,//prim.var.
+      pion_flt *flux
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_base::set_interface_tracer_flux ...starting.\n";
@@ -118,3 +152,10 @@ void flux_solver_base::set_interface_tracer_flux(const double *left, //prim.var.
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+

@@ -29,6 +29,7 @@
 ///    For this to work I had to explicitly call the Euler Eqns class for PtoU()
 ///    and PUtoFlux(); otherwise the flux-solver class (with tracers) would be used.
 /// - 2015.01.14 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -45,9 +46,10 @@ using namespace std;
 
 
 
-Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(const int nv,///< Length of State Vectors, nvar
-					   const double g ///< Gamma for state vector.
-					   )
+Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(
+      const int nv,///< Length of State Vectors, nvar
+      const double g ///< Gamma for state vector.
+      )
   : eqns_base(nv), eqns_Euler(nv), rs_nvar(5)
 {
 #ifdef FUNCTION_ID
@@ -125,15 +127,16 @@ Riemann_Roe_Hydro_CV::~Riemann_Roe_Hydro_CV()
 
 
 
-int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(const double *left,
-						    const double *right,
-						    const double g,
+int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
+    const pion_flt *left,
+    const pion_flt *right,
+    const double g,
 #ifdef HCORR
-						    const double hc_eta,
+    const double hc_eta,
 #endif // HCORR
-						    double *out_pstar,
-						    double *out_flux
-						    )
+    pion_flt *out_pstar,
+    pion_flt *out_flux
+    )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric ...starting.\n";
@@ -229,15 +232,16 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(const double *left,
 
 
 
-int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
-						   const double *right,
-						   const double g,
+int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(
+      const pion_flt *left,
+      const pion_flt *right,
+      const double g,
 #ifdef HCORR
-						   const double hc_eta,
+      const double hc_eta,
 #endif // HCORR
-						   double *out_pstar,
-						   double *out_flux
-						   )
+      pion_flt *out_pstar,
+      pion_flt *out_flux
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::Roe_flux_solver_onesided ...starting.\n";
@@ -264,7 +268,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
   if (err) {
     for (int v=0;v<rs_nvar;v++)
       out_pstar[v] = 0.5*(left[v]+right[v]);
-    double utemp[rs_nvar];
+    pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(left,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(left,utemp,out_flux);
     //eqns_Euler::PtoFlux(left,out_flux,eq_gamma);
@@ -290,7 +294,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
     // We take the left state to get the flux, since all waves go to
     // the right.  Pstar is the left state.
     //
-    double utemp[rs_nvar];
+    pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(left,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(left,utemp,out_flux);
     //eqns_Euler::PtoFlux(left,out_flux,eq_gamma);
@@ -303,7 +307,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
     // We take the right state to get the flux, since all waves go to
     // the left.  Pstar is the right state.
     //
-    double utemp[rs_nvar];
+    pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(right,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(right,utemp,out_flux);
     //eqns_Euler::PtoFlux(right,out_flux,eq_gamma);
@@ -366,9 +370,10 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(const double *left,
 // -------------------------------------------------------------------
 
 
-int Riemann_Roe_Hydro_CV::test_left_right_equality(const double *left,
-						   const double *right
-						   )
+int Riemann_Roe_Hydro_CV::test_left_right_equality(
+      const pion_flt *left,
+      const pion_flt *right
+      )
 {
   //
   // Return true if the left and right input states are almost
@@ -400,9 +405,10 @@ int Riemann_Roe_Hydro_CV::test_left_right_equality(const double *left,
 
 
 
-void Riemann_Roe_Hydro_CV::set_Roe_mean_state(const double *left,
-					      const double *right
-					      )
+void Riemann_Roe_Hydro_CV::set_Roe_mean_state(
+      const pion_flt *left,
+      const pion_flt *right
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::set_Roe_mean_state ...starting.\n";
@@ -550,9 +556,10 @@ void Riemann_Roe_Hydro_CV::set_eigenvectors()
 
 
 
-void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(const double * left,
-					   const double * right
-					   )
+void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(
+      const pion_flt * left,
+      const pion_flt * right
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::set_ul_ur_udiff ...starting.\n";
@@ -619,7 +626,9 @@ void Riemann_Roe_Hydro_CV::set_wave_strengths()
 
 
 
-void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(double *out_flux)
+void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(
+      pion_flt *out_flux
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::calculate_symmetric_flux ...starting.\n";
@@ -671,7 +680,9 @@ void Riemann_Roe_Hydro_CV::calculate_symmetric_flux(double *out_flux)
 
 
 
-void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(double *out_pstar)
+void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(
+      pion_flt *out_pstar
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::set_pstar_from_meanp ...starting.\n";
@@ -701,9 +712,11 @@ void Riemann_Roe_Hydro_CV::set_pstar_from_meanp(double *out_pstar)
 
 
 
-void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(const double *left,
-						     const double *right,
-						     double *out_flux)
+void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(
+      const pion_flt *left,
+      const pion_flt *right,
+      pion_flt *out_flux
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::calculate_asymmetric_flux ...starting.\n";
@@ -713,7 +726,7 @@ void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(const double *left,
     // First get the left state flux:
     // 
     //rep.printVec("left  flux:",out_flux,5);
-    double utemp[rs_nvar];
+    pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(left,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(left,utemp,out_flux);
     //eqns_Euler::PtoFlux(left,out_flux,eq_gamma);
@@ -738,7 +751,7 @@ void Riemann_Roe_Hydro_CV::calculate_asymmetric_flux(const double *left,
     // this by going back from the right to the left, and making sure
     // we get the same answer!
     //
-    double ftemp[rs_nvar];
+    pion_flt ftemp[rs_nvar];
     //double utemp[rs_nvar];
     eqns_Euler::PtoU(right,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(right,utemp,ftemp);

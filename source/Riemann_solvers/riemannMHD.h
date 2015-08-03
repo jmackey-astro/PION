@@ -18,6 +18,7 @@
 ///   and so that RS_left/right/pstar/meanp are all private vars.
 ///   Removed SetAvgState() (moved to eqns_mhd_ideal).
 /// - 2015.06.07 JM: Tidied up a bit!
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef RIEMANNMHD_H
 #define RIEMANNMHD_H
@@ -91,10 +92,10 @@ class riemann_MHD :
   /// purposes, when deciding whether a quantity is 'small' or not.
   /// 
   riemann_MHD(
-        const int,   ///< Length of state vectors, nvar.
-	      const double *, ///< Mean values of primitive variables on grid [vector, length nvar]
-	      const double  ///< Gamma for state vector.
-	      );
+      const int,   ///< Length of state vectors, nvar.
+      const pion_flt *, ///< Mean values of primitive variables on grid [vector, length nvar]
+      const double  ///< Gamma for state vector.
+      );
 
   /// \brief Destructor: deletes dynamically allocated arrays. 
    ~riemann_MHD();
@@ -109,12 +110,13 @@ class riemann_MHD :
   /// \retval 1 fatal failure in method, so should bug out and exit code.
   /// \retval 2 non-fatal failure, e.g. got negative pressure so return vacuum conditions.
   /// 
-   int JMs_riemann_solve(const double *, ///< Left state vector.
-			 const double *, ///< Right state vector.
-			 double *,    ///< Result state vector.
-			 const int,   ///< mode to solve (FLUX_RSlinear is only option!)
-			 const double  ///< Gas eos constant gamma.
-			 );
+  int JMs_riemann_solve(
+      const pion_flt *, ///< Left state vector.
+      const pion_flt *, ///< Right state vector.
+      pion_flt *,    ///< Result state vector.
+      const int,   ///< mode to solve (FLUX_RSlinear is only option!)
+      const double  ///< Gas eos constant gamma.
+      );
 
    
   private:
@@ -136,25 +138,25 @@ class riemann_MHD :
      alphaf, ///< The fast speed normalisation constant \f$=(a^2-c_s^2)/(c_f^2-c_s^2)\f$.
      alphas; ///< The slow speed normalisation constant \f$=(c_f^2-a^2)/(c_f^2-c_s^2)\f$.
 
-   double *RS_pdiff; ///< Difference between left and right states (for calculation).
-   double *RS_evalue;  ///< The eignevalues of the matrix \f$\bar{A}\f$.
-   double *RS_strength; ///< The wavestrengths for each wave.
+   pion_flt *RS_pdiff; ///< Difference between left and right states (for calculation).
+   pion_flt *RS_evalue;  ///< The eignevalues of the matrix \f$\bar{A}\f$.
+   pion_flt *RS_strength; ///< The wavestrengths for each wave.
 
   /// Left state vector (local copy)
-   double *RS_left;
+   pion_flt *RS_left;
   /// Right state vector (local copy)
-   double *RS_right;
+   pion_flt *RS_right;
   /// Resolved state vector (local copy)
-   double *RS_pstar;
+   pion_flt *RS_pstar;
   /// Mean state vector
-   double *RS_meanp;
+   pion_flt *RS_meanp;
 
   /// The elements of the 7 left eigenvectors... evec[E-val][Element]
-   double RS_leftevec[7][7];
+  pion_flt RS_leftevec[7][7];
   /// The elements of the 7 right eigenvectors...evec[E-val][Element]
-   double RS_rightevec[7][7];
+  pion_flt RS_rightevec[7][7];
 
-   long int onaxis, ///< Debugging counters for checking eigenvectors are right.
+  long int onaxis, ///< Debugging counters for checking eigenvectors are right.
      offaxis, ///< Debugging counters for checking eigenvectors are right.
      samestate, ///< Debugging counter, for counting how many solves had the same left and right state.
      totalsolve; ///< Counter for total number of Riemann Problems solved.
@@ -165,10 +167,10 @@ class riemann_MHD :
   /// but aren't b/c of roundoff. For my machine, double precision
   /// accuracy is about 2e-16, so set this to 1.e-15.
   ///
-   double smallB;
+  double smallB;
 
   /// Very small number, used to check that B_t is not zero.
-   double tinyB;
+  double tinyB;
 
 
   /// \brief assigns the data passed to the solver, to class member variables.
@@ -176,9 +178,10 @@ class riemann_MHD :
   /// Make sure the state vectors are in the format expected by the riemann
   /// solver!!!
   /// 
-   void assign_data(const double *, ///< Pointer to left state vector
-		    const double *  ///< Pointer to right state vector
-		    );
+  void assign_data(
+      const pion_flt *, ///< Pointer to left state vector
+      const pion_flt *  ///< Pointer to right state vector
+      );
 
   /// \brief  Calculates the average state vector, e.g. (P_L+P_R)/2
   /// 
@@ -191,7 +194,7 @@ class riemann_MHD :
   /// 
   /// Calculates sound speeds (c_h, c_a, c_s, c_f)
   /// 
-   int get_sound_speeds();
+  int get_sound_speeds();
 
   /// \brief  Calculates the eignevalues of the matrix \f$\bar{A}\f$
   /// 
@@ -199,7 +202,7 @@ class riemann_MHD :
   /// real wavespeeds, but speeds calculated from the average state which are 
   /// assumed to apply everywhere.
   /// 
-   void get_eigenvalues();
+  void get_eigenvalues();
 
   /// \brief  Constructs eigenvectors in an inefficient way and multiplies in the normalisation afterwards
   /// 
@@ -207,12 +210,12 @@ class riemann_MHD :
   /// probably never will.
   ///  (SHOULD TAKE THIS OUT AT SOME STAGE!!!)
   /// 
-   int falle_evectors(); 
+  int falle_evectors(); 
 
   /// \brief  Check and output the values of the evectors and their dot products
   /// 
   /// 
-   int check_evectors();
+  int check_evectors();
 
   /// \brief  This constructs evectors using some idea I came up with
   /// 
@@ -220,14 +223,14 @@ class riemann_MHD :
   /// the normalisation.  I can't remember, but I don't think it worked any better
   /// than Falle's norm.
   /// 
-   int my_evectors();
+  int my_evectors();
 
   /// \brief  This constructs evectors using the Roe and Balsara normalisation.
   /// 
   /// Mostly Roe and Balsara norm, but the Alfven waves are still the same as in 
   /// Falle et al. 
   /// 
-   int RoeBalsara_evectors();
+  int RoeBalsara_evectors();
 
   /// \brief Evaluates dot product to two vectors
   /// 
@@ -235,10 +238,11 @@ class riemann_MHD :
   /// 
   /// \retval value of dot product if successful.
   /// 
-   double dot_product(double *, ///< Pointer to Vector 1.
-		      double *, ///< Pointer to Vector 2.
-		      int ///< Length of vectors.
-		      );
+  double dot_product(
+      pion_flt *, ///< Pointer to Vector 1.
+      pion_flt *, ///< Pointer to Vector 2.
+      int ///< Length of vectors.
+      );
 
   /// \brief  Calculate the (normalised) eigenvectors for each e-value.
   /// 
@@ -248,7 +252,7 @@ class riemann_MHD :
   /// \retval 0 success
   /// \retval 1 failure
   /// 
-   int normalise_evectors();
+  int normalise_evectors();
 
   /// \brief Calculates the wave strengths alpha_i
   /// 
@@ -274,13 +278,14 @@ class riemann_MHD :
   /// \retval 0 success
   /// \retval 1 failure
   /// 
-   int get_pstar();
+  int get_pstar();
 
   /// \brief Checks the error code, and if it's non-zero, prints it and a message
   /// 
-   void failerror(int,///< Error code.
-		  string ///< Error message
-		  );
+  void failerror(
+      int,///< Error code.
+      string ///< Error message
+      );
 
   /// \brief Changes the order of variables so they are back to the code order
   /// 
@@ -289,12 +294,14 @@ class riemann_MHD :
   /// changes the order of the B-field elements from rsvars to primitive.
   /// 
   /// 
-   void solver2codevars(double * ///< Vector to convert.
-			);
+  void solver2codevars(
+      pion_flt * ///< Vector to convert.
+      );
 
   /// \brief Change order of variables in state vector from code to solver variables. 
-   void code2solvervars(double * ///< Vector to convert.
-			);
+  void code2solvervars(
+      pion_flt * ///< Vector to convert.
+      );
 
 };
 

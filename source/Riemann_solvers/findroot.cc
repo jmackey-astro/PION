@@ -19,6 +19,7 @@
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2010.12.23 JM: Moved to Riemann_solver/ directory.
 /// - 2015.03.10 JM: Tidied up a bit.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 ///
 
 #include "findroot.h"
@@ -59,12 +60,12 @@ findroot::~findroot()
 // This version is specific to solving the equation in the Exact Riemann Solver.
 // Other versions could be specified, taking more or fewer parameters.
 int findroot::FR_find_root(
-      double *ans, ///< pointer to result
-      const double p1,  ///< parameter 1
-      const double p2,  ///< parameter 2
-      const double p3,  ///< parameter 3
-      const double p4,  ///< parameter 4
-      const double p5   ///< parameter 5
+      pion_flt *ans, ///< pointer to result
+      const pion_flt p1,  ///< parameter 1
+      const pion_flt p2,  ///< parameter 2
+      const pion_flt p3,  ///< parameter 3
+      const pion_flt p4,  ///< parameter 4
+      const pion_flt p5   ///< parameter 5
       )
 {
 
@@ -76,15 +77,15 @@ int findroot::FR_find_root(
 
   // Set initial values for x1, x2
   // Modify this for your equations
-  //  double x1 = 1.;
-  //  double x2 = 2.;
+  //  pion_flt x1 = 1.;
+  //  pion_flt x2 = 2.;
   // My initial guesses are 1/3 of and 3 times the arithmetic mean 
   // of the left and right pressures.
-  double x1 = (FR_param1+ FR_param2)/6.0;
-  double x2 = x1*9.0;
+  pion_flt x1 = (FR_param1+ FR_param2)/6.0;
+  pion_flt x2 = x1*9.0;
   // This guess is just [0,1], which is not a bad starting point.
-  //  double x1 = 0.;
-  //  double x2 = 1.;
+  //  pion_flt x1 = 0.;
+  //  pion_flt x2 = 1.;
  
   // Call the common solver, now that parameters are set properly.
   int err = findroot::solve_pos(x1, x2, ans);
@@ -104,8 +105,8 @@ int findroot::FR_find_root(
 
 // This version is for testing
 int findroot::solve_test(
-        double *ans, ///< pointer to result
-	const double p1   ///< pointer to parameter data.
+        pion_flt *ans, ///< pointer to result
+	const pion_flt p1   ///< pointer to parameter data.
         )
 {
   //
@@ -116,8 +117,8 @@ int findroot::solve_test(
   //
   // Set initial values for x1, x2
   // 
-  double x1 = 0.001;
-  double x2 = 1.;
+  pion_flt x1 = 0.001;
+  pion_flt x2 = 1.;
   
   //
   // Call the common solver, now that parameters are set properly.
@@ -137,7 +138,7 @@ int findroot::solve_test(
 
 
 
-double findroot::FR_test_function(const double x)
+pion_flt findroot::FR_test_function(const pion_flt x)
 {
   // f(x) = x^2-gamma, where gamma is a parameter passed into the solver.
   //   return(x*x-(*gamma));
@@ -153,7 +154,11 @@ double findroot::FR_test_function(const double x)
 
 
 
-int findroot::solve_pos(double x1, double x2, double *ans)
+int findroot::solve_pos(
+      pion_flt x1,
+      pion_flt x2,
+      pion_flt *ans
+      )
 {
   //  cout << "(fr::solve) ans = " << *ans << "\n";
   int err = bracket_root_pos(&x1,&x2);
@@ -180,7 +185,11 @@ int findroot::solve_pos(double x1, double x2, double *ans)
 
 
 
-int findroot::solve_pm(double x1, double x2, double *ans)
+int findroot::solve_pm(
+      pion_flt x1,
+      pion_flt x2,
+      pion_flt *ans
+      )
 {
    //  cout << "(fr::solve) ans = " << *ans << "\n";
    //  int err = bracket_root_pos(&x1,&x2);
@@ -212,7 +221,10 @@ int findroot::solve_pm(double x1, double x2, double *ans)
 /// 
 /// This function returns brackets around a root.
 ///
-int findroot::bracket_root_pm(double *x1, double *x2)
+int findroot::bracket_root_pm(
+      pion_flt *x1,
+      pion_flt *x2
+      )
 {
    // This is based on the NR root bracketing procedure.
    // It works for functions of x=[-infty,infty].
@@ -223,12 +235,12 @@ int findroot::bracket_root_pm(double *x1, double *x2)
    }
    if (*x1 > *x2) {
       //      cout << "Reordering... setting x1<x2" << "\n";
-      double temp = *x1;
+      pion_flt temp = *x1;
       *x1 = *x2;
       *x2 = temp;
    }
-   double f1 = FR_root_function(*x1);
-   double f2 = FR_root_function(*x2);
+   pion_flt f1 = FR_root_function(*x1);
+   pion_flt f2 = FR_root_function(*x2);
    //   cout << "F1,F2 " << f1 << ", " << f2 << "\n";
    for (int j=0; j<50; j++) {
       //cout << "(bracket) have done " << j << " expansions. (x1,x2)= " << *x1 << ", " << *x2 << "\n";
@@ -254,7 +266,7 @@ int findroot::bracket_root_pm(double *x1, double *x2)
 
 
 
-int findroot::bracket_root_pos(double *x1, double *x2)
+int findroot::bracket_root_pos(pion_flt *x1, pion_flt *x2)
 {
   // This is based on the NR root bracketing procedure.
   // It only works for fucntion of x=[0,infty], and would need
@@ -266,12 +278,12 @@ int findroot::bracket_root_pos(double *x1, double *x2)
   }
   if (*x1 > *x2) {
      //    cout << "Reordering... setting x1<x2" << "\n";
-    double temp = *x1;
+    pion_flt temp = *x1;
     *x1 = *x2;
     *x2 = temp;
   }
-  double f1 = FR_root_function(*x1);
-  double f2 = FR_root_function(*x2);
+  pion_flt f1 = FR_root_function(*x1);
+  pion_flt f2 = FR_root_function(*x2);
   //  cout << "F1,F2 " << f1 << ", " << f2 << "\n";
   for (int j=0; j<50; j++) {
     if (f1*f2 < 0) {
@@ -302,7 +314,7 @@ int findroot::bracket_root_pos(double *x1, double *x2)
 
 
 
-int findroot::find_root_bisection(double *x1, double *x2, double err, double *ans)
+int findroot::find_root_bisection(pion_flt *x1, pion_flt *x2, pion_flt err, pion_flt *ans)
 {
   // This is a simple bisection routine to find the root to an accuracy
   // of 'err'.  It is based on the NR bisection routine.
@@ -310,10 +322,10 @@ int findroot::find_root_bisection(double *x1, double *x2, double err, double *an
     cerr << "(findroot) Error, must have x1<x2, ordered brackets!" << "\n";
     return(1);
   }
-  double f1 =  FR_root_function(*x1);
-  double f2 =  FR_root_function(*x2);
-  double xmid = (*x2+*x1)/2.0;
-  double fmid=0.0;
+  pion_flt f1 =  FR_root_function(*x1);
+  pion_flt f2 =  FR_root_function(*x2);
+  pion_flt xmid = (*x2+*x1)/2.0;
+  pion_flt fmid=0.0;
   for (int j=0; j<100; j++) {
     if (fabs((*x1 - *x2)/ (*x2)) < err) {
       //      cout << "(find_root) Root found after " << j << " bisections to accuracy " << err << "\n";
@@ -337,16 +349,20 @@ int findroot::find_root_bisection(double *x1, double *x2, double err, double *an
 
 
 
-int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
+int findroot::find_root_zbrent(
+      pion_flt x1,
+      pion_flt x2,
+      pion_flt tol,
+      pion_flt *ans)
 {
    // This is the numerical recipes routine 'zbrent.c'
    // It uses bisection and a higher order method when it can.
    // See NR book, p.361 of ansi-c version.
    int ITMAX=100;
-   double EPS=MACHINEACCURACY;
+   pion_flt EPS=MACHINEACCURACY;
    int iter;
-   double a=x1,b=x2,c=x2,d,e,min1,min2;
-   double fa=FR_root_function(a),fb=FR_root_function(b),fc,p,q,r,s,tol1,xm;
+   pion_flt a=x1,b=x2,c=x2,d,e,min1,min2;
+   pion_flt fa=FR_root_function(a),fb=FR_root_function(b),fc,p,q,r,s,tol1,xm;
   d=0.;e=0.;   
    if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) {
       cerr<<"Root must be bracketed in zbrent"<<"\n"; return(1);
@@ -431,17 +447,17 @@ int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
 // int main (int argc, char **argv)
 // {
 //    if(argc!=2) {
-//       cerr<< "Main: pleas pass 'double g' as argument."<< "\n";
+//       cerr<< "Main: pleas pass 'pion_flt g' as argument."<< "\n";
 //       return(1);
 //    }
 //    findroot fr;
 //    int err=0;
-//    double gamma = 5./3.;
-//    double left[3]  = {1.0, 0., 10.};
-//    double right[3] = {0.125, 0., 1.};
-//    double cl = sqrt(gamma*left[2]/left[0]);
-//    double cr = sqrt(gamma*right[2]/right[0]);
-//    double ans[3] = {0.,0.,0.};
+//    pion_flt gamma = 5./3.;
+//    pion_flt left[3]  = {1.0, 0., 10.};
+//    pion_flt right[3] = {0.125, 0., 1.};
+//    pion_flt cl = sqrt(gamma*left[2]/left[0]);
+//    pion_flt cr = sqrt(gamma*right[2]/right[0]);
+//    pion_flt ans[3] = {0.,0.,0.};
 //    fr.solve_riemann(ans, left, right, &gamma, &cl, &cr);
 //    cout << "ans: p=" << ans[0] << " " << ans[1] << " " << ans[2] << "\n";
 //    cout <<" ****************************************************************** "<<"\n";
@@ -455,8 +471,8 @@ int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
 //    cout << "ans: p=" << ans[0] << " " << ans[1] << " " << ans[2] << "\n";
 //    cout <<" ****************************************************************** "<<"\n";
 //    cout <<" ****************************************************************** "<<"\n";
-//    double vmin=-23.;
-//    double vmax= 25.;
+//    pion_flt vmin=-23.;
+//    pion_flt vmax= 25.;
 //    int Ng = 50;
 //    left[2] = 10.;
 //    for (int k=0;k<Ng;k++) { 
@@ -483,7 +499,7 @@ int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
 //    t1 = time(0);
 //    int i=0;
 //    for (i=0;i<1000000;i++) {
-//       gamma = (static_cast<double>(i)+0.1)/1.e4;
+//       gamma = (static_cast<pion_flt>(i)+0.1)/1.e4;
 //       err = fr.solve_test(ans,&gamma);
 //       gamma = 5./3.;
 //       err+= fr.solve_riemann(ans, left, right, &gamma, &cl, &cr);
@@ -492,7 +508,7 @@ int findroot::find_root_zbrent(double x1, double x2, double tol, double *ans)
 //       }
 //    }
 //    t2 = time(0);
-//    double d;
+//    pion_flt d;
 //    d =difftime(t2,t1);
 //    cout << "Timing completed" << "\n";
 //    cout << "Nt: " << i << "\t solver took " << d << " seconds. "<< "\n";

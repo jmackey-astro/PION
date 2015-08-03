@@ -34,10 +34,10 @@
 ///   are just a recipe for disaster (AV was having no effect at all!)
 /// - 2010.12.27 JM: Moved Roe flux solver to own class in Riemann_solvers/
 ///   Got rid of inherited class flux/left/right/pstar variables.
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid now.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -55,7 +55,7 @@ using namespace std;
 
 flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi(
        const int nv, ///< Number of variables in state vector
-       const double *state, ///< state vector which is 'typical' in the problem being solved. 
+       const pion_flt *state, ///< state vector which is 'typical' in the problem being solved. 
        const double eta, ///< coefficient of artificial viscosity
        const double g, ///< gamma (EOS).
        const int ntr ///< Number of tracer variables.
@@ -100,10 +100,10 @@ flux_solver_mhd_ideal_adi::~flux_solver_mhd_ideal_adi()
 int flux_solver_mhd_ideal_adi::inviscid_flux(
       const cell *Cl, ///< Left state cell pointer
       const cell *Cr, ///< Right state cell pointer
-      const double *Pl, ///< Left Primitive vector.
-      const double *Pr, ///< Right Primitive vector.
-      double *flux,///< Resultant Flux vector.
-      double *pstar, ///< State vector at interface.
+      const pion_flt *Pl, ///< Left Primitive vector.
+      const pion_flt *Pr, ///< Right Primitive vector.
+      pion_flt *flux,///< Resultant Flux vector.
+      pion_flt *pstar, ///< State vector at interface.
       const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
       const double g        ///< Gas constant gamma.
       )
@@ -191,7 +191,7 @@ int flux_solver_mhd_ideal_adi::inviscid_flux(
     //rep.printVec("pstar: ",pstar,eq_nvar);
     //rep.printVec("left : ",Pl ,eq_nvar);
     //rep.printVec("right: ",Pr,eq_nvar);
-    double l[eq_nvar], r[eq_nvar];
+    pion_flt l[eq_nvar], r[eq_nvar];
     for (int v=0;v<eq_nvar;v++) {
       l[v] = Pl[v];
       r[v] = Pr[v];
@@ -242,13 +242,14 @@ int flux_solver_mhd_ideal_adi::inviscid_flux(
 
 
 
-int flux_solver_mhd_ideal_adi::AVFalle(const double *Pleft,
-				       const double *Pright,
-				       const double *Pstar,
-				       double *flux, 
-				       const double eta, ///< already set as FS_etav
-				       const double gamma ///< already set as eq_gamma
-				       )
+int flux_solver_mhd_ideal_adi::AVFalle(
+      const pion_flt *Pleft,
+      const pion_flt *Pright,
+      const pion_flt *Pstar,
+      pion_flt *flux, 
+      const double eta, ///< already set as FS_etav
+      const double gamma ///< already set as eq_gamma
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_mhd_ideal_adi::AVFalle ...starting.\n";
@@ -418,12 +419,13 @@ int flux_solver_mhd_ideal_adi::AVFalle(const double *Pleft,
 
 
 #ifdef LAPIDUS_VISCOSITY_ENABLED
-int flux_solver_mhd_ideal_adi::AVLapidus(const cell *Cl, ///< Left state cell pointer
-					 const cell *Cr, ///< Right state cell pointer
-					 double *flux, 
-					 const double etav,
-					 const double gam
-					 )
+int flux_solver_mhd_ideal_adi::AVLapidus(
+      const cell *Cl, ///< Left state cell pointer
+      const cell *Cr, ///< Right state cell pointer
+      pion_flt *flux, 
+      const double etav,
+      const double gam
+      )
 {
   ///
   /// This is not working!!! Don't use it!
@@ -432,7 +434,7 @@ int flux_solver_mhd_ideal_adi::AVLapidus(const cell *Cl, ///< Left state cell po
   ///
   rep.error("Don't use Lapidus!!!",1);
   
-  double ul[8], ur[8];
+  pion_flt ul[8], ur[8];
   PtoU(left,ul,gam); PtoU(right,ur,gam);
   //
   // 2009-10-14 is the sign of this divergence wrong???
@@ -480,17 +482,18 @@ int flux_solver_mhd_ideal_adi::AVLapidus(const cell *Cl, ///< Left state cell po
 // flux_solver_mhd_mixedGLM_adi class, for the Dedner-GLM divergence cleaning method.
 // **********************************************************************************
 
-flux_solver_mhd_mixedGLM_adi::flux_solver_mhd_mixedGLM_adi(const int nv,
-   ///< Number of variables in state vector
-							   const double *state,
-   ///< state vector which is 'typical' in the problem being solved. 
-							   const double eta,
-   ///< coefficient of artificial viscosity
-							   const double g,
-   ///< gamma (EOS).
-							   const int ntr
-   ///< number of tracer variables.
-							   )
+flux_solver_mhd_mixedGLM_adi::flux_solver_mhd_mixedGLM_adi(
+      const int nv,
+      ///< Number of variables in state vector
+      const pion_flt *state,
+      ///< state vector which is 'typical' in the problem being solved. 
+      const double eta,
+      ///< coefficient of artificial viscosity
+      const double g,
+      ///< gamma (EOS).
+      const int ntr
+      ///< number of tracer variables.
+      )
   : eqns_base(nv),
     //    riemann_base(nv),
     flux_solver_base(nv,eta, ntr), 
@@ -536,10 +539,10 @@ flux_solver_mhd_mixedGLM_adi::~flux_solver_mhd_mixedGLM_adi()
 int flux_solver_mhd_mixedGLM_adi::inviscid_flux(
       const cell *Cl, ///< Left state cell pointer
       const cell *Cr, ///< Right state cell pointer
-      const double *Pl, ///< Left Primitive state vector.
-      const double *Pr, ///< Right Primitive state vector.
-      double *flux, ///< Resultant Flux state vector.
-      double *pstar, ///< State vector at interface.
+      const pion_flt *Pl, ///< Left Primitive state vector.
+      const pion_flt *Pr, ///< Right Primitive state vector.
+      pion_flt *flux, ///< Resultant Flux state vector.
+      pion_flt *pstar, ///< State vector at interface.
       const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
       const double g ///< Gas constant gamma.
       )
@@ -572,7 +575,7 @@ int flux_solver_mhd_mixedGLM_adi::inviscid_flux(
   // the left and right state values of eqBX to the resolved state of
   // the Dedner et al. (2002) Riemann problem for (Bx,Psi).
   //
-  double left[eq_nvar], right[eq_nvar];
+  pion_flt left[eq_nvar], right[eq_nvar];
   for (int v=0;v<eq_nvar;v++) left[v]  = Pl[v];
   for (int v=0;v<eq_nvar;v++) right[v] = Pr[v];
 

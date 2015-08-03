@@ -18,12 +18,11 @@
 /// - 2010-12.22 JM: Moved functions from flux_hydro_adiabatic.h/.cc
 ///   and generated new class.  Split everything into functions.
 ///   Defined a bunch of private class variables.
-///
 /// - 2011.03.03 JM: Added rs_nvar=5 for local state vectors.  New code versions
 ///    can handle up to 70 tracers, so it would hugely slow down the code if the
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
-///
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef ROE_HYDRO_CONSERVEDVAR_SOLVER_H
 #define ROE_HYDRO_CONSERVEDVAR_SOLVER_H
@@ -41,9 +40,11 @@ public:
   ///
   /// Constructor: doesn't do much.
   ///
-  Riemann_Roe_Hydro_CV(const int,      ///< Length of State Vectors, nvar
-		       const double    ///< Gamma for state vector.
-		       );
+  Riemann_Roe_Hydro_CV(
+      const int,      ///< Length of State Vectors, nvar
+      const double    ///< Gamma for state vector.
+      );
+
   ///
   /// Destructor: deletes dynamically allocated data.
   ///
@@ -55,33 +56,36 @@ public:
   /// USE THIS UNLESS YOU KNOW WHAT YOU ARE DOING!!!  SYMMETRIC
   /// VERSION IS MUCH BETTER)
   ///
-  int Roe_flux_solver_onesided(const double *, ///< input left state
-			       const double *, ///< input right state
-			       const double,   ///< input gamma
-#ifdef HCORR
-			       const double, ///< H-correction eta-max value.
-#endif // HCORR
-			       double *, ///< output pstar
-			       double *  ///< output flux
-			       );
+  int Roe_flux_solver_onesided(
+      const pion_flt *, ///< input left state
+      const pion_flt *, ///< input right state
+      const double,   ///< input gamma
+      #ifdef HCORR
+      const double, ///< H-correction eta-max value.
+      #endif // HCORR
+      pion_flt *, ///< output pstar
+      pion_flt *  ///< output flux
+      );
+
   ///
   /// Symmetric version of Roe's Flux solver for the Euler Equations,
   /// from Toro (1999), chapter 11.2.2, pp.350-353.
   ///
-  int Roe_flux_solver_symmetric(const double *, ///< input left state
-				const double *, ///< input right state
-				const double,   ///< input gamma
-#ifdef HCORR
-				const double, ///< H-correction eta-max value.
-#endif // HCORR
-				double *, ///< output pstar
-				double *  ///< output flux
-				);
+  int Roe_flux_solver_symmetric(
+      const pion_flt *, ///< input left state
+      const pion_flt *, ///< input right state
+      const double,   ///< input gamma
+      #ifdef HCORR
+      const double, ///< H-correction eta-max value.
+      #endif // HCORR
+      pion_flt *, ///< output pstar
+      pion_flt *  ///< output flux
+      );
 
 private:
 #ifdef HCORR
   /// H-correction eta-max value (pre-calculated for this interface)
-  double RCV_HC_etamax;
+  pion_flt RCV_HC_etamax;
 #endif // HCORR
   const int rs_nvar; ///< length of state vectors in solver (ignore tracers).
 
@@ -95,29 +99,30 @@ private:
   enum primitive eqHH;
 
   /// Local copy of mean state vector (5 elements only!)
-  double *RCV_meanp;
+  pion_flt *RCV_meanp;
 
   /// Eigenvalues
-  double *RCV_eval;
+  pion_flt *RCV_eval;
 
   /// Wave strengths.
-  double  *RCV_strength;
+  pion_flt  *RCV_strength;
 
   /// Difference vector
-  double *RCV_udiff;
+  pion_flt *RCV_udiff;
 
   /// Left and right state conserved variable state.
-  double *RCV_ul, *RCV_ur;
+  pion_flt *RCV_ul, *RCV_ur;
 
   /// matrix of eigenvectors
-  double **RCV_evec;
+  pion_flt **RCV_evec;
 
   ///
   /// Returns true if the left and right states are very similar.
   ///
-  int test_left_right_equality(const double *,  ///< input left state
-			       const double *   ///< input right state
-			       );
+  int test_left_right_equality(
+      const pion_flt *,  ///< input left state
+      const pion_flt *   ///< input right state
+      );
 
   ///
   /// Set the Roe-average mean state vector RCV_meanp[].
@@ -125,17 +130,19 @@ private:
   /// the square of the velocity and the sound speed (adiabatic) in
   /// the mean state.
   ///
-  void set_Roe_mean_state(const double *,  ///< input left state
-			  const double *   ///< input right state
-			  );
+  void set_Roe_mean_state(
+      const pion_flt *,  ///< input left state
+      const pion_flt *   ///< input right state
+      );
 
   ///
   /// Set left and right states in conservative variables, and then get
   /// the difference vector.  Store results in ul[], ur[], udiff[].
   ///
-  void set_ul_ur_udiff(const double *,  ///< input left state
-		       const double *   ///< input right state
-		       );
+  void set_ul_ur_udiff(
+      const pion_flt *,  ///< input left state
+      const pion_flt *   ///< input right state
+      );
 
   ///
   /// Assigns eigenvalues to eval[], based on meanp,a_mean.
@@ -159,8 +166,9 @@ private:
   /// Calculate the symmetric Roe flux (for the 5 physical variables
   /// only!) by stepping across all waves.
   ///
-  void calculate_symmetric_flux(double * ///< output flux vector
-				);
+  void calculate_symmetric_flux(
+      pion_flt * ///< output flux vector
+      );
 
   ///
   /// Calculate asymmetric (one-sided) Roe flux by stepping across
@@ -169,17 +177,19 @@ private:
   /// function is really superceded by the symmetric version since
   /// this version does not maintain symmetry in symmetric problems!
   ///
-  void calculate_asymmetric_flux(const double *,
-				 const double *,
-				 double *
-				 );
+  void calculate_asymmetric_flux(
+      const pion_flt *,
+      const pion_flt *,
+      pion_flt *
+      );
 
   ///
   /// Set Pstar[] from RCV_meanp[] (need to replace enthalpy with
   /// pressure).
   ///
-  void set_pstar_from_meanp(double * ///< output pstar vector
-			    );
+  void set_pstar_from_meanp(
+      pion_flt * ///< output pstar vector
+      );
 
 };
 

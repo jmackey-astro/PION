@@ -19,6 +19,7 @@
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef SOLVER_EQN_HYDRO_ADI_H
 #define SOLVER_EQN_HYDRO_ADI_H
@@ -46,15 +47,17 @@
 class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux_solver_hydro_adi, virtual public VectorOps_Cart
 {
  public:
-  FV_solver_Hydro_Euler(const int, ///< number of variables in state vector.
-			const int, ///< number of space dimensions in grid.
-			const double, ///< CFL number
-			const double, ///< dx, cell size.
-			const double, ///< gas eos gamma.
-			double *,     ///< State vector of mean values for simulation.
-			const double, ///< Artificial Viscosity Parameter etav.
-			const int     ///< Number of tracer variables.
-			);
+  FV_solver_Hydro_Euler(
+      const int, ///< number of variables in state vector.
+      const int, ///< number of space dimensions in grid.
+      const double, ///< CFL number
+      const double, ///< dx, cell size.
+      const double, ///< gas eos gamma.
+      pion_flt *,     ///< State vector of mean values for simulation.
+      const double, ///< Artificial Viscosity Parameter etav.
+      const int     ///< Number of tracer variables.
+      );
+
   ~FV_solver_Hydro_Euler();
 
   ///
@@ -64,9 +67,9 @@ class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux
         class GridBaseClass *,
         cell *, ///< Current cell.
         const axes, ///< Which axis we are looking along.
-        const double *, ///< Negative direction flux.
-        const double *, ///< Positive direction flux.
-        const double *, ///< slope vector for cell c.
+        const pion_flt *, ///< Negative direction flux.
+        const pion_flt *, ///< Positive direction flux.
+        const pion_flt *, ///< slope vector for cell c.
         const int,      ///< spatial order of accuracy.
         const double, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
@@ -76,21 +79,24 @@ class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
   ///
-  virtual int CellAdvanceTime(class cell *,   ///< current cell.
-			      const double *, ///< Initial Primitive State Vector.
-			      double *, ///< Update vector dU
-			      double *, ///< Final Primitive state vector (can be same as initial vec.).
-			      double *,  ///< Tracks change of energy if I have to correct for negative pressure
-			      const double, ///< gas EOS gamma.
-			      const double  ///< Cell timestep dt.
-			      );
+  virtual int CellAdvanceTime(
+      class cell *,   ///< current cell.
+      const pion_flt *, ///< Initial Primitive State Vector.
+      pion_flt *, ///< Update vector dU
+      pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
+      pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell timestep dt.
+      );
+
   ///
   /// Given a cell, calculate the hydrodynamic timestep.
   ///
-  virtual double CellTimeStep(const cell *, ///< pointer to cell
-			      const double, ///< gas EOS gamma.
-			      const double  ///< Cell size dx.
-			      );
+  virtual double CellTimeStep(
+      const cell *, ///< pointer to cell
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      );
 };
 
 
@@ -103,15 +109,17 @@ class cyl_FV_solver_Hydro_Euler
   ///
   /// sets indices for tracer variables in state vector.
   ///
-  cyl_FV_solver_Hydro_Euler(const int, ///< number of variables in state vector.
-			    const int, ///< number of space dimensions in grid.
-			    const double, ///< CFL number
-			    const double, ///< dx, cell size.
-			    const double, ///< gas eos gamma.
-			    double *,     ///< State vector of mean values for simulation.
-			    const double, ///< Artificial Viscosity Parameter etav.
-			    const int     ///< Number of tracer variables.
-			    );
+  cyl_FV_solver_Hydro_Euler(
+      const int, ///< number of variables in state vector.
+      const int, ///< number of space dimensions in grid.
+      const double, ///< CFL number
+      const double, ///< dx, cell size.
+      const double, ///< gas eos gamma.
+      pion_flt *,     ///< State vector of mean values for simulation.
+      const double, ///< Artificial Viscosity Parameter etav.
+      const int     ///< Number of tracer variables.
+      );
+
   ~cyl_FV_solver_Hydro_Euler();
   ///
   /// Adds the contribution from flux in the current direction to dU.
@@ -120,9 +128,9 @@ class cyl_FV_solver_Hydro_Euler
         class GridBaseClass *,
         cell *, ///< Current cell.
         const axes, ///< Which axis we are looking along.
-        const double *, ///< Negative direction flux.
-        const double *, ///< Positive direction flux.
-        const double *, ///< slope vector for cell c.
+        const pion_flt *, ///< Negative direction flux.
+        const pion_flt *, ///< Positive direction flux.
+        const pion_flt *, ///< slope vector for cell c.
         const int,      ///< spatial order of accuracy.
         const double, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
@@ -140,15 +148,17 @@ class sph_FV_solver_Hydro_Euler
   ///
   /// sets indices for tracer variables in state vector.
   ///
-  sph_FV_solver_Hydro_Euler(const int, ///< number of variables in state vector.
-			    const int, ///< number of space dimensions in grid.
-			    const double, ///< CFL number
-			    const double, ///< dx, cell size.
-			    const double, ///< gas eos gamma.
-			    double *,     ///< State vector of mean values for simulation.
-			    const double, ///< Artificial Viscosity Parameter etav.
-			    const int     ///< Number of tracer variables.
-			    );
+  sph_FV_solver_Hydro_Euler(
+      const int, ///< number of variables in state vector.
+      const int, ///< number of space dimensions in grid.
+      const double, ///< CFL number
+      const double, ///< dx, cell size.
+      const double, ///< gas eos gamma.
+      pion_flt *,     ///< State vector of mean values for simulation.
+      const double, ///< Artificial Viscosity Parameter etav.
+      const int     ///< Number of tracer variables.
+      );
+
   ~sph_FV_solver_Hydro_Euler();
   ///
   /// Adds the contribution from flux in the current direction to dU.
@@ -158,9 +168,9 @@ class sph_FV_solver_Hydro_Euler
         class GridBaseClass *,
         cell *, ///< Current cell.
         const axes, ///< Which axis we are looking along.
-        const double *, ///< Negative direction flux.
-        const double *, ///< Positive direction flux.
-        const double *, ///< slope vector for cell c.
+        const pion_flt *, ///< Negative direction flux.
+        const pion_flt *, ///< Positive direction flux.
+        const pion_flt *, ///< slope vector for cell c.
         const int,      ///< spatial order of accuracy.
         const double, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
@@ -168,3 +178,4 @@ class sph_FV_solver_Hydro_Euler
 };
 
 #endif // SOLVER_EQN_HYDRO_ADI_H
+
