@@ -45,6 +45,7 @@
 ///    be disabled, since I never use it now.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -65,22 +66,21 @@ using namespace std;
 
 
 MicroPhysics::MicroPhysics(
-          const int nv,
-			    const int ntracer,
-
+      const int nv,
+      const int ntracer,
 #ifdef OLD_TRACER
 
-          const std::string &trtype,  ///< List of what the tracer variables mean.
+      const std::string &trtype,  ///< List of what the tracer variables mean.
 
 # else
 
-          const std::string chem_code,  ///< type of chemistry we are running.
-          const std::string *trtype,  ///< List of what the tracer variables mean.
+      const std::string chem_code,  ///< type of chemistry we are running.
+      const std::string *trtype,  ///< List of what the tracer variables mean.
 
 #endif // OLD_TRACER
 
-			    struct which_physics *ephys
-			    )
+      struct which_physics *ephys
+      )
   :
   kB(pconst.kB()),
   m_p(pconst.m_p()),
@@ -403,8 +403,15 @@ MicroPhysics::~MicroPhysics()
   el_list.clear();
 }
 
-double MicroPhysics::Get_nH(const double rho ///< gas density.
-			    )
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MicroPhysics::Get_nH(
+      const double rho ///< gas density.
+      )
 {
   double nh=0.0;
   for (int i=0;i<nels;i++) nh += ee[i]->numfrac *ee[i]->mass;
@@ -412,25 +419,46 @@ double MicroPhysics::Get_nH(const double rho ///< gas density.
   return nh;
 }
 
-double MicroPhysics::Get_Temp(const double *P ///< state vector
-			      )
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MicroPhysics::Get_Temp(
+      const double *P ///< state vector
+      )
 {
   //  rep.printVec("\t\t\tPPPPPPPPPPPP",P,nvl);
   //  cout <<"Get_nTot(P): "<<Get_nTot(P)<<"\n";
   return (gamma-1.)*P[lv_eint]/kB/Get_nTot(P);
 }
 
-int MicroPhysics::Set_Eint(double *P, ///< state vector
-			   const double T ///< Temperature we want to set to.
-			   )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::Set_Eint(
+      double *P, ///< state vector
+      const double T ///< Temperature we want to set to.
+      )
 {
   if (T<=0) {cout <<"negative temperature in Set_Eint().\n"; return 1;}
   P[lv_eint] = Get_nTot(P)*kB*T/(gamma-1.);
   return 0;
 }
 
-double MicroPhysics::Get_nTot(const double *P ///< state vector
-			      )
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MicroPhysics::Get_nTot(
+      const double *P ///< state vector
+      )
 {
   // This assumes n_h has already been set, as that is the first thing 
   // TimeUpdateMP does.
@@ -439,8 +467,15 @@ double MicroPhysics::Get_nTot(const double *P ///< state vector
   return P[lv_nh]*nf;
 }
 
-double MicroPhysics::Get_nIons(const double *P ///< state vector
-			      )
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MicroPhysics::Get_nIons(
+      const double *P ///< state vector
+      )
 {
   double nf = 0.0;
   for (int i=0;i<nions;i++)
@@ -448,7 +483,16 @@ double MicroPhysics::Get_nIons(const double *P ///< state vector
   return P[lv_nh]*nf;
 }
 
-double MicroPhysics::neutral_fraction(const double *P, const ion_struct *i)
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MicroPhysics::neutral_fraction(
+      const double *P,
+      const ion_struct *i
+      )
 {
   //  rep.printVec("nf vec",P,nvl);
   double nf=1.0;
@@ -473,16 +517,29 @@ double MicroPhysics::neutral_fraction(const double *P, const ion_struct *i)
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MicroPhysics::Tr(string t) 
 {
   if (pvar.find(t)==pvar.end()) return -1;
   else return pvar[t];
 }
 
-int  MicroPhysics::Set_Temp(double *p,  ///< primitive vector.
-			    const double T, ///< temperature.
-			    const double g  ///< eos gamma.
-			    )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int  MicroPhysics::Set_Temp(
+      pion_flt *p,  ///< primitive vector.
+      const double T, ///< temperature.
+      const double g  ///< eos gamma.
+      )
 {
   gamma = g;
   double P[nvl];
@@ -492,9 +549,16 @@ int  MicroPhysics::Set_Temp(double *p,  ///< primitive vector.
   return err;
 }
 
-double MicroPhysics::Temperature(const pion_flt *p, ///< primitive vector
-				 const double g   ///< eos gamma
-				 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MicroPhysics::Temperature(
+      const pion_flt *p, ///< primitive vector
+      const double g   ///< eos gamma
+      )
 {
   if (nions >0) {
     gamma = g;  
@@ -506,10 +570,17 @@ double MicroPhysics::Temperature(const pion_flt *p, ///< primitive vector
 }
 
 
-int MicroPhysics::convert_prim2local(const double *p_in,
-				     double *p_local,
-				     const double gam
-				     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::convert_prim2local(
+      const pion_flt *p_in,
+      double *p_local,
+      const double gam
+      )
 {
   /** \todo Speed up this function by removing string maps!!! e.g. set up
    * a map<int,int> for relating primitive indices to local indices, and vice versa.
@@ -560,11 +631,18 @@ int MicroPhysics::convert_prim2local(const double *p_in,
   return 0;
 }
 
-int MicroPhysics::convert_local2prim(const double *p_local,
-				     const double *p_in,
-				     double *p_out,
-				     const double gam
-				     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::convert_local2prim(
+      const double *p_local,
+      const pion_flt *p_in,
+      pion_flt *p_out,
+      const double gam
+      )
 {
   // Now return updated values, note density, velocity, mag.field don't change.
   // only variables affected are pressure and tracers.
@@ -581,13 +659,20 @@ int MicroPhysics::convert_local2prim(const double *p_local,
   return 0;
 }
 
-int MicroPhysics::TimeUpdate_OnlyCooling(const double *p_in,
-					 double *p_out,
-					 const double dt,
-					 const double g,
-					 const int sw_int, 
-					 double *ttt
-					 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::TimeUpdate_OnlyCooling(
+      const pion_flt *p_in,
+      pion_flt *p_out,
+      const double dt,
+      const double g,
+      const int sw_int, 
+      double *ttt
+      )
 {
   //  cout <<"only cooling: nvl = "<<nvl<<"\n";
   if (nvl!=2) rep.error("nvl wrong",nvl);
@@ -640,13 +725,20 @@ int MicroPhysics::TimeUpdate_OnlyCooling(const double *p_in,
   return 0;
 }
 
-int MicroPhysics::TimeUpdateMP(const double *p_in,
-			       double *p_out,
-			       const double dt,
-			       const double g,
-			       const int sw_int,
-			       double *ttt
-			       )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::TimeUpdateMP(
+      const pion_flt *p_in,
+      pion_flt *p_out,
+      const double dt,
+      const double g,
+      const int sw_int,
+      double *ttt
+      )
 {
   // First if we are just doing cooling with no microphysics, call different function
   if (nions==0 && ep.cooling) return TimeUpdate_OnlyCooling(p_in, p_out, dt, g, sw_int, ttt);
@@ -705,16 +797,23 @@ int MicroPhysics::TimeUpdateMP(const double *p_in,
   return err;
 }
 
-int MicroPhysics::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Vector to be updated.
-					 double *p_out,        ///< Destination Vector for updated values.
-					 const double dt,      ///< Time Step to advance by.
-					 const double g,       ///< EOS gamma.
-					 const int sw_int,     ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-					 const double phot_in, ///< flux in per unit length along ray (F/ds or L/dV)
-					 const double ds,      ///< path length ds through cell.
-					 const double tau2cell, ///< Optical depth to entry point of ray into cell.
-					 double *deltau        ///< return optical depth through cell in this variable.
-					 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::TimeUpdate_RTsinglesrc(
+      const pion_flt *p_in,   ///< Primitive Vector to be updated.
+      pion_flt *p_out,        ///< Destination Vector for updated values.
+      const double dt,      ///< Time Step to advance by.
+      const double g,       ///< EOS gamma.
+      const int sw_int,     ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      const double phot_in, ///< flux in per unit length along ray (F/ds or L/dV)
+      const double ds,      ///< path length ds through cell.
+      const double tau2cell, ///< Optical depth to entry point of ray into cell.
+      double *deltau        ///< return optical depth through cell in this variable.
+      )
 {
   if (!ep.phot_ionisation) rep.error("RT requested, but phot_ionisation not set!",ep.phot_ionisation);
   MicroPhysics::tau_cell=0.0;
@@ -759,6 +858,12 @@ int MicroPhysics::TimeUpdate_RTsinglesrc(const double *p_in,   ///< Primitive Ve
     return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MicroPhysics::dPdt_OnlyCooling(const int nv, ///< number of variables we are expecting.
 				   const double *P, ///< Current state vector.
 				   double *R        ///< Rate Vector to write to.
@@ -775,6 +880,12 @@ int MicroPhysics::dPdt_OnlyCooling(const int nv, ///< number of variables we are
   //R[lv_eint] /= 10.0; ///??? What's this for????
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int MicroPhysics::dPdt(const int nv, ///< number of variables we are expecting.
@@ -913,11 +1024,23 @@ int MicroPhysics::dPdt(const int nv, ///< number of variables we are expecting.
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MicroPhysics::C_rate(const int nv, ///< number of variables we are expecting.
 			 const double *P, ///< Current state vector.
 			 double *R        ///< Rate Vector to write to.
 			 )
 {return 1;}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int MicroPhysics::D_rate(const int nv, ///< number of variables we are expecting.
 			 const double *P, ///< Current state vector.
@@ -930,6 +1053,12 @@ double MicroPhysics::phot_xsection(const struct ion_struct *ci)
   if      (ci->i ==H_1p) return 6.3e-18; // in cm^2
   else {cout <<"unknown photo-ionisation x-section\n"; return 0.0;}
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double MicroPhysics::Coll_Ion_rate(double temperature,   ///< Precalculated Temperature.
 				   const struct ion_struct *ci ///< current ion.
@@ -1013,6 +1142,12 @@ double MicroPhysics::Coll_Ion_rate(double temperature,   ///< Precalculated Temp
   temperature = ci->ion_pot/kB/temperature;
   return A*(1.+PP*sqrt(temperature))*exp(K*log(temperature) -temperature)/(X+temperature);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double MicroPhysics::Rad_Recomb_rate(double temperature,   ///< Precalculated Temperature.
 				     const struct ion_struct *ci ///< current ion.
@@ -1104,6 +1239,12 @@ double MicroPhysics::Rad_Recomb_rate(double temperature,   ///< Precalculated Te
 #endif //RAGA_RATES
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double MicroPhysics::rad_recomb(double T,
 				enum species i
 				)
@@ -1172,6 +1313,12 @@ double MicroPhysics::rad_recomb(double T,
   return r;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double MicroPhysics::dielec_recomb(double T,
 				   enum species i
 				   )
@@ -1226,6 +1373,12 @@ double MicroPhysics::dielec_recomb(double T,
 }
   
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double MicroPhysics::charge_exchange_rate(double T,   ///< Precalculated Temperature.
 					  const struct ion_struct *ci, ///< current ion.
 					  const int sw ///< 0 for recombination from ion, 1 for ionisation of ion.
@@ -1236,10 +1389,17 @@ double MicroPhysics::charge_exchange_rate(double T,   ///< Precalculated Tempera
   return r;
 }  
 
-int MicroPhysics::Init_ionfractions(double *p_prim,  ///< Primitive vector to be updated.
-				    const double gam, ///< eos gamma.
-				    const double temp ///< optional gas temperature to end up at. (negative means use pressure)
-				    )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int MicroPhysics::Init_ionfractions(
+      pion_flt *p_prim,  ///< Primitive vector to be updated.
+      const double gam, ///< eos gamma.
+      const double temp ///< optional gas temperature to end up at. (negative means use pressure)
+      )
 {
   gamma = gam;
   double T=temp, p_local[nvl];
@@ -1324,6 +1484,12 @@ int MicroPhysics::Init_ionfractions(double *p_prim,  ///< Primitive vector to be
   */
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 /** \page userguide
  * \section atomicdata Atomic Data
  * Abundance by number (N) From Kaye & Laby: http://www.kayelaby.npl.co.uk/chemistry/3_1/3_1_3.html \n
@@ -1351,6 +1517,12 @@ int MicroPhysics::Init_ionfractions(double *p_prim,  ///< Primitive vector to be
  * </table>
  *
  */
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void MicroPhysics::set_atomic_data()
@@ -1740,16 +1912,23 @@ void MicroPhysics::set_atomic_data()
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// This returns the minimum timescale of the times flagged in the
 /// arguments.  Time is returned in seconds.
 ///
-double MicroPhysics::timescales(const double *p_in,  ///< Current cell primitive vector.
-				const double gam,    ///< EOS gamma.
-				const bool f_cool,   ///< set to true if including cooling time.
-				const bool f_recomb, ///< set to true if including recombination time.
-				const bool f_photoion ///< set to true if including photo-ionsation time.
-				)
+double MicroPhysics::timescales(
+      const pion_flt *p_in,  ///< Current cell primitive vector.
+      const double gam,    ///< EOS gamma.
+      const bool f_cool,   ///< set to true if including cooling time.
+      const bool f_recomb, ///< set to true if including recombination time.
+      const bool f_photoion ///< set to true if including photo-ionsation time.
+      )
 {
   //
   // This only works for "only cooling" so far.
@@ -1802,6 +1981,12 @@ double MicroPhysics::timescales(const double *p_in,  ///< Current cell primitive
   }
   return VERY_LARGE_VALUE;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 #endif // if not excluding MPv1
 

@@ -467,7 +467,7 @@ int equilibrate_MP(
     rep.printVec("init right vec", gg->LastPt()->P,SimPM.nvar);
     
     // now do a long time integration to get to equilibrium.
-    c = gg->FirstPt(); double *p = c->P;
+    c = gg->FirstPt(); pion_flt *p = c->P;
     double tint = sqrt(SimPM.gamma*p[PG]/p[RO]);
     tint = 50.*gg->DX()/tint; // gives us 50 times the dynamical time for a cell.
     cout <<"time to step by="<<tint<<"\n";

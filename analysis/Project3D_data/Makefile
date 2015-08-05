@@ -95,8 +95,9 @@ ifeq ($(MAKE_UNAME), standard)
     CXX = mpicxx
   endif
   #CXXFLAGS = -O3
-  CXXFLAGS = -O1 -Wall -g
-  CXXFLAGS+= -Wno-unused-function
+  CXXFLAGS  = -O1 -Wall -g
+  #CXXFLAGS += -pg
+  CXXFLAGS += -Wno-unused-function
 
 
   MYLIB = ${CODEDIR}/extra_libraries
@@ -281,9 +282,10 @@ VectorOps_spherical.o \
         
 
 ifeq ($(MT), USE_THREADS)
-OBJECTS += logmessages.o threadpool.o threads.o
-VPATH +=:./andys_threads:./andys_threads/threadpool
-THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/reefa_constants.h
+  OBJECTS += logmessages.o threadpool.o threads.o
+  VPATH +=:./andys_threads:./andys_threads/threadpool
+  THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/reefa_constants.h
+  #GLOBAL += andys_threads/threads.h andys_threads/msvc_constants.h reefa_constants.h
 endif
 
 projection: $(OBJECTS)
@@ -388,7 +390,7 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 ###############################
 # Stuff Specific to this code #
 ###############################
-sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h
+sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
 main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
 image_io.o:		image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 

@@ -274,6 +274,7 @@ cell * cell_interface::new_cell()
   // analysis code.
   //
   if (minimal_cell) {
+    //cout <<"Minimal cells!\n";
     c->Ph = 0;
     c->dU = 0;
   }
@@ -283,11 +284,12 @@ cell * cell_interface::new_cell()
     for (int v=0;v<SimPM.nvar;v++) c->Ph[v] = c->dU[v] = 0.0;
   }
 
-  //  cout <<"Nxd="<<N_extra_data<<"\n";
-  if (N_extra_data>=1)
+  //cout <<"Nxd="<<N_extra_data<<"\n";
+  if (N_extra_data>=1) {
     c->extra_data = mem.myalloc(c->extra_data, N_extra_data);
-  for (short unsigned int v=0;v<N_extra_data;v++)
-    c->extra_data[v] = 0.0;
+    for (short unsigned int v=0;v<N_extra_data;v++)
+      c->extra_data[v] = 0.0;
+  }
 
   return c;
 }

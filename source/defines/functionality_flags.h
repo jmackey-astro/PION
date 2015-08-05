@@ -28,7 +28,9 @@
 //
 // Whether to use single or double precision
 //
+//#define PION_DATATYPE_DOUBLE
 //#define pion_flt double
+#define PION_DATATYPE_FLOAT
 #define pion_flt float
 
 //

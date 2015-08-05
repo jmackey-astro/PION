@@ -24,6 +24,7 @@
 ///    flags.
 /// - 2015.01.26 JM: removed references to mpiPM (no longer global),
 ///    added COMM pointer setup, added get_rank_nproc()
+/// - 2015.08.05 JM: Added pion_flt to send/receive for cell data.
 
 #ifdef PARALLEL
 #ifdef USE_MPI
@@ -332,7 +333,15 @@ int comm_mpi::send_cell_data(
     CI.get_ipos(*c,ipos);
     err += MPI_Pack(reinterpret_cast<void *>(&((*c)->id)), 1,          MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
     err += MPI_Pack(reinterpret_cast<void *>(ipos),        SimPM.ndim, MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+
+#if defined PION_DATATYPE_DOUBLE
     err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph),    SimPM.nvar, MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+#elif defined PION_DATATYPE_FLOAT
+    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph),    SimPM.nvar, MPI_FLOAT, reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+#else
+#error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
+#endif
+
     ct++;
     ++c;  // next cell in list.
   } while ( c != l->end() );
@@ -659,7 +668,7 @@ int comm_mpi::receive_cell_data(
 #endif //TESTING
 
   int *ipos = 0;
-  double *p = 0;
+  pion_flt *p = 0;
   ipos = mem.myalloc(ipos,SimPM.ndim);
   p = mem.myalloc(p,SimPM.nvar);
 
@@ -678,7 +687,13 @@ int comm_mpi::receive_cell_data(
     CI.get_ipos(*c,cpos);
     err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_INT, MPI_COMM_WORLD);
     err += MPI_Unpack(buf, ct, &position, ipos,  SimPM.ndim, MPI_INT, MPI_COMM_WORLD);
+#if defined PION_DATATYPE_DOUBLE
     err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_DOUBLE, MPI_COMM_WORLD);
+#elif defined PION_DATATYPE_FLOAT
+    err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_FLOAT, MPI_COMM_WORLD);
+#else
+#error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
+#endif
     if(err) rep.error("Unpack",err);
     // For a given boundary data iterator, put data into cells
     if (c==l->end()) rep.error("Got too many cells!",i);

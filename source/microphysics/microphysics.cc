@@ -52,6 +52,7 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.26 JM: Got rid of mpiPM. call.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -317,10 +318,11 @@ int MP_Hydrogen::Tr(string t)
 
 
 
-int MP_Hydrogen::Set_Temp(double *p,  ///< primitive vector.
-			  const double T, ///< temperature.
-			  const double g  ///< eos gamma.
-			  )
+int MP_Hydrogen::Set_Temp(
+      pion_flt *p,  ///< primitive vector.
+      const double T, ///< temperature.
+      const double g  ///< eos gamma.
+      )
 {
   gamma = g;
   double P[nvl];
@@ -345,9 +347,10 @@ int MP_Hydrogen::Set_Temp(double *p,  ///< primitive vector.
 
 
 
-double MP_Hydrogen::Temperature(const pion_flt *pv, ///< primitive vector
-				const double g   ///< eos gamma
-				)
+double MP_Hydrogen::Temperature(
+      const pion_flt *pv, ///< primitive vector
+      const double g   ///< eos gamma
+      )
 {
   //
   // Check for negative pressure/density!  If either is found, return -1.0e99.
@@ -381,10 +384,11 @@ double MP_Hydrogen::Temperature(const pion_flt *pv, ///< primitive vector
 
 
 
-int MP_Hydrogen::Init_ionfractions(double *p_prim,  ///< Primitive vector to be updated.
-				   const double gam, ///< eos gamma.
-				   const double temp ///< optional gas temperature to end up at. (negative means use pressure)
-				   )
+int MP_Hydrogen::Init_ionfractions(
+      pion_flt *p_prim,  ///< Primitive vector to be updated.
+      const double gam, ///< eos gamma.
+      const double temp ///< optional gas temperature to end up at. (negative means use pressure)
+      )
 {
   gamma = gam;
   double T=temp;
@@ -408,10 +412,11 @@ int MP_Hydrogen::Init_ionfractions(double *p_prim,  ///< Primitive vector to be 
 
 
 
-int MP_Hydrogen::convert_prim2local(const double *p_in,
-				    double *p_local,
-				    const double gam
-				    )
+int MP_Hydrogen::convert_prim2local(
+      const pion_flt *p_in,
+      double *p_local,
+      const double gam
+      )
 {
   p_local[lv_nh]   = p_in[RO]/m_p;
   p_local[lv_eint] = p_in[PG]/(gam-1.);
@@ -471,11 +476,12 @@ int MP_Hydrogen::convert_prim2local(const double *p_in,
 
 
 
-int MP_Hydrogen::convert_local2prim(const double *p_local,
-				     const double *p_in,
-				     double *p_out,
-				     const double gam
-				     )
+int MP_Hydrogen::convert_local2prim(
+      const double *p_local,
+      const pion_flt *p_in,
+      pion_flt *p_out,
+      const double gam
+      )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
   p_out[PG] = p_local[lv_eint]*(gam-1.0);
@@ -504,7 +510,7 @@ int MP_Hydrogen::convert_local2prim(const double *p_local,
     rep.error("Negative pressure output from RT solver!",p_out[PG]);
   }
   p_out[pv_Hp] = max(min_elecf, p_local[lv_Hp]);
-  p_out[pv_Hp] = min(1.0, p_out[pv_Hp]);
+  p_out[pv_Hp] = min(static_cast<pion_flt>(1.0), p_out[pv_Hp]);
 
   if (ep.phot_ionisation) {
     tau_cell = p_local[lv_dtau]; // this should be int(exp(-tau),dt)
@@ -527,13 +533,14 @@ int MP_Hydrogen::convert_local2prim(const double *p_local,
 
 
 
-int MP_Hydrogen::TimeUpdateMP(const double *p_in,
-			       double *p_out,
-			       const double dt,
-			       const double g,
-			       const int sw_int,
-			       double *ttt
-			       )
+int MP_Hydrogen::TimeUpdateMP(
+      const pion_flt *p_in,
+      pion_flt *p_out,
+      const double dt,
+      const double g,
+      const int sw_int,
+      double *ttt
+      )
 {
   int err = 0;
   gamma = g;
@@ -606,8 +613,8 @@ int MP_Hydrogen::TimeUpdateMP(const double *p_in,
 
 
 int MP_Hydrogen::TimeUpdate_RTsinglesrc(
-      const double *p_in,   ///< Primitive Vector to be updated.
-      double *p_out,        ///< Destination Vector for updated values.
+      const pion_flt *p_in,   ///< Primitive Vector to be updated.
+      pion_flt *p_out,        ///< Destination Vector for updated values.
       const double dt,      ///< Time Step to advance by.
       const double g,       ///< EOS gamma.
       const int sw_int,     ///< Switch for what type of integration to use.
@@ -1607,7 +1614,7 @@ double MP_Hydrogen::rad_recomb_energy(double T   ///< Precalculated Temperature.
 /// This returns the minimum timescale of the times flagged in the
 /// arguments.  Time is returned in seconds.
 ///
-double MP_Hydrogen::timescales(const double *p_in,  ///< Current cell primitive vector.
+double MP_Hydrogen::timescales(const pion_flt *p_in,  ///< Current cell primitive vector.
 			       const double gam,    ///< EOS gamma.
 			       const bool f_cool,   ///< set to true if including cooling time.
 			       const bool f_recomb, ///< set to true if including recombination time.

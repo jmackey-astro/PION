@@ -26,7 +26,7 @@ struct stellarwind_list SWP;
 JetParams::JetParams()
 {
    jetic =0; jetradius = -1;
-   jetstate=0; jetstate = new double [MAX_NVAR];
+   jetstate=0; jetstate = new pion_flt [MAX_NVAR];
    if (!jetstate) rep.error("Couldn't allocate memory for JP.jetstate[]",jetstate);
    for (int v=0; v<MAX_NVAR; v++) jetstate[v] = -1.e99;
 }

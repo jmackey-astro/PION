@@ -124,20 +124,20 @@ class mp_explicit_H
   ///
   mp_explicit_H(
       const int,          ///< Total number of variables in state vector
-	    const int,          ///< Number of tracer variables in state vector.
+      const int,          ///< Number of tracer variables in state vector.
 
 #ifdef OLD_TRACER
 
-	    const std::string &, ///< List of what the tracer variables mean.
+      const std::string &, ///< List of what the tracer variables mean.
 
 # else
 
-	    const std::string *, ///< List of what the tracer variables mean.
+      const std::string *, ///< List of what the tracer variables mean.
 
 #endif // OLD_TRACER
 
       struct which_physics * ///< extra physics stuff.
-	    );
+      );
 
   ///
   /// Destructor
@@ -198,30 +198,30 @@ class mp_explicit_H
   /// - Number of UV point sources.
   ///
   virtual int TimeUpdateMP_RTnew(
-                   const pion_flt *, ///< Primitive Vector to be updated.
- 	           const int,      ///< Number of UV heating sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of UV-heating column densities and source properties.
-                   const int,      ///< number of ionising radiation sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of ionising src column densities and source properties.
-		   pion_flt *,       ///< Destination Vector for updated values
-		                   ///< (can be same as first Vector.
-		   const double,   ///< Time Step to advance by.
-		   const double,   ///< EOS gamma.
-		   const int, ///< Switch for what type of integration to use.
-		              ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-		   double *    ///< any returned data (final temperature?).
-		   );
+     const pion_flt *, ///< Primitive Vector to be updated.
+     const int,      ///< Number of UV heating sources.
+     const std::vector<struct rt_source_data> &,
+     ///< list of UV-heating column densities and source properties.
+     const int,      ///< number of ionising radiation sources.
+     const std::vector<struct rt_source_data> &,
+     ///< list of ionising src column densities and source properties.
+     pion_flt *,       ///< Destination Vector for updated values
+                     ///< (can be same as first Vector.
+     const double,   ///< Time Step to advance by.
+     const double,   ///< EOS gamma.
+     const int, ///< Switch for what type of integration to use.
+                ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+     double *    ///< any returned data (final temperature?).
+     );
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
   /// there is no need to make it highly optimized.
   ///
   double Temperature(
-            const pion_flt *, ///< primitive vector
-            const double    ///< eos gamma
-            );
+      const pion_flt *, ///< primitive vector
+      const double    ///< eos gamma
+      );
 
   ///
   /// Set the gas temperature to a specified value.

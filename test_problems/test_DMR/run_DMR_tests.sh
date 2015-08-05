@@ -17,9 +17,6 @@ fi
 test_dir=$1
 code_dir=$2
 data_dir=$3
-#code_dir=/users/jmackey/active/projects/uniform_grid_code/trunk/bin_serial
-#test_dir=/users/jmackey/active/projects/uniform_grid_code/trunk/test_problems
-#data_dir=/vol/aibn129/aibn129_1/jmackey/data_etc/temp_sims
 
 # Just in case it doesn't exist, create the destination directory.
 mkdir -p $data_dir

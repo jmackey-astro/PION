@@ -1232,7 +1232,7 @@ int dataio_silo::get_scalar_data_array(
     vars[0] = static_cast<int>(BX);
     vars[1] = static_cast<int>(BY);
     vars[2] = static_cast<int>(BZ);
-    double crl[3]; for (int el=0;el<3;el++) crl[el]=0.0;
+    pion_flt crl[3]; for (int el=0;el<3;el++) crl[el]=0.0;
     if (silo_dtype==DB_FLOAT) {
       do {
         eqn->Curl(c,0,vars, gp, crl);

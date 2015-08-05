@@ -29,6 +29,8 @@
 #ifdef RT_TESTING_OUTPUTCOL
 #include "raytracing/raytracer_base.h"
 #endif // RT_TESTING_OUTPUTCOL
+#include "microphysics/microphysics_base.h"
+
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>

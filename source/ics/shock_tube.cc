@@ -10,6 +10,7 @@
 ///    same position at y=0.5.
 ///    Added check for negative angle, which is converted to arctan(0.5).
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.05 JM: Added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -25,6 +26,12 @@
 #include "equations/eqns_mhd_adiabatic.h"
 #include <sstream>
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 IC_shocktube::IC_shocktube() 
 {
   preshock = postshock = 0;
@@ -35,6 +42,12 @@ IC_shocktube::IC_shocktube()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 IC_shocktube::~IC_shocktube()
 {
   if (preshock)  {delete [] preshock;  preshock=0; }
@@ -42,9 +55,16 @@ IC_shocktube::~IC_shocktube()
   return;
 }
 
-int IC_shocktube::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			     class GridBaseClass *ggg ///< pointer to grid
-			     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int IC_shocktube::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -260,12 +280,31 @@ int IC_shocktube::setup_data(class ReadParams *rrp,    ///< pointer to parameter
   return err;
 }
 
-int IC_shocktube::assign_data(double *left, double *right, double interface)
+
+// ##################################################################
+// ##################################################################
+
+
+
+int IC_shocktube::assign_data(
+      double *l_in,      ///< input left state
+      double *r_in,      ///< input right state
+      double interface   ///< location of interface
+      )
 {
   int nvar=gg->Nvar();
   if(ndim<1 || ndim>3)
     rep.error("Bad ndim in setupNDWave",ndim);
   
+  //
+  // Cell data could be float or double, depending on pion_flt, so we
+  // copy the input vectors to an array of the right type.
+  //
+  pion_flt left[nvar], right[nvar];
+  for (int v=0;v<nvar;v++) {
+    left[v]  = l_in[v];
+    right[v] = r_in[v];
+  }
   
   class eqns_base *eqn=0;
   if      (eqns==1) eqn = new class eqns_Euler (nvar);
@@ -404,6 +443,12 @@ int IC_shocktube::assign_data(double *left, double *right, double interface)
   delete eqn; eqn=0;
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
 {
@@ -770,4 +815,10 @@ int IC_shocktube::get_riemann_ics(int sw, double *l, double *r, double *xm)
   cout <<"(IC_shocktube::get_riemann_ics) Got test number: "<<sw<<endl;
   return(0);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

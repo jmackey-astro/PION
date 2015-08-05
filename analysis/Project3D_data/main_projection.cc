@@ -228,7 +228,7 @@ int main(int argc, char **argv)
   string outfile    = argv[3];
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
-  rep.redirect(redir.str());
+  //rep.redirect(redir.str());
 
   //
   // start a timer, so I can see how long each step takes.

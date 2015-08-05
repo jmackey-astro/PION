@@ -18,6 +18,7 @@
 /// - 2011.11.22 JM: Added set_default_val() function to parameter classes.
 /// - 2015.07.09 JM: updated tracer parameters (each tracer has its
 ///    own parameter name.
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 
 #ifndef DATAIO_H
 #define DATAIO_H
@@ -229,13 +230,15 @@ protected:
 
 ///
 /// parameter class for DOUBLE ARRAY [MAX_NVAR] parameters
+/// This uses float or double, depending on the value of pion_flt
+/// in functionality_flags.h
 ///
 class pm_dvararr : public pm_base {
 public:
   pm_dvararr();
   pm_dvararr(const string );
-  pm_dvararr(const string, double *);
-  pm_dvararr(const string, double *, const double *);
+  pm_dvararr(const string, pion_flt *);
+  pm_dvararr(const string, pion_flt *, const pion_flt *);
   ~pm_dvararr();
 
   void assign_val(void *);
@@ -245,9 +248,9 @@ public:
   void set_to_default();
   void set_default_val(void *);
 protected:
-  double *ptr;
+  pion_flt *ptr;
   int len;
-  double *defval;
+  pion_flt *defval;
 };
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -424,6 +427,8 @@ class dataio_text : public DataIOBase {
     * \retval 1 failure
     * */
    int get_parameters(string /**< Name of parameterfile.*/);
+
+
    /**  \brief Get initial conditions and populate grid with them.
     * 
     * Get type of IC from parameterfile.\n
@@ -434,6 +439,8 @@ class dataio_text : public DataIOBase {
     * \retval 1 failure
     * */
    int assign_initial_data();
+
+
    /**  \brief Gets Initial left and right states for a Riemann Problem to solve (1D).
     * 
     * You pass this an integer, and pointers to left and right states, and it
@@ -446,6 +453,8 @@ class dataio_text : public DataIOBase {
 		       double *, ///< pointer to right state.
 		       double *  ///< pointer to left/right interface value (as a fraction of the range).
 		       );
+
+
    /** \brief Add a low level of pseudo-random noise to the data.
     * 
     * This adds random noise to the data.  The integer flag determines what 

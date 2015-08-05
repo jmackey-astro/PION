@@ -147,6 +147,7 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.08.05 JM: more pion_flt datatype changes.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -662,8 +663,8 @@ int mp_explicit_H::Tr(const string t)
 // Set the properties of a multifrequency ionising radiation source.
 //
 int mp_explicit_H::set_multifreq_source_properties(
-                      const struct rad_src_info *rsi
-                      )
+      const struct rad_src_info *rsi
+      )
 {
   //
   // Some sanity checks:
@@ -734,7 +735,7 @@ double mp_explicit_H::get_temperature(
 
 
 int mp_explicit_H::convert_prim2local(
-          const double *p_in, ///< primitive vector from grid cell (length nv_prim)
+          const pion_flt *p_in, ///< primitive vector from grid cell (length nv_prim)
           double *p_local
           )
 {
@@ -804,10 +805,10 @@ int mp_explicit_H::convert_prim2local(
 
 
 int mp_explicit_H::convert_local2prim(
-            const double *p_local,
-            const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
-            double *p_out       ///< updated primitive vector for grid cell (length nv_prim)
-            )
+      const double *p_local,
+      const pion_flt *p_in, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *p_out       ///< updated primitive vector for grid cell (length nv_prim)
+      )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
 
@@ -824,7 +825,7 @@ int mp_explicit_H::convert_local2prim(
   //
   // Set xHp to be within the required range (not too close to zero or 1).
   //
-  p_out[pv_Hp] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_out[pv_Hp]));
+  p_out[pv_Hp] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_Hp])));
 
   //
   // Set output pressure to be within required temperature range (use the 
@@ -881,10 +882,10 @@ double mp_explicit_H::Temperature(
 
 
 int mp_explicit_H::Set_Temp(
-          double *p_pv,   ///< primitive vector.
-          const double T, ///< temperature
-          const double    ///< eos gamma.
-          )
+      pion_flt *p_pv,   ///< primitive vector.
+      const double T, ///< temperature
+      const double    ///< eos gamma.
+      )
 {
   //
   // Check for negative pressure.  If density<0 then we should bug
@@ -908,8 +909,8 @@ int mp_explicit_H::Set_Temp(
 
 
 int mp_explicit_H::TimeUpdateMP(
-        const double *p_in,   ///< Primitive Vector to be updated.
-        double *p_out,        ///< Destination Vector for updated values.
+        const pion_flt *p_in,   ///< Primitive Vector to be updated.
+        pion_flt *p_out,        ///< Destination Vector for updated values.
         const double dt,      ///< Time Step to advance by.
         const double,         ///< EOS gamma.
         const int,            ///< Switch for what type of integration to use.
@@ -930,14 +931,14 @@ int mp_explicit_H::TimeUpdateMP(
 
 
 int mp_explicit_H::TimeUpdateMP_RTnew(
-          const double *p_in, ///< Primitive Vector to be updated.
+          const pion_flt *p_in, ///< Primitive Vector to be updated.
           const int N_heat,   ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &heat_src,
             ///< list of UV-heating column densities and source properties.
           const int N_ion,    ///< number of ionising radiation sources.
           const std::vector<struct rt_source_data> &ion_src,
             ///< list of ionising src column densities and source properties.
-          double *p_out,  ///< Destination Vector for updated values
+          pion_flt *p_out,  ///< Destination Vector for updated values
                           ///< (can be same as first Vector.
           const double dt,   ///< Time Step to advance by.
           const double,   ///< EOS gamma.
@@ -1011,7 +1012,7 @@ int mp_explicit_H::TimeUpdateMP_RTnew(
 
 
 double mp_explicit_H::timescales(
-          const double *p_in, ///< Current cell state vector.
+          const pion_flt *p_in, ///< Current cell state vector.
           const double,   ///< EOS gamma.
           const bool, ///< set to 'true' if including cooling time.
           const bool, ///< set to 'true' if including recombination time.
@@ -1042,15 +1043,15 @@ double mp_explicit_H::timescales(
 /// Default setting is DT02, which limits by 0.25/ydot (and not by E/Edot)
 ///
 double mp_explicit_H::timescales_RT(
-                    const double *p_in, ///< Current cell state vector.
-                    const int N_heat,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &heat_src,
-                    ///< list of UV-heating column densities and source properties.
-                    const int N_ion,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &ion_src,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    )
+        const pion_flt *p_in, ///< Current cell state vector.
+        const int N_heat,      ///< Number of UV heating sources.
+        const std::vector<struct rt_source_data> &heat_src,
+        ///< list of UV-heating column densities and source properties.
+        const int N_ion,      ///< number of ionising radiation sources.
+        const std::vector<struct rt_source_data> &ion_src,
+        ///< list of ionising src column densities and source properties.
+        const double   ///< EOS gamma.
+        )
 {
   int err=0;
   //
@@ -1133,7 +1134,7 @@ double mp_explicit_H::timescales_RT(
 
 
 double mp_explicit_H::total_cooling_rate(
-        const double *p_in, ///< primitive input state vector.
+        const pion_flt *p_in, ///< primitive input state vector.
         const int N_heat, ///< Number of UV heating sources.
         const std::vector<struct rt_source_data> &heat_src,
         ///< list of UV-heating column densities and source properties.
@@ -1169,7 +1170,7 @@ double mp_explicit_H::total_cooling_rate(
 
 double mp_explicit_H::get_recombination_rate(
           const int,          ///< ion index in tracer array (optional).
-          const double *p_in, ///< input state vector (primitive).
+          const pion_flt *p_in, ///< input state vector (primitive).
           const double g      ///< EOS gamma (optional)
           )
 {
@@ -1202,7 +1203,7 @@ double mp_explicit_H::get_recombination_rate(
 
 
 void mp_explicit_H::setup_radiation_source_parameters(
-        const double *p_in, ///< primitive input state vector.
+        const pion_flt *p_in, ///< primitive input state vector.
         double *P,  ///< local input state vector (x_in,E_int)
         const int N_heat, ///< Number of UV heating sources.
         const std::vector<struct rt_source_data> &heat_src,

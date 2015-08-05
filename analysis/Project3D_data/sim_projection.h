@@ -71,14 +71,16 @@ using namespace std;
 class axes_directions {
 public:
   virtual ~axes_directions() {}
-  enum axes get_axis_from_dir(const enum direction ///< direction to convert.
-			      );
-  enum direction cross_product(const enum direction, ///< first direction
-			       const enum direction  ///< second direction
-			       );
-  /** \brief Returns positive direction along an axis. */
+  enum axes get_axis_from_dir(
+      const enum direction ///< direction to convert.
+      );
+  enum direction cross_product(
+      const enum direction, ///< first direction
+      const enum direction  ///< second direction
+      );
+  /// Returns positive direction along an axis.
   enum direction get_posdir(const enum axes);
-  /** \brief Returns negative direction along an axis. */
+  /// Returns negative direction along an axis.
   enum direction get_negdir(const enum axes);
 };
 
@@ -92,38 +94,37 @@ public:
 
 
 
-/** \brief integration point along line of sight of a pixel.  This point 
- * is to be placed along a plane of cells, so the state vector at the 
- * point can be obtained by linear interpolation between two cells to the 
- * left and right of the point (in that plane).
- * */
+///
+/// integration point along line of sight of a pixel.  This point 
+/// is to be placed along a plane of cells, so the state vector at the 
+/// point can be obtained by linear interpolation between two cells to the 
+/// left and right of the point (in that plane).
+///
 struct point_4cellavg {
-  double pos[3]; ///< position of point, in image coords.
   cell *ngb[4];  ///< pointers to four surrounding cells.
-  double wt[4];  ///< weight of right cell value (wt of left=1-wt).
+  pion_flt wt[4];  ///< weight of right cell value (wt of left=1-wt).
+  //pion_flt pos[3]; ///< position of point, in image coords.
 };
 
 
-/** \brief Struct containing relevant information for a line of sight
- * integration through a pixel.
- * N.B. The 2-point average is not very good, and potentially misses half
- * a cell at each boundary, so it would be much better to do a 4pt average, 
- * I think.
- * */
+///
+/// Struct containing relevant information for a line of sight
+/// integration through a pixel.
+///
 struct integration_points {
   int npt; ///< number of integration points.
   double dx;      ///< interval between points (in image units)
   double dx_phys; ///< interval in physical units.
-  //  double theta, tantheta, costheta; ///< angle w.r.t. normal in x-z plane.
   struct point_4cellavg *p; ///< array of integration points.
 };
 
-/** \brief Pixel struct -- contains a list of integration points, ipix, ix[2]. */
+///
+/// Pixel struct -- contains a list of integration points, ipix, ix[2].
+///
 struct pixel {
   cell *inpixel;
   int ncells;
   int ipix, ix[2];
-
   struct integration_points int_pts; ///< list of points to integrate.
 };
 
@@ -150,26 +151,37 @@ public:
    */
   void get_npix(int * ///< 2D array to put number of pixels in each direction.
 		);
-  void get_image_Ipos(const int *, ///< integer position in sim coords.
-		      double *     ///< converted position in image coords.
-		      );
-  void get_image_Dpos(const double *, ///< integer position in sim coords.
-		      double *        ///< converted position in image coords.
-		      );
-  void get_sim_Dpos(const double *, ///< position in image coordinates.
-		    double *        ///< position in sim coords (dx=2).
-		    );
+
+  void get_image_Ipos(
+      const int *, ///< integer position in sim coords.
+      pion_flt *     ///< converted position in image coords.
+      );
+
+  void get_image_Dpos(
+      const pion_flt *, ///< integer position in sim coords.
+      pion_flt *        ///< converted position in image coords.
+      );
+
+  void get_sim_Dpos(
+      const pion_flt *, ///< position in image coordinates.
+      pion_flt *        ///< position in sim coords (dx=2).
+      );
+
   /** \brief Given a pixel centre, calculates the position of the first point
    * to use for the line of sight integration, and then the interval between 
    * points and the number of points.
    */
-  void set_integration_points(const double *, ///< pixel centre (x,y,zmin=0)
-			      double *,       ///< dx between points (image units)
-			      double *,       ///< position of nearest point.
-			      int *           ///< number of points.
-			      );
-  bool point_in_Isim_domain(const double * /// Point in sim coords (integer)
-			    );
+  void set_integration_points(
+      const pion_flt *, ///< pixel centre (x,y,zmin=0)
+      double *,       ///< dx between points (image units)
+      double *,       ///< position of nearest point.
+      int *           ///< number of points.
+      );
+
+  bool point_in_Isim_domain(
+      const pion_flt * /// Point in sim coords (integer)
+      );
+
   enum axes get_normal_axis()     {return sa[ZZ];}
   enum axes get_vertical_axis()   {return sa[YY];}
   enum axes get_horizontal_axis() {return sa[XX];}
@@ -450,11 +462,18 @@ public:
   //
   // Associating Cells and Pixels
   //
-  /** \brief Tests if a cell's integer position is in a pixel. */
-  bool cell_is_in_pixel(double *, ///< Cell position (in image coordinates).
-			pixel  *  ///< pixel in question.
-			);
-  /** \brief Add cells to pixels, in a list. */
+
+  ///
+  /// Tests if a cell's integer position is in a pixel.
+  ///
+  bool cell_is_in_pixel(
+      pion_flt *, ///< Cell position (in image coordinates).
+      pixel  *  ///< pixel in question.
+      );
+
+  ///
+  /// Add cells to pixels, in a list.
+  ///
   void add_cells_to_pixels();
 
   //
@@ -465,89 +484,102 @@ public:
   //
   // Calculate a pixel
   //
-  void calculate_pixel(struct pixel *, ///< pointer to pixel
-		       const struct vel_prof_stuff *, ///< struct with info for velocity binning.
-		       const int,      ///< flag for what to integrate.
-		       double *,       ///< array of pixel data.
-		       double *       ///< general purpose counter for stuff.
-		       );
+  void calculate_pixel(
+      struct pixel *, ///< pointer to pixel
+      const struct vel_prof_stuff *, ///< struct with info for velocity binning.
+      const int,      ///< flag for what to integrate.
+      double *,       ///< array of pixel data.
+      double *       ///< general purpose counter for stuff.
+      );
 
   /** \brief THESE FUNCTIONS ARE CARBON COPIES OF THOSE IN
    *  POINT_VELOCITY CLASS!!! MIGHT WANT TO CHANGE THIS SOMEDAY! */
-  double get_pt_density(struct point_4cellavg *);
+  double get_pt_density(
+      struct point_4cellavg *
+      );
+
   /** \brief THESE FUNCTIONS ARE CARBON COPIES OF THOSE IN
    *  POINT_VELOCITY CLASS!!! MIGHT WANT TO CHANGE THIS SOMEDAY! */
-  double get_pt_neutral_numberdensity(struct point_4cellavg *, ///< *pt,
-				      int                      ///< ifrac
-				      );
+  double get_pt_neutral_numberdensity(
+      struct point_4cellavg *, ///< *pt,
+      int                      ///< ifrac
+      );
+
   ///
   /// Get the Stokes Q component for the perpendicular magnetic field
   ///
-  double get_pt_StokesQ(struct point_4cellavg *, ///< pt
-			       const int, ///< ifrac
-			       const int, ///< bx index (image coords)
-			       const int, ///< by index (image coords)
-			       const int, ///< bz index (image coords)
-			       const int, ///< sign(xx)
-			       const int, ///< sign(yy)
-			       const int, ///< sign(zz)
-			       const double, ///< sin(theta)
-			       const double  ///< cos(theta)
-			       );
+  double get_pt_StokesQ(
+      struct point_4cellavg *, ///< pt
+      const int, ///< ifrac
+      const int, ///< bx index (image coords)
+      const int, ///< by index (image coords)
+      const int, ///< bz index (image coords)
+      const int, ///< sign(xx)
+      const int, ///< sign(yy)
+      const int, ///< sign(zz)
+      const double, ///< sin(theta)
+      const double  ///< cos(theta)
+      );
+
   ///
   /// Get the Stokes U component for the perpendicular magnetic field
   ///
-  double get_pt_StokesU(struct point_4cellavg *, ///< pt
-			       const int, ///< ifrac
-			       const int, ///< bx index (image coords)
-			       const int, ///< by index (image coords)
-			       const int, ///< bz index (image coords)
-			       const int, ///< sign(xx)
-			       const int, ///< sign(yy)
-			       const int, ///< sign(zz)
-			       const double, ///< sin(theta)
-			       const double  ///< cos(theta)
-			       );
+  double get_pt_StokesU(
+      struct point_4cellavg *, ///< pt
+      const int, ///< ifrac
+      const int, ///< bx index (image coords)
+      const int, ///< by index (image coords)
+      const int, ///< bz index (image coords)
+      const int, ///< sign(xx)
+      const int, ///< sign(yy)
+      const int, ///< sign(zz)
+      const double, ///< sin(theta)
+      const double  ///< cos(theta)
+      );
+
   ///
   /// Get the |BX| component for the perpendicular magnetic field.
   /// This returns sqrt(n_H)*Bx^2/|B|, so it's a density weighted
   /// value and also diluted by the proportion of B on the los
   /// direction
   ///
-  double get_pt_BXabs(struct point_4cellavg *, ///< pt
-		      const int, ///< ifrac
-		      const int, ///< bx index (image coords)
-		      const int, ///< by index (image coords)
-		      const int, ///< bz index (image coords)
-		      const int, ///< sign(xx)
-		      const int, ///< sign(yy)
-		      const int, ///< sign(zz)
-		      const double, ///< sin(theta)
-		      const double  ///< cos(theta)
-		      );
+  double get_pt_BXabs(
+      struct point_4cellavg *, ///< pt
+      const int, ///< ifrac
+      const int, ///< bx index (image coords)
+      const int, ///< by index (image coords)
+      const int, ///< bz index (image coords)
+      const int, ///< sign(xx)
+      const int, ///< sign(yy)
+      const int, ///< sign(zz)
+      const double, ///< sin(theta)
+      const double  ///< cos(theta)
+      );
+
   ///
   /// Get the |BY| component for the perpendicular magnetic field.
   /// This returns sqrt(n_H)*By^2/|B|, so it's a density weighted
   /// value and also diluted by the proportion of B on the los
   /// direction
   ///
-  double get_pt_BYabs(struct point_4cellavg *, ///< pt
-		      const int, ///< ifrac
-		      const int, ///< bx index (image coords)
-		      const int, ///< by index (image coords)
-		      const int, ///< bz index (image coords)
-		      const int, ///< sign(xx)
-		      const int, ///< sign(yy)
-		      const int, ///< sign(zz)
-		      const double, ///< sin(theta)
-		      const double  ///< cos(theta)
-		      );
+  double get_pt_BYabs(
+      struct point_4cellavg *, ///< pt
+      const int, ///< ifrac
+      const int, ///< bx index (image coords)
+      const int, ///< by index (image coords)
+      const int, ///< bz index (image coords)
+      const int, ///< sign(xx)
+      const int, ///< sign(yy)
+      const int, ///< sign(zz)
+      const double, ///< sin(theta)
+      const double  ///< cos(theta)
+      );
 
   void find_surrounding_cells(
-      const double *, ///< position of point, in simI coordinates.
+      const pion_flt *, ///< position of point, in simI coordinates.
       cell *,         ///< cell in plane, move from here to point.
       cell **,        ///< OUTPUT: list of 4 cells surrounding point
-      double *        ///< OUTPUT: list of weights for each cell.
+      pion_flt *        ///< OUTPUT: list of weights for each cell.
       );
 
 protected:

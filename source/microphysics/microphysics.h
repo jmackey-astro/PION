@@ -19,6 +19,7 @@
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 
 #ifndef MICROPHYSICS_H
 #define MICROPHYSICS_H
@@ -190,11 +191,13 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   /** \brief Returns element number of named tracer variable in state vector. */
   int Tr(string ///< tracer we want to get index for;
 	 );
+
   /** \brief Initialise microphysics ionisation fractions to an equilibrium value. */
   int Init_ionfractions(pion_flt *, ///< Primitive vector to be updated.
 			const double, ///< eos gamma.
 			const double  ///< optional gas temperature to end up at. (negative means use pressure)
 			);
+
   int Set_Temp(pion_flt *, ///< primitive vector.
 	       const double, ///< temperature
 	       const double  ///< eos gamma.
@@ -206,6 +209,7 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   double Temperature(const pion_flt *, ///< primitive vector
 		     const double    ///< eos gamma
 		     );
+
   ///
   /// This returns the minimum timescale of the times flagged in the
   /// arguments.  Time is returned in seconds.
@@ -257,12 +261,15 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
 			 double *,       ///< local vector (length nvl)
 			 const double    ///< eos gamma.
 			 );
+
   /** \brief convert local microphysics vector into state vector for grid cell. */
-  int convert_local2prim(const double *, ///< local vector (length nvl)
-			 const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-			 double *,       ///< updated primitive vector for grid cell (length nv_prim)
-			 const double    ///< eos gamma.
-			 );
+  int convert_local2prim(
+        const double *, ///< local vector (length nvl)
+        const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+        pion_flt *,       ///< updated primitive vector for grid cell (length nv_prim)
+        const double    ///< eos gamma.
+        );
+
   /** \brief Calculate rate of change of local state vector. Note this is 
    * certainly a different vector to the main code state vector, and 
    * consists of n_h, E_int, and if needed, x_e and all the ions x_i.
@@ -271,6 +278,7 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
 	   const double *, ///< current state vector P.
 	   double *        ///< Rate vector to write to, R=dPdt(P)
 	   );
+
   /** \brief Calculate rate of change of local state vector. Note this is 
    * certainly a different vector to the main code state vector, and 
    * consists only of n_h, E_int.  
@@ -585,11 +593,12 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
 			 );
 
   /** \brief convert local microphysics vector into state vector for grid cell. */
-  int convert_local2prim(const double *, ///< local vector (length nvl)
-			 const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-			 double *,       ///< updated primitive vector for grid cell (length nv_prim)
-			 const double    ///< eos gamma.
-			 );
+  int convert_local2prim(
+      const double *, ///< local vector (length nvl)
+      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *,       ///< updated primitive vector for grid cell (length nv_prim)
+      const double    ///< eos gamma.
+      );
 
   /** \brief Calculate rate of change of local state vector. Note this is 
    * certainly a different vector to the main code state vector, and 

@@ -28,6 +28,7 @@
 /// - 2014.07.11 JM: Changed noise from adiabatic to isothermal
 ///    perturbation.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.05 JM: Added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -640,7 +641,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     //
     if( (vfrac=stest.volumeFraction(cpt)) >0) {
       //cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
-      cpt->P[RO] = std::max(vfrac*(dratio),cpt->P[RO]);
+      cpt->P[RO] = std::max(static_cast<pion_flt>(vfrac*(dratio)),cpt->P[RO]);
       cpt->P[PG] = vfrac*(pratio*cpt->P[PG]) + (1.-vfrac)*cpt->P[PG];
       if (eqns==2)
 	cpt->P[BX] = vfrac*(Bratio*cpt->P[BX]) + (1.-vfrac)*cpt->P[BX];

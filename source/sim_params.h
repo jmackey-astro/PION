@@ -327,7 +327,7 @@ class JetParams {
    ~JetParams();
    int jetic;        ///< 0=not a jet sim, 1=is a jet sim
    int jetradius;    ///< Radius of jet in units of cellsize. Jet always centred at origin of XN boundary.
-   double *jetstate; ///< State vector for jet inflow.
+   pion_flt *jetstate; ///< State vector for jet inflow.
 };
 // *******************************************************************
 // *******************************************************************

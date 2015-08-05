@@ -72,27 +72,30 @@ extern struct energetics *GLOBAL_CE;
 /// and a half-timestep vector, Ph.
 ///
 class cell {
+
  public:
   friend class cell_interface;
-  pion_flt *P;   ///< Primitive Variables.
-  pion_flt *Ph;  ///< Primitive State vector at half timestep.
-  pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
   cell **ngb;  ///< Pointers to cell's Neigbours.
   cell *npt;   ///< Pointer to next point in list, or some other cell.
 #ifdef GRIDV2
   cell *npt_all;  ///< Pointer to next point in grid, including
                   ///< boundary data.
 #endif
+  int *pos;
+  pion_flt *P;   ///< Primitive Variables.
+  pion_flt *Ph;  ///< Primitive State vector at half timestep.
+  pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
+ private:
+  pion_flt *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
+ public:
   int id;      ///< Grid point's id.
   int isedge;  ///< Integer specifying if it is an edge cell, and if so, which edge.
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
+
 #ifdef COUNT_ENERGETICS
   struct energetics e; ///< to count up the energetics properties of the current cell.
 #endif
-  int *pos;
-  private:
-  pion_flt *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
 };
 
 

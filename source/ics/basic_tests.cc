@@ -14,6 +14,7 @@
 ///    sphere for the UNIFORM medium parameters (with optional
 ///    expansion velocity, for modelling winds).
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.05 JM: Added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -50,9 +51,10 @@ IC_basic_tests::~IC_basic_tests(){}
 
 
 
-int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			       class GridBaseClass *ggg ///< pointer to grid
-			       )
+int IC_basic_tests::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -604,7 +606,7 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   // Take curl of vector...
   //
   int els[3] = {BX,BY,BZ};
-  double ans[3];
+  pion_flt ans[3];
   class VectorOps_Cart *vec = new VectorOps_Cart (ndim,gg->DX());
   c = gg->FirstPt();
   do {

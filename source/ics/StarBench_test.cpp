@@ -14,6 +14,7 @@
 ///    so that it is off-grid and I don't need to worry about it
 ///    in this file.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.05 JM: Added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -29,13 +30,31 @@
 #include "dataIO/dataio.h"
 #include <sstream>
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 IC_StarBench_Tests::IC_StarBench_Tests()
 {
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 IC_StarBench_Tests::~IC_StarBench_Tests()
 {}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 int IC_StarBench_Tests::setup_data(
@@ -394,7 +413,8 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     // rho_cloud=1000*m_p, and core radius r_c=0.5pc.
     //
     double r_core = 0.5*3.086e18;
-    double rho_cl = 1000.0*pconst.m_p(), rho_cell=0.0;
+    double rho_cl = 1000.0*pconst.m_p();
+    double rho_cell=0.0;
     double cl_centre[SimPM.ndim];
     cl_centre[XX] = 1.92*3.086e18;
     for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
@@ -408,7 +428,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
       CI.get_dpos(c,pos);
       dist = gg->distance(cl_centre,pos);
       rho_cell = rho_cl*r_core*r_core/(r_core*r_core +dist*dist);
-      c->P[RO] = std::max(c->P[RO],rho_cell);
+      c->P[RO] = std::max(c->P[RO],static_cast<pion_flt>(rho_cell));
     } while ( (c=ggg->NextPt(c)) !=0);
   }
   else rep.error("Bad test name",test);

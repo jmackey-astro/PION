@@ -26,6 +26,7 @@
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
+/// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
 
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
@@ -184,11 +185,12 @@ enum direction axes_directions::cross_product(const enum direction d1,
 // *************************************************************
 // -------------------------------------------------------------
 
-coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line of sight direction
-					     const int angle,          ///< Angle of LOS w.r.t. los direction.
-					     const enum direction up_dir, ///< vertical direction, which stays in image plane.
-					     class GridBaseClass *ggg ///< pointer to grid of data.
-					     )
+coordinate_conversion::coordinate_conversion(
+      const enum direction los, ///< Line of sight direction
+      const int angle,          ///< Angle of LOS w.r.t. los direction.
+      const enum direction up_dir, ///< vertical direction, which stays in image plane.
+      class GridBaseClass *ggg ///< pointer to grid of data.
+      )
 {
   gptr = ggg;
   if (!gptr) rep.error("Need a valid grid pointer to set up image!!!",gptr);
@@ -246,7 +248,8 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
     zero_angle = false;
 
   if (abs(theta_deg)>45)
-    rep.error("Angle must be in range [-45,45].  For larger angle project along a different axis",theta_deg);
+    rep.error("Angle must be in range [-45,45].  For larger angle \
+               project along a different axis",theta_deg);
 
   theta = M_PI*theta_deg/180.0;
   sintheta = sin(theta);
@@ -260,7 +263,8 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
   im_dx=1;
 
   //
-  // Set the domain in image coordinates, and get number of pixels from that.
+  // Set the domain in image coordinates, and get number of pixels
+  // from that.
   //
   set_sim_extents_in_image_coords();
   set_npix();
@@ -345,8 +349,9 @@ void coordinate_conversion::set_sim_extents_in_image_coords()
 
 
 
-bool coordinate_conversion::point_in_Isim_domain(const double *x /// Point in sim coords (integer)
-						 )
+bool coordinate_conversion::point_in_Isim_domain(
+      const pion_flt *x /// Point in sim coords (integer)
+      )
 {
   bool inside=true;
   for (int v=0;v<3;v++) {
@@ -389,8 +394,9 @@ void coordinate_conversion::set_npix()
 
 
 
-void coordinate_conversion::get_npix(int *n ///< 2D array to put number of pixels in each direction.
-				     )
+void coordinate_conversion::get_npix(
+      int *n ///< 2D array to put number of pixels in each direction.
+      )
 {
   for (int v=0;v<2;v++) n[v] = im_npix[v];
   return;
@@ -403,21 +409,22 @@ void coordinate_conversion::get_npix(int *n ///< 2D array to put number of pixel
 
 
 
-void coordinate_conversion::get_image_Ipos(const int *spos, ///< input position, sim coords, integer units.
-					   double *im_pos   ///< converted position in image coords.
-					   )
+void coordinate_conversion::get_image_Ipos(
+      const int *spos, ///< input position, sim coords, integer units.
+      pion_flt *im_pos   ///< converted position in image coords.
+      )
 {
   //
   // first get delta, the distance between the left hand edge of the sim and 
   // the point in question.  Then divide by dx to get it in units of number of cells, 
   // which is the image unit.
   //
-  double delta[3];
+  pion_flt delta[3];
   for (int v=0;v<3;v++) {
     if (ss[v]>0)
-      delta[v] = static_cast<double>(spos[sa[v]] - sim_xminI[sa[v]])/sim_dxI;
+      delta[v] = static_cast<pion_flt>(spos[sa[v]] - sim_xminI[sa[v]])/sim_dxI;
     else 
-      delta[v] = static_cast<double>(sim_xmaxI[sa[v]] - spos[sa[v]])/sim_dxI;
+      delta[v] = static_cast<pion_flt>(sim_xmaxI[sa[v]] - spos[sa[v]])/sim_dxI;
   }
   //
   // Now we have this, I can use simple geometry to get from the sim 'origin' to
@@ -437,16 +444,17 @@ void coordinate_conversion::get_image_Ipos(const int *spos, ///< input position,
 
 
 
-void coordinate_conversion::get_image_Dpos(const double *spos, ///< input position, sim coords, integer units.
-					   double *im_pos      ///< converted position in image coords.
-					   )
+void coordinate_conversion::get_image_Dpos(
+      const pion_flt *spos, ///< input position, sim coords, integer units.
+      pion_flt *im_pos      ///< converted position in image coords.
+      )
 {
   //
   // first get delta, the distance between the left hand edge of the sim and 
   // the point in question.  Then divide by dx to get it in units of number of cells, 
   // which is the image unit.
   //
-  double delta[3];
+  pion_flt delta[3];
   for (int v=0;v<3;v++) {
     if (ss[v]>0)
       delta[v] = (spos[sa[v]] - sim_xminI[sa[v]])/sim_dxI;
@@ -472,15 +480,16 @@ void coordinate_conversion::get_image_Dpos(const double *spos, ///< input positi
 
 
 
-void coordinate_conversion::get_sim_Dpos(const double *im_pos, ///< position in image coordinates.
-					 double *spos        ///< position in sim coords (dx=2).
-					 )
+void coordinate_conversion::get_sim_Dpos(
+      const pion_flt *im_pos, ///< position in image coordinates.
+      pion_flt *spos        ///< position in sim coords (dx=2).
+      )
 {
   //
   // First get the deltas, which are perpendicular distances from the
   // negative (in image coords) edges of the simulation box.
   //
-  double delta[3];
+  pion_flt delta[3];
   delta[XX] = (im_pos[XX]-s_origin_img[XX])*costheta +
     (im_pos[ZZ]-s_origin_img[ZZ])*sintheta;
   delta[YY] = im_pos[YY];
@@ -522,11 +531,12 @@ void coordinate_conversion::get_sim_Dpos(const double *im_pos, ///< position in 
 
 
 
-image::image(const enum direction los, ///< Line of sight direction
-	const int t,            ///< Angle of LOS w.r.t. los direction.
-	const enum direction perp, ///< vertical direction, which stays in image plane.
-	class GridBaseClass *ggg ///< pointer to grid of data.
-	)
+image::image(
+      const enum direction los, ///< Line of sight direction
+      const int t,            ///< Angle of LOS w.r.t. los direction.
+      const enum direction perp, ///< vertical direction, which stays in image plane.
+      class GridBaseClass *ggg ///< pointer to grid of data.
+      )
   :
   coordinate_conversion(los,t,perp,ggg)
 {
@@ -576,20 +586,22 @@ struct pix_int_args {
   struct pixel *px; ///< pointer to pixel
   size_t i;      ///< pixel id
   double sim_dxP;
-  double s_xmax_img[3];
+  pion_flt s_xmax_img[3];
 };
 
 //
 // void function for threading with Andy's threadpool library
 //
-void calculate_pix_integration_pts(void *arg)
+void calculate_pix_integration_pts(
+      void *arg
+      )
 {
   struct pix_int_args *pia = reinterpret_cast<struct pix_int_args *>(arg);
   //size_t i = pia->i;
   pixel *p = pia->px;
   class image *img = pia->IMG;
   double sim_dxP = pia->sim_dxP;
-  double *s_xmax_img = pia->s_xmax_img;
+  pion_flt *s_xmax_img = pia->s_xmax_img;
   //
   // Set integration points dx = half the cell size.
   //
@@ -603,20 +615,21 @@ void calculate_pix_integration_pts(void *arg)
   // assign neighbouring cells and their associated weights.
   //
   struct point_4cellavg *pt;
-  double ppos_isim[3];
+  pion_flt ppos_isim[3];
   //    cell *c = (*(p->cells.begin()));
   cell *c = p->inpixel;
 
   for (int ipt=0;ipt<p->int_pts.npt; ipt++) {
     pt = &(p->int_pts.p[ipt]);
       
-    pt->pos[XX] = p->ix[XX] +0.5;
-    pt->pos[YY] = p->ix[YY] +0.5;
-    pt->pos[ZZ] = ipt*hh;
+    pion_flt ppos_im[3];
+    ppos_im[XX] = p->ix[XX] +0.5;
+    ppos_im[YY] = p->ix[YY] +0.5;
+    ppos_im[ZZ] = ipt*hh;
     //
     // Convert image position to a simulation position.
     //
-    img->get_sim_Dpos(pt->pos, ppos_isim);
+    img->get_sim_Dpos(ppos_im, ppos_isim);
     //
     // pass in position, starting cell, and get out the four surrounding
     // cells (or some nulls if it's not surrounded), and the bilinear
@@ -671,6 +684,7 @@ void image::add_integration_pts_to_pixels()
     p->int_pts.dx      = hh;
     p->int_pts.dx_phys = sim_dxP*hh;
     p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
+    cout <<"p->int_pts.npt = "<<p->int_pts.npt <<"\n";
     p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
 
     //
@@ -678,20 +692,21 @@ void image::add_integration_pts_to_pixels()
     // assign neighbouring cells and their associated weights.
     //
     struct point_4cellavg *pt;
-    double ppos_isim[3];
+    pion_flt ppos_isim[3];
     //    cell *c = (*(p->cells.begin()));
     cell *c = p->inpixel;
 
     for (int ipt=0;ipt<p->int_pts.npt; ipt++) {
       pt = &(p->int_pts.p[ipt]);
       
-      pt->pos[XX] = p->ix[XX] +0.5;
-      pt->pos[YY] = p->ix[YY] +0.5;
-      pt->pos[ZZ] = ipt*hh;
+      pion_flt ppos_im[3];
+      ppos_im[XX] = p->ix[XX] +0.5;
+      ppos_im[YY] = p->ix[YY] +0.5;
+      ppos_im[ZZ] = ipt*hh;
       //
       // Convert image position to a simulation position.
       //
-      get_sim_Dpos(pt->pos, ppos_isim);
+      get_sim_Dpos(ppos_im, ppos_isim);
       //
       // pass in position, starting cell, and get out the four surrounding
       // cells (or some nulls if it's not surrounded), and the bilinear
@@ -701,26 +716,6 @@ void image::add_integration_pts_to_pixels()
       //
       // Now for each point, we have set its position, neighbours, weights.
       //
-
-//       if (i==33) {
-// 	cout <<"\t-------------------\n";
-// 	rep.printVec("AXES",sa,3);
-// 	rep.printVec("IMG point",pt->pos,3);
-// 	rep.printVec("SIM point",ppos_isim,3);
-// 	if (pt->ngb[0]) rep.printVec("SIM cell0",pt->ngb[0]->pos,3);
-// 	if (pt->ngb[0]) rep.printVec("IMG cell0",pt->ngb[0]->Ph,3);
-// 	if (pt->ngb[1]) rep.printVec("SIM cell1",pt->ngb[1]->pos,3);
-// 	if (pt->ngb[1]) rep.printVec("IMG cell1",pt->ngb[1]->Ph,3);
-// 	if (pt->ngb[2]) rep.printVec("SIM cell2",pt->ngb[2]->pos,3);
-// 	if (pt->ngb[2]) rep.printVec("IMG cell2",pt->ngb[2]->Ph,3);
-// 	if (pt->ngb[3]) rep.printVec("SIM cell3",pt->ngb[3]->pos,3);
-// 	if (pt->ngb[3]) rep.printVec("IMG cell3",pt->ngb[3]->Ph,3);
-// 	rep.printVec("simxmax",sim_xmaxI,3);
-// 	cout <<"\twt[] = ["<<pt->wt[0]<<", "<<pt->wt[1]<<", "<<pt->wt[2]<<", "<<pt->wt[3]<<"]";
-// 	cout <<"\tsum = "<<pt->wt[0]+pt->wt[1]+pt->wt[2]+pt->wt[3]<<"\n";
-// 	cout <<"\t-------------------\n";
-//      }
-
     }
 
 #endif // THREADS
@@ -756,11 +751,12 @@ void image::add_integration_pts_to_pixels()
 
 
 
-void image::find_surrounding_cells(const double x[3],
-				   cell *c,
-				   cell *ngb[4],
-				   double wt[4]
-				   )
+void image::find_surrounding_cells(
+      const pion_flt x[3],
+      cell *c,
+      cell *ngb[4],
+      pion_flt wt[4]
+      )
 {
   if (!point_in_Isim_domain(x)) {
     for (int v=0;v<4;v++) {
@@ -953,9 +949,10 @@ void image::find_surrounding_cells(const double x[3],
 
 
 
-bool image::cell_is_in_pixel(double *cp, ///< Cell position (in image coordinates).
-			     pixel  *p  ///< pixel in question.
-			     )
+bool image::cell_is_in_pixel(
+      pion_flt *cp, ///< Cell position (in image coordinates).
+      pixel  *p  ///< pixel in question.
+      )
 {
   bool inside=true;
 
@@ -1168,7 +1165,8 @@ double image::get_pt_density(struct point_4cellavg *pt)
 
 
 double image::get_pt_neutral_numberdensity(
-        struct point_4cellavg *pt, int ifrac
+        struct point_4cellavg *pt,
+        int ifrac
         )
 {
   //
@@ -1196,10 +1194,13 @@ double image::get_pt_neutral_numberdensity(
 #define LINMAX_DENSITY
 #define MAXDENS 25000.0
 
-double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
-			     const int bx, const int by, const int bz,
-			     const int signx, const int , const int signz,
-			     const double sintht, const double costht)
+double image::get_pt_StokesQ(
+      struct point_4cellavg *pt,
+      const int ,
+      const int bx, const int by, const int bz,
+      const int signx, const int , const int signz,
+      const double sintht, const double costht
+      )
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
@@ -1248,10 +1249,13 @@ double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
 
 
 
-double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
-			     const int bx, const int by, const int bz,
-			     const int signx, const int signy, const int signz,
-			     const double sintht, const double costht)
+double image::get_pt_StokesU(
+      struct point_4cellavg *pt,
+      const int ,
+      const int bx, const int by, const int bz,
+      const int signx, const int signy, const int signz,
+      const double sintht, const double costht
+      )
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
@@ -1304,10 +1308,13 @@ double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
 
 
 
-double image::get_pt_BXabs(struct point_4cellavg *pt, const int,
-			   const int bx, const int by, const int bz,
-			   const int signx, const int , const int signz,
-			   const double sintht, const double costht)
+double image::get_pt_BXabs(
+      struct point_4cellavg *pt,
+      const int,
+      const int bx, const int by, const int bz,
+      const int signx, const int , const int signz,
+      const double sintht, const double costht
+      )
 {
   //
   // Bilinear interpolation with pre-calculated weights and neighbouring
@@ -1379,12 +1386,13 @@ double image::get_pt_BYabs(struct point_4cellavg *pt, const int ,
 
 
 
-void image::calculate_pixel(struct pixel *px,                 ///< pointer to pixel
-			    const struct vel_prof_stuff *vps, ///< struct with info for velocity binning.
-			    const int what_to_integrate,      ///< flag for what to integrate.
-			    double *im,                       ///< array of pixel data.
-			    double *tot_mass                  ///< general purpose counter for stuff.
-			    )
+void image::calculate_pixel(
+      struct pixel *px,                 ///< pointer to pixel
+      const struct vel_prof_stuff *vps, ///< struct with info for velocity binning.
+      const int what_to_integrate,      ///< flag for what to integrate.
+      double *im,                       ///< array of pixel data.
+      double *tot_mass                  ///< general purpose counter for stuff.
+      )
 {
   //   cout <<"calculate_pixel: i="<<i<<" what="<<what_to_integrate;
   //   cout <<" mass="<<*tot_mass<<" vps->v_min="<<vps->v_min;

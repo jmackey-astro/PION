@@ -48,6 +48,7 @@
 /// - 2013.09.16 JM: Increased precision of ascii data to 14 digits.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -177,7 +178,7 @@ pm_idimarr::pm_idimarr(const string s, int *p)
   type=MY_IDIMARR; len=MAX_DIM; name.assign(s);
   ptr=p; defval=0;
 }
-pm_dvararr::pm_dvararr(const string s, double *p)
+pm_dvararr::pm_dvararr(const string s, pion_flt *p)
 {
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s);
   ptr=p; defval=0;
@@ -224,7 +225,7 @@ pm_idimarr::pm_idimarr(const string s, int *p, const int *def)
   defval = mem.myalloc(defval,len);
   for (int v=0;v<len;v++) defval[v] = def[v];
 }
-pm_dvararr::pm_dvararr(const string s, double *p, const double *def)
+pm_dvararr::pm_dvararr(const string s, pion_flt *p, const pion_flt *def)
 {
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s); ptr=p;
   defval = mem.myalloc(defval,len);
@@ -296,7 +297,7 @@ void pm_long::set_ptr(void *p) {ptr=static_cast<long int *>(p);}
 void pm_string::set_ptr(void *p) {ptr=static_cast<string *>(p);}
 void pm_ddimarr::set_ptr(void *p) {ptr=static_cast<double *>(p);}
 void pm_idimarr::set_ptr(void *p) {ptr=static_cast<int *>(p);}
-void pm_dvararr::set_ptr(void *p) {ptr=static_cast<double *>(p);}
+void pm_dvararr::set_ptr(void *p) {ptr=static_cast<pion_flt *>(p);}
 
 
 // ##################################################################
@@ -393,7 +394,7 @@ void pm_idimarr::set_default_val(void *v) {
 }
 void pm_dvararr::set_default_val(void *v) {
   if (!defval) defval=mem.myalloc(defval,len);
-  else for (int i=0;i<len;i++) defval[i]=(static_cast<double *>(v))[i];
+  else for (int i=0;i<len;i++) defval[i]=(static_cast<pion_flt *>(v))[i];
 }
 
 
@@ -586,6 +587,7 @@ void DataIOBase::set_params()
     ("eta_visc",   &SimPM.etav);
   p = p020; p->critical=true;  
   params.push_back(p);
+
   pm_dvararr *p120 = new pm_dvararr 
     ("Ref_Vector",  SimPM.RefVec);
   p = p120; p->critical=true;  
@@ -2207,11 +2209,11 @@ int dataio_text::output_ascii_data(
     cerr << "Error opening file " << outfile << " for writing.  Quitting..." <<"\n";
     return(1);
   }
-//  cout <<"(dataio_text::output_ascii_data) Writing data in format: x[Ndim], rho, p_g, v_x, v_y, v_z, e_int(erg/mass), [B_x, B_y, B_z, p_g+p_m].\n";
+  //  cout <<"(dataio_text::output_ascii_data) Writing data in format: x[Ndim], rho, p_g, v_x, v_y, v_z, e_int(erg/mass), [B_x, B_y, B_z, p_g+p_m].\n";
   double b2=0.; // magnetic field squared.
-  double Utemp[SimPM.nvar];
-//  outf.setf( ios_base::fixed,ios_base::floatfield );
-//  outf.precision(6);
+  //double Utemp[SimPM.nvar];
+  //  outf.setf( ios_base::fixed,ios_base::floatfield );
+  //  outf.precision(6);
   outf << "# format: x,[y,z,],rho,pg,vx,vy,vz,[Bx,By,Bz],[Tr0,Tr1,Tr2,..],T,[Tau0,Tau1,...]\n";
   outf << "# time = "<<SimPM.simtime<<"  timestep = "<<SimPM.timestep<<"\n";
   outf.setf( ios_base::scientific );
