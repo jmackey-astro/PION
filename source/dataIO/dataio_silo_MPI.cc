@@ -418,7 +418,7 @@ int dataio_silo_pllel::OutputData(
   /// now, but could set it as a runtime parameter at some stage. 
   /// I have set it to produce files of up to about 1.2GB and then split.
   ///
-  int threshold=static_cast<int>(SimPM.Ncell/1.0e7)+1;
+  int threshold=static_cast<int>(SimPM.Ncell/3.0e7)+1;
   if (threshold<1) threshold=1;
   //
   // Have to make sure that we write at most one file per process!

@@ -152,18 +152,18 @@ void reset_radiation_sources(struct rad_sources *);
 // MODIFYING MIN/MAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
 //
 #ifdef RESET_DOMAIN
-void reset_domain()
+void reset_domain(class MCMDcontrol *MCMD)
 {
   rep.printVec("Old Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("Old Xmax",SimPM.Xmax,SimPM.ndim);
   for (int v=0;v<SimPM.ndim;v++) {
-    SimPM.Xmin[v] = -66.16384e18;
+    SimPM.Xmin[v] = -278.0856320e18;
     SimPM.NG[v] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
     SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
   }
   rep.printVec("New Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("New Xmax",SimPM.Xmax,SimPM.ndim);
-  mpiPM.decomposeDomain();
+  MCMD->decomposeDomain();
   return;
 }
 #endif
@@ -395,10 +395,9 @@ int main(int argc, char **argv)
   //
   // ------------------------------------------------------------------------
   // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
-  // Full X-range, Yrange=[-0.75,0.75]pc, Zrange=Yrange.
   //
 #ifdef RESET_DOMAIN
-  reset_domain();
+  reset_domain(&MCMD);
 #endif
   //
   // ------------------------------------------------------------------------
@@ -551,7 +550,7 @@ int main(int argc, char **argv)
     //
     err = dataio.ReadHeader(infile);
 #ifdef RESET_DOMAIN
-    reset_domain();
+    reset_domain(&MCMD);
 #endif
     if (err) rep.error("Didn't read header",err);
     if ( (err=MCMD.decomposeDomain()) !=0) 
