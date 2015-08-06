@@ -95,8 +95,8 @@ ifeq ($(MAKE_UNAME), standard)
     CXX = mpicxx
   endif
   #CXXFLAGS = -O3
-  CXXFLAGS  = -O1 -Wall -g
-  #CXXFLAGS += -pg
+  CXXFLAGS  = -O3 -Wall
+  #CXXFLAGS += -pg -g
   CXXFLAGS += -Wno-unused-function
 
 
@@ -249,6 +249,7 @@ dataio_silo.o \
 dataio_silo_utility.o \
 dataio_silo_MPI.o \
 utility_fits_class.o \
+point_quantities.o \
 main_projection.o \
 sim_projection.o \
 image_io.o \
@@ -390,9 +391,13 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 ###############################
 # Stuff Specific to this code #
 ###############################
-sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
-main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
-image_io.o:		image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
+
+point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL}
+sim_projection.o: sim_projection.cc sim_projection.h point_quantities.h \
+                  ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
+main_projection.o: main_projection.cc sim_projection.h point_quantities.h \
+                  ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
+image_io.o: image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 
 clean:
 	rm -f *.o projection

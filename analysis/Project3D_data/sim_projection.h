@@ -62,6 +62,8 @@ extern threadpool_t     tp; // main threadpool
 
 #endif //THREADS
 
+#include "point_quantities.h"
+
 
 using namespace std;
 
@@ -90,21 +92,6 @@ public:
 // ------------------------------------------------------------
 // ************************************************************
 // ------------------------------------------------------------
-
-
-
-
-///
-/// integration point along line of sight of a pixel.  This point 
-/// is to be placed along a plane of cells, so the state vector at the 
-/// point can be obtained by linear interpolation between two cells to the 
-/// left and right of the point (in that plane).
-///
-struct point_4cellavg {
-  cell *ngb[4];  ///< pointers to four surrounding cells.
-  pion_flt wt[4];  ///< weight of right cell value (wt of left=1-wt).
-  //pion_flt pos[3]; ///< position of point, in image coords.
-};
 
 
 ///
@@ -233,6 +220,13 @@ protected:
 };
 
 
+
+// ------------------------------------------------------------
+// ************************************************************
+// ------------------------------------------------------------
+
+
+
 // ------------------------------------------------------------
 // ************************************************************
 // ------------------------------------------------------------
@@ -246,7 +240,7 @@ protected:
  * numerical FFT artefacts (ringing, and excess signal at the ends of the profile).
  *
  * */
-class point_velocity {
+class point_velocity : public point_quantities{
 protected:
   //
   // Geometry variables
@@ -267,6 +261,7 @@ protected:
   int v_Nbins; ///< Number of velocity bins in profile.
   int broaden; ///< [0=none], 1=constant Gaussian broadening.
   double sigma; ///< width of gaussian to smooth with.
+
   /** \brief This computes the forward and inverse Fast Fourier Transform on
    * a 1D array of data.  It is effectively the NR version, for zero offset arrays.
    *
@@ -337,53 +332,7 @@ public:
           double * ///< Array of velocity bins to smooth.
           );
 
-   ///
-   /// Get the absorption and emission coefficients for H-alpha
-   /// radiation, according to a fit to Osterbrock's data table for
-   /// photoionised nebulae.
-   ///
-   void get_point_Halpha_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-
-   ///
-   /// Get the absorption and emission coefficients for [N II] 6584AA
-   /// radiation, according to a fit from Dopita (1973,A&A,29,387).
-   ///
-   void get_point_NII6584_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-
-
-
  protected:
-
-  /** \brief Get the density at the point, based on 4 cell bilinear interpolation. */
-  double get_point_density(const struct point_4cellavg *);
-
-  ///
-  /// Get the H^0 number density, using SimPM.MP.H_MassFrac to
-  /// convert from mass density to number density.
-  ///
-  double get_point_neutralH_numberdensity(
-          const struct point_4cellavg *, // point
-          const int // ifrac
-          );
-
-  ///
-  /// Get the temperature at a point, based on 4-cell bilinear
-  /// interpolation.  This requires a microphysics class.
-  ///
-  double get_point_temperature(
-          const struct point_4cellavg *,
-          const int // ifrac index in prim.vec.
-          );
 
   /** \brief Returns the LOS velocity at the point, based on a 4 cell bilinear average. */
   double get_point_los_velocity(
@@ -439,7 +388,7 @@ struct vel_prof_stuff {
  * This sets up the coordinate system for the image, and all the lines
  * of sight for calculating projected quantities.  It also has the
  * driver function for calculating the image value for each pixel. */
-class image : public coordinate_conversion {
+class image : public coordinate_conversion, public point_quantities {
 public:
   image(const enum direction, ///< Line of sight direction
 	const int,            ///< Angle of LOS w.r.t. los direction.
@@ -490,89 +439,6 @@ public:
       const int,      ///< flag for what to integrate.
       double *,       ///< array of pixel data.
       double *       ///< general purpose counter for stuff.
-      );
-
-  /** \brief THESE FUNCTIONS ARE CARBON COPIES OF THOSE IN
-   *  POINT_VELOCITY CLASS!!! MIGHT WANT TO CHANGE THIS SOMEDAY! */
-  double get_pt_density(
-      struct point_4cellavg *
-      );
-
-  /** \brief THESE FUNCTIONS ARE CARBON COPIES OF THOSE IN
-   *  POINT_VELOCITY CLASS!!! MIGHT WANT TO CHANGE THIS SOMEDAY! */
-  double get_pt_neutral_numberdensity(
-      struct point_4cellavg *, ///< *pt,
-      int                      ///< ifrac
-      );
-
-  ///
-  /// Get the Stokes Q component for the perpendicular magnetic field
-  ///
-  double get_pt_StokesQ(
-      struct point_4cellavg *, ///< pt
-      const int, ///< ifrac
-      const int, ///< bx index (image coords)
-      const int, ///< by index (image coords)
-      const int, ///< bz index (image coords)
-      const int, ///< sign(xx)
-      const int, ///< sign(yy)
-      const int, ///< sign(zz)
-      const double, ///< sin(theta)
-      const double  ///< cos(theta)
-      );
-
-  ///
-  /// Get the Stokes U component for the perpendicular magnetic field
-  ///
-  double get_pt_StokesU(
-      struct point_4cellavg *, ///< pt
-      const int, ///< ifrac
-      const int, ///< bx index (image coords)
-      const int, ///< by index (image coords)
-      const int, ///< bz index (image coords)
-      const int, ///< sign(xx)
-      const int, ///< sign(yy)
-      const int, ///< sign(zz)
-      const double, ///< sin(theta)
-      const double  ///< cos(theta)
-      );
-
-  ///
-  /// Get the |BX| component for the perpendicular magnetic field.
-  /// This returns sqrt(n_H)*Bx^2/|B|, so it's a density weighted
-  /// value and also diluted by the proportion of B on the los
-  /// direction
-  ///
-  double get_pt_BXabs(
-      struct point_4cellavg *, ///< pt
-      const int, ///< ifrac
-      const int, ///< bx index (image coords)
-      const int, ///< by index (image coords)
-      const int, ///< bz index (image coords)
-      const int, ///< sign(xx)
-      const int, ///< sign(yy)
-      const int, ///< sign(zz)
-      const double, ///< sin(theta)
-      const double  ///< cos(theta)
-      );
-
-  ///
-  /// Get the |BY| component for the perpendicular magnetic field.
-  /// This returns sqrt(n_H)*By^2/|B|, so it's a density weighted
-  /// value and also diluted by the proportion of B on the los
-  /// direction
-  ///
-  double get_pt_BYabs(
-      struct point_4cellavg *, ///< pt
-      const int, ///< ifrac
-      const int, ///< bx index (image coords)
-      const int, ///< by index (image coords)
-      const int, ///< bz index (image coords)
-      const int, ///< sign(xx)
-      const int, ///< sign(yy)
-      const int, ///< sign(zz)
-      const double, ///< sin(theta)
-      const double  ///< cos(theta)
       );
 
   void find_surrounding_cells(
