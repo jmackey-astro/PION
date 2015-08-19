@@ -54,7 +54,7 @@
 /// simulation domain smaller.  If not set, this does nothing.  If
 /// set, you need to hardcode the new Xmin[],Xmax[] in the function.
 ///
-//#define RESET_DOMAIN
+///#define RESET_DOMAIN
 
 ///
 /// If set, this subtracts the mean density from column density

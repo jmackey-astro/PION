@@ -84,7 +84,7 @@
 //
 // Number of threads.
 //
-#define NUM_THREADS_MAIN  10
+#define NUM_THREADS_MAIN  8
 #define THREADNAME_MAP_OFF // allows use of getThreadName() under MSVC dbg
 //
 // Release or debug build.

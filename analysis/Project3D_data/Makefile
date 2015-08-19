@@ -189,7 +189,8 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   ifeq ($(IOMODE), USE_MPI)
   CXX = mpiCC
   endif
-  CXXFLAGS = -O1 -Wall -g #-wd981 -wd383
+  CXXFLAGS = -O3 -Wall
+  #CXXFLAGS += -g #-wd981 -wd383
   #CXXFLAGE = -O1 -Wall
   CXXFLAGS += -DINTEL
   #CXXFLAGS += -DTESTING
