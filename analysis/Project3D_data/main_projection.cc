@@ -45,6 +45,8 @@
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: debugged and fixed a few things.
+/// - 2015.08.19 JM: Changed subtraction of mean to take the mean
+///    from the first image and apply that to all subsequent images.
 
 
 ///
@@ -600,6 +602,10 @@ int main(int argc, char **argv)
     int *what2int=0;
     double **img_array=0;
 
+#ifdef SUBTRACT_MEAN
+    double **mean_array=0;
+#endif // SUBTRACT_MEAN
+
     switch (what_to_integrate) {
     case I_DENSITY:
     case I_NEUTRAL_NH:
@@ -671,6 +677,17 @@ int main(int argc, char **argv)
 	img_array[6] = im7;
 	img_array[7] = im8;
       }
+#ifdef SUBTRACT_MEAN
+      //
+      // allocate memory for top row of the first image, so that we
+      // can subtract that from all subsequent images.  Only do this
+      // for the two images of projected density and neutral density.
+      //
+      mean_array = mem.myalloc(mean_array,2);
+      for (int v=0;v<2;v++) {
+        mean_array[v] = mem.myalloc(mean_array[v],npix[0]*Nbins);
+      }
+#endif // SUBTRACT_MEAN
       break;
     default:
       rep.error("bad what-to-integrate integer...",what_to_integrate);
@@ -810,12 +827,25 @@ int main(int argc, char **argv)
       break;
     case I_ALL_SCALARS:
       //
+      // if we are on the first image, then we need to get the top
+      // row of pixels and store them in mean_array[img][x-pix]
+      //
+      if (ifile==0) {
+        for (int ix=0; ix<npix[0]; ix++) {
+          mean_array[0][ix] = img_array[0][npix[0]*(npix[1]-1)+ix];
+          mean_array[1][ix] = img_array[1][npix[0]*(npix[1]-1)+ix];
+        }
+      }
+
+      //
       // Here we need to subtract from the first and second images.
       //
       for (int iy=0; iy<npix[1]; iy++) {
         for (int ix=0; ix<npix[0]; ix++) {
-          img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
-          img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
+          img_array[0][npix[0]*iy+ix] -= mean_array[0][ix];
+          img_array[1][npix[0]*iy+ix] -= mean_array[1][ix];
+          //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
+          //img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
         }
       }
       break;
