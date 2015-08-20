@@ -28,6 +28,7 @@
 #define I_BXabs 8
 #define I_BYabs 9
 #define I_NII6584    10
+#define I_RM 11             ///< Rotation Measure
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"

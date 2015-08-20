@@ -1194,7 +1194,8 @@ void image::calculate_pixel(
   else if (what_to_integrate==I_B_STOKESQ ||
 	   what_to_integrate==I_B_STOKESU ||
 	   what_to_integrate==I_BXabs     ||
-	   what_to_integrate==I_BYabs) {
+	   what_to_integrate==I_BYabs     ||
+	   what_to_integrate==I_RM          ) {
     int bx=0,by=0,bz=0;			       
     if      (sa[XX]==XX) bx=BX;
     else if (sa[XX]==YY) bx=BY;
@@ -1257,7 +1258,29 @@ void image::calculate_pixel(
       *tot_mass += ans;
       im[px->ipix] = ans;
     }
-    else rep.error("Bad what to integrate -- Stokes Q/U or BX/BY",what_to_integrate);
+    else if (what_to_integrate==I_RM) {
+      //
+      // Rotation Measure:
+      // Point quantity needs to be multiplied by dl in parsecs and
+      // sqrt(4pi)*10^6 to give the RM in rad/m^2.
+      //
+      ans = get_point_RotationMeasure(&(px->int_pts.p[0]),SimPM.ftr,
+                                        bx,bz,signx,signz,st,ct);
+      for (int v=1; v<(npt-1); v++) {
+	wt = 6-wt;
+	ans += wt *get_point_RotationMeasure(&(px->int_pts.p[v]),
+                              SimPM.ftr, bx,bz,signx,signz,st,ct);
+      }
+      ans += get_point_RotationMeasure(&(px->int_pts.p[npt-1]),
+                              SimPM.ftr, bx,bz,signx,signz,st,ct);
+      ans *= hh*1.0e6*sqrt(4.0*M_PI)/3.0/pconst.parsec();
+      *tot_mass += ans;
+      im[px->ipix] = ans;
+    }
+    else {
+      rep.error("Bad what to integrate -- B-field options",
+                what_to_integrate);
+    }
   } // I_STOKES Q/U or BX/BY
   
   else if (what_to_integrate==I_VX) {

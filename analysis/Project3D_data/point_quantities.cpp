@@ -11,6 +11,7 @@
 /// - 2015.08.06 JM: Trying to avoid code duplication in
 ///  point_velocity and image classes, so both can derive from this
 ///  class.
+/// - 2015.08.19 JM: Added get_point_RotationMeasure()
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -315,6 +316,49 @@ double point_quantities::get_point_BYabs(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+double point_quantities::get_point_RotationMeasure(
+      struct point_4cellavg *pt, ///< pt
+      const int ifrac, ///< ifrac
+      const int bx,    ///< bx index (image coords)
+      const int bz,    ///< bz index (image coords)
+      const int sx,    ///< sign(xx)
+      const int sz,    ///< sign(zz)
+      const double st, ///< sin(theta)
+      const double ct  ///< cos(theta)
+      )
+{
+  //
+  // Bilinear interpolation with pre-calculated weights and
+  // neighbouring cells.
+  // The point value is RM = 0.81*n_e(cm^{-3})*B_los/sqrt(4pi)
+  // This gets multiplied at the end by the path length through each
+  // element of the integral (hh), by sqrt(4pi), and divided by 1 pc.
+  //
+  // the sqrt(4pi) factor is because the code uses units for B that
+  // are Gauss/sqrt(4pi), so that I don't have to do any multiplying
+  // or dividing by these factors in the code.
+  //
+  double val=0.0;
+  for (int v=0;v<4;v++) {
+    //
+    // If point exists, add its contribution, with weight.
+    //
+    if (pt->ngb[v]) {
+      val += pt->wt[v] *
+          (sx*pt->ngb[v]->P[bx]*st +sz*pt->ngb[v]->P[bz]*ct) *
+          (pt->ngb[v]->P[RO]*pt->ngb[v]->P[ifrac]);
+    }
+  }
+  //
+  // convert to cm^{-3} and return:
+  //
+  return val*SimPM.EP.H_MassFrac/pconst.m_p();
+};
 
 
 // ##################################################################

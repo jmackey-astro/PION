@@ -511,6 +511,109 @@ int main(int argc, char **argv)
   //
 
   //
+  // Setup arrays for the pixels in each image.
+  //
+  // If integrating velocity profiles, I need
+  // num_pixels*N_velocity_bins elements to my pixel array.
+  //
+  // If getting velocity profiles, also want a 2D image flattened in
+  // the perp. direction
+  //
+  // im is a pointer to one of im1/2/3/4/5
+  // 
+  double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0,
+         *im7=0, *im8=0, *im9=0;
+  long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
+
+  int n_images=0;
+  int *what2int=0;
+  double **img_array=0;
+#ifdef SUBTRACT_MEAN
+  double **mean_array=0;
+#endif // SUBTRACT_MEAN
+
+  switch (what_to_integrate) {
+  case I_DENSITY:
+  case I_NEUTRAL_NH:
+  case I_EMISSION:
+    //
+    // Only need one image:
+    //
+    n_images = 1;
+    im1 = mem.myalloc(im1,nels);
+    what2int  = mem.myalloc(what2int ,n_images);
+    img_array = mem.myalloc(img_array,n_images);
+    what2int[0] = what_to_integrate;
+    img_array[0] = im1;
+    break;
+  case I_VEL_LOS:
+  case I_VX:
+    n_images = 1;
+    im1 = mem.myalloc(im1,nels);
+    im2 = mem.myalloc(im2,npix[0]*npix[2]);
+    what2int  = mem.myalloc(what2int ,n_images);
+    img_array = mem.myalloc(img_array,n_images);
+    what2int[0] = what_to_integrate;
+    img_array[0] = im1;      
+    break;
+
+  case I_ALL_SCALARS:
+    if (SIMeqns==1) 
+      n_images = 4; // No B-field components
+    else
+      n_images = 9; // Project Stokes Q,U and BX,BT, RM
+    im1 = mem.myalloc(im1,nels);
+    im2 = mem.myalloc(im2,nels);
+    im3 = mem.myalloc(im3,nels);
+    im4 = mem.myalloc(im4,nels);
+    if (SIMeqns==2) { 
+      im5 = mem.myalloc(im5,nels);
+      im6 = mem.myalloc(im6,nels);
+      im7 = mem.myalloc(im7,nels);
+      im8 = mem.myalloc(im8,nels);
+      im9 = mem.myalloc(im9,nels);
+    }
+    what2int  = mem.myalloc(what2int ,n_images);
+    img_array = mem.myalloc(img_array,n_images);
+    what2int[0] = I_DENSITY;
+    what2int[1] = I_NEUTRAL_NH;
+    what2int[2] = I_EMISSION;
+    what2int[3] = I_NII6584;
+    if (SIMeqns==2) { 
+      what2int[4] = I_B_STOKESQ;
+      what2int[5] = I_B_STOKESU;
+      what2int[6] = I_BXabs;
+      what2int[7] = I_BYabs;
+      what2int[8] = I_RM;
+    }
+    img_array[0] = im1;
+    img_array[1] = im2;
+    img_array[2] = im3;
+    img_array[3] = im4;
+    if (SIMeqns==2) { 
+      img_array[4] = im5;
+      img_array[5] = im6;
+      img_array[6] = im7;
+      img_array[7] = im8;
+      img_array[8] = im9;
+    }
+#ifdef SUBTRACT_MEAN
+    //
+    // allocate memory for top row of the first image, so that we
+    // can subtract that from all subsequent images.  Only do this
+    // for the two images of projected density and neutral density.
+    //
+    mean_array = mem.myalloc(mean_array,2);
+    for (int v=0;v<2;v++) {
+      mean_array[v] = mem.myalloc(mean_array[v],npix[0]);
+    }
+#endif // SUBTRACT_MEAN
+    break;
+  default:
+    rep.error("bad what-to-integrate integer...",what_to_integrate);
+  }
+
+  //
   // Set output file; if multiple files, append _xxx to the name.
   // Initialise file handle to empty string.  Will use it later to label output file.
   //
@@ -590,22 +693,8 @@ int main(int argc, char **argv)
     //
 
     //
-    // If integrating velocity profiles, I need num_pixels*N_velocity_bins elements to my pixel array.
-    // If getting velocity profiles, also want a 2D image flattened in the perp. direction
+    // Initialize image arrays to zero
     //
-    // im is a pointer to one of im1/2/3/4/5
-    // 
-    double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0, *im7=0, *im8=0;
-    long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
-
-    int n_images=0;
-    int *what2int=0;
-    double **img_array=0;
-
-#ifdef SUBTRACT_MEAN
-    double **mean_array=0;
-#endif // SUBTRACT_MEAN
-
     switch (what_to_integrate) {
     case I_DENSITY:
     case I_NEUTRAL_NH:
@@ -613,82 +702,28 @@ int main(int argc, char **argv)
       //
       // Only need one image:
       //
-      n_images = 1;
-      im1 = mem.myalloc(im1,nels);
-      what2int  = mem.myalloc(what2int ,n_images);
-      img_array = mem.myalloc(img_array,n_images);
       for (int v=0;v<nels;           v++) im1[v]=0.0;
-      what2int[0] = what_to_integrate;
-      img_array[0] = im1;
       break;
     case I_VEL_LOS:
     case I_VX:
-      n_images = 1;
-      im1 = mem.myalloc(im1,nels);
-      im2 = mem.myalloc(im2,npix[0]*npix[2]);
-      what2int  = mem.myalloc(what2int ,n_images);
-      img_array = mem.myalloc(img_array,n_images);
       for (int v=0;v<nels;           v++) im1[v]=0.0;
       for (int v=0;v<npix[0]*npix[2];v++) im2[v]=0.0;
-      what2int[0] = what_to_integrate;
-      img_array[0] = im1;      
       break;
 
     case I_ALL_SCALARS:
-      if (SIMeqns==1) 
-	n_images = 4; // No field components
-      else
-	n_images = 8; // Project Stokes Q,U and BX,BT
-      im1 = mem.myalloc(im1,nels);
-      im2 = mem.myalloc(im2,nels);
-      im3 = mem.myalloc(im3,nels);
-      im4 = mem.myalloc(im4,nels);
+      for (int v=0;v<nels; v++) im1[v] = 0.0;
+      for (int v=0;v<nels; v++) im2[v] = 0.0;
+      for (int v=0;v<nels; v++) im3[v] = 0.0;
+      for (int v=0;v<nels; v++) im4[v] = 0.0;
       if (SIMeqns==2) { 
-	im5 = mem.myalloc(im5,nels);
-	im6 = mem.myalloc(im6,nels);
-	im7 = mem.myalloc(im7,nels);
-	im8 = mem.myalloc(im8,nels);
+        for (int v=0;v<nels; v++) im5[v] = 0.0;
+        for (int v=0;v<nels; v++) im6[v] = 0.0;
+        for (int v=0;v<nels; v++) im7[v] = 0.0;
+        for (int v=0;v<nels; v++) im8[v] = 0.0;
+        for (int v=0;v<nels; v++) im9[v] = 0.0;
       }
-      what2int  = mem.myalloc(what2int ,n_images);
-      img_array = mem.myalloc(img_array,n_images);
-      for (int v=0;v<nels; v++)
-	im1[v] = im2[v] = im3[v] = im4[v] = 0.0;
-      if (SIMeqns==2) { 
-	for (int v=0;v<nels; v++)
-	  im5[v] = im6[v] = im7[v] = im8[v] = 0.0;
-      }
-      what2int[0] = I_DENSITY;
-      what2int[1] = I_NEUTRAL_NH;
-      what2int[2] = I_EMISSION;
-      what2int[3] = I_NII6584;
-      if (SIMeqns==2) { 
-	what2int[4] = I_B_STOKESQ;
-	what2int[5] = I_B_STOKESU;
-	what2int[6] = I_BXabs;
-	what2int[7] = I_BYabs;
-      }
-      img_array[0] = im1;
-      img_array[1] = im2;
-      img_array[2] = im3;
-      img_array[3] = im4;
-      if (SIMeqns==2) { 
-	img_array[4] = im5;
-	img_array[5] = im6;
-	img_array[6] = im7;
-	img_array[7] = im8;
-      }
-#ifdef SUBTRACT_MEAN
-      //
-      // allocate memory for top row of the first image, so that we
-      // can subtract that from all subsequent images.  Only do this
-      // for the two images of projected density and neutral density.
-      //
-      mean_array = mem.myalloc(mean_array,2);
-      for (int v=0;v<2;v++) {
-        mean_array[v] = mem.myalloc(mean_array[v],npix[0]*Nbins);
-      }
-#endif // SUBTRACT_MEAN
       break;
+
     default:
       rep.error("bad what-to-integrate integer...",what_to_integrate);
     }
@@ -774,7 +809,7 @@ int main(int argc, char **argv)
     // Replace projected |Bx|,|By| (images 6,7) with values calculated
     // from the Stokes Q and U values in images 4,5.
     //
-    if (n_images==8) {
+    if (n_images==9) {
       double norm;
       for (int ix=0;ix<num_pixels;ix++) {
 	norm = sqrt(img_array[4][ix]*img_array[4][ix]+
@@ -835,6 +870,8 @@ int main(int argc, char **argv)
           mean_array[0][ix] = img_array[0][npix[0]*(npix[1]-1)+ix];
           mean_array[1][ix] = img_array[1][npix[0]*(npix[1]-1)+ix];
         }
+        //rep.printVec("rho",mean_array[0],npix[0]);
+        //rep.printVec("NH ",mean_array[1],npix[0]);
       }
 
       //
@@ -842,6 +879,11 @@ int main(int argc, char **argv)
       //
       for (int iy=0; iy<npix[1]; iy++) {
         for (int ix=0; ix<npix[0]; ix++) {
+          //if (!isfinite(img_array[0][npix[0]*iy+ix]) ||
+          //    !isfinite(mean_array[0][ix])) {
+          //  cout <<"not finite! "<<img_array[0][npix[0]*iy+ix];
+          //  cout<<"  "<<mean_array[0][ix]<<"\n";
+          //}
           img_array[0][npix[0]*iy+ix] -= mean_array[0][ix];
           img_array[1][npix[0]*iy+ix] -= mean_array[1][ix];
           //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
@@ -946,6 +988,8 @@ int main(int argc, char **argv)
 	im_name[6]=t.str(); t.str("");
 	t<<"Proj_byabs";
 	im_name[7]=t.str(); t.str("");
+	t<<"Proj_RM";
+	im_name[8]=t.str(); t.str("");
       }
       break;
     default:
@@ -1010,14 +1054,6 @@ int main(int argc, char **argv)
       err = imio.close_image_file(filehandle);
       if (err) rep.error("failed to close output file",err);
     }
-    im1 = mem.myfree(im1);
-    im2 = mem.myfree(im2);
-    im3 = mem.myfree(im3);
-    im4 = mem.myfree(im4);
-    im5 = mem.myfree(im5);
-    im6 = mem.myfree(im6);
-    im7 = mem.myfree(im7);
-    im8 = mem.myfree(im8);
     im_name = mem.myfree(im_name);
 
 
@@ -1038,6 +1074,23 @@ int main(int argc, char **argv)
   cout <<"--------------- Finised Analysing all Files -----------\n";
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Clearing up and Exiting ---------------\n";
+
+  im1 = mem.myfree(im1);
+  im2 = mem.myfree(im2);
+  im3 = mem.myfree(im3);
+  im4 = mem.myfree(im4);
+  im5 = mem.myfree(im5);
+  im6 = mem.myfree(im6);
+  im7 = mem.myfree(im7);
+  im8 = mem.myfree(im8);
+  im9 = mem.myfree(im9);
+  img_array=mem.myfree(img_array);
+  what2int=mem.myfree(what2int);
+#ifdef SUBTRACT_MEAN
+  mean_array[0]=mem.myfree(mean_array[0]);
+  mean_array[1]=mem.myfree(mean_array[1]);
+  mean_array=mem.myfree(mean_array);
+#endif // SUBTRACT_MEAN
   //
   // Need to delete extra cell position before deleting grid.
   //

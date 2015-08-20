@@ -11,6 +11,7 @@
 /// - 2015.08.06 JM: Trying to avoid code duplication in
 ///  point_velocity and image classes, so both can derive from this
 ///  class.
+/// - 2015.08.19 JM: Added get_point_RotationMeasure()
 
 #ifndef POINT_QUANTITIES_H
 #define POINT_QUANTITIES_H
@@ -134,6 +135,23 @@ class point_quantities {
       const int, ///< bz index (image coords)
       const int, ///< sign(xx)
       const int, ///< sign(yy)
+      const int, ///< sign(zz)
+      const double, ///< sin(theta)
+      const double  ///< cos(theta)
+      );
+
+  ///
+  /// Get the Rotation measure along the line of sight.  When
+  /// multiplied by the path length along each line segment (in pc)
+  /// and by sqrt(4pi) this gives the RM in units of rad/m^2.
+  /// It assumes n_e = n_H*y(H+), i.e. all electrons are from H-->H^+
+  ///
+  double get_point_RotationMeasure(
+      struct point_4cellavg *, ///< pt
+      const int, ///< ifrac
+      const int, ///< bx index (image coords)
+      const int, ///< bz index (image coords)
+      const int, ///< sign(xx)
       const int, ///< sign(zz)
       const double, ///< sin(theta)
       const double  ///< cos(theta)
