@@ -424,9 +424,11 @@ void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (in
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_ipos_as_double(const double *p_in, ///< physical position (input)
-					double *p_out       ///< integer position (output)
-					)
+
+void cell_interface::get_ipos_as_double(
+    const double *p_in, ///< physical position (input)
+    double *p_out       ///< integer position (output)
+    )
 {
   if (dxo2<0.0)
     rep.error("set up grid before trying to get integer positions!!!",dxo2);
@@ -443,9 +445,11 @@ void cell_interface::get_ipos_as_double(const double *p_in, ///< physical positi
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_dpos_vec(const int *p_in, ///< integer position (output)
-				  double *p_out    ///< physical position (input)
-				  )
+
+void cell_interface::get_dpos_vec(
+    const int *p_in, ///< integer position (output)
+    double *p_out    ///< physical position (input)
+    )
 {
   for (int v=0;v<SimPM.ndim;v++)
         p_out[v] = xmin[v] +(p_in[v]+1)*dxo2;
@@ -456,7 +460,11 @@ void cell_interface::get_dpos_vec(const int *p_in, ///< integer position (output
 // ##################################################################
 // ##################################################################
 
-void cell_interface::copy_cell(const cell *c1, cell *c2)
+
+void cell_interface::copy_cell(
+    const cell *c1,
+    cell *c2
+    )
 {
   for (int i=0;i<SimPM.ndim;i++) c2->pos[i] = c1->pos[i];
   for (int v=0;v<SimPM.nvar;v++) {

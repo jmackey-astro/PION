@@ -47,6 +47,8 @@
 /// - 2015.07.13 JM: debugged and fixed a few things.
 /// - 2015.08.19 JM: Changed subtraction of mean to take the mean
 ///    from the first image and apply that to all subsequent images.
+/// - 2015.08.20 JM: Changed image coordinates, so that the origin of
+///    the simulation is projected onto the image origin.
 
 
 ///
@@ -923,19 +925,32 @@ int main(int argc, char **argv)
     //rep.printVec("CELL POS:",grid->FirstPt()->pos,3);
     //rep.printVec("IMG  POS:",posIMG,3);
     //rep.printVec("SIM  POS:",posSIM,3);
-    double im_xmin[3];
+    //
+    // Want to set the image origin to project onto the simulation
+    // origin.  This is a clunky way to find it, but it works...
+    //
+    double im_xmin[3], o2[3];
+    pion_flt origin[3];
     for (int v=0; v<3;v++) {
       im_xmin[v] = 0.0;  //posSIM[v] - (posIMG[v]+0.5)*grid->DX();
+      origin[v] = 0.0;
+      o2[v] = 0.0;
     }
+    CI.get_ipos_as_double(o2,o2);
+    for (int v=0; v<3;v++) origin[v]=o2[v];
+    IMG.get_image_Dpos(origin,origin);
+    for (int v=0; v<3;v++) im_xmin[v] = -origin[v]*grid->DX();
+    rep.printVec("sim origin in units of dx",origin,3);
+
     double im_dx[3] = {grid->DX(), grid->DX(), grid->DX()};
     if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
       im_xmin[2] = v_min;
       im_dx[2]   = bin_size;
     }
-#ifdef TESTING
+//#ifdef TESTING
     rep.printVec("IMG XMIN:",im_xmin,3);
     rep.printVec("IMG DX:  ",im_dx,3);
-#endif // TESTING
+//#endif // TESTING
 
 
     //**********************
