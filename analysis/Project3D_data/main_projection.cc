@@ -56,7 +56,7 @@
 /// simulation domain smaller.  If not set, this does nothing.  If
 /// set, you need to hardcode the new Xmin[],Xmax[] in the function.
 ///
-///#define RESET_DOMAIN
+//#define RESET_DOMAIN
 
 ///
 /// If set, this subtracts the mean density from column density
@@ -161,7 +161,8 @@ void reset_domain(class MCMDcontrol *MCMD)
   rep.printVec("Old Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("Old Xmax",SimPM.Xmax,SimPM.ndim);
   for (int v=0;v<SimPM.ndim;v++) {
-    SimPM.Xmin[v] = -278.0856320e18;
+    // SimPM.Xmin[v] = -278.085632e18;  // for BT3_v020_r2p5, to give 768^3 grid
+    // SimPM.Xmin[v] = -227.524608e18;  // for BT3_v010_r2p5, to give 768^3 grid
     SimPM.NG[v] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
     SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
   }
