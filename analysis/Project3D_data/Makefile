@@ -393,7 +393,7 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 # Stuff Specific to this code #
 ###############################
 
-point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL}
+point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL} ${THREAD_INCLUDE}
 sim_projection.o: sim_projection.cc sim_projection.h point_quantities.h \
                   ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
 main_projection.o: main_projection.cc sim_projection.h point_quantities.h \

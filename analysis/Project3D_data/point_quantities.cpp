@@ -12,6 +12,8 @@
 ///  point_velocity and image classes, so both can derive from this
 ///  class.
 /// - 2015.08.19 JM: Added get_point_RotationMeasure()
+/// - 2015.08.21 JM: MP->Temperature() is NOT threadsafe, so had to
+///    hardcode the temperature estimate if using threads.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -91,7 +93,16 @@ double point_quantities::get_point_temperature(
   if (MP) {
     for (int v=0;v<4;v++) {
       if (pt->ngb[v]) {
+#ifdef THREADS
+        val += pt->wt[v]*(pt->ngb[v]->P[PG]*pconst.m_p()/
+          (pconst.kB()*pt->ngb[v]->P[RO]*SimPM.EP.H_MassFrac*(1.0+pt->ngb[v]->P[ifrac])));
+#else // no threads
+        //
+        // MP->Temperature() is not threadsafe on SuperMUC, so I need
+        // this ifdef...
+        //
         val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,SimPM.gamma);
+#endif // THREADS
       }
     }
   }

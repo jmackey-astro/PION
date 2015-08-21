@@ -1503,7 +1503,7 @@ void image::calculate_pixel(
        }
     }
 
-    *tot_mass += 0.0;  // this means nothing for emission integration...
+    //*tot_mass += 0.0;  // this means nothing for emission integration...
     im[px->ipix] = ans; ///1.0e80;
     //cout <<"\t\tans = "<<ans<<endl;
   } // I_EMISSION

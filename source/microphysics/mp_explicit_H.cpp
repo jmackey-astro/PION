@@ -382,6 +382,7 @@ mp_explicit_H::mp_explicit_H(
   JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
   JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
 #ifdef HE_INERT
+  JM_NION  = 1.0;
   JM_NELEC = 1.0; // if He is always neutral.
 #endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
