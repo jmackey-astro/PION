@@ -27,7 +27,7 @@
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
-
+/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
 // simulation.  First we get the directory listing, then for each file we load
@@ -1190,7 +1190,40 @@ void image::calculate_pixel(
     *tot_mass += ans;
     im[px->ipix] = ans;
   }
-  
+  else if (what_to_integrate==I_EM) {
+    //
+    // Emission Measure:
+    // Point quantity in units cm^{-6} needs to be multiplied by dl
+    // in parsecs to get projected units cm^{-6}.pc
+    //
+    //cout <<"calculating EM\n";
+    ans = get_point_EmissionMeasure(&(px->int_pts.p[0]),SimPM.ftr);
+    for (int v=1; v<(npt-1); v++) {
+      wt = 6-wt;
+      ans += wt *get_point_EmissionMeasure(&(px->int_pts.p[v]), SimPM.ftr);
+    }
+    ans += get_point_EmissionMeasure(&(px->int_pts.p[npt-1]), SimPM.ftr);
+    ans *= hh/3.0/pconst.parsec();
+    *tot_mass += ans;
+    im[px->ipix] = ans;
+  }
+  else if (what_to_integrate==I_BREMS20CM) {
+    //
+    // Bremsstrahlung at 20cm:
+    // Point quantity in units MJy/sr/cm
+    // Projected quantity in MJy/sr
+    //
+    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]),SimPM.ftr);
+    for (int v=1; v<(npt-1); v++) {
+      wt = 6-wt;
+      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]), SimPM.ftr);
+    }
+    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]), SimPM.ftr);
+    ans *= hh/3.0;
+    *tot_mass += ans;
+    im[px->ipix] = ans;
+  }
+
   else if (what_to_integrate==I_B_STOKESQ ||
 	   what_to_integrate==I_B_STOKESU ||
 	   what_to_integrate==I_BXabs     ||

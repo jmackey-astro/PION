@@ -49,6 +49,7 @@
 ///    from the first image and apply that to all subsequent images.
 /// - 2015.08.20 JM: Changed image coordinates, so that the origin of
 ///    the simulation is projected onto the image origin.
+/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
 
 
 ///
@@ -56,7 +57,7 @@
 /// simulation domain smaller.  If not set, this does nothing.  If
 /// set, you need to hardcode the new Xmin[],Xmax[] in the function.
 ///
-#define RESET_DOMAIN
+//#define RESET_DOMAIN
 
 ///
 /// If set, this subtracts the mean density from column density
@@ -525,7 +526,7 @@ int main(int argc, char **argv)
   // im is a pointer to one of im1/2/3/4/5
   // 
   double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0,
-         *im7=0, *im8=0, *im9=0;
+         *im7=0, *im8=0, *im9=0, *im10=0, *im11=0;
   long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
 
   int n_images=0;
@@ -562,19 +563,21 @@ int main(int argc, char **argv)
 
   case I_ALL_SCALARS:
     if (SIMeqns==1) 
-      n_images = 4; // No B-field components
+      n_images = 6; // No B-field components (dens, NH0, HA, NII, EM, 20cm)
     else
-      n_images = 9; // Project Stokes Q,U and BX,BT, RM
+      n_images = 11; // Project Stokes Q,U and BX,BT, RM
     im1 = mem.myalloc(im1,nels);
     im2 = mem.myalloc(im2,nels);
     im3 = mem.myalloc(im3,nels);
     im4 = mem.myalloc(im4,nels);
+    im5 = mem.myalloc(im5,nels);
+    im6 = mem.myalloc(im6,nels);
     if (SIMeqns==2) { 
-      im5 = mem.myalloc(im5,nels);
-      im6 = mem.myalloc(im6,nels);
       im7 = mem.myalloc(im7,nels);
       im8 = mem.myalloc(im8,nels);
       im9 = mem.myalloc(im9,nels);
+      im10 = mem.myalloc(im10,nels);
+      im11 = mem.myalloc(im11,nels);
     }
     what2int  = mem.myalloc(what2int ,n_images);
     img_array = mem.myalloc(img_array,n_images);
@@ -582,23 +585,27 @@ int main(int argc, char **argv)
     what2int[1] = I_NEUTRAL_NH;
     what2int[2] = I_EMISSION;
     what2int[3] = I_NII6584;
+    what2int[4] = I_EM;
+    what2int[5] = I_BREMS20CM;
     if (SIMeqns==2) { 
-      what2int[4] = I_B_STOKESQ;
-      what2int[5] = I_B_STOKESU;
-      what2int[6] = I_BXabs;
-      what2int[7] = I_BYabs;
-      what2int[8] = I_RM;
+      what2int[6] = I_B_STOKESQ;
+      what2int[7] = I_B_STOKESU;
+      what2int[8] = I_BXabs;
+      what2int[9] = I_BYabs;
+      what2int[10]= I_RM;
     }
     img_array[0] = im1;
     img_array[1] = im2;
     img_array[2] = im3;
     img_array[3] = im4;
+    img_array[4] = im5;
+    img_array[5] = im6;
     if (SIMeqns==2) { 
-      img_array[4] = im5;
-      img_array[5] = im6;
       img_array[6] = im7;
       img_array[7] = im8;
       img_array[8] = im9;
+      img_array[9] = im10;
+      img_array[10]= im11;
     }
 #ifdef SUBTRACT_MEAN
     //
@@ -718,12 +725,14 @@ int main(int argc, char **argv)
       for (int v=0;v<nels; v++) im2[v] = 0.0;
       for (int v=0;v<nels; v++) im3[v] = 0.0;
       for (int v=0;v<nels; v++) im4[v] = 0.0;
+      for (int v=0;v<nels; v++) im5[v] = 0.0;
+      for (int v=0;v<nels; v++) im6[v] = 0.0;
       if (SIMeqns==2) { 
-        for (int v=0;v<nels; v++) im5[v] = 0.0;
-        for (int v=0;v<nels; v++) im6[v] = 0.0;
         for (int v=0;v<nels; v++) im7[v] = 0.0;
         for (int v=0;v<nels; v++) im8[v] = 0.0;
         for (int v=0;v<nels; v++) im9[v] = 0.0;
+        for (int v=0;v<nels; v++) im10[v]= 0.0;
+        for (int v=0;v<nels; v++) im11[v]= 0.0;
       }
       break;
 
@@ -815,12 +824,12 @@ int main(int argc, char **argv)
     if (n_images==9) {
       double norm;
       for (int ix=0;ix<num_pixels;ix++) {
-	norm = sqrt(img_array[4][ix]*img_array[4][ix]+
-		    img_array[5][ix]*img_array[5][ix]);
-	img_array[6][ix] =
-	  norm*cos(0.5*atan2(img_array[5][ix],img_array[4][ix]));
-	img_array[7][ix] =
-	  norm*sin(0.5*atan2(img_array[5][ix],img_array[4][ix]));
+	norm = sqrt(img_array[6][ix]*img_array[6][ix]+
+		    img_array[7][ix]*img_array[7][ix]);
+	img_array[8][ix] =
+	  norm*cos(0.5*atan2(img_array[7][ix],img_array[6][ix]));
+	img_array[9][ix] =
+	  norm*sin(0.5*atan2(img_array[7][ix],img_array[6][ix]));
       }
     }
     // ***************************************************************
@@ -995,17 +1004,21 @@ int main(int argc, char **argv)
       im_name[2]=t.str(); t.str("");
       t<<"Proj_NII6584";
       im_name[3]=t.str(); t.str("");
+      t<<"Proj_EM";
+      im_name[4]=t.str(); t.str("");
+      t<<"Proj_BREMS20CM";
+      im_name[5]=t.str(); t.str("");
       if (SIMeqns==2) { 
 	t<<"Proj_b_q";
-	im_name[4]=t.str(); t.str("");
-	t<<"Proj_b_u";
-	im_name[5]=t.str(); t.str("");
-	t<<"Proj_bxabs";
 	im_name[6]=t.str(); t.str("");
-	t<<"Proj_byabs";
+	t<<"Proj_b_u";
 	im_name[7]=t.str(); t.str("");
-	t<<"Proj_RM";
+	t<<"Proj_bxabs";
 	im_name[8]=t.str(); t.str("");
+	t<<"Proj_byabs";
+	im_name[9]=t.str(); t.str("");
+	t<<"Proj_RM";
+	im_name[10]=t.str(); t.str("");
       }
       break;
     default:
@@ -1100,6 +1113,8 @@ int main(int argc, char **argv)
   im7 = mem.myfree(im7);
   im8 = mem.myfree(im8);
   im9 = mem.myfree(im9);
+  im10= mem.myfree(im10);
+  im11= mem.myfree(im11);
   img_array=mem.myfree(img_array);
   what2int=mem.myfree(what2int);
 #ifdef SUBTRACT_MEAN

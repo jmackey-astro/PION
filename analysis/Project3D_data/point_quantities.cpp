@@ -14,6 +14,7 @@
 /// - 2015.08.19 JM: Added get_point_RotationMeasure()
 /// - 2015.08.21 JM: MP->Temperature() is NOT threadsafe, so had to
 ///    hardcode the temperature estimate if using threads.
+/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -492,6 +493,80 @@ void point_quantities::get_point_NII6584_params(
   }
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+double point_quantities::get_point_EmissionMeasure(
+      const struct point_4cellavg *pt, ///< pt
+      const int ifrac ///< ifrac
+      )
+{
+  //
+  // Bilinear interpolation with pre-calculated weights and
+  // neighbouring cells.
+  // The point value is EM = n_e^2(cm^{-3})
+  // This gets multiplied at the end by the path length through each
+  // element of the integral (hh) and divided by 1 pc.
+  //
+  double val=0.0;
+  for (int v=0;v<4;v++) {
+    //
+    // If point exists, add its contribution, with weight.
+    //
+    if (pt->ngb[v]) {
+      val += pt->wt[v] 
+              *pow(pt->ngb[v]->P[RO]*pt->ngb[v]->P[ifrac],2.0);
+    }
+  }
+  //
+  // convert to cm^{-3} and return:
+  //
+  return val*pow(SimPM.EP.H_MassFrac/pconst.m_p(),2.0);
+};
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+double point_quantities::get_point_Bremsstrahlung20cm(
+      const struct point_4cellavg *pt, ///< pt
+      const int ifrac ///< ifrac
+      )
+{
+  //
+  // Bilinear interpolation with pre-calculated weights and
+  // neighbouring cells.
+  // The point value is j = 4.44e-21 (MJy/sr/cm) n_e n_i/sqrt(T)
+  // This gets multiplied at the end by the path length through each
+  // element of the integral (hh).
+  //
+  // assume n_e = n_i = rho*X_H*y(H+)/m_p
+  //
+  double val=0.0;
+  for (int v=0;v<4;v++) {
+    //
+    // If point exists, add its contribution, with weight.
+    //
+    if (pt->ngb[v]) {
+      val += pt->wt[v]
+              *pow(pt->ngb[v]->P[RO]*pt->ngb[v]->P[ifrac],2.0)
+              *sqrt(pt->ngb[v]->P[RO]*(1.0+pt->ngb[v]->P[ifrac])
+                    /pt->ngb[v]->P[PG]);
+    }
+  }
+  //
+  // multiply by constants to get emissivity in MJy/sr/cm
+  //
+  return val*pow(SimPM.EP.H_MassFrac/pconst.m_p(),2.5)
+            *sqrt(pconst.kB())
+            *4.44e-21;
+};
 
 
 

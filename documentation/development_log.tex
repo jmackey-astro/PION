@@ -90,6 +90,13 @@
 \item See if it helps with symmetry-axis problems in problems with cooling.
 \end{enumerate}
 
+
+\subsubsection{Projection code}
+\begin{enumerate}
+\item Parallelise in $y$-direction with MPI!!! (see note 2015.08.30).
+\item Update velocity stuff for PPV cubes and get it working.
+\end{enumerate}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%------------------------------%%%%%%%%%%%%%%%%%%%%
 \subsection{Log of Progress}
@@ -167,6 +174,16 @@ It needs a lot of changes to a lot of functions though.
 I think I need a full day to make this change, but it will be worth it in the long run, and it should allow the projection code to run bigger simulations\ldots
 If I can use $\sim50$\% less memory then I'll be able to analyse the $768^3$ sims, I think.
 So it will have to wait until after I get back from my holidays.
+
+\paragraph{2015.08.30 JM:}
+Just had an obvious idea for the projection code: I can do domain decomposition in the $y$-direction, because the projection is always perpendicular to this axis.
+This will allow me to speed it up a lot, and to project larger simulations.
+Just need to have a MPI communication to gather the image into onto rank 0 to write the image to disk.
+This will allow me to use the PPV functionality too.
+This is cool!  I should definitely do this soon.
+
+\paragraph{2015.08.30 JM:}
+Projection code: added 20cm Bremsstrahlung and Emission measure as scalars to calculate when projecting.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

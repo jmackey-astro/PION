@@ -12,6 +12,7 @@
 ///  point_velocity and image classes, so both can derive from this
 ///  class.
 /// - 2015.08.19 JM: Added get_point_RotationMeasure()
+/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
 
 #ifndef POINT_QUANTITIES_H
 #define POINT_QUANTITIES_H
@@ -63,7 +64,8 @@ class point_quantities {
 
   ///
   /// Get the temperature at a point, based on 4-cell bilinear
-  /// interpolation.  This requires a microphysics class.
+  /// interpolation.  This uses a microphysics class if not using
+  /// threads, otherwise is HARDCODED!!!
   ///
   double get_point_temperature(
           const struct point_4cellavg *, ///< point
@@ -180,6 +182,23 @@ class point_quantities {
           double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
           );
 
+  ///
+  /// Get the Emission Measure at a point, based on 4-cell bilinear
+  /// interpolation.  Returns value in cm^{-6}
+  ///
+  double get_point_EmissionMeasure(
+          const struct point_4cellavg *, ///< point
+          const int                      ///< ifrac index in prim.vec.
+          );
+
+  ///
+  /// Get the 20cm Bremsstrahlung at a point, based on 4-cell bilinear
+  /// interpolation.  Returns value in MJy/sr/cm.
+  ///
+  double get_point_Bremsstrahlung20cm(
+          const struct point_4cellavg *, ///< point
+          const int                      ///< ifrac index in prim.vec.
+          );
 
 };
 

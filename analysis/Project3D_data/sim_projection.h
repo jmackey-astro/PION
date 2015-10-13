@@ -12,6 +12,7 @@
 /// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
+/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
 
 
 #ifndef SIM_PROJECTION_H
@@ -25,10 +26,12 @@
 #define I_B_STOKESQ  5
 #define I_B_STOKESU  6
 #define I_ALL_SCALARS 7
-#define I_BXabs 8
-#define I_BYabs 9
+#define I_BXabs       8
+#define I_BYabs       9
 #define I_NII6584    10
-#define I_RM 11             ///< Rotation Measure
+#define I_RM         11   ///< Rotation Measure
+#define I_BREMS20CM  12   ///< 20cm Bremsstrahlung
+#define I_EM         13   ///< Emission measure (projected n_e^2)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
