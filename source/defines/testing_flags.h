@@ -39,7 +39,7 @@
 //
 //#define FUNCTION_ID
 
-//#define RT_TESTING ///< Enable this for debugging info on raytracing.
+#define RT_TESTING ///< Enable this for debugging info on raytracing.
 
 //#define RSTESTING ///< If testing the Riemann Solvers.
 
@@ -52,7 +52,7 @@
 /// and disables timestep limiting in first 3 steps.
 ///
 //#define RT_TEST_PROBS
-//#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
+#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
 
 /// for the field loop advection test problem only.
 //#define CHECK_MAGP

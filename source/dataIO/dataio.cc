@@ -2211,7 +2211,9 @@ int dataio_text::output_ascii_data(
   }
   //  cout <<"(dataio_text::output_ascii_data) Writing data in format: x[Ndim], rho, p_g, v_x, v_y, v_z, e_int(erg/mass), [B_x, B_y, B_z, p_g+p_m].\n";
   double b2=0.; // magnetic field squared.
-  //double Utemp[SimPM.nvar];
+#ifdef RT_TESTING_OUTPUTCOL
+  double Utemp[SimPM.nvar];
+#endif // RT_TESTING_OUTPUTCOL
   //  outf.setf( ios_base::fixed,ios_base::floatfield );
   //  outf.precision(6);
   outf << "# format: x,[y,z,],rho,pg,vx,vy,vz,[Bx,By,Bz],[Tr0,Tr1,Tr2,..],T,[Tau0,Tau1,...]\n";

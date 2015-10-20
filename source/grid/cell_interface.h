@@ -40,6 +40,10 @@
 #include "constants.h"
 #include "sim_constants.h"
 
+#ifdef RT_TESTING
+#include <iostream>
+#endif
+
 class cell_interface;
 
 #ifdef COUNT_ENERGETICS
@@ -340,8 +344,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (iVsh[s] <0) { 
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
       return;
     }
 #endif // RT_TESTING
@@ -363,8 +367,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (iVsh[s] <0) { 
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
       return -1.0e99;
     }
 #endif // RT_TESTING
@@ -386,8 +390,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (idS[s] <0) {
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
       return;
     }
 #endif // RT_TESTING
@@ -409,8 +413,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (idS[s] <0) {
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
       return -1.0e99;
     }
 #endif // RT_TESTING
