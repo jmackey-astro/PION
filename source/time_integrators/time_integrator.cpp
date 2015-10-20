@@ -673,7 +673,6 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
       }
       for (int v=0; v<FVI_nion; v++) {
         FVI_ionising_srcs[v].Vshell = CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
-        cout <<"FVI_ionising_srcs[v].Vshell="<<FVI_ionising_srcs[v].Vshell<<"\n";
         FVI_ionising_srcs[v].dS     = CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
         CI.get_cell_col(c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].DelCol);
         CI.get_col(     c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);

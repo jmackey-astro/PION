@@ -39,7 +39,7 @@
 //
 //#define FUNCTION_ID
 
-#define RT_TESTING ///< Enable this for debugging info on raytracing.
+//#define RT_TESTING ///< Enable this for debugging info on raytracing.
 
 //#define RSTESTING ///< If testing the Riemann Solvers.
 

@@ -30,6 +30,7 @@
 ///    associated with NTau>=1 optical depths, for flexibility.
 /// - 2013.09.05 JM: modified error checking in inline functions.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.10.19 JM: changed extra_data to double b/c Vshell is too large.
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
@@ -90,7 +91,7 @@ class cell {
   pion_flt *Ph;  ///< Primitive State vector at half timestep.
   pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
  private:
-  pion_flt *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
+  double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
  public:
   int id;      ///< Grid point's id.
   int isedge;  ///< Integer specifying if it is an edge cell, and if so, which edge.
