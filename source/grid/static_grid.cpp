@@ -1598,7 +1598,8 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
         );
     }
     else {
-      err = Wind->add_source(SWP.params[isw]->dpos,
+      err = Wind->add_source(
+        SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
         SWP.params[isw]->type,
         SWP.params[isw]->Mdot,

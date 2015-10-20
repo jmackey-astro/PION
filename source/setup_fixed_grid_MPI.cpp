@@ -132,6 +132,7 @@ int setup_fixed_grid_pllel::setup_grid(
   cout <<"\t DX = "<<(*grid)->DX()<<"\n";
   dp.grid = (*grid);
 #endif
+  cout <<"DX = "<<(*grid)->DX()<<"\n";
 
   return(0);
 }

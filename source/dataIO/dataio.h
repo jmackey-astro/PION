@@ -19,6 +19,7 @@
 /// - 2015.07.09 JM: updated tracer parameters (each tracer has its
 ///    own parameter name.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
+/// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 
 #ifndef DATAIO_H
 #define DATAIO_H

@@ -41,6 +41,7 @@
 ///    errors in the wind properties from rounding errors.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -116,7 +117,7 @@ int stellar_wind::add_source(
         const double vinf, ///< Vinf (km/s)
         const double temp, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
         const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-        const double *trv  ///< Tracer values of wind (if any)
+        const pion_flt *trv  ///< Tracer values of wind (if any)
         )
 {
   struct wind_source *ws = 0;
@@ -139,6 +140,8 @@ int stellar_wind::add_source(
 
   for (int v=0;v<SimPM.ndim;v++)
     ws->dpos[v] = pos[v];
+  rep.printVec("ws->dpos",ws->dpos,SimPM.ndim);
+
   for (int v=SimPM.ndim;v<MAX_DIM;v++)
     ws->dpos[v] = VERY_LARGE_VALUE;
 
@@ -156,7 +159,10 @@ int stellar_wind::add_source(
 
   ws->tracers=0;
   ws->tracers = mem.myalloc(ws->tracers,SimPM.ntracer);
-  for (int v=0;v<SimPM.ntracer; v++) ws->tracers[v] = trv[v];
+  for (int v=0;v<SimPM.ntracer; v++) {
+    ws->tracers[v] = trv[v];
+    cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
+  }
     
   ws->cells_added = false;
 
@@ -281,6 +287,10 @@ void stellar_wind::set_wind_cell_reference_state(
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
+  double pp[SimPM.ndim];
+  CI.get_dpos(wc->c,pp);
+  rep.printVec("cell pos", pp, SimPM.ndim);
+  cout <<"dist="<<wc->dist<<"\n";
 
   //
   // Density at cell position: rho = Mdot/(4.pi.R^2.v_inf) (for 3D)
@@ -569,7 +579,8 @@ void stellar_wind::get_src_drad(
 
 
 
-void stellar_wind::get_src_Vinf(const int id, ///< src id
+void stellar_wind::get_src_Vinf(
+        const int id, ///< src id
         double *x   ///< Vinf (output)
         )
 {
@@ -582,9 +593,10 @@ void stellar_wind::get_src_Vinf(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_Tw(const int id, ///< src id
-            double *x   ///< Stellar Radius (output)
-            )
+void stellar_wind::get_src_Tw(
+        const int id, ///< src id
+        double *x   ///< Stellar Radius (output)
+        )
 {
   *x = wlist[id]->Tw;
 }
@@ -595,9 +607,10 @@ void stellar_wind::get_src_Tw(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_Rstar(const int id, ///< src id
-         double *x   ///< Stellar radius (output)
-         )
+void stellar_wind::get_src_Rstar(
+        const int id, ///< src id
+        double *x   ///< Stellar radius (output)
+        )
 {
   *x = wlist[id]->Rstar;
 }
@@ -608,8 +621,9 @@ void stellar_wind::get_src_Rstar(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_trcr(const int id, ///< src id
-        double *x   ///< tracers (output)
+void stellar_wind::get_src_trcr(
+        const int id, ///< src id
+        pion_flt *x   ///< tracers (output)
         )
 {
   for (int v=0;v<SimPM.ntracer; v++)
@@ -623,7 +637,8 @@ void stellar_wind::get_src_trcr(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_type(const int id, ///< src id
+void stellar_wind::get_src_type(
+        const int id, ///< src id
         int *x   ///< type of wind (=0 for now) (output)
         )
 {
@@ -698,7 +713,7 @@ int stellar_wind_evolution::add_source(
         const double vinf, ///< Vinf (km/s)
         const double Twnd, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
         const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-        const double *trv  ///< Tracer values of wind (if any)
+        const pion_flt *trv  ///< Tracer values of wind (if any)
         )
 {
   //
@@ -751,7 +766,7 @@ int stellar_wind_evolution::add_evolving_source(
   const double  rad,        ///< radius (physical units).
   const int    type,        ///< type (must be 3, for variable wind).
   const double Rstar,       ///< Radius at which to get gas pressure from Teff
-  const double *trv,        ///< Any (constant) wind tracer values.
+  const pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)]
   const double t_now,       ///< current simulation time, to see if src is active.

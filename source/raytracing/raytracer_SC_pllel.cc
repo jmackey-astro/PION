@@ -394,7 +394,7 @@ void raytracer_USC_pllel::col2cell_3d(
 
 #ifdef RT_TESTING
   //cout <<"3D ShortChars:: cols for cell id="<<c->id<<"\n";
-  if (!GS.equalD(dx[0],0.0) && !GS.equalD(dx[1],0.0) &&
+  if (!pconst.equalD(dx[0],0.0) && !pconst.equalD(dx[1],0.0) &&
       (col1[0]<0.0 || col2[0]<0.0 || col3[0]<0.0 || col4[0]<0.0)) {
     cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
     cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
@@ -417,7 +417,7 @@ void raytracer_USC_pllel::col2cell_3d(
   // doesn't matter.
   //
   double dpos[3]; CI.get_dpos(c,dpos);
-  if (GS.distance(dd,dpos,SimPM.ndim) < gridptr->DX()/2.) {
+  if (gridptr->distance(dd,dpos) < gridptr->DX()/2.) {
     cout.setf(ios_base::scientific); cout.precision(15);
     cout <<"cell with max.diff in step 1: id="<<c->id<<"\n";
     cout <<"pnt  pos="; rep.printVec("pnt",dd,SimPM.ndim);
@@ -441,13 +441,13 @@ void raytracer_USC_pllel::col2cell_3d(
 #ifdef RT_TESTING
   for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
     if (col1[iT]<0.0) {cout <<"col1="<<col1[iT]<<", setting to zero.\n"; col1[iT]=0.0;}
-    if (col2[iT]<0.0 && !GS.equalD(dx[0],0.0))
+    if (col2[iT]<0.0 && !pconst.equalD(dx[0],0.0))
       {cout <<"col2="<<col2[iT]<<", setting to zero.\n"; col2[iT]=0.0;}
     //else if (col2<0.) cout <<"dx[0]="<<dx[0]<<"\n";
-    if (col3[iT]<0.0 && !GS.equalD(dx[1],0.0))
+    if (col3[iT]<0.0 && !pconst.equalD(dx[1],0.0))
       {cout <<"col3="<<col3[iT]<<", setting to zero.\n"; col3[iT]=0.0;}
     //else if (col3<0.) cout <<"dx[1]="<<dx[1]<<"\n";
-    if (col4[iT]<0.0 && !GS.equalD(dx[0],0.0)  && !GS.equalD(dx[1],0.0))
+    if (col4[iT]<0.0 && !pconst.equalD(dx[0],0.0)  && !pconst.equalD(dx[1],0.0))
       {cout <<"col4="<<col4[iT]<<", setting to zero.\n"; col4[iT]=0.0;}
     //else if (col4<0.) cout <<"dx[0]="<<dx[0]<<"\tdx[1]="<<dx[1]<<"\n";
   }

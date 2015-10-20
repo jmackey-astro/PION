@@ -9,6 +9,7 @@
 /// - 2015.07.03 JM: Started to change tracer setup in files.
 ///    Put units and JetParams classes into this file from global.h.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
@@ -173,7 +174,7 @@ struct stellarwind_params {
   double Vinf;  ///< wind terminal velocity in km/s.
   double Rstar; ///< radius at which to set pressure based on Tstar.
   double Tstar; ///< stellar temperature (sets pressure at r=Rstar).
-  double tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
+  pion_flt tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
   double radius;
   ///< Radius out to which boundary condition is imposed (physical).
   std::string evolving_wind_file; ///< name of file containing evolving wind data.

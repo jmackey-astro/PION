@@ -49,6 +49,7 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
+/// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -281,7 +282,7 @@ void pm_idimarr::assign_val(void *val)
 }
 void pm_dvararr::assign_val(void *val)
 {
-  for (int i=0;i<len;i++) ptr[i]= (static_cast<double *>(val))[i];
+  for (int i=0;i<len;i++) ptr[i]= (static_cast<pion_flt *>(val))[i];
 }
 
 

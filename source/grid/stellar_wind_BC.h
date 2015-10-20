@@ -18,6 +18,7 @@
 ///    rounding errors created potential errors in 1D.
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
 
 
 #ifndef STELLAR_WIND_BC_H
@@ -76,7 +77,8 @@ struct wind_source {
     Mdot,  ///< mass loss rate
     Vinf,  ///< wind velocity
     Tw,    ///< wind temperature
-    Rstar, ///< Radius of star.
+    Rstar; ///< Radius of star.
+  pion_flt
     *tracers; ///< tracer values of wind.
   bool
     //ipos_set, ///< false until we set the integer position.
@@ -109,7 +111,7 @@ class stellar_wind {
       const double,   ///< Vinf (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Stellar Radius (to get gas pressure)
-      const double *  ///< Tracer values of wind (if any)
+      const pion_flt *  ///< Tracer values of wind (if any)
       );
 
   ///
@@ -120,7 +122,7 @@ class stellar_wind {
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).
       const double,   ///< Radius at which to get gas pressure from Teff
-      const double *, ///< Any (constant) wind tracer values.
+      const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
@@ -186,23 +188,28 @@ class stellar_wind {
         double *   ///< mdot (output)
         );
 
-  void get_src_Vinf(const int, ///< src id
+  void get_src_Vinf(
+        const int, ///< src id
         double *   ///< Vinf (output)
         );
 
-  void get_src_Tw(const int, ///< src id
-      double *   ///< Temperature (output)
-      );
-
-  void get_src_Rstar(const int, ///< src id
-         double *   ///< Stellar radius (output)
-         );
-
-  void get_src_trcr(const int, ///< src id
-        double *   ///< tracers (output)
+  void get_src_Tw(
+        const int, ///< src id
+        double *   ///< Temperature (output)
         );
 
-  void get_src_type(const int, ///< src id
+  void get_src_Rstar(
+        const int, ///< src id
+        double *   ///< Stellar radius (output)
+        );
+
+  void get_src_trcr(
+        const int, ///< src id
+        pion_flt *   ///< tracers (output)
+        );
+
+  void get_src_type(
+        const int, ///< src id
         int *   ///< type of wind (=0 for now) (output)
         );
 
@@ -278,7 +285,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< Vinf (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Stellar Radius (to get gas pressure)
-      const double *  ///< Tracer values of wind (if any)
+      const pion_flt *  ///< Tracer values of wind (if any)
       );
 
   ///
@@ -291,7 +298,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).
       const double,   ///< Radius at which to get gas pressure from Teff
-      const double *, ///< Any (constant) wind tracer values.
+      const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
