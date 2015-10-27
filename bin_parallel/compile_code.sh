@@ -196,7 +196,7 @@ fi
 #PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
 
 # Read in turbulence simulations provided by Blakesley Burkhart
-#PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
+PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 
 PION_OPTIONS+=" -DCODE_EXT_SBII"
 export PION_OPTIONS
