@@ -205,8 +205,8 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   // Get Max velocity along a grid direction.
   //
   pion_flt temp = fabs(c->P[eqVX]);
-  if (FV_gndim>1) temp = max(temp,fabs(c->P[eqVY]));
-  if (FV_gndim>2) temp = max(temp,fabs(c->P[eqVZ]));
+  if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
+  if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
   
   //
   // Add the sound speed to this, and it is the max wavespeed.

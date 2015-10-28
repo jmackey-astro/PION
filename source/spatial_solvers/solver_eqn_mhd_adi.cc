@@ -321,8 +321,8 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   //
   pion_flt u1[eq_nvar];
   pion_flt temp = fabs(c->P[eqVX]);
-  if (FV_gndim>1) temp = max(temp,fabs(c->P[eqVY]));
-  if (FV_gndim>2) temp = max(temp,fabs(c->P[eqVZ]));
+  if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
+  if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
   
   /*  if (fabs(c->P[VX])>fabs(c->P[VY])) {temp = fabs(c->P[VX]);}
    else {temp = fabs(c->P[VY]);}

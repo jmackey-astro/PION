@@ -63,7 +63,7 @@
 /// If set, this subtracts the mean density from column density
 /// images.
 ///
-#define SUBTRACT_MEAN
+//#define SUBTRACT_MEAN
 
 #include <iostream>
 #include <sstream>
@@ -162,8 +162,9 @@ void reset_domain(class MCMDcontrol *MCMD)
   rep.printVec("Old Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("Old Xmax",SimPM.Xmax,SimPM.ndim);
   for (int v=0;v<SimPM.ndim;v++) {
-    //SimPM.Xmin[v] = -278.085632e18;  // for BT3_v020_r2p5, to give 768^3 grid
-    SimPM.Xmin[v] = -227.524608e18;  // for BT3_v010_r2p5, to give 768^3 grid
+    //SimPM.Xmin[v] = -309.686272e18;  // for BT3_v070_r2p5, to give 768^3 grid
+    //SimPM.Xmin[v] = -278.085632e18;  // for BT3_v[020/030]_r2p5, to give 768^3 grid
+    //SimPM.Xmin[v] = -227.524608e18;  // for BT3_v010_r2p5, to give 768^3 grid
     SimPM.NG[v] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
     SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
   }
