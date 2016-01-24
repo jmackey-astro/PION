@@ -36,7 +36,7 @@
 }
 
 \title{Development log for \pion{}}
-\author{Jonathan Mackey (AIfA)}
+\author{Jonathan Mackey (DIAS)}
 
 \begin{document}
 \maketitle
@@ -58,20 +58,20 @@
 
 \subsubsection{First I need to deal with global.h/.cc to get rid of all the global stuff.}
 \begin{enumerate}
-\item 2015.06.07: Got rid of global.h/global.cc and got serial code to compile again.
+\item \sout{2015.06.07: Got rid of global.h/global.cc and got serial code to compile again.}
 \item I have already made a lot of progress since mid-January, by spending a short while every day working on \pion{} (max.~1 hour per day).
-\item XXX JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h
-\item XXX Stellar wind parameters class needs to go somewhere.
-\item XXX GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/ [\textbf{DONE 02.03.15}], and the constants can go into sim-constants.
-  The only thing that doesn't have an obvious home is equalD(); it is a very useful function, maybe it can be on its own somewhere?
-\item XXX Remove the global microphysics pointer; maybe put it in sim-control? (in microphysics\_base.h)
-\item XXX Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.
+\item XXX \sout{JetParams class: what is that doing here?  Where can it go?  I guess into simparams.h}
+\item XXX \sout{Stellar wind parameters class needs to go somewhere.}
+\item XXX \sout{GeneralStuff needs to be got rid of entirely; I can make an interpolation class in the tools/ directory, and also a timers class in tools/ [\textbf{DONE 02.03.15}], and the constants can go into sim-constants.
+  The only thing that doesn't have an obvious home is equalD(); it is a very useful function, maybe it can be on its own somewhere?}
+\item XXX \sout{Remove the global microphysics pointer; maybe put it in sim-control? (in microphysics\_base.h)}
+\item XXX \sout{Move the raytracing base class to its own header file, and get rid of the global pointer; again maybe put it in sim-control.}
 \end{enumerate}
 
 \subsubsection{Then a few things that need fixing}
 \begin{enumerate}
-\item Change the boundary conditions setup so that each boundary has its own line in the parameter files.
-\item Change the microphysics and tracer variable setup so that each tracer variable has its own line in the parameter file (and maybe include some variables automatically when needed by microphysics?).
+\item \hl{Change the boundary conditions setup so that each boundary has its own line in the parameter files.}
+\item \hl{Change the microphysics and tracer variable setup so that each tracer variable has its own line in the parameter file (and maybe include some variables automatically when needed by microphysics?).}
 \end{enumerate}
 
 \subsubsection{I need a new uniform\_grid class.}
