@@ -194,8 +194,6 @@ int main(int argc, char **argv)
   MCMD.set_myrank(myrank);
   MCMD.set_nproc(nproc);
 
-  ostringstream path; path << "log_projection_"<<myrank<<"_";
-  rep.redirect(path.str());
 
 #ifdef THREADS
   tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
@@ -238,7 +236,7 @@ int main(int argc, char **argv)
   string outfile    = argv[3];
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
-  //rep.redirect(redir.str());
+  rep.redirect(redir.str());
 
   //
   // start a timer, so I can see how long each step takes.
@@ -542,7 +540,7 @@ int main(int argc, char **argv)
   // more than one MPI process.
   //
   int rank0_npix[3]={-1,-1,-1}, rank0_num_pixels=0;
-  if (myrank==0 && nproc>1) {
+  if (myrank==0) {
     nels *= nproc;
     rank0_npix[0] = npix[0];
     rank0_npix[1] = npix[1]*nproc;
@@ -692,7 +690,7 @@ int main(int argc, char **argv)
     if ( (err=MCMD.decomposeDomain(perpaxis)) !=0) 
       rep.error("Couldn't Decompose Domain!",err);
 
-    cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7;
+    cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.156e7;
     cout <<" yrs for step="<<ifile<<"   ############\n";
     cout.flush();
 

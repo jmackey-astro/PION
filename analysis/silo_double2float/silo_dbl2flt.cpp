@@ -22,6 +22,7 @@ using namespace std;
 #include "defines/testing_flags.h"
 
 #include "tools/reporting.h"
+#include "tools/timer.h"
 #include "constants.h"
 
 #include "dataIO/dataio.h"
@@ -151,6 +152,15 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
   //
+  // start a timer, so I can see how long each step takes.
+  //
+  clk.start_timer("mainloop");
+  double mltsf=0.0;
+  mltsf=clk.time_so_far("mainloop");
+  cout <<"*-*-*-* Starting code,\t total time so far = "<<mltsf;
+  cout <<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+  cout.flush();
+  //
   // loop over all files: open first+output and write the difference.
   //
   for (unsigned int fff=0; fff<nfiles; fff++) {
@@ -173,6 +183,10 @@ int main(int argc, char **argv)
     //
     err = io_read.ReadHeader(inputfile);
     if (err) rep.error("Didn't read header",err);
+
+    cout <<"#### SIMULATION TIME: "<<SimPM.simtime/3.156e7;
+    cout <<" yrs for step="<<fff<<"   ####\n";
+    //cout.flush();
   
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
@@ -199,6 +213,11 @@ int main(int argc, char **argv)
     // move onto next first and output files
     //
     ff++;
+    mltsf=clk.time_so_far("mainloop");
+    cout <<"*-*-*-* Loop: "<< fff <<",\t total time so far = ";
+    cout <<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
+    cout.flush();
+
   } // move onto next file
 
   //

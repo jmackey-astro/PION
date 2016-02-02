@@ -385,11 +385,11 @@ int main(int argc, char **argv)
 #ifdef SERIAL
     //    outfile = icfile+".silo";
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo ("DOUBLE");
+    dataio=0; dataio=new dataio_silo ("FLOAT");
 #endif
 #ifdef PARALLEL
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo_pllel ("DOUBLE",&MCMD);
+    dataio=0; dataio=new dataio_silo_pllel ("FLOAT",&MCMD);
 #endif
   }
 #endif // if SILO defined.
