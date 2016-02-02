@@ -7,6 +7,7 @@
 ///
 /// Modifications :\n
 /// - 2015.01.27 JM: moved from sim_control_MPI.h
+/// - 2016.02.02 JM: Added option to decompose only along one axis.
 
 #ifndef MCMD_CONTROL_H
 #define MCMD_CONTROL_H
@@ -14,6 +15,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "sim_constants.h"
+#include "constants.h"
 #include <vector>
 
 ///
@@ -54,6 +56,13 @@ class MCMDcontrol {
   /// a structure which contains the domain of each processor.
   ///
   int decomposeDomain();
+
+  ///
+  /// Decompose the domain into blocks for each processor, and set up
+  /// a structure which contains the domain of each processor.
+  /// *** This version decomposes only along one axis ***
+  ///
+  int decomposeDomain(const enum axes);
 
   ///
   /// Get a list of all abutting domains, including corner/edge

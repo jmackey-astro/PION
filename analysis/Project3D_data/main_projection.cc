@@ -63,7 +63,7 @@
 /// If set, this subtracts the mean density from column density
 /// images.
 ///
-//#define SUBTRACT_MEAN
+#define SUBTRACT_MEAN
 
 #include <iostream>
 #include <sstream>
@@ -189,10 +189,13 @@ int main(int argc, char **argv)
   // Also initialise the MCMD class with myrank and nproc.
   //
   class MCMDcontrol MCMD;
-  int r=-1, np=-1;
-  COMM->get_rank_nproc(&r,&np);
-  MCMD.set_myrank(r);
-  MCMD.set_nproc(np);
+  int myrank=-1, nproc=-1;
+  COMM->get_rank_nproc(&myrank,&nproc);
+  MCMD.set_myrank(myrank);
+  MCMD.set_nproc(nproc);
+
+  ostringstream path; path << "log_projection_"<<myrank<<"_";
+  rep.redirect(path.str());
 
 #ifdef THREADS
   tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
@@ -414,8 +417,12 @@ int main(int argc, char **argv)
   // First decompose the domain, so I know the dimensions of the local
   // grid to set up.  If nproc==1, then this sets the local domain to
   // be the full domain.
+  // Get axis corresponding to perpdir, and decompose only along
+  // this axis.
   //
-  err  = MCMD.decomposeDomain();
+  enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
+  cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
+  MCMD.decomposeDomain(perpaxis);
   if (err) rep.error("main: failed to decompose domain!",err);
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -529,6 +536,19 @@ int main(int argc, char **argv)
   double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0,
          *im7=0, *im8=0, *im9=0, *im10=0, *im11=0;
   long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
+
+  //
+  // first processor needs a bigger array for the images if there is
+  // more than one MPI process.
+  //
+  int rank0_npix[3]={-1,-1,-1}, rank0_num_pixels=0;
+  if (myrank==0 && nproc>1) {
+    nels *= nproc;
+    rank0_npix[0] = npix[0];
+    rank0_npix[1] = npix[1]*nproc;
+    rank0_npix[2] = npix[2];
+    rank0_num_pixels = rank0_npix[0]*rank0_npix[1];
+  }
 
   int n_images=0;
   int *what2int=0;
@@ -669,7 +689,7 @@ int main(int argc, char **argv)
     reset_domain(&MCMD);
 #endif
     if (err) rep.error("Didn't read header",err);
-    if ( (err=MCMD.decomposeDomain()) !=0) 
+    if ( (err=MCMD.decomposeDomain(perpaxis)) !=0) 
       rep.error("Couldn't Decompose Domain!",err);
 
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.16e7;
@@ -814,6 +834,84 @@ int main(int argc, char **argv)
       cout <<"\t time = "<<tsf<<" secs."<<"\n";
       //cout.flush();
       clk.stop_timer("makeimage");
+
+      // ------------------------------------------------------------
+      // ------------------------------------------------------------
+      // If nproc>1, then we need to gather all data on process 0.
+      //
+      if (nproc>1 && myrank==0) {
+        //
+        // allocate buffer to receive data.
+        //
+        //cout <<"RANK 0: RECEIVING DATA\n";
+        //double *buf =0;
+        long int ct = nels/nproc;
+        //buf = mem.myalloc(buf,ct);
+        //
+        // loop over all the other processes to get data from them,
+        // but not neccessarily in order.
+        //
+        for (int irank=1; irank<nproc; irank++) {
+          string recv_id;
+          int recv_tag=-1;
+          int from_rank=-1;
+          err = COMM->look_for_data_to_receive(
+                       &from_rank, ///< rank of sender
+                       recv_id,    ///< identifier for receive.
+                       &recv_tag,  ///< comm_tag associated with data.
+                       COMM_DOUBLEDATA ///< type of data we want.
+                       );
+          if (err) rep.error("look for cell data failed",err);
+
+          //
+          // Receive data into buffer.
+          //
+          //cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
+          err = COMM->receive_double_data(
+                  from_rank, ///< rank of process we are receiving from.
+                  recv_tag,  ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
+                  recv_id, ///< identifier for receive, for any book-keeping that might be needed.
+                  ct, ///< number of doubles to receive
+                  &(im[ct*from_rank])
+                  //buf ///< Pointer to array to write to (must be already initialised).
+                  );
+          if (err) {
+            cout <<from_rank <<"\t"<< recv_tag <<"\t"<< recv_id;
+            cout <<"\t"<< ct <<"\t"<< irank<<"\n";
+            rep.error("Receive image getdata failed",err);
+          }
+
+          //
+          // put data into image array
+          //
+          //for (long int v=0; v<ct; v++) im[ct*from_rank +v] = buf[v];
+        }
+        //buf = mem.myfree(buf);
+      } // if myrank==0
+      else if (myrank!=0 && nproc>1) {
+        //
+        // send data to rank 0
+        //
+        //cout <<"RANK "<<myrank<<": SENDING DATA\n";
+        string id;
+        //cout <<"sending "<<nels<<" to rank 0.\n";
+        cout.flush();
+        err = COMM->send_double_data(
+              0,       ///< rank to send to.
+              nels,    ///< size of buffer, in number of doubles.
+              im,      ///< pointer to double array.
+              id,      ///< identifier for send, for tracking delivery later.
+              BC_RTtag ///< comm_tag, to say what kind of send this is.
+              );
+        if (err) rep.error("Send image failed.",err);
+
+        err = COMM->wait_for_send_to_finish(id);
+        if (err) rep.error("wait for send to finish failed",err);
+      } // if myrank !=0
+      // ------------------------------------------------------------
+      // ------------------------------------------------------------
+
+
     } // loop over output images
 
     
@@ -863,66 +961,72 @@ int main(int argc, char **argv)
     // We assume the "top" of the image is upstream undisturbed gas
     // and subtract the values in the top row from all rows below.
     //
-    switch (what_to_integrate) {
-    case I_DENSITY:
-    case I_NEUTRAL_NH:
-      //
-      // Here we just do the first (and only) image.
-      //
-      for (int iy=0; iy<npix[1]; iy++)
-        for (int ix=0; ix<npix[0]; ix++)
-          img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
-      break;
-    case I_ALL_SCALARS:
-      //
-      // if we are on the first image, then we need to get the top
-      // row of pixels and store them in mean_array[img][x-pix]
-      //
-      if (ifile==0) {
-        for (int ix=0; ix<npix[0]; ix++) {
-          mean_array[0][ix] = img_array[0][npix[0]*(npix[1]-1)+ix];
-          mean_array[1][ix] = img_array[1][npix[0]*(npix[1]-1)+ix];
+    // Again, only do this for rank 0 with the gathered image.
+    //
+    if (myrank==0) {
+      switch (what_to_integrate) {
+      case I_DENSITY:
+      case I_NEUTRAL_NH:
+        //
+        // Here we just do the first (and only) image.
+        //
+        for (int iy=0; iy<rank0_npix[1]; iy++)
+          for (int ix=0; ix<rank0_npix[0]; ix++)
+            img_array[0][rank0_npix[0]*iy+ix] -= img_array[0][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+        break;
+      case I_ALL_SCALARS:
+        //
+        // if we are on the first image, then we need to get the top
+        // row of pixels and store them in mean_array[img][x-pix]
+        //
+        if (ifile==0) {
+          for (int ix=0; ix<rank0_npix[0]; ix++) {
+            mean_array[0][ix] = img_array[0][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+            mean_array[1][ix] = img_array[1][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+          }
+          //rep.printVec("rho",mean_array[0],npix[0]);
+          //rep.printVec("NH ",mean_array[1],npix[0]);
         }
-        //rep.printVec("rho",mean_array[0],npix[0]);
-        //rep.printVec("NH ",mean_array[1],npix[0]);
-      }
 
-      //
-      // Here we need to subtract from the first and second images.
-      //
-      for (int iy=0; iy<npix[1]; iy++) {
-        for (int ix=0; ix<npix[0]; ix++) {
-          //if (!isfinite(img_array[0][npix[0]*iy+ix]) ||
-          //    !isfinite(mean_array[0][ix])) {
-          //  cout <<"not finite! "<<img_array[0][npix[0]*iy+ix];
-          //  cout<<"  "<<mean_array[0][ix]<<"\n";
-          //}
-          img_array[0][npix[0]*iy+ix] -= mean_array[0][ix];
-          img_array[1][npix[0]*iy+ix] -= mean_array[1][ix];
-          //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
-          //img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
+        //
+        // Here we need to subtract from the first and second images.
+        //
+        for (int iy=0; iy<rank0_npix[1]; iy++) {
+          for (int ix=0; ix<rank0_npix[0]; ix++) {
+            //if (!isfinite(img_array[0][npix[0]*iy+ix]) ||
+            //    !isfinite(mean_array[0][ix])) {
+            //  cout <<"not finite! "<<img_array[0][npix[0]*iy+ix];
+            //  cout<<"  "<<mean_array[0][ix]<<"\n";
+            //}
+            img_array[0][rank0_npix[0]*iy+ix] -= mean_array[0][ix];
+            img_array[1][rank0_npix[0]*iy+ix] -= mean_array[1][ix];
+            //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
+            //img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
+          }
         }
+        break;
+      default:
+        // default action is to do nothing.
+        break;
       }
-      break;
-    default:
-      // default action is to do nothing.
-      break;
-    }
+    } // if myrank==0
 #endif // SUBTRACT_MEAN
 
     //
     // If we got a P-V data-cube, also construct a 2D image projected
     // along the perpendicular direction.
     //
-    if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
-      int ix=0, iy=0, iz=0;
-      for (long int v=0;v<nels; v++) {
-	im2[npix[0]*iz+ix] += im1[v];
-	ix++;
-	if (ix>=npix[0]) {ix=0; iy++;}
-	if (iy>=npix[1]) {iy=0; iz++;}
+    if (myrank==0) {
+      if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
+        int ix=0, iy=0, iz=0;
+        for (long int v=0;v<nels; v++) {
+          im2[rank0_npix[0]*iz+ix] += im1[v];
+          ix++;
+          if (ix>=rank0_npix[0]) {ix=0; iy++;}
+          if (iy>=rank0_npix[1]) {iy=0; iz++;}
+        }
       }
-    }
+    } // if myrank==0
 
 #ifdef TESTING
     cout <<"--------------- Finished Analysing this step ----------\n";
@@ -939,6 +1043,8 @@ int main(int argc, char **argv)
     //
     // Want to set the image origin to project onto the simulation
     // origin.  This is a clunky way to find it, but it works...
+    // Rank 0 always has local Xmin equal to global Xmin, so it works
+    // for multiple cores.
     //
     double im_xmin[3], o2[3];
     pion_flt origin[3];
@@ -967,125 +1073,128 @@ int main(int argc, char **argv)
     //**********************
     //* Write Data to file *
     //**********************
-    //this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, ifile);
-    this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, SimPM.timestep);
-    err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
-    if (err) rep.error("failed to open output file",err);
+    // only proc 0 writes data!!!
 
-    string *im_name = mem.myalloc(im_name, n_images);
-    ostringstream t; t.fill('0');
-    
-    switch (what_to_integrate) {
-    case I_DENSITY:
-      t<<"Proj_Dens";
-      im_name[0]=t.str();
-      break;
-    case I_NEUTRAL_NH:
-      t<<"Proj_NH";
-      im_name[0]=t.str();
-      break;
-    case I_VEL_LOS:
-      t<<"Proj_LOS_V";
-      im_name[0]=t.str();
-      break;
-    case I_VX:
-      t<<"Proj_VX";
-      im_name[0]=t.str();
-      break;
-    case I_EMISSION:
-      t<<"Proj_Halpha";
-      im_name[0]=t.str();
-      break;
-    case I_ALL_SCALARS:
-      t<<"Proj_Dens";
-      im_name[0]=t.str(); t.str("");
-      t<<"Proj_NH";
-      im_name[1]=t.str(); t.str("");
-      t<<"Proj_Halpha";
-      im_name[2]=t.str(); t.str("");
-      t<<"Proj_NII6584";
-      im_name[3]=t.str(); t.str("");
-      t<<"Proj_EM";
-      im_name[4]=t.str(); t.str("");
-      t<<"Proj_BREMS20CM";
-      im_name[5]=t.str(); t.str("");
-      if (SIMeqns==2) { 
-	t<<"Proj_b_q";
-	im_name[6]=t.str(); t.str("");
-	t<<"Proj_b_u";
-	im_name[7]=t.str(); t.str("");
-	t<<"Proj_bxabs";
-	im_name[8]=t.str(); t.str("");
-	t<<"Proj_byabs";
-	im_name[9]=t.str(); t.str("");
-	t<<"Proj_RM";
-	im_name[10]=t.str(); t.str("");
-      }
-      break;
-    default:
-      rep.error("bad what-to-integrate integer...",what_to_integrate);
-    }
+    if (myrank==0) {
+      //this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, ifile);
+      this_outfile = imio.get_output_filename(outfile, multi_opfiles, op_filetype, SimPM.timestep);
+      err = imio.open_image_file(this_outfile, op_filetype, &filehandle);
+      if (err) rep.error("failed to open output file",err);
 
-    //
-    // Write N images, depending on what we were asked to output:
-    //
-    for (int outputs=0;outputs<n_images;outputs++) {
-      im  = img_array[outputs];
-
+      string *im_name = mem.myalloc(im_name, n_images);
+      ostringstream t; t.fill('0');
+      
       switch (what_to_integrate) {
-      case I_DENSITY: case I_NEUTRAL_NH: case I_EMISSION: case I_ALL_SCALARS:
-        err = imio.write_image_to_file(filehandle, op_filetype, im,
-                                      num_pixels, 2, npix,
-                                      im_name[outputs],
-                                      im_xmin, im_dx,
-                                      SimPM.simtime, SimPM.timestep
-                                      );
-	break;
-      case I_VEL_LOS: case I_VX:
-        err = imio.write_image_to_file(filehandle, op_filetype, im,
-                                      num_pixels*Nbins, 3, npix,
-                                      im_name[outputs],
-                                      im_xmin, im_dx,
-                                      SimPM.simtime, SimPM.timestep
-                                      );
-	break;
+      case I_DENSITY:
+        t<<"Proj_Dens";
+        im_name[0]=t.str();
+        break;
+      case I_NEUTRAL_NH:
+        t<<"Proj_NH";
+        im_name[0]=t.str();
+        break;
+      case I_VEL_LOS:
+        t<<"Proj_LOS_V";
+        im_name[0]=t.str();
+        break;
+      case I_VX:
+        t<<"Proj_VX";
+        im_name[0]=t.str();
+        break;
+      case I_EMISSION:
+        t<<"Proj_Halpha";
+        im_name[0]=t.str();
+        break;
+      case I_ALL_SCALARS:
+        t<<"Proj_Dens";
+        im_name[0]=t.str(); t.str("");
+        t<<"Proj_NH";
+        im_name[1]=t.str(); t.str("");
+        t<<"Proj_Halpha";
+        im_name[2]=t.str(); t.str("");
+        t<<"Proj_NII6584";
+        im_name[3]=t.str(); t.str("");
+        t<<"Proj_EM";
+        im_name[4]=t.str(); t.str("");
+        t<<"Proj_BREMS20CM";
+        im_name[5]=t.str(); t.str("");
+        if (SIMeqns==2) { 
+          t<<"Proj_b_q";
+          im_name[6]=t.str(); t.str("");
+          t<<"Proj_b_u";
+          im_name[7]=t.str(); t.str("");
+          t<<"Proj_bxabs";
+          im_name[8]=t.str(); t.str("");
+          t<<"Proj_byabs";
+          im_name[9]=t.str(); t.str("");
+          t<<"Proj_RM";
+          im_name[10]=t.str(); t.str("");
+        }
+        break;
       default:
-	rep.error("bad what-to-integrate integer...",what_to_integrate);
+        rep.error("bad what-to-integrate integer...",what_to_integrate);
       }
-      if (err) rep.error("Failed to write image to file",err);
-    }
 
-    //
-    // Also write a 2D P-V diagram summed along the perpendicular
-    // direction, if we have calculted LOS velocity or VX.
-    //
-    //if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
-    //  t.str("");
-    //  if (what_to_integrate==I_VEL_LOS)
-    //    t<<"los_vel_proj_";
-    //  else
-    //    t<<"velx_proj";
-    //  t.width(5); t<<SimPM.timestep;
-    //  im_name[0] = t.str();
-    //  int np[2]; np[0]=npix[0]; np[1]=npix[2];
-    //  err = imio.write_image_to_file(filehandle, op_filetype, im2,
-    //                                  npix[0]*npix[2], 2, np, im_name[0],
-    //                                  im_xmin, im_dx,
-    //                                  SimPM.simtime, SimPM.timestep
-    //                                  );
-    //  if (err) rep.error("Failed to write 2nd image to file",err);
-    //}
-    
-    
-    //*********************************************
-    //* Close outfile if using multiple O/P files *
-    //*********************************************
-    if (multi_opfiles) {
-      err = imio.close_image_file(filehandle);
-      if (err) rep.error("failed to close output file",err);
-    }
-    im_name = mem.myfree(im_name);
+      //
+      // Write N images, depending on what we were asked to output:
+      //
+      for (int outputs=0;outputs<n_images;outputs++) {
+        im  = img_array[outputs];
 
+        switch (what_to_integrate) {
+        case I_DENSITY: case I_NEUTRAL_NH: case I_EMISSION: case I_ALL_SCALARS:
+          err = imio.write_image_to_file(filehandle, op_filetype, im,
+                                        rank0_num_pixels, 2, rank0_npix,
+                                        im_name[outputs],
+                                        im_xmin, im_dx,
+                                        SimPM.simtime, SimPM.timestep
+                                        );
+          break;
+        case I_VEL_LOS: case I_VX:
+          err = imio.write_image_to_file(filehandle, op_filetype, im,
+                                        rank0_num_pixels*Nbins, 3, rank0_npix,
+                                        im_name[outputs],
+                                        im_xmin, im_dx,
+                                        SimPM.simtime, SimPM.timestep
+                                        );
+          break;
+        default:
+          rep.error("bad what-to-integrate integer...",what_to_integrate);
+        }
+        if (err) rep.error("Failed to write image to file",err);
+      }
+
+      //
+      // Also write a 2D P-V diagram summed along the perpendicular
+      // direction, if we have calculted LOS velocity or VX.
+      //
+      //if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
+      //  t.str("");
+      //  if (what_to_integrate==I_VEL_LOS)
+      //    t<<"los_vel_proj_";
+      //  else
+      //    t<<"velx_proj";
+      //  t.width(5); t<<SimPM.timestep;
+      //  im_name[0] = t.str();
+      //  int np[2]; np[0]=npix[0]; np[1]=npix[2];
+      //  err = imio.write_image_to_file(filehandle, op_filetype, im2,
+      //                                  npix[0]*npix[2], 2, np, im_name[0],
+      //                                  im_xmin, im_dx,
+      //                                  SimPM.simtime, SimPM.timestep
+      //                                  );
+      //  if (err) rep.error("Failed to write 2nd image to file",err);
+      //}
+      
+      
+      //*********************************************
+      //* Close outfile if using multiple O/P files *
+      //*********************************************
+      if (multi_opfiles) {
+        err = imio.close_image_file(filehandle);
+        if (err) rep.error("failed to close output file",err);
+      }
+      im_name = mem.myfree(im_name);
+    } // if myrank==0
 
     mltsf=clk.time_so_far("mainloop");
     cout <<"*-*-*-* Loop: "<< ifile <<",\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";

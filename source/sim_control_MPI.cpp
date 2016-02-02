@@ -251,6 +251,13 @@ int sim_control_fixedgrid_pllel::Init(
 
   else
     rep.error("Bad file type specifier for parallel grids (2=fits,5=silo) IS IT COMPILED IN???",typeOfFile);
+  
+
+  err = mpiPM.decomposeDomain();
+  if (err)
+    rep.error("Couldn't Decompose Domain!",err);
+
+
 
 #ifdef TESTING
   cout <<"(sim_control_fixedgrid_pllel::init) Calling serial code sim_control_fixedgrid::init() on infile."<<"\n";

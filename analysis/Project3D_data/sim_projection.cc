@@ -212,8 +212,8 @@ coordinate_conversion::coordinate_conversion(
     sim_rangeI[v] = sim_xmaxI[v]-sim_xminI[v];
     sim_ncell[v]  = sim_rangeI[v]/sim_dxI;
     // SANITY CHECK!
-    if (sim_ncell[v] != SimPM.NG[v])
-      rep.error("Cells dont match at all!!!", sim_ncell[v]-SimPM.NG[v]);
+    //if (sim_ncell[v] != SimPM.NG[v])
+    //  rep.error("Cells dont match at all!!!", sim_ncell[v]-SimPM.NG[v]);
   }
 
   //

@@ -7,6 +7,7 @@
 ///
 /// Modifications :\n
 /// - 2015.01.27 JM: moved from sim_control_MPI.cpp
+/// - 2016.02.02 JM: Added option to decompose only along one axis.
 
 
 #include "MCMD_control.h"
@@ -50,8 +51,10 @@ MCMDcontrol::~MCMDcontrol() {
   return;
 }
 
+
 // ##################################################################
 // ##################################################################
+
 
 int MCMDcontrol::decomposeDomain()
 {
@@ -210,6 +213,89 @@ int MCMDcontrol::decomposeDomain()
   // }
   // cout << "---MCMDcontrol::decomposeDomain() Domain decomposition done.\n\n";
   return(0);
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+int MCMDcontrol::decomposeDomain(
+    const enum axes daxis   ///< Axis to decompose domain along.
+    )
+{
+  cout << "---MCMDcontrol::decomposeDomain() decomposing domain";
+  cout << " along axis " << static_cast<int>(daxis) <<"\n";
+
+  //
+  // We subdivide the domain in half recursively, along one axis
+  //
+  if (SimPM.ndim==1) {
+    rep.error("Use nomal domain decomposition for 1D",daxis);
+  } // If 1D
+  
+  else if (SimPM.ndim==2 || SimPM.ndim==3) {
+    for (int i=0;i<SimPM.ndim;i++) {
+      LocalRange[i] = SimPM.Range[i];
+      LocalXmin[i]  = SimPM.Xmin[i];
+      LocalXmax[i]  = SimPM.Xmax[i];
+      LocalNG[i]    = SimPM.NG[i];
+      LocalNcell    = SimPM.Ncell;
+    }
+    //
+    // npcounter counts how many sub-domains I have.
+    //
+    int npcounter=1;
+    
+    while (npcounter < nproc) {
+      // find longest axis of subrange.
+      // Half that range and multiply nproc by 2.
+      LocalRange[daxis] /= 2.0;
+      npcounter *=2;
+    }
+    if (npcounter != nproc) {
+      rep.error("nproc not a power of 2!",nproc);
+    }
+    
+    //
+    // Now we know the range of each subcell, so calculate where I fit into
+    // the hierarchy, defined by
+    // \f[ \mbox{myrank} = n_x*n_y*i_z + n_x*i_y + i_x \f]
+    // This requires myrank to count from zero!
+    //
+    for (int i=0;i<SimPM.ndim;i++)
+      nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/LocalRange[i]);
+    int temp=myrank;
+    if (SimPM.ndim==3) {
+      ix[ZZ] = temp/nx[XX]/nx[YY];
+      temp -= ix[ZZ]*nx[XX]*nx[YY];
+    }
+    ix[YY] = temp/nx[XX];
+    temp -= ix[YY]*nx[XX];
+    ix[XX] = temp;
+    
+    LocalNcell = SimPM.Ncell;
+    for (int i=0;i<SimPM.ndim;i++) {
+      LocalXmin[i]  = SimPM.Xmin[i] +ix[i]*LocalRange[i];
+      LocalXmax[i]  = SimPM.Xmin[i] +(ix[i]+1)*LocalRange[i];
+      LocalNG[i]    = SimPM.NG[i]/nx[i];
+      LocalNcell   /= nx[i];
+      offsets[i]    = ix[i]*LocalNG[i];
+    }
+    // Set up ngbprocs array to point to neighbouring processors
+    pointToNeighbours();    
+  } // if 2D or 3D
+  
+  else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
+
+  rep.printVec("NXYZ",LocalNG,SimPM.ndim);
+  rep.printVec("XMIN",LocalXmin,SimPM.ndim);
+  rep.printVec("XMAX",LocalXmax,SimPM.ndim);
+  rep.printVec("RANGE",LocalRange,SimPM.ndim);
+
+
+  cout << "---MCMDcontrol::decomposeDomain() finished.\n\n";
+  return 0;
 }
 
 // ##################################################################

@@ -85,8 +85,8 @@ int setup_fixed_grid_pllel::setup_grid(
   // local grid to set up.
   //
   int err=0;
-  if((err=MCMD->decomposeDomain()))
-    rep.error("Couldn't Decompose Domain!",err);
+  //if((err=MCMD->decomposeDomain()))
+  //  rep.error("Couldn't Decompose Domain!",err);
   
   //
   // May need to setup extra data in each cell for ray-tracing

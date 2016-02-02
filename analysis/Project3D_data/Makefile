@@ -98,6 +98,7 @@ ifeq ($(MAKE_UNAME), standard)
   CXXFLAGS  = -O3 -Wall
   #CXXFLAGS += -pg -g
   CXXFLAGS += -Wno-unused-function
+  #OPTION += -DTESTING
 
 
   MYLIB = ${CODEDIR}/extra_libraries
