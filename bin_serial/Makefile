@@ -45,6 +45,8 @@
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
 # - 2014.04.14 JM: Added options for JUDGE at JSC.
+# - 2015.01.08 JM: Added tools/reporting.h.cpp and tools/mem_manage.h
+# - 2015.01.12 JM: Added command_line_interface.h.cpp.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -72,14 +74,19 @@ VPATH = \
 ../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
-../source/contrib: \
+../source/contrib:\
+../source/tools:\
 ../source/future
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+GLOBAL = functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
+
+ifneq ($(PION_OPTIMISE), HIGH)
+  GLOBAL += command_line_interface.h
+endif
 
 ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
-  GLOBAL += constants.h
+  #GLOBAL += constants.h
 endif
 
 #######################
@@ -276,9 +283,14 @@ endif
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
 
-OBJECTS = main.o \
+OBJECTS = reporting.o mem_manage.o command_line_interface.o \
+        timer.o interpolate.o \
+        constants.o \
+  sim_params.o \
+        main.o \
         uniform_grid.o cell_interface.o \
-        gridMethods.o global.o \
+        setup_fixed_grid.o sim_control.o  \
+        MCMD_control.o \
         time_integrator.o calc_timestep.o \
 	VectorOps.o VectorOps_spherical.o \
 	eqns_base.o solver_eqn_base.o \
@@ -291,7 +303,9 @@ OBJECTS = main.o \
 	eqns_hydro_isothermal.o flux_hydro_isothermal.o solver_eqn_hydro_iso.o \
 	eqns_mhd_adiabatic.o riemannMHD.o flux_mhd_adiabatic.o \
 	solver_eqn_mhd_adi.o \
+        raytracer_base.o  \
 	integrator.o cooling.o microphysics.o microphysics_v1.o raytracer_SC.o \
+        microphysics_base.o  \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
         file_status.o \
 	stellar_wind_BC.o \
@@ -303,11 +317,18 @@ OBJECTS = main.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
-IC_OBJ	= icgen.o \
-          uniform_grid.o cell_interface.o \
-          global.o readparams.o file_status.o \
+IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
+        timer.o interpolate.o \
+        constants.o \
+  sim_params.o \
+        setup_fixed_grid.o icgen.o \
+        MCMD_control.o \
+        uniform_grid.o cell_interface.o \
+        readparams.o file_status.o \
+        raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
+        microphysics_base.o  \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o shock_cloud.o \
 	photoevaporating_random_clumps.o dataio_fits.o utility_fits_class.o \
@@ -319,7 +340,9 @@ IC_OBJ	= icgen.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
-        StarBench_test.o
+        StarBench_test.o \
+        raytracer_SC.o \
+        mp_only_cooling.o
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
@@ -371,11 +394,18 @@ clean:
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
+reporting.o:   tools/reporting.cpp ${GLOBAL}
+mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
+command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
+timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
+constants.o: constants.cpp ${GLOBAL}
+sim_params.o: sim_params.cpp ${GLOBAL}
 
-main.o:         main.cc grid.h ${GLOBAL}
-global.o:       global.cc ${GLOBAL}
+main.o:         main.cpp sim_control.h ${GLOBAL}
 
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+
 
 uniform_grid.o:  uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h \
 		VectorOps.h VectorOps_spherical.h
@@ -383,6 +413,22 @@ uniform_grid.o:  uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h \
 VectorOps.o:           VectorOps.cc VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
+
+MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+
+setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
+    grid_base_class.h uniform_grid.h
+
+sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
+		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \
+		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
+                mp_only_cooling.h mp_explicit_H.h mp_implicit_H.h
+
+time_integrator.o: time_integrator.cpp sim_control.h \
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+
+calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h\
+ solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 #####################
 # EQUATIONS CLASSES #
@@ -487,18 +533,22 @@ solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
 # MICROPHYSICS STUFF #
 ######################
 
-integrator.o:	integrator.cc integrator.h ${GLOBAL}
-cooling.o:	cooling.cc cooling.h ${GLOBAL}
+microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+integrator.o:	integrator.cc integrator.h ${GLOBAL}
+cooling.o:	cooling.cc cooling.h tools/interpolate.h ${GLOBAL}
+
+cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h \
+ tools/interpolate.h ${GLOBAL}
+
 hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
-    ${GLOBAL}
+   tools/interpolate.h  ${GLOBAL}
 
 mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
 microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
-   ${GLOBAL} cooling.h integrator.h
+   ${GLOBAL} cooling.h integrator.h tools/interpolate.h
 microphysics_v1.o: microphysics_v1.cc microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
 microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
@@ -506,9 +556,10 @@ microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
 #header.h
 
 hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
-  hydrogen_photoion.h 
+  hydrogen_photoion.h tools/interpolate.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h \
+  tools/interpolate.h ${GLOBAL}
 
 mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
@@ -544,17 +595,11 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 # Raytracing
 ########################
-raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} uniform_grid.h
+raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
 
-gridMethods.o:  gridMethods.cc grid.h ${GLOBAL} solver_eqn_base.h \
-		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \
-		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
-                mp_only_cooling.h mp_explicit_H.h mp_implicit_H.h
+raytracer_SC.o: raytracer_SC.cc raytracer_SC.h raytracer_base.h \
+  ${GLOBAL} uniform_grid.h
 
-# functions for stepping forward in time
-time_integrator.o: time_integrator.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
-# functions for calculating the timestep
-calc_timestep.o: calc_timestep.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 ########################
 # Data I/O
@@ -569,13 +614,14 @@ dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.
 readparams.o:   readparams.cc readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
 
-stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h ${GLOBAL}
+stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h \
+  tools/interpolate.h ${GLOBAL}
 
 ##############################
 ##### IC GENERATOR FILES #####
 ##############################
 icgen.o: icgen.cc icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  mp_v2_aifa.h \
-         microphysics.h microphysics_lowZ.h
+         microphysics.h microphysics_lowZ.h dataio_silo.h dataio.h dataio_fits.h
 get_sim_info.o: get_sim_info.h get_sim_info.cc ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cc inside_sphere.h ${GLOBAL}
 ########################

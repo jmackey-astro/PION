@@ -9,20 +9,20 @@
 /// - 2010.10.01 JM: Added spherical coordinate option.  Fixed bug in
 ///   wind_src routines where the read function was called when
 ///   Nsrc==0.  Added comments at start of file!
-///
 /// - 2010.12.29 JM: Added Internal--energy--solving equations.
-///
-/// - 20100.01.06 JM: New stellar wind interface. (bug fix 01.18 JM).
-///
-/// - 2011.02.15 JM: Added new stellar wind parameters for evolving wind sources.
-///
-/// - 2011.02.28 JM: Got rid of RSP radiation-source-parameters class references.
+/// - 2010.01.06 JM: New stellar wind interface. (bug fix 01.18 JM).
+/// - 2011.02.15 JM: Added new stellar wind parameters for evolving
+///    wind sources.
+/// - 2011.02.28 JM: Got rid of RSP radiation-source-parameters class
+///    references.
 /// - 2011.03.02 JM: Got rid of references to MAX_NTR (no longer used).
 /// - 2011.03.21 JM: Added RT_s_update_N as another radiation source 
 ///    parameter. (and 22.03, changed notation of RT flags 15.04)
 /// - 2011.05.02 JM: new RT params.
-/// - 2011.06.02 JM: some debugging text additions. read_radsources() always called now.
-/// - 2012.01.14 JM: Added RT_EVO_FILE_[i] (optional) for time-varying radiation source.
+/// - 2011.06.02 JM: some debugging text additions. read_radsources()
+///    always called now.
+/// - 2012.01.14 JM: Added RT_EVO_FILE_[i] (optional) for time-
+///    varying radiation source.
 /// - 2013.02.14 JM: Added He/Metal mass fractions as EP parameters,
 ///    to make metallicity and mu into parameterfile settings.
 /// - 2013.04.15 JM: Removed lots of cout/cerr statements to clean up
@@ -30,9 +30,21 @@
 /// - 2013.08.19 JM: Added Hydrogen MassFrac to EP parameter list
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.08.23 JM: Added new mpv9_HHe module code.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.06/07 JM: Change tracer setup in files, so that each
+///    tracer has its own variable.
 
-#include "get_sim_info.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/get_sim_info.h"
+
 #include <sstream>
 using namespace std;
 
@@ -135,19 +147,63 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   const int ndim = SimPM.ndim;
   SimPM.eqnNDim = 3;
   
-  // tracer variables.
+  //
+  // tracer variables: number of tracers, and then each one gets a
+  // string name, stored in SimPM.trtype
+  //
   str = rp->find_parameter("ntracer");
   if (str=="") {
-    //cout <<"Not using tracer variables.\n";
+#ifdef TESTING
+    cout <<"Not using tracer variables.\n";
+#endif
     SimPM.ntracer = 0;
     SimPM.ftr = SimPM.nvar;
   }
   else if (!isnan( SimPM.ntracer=atoi(str.c_str()) ) ) {
-    //cout <<"using "<<SimPM.ntracer<<" passive tracer variables\n";
+#ifdef TESTING
+    cout <<"using "<<SimPM.ntracer<<" passive tracer variables\n";
+#endif
     SimPM.ftr = SimPM.nvar;
     SimPM.nvar += SimPM.ntracer;
+
+
+#ifdef OLD_TRACER
+
+    //
+    // all tracers in a single parameter.
+    //
     SimPM.trtype = rp->find_parameter("trtype");
-    //cout <<"using tracer(s) described as "<<SimPM.trtype<<endl;
+#ifdef TESTING
+    cout <<"using tracer(s) described as "<<SimPM.trtype<<"\n";
+#endif
+
+#else // new/old tracer
+
+    //
+    // Get what type of chemistry we are doing:
+    //
+    SimPM.chem_code = rp->find_parameter("chem_code");
+
+    //
+    // Each tracer has its own parameter, called Tracer000, Tracer001,
+    // etc., so setup a string for each in the trtype array.
+    //
+    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+    for (int i=0;i<SimPM.ntracer;i++) {
+      ostringstream temp;
+      temp <<"Tracer";
+      temp.width(3);
+      temp.fill('0');
+      temp <<i;
+      SimPM.trtype[i] = rp->find_parameter(temp.str());
+#ifdef TESTING
+      cout <<"using tracer(s) described as "<<SimPM.trtype[i]<<"\n";
+#endif
+    }
+
+#endif // OLD_TRACER
+
+
   }
   else rep.error("number of tracers is not a number!",SimPM.ntracer);
   
@@ -259,7 +315,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   SimPM.opfreq   = atoi(str.c_str());
   //cout <<"\tOutFile: "<<SimPM.outFileBase<< ".xxx\t Type="<<SimPM.typeofop;
-  //cout <<" every "<<SimPM.opfreq<<" timesteps."<<endl;
+  //cout <<" every "<<SimPM.opfreq<<" timesteps."<<"\n";
 
   // Optional output-by-years parameters:
   seek="OutputCriterion";
@@ -285,7 +341,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   seek="BC"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   SimPM.typeofbc = str;
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
-  //cout <<"\tBoundary Conditions: "<<SimPM.typeofbc<<endl;
+  //cout <<"\tBoundary Conditions: "<<SimPM.typeofbc<<"\n";
   
   // Timing
   seek="StartTime"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
@@ -319,7 +375,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SimPM.etav = atof(str.c_str());
   }
   else rep.error("\tUnknown viscosity requested... fix me.",str);
-  //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<endl;
+  //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<"\n";
   // Which Physics
   err += read_extra_physics();
   if (err) rep.error("read_extra_physics",err);   

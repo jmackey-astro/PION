@@ -1,22 +1,23 @@
-/** \file comm_files.cc
- *
- * \brief Contains comms class for multi-process communication using 
- * files (no MPI!).
- *
- * \author Jonathan Mackey
- * \date 2009-01-27.
- */ 
+/// \file comm_files.cc
 ///
+/// \brief Contains comms class for multi-process communication using 
+/// files (no MPI!).
+///
+/// \author Jonathan Mackey
+/// \date 2009-01-27.
+/// 
 /// Modifications:\n
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays,
 ///    but it is not yet implemented.  If I ever need it, I will write it...
-///
+/// - 2015.01.26 JM: Removed mpiPM (no longer global), added COMM
+///    setup, and added get_rank_nproc() function
+
 #ifdef PARALLEL
 #ifdef USE_FILE_COMMS
 
 
-#include "../global.h"
+
 #ifdef INTEL
 #include <mathimf.h
 #else
@@ -25,6 +26,8 @@
 #include <sstream>
 using namespace std;
 
+
+class comms_base *COMM = new comm_files ();
 
 
 // ##################################################################
@@ -83,28 +86,26 @@ int comm_files::init(int *argc,   ///< number of program arguments.
     args[i] = (*argv)[i];
   }
 
-  mpiPM.myrank = mpiPM.nproc = -1;
+  myrank = nproc = -1;
   for (int i=0;i<(*argc); i++) {
     if      (args[i].find("myrank=") != string::npos) {
       cout <<"found myrank as "<<i<<"th arg.\n";
       string rank= args[i].substr(7);
-      mpiPM.myrank = atoi(rank.c_str());
+      myrank = atoi(rank.c_str());
     }
     else if (args[i].find("nproc=") != string::npos) {
       cout <<"found nproc as "<<i<<"th arg.\n";
       string np= args[i].substr(6);
-      mpiPM.nproc = atoi(np.c_str());
+      nproc = atoi(np.c_str());
     }
   }
-  if (mpiPM.myrank<0 || mpiPM.nproc<0)
-    rep.error("failed to find rank and nproc in command-line args",mpiPM.myrank);
+  if (myrank<0 || nproc<0)
+    rep.error("failed to find rank and nproc in command-line args",myrank);
 
   //
   // reduce number of args by 2, since myrank and nproc must be last two args.
   //
   (*argc) -= 2;
-  comm_files::myrank = mpiPM.myrank;
-  comm_files::nproc  = mpiPM.nproc;
 
   //
   // If I'm the root processor, create the directory, and then a file in it
@@ -131,7 +132,8 @@ int comm_files::init(int *argc,   ///< number of program arguments.
     wait_for_file(s);
   }
 
-  ostringstream oss; oss<<dir<<ini<<"_rank_"<<myrank<<"_of_"<<nproc<<"_present_and_correct";
+  ostringstream oss;
+  oss<<dir<<ini<<"_rank_"<<myrank<<"_of_"<<nproc<<"_present_and_correct";
   ofstream outf(oss.str().c_str());
   outf.close();
   //
@@ -139,8 +141,24 @@ int comm_files::init(int *argc,   ///< number of program arguments.
   //
   barrier("comm_files_init_end");
 
-  cout << "comm_files::init():  rank: " << myrank << " nproc: " << nproc << "\n";
+  cout << "comm_files::init():  rank: "<<myrank<<" nproc: "<<nproc<<"\n";
   return 0;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int comm_mpi::get_rank_nproc(
+        int *r, ///< rank.
+	int *n  ///< nproc
+	)
+{
+  *r = comm_files::myrank;
+  *n = comm_files::nproc;
+  return err;
 }
 
 
@@ -166,7 +184,7 @@ int comm_files::finalise()
     string s(dir); s += ini;
     remove(s.c_str());
   }
-  cout << "comm_files::finalise():  rank: " << myrank << " nproc: " << nproc << "\n";
+  cout << "comm_files::finalise():  rank: "<<myrank<<" nproc: "<<nproc<<"\n";
   return 0;
 }
 
@@ -474,10 +492,10 @@ int comm_files::send_cell_data(const int to_rank,    ///< rank to send to.
   //
   if(!id.empty()) id.erase();
   if (nc==0 || (l->empty()) ) {
-    cout <<mpiPM.myrank<<"\t Nothing to send to rank: "<<to_rank<<" !!!\n";
+    cout <<myrank<<"\t Nothing to send to rank: "<<to_rank<<" !!!\n";
     return 1;
   }
-  if (to_rank<0 || to_rank>mpiPM.nproc)
+  if (to_rank<0 || to_rank>nproc)
     rep.error("to_rank is out of bounds",to_rank);
   list<cell *>::iterator c=l->begin();
   int err=0;
@@ -515,7 +533,7 @@ int comm_files::send_cell_data(const int to_rank,    ///< rank to send to.
   // Create record of the send.
   //
   si->comm_tag = comm_tag;
-  si->from_rank = mpiPM.myrank;
+  si->from_rank = myrank;
   si->to_rank = to_rank;
   //si->data = 0;
   si->type = COMM_CELLDATA;
@@ -543,7 +561,7 @@ int comm_files::send_cell_data(const int to_rank,    ///< rank to send to.
   //
   // Check that we packed the right amount of data:
   //
-  //  cout <<mpiPM.myrank<<"\tcomm_pack_send_data: bufsiz: ";
+  //  cout <<myrank<<"\tcomm_pack_send_data: bufsiz: ";
   //  cout <<totalsize<<"  nc="<<nc<<" ct="<<ct<<"\n";
   if (ct != nc) rep.error("Length of list doesn't match nc",ct-nc);
   if (err) rep.error("MPI_Pack returned abnormally",err);
@@ -577,7 +595,7 @@ int comm_files::wait_for_send_to_finish(string &id ///< identifier for the send 
   list<sent_info *>::iterator i;
   struct sent_info *si=0;
 #ifdef TESTING
-  cout <<"rank: "<<mpiPM.myrank<<"  comm_files::wait_for_send_to_finish() more than one send, so finding in list.\n";
+  cout <<"rank: "<<myrank<<"  comm_files::wait_for_send_to_finish() more than one send, so finding in list.\n";
   cout <<"\t\tsend id="<<id<<"\n";
 #endif //TESTING
 
@@ -590,7 +608,7 @@ int comm_files::wait_for_send_to_finish(string &id ///< identifier for the send 
     rep.error("Failed to find send with id:",id);
 #ifdef TESTING
   cout <<"found send id="<<si->id<<" and looking for id="<<id<<"\n";
-  cout <<"rank: "<<mpiPM.myrank<<"  comm_files::wait_for_send_to_finish() found this send.\n";
+  cout <<"rank: "<<myrank<<"  comm_files::wait_for_send_to_finish() found this send.\n";
 #endif //TESTING
 
   //
@@ -599,7 +617,7 @@ int comm_files::wait_for_send_to_finish(string &id ///< identifier for the send 
   wait_for_peer_to_read_file(si->id);
   remove((si->id).c_str());
 #ifdef TESTING
-  cout <<"rank: "<<mpiPM.myrank<<"  comm_files::wait_for_send_to_finish() peer has read file, and I deleted it.\n";
+  cout <<"rank: "<<myrank<<"  comm_files::wait_for_send_to_finish() peer has read file, and I deleted it.\n";
 #endif
 
 #ifdef TESTING
@@ -636,7 +654,7 @@ int comm_files::look_for_data_to_receive(int *from_rank, ///< rank of sender
 #else
   ri = mem.myalloc(ri,1);
 #endif
-  ri->to_rank   = mpiPM.myrank;
+  ri->to_rank   = myrank;
   if (type!=COMM_CELLDATA && type!=COMM_DOUBLEDATA)
     rep.error("only know two types of data to look for!",type);
   ri->type = type;
@@ -646,7 +664,7 @@ int comm_files::look_for_data_to_receive(int *from_rank, ///< rank of sender
   // This is a very inefficient method, but speed it not of the essence here...
   //
 #ifdef TESTING
-  cout <<"rank: "<<mpiPM.myrank<<"  comm_files::look_for_data_to_receive() looking for source\n";
+  cout <<"rank: "<<myrank<<"  comm_files::look_for_data_to_receive() looking for source\n";
 #endif //TESTING
   ostringstream f; bool found=false;
   do {
@@ -826,11 +844,12 @@ int comm_files::receive_cell_data(const int from_rank,  ///< rank of process we 
 }
 
 
-int comm_files::send_double_data(const int to_rank,   ///< rank to send to.
-				 const long int n_el, ///< size of buffer, in number of doubles.
-				 const double *data,  ///< pointer to double array.
-				 string &id,          ///< identifier for send, for tracking delivery later.
-				 const int comm_tag   ///< comm_tag, to say what kind of send this is.
+int comm_files::send_double_data(
+        const int to_rank,   ///< rank to send to.
+	const long int n_el, ///< size of buffer, in number of doubles.
+	const double *data,  ///< pointer to double array.
+	string &id,          ///< identifier for send, for tracking delivery later.
+	const int comm_tag   ///< comm_tag, to say what kind of send this is.
 				 )
 {
   if (!data) rep.error("comm_files::send_double_data() null pointer!",data);
@@ -857,7 +876,7 @@ int comm_files::send_double_data(const int to_rank,   ///< rank to send to.
   // Add info to send record.
   //
   si->comm_tag  = comm_tag;
-  si->from_rank = mpiPM.myrank;
+  si->from_rank = myrank;
   si->to_rank   = to_rank;
   si->type      = COMM_DOUBLEDATA;
   si->id        = id;

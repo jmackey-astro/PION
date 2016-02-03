@@ -13,6 +13,11 @@
 #define COOLING_H
 
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+
 //#define COOL_TESTING ///< output cooling rate to a file.
 #define LOGSLP
 //#define LINSLP ///< Use linear extrapolation of cooling function for low temperatures.

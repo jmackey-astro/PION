@@ -60,12 +60,12 @@
 /// in parallel.  This should allow for better scaling with number of processors.
 ///
 ///
-///
-/// TODO: Need a global interface function for MP that lets me update the properties of
-///       the multi-frequency photoionising source, and the point UV source.
-///
 
 #ifdef MP_V2_AIFA
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 
 #include <vector>

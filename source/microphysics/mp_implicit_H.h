@@ -12,6 +12,7 @@
 /// - getting it written: mods up until 2011.10.XX
 /// - 2011.10.17 JM: Debugging.
 /// - 2013.02.14 JM: Tidied up file.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 
 
@@ -73,14 +74,14 @@ class mp_implicit_H
   /// <<\delta\rho\times\delta x>>
   ///
   virtual int TimeUpdateMP_RTnew(
-          const double *, ///< Primitive Vector to be updated.
+          const pion_flt *, ///< Primitive Vector to be updated.
           const int,      ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &,
           ///< list of UV-heating column densities and source properties.
           const int,      ///< number of ionising radiation sources.
           const std::vector<struct rt_source_data> &,
           ///< list of ionising src column densities and source properties.
-          double *,       ///< Destination Vector for updated values
+          pion_flt *,       ///< Destination Vector for updated values
                          ///< (can be same as first Vector.
           const double,   ///< Time Step to advance by.
           const double,   ///< EOS gamma.
@@ -94,7 +95,7 @@ class mp_implicit_H
   /// arguments.  (photoionisation time is not implemented).
   ///
   double timescales(
-          const double *, ///< Current cell.
+          const pion_flt *, ///< Current cell.
           const double,   ///< EOS gamma.
           const bool, ///< set to 'true' if including cooling time.
           const bool, ///< set to 'true' if including recombination time.
@@ -109,7 +110,7 @@ class mp_implicit_H
   /// capability than the other timescales function.
   ///
   double timescales_RT(
-          const double *, ///< Current cell.
+          const pion_flt *, ///< Current cell.
           const int,      ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &,
           ///< list of UV-heating column densities and source properties.
@@ -125,7 +126,7 @@ class mp_implicit_H
   /// vector.
   ///
   virtual int convert_prim2local(
-          const double *, ///< primitive vector from grid cell (length nv_prim)
+          const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
           double *        ///< local vector [x,E](n+1).
           );
 

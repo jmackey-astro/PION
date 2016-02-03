@@ -2,8 +2,25 @@
 /// File for setting up laser ablation problems.
 /// Jonathan Mackey
 /// 2009-12-18
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "icgen.h"
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 IC_laser_ablation::IC_laser_ablation() 
 {
@@ -12,10 +29,24 @@ IC_laser_ablation::IC_laser_ablation()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 IC_laser_ablation::~IC_laser_ablation()
 {
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
@@ -107,7 +138,7 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -120,13 +151,20 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 int IC_laser_ablation::setup_LaserAblationAxi()
 {
 
   cout <<"\t\tSetting up laser ablation problem with v0="<<vel0;
   cout <<", rho="<<rho0<<", p0="<<Pressure0<<" ...\n";
 
-  if (!GS.equalD(BT0,0.0))
+  if (!pconst.equalD(BT0,0.0))
     rep.error("can't have transverse field in axisymmetric model!",BT0);
 
   double p0 = Pressure0;
@@ -184,10 +222,24 @@ int IC_laser_ablation::setup_LaserAblationAxi()
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 int IC_laser_ablation::setup_LaserAblation3D()
 {
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 

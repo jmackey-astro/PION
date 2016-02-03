@@ -31,8 +31,19 @@
 /// - 2011.04.15 JM: UtoP() again -- added recalculation of all prim.
 ///    vars if a negative density is encountered.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.14 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
-#include "global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+
+#include "microphysics/microphysics_base.h"
 #include "eqns_hydro_adiabatic.h"
 using namespace std;
 
@@ -74,7 +85,10 @@ eqns_Euler::~eqns_Euler()
 // ##################################################################
 // ##################################################################
 
-void eqns_Euler::PtoU(const double* p, double* u, const double gamma)
+void eqns_Euler::PtoU(
+      const pion_flt *p,
+      pion_flt *u,
+      const double gamma)
 {
   // First rho
   u[eqRHO] = p[eqRO];
@@ -91,7 +105,11 @@ void eqns_Euler::PtoU(const double* p, double* u, const double gamma)
 // ##################################################################
 // ##################################################################
 
-int eqns_Euler::UtoP(const double *u, double *p, const double gamma)
+int eqns_Euler::UtoP(
+      const pion_flt *u,
+      pion_flt *p,
+      const double gamma
+      )
 {
   int err=0;
 #ifndef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -205,9 +223,11 @@ int eqns_Euler::UtoP(const double *u, double *p, const double gamma)
 // ##################################################################
 // ##################################################################
 
-double eqns_Euler::chydro(const double *p, ///< Pointer to primitive variables.
-			  const double g   ///< Gas constant gamma.
-			  )
+
+double eqns_Euler::chydro(
+      const pion_flt *p, ///< Pointer to primitive variables.
+      const double g   ///< Gas constant gamma.
+      )
 {
   return(sqrt(g*p[eqPG]/p[eqRO]));
 }
@@ -216,7 +236,14 @@ double eqns_Euler::chydro(const double *p, ///< Pointer to primitive variables.
 // ##################################################################
 // ##################################################################
 
-int eqns_Euler::HydroWave(int lr, const double pp, const double *prewave, double *u, const double gamma) 
+
+int eqns_Euler::HydroWave(
+      int lr,
+      const pion_flt pp,
+      const pion_flt *prewave,
+      pion_flt *u,
+      const double gamma
+      ) 
 {
   double pratio = pp/prewave[eqPG];
   // First set the appropriate prewave sound speed.
@@ -253,7 +280,14 @@ int eqns_Euler::HydroWave(int lr, const double pp, const double *prewave, double
 // ##################################################################
 
 						  
-int eqns_Euler::HydroWaveFull(int lr, const double pp, const double *prewave, double *u, double *rho, const double gamma)
+int eqns_Euler::HydroWaveFull(
+      int lr,
+      const pion_flt pp,
+      const pion_flt *prewave,
+      pion_flt *u,
+      pion_flt *rho,
+      const double gamma
+      )
 {
   double pratio = pp/prewave[eqPG];
   // First get the appropriate velocity u*
@@ -277,7 +311,11 @@ int eqns_Euler::HydroWaveFull(int lr, const double pp, const double *prewave, do
 // ##################################################################
 
 
-void eqns_Euler::PUtoFlux(const double *p, const double *u, double *f)
+void eqns_Euler::PUtoFlux(
+      const pion_flt *p,
+      const pion_flt *u,
+      pion_flt *f
+      )
 {
   f[eqRHO] = u[eqMMX];
   f[eqMMX] = u[eqMMX]*p[eqVX] +p[eqPG];
@@ -293,7 +331,12 @@ void eqns_Euler::PUtoFlux(const double *p, const double *u, double *f)
 // ##################################################################
 // ##################################################################
 
-void eqns_Euler::UtoFlux(const double *u, double *f, const double gamma)
+
+void eqns_Euler::UtoFlux(
+      const pion_flt *u,
+      pion_flt *f,
+      const double gamma
+      )
 {
   double pg = (gamma-1.) *(u[eqERG] -(u[eqMMX]*u[eqMMX] +u[eqMMY]*u[eqMMY] +u[eqMMZ]*u[eqMMZ])/(2.*u[eqRHO]));
   f[eqRHO] = u[eqMMX];
@@ -309,10 +352,12 @@ void eqns_Euler::UtoFlux(const double *u, double *f, const double gamma)
 // ##################################################################
 // ##################################################################
 
+
 ///  Returns Enthalpy (per unit mass), given primitive variable vector. 
-double eqns_Euler::Enthalpy(const double *p, ///< Primitive State Vector.
-			    const double g   ///< gas EOS gamma.
-			    )
+double eqns_Euler::Enthalpy(
+      const pion_flt *p, ///< Primitive State Vector.
+      const double g   ///< gas EOS gamma.
+      )
 {
   //cout <<"Enthalpy!\n";
   return (0.5*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ]) +g*p[eqPG]/(g-1.0)/p[eqRO]);
@@ -322,10 +367,12 @@ double eqns_Euler::Enthalpy(const double *p, ///< Primitive State Vector.
 // ##################################################################
 // ##################################################################
 
+
 ///  Returns Internal Energy (per unit mass, so 'Temperature'), given primitive variable vector. 
-double eqns_Euler::eint(const double *p, ///< Primitive State Vector.
-			const double g   ///< gas EOS gamma.
-			)
+double eqns_Euler::eint(
+      const pion_flt *p, ///< Primitive State Vector.
+      const double g   ///< gas EOS gamma.
+      )
 {
   return p[eqPG]/(g-1.)/p[eqRO];
 }
@@ -336,9 +383,10 @@ double eqns_Euler::eint(const double *p, ///< Primitive State Vector.
 
 
 ///  Returns Total Energy (per unit volume), given primitive variable vector. 
-double eqns_Euler::Etot(const double *p, ///< State Vector.
-			const double g   ///< gas EOS gamma.
-			) 
+double eqns_Euler::Etot(
+      const pion_flt *p, ///< State Vector.
+      const double g   ///< gas EOS gamma.
+      ) 
 {
   return p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])/2. +p[eqPG]/(g-1.);
 }
@@ -348,9 +396,10 @@ double eqns_Euler::Etot(const double *p, ///< State Vector.
 // ##################################################################
 
 ///  Returns Total Pressure (per unit Volume), given primitive variable vector. 
-double eqns_Euler::Ptot(const double *p, ///< Primitive State Vector.
-			const double    ///< gas EOS gamma.
-			) 
+double eqns_Euler::Ptot(
+      const pion_flt *p, ///< Primitive State Vector.
+      const double    ///< gas EOS gamma.
+      ) 
 {
   return p[eqPG];
 }
@@ -360,10 +409,11 @@ double eqns_Euler::Ptot(const double *p, ///< Primitive State Vector.
 // ##################################################################
 
 ///  Given a pressure ratio and initial density, calculate adiabatic final density.
-double eqns_Euler::AdiabaticRho(const double pr, ///< New to Old pressure ratio
-				const double ri, ///< Old Density
-				const double g ///< gas EOS gamma.
-				)
+double eqns_Euler::AdiabaticRho(
+      const double pr, ///< New to Old pressure ratio
+      const double ri, ///< Old Density
+      const double g ///< gas EOS gamma.
+      )
 {
   return ri*exp(log(pr)/g);
 }
@@ -372,9 +422,10 @@ double eqns_Euler::AdiabaticRho(const double pr, ///< New to Old pressure ratio
 // ##################################################################
 // ##################################################################
 
-void eqns_Euler::SetAvgState(const double *ms,  ///< Mean Prim. var. state vector
-			     const double g ///< Gas constant gamma.
-			     )
+void eqns_Euler::SetAvgState(
+      const pion_flt *ms,  ///< Mean Prim. var. state vector
+      const double g ///< Gas constant gamma.
+      )
 {
   for (int v=0; v<eq_nvar; v++)
     eq_refvec[v] = ms[v];

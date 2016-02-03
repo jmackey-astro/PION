@@ -16,12 +16,23 @@
 /// - 2011.11.22 JM: Added t_scalefactor parameter for stellar winds.
 /// - 2013.09.06 JM: Removed integer position functions, because the
 ///    rounding errors created potential errors in 1D.
+/// - 2015.01.10 JM: New include statements for new file structure.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
 
 
 #ifndef STELLAR_WIND_BC_H
 #define STELLAR_WIND_BC_H
 
-#include "../global.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#include "sim_constants.h"
+#include "sim_params.h"
+#include "tools/reporting.h"
+
 
 //
 // Defines for type of wind:
@@ -43,7 +54,7 @@
 ///
 struct wind_cell {
   class cell *c;  ///< cell we are interested in.
-  double *p; ///< primitive vector with wind properties for this cell.
+  pion_flt *p; ///< primitive vector with wind properties for this cell.
   double dist;    ///< distance of cell centre to wind src.
 };
 
@@ -66,7 +77,8 @@ struct wind_source {
     Mdot,  ///< mass loss rate
     Vinf,  ///< wind velocity
     Tw,    ///< wind temperature
-    Rstar, ///< Radius of star.
+    Rstar; ///< Radius of star.
+  pion_flt
     *tracers; ///< tracer values of wind.
   bool
     //ipos_set, ///< false until we set the integer position.
@@ -99,7 +111,7 @@ class stellar_wind {
       const double,   ///< Vinf (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Stellar Radius (to get gas pressure)
-      const double *  ///< Tracer values of wind (if any)
+      const pion_flt *  ///< Tracer values of wind (if any)
       );
 
   ///
@@ -110,7 +122,7 @@ class stellar_wind {
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).
       const double,   ///< Radius at which to get gas pressure from Teff
-      const double *, ///< Any (constant) wind tracer values.
+      const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
@@ -129,6 +141,7 @@ class stellar_wind {
   /// (possibly fixed) boundary value.  Returns non-zero on error.
   ///
   int add_cell(
+      class GridBaseClass *,
       const int, ///< src id
       cell *     ///< cell to add to list.
       );
@@ -154,6 +167,7 @@ class stellar_wind {
   /// or return a positive value if the cell is not in the list.
   ///
   virtual int set_cell_values(
+      class GridBaseClass *,
       const int, ///< src id
       const double ///< simulation time
       );
@@ -174,23 +188,28 @@ class stellar_wind {
         double *   ///< mdot (output)
         );
 
-  void get_src_Vinf(const int, ///< src id
+  void get_src_Vinf(
+        const int, ///< src id
         double *   ///< Vinf (output)
         );
 
-  void get_src_Tw(const int, ///< src id
-      double *   ///< Temperature (output)
-      );
-
-  void get_src_Rstar(const int, ///< src id
-         double *   ///< Stellar radius (output)
-         );
-
-  void get_src_trcr(const int, ///< src id
-        double *   ///< tracers (output)
+  void get_src_Tw(
+        const int, ///< src id
+        double *   ///< Temperature (output)
         );
 
-  void get_src_type(const int, ///< src id
+  void get_src_Rstar(
+        const int, ///< src id
+        double *   ///< Stellar radius (output)
+        );
+
+  void get_src_trcr(
+        const int, ///< src id
+        pion_flt *   ///< tracers (output)
+        );
+
+  void get_src_type(
+        const int, ///< src id
         int *   ///< type of wind (=0 for now) (output)
         );
 
@@ -203,6 +222,7 @@ class stellar_wind {
   /// and the cell-to-source distance.
   ///
   void set_wind_cell_reference_state(
+      class GridBaseClass *,
       struct wind_cell *,
       const struct wind_source *
       );
@@ -265,7 +285,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< Vinf (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Stellar Radius (to get gas pressure)
-      const double *  ///< Tracer values of wind (if any)
+      const pion_flt *  ///< Tracer values of wind (if any)
       );
 
   ///
@@ -278,7 +298,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).
       const double,   ///< Radius at which to get gas pressure from Teff
-      const double *, ///< Any (constant) wind tracer values.
+      const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
@@ -299,6 +319,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// The state vectors P[] and Ph[] are set to wind values, if the source is active.
   ///
   int set_cell_values(
+      class GridBaseClass *,
       const int, ///< src id
       const double ///< simulation time
       );
@@ -310,6 +331,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// wind cells.
   ///
   void update_source(
+      class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
       const double ///< current simulation time.
       );

@@ -19,7 +19,19 @@
 ///    vars if a negative density is encountered.  Also added the
 ///    ifdef for setting negative pressure to a fixed temperature.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "constants.h"
+
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/microphysics_base.h"
 #include "eqns_mhd_adiabatic.h"
 #include <iostream>
 using namespace std;
@@ -63,7 +75,11 @@ eqns_mhd_ideal::~eqns_mhd_ideal()
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_ideal::PtoU(const double *p, double *u, const double gamma)
+void eqns_mhd_ideal::PtoU(
+      const pion_flt *p,
+      pion_flt *u,
+      const double gamma
+      )
 {
   u[eqRHO] = p[eqRO];
   u[eqMMX] = p[eqRO]*p[eqVX];
@@ -82,7 +98,11 @@ void eqns_mhd_ideal::PtoU(const double *p, double *u, const double gamma)
 // ##################################################################
 // ##################################################################
 
-int eqns_mhd_ideal::UtoP(const double *u, double *p, const double gamma)
+int eqns_mhd_ideal::UtoP(
+      const pion_flt *u,
+      pion_flt *p,
+      const double gamma
+      )
 {
 #ifndef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   static long int ct_pg=0;
@@ -177,9 +197,11 @@ int eqns_mhd_ideal::UtoP(const double *u, double *p, const double gamma)
 // ##################################################################
 // ##################################################################
 
-double eqns_mhd_ideal::chydro(const double *p,   ///< Pointer to primitive variables.
-			      const double gamma ///< Gas constant gamma.
-			      )
+
+double eqns_mhd_ideal::chydro(
+      const pion_flt *p,   ///< Pointer to primitive variables.
+      const double gamma ///< Gas constant gamma.
+      )
 {
   return sqrt(gamma*p[eqPG]/p[eqRO]);
 }
@@ -188,8 +210,12 @@ double eqns_mhd_ideal::chydro(const double *p,   ///< Pointer to primitive varia
 // ##################################################################
 // ##################################################################
 
+
 /* Calculate fast magnetic wavespeed, in direction we are looking in. */
-double eqns_mhd_ideal::cfast(const double *p, const double gamma)
+double eqns_mhd_ideal::cfast(
+      const pion_flt *p,
+      const double gamma
+      )
 {
   //cout <<"cfast!\n";
   double ch = chydro(p, gamma);
@@ -203,12 +229,15 @@ double eqns_mhd_ideal::cfast(const double *p, const double gamma)
 // ##################################################################
 // ##################################################################
 
-double eqns_mhd_ideal::cfast_components(const double cfRO,
-					const double cfPG,
-					const double cfBX,
-					const double cfBY,
-					const double cfBZ,
-					const double g)
+
+double eqns_mhd_ideal::cfast_components(
+      const double cfRO,
+      const double cfPG,
+      const double cfBX,
+      const double cfBY,
+      const double cfBZ,
+      const double g
+      )
 {
   double ch = sqrt(g*cfPG/cfRO);
   double temp1 = ch*ch + (cfBX*cfBX +cfBY*cfBY +cfBZ*cfBZ)/cfRO;
@@ -225,8 +254,12 @@ double eqns_mhd_ideal::cfast_components(const double cfRO,
 // ##################################################################
 // ##################################################################
 
-/* Calculate slow magnetic wavespeed. */
-double eqns_mhd_ideal::cslow(const double *p, const double gamma)
+
+// Calculate slow magnetic wavespeed.
+double eqns_mhd_ideal::cslow(
+      const pion_flt *p,
+      const double gamma
+      )
 {
   double temp1;
   double temp2;
@@ -248,7 +281,12 @@ double eqns_mhd_ideal::cslow(const double *p, const double gamma)
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_ideal::PUtoFlux(const double *p, const double *u, double *f)
+
+void eqns_mhd_ideal::PUtoFlux(
+      const pion_flt *p,
+      const pion_flt *u,
+      pion_flt *f
+      )
 {
   /** \section Equations
    * The equations for the flux are in Falle, Komissarov, Joarder, 1998, MNRAS,297,265.
@@ -270,7 +308,12 @@ void eqns_mhd_ideal::PUtoFlux(const double *p, const double *u, double *f)
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_ideal::UtoFlux(const double *u, double *f, const double gamma)
+
+void eqns_mhd_ideal::UtoFlux(
+      const pion_flt *u,
+      pion_flt *f,
+      const double gamma
+      )
 {
   double pm = (u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.; // Magnetic pressure.
   double pg = (gamma-1.) *(u[eqERG] -(u[eqMMX]*u[eqMMX] +u[eqMMY]*u[eqMMY] +u[eqMMZ]*u[eqMMZ])/(2.*u[eqRHO]) -pm);
@@ -291,10 +334,11 @@ void eqns_mhd_ideal::UtoFlux(const double *u, double *f, const double gamma)
 // ##################################################################
 
 
-void eqns_mhd_ideal::rotate(double *vec, ///< State vector
-			 enum axes initdir, ///< Initial orientation.
-			 enum axes finaldir ///< Final Orientation.
-			 )
+void eqns_mhd_ideal::rotate(
+      pion_flt *vec, ///< State vector
+      enum axes initdir, ///< Initial orientation.
+      enum axes finaldir ///< Final Orientation.
+      )
 {
   /** \section Directions
    * This only rotates between the three positive directions, XP,YP,ZP, 
@@ -302,7 +346,7 @@ void eqns_mhd_ideal::rotate(double *vec, ///< State vector
    * of the vector components.
    * */
   if (initdir==finaldir) return;
-  double v[eq_nvar];
+  pion_flt v[eq_nvar];
   for (int i=0;i<eq_nvar;i++) v[i] = vec[i];
   int offset = (static_cast<int>(finaldir-initdir+3))%3;
   if (offset ==1) {
@@ -329,12 +373,16 @@ void eqns_mhd_ideal::rotate(double *vec, ///< State vector
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_ideal::rotateXY(double *v, double theta)
+
+void eqns_mhd_ideal::rotateXY(
+      pion_flt *v,
+      double theta
+      )
 {
   double ct=cos(theta); double st=sin(theta);
 
-  double vx = v[eqVX]*ct - v[eqVY]*st;
-  double vy = v[eqVX]*st + v[eqVY]*ct;
+  pion_flt vx = v[eqVX]*ct - v[eqVY]*st;
+  pion_flt vy = v[eqVX]*st + v[eqVY]*ct;
   v[eqVX] = vx; v[eqVY]=vy;
 
   vx = v[eqBX]*ct - v[eqBY]*st;
@@ -346,10 +394,12 @@ void eqns_mhd_ideal::rotateXY(double *v, double theta)
 // ##################################################################
 // ##################################################################
 
+
 ///  Returns Internal Energy (per unit mass, so 'Temperature'), given primitive variable vector. 
-double eqns_mhd_ideal::eint(const double *p, ///< Primitive State Vector.
-			    const double g   ///< gas EOS gamma.
-			    )
+double eqns_mhd_ideal::eint(
+      const pion_flt *p, ///< Primitive State Vector.
+      const double g   ///< gas EOS gamma.
+      )
 {
   return p[eqPG]/(g-1.)/p[eqRO];
 }
@@ -359,9 +409,10 @@ double eqns_mhd_ideal::eint(const double *p, ///< Primitive State Vector.
 // ##################################################################
 
 /// Returns Total Energy (per unit volume), given primitive variable vector. 
-double eqns_mhd_ideal::Etot(const double *p, ///< State Vector.
-			    const double g   ///< gas EOS gamma.
-			    ) 
+double eqns_mhd_ideal::Etot(
+      const pion_flt *p, ///< State Vector.
+      const double g   ///< gas EOS gamma.
+      ) 
 {
   return( (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])/2.)
 	  +(p[eqPG]/(g-1.))
@@ -372,10 +423,12 @@ double eqns_mhd_ideal::Etot(const double *p, ///< State Vector.
 // ##################################################################
 // ##################################################################
 
+
 /// Returns Total Pressure (per unit Volume), given primitive variable vector. 
-double eqns_mhd_ideal::Ptot(const double *p, ///< Primitive State Vector.
-			    const double    ///< gas EOS gamma.
-			    )
+double eqns_mhd_ideal::Ptot(
+      const pion_flt *p, ///< Primitive State Vector.
+      const double    ///< gas EOS gamma.
+      )
 {
 return( p[eqPG]+ 0.5*(p[eqBX]*p[eqBX] +p[eqBY]*p[eqBY] +p[eqBZ]*p[eqBZ]) );
 }
@@ -384,11 +437,13 @@ return( p[eqPG]+ 0.5*(p[eqBX]*p[eqBX] +p[eqBY]*p[eqBY] +p[eqBZ]*p[eqBZ]) );
 // ##################################################################
 // ##################################################################
 
+
 /// Given a pressure ratio and initial density, calculate adiabatic final density.
-double eqns_mhd_ideal::AdiabaticRho(const double pr, ///< New to Old pressure ratio
-				    const double ri, ///< Old Density
-				    const double g ///< gas EOS gamma.
-				    )
+double eqns_mhd_ideal::AdiabaticRho(
+      const double pr, ///< New to Old pressure ratio
+      const double ri, ///< Old Density
+      const double g ///< gas EOS gamma.
+      )
 {
   return(ri*exp(log(pr)/g));
 }
@@ -397,9 +452,10 @@ double eqns_mhd_ideal::AdiabaticRho(const double pr, ///< New to Old pressure ra
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_ideal::SetAvgState(const double *state, ///< Mean Primitive var. state vector
-				 const double g ///< Gas constant gamma.
-				 )
+void eqns_mhd_ideal::SetAvgState(
+      const pion_flt *state, ///< Mean Primitive var. state vector
+      const double g ///< Gas constant gamma.
+      )
 {
   //
   // Set typical values to be used for reference:
@@ -474,13 +530,17 @@ eqns_mhd_mixedGLM::~eqns_mhd_mixedGLM()
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_mixedGLM::GLMsetPsiSpeed(const double cfl, const double delx, const double delt)
+void eqns_mhd_mixedGLM::GLMsetPsiSpeed(
+      const double cfl,
+      const double delx,
+      const double delt
+      )
 {
   /** \section chyp Hyperbolic Wave Speed
    * See the Code Algorithms page \ref algorithms for details of my implementation.
    * */
   //  cout <<"calculating GLM_chyp!\n";
-  GLM_chyp = cfl*delx/delt;///(SimPM.ndim); // hyperbolic wavespeed is equal to max. allowed value for given CFL no.
+  GLM_chyp = cfl*delx/delt; ///(SimPM.ndim); // hyperbolic wavespeed is equal to max. allowed value for given CFL no.
   GLM_cr = 4.0*delx; // This works well for general use.
   //GLM_cr *=20.5; // This is for when getting negative pressure near outflow boundaries.
   //GLM_cr = 0.3*delx;
@@ -505,10 +565,11 @@ void eqns_mhd_mixedGLM::GLMsetPsiSpeed(const double cfl, const double delx, cons
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_mixedGLM::PtoU(const double *P,    ///< pointer to Primitive variables.
-		    double *U,          ///< pointer to conserved variables.
-		    const double gamma  ///< Gas constant gamma.
-		    )
+void eqns_mhd_mixedGLM::PtoU(
+      const pion_flt *P,    ///< pointer to Primitive variables.
+      pion_flt *U,          ///< pointer to conserved variables.
+      const double gamma  ///< Gas constant gamma.
+      )
 {
 //  cout <<"glm ptou\n";
   U[eqPSI] = P[eqSI];
@@ -520,10 +581,11 @@ void eqns_mhd_mixedGLM::PtoU(const double *P,    ///< pointer to Primitive varia
 // ##################################################################
 // ##################################################################
 
-int eqns_mhd_mixedGLM::UtoP(const double *U, ///< pointer to conserved variables.
-		    double *P,       ///< pointer to Primitive variables.
-		    const double g   ///< Gas constant gamma.
-		    )
+int eqns_mhd_mixedGLM::UtoP(
+      const pion_flt *U, ///< pointer to conserved variables.
+      pion_flt *P,       ///< pointer to Primitive variables.
+      const double g   ///< Gas constant gamma.
+      )
 {
   //  cout <<"glm utop\n";
   P[eqSI]=U[eqPSI];
@@ -534,9 +596,10 @@ int eqns_mhd_mixedGLM::UtoP(const double *U, ///< pointer to conserved variables
 // ##################################################################
 // ##################################################################
 
-void eqns_mhd_mixedGLM::GLMsource(double *psivar, ///< Primitive Psi variable.
-				  const double delt ///< timestep
-				  )
+void eqns_mhd_mixedGLM::GLMsource(
+      pion_flt *psivar, ///< Primitive Psi variable.
+      const double delt ///< timestep
+      )
 {
   //cout <<"\tglmsource: exp factor="<<-delt*GLM_chyp/GLM_cr<<"\n";
   *psivar *= exp(-delt*GLM_chyp/GLM_cr);

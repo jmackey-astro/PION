@@ -1,15 +1,24 @@
-/** \file blast_wave.cc
- *  \author Jonathan Mackey
- *
- * File for setting up blast wave test problems for all possible grids
- * and geometries -- 1d,2d,3d, cartesian,cylindrical,spherical, hydro,mhd.
- * */
+/// \file blast_wave.cc
+/// \author Jonathan Mackey
 ///
-/// 2010-10-01 JM: Added spherically symmetric BW (1D) in polar coordinates.
+/// File for setting up blast wave test problems for all possible grids
+/// and geometries -- 1d,2d,3d, cartesian,cylindrical,spherical, hydro,mhd.
 ///
+///
+/// - 2010-10-01 JM: Added spherically symmetric BW (1D) in polar coordinates.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "icgen.h"
-#include "../coord_sys/VectorOps.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
+#include "coord_sys/VectorOps.h"
 #include <sstream>
 using namespace std;
 
@@ -188,7 +197,7 @@ int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -431,8 +440,8 @@ int IC_blastwave::setup_sph_bw_File(
       // This is exact for spherical coords.
       // The ion fraction should be 1 already, so ignore it.
       CI.get_dpos(c,dpos);
-      //cout <<"radius["<<i<<"]="<<radius[i]<<", dist="<<GS.distance(dpos,centre,ndim)<<"  bw_rad="<<bw_rad<<"\n";
-      if (GS.distance(dpos,centre,ndim) <= bw_rad) {
+      //cout <<"radius["<<i<<"]="<<radius[i]<<", dist="<<gg->distance(centre,dpos)<<"  bw_rad="<<bw_rad<<"\n";
+      if (gg->distance(centre,dpos) <= bw_rad) {
         c->P[PG] = Pin;
         c->P[RO] = bw_blastRO;
         cout <<"Setting cell "<<c->id<<" to internal value.\n";
@@ -497,7 +506,7 @@ int IC_blastwave::setup_sph_bw()
      // This is where I set the state inside the blast radius.
      // This is exact for spherical coords.
      CI.get_dpos(cpt,dpos);
-     if (GS.distance(dpos,centre,ndim) <= bw_rad) {
+     if (gg->distance(centre,dpos) <= bw_rad) {
        cpt->P[PG] = Pin;
        cpt->P[RO] = bw_blastRO;
        //for (int i=0;i<SimPM.ntracer;i++) {
@@ -574,7 +583,7 @@ int IC_blastwave::setup_cyl_bw()
      // cell is cartesian!  But it's better than nothing.
      //if( (vfrac=stest.volumeFraction(cpt)) >0) {
      CI.get_dpos(cpt,dpos);
-     if (GS.distance(dpos,centre,ndim) <= bw_rad) {
+     if (gg->distance(centre,dpos) <= bw_rad) {
        vfrac=1.0;
        cpt->P[PG] = vfrac*(Pin)        + (1.-vfrac)*cpt->P[PG];
        cpt->P[RO] = vfrac*(bw_blastRO) + (1.-vfrac)*cpt->P[RO];

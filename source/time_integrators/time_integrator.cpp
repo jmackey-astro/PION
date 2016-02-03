@@ -4,7 +4,7 @@
 /// 
 /// \author Jonathan Mackey
 /// 
-/// This file contains the definitions of the member functions for IntUniformFV 
+/// This file contains the definitions of the member functions for sim_control_fixedgrid 
 /// class, which is the basic 1st/2nd order Finite Volume Solver according to
 /// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
 /// 
@@ -20,7 +20,7 @@
 ///  - 2007-11-01 Added dataio class last week, cleaning up today.
 ///  - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
 ///
-///  - JM 2009-12-16 Added ifdef in IntUniformFV::Time_Int() so that I
+///  - JM 2009-12-16 Added ifdef in sim_control_fixedgrid::Time_Int() so that I
 ///      can get the code to output magnetic pressure instead of
 ///      timing info every timestep.  This is purely to make a plot of
 ///      magnetic pressure for the Field Loop Advection Test and
@@ -141,27 +141,34 @@
 /// - 2013.10.13 JM: Fixed bug in dU_Column relating to internal
 ///    boundaries; seems it never arose before.
 /// - 2013.12.03 JM: Modified NO_COOLING_ON_AXIS hack.
+/// - 2015.01.12/13 JM: Modified for new code structure; began adding
+///    the grid pointer everywhere.
+/// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
-#ifdef NEW_TIME_UPDATE
+#include "sim_control.h"
+#include "dataIO/dataio.h"
 
-#include "../grid.h"
-#include "../dataIO/dataio.h"
-
-#include "../microphysics/microphysics_base.h"
-#include "../raytracing/raytracer_SC.h"
+#include "microphysics/microphysics_base.h"
+#include "raytracing/raytracer_SC.h"
 
 #ifdef SILO
-#include "../dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo.h"
 #endif // if SILO
 #ifdef FITS
-#include "../dataIO/dataio_fits.h"
+#include "dataIO/dataio_fits.h"
 #endif // if FITS
 
-#include "../spatial_solvers/solver_eqn_base.h"
+#include "spatial_solvers/solver_eqn_base.h"
 
 
 #include <iostream>
@@ -185,7 +192,9 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int IntUniformFV::advance_time()
+int sim_control_fixedgrid::advance_time(
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   int err=0;
 
@@ -194,7 +203,7 @@ int IntUniformFV::advance_time()
   // on the ray-tracing column densities, and if so all the column densities
   // will be calculated with raytracing calls in calc_mp_timestep()
   //
-  err += calc_timestep();
+  err += calc_timestep(grid);
   if (err) 
     rep.error("advance_time: bad return value from calc_timestep()",err);
 
@@ -208,7 +217,7 @@ int IntUniformFV::advance_time()
     // function knows whether to update P[i] as well as Ph[i]
     //
     //cout <<"First order update\n";
-    err += first_order_update(SimPM.dt, SimPM.tmOOA);
+    err += first_order_update(SimPM.dt, SimPM.tmOOA, grid);
     if (err)
       rep.error("first_order_update() returned error",err);
   }
@@ -222,7 +231,7 @@ int IntUniformFV::advance_time()
 #ifdef RT_TESTING
       cout <<"--- tstep_dyn_then_mp() selected for implicit RT.\n";
 #endif
-      err += timestep_dynamics_then_microphysics();
+      err += timestep_dynamics_then_microphysics(grid);
       if (err)
         rep.error("tstep_dyn_then_mp() returned error",err);
     }
@@ -232,8 +241,8 @@ int IntUniformFV::advance_time()
     //
     else {
       //cout <<"Second order update\n";
-      err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA);
-      err += second_order_update(SimPM.dt,     SimPM.tmOOA);
+      err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid);
+      err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid);
       if (err)
         rep.error("Second order time-update returned error",err);
     }
@@ -263,10 +272,11 @@ int IntUniformFV::advance_time()
 
 
 
-int IntUniformFV::first_order_update(
-            const double dt,
-            const int   ooa
-            )
+int sim_control_fixedgrid::first_order_update(
+      const double dt,
+      const int   ooa,
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   int err=0;
   //
@@ -288,10 +298,10 @@ int IntUniformFV::first_order_update(
   //
   // Calculate updates for each physics module
   //
-  err += calc_microphysics_dU(dt);
-  err += calc_dynamics_dU(dt,OA1);
+  err += calc_microphysics_dU(dt, grid);
+  err += calc_dynamics_dU(dt,OA1, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt,OA1);
+  err += calc_thermal_conduction_dU(dt,OA1, grid);
 #endif // THERMAL_CONDUCTION
   if (err) 
     rep.error("first_order_update: error from calc_*_dU",err);
@@ -299,7 +309,7 @@ int IntUniformFV::first_order_update(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-  err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,ooa);
+  err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,ooa, grid);
   if (err) 
     rep.error("first_order_update: error from state-vec update",err);
 
@@ -321,10 +331,11 @@ int IntUniformFV::first_order_update(
 
 
 
-int IntUniformFV::second_order_update(
-            const double dt,
-            const int   ooa
-            )
+int sim_control_fixedgrid::second_order_update(
+      const double dt,
+      const int   ooa,
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   int err=0;
   //
@@ -344,10 +355,10 @@ int IntUniformFV::second_order_update(
   //
   // Calculate updates for each physics module
   //
-  err += calc_microphysics_dU(      dt);
-  err += calc_dynamics_dU(          dt, OA2);
+  err += calc_microphysics_dU(      dt,      grid);
+  err += calc_dynamics_dU(          dt, OA2, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt, OA2);
+  err += calc_thermal_conduction_dU(dt, OA2, grid);
 #endif // THERMAL_CONDUCTION
   if (err) 
     rep.error("second_order_update: error from calc_*_dU",err);
@@ -355,7 +366,7 @@ int IntUniformFV::second_order_update(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-  err += grid_update_state_vector(  dt, TIMESTEP_FULL, ooa);
+  err += grid_update_state_vector(  dt, TIMESTEP_FULL, ooa, grid);
   if (err) 
     rep.error("second_order_update: error from state-vec update",err);
 
@@ -390,10 +401,12 @@ int IntUniformFV::second_order_update(
 
 
 
-int IntUniformFV::timestep_dynamics_then_microphysics()
+int sim_control_fixedgrid::timestep_dynamics_then_microphysics(
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
 #ifdef TESTING
-  cout <<"Using  IntUniformFV::timestep_dynamics_then_microphysics() update.\n";
+  cout <<"Using  sim_control_fixedgrid::timestep_dynamics_then_microphysics() update.\n";
 #endif // TESTING
   
   // ----------------------------------------------------------------
@@ -438,12 +451,12 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
 
   if (SimPM.tmOOA ==OA1) { // First order time time
     eqn->Setdt(dt);
-    err  = calc_dynamics_dU(dt,OA1);
+    err  = calc_dynamics_dU(dt,OA1, grid);
     //     cout <<"updating microphysics.\n";
-    err += calc_microphysics_dU(dt);
+    err += calc_microphysics_dU(dt, grid);
     //    cout <<"done with mp.\n";
 
-    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA1);
+    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA1, grid);
     err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
     //     cout <<"updating external bcs.\n";
     err += grid->TimeUpdateExternalBCs(SimPM.tmOOA,SimPM.tmOOA);
@@ -465,9 +478,9 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
     //
     dt /= 2.0;
     eqn->Setdt(dt);
-    err  = calc_dynamics_dU(dt,OA1);
+    err  = calc_dynamics_dU(dt,OA1, grid);
 
-    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA2);
+    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA2, grid);
     err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
     err += grid->TimeUpdateExternalBCs(OA1,SimPM.tmOOA);
     if (err) rep.error("O2 half time update loop generated errors",err);
@@ -478,11 +491,11 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
     dt *= 2.0;
     eqn->Setdt(dt);
     //    cout <<"\tsecond pass.... \n";
-    err = calc_dynamics_dU(dt,OA2); //,SimPM.tmOOA);
+    err = calc_dynamics_dU(dt,OA2, grid); //,SimPM.tmOOA);
     // Update MicroPhysics, if present
-    err += calc_microphysics_dU(dt);
+    err += calc_microphysics_dU(dt, grid);
 
-    err += grid_update_state_vector(dt,TIMESTEP_FULL,OA2);
+    err += grid_update_state_vector(dt,TIMESTEP_FULL,OA2, grid);
     err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
     err += grid->TimeUpdateExternalBCs(SimPM.tmOOA,SimPM.tmOOA);
 
@@ -494,7 +507,7 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
 #ifdef TESTING
   if (SimPM.timestep%20 ==0) {
     //    cout <<"dp.initERG = "<<dp.initERG<<"\n";
-    check_energy_cons();
+    check_energy_cons(grid);
   }
 #endif // TESTING
   //  cout <<"now dt = "<<SimPM.dt<<"\n";
@@ -511,7 +524,9 @@ int IntUniformFV::timestep_dynamics_then_microphysics()
 
 
 
-int IntUniformFV::calculate_raytracing_column_densities()
+int sim_control_fixedgrid::calculate_raytracing_column_densities(
+      //class GridBaseClass *grid ///< Computational grid.
+      )
 {
   int err=0;
   //
@@ -521,7 +536,7 @@ int IntUniformFV::calculate_raytracing_column_densities()
   if (RT) {
     for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
 #ifdef RT_TESTING
-      cout <<"IntUniformFV::calc_RT_col_dens: SRC-ID: "<<isrc<<"\n";
+      cout <<"sim_control_fixedgrid::calc_RT_col_dens: SRC-ID: "<<isrc<<"\n";
 #endif
       err += RT->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
       if (err) {
@@ -539,9 +554,10 @@ int IntUniformFV::calculate_raytracing_column_densities()
 
 
 
-int IntUniformFV::calc_microphysics_dU(
-            const double delt ///< timestep to integrate MP eqns.
-            )
+int sim_control_fixedgrid::calc_microphysics_dU(
+      const double delt, ///< timestep to integrate MP eqns.
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   //cout <<"\tcalc_microphysics_dU starting.\n";
 
@@ -564,7 +580,7 @@ int IntUniformFV::calc_microphysics_dU(
 #ifdef RT_TESTING
     cout <<"\t\t--- calling calc_microphysics_dU_no_RT()\n";
 #endif // RT_TESTING
-    err += calc_microphysics_dU_no_RT(delt);
+    err += calc_microphysics_dU_no_RT(delt, grid);
   }
 
   else if (RT && RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT) {
@@ -574,7 +590,7 @@ int IntUniformFV::calc_microphysics_dU(
 #ifdef RT_TESTING
     cout <<"\t\t--- calling calc_microphysics_dU_JMs_C2ray_RT()\n";
 #endif // RT_TESTING
-    err += calc_microphysics_dU_JMs_C2ray_RT(delt);
+    err += calc_microphysics_dU_JMs_C2ray_RT(delt, grid);
   }
 
   else {
@@ -586,7 +602,7 @@ int IntUniformFV::calc_microphysics_dU(
 #ifdef RT_TESTING
     cout <<"\t\t--- calling calc_microphysics_dU_general_RT()\n";
 #endif // RT_TESTING
-    err += calc_microphysics_dU_general_RT(delt);
+    err += calc_microphysics_dU_general_RT(delt, grid);
   }
     
   //cout <<"\tcalc_microphysics_dU finished.\n";
@@ -599,9 +615,10 @@ int IntUniformFV::calc_microphysics_dU(
 
 
 
-int IntUniformFV::calc_microphysics_dU_general_RT(
-        const double delt // timestep to integrate
-        )
+int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
+      const double delt, // timestep to integrate
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
 #ifdef RT_TESTING
   if (!RT)
@@ -624,8 +641,8 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
   // a non-zero error code.
   //
   cell *c = grid->FirstPt();
-  double p[SimPM.nvar]; // temporary state vector for output state.
-  double ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
+  pion_flt p[SimPM.nvar]; // temporary state vector for output state.
+  pion_flt ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
 
   double tt=0.; // temperature returned at end of microphysics step.
   do {
@@ -718,9 +735,10 @@ int IntUniformFV::calc_microphysics_dU_general_RT(
 
 
 
-int IntUniformFV::calc_microphysics_dU_JMs_C2ray_RT(
-          const double delt ///< timestep to integrate
-          )
+int sim_control_fixedgrid::calc_microphysics_dU_JMs_C2ray_RT(
+      const double delt, ///< timestep to integrate
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
 #ifdef RT_TESTING
   if (!RT) rep.error("Logic error: must have RT unless i'm an idiot","C2RAY");
@@ -772,9 +790,10 @@ int IntUniformFV::calc_microphysics_dU_JMs_C2ray_RT(
 
 
 
-int IntUniformFV::calc_microphysics_dU_no_RT(
-          const double delt ///< timestep to integrate
-          )
+int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
+      const double delt, ///< timestep to integrate
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
 #ifdef TESTING
   cout <<"calc_microphysics_dU_no_RT starting.\n";
@@ -784,8 +803,8 @@ int IntUniformFV::calc_microphysics_dU_no_RT(
   // so just do my original microphysics update.
   //
   cell *c = grid->FirstPt();
-  double p[SimPM.nvar]; // temporary state vector for output state.
-  double ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
+  pion_flt p[SimPM.nvar]; // temporary state vector for output state.
+  pion_flt ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
   double tt=0.; // temperature returned at end of microphysics step.
   int err=0;
   do {
@@ -833,11 +852,12 @@ int IntUniformFV::calc_microphysics_dU_no_RT(
 
 
   
-int IntUniformFV::calc_dynamics_dU(
-          const double dt, ///< timestep to integrate
-          const int space_ooa ///< spatial order of accuracy for update.
-          //const int time_ooa   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-          )
+int sim_control_fixedgrid::calc_dynamics_dU(
+      const double dt, ///< timestep to integrate
+      const int space_ooa, ///< spatial order of accuracy for update.
+      //const int time_ooa,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   //cout <<"\tcalc_dynamics_dU starting.\n";
   //
@@ -859,13 +879,13 @@ int IntUniformFV::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(dt,space_ooa); //,time_ooa);
+  err = eqn->preprocess_data(space_ooa, space_ooa, grid); //,time_ooa);
 
   //
   // Now calculate the directionally-unsplit time update for the
   // conserved variables:
   //
-  err = set_dynamics_dU(dt,space_ooa); //,time_ooa);
+  err = set_dynamics_dU(dt, space_ooa, grid); //,time_ooa);
   rep.errorTest("calc_dynamics_dU() eqn->set_dynamics_dU returned error.",
                 0,err);
 
@@ -877,7 +897,7 @@ int IntUniformFV::calc_dynamics_dU(
   // robust than e.g. Toth (2000) Field-CT method.  (well the internal
   // energy solver uses it, but it's not really worth using).
   //
-  err = eqn->PostProcess_dU(dt,space_ooa); //,time_ooa);
+  err = eqn->PostProcess_dU(dt, space_ooa, grid); //,time_ooa);
   rep.errorTest("calc_dynamics_dU() eqn->PostProcess_dU()",0,err);
 
   return 0;
@@ -889,10 +909,11 @@ int IntUniformFV::calc_dynamics_dU(
 
 
 
-int IntUniformFV::set_dynamics_dU(
-            const double dt,    ///< timestep for this calculation
-            const int space_ooa ///< space OOA for this calculation
-            )
+int sim_control_fixedgrid::set_dynamics_dU(
+      const double dt,     ///< timestep for this calculation
+      const int space_ooa, ///< space OOA for this calculation
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   //  cout <<"\t\t\tStarting set_dynamics_dU: ndim = "<<SimPM.ndim<<"\n";
   int return_value=0;
@@ -941,7 +962,7 @@ int IntUniformFV::set_dynamics_dU(
       // or half step) so it is not too important.
                                         space_ooa,
 #endif
-                                        space_ooa)) ==0) {
+                                        space_ooa, grid)) ==0) {
       //cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
       //rep.printVec("cpt",cpt->pos,SimPM.ndim);
       if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim]))->isgd ) {
@@ -971,17 +992,18 @@ int IntUniformFV::set_dynamics_dU(
 
   
 
-int IntUniformFV::dynamics_dU_column
-        (
-        const class cell *startingPt, ///< sterting point of column.
-        const enum direction posdir, ///< direction to trace column.
-        const enum direction negdir, ///< reverse direction
-        const double dt, ///< timestep we are advancing by.
+int sim_control_fixedgrid::dynamics_dU_column
+      (
+      const class cell *startingPt, ///< sterting point of column.
+      const enum direction posdir, ///< direction to trace column.
+      const enum direction negdir, ///< reverse direction
+      const double dt, ///< timestep we are advancing by.
 #ifdef TESTING
-        const int ctm, ///< time order-of-accuracy (for conservation)
+      const int ctm, ///< time order-of-accuracy (for conservation)
 #endif
-        const int csp  ///< spatial order-of-accuracy for this step.
-        )
+      const int csp,  ///< spatial order-of-accuracy for this step.
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   //  cout <<"Starting dU_column in direction "<<posdir<<" at ";
   //  rep.printVec("starting position",startingPt->x,SimPM.ndim);
@@ -1003,7 +1025,7 @@ int IntUniformFV::dynamics_dU_column
   // Calculate Flux at positive (right) boundary of cell and store in temporary arrays
   // for the current cell (Fr_this) and the negative neighbour (Fr_prev)
   // Have to do it this way b/c ISO C++ forbids re-assignment of arrays.
-  double *Fr_this=0, *Fr_prev=0, *temp=0, *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *pstar=0;
+  pion_flt *Fr_this=0, *Fr_prev=0, *temp=0, *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *pstar=0;
   Fr_prev   = mem.myalloc(Fr_prev,   SimPM.nvar);
   Fr_this   = mem.myalloc(Fr_this,   SimPM.nvar);
   slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
@@ -1045,14 +1067,14 @@ int IntUniformFV::dynamics_dU_column
     //    if (SimPM.timestep==2959 && dp.c->id==93) commandline.console("-ve density> ");
 #endif
     // Get the flux from left and right states, adding artificial viscosity if needed.
-    err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp);
-    err += eqn->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp);
-    err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp);
+    err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+    err += eqn->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
+    err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
     //    rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
     //    rep.errorTest("Edge States not obtained!",0,err);
-    err += eqn->InterCellFlux(cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
+    err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
     //    rep.printVec("Fr",Fr_this,SimPM.nvar);    rep.errorTest("Intercell Flux not obtained!",0,err);
-    err += eqn->dU_Cell(cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
+    err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
     //    rep.errorTest("dU not obtained!",0,err);
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {
@@ -1109,11 +1131,11 @@ int IntUniformFV::dynamics_dU_column
 #ifdef TESTING
   dp.c = cpt;
 #endif
-  err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp);
+  err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-  err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp);
-  err += eqn->InterCellFlux(cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
-  err += eqn->dU_Cell(cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
+  err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+  err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
+  err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
 #ifdef TESTING
   if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
     ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
@@ -1161,17 +1183,18 @@ int IntUniformFV::dynamics_dU_column
 // ##################################################################
 
   
-int IntUniformFV::grid_update_state_vector(
-            const double dt,  ///< timestep
-            const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-            const int ooa   ///< Full order of accuracy of simulation
-            )
+int sim_control_fixedgrid::grid_update_state_vector(
+      const double dt,  ///< timestep
+      const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int ooa,   ///< Full order of accuracy of simulation
+      class GridBaseClass *grid ///< Computational grid.
+      )
 {
   int err=0;
   //
   // temp variable to handle change of energy when correcting for negative pressure.
   //
-  double temperg =0.0;
+  pion_flt temperg =0.0;
 
   //
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
@@ -1220,11 +1243,6 @@ int IntUniformFV::grid_update_state_vector(
 // ##################################################################
 // ##################################################################
 
-#endif // NEW_TIME_UPDATE
-
-
-// ##################################################################
-// ##################################################################
 
 
 

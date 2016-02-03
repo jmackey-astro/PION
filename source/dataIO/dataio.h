@@ -1,33 +1,36 @@
-/** \file dataio.h
- * 
- * modified:\n
- *  - 2007-10-25 Got class structure that works for parallel output.
- *  - 2007-10-26 parallel fits-io class reads data from single and multiple
- *    files. Put in serial ifdefs, so that it should work for serial code too.
- *  - 2008-01-16 Documented the classes.
- *
- *  - 2010-02-03 JM: made base class virtual
- * */
-///
+/// \file dataio.h
+/// \author Jonathan Mackey
+/// 
+/// modified:\n
+/// - 2007-10-25 Got class structure that works for parallel output.
+/// - 2007-10-26 parallel fits-io class reads data from single and multiple
+///    files. Put in serial ifdefs, so that it should work for serial code too.
+/// - 2008-01-16 Documented the classes.
+/// - 2010-02-03 JM: made base class virtual
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2101-07-20/22 JM: Updated sim.file header I/O to be more general
 ///    and make it easier to add new parameters.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
-///
 /// - 2010.11.03 JM: Added Ndigits variable for naming files.
 /// - 2011.06.02 JM: Added WriteHeader() function so I can over-write header
 ///    parameters and restart a simulation with e.g. different microphysics.
 /// - 2011.11.22 JM: Added set_default_val() function to parameter classes.
+/// - 2015.07.09 JM: updated tracer parameters (each tracer has its
+///    own parameter name.
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
+/// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 
 #ifndef DATAIO_H
 #define DATAIO_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+
 #include <cstring>
 #include <list>
-#include "global.h"
+
 #include "spatial_solvers/solver_eqn_base.h"
 #include "dataIO/file_status.h"
 
@@ -228,13 +231,15 @@ protected:
 
 ///
 /// parameter class for DOUBLE ARRAY [MAX_NVAR] parameters
+/// This uses float or double, depending on the value of pion_flt
+/// in functionality_flags.h
 ///
 class pm_dvararr : public pm_base {
 public:
   pm_dvararr();
   pm_dvararr(const string );
-  pm_dvararr(const string, double *);
-  pm_dvararr(const string, double *, const double *);
+  pm_dvararr(const string, pion_flt *);
+  pm_dvararr(const string, pion_flt *, const pion_flt *);
   ~pm_dvararr();
 
   void assign_val(void *);
@@ -244,9 +249,9 @@ public:
   void set_to_default();
   void set_default_val(void *);
 protected:
-  double *ptr;
+  pion_flt *ptr;
   int len;
-  double *defval;
+  pion_flt *defval;
 };
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -276,11 +281,14 @@ class DataIOBase : public file_status {
           )=0;
   
 
-   /** \brief Output simulation data to file. */
-   virtual int OutputData(const string, ///< File to write to
-			  class GridBaseClass *, ///< pointer to data.
-			  const long int ///< number to stamp file with (e.g. timestep)
-			  )=0;
+  ///
+  /// Write simulation data to file.
+  ///
+  virtual int OutputData(
+        const string, ///< File to write to
+        class GridBaseClass *, ///< pointer to data.
+        const long int ///< number to stamp file with (e.g. timestep)
+        )=0;
 
    /** \brief Reads simulation parameters from file. */
    virtual int ReadHeader(string ///< file to read from
@@ -309,6 +317,18 @@ class DataIOBase : public file_status {
    std::list<class pm_base *> rt_src;
    bool have_setup_rt_src; ///< we only want to add to the list once!
    void set_rt_src_params(); ///< add source parameters to rt_src list.
+  
+#ifndef OLD_TRACER
+
+  ///
+  /// Parameters for tracers.
+  ///
+  std::list<class pm_base *> tr_pm;
+  bool have_setup_tracers; ///< track whether we have set up tracers
+  void set_tracer_params(); ///< add tracer parameters to tr_pm list.
+
+#endif // OLD_TRACER
+
    ///
    /// parameters for any stellar wind sources.
    ///
@@ -408,6 +428,8 @@ class dataio_text : public DataIOBase {
     * \retval 1 failure
     * */
    int get_parameters(string /**< Name of parameterfile.*/);
+
+
    /**  \brief Get initial conditions and populate grid with them.
     * 
     * Get type of IC from parameterfile.\n
@@ -418,6 +440,8 @@ class dataio_text : public DataIOBase {
     * \retval 1 failure
     * */
    int assign_initial_data();
+
+
    /**  \brief Gets Initial left and right states for a Riemann Problem to solve (1D).
     * 
     * You pass this an integer, and pointers to left and right states, and it
@@ -430,6 +454,8 @@ class dataio_text : public DataIOBase {
 		       double *, ///< pointer to right state.
 		       double *  ///< pointer to left/right interface value (as a fraction of the range).
 		       );
+
+
    /** \brief Add a low level of pseudo-random noise to the data.
     * 
     * This adds random noise to the data.  The integer flag determines what 

@@ -1,5 +1,5 @@
 %%%
-%%% Code Users Guide
+%%% PION Users Guide
 %%%
 \documentclass[a4paper,11pt]{report}
 %\documentclass[a4paper,11pt,draft]{article}
@@ -8,8 +8,12 @@
 \usepackage{graphicx}
 \usepackage{fixltx2e}
 \usepackage{morefloats}
-\usepackage{url}
 \usepackage{rotating}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{color,soul}
+\usepackage[normalem]{ulem}
 %
 % THIS GIVES TIMES NEW ROMAN FONTS:
 % http://www.terminally-incoherent.com/blog/2008/05/08/few-words-on-latex-fonts/
@@ -28,53 +32,50 @@
 \parindent = 0.0 truept
 \parskip = 6.0 truept
 
-\input{../../../documentation_misc/bibtex/defs.tex}
+\input{./defs.tex}
 
 
 
-\title{User's Guide for \pion{} version 0.1}
+\title{User's Guide for \pion{} version 1.0}
 \author{Jonathan Mackey}
 \begin{document}
 \maketitle
 
 
-\section{Important Information}
-This documentation applies to \pion{} version 0.1.
+\section*{Important Information}
+This documentation applies to \pion{} version 1.0.
 
 \pion{} is a grid-based code for astrophysical fluid dynamics.
 
-\subsection{Contact information and feedback}
+\subsection*{Contact information and feedback}
 The main developer of \pion{} is Jonathan Mackey.
 You can contact him by email at
 
 \hangindent=0.5cm
-\quad \url{jmackey@astro.uni-bonn.de}
+\quad \url{jmackey@cp.dias.ie}
 
 or by post at:
 
 \hangindent=0.5cm
-\quad Argelander-Institut f\"ur Astronomie\\
-\quad Auf dem H\"ugel 71\\
-\quad 53121 Bonn\\
-\quad Germany.
+\quad Dunsink Observatory\\
+\quad Dunsink Lane\\
+\quad Dublin 15\\
+\quad D15 XR2R
+\quad Ireland.
 
-If you find a bug, please report it to J.~Mackey by email.
-Ideally, please also submit a patch to fix the bug.
+If you find a bug, please report it to J.~Mackey by email and file it as a bug at \href{https://bitbucket.org/jmackey/pion}{https://bitbucket.org/jmackey/pion}.
+Ideally, please also submit a patch to fix the bug!
 
 If you add new code segments and contribute them back to \pion{}, they are not subject to the same distribution restrictions as the rest of \pion{}, unless you want them to be, i.e.~you maintain control of the rights and restrictions to any code you write.
 
 
-\subsection{Terms of Use}
+\subsection*{Terms of Use}
 The terms of use are noted in detail in the file \texttt{pion/LICENCE.txt}.
-Please read them, and do not use the code if you do not agree to them.
+Please read them, and if you don't agree with any of the conditions, then don't use \pion{}.
 
-One noteworthy condition is that the code \pion{} (including all of its source code) is \textbf{not freely distributed}, and the terms of use include a clause stating that you will not make any part of the code publically available or accessible, in any form.
-If you do not agree to this, you are not permitted to use \pion{} and you are not permitted to keep a copy of the code.
-The aim of this is not to keep the code secret, but rather to prevent the code from being used for purposes for which it is not intended.
-
-Another condition is that \pion{} comes with no warranty whatsoever.
+A noteworthy condition is that \pion{} comes with no warranty whatsoever.
 Best efforts have been made to ensure the code accurately solves the equations it claims to solve, but there is no guarantee to this effect.
-The code is developed for astrophysics, not for any practical purpose where failure or bugs might have material consequences (except for the developer's reputation and career!).
+The code is developed for astrophysics, not for any practical purpose where failure or bugs might have material consequences (except for the developers' reputations and careers!).
 
 \newpage
 \addcontentsline{toc}{section}{Table of Contents}
@@ -90,10 +91,24 @@ The code is developed for astrophysics, not for any practical purpose where fail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Running a simple test problem}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This guide shows you how to run the double Mach-reflection test, in serial and parallel, and to compare the results with expected behaviour.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Overview of Code Design}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Installation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Installation is reasonably straightforward, but there is one library which needs to be manually downloaded because it does not have a free licence.
 The code is not really \emph{installed}, just compiled on a given computer.
 The executables can then be moved to any directory you want and run on a particular problem.
@@ -101,7 +116,7 @@ It is quite rare that the code needs to be recompiled to run a different simulat
 Here is how to compile the code:
 \begin{enumerate}
 \item
-  If you have a copy of \pion{} as \texttt{pion.0.1.tar.gz}, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
+  If you have a copy of \pion{} as \texttt{pion1.tar.gz}, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
 \item
   The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.5.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|pion/extra_libraries/|.
 \item
@@ -118,13 +133,15 @@ The compile scripts will automatically detect if it is being compiled on the fol
 \item \emph{SuperMUC} at the Leibniz Rechenzentrum (LRZ) in Munich,
 \item \emph{Phalanx} or \emph{Dougal} at UCL astrophysics dept.,
 \item \emph{Dirac-II/Complexity} at the University of Leicester,
-\item \emph{OS X 10.6}, with \emph{XCode} installed.
+\item \emph{OS X 10.X}, with \emph{XCode} installed.
 \end{itemize}
 If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
 It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compilation on other machines}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 If you want to compile it on a machine with e.g.\ Intel compilers, then you can either email me for help or you can try editing the compile scripts.
 It is relatively straightforward to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} environmental variables (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
 As you can see from \verb|install.sh|, you need to edit the files
@@ -134,19 +151,18 @@ As you can see from \verb|install.sh|, you need to edit the files
 \verb|pion/bin_parallel| and \verb|pion/bin_serial|.
 
 The library install script \verb|pion/extra_libraries/install_all_libs.sh| detects machines by hostname, so you can add a loop for your host.
-\texttt{NCORES} and \texttt{MAKE\_UNAME} are not so important, but \texttt{CC, CXX} and \texttt{FC} need to be set to something sensible.
+\texttt{NCORES} and \texttt{MAKE\_UNAME} are not so important, but \texttt{CC, CXX} and \texttt{FC} need to be set to your C, C++, and FORTRAN compilers.
 
 The serial and parallel \verb|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important because the Makefiles have a section defining various quantities depending on the value of \texttt{MAKE\_UNAME}.
 A new section needs to be created for the new machine in the Makefiles in \verb|pion/bin_serial| and \verb|pion/bin_parallel|.
 
 
 
- 
-
-
-
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction to Code}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%
 % Written in C++
 % Object-oriented
@@ -156,7 +172,7 @@ A new section needs to be created for the new machine in the Makefiles in \verb|
 %
 
 Two executables are compiled -- an initial condition (IC) generator and the executable to run the code.
-Both are based mostly on the same source files, but the IC generator has some files only it uses, and the same for the simulation executable.
+Both are based mostly on the same source files, but the IC generator has some files that only it uses, and the same for the simulation executable.
 The IC generator reads in a parameter file and uses the information in this text file to put gas on the computational grid, setup boundaries, radiation and/or stellar wind sources and anything else that needs to be set.
 It then writes all of this to a standard simulation output file, in either FITS\footnote{See \url{http://heasarc.gsfc.nasa.gov/fitsio/} for details.} or SILO\footnote{See \url{https://wci.llnl.gov/codes/silo/} for details} format.
 These output files contain a header with all of the information from the parameter file (and some extra info besides) and then the binary data stored in architecture-independent format (i.e.\ the data can be read on any computer if you have a code routine to read it).
@@ -165,16 +181,16 @@ So the parameter file is only used by the IC generator.
 The simulation code then reads in the IC file, starting with the header to get the parameters of the grid and the equations to be solved.
 Then the command-line is parsed to see if any parameters need to be overriden, such as the time to finish the simulation, the type of Riemann solver to use, how often to output data, etc.
 It then generates the grid, reads in the data from the IC file, and finally sets up the boundaries.
-Following this, the equations solver is setup, the microphysics solver (if needed) and the raytracer (if needed).
+Following this, the equations solver is set up, the microphysics solver (if needed) and the raytracer (if needed).
 Once everything has been set up the time integrator is called, and timestepping proceeds until something triggers the end of the simulation.
 At this point the code quits.
 
 
 Both SILO and FITS data can be read by the VisIt visualisation software package\footnote{\url{http://visit}}.
-FITS can of course be read by SAO-DS9 or probably also IDL (although I haven't tested this).
+FITS can also be read by python, SAO-DS9 and IDL (although I haven't tested this).
 I'm not sure if there are other visualisation tools for SILO data, but VisIt was designed around SILO so there is probably no reason to use a different visualisation package.
-FITS data doesn't really output in parallel well (each core writes its own file), so it is not recommended, but it is good for serial data.
-For running on more than a few cores, SILO output is recommended, and this can be postprocessed and converted to FITS with one of the analysis programmes that come with \pion{} \textbf{[CHECK IT WORKS!  Add a link]}.
+FITS data doesn't really output in parallel efficiently (each core writes its own file), so it is not recommended, but it is good for serial data.
+For running on more than a few cores, SILO output is recommended, and this can be postprocessed and converted to FITS with one of the analysis programmes that come with \pion{} \hl{[CHECK IT WORKS!  Add a link]}.
 
 For 1D and 2D serial calculations, it is often more useful to output text files which can be read by e.g.\ Gnuplot.
 This is also an option in the parameter file and can be set as a command-line option.
@@ -191,24 +207,19 @@ To summarise, here is how to set up a simulation:
 
 Of course life is not simple, so there are a few things to note.
 
-In the current setup, when running the code in parallel the same number of processes must be used for the IC generator, running the simulation code, and restarting from a checkpoint or output file.
+In the current setup, when running the code in parallel the same number of processes must be used for the IC generator, running the simulation code, and restarting from a checkpoint or output file \hl{[FIX THIS!]}.
 This is because each process writes its own grid to part of an output file, and so expects to find its own grid when it reads an input file.
 It would not be too difficult to change this so that the read function can access data written by any number of cores, but it is some way down the todo list.
 
 The error checking is not guaranteed to be the same in the IC generator and simulation code, so it is possible that the IC generator will create a valid IC file but the simulation code will not be able to run it because some parameters are missing or can only be used in combination with certain values of other parameters.
-I have tried to catch all of the possible conflicts at the IC generator stage, but still I always check that a simulation is set up correctly with a small simulation (on a coarser grid) before I submit a big job on a supercomputer.
-
-\subsection{Comparison to other codes}
-The code and execution sequence of \pion{} is a bit different to many codes.
-In a number of codes the initial conditions are generated by the simulation code itself, and the way the ICs are set up is determined by compile flags.
-For many codes also, everything is set at compile time, and there are no runtime parameters which can be changed.
-The idea of this is to have as small an executable as possible, but it can make for rather inflexible code.
-To be honest I have not tested whether \pion{} runs faster when I exclude large parts of code from compilation; it is something that should be looked at eventually.
-But for sure the performance of the code is comparable to other codes, so it is not slowing things down terribly, and the advantage of flexibility is significant especially for testing and setting up problems where parameters are changed and refined many times before a simulation is started.
-It may be a good idea to put in flags to exclude modules which are not required, in order to have the production code as lean as possible.
+I have tried to catch all of the possible conflicts at the IC generator stage, but still you should always check that a simulation is set up correctly with a small simulation (on a coarser grid) before you submit a big job on a supercomputer.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{The Parameter File}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The paramater file is an ASCII text file containing a list of paramters and their values.
 Lines beginning with the \verb|#| key are ignored and can be used for comments.
 Blank lines are also ignored.
@@ -294,7 +305,38 @@ Possible values for initial conditions parameter \verb|ics| are given in the fol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\begin{table}
+  \centering
+  \caption{
+    Summary of data input/output options for \pion{}.
+  }
+  \begin{tabular}{ l c l}
+    %\hline
+    Format & Binary? & Intended Usage \\
+    \hline
+    ASCII text & no   & serial, 1D and small 2D sims., debugging. \\
+    FITS       & yes  & serial and small parallel sims. \\
+    SILO       & yes  & serial, parallel, including HPC sims. \\
+  \end{tabular}
+  \label{tab:ioformats}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\textsc{Silo} I/O}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This is the ``native'' format used by \pion{} and should be used by default for parallel simulations.
+For performance reasons it is strongly recommended when running on more than about 16 CPUs.
+On supercomputers it is the only output format recommended.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{\textsc{Fits} I/O}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \textsc{Fits} is a flexible data format that, importantly, writes \emph{architecture-independent} files.
 This means you don't need to worry about little-endian or big-endian, or fortran-unformatted data, or binary/ascii.
 In addition, it is very well-supported by astronomical software, and there are GUI programs that can display FITS data.
@@ -308,7 +350,7 @@ which acts on a whole series of output files to automate the process.
 So there is one extra post-processing step with \textsc{Fits} data when running on multiple CPUs before you can look at the results.
 
 The simulation variables are writted in different HDUs (Header Data Units), depending on the physics included, and all values are in cgs units.
-First the ordering for hydrodynamics (no magnetic field):
+First the ordering for hydrodynamics (no magnetic field) \hl{CHECK THIS!}:
 \begin{itemize}
 \item HDU1 is always the simulation parameters; lots of parameter-value pairs.
 \item HDU2 is gas density.
@@ -322,7 +364,7 @@ First the ordering for hydrodynamics (no magnetic field):
   For example, if not doing radiative transfer, and if we have two tracer variables, this is HDU9.
 \end{itemize}
 
-Now the ordering for MHD simulations (mostly similar, but with MHD variables in the middle):
+Now the ordering for MHD simulations (mostly similar, but with MHD variables in the middle) \hl{CHECK THIS!}:
 \begin{itemize}
 \item HDU1 is always the simulation parameters; lots of parameter-value pairs.
 \item HDU2 is gas density.
@@ -343,7 +385,11 @@ Also, the same number of MPI processes must be used for writing the initial cond
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{ASCII Text I/O}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Text I/O only works for serial code, and is only designed for 1D and 2D simulations.
 It writes a text file for each simulation output, and each line of the file contains the variables (including position) for a cell.
 For 2D simulations, columns of constant $y$ are written in order of increasing $x$ position, and a blank line is inserted at the end of each column.
@@ -352,14 +398,9 @@ The first lines of each text file contain the simulation time (in seconds), the 
 The ordering of variables is basically the same as for \textsc{Fits} files, except that the cell-centred positions of each cell are written in the first column for 1D or first two columns for 2D.
 
 
-\section{\textsc{Silo} I/O}
-This is the ``native'' format used by \pion{}, and is the recommended format when running on more than about 64 CPUs.
-In general supercomputer filesystems prefer a few very, large files rather than the many, small files that are produced by \textsc{Fits} I/O.
-For up to 64 or 128 CPUs the difference in performance may not be large, however.
 
 
-
-\bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
-\bibliography{../../../documentation_misc/bibtex/refs.bib}
+\bibliographystyle{./apj.bst}
+\bibliography{./refs.bib}
 
 \end{document}

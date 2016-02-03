@@ -1,5 +1,5 @@
 ///
-/// \file main.cc
+/// \file main.cpp
 /// 
 /// \brief Main program which sets up a uniform grid and runs the simulation.
 /// 
@@ -44,18 +44,54 @@
 /// - 2010.10.13 JM: Moved print_commandline_options to global function.
 /// - 2010.11.15 JM: replaced endl with c-style newline chars.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
-///
+/// - 2015.01.08 JM: Moved grid definition to this file from global.h
+///    and added link to reporting class.
+/// - 2015.01.(10-26) JM: New include statements for new file
+///    structure, and non-global grid class.
+/// - 2015.04.30 JM: tidying up.
 
 #include <iostream>
 using namespace std;
-#include "global.h"
-#include "grid.h"
+
+//
+// These tell code what to compile and what to leave out.
+//
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "sim_constants.h"
+
+//
+// reporting class, for dealing with stdio/stderr
+//
+#include "tools/reporting.h"
+
+//
+// grid base class
+//
+#include "grid/grid_base_class.h"
+//
+// simulation control toolkit class.
+//
+#include "sim_control.h"
+
 
 int main(int argc, char **argv)
 {
   
+  //
+  // Set up simulation controller class.
+  //
+  class sim_control_fixedgrid *sim_control = 0;
+  sim_control = new class sim_control_fixedgrid();
+  if (!sim_control)
+    rep.error("(pion) Couldn't initialise sim_control_fixedgrid", sim_control);
+
+  //
+  // Check that command-line arguments are sufficient.
+  //
   if (argc<4) {
-    print_command_line_options(argc,argv);
+    sim_control->print_command_line_options(argc,argv);
     rep.error("Bad arguments",argc);
   }
   
@@ -69,7 +105,8 @@ int main(int argc, char **argv)
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
       cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+      // Redirects cout and cerr to text files in the directory specified.
+      rep.redirect(outpath);
     }
   }
   cout <<"-------------------------------------------------------\n";
@@ -97,38 +134,55 @@ int main(int argc, char **argv)
 
   int type = atoi(argv[3]);
   if (type!=1) rep.error("Only know uniform FV solver (=1)",type);
-  
-  if (integrator)
-    rep.error("integrator already set up!",integrator);
-  integrator = new class IntUniformFV();
-  if (!integrator)
-    rep.error("(pion) Couldn't initialise IntUniformFV integrator", integrator);
+ 
+  //
+  // set up pointer to grid base class.
+  //
+  class GridBaseClass *grid = 0;
 
+  //
+  // Initialise the grid.
   // inputs are infile_name, infile_type, nargs, *args[]
-  err = integrator->Init(argv[1], ft, argc, args);
+  //
+  err = sim_control->Init(argv[1], ft, argc, args, &grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
-    delete integrator;
+    delete sim_control;
     return 1;
   }
-  err+= integrator->Time_Int();
+  //
+  // Integrate forward in time until the end of the calculation.
+  //
+  err+= sim_control->Time_Int(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
-    delete integrator;
+    delete sim_control;
+    delete grid;
     return 1;
   }
-  err+= integrator->Finalise();
+  //
+  // Finalise and exit.
+  //
+  err+= sim_control->Finalise(grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
-    delete integrator;
+    delete sim_control;
+    delete grid;
     return 1;
   }
 
-  delete integrator; integrator=0;
+  delete sim_control; sim_control=0;
+  delete grid; grid=0;
   delete [] args; args=0;
+  
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion v.0.1  finsihed  ---------------------\n";
   cout <<"-------------------------------------------------------\n";
 
   return 0;
 }
+
+
+
+
+

@@ -14,6 +14,11 @@
 #ifndef HYDROGEN_MP_H
 #define HYDROGEN_MP_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "hydrogen_recomb_Hummer94.h"
 #include "hydrogen_photoion.h"
 

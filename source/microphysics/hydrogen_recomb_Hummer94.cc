@@ -11,11 +11,20 @@
 /// - 2011.04.18 JM: Added an ifdef for RT_TEST_PROBS to return 2.59e-13 as the RRR.
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
-///
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/interpolate.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 //#define TEST_HUMMER94_COOLING_FUNCTION
-#include "../global.h"
-#include "hydrogen_recomb_Hummer94.h"
+
+#include "microphysics/hydrogen_recomb_Hummer94.h"
 using namespace std;
 
 
@@ -71,9 +80,9 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
     hr_beta2[i] = 0.0;
     hr_btot2[i]  = 0.0;
   }
-  GS.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha2);
-  GS.spline(hr_t, hr_beta,  hr_Nspl, 1.e99, 1.e99, hr_beta2 );
-  GS.spline(hr_t, hr_btot,  hr_Nspl, 1.e99, 1.e99, hr_btot2 );
+  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha2);
+  interpolate.spline(hr_t, hr_beta,  hr_Nspl, 1.e99, 1.e99, hr_beta2 );
+  interpolate.spline(hr_t, hr_btot,  hr_Nspl, 1.e99, 1.e99, hr_btot2 );
 
   MinTemp = hr_t[0];
   MaxTemp = hr_t[hr_Nspl-1];
@@ -103,32 +112,27 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
   //cout << "\t\tB-tot min-slope="<<MinSlope_btot<<" max-slope="<<MaxSlope_btot<<"\n";
 
 #ifdef TESTING
-#ifdef PARALLEL
-  if (mpiPM.myrank==0) {
-#endif 
-    ofstream outf("hummer_recomb.txt");
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Hummer Recombination and Cooling Curve Data: Temperature(K) ";
-    outf <<"Rate(cm^3/s) CoolB(erg.cm^3/s) Total-Cool[B+FF](erg.cm^3/s)\n";
-    outf <<"# Cols: T  alpha_B*sqrt(T)  beta_B*sqrt(T)  beta_B^tot*sqrt(T)";
-    outf <<"  alpha_B  beta_B  beta_B^tot.\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double t=10.0;
-    do {
-      outf << t <<"\t"<< Hii_rad_recomb_rate(t)*sqrt(t) <<"\t";
-      outf << Hii_rad_recomb_cooling(t)*sqrt(t) <<"\t";
-      outf << Hii_total_cooling(t)*sqrt(t) <<"\t";
-      outf << Hii_rad_recomb_rate(t) <<"\t";
-      outf << Hii_rad_recomb_cooling(t) <<"\t";
-      outf << Hii_total_cooling(t) <<"\n";
-      t *=1.1;
-    } while (t<1.0e9);
-    outf.close();
-#ifdef PARALLEL
-  }
-#endif 
+  ofstream outf("hummer_recomb.txt");
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Hummer Recombination and Cooling Curve Data: Temperature(K) ";
+  outf <<"Rate(cm^3/s) CoolB(erg.cm^3/s) Total-Cool[B+FF](erg.cm^3/s)\n";
+  outf <<"# Cols: T  alpha_B*sqrt(T)  beta_B*sqrt(T)  beta_B^tot*sqrt(T)";
+  outf <<"  alpha_B  beta_B  beta_B^tot.\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double t=10.0;
+  do {
+    outf << t <<"\t"<< Hii_rad_recomb_rate(t)*sqrt(t) <<"\t";
+    outf << Hii_rad_recomb_cooling(t)*sqrt(t) <<"\t";
+    outf << Hii_total_cooling(t)*sqrt(t) <<"\t";
+    outf << Hii_rad_recomb_rate(t) <<"\t";
+    outf << Hii_rad_recomb_cooling(t) <<"\t";
+    outf << Hii_total_cooling(t) <<"\n";
+    t *=1.1;
+  } while (t<1.0e9);
+  outf.close();
 #endif //TESTING
+
   return;
 }
 
@@ -172,7 +176,7 @@ double Hummer94_Hrecomb::Hii_rad_recomb_rate(const double T)
     rate = hr_alpha[0] *pow(T/MinTemp, MinSlope_alpha);
   }
   else {
-    GS.splint(hr_t, hr_alpha, hr_alpha2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_alpha, hr_alpha2, hr_Nspl, T, &rate);
   }
 
   return rate;
@@ -205,7 +209,7 @@ double Hummer94_Hrecomb::Hii_rad_recomb_cooling(const double T)
     rate = hr_beta[0] *pow(T/MinTemp, MinSlope_beta);
   }
   else {
-    GS.splint(hr_t, hr_beta, hr_beta2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_beta, hr_beta2, hr_Nspl, T, &rate);
   }
 
   return rate*kB*T;
@@ -238,7 +242,7 @@ double Hummer94_Hrecomb::Hii_total_cooling(const double T)
     rate = hr_btot[0] *pow(T/MinTemp, MinSlope_btot);
   }
   else {
-    GS.splint(hr_t, hr_btot, hr_btot2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_btot, hr_btot2, hr_Nspl, T, &rate);
   }
   //cout <<"TOTAL COOLING: T="<<T<<" rate="<<rate<<" kB="<<kB<<" T="<<T<<"\n";
   return rate*kB*T;

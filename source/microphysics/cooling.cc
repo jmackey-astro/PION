@@ -10,24 +10,30 @@
 ///  - 2010-01-12 JM: modified cooling==5 so that it is appropriate for the Iliev et al. tests.
 ///  - 2010-01-15 JM: comments added.
 ///  - 2010-06-24 JM: Corrected KI02 function (with typos fixed from Vaz.-Sem. et al 2007.
-///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2011.01.14 JM: moved to microphysics/ sub-dir.
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/interpolate.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 
-
-#include "../global.h"
-#include "cooling.h"
+#include "microphysics/cooling.h"
 #include <iostream>
 using namespace std;
 
 CoolingFn::CoolingFn(int flag)
 {
-  kB = GS.kB();
+  kB = pconst.kB();
   Temp=0; Lamb=0; Lam2=0;
 
   string fname="CoolingFn::CoolingFn";
@@ -82,7 +88,7 @@ CoolingFn::CoolingFn(int flag)
     // boundary conditions for extrapolation beyond the range of the data.  It is 
     // dangerous to go beyond the range, but this boundary condition means that
     // extrapolation has a chance of being reasonable.
-    GS.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
   } // SD93 function (NEQ)
 
 
@@ -142,7 +148,7 @@ CoolingFn::CoolingFn(int flag)
   // boundary conditions for extrapolation beyond the range of the data.  It is 
   // dangerous to go beyond the range, but this boundary condition means that
   // extrapolation has a chance of being reasonable.
-  GS.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+  interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
   rep.error("Dalgarno and McCray cooling function is not usably coded -- get a better function",999);
   } // DMcC72 function
   
@@ -189,7 +195,7 @@ CoolingFn::CoolingFn(int flag)
     MinSlope = (temp2[1]-temp2[0])/(temp1[1]-temp1[0]);
     cout <<"\t\tMinSlope (logarithmic) = "<<MinSlope<<"\n";
 #endif
-    GS.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
   } // SD93 function (CIE)
     
 
@@ -264,7 +270,7 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp = Temp[Nspl-1];
     MinSlope = (temp2[1]-temp2[0])/(temp1[1]-temp1[0]);
     cout <<"\t\tMinSlope (logarithmic) = "<<MinSlope<<"\n";
-    GS.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
   } // SD93-CIE-ForbiddenLine
 
   else rep.error("Bad flag in CoolingFn Constructor",flag);
@@ -324,10 +330,10 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      grid->PrintCell(dp.c);
+      dp.grid->PrintCell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      GS.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
     }
     else if (T<=0.) rate = 0.0;
     else if (T<MinTemp) {
@@ -342,7 +348,7 @@ double CoolingFn::CoolingRate(const double T,
 #endif
     }
     else {
-      GS.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
     }
     //
     // Multiply by n_e.n_i
@@ -377,10 +383,10 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      grid->PrintCell(dp.c);
+      dp.grid->PrintCell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      GS.splint(Temp, Lamb, Lam2, Nspl, log10(MaxTemp), &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, log10(MaxTemp), &rate);
       rate = exp(log(10.0)*rate);
     }
     else if (T<=0.) rate = 0.0;
@@ -395,7 +401,7 @@ double CoolingFn::CoolingRate(const double T,
 #endif
     }
     else {
-      GS.splint(Temp, Lamb, Lam2, Nspl, log10(T), &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, log10(T), &rate);
       rate = exp(log(10.0)*rate);
     }
     //
@@ -474,10 +480,10 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       //cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      //grid->PrintCell(dp.c);
+      //dp.grid->PrintCell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      GS.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
     }
     else if (T<=0.) rate = 0.0;
     else if (T<MinTemp) {
@@ -485,7 +491,7 @@ double CoolingFn::CoolingRate(const double T,
       rate = max(1.e-50, Lamb[0]*exp(25.0*(log(T)-log(MinTemp))));
     }
     else {
-      GS.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
     }
     if (T<2.0e4) rate += xHp*2.0e-24*T/8000.0; //exp(2.0*log(T/8000.0));
 
@@ -520,10 +526,10 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       //cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      //grid->PrintCell(dp.c);
+      //dp.grid->PrintCell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      GS.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
     }
     else if (T<=0.) rate = 0.0;
     else if (T<MinTemp) {
@@ -531,7 +537,7 @@ double CoolingFn::CoolingRate(const double T,
       rate = max(1.e-50, Lamb[0]*exp(25.0*(log(T)-log(MinTemp))));
     }
     else {
-      GS.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
+      interpolate.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
     }
 
     //

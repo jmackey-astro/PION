@@ -1,20 +1,32 @@
-/** \file basic_tests.cc
- * 
- * File for setting up some basic test problems which won't be ever used for
- * actual physics sims, just for testing the code.
- *
- * 2009-12-07 JM: added switch in calling FieldLoop test to allow it to 
- * have a non-zero Vz, which provides a more stringent test.
- * */
+/// \file basic_tests.cc
+/// \author Jonathan Mackey
+/// 
+/// File for setting up some basic test problems which won't be ever used for
+/// actual physics sims, just for testing the code.
+///
+/// 2009-12-07 JM: added switch in calling FieldLoop test to allow it to 
+/// have a non-zero Vz, which provides a more stringent test.
+///
 ///
 /// 2010.10.05 JM: Added ambient medium parameters to be read from paramter file
 ///   for the "uniform" initial conditions.
 /// - 2013.10.17 JM: Added optional core/radial slope isothermal 
 ///    sphere for the UNIFORM medium parameters (with optional
 ///    expansion velocity, for modelling winds).
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.05 JM: Added pion_flt datatype.
 
-#include "icgen.h"
-#include "../coord_sys/VectorOps.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
+#include "coord_sys/VectorOps.h"
 using namespace std;
 #include <sstream>
 
@@ -39,9 +51,10 @@ IC_basic_tests::~IC_basic_tests(){}
 
 
 
-int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			       class GridBaseClass *ggg ///< pointer to grid
-			       )
+int IC_basic_tests::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -114,7 +127,7 @@ int IC_basic_tests::setup_data(class ReadParams *rrp,    ///< pointer to paramet
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -251,7 +264,7 @@ int IC_basic_tests::setup_uniformgrid(
   // Check that the radial slope is non-zero.  If it is zero, then
   // switch off the core.
   //
-  if (use_core && GS.equalD(radial_slope, 0.0)) use_core=false;
+  if (use_core && pconst.equalD(radial_slope, 0.0)) use_core=false;
 
 
   cout <<"\t\tAssigning values to data.\n";
@@ -310,7 +323,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   int ndim=gg->Ndim(); //int nvar=gg->Nvar();
   if(ndim!=2 && ndim!=3) rep.error("Bad ndim in setup_sinewave_velocity()",ndim);
 
-//   if (ndim==2 && !GS.equalD(thetaXZ,M_PI/2.)) {
+//   if (ndim==2 && !pconst.equalD(thetaXZ,M_PI/2.)) {
 //     rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to zero.",0,thetaXZ);
 //     thetaXZ=M_PI/2.;
 //   }
@@ -324,7 +337,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   double vy = 1.0; //sin(thetaXZ)*sin(thetaXY);
   double vz = 1.0; //cos(thetaXZ);
   cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
-  double pin, pout; pin=pout=1.0;
+  double pout; pout=1.0;
   double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
 //  SimPM.typeofbc = "PERIODIC";
@@ -334,7 +347,10 @@ int IC_basic_tests::setup_sinewave_velocity()
   else SimPM.finishtime = 5.*SimPM.Range[0]/vy;
 
   // Circle setup
-  double centre[ndim]; for (int i=0;i<ndim;i++) centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+  double centre[ndim];
+  for (int i=0;i<ndim;i++) {
+    centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+  }
   double radius = (SimPM.Xmax[0]-SimPM.Xmin[0])/10.; // radius is 1/5 of box diameter in x-dir.
   // Set up the inside_sphere class, with 100 subpoints per cell.
   int nsub; if (ndim==2) nsub=100; else nsub=32;
@@ -344,7 +360,6 @@ int IC_basic_tests::setup_sinewave_velocity()
   // data
   cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
-  int ix[ndim]; for (int i=0;i<ndim;i++) ix[i]=0;
   do {
      // Set values of primitive variables.
      cpt->P[RO] = rhoout; cpt->P[PG] = pout;
@@ -400,7 +415,7 @@ int IC_basic_tests::setup_advection()
   int ndim=gg->Ndim(); //int nvar=gg->Nvar();
   if(ndim!=2 && ndim!=3) rep.error("Bad ndim in setupNDadvectionHD",ndim);
 
-  if (ndim==2 && !GS.equalD(thetaXZ,M_PI/2.)) {
+  if (ndim==2 && !pconst.equalD(thetaXZ,M_PI/2.)) {
     rep.warning("Given 3d angle, but 2d sim.  setting 3d angle to zero.",0,thetaXZ);
     thetaXZ=M_PI/2.;
   }
@@ -414,8 +429,8 @@ int IC_basic_tests::setup_advection()
   double vy = sin(thetaXZ)*sin(thetaXY);
   double vz = cos(thetaXZ);
   cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
-  double pin, pout; pin=pout=1;
-  double rhoin,rhoout; rhoin=10; rhoout=1;
+  double pout; pout=1.0;
+  double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
 //  SimPM.typeofbc = "PERIODIC";
 //  SimPM.typeofbc = "XNinf XPinf YNinf YPinf";
@@ -434,7 +449,6 @@ int IC_basic_tests::setup_advection()
   // data
   cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
-  int ix[ndim]; for (int i=0;i<ndim;i++) ix[i]=0;
   do {
      // Set values of primitive variables.
      cpt->P[RO] = rhoout; cpt->P[PG] = pout;
@@ -560,7 +574,7 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
     c->P[VY] = vel/2.0; //vel*cos(flow_angle);
     c->P[VZ] = vz; // If vz!=0, this tests if B_z gets contaminated.
     CI.get_dpos(c,dpos);
-    dist = GS.distance(centre,dpos,ndim);
+    dist = gg->distance(centre,dpos);
 
     //
     // poor man's b-field (has divB errors)
@@ -592,12 +606,12 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   // Take curl of vector...
   //
   int els[3] = {BX,BY,BZ};
-  double ans[3];
+  pion_flt ans[3];
   class VectorOps_Cart *vec = new VectorOps_Cart (ndim,gg->DX());
   c = gg->FirstPt();
   do {
     if (!c->isedge) {
-      vec->Curl(c,1,els,ans);
+      vec->Curl(c,1,els,gg, ans);
       c->P[BX] = ans[0];
       c->P[BY] = ans[1];
       c->P[BZ] = ans[2];
@@ -618,11 +632,11 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
 // ##################################################################
 
 
-
-/** \brief Set up Orszag-Tang Vortex problem (from Dai & Woodward 1998,APJ,494,317)
- * This assumes the grid is unit size in both directions, so it automatically works
- * in serial and in parallel.
- */
+///
+/// Set up Orszag-Tang Vortex problem (from Dai & Woodward 1998,APJ,494,317)
+/// This assumes the grid is unit size in both directions, so it automatically works
+/// in serial and in parallel.
+///
 int IC_basic_tests::setup_OrszagTang()
 {
   // set plasma beta parameter (ratio of gas to magnetic pressure)
@@ -773,7 +787,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
   double Bx = 0.5/sqrt(4.*M_PI); // think this is right, but not sure about 4Pi
   int seed= 975;
 #ifdef PARALLEL
-  seed += mpiPM.myrank;
+  seed += MCMD->get_myrank();
 #endif
   srand(seed);
   double noise_amp = 0.01; // absolute amplitude of noise.

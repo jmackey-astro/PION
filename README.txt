@@ -1,6 +1,6 @@
 Author: Jonathan Mackey
-Version: 0.1
-Date: 2013.01.10
+Version: 1.0
+Date: 2016.01.24
 
 -------------------------------
 --- IMPORTANT INFORMATION   ---

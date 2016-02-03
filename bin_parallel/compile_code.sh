@@ -24,11 +24,11 @@
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
 # we are compiling on.  If it is not a known computer it is just set to
-# "standard" which is a standard linux system, assumed to have 4 cores (for
+# "standard" which is a standard linux system, assumed to have 8 cores (for
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
-NCORES=4
+NCORES=8
 #
 # Production code options:
 #
@@ -40,6 +40,7 @@ export CXX=mpicxx
 #
 #export PION_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
 #export PION_OPTIMISE=LOW
+#NCORES=4
 #export CXX=g++
 
 
@@ -123,13 +124,13 @@ fi
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
+#  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
+#  export PION_OPTIMISE=HIGH
   export CXX=mpicxx
   export CC=mpicc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=2
+  #NCORES=1
 fi
 #################################
 
@@ -213,7 +214,7 @@ fi
 #PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
 
 # Read in turbulence simulations provided by Blakesley Burkhart
-#PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
+PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 
 PION_OPTIONS+=" -DCODE_EXT_SBII"
 export PION_OPTIONS

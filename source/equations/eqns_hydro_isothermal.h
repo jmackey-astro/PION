@@ -12,10 +12,15 @@
 ///   don't have time to fix isothermal stuff now...
 ///
 
-#ifdef ISOTHERMAL_SOLVERS_ENABLED
 
 #ifndef EQNS_HYDRO_ISOTHERMAL_H
 #define EQNS_HYDRO_ISOTHERMAL_H
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#ifdef ISOTHERMAL_SOLVERS_ENABLED
 
 #include "eqns_base.h"
 
@@ -94,6 +99,6 @@ protected:
 };
 
 
+#endif // ISOTHERMAL_SOLVERS_ENABLED
 #endif // EQNS_HYDRO_ISOTHERMAL_H
 
-#endif // ISOTHERMAL_SOLVERS_ENABLED

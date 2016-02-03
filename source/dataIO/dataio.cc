@@ -1,41 +1,30 @@
-/** \file dataio.cc
- * Class definitions for ASCII Text data I/O.
- * 
- * modified:\n
- *  - 2007-10-25 got the parallel fits-io class to compile and write data.
- *  - 2007-10-26 parallel fits-io class reads data from single and multiple
- *    files. Put in serial ifdefs, so that it should work for serial code too.
- *  - 2008-09-19 Moved fits I/O to dataio_fits.cc, and moved text dataio from
- *     gridMethods.cc to here in a new class dataio_text.
- *
- *  - 2010-02-03 JM: removed unused variables from functions.
- * */
+/// \file dataio.cc
+/// \author Jonathan Mackey
+/// Class definitions for ASCII Text data I/O.
+/// 
+/// modified:\n
+///  - 2007-10-25 got the parallel fits-io class to compile and write data.
+///  - 2007-10-26 parallel fits-io class reads data from single and multiple
+///    files. Put in serial ifdefs, so that it should work for serial code too.
+///  - 2008-09-19 Moved fits I/O to dataio_fits.cc, and moved text dataio from
+///     gridMethods.cc to here in a new class dataio_text.
 ///
+///  - 2010-02-03 JM: removed unused variables from functions.
 /// - 2010-04-21 JM: Changed filename setup so that i can write
 ///    checkpoint files with fname.999999.txt/silo/fits
-///
 /// - 2010-07-20/22 JM: Work on new dataio structure with a list of parameters
 ///    to read and write.  read/write_simulation_parameters() functions work now.
-///
 /// - 2010-09-03 JM: analysis software tried to add new RSP source
 ///    every read, so I changed the function to only add sources if
 ///    the source list is empty.
-///
 /// - 2010.10.01 JM: Spherical coordinates added.
 ///    Got rid of testing myalloc/myfree commands.
-///
 /// - 2010.10.05 JM: Added an extra parameter "Rstar" for stellar winds.
-///
 /// - 2010.10.13 JM: Removed NEW_SOLVER_STRUCT ifdefs.
-///
 /// - 2010.11.03 JM: New Ndigits variable added.  Removed 'endl' statements.
-///
 /// - 2010.11.21 JM: Added more viscosity flags for dataio_text
-///
 /// - 2011.01.06 JM: New stellar wind interface.
-///
 /// - 2011.02.15 JM: Added new stellar wind parameters for evolving wind sources.
-///
 /// - 2011.02.24 JM: Added read/write for multiple radiation sources, with
 ///    additional parameters. Much simplified RT I/O by using new struct SimPM.RS.
 /// - 2011.02.25 JM: got rid of HCORR ifdef wrapper.
@@ -57,18 +46,33 @@
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
 /// - 2013.09.05 JM: changed logic of writing T/Eint in ascii data.
 /// - 2013.09.16 JM: Increased precision of ascii data to 14 digits.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
+/// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
+/// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 
-//
-// These tell code what to compile and what to leave out.
-//
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "dataIO/dataio.h"
 #include "dataIO/readparams.h"
 #include "grid/stellar_wind_BC.h"
+#include "raytracing/raytracer_base.h"
+
 #include <sstream>
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 // -----------------------------------------------------
@@ -93,6 +97,12 @@ pm_idimarr::pm_idimarr()
  {type=MY_IDIMARR; len=MAX_DIM; defval=0;}
 pm_dvararr::pm_dvararr()
  {type=MY_DVARARR; len=MAX_NVAR; defval=0;}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // constructor with name only
@@ -130,6 +140,12 @@ pm_dvararr::pm_dvararr(const string s)
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s); defval=0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // constructor with name and pointer to data
 //
@@ -163,11 +179,17 @@ pm_idimarr::pm_idimarr(const string s, int *p)
   type=MY_IDIMARR; len=MAX_DIM; name.assign(s);
   ptr=p; defval=0;
 }
-pm_dvararr::pm_dvararr(const string s, double *p)
+pm_dvararr::pm_dvararr(const string s, pion_flt *p)
 {
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s);
   ptr=p; defval=0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // constructor with name, pointer to data, default value.
@@ -204,12 +226,18 @@ pm_idimarr::pm_idimarr(const string s, int *p, const int *def)
   defval = mem.myalloc(defval,len);
   for (int v=0;v<len;v++) defval[v] = def[v];
 }
-pm_dvararr::pm_dvararr(const string s, double *p, const double *def)
+pm_dvararr::pm_dvararr(const string s, pion_flt *p, const pion_flt *def)
 {
   type=MY_DVARARR; len=MAX_NVAR; name.assign(s); ptr=p;
   defval = mem.myalloc(defval,len);
   for (int v=0;v<len;v++) defval[v] = def[v];
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Some have destructors:
@@ -226,6 +254,12 @@ pm_dvararr::~pm_dvararr() {
   if (defval) defval = mem.myfree(defval);
   ptr=0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 void pm_int::assign_val(void *val)
@@ -248,8 +282,14 @@ void pm_idimarr::assign_val(void *val)
 }
 void pm_dvararr::assign_val(void *val)
 {
-  for (int i=0;i<len;i++) ptr[i]= (static_cast<double *>(val))[i];
+  for (int i=0;i<len;i++) ptr[i]= (static_cast<pion_flt *>(val))[i];
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void pm_int::set_ptr(void *p) {ptr=static_cast<int *>(p);}
 void pm_double::set_ptr(void *p) {ptr=static_cast<double *>(p);}
@@ -258,14 +298,20 @@ void pm_long::set_ptr(void *p) {ptr=static_cast<long int *>(p);}
 void pm_string::set_ptr(void *p) {ptr=static_cast<string *>(p);}
 void pm_ddimarr::set_ptr(void *p) {ptr=static_cast<double *>(p);}
 void pm_idimarr::set_ptr(void *p) {ptr=static_cast<int *>(p);}
-void pm_dvararr::set_ptr(void *p) {ptr=static_cast<double *>(p);}
+void pm_dvararr::set_ptr(void *p) {ptr=static_cast<pion_flt *>(p);}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 void pm_int::show_val() {cout<<*ptr;}
 void pm_double::show_val() {cout<<*ptr;}
 void pm_float::show_val() {cout<<*ptr;}
 void pm_long::show_val() {cout<<*ptr;}
-void pm_string::show_val() {cout<<*ptr;}
+void pm_string::show_val() {cout<<*ptr<<", name="<<name;}
 void pm_ddimarr::show_val()
 {
   cout <<"[";
@@ -284,6 +330,12 @@ void pm_dvararr::show_val()
   for (int i=0;i<len-1;i++) cout<<ptr[i]<<", ";
   cout <<ptr[len-1]<<"]";
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 void pm_int::set_to_default() {*ptr=defval;}
@@ -305,6 +357,12 @@ void pm_dvararr::set_to_default() {
   else for (int i=0;i<len;i++) ptr[i] = defval[i];
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 void * pm_int::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_double::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_float::get_ptr() {return static_cast<void *>(ptr);}
@@ -313,6 +371,12 @@ void * pm_string::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_ddimarr::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_idimarr::get_ptr() {return static_cast<void *>(ptr);}
 void * pm_dvararr::get_ptr() {return static_cast<void *>(ptr);}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -331,7 +395,7 @@ void pm_idimarr::set_default_val(void *v) {
 }
 void pm_dvararr::set_default_val(void *v) {
   if (!defval) defval=mem.myalloc(defval,len);
-  else for (int i=0;i<len;i++) defval[i]=(static_cast<double *>(v))[i];
+  else for (int i=0;i<len;i++) defval[i]=(static_cast<pion_flt *>(v))[i];
 }
 
 
@@ -438,9 +502,6 @@ void DataIOBase::set_params()
     ("typeofbc_str",&SimPM.typeofbc);
   p = p007; p->critical=true;  
   params.push_back(p);
-  //
-  // leaving out Nbc b/c it's effectively redundant.  feel free to add in later...
-  //
 
   //
   // EQUATIONS
@@ -457,14 +518,44 @@ void DataIOBase::set_params()
     ("eqn_nvar",   &SimPM.nvar);
   p = p010; p->critical=true;  
   params.push_back(p);
+
+  //
+  // Tracers
+  //
   pm_int     *p011 = new pm_int     
     ("num_tracer", &SimPM.ntracer);
   p = p011; p->critical=true;  
   params.push_back(p);
+
+#ifdef OLD_TRACER
+
   pm_string  *p012 = new pm_string  
     ("tracer_str", &SimPM.trtype, "NEED_TRACER_VALUES!");
   p = p012; p->critical=false;  
   params.push_back(p);
+
+#else // new/old tracer
+  
+  //
+  // Need a parameter for the type of chemistry we use
+  //
+  pm_string  *p012a = new pm_string  
+    ("chem_code", &SimPM.chem_code, "CHEM_CODE");
+  p = p012a; p->critical=false;  
+  params.push_back(p);
+  
+  //
+  // What to do here?  I want to set parameters for N tracers, but
+  // ntracer is not set until we read in some datafile, so we cannot
+  // know here how long the SimPM.trtype[] array is.
+  // I guess we have to leave it here and add more parameters to read
+  // once I have a number for ntracer.
+  //
+  have_setup_tracers=false; // so we know to populate list later.
+
+
+#endif // OLD_TRACER
+
   pm_int     *p013 = new pm_int     
     ("solver",     &SimPM.solverType);
   p = p013; p->critical=true;  
@@ -497,6 +588,7 @@ void DataIOBase::set_params()
     ("eta_visc",   &SimPM.etav);
   p = p020; p->critical=true;  
   params.push_back(p);
+
   pm_dvararr *p120 = new pm_dvararr 
     ("Ref_Vector",  SimPM.RefVec);
   p = p120; p->critical=true;  
@@ -758,6 +850,21 @@ int DataIOBase::read_simulation_parameters()
   //
   if (SimPM.ntracer>0) SimPM.ftr = SimPM.nvar-SimPM.ntracer;
   else                 SimPM.ftr = SimPM.nvar;
+
+#ifndef OLD_TRACER
+
+  //
+  // Also set up tracer parameters, based on ntracer and read them in
+  //
+  set_tracer_params();
+  for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
+    p = (*iter);
+    err = read_header_param(p);
+    if (err) rep.error("Error reading parameter",p->name);
+  }
+
+#endif // OLD_TRACER
+
 
   //
   // Set SimPM.Range[] based on Xmin,Xmax
@@ -1071,6 +1178,49 @@ int DataIOBase::read_simulation_parameters()
 // ##################################################################
 
 
+#ifndef OLD_TRACER
+
+void DataIOBase::set_tracer_params()
+{
+  if (have_setup_tracers) {
+    rep.error("Trying to setup tracer parameters twice!",
+              have_setup_tracers);
+  }
+  if (SimPM.ntracer==0) {
+    cout <<"\t*** No tracers to set up\n";
+    have_setup_tracers = true;
+    return;
+  }
+  //
+  // So now we have tracers and we need to add them to the list.
+  //
+  if (!SimPM.trtype) {
+    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+  }
+
+  class pm_base *p;
+
+  for (int i=0;i<SimPM.ntracer;i++) {
+    ostringstream temp; temp <<"Tracer";
+    temp.width(3); temp.fill('0'); temp <<i;
+    cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
+
+    pm_string  *ptemp = new pm_string  
+      (temp.str(), &SimPM.trtype[i], "NEED_TRACER_VALUES!");
+    p = ptemp; p->critical=false;  
+    tr_pm.push_back(p);
+  }
+  have_setup_tracers = true;
+  return;
+}
+
+#endif // OLD_TRACER
+
+
+// ##################################################################
+// ##################################################################
+
+
 void DataIOBase::set_windsrc_params()
 {
   //
@@ -1301,6 +1451,24 @@ int DataIOBase::write_simulation_parameters()
     err = write_header_param(p);
     if (err) rep.error("Error writing parameter",(*iter)->name);
   }
+
+
+#ifndef OLD_TRACER
+
+  //
+  // Write tracer parameters
+  //
+  if (!have_setup_tracers) set_tracer_params();
+  cout <<"Writing tracer names.\n";
+  for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
+    p = (*iter);
+    cout <<"tracer val: "; p->show_val(); cout <<"\n";
+    err = write_header_param(p);
+    if (err) rep.error("Error reading parameter",p->name);
+  }
+
+#endif // OLD_TRACER
+
 
   //
   // Write Jet parameters if doing a JET SIM
@@ -2032,8 +2200,9 @@ int dataio_text::get_parameters(string pfile)
 
 
 
-int dataio_text::output_ascii_data(string outfile
-           )
+int dataio_text::output_ascii_data(
+        string outfile
+        )
 {
   ofstream outf(outfile.c_str());
   if(!outf.is_open()) 
@@ -2041,11 +2210,13 @@ int dataio_text::output_ascii_data(string outfile
     cerr << "Error opening file " << outfile << " for writing.  Quitting..." <<"\n";
     return(1);
   }
-//  cout <<"(dataio_text::output_ascii_data) Writing data in format: x[Ndim], rho, p_g, v_x, v_y, v_z, e_int(erg/mass), [B_x, B_y, B_z, p_g+p_m].\n";
+  //  cout <<"(dataio_text::output_ascii_data) Writing data in format: x[Ndim], rho, p_g, v_x, v_y, v_z, e_int(erg/mass), [B_x, B_y, B_z, p_g+p_m].\n";
   double b2=0.; // magnetic field squared.
+#ifdef RT_TESTING_OUTPUTCOL
   double Utemp[SimPM.nvar];
-//  outf.setf( ios_base::fixed,ios_base::floatfield );
-//  outf.precision(6);
+#endif // RT_TESTING_OUTPUTCOL
+  //  outf.setf( ios_base::fixed,ios_base::floatfield );
+  //  outf.precision(6);
   outf << "# format: x,[y,z,],rho,pg,vx,vy,vz,[Bx,By,Bz],[Tr0,Tr1,Tr2,..],T,[Tau0,Tau1,...]\n";
   outf << "# time = "<<SimPM.simtime<<"  timestep = "<<SimPM.timestep<<"\n";
   outf.setf( ios_base::scientific );
@@ -2078,7 +2249,7 @@ int dataio_text::output_ascii_data(string outfile
       b2 = cpt->P[BX]*cpt->P[BX] +cpt->P[BY]*cpt->P[BY] +cpt->P[BZ]*cpt->P[BZ];
       //       outf <<"  "<< cpt->P[BX] <<"  "<< cpt->P[BY] <<"  "<< cpt->P[BZ] <<"  ";
       outf <<"  "<< cpt->P[PG]+b2/2.;
-      outf <<"  "<< eqn->Div(cpt,0,vars);
+      outf <<"  "<< eqn->Divergence(cpt,0,vars,gp);
     }
 #ifdef RT_TESTING_OUTPUTCOL
     if (RT) {

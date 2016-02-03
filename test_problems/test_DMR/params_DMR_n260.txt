@@ -1,17 +1,28 @@
 # parameter file for Initial Condition Generation.
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
+
 ndim 2
-# Type of Equations to Solve {hd/euler, mhd, glm-mhd...}
 eqn euler
-# Type of coordinates: cartesian, cylindrical are options.
 coordinates cartesian
 solver RS_Roe
 
+
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
+
 ics DoubleMachRef
+DMRmach 10.0
+DMRtheta 60
+# ideal gas adiabatic index, gamma {1.667, 1.4, 2.0} limits (1,2]
+GAMMA 1.4
+
+# IC filename
+ICfilename IC_DMRm10t60_n260
+
+# Output FileName Base
+OutputFile DMRm10t60_n260
+
 
 # Which physics to use
 EP_dynamics     1
@@ -23,11 +34,12 @@ EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 0
 
-# IC filename
-ICfilename IC_DMRm10t60_n520
-
-# Output FileName Base
-OutputFile DMRm10t60_n520
+EP_MP_timestep_limit 0.0
+EP_Min_Temperature   1.0
+EP_Max_Temperature   1.0
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   1.0
+EP_Metal_MassFrac    1.0
 
 # Number and type of tracers.
 ntracer 0
@@ -41,8 +53,8 @@ noise -1.0
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  520
-NGridY  160
+NGridX  260
+NGridY  80
 NGridZ  1
 # Boundaries of Simulation box:
 Xmin 0.0
@@ -73,11 +85,9 @@ OrderOfAccTime  2
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
 BC XNinf_XPout_YNref_YPdmr_INdm2
 
-# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.4
 
 # CFL coefficient 0<cfl<1
-CFL 0.7
+CFL 0.4
 
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
@@ -92,9 +102,10 @@ lenval 1.0
 velval 1.0
 magval 1.0
 
-## Parameters specific for various problems
-DMRmach 10.0
-DMRtheta 60
+# winds and radiative transfer
+RT_Nsources 0
+WIND_NSRC   0
+
 
 # Reference Vector
 refvec0 1.0

@@ -11,16 +11,13 @@
 /// - 2010.10.05 JM: Added spherical coordinate possibility.  Also
 ///    changed pressure calculation to calculate it at the stellar
 ///    radius and scale outwards assuming adiabatic expansion.
-///
 /// - 2010.12.04 JM: Added geometry-dependent grids, in a
 ///   GEOMETRIC_GRID ifdef.  So VX,VY,VZ are now set by using calls to
 ///   distance() functions in the grid class.  It doesn't seem to help
 ///   much.
 /// - 2011.01.07 JM: I debugged the geometric grid functions, and now
 ///   it works very well!  I have a nice spherical expansion.
-///
 /// - 2011.01.18 JM: Added #def which sets pressure so that Tmin=10K
-///
 /// - 2011.02.14 JM: Added stellar_wind_evolution class for winds with 
 ///    evolving properties, determined by a stellar evolution model, and
 ///    fitted with spline functions.
@@ -42,16 +39,23 @@
 ///    because it didn't help with anything, ever.
 ///    Removed the integer positions because they created potential
 ///    errors in the wind properties from rounding errors.
-
-
-//------------------------------------------------
-//------------ STELLAR WIND CLASS ----------------
-//------------------------------------------------
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/interpolate.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
-#include "stellar_wind_BC.h"
+#include "grid/grid_base_class.h"
+#include "grid/stellar_wind_BC.h"
+#include "microphysics/microphysics_base.h"
 #include <sstream>
 using namespace std;
 
@@ -113,7 +117,7 @@ int stellar_wind::add_source(
         const double vinf, ///< Vinf (km/s)
         const double temp, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
         const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-        const double *trv  ///< Tracer values of wind (if any)
+        const pion_flt *trv  ///< Tracer values of wind (if any)
         )
 {
   struct wind_source *ws = 0;
@@ -136,6 +140,8 @@ int stellar_wind::add_source(
 
   for (int v=0;v<SimPM.ndim;v++)
     ws->dpos[v] = pos[v];
+  rep.printVec("ws->dpos",ws->dpos,SimPM.ndim);
+
   for (int v=SimPM.ndim;v<MAX_DIM;v++)
     ws->dpos[v] = VERY_LARGE_VALUE;
 
@@ -145,7 +151,7 @@ int stellar_wind::add_source(
   // Mdot and Vinf are passed to the function in Msun/yr and km/s,
   // but are stored internally in cgs units.
   //
-  ws->Mdot  = mdot *GS.Msun()/GS.s_per_yr();
+  ws->Mdot  = mdot *pconst.Msun()/pconst.year();
   ws->Vinf  = vinf *1.0e5;
 
   ws->Tw    = temp;
@@ -153,7 +159,10 @@ int stellar_wind::add_source(
 
   ws->tracers=0;
   ws->tracers = mem.myalloc(ws->tracers,SimPM.ntracer);
-  for (int v=0;v<SimPM.ntracer; v++) ws->tracers[v] = trv[v];
+  for (int v=0;v<SimPM.ntracer; v++) {
+    ws->tracers[v] = trv[v];
+    cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
+  }
     
   ws->cells_added = false;
 
@@ -164,7 +173,7 @@ int stellar_wind::add_source(
   // Make sure the source position is compatible with the geometry!
   //
   if (SimPM.coord_sys==COORD_SPH) {
-    if (!GS.equalD(ws->dpos[Rsph],0.0))
+    if (!pconst.equalD(ws->dpos[Rsph],0.0))
       rep.error("Spherical symmetry but source not at origin!",
                 ws->dpos[Rsph]);
   }
@@ -172,7 +181,7 @@ int stellar_wind::add_source(
     //
     // Axisymmetry
     //
-    if (!GS.equalD(ws->dpos[Rcyl],0.0))
+    if (!pconst.equalD(ws->dpos[Rcyl],0.0))
       rep.error("Axisymmetry but source not at R=0!",ws->dpos[Rcyl]);
   }
 
@@ -205,6 +214,7 @@ int stellar_wind::Nsources()
 
 
 int stellar_wind::add_cell(
+        class GridBaseClass *grid,
         const int id, ///< src id
         cell *c       ///< cell to add to list.
         )
@@ -245,7 +255,7 @@ int stellar_wind::add_cell(
   //
   // Now assign values to the state vector:
   //
-  set_wind_cell_reference_state(wc,WS);
+  set_wind_cell_reference_state(grid, wc,WS);
 
   WS->wcells.push_back(wc);
   WS->ncell += 1;
@@ -267,6 +277,7 @@ int stellar_wind::add_cell(
 
 
 void stellar_wind::set_wind_cell_reference_state(
+        class GridBaseClass *grid,
         struct wind_cell *wc,
         const struct wind_source *WS
         )
@@ -276,6 +287,10 @@ void stellar_wind::set_wind_cell_reference_state(
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
+  double pp[SimPM.ndim];
+  CI.get_dpos(wc->c,pp);
+  rep.printVec("cell pos", pp, SimPM.ndim);
+  cout <<"dist="<<wc->dist<<"\n";
 
   //
   // Density at cell position: rho = Mdot/(4.pi.R^2.v_inf) (for 3D)
@@ -294,7 +309,7 @@ void stellar_wind::set_wind_cell_reference_state(
     // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.27 (NEUTRAL).
     // ******************************************************************************
     //
-    wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
+    wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
     wc->p[PG]*= exp((SimPM.gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
   }
@@ -320,7 +335,7 @@ void stellar_wind::set_wind_cell_reference_state(
     // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
     // ******************************************************************************
     //
-    wc->p[PG] = GS.kB()*WS->Tw/GS.m_p();
+    wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
     wc->p[PG]*= exp((SimPM.gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
     wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
   }
@@ -367,6 +382,7 @@ void stellar_wind::set_wind_cell_reference_state(
       wc->p[SimPM.ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
   }
 
+//#define TESTING
 #ifdef TESTING
   cout << " \t\t pg=" << wc->p[PG];
 #endif
@@ -375,6 +391,9 @@ void stellar_wind::set_wind_cell_reference_state(
   // Set the minimum temperature to be 10K in the wind...
   //
   if (MP) {
+#ifdef TESTING
+  cout <<",  Tw= "<<MP->Temperature(wc->p,SimPM.gamma);
+#endif
     if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
 #ifdef TESTING
       cout <<"... resetting temperature in wind. pg=";
@@ -387,8 +406,8 @@ void stellar_wind::set_wind_cell_reference_state(
   }
   else {
     // appropriate for a neutral medium.
-    wc->p[PG] = max(wc->p[PG], 
-      SimPM.EP.MinTemperature*wc->p[RO]*GS.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/GS.m_p());
+    wc->p[PG] = max(static_cast<double>(wc->p[PG]), 
+      SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 #ifdef TESTING
@@ -444,9 +463,10 @@ int stellar_wind::get_num_cells(const int id ///< src id
 
 
 int stellar_wind::set_cell_values(
-          const int id,  ///< src id
-          const double t ///< simulation time
-          )
+        class GridBaseClass *,
+        const int id,  ///< src id
+        const double t ///< simulation time
+        )
 {
   if (id<0 || id>=nsrc)
     rep.error("bad src id",id);
@@ -471,6 +491,7 @@ int stellar_wind::set_cell_values(
       for (int v=0;v<SimPM.nvar;v++)
         WS->wcells[i]->c->Ph[v] = WS->wcells[i]->p[v];
       //cout <<"TW="<<WS->Tw<<",  ftr val="<<WS->wcells[i]->c->Ph[SimPM.ftr]<<"\n";
+      //cout <<"TW="<<WS->Tw<<",  str val="<<WS->wcells[i]->c->Ph[SimPM.ftr+1]<<"\n";
     }
   }
 
@@ -539,7 +560,7 @@ void stellar_wind::get_src_Mdot(
         double *x     ///< mdot (output)
         )
 {
-  *x = wlist[id]->Mdot *GS.s_per_yr()/GS.Msun();
+  *x = wlist[id]->Mdot *pconst.year()/pconst.Msun();
 }
 
 
@@ -563,7 +584,8 @@ void stellar_wind::get_src_drad(
 
 
 
-void stellar_wind::get_src_Vinf(const int id, ///< src id
+void stellar_wind::get_src_Vinf(
+        const int id, ///< src id
         double *x   ///< Vinf (output)
         )
 {
@@ -576,9 +598,10 @@ void stellar_wind::get_src_Vinf(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_Tw(const int id, ///< src id
-            double *x   ///< Stellar Radius (output)
-            )
+void stellar_wind::get_src_Tw(
+        const int id, ///< src id
+        double *x   ///< Stellar Radius (output)
+        )
 {
   *x = wlist[id]->Tw;
 }
@@ -589,9 +612,10 @@ void stellar_wind::get_src_Tw(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_Rstar(const int id, ///< src id
-         double *x   ///< Stellar radius (output)
-         )
+void stellar_wind::get_src_Rstar(
+        const int id, ///< src id
+        double *x   ///< Stellar radius (output)
+        )
 {
   *x = wlist[id]->Rstar;
 }
@@ -602,8 +626,9 @@ void stellar_wind::get_src_Rstar(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_trcr(const int id, ///< src id
-        double *x   ///< tracers (output)
+void stellar_wind::get_src_trcr(
+        const int id, ///< src id
+        pion_flt *x   ///< tracers (output)
         )
 {
   for (int v=0;v<SimPM.ntracer; v++)
@@ -617,7 +642,8 @@ void stellar_wind::get_src_trcr(const int id, ///< src id
 
 
 
-void stellar_wind::get_src_type(const int id, ///< src id
+void stellar_wind::get_src_type(
+        const int id, ///< src id
         int *x   ///< type of wind (=0 for now) (output)
         )
 {
@@ -692,7 +718,7 @@ int stellar_wind_evolution::add_source(
         const double vinf, ///< Vinf (km/s)
         const double Twnd, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
         const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-        const double *trv  ///< Tracer values of wind (if any)
+        const pion_flt *trv  ///< Tracer values of wind (if any)
         )
 {
   //
@@ -745,7 +771,7 @@ int stellar_wind_evolution::add_evolving_source(
   const double  rad,        ///< radius (physical units).
   const int    type,        ///< type (must be 3, for variable wind).
   const double Rstar,       ///< Radius at which to get gas pressure from Teff
-  const double *trv,        ///< Any (constant) wind tracer values.
+  const pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)]
   const double t_now,       ///< current simulation time, to see if src is active.
@@ -844,9 +870,9 @@ int stellar_wind_evolution::add_evolving_source(
     t[i] /= t_scalefactor;
     //cout <<" t[i]="<<t[i]<<"\n";
   }
-  //GS.spline(t,md,Nspl,1.e99,1.e99,md2);
-  //GS.spline(t,vi,Nspl,1.e99,1.e99,vi2);
-  //GS.spline(t,Tf,Nspl,1.e99,1.e99,Tf2);
+  //interpolate.spline(t,md,Nspl,1.e99,1.e99,md2);
+  //interpolate.spline(t,vi,Nspl,1.e99,1.e99,vi2);
+  //interpolate.spline(t,Tf,Nspl,1.e99,1.e99,Tf2);
 
 
   //
@@ -872,10 +898,10 @@ int stellar_wind_evolution::add_evolving_source(
   // years, but everything else is in seconds.  Note that the global SWP struct
   // still has times in years though.
   //
-  temp->offset = time_offset*GS.s_per_yr()/t_scalefactor; // now in seconds
-  temp->tstart = t[0]       *GS.s_per_yr(); // now in seconds (already scaled)
-  temp->tfinish= t[Nspl-1]  *GS.s_per_yr(); // now in seconds (already scaled)
-  temp->update_freq = update_freq*GS.s_per_yr()/t_scalefactor; // now in seconds
+  temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
+  temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
+  temp->tfinish= t[Nspl-1]  *pconst.year(); // now in seconds (already scaled)
+  temp->update_freq = update_freq*pconst.year()/t_scalefactor; // now in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
   cout <<"\t\t tstart="<<temp->tstart;
@@ -891,19 +917,19 @@ int stellar_wind_evolution::add_evolving_source(
   //
   double mdot=0.0, vinf=0.0, Twind=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
-        GS.equalD(temp->tstart, t_now))
+        pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
     temp->is_active = true;
     //
     // Get the current values for mdot, vinf, Teff, and setup a wind
     // source using the constant-wind function.
     //
-    //GS.splint(t, Tf, Tf2, Nspl, t_now/GS.s_per_yr(), &Twind);
-    //GS.splint(t, md, md2, Nspl, t_now/GS.s_per_yr(), &mdot);
-    //GS.splint(t, vi, vi2, Nspl, t_now/GS.s_per_yr(), &vinf);
-    GS.root_find_linear(t, Tf, Nspl, t_now/GS.s_per_yr(), &Twind);
-    GS.root_find_linear(t, md, Nspl, t_now/GS.s_per_yr(), &mdot);
-    GS.root_find_linear(t, vi, Nspl, t_now/GS.s_per_yr(), &vinf);
+    //interpolate.splint(t, Tf, Tf2, Nspl, t_now/pconst.year(), &Twind);
+    //interpolate.splint(t, md, md2, Nspl, t_now/pconst.year(), &mdot);
+    //interpolate.splint(t, vi, vi2, Nspl, t_now/pconst.year(), &vinf);
+    interpolate.root_find_linear(t, Tf, Nspl, t_now/pconst.year(), &Twind);
+    interpolate.root_find_linear(t, md, Nspl, t_now/pconst.year(), &mdot);
+    interpolate.root_find_linear(t, vi, Nspl, t_now/pconst.year(), &vinf);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -919,9 +945,9 @@ int stellar_wind_evolution::add_evolving_source(
   // Need to convert units.  add_source expects mdot in msun/yr,
   // vinf in km/s, and Twind in K.
   //
-  mdot = exp(GS.ln10()*mdot);
-  vinf = exp(GS.ln10()*vinf) /1.0e5;
-  Twind = exp(GS.ln10()*Twind);
+  mdot = exp(pconst.ln10()*mdot);
+  vinf = exp(pconst.ln10()*vinf) /1.0e5;
+  Twind = exp(pconst.ln10()*Twind);
   //
   // Now add source using constant wind version.
   //
@@ -949,6 +975,7 @@ int stellar_wind_evolution::add_evolving_source(
 
 
 void stellar_wind_evolution::update_source(
+        class GridBaseClass *grid,
         struct evolving_wind_data *wd,
         const double t_now
         )
@@ -978,19 +1005,19 @@ void stellar_wind_evolution::update_source(
   // Now we update Mdot, Vinf, Teff by spline interpolation.
   //
   double mdot=0.0, vinf=0.0, Twind=0.0;
-  //GS.splint(wd->t, wd->Teff, wd->Teff2, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
-  //GS.splint(wd->t, wd->mdot, wd->mdot2, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
-  //GS.splint(wd->t, wd->vinf, wd->vinf2, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
-  GS.root_find_linear(wd->t, wd->Teff, wd->Nspl, t_now/GS.s_per_yr(), &Twind);
-  GS.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/GS.s_per_yr(), &mdot);
-  GS.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/GS.s_per_yr(), &vinf);
+  //interpolate.splint(wd->t, wd->Teff, wd->Teff2, wd->Nspl, t_now/pconst.year(), &Twind);
+  //interpolate.splint(wd->t, wd->mdot, wd->mdot2, wd->Nspl, t_now/pconst.year(), &mdot);
+  //interpolate.splint(wd->t, wd->vinf, wd->vinf2, wd->Nspl, t_now/pconst.year(), &vinf);
+  interpolate.root_find_linear(wd->t, wd->Teff, wd->Nspl, t_now/pconst.year(), &Twind);
+  interpolate.root_find_linear(wd->t, wd->mdot, wd->Nspl, t_now/pconst.year(), &mdot);
+  interpolate.root_find_linear(wd->t, wd->vinf, wd->Nspl, t_now/pconst.year(), &vinf);
   //
   // Assign new values to wd->ws (the wind source struct), converting
   // from log10 to actual values, and also unit conversions.
   //
-  wd->ws->Mdot = exp(GS.ln10()*mdot) *GS.Msun()/GS.s_per_yr();  // this was log10(msun/yr)
-  wd->ws->Vinf = exp(GS.ln10()*vinf);  // this is in log10(cm/s) already.
-  wd->ws->Tw   = exp(GS.ln10()*Twind); // This is in log10(K).
+  wd->ws->Mdot = exp(pconst.ln10()*mdot) *pconst.Msun()/pconst.year();  // this was log10(msun/yr)
+  wd->ws->Vinf = exp(pconst.ln10()*vinf);  // this is in log10(cm/s) already.
+  wd->ws->Tw   = exp(pconst.ln10()*Twind); // This is in log10(K).
 
   //cout <<"updating source: updated [mdot,vinf,Tw]=[";
   //cout <<wd->ws->Mdot<<", "<<wd->ws->Vinf<<", "<<wd->ws->Tw<<"]\n";
@@ -1000,7 +1027,7 @@ void stellar_wind_evolution::update_source(
   // updated values.
   //
   for (int i=0; i<wd->ws->ncell; i++) {
-    set_wind_cell_reference_state(wd->ws->wcells[i],wd->ws);
+    set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws);
   }
 
   //
@@ -1019,9 +1046,10 @@ void stellar_wind_evolution::update_source(
 
 
 int stellar_wind_evolution::set_cell_values(
-          const int id,  ///< src id
-          const double t_now ///< simulation time
-          )
+        class GridBaseClass *grid,
+        const int id,  ///< src id
+        const double t_now ///< simulation time
+        )
 {
   int err=0;
   if (id<0 || id>=nsrc) {
@@ -1048,7 +1076,7 @@ int stellar_wind_evolution::set_cell_values(
   // serious.
   //
   else if (t_now >= wd->t_next_update) {
-    update_source(wd, t_now);
+    update_source(grid, wd, t_now);
   }
 
   //
@@ -1057,7 +1085,7 @@ int stellar_wind_evolution::set_cell_values(
   // functions.  If not, then we ignore it and return.
   //
   if (wd->is_active) {
-    err += stellar_wind::set_cell_values(id,t_now);
+    err += stellar_wind::set_cell_values(grid, id,t_now);
   }
 
   return err;

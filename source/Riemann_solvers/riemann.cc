@@ -34,8 +34,15 @@
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.14 JM: Added new include statements for new PION version.
 
-#include "riemann.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+
+#include "Riemann_solvers/riemann.h"
 #include <iostream>
 using namespace std;
 
@@ -43,15 +50,17 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
+
 // This version is specific to solving the equation in the Exact Riemann Solver.
 // Other versions could be specified, taking more or fewer parameters.
-int riemann_Euler::FR_find_root(double *ans, /**< pointer to result */
-				const double p1,  ///< p_g left
-				const double p2,  ///< p_g right
-				const double p3,  ///< eq_gamma
-				const double p4,  ///< cs_left
-				const double p5   ///< cs_right
-				)
+int riemann_Euler::FR_find_root(
+      pion_flt *ans, ///< pointer to result
+      const pion_flt p1,  ///< p_g left
+      const pion_flt p2,  ///< p_g right
+      const pion_flt p3,  ///< eq_gamma
+      const pion_flt p4,  ///< cs_left
+      const pion_flt p5   ///< cs_right
+      )
 {
 
   FR_param1 = p1;  ///< e.g. left state pressure
@@ -65,8 +74,8 @@ int riemann_Euler::FR_find_root(double *ans, /**< pointer to result */
   // My initial guesses are 1/3 of and 3 times the arithmetic mean 
   // of the left and right pressures.
   //
-  double x1 = (FR_param1+ FR_param2)/6.0;
-  double x2 = x1*9.0;
+  pion_flt x1 = (FR_param1+ FR_param2)/6.0;
+  pion_flt x2 = x1*9.0;
 
   // 
   // Call the common solver, now that parameters are set properly, to
@@ -82,11 +91,14 @@ int riemann_Euler::FR_find_root(double *ans, /**< pointer to result */
   return(0);
 }
 
+
 // ##################################################################
 // ##################################################################
 
 
-double riemann_Euler::FR_root_function(double pp)
+pion_flt riemann_Euler::FR_root_function(
+      pion_flt pp
+      )
 {
   //
   // Wrapper function to solve across both waves given p*=pp, which returns
@@ -97,7 +109,7 @@ double riemann_Euler::FR_root_function(double pp)
   // basically we want to find the root of this 'equation'.
   // 
   int err=0;
-  double ustarL, ustarR;
+  pion_flt ustarL, ustarR;
   err = HydroWave(XN, pp,  rs_left, &ustarL, eq_gamma);
   err+= HydroWave(XP, pp, rs_right, &ustarR, eq_gamma);
   if (err!=0) {
@@ -107,6 +119,7 @@ double riemann_Euler::FR_root_function(double pp)
   return(ustarR - ustarL);
 }
 
+
 // ##################################################################
 // ##################################################################
 
@@ -114,10 +127,11 @@ double riemann_Euler::FR_root_function(double pp)
 //
 // Constructor of the riemann class: set up variables, allocate memory, etc.
 //
-riemann_Euler::riemann_Euler(const int nv, ///< number of vars.
-			     const double *state, ///< reference vec.
-			     const double g ///< gas EOS.
-			     )
+riemann_Euler::riemann_Euler(
+      const int nv, ///< number of vars.
+      const pion_flt *state, ///< reference vec.
+      const double g ///< gas EOS.
+      )
   : eqns_base(nv),
     eqns_Euler(nv),
     findroot(), rs_nvar(5)
@@ -202,6 +216,7 @@ riemann_Euler::~riemann_Euler()
 #endif //FUNCTION_ID
 }
 
+
 // ##################################################################
 // ##################################################################
 
@@ -222,6 +237,7 @@ void riemann_Euler::testing()
 #endif //RSTESTING
 }
 
+
 // ##################################################################
 // ##################################################################
 
@@ -232,13 +248,14 @@ void riemann_Euler::testing()
 // and then sets the solver going, which returns the state P* in 'result'.
 // err_code  solve(left,     right,    result  );
 //
-int riemann_Euler::JMs_riemann_solve(const double *l,
-				     const double *r,
-				     double *ans,
-				     const int mode,
-				     ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
-				     const double g
-				     )
+int riemann_Euler::JMs_riemann_solve(
+      const pion_flt *l,
+      const pion_flt *r,
+      pion_flt *ans,
+      const int mode,
+      ///< Solve Type (1=LinearRS,2=ExactRS,3=HybridRS)
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"riemann_Euler::JMs_riemann_solve ...starting.\n";
@@ -257,14 +274,14 @@ int riemann_Euler::JMs_riemann_solve(const double *l,
   }
 #endif
 
-  /** \section Gamma
-   * I assign gamma to a class variable every time.  This is so that all
-   * functions in the class have access to it without having to pass it 
-   * around everywhere.  It will never change in the solver, unless the 
-   * left and right states have different gammas.  That's a big upgrade in my
-   * degree of accuracy though, because then p* will also have its own
-   * gamma, and the solver will need a rewrite if I get to that stage.
-   * */
+  /// \section Gamma
+  /// I assign gamma to a class variable every time.  This is so that all
+  /// functions in the class have access to it without having to pass it 
+  /// around everywhere.  It will never change in the solver, unless the 
+  /// left and right states have different gammas.  That's a big upgrade in my
+  /// degree of accuracy though, because then p* will also have its own
+  /// gamma, and the solver will need a rewrite if I get to that stage.
+  /// 
   eq_gamma = g;
   //cout << "(riemann_Euler::solve) Assigning data, gamma: " << riemann_Euler::eq_gamma << "\n";
 
@@ -522,8 +539,8 @@ int riemann_Euler::JMs_riemann_solve(const double *l,
   // [DEBUGGING] Check that we haven't altered rs_left or rs_right!
   //
   // for (int v=0; v<rs_nvar; v++) {
-  //   if (!GS.equalD(l[v],rs_left[v] )) rep.error("changed  left state vector!",v);
-  //   if (!GS.equalD(r[v],rs_right[v])) rep.error("changed right state vector!",v);
+  //   if (!pconst.equalD(l[v],rs_left[v] )) rep.error("changed  left state vector!",v);
+  //   if (!pconst.equalD(r[v],rs_right[v])) rep.error("changed right state vector!",v);
   // }
 
 #ifdef FUNCTION_ID
@@ -633,9 +650,6 @@ int riemann_Euler::check_wave_locations()
     double vsh = rs_right[eqVX] +
       (rs_pstar[eqPG]/rs_right[eqPG] -1.)*cr*cr/eq_gamma/(rs_pstar[eqVX]-rs_right[eqVX]);
     if (vsh <0.) {
-       //      cout << "riemann_Euler::solve  Right shock swept to the left!!!  vsh: " << vsh << "\n";
-       //      cout << "right shock, vsh= " << vsh <<" ps/pr:" <<(rs_pstar[eqPG]/rs_right[eqPG])<<" vs-vr:"<<(rs_pstar[eqVX]-rs_right[eqVX])<< "\n";
-       //      cout << "vr:"<<rs_right[eqVX]<< " vs:"<<rs_pstar[eqVX]<<"\n";
        rs_pstar[eqPG] = rs_right[eqPG];
        rs_pstar[eqRO] = rs_right[eqRO];
        rs_pstar[eqVX] = rs_right[eqVX];
@@ -673,19 +687,19 @@ int riemann_Euler::linearOK()
   //
   // Return 0 if linear result is ok, and 1 if it's not.
   //
-  /** \section ok Linear or Exact.
-   * Here we have to decide whether to use the linear result or not.
-   * Obviously we'd like to because it's cheaper numerically.\n
-   * I am using the mean matrix constructed from (P_L+P_R)/2. For this averaging,
-   * - contact discontinuities are always treated exactly,
-   *   so the density jump is always correct.
-   * - Pressure: I get 2% error if I use the linear one in the range P_R/P_L in [1/1.5, 1.5].
-   * - Velocity: Error gets very large if (v_L-v_R) is much different from zero, b/c that means
-   *   we have either a converging or diverging flow, and that's harder to handle.  Also when
-   *   v_L/R are close to any of the sound speeds we have trouble because the linear solver 
-   *   isn't good at telling exactly what the wavespeeds are, so it can put you on the wrong
-   *   side of a wave.  This is the largest source of error in the solver.
-   */
+  /// \section ok Linear or Exact.
+  /// Here we have to decide whether to use the linear result or not.
+  /// Obviously we'd like to because it's cheaper numerically.\n
+  /// I am using the mean matrix constructed from (P_L+P_R)/2. For this averaging,
+  /// - contact discontinuities are always treated exactly,
+  ///   so the density jump is always correct.
+  /// - Pressure: I get 2% error if I use the linear one in the range P_R/P_L in [1/1.5, 1.5].
+  /// - Velocity: Error gets very large if (v_L-v_R) is much different from zero, b/c that means
+  ///   we have either a converging or diverging flow, and that's harder to handle.  Also when
+  ///   v_L/R are close to any of the sound speeds we have trouble because the linear solver 
+  ///   isn't good at telling exactly what the wavespeeds are, so it can put you on the wrong
+  ///   side of a wave.  This is the largest source of error in the solver.
+   
   //
   // First if the left and right states are within some percentage of each other, then we are ok.
   if ( (max(rs_left[eqPG],rs_right[eqPG])/min(rs_left[eqPG],rs_right[eqPG])<1.4) &&
@@ -841,19 +855,17 @@ int riemann_Euler::exact_solver()
   // across the contact discontinuity.
   //
   err += FR_find_root(&(rs_pstar[eqPG]), rs_left[eqPG], rs_right[eqPG], eq_gamma, cl, cr);
-  //  cout << "P*  rho: " << rs_pstar[eqRO] << "  v: " <<  rs_pstar[eqVX] << "   p: " << rs_pstar[eqPG] << "\n";
 
   // 
   // ************* Now get u* and rho*left ****************************
   // This gets rs_pstar[eqVX]
   // 
   err += HydroWaveFull(XN, rs_pstar[eqPG], rs_left, &(rs_pstar[eqVX]), &(rs_pstar[eqRO]), eq_gamma);
-  //  cout << "P* (got Vel value)  rho: " << rs_pstar[eqRO] << "  v: " <<  rs_pstar[eqVX] << "   p: " << rs_pstar[eqPG] << "\n";
 
   //
   // Now get rho*, using either rho*L or rho*R or their arithmetic mean if u* is close to zero.
   // 
-  double rhostar, temp;
+  pion_flt rhostar, temp;
   if ( (rs_pstar[eqVX] > 0) && (fabs(rs_pstar[eqVX]/cr)>1.e-6) ) {
     err += HydroWaveFull(XN, rs_pstar[eqPG],  rs_left, &temp, &rhostar, eq_gamma);
   }
@@ -861,7 +873,6 @@ int riemann_Euler::exact_solver()
     err += HydroWaveFull(XP, rs_pstar[eqPG], rs_right, &temp, &rhostar, eq_gamma);
   }
   else if (fabs(rs_pstar[eqVX]/cr)<=1.e-6) {
-    //    cout << "U_star == " << rs_pstar[eqVX] << " !!! Do I use rho_star left or right????  Using arithmetic mean" << "\n";
     err += HydroWaveFull(XN, rs_pstar[eqPG],  rs_left, &temp, &rhostar, eq_gamma); 
     err += HydroWaveFull(XP, rs_pstar[eqPG], rs_right, &temp, &(rs_pstar[eqRO]), eq_gamma);
     rhostar = (rhostar +rs_pstar[eqRO])/2.0;
@@ -874,7 +885,6 @@ int riemann_Euler::exact_solver()
     return(1);
   }
   rs_pstar[eqRO] = rhostar;
-  //  cout << "P* (Got all values) rho: " << rs_pstar[eqRO] << "  v: " <<  rs_pstar[eqVX] << "   p: " << rs_pstar[eqPG] << "\n";
 
   //
   // Make sure everything went ok.
@@ -885,10 +895,6 @@ int riemann_Euler::exact_solver()
     return(1);
   }
 
-  //if(rs_pstar[eqPG]>rs_left[eqPG] && rs_pstar[eqPG]>rs_right[eqPG]) cout <<"WAVES: Two shocks...\n";
-  //if(rs_pstar[eqPG]<rs_left[eqPG] && rs_pstar[eqPG]>rs_right[eqPG]) cout <<"WAVES: Rare-shock...\n";
-  //if(rs_pstar[eqPG]>rs_left[eqPG] && rs_pstar[eqPG]<rs_right[eqPG]) cout <<"WAVES: Shock-rare...\n";
-  //if(rs_pstar[eqPG]<rs_left[eqPG] && rs_pstar[eqPG]<rs_right[eqPG]) cout <<"WAVES: Rare-rare...\n";
 
   //
   // Now we check wave locations to get the state at x=0.
@@ -923,12 +929,12 @@ int riemann_Euler::solve_rarerare()
   /// \left(\frac{c_L}{p_L^{(\gamma-1)/2\gamma}} +\frac{c_R}{p_R^{(\gamma-1)/2\gamma}}\right)^{-1}\right]^{2\gamma/(\gamma-1)}
   /// \f]
   ///
-  //  cout << "rare-rare: gamma: " << gamma << " cl, cr " << cl << "," << cr << "\n";
+
   rs_pstar[eqPG] = pow(  (cl+cr -(eq_gamma-1.)/2.*(rs_right[eqVX]-rs_left[eqVX])) 
 		    /( (cl*exp(-(eq_gamma-1.)/2./eq_gamma*log(rs_left[eqPG]))) 
 		       +(cr*exp(-(eq_gamma-1.)/2./eq_gamma*log(rs_right[eqPG]))) ), 2.*eq_gamma/(eq_gamma-1.));  
   //
-  // Velocity Equation: v*-vl = 2cl/(g-1) *[1 -(p*/pl)^((g-1)/2g)]
+  // Velocity Equation: v*-vl = 2cl/(g-1) *[1 -(ppl)^((g-1)/2g)]
   //
   rs_pstar[eqVX] = rs_left[eqVX] + 2.*cl/(eq_gamma-1.) *(1. -exp((eq_gamma-1.)/2./eq_gamma*log(rs_pstar[eqPG]/rs_left[eqPG])));
   //
@@ -942,7 +948,6 @@ int riemann_Euler::solve_rarerare()
     rs_pstar[eqRO]  = rs_right[eqRO]*exp(log(rs_pstar[eqPG]/rs_right[eqPG])/eq_gamma);
   }
   else if (fabs(rs_pstar[eqVX]/cr) <= 1.e-6){
-    //    cout << "U_star == " << rs_pstar[eqVX] << " !!! Do I use rho_star left or right????  Using arithmetic mean" << "\n";
     rs_pstar[eqRO]  = ( (rs_right[eqRO]*exp(log(rs_pstar[eqPG]/rs_right[eqPG])/eq_gamma))
 		   +( rs_left[eqRO]*exp(log(rs_pstar[eqPG]/rs_left[eqPG])/eq_gamma)) )/2.0;
   }
@@ -962,8 +967,6 @@ int riemann_Euler::solve_rarerare()
     rs_pstar[eqPG] = rs_pstar[eqRO] = rs_pstar [eqVX] = -1.9;
     return(1);
   }
-  //  cout << "P* (checked waves) rho: " << rs_pstar[eqRO] << "  v: " <<  rs_pstar[eqVX] << "   p: " << rs_pstar[eqPG] << "\n";
-  // 
   return(0);
 }
 
@@ -974,17 +977,17 @@ int riemann_Euler::solve_rarerare()
 
 int riemann_Euler::solve_cavitation()
 {
-  /** This only gets called if I know I have cavitation.
-   * The solution for this is in my exact riemann solver notes.
-   * I go through the cases one by one, for where each wave is.  I know
-   * the locations of all the boundaries b/c they only depend on the left 
-   * and right states.\n
-   * If I always check the right boundary of the region, I only need one
-   * check per region.
-   * 
-   * The condition for cavitation is that 
-   * \f[ (u_R-u_L) >= \frac{2}{\gamma -1}(c_R+c_L) \f]
-   */
+  /// This only gets called if I know I have cavitation.
+  /// The solution for this is in my exact riemann solver notes.
+  /// I go through the cases one by one, for where each wave is.  I know
+  /// the locations of all the boundaries b/c they only depend on the left 
+  /// and right states.\n
+  /// If I always check the right boundary of the region, I only need one
+  /// check per region.
+  /// 
+  /// The condition for cavitation is that 
+  /// \f[ (u_R-u_L) >= \frac{2}{\gamma -1}(c_R+c_L) \f]
+   
   if( (rs_left[eqVX]-cl)>=0. ) {
     //
     // Everything swept to the right.
@@ -1021,7 +1024,6 @@ int riemann_Euler::solve_cavitation()
     //
     //cout <<"Inside the right rarefaction..."<<"\n";
     rs_pstar[eqVX] = (-2.*cr + rs_right[eqVX]*(eq_gamma -1.))/(eq_gamma +1.);
-    //      cout << "rs_pstar[v] = " << rs_pstar[eqVX] << "\n";
     rs_pstar[eqRO] = rs_right[eqRO] *exp(2./(eq_gamma-1.)*log(-rs_pstar[eqVX]/cr));
     rs_pstar[eqPG] = exp(eq_gamma *log(rs_pstar[eqRO]/rs_right[eqRO]))*rs_right[eqPG];
     return(0);

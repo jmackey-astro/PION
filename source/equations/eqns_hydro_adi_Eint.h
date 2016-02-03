@@ -14,6 +14,10 @@
 #ifndef EQNS_HYDRO_ADI_EINT_H
 #define EQNS_HYDRO_ADI_EINT_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #ifdef INCLUDE_EINT_ADI_HYDRO
 
 #include "eqns_hydro_adiabatic.h"

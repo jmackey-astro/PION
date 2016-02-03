@@ -21,12 +21,19 @@
 ///    DelCol are changed to arrays.  Added get_n_el() function.
 /// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
 ///    cooling rates per cell for postprocessing.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 #ifndef MICROPHYSICS_BASE_H
 #define MICROPHYSICS_BASE_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include <vector>
-#include "../grid/cell_interface.h"
+#include <string>
+#include "grid/cell_interface.h"
 //#define MP_DEBUG
 
 
@@ -53,23 +60,24 @@ struct rt_source_data {
 
 
 
-/** \brief pure virtual base/interface class for in-cell microphysics update.*/
+/// pure virtual base/interface class for in-cell microphysics update.
 class MicroPhysicsBase {
   public :
    virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
 
-   /** \brief Non-RT microphysics update, so cooling and heating and chemistry.
-    * 
-    * This uses various integration methods to update the elements and the
-    * internal energy.
-    * */
-   virtual int TimeUpdateMP(const double *, ///< Primitive Vector to be updated.
-			    double *,       ///< Destination Vector for updated values.
-			    const double,   ///< Time Step to advance by.
-			    const double,   ///< EOS gamma.
-			    const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-			    double *        ///< final temperature.
-			    )=0;
+   /// Non-RT microphysics update, so cooling and heating and chemistry.
+   /// 
+   /// This uses various integration methods to update the elements and the
+   /// internal energy.
+   /// 
+   virtual int TimeUpdateMP(
+        const pion_flt *, ///< Primitive Vector to be updated.
+        pion_flt *,       ///< Destination Vector for updated values.
+        const double,   ///< Time Step to advance by.
+        const double,   ///< EOS gamma.
+        const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+        double *        ///< final temperature.
+        )=0;
 
    ///
    /// If doing ray-tracing, the tracer can call this function to
@@ -77,8 +85,8 @@ class MicroPhysicsBase {
    /// given an external radiation flux.
    ///
    virtual int TimeUpdate_RTsinglesrc(
-              const double *, ///< Primitive Vector to be updated.
-              double *,       ///< Destination Vector for updated values.
+              const pion_flt *, ///< Primitive Vector to be updated.
+              pion_flt *,       ///< Destination Vector for updated values.
               const double,   ///< Time Step to advance by.
               const double,   ///< EOS gamma.
               const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
@@ -88,11 +96,12 @@ class MicroPhysicsBase {
               double *        ///< return optical depth through cell in this variable.
               )=0;
 
-   /** \brief Initialise microphysics ionisation fractions to an equilibrium value. */
-   virtual int Init_ionfractions(double *, ///< Primitive vector to be updated.
-				 const double, ///< eos gamma.
-				 const double  ///< optional gas temperature to end up at. (negative means use pressure)
-				 )=0;
+   /// Initialise microphysics ionisation fractions to an equilibrium value. 
+   virtual int Init_ionfractions(
+      pion_flt *, ///< Primitive vector to be updated.
+      const double, ///< eos gamma.
+      const double  ///< optional gas temperature to end up at. (negative means use pressure)
+      )=0;
 
   ///
   /// Given a cell, calculated converged time-averaged rates of 
@@ -128,55 +137,58 @@ class MicroPhysicsBase {
   /// heating sources and a list of ionising sources.
   ///
   virtual int TimeUpdateMP_RTnew(
-                    const double *, ///< Primitive Vector to be updated.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    double *,       ///< Destination Vector for updated values
-                    ///< (can be same as first Vector.
-                    const double,   ///< Time Step to advance by.
-                    const double,   ///< EOS gamma.
-                    const int, ///< Switch for what type of integration to use.
-                    ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-                    double *    ///< final temperature (not strictly needed).
-                    ) {return 1;}
+      const pion_flt *, ///< Primitive Vector to be updated.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      pion_flt *,       ///< Destination Vector for updated values
+      ///< (can be same as first Vector.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
+      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *    ///< final temperature (not strictly needed).
+      ) {return 1;}
 
-   /** \brief Given a string, return the index of the tracer that it refers to.
-    * 
-    * \retval int>0 success: int=tracer value
-    * \retval int<0 failure: string doesn't correspond to any tracer.
-    * */
-   virtual int Tr(const string ///< name of tracer we are looking for.
+  /// Given a string, return the index of the tracer that it refers to.
+  /// 
+  /// \retval int>0 success: int=tracer value
+  /// \retval int<0 failure: string doesn't correspond to any tracer.
+  /// 
+  virtual int Tr(const std::string ///< name of tracer we are looking for.
 		  )=0;
 
-   /** \brief Sets the pressure in p-vec to be such that temperature is
-    * what you want it to be. */
-   virtual int Set_Temp(double *, ///< primitive vector.
-			const double, ///< temperature.
-			const double ///< eos gamma.
-			)=0;
+  /// Sets the pressure in p-vec to be such that temperature is
+  /// what you want it to be. 
+  virtual int Set_Temp(
+      pion_flt *, ///< primitive vector.
+      const double, ///< temperature.
+      const double ///< eos gamma.
+      )=0;
 
-   /** \brief Returns the gas temperature (not very optimized though) 
-    *
-    * Assumes primitive vector is in cgs units.
-    */
-   virtual double Temperature(const double *, ///< primitive vector
-			      const double    ///< eos gamma
-			      )=0;
+  ///
+  /// Returns the gas temperature (not very optimized though) 
+  /// Assumes primitive vector is in cgs units.
+  ///
+  virtual double Temperature(
+      const pion_flt *, ///< primitive vector
+      const double    ///< eos gamma
+      )=0;
 
    ///
    /// This returns the minimum timescale of the times flagged in the
    /// arguments.  Time is returned in seconds.
    ///
-   virtual double timescales(const double *, ///< Current cell.
-			     const double,   ///< EOS gamma.
-			     const bool, ///< set to true if including cooling time.
-			     const bool, ///< set to true if including recombination time.
-			     const bool  ///< set to true if including photo-ionsation time.
-			     )=0;
+   virtual double timescales(
+      const pion_flt *, ///< Current cell.
+      const double,   ///< EOS gamma.
+      const bool, ///< set to true if including cooling time.
+      const bool, ///< set to true if including recombination time.
+      const bool  ///< set to true if including photo-ionsation time.
+      )=0;
 
   ///
   /// This returns the minimum timescale of all microphysical processes, including
@@ -185,15 +197,15 @@ class MicroPhysicsBase {
   /// capability than the other timescales function.
   ///
   virtual double timescales_RT(
-                    const double *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    )=0;
+      const pion_flt *, ///< Current cell.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      )=0;
 
   ///
   /// Set the properties of a multifrequency ionising radiation source.
@@ -209,7 +221,7 @@ class MicroPhysicsBase {
   /// between heating and cooling.
   ///
   virtual double total_cooling_rate(
-      const double *, ///< Current cell values.
+      const pion_flt *, ///< Current cell values.
       const int,      ///< Number of UV heating sources.
       const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
@@ -226,7 +238,7 @@ class MicroPhysicsBase {
   ///
   virtual double get_recombination_rate(
           const int,      ///< ion index in tracer array (optional).
-          const double *, ///< input state vector (primitive).
+          const pion_flt *, ///< input state vector (primitive).
           const double    ///< EOS gamma (optional)
           )=0;
 
@@ -242,11 +254,16 @@ class MicroPhysicsBase {
   /// Return number density of a given element.
   ///
   virtual double get_n_el(
-        const double *, ///< primitive state vector.
+        const pion_flt *, ///< primitive state vector.
         const int       ///< integer identifier for the element.
         ) {return -1.0e99;}
 
 };
+
+///
+/// Global pointed to the microphysics class.
+///
+extern class MicroPhysicsBase *MP;
 
 #endif // MICROPHYSICS_BASE_H
 
