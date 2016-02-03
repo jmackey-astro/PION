@@ -14,13 +14,18 @@
 #ifndef FLUX_HYDRO_ADI_EINT_H
 #define FLUX_HYDRO_ADI_EINT_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #ifdef INCLUDE_EINT_ADI_HYDRO
 
 
 #include "flux_base.h"
 #include "flux_hydro_adiabatic.h"
-#include "../Riemann_solvers/riemann.h"
-#include "../Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.h"
+#include "Riemann_solvers/riemann.h"
+#include "Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.h"
 
 ///
 /// Flux Solver Class for Adiabatic Hydrodynamics (Euler Equations), 

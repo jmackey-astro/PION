@@ -43,7 +43,7 @@
 #    Added file_status.o/cpp object file. Added NEW_METALLICITY flag.
 # - 2013.08.19 JM: Changed filenames for Harpreet's module.
 # - 2014.04.14 JM: Section for Judge at JSC.
-#
+# - 2015.01.26-28 JM: Edited for new filenames and code structure.
 ###
 
 ############################
@@ -71,10 +71,12 @@ VPATH = \
 ../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
-../source/contrib
+../source/contrib:\
+../source/tools
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
 
 #######################
 ## COMPILATION RULES ##
@@ -301,14 +303,22 @@ endif
 
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
-OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
+OBJECTS = reporting.o mem_manage.o command_line_interface.o \
+        timer.o  interpolate.o \
+        constants.o \
+        mainMPI.o uniform_grid.o sim_control.o sim_params.o                      \
+        MCMD_control.o \
+        setup_fixed_grid.o setup_fixed_grid_MPI.o \
         time_integrator.o calc_timestep.o                                      \
 	VectorOps.o VectorOps_spherical.o cell_interface.o                     \
 	integrator.o cooling.o microphysics.o microphysics_v1.o                \
-	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
+        microphysics_base.o  \
+	dataio.o readparams.o dataio_silo.o \
+        dataio_fits.o utility_fits_class.o dataio_fits_MPI.o \
         file_status.o                                                          \
-	dataio_silo_MPI.o gridMethodsMPI.o uniform_grid_pllel.o                \
+	dataio_silo_MPI.o sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
+        raytracer_base.o  \
 	comm_mpi.o comm_files.o                                                \
 	stellar_wind_BC.o                                                      \
 	eqns_base.o eqns_hydro_adiabatic.o                                     \
@@ -327,21 +337,30 @@ OBJECTS = mainMPI.o uniform_grid.o gridMethods.o global.o                      \
         hydrogen_mp.o hydrogen_photoion.o                                      \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
-IC_OBJ = icgen.o uniform_grid.o global.o readparams.o \
+IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
+        timer.o  interpolate.o \
+        constants.o \
+        icgen.o uniform_grid.o sim_params.o readparams.o \
+        MCMD_control.o \
+        setup_fixed_grid.o setup_fixed_grid_MPI.o \
+	raytracer_SC_pllel.o raytracer_SC.o                                    \
+        raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
         file_status.o                                                          \
 	integrator.o cooling.o microphysics.o microphysics_v1.o \
+        microphysics_base.o  \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o jet.o \
 	photoevaporating_random_clumps.o shock_cloud.o \
-	uniform_grid_pllel.o dataio_silo_MPI.o dataio_fits.o \
+	uniform_grid_pllel.o dataio_silo_MPI.o \
+        dataio_fits.o dataio_fits_MPI.o \
 	VectorOps.o VectorOps_spherical.o  cell_interface.o \
 	comm_mpi.o comm_files.o photoevaporating_multiclumps.o \
 	utility_fits_class.o eqns_base.o eqns_hydro_adiabatic.o \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o laser_ablation.o \
 	stellar_wind_BC.o \
         spherical_clump.o \
-        cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
+        mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
         StarBench_test.o
@@ -392,21 +411,38 @@ clean:
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
+reporting.o:   tools/reporting.cpp ${GLOBAL}
+mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
+command_line_interface.o:  tools/command_line_interface.cpp ${GLOBAL}
+timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
+constants.o: constants.cpp ${GLOBAL}
 
-mainMPI.o: mainMPI.cc grid.h ${GLOBAL} comms.h
-global.o: global.cc ${GLOBAL}
+mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
+sim_params.o: sim_params.cpp ${GLOBAL}
 cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
 
-gridMethods.o:  gridMethods.cc grid.h ${GLOBAL} solver_eqn_base.h microphysics.h \
+MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
+
+sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h microphysics.h \
  dataio.h dataio_silo.h dataio_fits.h microphysics_lowZ.h \
- microphysics_base.h mp_only_cooling.h mp_v2_aifa.h
+ microphysics_base.h mp_only_cooling.h mp_v2_aifa.h \
+ MCMD_control.h
 
 # functions for stepping forward in time
-time_integrator.o: time_integrator.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+time_integrator.o: time_integrator.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_base.h ${GLOBAL}
 # functions for calculating the timestep
-calc_timestep.o: calc_timestep.cpp grid.h microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h solver_eqn_base.h raytracer_base.h ${GLOBAL}
 
-gridMethodsMPI.o: gridMethodsMPI.cc grid.h ${GLOBAL} comms.h
+setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
+    grid_base_class.h uniform_grid.h
+
+setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
+    setup_fixed_grid.h ${GLOBAL} \
+    grid_base_class.h uniform_grid.h
+
+sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
+ sim_control.h MCMD_control.h ${GLOBAL} comms.h
 
 uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
 
@@ -515,6 +551,7 @@ solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
 ######################
 # MICROPHYSICS STUFF #
 ######################
+microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
 integrator.o: integrator.cc integrator.h ${GLOBAL}
 cooling.o:    cooling.cc cooling.h ${GLOBAL}
@@ -571,10 +608,13 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 # Raytracing
 ########################
+raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
+
 raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} \
-    uniform_grid.h
+    uniform_grid.h raytracer_base.h
+
 raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h \
-    ${GLOBAL} uniform_grid.h comms.h
+    ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
 
 ########################
 # Data I/O
@@ -584,9 +624,16 @@ dataio.o: dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h \
     readparams.h stellar_wind_BC.h file_status.h
 dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
+
 dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} \
     solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
     file_status.h
+
+dataio_fits_MPI.o:  dataio_fits_MPI.cpp dataio_fits_MPI.h \
+    dataio_fits.h dataio.h ${GLOBAL} \
+    solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
+    file_status.h
+
 readparams.o:	readparams.cc readparams.h ${GLOBAL}
 dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h

@@ -1,32 +1,37 @@
-/* \file comm_files.h
- *
- * \brief Contains comms class for multi-process communication using
- * files.  This is only intended for debugging code -- all processes
- * must be started up by hand on the same machine in the same directory,
- * and this class creates and destroys files to pass information between
- * processes.
- *
- * \author Jonathan Mackey
- * \date 2009-01-27.
- */ 
+/// \file comm_files.h
+///
+/// \brief Contains comms class for multi-process communication using
+/// files.  This is only intended for debugging code -- all processes
+/// must be started up by hand on the same machine in the same directory,
+/// and this class creates and destroys files to pass information between
+/// processes.
+///
+/// \author Jonathan Mackey
+/// \date 2009-01-27.
+/// 
 /// Modifications:
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
-///
-
-#ifdef PARALLEL
-#ifdef USE_FILE_COMMS
+/// - 2015.01.26 JM: added get_rank_nproc() function.
 
 #ifndef COMM_FILES_H
 #define COMM_FILES_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#ifdef PARALLEL
+#ifdef USE_FILE_COMMS
+
 //
 // These tells code what to compile and what to leave out.
 //
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 #include "comms.h"
-#include "../dataIO/file_status.h"
+#include "dataIO/file_status.h"
 
 #define FDELAY_USECS 500000
 
@@ -58,6 +63,14 @@ class comm_files : public comms_base {
   int init(int *, ///< number of program arguments.
 	   char *** ///< character list of arguments.
 	   );
+
+  ///
+  /// Get this process's rank, and total number of processes.
+  ///
+  int get_rank_nproc(
+        int *, ///< rank.
+	int *  ///< nproc
+	);
 
   /** \brief Tell other processes that I am exiting, and either exit, or wait for the
    * others and then exit. */
@@ -221,7 +234,7 @@ class comm_files : public comms_base {
 
 
 
-#endif // COMM_FILES_H
-
 #endif // USE_FILE_COMMS
 #endif //PARALLEL
+#endif // COMM_FILES_H
+

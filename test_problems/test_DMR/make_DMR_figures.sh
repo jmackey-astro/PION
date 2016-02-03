@@ -18,19 +18,28 @@ cd ${test_dir}/test_DMR/
 #exit
 
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_Hyb_av00 $visit_cmd
+sleep 10
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_Hyb_av10 $visit_cmd
+sleep 10
 
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_RCV_av00 $visit_cmd
+sleep 10
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_RCV_av10 $visit_cmd
+sleep 10
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_RCV_Hcor $visit_cmd
+sleep 10
 
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_RPV_av00 $visit_cmd
+sleep 10
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_RPV_av10 $visit_cmd
+sleep 10
 
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_FVS_av00 $visit_cmd
+sleep 10
 ./plot_DMR_results.sh ${data_dir} DMRm10t60_n260_FVS_av10 $visit_cmd
+sleep 10
 
-
+exit
 #
 # Crop figures down to the bare minimum of white space.
 #

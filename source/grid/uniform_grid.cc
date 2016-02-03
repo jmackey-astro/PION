@@ -69,10 +69,17 @@
 /// - 2013.09.06 JM: Added difference_vertex2cell() functions.
 ///    Set stellar wind boundary conditions to use physical distances
 ///    not integer distances, to avoid rounding errors.
+/// - 2015.01.10 JM: New include statements for new file structure.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 
-#include "global.h"
-#include "uniform_grid.h"
+#include "grid/uniform_grid.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -426,11 +433,11 @@ int UniformGrid::setCellSize()
   SimPM.dx = G_dx;
 
   if(G_ndim>1) {
-    if (!GS.equalD(G_range[1]/G_dx, static_cast<double>(G_ng[1])))
+    if (!pconst.equalD(G_range[1]/G_dx, static_cast<double>(G_ng[1])))
       rep.error("Cells are not cubic! Set the range and number of points appropriately.",G_range[1]/G_dx/G_ng[1]);
   }
   if (G_ndim>2) {
-    if (!GS.equalD(G_range[2]/G_dx, static_cast<double>(G_ng[2])))
+    if (!pconst.equalD(G_range[2]/G_dx, static_cast<double>(G_ng[2])))
       rep.error("Cells are not cubic! Set the range and number of points appropriately.",G_range[2]/G_dx/G_ng[2]);
   }
   // Surface area of interface: It is assumed extra dimensions are per unit length.
@@ -1480,9 +1487,8 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
     if (distance_vertex2cell(srcpos,c) <= srcrad) {
         ncell++;
         //b->data.push_back(c); // don't need b to have a lit too.
-        err += Wind->add_cell(id,c);
+        err += Wind->add_cell(this, id,c);
         //cout <<"CART: adding cell "<<c->id<<" to list. d=";
-        //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
         //rep.printVec("src", srcpos, G_ndim);
         //rep.printVec("pos", c->pos, G_ndim);
       }
@@ -1522,7 +1528,7 @@ int UniformGrid::BC_update_STWIND(
   int err=0;
   for (int id=0;id<Wind->Nsources();id++) {
     //cout <<" updating source "<<id<<"\n";
-    err += Wind->set_cell_values(id,SimPM.simtime);
+    err += Wind->set_cell_values(this, id,SimPM.simtime);
     //cout <<" finished source "<<id<<"\n";
   }
 
@@ -1651,7 +1657,8 @@ int UniformGrid::BC_update_STARBENCH1(
     //
     // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
     //
-    (*c)->Ph[Vnorm] = norm_sign*max(0.0, (*c)->Ph[Vnorm]*norm_sign);
+    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                    (*c)->Ph[Vnorm]*norm_sign);
 
 
     //
@@ -1925,7 +1932,8 @@ int UniformGrid::BC_update_ONEWAY_OUT( struct boundary_data *b,
     //
     // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
     //
-    (*c)->Ph[Vnorm] = norm_sign*max(0.0, (*c)->Ph[Vnorm]*norm_sign);
+    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                    (*c)->Ph[Vnorm]*norm_sign);
 
     if (cstep==maxstep)
       for (int v=0;v<G_nvar;v++)
@@ -2248,9 +2256,10 @@ void UniformGrid::BC_deleteBoundaryData()
 /// This function takes input in physical units, and outputs in 
 /// physical units.
 ///
-double UniformGrid::distance(const double *p1, ///< position 1 (physical)
-           const double *p2  ///< position 2 (physical)
-           )
+double UniformGrid::distance(
+      const double *p1, ///< position 1 (physical)
+      const double *p2  ///< position 2 (physical)
+      )
 {
   double temp=0.0;
   for (int i=0;i<G_ndim;i++)
@@ -2268,9 +2277,10 @@ double UniformGrid::distance(const double *p1, ///< position 1 (physical)
 /// This function takes input in code integer units, and outputs in
 /// integer units (but obviously the answer is not an integer).
 ///
-double UniformGrid::idistance(const int *p1, ///< position 1 (integer)
-            const int *p2  ///< position 2 (integer)
-            )
+double UniformGrid::idistance(
+      const int *p1, ///< position 1 (integer)
+      const int *p2  ///< position 2 (integer)
+      )
 {
   double temp=0.0;
   for (int i=0;i<G_ndim;i++)
@@ -2287,9 +2297,10 @@ double UniformGrid::idistance(const int *p1, ///< position 1 (integer)
 /// centre-of-volume of cells if non-cartesian geometry).
 /// Result returned in physical units (e.g. centimetres).
 ///
-double UniformGrid::distance_cell2cell(const cell *c1, ///< cell 1
-               const cell *c2  ///< cell 2
-               )
+double UniformGrid::distance_cell2cell(
+      const cell *c1, ///< cell 1
+      const cell *c2  ///< cell 2
+      )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -2307,9 +2318,10 @@ double UniformGrid::distance_cell2cell(const cell *c1, ///< cell 1
 /// Result returned in grid--integer units (one cell has a diameter
 /// two units).
 ///
-double UniformGrid::idistance_cell2cell(const cell *c1, ///< cell 1
-          const cell *c2  ///< cell 2
-          )
+double UniformGrid::idistance_cell2cell(
+      const cell *c1, ///< cell 1
+      const cell *c2  ///< cell 2
+      )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -2328,9 +2340,10 @@ double UniformGrid::idistance_cell2cell(const cell *c1, ///< cell 1
 /// (will be between centre-of-volume of cells if non-cartesian
 /// geometry).  Here both input and output are physical units.
 ///
-double UniformGrid::distance_vertex2cell(const double *v, ///< vertex (physical)
-           const cell *c    ///< cell
-           )
+double UniformGrid::distance_vertex2cell(
+      const double *v, ///< vertex (physical)
+      const cell *c    ///< cell
+      )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -2763,7 +2776,7 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(
 
       ncell++;
       //b->data.push_back(c); // don't need b to have a lit too.
-      err += Wind->add_cell(id,c);
+      err += Wind->add_cell(this, id,c);
 #ifdef TESTING
       cout <<"CYL adding cell "<<c->id<<" to list.\n";
       rep.printVec("***src", srcpos, G_ndim);
@@ -3105,9 +3118,8 @@ int uniform_grid_sph::BC_assign_STWIND_add_cells2src(
       rep.printVec("cell-pos", c->pos, G_ndim);
 #endif
       //b->data.push_back(c); // don't need b to have a list too.
-      err += Wind->add_cell(id,c);
+      err += Wind->add_cell(this, id,c);
       //cout <<"SPH: adding cell "<<c->id<<" to list. d=";
-      //cout <<GS.idistance(srcpos,c->pos,G_ndim)<<"\n";
       //rep.printVec("src", srcpos, G_ndim);
       //rep.printVec("pos", c->pos, G_ndim);
     }

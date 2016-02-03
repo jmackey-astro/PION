@@ -13,126 +13,39 @@
 /// - 2010.12.07 JM: Added setup_extra_data() call to cell_interface
 ///   before setting up grid.  Need to add Geomtric grid options!
 /// - 2011.04.23 JM: new code for setup_extra_data().
-///
+/// - 2015.03.26 JM: updated for pion v0.2
+/// - 2015.06.18 JM: updated to allow FLOAT or DOUBLE silo data.
 
 #ifndef PARALLEL
 # error "define PARALLEL so this will work!"
 #endif
 
-#include <dirent.h>
-#include <errno.h>
 #include <list>
 #include <iostream>
 #include <sstream>
-using namespace std;
-#include "../../source/global.h"
-#include "../../source/dataIO/dataio.h"
-#include "../../source/dataIO/dataio_silo.h"
-#include "../../source/grid/uniform_grid.h"
 #include <silo.h>
+#include <cmath>
+using namespace std;
 
-/** \brief choose variables to read (from dataio_silo.cc) */
-void set_readvars(std::vector<string> &///< list of variables to add to.
-		  );
-/** \brief Given a Variable and a Silo File, read the data onto the grid. */
-int read_variable2grid(DBfile *, ///< pointer to silo file.
-		       const string,   ///< variable name to read.
-		       const long int  ///< number of cells expected.
-		       );
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
-/** \brief get nproc and numfiles from the header, and returns an error
- * if it is a serial file (fails to find numfiles).
- */
-int get_nproc_numfiles(const string, ///< name of file to open
-		       int *,   ///< number of processes.
-		       int *    ///< number of files per timestep
-		       );
+#include "tools/reporting.h"
+#include "constants.h"
 
-/** \brief Given a point, determine if it is on my local domain or not.
- * Returns true if it is. 
- */
-bool point_on_my_domain(const cell * ///< pointer to cell
-			);
+#include "sim_params.h"
+#include "dataIO/dataio.h"
+#include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_utility.h"
+#include "grid/uniform_grid.h"
+
+#include "MCMD_control.h"
+#include "setup_fixed_grid_MPI.h"
 
 
-//
-// Return list of files in a given directory.
-//
-int get_dir_listing (const string dir,    ///< directory to list.
-		     list<string> *files  ///< list to put filenames in.
-		     )
-{
-  cout <<"get_dir_listing() reading directory: "<<dir<<endl;
-  DIR *dp=0;
-  struct dirent *dirp=0;
-  if((dp  = opendir(dir.c_str())) == 0) {
-    cout << "Error(" << errno << ") opening " << dir << endl;
-    return errno;
-  }
-  
-  while ((dirp = readdir(dp)) != 0) {
-    //string temp=dirp->d_name;files->push_back(temp);
-    files->push_back(string(dirp->d_name));
-    //cout <<"\tget_dir_listing() file: "<<string(dirp->d_name)<<endl;
-  }
-  closedir(dp);
-  cout <<"get_dir_listing() done."<<endl;
-  return 0;
-}
+// ##################################################################
+// ##################################################################
 
-//
-// Given a directory and a string to match files to (may be blank),
-// return sorted list of files.
-//
-int get_files_in_dir(const string dir,    ///< directory to list.
-		     const string str,    ///< string that files start with
-		     list<string> *files  ///< list to put filenames in.
-		     )
-{
-  cout <<"get_files_in_dir(): starting.\n";
-  int err=0;
-  if (!files->empty())
-    cout <<"WARNING: list of files is not empty, adding to end of list.\n";
-
-  //
-  // get directory listing
-  //
-  err += get_dir_listing(dir,files);
-  cout <<"get_files_in_dir(): got dir listing with "<<files->size()<<" elements.\n";
-
-  //
-  // remove elements that don't begin with a given substring
-  //
-  if (!str.empty()) {
-    cout <<"get_files_in_dir(): looking for substring in filenames: "<<str<<endl;
-    list<string>::iterator i=files->begin();
-    cout <<"file i="<<*i<<"\n";
-    if (i!=files->end()) { // check that dir listing is not empty...
-      do {
-	//if ((*i).find(str) == string::npos) {
-	//
-	// If filename doesn't start with str, then delete it.
-	//
-	if ((*i).find(str) != 0 || (*i).find("silo")==string::npos) {
-	  //cout <<"removing file "<<*i<<" from list.\n";
-	  files->erase(i);
-	  //files->remove(i);
-	  i=files->begin();
-	}
-	else i++;
-      } while (i!=files->end());
-    }
-  }
-  else
-    cout <<"get_files_in_dir(): No substring, so not removing any elements. returning...\n";
-
-  //
-  // sort remaining elements.
-  //
-  files->sort();
-  cout <<"get_files_in_dir(): done. found "<<files->size()<<" files.\n";
-  return err;
-}
 
 
 
@@ -144,24 +57,35 @@ int main(int argc, char **argv)
   // piece of code.
   //
   int err = COMM->init(&argc, &argv);
+  //
+  // Also initialise the MCMD class with myrank and nproc.
+  //
+  class MCMDcontrol MCMD;
+  int r=-1, np=-1;
+  COMM->get_rank_nproc(&r,&np);
+  MCMD.set_myrank(r);
+  MCMD.set_nproc(np);
 
   //
   // Get an input file and an output file.
   //
-  if (argc!=7) {
+  if (argc!=9) {
     cerr << "Error: must call as follows...\n";
-    cerr << "silocompare: <silocompare> <first-dir> <comp-dir> <first-file> <comp-file> <outfile> <fabs/plus-minus/L1/L2>\n";
+    cerr << "silocompare: <silocompare> <first-dir> <comp-dir> <first-file> <flt/dbl> <comp-file> <flt/dbl> <outfile> <fabs/plus-minus/L1/L2>\n";
     cerr << "\t 0: Diff image is relative error for rho/p_g (abs.val)\n";
     cerr << "\t 1: Diff image is relative error for rho/p_g (+/-)\n";
     cerr << "\t 2: Just calculate L1+L2 error, no difference image.\n";
+    cerr << "<flt/dbl>: FLOAT or DOUBLE for whether you think the file is float or double precision.\n";
     rep.error("Bad number of args",argc);
   }
   string fdir = argv[1];
   string sdir = argv[2];
   string firstfile   =argv[3];
-  string secondfile  =argv[4];
-  string outfilebase =argv[5]; string outfile;
-  int optype=atoi(argv[6]);
+  string dtype1(argv[4]);
+  string secondfile  =argv[5];
+  string dtype2(argv[6]);
+  string outfilebase =argv[7]; string outfile;
+  int optype=atoi(argv[8]);
   if (optype<0 || optype>2)
     rep.error("Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2)",optype);
   cout <<"fdir="<<fdir<<"\tsdir="<<sdir<<endl;
@@ -171,21 +95,42 @@ int main(int argc, char **argv)
   //rep.redirect(rts);
 
   //
-  // Get list of first and second files to read, and make sure they match.
+  // set up dataio_utility class
+  //
+  class dataio_silo_utility dataio(dtype2,&MCMD);
+
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+
+  //
+  // Get list of files to read:
   //
   list<string> ffiles, sfiles;
-  err += get_files_in_dir(fdir, firstfile,  &ffiles);
-  err += get_files_in_dir(sdir, secondfile, &sfiles);
-  if (err) rep.error("failed to get list of files",err);
-  //for (list<string>::iterator s=ffiles.begin(); s!=ffiles.end(); s++)
-  //  cout <<"firstfiles: "<<*s<<endl;
-  //for (list<string>::iterator s=sfiles.begin(); s!=sfiles.end(); s++)
-  //  cout <<"second files: "<<*s<<endl;
+  err += dataio.get_files_in_dir(fdir, firstfile,  &ffiles);
+  if (err) rep.error("failed to get first list of files",err);
+  err += dataio.get_files_in_dir(sdir, secondfile, &sfiles);;
+  if (err) rep.error("failed to get second list of files",err);
 
-
-
-  //if (ffiles.size() != sfiles.size())
-  //  rep.error("different number of first/second files!",ffiles.size()-sfiles.size());
+  for (list<string>::iterator s=ffiles.begin(); s!=ffiles.end(); s++) {
+    // If file is not a .silo file, then remove it from the list.
+    if ((*s).find(".silo")==string::npos) {
+      cout <<"removing file "<<*s<<" from list.\n";
+      ffiles.erase(s);
+    }
+    else {
+      cout <<"files: "<<*s<<endl;
+    }
+  }
+  for (list<string>::iterator s=sfiles.begin(); s!=sfiles.end(); s++) {
+    // If file is not a .silo file, then remove it from the list.
+    if ((*s).find(".silo")==string::npos) {
+      cout <<"removing file "<<*s<<" from list.\n";
+      sfiles.erase(s);
+    }
+    else {
+      cout <<"files: "<<*s<<endl;
+    }
+  }
 
   //
   // Set up iterators to run through all the files.
@@ -193,160 +138,87 @@ int main(int argc, char **argv)
   list<string>::iterator ff=ffiles.begin();
   list<string>::iterator ss=sfiles.begin();
 
+  //
+  // Set the number of files to be the length of the shortest list.
+  //
   unsigned int nfiles = ffiles.size();
   nfiles = std::min(nfiles, static_cast<unsigned int>(sfiles.size()));
+  if (nfiles<1) rep.error("Need at least one file, but got none",nfiles);
   
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+
+  //
+  // Read the first file, and setup the grid based on its parameters.
+  //
+  ostringstream oo;
+  oo.str(""); oo<<fdir<<"/"<<*ff; firstfile =oo.str();
+  err = dataio.ReadHeader(firstfile);
+  if (err) rep.error("Didn't read header",err);
+
+  //
+  // get a setup_grid class, and use it to set up the grid!
+  //
+  class setup_fixed_grid *SimSetup =0;
+  SimSetup = new setup_fixed_grid_pllel();
+  class GridBaseClass *grid = 0;
+  err  = MCMD.decomposeDomain();
+  if (err) rep.error("main: failed to decompose domain!",err);
+  //
+  // Now we have read in parameters from the file, so set up a grid.
+  //
+  SimSetup->setup_grid(&grid,&MCMD);
+  if (!grid) rep.error("Grid setup failed",grid);
+
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+
   //
   // loop over all files: open first+second and write the difference.
   //
   for (unsigned int fff=0; fff<nfiles; fff++) {
-    ostringstream oo;
+    
     oo.str(""); oo<<fdir<<"/"<<*ff; firstfile  =oo.str(); 
     oo.str(""); oo<<sdir<<"/"<<*ss; secondfile =oo.str(); 
     oo.str(""); oo <<outfilebase<<"."; oo.fill('0'); oo.width(5); oo<<fff<<".silo";
     outfile = oo.str();
     cout <<"\n**************************************************************************************\n";
-    cout <<"fff="<<fff<<"\tfirst file: "<<firstfile<<"\tsecond file: "<<secondfile<<"\toutput file: "<<outfile<<"\n";
+    cout <<"fff="<<fff<<"\tfirst file: "<<firstfile;
+    cout <<"\tsecond file: "<<secondfile<<"\toutput file: "<<outfile<<"\n";
 
     class file_status fstat;
-    if (!fstat.file_exists(firstfile) || !fstat.file_exists(secondfile)) {
-       cout <<"first file: "<<firstfile<<"\tand second file: "<<secondfile<<endl;
+    if (!fstat.file_exists(firstfile) ||
+        !fstat.file_exists(secondfile)) {
+       cout <<"first file: "<<firstfile;
+       cout <<"\tand second file: "<<secondfile<<endl;
        rep.error("First or second file doesn't exist",secondfile);
     }
     
     //
-    // Setup first and second silo I/O classes.
+    // Setup output silo I/O classes.
     //
-    bool
-      ff_serial = true,
-      sf_serial = false;
-    class dataio_silo firstio;
+    class dataio_silo firstio("DOUBLE");
     
+    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
+
     //
     // Read in first code header so i know how to setup grid.
     //
-    err = firstio.ReadHeader(firstfile);
+    err = dataio.ReadHeader(firstfile);
     if (err) rep.error("Didn't read header",err);
   
-    //
-    // May need to setup extra data in each cell for ray-tracing optical
-    // depths and/or viscosity variables (here just set it to zero).
-    //
-    CI.setup_extra_data(SimPM.RS,0,0);
-    //
-    // Setup grid.
-    //
-    if (grid) cout <<"grid already setup, so continuing.\n";
-    else {
-#ifdef CHECK_NEW_EXCEP_ON
-      try {
-	grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
-      }
-      catch (std::bad_alloc) {
-	rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
-      }
-#else
-      grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
-      if (grid==0) rep.error("(IntUniformFV::setup_grid) Couldn't assign data!", grid);
-#endif
-      cout <<"(silocompare::setup_grid) Done. g="<<grid<<"\n";
-      cout <<"DX = "<<grid->DX()<<endl;
-    }
-    cout <<"DX = "<<grid->DX()<<endl;
+    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
 
-    
     //
-    // Read first file data onto grid; this may be serial or parallel, so we
-    // need to decide first.
+    // Read data (this reader can read serial or parallel data).
     //
-    int nproc=0, numfiles=0, ngroups=0;
-    err = get_nproc_numfiles(firstfile, &nproc, &numfiles);
-    if (err) {
-      //
-      // must be reading serial file, so use serial ReadData() function:
-      //
-      ff_serial = true;
-      ngroups   = 1;
-      err = firstio.ReadData(firstfile,grid);
-      rep.errorTest("(silocompare) Failed to read data",0,err);
-    }
-    else {
-      //
-      // must be reading parallel file, so want to read in every subdomain onto grid.
-      // Use local functions for this:
-      //
-      ff_serial = false;
-      ngroups   = nproc/numfiles;
-      //
-      // First loop over all files:
-      //
-      for (int ifile=0; ifile<numfiles; ifile++) {
-	string infile = firstfile;
-	//
-	// If we have a parallel file, Parse filename, and replace file number 
-	// with new ifile, store in name 'infile'.
-	//
-	ostringstream temp; 
-	temp.fill('0');
-	string::size_type pos = infile.find("_0000");
-	if (pos==string::npos) {
-	  cout <<"didn't find _0000 in file, but claim we are reading pllel file!\n";
-	  rep.error("not a parallel i/o filename!",infile);
-	}
-	else {
-	  temp.str("");temp<<"_";temp.width(4);temp<<ifile;
-	  infile.replace(pos,5,temp.str());
-	  cout <<"\tNew infile: "<<infile<<endl;
-	  temp.str("");
-	}
+    err = dataio.parallel_read_any_data(firstfile, grid);
+    rep.errorTest("(silocompare) Failed to read firstfile",0,err);
 
-	DBfile *dbfile = DBOpen(infile.c_str(), SILO_FILETYPE, DB_READ);
-	if (!dbfile) rep.error("open first silo file failed.",dbfile);
-	//
-	// loop over domains within this file.
-	//
-	for (int igroup=0; igroup<ngroups; igroup++) {
-	  DBSetDir(dbfile,"/");
-	  //
-	  // choose myrank, and decompose domain accordingly.
-	  //
-	  mpiPM.myrank = ifile*ngroups +igroup;
-	  mpiPM.decomposeDomain();
-	  
-	  
-	  //
-	  // set directory in file.
-	  //
-	  temp.str(""); temp << "rank_"; temp.width(4); temp << mpiPM.myrank << "_domain_";
-	  temp.width(4); temp << igroup;
-	  string mydir = temp.str(); temp.str("");
-	  cout <<"\t\tdomain: "<<mydir<<endl;
-	  DBSetDir(dbfile, mydir.c_str());
-
-	  //
-	  // set variables to read: (ripped from dataio_silo class)
-	  //
-	  std::vector<string> readvars;
-	  set_readvars(readvars);
-	  
-	  //
-	  // now read each variable in turn from the mesh
-	  //
-	  for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-	    err = read_variable2grid(dbfile, (*i), mpiPM.LocalNcell);
-	    if (err)
-	      rep.error("error reading variable",(*i));
-	  }
-	} // loop over domains within a file.
-	
-	//
-	// Close this file
-	//
-	DBClose(dbfile);
-	dbfile=0; 
-      } // loop over files
-
-    } // plell first file...
+    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
     
     //
     // Now put the data in c->Ph for first file:
@@ -367,98 +239,11 @@ int main(int argc, char **argv)
     // ***************************************************************
     
     //
-    // Now for the tricky bit -- read in the second file for each processor.
-    // I think I'll have to write new code to do this.
+    // Read data (this reader can read serial or parallel data).
     //
-    nproc=0; numfiles=0, ngroups=0;
-    err = get_nproc_numfiles(secondfile, &nproc, &numfiles);
-    if (err) {
-      // are reading a serial file...
-      sf_serial = true;
-      ngroups   = 1;
-    }
-    else {
-      sf_serial = false;
-      ngroups   = nproc/numfiles;
-    }
-    
-    //
-    // Now loop over all files:
-    //
-    for (int ifile=0; ifile<numfiles; ifile++) {
-      string infile=secondfile;
+    err = dataio.parallel_read_any_data(secondfile, grid);
+    rep.errorTest("(silocompare) Failed to read secondfile",0,err);
 
-      //
-      // If we have a parallel file, Parse filename, and replace file number 
-      // with new ifile, store in name 'infile'.
-      //
-      ostringstream temp; 
-      if (!sf_serial) {
-	temp.fill('0');
-	string::size_type pos = infile.find("_0000");
-	if (pos==string::npos) {
-	  cout <<"didn't find _0000 in file, but claim we are reading pllel file!\n";
-	  rep.error("not a pllel i/o filename!",infile);
-	}
-	else {
-	  temp.str("");temp<<"_";temp.width(4);temp<<ifile;
-	  infile.replace(pos,5,temp.str());
-	  cout <<"\tNew infile: "<<infile<<endl;
-	  temp.str("");
-	}
-      }
-      DBfile *dbfile = DBOpen(infile.c_str(), SILO_FILETYPE, DB_READ);
-      if (!dbfile) rep.error("open second silo file failed.",dbfile);
-      
-      //
-      // loop over domains within this file.
-      //
-      for (int igroup=0; igroup<ngroups; igroup++) {
-	DBSetDir(dbfile,"/");
-	//
-	// choose myrank, and decompose domain accordingly.
-	//
-	mpiPM.myrank = ifile*ngroups +igroup;
-	mpiPM.decomposeDomain();
-	
-
-	//
-	// If serial file we don't need to do anything here, b/c all files are in the root dir.
-	// If parallel, we need to cd into this group's directory.
-	//
-	if (!sf_serial) {
-	  //
-	  // set directory in file.
-	  //
-	  temp.str(""); temp << "rank_"; temp.width(4); temp << mpiPM.myrank << "_domain_";
-	  temp.width(4); temp << igroup;
-	  string mydir = temp.str(); temp.str("");
-	  cout <<"\t\tdomain: "<<mydir<<endl;
-	  DBSetDir(dbfile, mydir.c_str());
-	}
-
-	//
-	// set variables to read: (ripped from dataio_silo class)
-	//
-	std::vector<string> readvars;
-	set_readvars(readvars);
-	
-	//
-	// now read each variable in turn from the mesh
-	//
-	for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-	  err = read_variable2grid(dbfile, (*i), mpiPM.LocalNcell);
-	  if (err)
-	    rep.error("error reading variable",(*i));
-	}
-      } // loop over domains within a file.
-      
-      //
-      // Close this file
-      //
-      DBClose(dbfile);
-      dbfile=0; 
-    } // loop over files
     cout <<"FINISHED reading second file: "<<secondfile<<endl;
     
 
@@ -609,6 +394,7 @@ int main(int argc, char **argv)
   //
   // Finish up and quit.
   //
+  if (grid) {delete grid; grid=0;}
   COMM->finalise();
   delete COMM; COMM=0;
   //MPI_Finalize();
@@ -616,197 +402,4 @@ int main(int argc, char **argv)
 }
 
 
-int get_nproc_numfiles(string fname, int *np, int *nf)
-{
-  int err=0;
-
-  //
-  // open file
-  //
-  cout <<"opening file: "<<fname<<endl;
-  DBfile *dbfile = 0;
-  dbfile = DBOpen(fname.c_str(), SILO_FILETYPE, DB_READ);
-  if (!dbfile) rep.error("open silo file failed.",dbfile);
-  
-  //
-  // read nproc, numfiles from header
-  //
-  DBSetDir(dbfile,"/header");
-  int nproc=0, numfiles=0, ngroups=0;
-  err += DBReadVar(dbfile,"MPI_nproc",&nproc);
-  err += DBReadVar(dbfile,"NUM_FILES",&numfiles);
-  if (err) {
-    cout <<"must be serial file -- failed to find NUM_FILES and MPI_nproc\n";
-    cout <<"continuing assuming serial file....\n";
-    //rep.error("error reading params from file",fname);
-    mpiPM.nproc=1; numfiles=1; ngroups=1;
-  }
-  else {
-    cout <<"\tRead nproc="<<nproc<<"\tand numfiles="<<numfiles<<"\n";
-    ngroups = nproc/numfiles;
-    mpiPM.nproc = nproc;
-  }
-  DBClose(dbfile); dbfile=0; 
-  
-  *np = nproc;
-  *nf = numfiles;
-  return err;
-}
-
-int read_variable2grid(DBfile *dbfile,        ///< pointer to silo file.
-		       const string variable, ///< variable name to read.
-		       const long int npt     ///< number of cells expected.
-		       )
-{
-  DBquadvar *silodata=0;
-  silodata = DBGetQuadvar(dbfile,variable.c_str());
-  if (!silodata)
-    rep.error("dataio_silo::read_variable2grid() failed to read variable",variable);
-  if (silodata->nels != npt)
-    rep.error("dataio_silo::read_variable2grid() wrong number of cells",silodata->nels-SimPM.Ncell);
-
-  FAKE_DOUBLE **data = (FAKE_DOUBLE **)(silodata->vals);
-
-  if (variable=="Velocity" || variable=="MagneticField") {
-    int v1,v2,v3;
-    if (variable=="Velocity") {v1=VX;v2=VY;v3=VZ;}
-    else                      {v1=BX;v2=BY;v3=BZ;}
-    //    cout <<"name: "<<silodata->name<<"\tnels="<<silodata->nels<<endl;
-    //    cout <<"ndims: "<<silodata->ndims<<"\tnvals: "<<silodata->nvals<<endl;
-    //cout <<"reading variable "<<variable<<" into element "<<v1<<" of state vec.\n";
-    cell *c=grid->FirstPt(); long int ct=0;
-    do {
-      if (point_on_my_domain(c)) {
-	//      cout <<"ct="<<ct<<"\t and ncell="<<npt<<endl;
-	c->P[v1] = data[0][ct];
-	c->P[v2] = data[1][ct];
-	c->P[v3] = data[2][ct];
-	//c->P[v1] = silodata->vals[0][ct];
-	//c->P[v2] = silodata->vals[1][ct];
-	//c->P[v3] = silodata->vals[2][ct];
-	//cout <<"ct="<<ct<<"\t and ncell="<<npt<<endl;
-	ct++;
-      }
-    } while ( (c=grid->NextPt(c))!=0 );
-    if (ct != npt) rep.error("wrong number of points read for vector variable",ct-npt);
-  } // vector variable
-
-  else {
-    int v1=0;
-    if      (variable=="Density")         v1=RO;
-    else if (variable=="Pressure")        v1=PG;
-    else if (variable=="VelocityX")       v1=VX;
-    else if (variable=="VelocityY")       v1=VY;
-    else if (variable=="VelocityZ")       v1=VZ;
-    else if (variable=="MagneticFieldX")  v1=BX;
-    else if (variable=="MagneticFieldY")  v1=BY;
-    else if (variable=="MagneticFieldZ")  v1=BZ;
-    else if (variable=="glmPSI")          v1=SI;
-    //
-    // Now loop over up to MAX_NVAR tracers...
-    //
-    else if (variable.substr(0,2)=="Tr") {
-      int itr = atoi(variable.substr(2,3).c_str());
-      if (!isfinite(itr) || itr<0 || itr>=MAX_NVAR) {
-        rep.error("Bad diffuse Column-density identifier.",variable);
-      }
-      v1 = SimPM.ftr +itr;
-    }
-    //else if (variable.substr(0,3)=="Tr0") {v1=SimPM.ftr;}
-    //else if (variable.substr(0,3)=="Tr1") {v1=SimPM.ftr+1;}
-    //else if (variable.substr(0,3)=="Tr2") {v1=SimPM.ftr+2;}
-    //else if (variable.substr(0,3)=="Tr3") {v1=SimPM.ftr+3;}
-    //else if (variable.substr(0,3)=="Tr4") {v1=SimPM.ftr+4;}
-    //else if (variable.substr(0,3)=="Tr5") {v1=SimPM.ftr+5;}
-    //else if (variable.substr(0,3)=="Tr6") {v1=SimPM.ftr+6;}
-    //else if (variable.substr(0,3)=="Tr7") {v1=SimPM.ftr+7;}
-    //else if (variable.substr(0,3)=="Tr8") {v1=SimPM.ftr+8;}
-    //else if (variable.substr(0,3)=="Tr9") {v1=SimPM.ftr+9;}
-    else rep.error("what var to read???",variable);
-    //cout <<"reading variable "<<variable<<" into element "<<v1<<" of state vec.\n";
-    cell *c=grid->FirstPt(); long int ct=0;
-    do {
-      if (point_on_my_domain(c)) {
-	//cout <<"val="<<silodata->vals[0][ct]<<" and data="<<data[0][ct]<<endl;
-	//c->P[v1] = silodata->vals[0][ct];
-	c->P[v1] = data[0][ct];
-	ct++;
-	//cout <<"ct="<<ct<<"\t and ncell="<<npt<<endl;
-      }
-    } while ( (c=grid->NextPt(c))!=0 );
-    if (ct != npt) rep.error("wrong number of points read for scalar variable",ct-npt);
-  } // scalar variable
-
-  //  cout <<"Read variable "<<variable<<endl;
-  DBFreeQuadvar(silodata); //silodata=0;
-  data=0;
-  return 0;
-}
-
-bool point_on_my_domain(const cell *c ///< pointer to cell
-			)
-{
-  //
-  // Assume point is on domain, and set to false if found to be off.
-  //
-  bool on=true;
-  double dpos[SimPM.ndim]; CI.get_dpos(c,dpos);
-  for (int i=0; i<SimPM.ndim; i++) {
-    if (dpos[i]<mpiPM.LocalXmin[i]) on=false;
-    if (dpos[i]>mpiPM.LocalXmax[i]) on=false;
-  }
-  return on;
-}
-
-void set_readvars(std::vector<string> &readvars ///< list of variables to add to.
-		  )
-{
-  readvars.push_back("Density");
-  readvars.push_back("Pressure");
-#if defined (SILO_SCALARS)
-  readvars.push_back("VelocityX");
-  readvars.push_back("VelocityY");
-  readvars.push_back("VelocityZ");
-#elif defined (SILO_VECTORS)
-  readvars.push_back("Velocity");
-#else
-#error "Must have either scalar components or vector variables defined!"
-#endif
-  // MHD has B-field, and maybe Psi for glm-mhd
-  if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQFCD || SimPM.eqntype==EQGLM) {
-#if defined (SILO_SCALARS)
-    readvars.push_back("MagneticFieldX");
-    readvars.push_back("MagneticFieldY");
-    readvars.push_back("MagneticFieldZ");
-#elif defined (SILO_VECTORS)
-    readvars.push_back("MagneticField");
-#else
-#error "Must have either scalar components or vector variables defined!"
-#endif
-    if (SimPM.eqntype==EQGLM) 
-      readvars.push_back("glmPSI");
-  }
-  // if there are any tracer variables, get their names from SimPM.trtype
-  if (SimPM.ntracer>0) {
-    string s; ostringstream temp;
-    for (int i=0; i<SimPM.ntracer; i++) {
-      s.erase(); temp.str("");
-      temp<< "Tr";
-      temp.width(3); temp.fill('0'); temp << i;
-      if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
-        temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
-      }
-      s=temp.str();
-      // replace "+" with "p", and "-" with "m"
-      string::size_type p=s.find("+");
-      if (p!=string::npos) s.replace(p,1,"p");
-      p=s.find("-");
-      if (p!=string::npos) s.replace(p,1,"m");
-      readvars.push_back(s);
-      //      cout <<"tracer = "<<s<<endl;
-    }
-  } //tracers
-
-  return;
-} // set_readvars(vector<string>)
 

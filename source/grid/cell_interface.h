@@ -29,12 +29,21 @@
 ///    made them inline.  Added option for radiation sources to be
 ///    associated with NTau>=1 optical depths, for flexibility.
 /// - 2013.09.05 JM: modified error checking in inline functions.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.10.19 JM: changed extra_data to double b/c Vshell is too large.
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
+#include "constants.h"
+#include "sim_constants.h"
+
+#ifdef RT_TESTING
+#include <iostream>
+#endif
 
 class cell_interface;
 
@@ -54,6 +63,9 @@ struct energetics {
     cooling_time, // in years
     recomb_time;  // in years
 };
+
+extern struct energetics *GLOBAL_CE;
+ ///< for tracking rates in microphysics/raytracing.
 #endif
 
 
@@ -65,33 +77,33 @@ struct energetics {
 /// and a half-timestep vector, Ph.
 ///
 class cell {
+
  public:
   friend class cell_interface;
-  double *P;   ///< Primitive Variables.
-  double *Ph;  ///< Primitive State vector at half timestep.
-  double *dU;  ///< Update vector to be added to U when we do the time update.
   cell **ngb;  ///< Pointers to cell's Neigbours.
   cell *npt;   ///< Pointer to next point in list, or some other cell.
 #ifdef GRIDV2
   cell *npt_all;  ///< Pointer to next point in grid, including
                   ///< boundary data.
 #endif
+  int *pos;
+  pion_flt *P;   ///< Primitive Variables.
+  pion_flt *Ph;  ///< Primitive State vector at half timestep.
+  pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
+ private:
+  double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
+ public:
   int id;      ///< Grid point's id.
   int isedge;  ///< Integer specifying if it is an edge cell, and if so, which edge.
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
+
 #ifdef COUNT_ENERGETICS
   struct energetics e; ///< to count up the energetics properties of the current cell.
 #endif
-  int *pos;
-  private:
-  double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
 };
 
 
-#ifndef GRIDV2
-#include "global.h"
-#endif
 ///
 /// Cell Interface class, so each cell doesn't need to have a list of
 /// pointers to all these functions.  This should contain
@@ -333,8 +345,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (iVsh[s] <0) { 
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
       return;
     }
 #endif // RT_TESTING
@@ -356,8 +368,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (iVsh[s] <0) { 
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no Vhsell variable: " << iVsh[s]<<"\n";
       return -1.0e99;
     }
 #endif // RT_TESTING
@@ -379,8 +391,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (idS[s] <0) {
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
       return;
     }
 #endif // RT_TESTING
@@ -402,8 +414,8 @@ class cell_interface {
   {
 #ifdef RT_TESTING
     if (idS[s] <0) {
-      cerr <<"source "<<s<<": ";
-      cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
+      std::cerr <<"source "<<s<<": ";
+      std::cerr <<"Source has no deltaS variable"<< idS[s]<<"\n";
       return -1.0e99;
     }
 #endif // RT_TESTING
@@ -421,7 +433,7 @@ class cell_interface {
   ///
   inline double get_Hcorr(
     const cell *c,
-    const axes a
+    const enum axes a
     )
   {return c->extra_data[iHcorr[a]];}
 
@@ -434,7 +446,7 @@ class cell_interface {
   ///
   inline void   set_Hcorr(
     cell *c,
-    const axes a,
+    const enum axes a,
     double eta
     )
   {c->extra_data[iHcorr[a]] = eta; return;}
@@ -529,5 +541,9 @@ class cell_interface {
   short unsigned int iDivV;
 
 };
+
+
+extern class cell_interface CI;
+  ///< Global Instance of cell interface class.
 
 #endif // CELL_INTERFACE_H

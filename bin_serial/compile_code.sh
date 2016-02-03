@@ -25,10 +25,11 @@
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
-NCORES=4
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
+NCORES=8
 #export PION_OPTIMISE=LOW
+#NCORES=1
 export CXX=g++
 
 #################################
@@ -88,12 +89,12 @@ esac
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
   export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
+#  export PION_OPTIMISE=HIGH
   export CXX=g++
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=2
+  NCORES=4
 fi
 #################################
 

@@ -16,9 +16,9 @@
 #define RAYTRACING_SHIELDING_H
 
 
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "raytracer_SC.h" // short-characteristics ray-tracer.
 
 ///

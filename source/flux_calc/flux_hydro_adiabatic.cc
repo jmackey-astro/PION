@@ -19,30 +19,21 @@
 /// History: \n
 ///  - 2009-10-20 Started on the file
 ///  - 2010-01-13 JM: Added Resolved state calculation to Roe Solver (Toro,1999,eq.11.17).
-///
 ///  - 2010-07-31 JM: Added Primitive variable linear solver with Roe average.
-///
 ///  - 2010-09-21 JM: Shortened some long lines.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to flux functions).
-///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for 
 ///   extra_data.
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
 ///    Renamed calculate_flux() to inviscid_flux() and moved AV
 ///    calculation to FV_solver_base class.
-///
 ///  - 2010.11.19 JM: Added H-correction to Roe conserved Var solver.
-///
 /// - 2010.11.21 JM: ifdef option to use the mean state for Pstar in
 ///   Roe conserved variable solver (4).  This is only relevant for
 ///   the FKJ98 viscosity function, and make sure that pstar has
 ///   positive definite pressure and density.  The ifdef statement is
 ///   at the top of this file.
-///   
 /// - 2010.11.21 JM: Added symmetric version of the Roe conserved
 ///   variables flux solver, called Roe_flux_solver_symmetric().  It
 ///   is MUCH BETTER than the one-sided one, which I have renamed to
@@ -50,29 +41,39 @@
 ///   with the H-correction, the one-sided solver developed spikes at
 ///   90 degree intervals, but the symmetric solver is perfectly
 ///   clean.  SO, DON'T USE ONE-SIDED ROE FLUX SOLVER ANYMORE!
-///
 /// - 2010.12.22 JM: Moved Roe PV and CV solvers to Riemann_solvers/
 ///   directory.  Got rid of the ROE_CV_MEANP ifdef (it is default).
-///
 /// - 2010.12.23 JM: Moved UtoP() etc. from solver to flux-solver.
 ///   Now all tracer stuff is dealt with here.  Added pstar[] array
 ///   to inviscid_flux() function since it is no longer inherited.
-///
 /// - 2010.12.27 JM: Enclosed Lapidus AV in an ifdef.
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code; it is solid now.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
 #include "flux_hydro_adiabatic.h"
-//#include "../global.h"
 using namespace std;
 
-flux_solver_hydro_adi::flux_solver_hydro_adi(const int nv,        ///< Number of variables in state vector
-					     const double *state, ///< state vector which is 'typical' in the problem being solved. 
-					     const double eta,     ///< coefficient of artificial viscosity
-					     const double g,       ///< gamma (EOS).
-					     const int ntr         ///< Number of tracer variables.
-					     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+flux_solver_hydro_adi::flux_solver_hydro_adi(
+      const int nv,        ///< Number of variables in state vector
+      const pion_flt *state, ///< state vector which is 'typical' in the problem being solved. 
+      const double eta,     ///< coefficient of artificial viscosity
+      const double g,       ///< gamma (EOS).
+      const int ntr         ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     // riemann_base(nv),
     flux_solver_base(nv,eta,ntr),
@@ -99,6 +100,12 @@ flux_solver_hydro_adi::flux_solver_hydro_adi(const int nv,        ///< Number of
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 flux_solver_hydro_adi::~flux_solver_hydro_adi()
 {
 #ifdef FUNCTION_ID
@@ -112,16 +119,23 @@ flux_solver_hydro_adi::~flux_solver_hydro_adi()
 }
 
 
-int flux_solver_hydro_adi::inviscid_flux(const cell *Cl, ///< Left state cell pointer
-					 const cell *Cr, ///< Right state cell pointer
-					 const double *Pl,///< Left Primitive state vector.
-					 const double *Pr,///< Right Primitive state vector.
-					 double *flux,   ///< Resultant Flux state vector.
-					 double *pstar,  ///< State vector at interface.
-					 const int solve_flag,
-	       ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-					 const double g  ///< Gas constant gamma.
-					 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int flux_solver_hydro_adi::inviscid_flux(
+      const cell *Cl, ///< Left state cell pointer
+      const cell *Cr, ///< Right state cell pointer
+      const pion_flt *Pl,///< Left Primitive state vector.
+      const pion_flt *Pr,///< Right Primitive state vector.
+      pion_flt *flux,   ///< Resultant Flux state vector.
+      pion_flt *pstar,  ///< State vector at interface.
+      const int solve_flag,
+      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double g  ///< Gas constant gamma.
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::inviscid_flux ...starting.\n";
@@ -214,7 +228,8 @@ int flux_solver_hydro_adi::inviscid_flux(const cell *Cl, ///< Left state cell po
     //#define RoeHYDRO_TESTING
 #ifdef RoeHYDRO_TESTING
     err += riemann_solve(Pl,Pr,pstar,1,eq_gamma);
-    double temp[eq_nvar], diff=0.0;
+    pion_flt temp[eq_nvar];
+    double diff=0.0;
     PtoFlux(pstar, temp, eq_gamma);
     for (int v=0;v<5;v++)
       diff += fabs(temp[v]-flux[v])/
@@ -253,13 +268,20 @@ int flux_solver_hydro_adi::inviscid_flux(const cell *Cl, ///< Left state cell po
 }
 
 
-int flux_solver_hydro_adi::AVFalle(const double *Pl,
-				   const double *Pr,
-				   const double *pstar,
-				   double *flux, 
-				   const double etav,
-				   const double gam
-				   )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int flux_solver_hydro_adi::AVFalle(
+      const pion_flt *Pl,
+      const pion_flt *Pr,
+      const pion_flt *pstar,
+      pion_flt *flux, 
+      const double etav,
+      const double gam
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::AVFalle ...starting.\n";
@@ -312,15 +334,22 @@ int flux_solver_hydro_adi::AVFalle(const double *Pl,
   return 0;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 #ifdef LAPIDUS_VISCOSITY_ENABLED
-int flux_solver_hydro_adi::AVLapidus(const cell *Cl, ///< Left state cell pointer
-				     const cell *Cr, ///< Right state cell pointer
-				     const double *Pl, ///< Left state
-				     const double *Pr, ///< Right state
-				     double *flux, 
-				     const double etav,
-				     const double gam
-				     )
+int flux_solver_hydro_adi::AVLapidus(
+      const cell *Cl, ///< Left state cell pointer
+      const cell *Cr, ///< Right state cell pointer
+      const pion_flt *Pl, ///< Left state
+      const pion_flt *Pr, ///< Right state
+      pion_flt *flux, 
+      const double etav,
+      const double gam
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::AVLapidus( ...starting.\n";
@@ -329,7 +358,7 @@ int flux_solver_hydro_adi::AVLapidus(const cell *Cl, ///< Left state cell pointe
 #ifdef TEST_LAPIDUS
   //
 
-  double ul[5], ur[5]; // Euler equations only affect first 5 vars.
+  pion_flt ul[5], ur[5]; // Euler equations only affect first 5 vars.
   PtoU(Pl,ul,gam); PtoU(Pr,ur,gam);
   //
   // I need a way to get div(v) for the edge point based on the two
@@ -365,7 +394,7 @@ int flux_solver_hydro_adi::AVLapidus(const cell *Cl, ///< Left state cell pointe
   ///
   rep.error("Don't use Lapidus!!!",1);
 
-  double ul[5], ur[5]; // Euler equations only affect first 5 vars.
+  pion_flt ul[5], ur[5]; // Euler equations only affect first 5 vars.
   PtoU(Pl,ul,gam); PtoU(Pr,ur,gam);
   double divu = ((Pr[eqVX]-Pl[eqVX])+
 		 (Pr[eqVY]-Pl[eqVY])+
@@ -392,7 +421,17 @@ int flux_solver_hydro_adi::AVLapidus(const cell *Cl, ///< Left state cell pointe
 
 
 
-void flux_solver_hydro_adi::PtoU(const double* p, double* u, const double g)
+// ##################################################################
+// ##################################################################
+
+
+
+
+void flux_solver_hydro_adi::PtoU(
+      const pion_flt *p,
+      pion_flt *u,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::PtoU ...starting.\n";
@@ -407,7 +446,17 @@ void flux_solver_hydro_adi::PtoU(const double* p, double* u, const double g)
   return;
 }
 
-int flux_solver_hydro_adi::UtoP(const double *u, double *p, const double g)
+
+// ##################################################################
+// ##################################################################
+
+
+
+int flux_solver_hydro_adi::UtoP(
+      const pion_flt *u,
+      pion_flt *p,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::UtoP ...starting.\n";
@@ -422,7 +471,17 @@ int flux_solver_hydro_adi::UtoP(const double *u, double *p, const double g)
   return err;
 }
 
-void flux_solver_hydro_adi::PUtoFlux(const double *p, const double *u, double *f)
+
+// ##################################################################
+// ##################################################################
+
+
+
+void flux_solver_hydro_adi::PUtoFlux(
+      const pion_flt *p,
+      const pion_flt *u,
+      pion_flt *f
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::PUtoFlux ...starting.\n";
@@ -437,7 +496,17 @@ void flux_solver_hydro_adi::PUtoFlux(const double *p, const double *u, double *f
   return;
 }
 
-void flux_solver_hydro_adi::UtoFlux(const double *u, double *f, const double g)
+
+// ##################################################################
+// ##################################################################
+
+
+
+void flux_solver_hydro_adi::UtoFlux(
+      const pion_flt *u,
+      pion_flt *f,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::UtoFlux ...starting.\n";
@@ -451,5 +520,11 @@ void flux_solver_hydro_adi::UtoFlux(const double *u, double *f, const double g)
 #endif //FUNCTION_ID
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 

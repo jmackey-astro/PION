@@ -11,10 +11,19 @@
 ///    heating rates.
 /// - 2011.04.14 JM: Fixed bugs.
 /// - 2011.06.20 JM: Got rid of non-ANSI-C exp10 functions
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "hydrogen_mp.h"
-#include "hydrogen_recomb_Hummer94.h"
-#include "../global.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/interpolate.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/hydrogen_mp.h"
+#include "microphysics/hydrogen_recomb_Hummer94.h"
 
 using namespace std;
 
@@ -72,7 +81,7 @@ void Hydrogen_chem::setup_Hi_coll_excitation_rate()
     cx_T[i] = log10(T[i]);
     cx_rate[i] = log10(R[i]);
   }
-  GS.spline(cx_T, cx_rate, cx_Nspl, 1.e99, 1.e99, cx_rate2);
+  interpolate.spline(cx_T, cx_rate, cx_Nspl, 1.e99, 1.e99, cx_rate2);
   //
   // Logarithmic slopes at either end of the domain.
   //
@@ -107,7 +116,7 @@ double Hydrogen_chem::Hi_coll_excitation_cooling_rate(double T)
     rate = cx_rate[cx_Nspl-1] + cx_MaxSlope*(T - cx_maxT);
   }
   else {
-    GS.splint(cx_T, cx_rate, cx_rate2, cx_Nspl, T, &rate);
+    interpolate.splint(cx_T, cx_rate, cx_rate2, cx_Nspl, T, &rate);
   }
   return exp(2.302585093*rate);
 }

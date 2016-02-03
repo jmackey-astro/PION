@@ -6,7 +6,7 @@
 //
 // Includes.
 //
-#include "../constants.h"
+#include "../reefa_constants.h"
 #include "../threads.h"
 //
 #include <string>

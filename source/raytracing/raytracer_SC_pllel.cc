@@ -9,27 +9,20 @@
 ///  - 2010-01-22 JM: worked on sources at cell-corners to try and get it working.
 ///  - 2010-01-23 JM: made sure source cell geometry is only for cell-centred sources.
 ///  - 2010-01-26 JM: Debugging sources at cell-vertices in 3D.
-///
 ///  - 2010.07.23 JM: New RSP source position class interface.
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 ///  - 2010.11.15 JM: replaced endl with c-style newline chars.
-///
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 ///    Changed source indexing so IDs are set by SimPM.RS and not assigned locally.
 ///    Changed Add_Source() interface so that all info gets passed to class.
 ///    Should handle multiple sources now, and sources at infinity.  Of course I 
 ///    need a "rates-only" update function to actually use multiple emitting sources.
-///
 /// - 2011.03.21 JM: Added RayTrace_Column_Density() interface function.  Just a
 ///    dummy function for now.  (2011.04.15 JM: it points to the old update fn now! The
 ///    deciding of whether to update or calculate column-density is in ProcessCell()).
-///
 /// - 2011.04.22 JM: Updated Add_Source() to set Vshell in cells if Column-density
 ///    update is required.
-///
 /// - 2011.04.23 JM: Added TauMin[] array of values of TauMin for each source, ordered
 ///    by source id.  This removes the need for interpolate_2D_RHO() so I got rid of it.
 ///    Now the interpolate functions read TauMin[src_id] and apply that to the interpolation.
@@ -38,9 +31,19 @@
 ///    function to call add_source_to_list() and set_Vshell_for_source() at the
 ///    appropriate places.
 /// - 2013.09.05 JM: Debugged for new get/set col functions.
+/// - 2015.01.28 JM: New include statements for new file structure.
 
-#include "../global.h"
-#include "raytracer_SC.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/timer.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "raytracing/raytracer_SC.h"
 #include <fstream>
 #include <iostream>
 using namespace std;
@@ -148,39 +151,40 @@ int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
   string t1="totalRT", t2="waitingRT", t3="doingRT", t4="tempRT";
   double total=0.0, wait=0.0, run=0.0;
 
-  GS.start_timer(t1);
+  clk.start_timer(t1);
   //
   // First Receive RT boundaries from processors nearer source.
   //
-  GS.start_timer(t2);
-  //GS.start_timer(t4);
+  clk.start_timer(t2);
+  //clk.start_timer(t4);
   err += gridptr->Receive_RT_Boundaries(s_id);
-  //cout <<"RT: waiting to receive for "<<GS.stop_timer(t4)<<" secs.\n";
-  GS.pause_timer(t2);
+  //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
+  clk.pause_timer(t2);
 
   //
   // Now we have the boundary conditions, so call the serial Raytracer.
   //
-  GS.start_timer(t3);
-  //GS.start_timer(t4);
+  clk.start_timer(t3);
+  //clk.start_timer(t4);
   err += raytracer_USC::RayTrace_SingleSource(s_id, dt, g);
-  //cout <<"RT: Tracing over domain took "<<GS.stop_timer(t4)<<" secs.\n";
-  run = GS.pause_timer(t3);
+  //cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
+  run = clk.pause_timer(t3);
 
   //
   // Finally, send the new column densities to processors further from source.
   //
-  GS.start_timer(t2);
-  //GS.start_timer(t4);
+  clk.start_timer(t2);
+  //clk.start_timer(t4);
   err += gridptr->Send_RT_Boundaries(s_id);
-  //cout <<"RT: Sending boundaries/Waiting for "<<GS.stop_timer(t4)<<" secs.\n";
-  wait  = GS.pause_timer(t2);
-  total = GS.pause_timer(t1);
-	
-  if (mpiPM.myrank==0 && (SimPM.timestep%100==0) && s_id==0) {
+  //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
+  wait  = clk.pause_timer(t2);
+  total = clk.pause_timer(t1);
+
+  if ( (SimPM.timestep%100==0) && s_id==0) {
     cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
     cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";
   }
+
   return err;
 }
 
@@ -390,7 +394,7 @@ void raytracer_USC_pllel::col2cell_3d(
 
 #ifdef RT_TESTING
   //cout <<"3D ShortChars:: cols for cell id="<<c->id<<"\n";
-  if (!GS.equalD(dx[0],0.0) && !GS.equalD(dx[1],0.0) &&
+  if (!pconst.equalD(dx[0],0.0) && !pconst.equalD(dx[1],0.0) &&
       (col1[0]<0.0 || col2[0]<0.0 || col3[0]<0.0 || col4[0]<0.0)) {
     cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
     cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
@@ -413,7 +417,7 @@ void raytracer_USC_pllel::col2cell_3d(
   // doesn't matter.
   //
   double dpos[3]; CI.get_dpos(c,dpos);
-  if (GS.distance(dd,dpos,SimPM.ndim) < gridptr->DX()/2.) {
+  if (gridptr->distance(dd,dpos) < gridptr->DX()/2.) {
     cout.setf(ios_base::scientific); cout.precision(15);
     cout <<"cell with max.diff in step 1: id="<<c->id<<"\n";
     cout <<"pnt  pos="; rep.printVec("pnt",dd,SimPM.ndim);
@@ -437,13 +441,13 @@ void raytracer_USC_pllel::col2cell_3d(
 #ifdef RT_TESTING
   for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
     if (col1[iT]<0.0) {cout <<"col1="<<col1[iT]<<", setting to zero.\n"; col1[iT]=0.0;}
-    if (col2[iT]<0.0 && !GS.equalD(dx[0],0.0))
+    if (col2[iT]<0.0 && !pconst.equalD(dx[0],0.0))
       {cout <<"col2="<<col2[iT]<<", setting to zero.\n"; col2[iT]=0.0;}
     //else if (col2<0.) cout <<"dx[0]="<<dx[0]<<"\n";
-    if (col3[iT]<0.0 && !GS.equalD(dx[1],0.0))
+    if (col3[iT]<0.0 && !pconst.equalD(dx[1],0.0))
       {cout <<"col3="<<col3[iT]<<", setting to zero.\n"; col3[iT]=0.0;}
     //else if (col3<0.) cout <<"dx[1]="<<dx[1]<<"\n";
-    if (col4[iT]<0.0 && !GS.equalD(dx[0],0.0)  && !GS.equalD(dx[1],0.0))
+    if (col4[iT]<0.0 && !pconst.equalD(dx[0],0.0)  && !pconst.equalD(dx[1],0.0))
       {cout <<"col4="<<col4[iT]<<", setting to zero.\n"; col4[iT]=0.0;}
     //else if (col4<0.) cout <<"dx[0]="<<dx[0]<<"\tdx[1]="<<dx[1]<<"\n";
   }

@@ -85,6 +85,7 @@
 /// - 2011.09.21 JM: Set the cooling to be C2 (cooling=15 in cooling.cc) for RT_TEST_PROBS
 /// - 2011.10.13 JM: Added switch in TimeUpdate_RTnew() so that if nothing is changing
 ///    much over a timestep then just do an Euler integration.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,591,1220)
 ///       which is the 'proto-solar nebula' value. The photospheric value is lower
@@ -92,13 +93,21 @@
 ///
 
 #ifdef MP_V2_AIFA
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #ifndef EXCLUDE_MPV2
 
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
-#include "mp_v2_aifa.h"
-#include "../global.h"
+#include "microphysics/mp_v2_aifa.h"
+
 using namespace std;
 
 #define JM_NELEC 1.1 ///< ionised gas has 1.1 electrons per hydrogen nucleon (H+,He+, no He2+!)
@@ -779,39 +788,33 @@ mp_v2_aifa::mp_v2_aifa(
   //
   // ------------- output cooling rates for various temperatures ---------
   //
-#ifdef PARALLEL
-  if (mpiPM.myrank==0) {
-#endif 
-    double p[nv_prim];
-    p[RO]=2.34e-24; p[PG]=1.0e-12;
-    p[pv_Hp] = 0.99;
+  double p[nv_prim];
+  p[RO]=2.34e-24; p[PG]=1.0e-12;
+  p[pv_Hp] = 0.99;
 
-    string opfile("cooling_mpv2_aifa.txt");
-    ofstream outf(opfile.c_str());
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999, x=0.00001, x=0.5 (n=1 per cc)\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double t=SimPM.EP.MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
-    do {
-      p[pv_Hp] = 0.99999;
-      Set_Temp(p,t,junk);
-      MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edi);
+  string opfile("cooling_mpv2_aifa.txt");
+  ofstream outf(opfile.c_str());
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999, x=0.00001, x=0.5 (n=1 per cc)\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double t=SimPM.EP.MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
+  do {
+    p[pv_Hp] = 0.99999;
+    Set_Temp(p,t,junk);
+    MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edi);
 
-      p[pv_Hp] = 0.5;
-      Set_Temp(p,t,junk);
-      MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edpi);
+    p[pv_Hp] = 0.5;
+    Set_Temp(p,t,junk);
+    MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edpi);
 
-      p[pv_Hp] = 0.00001;
-      Set_Temp(p,t,junk);
-      MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edn);
-      outf << t <<"\t"<< Edi <<"  "<< Edn <<"  "<< Edpi <<"\n";
-      t *=1.05;
-    } while (T<min(1.0e9,SimPM.EP.MaxTemperature));
-    outf.close();  
-#ifdef PARALLEL
-  }
-#endif 
+    p[pv_Hp] = 0.00001;
+    Set_Temp(p,t,junk);
+    MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edn);
+    outf << t <<"\t"<< Edi <<"  "<< Edn <<"  "<< Edpi <<"\n";
+    t *=1.05;
+  } while (T<min(1.0e9,SimPM.EP.MaxTemperature));
+  outf.close();  
   //
   // ------------- output cooling rates for various temperatures ---------
   //

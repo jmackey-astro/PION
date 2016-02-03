@@ -32,6 +32,7 @@
 #include <new>
 #include <sstream>
 #include <string>
+//#include <iostream>
 //
 using namespace std;
 //
@@ -512,14 +513,22 @@ int tp_waitOnFinished(threadpool_t *tp,int n)
   //
   // Wait on all current tasks to complete.
   //
+  //std::cout <<"waiting on threads... "<<tp->numfinished<<", out of "<<n<<"\n";
+  //std::cout.flush();
   tp->Qlock.lock();
+  //std::cout <<"waiting on threads part 2 ... "<<tp->numfinished<<", out of "<<n<<"\n";
+  //std::cout.flush();
   while(tp->numfinished<n) {
 #if defined(_WIN32)
     tp->Qlock.unlock();
     tp->TFinished.wait();
     tp->Qlock.lock();
 #else
+    //std::cout <<"waiting on threads part 3 ... "<<tp->numfinished<<", out of "<<n<<"\n";
+    //std::cout.flush();
     tp->TFinished.wait(tp->Qlock);
+    //std::cout <<"waiting on threads part 4 ... "<<tp->numfinished<<", out of "<<n<<"\n";
+    //std::cout.flush();
 #endif
   }
   tp->numfinished=0;
@@ -538,7 +547,7 @@ int tp_waitOnFinished(threadpool_t *tp,int n)
 //                                                                         //
 /////////////////////////////////////////////////////////////////////////////
 //
-#include "../constants.h"
+#include "../reefa_constants.h"
 #include "../logmessages.h"
 
 

@@ -12,10 +12,18 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2014.06.XX
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "microphysics/mpv8_StarBench_heatcool.h"
-
-#include "global.h"
 
 using namespace std;
 
@@ -28,7 +36,17 @@ using namespace std;
 mpv8_SBheatcool::mpv8_SBheatcool(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
           const std::string &trtype,  ///< List of what the tracer variables mean.
+
+# else
+
+          const std::string *trtype,  ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
           struct which_physics *ephys  ///< extra physics stuff.
 	  )
 :

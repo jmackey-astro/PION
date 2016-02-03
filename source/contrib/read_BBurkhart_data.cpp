@@ -7,8 +7,16 @@
 /// - 2012.10.15 JM: Started on file.
 /// - 2012.10.16 JM: Debugged and got a stable version working. 
 /// - 2013.02.27 JM: minor tidying up.
+/// - 2015.10.27 JM: updated for new pion
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
 #include "ics/icgen.h"
+#include "constants.h"
 #include "coord_sys/VectorOps.h"
 #include "dataIO/dataio.h"
 #include "dataIO/dataio_fits.h"
@@ -244,7 +252,7 @@ int IC_read_BBurkhart_data::setup_data(
       // It is obtained by multiplying by density, which is already
       // in cgs units, so we don't need ISMdensity in the scaling.
       //
-      scaling = GS.kB()*Tism/(mass_per_particle*CodePDratio);
+      scaling = pconst.kB()*Tism/(mass_per_particle*CodePDratio);
       break;
 
       case VX:
@@ -253,7 +261,7 @@ int IC_read_BBurkhart_data::setup_data(
       //
       // Velocity scaling is the ratio of cgs-to-code sound speeds.
       //
-      scaling = sqrt(GS.kB()*Tism/(mass_per_particle*CodePDratio));
+      scaling = sqrt(pconst.kB()*Tism/(mass_per_particle*CodePDratio));
       break;
 
       case BX:
@@ -264,7 +272,7 @@ int IC_read_BBurkhart_data::setup_data(
       // velocity in code units is defined to be unity.  My code uses
       // cgs units divided by sqrt(4pi), so take that into account...
       //
-      scaling = sqrt(ISMdensity/(4.0*M_PI))*sqrt(GS.kB()*Tism/(mass_per_particle*CodePDratio));
+      scaling = sqrt(ISMdensity/(4.0*M_PI))*sqrt(pconst.kB()*Tism/(mass_per_particle*CodePDratio));
       break;
 
       case SI:

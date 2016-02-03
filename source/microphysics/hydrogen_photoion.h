@@ -18,12 +18,17 @@
 ///    multifreq photoionisation and photoheating rates.
 /// - 2011.05.04 JM: Added a discretised multifreq photoionisation rate with
 ///    an approximation for dtau<<1.
-/// - 2011.10.08 JM: Added switch to use GS.spline/splint instead of the local
+/// - 2011.10.08 JM: Added switch to use interpolate.spline/splint instead of the local
 ///    STL vector one, because the vector functions are slower by about 2.5%.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 ///
 #ifndef HYDROGEN_PHOTOION
 #define HYDROGEN_PHOTOION
+
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 //#define USE_VECTORS  // This uses STL vectors for spline interpolation.  It's 2.5% slower.
 #define JUST_IONISED 2.178721e-11 ///< This is (1.0+5e-7) times the ionisation energy of H

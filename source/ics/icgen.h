@@ -16,28 +16,48 @@
 /// - 2013.01.10 JM: Added new StarBench workshop test probs class.
 /// - 2013.03.23 JM: Added another StarBench test.
 /// - 2013.03.24 JM: Added another StarBench test.
+/// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
 
 #ifndef ICGEN_H
 #define ICGEN_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
+#include "grid/grid_base_class.h"
 #include "ics/inside_sphere.h"
-#include "global.h"
+
 #include "dataIO/readparams.h"
+#ifdef PARALLEL
+#include "MCMD_control.h"
+#endif // PARALLEL
 
 class ICsetup_base {
   public :
-   virtual ~ICsetup_base() {}
-   virtual int setup_data(class ReadParams *, ///< pointer to parameter list.
+  virtual ~ICsetup_base() {}
+  virtual int setup_data(class ReadParams *, ///< pointer to parameter list.
 			  class GridBaseClass * ///< pointer to grid
 			  )=0;
+#ifdef PARALLEL
+  void set_MCMD_pointer(
+      class MCMDcontrol *m
+      )
+  {MCMD = m; return;}
+#endif // PARALLEL
   protected:
-   int AddNoise2Data(int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
-		     double ///< Noise level (in pressure) in fractional level.
-		     );
+   int AddNoise2Data(
+        class GridBaseClass *,
+        int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
+        double ///< Noise level (in pressure) in fractional level.
+        );
    int SmoothData(int ///< Number of cell diameters to smooth over.
 		  );
    class GridBaseClass *gg; ///< pointer to grid.
    class ReadParams *rp; ///< pointer to readparams.
+#ifdef PARALLEL
+   class MCMDcontrol *MCMD;
+#endif // PARALLEL
 };
 
 

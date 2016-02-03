@@ -17,7 +17,8 @@
 //#include "../defines/functionality_flags.h"
 //#include "../defines/testing_flags.h"
 //#include "../global.h"
-#include "raytracer_shielding.h" // short-characteristics ray-tracer.
+#include "raytracing/raytracer_shielding.h" // short-characteristics ray-tracer.
+#include "tools/timer.h"
 using namespace std;
 
 #ifndef HCORR
@@ -221,34 +222,34 @@ int raytracer_shielding_pllel::RayTrace_SingleSource(
   string t1="totalRT", t2="waitingRT", t3="doingRT", t4="tempRT";
   double total=0.0, wait=0.0, run=0.0;
 
-  GS.start_timer(t1);
+  clk.start_timer(t1);
   //
   // First Receive RT boundaries from processors nearer source.
   //
-  GS.start_timer(t2);
-  //GS.start_timer(t4);
+  clk.start_timer(t2);
+  //clk.start_timer(t4);
   err += gridptr->Receive_RT_Boundaries(s_id);
-  //cout <<"RT: waiting to receive for "<<GS.stop_timer(t4)<<" secs.\n";
-  GS.pause_timer(t2);
+  //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
+  clk.pause_timer(t2);
 
   //
   // Now we have the boundary conditions, so call the serial Raytracer.
   //
-  GS.start_timer(t3);
-  //GS.start_timer(t4);
+  clk.start_timer(t3);
+  //clk.start_timer(t4);
   err += raytracer_USC_infinity::RayTrace_SingleSource(s_id, dt, g);
-  //cout <<"RT: Tracing over domain took "<<GS.stop_timer(t4)<<" secs.\n";
-  run = GS.pause_timer(t3);
+  //cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
+  run = clk.pause_timer(t3);
 
   //
   // Finally, send the new column densities to processors further from source.
   //
-  GS.start_timer(t2);
-  //GS.start_timer(t4);
+  clk.start_timer(t2);
+  //clk.start_timer(t4);
   err += gridptr->Send_RT_Boundaries(s_id);
-  //cout <<"RT: Sending boundaries/Waiting for "<<GS.stop_timer(t4)<<" secs.\n";
-  wait  = GS.pause_timer(t2);
-  total = GS.pause_timer(t1);
+  //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
+  wait  = clk.pause_timer(t2);
+  total = clk.pause_timer(t1);
 
   //cout <<"Diffuse RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
   //cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";

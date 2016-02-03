@@ -16,9 +16,17 @@
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
-///
+/// - 2015.01.13 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "constants.h"
 
 #include "VectorOps.h"
+
 using namespace std;
 
 BaseVectorOps::~BaseVectorOps() {}
@@ -57,8 +65,8 @@ double BaseVectorOps::AvgFalle(
 
 
 double BaseVectorOps::DotProduct(
-        const double *v1, // Vector 1.
-        const double *v2, // Vector 2.
+        const pion_flt *v1, // Vector 1.
+        const pion_flt *v2, // Vector 2.
         const int n       // length of vectors.
         )
 {
@@ -73,10 +81,10 @@ double BaseVectorOps::DotProduct(
 
 
 int BaseVectorOps::CrossProduct(
-        const double *a, // Vector 1.
-        const double *b, // Vector 2.
+        const pion_flt *a, // Vector 1.
+        const pion_flt *b, // Vector 2.
         const int n,      // length of vectors.
-        double *ans       // Result vector
+        pion_flt *ans       // Result vector
         )
 {
   if      (n==3) {
@@ -193,6 +201,12 @@ double VectorOps_Cart::CellVolume(const cell *)
   return(VOdV);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 double VectorOps_Cart::CellInterface(
           const cell *,
           const direction
@@ -204,16 +218,23 @@ double VectorOps_Cart::CellInterface(
   return(VOdA);
 }
 
-double VectorOps_Cart::maxGradAbs(
+
+
+// ##################################################################
+// ##################################################################
+
+
+double VectorOps_Cart::max_grad_abs(
         const cell *cpt,
         const int sv,
-        const int var
+        const int var,
+        class GridBaseClass *grid
         )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
     if (!grid->NextPt(cpt,static_cast<direction>(i)))
-      rep.error("VectorOps_Cart::maxGradAbs: Some neighbour cells don't exist",i);
+      rep.error("VectorOps_Cart::max_grad_abs: Some neighbour cells don't exist",i);
 #endif //TESTING
   
   double grad=0, temp=0;
@@ -235,24 +256,25 @@ double VectorOps_Cart::maxGradAbs(
   }
 
   return(grad);
-} // maxGradAbs
+} // max_grad_abs
 
 
 // ##################################################################
 // ##################################################################
 
 
-void VectorOps_Cart::Grad(
+void VectorOps_Cart::Gradient(
         const cell *c,
         const int sv,
         const int var,
-        double *grad
+        class GridBaseClass *grid,
+        pion_flt *grad
         )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
     if (!grid->NextPt(c,static_cast<direction>(i)))
-      rep.error("VectorOps_Cart::maxGradAbs: Some neighbour cells don't exist",i);
+      rep.error("VectorOps_Cart::Grad: Some neighbour cells don't exist",i);
 #endif //TESTING
   
   switch (sv) {
@@ -277,10 +299,11 @@ void VectorOps_Cart::Grad(
 // ##################################################################
 
 
-double VectorOps_Cart::Div(
+double VectorOps_Cart::Divergence(
         const cell *c, 
         const int sv, 
-        const int *var
+        const int *var,
+        class GridBaseClass *grid
         )
 { // get divergence of vector quantity.
   
@@ -318,7 +341,8 @@ void VectorOps_Cart::Curl(
         const cell *c, 
         const int vec, 
         const int *var, 
-        double *ans
+        class GridBaseClass *grid,
+        pion_flt *ans
         )
 {
 #ifdef TESTING
@@ -329,7 +353,7 @@ void VectorOps_Cart::Curl(
   if (!c->isgd) rep.error("Not Grid Cell! can't calculate curl. id follows",c->id);
 
   int vx=var[0], vy=var[1], vz=var[2];
-  double *vxp=0, *vxn=0, *vyp=0, *vyn=0, *vzp=0, *vzn=0;
+  pion_flt *vxp=0, *vxn=0, *vyp=0, *vyn=0, *vzp=0, *vzn=0;
   switch (vec) {
    case 0: // c->P
 //    cout <<"using P.\n";
@@ -388,9 +412,10 @@ int VectorOps_Cart::SetEdgeState(
         const cell *c,      ///< Current Cell.
         const direction d,  ///< Add or subtract the slope depending on direction.
         const int nv,       ///< length of state vectors.
-        const double *dpdx, ///< Slope vector.
-        double *edge,       ///< vector for edge state. 
-        const int OA        ///< Order of spatial Accuracy.
+        const pion_flt *dpdx, ///< Slope vector.
+        pion_flt *edge,       ///< vector for edge state. 
+        const int OA,       ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   switch (OA) {
@@ -414,6 +439,7 @@ int VectorOps_Cart::SetEdgeState(
     break; // O2
    default:
     cerr<<"\t(SetEdgeState) Only know 1st and 2nd order spatial accuracy!!!\n"; 
+    cerr<<"\tOA="<<OA<<"\n";
     return(1);
   } // Order of accuracy.
   return(0);
@@ -428,8 +454,9 @@ int VectorOps_Cart::SetSlope(
         const cell *c, ///< Current Cell.
         const axes d,  ///< Which direction to calculate slope in.
         const int nv,  ///< length of state vectors.
-        double *dpdx,  ///< Slope vector to be written to.
-        const int  OA  ///< Order of spatial Accuracy.
+        pion_flt *dpdx,  ///< Slope vector to be written to.
+        const int  OA, ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   if (OA==OA1){ // first order accurate so zero slope.
@@ -437,7 +464,7 @@ int VectorOps_Cart::SetSlope(
   } // 1st order.
   
   else if (OA==OA2) { // second order spatial accuracy.
-    double slpn[nv], slpp[nv];
+    pion_flt slpn[nv], slpp[nv];
     cell *cn=0,*cp=0;
     enum direction dp=NO,dn=NO;
     switch (d) {
@@ -475,20 +502,21 @@ int VectorOps_Cart::SetSlope(
 
 int VectorOps_Cart::DivStateVectorComponent(
         const cell *c,    ///< current cell.
+        class GridBaseClass *grid,
         const axes d,     ///< current coordinate axis we are looking along.
         const int nv,     ///< length of state vectors.
-        const double *fn, ///< Negative direction flux.
-        const double *fp, ///< Positive direction flux.
-        double *dudt      ///< Vector to assign divergence component to.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        pion_flt *dudt      ///< Vector to assign divergence component to.
         )
 {
-  enum direction dp;
-  switch (d) {
-   case XX: dp=XP; break;
-   case YY: dp=YP; break;
-   case ZZ: dp=ZP; break;
-   default: rep.error("Bad direction in DivStateVectorComponent",d);
-  }
+  //enum direction dp;
+  //switch (d) {
+  // case XX: dp=XP; break;
+  // case YY: dp=YP; break;
+  // case ZZ: dp=ZP; break;
+  // default: rep.error("Bad direction in DivStateVectorComponent",d);
+  //}
   
   /** \section Sign
    * Note that this function returns the negative of the i-th component of 
@@ -633,16 +661,17 @@ double VectorOps_Cyl::CellInterface(
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Cyl::maxGradAbs(
+double VectorOps_Cyl::max_grad_abs(
         const cell *c, 
         const int sv, 
-        const int var
+        const int var,
+        class GridBaseClass *grid
         )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
     if (!grid->NextPt(c,static_cast<direction>(i)))
-      rep.error("VectorOps_Cyl::maxGradAbs: Some neighbour cells don't exist",i);
+      rep.error("VectorOps_Cyl::max_grad_abs: Some neighbour cells don't exist",i);
 #endif //TESTING
 
   double dT=0.; // physical length R*dTheta
@@ -695,24 +724,25 @@ double VectorOps_Cyl::maxGradAbs(
     rep.error("Don't know what state vector to use for calculating gradient.",sv);
   }
   return(grad);
-} // maxGradAbs
+} // max_grad_abs
 
 
 // ##################################################################
 // ##################################################################
 
 
-void VectorOps_Cyl::Grad(
+void VectorOps_Cyl::Gradient(
         const cell *c, 
         const int sv, 
         const int var, 
-        double *grad
+        class GridBaseClass *grid,
+        pion_flt *grad
         )
 {
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
     if (!grid->NextPt(c,static_cast<direction>(i)))
-      rep.error("VectorOps_Cart::maxGradAbs: Some neighbour cells don't exist",i);
+      rep.error("VectorOps_Cart::Grad: Some neighbour cells don't exist",i);
 #endif //TESTING
   
   cell *cn,*cp;
@@ -752,12 +782,14 @@ void VectorOps_Cyl::Grad(
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Cyl::Div(
+double VectorOps_Cyl::Divergence(
         const cell *c, 
         const int sv, 
-        const int *var
+        const int *var,
+        class GridBaseClass *grid
         )
-{ // get divergence of vector quantity.
+{
+  // get divergence of vector quantity.
 
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
@@ -820,7 +852,8 @@ void VectorOps_Cyl::Curl(
         const cell *c, 
         const int vec, 
         const int *var, 
-        double *ans
+        class GridBaseClass *grid,
+        pion_flt *ans
         )
 {
 #ifdef TESTING
@@ -832,7 +865,7 @@ void VectorOps_Cyl::Curl(
   cout <<"Cyl_Curl() is not tested!!! make sure it works!!!\n";
   // variables z,R,theta = z,r,t
   int vz=var[0], vr=var[1], vt=var[2];
-  double *vzp=0, *vzn=0, *vrp=0, *vrn=0, *vtp=0, *vtn=0;
+  pion_flt *vzp=0, *vzn=0, *vrp=0, *vrn=0, *vtp=0, *vtn=0;
   double rp=0., rn=0.;
   
   switch (vec) {
@@ -891,9 +924,10 @@ int VectorOps_Cyl::SetEdgeState(
         const cell *c,       ///< Current Cell.
         const direction dir, ///< Add or subtract the slope depending on direction.
         const int nv,        ///< length of state vectors.
-        const double *dpdx,  ///< Slope vector.
-        double *edge,        ///< vector for edge state. 
-        const int OA         ///< Order of spatial Accuracy.
+        const pion_flt *dpdx,  ///< Slope vector.
+        pion_flt *edge,        ///< vector for edge state. 
+        const int OA,        ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   if (OA==OA1) { // 1st order, constant data.
@@ -937,8 +971,9 @@ int VectorOps_Cyl::SetSlope(
         const cell *c, ///< Current Cell.
         const axes d,  ///< Which direction to calculate slope in.
         const int nv,  ///< length of state vectors.
-        double *dpdx,  ///< Slope vector to be written to.
-        const int  OA  ///< Order of spatial Accuracy.
+        pion_flt *dpdx,  ///< Slope vector to be written to.
+        const int  OA, ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   if (OA==OA1){ // first order accurate so zero slope.
@@ -946,7 +981,7 @@ int VectorOps_Cyl::SetSlope(
   } // 1st order.
   
   else if (OA==OA2) { // second order spatial accuracy.
-    double slpn[nv], slpp[nv];
+    pion_flt slpn[nv], slpp[nv];
     cell *cn=0,*cp=0;
     enum direction dp=NO,dn=NO;
     switch (d) {
@@ -987,7 +1022,7 @@ int VectorOps_Cyl::SetSlope(
 #ifdef FIX_TRACER_SLOPES_TO_DENSITY
     if (SimPM.ntracer>0) {
       for (int v=SimPM.ftr; v<nv; v++) {
-	//if (!GS.equalD(dpdx[v],0.0)) 
+	//if (!pconst.equalD(dpdx[v],0.0)) 
         //  cout <<"setting dpdx["<<v<<"] from "<<dpdx[v]<<" to zero.\n";
 	dpdx[v] =0.0;
       }
@@ -1008,20 +1043,21 @@ int VectorOps_Cyl::SetSlope(
 
 int VectorOps_Cyl::DivStateVectorComponent(
         const cell *c,    ///< current cell.
+        class GridBaseClass *grid, 
         const axes d,     ///< current coordinate axis we are looking along.
         const int nv,     ///< length of state vectors.
-        const double *fn, ///< Negative direction flux.
-        const double *fp, ///< Positive direction flux.
-        double *dudt      ///< Vector to assign divergence component to.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        pion_flt *dudt      ///< Vector to assign divergence component to.
         )
 {
-  enum direction dp;
-  switch (d) {
-   case Zcyl: dp=ZPcyl; break;
-   case Rcyl: dp=RPcyl; break;
-   case Tcyl: dp=TPcyl; break;
-   default: rep.error("Bad direction in DivStateVectorComponent",d);
-  }
+  //enum direction dp;
+  //switch (d) {
+  // case Zcyl: dp=ZPcyl; break;
+  // case Rcyl: dp=RPcyl; break;
+  // case Tcyl: dp=TPcyl; break;
+  // default: rep.error("Bad direction in DivStateVectorComponent",d);
+  //}
 
   /** \section Sign
    * Note that this function returns the negative of the i-th component of 

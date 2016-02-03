@@ -5,7 +5,7 @@
 ///
 /// Modifications:
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum) of arrays.
-///
+/// - 2015.01.26 JM: added get_rank_nproc() function, and pointer.
 
 #ifdef PARALLEL
 
@@ -15,14 +15,16 @@
 //
 // These tells code what to compile and what to leave out.
 //
-#include "../defines/functionality_flags.h"
-#include "../defines/testing_flags.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
 
 #include <list>
 
 #ifdef SILO
 #include <silo.h>
 #endif
+
+#include "grid/cell_interface.h"
 
 #define COMM_CELLDATA   1
 #define COMM_DOUBLEDATA 2
@@ -38,10 +40,19 @@ class comms_base {
   virtual int init(int *, ///< number of program arguments.
 		   char *** ///< character list of arguments.
 		   )=0;
+  
+  ///
+  /// Get this process's rank, and total number of processes.
+  ///
+  virtual int get_rank_nproc(
+        int *, ///< rank.
+	int *  ///< nproc
+	)=0;
 
   /** \brief Tell other processes that I am exiting, and either exit, or wait for the
    * others and then exit. */
   virtual int finalise()=0;
+
   /** \brief Tell other processes to abort! */
   virtual int abort()=0;
 
@@ -197,6 +208,9 @@ class comms_base {
 #endif
 
 };
+
+
+extern class comms_base *COMM;
 
 #endif // COMMS_H
 

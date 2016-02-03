@@ -21,7 +21,7 @@
 # include <pthread.h>
 #endif
 
-#include "constants.h"
+#include "reefa_constants.h"
 
 #if defined(_WIN32) && !defined(_CYGWIN)
 // Please note that the reason to conditionally use mutex vs.

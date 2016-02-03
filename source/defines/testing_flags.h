@@ -23,6 +23,7 @@
 //
 #define TEST_SECOND_ORDER
 
+
 //
 // Various defines for testing bits of the code.
 //
@@ -51,7 +52,7 @@
 /// and disables timestep limiting in first 3 steps.
 ///
 //#define RT_TEST_PROBS
-#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
+//#define RT_TESTING_OUTPUTCOL ///< output column density info to files.
 
 /// for the field loop advection test problem only.
 //#define CHECK_MAGP
@@ -60,6 +61,12 @@
 //#define BLAST_WAVE_CHECK
 
 
+//#define GRIDV2
 
+//
+// This is for dealing with tracer variables in parameter files and
+// snapshots.  Should be unset, so that we can use new tracer naming.
+//
+#define OLD_TRACER
 
 #endif // TESTING_FLAGS_H

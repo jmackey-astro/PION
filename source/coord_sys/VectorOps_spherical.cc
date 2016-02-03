@@ -16,12 +16,18 @@
 /// - 2013.07.19 JM: Added TRACER_SLOPES_CONSERVED_VARS option, but
 ///    it is more diffusive than primitive variables, so it is not
 ///    used.
-///
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
 
 /// ***************************************
 /// ******** SPHERICAL COORDINATES ********
 /// ***************************************
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
 
 #include "VectorOps_spherical.h"
 using namespace std;
@@ -30,8 +36,11 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-VectorOps_Sph::VectorOps_Sph(int n, double del)
-  : VectorOps_Cart(n,del), VectorOps_Cyl(n,del)
+VectorOps_Sph::VectorOps_Sph(
+      int n,
+      double del
+      )
+: VectorOps_Cart(n,del), VectorOps_Cyl(n,del)
 {
 #ifdef TESTING
   cout <<"Setting up 1D spherical coordinates with ndim="<<VOnd;
@@ -137,7 +146,8 @@ double VectorOps_Sph::CellInterface(
 double VectorOps_Sph::maxGradAbs(
         const cell *c,
         const int sv,
-        const int var
+        const int var,
+        class GridBaseClass *grid
         )
 {
 #ifdef TESTING
@@ -181,11 +191,12 @@ double VectorOps_Sph::maxGradAbs(
 // ##################################################################
 
 
-void VectorOps_Sph::Grad(
+void VectorOps_Sph::Gradient(
         const cell *c,
         const int sv,
         const int var,
-        double *grad
+        class GridBaseClass *grid,
+        pion_flt *grad
         )
 {
 #ifdef TESTING
@@ -224,10 +235,11 @@ void VectorOps_Sph::Grad(
 // ##################################################################
 
 // get divergence of vector quantity.
-double VectorOps_Sph::Div(
+double VectorOps_Sph::Divergence(
         const cell *c,
         const int sv,
-        const int *var
+        const int *var,
+        class GridBaseClass *grid
         )
 {
 
@@ -274,7 +286,8 @@ void VectorOps_Sph::Curl(
         const cell *c,
         const int vec,
         const int *var,
-        double *ans
+        class GridBaseClass *grid,
+        pion_flt *ans
         )
 {
 #ifdef TESTING
@@ -301,9 +314,10 @@ int VectorOps_Sph::SetEdgeState(
         const cell *c,       ///< Current Cell.
         const direction dir, ///< Add or subtract the slope depending on direction.
         const int nv,        ///< length of state vectors.
-        const double *dpdx,  ///< Slope vector.
-        double *edge,        ///< vector for edge state. 
-        const int OA         ///< Order of spatial Accuracy.
+        const pion_flt *dpdx,  ///< Slope vector.
+        pion_flt *edge,        ///< vector for edge state. 
+        const int OA,        ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   
@@ -361,8 +375,9 @@ int VectorOps_Sph::SetSlope(
         const cell *c, ///< Current Cell.
         const axes d,  ///< Which direction to calculate slope in.
         const int nv,  ///< length of state vectors.
-        double *dpdx,  ///< Slope vector to be written to.
-        const int  OA  ///< Order of spatial Accuracy.
+        pion_flt *dpdx,  ///< Slope vector to be written to.
+        const int  OA, ///< Order of spatial Accuracy.
+        class GridBaseClass *grid
         )
 {
   //
@@ -376,7 +391,7 @@ int VectorOps_Sph::SetSlope(
   // second order spatial accuracy.
   // 
   else if (OA==OA2) {
-    double slpn[nv], slpp[nv];
+    pion_flt slpn[nv], slpp[nv];
     cell *cn=0,*cp=0;
     enum direction dp=NO,dn=NO;
 
@@ -446,11 +461,12 @@ int VectorOps_Sph::SetSlope(
 
 int VectorOps_Sph::DivStateVectorComponent(
         const cell *c,    ///< current cell.
+        class GridBaseClass *,
         const axes d,     ///< current coordinate axis we are looking along.
         const int nv,     ///< length of state vectors.
-        const double *fn, ///< Negative direction flux.
-        const double *fp, ///< Positive direction flux.
-        double *dudt      ///< Vector to assign divergence component to.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        pion_flt *dudt      ///< Vector to assign divergence component to.
         )
 {
   ///

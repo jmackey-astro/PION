@@ -4,6 +4,7 @@
 #   Updated Vpath to point to the tagged release used for MHD code.
 # 2013.02.05 JM: updated to work with pion.
 # 2013.10.15 JM: Updated to use microphysics to get temperature/n(H).
+# 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup, constants.h
 #
 
 SHELL = /bin/bash
@@ -12,19 +13,24 @@ SHELL = /bin/bash
 .SUFFIXES: .cxx .o
 .SUFFIXES: .cpp .o
 
-# make has rules for making objects from .cc files, so I don't need them
-# explicitly, unless I am doing something unusual.
+#######################
+## COMPILATION RULES ##
+#######################
 .cxx.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cc.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
+#######################
 
 
 srcdir = ${CURDIR}/../../source
+
 bindir=.
+
 CODEDIR=${CURDIR}/../..
+
 VPATH=${srcdir}:\
 ${srcdir}/grid:\
 ${srcdir}/defines:\
@@ -37,11 +43,13 @@ ${srcdir}/spatial_solvers:\
 ${srcdir}/time_integrators:\
 ${srcdir}/microphysics:\
 ${srcdir}/raytracing:\
-${srcdir}/contrib
+${srcdir}/contrib\
+${srcdir}/tools
 
 
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
 
 
 # --------------------
@@ -57,11 +65,6 @@ OPTION += -DSILO
 OPTION += -DFITS
 
 #
-# 2010.12.13 JM: New calculation of projected field! (Thanks to Will Henney!)
-#
-OPTION += -DNEW_STOKES_CALC
-
-#
 # This is to multi-thread the pixel calculations.
 #
 MT=USE_THREADS
@@ -69,12 +72,9 @@ OPTION += -DTHREADS -D__WXGTK__
 #MT=NO_THREADS
 
 #MAKE_UNAME=JUROPA
-MAKE_UNAME=standard
-#MAKE_UNAME=imac
-#MAKE_UNAME=epona
-#MAKE_UNAME=stokes
-#MAKE_UNAME=aurora
-#MAKE_UNAME=furfur
+#MAKE_UNAME=standard
+#MAKE_UNAME=OSX
+#MAKE_UNAME=SUPERMUC
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -94,13 +94,15 @@ ifeq ($(MAKE_UNAME), standard)
   ifeq ($(IOMODE), USE_MPI)
     CXX = mpicxx
   endif
-  CXXFLAGS = -O3
-  #CXXFLAGS = -O0 -Wall -g
-  CXXFLAGS+= -Wno-unused-function
+  #CXXFLAGS = -O3
+  CXXFLAGS  = -O3 -Wall
+  #CXXFLAGS += -pg -g
+  CXXFLAGS += -Wno-unused-function
+  #OPTION += -DTESTING
 
 
   MYLIB = ${CODEDIR}/extra_libraries
-  INC = -I${MYLIB}/include
+  INC  = -I${MYLIB}/include
   INC += -I${srcdir}
   LDFLAGS += -lm
   # All libraries are in this path:
@@ -149,7 +151,7 @@ endif
 ###########################################
 # Specific Options for my imac
 ###########################################
-ifeq ($(MAKE_UNAME), imac)
+ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(IOMODE), USE_FILE_COMMS)
   CXX = g++
   endif
@@ -161,20 +163,62 @@ ifeq ($(MAKE_UNAME), imac)
   CXXFLAGS = -O0
 #CXXFLAGS += -Wall
   CXXFLAGS += -g    # enable debugging with gdb
-  CXXFLAGS += -arch x86_64
+  #CXXFLAGS += -arch x86_64
 
-  MYLIB = /Users/jmackey/Library/my_local_libs
-# for Silo, which can use HDF5.
-  INC += -I$(MYLIB)/silo_gcc64/include
-  INC += -I$(MYLIB)/cfitsio64/include
+  MYLIB = $(CURDIR)/../../extra_libraries
+  #MYLIB = /Users/jmackey/Library/my_local_libs
+  INC += -I$(MYLIB)/include
+  INC += -I${srcdir}
 
-# Libraries for fits, silo (with hdf5)
-  LDFLAGS += -L$(MYLIB)/cfitsio64/lib/ -lcfitsio
-  LDFLAGS += -L$(MYLIB)/silo_gcc64/lib/ -lsilo
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  # libs for CVODES
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
 endif
 #############################################
 
+######################## -- SuperMUC -- ##############################
+# Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
+######################################################################
+ifeq ($(MAKE_UNAME), SUPERMUC)
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX=icc
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpiCC
+  endif
+  CXXFLAGS = -O3 -Wall
+  #CXXFLAGS += -g #-wd981 -wd383
+  #CXXFLAGE = -O1 -Wall
+  CXXFLAGS += -DINTEL
+  #CXXFLAGS += -DTESTING
+
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+  MYLIB = ${CODEDIR}/extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${srcdir}
+  INC += -I/usr/local/sundials/2.4.0/include
+  INC += ${MKL_INC} ${MPI_INC}
+  LDFLAGS = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L/usr/local/sundials/2.4.0/lib
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
+  LDFLAGS += -lreadline
+  ifeq ($(MT), USE_THREADS)
+    LDFLAGS += -pthread
+  endif
+
+
+endif
+##################### -- SuperMUC -- #################################
 
 
 ##################################################
@@ -183,7 +227,16 @@ endif
 CXXFLAGS += $(OPTION)
 
 OBJECTS = \
-global.o \
+        constants.o \
+        timer.o \
+        mem_manage.o \
+        reporting.o \
+        command_line_interface.o \
+        interpolate.o \
+        MCMD_control.o \
+        setup_fixed_grid.o \
+        setup_fixed_grid_MPI.o \
+sim_params.o \
 cell_interface.o \
 comm_mpi.o \
 comm_files.o \
@@ -198,35 +251,44 @@ dataio_silo.o \
 dataio_silo_utility.o \
 dataio_silo_MPI.o \
 utility_fits_class.o \
+point_quantities.o \
 main_projection.o \
 sim_projection.o \
 image_io.o \
 VectorOps.o \
 VectorOps_spherical.o \
- cooling_SD93_cie.o         \
- hydrogen_recomb_Hummer94.o \
- hydrogen_mp.o              \
- hydrogen_photoion.o        \
- mp_explicit_H.o            \
- cvode_integrator.o         \
- mp_implicit_H.o            \
- mp_v2_aifa.o               \
- integrator.o               \
- cooling.o                  \
- microphysics.o             \
- microphysics_v1.o          \
- microphysics_lowZ.o        \
- mp_only_cooling.o          \
- mpv5_molecular.o           \
- mpv6_PureH.o               \
- mpv7_TwoTempIso.o
+  \
+  raytracer_base.o            \
+  raytracer_SC_pllel.o        \
+  raytracer_SC.o              \
+  \
+  microphysics_base.o         \
+  cooling_SD93_cie.o          \
+  hydrogen_recomb_Hummer94.o  \
+  hydrogen_mp.o               \
+  hydrogen_photoion.o         \
+  mp_explicit_H.o             \
+  cvode_integrator.o          \
+  mp_implicit_H.o             \
+  mp_v2_aifa.o                \
+  integrator.o                \
+  cooling.o                   \
+  microphysics.o              \
+  microphysics_v1.o           \
+  microphysics_lowZ.o         \
+  mp_only_cooling.o           \
+  mpv5_molecular.o            \
+  mpv6_PureH.o                \
+  mpv7_TwoTempIso.o           \
+  mpv8_StarBench_heatcool.o
 
         
 
 ifeq ($(MT), USE_THREADS)
-OBJECTS += logmessages.o threadpool.o threads.o
-VPATH +=:./andys_threads:./andys_threads/threadpool
-THREAD_INCLUDE=threads.h msvc_constants.h constants.h
+  OBJECTS += logmessages.o threadpool.o threads.o
+  VPATH +=:./andys_threads:./andys_threads/threadpool
+  THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/reefa_constants.h
+  #GLOBAL += andys_threads/threads.h andys_threads/msvc_constants.h reefa_constants.h
 endif
 
 projection: $(OBJECTS)
@@ -236,23 +298,26 @@ projection: $(OBJECTS)
 ################################
 # Andy's multi-threading files #
 ################################
-logmessages.o: logmessages.cxx logmessages.h constants.h msvc_constants.h threads.h
-threadpool.o: threadpool.cxx threadpool.h constants.h msvc_constants.h logmessages.h threads.h
-threads.o: threads.cxx msvc_constants.h constants.h threads.h
+logmessages.o: logmessages.cxx logmessages.h reefa_constants.h msvc_constants.h threads.h
+threadpool.o: threadpool.cxx threadpool.h reefa_constants.h msvc_constants.h logmessages.h threads.h
+threads.o: threads.cxx msvc_constants.h reefa_constants.h threads.h
 
 #################################
 # Stuff From my Sim Code Source #
 #################################
-global.o: 	  global.cc ${GLOBAL}
+
+reporting.o:   tools/reporting.cpp ${GLOBAL}
+mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
+timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
+command_line_interface.o: tools/command_line_interface.cpp ${GLOBAL}
+constants.o: constants.cpp ${GLOBAL}
+sim_params.o: 	  sim_params.cpp ${GLOBAL}
 
 cell_interface.o: cell_interface.cc  cell_interface.h ${GLOBAL}
-
 uniform_grid.o:   uniform_grid.cc  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
-
 uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
 
 VectorOps.o:  VectorOps.cc  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
-
 VectorOps_spherical.o:  VectorOps_spherical.cc  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
 
@@ -328,9 +393,13 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 ###############################
 # Stuff Specific to this code #
 ###############################
-sim_projection.o:	sim_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h
-main_projection.o:	main_projection.cc sim_projection.h ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
-image_io.o:		image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
+
+point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL} ${THREAD_INCLUDE}
+sim_projection.o: sim_projection.cc sim_projection.h point_quantities.h \
+                  ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
+main_projection.o: main_projection.cc sim_projection.h point_quantities.h \
+                  ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
+image_io.o: image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 
 clean:
 	rm -f *.o projection

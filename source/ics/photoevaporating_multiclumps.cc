@@ -1,16 +1,15 @@
-/** \file photoevaporating_multiclumps.cc
- * 
- * File for setting up photo-evaporation of many random clumps and some
- * strategically positioned clumps.
- *
- * Modifications:\n
- *  - 2010-01-20 JM: line 714, corrected mass to be rho*(1+delta) [from rho*delta]
- *  - 2010-01-27 JM: comments
- *  - 2010-02-08 JM: Changed tracer calculation in clumps_set_dens() so that
- *      it gives the right answer (if all clumps have the same tracer value).
- *  - 2010-02-10 JM: Added isothermal euler equations.
- * */
+/// \file photoevaporating_multiclumps.cc
+/// \author Jonathan Mackey
 ///
+/// File for setting up photo-evaporation of many random clumps and some
+/// strategically positioned clumps.
+///
+/// Modifications:\n
+///  - 2010-01-20 JM: line 714, corrected mass to be rho*(1+delta) [from rho*delta]
+///  - 2010-01-27 JM: comments
+///  - 2010-02-08 JM: Changed tracer calculation in clumps_set_dens() so that
+///      it gives the right answer (if all clumps have the same tracer value).
+///  - 2010-02-10 JM: Added isothermal euler equations.
 /// - 2010.12.15 JM: Added get_alternate_ambient_params(rp, &amb_data) and 
 ///    add_alternate_ambient_data_to_grid(ggg, &amb_data) to allow for the 
 ///    nearest 10th of the grid to the negative x-boundary to have a
@@ -21,10 +20,27 @@
 /// - 2011.01.06 JM: fixed memory leak.
 /// - 2012.02.25 JM: Added optional velocity vector for clump.
 /// - 2012.04.23 JM: Added optional density gradient in ambient medium.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "icgen.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
 #include <sstream>
 #include <algorithm>
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 IC_photevap_multi_clumps::IC_photevap_multi_clumps()
@@ -35,6 +51,13 @@ IC_photevap_multi_clumps::IC_photevap_multi_clumps()
   sc_data.used = false;
   amb_data.used = false;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 IC_photevap_multi_clumps::~IC_photevap_multi_clumps()
 {
@@ -51,6 +74,13 @@ IC_photevap_multi_clumps::~IC_photevap_multi_clumps()
     amb_data.ambient = mem.myfree(amb_data.ambient);
   }
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
 int IC_photevap_multi_clumps::setup_data(class ReadParams *rrp, ///< pointer to parameter list.
@@ -116,6 +146,13 @@ int IC_photevap_multi_clumps::setup_data(class ReadParams *rrp, ///< pointer to 
 
   return err;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 int IC_photevap_multi_clumps::get_ambient_params(class ReadParams *rparams,
 						 struct ambient_data *amb
@@ -403,11 +440,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(class GridBaseClass *ggg,
     // centred on the source (srcpos).  cloudcentre is set by (PEC_xpos,PEC_ypos,PEC_zpos).
     //
     if (amb->radial_profile!=0) {
-#ifdef GEOMETRIC_GRID
-      dist = grid->distance_vertex2cell(cloudcentre,c);
-#else  // GEOMETRIC_GRID
-      dist = GS.distance(dpos,cloudcentre,SimPM.ndim);
-#endif // GEOMETRIC_GRID
+      dist = gg->distance_vertex2cell(cloudcentre,c);
       //cout <<"dist="<<dist<<", rad="<<amb->cloudradius<<", rho="<<c->P[RO];
       //cout <<", multiplier="<<exp(amb->radial_profile*log(amb->cloudradius/dist))<<"\n";
       //
@@ -547,7 +580,7 @@ int IC_photevap_multi_clumps::get_random_clump_params(class ReadParams *rparams,
   //cout <<"\tvolume="<<volume;
   if (ndim>2) volume *= SimPM.Range[ZZ]; //-rcd->border[ZN]-rcd->border[ZP];
   //cout <<"\tvolume="<<volume;
-  rcd->total_mass = rcd->density*volume*GS.m_p();
+  rcd->total_mass = rcd->density*volume*pconst.m_p();
   cout <<"Mean number density for Random Clumps:"<<rcd->density<<", giving total mass="<<rcd->total_mass<<" grams.\n";
 
   //
@@ -1206,7 +1239,7 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
 
 void IC_photevap_multi_clumps::print_clump(struct clump *rc)
 {
-  cout <<"--clump overdensity:"<<rc->overdensity<<"  mass/Msun:"<<rc->mass/GS.Msun()<<endl;
+  cout <<"--clump overdensity:"<<rc->overdensity<<"  mass/Msun:"<<rc->mass/pconst.Msun()<<endl;
   rep.printVec("Centre",rc->centre,SimPM.ndim);
   rep.printVec("Radius",rc->size,SimPM.ndim);
   rep.printVec("Angles",rc->ang,SimPM.ndim);

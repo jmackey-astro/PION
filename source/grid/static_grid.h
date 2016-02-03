@@ -51,11 +51,16 @@
 #define STATIC_GRID_H
 #ifdef GRIDV2
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 /// I should work on this more.
 
 #include <list>
 using namespace std;
-#include "global.h"
+
 #include "stellar_wind_BC.h"
 #include "coord_sys/VectorOps.h"
 #include "coord_sys/VectorOps_spherical.h"

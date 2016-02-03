@@ -17,6 +17,11 @@
 #ifndef EQNS_HYDRO_ADIABATIC_H
 #define EQNS_HYDRO_ADIABATIC_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include "eqns_base.h"
 ///
 /// Class describing the Euler Equations of Inviscid Hydrodynamics.
@@ -34,18 +39,20 @@ class eqns_Euler :  virtual public eqns_base {
   ///
   ///  Converts from primitive to conserved variables. 
   ///
-  virtual void PtoU(const double *, ///< pointer to Primitive variables.
-		    double *,       ///< pointer to conserved variables.
-		    const double    ///< Gas constant gamma.
-		    );
+  virtual void PtoU(
+      const pion_flt *, ///< pointer to Primitive variables.
+      pion_flt *,       ///< pointer to conserved variables.
+      const double    ///< Gas constant gamma.
+      );
   
   ///
   ///  convert from conserved to primitive variables. 
   ///
-  virtual int UtoP(const double *, ///< pointer to conserved variables.
-		    double *, ///< pointer to Primitive variables.
-		    const double    ///< Gas constant gamma.
-		    );
+  virtual int UtoP(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// Converts from primitive and conserved variables to corresponding
@@ -53,35 +60,39 @@ class eqns_Euler :  virtual public eqns_base {
   ///
   /// This assumes that the direction has been set correctly.
   ///
-  virtual void PUtoFlux(const double *, ///< pointer to Primitive variables.
-			const double *, ///< pointer to conserved variables.
-			double *  ///< Pointer to flux variable.
-			);
+  virtual void PUtoFlux(
+      const pion_flt *, ///< pointer to Primitive variables.
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *  ///< Pointer to flux variable.
+      );
 
   ///
   /// Converts from conserved variables to flux. 
   ///
-  virtual void UtoFlux(const double *, ///< Pointer to conserved variables state vector.
-		       double *,       ///< Pointer to flux variable state vector.
-		       const double    ///< Gas constant gamma.
-		       );
+  virtual void UtoFlux(
+      const pion_flt *, ///< Pointer to conserved variables state vector.
+      pion_flt *,       ///< Pointer to flux variable state vector.
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// Calculate hydrodynamic sound speed.
   /// \retval ch(>0) Success
   /// \retval -1     Failure
   ///
-  virtual double chydro(const double *, ///< Pointer to primitive variables.
-			const double    ///< Gas constant gamma.
-			);
+  virtual double chydro(
+      const pion_flt *, ///< Pointer to primitive variables.
+      const double    ///< Gas constant gamma.
+      );
   
   ///
   /// Returns the fastest wavespeed for the relevant equations.
   /// For eqns_Euler it returns the hydro speed.
   ///
-  virtual inline double maxspeed(const double *p, ///< Pointer to primitive variables.
-				 const double g   ///< Gas constant gamma.
-				 ) {return(chydro(p,g));}
+  virtual inline double maxspeed(
+      const pion_flt *p, ///< Pointer to primitive variables.
+      const double g   ///< Gas constant gamma.
+      ) {return(chydro(p,g));}
 
   ///
   ///  Calculates u* given p* and a pre-wave state.
@@ -93,12 +104,13 @@ class eqns_Euler :  virtual public eqns_base {
   ///\retval 0 success
   ///\retval 1 failure
   ///
-  int HydroWave(int,            ///< whether it is a left (XN) or right (XP) moving wave.
-		const double,   ///< The post-wave pressure, p*
-		const double *, ///< pointer to the pre-wave Primitive state vector.
-		double *,       ///< pointer to post-wave velocity variable.
-		const double    ///< Gas constant gamma.
-		);
+  int HydroWave(
+      int,            ///< whether it is a left (XN) or right (XP) moving wave.
+      const pion_flt,   ///< The post-wave pressure, p*
+      const pion_flt *, ///< pointer to the pre-wave Primitive state vector.
+      pion_flt *,       ///< pointer to post-wave velocity variable.
+      const double    ///< Gas constant gamma.
+      );
   
   ///
   ///  Calculates u* and rho* given p* and a pre-wave state.
@@ -112,60 +124,67 @@ class eqns_Euler :  virtual public eqns_base {
   ///\retval 0 success
   ///\retval 1 failure
   ///
-  int HydroWaveFull(int,            ///< whether it is a left (XN) or right (XP) moving wave.
-		    const double,   ///< The post-wave pressure, p*
-		    const double *, ///< pointer to the pre-wave Primitive state vector.
-		    double *,       ///< pointer to post-wave velocity variable.
-		    double *,       ///< pointer to post-wave density variable.
-		    const double    ///< Gas constant gamma.
-		    );
+  int HydroWaveFull(
+      int,            ///< whether it is a left (XN) or right (XP) moving wave.
+      const pion_flt,   ///< The post-wave pressure, p*
+      const pion_flt *, ///< pointer to the pre-wave Primitive state vector.
+      pion_flt *,       ///< pointer to post-wave velocity variable.
+      pion_flt *,       ///< pointer to post-wave density variable.
+      const double    ///< Gas constant gamma.
+      );
   
   ///
   /// Returns Internal Energy (per unit mass, so 'Temperature'), given
   /// primitive variable vector.
   ///
-  virtual double eint(const double *, ///< Primitive State Vector.
-		      const double    ///< gas EOS gamma.
-		      );
+  virtual double eint(
+      const pion_flt *, ///< Primitive State Vector.
+      const double    ///< gas EOS gamma.
+      );
 
   ///
   /// Returns Enthalpy (per unit mass), given primitive variable
   /// vector.
   ///
-  virtual double Enthalpy(const double *, ///< Primitive State Vector.
-			  const double ///< gas EOS gamma.
-			  );
+  virtual double Enthalpy(
+      const pion_flt *, ///< Primitive State Vector.
+      const double ///< gas EOS gamma.
+      );
 
   ///
   /// Returns Total Energy (per unit volume), given primitive variable
   /// vector.
   ///
-  virtual double Etot(const double *, ///< Primitive State Vector.
-		      const double    ///< gas EOS gamma.
-		      );
+  virtual double Etot(
+      const pion_flt *, ///< Primitive State Vector.
+      const double    ///< gas EOS gamma.
+      );
 
   ///
   /// Returns Total Pressure, given primitive variable vector.
   ///
-  virtual double Ptot(const double *, ///< Primitive State Vector.
-		      const double    ///< gas EOS gamma.
-		      );
+  virtual double Ptot(
+      const pion_flt *, ///< Primitive State Vector.
+      const double    ///< gas EOS gamma.
+      );
 
   ///
   /// Given a pressure ratio and initial density, calculate adiabatic
   /// final density.
   ///
-  virtual double AdiabaticRho(const double, ///< New to Old pressure ratio
-			      const double, ///< Old Density
-			      const double  ///< gas EOS gamma.
-			      );
+  virtual double AdiabaticRho(
+      const double, ///< New to Old pressure ratio
+      const double, ///< Old Density
+      const double  ///< gas EOS gamma.
+      );
 
   ///
   /// Set Values for mean velocity, pressure, density.
   ///
-  virtual void SetAvgState(const double *, ///< Mean Primitive var. state vector
-			   const double ///< Gas constant gamma.
-			   );
+  virtual void SetAvgState(
+      const pion_flt *, ///< Mean Primitive var. state vector
+      const double ///< Gas constant gamma.
+      );
 
 
  protected:

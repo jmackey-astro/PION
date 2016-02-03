@@ -144,6 +144,10 @@
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 /// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
 ///    cooling rates per cell for postprocessing.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2015.08.05 JM: more pion_flt datatype changes.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -161,24 +165,32 @@
 
 
 
-// ##################################################################
-// ##################################################################
-
-//#define BETELGEUSE
-
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
+// ##################################################################
+// ##################################################################
+
+
 #ifndef EXCLUDE_MPV3
 
+//#define BETELGEUSE
 //#define MPV3_DEBUG
 
-#include "mp_explicit_H.h"
-#include "global.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/mp_explicit_H.h"
+
 using namespace std;
 
 //#define HIGHDENS_CUTOFF ///< decreases CIE cooling exponentially with exp(-(nH/1000)^2)
 
-//#define HE_INERT
+#define HE_INERT
 
 //
 // The timestep-limiting is set by ifdef in
@@ -266,7 +278,17 @@ void mp_explicit_H::get_problem_size(
 mp_explicit_H::mp_explicit_H(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
           const std::string &trtype,  ///< List of what the tracer variables mean.
+
+# else
+
+          const std::string *trtype,  ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
           struct which_physics *ephys  ///< extra physics stuff.
 	  )
 :
@@ -280,6 +302,9 @@ mp_explicit_H::mp_explicit_H(
   // ----------------------------------------------------------------
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last ";
   cout <<ntracer<<" variables in state vec.\n";
+
+#ifdef OLD_TRACER
+
   //
   // first 6 chars are the type, then list of tracers, each 6 chars long.
   //
@@ -288,11 +313,24 @@ mp_explicit_H::mp_explicit_H(
     cout <<"warning: string doesn't match ntracer.  ";
     cout <<"make sure this looks ok: "<<trtype<<"\n";
   }
+
+# else
+
+  //
+  // first 6 chars are the type, then list of tracers, each 6 chars long.
+  //
+  int len = ntracer;
+
+#endif // OLD_TRACER
+
   //
   // Find H+ fraction in tracer variable list.
   //
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s; pv_Hp=-1;
+
+#ifdef OLD_TRACER
+
   for (int i=0;i<len;i++) {
     s = trtype.substr(6*(i+1),6); // Get 'i'th tracer variable.
     if (s=="H1+___" || s=="HII__") {
@@ -302,6 +340,21 @@ mp_explicit_H::mp_explicit_H(
   }
   if (pv_Hp<0)
     rep.error("No H ionisation fraction found in tracer list",trtype);
+
+# else
+
+  for (int i=0;i<len;i++) {
+    s = trtype[i]; // Get 'i'th tracer variable.
+    if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
+      pv_Hp = ftr+i;
+      cout <<"\t\tGot H+ as the "<<pv_Hp<<"th element of P[] (zero offset).\n";
+    }
+  }
+  if (pv_Hp<0)
+   rep.error("No H ionisation fraction found in tracer list",trtype[0]);
+
+#endif // OLD_TRACER
+
   // ================================================================
   // ================================================================
 
@@ -309,8 +362,8 @@ mp_explicit_H::mp_explicit_H(
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
   // ----------------------------------------------------------------
-  k_B = GS.kB();  // Boltzmann constant.
-  m_p = GS.m_p(); // Proton mass.
+  k_B = pconst.kB();  // Boltzmann constant.
+  m_p = pconst.m_p(); // Proton mass.
 
   //
   // Set EP to point to SimPM.EP struct passed to constructor.
@@ -329,6 +382,8 @@ mp_explicit_H::mp_explicit_H(
   JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
   JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
 #ifdef HE_INERT
+  // JM_NION is the number of neutral atoms per H atom
+  JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
   JM_NELEC = 1.0; // if He is always neutral.
 #endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
@@ -443,51 +498,47 @@ mp_explicit_H::mp_explicit_H(
   // ---------- output cooling rates for various temperatures -------
   // ----------------------------------------------------------------
 #ifdef MPV3_DEBUG
-#ifdef PARALLEL
-  if (mpiPM.myrank==0) {
-#endif
-    double p[nv_prim];
-    p[RO]=2.338e-24; p[PG]=1.0e-12;
-    p[pv_Hp] = 0.99;
-    lv_nH=1.0e0;
+  double p[nv_prim];
+  p[RO]=2.338e-24; p[PG]=1.0e-12;
+  p[pv_Hp] = 0.99;
+  lv_nH=1.0e0;
 
-    string opfile("cooling_mp_explicit_H.txt");
-    ofstream outf(opfile.c_str());
-    if(!outf.is_open()) rep.error("couldn't open outfile",1);
-    outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999,";
-    outf <<" x=0.00001, x=0.5 (n=1 per cc)\n";
-    outf.setf( ios_base::scientific );
-    outf.precision(6);
-    double T=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
-    do {
-      p[pv_Hp] = 0.99999;
-      Set_Temp(p,T,junk);
-      NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
-      NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
-      ydot(0,y_in,y_out,0);
-      Edi = NV_Ith_S(y_out,lv_eint);
+  string opfile("cooling_mp_explicit_H.txt");
+  ofstream outf(opfile.c_str());
+  if(!outf.is_open()) rep.error("couldn't open outfile",1);
+  outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999,";
+  outf <<" x=0.00001, x=0.5 (n=1 per cc)\n";
+  outf.setf( ios_base::scientific );
+  outf.precision(6);
+  double T=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
+  do {
+    p[pv_Hp] = 0.99999;
+    Set_Temp(p,T,junk);
+    NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
+    NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
+    ydot(0,y_in,y_out,0);
+    Edi = NV_Ith_S(y_out,lv_eint);
 
-      p[pv_Hp] = 0.05;
-      Set_Temp(p,T,junk);
-      NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
-      NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
-      ydot(0,y_in,y_out,0);
-      Edpi = NV_Ith_S(y_out,lv_eint);
+    p[pv_Hp] = 0.05;
+    Set_Temp(p,T,junk);
+    NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
+    NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
+    ydot(0,y_in,y_out,0);
+    Edpi = NV_Ith_S(y_out,lv_eint);
 
-      p[pv_Hp] = 0.00001;
-      Set_Temp(p,T,junk);
-      NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
-      NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
-      ydot(0,y_in,y_out,0);
-      Edn = NV_Ith_S(y_out,lv_eint);
+    p[pv_Hp] = 0.00001;
+    Set_Temp(p,T,junk);
+    NV_Ith_S(y_in,lv_H0)   = 1.0-p[pv_Hp];
+    NV_Ith_S(y_in,lv_eint) = p[PG]/gamma_minus_one;
+    ydot(0,y_in,y_out,0);
+    Edn = NV_Ith_S(y_out,lv_eint);
 
-      outf << T <<"\t"<< Edi/lv_nH/lv_nH <<"  "<< Edn/lv_nH/lv_nH <<"  "<< Edpi/lv_nH/lv_nH <<"\n";
-      T *=1.05;
-    } while (T<min(1.0e9,EP->MaxTemperature));
-    outf.close();  
-#ifdef PARALLEL
-  }
-#endif 
+    outf << T <<"\t"<< Edi/lv_nH/lv_nH;
+    outf <<"  "<< Edn/lv_nH/lv_nH;
+    outf <<"  "<< Edpi/lv_nH/lv_nH <<"\n";
+    T *=1.05;
+  } while (T<min(1.0e9,EP->MaxTemperature));
+  outf.close();  
 #endif //Debug
   // ================================================================
   // ================================================================
@@ -614,8 +665,8 @@ int mp_explicit_H::Tr(const string t)
 // Set the properties of a multifrequency ionising radiation source.
 //
 int mp_explicit_H::set_multifreq_source_properties(
-                      const struct rad_src_info *rsi
-                      )
+      const struct rad_src_info *rsi
+      )
 {
   //
   // Some sanity checks:
@@ -686,7 +737,7 @@ double mp_explicit_H::get_temperature(
 
 
 int mp_explicit_H::convert_prim2local(
-          const double *p_in, ///< primitive vector from grid cell (length nv_prim)
+          const pion_flt *p_in, ///< primitive vector from grid cell (length nv_prim)
           double *p_local
           )
 {
@@ -756,10 +807,10 @@ int mp_explicit_H::convert_prim2local(
 
 
 int mp_explicit_H::convert_local2prim(
-            const double *p_local,
-            const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
-            double *p_out       ///< updated primitive vector for grid cell (length nv_prim)
-            )
+      const double *p_local,
+      const pion_flt *p_in, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *p_out       ///< updated primitive vector for grid cell (length nv_prim)
+      )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
 
@@ -767,8 +818,12 @@ int mp_explicit_H::convert_local2prim(
   p_out[pv_Hp] = 1.0-p_local[lv_H0];
 
 #ifdef MPV3_DEBUG
-  if (p_out[pv_Hp]<0.0 || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp]))
+  if (p_out[pv_Hp]<-10.0*JM_RELTOL || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp])) {
+    rep.printVec("p_in",p_in, nv_prim);
+    rep.printVec("p_out",p_out, nv_prim);
+    rep.printVec("p_local",p_local, nvl);
     rep.error("Bad output H+ value in mp_explicit_H::convert_local2prim",p_out[pv_Hp]-1.0);
+  }
   if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
     rep.error("Bad output pressure in mp_explicit_H::convert_local2prim",p_out[PG]);
 #endif // MPV3_DEBUG
@@ -776,7 +831,7 @@ int mp_explicit_H::convert_local2prim(
   //
   // Set xHp to be within the required range (not too close to zero or 1).
   //
-  p_out[pv_Hp] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_out[pv_Hp]));
+  p_out[pv_Hp] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_Hp])));
 
   //
   // Set output pressure to be within required temperature range (use the 
@@ -808,7 +863,7 @@ int mp_explicit_H::convert_local2prim(
 // ##################################################################
 
 double mp_explicit_H::Temperature(
-            const double *pv, ///< primitive vector
+            const pion_flt *pv, ///< primitive vector
             const double      ///< eos gamma
             )
 {
@@ -833,10 +888,10 @@ double mp_explicit_H::Temperature(
 
 
 int mp_explicit_H::Set_Temp(
-          double *p_pv,   ///< primitive vector.
-          const double T, ///< temperature
-          const double    ///< eos gamma.
-          )
+      pion_flt *p_pv,   ///< primitive vector.
+      const double T, ///< temperature
+      const double    ///< eos gamma.
+      )
 {
   //
   // Check for negative pressure.  If density<0 then we should bug
@@ -860,8 +915,8 @@ int mp_explicit_H::Set_Temp(
 
 
 int mp_explicit_H::TimeUpdateMP(
-        const double *p_in,   ///< Primitive Vector to be updated.
-        double *p_out,        ///< Destination Vector for updated values.
+        const pion_flt *p_in,   ///< Primitive Vector to be updated.
+        pion_flt *p_out,        ///< Destination Vector for updated values.
         const double dt,      ///< Time Step to advance by.
         const double,         ///< EOS gamma.
         const int,            ///< Switch for what type of integration to use.
@@ -882,14 +937,14 @@ int mp_explicit_H::TimeUpdateMP(
 
 
 int mp_explicit_H::TimeUpdateMP_RTnew(
-          const double *p_in, ///< Primitive Vector to be updated.
+          const pion_flt *p_in, ///< Primitive Vector to be updated.
           const int N_heat,   ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &heat_src,
             ///< list of UV-heating column densities and source properties.
           const int N_ion,    ///< number of ionising radiation sources.
           const std::vector<struct rt_source_data> &ion_src,
             ///< list of ionising src column densities and source properties.
-          double *p_out,  ///< Destination Vector for updated values
+          pion_flt *p_out,  ///< Destination Vector for updated values
                           ///< (can be same as first Vector.
           const double dt,   ///< Time Step to advance by.
           const double,   ///< EOS gamma.
@@ -963,7 +1018,7 @@ int mp_explicit_H::TimeUpdateMP_RTnew(
 
 
 double mp_explicit_H::timescales(
-          const double *p_in, ///< Current cell state vector.
+          const pion_flt *p_in, ///< Current cell state vector.
           const double,   ///< EOS gamma.
           const bool, ///< set to 'true' if including cooling time.
           const bool, ///< set to 'true' if including recombination time.
@@ -994,15 +1049,15 @@ double mp_explicit_H::timescales(
 /// Default setting is DT02, which limits by 0.25/ydot (and not by E/Edot)
 ///
 double mp_explicit_H::timescales_RT(
-                    const double *p_in, ///< Current cell state vector.
-                    const int N_heat,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &heat_src,
-                    ///< list of UV-heating column densities and source properties.
-                    const int N_ion,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &ion_src,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    )
+        const pion_flt *p_in, ///< Current cell state vector.
+        const int N_heat,      ///< Number of UV heating sources.
+        const std::vector<struct rt_source_data> &heat_src,
+        ///< list of UV-heating column densities and source properties.
+        const int N_ion,      ///< number of ionising radiation sources.
+        const std::vector<struct rt_source_data> &ion_src,
+        ///< list of ionising src column densities and source properties.
+        const double   ///< EOS gamma.
+        )
 {
   int err=0;
   //
@@ -1085,7 +1140,7 @@ double mp_explicit_H::timescales_RT(
 
 
 double mp_explicit_H::total_cooling_rate(
-        const double *p_in, ///< primitive input state vector.
+        const pion_flt *p_in, ///< primitive input state vector.
         const int N_heat, ///< Number of UV heating sources.
         const std::vector<struct rt_source_data> &heat_src,
         ///< list of UV-heating column densities and source properties.
@@ -1121,7 +1176,7 @@ double mp_explicit_H::total_cooling_rate(
 
 double mp_explicit_H::get_recombination_rate(
           const int,          ///< ion index in tracer array (optional).
-          const double *p_in, ///< input state vector (primitive).
+          const pion_flt *p_in, ///< input state vector (primitive).
           const double g      ///< EOS gamma (optional)
           )
 {
@@ -1154,7 +1209,7 @@ double mp_explicit_H::get_recombination_rate(
 
 
 void mp_explicit_H::setup_radiation_source_parameters(
-        const double *p_in, ///< primitive input state vector.
+        const pion_flt *p_in, ///< primitive input state vector.
         double *P,  ///< local input state vector (x_in,E_int)
         const int N_heat, ///< Number of UV heating sources.
         const std::vector<struct rt_source_data> &heat_src,
@@ -1211,7 +1266,7 @@ void mp_explicit_H::setup_radiation_source_parameters(
       if (heat_src[v].type == RT_SRC_SINGLE) {
 #ifdef MPV3_DEBUG
         if (P[lv_H0]>0.01) {
-          cout <<"setup_rad_src_params: heating:  ds="<<heat_src[v].DelCol/p_in[RO];
+          cout <<"setup_rad_src_params: heating:  ds="<<heat_src[v].DelCol[0]/p_in[RO];
           cout <<", mpv_Vshell="<<heat_src[v].Vshell<<"\n";
         }
 #endif // MPV3_DEBUG
