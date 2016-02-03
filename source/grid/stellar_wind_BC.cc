@@ -382,6 +382,7 @@ void stellar_wind::set_wind_cell_reference_state(
       wc->p[SimPM.ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
   }
 
+//#define TESTING
 #ifdef TESTING
   cout << " \t\t pg=" << wc->p[PG];
 #endif
@@ -390,6 +391,9 @@ void stellar_wind::set_wind_cell_reference_state(
   // Set the minimum temperature to be 10K in the wind...
   //
   if (MP) {
+#ifdef TESTING
+  cout <<",  Tw= "<<MP->Temperature(wc->p,SimPM.gamma);
+#endif
     if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
 #ifdef TESTING
       cout <<"... resetting temperature in wind. pg=";
@@ -487,6 +491,7 @@ int stellar_wind::set_cell_values(
       for (int v=0;v<SimPM.nvar;v++)
         WS->wcells[i]->c->Ph[v] = WS->wcells[i]->p[v];
       //cout <<"TW="<<WS->Tw<<",  ftr val="<<WS->wcells[i]->c->Ph[SimPM.ftr]<<"\n";
+      //cout <<"TW="<<WS->Tw<<",  str val="<<WS->wcells[i]->c->Ph[SimPM.ftr+1]<<"\n";
     }
   }
 

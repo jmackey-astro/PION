@@ -53,6 +53,8 @@
 ///    wrong place.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.28 JM: Removed parallel code, put into new class.
+/// - 2015.02.13 JM: read_fits_image_to_data() no longer allocates
+///    memory for the image, so I do it in read_fits_image().
 
 
 #ifdef FITS
@@ -810,7 +812,11 @@ int DataIOFits::put_variable_into_data_array(
 int DataIOFits::read_fits_image(fitsfile *ff, string name, double *localxmin, double *globalxmin, int *npt, long int ntot)
 {
   double *data=0;
-  int err = utility_fitsio::read_fits_image_to_data(ff, name, SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot, &data);
+  data = mem.myalloc(data,ntot);
+
+  int err = utility_fitsio::read_fits_image_to_data(ff, name,
+      SimPM.ndim, localxmin, globalxmin, gp->DX(), npt, ntot,
+      TDOUBLE, static_cast<void *>(data));
   if (err) rep.error(" DataIOFits::read_fits_image() Failed to read image from file",err);
 
   // Choose variable to read to, based on name string, whose hdu is the currently open hdu.

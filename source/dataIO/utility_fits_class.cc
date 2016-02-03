@@ -27,6 +27,7 @@
 ///    need the HDU's name; without a name it will default to hdu1.
 /// - 2013.04.16 JM: some debugging messages and new comments added.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.02.13 JM: improved read_fits_image_to_data() quite a lot.
 
 #ifdef FITS
 
@@ -202,15 +203,16 @@ int utility_fitsio::read_fits_image_to_data(
     const double *l_xmin,  ///< local xmin (subdomain).
     const double *g_xmin,  ///< global xmin (full domain).
     const double pix_size, ///< pixel size
-    const int *npt,  ///< number of pixels to read in each direction
-    const long int ntot,  ///< total number of pixels to be read.
-    double **data          ///< data array to write to.
+    const int *npt,      ///< number of pixels to read in each direction
+    const long int ntot, ///< total number of pixels to be read.
+    const int datatype,  ///< FITS datatype (e.g. TDOUBLE or TFLOAT)
+    void *input_data     ///< data array to write to.
     )
 {  
-  //
-  // Allocate memory for data array.
-  //
-  *data = mem.myalloc(*data,ntot);
+  if (datatype!=TDOUBLE && datatype!=TFLOAT) {
+    cout <<"read_fits_image_to_data() only double or float.";
+    return 1;
+  }
 
   int hdu_num=1; // default to the first hdu.
 
@@ -224,12 +226,12 @@ int utility_fitsio::read_fits_image_to_data(
   long int inc[ndim];
   long int npix=1;
 
-  for (int i=0;i<SimPM.ndim;i++) {
+  for (int i=0;i<ndim;i++) {
     inc[i] = 1;
     fpix[i] = static_cast<long int>((l_xmin[i]-g_xmin[i])*ONE_PLUS_EPS/pix_size) +1;
     lpix[i] = fpix[i] + npt[i] -1; // -1 because it's inclusive: fpix,fpix+1,...,lpix
     npix *= (lpix[i]-fpix[i]+1);  // +1 because of previous line.
-    //    cout <<"fpix[i],lpix[i] = "<<fpix[i]<<", "<<lpix[i]<<"\n";
+    cout <<"fpix[i],lpix[i] = "<<fpix[i]<<", "<<lpix[i]<<"\n";
   }
   if (npix != ntot) rep.error("Pixel counting failed in read_fits_image()",npix-ntot);
 
@@ -246,38 +248,42 @@ int utility_fitsio::read_fits_image_to_data(
   // We shouldn't need to move to the hdu, b/c we should already be there, but 
   // this is just an extra layer of checking.
   //
+  int err = 0;
   if (name != "") {
     char keyval[256];
     strcpy(keyval,name.c_str());
-    int err = fits_movnam_hdu(ff, ANY_HDU, keyval, hdu_num, &status);
+    err = fits_movnam_hdu(ff, ANY_HDU, keyval, hdu_num, &status);
+    if(status) {fits_report_error(stderr,status);}
     if (err) {
       // If can't find variable, set them all to zero.
       if(status) {fits_report_error(stderr,status);}
       fits_clear_errmsg(); status=0;
-      cerr <<"utility_fitsio::read_fits_image() ";
-      cerr <<"couldn't get data for variable "<< name;
-      cerr <<"; will set data to zero and return error code.\n";
-      for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
+      cout <<"utility_fitsio::read_fits_image() couldn't get data ";
+      cout <<"for variable "<< name;
+      cout <<"; will return error code.\n";
       return err;
     }
   }
   else {
-    int err = ffmahd(ff,hdu_num,0,&status);
+    err = ffmahd(ff,hdu_num,0,&status);
+    if (status) {fits_report_error(stderr,status); return status;}
     if (err) {
-      // If can't move to a hdu, then return an error
-      if(status) {fits_report_error(stderr,status);}
-      fits_clear_errmsg(); status=0;
-      cerr <<"utility_fitsio::read_fits_image() ";
-      cerr <<"couldn't get data for HDU# "<< hdu_num;
-      cerr <<"; will set data to zero and return error code.\n";
-      for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
+      cout <<"problem with ffmahd, err="<<err<<"\n";
       return err;
     }
   }
+  
+  void *nulval=0;
+  double dnull = -1.0e20; 
+  float  fnull = -1.0e20;
+  if (datatype==TDOUBLE) nulval = static_cast<void *>(&dnull);
+  else                   nulval = static_cast<void *>(&fnull);
 
-  double nulval = -1.e99; int anynul=0;
-  fits_read_subset(ff, TDOUBLE, fpix, lpix, inc, &nulval, (*data), &anynul, &status);
+  int anynul=0;
+  fits_read_subset(ff, datatype, fpix, lpix, inc, nulval,
+                   input_data, &anynul, &status);
   if (status) {fits_report_error(stderr,status); return status;}
+  cout <<"anynul = "<<anynul<<"\n";
 
   return 0;
 }

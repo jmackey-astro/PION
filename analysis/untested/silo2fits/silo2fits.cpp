@@ -165,7 +165,7 @@ int main(int argc, char **argv)
     cout << "Use as follows:\n";
     cout << "<executable-filename> <input-path>";
     cout << " <input-silo-file-base>";
-    cout << " <output-path> <output-fits-file-base>";
+    cout << " <output-path> <output-fits-file-base> [Nskip]";
     cout << " [<xmin> <xmax> [<ymin> <ymax> [<zmin> <zmax>]]]";
     cout << "\n";
     cout <<"******************************************\n";
