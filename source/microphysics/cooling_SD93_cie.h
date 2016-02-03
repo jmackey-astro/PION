@@ -9,6 +9,11 @@
 ///
 #ifndef COOLING_SD93_CIE_H
 #define COOLING_SD93_CIE_H
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 ///
 /// Class which calculates the Sutherland & Dopita (1993) cooling
 /// rates for collisional ionisation equilibrium.  This is a minimal

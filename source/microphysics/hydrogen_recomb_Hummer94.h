@@ -12,6 +12,11 @@
 #ifndef HUMMER94_HRECOMB_H
 #define HUMMER94_HRECOMB_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 ///
 /// Set up Spline interpolation table for Hummer (1994) recombination rate
 /// and recombination cooling rate for Hydrogen.

@@ -6,6 +6,11 @@
 #ifndef FILE_STATUS_H
 #define FILE_STATUS_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include <dirent.h>
 #include <errno.h>
 #include <string>

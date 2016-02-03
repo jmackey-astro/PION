@@ -24,9 +24,23 @@
 /// - 2013.08.20 JM: Moved raytracing set/get functions to header and
 ///    made them inline.
 /// - 2013.09.20 JM: Changed initialisation of unsigned ints to zero.
+/// - 2015.01.10 JM: New include statements for new file structure.
 
 #include "cell_interface.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
 using namespace std;
+
+
+#ifdef COUNT_ENERGETICS
+struct energetics *GLOBAL_CE=0;
+///< for tracking rates in microphysics/raytracing.
+#endif
+
+class cell_interface CI;
+///< global class for accessing cell data, positions, neigbours.
+
 
 /************************* CELL INTERFACE ***********************/
 
@@ -38,7 +52,10 @@ cell_interface::cell_interface()
   minimal_cell = false;
   dxo2 = -HUGEVALUE;
   xmin = 0;
-  int_converter = ONE_PLUS_EPS;
+  //
+  // this means I can have grids with up to 5e5 zones before it fails...
+  //
+  int_converter = 1.0+2.0e-6; // ONE_PLUS_EPS;
   cell_size_int_units=2;
 
   /// This must be set to true to create a cell.
@@ -257,6 +274,7 @@ cell * cell_interface::new_cell()
   // analysis code.
   //
   if (minimal_cell) {
+    //cout <<"Minimal cells!\n";
     c->Ph = 0;
     c->dU = 0;
   }
@@ -266,11 +284,12 @@ cell * cell_interface::new_cell()
     for (int v=0;v<SimPM.nvar;v++) c->Ph[v] = c->dU[v] = 0.0;
   }
 
-  //  cout <<"Nxd="<<N_extra_data<<"\n";
-  if (N_extra_data>=1)
+  //cout <<"Nxd="<<N_extra_data<<"\n";
+  if (N_extra_data>=1) {
     c->extra_data = mem.myalloc(c->extra_data, N_extra_data);
-  for (short unsigned int v=0;v<N_extra_data;v++)
-    c->extra_data[v] = 0.0;
+    for (short unsigned int v=0;v<N_extra_data;v++)
+      c->extra_data[v] = 0.0;
+  }
 
   return c;
 }
@@ -405,9 +424,11 @@ void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (in
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_ipos_as_double(const double *p_in, ///< physical position (input)
-					double *p_out       ///< integer position (output)
-					)
+
+void cell_interface::get_ipos_as_double(
+    const double *p_in, ///< physical position (input)
+    double *p_out       ///< integer position (output)
+    )
 {
   if (dxo2<0.0)
     rep.error("set up grid before trying to get integer positions!!!",dxo2);
@@ -424,9 +445,11 @@ void cell_interface::get_ipos_as_double(const double *p_in, ///< physical positi
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_dpos_vec(const int *p_in, ///< integer position (output)
-				  double *p_out    ///< physical position (input)
-				  )
+
+void cell_interface::get_dpos_vec(
+    const int *p_in, ///< integer position (output)
+    double *p_out    ///< physical position (input)
+    )
 {
   for (int v=0;v<SimPM.ndim;v++)
         p_out[v] = xmin[v] +(p_in[v]+1)*dxo2;
@@ -437,7 +460,11 @@ void cell_interface::get_dpos_vec(const int *p_in, ///< integer position (output
 // ##################################################################
 // ##################################################################
 
-void cell_interface::copy_cell(const cell *c1, cell *c2)
+
+void cell_interface::copy_cell(
+    const cell *c1,
+    cell *c2
+    )
 {
   for (int i=0;i<SimPM.ndim;i++) c2->pos[i] = c1->pos[i];
   for (int v=0;v<SimPM.nvar;v++) {

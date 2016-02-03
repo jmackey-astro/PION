@@ -1,6 +1,19 @@
+/// \file inside_sphere.cc
+/// \author Jonathan Mackey
+///
+/// Test if a point is inside a sphere.
+///
+/// Modifications:
+/// - 2015.03.11 JM: tidied up code. (also 03.26)
 
-
+#include "constants.h"
 #include "inside_sphere.h"
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 inside_sphere::inside_sphere(double *cen, double r, double size, int N, int nd)
   : sr(r), clen(size), del(size/2.), nint(N), ndim(nd)
@@ -20,12 +33,24 @@ bool inside_sphere::equalD(const double a, const double b)
   else return(false); // false is zero.
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 double inside_sphere::distance(const double *d1, const double *d2, int nd)
 {
   double temp=0.;
   for (int i=0;i<nd;i++) temp+= (d1[i]-d2[i])*(d1[i]-d2[i]);
   return(sqrt(temp));
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 double inside_sphere::volumeFraction(cell *cpt)
@@ -35,24 +60,20 @@ double inside_sphere::volumeFraction(cell *cpt)
   //  printVec("Cell Centre",cpos,ndim);
 
   double pos[ndim];
-  int cdir[ndim]; // Direction of sphere centre {neg,0,pos} in each direction.  
   // First calculate nearest corner
   for (int v=0;v<ndim;v++) {
     if( (pos[v]= cpos[v]-del-spos[v]) >0) {
       pos[v] = pos[v]*pos[v];
-      cdir[v] = -1;
     }
     else if ( (pos[v]= cpos[v]+del-spos[v]) <0) {
       pos[v] = pos[v]*pos[v];
-      cdir[v] = 1;
     }
     else {
       pos[v] = 0.;
-      cdir[v] = 0;
     }
   }
-  //  printVec("cdir",cdir,2);
-  double dist=0.; for (int v=0;v<ndim;v++) dist += pos[v];
+  double dist=0.;
+  for (int v=0;v<ndim;v++) dist += pos[v];
   dist = sqrt(dist); // distance from sphere centre to nearest edge of cell.
   //  cout <<"distance to nearest corner: "<<dist<<endl;
     
@@ -67,8 +88,12 @@ double inside_sphere::volumeFraction(cell *cpt)
   }
   
   //  cout <<"Cell may cross circle... checking\n";
-  double dv = 1.; double vol=1.;
-  for (int v=0;v<ndim;v++) {dv*= clen/nint; vol*=clen;}
+  double dv = 1.;
+  double vol=1.;
+  for (int v=0;v<ndim;v++) {
+    dv*= clen/nint;
+    vol*=clen;
+  }
   double dx = clen/nint;
   double startpt[ndim];
   double frac=0.;
@@ -94,4 +119,10 @@ double inside_sphere::volumeFraction(cell *cpt)
   //  cout <<"\t VOL FRAC: "<<frac<<endl;
   return(frac);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

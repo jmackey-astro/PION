@@ -16,12 +16,24 @@
 ///    is lower than the SD93 curves, possibly because the Oxygen abundance is
 ///    now lower than it was 15 years ago (Lodders, 2003, ApJ).
 ///    Removed the DO_HEATING ifdef -- now we have 5 different cooling functions.
+///
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
 /// - 2015.01.13 JM: Added some comments.
-///
-#include "mp_only_cooling.h"
-#include "../global.h"
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "microphysics/mp_only_cooling.h"
+
 #include <sstream>
 using namespace std;
 
@@ -67,11 +79,11 @@ mp_only_cooling::mp_only_cooling(const int nv,
   //  n_tot \simeq 2.3 n_H (summing the previous lines).
   // So we define muH=1.4mp, mue=1.167mp, mui=1.273mp, mutot=0.609mp
   //
-  Mu =1.40*GS.m_p();
-  Mu_tot = 0.609*GS.m_p();
-  Mu_tot_over_kB = Mu_tot/GS.kB();
-  Mu_elec = 1.167*GS.m_p();
-  Mu_ion  = 1.273*GS.m_p();
+  Mu =1.40*pconst.m_p();
+  Mu_tot = 0.609*pconst.m_p();
+  Mu_tot_over_kB = Mu_tot/pconst.kB();
+  Mu_elec = 1.167*pconst.m_p();
+  Mu_ion  = 1.273*pconst.m_p();
   inv_Mu2 = 1.0/(Mu*Mu);
   inv_Mu2_elec_H = 1.0/(Mu_elec*Mu);
 
@@ -146,19 +158,14 @@ mp_only_cooling::~mp_only_cooling()
 //
 // update internal energy over full timestep.
 //
-int mp_only_cooling::TimeUpdateMP(const double *p_in,
-				  ///< Primitive Vector to be updated.
-				  double *p_out,
-				  ///< Destination Vector for updated values.
-				  const double dt,
-				  ///< Time Step to advance by.
-				  const double gamma,
-				  ///< EOS gamma.
-				  const int,
-				  ///< Switch for what type of integration to use (not used here!)
-				  double *Tf
-				  ///< final temperature.
-				  )
+int mp_only_cooling::TimeUpdateMP(
+      const pion_flt *p_in, ///< Primitive Vector to be updated
+      pion_flt *p_out, ///< Destination Vector for updated values.
+      const double dt, ///< Time Step to advance by.
+      const double gamma, ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use (not used here!)
+      double *Tf ///< final temperature.
+      )
 {
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -268,10 +275,11 @@ int mp_only_cooling::TimeUpdateMP(const double *p_in,
 //
 // Reset pressure so it corresponds to requested temperature.
 //
-int mp_only_cooling::Set_Temp(double *p_in, ///< primitive vector.
-			const double T, ///< temperature requested.
-			const double gam ///< eos gamma.
-			)
+int mp_only_cooling::Set_Temp(
+      pion_flt *p_in, ///< primitive vector.
+      const double T, ///< temperature requested.
+      const double gam ///< eos gamma.
+      )
 {
 #ifdef TESTING
   //
@@ -297,7 +305,7 @@ int mp_only_cooling::Set_Temp(double *p_in, ///< primitive vector.
 // cgs units and ionised gas with mu=0.7m_p.
 //
 double mp_only_cooling::Temperature(
-    const double *p_in, ///< primitive vector
+    const pion_flt *p_in, ///< primitive vector
     const double   ///< eos gamma
     )
 {
@@ -312,7 +320,7 @@ double mp_only_cooling::Temperature(
 // any effect here.
 //
 double mp_only_cooling::timescales(
-    const double *p_in, ///< Current cell.
+    const pion_flt *p_in, ///< Current cell.
     const double gam,   ///< EOS gamma.
     const bool, ///< set to true if including cooling time.
     const bool, ///< set to true if including recombination time.
@@ -460,19 +468,10 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
   // hence the differing multipliers on the two functions.
   //
   double rho2 = rho*rho;
-  double rate = 0;
-  if (T<2.0e4) {
-    rate  = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
-  }
-  else if (T<5.0e4) {
-    rate  = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
-    //cout <<"M="<<rate;
-    rate = min(rate, -cooling_rate_SD93CIE(T)*rho2*inv_Mu2);
-    //cout <<", CIE="<<-cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
-  }
-  else {
-    rate = -cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
-  }
+  double rate = -1.69e-22 *exp(-33610.0/T -(2180.0*2180.0/T/T)) *rho2*inv_Mu2_elec_H *exp(-T*T/5.0e10);
+  //cout <<"M="<<rate;
+  rate = min(rate, -cooling_rate_SD93CIE(T)*rho2*inv_Mu2);
+  //cout <<", CIE="<<-cooling_rate_SD93CIE(T)*rho2*inv_Mu2;
   //
   // Now Hydrogen cooling due to recombinations and Bremsstrahlung.
   //

@@ -22,18 +22,20 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.09.02 JM: Fixed treatment of tracers so that Nspecies is
 ///    not fixed to Ntracer.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-//
-// First include all the defines, to make sure that we need to compile in 
-// Harpreet's module to the final exe.
-//
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
 #ifndef EXCLUDE_HD_MODULE
 
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
-
-#include "microphysics_lowZ.h"
+#include "microphysics/microphysics_lowZ.h"
 using namespace std;
 
 
@@ -152,7 +154,7 @@ microphysics_lowz::~microphysics_lowz()
 
 
 
-double microphysics_lowz::Temperature(const double *pv, ///< primitive vector
+double microphysics_lowz::Temperature(const pion_flt *pv, ///< primitive vector
 				const double g   ///< eos gamma
 				)
 {

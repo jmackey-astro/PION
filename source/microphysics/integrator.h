@@ -3,7 +3,10 @@
 #ifndef INTEGRATOR_H
 #define INTEGRATOR_H
 
-#include "../global.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 
 /** \brief Integration class, with a bunch of different integration methods in it.
  * 

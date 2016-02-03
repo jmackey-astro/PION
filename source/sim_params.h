@@ -4,12 +4,26 @@
 ///
 /// Structure with simulation parameters.
 ///
+/// Modifications:
+/// - 2015.01.09 JM: Wrote file, moved stuff from global.h
+/// - 2015.07.03 JM: Started to change tracer setup in files.
+///    Put units and JetParams classes into this file from global.h.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
 
-#ifdef GRIDV2
+#include <string>
+#include <vector>
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "sim_constants.h"
+#include "constants.h"
+
+// *******************************************************************
 ///
 /// struct with lots of flags for what extra physics we are using.
 /// 
@@ -44,23 +58,41 @@ struct which_physics {
   /// - limit=4 : limit by dyn. +recomb times (NOT cooling/heating).
   ///
   int MP_timestep_limit;
-//#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   double MinTemperature; ///< Minimum temperature to allow in the simulation.
   double MaxTemperature; ///< Maximum temperature to allow in the simulation.
-//#endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 #ifdef THERMAL_CONDUCTION
   int thermal_conduction; ///< 0 if no conductivity, 1 if using it.
 #endif // THERMAL CONDUCTION
+
+  ///
+  /// Mass fraction of H, X, used for calculating mean mass per
+  /// particle by assuming the rest is He.
+  ///
+  double H_MassFrac;
+  ///
+  /// Mass fraction of He, Y, used for calculation electron/ion
+  /// densities as a function of H number density, and for setting
+  /// the mean mass per particle, mu.
+  ///
+  double Helium_MassFrac;
+  ///
+  /// Mass fraction of metals, Z, used for heating/cooling in
+  /// microphysics (but doesn't contribute to mean mass per particle,
+  /// mu).
+  ///
+  double Metal_MassFrac;
 };
+// *******************************************************************
 
 
+// *******************************************************************
 ///
 /// Star struct, for storing data from a stellar evolution file.
 /// I need to get rid of Rstar, because it is not used, and is in the
 /// wrong units.
 ///
 struct star {
-  string file_name;
+  std::string file_name;
     ///< Name of stellar evolution file.
   size_t
     Nlines,    ///< Number of lines in file.
@@ -69,7 +101,7 @@ struct star {
   int
     src_id; ///< ID of source in SimPM.RS
     //fuv_src_id;      ///< ID of (possible) Far-UV heating source in SimPM.RS
-  vector<double>
+  std::vector<double>
     time,  ///< Array of time, in seconds.
     Log_L, ///< log10 of Luminosity (Lsun)
     Log_T, ///< Log10 of Teff (K)
@@ -88,7 +120,7 @@ struct star {
 /// Radiation source struct.
 ///
 struct rad_src_info {
-  double position[MAX_DIM]; ///< src position (physical units).
+  double pos[MAX_DIM]; ///< src position (physical units).
   double strength; ///< src strength (photons/sec, or ergs/sec for multifreq.)
   double Rstar; ///< stellar radius in solar radii (for multifreq. photoionisation).
   double Tstar; ///< stellar effective temperature (for multifreq. photoionisation).
@@ -96,10 +128,25 @@ struct rad_src_info {
   int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
   int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
   int at_infinity; ///< set to true if source is at infinity.
-  int effect;      ///< RT_EFFECT_UV_HEATING, RT_EFFECT_PION_MONO, RT_EFFECT_PION_MULTI.
+  ///
+  /// "effect" is what the source does, and this defines many of its
+  /// properties implicitly.  Options are:
+  /// - RT_EFFECT_UV_HEATING,
+  /// - RT_EFFECT_PION_MONO,
+  /// - RT_EFFECT_PION_MULTI,
+  /// - RT_EFFECT_PHOTODISS, (UNUSED)
+  /// - RT_EFFECT_PION_EQM, (UNUSED--for photoionisation equilibrium)
+  /// - RT_EFFECT_HHE_MFQ
+  ///
+  int effect;
+  ///
+  /// "NTau" sets the number of quantities traced from the source.
+  ///
+  int NTau;
+
   int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
   int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
+  std::string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
 };
 
 ///
@@ -109,11 +156,53 @@ struct rad_sources {
   int Nsources;
   std::vector<struct rad_src_info> sources;
 };
+// *******************************************************************
 
-/** \brief Simulation Parameters Class
- * 
- * This is a holder for various flags and settings for the simulation.
- * */
+
+
+// *******************************************************************
+///
+/// This struct contains global data for a stellar wind source (for
+/// reading and writing to file).  The grid setup functions should
+/// read this struct and set up the appropriate wind boundary.
+///
+struct stellarwind_params {
+  int id;    ///< if we have multiple sources, this identifies them.
+  int type;  ///< what type of stellar wind?  see stellar_wind.h
+  double dpos[MAX_DIM]; ///< position of source (physical coords).
+  double Mdot;  ///< mass loss rate in solar masses per year.
+  double Vinf;  ///< wind terminal velocity in km/s.
+  double Rstar; ///< radius at which to set pressure based on Tstar.
+  double Tstar; ///< stellar temperature (sets pressure at r=Rstar).
+  pion_flt tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
+  double radius;
+  ///< Radius out to which boundary condition is imposed (physical).
+  std::string evolving_wind_file; ///< name of file containing evolving wind data.
+  double time_offset;   ///< time offset between wind-data-file and sim-time (YEARS!).
+  double update_freq;   ///< how often to update wind-data from file info (YEARS!).
+  /// Evolution of wind happens this factor faster than normal (for factor>1)
+  /// Should probably only be used for Main Sequence evolution!
+  double t_scalefactor;
+};
+
+struct stellarwind_list {
+  std::vector<struct stellarwind_params *> params; ///< list of params.
+  int Nsources; ///< number of sources.
+};
+
+extern struct stellarwind_list SWP;
+// *******************************************************************
+
+
+
+
+
+// *******************************************************************
+///
+/// \brief Simulation Parameters Class
+/// 
+/// This is a holder for various flags and settings for the simulation.
+///
 class SimParams {
   public:
    SimParams();
@@ -127,7 +216,18 @@ class SimParams {
    int nvar;       ///< Length of State Vectors (number of variables).
    int ntracer;    ///< Number of tracer variables.
    int ftr;        ///< Position of first tracer variable in state vector.
-   string trtype;  ///< String saying what type of tracer we are using.
+
+#ifdef OLD_TRACER
+
+   std::string trtype;  ///< String saying what type of tracer we are using.
+
+#else  // OLD_TRACER
+
+  std::string chem_code; ///< Code for what kind of chemistry we are running.
+  std::string *trtype;  ///< array of strings for the tracer type
+
+#endif // OLD_TRACER
+
    // Timing
    double simtime;    ///< current time in simulation. 
    double starttime;  ///< initial time to start simulation at. 
@@ -146,7 +246,7 @@ class SimParams {
    double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain.
    double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells.
    // Boundary cell data.
-   string typeofbc; ///< Type of boundary condition(s).
+   std::string typeofbc; ///< Type of boundary condition(s).
    int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
    // Integration accuracy
    int spOOA;  ///< Spatial Order of Accuracy in the code.
@@ -160,13 +260,13 @@ class SimParams {
    double etav;             ///< Artificial viscosity coefficient, should be between 0.01 and 0.3
    struct which_physics EP; ///< flags for what extra physics we are going to use.
    struct rad_sources   RS; ///< list of radiation sources.
-   vector<struct star>  STAR; ///< Data from stellar evolution file(s).
+   std::vector<struct star>  STAR; ///< Data from stellar evolution file(s).
 
    // File I/O
    int typeofop;       ///< Output FileType: Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
    int typeofip;       ///< Input FileType:  Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
 
-   string outFileBase; ///< Filename, with path, to write data to.
+   std::string outFileBase; ///< Filename, with path, to write data to.
    int opfreq;         ///< Output file every 'opfreq'th timestep.
    int op_criterion;   ///< =0 for per n-steps, =1 for per n-years.
    double next_optime; ///< if op_criterion=1, then this is the next time an output will happen.
@@ -175,14 +275,71 @@ class SimParams {
 
    // Initial Conditions.
    double addnoise; ///< Whether to add noise or not, 0=no, 1-3 are for different types of noise.
-   double RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
+   pion_flt RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
 };
 
+
+
+
+// *******************************************************************
+// *******************************************************************
 extern class SimParams SimPM;
+// *******************************************************************
+// *******************************************************************
 
 
 
-#endif // GRIDV2
+
+
+// *******************************************************************
+///
+/// Conversion factors between code units and physical units.  Currently
+/// not used, as the code can handle physical units without much trouble.
+///
+class Units {
+  public:
+   std::string unitsys; ///< Name of System of Units: code,mks,cgs,esu,etc.
+   std::string density, ///< Reference Density Units.
+     length,       ///< Reference Length Units.
+     velocity,     ///< Reference Velocity Units.
+     bfield;       ///< Reference B-Field Units.
+   double rhoVal,  ///< One code unit is this number of reference units.
+     lenVal,       ///< One code unit is this number of reference units.
+     velVal,       ///< One code unit is this number of reference units.
+     magVal;       ///< One code unit is this number of reference units.
+};
+
+// *******************************************************************
+// *******************************************************************
+extern class Units uc; ///< Unit conversion quantities from code to physical units.
+// *******************************************************************
+// *******************************************************************
+
+
+
+// *******************************************************************
+///
+/// If we are running a jet simulations, the physical properties of the
+/// jet are stored in this function.
+///
+class JetParams {
+  public:
+   JetParams();
+   ~JetParams();
+   int jetic;        ///< 0=not a jet sim, 1=is a jet sim
+   int jetradius;    ///< Radius of jet in units of cellsize. Jet always centred at origin of XN boundary.
+   pion_flt *jetstate; ///< State vector for jet inflow.
+};
+// *******************************************************************
+// *******************************************************************
+extern class JetParams JP;
+// *******************************************************************
+// *******************************************************************
+
+
+
+
+
 
 #endif // SIM_PARAMS_H
 

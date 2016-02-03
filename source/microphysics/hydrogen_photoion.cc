@@ -19,25 +19,30 @@
 ///    an approximation for dtau<<1.  Fixed bugs, simplified code.
 /// - 2011.06.20 JM: Got rid of non-ANSI-C exp10 functions
 /// - 2011.07.03 JM: Added more digits to ln(10) constant.
-/// - 2011.10.08 JM: Added switch to use GS.spline/splint instead of the local
+/// - 2011.10.08 JM: Added switch to use interpolate.spline/splint instead of the local
 ///    STL vector one, because the vector functions are slower by about 2.5%.
 /// - 2011.11.01 JM: changed to using Tau instead of NH0 (hopefully more
 ///    efficient by allowing smaller spline array.
 /// - 2012.12.26 JM: Added some hacks to study the photoionisation
 ///    cross section and Blackbody spectrum effects on results.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "tools/interpolate.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 //#define HACK_MODIFY_BB ///< scale the high energy BB emission
 #define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
 
-#include "hydrogen_photoion.h"
-#include "global.h"
-//#include "reporting.h"
-//#include "new_Hpion.h"
-//#include <cmath>
-//#include <iostream>
-//#include <cstdlib>
-//#include <vector>
+#include "microphysics/hydrogen_photoion.h"
+
 using namespace std;
 
 #define LOGTEN 2.302585093
@@ -117,7 +122,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
 #ifdef USE_VECTORS
     splint_vec(PI_Tau_vec, LTPIrate_vec, LTPIrt2_vec, PI_Nspl, log10(ans), &ans);
 #else 
-    GS.splint(PI_Tau, LTPIrate, LTPIrt2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(PI_Tau, LTPIrate, LTPIrt2, PI_Nspl, log10(ans), &ans);
 #endif
     ans = exp(LOGTEN*ans)*dTau0/(Hi_monochromatic_photo_ion_xsection(JUST_IONISED)*nH*Vshell);
     //cout <<"PIR="<<ans<<", non-discretised="<<
@@ -164,7 +169,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
 #ifdef USE_VECTORS
     splint_vec(PI_Tau_vec, LTPIheat_vec, LTPIht2_vec, PI_Nspl, log10(dtau), &ans);
 #else 
-    GS.splint(PI_Tau, LTPIheat, LTPIht2, PI_Nspl, log10(dtau), &ans);
+    interpolate.splint(PI_Tau, LTPIheat, LTPIht2, PI_Nspl, log10(dtau), &ans);
 #endif
     ans = exp(LOGTEN*ans)*dTau0/(Hi_monochromatic_photo_ion_xsection(JUST_IONISED)*nH*Vshell);
     //      Hi_multifreq_photoionisation_heating_rate(NH0,     nH,Vshell) -
@@ -209,7 +214,7 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
 #ifdef USE_VECTORS
   splint_vec(PI_Tau_vec, PIrate_vec, PIrt2_vec, PI_Nspl, log10(ans), &ans);
 #else 
-  GS.splint(PI_Tau, PIrate, PIrt2, PI_Nspl, log10(ans), &ans);
+  interpolate.splint(PI_Tau, PIrate, PIrt2, PI_Nspl, log10(ans), &ans);
 #endif
   ans = exp(LOGTEN*ans)/(nH0*Vshell);
   return ans;
@@ -237,7 +242,7 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_heating_rate(
 #ifdef USE_VECTORS
   splint_vec(PI_Tau_vec, PIheat_vec, PIht2_vec, PI_Nspl, log10(ans), &ans);
 #else 
-  GS.splint(PI_Tau, PIheat, PIht2, PI_Nspl, log10(ans), &ans);
+  interpolate.splint(PI_Tau, PIheat, PIht2, PI_Nspl, log10(ans), &ans);
 #endif
   ans = exp(LOGTEN*ans)/(nH0*Vshell);
   return ans;
@@ -478,8 +483,8 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   spline_vec(PI_Tau_vec, PIrate_vec, PI_Nspl, 1.e99, 1.e99, PIrt2_vec);
   spline_vec(PI_Tau_vec, PIheat_vec, PI_Nspl, 1.e99, 1.e99, PIht2_vec);
 #else 
-  GS.spline(PI_Tau, PIrate, PI_Nspl, 1.e99, 1.e99, PIrt2);
-  GS.spline(PI_Tau, PIheat, PI_Nspl, 1.e99, 1.e99, PIht2);
+  interpolate.spline(PI_Tau, PIrate, PI_Nspl, 1.e99, 1.e99, PIrt2);
+  interpolate.spline(PI_Tau, PIheat, PI_Nspl, 1.e99, 1.e99, PIht2);
 #endif
 
   // LOW-DTAU APPROX INTEGRAL ---------------
@@ -487,8 +492,8 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   spline_vec(PI_Tau_vec, LTPIrate_vec, PI_Nspl, 1.e99, 1.e99, LTPIrt2_vec);
   spline_vec(PI_Tau_vec, LTPIheat_vec, PI_Nspl, 1.e99, 1.e99, LTPIht2_vec);
 #else 
-  GS.spline(PI_Tau, LTPIrate, PI_Nspl, 1.e99, 1.e99, LTPIrt2);
-  GS.spline(PI_Tau, LTPIheat, PI_Nspl, 1.e99, 1.e99, LTPIht2);
+  interpolate.spline(PI_Tau, LTPIrate, PI_Nspl, 1.e99, 1.e99, LTPIrt2);
+  interpolate.spline(PI_Tau, LTPIheat, PI_Nspl, 1.e99, 1.e99, LTPIht2);
 #endif
   // ----------------------------------------
 

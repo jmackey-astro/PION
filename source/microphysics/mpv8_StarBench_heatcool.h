@@ -13,6 +13,7 @@
 ///
 /// Modifications:
 /// - getting it written: mods up until 2013.06.XX
+/// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
 #ifndef MPV8_PUREH_H
@@ -32,11 +33,21 @@ class mpv8_SBheatcool
   /// Constructor
   ///
   mpv8_SBheatcool(
-          const int,           ///< Total number of variables in state vector
-	  const int,           ///< Number of tracer variables in state vector.
-	  const std::string &, ///< List of what the tracer variables mean.
-          struct which_physics * ///< extra physics stuff.
-	  );
+    const int,          ///< Total number of variables in state vector
+    const int,          ///< Number of tracer variables in state vector.
+
+#ifdef OLD_TRACER
+
+    const std::string &, ///< List of what the tracer variables mean.
+
+# else
+
+    const std::string *, ///< List of what the tracer variables mean.
+
+#endif // OLD_TRACER
+
+    struct which_physics * ///< extra physics stuff.
+    );
 
   ///
   /// Destructor

@@ -3,8 +3,13 @@
 #ifndef GET_SIM_INFO_H
 #define GET_SIM_INFO_H
 
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+
 #include <iostream>
-#include "../dataIO/readparams.h"
+#include "dataIO/readparams.h"
 
 
 class get_sim_info {

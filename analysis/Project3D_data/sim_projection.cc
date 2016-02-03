@@ -21,7 +21,13 @@
 /// - 2013.10.15 JM: Updated to use microphysics classes to get the
 ///    gas temperature and n(H), and added [N II] forbidden line
 ///    emission.
-
+/// - 2015.07.03 JM: Got rid of NEW_STOKES_CALC (because old code was
+///    broken, so I just deleted the old code).
+/// - 2015.07.03 JM: updated for pion_dev: uses MCMD, SimSetup,
+///    constants.h
+/// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
+/// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
+/// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
 // simulation.  First we get the directory listing, then for each file we load
@@ -45,7 +51,8 @@
 
 
 #include "sim_projection.h"
-#include <cmath>
+
+
 
 
 // void print_array(string name, double *arr, int nel)
@@ -79,6 +86,12 @@ enum direction axes_directions::get_posdir(const enum axes a)
   return static_cast<direction>(2*i+1);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 enum direction axes_directions::get_negdir(const enum axes a)
 {
   int i=static_cast<int>(a);
@@ -88,6 +101,12 @@ enum direction axes_directions::get_negdir(const enum axes a)
   }
   return static_cast<direction>(2*i);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 enum axes axes_directions::get_axis_from_dir(const enum direction dir)
 {
@@ -100,6 +119,12 @@ enum axes axes_directions::get_axis_from_dir(const enum direction dir)
   }
   return a;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 enum direction axes_directions::cross_product(const enum direction d1,
 					      const enum direction d2
@@ -160,11 +185,12 @@ enum direction axes_directions::cross_product(const enum direction d1,
 // *************************************************************
 // -------------------------------------------------------------
 
-coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line of sight direction
-					     const int angle,          ///< Angle of LOS w.r.t. los direction.
-					     const enum direction up_dir, ///< vertical direction, which stays in image plane.
-					     class GridBaseClass *ggg ///< pointer to grid of data.
-					     )
+coordinate_conversion::coordinate_conversion(
+      const enum direction los, ///< Line of sight direction
+      const int angle,          ///< Angle of LOS w.r.t. los direction.
+      const enum direction up_dir, ///< vertical direction, which stays in image plane.
+      class GridBaseClass *ggg ///< pointer to grid of data.
+      )
 {
   gptr = ggg;
   if (!gptr) rep.error("Need a valid grid pointer to set up image!!!",gptr);
@@ -186,8 +212,8 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
     sim_rangeI[v] = sim_xmaxI[v]-sim_xminI[v];
     sim_ncell[v]  = sim_rangeI[v]/sim_dxI;
     // SANITY CHECK!
-    if (sim_ncell[v] != SimPM.NG[v])
-      rep.error("Cells dont match at all!!!", sim_ncell[v]-SimPM.NG[v]);
+    //if (sim_ncell[v] != SimPM.NG[v])
+    //  rep.error("Cells dont match at all!!!", sim_ncell[v]-SimPM.NG[v]);
   }
 
   //
@@ -222,7 +248,8 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
     zero_angle = false;
 
   if (abs(theta_deg)>45)
-    rep.error("Angle must be in range [-45,45].  For larger angle project along a different axis",theta_deg);
+    rep.error("Angle must be in range [-45,45].  For larger angle \
+               project along a different axis",theta_deg);
 
   theta = M_PI*theta_deg/180.0;
   sintheta = sin(theta);
@@ -236,7 +263,8 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
   im_dx=1;
 
   //
-  // Set the domain in image coordinates, and get number of pixels from that.
+  // Set the domain in image coordinates, and get number of pixels
+  // from that.
   //
   set_sim_extents_in_image_coords();
   set_npix();
@@ -250,8 +278,20 @@ coordinate_conversion::coordinate_conversion(const enum direction los, ///< Line
   return;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
 coordinate_conversion::~coordinate_conversion()
 {}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 void coordinate_conversion::set_sim_extents_in_image_coords()
 {
@@ -303,8 +343,15 @@ void coordinate_conversion::set_sim_extents_in_image_coords()
 }
 
 
-bool coordinate_conversion::point_in_Isim_domain(const double *x /// Point in sim coords (integer)
-						 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+bool coordinate_conversion::point_in_Isim_domain(
+      const pion_flt *x /// Point in sim coords (integer)
+      )
 {
   bool inside=true;
   for (int v=0;v<3;v++) {
@@ -313,6 +360,12 @@ bool coordinate_conversion::point_in_Isim_domain(const double *x /// Point in si
   return inside;
 }
     
+
+
+// ##################################################################
+// ##################################################################
+
+
 void coordinate_conversion::set_npix()
 {
   //
@@ -335,29 +388,43 @@ void coordinate_conversion::set_npix()
 }  
 
 
-void coordinate_conversion::get_npix(int *n ///< 2D array to put number of pixels in each direction.
-				     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void coordinate_conversion::get_npix(
+      int *n ///< 2D array to put number of pixels in each direction.
+      )
 {
   for (int v=0;v<2;v++) n[v] = im_npix[v];
   return;
 }
 
 
-void coordinate_conversion::get_image_Ipos(const int *spos, ///< input position, sim coords, integer units.
-					   double *im_pos   ///< converted position in image coords.
-					   )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void coordinate_conversion::get_image_Ipos(
+      const int *spos, ///< input position, sim coords, integer units.
+      pion_flt *im_pos   ///< converted position in image coords.
+      )
 {
   //
   // first get delta, the distance between the left hand edge of the sim and 
   // the point in question.  Then divide by dx to get it in units of number of cells, 
   // which is the image unit.
   //
-  double delta[3];
+  pion_flt delta[3];
   for (int v=0;v<3;v++) {
     if (ss[v]>0)
-      delta[v] = static_cast<double>(spos[sa[v]] - sim_xminI[sa[v]])/sim_dxI;
+      delta[v] = static_cast<pion_flt>(spos[sa[v]] - sim_xminI[sa[v]])/sim_dxI;
     else 
-      delta[v] = static_cast<double>(sim_xmaxI[sa[v]] - spos[sa[v]])/sim_dxI;
+      delta[v] = static_cast<pion_flt>(sim_xmaxI[sa[v]] - spos[sa[v]])/sim_dxI;
   }
   //
   // Now we have this, I can use simple geometry to get from the sim 'origin' to
@@ -371,16 +438,23 @@ void coordinate_conversion::get_image_Ipos(const int *spos, ///< input position,
 }
 
 
-void coordinate_conversion::get_image_Dpos(const double *spos, ///< input position, sim coords, integer units.
-					   double *im_pos      ///< converted position in image coords.
-					   )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void coordinate_conversion::get_image_Dpos(
+      const pion_flt *spos, ///< input position, sim coords, integer units.
+      pion_flt *im_pos      ///< converted position in image coords.
+      )
 {
   //
   // first get delta, the distance between the left hand edge of the sim and 
   // the point in question.  Then divide by dx to get it in units of number of cells, 
   // which is the image unit.
   //
-  double delta[3];
+  pion_flt delta[3];
   for (int v=0;v<3;v++) {
     if (ss[v]>0)
       delta[v] = (spos[sa[v]] - sim_xminI[sa[v]])/sim_dxI;
@@ -400,15 +474,22 @@ void coordinate_conversion::get_image_Dpos(const double *spos, ///< input positi
 }
 
 
-void coordinate_conversion::get_sim_Dpos(const double *im_pos, ///< position in image coordinates.
-					 double *spos        ///< position in sim coords (dx=2).
-					 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void coordinate_conversion::get_sim_Dpos(
+      const pion_flt *im_pos, ///< position in image coordinates.
+      pion_flt *spos        ///< position in sim coords (dx=2).
+      )
 {
   //
   // First get the deltas, which are perpendicular distances from the
   // negative (in image coords) edges of the simulation box.
   //
-  double delta[3];
+  pion_flt delta[3];
   delta[XX] = (im_pos[XX]-s_origin_img[XX])*costheta +
     (im_pos[ZZ]-s_origin_img[ZZ])*sintheta;
   delta[YY] = im_pos[YY];
@@ -450,11 +531,12 @@ void coordinate_conversion::get_sim_Dpos(const double *im_pos, ///< position in 
 
 
 
-image::image(const enum direction los, ///< Line of sight direction
-	const int t,            ///< Angle of LOS w.r.t. los direction.
-	const enum direction perp, ///< vertical direction, which stays in image plane.
-	class GridBaseClass *ggg ///< pointer to grid of data.
-	)
+image::image(
+      const enum direction los, ///< Line of sight direction
+      const int t,            ///< Angle of LOS w.r.t. los direction.
+      const enum direction perp, ///< vertical direction, which stays in image plane.
+      class GridBaseClass *ggg ///< pointer to grid of data.
+      )
   :
   coordinate_conversion(los,t,perp,ggg)
 {
@@ -465,11 +547,7 @@ image::image(const enum direction los, ///< Line of sight direction
   // so I can initialise the image array of pixels now.
   //
   pix=0;
-#ifdef TESTING
-  pix = mem.myalloc(pix,im_npixels,"image::image() pix");
-#else
   pix = mem.myalloc(pix,im_npixels);
-#endif
 
   initialise_pixels();
 
@@ -490,11 +568,7 @@ image::~image()
 
   if (pix) {
     for (int i=0;i<im_npixels;i++) delete_pixel_data(&(pix[i]));
-#ifdef TESTING
-    mem.myfree(pix,"image::~image() pix");
-#else
     mem.myfree(pix);
-#endif
   }
 
   return;
@@ -505,6 +579,78 @@ image::~image()
 // ##################################################################
 // ##################################################################
 
+#ifdef THREADS
+
+struct pix_int_args {
+  class image *IMG; ///< pointer to image class.
+  struct pixel *px; ///< pointer to pixel
+  size_t i;      ///< pixel id
+  double sim_dxP;
+  pion_flt s_xmax_img[3];
+};
+
+//
+// void function for threading with Andy's threadpool library
+//
+void calculate_pix_integration_pts(
+      void *arg
+      )
+{
+  struct pix_int_args *pia = reinterpret_cast<struct pix_int_args *>(arg);
+  //size_t i = pia->i;
+  pixel *p = pia->px;
+  class image *img = pia->IMG;
+  double sim_dxP = pia->sim_dxP;
+  pion_flt *s_xmax_img = pia->s_xmax_img;
+  //
+  // Set integration points dx = half the cell size.
+  //
+  double hh=0.5;
+  p->int_pts.dx      = hh;
+  p->int_pts.dx_phys = sim_dxP*hh;
+  p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
+  p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
+  //
+  // Set positions of each point along the line of sight, and 
+  // assign neighbouring cells and their associated weights.
+  //
+  struct point_4cellavg *pt;
+  pion_flt ppos_isim[3];
+  //    cell *c = (*(p->cells.begin()));
+  cell *c = p->inpixel;
+
+  for (int ipt=0;ipt<p->int_pts.npt; ipt++) {
+    pt = &(p->int_pts.p[ipt]);
+      
+    pion_flt ppos_im[3];
+    ppos_im[XX] = p->ix[XX] +0.5;
+    ppos_im[YY] = p->ix[YY] +0.5;
+    ppos_im[ZZ] = ipt*hh;
+    //
+    // Convert image position to a simulation position.
+    //
+    img->get_sim_Dpos(ppos_im, ppos_isim);
+    //
+    // pass in position, starting cell, and get out the four surrounding
+    // cells (or some nulls if it's not surrounded), and the bilinear
+    // interpolation weights associated with each cell.
+    //
+    img->find_surrounding_cells(ppos_isim, c, pt->ngb, pt->wt);
+    //
+    // Now for each point, we have set its position, neighbours, weights.
+    //
+  }
+
+  delete pia; pia = 0;
+
+  return;
+}
+#endif //THREADS
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 void image::add_integration_pts_to_pixels()
@@ -512,10 +658,24 @@ void image::add_integration_pts_to_pixels()
   if (!pix)
     rep.error("Can't add integration points to uninitialised pixels!",pix);
 
-  pixel *p=0;
 
   for (int i=0;i<im_npixels;i++) {
-    p = &(pix[i]);
+
+#ifdef THREADS
+    struct pix_int_args *pia = new struct pix_int_args;
+    pia->i = static_cast<size_t>(i);
+    pia->px = &(pix[i]);
+    pia->IMG = this;
+    pia->sim_dxP = sim_dxP;
+    for (size_t v=0;v<3;v++)
+      pia->s_xmax_img[v] = s_xmax_img[v];
+    //calculate_pix_integration_pts(reinterpret_cast<void *>(pia));
+    tp_addWork(&tp,calculate_pix_integration_pts,
+                   reinterpret_cast<void *>(pia),
+                   "image::add_integration_pts_to_pixels()");
+#else // THREADS
+
+    pixel *p = &(pix[i]);
     
     //
     // Set integration points dx = half the cell size.
@@ -524,31 +684,29 @@ void image::add_integration_pts_to_pixels()
     p->int_pts.dx      = hh;
     p->int_pts.dx_phys = sim_dxP*hh;
     p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
-#ifdef TESTING
-    p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt, "image::add_integration_pts_to_pixels() points");
-#else
+    cout <<"p->int_pts.npt = "<<p->int_pts.npt <<"\n";
     p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
-#endif
 
     //
     // Set positions of each point along the line of sight, and 
     // assign neighbouring cells and their associated weights.
     //
     struct point_4cellavg *pt;
-    double ppos_isim[3];
+    pion_flt ppos_isim[3];
     //    cell *c = (*(p->cells.begin()));
     cell *c = p->inpixel;
 
     for (int ipt=0;ipt<p->int_pts.npt; ipt++) {
       pt = &(p->int_pts.p[ipt]);
       
-      pt->pos[XX] = p->ix[XX] +0.5;
-      pt->pos[YY] = p->ix[YY] +0.5;
-      pt->pos[ZZ] = ipt*hh;
+      pion_flt ppos_im[3];
+      ppos_im[XX] = p->ix[XX] +0.5;
+      ppos_im[YY] = p->ix[YY] +0.5;
+      ppos_im[ZZ] = ipt*hh;
       //
       // Convert image position to a simulation position.
       //
-      get_sim_Dpos(pt->pos, ppos_isim);
+      get_sim_Dpos(ppos_im, ppos_isim);
       //
       // pass in position, starting cell, and get out the four surrounding
       // cells (or some nulls if it's not surrounded), and the bilinear
@@ -558,32 +716,31 @@ void image::add_integration_pts_to_pixels()
       //
       // Now for each point, we have set its position, neighbours, weights.
       //
-
-//       if (i==33) {
-// 	cout <<"\t-------------------\n";
-// 	rep.printVec("AXES",sa,3);
-// 	rep.printVec("IMG point",pt->pos,3);
-// 	rep.printVec("SIM point",ppos_isim,3);
-// 	if (pt->ngb[0]) rep.printVec("SIM cell0",pt->ngb[0]->pos,3);
-// 	if (pt->ngb[0]) rep.printVec("IMG cell0",pt->ngb[0]->Ph,3);
-// 	if (pt->ngb[1]) rep.printVec("SIM cell1",pt->ngb[1]->pos,3);
-// 	if (pt->ngb[1]) rep.printVec("IMG cell1",pt->ngb[1]->Ph,3);
-// 	if (pt->ngb[2]) rep.printVec("SIM cell2",pt->ngb[2]->pos,3);
-// 	if (pt->ngb[2]) rep.printVec("IMG cell2",pt->ngb[2]->Ph,3);
-// 	if (pt->ngb[3]) rep.printVec("SIM cell3",pt->ngb[3]->pos,3);
-// 	if (pt->ngb[3]) rep.printVec("IMG cell3",pt->ngb[3]->Ph,3);
-// 	rep.printVec("simxmax",sim_xmaxI,3);
-// 	cout <<"\twt[] = ["<<pt->wt[0]<<", "<<pt->wt[1]<<", "<<pt->wt[2]<<", "<<pt->wt[3]<<"]";
-// 	cout <<"\tsum = "<<pt->wt[0]+pt->wt[1]+pt->wt[2]+pt->wt[3]<<"\n";
-// 	cout <<"\t-------------------\n";
-//      }
-
     }
+
+#endif // THREADS
+
     //cout <<"\t------------------- NEXT PIXEL --------------- \n";
     //
     // Now for each pixel, we have initialised its points, set npt, dx, and dx_phys
     //
   }
+
+
+#ifdef THREADS
+//#ifdef TESTING
+  cout <<" - -- - waiting for "<<im_npixels<<" threads to finish.\n";
+  cout.flush();
+//#endif
+  //DbgMsg(" main(): waiting for %i threads...",num_pixels);
+  tp_waitOnFinished(&tp,im_npixels);
+  //DbgMsg(" main(): all threads finished.");
+//#ifdef TESTING
+  cout <<" - -- - All threads are finished.\n";
+  cout.flush();
+//#endif
+#endif // THREADS
+
   return;
 }
 
@@ -594,11 +751,12 @@ void image::add_integration_pts_to_pixels()
 
 
 
-void image::find_surrounding_cells(const double x[3],
-				   cell *c,
-				   cell *ngb[4],
-				   double wt[4]
-				   )
+void image::find_surrounding_cells(
+      const pion_flt x[3],
+      cell *c,
+      cell *ngb[4],
+      pion_flt wt[4]
+      )
 {
   if (!point_in_Isim_domain(x)) {
     for (int v=0;v<4;v++) {
@@ -612,7 +770,7 @@ void image::find_surrounding_cells(const double x[3],
     // Note sa[YY] is the axis c should be already on, so no
     // need to move in this direction, only sa[XX] and sa[ZZ]
     //
-    if (!GS.equalD(x[sa[YY]],c->pos[sa[YY]])) {
+    if (!pconst.equalD(x[sa[YY]],c->pos[sa[YY]])) {
       rep.error("WARNING: find_surrounding_cells() y-values not the same!",x[sa[YY]]-c->pos[sa[YY]]);
     }
     cell *seek=c;
@@ -791,9 +949,10 @@ void image::find_surrounding_cells(const double x[3],
 
 
 
-bool image::cell_is_in_pixel(double *cp, ///< Cell position (in image coordinates).
-			     pixel  *p  ///< pixel in question.
-			     )
+bool image::cell_is_in_pixel(
+      pion_flt *cp, ///< Cell position (in image coordinates).
+      pixel  *p  ///< pixel in question.
+      )
 {
   bool inside=true;
 
@@ -893,11 +1052,7 @@ void image::set_cell_positions_in_image()
   //
   cell *c = gptr->FirstPt();
   do {
-#ifdef TESTING
-    c->Ph = mem.myalloc(c->Ph,3,"image::set_cell_positions_in_image() Ph");
-#else
     c->Ph = mem.myalloc(c->Ph,3);
-#endif
     get_image_Ipos(c->pos, ///< input position, sim coords, integer units.
 		   c->Ph   ///< output: image coords and units.
 		   );
@@ -931,11 +1086,7 @@ void image::delete_cell_positions()
   //
   cell *c = gptr->FirstPt();
   do {
-#ifdef TESTING
-    c->Ph = mem.myfree(c->Ph,"image::set_cell_positions_in_image() Ph");
-#else
     c->Ph = mem.myfree(c->Ph);
-#endif
   } while ((c=gptr->NextPt(c))!=0);
 
   //
@@ -980,316 +1131,25 @@ void image::initialise_pixels()
 void image::delete_pixel_data(pixel *p)
 {
   if (p->int_pts.p) {
-#ifdef TESTING
-    p->int_pts.p = mem.myfree(p->int_pts.p,"image::delete_pixel_data() points");
-#else
     p->int_pts.p = mem.myfree(p->int_pts.p);
-#endif
   }
 
   return;
 }
 
 
-
 // ##################################################################
 // ##################################################################
 
 
 
-double image::get_pt_density(struct point_4cellavg *pt)
-{
-  //
-  // Bilinear interpolation with pre-calculated weights and neighbouring
-  // cells.
-  //
-  double val=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *pt->ngb[v]->P[RO];
-  }
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double image::get_pt_neutral_numberdensity(
-        struct point_4cellavg *pt, int ifrac
-        )
-{
-  //
-  // Bilinear interpolation with pre-calculated weights and neighbouring
-  // cells.
-  //
-  double val=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *(pt->ngb[v]->P[RO]
-                                      *(1.0-pt->ngb[v]->P[ifrac]));
-  }
-  val *= SimPM.EP.H_MassFrac/GS.m_p();
-  //cout <<"image::get_pt_neutral_numberdensity() n(H0) = "<<val<<"\n";
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-//#define SQRT_DENSITY
-//#define NO_DENSITY_WT
-#define LINMAX_DENSITY
-#define MAXDENS 25000.0
-
-double image::get_pt_StokesQ(struct point_4cellavg *pt, const int ,
-			     const int bx, const int by, const int bz,
-			     const int signx, const int , const int signz,
-			     const double sintht, const double costht)
-{
-  //
-  // Bilinear interpolation with pre-calculated weights and neighbouring
-  // cells.
-  //
-#ifdef NEW_STOKES_CALC
-  //
-  // New Q calculated from Bx,By according to
-  // Q = sum_i wt[i]*|f(n_H)*(Bx^2-By^2)/sqrt(Bx^2+By^2)|_i
-  //
-  double val=0.0, bx2=0.0, by2=0.0, btot=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      //
-      // Get Bx along line of sight:
-      //
-      bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      bx2 *= bx2;
-      //
-      // By is easier, and so then is btot.
-      //
-      by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      btot = sqrt(bx2+by2);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p())*(bx2-by2)/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *(bx2-by2)/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *(bx2-by2)/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  //
-  // End of new calc
-  //
-#else  // not NEW_STOKES_CALC
-  //
-  // Old calculation
-  //
-  double val=0.0, btot=0.0, bx2=0.0, by2=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      bx2 *= bx2;
-      by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  by2 +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p())*(bx2-by2)/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *(bx2-by2)/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *(bx2-by2)/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  //
-  // End of old calculation
-  //
-#endif // NEW_STOKES_CALC
-
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double image::get_pt_StokesU(struct point_4cellavg *pt, const int ,
-			     const int bx, const int by, const int bz,
-			     const int signx, const int signy, const int signz,
-			     const double sintht, const double costht)
-{
-  //
-  // Bilinear interpolation with pre-calculated weights and neighbouring
-  // cells.
-  //
-#ifdef NEW_STOKES_CALC
-  //
-  // New Q calculated from Bx,By according to
-  // Q = sum_i wt[i]*|f(n_H)*(2*Bx*By)/sqrt(Bx^2+By^2)|_i
-  //
-  double val=0.0, btot=0.0, bxy=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      //
-      // Calculate Bx and add Bx^2 to btot
-      //
-      bxy = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      btot = bxy*bxy;
-      //
-      // Multipy Bx by By, add By^2 to btot
-      //
-      bxy *= signy*pt->ngb[v]->P[by];
-      btot += pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      //
-      // Btot = sqrt(Bx^2+By^2) now.  bxy=Bx*By.
-      //
-      btot = sqrt(btot);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p())*2.0*bxy/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *2.0*bxy/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *2.0*bxy/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  //
-  // End of new calc
-  //
-#else  // not NEW_STOKES_CALC
-  //
-  // Old calculation
-  //
-  double val=0.0, btot=0.0, bxy=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      bxy = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      bxy *= signy*pt->ngb[v]->P[by];
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  pt->ngb[v]->P[by]*pt->ngb[v]->P[by] +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p()) *2.0*bxy/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *2.0*bxy/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *2.0*bxy/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  //
-  // End of old calculation
-  //
-#endif // NEW_STOKES_CALC
-
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double image::get_pt_BXabs(struct point_4cellavg *pt, const int,
-			   const int bx, const int by, const int bz,
-			   const int signx, const int , const int signz,
-			   const double sintht, const double costht)
-{
-  //
-  // Bilinear interpolation with pre-calculated weights and neighbouring
-  // cells.
-  //
-  double val=0.0, btot=0.0, bx2=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      bx2 = signx*pt->ngb[v]->P[bx]*costht -signz*pt->ngb[v]->P[bz]*sintht;
-      bx2 *= bx2;
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  pt->ngb[v]->P[by]*pt->ngb[v]->P[by] +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p()) *bx2/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *bx2/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *bx2/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double image::get_pt_BYabs(struct point_4cellavg *pt, const int ,
-			   const int bx, const int by, const int bz,
-			   const int , const int , const int ,
-			   const double , const double )
-{
-  //
-  // Bilinear interpolation with pre-calculated weights and neighbouring
-  // cells.
-  //
-  double val=0.0, btot=0.0, by2=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      by2 = pt->ngb[v]->P[by]*pt->ngb[v]->P[by];
-      btot = sqrt(pt->ngb[v]->P[bx]*pt->ngb[v]->P[bx] +
-		  by2 +
-		  pt->ngb[v]->P[bz]*pt->ngb[v]->P[bz]);
-#if defined (SQRT_DENSITY)
-      val += pt->wt[v] *sqrt(pt->ngb[v]->P[RO]/GS.m_p()) *by2/btot;
-#elif defined (NO_DENSITY_WT)
-      val += pt->wt[v] *by2/btot;
-#elif defined (LINMAX_DENSITY)
-      val += pt->wt[v] *std::min(pt->ngb[v]->P[RO]/GS.m_p(),MAXDENS) *by2/btot;
-#else
-#error "try to define some sort of weighting for magnetic field!!!"
-#endif
-    }
-  }
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void image::calculate_pixel(struct pixel *px,                 ///< pointer to pixel
-			    const struct vel_prof_stuff *vps, ///< struct with info for velocity binning.
-			    const int what_to_integrate,      ///< flag for what to integrate.
-			    double *im,                       ///< array of pixel data.
-			    double *tot_mass                  ///< general purpose counter for stuff.
-			    )
+void image::calculate_pixel(
+      struct pixel *px,                 ///< pointer to pixel
+      const struct vel_prof_stuff *vps, ///< struct with info for velocity binning.
+      const int what_to_integrate,      ///< flag for what to integrate.
+      double *im,                       ///< array of pixel data.
+      double *tot_mass                  ///< general purpose counter for stuff.
+      )
 {
   //   cout <<"calculate_pixel: i="<<i<<" what="<<what_to_integrate;
   //   cout <<" mass="<<*tot_mass<<" vps->v_min="<<vps->v_min;
@@ -1306,12 +1166,12 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
   double ans=0.0;
   
   if       (what_to_integrate==I_DENSITY) {
-    ans += get_pt_density(&(px->int_pts.p[0]));
+    ans += get_point_density(&(px->int_pts.p[0]));
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_pt_density(&(px->int_pts.p[v]));
+      ans += wt *get_point_density(&(px->int_pts.p[v]));
     }
-    ans += get_pt_density(&(px->int_pts.p[npt-1]));
+    ans += get_point_density(&(px->int_pts.p[npt-1]));
     ans *= hh/3.0;
 
     *tot_mass += ans;
@@ -1319,22 +1179,56 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
   }
   
   else if (what_to_integrate==I_NEUTRAL_NH) {
-    ans += get_pt_neutral_numberdensity(&(px->int_pts.p[0]),SimPM.ftr);
+    ans += get_point_neutralH_numberdensity(&(px->int_pts.p[0]),SimPM.ftr);
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_pt_neutral_numberdensity(&(px->int_pts.p[v]),SimPM.ftr);
+      ans += wt *get_point_neutralH_numberdensity(&(px->int_pts.p[v]),SimPM.ftr);
     }
-    ans += get_pt_neutral_numberdensity(&(px->int_pts.p[npt-1]),SimPM.ftr);
+    ans += get_point_neutralH_numberdensity(&(px->int_pts.p[npt-1]),SimPM.ftr);
     ans *= hh/3.0;
 
     *tot_mass += ans;
     im[px->ipix] = ans;
   }
-  
+  else if (what_to_integrate==I_EM) {
+    //
+    // Emission Measure:
+    // Point quantity in units cm^{-6} needs to be multiplied by dl
+    // in parsecs to get projected units cm^{-6}.pc
+    //
+    //cout <<"calculating EM\n";
+    ans = get_point_EmissionMeasure(&(px->int_pts.p[0]),SimPM.ftr);
+    for (int v=1; v<(npt-1); v++) {
+      wt = 6-wt;
+      ans += wt *get_point_EmissionMeasure(&(px->int_pts.p[v]), SimPM.ftr);
+    }
+    ans += get_point_EmissionMeasure(&(px->int_pts.p[npt-1]), SimPM.ftr);
+    ans *= hh/3.0/pconst.parsec();
+    *tot_mass += ans;
+    im[px->ipix] = ans;
+  }
+  else if (what_to_integrate==I_BREMS20CM) {
+    //
+    // Bremsstrahlung at 20cm:
+    // Point quantity in units MJy/sr/cm
+    // Projected quantity in MJy/sr
+    //
+    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]),SimPM.ftr);
+    for (int v=1; v<(npt-1); v++) {
+      wt = 6-wt;
+      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]), SimPM.ftr);
+    }
+    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]), SimPM.ftr);
+    ans *= hh/3.0;
+    *tot_mass += ans;
+    im[px->ipix] = ans;
+  }
+
   else if (what_to_integrate==I_B_STOKESQ ||
 	   what_to_integrate==I_B_STOKESU ||
 	   what_to_integrate==I_BXabs     ||
-	   what_to_integrate==I_BYabs) {
+	   what_to_integrate==I_BYabs     ||
+	   what_to_integrate==I_RM          ) {
     int bx=0,by=0,bz=0;			       
     if      (sa[XX]==XX) bx=BX;
     else if (sa[XX]==YY) bx=BY;
@@ -1354,50 +1248,72 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     //cout <<"using element "<<bz<<" for LOS, and "<<bx<<" for x-component; theta="<<angle<<" deg.\n";
 
     if      (what_to_integrate==I_B_STOKESQ) {
-      ans += get_pt_StokesQ(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_StokesQ(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       for (int v=1; v<(npt-1); v++) {
 	wt = 6-wt;
-	ans += wt *get_pt_StokesQ(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+	ans += wt *get_point_StokesQ(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       }
-      ans += get_pt_StokesQ(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_StokesQ(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       ans *= 1.0/3.0;
       *tot_mass += ans;
       im[px->ipix] = ans;
     }
     else if (what_to_integrate==I_B_STOKESU) {
-      ans += get_pt_StokesU(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_StokesU(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       for (int v=1; v<(npt-1); v++) {
 	wt = 6-wt;
-	ans += wt *get_pt_StokesU(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+	ans += wt *get_point_StokesU(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       }
-      ans += get_pt_StokesU(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_StokesU(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       ans *= 1.0/3.0;
       *tot_mass += ans;
       im[px->ipix] = ans;
     }
     else if (what_to_integrate==I_BXabs) {
-      ans += get_pt_BXabs(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_BXabs(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       for (int v=1; v<(npt-1); v++) {
 	wt = 6-wt;
-	ans += wt *get_pt_BXabs(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+	ans += wt *get_point_BXabs(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       }
-      ans += get_pt_BXabs(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_BXabs(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       ans *= 1.0/3.0;
       *tot_mass += ans;
       im[px->ipix] = ans;
     }
     else if (what_to_integrate==I_BYabs) {
-      ans += get_pt_BYabs(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_BYabs(&(px->int_pts.p[0]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       for (int v=1; v<(npt-1); v++) {
 	wt = 6-wt;
-	ans += wt *get_pt_BYabs(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+	ans += wt *get_point_BYabs(&(px->int_pts.p[v]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       }
-      ans += get_pt_BYabs(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
+      ans += get_point_BYabs(&(px->int_pts.p[npt-1]),SimPM.ftr, bx,by,bz,signx,signy,signz,st,ct);
       ans *= 1.0/3.0;
       *tot_mass += ans;
       im[px->ipix] = ans;
     }
-    else rep.error("Bad what to integrate -- Stokes Q/U or BX/BY",what_to_integrate);
+    else if (what_to_integrate==I_RM) {
+      //
+      // Rotation Measure:
+      // Point quantity needs to be multiplied by dl in parsecs and
+      // sqrt(4pi)*10^6 to give the RM in rad/m^2.
+      //
+      ans = get_point_RotationMeasure(&(px->int_pts.p[0]),SimPM.ftr,
+                                        bx,bz,signx,signz,st,ct);
+      for (int v=1; v<(npt-1); v++) {
+	wt = 6-wt;
+	ans += wt *get_point_RotationMeasure(&(px->int_pts.p[v]),
+                              SimPM.ftr, bx,bz,signx,signz,st,ct);
+      }
+      ans += get_point_RotationMeasure(&(px->int_pts.p[npt-1]),
+                              SimPM.ftr, bx,bz,signx,signz,st,ct);
+      ans *= hh*1.0e6*sqrt(4.0*M_PI)/3.0/pconst.parsec();
+      *tot_mass += ans;
+      im[px->ipix] = ans;
+    }
+    else {
+      rep.error("Bad what to integrate -- B-field options",
+                what_to_integrate);
+    }
   } // I_STOKES Q/U or BX/BY
   
   else if (what_to_integrate==I_VX) {
@@ -1594,7 +1510,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     // None of the parameters mean anything for calculating emission;
     // they're just for velocity.
     //
-    class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
+    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
     double alpha=0.0, j=0.0, dtau=0.0;
     ans=0.0;
     //
@@ -1603,7 +1519,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     // source function, eq. 1.30, and ignores scattering.
     // 
     for (int v=0; v<npt; v++) {
-       VLOS.get_point_Halpha_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+       get_point_Halpha_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
 	 //
@@ -1620,7 +1536,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
        }
     }
 
-    *tot_mass += 0.0;  // this means nothing for emission integration...
+    //*tot_mass += 0.0;  // this means nothing for emission integration...
     im[px->ipix] = ans; ///1.0e80;
     //cout <<"\t\tans = "<<ans<<endl;
   } // I_EMISSION
@@ -1631,7 +1547,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     // None of the parameters mean anything for calculating [NII];
     // they're just for velocity.
     //
-    class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
+    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
     double alpha=0.0, j=0.0, dtau=0.0;
     ans=0.0;
     //
@@ -1640,7 +1556,7 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
     // source function, eq. 1.30, and ignores scattering.
     // 
     for (int v=0; v<npt; v++) {
-       VLOS.get_point_NII6584_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+       get_point_NII6584_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
 	 //
@@ -1691,15 +1607,16 @@ void image::calculate_pixel(struct pixel *px,                 ///< pointer to pi
 
 
 
-point_velocity::point_velocity(const int vx_comp,  ///< velocity component perp. to LOS direction (contributing)
-			       const int vz_comp,  ///< velocity componenet along LOS
-			       const int signx,    ///< +1 if looking along +ve vx axis; -1 otherwise
-			       const int signz,    ///< +1 if looking along +ve vz axis; -1 otherwise
-			       const double theta, ///< Angle to LOS (radians)
-			       const double velocity_min,      ///< minimum velocity in range
-			       const double velocity_max,      ///< maximum velocity in range
-			       const int velocity_Nbins        ///< Number of bins.
-			       )
+point_velocity::point_velocity(
+      const int vx_comp,  ///< velocity component perp. to LOS direction (contributing
+      const int vz_comp,  ///< velocity componenet along LOS
+      const int signx,    ///< +1 if looking along +ve vx axis; -1 otherwise
+      const int signz,    ///< +1 if looking along +ve vz axis; -1 otherwise
+      const double theta, ///< Angle to LOS (radians)
+      const double velocity_min,      ///< minimum velocity in range
+      const double velocity_max,      ///< maximum velocity in range
+      const int velocity_Nbins        ///< Number of bins.
+      )
 {
   vx = vx_comp;
   vz = vz_comp;
@@ -1815,8 +1732,9 @@ void point_velocity::four1(
 
 
 
-void point_velocity::smooth_profile_FFT(double *data ///< Array of velocity bins to smooth.
-				    )
+void point_velocity::smooth_profile_FFT(
+      double *data ///< Array of velocity bins to smooth.
+      )
 {
   //
   // This works with Fourier Transform methods, rather than doing the convolution
@@ -1964,12 +1882,13 @@ void point_velocity::get_point_v_los_profile(
 
 
 
-void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point to add to profile.
-				     double *prof,    ///< velocity bins.
-				     const int ifrac, ///< index of i-fraction in P.V.
-				     double vel,      ///< LOS velocity of point.
-				     double norm      ///< Normalisation of profile.
-				     )
+void point_velocity::broaden_profile(
+      const struct point_4cellavg *pt, ///< point to add to profile.
+      double *prof,    ///< velocity bins.
+      const int ifrac, ///< index of i-fraction in P.V.
+      double vel,      ///< LOS velocity of point.
+      double norm      ///< Normalisation of profile.
+      )
 {
   //
   // This should be a delta-function input profile, and we will convolve this with
@@ -1987,8 +1906,8 @@ void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point
   // sigma = the thermal broadening sigma in the gaussian.
   //
   double T = get_point_temperature(pt,ifrac);
-  //double ma = 27.0*GS.m_p(); // mass of 12CO molecule
-  //double sigma2 = GS.kB()*T/ma;
+  //double ma = 27.0*pconst.m_p(); // mass of 12CO molecule
+  //double sigma2 = pconst.kB()*T/ma;
   //double sigma  = sqrt(sigma2);
 
   //
@@ -2035,228 +1954,6 @@ void point_velocity::broaden_profile(const struct point_4cellavg *pt, ///< point
   //}
   return;
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double point_velocity::get_point_temperature(
-        const struct point_4cellavg *pt,
-        const int ifrac
-        )
-{
-  double val = 0.0;
-  //
-  // If microphysics is set up, then use MP->Temperature() to get the
-  // temperature.  Otherwise assume a pure Hydrogen gas.
-  //
-  if (MP) {
-    for (int v=0;v<4;v++) {
-      if (pt->ngb[v]) {
-        val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,SimPM.gamma);
-      }
-    }
-  }
-  else {
-    rep.error("get_point_temperature(): no microphysics class",1);
-    //  
-    // First get the mean of p/rho/(1+x)
-    //
-    for (int v=0;v<4;v++) {
-      if (pt->ngb[v]) {
-        //cout <<"p,ro,if = "<<pt->ngb[v]->P[PG]<<", "<< pt->ngb[v]->P[RO] <<", "<<pt->ngb[v]->P[ifrac]<<endl;
-        val += pt->wt[v] *(pt->ngb[v]->P[PG]/pt->ngb[v]->P[RO]/(1.0+pt->ngb[v]->P[ifrac]));
-      }
-    }
-    //
-    // multiply by m_p/k_B = 1.67e-24/1.38e-16 = 1.21e-8
-    //
-    val *= 1.21e-8;
-    //  cout <<"Temperature="<<val<<endl;
-  }
-  return val;
-}
-    
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double point_velocity::get_point_density(const struct point_4cellavg *pt)
-{
-  double val=0.0;
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) val += pt->wt[v] *pt->ngb[v]->P[RO];
-  }
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-double point_velocity::get_point_neutralH_numberdensity(
-        const struct point_4cellavg *pt,
-        const int ifrac
-        )
-{
-  double val=0.0;
-  //
-  // First get neutral mass density.
-  //
-  for (int v=0;v<4;v++) {
-    if (pt->ngb[v]) {
-      val += pt->wt[v] *(pt->ngb[v]->P[RO]*(1.0-pt->ngb[v]->P[ifrac]));
-    }
-  }
-  //
-  // Then scale by H mass fraction and divide by mass of H.
-  //
-  val *= SimPM.EP.H_MassFrac/GS.m_p();
-  return val;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-///
-/// Get the absorption and emission coefficients for H-alpha
-/// recombination radiation, according to Hummer94 and Henney et al.
-/// (2005)'s generic formulae.
-/// 
-/// I found emissivities according to Storey & Hummer
-/// (1995,MNRAS,272,41), and they drop linearly with temperature.
-/// Not sure why that is, but it is for Ha,Hb,Hg, etc.
-///
-/// UPDATE: Replaced with a fit to Ostebrock (1989)'s tables, which
-/// seem to be more reliable.
-///
-void point_velocity::get_point_Halpha_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (photons/cm)
-        double *j        ///< emission coeff (phot/cm^3/s/ster)
-        )
-{
-  //
-  // I need the H+ number density, neutral number density, and
-  // temperature. ion density is calculated from (density minus
-  // neutral_density).
-  // 
-  double T, ni, nn;
-  T  = get_point_temperature(pt,ifrac);
-  //
-  // get_point_neutralH_numberdensity() assume mean mass per particle
-  // is m_p(), so we multiply by the H mass fraction to get H number
-  // density.
-  // get_point_density() is mass density, so we also divide by m_p().
-  // Then the electron number density is the H+ number density times
-  // (1+X(He)/4X(H)).
-  //
-  nn = get_point_neutralH_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/GS.m_p();
-  ni = std::max(0.0, ni-nn);
-  //
-  // First absorption, from Henney et al. (2009) assuming the opacity
-  // is from dust, so that neutrals and ions both count.
-  //
-  *alpha = (ni+nn) *5.0e-22; // cgs units hardcoded.
-  //*alpha = 0.0; // zero absorption (cuts out simulation edges).
-  //
-  // Emissivity in H-alpha is
-  //   j = 1.12e-22*n_e*n_p/pow(T,0.9) erg/cm3/s/sr,
-  // from Osterbrock (book, edition 2006, table 4.4).
-  // Converted to per square arcsec this is
-  //   j = 2.63e-33*n_e*n_p/pow(T,0.9) erg/cm3/s/sq.arcsec.
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  //
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid!!!
-    *j = 0.0;
-  }
-  else {
-    *j = 2.63e-33*ni*ni*exp(-0.9*log(T));
-    // OLD VALUES *j = 2.056e-14*ni*ni/T;
-    // Emissivity scales more steeply than recombination rate
-  }
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-///
-/// Get the absorption and emission coefficients for [N II] 6584AA
-/// forbidden line emission, according to the formula in Dopita 
-/// (1973,A&A,29,387)
-/// 
-void point_velocity::get_point_NII6584_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j        ///< emission coeff (erg/cm^3/s/sq.arcsec)
-        )
-{
-  //
-  // I need the H+ number density, neutral number density, and
-  // temperature. ion density is calculated from (density minus
-  // neutral_density).
-  // 
-  double T, ni, nn;
-  T  = get_point_temperature(pt,ifrac);
-  //
-  // get_point_neutralH_numberdensity() assume mean mass per particle
-  // is m_p(), so we multiply by the H mass fraction to get H number
-  // density.
-  // get_point_density() is mass density, so we also divide by m_p().
-  // Then the electron number density is the H+ number density times
-  // (1+X(He)/4X(H)).
-  //
-  nn = get_point_neutralH_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/GS.m_p();
-  ni = std::max(0.0, ni-nn);
-  //
-  // First absorption, from Henney et al. (2009) assuming the opacity
-  // is from dust, so that neutrals and ions both count.
-  //
-  *alpha = (ni+nn) *5.0e-22; // cgs units hardcoded.
-  //*alpha = 0.0; // zero absorption (cuts out simulation edges).
-  //
-  // Emissivity in [N II] 6584AA is
-  //  j([NII] ll 6584) =
-  //   6.82e-18 n_e*n_p*f(N)*exp(-chi/kT)/(4*pi*sqrt(T))
-  // in units of erg/cm3/s/sr, and use
-  //  n_e*n_p = rho^2 y^2 (X_H/m_p)^2
-  // and we convert to erg/cm2/s/sq.arcsec.
-  //
-  // Furthermore, we assume N has its solar ISM abundance of
-  // A(N)=7.85 or f(N)=7.08e-5.
-  //
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid!!!
-    *j = 0.0;
-  }
-  else {
-    *j = 9.03e-34*ni*ni*exp(-2.1855e4/T)/sqrt(T);
-  }
-  return;
-}
-
 
 
 
@@ -2378,6 +2075,12 @@ int point_velocity::get_velocity_bin_number(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // ------------------------------------------------------------
 // ************************************************************
 // ------------------------------------------------------------
@@ -2488,4 +2191,10 @@ int point_velocity::get_velocity_bin_number(
 
 //   return 0;
 // }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

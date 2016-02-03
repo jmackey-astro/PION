@@ -26,9 +26,20 @@
 /// - 2012.10.15 JM: minor mods to reading fits data, so that I don't
 ///    need the HDU's name; without a name it will default to hdu1.
 /// - 2013.04.16 JM: some debugging messages and new comments added.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
 #ifdef FITS
-#include "dataio_fits.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "dataIO/dataio_fits.h"
 #include "fitsio.h"
 #include <cstring>
 #include <sstream>
@@ -243,14 +254,25 @@ int utility_fitsio::read_fits_image_to_data(
       // If can't find variable, set them all to zero.
       if(status) {fits_report_error(stderr,status);}
       fits_clear_errmsg(); status=0;
-      cout <<"utility_fitsio::read_fits_image() couldn't get data for variable "<< name;
-      cout <<"; will set data to zero and return error code.\n";
+      cerr <<"utility_fitsio::read_fits_image() ";
+      cerr <<"couldn't get data for variable "<< name;
+      cerr <<"; will set data to zero and return error code.\n";
       for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
       return err;
     }
   }
   else {
     int err = ffmahd(ff,hdu_num,0,&status);
+    if (err) {
+      // If can't move to a hdu, then return an error
+      if(status) {fits_report_error(stderr,status);}
+      fits_clear_errmsg(); status=0;
+      cerr <<"utility_fitsio::read_fits_image() ";
+      cerr <<"couldn't get data for HDU# "<< hdu_num;
+      cerr <<"; will set data to zero and return error code.\n";
+      for (long int v=0;v<ntot;v++) (*data)[v]=0.0;
+      return err;
+    }
   }
 
   double nulval = -1.e99; int anynul=0;

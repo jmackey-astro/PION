@@ -14,28 +14,38 @@
 ///    This ref. has a typo in eq.24 -- the f_b^{pm} term should only have one +/-
 ///
 /// History:
-///  - 2010-09-21 JM: Started writing.
-///
+/// - 2010-09-21 JM: Started writing.
 /// - 2010.12.22 JM: Moved to Riemann solvers sub-directory.
-/// 
 /// - 2010.12.23 JM: Removed tracer flux calculation -- now calculated
 ///   by calling function in flux_solver_...
-///
 /// - 2011.03.03 JM: Added rs_nvar=5 for local state vectors.  New code versions
 ///    can handle up to 70 tracers, so it would hugely slow down the code if the
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
 ///    For this to work I had to explicitly call the Euler Eqns class for PtoU()
 ///    and PUtoFlux(); otherwise the flux-solver class (with tracers) would be used.
-///
+/// - 2015.01.14 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
-#include "Riemann_FVS_hydro.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+
+#include "Riemann_solvers/Riemann_FVS_hydro.h"
 #include <iostream>
 using namespace std;
 
-Riemann_FVS_Euler::Riemann_FVS_Euler(const int nv,      ///< Length of State Vectors, nvar
-				     const double g   ///< Gamma for state vector.
-				     )
+
+// ##################################################################
+// ##################################################################
+
+
+
+Riemann_FVS_Euler::Riemann_FVS_Euler(
+      const int nv,      ///< Length of State Vectors, nvar
+      const double g   ///< Gamma for state vector.
+      )
   : eqns_base(nv), eqns_Euler(nv), rs_nvar(5)
 {
   //
@@ -51,6 +61,12 @@ Riemann_FVS_Euler::Riemann_FVS_Euler(const int nv,      ///< Length of State Vec
   fneg = mem.myalloc(fneg,rs_nvar);
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 Riemann_FVS_Euler::~Riemann_FVS_Euler()
 {
   fpos = mem.myfree(fpos);
@@ -58,12 +74,19 @@ Riemann_FVS_Euler::~Riemann_FVS_Euler()
 }
 
 
-int Riemann_FVS_Euler::FVS_flux(const double *pl, ///< Left Primitive var. state vec.
-				const double *pr, ///< Right Primitive var. state vec.
-				double *flux,     ///< Result Flux vector.
-				double *pstar,    ///< Interface state (for viscosity)
-				const double    ///< Gas constant gamma (unused)
-				)
+// ##################################################################
+// ##################################################################
+
+
+
+
+int Riemann_FVS_Euler::FVS_flux(
+      const pion_flt *pl, ///< Left Primitive var. state vec.
+      const pion_flt *pr, ///< Right Primitive var. state vec.
+      pion_flt *flux,     ///< Result Flux vector.
+      pion_flt *pstar,    ///< Interface state (for viscosity)
+      const double    ///< Gas constant gamma (unused)
+      )
 {
 #ifdef TESTING
   //
@@ -102,7 +125,7 @@ int Riemann_FVS_Euler::FVS_flux(const double *pl, ///< Left Primitive var. state
   }
   else if (Ml > 1.0) {
     // Call the eqns_Euler version to avoid calculating tracer fluxes here.
-    double utemp[rs_nvar];
+    pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(pl,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(pl,utemp,fpos);
     //PtoFlux(pl,fpos,eq_gamma);
@@ -130,7 +153,7 @@ int Riemann_FVS_Euler::FVS_flux(const double *pl, ///< Left Primitive var. state
     for (int v=0;v<rs_nvar;v++) fneg[v]=0.0;
   }
   else if (Mr < -1.0) {
-    double utemp[rs_nvar];
+    pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(pr,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(pr,utemp,fneg);
     //PtoFlux(pr,fneg,eq_gamma);
@@ -177,11 +200,19 @@ int Riemann_FVS_Euler::FVS_flux(const double *pl, ///< Left Primitive var. state
   return 0;
 }
 
-void Riemann_FVS_Euler::Roe_average_state(const double *p1, ///< state 1
-					  const double *p2, ///< state 2
-					  const double,     ///< gamma (unused)
-					  double *ans       ///< Roe-averaged state
-					  )
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void Riemann_FVS_Euler::Roe_average_state(
+      const pion_flt *p1, ///< state 1
+      const pion_flt *p2, ///< state 2
+      const double,     ///< gamma (unused)
+      pion_flt *ans       ///< Roe-averaged state
+      )
 {
   //
   // Get Roe-average values for rho, v_x, v_y, v_z, H, a
@@ -213,3 +244,11 @@ void Riemann_FVS_Euler::Roe_average_state(const double *p1, ///< state 1
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+

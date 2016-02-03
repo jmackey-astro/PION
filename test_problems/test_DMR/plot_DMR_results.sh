@@ -1,5 +1,9 @@
 #!/bin/bash
-# Generate TIFF figures of the final frame of DMR test problems.
+#
+# Generate PNG figures of the final frame of DMR test problems.
+#
+# Modifications:
+# - 2015.03.24 JM: edited to write png files.
 
 # input a filename to read as $1
 filedir=$1
@@ -68,15 +72,6 @@ A.legendInfoFlag=0
 
 SetAnnotationAttributes(A)
 
-#
-# Open the Next file:
-#
-#OpenDatabase("localhost:/mnt/home_cr/jmackey/active/projects/uniform_grid_code/trunk/results/tests/DMRm10t60_n520_Hyb_av10.*.silo database", 0)
-#AddPlot("Contour", "Density", 0, 1)
-#SetPlotOptions(ca)
-#T.translateY = -1
-#SetOperatorOptions(T, 0)
-#SetAnnotationAttributes(A)
 
 DrawPlots()
 #state = TimeSliderGetNStates()
@@ -90,7 +85,7 @@ sw.height= 600
 sw.outputToCurrentDirectory = 0
 sw.outputDirectory = "${filedir}"
 sw.family = 0
-sw.format = sw.TIFF # BMP, CURVE, JPEG, OBJ, PNG, POSTSCRIPT, POVRAY, PPM, RGB, STL, TIFF, ULTRA, VTK
+sw.format = sw.PNG # BMP, CURVE, JPEG, OBJ, PNG, POSTSCRIPT, POVRAY, PPM, RGB, STL, TIFF, ULTRA, VTK
 sw.resConstraint = sw.NoConstraint
 SetSaveWindowAttributes(sw)
 SaveWindow()

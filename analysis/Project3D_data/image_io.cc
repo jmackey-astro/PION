@@ -12,7 +12,6 @@
 
 
 #include "image_io.h"
-#include "global.h"
 #include <sstream>
 using namespace std;
 

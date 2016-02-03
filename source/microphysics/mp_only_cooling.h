@@ -18,14 +18,20 @@
 ///    functions.
 /// - 2013.02.14 JM: Tidied up file.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
+/// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
 #ifndef MP_ONLY_COOLING_H
 #define MP_ONLY_COOLING_H
 
+
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "microphysics/cooling_SD93_cie.h"
 #include "microphysics/microphysics_base.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
-#include "global.h"
+
 
 ///
 /// This is a simple microphysics class which only has heating and
@@ -57,8 +63,8 @@ class mp_only_cooling
   /// and the internal energy.
   ///
   virtual int TimeUpdateMP(
-        const double *, ///< Primitive Vector to be updated.
-        double *,       ///< Destination Vector for updated values.
+        const pion_flt *, ///< Primitive Vector to be updated.
+        pion_flt *,       ///< Destination Vector for updated values.
         const double,   ///< Time Step to advance by.
         const double,   ///< EOS gamma.
         const int,      ///< Switch for what type of integration to use (not used here!)
@@ -69,23 +75,23 @@ class mp_only_cooling
   /// This is just a dummy function which bugs out if called.
   ///
   virtual int TimeUpdate_RTsinglesrc(
-	const double *,  ///< Primitive Vector to be updated.
-	double *,       ///< Destination Vector for updated values.
-	const double,   ///< Time Step to advance by.
-	const double,   ///< EOS gamma.
-	const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-	const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-	const double,   ///< path length ds through cell.
-	const double,   ///< Optical depth to entry point of ray into cell.
-	double *        ///< return optical depth through cell in this variable.
-	) {return DONT_CALL_ME;}
+        const pion_flt *,  ///< Primitive Vector to be updated.
+        pion_flt *,       ///< Destination Vector for updated values.
+        const double,   ///< Time Step to advance by.
+        const double,   ///< EOS gamma.
+        const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+        const double,   ///< flux in per unit length along ray (F/ds or L/dV)
+        const double,   ///< path length ds through cell.
+        const double,   ///< Optical depth to entry point of ray into cell.
+        double *        ///< return optical depth through cell in this variable.
+        ) {return DONT_CALL_ME;}
 
   ///
   /// Initialise microphysics ionisation fractions to an equilibrium
   /// value.  This function does nothing here.
   ///
   virtual int Init_ionfractions(
-        double *, ///< Primitive vector to be updated.
+        pion_flt *, ///< Primitive vector to be updated.
         const double, ///< eos gamma.
         const double  ///< optional gas temperature to end up at. (negative means use pressure)
         ) {return DONT_CALL_ME;}
@@ -126,7 +132,7 @@ class mp_only_cooling
   /// you want it to be.  Here we assume ionised gas with mu=0.7m_p.
   ///
   virtual int Set_Temp(
-        double *, ///< primitive vector.
+        pion_flt *, ///< primitive vector.
         const double, ///< temperature requested.
         const double ///< eos gamma.
         );
@@ -136,7 +142,7 @@ class mp_only_cooling
   /// cgs units and ionised gas with mu=0.7m_p.
   ///
   virtual double Temperature(
-        const double *, ///< primitive vector
+        const pion_flt *, ///< primitive vector
         const double    ///< eos gamma
         );
 
@@ -146,7 +152,7 @@ class mp_only_cooling
   /// has any effect here.
   ///
   virtual double timescales(
-        const double *, ///< Current cell.
+        const pion_flt *, ///< Current cell.
         const double,   ///< EOS gamma.
         const bool, ///< set to true if including cooling time.
         const bool, ///< set to true if including recombination time.
@@ -163,7 +169,7 @@ class mp_only_cooling
   /// capability, it doesn't do anything!
   ///
   virtual double timescales_RT(
-        const double *, ///< Current cell.
+        const pion_flt *, ///< Current cell.
         const int,      ///< Number of UV heating sources.
         const std::vector<struct rt_source_data> &,
         ///< list of UV-heating column densities and source properties.
@@ -183,7 +189,7 @@ class mp_only_cooling
   ///
   double get_recombination_rate(
           const int,      ///< ion index in tracer array (optional).
-          const double *, ///< input state vector (primitive).
+          const pion_flt *, ///< input state vector (primitive).
           const double    ///< EOS gamma (optional)
           )
   {

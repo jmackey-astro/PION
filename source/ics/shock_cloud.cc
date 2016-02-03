@@ -2,8 +2,17 @@
  * 
  * File for setting up shock-cloud interaction problems.
  * */
+/// - 2015.01.15 JM: Added new include statements for new PION version.
 
-#include "icgen.h"
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
+
+#include "ics/icgen.h"
 #include <sstream>
 using namespace std;
 
@@ -260,7 +269,7 @@ int IC_shock_cloud::setup_data(class ReadParams *rrp,    ///< pointer to paramet
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());

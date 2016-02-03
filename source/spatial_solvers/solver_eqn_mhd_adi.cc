@@ -16,7 +16,13 @@
 /// - 2010.12.30 JM: Added cell pointer to dU_cell()
 /// - 2011.04.15 JM: Change in UtoP() for tracers (to try to correct for negative density!).
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
 #include "solver_eqn_mhd_adi.h"
 using namespace std;
@@ -35,7 +41,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
       const double cflno, ///< CFL number
       const double cellsize, ///< dx, cell size.
       const double gam, ///< gas eos gamma.
-      double *state, ///< State vector of mean values for simulation.
+      pion_flt *state, ///< State vector of mean values for simulation.
       const double avcoeff, ///< Artificial Viscosity Parameter etav.
       const int ntr ///< Number of tracer variables.
       )
@@ -89,7 +95,11 @@ FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 // ##################################################################
 
 
-void FV_solver_mhd_ideal_adi::PtoU(const double* p, double* u, const double g)
+void FV_solver_mhd_ideal_adi::PtoU(
+      const pion_flt *p,
+      pion_flt *u,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::PtoU ...starting.\n";
@@ -108,7 +118,12 @@ void FV_solver_mhd_ideal_adi::PtoU(const double* p, double* u, const double g)
 // ##################################################################
 // ##################################################################
 
-int FV_solver_mhd_ideal_adi::UtoP(const double *u, double *p, const double g)
+
+int FV_solver_mhd_ideal_adi::UtoP(
+      const pion_flt *u,
+      pion_flt *p,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::UtoP ...starting.\n";
@@ -131,7 +146,12 @@ int FV_solver_mhd_ideal_adi::UtoP(const double *u, double *p, const double g)
 // ##################################################################
 // ##################################################################
 
-void FV_solver_mhd_ideal_adi::PUtoFlux(const double *p, const double *u, double *f)
+
+void FV_solver_mhd_ideal_adi::PUtoFlux(
+      const pion_flt *p,
+      const pion_flt *u,
+      pion_flt *f
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::PUtoFlux ...starting.\n";
@@ -150,7 +170,12 @@ void FV_solver_mhd_ideal_adi::PUtoFlux(const double *p, const double *u, double 
 // ##################################################################
 // ##################################################################
 
-void FV_solver_mhd_ideal_adi::UtoFlux(const double *u, double *f, const double g)
+
+void FV_solver_mhd_ideal_adi::UtoFlux(
+      const pion_flt *u,
+      pion_flt *f,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::UtoFlux ...starting.\n";
@@ -174,26 +199,28 @@ void FV_solver_mhd_ideal_adi::UtoFlux(const double *u, double *f, const double g
 ///
 /// Adds the contribution from flux in the current direction to dU.
 ///
-int FV_solver_mhd_ideal_adi::dU_Cell(cell *c,          // Current cell.
-				   const axes d,     // Which axis we are looking along.
-				   const double *fn, // Negative direction flux.
-				   const double *fp, // Positive direction flux.
-				   const double *,   // slope vector for cell c.
-				   const int,        // spatial order of accuracy.
-				   const double,     // cell length dx.
-				   const double      // cell TimeStep, dt.
-				   )
+int FV_solver_mhd_ideal_adi::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c,          // Current cell.
+        const axes d,     // Which axis we are looking along.
+        const pion_flt *fn, // Negative direction flux.
+        const pion_flt *fp, // Positive direction flux.
+        const pion_flt *,   // slope vector for cell c.
+        const int,        // spatial order of accuracy.
+        const double,     // cell length dx.
+        const double      // cell TimeStep, dt.
+        )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::dU_Cell ...starting.\n";
 #endif //FUNCTION_ID
 
-  double u1[eq_nvar];
+  pion_flt u1[eq_nvar];
   //
   // This calculates -dF/dx
   //
   //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   
 #ifdef FUNCTION_ID
@@ -210,20 +237,21 @@ int FV_solver_mhd_ideal_adi::dU_Cell(cell *c,          // Current cell.
 /// General Finite volume scheme for updating a cell's
 /// primitive state vector, for homogeneous equations.
 ///
-int FV_solver_mhd_ideal_adi::CellAdvanceTime(class cell *c, // cell to update.
-					   const double *Pin, // Initial State Vector.
-					   double *dU, // Update vector dU
-					   double *Pf, // Final state vector (can be same as initial vec.).
-					   double *dE, // Tracks change of energy if I have to correct for negative pressure
-					   const double, // gas EOS gamma.
-					   const double  // Cell timestep dt.
-					   )
+int FV_solver_mhd_ideal_adi::CellAdvanceTime(
+      class cell *c, // cell to update.
+      const pion_flt *Pin, // Initial State Vector.
+      pion_flt *dU, // Update vector dU
+      pion_flt *Pf, // Final state vector (can be same as initial vec.).
+      pion_flt *dE, // Tracks change of energy if I have to correct for negative pressure
+      const double, // gas EOS gamma.
+      const double  // Cell timestep dt.
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::CellAdvanceTime ...starting.\n";
 #endif //FUNCTION_ID
 
-  double u1[eq_nvar], u2[eq_nvar];
+  pion_flt u1[eq_nvar], u2[eq_nvar];
 
   //
   // First convert from Primitive to Conserved Variables
@@ -278,10 +306,11 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(class cell *c, // cell to update.
 ///
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
-double FV_solver_mhd_ideal_adi::CellTimeStep(const cell *c, ///< pointer to cell
-					     const double, ///< gas EOS gamma.
-					     const double  ///< Cell size dx.
-					     )
+double FV_solver_mhd_ideal_adi::CellTimeStep(
+        const cell *c, ///< pointer to cell
+        const double, ///< gas EOS gamma.
+        const double  ///< Cell size dx.
+        )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::CellTimeStep ...starting.\n";
@@ -290,10 +319,10 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(const cell *c, ///< pointer to cell
   //
   // Get Max velocity along a grid direction.
   //
-  double u1[eq_nvar];
-  double temp = fabs(c->P[eqVX]);
-  if (FV_gndim>1) temp = max(temp,fabs(c->P[eqVY]));
-  if (FV_gndim>2) temp = max(temp,fabs(c->P[eqVZ]));
+  pion_flt u1[eq_nvar];
+  pion_flt temp = fabs(c->P[eqVX]);
+  if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
+  if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
   
   /*  if (fabs(c->P[VX])>fabs(c->P[VY])) {temp = fabs(c->P[VX]);}
    else {temp = fabs(c->P[VY]);}
@@ -326,20 +355,20 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(const cell *c, ///< pointer to cell
 
   //
   // Check the gradient of pressure with neighbouring cells, since this can 
-  // dramatically shorten the timestep.
+  // dramatically shorten the timestep.  (CAN'T REMEMBER WHY!!!)
   //
-  if (c->isgd) {
-    int pg = static_cast<int>(eqPG);
-    double grad = maxGradAbs(c,0,pg)/c->P[RO];
-    if( (temp = grad*FV_dt/temp) >1.) FV_dt /= temp;
-  }
-  else if (grid->NextPt(c,XP)) {
-    double grad = fabs(c->P[PG]-grid->NextPt(c,XP)->P[PG])/FV_dx/c->P[RO];
-    if( (temp = grad*FV_dt/temp) >1.) {
-      FV_dt /= temp;
-    }
-  }
-  else rep.error("No neighbour to gradient test",c);    
+  //if (c->isgd) {
+  //  int pg = static_cast<int>(eqPG);
+  //  double grad = max_grad_abs(c,0,pg, grid)/c->P[RO];
+  //  if( (temp = grad*FV_dt/temp) >1.) FV_dt /= temp;
+  //}
+  //else if (grid->NextPt(c,XP)) {
+  //  double grad = fabs(c->P[PG]-grid->NextPt(c,XP)->P[PG])/FV_dx/c->P[RO];
+  //  if( (temp = grad*FV_dt/temp) >1.) {
+  //    FV_dt /= temp;
+  //  }
+  //}
+  //else rep.error("No neighbour to gradient test",c);    
 
   
   //
@@ -368,15 +397,16 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(const cell *c, ///< pointer to cell
 // ##################################################################
 // ##################################################################
 
-FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(const int nv, ///< number of variables in state vector.
-					     const int nd, ///< number of space dimensions in grid.
-					     const double cflno,   ///< CFL number
-					     const double cellsize,    ///< dx, cell size.
-					     const double gam,     ///< gas eos gamma.
-					     double *state,     ///< State vector of mean values for simulation.
-					     const double avcoeff, ///< Artificial Viscosity Parameter etav.
-					     const int ntr         ///< Number of tracer variables.
-					     )
+FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
+      const int nv, ///< number of variables in state vector.
+      const int nd, ///< number of space dimensions in grid.
+      const double cflno,   ///< CFL number
+      const double cellsize,    ///< dx, cell size.
+      const double gam,     ///< gas eos gamma.
+      pion_flt *state,     ///< State vector of mean values for simulation.
+      const double avcoeff, ///< Artificial Viscosity Parameter etav.
+      const int ntr         ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     //riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
@@ -435,10 +465,10 @@ FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 ///
 int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
       class cell *c,
-      const double *Pin, // Initial State Vector.
-      double *dU, // Update vector dU
-      double *Pf, // Final state vector (can be same as initial vec.).
-      double *dE, // Tracks change of energy if I have to correct for negative pressure
+      const pion_flt *Pin, // Initial State Vector.
+      pion_flt *dU, // Update vector dU
+      pion_flt *Pf, // Final state vector (can be same as initial vec.).
+      pion_flt *dE, // Tracks change of energy if I have to correct for negative pressure
       const double, // gas EOS gamma.
       const double // Cell timestep dt.
       )
@@ -460,7 +490,11 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
 // ##################################################################
 // ##################################################################
 
-void FV_solver_mhd_mixedGLM_adi::PtoU(const double* p, double* u, const double g)
+void FV_solver_mhd_mixedGLM_adi::PtoU(
+      const pion_flt *p,
+      pion_flt *u,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::PtoU ...starting.\n";
@@ -479,7 +513,11 @@ void FV_solver_mhd_mixedGLM_adi::PtoU(const double* p, double* u, const double g
 // ##################################################################
 // ##################################################################
 
-int FV_solver_mhd_mixedGLM_adi::UtoP(const double *u, double *p, const double g)
+int FV_solver_mhd_mixedGLM_adi::UtoP(
+      const pion_flt *u,
+      pion_flt *p,
+      const double g
+      )
 {
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::UtoP ...starting.\n";
@@ -538,7 +576,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
       const double cflno, ///< CFL number
       const double cellsize, ///< dx, cell size.
       const double gam, ///< gas eos gamma.
-      double *state,   ///< State vector of mean values for simulation.
+      pion_flt *state,   ///< State vector of mean values for simulation.
       const double avcoeff, ///< Artificial Viscosity Parameter etav.
       const int ntr    ///< Number of tracer variables.
       )
@@ -589,23 +627,25 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_mhd_ideal_adi::dU_Cell(cell *c, ///< Current cell.
-			      const axes d, ///< Which axis we are looking along.
-			      const double *fn, ///< Negative direction flux.
-			      const double *fp, ///< Positive direction flux.
-			      const double *dpdx, ///< slope vector for cell c.
-			      const int OA,      ///< spatial order of accuracy.
-			      const double, ///< cell length dx.
-			      const double  ///< cell TimeStep, dt.
-			      )
+int cyl_FV_solver_mhd_ideal_adi::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c, ///< Current cell.
+        const axes d, ///< Which axis we are looking along.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        const pion_flt *dpdx, ///< slope vector for cell c.
+        const int OA,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )
 {
 #ifdef FUNCTION_ID
   cout <<"cyl_FV_solver_mhd_ideal_adi::dU_Cell ...starting.\n";
 #endif //FUNCTION_ID
 
-  double u1[eq_nvar];
+  pion_flt u1[eq_nvar];
 
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   if (d==Rcyl) {
     double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
@@ -641,7 +681,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
         const double cflno, ///< CFL number
         const double cellsize, ///< dx, cell size.
         const double gam, ///< gas eos gamma.
-        double *state,   ///< State vector of mean values for simulation.
+        pion_flt *state,   ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr    ///< Number of tracer variables.
         )
@@ -693,22 +733,24 @@ cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(cell *c, ///< Current cell.
-				 const axes d, ///< Which axis we are looking along.
-				 const double *fn, ///< Negative direction flux.
-				 const double *fp, ///< Positive direction flux.
-				 const double *dpdx, ///< slope vector for cell c.
-				 const int OA,      ///< spatial order of accuracy.
-				 const double, ///< cell length dx.
-				 const double  ///< cell TimeStep, dt.
-				 )
+int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c, ///< Current cell.
+        const axes d, ///< Which axis we are looking along.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        const pion_flt *dpdx, ///< slope vector for cell c.
+        const int OA,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )
 {
 #ifdef FUNCTION_ID
   cout <<"cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell ...starting.\n";
 #endif //FUNCTION_ID
 
-  double u1[eq_nvar];
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  pion_flt u1[eq_nvar];
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   if (d==Rcyl) {
     double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +c->Ph[eqBZ]*c->Ph[eqBZ])/2.;

@@ -22,7 +22,7 @@
 
 #include "HHe_photoion.h"
 //#include "grid/cell_interface.h"
-#include "global.h"
+
 
 #include <iostream>
 using namespace std;
@@ -731,21 +731,21 @@ void HHe_photoion::Setup_photoionisation_rate_table(
   // A small value (<1.0e30) indicates that this is the actual value of the first
   // derivative at the boundary values (4th is lower limit, 5th is upper limit).
   //
-  GS.spline(prTau, pirA, PI_Nspl, 1.e99, 1.e99, pirA_2);
-  GS.spline(prTau, pirB, PI_Nspl, 1.e99, 1.e99, pirB_2);
-  GS.spline(prTau, pirC, PI_Nspl, 1.e99, 1.e99, pirC_2);
+  interpolate.spline(prTau, pirA, PI_Nspl, 1.e99, 1.e99, pirA_2);
+  interpolate.spline(prTau, pirB, PI_Nspl, 1.e99, 1.e99, pirB_2);
+  interpolate.spline(prTau, pirC, PI_Nspl, 1.e99, 1.e99, pirC_2);
 
-  GS.spline(prTau, phrA, PI_Nspl, 1.e99, 1.e99, phrA_2);
-  GS.spline(prTau, phrB, PI_Nspl, 1.e99, 1.e99, phrB_2);
-  GS.spline(prTau, phrC, PI_Nspl, 1.e99, 1.e99, phrC_2);
+  interpolate.spline(prTau, phrA, PI_Nspl, 1.e99, 1.e99, phrA_2);
+  interpolate.spline(prTau, phrB, PI_Nspl, 1.e99, 1.e99, phrB_2);
+  interpolate.spline(prTau, phrC, PI_Nspl, 1.e99, 1.e99, phrC_2);
 
-  GS.spline(prTau, iltA, PI_Nspl, 1.e99, 1.e99, iltA_2);
-  GS.spline(prTau, iltB, PI_Nspl, 1.e99, 1.e99, iltB_2);
-  GS.spline(prTau, iltC, PI_Nspl, 1.e99, 1.e99, iltC_2);
+  interpolate.spline(prTau, iltA, PI_Nspl, 1.e99, 1.e99, iltA_2);
+  interpolate.spline(prTau, iltB, PI_Nspl, 1.e99, 1.e99, iltB_2);
+  interpolate.spline(prTau, iltC, PI_Nspl, 1.e99, 1.e99, iltC_2);
 
-  GS.spline(prTau, hltA, PI_Nspl, 1.e99, 1.e99, hltA_2);
-  GS.spline(prTau, hltB, PI_Nspl, 1.e99, 1.e99, hltB_2);
-  GS.spline(prTau, hltC, PI_Nspl, 1.e99, 1.e99, hltC_2);
+  interpolate.spline(prTau, hltA, PI_Nspl, 1.e99, 1.e99, hltA_2);
+  interpolate.spline(prTau, hltB, PI_Nspl, 1.e99, 1.e99, hltB_2);
+  interpolate.spline(prTau, hltC, PI_Nspl, 1.e99, 1.e99, hltC_2);
   // ----------------------------------------
 
   return;
@@ -938,11 +938,11 @@ void HHe_photoion::get_region_HHe_integral_diff(
   //
   if      (t2-t1<2.0*MinTau) {
     ans = max(MinTau, min(MaxTau, t1));
-    GS.splint(prTau, il1, il2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(prTau, il1, il2, PI_Nspl, log10(ans), &ans);
     *pir = (t2-t1)*exp(ln10()*ans);
     
     ans = max(MinTau, min(MaxTau, t1));
-    GS.splint(prTau, hl1, hl2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(prTau, hl1, hl2, PI_Nspl, log10(ans), &ans);
     *phr = (t2-t1)*exp(ln10()*ans);
   }
   //
@@ -972,7 +972,7 @@ void HHe_photoion::get_region_HHe_integral_diff(
     // Add the term for Tau.
     //
     ans = max(MinTau, min(MaxTau, t1));
-    GS.splint(prTau, ia1, ia2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(prTau, ia1, ia2, PI_Nspl, log10(ans), &ans);
     *pir = exp(ln10()*ans);
 #ifdef MP9_TESTING
     cout.precision(10);
@@ -983,7 +983,7 @@ void HHe_photoion::get_region_HHe_integral_diff(
     // Subtract the term for Tau+DTau.
     //
     ans = max(MinTau, min(MaxTau, t2));
-    GS.splint(prTau, ia1, ia2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(prTau, ia1, ia2, PI_Nspl, log10(ans), &ans);
     *pir -= exp(ln10()*ans);
 #ifdef MP9_TESTING
     cout <<", b = "<<exp(ln10()*ans)<<" rel.diff="<< (temp-exp(ln10()*ans))/temp<<"\n";
@@ -995,7 +995,7 @@ void HHe_photoion::get_region_HHe_integral_diff(
     // Add the term for Tau.
     //
     ans = max(MinTau, min(MaxTau, t1));
-    GS.splint(prTau, ha1, ha2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(prTau, ha1, ha2, PI_Nspl, log10(ans), &ans);
     *phr = exp(ln10()*ans);
 #ifdef MP9_TESTING
     temp=exp(ln10()*ans);
@@ -1005,7 +1005,7 @@ void HHe_photoion::get_region_HHe_integral_diff(
     // Subtract the term for Tau+DTau.
     //
     ans = max(MinTau, min(MaxTau, t2));
-    GS.splint(prTau, ha1, ha2, PI_Nspl, log10(ans), &ans);
+    interpolate.splint(prTau, ha1, ha2, PI_Nspl, log10(ans), &ans);
     *phr -= exp(ln10()*ans);
 #ifdef MP9_TESTING
     cout <<", b = "<<exp(ln10()*ans)<<" rel.diff="<< (temp-exp(ln10()*ans))/temp<<"\n";

@@ -1,28 +1,24 @@
-/** \file solver_eqn_base.cc
- * 
- * \brief Class definition for various solvers implemented in my FV grid-code.
- * \author Jonathan Mackey
- * 
- * Modifications:
- *  - 2007-07-10 Part Way through writing it.
- *  - 2007-07-11 Still writing it and working out class heirarchy.
- *  - 2007-07-12 Got the class heirarchy working (I think...).
- *  - 2007-07-13 New Class structure implemented.
- *  - 2007-07-16 Reverted to less complicated class hierarchy.  Runs fast.
- *  - 2007-07-23 Started to add passive tracer variables
- *  - 2007-07-24 Added passive tracer variable support.
- *  - 2007-08-01 cylindrical coordinates support.
- *  - 2007-08-08 cylindrical coordinates hd/i-mhd/glm-mhd working.
- *  - 2007-11-30 Worked on Toth's Field-CD method for keeping divB=0.
- *  - 2009-10-20 New structure built on equations and flux classes...
- *  - 2009-10-24 Cut out all the old solver classes.
- * */
-///
+/// \file solver_eqn_base.cc
+/// 
+/// \brief Class definition for various solvers implemented in my FV grid-code.
+/// \author Jonathan Mackey
+/// 
+/// Modifications:
+///  - 2007-07-10 Part Way through writing it.
+///  - 2007-07-11 Still writing it and working out class heirarchy.
+///  - 2007-07-12 Got the class heirarchy working (I think...).
+///  - 2007-07-13 New Class structure implemented.
+///  - 2007-07-16 Reverted to less complicated class hierarchy.  Runs fast.
+///  - 2007-07-23 Started to add passive tracer variables
+///  - 2007-07-24 Added passive tracer variable support.
+///  - 2007-08-01 cylindrical coordinates support.
+///  - 2007-08-08 cylindrical coordinates hd/i-mhd/glm-mhd working.
+///  - 2007-11-30 Worked on Toth's Field-CD method for keeping divB=0.
+///  - 2009-10-20 New structure built on equations and flux classes...
+///  - 2009-10-24 Cut out all the old solver classes.
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added set_div_v() function for cells)
-///
 /// - 2010.11.12 JM: Changed ->col to use cell interface for
 ///   extra_data.
-///
 /// - 2010.11.15 JM: Renamed calculate_flux() to inviscid_flux() and
 ///   moved AV calculation to FV_solver_base class.  Added Pre- and 
 ///   Post-flux viscosity functions for the H-correction and Lapidus
@@ -31,26 +27,26 @@
 ///   the maximum value of eta on a given H-stencil.
 ///   Made InterCellFlux general for all classes.
 /// - 2010.11.19 JM: Debugged.
-///
 /// - 2010.12.08 JM: Got the H-correction to work for 1D grids.
-///
 /// - 2010.12.23 JM: Added new set_interface_tracer_flux(lp,rp,flux);
 ///   function.  Removed riemann_base calls.  Added pstar[] array
 ///   to intercell_flux() function since it is no longer inherited.
-///
 /// - 2010.12.27 JM: modified args to post_calc_viscous_terms to pass
 ///   in left, right, pstar (since these are no longer class vars).
-///
 /// - 2011.01.03 JM: Moved preprocess_data() and calc_Hcorrection from
 ///   gridMethods.cc
-///
 /// - 2011.02.25 JM: removed HCORR ifdef around new code
-///
 /// - 2011.04.06 JM: Added thermal-conduction to preprocess_data.
-///
 /// - 2012.08.05 JM: Added spacers between functions for readability.
 ///    Thermal Conduction module is unusable now, needs re-writing.
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
 #include "solver_eqn_base.h"
 using namespace std;
@@ -64,14 +60,15 @@ using namespace std;
 // ##################################################################
 
 
-FV_solver_base::FV_solver_base(const int nv, ///< number of variables in state vector.
-			       const int nd, ///< number of space dimensions in grid.
-			       const double cflno,   ///< CFL number
-			       const double delx,    ///< dx, cell size.
-			       const double gam,     ///< gas eos gamma.
-			       const double avcoeff, ///< Artificial Viscosity Parameter etav.
-			       const int ntr         ///< Number of tracer variables.
-			       )
+FV_solver_base::FV_solver_base(
+      const int nv, ///< number of variables in state vector.
+      const int nd, ///< number of space dimensions in grid.
+      const double cflno,   ///< CFL number
+      const double delx,    ///< dx, cell size.
+      const double gam,     ///< gas eos gamma.
+      const double avcoeff, ///< Artificial Viscosity Parameter etav.
+      const int ntr         ///< Number of tracer variables.
+      )
   : eqns_base(nv),
     // riemann_base(nv),
     flux_solver_base(nv,avcoeff,ntr),
@@ -99,16 +96,17 @@ FV_solver_base::~FV_solver_base()
 // ##################################################################
 
 
-int FV_solver_base::get_LaxFriedrichs_flux(const double *l,
-					   const double *r,
-					   double *f,
-					   const double
-					   )
+int FV_solver_base::get_LaxFriedrichs_flux(
+      const pion_flt *l,
+      const pion_flt *r,
+      pion_flt *f,
+      const double
+      )
 {
   //
   // This has to be in this solver because we need dx,dt,ndim
   //
-  double u1[eq_nvar], u2[eq_nvar], f1[eq_nvar], f2[eq_nvar];
+  pion_flt u1[eq_nvar], u2[eq_nvar], f1[eq_nvar], f2[eq_nvar];
   PtoU(l, u1, eq_gamma);   PtoU(r, u2, eq_gamma);
   UtoFlux(u1, f1, eq_gamma);  UtoFlux(u2, f2, eq_gamma);
   // Then get inter-cell flux from this.
@@ -131,11 +129,14 @@ int FV_solver_base::get_LaxFriedrichs_flux(const double *l,
   return 0;
 }
 
-void FV_solver_base::set_div_v(cell *c)
+void FV_solver_base::set_div_v(
+      class cell *c,
+      class GridBaseClass *grid
+      )
 {
   int indices[MAX_DIM];
   indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
-  CI.set_DivV(c, Div(c,1,indices));
+  CI.set_DivV(c, Divergence(c,1,indices, grid));
   return;
 }
 
@@ -149,26 +150,28 @@ void FV_solver_base::set_div_v(cell *c)
 ///
 /// Calculate Flux between a left and right state.
 ///
-int FV_solver_base::InterCellFlux(const cell *Cl, ///< Left state cell pointer
-				  const cell *Cr, ///< Right state cell pointer
-				  double *lp, ///< Left Primitive State Vector.
-				  double *rp, ///< Right Primitive State Vector.
-				  double *f, ///< Flux Vector. (written to).
-				  const int solve_flag,    ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-				  const int av_flag,    ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
-				  const double g, ///< gas EOS gamma.
-				  const double dx ///< Cell size dx.
-				  )
+int FV_solver_base::InterCellFlux(
+        class GridBaseClass *grid,
+        const cell *Cl, ///< Left state cell pointer
+        const cell *Cr, ///< Right state cell pointer
+        pion_flt *lp, ///< Left Primitive State Vector.
+        pion_flt *rp, ///< Right Primitive State Vector.
+        pion_flt *f, ///< Flux Vector. (written to).
+        const int solve_flag,    ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+        const int av_flag,    ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
+        const double g, ///< gas EOS gamma.
+        const double dx ///< Cell size dx.
+        )
 {
   //cout <<"FV_solver_base::InterCellFlux() gamma="<<eq_gamma<<" and passed in was g="<<g<<"\n";
   eq_gamma=g;
-  double pstar[eq_nvar];
+  pion_flt pstar[eq_nvar];
 
   //
   // Pre-calcualate anything needed for the viscosity (H-correction).
   // Data is stored in each cell, so no values returned.
   //
-  pre_calc_viscous_terms(Cl,Cr,av_flag);
+  pre_calc_viscous_terms(grid,Cl,Cr,av_flag);
 
 
   //
@@ -199,10 +202,12 @@ int FV_solver_base::InterCellFlux(const cell *Cl, ///< Left state cell pointer
 // ##################################################################
 
 
-void FV_solver_base::pre_calc_viscous_terms(const cell *cl, ///< left-of-interface cell
-					    const cell *cr, ///< right-of-interface cell
-					    const int av_flag ///< what kind of AV?
-					    )
+void FV_solver_base::pre_calc_viscous_terms(
+        class GridBaseClass *grid,
+        const cell *cl, ///< left-of-interface cell
+        const cell *cr, ///< right-of-interface cell
+        const int av_flag ///< what kind of AV?
+        )
 {
   //
   // Only the H-correction acts before the actual flux calculation:
@@ -210,7 +215,7 @@ void FV_solver_base::pre_calc_viscous_terms(const cell *cl, ///< left-of-interfa
   switch (av_flag) {
   case AV_HCORRECTION: // H-correction
   case AV_HCORR_FKJ98: // H-correction +FKJ98 viscosity
-    flux_solver_base::HC_etamax = select_Hcorr_eta(cl,cr);
+    flux_solver_base::HC_etamax = select_Hcorr_eta(cl,cr, grid);
     break;
   default:
     // Just silently continue if not doing the H-correction.
@@ -228,14 +233,15 @@ void FV_solver_base::pre_calc_viscous_terms(const cell *cl, ///< left-of-interfa
 
 
 
-void FV_solver_base::post_calc_viscous_terms(const cell *cl, ///< left-of-interface cell
-					     const cell *cr, ///< right-of-interface cell
-					     const double *Pl,
-					     const double *Pr,
-					     const double *Pstar,
-					     double *flux,   ///< flux vector
-					     const int av_flag ///< what kind of AV?
-					     )
+void FV_solver_base::post_calc_viscous_terms(
+      const cell *cl, ///< left-of-interface cell
+      const cell *cr, ///< right-of-interface cell
+      const pion_flt *Pl,
+      const pion_flt *Pr,
+      const pion_flt *Pstar,
+      pion_flt *flux,   ///< flux vector
+      const int av_flag ///< what kind of AV?
+      )
 {
   //  cout <<"etav="<<FS_etav<<"\t";  rep.printVec("flux",flux,eq_nvar);
   //  rep.printVec("flux",flux,eq_nvar);
@@ -274,7 +280,11 @@ void FV_solver_base::post_calc_viscous_terms(const cell *cl, ///< left-of-interf
 // Multi-dimensional calculations to be performed on every cell before
 // the flux calculations.
 //
-int FV_solver_base::preprocess_data(const int csp, const int ctm)
+int FV_solver_base::preprocess_data(
+        const int csp,
+        const int ctm,
+        class GridBaseClass *grid
+        )
 {
   //  cout <<"\t\t\tpreprocess_data(): Starting: ndim = "<<SimPM.ndim<<"\n";
   int err=0;
@@ -336,7 +346,7 @@ int FV_solver_base::preprocess_data(const int csp, const int ctm)
   //
   else if (SimPM.artviscosity==AV_HCORRECTION ||
 	   SimPM.artviscosity==AV_HCORR_FKJ98) {
-    err += calc_Hcorrection(csp,ctm);
+    err += calc_Hcorrection(csp,ctm, grid);
   }
   return err;
 }
@@ -347,7 +357,11 @@ int FV_solver_base::preprocess_data(const int csp, const int ctm)
 // ##################################################################
 
 
-int FV_solver_base::calc_Hcorrection(const int csp, const int ctm)
+int FV_solver_base::calc_Hcorrection(
+        const int csp,
+        const int ctm,
+        class GridBaseClass *grid
+        )
 {
   //  cout <<"\t\t\tcalc_Hcorrection() ndim = "<<SimPM.ndim<<"\n";
 
@@ -371,7 +385,7 @@ int FV_solver_base::calc_Hcorrection(const int csp, const int ctm)
   // each cell had a slope vector for each direction), but obviously
   // this would increase the memory overhead hugely.
   //
-  double *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *temp=0;
+  pion_flt *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *temp=0;
   slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
   slope_npt = mem.myalloc(slope_npt, SimPM.nvar);
   edgeL     = mem.myalloc(edgeL,     SimPM.nvar);
@@ -436,9 +450,9 @@ int FV_solver_base::calc_Hcorrection(const int csp, const int ctm)
 	// eta[] values as we go.
 	//
 	do {
-	  err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp);
-	  err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp);
-	  err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp);
+	  err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+	  err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
+	  err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
 	  set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
 	  //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
 
@@ -455,9 +469,9 @@ int FV_solver_base::calc_Hcorrection(const int csp, const int ctm)
 	//
 	// If 1st order, cpt is still a grid cell (2nd order we are done)
 	//
-	err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp);
+	err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
 	for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-	err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp);
+	err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
 	set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
 	//cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
 	
@@ -506,12 +520,13 @@ int FV_solver_base::calc_Hcorrection(const int csp, const int ctm)
 // ##################################################################
 
 
-void FV_solver_base::set_Hcorrection(cell *c, ///< cell to operate on
-				     const axes axis, ///< axis normal to interface.
-				     const double *edgeL, ///< Left state
-				     const double *edgeR, ///< right state
-				     const double g       ///< gamma
-				     )
+void FV_solver_base::set_Hcorrection(
+      cell *c, ///< cell to operate on
+      const axes axis, ///< axis normal to interface.
+      const pion_flt *edgeL, ///< Left state
+      const pion_flt *edgeR, ///< right state
+      const double g       ///< gamma
+      )
 {
   if (axis != GetDirection()) {
     cout <<GetDirection()<<"\t";
@@ -534,9 +549,11 @@ void FV_solver_base::set_Hcorrection(cell *c, ///< cell to operate on
 // ##################################################################
 
 
-double FV_solver_base::select_Hcorr_eta(const cell *cl, ///< cell to left of interface
-					const cell *cr ///< cell to right of interface
-					)
+double FV_solver_base::select_Hcorr_eta(
+        const cell *cl, ///< cell to left of interface
+        const cell *cr, ///< cell to right of interface
+        class GridBaseClass *grid
+        )
 {
   //
   // Based on Sanders, Morano, Druguet, (1998, JCP, 145, 511)

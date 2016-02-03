@@ -27,6 +27,17 @@
 /// - 2013.08.23 JM: Change rad_src_info.position[] to .pos[]
 /// - 2014.07.11 JM: Changed noise from adiabatic to isothermal
 ///    perturbation.
+/// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2015.08.05 JM: Added pion_flt datatype.
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
+#include "constants.h"
+#ifdef TESTING
+#include "tools/command_line_interface.h"
+#endif // TESTING
 
 #include "icgen.h"
 #include <sstream>
@@ -325,7 +336,7 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   if (noise>0) {
     cout <<"\t\tNOISE!!! Adding random adiabatic noise";
     cout <<" at fractional level = "<<noise<<endl;
-    err+= AddNoise2Data(4,noise);
+    err+= AddNoise2Data(gg, 4,noise);
   }
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -397,7 +408,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // interpolation.
     //
     CI.get_dpos(cpt,cell_pos);
-    d = GS.distance(cell_pos,cloud1,ndim);
+    d = gg->distance(cell_pos,cloud1);
     if (d < edge) {
       cpt->P[RO] = rho1;
       cpt->P[PG] = pg1;
@@ -421,7 +432,7 @@ int IC_photoevaporatingclump::setup_pec2()
     // interpolation.
     //
     CI.get_dpos(cpt,cell_pos);
-    d = GS.distance(cell_pos,cloud2,ndim);
+    d = gg->distance(cell_pos,cloud2);
     if (d < edge) {
       cpt->P[RO] = rho1;
       cpt->P[PG] = pg1;
@@ -522,8 +533,6 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   cout <<" propagating into an ambient medium with 1/r^3 profile in Zcyl.\n";
   cout <<"WARNING: THIS FUNCTION HAS BEEN TAKEN OVER FOR A SPECIFIC PROBLEM!!\n";
   rep.printVec("ambient ",ambient, SimPM.nvar);
-  int nsub;
-  if (ndim==2) nsub=100; else nsub=32;
   
   cout <<"\t\tAssigning primitive vectors.\n";
   //double dist=0.0;
@@ -616,12 +625,8 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     // Note the radial profile is measured from cloudcentre, not neccessarily
     // centred on the source (srcpos).  cloudcentre is set by (PEC_xpos,PEC_ypos,PEC_zpos).
     //
-    if (!GS.equalD(radial_slope,0.0)) {
-#ifdef GEOMETRIC_GRID
-      dist = grid->distance_vertex2cell(ISM_centre,cpt);
-#else  // GEOMETRIC_GRID
-      dist = GS.distance(dpos,ISM_centre,SimPM.ndim);
-#endif // GEOMETRIC_GRID
+    if (!pconst.equalD(radial_slope,0.0)) {
+      dist = gg->distance_vertex2cell(ISM_centre,cpt);
 
       //
       // We use rho=rho0/(1+(r/r0)^n)
@@ -636,7 +641,7 @@ int IC_photoevaporatingclump::setup_cloud_clump()
     //
     if( (vfrac=stest.volumeFraction(cpt)) >0) {
       //cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
-      cpt->P[RO] = std::max(vfrac*(dratio),cpt->P[RO]);
+      cpt->P[RO] = std::max(static_cast<pion_flt>(vfrac*(dratio)),cpt->P[RO]);
       cpt->P[PG] = vfrac*(pratio*cpt->P[PG]) + (1.-vfrac)*cpt->P[PG];
       if (eqns==2)
 	cpt->P[BX] = vfrac*(Bratio*cpt->P[BX]) + (1.-vfrac)*cpt->P[BX];
@@ -666,8 +671,6 @@ int IC_photoevaporatingclump::setup_radialprofile()
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" propagating into an ambient medium with 1/r^"<<radial_slope<<" profile.\n";
   rep.printVec("ambient ",ambient, SimPM.nvar);
-  int nsub;
-  if (ndim==2) nsub=100; else nsub=32;
   
   cout <<"\t\tAssigning primitive vectors.\n";
   double dist=0.0;
@@ -701,12 +704,8 @@ int IC_photoevaporatingclump::setup_radialprofile()
     // Note the radial profile is measured from cloudcentre, not neccessarily
     // centred on the source (srcpos).  cloudcentre is set by (PEC_xpos,PEC_ypos,PEC_zpos).
     //
-    if (!GS.equalD(radial_slope,0.0)) {
-#ifdef GEOMETRIC_GRID
-      dist = grid->distance_vertex2cell(cloudcentre,cpt);
-#else  // GEOMETRIC_GRID
-      dist = GS.distance(dpos,cloudcentre,SimPM.ndim);
-#endif // GEOMETRIC_GRID
+    if (!pconst.equalD(radial_slope,0.0)) {
+      dist = gg->distance_vertex2cell(cloudcentre,cpt);
       //
       // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if r>r0
       // We also change the pressure so there is a constant temperature state.

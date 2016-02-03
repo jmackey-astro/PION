@@ -16,14 +16,19 @@
 ///   don't have time to fix isothermal stuff now...
 ///
 
-#ifdef ISOTHERMAL_SOLVERS_ENABLED
-
-
 #ifndef FLUX_HYDRO_ISOTHERMAL_H
 #define FLUX_HYDRO_ISOTHERMAL_H
 
-#include "../equations/eqns_hydro_isothermal.h"
-#include "../Riemann_solvers/findroot.h"
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#ifdef ISOTHERMAL_SOLVERS_ENABLED
+
+
+
+#include "equations/eqns_hydro_isothermal.h"
+#include "Riemann_solvers/findroot.h"
 
 ///
 /// Isothermal Hydrodynamics Riemann Solver Class.
@@ -185,7 +190,8 @@ protected:
    int Roe_solver_hydro_iso();
 };
 
+#endif // ISOTHERMAL_SOLVERS_ENABLED
+
 #endif // FLUX_HYDRO_ISOTHERMAL_H
 
 
-#endif // ISOTHERMAL_SOLVERS_ENABLED

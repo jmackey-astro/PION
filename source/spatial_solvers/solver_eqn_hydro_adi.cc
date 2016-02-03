@@ -24,7 +24,14 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2013.08.19 JM: tested a bunch of approximations, but nothing
 ///    was an improvement so I left it the way it was.
+/// - 2015.01.14 JM: Modified for new code structure; added the grid
+///    pointer everywhere.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 #include "solver_eqn_hydro_adi.h"
 using namespace std;
 
@@ -42,7 +49,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
         const double cflno,   ///< CFL number
         const double cellsize,    ///< dx, cell size.
         const double gam,     ///< gas eos gamma.
-        double *state,     ///< State vector of mean values for simulation.
+        pion_flt *state,     ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr         ///< Number of tracer variables.
         )
@@ -84,22 +91,24 @@ FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 ///
 /// Adds the contribution from flux in the current direction to dU.
 ///
-int FV_solver_Hydro_Euler::dU_Cell(cell *c,          // Current cell.
-				   const axes d,     // Which axis we are looking along.
-				   const double *fn, // Negative direction flux.
-				   const double *fp, // Positive direction flux.
-				   const double *,   // slope vector for cell c.
-				   const int,        // spatial order of accuracy.
-				   const double,     // cell length dx.
-				   const double      // cell TimeStep, dt.
-				   )
+int FV_solver_Hydro_Euler::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c,          // Current cell.
+        const axes d,     // Which axis we are looking along.
+        const pion_flt *fn, // Negative direction flux.
+        const pion_flt *fp, // Positive direction flux.
+        const pion_flt *,   // slope vector for cell c.
+        const int,        // spatial order of accuracy.
+        const double,     // cell length dx.
+        const double      // cell TimeStep, dt.
+        )
 {
-  double u1[eq_nvar];
+  pion_flt u1[eq_nvar];
   //
   // This calculates -dF/dx
   //
   //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
 }
@@ -112,18 +121,19 @@ int FV_solver_Hydro_Euler::dU_Cell(cell *c,          // Current cell.
 /// General Finite volume scheme for updating a cell's
 /// primitive state vector, for homogeneous equations.
 ///
-int FV_solver_Hydro_Euler::CellAdvanceTime(class cell *c,
-					   const double *Pin, // Initial State Vector.
-					   double *dU, // Update vector dU
-					   double *Pf, // Final state vector (can be same as initial vec.).
-					   double *dE, // TESTING Tracks change of energy for negative pressure correction.
-					   const double, // gas EOS gamma.
-					   const double  // Cell timestep dt.
-					   )
+int FV_solver_Hydro_Euler::CellAdvanceTime(
+      class cell *c,
+      const pion_flt *Pin, // Initial State Vector.
+      pion_flt *dU, // Update vector dU
+      pion_flt *Pf, // Final state vector (can be same as initial vec.).
+      pion_flt *dE, // TESTING Tracks change of energy for negative pressure correction.
+      const double, // gas EOS gamma.
+      const double  // Cell timestep dt.
+      )
 {
-  double u1[eq_nvar];
+  pion_flt u1[eq_nvar];
 #ifdef TESTING
-  double u2[eq_nvar];
+  pion_flt u2[eq_nvar];
 #endif //TESTING
 
   //
@@ -176,10 +186,11 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(class cell *c,
 ///
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
-double FV_solver_Hydro_Euler::CellTimeStep(const cell *c, ///< pointer to cell
-					   const double, ///< gas EOS gamma.
-					   const double  ///< Cell size dx.
-					   )
+double FV_solver_Hydro_Euler::CellTimeStep(
+      const cell *c, ///< pointer to cell
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      )
 {
   /** \section Algorithm
    * First Get the maximum fluid velocity in each of the three directions.
@@ -193,9 +204,9 @@ double FV_solver_Hydro_Euler::CellTimeStep(const cell *c, ///< pointer to cell
   //
   // Get Max velocity along a grid direction.
   //
-  double temp = fabs(c->P[eqVX]);
-  if (FV_gndim>1) temp = max(temp,fabs(c->P[eqVY]));
-  if (FV_gndim>2) temp = max(temp,fabs(c->P[eqVZ]));
+  pion_flt temp = fabs(c->P[eqVX]);
+  if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
+  if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
   
   //
   // Add the sound speed to this, and it is the max wavespeed.
@@ -250,7 +261,7 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
         const double cflno, ///< CFL number
         const double cellsize, ///< dx, cell size.
         const double gam,     ///< gas eos gamma.
-        double *state, ///< State vector of mean values for simulation.
+        pion_flt *state, ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr         ///< Number of tracer variables.
         )
@@ -289,22 +300,24 @@ cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler()
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
-				       const axes d, ///< Which axis we are looking along.
-				       const double *fn, ///< Negative direction flux.
-				       const double *fp, ///< Positive direction flux.
-				       const double *dpdx, ///< slope vector for cell c.
-				       const int OA,      ///< spatial order of accuracy.
-				       const double, ///< cell length dx.
-				       const double  ///< cell TimeStep, dt.
-				       )
+int cyl_FV_solver_Hydro_Euler::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c, ///< Current cell.
+        const axes d, ///< Which axis we are looking along.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        const pion_flt *dpdx, ///< slope vector for cell c.
+        const int OA,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )
 {
-  double u1[eq_nvar];
+  pion_flt u1[eq_nvar];
   //
   // This calculates -dF/dx
   //
   //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   //
   // Add source term for the radial direction.
@@ -358,7 +371,7 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
         const double cflno, ///< CFL number
         const double cellsize, ///< dx, cell size.
         const double gam,     ///< gas eos gamma.
-        double *state, ///< State vector of mean values for simulation.
+        pion_flt *state, ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr         ///< Number of tracer variables.
         )
@@ -397,21 +410,23 @@ sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler()
 // ##################################################################
 // ##################################################################
 
-int sph_FV_solver_Hydro_Euler::dU_Cell(cell *c, ///< Current cell.
-				       const axes d, ///< Which axis we are looking along.
-				       const double *fn, ///< Negative direction flux.
-				       const double *fp, ///< Positive direction flux.
-				       const double *dpdx, ///< slope vector for cell c.
-				       const int OA,      ///< spatial order of accuracy.
-				       const double, ///< cell length dx.
-				       const double  ///< cell TimeStep, dt.
-				       )
+int sph_FV_solver_Hydro_Euler::dU_Cell(
+        class GridBaseClass *grid,
+        cell *c, ///< Current cell.
+        const axes d, ///< Which axis we are looking along.
+        const pion_flt *fn, ///< Negative direction flux.
+        const pion_flt *fp, ///< Positive direction flux.
+        const pion_flt *dpdx, ///< slope vector for cell c.
+        const int OA,      ///< spatial order of accuracy.
+        const double, ///< cell length dx.
+        const double  ///< cell TimeStep, dt.
+        )
 {
-  double u1[eq_nvar];
+  pion_flt u1[eq_nvar];
   //
   // This calculates the negative of the ith component of divergence
   //
-  int err = DivStateVectorComponent(c,d,eq_nvar,fn,fp,u1);
+  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   //
   // Add source term for the radial direction (2p_g/r).

@@ -8,22 +8,29 @@
 ///  - 2009-12-22 JM: Added comments to rotation to make clear that we
 ///    are moving the vector quantity through +theta, NOT rotating the
 ///    coord.sys. by +theta.
-///
 ///  - 2010.09.30 JM: Worked on Lapidus AV (added Cl,Cr pointers to
 ///    flux functions).
-///
 /// - 2010.10.01 JM: Cut out testing myalloc/myfree
-///
 /// - 2010.12.23 JM: Added eq_refvec[] to eqns_base.  Deleted
 ///   riemann_base altogether.  Moved flux_solver_base class
 ///   definitions to flux_base.cc
-///
 /// - 2011.01.03 JM: Added eq_posdir and eq_negdir direction variables.
-///
-///
+/// - 2015.01.14 JM: Added new include statements for new PION version.
+/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+#include "tools/reporting.h"
+#include "tools/mem_manage.h"
 
 #include "eqns_base.h"
 using namespace std;
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 eqns_base::eqns_base(const int n ///< Number of Variables in State Vector
 		     )
@@ -63,11 +70,23 @@ eqns_base::eqns_base(const int n ///< Number of Variables in State Vector
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 eqns_base::~eqns_base()
 {
   eq_refvec = mem.myfree(eq_refvec);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 void eqns_base::SetDirection(const enum axes d)
@@ -110,15 +129,28 @@ void eqns_base::SetDirection(const enum axes d)
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 enum axes eqns_base::GetDirection()
 {
   return eq_dir;
 }
 
-void eqns_base::rotate(double *vec, ///< State vector
-		       enum axes initdir, ///< Initial orientation.
-		       enum axes finaldir ///< Final Orientation.
-		       )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void eqns_base::rotate(
+      pion_flt *vec, ///< State vector
+      enum axes initdir, ///< Initial orientation.
+      enum axes finaldir ///< Final Orientation.
+      )
 {
   ///
   /// \section Directions
@@ -161,9 +193,16 @@ void eqns_base::rotate(double *vec, ///< State vector
   return;
 }
 
-void eqns_base::rotateXY(double *v, ///< State vector
-			 double theta ///< rotation angle
-			 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+void eqns_base::rotateXY(
+      pion_flt *v, ///< State vector
+      double theta ///< rotation angle
+      )
 {
   //
   // This rotates the 3D vector fields by an angle +theta around the z-axis
@@ -176,9 +215,18 @@ void eqns_base::rotateXY(double *v, ///< State vector
   return;
 }
 
-void eqns_base::PtoFlux(const double *p, double *f, const double gamma)
+
+// ##################################################################
+// ##################################################################
+
+
+
+void eqns_base::PtoFlux(
+      const pion_flt *p,
+      pion_flt *f,
+      const double gamma)
 {
-   double u[eq_nvar];
+   pion_flt u[eq_nvar];
    PtoU(p, u, gamma);
    PUtoFlux(p,u,f);
    return;
