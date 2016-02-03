@@ -57,8 +57,8 @@ MAKE_UNAME=standard
 # make sure cfitsio and silo are compiled in ../extra_libraries/
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
-  #CXXFLAGS += -O3 -Wno-unused-function
-  CXXFLAGS += -g -Wno-unused-function
+  CXXFLAGS += -O3 -Wno-unused-function -Wall
+  #CXXFLAGS += -g -Wno-unused-function
   CXX=mpicxx
 
   MYLIB = $(CURDIR)/../../extra_libraries

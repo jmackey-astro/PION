@@ -1624,7 +1624,7 @@ int mp_explicit_H::ydot(
   Edot -= 1.4e-23*METALLICITY*exp(-0.5*log(T)-92.0/T)*ne
           *exp(-mpv_nH/1.0e4)
 #ifndef BETELGEUSE
-          /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
+       //   /(1.0 + 0.05*mpv_nH*pow(T/2000.0,-0.37))
 #endif // BETELGEUSE
           ;
 

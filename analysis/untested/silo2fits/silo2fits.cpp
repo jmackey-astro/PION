@@ -28,6 +28,8 @@
 /// - 2013.04.18 JM: Modified for pure format conversion.
 /// - 2013.04.19 JM: Added option to resize the computational domain.
 /// - 2014.05.05 JM: Fixed accounting bug in 2D data.
+/// - 2014.10.14 JM: Added option to enlarge the domain with LastPt()
+/// - 2014.11.28 JM: Added option to only convert any Nth file.
 
 
 #include <iostream>
@@ -171,6 +173,7 @@ int main(int argc, char **argv)
     cout <<"input file:  base filename of sequence of files including _0000 if parallel.\n";
     cout <<"output path: directory to write output files to.\n";
     cout <<"output file: filename for output FITS file(s).\n";
+    cout <<"[Nskip]:     Only convert every Nskip file.\n";
     cout <<"xmin/xmax:   optional parameters to resize the domain.\n";
     rep.error("Bad number of args",argc);
   }
@@ -189,25 +192,32 @@ int main(int argc, char **argv)
   string op_path    = argv[3];
   string outfile    = argv[4];
 
+  //
+  // Only convert every Nskip file
+  //
+  size_t Nskip = 1;
+  if (argc>5) {
+    Nskip = static_cast<size_t>(atoi(argv[5]));
+  }
 
   //
   // see about xmin/xmax resetting domain.
   //
-  double xmin[MAX_DIM], xmax[MAX_DIM];
+  double xmin[MAX_DIM], xmax[MAX_DIM], old_xmin[MAX_DIM], old_xmax[MAX_DIM];
   size_t reset=0;
-  if (argc>5)  {xmin[XX] = atof(argv[5]); reset+=1;}
+  if (argc>6)  {xmin[XX] = atof(argv[6]); reset+=1;}
   else          xmin[XX]=0.0;
-  if (argc>6)  {xmax[XX] = atof(argv[6]); reset+=1;}
+  if (argc>7)  {xmax[XX] = atof(argv[7]); reset+=1;}
   else          xmax[XX]=0.0;
 
-  if (argc>7)  {xmin[YY] = atof(argv[7]); reset+=1;}
+  if (argc>8)  {xmin[YY] = atof(argv[8]); reset+=1;}
   else          xmin[YY]=0.0;
-  if (argc>8)  {xmax[YY] = atof(argv[8]); reset+=1;}
+  if (argc>9)  {xmax[YY] = atof(argv[9]); reset+=1;}
   else          xmax[YY]=0.0;
 
-  if (argc>9)  {xmin[ZZ] = atof(argv[9]); reset+=1;}
+  if (argc>10)  {xmin[ZZ] = atof(argv[10]); reset+=1;}
   else          xmin[ZZ]=0.0;
-  if (argc>10) {xmax[ZZ] = atof(argv[10]); reset+=1;}
+  if (argc>11) {xmax[ZZ] = atof(argv[11]); reset+=1;}
   else          xmax[ZZ]=0.0;
 
 
@@ -279,6 +289,12 @@ int main(int argc, char **argv)
   else if (reset==6) dir=3;
   else rep.error("Bad number of args in resetting domain",reset);
   //
+  // Save old simulation extents for all directions, for checking
+  // later.
+  //
+  for (size_t i=0;i<static_cast<size_t>(SimPM.ndim);i++) old_xmin[i]=SimPM.Xmin[i];
+  for (size_t i=0;i<static_cast<size_t>(SimPM.ndim);i++) old_xmax[i]=SimPM.Xmax[i];
+  //
   // leave domains that are not reset as the original extents:
   //
   for (int i=dir;i<SimPM.ndim;i++) xmin[i]=SimPM.Xmin[i];
@@ -346,6 +362,12 @@ int main(int argc, char **argv)
   //
   CI.setup_extra_data(SimPM.RS,0,0);
 
+  for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
+    cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", mpiPM.LocalXmin="<<mpiPM.LocalXmin[v]<<", xmin="<<xmin[v]<<"\n";
+    cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", mpiPM.LocalXmax="<<mpiPM.LocalXmax[v]<<", xmax="<<xmax[v]<<"\n";
+  }
+  cout.flush();
+
   if (grid) rep.error("grid already setup, so bugging out",grid);
 
   if      (SimPM.coord_sys==COORD_CRT) {
@@ -393,7 +415,7 @@ int main(int argc, char **argv)
   // loop over all files:
   //*******************************************************************
 
-  for (ifile=0; ifile<nfiles; ifile++) {
+  for (ifile=0; ifile<nfiles; ifile += Nskip) {
     cout.flush();
     cout <<"------ Starting Next Loop: ifile="<<ifile<<", time so far=";
     cout <<GS.time_so_far("analyse_data")<<" ----\n";
@@ -410,7 +432,7 @@ int main(int argc, char **argv)
     temp <<input_path<<"/"<<*ff;
     string infile = temp.str();
     temp.str("");
-    ff++;
+    for (size_t skip=0; skip<Nskip; skip++) ff++;
 
     //
     // delete any current radiation sources
@@ -438,11 +460,105 @@ int main(int argc, char **argv)
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(infile, ///< file to read from
-					grid    ///< pointer to data.
-					);
+    err = dataio.parallel_read_any_data(infile, grid);
     rep.errorTest("(main) Failed to read data",0,err);
     
+#ifdef TESTING
+    for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
+      cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", mpiPM.LocalXmin="<<mpiPM.LocalXmin[v]<<", xmin="<<xmin[v]<<", grid->SIM_Xmin="<<grid->SIM_iXmin(static_cast<axes>(v))<<"\n";
+      cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", mpiPM.LocalXmax="<<mpiPM.LocalXmax[v]<<", xmax="<<xmax[v]<<", grid->SIM_Xmax="<<grid->SIM_iXmax(static_cast<axes>(v))<<"\n";
+    }
+    cout.flush();
+#endif // TESTING
+
+    //
+    // If domain is bigger than original, then add more data.
+    //
+    cell *c=grid->FirstPt();
+    for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
+      //enum direction negd=static_cast<direction>(2*v);
+      //enum direction posd=grid->OppDir(negd);
+      //cout <<"dimension "<<v<<", posdir="<<posd<<", negdir="<<negd<<", dx="<<SimPM.dx<<"\n";    cout.flush();
+
+      double vals[SimPM.nvar];
+      //
+      // First check for extensions in the negative direction:
+      //
+      if ((old_xmin[v]-xmin[v]) < -0.5*SimPM.dx) {
+        cout <<"dimension "<<v<<" has enarged domain in -ve dir.\n";
+        //
+        // Navigate to first point on the original grid.
+        //
+        for (size_t d=0; d<static_cast<size_t>(SimPM.ndim); d++) {
+          enum direction negdd=static_cast<direction>(2*d);
+          enum direction posdd=grid->OppDir(negdd);
+          while (CI.get_dpos(c,d) < old_xmin[d])
+            c=grid->NextPt(c,posdd);
+        }
+        //
+        // Copy the state vector
+        //
+        for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
+          vals[d] = c->P[d];
+        }
+        //
+        // Write all new cells with this state vector.
+        //
+        c=grid->FirstPt();
+        do {
+          if (CI.get_dpos(c,v) < old_xmin[v]) {
+            for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
+              c->P[d] = vals[d];
+            }
+          }
+        } while ((c=grid->NextPt(c))!=0);
+      } // if extension in negative direction
+      //
+      // Then extensions in the positive direction:
+      //
+      if ((xmax[v]-old_xmax[v]) > 0.5*SimPM.dx) {
+        cout <<"dimension "<<v<<" has enarged domain in +ve dir.\n";
+        //
+        // Navigate to last point on the old grid in this dir
+        //
+        c=grid->LastPt();
+        //CI.print_cell(c);
+        //cout.flush();
+        for (size_t d=0; d<static_cast<size_t>(SimPM.ndim); d++) {
+          enum direction negdd=static_cast<direction>(2*d);
+          enum direction posdd=grid->OppDir(negdd);
+          while ( CI.get_dpos(c,d) > old_xmax[d]) {
+            //cout <<"d="<<d<<", pos="<< CI.get_dpos(c,d);
+            //cout <<", old_xmax="<<old_xmax[d]<<": ";
+            //CI.print_cell(c);
+            //cout.flush();
+            c=grid->NextPt(c,negdd);
+          }
+        }
+        //
+        // Copy the state vector
+        //
+        for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
+          vals[d] = c->P[d];
+        }
+        //
+        // Write all new cells with this state vector.
+        //
+        c=grid->FirstPt();
+        do {
+          if (CI.get_dpos(c,v) > old_xmax[v]) {
+            for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
+              c->P[d] = vals[d];
+            }
+          }
+        } while ((c=grid->NextPt(c))!=0);
+      } // if extension in positive direction 
+    }  // loop over directions.
+
+
+
+
+
     cout <<"--------------- Finished Reading Data  ----------------\n";
     cout <<"-------------------------------------------------------\n";
     cout <<"--------------- Starting Writing Data  ----------------\n";

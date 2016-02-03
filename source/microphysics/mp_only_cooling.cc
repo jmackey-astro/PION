@@ -16,8 +16,10 @@
 ///    is lower than the SD93 curves, possibly because the Oxygen abundance is
 ///    now lower than it was 15 years ago (Lodders, 2003, ApJ).
 ///    Removed the DO_HEATING ifdef -- now we have 5 different cooling functions.
+///
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
+/// - 2015.01.13 JM: Added some comments.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
@@ -101,6 +103,9 @@ mp_only_cooling::mp_only_cooling(const int nv,
     setup_WSS09_CIE();
     break;
   case WSS09_CIE_LINE_HEAT_COOL:
+    cout <<"\tRequested fully ionized gas with WSS09 cooling at high";
+    cout <<" temperatures,\n\tand photoionized gas at nebular";
+    cout <<" temperatures, with T_eq approx 8000 K.\n";
     setup_WSS09_CIE_OnlyMetals();
     break;
   default:
@@ -109,20 +114,26 @@ mp_only_cooling::mp_only_cooling(const int nv,
     break;
   }
 
-#ifdef TESTING
-  ostringstream opfile; opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
-  ofstream outf(opfile.str().c_str());
-  if(!outf.is_open()) rep.error("couldn't open outfile",1);
-  outf <<"Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
-  outf.setf( ios_base::scientific );
-  outf.precision(6);
-  double t=1.0e0;
-  do {
-    outf << t <<"\t"<< Edot(2.34e-24,t) <<"\n";
-    t *=1.05;
-  } while (t<1.0e10);
-  outf.close();
-#endif // TESTING
+//#ifdef TESTING
+#ifdef PARALLEL
+  if (mpiPM.myrank==0) {
+#endif 
+    ostringstream opfile; opfile << "coolingNOCHEM_" << cooling_flag << ".txt";
+    ofstream outf(opfile.str().c_str());
+    if(!outf.is_open()) rep.error("couldn't open outfile",1);
+    outf <<"Cooling Curve Data: Temperature(K) Rate(erg/cm^3/s) (n=1 per cc)\n";
+    outf.setf( ios_base::scientific );
+    outf.precision(6);
+    double t=1.0e0;
+    do {
+      outf << t <<"\t"<< Edot(2.34e-24,t) <<"\n";
+      t *=1.05;
+    } while (t<1.0e10);
+    outf.close();
+#ifdef PARALLEL
+  }
+#endif 
+//#endif 
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   MaxT_allowed = ephys->MaxTemperature;

@@ -49,8 +49,11 @@
 /// - 2013.04.18 JM: wrapped column-density output in ifdef so it is
 ///    not written to file by default.
 /// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
+/// - 2014.10.21 JM: Fixed memory leak where array was freed in the
+///    wrong place.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.01.28 JM: Removed parallel code, put into new class.
+
 
 #ifdef FITS
 
@@ -291,6 +294,7 @@ int DataIOFits::OutputData(
   // -------------------------------------------------------
   // -------------------------------------------------------
 
+      data = mem.myfree(data);
   extname = mem.myfree(extname);
   
   if (status) {
