@@ -71,7 +71,7 @@ ifeq ($(MAKE_UNAME), standard)
 
   LDFLAGS =  -lm  -lreadline
   # Libraries for fits, silo
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo
   # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
 endif

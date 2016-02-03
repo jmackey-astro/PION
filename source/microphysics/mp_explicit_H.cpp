@@ -818,8 +818,12 @@ int mp_explicit_H::convert_local2prim(
   p_out[pv_Hp] = 1.0-p_local[lv_H0];
 
 #ifdef MPV3_DEBUG
-  if (p_out[pv_Hp]<0.0 || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp]))
+  if (p_out[pv_Hp]<-10.0*JM_RELTOL || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp])) {
+    rep.printVec("p_in",p_in, nv_prim);
+    rep.printVec("p_out",p_out, nv_prim);
+    rep.printVec("p_local",p_local, nvl);
     rep.error("Bad output H+ value in mp_explicit_H::convert_local2prim",p_out[pv_Hp]-1.0);
+  }
   if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
     rep.error("Bad output pressure in mp_explicit_H::convert_local2prim",p_out[PG]);
 #endif // MPV3_DEBUG
@@ -1262,7 +1266,7 @@ void mp_explicit_H::setup_radiation_source_parameters(
       if (heat_src[v].type == RT_SRC_SINGLE) {
 #ifdef MPV3_DEBUG
         if (P[lv_H0]>0.01) {
-          cout <<"setup_rad_src_params: heating:  ds="<<heat_src[v].DelCol/p_in[RO];
+          cout <<"setup_rad_src_params: heating:  ds="<<heat_src[v].DelCol[0]/p_in[RO];
           cout <<", mpv_Vshell="<<heat_src[v].Vshell<<"\n";
         }
 #endif // MPV3_DEBUG

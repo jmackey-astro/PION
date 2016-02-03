@@ -109,9 +109,10 @@ class utility_fitsio {
         const double *, ///< local xmin (subdomain).
         const double *, ///< global xmin (full domain).
         const double,   ///< pixel size
-        const int *,     ///< number of pixels to read in each direction
-        const long int ,      ///< total number of pixels to be read.
-        double **       ///< data array to write to.
+        const int *,    ///< number of pixels to read in each direction
+        const long int, ///< total number of pixels to be read.
+        const int,      ///< FITS datatype (e.g. TDOUBLE or TFLOAT)
+        void *          ///< data array to write to.
         );
 };
 
