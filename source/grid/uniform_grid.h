@@ -48,6 +48,7 @@
 /// - 2015.01.28 JM: updated parallel grid declaration; tidied up the
 ///    tabbing and comments.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2016.02.12 JM: included static_grid.h modifications.
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H

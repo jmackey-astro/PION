@@ -1,5 +1,5 @@
 ///
-/// \file uniform_grid.cc
+/// \file uniform_grid.cpp
 /// 
 /// \author Jonathan Mackey
 /// 
@@ -83,6 +83,8 @@
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2016.02.11 JM: Worked on Grid_v2 update (full boundaries).
+/// - 2016.02.12 JM: including source code from static_grid.cc, and
+///    renamed to uniform_grid.cpp
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
