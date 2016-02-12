@@ -14,32 +14,34 @@
 /// n<=3).
 ///
 /// Modifications:\n
-/// - 2007-11-06 Got going on adding in parallel grid and getting it working.
+/// - 2007-11-06 Got going on adding in parallel grid and getting it
+///    working.
 /// - 2010-01-26 JM: Added get_iXmin/iXmax/iRange() functions to grid
-///   class to give integer positions.
+///    class to give integer positions.
 /// - 2010-03-13 JM: moved BoundaryTypes enum to uniformgrid.h; added
-///   oneway-outflow boundary.
+///    oneway-outflow boundary.
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
 /// - 2010-07-24 JM: Added stellar wind class, and boundary
 ///   setup/update functions.
 /// - 2010.10.04 JM: Added last-point-set flag.
 /// - 2010.12.04 JM: Added distance functions which change depending
-///  the geometry of the grid.  Added cylindrical and spherical grids.
-///  This is all in an ifdef for now (GEOMETRIC_GRID)
+///   the grid geometry.  Added cylindrical and spherical grids.
+///   This is all in an ifdef for now (GEOMETRIC_GRID)
 /// - 2011.01.06 JM: New stellar wind interface.
 /// - 2011.01.07 JM: I debugged the geometric grid functions, and now
-///   it works very well!  Added an iR_com(c) function to get the cell
-///   centre-of-volume radius in integer code units.  This was a
-///   problem before b/c the code and physical systems have different
-///   origins -- integer r=0 is at ix=-1.
-/// - 2011.02.15 JM: Made 'Wind' a pointer so that it can be either constant
-///   or evolving wind source class.
-/// - 2011.02.24 JM: Worked on generalising multi-source radiative transfer.
-///    Still some way to go to getting it functional.
+///    it works very well!  Added iR_com(c) function to get the cell
+///    centre-of-volume radius in integer code units.  This was a
+///    problem before b/c the code and physical systems have
+///    different origins -- integer r=0 is at ix=-1.
+/// - 2011.02.15 JM: Made 'Wind' a pointer so that it can be either
+///    constant or evolving wind source class.
+/// - 2011.02.24 JM: Worked on generalising multi-source radiative
+///    transfer. Still some way to go to getting it functional.
 /// - 2011.02.25 JM: Got rid of some vestigial data.
-/// - 2011.04.06 JM: Added idifference_cell2cell() function for thermal
-///    conduction calculation.
-/// - 2012.05.15 JM: Added global iXmin,iXmax,iRange functions for parallel grids.
+/// - 2011.04.06 JM: Added idifference_cell2cell() function for
+///    thermal conduction calculation.
+/// - 2012.05.15 JM: Added global iXmin,iXmax,iRange functions for
+///    parallel grids.
 /// - 2013.06.13 JM: Added STARBENCH1 internal boundary and functions.
 /// - 2013.09.06 JM: Added difference_vertex2cell() functions.
 /// - 2015.01.10 JM: New include statements for new file structure.
@@ -47,8 +49,8 @@
 ///    tabbing and comments.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 
-#ifndef UNIFORMGRID_H
-#define UNIFORMGRID_H
+#ifndef UNIFORM_GRID_H
+#define UNIFORM_GRID_H
 
 
 #include "defines/functionality_flags.h"
@@ -93,6 +95,12 @@ enum BoundaryTypes {
 
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Struct to contain all the information for a grid boundary.
 ///
@@ -103,6 +111,11 @@ struct boundary_data {
    list<cell *> data; ///< STL linked list for boundary data cells.
    pion_flt *refval; ///< Optional reference state vector (e.g. for fixed BCs.).
 };
+
+
+
+// ##################################################################
+// ##################################################################
 
 ///
 /// The uniform finite-volume grid.
@@ -118,7 +131,8 @@ struct boundary_data {
 ///
 class UniformGrid
 : virtual public GridBaseClass,
-  virtual public VectorOps_Cart {
+  virtual public VectorOps_Cart
+{
  protected:
   class stellar_wind *Wind; ///< stellar wind boundary condition class.
   int G_firstPtID;  ///< ID of the first point in the grid.
@@ -130,39 +144,46 @@ class UniformGrid
   const int G_nvar; ///< Number of variables in state vector;  public b/c it's constant so can't be messed with.
   const int G_eqntype; ///< Which equations we are using (used in reflective BCs to get it right).
   int *G_ng;       ///< number of grid points in each direction.
-  int G_ncell;     ///< Total number of grid points.
+
+  ///< Total number of grid points.
+  size_t G_ncell;
+  /// Total number of grid points, including boundary points.
+  size_t G_ncell_all;
+
   double *G_range; ///< Size of domain in x,y,z-direction.
   double *G_xmin;  ///< Min value of x,y,z in domain.
   double *G_xmax;  ///< Max value of x,y,z in domain.
+
   int *G_irange; ///< Size of domain in x,y,z-direction (integer coordinates).
   int *G_ixmin;  ///< Min value of x,y,z in domain (integer coordinates).
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
+
   double G_dx;     ///< Linear side length of (uniform, cubic, cartesian) grid cells.
   double G_dA;     ///< Area of one surface of the (uniform, cubic, cartesian) grid cells.
   double G_dV;     ///< Volume of one cubic, cartesian grid cell (same for all cells).
 
-  /// Initialises a new cell and returns a pointer to it. 
-  ///  Zeros cell array values.
-  cell * newCell();
 
-  /// Deletes all the data in a cell, and the cell itself.
-  void deleteCell(cell *);
-
-  /// Set cell dimensions based on grid properties.*/
-  int setCellSize();
-
-  /// Allocate memory for grid data.
-  /// 
-  /// This is for allocating the initial array and putting it into 
-  /// whatever structure is required.  Assigns IDs to the grid
-  /// points. Sets the 'npt' pointer to the next cell.
   ///
-  int allocateGridData();
+  /// Set cell dimensions based on grid properties.
+  ///
+  int set_cell_size();
 
+  ///
+  /// Allocate memory for grid data.
+  /// This is for allocating the initial array and putting it into
+  /// whatever structure is required.  Assigns IDs to the grid
+  /// points. Sets the npt and npt_all pointers to the next cell.
+  ///
+  int allocate_grid_data();
+
+  ///
   /// Assign positions to each grid point, pointers to neighbours.
-  int assignGridStructure();
-   
+  ///
+  int assign_grid_structure();
+
+  ///
   /// Set the boundary conditions string and initialise BC_bd
+  ///
   virtual int BC_setBCtypes(
         string ///< typeofbc string from initial conditions file.
         );
@@ -365,9 +386,12 @@ class UniformGrid
         const int   ///< final step.
         );
 
+  ///
   /// prints all the cells in the given boundary data pointer.
+  ///
   int BC_printBCdata(boundary_data *);
 
+  ///
   /// Destructor for all the boundary data, BC_bd.  Needed because 
   /// we need to delete some cells in the list, and others we just need to
   /// delete the pointers to them.
@@ -376,7 +400,10 @@ class UniformGrid
 
   struct boundary_data *BC_bd; ///< pointer to array of all boundaries.
   int BC_nbd; ///< Number of Boundaries.
-  int BC_nbc; ///< Depth of boundary cells (1 or 2 cells so far).
+  ///
+  /// Depth of boundary cells (1 or 2 cells so far).
+  ///
+  const int BC_nbc;
 
   public:
   /// 
@@ -386,120 +413,173 @@ class UniformGrid
   ///  - Sets up pointers to first element, and all neighbours.
   ///
   UniformGrid(
-        int, ///< ndim, length of position vector.
-        int, ///< nvar, length of state vectors.
-        int, ///< eqntype, which equations we are using (needed by BCs).
-        double *, ///< array of minimum values of x,y,z.
-        double *, ///< array of maximum values of x,y,z.
-        int *  ///< array of number of cells in x,y,z directions.
-        );
+    int, ///< ndim, length of position vector.
+    int, ///< nvar, length of state vectors.
+    int, ///< eqntype, which equations we are using (needed by BCs).
+    int, ///< number of boundary cells to use.
+    double *, ///< array of minimum values of x,y,z for this grid.
+    double *, ///< array of maximum values of x,y,z for this grid.
+    int *,    ///< array of number of cells in x,y,z directions.
+    double *, ///< array of min. x/y/z for full simulation.
+    double *  ///< array of max. x/y/z for full simulation.
+    );
 
   ///
   /// Destructor, deletes boundaries and grid data.
   ///
   virtual ~UniformGrid();
    
-  virtual double DX() const
-  {return(G_dx);} ///< Returns dx.
+  // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
-  virtual double DA() const
-  {return(G_dA);} ///< Returns dA.
+  /// Returns the diameter of a grid cell.
+  virtual double DX() const {return(G_dx);}
 
-  virtual double DV() const
-  {return(G_dV);} ///< Returns dV.
 
-  virtual int Ndim() const
-  {return(G_ndim);} ///< Returns ndim.
+  /// Returns dA (assuming cubic cells).
+  virtual double DA() const {return(G_dA);}
 
-  virtual int Nvar() const
-  {return(G_nvar);} ///< Returns nvar.
-
-  virtual double  Xmin(enum axes a) const
-  {return(G_xmin[a] );} ///< Returns x,y,z lower bounds.
-
-  virtual double  Xmax(enum axes a) const
-  {return(G_xmax[a] );} ///< Returns x,y,z upper bounds.
-
-  virtual double Range(enum axes a) const
-  {return(G_range[a]);} ///< Returns x,y,z range.
-
-  virtual int  iXmin(enum axes a) const
-  {return(G_ixmin[a] );} ///< Returns x,y,z lower bounds in cell integer coordinates.
-
-  virtual int  iXmax(enum axes a) const
-  {return(G_ixmax[a] );} ///< Returns x,y,z upper bounds in cell integer coordinates.
-
-  virtual int iRange(enum axes a) const
-  {return(G_irange[a]);} ///< Returns x,y,z range in cell integer coordinates.
-
-  virtual int  SIM_iXmin(enum axes a) const
-  {return(G_ixmin[a] );} ///< Returns GLOBAL x,y,z lower bounds in cell integer coordinates. (same as iXmin)
-
-  virtual int  SIM_iXmax(enum axes a) const
-  {return(G_ixmax[a] );} ///< Returns GLOBAL x,y,z upper bounds in cell integer coordinates. (same as iXmax)
-
-  virtual int SIM_iRange(enum axes a) const
-  {return(G_irange[a]);} ///< Returns GLOBAL x,y,z range in cell integer coordinates. (same as iRange)
+  /// Returns dV (assuming cubic cells).
+  virtual double DV() const {return(G_dV);}
 
   ///
-  /// Returns pointer to the first grid point.
+  /// Returns cell diameter for a given cell along a given axis.
+  ///
+  virtual double DX(
+    const cell *,   ///< cell to get dx for
+    const enum axes ///< axis along which to get dx.
+    ) const {return G_dx;}
+
+  ///
+  /// Returns cell boundary area for a given cell in a given
+  /// direction.
+  ///
+  virtual double DA(
+    const cell *,   ///< cell to get dA for
+    const enum direction ///< direction in which to get dA.
+    ) const {return G_dA;}
+
+  ///
+  /// Returns cell volume for a given cell.
+  ///
+  virtual double DV(const cell *) const {return G_dV;}
+
+  /// Returns dimensionality of grid.
+  virtual int Ndim() const {return(G_ndim);}
+
+  /// Returns length of state vectors.
+  virtual int Nvar() const {return(G_nvar);}
+
+
+  /// Returns x/y/z lower boundary of grid in code units.
+  virtual double  Xmin(enum axes a) const
+  {return(G_xmin[a] );}
+
+  /// Returns x/y/z upper boundary of grid in code units.
+  virtual double  Xmax(enum axes a) const
+  {return(G_xmax[a] );}
+
+  /// Returns x/y/z range of grid in code units.
+  virtual double Range(enum axes a) const
+  {return(G_range[a]);}
+
+  /// Returns x/y/z lower boundary of grid in integer coords (dx=2).
+  virtual int  iXmin(enum axes a) const
+  {return(G_ixmin[a] );}
+
+  /// Returns x/y/z upper boundary of grid in integer coords (dx=2).
+  virtual int  iXmax(enum axes a) const
+  {return(G_ixmax[a] );}
+
+  /// Returns x/y/z range of grid in integer coords (dx=2).
+  virtual int iRange(enum axes a) const
+  {return(G_irange[a]);}
+
+  /// Returns Simulation x,y,z lower bounds in cell integer coords (dx=2)
+  virtual int  SIM_iXmin(enum axes a) const
+  {return(G_ixmin[a] );}
+
+  /// Returns Simulation x,y,z upper bounds in cell integer coords (dx=2)
+  virtual int  SIM_iXmax(enum axes a) const
+  {return(G_ixmax[a] );}
+
+  /// Returns Simulation x,y,z range in cell integer coords (dx=2)
+  virtual int SIM_iRange(enum axes a) const
+  {return(G_irange[a]);}
+
+  /// Returns Simulation xyz lower bounds (code units)
+  virtual int  SIM_Xmin(enum axes a) const {return(G_xmin[a] );}
+  /// Returns Simulation xyz upper bounds (code units)
+  virtual int  SIM_Xmax(enum axes a) const {return(G_xmax[a] );}
+  /// Returns Simulation range (code units)
+  virtual int SIM_Range(enum axes a) const {return(G_range[a]);}
+
+  // ---------- QUERY BASIC GRID PROPERTIES -------------------------
+
+  // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
+  ///
+  /// Returns pointer to the first grid point (ex. boundary data).
   ///
   virtual cell * FirstPt();
 
   ///
-  /// Returns pointer to the last grid point. 
+  /// Returns pointer to the first grid point (inc. boundary data).
+  ///
+  virtual cell * FirstPt_All();
+
+  ///
+  /// Returns pointer to the last grid point (ex. boundary data). 
   ///
   virtual cell * LastPt();
 
   ///
-  /// copies contents of one cell into another.
+  /// Returns pointer to the last grid point (inc. boundary data).
   ///
-  virtual void CopyCell(
-        const cell *, ///< Pointer to original.
-        cell *       ///< Pointer to copy.
-        );
+  virtual cell * LastPt_All();
 
   ///
-  /// Prints contents of cell.
+  /// returns a pointer to a neighbouring cell in the given
+  /// direction.
   ///
-  virtual void PrintCell(const cell *);
+  /// This function is designed to be fast, so it does no range
+  /// checking on the direction, to make sure the pointer exists.  It
+  /// will do something unexpected if 2*Ndim<dir, as it will access a
+  /// random piece of memory.  It returns whatever is in 
+  /// cell->ngb[direction] i.e. the neighbour if it exists or 0 if it
+  /// doesn't.
+  ///
+  virtual cell * NextPt(
+    const cell *c,           ///< Current cell.
+    const enum direction dir ///< direction of neighbour.
+    )   {return(c->ngb[dir]);}
 
   ///
-  /// returns a pointer to a neighbouring cell in the given direction.
-  /// This function is designed to be fast, so it does no range checking
-  /// on the direction, to make sure the pointer exists.  It will do something
-  /// unexpected if 2*Ndim<dir, as it will access a random piece of memory.
-  /// It returns whatever is in cell->ngb[direction] i.e. the neighbour if it
-  /// exists or 0 if it doesn't.
+  /// returns a pointer to the next cell (ex. boundary data).
   ///
-  virtual inline cell * NextPt(
-        const cell *cpt,         ///< Current cell.
-        const enum direction dir ///< direction of neighbour.
-        )   {return(cpt->ngb[dir]);}
+  virtual cell * NextPt(const cell *c) {return(c->npt);}
 
   ///
-  /// returns a pointer to the next cell.
-  /// This function can mean whatever you want it to.  Each cell contains a 
-  /// pointer called 'npt' which can be set to point to any other cell.  This
-  /// function returns the value of this pointer.
+  /// returns a pointer to the next cell (inc. boundary data).
   ///
-  virtual inline cell * NextPt(const cell *cpt) {return(cpt->npt);}
-
-  ///
-  /// Returns the opposite direction to the one passed in to the function.
-  ///
-  virtual enum direction OppDir(enum direction );
+  virtual cell * NextPt_All(const cell *c) {return(c->npt_all);}
 
   ///
   /// Like NextPt(cell,dir), but in reverse direction.
   ///
   virtual class cell* PrevPt(
-        const class cell*, ///< Current Point.
-        enum direction     ///< Direction to go in.
+        const class cell *, ///< Current Point.
+        enum direction      ///< Direction to go in.
         );
 
+  // ---------- ACCESSING AND MOVING FROM CELL TO CELL --------------
+
   ///
-  /// Runs through ghost boundary cells and does the appropriate time update on them.*/
+  /// Returns the opposite direction to the one passed in to the function.
+  ///
+  virtual enum direction OppDir(enum direction );
+  
+  ///
+  /// Runs through ghost boundary cells and does the appropriate
+  /// time update on them.
   ///
   virtual int TimeUpdateExternalBCs(
         const int, ///< Current step number in the timestep.
@@ -507,7 +587,8 @@ class UniformGrid
         );
 
   ///
-  /// Runs through boundary cells which are grid cells and does the appropriate time update on them.*/
+  /// Runs through boundary cells which are grid cells and does
+  /// the appropriate time update on them.
   ///
   virtual int TimeUpdateInternalBCs(
         const int, ///< Current step number in the timestep.
@@ -645,6 +726,13 @@ class UniformGrid
 };
   
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Now we define a derive class cylindrical grid.  For now only the
 /// distance--between--two--points functions will be re-defined.
@@ -711,9 +799,10 @@ class uniform_grid_cyl
   /// (will be between centre-of-volume of cells if non-cartesian
   /// geometry).  Here both input and output are physical units.
   ///
-  virtual double distance_vertex2cell(const double *, ///< vertex (physical)
-				      const cell *    ///< cell
-				      );
+  virtual double distance_vertex2cell(
+        const double *, ///< vertex (physical)
+        const cell *    ///< cell
+        );
 
    ///
    /// As distance_vertex2cell(double[],cell) but for a single component
@@ -773,6 +862,12 @@ class uniform_grid_cyl
    virtual double iR_cov(const cell *);
 };
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Now we define a derive class spherical grid.  For now only the
 /// distance--between--two--points functions will be re-defined.
@@ -794,7 +889,7 @@ class uniform_grid_sph
 		   int *  ///< array of number of cells in x,y,z directions.
 		   );
   ///
-  /// Destructor: does nothing so far.
+  /// Destructor:
   ///
   ~uniform_grid_sph();
   ///
@@ -840,9 +935,10 @@ class uniform_grid_sph
   /// (will be between centre-of-volume of cells if non-cartesian
   /// geometry).  Here both input and output are physical units.
   ///
-  virtual double distance_vertex2cell(const double *, ///< vertex (physical)
-				      const cell *    ///< cell
-				      );
+  virtual double distance_vertex2cell(
+        const double *, ///< vertex (physical)
+        const cell *    ///< cell
+        );
 
    ///
    /// As distance_vertex2cell(double[],cell) but for a single component
@@ -1320,4 +1416,4 @@ class uniform_grid_sph_parallel
 #endif // PARALLEL
 
 
-#endif
+#endif // UNIFORM_GRID_H

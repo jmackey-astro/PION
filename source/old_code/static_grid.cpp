@@ -93,9 +93,15 @@ using namespace std;
 
 
 UniformGrid::UniformGrid(
-    int nd, int nv, int eqt, int Nbc,
-    double *g_xn, double *g_xp, int *g_nc,
-    double *sim_xn, double *sim_xp
+    int nd,
+    int nv,
+    int eqt,
+    int Nbc,
+    double *g_xn,
+    double *g_xp,
+    int *g_nc,
+    double *sim_xn,
+    double *sim_xp
     )
   : 
   VectorOps_Cart(nd),
@@ -115,7 +121,11 @@ UniformGrid::UniformGrid(
   //
   // Allocate arrays for dimensions of grid.
   //
-  G_ng=0; G_xmin=0; G_xmax=0; G_range=0;
+  G_ng=0;
+  G_xmin=0;
+  G_xmax=0;
+  G_range=0;
+  
   G_ng     = mem.myalloc(G_ng,    G_ndim);
 
   G_xmin   = mem.myalloc(G_xmin,  G_ndim);
@@ -228,10 +238,8 @@ UniformGrid::UniformGrid(
     Sim_ixmin[v]  = G_ixmin[v];
   }
 
-#ifdef GEOMETRIC_GRID
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
   set_dx(G_dx);
-#endif // GEOMETRIC_GRID
 
 #ifdef TESTING
   cout <<"UniformGrid Constructor done.\n";
@@ -363,7 +371,7 @@ int UniformGrid::assignGridStructure()
     /// - \f$ i <9 \f$ Not a Z-edge.
     /// - \f$ 9 \leq i <18 \f$ Neg. Z-edge.
     /// - \f$ 18\leq i <27 \f$ Pos. Z-edge.
-    /// - \f$ i \geq 27 \f$ Out of Range error. 
+    /// - \f$ i \geq 27 \f$ Out of Range error.
     ///
     c->isedge =0;
     if      (ix[XX]==0)            c->isedge +=1;
@@ -911,7 +919,8 @@ int UniformGrid::BC_setBCtypes(string bctype)
 // ##################################################################
 
 
-cell * UniformGrid::BC_setupBCcells(cell *edgept,
+cell * UniformGrid::BC_setupBCcells(
+            cell *edgept,
             const enum direction offdir, // direction off-grid
             double dx,
             int ibc)
@@ -1635,7 +1644,8 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
 // ##################################################################
 
 
-int UniformGrid::BC_assign_STWIND_add_cells2src(const int id, ///< source id
+int UniformGrid::BC_assign_STWIND_add_cells2src(
+            const int id, ///< source id
             struct boundary_data *b
             )
 {
