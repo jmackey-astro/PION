@@ -47,6 +47,7 @@
 # - 2014.04.14 JM: Added options for JUDGE at JSC.
 # - 2015.01.08 JM: Added tools/reporting.h.cpp and tools/mem_manage.h
 # - 2015.01.12 JM: Added command_line_interface.h.cpp.
+# - 2016.02.12 JM: renamed .cc files to .cpp
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -404,14 +405,14 @@ sim_params.o: sim_params.cpp ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
 
-cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 
 
-uniform_grid.o:  uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h \
+uniform_grid.o:  uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h \
 		VectorOps.h VectorOps_spherical.h
 
-VectorOps.o:           VectorOps.cc VectorOps.h ${GLOBAL} uniform_grid.h
-VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
+VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
 
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
@@ -434,66 +435,66 @@ calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h\
 # EQUATIONS CLASSES #
 #####################
 
-eqns_base.o:	          eqns_base.cc eqns_base.h ${GLOBAL}
+eqns_base.o:	          eqns_base.cpp eqns_base.h ${GLOBAL}
 
-eqns_hydro_adiabatic.o: eqns_hydro_adiabatic.cc eqns_hydro_adiabatic.h \
+eqns_hydro_adiabatic.o: eqns_hydro_adiabatic.cpp eqns_hydro_adiabatic.h \
 			eqns_base.h ${GLOBAL}
 
-eqns_hydro_isothermal.o: eqns_hydro_isothermal.cc \
+eqns_hydro_isothermal.o: eqns_hydro_isothermal.cpp \
                   eqns_hydro_isothermal.h eqns_base.h ${GLOBAL}
 
-eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cc eqns_mhd_adiabatic.h \
+eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cpp eqns_mhd_adiabatic.h \
 		      eqns_base.h ${GLOBAL}
 
-eqns_hydro_adi_Eint.o: eqns_hydro_adi_Eint.cc eqns_hydro_adi_Eint.h \
+eqns_hydro_adi_Eint.o: eqns_hydro_adi_Eint.cpp eqns_hydro_adi_Eint.h \
     eqns_hydro_adiabatic.h eqns_base.h ${GLOBAL}
 
 ###################
 # RIEMANN SOLVERS #
 ###################
 
-riemann.o: riemann.cc riemann.h findroot.h ${GLOBAL} \
+riemann.o: riemann.cpp riemann.h findroot.h ${GLOBAL} \
 	   eqns_hydro_adiabatic.h  eqns_base.h
 
-findroot.o: findroot.cc findroot.h ${GLOBAL}
+findroot.o: findroot.cpp findroot.h ${GLOBAL}
 
-Riemann_FVS_hydro.o: Riemann_FVS_hydro.cc Riemann_FVS_hydro.h \
+Riemann_FVS_hydro.o: Riemann_FVS_hydro.cpp Riemann_FVS_hydro.h \
    ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
-Roe_Hydro_ConservedVar_solver.o: Roe_Hydro_ConservedVar_solver.cc \
+Roe_Hydro_ConservedVar_solver.o: Roe_Hydro_ConservedVar_solver.cpp \
    Roe_Hydro_ConservedVar_solver.h \
    ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
-Roe_Hydro_PrimitiveVar_solver.o: Roe_Hydro_PrimitiveVar_solver.cc \
+Roe_Hydro_PrimitiveVar_solver.o: Roe_Hydro_PrimitiveVar_solver.cpp \
    Roe_Hydro_PrimitiveVar_solver.h \
    ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
-riemannMHD.o: riemannMHD.cc riemannMHD.h ${GLOBAL} \
+riemannMHD.o: riemannMHD.cpp riemannMHD.h ${GLOBAL} \
               eqns_mhd_adiabatic.h eqns_base.h ${GLOBAL} 
 
-Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cc \
+Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
    ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
 ####################
 # FLUX CALCULATORS #
 ####################
-flux_base.o : flux_base.cc flux_base.h eqns_base.h \
+flux_base.o : flux_base.cpp flux_base.h eqns_base.h \
               ${GLOBAL} cell_interface.h
 
-flux_hydro_adiabatic.o: flux_hydro_adiabatic.cc flux_hydro_adiabatic.h \
+flux_hydro_adiabatic.o: flux_hydro_adiabatic.cpp flux_hydro_adiabatic.h \
    eqns_hydro_adiabatic.h flux_base.h eqns_base.h riemann.h \
    Roe_Hydro_ConservedVar_solver.h Roe_Hydro_PrimitiveVar_solver.h \
    Riemann_FVS_hydro.h ${GLOBAL} cell_interface.h
 
-flux_hydro_isothermal.o: flux_hydro_isothermal.cc flux_hydro_isothermal.h \
+flux_hydro_isothermal.o: flux_hydro_isothermal.cpp flux_hydro_isothermal.h \
    eqns_hydro_isothermal.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h
 
-flux_mhd_adiabatic.o: flux_mhd_adiabatic.cc flux_mhd_adiabatic.h \
+flux_mhd_adiabatic.o: flux_mhd_adiabatic.cpp flux_mhd_adiabatic.h \
    eqns_mhd_adiabatic.h riemannMHD.h flux_base.h eqns_base.h \
    ${GLOBAL} cell_interface.h
 
-flux_hydro_adi_Eint.o: flux_hydro_adi_Eint.cc flux_hydro_adi_Eint.h \
+flux_hydro_adi_Eint.o: flux_hydro_adi_Eint.cpp flux_hydro_adi_Eint.h \
    eqns_hydro_adi_Eint.h \
    flux_hydro_adiabatic.h eqns_hydro_adiabatic.h \
    flux_base.h eqns_base.h \
@@ -510,23 +511,23 @@ solver_eqn_base.o: VectorOps.h solver_eqn_base.h flux_base.h \
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
    solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_hydro_adi.h flux_hydro_adiabatic.h  eqns_hydro_adiabatic.h \
-   solver_eqn_hydro_adi.cc
+   solver_eqn_hydro_adi.cpp
 
 solver_eqn_hydro_iso.o: VectorOps.h solver_eqn_base.h eqns_base.h \
    flux_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_hydro_iso.h flux_hydro_isothermal.h eqns_hydro_isothermal.h \
-   solver_eqn_hydro_iso.cc
+   solver_eqn_hydro_iso.cpp
 
 solver_eqn_mhd_adi.o: VectorOps.h \
    solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_mhd_adi.h flux_mhd_adiabatic.h  eqns_mhd_adiabatic.h \
-   solver_eqn_mhd_adi.cc
+   solver_eqn_mhd_adi.cpp
 
 solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
-   solver_eqn_hydro_adi_Eint.h solver_eqn_hydro_adi_Eint.cc \
+   solver_eqn_hydro_adi_Eint.h solver_eqn_hydro_adi_Eint.cpp \
    solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_hydro_adi.h flux_hydro_adiabatic.h  eqns_hydro_adiabatic.h \
-   solver_eqn_hydro_adi_Eint.h solver_eqn_hydro_adi_Eint.cc
+   solver_eqn_hydro_adi_Eint.h solver_eqn_hydro_adi_Eint.cpp
 
 
 ######################
@@ -535,33 +536,33 @@ solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
 
 microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
-integrator.o:	integrator.cc integrator.h ${GLOBAL}
-cooling.o:	cooling.cc cooling.h tools/interpolate.h ${GLOBAL}
+integrator.o:	integrator.cpp integrator.h ${GLOBAL}
+cooling.o:	cooling.cpp cooling.h tools/interpolate.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h \
+cooling_SD93_cie.o: cooling_SD93_cie.cpp cooling_SD93_cie.h \
  tools/interpolate.h ${GLOBAL}
 
-hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
+hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cpp \
    tools/interpolate.h  ${GLOBAL}
 
-mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
+mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
+microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h tools/interpolate.h
-microphysics_v1.o: microphysics_v1.cc microphysics.h \
+microphysics_v1.o: microphysics_v1.cpp microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
+microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
 #header.h
 
-hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
+hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h tools/interpolate.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h \
+hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h \
   tools/interpolate.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
@@ -597,7 +598,7 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
 
-raytracer_SC.o: raytracer_SC.cc raytracer_SC.h raytracer_base.h \
+raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
   ${GLOBAL} uniform_grid.h
 
 
@@ -605,37 +606,37 @@ raytracer_SC.o: raytracer_SC.cc raytracer_SC.h raytracer_base.h \
 # Data I/O
 ########################
 file_status.o:  file_status.cpp file_status.h ${GLOBAL}
-dataio.o:       dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
+dataio.o:       dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
 		stellar_wind_BC.h cell_interface.h
-dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h
-dataio_fits.o:  dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h
+dataio_fits.o:  dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
         solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h
 
-readparams.o:   readparams.cc readparams.h ${GLOBAL}
-utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h ${GLOBAL}
+readparams.o:   readparams.cpp readparams.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h ${GLOBAL}
 
-stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h \
+stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
   tools/interpolate.h ${GLOBAL}
 
 ##############################
 ##### IC GENERATOR FILES #####
 ##############################
-icgen.o: icgen.cc icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  mp_v2_aifa.h \
+icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  mp_v2_aifa.h \
          microphysics.h microphysics_lowZ.h dataio_silo.h dataio.h dataio_fits.h
-get_sim_info.o: get_sim_info.h get_sim_info.cc ${GLOBAL} readparams.h stellar_wind_BC.h
-inside_sphere.o: inside_sphere.cc inside_sphere.h ${GLOBAL}
+get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
+inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
 ########################
-shock_tube.o: shock_tube.cc icgen.h ${GLOBAL}
-radiative_shock.o: radiative_shock.cc icgen.h ${GLOBAL}
-blast_wave.o:      blast_wave.cc icgen.h ${GLOBAL} inside_sphere.h
-photoevaporating_clump.o:  photoevaporating_clump.cc icgen.h ${GLOBAL} inside_sphere.h
-basic_tests.o: basic_tests.cc icgen.h ${GLOBAL} 
-photoevaporating_random_clumps.o: photoevaporating_random_clumps.cc icgen.h ${GLOBAL}
-shock_cloud.o: shock_cloud.cc icgen.h ${GLOBAL} inside_sphere.h
-photoevaporating_multiclumps.o: photoevaporating_multiclumps.cc icgen.h ${GLOBAL}
-laser_ablation.o:   laser_ablation.cc icgen.h ${GLOBAL}
-jet.o:		    jet.cc icgen.h ${GLOBAL}
-spherical_clump.o: spherical_clump.cc icgen.h ${GLOBAL}
+shock_tube.o: shock_tube.cpp icgen.h ${GLOBAL}
+radiative_shock.o: radiative_shock.cpp icgen.h ${GLOBAL}
+blast_wave.o:      blast_wave.cpp icgen.h ${GLOBAL} inside_sphere.h
+photoevaporating_clump.o:  photoevaporating_clump.cpp icgen.h ${GLOBAL} inside_sphere.h
+basic_tests.o: basic_tests.cpp icgen.h ${GLOBAL} 
+photoevaporating_random_clumps.o: photoevaporating_random_clumps.cpp icgen.h ${GLOBAL}
+shock_cloud.o: shock_cloud.cpp icgen.h ${GLOBAL} inside_sphere.h
+photoevaporating_multiclumps.o: photoevaporating_multiclumps.cpp icgen.h ${GLOBAL}
+laser_ablation.o:   laser_ablation.cpp icgen.h ${GLOBAL}
+jet.o:		    jet.cpp icgen.h ${GLOBAL}
+spherical_clump.o: spherical_clump.cpp icgen.h ${GLOBAL}
 StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
 #######################
 

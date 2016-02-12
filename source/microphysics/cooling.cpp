@@ -24,6 +24,7 @@
 #include "constants.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
+#include "grid/cell_interface.h"
 #endif // TESTING
 
 
@@ -330,7 +331,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      dp.grid->PrintCell(dp.c);
+      CI.print_cell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
@@ -383,7 +384,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      dp.grid->PrintCell(dp.c);
+      CI.print_cell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       interpolate.splint(Temp, Lamb, Lam2, Nspl, log10(MaxTemp), &rate);
@@ -480,7 +481,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       //cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      //dp.grid->PrintCell(dp.c);
+      //CI.print_cell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
@@ -526,7 +527,7 @@ double CoolingFn::CoolingRate(const double T,
     if (T>MaxTemp) {
       //cout <<"Temp out of range!! Too large: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
 #ifdef TESTING
-      //dp.grid->PrintCell(dp.c);
+      //CI.print_cell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
       interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
