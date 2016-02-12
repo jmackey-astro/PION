@@ -3,7 +3,10 @@
 /// 
 /// \author Jonathan Mackey
 /// 
-/// Function definitions for UniformGrid class
+/// Function definitions for UniformGrid class:
+/// - setup boundaries.
+/// - allocate/delete grid data and setup linked lists.
+/// - update boundaries.
 /// 
 /// Modifications:\n
 ///  - 2007-08-07 minor fixes to boundary conditions.
@@ -84,7 +87,7 @@
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2016.02.11 JM: Worked on Grid_v2 update (full boundaries).
 /// - 2016.02.12 JM: including source code from static_grid.cc, and
-///    renamed to uniform_grid.cpp
+///    renamed to uniform_grid.cpp, worked on new grid structure.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -153,10 +156,13 @@ UniformGrid::UniformGrid(
   G_ixmax  = mem.myalloc(G_ixmax, G_ndim);
   G_irange = mem.myalloc(G_irange,G_ndim);
 
+  //
+  // For serial code the Sim_XXX arrays are the same as G_XXX arrays,
+  // but for parallel code with many grids this is useful.
+  //
   Sim_xmin   = mem.myalloc(Sim_xmin,  G_ndim);
   Sim_xmax   = mem.myalloc(Sim_xmax,  G_ndim);
   Sim_range  = mem.myalloc(Sim_range, G_ndim);
-
   Sim_ixmin  = mem.myalloc(Sim_ixmin, G_ndim);
   Sim_ixmax  = mem.myalloc(Sim_ixmax, G_ndim);
   Sim_irange = mem.myalloc(Sim_irange,G_ndim);
@@ -194,7 +200,7 @@ UniformGrid::UniformGrid(
   // Checks grid dimensions and discretisation is reasonable,
   // and that it gives cubic cells.
   //
-  setCellSize();
+  set_cell_size();
 
   //
   // Now create the first cell, and then allocate data from there.
@@ -202,6 +208,7 @@ UniformGrid::UniformGrid(
   //
   cout <<" done.\n Initialising first cell...\n";
   G_fpt_all = CI.new_cell();
+  G_fpt_all->id = 0;
   cout <<" done.\n";
   if(G_fpt_all==0) {
     rep.error("Couldn't assign memory to first cell in grid.",
@@ -212,18 +219,18 @@ UniformGrid::UniformGrid(
   // assign memory for all cells, including boundary cells.
   //
   cout <<"\t allocating memory for grid.\n";
-  int err = allocateGridData();
+  int err = allocate_grid_data();
   if(err!=0)
-    rep.error("Error setting up grid, allocateGridData",err);
+    rep.error("Error setting up grid, allocate_grid_data",err);
 
   //
   // assign grid structure on cells, setting positions and ngb
   // pointers.
   //
   cout <<"\t assigning pointers to neighbours.\n";
-  err += assignGridStructure();
+  err += assign_grid_structure();
   if(err!=0)
-    rep.error("Error setting up grid, assignGridStructure",err);
+    rep.error("Error setting up grid, assign_grid_structure",err);
   
 #ifdef TESTING
   rep.printVec("\tFirst Pt. integer position",FirstPt()->pos,nd);
@@ -307,32 +314,31 @@ UniformGrid::~UniformGrid()
 } // Destructor
 
 
+
 // ##################################################################
 // ##################################################################
 
-int UniformGrid::assignGridStructure()
+
+
+int UniformGrid::assign_grid_structure()
 {
-  //  cout<<"\tAssignGridStructure.\n";
-  /** \section Structure
-   * There is a base grid, Nx,Ny,Nz elements, which is 
-   * allocated at the start of the simulation.  These are
-   * ordered so that element (ix,iy,iz) has 
-   * \f$ \mbox{ID} = \mbox{firstPtID} + i_x +N_x*i_y + N_x*N_y*i_z \f$
-   * For a non-adaptive grid, NextPt(cpt) will return the next
-   * cell in this set, and null if it is at the last one. 
-   * NextPt(cpt,dirn) will return the next cell in a given
-   * direction, and null if it has reached an edge cell. Each cell 
-   * has pointers to it's neighbours to make this easy and fast.
-   * 
-   * Boundary or Ghost cells are not created by this class.  The edge
-   * points have null pointers for neighbours in directions pointing off
-   * the grid, and it is up to whoever sets up the grid to give it 
-   * boundary cells if needed.
-   * */
-  class cell *cpt = FirstPt();
-  int ix[MAX_DIM]; for (int i=0;i<MAX_DIM;i++) ix[i]=0;
+#ifdef TESTING
+  cout<<"\tAssignGridStructure.\n";
+#endif // TESTING
 
+  /// \section Structure
+  /// There is a base grid, Nx,Ny,Nz elements, which is 
+  /// allocated at the start of the simulation.  These are
+  /// ordered so that element (ix,iy,iz) has 
+  /// \f$ \mbox{ID} = \mbox{firstPtID} + i_x +N_x*i_y + N_x*N_y*i_z \f$.
+  /// NextPt(cpt) will return the next
+  /// cell in this set, and null if it is at the last one. 
+  /// NextPt(cpt,direction) will return the next cell in a given
+  /// direction, and null if it has reached an edge cell. Each cell 
+  /// has pointers to its neighbours.
+  /// 
 
+  // ----------------------------------------------------------------
   //
   // The cell integer positions are based off Sim_xmin (not G_xmin)
   // for reasons that become clear in the parallel version -- I want
@@ -343,7 +349,6 @@ int UniformGrid::assignGridStructure()
   //
   int ipos[MAX_DIM], offset[MAX_DIM];
   for (int i=0; i<MAX_DIM; i++) ipos[i] = offset[i] = 0;
-  
   for (int i=0; i<G_ndim; i++) {
     offset[i] = 1+ 2*static_cast<int>(ONE_PLUS_EPS*(G_xmin[i]-Sim_xmin[i])/G_dx);
 #ifdef TESTING
@@ -351,12 +356,17 @@ int UniformGrid::assignGridStructure()
 #endif
   }
 
-  //
-  // Go through full grid, setting positions, assuming first cell is
+  // ----------------------------------------------------------------
+  // ---------------------- SET CELL POSITIONS ----------------------
+  // Go through full grid, setting positions, where the first cell is
   // BC_nbc cells negative of G_xmin in all directions.
   //
-  int    ix[MAX_DIM];   for (int i=0;i<MAX_DIM;i++) ix[i]=-BC_nbc;
-  double dpos[MAX_DIM]; for (int i=0;i<MAX_DIM;i++) dpos[i] = 0.0;
+  int    ix[MAX_DIM];  // ix[] is a counter for cell number.
+  for (int i=0;i<MAX_DIM;i++) ix[i]=-BC_nbc;
+
+  double dpos[MAX_DIM];
+  for (int i=0;i<MAX_DIM;i++) dpos[i] = 0.0;
+
   class cell *c = FirstPt_All();
   do {
 #ifdef TESTING
@@ -367,10 +377,14 @@ int UniformGrid::assignGridStructure()
     // Assign positions, for integer positions the first on-grid cell
     // is at [1,0,0], and a cell is 2 units across, so the second
     // cell is at [3,0,0] etc.
+    // Boundary cells can have negative positions.
     //
     for (int i=0; i<G_ndim; i++) ipos[i] = offset[i] + 2*ix[i];
     CI.set_pos(c,ipos);
-
+    
+    //
+    // Initialise the cell data to zero.
+    //
     for(int v=0;v<G_nvar;v++) c->P[v] = 0.0;
     if (!CI.query_minimal_cells()) {
       for(int v=0;v<G_nvar;v++) c->Ph[v] = c->dU[v] =0.;
@@ -443,8 +457,11 @@ int UniformGrid::assignGridStructure()
       } // If 2D.
     } // If at end of XX row.
   } while ( (c=NextPt_All(c))!=0);
+  // ---------------------- SET CELL POSITIONS ----------------------
+  // ----------------------------------------------------------------
   
-  //
+  // ----------------------------------------------------------------
+  // ----------------------  SET npt POINTERS  ----------------------
   // Now run through grid and set npt pointer for on-grid cells.
   // Also set fpt for the first on-grid point, and lpt for the last.
   //
@@ -476,15 +493,15 @@ int UniformGrid::assignGridStructure()
       // cell, which we set npt to point to.
       //
       else {
-        temp = c;
+        ctemp = c;
         do {
-          temp = NextPt_All(temp);
-        } while (temp!=0 && !temp->isgd);
+          ctemp = NextPt_All(ctemp);
+        } while (ctemp!=0 && !ctemp->isgd);
 
-        if (temp) {
+        if (ctemp) {
           // there is another on-grid point.
-          if (!temp->isgd) rep.error("Setting npt error",temp->id);
-          c->npt = temp;
+          if (!ctemp->isgd) rep.error("Setting npt error",ctemp->id);
+          c->npt = ctemp;
         }
         else {
           // must be last point on grid.
@@ -497,14 +514,18 @@ int UniformGrid::assignGridStructure()
   } while ( (c=NextPt_All(c))!=0);
   if (!set_lpt) rep.error("failed to find last on-grid point",1);
   if (!set_fpt) rep.error("failed to find first on-grid point",1);
+  // ----------------------  SET npt POINTERS  ----------------------
+  // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
+  // ----------------------  SET ngb POINTERS  ----------------------
   //
   // Set up pointers to neighbours in x-direction
   //
   c = FirstPt_All();
-  cell *c_prev=0, *c_next = NextPt_All(c), *y_tmp=0, *z_tmp=0;
+  cell *c_prev=0, *c_next = NextPt_All(c);
   do {
-    c->ngb[XN] = c->prev;
+    c->ngb[XN] = c_prev;
 
     if (!c_next) {
       c->ngb[XP] = 0;
@@ -520,6 +541,7 @@ int UniformGrid::assignGridStructure()
 
     c = c_next;
     c_next = NextPt_All(c_next);
+  }
   while (c_next != 0);
 
   //
@@ -532,7 +554,7 @@ int UniformGrid::assignGridStructure()
     do {
       c_next=c;
       do {
-        c_next = NextPt_All(c);
+        c_next = NextPt_All(c_next);
       } while ( (c_next!=0) && 
                 (c_next->pos[YY] >= c->pos[YY]) &&
                 (c_next->pos[XX] != c->pos[XX]) );
@@ -582,11 +604,12 @@ int UniformGrid::assignGridStructure()
       c_next = NextPt_All(c_next);
     } while (c_next!=0);
   }
+  // ----------------------  SET ngb POINTERS  ----------------------
+  // ----------------------------------------------------------------
 
   //  cout<<"\tAssignGridStructure Finished.\n";
-  return(0);
-} // assignGridStructure()
-
+  return 0;
+} // assign_grid_structure()
 
 
 
@@ -595,16 +618,16 @@ int UniformGrid::assignGridStructure()
 
 
 
-
-int UniformGrid::allocateGridData()
+int UniformGrid::allocate_grid_data()
 {
   cout <<"\tAllocating grid data... G_ncell="<<G_ncell<<"\n";
   //
-  // First generate G_ncell_all points.
+  // First generate G_ncell_all points and add a npt_all counter so
+  // that they are in a singly linked list.
   //
   cell *c = G_fpt_all;
   size_t count=0;
-  while (c->id < G_ncell_all-1) {
+  while (c->id < static_cast<long int>(G_ncell_all-1)) {
     c->npt_all = CI.new_cell();
     c = c->npt_all;
     count++;
@@ -613,25 +636,12 @@ int UniformGrid::allocateGridData()
   c->npt_all = 0;
   G_lpt_all = c; 
   
-  //G_firstPtID = 0;
-  //G_lastPtID = G_ncell -1;
-  
-   //cell *cpt=G_fpt;
-  //cpt->id = G_firstPtID;
-  //int IDcount = G_firstPtID;
- // 
-  //while (cpt->id < G_lastPtID) {
-  //  cpt->npt = newCell();
-  //  cpt = cpt->npt; IDcount++;
-  //  cpt->id = IDcount;
-  //}
-  //if (IDcount-G_firstPtID != G_ncell-1) rep.error("error assigning grid points.",IDcount);
-  //cpt->npt = 0;
-//  cout <<"\tFinished Allocating Data.\n";
-//  cpt=FirstPt();
-//  do {printCell(cpt,G_ndim,G_nvar);} while ( (cpt=NextPt(cpt))!=0);
+#ifdef TESTING
+  cout <<"\tFinished Allocating Data.\n";
+#endif // TESTING
+
   return 0;
-} // allocateGridData
+} // allocate_grid_data
 
 
 
@@ -640,7 +650,7 @@ int UniformGrid::allocateGridData()
 
 
 
-int UniformGrid::setCellSize()
+int UniformGrid::set_cell_size()
 {
   //
   // Uniform Cartesian grid, with cubic cells, so this is easy, and
@@ -680,7 +690,7 @@ int UniformGrid::setCellSize()
   else  G_dV = G_dx*G_dx*G_dx;
   
   return 0;
-} // setCellSize
+} // set_cell_size
 
 
 
@@ -743,7 +753,7 @@ class cell* UniformGrid::FirstPt_All()
 class cell* UniformGrid::LastPt()
 {
 #ifdef TESTING
-  cout <<"Last Point is :"<<G_lpt; PrintCell(G_lpt);
+  cout <<"Last Point is :"<<G_lpt; CI.print_cell(G_lpt);
 #endif
   return(G_lpt);
 } // LastPt
@@ -783,8 +793,10 @@ class cell* UniformGrid::PrevPt(
   /// this function, but to call NextPt in the reverse direction.
   ///
   enum direction opp = OppDir(dir);
+#ifdef TESTING
   // This is going to be very inefficient...
-  //   cout <<"This function is very inefficient and probably shouldn't be used.\n";
+  cout <<"This function is very inefficient and probably shouldn't be used.\n";
+#endif // TESTING
   return(p->ngb[opp]);
 }
 
@@ -795,19 +807,26 @@ class cell* UniformGrid::PrevPt(
 
 
 
-int UniformGrid::SetupBCs(int Nbc, string typeofbc)
+int UniformGrid::SetupBCs(
+      const int Nbc,
+      string typeofbc
+      )
 {
-  BC_nbc = Nbc;
   if (BC_setBCtypes(typeofbc) !=0)
     rep.error("UniformGrid::setupBCs() Failed to set types of BC",1);
   
-  // This function loops through all points on the grid, and if it is an
-  // edge point, it finds which direction(s) are off the grid and sets up
-  // boundary cell(s) in that direction.
+  //
+  // This function loops through all points on the grid, and if it is
+  // an edge point, it finds which direction(s) are off the grid and
+  // adds the boundary cells to boundary data.
+  //
   class cell *c, *temppt;
   enum direction dir; int err=0;
   c = FirstPt();
   //  cout <<"Assigning edge data.\n";
+  // TODO: FIX THIS!!!
+  // ------- THIS NEEDS A RE-WRITE FOR NEW GRID -------
+  // - ngb pointer is already set for boundary data in assign_grid_str
   do {
     if (c->isedge !=0) {
       for (int i=0;i<2*G_ndim;i++) {
@@ -825,6 +844,7 @@ int UniformGrid::SetupBCs(int Nbc, string typeofbc)
   } while ( (c=NextPt(c)) !=0);
   if (err!=0) rep.error("Failed to set up Boundary cells",err);
   // cout <<"Done.\n";
+  // ------- THIS NEEDS A RE-WRITE FOR NEW GRID -------
   
   //
   // Loop through all boundaries, and assign data to them.
@@ -859,14 +879,17 @@ int UniformGrid::SetupBCs(int Nbc, string typeofbc)
 // ##################################################################
 
 
-int UniformGrid::BC_setBCtypes(string bctype)
+int UniformGrid::BC_setBCtypes(
+  std::string bctype
+  )
 {
 #ifdef TESTING
   cout <<"Set BC types...\n";
 #endif
   if(bctype=="FIXED" || bctype=="PERIODIC" || bctype=="ABSORBING") {
 #ifdef TESTING
-    cout <<"using old-style boundary condition specifier: "<<bctype<<" on all sides.\n";
+    cout <<"using old-style boundary condition specifier: "<<bctype;
+    cout <<" on all sides.\n";
     cout <<"Converting to new style specifier.\n";
 #endif
 
@@ -2784,9 +2807,21 @@ double UniformGrid::idifference_cell2cell(
 ///
 /// Constructor
 ///
-uniform_grid_cyl::uniform_grid_cyl(int nd, int nv, int eqt, double *xn, double *xp, int *nc)
+uniform_grid_cyl::uniform_grid_cyl(
+    int nd,         ///< ndim, length of position vector.
+    int nv,         ///< nvar, length of state vectors.
+    int eqt,        ///< eqntype, which equations we are using (needed by BCs).
+    int Nbc,        ///< Number of boundary cells to use.
+    double *g_xn,   ///< array of minimum values of x,y,z for this grid.
+    double *g_xp,   ///< array of maximum values of x,y,z for this grid.
+    int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *sim_xn, ///< array of min. x/y/z for full simulation.
+    double *sim_xp  ///< array of max. x/y/z for full simulation.
+    )
   : 
-  VectorOps_Cart(nd),UniformGrid(nd,nv,eqt,xn,xp,nc),VectorOps_Cyl(nd)
+  VectorOps_Cart(nd),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  VectorOps_Cyl(nd)
 {
 #ifdef TESTING
   cout <<"Setting up cylindrical uniform grid with";
@@ -3182,10 +3217,20 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(
 
 
 
-uniform_grid_sph::uniform_grid_sph(int nd, int nv, int eqt, double *xn, double *xp, int *nc)
+uniform_grid_sph::uniform_grid_sph(
+    int nd,         ///< ndim, length of position vector.
+    int nv,         ///< nvar, length of state vectors.
+    int eqt,        ///< eqntype, which equations we are using (needed by BCs).
+    int Nbc,        ///< Number of boundary cells to use.
+    double *g_xn,   ///< array of minimum values of x,y,z for this grid.
+    double *g_xp,   ///< array of maximum values of x,y,z for this grid.
+    int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *sim_xn, ///< array of min. x/y/z for full simulation.
+    double *sim_xp  ///< array of max. x/y/z for full simulation.
+    )
   : 
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,xn,xp,nc),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
   VectorOps_Cyl(nd),
   VectorOps_Sph(nd)
 {

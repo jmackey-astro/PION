@@ -1038,13 +1038,13 @@ int sim_control_fixedgrid::dynamics_dU_column
   // Set starting point, and next two points in the column.
   //
   cell *cpt = grid->NextPt(startingPt,posdir); //=grid->NextPt(startingPt,negdir);
-  while (grid->NextPt(cpt,negdir)) {cpt = grid->NextPt(cpt,negdir);} // grid->PrintCell(cpt);}
+  while (grid->NextPt(cpt,negdir)) {cpt = grid->NextPt(cpt,negdir);} // CI.print_cell(cpt);}
   if(cpt==0) {cerr<<"(RSMethod::calc_dUdt) error finding left boundary cell.\n";return(1);}
   cell *npt  = grid->NextPt(cpt,posdir);
   cell *n2pt = grid->NextPt(npt,posdir);
   if (npt==0 || n2pt==0) rep.error("Couldn't find two real cells in column",0);
-  //  cout<<"First Cell:"; grid->PrintCell(cpt);
-  //  cout<<"Next Cell: "; grid->PrintCell(npt);
+  //  cout<<"First Cell:"; CI.print_cell(cpt);
+  //  cout<<"Next Cell: "; CI.print_cell(npt);
   
   //
   // Left Ghost Cell (doesn't get updated)
@@ -1082,10 +1082,10 @@ int sim_control_fixedgrid::dynamics_dU_column
   rep.printVec("Fl",Fr_prev,SimPM.nvar); rep.printVec("Fr",Fr_this,SimPM.nvar);
   cout <<"dt:"<<dt<<"\tdx="<<SimPM.dx<<"\n";
 //  rep.printVec("dU",&cpt->dU[v],1);
-  grid->PrintCell(cpt); grid->PrintCell(npt);
+  CI.print_cell(cpt); CI.print_cell(npt);
   rep.error("nans!!!",2);
       }
-      //if (dp.c->id==114337) grid->PrintCell(cpt);
+      //if (dp.c->id==114337) CI.print_cell(cpt);
     }
     // Track energy, momentum entering domain.
     if(ctm==SimPM.tmOOA && !(cpt->isgd) && npt->isgd) {

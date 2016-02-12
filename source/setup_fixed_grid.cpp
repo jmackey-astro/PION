@@ -164,15 +164,35 @@ int setup_fixed_grid::setup_grid(
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Setting up computational grid --------------\n";
+
 #ifdef TESTING
   cout <<"Init::setup_grid: &grid="<< grid<<", and grid="<<*grid<<"\n";
 #endif // TESTING
+
   if (SimPM.gridType!=1) {
     rep.warning("gridType not set correctly: Only know Uniform finite\
                  volume grid, so resetting to 1!",1,SimPM.gridType);
     SimPM.gridType=1;
   }
-  if (SimPM.ndim <1 || SimPM.ndim>3)  rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
+
+  if (SimPM.ndim <1 || SimPM.ndim>3)
+    rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
+
+  //
+  // Nbc is the depth of the boundary layer.
+  //
+#ifdef TESTING
+  cout <<"Setting number of boundary cells == spatial OOA: ";
+  cout <<SimPM.spOOA<<"\n";
+#endif // TESTING
+  if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
+  else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
+  else rep.error("Spatial order of accuracy unhandled by boundary \
+                  conditions!",SimPM.spOOA);
+  
+  // Force Nbc=1 if using Lax-Friedrichs flux.
+  if (SimPM.solverType==FLUX_LF)
+  {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1;}
 
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -189,11 +209,11 @@ int setup_fixed_grid::setup_grid(
   if (*grid) rep.error("Grid already set up!",*grid);
 
   if      (SimPM.coord_sys==COORD_CRT)
-    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_CYL)
-    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_SPH)
-    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Xmin, SimPM.Xmax, SimPM.NG);
+    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
@@ -240,14 +260,6 @@ int setup_fixed_grid::boundary_conditions(
   }
 #endif
 
-  // Nbc is the depth of the boundary layer.
-  //  cout <<"Setting depth of boundary cells to be equal to spatial OOA.\n";
-  if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
-  else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
-  else rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
-  
-  if (SimPM.solverType==FLUX_LF) {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1;} // force this if LF Method.
-  
 #ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
 #endif

@@ -31,6 +31,7 @@
 /// - 2013.09.05 JM: modified error checking in inline functions.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.10.19 JM: changed extra_data to double b/c Vshell is too large.
+/// - 2016.02.12 JM: removed GRIDV2 flag.
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
@@ -82,10 +83,8 @@ class cell {
   friend class cell_interface;
   cell **ngb;  ///< Pointers to cell's Neigbours.
   cell *npt;   ///< Pointer to next point in list, or some other cell.
-#ifdef GRIDV2
   cell *npt_all;  ///< Pointer to next point in grid, including
                   ///< boundary data.
-#endif
   int *pos;
   pion_flt *P;   ///< Primitive Variables.
   pion_flt *Ph;  ///< Primitive State vector at half timestep.
@@ -93,7 +92,7 @@ class cell {
  private:
   double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
  public:
-  int id;      ///< Grid point's id.
+  long int id;      ///< Grid point's id.
   int isedge;  ///< Integer specifying if it is an edge cell, and if so, which edge.
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
