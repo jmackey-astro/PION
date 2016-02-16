@@ -14,6 +14,7 @@
 #include "tools/reporting.h"
 #include "tools/command_line_interface.h"
 #include "constants.h"
+#include "grid/cell_interface.h"
 using namespace std;
 
 #ifdef TESTING
@@ -211,7 +212,7 @@ void CommandLineInterface::bigcmd()
 
 void CommandLineInterface::print_cell() 
 {
-  dp.grid->PrintCell(dp.c);
+  CI.print_cell(dp.c);
   cout <<"\n";
   return;
 }

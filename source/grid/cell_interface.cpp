@@ -317,16 +317,16 @@ void cell_interface::delete_cell(cell *c)
 // ##################################################################
 // ##################################################################
 
-void cell_interface::set_pos(cell *c, ///< pointer to cell
-			     const double *p_in ///< double array of size ndim, containing cell position.
-			     )
+void cell_interface::set_pos(
+      cell *c, ///< pointer to cell
+      const double *p_in ///< double array of size ndim, containing cell position.
+      )
 {
   //
-  // Set position integer according to Xmin+(i+1)*DX/2=x
-  // This is Andy's positioning algorithm, and he says it's the best one he's found. 
+  // Set position integer according to Xmin+i*DX/2=x
   //
   for (int v=0;v<SimPM.ndim;v++) {
-    c->pos[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2) -1);
+    c->pos[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
   }
   //  rep.printVec("int-pos",c->pos,SimPM.ndim);
   return;
@@ -336,13 +336,13 @@ void cell_interface::set_pos(cell *c, ///< pointer to cell
 // ##################################################################
 // ##################################################################
 
-void cell_interface::set_pos(cell *c, ///< pointer to cell
-			     const int *p_in ///< integer array of size ndim, containing cell position.
-			     )
+void cell_interface::set_pos(
+      cell *c, ///< pointer to cell
+      const int *p_in ///< integer array of size ndim, containing cell position.
+      )
 {
   //
-  // Set position integer according to Xmin+(i+1)*DX/2=x
-  // This is Andy's positioning algorithm, and he says it's the best one he's found.
+  // Set position integer according to Xmin+i*DX/2=x
   // This function assumes a clever person has set p_in to have these values!
   // If not, the code may fail catastrophically.
   //
@@ -357,12 +357,13 @@ void cell_interface::set_pos(cell *c, ///< pointer to cell
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_dpos(const cell *c, ///< pointer to cell
-			     double *p_out ///< array to write position into.
-			     )
+void cell_interface::get_dpos(
+      const cell *c, ///< pointer to cell
+      double *p_out ///< array to write position into.
+      )
 {
   for (int v=0;v<SimPM.ndim;v++)
-    p_out[v] = xmin[v] +(c->pos[v]+1)*dxo2;
+    p_out[v] = xmin[v] +(c->pos[v])*dxo2;
   return;
 }
 
@@ -370,20 +371,22 @@ void cell_interface::get_dpos(const cell *c, ///< pointer to cell
 // ##################################################################
 // ##################################################################
 
-double cell_interface::get_dpos(const cell *c, ///< pointer to cell
-				const int v ///< element of position vector we want
-				)
+double cell_interface::get_dpos(
+      const cell *c, ///< pointer to cell
+      const int v ///< element of position vector we want
+      )
 {
-  return xmin[v] +(c->pos[v]+1)*dxo2;
+  return xmin[v] +(c->pos[v])*dxo2;
 }
 
 
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_ipos(const cell *c, ///< pointer to cell
-			      int *ipos_out  ///< array to write integer position into.
-			      )
+void cell_interface::get_ipos(
+      const cell *c, ///< pointer to cell
+      int *ipos_out  ///< array to write integer position into.
+      )
 {
   for (int v=0;v<SimPM.ndim;v++)
     ipos_out[v] = c->pos[v];
@@ -394,9 +397,10 @@ void cell_interface::get_ipos(const cell *c, ///< pointer to cell
 // ##################################################################
 // ##################################################################
 
-int cell_interface::get_ipos(const cell *c, ///< pointer to cell
-			     const int v    ///< element of position we want.
-			     )
+int cell_interface::get_ipos(
+      const cell *c, ///< pointer to cell
+      const int v    ///< element of position we want.
+      )
 {
   return c->pos[v];
 }
@@ -405,9 +409,10 @@ int cell_interface::get_ipos(const cell *c, ///< pointer to cell
 // ##################################################################
 // ##################################################################
 
-void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (input)
-				  int *p_out          ///< integer position (output)
-				  )
+void cell_interface::get_ipos_vec(
+      const double *p_in, ///< physical position (input)
+      int *p_out          ///< integer position (output)
+      )
 {
   if (dxo2<0.0)
     rep.error("set up grid before trying to get integer positions!!!",dxo2);
@@ -415,7 +420,7 @@ void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (in
     if (fabs(p_in[v])>VERY_LARGE_VALUE)
       p_out[v] = -1234567;
     else
-      p_out[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2) -1);
+      p_out[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
   }
   return;
 }
@@ -426,9 +431,9 @@ void cell_interface::get_ipos_vec(const double *p_in, ///< physical position (in
 
 
 void cell_interface::get_ipos_as_double(
-    const double *p_in, ///< physical position (input)
-    double *p_out       ///< integer position (output)
-    )
+      const double *p_in, ///< physical position (input)
+      double *p_out       ///< integer position (output)
+      )
 {
   if (dxo2<0.0)
     rep.error("set up grid before trying to get integer positions!!!",dxo2);
@@ -436,7 +441,7 @@ void cell_interface::get_ipos_as_double(
     if (fabs(p_in[v])>VERY_LARGE_VALUE)
       p_out[v] = -VERY_LARGE_VALUE;
     else
-      p_out[v] = (p_in[v]-xmin[v])/dxo2 -1.0;
+      p_out[v] = (p_in[v]-xmin[v])/dxo2;
   }
   return;
 }
@@ -447,12 +452,12 @@ void cell_interface::get_ipos_as_double(
 
 
 void cell_interface::get_dpos_vec(
-    const int *p_in, ///< integer position (output)
-    double *p_out    ///< physical position (input)
-    )
+      const int *p_in, ///< integer position (output)
+      double *p_out    ///< physical position (input)
+      )
 {
   for (int v=0;v<SimPM.ndim;v++)
-        p_out[v] = xmin[v] +(p_in[v]+1)*dxo2;
+        p_out[v] = xmin[v] +(p_in[v])*dxo2;
   return;
 }
 

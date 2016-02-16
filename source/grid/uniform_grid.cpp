@@ -250,9 +250,9 @@ UniformGrid::UniformGrid(
   CI.get_ipos_vec(G_xmax, G_ixmax );
   for (int v=0;v<G_ndim;v++) G_irange[v] = G_ixmax[v]-G_ixmin[v];
 #ifdef TESTING
-  rep.printVec("iXmin ", G_ixmin, G_ndim);
-  rep.printVec("iXmax ", G_ixmax, G_ndim);
-  rep.printVec("iRange", G_irange,G_ndim);
+  rep.printVec("grid ixmin ", G_ixmin, G_ndim);
+  rep.printVec("grid ixmax ", G_ixmax, G_ndim);
+  rep.printVec("grid irange", G_irange,G_ndim);
 #endif
 
   //
@@ -344,7 +344,7 @@ int UniformGrid::assign_grid_structure()
   // for reasons that become clear in the parallel version -- I want
   // positions to be globally applicable.  So we set the offset based
   // on (Sim_xmin-G_xmin).
-  // First cell is at [1,0,0], so the offset has 1 added to it
+  // First cell is at [1,1,1], so the offset has 1 added to it
   // (because the cell centre is 1 unit from xmin).
   //
   int ipos[MAX_DIM], offset[MAX_DIM];
@@ -375,8 +375,8 @@ int UniformGrid::assign_grid_structure()
 
     //
     // Assign positions, for integer positions the first on-grid cell
-    // is at [1,0,0], and a cell is 2 units across, so the second
-    // cell is at [3,0,0] etc.
+    // is at [1,1,1], and a cell is 2 units across, so the second
+    // cell is at [3,1,1] etc.
     // Boundary cells can have negative positions.
     //
     for (int i=0; i<G_ndim; i++) ipos[i] = offset[i] + 2*ix[i];
@@ -537,6 +537,10 @@ int UniformGrid::assign_grid_structure()
     else {
       c->ngb[XP] = 0;
       c_prev = 0;
+    }
+    if (c->id==114) {
+      cout <<"cid="<<c->id <<"\n";
+      cout <<c->ngb[XN] <<"  "<< c->ngb[XP] <<"\n";
     }
 
     c = c_next;
@@ -820,11 +824,77 @@ int UniformGrid::SetupBCs(
   // an edge point, it finds which direction(s) are off the grid and
   // adds the boundary cells to boundary data.
   //
-  class cell *c, *temppt;
+  class cell *c, *cy, *cz;
   enum direction dir; int err=0;
-  c = FirstPt();
-  //  cout <<"Assigning edge data.\n";
-  // TODO: FIX THIS!!!
+
+  //
+  // Set up X-boundaries, these are all cells adjacent to the grid 
+  // in the XN and XP directions.  First we go up the XN boundary
+  // along the YP and ZP directions (if multi-D).
+  // - c is a temporary cell pointer to move through the boundary
+  // data.
+  // - cy is a pointer to the cells in increasing y
+  // - cz is a pointer to the cells in increasing z
+  //
+  cz = FirstPt();
+  // loop in ZP direction
+  do {
+    cy = cz;
+    // loop in YP direction
+    do {
+      c=cy;
+      // add boundary cells beside the grid.
+      for (int v=0; v<BC_nbc; v++) {
+        c = NextPt(c, XN);
+        if (!c) {
+          CI.print_cell(cy);
+          CI.print_cell(c);
+          rep.error("Got lost on grid! XN",cy->id);
+        }
+        BC_bd[XN].data.push_back(c);
+        cout << " Adding cell "<<c->id<<" to grid.\n";
+      }
+      cy=NextPt(cy,YP);
+    } while (G_ndim>1 && cy!=0 && cy->isgd);
+    cz=NextPt(cz,ZP);
+  } while (G_ndim>2 && cz!=0 && cz->isgd);
+  cout <<"** Setup XN boundary, got "<<BC_bd[XN].data.size();
+  cout <<" grid cells.\n";
+
+  //
+  // Now do the same for XP, beginning at the most negative point
+  // at the XP boundary and moving to the most positive.
+  //
+  cz = FirstPt();
+  while (NextPt(cz,XP)->isgd) cz=NextPt(cz,XP);
+  // loop in ZP direction
+  do {
+    cy = cz;
+    // loop in YP direction
+    do {
+      c=cy;
+      // add boundary cells beside the grid.
+      for (int v=0; v<BC_nbc; v++) {
+        c = NextPt(c, XP);
+        if (!c) {
+          CI.print_cell(cy);
+          rep.error("Got lost on grid! XP",cy->id);
+        }
+        BC_bd[XN].data.push_back(c);
+      }
+      cy=NextPt(cy,YP);
+    } while (G_ndim>1 && cy!=0 && cy->isgd);
+    cz=NextPt(cz,ZP);
+  } while (G_ndim>2 && cz!=0 && cz->isgd);
+  cout <<"** Setup XP boundary, got "<<BC_bd[XP].data.size();
+  cout <<" grid cells.\n";
+
+    
+
+    
+  cell *temppt;
+
+    // TODO: FIX THIS!!!
   // ------- THIS NEEDS A RE-WRITE FOR NEW GRID -------
   // - ngb pointer is already set for boundary data in assign_grid_str
   do {
