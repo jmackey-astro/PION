@@ -148,6 +148,16 @@ class cell_interface {
   inline int get_integer_cell_size() {return cell_size_int_units;}
 
   ///
+  /// Set the cell size (for cubic cells).
+  ///
+  void set_dx(const double);
+
+  ///
+  /// Set the global Xmin of the grid.
+  ///
+  void set_xmin(const double *);
+
+  ///
   /// Return physical size of one internal unit
   ///
   inline double phys_per_int() {return dxo2;}
@@ -482,10 +492,11 @@ class cell_interface {
 
  private:
   bool minimal_cell; ///< default is false, set to true if analysing sims.
-  double dxo2; ///< Half a cell width.
+  double dxo2;  ///< Half a cell width.
   double *xmin; ///< The global Xmin of the domain, for counting integer positions from.
-  double int_converter; ///< Number of integers per cell width.
-  int cell_size_int_units; ///< size of a cell in integer units (==2)
+  double int_converter;     ///< Number of integers per cell width.
+  int cell_size_int_units;  ///< size of a cell in integer units (==2)
+  double cell_diameter;     ///< diameter of cell.
 
   bool have_setup_extra_data; ///< Flag checked when creating a cell!
   short unsigned int using_RT;     ///< Flag: 0=not doing RT, 1=doing RT.
