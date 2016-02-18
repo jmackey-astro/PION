@@ -86,6 +86,7 @@ cell_interface::cell_interface()
 
 cell_interface::~cell_interface()
 {
+  if (xmin) delete [] xmin;
   xmin=0;
   if (using_RT>0) {
     NTau  = mem.myfree(NTau);
@@ -110,11 +111,41 @@ void cell_interface::set_minimal_cell_data()
 // ##################################################################
 // ##################################################################
 
+
 void cell_interface::unset_minimal_cell_data()
 {
   minimal_cell = false;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+void cell_interface::set_dx(const double dx)
+{
+  cell_diameter = dx;
+  dxo2 = 0.5*dx;
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+void cell_interface::set_xmin(const double *xm)
+{
+  if (!xmin) {
+    xmin = new double [SimPM.ndim];
+  }
+  for (int v=0; v<SimPM.ndim; v++) {
+    xmin[v] = xm[v];
+  }
+  return;
+}
+
 
 
 // ##################################################################
@@ -247,8 +278,13 @@ cell * cell_interface::new_cell()
   // dx/2 and the xmin pointer correctly.
   //
   if (dxo2<0.0) {
+    rep.error("Set dx before creating cells!",dxo2);
     dxo2 = SimPM.dx/2.0;
     xmin = SimPM.Xmin;
+#ifdef TESTING
+    cout <<"dx/2="<<dxo2<<", dx="<<SimPM.dx<<"   ";
+    rep.printVec("CELL INTERFACE, xmin",xmin,SimPM.ndim);
+#endif // TESTING
   }
   cell *c=0;
   c = mem.myalloc(c,1);
@@ -363,7 +399,7 @@ void cell_interface::get_dpos(
       )
 {
   for (int v=0;v<SimPM.ndim;v++)
-    p_out[v] = xmin[v] +(c->pos[v])*dxo2;
+    p_out[v] = xmin[v] +c->pos[v]*dxo2;
   return;
 }
 
@@ -376,7 +412,7 @@ double cell_interface::get_dpos(
       const int v ///< element of position vector we want
       )
 {
-  return xmin[v] +(c->pos[v])*dxo2;
+  return xmin[v] +c->pos[v]*dxo2;
 }
 
 

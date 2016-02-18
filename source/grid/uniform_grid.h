@@ -109,9 +109,12 @@ enum BoundaryTypes {
 struct boundary_data {
    enum direction dir; ///< Outward Normal direction of boundary (NO dir if internal).
    string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
-   int itype;  ///< Integer flag for boundary type (per=1,out=2,inf=3,ref=4,fix=5).
+   int itype;         ///< Integer flag for boundary type.
+   int bloc;          ///< boundary location, e.g. x=0
+   bool bpos;         ///< whether boundary is in +ve direction?
+   enum axes baxis;   ///< index in position vector relating to bpos.
    list<cell *> data; ///< STL linked list for boundary data cells.
-   pion_flt *refval; ///< Optional reference state vector (e.g. for fixed BCs.).
+   pion_flt *refval;  ///< Optional reference state vector.
 };
 
 

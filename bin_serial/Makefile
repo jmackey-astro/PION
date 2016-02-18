@@ -253,10 +253,12 @@ endif
 ####  -- may need hard-coded path to work
 ######################################################################
 ifeq ($(MAKE_UNAME), imac)
-  CXXFLAGS = -O3
-#CXXFLAGS = -O0
-  CXXFLAGS += -Wall
-  CXXFLAGS += -g    # enable debugging with gdb
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+  else
+    CXXFLAGS = -O0 -Wall -g
+  endif
+
 #CXXFLAGS += -arch x86_64
 
 # CURDIR may only work with GNU Make!  It gives absolute paths, so that

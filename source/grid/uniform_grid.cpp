@@ -370,7 +370,7 @@ int UniformGrid::assign_grid_structure()
   class cell *c = FirstPt_All();
   do {
 #ifdef TESTING
-    cout <<"Cell id = "<<c->id<<"\n";
+    cout <<"Cell positions: id = "<<c->id<<"\n";
 #endif // TESTING
 
     //
@@ -381,7 +381,10 @@ int UniformGrid::assign_grid_structure()
     //
     for (int i=0; i<G_ndim; i++) ipos[i] = offset[i] + 2*ix[i];
     CI.set_pos(c,ipos);
-    
+#ifdef TESTING
+    rep.printVec("    pos", c->pos, G_ndim);
+#endif // TESTING
+
     //
     // Initialise the cell data to zero.
     //
@@ -398,13 +401,26 @@ int UniformGrid::assign_grid_structure()
     for (int v=0;v<G_ndim;v++)
       if (dpos[v]<G_xmin[v] || dpos[v]>G_xmax[v])
         on_grid=false;
+#ifdef TESTING
+    rep.printVec("    dpos",dpos,G_ndim);
+    rep.printVec("    xmax",G_xmax,G_ndim);
+#endif // TESTING
+
+
+
     if (on_grid) {
       c->isgd = true;
       c->isbd = false;
+#ifdef TESTING
+      cout <<"    cell is on grid";
+#endif // TESTING
     }
     else {
       c->isgd = false;
       c->isbd = true;
+#ifdef TESTING
+      cout <<"    cell NOT on grid";
+#endif // TESTING
     }
 
     ///
@@ -440,15 +456,22 @@ int UniformGrid::assign_grid_structure()
     // Increment counters
     //
     ix[XX]++;
-    if (ix[XX]==G_ng[XX]+2*BC_nbc) {
-      ix[XX]=0;
-      if (G_ndim>1) {
+    //
+    // if we got to the end of a row, then loop back and increment iy
+    //
+    if (ix[XX] == G_ng[XX]+BC_nbc) {
+      ix[XX] = -BC_nbc;
+      if (G_ndim > 1) {
         ix[YY]++;
-        if (ix[YY]==G_ng[YY]+2*BC_nbc) {
-          ix[YY]=0;
-          if (G_ndim>2) {
+        //
+        // if we got to the end of a y-column, then loop back and
+        // increment z.
+        //
+        if (ix[YY] == G_ng[YY]+BC_nbc) {
+          ix[YY] = -BC_nbc;
+          if (G_ndim > 2) {
             ix[ZZ]++;
-            if (ix[ZZ]>G_ng[ZZ]+2*BC_nbc) {
+            if (ix[ZZ]>G_ng[ZZ]+BC_nbc) {
               cerr <<"\tWe should be done by now.\n";
               return(ix[ZZ]);
             }
@@ -459,6 +482,14 @@ int UniformGrid::assign_grid_structure()
   } while ( (c=NextPt_All(c))!=0);
   // ---------------------- SET CELL POSITIONS ----------------------
   // ----------------------------------------------------------------
+#ifdef TESTING
+  //c = FirstPt_All();
+  //do {
+  //  cout <<"Cell id = "<<c->id<<"\n";
+  //  rep.printVec("cell pos",c->pos,G_ndim);
+  //} while ( (c=NextPt_All(c))!=0);
+#endif // TESTING
+
   
   // ----------------------------------------------------------------
   // ----------------------  SET npt POINTERS  ----------------------
@@ -525,22 +556,27 @@ int UniformGrid::assign_grid_structure()
   c = FirstPt_All();
   cell *c_prev=0, *c_next = NextPt_All(c);
   do {
+    //cout <<" Starting X ngb loop, c="<<c->id;
+    //rep.printVec("pos",c->pos,G_ndim);
     c->ngb[XN] = c_prev;
 
     if (!c_next) {
+      //cout <<"*** c_next=0, cell id ="<<c->id<<", pos=";
+      //rep.printVec("pos",c->pos,G_ndim);
       c->ngb[XP] = 0;
     }
     else if (c_next->pos[XX] > c->pos[XX]) {
       c->ngb[XP] = c_next;
       c_prev = c;
+      //cout <<"*** c_next[X]>c[X], cell id ="<<c->id<<", pos=";
+      //rep.printVec("pos",c->pos,G_ndim);
     }
     else {
+      //cout <<"*** c_next[X]<=c[X], cell id ="<<c->id<<"\n";
+      //rep.printVec("this pos",c->pos,G_ndim);
+      //rep.printVec("next pos",c_next->pos,G_ndim);
       c->ngb[XP] = 0;
       c_prev = 0;
-    }
-    if (c->id==114) {
-      cout <<"cid="<<c->id <<"\n";
-      cout <<c->ngb[XN] <<"  "<< c->ngb[XP] <<"\n";
     }
 
     c = c_next;
@@ -665,6 +701,12 @@ int UniformGrid::set_cell_size()
 #endif
 
   G_dx = G_range[0]/(G_ng[0]);
+
+  //
+  // Set Cell dx in cell interface class, and also xmin.
+  //
+  CI.set_dx(G_dx);
+  CI.set_xmin(Sim_xmin);
 
   if(G_ndim>1) {
     if (!pconst.equalD(G_range[1]/G_dx, static_cast<double>(G_ng[1])))
@@ -819,14 +861,23 @@ int UniformGrid::SetupBCs(
   if (BC_setBCtypes(typeofbc) !=0)
     rep.error("UniformGrid::setupBCs() Failed to set types of BC",1);
   
+  ///
+  /// \section Ordering of Cells in Boundary data
+  /// Cells are always ordered by increasing cell id.  So the cell
+  /// with the most negative ZYZ coords comes first, then increasing
+  /// in X, then in Y, and finally in Z.  i.e. the most slowly
+  /// increasing index is Z.
+  ///
+
   //
   // This function loops through all points on the grid, and if it is
   // an edge point, it finds which direction(s) are off the grid and
   // adds the boundary cells to boundary data.
   //
   class cell *c, *cy, *cz;
-  enum direction dir; int err=0;
+  int err=0;
 
+  // ----------------------------------------------------------------
   //
   // Set up X-boundaries, these are all cells adjacent to the grid 
   // in the XN and XP directions.  First we go up the XN boundary
@@ -844,15 +895,12 @@ int UniformGrid::SetupBCs(
     do {
       c=cy;
       // add boundary cells beside the grid.
+      for (int v=0; v<BC_nbc; v++) c = NextPt(c, XN);
+      if (!c) rep.error("Got lost on grid! XN",cy->id);
       for (int v=0; v<BC_nbc; v++) {
-        c = NextPt(c, XN);
-        if (!c) {
-          CI.print_cell(cy);
-          CI.print_cell(c);
-          rep.error("Got lost on grid! XN",cy->id);
-        }
         BC_bd[XN].data.push_back(c);
-        cout << " Adding cell "<<c->id<<" to grid.\n";
+        cout << " Adding cell "<<c->id<<" to XN boundary.\n";
+        c = NextPt(c, XP);
       }
       cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
@@ -860,7 +908,9 @@ int UniformGrid::SetupBCs(
   } while (G_ndim>2 && cz!=0 && cz->isgd);
   cout <<"** Setup XN boundary, got "<<BC_bd[XN].data.size();
   cout <<" grid cells.\n";
+  // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
   //
   // Now do the same for XP, beginning at the most negative point
   // at the XP boundary and moving to the most positive.
@@ -880,7 +930,8 @@ int UniformGrid::SetupBCs(
           CI.print_cell(cy);
           rep.error("Got lost on grid! XP",cy->id);
         }
-        BC_bd[XN].data.push_back(c);
+        BC_bd[XP].data.push_back(c);
+        cout << " Adding cell "<<c->id<<" to XP boundary.\n";
       }
       cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
@@ -888,34 +939,110 @@ int UniformGrid::SetupBCs(
   } while (G_ndim>2 && cz!=0 && cz->isgd);
   cout <<"** Setup XP boundary, got "<<BC_bd[XP].data.size();
   cout <<" grid cells.\n";
+  // ----------------------------------------------------------------
 
-    
+  // ----------------------------------------------------------------
+  //
+  // The YN/YP boundaries are different because they have the
+  // corner data too.
+  //
+  if (G_ndim>1) {
+    // --------------------------------------------------------------
+    //
+    // First YN boundary.
+    // Get to most negative cell, and add cells, progressing to
+    // the next one.
+    //
+    cz = FirstPt();
+    while (NextPt(cz,XN) != 0) cz = NextPt(cz,XN);
+    while (NextPt(cz,YN) != 0) cz = NextPt(cz,YN);
+    //
+    // loop in ZP-direction, at least once because there must be
+    // at least one plane of boundary cells.
+    //
+    do {
+      cy = cz;
+      //
+      // loop in the X-Y plane while we are in the YN boundary
+      // region, and add all the cells.
+      //
+      do {
+        BC_bd[YN].data.push_back(cy);
+        cout << " Adding cell "<<cy->id<<" to YN boundary.\n";
+        cy = NextPt_All(cy);
+      } while (cy->pos[YY] < G_xmin[YY]);
 
-    
-  cell *temppt;
+      cz = NextPt(cz, ZP);
+    } while (G_ndim>2 && cz!=0 && cz->isgd);
+    cout <<"** Setup YN boundary, got "<<BC_bd[YN].data.size();
+    cout <<" grid cells.\n";
+    // --------------------------------------------------------------
 
-    // TODO: FIX THIS!!!
-  // ------- THIS NEEDS A RE-WRITE FOR NEW GRID -------
-  // - ngb pointer is already set for boundary data in assign_grid_str
-  do {
-    if (c->isedge !=0) {
-      for (int i=0;i<2*G_ndim;i++) {
-        dir = static_cast<enum direction>(i);
-        temppt=NextPt(c,dir);
-        if (temppt==0) {
-          c->ngb[dir] = BC_setupBCcells(c, dir, G_dx, 1);
-          if (c->ngb[dir]==0)
-            rep.error("Failed to set up boundary cell",c->ngb[dir]);
-        } // if dir points off the grid.
-      } // Loop over all neighbours
-    } // if an edge point.
-    // If I use internal boundaries in the future:
-    // if (c->isbd) bc->assignIntBC(c);
-  } while ( (c=NextPt(c)) !=0);
-  if (err!=0) rep.error("Failed to set up Boundary cells",err);
-  // cout <<"Done.\n";
-  // ------- THIS NEEDS A RE-WRITE FOR NEW GRID -------
-  
+    // --------------------------------------------------------------
+    //
+    // Then YP boundary.
+    // Get to the first row of YP boundary cells, move to the 
+    // first cell in the XY plane, and go from there.
+    //
+    cz = FirstPt();
+    while (cz->isgd) cz = NextPt(cz,YP);
+    while (NextPt(cz,XN) != 0) cz = NextPt(cz,XN);
+
+    //
+    // loop in ZP-direction, at least once because there must be
+    // at least one plane of boundary cells.
+    //
+    do {
+      cy = cz;
+      //
+      // loop in the X-Y plane while we are in the YP boundary
+      // region, and add all the cells.
+      //
+      do {
+        BC_bd[YP].data.push_back(cy);
+        cout << " Adding cell "<<cy->id<<" to YP boundary.\n";
+        cy = NextPt_All(cy);
+      } while (cy !=0 && cy->pos[YY] > G_xmax[YY]);
+
+      cz = NextPt(cz, ZP);
+    } while (G_ndim>2 && cz!=0 && cz->isgd);
+    cout <<"** Setup YP boundary, got "<<BC_bd[YP].data.size();
+    cout <<" grid cells.\n";
+    // --------------------------------------------------------------
+  }
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  //
+  // Now the Z-boundary
+  //
+  if (G_ndim>2) {
+    //
+    // ZN is easy... all points until pos[Z] > xmin[Z]
+    //
+    cz = FirstPt_All();
+    do {
+      BC_bd[ZN].data.push_back(cz);
+      cout << " Adding cell "<<cz->id<<" to ZN boundary.\n";
+      cz = NextPt_All(cz);
+    } while (cz->pos[ZZ] < G_xmin[ZZ]);
+    //
+    // ZP is also easy... all points with pos[Z] > xmax[Z]
+    //
+    cz = LastPt();
+    while (cz->pos[ZZ] < G_xmax[ZZ]) cz = NextPt(cz);
+    do {
+      BC_bd[ZP].data.push_back(cz);
+      cout << " Adding cell "<<cz->id<<" to ZP boundary.\n";
+      cz = NextPt_All(cz);
+    } while (cz!=0);
+  }
+  // ----------------------------------------------------------------
+
+
+  }
+  // ----------------------------------------------------------------
+
   //
   // Loop through all boundaries, and assign data to them.
   //
@@ -1000,24 +1127,65 @@ int UniformGrid::BC_setBCtypes(
   string d[6] = {"XN","XP","YN","YP","ZN","ZP"};
   for (i=0; i<2*G_ndim; i++) {
     BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
+    BC_bd[i].baxis = static_cast<axes>(i/2);
+    //
+    // odd values of i are positive boundaries, others are negative.
+    //
+    if ((i+2)%2 !=0) {
+      BC_bd[i].bloc  = G_xmax[BC_bd[i].baxis];
+      BC_bd[i].bpos  = true;
+    }
+    else {
+      BC_bd[i].bloc  = G_xmin[BC_bd[i].baxis];
+      BC_bd[i].bpos  = false;
+    }
+    //
+    // find boundary condition specified:
+    //
     if ( (pos=bctype.find(d[i])) == string::npos)
       rep.error("Couldn't find boundary condition for ",d[i]);
     BC_bd[i].type = bctype.substr(pos+2,3);
-    if      (BC_bd[i].type=="per") {BC_bd[i].itype=PERIODIC;   BC_bd[i].type="PERIODIC";}
-    else if (BC_bd[i].type=="out" ||
-       BC_bd[i].type=="abs") {BC_bd[i].itype=OUTFLOW;    BC_bd[i].type="OUTFLOW";}
-    else if (BC_bd[i].type=="owo") {BC_bd[i].itype=ONEWAY_OUT; BC_bd[i].type="ONEWAY_OUT";}
-    else if (BC_bd[i].type=="inf") {BC_bd[i].itype=INFLOW ;    BC_bd[i].type="INFLOW";}
-    else if (BC_bd[i].type=="ref") {BC_bd[i].itype=REFLECTING; BC_bd[i].type="REFLECTING";}
-    else if (BC_bd[i].type=="jrf") {BC_bd[i].itype=JETREFLECT; BC_bd[i].type="JETREFLECT";}
-    else if (BC_bd[i].type=="fix") {BC_bd[i].itype=FIXED;      BC_bd[i].type="FIXED";}
-    else if (BC_bd[i].type=="dmr") {BC_bd[i].itype=DMACH;      BC_bd[i].type="DMACH";}
+
+    if      (BC_bd[i].type=="per") {
+      BC_bd[i].itype=PERIODIC;
+      BC_bd[i].type="PERIODIC";
+    }
+    else if (BC_bd[i].type=="out" || BC_bd[i].type=="abs") {
+      BC_bd[i].itype=OUTFLOW;
+      BC_bd[i].type="OUTFLOW";
+    }
+    else if (BC_bd[i].type=="owo") {
+      BC_bd[i].itype=ONEWAY_OUT;
+      BC_bd[i].type="ONEWAY_OUT";
+    }
+    else if (BC_bd[i].type=="inf") {
+      BC_bd[i].itype=INFLOW ;
+      BC_bd[i].type="INFLOW";
+    }
+    else if (BC_bd[i].type=="ref") {
+      BC_bd[i].itype=REFLECTING;
+      BC_bd[i].type="REFLECTING";
+    }
+    else if (BC_bd[i].type=="jrf") {
+      BC_bd[i].itype=JETREFLECT;
+      BC_bd[i].type="JETREFLECT";
+    }
+    else if (BC_bd[i].type=="fix") {
+      BC_bd[i].itype=FIXED;
+      BC_bd[i].type="FIXED";
+    }
+    else if (BC_bd[i].type=="dmr") {
+      BC_bd[i].itype=DMACH;
+      BC_bd[i].type="DMACH";
+    }
     else if (BC_bd[i].type=="sb1") {
       BC_bd[i].itype=STARBENCH1;
       BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
     }
-    else rep.error("Don't know this BC type",BC_bd[i].type);
-    
+    else {
+      rep.error("Don't know this BC type",BC_bd[i].type);
+    }
+
     if(!BC_bd[i].data.empty())
       rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
     BC_bd[i].refval=0;
@@ -1070,76 +1238,42 @@ int UniformGrid::BC_setBCtypes(
 // ##################################################################
 
 
-cell * UniformGrid::BC_setupBCcells(
-            cell *edgept,
-            const enum direction offdir, // direction off-grid
-            double dx,
-            int ibc)
-{
-  cell *t = CI.new_cell();
-  
-  // Assign values to the boundary cell.
-  t->isbd = true; 
-  t->isgd = false;
-  t->isedge = -1;
-  t->id = -10;  // Boundary ids are irrelevant -10 means not set, I set to something meaningful later.
-
-  //
-  // Set positions based on edge-point +/-2
-  //
-  int ix[G_ndim], delta=2;
-  CI.get_ipos(edgept,ix);
-  enum direction ondir = OppDir(offdir); // direction back onto grid.
-  switch (offdir) {
-   case XN: case YN: case ZN:
-    delta = -delta; break; //XN offset is negative.
-   case XP: case YP: case ZP:
-    break; //XP: do nothing.
-   default:
-    rep.error("Bad direction in setupBoundaryCells",offdir);
-  } // Which Direction.
-  enum axes a = static_cast<axes>(offdir/2);
-  ix[a] += delta;
-  CI.set_pos(t,ix);
-  //  rep.printVec("BC cell posn",ix,G_ndim);
-
-  t->ngb[ondir] = edgept; 
-  t->id = -ibc;
-  
-  BC_bd[offdir].data.push_back(t);
-  if(ibc<BC_nbc) t->ngb[offdir] = BC_setupBCcells(t,offdir,fabs(dx),ibc+1);
-  return(t);
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
 
 int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
 {
   enum direction offdir = b->dir;
   enum direction ondir  = OppDir(offdir);
-  if (b->data.empty()) rep.error("BC_assign_PERIODIC: empty boundary data",b->itype);
+
+  if (b->data.empty())
+    rep.error("BC_assign_PERIODIC: empty boundary data",b->itype);
+
   list<cell*>::iterator bpt=b->data.begin();
   cell *temp; unsigned int ct=0;
   do{
     temp=(*bpt);
     while (NextPt(temp,ondir) && NextPt(temp,ondir)->isgd)
       temp=NextPt(temp,ondir);
-    if(!temp->isgd) rep.error("BC_assign_PERIODIC: Got lost assigning periodic BCs",temp->id);
+
+    if(!temp->isgd)
+      rep.error("BC_assign_PERIODIC: Got lost assigning periodic BCs",
+                temp->id);
+    //
     // Now temp is last grid point before i hit the opposite boundary.
     // So copy this cells value into bpt, and the next one too if 2nd order.
+    //
     for (int i=0; i<BC_nbc; i++) {
       for (int v=0;v<G_nvar;v++) (*bpt)->P[v] = (*bpt)->Ph[v] = temp->P[v];
-      (*bpt)->npt = temp; (*bpt)->id = temp->id;
+      (*bpt)->npt = temp;
       ct++;
-      ++bpt; temp=NextPt(temp,offdir); if (!temp) rep.error("no grid point!",temp);
+      ++bpt;
+      temp = NextPt(temp,offdir);
+      if (!temp) rep.error("no grid point!",temp);
     }
   } while (bpt !=b->data.end());
-  if (ct != b->data.size()) rep.error("BC_assign_PERIODIC: missed some cells!",ct-b->data.size());
+
+  if (ct != b->data.size())
+    rep.error("BC_assign_PERIODIC: missed some cells!",ct-b->data.size());
+
   return 0;
 }
 
@@ -1149,59 +1283,82 @@ int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
 // ##################################################################
 
 
+
 int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
 {
+  //
   // Zero order extrapolation, if edge cell is index k, and boundary cells
   // k+1 and k+2, then P_{k+1} = P_{k+2} = P_{k}
   // First order extrapolation would be P_{k+1} = 2P_{k} - P_{k-1} but is
   // said to have stability problems sometimes (LeVeque, S.7.2.1, p131-132)
+  //
   enum direction offdir = b->dir;
   enum direction ondir  = OppDir(offdir);
-  if (b->data.empty()) rep.error("BC_assign_OUTFLOW: empty boundary data",b->itype);
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_OUTFLOW: empty boundary data",b->itype);
+  }
   list<cell*>::iterator bpt=b->data.begin();
   cell *temp; unsigned int ct=0;
+  //
+  // loop through all boundary cells, set npt to point to the grid
+  // cell where we get the data.
+  //
   do{
-    temp = NextPt((*bpt),ondir); if(temp==0) rep.error("Got lost assigning Absorbing bcs.",temp->id);
+    //
+    // Find the cell to point to.  This should be the first cell on
+    // the other side of the boundary, located at x[baxis]=bloc.
+    // --------END OF 18.02.2016--------
+    temp = NextPt((*bpt),ondir);
+    if(temp==0) {
+      rep.error("Got lost assigning Absorbing bcs.",temp->id);
+    }
+
     for (int i=0; i<BC_nbc; i++) {
-      for (int v=0;v<G_nvar;v++) (*bpt)->P[v] = (*bpt)->Ph[v] = temp->P[v];
+      for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
+      for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
       (*bpt)->npt = temp;
+
 #ifdef GLM_ZERO_BOUNDARY
       if (G_eqntype==EQGLM)
-  (*bpt)->P[SI]=(*bpt)->Ph[SI]=0.0;
+        (*bpt)->P[SI]=(*bpt)->Ph[SI]=0.0;
 #endif // GLM_ZERO_BOUNDARY
 #ifdef GLM_NEGATIVE_BOUNDARY
       if (G_eqntype==EQGLM) {
-  if (G_ndim==1)
-    rep.error("Psi outflow boundary condition doesn't work for 1D!",99);
-  //  (*bpt)->P[SI]=(*bpt)->Ph[SI]=-temp->P[SI];
-  //}
-  if ((*bpt)->id==-1)
-    (*bpt)->P[SI]=(*bpt)->Ph[SI]=-temp->P[SI];
-  else if ((*bpt)->id==-2) {
-    // need to set a pointer to cell [edge-1] for Psi
-    // Have to be a bit sneaky and use a null ngb pointer.
-    // Can't use ondir/offdir b/c we rely on getting 0 from
-    // NextPt() at the edge of the grid.  Use isedge index
-    // to tell us which ngb[] is to the [edge-1] cell.
-    //cout <<"cell isedge: "<<(*bpt)->isedge<<"\n";
-    int n=0; (*bpt)->isedge =0;
-    do {
-      if (n!=ondir && n!=offdir && (*bpt)->ngb[n]==0) {
-        (*bpt)->isedge = n;
-        (*bpt)->ngb[n] = temp->ngb[ondir];
-      }
-      n++;
-    } while (n<2*G_ndim && (*bpt)->isedge==0);    
-    (*bpt)->P[SI]=(*bpt)->Ph[SI]=-temp->ngb[ondir]->P[SI];
-  }
-  else rep.error("only know 1st/2nd order bcs",(*bpt)->id);
+        if (G_ndim==1) {
+          rep.error("Psi outflow boundary condition doesn't work for 1D!",99);
+        }
+        if ((*bpt)->id==-1)
+          (*bpt)->P[SI]=(*bpt)->Ph[SI]=-temp->P[SI];
+        else if ((*bpt)->id==-2) {
+          // need to set a pointer to cell [edge-1] for Psi
+          // Have to be a bit sneaky and use a null ngb pointer.
+          // Can't use ondir/offdir b/c we rely on getting 0 from
+          // NextPt() at the edge of the grid.  Use isedge index
+          // to tell us which ngb[] is to the [edge-1] cell.
+          //cout <<"cell isedge: "<<(*bpt)->isedge<<"\n";
+          int n=0; (*bpt)->isedge =0;
+          do {
+            if (n!=ondir && n!=offdir && (*bpt)->ngb[n]==0) {
+              (*bpt)->isedge = n;
+              (*bpt)->ngb[n] = temp->ngb[ondir];
+            }
+            n++;
+          } while (n<2*G_ndim && (*bpt)->isedge==0);    
+          (*bpt)->P[SI]=(*bpt)->Ph[SI]=-temp->ngb[ondir]->P[SI];
+        }
+        else rep.error("only know 1st/2nd order bcs",(*bpt)->id);
       }
 #endif // GLM_NEGATIVE_BOUNDARY
       ct++;
       ++bpt;
     }
   } while (bpt !=b->data.end());
-  if (ct != b->data.size()) rep.error("BC_assign_OUTFLOW: missed some cells!",ct-b->data.size());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_OUTFLOW: missed some cells!",
+              ct-b->data.size());
+  }
   return 0;
 }
 
@@ -1519,6 +1676,10 @@ int UniformGrid::BC_assign_JETREFLECT(boundary_data *b)
 
 int UniformGrid::BC_assign_DMACH(     boundary_data *b)
 {
+#ifdef TESTING
+  cout <<"Setting up DMACH boundary... starting.\n";
+#endif // TESTING
+
   if (b->data.empty()) rep.error("BC_assign_DMACH: empty boundary data",b->itype);
   // Set reference value to be downstream values.
   if (!b->refval) {
@@ -1544,6 +1705,10 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
     ++bpt; ct++;
   } while (bpt !=b->data.end());
   if (ct != b->data.size()) rep.error("BC_assign_: missed some cells!",ct-b->data.size());
+
+#ifdef TESTING
+  cout <<"Setting up DMACH boundary... finished.\n";
+#endif // TESTING
   return 0;
 }
 
@@ -1556,6 +1721,10 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
 
 int UniformGrid::BC_assign_DMACH2(    boundary_data *b) 
 {
+#ifdef TESTING
+  cout <<"Setting up DMACH2 boundary... starting.\n";
+#endif // TESTING
+
   if (b->dir != NO) rep.error("DMACH2 not internal boundary!",b->dir);
   cout <<"DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.\n";
   if (b->refval) rep.error("Already initialised memory in DMACH2 boundary refval",b->refval);
@@ -1584,6 +1753,10 @@ int UniformGrid::BC_assign_DMACH2(    boundary_data *b)
       }
     }
   } while ( (c=NextPt(c,XP)) && (CI.get_dpos(c,XX)<=1./6.));
+
+#ifdef TESTING
+  cout <<"Setting up DMACH2 boundary... finished.\n";
+#endif // TESTING
   return 0;
 }
 
@@ -2182,7 +2355,11 @@ int UniformGrid::BC_update_PERIODIC(   struct boundary_data *b,
       (*c)->Ph[v] = (*c)->npt->Ph[v];
       (*c)->dU[v] = 0.;
     }
-    if (cstep==maxstep) for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->npt->P[v];
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->P[v] = (*c)->npt->P[v];
+      }
+    }
   } // all cells.
   return 0;
 }
