@@ -108,6 +108,7 @@ enum BoundaryTypes {
 ///
 struct boundary_data {
    enum direction dir; ///< Outward Normal direction of boundary (NO dir if internal).
+   enum direction ondir; ///< direction back onto grid.
    string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
    int itype;         ///< Integer flag for boundary type.
    int bloc;          ///< boundary location, e.g. x=0
