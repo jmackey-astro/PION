@@ -88,6 +88,8 @@
 /// - 2016.02.11 JM: Worked on Grid_v2 update (full boundaries).
 /// - 2016.02.12 JM: including source code from static_grid.cc, and
 ///    renamed to uniform_grid.cpp, worked on new grid structure.
+/// - 2016.02.19 JM: new grid structure finished, compiles and runs
+///    the DMR test.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -303,6 +305,9 @@ UniformGrid::~UniformGrid()
   G_ixmax  = mem.myfree(G_ixmax);
   G_irange = mem.myfree(G_irange);
 
+  Sim_xmin  = mem.myfree(Sim_xmin);
+  Sim_xmax  = mem.myfree(Sim_xmax);
+  Sim_range = mem.myfree(Sim_range);
   Sim_ixmin  = mem.myfree(Sim_ixmin);
   Sim_ixmax  = mem.myfree(Sim_ixmax);
   Sim_irange = mem.myfree(Sim_irange);
@@ -451,6 +456,18 @@ int UniformGrid::assign_grid_structure()
       if      (ix[ZZ]==0)          c->isedge += 1*3*3;
       else if (ix[ZZ]==G_ng[ZZ]-1) c->isedge += 2*3*3;
     }
+
+    //
+    // Boundary values for isedge:  if the cell is off-grid, then set
+    // isedge to equal the number of cells it is from the grid.
+    //
+    if      (ix[XX]<0)         c->isedge = ix[XX];
+    else if (ix[XX]>=G_ng[XX]) c->isedge = G_ng[XX]-1-ix[XX];
+    if      (ix[YY]<0)         c->isedge = ix[YY];
+    else if (ix[YY]>=G_ng[YY]) c->isedge = G_ng[YY]-1-ix[YY];
+    if      (ix[ZZ]<0)         c->isedge = ix[ZZ];
+    else if (ix[ZZ]>=G_ng[ZZ]) c->isedge = G_ng[ZZ]-1-ix[ZZ];
+
     
     //
     // Increment counters
@@ -798,9 +815,9 @@ class cell* UniformGrid::FirstPt_All()
 
 class cell* UniformGrid::LastPt()
 {
-#ifdef TESTING
-  cout <<"Last Point is :"<<G_lpt; CI.print_cell(G_lpt);
-#endif
+//#ifdef TESTING
+//  cout <<"Last Point is :"<<G_lpt; CI.print_cell(G_lpt);
+//#endif
   return(G_lpt);
 } // LastPt
 
@@ -901,9 +918,9 @@ int UniformGrid::SetupBCs(
         cout << " Adding cell "<<c->id<<" to XN boundary.\n";
         c = NextPt(c, XP);
       }
-      cy=NextPt(cy,YP);
+      if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
-    cz=NextPt(cz,ZP);
+    if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
   cout <<"** Setup XN boundary, got "<<BC_bd[XN].data.size();
   cout <<" grid cells.\n";
@@ -932,9 +949,9 @@ int UniformGrid::SetupBCs(
         BC_bd[XP].data.push_back(c);
         cout << " Adding cell "<<c->id<<" to XP boundary.\n";
       }
-      cy=NextPt(cy,YP);
+      if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
-    cz=NextPt(cz,ZP);
+    if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
   cout <<"** Setup XP boundary, got "<<BC_bd[XP].data.size();
   cout <<" grid cells.\n";
@@ -971,7 +988,7 @@ int UniformGrid::SetupBCs(
         cy = NextPt_All(cy);
       } while (cy->pos[YY] < G_xmin[YY]);
 
-      cz = NextPt(cz, ZP);
+      if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->isgd);
     cout <<"** Setup YN boundary, got "<<BC_bd[YN].data.size();
     cout <<" grid cells.\n";
@@ -1002,8 +1019,8 @@ int UniformGrid::SetupBCs(
         cout << " Adding cell "<<cy->id<<" to YP boundary.\n";
         cy = NextPt_All(cy);
       } while (cy !=0 && cy->pos[YY] > G_xmax[YY]);
-
-      cz = NextPt(cz, ZP);
+      
+      if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->isgd);
     cout <<"** Setup YP boundary, got "<<BC_bd[YP].data.size();
     cout <<" grid cells.\n";
@@ -1125,6 +1142,7 @@ int UniformGrid::BC_setBCtypes(
   string d[6] = {"XN","XP","YN","YP","ZN","ZP"};
   for (i=0; i<2*G_ndim; i++) {
     BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
+    BC_bd[i].ondir = OppDir(BC_bd[i].dir);
     BC_bd[i].baxis = static_cast<axes>(i/2);
     //
     // odd values of i are positive boundaries, others are negative.
@@ -1257,1127 +1275,6 @@ int UniformGrid::BC_setBCtypes(
 
 
 
-int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
-{
-  enum direction offdir = b->dir;
-  enum direction ondir  = OppDir(offdir);
-
-  if (b->data.empty())
-    rep.error("BC_assign_PERIODIC: empty boundary data",b->itype);
-
-  list<cell*>::iterator bpt=b->data.begin();
-  cell *temp; unsigned int ct=0;
-  do{
-    temp=(*bpt);
-    while (NextPt(temp,ondir) && NextPt(temp,ondir)->isgd)
-      temp=NextPt(temp,ondir);
-
-    if(!temp->isgd)
-      rep.error("BC_assign_PERIODIC: Got lost assigning periodic BCs",
-                temp->id);
-    //
-    // Now temp is last grid point before i hit the opposite boundary.
-    // So copy this cells value into bpt, and the next one too if 2nd order.
-    //
-    for (int i=0; i<BC_nbc; i++) {
-      for (int v=0;v<G_nvar;v++) (*bpt)->P[v] = (*bpt)->Ph[v] = temp->P[v];
-      (*bpt)->npt = temp;
-      ct++;
-      ++bpt;
-      temp = NextPt(temp,offdir);
-      if (!temp) rep.error("no grid point!",temp);
-    }
-  } while (bpt !=b->data.end());
-
-  if (ct != b->data.size())
-    rep.error("BC_assign_PERIODIC: missed some cells!",ct-b->data.size());
-
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
-{
-  //
-  // Zero order extrapolation, if edge cell is index k, and boundary cells
-  // k+1 and k+2, then P_{k+1} = P_{k+2} = P_{k}
-  // First order extrapolation would be P_{k+1} = 2P_{k} - P_{k-1} but is
-  // said to have stability problems sometimes (LeVeque, S.7.2.1, p131-132)
-  //
-  enum direction offdir = b->dir;
-  enum direction ondir  = OppDir(offdir);
-
-  if (b->data.empty()) {
-    rep.error("BC_assign_OUTFLOW: empty boundary data",b->itype);
-  }
-  list<cell*>::iterator bpt=b->data.begin();
-  cell *temp = 0;
-  unsigned int ct = 0;  // counter (for accounting).
-
-  //
-  // loop through all boundary cells, set npt to point to the grid
-  // cell where we get the data.
-  //
-  do{
-    //
-    // Find the cell to point to.  This should be the first cell on
-    // the other side of the boundary, located at x[baxis]=bloc.
-    // Can't just use the ->isgd property because in y and z dirs
-    // the "ondir" direction will sometimes never hit the grid.
-    //
-    temp = (*bpt);
-    bool on_grid=false;
-    do {
-      temp = NextPt(temp,ondir);
-      if (!temp) {
-        rep.error("BC_assign_OUTFLOW: got lost on grid",(*bpt)->id);
-      }
-
-      if (b->bpos) {
-        //
-        // we have a positive boundary, so an on-grid cell has x<bloc
-        //
-        if ( temp->pos[b->baxis] < b->bloc ) on_grid=true;
-      }
-      else {
-        //
-        // negative boundary, so on-grid means x>bloc
-        //
-        if ( temp->pos[b->baxis] > b->bloc ) on_grid=true;
-      }
-    } while (temp!=0 && on_grid==false);
-
-    //
-    // So now temp exists and is "on-grid".  We need (later) to know
-    // how far from the grid the cell is, so we test for this here.
-    //
-    int dist = abs( (*bpt)->pos[b->baxis] - temp->pos[b->baxis] ); 
-
-
-    for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
-    for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
-    (*bpt)->npt = temp;
-
-    //
-    // The GLM boundary is somewhat different, because I found
-    // that zero-gradient didn't work well (Mackey & Lim, 2011,
-    // MNRAS,412,2079).  So we switch the sign instead.
-    //
-
-#ifdef GLM_ZERO_BOUNDARY
-    if (G_eqntype==EQGLM) {
-      (*bpt)->P[SI]=(*bpt)->Ph[SI]=0.0;
-    }
-#endif // GLM_ZERO_BOUNDARY
-#ifdef GLM_NEGATIVE_BOUNDARY
-    if (G_eqntype==EQGLM) {
-      if (G_ndim==1) {
-        rep.error("Psi outflow boundary condition doesn't work for 1D!",99);
-      }
-      if (dist == CI.get_integer_cell_size()) {
-        (*bpt)->P[SI]  = -temp->P[SI];
-        (*bpt)->Ph[SI] = -temp->P[SI];
-      }
-      else if (dist == CI.get_integer_cell_size()) {
-        //
-        // Get data from 2nd on-grid cell.
-        //
-        (*bpt)->P[SI]  = -temp->ngb[ondir]->P[SI];
-        (*bpt)->Ph[SI] = -temp->ngb[ondir]->P[SI];
-      }
-      else rep.error("only know 1st/2nd order bcs",(*bpt)->id);
-    }
-#endif // GLM_NEGATIVE_BOUNDARY
-    ct++;
-    ++bpt;
-  } while (bpt !=b->data.end());
-
-  if (ct != b->data.size()) {
-    rep.error("BC_assign_OUTFLOW: missed some cells!",
-              ct-b->data.size());
-  }
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_ONEWAY_OUT(boundary_data *b)
-{
-  //
-  // The setup for this is identical to outflow, so just call
-  // outflow() setup function.
-  //
-  int err=BC_assign_OUTFLOW(b);
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-int UniformGrid::BC_assign_INFLOW(    boundary_data *b)
-{
-  enum direction offdir = b->dir;
-  enum direction ondir  = OppDir(offdir);
-
-  if (b->data.empty()) {
-    rep.error("BC_assign_INFLOW: empty boundary data",b->itype);
-  }
-
-  list<cell*>::iterator bpt=b->data.begin();
-  cell *temp;
-  unsigned int ct=0;
-  do{
-    //
-    // Find the cell to point to.  This should be the first cell on
-    // the other side of the boundary, located at x[baxis]=bloc.
-    // Can't just use the ->isgd property because in y and z dirs
-    // the "ondir" direction will sometimes never hit the grid.
-    //
-    temp = (*bpt);
-    bool on_grid=false;
-    do {
-      temp = NextPt(temp,ondir);
-      if (!temp) {
-        rep.error("BC_assign_INFLOW: got lost on grid",(*bpt)->id);
-      }
-
-      if (b->bpos) {
-        //
-        // we have a positive boundary, so an on-grid cell has x<bloc
-        //
-        if ( temp->pos[b->baxis] < b->bloc ) on_grid=true;
-      }
-      else {
-        //
-        // negative boundary, so on-grid means x>bloc
-        //
-        if ( temp->pos[b->baxis] > b->bloc ) on_grid=true;
-      }
-    } while (temp!=0 && on_grid==false);
-
-    //
-    // Now set inflow data to be the first on-grid cell's values.
-    //
-    for (int i=0; i<BC_nbc; i++) {
-      for (int v=0;v<G_nvar;v++)
-        (*bpt)->P[v]  = temp->P[v];
-      for (int v=0;v<G_nvar;v++)
-        (*bpt)->Ph[v] = temp->P[v];
-      for (int v=0;v<G_nvar;v++)
-        (*bpt)->dU[v] = 0.;
-      ct++;
-      ++bpt;
-    }
-  } while (bpt !=b->data.end());
-
-  if (ct != b->data.size())
-    rep.error("BC_assign_INFLOW: missed some cells!",ct-b->data.size());
-  
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-int UniformGrid::BC_assign_REFLECTING(boundary_data *b)
-{
-  enum direction offdir = b->dir;
-  enum direction ondir  = OppDir(offdir);
-
-  if (b->data.empty()) {
-    rep.error("BC_assign_: empty boundary data",b->itype);
-  }
-  //
-  // set reference state so that it is mostly zeros but has some +/-1
-  // entries to flip the signs of the velocity and B-field (as 
-  // appropriate).
-  //
-  if (!b->refval) {
-    b->refval = mem.myalloc(b->refval, G_nvar);
-    for (int v=0;v<G_nvar;v++)
-      b->refval[v] = 1.0;
-    //
-    // velocity:
-    //
-    switch (offdir) {
-     case XN: case XP:
-      b->refval[VX] = -1.0;
-      break;
-     case  YN: case YP:
-      b->refval[VY] = -1.0;
-      break;
-     case  ZN: case ZP:
-      b->refval[VZ] = -1.0;
-      break;
-     default:
-      rep.error("BAD DIRECTION",offdir);
-      break;
-    } // Set Normal velocity direction.
-    
-    //
-    // B-field:
-    //
-    if (G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
-      switch (offdir) {
-       case XN: case XP:
-        b->refval[BX] = -1.0;
-        break;
-       case  YN: case YP:
-        b->refval[BY] = -1.0;
-        break;
-       case  ZN: case ZP:
-        b->refval[BZ] = -1.0;
-        break;
-       default:
-        rep.error("BAD DIRECTION",offdir);
-        break;
-      } // Set normal b-field direction.
-    } // Setting up reference value.
-  } // if we needed to set up refval.
-
-  //
-  // Now go through each column of boundary points and assign values
-  // to them.
-  //
-  list<cell*>::iterator bpt=b->data.begin();
-  cell *temp; unsigned int ct=0;
-  do{
-    temp = NextPt((*bpt),ondir);
-    if(!temp) rep.error("Got lost assigning reflecting bcs.",temp->id);
-    for (int i=0; i<BC_nbc; i++) {
-      for (int v=0;v<G_nvar;v++) {
-  (*bpt)->P[v] = (*bpt)->Ph[v] = temp->P[v]*b->refval[v];
-  (*bpt)->dU[v] = 0.;
-      }
-      (*bpt)->npt = temp;
-      ++bpt; ct++; temp=NextPt(temp,ondir);
-      if(!temp) rep.error("Got lost assigning reflecting bcs.",temp->id);
-    }
-  } while (bpt !=b->data.end());
-  if (ct != b->data.size()) rep.error("BC_assign_: missed some cells!",ct-b->data.size());
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_FIXED(     boundary_data *b)
-{
-  enum direction offdir = b->dir;
-  enum direction ondir  = OppDir(offdir);
-  if (b->data.empty()) rep.error("BC_assign_FIXED: empty boundary data",b->itype);
-  list<cell*>::iterator bpt=b->data.begin();
-  cell *temp; unsigned int ct=0;
-  temp = NextPt((*bpt),ondir);
-  if(!temp) rep.error("Got lost assigning FIXED bcs.",temp->id);
-  if (!b->refval) {
-    b->refval = mem.myalloc(b->refval, G_nvar);
-    for (int v=0;v<G_nvar;v++) b->refval[v] = temp->P[v];
-  }
-  // Initialise all the values to be the fixed value.
-  do{
-    for (int v=0;v<G_nvar;v++) {
-      (*bpt)->P[v] = (*bpt)->Ph[v] = b->refval[v];
-      (*bpt)->dU[v] = 0.;
-    }
-    ++bpt; ct++;
-  } while (bpt !=b->data.end());
-  if (ct != b->data.size())
-    rep.error("BC_assign_FIXED: missed some cells!",ct-b->data.size());
-  
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_JETBC(     boundary_data *b)
-{
-  if (!JP.jetic) rep.error("BC_assign_JETBC: not a jet simulation!",JP.jetic);
-  if (b->dir != NO) rep.error("BC_assign_JETBC: boundary is not an internal one!",b->dir);
-    cell *c = FirstPt(); cell *temp=0, *cy=0;
-  int ct=0; int ctot=0; int maxnv=0;
-
-  double jr = JP.jetradius*G_dx; // Physical radius of jet.
-  //cout <<"jetrad="<<JP.jetradius<<" dx="<<G_dx<<"\n";
-  //
-  // Assign reference values, containing Jet parameters:
-  //
-  if (!b->refval) {
-    b->refval = mem.myalloc(b->refval, G_nvar);
-  }
-  if (G_eqntype==EQEUL || G_eqntype==EQEUL_ISO || G_eqntype==EQEUL_EINT ||
-      G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
-    rep.printVec("JetState",JP.jetstate,MAX_NVAR);
-    b->refval[RO] = JP.jetstate[RO];
-    b->refval[PG] = JP.jetstate[PG];
-    b->refval[VX] = JP.jetstate[VX];
-    b->refval[VY] = JP.jetstate[VY];
-    b->refval[VZ] = JP.jetstate[VZ];
-    maxnv=5;
-  } else rep.error("BC_assign_JETBC: bad equation type",G_eqntype);
-  if (G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
-    b->refval[BX] = JP.jetstate[BX];
-    b->refval[BY] = JP.jetstate[BY];
-    b->refval[BZ] = JP.jetstate[BZ];
-    maxnv=8;
-  }
-  if (G_eqntype==EQGLM) {
-    b->refval[SI] = JP.jetstate[SI];
-    maxnv=9;
-  }
-  for (int v=maxnv; v<G_nvar; v++) b->refval[v] = JP.jetstate[v];
-  
-  if (!b->data.empty()) rep.error("BC_assign_JETBC: boundary data exists!",b->itype);
-
-
-  if (JP.jetic==1) { // Simplest jet -- zero opening angle.
-    //
-    // Axi-symmetry first -- this is relatively easy to set up.
-    //
-    if (G_ndim==2 && SimPM.coord_sys==COORD_CYL) {
-      do {
-  temp=c;
-  while ( (temp=NextPt(temp,XN))!=0 ) {
-    for (int v=0;v<G_nvar;v++) temp->P[v] = temp->Ph[v] = b->refval[v];
-# ifdef SOFTJET
-    //
-    // jetradius is in number of cells, jr is in integer grid units (dx=2).
-    // Jet centre is along Z_cyl axis, centred on origin.
-    //
-    temp->P[VX] = temp->Ph[VX] = b->refval[VX] *min(1., 4.0-4.0*CI.get_dpos(temp,YY)/jr);
-    //cout <<"Incoming VX = "<< temp->P[VX]<<" pos="<<CI.get_dpos(temp,YY)<<" jr="<<jr<<"\n";
-# endif //SOFTJET
-    b->data.push_back(temp); ctot++;
-    if (temp->isgd) rep.error("Looking for Boundary cells! setupjet",temp);
-  }
-  ct++;
-      } while ( (c=NextPt(c,YP)) && ct<JP.jetradius);
-      if (ct!=JP.jetradius) rep.error("Not enough cells for jet",ct);
-      cout <<"Got "<<ctot<<" Cells in total for jet boundary.\n";
-    } // 2D Axial Symmetry
-
-    //
-    // 3D now, more difficult.
-    //
-    else if (G_ndim==3 && SimPM.coord_sys==COORD_CRT) {
-      double dist=0.;
-      // 3D, so we need to convert the jet radius to a real length.
-      // Also, the jet will come in at the centre of the XN boundary,
-      // which must be the origin.
-      do { // loop over ZZ axis
-  cy=c; do { // loop over YY axis
-    if ((dist=sqrt(CI.get_dpos(cy,YY)*CI.get_dpos(cy,YY) +CI.get_dpos(cy,ZZ)*CI.get_dpos(cy,ZZ))) <= jr) {
-      temp = cy;
-      while ( (temp=NextPt(temp,XN))!=0 ) {
-        for (int v=0;v<G_nvar;v++) temp->P[v] = temp->Ph[v] = b->refval[v];
-# ifdef SOFTJET
-        temp->P[VX] = temp->Ph[VX] = b->refval[VX] *min(1., 4.0-4.0*dist/jr);
-        //    cout <<"Incoming VX = "<< temp->P[VX]<<"\n";
-# endif //SOFTJET
-        b->data.push_back(temp); ctot++;
-        if (temp->isgd) rep.error("Looking for Boundary cells! setupjet",temp);
-      }
-    } // if within jet radius
-  } while ( (cy=NextPt(cy,YP)) ); // scroll through cells on YY axis.
-      } while ( (c=NextPt(c,ZP)) );     // scroll through cells on ZZ axis.
-      //      BC_printBCdata(b);
-    } // 3D Cartesian
-
-    else rep.error("Only know how to set up jet in 2Dcyl or 3Dcart",G_ndim);
-
-  } // jetic==1
-  else rep.error("Only know simple jet with jetic=1",JP.jetic);
-
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_JETREFLECT(boundary_data *b)
-{
-  enum direction offdir = b->dir;
-  enum direction ondir  = OppDir(offdir);
-  if (b->data.empty()) rep.error("BC_assign_: empty boundary data",b->itype);
-
-  if (!b->refval) {
-    b->refval = mem.myalloc(b->refval, G_nvar);
-    for (int v=0;v<G_nvar;v++) b->refval[v] = 1;
-    switch (offdir) {
-     case XN: case XP:
-      b->refval[VX] = -1; break;
-     case  YN: case YP:
-      b->refval[VY] = -1; break;
-     case  ZN: case ZP:
-      b->refval[VZ] = -1; break;
-     default:
-      rep.error("BAD DIRECTION",offdir);
-    } // Set Normal velocity direction.
-    if (G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
-      switch (offdir) {
-       case XN: case XP:
-  b->refval[BY] = b->refval[BZ] = -1; break;
-       case  YN: case YP:
-  b->refval[BX] = b->refval[BZ] = -1; break;
-       case  ZN: case ZP:
-  b->refval[BX] = b->refval[BY] = -1; break;
-       default:
-  rep.error("BAD DIRECTION",offdir);
-      } // Set normal b-field direction.
-    } // if B-field exists
-  } // if we needed to set up refval.
-
-  // Now go through each column of boundary points and assign values to them.
-  list<cell*>::iterator bpt=b->data.begin();
-  cell *temp; unsigned int ct=0;
-  do{
-    temp = NextPt((*bpt),ondir);
-    if(!temp) rep.error("Got lost assigning jet-reflecting bcs.",temp->id);
-    for (int i=0; i<BC_nbc; i++) {
-      for (int v=0;v<G_nvar;v++) {
-  (*bpt)->P[v] = (*bpt)->Ph[v] = temp->P[v]*b->refval[v];
-  (*bpt)->dU[v] = 0.;
-      }
-      (*bpt)->npt = temp;
-      ++bpt; ct++; temp=NextPt(temp,ondir);
-      if(!temp) rep.error("Got lost assigning jet-reflecting bcs.",temp->id);
-    }
-  } while (bpt !=b->data.end());
-  if (ct != b->data.size()) rep.error("BC_assign_: missed some cells!",ct-b->data.size());
-
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_DMACH(     boundary_data *b)
-{
-#ifdef TESTING
-  cout <<"Setting up DMACH boundary... starting.\n";
-#endif // TESTING
-
-  if (b->data.empty()) rep.error("BC_assign_DMACH: empty boundary data",b->itype);
-  // Set reference value to be downstream values.
-  if (!b->refval) {
-    b->refval = mem.myalloc(b->refval, G_nvar);
-    b->refval[RO] = 1.4; b->refval[PG] = 1.0; b->refval[VX] = b->refval[VY] = b->refval[VZ] = 0.0;
-    //cout <<"SimPM.ftr="<<SimPM.ftr<<"\tG_nvar="<<G_nvar<<"\tSimPM.nvar="<<SimPM.nvar<<"\n";
-    for (int v=SimPM.ftr; v<G_nvar; v++) b->refval[v] = -1.0;
-  }
-  // Run through all boundary cells, and give them either upstream or downstream
-  // value, depending on their position.
-  list<cell*>::iterator bpt=b->data.begin();
-  unsigned int ct=0;
-  do {
-    if (CI.get_dpos(*bpt,XX) <= (10.0*SimPM.simtime/sin(M_PI/3.) +1./6. +CI.get_dpos(*bpt,YY)/tan(M_PI/3.))) {
-      (*bpt)->P[RO] = (*bpt)->Ph[RO] = 8.0;
-      (*bpt)->P[PG] = (*bpt)->Ph[PG] = 116.5;
-      (*bpt)->P[VX] = (*bpt)->Ph[VX] = 7.14470958;
-      (*bpt)->P[VY] = (*bpt)->Ph[VY] = -4.125;
-      (*bpt)->P[VZ] = (*bpt)->Ph[VZ] = 0.0;
-      for (int v=SimPM.ftr; v<G_nvar; v++) (*bpt)->P[v] = (*bpt)->Ph[v] = 1.0;
-    }
-    else for (int v=0;v<G_nvar;v++) (*bpt)->P[v] = (*bpt)->Ph[v] = b->refval[v];
-    ++bpt; ct++;
-  } while (bpt !=b->data.end());
-  if (ct != b->data.size()) rep.error("BC_assign_: missed some cells!",ct-b->data.size());
-
-#ifdef TESTING
-  cout <<"Setting up DMACH boundary... finished.\n";
-#endif // TESTING
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_DMACH2(    boundary_data *b) 
-{
-#ifdef TESTING
-  cout <<"Setting up DMACH2 boundary... starting.\n";
-#endif // TESTING
-
-  if (b->dir != NO) rep.error("DMACH2 not internal boundary!",b->dir);
-  cout <<"DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.\n";
-  if (b->refval) rep.error("Already initialised memory in DMACH2 boundary refval",b->refval);
-
-  b->refval = mem.myalloc(b->refval, G_nvar);
-
-  b->refval[RO] = 8.0;
-  b->refval[PG] = 116.5;
-  b->refval[VX] = 7.14470958;
-  b->refval[VY] = -4.125;
-  b->refval[VZ] = 0.0;
-  for (int v=SimPM.ftr; v<G_nvar; v++) b->refval[v] = 1.0;
-  // Now have to go from first point onto boundary and across to x<=1/6
-  if (!b->data.empty()) rep.error("BC_assign_DMACH2: Not empty boundary data",b->itype);
-  cell *c = FirstPt();
-  cell *temp=0;
-  do {
-    // check if we are <1/6 in case we are in a parallel grid where the domain is outside
-    // the DMR region.  This saves having to rewrite the function in the parallel uniform grid.
-    if (CI.get_dpos(c,XX)<=1./6.) {
-      temp=c;
-      while ( (temp=NextPt(temp,YN))!=0 ) {
-        for (int v=0;v<G_nvar;v++) temp->P[v] = temp->Ph[v] = b->refval[v];
-        b->data.push_back(temp);
-        if (temp->isgd) rep.error("BC_assign_DMACH2: Looking for Boundary cells!",temp);
-      }
-    }
-  } while ( (c=NextPt(c,XP)) && (CI.get_dpos(c,XX)<=1./6.));
-
-#ifdef TESTING
-  cout <<"Setting up DMACH2 boundary... finished.\n";
-#endif // TESTING
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
-{
-  if (b->dir != NO) rep.error("RADSHOCK not internal boundary!",b->dir);
-  cout <<"Assigning data to RADSHOCK boundary at XN boundary.\n";
-  if (G_ndim !=2 && G_ndim !=1) rep.error("RADSHOCK must be 1d or 2d",G_ndim);
-  if (b->refval) rep.error("Already initialised memory in RADSHOCK boundary refval",b->refval);
-  b->refval = mem.myalloc(b->refval, G_nvar);
-  if (!b->data.empty()) rep.error("BC_assign_RADSHOCK: Not empty boundary data",b->itype);
-  cell *c=FirstPt();
-  for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
-  //
-  // Try assuming that outflow will be at approx 3000 K, and shock
-  // will have cooled (with a fudge factor for lower velocity).
-  // so rho_1 = (v/(5km/s))^2 rho_0, and
-  //    v_1   = v_0 /(v/(5km/s))^2
-  //
-  double ratio = c->P[VX]*c->P[VX]/25.0e10;
-  if (fabs(c->P[VX])<55.0e5) ratio *= 0.5*fabs(c->P[VX])/50.0e5;
-  b->refval[RO] = c->P[RO]*ratio; // This boundary requires density to be M^2 times initial density.
-  b->refval[VX] = c->P[VX]/ratio; // mass flux out of domain is same as into domain.
-  
-  int ct=0;
-  if (G_ndim==1) {
-    do {
-      c->P[RO] = c->Ph[RO] = min(c->P[RO], b->refval[RO]);
-      b->data.push_back(c);
-      ct++;
-    } while (CI.get_dpos((c=NextPt(c)),XX) <= (G_xmin[XX] + (G_range[XX]*0.02)));
-  }
-  else if (G_ndim==2) {
-    do {
-      b->data.push_back(c);
-      ct++;
-      c->P[RO] = c->Ph[RO] = min(c->P[RO], b->refval[RO]);
-    } while ( (NextPt(c,YP)!=0) && (c=NextPt(c,YP))->isgd );
-    if (ct != G_ng[YY]) rep.error("Didn't get all cells in 2d RADSHOCK boundary",ct-G_ng[YY]);
-  }
-  cout <<"******************************************Added "<<ct<<" cells to RADSHOCK internal boundary.\n";
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_RADSH2(     boundary_data *b)
-{
-  if (b->dir != NO) rep.error("RADSH2 not external boundary!",b->dir);
-  cout <<"Assigning data to RADSH2 boundary at XN boundary.\n";
-  if (G_ndim !=2 && G_ndim !=1) rep.error("RADSH2 must be 1d or 2d",G_ndim);
-  if (b->refval) 
-    rep.error("Already initialised memory in RADSH2 boundary refval",b->refval);
-  b->refval = mem.myalloc(b->refval, G_nvar);
-  if (!b->data.empty())
-    rep.error("BC_assign_RADSH2: Not empty boundary data",b->itype);
-  cell *c=FirstPt();
-  for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
-  cell *temp =c;
-  do {temp=NextPt(temp,XP);} while (NextPt(temp,XP)->isgd);
-  cout <<"endpoint: "<<temp->P[VX]<<"  firstpt: "<<c->P[VX]<<"  ";
-  b->refval[VX] = temp->P[VX]*temp->P[RO]/c->P[RO]; // This boundary requires fixed velocity.
-  cout <<"Refval[VX] = "<< b->refval[VX] <<"\n"; //c->P[VX]<<"\n";
-  
-  int ct=0;
-  if (G_ndim==1) {
-    temp=c; 
-    while (CI.get_dpos(NextPt(temp),XX) <= G_xmax[XX]/128.)
-      temp=NextPt(temp);
-    do {
-      temp->P[VX] = temp->Ph[VX] = b->refval[VX]; // /c->P[VX]; //max(b->refval[VX],temp->P[VX]); // XN boundary, and want to limit outflow speed.
-      b->data.push_back(temp);
-      ct++;
-    } while ( (temp=NextPt(temp,XN)) !=0);
-  }
-  else if (G_ndim==2) {
-    do {
-      while (CI.get_dpos(NextPt(c,XP),XX) <= (G_xmax[XX]-G_xmin[XX])/128.)
-  c=NextPt(c,XP);
-      temp=c;
-      do {
-  b->data.push_back(temp);
-  ct++;
-  temp->P[VX] = temp->Ph[VX] = b->refval[VX]; // /c->P[VX]; //max(b->refval[VX],temp->P[VX]);
-      } while ( (temp = NextPt(temp,XN)) !=0);
-    } while ( (NextPt(c,YP)!=0) && (c=NextPt(c,YP))->isgd );
-//    cout <<"Got "<<ct<<" cells in 2d RADSH2 boundary.\n";
-//    if (ct != G_ng[YY]) rep.error("Didn't get all cells in 2d RADSH2 boundary",ct-G_ng[YY]);
-  }
-  cout <<"******************************************Added "<<ct<<" cells to RADSH2 internal boundary.\n";
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-///
-/// Add internal stellar wind boundaries -- these are (possibly
-/// time-varying) winds defined by a mass-loss-rate and a terminal
-/// velocity.  A region within the domain is given fixed values
-/// corresponding to a freely expanding wind from a
-/// cell-vertex-located source.
-///
-int UniformGrid::BC_assign_STWIND(boundary_data *b)
-{
-  //
-  // Check that we have an internal boundary struct, and that we have a stellar
-  // wind source to set up.
-  //
-  if (b->dir != NO)
-    rep.error("STWIND not external boundary!",b->dir);
-#ifdef TESTING
-  cout <<"Assigning data to STWIND boundary. Nsrc="<<SWP.Nsources<<"\n";
-#endif
-  if (SWP.Nsources<1) {
-    rep.error("UniformGrid::BC_assign_STWIND() No Wind Sources!",SWP.Nsources);
-  }
-
-  //
-  // Setup reference state vector and initialise to zero.
-  //
-  if (b->refval) 
-    rep.error("Already initialised memory in STWIND boundary refval",
-        b->refval);
-  b->refval = mem.myalloc(b->refval, G_nvar);
-  if (!b->data.empty())
-    rep.error("BC_assign_STWIND: Not empty boundary data",b->itype);
-  for (int v=0;v<G_nvar;v++)
-    b->refval[v]=0.0;
-
-  //
-  // New structure: we need to initialise the stellar wind class with
-  // all of the wind sources in the global parameter list (this was
-  // formerly done in DataIOBase::read_simulation_parameters()).
-  //
-  // The type of class we set up is determined first.  If any of the 
-  // wind sources have type==3==evolving, we set up stellar_wind_evolving(),
-  // otherwise we set up stellar_wind().
-  //
-  int err=0;
-  int Ns = SWP.Nsources;
-  for (int isw=0; isw<Ns; isw++) {
-    if (SWP.params[isw]->type ==3) err+=1;
-  }
-  Wind = 0;
-  if (Ns>0) {
-//#ifdef TESTING
-    cout <<"\n------------------ SETTING UP STELLAR WIND CLASS -----------------\n";
-//#endif
-    if (!err) {
-      Wind = new stellar_wind ();
-    }
-    else {
-      Wind = new stellar_wind_evolution();
-      err=0;
-    }
-  }
-
-  //
-  // Run through sources and add sources.
-  //
-  for (int isw=0; isw<Ns; isw++) {
-//#ifdef TESTING
-    cout <<"\tUniformGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
-//#endif
-    if (SWP.params[isw]->type==3) {
-      err = Wind->add_evolving_source(
-        SWP.params[isw]->dpos,
-        SWP.params[isw]->radius,
-        SWP.params[isw]->type,
-        SWP.params[isw]->Rstar,
-        SWP.params[isw]->tr,
-        SWP.params[isw]->evolving_wind_file,
-        SWP.params[isw]->time_offset,
-        SimPM.simtime,
-        SWP.params[isw]->update_freq,
-        SWP.params[isw]->t_scalefactor
-        );
-    }
-    else {
-      err = Wind->add_source(
-        SWP.params[isw]->dpos,
-        SWP.params[isw]->radius,
-        SWP.params[isw]->type,
-        SWP.params[isw]->Mdot,
-        SWP.params[isw]->Vinf,
-        SWP.params[isw]->Tstar,
-        SWP.params[isw]->Rstar,
-        SWP.params[isw]->tr
-        );
-    }
-    if (err) rep.error("Error adding wind source",isw);
-  }
-
-  //
-  // loop over sources, adding cells to boundary data list in order.
-  //
-  for (int id=0;id<Ns;id++) {
-//#ifdef TESTING
-    cout <<"\tUniformGrid::BC_assign_STWIND: Adding cells to source "<<id<<"\n";
-//#endif
-    BC_assign_STWIND_add_cells2src(id,b);
-  }
-  //
-  // Now we should have set everything up, so we assign the boundary
-  // cells with their boundary values.
-  //
-  err += BC_update_STWIND(b,0,0);
-//#ifdef TESTING
-  cout <<"\tFinished setting up wind parameters\n";
-  cout <<"------------- DONE SETTING UP STELLAR WIND CLASS -----------------\n\n";
-//#endif
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_STWIND_add_cells2src(
-        const int id, ///< source id
-        struct boundary_data *b
-        )
-{
-  //
-  // this is for cartesian geometry, with cubic cells, so things are
-  // quite simple.  We run through each cell, and if it is within the 
-  // source's radius of influence, then we add it to the lists.
-  //
-  int err=0;
-  int ncell=0;
-  double srcpos[MAX_DIM];
-  Wind->get_src_posn(id,srcpos);
-  double srcrad;
-  Wind->get_src_drad(id,&srcrad);
-#ifdef TESTING
-  cout <<"*** srcrad="<<srcrad<<"\n";
-  rep.printVec("src", srcpos, G_ndim);
-#endif
-
-  cell *c = FirstPt();
-  do {
-    //
-    // GEOMETRY: This should be to centre--of--volume of cell!
-    // It makes no difference for Cartesian grids b/c the centre--of--
-    // volume coincides the midpoint.
-    //
-    if (distance_vertex2cell(srcpos,c) <= srcrad) {
-        ncell++;
-        //b->data.push_back(c); // don't need b to have a lit too.
-        err += Wind->add_cell(this, id,c);
-        //cout <<"CART: adding cell "<<c->id<<" to list. d=";
-        //rep.printVec("src", srcpos, G_ndim);
-        //rep.printVec("pos", c->pos, G_ndim);
-      }
-  } while ((c=NextPt(c))!=0);
-  
-  err += Wind->set_num_cells(id,ncell);
-//#ifdef TESTING
-  cout <<"UniformGrid: Added "<<ncell<<" cells to wind boundary for WS "<<id<<"\n";
-//#endif
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-///
-/// Update internal stellar wind boundaries -- these are (possibly time-varying)
-/// winds defined by a mass-loss-rate and a terminal velocity.  If fixed in time
-/// the wind is updated with b->refval, otherwise with a (slower) call to the 
-/// stellar wind class SW
-///
-int UniformGrid::BC_update_STWIND(
-        boundary_data *b, ///< Boundary to update.
-        const int ,  ///< current fractional step being taken.
-        const int    ///< final step (not needed b/c fixed BC).
-        )
-{
-  //
-  // The stellar_wind class already has a list of cells to update
-  // for each source, together with pre-calculated state vectors,
-  // so we just call the set_cell_values() function.
-  //
-  int err=0;
-  for (int id=0;id<Wind->Nsources();id++) {
-    //cout <<" updating source "<<id<<"\n";
-    err += Wind->set_cell_values(this, id,SimPM.simtime);
-    //cout <<" finished source "<<id<<"\n";
-  }
-
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
-{
-  //
-  // First set up outflow boundaries.
-  //
-  int err=BC_assign_OUTFLOW(b);
-  if (err) rep.error("BC_assign_STARBENCH1 error in OUTFLOW",err);
-
-  //
-  // Now do some checks, and then set the column density in the 
-  // cells that we want to shadow.
-  //
-  if (b->dir != XN) rep.error("RADSH2 not XN boundary!",b->dir);
-  //enum direction offdir = b->dir;
-  //enum direction ondir  = OppDir(offdir);
-  if (b->data.empty())
-    rep.error("BC_assign_STARBENCH1: empty boundary data",b->itype);
-
-  //
-  // Set the column density (in g/cm2) to some large values in the
-  // range 1.4pc<y<2.6pc, and to zero for the others.
-  //
-  list<cell*>::iterator bpt=b->data.begin();
-  unsigned int ct=0;
-  double dpos[G_ndim];
-  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-  do{
-    //
-    // Set cell optical depth to be something big in the 
-    // relevant region for the first radiation source.
-    //
-    CI.get_dpos((*bpt),dpos);
-    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
-      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-      for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*bpt), s, &column);
-    }
-    else {
-      column = 0.00; // zero optical depth outside the barrier
-      for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*bpt), s, &column);
-    }
-
-    
-    ++bpt; ct++;
-  } while (bpt !=b->data.end());
-  if (ct != b->data.size())
-    rep.error("BC_assign_STARBENCH1: missed some cells!",ct-b->data.size());
-  
-  return 0;
-}
-
-// ##################################################################
-// ##################################################################
-
-int UniformGrid::BC_update_STARBENCH1(
-        struct boundary_data *b,
-        const int cstep,
-        const int maxstep
-        )
-{
-  //
-  // Outflow or Absorbing BCs; boundary cells are same as edge cells.
-  // This is zeroth order outflow bcs.
-  //
-  // For the one-way boundary we set the normal velocity to be zero if
-  // the flow wants to be onto the domain.
-  //
-
-  //
-  // First get the normal velocity component, and whether the offdir is
-  // positive or negative.
-  //
-  enum direction offdir = b->dir;
-  enum primitive Vnorm = RO;
-  int norm_sign = 0;
-  switch (offdir) {
-  case XN: case XP:
-    Vnorm = VX; break;
-  case YN: case YP:
-    Vnorm = VY; break;
-  case ZN: case ZP:
-    Vnorm = VZ; break;
-  default:
-    rep.error("bad dir",offdir);
-  }
-  if (Vnorm == RO)
-    rep.error("Failed to set normal velocity component",Vnorm);
-
-  switch (offdir) {
-  case XN: case YN: case ZN:
-    norm_sign = -1; break;
-  case XP: case YP: case ZP:
-    norm_sign =  1; break;
-  default:
-    rep.error("bad dir",offdir);
-  }
-
-  //
-  // Now run through all cells in the boundary
-  //
-  double dpos[G_ndim];
-  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    //
-    //exactly same routine as for periodic and zero-gradient.
-    //
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v];
-      (*c)->dU[v] = 0.;
-    }
-    //
-    // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
-    //
-    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
-                                    (*c)->Ph[Vnorm]*norm_sign);
-
-
-    //
-    // Set cell optical depth to be something big in the 
-    // relevant region for the first radiation source.
-    //
-    CI.get_dpos((*c),dpos);
-    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
-      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-      for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*c), s, &column);
-    }
-    else {
-      column = 0.00; // zero optical depth outside the barrier
-      for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*c), s, &column);
-    }
-
-
-    if (cstep==maxstep)
-      for (int v=0;v<G_nvar;v++)
-        (*c)->P[v] = (*c)->npt->P[v];
-
-#ifdef GLM_ZERO_BOUNDARY
-    if (G_eqntype==EQGLM) {
-      (*c)->P[SI]=(*c)->Ph[SI]=0.0;
-    }
-#endif // GLM_ZERO_BOUNDARY
-#ifdef GLM_NEGATIVE_BOUNDARY
-    if (G_eqntype==EQGLM) {
-      if ((*c)->id==-1) {
-        (*c)->P[SI] =-(*c)->npt->P[SI];
-        (*c)->Ph[SI]=-(*c)->npt->Ph[SI];
-      }
-      else if ((*c)->id==-2) {
-        (*c)->P[SI] =-(*c)->ngb[(*c)->isedge]->P[SI];
-        (*c)->Ph[SI]=-(*c)->ngb[(*c)->isedge]->Ph[SI];
-      }
-      else rep.error("only know 1st/2nd order bcs",(*c)->id);
-    }
-#endif // GLM_NEGATIVE_BOUNDARY
-
-  } // all cells.
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_printBCdata(boundary_data *b)
-{
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {  
-    CI.print_cell(*c);
-  }
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
 {
   struct boundary_data *b;
@@ -2455,6 +1352,61 @@ int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
 
 
 
+int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
+{
+  enum direction offdir = b->dir;
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty())
+    rep.error("BC_assign_PERIODIC: empty boundary data",b->itype);
+
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp; unsigned int ct=0;
+  do{
+    temp=(*bpt);
+    while (NextPt(temp,ondir) && NextPt(temp,ondir)->isgd)
+      temp=NextPt(temp,ondir);
+
+    if(!temp->isgd)
+      rep.error("BC_assign_PERIODIC: Got lost assigning periodic BCs",
+                temp->id);
+    //
+    // Now temp is last grid point before the opposite boundary.
+    // If *bpt is in the first row of boundary cells, then this is
+    // its partner cell, if the second row then we need to move back
+    // one cell.  We check this using the isedge flag, which for
+    // boundary cells is set to the number of cells from the edge.
+    //
+    // If nbc==2, then we have two pointers to two sheets of cells,
+    // otherwise only one and it is simpler.
+    // get to the correct cell on the opposite side of the grid.
+    //
+    for (int v=-1; v>(*bpt)->isedge; v--) {
+      temp = NextPt(temp,offdir);
+    }
+    for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    (*bpt)->npt = temp;
+    //
+    // increment counters.
+    //
+    ct++;
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size())
+    rep.error("BC_assign_PERIODIC: missed some cells!",ct-b->data.size());
+
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int UniformGrid::BC_update_PERIODIC(
       struct boundary_data *b,
       const int cstep,
@@ -2463,16 +1415,103 @@ int UniformGrid::BC_update_PERIODIC(
 {
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v];
-      (*c)->dU[v] = 0.;
-    }
+    for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = (*c)->npt->Ph[v];
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
     if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->P[v] = (*c)->npt->P[v];
-      }
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->npt->P[v];
     }
   } // all cells.
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
+{
+  //
+  // Zero order extrapolation, if edge cell is index k, and boundary cells
+  // k+1 and k+2, then P_{k+1} = P_{k+2} = P_{k}
+  // First order extrapolation would be P_{k+1} = 2P_{k} - P_{k-1} but is
+  // said to have stability problems sometimes (LeVeque, S.7.2.1, p131-132)
+  //
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_OUTFLOW: empty boundary data",b->itype);
+  }
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp = 0;
+  unsigned int ct = 0;  // counter (for accounting).
+
+  //
+  // loop through all boundary cells, set npt to point to the grid
+  // cell where we get the data.
+  //
+  do{
+    //
+    // Find the cell to point to.  This should be the first cell on
+    // the other side of the boundary, located at x[baxis]=bloc.
+    // Can't just use the ->isgd property because in y and z dirs
+    // the "ondir" direction will sometimes never hit the grid.
+    //
+    temp = (*bpt);
+    //
+    // If nbc==2, then we have two pointers to two sheets of cells,
+    // and we want both of them to point to the first on-grid cell,
+    // so we use "isedge" to move 1 or 2 cells on-grid to get the 
+    // on-grid value.
+    //
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = NextPt(temp,ondir);
+    }
+
+    for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    (*bpt)->npt = temp;
+
+    //
+    // The GLM boundary is somewhat different, because I found
+    // that zero-gradient didn't work well (Mackey & Lim, 2011,
+    // MNRAS,412,2079).  So we switch the sign instead.
+    //
+
+#ifdef GLM_ZERO_BOUNDARY
+    if (G_eqntype==EQGLM) {
+      (*bpt)->P[SI]=(*bpt)->Ph[SI]=0.0;
+    }
+#endif // GLM_ZERO_BOUNDARY
+#ifdef GLM_NEGATIVE_BOUNDARY
+    if (G_eqntype==EQGLM) {
+      if (G_ndim==1) {
+        rep.error("Psi outflow boundary condition doesn't work for 1D!",99);
+      }
+      if ((*bpt)->isedge == -1) {
+        (*bpt)->P[SI]  = -temp->P[SI];
+        (*bpt)->Ph[SI] = -temp->Ph[SI];
+      }
+      else if ((*bpt)->isedge == -2) {
+        //
+        // Get data from 2nd on-grid cell.
+        //
+        (*bpt)->P[SI]  = -NextPt(temp,ondir)->P[SI];
+        (*bpt)->Ph[SI] = -NextPt(temp,ondir)->Ph[SI];
+      }
+      else rep.error("only know 1st/2nd order bcs",(*bpt)->id);
+    }
+#endif // GLM_NEGATIVE_BOUNDARY
+    ct++;
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_OUTFLOW: missed some cells!",
+              ct-b->data.size());
+  }
   return 0;
 }
 
@@ -2501,17 +1540,10 @@ int UniformGrid::BC_update_OUTFLOW(
     // gc is the on-grid cell.
     //
     gc = (*c)->npt;
-    //
-    //exactly same routine as for periodic.
-    //
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = gc->Ph[v];
-      (*c)->dU[v] = 0.;
-    }
+    for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = gc->Ph[v];
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
     if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->P[v] = gc->P[v];
-      }
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = gc->P[v];
     }
     
     //
@@ -2528,15 +1560,13 @@ int UniformGrid::BC_update_OUTFLOW(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (G_eqntype==EQGLM) {
 
-      if (abs((*c)->pos[b->baxis] - gc->pos[b->baxis]) ==
-          CI.get_integer_cell_size()) {
+      if      ((*c)->isedge == -1) {
         (*c)->P[SI]  = -gc->P[SI];
         (*c)->Ph[SI] = -gc->Ph[SI];
       }
-      else if (abs((*c)->pos[b->baxis] - gc->pos[b->baxis]) ==
-          2*CI.get_integer_cell_size()) {
-        (*c)->P[SI]  = -NextPt(gc,ondir)->P[SI];
-        (*c)->Ph[SI] = -NextPt(gc,ondir)->Ph[SI];
+      else if ((*c)->isedge == -2) {
+        (*c)->P[SI]  = -NextPt(gc,b->ondir)->P[SI];
+        (*c)->Ph[SI] = -NextPt(gc,b->ondir)->Ph[SI];
       }
       else {
         rep.error("only know 1st/2nd order bcs",(*c)->id);
@@ -2546,6 +1576,23 @@ int UniformGrid::BC_update_OUTFLOW(
 
   } // all cells.
   return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_ONEWAY_OUT(boundary_data *b)
+{
+  //
+  // The setup for this is identical to outflow, so just call
+  // outflow() setup function.
+  //
+  int err=BC_assign_OUTFLOW(b);
+  return err;
 }
 
 
@@ -2604,16 +1651,17 @@ int UniformGrid::BC_update_ONEWAY_OUT(
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     //
-    //exactly same routine as for periodic.
+    // exactly same routine as for periodic.
+    // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
     //
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v];
-      (*c)->dU[v] = 0.;
-    }
+    for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = (*c)->npt->Ph[v];
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
+    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                    (*c)->Ph[Vnorm]*norm_sign);
     if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) {
-        (*c)->P[v] = (*c)->npt->P[v];
-      }
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->npt->P[v];
+      (*c)->P[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                      (*c)->P[Vnorm]*norm_sign);
     }
     
     //
@@ -2631,15 +1679,13 @@ int UniformGrid::BC_update_ONEWAY_OUT(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (G_eqntype==EQGLM) {
 
-      if (abs((*bpt)->pos[b->baxis] - temp->pos[b->baxis]) ==
-          CI.get_integer_cell_size()) {
+      if      ((*c)->isedge == -1) {
         (*c)->P[SI]  = -(*c)->npt->P[SI];
         (*c)->Ph[SI] = -(*c)->npt->Ph[SI];
       }
-      else if (abs((*bpt)->pos[b->baxis] - temp->pos[b->baxis]) ==
-          2*CI.get_integer_cell_size()) {
-        (*c)->P[SI]  = -NextPt(((*c)->npt),ondir)->P[SI];
-        (*c)->Ph[SI] = -NextPt(((*c)->npt),ondir)->Ph[SI];
+      else if ((*c)->isedge == -2) {
+        (*c)->P[SI]  = -NextPt(((*c)->npt),b->ondir)->P[SI];
+        (*c)->Ph[SI] = -NextPt(((*c)->npt),b->ondir)->Ph[SI];
       }
       else {
         rep.error("only know 1st/2nd order bcs",(*c)->id);
@@ -2647,19 +1693,63 @@ int UniformGrid::BC_update_ONEWAY_OUT(
     }
 #endif // GLM_NEGATIVE_BOUNDARY
 
-    //
-    // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
-    //
-    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
-                                    (*c)->Ph[Vnorm]*norm_sign);
-    if (cstep==maxstep) {
-      (*c)->P[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
-                                      (*c)->P[Vnorm]*norm_sign);
-    }
 
   } // all cells.
   return 0;
   
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_INFLOW(    boundary_data *b)
+{
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_INFLOW: empty boundary data",b->itype);
+  }
+
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp;
+  unsigned int ct=0;
+  do{
+    //
+    // Find the cell to point to.  This should be the first cell on
+    // the other side of the boundary, located at x[baxis]=bloc.
+    // Can't just use the ->isgd property because in y and z dirs
+    // the "ondir" direction will sometimes never hit the grid.
+    //
+    temp = (*bpt);
+
+    //
+    // If nbc==2, then we have two pointers to two sheets of cells,
+    // and we want both of them to point to the first on-grid cell,
+    // so we use "isedge" to move 1 or 2 cells on-grid to get the 
+    // on-grid value.
+    //
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = NextPt(temp,ondir);
+    }
+
+    //
+    // Now set inflow data to be the first on-grid cell's values.
+    //
+    for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->dU[v] = 0.0;
+    ct++;
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size())
+    rep.error("BC_assign_INFLOW: missed some cells!",ct-b->data.size());
+  
+  return 0;
 }
 
 
@@ -2681,115 +1771,103 @@ int UniformGrid::BC_update_INFLOW(
   //
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    for (int v=0;v<G_nvar;v++)
-      (*c)->dU[v]=0.o;
-  } // all cells.
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_update_REFLECTING( struct boundary_data *b,
-               const int cstep,
-               const int maxstep
-               )
-{
-  //exactly same routine as for outflow, except multiply v_n,B_n by -1.
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    //  cout <<"refval: "; for (int i=0;i<G_nvar;i++) cout <<b->refval[i]<<" "; cout <<"\n";
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v] *b->refval[v];
-      (*c)->dU[v] = 0.;
-    }
-    if (cstep==maxstep) for (int v=0;v<G_nvar;v++)  (*c)->P[v] = (*c)->npt->P[v];
-  } // all cells.
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_update_FIXED(      struct boundary_data *b,
-               const int , /// current ooa step e.g. 1 (not used here)
-               const int   /// overall ooa      e.g. 2 (not used here)
-               )
-{
-  // Fixed means all boundary points have same fixed value, stored in refval.
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->dU[v]=0.;
-      (*c)->P[v] = (*c)->Ph[v] = b->refval[v];
-    }
-  }    // all cells.   
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_update_JETREFLECT( struct boundary_data *b,
-               const int cstep,
-               const int maxstep
-               )
-{
-  //exactly same routine as for reflecting, except the normal B is unchanged, but the tangential is reversed.
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    //  cout <<"refval: "; for (int i=0;i<G_nvar;i++) cout <<b->refval[i]<<" "; cout <<"\n";
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v] *b->refval[v];
-      (*c)->dU[v] = 0.;
-    }
-    if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->npt->P[v];
-    }
-  } // all cells.
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_update_DMACH(      struct boundary_data *b,
-               const int cstep,
-               const int maxstep
-               )
-{
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    if (CI.get_dpos(*c,XX) <= (10.0*SimPM.simtime/sin(M_PI/3.) +1./6. +CI.get_dpos(*c,YY)/tan(M_PI/3.))) {
-      (*c)->Ph[RO] = 8.0;
-      (*c)->Ph[PG] = 116.5;
-      (*c)->Ph[VX] = 7.14470958;
-      (*c)->Ph[VY] = -4.125;
-      (*c)->Ph[VZ] = 0.0;
-      //      cout <<"SimPM.ftr = "<<SimPM.ftr<<" and nvar = "<<G_nvar<<"\n";
-      for (int v=SimPM.ftr; v<G_nvar; v++) (*c)->Ph[v] = 1.0;
-    }
-    else for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = b->refval[v];
     for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.0;
-    if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+  } // all cells.
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_REFLECTING(boundary_data *b)
+{
+  enum direction offdir = b->dir;
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_REFLECTING: empty boundary data",b->itype);
+  }
+  //
+  // set reference state so that it is mostly zeros but has some +/-1
+  // entries to flip the signs of the velocity and B-field (as 
+  // appropriate).
+  //
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, G_nvar);
+    for (int v=0;v<G_nvar;v++)
+      b->refval[v] = 1.0;
+    //
+    // velocity:
+    //
+    switch (offdir) {
+     case XN: case XP:
+      b->refval[VX] = -1.0;
+      break;
+     case  YN: case YP:
+      b->refval[VY] = -1.0;
+      break;
+     case  ZN: case ZP:
+      b->refval[VZ] = -1.0;
+      break;
+     default:
+      rep.error("BAD DIRECTION REFLECTING",offdir);
+      break;
+    } // Set Normal velocity direction.
+    
+    //
+    // B-field:
+    //
+    if (G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
+      switch (offdir) {
+       case XN: case XP:
+        b->refval[BX] = -1.0;
+        break;
+       case  YN: case YP:
+        b->refval[BY] = -1.0;
+        break;
+       case  ZN: case ZP:
+        b->refval[BZ] = -1.0;
+        break;
+       default:
+        rep.error("BAD DIRECTION REFLECTING",offdir);
+        break;
+      } // Set normal b-field direction.
+    } // Setting up reference value.
+  } // if we needed to set up refval.
+
+  //
+  // Now go through each of the boundary points and assign values
+  // to them, multiplying the relevant entries by -1.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp=0;
+  unsigned int ct=0;
+  do{
+    temp = (*bpt);
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = NextPt(temp,ondir);
     }
+    if(!temp) {
+      rep.error("Got lost assigning reflecting bcs.",temp->id);
+    }
+    for (int v=0;v<G_nvar;v++)
+      (*bpt)->P[v]  = temp->P[v]*b->refval[v];
+    for (int v=0;v<G_nvar;v++)
+      (*bpt)->Ph[v] = temp->Ph[v]*b->refval[v];
+    for (int v=0;v<G_nvar;v++)
+      (*bpt)->dU[v] = 0.0;
+    (*bpt)->npt = temp;
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_REFLECTING: missed some cells!",
+              ct-b->data.size());
   }
   return 0;
 }
@@ -2801,67 +1879,274 @@ int UniformGrid::BC_update_DMACH(      struct boundary_data *b,
 
 
 
-int UniformGrid::BC_update_DMACH2(     struct boundary_data *b,
-               const int,
-               const int
-               )
+int UniformGrid::BC_update_REFLECTING(
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
 {
-  // Fixed at all times, so no difference between full and half step.
+  //
+  // same routine as for outflow, except multiply v_n,B_n by -1.
+  //
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     for (int v=0;v<G_nvar;v++) {
-      (*c)->dU[v]=0.;
-      (*c)->P[v] = (*c)->Ph[v] = b->refval[v];
+      (*c)->Ph[v] = (*c)->npt->Ph[v] *b->refval[v];
     }
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->P[v] = (*c)->npt->P[v] *b->refval[v];
+      }
+    }
+  } // all cells.
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_FIXED(     boundary_data *b)
+{
+  enum direction ondir  = b->ondir;
+  if (b->data.empty()) {
+    rep.error("BC_assign_FIXED: empty boundary data",b->itype);
+  }
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, G_nvar);
+  }
+
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp=0;
+  unsigned int ct=0;
+  //
+  // First find an on-grid cell near a boundary point.  Because of
+  // corner cells, we can't guarantee that every boundary cell will
+  // reach an on-grid cell by moving in the on-grid direction.
+  //
+  do {
+    ++bpt;
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = NextPt(temp,ondir);
+    }
+  } while (!temp->isgd);
+  if(!temp) rep.error("Got lost assigning FIXED bcs.",temp->id);
+
+  //
+  // Now set reference value to be the on-grid value.
+  //
+  for (int v=0;v<G_nvar;v++) b->refval[v] = temp->P[v];
+  //
+  // Initialise all the values to be the fixed value.
+  //
+  bpt=b->data.begin();
+  do{
+    for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = b->refval[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = b->refval[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->dU[v] = 0.;
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_FIXED: missed some cells!",
+              ct-b->data.size());
+  }
+  
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_FIXED(
+      struct boundary_data *b,
+      const int , // current ooa step e.g. 1 (unused here)
+      const int   // overall ooa      e.g. 2 (unused here)
+      )
+{
+  //
+  // Fixed means all boundary points have same fixed value, stored
+  // in refval.
+  //
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v]=0.;
+    for (int v=0;v<G_nvar;v++) (*c)->P[v]  = b->refval[v];
+    for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = b->refval[v];
   }    // all cells.   
   return 0;
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
-int UniformGrid::BC_update_RADSHOCK(   struct boundary_data *b,
-               const int cstep,
-               const int maxstep
-               )
+int UniformGrid::BC_assign_JETBC(     boundary_data *b)
 {
-  // We set the density adjacent to the wall to the minimum of 
-  // the current density and some reference density.
-  list<cell*>::iterator c=b->data.begin();
-  //double temp=0.0;
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    //temp = (*c)->Ph[RO];
-    (*c)->Ph[RO] = min((*c)->Ph[RO], b->refval[RO]);
-    (*c)->Ph[VX] = max((*c)->Ph[VX], b->refval[VX]);
-    if (cstep==maxstep)
-      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
-    
+  if (!JP.jetic) {
+    rep.error("BC_assign_JETBC: not a jet simulation!",JP.jetic);
   }
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_update_RADSH2(   struct boundary_data *b,
-             const int cstep,
-             const int maxstep
-             )
-{
-  // We set the velocity at the boundary to be the initial outflow value.
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    (*c)->Ph[VX] = b->refval[VX]; //max(b->refval[VX],(*c)->Ph[VX]);
-    if (cstep==maxstep)
-      (*c)->P[VX] = (*c)->Ph[VX];
+  if (b->dir != NO) {
+    rep.error("BC_assign_JETBC: boundary is not an internal one!",
+              b->dir);
   }
+  cell *c = FirstPt();
+  cell *temp=0, *cy=0;
+  int ct=0;
+  int ctot=0;
+  int maxnv=0;
+
+  //
+  // Set the physical radius of jet.
+  //
+  double jr = JP.jetradius*G_dx;
+#ifdef TESTING
+  cout <<"jetrad="<<JP.jetradius<<" dx="<<G_dx<<"\n";
+#endif // TESTING
+
+  //
+  // Assign reference values, containing Jet parameters:
+  //
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, G_nvar);
+  }
+
+  if (G_eqntype==EQEUL || G_eqntype==EQEUL_ISO ||
+      G_eqntype==EQEUL_EINT || G_eqntype==EQMHD ||
+      G_eqntype==EQGLM || G_eqntype==EQFCD) {
+    rep.printVec("JetState",JP.jetstate,MAX_NVAR);
+    b->refval[RO] = JP.jetstate[RO];
+    b->refval[PG] = JP.jetstate[PG];
+    b->refval[VX] = JP.jetstate[VX];
+    b->refval[VY] = JP.jetstate[VY];
+    b->refval[VZ] = JP.jetstate[VZ];
+    maxnv=5;
+  }
+  else {
+    rep.error("BC_assign_JETBC: bad equation type",G_eqntype);
+  }
+
+  if (G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
+    b->refval[BX] = JP.jetstate[BX];
+    b->refval[BY] = JP.jetstate[BY];
+    b->refval[BZ] = JP.jetstate[BZ];
+    maxnv=8;
+  }
+
+  if (G_eqntype==EQGLM) {
+    b->refval[SI] = JP.jetstate[SI];
+    maxnv=9;
+  }
+
+  for (int v=maxnv; v<G_nvar; v++) {
+    b->refval[v] = JP.jetstate[v];
+  }
+  
+  if (!b->data.empty()) {
+    rep.error("BC_assign_JETBC: boundary data exists!",b->itype);
+  }
+
+  //
+  // Simplest jet -- zero opening angle.
+  //
+  if (JP.jetic==1) {
+    //
+    // Axi-symmetry first -- this is relatively easy to set up.
+    //
+    if (G_ndim==2 && SimPM.coord_sys==COORD_CYL) {
+      c = FirstPt();
+      do {
+        temp=c;
+        while ( (temp=NextPt(temp,XN))!=0 ) {
+          for (int v=0;v<G_nvar;v++) temp->P[v]  = b->refval[v];
+          for (int v=0;v<G_nvar;v++) temp->Ph[v] = b->refval[v];
+#ifdef SOFTJET
+          //
+          // jetradius is in number of cells, jr is in physical units.
+          // Jet centre is along Z_cyl axis, centred on origin.
+          //
+          temp->P[VX]  = b->refval[VX]
+                          *min(1., 4.0-4.0*CI.get_dpos(temp,YY)/jr);
+          temp->Ph[VX] = temp->P[VX];
+#endif //SOFTJET
+          b->data.push_back(temp);
+          ctot++;
+          if (temp->isgd){
+            rep.error("Looking for Boundary cells! setupjet",temp);
+          }
+        }
+        ct++;
+      } while ( (c=NextPt(c,YP)) && ct<JP.jetradius);
+      if (ct!=JP.jetradius) {
+        rep.error("Not enough cells for jet",ct);
+      }
+      cout <<"Got "<<ctot<<" Cells in total for jet boundary.\n";
+    } // 2D Axial Symmetry
+
+    //
+    // 3D now, more difficult.
+    //
+    else if (G_ndim==3 && SimPM.coord_sys==COORD_CRT) {
+      double dist=0.0;
+      c = FirstPt();
+      //
+      // 3D, so we need to convert the jet radius to a real length.
+      // Also, the jet will come in at the centre of the XN boundary,
+      // which must be the origin.
+      //
+      do { // loop over ZZ axis
+        cy=c;
+        do { // loop over YY axis
+          dist = sqrt(CI.get_dpos(cy,YY)*CI.get_dpos(cy,YY) +
+                      CI.get_dpos(cy,ZZ)*CI.get_dpos(cy,ZZ)  );
+          //
+          // if dist <= jr, then we are within the jet inflow, and we
+          // add the cells to the boundary.
+          //
+          if (dist <= jr) {
+            temp = cy;
+            while ( (temp=NextPt(temp,XN))!=0 ) {
+              for (int v=0;v<G_nvar;v++) temp->P[v]  = b->refval[v];
+              for (int v=0;v<G_nvar;v++) temp->Ph[v] = b->refval[v];
+# ifdef SOFTJET
+              temp->P[VX]  = b->refval[VX] *min(1., 4.0-4.0*dist/jr);
+              temp->Ph[VX] = temp->P[VX];
+# endif //SOFTJET
+              b->data.push_back(temp);
+              ctot++;
+              if (temp->isgd) {
+                rep.error("Looking for Boundary cells! setupjet",
+                          temp);
+              }
+            }
+          } // if within jet radius
+        } while ( (cy=NextPt(cy,YP)) ); // through cells on YY axis.
+      } while ( (c=NextPt(c,ZP)) );     // through cells on ZZ axis.
+      //      BC_printBCdata(b);
+    } // 3D Cartesian
+
+    else {
+      rep.error("Only know how to set up jet in 2Dcyl or 3Dcart",
+                G_ndim);
+    }
+
+  } // jetic==1
+  else {
+    rep.error("Only know simple jet with jetic=1",JP.jetic);
+  }
+
   return 0;
 }
 
@@ -2878,24 +2163,976 @@ int UniformGrid::BC_update_JETBC(      struct boundary_data *b,
                )
 {
 # ifdef SOFTJET
-  double dist=0.0, jr=JP.jetradius*G_dx;
+  double dist=0.0;
+  double jr = JP.jetradius*G_dx;
 # endif //SOFTJET
+
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v]=0.0;
+    for (int v=0;v<G_nvar;v++) (*c)->P[v]  = b->refval[v];
+    for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = b->refval[v];
+# ifdef SOFTJET
+    dist =0.0;
+    if      (G_ndim==2) dist = CI.get_dpos(*c,YY);
+    else if (G_ndim==3) {
+      dist = sqrt(CI.get_dpos(*c,YY)*CI.get_dpos(*c,YY)+
+                  CI.get_dpos(*c,ZZ)*CI.get_dpos(*c,ZZ) );
+    }
+    else rep.error("Jet BC, but not 2d or 3d!!!",G_ndim);
+    (*c)->P[VX]  = b->refval[VX] *min(1., 4-4.0*dist/jr);
+    (*c)->Ph[VX] = (*c)->P[VX];
+# endif //SOFTJET
+  }    // all cells.   
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_JETREFLECT(boundary_data *b)
+{
+  enum direction offdir = b->dir;
+  enum direction ondir  = b->ondir;
+  if (b->data.empty()) {
+    rep.error("BC_assign_: empty boundary data",b->itype);
+  }
+
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, G_nvar);
+  }
+
+  for (int v=0;v<G_nvar;v++) b->refval[v] = 1.0;
+  //
+  // Set Normal velocity multiplier to -1 for reflection.
+  //
+  switch (offdir) {
+   case XN: case XP:
+    b->refval[VX] = -1.0;
+    break;
+   case  YN: case YP:
+    b->refval[VY] = -1.0;
+    break;
+   case  ZN: case ZP:
+    b->refval[VZ] = -1.0;
+    break;
+   default:
+    rep.error("BAD DIRECTION",offdir);
+  } // Set Normal velocity direction.
+  //
+  // Set normal B-field multiplier to -1 for reflection.
+  //
+  if (G_eqntype==EQMHD || G_eqntype==EQGLM || G_eqntype==EQFCD) {
+    switch (offdir) {
+     case XN: case XP:
+      b->refval[BY] = b->refval[BZ] = -1.0;
+      break;
+     case  YN: case YP:
+      b->refval[BX] = b->refval[BZ] = -1.0;
+      break;
+     case  ZN: case ZP:
+      b->refval[BX] = b->refval[BY] = -1.0;
+      break;
+     default:
+      rep.error("BAD DIRECTION",offdir);
+    } // Set normal b-field direction.
+  } // if B-field exists
+
+  //
+  // Now go through each column of boundary points and assign values
+  // to them.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp=0;
+  unsigned int ct=0;
+
+  do{
+    temp = (*bpt);
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = NextPt(temp,ondir);
+    }
+    if(!temp) {
+      rep.error("Got lost assigning jet-reflecting bcs.",temp->id);
+    }
+    for (int v=0;v<G_nvar;v++)
+      (*bpt)->P[v]  = temp->P[v]*b->refval[v];
+    for (int v=0;v<G_nvar;v++)
+      (*bpt)->Ph[v] = temp->P[v]*b->refval[v];
+    for (int v=0;v<G_nvar;v++)
+      (*bpt)->dU[v] = 0.0;
+    (*bpt)->npt = temp;
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+  
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_: missed some cells!",ct-b->data.size());
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_JETREFLECT(
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
+{
+  //
+  // same routine as for reflecting, except the normal B is
+  // unchanged, but the tangential is reversed.
+  //
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     for (int v=0;v<G_nvar;v++) {
-      (*c)->dU[v]=0.;
-      (*c)->P[v] = (*c)->Ph[v] = b->refval[v];
+      (*c)->Ph[v] = (*c)->npt->Ph[v] *b->refval[v];
     }
-# ifdef SOFTJET
-    dist =0.0;
-    if (G_ndim==2) dist = CI.get_dpos(*c,YY);
-    else if (G_ndim==3) dist = sqrt(CI.get_dpos(*c,YY)*CI.get_dpos(*c,YY)+CI.get_dpos(*c,ZZ)*CI.get_dpos(*c,ZZ));
-    else rep.error("Jet BC, but not 2d or 3d!!!",G_ndim);      
-    (*c)->P[VX] = (*c)->Ph[VX] = b->refval[VX] *min(1., 4-4.0*dist/jr);
-# endif //SOFTJET
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) {
+        (*c)->P[v] = (*c)->npt->P[v] *b->refval[v];
+      }
+    }
+  } // all cells.
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_DMACH(     boundary_data *b)
+{
+#ifdef TESTING
+  cout <<"Setting up DMACH boundary... starting.\n";
+#endif // TESTING
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_DMACH: empty boundary data",b->itype);
+  }
+  //
+  // Set reference value to be downstream values.
+  //
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, G_nvar);
+  }
+
+  b->refval[RO] = 1.4;
+  b->refval[PG] = 1.0;
+  b->refval[VX] = 0.0;
+  b->refval[VY] = 0.0;
+  b->refval[VZ] = 0.0;
+  for (int v=SimPM.ftr; v<G_nvar; v++) b->refval[v] = -1.0;
+
+  //
+  // Run through all boundary cells, and give them either upstream or
+  // downstream value, depending on their position.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  unsigned int ct=0;
+  double bpos = 0.0;
+  do {
+    //
+    // This is the boundary position:
+    //
+    bpos =  10.0*SimPM.simtime/sin(M_PI/3.0)
+          + 1.0/6.0
+          + CI.get_dpos(*bpt,YY)/tan(M_PI/3.0);
+
+    if (CI.get_dpos(*bpt,XX) <= bpos) {
+      (*bpt)->P[RO] = 8.0;
+      (*bpt)->P[PG] = 116.5;
+      (*bpt)->P[VX] = 7.14470958;
+      (*bpt)->P[VY] = -4.125;
+      (*bpt)->P[VZ] = 0.0;
+      for (int v=SimPM.ftr; v<G_nvar; v++) (*bpt)->P[v]  = 1.0;
+      (*bpt)->Ph[RO] = 8.0;
+      (*bpt)->Ph[PG] = 116.5;
+      (*bpt)->Ph[VX] = 7.14470958;
+      (*bpt)->Ph[VY] = -4.125;
+      (*bpt)->Ph[VZ] = 0.0;
+      for (int v=SimPM.ftr; v<G_nvar; v++) (*bpt)->Ph[v] = 1.0;
+    }
+    else {
+      for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = b->refval[v];
+      for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = b->refval[v];
+    }
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_: missed some cells!",ct-b->data.size());
+  }
+#ifdef TESTING
+  cout <<"Setting up DMACH boundary... finished.\n";
+#endif // TESTING
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_DMACH(
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
+{
+  double bpos = 0.0;
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    //
+    // This is the boundary position:
+    //
+    bpos =  10.0*SimPM.simtime/sin(M_PI/3.0)
+          + 1.0/6.0
+          + CI.get_dpos(*c,YY)/tan(M_PI/3.0);
+
+    if (CI.get_dpos(*c,XX) <= bpos) {
+      (*c)->Ph[RO] = 8.0;
+      (*c)->Ph[PG] = 116.5;
+      (*c)->Ph[VX] = 7.14470958;
+      (*c)->Ph[VY] = -4.125;
+      (*c)->Ph[VZ] = 0.0;
+      for (int v=SimPM.ftr; v<G_nvar; v++) (*c)->Ph[v] = 1.0;
+    }
+    else {
+      for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = b->refval[v];
+    }
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.0;
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+    }
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_DMACH2(    boundary_data *b) 
+{
+#ifdef TESTING
+  cout <<"Setting up DMACH2 boundary... starting.\n";
+#endif // TESTING
+
+  if (b->dir != NO) {
+    rep.error("DMACH2 not internal boundary!",b->dir);
+  }
+  cout <<"DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.\n";
+  if (b->refval) {
+    rep.error("Already initialised memory in DMACH2 boundary refval",
+              b->refval);
+  }
+  b->refval = mem.myalloc(b->refval, G_nvar);
+
+  b->refval[RO] = 8.0;
+  b->refval[PG] = 116.5;
+  b->refval[VX] = 7.14470958;
+  b->refval[VY] = -4.125;
+  b->refval[VZ] = 0.0;
+  for (int v=SimPM.ftr; v<G_nvar; v++) b->refval[v] = 1.0;
+
+  //
+  // Now have to go from first point onto boundary and across to
+  // x<=1/6
+  //
+  if (!b->data.empty()) {
+    rep.error("BC_assign_DMACH2: Not empty boundary data",b->itype);
+  }
+  cell *c = FirstPt();
+  cell *temp=0;
+  do {
+    //
+    // check if we are <1/6 in case we are in a parallel grid where
+    // the domain is outside the DMR region.  This saves having to
+    // rewrite the function in the parallel uniform grid.
+    //
+    if (CI.get_dpos(c,XX)<=1./6.) {
+      temp=c;
+      while ( (temp=NextPt(temp,YN)) !=0 ) {
+        for (int v=0;v<G_nvar;v++) temp->P[v]  = b->refval[v];
+        for (int v=0;v<G_nvar;v++) temp->Ph[v] = b->refval[v];
+        b->data.push_back(temp);
+        if (temp->isgd) {
+          rep.error("BC_assign_DMACH2: Looking for Boundary cells!",
+                    temp);
+        }
+      }
+    }
+  } while ( (c=NextPt(c,XP)) && (CI.get_dpos(c,XX)<=1./6.));
+
+#ifdef TESTING
+  cout <<"Setting up DMACH2 boundary... finished.\n";
+#endif // TESTING
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_DMACH2(
+      struct boundary_data *b,
+      const int,
+      const int
+      )
+{
+  //
+  // Fixed at all times, so no difference between full and half step.
+  //
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v]=0.;
+    for (int v=0;v<G_nvar;v++) (*c)->P[v]  = b->refval[v];
+    for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = b->refval[v];
   }    // all cells.   
-  //  if (SimPM.timestep%10==0)
-  //    BC_printBCdata(b);
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_RADSHOCK(  boundary_data *b)
+{
+  //
+  // Initial checks and memory allocation.
+  //
+  if (b->dir != NO) {
+    rep.error("RADSHOCK not internal boundary!",b->dir);
+  }
+  cout <<"Assigning data to RADSHOCK boundary at XN boundary.\n";
+  if (G_ndim !=2 && G_ndim !=1) {
+    rep.error("RADSHOCK must be 1d or 2d",G_ndim);
+  }
+  if (b->refval) {
+    rep.error("Already initialised RADSHOCK boundary refval",
+              b->refval);
+  }
+  b->refval = mem.myalloc(b->refval, G_nvar);
+  if (!b->data.empty()) {
+    rep.error("BC_assign_RADSHOCK: Not empty boundary data",b->itype);
+  }
+  cell *c=FirstPt();
+  for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
+
+  //
+  // Try assuming that outflow will be at approx 3000 K, and shock
+  // will have cooled (with a fudge factor for lower velocity).
+  // so rho_1 = (v/(5km/s))^2 rho_0, and
+  //    v_1   = v_0 /(v/(5km/s))^2
+  //
+  double ratio = c->P[VX]*c->P[VX]/25.0e10;
+  if (fabs(c->P[VX])<55.0e5) {
+    ratio *= 0.5*fabs(c->P[VX])/50.0e5;
+  }
+  // This boundary requires density to be M^2 times initial density.
+  b->refval[RO] = c->P[RO]*ratio;
+  // mass flux out of domain is same as into domain.
+  b->refval[VX] = c->P[VX]/ratio;
+  
+  int ct=0;
+  if (G_ndim==1) {
+    do {
+      c->P[RO] = c->Ph[RO] = min(c->P[RO], b->refval[RO]);
+      b->data.push_back(c);
+      ct++;
+    } while (CI.get_dpos((c=NextPt(c)),XX) <=
+             (G_xmin[XX] + (G_range[XX]*0.02)) );
+  }
+  else if (G_ndim==2) {
+    do {
+      b->data.push_back(c);
+      ct++;
+      c->P[RO]  = min(c->P[RO], b->refval[RO]);
+      c->Ph[RO] = c->P[RO];
+    } while ( (NextPt(c,YP)!=0) && (c=NextPt(c,YP))->isgd );
+    if (ct != G_ng[YY]) {
+      rep.error("Didn't get all cells in 2d RADSHOCK boundary",
+                ct-G_ng[YY]);
+    }
+  }
+  cout <<"*** Added "<<ct<<" cells to RADSHOCK internal boundary.\n";
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_RADSHOCK(   struct boundary_data *b,
+               const int cstep,
+               const int maxstep
+               )
+{
+  //
+  // We set the density adjacent to the wall to the minimum of 
+  // the current density and some reference density.
+  //
+  list<cell*>::iterator c=b->data.begin();
+  //double temp=0.0;
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    //temp = (*c)->Ph[RO];
+    (*c)->Ph[RO] = min((*c)->Ph[RO], b->refval[RO]);
+    (*c)->Ph[VX] = max((*c)->Ph[VX], b->refval[VX]);
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+    }
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_RADSH2(     boundary_data *b)
+{
+  //
+  // Initial checks and memory allocation.
+  //
+  if (b->dir != NO) {
+    rep.error("RADSH2 not external boundary!",b->dir);
+  }
+  cout <<"Assigning data to RADSH2 boundary at XN boundary.\n";
+  if (G_ndim !=2 && G_ndim !=1) {
+    rep.error("RADSH2 must be 1d or 2d",G_ndim);
+  }
+  if (b->refval) {
+    rep.error("Already initialised memory in RADSH2 boundary refval",
+              b->refval);
+  }
+  b->refval = mem.myalloc(b->refval, G_nvar);
+  if (!b->data.empty()) {
+    rep.error("BC_assign_RADSH2: Not empty boundary data",b->itype);
+  }
+  cell *c=FirstPt();
+  for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
+  //
+  // Temp is the last point in the XP dir that is on-grid; we get the
+  // inflow velocity for this, to match the mass outflow rate.
+  //
+  cell *temp =c;
+  do {temp=NextPt(temp,XP);} while (NextPt(temp,XP)->isgd);
+  cout <<"endpoint: "<<temp->P[VX]<<"  firstpt: "<<c->P[VX]<<"  ";
+  b->refval[VX] = temp->P[VX]*temp->P[RO]/c->P[RO];
+  cout <<"Refval[VX] = "<< b->refval[VX] <<"\n";
+  
+  int ct=0;
+  if (G_ndim==1) {
+    //
+    // In 1D we just add a few cells near the XN border to the
+    // boundary.  We move to G_xmax[XX]/128. and work backwards to
+    // the XN edge of the grid, adding cells as we go.
+    //
+    temp=c; 
+    while (CI.get_dpos(NextPt(temp),XX) <= G_xmax[XX]/128.)
+      temp=NextPt(temp);
+    do {
+      // XN boundary, and want to limit outflow speed.
+      temp->P[VX]  = b->refval[VX];
+      temp->Ph[VX] = b->refval[VX];
+      b->data.push_back(temp);
+      ct++;
+    } while ( (temp=NextPt(temp,XN)) !=0);
+  }
+  else if (G_ndim==2) {
+    //
+    // In 2D we do the same, but for each X-row.
+    //
+    do {
+      while (CI.get_dpos(NextPt(c,XP),XX) <=
+             (G_xmax[XX]-G_xmin[XX])/128.    ) {
+        c=NextPt(c,XP);
+      }
+      temp=c;
+      do {
+        b->data.push_back(temp);
+        ct++;
+        temp->P[VX] =  b->refval[VX];
+        temp->Ph[VX] = temp->P[VX];
+      } while ( (temp = NextPt(temp,XN)) !=0);
+    } while ( (NextPt(c,YP)!=0) && (c=NextPt(c,YP))->isgd );
+  }
+  cout <<"*** Added "<<ct<<" cells to RADSH2 internal boundary.\n";
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_RADSH2(   struct boundary_data *b,
+             const int cstep,
+             const int maxstep
+             )
+{
+  //
+  // We set the velocity at the boundary to be the initial outflow
+  // value.
+  //
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    (*c)->Ph[VX] = b->refval[VX];
+    if (cstep==maxstep)
+      (*c)->P[VX] = (*c)->Ph[VX];
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+//
+// Add internal stellar wind boundaries -- these are (possibly
+// time-varying) winds defined by a mass-loss-rate and a terminal
+// velocity.  A region within the domain is given fixed values
+// corresponding to a freely expanding wind from a
+// cell-vertex-located source.
+//
+int UniformGrid::BC_assign_STWIND(boundary_data *b)
+{
+  //
+  // Check that we have an internal boundary struct, and that we have
+  // a stellar wind source to set up.
+  //
+  if (b->dir != NO)
+    rep.error("STWIND not external boundary!",b->dir);
+#ifdef TESTING
+  cout <<"Assigning data to STWIND boundary. Nsrc=";
+  cout <<SWP.Nsources<<"\n";
+#endif
+  if (SWP.Nsources<1) {
+    rep.error("UniformGrid::BC_assign_STWIND() No Wind Sources!",
+              SWP.Nsources);
+  }
+
+  //
+  // Setup reference state vector and initialise to zero.
+  //
+  if (b->refval) {
+    rep.error("Already initialised memory in STWIND boundary refval",
+        b->refval);
+  }
+  b->refval = mem.myalloc(b->refval, G_nvar);
+  if (!b->data.empty()) {
+    rep.error("BC_assign_STWIND: Not empty boundary data",b->itype);
+  }
+  for (int v=0;v<G_nvar;v++) b->refval[v]=0.0;
+
+  //
+  // New structure: we need to initialise the stellar wind class with
+  // all of the wind sources in the global parameter list (this was
+  // formerly done in DataIOBase::read_simulation_parameters()).
+  //
+  // The type of class we set up is determined first.  If any of the 
+  // wind sources have type==3==evolving, we set up stellar_wind_evolving(),
+  // otherwise we set up stellar_wind().
+  //
+  int err=0;
+  int Ns = SWP.Nsources;
+  for (int isw=0; isw<Ns; isw++) {
+    if (SWP.params[isw]->type ==3) err+=1;
+  }
+  Wind = 0;
+  if (Ns>0) {
+    cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
+    if (!err) {
+      Wind = new stellar_wind ();
+    }
+    else {
+      Wind = new stellar_wind_evolution();
+      err=0;
+    }
+  }
+
+  //
+  // Run through sources and add sources.
+  //
+  for (int isw=0; isw<Ns; isw++) {
+    cout <<"\tUniGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
+    if (SWP.params[isw]->type==3) {
+      err = Wind->add_evolving_source(
+        SWP.params[isw]->dpos,
+        SWP.params[isw]->radius,
+        SWP.params[isw]->type,
+        SWP.params[isw]->Rstar,
+        SWP.params[isw]->tr,
+        SWP.params[isw]->evolving_wind_file,
+        SWP.params[isw]->time_offset,
+        SimPM.simtime,
+        SWP.params[isw]->update_freq,
+        SWP.params[isw]->t_scalefactor
+        );
+    }
+    else {
+      err = Wind->add_source(
+        SWP.params[isw]->dpos,
+        SWP.params[isw]->radius,
+        SWP.params[isw]->type,
+        SWP.params[isw]->Mdot,
+        SWP.params[isw]->Vinf,
+        SWP.params[isw]->Tstar,
+        SWP.params[isw]->Rstar,
+        SWP.params[isw]->tr
+        );
+    }
+    if (err) rep.error("Error adding wind source",isw);
+  }
+
+  //
+  // loop over sources, adding cells to boundary data list in order.
+  //
+  for (int id=0;id<Ns;id++) {
+    cout <<"\tUniGrid::BC_assign_STWIND: Adding cells to source ";
+    cout <<id<<"\n";
+    BC_assign_STWIND_add_cells2src(id,b);
+  }
+  //
+  // Now we should have set everything up, so we assign the boundary
+  // cells with their boundary values.
+  //
+  err += BC_update_STWIND(b,0,0);
+  cout <<"\tFinished setting up wind parameters\n";
+  cout <<"------ DONE SETTING UP STELLAR WIND CLASS ----------\n\n";
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_STWIND_add_cells2src(
+        const int id, ///< source id
+        struct boundary_data *b
+        )
+{
+  //
+  // this is for cartesian geometry, with cubic cells, so things are
+  // quite simple.  We run through each cell, and if it is within the 
+  // source's radius of influence, then we add it to the lists.
+  //
+  int err=0;
+  int ncell=0;
+  double srcpos[MAX_DIM];
+  Wind->get_src_posn(id,srcpos);
+  double srcrad;
+  Wind->get_src_drad(id,&srcrad);
+#ifdef TESTING
+  cout <<"*** srcrad="<<srcrad<<"\n";
+  rep.printVec("src", srcpos, G_ndim);
+#endif
+
+  cell *c = FirstPt();
+  do {
+    //
+    // GEOMETRY: This is to the centre-of-volume of cell.
+    // It makes no difference for Cartesian grids b/c the centre-of-
+    // volume coincides the midpoint.
+    //
+    if (distance_vertex2cell(srcpos,c) <= srcrad) {
+      ncell++;
+      err += Wind->add_cell(this, id,c);
+      //cout <<"CART: adding cell "<<c->id<<" to list. d=";
+      //rep.printVec("src", srcpos, G_ndim);
+      //rep.printVec("pos", c->pos, G_ndim);
+    }
+  } while ((c=NextPt(c))!=0);
+  
+  err += Wind->set_num_cells(id,ncell);
+//#ifdef TESTING
+  cout <<"UniformGrid: Added "<<ncell;
+  cout <<" cells to wind boundary for WS "<<id<<"\n";
+//#endif
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+//
+// Update internal stellar wind boundaries -- these are (possibly
+// time-varying) winds defined by a mass-loss-rate and a terminal
+// velocity.  If fixed in time the wind is updated with b->refval,
+// otherwise with a (slower) call to the  stellar wind class SW
+//
+int UniformGrid::BC_update_STWIND(
+        boundary_data *b, ///< Boundary to update.
+        const int ,  ///< current fractional step being taken.
+        const int    ///< final step (not needed b/c fixed BC).
+        )
+{
+  //
+  // The stellar_wind class already has a list of cells to update
+  // for each source, together with pre-calculated state vectors,
+  // so we just call the set_cell_values() function.
+  //
+  int err=0;
+  for (int id=0;id<Wind->Nsources();id++) {
+    //cout <<" updating source "<<id<<"\n";
+    err += Wind->set_cell_values(this, id,SimPM.simtime);
+    //cout <<" finished source "<<id<<"\n";
+  }
+
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
+{
+  //
+  // First set up outflow boundaries.
+  //
+  int err=BC_assign_OUTFLOW(b);
+  if (err) rep.error("BC_assign_STARBENCH1 error in OUTFLOW",err);
+
+  //
+  // Now do some checks, and then set the column density in the 
+  // cells that we want to shadow.
+  //
+  if (b->dir != XN) rep.error("RADSH2 not XN boundary!",b->dir);
+  if (b->data.empty()) {
+    rep.error("BC_assign_STARBENCH1: empty boundary data",b->itype);
+  }
+
+  //
+  // Set the column density (in g/cm2) to some large values in the
+  // range 1.4pc<y<2.6pc, and to zero for the others.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  unsigned int ct=0;
+  double dpos[G_ndim];
+  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
+  do{
+    //
+    // Set cell optical depth to be something big in the 
+    // relevant region for the first radiation source.
+    //
+    CI.get_dpos((*bpt),dpos);
+    if (dpos[YY]>4.3204e18 &&
+        dpos[YY]<8.0235e18 &&
+        dpos[XX]<Sim_xmin[XX]+G_dx) {
+      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
+      for (int s=0; s<SimPM.RS.Nsources; s++) {
+        CI.set_col((*bpt), s, &column);
+      }
+    }
+    else {
+      column = 0.00; // zero optical depth outside the barrier
+      for (int s=0; s<SimPM.RS.Nsources; s++) {
+        CI.set_col((*bpt), s, &column);
+      }
+    }
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_STARBENCH1: missed some cells!",
+              ct-b->data.size());
+  }
+  
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_update_STARBENCH1(
+        struct boundary_data *b,
+        const int cstep,
+        const int maxstep
+        )
+{
+  //
+  // Outflow or Absorbing BCs; boundary cells are same as edge cells.
+  // This is zeroth order outflow bcs.
+  //
+  // For the one-way boundary we set the normal velocity to be zero
+  // if the flow wants to be onto the domain.
+  //
+
+  //
+  // First get the normal velocity component, and whether the offdir
+  // is positive or negative.
+  //
+  enum direction offdir = b->dir;
+  enum primitive Vnorm = RO;
+  int norm_sign = 0;
+  switch (offdir) {
+  case XN: case XP:
+    Vnorm = VX;
+    break;
+  case YN: case YP:
+    Vnorm = VY;
+    break;
+  case ZN: case ZP:
+    Vnorm = VZ;
+    break;
+  default:
+    rep.error("bad dir",offdir);
+  }
+  if (Vnorm == RO) {
+    rep.error("Failed to set normal velocity component",Vnorm);
+  }
+
+  switch (offdir) {
+  case XN: case YN: case ZN:
+    norm_sign = -1; break;
+  case XP: case YP: case ZP:
+    norm_sign =  1; break;
+  default:
+    rep.error("bad dir",offdir);
+  }
+
+  //
+  // Now run through all cells in the boundary
+  //
+  double dpos[G_ndim];
+  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
+  list<cell*>::iterator c=b->data.begin();
+
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    //
+    //exactly same routine as for periodic and zero-gradient.
+    //
+    for (int v=0;v<G_nvar;v++) {
+      (*c)->Ph[v] = (*c)->npt->Ph[v];
+      (*c)->dU[v] = 0.;
+    }
+    //
+    // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
+    //
+    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                    (*c)->Ph[Vnorm]*norm_sign);
+
+
+    //
+    // Set cell optical depth to be something big in the 
+    // relevant region for the first radiation source.
+    //
+    CI.get_dpos((*c),dpos);
+    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
+      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
+      for (int s=0; s<SimPM.RS.Nsources; s++)
+        CI.set_col((*c), s, &column);
+    }
+    else {
+      column = 0.00; // zero optical depth outside the barrier
+      for (int s=0; s<SimPM.RS.Nsources; s++)
+        CI.set_col((*c), s, &column);
+    }
+
+
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->npt->P[v];
+      //
+      // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
+      //
+      if (cstep==maxstep) {
+        (*c)->P[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
+                                        (*c)->P[Vnorm]*norm_sign);
+      }
+    }
+
+#ifdef GLM_ZERO_BOUNDARY
+    if (G_eqntype==EQGLM) {
+      (*c)->P[SI]  = 0.0;
+      (*c)->Ph[SI] = 0.0;
+    }
+#endif // GLM_ZERO_BOUNDARY
+#ifdef GLM_NEGATIVE_BOUNDARY
+    if (G_eqntype==EQGLM) {
+
+      if      ((*c)->isedge == -1) {
+        (*c)->P[SI]  = -(*c)->npt->P[SI];
+        (*c)->Ph[SI] = -(*c)->npt->Ph[SI];
+      }
+      else if ((*c)->isedge == -2) {
+        (*c)->P[SI]  = -NextPt(((*c)->npt),b->ondir)->P[SI];
+        (*c)->Ph[SI] = -NextPt(((*c)->npt),b->ondir)->Ph[SI];
+      }
+      else {
+        rep.error("only know 1st/2nd order bcs",(*c)->id);
+      }
+    }
+#endif // GLM_NEGATIVE_BOUNDARY
+
+  } // all cells.
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_printBCdata(boundary_data *b)
+{
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {  
+    CI.print_cell(*c);
+  }
   return 0;
 }
 

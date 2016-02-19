@@ -507,6 +507,13 @@ int sim_control_fixedgrid::Init(
   cout <<"------------------------------------------------------------\n";
 #endif // SERIAL
   
+#ifdef TESTING
+  cell *c = (*grid)->FirstPt_All();
+  do {
+    CI.print_cell(c);
+  } while ( (c=(*grid)->NextPt_All(c)) !=0 );
+#endif // TESTING
+  
   return(0);
 }
 

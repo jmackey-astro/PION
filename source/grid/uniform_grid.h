@@ -50,6 +50,8 @@
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2016.02.12 JM: included static_grid.h modifications, worked on
 ///    new grid structure.
+/// - 2016.02.19 JM: new grid structure finished, compiles and runs
+///    the DMR test.
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
