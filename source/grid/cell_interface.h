@@ -93,7 +93,12 @@ class cell {
   double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
  public:
   long int id;      ///< Grid point's id.
-  int isedge;  ///< Integer specifying if it is an edge cell, and if so, which edge.
+  ///
+  /// isedge: Integer specifying if it is an edge cell, and if so,
+  /// which edge.  For boundary cells, this has a negative value,
+  /// specifying how many cells from the edge they are.
+  ///
+  int isedge;
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
 
