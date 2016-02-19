@@ -875,7 +875,6 @@ int UniformGrid::SetupBCs(
   // adds the boundary cells to boundary data.
   //
   class cell *c, *cy, *cz;
-  int err=0;
 
   // ----------------------------------------------------------------
   //
@@ -1040,9 +1039,8 @@ int UniformGrid::SetupBCs(
   // ----------------------------------------------------------------
 
 
-  }
   // ----------------------------------------------------------------
-
+  int err=0;
   //
   // Loop through all boundaries, and assign data to them.
   //
@@ -1345,13 +1343,13 @@ int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
         //
         // we have a positive boundary, so an on-grid cell has x<bloc
         //
-        if ( temp->pos[baxis] < b->bloc ) on_grid=true;
+        if ( temp->pos[b->baxis] < b->bloc ) on_grid=true;
       }
       else {
         //
         // negative boundary, so on-grid means x>bloc
         //
-        if ( temp->pos[baxis] > b->bloc ) on_grid=true;
+        if ( temp->pos[b->baxis] > b->bloc ) on_grid=true;
       }
     } while (temp!=0 && on_grid==false);
 
@@ -1359,7 +1357,7 @@ int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
     // So now temp exists and is "on-grid".  We need (later) to know
     // how far from the grid the cell is, so we test for this here.
     //
-    int dist = abs( (*bpt)->pos[baxis] - temp->pos[baxis] ); 
+    int dist = abs( (*bpt)->pos[b->baxis] - temp->pos[b->baxis] ); 
 
 
     for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
@@ -1461,13 +1459,13 @@ int UniformGrid::BC_assign_INFLOW(    boundary_data *b)
         //
         // we have a positive boundary, so an on-grid cell has x<bloc
         //
-        if ( temp->pos[baxis] < b->bloc ) on_grid=true;
+        if ( temp->pos[b->baxis] < b->bloc ) on_grid=true;
       }
       else {
         //
         // negative boundary, so on-grid means x>bloc
         //
-        if ( temp->pos[baxis] > b->bloc ) on_grid=true;
+        if ( temp->pos[b->baxis] > b->bloc ) on_grid=true;
       }
     } while (temp!=0 && on_grid==false);
 
@@ -2496,18 +2494,23 @@ int UniformGrid::BC_update_OUTFLOW(
   // This is zeroth order outflow bcs.
   //
   list<cell*>::iterator c=b->data.begin();
+  cell *gc;
 
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    //
+    // gc is the on-grid cell.
+    //
+    gc = (*c)->npt;
     //
     //exactly same routine as for periodic.
     //
     for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v];
+      (*c)->Ph[v] = gc->Ph[v];
       (*c)->dU[v] = 0.;
     }
     if (cstep==maxstep) {
       for (int v=0;v<G_nvar;v++) {
-        (*c)->P[v] = (*c)->npt->P[v];
+        (*c)->P[v] = gc->P[v];
       }
     }
     
@@ -2525,15 +2528,15 @@ int UniformGrid::BC_update_OUTFLOW(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (G_eqntype==EQGLM) {
 
-      if (abs((*bpt)->pos[baxis] - temp->pos[baxis]) ==
+      if (abs((*c)->pos[b->baxis] - gc->pos[b->baxis]) ==
           CI.get_integer_cell_size()) {
-        (*c)->P[SI]  = -(*c)->npt->P[SI];
-        (*c)->Ph[SI] = -(*c)->npt->Ph[SI];
+        (*c)->P[SI]  = -gc->P[SI];
+        (*c)->Ph[SI] = -gc->Ph[SI];
       }
-      else if (abs((*bpt)->pos[baxis] - temp->pos[baxis]) ==
+      else if (abs((*c)->pos[b->baxis] - gc->pos[b->baxis]) ==
           2*CI.get_integer_cell_size()) {
-        (*c)->P[SI]  = -NextPt(((*c)->npt),ondir)->P[SI];
-        (*c)->Ph[SI] = -NextPt(((*c)->npt),ondir)->Ph[SI];
+        (*c)->P[SI]  = -NextPt(gc,ondir)->P[SI];
+        (*c)->Ph[SI] = -NextPt(gc,ondir)->Ph[SI];
       }
       else {
         rep.error("only know 1st/2nd order bcs",(*c)->id);
@@ -2628,12 +2631,12 @@ int UniformGrid::BC_update_ONEWAY_OUT(
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (G_eqntype==EQGLM) {
 
-      if (abs((*bpt)->pos[baxis] - temp->pos[baxis]) ==
+      if (abs((*bpt)->pos[b->baxis] - temp->pos[b->baxis]) ==
           CI.get_integer_cell_size()) {
         (*c)->P[SI]  = -(*c)->npt->P[SI];
         (*c)->Ph[SI] = -(*c)->npt->Ph[SI];
       }
-      else if (abs((*bpt)->pos[baxis] - temp->pos[baxis]) ==
+      else if (abs((*bpt)->pos[b->baxis] - temp->pos[b->baxis]) ==
           2*CI.get_integer_cell_size()) {
         (*c)->P[SI]  = -NextPt(((*c)->npt),ondir)->P[SI];
         (*c)->Ph[SI] = -NextPt(((*c)->npt),ondir)->Ph[SI];
