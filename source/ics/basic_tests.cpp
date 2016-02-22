@@ -15,6 +15,7 @@
 ///    expansion velocity, for modelling winds).
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.08.05 JM: Added pion_flt datatype.
+/// - 2016.02.22 JM: Updated Field Loop test to use new grid.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -289,7 +290,8 @@ int IC_basic_tests::setup_uniformgrid(
     }
   } while ( (cpt=ggg->NextPt(cpt))!=NULL);
   //  cpt = ggg->FirstPt();
-  //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  ( (cpt=ggg->NextPt(cpt))!=NULL);
+  //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;}
+  // while  ( (cpt=ggg->NextPt(cpt))!=NULL);
   cout <<"\t\tGot through data successfully.\n";
   return(0);
 }
@@ -542,9 +544,15 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   cout <<"\t\thttp://www.astro.princeton.edu/~jstone/tests/field-loop/Field-loop.html\n";
   cout <<"\tAlso see http://www.dias.ie/~fdc/MHDCodeComp/adv.html\n";
   int ndim=SimPM.ndim;
-  if(ndim!=2) rep.error("Bad ndim in setup_FieldLoop",ndim);
-  if(SimPM.eqntype!=EQMHD && SimPM.eqntype!=EQGLM && SimPM.eqntype!=EQFCD)
-    rep.error("Advection of Field Loop must be mhd! bad eqntype",SimPM.eqntype);
+  if (ndim!=2) {
+    rep.error("Bad ndim in setup_FieldLoop",ndim);
+  }
+  if (SimPM.eqntype!=EQMHD &&
+      SimPM.eqntype!=EQGLM &&
+      SimPM.eqntype!=EQFCD) {
+    rep.error("Advection of Field Loop must be mhd! bad eqntype",
+              SimPM.eqntype);
+  }
   SimPM.gamma = 5./3.; // just to make sure.
   SimPM.typeofbc = "XNper_XPper_YNper_YPper_";
   cout <<"\tMake sure x=[-1,1] and y=[-0.5,0.5]\n";
@@ -575,6 +583,10 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
     c->P[VZ] = vz; // If vz!=0, this tests if B_z gets contaminated.
     CI.get_dpos(c,dpos);
     dist = gg->distance(centre,dpos);
+    
+    //cout <<"cell id="<<c->id<<",  dist="<<dist;
+    //cout <<",  radius="<< radius<<",  ";
+    //rep.printVec("dpos",dpos,ndim);
 
     //
     // poor man's b-field (has divB errors)
@@ -595,8 +607,13 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
     //
     // vector potential...
     //
-    if (dist<radius) c->Ph[BZ]=A_max*(radius-dist);
-    else             c->Ph[BZ]=0.0;
+    if (dist<radius) {
+      c->Ph[BZ]=A_max*(radius-dist);
+      //cout <<"setting A(z)="<<c->Ph[BZ]<<"\n";
+    }
+    else             {
+      c->Ph[BZ]=0.0;
+    }
     c->Ph[BX]=c->Ph[BY]=0.0;
   } while ( (c=gg->NextPt(c))!=0);
   cout <<"Got through data successfully.\n";
@@ -610,6 +627,13 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   class VectorOps_Cart *vec = new VectorOps_Cart (ndim,gg->DX());
   c = gg->FirstPt();
   do {
+
+    //if (!pconst.equalD(c->Ph[BZ],0.0)) {
+    //  cout <<"A(z) = "<<c->Ph[BZ]<<"  ";
+    //  rep.printVec("ans",ans,3);
+    //  CI.print_cell(c);
+    //}
+
     if (!c->isedge) {
       vec->Curl(c,1,els,gg, ans);
       c->P[BX] = ans[0];

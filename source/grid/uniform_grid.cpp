@@ -90,6 +90,7 @@
 ///    renamed to uniform_grid.cpp, worked on new grid structure.
 /// - 2016.02.19 JM: new grid structure finished, compiles and runs
 ///    the DMR test.
+/// - 2016.02.22 JM: bugfixes for periodic boundaries.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -375,7 +376,7 @@ int UniformGrid::assign_grid_structure()
   class cell *c = FirstPt_All();
   do {
 #ifdef TESTING
-    cout <<"Cell positions: id = "<<c->id<<"\n";
+    //cout <<"Cell positions: id = "<<c->id<<"\n";
 #endif // TESTING
 
     //
@@ -387,7 +388,7 @@ int UniformGrid::assign_grid_structure()
     for (int i=0; i<G_ndim; i++) ipos[i] = offset[i] + 2*ix[i];
     CI.set_pos(c,ipos);
 #ifdef TESTING
-    rep.printVec("    pos", c->pos, G_ndim);
+    //rep.printVec("    pos", c->pos, G_ndim);
 #endif // TESTING
 
     //
@@ -407,8 +408,8 @@ int UniformGrid::assign_grid_structure()
       if (dpos[v]<G_xmin[v] || dpos[v]>G_xmax[v])
         on_grid=false;
 #ifdef TESTING
-    rep.printVec("    dpos",dpos,G_ndim);
-    rep.printVec("    xmax",G_xmax,G_ndim);
+    //rep.printVec("    dpos",dpos,G_ndim);
+    //rep.printVec("    xmax",G_xmax,G_ndim);
 #endif // TESTING
 
 
@@ -417,14 +418,14 @@ int UniformGrid::assign_grid_structure()
       c->isgd = true;
       c->isbd = false;
 #ifdef TESTING
-      cout <<"    cell is on grid";
+      //cout <<"    cell is on grid";
 #endif // TESTING
     }
     else {
       c->isgd = false;
       c->isbd = true;
 #ifdef TESTING
-      cout <<"    cell NOT on grid";
+      //cout <<"    cell NOT on grid";
 #endif // TESTING
     }
 
@@ -461,12 +462,32 @@ int UniformGrid::assign_grid_structure()
     // Boundary values for isedge:  if the cell is off-grid, then set
     // isedge to equal the number of cells it is from the grid.
     //
-    if      (ix[XX]<0)         c->isedge = ix[XX];
-    else if (ix[XX]>=G_ng[XX]) c->isedge = G_ng[XX]-1-ix[XX];
-    if      (ix[YY]<0)         c->isedge = ix[YY];
-    else if (ix[YY]>=G_ng[YY]) c->isedge = G_ng[YY]-1-ix[YY];
-    if      (ix[ZZ]<0)         c->isedge = ix[ZZ];
-    else if (ix[ZZ]>=G_ng[ZZ]) c->isedge = G_ng[ZZ]-1-ix[ZZ];
+    if      (ix[XX]<0)         {
+      c->isedge = ix[XX];
+      //cout <<"ix[x]="<<ix[XX]<<", ";
+      //rep.printVec("pos",c->pos,G_ndim);
+    }
+    else if (ix[XX]>=G_ng[XX]) {
+      c->isedge = G_ng[XX]-1-ix[XX];
+      //cout <<"ix[x]="<<ix[XX]<<", ";
+      //rep.printVec("pos",c->pos,G_ndim);
+    }
+    if (G_ndim>1) {
+      if      (ix[YY]<0)         {
+        c->isedge = ix[YY];
+        //cout <<"ix[y]="<<ix[YY]<<", ";
+        //rep.printVec("pos",c->pos,G_ndim);
+      }
+      else if (ix[YY]>=G_ng[YY]) {
+        c->isedge = G_ng[YY]-1-ix[YY];
+        //cout <<"ix[y]="<<ix[YY]<<", ";
+        //rep.printVec("pos",c->pos,G_ndim);
+      }
+    }
+    if (G_ndim>2) {
+      if      (ix[ZZ]<0)         c->isedge = ix[ZZ];
+      else if (ix[ZZ]>=G_ng[ZZ]) c->isedge = G_ng[ZZ]-1-ix[ZZ];
+    }
 
     
     //
@@ -915,7 +936,7 @@ int UniformGrid::SetupBCs(
       if (!c) rep.error("Got lost on grid! XN",cy->id);
       for (int v=0; v<BC_nbc; v++) {
         BC_bd[XN].data.push_back(c);
-        cout << " Adding cell "<<c->id<<" to XN boundary.\n";
+        //cout << " Adding cell "<<c->id<<" to XN boundary.\n";
         c = NextPt(c, XP);
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
@@ -947,7 +968,7 @@ int UniformGrid::SetupBCs(
           rep.error("Got lost on grid! XP",cy->id);
         }
         BC_bd[XP].data.push_back(c);
-        cout << " Adding cell "<<c->id<<" to XP boundary.\n";
+        //cout << " Adding cell "<<c->id<<" to XP boundary.\n";
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
@@ -984,7 +1005,7 @@ int UniformGrid::SetupBCs(
       //
       do {
         BC_bd[YN].data.push_back(cy);
-        cout << " Adding cell "<<cy->id<<" to YN boundary.\n";
+        //cout << " Adding cell "<<cy->id<<" to YN boundary.\n";
         cy = NextPt_All(cy);
       } while (cy->pos[YY] < G_xmin[YY]);
 
@@ -1016,7 +1037,7 @@ int UniformGrid::SetupBCs(
       //
       do {
         BC_bd[YP].data.push_back(cy);
-        cout << " Adding cell "<<cy->id<<" to YP boundary.\n";
+        //cout << " Adding cell "<<cy->id<<" to YP boundary.\n";
         cy = NextPt_All(cy);
       } while (cy !=0 && cy->pos[YY] > G_xmax[YY]);
       
@@ -1354,7 +1375,6 @@ int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
 
 int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
 {
-  enum direction offdir = b->dir;
   enum direction ondir  = b->ondir;
 
   if (b->data.empty())
@@ -1363,29 +1383,17 @@ int UniformGrid::BC_assign_PERIODIC(  boundary_data *b)
   list<cell*>::iterator bpt=b->data.begin();
   cell *temp; unsigned int ct=0;
   do{
+    //
+    // Go across the grid NG[baxis] cells, so that we map onto the
+    // cell on the other side of the grid.
+    //
     temp=(*bpt);
-    while (NextPt(temp,ondir) && NextPt(temp,ondir)->isgd)
+    for (int v=0; v<G_ng[b->baxis]; v++) {
       temp=NextPt(temp,ondir);
-
-    if(!temp->isgd)
-      rep.error("BC_assign_PERIODIC: Got lost assigning periodic BCs",
-                temp->id);
-    //
-    // Now temp is last grid point before the opposite boundary.
-    // If *bpt is in the first row of boundary cells, then this is
-    // its partner cell, if the second row then we need to move back
-    // one cell.  We check this using the isedge flag, which for
-    // boundary cells is set to the number of cells from the edge.
-    //
-    // If nbc==2, then we have two pointers to two sheets of cells,
-    // otherwise only one and it is simpler.
-    // get to the correct cell on the opposite side of the grid.
-    //
-    for (int v=-1; v>(*bpt)->isedge; v--) {
-      temp = NextPt(temp,offdir);
     }
     for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
     for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    for (int v=0;v<G_nvar;v++) (*bpt)->dU[v] = 0.0;
     (*bpt)->npt = temp;
     //
     // increment counters.
