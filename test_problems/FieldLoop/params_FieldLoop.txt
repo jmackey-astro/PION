@@ -1,12 +1,10 @@
 # parameter file for Initial Condition Generation.
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 2
-# Type of Equations to Solve {hd/euler, mhd, glm-mhd...}
 eqn glm-mhd
-# Type of coordinates: cartesian, cylindrical are options.
 coordinates cartesian
+solver RS_Roe
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
@@ -21,6 +19,12 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 0
+EP_MP_timestep_limit 0
+EP_Min_Temperature 0
+EP_Max_Temperature 1.0e99
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   0.0
+EP_Metal_MassFrac    0.0
 
 # IC filename
 ICfilename IC_FieldLoop200
@@ -90,6 +94,9 @@ rhoval 1.0
 lenval 1.0
 velval 1.0
 magval 1.0
+
+RT_Nsources 0
+WIND_NSRC   0
 
 # Reference Vector
 refvec0 1.0
