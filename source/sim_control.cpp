@@ -1521,7 +1521,7 @@ int sim_control_fixedgrid::Time_Int(
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
-    calculate_magnetic_pressure();
+    calculate_magnetic_pressure(grid);
 #elif defined (BLAST_WAVE_CHECK)
     calculate_blastwave_radius();
 #endif

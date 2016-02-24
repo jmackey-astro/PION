@@ -13,83 +13,44 @@
 # -2010.12.06 JM: Added Field Loop test problem.
 # -2012.07.06 JM: Modified to work in branches.
 
-#cd ../../
 BASE_DIR=`pwd`
-#cd -
 code_dir=${BASE_DIR}/../bin_serial
 test_dir=${BASE_DIR}
 src_dir=${BASE_DIR}/../source
 
 
-#####################################################################
-########################## TEMPORARY STUFF ##########################
-#####################################################################
 
-
-# If the code is on a network drive, code may run faster with data_dir
-# set to a local disk.
 DATE=`date +%Y-%m-%d`
+
+# aibn129 settings.
 data_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests/tests_$DATE
-mkdir $data_dir
-
-# cmp_dir doesn't do anything yet.  It will contain some results from
-# standard problems to compare the current tests to.
-cmp_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests
-#cmp_dir=${BASE_DIR}/trunk/test_results/ref
-
-#visit_cmd=/vol/aibn129/aibn129_1/jmackey/extra_libraries/visit_bin/bin/visit
-visit_cmd=/vol/software/software/tools/visit/bin/visit
-#---------------------------------------------------------------------
-#---------------------------------------------------------------------
-# Test Problem:
-#
-#
-# Overstable Shock 'Test'
-#
-cd ${test_dir}/test_OverstableShock
-./run_RSH_tests.sh $test_dir $code_dir $data_dir
-#
-# Test Problem:
-#---------------------------------------------------------------------
-#---------------------------------------------------------------------
-
-exit
-#####################################################################
-########################## TEMPORARY STUFF ##########################
-#####################################################################
-
-
-# If the code is on a network drive, code may run faster with data_dir
-# set to a local disk.
-DATE=`date +%Y-%m-%d`
-data_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests/tests_$DATE
-mkdir $data_dir
-
-# cmp_dir doesn't do anything yet.  It will contain some results from
-# standard problems to compare the current tests to.
-cmp_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests
-#cmp_dir=${BASE_DIR}/trunk/test_results/ref
-
 #visit_cmd=/vol/aibn129/aibn129_1/jmackey/extra_libraries/visit_bin/bin/visit
 visit_cmd=/vol/software/software/tools/visit/bin/visit
 
+# OS-X settings.
+data_dir=/Users/jm/Documents/CODE/pion_dev/test_problems/data_$DATE
+visit_cmd=/Applications/VisIt.app/Contents/MacOS/VisIt
+
+mkdir -p $data_dir
 
 
-sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
+
+
+sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
 ${src_dir}/defines/testing_flags.h
-sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
+sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
 ${src_dir}/defines/testing_flags.h
-sed -i -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
+sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
 ${src_dir}/defines/functionality_flags.h
-sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
+sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
 ${src_dir}/defines/testing_flags.h
 #
 # Check we can compile the code
 #
 cd $code_dir
 echo "MAKE IN" $code_dir
-./compile_code.sh
-if [ ! -f ../bin/main_serial ] || [ ! -f ../bin/icgen_serial ]
+#bash ./compile_code.sh
+if [ ! -f ../pion_serial ] || [ ! -f ../icgen_serial ]
 then
   echo "Cannot compile code"
   exit
@@ -99,31 +60,47 @@ fi
 
 
 
-
-
-
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 # Field Loop test
 #
 echo "*************** FIELD LOOP TEST 2D MHD ***************"
-cd ${test_dir}/test_FieldLoop/
+cd ${test_dir}/FieldLoop/
 # We set a flag so that the code outputs the magnetic pressure on the
 # full domain as a function of time.
-sed -i -e "s|//#define CHECK_MAGP|#define CHECK_MAGP|g" ${src_dir}/defines/testing_flags.h
+sed -i -e "s|//#define CHECK_MAGP|#define CHECK_MAGP|g" \
+  ${src_dir}/defines/testing_flags.h
 #
 # Now run the tests:
 #
-./run_FL_test.sh $test_dir $code_dir $data_dir $visit_cmd
+./run_FL_test.sh ${test_dir}/FieldLoop $code_dir $data_dir $visit_cmd
 #
 # Unset the special FieldLoop flag
-sed -i -e "s|^#define CHECK_MAGP|//#define CHECK_MAGP|g" ${src_dir}/defines/testing_flags.h
+sed -i -e "s|^#define CHECK_MAGP|//#define CHECK_MAGP|g" \
+  ${src_dir}/defines/testing_flags.h
 echo "*************** FIELD LOOP TEST DONE   ***************"
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
+#---------------------------------------------------------------------
+# Tidy up stuff: move all figures to a directory in data_dir/
+# Then make sure flags are unset in the code flags files.
+#---------------------------------------------------------------------
+cd ${test_dir}/
+mkdir $data_dir/FIGS
+mv *.jpeg *.eps */*.jpeg */*.eps $data_dir/FIGS
 
-#exit
+# Make sure these are unset at the end of the tests...
+sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
+${src_dir}/defines/testing_flags.h
+sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
+${src_dir}/defines/testing_flags.h
+sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
+${src_dir}/defines/functionality_flags.h
+sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
+${src_dir}/defines/testing_flags.h
+
+exit
 
 
 
@@ -299,5 +276,42 @@ exit
 #---------------------------------------------------------------------
 #---------------------------------------------------------------------
 
+
+#####################################################################
+########################## TEMPORARY STUFF ##########################
+#####################################################################
+
+
+# If the code is on a network drive, code may run faster with data_dir
+# set to a local disk.
+DATE=`date +%Y-%m-%d`
+data_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests/tests_$DATE
+mkdir $data_dir
+
+# cmp_dir doesn't do anything yet.  It will contain some results from
+# standard problems to compare the current tests to.
+cmp_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests
+#cmp_dir=${BASE_DIR}/trunk/test_results/ref
+
+#visit_cmd=/vol/aibn129/aibn129_1/jmackey/extra_libraries/visit_bin/bin/visit
+visit_cmd=/vol/software/software/tools/visit/bin/visit
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+# Test Problem:
+#
+#
+# Overstable Shock 'Test'
+#
+cd ${test_dir}/test_OverstableShock
+./run_RSH_tests.sh $test_dir $code_dir $data_dir
+#
+# Test Problem:
+#---------------------------------------------------------------------
+#---------------------------------------------------------------------
+
+exit
+#####################################################################
+########################## TEMPORARY STUFF ##########################
+#####################################################################
 
 
