@@ -8,53 +8,56 @@
 
 
 # call with ./run_FL_tests.sh $test_dir $code_dir $data_dir
-test_dir=${1}/test_FieldLoop
-code_dir=$2
-data_dir=$3/FieldLoop
-visit_cmd=$4
+test_dir=${1}
+code_dir=${2}
+data_dir=${3}/FieldLoop
+visit_cmd=${4}
 
 # Just in case it doesn't exist, create the destination directory.
-mkdir $data_dir
+mkdir -p $data_dir
 #rm ${data_dir}/*
 
 cd ${code_dir}
 echo "MAKE IN" $code_dir
 ./compile_code.sh
 echo "MAKE SUCEEDED"
+cd -
 
-./icgen ${test_dir}/pf_FieldLoop.txt   silo redirect=tmp_
-./icgen ${test_dir}/pf_FieldLoopVz.txt silo redirect=tmp_
-./icgen ${test_dir}/pf_FieldLoopStatic.txt silo redirect=tmp_
+../../icgen_serial ${test_dir}/params_FieldLoop.txt       silo redirect=tmp_
+../../icgen_serial ${test_dir}/params_FieldLoopVz.txt     silo redirect=tmp_
+../../icgen_serial ${test_dir}/params_FieldLoopStatic.txt silo redirect=tmp_
 
-./main_serial IC_FieldLoop200static.silo 5 1 outfile=${data_dir}/FieldLoop200static_Roe \
+../../pion_serial IC_FieldLoop200static.silo 5 1 outfile=${data_dir}/FieldLoop200static_Roe \
  redirect=${data_dir}/msg_FieldLoop200_Roe_static_av1 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-./main_serial IC_FieldLoop200.silo 5 1 outfile=${data_dir}/FieldLoop200_Roe \
+../../pion_serial IC_FieldLoop200.silo 5 1 outfile=${data_dir}/FieldLoop200_Roe \
  redirect=${data_dir}/msg_FieldLoop200_Roe_planar_av1 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-./main_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_Roe \
+wait
+../../pion_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_Roe \
  redirect=${data_dir}/msg_FieldLoop200_Roe_VxVyVz_av1 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-./main_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_RoeAV0 \
+../../pion_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_RoeAV0 \
  redirect=${data_dir}/msg_FieldLoop200_Roe_VxVyVz_av0 cfl=0.4 AVtype=0 EtaVisc=0.0 solver=4 &
-#wait
+wait
 
-./main_serial IC_FieldLoop200static.silo 5 1 outfile=${data_dir}/FieldLoop200static_Lin \
+../../pion_serial IC_FieldLoop200static.silo 5 1 outfile=${data_dir}/FieldLoop200static_Lin \
  redirect=${data_dir}/msg_FieldLoop200_Lin_static_av1 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-./main_serial IC_FieldLoop200.silo 5 1 outfile=${data_dir}/FieldLoop200_Lin \
+../../pion_serial IC_FieldLoop200.silo 5 1 outfile=${data_dir}/FieldLoop200_Lin \
  redirect=${data_dir}/msg_FieldLoop200_Lin_planar_av1 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-./main_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_Lin \
+wait
+../../pion_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_Lin \
  redirect=${data_dir}/msg_FieldLoop200_Lin_VxVyVz_av1 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
-./main_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_LinAV0 \
+../../pion_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_LinAV0 \
  redirect=${data_dir}/msg_FieldLoop200_Lin_VxVyVz_av0 cfl=0.4 AVtype=0 EtaVisc=0.0 solver=4 &
-#wait
+wait
 
-./main_serial IC_FieldLoop200static.silo 5 1 outfile=${data_dir}/FieldLoop200static_Roe_Hcorr \
+../../pion_serial IC_FieldLoop200static.silo 5 1 outfile=${data_dir}/FieldLoop200static_Roe_Hcorr \
  redirect=${data_dir}/msg_FieldLoop200_Roe_static_Hcorr cfl=0.4 AVtype=3 solver=4 &
-./main_serial IC_FieldLoop200.silo 5 1 outfile=${data_dir}/FieldLoop200_Roe_Hcorr \
+../../pion_serial IC_FieldLoop200.silo 5 1 outfile=${data_dir}/FieldLoop200_Roe_Hcorr \
  redirect=${data_dir}/msg_FieldLoop200_Roe_planar_Hcorr cfl=0.4 AVtype=3 solver=4 &
-./main_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_Roe_Hcorr \
+../../pion_serial IC_FieldLoop200vz.silo 5 1 outfile=${data_dir}/FieldLoop200vz_Roe_Hcorr \
  redirect=${data_dir}/msg_FieldLoop200_Roe_VxVyVz_Hcorr cfl=0.4 AVtype=3 solver=4 &
 wait
 
-
+exit
 echo "Sims finished, moving to FieldLoop dir to make figures."
 cd ${test_dir}
 ./make_FL_img.sh ${data_dir} FieldLoop200static_Roe FieldLoop200static_Roe $visit_cmd
