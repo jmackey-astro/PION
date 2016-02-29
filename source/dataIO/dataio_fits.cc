@@ -296,7 +296,6 @@ int DataIOFits::OutputData(
   // -------------------------------------------------------
   // -------------------------------------------------------
 
-      data = mem.myfree(data);
   extname = mem.myfree(extname);
   
   if (status) {
