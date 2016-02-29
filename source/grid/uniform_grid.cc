@@ -778,6 +778,10 @@ cell * UniformGrid::BC_setupBCcells(
   t->id = -ibc;
   
   BC_bd[offdir].data.push_back(t);
+  if (offdir==XN) {
+    cout <<" adding cell with id="<<t->id<<" to grid : ";
+    rep.printVec("pos",t->pos,G_ndim);
+  }
   if(ibc<BC_nbc) t->ngb[offdir] = BC_setupBCcells(t,offdir,fabs(dx),ibc+1);
   return(t);
 }
