@@ -56,14 +56,24 @@ fi
 # Double Mach Reflection, same as Stone et al. 2008.
 #
 echo "DOUBLE MACH REFLECTION: GENERATE ICS"
-./icgen_serial ${test_dir}/params_DMR_n260.txt silo redirect=${data_dir}/ic_n260_
-./icgen_serial ${test_dir}/params_DMR_n520.txt silo redirect=${data_dir}/ic_n520_
+./icgen_serial ${test_dir}/params_DMR_n130.txt silo redirect=${data_dir}/ic_n260_
+#./icgen_serial ${test_dir}/params_DMR_n260.txt silo redirect=${data_dir}/ic_n260_
+#./icgen_serial ${test_dir}/params_DMR_n520.txt silo redirect=${data_dir}/ic_n520_
 
-#./main_serial IC_DMRm10t60_n260.silo 5 1 outfile=${data_dir}/DMRm10t60_n260_EINT_av10 cfl=0.5 \
-# redirect=${data_dir}/msg_DMRm10t60_n260_EINT_av10 solver=3 eqntype=9 AVtype=1 EtaVisc=0.1
-#exit
-
-
+echo "DOUBLE MACH REFLECTION: RUN LOW RES"
+./pion_serial IC_DMRm10t60_n130.silo 5 1 outfile=${data_dir}/DMRm10t60_n130_Hyb_av10 cfl=0.4 artvisc=0.1 \
+ redirect=${data_dir}/msg_DMRm10t60_n130_Hyb_av10 solver=3 &
+./pion_serial IC_DMRm10t60_n130.silo 5 1 outfile=${data_dir}/DMRm10t60_n130_RCV_av10 cfl=0.4 artvisc=0.1 \
+ redirect=${data_dir}/msg_DMRm10t60_n130_RCV_av10 solver=4 &
+./pion_serial IC_DMRm10t60_n130.silo 5 1 outfile=${data_dir}/DMRm10t60_n130_RPV_av10 cfl=0.4 artvisc=0.1 \
+ redirect=${data_dir}/msg_DMRm10t60_n130_RPV_av10 solver=5 &
+wait
+./pion_serial IC_DMRm10t60_n130.silo 5 1 outfile=${data_dir}/DMRm10t60_n130_FVS_av10 cfl=0.4 artvisc=0.1 \
+ redirect=${data_dir}/msg_DMRm10t60_n130_FVS_av10 solver=6 &
+./pion_serial IC_DMRm10t60_n130.silo 5 1 outfile=${data_dir}/DMRm10t60_n130_RCV_Hcor cfl=0.4 AVtype=3    \
+ redirect=${data_dir}/msg_DMRm10t60_n130_RCV_Hcor solver=4 &
+wait
+exit
 
 #
 echo "DOUBLE MACH REFLECTION: RUN LOW RES"
