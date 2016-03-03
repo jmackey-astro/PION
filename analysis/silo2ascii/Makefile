@@ -2,29 +2,57 @@
 #
 # 2011.12.14 JM: Adapted from silocompare Makefile.
 # 2013.09.05 JM: updated for pion.
+# 2016.03.03 JM: updated for pion_dev: uses MCMD, SimSetup, constants.h
 
 
 ############################
 ### BASIC INFO AND PATHS ###
 ############################
 
-SHELL = /bin/sh
+SHELL = /bin/bash
 .SUFFIXES:
 .SUFFIXES: .cc .o
+.SUFFIXES: .cxx .o
 .SUFFIXES: .cpp .o
-srcdir = .
-SRCDIR=${CURDIR}/../../source
-
-GLOBAL = global.h functionality_flags.h testing_flags.h
 
 #######################
 ## COMPILATION RULES ##
 #######################
+.cxx.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cc.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 #######################
+
+
+SRCDIR = ${CURDIR}/../../source
+
+bindir=.
+
+CODEDIR=${CURDIR}/../..
+
+VPATH=${SRCDIR}:\
+${SRCDIR}/grid:\
+${SRCDIR}/defines:\
+${SRCDIR}/dataIO:\
+${SRCDIR}/comms:\
+${SRCDIR}/coord_sys:\
+${SRCDIR}/equations:\
+${SRCDIR}/flux_calc:\
+${SRCDIR}/spatial_solvers:\
+${SRCDIR}/time_integrators:\
+${SRCDIR}/microphysics:\
+${SRCDIR}/raytracing:\
+${SRCDIR}/contrib\
+${SRCDIR}/tools
+
+
+
+GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
+
 
 # --------------------
 # Compile-time options
@@ -48,8 +76,7 @@ CXXFLAGS = -O3
 #CXXFLAGS += -Wall
 
 ######################################################################
-# Options for a "standard" workstation.
-# make sure cfitsio and silo are compiled in ../extra_libraries/
+# Options for a "standard" linux workstation.
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
 
@@ -65,7 +92,7 @@ ifeq ($(MAKE_UNAME), standard)
   #CXXFLAGS = -O0 -Wall -g
   CXXFLAGS+= -Wno-unused-function
 
-  MYLIB = $(CURDIR)/../../extra_libraries
+  MYLIB = ${CODEDIR}/extra_libraries
   INC = -I${MYLIB}/include
   INC += -I${SRCDIR}
 
@@ -78,6 +105,7 @@ ifeq ($(MAKE_UNAME), standard)
   # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
 endif
+######################################################################
 
 ######################## -- JUROPA -- ################################
 # Options for the Juelich Supercomputer JUROPA
@@ -118,78 +146,93 @@ LDFLAGS += -lmkl_sequential -lmkl_core
 endif
 ##################### -- JUROPA -- ###################################
 
-#############################################
-# Specific Options for STOKES - ICHEC cluster
-# Intel Compilers! (OR gcc -- need to choose which and comment out section below)
-#############################################
-# module load mvapich2-intel intel-cc intel-mkl valgrind ddt
-#############################################
-ifeq ($(MAKE_UNAME), stokes)
-ifeq ($(IOMODE), USE_FILE_COMMS)
-CXX = icpc
-endif
-ifeq ($(IOMODE), USE_MPI)
-CXX = mpicxx
-endif
-CXXFLAGS = -O3  # optimised code
-#CXXFLAGS = -O0
+
+
+###########################################
+# Specific Options for my imac
+###########################################
+ifeq ($(MAKE_UNAME), OSX)
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpicxx
+  endif
+
+#CXXFLAGS = -O3
+  CXXFLAGS = -O0
 #CXXFLAGS += -Wall
-#CXXFLAGS += -g   # for debugging with ddt. 
-#CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-#CXXFLAGS += -fp-stack-check -fstack-security-check
-CXXFLAGS +=  -DINTEL -axSSE4.2,SSSE3
-MYLIB = /ichec/work/dsast002b/jm_code/extra_libs
-# gcc
-#INC  = -I$(MYLIB)/cfitsio_gcc/include
-#LDFLAGS += -L$(MYLIB)/cfitsio_gcc/lib/ -lcfitsio
-#INC += -I$(MYLIB)/silo_gcc_nohdf/include
-#LDFLAGS += -L$(MYLIB)/silo_gcc_nohdf/lib/ -lsilo
-#LDFLAGS += -lm
-#intel
-INC  = -I$(MYLIB)/cfitsio/include
-LDFLAGS += -L$(MYLIB)/cfitsio/lib/ -lcfitsio
-INC += -I$(MYLIB)/silo_intel_nohdf/include
-LDFLAGS += -L$(MYLIB)/silo_intel_nohdf/lib/ -lsilo
-LDFLAGS += -lmkl_sequential -lmkl_core
+  CXXFLAGS += -g    # enable debugging with gdb
+  #CXXFLAGS += -arch x86_64
+
+  MYLIB = $(CURDIR)/../../extra_libraries
+  #MYLIB = /Users/jmackey/Library/my_local_libs
+  INC += -I$(MYLIB)/include
+  INC += -I${srcdir}
+
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsilo 
+  # libs for CVODES
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
 endif
+#############################################
 
 
 ##################################################
 ##################################################
 
 CXXFLAGS += $(OPT)
-VPATH = \
-../../source:\
-../../source/ics:\
-../../source/Riemann_solvers:\
-../../source/defines:\
-../../source/microphysics:\
-../../source/raytracing:\
-../../source/microphysics/Harpreets_code:\
-../../source/grid:\
-../../source/dataIO:\
-../../source/comms:\
-../../source/coord_sys:\
-../../source/equations:\
-../../source/flux_calc:\
-../../source/spatial_solvers:\
-../../source/time_integrators:\
-../../source/future
 
 #####################################################
 ##### LIST OF OBJECT FILES, DIRECTIVES FOR MAKE #####
 #####################################################
 
-OBJECTS = silo2text.o uniform_grid.o dataio.o readparams.o global.o \
-	dataio_silo.o uniform_grid_pllel.o comm_mpi.o comm_files.o \
-	VectorOps.o VectorOps_spherical.o \
-	stellar_wind_BC.o cell_interface.o file_status.o \
-        cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
-        hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o        \
-        integrator.o cooling.o microphysics.o microphysics_v1.o                \
-        microphysics_lowZ.o mp_only_cooling.o                                  \
-        mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o mpv8_StarBench_heatcool.o
+OBJECTS = \
+  silo2text.o                 \
+  constants.o \
+  timer.o \
+  mem_manage.o \
+  reporting.o \
+  command_line_interface.o \
+  interpolate.o \
+  MCMD_control.o \
+  setup_fixed_grid.o \
+  setup_fixed_grid_MPI.o \
+  uniform_grid.o              \
+  dataio.o                    \
+  readparams.o                \
+  dataio_silo.o               \
+  dataio_silo_utility.o \
+  dataio_silo_MPI.o \
+  uniform_grid_pllel.o        \
+  comm_mpi.o                  \
+  comm_files.o                \
+  VectorOps.o                 \
+  VectorOps_spherical.o       \
+  stellar_wind_BC.o           \
+  cell_interface.o            \
+  file_status.o               \
+  cooling_SD93_cie.o          \
+  hydrogen_recomb_Hummer94.o  \
+  hydrogen_mp.o               \
+  hydrogen_photoion.o         \
+  mp_explicit_H.o             \
+  cvode_integrator.o          \
+  mp_implicit_H.o             \
+  mp_v2_aifa.o                \
+  integrator.o                \
+  cooling.o                   \
+  microphysics.o              \
+  microphysics_v1.o           \
+  microphysics_lowZ.o         \
+  mp_only_cooling.o           \
+  mpv5_molecular.o            \
+  mpv6_PureH.o                \
+  mpv7_TwoTempIso.o           \
+  mpv8_StarBench_heatcool.o
 
 ##########################
 ### -- EXECTUTABLES -- ###
@@ -202,29 +245,29 @@ silo2text: $(OBJECTS)
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
-silo2text.o:	silo2text.cc uniform_grid.h dataio.h ${GLOBAL}
-global.o: global.cc ${GLOBAL}
+silo2text.o:	silo2text.cpp uniform_grid.h dataio.h ${GLOBAL}
+global.o: global.cpp ${GLOBAL}
 
-uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
+uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
 
 ########################
 # Data I/O
 ########################
 file_status.o: file_status.cpp file_status.h
-dataio.o: dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h \
+dataio.o: dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h \
     readparams.h stellar_wind_BC.h file_status.h
-dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} \
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
-readparams.o:	readparams.cc readparams.h ${GLOBAL}
+readparams.o:	readparams.cpp readparams.h ${GLOBAL}
 
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h ${GLOBAL}
-comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
+comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 
-stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h ${GLOBAL}
+stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h ${GLOBAL}
 
-VectorOps.o: VectorOps.cc VectorOps.h ${GLOBAL} uniform_grid.h
-VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
+VectorOps.o: VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
  ${GLOBAL} uniform_grid.h
 
 
@@ -232,30 +275,30 @@ VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h 
 # MICROPHYSICS STUFF #
 ######################
 
-integrator.o: integrator.cc integrator.h ${GLOBAL}
-cooling.o:    cooling.cc cooling.h ${GLOBAL}
+integrator.o: integrator.cpp integrator.h ${GLOBAL}
+cooling.o:    cooling.cpp cooling.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+cooling_SD93_cie.o: cooling_SD93_cie.cpp cooling_SD93_cie.h ${GLOBAL}
 
-hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
+hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cpp \
     ${GLOBAL}
 
-mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
+mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
+microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h
-microphysics_v1.o: microphysics_v1.cc microphysics.h \
+microphysics_v1.o: microphysics_v1.cpp microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
+microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
-hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
+hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
