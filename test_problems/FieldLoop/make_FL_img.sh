@@ -4,11 +4,10 @@
 # the ImageMagick command-line tool 'convert'
 #
 #  - JM 2009-12-15: Added cropping of figures; plus annotations in python files.
-#
 #  - JM 2009-12-14: Writing file; can make Magnetic pressure and Current Density 
 #    plots now.
-#
 #  - JM 2010.10.19: Changed so they are contour plots, not pseudocolour
+# - 2016.03.06 JM: updated to fix a couple of bugs.
 
 data_dir=$1
 infile=$2
@@ -64,7 +63,7 @@ A.axes2D.autoSetTicks = 0
 A.axes2D.autoSetScaling = 0
 A.axes2D.lineWidth = 2
 A.axes2D.tickLocation = A.axes2D.Outside  # Inside, Outside, Both
-A.axes2D.tickAxes = A.Off  #A.axes2D.BottomLeft  # Off, Bottom, Left, BottomLeft, All
+A.axes2D.tickAxes = A.axes2D.Off  #A.axes2D.BottomLeft  # Off, Bottom, Left, BottomLeft, All
 A.axes2D.xAxis.title.visible = 0
 A.axes2D.xAxis.label.visible = 1
 A.axes2D.xAxis.label.font.font = A.axes2D.xAxis.label.font.Times  # Arial, Courier, Times
@@ -161,7 +160,7 @@ sw.height= 700
 sw.outputToCurrentDirectory = 0
 sw.outputDirectory = "${data_dir}"
 sw.family = 0
-sw.format=sw.TIFF
+sw.format=sw.PNG
 sw.resConstraint = sw.NoConstraint
 
 
@@ -180,6 +179,7 @@ quit()
 EOF
 
 $visit_cmd -cli -nowin -s plot_FL_results.py
+sleep 15
 #exit
 
 #
@@ -233,7 +233,7 @@ A.axes2D.autoSetTicks = 0
 A.axes2D.autoSetScaling = 0
 A.axes2D.lineWidth = 2
 A.axes2D.tickLocation = A.axes2D.Outside  # Inside, Outside, Both
-A.axes2D.tickAxes = A.Off  #A.axes2D.BottomLeft  # Off, Bottom, Left, BottomLeft, All
+A.axes2D.tickAxes = A.axes2D.Off  #A.axes2D.BottomLeft  # Off, Bottom, Left, BottomLeft, All
 A.axes2D.xAxis.title.visible = 0
 A.axes2D.xAxis.label.visible = 1
 A.axes2D.xAxis.label.font.font = A.axes2D.xAxis.label.font.Times  # Arial, Courier, Times
@@ -330,7 +330,7 @@ sw.height= 700
 sw.outputToCurrentDirectory = 0
 sw.outputDirectory = "${data_dir}"
 sw.family = 0
-sw.format=sw.TIFF
+sw.format=sw.PNG
 sw.resConstraint = sw.NoConstraint
 
 
@@ -349,23 +349,24 @@ quit()
 EOF
 
 $visit_cmd -cli -nowin -s plot_FL_results.py
+sleep 15
 
 #
 # Now resize the images
 #
-convert -crop 635x600+180+25 ${data_dir}/${outfile}_CurlB2D_00.tif ${data_dir}/${outfile}_CurlB2D_00.tif
-convert -crop 635x600+180+25 ${data_dir}/${outfile}_MagP_00.tif    ${data_dir}/${outfile}_MagP_00.tif
-convert -crop 635x600+180+25 ${data_dir}/${outfile}_CurlB2D_01.tif ${data_dir}/${outfile}_CurlB2D_01.tif
-convert -crop 635x600+180+25 ${data_dir}/${outfile}_MagP_01.tif    ${data_dir}/${outfile}_MagP_01.tif
-convert -crop 635x600+180+25 ${data_dir}/${outfile}_CurlB2D_02.tif ${data_dir}/${outfile}_CurlB2D_02.tif
-convert -crop 635x600+180+25 ${data_dir}/${outfile}_MagP_02.tif    ${data_dir}/${outfile}_MagP_02.tif
+convert -crop 635x600+180+25 ${data_dir}/${outfile}_CurlB2D_00.png ${data_dir}/${outfile}_CurlB2D_00.png
+convert -crop 635x600+180+25 ${data_dir}/${outfile}_MagP_00.png    ${data_dir}/${outfile}_MagP_00.png
+convert -crop 635x600+180+25 ${data_dir}/${outfile}_CurlB2D_01.png ${data_dir}/${outfile}_CurlB2D_01.png
+convert -crop 635x600+180+25 ${data_dir}/${outfile}_MagP_01.png    ${data_dir}/${outfile}_MagP_01.png
+convert -crop 635x600+180+25 ${data_dir}/${outfile}_CurlB2D_02.png ${data_dir}/${outfile}_CurlB2D_02.png
+convert -crop 635x600+180+25 ${data_dir}/${outfile}_MagP_02.png    ${data_dir}/${outfile}_MagP_02.png
 #
 # Old pseudocolour plots:
-#convert -crop 452x453+464+144 ${data_dir}/${outfile}_CurlB2D_00.tif ${data_dir}/${outfile}_CurlB2D_00.tif
-#convert -crop 452x453+464+144 ${data_dir}/${outfile}_MagP_00.tif    ${data_dir}/${outfile}_MagP_00.tif
-#convert -crop 452x453+464+144 ${data_dir}/${outfile}_CurlB2D_01.tif ${data_dir}/${outfile}_CurlB2D_01.tif
-#convert -crop 452x453+464+144 ${data_dir}/${outfile}_MagP_01.tif    ${data_dir}/${outfile}_MagP_01.tif
-#convert -crop 452x453+464+144 ${data_dir}/${outfile}_CurlB2D_02.tif ${data_dir}/${outfile}_CurlB2D_02.tif
-#convert -crop 452x453+464+144 ${data_dir}/${outfile}_MagP_02.tif    ${data_dir}/${outfile}_MagP_02.tif
+#convert -crop 452x453+464+144 ${data_dir}/${outfile}_CurlB2D_00.png ${data_dir}/${outfile}_CurlB2D_00.png
+#convert -crop 452x453+464+144 ${data_dir}/${outfile}_MagP_00.png    ${data_dir}/${outfile}_MagP_00.png
+#convert -crop 452x453+464+144 ${data_dir}/${outfile}_CurlB2D_01.png ${data_dir}/${outfile}_CurlB2D_01.png
+#convert -crop 452x453+464+144 ${data_dir}/${outfile}_MagP_01.png    ${data_dir}/${outfile}_MagP_01.png
+#convert -crop 452x453+464+144 ${data_dir}/${outfile}_CurlB2D_02.png ${data_dir}/${outfile}_CurlB2D_02.png
+#convert -crop 452x453+464+144 ${data_dir}/${outfile}_MagP_02.png    ${data_dir}/${outfile}_MagP_02.png
 
 exit
