@@ -1523,7 +1523,7 @@ int sim_control_fixedgrid::Time_Int(
 #if defined (CHECK_MAGP)
     calculate_magnetic_pressure(grid);
 #elif defined (BLAST_WAVE_CHECK)
-    calculate_blastwave_radius();
+    calculate_blastwave_radius(grid);
 #endif
     //
     // Update RT sources.

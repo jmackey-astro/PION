@@ -91,6 +91,7 @@
 /// - 2016.02.19 JM: new grid structure finished, compiles and runs
 ///    the DMR test.
 /// - 2016.02.22 JM: bugfixes for periodic boundaries.
+/// - 2016.03.08 JM: bugfixes for outflow boundaries, grid setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -592,8 +593,9 @@ int UniformGrid::assign_grid_structure()
   // Set up pointers to neighbours in x-direction
   //
   c = FirstPt_All();
-  cell *c_prev=0, *c_next = NextPt_All(c);
+  cell *c_prev=0, *c_next = c;
   do {
+    c_next = NextPt_All(c_next);
     //cout <<" Starting X ngb loop, c="<<c->id;
     //rep.printVec("pos",c->pos,G_ndim);
     c->ngb[XN] = c_prev;
@@ -618,9 +620,8 @@ int UniformGrid::assign_grid_structure()
     }
 
     c = c_next;
-    c_next = NextPt_All(c_next);
   }
-  while (c_next != 0);
+  while (c != 0);
 
   //
   // Pointers to neighbours in the Y-Direction, if it exists.
@@ -1164,6 +1165,9 @@ int UniformGrid::BC_setBCtypes(
   for (i=0; i<2*G_ndim; i++) {
     BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
     BC_bd[i].ondir = OppDir(BC_bd[i].dir);
+#ifdef TESTING
+    cout <<"i="<<i<<", dir = "<<BC_bd[i].dir<<", ondir="<< BC_bd[i].ondir<<"\n";
+#endif
     BC_bd[i].baxis = static_cast<axes>(i/2);
     //
     // odd values of i are positive boundaries, others are negative.
@@ -1475,6 +1479,8 @@ int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
     // on-grid value.
     //
     for (int v=0; v>(*bpt)->isedge; v--) {
+      //CI.print_cell(temp);
+      //cout <<"ondir="<<ondir<<"\n";
       temp = NextPt(temp,ondir);
     }
 
