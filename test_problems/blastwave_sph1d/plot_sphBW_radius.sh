@@ -1,7 +1,9 @@
 #!/bin/bash
 
 #
-# Plot the radius of a blastwave as a function of time, from a number of different files.
+# Plot the radius of a blastwave as a function of time,
+# from a number of different files.
+# - 2016.03.08 JM: updated for new pion.
 #
 outfile=$1
 F1=$2
@@ -12,7 +14,7 @@ F2title="$6"
 F3title="$7"
 
 cat << EOF  > gnu.plt
-set terminal postscript enhanced color eps
+set terminal postscript enhanced color eps "Helvetica" 14
 set output '${outfile}.eps' 
 set size 0.7071,0.7071
 #set term x11 noraise size 1500,500
@@ -37,5 +39,6 @@ EOF
 
 gnuplot gnu.plt
 
+convert -density 400 ${outfile}.eps -background white -flatten ${outfile}.png
 
-convert -density 300 -quality 100 ${outfile}.eps ${outfile}.jpeg
+exit

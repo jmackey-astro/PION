@@ -65,29 +65,18 @@ wait
 echo "Sims finished, moving to FieldLoop dir to make figures."
 cd ${test_dir}
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}static_Roe FieldLoop${resolution}static_Roe $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}_Roe FieldLoop${resolution}_Roe             $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}vz_Roe FieldLoop${resolution}vz_Roe         $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}vz_RoeAV0 FieldLoop${resolution}vz_RoeAV0   $visit_cmd
-#sleep 10
 
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}static_Lin FieldLoop${resolution}static_Lin $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}_Lin FieldLoop${resolution}_Lin             $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}vz_Lin FieldLoop${resolution}vz_Lin         $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}vz_LinAV0 FieldLoop${resolution}vz_LinAV0   $visit_cmd
-#sleep 10
 
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}static_Roe_Hcorr FieldLoop${resolution}static_Roe_Hcorr $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}_Roe_Hcorr       FieldLoop${resolution}_Roe_Hcorr       $visit_cmd
-#sleep 10
 ./make_FL_img.sh ${data_dir} FieldLoop${resolution}vz_Roe_Hcorr     FieldLoop${resolution}vz_Roe_Hcorr     $visit_cmd
-#sleep 10
 
 convert ${data_dir}/FieldLoop${resolution}_Roe_MagP_00.png ${data_dir}/FieldLoop${resolution}static_Roe_MagP_02.png \
     ${data_dir}/FieldLoop${resolution}_Roe_MagP_02.png +append ${test_dir}/FL${resolution}_Roe_MagP.png
@@ -104,6 +93,6 @@ convert ${data_dir}/FieldLoop${resolution}_Roe_Hcorr_CurlB2D_00.png ${data_dir}/
     ${data_dir}/FieldLoop${resolution}_Roe_Hcorr_CurlB2D_02.png +append ${test_dir}/FL${resolution}_Roe_Hcorr_CurlB2D.png
 
 
-./magp_decay.sh ${data_dir} FieldLoop2D_n${resolution}
+./magp_decay.sh ${data_dir} FieldLoop2D_n${resolution} 100
 exit
 

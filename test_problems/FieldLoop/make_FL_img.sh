@@ -179,7 +179,7 @@ quit()
 EOF
 
 $visit_cmd -cli -nowin -s plot_FL_results.py
-sleep 15
+#sleep 15
 #exit
 
 #
@@ -349,7 +349,7 @@ quit()
 EOF
 
 $visit_cmd -cli -nowin -s plot_FL_results.py
-sleep 15
+#sleep 15
 
 #
 # Now resize the images

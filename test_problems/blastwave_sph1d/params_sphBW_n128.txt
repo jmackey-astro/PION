@@ -16,9 +16,9 @@ ics BlastWave
 
 
 # IC filename
-ICfilename IC_BW1D_phys_n512
+ICfilename IC_BW1D_phys_n128
 # Output FileName Base
-OutputFile    BW1D_phys_n512
+OutputFile    BW1D_phys_n128
 
 
 # Number and type of tracers.
@@ -40,6 +40,12 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
+EP_MP_timestep_limit 0
+EP_Min_Temperature 0
+EP_Max_Temperature 1.0e99
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   0.0
+EP_Metal_MassFrac    0.0
 
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -50,8 +56,8 @@ noise -1 #0.5
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  512
-NGridY  512
+NGridX  128
+NGridY  128
 NGridZ  64
 
 # Boundaries of Simulation box:
@@ -110,15 +116,16 @@ magval 1
 ##################
 ### BLAST WAVE ###
 ##################
-BWradius   0.03125    # fraction of x-range (1/32)
-BWpressure 1.38e-11   # ambient pressure (10^4K for 100 per c.c.)
+BWpressure 1.38e-11   # ambient pressure (10^3K for 100 per c.c.)
 BWdensity  2.34e-22   # ambient density (~100 per c.c.)
-BWpgRatio  1.285888e7 # pressure ratio pin/pout
-BWroRatio  1.0        # density ratio rin/rout
+
 BWmagfieldX 0.0    # Magnetic field strength
 BWmagfieldY 0.0    # Magnetic field strength
 BWmagfieldZ 0.0      # Magnetic field strength
 
+BW_energy      1.0e51
+BW_nzones      1
+BW_blast_dens  2.34e-22
 
 #############################
 # Ambient Medium Parameters #
@@ -143,34 +150,17 @@ PERC_ambTR6 0.0
 #########################
 # radiation source list #
 #########################
-RPnsources 0
-RPpos00  0.0e18
-RPpos01  0.0e18
-RPpos02  0.0e18
-RPstrength0 1.0e47
+RT_Nsources 0
 
 ########################
 # stellar wind sources #
 ########################
 WIND_NSRC 0
-WIND_0_pos0  0.0e18
-WIND_0_pos1  0.0e18
-WIND_0_pos2  0.0e18
-WIND_0_radius 6.172e17
-WIND_0_type   0
-WIND_0_mdot   5.0e-6
-WIND_0_vinf   100.0
-WIND_0_temp   10000.0
-WIND_0_TR0 0.999999
-WIND_0_TR1 -1.0
-WIND_0_TR2 0.0
-WIND_0_TR3 0.0
-WIND_0_TR4 0.0
 
 ####################
 # Reference Vector #
 ####################
-refvec0 1.0e-23  # ~100 particles /cc
+refvec0 1.0e-23  # ~10 particles /cc
 refvec1 3.0e-10  # T ~ 10^3K
 refvec2 1.0e6    # v ~ 100 km/s = 1.e7 cm/s
 refvec3 1.0e6    # v 
