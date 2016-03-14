@@ -8,6 +8,8 @@
 /// - 2012.10.16 JM: Debugged and got a stable version working. 
 /// - 2013.02.27 JM: minor tidying up.
 /// - 2015.10.27 JM: updated for new pion
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -392,8 +394,8 @@ void IC_read_BBurkhart_data::read_file(
 
   double *data =0;
   //size_t Npix = SimPM.Ncell;
-  int npix[ndim];
-  for (int v=0; v<ndim;v++) npix[v] = SimPM.NG[v];
+  //int npix[ndim];
+  //for (int v=0; v<ndim;v++) npix[v] = SimPM.NG[v];
 
   double l_xmin[ndim], g_xmin[ndim];
   for (int v=0; v<ndim;v++) {
@@ -403,7 +405,7 @@ void IC_read_BBurkhart_data::read_file(
   double pix_size = g->DX();
   //data = mem.myalloc(data,Npix);
 
-  err = fio->read_fits_image_to_data(ff, HDU_NAME, ndim, l_xmin, g_xmin, pix_size, NG, ncell, &data);
+  err = fio->read_fits_image_to_data(ff, HDU_NAME, ndim, l_xmin, g_xmin, pix_size, NG, ncell, TDOUBLE, &data);
   if (err) rep.error("Failed to read fits subset",err);
   
   

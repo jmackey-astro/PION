@@ -25,6 +25,8 @@
 ///    made them inline.
 /// - 2013.09.20 JM: Changed initialisation of unsigned ints to zero.
 /// - 2015.01.10 JM: New include statements for new file structure.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #include "cell_interface.h"
 #include "tools/reporting.h"
@@ -302,6 +304,7 @@ cell * cell_interface::new_cell()
   for (int v=0;v<SimPM.nvar;v++) c->P[v] = 0.0;
   for (int v=0; v<2*SimPM.ndim; v++) c->ngb[v] = 0;
   c->npt = 0;
+  c->npt_all = 0;
   c->id  = -9999; c->isedge=-999; c->isbd=c->isgd=false;
 
   //
@@ -515,6 +518,7 @@ void cell_interface::copy_cell(
   }
   for (int i=0;i<2*SimPM.ndim;i++) c2->ngb[i]=c1->ngb[i];
   c2->npt = c1->npt;
+  c2->npt_all = c1->npt_all;
   c2->id = c1->id;
   c2->isedge = c1->isedge;
   c2->isbd = c1->isbd;
@@ -535,12 +539,16 @@ void cell_interface::print_cell(const cell *c)
   cout<<"\tnpt: "<<c->npt;
   if (c->npt!=0) cout <<"\tnpt[id]: "<<c->npt->id<<"\n";
   else cout <<"\tnpt is not addressed (last point?).\n";
+  cout<<"\tnpt_all: "<<c->npt_all;
+  if (c->npt_all!=0) cout <<"\tnpt_all[id]: "<<c->npt_all->id<<"\n";
+  else cout <<"\tnpt_all is not addressed (last point?).\n";
   if (N_extra_data>0) {
     cout <<"\t";
     rep.printVec("extra_data[]",c->extra_data,N_extra_data);
   }
   cout <<"\t"; rep.printVec("pos[]",c->pos,SimPM.ndim);
-  cout <<"\t"; double p[SimPM.ndim]; get_dpos(c,p); rep.printVec("dpos[]",p,SimPM.ndim);
+  cout <<"\t"; double p[SimPM.ndim];
+  get_dpos(c,p); rep.printVec("dpos[]",p,SimPM.ndim);
   cout <<"\t"; rep.printVec("P[]  ",c->P,SimPM.nvar);
   if (!minimal_cell) {
     cout <<"\t"; rep.printVec("Ph[] ",c->Ph,SimPM.nvar);

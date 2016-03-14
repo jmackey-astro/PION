@@ -51,6 +51,8 @@
 /// - 2015.[01.26-02.03] JM: CHANGED FILENAME TO SIM_CONTROL_MPI.CPP,
 ///    added ParallelParams class, and fixing code for non-global mpiPM.
 /// - 2015.02.18 JM: moved setup functions to setup_fixed_grid_MPI
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -250,12 +252,20 @@ int sim_control_fixedgrid_pllel::Init(
 #endif // if SILO
 
   else
-    rep.error("Bad file type specifier for parallel grids (2=fits,5=silo) IS IT COMPILED IN???",typeOfFile);
+    rep.error("Bad file type specifier for parallel grids (2=fits,\
+               5=silo) IS IT COMPILED IN???",typeOfFile);
   
 
+  //
+  // We need to decompose the domain here, because setup_grid() needs
+  // this, but this means we need to read the header to find out what
+  // the grid dimensions are.  So the header is read twice, but this
+  // should be ok because it only happens during initialisation.
+  //
+  err = dataio->ReadHeader(infile);
+  if (err) rep.error("PLLEL Init(): failed to read header",err);
   err = mpiPM.decomposeDomain();
-  if (err)
-    rep.error("Couldn't Decompose Domain!",err);
+  if (err) rep.error("PLLEL Init():Couldn't Decompose Domain!",err);
 
 
 

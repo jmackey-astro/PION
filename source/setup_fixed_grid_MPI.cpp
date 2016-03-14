@@ -9,6 +9,8 @@
 /// 
 /// Modifications:
 /// - 2015.02.18 JM: new file for setting up parallel grids.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 ///
 
 #include "defines/functionality_flags.h"
@@ -81,13 +83,21 @@ int setup_fixed_grid_pllel::setup_grid(
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
   
   //
-  // First decompose the domain, so I know the dimensions of the
-  // local grid to set up.
+  // Nbc is the depth of the boundary layer.
   //
-  int err=0;
-  //if((err=MCMD->decomposeDomain()))
-  //  rep.error("Couldn't Decompose Domain!",err);
+#ifdef TESTING
+  cout <<"Setting number of boundary cells == spatial OOA: ";
+  cout <<SimPM.spOOA<<"\n";
+#endif // TESTING
+  if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
+  else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
+  else rep.error("Spatial order of accuracy unhandled by boundary \
+                  conditions!",SimPM.spOOA);
   
+  // Force Nbc=1 if using Lax-Friedrichs flux.
+  if (SimPM.solverType==FLUX_LF)
+  {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1;}
+
   //
   // May need to setup extra data in each cell for ray-tracing
   // optical depths and/or viscosity variables.  Cells cannot be
@@ -105,18 +115,21 @@ int setup_fixed_grid_pllel::setup_grid(
 
   if      (SimPM.coord_sys==COORD_CRT) {
     *grid = new UniformGridParallel (
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG, MCMD);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax, MCMD);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
     *grid = new uniform_grid_cyl_parallel (
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG, MCMD);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax, MCMD);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
     *grid = new uniform_grid_sph_parallel (
-      SimPM.ndim, SimPM.nvar, SimPM.eqntype,
-      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG, MCMD);
+      SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+      MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax, MCMD);
   }
   else {
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);

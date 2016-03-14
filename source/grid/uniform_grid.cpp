@@ -92,6 +92,8 @@
 ///    the DMR test.
 /// - 2016.02.22 JM: bugfixes for periodic boundaries.
 /// - 2016.03.08 JM: bugfixes for outflow boundaries, grid setup.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -189,11 +191,13 @@ UniformGrid::UniformGrid(
 
     //
     // For single static grid, Sim_xmin/xmax/range are the same as
-    // for the grid (becuase there is only one grid).
+    // for the grid (becuase there is only one grid).  But we set
+    // them here anyway so that it is correctly placed in a multigrid
+    // setup.
     //
-    Sim_xmin[i] = G_xmin[i];
-    Sim_xmax[i] = G_xmax[i];
-    Sim_range[i] = G_range[i];
+    Sim_xmin[i] = sim_xn[i];
+    Sim_xmax[i] = sim_xp[i];
+    Sim_range[i] = sim_xp[i]-sim_xn[i];
   }
 
 #ifdef TESTING
@@ -262,10 +266,10 @@ UniformGrid::UniformGrid(
   //
   // Set integer dimensions/location of Simulation (same as grid)
   //
+  CI.get_ipos_vec(Sim_xmin, Sim_ixmin);
+  CI.get_ipos_vec(Sim_xmax, Sim_ixmax);
   for (int v=0;v<G_ndim;v++) {
-    Sim_irange[v] = G_irange[v];
-    Sim_ixmax[v]  = G_ixmax[v];
-    Sim_ixmin[v]  = G_ixmin[v];
+    Sim_irange[v] = Sim_ixmax[v]-Sim_ixmin[v];
   }
 
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
@@ -285,16 +289,22 @@ UniformGrid::UniformGrid(
 UniformGrid::~UniformGrid()
 {
 
-  //  cout <<"\tUniformGrid Destructor: delete boundary data if it exists...\n";
+  //  
+  // Delete the boudary data lists.
+  //
   if (BC_bd !=0) BC_deleteBoundaryData();
-  //  cout <<"\tdone.\n";   
-  // Delete the list of data I have just created...
-  //  cout <<"\tDeleting grid data...\n";
 
-  cell *cpt=FirstPt(), *npt=NextPt(FirstPt());
+  //
+  // Delete the grid data.
+  //
+  cell *cpt=FirstPt_All();
+  cell *npt=NextPt_All(cpt);
   do {
+    //cout <<"deleting cell id: "<<cpt->id<<"\n";
     CI.delete_cell(cpt);
-  } while ( (npt=NextPt(cpt=npt))!=0 );
+    cpt = npt;
+  } while ( (npt=NextPt_All(cpt))!=0 );
+  //cout <<"deleting cell id: "<<cpt->id<<"\n";
   CI.delete_cell(cpt);
 
   if (Wind) {delete Wind; Wind=0;}
@@ -1008,7 +1018,7 @@ int UniformGrid::SetupBCs(
         BC_bd[YN].data.push_back(cy);
         //cout << " Adding cell "<<cy->id<<" to YN boundary.\n";
         cy = NextPt_All(cy);
-      } while (cy->pos[YY] < G_xmin[YY]);
+      } while (cy->pos[YY] < G_ixmin[YY]);
 
       if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->isgd);
@@ -1040,7 +1050,7 @@ int UniformGrid::SetupBCs(
         BC_bd[YP].data.push_back(cy);
         //cout << " Adding cell "<<cy->id<<" to YP boundary.\n";
         cy = NextPt_All(cy);
-      } while (cy !=0 && cy->pos[YY] > G_xmax[YY]);
+      } while ((cy !=0) && (cy->pos[YY] > G_ixmax[YY]));
       
       if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->isgd);
@@ -1063,12 +1073,12 @@ int UniformGrid::SetupBCs(
       BC_bd[ZN].data.push_back(cz);
       cout << " Adding cell "<<cz->id<<" to ZN boundary.\n";
       cz = NextPt_All(cz);
-    } while (cz->pos[ZZ] < G_xmin[ZZ]);
+    } while (cz->pos[ZZ] < G_ixmin[ZZ]);
     //
     // ZP is also easy... all points with pos[Z] > xmax[Z]
     //
     cz = LastPt();
-    while (cz->pos[ZZ] < G_xmax[ZZ]) cz = NextPt(cz);
+    while (cz->pos[ZZ] < G_ixmax[ZZ]) cz = NextPt(cz);
     do {
       BC_bd[ZP].data.push_back(cz);
       cout << " Adding cell "<<cz->id<<" to ZP boundary.\n";
@@ -1077,7 +1087,22 @@ int UniformGrid::SetupBCs(
   }
   // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
+  int err = assign_boundary_data();
+  // ----------------------------------------------------------------
 
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::assign_boundary_data()
+{
   // ----------------------------------------------------------------
   int err=0;
   //
@@ -1147,9 +1172,11 @@ int UniformGrid::BC_setBCtypes(
 #endif
   }    
 
-  // Set up boundary data struct.  Assumes bctype is in format "XPper XNper " etc.,
-  // so that each boundary is defined by 6 characters, and number of boundaries is
-  // given by length/6.
+  //
+  // Set up boundary data struct.  Assumes bctype is in format
+  // "XPper XNper " etc., so that each boundary is defined by 6
+  // characters, and number of boundaries is given by length/6.
+  //
   int len = bctype.length(); len = (len+5)/6;
   if (len < 2*G_ndim) rep.error("Need boundaries on all sides!",len);
 #ifdef TESTING
@@ -3168,57 +3195,32 @@ void UniformGrid::BC_deleteBoundaryData()
     if (b->refval !=0) {
       b->refval = mem.myfree(b->refval);
     }
-    if (ibd<2*G_ndim) {
-      if (b->data.empty()) {
+
+    if (b->data.empty()) {
 #ifdef TESTING
-        cout <<"BC destructor: No boundary cells to delete.\n";
+      cout <<"BC destructor: No boundary cells to delete.\n";
 #endif
-      }
-      else {
-        list<cell *>::iterator i=b->data.begin();
-        do {
-          CI.delete_cell(*i);  // This seems to work in terms of actually freeing the memory.
-          b->data.erase(i);
-          i=b->data.begin();
-        }  while(i!=b->data.end());
-        if (b->data.empty()) {
-#ifdef TESTING
-          cout <<"\t done.\n";
-#endif
-        }
-        else {
-#ifdef TESTING
-          cout <<"\t not empty list! FIX ME!!!\n";
-#endif
-        }
-      }
     }
     else {
-      if (b->data.empty()) {
+      list<cell *>::iterator i=b->data.begin();
+      do {
+        // Don't need to delete the cell here because we just have
+        // pointers to cells initialised and listed elsewhere.
+        b->data.erase(i);
+        i=b->data.begin();
+      }  while(i!=b->data.end());
+      if(b->data.empty()) {
 #ifdef TESTING
-        cout <<"BC destructor: No boundary cells to delete.\n";
+        cout <<"\t done.\n";
 #endif
       }
       else {
-        list<cell *>::iterator i=b->data.begin();
-        do {
-          // Don't need to delete the cell here because the extra boundaries just have
-          // pointers to cells initialised and listed elsewhere.
-          b->data.erase(i);
-          i=b->data.begin();
-        }  while(i!=b->data.end());
-        if(b->data.empty()) {
 #ifdef TESTING
-          cout <<"\t done.\n";
+        cout <<"\t not empty list! FIX ME!!!\n";
 #endif
-        }
-        else {
-#ifdef TESTING
-          cout <<"\t not empty list! FIX ME!!!\n";
-#endif
-        }
       }
     }
+
   } // loop over all boundaries.
   BC_bd = mem.myfree(BC_bd);
   return;

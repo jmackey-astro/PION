@@ -43,6 +43,9 @@ EP_update_erg 1
 EP_MP_timestep_limit 0
 EP_Min_Temperature 1.0e-100
 EP_Max_Temperature 1.0e100
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   0.0
+EP_Metal_MassFrac    0.0
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
@@ -52,7 +55,7 @@ noise -1 #0.5
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  512
+NGridX  1024
 NGridY  512
 NGridZ  64
 
@@ -132,7 +135,7 @@ BWmagfieldY 0.0   # Magnetic field strength
 BWmagfieldZ 0.0   # Magnetic field strength
 
 BW_energy 1.0e51  # energy in ergs (all thermal)
-BW_nzones 16       # Radius of hot region.
+BW_nzones 32       # Radius of hot region.
 BW_blast_dens 2.34e-22  # here same as ambient density.
 
 # We can have a second ISM region, but here we ignore it by setting

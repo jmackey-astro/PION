@@ -25,6 +25,8 @@
 /// - 2015.01.26 JM: removed references to mpiPM (no longer global),
 ///    added COMM pointer setup, added get_rank_nproc()
 /// - 2015.08.05 JM: Added pion_flt to send/receive for cell data.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #ifdef PARALLEL
 #ifdef USE_MPI
@@ -311,8 +313,10 @@ int comm_mpi::send_cell_data(
 	+ sizeof((*c)->id);
   long int totalsize = 0;
   totalsize = sizeof(long int) + nc*unitsize;
-  //cout <<" Send buffer size= ndim*"<<sizeof(CI.get_ipos(*c,0))<<"\n";
-
+#ifdef TESTING
+  cout <<" Send buffer unitsize= "<<unitsize;
+  cout <<" total size = "<< totalsize <<"\n";
+#endif
 
   //
   // Allocate memory for send buffer, and for the record of the send.
@@ -328,16 +332,26 @@ int comm_mpi::send_cell_data(
   // int MPI_Pack(void* inbuf, int incount, MPI_Datatype datatype, void *outbuf, int outsize, int *position, MPI_Comm comm)
   //
   int position=0, ct=0, ipos[MAX_DIM];
-  err += MPI_Pack(reinterpret_cast<void *>(&nc), 1, MPI_LONG, reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+  err += MPI_Pack(reinterpret_cast<void *>(&nc), 1, MPI_LONG, 
+                  reinterpret_cast<void *>(send_buff), totalsize,
+                  &position, MPI_COMM_WORLD);
   do {
     CI.get_ipos(*c,ipos);
-    err += MPI_Pack(reinterpret_cast<void *>(&((*c)->id)), 1,          MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
-    err += MPI_Pack(reinterpret_cast<void *>(ipos),        SimPM.ndim, MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+    err += MPI_Pack(reinterpret_cast<void *>(&((*c)->id)),       1,
+    MPI_LONG,    reinterpret_cast<void *>(send_buff), totalsize,
+    &position, MPI_COMM_WORLD);
+    err += MPI_Pack(reinterpret_cast<void *>(ipos),     SimPM.ndim,
+    MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize,
+    &position, MPI_COMM_WORLD);
 
 #if defined PION_DATATYPE_DOUBLE
-    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph),    SimPM.nvar, MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), SimPM.nvar,
+    MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize,
+    &position, MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
-    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph),    SimPM.nvar, MPI_FLOAT, reinterpret_cast<void *>(send_buff), totalsize, &position, MPI_COMM_WORLD);
+    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), SimPM.nvar,
+    MPI_FLOAT, reinterpret_cast<void *>(send_buff), totalsize,
+    &position, MPI_COMM_WORLD);
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
@@ -373,8 +387,11 @@ int comm_mpi::send_cell_data(
   //err += MPI_Isend(reinterpret_cast<void *>(send_buff), position, MPI_PACKED, si->to_rank, si->comm_tag, MPI_COMM_WORLD, si->request);
   err += MPI_Isend(si->data, position, MPI_PACKED, si->to_rank, si->comm_tag, MPI_COMM_WORLD, &(si->request));
   if (err) rep.error("MPI_Send failed",err);
+
 #ifdef TESTING
-  cout <<"comm_mpi::send_cell_data: sending "<<position<<" bytes in buffer size: "<<totalsize<<" to rank "<<to_rank<<"\n";
+  cout <<"comm_mpi::send_cell_data: sending "<<position;
+  cout <<" bytes in buffer size: "<<totalsize<<" to rank ";
+  cout <<to_rank<<"\n";
 #endif //TESTING
 
   ostringstream temp; temp.str("");
@@ -685,7 +702,7 @@ int comm_mpi::receive_cell_data(
 
   for (int i=0; i<ncell; i++) {
     CI.get_ipos(*c,cpos);
-    err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_INT, MPI_COMM_WORLD);
+    err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_LONG, MPI_COMM_WORLD);
     err += MPI_Unpack(buf, ct, &position, ipos,  SimPM.ndim, MPI_INT, MPI_COMM_WORLD);
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -704,8 +721,10 @@ int comm_mpi::receive_cell_data(
     //for (int v=0; v<SimPM.ndim; v++)       
     //  if (ipos[v]!=cpos[v])
     //	cout <<"*** Position x["<<v<<"] for received cell "<<i<<": got x="<<ipos[v]<<" expected x="<<cpos[v]<<"; distance="<<ipos[v]-cpos[v]<<"\n";
-    //rep.printVec("\trecvd",ipos,SimPM.ndim);
-    //rep.printVec("\tlocal",cpos,SimPM.ndim);
+#ifdef TESTING
+    rep.printVec("\trecvd",ipos,SimPM.ndim);
+    rep.printVec("\tlocal",cpos,SimPM.ndim);
+#endif
     ++c;
   }
 

@@ -137,6 +137,8 @@
 /// - 2015.01.13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
 /// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -286,33 +288,14 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 #endif
 
   //
-  // Some simulations have rapid inflow which is not on the domain for
-  // the first timestep, so we calculate a timestep for the boundary
-  // cell also, in the -x direction only! So make sure the inflow is
-  // always in the x-direction from the left.  We do this for the
-  // first few steps only, and only if doing a stellar-jet or
-  // stellar-wind simulation.
-  //
-  // [NOTE: I WOULD LIKE TO MAKE THIS BETTER.  THERE SHOULD BE CORNER
-  // BOUNDARY CELLS SO I SHOULD BE ABLE TO TRACE OUT THE WHOLE GRID
-  // INCLUDING BOUNDARY DATA IN ONE GO.  IT'S ON THE TO-DO LIST!]
-
-  //
-  // First calculate for a boundary point (in case of incoming jet or
-  // stellar wind!).
+  // For the first 10 timesteps, we calculate the timestep for
+  // boundary data too, because we can have some setups with rapid
+  // inflow (such as a jet), which doesn't appear on the grid
+  // immediately.
   //
 #ifndef RT_TEST_PROBS
   if (SimPM.timestep<=10) {
-     c = grid->NextPt(c,XN);
-     tempdt = eqn->CellTimeStep(c,SimPM.gamma,SimPM.dx);
-     c = grid->NextPt(c,XP);
-#ifdef TESTING
-     cout <<"\tBoundary point timestep! ";
-#endif
-     dt = min(dt,tempdt);
-#ifdef TESTING
-     cout <<"\tdt = "<<tempdt<<"\n";  
-#endif
+     c = grid->FirstPt_All();
   }
 #endif // not RT_TEST_PROBS
 
@@ -333,8 +316,26 @@ double sim_control_fixedgrid::calc_dynamics_dt(
       rep.error("CellTimeStep function returned failing value",c->id);
     //    commandline.console("timestep -> ");
     dt = min(dt, tempdt);
-    //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";    
-  } while ( (c =grid->NextPt(c)) !=0);
+    //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
+
+    //
+    // Move to next cell.  For the first few steps, we include
+    // boundary data in this, using NextPt_All(); otherwise use the
+    // NextPt() command to only take grid cells.
+    //
+#ifndef RT_TEST_PROBS
+    if (SimPM.timestep<=10) {
+      c = grid->NextPt_All(c);
+    }
+    else {
+#endif // not RT_TEST_PROBS
+      c = grid->NextPt(c);
+#ifndef RT_TEST_PROBS
+    }
+#endif // not RT_TEST_PROBS
+
+  } while (c != 0);
+
   if (dt <= 0.0)
     rep.error("Got zero timestep!!!",dt);
 #ifdef TESTING
