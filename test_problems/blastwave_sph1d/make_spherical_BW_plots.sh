@@ -61,8 +61,6 @@ $file1 $file2 $file3 \
 "Hyb, FKJ98, N=256" "RPV, FKJ98, N=256" "FVS, FKJ98, N=256"
 
 
-#exit
-
 ./plot_sphBW_radius.sh ${data_dir}/BW1D_radius_Roe_HCorr \
 ${data_dir}/msg_BW1D_phys_n128_Roe_Hcorrinfo.txt \
 ${data_dir}/msg_BW1D_phys_n256_Roe_Hcorrinfo.txt \
@@ -93,4 +91,7 @@ ${data_dir}/msg_BW1D_phys_n256_RPV_FKJav01info.txt \
 ${data_dir}/msg_BW1D_phys_n512_RPV_FKJav01info.txt \
 "RPV, FKJ98, N=128" "RPV, FKJ98, N=256" "RPV, FKJ98, N=512"
 
+mkdir -p ${data_dir}/../FIGS
+mv ${data_dir}/*.png ${data_dir}/../FIGS/
 exit
+
