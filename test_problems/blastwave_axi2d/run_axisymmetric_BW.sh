@@ -16,23 +16,23 @@ data_dir=$3   # should be sub-directory 'blastwave_axi2d' of the test-results di
 
 
 # In case it doesn't exist, create the destination directory.
-mkdir $data_dir
+mkdir -p $data_dir
 
 cd ${code_dir}
-echo "MAKE IN" $code_dir
+echo "MAKE IN" ${code_dir}
 #bash ./clean.sh
 bash ./compile_code.sh
 echo "MAKE FINISHED"
-cp ../icgen_* ../pion_* $test_dir
-cd $test_dir
+cp ../icgen_* ../pion_* ${test_dir}
+cd ${test_dir}
 
 ICGEN="./icgen_serial"
 PION="./pion_serial"
 
-${ICGEN} ${test_dir}/pf_axi2dBW_HalfPlane_NR064.txt   silo redirect=tmp_NR064_
-${ICGEN} ${test_dir}/pf_axi2dBW_HalfPlane_NR128.txt   silo redirect=tmp_NR128_
-${ICGEN} ${test_dir}/pf_axi2dBW_HalfPlane_NR256.txt   silo redirect=tmp_NR256_
-${ICGEN} ${test_dir}/pf_axi2dBW_HalfPlane_NR512.txt   silo redirect=tmp_NR512_
+${ICGEN} ${test_dir}/params_axi2dBW_HalfPlane_NR064.txt   silo redirect=tmp_NR064_
+${ICGEN} ${test_dir}/params_axi2dBW_HalfPlane_NR128.txt   silo redirect=tmp_NR128_
+${ICGEN} ${test_dir}/params_axi2dBW_HalfPlane_NR256.txt   silo redirect=tmp_NR256_
+${ICGEN} ${test_dir}/params_axi2dBW_HalfPlane_NR512.txt   silo redirect=tmp_NR512_
 
 #
 #
@@ -46,31 +46,31 @@ for NNN in "n064" "n128" "n256" "n512"
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=3 \
-    opfreq_time=1.0e20 finishtime=3.16e10 &
+    opfreq_time=1.0e20 finishtime=3.156e10 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=5 \
-    opfreq_time=1.0e20 finishtime=3.16e10 &
+    opfreq_time=1.0e20 finishtime=3.156e10 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=6 \
-    opfreq_time=1.0e20 finishtime=3.16e10 &
+    opfreq_time=1.0e20 finishtime=3.156e10 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=4 \
-    opfreq_time=1.0e20 finishtime=3.16e10 &
+    opfreq_time=1.0e20 finishtime=3.156e10 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr   \
     cfl=0.3 AVtype=3 EtaVisc=0.0 solver=4 \
-    opfreq_time=1.0e20 finishtime=3.16e10 &
+    opfreq_time=1.0e20 finishtime=3.156e10 &
 #
   wait
 #
@@ -82,31 +82,31 @@ for NNN in "n064" "n128" "n256" "n512"
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=3 \
-    opfreq_time=1.0e20  &
+    opfreq_time=1.0e20 finishtime=1.578e12 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=5 \
-    opfreq_time=1.0e20  &
+    opfreq_time=1.0e20 finishtime=1.578e12 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=6 \
-    opfreq_time=1.0e20  &
+    opfreq_time=1.0e20 finishtime=1.578e12 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=4 \
-    opfreq_time=1.0e20  &
+    opfreq_time=1.0e20 finishtime=1.578e12 &
 #
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr  \
     cfl=0.3 AVtype=3 EtaVisc=0.0 solver=4 \
-    opfreq_time=1.0e20  &
+    opfreq_time=1.0e20 finishtime=1.578e12 &
 #
   wait
 done
@@ -116,8 +116,8 @@ done
 # --------------------------------------------------------------------
 # Now I should have a sequence for each simulation of:
 # 0: initial conditions
-# 1: Results at  1 kyr (3.16e10)
-# 2: Results at 50 kyr (1.58e12)
+# 1: Results at  1 kyr (3.156e10)
+# 2: Results at 50 kyr (1.578e12)
 # 3: checkpoint file 1 .9999998.silo
 # 4: checkpoint file 2 .9999999.silo
 #
