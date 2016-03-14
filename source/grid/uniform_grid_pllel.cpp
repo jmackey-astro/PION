@@ -1,4 +1,4 @@
-/// \file uniform_grid_pllel.cc
+/// \file uniform_grid_pllel.cpp
 /// \author Jonathan Mackey
 /// 
 /// Definitions for parallel uniform grid.
@@ -36,6 +36,8 @@
 /// - 2013.09.05 JM: Debugged for new get/set col functions.
 /// - 2015.01.28 JM: Removed GEOMETRIC_GRID (it is default now), and
 ///    updated for the new code structure.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -66,16 +68,21 @@ UniformGridParallel::UniformGridParallel(
       int nd,
       int nv,
       int eqt,
-      double *xn,
-      double *xp,
-      int *nc,
+      int nbc, ///< number of boundary cells to use.
+      double *xn, ///< array of minimum values of x,y,z for this grid.
+      double *xp, ///< array of maximum values of x,y,z for this grid.
+      int *nc,    ///< array of number of cells in x,y,z directions.
+      double *sim_xn, ///< array of min. x/y/z for full simulation.
+      double *sim_xp, ///< array of max. x/y/z for full simulation.
       class MCMDcontrol *p
       )
   :
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,xn,xp,nc)
+  UniformGrid(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp)
 {
-  //cout <<"UniformGridParallel constructor.\n";
+#ifdef TESTING
+  cout <<"UniformGridParallel constructor.\n";
+#endif
   //rep.printVec("Local Xmin",xn,nd);
   //rep.printVec("Local Xmax",xp,nd);
   //rep.printVec("Local Npt ",nc,nd);
@@ -86,28 +93,18 @@ UniformGridParallel::UniformGridParallel(
   //  RT_bd=0;
 #endif // PLLEL_RT
 
-  //
-  // If we need to know about the global size of the simulation:
-  //
-  SIM_ixmin  = mem.myalloc(SIM_ixmin, G_ndim); 
-  SIM_ixmax  = mem.myalloc(SIM_ixmax, G_ndim); 
-  SIM_irange = mem.myalloc(SIM_irange,G_ndim); 
-  //
-  // Set integer dimensions/location of grid.
-  //
-  CI.get_ipos_vec(SimPM.Xmin, SIM_ixmin );
-  CI.get_ipos_vec(SimPM.Xmax, SIM_ixmax );
-  for (int v=0;v<G_ndim;v++)
-    SIM_irange[v] = SIM_ixmax[v]-SIM_ixmin[v];
-  //rep.printVec("SIM iXmin ", SIM_ixmin, G_ndim);
-  //rep.printVec("SIM iXmax ", SIM_ixmax, G_ndim);
-  //rep.printVec("SIM iRange", SIM_irange,G_ndim);
+  //rep.printVec("SIM iXmin ", Sim_ixmin, G_ndim);
+  //rep.printVec("SIM iXmax ", Sim_ixmax, G_ndim);
+  //rep.printVec("SIM iRange", Sim_irange,G_ndim);
   
   //
   // Set pointer to muli-core class.
   //
   mpiPM = p;
 
+#ifdef TESTING
+  cout <<"UniformGridParallel constructor done.\n";
+#endif
   return;
 }
 
@@ -121,7 +118,7 @@ UniformGridParallel::UniformGridParallel(
 UniformGridParallel::~UniformGridParallel()
 {
 #ifdef TESTING
-  //cout <<"UniformGridParallel destructor.\n";
+  cout <<"UniformGridParallel destructor.\n";
 #endif
 #ifdef PLLEL_RT
   //
@@ -152,41 +149,6 @@ UniformGridParallel::~UniformGridParallel()
           }
         } // if pre-existing.
         
-        //
-        // Else we created the cells too, so we need to delete them.
-        //
-        else {
-          //cout <<"\t    Deleting  created boundary data for dir: "<<n<<"\n";
-          //cout <<"\t    Deleting created  boundary data for dir: "<<n<<"\n";
-          if      (!b) {
-            //cout <<"\t\tZero boundary data pointer for dir: "<<n<<"\n";
-          }
-          else if (b->data.empty()) {
-            //cout <<"\t\tRT_BC destructor: No boundary cells to delete.\n";
-          }
-          else {
-            //cout <<"\t    Deleting standard boundary data for dir: "<<n<<"\n";
-            list<cell *>::iterator i=b->data.begin();
-            do {
-              //cout <<"\t\tDeleting an RT boundary cell...\n";
-              if (isrc==0) {
-                //
-                // only delete the actual cell in the first pass through.  So the first 
-                // source should always be the ionising source!
-                //
-                deleteCell(*i);  // This seems to work in terms of actually freeing the memory.
-              }
-              b->data.erase(i);
-              i=b->data.begin();
-            }  while(i!=b->data.end());
-            if(b->data.empty()) {
-              //cout <<"\t\tDeleting RT Boundary data done.\n";
-            }
-            else {
-              //cout <<"\t not empty list! FIX ME!!!\n";
-            }
-          }
-        }
 
         //cout <<"\t\tNow deleting boundary data...\n";
         if (b) {
@@ -225,10 +187,6 @@ UniformGridParallel::~UniformGridParallel()
   }
 #endif // PLLEL_RT
 
-  SIM_ixmin  = mem.myfree(SIM_ixmin);
-  SIM_ixmax  = mem.myfree(SIM_ixmax);
-  SIM_irange = mem.myfree(SIM_irange);
-
   return;
 }
 
@@ -243,115 +201,128 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
 {
   string fname="UniformGridParallel::BC_setBCtypes";
 #ifdef TESTING
-  cout <<"Set BC types...\n";
-#endif 
-  if(bctype=="FIXED" || bctype=="PERIODIC" || bctype=="ABSORBING") {
-#ifdef TESTING
-    cout <<"using old-style boundary condition specifier: "<<bctype<<" on all sides.\n";
-    cout <<"Converting to new style specifier.\n";
-#endif 
-    
-    if (bctype=="FIXED") {
-      bctype = "XNfix_XPfix_";
-      if (G_ndim>1) bctype += "YNfix_YPfix_";
-      if (G_ndim>2) bctype += "ZNfix_ZPfix_";
-    }
-    else if (bctype=="PERIODIC") {
-      bctype = "XNper_XPper_";
-      if (G_ndim>1) bctype += "YNper_YPper_";
-      if (G_ndim>2) bctype += "ZNper_ZPper_";
-    }
-    else if (bctype=="ABSORBING") {
-      bctype = "XNout_XPout_";
-      if (G_ndim>1) bctype += "YNout_YPout_";
-      if (G_ndim>2) bctype += "ZNout_ZPout_";
-    }
-#ifdef TESTING
-    cout <<"New bctype string = "<<bctype<<"\n";
-#endif 
-  }
-  // Set up boundary data struct.  Assumes bctype is in format "XPper XNper " etc.,
-  // so that each boundary is defined by 6 characters, and number of boundaries is
-  // given by length/6.
-  int len = bctype.length(); len = (len+5)/6;
-  if (len < 2*G_ndim) rep.error("Need boundaries on all sides!",len);
-#ifdef TESTING
-  cout <<"Got "<<len<<" boundaries to set up.\n";
+  cout <<"PLLEL: Set BC types...\n";
 #endif 
 
-  int i=0; string::size_type pos; 
+  //
+  // Set up boundary data struct.  Assumes bctype is in format
+  // "XPper XNper " etc., so that each boundary is defined by 6
+  // characters, and number of boundaries is given by length/6.
+  //
+  int len = bctype.length();
+  len = (len+5)/6;
+  if (len < 2*G_ndim) {
+    rep.error("Need boundaries on all sides!",len);
+  }
+#ifdef TESTING
+  cout <<"PLLEL: Got "<<len<<" boundaries to set up.\n";
+#endif
+
+  //
+  // Remove any internal boundary specifiers that are not on my
+  // local domain.
+  //
+  int i=0;
+  string::size_type pos;
   if (len > 2*G_ndim) {
 #ifdef TESTING
     cout <<"\t checking if I need extra boundaries in this subdomain.\n";
-#endif 
-    // Go through all the internal boundaries I know about, and see if the
-    // subdomain needs to know about them.
+#endif
+    //
+    // Go through all the internal boundaries I know about, and see
+    // if the subdomain needs to know about them.
+    //
     for (i=2*G_ndim; i<=len; i++) {
       if ( (pos=bctype.find("INjet")) !=string::npos) {
-        // Jet always comes in from the XN boundary, at the YN corner in 2d,
-        // and at the centre of the boundary in 3d.
-        // So in 2D I will always assume that proc 0 only needs to know about the jet
-        // i.e. a processor always spans the jet width.
-        // In 3D it's more complicated, and perhaps all processors on the XN boundary
-        // should keep the jet BC, even though some might be empty.
+        //
+        // Jet always comes in from the XN boundary, at the YN corner
+        // in 2d, and at the centre of the boundary in 3d.
+        //
+        // So in 2D I will always assume that proc 0 only needs to
+        // know about the jet i.e. a processor always spans the jet
+        // width.
+        //
+        // In 3D it's more complicated, and perhaps all processors on
+        // the XN boundary should keep the jet BC, even though some
+        // might be empty.
+        //
         if (G_ndim==2) {
           if (mpiPM->get_myrank() !=0) {
             cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
-      bctype.erase(pos,6);
+            bctype.erase(pos,6);
 #ifdef TESTING
-      cout <<"Removed jet bc;  bctype = "<<bctype<<"\n";
+            cout <<"Removed jet bc;  bctype = "<<bctype<<"\n";
 #endif 
-      len -= 1;
-    }
+            len -= 1;
+          }
         }
-  else if (G_ndim==3) {
-    if (!pconst.equalD(SimPM.Xmin[XX], mpiPM->LocalXmin[XX])) {
+        else if (G_ndim==3) {
+          if (!pconst.equalD(Sim_xmin[XX], G_xmin[XX])) {
 #ifdef TESTING
-      cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
+            cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
 #endif 
-      bctype.erase(pos,6);
+            bctype.erase(pos,6);
 #ifdef TESTING
-      cout <<"Removed jet bc;  bctype = "<<bctype<<"\n";
+            cout <<"Removed jet bc;  bctype = "<<bctype<<"\n";
 #endif 
-      len -= 1;
-    }
+            len -= 1;
+          }
         }
         else rep.error("Bad ndim for jet simulation in BC_setBCtypes()",G_ndim);
       }
       else if ( (pos=bctype.find("INdm2")) !=string::npos) {
-  // This is a test problem (double mach reflection) with hard-coded
-  // boundaries, and this boundary is along the YN boundary between
-  // x=[0,1/6].
-  if ( (!pconst.equalD(SimPM.Xmin[YY],mpiPM->LocalXmin[YY])) 
-       || (mpiPM->LocalXmin[XX]>1./6.) ) {
+        //
+        // This is a test problem (double mach reflection) with
+        // hard-coded boundaries, and this boundary is along the YN
+        // boundary between x=[0,1/6].
+        //
+        if ( (!pconst.equalD(Sim_xmin[YY],G_xmin[YY])) ||
+             (G_xmin[XX]>1./6.) ) {
 #ifdef TESTING
-    cout <<"Removing dmr2 bc; bctype = "<<bctype<<"\n";
+          cout <<"Removing dmr2 bc; bctype = "<<bctype<<"\n";
 #endif 
-    bctype.erase(pos,6);
+          bctype.erase(pos,6);
 #ifdef TESTING
-    cout <<"Removed dmr2 bc;  bctype = "<<bctype<<"\n";
+          cout <<"Removed dmr2 bc;  bctype = "<<bctype<<"\n";
 #endif 
-    len -= 1;
-  }
+          len -= 1;
+        }
       }
       else if ( (pos=bctype.find("INwnd")) !=string::npos) {
-  //
-  // This is a stellar wind problem -- it only sets cells which
-  // are on the domain to be part of the wind, so we can let
-  // every proc set it up without any trouble.
-  //
+        //
+        // This is a stellar wind problem -- it only sets cells which
+        // are on the domain to be part of the wind, so we can let
+        // every proc set it up without any trouble.
+        //
       }
-      else rep.error("Couldn't find boundary condition for extra boundary condition","IN");
+      else {
+        rep.error("Couldn't find boundary condition for extra \
+                   boundary condition","IN");
+      }
     } // loop through extra boundaries.
   } // checking if extra boundaries are needed.
   
+  //
+  // Now call serial version of setBCtypes, to set up the boundaries
+  // that are left.
+  //
+  int err = UniformGrid::BC_setBCtypes(bctype);
+  if (err) {
+    rep.error("UniGridPllel::BC_setBCtypes:: serial call error",err);
+  }
+  
+  //
+  // Now go through the 6 directions, and see if we need to replace
+  // any edge boundaries with MPI communication boundaries, if the
+  // local grid does not reach the global grid boundary.
+  //
   i=0; enum axes dir;
   string temp;
   // Loop through boundaries, and if local boundary is not sim boundary,
   // set it to be a parallel boundary.
   for (i=0; i<G_ndim; i++) {
     dir = static_cast<axes>(i);
-    if (!pconst.equalD(G_xmin[i], SimPM.Xmin[i])) {
+    if (!pconst.equalD(G_xmin[i], Sim_xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
       if      (dir==XX) temp = "XNmpi_";
       else if (dir==YY) temp = "YNmpi_";
@@ -359,7 +330,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
       else rep.error("Bad axis!",dir);
       bctype.replace(2*i*6,6,temp); cout <<"new bctype="<<bctype<<"\n";
     }
-    if (!pconst.equalD(G_xmax[i], SimPM.Xmax[i])) {
+    if (!pconst.equalD(G_xmax[i], Sim_xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
       if      (dir==XX) temp = "XPmpi_";
       else if (dir==YY) temp = "YPmpi_";
@@ -369,69 +340,27 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
     }
   }
   
-  // Now set up boundary data structs.
-  BC_bd=0; 
-  BC_bd = mem.myalloc(BC_bd,len);
-  UniformGrid::BC_nbd = len;
-
-  // Now go through the domain edge boundaries and assign them.
+  //
+  // Now go through the domain edge boundaries and assign any that
+  // are MPI boundaries.
+  //
   string d[6] = {"XN","XP","YN","YP","ZN","ZP"};
   for (i=0; i<2*G_ndim; i++) {
     BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
     if ( (pos=bctype.find(d[i])) == string::npos)
       rep.error("Couldn't find boundary condition for ",d[i]);
     BC_bd[i].type = bctype.substr(pos+2,3);
-    if      (BC_bd[i].type=="per") {BC_bd[i].itype=PERIODIC; BC_bd[i].type="PERIODIC";}
-    else if (BC_bd[i].type=="out" ||
-       BC_bd[i].type=="abs") {BC_bd[i].itype=OUTFLOW; BC_bd[i].type="OUTFLOW";}
-    else if (BC_bd[i].type=="owo") {BC_bd[i].itype=ONEWAY_OUT; BC_bd[i].type="ONEWAY_OUT";}
-    else if (BC_bd[i].type=="inf") {BC_bd[i].itype=INFLOW ; BC_bd[i].type="INFLOW";}
-    else if (BC_bd[i].type=="ref") {BC_bd[i].itype=REFLECTING; BC_bd[i].type="REFLECTING";}
-    else if (BC_bd[i].type=="jrf") {BC_bd[i].itype=JETREFLECT; BC_bd[i].type="JETREFLECT";}
-    else if (BC_bd[i].type=="fix") {BC_bd[i].itype=FIXED; BC_bd[i].type="FIXED";}
-    else if (BC_bd[i].type=="dmr") {BC_bd[i].itype=DMACH; BC_bd[i].type="DMACH";}
-    else if (BC_bd[i].type=="mpi") {BC_bd[i].itype=BCMPI; BC_bd[i].type="BCMPI";}
-    else if (BC_bd[i].type=="sb1") {
-      BC_bd[i].itype=STARBENCH1;
-      BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
+    if (BC_bd[i].type=="mpi") {
+      BC_bd[i].itype=BCMPI;
+      BC_bd[i].type="BCMPI";
     }
-    else rep.error("Don't know this BC type",BC_bd[i].type);
-    
-    if(!BC_bd[i].data.empty()) rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
-    BC_bd[i].refval=0;
 #ifdef TESTING
-    cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
+    cout <<"\tPLLEL: Boundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
 #endif 
   }
 
-  // If there are any extra boundaries, deal with them too.
-  if (i<BC_nbd) {
 #ifdef TESTING
-    cout <<"Got "<<i<<" boundaries, but have "<<BC_nbd<<" boundaries.\n";
-    cout <<"Must have extra BCs... checking if I know what they are.\n";
-#endif 
-    do {
-      BC_bd[i].dir = NO;
-      // search string, starting at position 6i.
-      // This ensures if we have more than one internal boundary, that we
-      // don't keep finding the first one...
-      if ( (pos=bctype.find("IN",i*6)) ==string::npos)
-  rep.error("Couldn't find boundary condition for extra boundary condition","IN");
-      BC_bd[i].type = bctype.substr(pos+2,3);
-      if      (BC_bd[i].type=="jet") {BC_bd[i].itype=JETBC; BC_bd[i].type="JETBC";}
-      else if (BC_bd[i].type=="dm2") {BC_bd[i].itype=DMACH2; BC_bd[i].type="DMACH2";}
-      else if (BC_bd[i].type=="wnd") {BC_bd[i].itype=STWIND;   BC_bd[i].type="STWIND";}
-      else rep.error("Don't know this BC type",BC_bd[i].type);
-      if(!BC_bd[i].data.empty()) rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
-      BC_bd[i].refval=0;
-#ifdef TESTING
-      cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
-#endif 
-      i++;
-    } while (i<BC_nbd);
-  }
-#ifdef TESTING
-  cout <<"BC types and data set up.\n";
+  cout <<"PLLEL: BC types and data set up.\n";
 #endif 
 
   //
@@ -439,32 +368,44 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
   // wrap around.  So set the number of procs in each direction.
   //
   int nx[SimPM.ndim];
-  for (i=0;i<G_ndim;i++)
-    nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/mpiPM->LocalRange[i]);
+  for (i=0;i<G_ndim;i++) {
+    nx[i] =static_cast<int>(ONE_PLUS_EPS*Sim_range[i]/G_range[i]);
+  }
   for (i=0; i<2*G_ndim; i++) {
     if (BC_bd[i].itype == PERIODIC) {
       switch (i) {
        case XN:
-  mpiPM->ngbprocs[XN] = mpiPM->get_myrank() +nx[XX] -1; break;
+        mpiPM->ngbprocs[XN] = mpiPM->get_myrank() +nx[XX] -1;
+        break;
        case XP:
-  mpiPM->ngbprocs[XP] = mpiPM->get_myrank() -nx[XX] +1; break;
+        mpiPM->ngbprocs[XP] = mpiPM->get_myrank() -nx[XX] +1;
+        break;
        case YN:
-  mpiPM->ngbprocs[YN] = mpiPM->get_myrank() +(nx[YY]-1)*nx[XX]; break;
+        mpiPM->ngbprocs[YN] = mpiPM->get_myrank() +(nx[YY]-1)*nx[XX];
+        break;
        case YP:
-  mpiPM->ngbprocs[YP] = mpiPM->get_myrank() -(nx[YY]-1)*nx[XX]; break;
+        mpiPM->ngbprocs[YP] = mpiPM->get_myrank() -(nx[YY]-1)*nx[XX];
+        break;
        case ZN:
-  mpiPM->ngbprocs[ZN] = mpiPM->get_myrank() +(nx[ZZ]-1)*nx[YY]*nx[XX]; break;
+        mpiPM->ngbprocs[ZN] = mpiPM->get_myrank() +
+                              (nx[ZZ]-1)*nx[YY]*nx[XX];
+        break;
        case ZP:
-  mpiPM->ngbprocs[ZP] = mpiPM->get_myrank() -(nx[ZZ]-1)*nx[YY]*nx[XX]; break;
+        mpiPM->ngbprocs[ZP] = mpiPM->get_myrank() -
+                              (nx[ZZ]-1)*nx[YY]*nx[XX];
+        break;
        default:
-  rep.error("UniformGridParallel::BC_setBCtypes: Bad direction",i); break;
+        rep.error("UniformGridParallel::BC_setBCtypes: Bad direction",i);
+        break;
       } // set neighbour according to direction.
-      if ( (mpiPM->ngbprocs[i]<0) || (mpiPM->ngbprocs[i]>=mpiPM->get_nproc()) )
-  rep.error("UniformGridParallel::BC_setBCtypes: Bad periodic neighbour",mpiPM->ngbprocs[i]);
+      if ( (mpiPM->ngbprocs[i]<0) ||
+           (mpiPM->ngbprocs[i]>=mpiPM->get_nproc()) )
+        rep.error("UniformGridParallel::BC_setBCtypes: Bad periodic \
+                   neighbour",mpiPM->ngbprocs[i]);
       if (mpiPM->ngbprocs[i] == mpiPM->get_myrank()) {
-  //  cout <<"UniformGridParallel::BC_setBCtypes: only one proc in dir [i]: "<<i<<"\n";
-  //  cout <<"UniformGridParallel::BC_setBCtypes: periodic on single proc, so setting ngb to -999.\n";
-  mpiPM->ngbprocs[i] = -999;
+        //  cout <<"UniformGridParallel::BC_setBCtypes: only one proc in dir [i]: "<<i<<"\n";
+        //  cout <<"UniformGridParallel::BC_setBCtypes: periodic on single proc, so setting ngb to -999.\n";
+        mpiPM->ngbprocs[i] = -999;
       }
     } // if periodic  
 #ifdef TESTING
@@ -481,37 +422,17 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
 
 
 
-int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
+int UniformGridParallel::assign_boundary_data()
 {
-  BC_nbc = Nbc;
-  if (BC_setBCtypes(typeofbc) !=0)
-    rep.error("UniformGrid::setupBCs() Failed to set types of BC",1);
-  
-  // This function loops through all points on the grid, and if it is an
-  // edge point, it finds which direction(s) are off the grid and sets up
-  // boundary cell(s) in that direction.
-  class cell *c, *temppt;
-  enum direction dir; int err=0;
-  c = FirstPt();
-  //  cout <<"Assigning edge data.\n";
-  do {
-    if (c->isedge !=0) {
-      for (int i=0;i<2*G_ndim;i++) {
-        dir = static_cast<enum direction>(i);
-         temppt=NextPt(c,dir);
-         if (temppt==0) {
-           c->ngb[dir] = BC_setupBCcells(c, dir, G_dx, 1);
-           if (c->ngb[dir]==0)
-             rep.error("Failed to set up boundary cell",c->ngb[dir]);
-         } // if dir points off the grid.
-      } // Loop over all neighbours
-    } // if an edge point.
-    // If I use internal boundaries in the future:
-    // if (c->isbd) bc->assignIntBC(c);
-  } while ( (c=NextPt(c)) !=0);
-  if (err!=0) rep.error("Failed to set up Boundary cells",err);
-  // cout <<"Done.\n";
+#ifdef TESTING
+  cout<<"UniformGridParallel::assign_boundary_data()\n";
+#endif // TESTING
+  //
   // Loop through all boundaries, and assign data to them.
+  // This is only different to the serial version in that it includes
+  // BCMPI boundaries (MPI communication of internal boundaries).
+  //
+  int err=0;
   for (int i=0; i<BC_nbd; i++) {
     switch (BC_bd[i].itype) {
      case PERIODIC:   err += BC_assign_PERIODIC(  &BC_bd[i]); break;
@@ -524,13 +445,13 @@ int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
      case JETREFLECT: err += BC_assign_JETREFLECT(&BC_bd[i]); break;
      case DMACH:      err += BC_assign_DMACH(     &BC_bd[i]); break;
      case DMACH2:     err += BC_assign_DMACH2(    &BC_bd[i]); break;
-     case BCMPI:      err += BC_assign_BCMPI(&BC_bd[i],BC_MPItag); break;
+     case BCMPI: err += BC_assign_BCMPI(&BC_bd[i],BC_MPItag); break;
      case STWIND:     err += BC_assign_STWIND(    &BC_bd[i]); break;
      case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
     }
-    if (i==XP || (i==YP && G_ndim>=2) || (i==ZP && G_ndim==3)) {
+    if (i==XP || (i==YP && G_ndim>1) || (i==ZP && G_ndim==3)) {
       // Need to make sure all processors are updating boundaries along
       // each axis together, so that there is no deadlock from one 
       // process sending data in y/z-dir into a processor that is still
@@ -538,7 +459,10 @@ int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
       COMM->barrier("UniformGridParallel__SetupBCs");
     }
   }
-  return(err);
+#ifdef TESTING
+  cout<<"UniformGridParallel::assign_boundary_data() finished\n";
+#endif // TESTING
+  return err;
 }
 
 
@@ -548,7 +472,10 @@ int UniformGridParallel::SetupBCs(int Nbc, string typeofbc)
 
 
 
-int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxstep)
+int UniformGridParallel::TimeUpdateExternalBCs(
+      const int cstep,
+      const int maxstep
+      )
 {
   struct boundary_data *b;
   int i=0; int err=0;
@@ -565,7 +492,7 @@ int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxste
     case JETREFLECT: err += BC_update_JETREFLECT( b, cstep, maxstep); break;
     case DMACH:      err += BC_update_DMACH(      b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
-    case BCMPI:      err += BC_update_BCMPI(      b, cstep, maxstep,BC_MPItag); break;
+    case BCMPI: err += BC_update_BCMPI( b, cstep, maxstep,BC_MPItag); break;
     case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
     case STWIND: case RADSHOCK: case RADSH2:
       //
@@ -596,19 +523,22 @@ int UniformGridParallel::TimeUpdateExternalBCs(const int cstep, const int maxste
 
 
 
-int UniformGridParallel::BC_assign_PERIODIC(  boundary_data *b)
+int UniformGridParallel::BC_assign_PERIODIC(
+      boundary_data *b
+      )
 {
-  // For parallel grid, periodic data is on a different processor,
+  //
+  // For parallel grid, periodic data may be on a different proc.,
   // which is already pointed to by mpiPM->ngbprocs[b->dir]
   // So I just have to call BC_assign_BCMPI and it will do the job.
   int err=0;
   if (mpiPM->ngbprocs[b->dir] <0) {
-    //    cout <<"BC_assign_PERIODIC: non comm periodic in direction "<<b->dir<<"\n";
+    // cout <<"BC_assign_PERIODIC: non comm periodic in direction "<<b->dir<<"\n";
     err = UniformGrid::BC_assign_PERIODIC(b);
   }
   else {
-    //    cout<<"BC_assign_PERIODIC: communicating periodic bc in direction "<<b->dir<<"\n";
-    //    cout<<"BC_assign_PERIODIC: calling mpi assign BC function\n";
+    // cout<<"BC_assign_PERIODIC: communicating periodic bc in direction "<<b->dir<<"\n";
+    // cout<<"BC_assign_PERIODIC: calling mpi assign BC function\n";
     err = UniformGridParallel::BC_assign_BCMPI(b,BC_PERtag);
   }
   return err;
@@ -621,22 +551,25 @@ int UniformGridParallel::BC_assign_PERIODIC(  boundary_data *b)
 
 
 
-int UniformGridParallel::BC_update_PERIODIC(   struct boundary_data *b,
-                 const int cstep,
-                 const int maxstep
-                 )
+int UniformGridParallel::BC_update_PERIODIC(
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
 {
-  // For parallel grid, periodic data is on a different processor,
+  //
+  // For parallel grid, periodic data can be on a different proc.,
   // which is already pointed to by mpiPM->ngbprocs[b->dir]
   // So I just have to call BC_update_BCMPI and it will do the job.
+  //
   int err=0;
   if (mpiPM->ngbprocs[b->dir] <0) {
-    //    cout <<"BC_update_PERIODIC: non-communicating periodic BC in direction "<<b->dir<<"\n";
+    // cout <<"BC_update_PERIODIC: non-communicating periodic BC in direction "<<b->dir<<"\n";
     err = UniformGrid::BC_update_PERIODIC(b,cstep,maxstep);
   }
   else {
-    //    cout<<"BC_update_PERIODIC: communicating periodic BC in direction "<<b->dir<<"\n";
-    //    cout<<"BC_update_PERIODIC: calling mpi update BC function\n";
+    // cout<<"BC_update_PERIODIC: communicating periodic BC in direction "<<b->dir<<"\n";
+    // cout<<"BC_update_PERIODIC: calling mpi update BC function\n";
     err = UniformGridParallel::BC_update_BCMPI(b,cstep,maxstep,BC_PERtag);
   }
   return err;
@@ -649,140 +582,27 @@ int UniformGridParallel::BC_update_PERIODIC(   struct boundary_data *b,
 
 
 
-int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
-           int comm_tag
-           )
+int UniformGridParallel::BC_assign_BCMPI(
+      boundary_data *b,
+      int comm_tag
+      )
 {
-  // first choose cells to send and send this boundary to appropriate
-  // processor.
-  list<cell *> cells;
-  int ncell=0;
-  int err  =0;
+  //
+  // This is the same as the update function, except that we want
+  // to set P[] and Ph[] vectors to the same values, so we set cstep
+  // equal to maxstep.
+  //
+  int err = 0;
 #ifdef TESTING
   cout <<"*******************************************\n";
-  cout <<"BC_assign_BCMPI: sending data in dir: "<<b->dir<<"\n";
+  cout <<"BC_assign_BCMPI: starting\n";
 #endif 
-  err += comm_select_data2send(&cells, &ncell, b->dir);
+  err = BC_update_BCMPI(b,2,2,comm_tag);
 #ifdef TESTING
-  cout <<"BC_assign_BCMPI: sending "<<ncell<<" cells.  Boundary data contains "<<b->data.size()<<" cells.\n";
+  cout <<"BC_assign_BCMPI: finished\n";
+  cout <<"*******************************************\n";
 #endif 
-
-  //
-  // New stuff: send the data.
-  //
-  string send_id;
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: sending data...\n";
-#endif 
-  err += COMM->send_cell_data(mpiPM->ngbprocs[b->dir], // to_rank
-            &cells,        // cells list.
-            ncell,        // number of cells.
-            send_id,     // identifier for send.
-            comm_tag
-            );
-  if (err) rep.error("sending data failed",err);
-
-  //
-  // New stuff: receive data.
-  //
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: looking for data to receive...\n";
-#endif 
-  string recv_id; int recv_tag=-1; int from_rank=-1;
-  err = COMM->look_for_data_to_receive(&from_rank, ///< rank of sender
-               recv_id,    ///< identifier for receive.
-               &recv_tag,  ///< comm_tag associated with data.
-               COMM_CELLDATA ///< type of data we want.
-               );
-  if (err) rep.error("look for cell data failed",err);
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: got data to receive from rank: "<<from_rank<<"\n";
-#endif 
-
-  //
-  // See what direction we are getting data from:
-  // This is complicated for the case where we get an internal and a periodic boundary
-  // from the same process -- we need to decide which one we are getting.
-  //
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: associating direction with rank.\n";
-#endif 
-  enum direction dir=NO;
-  for (int i=0; i<2*G_ndim; i++) {
-    if (from_rank == mpiPM->ngbprocs[i]) {
-      if (dir==NO) dir = static_cast<direction>(i);
-      else {
-  //
-  // must be receiving periodic and internal boundary from same proc.
-  // In this case we need to decide which it is, and whether the source
-  // direction is the positive or negative direction.
-  // N.B. if none of the conditions below are satisfied, then the earlier 
-  // assignment of dir was the correct one.  This is just for if the first
-  // assignment was the wrong one.
-  //
-      if (recv_tag == BC_PERtag) {
-    // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
-    if      (from_rank>mpiPM->get_myrank() && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank<mpiPM->get_myrank() && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
-  }
-  else if (recv_tag == BC_MPItag) {
-    // Internal boundary, so in neg.dir. from_rank should be < myrank.
-    if      (from_rank<mpiPM->get_myrank() && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank>mpiPM->get_myrank() && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
-  }
-  else rep.error("bad tag",recv_tag);
-      }
-    }
-  }
-  if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
-#ifdef TESTING
-  cout <<mpiPM->get_myrank()<<"\tBC_assign_BCMPI: Receiving Data type ";
-  cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
-#endif 
-
-  //
-  // Now choose the boundary data associated with boundary we are receiving:
-  //
-  struct boundary_data *recv_b = 0;
-  recv_b = &BC_bd[static_cast<int>(dir)];
-
-  //
-  // Receive the data:
-  //
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: calling COMM->receive_cell_data().\n";
-#endif 
-  err = COMM->receive_cell_data(from_rank,  ///< rank of process we are receiving from.
-        &(recv_b->data),     ///< list of cells to get data for. 
-        recv_b->data.size(), ///< number of cells in list (extra checking!)
-        recv_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-        recv_id      ///< identifier for receive, for any book-keeping that might be needed.
-        );
-  if (err) rep.error("COMM->receive_cell_data() returned error",err);
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: returned from COMM->receive_cell_data().\n";
-#endif 
-
-  //
-  // Set P=Ph for received boundary.
-  //
-  struct boundary_data *b2 = &BC_bd[static_cast<int>(dir)];
-  list<cell*>::iterator c=b2->data.begin();
-  for (c=b2->data.begin(); c!=b2->data.end(); ++c) {
-    for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
-  } // all cells.
-    
-  //
-  // Wait until send is finished, and then return.
-  //
-  //  cout <<"BC_update_BCMPI: waiting for finish "<<b->dir<<"\n";
-  err = COMM->wait_for_send_to_finish(send_id);
-  if (err) rep.error("Waiting for send to complete!", err);
-  //cout <<"BC_update_BCMPI: send and receive finished.\n";
-  //cout <<"BC_update_BCMPI: Sent BC "<<b->dir<<", received BC "<<dir<<"\n";
-  //cout <<"*******************************************\n\n";
-
-  return 0;
+  return err;
 }
 
 
@@ -792,95 +612,133 @@ int UniformGridParallel::BC_assign_BCMPI(boundary_data *b,
 
 
 
-int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
-           const int cstep,
-           const int maxstep,
-           int comm_tag
-           )
+int UniformGridParallel::BC_update_BCMPI(
+      boundary_data *b,
+      const int cstep,
+      const int maxstep,
+      int comm_tag
+      )
 {
+  //
   // first choose cells to send and send this boundary to appropriate
   // processor.
+  //
   list<cell *> cells;
   int ncell=0;
   int err  =0;
-  //cout <<"*******************************************\n";
-  //cout <<"BC_update_BCMPI: sending data in dir: "<<b->dir<<"\n";
-  err += comm_select_data2send(&cells, &ncell, b->dir);
-  //  cout <<"BC_update_BCMPI: sending "<<ncell<<" cells.  Boundary data contains "<<b->data.size()<<" cells.\n";
+#ifdef TESTING
+  cout <<"*******************************************\n";
+  cout <<"BC_update_BCMPI: sending data in dir: "<<b->dir<<"\n";
+#endif 
+  err += comm_select_data2send(&cells, &ncell, b);
+  //cells = b->data;
+  //ncell = cells.size();
+#ifdef TESTING
+  cout <<"BC_update_BCMPI: sending "<<ncell;
+  cout <<" cells.  Boundary data contains "<<b->data.size();
+  cout <<" cells.\n";
+#endif // TESTING
 
   //
-  // New stuff: send the data.
+  // send the data.
   //
   string send_id;
-  err += COMM->send_cell_data(mpiPM->ngbprocs[b->dir], // to_rank
-            &cells,        // cells list.
-            ncell,        // number of cells.
-            send_id,     // identifier for send.
-            comm_tag
-            );
+#ifdef TESTING
+  cout <<"BC_update_BCMPI: sending data...\n";
+#endif 
+  err += COMM->send_cell_data(
+        mpiPM->ngbprocs[b->dir], // to_rank
+        &cells,        // cells list.
+        ncell,        // number of cells.
+        send_id,     // identifier for send.
+        comm_tag
+        );
   if (err) rep.error("sending data failed",err);
 
   //
-  // New stuff: receive data.
+  // receive data.
   //
   string recv_id; int recv_tag=-1; int from_rank=-1;
-  err = COMM->look_for_data_to_receive(&from_rank, ///< rank of sender
-               recv_id,    ///< identifier for receive.
-               &recv_tag,  ///< comm_tag associated with data.
-               COMM_CELLDATA ///< type of data we want.
-               );
+  err = COMM->look_for_data_to_receive(
+        &from_rank, ///< rank of sender
+        recv_id,    ///< identifier for receive.
+        &recv_tag,  ///< comm_tag associated with data.
+        COMM_CELLDATA ///< type of data we want.
+        );
   if (err) rep.error("look for cell data failed",err);
+#ifdef TESTING
+  cout <<"BC_update_BCMPI: got data to receive from rank: "<<from_rank<<"\n";
+#endif 
 
   //
   // See what direction we are getting data from:
-  // This is complicated for the case where we get an internal and a periodic boundary
-  // from the same process -- we need to decide which one we are getting.
+  // This is complicated for the case where we get an internal and a
+  // periodic boundary from the same process -- we need to decide
+  // which one we are getting.
   //
+#ifdef TESTING
+  cout <<"BC_update_BCMPI: associating direction with rank.\n";
+#endif 
   enum direction dir=NO;
   for (int i=0; i<2*G_ndim; i++) {
     if (from_rank == mpiPM->ngbprocs[i]) {
       if (dir==NO) dir = static_cast<direction>(i);
       else {
-  //
-  // must be receiving periodic and internal boundary from same proc.
-  // In this case we need to decide which it is, and whether the source
-  // direction is the positive or negative direction.
-  // N.B. if none of the conditions below are satisfied, then the earlier 
-  // assignment of dir was the correct one.  This is just for if the first
-  // assignment was the wrong one.
-  //
-      if (recv_tag == BC_PERtag) {
-    // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
-    if      (from_rank>mpiPM->get_myrank() && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank<mpiPM->get_myrank() && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
-  }
-  else if (recv_tag == BC_MPItag) {
-    // Internal boundary, so in neg.dir. from_rank should be < myrank.
-    if      (from_rank<mpiPM->get_myrank() && (i==XN || i==YN || i==ZN)) dir = static_cast<direction>(i);
-    else if (from_rank>mpiPM->get_myrank() && (i==XP || i==YP || i==ZP)) dir = static_cast<direction>(i);
-  }
-  else rep.error("bad tag",recv_tag);
+        //
+        // must be receiving periodic and internal boundary from same proc.
+        // In this case we need to decide which it is, and whether the source
+        // direction is the positive or negative direction.
+        // N.B. if none of the conditions below are satisfied, then the earlier 
+        // assignment of dir was the correct one.  This is just for if the first
+        // assignment was the wrong one.
+        //
+        if (recv_tag == BC_PERtag) {
+          // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
+          if      ( from_rank>mpiPM->get_myrank() && 
+                    (i==XN || i==YN || i==ZN)) {
+            dir = static_cast<direction>(i);
+          }
+          else if ( from_rank<mpiPM->get_myrank() &&
+                    (i==XP || i==YP || i==ZP)) {
+            dir = static_cast<direction>(i);
+          }
+        }
+        else if (recv_tag == BC_MPItag) {
+          // Internal boundary, so in neg.dir. from_rank should be < myrank.
+          if      ( from_rank<mpiPM->get_myrank() &&
+                    (i==XN || i==YN || i==ZN)) {
+            dir = static_cast<direction>(i);
+          }
+          else if ( from_rank>mpiPM->get_myrank() &&
+                    (i==XP || i==YP || i==ZP)) {
+            dir = static_cast<direction>(i);
+          }
+        }
+        else rep.error("bad tag",recv_tag);
       }
     }
   }
   if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
-  //  cout <<mpiPM->get_myrank()<<"\tcomm_receive_any_data: Receiving Data type ";
-  //  cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
+#ifdef TESTING
+  cout <<mpiPM->get_myrank()<<"\tBC_update_BCMPI: Receiving Data type ";
+  cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
+#endif 
 
   //
-  // Now choose the boundary data associated with boundary we are receiving:
+  // Now choose the boundary data associated with boundary we are
+  // receiving:
   //
-  struct boundary_data *recv_b = 0;
-  recv_b = &BC_bd[static_cast<int>(dir)];
+  struct boundary_data *recv_b = &BC_bd[static_cast<int>(dir)];
 
   //
   // Receive the data:
   //
-  err = COMM->receive_cell_data(from_rank,  ///< rank of process we are receiving from.
+  err = COMM->receive_cell_data(
+        from_rank,  ///< rank of process we are receiving from.
         &(recv_b->data),     ///< list of cells to get data for. 
         recv_b->data.size(), ///< number of cells in list (extra checking!)
         recv_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-        recv_id      ///< identifier for receive, for any book-keeping that might be needed.
+        recv_id     ///< identifier for receive, for any book-keeping.
         );
   if (err) rep.error("COMM->receive_cell_data() returned error",err);
 
@@ -910,92 +768,55 @@ int UniformGridParallel::BC_update_BCMPI(boundary_data *b,
 
 
 
+
+
 // ##################################################################
 // ##################################################################
 
 
 
-int UniformGridParallel::comm_select_data2send(list<cell *> *l,
-                 int *nc,
-                 enum direction d)
+int UniformGridParallel::comm_select_data2send(
+      list<cell *> *l,
+      int *nc,
+      boundary_data *b
+      )
 {
   // Check inputs.
   if ( !(*l).empty() ) {
+#ifdef TESTING
     rep.warning("comm_select_data2send: List not empty! Emptying it now.",0,(*l).size());
+#endif
     (*l).clear(); if(!(*l).empty()) rep.error("emptying list.",(*l).empty());
   }
   if ( *nc !=0 ) {
+#ifdef TESTING
     rep.warning("comm_select_data2send: uninitialized counter in input. setting it to zero.",0,*nc);
+#endif
     *nc=0;
   }
   
-  // Calculate perpendicular directions.
-  enum direction perp2d=NO, perp3d=NO, oppdir=NO;
-  oppdir = OppDir(d);
-  switch (d) {
-   case XN: case XP:
-    perp2d = YP; perp3d = ZP; break;
-   case YN: case YP:
-    perp2d = XP; perp3d = ZP; break;
-   case ZN: case ZP:
-    perp2d = XP; perp3d = YP; break;
-   default:
-    rep.error("comm_select_data2send: Bad direction",d); break;
-  }
-  
-  // First get to boundary from first point on grid [XN,YN,ZN].
-  cell *c= FirstPt(); if (!c) rep.error("lost on grid!",c);
-  while ( (NextPt(c,d)) && (NextPt(c,d)->isgd)) {c = NextPt(c,d);}
-  //  rep.printVec("select_data2send: first point to send",c->x,G_ndim);
-  
-  // Now go through and add all cells on the boundary to the list.
-  // Safe to assume grid is bigger than depth of boundary cells!!
-  // (so i don't check that cells exist, etc.)
-  if (G_ndim==1) {
-    for (int n=0; n<BC_nbc; n++) {
-      //      rep.printVec("1D select_data2send: point to send",c->x,G_ndim);
-      (*l).push_back(c); (*nc)++;
-      c=NextPt(c,oppdir);
-    }
-  } // if 1D
-  
-  else if (G_ndim==2) {
-    cell *temp=0;
-    do {
-      // Get column of cells at current point.
-      temp=c;
-      for (int n=0; n<BC_nbc; n++) {
-  (*l).push_back(temp); (*nc)++; // have at least one cell.
-  temp = NextPt(temp,oppdir);
-      } // get column of depth nbc
-      c = NextPt(c,perp2d);
-    } while ( (c) && (c->isgd) );
-  } // if 2D
-  
-  else if (G_ndim==3) {
-    cell *temp=0; cell *t2=0;
-    do {
-      // Get column of cells at current point.
-      t2 = c;
-      for (int n=0; n<BC_nbc; n++) {
-  // rep.printVec("select_data2send: point to send",t2->x,G_ndim);
-  (*l).push_back(t2); (*nc)++; // have at least one cell.
-  t2 = NextPt(t2,oppdir);
-      }
-      temp = c;
-      while ( (temp=NextPt(temp,perp2d)) && (temp->isgd) ) {
-  t2 = temp;
-  for (int n=0; n<BC_nbc; n++) {
-    (*l).push_back(t2); (*nc)++; // have at least one cell.
-    t2 = NextPt(t2,oppdir);
-  } // get column of depth nbc
-      } // loop over 2d dir.
-      c = NextPt(c,perp3d);
-    } while ( (c) && (c->isgd) );
-  } // if 3D
-  else rep.error("Bad NDIM",G_ndim);
+  //
+  // We want to get all cells on the grid that are adjacent to the
+  // boundary data, so we just go BC_nbc cells in the "ondir"
+  // direction from every boundary cell, and this is a "send" cell.
+  //
+  int count=0;
+  list<cell*>::iterator c=b->data.begin();
+  cell *temp =0;
+  do {
+    temp = *c;
+    for (int v=0;v<BC_nbc;v++) temp = NextPt(temp,b->ondir);
+    (*l).push_back(temp);
+    count++;
+    ++c;
+  } while (c!=b->data.end());
+
+  cout <<"Got "<<count<<" cells, expected "<<b->data.size()<<"\n";
+
+
   return 0;
 }
+
 
 
 
@@ -2026,7 +1847,7 @@ class cell * UniformGridParallel::RT_new_edge_cell(const cell *c, ///< grid edge
     rep.error("edge cell already exists! RT_new_edge_cell",NextPt(move,d2));
   }
   else {
-    t = newCell();
+    t = CI.new_cell();
     t->isbd = true; 
     t->isgd = false;
     t->isedge = -1;
@@ -2197,7 +2018,7 @@ class cell * UniformGridParallel::RT_new_corner_cell(const cell *c, ///< grid co
     rep.error("corner cell already exists! RT_new_corner_cell",NextPt(move,d3));
   }
   else {
-    t = newCell();
+    t = CI.new_cell();
     t->isbd = true; 
     t->isgd = false;
     t->isedge = -1;
@@ -2788,17 +2609,20 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
       int nd,
       int nv,
       int eqt,
+      int nbc, ///< number of boundary cells to use.
       double *xn,
       double *xp,
       int *nc,
+      double *sim_xn, ///< array of min. x/y/z for full simulation.
+      double *sim_xp, ///< array of max. x/y/z for full simulation.
       class MCMDcontrol *p
       )
   :
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,xn,xp,nc),
-  UniformGridParallel(nd,nv,eqt,xn,xp,nc,p),
+  UniformGrid(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp),
+  UniformGridParallel(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp,p),
   VectorOps_Cyl(nd),
-  uniform_grid_cyl(nd,nv,eqt,xn,xp,nc)
+  uniform_grid_cyl(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp)
 {
 #ifdef TESTING
   cout <<"uniform_grid_cyl_parallel:: cyl. uniform PARALLEL grid";
@@ -2841,7 +2665,7 @@ double uniform_grid_cyl_parallel::iR_cov(const cell *c)
   //
   //cout <<" Cell radius: "<< R_com(c)/CI.phys_per_int() +G_ixmin[Rcyl];
   //rep.printVec("  cell centre",c->pos,G_ndim);
-  return (R_com(c)-SimPM.Xmin[Rcyl])/CI.phys_per_int() +SIM_ixmin[Rcyl];
+  return (R_com(c)-SimPM.Xmin[Rcyl])/CI.phys_per_int() +Sim_ixmin[Rcyl];
 }
 
 
@@ -2872,18 +2696,21 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
       int nd,
       int nv,
       int eqt,
+      int nbc, ///< number of boundary cells to use.
       double *xn,
       double *xp,
       int *nc,
+      double *sim_xn, ///< array of min. x/y/z for full simulation.
+      double *sim_xp, ///< array of max. x/y/z for full simulation.
       class MCMDcontrol *p
       )
   :
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,xn,xp,nc),
-  UniformGridParallel(nd,nv,eqt,xn,xp,nc,p),
+  UniformGrid(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp),
+  UniformGridParallel(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp,p),
   VectorOps_Cyl(nd),
   VectorOps_Sph(nd),
-  uniform_grid_sph(nd,nv,eqt,xn,xp,nc)
+  uniform_grid_sph(nd,nv,eqt,nbc,xn,xp,nc,sim_xn,sim_xp)
 {
 #ifdef TESTING
   cout <<"uniform_grid_sph_parallel:: sph. uniform PARALLEL grid";
@@ -2924,7 +2751,7 @@ double uniform_grid_sph_parallel::iR_cov(const cell *c)
   // function to get R_com() in integer units, measured from the
   // integer coord-sys. origin.
   //
-  return (R_com(c)-SimPM.Xmin[Rsph])/CI.phys_per_int() +SIM_ixmin[Rsph];
+  return (R_com(c)-SimPM.Xmin[Rsph])/CI.phys_per_int() +Sim_ixmin[Rsph];
 }
 
 

@@ -42,6 +42,7 @@ for NNN in "n064" "n128" "n256" "n512"
 # 
 # First run some short simulations to make sure the early expansion is ok.
 #
+  echo "Running"  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1
   ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
@@ -73,6 +74,7 @@ for NNN in "n064" "n128" "n256" "n512"
     opfreq_time=1.0e20 finishtime=3.156e10 &
 #
   wait
+#exit
 #
 # Then run simulations for the full 50kyr to make sure they all converge to roughly the same answer.
 #

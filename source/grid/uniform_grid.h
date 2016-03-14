@@ -52,6 +52,8 @@
 ///    new grid structure.
 /// - 2016.02.19 JM: new grid structure finished, compiles and runs
 ///    the DMR test.
+/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
+///    boundaries).
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -224,14 +226,10 @@ class UniformGrid
         string ///< list of strings describing each boundary.
         );
 
-  /// Create new boundary cells for an edge cell.
-  cell * BC_setupBCcells(
-        cell *, ///< pointer to edge cell.
-        const enum direction,    ///< direction from edge cell to boundary cell.
-        double, ///< size of cell, dx.
-        int ///< number of cells off the edge we are assigning,
-            ///< =1 for edge cell, =2 for 1st boundary cell.
-        );
+  ///
+  /// Assigns data to each boundary.  Called by SetupBCs().
+  ///
+  virtual int assign_boundary_data();
 
   /// Assigns data to a periodic boundary.
   virtual int BC_assign_PERIODIC(  boundary_data *);
@@ -1149,6 +1147,12 @@ class UniformGridParallel
 : virtual public UniformGrid
 {
   protected:
+
+  ///
+  /// Assigns data to each boundary.  Called by SetupBCs().
+  ///
+  virtual int assign_boundary_data();
+
   ///
   /// Assigns data to a periodic boundary, getting data from another
   /// process if necessary.
@@ -1193,19 +1197,11 @@ class UniformGridParallel
         string ///< list of strings describing each boundary.
         );
 
-  ///
-  /// Given a direction, creates a list of cells to pack and send.
-  /// 
-  /// This function receives a pointer to an empty list of pointers to cells,
-  /// and a pointer to a counter, set to zero.  It finds all cells that need
-  /// to be send in the communication, adds them to the list and increments
-  /// the counter, returning the list and counter.
-  ///
   int comm_select_data2send(
-        list<cell *> *, ///< list of cells to send.
-        int *,          ///< counter for how many cells to send.
-        enum direction  ///< direction of boundary to pick cells for
-        );
+      list<cell *> *,  ///< list of cells (returned by this func.)
+      int *,         ///< number of cells in list.
+      boundary_data *  ///< pointer to boundary data.
+      );
 
 #ifdef PLLEL_RT
   ///
@@ -1311,13 +1307,6 @@ class UniformGridParallel
         );
 #endif // PLLEL_RT
 
-  /// GLOBAL Size of domain in x,y,z-direction (integer coordinates).
-  int *SIM_irange;
-  /// Min value of x,y,z in GLOBAL domain (integer coordinates).
-  int *SIM_ixmin;
-  /// Max value of x,y,z in GLOBAL domain (integer coordinates).   
-  int *SIM_ixmax;
-
   ///
   /// multi-core decomposition class.
   ///
@@ -1331,9 +1320,12 @@ class UniformGridParallel
         int,         ///< ndim
         int,         ///< nvar
         int,         ///< equation type
+        int, ///< number of boundary cells to use.
         double *,    ///< local xmin
         double *,    ///< local xmax
         int *,       ///< local number of grid zones
+        double *, ///< array of min. x/y/z for full simulation.
+        double *,  ///< array of max. x/y/z for full simulation.
         class MCMDcontrol * ///< pointer to MPI domain decomposition
         );
 
@@ -1342,14 +1334,6 @@ class UniformGridParallel
   /// 
   ~UniformGridParallel();
 
-  /// 
-  /// Sets up boundary conditions; has an extra BC type, BCMPI, for an 
-  /// internal inter-processor boundary.
-  /// 
-  virtual int SetupBCs(
-        int,   ///< Depth of Boundary cells, 1,2,etc.
-        string ///< string containing info on types of BCs on all sides.
-        );
 
   /// 
   /// Runs through ghost boundary cells and does the appropriate time update on them.
@@ -1387,12 +1371,12 @@ class UniformGridParallel
         );
 
 #endif // PLLEL_RT
-  virtual int  SIM_iXmin(enum axes a) const
-  {return(SIM_ixmin[a] );} ///< Returns GLOBAL x,y,z lower bounds in cell integer coordinates.
-  virtual int  SIM_iXmax(enum axes a) const
-  {return(SIM_ixmax[a] );} ///< Returns GLOBAL x,y,z upper bounds in cell integer coordinates.
-  virtual int SIM_iRange(enum axes a) const
-  {return(SIM_irange[a]);} ///< Returns GLOBAL x,y,z range in cell integer coordinates.
+  virtual int  Sim_iXmin(enum axes a) const
+  {return(Sim_ixmin[a] );} ///< Returns GLOBAL x,y,z lower bounds in cell integer coordinates.
+  virtual int  Sim_iXmax(enum axes a) const
+  {return(Sim_ixmax[a] );} ///< Returns GLOBAL x,y,z upper bounds in cell integer coordinates.
+  virtual int Sim_iRange(enum axes a) const
+  {return(Sim_irange[a]);} ///< Returns GLOBAL x,y,z range in cell integer coordinates.
 };
 
 ///
@@ -1417,9 +1401,12 @@ class uniform_grid_cyl_parallel
         int, ///< ndim, length of position vector.
         int, ///< nvar, length of state vectors.
         int, ///< eqntype, which equations we are using (needed by BCs).
+        int, ///< number of boundary cells to use.
         double *, ///< array of minimum values of x,y,z.
         double *, ///< array of maximum values of x,y,z.
         int *, ///< array of number of cells in x,y,z directions.
+        double *, ///< array of min. x/y/z for full simulation.
+        double *,  ///< array of max. x/y/z for full simulation.
         class MCMDcontrol * ///< pointer to MPI domain decomposition
         );
 
@@ -1459,9 +1446,12 @@ class uniform_grid_sph_parallel
         int, ///< ndim, length of position vector.
         int, ///< nvar, length of state vectors.
         int, ///< eqntype, which equations we are using (needed by BCs).
+        int, ///< number of boundary cells to use.
         double *, ///< array of minimum values of x,y,z.
         double *, ///< array of maximum values of x,y,z.
         int *, ///< array of number of cells in x,y,z directions.
+        double *, ///< array of min. x/y/z for full simulation.
+        double *,  ///< array of max. x/y/z for full simulation.
         class MCMDcontrol * ///< pointer to MPI domain decomposition
         );
 

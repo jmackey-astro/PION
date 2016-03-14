@@ -16,9 +16,9 @@ ics BlastWave
 
 
 # IC filename
-ICfilename IC_BWaxi2D_HalfPlane_n128
+ICfilename IC_BWaxi2D_HalfPlane_n016
 # Output FileName Base
-OutputFile    BWaxi2D_HalfPlane_n128
+OutputFile    BWaxi2D_HalfPlane_n016
 
 
 # Number and type of tracers.
@@ -55,8 +55,8 @@ noise -1 #0.5
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  256
-NGridY  128
+NGridX  32
+NGridY  16
 NGridZ  64
 
 # Boundaries of Simulation box:
@@ -135,7 +135,7 @@ BWmagfieldY 0.0   # Magnetic field strength
 BWmagfieldZ 0.0   # Magnetic field strength
 
 BW_energy 1.0e51  # energy in ergs (all thermal)
-BW_nzones 8       # Radius of hot region.
+BW_nzones 2       # Radius of hot region.
 BW_blast_dens 2.34e-22  # here same as ambient density.
 
 # We can have a second ISM region, but here we ignore it by setting
