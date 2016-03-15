@@ -111,15 +111,20 @@ enum BoundaryTypes {
 /// Struct to contain all the information for a grid boundary.
 ///
 struct boundary_data {
-   enum direction dir; ///< Outward Normal direction of boundary (NO dir if internal).
-   enum direction ondir; ///< direction back onto grid.
-   string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
-   int itype;         ///< Integer flag for boundary type.
-   int bloc;          ///< boundary location, e.g. x=0
-   bool bpos;         ///< whether boundary is in +ve direction?
-   enum axes baxis;   ///< index in position vector relating to bpos.
-   list<cell *> data; ///< STL linked list for boundary data cells.
-   pion_flt *refval;  ///< Optional reference state vector.
+  enum direction dir; ///< Outward Normal direction of boundary (NO dir if internal).
+  enum direction ondir; ///< direction back onto grid.
+  string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
+  int itype;         ///< Integer flag for boundary type.
+  int bloc;          ///< boundary location, e.g. x=0
+  bool bpos;         ///< whether boundary is in +ve direction?
+  enum axes baxis;   ///< index in position vector relating to bpos.
+  list<cell *> data; ///< STL linked list for boundary data cells.
+  ///
+  /// STL linked list for grid cells to send to neighbouring
+  /// processor (parallel only; for serial code this is unused).
+  ///
+  list<cell *> send_data;
+  pion_flt *refval;  ///< Optional reference state vector.
 };
 
 
@@ -1197,7 +1202,7 @@ class UniformGridParallel
         string ///< list of strings describing each boundary.
         );
 
-  int comm_select_data2send(
+  int BC_select_data2send(
       list<cell *> *,  ///< list of cells (returned by this func.)
       int *,         ///< number of cells in list.
       boundary_data *  ///< pointer to boundary data.
