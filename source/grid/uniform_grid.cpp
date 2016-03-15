@@ -678,8 +678,11 @@ int UniformGrid::assign_grid_structure()
     //
     c = FirstPt_All();
     c_next = NextPt_All(c);
-    while (CI.get_ipos(c_next,ZZ) == CI.get_ipos(c,ZZ)) {
-      c_next=NextPt(c_next);
+    //CI.print_cell(c);
+    //CI.print_cell(c_next);
+    while (c_next->pos[ZZ] == c->pos[ZZ]) {
+      c_next=NextPt_All(c_next);
+      //cout <<"c_next, id="<<c_next->id<<"\n";
       // Let c_next loop through x-y plane until i get to above the
       // first point.
     }
@@ -687,6 +690,8 @@ int UniformGrid::assign_grid_structure()
     // Now c_next should be c's ZP neighbour.
     //
     do {
+      //rep.printVec("C-",c->pos,G_ndim);
+      //rep.printVec("C+",c_next->pos,G_ndim);
       c->ngb[ZP] = c_next;
       c_next->ngb[ZN] = c;
       c = NextPt_All(c);
@@ -954,8 +959,10 @@ int UniformGrid::SetupBCs(
     } while (G_ndim>1 && cy!=0 && cy->isgd);
     if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
+#ifdef TESTING
   cout <<"** Setup XN boundary, got "<<BC_bd[XN].data.size();
   cout <<" grid cells.\n";
+#endif // TESTING
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -985,8 +992,10 @@ int UniformGrid::SetupBCs(
     } while (G_ndim>1 && cy!=0 && cy->isgd);
     if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
+#ifdef TESTING
   cout <<"** Setup XP boundary, got "<<BC_bd[XP].data.size();
   cout <<" grid cells.\n";
+#endif // TESTING
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -1021,9 +1030,11 @@ int UniformGrid::SetupBCs(
       } while (cy->pos[YY] < G_ixmin[YY]);
 
       if (G_ndim>2) cz = NextPt(cz, ZP);
-    } while (G_ndim>2 && cz!=0 && cz->isgd);
+    } while (G_ndim>2 && cz!=0 && cz->pos[ZZ]<G_ixmax[ZZ]);
+#ifdef TESTING
     cout <<"** Setup YN boundary, got "<<BC_bd[YN].data.size();
     cout <<" grid cells.\n";
+#endif // TESTING
     // --------------------------------------------------------------
 
     // --------------------------------------------------------------
@@ -1053,9 +1064,11 @@ int UniformGrid::SetupBCs(
       } while ((cy !=0) && (cy->pos[YY] > G_ixmax[YY]));
       
       if (G_ndim>2) cz = NextPt(cz, ZP);
-    } while (G_ndim>2 && cz!=0 && cz->isgd);
+    } while (G_ndim>2 && cz!=0 && cz->pos[ZZ]<G_ixmax[ZZ]);
+#ifdef TESTING
     cout <<"** Setup YP boundary, got "<<BC_bd[YP].data.size();
     cout <<" grid cells.\n";
+#endif // TESTING
     // --------------------------------------------------------------
   }
   // ----------------------------------------------------------------
@@ -1071,19 +1084,27 @@ int UniformGrid::SetupBCs(
     cz = FirstPt_All();
     do {
       BC_bd[ZN].data.push_back(cz);
-      cout << " Adding cell "<<cz->id<<" to ZN boundary.\n";
+      //cout << " Adding cell "<<cz->id<<" to ZN boundary.\n";
       cz = NextPt_All(cz);
     } while (cz->pos[ZZ] < G_ixmin[ZZ]);
+#ifdef TESTING
+    cout <<"** Setup ZN boundary, got "<<BC_bd[ZN].data.size();
+    cout <<" grid cells.\n";
+#endif // TESTING
     //
     // ZP is also easy... all points with pos[Z] > xmax[Z]
     //
     cz = LastPt();
-    while (cz->pos[ZZ] < G_ixmax[ZZ]) cz = NextPt(cz);
+    while (cz->pos[ZZ] < G_ixmax[ZZ]) cz = NextPt_All(cz);
     do {
       BC_bd[ZP].data.push_back(cz);
-      cout << " Adding cell "<<cz->id<<" to ZP boundary.\n";
+      //cout << " Adding cell "<<cz->id<<" to ZP boundary.\n";
       cz = NextPt_All(cz);
     } while (cz!=0);
+#ifdef TESTING
+    cout <<"** Setup ZP boundary, got "<<BC_bd[ZP].data.size();
+    cout <<" grid cells.\n";
+#endif // TESTING
   }
   // ----------------------------------------------------------------
 
@@ -1491,6 +1512,7 @@ int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
   // loop through all boundary cells, set npt to point to the grid
   // cell where we get the data.
   //
+  //cout <<"\t\t**** PRINTING CELLS FOR BOUNDARY DIR = "<<b->dir<<" ****\n\n";
   do{
     //
     // Find the cell to point to.  This should be the first cell on
@@ -1514,6 +1536,7 @@ int UniformGrid::BC_assign_OUTFLOW(   boundary_data *b)
     for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = temp->P[v];
     for (int v=0;v<G_nvar;v++) (*bpt)->Ph[v] = temp->P[v];
     (*bpt)->npt = temp;
+    //CI.print_cell((*bpt));
 
     //
     // The GLM boundary is somewhat different, because I found
@@ -1887,6 +1910,7 @@ int UniformGrid::BC_assign_REFLECTING(boundary_data *b)
   list<cell*>::iterator bpt=b->data.begin();
   cell *temp=0;
   unsigned int ct=0;
+  //cout <<"\t\t**** PRINTING CELLS FOR BOUNDARY DIR = "<<b->dir<<" ****\n\n";
   do{
     temp = (*bpt);
     for (int v=0; v>(*bpt)->isedge; v--) {
@@ -1902,6 +1926,7 @@ int UniformGrid::BC_assign_REFLECTING(boundary_data *b)
     for (int v=0;v<G_nvar;v++)
       (*bpt)->dU[v] = 0.0;
     (*bpt)->npt = temp;
+    //CI.print_cell((*bpt));
     ++bpt;
     ct++;
   } while (bpt !=b->data.end());

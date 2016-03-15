@@ -510,7 +510,8 @@ int sim_control_fixedgrid::Init(
 #ifdef TESTING
   cell *c = (*grid)->FirstPt_All();
   do {
-    CI.print_cell(c);
+    if (pconst.equalD(c->P[RO],0.0))
+      CI.print_cell(c);
   } while ( (c=(*grid)->NextPt_All(c)) !=0 );
 #endif // TESTING
   
