@@ -78,7 +78,7 @@
 /// N.B. This must be unset for sims with no MP-> module, because
 /// it calls the MP->Temperature() function!
 ///
-//#define SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+#define SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
 ///
 /// This prevents the timestep increasing by more than 30% per step, 
