@@ -26,6 +26,8 @@
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2016.03.16 JM: Changed Min/Max neutral fraction, and the method
+///    of calculating temperature, to try to improve code.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -101,6 +103,12 @@ mpv7_TwoTempIso::mpv7_TwoTempIso(
   TTI_Thi = EP->MaxTemperature;
   TTI_Tlo = EP->MinTemperature;
   
+  //
+  // Set these to be as close to 0 and 1 as possible, so that the
+  // temperature is set correctly!
+  //
+  Min_NeutralFrac = 1.0e-15;
+  Max_NeutralFrac = 1.0-1.0e-15;
 #ifdef TESTING
   cout <<"mpv7_TwoTempIso: Y="<< EP->Helium_MassFrac;
   cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
@@ -222,9 +230,9 @@ double mpv7_TwoTempIso::get_temperature(
   // which is RJR William's estimate of the correct temperature to
   // get the mixed cell physics right.
   //
-  double frac=1.0;
-  if (xp>frac) return TTI_Thi;
-  else return (xp/frac*(2.0*TTI_Thi-TTI_Tlo) +TTI_Tlo)/(1.0+xp/frac);
+  //double frac = ONE_MINUS_EPS;
+  //if (xp>frac) return TTI_Thi;
+  //else return (xp/frac*(2.0*TTI_Thi-TTI_Tlo) +TTI_Tlo)/(1.0+xp/frac);
 
   // Dodgy logarithmic interpolation.
   //if (xp<1.0e-4) return TTI_Tlo;
@@ -241,7 +249,7 @@ double mpv7_TwoTempIso::get_temperature(
   //
   // returns gas temperature according to T=Tlo + y*(Thi-Tlo),
   //
-  //return (TTI_Tlo +xp*(TTI_Thi-TTI_Tlo));
+  return (TTI_Tlo +xp*(TTI_Thi-TTI_Tlo));
 }
 
 

@@ -239,9 +239,9 @@ int dataio_silo_pllel::ReadData(
   if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
 
   if (silo_filetype==DB_HDF5) {
-    char *compress = DBGetCompression();
+    //char *compress = DBGetCompression();
     //    cout <<"compression="<<compress<<"\n";
-    DBSetCompression(compress);
+    //DBSetCompression(compress);
     int friendly=DBGetFriendlyHDF5Names();
     DBSetFriendlyHDF5Names(friendly);
   }

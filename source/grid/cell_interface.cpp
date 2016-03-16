@@ -1,5 +1,5 @@
 ///
-/// \file   cell_interface.cc
+/// \file   cell_interface.cpp
 /// \author Jonathan Mackey
 /// \date   12.11.2010
 ///
@@ -26,7 +26,7 @@
 /// - 2013.09.20 JM: Changed initialisation of unsigned ints to zero.
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
-///    boundaries).
+///    boundaries).  Changed int_converter depending on pion_flt.
 
 #include "cell_interface.h"
 #include "tools/reporting.h"
@@ -57,7 +57,16 @@ cell_interface::cell_interface()
   //
   // this means I can have grids with up to 5e5 zones before it fails...
   //
-  int_converter = 1.0+2.0e-6; // ONE_PLUS_EPS;
+  if (sizeof(pion_flt)==sizeof(double)) {
+    //cout <<"int_converter = 1+EPS\n";
+    //int_converter = 1.0+1.0e-7; //ONE_PLUS_EPS;
+    int_converter = ONE_PLUS_EPS;
+  }
+  else {
+    // this means I can have grids with up to 5e5 zones before it
+    // fails with floating point variables...
+    int_converter = 1.0+2.0e-6;
+  }
   cell_size_int_units=2;
 
   /// This must be set to true to create a cell.

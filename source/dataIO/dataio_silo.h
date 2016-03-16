@@ -41,14 +41,6 @@
 #include <silo.h>
 #include <vector>
 
-//
-// These are here because I am initially couldn't write double
-// precision data to the silo files, but I figured it out.
-//
-//#define FAKE_DOUBLE float
-//#define FAKE_DATATYPE DB_FLOAT
-//#define FAKE_DOUBLE double
-//#define FAKE_DATATYPE DB_DOUBLE
 
 
 ///

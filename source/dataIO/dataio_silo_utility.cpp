@@ -904,11 +904,11 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   CI.get_ipos_vec(mesh_xmin, iXmin);
   CI.get_ipos_vec(mesh_xmax, iXmax);
 
-  //rep.printVec("get_quadmesh_integer_extents: mesh_Xmin",mesh_xmin,ndim);
-  //rep.printVec("get_quadmesh_integer_extents: mesh_Xmax",mesh_xmax,ndim);
+  rep.printVec("get_quadmesh_integer_extents: mesh_Xmin",mesh_xmin,ndim);
+  rep.printVec("get_quadmesh_integer_extents: mesh_Xmax",mesh_xmax,ndim);
   
-  //rep.printVec("get_quadmesh_integer_extents: iXmin",iXmin,ndim);
-  //rep.printVec("get_quadmesh_integer_extents: iXmax",iXmax,ndim);
+  rep.printVec("get_quadmesh_integer_extents: iXmin",iXmin,ndim);
+  rep.printVec("get_quadmesh_integer_extents: iXmax",iXmax,ndim);
   
   return;
 }
@@ -1013,6 +1013,9 @@ int dataio_silo_utility::PP_read_var2grid(
   cell *c=ggg->FirstPt();
 
   for (int v=0;v<ndim;v++) {
+#ifdef TESTING
+    cout <<"c->pos[v]="<<c->pos[v]<<" : iXmin[v]="<<iXmin[v]<<"\n";
+#endif
     enum direction posdir = static_cast<direction>(2*v+1);
 
     while (c!=0 && c->pos[v]<iXmin[v]) {
@@ -1037,8 +1040,9 @@ int dataio_silo_utility::PP_read_var2grid(
   int qm_ix[ndim], qm_NX[ndim];
   for (int v=0;v<ndim;v++) {
     qm_start[v] = (c->pos[v]-iXmin[v])/dx;
-    //cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
-    //cout <<c->pos[v]<< ", xmin="<<iXmin[v]<<" dims="<<qv->dims[v]<<"\n";
+    cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
+    cout <<c->pos[v]<< ", xmin="<<iXmin[v]<<" dims="<<qv->dims[v];
+    cout <<", var = "<<variable<<"\n";
     qm_ix[v] = qm_start[v];
     //
     // Get number of elements in each direction for this subdomain.
@@ -1096,8 +1100,16 @@ int dataio_silo_utility::PP_read_var2grid(
         //cx->P[v1] = data[0][qv_index];
         //if (v2>0) cx->P[v2] = data[1][qv_index];
         //if (v3>0) cx->P[v3] = data[2][qv_index];
+        
+#ifdef TESTING
+        if (v1==RO) {
+          cout <<"id="<<cx->id<<",  x="<<CI.get_dpos(cx,XX)<<" : ";
+          cout <<"iXmax="<<iXmax[XX]<<" : ";
+          rep.printVec("Cell",cx->pos,ndim);
+          cout.flush();
+        }
+#endif
 
-        //rep.printVec("Cell",cx->pos,ndim);
         cx = ggg->NextPt(cx,XP);
         qv_index++;
         qm_ix[XX] ++;
