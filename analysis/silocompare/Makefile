@@ -5,6 +5,7 @@
 # 2011.04.23 JM: now works on Juropa.
 # 2013.09.05 JM: Updated for pion.
 # 2015.03.26 JM: updated for pion v0.2.
+# 2016.03.13 JM: updated for new pion version (.cc --> .cpp)
 
 SHELL = /bin/sh
 .SUFFIXES:
@@ -270,7 +271,7 @@ silocompare: $(OBJECTS)
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
 
-silocompare.o:	silocompare.cc sim_params.h uniform_grid.h dataio.h ${GLOBAL}
+silocompare.o:	silocompare.cpp sim_params.h uniform_grid.h dataio.h ${GLOBAL}
 
 reporting.o:   tools/reporting.cpp ${GLOBAL}
 mem_manage.o:  tools/mem_manage.cpp ${GLOBAL}
@@ -278,15 +279,15 @@ constants.o: constants.cpp ${GLOBAL}
 timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 sim_params.o: 	  sim_params.cpp  ${GLOBAL}
 
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h
-comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h
+comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 
-uniform_grid.o: uniform_grid.cc uniform_grid.h ${GLOBAL} stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
-stellar_wind_BC.o: stellar_wind_BC.cc stellar_wind_BC.h ${GLOBAL}
+uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
+stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h ${GLOBAL}
 
-VectorOps.o:           VectorOps.cc VectorOps.h uniform_grid.h ${GLOBAL}
-VectorOps_spherical.o: VectorOps_spherical.cc VectorOps_spherical.h VectorOps.h \
+VectorOps.o:           VectorOps.cpp VectorOps.h uniform_grid.h ${GLOBAL}
+VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
 		       uniform_grid.h ${GLOBAL}
 
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
@@ -303,30 +304,30 @@ setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
 ######################
 microphysics_base.o: microphysics_base.cpp microphysics_base.h ${GLOBAL}
 
-integrator.o: integrator.cc integrator.h ${GLOBAL}
-cooling.o:    cooling.cc cooling.h ${GLOBAL}
+integrator.o: integrator.cpp integrator.h ${GLOBAL}
+cooling.o:    cooling.cpp cooling.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+cooling_SD93_cie.o: cooling_SD93_cie.cpp cooling_SD93_cie.h ${GLOBAL}
 
-hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
+hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cpp \
     ${GLOBAL}
 
-mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
+mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
+microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h
-microphysics_v1.o: microphysics_v1.cc microphysics.h \
+microphysics_v1.o: microphysics_v1.cpp microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
+microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
-hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
+hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
@@ -358,10 +359,10 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
 ########################
 raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
 
-raytracer_SC.o: raytracer_SC.cc raytracer_SC.h ${GLOBAL} \
+raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
 
-raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h \
+raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
     ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
 
 ########################
@@ -369,18 +370,18 @@ raytracer_SC_pllel.o : raytracer_SC_pllel.cc raytracer_SC.h \
 ########################
 file_status.o: file_status.cpp file_status.h
 
-dataio.o: dataio.cc dataio.h ${GLOBAL} solver_eqn_base.h \
+dataio.o: dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h \
     readparams.h stellar_wind_BC.h file_status.h
 
-dataio_silo.o:  dataio_silo.cc dataio_silo.h dataio.h ${GLOBAL} \
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
 
-dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
+dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h
 
-readparams.o:	readparams.cc readparams.h ${GLOBAL}
+readparams.o:	readparams.cpp readparams.h ${GLOBAL}
 
-dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
+dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h
 
 dataio_silo_utility.o: dataio_silo_utility.cpp dataio_silo_utility.h\

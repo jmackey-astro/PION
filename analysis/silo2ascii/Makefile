@@ -198,6 +198,7 @@ OBJECTS = \
   reporting.o \
   command_line_interface.o \
   interpolate.o \
+  sim_params.o \
   MCMD_control.o \
   setup_fixed_grid.o \
   setup_fixed_grid_MPI.o \
@@ -205,8 +206,8 @@ OBJECTS = \
   dataio.o                    \
   readparams.o                \
   dataio_silo.o               \
-  dataio_silo_utility.o \
-  dataio_silo_MPI.o \
+  dataio_silo_utility.o       \
+  dataio_silo_MPI.o           \
   uniform_grid_pllel.o        \
   comm_mpi.o                  \
   comm_files.o                \
@@ -225,6 +226,7 @@ OBJECTS = \
   mp_v2_aifa.o                \
   integrator.o                \
   cooling.o                   \
+  microphysics_base.o         \
   microphysics.o              \
   microphysics_v1.o           \
   microphysics_lowZ.o         \
@@ -232,7 +234,10 @@ OBJECTS = \
   mpv5_molecular.o            \
   mpv6_PureH.o                \
   mpv7_TwoTempIso.o           \
-  mpv8_StarBench_heatcool.o
+  mpv8_StarBench_heatcool.o   \
+  raytracer_base.o            \
+  raytracer_SC_pllel.o        \
+  raytracer_SC.o
 
 ##########################
 ### -- EXECTUTABLES -- ###

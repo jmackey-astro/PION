@@ -100,7 +100,7 @@
 
 
 #define JM_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
-#define JM_MINNEU 1.0e-12  ///< minimum neutral fraction i care about.
+#define JM_MINNEU 1.0e-12  ///< minimum neutral fraction I care about.
 #define JM_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
 
 

@@ -166,17 +166,10 @@ int main(int argc, char **argv)
     //
     if (fff==0) {
       //
-      // get a setup_grid class, and use it to set up the grid.
+      // Decompose domain (in case running with more than one core).
       //
-      class setup_fixed_grid *SimSetup =0;
-      SimSetup = new setup_fixed_grid_pllel();
-      class GridBaseClass *grid = 0;
-      //
-      // Now we have read in parameters from the file, so set up a grid.
-      //
-      SimSetup->setup_grid(&grid,&MCMD);
-      if (!grid) rep.error("Grid setup failed",grid);
-      cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
+      err  = MCMD.decomposeDomain();
+      if (err) rep.error("main: failed to decompose domain!",err);
       //
       // Now setup microphysics and raytracing classes
       //
