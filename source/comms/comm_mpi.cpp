@@ -773,12 +773,13 @@ int comm_mpi::receive_cell_data(
 
 
 
-int comm_mpi::send_double_data(const int to_rank,      ///< rank to send to.
-			       const long int n_el, ///< size of buffer, in number of doubles.
-			       const double *data, ///< pointer to double array.
-			       string &id,       ///< identifier for send, for tracking delivery later.
-			       const int comm_tag      ///< comm_tag, to say what kind of send this is.
-			       )
+int comm_mpi::send_double_data(
+      const int to_rank,      ///< rank to send to.
+      const long int n_el, ///< size of buffer, in number of doubles.
+      const double *data, ///< pointer to double array.
+      string &id,       ///< identifier for send, for tracking delivery later.
+      const int comm_tag      ///< comm_tag, to say what kind of send this is.
+      )
 {
   if (!data) rep.error("comm_mpi::send_double_data() null pointer!",data);
   int err=0;
@@ -929,12 +930,13 @@ int comm_mpi::receive_double_data(
 
 
 #ifdef SILO
-int comm_mpi::silo_pllel_init(const int num_files,    ///< number of files to write
-			      const std::string iotype, ///< READ or WRITE
-			      const std::string session_id, ///< identifier for this read/write.
-			      int *group_rank,    ///< rank of group (nth file).
-			      int *rank_in_group  ///< rank in group (nth proc in file i).
-			      )
+int comm_mpi::silo_pllel_init(
+      const int num_files,    ///< number of files to write
+      const std::string iotype, ///< READ or WRITE
+      const std::string session_id, ///< identifier for this read/write.
+      int *group_rank,    ///< rank of group (nth file).
+      int *rank_in_group  ///< rank in group (nth proc in file i).
+      )
 {
   comm_mpi::silo_id = session_id;
   comm_mpi::bat=0;
@@ -1014,11 +1016,12 @@ int comm_mpi::silo_pllel_finish_with_file(
 // ##################################################################
 
 
-void comm_mpi::silo_pllel_get_ranks(const std::string id, ///< identifier for this read/write.
-				    const int proc, ///< processor rank
-				    int *group, ///< rank of group processor is in.
-				    int *rank   ///< rank of processor within group.
-				    )
+void comm_mpi::silo_pllel_get_ranks(
+      const std::string id, ///< identifier for this read/write.
+      const int proc, ///< processor rank
+      int *group, ///< rank of group processor is in.
+      int *rank   ///< rank of processor within group.
+      )
 {
   if (id!=silo_id) rep.error(id, silo_id);
 
