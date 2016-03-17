@@ -461,19 +461,6 @@ int dataio_silo_pllel::OutputData(
   if (mydir.size()+1>=strlength) rep.error("string too large",mydir);
   //  cout <<"string for my directory in file set...\n";
 
-
-  //
-  // Wait for my turn to write to the file.
-  //
-  //  cout <<"----dataio_silo_pllel::OutputData() waiting for baton\n";
-  *db_ptr=0;
-  err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
-  if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
-
-  //
-  // Have got the baton, now, so the file is mine to write to.
-  // local work here... each proc write their part of the grid.
-  //
   err=0;
   if (!have_setup_gridinfo) {
     // set grid properties for quadmesh 
@@ -494,7 +481,17 @@ int dataio_silo_pllel::OutputData(
     //cout <<"----dataio_silo_pllel::OutputData() write vars setup done\n";
   }
 
+  //
+  // Wait for my turn to write to the file.
+  //
+  //  cout <<"----dataio_silo_pllel::OutputData() waiting for baton\n";
+  *db_ptr=0;
+  err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
+  if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
 
+  //
+  // Have got the baton, now, so the file is mine to write to.
+  // local work here... each proc write their part of the grid.
   //
   // Generate Mesh in file.
   //
