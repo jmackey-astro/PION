@@ -10,6 +10,7 @@ serial_dir=${BASE_DIR}/../bin_serial
 pllel_dir=${BASE_DIR}/../bin_parallel
 test_dir=${BASE_DIR}
 src_dir=${BASE_DIR}/../source
+cmp_dir=${BASE_DIR}/../analysis/silocompare
 
 
 # Test command-line arguments
@@ -80,10 +81,10 @@ echo "*********** BLAST--WAVE TESTS!!! PUT YOUR GOGGLES ON ;-) **********"
 #
 # First run code in serial:
 cd ${test_dir}/blastwave_crt3d
-#bash ./run_BW3D_serial.sh   $test_dir/blastwave_crt3d $serial_dir ${data_dir}/blastwave3D $resolution
+bash ./run_BW3D_serial.sh   $test_dir/blastwave_crt3d $serial_dir ${data_dir}/blastwave3D $resolution
 bash ./run_BW3D_parallel.sh $test_dir/blastwave_crt3d $pllel_dir  ${data_dir}/blastwave3D $resolution
-# Now analyse the results and plot the shock radius as a function of
-# time, compared with the analytic Sedov-Taylor solution.
+# compare the serial and parallel results.
+bash ./compare_ser_pll.sh $test_dir/blastwave_crt3d ${cmp_dir}  ${data_dir}/blastwave3D $resolution
 
 #
 # End of Test Problem: Blastwave (3D)

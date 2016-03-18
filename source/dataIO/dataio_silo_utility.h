@@ -149,6 +149,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   ///
   void get_quadmesh_integer_extents(
       DBfile *,        ///< pointer to silo file.
+      class GridBaseClass *, ///< pointer to data.
       const string, ///< directory of mesh
       const string, ///< name of mesh
       int *, ///< integer Xmin for mesh (output)

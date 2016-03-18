@@ -16,6 +16,7 @@
 /// - 2015.03.26 JM: updated for pion v0.2
 /// - 2015.06.18 JM: updated to allow FLOAT or DOUBLE silo data.
 /// - 2016.03.16 JM: renamed to silocompare.cpp
+/// - 2016.03.18 JM: updated to work better with grid/double/float
 
 #ifndef PARALLEL
 # error "define PARALLEL so this will work!"
@@ -229,9 +230,6 @@ int main(int argc, char **argv)
       for (int v=0; v<SimPM.nvar; v++)
 	c->Ph[v] = c->P[v];
     } while ( (c=grid->NextPt(c))!=0);
-    c = grid->FirstPt();
-    rep.printVec("P ",c->P ,SimPM.nvar);
-    rep.printVec("Ph",c->Ph,SimPM.nvar);
 
     cout <<"FINISHED reading first file: "<<firstfile<<endl;
 
@@ -246,6 +244,16 @@ int main(int argc, char **argv)
     rep.errorTest("(silocompare) Failed to read secondfile",0,err);
 
     cout <<"FINISHED reading second file: "<<secondfile<<endl;
+
+    //c = grid->FirstPt();
+    //do {
+    //  if (c->Ph[RO] < 2.0e-30) {
+    //    CI.print_cell(c);
+    //  }
+    //} while ( (c=grid->NextPt(c))!=0);
+    c = grid->FirstPt();
+    rep.printVec("P ",c->P ,SimPM.nvar);
+    rep.printVec("Ph",c->Ph,SimPM.nvar);
     
 
     // *********************************************************************
@@ -257,8 +265,10 @@ int main(int argc, char **argv)
     c=grid->FirstPt(); 
     double maxdiff[SimPM.nvar]; double temp;
     double reldiff[SimPM.nvar];
+    double absdiff[SimPM.nvar];
     for (int v=0;v<SimPM.nvar;v++) maxdiff[v] = 0.0;
     for (int v=0;v<SimPM.nvar;v++) reldiff[v] = 0.0;
+    for (int v=0;v<SimPM.nvar;v++) absdiff[v] = 0.0;
     int ipos[SimPM.ndim];
 
     rep.printVec("P ",c->P ,SimPM.nvar);
@@ -320,11 +330,12 @@ int main(int argc, char **argv)
       break;
     case 2:
       //
-      // Just get the L1 and L2 error. L1=maxdiff; L2=reldiff;
+      // get the L1 and L2 error. L1=absdiff; L2=reldiff;
       //
       for (int v=0;v<SimPM.nvar;v++) {
-	maxdiff[v]=0.0;
+        absdiff[v]=0.0;
 	reldiff[v]=0.0;
+	maxdiff[v]=0.0;
       }
       do {
 	//
@@ -333,15 +344,16 @@ int main(int argc, char **argv)
 	//
 	for (int v=0;v<SimPM.nvar;v++) {
 	  temp = fabs(c->P[v]-c->Ph[v]);
-	  maxdiff[v] += temp;
+	  absdiff[v] += temp;
 	  reldiff[v] += temp*temp;
+	  maxdiff[v] = std::max(maxdiff[v],temp);
 	}
       } while ( (c=grid->NextPt(c))!=0);
       //
       // Now divide by N and take sqrt for L2
       //
       for (int v=0;v<SimPM.nvar;v++) {
-	maxdiff[v] /= SimPM.Ncell;
+	absdiff[v] /= SimPM.Ncell;
 	reldiff[v] /= SimPM.Ncell;
 	reldiff[v] = sqrt(reldiff[v]);
       }
@@ -372,10 +384,15 @@ int main(int argc, char **argv)
       outf.open(outfile.c_str(), fstream::app);
       cout <<"Writing data to Output File: "<<outfile<<"\n";
       outf <<"# file1="<<firstfile<<"\n# file2="<<secondfile<<endl;
-      cout <<"\n\t\t***: var L1err L2err ********************\n";
+      cout <<"\n\t***: var L1err (Mean-Absolute Error) L2err ";
+      cout <<"max-err-abs ****\n";
+      outf <<"\n***: var L1err L2err ";
+      outf <<"(root-mean-squared error) max-err-abs ***\n";
+      outf <<" L1err = (Mean-Absolute Error), ";
+      outf <<" L2err = (root-mean-squared error).\n";
       for (int v=0;v<SimPM.nvar;v++) {
-	cout <<v<<"\t"<<maxdiff[v]<<"\t"<<reldiff[v]<<endl;
-	outf <<v<<"    "<<maxdiff[v]<<"    "<<reldiff[v]<<endl;
+	cout <<v<<"\t"<<absdiff[v]<<"\t"<<reldiff[v]<<"\t"<<absdiff[v]<<endl;
+	outf <<v<<"    "<<absdiff[v]<<"    "<<reldiff[v]<<"    "<<absdiff[v]<<endl;
       }
       cout <<"\t\t***********************\n";
       outf.close();

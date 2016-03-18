@@ -26,6 +26,8 @@
 /// - 2015.03.26 JM: updated for pion v0.2
 /// - 2015.06.13 JM: started updating to work with void* pointers for
 ///    coordinates and data variables (they can be float or double).
+/// - 2016.03.18 JM: updated to work better with large grids and with
+///    FLOAT and DOUBLE data (no buggy integer positions anymore...).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -61,8 +63,11 @@ dataio_silo_pllel(dtype,p)
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
 
 
 int dataio_silo_utility::SRAD_get_nproc_numfiles(
@@ -216,13 +221,6 @@ int dataio_silo_utility::SRAD_read_var2grid(
           c->P[v3] = ddata[2][ct];
           ct++;
         }
-        //c->P[v1] = data[0][ct];
-        //c->P[v2] = data[1][ct];
-        //c->P[v3] = data[2][ct];
-        //c->P[v1] = silodata->vals[0][ct];
-        //c->P[v2] = silodata->vals[1][ct];
-        //c->P[v3] = silodata->vals[2][ct];
-        //cout <<"ct="<<ct<<"\t and ncell="<<npt<<"\n";
         ct++;
       }
     } while ( (c=ggg->NextPt(c))!=0 );
@@ -626,7 +624,7 @@ int dataio_silo_utility::parallel_read_serial_silodata(
   // Get max and min quadmesh positions (integers)
   //
   int mesh_iXmin[ndim], mesh_iXmax[ndim];
-  get_quadmesh_integer_extents(dbfile, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
+  get_quadmesh_integer_extents(dbfile, ggg, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
   //if (err) rep.error("Failed to get quadmesh extents!",qm_dir);
 
   //
@@ -737,7 +735,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       // Get max and min quadmesh positions (integers)
       //
       int mesh_iXmin[ndim], mesh_iXmax[ndim];
-      get_quadmesh_integer_extents(dbfile, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
+      get_quadmesh_integer_extents(dbfile, ggg, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
       //if (err) rep.error("Failed to get quadmesh extents!",qm_dir);
 
       //
@@ -852,14 +850,19 @@ void dataio_silo_utility::get_quadmesh_extents(
     silo_dtype = qm->datatype;
     create_data_arrays();
   }
-
+  
+  cout.setf( ios_base::scientific );
+  cout.precision(15);
   if (silo_dtype==DB_FLOAT) {
     float  *fqmmin = qm->min_extents;
     float  *fqmmax = qm->max_extents;
     for (int v=0;v<ndim;v++) {
       mesh_xmin[v] = fqmmin[v];
       mesh_xmax[v] = fqmmax[v];
-      //cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+#ifdef TESTING
+      cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max=";
+      cout <<mesh_xmax[v]<<"\n";
+#endif // TESTING
     }
   }
   else {
@@ -868,7 +871,10 @@ void dataio_silo_utility::get_quadmesh_extents(
     for (int v=0;v<ndim;v++) {
       mesh_xmin[v] = dqmmin[v];
       mesh_xmax[v] = dqmmax[v];
-      //cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max="<<mesh_xmax[v]<<"\n";
+#ifdef TESTING
+      cout <<"dir: "<<v<<"\t min="<<mesh_xmin[v]<<" and max=";
+      cout <<mesh_xmax[v]<<"\n";
+#endif // TESTING
     }
   }
   DBFreeQuadmesh(qm); //qm=0;
@@ -884,6 +890,7 @@ void dataio_silo_utility::get_quadmesh_extents(
 
 void dataio_silo_utility::get_quadmesh_integer_extents(
       DBfile *dbfile,        ///< pointer to silo file.
+      class GridBaseClass *ggg, ///< pointer to data.
       const string mesh_dir, ///< directory of mesh
       const string qm_name,  ///< name of mesh
       int *iXmin, ///< integer Xmin for mesh (output)
@@ -901,14 +908,25 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   // this will fail and bug out if the global grid class isn't set up,
   // since that defines the coordinate system).
   //
+  if (silo_dtype == DB_FLOAT) {
+    //
+    // we need an extra buffer here to put the variable on the +ve
+    // side of the cell border.
+    //
+    for (int v=0;v<ndim;v++) {
+      mesh_xmin[v] *= (1.0+0.1/ggg->SIM_iRange(static_cast<axes>(v)));
+      mesh_xmax[v] *= (1.0+0.1/ggg->SIM_iRange(static_cast<axes>(v)));
+    }
+  }
   CI.get_ipos_vec(mesh_xmin, iXmin);
   CI.get_ipos_vec(mesh_xmax, iXmax);
 
+#ifdef TESTING
   rep.printVec("get_quadmesh_integer_extents: mesh_Xmin",mesh_xmin,ndim);
   rep.printVec("get_quadmesh_integer_extents: mesh_Xmax",mesh_xmax,ndim);
-  
   rep.printVec("get_quadmesh_integer_extents: iXmin",iXmin,ndim);
   rep.printVec("get_quadmesh_integer_extents: iXmax",iXmax,ndim);
+#endif // TESTING
   
   return;
 }
@@ -1040,9 +1058,11 @@ int dataio_silo_utility::PP_read_var2grid(
   int qm_ix[ndim], qm_NX[ndim];
   for (int v=0;v<ndim;v++) {
     qm_start[v] = (c->pos[v]-iXmin[v])/dx;
+#ifdef TESTING
     cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
     cout <<c->pos[v]<< ", xmin="<<iXmin[v]<<" dims="<<qv->dims[v];
     cout <<", var = "<<variable<<"\n";
+#endif // TESTING
     qm_ix[v] = qm_start[v];
     //
     // Get number of elements in each direction for this subdomain.

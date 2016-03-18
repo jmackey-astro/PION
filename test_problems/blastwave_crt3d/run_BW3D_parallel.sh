@@ -25,8 +25,8 @@ mkdir -p $data_dir
 
 cd ${code_dir}
 echo "MAKE IN" ${code_dir}
-#bash ./clean.sh
-#bash ./compile_code.sh
+bash ./clean.sh
+bash ./compile_code.sh
 echo "MAKE FINISHED"
 cp ../icgen_parallel ../pion_parallel ${test_dir}
 cd ${test_dir}
@@ -48,7 +48,6 @@ ${PION} IC_BWcrt3D_Octant_NR${resolution}_0000.silo 5 1 \
   redirect=${data_dir}/msg_BWcrt3Dpll_Octant_NR${resolution}_HYB_FKJav01 \
   cfl=0.3 AVtype=1 EtaVisc=0.1 solver=3 \
   opfreq_time=1.578e11 finishtime=3.156e10
-exit
 #
 ${PION} IC_BWcrt3D_Octant_NR${resolution}_0000.silo 5 1 \
   outfile=${data_dir}/BWcrt3Dpll_Octant_NR${resolution}_RPV_FKJav01 \
@@ -133,5 +132,6 @@ rm ${data_dir}/BWcrt3Dpll_Octant*_00*.999999*.silo
 # Now we can make visit images, and files 1 and 11 will be the ones of
 # interest.  I can tile them for each resolution.
 # --------------------------------------------------------------------
-# 
+#
+exit
 

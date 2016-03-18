@@ -378,7 +378,7 @@ int sim_control_fixedgrid::Init(
 #endif // if FITS
 #ifdef SILO
   case 5: // Start from Silo ICfile or restart file.
-    if (!dataio) dataio = new dataio_silo ("FLOAT");
+    if (!dataio) dataio = new dataio_silo ("DOUBLE");
     if (!dataio) rep.error("dataio_silo initialisation",dataio);
     break; 
 #endif // if SILO
@@ -482,10 +482,10 @@ int sim_control_fixedgrid::Init(
 #endif // if FITS
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo ("FLOAT");
+      dataio = new dataio_silo ("DOUBLE");
       break;
     case 6: // silo + text
-      dataio = new dataio_silo ("FLOAT");
+      dataio = new dataio_silo ("DOUBLE");
       textio = new dataio_text ();
       if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
       break;

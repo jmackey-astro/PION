@@ -323,8 +323,9 @@ int dataio_silo::OutputData(
 
 
 
-int dataio_silo::ReadHeader(string infile ///< file to read from
-			   )
+int dataio_silo::ReadHeader(
+      string infile ///< file to read from
+      )
 {
   int err=0;
   silofile=infile;
@@ -334,15 +335,22 @@ int dataio_silo::ReadHeader(string infile ///< file to read from
 
   // Create file
   //*db_ptr=0;
-  if (silofile.size()>=strlength-1) rep.error("string too large",silofile);
-  char temp[strlength]; strcpy(temp,silofile.c_str());
+  if (silofile.size()>=strlength-1) {
+    rep.error("string too large",silofile);
+  }
+  char temp[strlength];
+  strcpy(temp,silofile.c_str());
   *db_ptr = DBOpen(temp, DB_UNKNOWN, DB_READ);
-  if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
+  if (!(*db_ptr)) {
+    rep.error("open silo file failed.",*db_ptr);
+  }
 
   DBSetDir(*db_ptr,"/header");
   err = read_simulation_parameters();
-  if (err)
-    rep.error("dataio_silo::ReadHeader() error reading header from silo file",err);
+  if (err) {
+    rep.error("dataio_silo::ReadHeader() error reading header \
+               from silo file",err);
+  }
   dataio_silo::ndim = SimPM.ndim;
 
   DBClose(*db_ptr); //*db_ptr=0;
@@ -902,7 +910,9 @@ int dataio_silo::generate_quadmesh(DBfile *dbfile, string meshname)
   // DBPutQuadmesh requires the data to be (void **), with the actual
   // datatype in silo_dtype.  This is why node_coords is void **.
   //
-  int err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames, node_coords, nodedims, ndim, silo_dtype, DB_COLLINEAR, GridOpts);
+  int err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames,
+                          node_coords, nodedims, ndim, silo_dtype,
+                          DB_COLLINEAR, GridOpts);
 
   for (int i=0;i<ndim;i++) coordnames[i] = mem.myfree(coordnames[i]);
   coordnames = mem.myfree(coordnames);
