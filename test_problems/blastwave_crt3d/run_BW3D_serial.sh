@@ -25,8 +25,8 @@ mkdir -p $data_dir
 
 cd ${code_dir}
 echo "MAKE IN" ${code_dir}
-#bash ./clean.sh
-#bash ./compile_code.sh
+bash ./clean.sh
+bash ./compile_code.sh
 echo "MAKE FINISHED"
 cp ../icgen_* ../pion_* ${test_dir}
 cd ${test_dir}
@@ -133,4 +133,5 @@ rm ${data_dir}/BWcrt3D_Octant*.999999*.silo
 # interest.  I can tile them for each resolution.
 # --------------------------------------------------------------------
 # 
+exit
 

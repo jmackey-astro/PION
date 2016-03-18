@@ -103,8 +103,9 @@ dataio_silo_pllel::~dataio_silo_pllel()
 
 
 
-int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
-				  )
+int dataio_silo_pllel::ReadHeader(
+      string infile ///< file to read from
+      )
 {
   int err=0;
   silofile=infile;
@@ -112,14 +113,20 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   cout <<"Rank: "<<mpiPM->get_myrank();
   cout <<"\tReading Header from file: "<<silofile<<"\n";
 #endif
-  if (!file_exists(silofile))
-    rep.error("dataio_silo_pllel::ReadHeader() File not found, myrank follows",mpiPM->get_myrank());
+
+  if (!file_exists(silofile)) {
+    rep.error("dataio_silo_pllel::ReadHeader() File not found, \
+               myrank follows",mpiPM->get_myrank());
+  }
 
   int group_rank=0, myrank_group=0;
   string file_id="read_header";
   int num_files=1;
-  err = COMM->silo_pllel_init(num_files,"READ", file_id, &group_rank, &myrank_group);
-  if (err) rep.error("COMM->silo_pllel_init() returned err",err);
+  err = COMM->silo_pllel_init(num_files,"READ", file_id,
+                              &group_rank, &myrank_group);
+  if (err) {
+    rep.error("COMM->silo_pllel_init() returned err",err);
+  }
 
   //
   // Now wait for baton, and open into /header directory in file.
@@ -127,7 +134,9 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   *db_ptr=0;
   string mydir = "/header";
   err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
-  if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
+  if (err || !(*db_ptr)) {
+    rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
+  }
 
   //
   // Now read the header, and also NUM_FILES, which tells me how many files
@@ -135,15 +144,19 @@ int dataio_silo_pllel::ReadHeader(string infile ///< file to read from
   //
   err = read_simulation_parameters();
   dataio_silo::ndim = SimPM.ndim;
-  if (err)
-    rep.error("dataio_silo::ReadHeader() error reading header from silo file",err);
+  if (err) {
+    rep.error("dataio_silo_MPI::ReadHeader() error reading header \
+               from silo file",err);
+  }
+
   err += DBReadVar(*db_ptr,"NUM_FILES",   &numfiles);
   if (err) {
     numfiles=1; err =0;
 #ifdef TESTING
     cout <<"Warning didn't read NUM_FILES from silo file.\n";
 #endif
-    rep.error("dataio_silo::ReadHeader() error reading NUM_FILES from silo file",err);
+    //rep.error("dataio_silo::ReadHeader() error reading NUM_FILES \
+    //           from silo file",err);
   }
 
   //

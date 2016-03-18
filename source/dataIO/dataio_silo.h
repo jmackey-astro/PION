@@ -25,6 +25,7 @@
 /// - 2015.01.28 JM: Tidied up a lot, added new mpiPM pointer.
 /// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
 ///    parameter, set in the constructor.
+/// - 2016.03.18 JM: better treatment of float/double coordinates.
 
 #ifndef DATAIO_SILO_H
 #define DATAIO_SILO_H
@@ -88,19 +89,21 @@ class dataio_silo :public DataIOBase {
   /// internal energy/Temperature (and the Magnetic Field divergence
   /// and total Pressure if the solver is an MHD solver).
   ///
-   virtual int OutputData(
+  virtual int OutputData(
         const string, ///< File to write to
         class GridBaseClass *, ///< pointer to data.
         const long int ///< number to stamp file with (e.g. timestep)
         );
+
   ///
   /// Reads the header from the file specified, and puts the
   /// simulation parameters in the global data class declared in global.h.
   /// This should be called first if we want to set up a uniform grid with
   /// the right dimensions to take the data from the file.
   ///
-   virtual int ReadHeader(string ///< file to read from
-			  );
+  virtual int ReadHeader(
+      string ///< file to read from
+      );
 
 
   ///
