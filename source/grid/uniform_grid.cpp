@@ -952,7 +952,7 @@ int UniformGrid::SetupBCs(
       if (!c) rep.error("Got lost on grid! XN",cy->id);
       for (int v=0; v<BC_nbc; v++) {
         BC_bd[XN].data.push_back(c);
-        //cout << " Adding cell "<<c->id<<" to XN boundary.\n";
+        cout << " Adding cell "<<c->id<<" to XN boundary.\n";
         c = NextPt(c, XP);
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
@@ -986,7 +986,7 @@ int UniformGrid::SetupBCs(
           rep.error("Got lost on grid! XP",cy->id);
         }
         BC_bd[XP].data.push_back(c);
-        //cout << " Adding cell "<<c->id<<" to XP boundary.\n";
+        cout << " Adding cell "<<c->id<<" to XP boundary.\n";
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
@@ -1978,6 +1978,7 @@ int UniformGrid::BC_update_REFLECTING(
 
 int UniformGrid::BC_assign_FIXED(     boundary_data *b)
 {
+  cout <<" UniformGrid::BC_assign_FIXED starting\n";
   enum direction ondir  = b->ondir;
   if (b->data.empty()) {
     rep.error("BC_assign_FIXED: empty boundary data",b->itype);
@@ -1994,8 +1995,11 @@ int UniformGrid::BC_assign_FIXED(     boundary_data *b)
   // corner cells, we can't guarantee that every boundary cell will
   // reach an on-grid cell by moving in the on-grid direction.
   //
+  cout <<"Finding first on-grid cell, size="<<b->data.size()<<".\n";
   do {
-    ++bpt;
+    //++bpt;
+    temp = (*bpt);
+    CI.print_cell(temp);
     for (int v=0; v>(*bpt)->isedge; v--) {
       temp = NextPt(temp,ondir);
     }
@@ -2005,6 +2009,7 @@ int UniformGrid::BC_assign_FIXED(     boundary_data *b)
   //
   // Now set reference value to be the on-grid value.
   //
+  cout <<"Setting reference value.\n";
   for (int v=0;v<G_nvar;v++) b->refval[v] = temp->P[v];
   //
   // Initialise all the values to be the fixed value.

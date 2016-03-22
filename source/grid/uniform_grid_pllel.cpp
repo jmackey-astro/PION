@@ -566,12 +566,18 @@ int UniformGridParallel::BC_update_PERIODIC(
   //
   int err=0;
   if (mpiPM->ngbprocs[b->dir] <0) {
-    // cout <<"BC_update_PERIODIC: non-communicating periodic BC in direction "<<b->dir<<"\n";
+#ifdef TESTING
+    cout <<"BC_update_PERIODIC: non-communicating periodic BC in ";
+    cout <<"direction "<<b->dir<<"\n";
+#endif
     err = UniformGrid::BC_update_PERIODIC(b,cstep,maxstep);
   }
   else {
-    // cout<<"BC_update_PERIODIC: communicating periodic BC in direction "<<b->dir<<"\n";
-    // cout<<"BC_update_PERIODIC: calling mpi update BC function\n";
+#ifdef TESTING
+    cout<<"BC_update_PERIODIC: communicating periodic BC in ";
+    cout<<"direction "<<b->dir<<"\n";
+    cout<<"BC_update_PERIODIC: calling mpi update BC function\n";
+#endif
     err = UniformGridParallel::BC_update_BCMPI(b,cstep,maxstep,BC_PERtag);
   }
   return err;
@@ -645,6 +651,7 @@ int UniformGridParallel::BC_update_BCMPI(
   cout <<"BC_update_BCMPI: sending "<<b->send_data.size();
   cout <<" cells.  Boundary data contains "<<b->data.size();
   cout <<" cells.\n";
+  cout.flush();
 #endif // TESTING
 
   //
@@ -1480,7 +1487,6 @@ int UniformGridParallel::RT_populate_recv_boundary(
   // 2nd ones).  Add 1st boundary cells to the RT boundary list.
   //
   list<cell*>::const_iterator bpt=b2->data.begin();
-  cell *t=0;
   do{
     //
     // if isedge==-1 then cell is one cell off-grid in offdir.

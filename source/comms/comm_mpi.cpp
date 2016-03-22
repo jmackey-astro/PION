@@ -338,20 +338,20 @@ int comm_mpi::send_cell_data(
   do {
     CI.get_ipos(*c,ipos);
     err += MPI_Pack(reinterpret_cast<void *>(&((*c)->id)),       1,
-    MPI_LONG,    reinterpret_cast<void *>(send_buff), totalsize,
-    &position, MPI_COMM_WORLD);
+      MPI_LONG,    reinterpret_cast<void *>(send_buff), totalsize,
+      &position, MPI_COMM_WORLD);
     err += MPI_Pack(reinterpret_cast<void *>(ipos),     SimPM.ndim,
-    MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize,
-    &position, MPI_COMM_WORLD);
+      MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize,
+      &position, MPI_COMM_WORLD);
 
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), SimPM.nvar,
-    MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize,
-    &position, MPI_COMM_WORLD);
+      MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize,
+      &position, MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
     err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), SimPM.nvar,
-    MPI_FLOAT, reinterpret_cast<void *>(send_buff), totalsize,
-    &position, MPI_COMM_WORLD);
+      MPI_FLOAT, reinterpret_cast<void *>(send_buff), totalsize,
+      &position, MPI_COMM_WORLD);
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
@@ -365,9 +365,15 @@ int comm_mpi::send_cell_data(
   //
   //  cout <<myrank<<"\tcomm_pack_send_data: bufsiz: ";
   //  cout <<totalsize<<" position in buf: "<<position<<" nc="<<nc<<" ct="<<ct<<"\n";
-  if (ct != nc) rep.error("Length of list doesn't match nc",ct-nc);
-  if (position > totalsize) rep.error("Overwrote buffer length",position-totalsize);
-  if (err) rep.error("MPI_Pack returned abnormally",err);
+  if (ct != nc) {
+    rep.error("Length of list doesn't match nc",ct-nc);
+  }
+  if (position > totalsize) {
+    rep.error("Overwrote buffer length",position-totalsize);
+  }
+  if (err) {
+    rep.error("MPI_Pack returned abnormally",err);
+  }
 
   //
   // Create record of the send.
@@ -392,6 +398,7 @@ int comm_mpi::send_cell_data(
   cout <<"comm_mpi::send_cell_data: sending "<<position;
   cout <<" bytes in buffer size: "<<totalsize<<" to rank ";
   cout <<to_rank<<"\n";
+  cout.flush();
 #endif //TESTING
 
   ostringstream temp; temp.str("");
@@ -589,6 +596,7 @@ int comm_mpi::receive_cell_data(
   //
 #ifdef TESTING
   cout <<"comm_mpi::receive_cell_data: recv_list size="<<recv_list.size()<<"\n";
+  cout.flush();
 #endif //TESTING
 
   if (recv_list.empty()) rep.error("Call look4data before receive_data",recv_list.size());
@@ -605,6 +613,7 @@ int comm_mpi::receive_cell_data(
 #ifdef TESTING
   cout <<"found recv id="<<info->id<<" and looking for id="<<id<<"\n";
   cout <<"comm_mpi::receive_cell_data: found recv id\n";
+  cout.flush();
 #endif //TESTING
 
   //
@@ -620,6 +629,7 @@ int comm_mpi::receive_cell_data(
   //
 #ifdef TESTING
   cout <<"comm_mpi::receive_cell_data: getting size of buffer.\n";
+  cout.flush();
 #endif //TESTING
 
   int ct = 0;
@@ -628,6 +638,7 @@ int comm_mpi::receive_cell_data(
 
 #ifdef TESTING
   cout <<"comm_mpi::receive_cell_data: buffer is "<<ct<<" bytes.\n.";
+  cout.flush();
 #endif //TESTING
 
   if (ct<0) rep.error("bad buffer size count",ct);
@@ -643,12 +654,18 @@ int comm_mpi::receive_cell_data(
   // int MPI_Recv(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
   //
 #ifdef TESTING
-  cout <<"comm_mpi::receive_cell_data: receiving buffer of data from rank: "<<from_rank<<"\n";
+  cout <<"comm_mpi::receive_cell_data: receiving buffer of ";
+  cout <<"data from rank: "<<from_rank<<"\n";
+  cout.flush();
 #endif //TESTING
 
   err += MPI_Recv(buf, ct, MPI_PACKED, from_rank, comm_tag, MPI_COMM_WORLD, &(info->status));
   if (err) rep.error("MPI_Recv failed", err);
-  //  cout <<"\tcomm_receive_any_data: status: "<<status.MPI_SOURCE<<", "<<status.MPI_TAG<<", ct="<<ct<<"\n";
+#ifdef TESTING
+  cout <<"\tcomm_receive_any_data: status: "<<info->status.MPI_SOURCE;
+  cout <<", "<<info->status.MPI_TAG<<", ct="<<ct<<"\n";
+  cout.flush();
+#endif //TESTING
 
   //  
   // First unpack the cells received count.
@@ -657,14 +674,19 @@ int comm_mpi::receive_cell_data(
 
 #ifdef TESTING
   cout <<"comm_mpi::receive_cell_data: getting number of cells received\n";
+  cout.flush();
 #endif //TESTING
 
   int position=0;
   long int ncell=0;
 
   err = MPI_Unpack(buf, ct, &position, &ncell, 1, MPI_LONG, MPI_COMM_WORLD);
-
   if (err) rep.error("Unpack",err);
+#ifdef TESTING
+  cout <<"comm_mpi::receive_cell_data: got "<<ncell<<" cells.\n";
+  cout.flush();
+#endif //TESTING
+  
 
   if (ncell != static_cast<int>(l->size()) || (ncell !=nc)) {
     cerr <<myrank<<"\tcomm_mpi:recv: length of data = "<<l->size();
@@ -674,7 +696,8 @@ int comm_mpi::receive_cell_data(
   }
 
 #ifdef TESTING
-    cout <<myrank<<"\tcomm_mpi:recv: got "<<ncell<<" cells, as expected.\n";
+  cout <<myrank<<"\tcomm_mpi:recv: got "<<ncell<<" cells, as expected.\n";
+  cout.flush();
 #endif //TESTING
   
   // 
@@ -682,6 +705,7 @@ int comm_mpi::receive_cell_data(
   //
 #ifdef TESTING
   cout <<"comm_mpi::receive_cell_data: allocating arrays to unpack data into.\n";
+  cout.flush();
 #endif //TESTING
 
   int *ipos = 0;
@@ -694,6 +718,7 @@ int comm_mpi::receive_cell_data(
   //
 #ifdef TESTING
   cout <<"comm_mpi::receive_cell_data: unpacking data into list of cells.\n";
+  cout.flush();
 #endif //TESTING
 
   int cpos[MAX_DIM];
@@ -701,9 +726,28 @@ int comm_mpi::receive_cell_data(
   list<cell*>::iterator c=l->begin();
 
   for (int i=0; i<ncell; i++) {
+#ifdef TESTING
+    cout <<"comm_mpi::receive_cell_data: unpacking cell "<<i<<".\n";
+    cout.flush();
+#endif //TESTING
     CI.get_ipos(*c,cpos);
+#ifdef TESTING
+    cout <<"position="<<position<<" : ";
+    rep.printVec("cpos",cpos,SimPM.ndim);
+    cout.flush();
+#endif //TESTING
     err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_LONG, MPI_COMM_WORLD);
+#ifdef TESTING
+    cout <<"position="<<position<<" : ";
+    cout <<"cell id = "<<c_id<<"\n";
+    cout.flush();
+#endif //TESTING
     err += MPI_Unpack(buf, ct, &position, ipos,  SimPM.ndim, MPI_INT, MPI_COMM_WORLD);
+#ifdef TESTING
+    cout <<"position="<<position<<" : ";
+    rep.printVec("recvd pos",ipos,SimPM.ndim);
+    cout.flush();
+#endif //TESTING
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_DOUBLE, MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
@@ -711,6 +755,11 @@ int comm_mpi::receive_cell_data(
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
+#ifdef TESTING
+    cout <<"position="<<position<<" : ";
+    rep.printVec("data var",p,SimPM.nvar);
+    cout.flush();
+#endif //TESTING
     if(err) rep.error("Unpack",err);
     // For a given boundary data iterator, put data into cells
     if (c==l->end()) rep.error("Got too many cells!",i);
@@ -724,6 +773,7 @@ int comm_mpi::receive_cell_data(
 #ifdef TESTING
     rep.printVec("\trecvd",ipos,SimPM.ndim);
     rep.printVec("\tlocal",cpos,SimPM.ndim);
+    cout.flush();
 #endif
     ++c;
   }
