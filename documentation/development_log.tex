@@ -10,6 +10,8 @@
 \bibliographystyle{../../../../active/documentation_misc/bibtex/apj.bst}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{color,soul}
+\usepackage[normalem]{ulem}
 
 \input{../../../../active/documentation_misc/bibtex/defs}
 
@@ -76,9 +78,9 @@
 
 \subsubsection{I need a new uniform\_grid class.}
 \begin{enumerate}
-\item look at what I did before!
-\item Change the boundaries so that the full grid (including ghost cells) is a line/square/cube without any empty corner sections.
-\item Get the new boundaries working in parallel with MPI (first without RT).
+\item XXX look at what I did before!  \hl{[DONE]}
+\item XXX Change the boundaries so that the full grid (including ghost cells) is a line/square/cube without any empty corner sections.  \hl{[DONE]}
+\item XXX Get the new boundaries working in parallel with MPI (first without RT).  \hl{[DONE]}
 \item Test this with 1D, 2D, 3D problems such as the DMR, advection, and blastwave tests.
 \item Get the new boundaries working in parallel with MPI including RT (this should be much simpler than the original scheme, and so the scaling should improve quite a bit).
 \item Test this with the spherical HII region expansion tests.
@@ -184,6 +186,11 @@ This is cool!  I should definitely do this soon.
 
 \paragraph{2015.08.30 JM:}
 Projection code: added 20cm Bremsstrahlung and Emission measure as scalars to calculate when projecting.
+
+\paragraph{2016.03.16 JM:}
+Hmmm\ldots not many updates to the log lately.
+I have done a lot on \pion{} development: I wrote the new grid and boundary class and tested it in serial, and have now started getting it working in parallel too.
+I am also updating the test problems as I go, using them to debug the new code.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

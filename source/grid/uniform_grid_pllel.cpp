@@ -38,6 +38,8 @@
 ///    updated for the new code structure.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).
+/// - 2016.03.21 JM: Worked on simplifying RT boundaries (first hack!
+///    compiles but buggy...).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -1207,24 +1209,6 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   //
   // send procs:
   //
-#ifdef CELL_CENTRED_SRC
-  bool send_proc_exists[2*G_ndim];
-  for (int i=0;i<G_ndim;i++) {
-    enum direction posdir=static_cast<direction>(2*i+1);
-    enum direction negdir=static_cast<direction>(2*i);
-    if (srcpos[i]>=G_xmin[i] && (!pconst.equalD(mpiPM->LocalXmin[i],Sim_xmin[i])) )
-      send_proc_exists[negdir] = true;
-    else 
-      send_proc_exists[negdir] = false; // either doesn't exist, or we don't need it.
-
-    if (srcpos[i]<=G_xmax[i] && (!pconst.equalD(mpiPM->LocalXmax[i],Sim_xmax[i])) )
-      send_proc_exists[posdir] = true;
-    else 
-      send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.
-  }
-#endif // CELL_CENTRED_SRC
-#ifdef NON_CELL_CENTRED_SRC
-  //
   // Source should be at a cell corner, so we need to be more careful
   // with the less than/greater than questions.  We will define the
   // source to be on the domain if it is within the domain or on the
@@ -1249,7 +1233,6 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
     else 
       send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.
   }
-#endif // NON_CELL_CENTRED_SRC
 
 
   //
@@ -1271,26 +1254,10 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
     if (srcdir[YY]==YN && recv_proc_exists[YY]==true) {
       temp.rank=mpiPM->get_myrank()-nx[XX]; temp.dir = dir_YN;
       RT_recv_list.push_back(temp);
-      if      (srcdir[XX]==XN && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM->get_myrank()-nx[XX]-1; temp.dir += dir_XN; //srcdir[YY]+srcdir[XX];
-  RT_recv_list.push_back(temp);
-      }
-      else if (srcdir[XX]==XP && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM->get_myrank()-nx[XX]+1; temp.dir += dir_XP; //srcdir[YY]+srcdir[XX];
-  RT_recv_list.push_back(temp);
-      }
     }
     else if (srcdir[YY]==YP && recv_proc_exists[YY]==true) {
       temp.rank=mpiPM->get_myrank()+nx[XX]; temp.dir = dir_YP;
       RT_recv_list.push_back(temp);
-      if      (srcdir[XX]==XN && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM->get_myrank()+nx[XX]-1; temp.dir += dir_XN; //srcdir[YY]+srcdir[XX];
-  RT_recv_list.push_back(temp);
-      }
-      else if (srcdir[XX]==XP && recv_proc_exists[XX]==true) {
-  temp.rank=mpiPM->get_myrank()+nx[XX]+1; temp.dir += dir_XP; //srcdir[YY]+srcdir[XX];
-  RT_recv_list.push_back(temp);
-      }
     }
   } // y-dir
 
@@ -1308,32 +1275,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
       rep.error("Bad Logic -- z-dir RT setup",srcdir[ZZ]);
     }
     temp.rank=rank; temp.dir=dir; temp.RT_bd=0;
-
-    // Have up to 3 extra boundaries if there is a Z neighbour.
     RT_recv_list.push_back(temp);
-    if (recv_proc_exists[YY] && srcdir[YY]!=NO) {
-      if      (srcdir[YY]==YN) {temp.rank = rank-nx[XX]; temp.dir=dir +dir_YN;} //srcdir[ZZ]+srcdir[YY];}
-      else if (srcdir[YY]==YP) {temp.rank = rank+nx[XX]; temp.dir=dir +dir_YP;} //srcdir[ZZ]+srcdir[YY];}
-      else rep.error("Bad Logic -- yz-dir RT setup",srcdir[ZZ]);
-      RT_recv_list.push_back(temp);
-    }
-    if (recv_proc_exists[XX] && srcdir[XX]!=NO) {
-      if      (srcdir[XX]==XN) {temp.rank = rank-1; temp.dir=dir +dir_XN;}//srcdir[ZZ]+srcdir[XX];}
-      else if (srcdir[XX]==XP) {temp.rank = rank+1; temp.dir=dir +dir_XP;}//srcdir[ZZ]+srcdir[XX];}
-      else rep.error("Bad Logic -- xz-dir RT setup",srcdir[ZZ]);
-      RT_recv_list.push_back(temp);
-    }
-    if (recv_proc_exists[YY] && srcdir[YY]!=NO &&
-  recv_proc_exists[XX] && srcdir[XX]!=NO) {
-      // dir=srcdir[ZZ]; rank=mpiPM->get_myrank()(+-)nx[XX]*nx[YY];
-      //dir = srcdir[ZZ]+srcdir[YY]+srcdir[XX];
-      if      (srcdir[YY]==YN) {rank -= nx[XX]; dir += dir_YN;}
-      else if (srcdir[YY]==YP) {rank += nx[XX]; dir += dir_YP;}
-      if      (srcdir[XX]==XN) {rank -= 1;      dir += dir_XN;}
-      else if (srcdir[XX]==XP) {rank += 1;      dir += dir_XP;}
-      temp.rank=rank; temp.dir=dir;
-      RT_recv_list.push_back(temp);
-    }
   } //z-dir
   // Up to Seven processors to receive from, or as few as None.
 
@@ -1355,71 +1297,32 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
     if (send_proc_exists[YN]) {
       rank -= nx[XX]; dir=dir_YN;
       temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
-      if (send_proc_exists[XN]) {
-  temp.rank = rank-1; temp.dir=dir +dir_XN; RT_send_list.push_back(temp);
-      }
-      if (send_proc_exists[XP]) {
-  temp.rank = rank+1; temp.dir=dir +dir_XP; RT_send_list.push_back(temp);
-      }
     }
     rank=mpiPM->get_myrank(); dir=0;
     if (send_proc_exists[YP]) {
       rank += nx[XX]; dir=dir_YP;
       temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
-      if (send_proc_exists[XN]) {
-  temp.rank = rank-1; temp.dir=dir +dir_XN; RT_send_list.push_back(temp);
-      }
-      if (send_proc_exists[XP]) {
-  temp.rank = rank+1; temp.dir=dir +dir_XP; RT_send_list.push_back(temp);
-      }
     }
   }
   // z-dir
   if (G_ndim>2) {
     rank=mpiPM->get_myrank(); dir=0;
     if (send_proc_exists[ZN]) {
-      rank -= nx[XX]*nx[YY]; dir = dir_ZN;
-      temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
-      if (send_proc_exists[XN])
-  {temp.rank = rank-1; temp.dir=dir +dir_XN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[XP])
-  {temp.rank = rank+1; temp.dir=dir +dir_XP; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YN])
-  {temp.rank = rank-nx[XX]; temp.dir=dir +dir_YN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YP])
-  {temp.rank = rank+nx[XX]; temp.dir=dir +dir_YP; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YN] && send_proc_exists[XN])
-  {temp.rank = rank-nx[XX]-1; temp.dir=dir +dir_YN +dir_XN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YN] && send_proc_exists[XP])
-  {temp.rank = rank-nx[XX]+1; temp.dir=dir +dir_YN +dir_XP; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YP] && send_proc_exists[XN])
-  {temp.rank = rank+nx[XX]-1; temp.dir=dir +dir_YP +dir_XN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YP] && send_proc_exists[XP])
-  {temp.rank = rank+nx[XX]+1; temp.dir=dir +dir_YP +dir_XP; RT_send_list.push_back(temp);}
+      rank -= nx[XX]*nx[YY];
+      dir = dir_ZN;
+      temp.rank = rank;
+      temp.dir=dir;
+      RT_send_list.push_back(temp);
     }
     rank=mpiPM->get_myrank(); dir=0;
     if (send_proc_exists[ZP]) {
-      rank += nx[XX]*nx[YY]; dir = dir_ZP;
-      temp.rank = rank; temp.dir=dir; RT_send_list.push_back(temp);
-      if (send_proc_exists[XN])
-  {temp.rank = rank-1; temp.dir=dir +dir_XN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[XP])
-  {temp.rank = rank+1; temp.dir=dir +dir_XP; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YN])
-  {temp.rank = rank-nx[XX]; temp.dir=dir +dir_YN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YP])
-  {temp.rank = rank+nx[XX]; temp.dir=dir +dir_YP; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YN] && send_proc_exists[XN])
-  {temp.rank = rank-nx[XX]-1; temp.dir=dir +dir_YN +dir_XN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YN] && send_proc_exists[XP])
-  {temp.rank = rank-nx[XX]+1; temp.dir=dir +dir_YN +dir_XP; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YP] && send_proc_exists[XN])
-  {temp.rank = rank+nx[XX]-1; temp.dir=dir +dir_YP +dir_XN; RT_send_list.push_back(temp);}
-      if (send_proc_exists[YP] && send_proc_exists[XP])
-  {temp.rank = rank+nx[XX]+1; temp.dir=dir +dir_YP +dir_XP; RT_send_list.push_back(temp);}
+      rank += nx[XX]*nx[YY];
+      dir = dir_ZP;
+      temp.rank = rank;
+      temp.dir=dir;
+      RT_send_list.push_back(temp);
     }
   } // z-dir
-  // Up to 26 neighbours in total for sending (if source is on this processor's domain).  
 
   //
   // Figure out how many RT boundaries I need and set them up.
@@ -1435,16 +1338,6 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   cout <<"\n";
 #endif
 
-  //RT_nbd = static_cast<int>(RT_send_list.size()+RT_recv_list.size());
-  //if (RT_bd) rep.error("RT_bd already initialised",RT_bd);
-  //try {
-  //  RT_bd = new struct boundary_data [RT_nbd];
-  //}
-  //catch (std::bad_alloc) {
-  //  rep.error("out of memory: RT_bd (UniformGridParallel::Setup_RT_Boundaries)",RT_bd);
-  //}
-  
-
   //
   // Set up receive boundaries.  First initialise all boundary_data pointers
   // to zero, then setup faces, edges, and corners, in that order (so ngb 
@@ -1458,29 +1351,9 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   //
   for (unsigned int i=0;i<RT_recv_list.size();i++) {
     int d=RT_recv_list[i].dir;
-    if (d==dir_XN || d==dir_XP || d==dir_YN || d==dir_YP ||
-  d==dir_ZN || d==dir_ZP) {
-      err += setup_RT_recv_boundary(RT_recv_list[i]);
-    }
-  }
-  //
-  // Now set up edge boundaries.
-  //
-  for (unsigned int i=0;i<RT_recv_list.size();i++) {
-    int d=RT_recv_list[i].dir;
-    if (d==dir_YNXN || d==dir_YNXP || d==dir_YPXN || d==dir_YPXP ||
-  d==dir_ZNXN || d==dir_ZNXP || d==dir_ZPXN || d==dir_ZPXP ||
-  d==dir_ZNYN || d==dir_ZNYP || d==dir_ZPYN || d==dir_ZPYP) {
-      err += setup_RT_recv_boundary(RT_recv_list[i]);
-    }
-  }
-  //
-  // Now set up corner boundaries
-  //
-  for (unsigned int i=0;i<RT_recv_list.size();i++) {
-    int d=RT_recv_list[i].dir;
-    if (d==dir_ZNYNXN || d==dir_ZNYNXP || d==dir_ZNYPXN || d==dir_ZNYPXP ||
-  d==dir_ZPYNXN || d==dir_ZPYNXP || d==dir_ZPYPXN || d==dir_ZPYPXP) {
+    if (d==dir_XN || d==dir_XP ||
+        d==dir_YN || d==dir_YP ||
+        d==dir_ZN || d==dir_ZP) {
       err += setup_RT_recv_boundary(RT_recv_list[i]);
     }
   }
@@ -1488,7 +1361,9 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   // Make sure we initialised all the boundaries correctly!
   //
   for (unsigned int i=0;i<RT_recv_list.size();i++) {
-    if (!(RT_recv_list[i].RT_bd)) rep.error("Missed out on receive boundary!",RT_recv_list[i].dir);
+    if (!(RT_recv_list[i].RT_bd)) {
+      rep.error("Missed out on receive boundary!",RT_recv_list[i].dir);
+    }
   }
   if (err) rep.error("failed to setup RT recv boundaries",err);
 
@@ -1497,7 +1372,9 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
     err += setup_RT_send_boundary(RT_send_list[i]);
   }
   for (unsigned int i=0;i<RT_send_list.size();i++) {
-    if (!(RT_send_list[i].RT_bd)) rep.error("Missed out on send boundary!",i);
+    if (!(RT_send_list[i].RT_bd)) {
+      rep.error("Missed out on send boundary!",i);
+    }
   }
   if (err) rep.error("failed to setup RT send boundaries",err);
 
@@ -1515,64 +1392,21 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
 
 
 
-
-class cell * UniformGridParallel::get2startcell(const enum rt_dirs d ///< direction of boundary.
-            )
-{
-#ifdef RT_TESTING
-  cout <<"UniformGridParallel::get2startcell starting.\n";
-#endif 
-  class cell *c = FirstPt();
-  if (!c) rep.error("Called get2startcell before grid initialised!",c);
-
-  if (d%3==2) {
-    // XP dir
-    do {c=NextPt(c,XP);} while (NextPt(c,XP)!=0 && NextPt(c,XP)->isgd);
-  }
-  if ((d/3)%3==2) {
-    // YP dir
-    do {c=NextPt(c,YP);} while (NextPt(c,YP)!=0 && NextPt(c,YP)->isgd);
-  }
-  if ((d/9)%3==2) {
-    // ZP dir
-    do {c=NextPt(c,ZP);} while (NextPt(c,ZP)!=0 && NextPt(c,ZP)->isgd);
-  }
-#ifdef RT_TESTING
-  cout <<"UniformGridParallel::get2startcell returning.\n";
-#endif 
-  return c;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
 int UniformGridParallel::setup_RT_recv_boundary(
-        struct RT_boundary_list_element &b ///< boundary info.
-        )
+      struct RT_boundary_list_element &b ///< boundary info.
+      )
 {
 #ifdef RT_TESTING
   cout <<"UniformGridParallel::setup_RT_recv_boundary() starting (dir="<<b.dir<<").\n";
 #endif 
   int err=0;
-  cell *c = get2startcell(static_cast<enum rt_dirs>(b.dir));
 
-  //
-  // Go through the cases one by one...
-  //
-  enum direction d1,d2,d3;
-  int d;
-  cell *t=0;
   //
   // First set up boundary data, since it starts as an uninitialised pointer.
   //
   if (b.RT_bd) rep.error("Already set up RT boudary data!",b.RT_bd);
   b.RT_bd = mem.myalloc(b.RT_bd,1);
+  enum direction d1;
 
   switch (b.dir) {
     //
@@ -1582,139 +1416,33 @@ int UniformGridParallel::setup_RT_recv_boundary(
   case dir_XN:
     d1=XN;
     if (!BC_bd) rep.error("setup regular boundaries before RT ones!!!",b.dir);
-    err += RT_connect_face_cells(b.RT_bd, &(BC_bd[d1]), d1);
+    err += RT_populate_recv_boundary(b.RT_bd, &(BC_bd[d1]), d1);
     break;
   case dir_XP:
     d1=XP;
     if (!BC_bd) rep.error("setup regular boundaries before RT ones!!!",b.dir);
-    err += RT_connect_face_cells(b.RT_bd, &(BC_bd[d1]), d1);
+    err += RT_populate_recv_boundary(b.RT_bd, &(BC_bd[d1]), d1);
     break;
   case dir_YN:
     d1=YN;
     if (!BC_bd) rep.error("setup regular boundaries before RT ones!!!",b.dir);
-    err += RT_connect_face_cells(b.RT_bd, &(BC_bd[d1]), d1);
+    err += RT_populate_recv_boundary(b.RT_bd, &(BC_bd[d1]), d1);
     break;
   case dir_YP:
     d1=YP;
     if (!BC_bd) rep.error("setup regular boundaries before RT ones!!!",b.dir);
-    err += RT_connect_face_cells(b.RT_bd, &(BC_bd[d1]), d1);
+    err += RT_populate_recv_boundary(b.RT_bd, &(BC_bd[d1]), d1);
     break;
   case dir_ZN:
     d1=ZN;
     if (!BC_bd) rep.error("setup regular boundaries before RT ones!!!",b.dir);
-    err += RT_connect_face_cells(b.RT_bd, &(BC_bd[d1]), d1);
+    err += RT_populate_recv_boundary(b.RT_bd, &(BC_bd[d1]), d1);
     break;
   case dir_ZP:
     d1=ZP;
     if (!BC_bd) rep.error("setup regular boundaries before RT ones!!!",b.dir);
-    err += RT_connect_face_cells(b.RT_bd, &(BC_bd[d1]), d1);
+    err += RT_populate_recv_boundary(b.RT_bd, &(BC_bd[d1]), d1);
     break;
-
-    //
-    // now more difficult ones, where we have to create new cells.
-    //
-  case dir_ZNYNXN:
-  case dir_ZNYNXP:
-  case dir_ZNYPXN:
-  case dir_ZNYPXP:
-  case dir_ZPYNXN:
-  case dir_ZPYNXP:
-  case dir_ZPYPXN:
-  case dir_ZPYPXP:
-    //
-    // in this case, should have created edge boundaries first, so i can navigate across them.
-    //
-    if (G_ndim!=3) rep.error("Need 3d for corner cells!!! logic error",b.dir);
-    d=(b.dir %3);
-    switch (d) {
-      //case 0: d1=NO; break; // there must be a direction!
-    case 1: d1=XN; break;
-    case 2: d1=XP; break;
-    default: d1=NO; rep.error("logic!!!",d);
-    }
-    d=((b.dir/3) %3);
-    switch (d) {
-      //case 0: d2=NO; break; // there must be a direction!
-    case 1: d2=YN; break;
-    case 2: d2=YP; break;
-    default: d2=NO; rep.error("logic!!!",d);
-    }
-    d=((b.dir/9) %3);
-    switch (d) {
-      //case 0: d3=NO; break; // there must be a direction!
-    case 1: d3=ZN; break;
-    case 2: d3=ZP; break;
-    default: d3=NO; rep.error("logic!!!",d);
-    }
-    //
-    // Now create a new cell for the corner, and add it to the list.
-    //
-#ifdef RT_TESTING
-    cout <<"\t\t\tAdding corner cell!!\n";
-#endif 
-    t = RT_new_corner_cell(c,d1,d2,d3);
-#ifdef RT_TESTING
-    cout <<"Recv grid cell at corner: "; PrintCell(c);
-    cout <<"Recv Corner Cell: "; PrintCell(t);
-#endif 
-    b.RT_bd->data.push_back(t);
-    break;
-
-  case dir_YNXN:
-  case dir_YNXP:
-  case dir_YPXN:
-  case dir_YPXP:
-    if (G_ndim<2) rep.error("Need 2d/3d for edge cells!!! logic error",b.dir);
-    d1=static_cast<direction>((b.dir %3)-1);     // [0,1] for XN,XP
-    d2=static_cast<direction>(((b.dir/3) %3)+1); // [2,3] for YN,YP
-#ifdef RT_TESTING
-    cout <<"dir="<<b.dir<<" and d1="<<d1<<" and d2="<<d2<<"\n";
-#endif 
-    d3=ZP;
-    //
-    // Now pass boundary data to setup function, which will create cells and
-    // add them to the boundary data list.
-    //
-    err += RT_edge_cells_setup(c, b.RT_bd, d1, d2, d3);
-    break;
-
-  case dir_ZNXN:
-  case dir_ZNXP:
-  case dir_ZPXN:
-  case dir_ZPXP:
-    if (G_ndim<2) rep.error("Need 2d/3d for edge cells!!! logic error",b.dir);
-    d1=static_cast<direction>((b.dir %3)-1);     // [0,1] for XN,XP
-    d2=static_cast<direction>(((b.dir/9) %3)+3); // [4,5] for ZN,ZP
-#ifdef RT_TESTING
-    cout <<"dir="<<b.dir<<" and d1="<<d1<<" and d2="<<d2<<"\n";
-#endif 
-    d3=YP;
-    //
-    // Now pass boundary data to setup function, which will create cells and
-    // add them to the boundary data list.
-    //
-    err += RT_edge_cells_setup(c, b.RT_bd, d1, d2, d3);
-    break;
-
-  case dir_ZNYN:
-  case dir_ZNYP:
-  case dir_ZPYN:
-  case dir_ZPYP:
-    if (G_ndim<2) rep.error("Need 2d/3d for edge cells!!! logic error",b.dir);
-    d1=static_cast<direction>(((b.dir/3) %3)+1); // [2,3] for YN,YP
-    d2=static_cast<direction>(((b.dir/9) %3)+3); // [4,5] for ZN,ZP
-#ifdef RT_TESTING
-    cout <<"dir="<<b.dir<<" and d1="<<d1<<" and d2="<<d2<<"\n";
-#endif 
-    d3=XP;
-    //
-    // Now pass boundary data to setup function, which will create cells and
-    // add them to the boundary data list.
-    //
-    err += RT_edge_cells_setup(c, b.RT_bd, d1, d2, d3);
-    break;
-
-
 
   default:
     rep.error("bad dir!",b.dir);
@@ -1727,183 +1455,12 @@ int UniformGridParallel::setup_RT_recv_boundary(
 }
 
 
-
 // ##################################################################
 // ##################################################################
 
 
 
-
-
-int UniformGridParallel::RT_edge_cells_setup(cell *c, ///< grid corner cell.
-               struct boundary_data *b, ///< pointer to boundary data.
-               const enum direction d1, ///< 1st dir
-               const enum direction d2, ///< 2nd dir
-               const enum direction d3 ///< direction to trace along.
-               )
-{
-  //
-  // THIS CODE ASSUMES THAT EDGE BOUNDARY DATA MAY NOT EXIST (AS OPPOSED TO FACE
-  // BOUNDARY DATA WHICH MUST EXIST).  EDGES ARE AT DOMAIN CORNERS IN 2D, AND IN
-  // 3D ARE THE EXTENSION OF THESE CORNERS ALONG THE 3RD DIMENSION.
-  // THE FUNCTION RT_new_edge_cell() RETURNS A POINTER TO THE CELL IF IT HAS ALREADY
-  // BEEN CREATED, OR CREATES A NEW CELL, CONNECTS IT TO THE GRID, AND RETURNS ITS
-  // POINTER IF IT DOESN'T PRE-EXIST.
-  //
-#ifdef RT_TESTING
-  cout <<"RT_edge_cells_setup starting\n";
-#endif 
-  if (!b) rep.error("Empty RT Boundary data passed to RT_edge_cells_setup()",b);
-  if (G_ndim==1) rep.error("need 2d/3d for edge cells setup",d1);
-
-  cell *t=0, *t2=0;
-  unsigned int count=0;
-  if (G_ndim==2) {
-#ifdef RT_TESTING
-    cout <<"calling RT_new_edge_cell(c,d1,d2)\n";
-#endif 
-    t = RT_new_edge_cell(c,d1,d2);
-#ifdef RT_TESTING
-    cout <<"Back from RT_new_edge_cell(c,d1,d2)\n";
-#endif 
-    if (b->data.empty()) {
-#ifdef RT_TESTING
-      cout <<"data is empty, adding cell to it.\n";
-#endif 
-    }
-    b->data.push_back(t);
-#ifdef RT_TESTING
-    cout <<"Added cell to boundary data.\n";
-#endif 
-    count++;
-  }
-  else {
-    //
-    // set t2 to be the previous cell in the d3 column (if it exists).
-    //
-    t2=NextPt(c,OppDir(d3));
-    if (!t2) rep.error("no face boundary (or got lost), RT_edge_cells_setup",t2);
-    t2=NextPt(t2,d1); if (t2) t2=NextPt(t2,d2); // may or may not exist.
-    //
-    // now trace through the d3 column, setting the d3 ngb pointers as we go.
-    // RT_new_edge_cell() sets the d1,d2 pointers.
-    //
-    do {
-      t = RT_new_edge_cell(c,d1,d2);
-      if (t2) t2->ngb[d3]= t;
-      t->ngb[OppDir(d3)] = t2;
-      t2=t;
-      b->data.push_back(t);
-      count++;
-    } while ( (c=NextPt(c,d3))!=0 && c->isgd);
-  }
-
-  if (count != b->data.size()) {
-    cerr <<"UniformGridParallel::RT_edge_cells_setup() wrong number of cells!\n";
-    return (count-b->data.size());
-  }
-  else {
-#ifdef RT_TESTING
-    cout <<"RT_edge_cells_setup returning.\n";
-#endif 
-    return 0;
-  }
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-class cell * UniformGridParallel::RT_new_edge_cell(const cell *c, ///< grid edge cell.
-               const enum direction d1, ///< first dir
-               const enum direction d2  ///< second dir
-               )
-{
-#ifdef RT_TESTING
-  cout <<"UniformGridParallel::RT_new_edge_cell() starting.\n";
-#endif 
-  cell *t=0;
-  cell *move=0;
-  move=NextPt(c,d1); if (!move || move->isgd) rep.error("lost on grid: edge",d1);
-  //
-  // So now we are on the boundary and the new cell needs to be in dir d2.  If
-  // we have multiple sources, however, it may already have been created when
-  // setting up boundary data for a previous source.  So if it exists we just 
-  // return a pointer to the cell.  If not, then we create a new cell and set
-  // up its connectivity to the rest of the grid, and then return it.
-  //
-  if (NextPt(move,d2)!=0 && !NextPt(move,d2)->isgd) {
-    t = NextPt(move,d2);
-  }
-  else if (NextPt(move,d2)!=0) {
-    rep.error("edge cell already exists! RT_new_edge_cell",NextPt(move,d2));
-  }
-  else {
-    t = CI.new_cell();
-    t->isbd = true; 
-    t->isgd = false;
-    t->isedge = -1;
-    // Boundary ids are irrelevant -10 means not set, I set to something meaningful later.
-    t->id = -98;
-    double tau[MAX_TAU];
-    for (short unsigned int v=0; v<MAX_TAU; v++) tau[v]=0.0;
-    for (int v=0;v<SimPM.RS.Nsources;v++) {
-      CI.set_col(t,v,tau);
-    } // no harm initialising it!!!
-
-    //
-    // Assign position of cell, based on positions of neighbours
-    //
-    int ix[MAX_DIM], delta=2;
-    CI.get_ipos(move,ix);
-    enum axes a = static_cast<axes>(d2/2);
-    switch (d2) {
-    case XN: case YN: case ZN:
-      ix[a] -= delta; break;
-    case XP: case YP: case ZP:
-      ix[a] += delta; break;
-    default: rep.error("Bad dir",d2);
-    }
-    CI.set_pos(t,ix);
-
-    // assign neighbour pointers in the plane d1,d2 -- so two each-way pointers
-    enum direction opp;
-    move->ngb[d2] = t;
-    opp = OppDir(d2); t->ngb[opp] = move;
-    move=NextPt(c,d2); if (!move || move->isgd) rep.error("lost on grid: edge2",d2);
-    move->ngb[d1] = t;
-    opp = OppDir(d1); t->ngb[opp] = move;
-
-#ifdef RT_TESTING
-    if (mpiPM->get_myrank()==60 && c->id==31) {
-      cout <<"RT_new_edge_cell() grid cell, c, new cell, t.\n";
-      cout <<"d1="<<d1<<" and d2="<<d2<<"\n";
-      PrintCell(c); PrintCell(t);
-    }
-#endif
-  } // if cell doesn't already exist.
-
-#ifdef RT_TESTING
-  cout <<"UniformGridParallel::RT_new_edge_cell() returning.\n";
-#endif 
-  return t;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int UniformGridParallel::RT_connect_face_cells(
+int UniformGridParallel::RT_populate_recv_boundary(
         struct boundary_data *b,        ///< pointer to RT boundary data.
         const struct boundary_data *b2, ///< pointer to BC boundary data.
         const enum direction offdir     ///< face dir
@@ -1911,62 +1468,31 @@ int UniformGridParallel::RT_connect_face_cells(
 {
   //if (G_ndim==1) return 0; // no connections to make!
   if (!b || !b2)
-    rep.error("UniformGridParallel::RT_connect_face_cells() Null b/b2 pointer",b);
+    rep.error("UniformGridParallel::RT_populate_recv_boundary() Null b/b2 pointer",b);
 
-  //
-  // First set all the directions we need:
-  //
-  enum direction ondir=OppDir(offdir);
 #ifdef RT_TESTING
-    cout <<"RT_connect_face_cells() offdir="<< offdir;
+    cout <<"RT_populate_recv_boundary() offdir="<< offdir;
     cout <<",  ondir="<<ondir<<"\n";
 #endif // RT_TESTING
-  enum direction dir1=NO, opp1=NO, dir2=NO, opp2=NO;
-  switch (offdir) {
-  case XN: case XP:
-    dir1=YN; dir2=ZN; opp1=YP; opp2=ZP; break;
-  case YN: case YP:
-    dir1=XN; dir2=ZN; opp1=XP; opp2=ZP; break;
-  case ZN: case ZP:
-    dir1=XN; dir2=YN; opp1=XP; opp2=YP; break;
-  default:
-    rep.error("BAD DIR! UniformGridParallel::RT_connect_face_cells",offdir);
-  }
 
   //
-  // Run through all the BC boundary points (may be 2 deep, so skip 2nd ones).
-  // Connect all the 1st boundary points to each other.
-  // At the same time, add 1st boundary cells to the RT boundary list.
+  // Run through all the BC boundary points (may be 2 deep, so skip
+  // 2nd ones).  Add 1st boundary cells to the RT boundary list.
   //
   list<cell*>::const_iterator bpt=b2->data.begin();
   cell *t=0;
   do{
-#ifdef RT_TESTING
-    cout <<"RT_connect_face_cells() cpos="<< (*bpt)->pos[0]<<"\n";
-#endif // RT_TESTING
-    if (NextPt(*bpt,ondir)->isgd) {
+    //
+    // if isedge==-1 then cell is one cell off-grid in offdir.
+    //
+    if ((*bpt)->isedge == -1) {
       //
       // Add to RT list.
       //
       b->data.push_back(*bpt);
-
-      if (G_ndim>1) {
-        //
-        // Make connections to neighbouring boundary cells.
-        //
-        t=NextPt(*bpt,ondir);
-        t=NextPt(t,dir1); 
-        (*bpt)->ngb[dir1] = NextPt(t,offdir);
-        t=NextPt(NextPt(t,opp1),opp1);
-        (*bpt)->ngb[opp1] = NextPt(t,offdir);
-        if (G_ndim==3) {
-          t=NextPt(t,dir1);
-          t=NextPt(t,dir2); 
-          (*bpt)->ngb[dir2] = NextPt(t,offdir);
-          t=NextPt(NextPt(t,opp2),opp2);
-          (*bpt)->ngb[opp2] = NextPt(t,offdir);
-        }
-      }
+#ifdef RT_TESTING
+      cout <<"RT_populate_recv_boundary() cpos="<< (*bpt)->pos[0]<<"\n";
+#endif // RT_TESTING
     }
     //
     // Move to next cell.
@@ -1985,245 +1511,59 @@ int UniformGridParallel::RT_connect_face_cells(
 
 
 
-class cell * UniformGridParallel::RT_new_corner_cell(const cell *c, ///< grid corner cell.
-                 const enum direction d1, ///< x-dir
-                 const enum direction d2, ///< y-dir
-                 const enum direction d3  ///< z-dir
-                 )
-{
-  //
-  // CORNER OF DOMAIN IN 3D -- THE APEX OF THE THREE COORDINATE DIRECTIONS HAS 
-  // A BOUNDARY CELL WITH NO FACES CONNECTED TO THE LOCAL DOMAIN, BUT IT IS 
-  // STILL NEEDED FOR RAY-TRACING TO GET OPTICAL DEPTH ALONG RAYS ENTERING THE
-  // DOMAIN.  THIS FUNCTION SETS UP THE CORNER CELL.
-  //
-  cell *t=0;
-  cell *move=0;
-  move=NextPt(c,d1); if (!move || move->isgd) rep.error("lost on grid: corner",d1);
-  move=NextPt(move,d2); if (!move || move->isgd) rep.error("lost on grid: corner",d2);
-
-  //
-  // If we have multiple sources, the cell may already have been created when
-  // setting up boundary data for a previous source.  So if it exists we just 
-  // return a pointer to the cell.  If not, then we create a new cell and set
-  // up its connectivity to the rest of the grid, and then return it.
-  //
-  if (NextPt(move,d3)!=0 && !NextPt(move,d3)->isgd) {
-    t = NextPt(move,d3);
-  }
-  else if (NextPt(move,d3)!=0) {
-    rep.error("corner cell already exists! RT_new_corner_cell",NextPt(move,d3));
-  }
-  else {
-    t = CI.new_cell();
-    t->isbd = true; 
-    t->isgd = false;
-    t->isedge = -1;
-#ifdef RT_TESTING
-    cout <<"Move cell c+d1="<<d1<<" +d2="<<d2;PrintCell(move);
-    t->id = -500;
-#else
-    t->id = -99;  // Boundary ids are irrelevant
-#endif
-
-    //
-    // Assign position of cell, based on positions of neighbours
-    //
-    int ix[MAX_DIM], delta=2;
-    CI.get_ipos(move,ix);
-    enum axes a = static_cast<axes>(d3/2);
-    switch (d3) {
-    case ZN: ix[a] -= delta; break;
-    case ZP: ix[a] += delta; break;
-    default: rep.error("Bad dir",d3);
-    }
-    CI.set_pos(t,ix);
-
-    //
-    // assign neighbour pointers both ways in the 3 directions:
-    //
-    enum direction opp;
-    opp = OppDir(d3); t->ngb[opp]=move;  move->ngb[d3]=t;
-
-    opp = OppDir(d2); move=NextPt(move,opp);
-    t->ngb[opp] = NextPt(move,d3);
-    if (!t->ngb[opp]) rep.error("setup edges before corners!",opp);
-    NextPt(move,d3)->ngb[d2] = t;
-
-    opp = OppDir(d1); move=NextPt(move,d2); move=NextPt(move,opp);  
-    t->ngb[opp] = NextPt(move,d3);
-    if (!t->ngb[opp]) rep.error("setup edges before corners!",opp);
-    NextPt(move,d3)->ngb[d1] = t;
-  } // if cell didn't already exist.
-
-  return t;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-
-int UniformGridParallel::setup_RT_send_boundary(struct RT_boundary_list_element &b ///< boundary info.
-            )
+int UniformGridParallel::setup_RT_send_boundary(
+      struct RT_boundary_list_element &send_b ///< boundary info.
+      )
 {
 #ifdef RT_TESTING
-  cout <<"UniformGridParallel::setup_RT_send_boundary() starting (dir="<<b.dir<<").\n";
+  cout <<"UniformGridParallel::setup_RT_send_boundary() ";
+  cout <<"starting (dir="<<send_b.dir<<").\n";
 #endif 
   int err=0;
-  cell *c = get2startcell(static_cast<enum rt_dirs>(b.dir));
-  cell *t = 0;
-
   //
-  // Set the directions associated with the boundary.
+  // get a pointer to the existing grid boundary.
   //
-  enum direction d1,d2,d3;
-  int d;
-  d=(b.dir %3);
-  switch (d) {
-  case 0: d1=NO; break;
-  case 1: d1=XN; break;
-  case 2: d1=XP; break;
-  default: d1=NO; rep.error("logic!!!",d);
-  }
-  d=((b.dir/3) %3);
-  switch (d) {
-  case 0: d2=NO; break;
-  case 1: d2=YN; break;
-  case 2: d2=YP; break;
-  default: d2=NO; rep.error("logic!!!",d);
-  }
-  d=((b.dir/9) %3);
-  switch (d) {
-  case 0: d3=NO; break;
-  case 1: d3=ZN; break;
-  case 2: d3=ZP; break;
-  default: d3=NO; rep.error("logic!!!",d);
+  boundary_data *grid_b = &(BC_bd[send_b.dir]);
+  if (!grid_b) {
+    rep.error("RT boundary in dir with no real boundary!",send_b.dir);
   }
 
   //
-  // Set up boundary data, since I need to add cells to the list.
+  // Set up boundary data.
   //
-  if (b.RT_bd) rep.error("Already set up RT boudary data!",b.RT_bd);
-  b.RT_bd = mem.myalloc(b.RT_bd,1);
+  if (send_b.RT_bd) {
+    rep.error("Already set up RT boudary data!",send_b.RT_bd);
+  }
+  send_b.RT_bd = mem.myalloc(send_b.RT_bd,1);
   
-  switch (b.dir) {
+  //
+  // Now get every cell in the grid boundary for which isedge==-1,
+  // indicating that it is one cell off-grid, and add the neighbour
+  // cell in the on-grid-direction to the send-boundary list.
+  //
+  list<cell*>::const_iterator bpt=grid_b->data.begin();
+  do{
     //
-    // First do the corners, which are just one cell, and I should be there already!
+    // if isedge==-1 then cell is one cell off-grid in offdir.
     //
-  case dir_ZNYNXN:
-  case dir_ZNYNXP:
-  case dir_ZNYPXN:
-  case dir_ZNYPXP:
-  case dir_ZPYNXN:
-  case dir_ZPYNXP:
-  case dir_ZPYPXN:
-  case dir_ZPYPXP:
+    if ((*bpt)->isedge == -1) {
+      //
+      // Add to RT list.
+      //
+      send_b.RT_bd->data.push_back(NextPt(*bpt,grid_b->ondir));
 #ifdef RT_TESTING
-    cout <<"Send Corner Cell: "; PrintCell(t);
-#endif 
-    b.RT_bd->data.push_back(c);
-    break;
-
+      cout <<"setup_RT_send_boundary() cpos="<< (*bpt)->pos[0]<<"\n";
+#endif // RT_TESTING
+    }
     //
-    // Now do the edges, where I need to add a column of cells.
-    // Two of the dirs label the edge, and the other is the direction
-    // along the column.
+    // Move to next cell.
     //
-  case dir_YNXN:
-  case dir_YNXP:
-  case dir_YPXN:
-  case dir_YPXP:
-  case dir_ZNXN:
-  case dir_ZNXP:
-  case dir_ZPXN:
-  case dir_ZPXP:
-  case dir_ZNYN:
-  case dir_ZNYP:
-  case dir_ZPYN:
-  case dir_ZPYP:
-    if (G_ndim==1) rep.error("Bad ndim!",G_ndim);
-    //
-    // if 2D, only add one cell...
-    //
-    if (G_ndim==2) {
-      b.RT_bd->data.push_back(c);
-    }
-    else {
-      //
-      // Get normal direction:
-      //
-      if      (d1==NO) d1=XP;
-      else if (d2==NO) d1=YP;
-      else if (d3==NO) d1=ZP;
-      else rep.error("Need a direction for tracing a column!!!",d1);
-      
-      //
-      // trace along that column, starting from cell c.
-      //
-      do {
-        b.RT_bd->data.push_back(c);
-      } while ((c=NextPt(c,d1))->isgd);
-    }
-    break;
-
-  case dir_XN:
-  case dir_XP:
-  case dir_YN:
-  case dir_YP:
-  case dir_ZN:
-  case dir_ZP:
-    if      (G_ndim==1) {
-      b.RT_bd->data.push_back(c);
-    }
-    else if (G_ndim==2) {
-      //
-      // Find Perpendicular Direction
-      //
-      if      (d1==NO) d1=XP;
-      else if (d2==NO) d1=YP;
-      else rep.error("Need a direction for tracing a column[face]!!!",d1);
-      //
-      // trace along that column, starting from cell c.
-      //
-      do {
-        b.RT_bd->data.push_back(c);
-      } while ((c=NextPt(c,d1))->isgd);
-    }
-    else {
-      //
-      // Find Perpendicular Directions
-      //
-      if      (d1!=NO) d=XP;
-      else if (d2!=NO) d=YP;
-      else if (d3!=NO) d=ZP;
-      else rep.error("Need a direction for tracing a column[face]!!!",d1);
-      if      (d==XP) {d1=YP; d2=ZP;}
-      else if (d==YP) {d1=XP; d2=ZP;}
-      else if (d==ZP) {d1=XP; d2=YP;}
-      else rep.error("BAD DIRECTION!!!",d);
-      //
-      // trace along that plane, starting from cell c.
-      //
-      do {
-        t=c;
-        do {
-          b.RT_bd->data.push_back(t);
-        } while ((t=NextPt(t,d1))->isgd);
-      } while ((c=NextPt(c,d2))->isgd);
-    }
-    break;
-    
-  default:
-    rep.error("bad dir!",b.dir);
-  }
+    ++bpt;
+  } while (bpt !=grid_b->data.end());
 
 #ifdef RT_TESTING
-  cout <<"UniformGridParallel::setup_RT_send_boundary() returning (dir="<<b.dir<<").\n";
+  cout <<"UniformGridParallel::setup_RT_send_boundary() returning ";
+  cout <<"(dir="<<b.dir<<").\n";
 #endif 
   return err;
 }
@@ -2237,8 +1577,9 @@ int UniformGridParallel::setup_RT_send_boundary(struct RT_boundary_list_element 
 
 
 
-int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
-                 )
+int UniformGridParallel::Receive_RT_Boundaries(
+      const int src_id ///< source id
+      )
 {
 #ifdef RT_TESTING
   cout <<"\tReceive_RT_Boundaries() src="<<src_id<<": Starting\n";
@@ -2384,8 +1725,7 @@ int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
           else cout <<"]\n";
         }
 #endif  
-        for (short unsigned int v=0;
-              v<SimPM.RS.sources[src_id].NTau; v++) {
+        for (short unsigned int v=0; v<SimPM.RS.sources[src_id].NTau; v++) {
           tau[v] = buf[count];
           count++;
         }
@@ -2417,8 +1757,9 @@ int UniformGridParallel::Receive_RT_Boundaries(const int src_id ///< source id
 
 
 
-int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
-              )
+int UniformGridParallel::Send_RT_Boundaries(
+      const int src_id ///< source id
+      )
 {
   int err=0;
 #ifdef RT_TESTING
@@ -2521,8 +1862,10 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
           if (SimPM.ndim>2)cout<<","<<(*c)->pos[ZZ]<<"]\n";
           else cout <<"]\n";
         }
-        //if (count<32)
-        //  cout <<"send data ["<<i<<"]: col = "<<(*c)->col<<" for cell "<<count<<": pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY]<<","<<(*c)->pos[ZZ]<<"]\n";
+        //if (count<32) {
+        //  cout <<"send data ["<<i<<"]: col = "<<(*c)->col<<" for cell ";
+        //  cout <<count<<": "; rep.printVec("pos",(*c)->pos, G_ndim);
+        //}
 #endif 
       }
 
@@ -2530,10 +1873,12 @@ int UniformGridParallel::Send_RT_Boundaries(const int src_id ///< source id
       // Send data
       //
 #ifdef RT_TESTING
-      cout <<"Send_BC["<<i<<"]: Sending "<<nc<<" doubles to proc: "<<i_src->RT_send_list[i].rank;
+      cout <<"Send_BC["<<i<<"]: Sending "<<nc<<" doubles to proc: ";
+      cout <<i_src->RT_send_list[i].rank;
       cout <<" in direction "<<i_src->RT_send_list[i].dir<<"\n";
 #endif
-      err += COMM->send_double_data(i_src->RT_send_list[i].rank, ///< rank to send to.
+      err += COMM->send_double_data(
+            i_src->RT_send_list[i].rank, ///< rank to send to.
             nc,      ///< size of buffer, in number of doubles.
             data,    ///< pointer to double array.
             id[i],   ///< identifier for send, for tracking delivery later.

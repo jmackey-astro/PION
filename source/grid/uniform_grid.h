@@ -1264,48 +1264,10 @@ class UniformGridParallel
         );
 
   ///
-  /// gets to corner cell on grid, adjacent to boundary.
+  /// Add cells to the receive boundary list, so we know what to
+  /// expect. 
   ///
-  class cell * get2startcell(
-        const enum rt_dirs ///< direction of boundary.
-        ); 
-
-  ///
-  /// Create a new corner cell (for a 3d corner of the grid)
-  ///
-  class cell * RT_new_corner_cell(
-        const cell *, ///< grid corner cell.
-        const enum direction, ///< x-dir
-        const enum direction, ///< y-dir
-        const enum direction  ///< z-dir
-        );
-
-  ///
-  /// Setup edge cells in boundary (for a 3d edge or 2d corner of the grid)
-  ///
-  int RT_edge_cells_setup(
-        cell *, ///< grid corner cell.
-        struct boundary_data *, ///< pointer to boundary data.
-        const enum direction, ///< 1st dir
-        const enum direction, ///< 2nd dir
-        const enum direction  ///< direction to trace along.
-        );
-
-  ///
-  /// Create a new edge cell (for a 3d edge or 2d corner of the grid)
-  ///
-  class cell * RT_new_edge_cell(
-        const cell *, ///< grid corner cell.
-        const enum direction, ///< first dir
-        const enum direction ///< second dir
-        );
-
-  ///
-  /// Create a new face cell (for a 3d face or 2d edge of the grid) 
-  /// Note that this only connects the boundary cells already existing!!! 
-  /// It sets ngb[] pointers so raytracing can work with boundary data. 
-  ///
-  int RT_connect_face_cells(
+  int RT_populate_recv_boundary(
         struct boundary_data *, ///< pointer to RT boundary data.
         const struct boundary_data *, ///< pointer to BC boundary data.
         const enum direction ///< face direction
