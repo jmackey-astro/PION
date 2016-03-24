@@ -722,31 +722,31 @@ int comm_mpi::receive_cell_data(
 #endif //TESTING
 
   int cpos[MAX_DIM];
-  int c_id=0;
+  long int c_id=0;
   list<cell*>::iterator c=l->begin();
 
   for (int i=0; i<ncell; i++) {
 #ifdef TESTING
-    cout <<"comm_mpi::receive_cell_data: unpacking cell "<<i<<".\n";
-    cout.flush();
+    //cout <<"comm_mpi::receive_cell_data: unpacking cell "<<i<<".\n";
+    //cout.flush();
 #endif //TESTING
     CI.get_ipos(*c,cpos);
 #ifdef TESTING
-    cout <<"position="<<position<<" : ";
-    rep.printVec("cpos",cpos,SimPM.ndim);
-    cout.flush();
+    //cout <<"position="<<position<<" : cell id = "<<(*c)->id<<" : ";
+    //rep.printVec("cpos",cpos,SimPM.ndim);
+    //cout.flush();
 #endif //TESTING
     err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_LONG, MPI_COMM_WORLD);
 #ifdef TESTING
-    cout <<"position="<<position<<" : ";
-    cout <<"cell id = "<<c_id<<"\n";
-    cout.flush();
+    //cout <<"position="<<position<<" : ";
+    //cout <<"cell id = "<<c_id<<"\n";
+    //cout.flush();
 #endif //TESTING
     err += MPI_Unpack(buf, ct, &position, ipos,  SimPM.ndim, MPI_INT, MPI_COMM_WORLD);
 #ifdef TESTING
-    cout <<"position="<<position<<" : ";
-    rep.printVec("recvd pos",ipos,SimPM.ndim);
-    cout.flush();
+    //cout <<"position="<<position<<" : ";
+    //rep.printVec("recvd pos",ipos,SimPM.ndim);
+    //cout.flush();
 #endif //TESTING
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_DOUBLE, MPI_COMM_WORLD);
@@ -756,9 +756,10 @@ int comm_mpi::receive_cell_data(
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
 #ifdef TESTING
-    cout <<"position="<<position<<" : ";
-    rep.printVec("data var",p,SimPM.nvar);
-    cout.flush();
+    //rep.printVec("\tlocal",cpos,SimPM.ndim);
+    //cout <<"position="<<position<<" : ";
+    //rep.printVec("data var",p,SimPM.nvar);
+    //cout.flush();
 #endif //TESTING
     if(err) rep.error("Unpack",err);
     // For a given boundary data iterator, put data into cells
@@ -768,12 +769,15 @@ int comm_mpi::receive_cell_data(
     // This position checking doesn't work for periodic boundaries!
     //
     //for (int v=0; v<SimPM.ndim; v++)       
-    //  if (ipos[v]!=cpos[v])
-    //	cout <<"*** Position x["<<v<<"] for received cell "<<i<<": got x="<<ipos[v]<<" expected x="<<cpos[v]<<"; distance="<<ipos[v]-cpos[v]<<"\n";
+    //  if (ipos[v]!=cpos[v]) {
+    //    cout <<"*** Position x["<<v<<"] for received cell "<<i;
+    //    cout <<": got x="<<ipos[v]<<" expected x="<<cpos[v];
+    //    cout <<"; distance="<<ipos[v]-cpos[v]<<"\n";
+    //  }
 #ifdef TESTING
-    rep.printVec("\trecvd",ipos,SimPM.ndim);
-    rep.printVec("\tlocal",cpos,SimPM.ndim);
-    cout.flush();
+    //rep.printVec("\trecvd",ipos,SimPM.ndim);
+    //rep.printVec("\tlocal",cpos,SimPM.ndim);
+    //cout.flush();
 #endif
     ++c;
   }

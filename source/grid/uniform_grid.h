@@ -53,7 +53,7 @@
 /// - 2016.02.19 JM: new grid structure finished, compiles and runs
 ///    the DMR test.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
-///    boundaries).
+///    boundaries). 03.24:fixed some bugs, redefined dir_XP
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -1085,33 +1085,13 @@ class uniform_grid_sph
 
 #ifdef PLLEL_RT
 enum rt_dirs {
-  dir_NO     =0,
-  dir_XN     =1,
-  dir_XP     =2,
-  dir_YN     =3,
-  dir_YNXN   =4,
-  dir_YNXP   =5,
-  dir_YP     =6,
-  dir_YPXN   =7,
-  dir_YPXP   =8,
-  dir_ZN     =9,
-  dir_ZNXN   =10,
-  dir_ZNXP   =11,
-  dir_ZNYN   =12,
-  dir_ZNYNXN =13,
-  dir_ZNYNXP =14,
-  dir_ZNYP   =15,
-  dir_ZNYPXN =16,
-  dir_ZNYPXP =17,
-  dir_ZP     =18,
-  dir_ZPXN   =19,
-  dir_ZPXP   =20,
-  dir_ZPYN   =21,
-  dir_ZPYNXN =22,
-  dir_ZPYNXP =23,
-  dir_ZPYP   =24,
-  dir_ZPYPXN =25,
-  dir_ZPYPXP =26
+  dir_NO     =-1,
+  dir_XN     =0,
+  dir_XP     =1,
+  dir_YN     =2,
+  dir_YP     =3,
+  dir_ZN     =4,
+  dir_ZP     =5,
 };
 
 ///

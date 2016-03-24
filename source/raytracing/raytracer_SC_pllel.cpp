@@ -346,10 +346,10 @@ void raytracer_USC_pllel::col2cell_3d(
 	//
 #ifdef RT_TESTING
 	//cout <<"...corner cell doesn't exist...\n";
-	//gridptr->PrintCell(c);
-	//gridptr->PrintCell(c1);
-	//gridptr->PrintCell(c2);
-	//gridptr->PrintCell(c3);
+	//CI.print_cell(c);
+	//CI.print_cell(c1);
+	//CI.print_cell(c2);
+	//CI.print_cell(c3);
 	//  else cout <<"cell c3 doesn't exist either\n.";
 	//rep.error("lost on grid -- corner cell doesn't exist",c4);
 #endif
@@ -359,10 +359,10 @@ void raytracer_USC_pllel::col2cell_3d(
 #ifdef RT_TESTING
 	//	if (mpiPM.myrank==60) {
 	//  cout <<"RT_BD corner cell doesn't exist... cells c,c1,c2,c3\n";
-	// gridptr->PrintCell(c);
-	//  gridptr->PrintCell(c1);
-	//  gridptr->PrintCell(c2);
-	//  if (c3) gridptr->PrintCell(c3);
+	// CI.print_cell(c);
+	//  CI.print_cell(c1);
+	//  CI.print_cell(c2);
+	//  if (c3) CI.print_cell(c3);
 	//  else cout <<"cell c3 doesn't exist either\n.";
 	//}
 #endif
@@ -398,11 +398,11 @@ void raytracer_USC_pllel::col2cell_3d(
       (col1[0]<0.0 || col2[0]<0.0 || col3[0]<0.0 || col4[0]<0.0)) {
     cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
     cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
-    gridptr->PrintCell(c);
-    gridptr->PrintCell(c1);
-    gridptr->PrintCell(c2);
-    gridptr->PrintCell(c3);
-    gridptr->PrintCell(c4);
+    CI.print_cell(c);
+    CI.print_cell(c1);
+    CI.print_cell(c2);
+    CI.print_cell(c3);
+    CI.print_cell(c4);
     //if (col1<0.0) {cout <<"col1="<<col1<<", setting to zero.\n"; col1=0.0;}
     //if (col2<0.0) {cout <<"col2="<<col2<<", setting to zero.\n"; col2=0.0;}
     //if (col3<0.0) {cout <<"col3="<<col3<<", setting to zero.\n"; col3=0.0;}

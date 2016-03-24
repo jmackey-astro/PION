@@ -2327,10 +2327,10 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
 #ifdef RT_TESTING
       if (Nc[0] < 0.0) {
 	cout <<"column is negative:"<<Nc[0]<<" coming from off grid???\n";
-	gridptr->PrintCell(c);
-	gridptr->PrintCell(ngb);
+	CI.print_cell(c);
+	CI.print_cell(ngb);
 	if (gridptr->NextPt(c,XP))
-	  gridptr->PrintCell(gridptr->NextPt(c,XP));
+	  CI.print_cell(gridptr->NextPt(c,XP));
 	Nc[0]=0.0;
 	rep.error("Got negative column from a cell when we shouldn't have!",Nc[0]);
       }
@@ -2480,10 +2480,10 @@ int raytracer_USC::cell_cols_3d(const rad_source *src,
       }
       else {
         cout <<"column is negative:"<<Nc[0]<<" coming from off grid???\n";
-        gridptr->PrintCell(c);
-        gridptr->PrintCell(ngb);
+        CI.print_cell(c);
+        CI.print_cell(ngb);
         if (gridptr->NextPt(c,XP))
-          gridptr->PrintCell(gridptr->NextPt(c,XP));
+          CI.print_cell(gridptr->NextPt(c,XP));
         Nc[0]=0.0;
         rep.error("Got negative column from a cell when we shouldn't have!",Nc[0]);
       }
@@ -2940,7 +2940,7 @@ int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
   CI.set_col(c, s->id, deltau); // deltau is time-averaged optical depth(s).
   if (deltau[0]<0.0) {
     cout <<"\tSRCCELL: deltau: "<<deltau[0]<<" setting to zero.\n";
-    gridptr->PrintCell(c);
+    CI.print_cell(c);
     CI.set_col(c, s->id, deltau);
     rep.error("negative tau",c->col);
   }
