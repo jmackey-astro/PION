@@ -39,11 +39,11 @@
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).
 /// - 2016.03.21 JM: Worked on simplifying RT boundaries (first hack!
-///    compiles but buggy...).
+///    compiles but buggy...) 03.24:fixed some bugs, redefined dir_XP
+
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "constants.h"
@@ -1240,7 +1240,9 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
     else 
       send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.
   }
-
+#ifdef RT_TESTING
+  rep.printVec("send_proc_exists",send_proc_exists,2*G_ndim);
+#endif
 
   //
   // Now get id's and directions of receive processors.
@@ -1290,12 +1292,17 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   // Choose processors I need to send data to.
   //
   // x-dir
-  int rank=mpiPM->get_myrank(); int dir;
+  int rank = mpiPM->get_myrank();
+  int dir  = 0;
   if (send_proc_exists[XN]) {
-    temp.rank = rank-1; temp.dir = dir_XN; RT_send_list.push_back(temp);
+    temp.rank = rank-1;
+    temp.dir = dir_XN;
+    RT_send_list.push_back(temp);
   }
   if (send_proc_exists[XP]) {
-    temp.rank = rank+1; temp.dir = dir_XP; RT_send_list.push_back(temp);
+    temp.rank = rank+1;
+    temp.dir = dir_XP;
+    RT_send_list.push_back(temp);
   }
 
   // y-dir
@@ -1479,7 +1486,7 @@ int UniformGridParallel::RT_populate_recv_boundary(
 
 #ifdef RT_TESTING
     cout <<"RT_populate_recv_boundary() offdir="<< offdir;
-    cout <<",  ondir="<<ondir<<"\n";
+    cout <<",  ondir="<<b2->ondir<<"\n";
 #endif // RT_TESTING
 
   //
@@ -1558,7 +1565,8 @@ int UniformGridParallel::setup_RT_send_boundary(
       //
       send_b.RT_bd->data.push_back(NextPt(*bpt,grid_b->ondir));
 #ifdef RT_TESTING
-      cout <<"setup_RT_send_boundary() cpos="<< (*bpt)->pos[0]<<"\n";
+      cout <<"setup_RT_send_boundary() cpos="<< (*bpt)->pos[0];
+      if (G_ndim>1) cout <<", "<<(*bpt)->pos[1]<<"\n";
 #endif // RT_TESTING
     }
     //
@@ -1569,7 +1577,7 @@ int UniformGridParallel::setup_RT_send_boundary(
 
 #ifdef RT_TESTING
   cout <<"UniformGridParallel::setup_RT_send_boundary() returning ";
-  cout <<"(dir="<<b.dir<<").\n";
+  cout <<"(dir="<<send_b.dir<<").\n";
 #endif 
   return err;
 }
@@ -1832,7 +1840,8 @@ int UniformGridParallel::Send_RT_Boundaries(
       data=0;
 
 #ifdef RT_TESTING
-      cout <<"\tSend_RT_Boundaries() src="<<src_id<<": Sending boundary in dir "<<i_src->RT_send_list[i].dir<<"\n";
+      cout <<"\tSend_RT_Boundaries() src="<<src_id;
+      cout <<": Sending boundary in dir "<<i_src->RT_send_list[i].dir<<"\n";
 #endif 
       //
       // How many cell column densities to send:
