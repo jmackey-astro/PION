@@ -16,15 +16,6 @@
 #define TESTING_FLAGS_H
 
 //
-// This flag enables a fully second-order time update of the microphysics with
-// raytracing, so that the column densities are calculated at the beginning of 
-// a timestep for the half step, and also for the time-centred density field
-// for the full step.
-//
-#define TEST_SECOND_ORDER
-
-
-//
 // Various defines for testing bits of the code.
 //
 //#define TESTING ///< Comment this out if not testing the code.

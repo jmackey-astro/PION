@@ -952,7 +952,9 @@ int UniformGrid::SetupBCs(
       if (!c) rep.error("Got lost on grid! XN",cy->id);
       for (int v=0; v<BC_nbc; v++) {
         BC_bd[XN].data.push_back(c);
+#ifdef TESTING
         cout << " Adding cell "<<c->id<<" to XN boundary.\n";
+#endif // TESTING
         c = NextPt(c, XP);
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
@@ -986,7 +988,9 @@ int UniformGrid::SetupBCs(
           rep.error("Got lost on grid! XP",cy->id);
         }
         BC_bd[XP].data.push_back(c);
+#ifdef TESTING
         cout << " Adding cell "<<c->id<<" to XP boundary.\n";
+#endif // TESTING
       }
       if (G_ndim>1) cy=NextPt(cy,YP);
     } while (G_ndim>1 && cy!=0 && cy->isgd);
