@@ -313,59 +313,59 @@ command_line_interface.o: tools/command_line_interface.cpp ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 sim_params.o: 	  sim_params.cpp ${GLOBAL}
 
-cell_interface.o: cell_interface.cc  cell_interface.h ${GLOBAL}
-uniform_grid.o:   uniform_grid.cc  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cc uniform_grid.h ${GLOBAL} comms.h
+cell_interface.o: cell_interface.cpp  cell_interface.h ${GLOBAL}
+uniform_grid.o:   uniform_grid.cpp  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
 
-VectorOps.o:  VectorOps.cc  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
-VectorOps_spherical.o:  VectorOps_spherical.cc  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
+VectorOps.o:  VectorOps.cpp  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps_spherical.o:  VectorOps_spherical.cpp  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
 
 
 file_status.o: dataIO/file_status.cpp dataIO/file_status.h
-dataio.o:       dataIO/dataio.cc  dataIO/dataio.h  ${GLOBAL}  solver_eqn_base.h  dataIO/readparams.h \
+dataio.o:       dataIO/dataio.cpp  dataIO/dataio.h  ${GLOBAL}  solver_eqn_base.h  dataIO/readparams.h \
 		stellar_wind_BC.h dataIO/file_status.h
-dataio_silo.o:  dataIO/dataio_silo.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h  dataIO/file_status.h
-dataio_fits.o:  dataIO/dataio_fits.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h \
+dataio_silo.o:  dataIO/dataio_silo.cpp  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h  dataIO/file_status.h
+dataio_fits.o:  dataIO/dataio_fits.cpp  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h \
 		solver_eqn_hydro_adi.h  solver_eqn_hydro_iso.h  dataIO/file_status.h
-readparams.o:	dataIO/readparams.cc  dataIO/readparams.h  ${GLOBAL}
-dataio_silo_MPI.o:    dataIO/dataio_silo_MPI.cc  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  comms.h  dataIO/file_status.h
-utility_fits_class.o: dataIO/utility_fits_class.cc  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}
+readparams.o:	dataIO/readparams.cpp  dataIO/readparams.h  ${GLOBAL}
+dataio_silo_MPI.o:    dataIO/dataio_silo_MPI.cpp  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  comms.h  dataIO/file_status.h
+utility_fits_class.o: dataIO/utility_fits_class.cpp  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}
 
-comm_mpi.o:    comm_mpi.cc  comm_mpi.h  comms.h  ${GLOBAL}
-comm_files.o:  comm_files.cc  comm_files.h  comms.h  ${GLOBAL}
+comm_mpi.o:    comm_mpi.cpp  comm_mpi.h  comms.h  ${GLOBAL}
+comm_files.o:  comm_files.cpp  comm_files.h  comms.h  ${GLOBAL}
 
 dataio_silo_utility.o:  dataIO/dataio_silo_utility.cpp  dataIO/dataio_silo_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
-stellar_wind_BC.o: stellar_wind_BC.cc  stellar_wind_BC.h ${GLOBAL}
+stellar_wind_BC.o: stellar_wind_BC.cpp  stellar_wind_BC.h ${GLOBAL}
 
 ######################
 # MICROPHYSICS STUFF #
 ######################
 
-integrator.o: integrator.cc integrator.h ${GLOBAL}
-cooling.o:    cooling.cc cooling.h ${GLOBAL}
+integrator.o: integrator.cpp integrator.h ${GLOBAL}
+cooling.o:    cooling.cpp cooling.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+cooling_SD93_cie.o: cooling_SD93_cie.cpp cooling_SD93_cie.h ${GLOBAL}
 
-hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
+hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cpp \
     ${GLOBAL}
 
-mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
+mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
+microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h
-microphysics_v1.o: microphysics_v1.cc microphysics.h \
+microphysics_v1.o: microphysics_v1.cpp microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
+microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
-hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
+hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
@@ -395,11 +395,11 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 ###############################
 
 point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL} ${THREAD_INCLUDE}
-sim_projection.o: sim_projection.cc sim_projection.h point_quantities.h \
+sim_projection.o: sim_projection.cpp sim_projection.h point_quantities.h \
                   ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
-main_projection.o: main_projection.cc sim_projection.h point_quantities.h \
+main_projection.o: main_projection.cpp sim_projection.h point_quantities.h \
                   ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
-image_io.o: image_io.cc image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
+image_io.o: image_io.cpp image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 
 clean:
 	rm -f *.o projection
