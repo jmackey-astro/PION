@@ -1,4 +1,4 @@
-/// \file dataio_silo_utility.cc
+/// \file dataio_silo_utility.cpp
 /// \author Jonathan Mackey
 /// 
 /// This is code for analysing silo data files in serial mode;
@@ -28,6 +28,8 @@
 ///    coordinates and data variables (they can be float or double).
 /// - 2016.03.18 JM: updated to work better with large grids and with
 ///    FLOAT and DOUBLE data (no buggy integer positions anymore...).
+/// - 2016.04.04 JM: fixed bug in get_quadmesh_integer_extents() for
+///    xmin/xmax<0.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -911,11 +913,22 @@ void dataio_silo_utility::get_quadmesh_integer_extents(
   if (silo_dtype == DB_FLOAT) {
     //
     // we need an extra buffer here to put the variable on the +ve
-    // side of the cell border.
+    // side of the cell border.  Have to do it a bit carefully, 
+    // because the xmin/xmax values can be > or < 0.
     //
+    double buffer = 0.0;
     for (int v=0;v<ndim;v++) {
-      mesh_xmin[v] *= (1.0+0.1/ggg->SIM_iRange(static_cast<axes>(v)));
-      mesh_xmax[v] *= (1.0+0.1/ggg->SIM_iRange(static_cast<axes>(v)));
+      buffer=std::min(1.0e-5,0.1/ggg->SIM_iRange(static_cast<axes>(v)));
+      
+      if (mesh_xmin[v] < 0.0) 
+        mesh_xmin[v] *= (1.0-buffer);
+      else
+        mesh_xmin[v] *= (1.0+buffer);
+
+      if (mesh_xmax[v] < 0.0)
+        mesh_xmax[v] *= (1.0-buffer);
+      else
+        mesh_xmax[v] *= (1.0+buffer);
     }
   }
   CI.get_ipos_vec(mesh_xmin, iXmin);
