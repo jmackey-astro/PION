@@ -1065,27 +1065,35 @@ int sim_control_fixedgrid::dynamics_dU_column
 #ifdef TESTING
     dp.c = cpt;
     //    if (SimPM.timestep==2959 && dp.c->id==93) commandline.console("-ve density> ");
+    cout<<"First Cell:"; CI.print_cell(cpt);
+    cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
     // Get the flux from left and right states, adding artificial viscosity if needed.
     err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
     err += eqn->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
     err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
-    //    rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
-    //    rep.errorTest("Edge States not obtained!",0,err);
-    err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
-    //    rep.printVec("Fr",Fr_this,SimPM.nvar);    rep.errorTest("Intercell Flux not obtained!",0,err);
+    // rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
+    // rep.errorTest("Edge States not obtained!",0,err);
+    err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this,
+                              SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
+    // rep.printVec("Fr",Fr_this,SimPM.nvar);
+    // rep.errorTest("Intercell Flux not obtained!",0,err);
     err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
     //    rep.errorTest("dU not obtained!",0,err);
+
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {
       if(!isfinite(cpt->dU[v])) {
-  rep.printVec("Fl",Fr_prev,SimPM.nvar); rep.printVec("Fr",Fr_this,SimPM.nvar);
-  cout <<"dt:"<<dt<<"\tdx="<<SimPM.dx<<"\n";
-//  rep.printVec("dU",&cpt->dU[v],1);
-  CI.print_cell(cpt); CI.print_cell(npt);
-  rep.error("nans!!!",2);
+        rep.printVec("Fl",Fr_prev,SimPM.nvar);
+        rep.printVec("Fr",Fr_this,SimPM.nvar);
+        rep.printVec("El",edgeL,SimPM.nvar);
+        rep.printVec("Er",edgeR,SimPM.nvar);
+        cout <<"dt:"<<dt<<"\tdx="<<SimPM.dx<<"\n";
+        //  rep.printVec("dU",&cpt->dU[v],1);
+        CI.print_cell(cpt);
+        CI.print_cell(npt);
+        rep.error("nans!!!",2);
       }
-      //if (dp.c->id==114337) CI.print_cell(cpt);
     }
     // Track energy, momentum entering domain.
     if(ctm==SimPM.tmOOA && !(cpt->isgd) && npt->isgd) {
@@ -1095,10 +1103,10 @@ int sim_control_fixedgrid::dynamics_dU_column
       dp.initMMX += Fr_this[MMX]*dt*eqn->CellInterface(cpt,posdir);
       dp.initMMY += Fr_this[MMY]*dt*eqn->CellInterface(cpt,posdir);
       dp.initMMZ += Fr_this[MMZ]*dt*eqn->CellInterface(cpt,posdir);
-//      if (posdir==YP && fabs(Fr_this[MMY])>2*MACHINEACCURACY) {
-//  cout <<"R-momentum flux entering domain from R=0(!) = "<<Fr_this[MMY]<<"\n";
-//  cout <<"v_R in first cell = "<<npt->Ph[VY]<<", "<<npt->P[VY]<<"\n";
-//      }
+      //      if (posdir==YP && fabs(Fr_this[MMY])>2*MACHINEACCURACY) {
+      //  cout <<"R-momentum flux entering domain from R=0(!) = "<<Fr_this[MMY]<<"\n";
+      //  cout <<"v_R in first cell = "<<npt->Ph[VY]<<", "<<npt->P[VY]<<"\n";
+      //      }
     }
     else if (ctm==SimPM.tmOOA && !(npt->isgd) && cpt->isgd) {
       ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
@@ -1108,9 +1116,10 @@ int sim_control_fixedgrid::dynamics_dU_column
       dp.initMMY -= Fr_this[MMY]*dt*eqn->CellInterface(cpt,posdir);
       dp.initMMZ -= Fr_this[MMZ]*dt*eqn->CellInterface(cpt,posdir);
     }
-//    if(posdir==YP && ctm==SimPM.tmOOA && cpt->x[YY]<SimPM.dx && cpt->x[YY]>0 && fabs(Fr_prev[MMY])>2*MACHINEACCURACY) {
-//      cout <<"R-Momentum Flux leaving first cell at R=dR = "<<Fr_this[MMY]<<"\n";
-//    }
+    //    if (posdir==YP && ctm==SimPM.tmOOA && cpt->x[YY]<SimPM.dx &&
+    //        cpt->x[YY]>0 && fabs(Fr_prev[MMY])>2*MACHINEACCURACY) {
+    //      cout <<"R-Momentum Flux leaving first cell at R=dR = "<<Fr_this[MMY]<<"\n";
+    //    }
 #endif //TESTING
     //
     // Now move temp arrays to prepare for moving on to the next cell.
