@@ -20,6 +20,7 @@
 /// - 2010.12.23 JM: Moved to Riemann_solver/ directory.
 /// - 2015.03.10 JM: Tidied up a bit.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2016.04.07 JM: reset some pion_flt to double for convergence.
 ///
 
 #include "findroot.h"
@@ -167,7 +168,7 @@ int findroot::solve_pos(
     *ans = -1.0;
     return(1);
   }
-  //  cout <<"(fr::solve) Bracketed Root: x1="<<x1<<" and x2="<<x2<<"\n";
+  //cout <<"(fr::solve) Bracketed Root: x1="<<x1<<" and x2="<<x2<<"\n";
   //err = find_root_bisection(&x1,&x2,errtol,ans);
   err = find_root_zbrent(x1,x2,errtol,ans);
   if (err!=0) {
@@ -314,7 +315,12 @@ int findroot::bracket_root_pos(pion_flt *x1, pion_flt *x2)
 
 
 
-int findroot::find_root_bisection(pion_flt *x1, pion_flt *x2, pion_flt err, pion_flt *ans)
+int findroot::find_root_bisection(
+      pion_flt *x1,
+      pion_flt *x2,
+      pion_flt err,
+      pion_flt *ans
+      )
 {
   // This is a simple bisection routine to find the root to an accuracy
   // of 'err'.  It is based on the NR bisection routine.
@@ -322,13 +328,14 @@ int findroot::find_root_bisection(pion_flt *x1, pion_flt *x2, pion_flt err, pion
     cerr << "(findroot) Error, must have x1<x2, ordered brackets!" << "\n";
     return(1);
   }
-  pion_flt f1 =  FR_root_function(*x1);
-  pion_flt f2 =  FR_root_function(*x2);
-  pion_flt xmid = (*x2+*x1)/2.0;
-  pion_flt fmid=0.0;
+  double f1 =  FR_root_function(*x1);
+  double f2 =  FR_root_function(*x2);
+  double xmid = (*x2+*x1)/2.0;
+  double fmid=0.0;
   for (int j=0; j<100; j++) {
     if (fabs((*x1 - *x2)/ (*x2)) < err) {
-      //      cout << "(find_root) Root found after " << j << " bisections to accuracy " << err << "\n";
+      // cout << "(find_root) Root found after " << j;
+      // cout << " bisections to accuracy " << err << "\n";
       *ans = xmid;
       return(0);
     }
@@ -353,88 +360,95 @@ int findroot::find_root_zbrent(
       pion_flt x1,
       pion_flt x2,
       pion_flt tol,
-      pion_flt *ans)
+      pion_flt *ans
+      )
 {
-   // This is the numerical recipes routine 'zbrent.c'
-   // It uses bisection and a higher order method when it can.
-   // See NR book, p.361 of ansi-c version.
-   int ITMAX=100;
-   pion_flt EPS=MACHINEACCURACY;
-   int iter;
-   pion_flt a=x1,b=x2,c=x2,d,e,min1,min2;
-   pion_flt fa=FR_root_function(a),fb=FR_root_function(b),fc,p,q,r,s,tol1,xm;
+  // This is the numerical recipes routine 'zbrent.c'
+  // It uses bisection and a higher order method when it can.
+  // See NR book, p.361 of ansi-c version.
+  int ITMAX=100;
+  double EPS=MACHINEACCURACY;
+  int iter;
+  double a=x1,b=x2,c=x2,d,e,min1,min2;
+  double 
+    fa=FR_root_function(a),
+    fb=FR_root_function(b),
+    fc,p,q,r,s,tol1,xm;
   d=0.;e=0.;   
-   if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) {
-      cerr<<"Root must be bracketed in zbrent"<<"\n"; return(1);
-   }
-   fc=fb;
-   for (iter=1;iter<=ITMAX;iter++) {
-      if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
-	 c=a;
-	 fc=fa;
-	 e=d=b-a;
-      }
-      if (fabs(fc) < fabs(fb)) {
-	 a=b;
-	 b=c;
-	 c=a;
-	 fa=fb;
-	 fb=fc;
-	 fc=fa;
-      }
-     //     cout <<"fabs(b)="<<fabs(b)<<"\t"<<fabs(c)<<"\t"<<fabs(a)<<"\n";
-     // This tolerance is first a relative accuracy, where EPS is roughly
-     // the machine precision, and fabs(b) is the value of the pressure
-     // at the lower or upper bound.
-     // The second term was initially an absolute tolerance, but I don't 
-     // want to have this, as I know my function is always positive, but
-     // can sometimes be very small -- e.g. PG=1.e-11 is typical for cgs
-     // units.  So I changed it to a relative tolerance too.  'tol' is 
-     // usually larger than EPS, set to something like 1.e-8 as this is
-     // still pretty good accuracy.
-      tol1=2.0*EPS*fabs(b) +0.5*tol*fabs(b);
-      xm=0.5*(c-b);
-      if (fabs(xm) <= tol1 || fb == 0.0) {
-	*ans= b;
-	//	cout <<"ITER="<<iter<<"\n";
-	return(0);
-      }
-      if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
-	 s=fb/fa;
-	 if (a == c) {
-	    p=2.0*xm*s;
-	    q=1.0-s;
-	 } else {
-	    q=fa/fc;
-	    r=fb/fc;
-	    p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0));
-	    q=(q-1.0)*(r-1.0)*(s-1.0);
-	 }
-	 if (p > 0.0) q = -q;
-	 p=fabs(p);
-	 min1=3.0*xm*q-fabs(tol1*q);
-	 min2=fabs(e*q);
-	 if (2.0*p < (min1 < min2 ? min1 : min2)) {
-	    e=d;
-	    d=p/q;
-	 } else {
-	    d=xm;
-	    e=d;
-	 }
-      } else {
-	 d=xm;
-	 e=d;
-      }
+  if ((fa > 0.0 && fb > 0.0) || (fa < 0.0 && fb < 0.0)) {
+    cerr<<"Root must be bracketed in zbrent"<<"\n"; return(1);
+  }
+  fc=fb;
+  for (iter=1;iter<=ITMAX;iter++) {
+    if ((fb > 0.0 && fc > 0.0) || (fb < 0.0 && fc < 0.0)) {
+      c=a;
+      fc=fa;
+      e=d=b-a;
+    }
+    if (fabs(fc) < fabs(fb)) {
       a=b;
+      b=c;
+      c=a;
       fa=fb;
-      if (fabs(d) > tol1)
-	 b += d;
-      else
-	 b += ((xm) >= 0.0 ? fabs(tol1) : -fabs(tol1));
-      fb=FR_root_function(b);
-   }
-   cerr<<"Maximum number of iterations exceeded in zbrent"<<"\n";
-   return(1);
+      fb=fc;
+      fc=fa;
+    }
+    //     cout <<"fabs(b)="<<fabs(b)<<"\t"<<fabs(c)<<"\t"<<fabs(a)<<"\n";
+    // This tolerance is first a relative accuracy, where EPS is roughly
+    // the machine precision, and fabs(b) is the value of the pressure
+    // at the lower or upper bound.
+    // The second term was initially an absolute tolerance, but I don't 
+    // want to have this, as I know my function is always positive, but
+    // can sometimes be very small -- e.g. PG=1.e-11 is typical for cgs
+    // units.  So I changed it to a relative tolerance too.  'tol' is 
+    // usually larger than EPS, set to something like 1.e-8 as this is
+    // still pretty good accuracy.
+    tol1=2.0*EPS*fabs(b) +0.5*tol*fabs(b);
+    xm=0.5*(c-b);
+    if (fabs(xm) <= tol1 || fb == 0.0) {
+      *ans= b;
+      //	cout <<"ITER="<<iter<<"\n";
+      return(0);
+    }
+    if (fabs(e) >= tol1 && fabs(fa) > fabs(fb)) {
+      s=fb/fa;
+      if (a == c) {
+        p=2.0*xm*s;
+        q=1.0-s;
+      }
+      else {
+        q=fa/fc;
+        r=fb/fc;
+        p=s*(2.0*xm*q*(q-r)-(b-a)*(r-1.0));
+        q=(q-1.0)*(r-1.0)*(s-1.0);
+      }
+      if (p > 0.0) q = -q;
+      p=fabs(p);
+      min1=3.0*xm*q-fabs(tol1*q);
+      min2=fabs(e*q);
+      if (2.0*p < (min1 < min2 ? min1 : min2)) {
+        e=d;
+        d=p/q;
+      }
+      else {
+        d=xm;
+        e=d;
+      }
+    }
+    else {
+      d=xm;
+      e=d;
+    }
+    a=b;
+    fa=fb;
+    if (fabs(d) > tol1)
+      b += d;
+    else
+      b += ((xm) >= 0.0 ? fabs(tol1) : -fabs(tol1));
+    fb=FR_root_function(b);
+  }
+  cerr<<"Maximum number of iterations exceeded in zbrent"<<"\n";
+  return(1);
 }
 
 

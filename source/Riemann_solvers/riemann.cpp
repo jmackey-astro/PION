@@ -855,6 +855,11 @@ int riemann_Euler::exact_solver()
   // across the contact discontinuity.
   //
   err += FR_find_root(&(rs_pstar[eqPG]), rs_left[eqPG], rs_right[eqPG], eq_gamma, cl, cr);
+  if (err) {
+    cout <<"Riemann--exact_solver::FR_find_root: error: " <<rs_left[eqPG];
+    cout <<"  "<< rs_right[eqPG] <<"  "<< eq_gamma;
+    cout <<"  "<< cl <<"  "<< cr <<"  "<< rs_pstar[eqPG] <<"\n";
+  }
 
   // 
   // ************* Now get u* and rho*left ****************************
@@ -882,6 +887,8 @@ int riemann_Euler::exact_solver()
     rs_pstar[eqRO] = -1.0;
     cerr << "(riemann_Euler::exact_solver) something went very wrong!!!" << "\n";
     cerr << "P*  rho: " << rs_pstar[eqRO] << "  v: " <<  rs_pstar[eqVX] << "   p: " << rs_pstar[eqPG] << "\n";
+    rep.printVec("rs_left", rs_left, rs_nvar); 
+    rep.printVec("rs_right", rs_right, rs_nvar); 
     return(1);
   }
   rs_pstar[eqRO] = rhostar;
