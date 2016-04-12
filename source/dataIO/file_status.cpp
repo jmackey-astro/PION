@@ -139,6 +139,7 @@ int file_status::get_files_in_dir(
     list<string>::iterator i=files->begin();
     if (i!=files->end()) { // check that dir listing is not empty...
       do {
+        //cout <<*i<<"\n";
 	//if ((*i).find(str) == string::npos) {
 	//
 	// If filename doesn't start with str, then delete it.
@@ -149,7 +150,10 @@ int file_status::get_files_in_dir(
 	  //files->remove(i);
 	  i=files->begin();
 	}
-	else i++;
+	else {
+          i++;
+          //cout <<"Keeping file "<<*i<<" in list.\n";
+        }
       } while (i!=files->end());
     }
   }

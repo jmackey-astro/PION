@@ -28,10 +28,10 @@
 //
 // Whether to use single or double precision
 //
-//#define PION_DATATYPE_DOUBLE
-//#define pion_flt double
-#define PION_DATATYPE_FLOAT
-#define pion_flt float
+#define PION_DATATYPE_DOUBLE
+#define pion_flt double
+//#define PION_DATATYPE_FLOAT
+//#define pion_flt float
 
 //
 // This flag prevents compilation if any parts of the code are flagged as HACKs
@@ -69,6 +69,7 @@
 // See Mackey (2011,A&A,539,A147) for details.
 //
 #define MPV3_DTLIMIT 2
+//#define MPV3_DTLIMIT 3
 #define MPV4_DTLIMIT 5
 
 

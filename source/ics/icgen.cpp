@@ -265,6 +265,9 @@ int main(int argc, char **argv)
   else if (ics=="StarBench_TremblinCooling") {
     ic = new IC_StarBench_Tests();
   }
+  else if (ics=="StarBench_Cone") {
+    ic = new IC_StarBench_Tests();
+  }
 
 #ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE
