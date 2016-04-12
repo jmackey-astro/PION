@@ -633,6 +633,14 @@ class IC_StarBench_Tests : public ICsetup_base {
       string &test           ///< String with which test to run.
       );
 
+  ///
+  /// conical HII region expansion.
+  ///
+  int setup_StarBench_Cone(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *, ///< pointer to grid
+      string &test           ///< String with which test to run.
+      );
 };
 
 #endif //  ICGEN_H

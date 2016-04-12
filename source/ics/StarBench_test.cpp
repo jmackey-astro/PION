@@ -102,6 +102,10 @@ int IC_StarBench_Tests::setup_data(
     cout <<"\t\tSetting up StarBench Shadowing/Mixing/Cooling test.\n";
     err += setup_StarBench_TremblinCooling(rrp,ggg,ics);
   }
+  else if (ics=="StarBench_Cone") {
+    cout <<"\t\tSetting up StarBench Cone test.\n";
+    err += setup_StarBench_Cone(rrp,ggg,ics);
+  }
 
 
   //else if (ics=="") {
@@ -121,7 +125,7 @@ int IC_StarBench_Tests::setup_data(
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
   if (noise>0) {
-    cout <<"\t\tNOISE: Adding random adiabatic noise at fractional level = "<<noise<<endl;
+    cout <<"\t\tNOISE: Adding random adiabatic noise at fractional level = "<<noise<<"\n";
     err+= AddNoise2Data(gg, 2,noise);
   }
   ics = rp->find_parameter("smooth");
@@ -479,6 +483,64 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
 
 // ##################################################################
 // ##################################################################
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+int IC_StarBench_Tests::setup_StarBench_Cone(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg, ///< pointer to grid
+      string &test
+      )
+{
+  
+  double srcpos[SimPM.ndim];
+  for (int v=0;v<SimPM.ndim;v++) {
+    srcpos[v] = SimPM.RS.sources[0].pos[v];
+    if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
+  }
+  rep.printVec("source position",srcpos,      SimPM.ndim);
+  
+  //double density=0.0;
+  //string seek = rrp->find_parameter("StarBench_Cone_Rho");
+  //if (seek=="") rep.error("Need parameter StarBench_TremblinCooling_Rho",1);
+  //else density = atof(seek.c_str());
+  
+  cell *c=ggg->FirstPt();
+  double pos[SimPM.ndim];
+  double dist = 0.0;
+  double r0 = 3.086e17;    // core radius of cloud.
+  double radial_slope=2.0; // power law slope in rho for r>r0
+  double theta=0.0;
+  do {
+    CI.get_dpos(c,pos);
+    theta = atan2(pos[Rcyl],pos[Zcyl]);
+
+    c->P[RO] = 1.0e4*pconst.m_p(); // Pure H with n=10^4/cm3.
+    c->P[PG] = 1.518e-10; // 100K neutral gas (pure H).
+    c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
+    for (int v=0; v<SimPM.ntracer; v++)
+      c->P[SimPM.ftr+v] = 1.0e-12;
+    
+    dist = ggg->distance_vertex2cell(srcpos,c);
+    //
+    // Following the Iliev et al 2009 test 6, we use rho=rho0(r0/r)^n if r>r0
+    // We also change the pressure so there is a constant temperature state.
+    //
+    if (dist>r0) {
+      c->P[RO] *= exp(radial_slope*log(r0/dist))*(1.0-0.25*cos(theta));
+      c->P[PG] *= exp(radial_slope*log(r0/dist))*(1.0-0.25*cos(theta));
+    }
+  
+
+  } while ( (c=ggg->NextPt(c)) !=0);
+
+
+  return 0;
+}
 
 // ##################################################################
 // ##################################################################
