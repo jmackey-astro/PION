@@ -5,6 +5,7 @@
 # - 2013.02.07 JM: Updated for new library versions (all).
 # - 2014.04.14 JM: Added section for JUDGE at JSC.
 # - 2015.01.14 JM: Section for Juropatest system at JSC.
+# - 2016.04.29 JM: updated for sundials 2.6.2 and cfitsio 3390.
 
 mkdir include
 mkdir bin
