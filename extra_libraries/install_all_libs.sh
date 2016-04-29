@@ -179,10 +179,14 @@ make distclean
 ./configure --prefix=${BASE_PATH} \
 --enable-browser \
 --disable-fortran \
---disable-silex --with-readline
+--disable-silex \
+--with-readline \
+--enable-pythonmodule
 
-#--with-readline \
-#--enable-hdf5=no
+# Silex is broken because I can't get Qt working...
+#--enable-silex \
+#--with-Qt-include-dir=/usr/include/qt4 --with-Qt-bin-dir=/usr/lib/x86_64-linux-gnu/qt4/bin --with-Qt-lib-dir=/usr/lib/x86_64-linux-gnu --with-Qt-dir=/usr/lib/x86_64-linux-gnu/qt4
+
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
@@ -208,9 +212,10 @@ echo "********************************"
 
 #################################
 # Change these for new versions:
-FILE=sundials-2.5.0.tar.gz
-SRC_DIR=sundials-2.5.0
-REMOTE_URL=https://computation.llnl.gov/casc/sundials/download/download.html
+FILE=sundials-2.6.2.tar.gz
+SRC_DIR=sundials-2.6.2
+BLD_DIR=sundials_build
+REMOTE_URL=http://computation.llnl.gov/projects/sundials-suite-nonlinear-differential-algebraic-equation-solvers/download/sundials-2.6.2.tar.gz
 echo "********************************"
 echo "*** INSTALLING CVODES LIBRARY FILE=${FILE}****"
 echo "********************************"
@@ -220,12 +225,11 @@ if [ -e $FILE ]; then
 else 
 	echo "***** File does not exist ******"
 	echo "********************************"
-	echo "*** Automatic download is not permitted so please: "
-        echo "***  -Download ${FILE} from ${REMOTE_URL}"
-        echo "***  -Save to current directory."
-        echo "***  -Re-run this script."
+	echo "*** Automatic download of ${FILE}"
+        echo "from ${REMOTE_URL}"
+        wget --no-check-certificate $REMOTE_URL
+        echo "***  Downloaded."
 	echo "********************************"
-	exit
 fi 
 export CFLAGS='-O3'
 echo "***********************************"
@@ -233,24 +237,24 @@ echo "*** EXTRACTING SUNDIALS LIBRARY ***"
 echo "***********************************"
 tar zxf $FILE
 echo "***********************************"
-echo "*** RUNNING CONFIGURE ***"
+echo "*** RUNNING CMAKE CONFIG ***"
 echo "***********************************"
 BASE_PATH=`pwd`
 echo "***Path = $BASE_PATH ***"
-cd $SRC_DIR
-make distclean
-./configure --prefix=${BASE_PATH} --disable-shared --disable-ida \
- --disable-idas --disable-kinsol --disable-cpodes --disable-mpi --disable-fcmix \
- --disable-blas --disable-lapack
+mkdir -p $BLD_DIR
+cd $BLD_DIR
+cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
+ -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
+ ${BASE_PATH}/${SRC_DIR}
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
-make -j$NCORES
+make -j$NCORES install
 echo "*********************************"
-echo "*** INSTALLING CVODES LIBRARY ***"
+echo "*** INSTALLED CVODES LIBRARY ***"
 echo "*********************************"
-make install
 cd $CURDIR
+rm -rf $BLD_DIR
 echo "********************************"
 echo "*** FINISHED! ***"
 echo "********************************"
@@ -263,9 +267,9 @@ echo "*** INSTALLING FITS LIBRARY ***"
 echo "*******************************"
 #################################
 # Change these for new versions:
-FILE=cfitsio3310.tar.gz
+FILE=cfitsio3390.tar.gz
 SRC_DIR=cfitsio
-REMOTE_URL=ftp://heasarc.gsfc.nasa.gov/software/fitsio/c/cfitsio3310.tar.gz
+REMOTE_URL=http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
 #################################
 
 if [ -e $FILE ]; then
