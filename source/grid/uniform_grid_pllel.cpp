@@ -84,10 +84,10 @@ UniformGridParallel::UniformGridParallel(
 {
 #ifdef TESTING
   cout <<"UniformGridParallel constructor.\n";
+  rep.printVec("Local Xmin",xn,nd);
+  rep.printVec("Local Xmax",xp,nd);
+  rep.printVec("Local Npt ",nc,nd);
 #endif
-  //rep.printVec("Local Xmin",xn,nd);
-  //rep.printVec("Local Xmax",xp,nd);
-  //rep.printVec("Local Npt ",nc,nd);
 
 #ifdef PLLEL_RT
   //RT_nbd=0;
@@ -95,9 +95,14 @@ UniformGridParallel::UniformGridParallel(
   //  RT_bd=0;
 #endif // PLLEL_RT
 
-  //rep.printVec("SIM iXmin ", Sim_ixmin, G_ndim);
-  //rep.printVec("SIM iXmax ", Sim_ixmax, G_ndim);
-  //rep.printVec("SIM iRange", Sim_irange,G_ndim);
+#ifdef TESTING
+  rep.printVec("SIM Xmin ", Sim_xmin, G_ndim);
+  rep.printVec("SIM Xmax ", Sim_xmax, G_ndim);
+  rep.printVec("SIM Range", Sim_range,G_ndim);
+  rep.printVec("SIM iXmin ", Sim_ixmin, G_ndim);
+  rep.printVec("SIM iXmax ", Sim_ixmax, G_ndim);
+  rep.printVec("SIM iRange", Sim_irange,G_ndim);
+#endif
   
   //
   // Set pointer to muli-core class.

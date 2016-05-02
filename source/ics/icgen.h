@@ -17,6 +17,7 @@
 /// - 2013.03.23 JM: Added another StarBench test.
 /// - 2013.03.24 JM: Added another StarBench test.
 /// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
+/// - 2016.05.02 JM: A planar ionisation-front Test
 
 #ifndef ICGEN_H
 #define ICGEN_H
@@ -610,6 +611,15 @@ class IC_StarBench_Tests : public ICsetup_base {
   /// Haworth.
   ///
   int setup_StarBench_IFI(
+      class ReadParams *,    ///< pointer to parameter list.
+      class GridBaseClass *, ///< pointer to grid
+      string &test           ///< String with which test to run.
+      );
+
+  ///
+  /// A planar ionisation-front Test.
+  ///
+  int setup_StarBench_planarIF(
       class ReadParams *,    ///< pointer to parameter list.
       class GridBaseClass *, ///< pointer to grid
       string &test           ///< String with which test to run.
