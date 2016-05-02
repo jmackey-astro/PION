@@ -15,6 +15,7 @@
 ///    in this file.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.08.05 JM: Added pion_flt datatype.
+/// - 2016.05.02 JM: Added Cone-IF test, and planar IF test.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -26,6 +27,7 @@
 #endif // TESTING
 
 #include "ics/icgen.h"
+#include "microphysics/microphysics_base.h"
 #include "coord_sys/VectorOps.h"
 #include "dataIO/dataio.h"
 #include <sstream>
@@ -105,6 +107,10 @@ int IC_StarBench_Tests::setup_data(
   else if (ics=="StarBench_Cone") {
     cout <<"\t\tSetting up StarBench Cone test.\n";
     err += setup_StarBench_Cone(rrp,ggg,ics);
+  }
+  else if (ics=="StarBench_IFI_V2") {
+    cout <<"\t\tSetting up planar ionization front.\n";
+    err += setup_StarBench_planarIF(rrp,ggg,ics);
   }
 
 
@@ -301,6 +307,215 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
       c->P[VZ] = 0.0;
     } while ( (c=ggg->NextPt(c)) !=0);
   }
+
+  return 0;
+}
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+int IC_StarBench_Tests::setup_StarBench_planarIF(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg, ///< pointer to grid
+      string &test
+      )
+{
+  //
+  // ----------------------------------------------------------------
+  // First get input parameters:
+  // v_up, rho_up, T_neutral, T_ionized, v_down
+  //
+  double rho0=0.0, vel0=0.0, vel2=0.0;
+
+  string seek = rrp->find_parameter("StarBench_IFI_rho0");
+  if (seek=="") rep.error("Need parameter StarBench_IFI_rho0",1);
+  else rho0 = atof(seek.c_str());
+
+  seek = rrp->find_parameter("StarBench_IFI_vel0");
+  if (seek=="") rep.error("Need parameter StarBench_IFI_vel0",1);
+  else vel0 = atof(seek.c_str());
+
+  seek = rrp->find_parameter("StarBench_IFI_vel2");
+  if (seek=="") rep.error("Need parameter StarBench_IFI_vel2",1);
+  else vel2 = atof(seek.c_str());
+
+  // v_x is the velocity flowing into the shock, in the shock frame.
+  double v_x = vel0;
+  //
+  // X_up are upstream parameters, in grid reference frame.
+  double d_up = rho0, v_up = 0.0;
+  //
+  // X_sh are shocked neutral shell parameters, in grid ref. frame.
+  double d_sh = 0.0, v_sh = 0.0;
+  //
+  // X_dn are downstream ionized gas parameters, in grid ref. frame.
+  double d_dn = 0.0, v_dn = vel2;
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // c_n and c_i are the neutral and ionized gas sound speeds.
+  // Set them based on MinTemperature and MaxTemperature.
+  //
+  double c_n = 0.0, c_i = 0.0;
+
+  cell *c=ggg->FirstPt();
+  c->P[RO] = d_up;
+  c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
+
+  //
+  // Neutral gas sound speed: MP->Set_Temp() sets the gas pressure to
+  // correspond to the given temperature, then we can get sound speed
+  // from c^2 = p/rho
+  //
+  c->P[PG] = 1.0e-10;
+  for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 0.0;
+  MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+  c_n = sqrt(c->P[PG]/c->P[RO]);
+
+  //
+  // Ionized gas
+  // 
+  for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+  MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+  c_i = sqrt(c->P[PG]/c->P[RO]);
+  
+  cout <<"c_n = "<< c_n <<", c_i = "<<c_i<<"\n";
+  //
+  // Still need to calculate v_up, v_sh, d_sh, d_dn
+  // ----------------------------------------------------------------
+
+
+  // ----------------------------------------------------------------
+  // Get shell density from shock jump conditions:
+  // rho_shell = rho_0 *M^2
+  //
+  d_sh = d_up * pow(v_x/c_n, 2);
+  //
+  // Still need to calculate v_up, v_sh, d_dn
+  // ----------------------------------------------------------------
+  
+  // ----------------------------------------------------------------
+  // Get v_shell from downstream exhaust velocity and the jump 
+  // conditions.
+  // First calculate the term in square root (b^2-4ac)
+  //
+  v_sh = pow(v_dn,4) + 2.0*pow(c_i*v_dn,2) +pow(c_i,4)
+         - 4.0*pow(c_n*v_dn,2);
+  //
+  // Now calculate v_sh from the quadratic root formula.
+  //
+  v_sh = (0.5/v_dn) * (pow(v_dn,2) + pow(c_i,2) - sqrt(v_sh));
+  //
+  // Still need to calculate v_up, d_dn
+  // ----------------------------------------------------------------
+  
+  // ----------------------------------------------------------------
+  // Get v_up from shock velocity and v_x
+  // v_shock = c_n^2/v_x - v_sh
+  //
+  v_up = pow(c_n,2)/v_x - v_sh;
+  cout  <<"shock vel = "<<v_up;
+  v_up = v_x - v_up;
+  cout <<" : upstream vel = "<<v_up<<"\n";
+  //
+  // Still need to calculate d_dn
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // Get d_dn from continuity
+  d_dn = d_sh*v_sh/v_dn;
+  // Now we have the parameters for the three regions.
+  cout <<"\t v_0 = "<<v_up<<", rho_0 = "<<d_up<<"\n";
+  cout <<"\t v_1 = "<<v_sh<<", rho_1 = "<<d_sh<<"\n";
+  cout <<"\t v_2 = "<<v_dn<<", rho_2 = "<<d_dn<<"\n";
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // Get the position of the I-front, assuming the flow is from right
+  // to left, and the ionizing source is shining from the left.
+  //
+  c->P[RO] = d_dn;
+  c->P[VX] = v_dn;
+  c->P[PG] = 0.0;
+  MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+  for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+  
+  //
+  // This is the local recombination rate (number per cm^3 per sec).
+  //
+  double IF_pos = MP->get_recombination_rate(0, c->P, SimPM.gamma);
+  //
+  // Length to absorb all photons is the source strength * IF_pos
+  //
+  if (SimPM.RS.Nsources<1) {
+    rep.error("Need Radiation Source for test!",SimPM.RS.Nsources);
+  }
+  cout <<"Recombination rate = "<<IF_pos<<" :  ";
+  IF_pos = SimPM.RS.sources[0].strength / IF_pos;
+
+  cout <<"source ionizing flux = "<< SimPM.RS.sources[0].strength;
+  cout <<" :  "<<"length to absorb photons = "<<IF_pos<<"\n";
+  //
+  // Add in a fudge factor of 0.65 because the downstream region is
+  // not constant density but increases towards the I-front.  So we
+  // get more recombinations than for constant density.
+  IF_pos = 0.65*IF_pos + ggg->SIM_Xmin(XX);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // Now set the positions of the two discontinuities.
+  // Shell Thickness is input in number of cells.
+  double shock_pos = 0.0;
+  seek = rrp->find_parameter("StarBench_IFI_shell_thickness");
+  if (seek=="") rep.error("Need parameter StarBench_IFI_shell_thickness",1);
+  else shock_pos = atof(seek.c_str())*ggg->DX() +IF_pos;
+  cout <<"IF_pos = "<<IF_pos<<", shock_pos="<<shock_pos<<"\n";
+  // ----------------------------------------------------------------
+
+  double pos[SimPM.ndim];
+  do {
+    CI.get_dpos(c,pos);
+
+    if (pos[XX]<= IF_pos) {
+      //
+      // Set to downstream properties, ionized.
+      //
+      c->P[RO] = d_dn;
+      c->P[PG] = 1.0e-10;
+      c->P[VX] = -v_dn;
+      c->P[VY] = c->P[VZ] = 0.0;
+      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+      MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+    }
+    else if (pos[XX]<= shock_pos) {
+      //
+      // Shell properties, neutral.
+      //
+      c->P[RO] = d_sh;
+      c->P[PG] = 1.0e-10;
+      c->P[VX] = -v_sh;
+      c->P[VY] = c->P[VZ] = 0.0;
+      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
+      MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+    }
+    else {
+      //
+      // Upstream unshocked properties, neutral.
+      //
+      c->P[RO] = d_up;
+      c->P[PG] = 1.0e-10;
+      c->P[VX] = -v_up;
+      c->P[VY] = c->P[VZ] = 0.0;
+      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
+      MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+    }
+
+  } while ( (c=ggg->NextPt(c)) !=0);
 
   return 0;
 }
