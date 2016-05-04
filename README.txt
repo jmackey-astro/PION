@@ -1,6 +1,6 @@
 Author: Jonathan Mackey
 Version: 1.0
-Date: 2016.01.24
+Date: 2016.05.05
 
 -------------------------------
 --- IMPORTANT INFORMATION   ---
@@ -17,20 +17,17 @@ pion/docs/.
 ---- COMPILING CODE:       ----
 -------------------------------
 Stages:
-(1) compile external libraries (including manually downloading the
-SUNDIALS library).
-(2) run serial code compilation script.
+(1) compile external libraries.
+(2) run serial code compilation script, and/or
 (3) run parallel code compilation script.
 (4) copy the executables to wherever you want to run the code.
 
 (1)
 First you need to compile extra libraries.
 cd to "./extra_libraries"
-run "bash install_all_libs.sh" to install.
-You need to manually download the Sundials library (v.2.4.0 please)
-from their website -- the install script will complain and tell you
-the link to the library.
-The script needs internet access with "wget" to work.
+From the command line, run "bash install_all_libs.sh" to install.
+The script needs internet access with "wget" to work.  On OS-X this
+means you probably need to replace wget with another command (curl?).
 
 (2)
 Then cd to "./bin_serial" and run "bash compile_code.sh"
@@ -45,7 +42,7 @@ fits (references to ff**** functions) or cvode/nvector then the
 libraries must have failed to compile.
 
 If all went well, there should be no error messages and there should
-be two executable files in ../ (i.e. the pion root directory):
+be two executable files in ../ (i.e. the PION root directory):
  - "icgen_serial" for generating initial conditions, and
  - "pion_serial" for running the code.
 Most code options are decided at run-time not compile-time, so you
@@ -55,9 +52,10 @@ If there are errors before linking, then there must be a problem with
 the source code, maybe due to some c++ header files not being
 installed.
 
-Either way, probably email me at jmackey@astro.uni-bonn.de and I'll
+Either way, probably email me at jmackey@cp.dias.ie and I'll
 see what I can do to help.  Quote the exact error message in the
-email.
+email.  Or open an "issue" on the bitbucket PION pages:
+https://bitbucket.org/jmackey/pion/issues
 
 If you are not using Linux/UNIX then the Makefile and/or
 compile_code.sh script may need editing.
@@ -83,15 +81,16 @@ the serial version of the code.
 
 First you want to make sure the code tests run ok.  I'm still working
 on this, but there is a subdirectory called
-"uniform_grid_code/trunk/test_problems".  Here you can run
+"test_problems".  Here you can run
 "./run_all_tests.sh" and it will run at least some tests, hopefully
 without bugging out.  (some of the tests have directories hard-coded
 to my desktop at AIfA).
 First edit run_all_tests.sh so that the data_dir variable is set to 
 some directory on your computer (and not my AIfA harddisk).
 
-The Double-Mach-Reflection is a good test, and should run fine, and
-if you have "eog" (eye-of-gnome) on your system, it will pop up jpeg
+The Double-Mach-Reflection is a good test, and should run fine with:
+ "bash run_double_Mach_reflection_test.sh"
+If you have "eog" (eye-of-gnome) on your system, it will pop up jpeg
 figures automatically which you can compare to
 http://www.astro.uni-bonn.de/~jmackey/jmac/node10.html figures.  They
 should look indistinguishable to the naked eye.  If not something is
@@ -100,11 +99,15 @@ definitely wrong.
 Shock-tube tests will probably take a long time to run (a few hours),
 so you may as well set that running overnight.
 
+[There are currently a lot of test problems in the 
+test_problems/untested directory; these used to work, but need some
+work to get them working again.]
+
 ----------------------------------------
 ----- MORE COMPLICATED SIMULATIONS -----
 ----------------------------------------
 
-cd to uniform_grid_code/trunk/bin
+cd to the pion root directory.
 Here there are the two executables: "icgen_serial" and "pion_serial".
 
 "icgen_serial" will read a parameter file and based on the values read
@@ -119,9 +122,11 @@ start/restart the simulation and run until it gets to "finishtime", at
 which point it will output data and stop.  You can get a list of
 command-line options by typing "./pion_serial" with no arguments.
 
-A typical simulation run is as follows (copied from bin_serial/run.sh)
-$ ./icgen_serial pf_test_winds.txt silo
-$ ./pion_serial IC_wind_test1.silo 5 1 op_criterion=1 opfreq_time=1.58e10 cooling=0 redirect=test1 outfile=/export/aibn214_1/jmackey/testing/results/wind_test1 cfl=0.1
+A typical simulation run is as follows:
+$ ./icgen_serial params_test_winds.txt silo
+$ ./pion_serial IC_wind_test1.silo 5 1 op_criterion=1 \
+ opfreq_time=1.58e10 cooling=0 redirect=test1 \
+ outfile=/path/to/results/wind_test1 cfl=0.1
 
 In icgen_serial, the first argument is the parameter-file, and the second
 tells it to write a silo file (rather than fits).
@@ -136,7 +141,7 @@ OPTIONAL ARGUMENTS:
 (5) opfreq_time=1.58e10	       output frequency (in whatever units)
 (6) cooling=0		       no cooling
 (7) redirect=test1	       standard output to file ./test1info.txt
-(8) outfile=/export/aibn214_1/jmackey/testing/results/wind_test1
+(8) outfile=/path/to/results/wind_test1
 			       output file name with path (will be
 			       appended with step number)
 (9) cfl=0.1		       Courant number (<1 in 1D, <0.5 2D, <0.35
@@ -153,7 +158,8 @@ You need to edit a parameter file for the problem you want to run.
 Probably copy the template file from ics/pfiles/ to bin/ since
 the templates are under version control and should only be updated if
 they become obselete because of new code features.  a '#' at the start
-of a line means it is ignored.
+of a line means it is ignored.  Alternatively you can get parameter
+files from the test_problems directory.
 
 The most important parameter is "ics" which determines the correct
 grid-setup routine to call.  Then down at the bottom there is a
@@ -167,7 +173,8 @@ string incorrectly.  "icgen_serial" doesn't check that it is correct
 for each dimension, and possibly "internal" extra boundaries.  If you
 are running in 3D with only 4 boundaries the initial condition
 generator will run, but pion_serial will bug out when it tries to
-setup the grid.
+setup the grid.  [There is a request in the bitbucket issue tracker
+to fix this, because it is really annoying].
 
 The "BC" string is a sequence of 6-character boundary specifiers.  The
 first two characters give the direction: XN=x-negative, XP=x-positive,
@@ -200,11 +207,11 @@ good).
 ---- RUNNING IN PARALLEL ----
 -----------------------------
 
-The parallel compilation is in uniform_grid_code/trunk/bin_parallel
+The parallel compilation is in bin_parallel/
 Again try "bash compile_code.sh", and the same caveats for OS X and
 the Makefile apply for parallel as serial code.
-Executables should be in trunk/bin/ called pion_parallel and
-icgen_parallel. 
+Executables should be in the PION root directory called pion_parallel
+and icgen_parallel. 
 
 This should generate a lot of warnings about "PMPIO" but no errors.
 If there are errors you should make sure that an MPI installation is
@@ -212,9 +219,9 @@ present on the system.  If you can compile and run an MPI 'hello
 world' program, then something strange is going on and probably the
 best thing is to contact me.
 
-Parallel code should always be run with the "redirect=/path/to/file"
-argument included, otherwise every process will output its info to the
-console which is messy.  A typical example script is quoted below:
+Parallel code should usually be run with the "redirect=/path/to/file"
+argument included, because it can produce a lot of screen output.
+A typical example script is quoted below:
 
 ********************* run.sh ****************************
 #!/bin/bash
@@ -224,30 +231,25 @@ sim_dir=/export/aibn129_1/jmackey/data_etc/stellar_winds/test_moving_src
 mkdir ${sim_dir}
 mkdir ${sim_dir}/run_log
 
-mpirun -np 4 ./icgen_parallel pf_MSwind_Md1em6_v250_noI_adv000.txt silo redirect=${sim_dir}/run_log/ic_WIND_Md1em6_v250_noI_adv000
-mpirun -np 4 ./icgen_parallel pf_MSwind_Md1em6_v250_noI_adv100.txt silo redirect=${sim_dir}/run_log/ic_WIND_Md1em6_v250_noI_adv100
+mpirun -np 4 ./icgen_parallel pf_MSwind_Md1em6_v250_noI_adv000.txt silo \
+ redirect=${sim_dir}/run_log/ic_WIND_Md1em6_v250_noI_adv000
 rsync -vt IC_WIND_Md1em6_v250_noI_adv*.silo ${sim_dir}/
 rm IC_WIND_Md1em6_v250_noI_adv*.silo
 
 #
-# First run the sims for a short time:
+# Run the sims for a short time:
 #
 mpirun -np 4 ./pion_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv000_0000.silo 5 1 \
 outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv000 \
 redirect=${sim_dir}/run_log/msg_WIND_Md1em6_v250_noI_adv000 \
 finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.15
 
-mpirun -np 4 ./pion_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv100_0000.silo 5 1 \
-outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv100 \
-redirect=${sim_dir}/run_log/msg_WIND_Md1em6_v250_noI_adv100 \
-finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.15
-
 ********************* run.sh ****************************
 
-The first time you run parallel code there will probably be an error
-about no "mpd" host running.  Run 'mpd&' and try again.
+The first time you run parallel code there may be an error about no
+"mpd" host running.  Run 'mpd&' and try again.
 
 ---------------------------------------------------------------------
-Written by Jonathan Mackey (C) 2006-2013  jmackey@astro.uni-bonn.de
+Written by Jonathan Mackey (C) 2006-2016  jmackey@cp.dias.ie
 ---------------------------------------------------------------------
 

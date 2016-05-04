@@ -152,7 +152,6 @@ echo "********************************"
 # Change these for new versions:
 FILE=silo-4.10.2-bsd.tar.gz
 SRC_DIR=silo-4.10.2-bsd
-#REMOTE_URL=https://wci.llnl.gov/codes/silo/silo-4.9/silo-4.9-bsd.tar.gz
 REMOTE_URL=https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
 #################################
 
