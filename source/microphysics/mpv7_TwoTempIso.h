@@ -19,8 +19,8 @@
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
-#ifndef MPV7_PUREH_H
-#define MPV7_PUREH_H
+#ifndef MPV7_TWOTEMPISO_H
+#define MPV7_TWOTEMPISO_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -133,7 +133,7 @@ class mpv7_TwoTempIso
   //---------------------------------------------------------------------------
 };
 
-#endif // MPV7_PUREH_H
+#endif // MPV7_TWOTEMPISO_H
 
 
 
