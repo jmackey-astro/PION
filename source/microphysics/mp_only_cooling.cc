@@ -114,7 +114,7 @@ mp_only_cooling::mp_only_cooling(const int nv,
     break;
   }
 
-//#ifdef TESTING
+#ifdef TESTING
 #ifdef PARALLEL
   if (mpiPM.myrank==0) {
 #endif 
@@ -133,7 +133,7 @@ mp_only_cooling::mp_only_cooling(const int nv,
 #ifdef PARALLEL
   }
 #endif 
-//#endif 
+#endif 
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   MaxT_allowed = ephys->MaxTemperature;

@@ -252,6 +252,8 @@ int sim_control_fixedgrid_pllel::Init(
   else
     rep.error("Bad file type specifier for parallel grids (2=fits,5=silo) IS IT COMPILED IN???",typeOfFile);
   
+  err = dataio->ReadHeader(infile);
+  rep.errorTest("(INIT(pllel)::ReadHeader) err!=0 Something went bad",0,err);
 
   err = mpiPM.decomposeDomain();
   if (err)
@@ -353,7 +355,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-      //cout.flush();
+      cout.flush();
     }
 	
     //
