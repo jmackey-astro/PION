@@ -54,6 +54,8 @@
 ///    the DMR test.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries). 03.24:fixed some bugs, redefined dir_XP
+/// - 2016.05.02 JM: fixed bug: parallel grid had no SIM_Xmin()/max/
+///    range() functions, so it was returning G_xmin!
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -1318,12 +1320,30 @@ class UniformGridParallel
         );
 
 #endif // PLLEL_RT
+
+  /// Returns Simulation xyz lower bounds (code units)
+  virtual double SIM_Xmin(enum axes a) const
+  {return(Sim_xmin[a] );}
+
+  /// Returns Simulation xyz upper bounds (code units)
+  virtual double SIM_Xmax(enum axes a) const
+  {return(Sim_xmax[a] );}
+
+  /// Returns Simulation range (code units)
+  virtual double SIM_Range(enum axes a) const
+  {return(Sim_range[a]);}
+
+  /// Returns Simulation xyz lower bounds (integer units, 1cell=2units)
   virtual int  Sim_iXmin(enum axes a) const
-  {return(Sim_ixmin[a] );} ///< Returns GLOBAL x,y,z lower bounds in cell integer coordinates.
+  {return(Sim_ixmin[a] );}
+
+  /// Returns Simulation xyz upper bounds (integer units, 1cell=2units)
   virtual int  Sim_iXmax(enum axes a) const
-  {return(Sim_ixmax[a] );} ///< Returns GLOBAL x,y,z upper bounds in cell integer coordinates.
+  {return(Sim_ixmax[a] );}
+
+  /// Returns Simulation xyz range (integer units, 1cell=2units)
   virtual int Sim_iRange(enum axes a) const
-  {return(Sim_irange[a]);} ///< Returns GLOBAL x,y,z range in cell integer coordinates.
+  {return(Sim_irange[a]);}
 };
 
 ///
