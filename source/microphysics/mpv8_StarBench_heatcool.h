@@ -16,8 +16,8 @@
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
-#ifndef MPV8_PUREH_H
-#define MPV8_PUREH_H
+#ifndef MPV8_SBHEATCOOL_H
+#define MPV8_SBHEATCOOL_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -130,7 +130,7 @@ class mpv8_SBheatcool
   //---------------------------------------------------------------------------
 };
 
-#endif // MPV8_PUREH_H
+#endif // MPV8_SBHEATCOOL_H
 
 
 

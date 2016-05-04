@@ -403,7 +403,7 @@ void IC_read_BBurkhart_data::read_file(
   double pix_size = g->DX();
   //data = mem.myalloc(data,Npix);
 
-  err = fio->read_fits_image_to_data(ff, HDU_NAME, ndim, l_xmin, g_xmin, pix_size, NG, ncell, &data);
+  err = fio->read_fits_image_to_data(ff, HDU_NAME, ndim, l_xmin, g_xmin, pix_size, NG, ncell, TDOUBLE, &data);
   if (err) rep.error("Failed to read fits subset",err);
   
   
