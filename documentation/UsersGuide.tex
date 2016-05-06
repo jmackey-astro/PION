@@ -60,7 +60,7 @@ or by post at:
 \quad Dunsink Observatory\\
 \quad Dunsink Lane\\
 \quad Dublin 15\\
-\quad D15 XR2R
+\quad D15 XR2R\\
 \quad Ireland.
 
 If you find a bug, please report it to J.~Mackey by email and file it as a bug at \href{https://bitbucket.org/jmackey/pion}{https://bitbucket.org/jmackey/pion}.
@@ -97,6 +97,7 @@ The code is developed for astrophysics, not for any practical purpose where fail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This guide shows you how to run the double Mach-reflection test, in serial and parallel, and to compare the results with expected behaviour.
+\hl{Unfortunately this is not written yet\ldots}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -109,18 +110,17 @@ This guide shows you how to run the double Mach-reflection test, in serial and p
 \section{Installation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Installation is reasonably straightforward, but there is one library which needs to be manually downloaded because it does not have a free licence.
-The code is not really \emph{installed}, just compiled on a given computer.
+Installation is reasonably straightforward, although the code is not really \emph{installed}, just compiled on a given computer.
 The executables can then be moved to any directory you want and run on a particular problem.
 It is quite rare that the code needs to be recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
 Here is how to compile the code:
 \begin{enumerate}
 \item
-  If you have a copy of \pion{} as \texttt{pion1.tar.gz}, unzip/untar it into any directory you want.  The cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
+  If you have a copy of \pion{} as \texttt{pion1.tar.gz}, unzip/untar it into any directory you want.
+  Then cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
+  If you obtain it from bitbucket then you should already have an unzipped source tree.
 \item
-  The Sundials numerical integration library is used for some of the microphysics classes, so the file \verb|sundials-2.5.0.tar.gz| needs to be downloaded from \url{https://computation.llnl.gov/casc/sundials/download/download.html} and moved into the directory \verb|pion/extra_libraries/|.
-\item
-  Then from \verb|pion/| with a standard linux workstation you should be able to run the command \verb|./install.sh|.
+  Then from directory \verb|pion/|, with a standard linux workstation, you should be able to run the command \verb|bash ./install.sh|.
   If this is successful then the \textsc{Silo}, \textsc{FITS}, and \textsc{Sundials} libraries should be installed to \verb|pion/extra_libraries/| and code executables should have been created in the current directory.
   The exectuables are \verb|pion_serial|, \verb|pion_parallel|, \verb|icgen_serial|, and \verb|icgen_parallel|.
 \item
@@ -133,7 +133,8 @@ The compile scripts will automatically detect if it is being compiled on the fol
 \item \emph{SuperMUC} at the Leibniz Rechenzentrum (LRZ) in Munich,
 \item \emph{Phalanx} or \emph{Dougal} at UCL astrophysics dept.,
 \item \emph{Dirac-II/Complexity} at the University of Leicester,
-\item \emph{OS X 10.X}, with \emph{XCode} installed.
+\item \emph{OS X 10.X}, with \emph{XCode} installed,
+\item \emph{FIONN} at the Irish Centre for High-End Computing (ICHEC).
 \end{itemize}
 If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
 It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
@@ -143,7 +144,7 @@ It has only been compiled on Debian-based linux distributions (Debian and Ubuntu
 \subsection{Compilation on other machines}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 If you want to compile it on a machine with e.g.\ Intel compilers, then you can either email me for help or you can try editing the compile scripts.
-It is relatively straightforward to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} environmental variables (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
+It is relatively straightforward (but sometimes tedious!) to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} environmental variables (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
 As you can see from \verb|install.sh|, you need to edit the files
 \verb|pion/extra_libraries/install_all_libs.sh|,
 \verb|pion/bin_parallel/compile_code.sh|, and
@@ -399,8 +400,10 @@ The ordering of variables is basically the same as for \textsc{Fits} files, exce
 
 
 
+\bibpunct{(}{)}{;}{a}{,}{,}
 
-\bibliographystyle{./apj.bst}
+\bibliographystyle{plainnat}
+%\bibliographystyle{natbib}
 \bibliography{./refs.bib}
 
 \end{document}

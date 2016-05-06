@@ -18,6 +18,7 @@
 #    microphysics classes.
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2014.04.14 JM: Added option for JUDGE.
+# - 2016.05.04 JM: Added FIONN to list of machines (not yet working)
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
 # we are compiling on.  If it is not a known computer we just set it to
@@ -33,7 +34,7 @@ NCORES=8
 export CXX=g++
 
 #################################
-### TEST FOR PHALANX ICC/ICPC ###
+### TEST FOR PHALANX ICC/ICPC ###
 #################################
 if [ "${HOST}" = 'phalanx.star.ucl.ac.uk' ]; then
   source /opt/intel/Compiler/11.1/073/bin/ifortvars.sh intel64
@@ -52,7 +53,7 @@ fi
 #################################
 
 #################################
-### TEST FOR Dougal ICC/ICPC ###
+### TEST FOR Dougal ICC/ICPC ###
 #################################
 if [ "${HOST}" = 'dougal.hpc.phys.ucl.ac.uk' ]; then
   source /opt/intel/Compiler/11.1/046/bin/ifortvars.sh intel64
@@ -83,8 +84,25 @@ case $HOST in
 esac
 #######################
 
+#######################
+case $HOST in
+  fionn[0-9])
+    echo "Compiling on FIONN/ICHEC"
+    source /usr/share/modules/init/bash
+    module purge
+    module load dev intel
+    MAKE_UNAME=FIONN
+    NCORES=8
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
+    export CXX=icpc
+    ;;
+esac
+#######################
+
 #################################
-### TEST FOR OS X (DARWIN)    ###
+### TEST FOR OS X (DARWIN)    ###
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then

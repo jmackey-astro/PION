@@ -1,110 +1,98 @@
-This is the PION licence, which you must agree with in order to use
-the code.
+This document is the licence to use the astrophysics simulation code
+"PhotoIonization Of Nebulae (PION).  Usage of this software implies acceptance
+of the licence.  You do not have to explicity write to me to accept the
+licence.  If you do not agree to this licence you are not permitted to use
+PION.
+
 Copyright (c) 2006-2016 by Jonathan Mackey and co-authors.
 
 Contact information:
 Email: jmackey@cp.dias.ie
 
-This document is the licence to use the astrophysics simulation code
-"PhotoIonization Of Nebulae (PION).  Usage of this software implies acceptance
-of the licence!  You do not have to explicity write to me to accept the
-licence.
-
 -----------------
 
-This document last updated: 2016.01.24.
+This document last updated: 2016.05.04.
 
 The principal author of this code is Jonathan Mackey.
 
 Minor code contributions and major planning/conceptual contributions
-have been made by Dr. Andrew J. Lim from 2006-2010.
+have been made by Andrew J. Lim from 2006-2010.
 
 Metal-free Chemistry/heating/cooling routines contributed by Harpreet Dhanoa.
 
 -----------------
 
 The definitive version of PION is maintained by Jonathan Mackey at
-http://bitbucket.org in a version control repository.
+http://bitbucket.org/jmackey/pion in a version control repository.
 
 -----------------
 
 PION is free software in that you will not be charged money to use it, but
-there are some restrictions as to what you are permitted to do with it.
+there are some restrictions as to what you are permitted to do with it.  The
+following restrictions largely follow the BSD licence, but with a couple of
+additions.
 
 -------------------
 Disclaimer:
 -------------------
 
 This applies to the code PION, and any code derived from any part of PION.
-[change this to BSD licence, b/c the GPL can't be modified].
 
-BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
-FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
-OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
-PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
-OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
-TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
-PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
-REPAIR OR CORRECTION.
-
-IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
-WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
-REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
-INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
-OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
-TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
-YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
-PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
-POSSIBILITY OF SUCH DAMAGES.
+THIS SOFTWARE IS PROVIDED BY JONATHAN MACKEY AND CO-AUTHORS ''AS IS'' AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL JONATHAN MACKEY AND/OR CO-AUTHORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 -----------------
-
-In publications which use the code, you agree to cite papers describing the code.  At the moment this is:
-
- - Mackey & Lim (2010,MNRAS,403,714) for hydrodynamics and raytracing plus photoionisation,
- - Mackey & Lim (2011,MNRAS,412,2079) for photoionisation with magnetohydrodynamics,
- - Mackey (2012,A&A,539,A147) for updated explicit photoionisation algrithm.
- - Dhanoa, Mackey & Yates (2014,MNRAS,444,2085) for metal-free chemistry.
-
-You should cite at least one of these articles, whichever is most
-appropriate for the modules you are using.
-
+CONDITIONS OF USE AND REDISTRIBUTION
 -----------------
 
-This code, and any codes derived from it or using any of its source code, may
-not under any circumstances be used for weapons research and/or military
-research, including but not limited to modelling of weapons explosions and the
-evolution of associated blast waves, without explicit written permission from
-the authors, including handwritten signature.
 
------------------
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-If you modify PION, you must clearly state this in publications arising from
+1. Redistributions of source code must reproduce this copyright
+notice, this list of conditions and disclaimers, unchanged and in its entirety
+(i.e. all of the text in this licence file).
+
+2. Redistributions in binary form must reproduce this copyright notice, this
+list of conditions and disclaimers, unchanged and in its entirety (i.e. all of
+the text in this licence file).
+
+3. The names of the authors, the names of the institutions that fund and/or
+host its development, and the names of institutions which have funded and/or
+hosted its development in the past, may not be used to endorse or promote
+products derived from this Software without specific prior written permission.
+
+4. If you modify PION, you must clearly state this in publications arising from
 simulations using a modified version of the code.  Furthermore, you must state
 clearly what modifications you have made, providing enough information for
-another computational astrophysicist to reproduce your results without too much
+another computational astrophysicist to reproduce your results with reasonable
 effort.
 
------------------
+5. PION, and any codes derived from it or using any of its source code, may not
+under any circumstances be used for weapons research and/or military research,
+including but not limited to modelling of weapons explosions and the evolution
+of associated blast waves, without explicit written permission from the
+authors, including handwritten signature.
 
-Redistributions of source code must reproduce this copyright
-notice, this list of conditions and disclaimers, unchanged and in its
-entirety (i.e. all of the text in this licence file).
-
------------------
-
-Redistributions in binary form must reproduce this copyright notice, this list
-of conditions and disclaimers, unchanged and in its entirety (i.e. all of the
-text in this licence file).
-
------------------
-
-The names of the authors, the names of the institutions that fund and/or host
-its development, and the names of institutions which have funded and/or hosted
-its development in the past, may not be used to endorse or promote products
-derived from this Software without specific prior written permission.
-
+6. In publications which use PION, or a modified version of PION, or components
+of PION incorporated into a new code, you agree to cite at least one of the
+relevant papers describing PION and its components:
+ - Mackey & Lim (2010,MNRAS,403,714) for hydrodynamics and raytracing plus
+   photoionisation,
+ - Mackey & Lim (2011,MNRAS,412,2079) for photoionisation with
+   magnetohydrodynamics,
+ - Mackey (2012,A&A,539,A147) for updated explicit photoionisation algrithm.
+ - Dhanoa, Mackey & Yates (2014,MNRAS,444,2085) for metal-free chemistry.  You
+   agree to cite at least one of these articles, whichever is most appropriate
+   for the modules you are using.
 
 -------------------
 END
