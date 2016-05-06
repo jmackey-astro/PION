@@ -6,6 +6,7 @@
 # - 2014.04.14 JM: Added section for JUDGE at JSC.
 # - 2015.01.14 JM: Section for Juropatest system at JSC.
 # - 2016.04.29 JM: updated for sundials 2.6.2 and cfitsio 3390.
+# - 2016.05.04 JM: Added FIONN to list of machines.
 
 mkdir include
 mkdir bin
@@ -19,7 +20,7 @@ export FC=gfortran
 
 
 #################################
-### TEST FOR Dougal ICC/ICPC ###
+### TEST FOR Dougal ICC/ICPC ###
 #################################
 if [ "${HOST}" = 'dougal.hpc.phys.ucl.ac.uk' ]; then
     source /opt/intel/Compiler/11.1/046/bin/ifortvars.sh intel64
@@ -34,7 +35,7 @@ fi
 #################################
 
 #################################
-### TEST FOR PHALANX ICC/ICPC ###
+### TEST FOR PHALANX ICC/ICPC ###
 #################################
 if [ "${HOST}" = 'phalanx.star.ucl.ac.uk' ]; then
     source /opt/intel/Compiler/11.1/073/bin/ifortvars.sh intel64
@@ -52,7 +53,7 @@ fi
 #################################
 
 #######################
-### TEST FOR JUROPA ###
+### TEST FOR JUROPA ###
 #######################
 case $HOST in
   jj[0-9][0-9]l[0-9][0-9])
@@ -70,7 +71,7 @@ esac
 #######################
 
 #######################
-### TEST FOR JUROPATEST ###
+### TEST FOR JUROPATEST ###
 #######################
 MACHINE=$(cat /etc/FZJ/systemname)
 if test "${MACHINE}" = "juropatest"; then
@@ -86,7 +87,7 @@ fi
 #######################
 
 #######################
-## TEST FOR SuperMUC ##
+## TEST FOR SuperMUC ##
 #######################
 case $HOST in
   login[0-9][0-9])
@@ -135,6 +136,26 @@ case $HOST in
 esac
 #######################
 
+#######################
+### TEST FOR FIONN  ###
+#######################
+case $HOST in
+  fionn[0-9])
+    echo "Compiling on FIONN/ICHEC"
+    source /usr/share/modules/init/bash
+    module purge
+    module load dev intel
+    module load dev cmake/intel/latest
+    MAKE_UNAME=FIONN
+    NCORES=8
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export CC=icc
+    export CXX=icpc
+    export FC=ifort
+    ;;
+esac
+#######################
+
 
 
 export MAKE_UNAME
@@ -152,7 +173,6 @@ echo "********************************"
 # Change these for new versions:
 FILE=silo-4.10.2-bsd.tar.gz
 SRC_DIR=silo-4.10.2-bsd
-#REMOTE_URL=https://wci.llnl.gov/codes/silo/silo-4.9/silo-4.9-bsd.tar.gz
 REMOTE_URL=https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
 #################################
 

@@ -572,10 +572,10 @@ double sim_control_fixedgrid::get_mp_timescales_with_radiation(
       //
       tempdt = MP->timescales_RT(c->Ph, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs, SimPM.gamma);
 #ifdef TESTING
-      //if (tempdt<dt) {
-      //  cout <<"(get_min_timestep) id="<<c->id<<":  dt="<<tempdt<<", min-dt="<<dt;
-      //  cout <<".\t 1-x="<<1.0-c->Ph[SimPM.ftr]<<", pg="<<c->Ph[PG]<<"\n";
-      //}
+      if (tempdt<dt) {
+        cout <<"(get_min_timestep) id="<<c->id<<":  dt="<<tempdt<<", min-dt="<<dt;
+        cout <<".\t 1-x="<<1.0-c->Ph[SimPM.ftr]<<", pg="<<c->Ph[PG]<<"\n";
+      }
 #endif
       if (tempdt<=0.0) {
         cout <<"get_mp_timescales_with_radiation() negative timestep... ";

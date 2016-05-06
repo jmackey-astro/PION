@@ -48,6 +48,7 @@
 # - 2015.01.08 JM: Added tools/reporting.h.cpp and tools/mem_manage.h
 # - 2015.01.12 JM: Added command_line_interface.h.cpp.
 # - 2016.02.12 JM: renamed .cc files to .cpp
+# - 2016.05.04 JM: Added FIONN to list of machines (not yet working)
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -156,6 +157,32 @@ ifeq ($(MAKE_UNAME), JUROPA)
 
 endif
 ##################### -- JUROPA -- ###################################
+
+######################## -- FIONN -- ################################
+# Options for the ICHEC Supercomputer FIONN
+# Intel Compilers
+######################################################################
+ifeq ($(MAKE_UNAME), FIONN)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+  else
+    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  endif
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+
+  MYLIB = ../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
+endif
+##################### -- FIONN -- ###################################
 ######################################################################
 
 ######################## -- JUDGE -- ################################

@@ -11,7 +11,7 @@
 #./install_cvodes.sh
 #./install_silo.sh
 
-lib_path=../../pion/extra_libraries
+lib_path=../../pion_dev/extra_libraries
 ln -s ${lib_path}/lib ./lib
 ln -s ${lib_path}/include ./include
 ln -s ${lib_path}/bin ./bin
