@@ -45,6 +45,7 @@
 # - 2014.04.14 JM: Section for Judge at JSC.
 # - 2015.01.26-28 JM: Edited for new filenames and code structure.
 # - 2016.03.14 JM: renamed .cc files to .cpp
+# - 2016.05.04 JM: Added FIONN to list of machines
 ###
 
 ############################
@@ -114,6 +115,31 @@ ifeq ($(MAKE_UNAME), standard)
 endif
 ################### --- STANDARD WORKSTATION ---######################
 
+################### --- FIONN at ICHEC.IE ---######################
+# Options for fionn.ichec.ie
+######################################################################
+ifeq ($(MAKE_UNAME), FIONN)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+  else
+    CXXFLAGS = -O0 -Wall -g
+    # -wd981 -wd383
+  endif
+  # -wd981 disables a warning about order of evaluation of operands:
+  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
+  #  and also http://software.intel.com/en-us/articles/cdiag981/
+  # -wd383 also diasables a warning about passing a temporary object to a function.
+  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
+  #CXXFLAGS += -fp-stack-check -fstack-security-check
+
+  MYLIB = ../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
+endif
+################### --- FIONN at ICHEC.IE ---######################
 
 
 ######################## -- JUROPA -- ################################

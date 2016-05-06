@@ -365,7 +365,9 @@ int sim_control_fixedgrid_pllel::Time_Int(
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
+#ifdef TESTING
       cout.flush();
+#endif // TESTING
     }
 	
     //
