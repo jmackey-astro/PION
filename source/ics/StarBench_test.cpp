@@ -517,6 +517,29 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
 
   } while ( (c=ggg->NextPt(c)) !=0);
 
+
+  //
+  // Add a perturbation upstream:
+  //
+  int ptype = -1;
+  seek = rrp->find_parameter("StarBench_IFI_perturbation");
+  if (seek=="") rep.error("Need parameter StarBench_IFI_perturbation",1);
+  else  ptype = atoi(seek.c_str());
+
+  if (ptype==1) {
+    double lambda = 0.125*SimPM.Range[YY];
+    double A = 0.75*c_n;
+    double x0 = shock_pos + 0.2*SimPM.Range[XX];
+    double sig= 0.05*SimPM.Range[XX];
+    c=ggg->FirstPt();
+    do {
+      CI.get_dpos(c,pos);
+      c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda)
+                      *exp(-0.5*pow((pos[XX]-x0)/sig,2.0));
+    } while ( (c=ggg->NextPt(c)) !=0);
+  }
+
+
   return 0;
 }
 
