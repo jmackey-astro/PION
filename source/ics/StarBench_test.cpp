@@ -16,6 +16,7 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.08.05 JM: Added pion_flt datatype.
 /// - 2016.05.02 JM: Added Cone-IF test, and planar IF test.
+/// - 2016.05.15 JM: Added perturbations to planar IF test.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -477,6 +478,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   cout <<"IF_pos = "<<IF_pos<<", shock_pos="<<shock_pos<<"\n";
   // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
   double pos[SimPM.ndim];
   do {
     CI.get_dpos(c,pos);
@@ -516,17 +518,35 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     }
 
   } while ( (c=ggg->NextPt(c)) !=0);
+  // ----------------------------------------------------------------
 
 
   //
+  // ----------------------------------------------------------------
   // Add a perturbation upstream:
   //
   int ptype = -1;
   seek = rrp->find_parameter("StarBench_IFI_perturbation");
-  if (seek=="") rep.error("Need parameter StarBench_IFI_perturbation",1);
-  else  ptype = atoi(seek.c_str());
+  if      (seek=="1" || seek=="velocity") {
+    ptype = 1;
+  }
+  else if (seek=="2" || seek=="deformation") {
+    ptype = 2;
+  }
+  else if (seek=="3" || seek=="clump") {
+    ptype = 3;
+  }
+  else {
+   rep.error("Need parameter StarBench_IFI_perturbation",seek);
+  }
+  // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
   if (ptype==1) {
+    //
+    // upstream velocity perturbation, 0.75 of the neutral gas sound
+    // speed.
+    //
     double lambda = 0.125*SimPM.Range[YY];
     double A = 0.75*c_n;
     double x0 = shock_pos + 0.2*SimPM.Range[XX];
@@ -537,7 +557,64 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda)
                       *exp(-0.5*pow((pos[XX]-x0)/sig,2.0));
     } while ( (c=ggg->NextPt(c)) !=0);
-  }
+  } //  ptype==1
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  else if (ptype==2) {
+    //
+    // Overwrite data, with curved shock.
+    //
+    double lambda = 0.25*SimPM.Range[YY];
+    double A = lambda *0.125;
+    double deflection=0.0;
+    c=ggg->FirstPt();
+    do {
+      CI.get_dpos(c,pos);
+      deflection = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda);
+      if (pos[XX]<= IF_pos+deflection) {
+        //
+        // Set to downstream properties, ionized.
+        //
+        c->P[RO] = d_dn;
+        c->P[PG] = 1.0e-10;
+        c->P[VX] = -v_dn;
+        c->P[VY] = c->P[VZ] = 0.0;
+        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+        MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+      }
+      else if (pos[XX]<= shock_pos+deflection) {
+        //
+        // Shell properties, neutral.
+        //
+        c->P[RO] = d_sh;
+        c->P[PG] = 1.0e-10;
+        c->P[VX] = -v_sh;
+        c->P[VY] = c->P[VZ] = 0.0;
+        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
+        MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+      }
+      else {
+        //
+        // Upstream unshocked properties, neutral.
+        //
+        c->P[RO] = d_up;
+        c->P[PG] = 1.0e-10;
+        c->P[VX] = -v_up;
+        c->P[VY] = c->P[VZ] = 0.0;
+        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
+        MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+      }
+
+    } while ( (c=ggg->NextPt(c)) !=0);
+  } //  ptype==2
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  else if (ptype==3) {
+  } //  ptype==3
+  // ----------------------------------------------------------------
+
 
 
   return 0;
