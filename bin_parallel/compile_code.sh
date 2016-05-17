@@ -20,6 +20,7 @@
 # - 2013.09.20 JM: New Intel compilers for Juropa.
 # - 2014.04.14 JM: Section for Judge at JSC.
 # - 2015.01.14 JM: Section for Juropatest system at JSC.
+# - 2016.05.04 JM: Added FIONN to list of machines
 
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
@@ -43,6 +44,28 @@ export CXX=mpicxx
 #NCORES=1
 #export CXX=g++
 
+################### --- FIONN at ICHEC.IE ---######################
+# Options for fionn.ichec.ie
+######################################################################
+case $HOST in
+  fionn[0-9])
+    echo "Compiling on FIONN/ICHEC"
+    source /usr/share/modules/init/bash
+    module purge
+    module load dev intel
+    MAKE_UNAME=FIONN
+    # -DINTEL means the code uses the intel math headers instead of gnu.
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIMISE=HIGH
+    NCORES=8
+    #export PION_OPTIMISE=LOW
+    #NCORES=1
+    export CC=mpiicc
+    export CXX=mpiicpc
+    echo "***** COMPILING WITH FIONN: COMPILERS ARE $CC $CXX "  
+    ;;
+esac
+################### --- FIONN at ICHEC.IE ---######################
 
 #################################
 ### TEST FOR PHALANX ICC/ICPC ###
@@ -102,25 +125,9 @@ case $HOST in
 esac
 #######################
 
-#######################
-### TEST FOR JUROPATEST ###
-#######################
-MACHINE=$(cat /etc/FZJ/systemname)
-if test "${MACHINE}" = "juropatest"; then
-    echo "Compiling on JUROPATEST"
-    module purge
-    module load intel-para
-    MAKE_UNAME=JUROPA
-    NCORES=8
-    # -DINTEL means the code uses the intel math headers instead of gnu.
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export PION_OPTIMISE=HIGH
-    export CXX=mpicxx
-fi
-#######################
 
 #################################
-### TEST FOR OS X (DARWIN)    ###
+### TEST FOR OS X (DARWIN)    ###
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then

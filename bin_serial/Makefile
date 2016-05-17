@@ -48,7 +48,7 @@
 # - 2015.01.08 JM: Added tools/reporting.h.cpp and tools/mem_manage.h
 # - 2015.01.12 JM: Added command_line_interface.h.cpp.
 # - 2016.02.12 JM: renamed .cc files to .cpp
-# - 2016.05.04 JM: Added FIONN to list of machines (not yet working)
+# - 2016.05.04 JM: Added FIONN to list of machines
 #
 ############################
 ### BASIC INFO AND PATHS ###

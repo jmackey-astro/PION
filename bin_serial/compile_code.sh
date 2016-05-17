@@ -18,7 +18,7 @@
 #    microphysics classes.
 # - 2013.02.27 JM: Added extensions for contributed code.
 # - 2014.04.14 JM: Added option for JUDGE.
-# - 2016.05.04 JM: Added FIONN to list of machines (not yet working)
+# - 2016.05.04 JM: Added FIONN to list of machines
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
 # we are compiling on.  If it is not a known computer we just set it to
