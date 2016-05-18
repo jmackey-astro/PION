@@ -145,7 +145,8 @@ case $HOST in
     source /usr/share/modules/init/bash
     module purge
     module load dev intel
-    module load dev cmake/intel/latest
+    #module load dev cmake/intel/latest
+    module load dev cmake/intel/3.0.2
     MAKE_UNAME=FIONN
     NCORES=8
     # -DINTEL means the code uses the intel math headers instead of gnu.
