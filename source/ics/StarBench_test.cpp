@@ -533,8 +533,11 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   else if (seek=="2" || seek=="deformation") {
     ptype = 2;
   }
-  else if (seek=="3" || seek=="clump") {
+  else if (seek=="3" || seek=="def_small") {
     ptype = 3;
+  }
+  else if (seek=="0" || seek=="none") {
+    ptype = 0;
   }
   else {
    rep.error("Need parameter StarBench_IFI_perturbation",seek);
@@ -561,12 +564,15 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  else if (ptype==2) {
+  else if (ptype==2 || ptype==3) {
     //
     // Overwrite data, with curved shock.
     //
     double lambda = 0.25*SimPM.Range[YY];
-    double A = lambda *0.125;
+    double A = 0.0;
+    if      (ptype==2) A = lambda *0.125;
+    else if (ptype==3) A = lambda *0.025;
+    else               A = 0;
     double deflection=0.0;
     c=ggg->FirstPt();
     do {
@@ -607,12 +613,17 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       }
 
     } while ( (c=ggg->NextPt(c)) !=0);
-  } //  ptype==2
+  } //  ptype==2 || 3
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  else if (ptype==3) {
-  } //  ptype==3
+  else if (ptype==4) {
+  } //  ptype==4
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  else if (ptype==0) {
+  } //  ptype==0
   // ----------------------------------------------------------------
 
 
