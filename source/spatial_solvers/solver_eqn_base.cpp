@@ -42,6 +42,7 @@
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2016.05.21 JM: Tidied up H-correction terms.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -311,10 +312,6 @@ int FV_solver_base::preprocess_data(
   //cout <<"\tmultiplying conduction dU by dt.\n";
   do {
     c->dU[ERG] *= SimPM.dt;
-    //if (c->id==39783) {
-    //  cout <<"\tPPD cell id: "<<c->id;
-    //  cout <<", dU[cond]="<<c->dU[ERG]<<", E="<<c->Ph[PG]/(SimPM.gamma-1.0)<<"\n";
-    //}
   } while ( (c =grid->NextPt(c)) !=0);
 #endif // THERMAL CONDUCTION
 
@@ -363,7 +360,9 @@ int FV_solver_base::calc_Hcorrection(
         class GridBaseClass *grid
         )
 {
-  //  cout <<"\t\t\tcalc_Hcorrection() ndim = "<<SimPM.ndim<<"\n";
+#ifdef TESTING
+  cout <<"\t\t\tcalc_Hcorrection() ndim = "<<SimPM.ndim<<"\n";
+#endif // TESTING
 
   //
   // This function is quite similar to calc_dU() and dU_column()
@@ -371,7 +370,7 @@ int FV_solver_base::calc_Hcorrection(
   //
 
   // 
-  // Allocate arrays
+  // Allocate arrays for direction values.
   //
   int err=0;
   enum direction posdirs[MAX_DIM], negdirs[MAX_DIM];
@@ -379,6 +378,7 @@ int FV_solver_base::calc_Hcorrection(
   posdirs[0] = XP; posdirs[1] = YP; posdirs[2] = ZP;
   negdirs[0] = XN; negdirs[1] = YN; negdirs[2] = ZN;
   axis[0] = XX; axis[1] = YY; axis[2] = ZZ;
+
   //
   // Slope and edge state temporary arrays: This could be more
   // computationally efficient if these were cell members (i.e. if
@@ -395,13 +395,10 @@ int FV_solver_base::calc_Hcorrection(
   // Loop through each direction.
   //
   for (int idim=0;idim<SimPM.ndim;idim++) {
-    //    cout <<"\t\t\tidim="<<idim<<"\n";
+#ifdef TESTING
+    cout <<"\t\t\tidim="<<idim<<"\n";
+#endif // TESTING
     SetDirection(axis[idim]);
-
-    //
-    // Want to start at first boundary cell eventually, but for now
-    // stick to the grid cells.
-    //
     class cell *start  = grid->FirstPt();
     class cell *marker = grid->FirstPt();
 
@@ -614,8 +611,10 @@ double FV_solver_base::select_Hcorr_eta(
   //
   // Will want to comment this out later...
   //
-  //  cout <<"cell id="<<cl->id<<" axis="<<axis<<", eta_max="<<eta<<"\n";
-  
+#ifdef TESTING
+  cout <<"cell id="<<cl->id<<" axis="<<axis<<", eta_max="<<eta<<"\n";
+#endif // TESTING
+
   return eta;
 }
 
