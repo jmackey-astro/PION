@@ -11,7 +11,6 @@ solver 4
 # Type of Equations to Solve {hd, mhd, ...}
 eqn  euler
 ntracer 1
-#trtype ChALL_trace_H1+___e-____He1+__He2+__
 InitIons YES
 #Tracer0 1.0
 #Tracer1 1.0
