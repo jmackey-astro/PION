@@ -303,8 +303,7 @@ void sim_control_fixedgrid::print_command_line_options(
 
   cout <<"\t AVtype=N      : modify type of artificial viscosity:";
   cout <<" 0=none, 1=Falle,Komissarov,Joarder(1998), 2=Colella+Woodward(1984), 3=Sanders et al.(1998)[H-correction].\n";
-  cout <<"\t\t\t WARNING -- AVtype=2 IS NOT WORKING WELL.  ONLY USE FKJ98.";
-  cout <<" The H-correction works well in serial, if needed.\n";
+  cout <<"\t\t\t WARNING -- AVtype=2 IS NOT WORKING WELL.  ONLY USE FKJ98/H-corr.";
   cout <<"\t EtaVisc=D     : modify viscosity parameter to the given double precision value.\n";
 
   //cout <<"\t coordsys=NAME : override coordinate system to [cartesian,cylindrical]. !DANGEROUS!\n";
@@ -642,48 +641,48 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
       // Assign art.viscosity parameter. String is 'artvisc=I' with I in [0,N].
       int v = atoi((args[i].substr(7)).c_str());
       if      (v == 0) {
-  cout <<"\t\tNot using artificial viscosity.\n";
-  SimPM.artviscosity=0; SimPM.etav=0.;
+        cout <<"\t\tNot using artificial viscosity.\n";
+        SimPM.artviscosity=0; SimPM.etav=0.;
       }
       else if (v == 1) {
-  cout <<"\t\tUsing Falle, Komissarov, Joarder (1998) AV prescription.\n";
-  SimPM.artviscosity = AV_FKJ98_1D; // ==1
-  SimPM.etav = 0.1;
+        cout <<"\t\tUsing Falle, Komissarov, Joarder (1998) AV prescription.\n";
+        SimPM.artviscosity = AV_FKJ98_1D; // ==1
+        SimPM.etav = 0.1;
       }
       else if (v == 2) {
-  cout <<"\t\tUsing Colella and Woodward (1984) AV prescription (Lapidus).\n";
-  cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
-  SimPM.artviscosity=AV_LAPIDUS; // ==2 (NEEDS TESTING!!!)
-  SimPM.etav = 0.1;
+        cout <<"\t\tUsing Colella and Woodward (1984) AV prescription (Lapidus).\n";
+        cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
+        SimPM.artviscosity=AV_LAPIDUS; // ==2 (NEEDS TESTING!!!)
+        SimPM.etav = 0.1;
       }
       else if (v == 3) {
-  cout <<"\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511).\n";
-  cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
-  SimPM.artviscosity=AV_HCORRECTION; // ==3 (NEEDS TESTING!!!)
-  SimPM.etav = 0.1; // This parameter is redundant for the H-correction.
+        cout <<"\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511).\n";
+        cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
+        SimPM.artviscosity=AV_HCORRECTION;
+        SimPM.etav = 0.1; // This parameter is redundant for the H-correction.
       }
       else if (v == 4) {
-  cout <<"\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511)\n";
-  cout <<"\t\twith the 1D viscosity of Falle, Komissarov, Joarder (1998)\n";
-  cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
-  SimPM.artviscosity=AV_HCORR_FKJ98; // ==4 (NEEDS TESTING!!!)
-  SimPM.etav = 0.1;
+        cout <<"\t\tUsing the H-correction of Sanders et al. (1998,JCP,145,511)\n";
+        cout <<"\t\twith the 1D viscosity of Falle, Komissarov, Joarder (1998)\n";
+        cout <<"\t\t****** WARNING, THIS NEEDS TESTING, EXPERIMENTAL CODE!! ****\n";
+        SimPM.artviscosity=AV_HCORR_FKJ98; // ==4 (NEEDS TESTING!!!)
+        SimPM.etav = 0.1;
       }
       else if (v == AV_VonNeuRicht) {
-  // AV_VonNeuRicht==5
-  cout <<"\t\tUsing Multi-D von Neumann & Richtmeyer (1950) viscosity.\n";
-  cout <<"\t\tSee Tscharnuter & Winkler (1979), Stone & Norman (1992).\n";
-  cout <<"\t\tWARNING -- THIS ONLY WORKS WITH EQNTYPE==9(EQEUL_EINT).\n";
-  SimPM.artviscosity=AV_VonNeuRicht;
-  SimPM.etav = 1.0;
+        // AV_VonNeuRicht==5
+        cout <<"\t\tUsing Multi-D von Neumann & Richtmeyer (1950) viscosity.\n";
+        cout <<"\t\tSee Tscharnuter & Winkler (1979), Stone & Norman (1992).\n";
+        cout <<"\t\tWARNING -- THIS ONLY WORKS WITH EQNTYPE==9(EQEUL_EINT).\n";
+        SimPM.artviscosity=AV_VonNeuRicht;
+        SimPM.etav = 1.0;
       }
       else {
-  cout <<"\t\t********************** FIX ME!!!! **************************\n";
-  cout <<"\t\tDIDN'T UNDERSTAND AV="<<v<<", SETTING TO FALLE et al (1998).\n";
-  cout <<"\t\t********************** FIX ME!!!! **************************\n";
-  SimPM.artviscosity = 1;
-  SimPM.etav = 0.1;
-  rep.error("Bad viscosity flag from command-line",v);
+        cout <<"\t\t********************** FIX ME!!!! **************************\n";
+        cout <<"\t\tDIDN'T UNDERSTAND AV="<<v<<", SETTING TO FALLE et al (1998).\n";
+        cout <<"\t\t********************** FIX ME!!!! **************************\n";
+        SimPM.artviscosity = 1;
+        SimPM.etav = 0.1;
+        rep.error("Bad viscosity flag from command-line",v);
       }  
       cout <<"\tOVERRIDE PARAMS: setting AV = "<<SimPM.artviscosity<<" and eta = "<<SimPM.etav<<"\n"; 
     }
@@ -695,7 +694,7 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
       cout <<"\tOVERRIDE PARAMS: Resetting eta_visc from ";
       cout <<SimPM.etav<<" to "<<visc<<"\n";
       if (visc<0.0 || !isfinite(visc))
-  rep.error("Error: eta viscosity parameter outside allowed range!",visc);
+        rep.error("Error: eta viscosity parameter outside allowed range!",visc);
       SimPM.etav = visc;
     }
 
@@ -704,16 +703,16 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
       // Assign art.viscosity parameter. String is 'artvisc=D' with D in [0,N].
       double visc = atof((args[i].substr(8)).c_str());
       if(fabs(visc) <= 1.e-6) {
-  cout <<"\t\tNot using artificial viscosity.\n";
-  SimPM.artviscosity=0; SimPM.etav=0.;
+        cout <<"\t\tNot using artificial viscosity.\n";
+        SimPM.artviscosity=0; SimPM.etav=0.;
       }
       else if (visc <=0) {
-  SimPM.artviscosity = 1;
-  SimPM.etav = 0.15;
+        SimPM.artviscosity = 1;
+        SimPM.etav = 0.15;
       }
       else {
-  SimPM.artviscosity=1;
-  SimPM.etav = visc;
+        SimPM.artviscosity=1;
+        SimPM.etav = visc;
       }
       cout <<"\tOVERRIDE PARAMS: setting AV = "<<SimPM.artviscosity<<" and eta = "<<SimPM.etav<<"\n"; 
     }

@@ -19,6 +19,7 @@
 /// - 2010.12.27 JM: Moved from flux_mhd_adiabatic.h
 /// - 2015.01.14 JM: Added new include statements for new PION version.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2016.05.21 JM: removed H-correction ifdefs (it should be always enabled).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -136,9 +137,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
       const pion_flt *left,
       const pion_flt *right,
       const double g,
-#ifdef HCORR
       const pion_flt hc_etamax,
-#endif // HCORR
       pion_flt *out_pstar,
       pion_flt *out_flux
       )
@@ -178,11 +177,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
 
   err += Roe_get_wavespeeds();
 
-  err += Roe_get_eigenvalues(
-#ifdef HCORR
-			     hc_etamax
-#endif // HCORR
-			     );
+  err += Roe_get_eigenvalues(hc_etamax);
  
   err += Roe_get_wavestrengths();
  
@@ -206,27 +201,6 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_onesided(
   set_pstar_from_meanp(out_pstar);
 #endif // not MHD_ROE_USE_USTAR
 
-  
-  //  rep.printVec(" left",left,8);
-  //  rep.printVec("right",right,8);
-  //rep.printVec("meanp",Roe_meanp,8);
-  //rep.printVec("pdiff",Roe_pdiff,8);
-  //rep.printVec("udiff",Roe_udiff,8);
-  //  for (int i=0; i<7; ++i) {
-  //   cout << "rightevec["<<i<<"] = [ ";
-  //    for (int j=0; j<7; j++) {
-  //      cout.width(9);
-  //      cout << Roe_right_evecs[i][j] <<", ";
-  //    }
-  //    cout << "]" << "\n";
-  //   }
-  //cout <<"\t*************************************\n";
-  //  rep.error("bugging out deliberately!!!",24);
-  
-  //if (err)
-  //  cout <<"Riemann_Roe_MHD_CV::Roe_Conserved_flux_solver() ";
-  //  cout <<"Picked up an error calculating fluxes...\n";
-
   return err;
 }
 
@@ -244,9 +218,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
       const pion_flt *left,
       const pion_flt *right,
       const double g,
-#ifdef HCORR
       const pion_flt hc_etamax,
-#endif // HCORR
       pion_flt *out_pstar,
       pion_flt *out_flux
       )
@@ -268,11 +240,7 @@ int Riemann_Roe_MHD_CV::MHD_Roe_CV_flux_solver_symmetric(
   err += Roe_get_average_state(left,right);
   err += Roe_get_difference_states(left,right);
   err += Roe_get_wavespeeds();
-  err += Roe_get_eigenvalues(
-#ifdef HCORR
-			     hc_etamax
-#endif // HCORR
-			     );
+  err += Roe_get_eigenvalues(hc_etamax);
   err += Roe_get_wavestrengths();
   err += Roe_get_right_evectors();
 
@@ -618,9 +586,7 @@ int Riemann_Roe_MHD_CV::Roe_get_wavespeeds()
 /// Get the Roe-averaged eigenvalues
 ///
 int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
-#ifdef HCORR
       const pion_flt Hcorr_etamax
-#endif // HCORR
       )
 {
   //
@@ -637,7 +603,6 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
   rep.printVec("e-values",Roe_evalues,7);
 #endif
 
-#ifdef HCORR
 #ifdef TESTING
   //
   // Paranoid test!  Make sure eta=0 if not using H-correction.
@@ -670,7 +635,6 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
 #ifdef RoeMHD_TESTING
   rep.printVec("e-values after H-correction",Roe_evalues,7);
 #endif
-#endif // HCORR
 
   return 0;
 }
