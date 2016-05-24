@@ -11,7 +11,6 @@ solver 4
 # Type of Equations to Solve {hd, mhd, ...}
 eqn  euler
 ntracer 1
-#trtype ChALL_trace_H1+___e-____He1+__He2+__
 InitIons YES
 #Tracer0 1.0
 #Tracer1 1.0
@@ -20,6 +19,7 @@ InitIons YES
 trtype color_trace_
 
 # extra physics
+EP_dynamics     1
 EP_raytracing   0
 EP_phot_ionisation   0
 EP_cooling      0
@@ -27,14 +27,20 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 1
+EP_MP_timestep_limit 0
+EP_Min_Temperature 1.0e-100
+EP_Max_Temperature 1.0e100
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   0.0
+EP_Metal_MassFrac    0.0
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
 ics ShockTube
 # IC filename
-ICfilename IC_ObliqueM40
+ICfilename IC_ObliqueM25
 # Output FileName Base
-OutputFile    ObliqueM40
+OutputFile    ObliqueM25
 STnumber   -7  # optional shock-tube problem number (<=0 for not used)
               # Tests 1-5 are from Toro, p.225. (use gamma=1.4)
               # Test 6 is a tricky hydro one.
@@ -49,14 +55,14 @@ STangleXY 2.0 # shock direction
 STangleXZ 0.0 # shock direction
 
 #M25 [3.9808917197e-22, 7.8100000000e-10, 2.4167416080e+06]
-#M40 [3.9925140362e-22, 1.9997500000e-09, 3.8705627316e+06] 
+#M40 [3.9925140362e-22, 1.9997500000e-09, 3.8705627316e+06]
 #75  [3.9978678038e-22, 7.0310000000e-09, 7.2605527797e+06]
-STpostvecRO 3.9925140362e-22
-STpostvecPG 1.9997500000e-09
-STpostvecVX -1.2934150634e+06
+STpostvecRO 3.9808917197e-22
+STpostvecPG 7.8100000000e-10
+STpostvecVX -8.2074451397e05
 STprevecRO 1.0e-22
 STprevecPG 1.0e-12
-STprevecVX -5.1639777950e+06
+STprevecVX -3.237486122e6
 STshockpos 4.0e16
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -78,6 +84,8 @@ Zmin 0.0
 Xmax 1.0e17
 Ymax 0.5e17
 Zmax 1.0
+#Xmax 0.7071067814 # For 2d square box with unit diagonal.
+#Ymax 0.7071067814
 
 
 # Data Output Path
@@ -152,23 +160,15 @@ STpostvecTR5 0.0
 STpostvecTR6 0.0
 
 
-# Reference Vector for dimensionless Shock tubes (set all to ~1)
-#refvec0 1.0
-#refvec1 1.0
-#refvec2 1.0
-#refvec3 1.0
-#refvec4 1.0
-#refvec5 1.0
-#refvec6 1.0
-#refvec7 1.0
-#refvec8 1.0
-#refvec9 1.0
-#refvec10 1.0
-#refvec11 1.0
-#refvec12 1.0
-#refvec13 1.0
-#refvec14 1.0
-#refvec15 1.0
+#########################
+# radiation source list #
+#########################
+RT_Nsources 0
+
+########################
+# stellar wind sources #
+########################
+WIND_NSRC 0
 
 # Reference Vector for cgs units shock tubes.
 # modify as needed

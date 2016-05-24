@@ -18,6 +18,7 @@
 /// History:
 /// - 2010.12.27 JM: Moved from flux_mhd_adiabatic.h
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2016.05.21 JM: removed H-correction ifdefs (it should be always enabled).
 ///
 
 #ifndef ROE_MHD_CONSERVEDVAR_SOLVER_H
@@ -89,9 +90,7 @@ class Riemann_Roe_MHD_CV :  virtual public eqns_mhd_ideal
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
       const double,   ///< input gamma
-#ifdef HCORR
       const pion_flt, ///< H-correction eta-max value.
-#endif // HCORR
       pion_flt *, ///< output pstar
       pion_flt *  ///< output flux
       );
@@ -107,9 +106,7 @@ class Riemann_Roe_MHD_CV :  virtual public eqns_mhd_ideal
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
       const double,   ///< input gamma
-#ifdef HCORR
       const pion_flt, ///< H-correction eta-max value.
-#endif // HCORR
       pion_flt *, ///< output pstar
       pion_flt *  ///< output flux
       );
@@ -159,10 +156,8 @@ class Riemann_Roe_MHD_CV :  virtual public eqns_mhd_ideal
   /// H-correction.
   ///
   int Roe_get_eigenvalues(
-#ifdef HCORR
 	const pion_flt ///< H-correction eta-max.
-#endif // HCORR
-);
+        );
 
   ///
   /// Get the Roe-averaged wave strengths,

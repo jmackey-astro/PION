@@ -30,6 +30,7 @@
 ///    and PUtoFlux(); otherwise the flux-solver class (with tracers) would be used.
 /// - 2015.01.14 JM: Added new include statements for new PION version.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2016.05.21 JM: removed H-correction ifdefs (it should be always enabled).
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -80,9 +81,7 @@ Riemann_Roe_Hydro_CV::Riemann_Roe_Hydro_CV(
   for (int v=0;v<5;v++) 
     RCV_evec[v] = mem.myalloc(RCV_evec[v],rs_nvar);
 
-#ifdef HCORR
   RCV_HC_etamax = 0.0;
-#endif // HCORR
 
   RCV_v2_mean = 0.0;
   RCV_a_mean  = 0.0;
@@ -131,9 +130,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
     const pion_flt *left,
     const pion_flt *right,
     const double g,
-#ifdef HCORR
     const double hc_eta,
-#endif // HCORR
     pion_flt *out_pstar,
     pion_flt *out_flux
     )
@@ -147,13 +144,12 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
   // Roe_flux_solver_onesided(), except that we always take the mean
   // of all waves rather than just traversing from left to right.  In
   // theory this should be give a perfectly symmetric solution when
-  // the initial conditions are symmetric.  In practice it is much
+  // the initial conditions are symmetric.  It is much
   // better than the asymmetric version -- especially with the
   // H-correction the quality of the solution is *much* better.
   //
   eq_gamma=g;
 
-#ifdef HCORR
   //
   // If using the H-correction, this will be non-zero, and the
   // eigenvalues will be modified according to the prescription in
@@ -161,7 +157,6 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
   // parameter is zero, then it has no effect on the solution.
   //
   RCV_HC_etamax = hc_eta;
-#endif // HCORR
 
   //
   // (1) Get Roe-average values for rho,vx,vy,vz,H,a
@@ -236,9 +231,7 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(
       const pion_flt *left,
       const pion_flt *right,
       const double g,
-#ifdef HCORR
       const double hc_eta,
-#endif // HCORR
       pion_flt *out_pstar,
       pion_flt *out_flux
       )
@@ -250,7 +243,6 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(
   int err=0;
   eq_gamma=g;
 
-#ifdef HCORR
   //
   // If using the H-correction, this will be non-zero, and the
   // eigenvalues will be modified according to the prescription in
@@ -258,7 +250,6 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_onesided(
   // parameter is zero, then it has no effect on the solution.
   //
   RCV_HC_etamax = hc_eta;
-#endif // HCORR
 
   //
   // First test if the left and right states are the same, and if they
@@ -460,7 +451,6 @@ void Riemann_Roe_Hydro_CV::set_eigenvalues()
   RCV_eval[1] = RCV_eval[2] = RCV_eval[3] =  RCV_meanp[eqVX];
   RCV_eval[4] = RCV_meanp[eqVX] + RCV_a_mean;
 
-#ifdef HCORR
 #ifdef TESTING
   //
   // Paranoid test!  Make sure eta=0 if not using H-correction.
@@ -490,7 +480,6 @@ void Riemann_Roe_Hydro_CV::set_eigenvalues()
       RCV_eval[v] = max(RCV_eval[v], RCV_HC_etamax);
     }
   }
-#endif // HCORR
 
 #ifdef FUNCTION_ID
   cout <<"Riemann_Roe_Hydro_CV::set_eigenvalues ...returning.\n";
