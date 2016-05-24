@@ -1359,7 +1359,9 @@ void mp_explicit_H::setup_radiation_source_parameters(
     mpv_G0_UV /= 1.2e7;
     mpv_G0_IR /= 1.2e7;
 #ifdef MPV3_DEBUG
-    cout <<"\tTotal UV attenuated flux = "<<mpv_G0_UV<<" in units of 1.2e7 phot/cm2/s\n";
+    if (mpv_G0_UV>1.0) {
+      cout <<"\tTotal UV attenuated flux = "<<mpv_G0_UV<<" in units of 1.2e7 phot/cm2/s\n";
+    }
 #endif // MPV3_DEBUG
   } // If there are UV heating sources
   else {

@@ -374,6 +374,10 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
     SimPM.etav = atof(str.c_str());
   }
+  else if ( SimPM.artviscosity == 3) {
+    // using H-correction.
+    SimPM.etav = 0.1;
+  }
   else rep.error("\tUnknown viscosity requested... fix me.",str);
   //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<"\n";
   // Which Physics
