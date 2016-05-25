@@ -91,26 +91,31 @@ The code is developed for astrophysics, not for any practical purpose where fail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Running a simple test problem}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This guide shows you how to run the double Mach-reflection test, in serial and parallel, and to compare the results with expected behaviour.
-\hl{Unfortunately this is not written yet\ldots}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Overview of Code Design}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Installation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Installation is reasonably straightforward, although the code is not really \emph{installed}, just compiled on a given computer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Requirements}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pion{} requires standard code development tools (Make, Bash, C, C++, and FORTRAN compilers), but there are a couple of non-standard requirements.
+You should have \verb|cmake| installed on the computer (needed for Sundials).
+For parallel code you should have MPI installed (e.g. OpenMPI or MPICH).
+
+\pion{} source code can be obtained from bitbucket:\\
+\verb|hg clone https://jmackey@bitbucket.org/jmackey/pion ./pion|\\
+This command creates a new directory called \verb|pion| as a subdirectory of the current directory, and downloads the \pion{} source code into it.
+
+FITS files can be viewed using ds9 or other image-viewing software.
+SILO files can be viewed using VisIt (from LLNL), or from python (using the python-silo package in debian/ubuntu).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compilation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The code is not really \emph{installed}, just compiled on a given computer.
 The executables can then be moved to any directory you want and run on a particular problem.
 It is quite rare that the code needs to be recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
 Here is how to compile the code:
@@ -139,6 +144,16 @@ The compile scripts will automatically detect if it is being compiled on the fol
 If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
 It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compilation on OS X}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pion{} has only been tested on OS X with XCode and macports installed, using curl, gcc, openmpi.
+Any contributions and testing with other setups are welcome.
+
+There is an ugly hack in the \verb|compile_code.sh| scripts for both serial and parallel code.
+For some reason the Sundials are not being linked with paths, so the executables don't run as-is (on JM's Macbook).
+To get around this, the links are changed with the command \verb|install_name_tool|.
+This is not ideal, and hopefully will not be needed in future.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compilation on other machines}
@@ -157,6 +172,20 @@ The library install script \verb|pion/extra_libraries/install_all_libs.sh| detec
 The serial and parallel \verb|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important because the Makefiles have a section defining various quantities depending on the value of \texttt{MAKE\_UNAME}.
 A new section needs to be created for the new machine in the Makefiles in \verb|pion/bin_serial| and \verb|pion/bin_parallel|.
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Running a simple test problem}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This guide shows you how to run the double Mach-reflection test, in serial and parallel, and to compare the results with expected behaviour.
+\hl{Unfortunately this is not written yet\ldots}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Overview of Code Design}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

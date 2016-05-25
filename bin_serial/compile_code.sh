@@ -113,6 +113,7 @@ if [ ! -z "$DDD" ]; then
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
   NCORES=4
+  path=`pwd`
 fi
 #################################
 
@@ -196,6 +197,24 @@ echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES}
 #####################################################################
 
+#####################################################################
+## fix some linking problem with OSX (this is new... 2016.05.25)
+#####################################################################
+if [ ! -z "$DDD" ]; then
+  install_name_tool -change libsundials_cvode.1.dylib      \
+   ${path}/../extra_libraries/lib/libsundials_cvode.1.dylib       \
+   ../icgen_serial
+  install_name_tool -change libsundials_nvecserial.0.dylib \
+   ${path}/../extra_libraries/lib//libsundials_nvecserial.0.dylib \
+   ../icgen_serial 
+  install_name_tool -change libsundials_cvode.1.dylib      \
+   ${path}/../extra_libraries/lib/libsundials_cvode.1.dylib       \
+   ../pion_serial
+  install_name_tool -change libsundials_nvecserial.0.dylib \
+   ${path}/../extra_libraries/lib//libsundials_nvecserial.0.dylib \
+   ../pion_serial 
+fi
+#####################################################################
 
 exit
 
