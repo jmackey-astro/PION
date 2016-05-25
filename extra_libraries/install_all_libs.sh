@@ -7,6 +7,7 @@
 # - 2015.01.14 JM: Section for Juropatest system at JSC.
 # - 2016.04.29 JM: updated for sundials 2.6.2 and cfitsio 3390.
 # - 2016.05.04 JM: Added FIONN to list of machines.
+# - 2016.05.25 JM: Added support for OSX (use curl to download).
 
 mkdir include
 mkdir bin
@@ -18,6 +19,7 @@ export CC=gcc
 export CXX=g++
 export FC=gfortran
 
+export WGET='wget'
 
 #################################
 ### TEST FOR Dougal ICC/ICPC ###
@@ -157,6 +159,19 @@ case $HOST in
 esac
 #######################
 
+#################################
+### TEST FOR OS X (DARWIN)    ###
+#################################
+DDD=`uname -a | grep "Darwin"`
+if [ ! -z "$DDD" ]; then
+  export CXX=g++
+  export CC=gcc
+  export FC=gfortran
+  echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
+  MAKE_UNAME=osx
+  NCORES=4
+fi
+#################################
 
 
 export MAKE_UNAME
@@ -185,7 +200,17 @@ else
 	echo "********************************"
 	echo "*** DOWNLOADING SILO LIBRARY ***"
 	echo "********************************"
-	wget --no-check-certificate $REMOTE_URL
+        if [ $MAKE_UNAME == "osx" ]; then
+          curl  $REMOTE_URL -o $FILE
+        else
+          $WGET --no-check-certificate $REMOTE_URL -O $FILE
+        fi
+        # check it downloaded.
+        if [ ! -f $FILE ]; then
+          echo "File not found! : $FILE"
+          echo "Download of Silo Library Failed... quitting"
+          exit
+        fi
 fi 
 echo "********************************"
 echo "*** EXTRACTING SILO LIBRARY ***"
@@ -249,7 +274,17 @@ else
 	echo "********************************"
 	echo "*** Automatic download of ${FILE}"
         echo "from ${REMOTE_URL}"
-        wget --no-check-certificate $REMOTE_URL
+        if [ $MAKE_UNAME == "osx" ]; then
+          curl  $REMOTE_URL -o $FILE
+        else
+          $WGET --no-check-certificate $REMOTE_URL -O $FILE
+        fi
+        # check it downloaded.
+        if [ ! -f $FILE ]; then
+          echo "File not found! : $FILE"
+          echo "Download of Silo Library Failed... quitting"
+          exit
+        fi
         echo "***  Downloaded."
 	echo "********************************"
 fi 
@@ -266,7 +301,7 @@ echo "***Path = $BASE_PATH ***"
 mkdir -p $BLD_DIR
 cd $BLD_DIR
 cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
- -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
+ -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=ON \
  ${BASE_PATH}/${SRC_DIR}
 echo "********************************"
 echo "*** RUNNING MAKE ***"
@@ -301,7 +336,17 @@ else
 	echo "*******************************"
 	echo "*** DOWNLOADING FITS LIBRARY ***"
 	echo "*******************************"
-	wget $REMOTE_URL
+        if [ $MAKE_UNAME == "osx" ]; then
+          curl  $REMOTE_URL -o $FILE
+        else
+          $WGET --no-check-certificate $REMOTE_URL -O $FILE
+        fi
+        # check it downloaded.
+        if [ ! -f $FILE ]; then
+          echo "File not found! : $FILE"
+          echo "Download of Silo Library Failed... quitting"
+          exit
+        fi
 fi
 echo "*******************************"
 echo "*** EXTRACTING FITS LIBRARY ***"

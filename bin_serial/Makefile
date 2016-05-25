@@ -294,9 +294,10 @@ ifeq ($(MAKE_UNAME), imac)
   MYLIB = $(CURDIR)/../extra_libraries
 
   INC = -I${MYLIB}/include
-    INC += -I${SRCDIR}
+  INC += -I${SRCDIR}
+ # LDFLAGS += -static
   LDFLAGS += -lm  
-  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,-L${MYLIB}/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsilo 
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
