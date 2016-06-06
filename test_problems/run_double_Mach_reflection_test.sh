@@ -48,7 +48,7 @@ fi
 
 if [ "$2" = "" ]
 then
-  data_dir=/home/green/pion/test_problems/data_$DATE
+  data_dir=${BASE_DIR}/data_$DATE
 else
   data_dir=$2
 fi
