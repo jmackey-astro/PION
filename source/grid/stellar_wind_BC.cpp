@@ -289,8 +289,8 @@ void stellar_wind::set_wind_cell_reference_state(
   //
   double pp[SimPM.ndim];
   CI.get_dpos(wc->c,pp);
-  rep.printVec("cell pos", pp, SimPM.ndim);
-  cout <<"dist="<<wc->dist<<"\n";
+  //rep.printVec("cell pos", pp, SimPM.ndim);
+  //cout <<"dist="<<wc->dist<<"\n";
 
   //
   // Density at cell position: rho = Mdot/(4.pi.R^2.v_inf) (for 3D)

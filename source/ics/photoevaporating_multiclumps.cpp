@@ -1086,9 +1086,10 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
 
 
 
-int IC_photevap_multi_clumps::add_strategic_clumps_to_grid(class GridBaseClass *ggg,
-							   struct strategic_clump_data *scd
-							   )
+int IC_photevap_multi_clumps::add_strategic_clumps_to_grid(
+      class GridBaseClass *ggg,
+      struct strategic_clump_data *scd
+      )
 {
   int err=0;
   if (!scd->used) {

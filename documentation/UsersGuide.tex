@@ -102,7 +102,7 @@ The code is developed for astrophysics, not for any practical purpose where fail
 \subsection{Requirements}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \pion{} requires standard code development tools (Make, Bash, C, C++, and FORTRAN compilers), but there are a couple of non-standard requirements.
-You should have \verb|cmake| installed on the computer (needed for Sundials).
+You should have \verb|cmake| installed on the computer (needed for the Sundials library).
 For parallel code you should have MPI installed (e.g. OpenMPI or MPICH).
 
 \pion{} source code can be obtained from bitbucket:\\
@@ -115,13 +115,13 @@ SILO files can be viewed using VisIt (from LLNL), or from python (using the pyth
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compilation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The code is not really \emph{installed}, just compiled on a given computer.
+\pion{} usually has to be recompiled on every computer that you want to run it on, because it depends on locally compiled libraries and system libraries.
 The executables can then be moved to any directory you want and run on a particular problem.
 It is quite rare that the code needs to be recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
 Here is how to compile the code:
 \begin{enumerate}
 \item
-  If you have a copy of \pion{} as \texttt{pion1.tar.gz}, unzip/untar it into any directory you want.
+  Obtain \pion{} source code from bitbucket (see above).
   Then cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
   If you obtain it from bitbucket then you should already have an unzipped source tree.
 \item
@@ -134,11 +134,11 @@ Here is how to compile the code:
 
 The compile scripts will automatically detect if it is being compiled on the following systems:
 \begin{itemize}
-\item \emph{JUROPA} at J\"ulich Supercomputing Centre,
+\item \emph{JUROPA} at J\"ulich Supercomputing Centre \hl{PROBABLY OUTDATED!},
 \item \emph{SuperMUC} at the Leibniz Rechenzentrum (LRZ) in Munich,
 \item \emph{Phalanx} or \emph{Dougal} at UCL astrophysics dept.,
-\item \emph{Dirac-II/Complexity} at the University of Leicester,
-\item \emph{OS X 10.X}, with \emph{XCode} installed,
+\item \emph{Dirac-II/Complexity} at the University of Leicester \hl{PROBABLY OUTDATED!},
+\item \emph{OS X 10.X}, with \emph{XCode} installed and \emph{Macports},
 \item \emph{FIONN} at the Irish Centre for High-End Computing (ICHEC).
 \end{itemize}
 If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
@@ -154,6 +154,11 @@ There is an ugly hack in the \verb|compile_code.sh| scripts for both serial and 
 For some reason the Sundials are not being linked with paths, so the executables don't run as-is (on JM's Macbook).
 To get around this, the links are changed with the command \verb|install_name_tool|.
 This is not ideal, and hopefully will not be needed in future.
+
+\verb|sudo port install mpich-gcc49 +threads|
+\verb|port select --list mpi|
+\verb|sudo port select --set mpi mpich-gcc49-fortran|
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Compilation on other machines}
