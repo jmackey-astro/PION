@@ -113,7 +113,9 @@ if [ ! -z "$DDD" ]; then
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
   NCORES=4
-  path=`pwd`
+  #path=`pwd`
+  #DYLD_FALLBACK_LIBRARY_PATH=${path}/../extra_libraries:${DYLD_FALLBACK_LIBRARY_PATH}
+  #export DYLD_FALLBACK_LIBRARY_PATH
 fi
 #################################
 
@@ -196,6 +198,8 @@ export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES}
 #####################################################################
+
+#exit 
 
 #####################################################################
 ## fix some linking problem with OSX (this is new... 2016.05.25)

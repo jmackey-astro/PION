@@ -71,14 +71,14 @@ cp Python_Plot.py $data_dir
 #---------------------------------------------------------------------
 # Set the code-testing flags correctly in testing_flags.h
 #---------------------------------------------------------------------
-sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
-${src_dir}/defines/testing_flags.h
-sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
-${src_dir}/defines/testing_flags.h
-sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
-${src_dir}/defines/functionality_flags.h
-sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
-${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
+#${src_dir}/defines/functionality_flags.h
+#sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
+#${src_dir}/defines/testing_flags.h
 #---------------------------------------------------------------------
 # Run the Double Mach Reflection test
 #---------------------------------------------------------------------
@@ -88,19 +88,21 @@ cd ${data_dir}/SILO
 mv *.txt ${data_dir}/MSG
 
 cd ../
+export PYTHONPATH=${BASE_DIR}/../extra_libraries/lib
+echo $PYTHONPATH
 python Python_Plot.py
 
 #./make_DMR_figures.sh ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR $visit_cmd ${resolution}
 #---------------------------------------------------------------------
 # Unset the TESTING flags so that the code is back to normal operation.
-sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
-${src_dir}/defines/testing_flags.h
-sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
-${src_dir}/defines/testing_flags.h
-sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
-${src_dir}/defines/functionality_flags.h
-sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
-${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
+#${src_dir}/defines/functionality_flags.h
+#sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
+#${src_dir}/defines/testing_flags.h
 #---------------------------------------------------------------------
 
 exit

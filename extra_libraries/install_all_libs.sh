@@ -224,15 +224,15 @@ echo "***Path = $BASE_PATH ***"
 cd $SRC_DIR
 make distclean
 ./configure --prefix=${BASE_PATH} \
---enable-browser \
+--disable-browser \
 --disable-fortran \
 --disable-silex \
---with-readline \
 --enable-pythonmodule
 
 # Silex is broken because I can't get Qt working...
 #--enable-silex \
 #--with-Qt-include-dir=/usr/include/qt4 --with-Qt-bin-dir=/usr/lib/x86_64-linux-gnu/qt4/bin --with-Qt-lib-dir=/usr/lib/x86_64-linux-gnu --with-Qt-dir=/usr/lib/x86_64-linux-gnu/qt4
+#--with-readline \
 
 echo "********************************"
 echo "*** RUNNING MAKE ***"
@@ -300,18 +300,20 @@ BASE_PATH=`pwd`
 echo "***Path = $BASE_PATH ***"
 mkdir -p $BLD_DIR
 cd $BLD_DIR
+echo "cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=ON ${BASE_PATH}/${SRC_DIR}"
 cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
  -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=ON \
  ${BASE_PATH}/${SRC_DIR}
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
+make -j$NCORES
 make -j$NCORES install
 echo "*********************************"
 echo "*** INSTALLED CVODES LIBRARY ***"
 echo "*********************************"
 cd $CURDIR
-rm -rf $BLD_DIR
+#rm -rf $BLD_DIR
 echo "********************************"
 echo "*** FINISHED! ***"
 echo "********************************"
