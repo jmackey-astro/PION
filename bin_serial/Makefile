@@ -287,20 +287,40 @@ ifeq ($(MAKE_UNAME), imac)
   endif
 
 #CXXFLAGS += -arch x86_64
-
 # CURDIR may only work with GNU Make!  It gives absolute paths, so that
 # the executable can always link to shared libs.
-#MYLIB = /Users/jmackey/Library/JMs_stuff
-  MYLIB = $(CURDIR)/../extra_libraries
+  #MYLIB = $(CURDIR)/../extra_libraries
+#  MYLIB = /Users/jm/Documents/CODE/pion_stable/extra_libraries
+#
+#prefix       = /Users/jm/Documents/CODE/pion_stable/extra_libraries
+#exec_prefix  = /Users/jm/Documents/CODE/pion_stable/extra_libraries
+#includedir   = /Users/jm/Documents/CODE/pion_stable/extra_libraries/include
+#libdir       = /Users/jm/Documents/CODE/pion_stable/extra_libraries/lib
+#CPP      = /opt/local/bin/gcc
+#CXX      = g++
+#CPPFLAGS = -O3 -DNDEBUG
+#CC       = /opt/local/bin/gcc
+#CFLAGS   = -O3 -DNDEBUG
+#LDFLAGS  = 
+#LIBS     =  -lm
+
+#  LINKFLAGS = -Wl,-rpath,/Users/jm/Documents/CODE/pion_stable/extra_libraries/lib
+
+#  INCLUDES = -I${includedir}
+#  LIBRARIES = -lsundials_cvode -lsundials_nvecserial ${LIBS}
+#  INC = ${INCLUDES}
+#LDFLAGS  = -L${libdir}
+#LDFLAGS += ${LIBRARIES}
+#LDFLAGS += ${LINKFLAGS}
 
   INC = -I${MYLIB}/include
   INC += -I${SRCDIR}
- # LDFLAGS += -static
-  LDFLAGS += -lm  
-  LDFLAGS += -Wl,-rpath,-L${MYLIB}/lib
+  LDFLAGS = -L${MYLIB}/lib
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsilo 
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lm  
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
 
 endif
 ######################################################################
@@ -415,7 +435,7 @@ ${bindir}/pion_serial : $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/pion_serial $(LDFLAGS)
 
 ${bindir}/icgen_serial: $(IC_OBJ)
-	$(CXX) $(CXXFLAGS) $(IC_OBJ) -o ${bindir}/icgen_serial $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(INC) $(IC_OBJ) -o ${bindir}/icgen_serial $(LDFLAGS)
 
 clean:
 	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial
@@ -584,7 +604,6 @@ microphysics_v1.o: microphysics_v1.cpp microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
 microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
-#header.h
 
 hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h tools/interpolate.h 

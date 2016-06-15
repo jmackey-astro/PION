@@ -36,7 +36,7 @@ for files in data_files:
 #	print "db.filename = '%s'"%db.filename
 
 	toc = db.GetToc()
-#	print "\n-- TOC --\n",toc
+	print "\n-- TOC --\n",toc
 
 #	print "cycle='%d'"%db.GetVar("cycle")
 #	print "dtime='%f'"%db.GetVar("dtime")

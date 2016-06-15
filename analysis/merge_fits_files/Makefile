@@ -1,102 +1,71 @@
-# Makefile for silo2text code, Jonathan Mackey
 #
-# 2011.12.14 JM: Adapted from silocompare Makefile.
-# 2013.09.05 JM: updated for pion.
-# 2016.03.03 JM: updated for pion_dev: uses MCMD, SimSetup, constants.h
+# Makefile for code to stitch together a bunch of fits outputs from
+# many subdomains into a single large file.
+#
+# Author: Jonathan Mackey
+# Date: Sometime in 2007
+# Modifications:
+# - 2013.04.16 JM: Updated for new pion source code.
 
 
-############################
-### BASIC INFO AND PATHS ###
-############################
-
-SHELL = /bin/bash
+SHELL = /bin/sh
 .SUFFIXES:
-.SUFFIXES: .cc .o
-.SUFFIXES: .cxx .o
 .SUFFIXES: .cpp .o
+.SUFFIXES: .cpp .o
+bindir = ..
+SRCDIR=${CURDIR}/../../source
 
-#######################
-## COMPILATION RULES ##
-#######################
-.cxx.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
-.cc.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
-.cpp.o:
-	$(CXX) $(CXXFLAGS) $(INC) -c $<
-#######################
-
-
-SRCDIR = ${CURDIR}/../../source
-
-bindir=.
-
-CODEDIR=${CURDIR}/../..
-
-VPATH=${SRCDIR}:\
-${SRCDIR}/grid:\
-${SRCDIR}/defines:\
-${SRCDIR}/dataIO:\
-${SRCDIR}/comms:\
-${SRCDIR}/coord_sys:\
-${SRCDIR}/equations:\
-${SRCDIR}/flux_calc:\
-${SRCDIR}/spatial_solvers:\
-${SRCDIR}/time_integrators:\
-${SRCDIR}/microphysics:\
-${SRCDIR}/raytracing:\
-${SRCDIR}/contrib\
-${SRCDIR}/tools
-
+VPATH = \
+../../source:\
+../../source/ics:\
+../../source/Riemann_solvers:\
+../../source/defines:\
+../../source/microphysics:\
+../../source/raytracing:\
+../../source/grid:\
+../../source/dataIO:\
+../../source/comms:\
+../../source/coord_sys:\
+../../source/equations:\
+../../source/flux_calc:\
+../../source/spatial_solvers:\
+../../source/time_integrators:\
+../../source/contrib\
+../../source/tools
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h
 
 
-# --------------------
-# Compile-time options
-# --------------------
-# Tell it that we're using MPI
-OPT  = -DPARALLEL
-#IOMODE=USE_FILE_COMMS
-IOMODE=USE_MPI
-OPT += -D$(IOMODE)
-# if using Silo
-OPT += -DSILO
+#######################
+## COMPILATION RULES ##
+#######################
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cxx.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
+#######################
 
-#MAKE_UNAME=JUROPA
+OPT = -DPARALLEL
+OPT += -DUSE_MPI
+OPT += -DFITS
+CXXFLAGS = $(OPT)
+
 #MAKE_UNAME=standard
-#MAKE_UNAME=stokes
 
-# All machines and options need readline and maths
-LDFLAGS = -lreadline
-# display all warnings
-CXXFLAGS = -O3 
-#CXXFLAGS += -Wall
-
-######################################################################
-# Options for a "standard" linux workstation.
+#####################################################################
+# Options for a "standard" workstation.
+# make sure cfitsio and silo are compiled in ../extra_libraries/
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
+  CXXFLAGS += -g -O3 -Wno-unused-function
+  CXX=mpicxx
 
-  ifeq ($(IOMODE), USE_FILE_COMMS)
-    CXX = g++
-  endif
-  ifeq ($(IOMODE), USE_MPI)
-    CXX = mpicxx
-  endif
-
-  CXXFLAGS = -O3
-  #CXXFLAGS = -O3 -g
-  #CXXFLAGS = -O0 -Wall -g
-  CXXFLAGS+= -Wno-unused-function
-
-  MYLIB = ${CODEDIR}/extra_libraries
+  MYLIB = $(CURDIR)/../../extra_libraries
   INC = -I${MYLIB}/include
   INC += -I${SRCDIR}
-
-  LDFLAGS =  -lm  -lreadline
+  LDFLAGS += -lm
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
   # Libraries for fits, silo
@@ -105,62 +74,17 @@ ifeq ($(MAKE_UNAME), standard)
   # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
 endif
-######################################################################
-
-######################## -- JUROPA -- ################################
-# Options for the Juelich Supercomputer JUROPA
-# Intel Compilers!
-######################################################################
-ifeq ($(MAKE_UNAME), JUROPA)
-CXX = mpicxx
-CXXFLAGS = -O3  # optimised code
-#CXXFLAGS = -O0 -Wall -g -wd981 -wd383   
-# -wd981 disables a warning about order of evaluation of operands:
-#  see http://software.intel.com/en-us/forums/showthread.php?t=62309
-#  and also http://software.intel.com/en-us/articles/cdiag981/
-# -wd383 also diasables a warning about passing a temporary object to a function.
-#CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-#CXXFLAGS += -fp-stack-check -fstack-security-check
-
-# CURDIR may only work with GNU Make!  It gives absolute paths, so that
-# the executable can always link to shared libs.
-MYLIB = $(CURDIR)/../../extra_libraries
-
-# Includes for FITS/SILO/CVODES
-INC = -I${MYLIB}/include
-#LDFLAGS =  -lm  -lreadline -lncurses
-LDFLAGS = -L${MYLIB}/lib
-# Libraries for fits, silo
-LDFLAGS += -lcfitsio
-LDFLAGS += -lsilo 
-# libs for CVODES
-#LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/cvodes_lib/lib -lsundials_cvodes -lsundials_nvecserial
-#LDFLAGS += -llapack -lblas
-LDFLAGS += ${MYLIB}/lib/libsundials_cvodes.a ${MYLIB}/lib/libsundials_nvecserial.a
-
-OPT += -DINTEL
-
-# Libraries for MPI/MKL
-LDFLAGS += -lmkl_sequential -lmkl_core
-
-endif
-##################### -- JUROPA -- ###################################
-
+################### --- STANDARD WORKSTATION ---######################
 
 
 ###########################################
-# Specific Options for my imac
+# Options for OS X 
 ###########################################
 ifeq ($(MAKE_UNAME), OSX)
-  ifeq ($(IOMODE), USE_FILE_COMMS)
-  CXX = g++
-  endif
-  ifeq ($(IOMODE), USE_MPI)
   CXX = mpicxx
-  endif
 
 #CXXFLAGS = -O3
-  CXXFLAGS = -O0
+  CXXFLAGS += -O0
 #CXXFLAGS += -Wall
   CXXFLAGS += -g    # enable debugging with gdb
   #CXXFLAGS += -arch x86_64
@@ -173,7 +97,7 @@ ifeq ($(MAKE_UNAME), OSX)
   LDFLAGS += -lm  
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo 
+  #LDFLAGS += -lsilo 
   # libs for CVODES
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
@@ -181,17 +105,8 @@ endif
 #############################################
 
 
-##################################################
-##################################################
 
-CXXFLAGS += $(OPT)
-
-#####################################################
-##### LIST OF OBJECT FILES, DIRECTIVES FOR MAKE #####
-#####################################################
-
-OBJECTS = \
-  silo2text.o                 \
+OBJECTS = merge_fits_files.o \
   constants.o \
   timer.o \
   mem_manage.o \
@@ -203,12 +118,8 @@ OBJECTS = \
   setup_fixed_grid.o \
   setup_fixed_grid_MPI.o \
   uniform_grid.o              \
-  dataio.o                    \
-  readparams.o                \
-  dataio_silo.o               \
-  dataio_silo_utility.o       \
-  dataio_silo_MPI.o           \
   uniform_grid_pllel.o        \
+  readparams.o                \
   comm_mpi.o                  \
   comm_files.o                \
   VectorOps.o                 \
@@ -216,6 +127,8 @@ OBJECTS = \
   stellar_wind_BC.o           \
   cell_interface.o            \
   file_status.o               \
+  dataio.o                    \
+  dataio_fits.o utility_fits_class.o   \
   cooling_SD93_cie.o          \
   hydrogen_recomb_Hummer94.o  \
   hydrogen_mp.o               \
@@ -239,37 +152,34 @@ OBJECTS = \
   raytracer_SC_pllel.o        \
   raytracer_SC.o
 
-##########################
-### -- EXECTUTABLES -- ###
-##########################
 
-silo2text: $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o silo2text $(LDFLAGS)
+########################
+merge_fits_files: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o merge_fits_files $(LDFLAGS)
+########################
 
-
-####################################
-### DEPENDENCIES OF SOURCE FILES ###
-####################################
-silo2text.o:	silo2text.cpp uniform_grid.h dataio.h ${GLOBAL}
+########################
+merge_fits_files.o: merge_fits_files.cpp ${GLOBAL} dataio.h
 global.o: global.cpp ${GLOBAL}
-
-uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
+cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
+########################
 
 ########################
 # Data I/O
 ########################
 file_status.o: file_status.cpp file_status.h
+readparams.o: readparams.cpp readparams.h ${GLOBAL}
 dataio.o: dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h \
     readparams.h stellar_wind_BC.h file_status.h
-dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} \
-    solver_eqn_base.h file_status.h
-readparams.o:	readparams.cpp readparams.h ${GLOBAL}
+dataio_fits.o: dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h \
+    ${GLOBAL} file_status.h
 
-comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
-comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 
+uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h ${GLOBAL}
+
 
 VectorOps.o: VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
@@ -330,7 +240,11 @@ mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
   mpv8_StarBench_heatcool.h mp_explicit_H.h \
   microphysics_base.h ${GLOBAL}
 
+#######################
+## MPI/files comms classes
+########################
+comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
 
 clean:
-	rm -f *.o silo2text
-
+	rm -f *.o merge_fits_files
