@@ -26,10 +26,10 @@ if [ "$MAKE_UNAME" = "OSX" ]; then
   path=`pwd`
   install_name_tool -change libsundials_cvode.1.dylib      \
    ${path}/../../extra_libraries/lib/libsundials_cvode.1.dylib       \
-   merge_fits_files
+   SILO2FITS
   install_name_tool -change libsundials_nvecserial.0.dylib \
    ${path}/../../extra_libraries/lib/libsundials_nvecserial.0.dylib \
-   merge_fits_files 
+   SILO2FITS 
 fi
 #####################################################################
 
@@ -37,7 +37,7 @@ exit
 
 
 #valgrind  --leak-check=full --show-reachable=yes \
-#./merge_fits_files $1 $2 $3 $4 $5 $6
+#./SILO2FITS $1 $2 $3 $4 $5 $6
 
 #make clean
 
