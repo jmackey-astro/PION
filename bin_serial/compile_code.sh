@@ -199,7 +199,7 @@ echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES}
 #####################################################################
 
-#exit 
+exit 
 
 #####################################################################
 ## fix some linking problem with OSX (this is new... 2016.05.25)
