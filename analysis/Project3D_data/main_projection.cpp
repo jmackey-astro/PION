@@ -250,13 +250,13 @@ int main(int argc, char **argv)
   int op_filetype = atoi(argv[4]);
   switch (op_filetype) {
   case 0:
-    cout <<"\t\toutputting data to text file.\n";
+    cout <<"\t\twriting data to text file.\n";
     break;
   case 1:
-    cout <<"\t\toutputting data to fits files.\n";
+    cout <<"\t\twriting data to fits files.\n";
     break;
   case 3:
-    cout <<"\t\toutputting data to VTK files.\n";
+    cout <<"\t\twriting data to VTK files.\n";
     break;
   default:
     rep.error("Bad outfile format",op_filetype);
@@ -265,10 +265,10 @@ int main(int argc, char **argv)
   int multi_opfiles = atoi(argv[5]);
   switch (multi_opfiles) {
   case 0:
-    cout <<"\t\tOutputting all timesteps in a single file.\n";
+    cout <<"\t\twriting all timesteps in a single file.\n";
     break;
   case 1:
-    cout <<"\t\tOutputting timesteps in different files.\n";
+    cout <<"\t\twriting timesteps in different files.\n";
     break;
   default:
     rep.error("Bad multi-files value",multi_opfiles);

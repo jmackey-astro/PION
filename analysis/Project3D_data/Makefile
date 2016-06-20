@@ -257,11 +257,9 @@ sim_projection.o \
 image_io.o \
 VectorOps.o \
 VectorOps_spherical.o \
-  \
   raytracer_base.o            \
   raytracer_SC_pllel.o        \
   raytracer_SC.o              \
-  \
   microphysics_base.o         \
   cooling_SD93_cie.o          \
   hydrogen_recomb_Hummer94.o  \
@@ -294,6 +292,10 @@ endif
 projection: $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection $(LDFLAGS)
 
+
+####################################
+### DEPENDENCIES OF SOURCE FILES ###
+####################################
 
 ################################
 # Andy's multi-threading files #

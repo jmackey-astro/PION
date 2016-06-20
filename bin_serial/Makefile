@@ -289,7 +289,7 @@ ifeq ($(MAKE_UNAME), imac)
 #CXXFLAGS += -arch x86_64
 # CURDIR may only work with GNU Make!  It gives absolute paths, so that
 # the executable can always link to shared libs.
-  #MYLIB = $(CURDIR)/../extra_libraries
+  MYLIB = $(CURDIR)/../extra_libraries
 #  MYLIB = /Users/jm/Documents/CODE/pion_stable/extra_libraries
 #
 #prefix       = /Users/jm/Documents/CODE/pion_stable/extra_libraries
