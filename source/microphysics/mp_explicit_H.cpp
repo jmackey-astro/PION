@@ -148,6 +148,7 @@
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.08.05 JM: more pion_flt datatype changes.
+/// - 2016.06.21 JM: Temperature() threadsafe.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,
 ///       591,1220) which is the 'proto-solar nebula' value. The
@@ -879,7 +880,7 @@ double mp_explicit_H::Temperature(
   //
   double P[nvl];
   convert_prim2local(pv,P);
-  return get_temperature(mpv_nH, P[lv_eint], 1.0-P[lv_H0]);
+  return get_temperature(pv[RO]/mean_mass_per_H, P[lv_eint], 1.0-P[lv_H0]);
 }
 
 

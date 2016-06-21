@@ -22,6 +22,7 @@
 /// - 2015.01.13 JM: Added some comments.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2016.06.21 JM: Temperature() threadsafe.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
