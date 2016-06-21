@@ -86,6 +86,7 @@
 /// - 2011.10.13 JM: Added switch in TimeUpdate_RTnew() so that if nothing is changing
 ///    much over a timestep then just do an Euler integration.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2016.06.21 JM: Temperature() threadsafe.
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,591,1220)
 ///       which is the 'proto-solar nebula' value. The photospheric value is lower
@@ -1002,9 +1003,9 @@ int mp_v2_aifa::TimeUpdateMP_RTnew(
 
 
 double mp_v2_aifa::Temperature(
-            const double *pv, ///< primitive vector
-            const double      ///< eos gamma
-            )
+      const double *pv, ///< primitive vector
+      const double      ///< eos gamma
+      )
 {
   //
   // Check for negative pressure/density!  If either is found, return -1.0e99.
@@ -1015,15 +1016,7 @@ double mp_v2_aifa::Temperature(
   }
   double P[nvl];
   convert_prim2local(pv,P);
-
-#ifdef MP_DEBUG
-  //double T1 = MPR.get_temperature(lv_nH, P[lv_eint], P[lv_Hp]);
-  //cout <<"TEMPERATURE: nH="<<lv_nH<<", eint="<< P[lv_eint]<<", x="<<P[lv_Hp];
-  //double T2=(gamma_minus_one)*P[lv_eint]/k_B/(JM_NION+JM_NELEC*P[lv_Hp])/lv_nH; // Temperature.
-  //cout <<"\tT(MPR)="<<T1<<", T(local)="<<T2<<"\n";
-#endif // MP_DEBUG
-
-  return MPR.get_temperature(lv_nH, P[lv_eint], P[lv_Hp]);
+  return MPR.get_temperature(p_in[RO]/mean_mass_per_H, P[lv_eint], P[lv_Hp]);
 }
 
 

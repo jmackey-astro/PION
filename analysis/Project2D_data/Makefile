@@ -66,11 +66,22 @@ OPTION += -D$(IOMODE)
 OPTION += -DSILO
 OPTION += -DFITS
 
+#
+# This is to multi-thread the pixel calculations.
+#
+#MT=USE_THREADS
+OPTION += -DTHREADS -D__WXGTK__
+#MT=NO_THREADS
+
 #MAKE_UNAME=standard
 #MAKE_UNAME=OSX
 
 # All machines and options need readline and maths
-LDFLAGS = -lreadline
+LDFLAGS  = -lreadline
+LDFLAGS += -lm
+ifeq ($(MT), USE_THREADS)
+  LDFLAGS += -pthread
+endif
 
 ######################################################################
 # Options for a "standard" workstation.
@@ -87,7 +98,6 @@ ifeq ($(MAKE_UNAME), standard)
   MYLIB = ${PION}/extra_libraries
   INC = -I${MYLIB}/include
   INC += -I${srcdir}
-  LDFLAGS += -lm
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
   # Libraries for fits, silo
@@ -112,7 +122,6 @@ ifeq ($(MAKE_UNAME), OSX)
   INC = -I${MYLIB}/include
   INC += -I${srcdir}
 
-  LDFLAGS +=  -lm  
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsilo 
@@ -152,7 +161,6 @@ OBJECTS = \
   VectorOps.o                \
   VectorOps_spherical.o      \
   stellar_wind_BC.o          \
-  project_axi2Ddata.o        \
   image_io.o                 \
   cell_interface.o           \
   raytracer_base.o            \
@@ -180,9 +188,20 @@ OBJECTS = \
 
 ifeq ($(IOMODE), USE_FILE_COMMS)
   OBJECTS += comm_files.o 
-endif
+else
 ifeq ($(IOMODE), USE_MPI)
   OBJECTS += comm_mpi.o
+endif
+endif
+
+
+ifeq ($(MT), USE_THREADS)
+  OBJECTS += logmessages.o threadpool.o threads.o
+  OBJECTS += project_axi2Ddata_thread.o
+  VPATH +=:${srcdir}/tools/threads_AJL:${srcdir}/tools/threads_AJL/threadpool
+  THREAD_INCLUDE=${srcdir}/tools/threads_AJL/threads.h ${srcdir}/tools/threads_AJL/msvc_constants.h ${srcdir}/tools/threads_AJL/reefa_constants.h
+else
+  OBJECTS += project_axi2Ddata.o
 endif
 
 
@@ -231,6 +250,15 @@ comm_files.o:  comm_files.cpp  comm_files.h  comms.h  ${GLOBAL}
 
 dataio_silo_utility.o:  dataIO/dataio_silo_utility.cpp  dataIO/dataio_silo_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
 stellar_wind_BC.o: stellar_wind_BC.cpp  stellar_wind_BC.h ${GLOBAL}
+
+################################
+# Andy's multi-threading files #
+################################
+logmessages.o: logmessages.cxx logmessages.h reefa_constants.h \
+  msvc_constants.h threads.h
+threadpool.o: threadpool.cxx threadpool.h reefa_constants.h \
+  msvc_constants.h logmessages.h threads.h
+threads.o: threads.cxx msvc_constants.h reefa_constants.h threads.h
 
 ######################
 # MICROPHYSICS STUFF #

@@ -1,16 +1,18 @@
 #!/bin/bash
-if [ "$1" = "" ]
+if [ "$1" = "" ] || [ "$2" = "" ]
   then
-  echo "Usage: $0  <make_uname>"
+  echo "Usage: $0  <make_uname> <threads>"
   echo "  <make_uname> is the machine identifier: standard (linux), OSX, other?"
+  echo "  <threads> =USE_THREADS if multithreading is required, otherwise NO"
   exit
 else
   MAKE_UNAME=$1
+  MT=$2
 fi
 
 echo "Compiling with option: $MAKE_UNAME"
 
-MAKE_UNAME=$MAKE_UNAME make -f Makefile -j12
+MAKE_UNAME=$MAKE_UNAME MT=$MT make -f Makefile -j12
 EXE=project_data2D
 
 

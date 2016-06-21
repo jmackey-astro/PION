@@ -140,6 +140,7 @@ class mp_only_cooling
   ///
   /// Returns the gas temperature.  Assumes primitive vector is in
   /// cgs units and ionised gas with mu=0.7m_p.
+  /// - Is threadsafe.
   ///
   virtual double Temperature(
         const pion_flt *, ///< primitive vector

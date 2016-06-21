@@ -53,6 +53,7 @@
 /// - 2015.01.26 JM: Got rid of mpiPM. call.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
+/// - 2016.06.21 JM: Temperature() threadsafe.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"

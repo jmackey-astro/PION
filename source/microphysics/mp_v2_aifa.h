@@ -324,6 +324,7 @@ class mp_v2_aifa
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
   /// there is no need to make it highly optimized.
+  /// - Is threadsafe.
   ///
   double Temperature(
             const double *, ///< primitive vector
