@@ -5,8 +5,16 @@
 ///
 /// Description: Writes images in ASCII, FITS, VTK format.
 ///
+/// The VTK writer is based on code from PLUTO, written by Andrea
+/// Mignone and which is distributed according to the GNU GENERAL
+/// PUBLIC LICENSE (GPL) Version 2.  As such, the VTK writer code
+/// is not subject to the PION license but can be used according to
+/// the terms of the GNU GPLv2.
+///
+///
 /// Modifications:
 /// - 2013.10.15 JM: Added VTK output support.
+/// - 2016.06.22 JM: Tidied up code and comments.
 
 #ifndef IMAGE_IO
 #define IMAGE_IO
@@ -19,7 +27,7 @@
 #include <fitsio.h>
 
 //
-// Image I/O class, for writing text and fits images.
+// Image I/O class, for writing ASCII, FITS, VTK images.
 //
 class image_io: public file_status {
 public:

@@ -202,7 +202,7 @@ make -j${NCORES}
 exit 
 
 #####################################################################
-## fix some linking problem with OSX (this is new... 2016.05.25)
+## fix some linking problem with OSX (this is new... 2016.05.25)
 #####################################################################
 if [ ! -z "$DDD" ]; then
   install_name_tool -change libsundials_cvode.1.dylib      \

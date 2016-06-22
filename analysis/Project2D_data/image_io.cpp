@@ -1,12 +1,19 @@
 ///
-/// \file image_io.cc
+/// \file image_io.cpp
 /// \author Jonathan Mackey
 /// \date 20XX
 ///
 /// Description: Writes images in ASCII, FITS, VTK format.
 ///
+/// The VTK writer is based on code from PLUTO, written by Andrea
+/// Mignone and which is distributed according to the GNU GENERAL
+/// PUBLIC LICENSE (GPL) Version 2.  As such, the VTK writer code
+/// is not subject to the PION license but can be used according to
+/// the terms of the GNU GPLv2.
+///
 /// Modifications:
 /// - 2013.10.15 JM: Added VTK output support.
+/// - 2016.06.22 JM: Tidied up code and comments.
 
 
 
@@ -207,7 +214,7 @@ int image_io::write_image_to_file(
     if (!vtk_header_written) {
       ofn.str("");
       ofn << "# vtk DataFile Version 2.0\n";
-      ofn << "JM's VTK Data\n";
+      ofn << "PION VTK Data\n";
       ofn << "BINARY\n";
       ofn << "DATASET STRUCTURED_POINTS\n";
 
