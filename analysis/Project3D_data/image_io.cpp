@@ -1,12 +1,19 @@
 ///
-/// \file image_io.cc
+/// \file image_io.cpp
 /// \author Jonathan Mackey
 /// \date 20XX
 ///
 /// Description: Writes images in ASCII, FITS, VTK format.
 ///
+/// The VTK writer is based on code from PLUTO, written by Andrea
+/// Mignone and which is distributed according to the GNU GENERAL
+/// PUBLIC LICENSE (GPL) Version 2.  As such, the VTK writer code
+/// is not subject to the PION license but can be used according to
+/// the terms of the GNU GPLv2.
+///
 /// Modifications:
 /// - 2013.10.15 JM: Added VTK output support.
+/// - 2016.06.22 JM: Tidied up code and comments.
 
 
 
@@ -22,11 +29,12 @@ using namespace std;
 // -------------------------------------------------------------
 
 
-string image_io::get_output_filename(const string outfile,    ///< outfile base
-				     const int multi_opfiles, ///< multi_opfiles: 0=single file, 1=multiple files.
-				     const int op_filetype,   ///< op_filetype: 0=textfile, 1=fitsfile
-				     const int ifile          ///< integer count of file number to put in name.
-				     )
+string image_io::get_output_filename(
+    const string outfile,    ///< outfile base
+    const int multi_opfiles, ///< multi_opfiles: 0=single file, 1=multiple files.
+    const int op_filetype,   ///< op_filetype: 0=textfile, 1=fitsfile
+    const int ifile          ///< integer count of file number to put in name.
+    )
 {
   ostringstream temp;
   temp.str(""); temp << outfile;
@@ -50,10 +58,10 @@ string image_io::get_output_filename(const string outfile,    ///< outfile base
 
 
 int image_io::open_image_file(
-        const string this_outfile, ///< this_outfile
-        const int op_filetype,     ///< op_filetype: 0=textfile, 1=fits,3=vtk
-        string *f                  ///< file handle
-        )
+    const string this_outfile, ///< this_outfile
+    const int op_filetype,     ///< op_filetype: 0=textfile, 1=fits,3=vtk
+    string *f                  ///< file handle
+    )
 {
   (*f).clear();
   *f = filehandle;
@@ -117,14 +125,19 @@ int image_io::close_image_file(const string f)
   //
   // Check that f is equal to filehandle
   //
-  if (f!=filehandle) rep.error("bad file handle in close_image_file()",f);
+  if (f!=filehandle) {
+    rep.error("bad file handle in close_image_file()",f);
+  }
   
   int err=0, status=0;
   //
-  // Close file
+  // Close file, going through outf (ascii), ff (fits), and fvtk
+  // (vtk) pointers in turn.
   //
-  if (outf.is_open())
+
+  if (outf.is_open()) {
     outf.close();
+  }
   
   if (ff) {
     err += fits_close_file(ff,&status);
@@ -155,18 +168,18 @@ int image_io::close_image_file(const string f)
 
 
 int image_io::write_image_to_file(
-        const string f,      ///< file handle
-        const int op_filetype, ///< text,fits,vtk
-        double *im,          ///< image array
-        const int num_pix,   ///< number of pixels: image.num_pixels
-        const int im_dim,    ///< dimension of image [0,1,2]: image.dim
-        const int *npix,     ///< array of npix in each dimension: image.npix
-        const string name,   ///< Name of image, e.g. TotMass (8 char max. for fits).
-        const double *xmin,  ///< array with minimum dimensions of image.
-        const double *dx,    ///< array with pixel size in each dimension.
-        const double time,   ///< simulation time (optional)
-        const long int cycle ///< simulation timestep (optional)
-        )
+    const string f,      ///< file handle
+    const int op_filetype, ///< text,fits,vtk
+    double *im,          ///< image array
+    const int num_pix,   ///< number of pixels: image.num_pixels
+    const int im_dim,    ///< dimension of image [0,1,2]: image.dim
+    const int *npix,     ///< array of npix in each dimension: image.npix
+    const string name,   ///< Name of image, e.g. TotMass (8 char max. for fits).
+    const double *xmin,  ///< array with minimum dimensions of image.
+    const double *dx,    ///< array with pixel size in each dimension.
+    const double time,   ///< simulation time (optional)
+    const long int cycle ///< simulation timestep (optional)
+    )
 {
   //
   // Check that f is equal to filehandle
@@ -190,10 +203,12 @@ int image_io::write_image_to_file(
     break;
 
   case 1:
-    if (!ff) rep.error("Don't call write_image_to_file() without having an open file!!!",ff);
+    if (!ff) {
+      rep.error("write_image_to_file() fits file is not open",ff);
+    }
     cout <<"WRITING IMAGE TO FITS FILE: "<<f<<endl;
     utfits.create_fits_image(ff, name, im_dim, npix);
-    utfits.write_fits_image(ff, name, min, min, 1.0, im_dim, npix, num_pix, im);
+    utfits.write_fits_image(ff,name,min,min,1.0,im_dim,npix,num_pix,im);
     break;
 
   case 3:
@@ -205,12 +220,18 @@ int image_io::write_image_to_file(
     // write header if needed.
     //
     if (!vtk_header_written) {
+      //
+      // Start with header information.
+      //
       ofn.str("");
       ofn << "# vtk DataFile Version 2.0\n";
-      ofn << "JM's VTK Data\n";
+      ofn << "PION VTK Data\n";
       ofn << "BINARY\n";
       ofn << "DATASET STRUCTURED_POINTS\n";
 
+      //
+      // Need number of vertices in each dimension.
+      //
       ofn << "DIMENSIONS ";
       ofn <<               static_cast<int>(npix[0]+1) <<" ";
       if (im_dim>1) ofn << static_cast<int>(npix[1]+1) <<" ";
@@ -218,18 +239,27 @@ int image_io::write_image_to_file(
       if (im_dim>2) ofn << static_cast<int>(npix[2]+1) <<"\n";
       else          ofn << "2 \n";
       
+      //
+      // Write the location of the negative corner of grid.
+      //
       ofn << "ORIGIN "  << xmin[0] <<" ";
       if (im_dim>1) ofn << xmin[1] <<" ";
       else          ofn << "0.0 ";
       if (im_dim>2) ofn << xmin[2] <<"\n";
       else          ofn << 0.0 <<"\n";
 
+      //
+      // Write grid spacing dx in each direction of the grid.
+      //
       ofn << "SPACING "      << dx[0];
       if (im_dim>1) ofn <<" "<< dx[1];
       else          ofn <<" "<< dx[0];
       if (im_dim>2) ofn <<" "<< dx[2];
       else          ofn <<" "<< dx[0];
 
+      //
+      // Write time and cycle as field data.
+      //
       ofn << "FIELD FieldData 2\n";
       ofn << "TIME 1 1 double\n";
       fprintf (fvtk, "%s", ofn.str().c_str());
@@ -246,6 +276,9 @@ int image_io::write_image_to_file(
       SWAP_ENDIAN(&tempi, sizeof(int));
       fwrite(&tempi, sizeof(int),1, fvtk);
 
+      //
+      // Write header for cell-data
+      //
       ofn.str("");
       ofn << "\nCELL_DATA "<< static_cast<int>(num_pix) <<"\n";
       fprintf (fvtk, "%s", ofn.str().c_str());
@@ -285,9 +318,9 @@ int image_io::write_image_to_file(
 
 
 void image_io::SWAP_ENDIAN(
-        void *x,
-        const int nbytes
-        ) 
+    void *x,
+    const int nbytes
+    ) 
 ///
 /// PURPOSE: Swap the byte order of x (legacy binary vtk must be
 /// big-endian!).
