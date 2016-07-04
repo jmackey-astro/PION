@@ -652,9 +652,14 @@ mp_explicit_H::~mp_explicit_H()
 // ##################################################################
 
 
-int mp_explicit_H::Tr(const string t)
+int mp_explicit_H::Tr(const string s)
 {
-  return lv_H0;
+  if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
+    return pv_Hp;
+  }
+  else {
+    return -1;
+  }
 }
 
 

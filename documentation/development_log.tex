@@ -192,6 +192,15 @@ Hmmm\ldots not many updates to the log lately.
 I have done a lot on \pion{} development: I wrote the new grid and boundary class and tested it in serial, and have now started getting it working in parallel too.
 I am also updating the test problems as I go, using them to debug the new code.
 
+\paragraph{2016.07.04 JM:}
+2D projection code:  making it more flexible and general:
+\begin{itemize}
+\item Add \texttt{ifdef} for whether to include absorption of H$\alpha$ and [N\,II] emission (by dust).  Checked that it works for serial code and parallel.
+\item Moved xray-emission calculation to own file, and also emission/absorption calculations, to avoid having two sets of code in 2 places.
+Turned X-ray emission functions into a class, to avoid passing the arrays around as function arguments everywhere.
+\item Added code to query MP->Tr() to get the H$^+$ tracer value.  If tracer is not found, then assume all H is fully ionized.
+\item Fixed integration scheme to use the equation of Radiative transfer instead of a simple Euler integration.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

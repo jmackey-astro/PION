@@ -69,12 +69,12 @@ OPTION += -DFITS
 #
 # This is to multi-thread the pixel calculations.
 #
-#MT=USE_THREADS
-OPTION += -DTHREADS -D__WXGTK__
-#MT=NO_THREADS
+ifeq ($(MT), USE_THREADS)
+  OPTION += -DTHREADS -D__WXGTK__
+endif
 
-#MAKE_UNAME=standard
-#MAKE_UNAME=OSX
+# This variable includes a #define for ABSORPTION, if requested
+OPTION += ${ABS}
 
 # All machines and options need readline and maths
 LDFLAGS  = -lreadline
@@ -184,7 +184,9 @@ OBJECTS = \
   mpv5_molecular.o           \
   mpv6_PureH.o               \
   mpv7_TwoTempIso.o          \
-  mpv8_StarBench_heatcool.o
+  mpv8_StarBench_heatcool.o  \
+  xray_emission.o            \
+  emission_absorption.o
 
 ifeq ($(IOMODE), USE_FILE_COMMS)
   OBJECTS += comm_files.o 
