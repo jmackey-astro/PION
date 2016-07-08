@@ -139,7 +139,8 @@ int main(int argc, char **argv)
     cout <<"output file:  filename for output file(s).\n";
     cout <<"op-file-type: integer/string [0,text,TEXT], [1,fits,FITS], [3,vtk,VTK]\n";
     //cout <<"muti-opfiles: integer. 1=one output file per step. (MUST CHOOSE 1))\n";
-    cout <<"skip:         will skip this number of input files each loop.\n";
+    cout <<"skip:         will skip this number of input files each loop. ";
+    cout <<"(0 means it will calculate every file)\n";
     rep.error("Bad number of args",argc);
   }
 
@@ -412,7 +413,7 @@ int main(int argc, char **argv)
   unsigned int ifile=0;
   clk.start_timer("total"); double ttsf=0.0;
 
-  for (ifile=0; ifile<static_cast<unsigned int>(nfiles); ifile+=skip) {
+  for (ifile=0; ifile<static_cast<unsigned int>(nfiles); ifile+=1+skip) {
     cout <<"--------- Starting Next Loop: ifile="<<ifile<<"------\n";
     cout <<"========= reading file: "<<*ff<<"\n";
     cout.flush();
@@ -430,14 +431,14 @@ int main(int argc, char **argv)
     temp <<input_path<<"/"<<*ff;
     string infile = temp.str();
     temp.str("");
-    for (size_t q=0;q<skip;q++) ff++;
+    for (size_t q=0;q<=skip;q++) ff++;
 
     //
     // skip first file in list.
     //
-    if (ifile==0) {
-      continue;
-    }
+    //if (ifile==0) {
+    //  continue;
+    //}
 
     //
     // Read header to get timestep info.
