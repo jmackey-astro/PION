@@ -740,12 +740,6 @@ int raytracer_USC_infinity::cell_cols_1d(
         double *ds
         )
 {
-  /** \section AMR
-   * this needs a new function for DX() for AMR grid.
-   *  \section Curvilinear
-   * this needs a new function for non-cubic grid cells and
-   * non-cartesian coordinates.
-   * */
   if (!c) rep.error("cell_cols_1d() null cell",c);
 
   if (c==src->sc && !src->s->at_infinity && src->src_on_grid) {
@@ -2234,11 +2228,6 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
 				double *ds
 				)
 {
-  /** \section AMR
-   * this needs a new function for DX() for AMR grid.
-   *  \section Curvilinear
-   * this needs a new function for non-cubic grid cells and non-cartesian coordinates.
-   * */
   //  cout <<"raytracer_USC::cell_cols_2d() start\n";
   double delta=0.0;
   enum direction entryface=NO, perpface=NO;
@@ -2376,11 +2365,6 @@ int raytracer_USC::cell_cols_3d(const rad_source *src,
 				double *ds
 				)
 {
-  /** \section AMR
-   * this needs a new function for DX() for AMR grid.
-   *  \section Curvilinear
-   * this needs a new function for non-cubic grid cells and non-cartesian coordinates.
-   * */
 
   int dx[3]; // relative position vector.
   dx[XX] = abs(CI.get_ipos(c,XX) - src->ipos[XX]);
