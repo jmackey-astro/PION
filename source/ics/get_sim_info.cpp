@@ -279,13 +279,13 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
   if(ndim>1) {
     if ( fabs(SimPM.Range[1]/(SimPM.NG[1])/SimPM.dx -1.)> 100.*MACHINEACCURACY) {
-      rep.error("Cells are not cubic! Set the range and number of points appropriately.",
+      rep.error("Cells must be same length in each direction! Set the range and number of points appropriately.",
 		fabs(SimPM.Range[1]/(SimPM.NG[1])/SimPM.dx -1.));
     }
   }
   if (ndim>2) {
     if ( fabs(SimPM.Range[2]/(SimPM.NG[2])/SimPM.dx -1.)> 100.*MACHINEACCURACY) {
-      rep.error("Cells are not cubic! Set the range and number of points appropriately.",
+      rep.error("Cells must be same length in each direction! Set the range and number of points appropriately.",
 		fabs(SimPM.Range[2]/(SimPM.NG[2])/SimPM.dx -1.));
     }
   }

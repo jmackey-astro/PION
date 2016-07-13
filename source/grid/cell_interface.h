@@ -153,7 +153,7 @@ class cell_interface {
   inline int get_integer_cell_size() {return cell_size_int_units;}
 
   ///
-  /// Set the cell size (for cubic cells).
+  /// Set the cell size (for cells that are cubes).
   ///
   void set_dx(const double);
 
