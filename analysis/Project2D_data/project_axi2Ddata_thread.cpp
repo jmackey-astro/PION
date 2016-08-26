@@ -243,10 +243,17 @@ void calculate_column(void *arg)
                   ta->N_R, b, ta->delr);
           }
           else {
+#ifdef ABSORPTION
             ta->img_array[ivar][ta->npix[Zcyl]*ipix +ta->iz] = calc_projectionRT(
                   raw_data[DATA_R],
                   ems_data[ivar], abs_data[ivar],
                   ta->N_R, b, ta->delr);
+#else
+            ta->img_array[ivar][ta->npix[Zcyl]*ipix +ta->iz] = calc_projection(
+                  raw_data[DATA_R],
+                  ems_data[ivar], abs_data[ivar],
+                  ta->N_R, b, ta->delr);
+#endif
           }
         }
       }

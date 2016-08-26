@@ -308,10 +308,11 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 #ifdef TESTING
     dp.c = c;
 #endif
-    tempdt = eqn->CellTimeStep(c, ///< pointer to cell
-             SimPM.gamma, ///< gas EOS gamma.
-             SimPM.dx  ///< Cell size dx.
-             );
+    tempdt = eqn->CellTimeStep(
+              c, ///< pointer to cell
+              SimPM.gamma, ///< gas EOS gamma.
+              SimPM.dx  ///< Cell size dx.
+              );
     if(tempdt<=0.0)
       rep.error("CellTimeStep function returned failing value",c->id);
     //    commandline.console("timestep -> ");

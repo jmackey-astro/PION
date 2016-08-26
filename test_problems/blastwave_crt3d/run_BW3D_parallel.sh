@@ -17,7 +17,7 @@ fi
 # call with ./run_BW3D_parallel.sh $test_dir $code_dir $data_dir $resolution
 test_dir=$1   # should be current directory
 code_dir=$2
-data_dir=$3   # should be sub-directory 'blastwave_axi2d' of the test-results directory.
+data_dir=$3   # should be sub-directory 'blastwave_crt3d' of the test-results directory.
 resolution=$4
 
 # In case it doesn't exist, create the destination directory.
