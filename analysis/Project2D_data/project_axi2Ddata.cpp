@@ -586,10 +586,17 @@ int main(int argc, char **argv)
                   N_R, b, delr);
           }
           else {
+#ifdef ABSORPTION
             img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projectionRT(
                   raw_data[DATA_R],
                   ems_data[ivar], abs_data[ivar],
                   N_R, b, delr);
+#else
+            img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projection(
+                  raw_data[DATA_R],
+                  ems_data[ivar], abs_data[ivar],
+                  N_R, b, delr);
+#endif
           }
         }
       }

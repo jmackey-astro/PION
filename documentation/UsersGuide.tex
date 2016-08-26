@@ -508,9 +508,95 @@ See \href{http://www.vtk.org/}{http://www.vtk.org/} for further details.
 
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Test Problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{3D adiabatic blast wave}
+\label{sec:test:bw3d}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This test simulates a 3D adiabatic blast wave, set up with an intial spherical region near the origin that is dramatically overpressurised compared with the ambient medium.
+It is run in one octant of 3D space, with reflecting boundary conditions because of the symmetry of the problem.
+This test is a very simple one, and only really tests that the propagation speed of the blast wave is the same in all directions, and that there are no grid-aligned artefacts associated with the (artificial) \citet{Qui94} or carbuncle instabilities.
 
+For this reason, the simulation is primarily a test that the integrator has sufficient dissipation to avoid numerical instabilities, and it is also used as a test that the serial and parallel versions of the code produce the same answer.
+Each simulation is run at a given resolution with a number of different solvers and settings, and in serial and parallel, and the results are then compared with each other using the \lstinline|silocompare| program in \lstinline|/analysis/silocompare/|.
+Plots of density vs.~radius are then generated using \visit{}.
+
+The test is run with the following command:
+\begin{lstlisting}
+ bash run_blastwave_3d.sh /path/to/save/test/data /path/to/visit/command <RES>
+\end{lstlisting}
+where \lstinline|<RES>| is the number of zones to use for the test, and can be 016, 032, 064, 128, or 256 (the leading zero is required).
+The total number of zones is \lstinline|<RES>|$^3$, and anything more than 032 will take quite a long time to run, because the simulation is run 5 times in serial and 5 times in parallel.
+
+Ideally at late times this test should reproduce the Sedov-Taylor solution for blastwave expansion, once the shock radius exceeds the initial discontinuity radius by a significant factor.
+
+\subsubsection{Parameters of the test}
+The ISM is unmagnetised and uniform, with density $\rho=2.34\times10^{-22}\,\gpcmc$ (parameter \lstinline|BWdensity|) and pressure $p_\mathrm{g}=1.38\times10^{-11}\,\mathrm{dyne\,cm}^{-2}$ (parameter \lstinline|BWpressure|).
+The high-pressure region is initialised with $10^{51}$ ergs or thermal energy (parameter \lstinline|BW_energy|), distributed among grid zones with a zone-centre that is within $N*\Delta x$ of the origin, where $\Delta x$ is the diameter of a zone, and $N$ (parameter \lstinline|BW_nzones|) varies depending on the simulation resolution.
+The inner region can have a different density to the outer region, but for these tests it is taken to be the same (parameter \lstinline|BW_blast_dens|).
+
+The domain is taken to be $\{x,y,z\} \in [0,10]$\,pc, with reflecting boundaries at $\{x,y,z\}=0$\,pc and outflow boundaries at $\{x,y,z\}=10$\,pc.
+An ideal gas is used with ratio of specific heats $\gamma=5/3$, appropriate for a monatomic ideal gas.
+
+\subsubsection{Diagnostics}
+
+The comparison of serial with parallel results is displayed to screen.
+\lstinline|silocompare| produces a lot of text as follows:
+\begin{verbatim}
+*** Checking for L1, L2, Max, errors: ***
+0    0    0    0
+1    0    0    0
+2    0    0    0
+3    0    0    0
+4    0    0    0
+...
+\end{verbatim}
+and possibly some unimportant warning messages from data I/O:
+\begin{verbatim}
+DBReadVar: Low-level function call failed: PJ_read
+\end{verbatim}
+Of the list of numbers, column 1 is the variable being tested, followed by the $L_1$ norm, $L_2$ norm, and the maximum difference between two cells.
+All of these numbers should be zero, because the serial and parallel hydrodynamics should be byte-for-byte identical.
+If this is not the case, then a bug has been introduced somewhere to \pion{}.
+
+Plots of density, $\rho$, as a function of radius, $r$, are generated using \visit{}, where every grid zone is plotted as a point in the $(r,\rho)$ plane for each of 11 snapshots.
+An example is shown in Fig.~\ref{fig:bw3d_hd_adi_n032}, for $N=[16,32,64]$.
+The improvement in the results with resolution is clear, both in the reduced scatter with increasing resolution, and in the peak density achieved in the post-shock region.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR016_RCV_Hcorr_011.png}
+\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR032_RCV_Hcorr_011.png}
+\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR064_RCV_Hcorr_011.png}
+\caption{
+  Scatter plot of density against radius for a 3D adiabatic blastwave.
+  The left-hand panel shows the result with $16^3$ grid zones, the centre panel with $32^3$ zones, and the right-hand panel with $64^3$ zones.
+  All plots are for an evolutionary time of 0.05\,Myr.
+  The test parameters are discussed in the text (sec.~\ref{sec:test:bw3d})
+    }
+\label{fig:bw3d_hd_adi_n032}
+\end{figure}
+
+\subsubsection{Unused parameters that are available for experimentation}
+Magnetic field can be specified by the parameters \lstinline|BWmagfieldX, BWmagfieldY, BWmagfieldZ|, but note that this will not work with simple reflecting boundary conditions for a single octant.
+
+Additionally a second ISM region can be specified, as a slab located at $x>x_0$, where $x_0$ is the interface coordinate (in cm) specified by the parameter \lstinline|BW_interface|.
+Density, pressure, velocity can be set by parameters, \lstinline|BW_amb2_RO|, \lstinline|BW_amb2_PG|, \lstinline|BW_amb2_VX|, \lstinline|BW_amb2_VY|, and \lstinline|BW_amb2_VZ|, respectively.
 \bibpunct{(}{)}{;}{a}{,}{,}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{StarBench test problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Cosmological radiative transfer test problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \bibliographystyle{plainnat}
 %\bibliographystyle{natbib}

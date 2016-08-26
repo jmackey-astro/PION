@@ -254,6 +254,7 @@ int get_emission_absorption_data(
                           data[DATA_D][i]*data[DATA_TR0][i]*
                           pow(data[DATA_T][i], -0.9);
                           //exp(-0.9*log(data[DATA_T][i]));
+      //if (!isfinite(ems[im][i])) cout <<"ems="<< ems[im][i]<<"\n";
 #ifdef ABSORPTION
         abs[im][i] = immpH*5.0e-22 *data[DATA_D][i];
 #else

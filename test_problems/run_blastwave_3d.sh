@@ -4,6 +4,8 @@
 # This script runs the 3D blastwave test.
 #
 # - 2016.03.17 JM: wrote the script.
+# - 2016.08.26 JM: updated to check consistency between serial and
+#    parallel runs, and to plot the density vs. radius.
 
 BASE_DIR=`pwd`
 serial_dir=${BASE_DIR}/../bin_serial
@@ -31,7 +33,7 @@ visit_cmd=/Applications/VisIt.app/Contents/MacOS/VisIt
 
 if [ "$1" = "" ]
 then
-  data_dir=/Users/jm/Documents/CODE/pion_dev/test_problems/data_$DATE
+  data_dir=./data_$DATE
 else
   data_dir=$1
 fi
@@ -85,6 +87,7 @@ bash ./run_BW3D_serial.sh   $test_dir/blastwave_crt3d $serial_dir ${data_dir}/bl
 bash ./run_BW3D_parallel.sh $test_dir/blastwave_crt3d $pllel_dir  ${data_dir}/blastwave3D $resolution
 # compare the serial and parallel results.
 bash ./compare_ser_pll.sh $test_dir/blastwave_crt3d ${cmp_dir}  ${data_dir}/blastwave3D $resolution
+bash ./make_scatter_plots.sh ${data_dir}/blastwave3D $resolution
 
 #
 # End of Test Problem: Blastwave (3D)

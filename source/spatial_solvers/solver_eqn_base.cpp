@@ -43,6 +43,9 @@
 ///    pointer everywhere.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2016.05.21 JM: Tidied up H-correction terms.
+/// - 2016.08.25 JM: Changed H-correction loop to start with
+///    FirstPt_All() instead of FirstPt().  Now serial/parallel code
+///    produces identical results for the 3D blastwave test.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -399,8 +402,8 @@ int FV_solver_base::calc_Hcorrection(
     cout <<"\t\t\tidim="<<idim<<"\n";
 #endif // TESTING
     SetDirection(axis[idim]);
-    class cell *start  = grid->FirstPt();
-    class cell *marker = grid->FirstPt();
+    class cell *start  = grid->FirstPt_All();
+    class cell *marker = grid->FirstPt_All();
 
     //
     // Loop over z-planes (there must be at least one!)

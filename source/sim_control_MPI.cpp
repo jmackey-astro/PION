@@ -431,9 +431,6 @@ int sim_control_fixedgrid_pllel::calc_timestep(
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(grid);
   t_mp  = calc_microphysics_dt(grid);
-  // output step-limiting info every tenth timestep.
-  if (t_mp<t_dyn && (SimPM.timestep%10)==0)
-    cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
   
   //
   // Now get global min over all grids for dynamics and microphysics timesteps.
@@ -447,6 +444,10 @@ int sim_control_fixedgrid_pllel::calc_timestep(
   //SimPM.dt = t_mp;
   t_mp = COMM->global_operation_double("MIN", t_mp);
   //cout <<"proc "<<mpiPM.myrank<<":\t my t_mp ="<<SimPM.dt<<" and global t_mp ="<<t_mp<<"\n";
+  
+  // Write step-limiting info every tenth timestep.
+  if (t_mp<t_dyn && (SimPM.timestep%10)==0)
+    cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
 
   //
   // if using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
