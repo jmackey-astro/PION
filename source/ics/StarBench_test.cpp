@@ -568,11 +568,14 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     //
     // Overwrite data, with curved shock.
     //
-    double lambda = 0.25*SimPM.Range[YY];
+    double lambda = SimPM.Range[YY];
+    if      (ptype==2) lambda *= 0.25;  // 4 wavelengths on the domain
+    else if (ptype==3) lambda *= 1.00;  // just one wavelength
+
     double A = 0.0;
-    if      (ptype==2) A = lambda *0.125;
-    else if (ptype==3) A = lambda *0.025;
-    else               A = 0;
+    if      (ptype==2) A = lambda / 8.0;  // 1/32 of the y-domain, 1/8 of l.
+    else if (ptype==3) A = lambda /64.0;  // 1/64 of l and the y-domain.
+    else               A = 0.0;
     double deflection=0.0;
     c=ggg->FirstPt();
     do {
