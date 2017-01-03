@@ -99,9 +99,9 @@ class GridBaseClass {
 
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
-  virtual double DX() const =0; ///< Returns dx (assuming cubic cells).
-  virtual double DA() const =0; ///< Returns dA (assuming cubic cells).
-  virtual double DV() const =0; ///< Returns dV (assuming cubic cells).
+  virtual double DX() const =0; ///< Returns dx (assuming cells are cubes).
+  virtual double DA() const =0; ///< Returns dA (assuming cells are cubes).
+  virtual double DV() const =0; ///< Returns dV (assuming cells are cubes).
 
   ///
   /// Returns cell diameter for a given cell along a given axis.

@@ -217,6 +217,7 @@ class mp_explicit_H
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
   /// there is no need to make it highly optimized.
+  /// - Is threadsafe.
   ///
   double Temperature(
       const pion_flt *, ///< primitive vector

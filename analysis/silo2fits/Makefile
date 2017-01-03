@@ -4,6 +4,7 @@
 # Author: Jonathan Mackey
 # Date: 2013.04.18
 # Modifications:
+# - 2016.06.16 JM: updated to work with new PION code.
 
 
 SHELL = /bin/sh
@@ -11,7 +12,7 @@ SHELL = /bin/sh
 .SUFFIXES: .cc .o
 .SUFFIXES: .cpp .o
 .SUFFIXES: .cxx .o
-bindir = ..
+bindir = .
 SRCDIR=${CURDIR}/../../source
 
 VPATH = \
@@ -29,9 +30,12 @@ VPATH = \
 ../../source/flux_calc:\
 ../../source/spatial_solvers:\
 ../../source/time_integrators:\
-../../source/contrib
+../../source/contrib\
+../../source/tools
 
-GLOBAL = global.h functionality_flags.h testing_flags.h
+
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
 
 #######################
 ## COMPILATION RULES ##
@@ -57,8 +61,8 @@ MAKE_UNAME=standard
 # make sure cfitsio and silo are compiled in ../extra_libraries/
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
-  CXXFLAGS += -O3 -Wno-unused-function -Wall
-  #CXXFLAGS += -g -Wno-unused-function
+  #CXXFLAGS += -O3 -Wno-unused-function -Wall
+  CXXFLAGS += -g -Wno-unused-function
   CXX=mpicxx
 
   MYLIB = $(CURDIR)/../../extra_libraries
@@ -76,16 +80,55 @@ endif
 ################### --- STANDARD WORKSTATION ---######################
 
 
+###########################################
+# Options for OS X 
+###########################################
+ifeq ($(MAKE_UNAME), OSX)
+  CXX = mpicxx
+
+#CXXFLAGS = -O3
+  CXXFLAGS += -O0
+#CXXFLAGS += -Wall
+  CXXFLAGS += -g    # enable debugging with gdb
+  #CXXFLAGS += -arch x86_64
+
+  MYLIB = $(CURDIR)/../../extra_libraries
+  #MYLIB = /Users/jmackey/Library/my_local_libs
+  INC += -I$(MYLIB)/include
+  INC += -I${SRCDIR}
+
+  LDFLAGS += -lm  
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -lcfitsio
+  #LDFLAGS += -lsilo 
+  # libs for CVODES
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
+endif
+#############################################
 
 
-OBJECTS = silo2fits.o global.o                                      \
-        comm_files.o comm_mpi.o                                     \
+
+OBJECTS = silo2fits.o   \
+  constants.o \
+  timer.o \
+  mem_manage.o \
+  reporting.o \
+  command_line_interface.o \
+  interpolate.o \
+  sim_params.o \
+  MCMD_control.o \
+  setup_fixed_grid.o \
+  setup_fixed_grid_MPI.o \
+        comm_files.o \
+        comm_mpi.o         \
         dataio.o dataio_fits.o utility_fits_class.o                 \
         file_status.o readparams.o                                  \
         dataio_silo.o dataio_silo_utility.o dataio_silo_MPI.o       \
-        cell_interface.o                                            \
+        cell_interface.o      \
         uniform_grid_pllel.o uniform_grid.o                         \
         VectorOps.o VectorOps_spherical.o stellar_wind_BC.o         \
+  microphysics_base.o         \
 microphysics.o \
 microphysics_v1.o \
 integrator.o \
@@ -102,7 +145,11 @@ microphysics_lowZ.o \
 mp_only_cooling.o \
 mpv5_molecular.o \
 mpv6_PureH.o \
-mpv7_TwoTempIso.o 
+mpv7_TwoTempIso.o   \
+  mpv8_StarBench_heatcool.o   \
+  raytracer_base.o            \
+  raytracer_SC_pllel.o        \
+  raytracer_SC.o
 
 
 silo2fits: $(OBJECTS)
@@ -110,49 +157,48 @@ silo2fits: $(OBJECTS)
 
 
 silo2fits.o: silo2fits.cpp ${GLOBAL} dataio.h
-global.o: global.cc ${GLOBAL}
-cell_interface.o: cell_interface.cc cell_interface.h ${GLOBAL}
+cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 
 ########################
 # Data I/O
 ########################
 file_status.o: file_status.cpp file_status.h
-readparams.o: readparams.cc readparams.h ${GLOBAL}
-dataio.o: dataio.cc dataio.h ${GLOBAL}
-dataio_fits.o: dataio_fits.cc dataio_fits.h dataio.h ${GLOBAL}
-utility_fits_class.o: utility_fits_class.cc dataio_fits.h dataio.h \
+readparams.o: readparams.cpp readparams.h ${GLOBAL}
+dataio.o: dataio.cpp dataio.h ${GLOBAL}
+dataio_fits.o: dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h \
     ${GLOBAL} file_status.h
-dataio_silo_MPI.o:    dataio_silo_MPI.cc dataio_silo.h dataio.h \
+dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h
 
 ######################
 # MICROPHYSICS STUFF #
 ######################
 
-integrator.o: integrator.cc integrator.h ${GLOBAL}
-cooling.o:    cooling.cc cooling.h ${GLOBAL}
+integrator.o: integrator.cpp integrator.h ${GLOBAL}
+cooling.o:    cooling.cpp cooling.h ${GLOBAL}
 
-cooling_SD93_cie.o: cooling_SD93_cie.cc cooling_SD93_cie.h ${GLOBAL}
+cooling_SD93_cie.o: cooling_SD93_cie.cpp cooling_SD93_cie.h ${GLOBAL}
 
-hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cc \
+hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.cpp \
     ${GLOBAL}
 
-mp_only_cooling.o: mp_only_cooling.cc mp_only_cooling.h ${GLOBAL} \
+mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cc microphysics.h microphysics_base.h \
+microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h
-microphysics_v1.o: microphysics_v1.cc microphysics.h \
+microphysics_v1.o: microphysics_v1.cpp microphysics.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cc microphysics_lowZ.h \
+microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
-hydrogen_mp.o: hydrogen_mp.cc hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
+hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h 
 
-hydrogen_photoion.o: hydrogen_photoion.cc hydrogen_photoion.h ${GLOBAL}
+hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cc mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
@@ -175,11 +221,15 @@ mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
 mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
   mp_explicit_H.h microphysics_base.h ${GLOBAL}
 
+mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
+  mpv8_StarBench_heatcool.h mp_explicit_H.h \
+  microphysics_base.h ${GLOBAL}
+
 #######################
 ## MPI/files comms classes
 ########################
-comm_files.o: comm_files.cc comm_files.h comms.h ${GLOBAL}
-comm_mpi.o: comm_mpi.cc comm_mpi.h comms.h ${GLOBAL}
+comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
+comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
 
 clean:
 	rm -f *.o SILO2FITS

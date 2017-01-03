@@ -279,13 +279,13 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
   if(ndim>1) {
     if ( fabs(SimPM.Range[1]/(SimPM.NG[1])/SimPM.dx -1.)> 100.*MACHINEACCURACY) {
-      rep.error("Cells are not cubic! Set the range and number of points appropriately.",
+      rep.error("Cells must be same length in each direction! Set the range and number of points appropriately.",
 		fabs(SimPM.Range[1]/(SimPM.NG[1])/SimPM.dx -1.));
     }
   }
   if (ndim>2) {
     if ( fabs(SimPM.Range[2]/(SimPM.NG[2])/SimPM.dx -1.)> 100.*MACHINEACCURACY) {
-      rep.error("Cells are not cubic! Set the range and number of points appropriately.",
+      rep.error("Cells must be same length in each direction! Set the range and number of points appropriately.",
 		fabs(SimPM.Range[2]/(SimPM.NG[2])/SimPM.dx -1.));
     }
   }
@@ -373,6 +373,10 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     seek="EtaViscosity";
     str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
     SimPM.etav = atof(str.c_str());
+  }
+  else if ( SimPM.artviscosity == 3) {
+    // using H-correction.
+    SimPM.etav = 0.1;
   }
   else rep.error("\tUnknown viscosity requested... fix me.",str);
   //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<"\n";

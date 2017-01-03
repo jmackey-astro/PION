@@ -57,8 +57,8 @@
 #include "MCMD_control.h"
 #include "setup_fixed_grid.h"
 
-/// The simplest finite volume grid -- a uniform grid with cubic cells
-/// in the chosen coordinates.
+/// The simplest finite volume grid -- a uniform grid with cells that
+/// are cube-shaped in the chosen coordinates.
 /// 
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.

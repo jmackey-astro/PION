@@ -14,10 +14,26 @@
 \usepackage{enumitem}
 \usepackage{color,soul}
 \usepackage[normalem]{ulem}
+
+% For code snippets:
+\usepackage{listings}
+\lstset{
+  language=C++,
+  basicstyle=\footnotesize\ttfamily,
+  breaklines = true
+}
+% code snippet:
+% \begin{lstlisting}
+% ...
+% \end{lstlisting}
 %
-% THIS GIVES TIMES NEW ROMAN FONTS:
-% http://www.terminally-incoherent.com/blog/2008/05/08/few-words-on-latex-fonts/
+% Import and display source file:
+% \lstinputlisting[<options>]{helloworld.c}
+% \lstinputlisting[language=Python, firstline=37, lastline=45]{source_filename.py}
 %
+% inline code snippet:
+% \lstinline[<options>]<char><code><char> 
+
 \usepackage[T1]{fontenc}
 \usepackage{times}
 %
@@ -91,6 +107,116 @@ The code is developed for astrophysics, not for any practical purpose where fail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Installation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Requirements}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pion{} requires standard code development tools (Make, Bash, C, C++, and FORTRAN compilers), but there are a couple of non-standard requirements.
+You should have \lstinline|cmake| installed on the computer (needed for the Sundials library).
+For parallel code you should have MPI installed (e.g. OpenMPI or MPICH).
+
+\pion{} source code can be obtained from bitbucket:
+\begin{lstlisting}[language=bash, escapechar=!]
+!\$! hg clone https://bitbucket.org/jmackey/pion ./pion
+\end{lstlisting}
+This command creates a new directory called \lstinline|pion| as a subdirectory of the current directory, and downloads the \pion{} source code into it.
+
+\pion{} needs to compile some extra libraries, if they are not already installed by the operating system.
+They will be automatically downloaded and installed to \lstinline|pion/extra_libraries/| during installation.
+These are:
+\begin{itemize}
+\item
+\textsc{sundials}: obtained from \href{http://computation.llnl.gov/projects/sundials-suite-nonlinear-differential-algebraic-equation-solvers}{http://computation.llnl.gov}
+\item
+\textsc{silo}: obtained from \href{https://wci.llnl.gov/simulation/computer-codes/silo}{https://wci.llnl.gov}
+\item
+\textsc{cfitsio}: obtained from \href{http://heasarc.gsfc.nasa.gov/fitsio/}{http://heasarc.gsfc.nasa.gov/fitsio/}
+\end{itemize}
+
+FITS files can be viewed using ds9 or other image-viewing software.
+SILO files can be viewed using VisIt (from LLNL), or from python using the SILO module.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compilation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pion{} usually has to be recompiled on every computer that you want to run it on, because it depends on locally compiled libraries and system libraries.
+The executables can then be moved to any directory you want and run on a particular problem.
+It is quite rare that the code needs to be recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
+Here is how to compile the code:
+\begin{enumerate}
+\item
+  Obtain \pion{} source code from bitbucket (see above).
+  Then cd into this directory and the directory \lstinline|pion/| should have been created there.  cd into this directory.
+  If you obtain it from bitbucket then you should already have an unzipped source tree.
+\item
+  Then from directory \lstinline|pion/|, with a standard linux workstation, you should be able to run the command \lstinline|bash ./install.sh|.
+  If this is successful then the \textsc{Silo}, \textsc{FITS}, and \textsc{Sundials} libraries should be installed to \lstinline|pion/extra_libraries/| and code executables should have been created in the current directory.
+  The exectuables are \lstinline|pion_serial|, \lstinline|pion_parallel|, \lstinline|icgen_serial|, and \lstinline|icgen_parallel|.
+\item
+  If the executables are not there, then something went wrong, and you should run the commands in install.sh one-by-one to determine where things failed (probably in the library installation).
+\end{enumerate}
+
+The compile scripts will automatically detect if it is being compiled on the following systems:
+\begin{itemize}
+\item \emph{JUROPA} at J\"ulich Supercomputing Centre \hl{PROBABLY OUTDATED!},
+\item \emph{SuperMUC} at the Leibniz Rechenzentrum (LRZ) in Munich,
+\item \emph{Phalanx} or \emph{Dougal} at UCL astrophysics dept.,
+\item \emph{Dirac-II/Complexity} at the University of Leicester \hl{PROBABLY OUTDATED!},
+\item \emph{OS X 10.X}, with \emph{XCode} installed and \emph{Macports},
+\item \emph{FIONN} at the Irish Centre for High-End Computing (ICHEC).
+\end{itemize}
+If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
+It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compilation on OS X}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pion{} has only been tested on OS X with XCode and macports installed, using curl, gcc, and mpich.
+Macports can be obtained from \href{http://www.macports.org/}{http://www.macports.org/}.
+Any contributions and testing with other setups are welcome.
+Here is the version of gcc and MPI that I used:
+
+\begin{lstlisting}[language=bash, escapechar=!]
+!\$! sudo port install gcc49
+!\$! sudo port install mpich-gcc49 +threads
+!\$! port select --list gcc
+!\$! sudo port select --set gcc mp-gcc49
+!\$! port select --list mpi
+!\$! sudo port select --set mpi mpich-gcc49-fortran
+\end{lstlisting}
+
+There is an ugly hack in the \lstinline|compile_code.sh| scripts for both serial and parallel code for compilation on OS X.
+For some reason the Sundials libraries are not being linked with paths, so the executables don't run as-is (on JM's Macbook).
+To get around this, the links are changed with the command \lstinline|install_name_tool|.
+This is not ideal, and hopefully will not be needed in future.
+
+\lstinputlisting[language=bash, firstline=204, lastline=221]{../bin_serial/compile_code.sh}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Compilation on other machines}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+If you want to compile it on a machine with e.g.\ Intel compilers, then you can either email me for help or you can try editing the compile scripts.
+It is relatively straightforward (but sometimes tedious!) to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} environmental variables (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
+As you can see from \lstinline|install.sh|, you need to edit the files
+\lstinline|pion/extra_libraries/install_all_libs.sh|,
+\lstinline|pion/bin_parallel/compile_code.sh|, and
+\lstinline|pion/bin_serial/compile_code.sh|, and maybe also \lstinline|Makefile| in
+\lstinline|pion/bin_parallel| and \lstinline|pion/bin_serial|.
+
+The library install script \lstinline|pion/extra_libraries/install_all_libs.sh| detects machines by hostname, so you can add a loop for your host.
+\texttt{NCORES} and \texttt{MAKE\_UNAME} are not so important, but \texttt{CC, CXX} and \texttt{FC} need to be set to your C, C++, and FORTRAN compilers.
+
+The serial and parallel \lstinline|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important because the Makefiles have a section defining various quantities depending on the value of \texttt{MAKE\_UNAME}.
+A new section needs to be created for the new machine in the Makefiles in \lstinline|pion/bin_serial| and \lstinline|pion/bin_parallel|.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Running a simple test problem}
@@ -104,59 +230,6 @@ This guide shows you how to run the double Mach-reflection test, in serial and p
 \section{Overview of Code Design}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Installation}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Installation is reasonably straightforward, although the code is not really \emph{installed}, just compiled on a given computer.
-The executables can then be moved to any directory you want and run on a particular problem.
-It is quite rare that the code needs to be recompiled to run a different simulation -- a guiding design principle of the code is that most options should be set at run-time and not compile-time.
-Here is how to compile the code:
-\begin{enumerate}
-\item
-  If you have a copy of \pion{} as \texttt{pion1.tar.gz}, unzip/untar it into any directory you want.
-  Then cd into this directory and the directory \verb|pion/| should have been created there.  cd into this directory.
-  If you obtain it from bitbucket then you should already have an unzipped source tree.
-\item
-  Then from directory \verb|pion/|, with a standard linux workstation, you should be able to run the command \verb|bash ./install.sh|.
-  If this is successful then the \textsc{Silo}, \textsc{FITS}, and \textsc{Sundials} libraries should be installed to \verb|pion/extra_libraries/| and code executables should have been created in the current directory.
-  The exectuables are \verb|pion_serial|, \verb|pion_parallel|, \verb|icgen_serial|, and \verb|icgen_parallel|.
-\item
-  If the executables are not there, then something went wrong, and you should run the commands in install.sh one-by-one to determine where things failed (probably in the library installation).
-\end{enumerate}
-
-The compile scripts will automatically detect if it is being compiled on the following systems:
-\begin{itemize}
-\item \emph{JUROPA} at J\"ulich Supercomputing Centre,
-\item \emph{SuperMUC} at the Leibniz Rechenzentrum (LRZ) in Munich,
-\item \emph{Phalanx} or \emph{Dougal} at UCL astrophysics dept.,
-\item \emph{Dirac-II/Complexity} at the University of Leicester,
-\item \emph{OS X 10.X}, with \emph{XCode} installed,
-\item \emph{FIONN} at the Irish Centre for High-End Computing (ICHEC).
-\end{itemize}
-If none of these machines is identified then it is assumed that compilation is on a standard linux/UNIX workstation.
-It has only been compiled on Debian-based linux distributions (Debian and Ubuntu), so I don't know if it works on Fedora/RedHat linux.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Compilation on other machines}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-If you want to compile it on a machine with e.g.\ Intel compilers, then you can either email me for help or you can try editing the compile scripts.
-It is relatively straightforward (but sometimes tedious!) to modify the compile scripts for other machines -- it is just a matter of locating the standard libraries, setting the MPI wrapper commands, and setting the \texttt{CC, CXX} environmental variables (Fortran is not needed, but one or other of the libraries may also need \texttt{FC} to be defined if not using gfortran).
-As you can see from \verb|install.sh|, you need to edit the files
-\verb|pion/extra_libraries/install_all_libs.sh|,
-\verb|pion/bin_parallel/compile_code.sh|, and
-\verb|pion/bin_serial/compile_code.sh|, and maybe also \verb|Makefile| in
-\verb|pion/bin_parallel| and \verb|pion/bin_serial|.
-
-The library install script \verb|pion/extra_libraries/install_all_libs.sh| detects machines by hostname, so you can add a loop for your host.
-\texttt{NCORES} and \texttt{MAKE\_UNAME} are not so important, but \texttt{CC, CXX} and \texttt{FC} need to be set to your C, C++, and FORTRAN compilers.
-
-The serial and parallel \verb|compile_code.sh| scripts have a similar structure, but here \texttt{MAKE\_UNAME} is important because the Makefiles have a section defining various quantities depending on the value of \texttt{MAKE\_UNAME}.
-A new section needs to be created for the new machine in the Makefiles in \verb|pion/bin_serial| and \verb|pion/bin_parallel|.
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -222,7 +295,7 @@ I have tried to catch all of the possible conflicts at the IC generator stage, b
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 The paramater file is an ASCII text file containing a list of paramters and their values.
-Lines beginning with the \verb|#| key are ignored and can be used for comments.
+Lines beginning with the \lstinline|#| key are ignored and can be used for comments.
 Blank lines are also ignored.
 Lines with parameters must begin with a single-word parameter name, followed by some white space, followed by the parameter value (no commas please! Tabs may be ok, I haven't checked).
 There are a list of allowed parameters described in Table~\ref{tab:plist}.
@@ -244,13 +317,13 @@ There are a list of allowed parameters described in Table~\ref{tab:plist}.
     \\
     ics & Type of initial conditions to set up & See below for details & n/a & See below.
     \\
-    ICfilename & Base name of initial conditions file & any unix filename & n/a & Don't include \verb|.silo| or \verb|.fits| at the end.
+    ICfilename & Base name of initial conditions file & any unix filename & n/a & Don't include \lstinline|.silo| or \lstinline|.fits| at the end.
     \\
-    OutputFile & Base name of output file & any unix filename & n/a &  Don't include \verb|.silo| or \verb|.fits| at the end.
+    OutputFile & Base name of output file & any unix filename & n/a &  Don't include \lstinline|.silo| or \lstinline|.fits| at the end.
     \\
     ntracer  & Number of tracer variables & $0-75$ & 0 & Must be integer.
     \\
-    trtype   & String describing chemistry and tracers & e.g.\ \verb|NONE__colour| & n/a & example means no chemistry and one colour tracer.  The first six characters determine what kind of microphysics solver we are to use (see below for further details).
+    trtype   & String describing chemistry and tracers & e.g.\ \lstinline|NONE__colour| & n/a & example means no chemistry and one colour tracer.  The first six characters determine what kind of microphysics solver we are to use (see below for further details).
     \\
     InitIons & How to initialise tracer values & LEAVE, \textbf{other options} & n/a & LEAVE means the microphysics solver does not do anything to the values.
     \\
@@ -266,35 +339,35 @@ There are a list of allowed parameters described in Table~\ref{tab:plist}.
 \end{sidewaystable}
 
 
-Possible values for initial conditions parameter \verb|ics| are given in the following list.  Note that many of the problems require extra specific parameters in the parameter file in order to set up a problem correctly.  These are described in the following subsections.
+Possible values for initial conditions parameter \lstinline|ics| are given in the following list.  Note that many of the problems require extra specific parameters in the parameter file in order to set up a problem correctly.  These are described in the following subsections.
 \begin{itemize}
-  \item \verb|ShockTube| -- Sets up a 1D or 2D shock-tube problem.
+  \item \lstinline|ShockTube| -- Sets up a 1D or 2D shock-tube problem.
   This requires additionally a number of parameters. [FILL IN].
-  \item \verb|OrszagTang| -- Sets up the 2D \citet{OrsTan79} vortex test problem.[FILL IN].
-  \item \verb|Uniform| -- Sets up uniform initial conditions.
-  \item \verb|Advection| -- Sets up a simple problem advecting a feature across a periodic domain.
-  \item \verb|AdvectSineWave| -- Can't remember! Advects a sine wave across the grid maybe.
-  \item \verb|KelvinHelmholz| -- Sets up a Kelvin-Helmholz instability test problem.
-  \item \verb|KelvinHelmholzStone| -- Sets up the version of the K-H test problem on Jim Stones code test page \url{http://www.astro.princeton.edu/~stone/FIXME}.
-  \item \verb|FieldLoop| -- Sets up a 2D MHD Field Loop advection test.
-  \item \verb|FieldLoopVz| -- Sets up a 2D Field loop advection test with a non-zero $\hat{z}$ component in the velocity.
-  \item \verb|FieldLoopStatic| -- Static version of the Field Loop advection test (to see the diffusivity of the scheme without any advection).
-  \item \verb|Jet| or \verb|JET| or \verb|jet| -- A 2D or 3D jet simulation, where the jet is injected along the symmetry axis in 2D or along the $\hat{x}$ axis in 3D.
-  \item \verb|DoubleMachRef| -- The famous double Mach reflection test of \citet{ColWoo84} [CHECK REF!].
-  \item \verb|RadiativeShock| -- Radiative shock test \citep[e.g.][]{InnGidFal87b} with wall boundary condition.
-  \item \verb|RadiativeShockOutflow| -- Radiative shock with outflow downstream boundary condition instead of wall.
-  \item \verb|LaserAblationAxi| -- Ablation of a target by a laser and the subsequent hydrodynamic evolution
-  \item \verb|LaserAblation3D| -- Ablation of a target by a laser in 3D.
-  \item \verb|ShockCloud| -- Planar shock from the $-\hat{x}$ direction hitting a stationary top-hat cloud.
-  \item \verb|BlastWave| -- A blast wave test problem, in 1-3D and any of the allowed coordinate systems, with any requested microphysics.
-  \item \verb|PhotoEvaporatingClump| -- Photoionisation problem with a radiation source and a dense clump embedded in a uniform background medium.
-  \item \verb|PhotoEvaporatingClump2| -- Same as previous but with two clumps (e.g.\ for the problem in \citealt{LimMel03}).
-  \item \verb|PhotoEvap_radial| -- Photoevaporation problem with a source in an ambient medium with a density profile.
-  \item \verb|PhotoEvap_powerlaw| -- As above, with a power-law density profile.
-  \item \verb|PhotoEvap_paralleltest| -- Not sure, something to do with photoionisation [FIX THIS!].
-  \item \verb|PhotEvap_RandomClumps| or \verb|PhotEvap_RandomClumps2| or \verb|PERC| or \verb|PERC2| -- Second generation photoevaporation problem with random dense clumps placed in a uniform background and subject to ionising radiation.  Used by \citet{MacLim10} to set up calculations with randomly placed clumps.
-  \item \verb|PhotEvap_MultiClumps_FixNum| or \verb|PhotEvap_MultiClumps_FixMass| or \verb|PE_MC_FN| or \verb|PE_MC_FM| -- Third generation photoevaporation problem used for the calculations involving multiple clumps placed in strategic positions in \citet{MacLim10,MacLim11b}.  The FixNum value uses a fixed number of clumps with random properties within a specified range, whereas the FixMass value uses a fixed mass of clump material and allocates it to clumps with random properties until all of the mass is used up.
-  \item \verb|Clump_Spherical| or \verb|Clump_Axisymmetric| -- Don't know [LOOK THIS UP!].
+  \item \lstinline|OrszagTang| -- Sets up the 2D \citet{OrsTan79} vortex test problem.[FILL IN].
+  \item \lstinline|Uniform| -- Sets up uniform initial conditions.
+  \item \lstinline|Advection| -- Sets up a simple problem advecting a feature across a periodic domain.
+  \item \lstinline|AdvectSineWave| -- Can't remember! Advects a sine wave across the grid maybe.
+  \item \lstinline|KelvinHelmholz| -- Sets up a Kelvin-Helmholz instability test problem.
+  \item \lstinline|KelvinHelmholzStone| -- Sets up the version of the K-H test problem on Jim Stones code test page \url{http://www.astro.princeton.edu/~stone/FIXME}.
+  \item \lstinline|FieldLoop| -- Sets up a 2D MHD Field Loop advection test.
+  \item \lstinline|FieldLoopVz| -- Sets up a 2D Field loop advection test with a non-zero $\hat{z}$ component in the velocity.
+  \item \lstinline|FieldLoopStatic| -- Static version of the Field Loop advection test (to see the diffusivity of the scheme without any advection).
+  \item \lstinline|Jet| or \lstinline|JET| or \lstinline|jet| -- A 2D or 3D jet simulation, where the jet is injected along the symmetry axis in 2D or along the $\hat{x}$ axis in 3D.
+  \item \lstinline|DoubleMachRef| -- The famous double Mach reflection test of \citet{ColWoo84} [CHECK REF!].
+  \item \lstinline|RadiativeShock| -- Radiative shock test \citep[e.g.][]{InnGidFal87b} with wall boundary condition.
+  \item \lstinline|RadiativeShockOutflow| -- Radiative shock with outflow downstream boundary condition instead of wall.
+  \item \lstinline|LaserAblationAxi| -- Ablation of a target by a laser and the subsequent hydrodynamic evolution
+  \item \lstinline|LaserAblation3D| -- Ablation of a target by a laser in 3D.
+  \item \lstinline|ShockCloud| -- Planar shock from the $-\hat{x}$ direction hitting a stationary top-hat cloud.
+  \item \lstinline|BlastWave| -- A blast wave test problem, in 1-3D and any of the allowed coordinate systems, with any requested microphysics.
+  \item \lstinline|PhotoEvaporatingClump| -- Photoionisation problem with a radiation source and a dense clump embedded in a uniform background medium.
+  \item \lstinline|PhotoEvaporatingClump2| -- Same as previous but with two clumps (e.g.\ for the problem in \citealt{LimMel03}).
+  \item \lstinline|PhotoEvap_radial| -- Photoevaporation problem with a source in an ambient medium with a density profile.
+  \item \lstinline|PhotoEvap_powerlaw| -- As above, with a power-law density profile.
+  \item \lstinline|PhotoEvap_paralleltest| -- Not sure, something to do with photoionisation [FIX THIS!].
+  \item \lstinline|PhotEvap_RandomClumps| or \lstinline|PhotEvap_RandomClumps2| or \lstinline|PERC| or \lstinline|PERC2| -- Second generation photoevaporation problem with random dense clumps placed in a uniform background and subject to ionising radiation.  Used by \citet{MacLim10} to set up calculations with randomly placed clumps.
+  \item \lstinline|PhotEvap_MultiClumps_FixNum| or \lstinline|PhotEvap_MultiClumps_FixMass| or \lstinline|PE_MC_FN| or \lstinline|PE_MC_FM| -- Third generation photoevaporation problem used for the calculations involving multiple clumps placed in strategic positions in \citet{MacLim10,MacLim11b}.  The FixNum value uses a fixed number of clumps with random properties within a specified range, whereas the FixMass value uses a fixed mass of clump material and allocates it to clumps with random properties until all of the mass is used up.
+  \item \lstinline|Clump_Spherical| or \lstinline|Clump_Axisymmetric| -- Don't know [LOOK THIS UP!].
 \end{itemize}
 
 
@@ -345,10 +418,12 @@ It writes binary data, so it is fast and loss-less.
 
 \pion{} can read and write \textsc{Fits} files, although the data I/O is not as simple for running in parallel as is the case for \textsc{Silo}.
 What happens is that each MPI process writes its part of the grid to its own file, and each file also contains a part of the header.
-To visualise the data afterwards you need to merge all of these files into a single \textsc{Fits} file, using the script \\
-\verb|pion/analysis/merge_fits_files/stitchfits_compile.sh|,\\
+To visualise the data afterwards you need to merge all of these files into a single \textsc{Fits} file, using the code in 
+\lstinline|pion/analysis/merge_fits_files/|,
 which acts on a whole series of output files to automate the process.
 So there is one extra post-processing step with \textsc{Fits} data when running on multiple CPUs before you can look at the results.
+
+Most supercomputer administrators discourage users from writing to many different files at once because this degrades performance for other users, so \textsc{fits} is not recommended for simulations using more than 32 or 64 MPI processes.
 
 The simulation variables are writted in different HDUs (Header Data Units), depending on the physics included, and all values are in cgs units.
 First the ordering for hydrodynamics (no magnetic field) \hl{CHECK THIS!}:
@@ -398,9 +473,130 @@ This is so that it can be plotted simply with e.g.\ Gnuplot's 'splot' function.
 The first lines of each text file contain the simulation time (in seconds), the timestep, and the list of variables that are written.
 The ordering of variables is basically the same as for \textsc{Fits} files, except that the cell-centred positions of each cell are written in the first column for 1D or first two columns for 2D.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Postprocessing and Visualising \pion{} Snapshots}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Reading data into Python}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Python is a popular tool for data analysis because it is free, has a huge user-base, and has a vast array of modules for various tasks.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Reading Silo files}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This is under development; there will be a module in \lstinline{pion/analysis/python} for reading Silo files into NumPy arrays, with associated data extents and other simulation parameters.
+
+For now, look at the file \lstinline{pion/test_problems/Python_Plot.py} to get an idea of how to read Silo files into Python and plot the data.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Reading VTK files}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The projection codes in \lstinline{pion/analysis/Project3D_data} and \lstinline{pion/analysis/Project2D_data} can produce VTK files containing images of projected quantities.
+It is also planned that \pion{} can be set to write VTK files, at least in serial mode.
+
+The scripts \lstinline{pion/analysis/python/plot_vtk_data.py} and \lstinline{pion/analysis/python/logplot_vtk_data.py} show how to read the VTK files produced by the projection code and plot two of the quantities calculated (column density of neutral Hydrogen, and H$\alpha$ line intensity).
+
+Note that \pion{} and its analysis codes write VTK version 2 legacy format, binary files, largely following the method in the \textsc{pluto} code (\href{http://plutocode.ph.unito.it}{http://plutocode.ph.unito.it}).
+See \href{http://www.vtk.org/}{http://www.vtk.org/} for further details.
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Test Problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{3D adiabatic blast wave}
+\label{sec:test:bw3d}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+This test simulates a 3D adiabatic blast wave, set up with an intial spherical region near the origin that is dramatically overpressurised compared with the ambient medium.
+It is run in one octant of 3D space, with reflecting boundary conditions because of the symmetry of the problem.
+This test is a very simple one, and only really tests that the propagation speed of the blast wave is the same in all directions, and that there are no grid-aligned artefacts associated with the (artificial) \citet{Qui94} or carbuncle instabilities.
+
+For this reason, the simulation is primarily a test that the integrator has sufficient dissipation to avoid numerical instabilities, and it is also used as a test that the serial and parallel versions of the code produce the same answer.
+Each simulation is run at a given resolution with a number of different solvers and settings, and in serial and parallel, and the results are then compared with each other using the \lstinline|silocompare| program in \lstinline|/analysis/silocompare/|.
+Plots of density vs.~radius are then generated using \visit{}.
+
+The test is run with the following command:
+\begin{lstlisting}
+ bash run_blastwave_3d.sh /path/to/save/test/data /path/to/visit/command <RES>
+\end{lstlisting}
+where \lstinline|<RES>| is the number of zones to use for the test, and can be 016, 032, 064, 128, or 256 (the leading zero is required).
+The total number of zones is \lstinline|<RES>|$^3$, and anything more than 032 will take quite a long time to run, because the simulation is run 5 times in serial and 5 times in parallel.
+
+Ideally at late times this test should reproduce the Sedov-Taylor solution for blastwave expansion, once the shock radius exceeds the initial discontinuity radius by a significant factor.
+
+\subsubsection{Parameters of the test}
+The ISM is unmagnetised and uniform, with density $\rho=2.34\times10^{-22}\,\gpcmc$ (parameter \lstinline|BWdensity|) and pressure $p_\mathrm{g}=1.38\times10^{-11}\,\mathrm{dyne\,cm}^{-2}$ (parameter \lstinline|BWpressure|).
+The high-pressure region is initialised with $10^{51}$ ergs or thermal energy (parameter \lstinline|BW_energy|), distributed among grid zones with a zone-centre that is within $N*\Delta x$ of the origin, where $\Delta x$ is the diameter of a zone, and $N$ (parameter \lstinline|BW_nzones|) varies depending on the simulation resolution.
+The inner region can have a different density to the outer region, but for these tests it is taken to be the same (parameter \lstinline|BW_blast_dens|).
+
+The domain is taken to be $\{x,y,z\} \in [0,10]$\,pc, with reflecting boundaries at $\{x,y,z\}=0$\,pc and outflow boundaries at $\{x,y,z\}=10$\,pc.
+An ideal gas is used with ratio of specific heats $\gamma=5/3$, appropriate for a monatomic ideal gas.
+
+\subsubsection{Diagnostics}
+
+The comparison of serial with parallel results is displayed to screen.
+\lstinline|silocompare| produces a lot of text as follows:
+\begin{verbatim}
+*** Checking for L1, L2, Max, errors: ***
+0    0    0    0
+1    0    0    0
+2    0    0    0
+3    0    0    0
+4    0    0    0
+...
+\end{verbatim}
+and possibly some unimportant warning messages from data I/O:
+\begin{verbatim}
+DBReadVar: Low-level function call failed: PJ_read
+\end{verbatim}
+Of the list of numbers, column 1 is the variable being tested, followed by the $L_1$ norm, $L_2$ norm, and the maximum difference between two cells.
+All of these numbers should be zero, because the serial and parallel hydrodynamics should be byte-for-byte identical.
+If this is not the case, then a bug has been introduced somewhere to \pion{}.
+
+Plots of density, $\rho$, as a function of radius, $r$, are generated using \visit{}, where every grid zone is plotted as a point in the $(r,\rho)$ plane for each of 11 snapshots.
+An example is shown in Fig.~\ref{fig:bw3d_hd_adi_n032}, for $N=[16,32,64]$.
+The improvement in the results with resolution is clear, both in the reduced scatter with increasing resolution, and in the peak density achieved in the post-shock region.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR016_RCV_Hcorr_011.png}
+\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR032_RCV_Hcorr_011.png}
+\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR064_RCV_Hcorr_011.png}
+\caption{
+  Scatter plot of density against radius for a 3D adiabatic blastwave.
+  The left-hand panel shows the result with $16^3$ grid zones, the centre panel with $32^3$ zones, and the right-hand panel with $64^3$ zones.
+  All plots are for an evolutionary time of 0.05\,Myr.
+  The test parameters are discussed in the text (sec.~\ref{sec:test:bw3d})
+    }
+\label{fig:bw3d_hd_adi_n032}
+\end{figure}
+
+\subsubsection{Unused parameters that are available for experimentation}
+Magnetic field can be specified by the parameters \lstinline|BWmagfieldX, BWmagfieldY, BWmagfieldZ|, but note that this will not work with simple reflecting boundary conditions for a single octant.
+
+Additionally a second ISM region can be specified, as a slab located at $x>x_0$, where $x_0$ is the interface coordinate (in cm) specified by the parameter \lstinline|BW_interface|.
+Density, pressure, velocity can be set by parameters, \lstinline|BW_amb2_RO|, \lstinline|BW_amb2_PG|, \lstinline|BW_amb2_VX|, \lstinline|BW_amb2_VY|, and \lstinline|BW_amb2_VZ|, respectively.
 \bibpunct{(}{)}{;}{a}{,}{,}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{StarBench test problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Cosmological radiative transfer test problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 \bibliographystyle{plainnat}
 %\bibliographystyle{natbib}

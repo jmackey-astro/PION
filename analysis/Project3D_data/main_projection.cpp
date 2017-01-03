@@ -97,16 +97,16 @@ using namespace std;
 
 
 #ifdef THREADS
-#include "andys_threads/msvc_constants.h"
+#include "tools/threads_AJL/msvc_constants.h"
 #if defined(_DEBUG) &&  defined(_MSC_VER) &&  defined(MSVC_DEBUG_NEW_TRACE_ON)
   #define CRTDBG_MAP_ALLOC
   #include <stdlib.h> 
   #include <crtdbg.h> 
   #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
 #endif
-#include "andys_threads/reefa_constants.h"
-#include "andys_threads/logmessages.h"
-#include "andys_threads/threadpool/threadpool.h"
+#include "tools/threads_AJL/reefa_constants.h"
+#include "tools/threads_AJL/logmessages.h"
+#include "tools/threads_AJL/threadpool/threadpool.h"
 //
 // Global threading variables.
 //
@@ -199,9 +199,6 @@ int main(int argc, char **argv)
   tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
 #endif //THREADS
 
-  //cout <<"WARNING! SIMULATION DOMAIN HARD-CODED FOR MHD ET SIMULATIONS.\n";
-  //cout <<"********************* USE WITH CAUTION! ********************\n\n";
-
   //*******************************************************************
   //*******************************************************************
   //
@@ -250,13 +247,13 @@ int main(int argc, char **argv)
   int op_filetype = atoi(argv[4]);
   switch (op_filetype) {
   case 0:
-    cout <<"\t\toutputting data to text file.\n";
+    cout <<"\t\twriting data to text file.\n";
     break;
   case 1:
-    cout <<"\t\toutputting data to fits files.\n";
+    cout <<"\t\twriting data to fits files.\n";
     break;
   case 3:
-    cout <<"\t\toutputting data to VTK files.\n";
+    cout <<"\t\twriting data to VTK files.\n";
     break;
   default:
     rep.error("Bad outfile format",op_filetype);
@@ -265,10 +262,10 @@ int main(int argc, char **argv)
   int multi_opfiles = atoi(argv[5]);
   switch (multi_opfiles) {
   case 0:
-    cout <<"\t\tOutputting all timesteps in a single file.\n";
+    cout <<"\t\twriting all timesteps in a single file.\n";
     break;
   case 1:
-    cout <<"\t\tOutputting timesteps in different files.\n";
+    cout <<"\t\twriting timesteps in different files.\n";
     break;
   default:
     rep.error("Bad multi-files value",multi_opfiles);

@@ -5,7 +5,7 @@
 /// 
 /// Function definitions for class members of the various VectorOps classes.
 /// These work for a grid in which the cells are all the same size, and either 
-/// square or cubic for 2 and 3D respectively.
+/// square or cube-shaped for 2 and 3D respectively.
 /// 
 /// Modified:\n
 ///  - 2007-08-01 File Created
@@ -195,9 +195,10 @@ VectorOps_Cart::~VectorOps_Cart() {}
 
 double VectorOps_Cart::CellVolume(const cell *)
 {
-  /** \section Volume
-   * This function assumes cells are cubic, so Volume is exp(ndim*log(dx)).
-   * */
+  /// \section Volume
+  /// This function assumes cells are cube-shaped, so Volume is
+  /// exp(ndim*log(dx)).
+  ///
   return(VOdV);
 }
 
@@ -212,9 +213,10 @@ double VectorOps_Cart::CellInterface(
           const direction
           )
 {
-  /** \section Interfaces
-   * This function assumes cells are cubic, so all surfaces have the same area.
-   * */
+  /// \section Interfaces
+  /// This function assumes cells are cube-shaped, so all surfaces
+  /// have the same area.
+  ///
   return(VOdA);
 }
 
@@ -395,7 +397,7 @@ void VectorOps_Cart::Curl(
     ans[2] +=  0.0;
 //    rep.printVec("curl: z-dir: ",ans,3);
   }
-  // All the differences have the same denominator in cartesian cubic cells:
+  // All differences have the same denominator in cartesian cubic cells:
   ans[0] /= (2.*VOdx);
   ans[1] /= (2.*VOdx);
   ans[2] /= (2.*VOdx);

@@ -244,7 +244,7 @@ class VectorOps_Cart : virtual public BaseVectorOps
   ///
   VectorOps_Cart(
         int, ///< Number of spatial dimensions of grid
-        double ///< Length of cell in all directions (cells must be cubic).
+        double ///< Length of cell (must be the same in all directions).
         );
 
   ///
@@ -429,7 +429,7 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   ///
   VectorOps_Cyl(
         int, ///< Number of spatial dimensions of grid
-        double ///< Length of cell in all directions (cells must be cubic).
+        double ///< diameter of cell (same in all directions).
         );
 
   ///

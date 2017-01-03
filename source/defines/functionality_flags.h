@@ -119,12 +119,6 @@
 // and tested.
 // -------------------------------------------------------------------
 
-//
-// with this set, grids inherit the appropriate VectorOps class.
-//
-#define GEOMETRIC_GRID
-
-#define HCORR ///< for testing the H-correction addition to the code.
 
 ///
 /// Use try{}catch(){} for bad_alloc in dynamic memory allocation.

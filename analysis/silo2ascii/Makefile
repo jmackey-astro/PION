@@ -50,7 +50,7 @@ ${SRCDIR}/tools
 
 
 
-GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
          sim_params.h sim_constants.h constants.h
 
 
@@ -66,7 +66,7 @@ OPT += -D$(IOMODE)
 OPT += -DSILO
 
 #MAKE_UNAME=JUROPA
-MAKE_UNAME=standard
+#MAKE_UNAME=standard
 #MAKE_UNAME=stokes
 
 # All machines and options need readline and maths
@@ -168,7 +168,7 @@ ifeq ($(MAKE_UNAME), OSX)
   MYLIB = $(CURDIR)/../../extra_libraries
   #MYLIB = /Users/jmackey/Library/my_local_libs
   INC += -I$(MYLIB)/include
-  INC += -I${srcdir}
+  INC += -I${SRCDIR}
 
   LDFLAGS += -lm  
   LDFLAGS += -L${MYLIB}/lib

@@ -137,7 +137,7 @@ struct boundary_data {
 ///
 /// The uniform finite-volume grid.
 /// 
-/// Can be 1,2, or 3 dimensional.  The grid cells must be cubic, so the number
+/// Can be 1,2, or 3 dimensional.  The grid cells must be cubes, so the number
 /// of cells in each dimension should be in the right proportion to the 
 /// length of the grid in each dimension.
 /// 
@@ -195,9 +195,9 @@ class UniformGrid
   int *G_ixmin;  ///< Min value of x,y,z in domain (integer coordinates).
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
 
-  double G_dx;     ///< Linear side length of (uniform, cubic, cartesian) grid cells.
-  double G_dA;     ///< Area of one surface of the (uniform, cubic, cartesian) grid cells.
-  double G_dV;     ///< Volume of one cubic, cartesian grid cell (same for all cells).
+  double G_dx;     ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
+  double G_dA;     ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
+  double G_dV;     ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
 
   double *Sim_range; ///< Size of full domain in x,y,z-direction.
   double *Sim_xmin;  ///< Min value of x,y,z in full domain.
@@ -476,10 +476,10 @@ class UniformGrid
   virtual double DX() const {return(G_dx);}
 
 
-  /// Returns dA (assuming cubic cells).
+  /// Returns dA (assuming cells are cubes).
   virtual double DA() const {return(G_dA);}
 
-  /// Returns dV (assuming cubic cells).
+  /// Returns dV (assuming cells are cubes).
   virtual double DV() const {return(G_dV);}
 
   ///
