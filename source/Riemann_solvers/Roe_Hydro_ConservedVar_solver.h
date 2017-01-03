@@ -23,6 +23,7 @@
 ///    Riemann solver used all that memory when it only needs 5 vars.  Tracer 
 ///    fluxes are dealt with by the flux-solver classes.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2016.05.21 JM: removed H-correction ifdefs (it should be always enabled).
 
 #ifndef ROE_HYDRO_CONSERVEDVAR_SOLVER_H
 #define ROE_HYDRO_CONSERVEDVAR_SOLVER_H
@@ -60,9 +61,7 @@ public:
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
       const double,   ///< input gamma
-      #ifdef HCORR
       const double, ///< H-correction eta-max value.
-      #endif // HCORR
       pion_flt *, ///< output pstar
       pion_flt *  ///< output flux
       );
@@ -75,18 +74,15 @@ public:
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
       const double,   ///< input gamma
-      #ifdef HCORR
       const double, ///< H-correction eta-max value.
-      #endif // HCORR
       pion_flt *, ///< output pstar
       pion_flt *  ///< output flux
       );
 
 private:
-#ifdef HCORR
   /// H-correction eta-max value (pre-calculated for this interface)
   pion_flt RCV_HC_etamax;
-#endif // HCORR
+
   const int rs_nvar; ///< length of state vectors in solver (ignore tracers).
 
   /// Square of the gas velocity in the mean state.

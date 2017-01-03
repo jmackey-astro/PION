@@ -23,6 +23,7 @@
 /// - 2013.09.02 JM: Fixed treatment of tracers so that Nspecies is
 ///    not fixed to Ntracer.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2016.06.21 JM: Temperature() NOT threadsafe.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -158,6 +159,9 @@ double microphysics_lowz::Temperature(const pion_flt *pv, ///< primitive vector
 				const double g   ///< eos gamma
 				)
 {
+#ifdef THREADS
+  rep.error("microphysics_lowz::Temperature() not thread-safe!",1);
+#endif
   //
   // put data from p_in into local vectors.
   //

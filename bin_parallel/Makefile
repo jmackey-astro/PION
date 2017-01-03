@@ -288,6 +288,8 @@ ifeq ($(MAKE_UNAME), imac)
   LDFLAGS += -lsilo 
   # libs for CVODES
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  #LDFLAGS += -Wl,--rpath
+  LDFLAGS += -Wl,-no_compact_unwind
 
 endif
 #################### --- OS X Darwin --- #############################

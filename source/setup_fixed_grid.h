@@ -20,8 +20,8 @@
 #include "MCMD_control.h"
 
 ///
-/// The simplest finite volume grid - a uniform grid with cubic cells
-/// in the chosen coordinates.  This class can set up the grid and
+/// The simplest finite volume grid - a uniform grid with cells that
+/// are cubes in the chosen coordinates.  This class sets up the grid and
 /// other things to get a simulation ready to run, so it is useful
 /// for simulation analysis.  PION itself uses a derived class to
 /// setup and run simulations.

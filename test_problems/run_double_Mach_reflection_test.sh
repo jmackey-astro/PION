@@ -11,6 +11,7 @@
 # -2010.10.11 JM: Updated directories to be relative to uniform_grid_code/
 # -2010.12.06 JM: Added Field Loop test problem.
 # -2012.07.06 JM: Modified to work in branches.
+# -2016.05.24 SG: Modified to plot in Python instead of visit.
 
 
 BASE_DIR=`pwd`
@@ -47,52 +48,61 @@ fi
 
 if [ "$2" = "" ]
 then
-  data_dir=/Users/jm/Documents/CODE/pion_dev/test_problems/data_$DATE
+  data_dir=${BASE_DIR}/data_$DATE
 else
   data_dir=$2
 fi
 
-if [ "$3" = "" ]
-then
-  visit_cmd=/Applications/VisIt.app/Contents/MacOS/VisIt
-else
-  visit_cmd=$3
-fi
+#if [ "$3" = "" ]
+#then
+#  visit_cmd=/home/green/visit/bin/visit
+#else
+#  visit_cmd=$3
+#fi
 #---------------------------------------------------------------------
 
 mkdir -p $data_dir
 mkdir -p ${data_dir}/FIGS
+mkdir -p ${data_dir}/MSG
 
-
+cp Python_Plot.py $data_dir
 
 
 #---------------------------------------------------------------------
 # Set the code-testing flags correctly in testing_flags.h
 #---------------------------------------------------------------------
-sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
-${src_dir}/defines/testing_flags.h
-sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
-${src_dir}/defines/testing_flags.h
-sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
-${src_dir}/defines/functionality_flags.h
-sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
-${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
+#${src_dir}/defines/functionality_flags.h
+#sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
+#${src_dir}/defines/testing_flags.h
 #---------------------------------------------------------------------
 # Run the Double Mach Reflection test
 #---------------------------------------------------------------------
 cd ${test_dir}/double_Mach_reflection
-./run_DMR_tests.sh    ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR ${resolution}
-./make_DMR_figures.sh ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR $visit_cmd ${resolution}
+./run_DMR_tests.sh    ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/SILO ${resolution}
+cd ${data_dir}/SILO
+mv *.txt ${data_dir}/MSG
+
+cd ../
+export PYTHONPATH=${BASE_DIR}/../extra_libraries/lib
+echo $PYTHONPATH
+python Python_Plot.py
+
+#./make_DMR_figures.sh ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR $visit_cmd ${resolution}
 #---------------------------------------------------------------------
 # Unset the TESTING flags so that the code is back to normal operation.
-sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
-${src_dir}/defines/testing_flags.h
-sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
-${src_dir}/defines/testing_flags.h
-sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
-${src_dir}/defines/functionality_flags.h
-sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
-${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
+#${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
+#${src_dir}/defines/functionality_flags.h
+#sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
+#${src_dir}/defines/testing_flags.h
 #---------------------------------------------------------------------
 
 exit

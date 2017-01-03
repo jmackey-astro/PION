@@ -47,16 +47,16 @@
 #include "microphysics/microphysics_base.h"
 
 #ifdef THREADS
-#include "andys_threads/msvc_constants.h"
+#include "tools/threads_AJL/msvc_constants.h"
 #if defined(_DEBUG) &&  defined(_MSC_VER) &&  defined(MSVC_DEBUG_NEW_TRACE_ON)
   #define CRTDBG_MAP_ALLOC
   #include <stdlib.h> 
   #include <crtdbg.h> 
   #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
 #endif
-#include "andys_threads/reefa_constants.h"
-#include "andys_threads/logmessages.h"
-#include "andys_threads/threadpool/threadpool.h"
+#include "tools/threads_AJL/reefa_constants.h"
+#include "tools/threads_AJL/logmessages.h"
+#include "tools/threads_AJL/threadpool/threadpool.h"
 //
 // Global threading variables.
 //

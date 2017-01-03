@@ -112,10 +112,10 @@ int reporting::redirect(const string &path)
   COMM->get_rank_nproc(&myrank, &nproc);
   //cout <<"myrank="<<mpiPM.myrank<<"\n";
   if (myrank==0) {
-    cout <<"(reporting::redirect): O/P goes to text files in ";
-    cout <<path<<"\n";
-    cout <<"Note: not redirecting error messages, and suppressing ";
-    cout <<"stdout from all processes except myrank=0.\n";
+    //cout <<"(reporting::redirect): O/P goes to text files in ";
+    //cout <<path<<"\n";
+    //cout <<"Note: not redirecting error messages, and suppressing ";
+    //cout <<"stdout from all processes except myrank=0.\n";
     
     temp = path+"info.txt";
     infomsg.open(temp.c_str(), ios::trunc);

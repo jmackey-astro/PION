@@ -534,10 +534,11 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
 	       const double  ///< eos gamma.
 	       );
 
-  /** \brief Returns the gas temperature (not very optimized though) 
-   *
-   * Assumes primitive vector is in cgs units.
-   */
+  /// \brief Returns the gas temperature (not very optimized though) 
+  ///
+  /// - Assumes primitive vector is in cgs units.
+  /// - Is threadsafe.
+  ///
   double Temperature(const pion_flt *, ///< primitive vector
 		     const double    ///< eos gamma
 		     );

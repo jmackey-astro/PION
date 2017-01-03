@@ -43,7 +43,7 @@ ${srcdir}/spatial_solvers:\
 ${srcdir}/time_integrators:\
 ${srcdir}/microphysics:\
 ${srcdir}/raytracing:\
-${srcdir}/contrib\
+${srcdir}/contrib:\
 ${srcdir}/tools
 
 
@@ -78,8 +78,9 @@ OPTION += -DTHREADS -D__WXGTK__
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
+LDFLAGS += -lm  
 ifeq ($(MT), USE_THREADS)
-LDFLAGS += -pthread
+  LDFLAGS += -pthread
 endif
 
 ###########################################
@@ -104,7 +105,6 @@ ifeq ($(MAKE_UNAME), standard)
   MYLIB = ${CODEDIR}/extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${srcdir}
-  LDFLAGS += -lm
   # All libraries are in this path:
   LDFLAGS += -L${MYLIB}/lib
   # Libraries for fits, silo
@@ -138,11 +138,9 @@ ifeq ($(MAKE_UNAME), JUROPA)
 
   MYLIB = ../../extra_libraries
   INC  = -I${MYLIB}/include
-  LDFLAGS  = -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -lmkl_sequential -lmkl_core
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -lreadline
 
-  #VPATH=../../source:../../source/defines
 endif
 ##################### -- JUROPA -- ###################################
 
@@ -163,14 +161,11 @@ ifeq ($(MAKE_UNAME), OSX)
   CXXFLAGS = -O0
 #CXXFLAGS += -Wall
   CXXFLAGS += -g    # enable debugging with gdb
-  #CXXFLAGS += -arch x86_64
 
   MYLIB = $(CURDIR)/../../extra_libraries
-  #MYLIB = /Users/jmackey/Library/my_local_libs
   INC += -I$(MYLIB)/include
   INC += -I${srcdir}
 
-  LDFLAGS += -lm  
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsilo 
@@ -207,14 +202,14 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   INC += -I${srcdir}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC} ${MPI_INC}
-  LDFLAGS = -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
   LDFLAGS += -lreadline
-  ifeq ($(MT), USE_THREADS)
-    LDFLAGS += -pthread
-  endif
+#  ifeq ($(MT), USE_THREADS)
+#    LDFLAGS += -pthread
+#  endif
 
 
 endif
@@ -257,11 +252,9 @@ sim_projection.o \
 image_io.o \
 VectorOps.o \
 VectorOps_spherical.o \
-  \
   raytracer_base.o            \
   raytracer_SC_pllel.o        \
   raytracer_SC.o              \
-  \
   microphysics_base.o         \
   cooling_SD93_cie.o          \
   hydrogen_recomb_Hummer94.o  \
@@ -286,14 +279,18 @@ VectorOps_spherical.o \
 
 ifeq ($(MT), USE_THREADS)
   OBJECTS += logmessages.o threadpool.o threads.o
-  VPATH +=:./andys_threads:./andys_threads/threadpool
-  THREAD_INCLUDE=./andys_threads/threads.h ./andys_threads/msvc_constants.h ./andys_threads/reefa_constants.h
-  #GLOBAL += andys_threads/threads.h andys_threads/msvc_constants.h reefa_constants.h
+  VPATH +=:${srcdir}/tools/threads_AJL:${srcdir}/tools/threads_AJL/threadpool
+  THREAD_INCLUDE=${srcdir}/tools/threads_AJL/threads.h ${srcdir}/tools/threads_AJL/msvc_constants.h ${srcdir}/tools/threads_AJL/reefa_constants.h
+  #GLOBAL += threads_AJL/threads.h threads_AJL/msvc_constants.h reefa_constants.h
 endif
 
 projection: $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection $(LDFLAGS)
 
+
+####################################
+### DEPENDENCIES OF SOURCE FILES ###
+####################################
 
 ################################
 # Andy's multi-threading files #

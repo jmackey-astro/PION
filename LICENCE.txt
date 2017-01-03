@@ -7,11 +7,21 @@ PION.
 Copyright (c) 2006-2016 by Jonathan Mackey and co-authors.
 
 Contact information:
-Email: jmackey@cp.dias.ie
+
+Email:
+jmackey@cp.dias.ie
+
+Post:
+Dunsink Observatory,
+Dunsink Lane,
+Castleknock,
+Dublin 15,
+D15 XR2R,
+Ireland.
 
 -----------------
 
-This document last updated: 2016.05.04.
+This document last updated: 2016/08/25.
 
 The principal author of this code is Jonathan Mackey.
 
@@ -19,6 +29,8 @@ Minor code contributions and major planning/conceptual contributions
 have been made by Andrew J. Lim from 2006-2010.
 
 Metal-free Chemistry/heating/cooling routines contributed by Harpreet Dhanoa.
+
+Python analysis tools developed with Sam Green.
 
 -----------------
 
@@ -90,9 +102,7 @@ relevant papers describing PION and its components:
  - Mackey & Lim (2011,MNRAS,412,2079) for photoionisation with
    magnetohydrodynamics,
  - Mackey (2012,A&A,539,A147) for updated explicit photoionisation algrithm.
- - Dhanoa, Mackey & Yates (2014,MNRAS,444,2085) for metal-free chemistry.  You
-   agree to cite at least one of these articles, whichever is most appropriate
-   for the modules you are using.
+ - Dhanoa, Mackey & Yates (2014,MNRAS,444,2085) for metal-free chemistry.
 
 -------------------
 END

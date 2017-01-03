@@ -206,7 +206,7 @@ UniformGrid::UniformGrid(
 #endif
   //
   // Checks grid dimensions and discretisation is reasonable,
-  // and that it gives cubic cells.
+  // and that it gives cells with equal length in each dimension.
   //
   set_cell_size();
 
@@ -747,8 +747,8 @@ int UniformGrid::allocate_grid_data()
 int UniformGrid::set_cell_size()
 {
   //
-  // Uniform Cartesian grid, with cubic cells, so this is easy, and
-  // every cell has the same dimensions.
+  // Uniform Cartesian grid, with cells that have the same length in
+  // each direction, so this is very easy...
   //
 #ifdef TESTING
   cout <<"\t Setting G_dx=constant for all cells.\n";
@@ -764,14 +764,12 @@ int UniformGrid::set_cell_size()
 
   if(G_ndim>1) {
     if (!pconst.equalD(G_range[1]/G_dx, static_cast<double>(G_ng[1])))
-      rep.error("Cells are not cubic! Set the range and number of \
-        points appropriately.", G_range[1]/G_dx/G_ng[1]);
+      rep.error("Cells must be same length in each direction! Set the range and number of points appropriately.", G_range[1]/G_dx/G_ng[1]);
   }
 
   if (G_ndim>2) {
     if (!pconst.equalD(G_range[2]/G_dx, static_cast<double>(G_ng[2])))
-      rep.error("Cells are not cubic! Set the range and number of \
-        points appropriately.", G_range[2]/G_dx/G_ng[2]);
+      rep.error("Cells must be same length in each direction! Set the range and number of points appropriately.", G_range[2]/G_dx/G_ng[2]);
   }
 
   //
@@ -2928,7 +2926,7 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
         )
 {
   //
-  // this is for cartesian geometry, with cubic cells, so things are
+  // For cartesian geometry, with cells that are cubes, so it is
   // quite simple.  We run through each cell, and if it is within the 
   // source's radius of influence, then we add it to the lists.
   //
@@ -3831,7 +3829,7 @@ int uniform_grid_cyl::BC_assign_STWIND_add_cells2src(
         )
 {
   //
-  // this is for cylindrical geometry, with cubic cells, so things are
+  // For cylindrical geometry, with cells that are cubes, so things are
   // quite simple.  We run through all cells, and if any are within the 
   // source's radius of influence, then we add them to the lists.
   //

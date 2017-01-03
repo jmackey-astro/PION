@@ -879,7 +879,7 @@ int sim_control_fixedgrid::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(space_ooa, space_ooa, grid); //,time_ooa);
+  err = eqn->preprocess_data(space_ooa, space_ooa, grid);
 
   //
   // Now calculate the directionally-unsplit time update for the
