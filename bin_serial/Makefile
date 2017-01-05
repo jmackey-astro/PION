@@ -49,6 +49,7 @@
 # - 2015.01.12 JM: Added command_line_interface.h.cpp.
 # - 2016.02.12 JM: renamed .cc files to .cpp
 # - 2016.05.04 JM: Added FIONN to list of machines
+# - 2016.08.29 JM: removed *Eint solvers.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -361,9 +362,6 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         file_status.o \
 	stellar_wind_BC.o \
 	flux_base.o \
-	eqns_hydro_adi_Eint.o \
-	flux_hydro_adi_Eint.o \
-	solver_eqn_hydro_adi_Eint.o \
       	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
@@ -496,9 +494,6 @@ eqns_hydro_isothermal.o: eqns_hydro_isothermal.cpp \
 eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cpp eqns_mhd_adiabatic.h \
 		      eqns_base.h ${GLOBAL}
 
-eqns_hydro_adi_Eint.o: eqns_hydro_adi_Eint.cpp eqns_hydro_adi_Eint.h \
-    eqns_hydro_adiabatic.h eqns_base.h ${GLOBAL}
-
 ###################
 # RIEMANN SOLVERS #
 ###################
@@ -544,13 +539,6 @@ flux_mhd_adiabatic.o: flux_mhd_adiabatic.cpp flux_mhd_adiabatic.h \
    eqns_mhd_adiabatic.h riemannMHD.h flux_base.h eqns_base.h \
    ${GLOBAL} cell_interface.h
 
-flux_hydro_adi_Eint.o: flux_hydro_adi_Eint.cpp flux_hydro_adi_Eint.h \
-   eqns_hydro_adi_Eint.h \
-   flux_hydro_adiabatic.h eqns_hydro_adiabatic.h \
-   flux_base.h eqns_base.h \
-   riemann.h Roe_Hydro_PrimitiveVar_solver.h \
-   ${GLOBAL} cell_interface.h
-
 ###########
 # SOLVERS #
 ###########
@@ -572,12 +560,6 @@ solver_eqn_mhd_adi.o: VectorOps.h \
    solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_mhd_adi.h flux_mhd_adiabatic.h  eqns_mhd_adiabatic.h \
    solver_eqn_mhd_adi.cpp
-
-solver_eqn_hydro_adi_Eint.o:	VectorOps.h VectorOps_spherical.h \
-   solver_eqn_hydro_adi_Eint.h solver_eqn_hydro_adi_Eint.cpp \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_adi.h flux_hydro_adiabatic.h  eqns_hydro_adiabatic.h \
-   solver_eqn_hydro_adi_Eint.h solver_eqn_hydro_adi_Eint.cpp
 
 
 ######################

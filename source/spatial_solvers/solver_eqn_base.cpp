@@ -285,9 +285,8 @@ void FV_solver_base::post_calc_viscous_terms(
 // the flux calculations.
 //
 int FV_solver_base::preprocess_data(
-        const int csp,
-        const int ctm,
-        class GridBaseClass *grid
+        const int csp,            // spatial order of accuracy required.
+        class GridBaseClass *grid // pointer to grid.
         )
 {
   //  cout <<"\t\t\tpreprocess_data(): Starting: ndim = "<<SimPM.ndim<<"\n";
@@ -299,7 +298,7 @@ int FV_solver_base::preprocess_data(
   // to calculate Edot, because it was already done in calc_dt().  But on the 
   // second half step we need to calculate it here.
   //
-  if (ctm != OA1) {
+  if (csp != OA1) {
     //cout <<"\tFV_solver_base::preprocess_data: setting Edot for 2nd step.\n";
     err = set_thermal_conduction_Edot();
     if (err) {
@@ -318,12 +317,12 @@ int FV_solver_base::preprocess_data(
   } while ( (c =grid->NextPt(c)) !=0);
 #endif // THERMAL CONDUCTION
 
+#ifdef TEST_LAPIDUS
   //
   // If we have a Lapidus-type viscosity, then we need to save div(v)
   // for every cell.
   //
   if (SimPM.artviscosity==AV_LAPIDUS) {
-#ifdef TEST_LAPIDUS
     //
     // TODO: NEED FIRST BOUNDARY CELL VALUES ALSO!
     //
@@ -335,19 +334,23 @@ int FV_solver_base::preprocess_data(
       } while ( (c =grid->NextPt(c)) !=0);
     }
     //
-#else
-    cout <<"\t\t*** ASKED FOR LAPIDUS VISC, BUT IFDEF IS NOT ENABLED.\n";
-#endif //TEST_LAPIDUS
   }
+#else 
+  if (SimPM.artviscosity==AV_LAPIDUS) {
+    cout <<"\t\t*** ASKED FOR LAPIDUS VISC, BUT IFDEF IS NOT ENABLED.\n";
+  }
+#endif //TEST_LAPIDUS
+
   //
   // For the H-correction we need a maximum speed in each direction
   // for every cell.  Note this calculation is very time-consuming
   // because all of the slopes and edge-states must be calculated.
   //
-  else if (SimPM.artviscosity==AV_HCORRECTION ||
-	   SimPM.artviscosity==AV_HCORR_FKJ98) {
-    err += calc_Hcorrection(csp,ctm, grid);
+  if (SimPM.artviscosity==AV_HCORRECTION ||
+      SimPM.artviscosity==AV_HCORR_FKJ98) {
+    err += calc_Hcorrection(csp, grid);
   }
+
   return err;
 }
 
@@ -359,7 +362,6 @@ int FV_solver_base::preprocess_data(
 
 int FV_solver_base::calc_Hcorrection(
         const int csp,
-        const int ctm,
         class GridBaseClass *grid
         )
 {
@@ -417,6 +419,7 @@ int FV_solver_base::calc_Hcorrection(
       //
       xcolumns_finished = false;
       do {
+
 	// --------------------------------------------------------
 	// Calculate the H-correction coefficients for this column:
 	// Start at the outermost boundary cell, and go to the end.
@@ -429,9 +432,6 @@ int FV_solver_base::calc_Hcorrection(
 	// stencil).
 	//
 	cell *cpt = start;
-	while (grid->NextPt(cpt,negdirs[idim])) {
-	  cpt = grid->NextPt(cpt,negdirs[idim]);
-	}	
 	cell *npt  = grid->NextPt(cpt,posdirs[idim]);
 	cell *n2pt = grid->NextPt(npt,posdirs[idim]);
 	if (npt==0 || n2pt==0)
@@ -445,10 +445,10 @@ int FV_solver_base::calc_Hcorrection(
 	  edgeL[v]     = 0.;
 	} // slope_npt[] and edgeR[] get initialised in next loop.
 	
-	//
+	// --------------------------------------------------------
 	// Run through column, calculating slopes, edge-states, and
 	// eta[] values as we go.
-	//
+	// --------------------------------------------------------
 	do {
 	  err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
 	  err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
@@ -460,10 +460,11 @@ int FV_solver_base::calc_Hcorrection(
 	  // Set npt slope to cpt slope, set n2pt to npt, npt to cpt.
 	  // Move to next cell.
 	  //
+	  cpt = npt;
+          npt = n2pt;
 	  temp = slope_cpt;
 	  slope_cpt = slope_npt;
 	  slope_npt = temp;
-	  cpt = npt; npt = n2pt;
 	}  while ( (n2pt=grid->NextPt(n2pt,posdirs[idim])) !=0);
 
 	//
@@ -486,7 +487,7 @@ int FV_solver_base::calc_Hcorrection(
 	if (SimPM.ndim==1) xcolumns_finished = true;
 	else {
 	  start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
-	  if (!start || !start->isgd) xcolumns_finished = true;
+	  if (!start) xcolumns_finished = true;
 	}
       } while (!xcolumns_finished);
 	
@@ -499,7 +500,7 @@ int FV_solver_base::calc_Hcorrection(
       else {
 	start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
 	marker = start;
-	if (!start || !start->isgd) zplanes_finished = true;
+	if (!start) zplanes_finished = true;
       }
     } while (!zplanes_finished);
 
