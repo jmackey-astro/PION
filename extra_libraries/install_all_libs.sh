@@ -147,11 +147,13 @@ case $HOST in
     source /usr/share/modules/init/bash
     module purge
     module load dev intel
-    #module load dev cmake/intel/latest
-    module load dev cmake/intel/3.0.2
+    module load dev cmake/intel/latest
+    #module load dev cmake/intel/3.0.2
+    module load python py/intel
+    module load python numpy
+    #module list
     MAKE_UNAME=FIONN
     NCORES=8
-    # -DINTEL means the code uses the intel math headers instead of gnu.
     export CC=icc
     export CXX=icpc
     export FC=ifort
@@ -222,12 +224,13 @@ echo "********************************"
 BASE_PATH=`pwd`
 echo "***Path = $BASE_PATH ***"
 cd $SRC_DIR
-make distclean
+#make clean
 ./configure --prefix=${BASE_PATH} \
---disable-browser \
---disable-fortran \
---disable-silex \
---enable-pythonmodule
+ --disable-browser \
+ --disable-fortran \
+ --disable-silex \
+ --disable-shared \
+ --enable-pythonmodule
 
 # Silex is broken because I can't get Qt working...
 #--enable-silex \
@@ -238,9 +241,9 @@ echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
 make -j$NCORES
-echo "********************************"
-echo "*** RUNNING TESTS ***"
-echo "********************************"
+#echo "********************************"
+#echo "*** RUNNING TESTS ***"
+#echo "********************************"
 #cd tests/
 #make check
 #cd ..
@@ -264,7 +267,7 @@ SRC_DIR=sundials-2.6.2
 BLD_DIR=sundials_build
 REMOTE_URL=http://computation.llnl.gov/projects/sundials-suite-nonlinear-differential-algebraic-equation-solvers/download/sundials-2.6.2.tar.gz
 echo "********************************"
-echo "*** INSTALLING CVODES LIBRARY FILE=${FILE}****"
+echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
 echo "********************************"
 #################################
 if [ -e $FILE ]; then
@@ -297,12 +300,15 @@ echo "***********************************"
 echo "*** RUNNING CMAKE CONFIG ***"
 echo "***********************************"
 BASE_PATH=`pwd`
-echo "***Path = $BASE_PATH ***"
+echo "Path = $BASE_PATH"
 mkdir -p $BLD_DIR
 cd $BLD_DIR
-echo "cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=ON ${BASE_PATH}/${SRC_DIR}"
+echo "Running CMAKE"
 cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
- -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=ON \
+ -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
+ -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
+ -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
+ -DBUILD_CVODE=ON -DBUILD_SHARED_LIBS=OFF \
  ${BASE_PATH}/${SRC_DIR}
 echo "********************************"
 echo "*** RUNNING MAKE ***"
@@ -310,10 +316,10 @@ echo "********************************"
 make -j$NCORES
 make -j$NCORES install
 echo "*********************************"
-echo "*** INSTALLED CVODES LIBRARY ***"
+echo "*** INSTALLED CVODE LIBRARY ***"
 echo "*********************************"
 cd $CURDIR
-#rm -rf $BLD_DIR
+rm -rf $BLD_DIR
 echo "********************************"
 echo "*** FINISHED! ***"
 echo "********************************"

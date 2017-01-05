@@ -422,6 +422,7 @@ int setup_fixed_grid::setup_microphysics()
       have_set_MP=true;
     }
 
+#ifdef CODE_EXT_SBII
     if (mptype=="MPSBHC") {
       cout <<"\t******* setting up mpv8_StarBench_heatcool module *********\n";
       cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
@@ -430,6 +431,7 @@ int setup_fixed_grid::setup_microphysics()
       MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
       have_set_MP=true;
     }
+#endif // CODE_EXT_SBII
 
 #ifdef CODE_EXT_HHE
     if (mptype=="MPv9__") {
