@@ -167,7 +167,7 @@
 #endif // if FITS
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
-#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
+//#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
 #include "spatial_solvers/solver_eqn_hydro_iso.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
 
@@ -553,30 +553,30 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
   // Don't do anything if not changing eqntype
       }
 
-#ifdef INCLUDE_EINT_ADI_HYDRO
-      else if (SimPM.eqntype==EQEUL && e==EQEUL_EINT) {
-  //
-  // This shouldn't cause any problems.
-  //
-  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from Euler";
-  cout <<" (Etot) to Euler-Eint -- non-conservative.\n";
-  SimPM.eqntype=e;
-#ifdef        EINT_ETOT_PARALLEL
-  SimPM.nvar+=1; SimPM.ftr +=1;
-#endif //     EINT_ETOT_PARALLEL
-      }
-      else if (SimPM.eqntype==EQEUL_EINT && e==EQEUL) {
-  //
-  // This shouldn't cause any problems,.
-  //
-  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from Euler-Eint";
-  cout <<" (non-conservative) to Euler (total energy).\n";
-  SimPM.eqntype=e;
-#ifdef        EINT_ETOT_PARALLEL
-  SimPM.nvar-=1; SimPM.ftr -=1;
-#endif //     EINT_ETOT_PARALLEL
-      }
-#endif // if INCLUDE_EINT_ADI_HYDRO
+//#ifdef INCLUDE_EINT_ADI_HYDRO
+//      else if (SimPM.eqntype==EQEUL && e==EQEUL_EINT) {
+//  //
+//  // This shouldn't cause any problems.
+//  //
+//  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from Euler";
+//  cout <<" (Etot) to Euler-Eint -- non-conservative.\n";
+//  SimPM.eqntype=e;
+//#ifdef        EINT_ETOT_PARALLEL
+//  SimPM.nvar+=1; SimPM.ftr +=1;
+//#endif //     EINT_ETOT_PARALLEL
+//      }
+//      else if (SimPM.eqntype==EQEUL_EINT && e==EQEUL) {
+//  //
+//  // This shouldn't cause any problems,.
+//  //
+//  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from Euler-Eint";
+//  cout <<" (non-conservative) to Euler (total energy).\n";
+//  SimPM.eqntype=e;
+//#ifdef        EINT_ETOT_PARALLEL
+//  SimPM.nvar-=1; SimPM.ftr -=1;
+//#endif //     EINT_ETOT_PARALLEL
+//      }
+//#endif // if INCLUDE_EINT_ADI_HYDRO
 
       else {
   cout <<"\tOVERRIDE PARAMS: Resetting eqntype from ";
