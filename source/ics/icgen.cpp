@@ -248,6 +248,7 @@ int main(int argc, char **argv)
            ics=="Clump_Axisymmetric")
     ic = new IC_spherical_clump();
 
+#ifdef CODE_EXT_SBII
   else if (ics=="StarBench_ContactDiscontinuity1" ||
            ics=="StarBench_ContactDiscontinuity2" ||
            ics=="StarBench_ContactDiscontinuity3" ||
@@ -262,6 +263,7 @@ int main(int argc, char **argv)
            ics=="StarBench_Cone") {
     ic = new IC_StarBench_Tests();
   }
+#endif // CODE_EXT_SBII
 
 #ifdef HARPREETS_CODE_EXT
 #ifndef EXCLUDE_HD_MODULE

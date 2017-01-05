@@ -55,13 +55,18 @@ case $HOST in
     module load dev intel
     MAKE_UNAME=FIONN
     # -DINTEL means the code uses the intel math headers instead of gnu.
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    #export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DINTEL"
     export PION_OPTIMISE=HIGH
     NCORES=8
     #export PION_OPTIMISE=LOW
     #NCORES=1
     export CC=mpiicc
     export CXX=mpiicpc
+    PION_PATH=`pwd`
+    PION_PATH=${PION_PATH}/../extra_libraries/lib
+    export LD_LIBRARY_PATH=${PION_PATH}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH:-}
+    echo $LD_LIBRARY_PATH
     echo "***** COMPILING WITH FIONN: COMPILERS ARE $CC $CXX "  
     ;;
 esac
@@ -222,9 +227,9 @@ fi
 #PION_OPTIONS+=" -DHARPREETS_CODE_EXT"
 
 # Read in turbulence simulations provided by Blakesley Burkhart
-PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
+#PION_OPTIONS+=" -DBBTURBULENCE_CODE_EXT"
 
-PION_OPTIONS+=" -DCODE_EXT_SBII"
+#PION_OPTIONS+=" -DCODE_EXT_SBII"
 export PION_OPTIONS
 echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################
@@ -244,6 +249,7 @@ make -j${NCORES} -f Makefile
 ## fix some linking problem with OSX (this is new... 2016.05.25)
 #####################################################################
 if [ ! -z "$DDD" ]; then
+  echo "Fixing linking for Sundials on OS X"
   install_name_tool -change libsundials_cvode.1.dylib      \
    ${path}/../extra_libraries/lib/libsundials_cvode.1.dylib       \
    ../icgen_parallel
