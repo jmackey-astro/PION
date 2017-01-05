@@ -855,7 +855,6 @@ int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
 int sim_control_fixedgrid::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
       const int space_ooa, ///< spatial order of accuracy for update.
-      //const int time_ooa,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -879,7 +878,7 @@ int sim_control_fixedgrid::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(space_ooa, space_ooa, grid);
+  err = eqn->preprocess_data(space_ooa, grid);
 
   //
   // Now calculate the directionally-unsplit time update for the

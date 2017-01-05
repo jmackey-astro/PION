@@ -565,17 +565,19 @@ All of these numbers should be zero, because the serial and parallel hydrodynami
 If this is not the case, then a bug has been introduced somewhere to \pion{}.
 
 Plots of density, $\rho$, as a function of radius, $r$, are generated using \visit{}, where every grid zone is plotted as a point in the $(r,\rho)$ plane for each of 11 snapshots.
-An example is shown in Fig.~\ref{fig:bw3d_hd_adi_n032}, for $N=[16,32,64]$.
+An example is shown in Fig.~\ref{fig:bw3d_hd_adi_n032}, for $N=[16,32,64,128]$.
 The improvement in the results with resolution is clear, both in the reduced scatter with increasing resolution, and in the peak density achieved in the post-shock region.
+These calculations used the Roe solver (in conserved variables) with the H-correction to eliminate the carbuncle instability.
 
 \begin{figure}
 \centering
-\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR016_RCV_Hcorr_011.png}
-\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR032_RCV_Hcorr_011.png}
-\includegraphics[width=0.32\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR064_RCV_Hcorr_011.png}
+\includegraphics[width=0.4\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR016_RCV_Hcorr_011.png}
+\includegraphics[width=0.4\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR032_RCV_Hcorr_011.png}
+\includegraphics[width=0.4\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR064_RCV_Hcorr_011.png}
+\includegraphics[width=0.4\textwidth]{figs/Density_BWcrt3Dpll_Octant_NR128_RCV_Hcorr_011.png}
 \caption{
   Scatter plot of density against radius for a 3D adiabatic blastwave.
-  The left-hand panel shows the result with $16^3$ grid zones, the centre panel with $32^3$ zones, and the right-hand panel with $64^3$ zones.
+  The panels show the result with $16^3$, $32^3$, $64^3$, and $128^3$ grid zones, from left to right and top to bottom, respectively.
   All plots are for an evolutionary time of 0.05\,Myr.
   The test parameters are discussed in the text (sec.~\ref{sec:test:bw3d})
     }

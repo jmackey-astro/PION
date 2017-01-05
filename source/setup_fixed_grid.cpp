@@ -65,7 +65,7 @@
 #endif // if FITS
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
-#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
+//#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
 #include "spatial_solvers/solver_eqn_hydro_iso.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
 
