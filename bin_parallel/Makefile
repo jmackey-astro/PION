@@ -132,11 +132,14 @@ ifeq ($(MAKE_UNAME), FIONN)
   #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
   #CXXFLAGS += -fp-stack-check -fstack-security-check
 
-  MYLIB = ../extra_libraries
+  MYLIB = $(CURDIR)/../extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
+  LDFLAGS += -Wl,-L${MYLIB}/lib
+  LDFLAGS += -lsilo 
+  #LDFLAGS += -lcfitsio
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lm
 
 endif
 ################### --- FIONN at ICHEC.IE ---######################
@@ -391,8 +394,7 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
         spherical_clump.o \
         mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
-        StarBench_test.o
+        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
@@ -409,7 +411,7 @@ endif
 
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
   OBJECTS += mpv8_StarBench_heatcool.o
-  IC_OBJ +=  mpv8_StarBench_heatcool.o
+  IC_OBJ +=  mpv8_StarBench_heatcool.o StarBench_test.o
 endif
 
 # NEW chemistry classes.
