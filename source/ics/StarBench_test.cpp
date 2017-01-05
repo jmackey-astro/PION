@@ -581,7 +581,9 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     do {
       CI.get_dpos(c,pos);
       deflection = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda);
-      if (pos[XX]<= IF_pos+deflection) {
+      //if (pos[XX]<= IF_pos+deflection) {
+      // This makes the IF smooth, but the SF is still distorted.
+      if (pos[XX]<= IF_pos) {
         //
         // Set to downstream properties, ionized.
         //
