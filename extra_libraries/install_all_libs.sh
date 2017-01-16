@@ -18,6 +18,7 @@ NCORES=4
 export CC=gcc
 export CXX=g++
 export FC=gfortran
+SHARED=YES
 
 export WGET='wget'
 
@@ -68,6 +69,7 @@ case $HOST in
     export FC=ifort
     MAKE_UNAME=JUROPA
     NCORES=8
+    SHARED=NO
     ;;
 esac
 #######################
@@ -157,6 +159,7 @@ case $HOST in
     export CC=icc
     export CXX=icpc
     export FC=ifort
+    SHARED=NO
     ;;
 esac
 #######################
@@ -172,6 +175,7 @@ if [ ! -z "$DDD" ]; then
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=osx
   NCORES=4
+  SHARED=NO
 fi
 #################################
 
@@ -225,12 +229,24 @@ BASE_PATH=`pwd`
 echo "***Path = $BASE_PATH ***"
 cd $SRC_DIR
 #make clean
-./configure --prefix=${BASE_PATH} \
+
+if [ "$SHARED" == "NO" ]
+then
+  echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
+  ./configure --prefix=${BASE_PATH} \
  --disable-browser \
  --disable-fortran \
  --disable-silex \
  --disable-shared \
  --enable-pythonmodule
+else
+  echo " ****** COMPILING SHARED LIBRARIES ****** "
+  ./configure --prefix=${BASE_PATH} \
+ --disable-browser \
+ --disable-fortran \
+ --disable-silex \
+ --enable-pythonmodule
+fi
 
 # Silex is broken because I can't get Qt working...
 #--enable-silex \
@@ -304,12 +320,24 @@ echo "Path = $BASE_PATH"
 mkdir -p $BLD_DIR
 cd $BLD_DIR
 echo "Running CMAKE"
-cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
+if [ "$SHARED" == "NO" ]
+then
+  echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
+  cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
  -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
  -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
  -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
  -DBUILD_CVODE=ON -DBUILD_SHARED_LIBS=OFF \
  ${BASE_PATH}/${SRC_DIR}
+else
+  echo " ****** COMPILING SHARED LIBRARIES ****** "
+  cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
+ -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
+ -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
+ -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
+ -DBUILD_CVODE=ON \
+ ${BASE_PATH}/${SRC_DIR}
+fi
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
