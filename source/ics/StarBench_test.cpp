@@ -626,32 +626,53 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
 
   // ----------------------------------------------------------------
   else if (ptype==4) {
+    c=ggg->FirstPt();
+    c->P[RO] = d_dn;
+    c->P[VX] = v_dn;
+    c->P[PG] = 0.0;
+    MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+    for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+    IF_pos = MP->get_recombination_rate(0, c->P, SimPM.gamma);
+    IF_pos = 0.65*SimPM.RS.sources[0].strength / IF_pos + ggg->SIM_Xmin(XX);
     //
     // Density sinusoidal perturbation, gaussian smoothed in x.
     //
-    double centre = ggg->Sim_Xmin(XX)+ 0.75*ggg->Sim_Range(XX);
-    double sigma  = 0.05*ggg->Sim_Range(XX);
-    double lambda = ggg->Sim_Range(YY);  // perturbation wavelength
+    double centre = ggg->SIM_Xmin(XX)+ 0.75*ggg->SIM_Range(XX);
+    double sigma  = 0.05*ggg->SIM_Range(XX);
+    double lambda = ggg->SIM_Range(YY);  // perturbation wavelength
     double amp    = 0.1;  // relative amplitude of density perturbation
     double deltarho = 0.0; // overdensity (calculated at each grid cell)
     //
     // Put data on grid:
     //
-    c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
-      deltarho = amp*sin(2.0*M_PI*(pos[YY]+0.5*ggg->Sim_Range(YY))/lambda);
-      deltarho *= exp(- 0.5*pow((pos[XX] - centre)/sigma, 2.0));
-      //
-      // Upstream unshocked properties, neutral.
-      //
-      c->P[RO] = d_up * (1.0 + deltarho);
-      c->P[PG] = 1.0e-10; // reset later with Set_Temp() call.
-      c->P[VX] = -v_up;
-      c->P[VY] = c->P[VZ] = 0.0;
-      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
-      MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
-    }
+      if (pos[XX]<= IF_pos) {
+        //
+        // Set to downstream properties, ionized.
+        //
+        c->P[RO] = d_dn;
+        c->P[PG] = 1.0e-10;
+        c->P[VX] = -v_dn;
+        c->P[VY] = c->P[VZ] = 0.0;
+        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+        MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+      }
+      else {
+        deltarho = amp*sin(2.0*M_PI*(pos[YY]+0.5*ggg->SIM_Range(YY))/lambda);
+        deltarho *= exp(- 0.5*pow((pos[XX] - centre)/sigma, 2.0));
+        //
+        // Upstream unshocked properties, neutral.
+        //
+        c->P[RO] = d_up * (1.0 + deltarho);
+        c->P[PG] = 1.0e-10; // reset later with Set_Temp() call.
+        c->P[VX] = -v_up;
+        c->P[VY] = c->P[VZ] = 0.0;
+        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
+        MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+      }
+    } while ( (c=ggg->NextPt(c)) !=0);
+
   } //  ptype==4
   // ----------------------------------------------------------------
 
