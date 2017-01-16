@@ -38,6 +38,8 @@
 /// - 2014.07.11 JM: Added isothermal noise perturbation option.
 /// - 2015.01.(15-26) JM: Added new include statements for new PION version.
 /// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
+/// - 2016.05.02 JM: Changed order of code so that MP is initialised
+///    before the "setup" function is called.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -250,23 +252,15 @@ int main(int argc, char **argv)
   else if (ics=="StarBench_ContactDiscontinuity1" ||
            ics=="StarBench_ContactDiscontinuity2" ||
            ics=="StarBench_ContactDiscontinuity3" ||
-           ics=="StarBench_ContactDiscontinuity4") {
-    ic = new IC_StarBench_Tests();
-  }
-
-  else if (ics=="StarBench_IFI_testA" ||
-           ics=="StarBench_IFI_testB" ||
-           ics=="StarBench_IFI_testC") {
-    ic = new IC_StarBench_Tests();
-  }
-  else if (ics=="StarBench_IrrCloud_Uniform" ||
-           ics=="StarBench_IrrCloud_IsoSph") {
-    ic = new IC_StarBench_Tests();
-  }
-  else if (ics=="StarBench_TremblinCooling") {
-    ic = new IC_StarBench_Tests();
-  }
-  else if (ics=="StarBench_Cone") {
+           ics=="StarBench_ContactDiscontinuity4" ||
+           ics=="StarBench_IFI_testA"             ||
+           ics=="StarBench_IFI_testB"             ||
+           ics=="StarBench_IFI_testC"             ||
+           ics=="StarBench_IFI_V2"                ||
+           ics=="StarBench_IrrCloud_Uniform"      ||
+           ics=="StarBench_IrrCloud_IsoSph"       ||
+           ics=="StarBench_TremblinCooling"       ||
+           ics=="StarBench_Cone") {
     ic = new IC_StarBench_Tests();
   }
 #endif // CODE_EXT_SBII
@@ -293,12 +287,9 @@ int main(int argc, char **argv)
   ic->set_MCMD_pointer(&MCMD);
 #endif // PARALLEL
 
-  // call setup on the class just setup.
-  err += ic->setup_data(rp,grid);
-  if (err) rep.error("Initial conditions setup failed.",err);
-
-  // if data initialised ok, see if we need to init microphysics variables,
-  // and give them an equilibrium value.
+  // ----------------------------------------------------------------
+  // We need to init microphysics class for some of the setups.
+  //
   MP=0;  // global microphysics class pointer.
 
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
@@ -320,25 +311,44 @@ int main(int argc, char **argv)
     }
 
 #endif // OLD_TRACER
+    SimSetup->setup_microphysics();
+    if (!MP) rep.error("microphysics init",MP);
+  }
+  else {
+    cout <<"MAIN: not doing ray-tracing or microphysics.\n";
+  }
+  // ----------------------------------------------------------------
+
+
+
+  // ----------------------------------------------------------------
+  // call "setup" to set up the data on the computational grid.
+  err += ic->setup_data(rp,grid);
+  if (err) rep.error("Initial conditions setup failed.",err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  // if data initialised ok, maybe we need to equilibrate the 
+  // chemistry...
+  //
+  if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
+    cout <<"MAIN: equilibrating the chemical species.\n";
+    if (!MP) rep.error("microphysics init",MP);
 
     // first avoid cooling the gas in getting to equilbrium, by
     // setting update_erg to false.
     bool uerg = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
 
-    SimSetup->setup_microphysics();
-
-    if (!MP) rep.error("microphysics init",MP);
-    //if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);
-
     err = equilibrate_MP(grid,MP,rp);
-    if (err) rep.error("setting ionisation states to equilibrium failed",err);
+    if (err)
+      rep.error("setting chemical states to equilibrium failed",err);
 
     SimPM.EP.update_erg = uerg;
+    cout <<"MAIN: finished equilibrating the chemical species.\n";
   }
-  else {
-    cout <<"MAIN: not doing ray-tracing or microphysics.\n";
-  }
+  // ----------------------------------------------------------------
+
 
 
   //
