@@ -536,6 +536,9 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   else if (seek=="3" || seek=="def_small") {
     ptype = 3;
   }
+  else if (seek=="4" || seek=="density") {
+    ptype = 4;
+  }
   else if (seek=="0" || seek=="none") {
     ptype = 0;
   }
@@ -574,7 +577,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
 
     double A = 0.0;
     if      (ptype==2) A = lambda / 8.0;  // 1/32 of the y-domain, 1/8 of l.
-    else if (ptype==3) A = lambda /64.0;  // 1/64 of l and the y-domain.
+    else if (ptype==3) A = lambda /128.0;  // 1/128 of l and the y-domain (1 cell at r1)
     else               A = 0.0;
     double deflection=0.0;
     c=ggg->FirstPt();
@@ -623,6 +626,32 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
 
   // ----------------------------------------------------------------
   else if (ptype==4) {
+    //
+    // Density sinusoidal perturbation, gaussian smoothed in x.
+    //
+    double centre = ggg->Sim_Xmin(XX)+ 0.75*ggg->Sim_Range(XX);
+    double sigma  = 0.05*ggg->Sim_Range(XX);
+    double lambda = ggg->Sim_Range(YY);  // perturbation wavelength
+    double amp    = 0.1;  // relative amplitude of density perturbation
+    double deltarho = 0.0; // overdensity (calculated at each grid cell)
+    //
+    // Put data on grid:
+    //
+    c=ggg->FirstPt();
+    do {
+      CI.get_dpos(c,pos);
+      deltarho = amp*sin(2.0*M_PI*(pos[YY]+0.5*ggg->Sim_Range(YY))/lambda);
+      deltarho *= exp(- 0.5*pow((pos[XX] - centre)/sigma, 2.0));
+      //
+      // Upstream unshocked properties, neutral.
+      //
+      c->P[RO] = d_up * (1.0 + deltarho);
+      c->P[PG] = 1.0e-10; // reset later with Set_Temp() call.
+      c->P[VX] = -v_up;
+      c->P[VY] = c->P[VZ] = 0.0;
+      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
+      MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+    }
   } //  ptype==4
   // ----------------------------------------------------------------
 
