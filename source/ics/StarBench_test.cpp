@@ -465,7 +465,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // Add in a fudge factor of 0.65 because the downstream region is
   // not constant density but increases towards the I-front.  So we
   // get more recombinations than for constant density.
-  IF_pos = 0.65*IF_pos + ggg->SIM_Xmin(XX);
+  //IF_pos = 0.65*IF_pos + ggg->SIM_Xmin(XX);
+  IF_pos = sqrt(v_x/c_i)*IF_pos + ggg->SIM_Xmin(XX);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
