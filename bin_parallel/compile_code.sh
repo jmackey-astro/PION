@@ -117,8 +117,6 @@ case $HOST in
   jj[0-9][0-9]l[0-9][0-9])
     echo "Compiling on JUROPA"
     module purge
-    #module load mkl/10.2.2.025 intel/11.1.059 sundials/2.4.0 parastation/mpi2-intel-5.0.25-2
-    #module load mkl/10.2.5.035 intel/11.1.072 parastation/mpi2-intel-5.0.26-1
     module load intel/12.1.4 parastation/mpi2-intel-5.0.26-1 sundials/2.5.0
     MAKE_UNAME=JUROPA
     NCORES=8
@@ -243,26 +241,5 @@ echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES} -f Makefile
 #####################################################################
 
-#exit
-
-#####################################################################
-## fix some linking problem with OSX (this is new... 2016.05.25)
-#####################################################################
-if [ ! -z "$DDD" ]; then
-  echo "Fixing linking for Sundials on OS X"
-  install_name_tool -change libsundials_cvode.1.dylib      \
-   ${path}/../extra_libraries/lib/libsundials_cvode.1.dylib       \
-   ../icgen_parallel
-  install_name_tool -change libsundials_nvecserial.0.dylib \
-   ${path}/../extra_libraries/lib//libsundials_nvecserial.0.dylib \
-   ../icgen_parallel 
-  install_name_tool -change libsundials_cvode.1.dylib      \
-   ${path}/../extra_libraries/lib/libsundials_cvode.1.dylib       \
-   ../pion_parallel
-  install_name_tool -change libsundials_nvecserial.0.dylib \
-   ${path}/../extra_libraries/lib//libsundials_nvecserial.0.dylib \
-   ../pion_parallel 
-fi
-#####################################################################
 exit
 

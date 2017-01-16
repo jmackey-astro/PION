@@ -159,10 +159,10 @@ ifeq ($(MAKE_UNAME), OSX)
   CXX = mpicxx
   endif
 
-#CXXFLAGS = -O3
-  CXXFLAGS = -O0
+  CXXFLAGS = -O3
+#  CXXFLAGS = -O0
 #CXXFLAGS += -Wall
-  CXXFLAGS += -g    # enable debugging with gdb
+#  CXXFLAGS += -g    # enable debugging with gdb
   #CXXFLAGS += -arch x86_64
 
   MYLIB = $(CURDIR)/../../extra_libraries
