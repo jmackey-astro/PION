@@ -467,6 +467,19 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // get more recombinations than for constant density.
   //IF_pos = 0.65*IF_pos + ggg->SIM_Xmin(XX);
   IF_pos = sqrt(v_x/c_i)*IF_pos + ggg->SIM_Xmin(XX);
+
+  //
+  // Use given parameter, if present, for initial position of IF.
+  //
+  double tmp = IF_pos;
+  seek = rrp->find_parameter("StarBench_IFI_xIF");
+  if (seek!="") {
+    IF_pos = atof(seek.c_str());
+    cout <<"Using given IF_pos="<<IF_pos<<" cm.  Calculated value="<<tmp<<" cm\n";
+  }
+  else {
+    cout <<"No IF_pos specified.  Using calculated IF_pos="<<IF_pos<<" cm.\n";
+  }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
