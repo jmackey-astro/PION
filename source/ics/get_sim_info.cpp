@@ -33,6 +33,8 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.06/07 JM: Change tracer setup in files, so that each
 ///    tracer has its own variable.
+/// - 2017.03.07 JM: changed logic so that ArtificalViscosity=4 is
+///    allowed.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -364,12 +366,13 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   seek="CFL";
   str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   SimPM.CFL   = atof(str.c_str());
+
   seek="ArtificialViscosity";
   str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   if( (SimPM.artviscosity=atoi(str.c_str())) ==0) {
     SimPM.etav=0.;
   }
-  else if ( SimPM.artviscosity == 1) {
+  else if ( SimPM.artviscosity == 1  || SimPM.artviscosity == 4) {
     seek="EtaViscosity";
     str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
     SimPM.etav = atof(str.c_str());
