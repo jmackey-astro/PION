@@ -122,20 +122,12 @@ int Xray_emission::setup_xray_tables_priv(
   *logLum3 = mem.myalloc(*logLum3,Nel);
   *logLum4 = mem.myalloc(*logLum4,Nel);
 
-  //cout <<"(*logT)="<<(*logT)<<" (logT)="<<(logT)<<"\n";
-  
   for (size_t v=0; v<Nel; v++) {
-    //cout <<"v="<<v<<" "<<LT[v];
     (*logT)[v] = lLT[v];
-    //cout <<" "<<L1[v];
     (*logLum1)[v] = log10(lL1[v]);
-    //cout <<" "<<L2[v];
     (*logLum2)[v] = log10(lL2[v]);
-    //cout <<" "<<L3[v];
     (*logLum3)[v] = log10(lL3[v]);
-    //cout <<" "<<L4[v];
     (*logLum4)[v] = log10(lL4[v]);
-    //cout <<"\n";
   }
 
   *N = Nel;
@@ -144,12 +136,10 @@ int Xray_emission::setup_xray_tables_priv(
 }
 
 
+// ##################################################################
+// ##################################################################
 
-//  double t[17]= {5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2};
-//  double l1[17]={5.8367e-27, 6.8811e-26, 2.5779e-24, 1.5294e-23, 1.5956e-23, 1.7678e-23, 1.7051e-23, 1.8891e-23, 2.0251e-23, 2.6735e-23, 2.8442e-23, 1.8402e-23, 1.5671e-23, 1.7602e-23, 2.1008e-23, 2.5335e-23, 3.0165e-23}; 
-//  double l2[17]={, , , , , , , , , , , , , , , , , , , , , , 
-//  double l3[17]={, , , , , , , , , , , , , , , , , , , , , , 
-//  double l4[17]={, , , , , , , , , , , , , , , , , , , , , , 
+
 
 void Xray_emission::free_xray_tables_priv(
       double **logT,
@@ -189,14 +179,6 @@ void Xray_emission::get_xray_emissivity(
   // extrapolate linearly
   //
   if (lt<LT[0]) {
-
-    //cout << "extrapolate, T="<<T<<" : ";
-    //res[0] = L1[0]+(L1[1]-L1[0])*(lt-LT[0])/(LT[1]-LT[0]);
-    //res[1] = L2[0]+(L2[1]-L2[0])*(lt-LT[0])/(LT[1]-LT[0]);
-    //res[2] = L3[0]+(L3[1]-L3[0])*(lt-LT[0])/(LT[1]-LT[0]);
-    //res[3] = L4[0]+(L4[1]-L4[0])*(lt-LT[0])/(LT[1]-LT[0]);
-    //for (size_t v=0; v<4; v++) res[v] = exp(ln10*res[v]);
-    //rep.printVec("Res",res,4);
     for (size_t v=0; v<4; v++) res[v] = 0.0;
   }
   else if (lt>LT[XNel-1]) {
@@ -213,7 +195,6 @@ void Xray_emission::get_xray_emissivity(
     rep.printVec("Res",res,4);
   }
   else {
-    //cout <<"interpolate, T="<<T<<" : ";
     interpolate.root_find_linear(LT, L1, XNel, lt, &lrate);
     res[0] = exp(ln10*lrate);
     interpolate.root_find_linear(LT, L2, XNel, lt, &lrate);
@@ -222,7 +203,6 @@ void Xray_emission::get_xray_emissivity(
     res[2] = exp(ln10*lrate);
     interpolate.root_find_linear(LT, L4, XNel, lt, &lrate);
     res[3] = exp(ln10*lrate);
-    //rep.printVec("Res",res,4);
   }
 
   return;
