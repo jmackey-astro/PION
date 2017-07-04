@@ -331,7 +331,7 @@ int main(int argc, char **argv)
   // if data initialised ok, maybe we need to equilibrate the 
   // chemistry...
   //
-  if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
+  if (SimPM.ntracer>0 && (SimPM.EP.chemistry)) {
     cout <<"MAIN: equilibrating the chemical species.\n";
     if (!MP) rep.error("microphysics init",MP);
 
