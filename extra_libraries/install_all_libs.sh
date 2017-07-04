@@ -281,7 +281,7 @@ echo "********************************"
 FILE=sundials-2.6.2.tar.gz
 SRC_DIR=sundials-2.6.2
 BLD_DIR=sundials_build
-REMOTE_URL=http://computation.llnl.gov/projects/sundials-suite-nonlinear-differential-algebraic-equation-solvers/download/sundials-2.6.2.tar.gz
+REMOTE_URL=https://computation.llnl.gov/projects/sundials-suite-nonlinear-differential-algebraic-equation-solvers/download/sundials-2.6.2.tar.gz
 echo "********************************"
 echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
 echo "********************************"
@@ -311,7 +311,7 @@ export CFLAGS='-O3'
 echo "***********************************"
 echo "*** EXTRACTING SUNDIALS LIBRARY ***"
 echo "***********************************"
-tar zxf $FILE
+tar zxvf $FILE
 echo "***********************************"
 echo "*** RUNNING CMAKE CONFIG ***"
 echo "***********************************"
@@ -362,7 +362,7 @@ echo "*******************************"
 # Change these for new versions:
 FILE=cfitsio3390.tar.gz
 SRC_DIR=cfitsio
-REMOTE_URL=http://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
+REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
 #################################
 
 if [ -e $FILE ]; then
