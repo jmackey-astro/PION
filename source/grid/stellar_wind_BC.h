@@ -19,6 +19,8 @@
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
+/// - 2017.07.21 RK: Removed Vinf as argument for wind_source, added v_rot and v_esc. Created
+///					 stellar_wind_angle class for angle-dependent BSG winds.
 
 
 #ifndef STELLAR_WIND_BC_H
@@ -56,6 +58,7 @@ struct wind_cell {
   class cell *c;  ///< cell we are interested in.
   pion_flt *p; ///< primitive vector with wind properties for this cell.
   double dist;    ///< distance of cell centre to wind src.
+  double theta; ///< polar angle in radians
 };
 
 
@@ -75,7 +78,9 @@ struct wind_source {
     dpos[MAX_DIM], ///< physical position of source
     radius, ///< radius of fixed region (in internal units dx=2).
     Mdot,  ///< mass loss rate
-    Vinf,  ///< wind velocity
+	Vinf, ///< terminal wind velocity
+	v_rot, ///< stellar rotational velocity
+	v_esc, ///< wind escape velocity
     Tw,    ///< wind temperature
     Rstar; ///< Radius of star.
   pion_flt
@@ -344,4 +349,19 @@ class stellar_wind_evolution : virtual public stellar_wind {
   std::vector<struct evolving_wind_data *> wdata_evol;
 };
 
+
 #endif // STELLAR_WIND_BC_H
+
+
+
+
+
+
+
+
+
+
+
+
+
+

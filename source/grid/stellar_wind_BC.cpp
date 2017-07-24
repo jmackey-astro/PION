@@ -247,6 +247,10 @@ int stellar_wind::add_cell(
   wc->c = c;
 
   //
+  // Calculate tan here
+  //
+
+  //
   // Allocate memory for wind_cell reference state vector.
   //
   wc->p = 0;
@@ -1095,7 +1099,6 @@ int stellar_wind_evolution::set_cell_values(
 
 // ##################################################################
 // ##################################################################
-
 
 
 
