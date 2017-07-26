@@ -44,10 +44,13 @@
 // 3=evolving in time according to a stellar evolution model.
 //
 #define WINDTYPE_CONSTANT 0
-#define WINDTYPE_SWITCHON 1
-#define WINDTYPE_EXPAND   2
-#define WINDTYPE_EVOLVING 3
+#define WINDTYPE_EVOLVING 1
+#define WINDTYPE_ANGLE 2
 
+
+
+// ##################################################################
+// ##################################################################
 
 
 ///
@@ -55,12 +58,16 @@
 /// distance from the grid cell-centre to the source position.
 ///
 struct wind_cell {
-  class cell *c;  ///< cell we are interested in.
-  pion_flt *p; ///< primitive vector with wind properties for this cell.
+  class cell *c;  ///< pointer to cell we are interested in.
+  pion_flt *p;    ///< primitive vector with wind properties for this cell.
   double dist;    ///< distance of cell centre to wind src.
-  double theta; ///< polar angle in radians
+  double theta;   ///< polar angle in radians of cell from source.
 };
 
+
+
+// ##################################################################
+// ##################################################################
 
 
 ///
@@ -69,11 +76,10 @@ struct wind_cell {
 /// set automatically to be in the freely expanding wind.
 ///
 struct wind_source {
-  //int ipos[MAX_DIM], ///< integer position of source
   int
     id,    ///< id of source.
     ncell, ///< number of cells in the artificially fixed region.
-    type;  ///< type of wind source (0=constant,1=gradual-switch-on).
+    type;  ///< type of wind source (0=constant,1=evolving,2=lat-dep.).
   double
     dpos[MAX_DIM], ///< physical position of source
     radius, ///< radius of fixed region (in internal units dx=2).
@@ -86,10 +92,14 @@ struct wind_source {
   pion_flt
     *tracers; ///< tracer values of wind.
   bool
-    //ipos_set, ///< false until we set the integer position.
     cells_added; ///< false until we add all cells to the source list.
   std::vector<struct wind_cell *> wcells;
 };
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -100,7 +110,6 @@ struct wind_source {
 ///
 class stellar_wind {
  public:
-  //int Num_src;  ///< can set this so we know how many sources to look for in pfiles.
   stellar_wind();
   virtual ~stellar_wind();
   ///
@@ -109,9 +118,9 @@ class stellar_wind {
   /// hydrogen gas, otherwise it will be modified accordingly.
   ///
   int add_source(
-      const double *, ///< position (physical units)
-      const double,   ///< radius (physical units)
-      const int,      ///< type (0=fixed,1=gradual-switch-on)
+      const double *, ///< position (cgs units)
+      const double,   ///< radius (cgs units)
+      const int,      ///< type (0=constant,1=evolving,2=lat-dep.)
       const double,   ///< Mdot (Msun/yr)
       const double,   ///< Vinf (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
@@ -123,9 +132,9 @@ class stellar_wind {
   /// This function is only used in a derived class.
   ///
   virtual int add_evolving_source(
-      const double *, ///< position (physical units).
-      const double,   ///< radius (physical units).
-      const int,      ///< type (must be 3, for variable wind).
+      const double *, ///< position (cgs units).
+      const double,   ///< radius (cgs units).
+      const int,      ///< type (1=evolving,2=lat-dep.).
       const double,   ///< Radius at which to get gas pressure from Teff
       const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
@@ -237,18 +246,19 @@ class stellar_wind {
 };
 
 
+// ##################################################################
+// ##################################################################
+
+
 ///
-/// Struct for holding evolving stellar wind data (spline arrays, Nspl).
+/// Struct for holding evolving stellar wind data (spline arrays, Npt).
 ///
 struct evolving_wind_data {
-  int Nspl;
+  int Npt;
   double *t;
   double *mdot;
-  double *mdot2;
   double *vinf;
-  double *vinf2;
   double *Teff;
-  double *Teff2;
   struct wind_source *ws;
   bool is_active; ///< Set to false initially, then to true once its time has come.
   double offset, ///< sim-time minus spline-time.
@@ -257,6 +267,10 @@ struct evolving_wind_data {
     t_next_update, ///< Next time we need to update the source properties.
     update_freq; ///< Time interval between calls to update wind properties.
 };
+
+
+// ##################################################################
+// ##################################################################
 
 
 ///
