@@ -19,7 +19,7 @@
 using namespace std;
 
 ///
-/// Interpolation class, including cubic spline (from Numerical
+/// Interpolation class, including cubic spline (adapted from Numerical
 /// Recipes) and bisection with linear interpolation.
 ///
 class interpolate_arrays {
@@ -54,7 +54,7 @@ class interpolate_arrays {
         );
 
   ///
-  /// NR92 spline function for C++ STL vectors.
+  /// spline function for C++ STL vectors.
   ///
   void spline_vec(
         const std::vector<double> &,
@@ -66,7 +66,7 @@ class interpolate_arrays {
         );
 
   ///
-  /// NR92 splint function for C++ STL vectors.
+  /// splint function for C++ STL vectors.
   ///
   void splint_vec(
         const std::vector<double> &,
@@ -102,7 +102,22 @@ class interpolate_arrays {
         const double *,   ///< (x,y) we are searching for.
         double *           ///< pointer to result.
         );
+
+  ///
+  /// This brackets an (x,y) value with 2 function values in each
+  /// direction, and does bilinear interpolation on them.  Same as
+  /// root_find_bilinear(), but uses STL vector objects.
+  ///
+  double root_find_bilinear_vec(
+        const vector<double> &,     ///< Array of x values.
+        const vector<double> &,     ///< Array of y values.
+        const vector< vector<double> > &,  ///< Array of function values
+        const vector<size_t> &,  ///< Array sizes
+        const vector<double> &   ///< (x,y) we are searching for.
+        );
+
 };
+
 
 ///
 /// global instance of class, defined in interpolate.cpp.

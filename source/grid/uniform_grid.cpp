@@ -2840,24 +2840,30 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // all of the wind sources in the global parameter list (this was
   // formerly done in DataIOBase::read_simulation_parameters()).
   //
-  // The type of class we set up is determined first.  If any of the 
-  // wind sources have type==3==evolving, we set up stellar_wind_evolving(),
-  // otherwise we set up stellar_wind().
+  // The type of class we set up is determined first.
+  // stellar_wind_evolution is derived from stellar_wind, and 
+  // stellar_wind_angle is derived from stellar_wind_evolution.
   //
   int err=0;
   int Ns = SWP.Nsources;
   for (int isw=0; isw<Ns; isw++) {
-    if (SWP.params[isw]->type ==3) err+=1;
+    if (SWP.params[isw]->type ==WINDTYPE_EVOLVING) err=1;
+  }
+  for (int isw=0; isw<Ns; isw++) {
+    if (SWP.params[isw]->type ==WINDTYPE_ANGLE) err=2;
   }
   Wind = 0;
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
-    if (!err) {
+    if      (err==0) {
       Wind = new stellar_wind ();
     }
-    else {
+    else if (err==1) {
       Wind = new stellar_wind_evolution();
       err=0;
+    }
+    else if (err==2) {
+      Wind = new stellar_wind_angle();
     }
   }
 
@@ -2866,7 +2872,27 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   //
   for (int isw=0; isw<Ns; isw++) {
     cout <<"\tUniGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
-    if (SWP.params[isw]->type==3) {
+    if (SWP.params[isw]->type==WINDTYPE_CONSTANT) {
+      //
+      // This is for spherically symmetric winds that are constant
+      // in time.
+      //
+      err = Wind->add_source(
+        SWP.params[isw]->dpos,
+        SWP.params[isw]->radius,
+        SWP.params[isw]->type,
+        SWP.params[isw]->Mdot,
+        SWP.params[isw]->Vinf,
+        SWP.params[isw]->Tstar,
+        SWP.params[isw]->Rstar,
+        SWP.params[isw]->tr
+        );
+    }
+    else {
+      //
+      // This works for spherically symmetric winds and for
+      // latitude-dependent winds that evolve over time.
+      //
       err = Wind->add_evolving_source(
         SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
@@ -2878,18 +2904,6 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
         SimPM.simtime,
         SWP.params[isw]->update_freq,
         SWP.params[isw]->t_scalefactor
-        );
-    }
-    else {
-      err = Wind->add_source(
-        SWP.params[isw]->dpos,
-        SWP.params[isw]->radius,
-        SWP.params[isw]->type,
-        SWP.params[isw]->Mdot,
-        SWP.params[isw]->Vinf,
-        SWP.params[isw]->Tstar,
-        SWP.params[isw]->Rstar,
-        SWP.params[isw]->tr
         );
     }
     if (err) rep.error("Error adding wind source",isw);
@@ -2926,16 +2940,16 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
         )
 {
   //
-  // For cartesian geometry, with cells that are cubes, so it is
-  // quite simple.  We run through each cell, and if it is within the 
+  // We run through each cell, and if it is within the 
   // source's radius of influence, then we add it to the lists.
   //
   int err=0;
   int ncell=0;
   double srcpos[MAX_DIM];
-  Wind->get_src_posn(id,srcpos);
   double srcrad;
+  Wind->get_src_posn(id,srcpos);
   Wind->get_src_drad(id,&srcrad);
+
 #ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
   rep.printVec("src", srcpos, G_ndim);
@@ -2951,17 +2965,15 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
     if (distance_vertex2cell(srcpos,c) <= srcrad) {
       ncell++;
       err += Wind->add_cell(this, id,c);
-      //cout <<"CART: adding cell "<<c->id<<" to list. d=";
-      //rep.printVec("src", srcpos, G_ndim);
-      //rep.printVec("pos", c->pos, G_ndim);
     }
   } while ((c=NextPt(c))!=0);
   
   err += Wind->set_num_cells(id,ncell);
-//#ifdef TESTING
+
+#ifdef TESTING
   cout <<"UniformGrid: Added "<<ncell;
   cout <<" cells to wind boundary for WS "<<id<<"\n";
-//#endif
+#endif
   return err;
 }
 
@@ -2991,9 +3003,7 @@ int UniformGrid::BC_update_STWIND(
   //
   int err=0;
   for (int id=0;id<Wind->Nsources();id++) {
-    //cout <<" updating source "<<id<<"\n";
     err += Wind->set_cell_values(this, id,SimPM.simtime);
-    //cout <<" finished source "<<id<<"\n";
   }
 
   return err;

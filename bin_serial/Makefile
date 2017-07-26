@@ -361,6 +361,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
         file_status.o \
 	stellar_wind_BC.o \
+	stellar_wind_angle.o \
 	flux_base.o \
       	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
@@ -385,6 +386,7 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
 	eqns_base.o eqns_hydro_adiabatic.o eqns_hydro_isothermal.o \
 	eqns_mhd_adiabatic.o laser_ablation.o jet.o \
 	stellar_wind_BC.o \
+	stellar_wind_angle.o \
 	spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
@@ -456,8 +458,9 @@ main.o:         main.cpp sim_control.h ${GLOBAL}
 cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 
 
-uniform_grid.o:  uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h \
-		VectorOps.h VectorOps_spherical.h
+uniform_grid.o:  uniform_grid.cpp uniform_grid.h ${GLOBAL} \
+    stellar_wind_angle.h stellar_wind_BC.h \
+    VectorOps.h VectorOps_spherical.h
 
 VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
@@ -638,7 +641,7 @@ raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
 ########################
 file_status.o:  file_status.cpp file_status.h ${GLOBAL}
 dataio.o:       dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
-		stellar_wind_BC.h cell_interface.h
+		stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
 dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h
 dataio_fits.o:  dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
         solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h
@@ -647,6 +650,8 @@ readparams.o:   readparams.cpp readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h ${GLOBAL}
 
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
+  tools/interpolate.h ${GLOBAL}
+stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
   tools/interpolate.h ${GLOBAL}
 
 ##############################

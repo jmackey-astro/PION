@@ -75,6 +75,7 @@ using namespace std;
 
 #include "grid/grid_base_class.h"
 #include "grid/stellar_wind_BC.h"
+#include "grid/stellar_wind_angle.h"
 #include "coord_sys/VectorOps.h"
 #include "coord_sys/VectorOps_spherical.h"
 
