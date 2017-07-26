@@ -246,9 +246,14 @@ int stellar_wind::add_cell(
   c->isbd=true;
   wc->c = c;
 
-  //
+  // ***************************
   // Calculate tan here
-  //
+  // ***************************
+
+  wc->theta = 0;
+
+  // if statements for dim
+  // if 1D theta = 0.0;
 
   //
   // Allocate memory for wind_cell reference state vector.
