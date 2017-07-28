@@ -55,6 +55,14 @@ stellar_wind_angle::~stellar_wind_angle()
 // ##################################################################
 // ##################################################################
 
+// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+double pow_fast(
+	double a,
+	double b
+	)
+{
+	return exp(b*log(a));
+}
 
 // Generate interpolating tables for wind density function
 void stellar_wind_angle::setup_tables()
@@ -88,7 +96,7 @@ void stellar_wind_angle::setup_tables()
 	omega_vec.resize(npts);
     
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
-    for (int j = 0; j < npts; j++) omega_vec[j] = 1 - pow(10, log_mu_vec[j]);
+    for (int j = 0; j < npts; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
     //
     // Write delta table
@@ -124,7 +132,7 @@ double stellar_wind_angle::integrand(
 	double omega // Omega (v_rot/v_esc)
     )
 {
-	return fn_alpha(omega, theta) * pow(1.0 - omega*sin(theta), c_xi) * sin(theta);
+	return fn_alpha(omega, theta) * pow_fast(1.0 - omega*sin(theta), c_xi) * sin(theta);
 } 
 
 
@@ -182,7 +190,7 @@ double stellar_wind_angle::fn_phi(
 	double theta // Co-latitude angle (radians)
 	)
 {
-	return (omega/(22.0*pconst.sqrt2()*c_zeta)) * sin(theta) * pow(1.0 - omega*sin(theta), -c_gamma);
+	return (omega/(22.0*pconst.sqrt2()*c_zeta)) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
 }
 
 
@@ -196,7 +204,7 @@ double stellar_wind_angle::fn_alpha(
 	double theta // Co-latitude angle (radians)
 	)
 {
-	return pow(cos(fn_phi(omega, theta)) + pow(tan(theta),-2.0) * 
+	return pow_fast(cos(fn_phi(omega, theta)) + pow_fast(tan(theta),-2.0) * 
 		   (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) )) * fn_phi(omega, theta) *
 		   sin(fn_phi(omega, theta)), -1.0);
 } // the cotan term will diverge here if theta = 0.0
@@ -211,7 +219,7 @@ double stellar_wind_angle::fn_delta(
 	double omega // Omega (v_rot/v_esc)
 	)
 {
-	return 2.0*pow(integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega), -1.0);
+	return 2.0*pow_fast(integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega), -1.0);
 }
 
 
@@ -226,7 +234,7 @@ double stellar_wind_angle::fn_v_inf(
 	double theta // Co-latitude angle (radians)
 	)
 {
-	return c_zeta * v_esc * pow(1.0 - omega*sin(theta), c_gamma);
+	return c_zeta * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma);
 }
 
 
@@ -243,8 +251,8 @@ double stellar_wind_angle::fn_density(
 	double theta // Co-latitude angle (radians)
     )
 {
-    return (mdot * fn_alpha(omega, theta) * fn_delta(omega) * pow(1.0 - omega*sin(theta), c_xi)) /
-           (8.0 * pconst.pi() * pow(radius, 2.0) * fn_v_inf(omega, v_esc, theta));
+    return (mdot * fn_alpha(omega, theta) * fn_delta(omega) * pow_fast(1.0 - omega*sin(theta), c_xi)) /
+           (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta));
 }
 
 
@@ -292,8 +300,8 @@ double stellar_wind_angle::fn_density_interp(
 
     alpha_interp = root_find_bilinear_vec(omega_vec, theta_vec, alpha_vec, nxy, seek);
 
-    return (mdot * alpha_interp * delta_interp * pow(1.0 - omega*sin(theta), c_xi)) /
-    (8.0 * pconst.pi() * pow(radius, 2.0) * fn_v_inf(omega, v_esc, theta));
+    return (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi)) /
+    (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta));
 }
 
 
