@@ -107,6 +107,18 @@ stellar_wind::~stellar_wind()
 // ##################################################################
 
 
+// Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+double stellar_wind::pow_fast(
+	double a,
+	double b
+	)
+{
+	return exp(b*log(a));
+}
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -242,14 +254,33 @@ int stellar_wind::add_cell(
   c->isbd=true;
   wc->c = c;
 
-  // ***************************
-  // Calculate tan here
-  // ***************************
+  //
+  // Calculate the polar angle theta
+  //
 
-  wc->theta = 0;
+  // Set theta to 0 if 1D - no angle dependent wind in this case (should add exit if angle + 1D)
+  if (SimPM.ndim = 1)
+	wc->theta = 0;
 
-  // if statements for dim
-  // if 1D theta = 0.0;
+  // Polar angle in 2D
+  if (SimPM.ndim = 2)
+
+	// Opposite and adjacent of cell angle
+	double opp = grid->difference_vertex2cell(wc->dpos, c, Rcyl);
+	double adj = grid->difference_vertex2cell(wc->dpos, c, Zcyl);
+
+    wc->theta = atan(fabs(opp/adj));
+
+  // Polar angle in 3D
+  if (SimPM.ndim = 3)
+    
+    double opp1 = grid->difference_vertex2cell(wc->dpos, c, Rcyl);
+	double adj1 = grid->difference_vertex2cell(wc->dpos, c, Zcyl);
+
+	double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
+	double opp2 = grid->difference_vertex2cell(wc->dpos, c, Tcyl);
+
+	wc->theta = atan(fabs(opp2/adj2));
 
   //
   // Allocate memory for wind_cell reference state vector.

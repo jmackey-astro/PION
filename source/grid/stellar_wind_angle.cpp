@@ -46,9 +46,7 @@ stellar_wind_angle::stellar_wind_angle()
 // Destructor
 stellar_wind_angle::~stellar_wind_angle()
 {
-  // *****************************
-  // Need to delete wind cell struct?
-  // *****************************
+
 }
 
 
@@ -56,7 +54,8 @@ stellar_wind_angle::~stellar_wind_angle()
 // ##################################################################
 
 // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
-double pow_fast(
+// (also added fn to stellar_wind - probably already inherited from stellar_wind_evolution?)
+double stellar_wind_angle::pow_fast(
 	double a,
 	double b
 	)
@@ -220,7 +219,7 @@ double stellar_wind_angle::fn_delta(
 	)
 {
 	return 2.0*pow_fast(integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega), -1.0);
-}
+} // 230 points determined to give sufficient accuracy
 
 
 // ##################################################################
@@ -343,14 +342,10 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
     // ******************************************************************************
     //
+    wc->p[PG] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->radius, wc->theta);
+	wc->p[PG] *= pow_fast(WS->radius/WS->Rstar, 2.0*(1 - SimPM.gamma));
+	wc->p[PG] *= WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
 
-	// **********************************
-    // Is this valid for angle dependent wind?
-    // **********************************
-
-    wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
-    wc->p[PG]*= exp((SimPM.gamma-1.0)*log(4.0*pconst.pi()*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
-    wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
 
   //
   // NOW VELOCITIES: These should be cell-average values, which are
@@ -366,13 +361,13 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // Velocity x component
   wc->p[VX] = Vinf*grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
 
-  // Velocity y component (2D or 3D)
+  // Velocity y component (if 2D or 3D)
   if (SimPM.ndim>1)
     wc->p[VY] = Vinf*grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
   else
     wc->p[VY] = 0.0;
 
-  // Velocity z component (3D)
+  // Velocity z component (if 3D)
   if (SimPM.ndim>2)
     wc->p[VZ] = Vinf*grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
   else

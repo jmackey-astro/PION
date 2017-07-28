@@ -227,6 +227,12 @@ class stellar_wind {
         int *   ///< type of wind (=0 for now) (output)
         );
 
+  // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+  double pow_fast(
+		double a,
+		double b
+		);
+
   // --------------------------------------------------------------
 
  protected:
