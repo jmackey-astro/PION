@@ -29,6 +29,12 @@ class stellar_wind_angle : virtual public stellar_wind {
 	///
 	~stellar_wind_angle();
 
+  // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
+  double pow_fast(
+	double, ///< a
+	double ///< b
+	);
+
 
   //
   // setup tables for interpolation.
