@@ -50,6 +50,7 @@
 # - 2016.02.12 JM: renamed .cc files to .cpp
 # - 2016.05.04 JM: Added FIONN to list of machines
 # - 2016.08.29 JM: removed *Eint solvers.
+# - 2017-07-29 JM: updated for latitude-dependent winds.
 #
 ############################
 ### BASIC INFO AND PATHS ###

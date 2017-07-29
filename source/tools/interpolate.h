@@ -29,7 +29,7 @@ class interpolate_arrays {
 
   ///
   /// Sets up Cubic Spline interpolation
-  /// (from Martin White's Code, from NR)
+  /// (from Martin White's Code)
   ///
   void spline(
         const double *, ///< Array of x values.
@@ -42,7 +42,7 @@ class interpolate_arrays {
 
   ///
   /// Performs cubic spline interpolation to get y(x)
-  /// (from Martin White's Code, from NR) 
+  /// (from Martin White's Code) 
   ///
   void splint(
         const double *, ///< Array of x values.
@@ -74,7 +74,7 @@ class interpolate_arrays {
         const std::vector<double> &,
         const int,
         const double,
-        double *
+        double &
         );
 
   ///
