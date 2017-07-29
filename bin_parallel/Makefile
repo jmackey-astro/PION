@@ -47,6 +47,7 @@
 # - 2016.03.14 JM: renamed .cc files to .cpp
 # - 2016.05.04 JM: Added FIONN to list of machines
 # - 2016.08.29 JM: removed *Eint solvers.
+# - 2017-07-29 JM: updated for latitude-dependent winds.
 ###
 
 ############################
@@ -354,6 +355,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         raytracer_base.o  \
 	comm_mpi.o comm_files.o                                                \
 	stellar_wind_BC.o                                                      \
+	stellar_wind_angle.o \
 	eqns_base.o eqns_hydro_adiabatic.o                                     \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o                           \
 	riemann.o findroot.o riemannMHD.o                                      \
@@ -390,6 +392,7 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
 	utility_fits_class.o eqns_base.o eqns_hydro_adiabatic.o \
 	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o laser_ablation.o \
 	stellar_wind_BC.o \
+	stellar_wind_angle.o \
         spherical_clump.o \
         mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
@@ -474,9 +477,13 @@ setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
  sim_control.h MCMD_control.h ${GLOBAL} comms.h
 
-uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} stellar_wind_BC.h
+uniform_grid.o: uniform_grid.cpp uniform_grid.h ${GLOBAL} \
+    stellar_wind_angle.h stellar_wind_BC.h \
+    VectorOps.h VectorOps_spherical.h
 
-uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} \
+    comms.h stellar_wind_angle.h stellar_wind_BC.h \
+    VectorOps.h VectorOps_spherical.h
 
 VectorOps.o: VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
@@ -635,7 +642,7 @@ raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
 ########################
 file_status.o: file_status.cpp file_status.h
 dataio.o: dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h \
-    readparams.h stellar_wind_BC.h file_status.h
+    readparams.h stellar_wind_angle.h stellar_wind_BC.h file_status.h
 dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
 
@@ -658,7 +665,8 @@ utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h \
 # Stellar wind boundary condition
 ########################
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h ${GLOBAL}
-
+stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
+  tools/interpolate.h ${GLOBAL}
 
 #######################
 ## MPI/files comms classes

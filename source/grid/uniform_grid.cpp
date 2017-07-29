@@ -2888,7 +2888,7 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
         SWP.params[isw]->tr
         );
     }
-    else {
+    else  {
       //
       // This works for spherically symmetric winds and for
       // latitude-dependent winds that evolve over time.

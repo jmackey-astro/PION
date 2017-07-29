@@ -259,28 +259,31 @@ int stellar_wind::add_cell(
   //
 
   // Set theta to 0 if 1D - no angle dependent wind in this case (should add exit if angle + 1D)
-  if (SimPM.ndim = 1)
+  if (SimPM.ndim == 1) {
 	wc->theta = 0;
+  }
 
   // Polar angle in 2D
-  if (SimPM.ndim = 2)
+  else if (SimPM.ndim == 2) {
 
 	// Opposite and adjacent of cell angle
-	double opp = grid->difference_vertex2cell(wc->dpos, c, Rcyl);
-	double adj = grid->difference_vertex2cell(wc->dpos, c, Zcyl);
+	double opp = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
+	double adj = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
 
     wc->theta = atan(fabs(opp/adj));
+  }
 
   // Polar angle in 3D
-  if (SimPM.ndim = 3)
+  else if (SimPM.ndim == 3) {
     
-    double opp1 = grid->difference_vertex2cell(wc->dpos, c, Rcyl);
-	double adj1 = grid->difference_vertex2cell(wc->dpos, c, Zcyl);
+    double opp1 = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
+	double adj1 = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
 
 	double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
-	double opp2 = grid->difference_vertex2cell(wc->dpos, c, Tcyl);
+	double opp2 = grid->difference_vertex2cell(WS->dpos, c, Tcyl);
 
 	wc->theta = atan(fabs(opp2/adj2));
+  }
 
   //
   // Allocate memory for wind_cell reference state vector.

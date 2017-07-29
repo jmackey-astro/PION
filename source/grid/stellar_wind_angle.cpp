@@ -14,7 +14,6 @@
 #include <sstream>
 
 
-#include "wind.h"
 #include "constants.h"
 #include <iostream>
 #include <cmath>
@@ -354,7 +353,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   //
 
   // calculate terminal wind velocity
-  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta)
+  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta);
 
   cell *c = wc->c;
 

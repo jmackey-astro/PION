@@ -250,7 +250,7 @@ void interpolate_arrays::splint_vec(
         const std::vector<double> &y2a,
         const int n,
         const double x,
-        double *y
+        double &y
         )
 {
   int klo,khi,k;
@@ -266,12 +266,12 @@ void interpolate_arrays::splint_vec(
   h=xa[khi]-xa[klo];
   if (h < VERY_TINY_VALUE) {
     cerr << "Bad xa input to routine splint: h="<< h<<"\n";
-    *y = VERY_LARGE_VALUE;
+    y = VERY_LARGE_VALUE;
     return;
   }
   a=(xa[khi]-x)/h;
   b=(x-xa[klo])/h;
-  *y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
+  y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
   return;
 }
 
