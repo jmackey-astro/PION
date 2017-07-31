@@ -464,14 +464,14 @@ int stellar_wind_angle::add_evolving_source(
   //
   FILE *wf = fopen(infile.c_str(), "r");
   // Skip first two lines
-  string line;
+  char line[512];
   fscanf(wf, "%s", line);
   fscanf(wf, "%s", line);
 
   // Temp. variables for column values
   double t1, t2, t3, t4, t5, t6;
   //while (fscanf(wf, "%16.5E %16.5E %16.5E %16.5E %16.5E %16.5E", t1, t2, t3, t4, t5, t6) != EOF){
-  while (fscanf(wf, "   %E   %E   %E   %E   %E   %E", t1,t2,t3,t4,t5,t6) != EOF){
+  while (fscanf(wf, " %lE %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
     
     // Set vector values
     time_evo.push_back(t1);
@@ -482,7 +482,7 @@ int stellar_wind_angle::add_evolving_source(
     vrot_evo.push_back(t6);
 
     // Stellar radius
-    t6 = sqrt(t3/(4*pconst.pi()*pow_fast(t4, 4));
+    t6 = sqrt(t3/(4*pconst.pi()*pow_fast(t4, 4)));
     
     // Escape velocity
     vesc_evo.push_back(sqrt(2*pconst.G()*t2/t6));
@@ -524,8 +524,8 @@ int stellar_wind_angle::add_evolving_source(
   // still has times in years though.
   //
   temp->offset = time_offset/t_scalefactor; // now in seconds
-  temp->tstart = t[0];            // in seconds (already scaled)
-  temp->tfinish= t[Npt-1];        // in seconds (already scaled)
+  temp->tstart = time_evo[0];            // in seconds (already scaled)
+  temp->tfinish= time_evo[Npt-1];        // in seconds (already scaled)
   temp->update_freq = update_freq/t_scalefactor; // in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
@@ -540,7 +540,7 @@ int stellar_wind_angle::add_evolving_source(
   // properties.  We set it to be active if the current time is
   // within update_freq of tstart.
   //
-  double mdot=0.0, vinf=0.0, Twind=0.0;
+  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
@@ -549,9 +549,10 @@ int stellar_wind_angle::add_evolving_source(
     // Get the current values for mdot, vinf, Teff, and setup a wind
     // source using the constant-wind function.
     //
-    interpolate.root_find_linear(t, Tf, Npt, t_now/pconst.year(), &Twind);
-    interpolate.root_find_linear(t, md, Npt, t_now/pconst.year(), &mdot);
-    interpolate.root_find_linear(t, vi, Npt, t_now/pconst.year(), &vinf);
+    interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now/pconst.year(), Twind);
+    interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now/pconst.year(), mdot);
+    interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now/pconst.year(), vesc);
+    interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now/pconst.year(), vrot);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -561,13 +562,13 @@ int stellar_wind_angle::add_evolving_source(
     cout <<", tstart=";
     cout <<temp->tstart<<". Setting wind source to INACTIVE.\n";
     temp->is_active = false;
-    mdot=-100.0; vinf=-100.0; Twind=-100.0;
+    mdot=-100.0; vesc=-100.0; vrot=-100.0; Twind=-100.0;
   }
 
   //
-  // Now add source using constant wind version.
+  // Now add source using rotating star version.
   //
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twind,Rstar,trv);
+  add_rotating_source(pos,rad,type,mdot, vesc, vrot,Twind,Rstar,trv);
   temp->ws = wlist.back();
 
   //
@@ -581,5 +582,91 @@ int stellar_wind_angle::add_evolving_source(
   //NSRC_TOTAL++;
 
   return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+int stellar_wind_angle::add_rotating_source(
+      const double *pos, ///< position (cm from grid origin)
+      const double rad,   ///< radius (cm)
+      const int type,      ///< type (2=lat-dep.)
+      const double mdot,   ///< Mdot (g/s)
+      const double vesc,   ///< Vesc (cm/s)
+      const double vrot,   ///< Vrot (cm/s)
+      const double Twind,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
+      const double Rstar,   ///< Radius where T=Twind (to get gas pressure)
+      const pion_flt *trv  ///< Tracer values of wind (if any)
+      )
+{
+  struct wind_source *ws = 0;
+  ws = mem.myalloc(ws,1);
+  ws->id = wlist.size();
+  ws->ncell = 0;
+  ws->type = type;
+  switch (type) {
+  case WINDTYPE_ANGLE:
+    cout <<"\tAdding rotating wind source as id="<<ws->id<<"\n";
+    break;
+  default:
+    rep.error("What type of source is this?  add a new type?",type);
+    break;
+  }
+
+  for (int v=0;v<SimPM.ndim;v++)
+    ws->dpos[v] = pos[v];
+  rep.printVec("ws->dpos",ws->dpos,SimPM.ndim);
+
+  for (int v=SimPM.ndim;v<MAX_DIM;v++)
+    ws->dpos[v] = VERY_LARGE_VALUE;
+
+  ws->radius = rad;
+
+  // all inputs in cgs units.
+  ws->Mdot  = mdot;
+  ws->v_esc = vesc;
+  ws->Vinf  = vesc;
+  ws->v_rot = vrot;
+
+  ws->Tw    = Twind;
+  ws->Rstar = Rstar;
+
+  ws->tracers=0;
+  ws->tracers = mem.myalloc(ws->tracers,SimPM.ntracer);
+  for (int v=0;v<SimPM.ntracer; v++) {
+    ws->tracers[v] = trv[v];
+    cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
+  }
+    
+  ws->cells_added = false;
+  if (!ws->wcells.empty())
+    rep.error("wind_source: wcells not empty!",ws->wcells.size());
+
+  //
+  // Make sure the source position is compatible with the geometry:
+  //
+  if (SimPM.coord_sys==COORD_SPH) {
+    if (!pconst.equalD(ws->dpos[Rsph],0.0))
+      rep.error("Spherical symmetry but source not at origin!",
+                ws->dpos[Rsph]);
+  }
+  if (SimPM.coord_sys==COORD_CYL && SimPM.ndim==2) {
+    //
+    // Axisymmetry
+    //
+    if (!pconst.equalD(ws->dpos[Rcyl],0.0))
+      rep.error("Axisymmetry but source not at R=0!",ws->dpos[Rcyl]);
+  }
+
+  wlist.push_back(ws);
+  nsrc++;
+#ifdef TESTING
+  cout <<"\tAdded wind source id="<<nsrc-1<<" to list of ";
+  cout <<nsrc<<" elements.\n";
+#endif // TESTING
+  return ws->id;
 }
 

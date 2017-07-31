@@ -111,7 +111,7 @@ if [ ! -z "$DDD" ]; then
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=1
+  NCORES=4
 fi
 #################################
 
@@ -160,7 +160,7 @@ if [ $PION_OPTIMISE == LOW ]
   echo "LDFLAGS= $DLFLAGS"
   export LDFLAGS=" -lreadline -lncurses "
   echo "LDFLAGS= $LDFLAGS"
-  export PION_OPTIONS="$PION_OPTIONS -DTESTING"
+  #export PION_OPTIONS="$PION_OPTIONS -DTESTING"
 else
   export LDFLAGS=""
 fi

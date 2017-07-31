@@ -15,7 +15,9 @@
 // Stellar wind class for angle dependent winds, developed for BSGs etc.
 // Added by Robert Kavanagh (21/7/17)
 //
-class stellar_wind_angle : virtual public stellar_wind_evolution, virtual public interpolate_arrays  {
+class stellar_wind_angle
+: virtual public stellar_wind_evolution,
+  virtual public interpolate_arrays  {
 	public:
 	///
 	/// Constructor: 
@@ -32,7 +34,7 @@ class stellar_wind_angle : virtual public stellar_wind_evolution, virtual public
   /// a time offset between the start of the simulation and the time in the 
   /// stellar model (may need to be <0 so that wind feedback starts immediately).
   ///
-  int add_evolving_source(
+  virtual int add_evolving_source(
       const double *, ///< position (physical units).
       const double,   ///< radius (physical units).
       const int,      ///< type (must be WINDTYPE_ANGLE).
@@ -45,6 +47,23 @@ class stellar_wind_angle : virtual public stellar_wind_evolution, virtual public
       const double    ///< scale factor for time (t(sim)=[t(evo_file)-offset]/scalefactor
       );
   
+  ///
+  /// Add a wind source, returns source id (count from zero).
+  /// Note the temperature is in Kelvin if we have a pure neutral atomic
+  /// hydrogen gas, otherwise it will be modified accordingly.
+  ///
+  virtual int add_rotating_source(
+      const double *, ///< position (cm from grid origin)
+      const double,   ///< radius (cm)
+      const int,      ///< type (2=lat-dep.)
+      const double,   ///< Mdot (g/s)
+      const double,   ///< Vesc (cm/s)
+      const double,   ///< Vrot (cm/s)
+      const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
+      const double,   ///< Radius where T=Twind (to get gas pressure)
+      const pion_flt *  ///< Tracer values of wind (if any)
+      );
+
   // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
   double pow_fast(
 	double, ///< a

@@ -82,13 +82,13 @@ struct wind_source {
     type;  ///< type of wind source (0=constant,1=evolving,2=lat-dep.).
   double
     dpos[MAX_DIM], ///< physical position of source
-    radius, ///< radius of fixed region (in internal units dx=2).
-    Mdot,  ///< mass loss rate
-	Vinf, ///< terminal wind velocity
-	v_rot, ///< stellar rotational velocity
-	v_esc, ///< wind escape velocity
-    Tw,    ///< wind temperature
-    Rstar; ///< Radius of star.
+    radius, ///< radius of fixed region (in cm).
+    Mdot,   ///< mass loss rate  (g/s)
+    Vinf,   ///< terminal wind velocity (cm/s)
+    v_rot,  ///< stellar rotational velocity (cm/s)
+    v_esc,  ///< wind escape velocity (cm/s)
+    Tw,     ///< wind temperature (K)
+    Rstar;  ///< distance from source at which T=Tw (cm) 
   pion_flt
     *tracers; ///< tracer values of wind.
   bool
@@ -144,6 +144,24 @@ class stellar_wind {
       const double    ///< scale factor for time (t(sim)=[t(evo_file)-offset]/scalefactor
       )
   {rep.error("Don't call add_evolving_source from here.",99);return 99;}
+
+  ///
+  /// Add a wind source, returns source id (count from zero).
+  /// Note the temperature is in Kelvin if we have a pure neutral atomic
+  /// hydrogen gas, otherwise it will be modified accordingly.
+  ///
+  virtual int add_rotating_source(
+      const double *, ///< position (cm from grid origin)
+      const double,   ///< radius (cm)
+      const int,      ///< type (2=lat-dep.)
+      const double,   ///< Mdot (g/s)
+      const double,   ///< Vesc (cm/s)
+      const double,   ///< Vrot (cm/s)
+      const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
+      const double,   ///< Radius where T=Twind (to get gas pressure)
+      const pion_flt *  ///< Tracer values of wind (if any)
+      )
+  {rep.error("Don't call add_rotating_source from here.",99);return 99;}
 
   ///
   /// Return number of sources
