@@ -29,7 +29,7 @@ MAKE_UNAME=standard
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 NCORES=8
-#export PION_OPTIMISE=LOW
+export PION_OPTIMISE=LOW
 #NCORES=1
 export CXX=g++
 
@@ -111,7 +111,7 @@ if [ ! -z "$DDD" ]; then
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=4
+  NCORES=1
 fi
 #################################
 
