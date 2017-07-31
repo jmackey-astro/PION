@@ -29,7 +29,7 @@ MAKE_UNAME=standard
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 NCORES=8
-#export PION_OPTIMISE=LOW
+export PION_OPTIMISE=LOW
 #NCORES=1
 export CXX=g++
 
@@ -160,7 +160,7 @@ if [ $PION_OPTIMISE == LOW ]
   echo "LDFLAGS= $DLFLAGS"
   export LDFLAGS=" -lreadline -lncurses "
   echo "LDFLAGS= $LDFLAGS"
-  export PION_OPTIONS="$PION_OPTIONS -DTESTING"
+  #export PION_OPTIONS="$PION_OPTIONS -DTESTING"
 else
   export LDFLAGS=""
 fi
