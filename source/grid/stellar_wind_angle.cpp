@@ -437,18 +437,18 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 int stellar_wind_angle::add_evolving_source(
   const double *pos,        ///< position (physical units).
   const double  rad,        ///< radius (physical units).
-  const int    type,        ///< type (must be 3, for variable wind).
+  const int    type,        ///< type (must be WINDTYPE_ANGLE).
   const double Rstar,       ///< Radius at which to get gas pressure from Teff
   const pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
-  const double time_offset, ///< time offset = [t(sim)-t(wind_file)] in years
+  const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
   const double t_now,       ///< current simulation time, to see if src is active.
-  const double update_freq, ///< frequency with which to update wind properties.
+  const double update_freq, ///< frequency with which to update wind properties (seconds).
   const double t_scalefactor ///< wind evolves this factor times faster than normal
   )
 {
-  if (type != WINDTYPE_EVOLVING) {
-    rep.error("Bad wind type for evolving stellar wind!",type);
+  if (type != WINDTYPE_ANGLE) {
+    rep.error("Bad wind type for evolving stellar wind (rotating star)!",type);
   }
   //
   // First we will read the file, and see when the source should
@@ -458,38 +458,34 @@ int stellar_wind_angle::add_evolving_source(
   cout <<"\t\tsw-evo: adding source from file "<<infile<<"\n";
 #endif
 
-
   //
   // Read in stellar evolution data
   // Format: time	M	L	Teff	Mdot	vrot
   //
-
   FILE *wf = fopen(infile.c_str(), "r");
-
-  // Temp. variables for column values
-  double t1, t2, t3, t4, t5, t6;
-
   // Skip first two lines
   string line;
   fscanf(wf, "%s", line);
   fscanf(wf, "%s", line);
 
-  while (fscanf(wf, "%16.5E %16.5E %16.5E %16.5E %16.5E %16.5E", t1, t2, t3, t4, t5, t6) != EOF){
-	
-	// Set vector values
-	time_evo.push_back(t1);
-	M_evo.push_back(t2);
-	L_evo.push_back(t3);
-	Teff_evo.push_back(t4);
-	Mdot_evo.push_back(t5);
-	vrot_evo.push_back(t6);
+  // Temp. variables for column values
+  double t1, t2, t3, t4, t5, t6;
+  //while (fscanf(wf, "%16.5E %16.5E %16.5E %16.5E %16.5E %16.5E", t1, t2, t3, t4, t5, t6) != EOF){
+  while (fscanf(wf, "   %E   %E   %E   %E   %E   %E", t1,t2,t3,t4,t5,t6) != EOF){
+    
+    // Set vector values
+    time_evo.push_back(t1);
+    M_evo.push_back(t2);
+    L_evo.push_back(t3);
+    Teff_evo.push_back(t4);
+    Mdot_evo.push_back(t5);
+    vrot_evo.push_back(t6);
 
-	// Stellar radius
-	t6 = sqrt(t3/(4*pconst.pi()*pow_fast(t4, 4));
-	
-	// Escape velocity
-	vesc_evo.push_back(sqrt(2*pconst.G()*t2/t6));
-
+    // Stellar radius
+    t6 = sqrt(t3/(4*pconst.pi()*pow_fast(t4, 4));
+    
+    // Escape velocity
+    vesc_evo.push_back(sqrt(2*pconst.G()*t2/t6));
   }
 
   // Column length
@@ -500,9 +496,9 @@ int stellar_wind_angle::add_evolving_source(
   // time array using the time-offset so that it has the same zero
   // offset as the simulation time.
   //
-  for (i=0; i<Npt; i++) {
+  for (size_t i=0; i<Npt; i++) {
     //
-    // times in the file are measured in years, so offset should be
+    // times in the file are measured in seconds, so offset should be
     // in years.
     //
     time_evo[i] += time_offset;
@@ -527,10 +523,10 @@ int stellar_wind_angle::add_evolving_source(
   // years, but everything else is in seconds.  Note that the global SWP struct
   // still has times in years though.
   //
-  temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
-  temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
-  temp->tfinish= t[Npt-1]  *pconst.year(); // now in seconds (already scaled)
-  temp->update_freq = update_freq*pconst.year()/t_scalefactor; // now in seconds
+  temp->offset = time_offset/t_scalefactor; // now in seconds
+  temp->tstart = t[0];            // in seconds (already scaled)
+  temp->tfinish= t[Npt-1];        // in seconds (already scaled)
+  temp->update_freq = update_freq/t_scalefactor; // in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
   cout <<"\t\t tstart="<<temp->tstart;

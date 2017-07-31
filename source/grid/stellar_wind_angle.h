@@ -27,6 +27,24 @@ class stellar_wind_angle : virtual public stellar_wind_evolution, virtual public
 	///
 	~stellar_wind_angle();
 
+  ///
+  /// Add an evolving source for rotating star: takes in the filename of the source data, and 
+  /// a time offset between the start of the simulation and the time in the 
+  /// stellar model (may need to be <0 so that wind feedback starts immediately).
+  ///
+  int add_evolving_source(
+      const double *, ///< position (physical units).
+      const double,   ///< radius (physical units).
+      const int,      ///< type (must be WINDTYPE_ANGLE).
+      const double,   ///< Radius at which to get gas pressure from Teff
+      const pion_flt *, ///< Any (constant) wind tracer values.
+      const string,   ///< file name to read data from.
+      const double,   ///< time offset = [t(sim)-t(wind_file)]
+      const double,   ///< current time.
+      const double,   ///< frequency with which to update wind properties.
+      const double    ///< scale factor for time (t(sim)=[t(evo_file)-offset]/scalefactor
+      );
+  
   // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
   double pow_fast(
 	double, ///< a
