@@ -178,6 +178,16 @@ class stellar_wind_angle
       struct wind_cell *,
       const struct wind_source *
       );
+
+  ///
+  /// Update both the wind properties and the state vectors of all of the
+  /// wind cells, for a rotating star with latitude-dependent wind.
+  ///
+  virtual void update_source(
+      class GridBaseClass *,
+      struct evolving_wind_data *, ///< source to update.
+      const double ///< current simulation time.
+      );
  
 };
 

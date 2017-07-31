@@ -373,7 +373,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// updating both the wind properties and the state vectors of all of the
   /// wind cells.
   ///
-  void update_source(
+  virtual void update_source(
       class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
       const double ///< current simulation time.

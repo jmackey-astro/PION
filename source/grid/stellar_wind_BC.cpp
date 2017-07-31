@@ -265,26 +265,21 @@ int stellar_wind::add_cell(
 
   // Polar angle in 2D
   else if (SimPM.ndim == 2) {
-
-	// Opposite and adjacent of cell angle
-	double opp = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
-	double adj = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
-
+    // Opposite and adjacent of cell angle
+    double opp = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
+    double adj = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
     wc->theta = atan(fabs(opp/adj));
   }
 
   // Polar angle in 3D
   else if (SimPM.ndim == 3) {
-    
-	// Opposite and adjacent in R-Z plane
-	double opp1 = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
-	double adj1 = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
-
-	// Opposite and adjacent in Z-T plane
-	double opp2 = grid->difference_vertex2cell(WS->dpos, c, Tcyl);
-	double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
-
-	wc->theta = atan(fabs(opp2/adj2));
+    // Opposite and adjacent in R-Z plane
+    double opp1 = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
+    double adj1 = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
+    // Opposite and adjacent in Z-T plane
+    double opp2 = grid->difference_vertex2cell(WS->dpos, c, Tcyl);
+    double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
+    wc->theta = atan(fabs(opp2/adj2));
   }
 
   //
@@ -499,23 +494,14 @@ int stellar_wind::set_cell_values(
   // add quite a bit here.
   //
   struct wind_source *WS = wlist[id];
-  //cout <<"updating source "<<id<<" which has "<<WS->ncell<<" cells.\n";
-  if      (WS->type==WINDTYPE_CONSTANT ||
-           WS->type==WINDTYPE_EVOLVING) {
-    //
-    // Constant wind (type==0 or type==3)
-    //
-    for (int i=0; i<WS->ncell; i++) {
-      for (int v=0;v<SimPM.nvar;v++)
-        WS->wcells[i]->c->P[v]  = WS->wcells[i]->p[v];
-      for (int v=0;v<SimPM.nvar;v++)
-        WS->wcells[i]->c->Ph[v] = WS->wcells[i]->p[v];
-    }
-  }
-
-  else {
-    rep.error("set_cell_values(): What type of source is this?",
-              WS->type);
+#ifdef TESTING
+  cout <<"updating source "<<id<<" which has "<<WS->ncell<<" cells.\n";
+#endif
+  for (int i=0; i<WS->ncell; i++) {
+    for (int v=0;v<SimPM.nvar;v++)
+      WS->wcells[i]->c->P[v]  = WS->wcells[i]->p[v];
+    for (int v=0;v<SimPM.nvar;v++)
+      WS->wcells[i]->c->Ph[v] = WS->wcells[i]->p[v];
   }
     
   return 0;
@@ -678,10 +664,10 @@ stellar_wind_evolution::~stellar_wind_evolution()
   struct evolving_wind_data *wd=0;
   while (wdata_evol.size() >0) {
     wd = wdata_evol.back();
-    wd->t = mem.myfree(wd->t);
-    wd->mdot  = mem.myfree(wd->mdot);
-    wd->vinf  = mem.myfree(wd->vinf);
-    wd->Teff  = mem.myfree(wd->Teff);
+    if (wd->t) wd->t = mem.myfree(wd->t);
+    if (wd->mdot) wd->mdot  = mem.myfree(wd->mdot);
+    if (wd->vinf) wd->vinf  = mem.myfree(wd->vinf);
+    if (wd->Teff) wd->Teff  = mem.myfree(wd->Teff);
     wdata_evol.pop_back();
     wd = mem.myfree(wd);
   }
@@ -800,7 +786,7 @@ int stellar_wind_evolution::add_evolving_source(
   // arrays, which we now need to set up.  We need time[], vinf[],
   // vinf2[], mdot[], mdot2[], Teff, Teff2[].
   //
-  double *t=0, *vi=0, *vi2=0, *md=0, *md2=0, *Tf=0, *Tf2=0;
+  double *t=0, *vi=0, *md=0, *Tf=0;
   t   = mem.myalloc(t  , Npt);
   vi  = mem.myalloc(vi , Npt);
   md  = mem.myalloc(md , Npt);
