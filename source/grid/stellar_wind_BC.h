@@ -318,7 +318,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
   /// a time offset between the start of the simulation and the time in the 
   /// stellar model (may need to be <0 so that wind feedback starts immediately).
   ///
-  int add_evolving_source(
+  virtual int add_evolving_source(
       const double *, ///< position (physical units).
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).

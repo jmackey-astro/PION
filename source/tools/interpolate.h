@@ -32,50 +32,50 @@ class interpolate_arrays {
   /// (from Martin White's Code)
   ///
   void spline(
-        const double *, ///< Array of x values.
-        const double *, ///< Array of y values.
-        const int ,     ///< Length of arrays.
-        double ,  ///< First Derivative of interpolating function at x[1] (unit offset array) (>1.e30 for natural spline)
-        double ,  ///< First Derivative of interpolating function at x[n] (unit offset array) (>1.e30 for natural spline)
-        double *  ///< Empty array to store d2y/dx2 in.
-        );
+    const double *, ///< Array of x values.
+    const double *, ///< Array of y values.
+    const int ,     ///< Length of arrays.
+    double ,  ///< First Derivative of interpolating function at x[1] (unit offset array) (>1.e30 for natural spline)
+    double ,  ///< First Derivative of interpolating function at x[n] (unit offset array) (>1.e30 for natural spline)
+    double *  ///< Empty array to store d2y/dx2 in.
+    );
 
   ///
   /// Performs cubic spline interpolation to get y(x)
   /// (from Martin White's Code) 
   ///
   void splint(
-        const double *, ///< Array of x values.
-        const double *, ///< Array of y values.
-        const double *, ///< Array of d2y/dx2 values.
-        const int ,     ///< nspl
-        const double ,  ///< x we are searching for.
-        double *  ///< pointer to result.
-        );
+    const double *, ///< Array of x values.
+    const double *, ///< Array of y values.
+    const double *, ///< Array of d2y/dx2 values.
+    const int ,     ///< nspl
+    const double ,  ///< x we are searching for.
+    double *  ///< pointer to result.
+    );
 
   ///
   /// spline function for C++ STL vectors.
   ///
   void spline_vec(
-        const std::vector<double> &,
-        const std::vector<double> &,
-        const int ,
-        double ,
-        double ,
-        std::vector<double> &
-        );
+    const std::vector<double> &,
+    const std::vector<double> &,
+    const int ,
+    double ,
+    double ,
+    std::vector<double> &
+    );
 
   ///
   /// splint function for C++ STL vectors.
   ///
   void splint_vec(
-        const std::vector<double> &,
-        const std::vector<double> &,
-        const std::vector<double> &,
-        const int,
-        const double,
-        double &
-        );
+    const std::vector<double> &,
+    const std::vector<double> &,
+    const std::vector<double> &,
+    const int,
+    const double,
+    double &
+    );
 
   ///
   /// Given a vector of x-values, and corresponding y-values, and an input
@@ -83,25 +83,37 @@ class interpolate_arrays {
   /// interopolation.
   ///
   void root_find_linear(
-        const double *, ///< Array of x values.
-        const double *, ///< Array of y values.
-        const size_t,   ///< Array sizes
-        const double ,  ///< x we are searching for.
-        double *  ///< pointer to result.
-        );
+    const double *, ///< Array of x values.
+    const double *, ///< Array of y values.
+    const size_t,   ///< Array sizes
+    const double ,  ///< x we are searching for.
+    double *  ///< pointer to result.
+    );
 
   ///
   /// This brackets an (x,y) value with 2 function values in each
   /// direction, and does bilinear interpolation on them.
   ///
   void root_find_bilinear(
-        const double *,    ///< Array of x values.
-        const double *,    ///< Array of y values.
-        double **, ///< Array of function values
-        const size_t *,   ///< Array sizes
-        const double *,   ///< (x,y) we are searching for.
-        double *           ///< pointer to result.
-        );
+    const double *,    ///< Array of x values.
+    const double *,    ///< Array of y values.
+    double **, ///< Array of function values
+    const size_t *,   ///< Array sizes
+    const double *,   ///< (x,y) we are searching for.
+    double *           ///< pointer to result.
+    );
+
+  ///
+  /// Given a vector of x-values, and corresponding y-values, and an input
+  /// x value, find the corresponding y-value by bisection and then linear
+  /// interopolation.
+  ///
+  void root_find_linear_vec(
+    const vector<double> &, ///< Array of x values.
+    const vector<double> &, ///< Array of y values.
+    const double ,  ///< x we are searching for.
+    double &        ///< pointer to result.
+    );
 
   ///
   /// This brackets an (x,y) value with 2 function values in each
@@ -109,12 +121,12 @@ class interpolate_arrays {
   /// root_find_bilinear(), but uses STL vector objects.
   ///
   double root_find_bilinear_vec(
-        const vector<double> &,     ///< Array of x values.
-        const vector<double> &,     ///< Array of y values.
-        const vector< vector<double> > &,  ///< Array of function values
-        const vector<size_t> &,  ///< Array sizes
-        const vector<double> &   ///< (x,y) we are searching for.
-        );
+    const vector<double> &,     ///< Array of x values.
+    const vector<double> &,     ///< Array of y values.
+    const vector< vector<double> > &,  ///< Array of function values
+    const vector<size_t> &,  ///< Array sizes
+    const vector<double> &   ///< (x,y) we are searching for.
+    );
 
 };
 

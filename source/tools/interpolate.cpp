@@ -136,6 +136,55 @@ void interpolate_arrays::splint(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+void interpolate_arrays::root_find_linear_vec(
+        const vector<double> &xarr, ///< Array of x values.
+        const vector<double> &yarr, ///< Array of y values.
+        const double xreq,  ///< x we are searching for.
+        double &yreq        ///< pointer to result.
+        )
+{
+  //
+  // Given a vector of x-values, and corresponding y-values, and an input
+  // x value, find the corresponding y-value by bisection and then linear
+  // interopolation.
+  //
+  // First we find the two x-points in the array which bracket the requested
+  // x-value, with bisection.
+  //
+  size_t len = xarr.size();
+  size_t
+    ihi = len-1,  // upper bracketing value
+    ilo = 0,    // lower bracketing value
+    imid= 0;    // midpoint
+  do {
+    imid = ilo + floor((ihi-ilo)/2.0);
+    if (xarr[imid] < xreq) ilo = imid;
+    else                   ihi = imid;
+  } while (ihi-ilo >1);
+
+  //
+  // Array bounds checking: if we are extrapolating do it
+  // with zero slope (take the edge value).
+  //
+  double xval=0.0;
+  if      (xreq>xarr[ihi]) xval = xarr[ihi];
+  else if (xreq<xarr[ilo]) xval = xarr[ilo];
+  else                     xval = xreq;
+
+  //
+  // Now we linearly interpolate the y value between the two adjacent
+  // bracketing points.
+  //
+  yreq = yarr[ilo] + (yarr[ihi]-yarr[ilo])*(xval-xarr[ilo])/(xarr[ihi]-xarr[ilo]);
+  return;
+}
+
 // ##################################################################
 // ##################################################################
 
