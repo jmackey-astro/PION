@@ -46,6 +46,7 @@ class constants {
   inline double h()      {return 6.62606957e-27;}
   inline double StefanBoltzmannConst() {return 5.670373e-5;}
   inline double m_p()    {return 1.672621777e-24;}
+  inline double G()		 {return 6.67408e-8;}
   //
   // Atomic data
   //

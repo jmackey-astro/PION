@@ -18,6 +18,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <cstdio>
 using namespace std;
 
 
@@ -52,6 +53,7 @@ stellar_wind_angle::~stellar_wind_angle()
 // ##################################################################
 // ##################################################################
 
+
 // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast
 // (also added fn to stellar_wind - probably already inherited from stellar_wind_evolution?)
 double stellar_wind_angle::pow_fast(
@@ -62,6 +64,11 @@ double stellar_wind_angle::pow_fast(
 	return exp(b*log(a));
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
 // Generate interpolating tables for wind density function
 void stellar_wind_angle::setup_tables()
 {   
@@ -69,6 +76,8 @@ void stellar_wind_angle::setup_tables()
 	// Set up theta array
     //
     
+	cout << "setup_tables is working" << endl;
+
     // Min, mid and max values of theta - 5pts between min and mid, 20pts between mid and max
     double theta_min = 0.1;
     double theta_mid = 60.0;
@@ -342,7 +351,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     // ******************************************************************************
     //
     wc->p[PG] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->radius, wc->theta);
-	wc->p[PG] *= pow_fast(WS->radius/WS->Rstar, 2.0*(1 - SimPM.gamma));
+	wc->p[PG] *= pow_fast(WS->radius/WS->Rstar, 2.0*(1.0 - SimPM.gamma));
 	wc->p[PG] *= WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
 
 
@@ -418,5 +427,163 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 #endif
 
   return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+int stellar_wind_angle::add_evolving_source(
+  const double *pos,        ///< position (physical units).
+  const double  rad,        ///< radius (physical units).
+  const int    type,        ///< type (must be 3, for variable wind).
+  const double Rstar,       ///< Radius at which to get gas pressure from Teff
+  const pion_flt *trv,        ///< Any (constant) wind tracer values.
+  const string infile,      ///< file name to read data from.
+  const double time_offset, ///< time offset = [t(sim)-t(wind_file)] in years
+  const double t_now,       ///< current simulation time, to see if src is active.
+  const double update_freq, ///< frequency with which to update wind properties.
+  const double t_scalefactor ///< wind evolves this factor times faster than normal
+  )
+{
+  if (type != WINDTYPE_EVOLVING) {
+    rep.error("Bad wind type for evolving stellar wind!",type);
+  }
+  //
+  // First we will read the file, and see when the source should
+  // switch on in the simulation (it may not be needed for a while).
+  //
+#ifdef TESTING
+  cout <<"\t\tsw-evo: adding source from file "<<infile<<"\n";
+#endif
+
+
+  //
+  // Read in stellar evolution data
+  // Format: time	M	L	Teff	Mdot	vrot
+  //
+
+  FILE *wf = fopen(infile.c_str(), "r");
+
+  // Temp. variables for column values
+  double t1, t2, t3, t4, t5, t6;
+
+  // Skip first two lines
+  string line;
+  fscanf(wf, "%s", line);
+  fscanf(wf, "%s", line);
+
+  while (fscanf(wf, "%16.5E %16.5E %16.5E %16.5E %16.5E %16.5E", t1, t2, t3, t4, t5, t6) != EOF){
+	
+	// Set vector values
+	time_evo.push_back(t1);
+	M_evo.push_back(t2);
+	L_evo.push_back(t3);
+	Teff_evo.push_back(t4);
+	Mdot_evo.push_back(t5);
+	vrot_evo.push_back(t6);
+
+	// Stellar radius
+	t6 = sqrt(t3/(4*pconst.pi()*pow_fast(t4, 4));
+	
+	// Escape velocity
+	vesc_evo.push_back(sqrt(2*pconst.G()*t2/t6));
+
+  }
+
+  // Column length
+  size_t Npt = time_evo.size();
+
+  //
+  // Next we set up the interpolation, first modifying the
+  // time array using the time-offset so that it has the same zero
+  // offset as the simulation time.
+  //
+  for (i=0; i<Npt; i++) {
+    //
+    // times in the file are measured in years, so offset should be
+    // in years.
+    //
+    time_evo[i] += time_offset;
+    // scale times by scale factor.
+    time_evo[i] /= t_scalefactor;
+  }
+
+  //
+  // Some properties of the wind source are specific to this module,
+  // such as the number of points in
+  // the array, and the timings (offset, update frequency).  
+  // They are stored in local data.
+  //
+  struct evolving_wind_data *temp=0;
+  temp = mem.myalloc(temp,1);
+  temp->Npt = Npt;
+
+  //
+  // Offset is not used in the code past here.  It's just here for I/O b/c a
+  // restart will need to read the data-file again.
+  // We reset all variables to be in seconds here.  So the interpolation uses
+  // years, but everything else is in seconds.  Note that the global SWP struct
+  // still has times in years though.
+  //
+  temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
+  temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
+  temp->tfinish= t[Npt-1]  *pconst.year(); // now in seconds (already scaled)
+  temp->update_freq = update_freq*pconst.year()/t_scalefactor; // now in seconds
+  temp->t_next_update = max(temp->tstart,t_now);
+#ifdef TESTING
+  cout <<"\t\t tstart="<<temp->tstart;
+  cout <<", next update="<<temp->t_next_update;
+  cout <<", and tfinish="<<temp->tfinish<<"\n";
+#endif
+
+  //
+  // We need to decide if the wind src is active yet.  If it is, then
+  // we also set up a constant wind source for updating its
+  // properties.  We set it to be active if the current time is
+  // within update_freq of tstart.
+  //
+  double mdot=0.0, vinf=0.0, Twind=0.0;
+  if ( ((t_now+temp->update_freq)>temp->tstart ||
+        pconst.equalD(temp->tstart, t_now))
+       && t_now<temp->tfinish) {
+    temp->is_active = true;
+    //
+    // Get the current values for mdot, vinf, Teff, and setup a wind
+    // source using the constant-wind function.
+    //
+    interpolate.root_find_linear(t, Tf, Npt, t_now/pconst.year(), &Twind);
+    interpolate.root_find_linear(t, md, Npt, t_now/pconst.year(), &mdot);
+    interpolate.root_find_linear(t, vi, Npt, t_now/pconst.year(), &vinf);
+#ifdef TESTING
+    cout <<"Source is Active\n";
+#endif
+  }
+  else {
+    cout <<"WARNING: Source is not yet active: tnow="<<t_now;
+    cout <<", tstart=";
+    cout <<temp->tstart<<". Setting wind source to INACTIVE.\n";
+    temp->is_active = false;
+    mdot=-100.0; vinf=-100.0; Twind=-100.0;
+  }
+
+  //
+  // Now add source using constant wind version.
+  //
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twind,Rstar,trv);
+  temp->ws = wlist.back();
+
+  //
+  // So now we have all of the properties of the wind source in the
+  // struct evolving_wind_data 'temp', and we have added it to the
+  // list of constant wind sources, wlist[].  We can now add temp to
+  // the list of evolving wind sources and return (so that wlist[i]
+  // and wdata_evol[i] point to the same source).
+  //
+  wdata_evol.push_back(temp);
+  //NSRC_TOTAL++;
+
+  return 0;
 }
 

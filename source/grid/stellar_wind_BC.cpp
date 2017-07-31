@@ -276,11 +276,13 @@ int stellar_wind::add_cell(
   // Polar angle in 3D
   else if (SimPM.ndim == 3) {
     
-    double opp1 = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
+	// Opposite and adjacent in R-Z plane
+	double opp1 = grid->difference_vertex2cell(WS->dpos, c, Rcyl);
 	double adj1 = grid->difference_vertex2cell(WS->dpos, c, Zcyl);
 
-	double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
+	// Opposite and adjacent in Z-T plane
 	double opp2 = grid->difference_vertex2cell(WS->dpos, c, Tcyl);
+	double adj2 = sqrt(pow_fast(opp1, 2.0) + pow_fast(adj1, 2.0));
 
 	wc->theta = atan(fabs(opp2/adj2));
   }

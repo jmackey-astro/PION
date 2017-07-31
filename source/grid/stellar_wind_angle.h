@@ -5,11 +5,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/interpolate.h"
-
 #include "sim_constants.h"
 #include "sim_params.h"
 #include "tools/reporting.h"
-
 #include "grid/stellar_wind_BC.h"
 
 
@@ -17,7 +15,7 @@
 // Stellar wind class for angle dependent winds, developed for BSGs etc.
 // Added by Robert Kavanagh (21/7/17)
 //
-class stellar_wind_angle : virtual public stellar_wind, virtual public interpolate_arrays  {
+class stellar_wind_angle : virtual public stellar_wind_evolution, virtual public interpolate_arrays  {
 	public:
 	///
 	/// Constructor: 
@@ -34,7 +32,6 @@ class stellar_wind_angle : virtual public stellar_wind, virtual public interpola
 	double, ///< a
 	double ///< b
 	);
-
 
   //
   // setup tables for interpolation.
@@ -125,6 +122,14 @@ class stellar_wind_angle : virtual public stellar_wind, virtual public interpola
   vector<double> delta_vec; ///< delta table
   vector< vector<double> > alpha_vec; ///< alpha table
   
+  vector<double> time_evo;
+  vector<double> M_evo;
+  vector<double> L_evo;
+  vector<double> Teff_evo;
+  vector<double> Mdot_evo;
+  vector<double> vrot_evo;
+  vector<double> vesc_evo;
+
   protected:
 
   ///
