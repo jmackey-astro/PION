@@ -1,3 +1,8 @@
+
+
+/// Modifications:
+/// - 2017.07.[20-31] RK/JM: Getting it working.
+
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
@@ -363,7 +368,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
   // calculate terminal wind velocity
   double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta);
-  cout <<WS->v_esc<<"\n";
+  //cout <<WS->v_esc<<"\n";
 
   cell *c = wc->c;
 
@@ -487,11 +492,11 @@ int stellar_wind_angle::add_evolving_source(
     vrot_evo.push_back(t6);
 
     // Stellar radius
-    t6 = sqrt( t3/ (4.0*pconst.pi()*pow_fast(t4, 4.0)));
+    t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow_fast(t4, 4.0)));
     
     // Escape velocity
     vesc_evo.push_back(sqrt(2.0*pconst.G()*t2/t6));
-    cout <<t6<<"  "<<t4<<"  "<<t3<<"  "<<sqrt(2.0*pconst.G()*t2/t6)<<"\n";
+    //cout <<t6<<"  "<<t4<<"  "<<t3<<"  "<<sqrt(2.0*pconst.G()*t2/t6)<<"\n";
     //rep.error("test",2);
   }
   fclose(wf);
