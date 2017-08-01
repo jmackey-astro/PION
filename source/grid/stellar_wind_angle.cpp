@@ -102,7 +102,7 @@ void stellar_wind_angle::setup_tables()
     
 	log_mu_vec.resize(npts);    
 
-    // Iterate log(mu) values - evenly spaced (fixed s.t. smallest element of omega_vec is first)
+    // Iterate log(mu) values - evenly spaced
     for (int i = 0; i < npts; i++) log_mu_vec[npts - i - 1] = -4.0 + i*(4.0/npts);
 
 	omega_vec.resize(npts);
@@ -127,7 +127,7 @@ void stellar_wind_angle::setup_tables()
 
 	for (int x = 0; x < npts; x++){
 		for (int y = 0; y < npts; y++){
-			alpha_vec[y][x] = fn_alpha(omega_vec[x], theta_vec[y]);
+			alpha_vec[x][y] = fn_alpha(omega_vec[x], theta_vec[y]);
 		}
 	}
   return;
