@@ -121,6 +121,9 @@ int main(int argc, char **argv)
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }
+#ifndef TESTING
+  rep.kill_stdout_from_other_procs(0);
+#endif
   //cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
 #endif //PARALLEL
 #ifdef SERIAL

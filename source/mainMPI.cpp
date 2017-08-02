@@ -94,6 +94,9 @@ int main(int argc, char **argv)
       rep.redirect(outpath);
     }
   }
+#ifndef TESTING
+  rep.kill_stdout_from_other_procs(0);
+#endif
 
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   for (int i=0;i<argc;i++) {

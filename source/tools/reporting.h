@@ -50,7 +50,15 @@ class reporting {
   int redirect(
     const string & ///< Location of files to write reporting to.
     );
-   
+  
+  ///
+  /// This kills all output to screen from all cores except
+  /// the one listed.
+  ///
+  void kill_stdout_from_other_procs(
+    const int  ///< don't kill it from this core
+    );
+
   ///
   /// This exits the code cleanly if I know I have an error.
   ///
