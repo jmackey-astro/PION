@@ -127,11 +127,6 @@ int reporting::redirect(const string &path)
     cout.rdbuf( infomsg.rdbuf() );
     cout.setf(ios_base::scientific); cout.precision(7);
   }
-  else {
-    //saved_buffer_cout = cout.rdbuf(); // <-- save
-    //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
-    std::cout.setstate(std::ios::failbit) ;
-  }
 #else
   //
   // for testing we want all processors to have their own log file.
@@ -161,6 +156,31 @@ int reporting::redirect(const string &path)
 #error "Must define either SERIAL or PARALLEL (reporting::redirect)"
 #endif
   return(0);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+void reporting::kill_stdout_from_other_procs(
+    const int core  ///< don't kill it from this core
+    )
+{
+  //
+  // For parallel execution (production runs) we only want ouput
+  // from proc. 0, so we redirect all stdout/stderr from other
+  // processes to some dead end like /dev/null.
+  //
+  myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
+  if (myrank!=0) {
+    //saved_buffer_cout = cout.rdbuf(); // <-- save
+    //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
+    std::cout.setstate(std::ios::failbit) ;
+  }
+  return;
 }
 
 
