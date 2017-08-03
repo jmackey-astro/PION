@@ -53,6 +53,7 @@
 /// - 2015.02.18 JM: moved setup functions to setup_fixed_grid_MPI
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).  Changed default I/O to DOUBLE precision.
+/// - 2017.08.03 JM: Changed silo dataio class to be the utility class. 
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
