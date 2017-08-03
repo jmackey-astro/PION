@@ -281,7 +281,7 @@ echo "********************************"
 FILE=sundials-2.6.2.tar.gz
 SRC_DIR=sundials-2.6.2
 BLD_DIR=sundials_build
-REMOTE_URL=https://computation.llnl.gov/projects/sundials-suite-nonlinear-differential-algebraic-equation-solvers/download/sundials-2.6.2.tar.gz
+REMOTE_URL=https://computation.llnl.gov/projects/sundials/download/sundials-2.6.2.tar.gz
 echo "********************************"
 echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
 echo "********************************"
