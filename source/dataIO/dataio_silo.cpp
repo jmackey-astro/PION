@@ -457,9 +457,10 @@ int dataio_silo::ReadData(string infile,
 
 
 
-int dataio_silo::choose_filename(const string codefile,
-				 const int counter
-				 )
+int dataio_silo::choose_filename(
+      const string codefile,
+      const int counter
+      )
 {
   //
   // for serial files this is easy -- just codefile.cycle.silo. 
@@ -498,8 +499,8 @@ int dataio_silo::choose_filename(const string codefile,
 
 
 int dataio_silo::setup_grid_properties(
-        class GridBaseClass *grid
-        )
+      class GridBaseClass *grid
+      )
 {
   // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
   if (!grid)

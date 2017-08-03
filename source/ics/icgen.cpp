@@ -40,6 +40,8 @@
 /// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
 /// - 2016.05.02 JM: Changed order of code so that MP is initialised
 ///    before the "setup" function is called.
+/// - 2017.08.03 JM: Don't write IC_filename.silo, just name it like
+///    a normal snapshot.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -366,7 +368,7 @@ int main(int argc, char **argv)
   // MPI: WRITE PARALLEL FILES HERE
   // write data to file.
   cout <<"IC file-type is "<<icftype<<"\n";
-  seek="ICfilename";
+  seek="OutputFile";
   string icfile   = rp->find_parameter(seek);
   string outfile;
   if (icfile=="") {
@@ -415,7 +417,7 @@ int main(int argc, char **argv)
   else rep.error("Don't recognise I/O type (text/fits/silo)",icftype);
   if (!dataio) rep.error("IO class initialisation: ",icftype);
   
-  err = dataio->OutputData(outfile,grid, -1);
+  err = dataio->OutputData(outfile,grid, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
   cout <<icftype<<" FILE WRITTEN in";

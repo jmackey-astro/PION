@@ -354,7 +354,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	dataio.o readparams.o dataio_silo.o \
         dataio_fits.o utility_fits_class.o dataio_fits_MPI.o \
         file_status.o                                                          \
-	dataio_silo_MPI.o sim_control_MPI.o uniform_grid_pllel.o                \
+	dataio_silo_MPI.o dataio_silo_utility.o sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
         raytracer_base.o  \
 	comm_mpi.o comm_files.o                                                \
@@ -662,6 +662,11 @@ dataio_fits_MPI.o:  dataio_fits_MPI.cpp dataio_fits_MPI.h \
 readparams.o:	readparams.cpp readparams.h ${GLOBAL}
 dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio.h \
     ${GLOBAL} comms.h file_status.h
+
+dataio_silo_utility.o:    dataio_silo_utility.cpp dataio_silo_utility.h \
+    dataio_silo.h dataio.h \
+    ${GLOBAL} comms.h file_status.h
+
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h \
     ${GLOBAL} file_status.h
 

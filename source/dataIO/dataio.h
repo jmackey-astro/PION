@@ -20,6 +20,7 @@
 ///    own parameter name.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
+/// - 2017.08.03 JM: Added parallel_read_any_data() function to base class
 
 #ifndef DATAIO_H
 #define DATAIO_H
@@ -277,28 +278,43 @@ class DataIOBase : public file_status {
   /// Write simulation header info to file
   ///
   virtual int WriteHeader(
-          const string ///< file to write to (full, exact filename).
-          )=0;
+      const string ///< file to write to (full, exact filename).
+      )=0;
   
 
   ///
   /// Write simulation data to file.
   ///
   virtual int OutputData(
-        const string, ///< File to write to
-        class GridBaseClass *, ///< pointer to data.
-        const long int ///< number to stamp file with (e.g. timestep)
-        )=0;
+      const string, ///< File to write to
+      class GridBaseClass *, ///< pointer to data.
+      const long int ///< number to stamp file with (e.g. timestep)
+      )=0;
 
-   /** \brief Reads simulation parameters from file. */
-   virtual int ReadHeader(string ///< file to read from
-			   )=0;
-   /** Having set up a grid with parameters from the header, this reads
-    * data from the file and puts it on the grid.
-    * */
-   virtual int ReadData(string, ///< file to read from
-			class GridBaseClass * ///< pointer to data.
-			)=0;
+   ///
+   /// Reads simulation parameters from file.
+   ///
+   virtual int ReadHeader(
+      string ///< file to read from
+      )=0;
+
+   ///
+   /// Having set up a grid with parameters from the header, this reads
+   /// data from the file and puts it on the grid.
+   ///
+   virtual int ReadData(
+      string, ///< file to read from
+      class GridBaseClass * ///< pointer to data.
+      )=0;
+
+  ///
+  /// Read silo data from any PION silo file
+  ///
+  virtual int parallel_read_any_data(
+      string, ///< file to read from
+      class GridBaseClass * ///< pointer to data.
+      ) {return -999;}
+
  protected:
    const int Ndigits; ///< number of digits for counter in filenames.
    ///

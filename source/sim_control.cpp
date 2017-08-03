@@ -419,12 +419,29 @@ int sim_control_fixedgrid::Init(
   // Now assign data to the grid, either from file, or via some function.
   //
 #if defined SERIAL
+
   err = dataio->ReadData(infile, *grid);
-  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
+
 #elif defined PARALLEL
-  err = dataio->parallel_read_any_data(infile, *grid);
+
+  switch (typeOfFile) {
+#ifdef FITS
+  case 2: // Start from FITS restartfile.
+  err = dataio->ReadData(infile, *grid);
+    break;
+#endif // if FITS
+#ifdef SILO
+  case 5: // Start from Silo restart file.
+    err = dataio->parallel_read_any_data(infile, *grid);
+    break; 
+#endif // if SILO
+  default:
+    cerr <<"(UniformFV::Init) Bad file type: "<<typeOfFile<<"\n";
+    return(1);
+  }
+
+#endif  // PARALLEL/SERIAL
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
-#endif
 
   //
   // Set Ph=P in every cell.
