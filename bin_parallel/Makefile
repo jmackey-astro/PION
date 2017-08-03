@@ -48,6 +48,7 @@
 # - 2016.05.04 JM: Added FIONN to list of machines
 # - 2016.08.29 JM: removed *Eint solvers.
 # - 2017-07-29 JM: updated for latitude-dependent winds.
+# - 2017-08-03 JM: updated standard workstation to use system libs.
 ###
 
 ############################
@@ -94,7 +95,8 @@ GLOBAL = functionality_flags.h testing_flags.h reporting.h \
 
 ######################################################################
 # Options for a "standard" workstation.
-# make sure cfitsio and silo are compiled in ../extra_libraries/
+# Need libsilo-dev libcfitsio-dev libsundials-serial-dev installed
+# on debian/ubuntu systems.
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
@@ -103,20 +105,16 @@ ifeq ($(MAKE_UNAME), standard)
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
 
-  #MYLIB = $(CURDIR)/../extra_libraries
-  #INC = -I${MYLIB}/include
   INC  = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm
   # All libraries are in this path:
-  #LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   # Libraries for fits, silo
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
   # libs for CVODES
-  #LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- STANDARD WORKSTATION ---######################
