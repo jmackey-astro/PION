@@ -103,17 +103,21 @@ ifeq ($(MAKE_UNAME), standard)
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
 
-  MYLIB = $(CURDIR)/../extra_libraries
-  INC = -I${MYLIB}/include
+  #MYLIB = $(CURDIR)/../extra_libraries
+  #INC = -I${MYLIB}/include
+  INC  = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm
   # All libraries are in this path:
-  LDFLAGS += -L${MYLIB}/lib
+  #LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   # Libraries for fits, silo
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo
+  LDFLAGS += -lsiloh5
   # libs for CVODES
-  LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
+  #LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- STANDARD WORKSTATION ---######################
 
