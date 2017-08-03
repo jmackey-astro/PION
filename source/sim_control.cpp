@@ -381,9 +381,6 @@ int sim_control_fixedgrid::Init(
     if (!dataio) rep.error("dataio_silo initialisation",dataio);
     break; 
 #endif // if SILO
-    //   case : // Start from HDF5 restartfile, which may be initial conditions or a snapshot.
-    //    err = getParametersHDF5(infile);
-    //    break;
   default:
     cerr <<"(UniformFV::Init) Do not understand typeOfFile="<<typeOfFile<<", so exiting.\n";
     return(1);
@@ -421,8 +418,14 @@ int sim_control_fixedgrid::Init(
   //
   // Now assign data to the grid, either from file, or via some function.
   //
+#if defined SERIAL
   err = dataio->ReadData(infile, *grid);
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
+#elif defined PARALLEL
+  err = dataio->parallel_read_any_data(infile, *grid);
+  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
+#endif
+
   //
   // Set Ph=P in every cell.
   //

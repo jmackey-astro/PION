@@ -68,6 +68,7 @@
 
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_utility.h"
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
@@ -240,7 +241,7 @@ int sim_control_fixedgrid_pllel::Init(
       mpiPM.ReadSingleFile = false;
     }
 
-    if (!dataio) dataio = new dataio_silo_pllel ("DOUBLE", &mpiPM);
+    if (!dataio) dataio = new dataio_silo_utility ("DOUBLE", &mpiPM);
     if (!dataio) rep.error("dataio_silo_pllel initialisation",dataio);
     if (!dataio->file_exists(infile)) {
       cout <<"\tInfile doesn't exist: failing\n";
@@ -255,9 +256,6 @@ int sim_control_fixedgrid_pllel::Init(
     rep.error("Bad file type specifier for parallel grids (2=fits,\
                5=silo) IS IT COMPILED IN???",typeOfFile);
   
-  err = dataio->ReadHeader(infile);
-  rep.errorTest("(INIT(pllel)::ReadHeader) err!=0 Something went bad",0,err);
-
   //
   // We need to decompose the domain here, because setup_grid() needs
   // this, but this means we need to read the header to find out what
@@ -301,7 +299,7 @@ int sim_control_fixedgrid_pllel::Init(
 #endif
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo_pllel ("DOUBLE", &mpiPM);
+      dataio = new dataio_silo_utility ("DOUBLE", &mpiPM);
       break;
 #endif // if SILO
     default:
