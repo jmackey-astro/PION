@@ -168,6 +168,7 @@ void reporting::kill_stdout_from_other_procs(
     const int core  ///< don't kill it from this core
     )
 {
+#if defined (PARALLEL)
   //
   // For parallel execution (production runs) we only want ouput
   // from proc. 0, so we redirect all stdout/stderr from other
@@ -180,6 +181,7 @@ void reporting::kill_stdout_from_other_procs(
     //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
     std::cout.setstate(std::ios::failbit) ;
   }
+#endif
   return;
 }
 
