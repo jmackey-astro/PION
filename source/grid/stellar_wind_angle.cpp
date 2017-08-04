@@ -494,7 +494,7 @@ int stellar_wind_angle::add_evolving_source(
     // Stellar radius
     t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow_fast(t4, 4.0)));
     
-	// Hydrogen mass fraction (should make this a sim parameter?)
+	// Hydrogen mass fraction (should make this a sim parameter?) 
 	double H_X = 0.7;
 
 	// Eddington luminosity (taking the opacity as the electron scattering cross section)
