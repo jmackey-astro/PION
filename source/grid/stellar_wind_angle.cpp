@@ -494,8 +494,14 @@ int stellar_wind_angle::add_evolving_source(
     // Stellar radius
     t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow_fast(t4, 4.0)));
     
+	// Hydrogen mass fraction (should make this a sim parameter?) 
+	double H_X = 0.7;
+
+	// Eddington luminosity (taking the opacity as the electron scattering cross section)
+	double L_edd = (4.0*pconst.pi()*pconst.c()*pconst.G()*t2)/(0.2*(1 + H_X));
+
     // Escape velocity
-    vesc_evo.push_back(sqrt(2.0*pconst.G()*t2/t6));
+    vesc_evo.push_back(sqrt(2.0*pconst.G()*t2*(1 - t3/L_edd)/t6));
     //cout <<t6<<"  "<<t4<<"  "<<t3<<"  "<<sqrt(2.0*pconst.G()*t2/t6)<<"\n";
     //rep.error("test",2);
   }
