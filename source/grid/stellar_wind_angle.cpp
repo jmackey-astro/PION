@@ -572,10 +572,10 @@ int stellar_wind_angle::add_evolving_source(
     // Get the current values for mdot, vinf, Teff, and setup a wind
     // source using the constant-wind function.
     //
-    interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now/pconst.year(), Twind);
-    interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now/pconst.year(), mdot);
-    interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now/pconst.year(), vesc);
-    interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now/pconst.year(), vrot);
+    interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now, Twind);
+    interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
+    interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
+    interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -727,10 +727,10 @@ void stellar_wind_angle::update_source(
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
   double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0;
-  interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now/pconst.year(), Twind);
-  interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now/pconst.year(), mdot);
-  interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now/pconst.year(), vesc);
-  interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now/pconst.year(), vrot);
+  interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now, Twind);
+  interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
+  interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
+  interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
   //
   // Assign new values to wd->ws (the wind source struct), converting
   // from log10 to actual values, and also unit conversions to cgs.

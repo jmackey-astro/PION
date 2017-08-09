@@ -2863,6 +2863,7 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
       err=0;
     }
     else if (err==2) {
+      cout <<"Setting up stellar_wind_angle class\n";
       Wind = new stellar_wind_angle();
     }
   }
@@ -2893,6 +2894,7 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
       // This works for spherically symmetric winds and for
       // latitude-dependent winds that evolve over time.
       //
+      cout <<"Adding source "<<isw<<" with filename "<<SWP.params[isw]->evolving_wind_file<<"\n";
       err = Wind->add_evolving_source(
         SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
