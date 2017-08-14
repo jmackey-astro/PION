@@ -73,7 +73,13 @@ class stellar_wind_angle
   //
   // setup tables for interpolation.
   //
-  void setup_tables();
+  void setup_tables(double); ///< Teff
+
+  //
+  // Eldridge et al. (2006, MN, 367, 186).
+  // V_inf = sqrt(beta)*V_esc
+  //
+  double beta(const double); ///< Teff
 
   //
   // Wind terminal velocity function
@@ -81,7 +87,8 @@ class stellar_wind_angle
   double fn_v_inf(
 	double, ///< omega
 	double, ///< escape velocity (cm/s)
-	double ///< theta
+	double, ///< theta
+	double ///< Teff(K)
 	);
 
   //
@@ -92,7 +99,8 @@ class stellar_wind_angle
 	double, ///< escape velocity (cm/s)
 	double, ///< mass loss rate (g/s)
 	double, ///< radius
-	double ///< theta
+	double, ///< theta
+	double ///< Teff (K)
   );
     
   //
@@ -103,7 +111,8 @@ class stellar_wind_angle
 	double, ///< escape velocity (cm/s)
 	double, ///< mass loss rate (g/s)
 	double, ///< radius
-	double ///< theta
+	double, ///< theta
+	double ///< Teff
 	);
   
   private:
@@ -114,7 +123,8 @@ class stellar_wind_angle
     const double, ///< lower limit
     const double, ///< upper limit
     const long int, ///< Number of points (must be even)
-    const double ///< omega
+    const double, ///< omega
+	const double ///< Teff (K)
     );
 
   //
@@ -122,7 +132,8 @@ class stellar_wind_angle
   //
   double fn_phi(
 	double, ///< omega
-	double ///< theta
+	double, ///< theta
+	double ///< Teff (K)
 	);
 
   //
@@ -130,7 +141,8 @@ class stellar_wind_angle
   //
   double fn_alpha(
 	double, ///< omega
-	double ///< theta
+	double, ///< theta
+	double ///< Teff (K)
 	);
 
   //
@@ -138,19 +150,20 @@ class stellar_wind_angle
   //
   double integrand(
     double, ///< theta
-    double  ///< omega
+    double,  ///< omega
+	const double ///< Teff
     );
   
   //
   // Delta function
   //
   double fn_delta(
-	double ///< omega
+	double, ///< omega
+	double ///< Teff (K)
 	);
 
   double c_gamma; ///< exponent in velocity formula
   double c_xi;    ///< exponent in density formula
-  double c_zeta;  ///< scaling for wind velocity
 
   int npts; ///< number of points in each table vector
   vector<double> theta_vec; ///< theta table
