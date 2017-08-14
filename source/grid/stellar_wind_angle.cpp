@@ -36,11 +36,10 @@ stellar_wind_angle::stellar_wind_angle()
 {
 	// Constants for wind functions
 	stellar_wind_angle::c_gamma = 0.35;
-	stellar_wind_angle::c_zeta  = 1.0;
 	stellar_wind_angle::c_xi    = -0.43;
 	stellar_wind_angle::npts 	= 25; // change depending on tests
 
-	setup_tables();
+	setup_tables(WS->Tw);
 }
 
 
@@ -75,7 +74,7 @@ double stellar_wind_angle::pow_fast(
 
 
 // Generate interpolating tables for wind density function
-void stellar_wind_angle::setup_tables()
+void stellar_wind_angle::setup_tables(double Teff) ///< Teff
 {   
     //
 	// Set up theta array
@@ -116,7 +115,7 @@ void stellar_wind_angle::setup_tables()
 
 	delta_vec.resize(npts);
 
-	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i]);
+	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i], Teff);
 
     //
     // Write alpha table
@@ -127,7 +126,7 @@ void stellar_wind_angle::setup_tables()
 
 	for (int x = 0; x < npts; x++){
 		for (int y = 0; y < npts; y++){
-			alpha_vec[x][y] = fn_alpha(omega_vec[x], theta_vec[y]);
+			alpha_vec[x][y] = fn_alpha(omega_vec[x], theta_vec[y], Teff);
 		}
 	}
   return;
@@ -138,13 +137,62 @@ void stellar_wind_angle::setup_tables()
 // ##################################################################
 
 
+double stellar_wind_angle::beta(const double Teff)
+{
+  //
+  // Eldridge et al. (2006, MN, 367, 186).
+  // V_inf = sqrt(beta)*V_esc
+  //
+  double beta;
+
+  if (Teff <= 3600.0)
+    beta = 0.125;
+  else if (Teff >= 22000.0)
+    beta = 2.6;
+  else {
+    //
+    // Linear interpolation for beta from Eldridge et al. Table 1.
+    //
+    double b0, b1, T0, T1;
+    if      (Teff<6000.0) {
+      T0 = 3600.0; b0 = 0.125;
+      T1 = 6000.0; b1 = 0.5;
+    }
+    else if (Teff <8000.0) {
+      T0 = 6000.0; b0 = 0.5;
+      T1 = 8000.0; b1 = 0.7;
+    }
+    else if (Teff <10000.0) {
+      T0 = 8000.0; b0 = 0.7;
+      T1 = 10000.0; b1 = 1.3;
+    }
+    else if (Teff <20000.0) {
+      T0 = 10000.0; b0=1.3;
+      T1 = 20000.0; b1=1.3;
+    }
+    else {
+      T0 = 20000.0; b0 = 1.3;
+      T1 = 22000.0; b1 = 2.6;
+    }
+    beta = b0 + (Teff-T0)*(b1-b0)/(T1-T0);
+  }
+
+  return beta;
+};
+
+
+// ##################################################################
+// ##################################################################
+
+
 // Integrand for integral in delta function
 double stellar_wind_angle::integrand(
 	double theta, // Co-latitude angle (radians)
-	double omega // Omega (v_rot/v_esc)
+	double omega, // Omega (v_rot/v_esc)
+	double Teff // Teff (K)
     )
 {
-	return fn_alpha(omega, theta) * pow_fast(1.0 - omega*sin(theta), c_xi) * sin(theta);
+	return fn_alpha(omega, theta, Teff) * pow_fast(1.0 - omega*sin(theta), c_xi) * sin(theta);
 } 
 
 
@@ -157,7 +205,8 @@ double  stellar_wind_angle::integrate_Simpson(
     const double min, ///< lower limit
     const double max, ///< upper limit
     const long int npt,    ///< Number of points (must be even)
-    const double omega ///<  omega
+    const double omega, ///<  omega
+	const double Teff ///< Teff (K)
     )
 {
 
@@ -170,18 +219,18 @@ double  stellar_wind_angle::integrate_Simpson(
   //
   // f(0) lower limit
   //
-  ans += integrand(min, omega);
+  ans += integrand(min, omega, Teff);
   //
   // f(N) upper limit
   //
-  ans += integrand(max, omega);
+  ans += integrand(max, omega, Teff);
   //
   // Intermediate points.
   //
   int wt = 4; double x=0.0;
   for (long int i=1; i<npt; i++) {
     x = min + i*hh;
-    ans += wt*integrand(x, omega);
+    ans += wt*integrand(x, omega, Teff);
     wt = 6-wt;
   }
   //
@@ -199,10 +248,11 @@ double  stellar_wind_angle::integrate_Simpson(
 // Phi' function
 double stellar_wind_angle::fn_phi(
 	double omega, // omega (v_rot/v_esc)
-	double theta // Co-latitude angle (radians)
+	double theta, // Co-latitude angle (radians)
+	double Teff // Teff (K)
 	)
 {
-	return (omega/(22.0*pconst.sqrt2()*c_zeta)) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
+	return (omega/(22.0*pconst.sqrt2()*sqrt(beta(Teff)))) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
 }
 
 
@@ -213,12 +263,13 @@ double stellar_wind_angle::fn_phi(
 // Alpha function
 double stellar_wind_angle::fn_alpha(
 	double omega, // Omega (v_rot/v_esc)
-	double theta // Co-latitude angle (radians)
+	double theta, // Co-latitude angle (radians)
+	double Teff // Teff (K)
 	)
 {
-	return pow_fast(cos(fn_phi(omega, theta)) + pow_fast(tan(theta),-2.0) * 
-		   (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) )) * fn_phi(omega, theta) *
-		   sin(fn_phi(omega, theta)), -1.0);
+	return pow_fast(cos(fn_phi(omega, theta, Teff)) + pow_fast(tan(theta),-2.0) * 
+		   (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) )) * fn_phi(omega, theta, Teff) *
+		   sin(fn_phi(omega, theta, Teff)), -1.0);
 } // the cotan term will diverge here if theta = 0.0
 
 
@@ -228,10 +279,11 @@ double stellar_wind_angle::fn_alpha(
 
 // Delta function
 double stellar_wind_angle::fn_delta(
-	double omega // Omega (v_rot/v_esc)
+	double omega, // Omega (v_rot/v_esc)
+	double Teff // Teff (K)
 	)
 {
-	return 2.0*pow_fast(integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega), -1.0);
+	return 2.0*pow_fast(integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega, Teff), -1.0);
 } // 230 points determined to give sufficient accuracy
 
 
@@ -243,10 +295,11 @@ double stellar_wind_angle::fn_delta(
 double stellar_wind_angle::fn_v_inf(
 	double omega, // Omega (v_rot/v_esc)
 	double v_esc, // Escape velocity (cm/s)
-	double theta // Co-latitude angle (radians)
+	double theta, // Co-latitude angle (radians)
+	double Teff // Teff (K)
 	)
 {
-	return c_zeta * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma);
+	return sqrt(beta(Teff)) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma);
 }
 
 
@@ -260,11 +313,11 @@ double stellar_wind_angle::fn_density(
 	double v_esc, // Escape velocity (cm/s)
 	double mdot, // Mass loss rate (g/s)
 	double radius, // Radius (cm)
-	double theta // Co-latitude angle (radians)
+	double theta, // Co-latitude angle (radians)
+	double Teff // Teff (K)
     )
 {
-    return (mdot * fn_alpha(omega, theta) * fn_delta(omega) * pow_fast(1.0 - omega*sin(theta), c_xi)) /
-           (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta));
+    return (mdot * fn_alpha(omega, theta, Teff) * fn_delta(omega, Teff) * pow_fast(1.0 - omega*sin(theta), c_xi)) / (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
 }
 
 
@@ -278,7 +331,8 @@ double stellar_wind_angle::fn_density_interp(
 	double v_esc, // Escape velocity (cm/s)
 	double mdot, // Mass loss rate (g/s)
 	double radius, // Radius (cm)
-	double theta // Co-latitude angle (radians)
+	double theta, // Co-latitude angle (radians)
+	double Teff // Teff (K)
     )
 {
     //
@@ -313,7 +367,7 @@ double stellar_wind_angle::fn_density_interp(
     alpha_interp = root_find_bilinear_vec(omega_vec, theta_vec, alpha_vec, nxy, seek);
 
     return (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi)) /
-    (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta));
+    (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
 }
 
 
@@ -340,7 +394,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     //
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     //
-    wc->p[RO] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, wc->dist, wc->theta);
+    wc->p[RO] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
 
     //
     // Set pressure based on wind density/temperature at the stellar radius,
@@ -356,7 +410,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     // ******************************************************************************
     //
     wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-    wc->p[PG] *= pow_fast(fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->Rstar, wc->theta), 1.0-SimPM.gamma);
+    wc->p[PG] *= pow_fast(fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-SimPM.gamma);
     wc->p[PG] *= pow_fast(wc->p[RO], SimPM.gamma);
 
 
@@ -367,7 +421,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   //
 
   // calculate terminal wind velocity
-  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta);
+  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta, WS->Tw);
   //cout <<WS->v_esc<<"\n";
 
   cell *c = wc->c;
