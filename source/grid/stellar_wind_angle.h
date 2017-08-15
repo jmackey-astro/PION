@@ -73,7 +73,7 @@ class stellar_wind_angle
   //
   // setup tables for interpolation.
   //
-  void setup_tables(double); ///< Teff
+  void setup_tables();
 
   //
   // Eldridge et al. (2006, MN, 367, 186).
