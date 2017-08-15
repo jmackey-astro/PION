@@ -166,9 +166,11 @@ class stellar_wind_angle
   double c_xi;    ///< exponent in density formula
 
   int npts; ///< number of points in each table vector
-  vector<double> theta_vec; ///< theta table
-  vector<double> log_mu_vec; ///< log(mu) = log(1 - omega) table
-  vector<double> omega_vec; ///< omega table
+  vector<double> theta_vec; ///< theta vector
+  vector<double> log_mu_vec; ///< log(mu) = log(1 - omega) vector
+  vector<double> omega_vec; ///< omega vector
+  vector<double> Teff_vec; ///< Teff vector
+      
   vector<double> delta_vec; ///< delta table
   vector< vector<double> > alpha_vec; ///< alpha table
   

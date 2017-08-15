@@ -329,7 +329,6 @@ void interpolate_arrays::splint_vec(
 // ##################################################################
 
 
-
 void interpolate_arrays::root_find_bilinear(
         const double *x,     ///< Array of x values.
         const double *y,     ///< Array of y values.
@@ -409,8 +408,6 @@ void interpolate_arrays::root_find_bilinear(
 
 // ##################################################################
 // ##################################################################
-
-
 
 
 double interpolate_arrays::root_find_bilinear_vec(
@@ -493,6 +490,79 @@ double interpolate_arrays::root_find_bilinear_vec(
   return result;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+double interpolate_arrays::root_find_trilinear_vec(
+    const vector<double> &x_vec,     ///< Array of x values.
+    const vector<double> &y_vec,     ///< Array of y values.
+    const vector<double> &z_vec,     ///< Array of z values.
+    const vector<vector<vector<double> > > &f,  ///< Array of function values f(x,y,z)
+    const vector<size_t> &len,  ///< Array sizes
+    const vector<double> &xreq ///< (x,y,z) we are searching for.
+    )
+{
+  //
+  // Determine (x0,y0,z0) and (x1,y1,z1) - nearest neighbours to input (x,y,z)
+  //
+
+  // Initialise nearest neighbour variables and x, y, z
+  double x0 = 0.0, y0 = 0.0, z0 = 0.0, x1 = 0.0, y1 = 0.0, z1 = 0.0;
+  double x = xreq[0], y = xreq[1], z = xreq[2];
+  
+  // Loops to determine the value of the nearest neighbours of x, y and z
+  int x_index = 0, y_index = 0, z_index = 0;
+  
+  while(x > x_vec[x_index]) x_index++;
+  while(y > y_vec[y_index]) y_index++;
+  while(z > z_vec[z_index]) z_index++;
+  
+  // Set nearest neighbours
+  x0 = x_vec[x_index - 1], x1 = x_vec[x_index];
+  y0 = y_vec[y_index - 1], y1 = y_vec[y_index];
+  z0 = z_vec[z_index - 1], z1 = z_vec[z_index];
+  
+  //
+  // Calculate delta x, delta y and delta z terms for trilinear interpolation
+  //
+  double dx = (x - x0)/(x1 - x0);
+  double dy = (y - y0)/(y1 - y0);
+  double dz = (z - z0)/(z1 - z0);
+  
+  //
+  // Calculate f000, f001 etc. terms for coefficients
+  //
+  double f000 = f[x_index - 1][y_index - 1][z_index - 1]; // f(x0, y0, z0)
+  
+  double f001 = f[x_index - 1][y_index - 1][z_index]; // f(x0, y0, z1)
+  double f010 = f[x_index - 1][y_index][z_index - 1]; // f(x0, y1, z0)
+  double f100 = f[x_index][y_index - 1][z_index - 1]; // f(x1, y0, z0)
+  
+  double f110 = f[x_index][y_index][z_index - 1]; // f(x1, y1, z0)
+  double f011 = f[x_index - 1][y_index][z_index]; // f(x0, y1, z1)
+  double f101 = f[x_index][y_index - 1][z_index]; // f(x1, y0, z1)
+  
+  double f111 = f[x_index][y_index][z_index]; // f(x1, y1, z1)
+  
+  //
+  // Calculate c coefficients for trilinear interpolation
+  //
+  double c0 = f000;
+  double c1 = f100 - f000;
+  double c2 = f010 - f000;
+  double c3 = f001 - f000;
+  double c4 = f110 - f010 - f100 + f000;
+  double c5 = f011 - f001 - f010 + f000;
+  double c6 = f101 - f001 - f100 + f000;
+  double c7 = f111 - f011 - f101 - f110 + f100 + f001 + f010 - f000;
+  
+  //
+  // Return f(x,y,z)
+  //
+  return c0 + c1*dx + c2*dy + c3*dz + c4*dx*dy + c5*dy*dz + c6*dz*dx + c7*dx*dy*dz;
+}
 
 
 // ##################################################################
