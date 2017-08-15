@@ -127,6 +127,20 @@ class interpolate_arrays {
     const vector<size_t> &,  ///< Array sizes
     const vector<double> &   ///< (x,y) we are searching for.
     );
+  
+  //
+  // Function to find the value of f(x,y,z) for an inputted (x,y,z),
+  // by interpolating vectors of x, y, and z.
+  // See: spie.org/samples/PM159.pdf - 9.2.2 Trilinear interpolation
+  //
+  double root_find_trilinear_vec(
+   const vector<double> &,     ///< Array of x values.
+   const vector<double> &,     ///< Array of y values.
+   const vector<double> &,     ///< Array of z values.
+   const vector<vector<vector<double> > > &,  ///< Array of function values f(x,y,z)
+   const vector<size_t> &,  ///< Array sizes
+   const vector<double> & ///< (x,y,z) we are searching for.
+)
 
 };
 

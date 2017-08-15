@@ -77,7 +77,7 @@ double stellar_wind_angle::pow_fast(
 void stellar_wind_angle::setup_tables()
 {   
     //
-	// Set up theta array
+	// Set up theta vector
     //
     
 	cout << "setup_tables is working" << endl;
@@ -96,7 +96,7 @@ void stellar_wind_angle::setup_tables()
 	}
     
 	//
-    // Set up omega array
+    // Set up omega vector
     //
     
 	log_mu_vec.resize(npts);    
@@ -110,10 +110,13 @@ void stellar_wind_angle::setup_tables()
     for (int j = 0; j < npts; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
     //
-    // Write delta table
-    // ***HACK*** just do the table for T=10,000 K. ***HACK***
+    // Set up Teff vector
     //
-
+    
+    //
+    // Write delta table
+    //
+    
 	delta_vec.resize(npts);
 
 	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i], 1.0e4);
