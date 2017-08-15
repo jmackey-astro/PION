@@ -39,7 +39,7 @@ stellar_wind_angle::stellar_wind_angle()
 	stellar_wind_angle::c_xi    = -0.43;
 	stellar_wind_angle::npts 	= 25; // change depending on tests
 
-	setup_tables(WS->Tw);
+	setup_tables();
 }
 
 
@@ -74,7 +74,7 @@ double stellar_wind_angle::pow_fast(
 
 
 // Generate interpolating tables for wind density function
-void stellar_wind_angle::setup_tables(double Teff) ///< Teff
+void stellar_wind_angle::setup_tables()
 {   
     //
 	// Set up theta array
@@ -111,11 +111,12 @@ void stellar_wind_angle::setup_tables(double Teff) ///< Teff
 
     //
     // Write delta table
+    // ***HACK*** just do the table for T=10,000 K. ***HACK***
     //
 
 	delta_vec.resize(npts);
 
-	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i], Teff);
+	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i], 1.0e4);
 
     //
     // Write alpha table
@@ -126,7 +127,7 @@ void stellar_wind_angle::setup_tables(double Teff) ///< Teff
 
 	for (int x = 0; x < npts; x++){
 		for (int y = 0; y < npts; y++){
-			alpha_vec[x][y] = fn_alpha(omega_vec[x], theta_vec[y], Teff);
+			alpha_vec[x][y] = fn_alpha(omega_vec[x], theta_vec[y], 1.0e4);
 		}
 	}
   return;
@@ -335,6 +336,8 @@ double stellar_wind_angle::fn_density_interp(
 	double Teff // Teff (K)
     )
 {
+    // ***HACK*** just do it the slow way ***HACK***
+    return fn_density(omega,v_esc,mdot,radius,theta,Teff);
     //
     // Use tables to interpolate the value of delta
     //
