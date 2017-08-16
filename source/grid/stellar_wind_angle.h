@@ -76,12 +76,6 @@ class stellar_wind_angle
   void setup_tables();
 
   //
-  // Eldridge et al. (2006, MN, 367, 186).
-  // V_inf = sqrt(beta)*V_esc
-  //
-  double beta(const double); ///< Teff
-
-  //
   // Wind terminal velocity function
   //
   double fn_v_inf(
@@ -116,6 +110,12 @@ class stellar_wind_angle
 	);
   
   private:
+  //
+  // Eldridge et al. (2006, MN, 367, 186).
+  // v_inf = sqrt(beta)*v_esc
+  //
+  double beta(const double); ///< Teff
+  
   //
   // Simpson's rule integration of function f
   //
@@ -165,14 +165,17 @@ class stellar_wind_angle
   double c_gamma; ///< exponent in velocity formula
   double c_xi;    ///< exponent in density formula
 
-  int npts; ///< number of points in each table vector
+  int npts_theta; ///< number of points in theta vector
+  int npts_omega; ///< number of points in omega vector
+  int npts_Teff;  ///< number of points in Teff vector
+  
   vector<double> theta_vec; ///< theta vector
   vector<double> log_mu_vec; ///< log(mu) = log(1 - omega) vector
   vector<double> omega_vec; ///< omega vector
   vector<double> Teff_vec; ///< Teff vector
       
-  vector<double> delta_vec; ///< delta table
-  vector< vector<double> > alpha_vec; ///< alpha table
+  vector<vector<double> > delta_vec; ///< delta table
+  vector<vector<vector<double> > > alpha_vec; ///< alpha table
   
   vector<double> time_evo;
   vector<double> M_evo;

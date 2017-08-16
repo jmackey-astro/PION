@@ -1,7 +1,8 @@
-
-
 /// Modifications:
 /// - 2017.07.[20-31] RK/JM: Getting it working.
+/// - 2017.08.[15-?] RK: reworked to include trilinear interpolation
+/// of density, to accommodate for addition of Teff dimension to
+/// setup_tables
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -37,8 +38,13 @@ stellar_wind_angle::stellar_wind_angle()
 	// Constants for wind functions
 	stellar_wind_angle::c_gamma = 0.35;
 	stellar_wind_angle::c_xi    = -0.43;
-	stellar_wind_angle::npts 	= 25; // change depending on tests
+	
+    // Number of points in theta, omega and Teff vectors
+    stellar_wind_angle::npts_theta = 25;
+    stellar_wind_angle::npts_omega = 25;
+    stellar_wind_angle::npts_Teff = 20;
 
+    // Generate interpolating tables
 	setup_tables();
 }
 
@@ -79,7 +85,6 @@ void stellar_wind_angle::setup_tables()
     //
 	// Set up theta vector
     //
-    
 	cout << "setup_tables is working" << endl;
 
     // Min, mid and max values of theta - 5pts between min and mid, 20pts between mid and max
@@ -87,36 +92,58 @@ void stellar_wind_angle::setup_tables()
     double theta_mid = 60.0;
     double theta_max = 89.9;
     
-	theta_vec.resize(npts);
+	theta_vec.resize(npts_theta);
     
-    for (int k = 0; k < npts; k++)
+    for (int k = 0; k < npts_theta; k++)
     {
         if (k <= 4) theta_vec[k] = (theta_min + k*((theta_mid - theta_min)/4.0))*(pconst.pi()/180.0);
-        else theta_vec[k] = (theta_mid + (k - 4)*((theta_max - theta_mid)/(npts - 5)))*(pconst.pi()/180.0);
+        else theta_vec[k] = (theta_mid + (k - 4)*((theta_max - theta_mid)/(npts_theta - 5)))*(pconst.pi()/180.0);
 	}
     
 	//
     // Set up omega vector
     //
-    
-	log_mu_vec.resize(npts);    
+	log_mu_vec.resize(npts_omega);
 
     // Iterate log(mu) values - evenly spaced
-    for (int i = 0; i < npts; i++) log_mu_vec[npts - i - 1] = -4.0 + i*(4.0/npts);
+    for (int i = 0; i < npts_omega; i++) log_mu_vec[npts_omega - i - 1] = -4.0 + i*(4.0/npts_omega);
 
-	omega_vec.resize(npts);
+	omega_vec.resize(npts_omega);
     
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
-    for (int j = 0; j < npts; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
+    for (int j = 0; j < npts_omega; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
     //
     // Set up Teff vector
     //
+    Teff_vec.resize(npts_Teff);
+    
+    // Temperature ranges from Eldridge et al. (2006, MN, 367, 186) (K)
+    double T0 = 3600, T1 = 6000, T2 = 8000, T3 = 10000, T4 = 20000, T5 = 22000;
+    
+    for (int i = 0; i < npts_Teff; i++){
+        if (i = 0)     Teff_vec[i] = T0;
+        if (0 < i < 5) Teff_vec[i] = // careful with indexes here..
+    }
+    
+    ///// *** these will have to be vectors / added to vectors of delta and alpha
+    ///// *** if so, ignore interpolating delta and alpha wrt Teff.....
+    /*
+    // Constant delta values for delta vs. Teff curves (put this down at delta vec ... ?
+    double delta1 = fn_delta(omega_vec,T0); // Constant for T <= 3600 K
+    double delta2 = fn_delta(omega_vec,T3); // Constant for 10000 <= T <= 20000
+    double delta3 = fn_delta(omega_vec,T5); // Constant for T >= 22000
+    
+    // Constant alpha values for alpha vs. Teff curves
+    double alpha1 = fn_alpha(omega_vec,T0); // Constant for T <= 3600 K
+    double alpha2 = fn_alpha(omega_vec,T3); // Constant for 10000 <= T <= 20000
+    double alpha3 = fn_alpha(omega_vec,T5); // Constant for T >= 22000
+    */
     
     //
     // Write delta table
     //
-    
+    /*
 	delta_vec.resize(npts);
 
 	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i], 1.0e4);
@@ -134,6 +161,7 @@ void stellar_wind_angle::setup_tables()
 		}
 	}
   return;
+  */
 }
 
 
