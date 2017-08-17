@@ -85,7 +85,8 @@ void stellar_wind_angle::setup_tables()
     //
 	// Set up theta vector
     //
-	cout << "setup_tables is working" << endl;
+    
+	cout << "Setting up interpolating tables" << endl;
 
     // Min, mid and max values of theta - 5pts between min and mid, 20pts between mid and max
     double theta_min = 0.1;
@@ -100,9 +101,13 @@ void stellar_wind_angle::setup_tables()
         else theta_vec[k] = (theta_mid + (k - 4)*((theta_max - theta_mid)/(npts_theta - 5)))*(pconst.pi()/180.0);
 	}
     
+    cout << "Theta vector generated" << endl;
+
+    
 	//
     // Set up omega vector
     //
+    
 	log_mu_vec.resize(npts_omega);
 
     // Iterate log(mu) values - evenly spaced
@@ -113,55 +118,77 @@ void stellar_wind_angle::setup_tables()
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
     for (int j = 0; j < npts_omega; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
+    cout << "Omega vector generated" << endl;
+
+
     //
     // Set up Teff vector
     //
-    Teff_vec.resize(npts_Teff);
-    
+
     // Temperature ranges from Eldridge et al. (2006, MN, 367, 186) (K)
     double T0 = 3600, T1 = 6000, T2 = 8000, T3 = 10000, T4 = 20000, T5 = 22000;
+
+    Teff_vec.resize(npts_Teff);
     
+    // Set values - based on plots for alpha and delta vs. Teff
     for (int i = 0; i < npts_Teff; i++){
-        if (i = 0)     Teff_vec[i] = T0;
-        if (0 < i < 5) Teff_vec[i] = // careful with indexes here..
-    }
+        if (i == 0)             Teff_vec[i] = T0;
+        if (1 <= i && i <= 5)   Teff_vec[i] = T0 + i*((T1 - T0)/6);
+        if (i == 6)             Teff_vec[i] = T1;
+        if (7 <= i && i <= 9)   Teff_vec[i] = T1 + (i - 6)*((T2 - T1)/4);
+        if (i == 10)            Teff_vec[i] = T2;
+        if (11 <= i && i <= 13) Teff_vec[i] = T2 + (i - 10)*((T3 - T2)/4);
+        if (i == 14)            Teff_vec[i] = T3;
+        if (i == 15)            Teff_vec[i] = T4;
+        if (16 <= i && i <= 18) Teff_vec[i] = T4 + (i - 15)*((T5 - T4)/4);
+        if (i == 19)            Teff_vec[i] = T5;
+        }
     
-    ///// *** these will have to be vectors / added to vectors of delta and alpha
-    ///// *** if so, ignore interpolating delta and alpha wrt Teff.....
-    /*
-    // Constant delta values for delta vs. Teff curves (put this down at delta vec ... ?
-    double delta1 = fn_delta(omega_vec,T0); // Constant for T <= 3600 K
-    double delta2 = fn_delta(omega_vec,T3); // Constant for 10000 <= T <= 20000
-    double delta3 = fn_delta(omega_vec,T5); // Constant for T >= 22000
-    
-    // Constant alpha values for alpha vs. Teff curves
-    double alpha1 = fn_alpha(omega_vec,T0); // Constant for T <= 3600 K
-    double alpha2 = fn_alpha(omega_vec,T3); // Constant for 10000 <= T <= 20000
-    double alpha3 = fn_alpha(omega_vec,T5); // Constant for T >= 22000
-    */
-    
+    cout << "Teff vector generated" << endl;
+
+
     //
     // Write delta table
     //
-    /*
-	delta_vec.resize(npts);
+    
+	delta_vec.resize(npts_omega);
+    for (int i = 0; i < npts_omega; i++) delta_vec[i].resize(npts_Teff);
+    
+    // Set values - delta(omega, Teff)
+    for (int i = 0; i < npts_omega; i++){
+        for (int j = 0; j < npts_Teff; j++){
+            delta_vec[i][j] = fn_delta(omega_vec[i], Teff_vec[j]);
+        }
+    }
 
-	for (int i = 0; i < npts; i++) delta_vec[i] = fn_delta(omega_vec[i], 1.0e4);
+    cout << "Delta table generated" << endl;
+
 
     //
     // Write alpha table
     //
 	
-	alpha_vec.resize(npts);
-	for (int i = 0; i < npts; i++) alpha_vec[i].resize(npts);
-
-	for (int x = 0; x < npts; x++){
-		for (int y = 0; y < npts; y++){
-			alpha_vec[x][y] = fn_alpha(omega_vec[x], theta_vec[y], 1.0e4);
-		}
-	}
-  return;
-  */
+    alpha_vec.resize(npts_omega);
+    
+    for(int i = 0; i < npts_omega; i++){
+        alpha_vec[i].resize(npts_theta);
+        for(int j = 0; j < npts_theta; j++){
+            alpha_vec[i][j].resize(npts_Teff);
+        }
+    }
+    
+    // Set values - alpha(omega, theta, Teff)
+    for(int i = 0; i < npts_omega; i++){
+        for(int j = 0; j < npts_theta; j++){
+            for(int k = 0; k < npts_Teff; k++){
+                alpha_vec[i][j][k] = fn_alpha(omega_vec[i], theta_vec[j], Teff_vec[k]);
+            }
+        }
+    }
+	
+    cout << "Alpha table generated" << endl;
+    
+    return;
 }
 
 
@@ -339,7 +366,7 @@ double stellar_wind_angle::fn_v_inf(
 // ##################################################################
 
 
-// Wind density function (analytic - ~68 times slower than interpolated wind density function)
+// Analytic wind density function
 double stellar_wind_angle::fn_density(
 	double omega, // Omega (v_rot/v_esc)
 	double v_esc, // Escape velocity (cm/s)
@@ -367,41 +394,54 @@ double stellar_wind_angle::fn_density_interp(
 	double Teff // Teff (K)
     )
 {
-    // ***HACK*** just do it the slow way ***HACK***
-    return fn_density(omega,v_esc,mdot,radius,theta,Teff);
     //
     // Use tables to interpolate the value of delta
     //
 
     double delta_interp;
-    vector<double> d2_omega;
-    d2_omega.resize(npts);
-    for (int i = 0; i < npts; i++) d2_omega[i] = 0.0;	
 
-    // Calculate second derivatives of omega wrt delta - stored in d2_omega
-    spline_vec(omega_vec, delta_vec, npts, 1e32, 1e32, d2_omega);
-
-    // Returns interpolated value of delta from input omega - stored in delta_interp
-    splint_vec(omega_vec, delta_vec, d2_omega, npts, omega, delta_interp);
-
+    // Vector for delta interpolation vector sizes
+    vector<size_t> delta_vec_size (2);
+    delta_vec_size[0] = npts_omega;
+    delta_vec_size[1] = npts_Teff;
+    
+    // Vector for delta input (omega, Teff)
+    vector<double> delta_input (2);
+    delta_input[0] = omega;
+    delta_input[1] = Teff;
+    
+    delta_interp = root_find_bilinear_vec(omega_vec, Teff_vec, delta_vec, delta_vec_size, delta_input);
+    
+    
     //
     // Use tables to interpolate the value of alpha
     //
 
     double alpha_interp;
 
-    vector<double> seek (2); // (omega, theta) input
-    seek[0] = omega;
-    seek[1] = theta;
+    // Vector for delta interpolation vector sizes
+    vector<size_t> alpha_vec_size (3);
+    alpha_vec_size[0] = npts_omega;
+    alpha_vec_size[1] = npts_theta;
+    alpha_vec_size[2] = npts_Teff;
     
-    vector<size_t> nxy (2);
-    nxy[0] = npts;
-    nxy[1] = npts; // should we change this to accomodate for different sizes?
+    // Vector for delta input (omega, Teff)
+    vector<double> alpha_input (3);
+    alpha_input[0] = omega;
+    alpha_input[1] = theta;
+    alpha_input[2] = Teff;
+    
+    alpha_interp = root_find_trilinear_vec(omega_vec, theta_vec, Teff_vec, alpha_vec, alpha_vec_size, alpha_input);
 
-    alpha_interp = root_find_bilinear_vec(omega_vec, theta_vec, alpha_vec, nxy, seek);
 
-    return (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi)) /
-    (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
+    //
+    // Return interpolated density
+    //
+    
+    double result = (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi));
+    result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
+
+    return result;
 }
 
 
