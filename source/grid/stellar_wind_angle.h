@@ -86,7 +86,7 @@ class stellar_wind_angle
 	);
 
   //
-  // Wind density function
+  // Analytic wind density function
   //
   double fn_density(
 	double, ///< omega
@@ -169,12 +169,12 @@ class stellar_wind_angle
   int npts_omega; ///< number of points in omega vector
   int npts_Teff;  ///< number of points in Teff vector
   
-  vector<double> theta_vec; ///< theta vector
+  vector<double> theta_vec;  ///< theta vector
   vector<double> log_mu_vec; ///< log(mu) = log(1 - omega) vector
-  vector<double> omega_vec; ///< omega vector
-  vector<double> Teff_vec; ///< Teff vector
+  vector<double> omega_vec;  ///< omega vector
+  vector<double> Teff_vec;   ///< Teff vector
       
-  vector<vector<double> > delta_vec; ///< delta table
+  vector<vector<double> > delta_vec;          ///< delta table
   vector<vector<vector<double> > > alpha_vec; ///< alpha table
   
   vector<double> time_evo;
