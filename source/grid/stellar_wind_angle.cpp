@@ -113,7 +113,7 @@ void stellar_wind_angle::setup_tables()
 	log_mu_vec.resize(npts_omega);
 
     // Iterate log(mu) values - evenly spaced
-    for (int i = 0; i < npts_omega; i++) log_mu_vec[npts_omega - i - 1] = -4.0 + i*(4.0/npts_omega);
+    for (int i = 0; i < npts_omega; i++) log_mu_vec[npts_omega - i - 1] = -4.0 + i*(4.0/(npts_omega - 1));
 
 	omega_vec.resize(npts_omega);
     
@@ -191,7 +191,7 @@ void stellar_wind_angle::setup_tables()
     }
 	
     cout << "- Alpha table generated" << endl << endl;
-	cout << "Finished interpolating tables setup" << endl;
+	cout << "Finished interpolating tables setup (test)" << endl;
 	cout << "###############################" << endl << endl;
 
     
@@ -207,7 +207,7 @@ double stellar_wind_angle::beta(const double Teff)
 {
   //
   // Eldridge et al. (2006, MN, 367, 186).
-  // V_inf = sqrt(beta)*V_esc
+  // Beta = Zeta^2
   //
   double beta;
 
@@ -416,10 +416,10 @@ double stellar_wind_angle::fn_density_interp(
     vector<double> delta_input (2);
     delta_input[0] = omega;
     delta_input[1] = Teff;
-    
+
+   
     delta_interp = root_find_bilinear_vec(omega_vec, Teff_vec, delta_vec, delta_vec_size, delta_input);
-    
-    
+
     //
     // Use tables to interpolate the value of alpha
     //
@@ -437,14 +437,14 @@ double stellar_wind_angle::fn_density_interp(
     alpha_input[0] = omega;
     alpha_input[1] = theta;
     alpha_input[2] = Teff;
-    
+	
+	// Error occuring here:
     alpha_interp = root_find_trilinear_vec(omega_vec, theta_vec, Teff_vec, alpha_vec, alpha_vec_size, alpha_input);
-
 
     //
     // Return interpolated density
     //
-    
+
     double result = (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi));
     result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
 
@@ -470,12 +470,14 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   double pp[SimPM.ndim];
   CI.get_dpos(wc->c,pp);
   //rep.printVec("cell pos", pp, SimPM.ndim);
-  //cout <<"dist="<<wc->dist<<"\n";
+  cout <<"dist="<<wc->dist<<"\n";
 
     //
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     //
+
     wc->p[RO] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
+	cout << "Cell density = " << wc->p[RO] << endl;
 
     //
     // Set pressure based on wind density/temperature at the stellar radius,
@@ -615,7 +617,7 @@ int stellar_wind_angle::add_evolving_source(
 
   // Temp. variables for column values
   double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
-  while (fscanf(wf, "%lE %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
+  while (fscanf(wf, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
     //cout.precision(16);
     //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
     // Set vector value
