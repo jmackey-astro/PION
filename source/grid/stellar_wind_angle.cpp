@@ -42,7 +42,7 @@ stellar_wind_angle::stellar_wind_angle()
     // Number of points in theta, omega and Teff vectors
     stellar_wind_angle::npts_theta = 25;
     stellar_wind_angle::npts_omega = 25;
-    stellar_wind_angle::npts_Teff = 20;
+    stellar_wind_angle::npts_Teff = 22;
 
     // Generate interpolating tables
 	setup_tables();
@@ -86,7 +86,9 @@ void stellar_wind_angle::setup_tables()
 	// Set up theta vector
     //
     
+	cout << "###############################" << endl;
 	cout << "Setting up interpolating tables" << endl;
+	cout << "###############################" << endl;
 
     // Min, mid and max values of theta - 5pts between min and mid, 20pts between mid and max
     double theta_min = 0.1;
@@ -101,7 +103,7 @@ void stellar_wind_angle::setup_tables()
         else theta_vec[k] = (theta_mid + (k - 4)*((theta_max - theta_mid)/(npts_theta - 5)))*(pconst.pi()/180.0);
 	}
     
-    cout << "Theta vector generated" << endl;
+    cout << "- Theta vector generated" << endl;
 
     
 	//
@@ -118,33 +120,35 @@ void stellar_wind_angle::setup_tables()
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
     for (int j = 0; j < npts_omega; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
-    cout << "Omega vector generated" << endl;
+    cout << "- Omega vector generated" << endl;
 
 
     //
     // Set up Teff vector
     //
 
-    // Temperature ranges from Eldridge et al. (2006, MN, 367, 186) (K)
-    double T0 = 3600, T1 = 6000, T2 = 8000, T3 = 10000, T4 = 20000, T5 = 22000;
+    // Temperature ranges from Eldridge et al. (2006, MN, 367, 186) (K) + upper and lower Teff limits
+    double T0 = 1000.0, T1 = 3600.0, T2 = 6000.0, T3 = 8000.0, T4 = 10000.0, T5 = 20000.0, T6 = 22000.0, T7 = 40000.0;
 
     Teff_vec.resize(npts_Teff);
     
     // Set values - based on plots for alpha and delta vs. Teff
     for (int i = 0; i < npts_Teff; i++){
-        if (i == 0)             Teff_vec[i] = T0;
-        if (1 <= i && i <= 5)   Teff_vec[i] = T0 + i*((T1 - T0)/6);
-        if (i == 6)             Teff_vec[i] = T1;
-        if (7 <= i && i <= 9)   Teff_vec[i] = T1 + (i - 6)*((T2 - T1)/4);
-        if (i == 10)            Teff_vec[i] = T2;
-        if (11 <= i && i <= 13) Teff_vec[i] = T2 + (i - 10)*((T3 - T2)/4);
-        if (i == 14)            Teff_vec[i] = T3;
+		if (i == 0)             Teff_vec[i] = T0;
+        if (i == 1)             Teff_vec[i] = T1;
+        if (2 <= i && i <= 6)   Teff_vec[i] = T1 + i*((T2 - T1)/6);
+        if (i == 7)             Teff_vec[i] = T2;
+        if (8 <= i && i <= 10)  Teff_vec[i] = T2 + (i - 6)*((T3 - T2)/4);
+        if (i == 11)            Teff_vec[i] = T3;
+        if (12 <= i && i <= 14) Teff_vec[i] = T3 + (i - 10)*((T4 - T3)/4);
         if (i == 15)            Teff_vec[i] = T4;
-        if (16 <= i && i <= 18) Teff_vec[i] = T4 + (i - 15)*((T5 - T4)/4);
-        if (i == 19)            Teff_vec[i] = T5;
+        if (i == 16)            Teff_vec[i] = T5;
+        if (17 <= i && i <= 19) Teff_vec[i] = T5 + (i - 15)*((T6 - T5)/4);
+        if (i == 20)            Teff_vec[i] = T6;
+		if (i == 21)            Teff_vec[i] = T7;
         }
     
-    cout << "Teff vector generated" << endl;
+    cout << "- Teff vector generated" << endl;
 
 
     //
@@ -161,7 +165,7 @@ void stellar_wind_angle::setup_tables()
         }
     }
 
-    cout << "Delta table generated" << endl;
+    cout << "- Delta table generated" << endl;
 
 
     //
@@ -186,7 +190,10 @@ void stellar_wind_angle::setup_tables()
         }
     }
 	
-    cout << "Alpha table generated" << endl;
+    cout << "- Alpha table generated" << endl << endl;
+	cout << "Finished interpolating tables setup" << endl;
+	cout << "###############################" << endl << endl;
+
     
     return;
 }
@@ -601,14 +608,14 @@ int stellar_wind_angle::add_evolving_source(
   if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
   // Skip first two lines
   char line[512];
-  fgets(line,512,wf);
+  fgets(line,512,wf); // compiler complains here
   //printf("%s",line);
-  fgets(line,512,wf);
+  fgets(line,512,wf); // compiler complains here
   //printf("%s",line);
 
   // Temp. variables for column values
   double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
-  while (fscanf(wf, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
+  while (fscanf(wf, "%lE %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
     //cout.precision(16);
     //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
     // Set vector value
