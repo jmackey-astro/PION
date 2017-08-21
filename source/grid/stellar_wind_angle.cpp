@@ -37,7 +37,8 @@ stellar_wind_angle::stellar_wind_angle()
 {
 	// Constants for wind functions
 	stellar_wind_angle::c_gamma = 0.35;
-	stellar_wind_angle::c_xi    = -0.43;
+	stellar_wind_angle::c_xi    = -5.0;
+    stellar_wind_angle::c_beta  = -0.5;
 	
     // Number of points in theta, omega and Teff vectors
     stellar_wind_angle::npts_theta = 25;
@@ -446,6 +447,7 @@ double stellar_wind_angle::fn_density_interp(
     //
 
     double result = (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi));
+    result *= pow_fast(1 - omega, c_beta);
     result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
 
     return result;
