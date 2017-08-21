@@ -63,14 +63,6 @@ int main(int argc, char **argv)
     rep.error("(PION) Couldn't initialise sim_control_fixedgrid_pllel", sim_control);
 
   //
-  // Check that command-line arguments are sufficient.
-  //
-  if (argc<4) {
-    sim_control->print_command_line_options(argc,argv);
-    rep.error("Bad arguments",argc);
-  }
-
-  //
   // copy cmd-line args into an array of strings (for ease of use.
   //
   string *args=0;
@@ -97,6 +89,14 @@ int main(int argc, char **argv)
 #ifndef TESTING
   rep.kill_stdout_from_other_procs(0);
 #endif
+
+  //
+  // Check that command-line arguments are sufficient.
+  //
+  if (argc<4) {
+    sim_control->print_command_line_options(argc,argv);
+    rep.error("Bad arguments",argc);
+  }
 
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   for (int i=0;i<argc;i++) {
