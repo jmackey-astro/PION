@@ -84,19 +84,19 @@ double stellar_wind_angle::pow_fast(
 void stellar_wind_angle::setup_tables()
 {   
     //
-	// Set up theta vector
+    // Set up theta vector
     //
     
-	cout << "###############################" << endl;
-	cout << "Setting up interpolating tables" << endl;
-	cout << "###############################" << endl;
+    cout << "###############################" << endl;
+    cout << "Setting up interpolating tables" << endl;
+    cout << "###############################" << endl;
 
     // Min, mid and max values of theta - 5pts between min and mid, 20pts between mid and max
     double theta_min = 0.1;
     double theta_mid = 60.0;
     double theta_max = 89.9;
     
-	theta_vec.resize(npts_theta);
+    theta_vec.resize(npts_theta);
     
     for (int k = 0; k < npts_theta; k++)
     {
@@ -107,16 +107,16 @@ void stellar_wind_angle::setup_tables()
     cout << "- Theta vector generated" << endl;
 
     
-	//
+    //
     // Set up omega vector
     //
     
-	log_mu_vec.resize(npts_omega);
+    log_mu_vec.resize(npts_omega);
 
     // Iterate log(mu) values - evenly spaced
     for (int i = 0; i < npts_omega; i++) log_mu_vec[npts_omega - i - 1] = -4.0 + i*(4.0/(npts_omega - 1));
 
-	omega_vec.resize(npts_omega);
+    omega_vec.resize(npts_omega);
     
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
     for (int j = 0; j < npts_omega; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
@@ -135,7 +135,7 @@ void stellar_wind_angle::setup_tables()
     
     // Set values - based on plots for alpha and delta vs. Teff
     for (int i = 0; i < npts_Teff; i++){
-		if (i == 0)             Teff_vec[i] = T0;
+	if (i == 0)             Teff_vec[i] = T0;
         if (i == 1)             Teff_vec[i] = T1;
         if (2 <= i && i <= 6)   Teff_vec[i] = T1 + i*((T2 - T1)/6);
         if (i == 7)             Teff_vec[i] = T2;
@@ -146,7 +146,7 @@ void stellar_wind_angle::setup_tables()
         if (i == 16)            Teff_vec[i] = T5;
         if (17 <= i && i <= 19) Teff_vec[i] = T5 + (i - 15)*((T6 - T5)/4);
         if (i == 20)            Teff_vec[i] = T6;
-		if (i == 21)            Teff_vec[i] = T7;
+	if (i == 21)            Teff_vec[i] = T7;
         }
     
     cout << "- Teff vector generated" << endl;
@@ -156,7 +156,7 @@ void stellar_wind_angle::setup_tables()
     // Write delta table
     //
     
-	delta_vec.resize(npts_omega);
+    delta_vec.resize(npts_omega);
     for (int i = 0; i < npts_omega; i++) delta_vec[i].resize(npts_Teff);
     
     // Set values - delta(omega, Teff)
@@ -192,8 +192,8 @@ void stellar_wind_angle::setup_tables()
     }
 	
     cout << "- Alpha table generated" << endl << endl;
-	cout << "Finished interpolating tables setup (test)" << endl;
-	cout << "###############################" << endl << endl;
+    cout << "Finished interpolating tables setup" << endl;
+    cout << "###############################" << endl << endl;
 
     
     return;
