@@ -511,10 +511,6 @@ double interpolate_arrays::root_find_trilinear_vec(
   // Initialise nearest neighbour variables and x, y, z
   double x0 = 0.0, y0 = 0.0, z0 = 0.0, x1 = 0.0, y1 = 0.0, z1 = 0.0;
   double x = input[0], y = input[1], z = input[2];
-  
-  for (int i = 0; i < x_vec.size(); i++) cout << x_vec[i] << endl;
-  for (int i = 0; i < y_vec.size(); i++) cout << y_vec[i] << endl;
-  for (int i = 0; i < z_vec.size(); i++) cout << z_vec[i] << endl;
 
   // Loops to determine the value of the nearest neighbours of x, y and z
   int x_index = 0, y_index = 0, z_index = 0;
