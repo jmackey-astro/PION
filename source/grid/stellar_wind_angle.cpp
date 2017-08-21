@@ -472,14 +472,13 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   double pp[SimPM.ndim];
   CI.get_dpos(wc->c,pp);
   //rep.printVec("cell pos", pp, SimPM.ndim);
-  cout <<"dist="<<wc->dist<<"\n";
+  //cout <<"dist="<<wc->dist<<"\n";
 
     //
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     //
 
     wc->p[RO] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
-	cout << "Cell density = " << wc->p[RO] << endl;
 
     //
     // Set pressure based on wind density/temperature at the stellar radius,
