@@ -164,7 +164,6 @@ class stellar_wind_angle
 
   double c_gamma; ///< exponent in velocity formula
   double c_xi;    ///< exponent in density formula
-  double c_beta;  ///< exponent for (1 - omega) term added to density, to increase mass loss with omega
 
   int npts_theta; ///< number of points in theta vector
   int npts_omega; ///< number of points in omega vector
