@@ -1281,90 +1281,70 @@ int sim_control_fixedgrid::setup_evolving_RT_sources()
   //
   for (int isrc=0; isrc<Nevo; isrc++) {
     struct star *istar = &(SimPM.STAR[isrc]);
+    istar->Nlines = 0;
+    istar->time.resize(0);
+    istar->Log_L.resize(0);
+    istar->Log_T.resize(0);
+    istar->Log_R.resize(0);
+    istar->Log_V.resize(0);
     //
     // Open file
     //
-    ifstream infile(istar->file_name.c_str());
-    if (!infile.is_open())
-      rep.error("setup_evolving_RT_sources() Opening EvoFile",istar->file_name);
-      
-    //
-    // Read Nlines, and put data into time, Log_L, Log_T, Log_R, Log_V.
-    //
-    string line;
-    getline(infile, line);
-    while (line.empty() == true || line.substr(0,1) == "#") {
-      getline(infile, line);
-    }
-    //
-    // Now first non-comment line should tell me Nlines, which we use to resize
-    // the arrays.
-    //
-    istringstream iss2(line);
-    string junk;
-    iss2 >> junk >> istar->Nlines;
-    //cout <<"\t\tgetting Nlines:: "<<junk<<": "<<istar->Nlines<<"\n";
-    if (istar->Nlines>1000000 || istar->Nlines<2) {
-      rep.error("setup_evolving_RT_sources() Bad Nlines in stellar radiation evolution",istar->Nlines);
-    }
-    istar->time.resize(istar->Nlines);
-    istar->Log_L.resize(istar->Nlines);
-    istar->Log_T.resize(istar->Nlines);
-    istar->Log_R.resize(istar->Nlines);
-    istar->Log_V.resize(istar->Nlines);
-    size_t i=0;
-    while (!infile.eof()) {
-      getline(infile, line);
-      istringstream iss(line);
-      if (i>istar->Nlines)
-        rep.error("setup_evolving_RT_sources() Too many lines in EvoFile",iss.str());
-      if (!line.empty()) {
-        iss >> istar->time[i] >> istar->Log_L[i] >> istar->Log_T[i] >> istar->Log_R[i] >> istar->Log_V[i];
-        //
-        // Rescale time to seconds
-        //
-        istar->time[i] *= pconst.year();
-        
-        //
-        // For ionisation rate, we need to rescale the Blackbody luminosity so
-        // that it is much smaller for T<30000K, b/c the actual ionising photon
-        // luminosity of these stars is much less than indicated by BB curve.
-        // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
-        // (1998,ApJ,501,192), compared them to the ionising photon luminosity
-        // of a BB with the same radius and Teff, and got the following scaling
-        // factor:
-        //
-        if (istar->Log_T[i]<4.55555) {
-          //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
-          //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
-          //cout << exp(pconst.ln10()*(9.0*istar->Log_T[i] -41.0));
-          istar->Log_L[i] += 9.0*istar->Log_T[i] -41.0;
-          //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
-        }
-        //
-        // calculate radius from L=4.pi.R^2.sigma.T^4 (I want to get rid of
-        // this altogether soon).
-        //
-        istar->Log_R[i] =
-          0.5*(istar->Log_L[i]-4.0*istar->Log_T[i]+log10(pconst.Lsun()/
-              (4.0*M_PI*pconst.StefanBoltzmannConst()))) -log10(pconst.Rsun());
-
-        //cout <<istar->time[i]<<"\t"<< istar->Log_L[i] <<"\t"<< istar->Log_T[i] <<"\t"<< istar->Log_R[i] <<"\t"<< istar->Log_V[i] <<"\n";
-        i++;
+    FILE *infile=0;
+    infile = fopen(istar->file_name.c_str(), "r");
+    if (!infile) rep.error("can't open wind evolving radiation source file",infile);
+    // Skip first two lines
+    char line[512];
+    fgets(line,512,infile); // compiler complains here
+    //printf("%s",line);
+    fgets(line,512,infile); // compiler complains here
+    //printf("%s",line);
+    // Temporary variables for column values
+    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
+    size_t iline=0;
+    while (fscanf(infile, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
+      //cout.precision(16);
+      //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
+      istar->Nlines ++;
+      istar->time.push_back(t1);
+      istar->Log_L.push_back( log10(t3/pconst.Lsun()) );
+      istar->Log_T.push_back( log10(t4) );
+      //
+      // For ionisation rate, we need to rescale the Blackbody luminosity so
+      // that it is much smaller for T<30000K, b/c the actual ionising photon
+      // luminosity of these stars is much less than indicated by BB curve.
+      // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
+      // (1998,ApJ,501,192), compared them to the ionising photon luminosity
+      // of a BB with the same radius and Teff, and got the following scaling
+      // factor:
+      //
+      if (istar->Log_T[iline]<4.55555) {
+        //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
+        //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
+        //cout << exp(pconst.ln10()*(9.0*istar->Log_T[i] -41.0));
+        istar->Log_L[iline] += 9.0*istar->Log_T[iline] -41.0;
+        //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
       }
+
+      istar->Log_V.push_back( log10(t6/1.0e5) );
+
+      // Stellar radius, from Stefan Boltzmann Law.
+      t6 = sqrt( pow(10.0,istar->Log_L[iline])*pconst.Lsun()/ 
+                (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(t4, 4.0)));
+
+      istar->Log_R.push_back( log10(t6/pconst.Rsun() ));
+
+      iline ++;
     }
-    if (i!=istar->Nlines) {
-      rep.error("setup_evolving_RT_sources() Too few lines in file!",istar->Nlines-i);
-    }
-    infile.close();
+    fclose(infile);
 
     //
     // Finally set the last_line counter to be the array index nearest to
     // (but less than) the current time.
     //
-    i=0;
-    while (istar->time[i] < SimPM.simtime) i++;
-    istar->last_line = i;
+    iline=0;
+    while (istar->time[iline] < SimPM.simtime) iline++;
+    istar->last_line = iline;
 
     // initialise to zero.
     istar->Lnow = istar->Tnow = istar->Rnow = istar->Vnow = 0.0;
