@@ -229,6 +229,7 @@ int IC_basic_tests::setup_uniformgrid(
   }
   else {
     radial_slope = atof(str.c_str());
+    //cout <<"\t***\t*** slope = "<<radial_slope<<"\n";
   }
 
   seek = "UNIFORM_radial_velocity";
@@ -244,6 +245,7 @@ int IC_basic_tests::setup_uniformgrid(
   }
   else {
     core_radius = atof(str.c_str());
+    //cout <<"\t***\t*** core = "<< core_radius <<"\n";
   }
 
   seek = "UNIFORM_core_centre_XX";
@@ -287,6 +289,7 @@ int IC_basic_tests::setup_uniformgrid(
       cpt->P[VX] = radial_vel*(dpos[XX]-centre[XX])/distance;
       cpt->P[VY] = radial_vel*(dpos[YY]-centre[YY])/distance;
       cpt->P[VZ] = radial_vel*(dpos[ZZ]-centre[ZZ])/distance;
+      //cout <<"core density = "<<cpt->P[RO]<<", d="<<distance<<"\n";
     }
   } while ( (cpt=ggg->NextPt(cpt))!=NULL);
   //  cpt = ggg->FirstPt();

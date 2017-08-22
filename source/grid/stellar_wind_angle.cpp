@@ -210,9 +210,11 @@ double stellar_wind_angle::beta(const double Teff)
   // Beta = Zeta^2
   //
   double beta;
+  //double rsg=0.125; // Eldridge value
+  double rsg=0.04;  // Mackey+2012 Betelgeuse value
 
   if (Teff <= 3600.0)
-    beta = 0.125;
+    beta = rsg;
   else if (Teff >= 22000.0)
     beta = 2.6;
   else {
@@ -221,7 +223,7 @@ double stellar_wind_angle::beta(const double Teff)
     //
     double b0, b1, T0, T1;
     if      (Teff<6000.0) {
-      T0 = 3600.0; b0 = 0.125;
+      T0 = 3600.0; b0 = rsg;
       T1 = 6000.0; b1 = 0.5;
     }
     else if (Teff <8000.0) {

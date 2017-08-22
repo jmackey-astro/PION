@@ -877,7 +877,7 @@ double mp_explicit_H::Temperature(
   // Check for negative pressure/density!  If either is found, return -1.0e99.
   //
   if (pv[RO]<=0.0 || pv[PG]<=0.0) {
-    cout <<"mp_explicit_H::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
+    //cout <<"mp_explicit_H::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
   }
   //

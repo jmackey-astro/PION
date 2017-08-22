@@ -432,8 +432,24 @@ void raytracer_USC_infinity::update_RT_source_properties(
   if (src->s->effect != RT_EFFECT_PION_MULTI) {
     rep.error("update_RT_source_properties() Don't know how to update source type for this id",src->s->id);
   }
+  //
+  // copy parameters.
+  //
+  for (int v=0; v<MAX_DIM;v++)
+    src->s->pos[v] = rs->pos[v];
   src->s->strength = rs->strength;
-  rep.error("Update source properties not implemented yet.",99);
+  src->s->Rstar = rs->Rstar;
+  src->s->Tstar = rs->Tstar;
+  //src->s->id = rs->id;
+  //src->s->type = rs->type;
+  //src->s->update = rs->update;
+  //src->s->at_infinity = rs->at_infinity;
+  //src->s->effect = rs->effect;
+  //src->s->NTau = rs->NTau;
+  //src->s->opacity_src = rs->opacity_src;
+  //src->s->opacity_var = rs->opacity_var;
+  //src->s->EvoFile = rs->EvoFile;
+  //rep.error("Update source properties not implemented yet.",99);
   return;
 }
 

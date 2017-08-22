@@ -354,8 +354,8 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   //
   double L = 5.67e-5*pow(Tstar,4.0)*4.0*M_PI*Rstar*Rstar;
   if (fabs(1.0-L/Lstar) >0.05) {
-    cerr <<"\tLuminosities don't match! Lstar="<<Lstar;
-    cerr <<" and Stefan-Bolt. law gives L="<<L;
+    cout <<"\tLuminosities don't match! Lstar="<<Lstar;
+    cout <<" and Stefan-Bolt. law gives L="<<L;
     cout <<"\t:Setup_photoionisation_rate_table: Ignoring Lstar and using 4.Pi.R^2.sigma.T^4.\n";
     //cerr <<": NOTE Rstar given will be scaled to give the requested Lstar\n";
     //
