@@ -416,7 +416,7 @@ double stellar_wind_angle::fn_density_interp(
     
     // Vector for delta input (omega, Teff)
     vector<double> delta_input (2);
-    delta_input[0] = omega;
+    delta_input[0] = std::min(omega,omega_vec[npts_omega-1]);
     delta_input[1] = Teff;
 
    
@@ -436,7 +436,7 @@ double stellar_wind_angle::fn_density_interp(
     
     // Vector for delta input (omega, Teff)
     vector<double> alpha_input (3);
-    alpha_input[0] = omega;
+    alpha_input[0] = delta_input[0];
     alpha_input[1] = theta;
     alpha_input[2] = Teff;
 	
@@ -478,7 +478,17 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
     //
 
-    wc->p[RO] = fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
+    wc->p[RO] = fn_density_interp(std::min(0.9999,pconst.sqrt2()*WS->v_rot/WS->v_esc), WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
+    if (!isfinite(wc->p[RO])) {
+      cout <<"bad density interpolation: "<<wc->p[RO]<<"\n";
+      cout <<pconst.sqrt2()*WS->v_rot/WS->v_esc <<"  ";
+      cout <<WS->v_esc <<"  ";
+      cout <<WS->Mdot <<"  ";
+      cout <<wc->dist <<"  ";
+      cout <<wc->theta <<"  ";
+      cout << WS->Tw <<"\n";
+      rep.error("Density",1);
+    }
 
     //
     // Set pressure based on wind density/temperature at the stellar radius,
