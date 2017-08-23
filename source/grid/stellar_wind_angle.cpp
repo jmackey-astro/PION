@@ -450,6 +450,18 @@ double stellar_wind_angle::fn_density_interp(
     double result = (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi));
     result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
 
+    if (!isfinite(result)) {
+      cout <<delta_interp <<"  "<< alpha_interp <<"  "<< result <<"  "<<fn_v_inf(omega, v_esc, theta, Teff)<< "  "<<omega<<"\n";
+      cout <<"  "<< mdot;
+      cout <<"  "<< alpha_interp;
+      cout <<"  "<< delta_interp;
+      cout <<"  "<< pow_fast(1.0 - omega*sin(theta), c_xi);
+      cout <<"  "<< pow_fast(radius, 2.0);
+      cout <<"  "<< fn_v_inf(omega, v_esc, theta, Teff);
+      //cout <<"  "<< ;
+      //cout <<"  "<< ;
+      cout <<"  "<< "\n";
+    }
     return result;
 }
 
