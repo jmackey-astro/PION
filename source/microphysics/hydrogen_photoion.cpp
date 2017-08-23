@@ -603,10 +603,10 @@ double hydrogen_photoion::photoion_rate_source_integrand(
   // Then 1/(exp(E/kT)-1)
   //
   ans /= (exp(E/(1.38e-16*Tstar)) -1.0);
-#ifdef HACK_MODIFY_BB
-  // multiply high energy emission by exp(-(0.03(E/eV))^5)
-  ans *= exp(-pow(1.87e10*E,5));
-#endif 
+//#ifdef HACK_MODIFY_BB
+//  // multiply high energy emission by exp(-(0.03(E/eV))^5)
+//  ans *= exp(-pow(1.87e10*E,5));
+//#endif 
   //
   // Then the prefactor: 8.pi^2.Rstar^2/(c^2.h^3)
   //

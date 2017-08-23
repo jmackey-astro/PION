@@ -16,6 +16,7 @@
 #include "defines/testing_flags.h"
 
 #include "tools/interpolate.h"
+#include "tools/reporting.h"
 #include "constants.h"
 #include <iostream>
 
@@ -524,6 +525,16 @@ double interpolate_arrays::root_find_trilinear_vec(
   y0 = y_vec[y_index - 1], y1 = y_vec[y_index];
   z0 = z_vec[z_index - 1], z1 = z_vec[z_index];
   
+  if (x_index <= 0 || x_index >= vec_size[0]) {
+    cout <<"x out of range: x_index="<<x_index<<", "<<vec_size[0]<<"\n";
+    rep.printSTLVec<double>("xvec",x_vec);
+    cout << "x="<<x<<"\n";
+    rep.error("Bug",1);
+  }
+  if (y_index <= 0 || y_index >= vec_size[1])
+    cout <<"y out of range: y_index="<<y_index<<", "<<vec_size[1]<<"\n";
+  if (z_index <= 0 || z_index >= vec_size[2])
+    cout <<"z out of range: z_index="<<z_index<<", "<<vec_size[2]<<"\n";
 
   //
   // Calculate delta x, delta y and delta z terms for trilinear interpolation

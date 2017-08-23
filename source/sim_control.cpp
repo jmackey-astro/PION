@@ -1316,13 +1316,13 @@ int sim_control_fixedgrid::setup_evolving_RT_sources()
       // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
       // (1998,ApJ,501,192), compared them to the ionising photon luminosity
       // of a BB with the same radius and Teff, and got the following scaling
-      // factor:
+      // factor, using file conversion.py in code_misc/testing/planck_fn/
       //
-      if (istar->Log_T[iline]<4.55555) {
+      if (istar->Log_T[iline]<4.53121387658) {
         //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
-        //cout << exp(pconst.ln10()*(9.0*istar->Log_T[i] -41.0));
-        istar->Log_L[iline] += 9.0*istar->Log_T[iline] -41.0;
+        double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
+        istar->Log_L[iline] -= 2.0*log10(beta);
         //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
       }
 
@@ -1331,7 +1331,6 @@ int sim_control_fixedgrid::setup_evolving_RT_sources()
       // Stellar radius, from Stefan Boltzmann Law.
       t6 = sqrt( pow(10.0,istar->Log_L[iline])*pconst.Lsun()/ 
                 (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(t4, 4.0)));
-
       istar->Log_R.push_back( log10(t6/pconst.Rsun() ));
 
       iline ++;

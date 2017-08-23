@@ -24,6 +24,7 @@
 #include <fstream>
 #include <stdlib.h> 
 #include "sim_params.h"
+#include <vector>
 
 #ifdef PARALLEL
 #include "comms/comms.h"
@@ -155,6 +156,22 @@ class reporting {
         int nd    ///< length of vector.
         )
   {
+    cout <<"Vector "<<msg<<" : [";
+    for (int i=0;i<nd-1;i++)
+      cout <<vec[i]<<", ";
+    cout <<vec[nd-1]<<" ]\n";
+    return;
+  }
+
+  ///
+  /// Print out a vector.
+  ///
+  template <class T> inline void printSTLVec(
+        string msg, ///< Name of Vector
+        const std::vector<T> &vec   ///<pointer to vector
+        )
+  {
+    int nd = vec.size();
     cout <<"Vector "<<msg<<" : [";
     for (int i=0;i<nd-1;i++)
       cout <<vec[i]<<", ";
