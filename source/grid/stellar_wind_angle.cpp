@@ -38,6 +38,7 @@ stellar_wind_angle::stellar_wind_angle()
 	// Constants for wind functions
 	stellar_wind_angle::c_gamma = 0.35;
 	stellar_wind_angle::c_xi    = -2.0;
+    stellar_wind_angle::c_beta  = -1.0;
 	
     // Number of points in theta, omega and Teff vectors
     stellar_wind_angle::npts_theta = 25;
@@ -667,7 +668,6 @@ int stellar_wind_angle::add_evolving_source(
     M_evo.push_back(t2);
     L_evo.push_back(t3);
     Teff_evo.push_back(t4);
-    Mdot_evo.push_back(t5);
     vrot_evo.push_back(t6);
 
     // Stellar radius
@@ -684,6 +684,9 @@ int stellar_wind_angle::add_evolving_source(
     vesc_evo.push_back(sqrt(2.0*pconst.G()*t2*(1 - t3/L_edd)/t6));
     //cout <<t6<<"  "<<t4<<"  "<<t3<<"  "<<sqrt(2.0*pconst.G()*t2/t6)<<"\n";
     //rep.error("test",2);
+    
+    // Mdot
+    Mdot_evo.push_back(t5*pow_fast(1 - pconst.sqrt2()*vrot_evo/vesc_evo, c_beta));
   }
   fclose(wf);
 
