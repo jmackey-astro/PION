@@ -81,6 +81,8 @@
 /// - 2014.08.01 JM: Set ipos[] to have the correct sign in the fn
 ///    raytracer_USC_infinity::add_source_to_list()
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2017.08.24 JM: Set code to ignore internal boundary regions
+///    when calculating absorption.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -859,9 +861,17 @@ int raytracer_USC_infinity::ProcessCell(
           cout <<" var="<<source->s->opacity_var+SimPM.ftr<<"\n";
         }
 #endif
-        cell_col[0] *= c->Ph[RO]*
+        // if cell is an internal boundary, don't consider it's
+        // absorption... This is a bit sketchy, and may only be
+        // suitable for a single star, or highly resolved nebulae.
+        if (c->isbd) {
+          cell_col[0] = 0.0;
+        }
+        else {
+          cell_col[0] *= c->Ph[RO]*
                        (1.0-c->Ph[source->s->opacity_var+SimPM.ftr]);
-        col2cell[0] += cell_col[0];
+          col2cell[0] += cell_col[0];
+        }
         CI.set_cell_col(c, source->s->id, cell_col);
         CI.set_col     (c, source->s->id, col2cell);
         break;
@@ -875,9 +885,14 @@ int raytracer_USC_infinity::ProcessCell(
 
       case RT_OPACITY_TRACER:
         // this is a generic flag for integrating rho*y_i*ds
-        cell_col[0] *= c->Ph[RO]*
-                       c->Ph[source->s->opacity_var+SimPM.ftr];
-        col2cell[0] += cell_col[0];
+        if (c->isbd) {
+          cell_col[0] = 0.0;
+        }
+        else {
+          cell_col[0] *= c->Ph[RO]*
+                         c->Ph[source->s->opacity_var+SimPM.ftr];
+          col2cell[0] += cell_col[0];
+        }
         CI.set_cell_col(c, source->s->id, cell_col);
         CI.set_col     (c, source->s->id, col2cell);
         break;
