@@ -180,6 +180,7 @@ class stellar_wind_angle
   vector<double> time_evo;
   vector<double> M_evo;
   vector<double> L_evo;
+  vector<double> R_evo;
   vector<double> Teff_evo;
   vector<double> Mdot_evo;
   vector<double> vrot_evo;
