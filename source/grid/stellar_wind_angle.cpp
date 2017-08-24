@@ -686,7 +686,7 @@ int stellar_wind_angle::add_evolving_source(
     //rep.error("test",2);
     
     // Mdot
-    Mdot_evo.push_back(t5*pow_fast(1 - pconst.sqrt2()*vrot_evo/vesc_evo, c_beta));
+    Mdot_evo.push_back(t5*pow_fast(1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back(), c_beta));
   }
   fclose(wf);
 
