@@ -162,6 +162,12 @@ void stellar_wind_angle::setup_tables()
     for (int i = 0; i < npts_omega; i++){
         for (int j = 0; j < npts_Teff; j++){
             delta_vec[i][j] = fn_delta(omega_vec[i], Teff_vec[j]);
+#ifdef TESTING
+            if (!isfinite(delta_vec[i][j])) {
+              cout <<"infinite delta!!! " << i <<"  "<< j <<"  " << omega_vec[i] <<"  "<< Teff_vec[j] << delta_vec[i][j] <<"\n";
+              rep.error("bug",delta_vec[i][j]);
+            }
+#endif
         }
     }
 
@@ -210,8 +216,8 @@ double stellar_wind_angle::beta(const double Teff)
   // Beta = Zeta^2
   //
   double beta;
-  //double rsg=0.125; // Eldridge value
-  double rsg=0.04;  // Mackey+2012 Betelgeuse value
+  double rsg=0.125; // Eldridge value
+  //double rsg=0.04;  // Mackey+2012 Betelgeuse value
 
   if (Teff <= 3600.0)
     beta = rsg;
@@ -320,7 +326,8 @@ double stellar_wind_angle::fn_phi(
 	double Teff // Teff (K)
 	)
 {
-	return (omega/(22.0*pconst.sqrt2()*sqrt(beta(Teff)))) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
+  double ans = (omega/(22.0*pconst.sqrt2()*sqrt(beta(Teff)))) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
+  return std::min(ans,0.5*pconst.pi()*ONE_MINUS_EPS);
 }
 
 
@@ -335,9 +342,11 @@ double stellar_wind_angle::fn_alpha(
 	double Teff // Teff (K)
 	)
 {
-	return pow_fast(cos(fn_phi(omega, theta, Teff)) + pow_fast(tan(theta),-2.0) * 
-		   (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) )) * fn_phi(omega, theta, Teff) *
-		   sin(fn_phi(omega, theta, Teff)), -1.0);
+  return  pow_fast(cos(fn_phi(omega, theta, Teff))
+        + pow_fast(tan(theta),-2.0)
+	* (1.0 + c_gamma*( omega*sin(theta) / (1.0 - omega*sin(theta)) ))
+        * fn_phi(omega, theta, Teff)
+        * sin(fn_phi(omega, theta, Teff)), -1.0 );
 } // the cotan term will diverge here if theta = 0.0
 
 
@@ -351,7 +360,9 @@ double stellar_wind_angle::fn_delta(
 	double Teff // Teff (K)
 	)
 {
-	return 2.0*pow_fast(integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega, Teff), -1.0);
+	return 2.0*pow_fast(
+          integrate_Simpson(0.001, pconst.pi()/2.0, 230, omega, Teff),
+          -1.0);
 } // 230 points determined to give sufficient accuracy
 
 
@@ -367,7 +378,10 @@ double stellar_wind_angle::fn_v_inf(
 	double Teff // Teff (K)
 	)
 {
-	return sqrt(beta(Teff)) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma);
+
+  omega = std::min(omega,0.999);
+  return std::min(0.5e5,
+    sqrt(beta(Teff)) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma));
 }
 
 
@@ -385,7 +399,11 @@ double stellar_wind_angle::fn_density(
 	double Teff // Teff (K)
     )
 {
-    return (mdot * fn_alpha(omega, theta, Teff) * fn_delta(omega, Teff) * pow_fast(1.0 - omega*sin(theta), c_xi)) / (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
+    return (mdot * fn_alpha(omega, theta, Teff)
+                 * fn_delta(omega, Teff)
+                 * pow_fast(1.0 - omega*sin(theta), c_xi) ) /
+            (8.0 * pconst.pi() * pow_fast(radius, 2.0)
+                 *  fn_v_inf(omega, v_esc, theta, Teff));
 }
 
 
@@ -403,10 +421,10 @@ double stellar_wind_angle::fn_density_interp(
 	double Teff // Teff (K)
     )
 {
+  omega = std::min(omega,0.999);
     //
     // Use tables to interpolate the value of delta
     //
-
     double delta_interp;
 
     // Vector for delta interpolation vector sizes
@@ -416,7 +434,7 @@ double stellar_wind_angle::fn_density_interp(
     
     // Vector for delta input (omega, Teff)
     vector<double> delta_input (2);
-    delta_input[0] = std::min(omega,omega_vec[npts_omega-1]);
+    delta_input[0] = omega;
     delta_input[1] = Teff;
 
    
@@ -425,7 +443,6 @@ double stellar_wind_angle::fn_density_interp(
     //
     // Use tables to interpolate the value of alpha
     //
-
     double alpha_interp;
 
     // Vector for delta interpolation vector sizes
@@ -436,7 +453,7 @@ double stellar_wind_angle::fn_density_interp(
     
     // Vector for delta input (omega, Teff)
     vector<double> alpha_input (3);
-    alpha_input[0] = delta_input[0];
+    alpha_input[0] = omega;
     alpha_input[1] = theta;
     alpha_input[2] = Teff;
 	
@@ -450,6 +467,7 @@ double stellar_wind_angle::fn_density_interp(
     double result = (mdot * alpha_interp * delta_interp * pow_fast(1.0 - omega*sin(theta), c_xi));
     result /= (8.0 * pconst.pi() * pow_fast(radius, 2.0) * fn_v_inf(omega, v_esc, theta, Teff));
 
+#ifdef TESTING
     if (!isfinite(result)) {
       cout <<delta_interp <<"  "<< alpha_interp <<"  "<< result <<"  "<<fn_v_inf(omega, v_esc, theta, Teff)<< "  "<<omega<<"\n";
       cout <<"  "<< mdot;
@@ -458,10 +476,10 @@ double stellar_wind_angle::fn_density_interp(
       cout <<"  "<< pow_fast(1.0 - omega*sin(theta), c_xi);
       cout <<"  "<< pow_fast(radius, 2.0);
       cout <<"  "<< fn_v_inf(omega, v_esc, theta, Teff);
-      //cout <<"  "<< ;
-      //cout <<"  "<< ;
+      cout <<"  "<< radius;
       cout <<"  "<< "\n";
     }
+#endif
     return result;
 }
 
@@ -491,7 +509,8 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     //
 
     wc->p[RO] = fn_density_interp(std::min(0.9999,pconst.sqrt2()*WS->v_rot/WS->v_esc), WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
-    if (!isfinite(wc->p[RO])) {
+#ifdef TESTING
+    if (!isfinite(wc->p[RO]) || pconst.equalD(wc->p[RO],0.0)) {
       cout <<"bad density interpolation: "<<wc->p[RO]<<"\n";
       cout <<pconst.sqrt2()*WS->v_rot/WS->v_esc <<"  ";
       cout <<WS->v_esc <<"  ";
@@ -501,6 +520,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       cout << WS->Tw <<"\n";
       rep.error("Density",1);
     }
+#endif
 
     //
     // Set pressure based on wind density/temperature at the stellar radius,
@@ -528,7 +548,6 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
   // calculate terminal wind velocity
   double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta, WS->Tw);
-  //cout <<WS->v_esc<<"\n";
 
   cell *c = wc->c;
 
@@ -653,12 +672,13 @@ int stellar_wind_angle::add_evolving_source(
 
     // Stellar radius
     t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow_fast(t4, 4.0)));
+    R_evo.push_back(t6);
     
-	// Hydrogen mass fraction (should make this a sim parameter?) 
-	double H_X = 0.7;
+    // Hydrogen mass fraction (should make this a sim parameter?) 
+    double H_X = 0.7;
 
-	// Eddington luminosity (taking the opacity as the electron scattering cross section)
-	double L_edd = (4.0*pconst.pi()*pconst.c()*pconst.G()*t2)/(0.2*(1 + H_X));
+    // Eddington luminosity (taking the opacity as the electron scattering cross section)
+    double L_edd = (4.0*pconst.pi()*pconst.c()*pconst.G()*t2)/(0.2*(1 + H_X));
 
     // Escape velocity
     vesc_evo.push_back(sqrt(2.0*pconst.G()*t2*(1 - t3/L_edd)/t6));
@@ -723,7 +743,7 @@ int stellar_wind_angle::add_evolving_source(
   // properties.  We set it to be active if the current time is
   // within update_freq of tstart.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0;
+  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
@@ -736,6 +756,7 @@ int stellar_wind_angle::add_evolving_source(
     interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
     interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
     interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
+    interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -751,7 +772,7 @@ int stellar_wind_angle::add_evolving_source(
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(pos,rad,type,mdot, vesc, vrot,Twind,Rstar,trv);
+  add_rotating_source(pos,rad,type,mdot, vesc, vrot,Twind,rstar,trv);
   temp->ws = wlist.back();
 
   //
@@ -886,11 +907,12 @@ void stellar_wind_angle::update_source(
   //
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0;
+  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0;
   interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now, Twind);
   interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
   interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
   interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
+  interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
   //
   // Assign new values to wd->ws (the wind source struct), converting
   // from log10 to actual values, and also unit conversions to cgs.
@@ -900,6 +922,7 @@ void stellar_wind_angle::update_source(
   wd->ws->Vinf = vesc;  // this is in cm/s already.
   wd->ws->v_rot = vrot;  // this is in cm/s already.
   wd->ws->Tw   = Twind; // This is in K.
+  wd->ws->Rstar = rstar;
 
   //
   // Now re-assign state vector of each wind-boundary-cell with
