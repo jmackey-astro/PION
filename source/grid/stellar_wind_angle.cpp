@@ -381,7 +381,7 @@ double stellar_wind_angle::fn_v_inf(
 {
 
   omega = std::min(omega,0.999);
-  return std::min(0.5e5,
+  return std::max(0.5e5,
     sqrt(beta(Teff)) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma));
 }
 
