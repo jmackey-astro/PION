@@ -7,6 +7,7 @@
 /// Modifications :\n
 /// - 2015.02.09 JM: Split sim_control class into a setup class and
 ///   a derived class for running simulations.
+/// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 
 #ifndef SETUP_FIXED_GRID_H
 #define SETUP_FIXED_GRID_H
@@ -70,6 +71,11 @@ class setup_fixed_grid
         class GridBaseClass * 
         );
 
+  ///
+  /// Check for any time-evolving radiation sources, and read the evolution
+  /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
+  ///
+  virtual int setup_evolving_RT_sources();
 
   //---------------------------------------
   protected:
@@ -84,6 +90,12 @@ class setup_fixed_grid
   std::vector<struct rt_source_data> FVI_heating_srcs;
   /// vector of RT ionising sources, of size FVI_nion
   std::vector<struct rt_source_data> FVI_ionising_srcs;
+  
+  ///
+  /// Check for any time-evolving radiation sources, and update source
+  /// properties from global struct SimPM.STAR[v] if needed
+  ///
+  virtual int update_evolving_RT_sources();
 
 
 }; // setup_fixed_grid

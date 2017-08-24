@@ -324,13 +324,24 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
+  //
+  // Set up the boundary conditions, since internal boundary data
+  // should really be already set to its correct value in the initial
+  // conditions file.
+  //
+  grid->SetupBCs(2, SimPM.typeofbc);
 
+
+  err += SimSetup->setup_raytracing(grid);
+  err += SimSetup->setup_evolving_RT_sources();
+  if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
   err += ic->setup_data(rp,grid);
   if (err) rep.error("Initial conditions setup failed.",err);
   // ----------------------------------------------------------------
+
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the 
@@ -356,12 +367,6 @@ int main(int argc, char **argv)
 
 
 
-  //
-  // Set up the boundary conditions, since internal boundary data
-  // should really be already set to its correct value in the initial
-  // conditions file.
-  //
-  grid->SetupBCs(2, SimPM.typeofbc);
   
 
   clk.start_timer("io"); double tsf=0;

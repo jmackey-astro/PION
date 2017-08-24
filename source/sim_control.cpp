@@ -141,6 +141,7 @@
 /// - 2015.01.(10-16) JM: New include statements for new file
 ///    structure, and non-global grid class.
 /// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL.CPP
+/// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -518,7 +519,7 @@ int sim_control_fixedgrid::Init(
   if (textio) textio->SetSolver(eqn);
 
   if (SimPM.timestep==0) {
-    cout << "(INIT) Outputting initial data.\n";
+    cout << "(INIT) Saving initial data.\n";
     err=output_data(*grid);
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
@@ -1168,7 +1169,7 @@ int sim_control_fixedgrid::output_data(
   //
   // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
   //
-  cout <<"\tOutputting data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
+  cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
   err = dataio->OutputData(SimPM.outFileBase, grid, SimPM.timestep);
   if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM.timestep);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
@@ -1238,226 +1239,6 @@ int sim_control_fixedgrid::ready_to_start(
   }
 
   return(0);
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_fixedgrid::setup_evolving_RT_sources()
-{
-  //
-  // Loop through list of sources, and see if any of them have an evolution
-  // file (if none, then the string is set to NOFILE in the data I/O stage).
-  //
-  int err=0;
-  int Nevo=0;
-  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-    if (SimPM.RS.sources[isrc].EvoFile == "NOFILE") {
-#ifdef TESTING
-      cout <<"setup_evolving_RT_sources() Source "<<isrc<<" has no evolution file.\n";
-#endif
-    }
-    else {
-      if (SimPM.RS.sources[isrc].effect != RT_EFFECT_PION_MULTI) {
-        rep.error("setup_evolving_RT_sources() Source is not multifreq but has EvoFile",isrc);
-      }
-      Nevo++;
-      struct star istar;
-#ifdef TESTING
-      cout <<"setup_evolving_RT_sources() Source "<<isrc<<" has EvoFile "<<istar.file_name<<"\n";
-#endif
-      istar.file_name = SimPM.RS.sources[isrc].EvoFile;
-      istar.src_id    = isrc;
-      SimPM.STAR.push_back(istar);
-    }
-  }
-  //
-  // Now go through each one we found and read the evolution file into arrays
-  // and set the rest of the data in the 'star' struct.
-  //
-  for (int isrc=0; isrc<Nevo; isrc++) {
-    struct star *istar = &(SimPM.STAR[isrc]);
-    istar->Nlines = 0;
-    istar->time.resize(0);
-    istar->Log_L.resize(0);
-    istar->Log_T.resize(0);
-    istar->Log_R.resize(0);
-    istar->Log_V.resize(0);
-    //
-    // Open file
-    //
-    FILE *infile=0;
-    infile = fopen(istar->file_name.c_str(), "r");
-    if (!infile) rep.error("can't open wind evolving radiation source file",infile);
-    // Skip first two lines
-    char line[512];
-    fgets(line,512,infile); // compiler complains here
-    //printf("%s",line);
-    fgets(line,512,infile); // compiler complains here
-    //printf("%s",line);
-    // Temporary variables for column values
-    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
-    size_t iline=0;
-    while (fscanf(infile, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
-      //cout.precision(16);
-      //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
-      istar->Nlines ++;
-      istar->time.push_back(t1);
-      istar->Log_L.push_back( log10(t3/pconst.Lsun()) );
-      istar->Log_T.push_back( log10(t4) );
-      //
-      // For ionisation rate, we need to rescale the Blackbody luminosity so
-      // that it is much smaller for T<30000K, b/c the actual ionising photon
-      // luminosity of these stars is much less than indicated by BB curve.
-      // I took data from Table 1 of Diaz-Miller, Franco, & Shore,
-      // (1998,ApJ,501,192), compared them to the ionising photon luminosity
-      // of a BB with the same radius and Teff, and got the following scaling
-      // factor, using file conversion.py in code_misc/testing/planck_fn/
-      //
-      if (istar->Log_T[iline]<4.53121387658) {
-        //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
-        //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
-        double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
-        istar->Log_L[iline] -= 2.0*log10(beta);
-        //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
-      }
-
-      istar->Log_V.push_back( log10(t6/1.0e5) );
-
-      // Stellar radius, from Stefan Boltzmann Law.
-      t6 = sqrt( pow(10.0,istar->Log_L[iline])*pconst.Lsun()/ 
-                (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(t4, 4.0)));
-      istar->Log_R.push_back( log10(t6/pconst.Rsun() ));
-
-      iline ++;
-    }
-    fclose(infile);
-
-    //
-    // Finally set the last_line counter to be the array index nearest to
-    // (but less than) the current time.
-    //
-    iline=0;
-    while (istar->time[iline] < SimPM.simtime) iline++;
-    istar->last_line = iline;
-
-    // initialise to zero.
-    istar->Lnow = istar->Tnow = istar->Rnow = istar->Vnow = 0.0;
-  }
-
-  //
-  // All done setting up the source.  Now we need to update the SimPM.RS.
-  // source properties and send the changes to the raytracing class.  Need
-  // time in secs, L,T,V in cgs and R in Rsun.
-  //
-  err = update_evolving_RT_sources();
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_fixedgrid::update_evolving_RT_sources()
-{
-  int err=0;
-  bool updated=false;
-  //
-  // Loop over all sources with Evolution files.
-  //
-  for (unsigned int isrc=0; isrc<SimPM.STAR.size(); isrc++) {
-    struct star *istar = &(SimPM.STAR[isrc]);
-    istar->t_now = SimPM.simtime;
-    size_t i = istar->last_line;
-
-    //
-    // Check if we have reached the last line of the file!
-    //
-    if (i==(istar->Nlines-1)) {
-      cout <<"\n\n*#*#*#*#* WARNING #*#*#*#*#*#* update_evolving_RT_sources()";
-      cout <<" Last line, assuming star is constant luminosity from now on!\n\n";
-      return 0;
-    }
-    //
-    // Check if we have moved forward one line in the code, in which
-    // case we need to increment i.
-    //
-    while (istar->t_now > istar->time[i+1]) {
-      //cout <<"update_evolving_RT_sources() Source has moved to next line. i="<<i<<" time="<<istar->time[i]<<"\n";
-      i++;
-      istar->last_line = i;
-    }
-
-    //
-    // Now we know the star properties are bracketed by line i and line i+1,
-    // so we can do a simple linear interpolation between them.
-    //
-    // First interpolate in log space.
-    //
-    double Lnow, Tnow, Rnow, Vnow;
-    Lnow = istar->Log_L[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_L[i+1]-istar->Log_L[i])/(istar->time[i+1]-istar->time[i]);
-    Tnow = istar->Log_T[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_T[i+1]-istar->Log_T[i])/(istar->time[i+1]-istar->time[i]);
-    Rnow = istar->Log_R[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_R[i+1]-istar->Log_R[i])/(istar->time[i+1]-istar->time[i]);
-    Vnow = istar->Log_V[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_V[i+1]-istar->Log_V[i])/(istar->time[i+1]-istar->time[i]);
-    //
-    // Now convert units (Radius is ok, but all others need conversion).
-    //
-    Lnow = exp(pconst.ln10()*(Lnow))*pconst.Lsun();
-    Tnow = exp(pconst.ln10()*(Tnow));
-    Rnow = exp(pconst.ln10()*(Rnow));
-    Vnow = exp(pconst.ln10()*(Vnow));
-
-    //
-    // If L or T change by more than 1% then update them; otherwise leave as they are.
-    //
-    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.01 || fabs(Tnow-istar->Tnow)/istar->Tnow >0.01 ) {
-      cout <<"update_evolving_RT_sources() NOW: t="<<istar->t_now<<"\t"<< Lnow <<"\t"<< Tnow <<"\t"<< Rnow <<"\t"<< Vnow <<"\n";
-      istar->Lnow = Lnow;
-      istar->Tnow = Tnow;
-      istar->Rnow = Rnow;
-      istar->Vnow = Vnow;
-
-      //
-      // Copy new data into SimPM.RS, and send updates to RayTracing and
-      // microphysics classes.
-      //
-      struct rad_src_info *rs = &(SimPM.RS.sources[istar->src_id]);
-      
-      rs->strength = istar->Lnow;
-      rs->Rstar    = istar->Rnow;
-      rs->Tstar    = istar->Tnow;
-      
-      RT->update_RT_source_properties(rs);
-
-      err += MP->set_multifreq_source_properties(rs);
-      if (err) rep.error("update_evolving_RT_sources() failed to update MP for source id",rs->id);
-
-      updated=true;
-    }
-
-  }
-  
-
-  //
-  // Finally get the data back from RT into the structs for MP updates.
-  //
-  if (updated) {
-    RT->populate_UVheating_src_list(FVI_heating_srcs);
-    RT->populate_ionising_src_list( FVI_ionising_srcs);
-  }
-  
-  return 0;
 }
 
 

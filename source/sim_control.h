@@ -43,6 +43,7 @@
 /// - 2015.01.26 JM: changed name to sim_control.cpp, and class names
 ///    to sim_control_XX, to better reflect what the class does!
 ///    Moved MPI-parallelised class to its own new file.
+/// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 
 #ifndef SIM_CONTROL_H
 #define SIM_CONTROL_H
@@ -124,38 +125,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   ///
   double get_max_walltime();
 
-  ///
-  /// Setup cell extra data through the cell_interface class CI.
-  ///
-  //void setup_cell_extra_data();
-
-  /// \brief initialise the grid class with appropriate parameters.
-  ///
-  /// This function sets up the appropriate grid; so far I only have a 
-  /// UniformGrid class -- uniform, cartesian, finite volume grid.
-  ///
-  //virtual int setup_grid(
-  //      class GridBaseClass **, ///< address of pointer to computational grid.
-  //      class MCMDcontrol *     ///< address of MCMD controller class.
-  //      );
-
-  ///
-  /// Decide if I need to setup MP class, and do it if i need to.
-  ///
-  //virtual int setup_microphysics();
-
-  ///
-  /// Decide if I need to setup RT class, and do it if i need to.
-  ///
-  //virtual int setup_raytracing(
-  //      class GridBaseClass * 
-  //      );
-
-  ///
-  /// Check for any time-evolving radiation sources, and read the evolution
-  /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
-  ///
-  virtual int setup_evolving_RT_sources();
 
    //---------------------------------------
   protected:
@@ -259,16 +228,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   // *********************** TIMESTEP CALCULATION **************************
   // ***********************************************************************
 
-  /// flag: true if timestep limit needs raytracing column densities
-  //bool FVI_need_column_densities_4dt;
-
-  //int FVI_nheat; ///< number of RT heating sources
-  //int FVI_nion;  ///< number of ionising sources
-  /// vector of RT heating sources, of size FVI_nheat
-  //std::vector<struct rt_source_data> FVI_heating_srcs;
-  /// vector of RT ionising sources, of size FVI_nion
-  //std::vector<struct rt_source_data> FVI_ionising_srcs;
-
   ///
   /// Calculate the appropriate timestep.
   /// 
@@ -284,11 +243,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
         class GridBaseClass * 
         );
 
-  ///
-  /// Check for any time-evolving radiation sources, and update source
-  /// properties from global struct SimPM.STAR[v] if needed
-  ///
-  virtual int update_evolving_RT_sources();
 
   ///
   /// Calculate the microphysics timestep, based on heating/cooling and reaction
