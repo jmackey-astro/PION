@@ -129,7 +129,7 @@ void stellar_wind_angle::setup_tables()
     //
 
     // Temperature ranges from Eldridge et al. (2006, MN, 367, 186) (K) + upper and lower Teff limits
-    double T0 = 1000.0, T1 = 3600.0, T2 = 6000.0, T3 = 8000.0, T4 = 10000.0, T5 = 20000.0, T6 = 22000.0, T7 = 40000.0;
+    double T0 = 1000.0, T1 = 3600.0, T2 = 6000.0, T3 = 8000.0, T4 = 10000.0, T5 = 20000.0, T6 = 22000.0, T7 = 51000.0;
 
     Teff_vec.resize(npts_Teff);
     
