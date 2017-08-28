@@ -668,7 +668,6 @@ int stellar_wind_angle::add_evolving_source(
     M_evo.push_back(t2);
     L_evo.push_back(t3);
     Teff_evo.push_back(t4);
-    Mdot_evo.push_back(t5);
     vrot_evo.push_back(t6);
 
     // Stellar radius
@@ -687,7 +686,7 @@ int stellar_wind_angle::add_evolving_source(
     //rep.error("test",2);
     
     // Mdot
-    //Mdot_evo.push_back(t5*pow_fast(1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back(), c_beta));
+    Mdot_evo.push_back(t5*pow_fast(1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back(), c_beta));
     //Mdot_evo.push_back(t5);
   }
   fclose(wf);
