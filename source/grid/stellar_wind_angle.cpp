@@ -3,6 +3,7 @@
 /// - 2017.08.[15-?] RK: reworked to include trilinear interpolation
 /// of density, to accommodate for addition of Teff dimension to
 /// setup_tables
+/// - 2017-08-30 JM: added flag for enhancing wind
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -87,9 +88,9 @@ void stellar_wind_angle::setup_tables()
     // Set up theta vector
     //
     
-    cout << "###############################" << endl;
-    cout << "Setting up interpolating tables" << endl;
-    cout << "###############################" << endl;
+    cout << "###############################" << "\n";
+    cout << "Setting up interpolating tables" << "\n";
+    cout << "###############################" << "\n";
 
     // Min, mid and max values of theta - 5pts between min and mid, 20pts between mid and max
     double theta_min = 0.1;
@@ -104,7 +105,7 @@ void stellar_wind_angle::setup_tables()
         else theta_vec[k] = (theta_mid + (k - 4)*((theta_max - theta_mid)/(npts_theta - 5)))*(pconst.pi()/180.0);
 	}
     
-    cout << "- Theta vector generated" << endl;
+    cout << "- Theta vector generated" << "\n";
 
     
     //
@@ -121,7 +122,7 @@ void stellar_wind_angle::setup_tables()
     // Iterate omega values - log spacing - spacing decreases as omega approaches 1
     for (int j = 0; j < npts_omega; j++) omega_vec[j] = 1 - pow_fast(10, log_mu_vec[j]);
 
-    cout << "- Omega vector generated" << endl;
+    cout << "- Omega vector generated" << "\n";
 
 
     //
@@ -149,7 +150,7 @@ void stellar_wind_angle::setup_tables()
 	if (i == 21)            Teff_vec[i] = T7;
         }
     
-    cout << "- Teff vector generated" << endl;
+    cout << "- Teff vector generated" << "\n";
 
 
     //
@@ -172,7 +173,7 @@ void stellar_wind_angle::setup_tables()
         }
     }
 
-    cout << "- Delta table generated" << endl;
+    cout << "- Delta table generated" << "\n";
 
 
     //
@@ -197,9 +198,9 @@ void stellar_wind_angle::setup_tables()
         }
     }
 	
-    cout << "- Alpha table generated" << endl << endl;
-    cout << "Finished interpolating tables setup" << endl;
-    cout << "###############################" << endl << endl;
+    cout << "- Alpha table generated" << "\n" << "\n";
+    cout << "Finished interpolating tables setup" << "\n";
+    cout << "###############################" << "\n" << "\n";
 
     
     return;
@@ -627,6 +628,7 @@ int stellar_wind_angle::add_evolving_source(
   const double Rstar,       ///< Radius at which to get gas pressure from Teff
   const pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
+  const int enhance,   ///< enhance mdot based on rotation (0=no,1=yes).
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
   const double t_now,       ///< current simulation time, to see if src is active.
   const double update_freq, ///< frequency with which to update wind properties (seconds).
@@ -685,9 +687,15 @@ int stellar_wind_angle::add_evolving_source(
     //cout <<t6<<"  "<<t4<<"  "<<t3<<"  "<<sqrt(2.0*pconst.G()*t2/t6)<<"\n";
     //rep.error("test",2);
     
-    // Mdot
-    Mdot_evo.push_back(t5*pow_fast(1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back(), c_beta));
-    //Mdot_evo.push_back(t5);
+    // Mdot: enhance by (1-omega)^(-c_beta) if enhance flag is set.
+    if (enhance) {
+      cout <<"mdot enhanced! "<<t1<<"  " <<t5*pow_fast(std::max(0.01,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta)<<"\n";
+      Mdot_evo.push_back(t5*pow_fast(std::max(0.01,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta));
+    }
+    else {
+      cout <<"Mdot not enhanced! "<<t1<<"  " <<t5<<"\n";
+      Mdot_evo.push_back(t5);
+    }
   }
   fclose(wf);
 

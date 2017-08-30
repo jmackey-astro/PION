@@ -597,6 +597,7 @@ int get_sim_info::read_wind_sources()
     // new stuff for evolving winds:
     //
     string evofile;
+    int enhance_mdot=0;
     double time_offset, update_freq, time_scalefac;
 
     for (int v=0;v<SimPM.ndim;v++) {
@@ -655,6 +656,11 @@ int get_sim_info::read_wind_sources()
     {      evofile = a; }
     else { evofile = "NOFILE";}
 
+    temp.str(""); temp<<"WIND_"<<i<<"_enhance_mdot";
+    if ( (a=rp->find_parameter(temp.str())) !="")
+    {      enhance_mdot = atof(a.c_str()); }
+    else { enhance_mdot = 0;}
+
     temp.str(""); temp<<"WIND_"<<i<<"_t_offset";
     if ( (a=rp->find_parameter(temp.str())) !="")
     {      time_offset=atof(a.c_str()); }
@@ -695,6 +701,7 @@ int get_sim_info::read_wind_sources()
     // new stuff for evolving winds:
     //
     wind->evolving_wind_file = evofile;
+    wind->enhance_mdot = enhance_mdot;
     wind->time_offset = time_offset;
     wind->update_freq = update_freq;
     wind->t_scalefactor = time_scalefac;

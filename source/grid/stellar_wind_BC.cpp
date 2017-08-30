@@ -740,6 +740,7 @@ int stellar_wind_evolution::add_evolving_source(
   const double Rstar,       ///< Radius at which to get gas pressure from Teff
   const pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
+  const int ,   ///< enhance mdot based on rotation (0=no,1=yes).
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)] in years
   const double t_now,       ///< current simulation time, to see if src is active.
   const double update_freq, ///< frequency with which to update wind properties.
