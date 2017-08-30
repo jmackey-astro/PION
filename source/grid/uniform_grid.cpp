@@ -2902,6 +2902,7 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
         SWP.params[isw]->Rstar,
         SWP.params[isw]->tr,
         SWP.params[isw]->evolving_wind_file,
+        SWP.params[isw]->enhance_mdot,
         SWP.params[isw]->time_offset,
         SimPM.simtime,
         SWP.params[isw]->update_freq,

@@ -66,7 +66,7 @@
 //
 // These flags set the timestep-limiting option for mp_explicit_H and
 // mp_implicit_H.  Only modify them if you know what you are doing.
-// See Mackey (2011,A&A,539,A147) for details.
+// See Mackey (2012,A&A,539,A147) for details.
 //
 #define MPV3_DTLIMIT 2
 //#define MPV3_DTLIMIT 3

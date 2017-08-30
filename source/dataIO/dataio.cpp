@@ -1102,6 +1102,20 @@ int DataIOBase::read_simulation_parameters()
       ++iter;
       //cout<<nm.str()<<" = "<<wind->evolving_wind_file<<"\n";
 
+      //
+      // Whether to enhance Mdot based on Omega (over and above what
+      // the evolutionary code does).
+      //
+      nm.str(""); nm << "WIND_"<<isw<<"_enhance_mdot";
+      if ( (*iter)->name.compare( nm.str() ) !=0) {
+        rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&wind->enhance_mdot));
+      err = read_header_param(*iter);
+      if (err) rep.error("Error reading parameter",(*iter)->name);
+      ++iter;
+      //cout<<nm.str()<<" = "<<wind->enhance_mdot<<"\n";
+
       nm.str(""); nm << "WIND_"<<isw<<"_t_offset";
       if ( (*iter)->name.compare( nm.str() ) !=0) {
         rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
@@ -1249,6 +1263,7 @@ void DataIOBase::set_windsrc_params()
     // New stuff for evolving winds:
     //
     ostringstream temp11; temp11.str(""); temp11<< "WIND_"<<n<<"_evofile";
+    ostringstream temp13; temp13.str(""); temp13<< "WIND_"<<n<<"_enhance_mdot";
     ostringstream temp9;  temp9.str("");  temp9 << "WIND_"<<n<<"_t_offset";
     ostringstream temp10; temp10.str(""); temp10<< "WIND_"<<n<<"_updatefreq";
     ostringstream temp12; temp12.str(""); temp12<< "WIND_"<<n<<"_t_scalefac";
@@ -1277,6 +1292,11 @@ void DataIOBase::set_windsrc_params()
     pm_string  *w011 = new pm_string  (temp11.str());
     w011->critical=false;
     windsrc.push_back(w011);
+
+    // enhance mdot based on rotation?
+    pm_int  *w013 = new pm_int        (temp13.str());
+    w013->critical=false;
+    windsrc.push_back(w013);
 
     // time offset
     pm_double  *w009 = new pm_double  (temp9.str());
@@ -1639,6 +1659,16 @@ int DataIOBase::write_simulation_parameters()
         rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->evolving_wind_file));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing parameter",(*iter)->name);
+      ++iter;
+      //cout<<nm<<" = "<<wind->evolving_wind_file<<"\n";
+
+      nm.str(""); nm << "WIND_"<<isw<<"_enhance_mdot";
+      if ( (*iter)->name.compare( nm.str() ) !=0) {
+        rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->enhance_mdot));
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter",(*iter)->name);
       ++iter;

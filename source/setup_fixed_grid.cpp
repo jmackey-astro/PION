@@ -799,7 +799,11 @@ int setup_fixed_grid::update_evolving_RT_sources()
     // If L or T change by more than 1% then update them; otherwise leave as they are.
     //
     if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.01 || fabs(Tnow-istar->Tnow)/istar->Tnow >0.01 ) {
-      cout <<"update_evolving_RT_sources() NOW: t="<<istar->t_now<<"\t"<< Lnow <<"\t"<< Tnow <<"\t"<< Rnow <<"\t"<< Vnow <<"\n";
+      cout <<"update_evolving_RT_sources() NOW: t="<<istar->t_now;
+      cout <<"\tL="<< Lnow;
+      cout <<"\tT="<< Tnow;
+      cout <<"\tR="<< Rnow;
+      cout <<"\tV="<< Vnow <<"\n";
       istar->Lnow = Lnow;
       istar->Tnow = Tnow;
       istar->Rnow = Rnow;

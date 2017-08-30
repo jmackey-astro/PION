@@ -178,6 +178,7 @@ struct stellarwind_params {
   double radius;
   ///< Radius out to which boundary condition is imposed (physical).
   std::string evolving_wind_file; ///< name of file containing evolving wind data.
+  int enhance_mdot;     ///< 0=no, 1=yes, for rapidly rotating stars.
   double time_offset;   ///< time offset between wind-data-file and sim-time (YEARS!).
   double update_freq;   ///< how often to update wind-data from file info (YEARS!).
   /// Evolution of wind happens this factor faster than normal (for factor>1)
