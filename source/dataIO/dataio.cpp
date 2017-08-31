@@ -1675,7 +1675,7 @@ int DataIOBase::write_simulation_parameters()
       err = write_header_param(*iter);
       if (err) rep.error("Error writing parameter",(*iter)->name);
       ++iter;
-      //cout<<nm<<" = "<<wind->evolving_wind_file<<"\n";
+      //cout<<nm<<" = "<<wind->enhance_mdot<<"\n";
 
       nm.str(""); nm << "WIND_"<<isw<<"_t_offset";
       if ( (*iter)->name.compare( nm.str() ) !=0) {

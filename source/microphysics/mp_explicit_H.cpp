@@ -1343,6 +1343,7 @@ void mp_explicit_H::setup_radiation_source_parameters(
         // This source must be a point source of UV heating. In this case the strength is 
         // the photon luminosity, so flux = L*ds*exp(-1.9Av)/mpv_Vshell
         //
+        //cout <<"heat_src[v].strength "<<heat_src[v].strength;
         temp = heat_src[v].strength*mpv_delta_S/heat_src[v].Vshell;
 #ifdef MPV3_DEBUG
         cout <<"setup_rad_src_params:\tpoint   src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
@@ -1364,6 +1365,7 @@ void mp_explicit_H::setup_radiation_source_parameters(
     //
     mpv_G0_UV /= 1.2e7;
     mpv_G0_IR /= 1.2e7;
+    //cout <<"  "<<mpv_G0_UV<<"  "<<mpv_G0_IR<<"\n";
 #ifdef MPV3_DEBUG
     if (mpv_G0_UV>1.0) {
       cout <<"\tTotal UV attenuated flux = "<<mpv_G0_UV<<" in units of 1.2e7 phot/cm2/s\n";

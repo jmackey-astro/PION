@@ -45,12 +45,29 @@ class constants {
   inline double kB()     {return 1.3806488e-16;}
   inline double h()      {return 6.62606957e-27;}
   inline double StefanBoltzmannConst() {return 5.670373e-5;}
-  inline double m_p()    {return 1.672621777e-24;}
-  inline double G()		 {return 6.67408e-8;}
-  //
-  // Atomic data
-  //
+  ///
+  /// proton mass
+  ///
+  inline double m_p()    {return 1.672621898e-24;}
+  ///
+  /// Unified atomic mass unit.
+  ///
+  inline double uamu()   {return 1.660539040e-24;}
+  ///
+  /// Hydrogen mass
+  ///
+  inline double m_H()    {return 1.6738e-24;}
+  ///
+  /// Gravitational constant
+  ///
+  inline double G()      {return 6.67408e-8;}
+  ///
+  /// Ionization potential of H
+  ///
   inline double Eth_H()  {return 13.59844*eV();}
+  ///
+  /// Ionization potential of H, in Hertz.
+  ///
   inline double NuTh_H() {return 3.288e15;}
   //
   // Unit conversion

@@ -185,7 +185,7 @@ class cell_interface {
     );
 
   ///
-  /// Returns double precision position of cell centre (code units).
+  /// Returns double precision position of cell centre (cgs).
   ///
   void get_dpos(
     const cell *, ///< pointer to cell
@@ -194,7 +194,7 @@ class cell_interface {
 
   ///
   /// Returns double precision position of cell centre in a specified
-  /// coordinate direction (code units).
+  /// coordinate direction (cgs).
   ///
   double get_dpos(
     const cell *, ///< pointer to cell

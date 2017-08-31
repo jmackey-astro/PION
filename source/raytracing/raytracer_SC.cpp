@@ -431,9 +431,9 @@ void raytracer_USC_infinity::update_RT_source_properties(
   if (!src) {
     rep.error("update_RT_source_properties() Couldn't find source in source list.",rs->id);
   }
-  if (src->s->effect != RT_EFFECT_PION_MULTI) {
-    rep.error("update_RT_source_properties() Don't know how to update source type for this id",src->s->id);
-  }
+  //if (src->s->effect != RT_EFFECT_PION_MULTI) {
+  //  rep.error("update_RT_source_properties() Don't know how to update source type for this id",src->s->id);
+  //}
   //
   // copy parameters.
   //
@@ -451,7 +451,8 @@ void raytracer_USC_infinity::update_RT_source_properties(
   //src->s->opacity_src = rs->opacity_src;
   //src->s->opacity_var = rs->opacity_var;
   //src->s->EvoFile = rs->EvoFile;
-  //rep.error("Update source properties not implemented yet.",99);
+
+    
   return;
 }
 

@@ -88,8 +88,6 @@ struct which_physics {
 // *******************************************************************
 ///
 /// Star struct, for storing data from a stellar evolution file.
-/// I need to get rid of Rstar, because it is not used, and is in the
-/// wrong units.
 ///
 struct star {
   std::string file_name;
