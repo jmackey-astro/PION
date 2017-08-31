@@ -638,9 +638,9 @@ int setup_fixed_grid::setup_evolving_RT_sources()
 #endif
     }
     else {
-      if (SimPM.RS.sources[isrc].effect != RT_EFFECT_PION_MULTI) {
-        rep.error("setup_evolving_RT_sources() Source is not multifreq but has EvoFile",isrc);
-      }
+      //if (SimPM.RS.sources[isrc].effect != RT_EFFECT_PION_MULTI) {
+      //  rep.error("setup_evolving_RT_sources() Source is not multifreq but has EvoFile",isrc);
+      //}
       Nevo++;
       struct star istar;
 #ifdef TESTING
@@ -676,11 +676,13 @@ int setup_fixed_grid::setup_evolving_RT_sources()
     fgets(line,512,infile); // compiler complains here
     //printf("%s",line);
     // Temporary variables for column values
+    // Columns are time, M, L, Teff, Mdot, vrot
     double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
     size_t iline=0;
     while (fscanf(infile, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
       //cout.precision(16);
       //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
+      //cout <<t1 <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
       istar->Nlines ++;
       istar->time.push_back(t1);
       istar->Log_L.push_back( log10(t3/pconst.Lsun()) );
@@ -694,11 +696,12 @@ int setup_fixed_grid::setup_evolving_RT_sources()
       // of a BB with the same radius and Teff, and got the following scaling
       // factor, using file conversion.py in code_misc/testing/planck_fn/
       //
-      if (istar->Log_T[iline]<4.53121387658) {
+      if (istar->Log_T[iline]<4.53121387658 &&
+          SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
         //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
         double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
-        istar->Log_L[iline] -= 2.0*log10(beta);
+        istar->Log_L[iline] -= 2.0*beta;
         //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
       }
 
@@ -709,6 +712,9 @@ int setup_fixed_grid::setup_evolving_RT_sources()
                 (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(t4, 4.0)));
       istar->Log_R.push_back( log10(t6/pconst.Rsun() ));
 
+      //if (SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
+      //  cout <<t1 <<"!!"<< pow(10.0,istar->Log_L[iline])*pconst.Lsun()  <<"  "<< pow(10.0,istar->Log_T[iline]) <<"  "<< t5 <<"  "<< pow(10.0,istar->Log_V[iline]) <<"\n";
+      //}
       iline ++;
     }
     fclose(infile);
@@ -790,10 +796,10 @@ int setup_fixed_grid::update_evolving_RT_sources()
     //
     // Now convert units (Radius is ok, but all others need conversion).
     //
-    Lnow = exp(pconst.ln10()*(Lnow))*pconst.Lsun();
-    Tnow = exp(pconst.ln10()*(Tnow));
-    Rnow = exp(pconst.ln10()*(Rnow));
-    Vnow = exp(pconst.ln10()*(Vnow));
+    Lnow = exp(pconst.ln10()*(Lnow))*pconst.Lsun();   // erg/s
+    Tnow = exp(pconst.ln10()*(Tnow));                 // K
+    Rnow = exp(pconst.ln10()*(Rnow));                 // Rsun  (!!!)
+    Vnow = exp(pconst.ln10()*(Vnow));                 // km/s  (!!!)
 
     //
     // If L or T change by more than 1% then update them; otherwise leave as they are.
@@ -819,10 +825,20 @@ int setup_fixed_grid::update_evolving_RT_sources()
       rs->Rstar    = istar->Rnow;
       rs->Tstar    = istar->Tnow;
       
+      //
+      // This is a horrible hack, fix it to something sensible ASAP!!!
+      //
+      if (rs->effect == RT_EFFECT_UV_HEATING) {
+        rs->strength = 1.0e48*(rs->strength/1.989e38)*exp(-1e4/rs->Tstar);
+        cout <<"FUV source: strength="<<rs->strength<<"\n";
+      }
+
       RT->update_RT_source_properties(rs);
 
-      err += MP->set_multifreq_source_properties(rs);
-      if (err) rep.error("update_evolving_RT_sources() failed to update MP for source id",rs->id);
+      if (rs->effect==RT_EFFECT_PION_MULTI) {
+        err += MP->set_multifreq_source_properties(rs);
+        if (err) rep.error("update_evolving_RT_sources() failed to update MP for source id",rs->id);
+      }
 
       updated=true;
     }

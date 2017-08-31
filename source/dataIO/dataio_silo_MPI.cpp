@@ -155,8 +155,6 @@ int dataio_silo_pllel::ReadHeader(
 #ifdef TESTING
     cout <<"Warning didn't read NUM_FILES from silo file.\n";
 #endif
-    //rep.error("dataio_silo::ReadHeader() error reading NUM_FILES \
-    //           from silo file",err);
   }
 
   //
