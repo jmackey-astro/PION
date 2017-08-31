@@ -1112,7 +1112,10 @@ int DataIOBase::read_simulation_parameters()
       }
       (*iter)->set_ptr(static_cast<void *>(&wind->enhance_mdot));
       err = read_header_param(*iter);
-      if (err) rep.error("Error reading parameter",(*iter)->name);
+      if (err) {
+        cout <<"failed to find WIND_"<<isw<<"_enhance_mdot parameter, setting to 0.\n";
+        //rep.error("Error reading parameter",(*iter)->name);
+      }
       ++iter;
       //cout<<nm.str()<<" = "<<wind->enhance_mdot<<"\n";
 
