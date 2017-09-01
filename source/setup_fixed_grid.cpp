@@ -696,12 +696,14 @@ int setup_fixed_grid::setup_evolving_RT_sources()
       // of a BB with the same radius and Teff, and got the following scaling
       // factor, using file conversion.py in code_misc/testing/planck_fn/
       //
-      if (1==0 && istar->Log_T[iline]<4.53121387658 &&
+      if (istar->Log_T[iline]<4.53121387658 &&
           SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
         //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
         double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
-        istar->Log_L[iline] -= 2.0*beta;
+        //istar->Log_L[iline] -= 2.0*beta;
+        // HACK!!! THIS REDUCES FLUX BY LESS THAN IT SHOULD...
+        istar->Log_L[iline] -= 0.4*beta;
         //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
       }
 
