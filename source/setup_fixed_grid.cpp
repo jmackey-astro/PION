@@ -696,7 +696,7 @@ int setup_fixed_grid::setup_evolving_RT_sources()
       // of a BB with the same radius and Teff, and got the following scaling
       // factor, using file conversion.py in code_misc/testing/planck_fn/
       //
-      if (istar->Log_T[iline]<4.53121387658 &&
+      if (1==0 && istar->Log_T[iline]<4.53121387658 &&
           SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
         //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
