@@ -690,7 +690,7 @@ int stellar_wind_angle::add_evolving_source(
     // Mdot: enhance by (1-omega)^(-c_beta) if enhance flag is set.
     if (enhance) {
       //cout <<"mdot enhanced! "<<t1<<"  " <<t5*pow_fast(std::max(0.01,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta)<<"\n";
-      Mdot_evo.push_back(t5*pow_fast(std::max(0.01,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta));
+      Mdot_evo.push_back(t5*pow_fast(std::max(0.1,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta));
     }
     else {
       //cout <<"Mdot not enhanced! "<<t1<<"  " <<t5<<"\n";
