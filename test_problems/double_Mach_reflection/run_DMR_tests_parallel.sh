@@ -61,19 +61,19 @@ echo "DOUBLE MACH REFLECTION: GENERATE ICS"
 mpirun -np 4 ./icgen_parallel ${test_dir}/params_DMR_n${resolution}.txt silo redirect=${data_dir}/iclog_n${resolution}_
 
 echo "DOUBLE MACH REFLECTION: RUN LOW RES"
-mpirun -np 4 ./pion_parallel IC_DMRm10t60_n${resolution}_0000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_Hyb_av10 cfl=0.4 artvisc=0.1 \
+mpirun -np 4 ./pion_parallel DMRm10t60_n${resolution}_0000.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_Hyb_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_Hyb_av10 solver=3
 
-mpirun -np 4 ./pion_parallel IC_DMRm10t60_n${resolution}_0000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_av10 cfl=0.4 artvisc=0.1 \
+mpirun -np 4 ./pion_parallel DMRm10t60_n${resolution}_0000.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RCV_av10 solver=4
 
-mpirun -np 4 ./pion_parallel IC_DMRm10t60_n${resolution}_0000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RPV_av10 cfl=0.4 artvisc=0.1 \
+mpirun -np 4 ./pion_parallel DMRm10t60_n${resolution}_0000.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RPV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RPV_av10 solver=5
 
-mpirun -np 4 ./pion_parallel IC_DMRm10t60_n${resolution}_0000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_FVS_av10 cfl=0.4 artvisc=0.1 \
+mpirun -np 4 ./pion_parallel DMRm10t60_n${resolution}_0000.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_FVS_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_FVS_av10 solver=6
 
-mpirun -np 4 ./pion_parallel IC_DMRm10t60_n${resolution}_0000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_Hcor cfl=0.4 AVtype=3    \
+mpirun -np 4 ./pion_parallel DMRm10t60_n${resolution}_0000.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_Hcor cfl=0.4 AVtype=3    \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RCV_Hcor solver=4
 
 exit

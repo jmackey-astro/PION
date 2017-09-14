@@ -60,15 +60,15 @@ echo "DOUBLE MACH REFLECTION: GENERATE ICS"
 ./icgen_serial ${test_dir}/params_DMR_n${resolution}.txt silo redirect=${data_dir}/iclog_n${resolution}_
 
 echo "DOUBLE MACH REFLECTION: RUN LOW RES"
-./pion_serial IC_DMRm10t60_n${resolution}.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_Hyb_av10 cfl=0.4 artvisc=0.1 \
+./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_Hyb_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_Hyb_av10 solver=3 &
-./pion_serial IC_DMRm10t60_n${resolution}.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_av10 cfl=0.4 artvisc=0.1 \
+./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RCV_av10 solver=4 &
-./pion_serial IC_DMRm10t60_n${resolution}.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RPV_av10 cfl=0.4 artvisc=0.1 \
+./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RPV_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RPV_av10 solver=5 &
-./pion_serial IC_DMRm10t60_n${resolution}.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_FVS_av10 cfl=0.4 artvisc=0.1 \
+./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_FVS_av10 cfl=0.4 artvisc=0.1 \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_FVS_av10 solver=6 &
-./pion_serial IC_DMRm10t60_n${resolution}.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_Hcor cfl=0.4 AVtype=3    \
+./pion_serial DMRm10t60_n${resolution}.00000000.silo 5 1 outfile=${data_dir}/DMRm10t60_n${resolution}_RCV_Hcor cfl=0.4 AVtype=3    \
  redirect=${data_dir}/msg_DMRm10t60_n${resolution}_RCV_Hcor solver=4 &
 wait
 exit
