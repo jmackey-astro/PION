@@ -24,6 +24,7 @@ src_dir=${BASE_DIR}/../source
 #---------------------------------------------------------------------
 # Default directories for storing data and finding the VisIt installation.
 DATE=`date +%Y-%m-%d`
+#visit_cmd='vglrun /usr/local/bin/visit'
 
 # aibn129 settings.
 #data_dir=/vol/aibn129/aibn129_1/jmackey/current_data/code_tests/tests_$DATE
@@ -37,7 +38,9 @@ DATE=`date +%Y-%m-%d`
 
 
 #---------------------------------------------------------------------
-# See if the directories are given from the command-line.
+# See if the required info can be parsed from the command-line.
+# If not just guess.
+#
 if [ "$1" = "" ]
 then
   echo "Please enter a resolution to use: NX = 130, 260, or 520"
@@ -50,59 +53,41 @@ if [ "$2" = "" ]
 then
   data_dir=${BASE_DIR}/data_$DATE
 else
-  data_dir=$2
+  data_dir=${BASE_DIR}/$2
 fi
 
-#if [ "$3" = "" ]
-#then
-#  visit_cmd=/home/green/visit/bin/visit
-#else
-#  visit_cmd=$3
-#fi
+if [ "$3" = "" ]
+then
+  visit_cmd='vglrun /usr/local/bin/visit'
+else
+  visit_cmd=$3
+fi
 #---------------------------------------------------------------------
 
 mkdir -p $data_dir
 mkdir -p ${data_dir}/FIGS
-mkdir -p ${data_dir}/MSG
-
-cp Python_Plot.py $data_dir
 
 
 #---------------------------------------------------------------------
 # Set the code-testing flags correctly in testing_flags.h
 #---------------------------------------------------------------------
-#sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
-#${src_dir}/defines/testing_flags.h
-#sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
-#${src_dir}/defines/testing_flags.h
-#sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
-#${src_dir}/defines/functionality_flags.h
-#sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
-#${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" ${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" ${src_dir}/defines/testing_flags.h
+#sed -i "" -e "s/^#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" ${src_dir}/defines/functionality_flags.h
+#sed -i "" -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" ${src_dir}/defines/testing_flags.h
 #---------------------------------------------------------------------
 # Run the Double Mach Reflection test
 #---------------------------------------------------------------------
 cd ${test_dir}/double_Mach_reflection
-./run_DMR_tests.sh    ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/SILO ${resolution}
-cd ${data_dir}/SILO
-mv *.txt ${data_dir}/MSG
+./run_DMR_tests.sh    ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR ${resolution}
+./make_DMR_figures.sh ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR "$visit_cmd" ${resolution}
 
-cd ../
-export PYTHONPATH=${BASE_DIR}/../extra_libraries/lib
-echo $PYTHONPATH
-python Python_Plot.py
-
-#./make_DMR_figures.sh ${test_dir}/double_Mach_reflection $code_dir ${data_dir}/DMR $visit_cmd ${resolution}
 #---------------------------------------------------------------------
 # Unset the TESTING flags so that the code is back to normal operation.
-#sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" \
-#${src_dir}/defines/testing_flags.h
-#sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" \
-#${src_dir}/defines/testing_flags.h
-#sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" \
-#${src_dir}/defines/functionality_flags.h
-#sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" \
-#${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^#define RT_TEST_PROBS/\/\/#define RT_TEST_PROBS/g" ${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^#define CHECK_MAGP/\/\/#define CHECK_MAGP/g" ${src_dir}/defines/testing_flags.h
+#sed -i -e "s/^\/\/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/#define SET_NEGATIVE_PRESSURE_TO_FIXED_T/" ${src_dir}/defines/functionality_flags.h
+#sed -i -e "s/^#define BLAST_WAVE_CHECK/\/\/#define BLAST_WAVE_CHECK/g" ${src_dir}/defines/testing_flags.h
 #---------------------------------------------------------------------
 
 exit

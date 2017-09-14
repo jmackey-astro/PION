@@ -11,15 +11,15 @@ RESOLUTION=$5
 echo "GENERATING PLOTS for resolution ${RESOLUTION}"
 cd ${test_dir}
 
-./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_Hyb_av10 $visit_cmd
+./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_Hyb_av10 "$visit_cmd"
 sleep 10
-./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_RCV_av10 $visit_cmd
+./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_RCV_av10 "$visit_cmd"
 sleep 10
-./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_RCV_Hcor $visit_cmd
+./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_RCV_Hcor "$visit_cmd"
 sleep 10
-./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_RPV_av10 $visit_cmd
+./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_RPV_av10 "$visit_cmd"
 sleep 10
-./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_FVS_av10 $visit_cmd
+./plot_DMR_results.sh ${data_dir} DMRm10t60_n${RESOLUTION}_FVS_av10 "$visit_cmd"
 sleep 10
 
 

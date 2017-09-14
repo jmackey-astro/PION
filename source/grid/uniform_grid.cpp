@@ -261,6 +261,9 @@ UniformGrid::UniformGrid(
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange,G_ndim);
+  rep.printVec("grid xmin ", G_xmin, G_ndim);
+  rep.printVec("grid xmax ", G_xmax, G_ndim);
+  rep.printVec("grid range", G_range,G_ndim);
 #endif
 
   //
