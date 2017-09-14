@@ -1,6 +1,6 @@
 Author: Jonathan Mackey
 Version: 1.0
-Date: 2016.05.05
+Date: 2017.09.14
 
 -------------------------------
 --- IMPORTANT INFORMATION   ---
@@ -24,12 +24,22 @@ Stages:
 
 (1)
 First you need to compile extra libraries.
-cd to "./extra_libraries"
-From the command line, run "bash install_all_libs.sh" to install.
-The script needs internet access with "wget" to work.  On OS-X this
-means you probably need to replace wget with another command (curl?).
+On debian/Ubuntu Linux distributions you should be able to install the
+packages:
+libsundials-serial-dev libsundials-serial 
+libsiloh5-0 libsilo-bin libsilo-dev
+libcfitsio-dev libcfitsio-bin
 
-(2)
+On other systems you may have to compile Silo, Sundials, and Cfitsio
+from source.  Here is how:
+- cd to "./extra_libraries"
+- From the command line, run "bash install_all_libs.sh" to install.
+The script needs internet access to download the source code for the
+libraries.  It also needs cmake, c, c++, fortran compilers to be
+installed on the system.
+
+
+(2) ** compile SERIAL version of the code **
 Then cd to "./bin_serial" and run "bash compile_code.sh"
 if you are lucky it will detect that you are using a standard
 workstation and will just compile.  If you are running Microsoft
@@ -39,7 +49,7 @@ workstation or OS X (with x-code installed) it should compile ok.
 
 If there are linking errors to silo (references to PDB and/or H5) or
 fits (references to ff**** functions) or cvode/nvector then the 
-libraries must have failed to compile.
+libraries didn't link and may have failed to compile.
 
 If all went well, there should be no error messages and there should
 be two executable files in ../ (i.e. the PION root directory):
@@ -61,13 +71,11 @@ If you are not using Linux/UNIX then the Makefile and/or
 compile_code.sh script may need editing.
 
 
-(3)
+(3) ** compile PARALLEL version of the code **
 cd to ../bin_parallel/ and run "bash compile_code.sh".
-Again, if you are lucky it will just compile.  There will probably
-be warning messages about pmpio.h from functions that are defined but
-never used; this is not a problem.  If compilation is successful
-then the files ../pion_parallel and ../icgen_parallel will
-exist.
+Again, if you are lucky it will just compile.
+If compilation is successful then the files ../pion_parallel and 
+../icgen_parallel will exist.
 
 In the event that it doesn't compile follow the same procedure as for
 the serial version of the code.
@@ -80,24 +88,26 @@ the serial version of the code.
 -------------------------------
 
 First you want to make sure the code tests run ok.  I'm still working
-on this, but there is a subdirectory called
-"test_problems".  Here you can run
-"./run_all_tests.sh" and it will run at least some tests, hopefully
-without bugging out.  (some of the tests have directories hard-coded
-to my desktop at AIfA).
-First edit run_all_tests.sh so that the data_dir variable is set to 
-some directory on your computer (and not my AIfA harddisk).
+on this, but there is a subdirectory called "test_problems".  Here you
+can run some test problems with known solutions.
 
 The Double-Mach-Reflection is a good test, and should run fine with:
- "bash run_double_Mach_reflection_test.sh"
-If you have "eog" (eye-of-gnome) on your system, it will pop up jpeg
-figures automatically which you can compare to
-http://www.astro.uni-bonn.de/~jmackey/jmac/node10.html figures.  They
-should look indistinguishable to the naked eye.  If not something is
-definitely wrong.
+ "bash run_double_Mach_reflection_test.sh <RES> <DIR>"
+where:
+ - <RES> is 130, 260, or 520, for the spatial resolution of the
+grid that you want to use,
+ - <DIR> is the path to the directory to save the data.  If <DIR> is
+ left blank then it saves in data_YYYYMMDD/ in the current directory.
 
-Shock-tube tests will probably take a long time to run (a few hours),
-so you may as well set that running overnight.
+The script runs the test with the given grid resolution for a number
+of different Riemann solvers, saving a few snapshots in <DIR>.
+
+The script will generate jpeg figures that you can compare with
+https://homepages.dias.ie/jmackey/jmac/node10.html figures.
+Note that you need to install VisIt for this script to work.  We are
+working on a python script to do the plotting instead.
+The figs should look indistinguishable to the naked eye.  If not
+something is probably wrong.
 
 [There are currently a lot of test problems in the 
 test_problems/untested directory; these used to work, but need some
@@ -124,7 +134,7 @@ command-line options by typing "./pion_serial" with no arguments.
 
 A typical simulation run is as follows:
 $ ./icgen_serial params_test_winds.txt silo
-$ ./pion_serial IC_wind_test1.silo 5 1 op_criterion=1 \
+$ ./pion_serial wind_test1.00000000.silo 5 1 op_criterion=1 \
  opfreq_time=1.58e10 cooling=0 redirect=test1 \
  outfile=/path/to/results/wind_test1 cfl=0.1
 
@@ -133,14 +143,14 @@ tells it to write a silo file (rather than fits).
 
 for main serial, the arguments refer to:
 REQUIRED ARGUMENTS:
-(1) IC_wind_test1.silo	       initial conditions filename.
+(1) wind_test1.00000000.silo   initial conditions filename (set by user!).
 (2) 5			       That the IC file is silo format(fits=2)
 (3) 1 			       That I'm using a uniform grid (always!)
 OPTIONAL ARGUMENTS:
 (4) op_criterion=1 	       output every n-time units (not n-steps)
-(5) opfreq_time=1.58e10	       output frequency (in whatever units)
+(5) opfreq_time=1.58e10	       output frequency (in code seconds)
 (6) cooling=0		       no cooling
-(7) redirect=test1	       standard output to file ./test1info.txt
+(7) redirect=test1	       redirect stdout to file ./test1info.txt
 (8) outfile=/path/to/results/wind_test1
 			       output file name with path (will be
 			       appended with step number)
@@ -213,43 +223,37 @@ the Makefile apply for parallel as serial code.
 Executables should be in the PION root directory called pion_parallel
 and icgen_parallel. 
 
-This should generate a lot of warnings about "PMPIO" but no errors.
 If there are errors you should make sure that an MPI installation is
 present on the system.  If you can compile and run an MPI 'hello
 world' program, then something strange is going on and probably the
 best thing is to contact me.
 
-Parallel code should usually be run with the "redirect=/path/to/file"
-argument included, because it can produce a lot of screen output.
 A typical example script is quoted below:
 
 ********************* run.sh ****************************
 #!/bin/bash
 # run code with 4 MPI processes.
 
-sim_dir=/export/aibn129_1/jmackey/data_etc/stellar_winds/test_moving_src
-mkdir ${sim_dir}
-mkdir ${sim_dir}/run_log
+sim_dir=/mnt/jmackey/data_etc/stellar_winds/test_moving_src
+mkdir -p ${sim_dir}
+mkdir -p ${sim_dir}/run_log
 
 mpirun -np 4 ./icgen_parallel pf_MSwind_Md1em6_v250_noI_adv000.txt silo \
  redirect=${sim_dir}/run_log/ic_WIND_Md1em6_v250_noI_adv000
-rsync -vt IC_WIND_Md1em6_v250_noI_adv*.silo ${sim_dir}/
-rm IC_WIND_Md1em6_v250_noI_adv*.silo
+mv WIND_Md1em6_v250_noI_adv*.silo ${sim_dir}/
 
 #
 # Run the sims for a short time:
 #
-mpirun -np 4 ./pion_parallel ${sim_dir}/IC_WIND_Md1em6_v250_noI_adv000_0000.silo 5 1 \
-outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv000 \
-redirect=${sim_dir}/run_log/msg_WIND_Md1em6_v250_noI_adv000 \
-finishtime=3.16e11 opfreq_time=1.58e10 artvisc=0.15
+mpirun -np 4 ./pion_parallel \
+ ${sim_dir}/WIND_Md1em6_v250_noI_adv000_0000.00000000.silo 5 1 \
+ outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv000 \
+ redirect=${sim_dir}/log_WIND_Md1em6_v250_noI_adv000 \
+ finishtime=3.16e11 opfreq_time=1.58e10
 
 ********************* run.sh ****************************
 
-The first time you run parallel code there may be an error about no
-"mpd" host running.  Run 'mpd&' and try again.
-
 ---------------------------------------------------------------------
-Written by Jonathan Mackey (C) 2006-2016  jmackey@cp.dias.ie
+Written by Jonathan Mackey (C) 2006-2017  jmackey@cp.dias.ie
 ---------------------------------------------------------------------
 

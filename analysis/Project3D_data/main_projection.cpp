@@ -861,7 +861,7 @@ int main(int argc, char **argv)
           //
           // Receive data into buffer.
           //
-          //cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
+          cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
           err = COMM->receive_double_data(
                   from_rank, ///< rank of process we are receiving from.
                   recv_tag,  ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
@@ -887,9 +887,9 @@ int main(int argc, char **argv)
         //
         // send data to rank 0
         //
-        //cout <<"RANK "<<myrank<<": SENDING DATA\n";
+        cout <<"RANK "<<myrank<<": SENDING DATA\n";
         string id;
-        //cout <<"sending "<<nels<<" to rank 0.\n";
+        cout <<"sending "<<nels<<" to rank 0.\n";
         cout.flush();
         err = COMM->send_double_data(
               0,       ///< rank to send to.

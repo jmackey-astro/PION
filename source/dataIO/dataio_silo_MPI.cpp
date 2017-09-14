@@ -500,6 +500,7 @@ int dataio_silo_pllel::OutputData(
   err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
 
+  rep.printVec("node_coords",reinterpret_cast<double *>(node_coords[XX]),SimPM.NG[XX]+1);
   //
   // Have got the baton, now, so the file is mine to write to.
   // local work here... each proc write their part of the grid.
@@ -821,8 +822,8 @@ int dataio_silo_pllel::setup_grid_properties(
   // This version is for the local domain of the current processor.
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
-  //double dx=gp->DX();
-  double dx=SimPM.dx;
+  double dx=grid->DX();
+  //double dx=SimPM.dx;
   if (node_coords || nodedims || zonedims ||
       nodex || nodey || nodez) {
     cerr<<"Have already setup variables for grid props! ";
@@ -912,6 +913,10 @@ int dataio_silo_pllel::setup_grid_properties(
         posz[i] = static_cast<double>(mpiPM->LocalXmin[ZZ]+i*dx);
       nodez = reinterpret_cast<void *>(posz);
     }
+    //rep.printVec("nodex",posx,nx);
+    //rep.printVec("nodey",posx,ny);
+    //rep.printVec("nodez",posx,nz);
+    //cout <<"dx="<<dx<<"\n";
   }
 
   nodedims[0] = nx;   zonedims[0] = nx-1;
