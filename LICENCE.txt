@@ -4,7 +4,7 @@ of the licence.  You do not have to explicity write to me to accept the
 licence.  If you do not agree to this licence you are not permitted to use
 PION.
 
-Copyright (c) 2006-2016 by Jonathan Mackey and co-authors.
+Copyright (c) 2006-2017 by Jonathan Mackey and co-authors.
 
 Contact information:
 
