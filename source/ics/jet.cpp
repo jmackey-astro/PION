@@ -24,6 +24,7 @@ IC_jet::IC_jet()
   ndim = coords = eqns = -1;
   jetrad=0;
   jdens = jpres = jvel = jtr0 = 0.0;
+  JP.jetic = 1;
   return;
 }
 
