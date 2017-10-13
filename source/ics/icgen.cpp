@@ -208,8 +208,10 @@ int main(int argc, char **argv)
      )
     ic = new IC_basic_tests();
 
-  else if (ics=="Jet" || ics=="JET" || ics=="jet")
+  else if (ics=="Jet" || ics=="JET" || ics=="jet") {
     ic = new IC_jet();
+    err += ic->setup_data(rp,grid);
+  }
 
   else if (ics=="DoubleMachRef")
     ic = new IC_basic_tests();
