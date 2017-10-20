@@ -35,54 +35,55 @@ class constants {
   //
   // Mathematics
   //
-  inline double ln10() {return 2.3025850929940459;}
-  inline double pi()     {return 3.14159265358979324;}
-  inline double sqrt2() {return 1.4142135623730950;}
+  inline double ln10()    {return 2.3025850929940459;}
+  inline double pi()      {return 3.14159265358979324;}
+  inline double halfpi()  {return 0.5*pi();}
+  inline double sqrt2()   {return 1.4142135623730950;}
   //
   // Physics
   //
-  inline double c()      {return 2.99792458e+10;}
-  inline double kB()     {return 1.3806488e-16;}
-  inline double h()      {return 6.62606957e-27;}
+  inline double c()       {return 2.99792458e+10;}
+  inline double kB()      {return 1.3806488e-16;}
+  inline double h()       {return 6.62606957e-27;}
   inline double StefanBoltzmannConst() {return 5.670373e-5;}
   ///
   /// proton mass
   ///
-  inline double m_p()    {return 1.672621898e-24;}
+  inline double m_p()     {return 1.672621898e-24;}
   ///
   /// Unified atomic mass unit.
   ///
-  inline double uamu()   {return 1.660539040e-24;}
+  inline double uamu()    {return 1.660539040e-24;}
   ///
   /// Hydrogen mass
   ///
-  inline double m_H()    {return 1.6738e-24;}
+  inline double m_H()     {return 1.6738e-24;}
   ///
   /// Gravitational constant
   ///
-  inline double G()      {return 6.67408e-8;}
+  inline double G()       {return 6.67408e-8;}
   ///
   /// Ionization potential of H
   ///
-  inline double Eth_H()  {return 13.59844*eV();}
+  inline double Eth_H()   {return 13.59844*eV();}
   ///
   /// Ionization potential of H, in Hertz.
   ///
-  inline double NuTh_H() {return 3.288e15;}
+  inline double NuTh_H()  {return 3.288e15;}
   //
   // Unit conversion
   //
-  inline double K_per_eV() {return 1.1604519e4;}
-  inline double year()     {return 3.1558150e7;}
-  inline double eV()       {return 1.602176565e-12;}
+  inline double K_per_eV(){return 1.1604519e4;}
+  inline double year()    {return 3.1558150e7;}
+  inline double eV()      {return 1.602176565e-12;}
   //
   // Astronomy
   //
-  inline double Msun()   {return 1.9891e33;}
-  inline double Lsun()   {return 3.839e33;}
-  inline double Rsun()   {return 6.955e10;}
-  inline double AU()     {return 1.49597870700e+13;}
-  inline double parsec() {return 3.0856776e18;}
+  inline double Msun()    {return 1.9891e33;}
+  inline double Lsun()    {return 3.839e33;}
+  inline double Rsun()    {return 6.955e10;}
+  inline double AU()      {return 1.49597870700e+13;}
+  inline double parsec()  {return 3.0856776e18;}
   
   ///
   /// tests if two doubles are equal to an accuracy of 1e-8.
