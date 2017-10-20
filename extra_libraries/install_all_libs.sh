@@ -242,7 +242,6 @@ then
 else
   echo " ****** COMPILING SHARED LIBRARIES ****** "
   ./configure --prefix=${BASE_PATH} \
- --disable-browser \
  --disable-fortran \
  --disable-silex \
  --enable-pythonmodule
