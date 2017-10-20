@@ -500,7 +500,7 @@ int dataio_silo_pllel::OutputData(
   err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
   if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
 
-  rep.printVec("node_coords",reinterpret_cast<double *>(node_coords[XX]),SimPM.NG[XX]+1);
+  //rep.printVec("node_coords",reinterpret_cast<double *>(node_coords[XX]),SimPM.NG[XX]+1);
   //
   // Have got the baton, now, so the file is mine to write to.
   // local work here... each proc write their part of the grid.
