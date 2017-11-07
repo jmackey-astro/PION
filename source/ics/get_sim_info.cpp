@@ -35,6 +35,7 @@
 ///    tracer has its own variable.
 /// - 2017.03.07 JM: changed logic so that ArtificalViscosity=4 is
 ///    allowed.
+/// - 2017.11.07 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -338,12 +339,48 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   //cout <<" and opfreq="<<SimPM.opfreq_time<<" code time units.\n";
 
 
-  
+  //
   // Boundary conditions.
-  seek="BC"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
-  SimPM.typeofbc = str;
+  // First do the edges of the domain:
+  //
+  SimPM.BC_XN = rp->find_parameter("BC_XN");
+  SimPM.BC_XP = rp->find_parameter("BC_XP");
+  if (SimPM.ndim>1) {
+    SimPM.BC_YN = rp->find_parameter("BC_YN");
+    SimPM.BC_YP = rp->find_parameter("BC_YP");
+  }
+  else {
+    SimPM.BC_YN = "NONE";
+    SimPM.BC_YP = "NONE";
+  }
+  if (SimPM.ndim>2) {
+    SimPM.BC_ZN = rp->find_parameter("BC_ZN");
+    SimPM.BC_ZP = rp->find_parameter("BC_ZP");
+  }
+  else {
+    SimPM.BC_ZN = "NONE";
+    SimPM.BC_ZP = "NONE";
+  }
+  //
+  // Now do the internal boundaries (if any).  Seek the string
+  // for a given internal boundary, and add to a vector until
+  // no more are found.
+  //
+  SimPM.BC_int.clear();
+  int v=0;
+  do {
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+    string temp = rp->find_parameter(intbc.str());
+    if (temp != "") {
+      SimPM.BC_INT.push_back(temp);
+      v++;
+    }
+  } while (temp != "");
+  
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
-  //cout <<"\tBoundary Conditions: "<<SimPM.typeofbc<<"\n";
   
   // Timing
   seek="StartTime"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
