@@ -66,13 +66,19 @@ SimParams::SimParams()
   dx = gamma = CFL = etav = -1.e99;
   artviscosity = opfreq = -1;
   typeofip = typeofop = -1;
-  typeofbc = "BAD-BC";
+
+  BC_XN = "";
+  BC_XP = "";
+  BC_YN = "";
+  BC_YP = "";
+  BC_ZN = "";
+  BC_ZP = "";
+  BC_INT.clear();
+
   outFileBase = "BAD-FILE";
   op_criterion=0; // default to per n-steps
   next_optime = opfreq_time = 0.0;
   addnoise=0;
-  //RefVec=0; RefVec = new double [MAX_NVAR];
-  //if (!RefVec) rep.error("Couldn't allocate memory for SimPM.RefVec[]",RefVec);
   for (int v=0; v<MAX_NVAR; v++) RefVec[v] = -1.e30;
   EP.dynamics          = 1;
   EP.raytracing        = 0;

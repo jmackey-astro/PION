@@ -242,29 +242,9 @@ int setup_fixed_grid::boundary_conditions(
 {
   // For uniform fixed cartesian grid.
 #ifdef TESTING
-  cout <<"(UniformFV::boundary_conditions)";
-  
-  if(SimPM.typeofbc=="FIXED") {
-    cout << "\t Using fixed boundary conditions; only useful for shock tube."<<"\n";
-  }
-  else if (SimPM.typeofbc=="PERIODIC") {
-    cout <<"\t Using periodic BCs on all sides of grid.\n";
-  }
-  else if (SimPM.typeofbc=="ABSORBING") {
-    cout <<"\t Using absorbing BCs on all sides of grid.\n";
-  }
-  else if (SimPM.typeofbc=="REFLECTING") {
-    cout <<"\t Using reflecting BCs on all sides of grid.\n";
-  }
-  else {
-    cout <<"\t Using the following BCs: "<<SimPM.typeofbc<<"\n";
-  }
-#endif
-
-#ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
 #endif
-  int err = grid->SetupBCs(SimPM.Nbc,SimPM.typeofbc);
+  int err = grid->SetupBCs(SimPM);
   if (err) rep.error("setup_fixed_grid::boundary_conditions() Couldn't \
                       set up boundary conditions class.",err);
 #ifdef TESTING

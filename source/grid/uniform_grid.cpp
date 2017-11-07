@@ -94,6 +94,7 @@
 /// - 2016.03.08 JM: bugfixes for outflow boundaries, grid setup.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).
+/// - 2017.11.07 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -909,11 +910,10 @@ class cell* UniformGrid::PrevPt(
 
 
 int UniformGrid::SetupBCs(
-      const int Nbc,
-      string typeofbc
+      class SimParams &par  ///< List of simulation params (including BCs)
       )
 {
-  if (BC_setBCtypes(typeofbc) !=0)
+  if (BC_setBCtypes(par) !=0)
     rep.error("UniformGrid::setupBCs() Failed to set types of BC",1);
   
   ///
@@ -1165,56 +1165,39 @@ int UniformGrid::assign_boundary_data()
 
 
 int UniformGrid::BC_setBCtypes(
-  std::string bctype
+  class SimParams &par
   )
 {
 #ifdef TESTING
   cout <<"Set BC types...\n";
 #endif
-  if(bctype=="FIXED" || bctype=="PERIODIC" || bctype=="ABSORBING") {
-#ifdef TESTING
-    cout <<"using old-style boundary condition specifier: "<<bctype;
-    cout <<" on all sides.\n";
-    cout <<"Converting to new style specifier.\n";
-#endif
 
-    if (bctype=="FIXED") {
-      bctype = "XNfix_XPfix_";
-      if (G_ndim>1) bctype += "YNfix_YPfix_";
-      if (G_ndim>2) bctype += "ZNfix_ZPfix_";
-    }
-    else if (bctype=="PERIODIC") {
-      bctype = "XNper_XPper_";
-      if (G_ndim>1) bctype += "YNper_YPper_";
-      if (G_ndim>2) bctype += "ZNper_ZPper_";
-    }
-    else if (bctype=="ABSORBING") {
-      bctype = "XNout_XPout_";
-      if (G_ndim>1) bctype += "YNout_YPout_";
-      if (G_ndim>2) bctype += "ZNout_ZPout_";
-    }
-#ifdef TESTING
-    cout <<"New bctype string = "<<bctype<<"\n";
-#endif
-  }    
-
-  //
-  // Set up boundary data struct.  Assumes bctype is in format
-  // "XPper XNper " etc., so that each boundary is defined by 6
-  // characters, and number of boundaries is given by length/6.
-  //
-  int len = bctype.length(); len = (len+5)/6;
-  if (len < 2*G_ndim) rep.error("Need boundaries on all sides!",len);
+  // Set number of boundaries: 2 for each dimension, plus internal.
+  int len = 2*G_ndim + par.BC_INT.size();
 #ifdef TESTING
   cout <<"Got "<<len<<" boundaries to set up.\n";
 #endif
   BC_bd=0;
   BC_bd = mem.myalloc(BC_bd, len);
   UniformGrid::BC_nbd = len;
-  
+
+  //
+  // First the 2N external boundaries.  Put the strings into an array.
+  //
+  std::vector<std::string> bc_strings(2*G_ndim);
+  bc_strings[0] = par.BC_XN; bc_strings[1] = par.BC_XP;
+  if (G_ndim>1) {
+    bc_strings[2] = par.BC_YN; bc_strings[3] = par.BC_YP;
+  }
+  if (G_ndim>2) {
+    bc_strings[4] = par.BC_ZN; bc_strings[5] = par.BC_ZP;
+  }
+
+  //
+  // Now go through each boundary and assign everything needed.
+  //
   int i=0;
   string::size_type pos;
-  string d[6] = {"XN","XP","YN","YP","ZN","ZP"};
   for (i=0; i<2*G_ndim; i++) {
     BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
     BC_bd[i].ondir = OppDir(BC_bd[i].dir);
@@ -1236,43 +1219,42 @@ int UniformGrid::BC_setBCtypes(
     //
     // find boundary condition specified:
     //
-    if ( (pos=bctype.find(d[i])) == string::npos)
-      rep.error("Couldn't find boundary condition for ",d[i]);
-    BC_bd[i].type = bctype.substr(pos+2,3);
+    BC_bd[i].type = bc_strings[i];
 
-    if      (BC_bd[i].type=="per") {
+    if      (BC_bd[i].type=="per" || BC_bd[i].type=="periodic") {
       BC_bd[i].itype=PERIODIC;
       BC_bd[i].type="PERIODIC";
     }
-    else if (BC_bd[i].type=="out" || BC_bd[i].type=="abs") {
+    else if (BC_bd[i].type=="out"    || BC_bd[i].type=="abs" || 
+            BC_bd[i].type=="outflow" || BC_bd[i].type=="zero-gradient") {
       BC_bd[i].itype=OUTFLOW;
       BC_bd[i].type="OUTFLOW";
     }
-    else if (BC_bd[i].type=="owo") {
+    else if (BC_bd[i].type=="owo" || BC_bd[i].type=="one-way-outflow") {
       BC_bd[i].itype=ONEWAY_OUT;
       BC_bd[i].type="ONEWAY_OUT";
     }
-    else if (BC_bd[i].type=="inf") {
+    else if (BC_bd[i].type=="inf" || BC_bd[i].type=="inflow") {
       BC_bd[i].itype=INFLOW ;
       BC_bd[i].type="INFLOW";
     }
-    else if (BC_bd[i].type=="ref") {
+    else if (BC_bd[i].type=="ref" || BC_bd[i].type=="reflecting") {
       BC_bd[i].itype=REFLECTING;
       BC_bd[i].type="REFLECTING";
     }
-    else if (BC_bd[i].type=="jrf") {
+    else if (BC_bd[i].type=="jrf" || BC_bd[i].type=="equator_ref") {
       BC_bd[i].itype=JETREFLECT;
       BC_bd[i].type="JETREFLECT";
     }
-    else if (BC_bd[i].type=="fix") {
+    else if (BC_bd[i].type=="fix" || BC_bd[i].type=="fixed") {
       BC_bd[i].itype=FIXED;
       BC_bd[i].type="FIXED";
     }
-    else if (BC_bd[i].type=="dmr") {
+    else if (BC_bd[i].type=="dmr" || BC_bd[i].type=="DMR") {
       BC_bd[i].itype=DMACH;
       BC_bd[i].type="DMACH";
     }
-    else if (BC_bd[i].type=="sb1") {
+    else if (BC_bd[i].type=="sb1" || BC_bd[i].type=="SB1") {
       BC_bd[i].itype=STARBENCH1;
       BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
     }
@@ -1287,41 +1269,38 @@ int UniformGrid::BC_setBCtypes(
     cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
 #endif
   }
+
   if (i<BC_nbd) {
 #ifdef TESTING
     cout <<"Got "<<i<<" boundaries, but have "<<BC_nbd<<" boundaries.\n";
-    cout <<"Must have extra BCs... checking if I know what they are.\n";
+    cout <<"Must have extra BCs... checking for internal BCs\n";
 #endif
     do {
       BC_bd[i].dir = NO;
-      if ( (pos=bctype.find("IN",i*6)) ==string::npos) {
-        for (int ii=i; ii<BC_nbd; ii++)
-          BC_bd[ii].refval=0;
-          cout <<"\tEncountered an unrecognised boundary condition.\n";
-          cout <<"\tPerhaps boundaries are specified for Y or Z";
-          cout <<" directions in a lower dimensional simulation.\n";
-          cout <<"\tPlease check the parameter BC in the parameter ";
-          cout <<"file used for setting up this simulation.\n";
-          rep.error("Couldn't find boundary condition for extra boundary condition","IN");
+      if (par.BC_INT.size() < i-2*G_ndim) {
+        rep.error("Bad Number of boundaries",par.BC_INT.size());
       }
-      BC_bd[i].type = bctype.substr(pos+2,3);
+      else {
+        BC_bd[i].type = par.BC_INT[i-2*G_ndim];
+      }
+
       if      (BC_bd[i].type=="jet") {
         BC_bd[i].itype=JETBC;
         BC_bd[i].type="JETBC";
       }
-      else if (BC_bd[i].type=="dm2") {
+      else if (BC_bd[i].type=="dm2" || BC_bd[i].type=="DMR2") {
         BC_bd[i].itype=DMACH2;
         BC_bd[i].type="DMACH2";
       }
-      else if (BC_bd[i].type=="rsh") {
+      else if (BC_bd[i].type=="rsh" || BC_bd[i].type=="RadShock") {
         BC_bd[i].itype=RADSHOCK;
         BC_bd[i].type="RADSHOCK";
       }
-      else if (BC_bd[i].type=="rs2") {
+      else if (BC_bd[i].type=="rs2" || BC_bd[i].type=="RadShock2") {
         BC_bd[i].itype=RADSH2;
         BC_bd[i].type="RADSH2";
       }
-      else if (BC_bd[i].type=="wnd") {
+      else if (BC_bd[i].type=="wnd" || BC_bd[i].type=="stellar_wind") {
         BC_bd[i].itype=STWIND;
         BC_bd[i].type="STWIND";
       }
@@ -2135,9 +2114,11 @@ int UniformGrid::BC_assign_JETBC(     boundary_data *b)
   }
 
   //
-  // Simplest jet -- zero opening angle.
+  // Simplest jet -- zero opening angle.  Check that this domain
+  // is at the edge of the full simulation domain, if not then we
+  // don't need to add any cells so skip this whole loop.
   //
-  if (JP.jetic==1) {
+  if (JP.jetic==1  && pconst.equalD(G_xmin[XX],Sim_xmin[XX])) {
     //
     // Axi-symmetry first -- this is relatively easy to set up.
     //

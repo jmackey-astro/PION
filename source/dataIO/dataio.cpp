@@ -50,6 +50,7 @@
 /// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
+/// - 2017.11.07 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -1752,12 +1753,7 @@ int DataIOBase::check_header_parameters()
 
 
   if (SimPM.typeofbc == "") rep.error("(Dataio::check_header_parameters) Didn't get type of BC from file. ",1);
-  //
-  // We don't care about Nbc anymore -- it is determined automatically from the
-  // order of accuracy of the integration scheme.
-  //if (SimPM.Nbc <0) {
-  //  rep.warning("(Dataio::check_header_parameters) Nbc not obtained from file. Will infer it from BCs",2,SimPM.Nbc);
-  //}
+
   if (SimPM.spOOA!=OA1 && SimPM.spOOA!=OA2) {
     rep.warning("(Dataio::check_header_parameters) Order of Accuracy not set from file. Default to second order",2,SimPM.spOOA);
     SimPM.spOOA=OA2;
@@ -2120,9 +2116,50 @@ int dataio_text::get_parameters(string pfile)
   cout <<"\tOutFile: "<<SimPM.outFileBase<< ".xxx\t Type="<<SimPM.typeofop;
   cout <<" every "<<SimPM.opfreq<<" timesteps."<<"\n";
   
+  //
   // Boundary conditions.
-  SimPM.typeofbc = rp->find_parameter("BC");
-  SimPM.Nbc = -1; // Set it to negative so I know it's not set.
+  // First do the edges of the domain:
+  //
+  SimPM.BC_XN = rp->find_parameter("BC_XN");
+  SimPM.BC_XP = rp->find_parameter("BC_XP");
+  if (SimPM.ndim>1) {
+    SimPM.BC_YN = rp->find_parameter("BC_YN");
+    SimPM.BC_YP = rp->find_parameter("BC_YP");
+  }
+  else {
+    SimPM.BC_YN = "NONE";
+    SimPM.BC_YP = "NONE";
+  }
+  if (SimPM.ndim>2) {
+    SimPM.BC_ZN = rp->find_parameter("BC_ZN");
+    SimPM.BC_ZP = rp->find_parameter("BC_ZP");
+  }
+  else {
+    SimPM.BC_ZN = "NONE";
+    SimPM.BC_ZP = "NONE";
+  }
+  //
+  // Now do the internal boundaries (if any).  Seek the string
+  // for a given internal boundary, and add to a vector until
+  // no more are found.
+  //
+  SimPM.BC_int.clear();
+  int v=0;
+  do {
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+    string temp = rp->find_parameter(intbc.str());
+    if (temp != "") {
+      SimPM.BC_INT.push_back(temp);
+      v++;
+    }
+  } while (temp != "");
+
+  // Number of boundary cells
+  // (set automatically based on order of scheme)
+  SimPM.Nbc = -1;
 
   
   // Physics:

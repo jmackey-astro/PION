@@ -56,6 +56,7 @@
 ///    boundaries). 03.24:fixed some bugs, redefined dir_XP
 /// - 2016.05.02 JM: fixed bug: parallel grid had no SIM_Xmin()/max/
 ///    range() functions, so it was returning G_xmin!
+/// - 2017.11.07 JM: updating boundary setup.
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -231,7 +232,7 @@ class UniformGrid
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int BC_setBCtypes(
-        string ///< list of strings describing each boundary.
+        class SimParams &  ///< reference to SimParams list.
         );
 
   ///
@@ -648,8 +649,7 @@ class UniformGrid
   /// specified in the input string.  Also assigns data to each boundary.
   ///
   virtual int SetupBCs(
-        int,   ///< Depth of Boundary cells, 1,2,etc.
-        std::string ///< string containing info on types of BCs on all sides.
+        class SimParams &  ///< List of simulation params (including BCs)
         );
 
   ///
@@ -1182,7 +1182,7 @@ class UniformGridParallel
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int BC_setBCtypes(
-        string ///< list of strings describing each boundary.
+        class SimParams &  ///< reference to SimParams list.
         );
 
   int BC_select_data2send(

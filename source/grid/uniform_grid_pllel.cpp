@@ -40,6 +40,7 @@
 ///    boundaries).
 /// - 2016.03.21 JM: Worked on simplifying RT boundaries (first hack!
 ///    compiles but buggy...) 03.24:fixed some bugs, redefined dir_XP
+/// - 2017.11.07 JM: updating boundary setup.
 
 
 #include "defines/functionality_flags.h"
@@ -204,116 +205,18 @@ UniformGridParallel::~UniformGridParallel()
 
 
 
-int UniformGridParallel::BC_setBCtypes(string bctype)
+int UniformGridParallel::BC_setBCtypes(
+  class SimParams &par
+  )
 {
   string fname="UniformGridParallel::BC_setBCtypes";
 #ifdef TESTING
   cout <<"PLLEL: Set BC types...\n";
 #endif 
-
   //
-  // Set up boundary data struct.  Assumes bctype is in format
-  // "XPper XNper " etc., so that each boundary is defined by 6
-  // characters, and number of boundaries is given by length/6.
+  // call serial version of setBCtypes, to set up the boundaries
   //
-  int len = bctype.length();
-  len = (len+5)/6;
-  if (len < 2*G_ndim) {
-    rep.error("Need boundaries on all sides!",len);
-  }
-#ifdef TESTING
-  cout <<"PLLEL: Got "<<len<<" boundaries to set up.\n";
-#endif
-
-  //
-  // Remove any internal boundary specifiers that are not on my
-  // local domain.
-  //
-  int i=0;
-  string::size_type pos;
-  if (len > 2*G_ndim) {
-#ifdef TESTING
-    cout <<"\t checking if I need extra boundaries in this subdomain.\n";
-#endif
-    //
-    // Go through all the internal boundaries I know about, and see
-    // if the subdomain needs to know about them.
-    //
-    for (i=2*G_ndim; i<=len; i++) {
-      if ( (pos=bctype.find("INjet")) !=string::npos) {
-        //
-        // Jet always comes in from the XN boundary, at the YN corner
-        // in 2d, and at the centre of the boundary in 3d.
-        //
-        // So in 2D I will always assume that proc 0 only needs to
-        // know about the jet i.e. a processor always spans the jet
-        // width.
-        //
-        // In 3D it's more complicated, and perhaps all processors on
-        // the XN boundary should keep the jet BC, even though some
-        // might be empty.
-        //
-        if (G_ndim==2) {
-          if (mpiPM->get_myrank() !=0) {
-            cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
-            bctype.erase(pos,6);
-#ifdef TESTING
-            cout <<"Removed jet bc;  bctype = "<<bctype<<"\n";
-#endif 
-            len -= 1;
-          }
-        }
-        else if (G_ndim==3) {
-          if (!pconst.equalD(Sim_xmin[XX], G_xmin[XX])) {
-#ifdef TESTING
-            cout <<"Removing jet bc; bctype = "<<bctype<<"\n";
-#endif 
-            bctype.erase(pos,6);
-#ifdef TESTING
-            cout <<"Removed jet bc;  bctype = "<<bctype<<"\n";
-#endif 
-            len -= 1;
-          }
-        }
-        else rep.error("Bad ndim for jet simulation in BC_setBCtypes()",G_ndim);
-      }
-      else if ( (pos=bctype.find("INdm2")) !=string::npos) {
-        //
-        // This is a test problem (double mach reflection) with
-        // hard-coded boundaries, and this boundary is along the YN
-        // boundary between x=[0,1/6].
-        //
-        if ( (!pconst.equalD(Sim_xmin[YY],G_xmin[YY])) ||
-             (G_xmin[XX]>1./6.) ) {
-#ifdef TESTING
-          cout <<"Removing dmr2 bc; bctype = "<<bctype<<"\n";
-#endif 
-          bctype.erase(pos,6);
-#ifdef TESTING
-          cout <<"Removed dmr2 bc;  bctype = "<<bctype<<"\n";
-#endif 
-          len -= 1;
-        }
-      }
-      else if ( (pos=bctype.find("INwnd")) !=string::npos) {
-        //
-        // This is a stellar wind problem -- it only sets cells which
-        // are on the domain to be part of the wind, so we can let
-        // every proc set it up without any trouble.
-        //
-      }
-      else {
-        rep.error("Couldn't find boundary condition for extra \
-                   boundary condition","IN");
-      }
-    } // loop through extra boundaries.
-  } // checking if extra boundaries are needed.
-  
-  //
-  // Now call serial version of setBCtypes, to set up the boundaries
-  // that are left.
-  //
-  int err = UniformGrid::BC_setBCtypes(bctype);
+  int err = UniformGrid::BC_setBCtypes(par);
   if (err) {
     rep.error("UniGridPllel::BC_setBCtypes:: serial call error",err);
   }
@@ -331,41 +234,18 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
     dir = static_cast<axes>(i);
     if (!pconst.equalD(G_xmin[i], Sim_xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
-      if      (dir==XX) temp = "XNmpi_";
-      else if (dir==YY) temp = "YNmpi_";
-      else if (dir==ZZ) temp = "ZNmpi_";
-      else rep.error("Bad axis!",dir);
-      bctype.replace(2*i*6,6,temp); cout <<"new bctype="<<bctype<<"\n";
+      BC_bd[2*i].type=="mpi"
+      BC_bd[2*i].itype=BCMPI;
+      BC_bd[2*i].type="BCMPI";
     }
     if (!pconst.equalD(G_xmax[i], Sim_xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
-      if      (dir==XX) temp = "XPmpi_";
-      else if (dir==YY) temp = "YPmpi_";
-      else if (dir==ZZ) temp = "ZPmpi_";
-      else rep.error("Bad axis!",dir);
-      bctype.replace((2*i+1)*6,6,temp); cout <<"new bctype="<<bctype<<"\n";
+      BC_bd[2*i+1].type=="mpi"
+      BC_bd[2*i+1].itype=BCMPI;
+      BC_bd[2*i+1].type="BCMPI";
     }
   }
   
-  //
-  // Now go through the domain edge boundaries and assign any that
-  // are MPI boundaries.
-  //
-  string d[6] = {"XN","XP","YN","YP","ZN","ZP"};
-  for (i=0; i<2*G_ndim; i++) {
-    BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
-    if ( (pos=bctype.find(d[i])) == string::npos)
-      rep.error("Couldn't find boundary condition for ",d[i]);
-    BC_bd[i].type = bctype.substr(pos+2,3);
-    if (BC_bd[i].type=="mpi") {
-      BC_bd[i].itype=BCMPI;
-      BC_bd[i].type="BCMPI";
-    }
-#ifdef TESTING
-    cout <<"\tPLLEL: Boundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
-#endif 
-  }
-
 #ifdef TESTING
   cout <<"PLLEL: BC types and data set up.\n";
 #endif 
@@ -405,6 +285,7 @@ int UniformGridParallel::BC_setBCtypes(string bctype)
         rep.error("UniformGridParallel::BC_setBCtypes: Bad direction",i);
         break;
       } // set neighbour according to direction.
+
       if ( (mpiPM->ngbprocs[i]<0) ||
            (mpiPM->ngbprocs[i]>=mpiPM->get_nproc()) )
         rep.error("UniformGridParallel::BC_setBCtypes: Bad periodic \
