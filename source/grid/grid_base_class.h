@@ -161,8 +161,7 @@ class GridBaseClass {
   /// Assign values to boundary data based on boundary conditions.
   ///
   virtual int SetupBCs(
-    const int,     ///< Depth of Boundary cells, 1,2,etc.
-    std::string ///< boundary condition string.
+    class SimParams &  ///< List of simulation params (including BCs)
     )=0;
 
   ///

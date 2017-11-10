@@ -499,10 +499,39 @@ void DataIOBase::set_params()
     ("Xmax",        SimPM.Xmax);
   p = p006; p->critical=true;  
   params.push_back(p);
+  //
+  // Boundary conditions
+  //
   pm_string  *p007 = new pm_string  
-    ("typeofbc_str",&SimPM.typeofbc);
+    ("BC_XN",&SimPM.BC_XN);
   p = p007; p->critical=true;  
   params.push_back(p);
+  pm_string  *p117 = new pm_string  
+    ("BC_XP",&SimPM.BC_XP);
+  p = p007; p->critical=true;  
+  params.push_back(p);
+  pm_string  *p118 = new pm_string  
+    ("BC_YN",&SimPM.BC_YN);
+  p = p007; p->critical=true;  
+  params.push_back(p);
+  pm_string  *p119 = new pm_string  
+    ("BC_YP",&SimPM.BC_YP);
+  p = p007; p->critical=true;  
+  params.push_back(p);
+  pm_string  *p120 = new pm_string  
+    ("BC_ZN",&SimPM.BC_ZN);
+  p = p007; p->critical=true;  
+  params.push_back(p);
+  pm_string  *p121 = new pm_string  
+    ("BC_ZP",&SimPM.BC_ZP);
+  p = p007; p->critical=true;  
+  params.push_back(p);
+  // Number of internal boundaries
+  pm_int     *p122 = new pm_int     
+    ("BC_Nint",   &SimPM.BC_Nint);
+  p = p008; p->critical=true;  
+  params.push_back(p);
+
 
   //
   // EQUATIONS
@@ -845,6 +874,22 @@ int DataIOBase::read_simulation_parameters()
       }
     }
   }
+
+  //
+  // Read internal boundary data
+  //
+  for (int v=0; v<SimPM.BC_Nint; v++) {
+    cout <<"reading internal boundary "<<v<<"\n";
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+#error "Get the BC_INT strings from file somehow"
+    if (temp != "") {
+      SimPM.BC_INT.push_back(temp);
+      v++;
+    }
+
 
   //
   // We now use num_tracer to set the position of the first tracer:
