@@ -40,7 +40,7 @@
 ///    boundaries).
 /// - 2016.03.21 JM: Worked on simplifying RT boundaries (first hack!
 ///    compiles but buggy...) 03.24:fixed some bugs, redefined dir_XP
-/// - 2017.11.07 JM: updating boundary setup.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 
 #include "defines/functionality_flags.h"
@@ -226,7 +226,7 @@ int UniformGridParallel::BC_setBCtypes(
   // any edge boundaries with MPI communication boundaries, if the
   // local grid does not reach the global grid boundary.
   //
-  i=0; enum axes dir;
+  int i=0; enum axes dir;
   string temp;
   // Loop through boundaries, and if local boundary is not sim boundary,
   // set it to be a parallel boundary.
@@ -234,13 +234,11 @@ int UniformGridParallel::BC_setBCtypes(
     dir = static_cast<axes>(i);
     if (!pconst.equalD(G_xmin[i], Sim_xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
-      BC_bd[2*i].type=="mpi"
       BC_bd[2*i].itype=BCMPI;
       BC_bd[2*i].type="BCMPI";
     }
     if (!pconst.equalD(G_xmax[i], Sim_xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
-      BC_bd[2*i+1].type=="mpi"
       BC_bd[2*i+1].itype=BCMPI;
       BC_bd[2*i+1].type="BCMPI";
     }

@@ -104,10 +104,12 @@ StartTime 0.0
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-#BC XNout_XPout
-BC XNout_XPfix_YNout_YPout
-#BC XNout_XPout_YNout_YPout_ZNout_ZPout
+# Type of Boundary Condition
+BC_XN outflow
+BC_XP fixed
+BC_YN outflow
+BC_YP outflow
+BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 #GAMMA 2.0

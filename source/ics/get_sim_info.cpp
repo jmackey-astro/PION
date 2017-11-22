@@ -35,7 +35,7 @@
 ///    tracer has its own variable.
 /// - 2017.03.07 JM: changed logic so that ArtificalViscosity=4 is
 ///    allowed.
-/// - 2017.11.07 JM: updating boundary setup.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -369,19 +369,20 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   str = rp->find_parameter("BC_Ninternal"); 
   if (str=="")  SimPM.BC_Nint = 0;
   else          SimPM.BC_Nint = atoi(str.c_str());
-  SimPM.BC_INT.clear();
+  if (SimPM.BC_Nint>0) {
+    SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+  }
   for (int v=0; v<SimPM.BC_Nint; v++) {
     ostringstream intbc; intbc.str("");
     intbc << "BC_INTERNAL_";
     intbc.width(3); intbc.fill('0');
     intbc << v;
-    cout <<"Looking for internal boundary: "<<intbc.str();
-    string temp = rp->find_parameter(intbc.str());
-    cout <<"   Found: "<<temp<<"\n";
-    SimPM.BC_INT.push_back(temp);
+    //cout <<"Looking for internal boundary: "<<intbc.str();
+    str = rp->find_parameter(intbc.str());
+    //cout <<"   Found: "<<str<<"\n";
+    SimPM.BC_INT[v] = str;
   }
-  rep.printSTLVec("BC_INT",SimPM.BC_INT);
-  //SimPM.BC_Nint = SimPM.BC_INT.size();
+  //rep.printVec("BC_INT",SimPM.BC_INT,SimPM.BC_Nint);
   
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
   

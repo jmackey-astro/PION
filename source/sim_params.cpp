@@ -6,6 +6,7 @@
 ///
 /// Modifications:
 /// - 2015.07.06 JM: moved from global.cc
+/// - 2017.11.22 JM: worked on boundary conditions string
 
 
 #include "sim_params.h"
@@ -73,7 +74,7 @@ SimParams::SimParams()
   BC_YP = "";
   BC_ZN = "";
   BC_ZP = "";
-  BC_INT.clear();
+  BC_INT = 0;
 
   outFileBase = "BAD-FILE";
   op_criterion=0; // default to per n-steps
@@ -120,6 +121,7 @@ SimParams::~SimParams()
   }
   STAR.clear();
 
+  BC_INT = mem.myfree(BC_INT); BC_INT=0;
 #ifdef OLD_TRACER
 #else
   trtype=mem.myfree(trtype);

@@ -116,6 +116,15 @@ ifeq ($(MAKE_UNAME), standard)
     CXXFLAGS = -O0 -Wall -g
   endif
 
+#  MYLIB = $(CURDIR)/../extra_libraries
+#  INC = -I${MYLIB}/include
+#  INC += -I${SRCDIR}
+#  LDFLAGS = -L${MYLIB}/lib
+#  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+#  LDFLAGS += -lcfitsio
+#  LDFLAGS += -lsilo 
+#  LDFLAGS += -lm  
+#  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   INC = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS +=  -lm

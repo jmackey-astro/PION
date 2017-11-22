@@ -94,7 +94,7 @@
 /// - 2016.03.08 JM: bugfixes for outflow boundaries, grid setup.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).
-/// - 2017.11.07 JM: updating boundary setup.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -1173,7 +1173,7 @@ int UniformGrid::BC_setBCtypes(
 #endif
 
   // Set number of boundaries: 2 for each dimension, plus internal.
-  int len = 2*G_ndim + par.BC_INT.size();
+  int len = 2*G_ndim + par.BC_Nint;
 #ifdef TESTING
   cout <<"Got "<<len<<" boundaries to set up.\n";
 #endif
@@ -1276,8 +1276,8 @@ int UniformGrid::BC_setBCtypes(
 #endif
     do {
       BC_bd[i].dir = NO;
-      if (par.BC_INT.size() < i-2*G_ndim) {
-        rep.error("Bad Number of boundaries",par.BC_INT.size());
+      if (par.BC_Nint < i-2*G_ndim) {
+        rep.error("Bad Number of boundaries",par.BC_Nint);
       }
       else {
         BC_bd[i].type = par.BC_INT[i-2*G_ndim];
