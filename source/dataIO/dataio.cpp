@@ -50,7 +50,7 @@
 /// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
-/// - 2017.11.07 JM: updating boundary setup.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -846,7 +846,7 @@ int DataIOBase::read_simulation_parameters()
         rep.error("Error reading parameter",p->name);
       }
       else {
-        cout <<"parameter "<<p->name<<" not found. setting to default val.\n";
+        //cout <<"parameter "<<p->name<<" not found. setting to default val.\n";
         p->set_to_default();
         err =0;
       }
@@ -856,7 +856,7 @@ int DataIOBase::read_simulation_parameters()
   //
   // Read boundary conditions for each edge and internal BCs
   //
-  set_bc_pm_params();
+  if (!have_setup_bc_pm) set_bc_pm_params();
   if (bc_pm.empty()) rep.error("Boundary parameter list is empty!!",0);
   //
   // now read them:
@@ -865,7 +865,7 @@ int DataIOBase::read_simulation_parameters()
   for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
     p = (*iter);
     err = read_header_param(p);
-    cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
+    //cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
     if (err) rep.error("Error reading parameter",p->name);
     ct++;
   }
@@ -1521,16 +1521,20 @@ void DataIOBase::set_bc_pm_params()
   //
   // Read internal boundary data
   //
-  SimPM.BC_INT.clear();
-  SimPM.BC_INT.resize(SimPM.BC_Nint);
-  cout <<"BC_Nint = "<<SimPM.BC_Nint<<"\n";
+  //SimPM.BC_INT.clear();
+  //SimPM.BC_INT.resize(SimPM.BC_Nint);
+  if (SimPM.BC_Nint>0) {
+    if (!SimPM.BC_INT)
+      SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+  }
+  //cout <<"BC_Nint = "<<SimPM.BC_Nint<<"\n";
   for (int v=0; v<SimPM.BC_Nint; v++) {
-    cout <<"reading internal boundary "<<v<<"\n";
+    //cout <<"reading internal boundary "<<v<<"\n";
     ostringstream intbc; intbc.str("");
     intbc << "BC_INTERNAL_";
     intbc.width(3); intbc.fill('0');
     intbc << v;
-    cout <<"v="<<v<<", setting up Internal BC : "<<intbc.str()<<"\n";
+    //cout <<"v="<<v<<", setting up Internal BC : "<<intbc.str()<<"\n";
     pm_string  *p124 = new pm_string (intbc.str(),&(SimPM.BC_INT[v]));
     //p124->critical=true;  
     bc_pm.push_back(p124);
@@ -1574,7 +1578,7 @@ int DataIOBase::write_simulation_parameters()
   //
   for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
     p = (*iter);
-    cout <<p->name<<"    "; p->show_val(); cout <<"\n";
+    //cout <<p->name<<"    "; p->show_val(); cout <<"\n";
     err = write_header_param(p);
     if (err) rep.error("Error writing BC parameter",p->name);
   }
@@ -2243,7 +2247,14 @@ int dataio_text::get_parameters(string pfile)
   // for a given internal boundary, and add to a vector until
   // no more are found.
   //
-  SimPM.BC_INT.clear();
+  ts = rp->find_parameter("BC_Ninternal"); 
+  if (ts=="")  SimPM.BC_Nint = 0;
+  else         SimPM.BC_Nint = atoi(ts.c_str());
+  if (SimPM.BC_Nint>0) {
+    if (SimPM.BC_INT) rep.error("BC_INT already initialized",2);
+    SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+  }
+  //SimPM.BC_INT.clear();
   int v=0;
   do {
     ostringstream intbc; intbc.str("");
@@ -2252,11 +2263,13 @@ int dataio_text::get_parameters(string pfile)
     intbc << v;
     string temp = rp->find_parameter(intbc.str());
     if (temp != "") {
-      SimPM.BC_INT.push_back(temp);
+      SimPM.BC_INT[v] = temp;
       v++;
     }
-  } while (temp != "");
-  SimPM.BC_Nint = SimPM.BC_INT.size();
+    else
+      rep.error("Didn't find internal BC",v);
+  } while (v<SimPM.BC_Nint);
+  //SimPM.BC_Nint = SimPM.BC_INT.size();
 
   // Number of boundary cells
   // (set automatically based on order of scheme)

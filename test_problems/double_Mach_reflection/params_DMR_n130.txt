@@ -83,7 +83,6 @@ OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-# BC XNinf_XPout_YNref_YPdmr_INdm2
 BC_XN inflow
 BC_XP outflow
 BC_YN reflecting

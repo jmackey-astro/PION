@@ -10,7 +10,7 @@
 ///    Put units and JetParams classes into this file from global.h.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
-/// - 2017.11.07 JM: updating boundary setup.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
@@ -252,8 +252,8 @@ class SimParams {
    std::string BC_YP; ///< Type of boundary condition.
    std::string BC_ZN; ///< Type of boundary condition.
    std::string BC_ZP; ///< Type of boundary condition.
-   int BC_Nint; ///< Number of internal boundary regions
-   std::vector<std::string> BC_INT; ///< Internal boundary regions.
+   int BC_Nint;       ///< Number of internal boundary regions
+   std::string *BC_INT;   ///< List of internal boundary regions.
 
    int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
    // Integration accuracy
