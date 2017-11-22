@@ -798,7 +798,7 @@ int IC_photevap_multi_clumps::rc_set_clump_properties(
     // Set clump centres, allowing for empty regions.
     // If periodic BCs, we only have empty regions in the X-dir, since Y,Z are periodic
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM.BC_YN == "periodic") {
       //cout <<"find = "<<SimPM.typeofbc.find("YNper")<<endl;
       rcd->cl[j].centre[XX] = SimPM.Xmin[XX]+ rcd->border[XN] +(xmax-rcd->border[XP]-rcd->border[XN])*random_frac();
       rcd->cl[j].centre[YY] = SimPM.Xmin[YY]+ ymax*random_frac();
@@ -1146,7 +1146,8 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
     // get distance from centre to clump.
     // If we have periodic BCs, need to do a bit more work...
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    //if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM.BC_YN == "periodic") {
       x0[XX] = dpos[XX]-cl[j].centre[XX];
       double temp;
       for (int i=1;i<ndim;i++) {

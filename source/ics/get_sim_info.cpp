@@ -366,19 +366,22 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   // for a given internal boundary, and add to a vector until
   // no more are found.
   //
-  SimPM.BC_int.clear();
-  int v=0;
-  do {
+  str = rp->find_parameter("BC_Ninternal"); 
+  if (str=="")  SimPM.BC_Nint = 0;
+  else          SimPM.BC_Nint = atoi(str.c_str());
+  SimPM.BC_INT.clear();
+  for (int v=0; v<SimPM.BC_Nint; v++) {
     ostringstream intbc; intbc.str("");
     intbc << "BC_INTERNAL_";
     intbc.width(3); intbc.fill('0');
     intbc << v;
+    cout <<"Looking for internal boundary: "<<intbc.str();
     string temp = rp->find_parameter(intbc.str());
-    if (temp != "") {
-      SimPM.BC_INT.push_back(temp);
-      v++;
-    }
-  } while (temp != "");
+    cout <<"   Found: "<<temp<<"\n";
+    SimPM.BC_INT.push_back(temp);
+  }
+  rep.printSTLVec("BC_INT",SimPM.BC_INT);
+  //SimPM.BC_Nint = SimPM.BC_INT.size();
   
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
   

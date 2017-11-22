@@ -502,34 +502,11 @@ void DataIOBase::set_params()
   //
   // Boundary conditions
   //
-  pm_string  *p007 = new pm_string  
-    ("BC_XN",&SimPM.BC_XN);
-  p = p007; p->critical=true;  
-  params.push_back(p);
-  pm_string  *p117 = new pm_string  
-    ("BC_XP",&SimPM.BC_XP);
-  p = p007; p->critical=true;  
-  params.push_back(p);
-  pm_string  *p118 = new pm_string  
-    ("BC_YN",&SimPM.BC_YN);
-  p = p007; p->critical=true;  
-  params.push_back(p);
-  pm_string  *p119 = new pm_string  
-    ("BC_YP",&SimPM.BC_YP);
-  p = p007; p->critical=true;  
-  params.push_back(p);
-  pm_string  *p120 = new pm_string  
-    ("BC_ZN",&SimPM.BC_ZN);
-  p = p007; p->critical=true;  
-  params.push_back(p);
-  pm_string  *p121 = new pm_string  
-    ("BC_ZP",&SimPM.BC_ZP);
-  p = p007; p->critical=true;  
-  params.push_back(p);
+  have_setup_bc_pm=false; // so we know to populate list later.
   // Number of internal boundaries
-  pm_int     *p122 = new pm_int     
-    ("BC_Nint",   &SimPM.BC_Nint);
-  p = p008; p->critical=true;  
+  pm_int     *p124 = new pm_int     
+    ("BC_Ninternal",   &SimPM.BC_Nint);
+  p = p124; p->critical=true;  
   params.push_back(p);
 
 
@@ -869,6 +846,7 @@ int DataIOBase::read_simulation_parameters()
         rep.error("Error reading parameter",p->name);
       }
       else {
+        cout <<"parameter "<<p->name<<" not found. setting to default val.\n";
         p->set_to_default();
         err =0;
       }
@@ -876,19 +854,21 @@ int DataIOBase::read_simulation_parameters()
   }
 
   //
-  // Read internal boundary data
+  // Read boundary conditions for each edge and internal BCs
   //
-  for (int v=0; v<SimPM.BC_Nint; v++) {
-    cout <<"reading internal boundary "<<v<<"\n";
-    ostringstream intbc; intbc.str("");
-    intbc << "BC_INTERNAL_";
-    intbc.width(3); intbc.fill('0');
-    intbc << v;
-#error "Get the BC_INT strings from file somehow"
-    if (temp != "") {
-      SimPM.BC_INT.push_back(temp);
-      v++;
-    }
+  set_bc_pm_params();
+  if (bc_pm.empty()) rep.error("Boundary parameter list is empty!!",0);
+  //
+  // now read them:
+  //
+  int ct=0;
+  for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
+    p = (*iter);
+    err = read_header_param(p);
+    cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
+    if (err) rep.error("Error reading parameter",p->name);
+    ct++;
+  }
 
 
   //
@@ -1499,6 +1479,69 @@ void DataIOBase::set_jet_pm_params()
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+void DataIOBase::set_bc_pm_params()
+{
+  cout <<"setting up BC parameters\n";
+  if (have_setup_bc_pm || !bc_pm.empty()) {
+    cout <<"BCs FLAG: "<< have_setup_bc_pm;
+    cout <<" EMPTY?: "<< bc_pm.empty();
+    cout <<"\n";
+    rep.error("set bc parameters twice?!",have_setup_bc_pm);
+  }
+  
+  pm_string  *p007 = new pm_string  
+    ("BC_XN",&SimPM.BC_XN);
+  p007->critical=true;  
+  bc_pm.push_back(p007);
+  pm_string  *p117 = new pm_string  
+    ("BC_XP",&SimPM.BC_XP);
+  p117->critical=true;  
+  bc_pm.push_back(p117);
+  pm_string  *p118 = new pm_string  
+    ("BC_YN",&SimPM.BC_YN);
+  //p118->critical=true;  
+  bc_pm.push_back(p118);
+  pm_string  *p119 = new pm_string  
+    ("BC_YP",&SimPM.BC_YP);
+  //p119->critical=true;  
+  bc_pm.push_back(p119);
+  pm_string  *p122 = new pm_string  
+    ("BC_ZN",&SimPM.BC_ZN);
+  //p122->critical=true;  
+  bc_pm.push_back(p122);
+  pm_string  *p123 = new pm_string  
+    ("BC_ZP",&SimPM.BC_ZP);
+  //p123->critical=true;  
+  bc_pm.push_back(p123);
+
+  //
+  // Read internal boundary data
+  //
+  SimPM.BC_INT.clear();
+  SimPM.BC_INT.resize(SimPM.BC_Nint);
+  cout <<"BC_Nint = "<<SimPM.BC_Nint<<"\n";
+  for (int v=0; v<SimPM.BC_Nint; v++) {
+    cout <<"reading internal boundary "<<v<<"\n";
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+    cout <<"v="<<v<<", setting up Internal BC : "<<intbc.str()<<"\n";
+    pm_string  *p124 = new pm_string (intbc.str(),&(SimPM.BC_INT[v]));
+    //p124->critical=true;  
+    bc_pm.push_back(p124);
+  }
+  have_setup_bc_pm=true;
+  return;
+}
+
+
+
+
 
 // ##################################################################
 // ##################################################################
@@ -1521,6 +1564,20 @@ int DataIOBase::write_simulation_parameters()
     if (err) rep.error("Error writing parameter",(*iter)->name);
   }
 
+  //
+  // Write Boundary string parameters
+  //
+  if (!have_setup_bc_pm) set_bc_pm_params();
+  if (bc_pm.empty()) rep.error("bc_pm empty, Need boundaries!","Huh?");
+  //
+  // now write them:
+  //
+  for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
+    p = (*iter);
+    cout <<p->name<<"    "; p->show_val(); cout <<"\n";
+    err = write_header_param(p);
+    if (err) rep.error("Error writing BC parameter",p->name);
+  }
 
 #ifndef OLD_TRACER
 
@@ -1796,8 +1853,6 @@ int DataIOBase::check_header_parameters()
   if (SimPM.ndim>1) if (SimPM.Xmax[1]<=SimPM.Xmin[1]) rep.error("(Dataio::check_header_parameters) Xmax[1]<0 -- must not have read from file",SimPM.Xmax[1]);
   if (SimPM.ndim>2) if (SimPM.Xmax[2]<=SimPM.Xmin[2]) rep.error("(Dataio::check_header_parameters) Xmax[2]<0 -- must not have read from file",SimPM.Xmax[2]);
 
-
-  if (SimPM.typeofbc == "") rep.error("(Dataio::check_header_parameters) Didn't get type of BC from file. ",1);
 
   if (SimPM.spOOA!=OA1 && SimPM.spOOA!=OA2) {
     rep.warning("(Dataio::check_header_parameters) Order of Accuracy not set from file. Default to second order",2,SimPM.spOOA);
@@ -2188,7 +2243,7 @@ int dataio_text::get_parameters(string pfile)
   // for a given internal boundary, and add to a vector until
   // no more are found.
   //
-  SimPM.BC_int.clear();
+  SimPM.BC_INT.clear();
   int v=0;
   do {
     ostringstream intbc; intbc.str("");
@@ -2201,6 +2256,7 @@ int dataio_text::get_parameters(string pfile)
       v++;
     }
   } while (temp != "");
+  SimPM.BC_Nint = SimPM.BC_INT.size();
 
   // Number of boundary cells
   // (set automatically based on order of scheme)

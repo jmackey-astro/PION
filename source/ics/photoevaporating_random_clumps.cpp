@@ -517,7 +517,8 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
     //
     // This restricts clump centres to be at least 0.1*Range from the edge.
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    //if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM.BC_YN == "periodic") {
       //cout <<"find = "<<SimPM.typeofbc.find("YNper")<<endl;
       // for periodic BCs we don't care how near the y or z boundary a clump is, but
       // we do want it to be away from the incident radiation boundary.
@@ -605,7 +606,8 @@ int IC_photevap_random_clumps::clumps_random_setup()
     //
     // This restricts clump centres to be at least 0.1*Range from the edge.
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    //if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM.BC_YN == "periodic") {
       //cout <<"find = "<<SimPM.typeofbc.find("YNper")<<endl;
       // for periodic BCs we don't care how near the y or z boundary a clump is, but
       // we do want it to be away from the incident radiation boundary.
@@ -846,7 +848,8 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c
     // get distance from centre to clump.
     // If we have periodic BCs, need to do a bit more work...
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    //if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM.BC_YN == "periodic") {
       x0[XX] = dpos[XX]-cl[j].centre[XX];
       double temp;
       for (int i=1;i<ndim;i++) {
