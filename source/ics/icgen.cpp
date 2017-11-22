@@ -331,7 +331,8 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  grid->SetupBCs(2, SimPM.typeofbc);
+  grid->SetupBCs(SimPM);
+  if (err) rep.error("icgen Couldn't set up boundaries.",err);
 
 
   err += SimSetup->setup_raytracing(grid);

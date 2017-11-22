@@ -1221,40 +1221,39 @@ int UniformGrid::BC_setBCtypes(
     //
     BC_bd[i].type = bc_strings[i];
 
-    if      (BC_bd[i].type=="per" || BC_bd[i].type=="periodic") {
+    if      (BC_bd[i].type=="periodic") {
       BC_bd[i].itype=PERIODIC;
       BC_bd[i].type="PERIODIC";
     }
-    else if (BC_bd[i].type=="out"    || BC_bd[i].type=="abs" || 
-            BC_bd[i].type=="outflow" || BC_bd[i].type=="zero-gradient") {
+    else if (BC_bd[i].type=="outflow" || BC_bd[i].type=="zero-gradient") {
       BC_bd[i].itype=OUTFLOW;
       BC_bd[i].type="OUTFLOW";
     }
-    else if (BC_bd[i].type=="owo" || BC_bd[i].type=="one-way-outflow") {
+    else if (BC_bd[i].type=="one-way-outflow") {
       BC_bd[i].itype=ONEWAY_OUT;
       BC_bd[i].type="ONEWAY_OUT";
     }
-    else if (BC_bd[i].type=="inf" || BC_bd[i].type=="inflow") {
+    else if (BC_bd[i].type=="inflow") {
       BC_bd[i].itype=INFLOW ;
       BC_bd[i].type="INFLOW";
     }
-    else if (BC_bd[i].type=="ref" || BC_bd[i].type=="reflecting") {
+    else if (BC_bd[i].type=="reflecting") {
       BC_bd[i].itype=REFLECTING;
       BC_bd[i].type="REFLECTING";
     }
-    else if (BC_bd[i].type=="jrf" || BC_bd[i].type=="equator_ref") {
+    else if (BC_bd[i].type=="equator_reflect") {
       BC_bd[i].itype=JETREFLECT;
       BC_bd[i].type="JETREFLECT";
     }
-    else if (BC_bd[i].type=="fix" || BC_bd[i].type=="fixed") {
+    else if (BC_bd[i].type=="fixed") {
       BC_bd[i].itype=FIXED;
       BC_bd[i].type="FIXED";
     }
-    else if (BC_bd[i].type=="dmr" || BC_bd[i].type=="DMR") {
+    else if (BC_bd[i].type=="DMR") {
       BC_bd[i].itype=DMACH;
       BC_bd[i].type="DMACH";
     }
-    else if (BC_bd[i].type=="sb1" || BC_bd[i].type=="SB1") {
+    else if (BC_bd[i].type=="SB1") {
       BC_bd[i].itype=STARBENCH1;
       BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
     }
@@ -1288,19 +1287,19 @@ int UniformGrid::BC_setBCtypes(
         BC_bd[i].itype=JETBC;
         BC_bd[i].type="JETBC";
       }
-      else if (BC_bd[i].type=="dm2" || BC_bd[i].type=="DMR2") {
+      else if (BC_bd[i].type=="DMR2") {
         BC_bd[i].itype=DMACH2;
         BC_bd[i].type="DMACH2";
       }
-      else if (BC_bd[i].type=="rsh" || BC_bd[i].type=="RadShock") {
+      else if (BC_bd[i].type=="RadShock") {
         BC_bd[i].itype=RADSHOCK;
         BC_bd[i].type="RADSHOCK";
       }
-      else if (BC_bd[i].type=="rs2" || BC_bd[i].type=="RadShock2") {
+      else if (BC_bd[i].type=="RadShock2") {
         BC_bd[i].itype=RADSH2;
         BC_bd[i].type="RADSH2";
       }
-      else if (BC_bd[i].type=="wnd" || BC_bd[i].type=="stellar_wind") {
+      else if (BC_bd[i].type=="stellar_wind") {
         BC_bd[i].itype=STWIND;
         BC_bd[i].type="STWIND";
       }

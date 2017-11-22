@@ -393,7 +393,9 @@ int IC_shocktube::assign_data(
   if (IC_shocktube::number==8) {
     cout <<"Alfven wave: switching to periodic boundaries.\n";
     if (ndim==1) {
-      SimPM.typeofbc="XNper_XPper_";
+      SimPM.BC_XN = "periodic";
+      SimPM.BC_XP = "periodic";
+      SimPM.BC_Nint = 0;
       double len=0.3, dpos[ndim], amp=1.0;
       
       cpt = gg->FirstPt();
@@ -417,7 +419,11 @@ int IC_shocktube::assign_data(
     else if (ndim==2) {
       //rep.error("AW test not set up in 2D yet.",ndim);
       cout <<"Alfven Wave test in 2D -- note not the same as 1D!!!\n";
-      SimPM.typeofbc="XNper_XPper_YNper_YPper_";
+      SimPM.BC_XN = "periodic";
+      SimPM.BC_XP = "periodic";
+      SimPM.BC_YN = "periodic";
+      SimPM.BC_YP = "periodic";
+      SimPM.BC_Nint = 0;
       double theta=atan(2.0), dpos[ndim], amp=0.1;
       
       cpt = gg->FirstPt();

@@ -83,7 +83,14 @@ OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNinf_XPout_YNref_YPdmr_INdm2
+# BC XNinf_XPout_YNref_YPdmr_INdm2
+BC_XN inflow
+BC_XP outflow
+BC_YN reflecting
+BC_YP DMR
+BC_Ninternal 1
+BC_INTERNAL_000 DMR2
+
 
 
 # CFL coefficient 0<cfl<1

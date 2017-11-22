@@ -345,9 +345,6 @@ int IC_basic_tests::setup_sinewave_velocity()
   double pout; pout=1.0;
   double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
-//  SimPM.typeofbc = "PERIODIC";
-//  SimPM.typeofbc = "XNinf XPinf YNinf YPinf";
-//  SimPM.typeofbc = "XNinf XPref YNinf YPref";
   if (vx>vy) SimPM.finishtime = 3.*SimPM.Range[0]/vx;
   else SimPM.finishtime = 5.*SimPM.Range[0]/vy;
 
@@ -437,9 +434,6 @@ int IC_basic_tests::setup_advection()
   double pout; pout=1.0;
   double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
-//  SimPM.typeofbc = "PERIODIC";
-//  SimPM.typeofbc = "XNinf XPinf YNinf YPinf";
-//  SimPM.typeofbc = "XNinf XPref YNinf YPref";
   if (vx>vy) SimPM.finishtime = 3.*SimPM.Range[0]/vx;
   else SimPM.finishtime = 5.*SimPM.Range[0]/vy;
 
@@ -506,7 +500,11 @@ int IC_basic_tests::setup_divBpeak()
   s[BY]=0.0; s[BZ] = 1.;
   s[BX]=0.;
   
-  SimPM.typeofbc = "PERIODIC";
+  //SimPM.BC_XN = "periodic";
+  //SimPM.BC_XP = "periodic";
+  //SimPM.BC_YN = "periodic";
+  //SimPM.BC_YP = "periodic";
+  //SimPM.BC_Nint = 0;
   SimPM.gamma = 5./3.;
   if(fabs(SimPM.Xmin[XX]+0.5) > 1.e-6 || fabs(SimPM.Xmax[XX]-1.5) > 1.e-6) {
     cout <<fabs(SimPM.Xmin[XX]+0.5) <<"\t"<<fabs(SimPM.Xmax[XX]-1.5) <<endl;
@@ -557,7 +555,10 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
               SimPM.eqntype);
   }
   SimPM.gamma = 5./3.; // just to make sure.
-  SimPM.typeofbc = "XNper_XPper_YNper_YPper_";
+  //SimPM.BC_XN = "periodic";
+  //SimPM.BC_XP = "periodic";
+  //SimPM.BC_YN = "periodic";
+  //SimPM.BC_YP = "periodic";
   cout <<"\tMake sure x=[-1,1] and y=[-0.5,0.5]\n";
   
   double A_max=0.001; // Peak in vector potential.
@@ -743,7 +744,11 @@ int IC_basic_tests::setup_DoubleMachRef()
   cout <<"with mach no. = "<<dmrmach<<" and angle "<<dmrtheta<<" degrees to x-axis.\n";
   if (ndim!=2) rep.error("Bad ndim in setup_DoubleMachRef",ndim);
   if (SimPM.eqntype != EQEUL) rep.error("DMR must be euler equations!",SimPM.eqntype);
-  SimPM.typeofbc = "XNinf_XPout_YNref_YPdmr_INdm2";
+  //SimPM.BC_XN = "inflow";
+  //SimPM.BC_XP = "outflow";
+  //SimPM.BC_YN = "reflecting";
+  //SimPM.BC_YP = "DMR";
+  //SimPM.BC_Nint = 1;
   SimPM.gamma=1.4;
   cout <<"*NB*: Assuming grid dimensions are {[0,4],[0,1]}; if not things may/will go wrong!\n";
   
@@ -803,7 +808,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
 
   // The following is for Jim Stone's test at:
   // http://www.astro.princeton.edu/~jstone/tests/kh/kh.html
-  SimPM.typeofbc = "XNper_XPper_YNper_YPper_";
+  //SimPM.typeofbc = "XNper_XPper_YNper_YPper_";
   cout <<"KH Instability: using periodic BCs everywhere.\n";
   SimPM.gamma=1.4;
   double pressure=2.5;
@@ -862,7 +867,7 @@ int IC_basic_tests::setup_KelvinHelmholz()
 
 
   // The following is for Frank, Jones, Ryu, \& Gaalaas, 1996, ApJ, 460, 777.
-  SimPM.typeofbc = "XNper_XPper_YNref_YPref_";
+  //SimPM.typeofbc = "XNper_XPper_YNref_YPref_";
   SimPM.gamma=5./3.;
   double pressure= 0.6;
   double rho = 1.0;

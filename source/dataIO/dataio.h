@@ -322,6 +322,12 @@ class DataIOBase : public file_status {
    ///
    std::list<class pm_base *> params;
    ///
+   /// parameters for Boundary Condition
+   ///
+   std::list<class pm_base *> bc_pm;
+   bool have_setup_bc_pm; ///< we only want to add to the list once!
+   void set_bc_pm_params(); ///< add BC parameters to bc_pm list.
+   ///
    /// parameters for Jet simulations
    ///
    std::list<class pm_base *> jet_pm;

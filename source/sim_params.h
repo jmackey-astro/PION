@@ -252,7 +252,9 @@ class SimParams {
    std::string BC_YP; ///< Type of boundary condition.
    std::string BC_ZN; ///< Type of boundary condition.
    std::string BC_ZP; ///< Type of boundary condition.
+   int BC_Nint; ///< Number of internal boundary regions
    std::vector<std::string> BC_INT; ///< Internal boundary regions.
+
    int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
    // Integration accuracy
    int spOOA;  ///< Spatial Order of Accuracy in the code.
