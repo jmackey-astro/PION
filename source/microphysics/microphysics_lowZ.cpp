@@ -48,7 +48,7 @@ using namespace std;
 
 microphysics_lowz::microphysics_lowz(const int nv,
 				     const int ntracer,
-				     const std::string &trtype,
+				     const std::string &tracers,
 				     struct which_physics *ephys
 				     )
   :

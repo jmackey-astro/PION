@@ -38,17 +38,7 @@ class mpv7_TwoTempIso
   mpv7_TwoTempIso(
     const int,          ///< Total number of variables in state vector
     const int,          ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-    const std::string &, ///< List of what the tracer variables mean.
-
-# else
-
     const std::string *, ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
     struct which_physics * ///< extra physics stuff.
     );
 

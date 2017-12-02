@@ -152,7 +152,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   
   //
   // tracer variables: number of tracers, and then each one gets a
-  // string name, stored in SimPM.trtype
+  // string name, stored in SimPM.tracers
   //
   str = rp->find_parameter("ntracer");
   if (str=="") {
@@ -162,26 +162,12 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SimPM.ntracer = 0;
     SimPM.ftr = SimPM.nvar;
   }
-  else if (!isnan( SimPM.ntracer=atoi(str.c_str()) ) ) {
+  else if (isfinite( SimPM.ntracer=atoi(str.c_str()) ) ) {
 #ifdef TESTING
     cout <<"using "<<SimPM.ntracer<<" passive tracer variables\n";
 #endif
     SimPM.ftr = SimPM.nvar;
     SimPM.nvar += SimPM.ntracer;
-
-
-#ifdef OLD_TRACER
-
-    //
-    // all tracers in a single parameter.
-    //
-    SimPM.trtype = rp->find_parameter("trtype");
-#ifdef TESTING
-    cout <<"using tracer(s) described as "<<SimPM.trtype<<"\n";
-#endif
-
-#else // new/old tracer
-
     //
     // Get what type of chemistry we are doing:
     //
@@ -189,26 +175,25 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
     //
     // Each tracer has its own parameter, called Tracer000, Tracer001,
-    // etc., so setup a string for each in the trtype array.
+    // etc., so setup a string for each in the tracers array.
     //
-    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+    SimPM.tracers = mem.myalloc(SimPM.tracers,SimPM.ntracer);
     for (int i=0;i<SimPM.ntracer;i++) {
       ostringstream temp;
       temp <<"Tracer";
       temp.width(3);
       temp.fill('0');
       temp <<i;
-      SimPM.trtype[i] = rp->find_parameter(temp.str());
+      SimPM.tracers[i] = rp->find_parameter(temp.str());
 #ifdef TESTING
-      cout <<"using tracer(s) described as "<<SimPM.trtype[i]<<"\n";
+      cout <<"using tracer(s) described as "<<SimPM.tracers[i]<<"\n";
 #endif
+      if (SimPM.tracers[i] == "") {
+        rep.error("Can't find tracer name for number",i);
+      }
     }
-
-#endif // OLD_TRACER
-
-
   }
-  else rep.error("number of tracers is not a number!",SimPM.ntracer);
+  else rep.error("number of tracers is not finite!",SimPM.ntracer);
   
   // coordinate system.
   str = rp->find_parameter("coordinates");

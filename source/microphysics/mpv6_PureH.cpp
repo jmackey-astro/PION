@@ -42,21 +42,11 @@ using namespace std;
 mpv6_PureH::mpv6_PureH(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-          const std::string &trtype,  ///< List of what the tracer variables mean.
-
-# else
-
-          const std::string *trtype,  ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
+          const std::string *tracers,  ///< List of what the tracer variables mean.
           struct which_physics *ephys  ///< extra physics stuff.
 	  )
 :
-  mp_explicit_H(nv,ntracer,trtype,ephys)
+  mp_explicit_H(nv,ntracer,tracers,ephys)
 {
 #ifdef TESTING
   cout <<"mpv6_PureH constructor setting up.\n";

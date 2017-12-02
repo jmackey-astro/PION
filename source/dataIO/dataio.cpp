@@ -502,12 +502,12 @@ void DataIOBase::set_params()
   //
   // Boundary conditions
   //
-  have_setup_bc_pm=false; // so we know to populate list later.
   // Number of internal boundaries
   pm_int     *p124 = new pm_int     
     ("BC_Ninternal",   &SimPM.BC_Nint);
   p = p124; p->critical=true;  
   params.push_back(p);
+  have_setup_bc_pm=false; // so we know to populate list later.
 
 
   //
@@ -533,36 +533,15 @@ void DataIOBase::set_params()
     ("num_tracer", &SimPM.ntracer);
   p = p011; p->critical=true;  
   params.push_back(p);
-
-#ifdef OLD_TRACER
-
-  pm_string  *p012 = new pm_string  
-    ("tracer_str", &SimPM.trtype, "NEED_TRACER_VALUES!");
-  p = p012; p->critical=false;  
-  params.push_back(p);
-
-#else // new/old tracer
-  
-  //
-  // Need a parameter for the type of chemistry we use
-  //
   pm_string  *p012a = new pm_string  
     ("chem_code", &SimPM.chem_code, "CHEM_CODE");
   p = p012a; p->critical=false;  
   params.push_back(p);
-  
-  //
-  // What to do here?  I want to set parameters for N tracers, but
-  // ntracer is not set until we read in some datafile, so we cannot
-  // know here how long the SimPM.trtype[] array is.
-  // I guess we have to leave it here and add more parameters to read
-  // once I have a number for ntracer.
-  //
   have_setup_tracers=false; // so we know to populate list later.
 
-
-#endif // OLD_TRACER
-
+  //
+  // hydro solver parameters.
+  //
   pm_int     *p013 = new pm_int     
     ("solver",     &SimPM.solverType);
   p = p013; p->critical=true;  
@@ -876,11 +855,8 @@ int DataIOBase::read_simulation_parameters()
   //
   if (SimPM.ntracer>0) SimPM.ftr = SimPM.nvar-SimPM.ntracer;
   else                 SimPM.ftr = SimPM.nvar;
-
-#ifndef OLD_TRACER
-
   //
-  // Also set up tracer parameters, based on ntracer and read them in
+  // Set up tracer parameters, based on ntracer and read them in
   //
   set_tracer_params();
   for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
@@ -888,8 +864,6 @@ int DataIOBase::read_simulation_parameters()
     err = read_header_param(p);
     if (err) rep.error("Error reading parameter",p->name);
   }
-
-#endif // OLD_TRACER
 
 
   //
@@ -1221,8 +1195,6 @@ int DataIOBase::read_simulation_parameters()
 // ##################################################################
 
 
-#ifndef OLD_TRACER
-
 void DataIOBase::set_tracer_params()
 {
   if (have_setup_tracers) {
@@ -1230,15 +1202,15 @@ void DataIOBase::set_tracer_params()
               have_setup_tracers);
   }
   if (SimPM.ntracer==0) {
-    cout <<"\t*** No tracers to set up\n";
+    //cout <<"\t*** No tracers to set up\n";
     have_setup_tracers = true;
     return;
   }
   //
   // So now we have tracers and we need to add them to the list.
   //
-  if (!SimPM.trtype) {
-    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+  if (!SimPM.tracers) {
+    SimPM.tracers = mem.myalloc(SimPM.tracers,SimPM.ntracer);
   }
 
   class pm_base *p;
@@ -1246,18 +1218,16 @@ void DataIOBase::set_tracer_params()
   for (int i=0;i<SimPM.ntracer;i++) {
     ostringstream temp; temp <<"Tracer";
     temp.width(3); temp.fill('0'); temp <<i;
-    cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
+    //cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
 
     pm_string  *ptemp = new pm_string  
-      (temp.str(), &SimPM.trtype[i], "NEED_TRACER_VALUES!");
-    p = ptemp; p->critical=false;  
+      (temp.str(), &SimPM.tracers[i], "NEED_TRACER_VALUES!");
+    p = ptemp; p->critical=true;  
     tr_pm.push_back(p);
   }
   have_setup_tracers = true;
   return;
 }
-
-#endif // OLD_TRACER
 
 
 // ##################################################################
@@ -1485,7 +1455,7 @@ void DataIOBase::set_jet_pm_params()
 
 void DataIOBase::set_bc_pm_params()
 {
-  cout <<"setting up BC parameters\n";
+  //cout <<"setting up BC parameters\n";
   if (have_setup_bc_pm || !bc_pm.empty()) {
     cout <<"BCs FLAG: "<< have_setup_bc_pm;
     cout <<" EMPTY?: "<< bc_pm.empty();
@@ -1583,36 +1553,23 @@ int DataIOBase::write_simulation_parameters()
     if (err) rep.error("Error writing BC parameter",p->name);
   }
 
-#ifndef OLD_TRACER
-
   //
   // Write tracer parameters
   //
   if (!have_setup_tracers) set_tracer_params();
-  cout <<"Writing tracer names.\n";
+  //cout <<"Writing tracer names.\n";
   for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
     p = (*iter);
-    cout <<"tracer val: "; p->show_val(); cout <<"\n";
+    //cout <<"tracer val: "; p->show_val(); cout <<"\n";
     err = write_header_param(p);
-    if (err) rep.error("Error reading parameter",p->name);
+    if (err) rep.error("Error writing tracer parameter",p->name);
   }
-
-#endif // OLD_TRACER
-
 
   //
   // Write Jet parameters if doing a JET SIM
   //
   if (JP.jetic) {
-    //
-    // Check jet parameters exist
-    //
     if (!have_setup_jet_pm) set_jet_pm_params();
-    if (jet_pm.empty())
-      rep.error("jet_pm list empty, but we are apparently ouputting a Jet sim!?","HMMM");
-    //
-    // now write them:
-    //
     for (list<pm_base *>::iterator iter=jet_pm.begin(); iter!=jet_pm.end(); ++iter) {
       p = (*iter);
       err = write_header_param(p);
@@ -1632,7 +1589,7 @@ int DataIOBase::write_simulation_parameters()
     //
     if (!have_setup_rt_src) set_rt_src_params();
     if (rt_src.empty()) {
-      rep.error("rt_src list empty, but we are apparently ouputting an RT sim!?","HMMM");
+      rep.error("rt_src list empty, but running RT sim!?","HMMM");
     }
     //
     // Data should be already set up and ready to go.
@@ -1751,9 +1708,6 @@ int DataIOBase::write_simulation_parameters()
       if ( (*iter)->name.compare( nm.str() ) !=0) {
         rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
       }
-      //SW.get_src_trcr(isw,xd);
-      //for (int v=SimPM.ntracer; v<MAX_NVAR; v++) xd[v]=0.0;
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->tr));
       for (int v=SimPM.ntracer; v<MAX_NVAR; v++) {
         SWP.params[isw]->tr[v]=0.0;

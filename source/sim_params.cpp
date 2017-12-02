@@ -44,17 +44,10 @@ SimParams::SimParams()
 //  cout <<"Setting up SimParams class... ";
   gridType = eqntype = solverType = -1;
   ndim = eqnNDim = nvar = -1;
+
   ntracer = ftr = -1;
-
-#ifdef OLD_TRACER
-
-  trtype="BAD-TRACER-TYPE";
-
-#else
   chem_code = "BAD_CHEM_CODE";
-  trtype=0;
-
-#endif // OLD_TRACER
+  tracers=0;
 
   starttime = simtime = finishtime = dt = -1.e99; last_dt = 1.e100;
   timestep = -1; maxtime = false;
@@ -122,10 +115,8 @@ SimParams::~SimParams()
   STAR.clear();
 
   BC_INT = mem.myfree(BC_INT); BC_INT=0;
-#ifdef OLD_TRACER
-#else
-  trtype=mem.myfree(trtype);
-#endif // OLD_TRACER
+
+  tracers=mem.myfree(tracers);
 }
 
 

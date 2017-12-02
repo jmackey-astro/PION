@@ -279,17 +279,7 @@ void mp_explicit_H::get_problem_size(
 mp_explicit_H::mp_explicit_H(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-          const std::string &trtype,  ///< List of what the tracer variables mean.
-
-# else
-
-          const std::string *trtype,  ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
+          const std::string *tracers,  ///< List of what the tracer variables mean.
           struct which_physics *ephys  ///< extra physics stuff.
 	  )
 :
@@ -303,26 +293,7 @@ mp_explicit_H::mp_explicit_H(
   // ----------------------------------------------------------------
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last ";
   cout <<ntracer<<" variables in state vec.\n";
-
-#ifdef OLD_TRACER
-
-  //
-  // first 6 chars are the type, then list of tracers, each 6 chars long.
-  //
-  int len = (trtype.length() +5)/6 -1;
-  if (len!=ntracer) {
-    cout <<"warning: string doesn't match ntracer.  ";
-    cout <<"make sure this looks ok: "<<trtype<<"\n";
-  }
-
-# else
-
-  //
-  // first 6 chars are the type, then list of tracers, each 6 chars long.
-  //
   int len = ntracer;
-
-#endif // OLD_TRACER
 
   //
   // Find H+ fraction in tracer variable list.
@@ -330,31 +301,15 @@ mp_explicit_H::mp_explicit_H(
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s; pv_Hp=-1;
 
-#ifdef OLD_TRACER
-
   for (int i=0;i<len;i++) {
-    s = trtype.substr(6*(i+1),6); // Get 'i'th tracer variable.
-    if (s=="H1+___" || s=="HII__") {
-      pv_Hp = ftr+i;
-      cout <<"\t\tGot H+ as the "<<pv_Hp<<"th element of P[] (zero offset).\n";
-    }
-  }
-  if (pv_Hp<0)
-    rep.error("No H ionisation fraction found in tracer list",trtype);
-
-# else
-
-  for (int i=0;i<len;i++) {
-    s = trtype[i]; // Get 'i'th tracer variable.
+    s = tracers[i]; // Get 'i'th tracer variable.
     if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
       pv_Hp = ftr+i;
       cout <<"\t\tGot H+ as the "<<pv_Hp<<"th element of P[] (zero offset).\n";
     }
   }
   if (pv_Hp<0)
-   rep.error("No H ionisation fraction found in tracer list",trtype[0]);
-
-#endif // OLD_TRACER
+   rep.error("No H ionisation fraction found in tracer list",tracers[0]);
 
   // ================================================================
   // ================================================================

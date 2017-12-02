@@ -281,28 +281,15 @@ int setup_fixed_grid::setup_microphysics()
   else if (SimPM.EP.chemistry) {
     //    MP = 0;
     string mptype;
-
-#ifdef OLD_TRACER
-
-    cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
-    if (SimPM.trtype.size() >=6)
-      mptype = SimPM.trtype.substr(0,6); // Get first 6 chars for type of MP.
-    else mptype = "None";
-
-# else
-    
     mptype = SimPM.chem_code;
-
-#endif // OLD_TRACER
-
     bool have_set_MP=false;
 
 
 #ifndef EXCLUDE_MPV1
-    if      (mptype=="ChAH__" || mptype=="onlyH_") {
+    if      (mptype=="ChAH" || mptype=="onlyH") {
       cout <<"\t******* setting up MP_Hydrogen microphysics module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY mp_implicit_H. **--**\n";
       have_set_MP=true;
     }
@@ -310,21 +297,21 @@ int setup_fixed_grid::setup_microphysics()
 
 
 #ifndef EXCLUDE_HD_MODULE
-    if (mptype=="lowZ__") {
+    if (mptype=="lowZ") {
       cout <<"\t******* setting up microphysics_lowz module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       have_set_MP=true;
     }
 #endif // exclude Harpreet's module
 
 #ifndef EXCLUDE_MPV2
-    if (mptype=="MPv2__") {
+    if (mptype=="MPv2") {
 #ifdef MP_V2_AIFA
       cout <<"\t******* setting up mp_v2_aifa module *********\n";
       cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_v2_aifa(SimPM.nvar, SimPM.ntracer, SimPM.trtype);
+      MP = new mp_v2_aifa(SimPM.nvar, SimPM.ntracer, SimPM.tracers);
       SimPM.EP.MP_timestep_limit = 1;
 #else
       rep.error("Enable mp_v2_aifa as an ifdef if you really want to use it",2);
@@ -335,7 +322,7 @@ int setup_fixed_grid::setup_microphysics()
 
 
 #ifndef EXCLUDE_MPV3
-    if (mptype=="MPv3__") {
+    if (mptype=="MPv3") {
       cout <<"\t******* setting up mp_explicit_H module *********\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. Timestep limiting is enforced by #def";
@@ -346,7 +333,7 @@ int setup_fixed_grid::setup_microphysics()
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
 
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP)
+      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP)
       );
       //if (SimPM.EP.MP_timestep_limit != 1)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
@@ -356,7 +343,7 @@ int setup_fixed_grid::setup_microphysics()
 
 
 #ifndef EXCLUDE_MPV4
-    if (mptype=="MPv4__") {
+    if (mptype=="MPv4") {
       cout <<"\t******* setting up mp_implicit_H module *********\n";
 #if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
@@ -370,7 +357,7 @@ int setup_fixed_grid::setup_microphysics()
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
       //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
@@ -379,27 +366,27 @@ int setup_fixed_grid::setup_microphysics()
 #endif // exclude MPv4
 
 
-    if (mptype=="MPv5__") {
+    if (mptype=="MPv5") {
       cout <<"\t******* setting up mpv5_molecular module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       have_set_MP=true;
     }
 
-    if (mptype=="MPv6__") {
+    if (mptype=="MPv6") {
       cout <<"\t******* setting up mpv6_PureH module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       have_set_MP=true;
     }
 
-    if (mptype=="MPv7__") {
+    if (mptype=="MPv7") {
       cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       have_set_MP=true;
     }
 
@@ -409,17 +396,17 @@ int setup_fixed_grid::setup_microphysics()
       cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
+      MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
       have_set_MP=true;
     }
 #endif // CODE_EXT_SBII
 
 #ifdef CODE_EXT_HHE
-    if (mptype=="MPv9__") {
+    if (mptype=="MPv9") {
       cout <<"\t******* setting up mpv9_HHe module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.trtype, 
+      MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.tracers, 
                         &(SimPM.EP), SimPM.gamma);
       have_set_MP=true;
     }
@@ -434,17 +421,7 @@ int setup_fixed_grid::setup_microphysics()
     if (!have_set_MP) {
       cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-
-#ifdef OLD_TRACER
-
-      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.trtype, &(SimPM.EP));
-
-# else
-
-      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.trtype, &(SimPM.EP));
-
-#endif // OLD_TRACER
-
+      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP));
       if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
         rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;

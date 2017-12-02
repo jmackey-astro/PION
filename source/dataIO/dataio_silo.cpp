@@ -751,7 +751,7 @@ int dataio_silo::setup_write_variables()
 #endif // RT_TESTING_OUTPUTCOL
 
   //
-  // if there are any tracer variables, get their names from SimPM.trtype,
+  // if there are any tracer variables, get their names from SimPM.tracers,
   // if it has the info.  All we really need is "TrXXX", where the Xs are 
   // the tracer number.
   //
@@ -763,18 +763,7 @@ int dataio_silo::setup_write_variables()
       temp.str("");
       temp<< "Tr";
       temp.width(3); temp.fill('0'); temp << i;
-
-#ifdef OLD_TRACER
-
-      if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
-        temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
-      }
-
-# else
-      
-      temp <<"_"<< SimPM.trtype[i];
-
-#endif // OLD_TRACER
+      temp <<"_"<< SimPM.tracers[i];
 
       s=temp.str();
       // replace "+" with "p", and "-" with "m"
@@ -1605,7 +1594,7 @@ int dataio_silo::set_readvars(int eqns ///< equations we are solving.
       readvars.push_back("glmPSI");
   }
   //
-  // if there are any tracer variables, get their names from SimPM.trtype,
+  // if there are any tracer variables, get their names from SimPM.tracers,
   // if it contains the details.  At least it's name will start with 
   // "TrXXX", which is all we really need.
   //
@@ -1615,18 +1604,7 @@ int dataio_silo::set_readvars(int eqns ///< equations we are solving.
       s.erase(); temp.str("");
       temp<< "Tr";
       temp.width(3); temp.fill('0'); temp << i;
-
-#ifdef OLD_TRACER
-
-      if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
-        temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
-      }
-
-# else
-      
-      temp <<"_"<< SimPM.trtype[i];
-
-#endif // OLD_TRACER
+      temp <<"_"<< SimPM.tracers[i];
 
       s=temp.str();
       // replace "+" with "p", and "-" with "m"

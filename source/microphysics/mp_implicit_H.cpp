@@ -251,11 +251,11 @@ int mp_implicit_H::ydot(
 mp_implicit_H::mp_implicit_H(
         const int nv,             ///< Total number of variables in state vector
         const int ntracer,        ///< Number of tracer variables in state vector.
-        const std::string &trtype, ///< List of what the tracer variables mean.
+        const std::string &tracers, ///< List of what the tracer variables mean.
         struct which_physics *ephys  ///< extra physics stuff.
         )
   :
-  mp_explicit_H(nv,ntracer,trtype,ephys)
+  mp_explicit_H(nv,ntracer,tracers,ephys)
 {
   //
   // All of the setup is in the explicit solver; the only changes
