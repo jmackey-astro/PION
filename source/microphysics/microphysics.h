@@ -147,18 +147,8 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
   MicroPhysics(
       const int,          ///< Total number of variables in state vector
       const int,          ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-      const std::string &, ///< List of what the tracer variables mean.
-
-# else
-
       const std::string,  ///< type of chemistry we are running.
       const std::string *, ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
       struct which_physics * ///< pointer to extra physics flags.
       );
 
@@ -444,20 +434,12 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
    * chemistry we are using.  The string has a specific format described in 
    * page \ref userguide.
    * */
-  MP_Hydrogen(const int,          ///< Total number of variables in state vector
-	      const int,          ///< Number of tracer variables in state vector.
-#ifdef OLD_TRACER
-
-	       const std::string &, ///< List of what the tracer variables mean.
-
-# else
-
-	       const std::string *, ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
-	      struct which_physics * ///< pointer to which physics flags.
-	      );
+  MP_Hydrogen(
+      const int,          ///< Total number of variables in state vector
+      const int,          ///< Number of tracer variables in state vector.
+      const std::string *, ///< List of what the tracer variables mean.
+      struct which_physics * ///< pointer to which physics flags.
+      );
 
   /** \brief Destructor deletes dynamically allocated member data. */
   ~MP_Hydrogen();

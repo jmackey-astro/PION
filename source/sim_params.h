@@ -214,19 +214,12 @@ class SimParams {
    int eqnNDim;    ///< Dimensionality of equations, set to 3 for now.
    int ndim;       ///< Dimensionality of grid (can be one of [1,2,3]).
    int nvar;       ///< Length of State Vectors (number of variables).
-   int ntracer;    ///< Number of tracer variables.
-   int ftr;        ///< Position of first tracer variable in state vector.
 
-#ifdef OLD_TRACER
-
-   std::string trtype;  ///< String saying what type of tracer we are using.
-
-#else  // OLD_TRACER
-
+  // Tracer variables:
+  int ntracer;    ///< Number of tracer variables.
+  int ftr;        ///< Position of first tracer variable in state vector.
   std::string chem_code; ///< Code for what kind of chemistry we are running.
-  std::string *trtype;  ///< array of strings for the tracer type
-
-#endif // OLD_TRACER
+  std::string *tracers;  ///< array of strings for the tracer type
 
    // Timing
    double simtime;    ///< current time in simulation. 
@@ -235,12 +228,12 @@ class SimParams {
    bool maxtime;      ///< False if simulation is to continue, true if time to stop.
    int timestep;      ///< Integer count of the number of timesteps since the start. 
    double dt;         ///< timestep size for simulation (all cells have same step).
-   double last_dt;    ///< Remember the last timestep, and don't increase the next step by more than 30%.
-   double min_timestep; ///< Minimum value timestep can be.  If it falls below this then bug out!
+   double last_dt;    ///< Remember the last timestep.
+   double min_timestep; ///< Minimum value timestep can be; if dt<min_timestep, but out.
 
    // Grid Point data
-   int NG[MAX_DIM];       ///< Number of 'real' grid-points in each direction (Total for sim)
-   long int Ncell;            ///< Total number of 'real' grid points (within the range) (Total for sim).
+   int NG[MAX_DIM];   ///< Number of 'real' grid-points in each direction (Total for sim)
+   long int Ncell;    ///< Total number of 'real' grid points (within the range) (Total for sim).
    double Range[MAX_DIM]; ///< Size of domain in x,y,z-direction.
    double Xmin[MAX_DIM];  ///< Min value of x,y,z in domain.
    double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain.

@@ -43,7 +43,8 @@ EP_Metal_MassFrac    1.0
 
 # Number and type of tracers.
 ntracer 0
-trtype none
+chem_code none
+
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1

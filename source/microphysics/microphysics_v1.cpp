@@ -68,17 +68,8 @@ using namespace std;
 MicroPhysics::MicroPhysics(
       const int nv,
       const int ntracer,
-#ifdef OLD_TRACER
-
-      const std::string &trtype,  ///< List of what the tracer variables mean.
-
-# else
-
       const std::string chem_code,  ///< type of chemistry we are running.
-      const std::string *trtype,  ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
+      const std::string *tracers,  ///< List of what the tracer variables mean.
       struct which_physics *ephys
       )
   :
@@ -119,27 +110,7 @@ MicroPhysics::MicroPhysics(
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s;
 
-#ifdef OLD_TRACER
-
-  //
-  // first 6 chars are the type, then list of tracers, each 6 chars long.
-  //
-  int len = (trtype.length() +5)/6 -1;
-  cout <<"\t\ttrtype = "<<trtype<<"\n";
-  cout <<"\t\tlen="<<len<<", ntr="<<ntracer<<"\n";
-  if (len!=ntracer) {
-    cout <<"warning: string doesn't match ntracer.  ";
-    cout <<"make sure this looks ok: "<<trtype<<"\n";
-  }
-
-# else
-
-  //
-  // first 6 chars are the type, then list of tracers, each 6 chars long.
-  //
   int len = ntracer;
-
-#endif // OLD_TRACER
 
   MicroPhysics::lvar["n_h" ] = 0; // 1st element of local vector is hydrogen number density.
   MicroPhysics::lvar["Eint"] = 1; // Second element of local state vector is internal energy/vol.
@@ -160,16 +131,7 @@ MicroPhysics::MicroPhysics(
 
   for (int i=0;i<len;i++) {
     // Now pick out the chemistry tracers and pass to microphysics constructor
-
-#ifdef OLD_TRACER
-
-    s = trtype.substr(6*(i+1),6); // Get 'i'th tracer variable.
-
-# else
-
-    s = trtype[i]; // Get 'i'th tracer variable.
-
-#endif // OLD_TRACER
+    s = tracers[i]; // Get 'i'th tracer variable.
 
     if      (s=="e-____")               {
       s="e-";   pvar[s] = ftr+i; lvar[s] = firstion+ct; pv_elec=pvar[s]; lv_elec=lvar[s]; ct++;
@@ -228,21 +190,10 @@ MicroPhysics::MicroPhysics(
   //  cout <<"\t\tset int_nvar\n";
 
 
-#ifdef OLD_TRACER
-
-  // Now initialize chemistry class.
-  if (trtype.size() >=6)
-       MicroPhysics::chemtype = trtype.substr(0,6); // Get first 6 chars for type of chemistry.
-  else MicroPhysics::chemtype = "None";
-
-# else
-
   // Now initialize chemistry class.
   MicroPhysics::chemtype = chem_code;
 
-#endif // OLD_TRACER
-
-  if (chemtype=="color_" || chemtype=="colour") chemtype = "None";
+  if (chemtype=="color" || chemtype=="colour") chemtype = "None";
   // this has tracers, but none relating to chemistry
   else if (chemtype=="ChAH__") { // Legacy Code...
     //    ions.push_back("H1+"); // only ion is H 1+
@@ -250,10 +201,10 @@ MicroPhysics::MicroPhysics(
     if (nions!=1) {cerr<<"Nions setup wrong.\n"; nions=1;}
     if (nels !=1) {nels =1;}
   }
-  else if (chemtype=="ChALL_") {
+  else if (chemtype=="ChALL") {
     // do nothing.
   }
-  else if (chemtype=="None__" || chemtype=="NONE__") {
+  else if (chemtype=="None" || chemtype=="NONE") {
     // no chemistry, so better be doing cooling, otherwise no point existing...
     if (!cool) rep.error("set up MP but no microphysics and not doing cooling!",nions);
     if (nions!=0) {cout <<"nions = "<<nions<<", setting to zero.\n"; nions=0;}

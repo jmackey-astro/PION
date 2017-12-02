@@ -306,18 +306,10 @@ int main(int argc, char **argv)
   else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
     cout <<"MAIN: setting up microphysics module\n";
 
-#ifdef OLD_TRACER
-
-    cout <<"TRTYPE: "<<SimPM.trtype<<"\n";
-
-#else
-
     cout <<"TRTYPE: \n";
     for (int i=0;i<SimPM.ntracer;i++) {
-      cout <<"\t"<<i<<"\t"<<SimPM.trtype[i]<<"\n";
+      cout <<"\t"<<i<<"\t"<<SimPM.tracers[i]<<"\n";
     }
-
-#endif // OLD_TRACER
     SimSetup->setup_microphysics();
     if (!MP) rep.error("microphysics init",MP);
   }
@@ -368,9 +360,6 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
-
-
-  
 
   clk.start_timer("io"); double tsf=0;
   // MPI: WRITE PARALLEL FILES HERE

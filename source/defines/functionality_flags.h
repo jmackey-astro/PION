@@ -91,10 +91,6 @@
 // Flags for parts of code under development.
 // -------------------------------------------------------------------
 
-///
-/// For the new time-integration scheme
-///
-#define NEW_TIME_UPDATE
 
 ///
 /// Flag for whether to do thermal conduction or not...
