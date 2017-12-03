@@ -343,7 +343,7 @@ mp_explicit_H::mp_explicit_H(
   JM_NELEC = 1.0; // if He is always neutral.
 #endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
-  //cout <<"Metallicity = "<<METALLICITY<<"\n";
+  cout <<"Metallicity = "<<METALLICITY<<"\n";
 
   setup_local_vectors();
   gamma   = SimPM.gamma;   // Gas has a constant ratio of specific heats.
@@ -656,7 +656,8 @@ int mp_explicit_H::set_multifreq_source_properties(
   //
   Emax = 24.59*1.602e-12;
 #else
-  Emax = 54.41778*1.602e-12;  // assume nothing doubly-ionized He.
+  //Emax = 54.41778*1.602e-12;  // assume nothing doubly-ionized He.
+  Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
 #endif // HE_INERT
   //
   // Call the function in hydrogen_photoion.

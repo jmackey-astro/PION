@@ -283,6 +283,7 @@ int setup_fixed_grid::setup_microphysics()
     string mptype;
     mptype = SimPM.chem_code;
     bool have_set_MP=false;
+    cout <<"setting up MP type: "<<mptype<<"\n";
 
 
 #ifndef EXCLUDE_MPV1

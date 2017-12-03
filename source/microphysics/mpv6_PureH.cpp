@@ -54,6 +54,7 @@ mpv6_PureH::mpv6_PureH(
   //
   // Here we set JM_NELEC and JM_NION to 1.0 because there is only H.
   //
+  EP->H_MassFrac = 1.0;
   EP->Helium_MassFrac = 0.0;
   EP->Metal_MassFrac = 0.0;
   JM_NION  = 1.0;
@@ -94,9 +95,10 @@ int mpv6_PureH::ydot(
 {
 
 #ifdef TESTING
-  //cout <<"mpv6_PureH::ydot(): Y="<< EP->Helium_MassFrac;
-  //cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
-  //cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
+  cout <<"mpv6_PureH::ydot(): Y="<< EP->Helium_MassFrac;
+  cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
+  cout <<", nH = "<<mpv_nH;
+  cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
 #endif // TESTING
 
   //
@@ -109,8 +111,7 @@ int mpv6_PureH::ydot(
 
   //
   // First get the temperature.  We assume the total particle number density
-  // is given by 1.1*nH*(1+x_in), appropriate for a gas with 10% Helium by 
-  // number, and if He is singly ionised whenever H is.
+  // is given by nH*(1+x_in), appropriate for a gas with 100% H.
   //
   double T = get_temperature(mpv_nH, E_in, x_in);
 
@@ -163,6 +164,12 @@ int mpv6_PureH::ydot(
                                   mpv_nH, mpv_delta_S, mpv_Vshell);
       Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
                                   mpv_nH, mpv_delta_S, mpv_Vshell);
+      //cout <<"multi-freq: ";
+      //cout <<Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
+      //                            mpv_nH, mpv_delta_S, mpv_Vshell);
+      //cout <<"  "<<Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
+      //                            mpv_nH, mpv_delta_S, mpv_Vshell);
+      //cout <<"\n";
       break;
 
       case RT_EFFECT_PION_MONO:
@@ -217,9 +224,9 @@ int mpv6_PureH::ydot(
   // We want to limit cooling as we approach the minimum temperature, so we scale
   // the rate to linearly approach zero as we reach Tmin.
   //
-  if (Edot<0.0 && T<2.0*EP->MinTemperature) {
-    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
-  }
+  //if (Edot<0.0 && T<2.0*EP->MinTemperature) {
+  //  Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
+  //}
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
   NV_Ith_S(y_dot,lv_eint) = Edot;
