@@ -23,7 +23,9 @@ OutputFile    DTE_D2_TTI_n00064
 
 # Number and type of tracers.
 ntracer 1
-trtype MPv7__H1+___
+chem_code MPv7
+Tracer000 H1+
+
 InitIons LEAVE
 Tracer0 0.0
 Tracer1 0.0

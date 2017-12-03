@@ -10,13 +10,11 @@ solver 4
 
 # Type of Equations to Solve {hd, mhd, ...}
 eqn  euler
+
 ntracer 1
+chem_code None
+TR000  Colour
 InitIons YES
-#Tracer0 1.0
-#Tracer1 1.0
-#Tracer2 0.0
-#Tracer3 0.0
-trtype color_trace_
 
 # extra physics
 EP_dynamics     1

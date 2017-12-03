@@ -23,13 +23,8 @@ OutputFile    DTE_D2_TTI_n00128
 
 # Number and type of tracers.
 ntracer 1
-trtype MPv7__H1+___
-InitIons LEAVE
-Tracer0 0.0
-Tracer1 0.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
+chem_code MPv7
+Tracer000 H1+
 
 # Which physics to use
 EP_dynamics     1

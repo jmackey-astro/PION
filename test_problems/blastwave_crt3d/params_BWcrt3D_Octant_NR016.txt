@@ -22,13 +22,8 @@ OutputFile    BWcrt3D_Octant_NR016
 
 # Number and type of tracers.
 ntracer 0
-trtype NONE__
+chem_code None
 InitIons LEAVE
-Tracer0 1.0
-Tracer1 1.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
 
 # Which physics to use
 EP_dynamics     1

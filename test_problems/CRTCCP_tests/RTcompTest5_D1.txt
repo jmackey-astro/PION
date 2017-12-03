@@ -1,30 +1,27 @@
 # parameter file for Initial Condition Generation.
-# 
-# 2014.06.30 JM: D-type-early test, in 2D.
+# JM 2010: for comparing my code with Iliev et al cosmological
+# code comparison tests.
+#
 
 ## Basic Properties
 # Dimensionality of Grid {1,2,3}
-ndim 2
-coordinates cylindrical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
+ndim 1
+coordinates spherical
 eqn  euler
 solver 3
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
+# Which ICs to set up
 # MHDShockCloud ShockTube...}
-ics PhotoEvap_radial
+ics PhotoEvaporatingClump
 
-# IC filename
-ICfilename IC_DTE_D2_TTI_n00256
 # Output FileName Base
-OutputFile    DTE_D2_TTI_n00256
-
+OutputFile    RTcompTest5_D1
 
 # Number and type of tracers.
 ntracer 1
-chem_code MPv7
+chem_code MPv6
 Tracer000 H1+
+InitIons LEAVE
 
 # Which physics to use
 EP_dynamics     1
@@ -36,31 +33,32 @@ EP_coll_ionisation   1
 EP_rad_recombination 1
 EP_update_erg 1
 EP_MP_timestep_limit 1 
-EP_Min_Temperature 1.0e+2
-EP_Max_Temperature 1.0e+4
+EP_Min_Temperature 50.0
+EP_Max_Temperature 1.0e6
 EP_Hydrogen_MassFrac 1.0
-EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
-EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
+EP_Helium_MassFrac 0.0  
+EP_Metal_MassFrac  0.0
+
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
 # Add noise at level of f% to Data? (f<=0 means no).
-noise -1
+noise -1.0
 
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  256
-NGridY  256
-NGridZ  256
+NGridX  128
+NGridY  128
+NGridZ  128
 # Boundaries of Simulation box:
 Xmin  0.0
 Ymin  0.0
 Zmin  0.0
 # Max values of x,y,z
-Xmax   3.874e18
-Ymax   3.874e18
-Zmax   3.874e18
+Xmax  4.629e22  # 15 kpc
+Ymax  4.629e22
+Zmax  4.629e22
 
 # Data Output Path
 OutputPath ./
@@ -69,30 +67,28 @@ OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 1
 OutputCriterion 1    # output per n-years=1, per step=0
-OPfreqTime 7.89e10   # 2.5 kyr
+OPfreqTime 3.16e14   # in seconds!!! --> 10Myr
 
 # Start time
 StartTime 0.0
-FinishTime 3.7872e+12  # 0.12 Myr in seconds
+FinishTime 1.58e16
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition
+# Boundary Conditions
 BC_XN reflecting
 BC_XP outflow
-BC_YN reflecting
-BC_YP outflow
 BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.0001
+GAMMA 1.666666666666666666666
 
 # CFL coefficient 0<cfl<1
-CFL 0.1
+CFL 0.3
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
-EtaViscosity 0.15
+EtaViscosity 0.1
 
 # Code Units
 # Reference systems of units are MKS (i.e. SI), CGS, others?
@@ -104,67 +100,62 @@ velval 1
 magval 1
 
 ## Parameters specific for various problems
-# ND photo-evaporation problem:
-#
-# Set initial Stroemgren Sphere properties here:
-# r=0.314pc = L_box/4, 
-# centred on origin,
-# T=10^4, so pressure is 200x the neutral gas (electrons+ions)
-#
-PECcloudradius 0.25  # Fraction of x-domain
-PECcloudTR0 0.99999  # cloud first tracer value (ion fraction)
-PECdratio 1.0     # constant density
-PECpratio 200.0   # photoheated to 10000K.
+# ND photo-evaporation problem
+# [PUT CLOUD OFF-GRID HERE SO IT HAS NO EFFECT]
+PECcloudradius 0.001  #9.765625e-2
+PECcloudTR0 1.0e-6  # cloud first tracer value
+PECdratio 1.0
+PECpratio 1.0
 PECBratio 1.0
-PEC_xpos 0.0e18
-PEC_ypos 0.0e18
-PEC_zpos 0.0e18
+PEC_radialslope 0.0
+PEC_xpos -3.7715e25
+PEC_ypos -1.543e25
+PEC_zpos -1.543e25
 
-# These two parameters not needed here.
-PEC_radialslope 0.0  # Clump is core/envelope with this powerlaw env.
-PEC_core_radius 100.0  # units of yrange, only used if radialslope != 0
-
-PEC_ambRO 5.21e-21  # nH~3120.0 per c.c.
-PEC_ambPG 4.305e-9  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
-PEC_ambVX  0.0e5
-PEC_ambVY  0.0e5
-PEC_ambVZ  0.0e5
-PEC_ambBX 0.00e-6 
-PEC_ambBY 0.00e-6
-PEC_ambBZ 0.00e-6
-PEC_ambTR0 1.0e-12  # neutral medium.
+PEC_ambRO 1.673e-27  # 1.e-3 particle per c.c.
+PEC_ambPG 1.381e-17  # 100K
+PEC_ambVX 0.0
+PEC_ambVY 0.0
+PEC_ambVZ 0.0
+PEC_ambBX 0.0
+PEC_ambBY 0.0
+PEC_ambBZ 0.0
+PEC_ambTR0 0.0
 PEC_ambTR1 0.0
+PEC_ambTR2 0.0
+PEC_ambTR3 0.0
+PEC_ambTR4 0.0
+PEC_ambTR5 0.0
+PEC_ambTR6 0.0
 
 # radiation source list
-#
 RT_Nsources 1
 
-# This source has 1e49 monochromatic ionising photons/sec.
+# This source has 5e48 ionising photons/sec.
 RT_position_0_0  0.0e18
 RT_position_0_1  0.0e18
 RT_position_0_2  0.0e18
-RT_strength_0    1.0e49 # photons/sec for monochromatic src.
-RT_Rstar____0    1.0 # (UNUSED) Radius of star in solar radii.
-RT_Tstar____0    1.0 # (UNUSED) Stellar effective temperature.
+RT_strength_0    2.65382e+38 # erg/s for multifrequency source.
+RT_Rstar____0    0.87686    # Radius of star in solar radii.
+RT_Tstar____0    1.0e5       # Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    0  # 0=no, 1=yes.
 RT_update___0    2  # 1=C2Ray update, 2=New update.
-RT_effect___0    2  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
+RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    2  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in state vector)
 RT_EVO_FILE_0    NOFILE
-
 
 ########################
 # stellar wind sources #
 ########################
 WIND_NSRC 0
 
-########################
-# Reference Vector     #
-########################
-refvec0 1.0e-24  # ~1 particles /cc
-refvec1 1.0e-13  # T ~ 10^1K
+
+
+# Reference Vector
+refvec0 1.0e-27  # ~0.001 particles /cc
+refvec1 1.0e-17  # T ~ 10^2K
 refvec2 1.0e6    # v ~ 10 km/s = 1.e6 cm/s
 refvec3 1.0e6    # v 
 refvec4 1.0e6    # v 
@@ -180,6 +171,4 @@ refvec13 1.0
 refvec14 1.0
 refvec15 1.0
 
-
-
-
+# Anything else?  
