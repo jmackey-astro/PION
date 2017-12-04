@@ -858,7 +858,7 @@ int DataIOBase::read_simulation_parameters()
   //
   // Set up tracer parameters, based on ntracer and read them in
   //
-  set_tracer_params();
+  if (!have_setup_tracers) set_tracer_params();
   for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
     p = (*iter);
     err = read_header_param(p);

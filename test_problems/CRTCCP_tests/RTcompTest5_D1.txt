@@ -65,11 +65,11 @@ OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 1
 OutputCriterion 1    # output per n-years=1, per step=0
-OPfreqTime 3.16e14   # in seconds!!! --> 10Myr
+OPfreqTime 3.156e14   # in seconds!!! --> 10Myr
 
 # Start time
 StartTime 0.0
-FinishTime 1.58e16
+FinishTime 1.578e16
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
