@@ -4,7 +4,6 @@
 #
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 3
 coordinates cartesian
 eqn  euler

@@ -4,32 +4,22 @@
 #
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 2
 coordinates cylindrical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver RShybrid
+solver 3
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
+# Which ICs to set up
 ics PhotEvap_MultiClumps_FixMass
-
-# IC filename
-ICfilename IC_RTcompTest7_D2
 # Output FileName Base
 OutputFile    RTcompTest7_D2
 
 # Number and type of tracers.
 ntracer 2
-trtype MPv3__H1+___Colour #ChALL_H1+___e-____ #He1+__He2+__
-InitIons LEAVE  #NO
-Tracer0 0.0
-Tracer1 0.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
+chem_code MPv6
+Tracer000 H1+
+Tracer001 Colour
+InitIons LEAVE
 
 # Which physics to use
 EP_dynamics     1
@@ -43,6 +33,9 @@ EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 50.0
 EP_Max_Temperature 1.0e6
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac 0.0  
+EP_Metal_MassFrac  0.0
 
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -72,17 +65,21 @@ OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 0
 OutputCriterion 1   # output per n-years=1, per step=0
-OPfreqTime 3.16e13   # in seconds!!! --> 1 Myr
+OPfreqTime 3.156e13   # in seconds!!! --> 1 Myr
 
 # Start time
 StartTime 0.0
-FinishTime 4.74e14
+FinishTime 1.789e15
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNout_XPout_YNref_YPout_  #ZNout_ZPout_
+# Boundary Conditions
+BC_XN reflecting
+BC_XP outflow
+BC_YN reflecting
+BC_YP outflow
+BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.666666666666666666666
@@ -157,6 +154,9 @@ PE_SC0_overdensity 199
 PE_SC0_xpos 1.5151515151515151515
 PE_SC0_ypos 0.0
 PE_SC0_zpos 0.5
+PE_SC0_vx  0.0
+PE_SC0_vy  0.0
+PE_SC0_vz  0.0
 PE_SC0_radius 0.2424242424242424242424
 PE_SC0_cloudTR0 0.0
 PE_SC0_cloudTR1 1.0
@@ -164,31 +164,6 @@ PE_SC0_cloudTR2 -1.0
 PE_SC0_cloudTR3 -1.0
 PE_SC0_cloudTR4 -1.0
 PE_SC0_cloudTR5 -1.0
-
-PE_SC1_overdensity 250
-PE_SC1_xpos 0.3
-PE_SC1_ypos 0.48
-PE_SC1_zpos 0.6
-PE_SC1_radius 0.075
-PE_SC1_cloudTR0 1.0e-6
-PE_SC1_cloudTR1 -1.0
-PE_SC1_cloudTR2 -1.0
-PE_SC1_cloudTR3 -1.0
-PE_SC1_cloudTR4 -1.0
-PE_SC1_cloudTR5 -1.0
-
-PE_SC2_overdensity 500
-PE_SC2_xpos 0.5
-PE_SC2_ypos 0.48
-PE_SC2_zpos 0.48
-PE_SC2_radius 0.06
-PE_SC2_cloudTR0 1.0e-6
-PE_SC2_cloudTR1 -1.0
-PE_SC2_cloudTR2 -1.0
-PE_SC2_cloudTR3 -1.0
-PE_SC2_cloudTR4 -1.0
-PE_SC2_cloudTR5 -1.0
-
 
 #############################
 # Ambient Medium Parameters #
@@ -219,8 +194,8 @@ RT_Nsources 1
 RT_position_0_0  -2.0e200
 RT_position_0_1  0.0e18
 RT_position_0_2  0.0e18
-RT_strength_0    5.30624e-05 # erg/s for multifrequency source.
-RT_Rstar____0    3.9381e-22   # Radius of star in solar radii.
+RT_strength_0    5.30765e-05 # erg/s for multifrequency source.
+RT_Rstar____0    3.92144e-22   # Radius of star in solar radii.
 RT_Tstar____0    1.0e5     # Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    1  # 0=no, 1=yes.
