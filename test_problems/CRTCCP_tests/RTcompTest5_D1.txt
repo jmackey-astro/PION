@@ -4,14 +4,12 @@
 #
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 1
 coordinates spherical
 eqn  euler
 solver 3
 
 # Which ICs to set up
-# MHDShockCloud ShockTube...}
 ics PhotoEvaporatingClump
 
 # Output FileName Base

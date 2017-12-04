@@ -4,33 +4,22 @@
 #
 
 ## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 1
 coordinates spherical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver RShybrid
+solver 3
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
+# Which ICs to set up
 ics PhotoEvap_radial
-
-# IC filename
-ICfilename IC_RTcompTest6_D1
 # Output FileName Base
 OutputFile    RTcompTest6_D1
 
 
 # Number and type of tracers.
 ntracer 1
-trtype MPv3__H1+___ #ChALL_H1+___e-____ #He1+__He2+__
-InitIons LEAVE  #NO
-Tracer0 0.0
-Tracer1 0.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
+chem_code MPv6
+Tracer000 H1+
+InitIons LEAVE
 
 # Which physics to use
 EP_dynamics     1
@@ -44,6 +33,9 @@ EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 50.0
 EP_Max_Temperature 1.0e6
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac 0.0  
+EP_Metal_MassFrac  0.0
 
 
 # Smooth Data by n cells? (n<=0 means no).
@@ -82,8 +74,10 @@ FinishTime 9.48e14
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNref_XPout_  #YNref_YPout_ZNref_ZPout_
+# Boundary Conditions
+BC_XN reflecting
+BC_XP outflow
+BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.666666666666666666666
@@ -135,12 +129,12 @@ PEC_ambTR6 0.0
 # No diffuse sources, b/c the medium is so dense they are irrelevant.
 #
 RT_Nsources 1
-# This source has 1e50 ionising photons/sec.
+# This source has 1e50 ionising photons/sec in 13.6-100 eV.
 RT_position_0_0  0.0e18
 RT_position_0_1  0.0e18
 RT_position_0_2  0.0e18
-RT_strength_0    5.30779e39 # erg/s for multifrequency source.
-RT_Rstar____0    3.90293   # Radius of star in solar radii.
+RT_strength_0    5.30765e39 # erg/s for multifrequency source.
+RT_Rstar____0    3.92144   # Radius of star in solar radii.
 RT_Tstar____0    1.0e5     # Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    0  # 0=no, 1=yes.
@@ -148,6 +142,7 @@ RT_update___0    2  # 1=C2Ray update, 2=New update.
 RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    2  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in state vector)
+RT_EVO_FILE_0    NOFILE
 
 ########################
 # stellar wind sources #

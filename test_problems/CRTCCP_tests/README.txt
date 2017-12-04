@@ -1,4 +1,4 @@
-Iliev et al. cosmological radiative transfer code comparison tests, with dynamics (paper 2).
+Iliev et al. (2009) cosmological radiative transfer code comparison tests, with dynamics (paper 2).
 
-Test 5 seems to work with the updated code.
-Tests 6 and 7 have not been tested yet.
+All 3 dynamical tests from paper II seem to work with the updated code.
+
