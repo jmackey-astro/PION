@@ -12,6 +12,7 @@
 /// - 2015.01.08 JM: Moved old grid (v1) definition from global.h to
 ///    this file.
 /// - 2015.07.06 JM: got rid of GEOMETRIC_GRID ifdef
+/// - 2017.12.09 JM: updated function args for boundary data.
 
 
 #ifndef GRID_BASE_CLASS_H
@@ -169,6 +170,7 @@ class GridBaseClass {
   /// update on them.
   ///
   virtual int TimeUpdateExternalBCs(
+    const double,   ///< current simulation time
     const int, ///< Current step number in the timestep.
     const int  ///< Maximum step number in timestep.
     )=0;
@@ -178,6 +180,7 @@ class GridBaseClass {
   /// appropriate time update on them.
   ///
   virtual int TimeUpdateInternalBCs(
+    const double,   ///< current simulation time
     const int, ///< Current step number in the timestep.
     const int  ///< Maximum step number in timestep.
     )=0;
