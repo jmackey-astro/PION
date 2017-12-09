@@ -32,6 +32,7 @@
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.10.19 JM: changed extra_data to double b/c Vshell is too large.
 /// - 2016.02.12 JM: removed GRIDV2 flag.
+/// - 2017.12.09 JM: Added ndim, nvar to get rid of SimPM references.
 
 #ifndef CELL_INTERFACE_H
 #define CELL_INTERFACE_H
@@ -151,6 +152,16 @@ class cell_interface {
   /// Returns the size of a cell in the internal integer units (2).
   ///
   inline int get_integer_cell_size() {return cell_size_int_units;}
+
+  ///
+  /// Set the number of spatial dimensions.
+  ///
+  void set_ndim(const int);
+
+  ///
+  /// Set length of state vector.
+  ///
+  void set_nvar(const int);
 
   ///
   /// Set the cell size (for cells that are cubes).
@@ -498,6 +509,8 @@ class cell_interface {
  private:
   bool minimal_cell; ///< default is false, set to true if analysing sims.
   double dxo2;  ///< Half a cell width.
+  int ndim;  ///< dimensionality of grid.
+  int nvar;  ///< number of variables in state vector.
   double *xmin; ///< The global Xmin of the domain, for counting integer positions from.
   double int_converter;     ///< Number of integers per cell width.
   int cell_size_int_units;  ///< size of a cell in integer units (==2)

@@ -57,6 +57,7 @@
 /// - 2016.05.02 JM: fixed bug: parallel grid had no SIM_Xmin()/max/
 ///    range() functions, so it was returning G_xmin!
 /// - 2017.11.07-22 JM: updating boundary setup.
+/// - 2017.12.09 JM: updated function args to get rid of SimPM references.
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -179,13 +180,14 @@ class UniformGrid
   ///
   cell *G_fpt_all;
 
-  const int G_ndim; ///< Dimensionality of Grid; public b/c it's constant so can't be messed with.
-  const int G_nvar; ///< Number of variables in state vector;  public b/c it's constant so can't be messed with.
-  const int G_eqntype; ///< Which equations we are using (used in reflective BCs to get it right).
-  int *G_ng;       ///< number of grid points in each direction.
-
-  ///< Total number of grid points.
-  size_t G_ncell;
+  const int G_ndim;   ///< Dimensionality of Grid
+  const int G_nvar;   ///< Number of variables in state vector
+  const int G_eqntype; ///< Which equations we are using.
+  int G_coordsys;     ///< coordinate system (cart/cyl/sph)
+  int G_ntracer;      ///< number of tracer fields.
+  int G_ftr;          ///< index of first tracer field.
+  int *G_ng;          ///< number of grid points in each direction.
+  size_t G_ncell;   ///< Total number of grid points.
   /// Total number of grid points, including boundary points.
   size_t G_ncell_all;
 
@@ -197,14 +199,13 @@ class UniformGrid
   int *G_ixmin;  ///< Min value of x,y,z in domain (integer coordinates).
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
 
-  double G_dx;     ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
-  double G_dA;     ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
-  double G_dV;     ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
+  double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
+  double G_dA;  ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
+  double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
 
   double *Sim_range; ///< Size of full domain in x,y,z-direction.
   double *Sim_xmin;  ///< Min value of x,y,z in full domain.
   double *Sim_xmax;  ///< Max value of x,y,z in full domain.
-
   int *Sim_irange; ///< Size of full domain in x,y,z-direction (integer coordinates).
   int *Sim_ixmin;  ///< Min value of x,y,z in full domain (integer coordinates).
   int *Sim_ixmax;  ///< Max value of x,y,z in full domain (integer coordinates).
@@ -238,13 +239,15 @@ class UniformGrid
   ///
   /// Assigns data to each boundary.  Called by SetupBCs().
   ///
-  virtual int assign_boundary_data();
+  virtual int assign_boundary_data(
+        const double   ///< current simulation time (for DMACH)
+        );
 
   /// Assigns data to a periodic boundary.
-  virtual int BC_assign_PERIODIC(  boundary_data *);
+  virtual int BC_assign_PERIODIC( boundary_data *);
 
   /// Assigns data on an outflow (zero gradient) boundary.
-  int         BC_assign_OUTFLOW(   boundary_data *);
+  int         BC_assign_OUTFLOW( boundary_data *);
 
   ///
   /// Assigns data on a one-way outflow (zero gradient) boundary.
@@ -252,22 +255,22 @@ class UniformGrid
   /// is onto domain then I set the boundary cells to have zero normal 
   /// velocity.
   ///
-  int         BC_assign_ONEWAY_OUT(boundary_data *);
+  int         BC_assign_ONEWAY_OUT( boundary_data *);
 
   /// Assigns data on an inflow (fixed) boundary.
-  int         BC_assign_INFLOW(    boundary_data *);
+  int         BC_assign_INFLOW( boundary_data *);
 
   /// Assigns data on a reflecting boundary.
-  int         BC_assign_REFLECTING(boundary_data *);
+  int         BC_assign_REFLECTING( boundary_data *);
 
   /// Assigns data on a fixed boundary.
-  int         BC_assign_FIXED(     boundary_data *);
+  int         BC_assign_FIXED( boundary_data *);
 
   ///
   /// Sets some boundary cells to be fixed to the Jet inflow
   /// condition.
   ///
-  virtual int BC_assign_JETBC(     boundary_data *);
+  virtual int BC_assign_JETBC( boundary_data *);
 
   ///
   /// Assigns data on a JetReflect boundary, which is the same
@@ -279,10 +282,13 @@ class UniformGrid
   int         BC_assign_JETREFLECT(boundary_data *);
 
   /// Assigns data on a boundary for the Double Mach Reflection Problem.
-  int         BC_assign_DMACH(     boundary_data *);
+  int         BC_assign_DMACH(
+        const double,   ///< current simulation time (for DMACH)
+        boundary_data *
+        );
 
   /// Assigns data on The other DMR test problem boundary
-  virtual int BC_assign_DMACH2(    boundary_data *);
+  virtual int BC_assign_DMACH2( boundary_data *);
 
   /// Assigns data for the Radiative Shock Test XN boundary.
   virtual int BC_assign_RADSHOCK(  boundary_data *);
@@ -296,7 +302,10 @@ class UniformGrid
   /// the domain is given fixed values corresponding to a freely expanding wind
   /// from a cell-vertex-located source.
   ///
-  int         BC_assign_STWIND(    boundary_data *);
+  int         BC_assign_STWIND(
+        const double,   ///< current simulation time
+        boundary_data *
+        );
 
   ///
   /// Add cells to both the Wind class, and to the boundary data list
@@ -312,9 +321,7 @@ class UniformGrid
   /// Add internal boundary of a solid dense wall for the StarBench
   /// shadowing/heating/cooling test by P. Tremblin.
   ///
-  int   BC_assign_STARBENCH1(
-          boundary_data *
-          );
+  int   BC_assign_STARBENCH1( boundary_data *);
 
   ///
   /// Update internal boundary of a solid dense wall for the StarBench
@@ -391,6 +398,7 @@ class UniformGrid
 
   /// Updates data on the double mach reflection (DMR) boundary.
   int         BC_update_DMACH(
+        const double,   ///< current simulation time (for DMACH)
         boundary_data *, ///< Boundary to update.
         const int,  ///< current fractional step being taken.
         const int   ///< final step.
@@ -424,6 +432,7 @@ class UniformGrid
   /// stellar wind class SW
   ///
   int         BC_update_STWIND(
+        const double,   ///< current simulation time
         boundary_data *, ///< Boundary to update.
         const int,  ///< current fractional step being taken.
         const int   ///< final step.
@@ -631,6 +640,7 @@ class UniformGrid
   /// time update on them.
   ///
   virtual int TimeUpdateExternalBCs(
+        const double,   ///< current simulation time
         const int, ///< Current step number in the timestep.
         const int  ///< Maximum step number in timestep.
         );
@@ -640,6 +650,7 @@ class UniformGrid
   /// the appropriate time update on them.
   ///
   virtual int TimeUpdateInternalBCs(
+        const double,   ///< current simulation time
         const int, ///< Current step number in the timestep.
         const int  ///< Maximum step number in timestep.
         );

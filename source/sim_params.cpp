@@ -14,7 +14,7 @@
 #include "tools/mem_manage.h"
 using namespace std;
 
-class SimParams SimPM;
+//class SimParams SimPM;
 class JetParams JP;
 class Units uc;
 struct stellarwind_list SWP;

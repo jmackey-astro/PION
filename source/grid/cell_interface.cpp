@@ -27,6 +27,7 @@
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).  Changed int_converter depending on pion_flt.
+/// - 2017.12.09 JM: Added ndim, nvar to get rid of SimPM references.
 
 #include "cell_interface.h"
 #include "tools/reporting.h"
@@ -53,6 +54,8 @@ cell_interface::cell_interface()
 {
   minimal_cell = false;
   dxo2 = -HUGEVALUE;
+  ndim = -1;
+  nvar = -1;
   xmin = 0;
   //
   // this means I can have grids with up to 5e5 zones before it fails...
@@ -146,12 +149,35 @@ void cell_interface::set_dx(const double dx)
 // ##################################################################
 
 
+void cell_interface::set_ndim(const int nd)
+{
+  ndim = nd;
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+void cell_interface::set_nvar(const int nv)
+{
+  nvar = nv;
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 void cell_interface::set_xmin(const double *xm)
 {
   if (!xmin) {
-    xmin = new double [SimPM.ndim];
+    xmin = new double [ndim];
   }
-  for (int v=0; v<SimPM.ndim; v++) {
+  for (int v=0; v<ndim; v++) {
     xmin[v] = xm[v];
   }
   return;
@@ -288,15 +314,10 @@ cell * cell_interface::new_cell()
   // If this is the first cell we are assigning, make sure we have set
   // dx/2 and the xmin pointer correctly.
   //
-  if (dxo2<0.0) {
-    rep.error("Set dx before creating cells!",dxo2);
-    dxo2 = SimPM.dx/2.0;
-    xmin = SimPM.Xmin;
-#ifdef TESTING
-    cout <<"dx/2="<<dxo2<<", dx="<<SimPM.dx<<"   ";
-    rep.printVec("CELL INTERFACE, xmin",xmin,SimPM.ndim);
-#endif // TESTING
-  }
+  if (dxo2<0.0) rep.error("Cell Interface: set dx",dxo2);
+  if (ndim<0) rep.error("Cell Interface: set ndim",ndim);
+  if (nvar<0) rep.error("Cell Interface: set nvar",nvar);
+
   cell *c=0;
   c = mem.myalloc(c,1);
   c->pos = 0;
@@ -305,13 +326,13 @@ cell * cell_interface::new_cell()
   //
   // Allocate memory and initialise to zero.
   //
-  c->P   = mem.myalloc(c->P,  SimPM.nvar);
-  c->ngb = mem.myalloc(c->ngb, 2*SimPM.ndim);
-  c->pos = mem.myalloc(c->pos, SimPM.ndim);
+  c->P   = mem.myalloc(c->P,  nvar);
+  c->ngb = mem.myalloc(c->ngb, 2*ndim);
+  c->pos = mem.myalloc(c->pos, ndim);
 
-  for (int v=0;v<SimPM.ndim;v++) c->pos[v]=0;
-  for (int v=0;v<SimPM.nvar;v++) c->P[v] = 0.0;
-  for (int v=0; v<2*SimPM.ndim; v++) c->ngb[v] = 0;
+  for (int v=0;v<ndim;v++) c->pos[v]=0;
+  for (int v=0;v<nvar;v++) c->P[v] = 0.0;
+  for (int v=0; v<2*ndim; v++) c->ngb[v] = 0;
   c->npt = 0;
   c->npt_all = 0;
   c->id  = -9999; c->isedge=-999; c->isbd=c->isgd=false;
@@ -327,9 +348,9 @@ cell * cell_interface::new_cell()
     c->dU = 0;
   }
   else {
-    c->Ph  = mem.myalloc(c->Ph, SimPM.nvar);
-    c->dU  = mem.myalloc(c->dU, SimPM.nvar);
-    for (int v=0;v<SimPM.nvar;v++) c->Ph[v] = c->dU[v] = 0.0;
+    c->Ph  = mem.myalloc(c->Ph, nvar);
+    c->dU  = mem.myalloc(c->dU, nvar);
+    for (int v=0;v<nvar;v++) c->Ph[v] = c->dU[v] = 0.0;
   }
 
   //cout <<"Nxd="<<N_extra_data<<"\n";
@@ -373,10 +394,10 @@ void cell_interface::set_pos(
   //
   // Set position integer according to Xmin+i*DX/2=x
   //
-  for (int v=0;v<SimPM.ndim;v++) {
+  for (int v=0;v<ndim;v++) {
     c->pos[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
   }
-  //  rep.printVec("int-pos",c->pos,SimPM.ndim);
+  //  rep.printVec("int-pos",c->pos,ndim);
   return;
 }
 
@@ -394,10 +415,10 @@ void cell_interface::set_pos(
   // This function assumes a clever person has set p_in to have these values!
   // If not, the code may fail catastrophically.
   //
-  for (int v=0;v<SimPM.ndim;v++) {
+  for (int v=0;v<ndim;v++) {
     c->pos[v] = p_in[v];
   }
-  //  rep.printVec("int-pos",c->pos,SimPM.ndim);
+  //  rep.printVec("int-pos",c->pos,ndim);
   return;
 }
 
@@ -410,7 +431,7 @@ void cell_interface::get_dpos(
       double *p_out ///< array to write position into.
       )
 {
-  for (int v=0;v<SimPM.ndim;v++)
+  for (int v=0;v<ndim;v++)
     p_out[v] = xmin[v] +c->pos[v]*dxo2;
   return;
 }
@@ -436,7 +457,7 @@ void cell_interface::get_ipos(
       int *ipos_out  ///< array to write integer position into.
       )
 {
-  for (int v=0;v<SimPM.ndim;v++)
+  for (int v=0;v<ndim;v++)
     ipos_out[v] = c->pos[v];
   return;
 }  
@@ -464,7 +485,7 @@ void cell_interface::get_ipos_vec(
 {
   if (dxo2<0.0)
     rep.error("set up grid before trying to get integer positions!!!",dxo2);
-  for (int v=0;v<SimPM.ndim;v++) {
+  for (int v=0;v<ndim;v++) {
     if (fabs(p_in[v])>VERY_LARGE_VALUE)
       p_out[v] = -1234567;
     else
@@ -488,7 +509,7 @@ void cell_interface::get_ipos_as_double(
 {
   if (dxo2<0.0)
     rep.error("set up grid before trying to get integer positions!!!",dxo2);
-  for (int v=0;v<SimPM.ndim;v++) {
+  for (int v=0;v<ndim;v++) {
     if (fabs(p_in[v])>VERY_LARGE_VALUE)
       p_out[v] = -VERY_LARGE_VALUE;
     else
@@ -507,7 +528,7 @@ void cell_interface::get_dpos_vec(
       double *p_out    ///< physical position (input)
       )
 {
-  for (int v=0;v<SimPM.ndim;v++)
+  for (int v=0;v<ndim;v++)
         p_out[v] = xmin[v] +(p_in[v])*dxo2;
   return;
 }
@@ -522,13 +543,13 @@ void cell_interface::copy_cell(
     cell *c2
     )
 {
-  for (int i=0;i<SimPM.ndim;i++) c2->pos[i] = c1->pos[i];
-  for (int v=0;v<SimPM.nvar;v++) {
+  for (int i=0;i<ndim;i++) c2->pos[i] = c1->pos[i];
+  for (int v=0;v<nvar;v++) {
     c2->P[v]  = c1->P[v];
     c2->Ph[v] = c1->Ph[v];
     c2->dU[v] = c1->dU[v];
   }
-  for (int i=0;i<2*SimPM.ndim;i++) c2->ngb[i]=c1->ngb[i];
+  for (int i=0;i<2*ndim;i++) c2->ngb[i]=c1->ngb[i];
   c2->npt = c1->npt;
   c2->npt_all = c1->npt_all;
   c2->id = c1->id;
@@ -558,15 +579,15 @@ void cell_interface::print_cell(const cell *c)
     cout <<"\t";
     rep.printVec("extra_data[]",c->extra_data,N_extra_data);
   }
-  cout <<"\t"; rep.printVec("pos[]",c->pos,SimPM.ndim);
-  cout <<"\t"; double p[SimPM.ndim];
-  get_dpos(c,p); rep.printVec("dpos[]",p,SimPM.ndim);
-  cout <<"\t"; rep.printVec("P[]  ",c->P,SimPM.nvar);
+  cout <<"\t"; rep.printVec("pos[]",c->pos,ndim);
+  cout <<"\t"; double p[ndim];
+  get_dpos(c,p); rep.printVec("dpos[]",p,ndim);
+  cout <<"\t"; rep.printVec("P[]  ",c->P,nvar);
   if (!minimal_cell) {
-    cout <<"\t"; rep.printVec("Ph[] ",c->Ph,SimPM.nvar);
-    cout <<"\t"; rep.printVec("dU[] ",c->dU,SimPM.nvar);
+    cout <<"\t"; rep.printVec("Ph[] ",c->Ph,nvar);
+    cout <<"\t"; rep.printVec("dU[] ",c->dU,nvar);
   }
-  cout <<"\t"; rep.printVec("ngb[]",c->ngb,2*SimPM.ndim);
+  cout <<"\t"; rep.printVec("ngb[]",c->ngb,2*ndim);
   return;
 }
 

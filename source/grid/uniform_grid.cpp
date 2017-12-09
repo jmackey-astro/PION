@@ -95,6 +95,7 @@
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).
 /// - 2017.11.07-22 JM: updating boundary setup.
+/// - 2017.12.09 JM: got rid of SimPM references.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -144,6 +145,7 @@ UniformGrid::UniformGrid(
   rep.printVec("\tXmax",g_xp,nd);
   rep.printVec("\tNpt ",g_nc,nd);
 #endif
+  G_coordsys = COORD_CRT;  // Cartesian Coordinate system
 
   //
   // Allocate arrays for dimensions of grid.
@@ -764,6 +766,8 @@ int UniformGrid::set_cell_size()
   // Set Cell dx in cell interface class, and also xmin.
   //
   CI.set_dx(G_dx);
+  CI.set_ndim(G_ndim);
+  CI.set_nvar(G_nvar);
   CI.set_xmin(Sim_xmin);
 
   if(G_ndim>1) {
@@ -915,6 +919,11 @@ int UniformGrid::SetupBCs(
 {
   if (BC_setBCtypes(par) !=0)
     rep.error("UniformGrid::setupBCs() Failed to set types of BC",1);
+  //
+  // Set ntracer and ftr, bsed on SimParams
+  //
+  G_ntracer = par.ntracer;
+  G_ftr     = par.ntracer;
   
   ///
   /// \section Ordering of Cells in Boundary data
@@ -1114,7 +1123,7 @@ int UniformGrid::SetupBCs(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  int err = assign_boundary_data();
+  int err = assign_boundary_data(par.simtime);
   // ----------------------------------------------------------------
 
   return err;
@@ -1127,7 +1136,9 @@ int UniformGrid::SetupBCs(
 
 
 
-int UniformGrid::assign_boundary_data()
+int UniformGrid::assign_boundary_data(
+        const double simtime  ///< current simulation time (for DMACH)
+        )
 {
   // ----------------------------------------------------------------
   int err=0;
@@ -1144,11 +1155,11 @@ int UniformGrid::assign_boundary_data()
      case FIXED:      err += BC_assign_FIXED(     &BC_bd[i]); break;
      case JETBC:      err += BC_assign_JETBC(     &BC_bd[i]); break;
      case JETREFLECT: err += BC_assign_JETREFLECT(&BC_bd[i]); break;
-     case DMACH:      err += BC_assign_DMACH(     &BC_bd[i]); break;
+     case DMACH:      err += BC_assign_DMACH(simtime, &BC_bd[i]); break;
      case DMACH2:     err += BC_assign_DMACH2(    &BC_bd[i]); break;
      case RADSHOCK:   err += BC_assign_RADSHOCK(  &BC_bd[i]); break;
      case RADSH2:     err += BC_assign_RADSH2(    &BC_bd[i]); break;
-     case STWIND:     err += BC_assign_STWIND(    &BC_bd[i]); break;
+     case STWIND:     err += BC_assign_STWIND(simtime, &BC_bd[i]); break;
      case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
@@ -1331,7 +1342,11 @@ int UniformGrid::BC_setBCtypes(
 
 
 
-int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
+int UniformGrid::TimeUpdateInternalBCs(
+        const double simtime,   ///< current simulation time
+        const int cstep,
+        const int maxstep
+        )
 {
   struct boundary_data *b;
   int i=0; int err=0;
@@ -1340,7 +1355,7 @@ int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
     switch (b->itype) {
      case RADSHOCK:   err += BC_update_RADSHOCK(   b, cstep, maxstep); break;
      case RADSH2:     err += BC_update_RADSH2(     b, cstep, maxstep); break;
-     case STWIND:     err += BC_update_STWIND(     b, cstep, maxstep); break;
+     case STWIND:     err += BC_update_STWIND(simtime, b, cstep, maxstep); break;
     case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW: case REFLECTING:
     case FIXED: case JETBC: case JETREFLECT: case DMACH: case DMACH2: case BCMPI:
     case STARBENCH1:
@@ -1365,7 +1380,11 @@ int UniformGrid::TimeUpdateInternalBCs(const int cstep, const int maxstep)
 
 
 
-int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
+int UniformGrid::TimeUpdateExternalBCs(
+        const double simtime,   ///< current simulation time
+        const int cstep,
+        const int maxstep
+        )
 {
   // TEMP_FIX
   //BC_printBCdata(&BC_bd[0]);
@@ -1384,7 +1403,7 @@ int UniformGrid::TimeUpdateExternalBCs(const int cstep, const int maxstep)
     case FIXED:      err += BC_update_FIXED(      b, cstep, maxstep); break;
     case JETBC:      err += BC_update_JETBC(      b, cstep, maxstep); break;
     case JETREFLECT: err += BC_update_JETREFLECT( b, cstep, maxstep); break;
-    case DMACH:      err += BC_update_DMACH(      b, cstep, maxstep); break;
+    case DMACH:      err += BC_update_DMACH(simtime, b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
     case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
     case RADSHOCK: case RADSH2: case STWIND: case BCMPI:
@@ -2121,7 +2140,7 @@ int UniformGrid::BC_assign_JETBC(     boundary_data *b)
     //
     // Axi-symmetry first -- this is relatively easy to set up.
     //
-    if (G_ndim==2 && SimPM.coord_sys==COORD_CYL) {
+    if (G_ndim==2 && G_coordsys==COORD_CYL) {
       c = FirstPt();
       do {
         temp=c;
@@ -2154,7 +2173,7 @@ int UniformGrid::BC_assign_JETBC(     boundary_data *b)
     //
     // 3D now, more difficult.
     //
-    else if (G_ndim==3 && SimPM.coord_sys==COORD_CRT) {
+    else if (G_ndim==3 && G_coordsys==COORD_CRT) {
       double dist=0.0;
       c = FirstPt();
       //
@@ -2370,7 +2389,10 @@ int UniformGrid::BC_update_JETREFLECT(
 
 
 
-int UniformGrid::BC_assign_DMACH(     boundary_data *b)
+int UniformGrid::BC_assign_DMACH(
+        const double simtime,   ///< current simulation time (for DMACH)
+        boundary_data *b
+        )
 {
 #ifdef TESTING
   cout <<"Setting up DMACH boundary... starting.\n";
@@ -2391,7 +2413,7 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
   b->refval[VX] = 0.0;
   b->refval[VY] = 0.0;
   b->refval[VZ] = 0.0;
-  for (int v=SimPM.ftr; v<G_nvar; v++) b->refval[v] = -1.0;
+  for (int v=G_ftr; v<G_nvar; v++) b->refval[v] = -1.0;
 
   //
   // Run through all boundary cells, and give them either upstream or
@@ -2404,7 +2426,7 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
     //
     // This is the boundary position:
     //
-    bpos =  10.0*SimPM.simtime/sin(M_PI/3.0)
+    bpos =  10.0*simtime/sin(M_PI/3.0)
           + 1.0/6.0
           + CI.get_dpos(*bpt,YY)/tan(M_PI/3.0);
 
@@ -2414,13 +2436,13 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
       (*bpt)->P[VX] = 7.14470958;
       (*bpt)->P[VY] = -4.125;
       (*bpt)->P[VZ] = 0.0;
-      for (int v=SimPM.ftr; v<G_nvar; v++) (*bpt)->P[v]  = 1.0;
+      for (int v=G_ftr; v<G_nvar; v++) (*bpt)->P[v]  = 1.0;
       (*bpt)->Ph[RO] = 8.0;
       (*bpt)->Ph[PG] = 116.5;
       (*bpt)->Ph[VX] = 7.14470958;
       (*bpt)->Ph[VY] = -4.125;
       (*bpt)->Ph[VZ] = 0.0;
-      for (int v=SimPM.ftr; v<G_nvar; v++) (*bpt)->Ph[v] = 1.0;
+      for (int v=G_ftr; v<G_nvar; v++) (*bpt)->Ph[v] = 1.0;
     }
     else {
       for (int v=0;v<G_nvar;v++) (*bpt)->P[v]  = b->refval[v];
@@ -2447,6 +2469,7 @@ int UniformGrid::BC_assign_DMACH(     boundary_data *b)
 
 
 int UniformGrid::BC_update_DMACH(
+      const double simtime,   ///< current simulation time
       struct boundary_data *b,
       const int cstep,
       const int maxstep
@@ -2458,7 +2481,7 @@ int UniformGrid::BC_update_DMACH(
     //
     // This is the boundary position:
     //
-    bpos =  10.0*SimPM.simtime/sin(M_PI/3.0)
+    bpos =  10.0*simtime/sin(M_PI/3.0)
           + 1.0/6.0
           + CI.get_dpos(*c,YY)/tan(M_PI/3.0);
 
@@ -2468,7 +2491,7 @@ int UniformGrid::BC_update_DMACH(
       (*c)->Ph[VX] = 7.14470958;
       (*c)->Ph[VY] = -4.125;
       (*c)->Ph[VZ] = 0.0;
-      for (int v=SimPM.ftr; v<G_nvar; v++) (*c)->Ph[v] = 1.0;
+      for (int v=G_ftr; v<G_nvar; v++) (*c)->Ph[v] = 1.0;
     }
     else {
       for (int v=0;v<G_nvar;v++) (*c)->Ph[v] = b->refval[v];
@@ -2509,7 +2532,7 @@ int UniformGrid::BC_assign_DMACH2(    boundary_data *b)
   b->refval[VX] = 7.14470958;
   b->refval[VY] = -4.125;
   b->refval[VZ] = 0.0;
-  for (int v=SimPM.ftr; v<G_nvar; v++) b->refval[v] = 1.0;
+  for (int v=G_ftr; v<G_nvar; v++) b->refval[v] = 1.0;
 
   //
   // Now have to go from first point onto boundary and across to
@@ -2788,7 +2811,10 @@ int UniformGrid::BC_update_RADSH2(   struct boundary_data *b,
 // corresponding to a freely expanding wind from a
 // cell-vertex-located source.
 //
-int UniformGrid::BC_assign_STWIND(boundary_data *b)
+int UniformGrid::BC_assign_STWIND(
+      const double simtime,   ///< current simulation time
+      boundary_data *b
+      )
 {
   //
   // Check that we have an internal boundary struct, and that we have
@@ -2887,7 +2913,7 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
         SWP.params[isw]->evolving_wind_file,
         SWP.params[isw]->enhance_mdot,
         SWP.params[isw]->time_offset,
-        SimPM.simtime,
+        simtime,
         SWP.params[isw]->update_freq,
         SWP.params[isw]->t_scalefactor
         );
@@ -2907,7 +2933,7 @@ int UniformGrid::BC_assign_STWIND(boundary_data *b)
   // Now we should have set everything up, so we assign the boundary
   // cells with their boundary values.
   //
-  err += BC_update_STWIND(b,0,0);
+  err += BC_update_STWIND(simtime, b,0,0);
   cout <<"\tFinished setting up wind parameters\n";
   cout <<"------ DONE SETTING UP STELLAR WIND CLASS ----------\n\n";
   return err;
@@ -2977,6 +3003,7 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
 // otherwise with a (slower) call to the  stellar wind class SW
 //
 int UniformGrid::BC_update_STWIND(
+        const double simtime,   ///< current simulation time
         boundary_data *b, ///< Boundary to update.
         const int ,  ///< current fractional step being taken.
         const int    ///< final step (not needed b/c fixed BC).
@@ -2989,7 +3016,7 @@ int UniformGrid::BC_update_STWIND(
   //
   int err=0;
   for (int id=0;id<Wind->Nsources();id++) {
-    err += Wind->set_cell_values(this, id,SimPM.simtime);
+    err += Wind->set_cell_values(this, id,simtime);
   }
 
   return err;
@@ -3037,15 +3064,11 @@ int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
         dpos[YY]<8.0235e18 &&
         dpos[XX]<Sim_xmin[XX]+G_dx) {
       column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-      for (int s=0; s<SimPM.RS.Nsources; s++) {
-        CI.set_col((*bpt), s, &column);
-      }
+      CI.set_col((*bpt), 0, &column);
     }
     else {
       column = 0.00; // zero optical depth outside the barrier
-      for (int s=0; s<SimPM.RS.Nsources; s++) {
-        CI.set_col((*bpt), s, &column);
-      }
+      CI.set_col((*bpt), 0, &column);
     }
     ++bpt;
     ct++;
@@ -3139,15 +3162,13 @@ int UniformGrid::BC_update_STARBENCH1(
     // relevant region for the first radiation source.
     //
     CI.get_dpos((*c),dpos);
-    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<SimPM.Xmin[XX]+G_dx) {
+    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<Sim_xmin[XX]+G_dx) {
       column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-      for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*c), s, &column);
+      CI.set_col((*c), 0, &column);
     }
     else {
       column = 0.00; // zero optical depth outside the barrier
-      for (int s=0; s<SimPM.RS.Nsources; s++)
-        CI.set_col((*c), s, &column);
+      CI.set_col((*c), 0, &column);
     }
 
 
@@ -3503,6 +3524,7 @@ uniform_grid_cyl::uniform_grid_cyl(
 #endif
   if (G_ndim!=2)
     rep.error("Need to write code for !=2 dimensions",G_ndim);
+  G_coordsys = COORD_CYL;  // Cylindrical Coordinate system
 
 #ifdef TESTING
   cout <<"cylindrical grid: dr="<<G_dx<<"\n";
@@ -3914,6 +3936,7 @@ uniform_grid_sph::uniform_grid_sph(
 #endif
   if (G_ndim!=1)
     rep.error("Need to write code for >1 dimension",G_ndim);
+  G_coordsys = COORD_SPH;  // Spherical Coordinate system
 
 #ifdef TESTING
   cout <<"spherical grid: dr="<<G_dx<<"\n";
