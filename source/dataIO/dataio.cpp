@@ -877,7 +877,7 @@ int DataIOBase::read_simulation_parameters()
   // Read Jet parameters if doing a JET SIM
   //
   if (JP.jetic) {
-    set_jet_pm_params();
+    if (!have_setup_jet_pm) set_jet_pm_params();
     if (jet_pm.empty())
       rep.error("Jet parameter list is empty -- make sure it populates itself!!",0);
     //
