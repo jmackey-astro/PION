@@ -236,6 +236,7 @@ cell_interface.o \
 comm_mpi.o \
 comm_files.o \
 stellar_wind_BC.o \
+	stellar_wind_angle.o \
 uniform_grid.o \
 uniform_grid_pllel.o \
 file_status.o \
@@ -311,8 +312,12 @@ constants.o: constants.cpp ${GLOBAL}
 sim_params.o: 	  sim_params.cpp ${GLOBAL}
 
 cell_interface.o: cell_interface.cpp  cell_interface.h ${GLOBAL}
-uniform_grid.o:   uniform_grid.cpp  uniform_grid.h  ${GLOBAL}  stellar_wind_BC.h
-uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} comms.h
+uniform_grid.o:   uniform_grid.cpp  uniform_grid.h  ${GLOBAL} \
+    stellar_wind_BC.h stellar_wind_angle.h  \
+    VectorOps.h VectorOps_spherical.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} \
+     comms.h stellar_wind_angle.h stellar_wind_BC.h \
+    VectorOps.h VectorOps_spherical.h
 
 VectorOps.o:  VectorOps.cpp  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o:  VectorOps_spherical.cpp  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
@@ -321,7 +326,7 @@ VectorOps_spherical.o:  VectorOps_spherical.cpp  coord_sys/VectorOps_spherical.h
 
 file_status.o: dataIO/file_status.cpp dataIO/file_status.h
 dataio.o:       dataIO/dataio.cpp  dataIO/dataio.h  ${GLOBAL}  solver_eqn_base.h  dataIO/readparams.h \
-		stellar_wind_BC.h dataIO/file_status.h
+		stellar_wind_BC.h  stellar_wind_angle.h dataIO/file_status.h
 dataio_silo.o:  dataIO/dataio_silo.cpp  dataIO/dataio_silo.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h  dataIO/file_status.h
 dataio_fits.o:  dataIO/dataio_fits.cpp  dataIO/dataio_fits.h  dataIO/dataio.h ${GLOBAL}  solver_eqn_base.h \
 		solver_eqn_hydro_adi.h  solver_eqn_hydro_iso.h  dataIO/file_status.h
@@ -334,7 +339,8 @@ comm_files.o:  comm_files.cpp  comm_files.h  comms.h  ${GLOBAL}
 
 dataio_silo_utility.o:  dataIO/dataio_silo_utility.cpp  dataIO/dataio_silo_utility.h  dataIO/dataio_silo.h  dataIO/dataio.h  ${GLOBAL}
 stellar_wind_BC.o: stellar_wind_BC.cpp  stellar_wind_BC.h ${GLOBAL}
-
+stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
+  tools/interpolate.h ${GLOBAL}
 ######################
 # MICROPHYSICS STUFF #
 ######################
