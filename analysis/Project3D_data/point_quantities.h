@@ -13,6 +13,7 @@
 ///  class.
 /// - 2015.08.19 JM: Added get_point_RotationMeasure()
 /// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #ifndef POINT_QUANTITIES_H
 #define POINT_QUANTITIES_H
@@ -54,12 +55,30 @@ class point_quantities {
       );
 
   ///
-  /// Get the H^0 number density, using SimPM.MP.H_MassFrac to
-  /// convert from mass density to number density.
+  /// Get the e^- number density, using Microphysics function to get
+  /// the electron number density at each simulation point and then
+  /// interpolating.
+  ///
+  double get_point_electron_numberdensity(
+          const struct point_4cellavg *
+          );
+
+  ///
+  /// Get the H^+ number density, using Microphysics function to get
+  /// the ionized H number density at each simulation point and then
+  /// interpolating.
+  ///
+  double get_point_ionizedH_numberdensity(
+          const struct point_4cellavg *
+          );
+
+  ///
+  /// Get the H^0 number density, using Microphysics function to get
+  /// the neutral H number density at each simulation point and then
+  /// interpolating.
   ///
   double get_point_neutralH_numberdensity(
-          const struct point_4cellavg *, ///< point
-          const int                      ///< ifrac index in prim.vec.
+          const struct point_4cellavg *
           );
 
   ///
@@ -150,7 +169,6 @@ class point_quantities {
   ///
   double get_point_RotationMeasure(
       struct point_4cellavg *, ///< pt
-      const int, ///< ifrac
       const int, ///< bx index (image coords)
       const int, ///< bz index (image coords)
       const int, ///< sign(xx)
@@ -187,8 +205,7 @@ class point_quantities {
   /// interpolation.  Returns value in cm^{-6}
   ///
   double get_point_EmissionMeasure(
-          const struct point_4cellavg *, ///< point
-          const int                      ///< ifrac index in prim.vec.
+          const struct point_4cellavg *
           );
 
   ///
@@ -196,8 +213,7 @@ class point_quantities {
   /// interpolation.  Returns value in MJy/sr/cm.
   ///
   double get_point_Bremsstrahlung20cm(
-          const struct point_4cellavg *, ///< point
-          const int                      ///< ifrac index in prim.vec.
+          const struct point_4cellavg *
           );
 
 };

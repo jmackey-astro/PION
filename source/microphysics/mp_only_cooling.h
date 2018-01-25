@@ -19,6 +19,7 @@
 /// - 2013.02.14 JM: Tidied up file.
 /// - 2013.08.12 JM: added get_recombination_rate() public function.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #ifndef MP_ONLY_COOLING_H
 #define MP_ONLY_COOLING_H
@@ -197,7 +198,29 @@ class mp_only_cooling
     cout <<"get_recombination_rate: mp_only_cooling has no ions!\n";
     return 1.0e99;
   }
-  
+
+  ///
+  /// Get electron number density (cm^{-3})
+  ///
+  double get_n_elec(
+        const pion_flt * ///< primitive state vector.
+        );
+
+  ///
+  /// Get H+ number density (cm^{-3})
+  ///
+  double get_n_Hplus(
+        const pion_flt * ///< primitive state vector.
+        );
+
+  ///
+  /// Get neutral H number density (cm^{-3})
+  ///
+ double get_n_Hneutral(
+        const pion_flt * ///< primitive state vector.
+        );
+
+ 
 
  private:
   int cooling_flag;

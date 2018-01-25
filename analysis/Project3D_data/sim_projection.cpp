@@ -1179,12 +1179,12 @@ void image::calculate_pixel(
   }
   
   else if (what_to_integrate==I_NEUTRAL_NH) {
-    ans += get_point_neutralH_numberdensity(&(px->int_pts.p[0]),SimPM.ftr);
+    ans += get_point_neutralH_numberdensity(&(px->int_pts.p[0]));
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_point_neutralH_numberdensity(&(px->int_pts.p[v]),SimPM.ftr);
+      ans += wt *get_point_neutralH_numberdensity(&(px->int_pts.p[v]));
     }
-    ans += get_point_neutralH_numberdensity(&(px->int_pts.p[npt-1]),SimPM.ftr);
+    ans += get_point_neutralH_numberdensity(&(px->int_pts.p[npt-1]));
     ans *= hh/3.0;
 
     *tot_mass += ans;
@@ -1197,12 +1197,12 @@ void image::calculate_pixel(
     // in parsecs to get projected units cm^{-6}.pc
     //
     //cout <<"calculating EM\n";
-    ans = get_point_EmissionMeasure(&(px->int_pts.p[0]),SimPM.ftr);
+    ans = get_point_EmissionMeasure(&(px->int_pts.p[0]));
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_point_EmissionMeasure(&(px->int_pts.p[v]), SimPM.ftr);
+      ans += wt *get_point_EmissionMeasure(&(px->int_pts.p[v]));
     }
-    ans += get_point_EmissionMeasure(&(px->int_pts.p[npt-1]), SimPM.ftr);
+    ans += get_point_EmissionMeasure(&(px->int_pts.p[npt-1]));
     ans *= hh/3.0/pconst.parsec();
     *tot_mass += ans;
     im[px->ipix] = ans;
@@ -1213,12 +1213,12 @@ void image::calculate_pixel(
     // Point quantity in units MJy/sr/cm
     // Projected quantity in MJy/sr
     //
-    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]),SimPM.ftr);
+    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]));
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]), SimPM.ftr);
+      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]));
     }
-    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]), SimPM.ftr);
+    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]));
     ans *= hh/3.0;
     *tot_mass += ans;
     im[px->ipix] = ans;
@@ -1297,15 +1297,15 @@ void image::calculate_pixel(
       // Point quantity needs to be multiplied by dl in parsecs and
       // sqrt(4pi)*10^6 to give the RM in rad/m^2.
       //
-      ans = get_point_RotationMeasure(&(px->int_pts.p[0]),SimPM.ftr,
+      ans = get_point_RotationMeasure(&(px->int_pts.p[0]),
                                         bx,bz,signx,signz,st,ct);
       for (int v=1; v<(npt-1); v++) {
 	wt = 6-wt;
 	ans += wt *get_point_RotationMeasure(&(px->int_pts.p[v]),
-                              SimPM.ftr, bx,bz,signx,signz,st,ct);
+                              bx,bz,signx,signz,st,ct);
       }
       ans += get_point_RotationMeasure(&(px->int_pts.p[npt-1]),
-                              SimPM.ftr, bx,bz,signx,signz,st,ct);
+                              bx,bz,signx,signz,st,ct);
       ans *= hh*1.0e6*sqrt(4.0*M_PI)/3.0/pconst.parsec();
       *tot_mass += ans;
       im[px->ipix] = ans;
@@ -1832,7 +1832,7 @@ void point_velocity::get_point_VX_profile(
   double vel, norm;
   int ibin;
   vel  = get_point_VX(pt);
-  norm = get_point_neutralH_numberdensity(pt,ifrac);
+  norm = get_point_neutralH_numberdensity(pt);
   ibin = get_velocity_bin_number(vel);
   for (int v=0;v<v_Nbins;v++) prof[v] = 0.0;
   if (ibin>0 && ibin<v_Nbins)
@@ -1862,7 +1862,7 @@ void point_velocity::get_point_v_los_profile(
   double vel, norm;
   int ibin;
   vel  = get_point_los_velocity(pt);
-  norm = get_point_neutralH_numberdensity(pt,ifrac);
+  norm = get_point_neutralH_numberdensity(pt);
   ibin = get_velocity_bin_number(vel);
   for (int v=0;v<v_Nbins;v++) prof[v] = 0.0;
   if (ibin>0 && ibin<v_Nbins)
@@ -1989,8 +1989,9 @@ double point_velocity::get_point_los_velocity(
 
 
 
-double point_velocity::get_point_perp_velocity(const struct point_4cellavg *pt
-					       )
+double point_velocity::get_point_perp_velocity(
+    const struct point_4cellavg *pt
+    )
 {
   double val=0.0;
   for (int v=0;v<4;v++) {
@@ -2011,8 +2012,9 @@ double point_velocity::get_point_perp_velocity(const struct point_4cellavg *pt
 
 
 
-double point_velocity::get_point_VX(const struct point_4cellavg *pt
-				    )
+double point_velocity::get_point_VX(
+    const struct point_4cellavg *pt
+    )
 {
   //
   // This does the bi-linear interpolation from the four nearest
