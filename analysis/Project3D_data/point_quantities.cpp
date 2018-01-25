@@ -132,15 +132,13 @@ double point_quantities::get_point_temperature(
   if (MP) {
     for (int v=0;v<4;v++) {
       if (pt->ngb[v]) {
-#ifdef THREADS
-        val += pt->wt[v]*(pt->ngb[v]->P[PG]*pconst.m_p()/
-          (pconst.kB()*pt->ngb[v]->P[RO]*SimPM.EP.H_MassFrac*(1.0+pt->ngb[v]->P[ifrac])));
-#else // no threads
-        //
-        // MP->Temperature() is not threadsafe on SuperMUC.
-        //
         val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,SimPM.gamma);
-#endif // THREADS
+        //if (!isfinite(MP->Temperature(pt->ngb[v]->P,SimPM.gamma))) {
+        //  cout <<"Invalid Temperature in loop="<<val<<"  "<<SimPM.gamma<<"  "<<endl;
+        //  rep.printVec("pv", pt->ngb[v]->P, SimPM.nvar);
+        //  rep.printVec("pos",pt->ngb[v]->pos, SimPM.ndim);
+        //  //rep.printVec("img",pt->ngb[v]->Ph, SimPM.ndim);
+        //}
       }
     }
   }
@@ -159,8 +157,9 @@ double point_quantities::get_point_temperature(
     // multiply by m_p/k_B = 1.67e-24/1.38e-16 = 1.21e-8
     //
     val *= 1.21e-8;
-    //  cout <<"Temperature="<<val<<endl;
   }
+  //if (!isfinite(val))
+  //  cout <<"Invalid Temperature="<<val<<endl;
   return val;
 }
     

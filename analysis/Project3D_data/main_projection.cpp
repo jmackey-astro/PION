@@ -96,50 +96,6 @@ using namespace std;
 
 
 
-#ifdef THREADS
-#include "tools/threads_AJL/msvc_constants.h"
-#if defined(_DEBUG) &&  defined(_MSC_VER) &&  defined(MSVC_DEBUG_NEW_TRACE_ON)
-  #define CRTDBG_MAP_ALLOC
-  #include <stdlib.h> 
-  #include <crtdbg.h> 
-  #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
-#endif
-#include "tools/threads_AJL/reefa_constants.h"
-#include "tools/threads_AJL/logmessages.h"
-#include "tools/threads_AJL/threadpool/threadpool.h"
-//
-// Global threading variables.
-//
-threadpool_t     tp; // main threadpool
-int monsecs_gl=0;    // seconds since the start of the month
-
-struct calc_pix_args {
-  class image *IMG; ///< pointer to image class.
-  struct pixel *px; ///< pointer to pixel
-  int i;      ///< pixel id
-  int what_to_integrate; ///< flag for what to integrate.
-  double *im;       ///< array of pixel data.
-  double *tot_mass; ///< general purpose counter for stuff.
-  struct vel_prof_stuff *vps; ///< struct with info for velocity binning.
-};
-
-//
-// void function for threading with Andy's threadpool library
-//
-void calculate_pixelW(void *arg)
-{
-  struct calc_pix_args *ta = reinterpret_cast<struct calc_pix_args *>(arg);
-  ta->IMG->calculate_pixel(ta->px,
-			   ta->vps,
-			   ta->what_to_integrate,
-			   ta->im,
-			   ta->tot_mass
-			   );
-  delete ta; ta=0;
-  return;
-}
-#endif //THREADS
-
 
 
 // ----------- MICROPHYSICS --------------
@@ -195,10 +151,6 @@ int main(int argc, char **argv)
   MCMD.set_nproc(nproc);
 
 
-#ifdef THREADS
-  tp_init(&tp,NUM_THREADS_MAIN,"Main Threadpool");
-#endif //THREADS
-
   //*******************************************************************
   //*******************************************************************
   //
@@ -234,6 +186,7 @@ int main(int argc, char **argv)
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
   rep.redirect(redir.str());
+  rep.kill_stdout_from_other_procs(0);
 
   //
   // start a timer, so I can see how long each step takes.
@@ -466,6 +419,10 @@ int main(int argc, char **argv)
   err += SimSetup->setup_microphysics();
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
+  
+  // Assign boundary conditions to boundary points.
+  //err = SimSetup->boundary_conditions(grid);
+  //if (err) rep.error("boundary_conditions setup",err);
 
   mltsf=clk.time_so_far("mainloop");
   cout <<"*-*-*-* Grid setup,\t total time so far = "<<mltsf<<" secs or "<<mltsf/3600.0<<" hours. *-*-*-*\n";
@@ -699,6 +656,13 @@ int main(int argc, char **argv)
 					);
     rep.errorTest("(main) Failed to read data",0,err);
     
+    //cell *tt = grid->FirstPt_All();
+    //do {
+    //  if (tt->P[RO]<1.0e-40) {
+    //    rep.printVec("Bad Cell, PV",tt->P,SimPM.nvar);
+    //    rep.printVec("-------, pos",tt->pos,SimPM.ndim);
+    //  }
+    //} while ((tt=grid->NextPt_All(tt))!=0);
 #ifdef TESTING
     cout <<"--------------- Finished Reading Data  ----------------\n";
     cout <<"-------------------------------------------------------\n";
@@ -776,55 +740,16 @@ int main(int argc, char **argv)
       //
       clk.start_timer("makeimage"); double tsf=0.0;
 
-#ifdef THREADS
-      cout <<"Beginning analysis: NUMTHREADS="<<NUM_THREADS_MAIN<<"... ";
-      cout <<"i="<<outputs<<", w2i = "<<w2i<<" ... ";
-      //cout.flush();
-#endif // THREADS
-
       for (int i=0;i<num_pixels;i++) {
 	px = &(IMG.pix[i]);
 
-#ifndef THREADS
 	IMG.calculate_pixel(px,       ///< pointer to pixel
 			    &vps,     ///< info for velocity profiling.
 			    w2i,      ///< flag for what to integrate.
 			    im,       ///< array of pixel data.
 			    &tot_mass ///< general purpose counter for stuff.
 			    );
-#endif // not THREADS
-
-#ifdef THREADS
-
-	struct calc_pix_args *ta = new struct calc_pix_args;
-	ta->px = px;
-	ta->IMG = &IMG;
-	ta->what_to_integrate = w2i;
-	ta->vps = &vps;
-	ta->im = im;
-	ta->tot_mass = &tot_mass;
-#ifdef TESTING
-        //cout <<" - -- - adding pixel "<<i<<" to work-list.\n";
-        //cout.flush();
-#endif
-	//calculate_pixelW(reinterpret_cast<void *>(ta));
-	tp_addWork(&tp,calculate_pixelW,reinterpret_cast<void *>(ta),"main()");
-#endif // THREADS
-	
       }
-#ifdef THREADS
-#ifdef TESTING
-      cout <<" - -- - waiting for "<<num_pixels<<" threads to finish.\n";
-      cout.flush();
-#endif
-      //DbgMsg(" main(): waiting for %i threads...",num_pixels);
-      tp_waitOnFinished(&tp,num_pixels);
-      //DbgMsg(" main(): all threads finished.");
-#ifdef TESTING
-      cout <<" - -- - All threads are finished.\n";
-      cout.flush();
-#endif
-#endif // THREADS
       tsf=clk.time_so_far("makeimage");
       cout <<"\t time = "<<tsf<<" secs."<<"\n";
       //cout.flush();
@@ -905,7 +830,7 @@ int main(int argc, char **argv)
       } // if myrank !=0
       // ------------------------------------------------------------
       // ------------------------------------------------------------
-
+      COMM->barrier("outputs");
 
     } // loop over output images
 
