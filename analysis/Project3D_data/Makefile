@@ -67,9 +67,9 @@ OPTION += -DFITS
 #
 # This is to multi-thread the pixel calculations.
 #
-MT=USE_THREADS
-OPTION += -DTHREADS -D__WXGTK__
-#MT=NO_THREADS
+#MT=USE_THREADS
+#OPTION += -DTHREADS -D__WXGTK__
+MT=NO_THREADS
 
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard

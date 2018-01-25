@@ -684,7 +684,7 @@ void image::add_integration_pts_to_pixels()
     p->int_pts.dx      = hh;
     p->int_pts.dx_phys = sim_dxP*hh;
     p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
-    cout <<"p->int_pts.npt = "<<p->int_pts.npt <<"\n";
+    //cout <<"p->int_pts.npt = "<<p->int_pts.npt <<"\n";
     p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
 
     //
