@@ -12,6 +12,7 @@
 /// - 2010.12.23 JM: Added SetAvgState() function to eqns_Euler class.
 ///
 /// - 2010.12.28 JM: moved internal energy Euler eqns to own file.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 ///
 
 #ifndef EQNS_HYDRO_ADIABATIC_H
@@ -49,6 +50,7 @@ class eqns_Euler :  virtual public eqns_base {
   ///  convert from conserved to primitive variables. 
   ///
   virtual int UtoP(
+      class SimParams &, ///< pointer to simulation parameters
       const pion_flt *, ///< pointer to conserved variables.
       pion_flt *, ///< pointer to Primitive variables.
       const double    ///< Gas constant gamma.

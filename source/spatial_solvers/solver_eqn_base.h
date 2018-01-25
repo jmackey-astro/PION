@@ -32,6 +32,7 @@
 /// - 2015.07.06 JM: tidied up a bit (but much more to do!)
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef SOLVER_EQN_BASE_H
 #define SOLVER_EQN_BASE_H
@@ -114,7 +115,9 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// It is virtual because with MHD the flux becomes dependent on the magnetic
   /// field direction so I may want to add that later.
   ///
-  virtual int set_thermal_conduction_Edot();
+  virtual int set_thermal_conduction_Edot(
+      class SimParams & ///< pointer to simulation parameters
+      );
 #endif // THERMAL CONDUCTION
 
 
@@ -175,9 +178,10 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// H-correction viscosity.
   ///
   virtual int preprocess_data(
-        const int, ///< Spatial order of acc for this call.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const int, ///< Spatial order of acc for this call.
+      class SimParams &, ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
   
 
   ///
@@ -185,10 +189,11 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
   /// for each grid point in each direction.  These values get stored
   /// in the cell data.
   /// 
-   int calc_Hcorrection(
-        const int, ///< Spatial order of acc for this call.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+  int calc_Hcorrection(
+      const int, ///< Spatial order of acc for this call.
+      class SimParams &, ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
 
   ///

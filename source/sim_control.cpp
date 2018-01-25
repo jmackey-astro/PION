@@ -142,6 +142,7 @@
 ///    structure, and non-global grid class.
 /// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL.CPP
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -386,7 +387,7 @@ int sim_control_fixedgrid::Init(
     cerr <<"(UniformFV::Init) Do not understand typeOfFile="<<typeOfFile<<", so exiting.\n";
     return(1);
   }
-  err = dataio->ReadHeader(infile);
+  err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("(INIT::get_parameters) err!=0 Something went bad",0,err);
   
   // Now see if any commandline args override the Parameters from the file.
@@ -395,7 +396,7 @@ int sim_control_fixedgrid::Init(
   
   // Now set up the grid structure.
   cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
-  err = setup_grid((grid),&mpiPM);
+  err = setup_grid((grid),SimPM,&mpiPM);
   cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
   err += get_cell_size(*grid);
   if (err!=0) {
@@ -413,7 +414,7 @@ int sim_control_fixedgrid::Init(
   //
   // Now setup Microphysics, if needed.
   //
-  err = setup_microphysics();
+  err = setup_microphysics(SimPM);
   rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
   
   //
@@ -459,7 +460,7 @@ int sim_control_fixedgrid::Init(
 
   
   // Assign boundary conditions to boundary points.
-  err = boundary_conditions(*grid);
+  err = boundary_conditions(SimPM, *grid);
   if (err!=0){cerr<<"(INIT::boundary_conditions) err!=0 Something went bad"<<"\n";return(1);}
 
 
@@ -1209,8 +1210,8 @@ int sim_control_fixedgrid::ready_to_start(
   // Setup Raytracing, if they are needed.
   //
   int err=0;
-  err += setup_raytracing(grid);
-  err += setup_evolving_RT_sources();
+  err += setup_raytracing(SimPM, grid);
+  err += setup_evolving_RT_sources(SimPM);
   if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
   //
   // If we are doing raytracing, we probably want to limit the timestep by
@@ -1308,7 +1309,7 @@ int sim_control_fixedgrid::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources();
+    err = update_evolving_RT_sources(SimPM);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;

@@ -8,6 +8,7 @@
 /// Modifications :\n
 /// - 2015.01.27 JM: moved from sim_control_MPI.h
 /// - 2016.02.02 JM: Added option to decompose only along one axis.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef MCMD_CONTROL_H
 #define MCMD_CONTROL_H
@@ -55,28 +56,37 @@ class MCMDcontrol {
   /// Decompose the domain into blocks for each processor, and set up
   /// a structure which contains the domain of each processor.
   ///
-  int decomposeDomain();
+  int decomposeDomain(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// Decompose the domain into blocks for each processor, and set up
   /// a structure which contains the domain of each processor.
   /// *** This version decomposes only along one axis ***
   ///
-  int decomposeDomain(const enum axes);
+  int decomposeDomain(
+      const enum axes,
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// Get a list of all abutting domains, including corner/edge
   /// intersections.
   ///
-  void get_abutting_domains(std::vector<int> & ///< write list to this vector.
-          );
+  void get_abutting_domains(
+      class SimParams &,  ///< pointer to simulation parameters
+      std::vector<int> & ///< write list to this vector.
+      );
 
   ///
   /// Returns the ix array for any requested rank.
   ///
-  void get_domain_ix(const int, ///< rank ix requested for.
-         int *      ///< array to put ix into.
-         );
+  void get_domain_ix(
+      class SimParams &,  ///< pointer to simulation parameters
+      const int, ///< rank ix requested for.
+      int *      ///< array to put ix into.
+      );
 
   /// get my process rank
   int get_myrank() {return myrank;}
@@ -114,7 +124,9 @@ class MCMDcontrol {
   /// in each direction, and 'i's refer to the location of the current
   /// processor along that direction.
   ///
-  int pointToNeighbours();
+  int pointToNeighbours(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      );
 };
 
 #endif // MCMD_CONTROL_H

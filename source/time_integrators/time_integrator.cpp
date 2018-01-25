@@ -145,6 +145,7 @@
 ///    the grid pointer everywhere.
 /// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -316,8 +317,8 @@ int sim_control_fixedgrid::first_order_update(
   //
   // Update boundary data.
   //
-  err += grid->TimeUpdateInternalBCs(OA1,ooa);
-  err += grid->TimeUpdateExternalBCs(OA1,ooa);
+  err += grid->TimeUpdateInternalBCs(SimPM.simtime,OA1,ooa);
+  err += grid->TimeUpdateExternalBCs(SimPM.simtime,OA1,ooa);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
@@ -373,8 +374,8 @@ int sim_control_fixedgrid::second_order_update(
   //
   // Update boundary data.
   //
-  err += grid->TimeUpdateInternalBCs(   OA2, ooa);
-  err += grid->TimeUpdateExternalBCs(   OA2, ooa);
+  err += grid->TimeUpdateInternalBCs(SimPM.simtime,   OA2, ooa);
+  err += grid->TimeUpdateExternalBCs(SimPM.simtime,   OA2, ooa);
   if (err) 
     rep.error("second_order_update: error from bounday update",err);
 
@@ -457,9 +458,9 @@ int sim_control_fixedgrid::timestep_dynamics_then_microphysics(
     //    cout <<"done with mp.\n";
 
     err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA1, grid);
-    err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
+    err += grid->TimeUpdateInternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     //     cout <<"updating external bcs.\n";
-    err += grid->TimeUpdateExternalBCs(SimPM.tmOOA,SimPM.tmOOA);
+    err += grid->TimeUpdateExternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     //    cout <<"done with external bcs.\n";
     if (err) rep.error("O1 time update loop generated errors",err);
   } // if 1st order accurate
@@ -481,8 +482,8 @@ int sim_control_fixedgrid::timestep_dynamics_then_microphysics(
     err  = calc_dynamics_dU(dt,OA1, grid);
 
     err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA2, grid);
-    err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
-    err += grid->TimeUpdateExternalBCs(OA1,SimPM.tmOOA);
+    err += grid->TimeUpdateInternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += grid->TimeUpdateExternalBCs(SimPM.simtime,OA1,SimPM.tmOOA);
     if (err) rep.error("O2 half time update loop generated errors",err);
     
     //
@@ -496,8 +497,8 @@ int sim_control_fixedgrid::timestep_dynamics_then_microphysics(
     err += calc_microphysics_dU(dt, grid);
 
     err += grid_update_state_vector(dt,TIMESTEP_FULL,OA2, grid);
-    err += grid->TimeUpdateInternalBCs(SimPM.tmOOA,SimPM.tmOOA);
-    err += grid->TimeUpdateExternalBCs(SimPM.tmOOA,SimPM.tmOOA);
+    err += grid->TimeUpdateInternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += grid->TimeUpdateExternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
 
     if (err) rep.error("O2 full time update loop generated errors",err);
   } // If 2nd order accurate.
@@ -878,7 +879,7 @@ int sim_control_fixedgrid::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(space_ooa, grid);
+  err = eqn->preprocess_data(space_ooa, SimPM, grid);
 
   //
   // Now calculate the directionally-unsplit time update for the

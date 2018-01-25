@@ -51,6 +51,7 @@
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 /// - 2017.11.07-22 JM: updating boundary setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -877,7 +878,7 @@ int DataIOBase::read_simulation_parameters()
   // Read Jet parameters if doing a JET SIM
   //
   if (JP.jetic) {
-    set_jet_pm_params();
+    if (!have_setup_jet_pm) set_jet_pm_params();
     if (jet_pm.empty())
       rep.error("Jet parameter list is empty -- make sure it populates itself!!",0);
     //
@@ -1933,7 +1934,10 @@ dataio_text::~dataio_text()
 // ##################################################################
 
 
-int dataio_text::ReadHeader(string pfile)
+int dataio_text::ReadHeader(
+      string pfile,           ///< Name of parameter file
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   // read info from parameterfile.
   cout <<"dataio_text::ReadHeader() Read simulation info from parameterfile.\n";
@@ -2045,7 +2049,10 @@ std::string dataio_text::set_filename(
 
 
 
-int dataio_text::get_parameters(string pfile)
+int dataio_text::get_parameters(
+      string pfile,  ///< Name of parameter file
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   cout <<"(dataio_text::get_parameters) from file "<<pfile<<" starting.\n";
 

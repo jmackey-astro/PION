@@ -10,6 +10,7 @@
 /// - 2010.12.27 JM: Put all isothermal dynamics in an ifdef b/c I
 ///   updated the code structure which has broken everything and I
 ///   don't have time to fix isothermal stuff now...
+/// - 2018.01.24 JM: worked on making SimPM non-global
 ///
 
 
@@ -40,10 +41,12 @@ public:
 		     const double    ///< Gas constant gamma.
 		     );
    /// convert from conserved to primitive variables.
-   virtual int UtoP(const double *, ///< pointer to conserved variables.
-		    double *, ///< pointer to Primitive variables.
-		    const double    ///< Gas constant gamma.
-		    );
+   virtual int UtoP(
+      class SimParams & ///< pointer to simulation parameters
+      const double *, ///< pointer to conserved variables.
+      double *, ///< pointer to Primitive variables.
+      const double    ///< Gas constant gamma.
+      );
    /// Converts from primitive and conserved variables to corresponding flux.
    /// This assumes that the direction has been set correctly.
    

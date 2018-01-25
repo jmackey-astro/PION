@@ -21,6 +21,7 @@
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 /// - 2017.08.03 JM: Added parallel_read_any_data() function to base class
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef DATAIO_H
 #define DATAIO_H
@@ -295,7 +296,8 @@ class DataIOBase : public file_status {
    /// Reads simulation parameters from file.
    ///
    virtual int ReadHeader(
-      string ///< file to read from
+      string,           ///< file to read from
+      class SimParams & ///< pointer to simulation parameters
       )=0;
 
    ///
@@ -410,9 +412,13 @@ class dataio_text : public DataIOBase {
 			  class GridBaseClass *, ///< pointer to data.
 			  const long int ///< number to stamp file with (e.g. timestep)
 			  );
-   /** \brief Reads simulation parameters from file. */
-   virtual int ReadHeader(string ///< file to read from
-			  );
+  ///
+  /// Reads simulation parameters from file.
+  ///
+  virtual int ReadHeader(
+      string, ///< file to read from
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      );
 
   ///
   /// Write simulation header info to file

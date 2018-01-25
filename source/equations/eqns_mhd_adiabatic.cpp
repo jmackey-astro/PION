@@ -21,6 +21,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -99,6 +100,7 @@ void eqns_mhd_ideal::PtoU(
 // ##################################################################
 
 int eqns_mhd_ideal::UtoP(
+      class SimParams &SimPM, ///< pointer to simulation parameters
       const pion_flt *u,
       pion_flt *p,
       const double gamma
@@ -536,11 +538,14 @@ void eqns_mhd_mixedGLM::GLMsetPsiSpeed(
       const double delt
       )
 {
-  /** \section chyp Hyperbolic Wave Speed
-   * See the Code Algorithms page \ref algorithms for details of my implementation.
-   * */
+  ///
+  /// \section chyp Hyperbolic Wave Speed
+  /// See the Code Algorithms page \ref algorithms for details of my
+  /// implementation.
+  ///
+
   //  cout <<"calculating GLM_chyp!\n";
-  GLM_chyp = cfl*delx/delt; ///(SimPM.ndim); // hyperbolic wavespeed is equal to max. allowed value for given CFL no.
+  GLM_chyp = cfl*delx/delt; /// hyperbolic wavespeed is equal to max. allowed value for given CFL no.
   GLM_cr = 4.0*delx; // This works well for general use.
   //GLM_cr *=20.5; // This is for when getting negative pressure near outflow boundaries.
   //GLM_cr = 0.3*delx;

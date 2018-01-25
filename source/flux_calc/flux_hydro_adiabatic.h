@@ -33,6 +33,7 @@
 ///   Now all tracer stuff is dealt with here.
 /// - 2010.12.27 JM: Enclosed Lapidus AV in ifdef.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef FLUX_HYDRO_ADIABATIC_H
 #define FLUX_HYDRO_ADIABATIC_H
@@ -111,6 +112,7 @@ public:
   /// conserved variable is the mass density of this.
   ///
   virtual int UtoP(
+      class SimParams &, ///< pointer to simulation parameters
       const pion_flt *, ///< pointer to conserved variables.
       pion_flt *, ///< pointer to Primitive variables.
       const double    ///< Gas constant gamma.
