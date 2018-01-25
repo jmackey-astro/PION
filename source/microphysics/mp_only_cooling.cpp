@@ -23,6 +23,7 @@
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2016.06.21 JM: Temperature() threadsafe.
+/// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -43,6 +44,11 @@ using namespace std;
 #define WSS09_CIE_PLUS_HEATING 6
 #define WSS09_CIE_ONLY_COOLING 7
 #define WSS09_CIE_LINE_HEAT_COOL 8
+
+// ##################################################################
+// ##################################################################
+
+
 
 mp_only_cooling::mp_only_cooling(const int nv,
 				 struct which_physics *ephys
@@ -143,10 +149,20 @@ mp_only_cooling::mp_only_cooling(const int nv,
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 
 mp_only_cooling::~mp_only_cooling()
 {
 }
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -266,6 +282,11 @@ int mp_only_cooling::TimeUpdateMP(
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 
 //
 // Reset pressure so it corresponds to requested temperature.
@@ -295,6 +316,11 @@ int mp_only_cooling::Set_Temp(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // Returns the gas temperature.  Assumes primitive vector is in
 // cgs units and ionised gas with mu=0.7m_p.
@@ -306,6 +332,58 @@ double mp_only_cooling::Temperature(
 {
   return p_in[PG]*Mu_tot_over_kB/p_in[RO];
 }
+
+
+// ##################################################################
+// ##################################################################
+
+//
+// Get electron number density (cm^{-3})
+//
+double mp_only_cooling::get_n_elec(
+      const pion_flt *p_in ///< primitive state vector.
+      )
+{
+  // H and He are fully ionized
+  return p_in[RO]/Mu_elec;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+//
+// Get H+ number density (cm^{-3})
+//
+double mp_only_cooling::get_n_Hplus(
+      const pion_flt *p_in ///< primitive state vector.
+      )
+{
+  // fully ionized hydrogen
+  return p_in[RO]/Mu;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+//
+// Get neutral H number density (cm^{-3})
+//
+double mp_only_cooling::get_n_Hneutral(
+      const pion_flt *p_in ///< primitive state vector.
+      )
+{
+  // Assume neutral fraction of 1e-12 (arbitrary)
+  return 1.0e-12*p_in[RO]/Mu;
+}
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -354,6 +432,11 @@ double mp_only_cooling::timescales(
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 
 double mp_only_cooling::Edot(
             const double rho, ///< mass density (g/cm3)
@@ -390,6 +473,11 @@ double mp_only_cooling::Edot(
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 
 /// only cooling, uses SD93-CIE curve only.
 double mp_only_cooling::Edot_SD93CIE_cool(
@@ -400,10 +488,15 @@ double mp_only_cooling::Edot_SD93CIE_cool(
   return -(rho*rho/Mu_elec/Mu_ion)*cooling_rate_SD93CIE(T);
 }
 
-///
-/// cooling from SD93-CIE plus heating assuming full ionisation of H, where 
-/// the heating rate equals recombination rate times 5eV/ionisation.
-///
+
+// ##################################################################
+// ##################################################################
+
+
+//
+// cooling from SD93-CIE plus heating assuming full ionisation of H, where 
+// the heating rate equals recombination rate times 5eV/ionisation.
+//
 double mp_only_cooling::Edot_SD93CIE_heat_cool(
             const double rho, ///< mass density (g/cm3)
             const double T    ///< Temperature (K)
@@ -414,8 +507,13 @@ double mp_only_cooling::Edot_SD93CIE_heat_cool(
 }
 
 
+// ##################################################################
+// ##################################################################
 
-/// only cooling, uses WSS09-CIE cooling function.
+
+
+
+// only cooling, uses WSS09-CIE cooling function.
 double mp_only_cooling::Edot_WSS09CIE_cool(
               const double rho, ///< mass density (g/cm3)
               const double T    ///< Temperature (K)
@@ -425,11 +523,15 @@ double mp_only_cooling::Edot_WSS09CIE_cool(
 }
 
 
+// ##################################################################
+// ##################################################################
 
-/// 
-/// cooling from WSS09-CIE plus heating assuming full ionisation of H, where 
-/// the heating rate equals recombination rate times 5eV/ionisation.
-///
+
+
+// 
+// cooling from WSS09-CIE plus heating assuming full ionisation of H, where 
+// the heating rate equals recombination rate times 5eV/ionisation.
+//
 double mp_only_cooling::Edot_WSS09CIE_heat_cool(
               const double rho, ///< mass density (g/cm3)
               const double T    ///< Temperature (K)
@@ -437,6 +539,11 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool(
 {
   return (rho*rho)*(2.733e-21*exp(-0.782991*log(T))/Mu_elec/Mu -cooling_rate_SD93CIE(T)/Mu/Mu);
 }
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -485,6 +592,11 @@ double mp_only_cooling::Edot_WSS09CIE_heat_cool_metallines(
   //cout <<", Heat="<<8.01e-12*Hii_rad_recomb_rate(T)*rho2*inv_Mu2_elec_H<<"\n";
   return rate;
 }
+
+// ##################################################################
+// ##################################################################
+
+
 
 // int main()
 // {

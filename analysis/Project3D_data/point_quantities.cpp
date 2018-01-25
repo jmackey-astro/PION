@@ -15,6 +15,7 @@
 /// - 2015.08.21 JM: MP->Temperature() is NOT threadsafe, so had to
 ///    hardcode the temperature estimate if using threads.
 /// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -52,24 +53,61 @@ double point_quantities::get_point_density(const struct point_4cellavg *pt)
 
 
 
-double point_quantities::get_point_neutralH_numberdensity(
-        const struct point_4cellavg *pt,
-        const int ifrac
+double point_quantities::get_point_electron_numberdensity(
+        const struct point_4cellavg *pt
         )
 {
   double val=0.0;
   //
-  // First get neutral mass density.
+  // Use the microphysics function to get electron number density.
   //
   for (int v=0;v<4;v++) {
     if (pt->ngb[v]) {
-      val += pt->wt[v] *(pt->ngb[v]->P[RO]*(1.0-pt->ngb[v]->P[ifrac]));
+      val += pt->wt[v] *MP->get_n_elec(pt->ngb[v]->P);
     }
   }
+  return val;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+double point_quantities::get_point_ionizedH_numberdensity(
+        const struct point_4cellavg *pt
+        )
+{
+  double val=0.0;
   //
-  // Then scale by H mass fraction and divide by mass of H.
+  // Use the microphysics function to get ionized H number density.
   //
-  val *= SimPM.EP.H_MassFrac/pconst.m_p();
+  for (int v=0;v<4;v++) {
+    if (pt->ngb[v]) {
+      val += pt->wt[v] *MP->get_n_Hplus(pt->ngb[v]->P);
+    }
+  }
+  return val;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+double point_quantities::get_point_neutralH_numberdensity(
+        const struct point_4cellavg *pt
+        )
+{
+  double val=0.0;
+  //
+  // Use the microphysics function to get neutral H number density.
+  //
+  for (int v=0;v<4;v++) {
+    if (pt->ngb[v]) {
+      val += pt->wt[v] *MP->get_n_Hneutral(pt->ngb[v]->P);
+    }
+  }
   return val;
 }
 
@@ -99,8 +137,7 @@ double point_quantities::get_point_temperature(
           (pconst.kB()*pt->ngb[v]->P[RO]*SimPM.EP.H_MassFrac*(1.0+pt->ngb[v]->P[ifrac])));
 #else // no threads
         //
-        // MP->Temperature() is not threadsafe on SuperMUC, so I need
-        // this ifdef...
+        // MP->Temperature() is not threadsafe on SuperMUC.
         //
         val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,SimPM.gamma);
 #endif // THREADS
@@ -335,7 +372,6 @@ double point_quantities::get_point_BYabs(
 
 double point_quantities::get_point_RotationMeasure(
       struct point_4cellavg *pt, ///< pt
-      const int ifrac, ///< ifrac
       const int bx,    ///< bx index (image coords)
       const int bz,    ///< bz index (image coords)
       const int sx,    ///< sign(xx)
@@ -363,13 +399,10 @@ double point_quantities::get_point_RotationMeasure(
     if (pt->ngb[v]) {
       val += pt->wt[v] *
           (sx*pt->ngb[v]->P[bx]*st +sz*pt->ngb[v]->P[bz]*ct) *
-          (pt->ngb[v]->P[RO]*pt->ngb[v]->P[ifrac]);
+          MP->get_n_elec(pt->ngb[v]->P);
     }
   }
-  //
-  // convert to cm^{-3} and return:
-  //
-  return val*SimPM.EP.H_MassFrac/pconst.m_p();
+  return val;
 };
 
 
@@ -401,14 +434,11 @@ void point_quantities::get_point_Halpha_params(
   // temperature. ion density is calculated from (density minus
   // neutral_density).
   // 
-  double T, ni, nn;
+  double T, ni, nn, ne;
   T  = get_point_temperature(pt,ifrac);
-  //
-  // get_point_density() is mass density, so we divide by m_p().
-  //
-  nn = get_point_neutralH_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/pconst.m_p();
-  ni = std::max(0.0, ni-nn);
+  nn = get_point_neutralH_numberdensity(pt);
+  ni = get_point_ionizedH_numberdensity(pt);
+  ne = get_point_electron_numberdensity(pt);
   //
   // First absorption, from Henney et al. (2009) assuming the opacity
   // is from dust, so that neutrals and ions both count.
@@ -424,11 +454,11 @@ void point_quantities::get_point_Halpha_params(
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
   //
   if (T<1.0) {
-    // can get zero temperature if point is off-grid!!!
+    // can get zero temperature if point is off-grid.
     *j = 0.0;
   }
   else {
-    *j = 2.63e-33*ni*ni*exp(-0.9*log(T));
+    *j = 2.63e-33*ni*ne*exp(-0.9*log(T));
     // OLD VALUES *j = 2.056e-14*ni*ni/T;
     // Emissivity scales more steeply than recombination rate
   }
@@ -459,14 +489,11 @@ void point_quantities::get_point_NII6584_params(
   // temperature. ion density is calculated from (density minus
   // neutral_density).
   // 
-  double T, ni, nn;
+  double T, ni, nn, ne;
   T  = get_point_temperature(pt,ifrac);
-  //
-  // get_point_density() is mass density, so we divide by m_p().
-  //
-  nn = get_point_neutralH_numberdensity(pt,ifrac);
-  ni = get_point_density(pt)*SimPM.EP.H_MassFrac/pconst.m_p();
-  ni = std::max(0.0, ni-nn);
+  nn = get_point_neutralH_numberdensity(pt);
+  ni = get_point_ionizedH_numberdensity(pt);
+  ne = get_point_electron_numberdensity(pt);
   //
   // First absorption, from Henney et al. (2009) assuming the opacity
   // is from dust, so that neutrals and ions both count.
@@ -477,10 +504,7 @@ void point_quantities::get_point_NII6584_params(
   // Emissivity in [N II] 6584AA is
   //  j([NII] ll 6584) =
   //   6.82e-18 n_e*n_p*f(N)*exp(-chi/kT)/(4*pi*sqrt(T))
-  // in units of erg/cm3/s/sr, and use
-  //  n_e*n_p = rho^2 y^2 (X_H/m_p)^2
-  // and we convert to erg/cm2/s/sq.arcsec.
-  //
+  // in units of erg/cm3/s/sr, and we convert to erg/cm2/s/sq.arcsec.
   // Furthermore, we assume N has its solar ISM abundance of
   // A(N)=7.85 or f(N)=7.08e-5.
   //
@@ -489,7 +513,7 @@ void point_quantities::get_point_NII6584_params(
     *j = 0.0;
   }
   else {
-    *j = 9.03e-34*ni*ni*exp(-2.1855e4/T)/sqrt(T);
+    *j = 9.03e-34*ni*ne*exp(-2.1855e4/T)/sqrt(T);
   }
   return;
 }
@@ -501,8 +525,7 @@ void point_quantities::get_point_NII6584_params(
 
 
 double point_quantities::get_point_EmissionMeasure(
-      const struct point_4cellavg *pt, ///< pt
-      const int ifrac ///< ifrac
+      const struct point_4cellavg *pt
       )
 {
   //
@@ -519,13 +542,10 @@ double point_quantities::get_point_EmissionMeasure(
     //
     if (pt->ngb[v]) {
       val += pt->wt[v] 
-              *pow(pt->ngb[v]->P[RO]*pt->ngb[v]->P[ifrac],2.0);
+              *pow(MP->get_n_elec(pt->ngb[v]->P),2.0);
     }
   }
-  //
-  // convert to cm^{-3} and return:
-  //
-  return val*pow(SimPM.EP.H_MassFrac/pconst.m_p(),2.0);
+  return val;
 };
 
 
@@ -535,8 +555,7 @@ double point_quantities::get_point_EmissionMeasure(
 
 
 double point_quantities::get_point_Bremsstrahlung20cm(
-      const struct point_4cellavg *pt, ///< pt
-      const int ifrac ///< ifrac
+      const struct point_4cellavg *pt
       )
 {
   //
@@ -555,17 +574,15 @@ double point_quantities::get_point_Bremsstrahlung20cm(
     //
     if (pt->ngb[v]) {
       val += pt->wt[v]
-              *pow(pt->ngb[v]->P[RO]*pt->ngb[v]->P[ifrac],2.0)
-              *sqrt(pt->ngb[v]->P[RO]*(1.0+pt->ngb[v]->P[ifrac])
-                    /pt->ngb[v]->P[PG]);
+              * MP->get_n_elec(pt->ngb[v]->P)
+              * MP->get_n_Hplus(pt->ngb[v]->P)
+              * sqrt(MP->Temperature(pt->ngb[v]->P,SimPM.gamma));
     }
   }
   //
-  // multiply by constants to get emissivity in MJy/sr/cm
+  // multiply by constant to get emissivity in MJy/sr/cm
   //
-  return val*pow(SimPM.EP.H_MassFrac/pconst.m_p(),2.5)
-            *sqrt(pconst.kB())
-            *4.44e-21;
+  return val*4.44e-21;
 };
 
 

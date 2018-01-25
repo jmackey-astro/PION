@@ -23,6 +23,7 @@
 ///    cooling rates per cell for postprocessing.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.25 JM: added functions to request n(H+),n(H0),n(e-)
 
 #ifndef MICROPHYSICS_BASE_H
 #define MICROPHYSICS_BASE_H
@@ -63,38 +64,38 @@ struct rt_source_data {
 /// pure virtual base/interface class for in-cell microphysics update.
 class MicroPhysicsBase {
   public :
-   virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
+  virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
 
-   /// Non-RT microphysics update, so cooling and heating and chemistry.
-   /// 
-   /// This uses various integration methods to update the elements and the
-   /// internal energy.
-   /// 
-   virtual int TimeUpdateMP(
-        const pion_flt *, ///< Primitive Vector to be updated.
-        pion_flt *,       ///< Destination Vector for updated values.
-        const double,   ///< Time Step to advance by.
-        const double,   ///< EOS gamma.
-        const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-        double *        ///< final temperature.
-        )=0;
+  /// Non-RT microphysics update, so cooling and heating and chemistry.
+  /// 
+  /// This uses various integration methods to update the elements and the
+  /// internal energy.
+  /// 
+  virtual int TimeUpdateMP(
+    const pion_flt *, ///< Primitive Vector to be updated.
+    pion_flt *,       ///< Destination Vector for updated values.
+    const double,   ///< Time Step to advance by.
+    const double,   ///< EOS gamma.
+    const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+    double *        ///< final temperature.
+    )=0;
 
-   ///
-   /// If doing ray-tracing, the tracer can call this function to
-   /// integrate the microphysics variables forward one timestep
-   /// given an external radiation flux.
-   ///
-   virtual int TimeUpdate_RTsinglesrc(
-              const pion_flt *, ///< Primitive Vector to be updated.
-              pion_flt *,       ///< Destination Vector for updated values.
-              const double,   ///< Time Step to advance by.
-              const double,   ///< EOS gamma.
-              const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-              const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-              const double,   ///< path length ds through cell.
-              const double,   ///< Optical depth to entry point of ray into cell.
-              double *        ///< return optical depth through cell in this variable.
-              )=0;
+  ///
+  /// If doing ray-tracing, the tracer can call this function to
+  /// integrate the microphysics variables forward one timestep
+  /// given an external radiation flux.
+  ///
+  virtual int TimeUpdate_RTsinglesrc(
+    const pion_flt *, ///< Primitive Vector to be updated.
+    pion_flt *,       ///< Destination Vector for updated values.
+    const double,   ///< Time Step to advance by.
+    const double,   ///< EOS gamma.
+    const int,      ///< Switch for what type of integration to use. (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+    const double,   ///< flux in per unit length along ray (F/ds or L/dV)
+    const double,   ///< path length ds through cell.
+    const double,   ///< Optical depth to entry point of ray into cell.
+    double *        ///< return optical depth through cell in this variable.
+    )=0;
 
    /// Initialise microphysics ionisation fractions to an equilibrium value. 
    virtual int Init_ionfractions(
@@ -257,6 +258,28 @@ class MicroPhysicsBase {
         const pion_flt *, ///< primitive state vector.
         const int       ///< integer identifier for the element.
         ) {return -1.0e99;}
+
+  ///
+  /// Get electron number density (cm^{-3})
+  ///
+  virtual double get_n_elec(
+        const pion_flt * ///< primitive state vector.
+        ) {return -1.0e99;}
+
+  ///
+  /// Get H+ number density (cm^{-3})
+  ///
+  virtual double get_n_Hplus(
+        const pion_flt * ///< primitive state vector.
+        ) {return -1.0e99;}
+
+  ///
+  /// Get neutral H number density (cm^{-3})
+  ///
+  virtual double get_n_Hneutral(
+        const pion_flt * ///< primitive state vector.
+        ) {return -1.0e99;}
+
 
 };
 
