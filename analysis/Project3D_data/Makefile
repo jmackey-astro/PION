@@ -64,13 +64,6 @@ OPTION += -D$(IOMODE)
 OPTION += -DSILO
 OPTION += -DFITS
 
-#
-# This is to multi-thread the pixel calculations.
-#
-#MT=USE_THREADS
-#OPTION += -DTHREADS -D__WXGTK__
-MT=NO_THREADS
-
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
 #MAKE_UNAME=OSX
@@ -79,9 +72,6 @@ MT=NO_THREADS
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
 LDFLAGS += -lm  
-ifeq ($(MT), USE_THREADS)
-  LDFLAGS += -pthread
-endif
 
 ###########################################
 # Options for standard workstation (e.g. Ubuntu 10.04 64 bit)
@@ -96,8 +86,8 @@ ifeq ($(MAKE_UNAME), standard)
     CXX = mpicxx
   endif
   #CXXFLAGS = -O3
-  CXXFLAGS  = -O3 -Wall
-  #CXXFLAGS += -pg -g
+  #CXXFLAGS  = -O3 -Wall
+  CXXFLAGS += -pg -g
   CXXFLAGS += -Wno-unused-function
   #OPTION += -DTESTING
 
@@ -207,11 +197,6 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
   LDFLAGS += -lreadline
-#  ifeq ($(MT), USE_THREADS)
-#    LDFLAGS += -pthread
-#  endif
-
-
 endif
 ##################### -- SuperMUC -- #################################
 
@@ -278,12 +263,6 @@ VectorOps_spherical.o \
 
         
 
-ifeq ($(MT), USE_THREADS)
-  OBJECTS += logmessages.o threadpool.o threads.o
-  VPATH +=:${srcdir}/tools/threads_AJL:${srcdir}/tools/threads_AJL/threadpool
-  THREAD_INCLUDE=${srcdir}/tools/threads_AJL/threads.h ${srcdir}/tools/threads_AJL/msvc_constants.h ${srcdir}/tools/threads_AJL/reefa_constants.h
-  #GLOBAL += threads_AJL/threads.h threads_AJL/msvc_constants.h reefa_constants.h
-endif
 
 projection: $(OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection $(LDFLAGS)
@@ -397,11 +376,11 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 # Stuff Specific to this code #
 ###############################
 
-point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL} ${THREAD_INCLUDE}
+point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL}
 sim_projection.o: sim_projection.cpp sim_projection.h point_quantities.h \
-                  ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE}
+                  ${GLOBAL} uniform_grid.h dataIO/dataio.h
 main_projection.o: main_projection.cpp sim_projection.h point_quantities.h \
-                  ${GLOBAL} uniform_grid.h dataIO/dataio.h ${THREAD_INCLUDE} 
+                  ${GLOBAL} uniform_grid.h dataIO/dataio.h
 image_io.o: image_io.cpp image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 
 clean:

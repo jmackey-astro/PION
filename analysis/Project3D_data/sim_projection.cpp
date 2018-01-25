@@ -28,6 +28,8 @@
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.08.05 JM: Added pion_flt datatype for low-memory cells.
 /// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2018.01.25 JM: test that cells are on-grid before adding them
+///    as neighbours (new now that boundary cells are always created)
 //
 // File to analyse a sequence of files from a photo-evaporating random clumps
 // simulation.  First we get the directory listing, then for each file we load
@@ -215,7 +217,8 @@ coordinate_conversion::coordinate_conversion(
     //if (sim_ncell[v] != SimPM.NG[v])
     //  rep.error("Cells dont match at all!!!", sim_ncell[v]-SimPM.NG[v]);
   }
-
+  rep.printVec("xminI",sim_xminI,3);
+  rep.printVec("xmaxI",sim_xmaxI,3);
   //
   // Set image and sim. orientations.  It is assumed the image plane is 
   // X-Y, and the normal is at an angle Theta to Z, and in the XZ plane.
@@ -579,78 +582,6 @@ image::~image()
 // ##################################################################
 // ##################################################################
 
-#ifdef THREADS
-
-struct pix_int_args {
-  class image *IMG; ///< pointer to image class.
-  struct pixel *px; ///< pointer to pixel
-  size_t i;      ///< pixel id
-  double sim_dxP;
-  pion_flt s_xmax_img[3];
-};
-
-//
-// void function for threading with Andy's threadpool library
-//
-void calculate_pix_integration_pts(
-      void *arg
-      )
-{
-  struct pix_int_args *pia = reinterpret_cast<struct pix_int_args *>(arg);
-  //size_t i = pia->i;
-  pixel *p = pia->px;
-  class image *img = pia->IMG;
-  double sim_dxP = pia->sim_dxP;
-  pion_flt *s_xmax_img = pia->s_xmax_img;
-  //
-  // Set integration points dx = half the cell size.
-  //
-  double hh=0.5;
-  p->int_pts.dx      = hh;
-  p->int_pts.dx_phys = sim_dxP*hh;
-  p->int_pts.npt     = static_cast<int>((s_xmax_img[ZZ]+0.5)/hh) +1;
-  p->int_pts.p = mem.myalloc(p->int_pts.p, p->int_pts.npt);
-  //
-  // Set positions of each point along the line of sight, and 
-  // assign neighbouring cells and their associated weights.
-  //
-  struct point_4cellavg *pt;
-  pion_flt ppos_isim[3];
-  //    cell *c = (*(p->cells.begin()));
-  cell *c = p->inpixel;
-
-  for (int ipt=0;ipt<p->int_pts.npt; ipt++) {
-    pt = &(p->int_pts.p[ipt]);
-      
-    pion_flt ppos_im[3];
-    ppos_im[XX] = p->ix[XX] +0.5;
-    ppos_im[YY] = p->ix[YY] +0.5;
-    ppos_im[ZZ] = ipt*hh;
-    //
-    // Convert image position to a simulation position.
-    //
-    img->get_sim_Dpos(ppos_im, ppos_isim);
-    //
-    // pass in position, starting cell, and get out the four surrounding
-    // cells (or some nulls if it's not surrounded), and the bilinear
-    // interpolation weights associated with each cell.
-    //
-    img->find_surrounding_cells(ppos_isim, c, pt->ngb, pt->wt);
-    //
-    // Now for each point, we have set its position, neighbours, weights.
-    //
-  }
-
-  delete pia; pia = 0;
-
-  return;
-}
-#endif //THREADS
-
-
-
-// ##################################################################
-// ##################################################################
 
 
 void image::add_integration_pts_to_pixels()
@@ -660,20 +591,6 @@ void image::add_integration_pts_to_pixels()
 
 
   for (int i=0;i<im_npixels;i++) {
-
-#ifdef THREADS
-    struct pix_int_args *pia = new struct pix_int_args;
-    pia->i = static_cast<size_t>(i);
-    pia->px = &(pix[i]);
-    pia->IMG = this;
-    pia->sim_dxP = sim_dxP;
-    for (size_t v=0;v<3;v++)
-      pia->s_xmax_img[v] = s_xmax_img[v];
-    //calculate_pix_integration_pts(reinterpret_cast<void *>(pia));
-    tp_addWork(&tp,calculate_pix_integration_pts,
-                   reinterpret_cast<void *>(pia),
-                   "image::add_integration_pts_to_pixels()");
-#else // THREADS
 
     pixel *p = &(pix[i]);
     
@@ -718,28 +635,12 @@ void image::add_integration_pts_to_pixels()
       //
     }
 
-#endif // THREADS
-
     //cout <<"\t------------------- NEXT PIXEL --------------- \n";
     //
     // Now for each pixel, we have initialised its points, set npt, dx, and dx_phys
     //
   }
 
-
-#ifdef THREADS
-//#ifdef TESTING
-  cout <<" - -- - waiting for "<<im_npixels<<" threads to finish.\n";
-  cout.flush();
-//#endif
-  //DbgMsg(" main(): waiting for %i threads...",num_pixels);
-  tp_waitOnFinished(&tp,im_npixels);
-  //DbgMsg(" main(): all threads finished.");
-//#ifdef TESTING
-  cout <<" - -- - All threads are finished.\n";
-  cout.flush();
-//#endif
-#endif // THREADS
 
   return;
 }
@@ -787,7 +688,7 @@ void image::find_surrounding_cells(
     else {
       d1=get_negdir(sa[ZZ]); sign=-1;
     }
-    while ( gptr->NextPt(seek,d1)!=0 && sign*(x[sa[ZZ]]-seek->pos[sa[ZZ]])>0.0 )
+    while ( gptr->NextPt(seek,d1)!=0 && gptr->NextPt(seek,d1)->isgd && sign*(x[sa[ZZ]]-seek->pos[sa[ZZ]])>0.0 )
       seek=gptr->NextPt(seek,d1);
 
 
@@ -800,7 +701,7 @@ void image::find_surrounding_cells(
     else {
       d1=get_negdir(sa[XX]); sign=-1;
     }
-    while ( gptr->NextPt(seek,d1)!=0 && sign*(x[sa[XX]]-seek->pos[sa[XX]])>0.0 )
+    while ( gptr->NextPt(seek,d1)!=0 && gptr->NextPt(seek,d1)->isgd && sign*(x[sa[XX]]-seek->pos[sa[XX]])>0.0 )
       seek=gptr->NextPt(seek,d1);
 
     //
@@ -917,6 +818,8 @@ void image::find_surrounding_cells(
       else
 	ngb[3] = 0;
     }
+
+    for (int v=0;v<4;v++) if (!ngb[v]->isgd) ngb[v]=0;
 
     //
     // Debug info:
