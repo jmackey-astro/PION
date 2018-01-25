@@ -9,6 +9,7 @@
 /// - 2015.02.09 JM: Split sim_control class into a setup class and
 ///   a derived class for running simulations.
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -123,7 +124,9 @@ setup_fixed_grid::~setup_fixed_grid()
 
 
 
-void setup_fixed_grid::setup_cell_extra_data()
+void setup_fixed_grid::setup_cell_extra_data(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //
   // Cells can need extra data for ray-tracing optical depths, eta-values for the
@@ -160,6 +163,7 @@ void setup_fixed_grid::setup_cell_extra_data()
 
 int setup_fixed_grid::setup_grid(
       class GridBaseClass **grid,
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       class MCMDcontrol * ///< unused for serial code.
       )
 {
@@ -199,7 +203,7 @@ int setup_fixed_grid::setup_grid(
   // May need to setup extra data in each cell for ray-tracing optical
   // depths and/or viscosity variables.
   //
-  setup_cell_extra_data();
+  setup_cell_extra_data(SimPM);
 
   //
   // Now we can setup the grid:
@@ -237,6 +241,7 @@ int setup_fixed_grid::setup_grid(
 
 
 int setup_fixed_grid::boundary_conditions(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       class GridBaseClass *grid 
       )
 {
@@ -261,7 +266,9 @@ int setup_fixed_grid::boundary_conditions(
 
 
 
-int setup_fixed_grid::setup_microphysics()
+int setup_fixed_grid::setup_microphysics(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   cout <<"------------------------------------------------------------\n";
   cout <<"----------------- MICROPHYSICS SETUP -----------------------\n";
@@ -467,6 +474,7 @@ int setup_fixed_grid::setup_microphysics()
 
 
 int setup_fixed_grid::setup_raytracing(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       class GridBaseClass *grid
       )
 {
@@ -581,7 +589,9 @@ int setup_fixed_grid::setup_raytracing(
 
 
 
-int setup_fixed_grid::setup_evolving_RT_sources()
+int setup_fixed_grid::setup_evolving_RT_sources(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //
   // Loop through list of sources, and see if any of them have an evolution
@@ -696,7 +706,7 @@ int setup_fixed_grid::setup_evolving_RT_sources()
   // source properties and send the changes to the raytracing class.  Need
   // time in secs, L,T,V in cgs and R in Rsun.
   //
-  err = update_evolving_RT_sources();
+  err = update_evolving_RT_sources(SimPM);
   return err;
 }
 
@@ -708,7 +718,9 @@ int setup_fixed_grid::setup_evolving_RT_sources()
 
 
 
-int setup_fixed_grid::update_evolving_RT_sources()
+int setup_fixed_grid::update_evolving_RT_sources(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   int err=0;
   bool updated=false;

@@ -9,6 +9,7 @@
 /// - 2009-10-20 Started on the file (moved from old equations.h)
 /// - 2010.12.23 JM: Added SetAvgState() function to eqns_mhd_ideal class.
 /// - 2015.08.03 JM: Added pion_flt for pion_flt *arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 ///
 
 #ifndef EQNS_MHD_ADIABATIC_H
@@ -40,6 +41,7 @@ class eqns_mhd_ideal : virtual public eqns_base {
    
   /// \brief convert from conserved to primitive variables. 
   virtual int UtoP(
+      class SimParams &, ///< pointer to simulation parameters
       const pion_flt *, ///< pointer to conserved variables.
       pion_flt *,       ///< pointer to Primitive variables.
       const double   ///< Gas constant gamma.

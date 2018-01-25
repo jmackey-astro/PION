@@ -55,6 +55,7 @@
 /// - 2015.01.28 JM: Removed parallel code, put into new class.
 /// - 2015.02.13 JM: read_fits_image_to_data() no longer allocates
 ///    memory for the image, so I do it in read_fits_image().
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 
 #ifdef FITS
@@ -312,8 +313,10 @@ int DataIOFits::OutputData(
 // ##################################################################
 
 
-int DataIOFits::ReadHeader(string infile ///< file to read from
-			   )
+int DataIOFits::ReadHeader(
+      string infile, ///< file to read from
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   int err=0; int status=0; fitsfile *ff;
 //  cout <<"DataIOFits::ReadHeader() opening fits file to read header...";

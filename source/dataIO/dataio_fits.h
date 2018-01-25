@@ -20,6 +20,7 @@
 ///    parameters and restart a simulation with e.g. different microphysics.
 /// - 2013.04.16 JM: choose_filename() made public.
 /// - 2015.01.28 JM: Tidied up, added "virtual" to some functions.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef DATAIO_FITS_H
 #define DATAIO_FITS_H
@@ -173,7 +174,8 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
   /// the right dimensions to take the data from the fits file.
   ///
   virtual int ReadHeader(
-        std::string ///< file to read from
+        std::string, ///< file to read from
+        class SimParams &  ///< pointer to simulation parameters
         );
 
   ///

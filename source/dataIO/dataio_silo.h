@@ -26,6 +26,7 @@
 /// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
 ///    parameter, set in the constructor.
 /// - 2016.03.18 JM: better treatment of float/double coordinates.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef DATAIO_SILO_H
 #define DATAIO_SILO_H
@@ -102,7 +103,8 @@ class dataio_silo :public DataIOBase {
   /// the right dimensions to take the data from the file.
   ///
   virtual int ReadHeader(
-      string ///< file to read from
+      string, ///< file to read from
+      class SimParams &  ///< pointer to simulation parameters
       );
 
 

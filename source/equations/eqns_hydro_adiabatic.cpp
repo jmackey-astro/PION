@@ -33,6 +33,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.14 JM: Added new include statements for new PION version.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -106,6 +107,7 @@ void eqns_Euler::PtoU(
 // ##################################################################
 
 int eqns_Euler::UtoP(
+      class SimParams &SimPM, ///< pointer to simulation parameters
       const pion_flt *u,
       pion_flt *p,
       const double gamma
