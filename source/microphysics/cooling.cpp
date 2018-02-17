@@ -32,6 +32,9 @@
 #include <iostream>
 using namespace std;
 
+#define GammaMinusOne 0.667
+
+
 CoolingFn::CoolingFn(int flag)
 {
   kB = pconst.kB();
@@ -508,7 +511,7 @@ double CoolingFn::CoolingRate(const double T,
     //if (T<T_inf) {
     //  //cout <<"\t\tcooling_rate(): artificially heating the gas...T="<<T<<"K, and we want T>=100K.\n";
     //  //cout <<"\t\tcooling_rate(): converting rate from "<<rate<<" to ";
-    //  rate += nH*nH*kB*(T-T_inf)/(SimPM.gamma-1.0)/t_c; 
+    //  rate += nH*nH*kB*(T-T_inf)/(GammaMinusOne)/t_c; 
     //  //cout <<rate<<"\n";
     //}
   } // SD93-CIE + Forbidden line
@@ -582,27 +585,17 @@ double CoolingFn::CoolingRate(const double T,
       //
       // means large energy gain for very low temperature cells (counteract neg.press.).
       //
-      rate += nH*kB*(T-T_min)/(SimPM.gamma-1.0)/t_h;
+      rate += nH*kB*(T-T_min)/(GammaMinusOne)/t_h;
     }
     else {
-#ifdef LOW_IONISATION_COOLING_HACK
-      //
-      // This is for if we only allow exponential cooling in cells with low ionisation.
-      //
-      if (xHp <=0.05) 
-	rate += max(0.0 ,
-		       nH*kB*(T-T_inf)/(SimPM.gamma-1.0)/t_c *exp(-T/1.e4)
-		       );
-#else
       //
       // "Standard" exponential cooling, where only cool neutral gas is affected.
       // The max(0,R) means that we don't get heating if T_min<T<T_inf  The exponential
       // part of the function has no effect in this case.
       //
       rate += max(0.0 ,
-		       (1.0+xHp)*(1.0-xHp)*(1.0-xHp)*nH*kB*(T-T_inf)/(SimPM.gamma-1.0)/t_c *exp(-T/1.e4)
-		       );
-#endif
+		 (1.0+xHp)*(1.0-xHp)*(1.0-xHp)*nH*kB*(T-T_inf)/(GammaMinusOne)/t_c *exp(-T/1.e4)
+		  );
     }
   } // SD93-CIE + Forbidden line [+toy-model Molecular cooling.]
 

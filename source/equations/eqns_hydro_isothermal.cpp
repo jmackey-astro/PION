@@ -47,9 +47,9 @@ void eqns_IsoEuler::PtoU(const double *p, ///< pointer to Primitive variables.
 }
 
 int eqns_IsoEuler::UtoP(
-      class SimParams &SimPM, ///< pointer to simulation parameters
       const double *u, ///< pointer to conserved variables.
       double *p,       ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
       const double   ///< unused (for gamma)
       )
 {
@@ -60,7 +60,7 @@ int eqns_IsoEuler::UtoP(
   p[eqAA] = u[eqAAA]/u[eqRHO];
   if (p[eqRO]<TINYVALUE) {
     cout <<"eqns_IsoEuler::UtoP() samll or negative density!!! rho="<<p[eqRO];
-    p[eqRO] = BASEPG*SimPM.RefVec[RO];
+    p[eqRO] = BASE_RHO:;
     cout <<"\t setting to base value. rho="<<p[eqRO]<<"\n";
     return 1;
   }

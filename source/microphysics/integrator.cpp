@@ -330,10 +330,6 @@ int Integrator_Base::Step_RK5CK(const int nv,   ///< number of elements in P arr
       pf[v] = p0[v] +k1[v]*dt;
       dp[v] = k1[v]*dt; // this is max absolute error
     }
-    //if (SimPM.timestep==200  && fll==0) {
-    //  cout <<"easy step: ntimes = "<<ntimes<<" and nnot = "<<nnot<<"\n";
-    //  fll++;
-    //}
     return err;
   }
   //  else nnot++;

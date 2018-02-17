@@ -54,9 +54,9 @@ class eqns_base {
   /// update went badly.
   ///
   virtual int UtoP(
-      class SimParams &, ///< pointer to simulation parameters
       const pion_flt *, ///< pointer to conserved variables.
       pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
       const double    ///< Gas constant gamma.
       ) =0;
 
