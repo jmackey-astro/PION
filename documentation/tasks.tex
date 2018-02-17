@@ -7,11 +7,11 @@
 %\usepackage[numbers,comma]{natbib}
 \usepackage{natbib}
 %\bibpunct{(}{)}{;}{a}{,}{,}
-\bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
+%\bibliographystyle{../../../documentation_misc/bibtex/apj.bst}
 \usepackage{amsmath}
 \usepackage{amssymb}
 
-\input{../../../documentation_misc/bibtex/defs}
+%\input{../../../documentation_misc/bibtex/defs}
 
 \usepackage[T1]{fontenc}
 \usepackage{times}
@@ -53,14 +53,30 @@ Done:
 \section{Development for version 0.2}
 To do:
 \begin{itemize}
-\item Get new grid working in serial.
-\item move parallel-parameters into the new parallel grid class as much as possible.
-\item get new grid working in parallel with hydro/MHD.
-\item get new grid working in parallel with raytracing.
+\item XXX Get new grid working in serial.
+\item XXX move parallel-parameters into the new parallel grid class as much as possible.
+\item XXX get new grid working in parallel with hydro/MHD.
+\item XXX get new grid working in parallel with raytracing.
 \end{itemize}
 
+\section{Development for Release 1.0}
 
-\bibliography{../../../../documentation_misc/bibtex/refs}
+\subsection{Making SimPM non-global}
+
+\begin{enumerate}
+\item Microphysics is a bit difficult:  So far we need:
+\begin{itemize}
+\item \verb|ftr|
+\item \verb|EP.MinTemperature|
+\item \verb|EP.MP_timestep_limit|
+\item \verb|RS|
+\item \verb|gamma|
+\item \verb|coord_sys|
+\time \verb|ndim|
+\end{itemize}
+\end{enumerate}
+
+%\bibliography{../../../../documentation_misc/bibtex/refs}
 \end{document}
 
 

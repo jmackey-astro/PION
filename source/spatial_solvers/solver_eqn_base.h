@@ -160,6 +160,7 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
       pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
       pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
       const double, ///< gas EOS gamma.
+      const double, ///< Min Temperature allowed on grid.
       const double  ///< Cell timestep dt.
       )=0;
 

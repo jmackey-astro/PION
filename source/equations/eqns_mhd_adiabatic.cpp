@@ -100,9 +100,9 @@ void eqns_mhd_ideal::PtoU(
 // ##################################################################
 
 int eqns_mhd_ideal::UtoP(
-      class SimParams &SimPM, ///< pointer to simulation parameters
       const pion_flt *u,
       pion_flt *p,
+      const double MinTemp, ///< minimum temperature/pressure allowed
       const double gamma
       )
 {
@@ -141,7 +141,7 @@ int eqns_mhd_ideal::UtoP(
     }
     // reset all variables because a negative density will change the sign of 
     // all of the velocities!
-    p[eqRO] = BASE_RHO*SimPM.RefVec[RO];
+    p[eqRO] = BASE_RHO;
     p[eqVX] *= u[eqRHO]/p[eqRO];
     p[eqVY] *= u[eqRHO]/p[eqRO];
     p[eqVZ] *= u[eqRHO]/p[eqRO];
@@ -163,21 +163,21 @@ int eqns_mhd_ideal::UtoP(
     //
     //cout <<"UtoP() mhd set-neg-press-to-fixed-T.  P<0\n";
     if (MP) {
-      MP->Set_Temp(p,SimPM.EP.MinTemperature,gamma);
+      MP->Set_Temp(p,MinTemp,gamma);
     }
     else {
       //
-      // If not, assume mu*m_p=2.34e-24g, and set p=k*rho
+      // If not, set p=0.01*rho
       //
-      p[eqPG] = 5.8974e8*p[eqRO];
+      p[eqPG] = 0.01*p[eqRO];
     }
   }
-  else if (MP && (MP->Temperature(p,gamma) <SimPM.EP.MinTemperature)) {
+  else if (MP && (MP->Temperature(p,gamma) <MinTemp)) {
     //
     // If we have microphysics, just set T=10K.
     //
     //cout <<"UtoP() mhd set-neg-press-to-fixed-T.  T<Tmin\n";
-    MP->Set_Temp(p,SimPM.EP.MinTemperature,gamma);
+    MP->Set_Temp(p,MinTemp,gamma);
   }
 
 #else // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -187,7 +187,7 @@ int eqns_mhd_ideal::UtoP(
       cout <<"(eqns_mhd_ideal::UtoP) negative pressure...p="<<p[eqPG];
       cout <<", correcting, count="<<ct_pg<<"\n";
     }
-    p[eqPG] =  BASEPG*SimPM.RefVec[PG];
+    p[eqPG] = 0.01*p[eqRO];
     err += 1;
   }
 #endif // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -589,12 +589,13 @@ void eqns_mhd_mixedGLM::PtoU(
 int eqns_mhd_mixedGLM::UtoP(
       const pion_flt *U, ///< pointer to conserved variables.
       pion_flt *P,       ///< pointer to Primitive variables.
+      const double MinTemp, ///< minimum temperature/pressure allowed
       const double g   ///< Gas constant gamma.
       )
 {
   //  cout <<"glm utop\n";
   P[eqSI]=U[eqPSI];
-  return(eqns_mhd_ideal::UtoP(U,P,g));
+  return(eqns_mhd_ideal::UtoP(U,P,MinTemp, g));
 }
 
 

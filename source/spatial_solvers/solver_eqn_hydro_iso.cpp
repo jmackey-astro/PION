@@ -31,15 +31,16 @@ using namespace std;
 // **************************************
 // ***** FV SOLVER HYDRO ISOTHERMAL *****
 // **************************************
-FV_solver_Hydro_iso::FV_solver_Hydro_iso(const int nv, ///< number of variables in state vector.
-					 const int nd, ///< number of space dimensions in grid.
-					 const double cflno,   ///< CFL number
-					 const double cellsize,    ///< dx, cell size.
-					 const double,     ///< gas eos gamma.
-					 double *state,     ///< State vector of mean values for simulation.
-					 const double avcoeff, ///< Artificial Viscosity Parameter etav.
-					 const int ntr         ///< Number of tracer variables.
-					 )
+FV_solver_Hydro_iso::FV_solver_Hydro_iso(
+      const int nv, ///< number of variables in state vector.
+      const int nd, ///< number of space dimensions in grid.
+      const double cflno,   ///< CFL number
+      const double cellsize,    ///< dx, cell size.
+      const double,     ///< gas eos gamma.
+      double *state,     ///< State vector of mean values for simulation.
+      const double avcoeff, ///< Artificial Viscosity Parameter etav.
+      const int ntr         ///< Number of tracer variables.
+      )
   : eqns_base(nv), riemann_base(nv), flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,0,avcoeff,ntr),
     eqns_IsoEuler(nv), riemann_hydro_iso(nv,state), flux_solver_hydro_iso(nv,state,avcoeff,ntr),
@@ -63,9 +64,14 @@ void FV_solver_Hydro_iso::PtoU(const double* p, double* u, const double)
   return;
 }
 
-int FV_solver_Hydro_iso::UtoP(const double *u, double *p, const double)
+int FV_solver_Hydro_iso::UtoP(
+      const double *u,
+      double *p,
+      const double MinTemp,
+      const double
+      )
 {
-  int err=eqns_IsoEuler::UtoP(u,p,0);
+  int err=eqns_IsoEuler::UtoP(u,p,MinTemp, 0);
   for (int t=0;t<FS_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
   return err;
 }
@@ -112,13 +118,15 @@ int FV_solver_Hydro_iso::dU_Cell(cell *c,          // Current cell.
 /// General Finite volume scheme for updating a cell's
 /// primitive state vector, for homogeneous equations.
 ///
-int FV_solver_Hydro_iso::CellAdvanceTime(const double *Pin, // Initial State Vector.
-					 double *dU, // Update vector dU
-					 double *Pf, // Final state vector (can be same as initial vec.).
-					 double *dE, // Tracks change of energy if I have to correct for negative pressure
-					 const double, // gas EOS gamma.
-					 const double  // Cell timestep dt.
-					 )
+int FV_solver_Hydro_iso::CellAdvanceTime(
+      const double *Pin, // Initial State Vector.
+      double *dU, // Update vector dU
+      double *Pf, // Final state vector (can be same as initial vec.).
+      double *dE, // Tracks change of energy if I have to correct for negative pressure
+      const double, // gas EOS gamma.
+      const double MinTemp, ///< Min Temperature allowed on grid.
+      const double  // Cell timestep dt.
+      )
 {
   double u1[eq_nvar], u2[eq_nvar];
 
@@ -143,7 +151,7 @@ int FV_solver_Hydro_iso::CellAdvanceTime(const double *Pin, // Initial State Vec
     u1[v] += dU[v];   // Update conserved variables
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
-  if(UtoP(u1,Pf, 0)!=0) {
+  if(UtoP(u1,Pf,MinTemp, 0)!=0) {
     cout<<"(LF_FVSolver::CellAdvanceTime) UtoP complained (maybe about negative pressure...) fixing\n";
 #ifdef TESTING
     //grid->PrintCell(dp.c);
@@ -155,17 +163,9 @@ int FV_solver_Hydro_iso::CellAdvanceTime(const double *Pin, // Initial State Vec
     //rep.printVec("dU ",dU, SimPM.nvar);
     PtoU(Pf, u2, 0);
     *dE += (u2[ERG]-u1[ERG]);
-    UtoP(u2,Pf, 0);
+    UtoP(u2,Pf,MinTemp, 0);
   }
 
-#ifdef TESTING
-  //  else if (dp.c->id==5887) {
-  //    grid->PrintCell(dp.c->ngb[XN]);
-  //    grid->PrintCell(dp.c);
-  //    grid->PrintCell(dp.c->ngb[XP]);
-  //    grid->PrintCell(dp.c->ngb[XP]->ngb[XP]);
-  //  }
-#endif //TESTING
 
   return 0;
 }
@@ -173,10 +173,11 @@ int FV_solver_Hydro_iso::CellAdvanceTime(const double *Pin, // Initial State Vec
 ///
 /// Given a cell, calculate the hydrodynamic timestep.
 ///
-double FV_solver_Hydro_iso::CellTimeStep(const cell *c, ///< pointer to cell
-					 const double, ///< gas EOS gamma.
-					 const double  ///< Cell size dx.
-					 )
+double FV_solver_Hydro_iso::CellTimeStep(
+      const cell *c, ///< pointer to cell
+      const double, ///< gas EOS gamma.
+      const double  ///< Cell size dx.
+      )
 {
   /** \section Algorithm
    * First Get the maximum fluid velocity in each of the three directions.

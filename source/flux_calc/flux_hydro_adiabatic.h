@@ -112,10 +112,10 @@ public:
   /// conserved variable is the mass density of this.
   ///
   virtual int UtoP(
-      class SimParams &, ///< pointer to simulation parameters
       const pion_flt *, ///< pointer to conserved variables.
-      pion_flt *, ///< pointer to Primitive variables.
-      const double    ///< Gas constant gamma.
+      pion_flt *,       ///< pointer to Primitive variables.
+      const double,     ///< minimum temperature/pressure allowed
+      const double      ///< Gas constant gamma.
       );
 
   ///

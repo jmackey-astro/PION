@@ -454,9 +454,9 @@ void flux_solver_hydro_adi::PtoU(
 
 
 int flux_solver_hydro_adi::UtoP(
-      class SimParams &SimPM, ///< pointer to simulation parameters
       const pion_flt *u,
       pion_flt *p,
+      const double MinTemp, ///< minimum temperature/pressure allowed
       const double g
       )
 {
@@ -464,7 +464,7 @@ int flux_solver_hydro_adi::UtoP(
   cout <<"flux_solver_hydro_adi::UtoP ...starting.\n";
 #endif //FUNCTION_ID
 
-  int err=eqns_Euler::UtoP(SimPM,u,p,g);
+  int err=eqns_Euler::UtoP(u,p,MinTemp,g);
   for (int t=0;t<FS_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
 
 #ifdef FUNCTION_ID

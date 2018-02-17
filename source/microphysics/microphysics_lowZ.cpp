@@ -48,6 +48,7 @@ using namespace std;
 
 microphysics_lowz::microphysics_lowz(const int nv,
 				     const int ntracer,
+                                     const int ftr,  ///< first tracer.
 				     const std::string &tracers,
 				     struct which_physics *ephys
 				     )
@@ -73,7 +74,10 @@ microphysics_lowz::microphysics_lowz(const int nv,
   ep.phot_ionisation   = ephys->phot_ionisation;
   ep.raytracing        = ephys->raytracing;
   ep.update_erg        = ephys->update_erg;
-  if (!ep.chemistry) {ep.coll_ionisation = ep.rad_recombination = ep.phot_ionisation = 0;}
+  if (!ep.chemistry) {
+    ep.coll_ionisation = ep.rad_recombination =
+                         ep.phot_ionisation = 0;
+  }
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   //
@@ -84,8 +88,6 @@ microphysics_lowz::microphysics_lowz(const int nv,
   cout <<"\t\tSetting up Tracer Variables.";
   get_problem_size(&Yvector_length, &Nspecies);
   Nspecies = Yvector_length-1;
-  //microphysics_lowz::Nspecies = SimPM.ntracer;
-  //microphysics_lowz::Yvector_length = Nspecies+1;
 
   //
   // Local state vector.  We have density, internal energy,
@@ -371,22 +373,6 @@ int microphysics_lowz::TimeUpdateMP(
   // This isn't really needed for anything.
   //
   *ttt = Eint;
-
-#ifdef MP_DEBUG
-  //
-  // TESTING !!!
-  //
-  Column_density = 0.0;
-  conversion_JMcode( density, col, P );
-  calculate_X(Yf,X);
-  calculate_T(Yf,X,P[0],*ttt);
-  if (*ttt<SimPM.EP.MinTemperature) {
-    cout <<"Output temperature to MP is too low!  T_in="<<*ttt<<"\n";
-  }
-  //
-  // TESTING !!!
-  //
-#endif // MP_DEBUG
 
   //
   // put updated state vector into p_out.
@@ -745,19 +731,14 @@ double microphysics_lowz::timescales_RT(
 
 
 
-int microphysics_lowz::Init_ionfractions(double *p, ///< Primitive vector to be updated.
-			const double g, ///< eos gamma.
-			const double    ///< optional gas temperature to end up at. (-ve means use pressure)
-			)
+int microphysics_lowz::Init_ionfractions(
+      double *p, ///< Primitive vector to be updated.
+      const double g, ///< eos gamma.
+      const double    ///< optional gas temperature to end up at. (-ve means use pressure)
+      )
 {
   //
   // We should have Nspecies tracers, so put them in a vector.
-  //
-  //std::vector<double> Yi;
-  //for (int v=0;v<SimPM.ntracer; v++) {
-  //  Yi.push_back(-1.0);
-  //}
-  // Yi should be the right size already.
   //
   Y_init(Yi);
   cout <<"Yi = [";

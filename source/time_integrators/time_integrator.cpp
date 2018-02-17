@@ -1216,7 +1216,7 @@ int sim_control_fixedgrid::grid_update_state_vector(
     dp.c = c;
 #endif
     err += eqn->CellAdvanceTime(c, c->P, c->dU, c->Ph, &temperg,
-                                SimPM.gamma, dt);
+                        SimPM.gamma, SimPM.EP.MinTemperature, dt);
 #ifdef TESTING
     if (err) {
       cout <<"______ Error in Cell-advance-time: "; CI.print_cell(c);
