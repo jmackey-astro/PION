@@ -216,6 +216,13 @@ class point_quantities {
           const struct point_4cellavg *
           );
 
+  void get_point_Xray_X01_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *,   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+  
 };
 
 

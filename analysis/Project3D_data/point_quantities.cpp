@@ -29,6 +29,8 @@
 
 #include "point_quantities.h"
 
+#include "xray_emission.h"
+
 using namespace std;
 
 
@@ -589,5 +591,41 @@ double point_quantities::get_point_Bremsstrahlung20cm(
 // ##################################################################
 // ##################################################################
 
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X01_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j,        ///< emission coeff (phot/cm^3/s/ster)
+        class Xray_emission &XR ///< pointer to class for getting X-ray em
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  XR.get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[0] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
 
 

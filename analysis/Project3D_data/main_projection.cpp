@@ -92,6 +92,8 @@ using namespace std;
 
 
 #include "raytracing/raytracer_SC.h"
+
+#include "xray_emission.h"
 // ----------- MICROPHYSICS --------------
 
 
@@ -486,7 +488,8 @@ int main(int argc, char **argv)
   // im is a pointer to one of im1/2/3/4/5
   // 
   double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0,
-         *im7=0, *im8=0, *im9=0, *im10=0, *im11=0;
+         *im7=0, *im8=0, *im9=0, *im10=0, *im11=0, *im12=0, *im13=0, *im14=0, *im15=0, 
+         *im16=0, *im17=0, *im18=0;
   long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
 
   //
@@ -536,21 +539,28 @@ int main(int argc, char **argv)
 
   case I_ALL_SCALARS:
     if (SIMeqns==1) 
-      n_images = 6; // No B-field components (dens, NH0, HA, NII, EM, 20cm)
+      n_images = 13; // No B-field components (dens, NH0, HA, NII, EM, 20cm, xray)
     else
-      n_images = 11; // Project Stokes Q,U and BX,BT, RM
+      n_images = 18; // Project Stokes Q,U and BX,BT, RM
     im1 = mem.myalloc(im1,nels);
     im2 = mem.myalloc(im2,nels);
     im3 = mem.myalloc(im3,nels);
     im4 = mem.myalloc(im4,nels);
     im5 = mem.myalloc(im5,nels);
     im6 = mem.myalloc(im6,nels);
+    im7 = mem.myalloc(im7,nels);
+    im8 = mem.myalloc(im8,nels);
+    im9 = mem.myalloc(im9,nels);
+    im10 = mem.myalloc(im10,nels);
+    im11 = mem.myalloc(im11,nels);
+    im12 = mem.myalloc(im12,nels);
+    im13 = mem.myalloc(im13,nels);
     if (SIMeqns==2) { 
-      im7 = mem.myalloc(im7,nels);
-      im8 = mem.myalloc(im8,nels);
-      im9 = mem.myalloc(im9,nels);
-      im10 = mem.myalloc(im10,nels);
-      im11 = mem.myalloc(im11,nels);
+      im14 = mem.myalloc(im14,nels);
+      im15 = mem.myalloc(im15,nels);
+      im16 = mem.myalloc(im16,nels);
+      im17 = mem.myalloc(im17,nels);
+      im18 = mem.myalloc(im18,nels);
     }
     what2int  = mem.myalloc(what2int ,n_images);
     img_array = mem.myalloc(img_array,n_images);
@@ -560,12 +570,19 @@ int main(int argc, char **argv)
     what2int[3] = I_NII6584;
     what2int[4] = I_EM;
     what2int[5] = I_BREMS20CM;
+    what2int[6] = I_X01;
+    what2int[7] = I_X02;
+    what2int[8] = I_X05;
+    what2int[9] = I_X10;
+    what2int[10] = I_X20;
+    what2int[11] = I_X50;
+    what2int[12] = I_X100;
     if (SIMeqns==2) { 
-      what2int[6] = I_B_STOKESQ;
-      what2int[7] = I_B_STOKESU;
-      what2int[8] = I_BXabs;
-      what2int[9] = I_BYabs;
-      what2int[10]= I_RM;
+      what2int[13] = I_B_STOKESQ;
+      what2int[14] = I_B_STOKESU;
+      what2int[15] = I_BXabs;
+      what2int[16] = I_BYabs;
+      what2int[17]= I_RM;
     }
     img_array[0] = im1;
     img_array[1] = im2;
@@ -573,12 +590,19 @@ int main(int argc, char **argv)
     img_array[3] = im4;
     img_array[4] = im5;
     img_array[5] = im6;
+    img_array[6] = im7;
+    img_array[7] = im8;
+    img_array[8] = im9;
+    img_array[9] = im10;
+    img_array[10] = im11;
+    img_array[11] = im12;
+    img_array[12] = im13;
     if (SIMeqns==2) { 
-      img_array[6] = im7;
-      img_array[7] = im8;
-      img_array[8] = im9;
-      img_array[9] = im10;
-      img_array[10]= im11;
+      img_array[13] = im14;
+      img_array[14] = im15;
+      img_array[15] = im16;
+      img_array[16] = im17;
+      img_array[17] = im18;
     }
 #ifdef SUBTRACT_MEAN
     //
@@ -707,12 +731,19 @@ int main(int argc, char **argv)
       for (int v=0;v<nels; v++) im4[v] = 0.0;
       for (int v=0;v<nels; v++) im5[v] = 0.0;
       for (int v=0;v<nels; v++) im6[v] = 0.0;
+      for (int v=0;v<nels; v++) im7[v] = 0.0;
+      for (int v=0;v<nels; v++) im8[v] = 0.0;
+      for (int v=0;v<nels; v++) im9[v] = 0.0;
+      for (int v=0;v<nels; v++) im10[v] = 0.0;
+      for (int v=0;v<nels; v++) im11[v] = 0.0;
+      for (int v=0;v<nels; v++) im12[v] = 0.0;
+      for (int v=0;v<nels; v++) im13[v] = 0.0;
       if (SIMeqns==2) { 
-        for (int v=0;v<nels; v++) im7[v] = 0.0;
-        for (int v=0;v<nels; v++) im8[v] = 0.0;
-        for (int v=0;v<nels; v++) im9[v] = 0.0;
-        for (int v=0;v<nels; v++) im10[v]= 0.0;
-        for (int v=0;v<nels; v++) im11[v]= 0.0;
+        for (int v=0;v<nels; v++) im14[v] = 0.0;
+        for (int v=0;v<nels; v++) im15[v] = 0.0;
+        for (int v=0;v<nels; v++) im16[v] = 0.0;
+        for (int v=0;v<nels; v++) im17[v] = 0.0;
+        for (int v=0;v<nels; v++) im18[v] = 0.0;
       }
       break;
 
@@ -1026,29 +1057,43 @@ int main(int argc, char **argv)
         im_name[0]=t.str();
         break;
       case I_ALL_SCALARS:
-        t<<"Proj_Dens";
+        t<<"AA_Dens";
         im_name[0]=t.str(); t.str("");
-        t<<"Proj_NH";
+        t<<"AA_NH";
         im_name[1]=t.str(); t.str("");
-        t<<"Proj_Halpha";
+        t<<"AA_Halpha";
         im_name[2]=t.str(); t.str("");
-        t<<"Proj_NII6584";
+        t<<"AA_NII6584";
         im_name[3]=t.str(); t.str("");
-        t<<"Proj_EM";
+        t<<"AA_EM";
         im_name[4]=t.str(); t.str("");
-        t<<"Proj_BREMS20CM";
+        t<<"AA_BREMS20CM";
         im_name[5]=t.str(); t.str("");
+        t<<"AA_XRAY_g0p1keV";
+        im_name[6]=t.str(); t.str("");
+        t<<"AA_XRAY_g0p2keV";
+        im_name[7]=t.str(); t.str("");
+        t<<"AA_XRAY_g0p5keV";
+        im_name[8]=t.str(); t.str("");
+        t<<"AA_XRAY_g1p0keV";
+        im_name[9]=t.str(); t.str("");
+        t<<"AA_XRAY_g2p0keV";
+        im_name[10]=t.str(); t.str("");
+        t<<"AA_XRAY_g5p0keV";
+        im_name[11]=t.str(); t.str("");
+        t<<"AA_XRAY_g10p0keV";
+        im_name[12]=t.str(); t.str("");
         if (SIMeqns==2) { 
           t<<"Proj_b_q";
-          im_name[6]=t.str(); t.str("");
+          im_name[13]=t.str(); t.str("");
           t<<"Proj_b_u";
-          im_name[7]=t.str(); t.str("");
+          im_name[14]=t.str(); t.str("");
           t<<"Proj_bxabs";
-          im_name[8]=t.str(); t.str("");
+          im_name[15]=t.str(); t.str("");
           t<<"Proj_byabs";
-          im_name[9]=t.str(); t.str("");
+          im_name[16]=t.str(); t.str("");
           t<<"Proj_RM";
-          im_name[10]=t.str(); t.str("");
+          im_name[17]=t.str(); t.str("");
         }
         break;
       default:
@@ -1145,6 +1190,13 @@ int main(int argc, char **argv)
   im9 = mem.myfree(im9);
   im10= mem.myfree(im10);
   im11= mem.myfree(im11);
+  im12 = mem.myfree(im11);
+  im13 = mem.myfree(im12);
+  im14 = mem.myfree(im13);
+  im15 = mem.myfree(im14);
+  im16 = mem.myfree(im15);
+  im17= mem.myfree(im16);
+  im18= mem.myfree(im17);
   img_array=mem.myfree(img_array);
   what2int=mem.myfree(what2int);
 #ifdef SUBTRACT_MEAN
