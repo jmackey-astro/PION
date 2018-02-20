@@ -598,8 +598,7 @@ void point_quantities::get_point_Xray_X01_params(
         const struct point_4cellavg *pt, ///< point in question.
         const int ifrac, ///< index of Prim.Vector with Ion. fraction.
         double *alpha,   ///< absorption coefficient (/cm)
-        double *j,        ///< emission coeff (phot/cm^3/s/ster)
-        class Xray_emission &XR ///< pointer to class for getting X-ray em
+        double *j
         )
 {
   // Need the electron number density and temperature.
@@ -611,7 +610,7 @@ void point_quantities::get_point_Xray_X01_params(
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  XR.get_xray_emissivity(T,xr);
+  get_xray_emissivity(T,xr);
 
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
