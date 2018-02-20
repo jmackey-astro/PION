@@ -259,7 +259,8 @@ VectorOps_spherical.o \
   mpv5_molecular.o            \
   mpv6_PureH.o                \
   mpv7_TwoTempIso.o           \
-  mpv8_StarBench_heatcool.o
+  mpv8_StarBench_heatcool.o   \
+  xray_emission.o
 
         
 
@@ -289,6 +290,8 @@ timer.o: tools/timer.cpp tools/timer.h ${GLOBAL}
 command_line_interface.o: tools/command_line_interface.cpp ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 sim_params.o: 	  sim_params.cpp ${GLOBAL}
+
+xray_emission.o: xray_emission.cpp xray_emission.h ${GLOBAL}
 
 cell_interface.o: cell_interface.cpp  cell_interface.h ${GLOBAL}
 uniform_grid.o:   uniform_grid.cpp  uniform_grid.h  ${GLOBAL} \
@@ -377,9 +380,9 @@ mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
 ###############################
 
 point_quantities.o: point_quantities.cpp point_quantities.h ${GLOBAL}
-sim_projection.o: sim_projection.cpp sim_projection.h point_quantities.h \
+sim_projection.o: sim_projection.cpp sim_projection.h point_quantities.h xray_emission.h \
                   ${GLOBAL} uniform_grid.h dataIO/dataio.h
-main_projection.o: main_projection.cpp sim_projection.h point_quantities.h \
+main_projection.o: main_projection.cpp sim_projection.h point_quantities.h xray_emission.h \
                   ${GLOBAL} uniform_grid.h dataIO/dataio.h
 image_io.o: image_io.cpp image_io.h  dataIO/dataio.h  dataIO/dataio_fits.h ${GLOBAL}
 

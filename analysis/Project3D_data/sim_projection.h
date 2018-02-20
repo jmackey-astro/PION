@@ -13,6 +13,7 @@
 ///    constants.h
 /// - 2015.07.13 JM: Multithreaded add_integration_pts_to_pixels
 /// - 2015.10.13 JM: added 20cm Bremsstrahlung and Emission measure
+/// - 2018.02.20 SG: Added X-ray emission for several energies.
 
 
 #ifndef SIM_PROJECTION_H
@@ -32,6 +33,13 @@
 #define I_RM         11   ///< Rotation Measure
 #define I_BREMS20CM  12   ///< 20cm Bremsstrahlung
 #define I_EM         13   ///< Emission measure (projected n_e^2)
+#define I_X01        14   ///< X-ray emission >0.1 keV
+#define I_X02        15   ///< X-ray emission >0.2 keV
+#define I_X05        16   ///< X-ray emission >0.5 keV
+#define I_X10        17   ///< X-ray emission >1.0 keV
+#define I_X20        18   ///< X-ray emission >2.0 keV
+#define I_X50        19   ///< X-ray emission >5.0 keV
+#define I_X100        20   ///< X-ray emission >10.0 keV
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
