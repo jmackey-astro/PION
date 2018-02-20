@@ -627,4 +627,220 @@ void point_quantities::get_point_Xray_X01_params(
 // ##################################################################
 // ##################################################################
 
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X02_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[1] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X05_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[2] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X10_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[3] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X20_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[4] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X50_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[5] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
+///
+void point_quantities::get_point_Xray_X100_params(
+        const struct point_4cellavg *pt, ///< point in question.
+        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        double *alpha,   ///< absorption coefficient (/cm)
+        double *j
+        )
+{
+  // Need the electron number density and temperature.
+
+  double T, ne;
+  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
+
+  T  = get_point_temperature(pt,ifrac);
+  ne = get_point_electron_numberdensity(pt);
+
+  // Assume n_e=n_p (i.e. ignore electrons from Helium).
+  get_xray_emissivity(T,xr);
+
+  if (T<1.0) {
+    // can get zero temperature if point is off-grid.
+    *j = 0.0;
+  }
+  else {
+    *j = xr[6] * ne * ne;
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 

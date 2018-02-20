@@ -225,6 +225,48 @@ class point_quantities :Xray_emission{
           double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
           );
   
+  void get_point_Xray_X02_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+          
+  void get_point_Xray_X05_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
+  void get_point_Xray_X10_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
+  void get_point_Xray_X20_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
+  void get_point_Xray_X50_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
+  void get_point_Xray_X100_params(
+          const struct point_4cellavg *, ///< point in question.
+          const int, ///< ifrac index in prim.vec.
+          double *,  ///< absorption coefficient (/cm)
+          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+          );
+
 };
 
 
