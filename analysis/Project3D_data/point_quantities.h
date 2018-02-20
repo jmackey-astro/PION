@@ -18,6 +18,8 @@
 #ifndef POINT_QUANTITIES_H
 #define POINT_QUANTITIES_H
 
+#include "xray_emission.h"
+
 ///
 /// integration point along line of sight of a pixel.  This point 
 /// is to be placed along a plane of cells, so the state vector at the 
@@ -34,7 +36,7 @@ struct point_4cellavg {
 ///
 /// Class for evaluating quantities at integration points.
 ///
-class point_quantities {
+class point_quantities :Xray_emission{
   public:
   ///
   /// constructor does nothing
