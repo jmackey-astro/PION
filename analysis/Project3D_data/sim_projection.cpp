@@ -1482,41 +1482,23 @@ void image::calculate_pixel(
   } // I_NII6584
 
   else if (what_to_integrate==I_X01) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
+
     double alpha=0.0, j=0.0, dtau=0.0;
     ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X01_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
 
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
-  } // I_X01
+    get_point_Xray_X01_params(&(px->int_pts.p[0]), SimPM.ftr, &alpha, &j);
+    ans = j;
+    for (int v=1; v<(npt-1); v++) {
+      wt = 6-wt;
+      get_point_Xray_X01_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+      ans += wt * j;
+    }
+    get_point_Xray_X01_params(&(px->int_pts.p[npt-1]), SimPM.ftr, &alpha, &j);
+    ans += j;
+    ans *= hh/3.0;
+    *tot_mass += ans;
+    im[px->ipix] = ans;
+  }
 
   else if (what_to_integrate==I_X02) {
     //
