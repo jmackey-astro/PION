@@ -871,17 +871,17 @@ int main(int argc, char **argv)
     // Replace projected |Bx|,|By| (images 6,7) with values calculated
     // from the Stokes Q and U values in images 4,5.
     //
-    if (n_images==9) {
-      double norm;
-      for (int ix=0;ix<num_pixels;ix++) {
-	norm = sqrt(img_array[6][ix]*img_array[6][ix]+
-		    img_array[7][ix]*img_array[7][ix]);
-	img_array[8][ix] =
-	  norm*cos(0.5*atan2(img_array[7][ix],img_array[6][ix]));
-	img_array[9][ix] =
-	  norm*sin(0.5*atan2(img_array[7][ix],img_array[6][ix]));
-      }
-    }
+  //  if (n_images==9) {
+  //    double norm;
+  //    for (int ix=0;ix<num_pixels;ix++) {
+	//norm = sqrt(img_array[6][ix]*img_array[6][ix]+
+	//	    img_array[7][ix]*img_array[7][ix]);
+	//img_array[8][ix] =
+	//  norm*cos(0.5*atan2(img_array[7][ix],img_array[6][ix]));
+	//img_array[9][ix] =
+	//  norm*sin(0.5*atan2(img_array[7][ix],img_array[6][ix]));
+  //    }
+  //  }
     // ***************************************************************
 
     //

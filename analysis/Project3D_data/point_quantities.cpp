@@ -615,10 +615,13 @@ void point_quantities::get_point_Xray_X01_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[0] * ne * ne;
+    *alpha = 0.0;
   }
+  //printf("%15.5e %15.5e %15.5e\n", T,  ne, xr[0]);
   return;
 }
 
@@ -651,9 +654,11 @@ void point_quantities::get_point_Xray_X02_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[1] * ne * ne;
+    *alpha = 0.0;
   }
   return;
 }
@@ -687,9 +692,11 @@ void point_quantities::get_point_Xray_X05_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[2] * ne * ne;
+    *alpha = 0.0;
   }
   return;
 }
@@ -723,9 +730,11 @@ void point_quantities::get_point_Xray_X10_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[3] * ne * ne;
+    *alpha = 0.0;
   }
   return;
 }
@@ -759,9 +768,11 @@ void point_quantities::get_point_Xray_X20_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[4] * ne * ne;
+    *alpha = 0.0;
   }
   return;
 }
@@ -795,9 +806,11 @@ void point_quantities::get_point_Xray_X50_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[5] * ne * ne;
+    *alpha = 0.0;
   }
   return;
 }
@@ -831,9 +844,11 @@ void point_quantities::get_point_Xray_X100_params(
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
+    *alpha = 0.0;
   }
   else {
     *j = xr[6] * ne * ne;
+    *alpha = 0.0;
   }
   return;
 }
