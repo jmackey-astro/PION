@@ -122,8 +122,7 @@ double point_quantities::get_point_neutralH_numberdensity(
 
 
 double point_quantities::get_point_temperature(
-        const struct point_4cellavg *pt,
-        const int ifrac
+        const struct point_4cellavg *pt
         )
 {
   double val = 0.0;
@@ -146,19 +145,6 @@ double point_quantities::get_point_temperature(
   }
   else {
     rep.error("get_point_temperature(): no microphysics class",1);
-    //  
-    // First get the mean of p/rho/(1+x)
-    //
-    for (int v=0;v<4;v++) {
-      if (pt->ngb[v]) {
-        //cout <<"p,ro,if = "<<pt->ngb[v]->P[PG]<<", "<< pt->ngb[v]->P[RO] <<", "<<pt->ngb[v]->P[ifrac]<<endl;
-        val += pt->wt[v] *(pt->ngb[v]->P[PG]/pt->ngb[v]->P[RO]/(1.0+pt->ngb[v]->P[ifrac]));
-      }
-    }
-    //
-    // multiply by m_p/k_B = 1.67e-24/1.38e-16 = 1.21e-8
-    //
-    val *= 1.21e-8;
   }
   //if (!isfinite(val))
   //  cout <<"Invalid Temperature="<<val<<endl;
@@ -436,7 +422,7 @@ void point_quantities::get_point_Halpha_params(
   // neutral_density).
   // 
   double T, ni, nn, ne;
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   nn = get_point_neutralH_numberdensity(pt);
   ni = get_point_ionizedH_numberdensity(pt);
   ne = get_point_electron_numberdensity(pt);
@@ -491,7 +477,7 @@ void point_quantities::get_point_NII6584_params(
   // neutral_density).
   // 
   double T, ni, nn, ne;
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   nn = get_point_neutralH_numberdensity(pt);
   ni = get_point_ionizedH_numberdensity(pt);
   ne = get_point_electron_numberdensity(pt);
@@ -606,7 +592,7 @@ void point_quantities::get_point_Xray_X01_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -618,7 +604,8 @@ void point_quantities::get_point_Xray_X01_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[0] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[0] * ne * ne;
     *alpha = 0.0;
   }
   //printf("%15.5e %15.5e %15.5e\n", T,  ne, xr[0]);
@@ -645,7 +632,7 @@ void point_quantities::get_point_Xray_X02_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -657,7 +644,8 @@ void point_quantities::get_point_Xray_X02_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[1] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[1] * ne * ne;
     *alpha = 0.0;
   }
   return;
@@ -683,7 +671,7 @@ void point_quantities::get_point_Xray_X05_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -695,7 +683,8 @@ void point_quantities::get_point_Xray_X05_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[2] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[2] * ne * ne;
     *alpha = 0.0;
   }
   return;
@@ -721,7 +710,7 @@ void point_quantities::get_point_Xray_X10_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -733,7 +722,8 @@ void point_quantities::get_point_Xray_X10_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[3] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[3] * ne * ne;
     *alpha = 0.0;
   }
   return;
@@ -759,7 +749,7 @@ void point_quantities::get_point_Xray_X20_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -771,7 +761,8 @@ void point_quantities::get_point_Xray_X20_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[4] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[4] * ne * ne;
     *alpha = 0.0;
   }
   return;
@@ -797,7 +788,7 @@ void point_quantities::get_point_Xray_X50_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -809,7 +800,8 @@ void point_quantities::get_point_Xray_X50_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[5] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[5] * ne * ne;
     *alpha = 0.0;
   }
   return;
@@ -835,7 +827,7 @@ void point_quantities::get_point_Xray_X100_params(
   double T, ne;
   double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
 
-  T  = get_point_temperature(pt,ifrac);
+  T  = get_point_temperature(pt);
   ne = get_point_electron_numberdensity(pt);
 
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
@@ -847,7 +839,8 @@ void point_quantities::get_point_Xray_X100_params(
     *alpha = 0.0;
   }
   else {
-    *j = xr[6] * ne * ne;
+    // prefactor converts to intensity in erg/cm2/s/square-arcsec
+    *j = 1.870e-12 * xr[6] * ne * ne;
     *alpha = 0.0;
   }
   return;

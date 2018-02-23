@@ -36,7 +36,7 @@ struct point_4cellavg {
 ///
 /// Class for evaluating quantities at integration points.
 ///
-class point_quantities :Xray_emission{
+class point_quantities : public Xray_emission {
   public:
   ///
   /// constructor does nothing
@@ -85,12 +85,10 @@ class point_quantities :Xray_emission{
 
   ///
   /// Get the temperature at a point, based on 4-cell bilinear
-  /// interpolation.  This uses a microphysics class if not using
-  /// threads, otherwise is HARDCODED!!!
+  /// interpolation.  This uses a microphysics class to get T.
   ///
   double get_point_temperature(
-          const struct point_4cellavg *, ///< point
-          const int                      ///< ifrac index in prim.vec.
+          const struct point_4cellavg * ///< point
           );
 
   ///
