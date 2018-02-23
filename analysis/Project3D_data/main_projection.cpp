@@ -182,11 +182,13 @@ int main(int argc, char **argv)
   //
   // Get input files and an output file.
   //
-  if (argc<10) {
+  if (argc<11) {
     cout << "Use as follows:\n";
     cout << "projection: <projection> <input-path> <input-silo-file-base>\n";
     cout << "\t\t <output-file> <op-file-type> <multi-opfiles> \n";
-    cout << "\t\t <normalvec> <fixed_dir> <theta> <what2integrate> +[optional velocity args] \n";
+    cout << "\t\t <normalvec> <fixed_dir> <theta> <what2integrate> ";
+    cout << " <skip>";
+    cout <<" +[optional velocity args] \n";
     cout <<"******************************************\n";
     cout <<"input path:   path to input files.\n";
     cout <<"input file:   base filename of sequence of filesn.\n";
@@ -198,6 +200,8 @@ int main(int argc, char **argv)
     cout <<"theta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).\n"; 
     cout <<"what2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha\n";
     cout <<"                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)";
+    cout <<"skip:         will skip this number of input files each loop. ";
+    cout <<"(0 means it will calculate every file)\n";
     cout <<"OPTIONAL VELOCITY ARGS:\n";
     cout <<"Nbins:        integer number of bins in velocity profile.\n";
     cout <<"v_min:        minimum velocity to measure (in same units as output files!)\n";
@@ -290,6 +294,9 @@ int main(int argc, char **argv)
   // 0=density, 1=neutral density, 2=LOS velocity, 3=VX, 4=emission,
   // 7=all_scalars, [5,6]=stokesQU, [8,9]=|B|(LOS,PERP)
 
+  // how sparsely to sample the data files.
+  size_t skip = static_cast<size_t>(atoi(argv[10]));
+
   //
   // Number of bins for each pixel value -- if getting velocity profiles we
   // will want this to be >1.  Should make this be dynamically allocateable.
@@ -303,11 +310,11 @@ int main(int argc, char **argv)
   
   if (what_to_integrate==I_VEL_LOS || what_to_integrate==I_VX) {
     if (argc<13) rep.error("Need at least 13 args for velocity profiling",argc);
-    Nbins = atoi(argv[10]);
-    v_min = atof(argv[11]);
-    v_max = atof(argv[12]);
-    smooth= atoi(argv[13]);
-    broadening=atof(argv[14]);
+    Nbins = atoi(argv[11]);
+    v_min = atof(argv[12]);
+    v_max = atof(argv[13]);
+    smooth= atoi(argv[14]);
+    broadening=atof(argv[15]);
     bin_size = (v_max-v_min)/Nbins;
     cout <<"Velocity info: max="<<v_max<<", min="<<v_min<<", binsize="<<bin_size;
     cout <<", Nb="<<Nbins<<", smooth="<<smooth<<", broaden by "<<broadening<<" cm/s\n";
@@ -663,7 +670,7 @@ int main(int argc, char **argv)
   //*******************************************************************
 
 
-  for (ifile=0; ifile< static_cast<unsigned int>(nfiles); ifile++) {
+  for (ifile=0; ifile< static_cast<unsigned int>(nfiles); ifile+=1+skip) {
     cout <<"--------------- Starting Next Loop: ifile="<<ifile<<"------\n";
 #ifdef TESTING
     cout <<"-------------------------------------------------------\n";
@@ -679,7 +686,7 @@ int main(int argc, char **argv)
     temp <<input_path<<"/"<<*ff;
     string infile = temp.str();
     temp.str("");
-    ff++;
+    for (size_t q=0;q<=skip;q++) ff++;
     //
     // Read header to get timestep info; 
     // also reset the domain to 1/2 the size in Y and Z (if needed).
