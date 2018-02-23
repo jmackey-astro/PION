@@ -2049,7 +2049,7 @@ void point_velocity::broaden_profile(
   // ma = mass of molecule/atom we are modelling.
   // sigma = the thermal broadening sigma in the gaussian.
   //
-  double T = get_point_temperature(pt,ifrac);
+  double T = get_point_temperature(pt);
   //double ma = 27.0*pconst.m_p(); // mass of 12CO molecule
   //double sigma2 = pconst.kB()*T/ma;
   //double sigma  = sqrt(sigma2);
