@@ -303,6 +303,12 @@ class mp_explicit_H
           const double    ///< EOS gamma (optional)
           );
   
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return EP->H_MassFrac;}
+
   protected:
   ///
   /// convert state vector from grid cell into local microphysics vector.

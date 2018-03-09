@@ -99,7 +99,10 @@ using namespace std;
 // ##################################################################
 
 
-DataIOFits::DataIOFits()
+DataIOFits::DataIOFits(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
+: DataIOBase(SimPM)
 {
   cout <<"Setting up DataIOFits class.\n";
   DataIOFits::eqn =0;
@@ -144,7 +147,7 @@ void DataIOFits::SetSolver(
 int DataIOFits::OutputData(
       string outfilebase,          ///< base filename
       class GridBaseClass *cg,     ///< pointer to data.
-//      class SimParams *sim_params, ///< pointer to simulation parameters
+      class SimParams &SimPM, ///< pointer to simulation parameters
 //      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
       const long int file_counter  ///< number to stamp file with (e.g. timestep)
       )
@@ -270,7 +273,7 @@ int DataIOFits::OutputData(
   // set file pointer for the header writing function.
   //
   file_ptr=ff;
-  err = write_simulation_parameters();
+  err = write_simulation_parameters(SimPM);
   if (err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
   ff=file_ptr;
   // --------------------------------------------------------
@@ -284,7 +287,7 @@ int DataIOFits::OutputData(
     //cout <<extname[i]<<"\t"<<SimPM.Xmin[2]<<"\t"<<SimPM.Xmax[2]<<"\t"<<SimPM.NG[2]<<"\t"<<SimPM.Ncell<<"\n";
     err += create_fits_image(ff,extname[i], SimPM.ndim, SimPM.NG);
     double *data=0;
-    err += put_variable_into_data_array(extname[i], SimPM.Ncell, &data);
+    err += put_variable_into_data_array(SimPM, extname[i], SimPM.Ncell, &data);
     err += write_fits_image(ff, extname[i], SimPM.Xmin, SimPM.Xmin, gp->DX(), SimPM.ndim, SimPM.NG, SimPM.Ncell, data);
     data = mem.myfree(data);
   }
@@ -339,7 +342,7 @@ int DataIOFits::ReadHeader(
   // set file pointer for the header reading function.
   //
   file_ptr=ff;
-  err += read_simulation_parameters();
+  err += read_simulation_parameters(SimPM);
   if (err) 
     rep.error("DataIOFits::ReadHeader() read fits header failed.",err);
   ff=file_ptr;
@@ -361,8 +364,9 @@ int DataIOFits::ReadHeader(
 
 
 int DataIOFits::WriteHeader(
-          const string fname ///< file to write to (full, exact filename).
-	  )
+      const string fname, ///< file to write to (full, exact filename).
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   int err=0; int status=0; fitsfile *ff;
   err = fits_open_file(&ff, fname.c_str(), READWRITE, &status);
@@ -386,7 +390,7 @@ int DataIOFits::WriteHeader(
   // set file pointer for the header writing function; then write the header.
   //
   file_ptr=ff;
-  err = write_simulation_parameters();
+  err = write_simulation_parameters(SimPM);
   if (err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
   ff=file_ptr;
 
@@ -405,9 +409,11 @@ int DataIOFits::WriteHeader(
 
 
 
-int DataIOFits::ReadData(string infile,
-			 class GridBaseClass *cg
-			 )
+int DataIOFits::ReadData(
+      string infile,
+      class GridBaseClass *cg,
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   string fname="DataIOFits::ReadData";
 
@@ -490,7 +496,7 @@ int DataIOFits::ReadData(string infile,
       err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, SimPM.NG);
       if (err) rep.error("image wrong size.",err);
       //      cout <<"***************ncell = "<<SimPM.Ncell<<"\n";
-      err += read_fits_image(ff, var[i], SimPM.Xmin, SimPM.Xmin, SimPM.NG, SimPM.Ncell);
+      err += read_fits_image(SimPM, ff, var[i], SimPM.Xmin, SimPM.Xmin, SimPM.NG, SimPM.Ncell);
       if (err) rep.error("error reading image.",err);
       //  cout <<"\t\tDataIOFits::ReadData() Got fits image.\n";
     } // got real hdu and read data.
@@ -719,6 +725,7 @@ int DataIOFits::write_header_param(class pm_base *p)
 
 
 int DataIOFits::put_variable_into_data_array(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       const string name,   ///< variable name to put in array.
       const long int ntot, ///< size of data array to be initialised.
       double **data        ///< pointer to uninitialised data.
@@ -811,7 +818,15 @@ int DataIOFits::put_variable_into_data_array(
 
 
 
-int DataIOFits::read_fits_image(fitsfile *ff, string name, double *localxmin, double *globalxmin, int *npt, long int ntot)
+int DataIOFits::read_fits_image(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      fitsfile *ff,
+      string name,
+      double *localxmin,
+      double *globalxmin,
+      int *npt,
+      long int ntot
+      )
 {
   double *data=0;
   data = mem.myalloc(data,ntot);

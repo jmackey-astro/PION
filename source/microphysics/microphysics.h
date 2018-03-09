@@ -244,6 +244,11 @@ class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
     return 1.0e99;
   }
 
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return ep.H_MassFrac;}
 
   private:
   /** \brief convert state vector from grid cell into local microphysics vector. */
