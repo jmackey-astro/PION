@@ -367,19 +367,19 @@ int sim_control_fixedgrid::Init(
   // First get grid parameters from a file.
   switch (typeOfFile) {
   case 1: // Start From ASCII Parameterfile.
-    if (!dataio) dataio = new dataio_text();
+    if (!dataio) dataio = new dataio_text(SimPM);
     if (!dataio) rep.error("dataio_text initialisation",dataio);
     break;
 #ifdef FITS
   case 2: // Start from FITS restartfile, which may be initial conditions or a snapshot.
   case 3: // Fits restartfile in table format (slower I/O than image...)
-    if (!dataio) dataio = new DataIOFits();
+    if (!dataio) dataio = new DataIOFits(SimPM);
     if (!dataio) rep.error("DataIOFits initialisation",dataio);
     break;
 #endif // if FITS
 #ifdef SILO
   case 5: // Start from Silo ICfile or restart file.
-    if (!dataio) dataio = new dataio_silo ("DOUBLE");
+    if (!dataio) dataio = new dataio_silo (SimPM, "DOUBLE");
     if (!dataio) rep.error("dataio_silo initialisation",dataio);
     break; 
 #endif // if SILO
@@ -422,14 +422,14 @@ int sim_control_fixedgrid::Init(
   //
 #if defined SERIAL
 
-  err = dataio->ReadData(infile, *grid);
+  err = dataio->ReadData(infile, *grid, SimPM);
 
 #elif defined PARALLEL
 
   switch (typeOfFile) {
 #ifdef FITS
   case 2: // Start from FITS restartfile.
-  err = dataio->ReadData(infile, *grid);
+  err = dataio->ReadData(infile, *grid, SimPM);
     break;
 #endif // if FITS
 #ifdef SILO
@@ -488,26 +488,26 @@ int sim_control_fixedgrid::Init(
     if (textio) {delete textio; textio=0;}
     switch (SimPM.typeofop) {
     case 1: // ascii, so do nothing.
-      dataio = new dataio_text ();
+      dataio = new dataio_text (SimPM);
       break;
 #ifdef FITS
     case 2: // fits
     case 3: // fits
-      dataio = new DataIOFits();
+      dataio = new DataIOFits(SimPM);
       break;
     case 4: // fits +ascii
-      dataio = new DataIOFits();
-      textio = new dataio_text();
+      dataio = new DataIOFits(SimPM);
+      textio = new dataio_text(SimPM);
       if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
       break;
 #endif // if FITS
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo ("DOUBLE");
+      dataio = new dataio_silo (SimPM, "DOUBLE");
       break;
     case 6: // silo + text
-      dataio = new dataio_silo ("DOUBLE");
-      textio = new dataio_text ();
+      dataio = new dataio_silo (SimPM, "DOUBLE");
+      textio = new dataio_text (SimPM);
       if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
       break;
 #endif // if SILO
@@ -1130,8 +1130,8 @@ int sim_control_fixedgrid::output_data(
       checkpoint_id=99999998;
     else
       checkpoint_id=99999999;
-    err = dataio->OutputData(SimPM.outFileBase, grid, checkpoint_id);
-    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, checkpoint_id);
+    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
+    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
     if (err) {cerr<<"\t Error writing data for checkpointing.\n"; return(1);}
   }
     
@@ -1171,8 +1171,8 @@ int sim_control_fixedgrid::output_data(
   // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
   //
   cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
-  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM.timestep);
-  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM.timestep);
+  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
+  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
   return(0);
 }

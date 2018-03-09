@@ -68,7 +68,11 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// Constructor.
   raytracer_USC_infinity(
       class GridBaseClass *, ///< Pointer to grid
-      class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
+      class MicroPhysicsBase *, ///< Pointer to MicroPhysics Class.
+      int,  ///< grid dimensionality
+      int,  ///< coordinate system
+      int,  ///< number of variables in state vector
+      int   ///< index of first tracer variable in state vector
       );
 
   ~raytracer_USC_infinity(); ///< destructor.
@@ -168,7 +172,10 @@ class raytracer_USC_infinity : public RayTracingBase {
         );
 
  protected:
-  int ndim;  ///< dimensionality of grid to traverse.
+  const int ndim;  ///< dimensionality of grid to traverse.
+  const int coord_sys; ///< identifier of coordinate system used.
+  const int nvar; ///< number of variables in state vector
+  const int first_tr; ///< index of 1st tracer variable in state vec.
   double delt; ///< Timestep to step by.
   double gamma; ///< EOS gamma.
 
@@ -301,9 +308,15 @@ class raytracer_USC_infinity : public RayTracingBase {
 class raytracer_USC : public raytracer_USC_infinity {
  public:
   /// Constructor.
-  raytracer_USC(class GridBaseClass *, ///< Pointer to grid
-		class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
-		);
+  raytracer_USC(
+      class GridBaseClass *, ///< Pointer to grid
+      class MicroPhysicsBase *, ///< Pointer to MicroPhysics Class.
+      int,  ///< grid dimensionality
+      int,  ///< coordinate system
+      int,  ///< number of variables in state vector
+      int,  ///< index of first tracer variable in state vector
+      int   ///< Number of radiation sources
+      );
   ~raytracer_USC(); ///< destructor.
 
   /// \brief Adds a source to the list of sources to trace.

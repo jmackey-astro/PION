@@ -132,7 +132,9 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
   ///
   /// Constructor.
   ///
-  DataIOFits();
+  DataIOFits(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   /// Destructor (doensn't have much to do).
   virtual ~DataIOFits();
@@ -162,10 +164,11 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
   /// if the solver is an MHD solver).
   ///
   virtual int OutputData(
-        const string, ///< File to write to
-        class GridBaseClass *, ///< pointer to data.
-        const long int ///< number to stamp file with (e.g. timestep)
-        );
+      const string, ///< File to write to
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
+      const long int ///< number to stamp file with (e.g. timestep)
+      );
 
   ///
   /// Reads the fits header from the file specified, and puts the
@@ -184,16 +187,18 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
   /// from the fits header, which should be read first.
   ///
   virtual int ReadData(
-        std::string, ///< file to read from
-        class GridBaseClass * ///< pointer to data.
-        );
+      std::string, ///< file to read from
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// Write simulation header info to file (file must already exist!)
   ///
   int WriteHeader(
-          const std::string ///< file to write to (full, exact filename).
-          );
+      const string, ///< file to write to (full, exact filename).
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   protected:
   class GridBaseClass *gp; ///< pointer to computational grid.
@@ -214,10 +219,11 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
   /// Puts a grid variable into a 1D data array.
   ///
   int put_variable_into_data_array(
-        const string,   ///< variable name to put in array.
-        const long int, ///< size of data array to be initialised.
-        double **       ///< pointer to uninitialised data.
-        );
+      class SimParams &,  ///< pointer to simulation parameters
+      const string,   ///< variable name to put in array.
+      const long int, ///< size of data array to be initialised.
+      double **       ///< pointer to uninitialised data.
+      );
 
   ///
   /// Given that we have opened a fits file, read in the header, 
@@ -234,13 +240,14 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
   /// a grid data variable.
   ///
   int read_fits_image(
-        fitsfile *, ///< fitsfile pointer.
-        string,     ///< extname of hdu to read from.
-        double *,   ///<  vector local xmin (subdomain).
-        double *,   ///< vector global xmin (full domain).
-        int *,      ///< vector npix to read in each direction.
-        long int    ///< total npix to read.
-        );
+      class SimParams &,  ///< pointer to simulation parameters
+      fitsfile *, ///< fitsfile pointer.
+      string,     ///< extname of hdu to read from.
+      double *,   ///<  vector local xmin (subdomain).
+      double *,   ///< vector global xmin (full domain).
+      int *,      ///< vector npix to read in each direction.
+      long int    ///< total npix to read.
+      );
 };
 
 #endif // if FITS

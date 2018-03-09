@@ -134,18 +134,19 @@ class RayTracingBase {
   ///
   /// Processes a single source's effect on the grid over a timestep.
   ///
-  virtual int RayTrace_SingleSource(const int, ///< Source id
-                                    const double, ///< Timestep
-                                    const double  ///< EOS Gamma.
-                                    )=0;
+  virtual int RayTrace_SingleSource(
+      const int, ///< Source id
+      const double, ///< Timestep
+      const double  ///< EOS Gamma.
+      )=0;
   ///
   /// Just calculate the column densities required for RT.
   ///
   virtual int RayTrace_Column_Density(
-                const int,    ///< Source id
-                const double, ///< Timestep
-                const double  ///< EOS Gamma.
-                )=0;
+      const int,    ///< Source id
+      const double, ///< Timestep
+      const double  ///< EOS Gamma.
+      )=0;
 
   /// \brief Prints list of sources with id, location, strength.
   virtual void Print_SourceList()=0;
@@ -166,8 +167,8 @@ class RayTracingBase {
   /// changes over time.
   ///
   virtual void update_RT_source_properties(
-                  const struct rad_src_info * ///< ptr to source info.
-                  )=0;
+      const struct rad_src_info * ///< ptr to source info.
+      )=0;
 
   /// Returns the number of ionising sources
   virtual int N_ionising_sources()=0;
@@ -183,8 +184,8 @@ class RayTracingBase {
   /// checking.
   ///
   virtual int populate_ionising_src_list(
-                std::vector<struct rt_source_data> & ///< list of data for ionising sources
-                )=0;
+      std::vector<struct rt_source_data> & ///< list of data for ionising sources
+      )=0;
 
   ///
   /// This function copies the UV-heating source data into two
@@ -194,8 +195,8 @@ class RayTracingBase {
   /// checking.
   ///
   virtual int populate_UVheating_src_list(
-                std::vector<struct rt_source_data> & ///< list of data for UV-heating sources
-                )=0;
+      std::vector<struct rt_source_data> & ///< list of data for UV-heating sources
+      )=0;
 
 };
 

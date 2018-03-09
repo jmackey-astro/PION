@@ -70,6 +70,12 @@ class mpv8_SBheatcool
           const double    ///< EOS gamma (optional)
           );
 
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return EP->H_MassFrac;}
+
   protected:
 
   ///

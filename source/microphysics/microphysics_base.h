@@ -258,6 +258,12 @@ class MicroPhysicsBase {
         const int       ///< integer identifier for the element.
         ) {return -1.0e99;}
 
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return 0.7154;}
+
 };
 
 ///

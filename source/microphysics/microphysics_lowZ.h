@@ -192,10 +192,11 @@ class microphysics_lowz
   /// Only needed if you want this feature in the initial condition generator.
   /// This will call Harpreet's Yinit() function to set initial values for tracers.
   ///
-  int Init_ionfractions(double *, ///< Primitive vector to be updated.
-			const double, ///< eos gamma.
-			const double  ///< optional gas temperature to end up at. (-ve means use pressure)
-			);
+  int Init_ionfractions(
+      double *, ///< Primitive vector to be updated.
+      const double, ///< eos gamma.
+      const double  ///< optional gas temperature to end up at. (-ve means use pressure)
+      );
 
   ///
   /// Set the gas temperature to a specified value.
@@ -205,18 +206,11 @@ class microphysics_lowz
 	       const double  ///< eos gamma.
 	       );
 
-  //
-  // Temporary function
-  //
-  //void Interface_with_JMs_code(
-  //            std::vector<double>, ///< Yinput
-  //            std::vector<double>, ///< Youtput
-  //            double, ///< density (g/cm3)
-  //            double, ///< input internal energy (erg/cm3)
-   //           double &, ///< output internal energy (erg/cm3)
-   //           double, ///< Column density (g/cm2)
-   //           double  ///< timestep to integrate
-   //           ) {return;}
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return ep->H_MassFrac;}
 
  protected:
   ///
