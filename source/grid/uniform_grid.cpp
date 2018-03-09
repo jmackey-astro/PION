@@ -2865,15 +2865,15 @@ int UniformGrid::BC_assign_STWIND(
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (err==0) {
-      Wind = new stellar_wind ();
+      Wind = new stellar_wind(G_ndim, G_nvar, G_ntracer, G_ftr, G_coordsys, G_eqntype);
     }
     else if (err==1) {
-      Wind = new stellar_wind_evolution();
+      Wind = new stellar_wind_evolution(G_ndim, G_nvar, G_ntracer, G_ftr, G_coordsys, G_eqntype);
       err=0;
     }
     else if (err==2) {
       cout <<"Setting up stellar_wind_angle class\n";
-      Wind = new stellar_wind_angle();
+      Wind = new stellar_wind_angle(G_ndim, G_nvar, G_ntracer, G_ftr, G_coordsys, G_eqntype);
     }
   }
 
