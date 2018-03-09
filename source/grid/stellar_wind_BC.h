@@ -110,7 +110,14 @@ struct wind_source {
 ///
 class stellar_wind {
  public:
-  stellar_wind();
+  stellar_wind(
+      const int, ///< ndim
+      const int, ///< nvar
+      const int, ///< ntracer
+      const int, ///< ftr
+      const int, ///< coord_sys
+      const int  ///< eqn_type
+      );
   virtual ~stellar_wind();
   ///
   /// Add a wind source, returns source id (count from zero).
@@ -255,6 +262,12 @@ class stellar_wind {
   // --------------------------------------------------------------
 
  protected:
+  const int ndim;
+  const int nvar;
+  const int ntracer;
+  const int ftr;
+  const int coordsys;
+  const int eqntype;
 
   ///
   /// Set values of wind_cell reference state based on Wind-Source properties
