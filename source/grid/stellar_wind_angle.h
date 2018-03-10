@@ -18,16 +18,23 @@
 class stellar_wind_angle
 : virtual public stellar_wind_evolution,
   virtual public interpolate_arrays  {
-	public:
-	///
-	/// Constructor: 
-	///
-	stellar_wind_angle();
+  public:
+  ///
+  /// Constructor: 
+  ///
+  stellar_wind_angle(
+      const int, ///< ndim
+      const int, ///< nvar
+      const int, ///< ntracer
+      const int, ///< ftr
+      const int, ///< coord_sys
+      const int  ///< eqn_type
+      );
 
-	///
-	/// Destructor (Delete spline arrays, etc.)
-	///
-	~stellar_wind_angle();
+  ///
+  /// Destructor (Delete spline arrays, etc.)
+  ///
+  ~stellar_wind_angle();
 
   ///
   /// Add an evolving source for rotating star: takes in the filename of the source data, and 

@@ -34,7 +34,15 @@ using namespace std;
 
 
 // Constructor
-stellar_wind_angle::stellar_wind_angle()
+stellar_wind_angle::stellar_wind_angle(
+      const int nd, ///< ndim
+      const int nv, ///< nvar
+      const int nt, ///< ntracer
+      const int ft, ///< ftr
+      const int cs, ///< coord_sys
+      const int eq ///< eqn_type
+      )
+: stellar_wind(nd,nv,nt,ft,cs,eq)
 {
 	// Constants for wind functions
 	stellar_wind_angle::c_gamma = 0.35;
@@ -501,9 +509,9 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
-  double pp[SimPM.ndim];
+  double pp[ndim];
   CI.get_dpos(wc->c,pp);
-  //rep.printVec("cell pos", pp, SimPM.ndim);
+  //rep.printVec("cell pos", pp, ndim);
   //cout <<"dist="<<wc->dist<<"\n";
 
     //
@@ -557,24 +565,24 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   wc->p[VX] = Vinf*grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
 
   // Velocity y component (if 2D or 3D)
-  if (SimPM.ndim>1)
+  if (ndim>1)
     wc->p[VY] = Vinf*grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
   else
     wc->p[VY] = 0.0;
 
   // Velocity z component (if 3D)
-  if (SimPM.ndim>2)
+  if (ndim>2)
     wc->p[VZ] = Vinf*grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
   else
     wc->p[VZ] = 0.0;
 
-  if (SimPM.eqntype!=EQEUL && SimPM.eqntype!=EQEUL_EINT)
-    rep.error("Need to code B into winds model!",SimPM.eqntype);
+  if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
+    rep.error("Need to code B into winds model!",eqntype);
 
 
   // update tracers
-  for (int v=0;v<SimPM.ntracer;v++)
-    wc->p[SimPM.ftr+v] = WS->tracers[v];
+  for (int v=0;v<ntracer;v++)
+    wc->p[ftr+v] = WS->tracers[v];
   //
   // HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK!
   // Assume the first tracer variable is the H+ ion fraction, and set it so
@@ -584,13 +592,13 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 #ifdef HACK_WARNING
 #error "REMOVE HACK setting ion fraction of H+ in winds"
 #endif
-  if (SimPM.ntracer>0) {
+  if (ntracer>0) {
     if      (WS->Tw >1.25e4)
-      wc->p[SimPM.ftr] = 1.0;
+      wc->p[ftr] = 1.0;
     else if (WS->Tw <1.00e4)
-      wc->p[SimPM.ftr] = 1.0e-7;
+      wc->p[ftr] = 1.0e-7;
     else
-      wc->p[SimPM.ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
+      wc->p[ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
   }
 
 //#define TESTING
@@ -832,11 +840,11 @@ int stellar_wind_angle::add_rotating_source(
     break;
   }
 
-  for (int v=0;v<SimPM.ndim;v++)
+  for (int v=0;v<ndim;v++)
     ws->dpos[v] = pos[v];
-  rep.printVec("ws->dpos",ws->dpos,SimPM.ndim);
+  rep.printVec("ws->dpos",ws->dpos,ndim);
 
-  for (int v=SimPM.ndim;v<MAX_DIM;v++)
+  for (int v=ndim;v<MAX_DIM;v++)
     ws->dpos[v] = VERY_LARGE_VALUE;
 
   ws->radius = rad;
@@ -851,8 +859,8 @@ int stellar_wind_angle::add_rotating_source(
   ws->Rstar = Rstar;
 
   ws->tracers=0;
-  ws->tracers = mem.myalloc(ws->tracers,SimPM.ntracer);
-  for (int v=0;v<SimPM.ntracer; v++) {
+  ws->tracers = mem.myalloc(ws->tracers,ntracer);
+  for (int v=0;v<ntracer; v++) {
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
@@ -864,12 +872,12 @@ int stellar_wind_angle::add_rotating_source(
   //
   // Make sure the source position is compatible with the geometry:
   //
-  if (SimPM.coord_sys==COORD_SPH) {
+  if (coordsys==COORD_SPH) {
     if (!pconst.equalD(ws->dpos[Rsph],0.0))
       rep.error("Spherical symmetry but source not at origin!",
                 ws->dpos[Rsph]);
   }
-  if (SimPM.coord_sys==COORD_CYL && SimPM.ndim==2) {
+  if (coordsys==COORD_CYL && ndim==2) {
     //
     // Axisymmetry
     //
@@ -905,7 +913,7 @@ void stellar_wind_angle::update_source(
   if (!wd->is_active) {
     cout <<"stellar_wind_angle::update_source() activating source id=";
     cout << wd->ws->id <<" at Simulation time t="<<t_now<<"\n";
-    rep.printVec("Source position",wd->ws->dpos,SimPM.ndim);
+    rep.printVec("Source position",wd->ws->dpos,ndim);
     wd->is_active=true;
   }
 

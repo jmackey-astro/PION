@@ -299,7 +299,7 @@ int stellar_wind::add_cell(
   //
   // Now assign values to the state vector:
   //
-  set_wind_cell_reference_state(grid, wc,WS);
+  set_wind_cell_reference_state(grid, wc, WS, gamma);
 
   WS->wcells.push_back(wc);
   WS->ncell += 1;
@@ -324,7 +324,8 @@ int stellar_wind::add_cell(
 void stellar_wind::set_wind_cell_reference_state(
       class GridBaseClass *grid,
       struct wind_cell *wc,
-      const struct wind_source *WS
+      const struct wind_source *WS,
+      const double gamma ///< EOS gamma
       )
 {
   //
@@ -352,8 +353,8 @@ void stellar_wind::set_wind_cell_reference_state(
     // ******************************************************************************
     //
     wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
-    wc->p[PG]*= exp((SimPM.gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
-    wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
+    wc->p[PG]*= exp((gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
+    wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
   }
 
   else {
@@ -378,8 +379,8 @@ void stellar_wind::set_wind_cell_reference_state(
     // ******************************************************************************
     //
     wc->p[PG] = pconst.kB()*WS->Tw/pconst.m_p();
-    wc->p[PG]*= exp((SimPM.gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
-    wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
+    wc->p[PG]*= exp((gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
+    wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
   }
 
 
@@ -425,8 +426,8 @@ void stellar_wind::set_wind_cell_reference_state(
   // Set the minimum temperature to be 10K in the wind...
   //
   if (MP) {
-    if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
-      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
+    if (MP->Temperature(wc->p,gamma) <SimPM.EP.MinTemperature) {
+      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,gamma);
     }
   }
   else {
@@ -643,7 +644,15 @@ void stellar_wind::get_src_type(
 // ----------  STELLAR WIND WITH STELLAR EVOLUTION ------------------
 // ------------------------------------------------------------------
 
-stellar_wind_evolution::stellar_wind_evolution()
+stellar_wind_evolution::stellar_wind_evolution(
+      const int nd, ///< ndim
+      const int nv, ///< nvar
+      const int nt, ///< ntracer
+      const int ft, ///< ftr
+      const int cs, ///< coord_sys
+      const int eq ///< eqn_type
+      )
+: stellar_wind(nd,nv,nt,ft,cs,eq)
 {
 #ifdef TESTING
   cout <<"Stellar wind with time evolution, constructor.\n";
@@ -938,7 +947,8 @@ int stellar_wind_evolution::add_evolving_source(
 void stellar_wind_evolution::update_source(
         class GridBaseClass *grid,
         struct evolving_wind_data *wd,
-        const double t_now
+        const double t_now,
+        const double gamma
         )
 {
   //
@@ -979,7 +989,7 @@ void stellar_wind_evolution::update_source(
   // updated values.
   //
   for (int i=0; i<wd->ws->ncell; i++) {
-    set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws);
+    set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws,gamma);
   }
 
   //

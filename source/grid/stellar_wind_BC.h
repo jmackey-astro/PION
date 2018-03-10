@@ -118,7 +118,9 @@ class stellar_wind {
       const int, ///< coord_sys
       const int  ///< eqn_type
       );
+
   virtual ~stellar_wind();
+
   ///
   /// Add a wind source, returns source id (count from zero).
   /// Note the temperature is in Kelvin if we have a pure neutral atomic
@@ -276,7 +278,8 @@ class stellar_wind {
   void set_wind_cell_reference_state(
       class GridBaseClass *,
       struct wind_cell *,
-      const struct wind_source *
+      const struct wind_source *,
+      const double ///< EOS gamma
       );
 
   std::vector<struct wind_source *> wlist; ///< list of sources.
@@ -324,7 +327,15 @@ class stellar_wind_evolution : virtual public stellar_wind {
   ///
   /// Constructor: 
   ///
-  stellar_wind_evolution();
+  stellar_wind_evolution(
+      const int, ///< ndim
+      const int, ///< nvar
+      const int, ///< ntracer
+      const int, ///< ftr
+      const int, ///< coord_sys
+      const int  ///< eqn_type
+      );
+  
   ///
   /// Destructor (Delete spline arrays, etc.)
   ///
@@ -391,7 +402,8 @@ class stellar_wind_evolution : virtual public stellar_wind {
   virtual void update_source(
       class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
-      const double ///< current simulation time.
+      const double, ///< current simulation time.
+      const double  ///< EOS Gamma
       );
 
   ///
