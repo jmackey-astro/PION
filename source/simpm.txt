@@ -1,0 +1,38 @@
+ndim
+nvar
+ntracer
+ftr
+coord_sys
+gamma
+eqntype
+EP.MinTemperature
+EP.Helium_MassFrac
+starttime
+finishtime
+dt
+maxtime
+
+Gamma:
+BC_assign_STWIND_add_cells2src
+BC_assign_STWIND
+assign_boundary_data
+SetupBCs() Already has Sim parameters...
+
+
+grid/stellar_wind_BC.cpp:    wc->p[PG]*= exp((SimPM.gamma-1.0)*log(2.0*M_PI*WS->Rstar*WS->Vinf/WS->Mdot));
+grid/stellar_wind_BC.cpp:    wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
+grid/stellar_wind_BC.cpp:    wc->p[PG]*= exp((SimPM.gamma-1.0)*log(4.0*M_PI*WS->Rstar*WS->Rstar*WS->Vinf/WS->Mdot));
+grid/stellar_wind_BC.cpp:    wc->p[PG]*= exp((SimPM.gamma)*log(wc->p[RO]));
+grid/stellar_wind_BC.cpp:    if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
+grid/stellar_wind_BC.cpp:      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
+grid/stellar_wind_BC.cpp:      SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
+grid/stellar_wind_BC.cpp:  temp->tstart = SimPM.starttime -1.0e10; // so it has already started.
+grid/stellar_wind_BC.cpp:  temp->tfinish= 2.0*SimPM.finishtime;    // so it keeps going to end of sim.
+grid/stellar_wind_BC.cpp:  wd->t_next_update = t_now+SimPM.dt;
+grid/stellar_wind_BC.cpp:    SimPM.maxtime=true;
+grid/stellar_wind_angle.cpp:    wc->p[PG] *= pow_fast(fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-SimPM.gamma);
+grid/stellar_wind_angle.cpp:    wc->p[PG] *= pow_fast(wc->p[RO], SimPM.gamma);
+grid/stellar_wind_angle.cpp:    if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
+grid/stellar_wind_angle.cpp:      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
+grid/stellar_wind_angle.cpp:      SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
+grid/stellar_wind_angle.cpp:  wd->t_next_update = t_now+SimPM.dt;
