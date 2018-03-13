@@ -1137,7 +1137,7 @@ int UniformGrid::SetupBCs(
 
 
 int UniformGrid::assign_boundary_data(
-        const double simtime  ///< current simulation time (for DMACH)
+        const double simtime  ///< current simulation time
         )
 {
   // ----------------------------------------------------------------
