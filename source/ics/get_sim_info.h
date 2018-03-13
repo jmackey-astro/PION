@@ -16,20 +16,28 @@ class get_sim_info {
 public:
   get_sim_info();
   ~get_sim_info();
-  int read_gridparams(std::string ///< paramfile.
-		      );
+  int read_gridparams(
+      std::string,  ///< parameter file.
+      class SimParams &  ///< pointer to simulation paramters.
+      );
 private:
   /** \brief Reads in extra physics params from the text file, if they are there. */
-  int read_extra_physics();
+  int read_extra_physics(
+      class SimParams &  ///< pointer to simulation paramters.
+      );
   /** \brief if we are doing raytracing, read in the source list. */
-  int read_radsources();
+  int read_radsources(
+      class SimParams &  ///< pointer to simulation paramters.
+      );
   /** \brief Reads in units params from the text file, if they are there. */
   int read_units();
   ///
   /// If we got one or more stellar wind sources, this function reads
   /// their properties
   ///
-  int read_wind_sources();
+  int read_wind_sources(
+      class SimParams &  ///< pointer to simulation paramters.
+      );
 
   class ReadParams *rp;
 };

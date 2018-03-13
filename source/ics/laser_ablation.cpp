@@ -63,7 +63,7 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
 
   string seek, str;
 
-  IC_laser_ablation::eqns = SimPM.eqntype;
+  IC_laser_ablation::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -112,7 +112,7 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
   if (str=="") IC_laser_ablation::BT0 = 0.0;
   IC_laser_ablation::BT0 = atof(str.c_str());
 
-  IC_laser_ablation::gam = SimPM.gamma;
+  IC_laser_ablation::gam = SimPM->gamma;
 
 
   // now make sure we are to do a radiative shock sim...
@@ -121,13 +121,13 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
   if (ics=="") rep.error("didn't get any ics to set up.",ics);
   else if (ics=="LaserAblationAxi") {
     cout <<"\t\tsetting up test problem: "<<ics<<endl;
-    if (SimPM.ndim!=2 || SimPM.coord_sys!=COORD_CYL) 
-      rep.error("Asked for 3D problem but not 3D grid!",SimPM.ndim);
+    if (SimPM->ndim!=2 || SimPM->coord_sys!=COORD_CYL) 
+      rep.error("Asked for 3D problem but not 3D grid!",SimPM->ndim);
     err += setup_LaserAblationAxi();
   }
   else if (ics=="LaserAblation3D") {
     cout <<"\t\tsetting up test problem: "<<ics<<endl;
-    if (SimPM.ndim!=3) rep.error("Asked for 3D problem but not 3D grid!",SimPM.ndim);
+    if (SimPM->ndim!=3) rep.error("Asked for 3D problem but not 3D grid!",SimPM->ndim);
     err += setup_LaserAblation3D();
   }
   else rep.error("Don't know what Initial Condition is!",ics);
@@ -138,7 +138,7 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, *SimPM, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -174,7 +174,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
 
 
   class cell *c = gg->FirstPt();
-  double pos[SimPM.ndim];
+  double pos[SimPM->ndim];
   do {
     CI.get_dpos(c,pos);
     if (pos[XX]<0.0025 && pos[YY]<0.04) {
@@ -186,7 +186,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
 	c->P[BY] = BT0; c->P[BX] = BX0; c->P[BZ] = 0.0;
       }
       // tracers (shouldn't be any except passive tracers.)
-      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = 1.0;
+      for (int i=0;i<SimPM->ntracer;i++) c->P[SimPM->ftr+i] = 1.0;
     }
     else if (pos[XX]<0.0025 && pos[YY]<0.06) {
       c->P[RO] = r0 +50.0*(r1-r0)*(pos[YY]-0.04);
@@ -197,7 +197,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
 	c->P[BY] = BT0; c->P[BX] = BX0; c->P[BZ] = 0.0;
       }
       // tracers (shouldn't be any except passive tracers.)
-      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = 1.0;
+      for (int i=0;i<SimPM->ntracer;i++) c->P[SimPM->ftr+i] = 1.0;
     }
     else {
       c->P[RO] = r1;
@@ -208,7 +208,7 @@ int IC_laser_ablation::setup_LaserAblationAxi()
 	c->P[BY] = BT0; c->P[BX] = BX0; c->P[BZ] = 0.0;
       }
       // tracers (shouldn't be any except passive tracers.)
-      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = 0.0;
+      for (int i=0;i<SimPM->ntracer;i++) c->P[SimPM->ftr+i] = 0.0;
     }
      // done.
   } while ((c=gg->NextPt(c))!=0);

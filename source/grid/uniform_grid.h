@@ -240,8 +240,11 @@ class UniformGrid
   /// Assigns data to each boundary.  Called by SetupBCs().
   ///
   virtual int assign_boundary_data(
-        const double   ///< current simulation time (for DMACH)
-        );
+      const double,   ///< current simulation time (for DMACH)
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double ///< minimum temperature allowed
+      );
 
   /// Assigns data to a periodic boundary.
   virtual int BC_assign_PERIODIC( boundary_data *);
@@ -302,10 +305,13 @@ class UniformGrid
   /// the domain is given fixed values corresponding to a freely expanding wind
   /// from a cell-vertex-located source.
   ///
-  int         BC_assign_STWIND(
-        const double,   ///< current simulation time
-        boundary_data *
-        );
+  int BC_assign_STWIND(
+      const double,   ///< current simulation time
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double,   ///< minimum temperature allowed
+      boundary_data *
+      );
 
   ///
   /// Add cells to both the Wind class, and to the boundary data list

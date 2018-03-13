@@ -140,16 +140,15 @@ struct element_struct {
  * */
 class MicroPhysics : public MicroPhysicsBase, public Integrator_Base {
  public:
-  /** \brief Constructor.  Takes in info on tracers to determine what sort of
-   * chemistry we are using.  The string has a specific format described in 
-   * page \ref userguide.
-   * */
+  /// Constructor.  Takes in info on tracers to determine what sort of
+  /// chemistry we are using.
   MicroPhysics(
       const int,          ///< Total number of variables in state vector
       const int,          ///< Number of tracer variables in state vector.
       const std::string,  ///< type of chemistry we are running.
       const std::string *, ///< List of what the tracer variables mean.
-      struct which_physics * ///< pointer to extra physics flags.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *    ///< radiation sources.
       );
 
   /** \brief Destructor deletes dynamically allocated member data. */
@@ -443,7 +442,8 @@ class MP_Hydrogen : public MicroPhysicsBase, public Integrator_Base {
       const int,          ///< Total number of variables in state vector
       const int,          ///< Number of tracer variables in state vector.
       const std::string *, ///< List of what the tracer variables mean.
-      struct which_physics * ///< pointer to which physics flags.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *    ///< radiation sources.
       );
 
   /** \brief Destructor deletes dynamically allocated member data. */

@@ -10,3 +10,15 @@
 ///
 class MicroPhysicsBase *MP=0;
 
+
+MicroPhysicsBase::MicroPhysicsBase(
+      struct which_physics *ephys, ///< which physics to calculate.
+      struct rad_sources *rsrcs    ///< radiation sources.
+      )
+{
+  EP = ephys;
+  RS = rsrcs;
+  return;
+}
+
+

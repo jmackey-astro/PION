@@ -70,9 +70,10 @@ MicroPhysics::MicroPhysics(
       const int ntracer,
       const std::string chem_code,  ///< type of chemistry we are running.
       const std::string *tracers,  ///< List of what the tracer variables mean.
-      struct which_physics *ephys
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs    ///< radiation sources.
       )
-  :
+: MicroPhysicsBase(ephys,rsrcs),
   kB(pconst.kB()),
   m_p(pconst.m_p()),
   nv_prim(nv)

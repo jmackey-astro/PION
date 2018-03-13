@@ -282,7 +282,7 @@ int setup_fixed_grid::setup_microphysics(
     cout <<"\t******* Requested cooling but no chemistry... setting";
     cout <<" up mp_only_cooling() class, with timestep-limiting.\n";
     SimPM.EP.MP_timestep_limit = 1;
-    MP = new mp_only_cooling(SimPM.nvar, &(SimPM.EP));
+    MP = new mp_only_cooling(SimPM.nvar, &(SimPM.EP), &(SimPM.RS));
     if (!MP) rep.error("mp_only_cooling() init",MP);
   }
   else if (SimPM.EP.chemistry) {
@@ -297,7 +297,7 @@ int setup_fixed_grid::setup_microphysics(
     if      (mptype=="ChAH" || mptype=="onlyH") {
       cout <<"\t******* setting up MP_Hydrogen microphysics module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY mp_implicit_H. **--**\n";
       have_set_MP=true;
     }
@@ -308,7 +308,7 @@ int setup_fixed_grid::setup_microphysics(
     if (mptype=="lowZ") {
       cout <<"\t******* setting up microphysics_lowz module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       have_set_MP=true;
     }
 #endif // exclude Harpreet's module
@@ -341,8 +341,9 @@ int setup_fixed_grid::setup_microphysics(
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
 
-      MP = new mp_explicit_H(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP)
-      );
+      MP = new mp_explicit_H(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       //if (SimPM.EP.MP_timestep_limit != 1)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;
@@ -365,7 +366,9 @@ int setup_fixed_grid::setup_microphysics(
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new mp_implicit_H(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
       //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
@@ -378,7 +381,9 @@ int setup_fixed_grid::setup_microphysics(
       cout <<"\t******* setting up mpv5_molecular module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv5_molecular(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new mpv5_molecular(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
     }
 
@@ -386,7 +391,9 @@ int setup_fixed_grid::setup_microphysics(
       cout <<"\t******* setting up mpv6_PureH module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv6_PureH(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new mpv6_PureH(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
     }
 
@@ -394,7 +401,9 @@ int setup_fixed_grid::setup_microphysics(
       cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv7_TwoTempIso(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new mpv7_TwoTempIso(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
     }
 
@@ -404,7 +413,9 @@ int setup_fixed_grid::setup_microphysics(
       cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv8_SBheatcool(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP));
+      MP = new mpv8_SBheatcool(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
     }
 #endif // CODE_EXT_SBII
@@ -429,7 +440,7 @@ int setup_fixed_grid::setup_microphysics(
     if (!have_set_MP) {
       cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP));
+      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
         rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;
@@ -502,14 +513,16 @@ int setup_fixed_grid::setup_raytracing(
     //
     // set up single source at infinity tracer, if appropriate
     //
-    RT = new raytracer_USC_infinity(grid,MP);
+    RT = new raytracer_USC_infinity(grid, MP, SimPM.ndim,
+                            SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
     if (!RT) rep.error("init pllel-rays raytracer error",RT);
   }
   else {
     //
     // set up regular tracer if simple one not already set up.
     //
-    RT = new raytracer_USC(grid,MP);
+    RT = new raytracer_USC(grid, MP, SimPM.ndim, SimPM.coord_sys,
+                          SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
     if (!RT) rep.error("init raytracer error 2",RT);
   }
 

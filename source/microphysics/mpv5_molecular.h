@@ -32,10 +32,14 @@ class mpv5_molecular
   /// Constructor
   ///
   mpv5_molecular(
-      const int,          ///< Total number of variables in state vector
-      const int,          ///< Number of tracer variables in state vector.
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
+      const int,  ///< Total number of variables in state vector
+      const int,  ///< Number of tracer variables in state vector.
       const std::string *, ///< List of what the tracer variables mean.
-      struct which_physics * ///< extra physics stuff.
+      struct which_physics *, ///< extra physics stuff.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
       );
 
   ///

@@ -78,7 +78,7 @@
 #include <sstream>
 using namespace std;
 
-int equilibrate_MP(GridBaseClass *, MicroPhysicsBase *, ReadParams *);
+int equilibrate_MP(GridBaseClass *, MicroPhysicsBase *, ReadParams *, SimParams &);
 
 int main(int argc, char **argv)
 {
@@ -147,6 +147,7 @@ int main(int argc, char **argv)
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
+  class SimParams SimPM;
 
   string pfile = argv[1];
   string icftype;
@@ -156,7 +157,7 @@ int main(int argc, char **argv)
   siminfo=0; siminfo = new class get_sim_info ();
   if (!siminfo) rep.error("Sim Info class init error",siminfo);
   err = 0;
-  err += siminfo->read_gridparams(pfile);
+  err += siminfo->read_gridparams(pfile, SimPM);
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
@@ -179,7 +180,7 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,&MCMD);
+  SimSetup->setup_grid(&grid,SimPM,&MCMD);
   if (!grid) rep.error("Grid setup failed",grid);
   
   //
@@ -210,6 +211,7 @@ int main(int argc, char **argv)
 
   else if (ics=="Jet" || ics=="JET" || ics=="jet") {
     ic = new IC_jet();
+    ic->set_SimPM(&SimPM);
     err += ic->setup_data(rp,grid);
   }
 
@@ -290,6 +292,7 @@ int main(int argc, char **argv)
   else rep.error("BAD IC identifier",ics);
   if (!ic) rep.error("failed to init",ics);
 
+  ic->set_SimPM(&SimPM);
 #ifdef PARALLEL
   ic->set_MCMD_pointer(&MCMD);
 #endif // PARALLEL
@@ -310,7 +313,7 @@ int main(int argc, char **argv)
     for (int i=0;i<SimPM.ntracer;i++) {
       cout <<"\t"<<i<<"\t"<<SimPM.tracers[i]<<"\n";
     }
-    SimSetup->setup_microphysics();
+    SimSetup->setup_microphysics(SimPM);
     if (!MP) rep.error("microphysics init",MP);
   }
   else {
@@ -327,8 +330,8 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
 
 
-  err += SimSetup->setup_raytracing(grid);
-  err += SimSetup->setup_evolving_RT_sources();
+  err += SimSetup->setup_raytracing(SimPM, grid);
+  err += SimSetup->setup_evolving_RT_sources(SimPM);
   if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
   // ----------------------------------------------------------------
@@ -351,7 +354,7 @@ int main(int argc, char **argv)
     bool uerg = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
 
-    err = equilibrate_MP(grid,MP,rp);
+    err = equilibrate_MP(grid,MP,rp,SimPM);
     if (err)
       rep.error("setting chemical states to equilibrium failed",err);
 
@@ -387,7 +390,7 @@ int main(int argc, char **argv)
     outfile=icfile;
     cout << outfile << "\n";
 #ifdef SERIAL
-    dataio = 0; dataio = new DataIOFits ();
+    dataio = 0; dataio = new DataIOFits (SimPM);
 #endif // SERIAL
 #ifdef PARALLEL
     dataio = 0; dataio = new DataIOFits_pllel (&MCMD);
@@ -402,7 +405,7 @@ int main(int argc, char **argv)
 #ifdef SERIAL
     //    outfile = icfile+".silo";
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo ("DOUBLE");
+    dataio=0; dataio=new dataio_silo (SimPM, "DOUBLE");
 #endif
 #ifdef PARALLEL
     cout <<outfile <<"\n";
@@ -414,7 +417,7 @@ int main(int argc, char **argv)
   else rep.error("Don't recognise I/O type (text/fits/silo)",icftype);
   if (!dataio) rep.error("IO class initialisation: ",icftype);
   
-  err = dataio->OutputData(outfile,grid, 0);
+  err = dataio->OutputData(outfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
   cout <<icftype<<" FILE WRITTEN in";
@@ -449,11 +452,22 @@ int main(int argc, char **argv)
   return err;
 }
 
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 int equilibrate_MP(
-  class GridBaseClass *gg,
-  class MicroPhysicsBase *mp,
-  class ReadParams *rp
-  )
+      class GridBaseClass *gg,
+      class MicroPhysicsBase *mp,
+      class ReadParams *rp,
+      class SimParams &SimPM
+      )
 {
 
   if (!mp || !gg || !rp) rep.error("microphysics or grid not initialised.",mp);
@@ -539,11 +553,19 @@ int equilibrate_MP(
 
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 int ICsetup_base::AddNoise2Data(
-        class GridBaseClass *grid,
-        int n,
-        double frac
-        )
+      class GridBaseClass *grid,
+      class SimParams &SimPM,
+      int n,
+      double frac
+      )
 {
   int seed= 975;
 #ifdef PARALLEL

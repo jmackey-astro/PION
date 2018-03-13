@@ -247,9 +247,9 @@ using namespace std;
 
 
 void mp_explicit_H::get_error_tolerances(
-                double *reltol, ///< relative error tolerance.
-                double atol[] ///< absolute error tolerances
-                )
+      double *reltol, ///< relative error tolerance.
+      double atol[] ///< absolute error tolerances
+      )
 {
   *reltol = JM_RELTOL;
   atol[lv_H0]   = JM_MINNEU; ///< minimum neutral fraction I care about.
@@ -263,9 +263,9 @@ void mp_explicit_H::get_error_tolerances(
 
 
 void mp_explicit_H::get_problem_size(
-                  int *ne, ///< number of equations
-                  int *np  ///< number of parameters in user_data vector.
-                  )
+      int *ne, ///< number of equations
+      int *np  ///< number of parameters in user_data vector.
+      )
 {
   *ne = N_equations;
   *np = N_extradata;
@@ -277,13 +277,17 @@ void mp_explicit_H::get_problem_size(
 
 
 mp_explicit_H::mp_explicit_H(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-          const std::string *tracers,  ///< List of what the tracer variables mean.
-          struct which_physics *ephys  ///< extra physics stuff.
-	  )
-:
-  nv_prim(nv)
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,   ///< Total number of variables in state vector
+      const int ntracer,         ///< Number of tracer variables in state vector.
+      const std::string *tracers,  ///< List of what the tracer variables mean.
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
+: MicroPhysicsBase(ephys,rsrcs),
+  ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
 {
   cout <<"\n---------------------------------------------------------------------\n";
   cout <<"mp_explicit_H: new microphysics class.\n";
@@ -322,10 +326,6 @@ mp_explicit_H::mp_explicit_H(
   m_p = pconst.m_p(); // Proton mass.
 
   //
-  // Set EP to point to SimPM.EP struct passed to constructor.
-  //
-  EP = ephys;
-  //
   // Get the mean mass per H atom from the He and Z mass fractions.
   // Assume metal content is low enough to ignore it.
   //
@@ -346,8 +346,7 @@ mp_explicit_H::mp_explicit_H(
   cout <<"Metallicity = "<<METALLICITY<<"\n";
 
   setup_local_vectors();
-  gamma   = SimPM.gamma;   // Gas has a constant ratio of specific heats.
-  gamma_minus_one = SimPM.gamma -1.0;
+  gamma_minus_one = eos_gamma -1.0;
   Min_NeutralFrac     = JM_MINNEU;
   Max_NeutralFrac     = 1.0-JM_MINNEU;
 
@@ -373,23 +372,23 @@ mp_explicit_H::mp_explicit_H(
   // ----------------------------------------------------------------
   // Set flags for whether we have diffuse and ionising radiation sources.
   // ----------------------------------------------------------------
-  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+  for (int isrc=0; isrc<RS->Nsources; isrc++) {
     // diffuse source at infinity, or point source for UV heating.
-    if ((SimPM.RS.sources[isrc].type==RT_SRC_DIFFUSE) ||
-        (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
-         SimPM.RS.sources[isrc].effect==RT_EFFECT_UV_HEATING)
+    if ((RS->sources[isrc].type==RT_SRC_DIFFUSE) ||
+        (RS->sources[isrc].type==RT_SRC_SINGLE &&
+         RS->sources[isrc].effect==RT_EFFECT_UV_HEATING)
         )
       N_diff_srcs++;
     // point source with monochromatic or multi-frequency ionising photons.
-    if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
-        (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
-         SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI)) {
+    if (RS->sources[isrc].type==RT_SRC_SINGLE &&
+        (RS->sources[isrc].effect==RT_EFFECT_PION_MONO ||
+         RS->sources[isrc].effect==RT_EFFECT_PION_MULTI)) {
       N_ion_srcs++;
       //
       // Set the source type and Luminosity for the ionising source:
       //
-      mpv_NIdot = SimPM.RS.sources[isrc].strength;
-      if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO)
+      mpv_NIdot = RS->sources[isrc].strength;
+      if (RS->sources[isrc].effect==RT_EFFECT_PION_MONO)
         ion_src_type=RT_EFFECT_PION_MONO;
       else
         ion_src_type=RT_EFFECT_PION_MULTI;
@@ -420,10 +419,10 @@ mp_explicit_H::mp_explicit_H(
     // Need to set up the multifrequency tables if needed.
     // Monochromatic sources don't need any setup.
     //
-    for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-      if (  (SimPM.RS.sources[isrc].type  ==RT_SRC_SINGLE) &&
-            (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI) ) {
-          int err=set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
+    for (int isrc=0; isrc<RS->Nsources; isrc++) {
+      if (  (RS->sources[isrc].type  ==RT_SRC_SINGLE) &&
+            (RS->sources[isrc].effect==RT_EFFECT_PION_MULTI) ) {
+          int err=set_multifreq_source_properties(&RS->sources[isrc]);
           if (err)
             rep.error("multifreq photoionisation setup failed in mp_explicit_H const.",err);
       }
@@ -536,30 +535,30 @@ void mp_explicit_H::setup_diffuse_RT_angle()
   // Set up solid angles for diffuse radiation.
   //
   diff_angle.clear();
-  if      (SimPM.coord_sys==COORD_CRT && SimPM.ndim==3) {
+  if      (coord_sys==COORD_CRT && ndim==3) {
     diff_angle.resize(6);
     for (int v=0;v<6;v++) diff_angle[v] = 4.0*M_PI/6.0;
   }
-  else if (SimPM.coord_sys==COORD_CRT && SimPM.ndim==2) {
+  else if (coord_sys==COORD_CRT && ndim==2) {
     diff_angle.resize(4);
     for (int v=0;v<4;v++) diff_angle[v] = 2.0*M_PI/4.0;
   }
-  else if (SimPM.coord_sys==COORD_CRT && SimPM.ndim==1) {
+  else if (coord_sys==COORD_CRT && ndim==1) {
     diff_angle.resize(2);
     for (int v=0;v<2;v++) diff_angle[v] = 1.0;
   }
-  else if (SimPM.coord_sys==COORD_CYL && SimPM.ndim==2) {
+  else if (coord_sys==COORD_CYL && ndim==2) {
     diff_angle.resize(3);
     //
     // for each source in turn, we get its direction and set the angle accordingly.
     //
     int count=0;
     int dir=-1;
-    for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-      if (SimPM.RS.sources[isrc].type==RT_SRC_DIFFUSE) {
-        for (int v=0;v<SimPM.ndim;v++) {
-          if (SimPM.RS.sources[isrc].pos[v] > 1.0e99) dir = 2*v+1;
-          if (SimPM.RS.sources[isrc].pos[v] <-1.0e99) dir = 2*v;
+    for (int isrc=0; isrc<RS->Nsources; isrc++) {
+      if (RS->sources[isrc].type==RT_SRC_DIFFUSE) {
+        for (int v=0;v<ndim;v++) {
+          if (RS->sources[isrc].pos[v] > 1.0e99) dir = 2*v+1;
+          if (RS->sources[isrc].pos[v] <-1.0e99) dir = 2*v;
         }
         if (dir<0) rep.error("Diffuse source not at infinity!",isrc);
         //
@@ -574,7 +573,7 @@ void mp_explicit_H::setup_diffuse_RT_angle()
     cout <<"Angles for diffuse sources: ["<<diff_angle[0]<<", ";
     cout <<diff_angle[1]<<", "<<diff_angle[2]<<"]\n";
   }
-  else if (SimPM.coord_sys==COORD_SPH && SimPM.ndim==1) {
+  else if (coord_sys==COORD_SPH && ndim==1) {
     //
     // for spherical symmetry the only diffuse source is at infinity
     //
@@ -582,7 +581,7 @@ void mp_explicit_H::setup_diffuse_RT_angle()
     diff_angle[0] = 4.0*M_PI;
   }
   else {
-    rep.error("Unhandled coord-sys/ndim combination in mp_explicit_H::mp_explicit_H",SimPM.ndim);
+    rep.error("Unhandled coord-sys/ndim combination",ndim);
   }
   return;
 }
@@ -988,7 +987,7 @@ double mp_explicit_H::timescales(
           )
 {
 #ifdef MPV3_DEBUG
-  if (SimPM.RS.Nsources!=0) {
+  if (RS->Nsources!=0) {
     cout <<"WARNING: mp_explicit_H::timescales() using non-RT version!\n";
   }
 #endif // MPV3_DEBUG

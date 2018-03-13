@@ -1123,7 +1123,8 @@ int UniformGrid::SetupBCs(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  int err = assign_boundary_data(par.simtime);
+  int err = assign_boundary_data(par.simtime, par.starttime,
+                              par.finishtime, par.EP.MinTemperature);
   // ----------------------------------------------------------------
 
   return err;
@@ -1137,7 +1138,10 @@ int UniformGrid::SetupBCs(
 
 
 int UniformGrid::assign_boundary_data(
-        const double simtime  ///< current simulation time
+        const double simtime,     ///< current simulation time
+        const double sim_start,   ///< start time of simulation
+        const double sim_finish,  ///< finish time of simulation
+        const double Tmin         ///< minimum temperature allowed
         )
 {
   // ----------------------------------------------------------------
@@ -1155,11 +1159,12 @@ int UniformGrid::assign_boundary_data(
      case FIXED:      err += BC_assign_FIXED(     &BC_bd[i]); break;
      case JETBC:      err += BC_assign_JETBC(     &BC_bd[i]); break;
      case JETREFLECT: err += BC_assign_JETREFLECT(&BC_bd[i]); break;
-     case DMACH:      err += BC_assign_DMACH(simtime, &BC_bd[i]); break;
+     case DMACH:  err += BC_assign_DMACH(simtime, &BC_bd[i]); break;
      case DMACH2:     err += BC_assign_DMACH2(    &BC_bd[i]); break;
      case RADSHOCK:   err += BC_assign_RADSHOCK(  &BC_bd[i]); break;
      case RADSH2:     err += BC_assign_RADSH2(    &BC_bd[i]); break;
-     case STWIND:     err += BC_assign_STWIND(simtime, &BC_bd[i]); break;
+     case STWIND: err += BC_assign_STWIND(simtime, sim_start,
+                                sim_finish, Tmin, &BC_bd[i]); break;
      case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
@@ -2813,6 +2818,9 @@ int UniformGrid::BC_update_RADSH2(   struct boundary_data *b,
 //
 int UniformGrid::BC_assign_STWIND(
       const double simtime,   ///< current simulation time
+      const double sim_start,   ///< Simulation start time.
+      const double sim_finish,   ///< Simulation finish time.
+      const double mt, ///< Minimum temperature allowed on grid
       boundary_data *b
       )
 {
@@ -2827,16 +2835,14 @@ int UniformGrid::BC_assign_STWIND(
   cout <<SWP.Nsources<<"\n";
 #endif
   if (SWP.Nsources<1) {
-    rep.error("UniformGrid::BC_assign_STWIND() No Wind Sources!",
-              SWP.Nsources);
+    rep.error("BC_assign_STWIND() No Sources!",SWP.Nsources);
   }
 
   //
   // Setup reference state vector and initialise to zero.
   //
   if (b->refval) {
-    rep.error("Already initialised memory in STWIND boundary refval",
-        b->refval);
+    rep.error("Initialised STWIND boundary refval",b->refval);
   }
   b->refval = mem.myalloc(b->refval, G_nvar);
   if (!b->data.empty()) {
@@ -2865,15 +2871,18 @@ int UniformGrid::BC_assign_STWIND(
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (err==0) {
-      Wind = new stellar_wind(G_ndim, G_nvar, G_ntracer, G_ftr, G_coordsys, G_eqntype);
+      Wind = new stellar_wind(G_ndim, G_nvar, G_ntracer, G_ftr,
+                              G_coordsys, G_eqntype, mt);
     }
     else if (err==1) {
-      Wind = new stellar_wind_evolution(G_ndim, G_nvar, G_ntracer, G_ftr, G_coordsys, G_eqntype);
+      Wind = new stellar_wind_evolution(G_ndim, G_nvar, G_ntracer,
+            G_ftr, G_coordsys, G_eqntype, mt, sim_start, sim_finish);
       err=0;
     }
     else if (err==2) {
       cout <<"Setting up stellar_wind_angle class\n";
-      Wind = new stellar_wind_angle(G_ndim, G_nvar, G_ntracer, G_ftr, G_coordsys, G_eqntype);
+      Wind = new stellar_wind_angle(G_ndim, G_nvar, G_ntracer, G_ftr,
+                  G_coordsys, G_eqntype, mt, sim_start, sim_finish);
     }
   }
 

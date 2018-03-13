@@ -68,12 +68,6 @@ flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi(
     riemann_MHD(nv,state,g),
     Riemann_Roe_MHD_CV(nv,g)
 {
-#ifdef TESTING
-  cout <<"flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi() constructor.\n";
-  cout <<"Default solver set to "<<SimPM.solverType<<" where ";
-  cout <<" 0=LF,1=RSlin,4=RSRoe-CV.\n";
-  cout <<" Note that only 0,1,4 are available for MHD so far!\n";
-#endif
   negPGct = negROct = 0;
   return;
 }

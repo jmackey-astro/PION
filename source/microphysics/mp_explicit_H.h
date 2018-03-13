@@ -123,10 +123,14 @@ class mp_explicit_H
   /// Constructor
   ///
   mp_explicit_H(
-      const int,          ///< Total number of variables in state vector
-      const int,          ///< Number of tracer variables in state vector.
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
+      const int,  ///< Total number of variables in state vector
+      const int,  ///< Number of tracer variables in state vector.
       const std::string *, ///< List of what the tracer variables mean.
-      struct which_physics * ///< extra physics stuff.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
       );
 
   ///
@@ -383,7 +387,10 @@ class mp_explicit_H
   //
   double k_B; ///<  Boltzmanns constant.
   double m_p; ///< Mass of proton.
-  double gamma;     ///< EOS gamma for ideal gas.
+  const int ndim; ///< Number of dimensions in grid.
+  const int nv_prim; ///< Number of variables in state vector.
+  const double eos_gamma; ///< EOS gamma for ideal gas.
+  const int coord_sys; ///< Coordinate System flag
   double gamma_minus_one; ///< as named.
   double lv_nH;  ///< current number density of H nucleons.
   struct which_physics *EP; ///< struct with flags for which extra physics we are or aren't doing.
@@ -394,7 +401,6 @@ class mp_explicit_H
   double JM_NION;  ///< Number of ions per ionised H atom.
   double METALLICITY; ///< Metallicity of gas, in units of solar.
 
-  const int nv_prim; ///< Number of variables in state vector.
   int       nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index. 
   int lv_H0;   ///< neutral hydrogeen local variable index.
