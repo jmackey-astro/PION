@@ -44,10 +44,12 @@ using namespace std;
 #define WSS09_CIE_ONLY_COOLING 7
 #define WSS09_CIE_LINE_HEAT_COOL 8
 
-mp_only_cooling::mp_only_cooling(const int nv,
-				 struct which_physics *ephys
-				 )
-:
+mp_only_cooling::mp_only_cooling(
+      const int nv,
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs    ///< radiation sources.
+      )
+: MicroPhysicsBase(ephys,rsrcs),
   cooling_function_SD93CIE(),
   Hummer94_Hrecomb(),
   nv_prim(nv)
@@ -56,7 +58,7 @@ mp_only_cooling::mp_only_cooling(const int nv,
   //
   // First check that we are updating energy
   //
-  if (!ephys->update_erg) {
+  if (!EP->update_erg) {
     rep.error("requested cooling microphysics but no energy update",
 	      DONT_CALL_ME);
   }
@@ -65,11 +67,11 @@ mp_only_cooling::mp_only_cooling(const int nv,
   // Next check that we are limiting timestep by the cooling time,
   // and if not, then set it!
   //
-  if (SimPM.EP.MP_timestep_limit != 1) {
+  if (EP->MP_timestep_limit != 1) {
     cout <<"\t\tmp_only_cooling: timestep limiting not set correctl";
-    cout <<"y.  Changing from "<<SimPM.EP.MP_timestep_limit<<" to ";
-    SimPM.EP.MP_timestep_limit = 1;
-    cout << SimPM.EP.MP_timestep_limit <<"\n";
+    cout <<"y.  Changing from "<<EP->MP_timestep_limit<<" to ";
+    EP->MP_timestep_limit = 1;
+    cout << EP->MP_timestep_limit <<"\n";
   }
 
   //
@@ -92,7 +94,7 @@ mp_only_cooling::mp_only_cooling(const int nv,
   //
   // Next select which cooling function to set up.
   //
-  cooling_flag = ephys->cooling;
+  cooling_flag = EP->cooling;
 
   switch (cooling_flag) {
   case SD93_CIE:
@@ -131,8 +133,8 @@ mp_only_cooling::mp_only_cooling(const int nv,
 #endif 
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  MaxT_allowed = ephys->MaxTemperature;
-  MinT_allowed = ephys->MinTemperature;
+  MaxT_allowed = EP->MaxTemperature;
+  MinT_allowed = EP->MinTemperature;
   if (MinT_allowed <1.0   || MinT_allowed>1.0e6 ) MinT_allowed=1.0;
   if (MaxT_allowed <1.0e2 || MaxT_allowed>3.0e10) MaxT_allowed=1.0e8; 
   cout <<"\t\tAllowed Temperature range: T_min="<<MinT_allowed<<"  T_max=";

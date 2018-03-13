@@ -137,7 +137,11 @@ int CommandLineInterface::execute(char *com)
   else if  (!strncmp(com,"cmd2"  ,4))  cmd2(com+4);
   else if  (!strncmp(com,"bigcmd",6))  bigcmd();
   else if  (!strncmp(com,"print_cell",10))  print_cell();
-  else if  (!strncmp(com,"print_flux",10))  print_flux();
+  else if  (!strncmp(com,"print_flux",10))  {
+    string s=com;
+    s=s.substr(11,2); cout <<s<<"\n";
+    print_flux(atoi(s.c_str()));
+  }
   else if  (!strncmp(com,"next_point",10))  {
     string s=com;
     s=s.substr(11,2); cout <<s<<"\n";
@@ -233,12 +237,14 @@ void CommandLineInterface::next_point(string s)
   return;
 }
 
-void CommandLineInterface::print_flux() 
+void CommandLineInterface::print_flux(
+    const int nvar   ///< Length of state vectors
+    ) 
 {
-  rep.printVec("left ",dp.vec2,SimPM.nvar);
-  rep.printVec("right",dp.vec3,SimPM.nvar);
-  rep.printVec("pstar",dp.vec1,SimPM.nvar);
-  rep.printVec("flux ",dp.vec4,SimPM.nvar);
+  rep.printVec("left ",dp.vec2,nvar);
+  rep.printVec("right",dp.vec3,nvar);
+  rep.printVec("pstar",dp.vec1,nvar);
+  rep.printVec("flux ",dp.vec4,nvar);
   return;
 }
 

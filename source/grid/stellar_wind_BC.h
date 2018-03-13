@@ -116,7 +116,8 @@ class stellar_wind {
       const int, ///< ntracer
       const int, ///< ftr
       const int, ///< coord_sys
-      const int  ///< eqn_type
+      const int,  ///< eqn_type
+      const double ///< minimum temperature allowed
       );
 
   virtual ~stellar_wind();
@@ -264,12 +265,13 @@ class stellar_wind {
   // --------------------------------------------------------------
 
  protected:
-  const int ndim;
-  const int nvar;
-  const int ntracer;
-  const int ftr;
-  const int coordsys;
-  const int eqntype;
+  const int ndim;     ///< number of dimensions on grid
+  const int nvar;     ///< number of variables in state vec.
+  const int ntracer;  ///< number of tracer variables in state vec.
+  const int ftr;      ///< first tracer index in state vec.
+  const int coordsys; ///< identifier of coordinate system
+  const int eqntype;  ///< Type of equations to solve
+  const double Tmin;  ///< Minimum Temperature allowed on grid.
 
   ///
   /// Set values of wind_cell reference state based on Wind-Source properties
@@ -315,9 +317,9 @@ struct evolving_wind_data {
 
 
 ///
-/// \brief stellar_wind_evolution: Derived class for time-varying stellar winds, with
-/// values set by spline interpolation of a table of values read in from a text
-/// file.
+/// \brief stellar_wind_evolution: Derived class for time-varying
+/// stellar winds, with values set by interpolation of a table of
+/// values read in from a text file.
 ///
 /// \date 2011.02.14
 /// \author Jonathan Mackey
@@ -333,7 +335,10 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const int, ///< ntracer
       const int, ///< ftr
       const int, ///< coord_sys
-      const int  ///< eqn_type
+      const int,  ///< eqn_type
+      const double, ///< minimum temperature allowed
+      const double, ///< Simulation start time.
+      const double  ///< Simulation finish time.
       );
   
   ///
@@ -394,6 +399,9 @@ class stellar_wind_evolution : virtual public stellar_wind {
       );
 
   protected:
+  const double sim_start;  ///< start time of simulation.
+  const double sim_finish; ///< finish time of simulation.
+
   ///
   /// If it is time to update the wind properties then this function does it, 
   /// updating both the wind properties and the state vectors of all of the

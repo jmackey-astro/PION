@@ -69,8 +69,10 @@ get_sim_info::~get_sim_info()
 
 
 
-int get_sim_info::read_gridparams(string pfile ///< paramfile.
-				  )
+int get_sim_info::read_gridparams(
+      string pfile, ///< paramfile.
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   int err =0;
   get_sim_info::rp=0;
@@ -410,11 +412,11 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   else rep.error("\tUnknown viscosity requested... fix me.",str);
   //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<"\n";
   // Which Physics
-  err += read_extra_physics();
+  err += read_extra_physics(SimPM);
   if (err) rep.error("read_extra_physics",err);   
    
   // Raytracing
-  err += read_radsources();
+  err += read_radsources(SimPM);
   if (err) rep.error("read_radsources",err);   
 
   //
@@ -430,7 +432,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SWP.Nsources = atoi(str.c_str());
     //cout <<"\tWIND_NSRC: got "<<SWP.Nsources<<" sources.\n";
     if (SWP.Nsources>0) {
-      err += read_wind_sources();
+      err += read_wind_sources(SimPM);
       if (err) rep.error("read_wind_sources",err);   
     }
   }
@@ -471,7 +473,9 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
 
 
-int get_sim_info::read_radsources()
+int get_sim_info::read_radsources(
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   if (!rp) return 1;
   string a;
@@ -604,7 +608,9 @@ int get_sim_info::read_radsources()
 
 
 
-int get_sim_info::read_wind_sources()
+int get_sim_info::read_wind_sources(
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   if (!rp)
     return 1;
@@ -742,7 +748,9 @@ int get_sim_info::read_wind_sources()
 
 
 
-int get_sim_info::read_extra_physics()
+int get_sim_info::read_extra_physics(
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   if (!rp) return 1;
   // read extra physics parameters if present, and set them to

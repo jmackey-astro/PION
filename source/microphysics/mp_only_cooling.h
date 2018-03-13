@@ -49,7 +49,8 @@ class mp_only_cooling
   ///
   mp_only_cooling(
       const int, ///< length of prim. state vec.
-      struct which_physics * ///< pointer to struct of what to calc.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *    ///< radiation sources.
       );
 
   ///

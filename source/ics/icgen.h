@@ -37,9 +37,14 @@
 class ICsetup_base {
   public :
   virtual ~ICsetup_base() {}
+
   virtual int setup_data(class ReadParams *, ///< pointer to parameter list.
 			  class GridBaseClass * ///< pointer to grid
 			  )=0;
+  void set_SimPM(
+      class SimParams *sp
+      )
+  {SimPM = sp; return;}
 #ifdef PARALLEL
   void set_MCMD_pointer(
       class MCMDcontrol *m
@@ -47,15 +52,21 @@ class ICsetup_base {
   {MCMD = m; return;}
 #endif // PARALLEL
   protected:
-   int AddNoise2Data(
-        class GridBaseClass *,
-        int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
-        double ///< Noise level (in pressure) in fractional level.
-        );
-   int SmoothData(int ///< Number of cell diameters to smooth over.
-		  );
+
+  int AddNoise2Data(
+      class GridBaseClass *,
+      class SimParams &,
+      int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
+      double ///< Noise level (in pressure) in fractional level.
+      );
+  
+  int SmoothData(
+      int ///< Number of cell diameters to smooth over.
+      );
+  
    class GridBaseClass *gg; ///< pointer to grid.
-   class ReadParams *rp; ///< pointer to readparams.
+   class ReadParams *rp;    ///< pointer to readparams.
+   class SimParams *SimPM;  ///< pointer to simulation parameters
 #ifdef PARALLEL
    class MCMDcontrol *MCMD;
 #endif // PARALLEL
@@ -66,9 +77,10 @@ class IC_basic_tests : public ICsetup_base {
   public:
    IC_basic_tests();
    ~IC_basic_tests();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+   int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
  protected:
    int eqns; ///< =1 for Euler equations, =2 for MHD equations.
    /** \brief Sets up a completely uniform grid, as a sanity check that the 
@@ -114,9 +126,11 @@ class IC_blastwave : public ICsetup_base {
   public:
    IC_blastwave();
    ~IC_blastwave();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+   int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int eqns;   ///< set to 1 for euler eqns, 2 for mhd equations
                ///< (including all divB cleaning methods)
@@ -155,9 +169,11 @@ class IC_shock_cloud : public ICsetup_base {
   public:
    IC_shock_cloud();
    ~IC_shock_cloud();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+   int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int ndim;   ///< grid dimensionality.
    int coords; ///< coord sys used
@@ -180,11 +196,13 @@ class IC_shock_cloud : public ICsetup_base {
 
 class IC_shocktube : public ICsetup_base {
   public:
-   IC_shocktube();
-   ~IC_shocktube();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  IC_shocktube();
+  ~IC_shocktube();
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int
      number, ///< shocktube test problem number
@@ -213,11 +231,13 @@ class IC_shocktube : public ICsetup_base {
 
 class IC_jet : public ICsetup_base {
   public:
-   IC_jet();
-   ~IC_jet();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  IC_jet();
+  ~IC_jet();
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int 
      ndim,   ///< grid dimensionality
@@ -236,9 +256,11 @@ class IC_radiative_shock : public ICsetup_base {
   public:
   IC_radiative_shock();
   ~IC_radiative_shock();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int eqns;    ///< 1=euler; 2=mhd
    double vsh;  ///< shock velocity (cgs)
@@ -260,9 +282,11 @@ class IC_laser_ablation : public ICsetup_base {
   public:
   IC_laser_ablation();
   ~IC_laser_ablation();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int eqns;    ///< 1=euler; 2=mhd
    double vel0;  ///< shock velocity (cgs)
@@ -286,9 +310,11 @@ class IC_photoevaporatingclump : public ICsetup_base {
   public:
    IC_photoevaporatingclump();
    ~IC_photoevaporatingclump();
-   int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
    int ndim;   ///< grid dimensionality.
    int coords; ///< coord sys used
@@ -344,9 +370,11 @@ class IC_photevap_random_clumps : public ICsetup_base {
  public:
   IC_photevap_random_clumps();
   ~IC_photevap_random_clumps();
-  int setup_data(class ReadParams *, ///< pointer to parameter list.
-		 class GridBaseClass * ///< pointer to grid
-		 );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
  protected:
   int ndim;   ///< grid dimensionality.
   int coords; ///< coord sys used
@@ -418,9 +446,11 @@ class IC_photevap_multi_clumps : public ICsetup_base {
  public:
   IC_photevap_multi_clumps();
   ~IC_photevap_multi_clumps();
-  int setup_data(class ReadParams *, ///< pointer to parameter list.
-		 class GridBaseClass * ///< pointer to grid
-		 );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
  protected:
   int ndim;   ///< grid dimensionality.
   int coords; ///< coord sys used
@@ -498,9 +528,11 @@ class IC_spherical_clump : public ICsetup_base {
   public:
   IC_spherical_clump();
   ~IC_spherical_clump();
-  int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
   int setup_clump(); ///< allocate data to grid cells.
   int eqns;  ///< set to 1 for euler eqns, 2 for mhd equations.
@@ -534,9 +566,11 @@ class IC_HD_2D_ShockCloud : public ICsetup_base {
   public:
   IC_HD_2D_ShockCloud();
   ~IC_HD_2D_ShockCloud();
-  int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
   void get_data_vals(
           double *, ///< Cell centre
@@ -561,9 +595,11 @@ class IC_read_BBurkhart_data : public ICsetup_base {
   public:
   IC_read_BBurkhart_data();
   ~IC_read_BBurkhart_data();
-  int setup_data(class ReadParams *, ///< pointer to parameter list.
-		  class GridBaseClass * ///< pointer to grid
-		  );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
   void read_file(
           const string, ///< input fits file to read
@@ -592,9 +628,11 @@ class IC_StarBench_Tests : public ICsetup_base {
   public:
   IC_StarBench_Tests();
   ~IC_StarBench_Tests();
-  int setup_data(class ReadParams *, ///< pointer to parameter list.
-		 class GridBaseClass * ///< pointer to grid
-		 );
+  int setup_data(
+      class ReadParams *, ///< pointer to parameter list.
+      class GridBaseClass * ///< pointer to grid
+      );
+
   protected:
   ///
   /// The contact discontinuity advection tests from Dale and

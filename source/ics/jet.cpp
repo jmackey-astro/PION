@@ -46,11 +46,11 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
   ICsetup_base::rp = rrp;
   if (!rp) rep.error("null pointer to ReadParams",rp);
 
-  IC_jet::ndim = SimPM.ndim;
+  IC_jet::ndim = SimPM->ndim;
   if (ndim!=2 && ndim!=3) rep.error("Shock-Cloud problem must be 2d or 3d",ndim);
-  IC_jet::coords = SimPM.coord_sys;
+  IC_jet::coords = SimPM->coord_sys;
   if (coords!=COORD_CRT && coords!=COORD_CYL) rep.error("Bad coord sys",coords);
-  IC_jet::eqns = SimPM.eqntype;
+  IC_jet::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -61,9 +61,9 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
   // initialise jet and ambient vectors to zero.
   //
   IC_jet::ambient = 0;
-  ambient = new double [SimPM.nvar];
+  ambient = new double [SimPM->nvar];
   if (!ambient) rep.error("malloc pre/post shock vecs",ambient);
-  for (int v=0;v<SimPM.nvar;v++) ambient[v] = 0.0;
+  for (int v=0;v<SimPM->nvar;v++) ambient[v] = 0.0;
 
 
   string seek, str;
@@ -117,23 +117,23 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
     JP.jetstate[BY] = ambient[BY];
     JP.jetstate[BZ] = ambient[BZ];
   }
-  if (SimPM.eqntype==EQGLM) {
+  if (SimPM->eqntype==EQGLM) {
     JP.jetstate[SI]=0.0;
   }
   //
   // Jet tracer values
   //
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     ostringstream temp;
     temp.str("");
     temp << "JETjetTR" << t;
     seek = temp.str();
     str = rp->find_parameter(seek);
-    if (str!="") JP.jetstate[t+SimPM.ftr] = atof(str.c_str());
-    else         JP.jetstate[t+SimPM.ftr] = 0.0;
+    if (str!="") JP.jetstate[t+SimPM->ftr] = atof(str.c_str());
+    else         JP.jetstate[t+SimPM->ftr] = 0.0;
   }
-  for (int v=SimPM.nvar; v<MAX_NVAR; v++) JP.jetstate[v]=0.0;
-  rep.printVec("JetState",JP.jetstate,SimPM.nvar);
+  for (int v=SimPM->nvar; v<MAX_NVAR; v++) JP.jetstate[v]=0.0;
+  rep.printVec("JetState",JP.jetstate,SimPM->nvar);
   //------------------------------------------------------------------
 
   //------------------------------------------------------------------
@@ -207,17 +207,17 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
     if (str!="") IC_jet::ambient[BZ] = atof(str.c_str());
     else         IC_jet::ambient[BZ] = -1.0e99;
 
-    if (SimPM.eqntype==EQGLM) ambient[SI] = 0.;
+    if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars
 
   // tracer variables
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "JETambTR" << t;
     seek = temp.str();
     str = rp->find_parameter(seek);
-    if (str!="") IC_jet::ambient[t+SimPM.ftr] = atof(str.c_str());
-    else         IC_jet::ambient[t+SimPM.ftr] = -1.0e99;
+    if (str!="") IC_jet::ambient[t+SimPM->ftr] = atof(str.c_str());
+    else         IC_jet::ambient[t+SimPM->ftr] = -1.0e99;
   }
   //------------------------------------------------------------------
 
@@ -239,7 +239,7 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
   //
   class cell *c = gg->FirstPt();
   do {
-     for (int v=0;v<SimPM.nvar;v++) c->P[v] = ambient[v];
+     for (int v=0;v<SimPM->nvar;v++) c->P[v] = ambient[v];
   } while ( (c=gg->NextPt(c))!=0);
 
   // Add noise to data?  Smooth data?
@@ -248,7 +248,7 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, *SimPM, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());

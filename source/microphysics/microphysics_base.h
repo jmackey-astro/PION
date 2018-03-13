@@ -60,10 +60,17 @@ struct rt_source_data {
 
 
 
-/// pure virtual base/interface class for in-cell microphysics update.
+/// virtual base/interface class for in-cell microphysics update.
 class MicroPhysicsBase {
   public :
-   virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
+  ///
+  /// Constructor sets up parameters used by derived classes.
+  ///
+  MicroPhysicsBase(
+      struct which_physics *, ///< which physics to calculate.
+      struct rad_sources *    ///< radiation sources.
+      );
+  virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
 
    /// Non-RT microphysics update, so cooling and heating and chemistry.
    /// 
@@ -263,6 +270,12 @@ class MicroPhysicsBase {
   ///
   virtual inline double get_X_H()
     {return 0.7154;}
+
+protected:
+  /// Struct with flags for which extra physics we are (not) doing.
+  struct which_physics *EP;
+  /// Struct with list of radiation sources
+  struct rad_sources *RS;
 
 };
 

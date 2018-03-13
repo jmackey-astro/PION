@@ -28,7 +28,10 @@ class stellar_wind_angle
       const int, ///< ntracer
       const int, ///< ftr
       const int, ///< coord_sys
-      const int  ///< eqn_type
+      const int, ///< eqn_type
+      const double, ///< minimum temperature allowed
+      const double, ///< Simulation start time.
+      const double  ///< Simulation finish time.
       );
 
   ///
@@ -204,7 +207,8 @@ class stellar_wind_angle
   void set_wind_cell_reference_state(
       class GridBaseClass *,
       struct wind_cell *,
-      const struct wind_source *
+      const struct wind_source *,
+      const double ///< EOS gamma
       );
 
   ///
@@ -214,7 +218,8 @@ class stellar_wind_angle
   virtual void update_source(
       class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
-      const double ///< current simulation time.
+      const double, ///< current simulation time.
+      const double  ///< EOS Gamma
       );
  
 };

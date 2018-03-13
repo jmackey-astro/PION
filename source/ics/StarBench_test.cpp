@@ -75,8 +75,8 @@ int IC_StarBench_Tests::setup_data(
   ICsetup_base::rp = rrp;
   if (!rp) rep.error("null pointer to ReadParams",rp);
 
-  if (SimPM.eqntype != EQEUL)
-    rep.error("Bad equations",SimPM.eqntype);
+  if (SimPM->eqntype != EQEUL)
+    rep.error("Bad equations",SimPM->eqntype);
 
   int err=0;
   string ics = rp->find_parameter("ics");
@@ -133,7 +133,7 @@ int IC_StarBench_Tests::setup_data(
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
   if (noise>0) {
     cout <<"\t\tNOISE: Adding random adiabatic noise at fractional level = "<<noise<<"\n";
-    err+= AddNoise2Data(gg, 2,noise);
+    err+= AddNoise2Data(gg, *SimPM, 2,noise);
   }
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -176,47 +176,47 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
     cerr <<"bad test! "<<test<<"\n";
     return 1;
   }
-  if (test_id <=2  && SimPM.ndim != 1) {
-    rep.error("ContactDiscontinuity1/2 is 1D test",SimPM.ndim);
+  if (test_id <=2  && SimPM->ndim != 1) {
+    rep.error("ContactDiscontinuity1/2 is 1D test",SimPM->ndim);
   }
-  if (test_id >=3 && SimPM.ndim != 2) {
-    rep.error("ContactDiscontinuity3/4 is 2D test",SimPM.ndim);
+  if (test_id >=3 && SimPM->ndim != 2) {
+    rep.error("ContactDiscontinuity3/4 is 2D test",SimPM->ndim);
   }
 
-  if (SimPM.ntracer != 1) {
+  if (SimPM->ntracer != 1) {
     rep.error("Need exactly one colour tracer for CD tests",
-              SimPM.ntracer);
+              SimPM->ntracer);
   }
   
   //
   // Get advection velocity from the parameterfile.
   //
-  double Vel[SimPM.ndim];
+  double Vel[SimPM->ndim];
   cout << "** It is assumed all parameters are correctly set **\n";
 
   string seek = rrp->find_parameter("StarBench_ContDisc_VX");
   if (seek=="") rep.error("Need parameter StarBench_ContDisc_VX",1);
   else Vel[XX] = atof(seek.c_str());
 
-  if (SimPM.ndim>1) {
+  if (SimPM->ndim>1) {
     string seek = rrp->find_parameter("StarBench_ContDisc_VY");
     if (seek=="") rep.error("Need parameter StarBench_ContDisc_VY",2);
     else Vel[YY] = atof(seek.c_str());
   }
 
   cell *c=ggg->FirstPt();
-  double pos[SimPM.ndim];
+  double pos[SimPM->ndim];
 
   if      (test_id==1) {
     do {
       CI.get_dpos(c,pos);
       if (pos[XX]<0.5) {
         c->P[RO] = 1.0;
-        c->P[SimPM.ftr] = 0.0;
+        c->P[SimPM->ftr] = 0.0;
       }
       else {
         c->P[RO] = 10.0;
-        c->P[SimPM.ftr] = 1.0;
+        c->P[SimPM->ftr] = 1.0;
       }
 
       c->P[PG] = 10.0;
@@ -233,11 +233,11 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
       CI.get_dpos(c,pos);
       if (pos[XX]<0.5) {
         c->P[RO] = 1.0;
-        c->P[SimPM.ftr] = 0.0;
+        c->P[SimPM->ftr] = 0.0;
       }
       else {
         c->P[RO] = 1000.0;
-        c->P[SimPM.ftr] = 1.0;
+        c->P[SimPM->ftr] = 1.0;
       }
 
       c->P[PG] = 1000.0;
@@ -296,11 +296,11 @@ int IC_StarBench_Tests::setup_ContactDiscontinuity(
       //
       if (inside) {
         c->P[RO] = rho_in;
-        c->P[SimPM.ftr] = 1.0;
+        c->P[SimPM->ftr] = 1.0;
       }
       else {
         c->P[RO] = 1.0;
-        c->P[SimPM.ftr] = 0.0;
+        c->P[SimPM->ftr] = 0.0;
       }
       c->P[PG] = pg;
       c->P[VX] = Vel[XX];
@@ -374,15 +374,15 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // from c^2 = p/rho
   //
   c->P[PG] = 1.0e-10;
-  for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 0.0;
-  MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+  for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 0.0;
+  MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
   c_n = sqrt(c->P[PG]/c->P[RO]);
 
   //
   // Ionized gas
   // 
-  for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
-  MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+  for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
+  MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
   c_i = sqrt(c->P[PG]/c->P[RO]);
   
   cout <<"c_n = "<< c_n <<", c_i = "<<c_i<<"\n";
@@ -443,23 +443,23 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   c->P[RO] = d_dn;
   c->P[VX] = v_dn;
   c->P[PG] = 0.0;
-  MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
-  for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
+  MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+  for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
   
   //
   // This is the local recombination rate (number per cm^3 per sec).
   //
-  double IF_pos = MP->get_recombination_rate(0, c->P, SimPM.gamma);
+  double IF_pos = MP->get_recombination_rate(0, c->P, SimPM->gamma);
   //
   // Length to absorb all photons is the source strength * IF_pos
   //
-  if (SimPM.RS.Nsources<1) {
-    rep.error("Need Radiation Source for test!",SimPM.RS.Nsources);
+  if (SimPM->RS.Nsources<1) {
+    rep.error("Need Radiation Source for test!",SimPM->RS.Nsources);
   }
   cout <<"Recombination rate = "<<IF_pos<<" :  ";
-  IF_pos = SimPM.RS.sources[0].strength / IF_pos;
+  IF_pos = SimPM->RS.sources[0].strength / IF_pos;
 
-  cout <<"source ionizing flux = "<< SimPM.RS.sources[0].strength;
+  cout <<"source ionizing flux = "<< SimPM->RS.sources[0].strength;
   cout <<" :  "<<"length to absorb photons = "<<IF_pos<<"\n";
   //
   // Add in a fudge factor of 0.65 because the downstream region is
@@ -493,7 +493,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  double pos[SimPM.ndim];
+  double pos[SimPM->ndim];
   do {
     CI.get_dpos(c,pos);
 
@@ -505,8 +505,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[PG] = 1.0e-10;
       c->P[VX] = -v_dn;
       c->P[VY] = c->P[VZ] = 0.0;
-      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
-      MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+      for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
+      MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
     }
     else if (pos[XX]<= shock_pos) {
       //
@@ -516,8 +516,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[PG] = 1.0e-10;
       c->P[VX] = -v_sh;
       c->P[VY] = c->P[VZ] = 0.0;
-      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
-      MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+      for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
+      MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
     }
     else {
       //
@@ -527,8 +527,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
       c->P[PG] = 1.0e-10;
       c->P[VX] = -v_up;
       c->P[VY] = c->P[VZ] = 0.0;
-      for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
-      MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+      for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
+      MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
     }
 
   } while ( (c=ggg->NextPt(c)) !=0);
@@ -567,14 +567,14 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     // upstream velocity perturbation, 0.75 of the neutral gas sound
     // speed.
     //
-    double lambda = 0.125*SimPM.Range[YY];
+    double lambda = 0.125*SimPM->Range[YY];
     double A = 0.75*c_n;
-    double x0 = shock_pos + 0.2*SimPM.Range[XX];
-    double sig= 0.05*SimPM.Range[XX];
+    double x0 = shock_pos + 0.2*SimPM->Range[XX];
+    double sig= 0.05*SimPM->Range[XX];
     c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
-      c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda)
+      c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM->Range[YY])/lambda)
                       *exp(-0.5*pow((pos[XX]-x0)/sig,2.0));
     } while ( (c=ggg->NextPt(c)) !=0);
   } //  ptype==1
@@ -585,7 +585,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     //
     // Overwrite data, with curved shock.
     //
-    double lambda = SimPM.Range[YY];
+    double lambda = SimPM->Range[YY];
     if      (ptype==2) lambda *= 0.25;  // 4 wavelengths on the domain
     else if (ptype==3) lambda *= 1.00;  // just one wavelength
 
@@ -597,7 +597,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
-      deflection = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda);
+      deflection = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM->Range[YY])/lambda);
       //if (pos[XX]<= IF_pos+deflection) {
       // This makes the IF smooth, but the SF is still distorted.
       if (pos[XX]<= IF_pos) {
@@ -608,8 +608,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[PG] = 1.0e-10;
         c->P[VX] = -v_dn;
         c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
-        MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
+        MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
       }
       else if (pos[XX]<= shock_pos+deflection) {
         //
@@ -619,8 +619,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[PG] = 1.0e-10;
         c->P[VX] = -v_sh;
         c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
-        MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
+        MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
       }
       else {
         //
@@ -630,8 +630,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[PG] = 1.0e-10;
         c->P[VX] = -v_up;
         c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
-        MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
+        MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
       }
 
     } while ( (c=ggg->NextPt(c)) !=0);
@@ -644,10 +644,10 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     c->P[RO] = d_dn;
     c->P[VX] = v_dn;
     c->P[PG] = 0.0;
-    MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
-    for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
-    IF_pos = MP->get_recombination_rate(0, c->P, SimPM.gamma);
-    IF_pos = 0.65*SimPM.RS.sources[0].strength / IF_pos + ggg->SIM_Xmin(XX);
+    MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+    for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
+    IF_pos = MP->get_recombination_rate(0, c->P, SimPM->gamma);
+    IF_pos = 0.65*SimPM->RS.sources[0].strength / IF_pos + ggg->SIM_Xmin(XX);
     //
     // Density sinusoidal perturbation, gaussian smoothed in x.
     //
@@ -669,8 +669,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[PG] = 1.0e-10;
         c->P[VX] = -v_dn;
         c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0;
-        MP->Set_Temp(c->P, SimPM.EP.MaxTemperature, SimPM.gamma);
+        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
+        MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
       }
       else {
         deltarho = amp*sin(2.0*M_PI*(pos[YY]+0.5*ggg->SIM_Range(YY))/lambda);
@@ -682,8 +682,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
         c->P[PG] = 1.0e-10; // reset later with Set_Temp() call.
         c->P[VX] = -v_up;
         c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM.ntracer; v++) c->P[SimPM.ftr+v] = 1.0e-12;
-        MP->Set_Temp(c->P, SimPM.EP.MinTemperature, SimPM.gamma);
+        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
+        MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
       }
     } while ( (c=ggg->NextPt(c)) !=0);
 
@@ -721,27 +721,27 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
   else rep.error("Bad test name",test);
 
   cell *c=ggg->FirstPt();
-  double pos[SimPM.ndim];
+  double pos[SimPM->ndim];
   do {
     //CI.get_dpos(c,pos);
 
     c->P[RO] = 44.0*pconst.m_p();      // Pure H with n=44/cm3.
     c->P[PG] = 44.0*pconst.kB()*10.0; // 10K neutral gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
-    for (int v=0; v<SimPM.ntracer; v++)
-      c->P[SimPM.ftr+v] = 0.0;
+    for (int v=0; v<SimPM->ntracer; v++)
+      c->P[SimPM->ftr+v] = 0.0;
 
   } while ( (c=ggg->NextPt(c)) !=0);
 
   if (id==3) {
-    double lambda = 0.125*SimPM.Range[YY];
+    double lambda = 0.125*SimPM->Range[YY];
     double A = 0.75 *sqrt(pconst.kB()*1.0e4/pconst.m_p());
-    double x0 = SimPM.Xmin[XX] +0.12*SimPM.Range[XX];
-    double sig= 0.05*SimPM.Range[XX];
+    double x0 = SimPM->Xmin[XX] +0.12*SimPM->Range[XX];
+    double sig= 0.05*SimPM->Range[XX];
     c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
-      c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM.Range[YY])/lambda)
+      c->P[VY] = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM->Range[YY])/lambda)
                   *exp(-0.5*pow((pos[XX]-x0)/sig,2.0));
     } while ( (c=ggg->NextPt(c)) !=0);
   }
@@ -766,7 +766,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   else rep.error("Bad test name",test);
 
   cell *c=ggg->FirstPt();
-  double pos[SimPM.ndim];
+  double pos[SimPM->ndim];
   //
   // Run through grid and set uniform initial conditions.
   //
@@ -776,8 +776,8 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     c->P[RO] = 50.0*pconst.m_p();      // From the test document.
     c->P[PG] = 50.0*pconst.kB()*1000.0; // Just pick some temperature...
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
-    for (int v=0; v<SimPM.ntracer; v++)
-      c->P[SimPM.ftr+v] = 0.0;
+    for (int v=0; v<SimPM->ntracer; v++)
+      c->P[SimPM->ftr+v] = 0.0;
   } while ( (c=ggg->NextPt(c)) !=0);
 
   //
@@ -792,9 +792,9 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     double radius = 3.086e18;
     double dist=0.0;
     double rho_cl = 1000.0*pconst.m_p();
-    double cl_centre[SimPM.ndim];
+    double cl_centre[SimPM->ndim];
     cl_centre[XX] = 1.92*3.086e18;
-    for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
+    for (int v=1;v<SimPM->ndim;v++) cl_centre[v]=0.0;
 
     c=ggg->FirstPt();
     do {
@@ -814,9 +814,9 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     double r_core = 0.5*3.086e18;
     double rho_cl = 1000.0*pconst.m_p();
     double rho_cell=0.0;
-    double cl_centre[SimPM.ndim];
+    double cl_centre[SimPM->ndim];
     cl_centre[XX] = 1.92*3.086e18;
-    for (int v=1;v<SimPM.ndim;v++) cl_centre[v]=0.0;
+    for (int v=1;v<SimPM->ndim;v++) cl_centre[v]=0.0;
     double dist=0.0;
 
     c=ggg->FirstPt();
@@ -855,7 +855,7 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
   else density = atof(seek.c_str());
 
 
-  double dpos[SimPM.ndim];
+  double dpos[SimPM->ndim];
   cell *c=ggg->FirstPt();
   do {
     CI.get_dpos(c,dpos);
@@ -866,8 +866,8 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
     c->P[RO] = density*pconst.m_p();      // Pure H with n=0.5/cm3.
     c->P[PG] = 2.0*c->P[RO]*pconst.kB()*1.0e4/pconst.m_p(); // 10000K ionised gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
-    for (int v=0; v<SimPM.ntracer; v++)
-      c->P[SimPM.ftr+v] = 1.0; // fully ionised
+    for (int v=0; v<SimPM->ntracer; v++)
+      c->P[SimPM->ftr+v] = 1.0; // fully ionised
 
 
   } while ( (c=ggg->NextPt(c)) !=0);
@@ -892,12 +892,12 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
       )
 {
   
-  double srcpos[SimPM.ndim];
-  for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].pos[v];
+  double srcpos[SimPM->ndim];
+  for (int v=0;v<SimPM->ndim;v++) {
+    srcpos[v] = SimPM->RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
-  rep.printVec("source position",srcpos,      SimPM.ndim);
+  rep.printVec("source position",srcpos,      SimPM->ndim);
   
   //double density=0.0;
   //string seek = rrp->find_parameter("StarBench_Cone_Rho");
@@ -905,7 +905,7 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
   //else density = atof(seek.c_str());
   
   cell *c=ggg->FirstPt();
-  double pos[SimPM.ndim];
+  double pos[SimPM->ndim];
   double dist = 0.0;
   double r0 = 3.086e17;    // core radius of cloud.
   double radial_slope=2.0; // power law slope in rho for r>r0
@@ -917,8 +917,8 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
     c->P[RO] = 1.0e4*pconst.m_p(); // Pure H with n=10^4/cm3.
     c->P[PG] = 1.518e-10; // 100K neutral gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
-    for (int v=0; v<SimPM.ntracer; v++)
-      c->P[SimPM.ftr+v] = 1.0e-12;
+    for (int v=0; v<SimPM->ntracer; v++)
+      c->P[SimPM->ftr+v] = 1.0e-12;
     
     dist = ggg->distance_vertex2cell(srcpos,c);
     //

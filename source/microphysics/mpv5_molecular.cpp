@@ -40,13 +40,17 @@ using namespace std;
 
 
 mpv5_molecular::mpv5_molecular(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-          const std::string *tracers,  ///< List of what the tracer variables mean.
-          struct which_physics *ephys  ///< extra physics stuff.
-	  )
-:
-  mp_explicit_H(nv,ntracer,tracers,ephys)
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,             ///< Total number of variables in state vector
+      const int ntracer,        ///< Number of tracer variables in state vector.
+      const std::string *tracers, ///< List of what the tracer variables mean.
+      struct which_physics *ephys,  ///< extra physics stuff.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
+  :
+  mp_explicit_H(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
   cout <<"mpv5_molecular constructor setting up.\n";
@@ -297,7 +301,7 @@ int mpv5_molecular::ydot(
   // the rate to linearly approach zero as we reach Tmin.
   //
   if (Edot<0.0 && T<2.0*EP->MinTemperature) {
-    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
+    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/EP->MinTemperature);
   }
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;

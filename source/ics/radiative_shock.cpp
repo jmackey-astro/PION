@@ -68,7 +68,7 @@ int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to par
 
   string seek, str;
 
-  IC_radiative_shock::eqns = SimPM.eqntype;
+  IC_radiative_shock::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -99,7 +99,7 @@ int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to par
   if (str=="") IC_radiative_shock::B0 = 0.0;
   IC_radiative_shock::B0 = atof(str.c_str());
 
-  IC_radiative_shock::gam = SimPM.gamma;
+  IC_radiative_shock::gam = SimPM->gamma;
 
 
   // now make sure we are to do a radiative shock sim...
@@ -122,7 +122,7 @@ int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to par
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(gg,2,noise);
+  if (noise>0) err+= AddNoise2Data(gg,*SimPM, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -154,7 +154,7 @@ int IC_radiative_shock::setup_RadiativeShock()
   //
   // Tracer values: upstream and downstream (only upstream used for Radiative Shock)
   //
-  int ntr = SimPM.ntracer;
+  int ntr = SimPM->ntracer;
   double trup[ntr];
   string seek, str;
   for (int t=0; t<ntr; t++) {
@@ -178,7 +178,7 @@ int IC_radiative_shock::setup_RadiativeShock()
        c->P[BY] = B0; c->P[BX] = c->P[BZ] = 0.0;
      }
      // tracers (fractional abundances!)
-     for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = trup[i]; // set later in MP.
+     for (int i=0;i<SimPM->ntracer;i++) c->P[SimPM->ftr+i] = trup[i]; // set later in MP.
      // done.
   } while ((c=gg->NextPt(c))!=0);
   return 0;
@@ -199,9 +199,9 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   double mu = 1.22; // mean mass per particle -- rough guess, good for neutral H, He.
   //mu /=2.0; // for ionised gas.
   double pg = rho0 *pconst.kB() *T0 /mu /pconst.m_p();
-  double xboundary = (SimPM.Xmax[XX]-SimPM.Xmin[XX])/5.;
+  double xboundary = (SimPM->Xmax[XX]-SimPM->Xmin[XX])/5.;
   if (vsh<=1.01e7) xboundary*=2.5; //stable shock should be near centre of grid.
-  double range = (SimPM.Xmax[XX]-SimPM.Xmin[XX])*5.0/SimPM.NG[XX];
+  double range = (SimPM->Xmax[XX]-SimPM->Xmin[XX])*5.0/SimPM->NG[XX];
   double mach0 = vsh/sqrt(gam*pg/rho0);  cout <<"shock mach no. = "<<mach0<<endl;
   double rho1 = rho0*mach0*mach0; // isothermal shock jump condition.
   //  double vel1 = rho0*vsh/rho1;
@@ -223,7 +223,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   //
   // Tracer values: upstream and downstream
   //
-  int ntr = SimPM.ntracer;
+  int ntr = SimPM->ntracer;
   double trup[ntr], trdn[ntr];
   for (int t=0; t<ntr; t++) {
     ostringstream temp;
@@ -243,7 +243,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
   }
   
   class cell *c = gg->FirstPt();
-  double dpos[SimPM.ndim];
+  double dpos[SimPM->ndim];
   do {
     CI.get_dpos(c,dpos);
     if (dpos[XX] >= xboundary+range) {
@@ -259,7 +259,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
 	c->P[BY] = c->P[BZ] = B0/sqrt(2.); c->P[BX] = 0.0;
       }
       // tracers (fractional abundances!)
-      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = trup[i];
+      for (int i=0;i<SimPM->ntracer;i++) c->P[SimPM->ftr+i] = trup[i];
     }
     else if (dpos[XX] <= xboundary-range) {
       //
@@ -274,7 +274,7 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
 	c->P[BY] = c->P[BZ] = B0*(rho1/rho0)/sqrt(2.); c->P[BX] = 0.0;
       }
       // tracers (fractional abundances!)
-      for (int i=0;i<SimPM.ntracer;i++) c->P[SimPM.ftr+i] = trdn[i];
+      for (int i=0;i<SimPM->ntracer;i++) c->P[SimPM->ftr+i] = trdn[i];
     }
     else {
       //
@@ -294,8 +294,8 @@ int IC_radiative_shock::setup_OutflowRadiativeShock()
       // tracers (fractional abundances!) -- linearly interpolate
       // between upstream and downstream values.
       //
-      for (int i=0;i<SimPM.ntracer;i++) 
-	c->P[SimPM.ftr+i] = frac*trup[i] + (1.-frac)*trdn[i];
+      for (int i=0;i<SimPM->ntracer;i++) 
+	c->P[SimPM->ftr+i] = frac*trup[i] + (1.-frac)*trdn[i];
     }
     // done.
   } while ((c=gg->NextPt(c))!=0);

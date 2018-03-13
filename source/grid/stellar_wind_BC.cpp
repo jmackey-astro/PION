@@ -74,9 +74,10 @@ stellar_wind::stellar_wind(
       const int nt, ///< ntracer
       const int ft, ///< ftr
       const int cs, ///< coord_sys
-      const int eq ///< eqn_type
+      const int eq, ///< eqn_type
+      const double mt ///< Minimum temperature allowed on grid
       )
-: ndim(nd), nvar(nv), ntracer(nt), ftr(ft), coordsys(cs), eqntype(eq)
+: ndim(nd), nvar(nv), ntracer(nt), ftr(ft), coordsys(cs), eqntype(eq), Tmin(mt)
 {
   nsrc=0;
 }
@@ -299,7 +300,8 @@ int stellar_wind::add_cell(
   //
   // Now assign values to the state vector:
   //
-  set_wind_cell_reference_state(grid, wc, WS, gamma);
+  /// NB: This function has the EOS Gamma hardcoded to 5/3
+  set_wind_cell_reference_state(grid, wc, WS, 5./3.);
 
   WS->wcells.push_back(wc);
   WS->ncell += 1;
@@ -423,17 +425,17 @@ void stellar_wind::set_wind_cell_reference_state(
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
-  // Set the minimum temperature to be 10K in the wind...
+  // Set a minimum temperature in the wind
   //
   if (MP) {
-    if (MP->Temperature(wc->p,gamma) <SimPM.EP.MinTemperature) {
-      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,gamma);
+    if (MP->Temperature(wc->p,gamma) <Tmin) {
+      MP->Set_Temp(wc->p,Tmin,gamma);
     }
   }
   else {
-    // appropriate for a neutral medium.
+    // appropriate for a neutral medium, He+M mass fraction 0.285.
     wc->p[PG] = max(static_cast<double>(wc->p[PG]), 
-      SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
+      Tmin*wc->p[RO]*pconst.kB()*0.78625/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
@@ -650,13 +652,16 @@ stellar_wind_evolution::stellar_wind_evolution(
       const int nt, ///< ntracer
       const int ft, ///< ftr
       const int cs, ///< coord_sys
-      const int eq ///< eqn_type
+      const int eq, ///< eqn_type
+      const double mt, ///< Minimum temperature allowed on grid
+      const double ss, ///< Simulation start time.
+      const double sf  ///< Simulation finish time.
       )
-: stellar_wind(nd,nv,nt,ft,cs,eq)
+: stellar_wind(nd,nv,nt,ft,cs,eq,mt), sim_start(ss), sim_finish(sf)
 {
 #ifdef TESTING
   cout <<"Stellar wind with time evolution, constructor.\n";
-#endif 
+#endif
 }
 
 
@@ -724,8 +729,8 @@ int stellar_wind_evolution::add_source(
   temp->vinf  = 0;
   temp->Teff  = 0;
   temp->offset = 0.0;
-  temp->tstart = SimPM.starttime -1.0e10; // so it has already started.
-  temp->tfinish= 2.0*SimPM.finishtime;    // so it keeps going to end of sim.
+  temp->tstart = sim_start -1.0e10; // so it has already started.
+  temp->tfinish= 2.0*sim_finish;    // so it keeps going to end of sim.
   temp->update_freq = 1.0e99;             // so it never updates.
   temp->t_next_update = 1.0e99;           // so it never updates.
   
@@ -956,17 +961,17 @@ void stellar_wind_evolution::update_source(
   // needs activating then we set that.
   //
   if (!wd->is_active) {
-    cout <<"stellar_wind_evolution::update_source() activating source id=";
+    cout <<"stellar_wind_evo::update_source activating source id=";
     cout << wd->ws->id <<" at Simulation time t="<<t_now<<"\n";
     rep.printVec("Source position",wd->ws->dpos,ndim);
     wd->is_active=true;
   }
 
   if (t_now < wd->tstart) {
-    rep.error("Requested updating source, but it hasn't switched on yet!",wd->tstart-t_now);
+    rep.error("Updating source, not yet active!",wd->tstart-t_now);
   }
 
-  wd->t_next_update = t_now+SimPM.dt;
+  wd->t_next_update = t_now; // (We update every timestep now)
   wd->t_next_update = min(wd->t_next_update, wd->tfinish);
   
   //
@@ -1021,19 +1026,11 @@ int stellar_wind_evolution::set_cell_values(
   struct evolving_wind_data *wd = wdata_evol[id];
 
   //
-  // Check if the source has reached its last time, because we want
-  // to stop the simulation in this case!
-  //
-  if (t_now >= wd->tfinish) {
-    cout <<"stellar_wind_evolution::set_cell_values() reached final time.";
-    cout <<"\t t(now)="<<t_now<<" and t(final)="<<wd->tfinish<<"\n";
-    SimPM.maxtime=true;
-  }
-  //
   // Check if the source needs to be updated, and if so, update it
   //
-  else if (t_now >= wd->t_next_update) {
-    update_source(grid, wd, t_now);
+  if (t_now >= wd->t_next_update) {
+    /// NB: This function has hardcoded EOS Gamma to 5/3
+    update_source(grid, wd, t_now, 5./3.);
   }
 
   //

@@ -34,18 +34,22 @@ using namespace std;
 
 
 mpv8_SBheatcool::mpv8_SBheatcool(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-          const std::string *tracers,  ///< List of what the tracer variables mean.
-          struct which_physics *ephys  ///< extra physics stuff.
-	  )
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,              ///< Total number of variables in state vector
+      const int ntracer,         ///< Number of tracer variables in state vector.
+      const std::string *tracers,  ///< List of what the tracer variables mean.
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
 :
-  mp_explicit_H(nv,ntracer,tracers,ephys)
+  mp_explicit_H(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
   cout <<"mpv8_SBheatcool constructor setting up.\n";
 #endif
-  gamma_minus_one = SimPM.gamma -1.0;
+  gamma_minus_one = eos_gamma -1.0;
 
   //
   // Get the mean mass per H atom from the He and Z mass fractions.

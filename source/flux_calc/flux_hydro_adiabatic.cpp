@@ -89,11 +89,6 @@ flux_solver_hydro_adi::flux_solver_hydro_adi(
 #endif //FUNCTION_ID
 
   eq_gamma = g;
-#ifdef TESTING
-  cout <<"flux_solver_hydro_adi::flux_solver_hydro_adi() constructor: gamma="<<eq_gamma<<"\n";
-  cout <<"Default solver set to "<<SimPM.solverType<<" where ";
-  cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSRoe,5=Roe-PV,6=FVS.\n";
-#endif
 
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::flux_solver_hydro_adi ...returning.\n";

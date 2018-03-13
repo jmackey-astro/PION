@@ -249,13 +249,17 @@ int mp_implicit_H::ydot(
 
 
 mp_implicit_H::mp_implicit_H(
-        const int nv,             ///< Total number of variables in state vector
-        const int ntracer,        ///< Number of tracer variables in state vector.
-        const std::string &tracers, ///< List of what the tracer variables mean.
-        struct which_physics *ephys  ///< extra physics stuff.
-        )
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,             ///< Total number of variables in state vector
+      const int ntracer,        ///< Number of tracer variables in state vector.
+      const std::string *tracers, ///< List of what the tracer variables mean.
+      struct which_physics *ephys,  ///< extra physics stuff.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
   :
-  mp_explicit_H(nv,ntracer,tracers,ephys)
+  mp_explicit_H(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
   //
   // All of the setup is in the explicit solver; the only changes
@@ -335,7 +339,7 @@ double mp_implicit_H::timescales(
           )
 {
 #ifdef MPV3_DEBUG
-  if (SimPM.RS.Nsources!=0) {
+  if (RS->Nsources!=0) {
     cout <<"WARNING: mp_explicit_H::timescales() using non-RT version!\n";
   }
 #endif // MPV3_DEBUG
@@ -373,7 +377,7 @@ double mp_implicit_H::timescales(
   //
   double tmin = HUGEVALUE;
 
-  if (tc && T>SimPM.EP.MinTemperature) {
+  if (tc && T>EP->MinTemperature) {
 #ifdef RT_TESTING
     cout <<"timestep limiting: cooling time=";
     cout <<NV_Ith_S(y_in,lv_eint)/(fabs(NV_Ith_S(y_out,lv_eint))+TINYVALUE)<<"\n";
