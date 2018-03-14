@@ -4,6 +4,8 @@
 
 
 #include "microphysics_base.h"
+#include <iostream>
+using namespace std;
 
 ///
 /// Global pointer to microphysics class.
@@ -16,8 +18,17 @@ MicroPhysicsBase::MicroPhysicsBase(
       struct rad_sources *rsrcs    ///< radiation sources.
       )
 {
+#ifdef TESTING
+  cout <<"MicroPhysicsBase:: setting up EP and RS: ";
+#endif
+
   EP = ephys;
   RS = rsrcs;
+
+#ifdef TESTING
+  cout <<EP<<"\t"<<RS<<"\n";
+#endif
+
   return;
 }
 

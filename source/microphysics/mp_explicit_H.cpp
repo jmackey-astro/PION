@@ -290,7 +290,7 @@ mp_explicit_H::mp_explicit_H(
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
 {
   cout <<"\n---------------------------------------------------------------------\n";
-  cout <<"mp_explicit_H: new microphysics class.\n";
+  cout <<"mp_explicit_H: a microphysics class.\n";
 
   // ----------------------------------------------------------------
   // ------- Set up tracer variables (find which one is H+). --------
@@ -317,6 +317,9 @@ mp_explicit_H::mp_explicit_H(
 
   // ================================================================
   // ================================================================
+#ifdef TESTING
+  cout <<"mp_explicit_H:: EP and RS: "<<EP<<"\t"<<RS<<endl;
+#endif
 
 
   // ----------------------------------------------------------------
@@ -343,7 +346,7 @@ mp_explicit_H::mp_explicit_H(
   JM_NELEC = 1.0; // if He is always neutral.
 #endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
-  cout <<"Metallicity = "<<METALLICITY<<"\n";
+  cout <<"Metallicity = "<<METALLICITY<<" of solar (0.0142)\n";
 
   setup_local_vectors();
   gamma_minus_one = eos_gamma -1.0;

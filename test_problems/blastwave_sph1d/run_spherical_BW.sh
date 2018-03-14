@@ -33,57 +33,57 @@ echo "MAKE SUCEEDED"
 #
 # N=128
 #
-../pion_serial IC_BW1D_phys_n128.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_Hyb_FKJav01 \
+../pion_serial BW1D_phys_n128.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_Hyb_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n128_Hyb_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=3 &
 #
-../pion_serial IC_BW1D_phys_n128.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_RPV_FKJav01 \
+../pion_serial BW1D_phys_n128.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_RPV_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n128_RPV_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=5 &
 #
-../pion_serial IC_BW1D_phys_n128.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_FVS_FKJav01 \
+../pion_serial BW1D_phys_n128.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_FVS_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n128_FVS_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=6 &
 #
-../pion_serial IC_BW1D_phys_n128.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_Roe_FKJav01 \
+../pion_serial BW1D_phys_n128.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_Roe_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n128_Roe_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
 #
-../pion_serial IC_BW1D_phys_n128.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_Roe_Hcorr \
+../pion_serial BW1D_phys_n128.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n128_Roe_Hcorr \
  redirect=${data_dir}/msg_BW1D_phys_n128_Roe_Hcorr   cfl=0.4 AVtype=3 EtaVisc=0.0 solver=4 &
 #
-#wait
+wait
 #
 # N=256
 #
-../pion_serial IC_BW1D_phys_n256.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_Hyb_FKJav01 \
+../pion_serial BW1D_phys_n256.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_Hyb_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n256_Hyb_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=3 &
 #
-../pion_serial IC_BW1D_phys_n256.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_RPV_FKJav01 \
+../pion_serial BW1D_phys_n256.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_RPV_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n256_RPV_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=5 &
 #
-../pion_serial IC_BW1D_phys_n256.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_FVS_FKJav01 \
+../pion_serial BW1D_phys_n256.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_FVS_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n256_FVS_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=6 &
 #
-../pion_serial IC_BW1D_phys_n256.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_Roe_FKJav01 \
+../pion_serial BW1D_phys_n256.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_Roe_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n256_Roe_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
 #
-../pion_serial IC_BW1D_phys_n256.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_Roe_Hcorr \
+../pion_serial BW1D_phys_n256.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n256_Roe_Hcorr \
  redirect=${data_dir}/msg_BW1D_phys_n256_Roe_Hcorr   cfl=0.4 AVtype=3 EtaVisc=0.0 solver=4 &
 #
-#wait
+wait
 #
 # N=512
 #
-../pion_serial IC_BW1D_phys_n512.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_Hyb_FKJav01 \
+../pion_serial BW1D_phys_n512.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_Hyb_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n512_Hyb_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=3 &
 #
-../pion_serial IC_BW1D_phys_n512.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_RPV_FKJav01 \
+../pion_serial BW1D_phys_n512.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_RPV_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n512_RPV_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=5 &
 #
-../pion_serial IC_BW1D_phys_n512.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_FVS_FKJav01 \
+../pion_serial BW1D_phys_n512.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_FVS_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n512_FVS_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=6 &
 #
-../pion_serial IC_BW1D_phys_n512.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_Roe_FKJav01 \
+../pion_serial BW1D_phys_n512.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_Roe_FKJav01 \
  redirect=${data_dir}/msg_BW1D_phys_n512_Roe_FKJav01 cfl=0.4 AVtype=1 EtaVisc=0.1 solver=4 &
 #
-../pion_serial IC_BW1D_phys_n512.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_Roe_Hcorr \
+../pion_serial BW1D_phys_n512.00000000.silo 5 1 outfile=${data_dir}/BW1D_phys_n512_Roe_Hcorr \
  redirect=${data_dir}/msg_BW1D_phys_n512_Roe_Hcorr   cfl=0.4 AVtype=3 EtaVisc=0.0 solver=4 &
 #
 wait

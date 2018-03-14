@@ -670,9 +670,12 @@ int stellar_wind_angle::add_evolving_source(
   if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
   // Skip first two lines
   char line[512];
-  fgets(line,512,wf); // compiler complains here
+  char *rval=0;
+  rval = fgets(line,512,wf);
+  if (!rval) rep.error("stwind_angle: failed to get line 1",line);
   //printf("%s",line);
-  fgets(line,512,wf); // compiler complains here
+  rval = fgets(line,512,wf);
+  if (!rval) rep.error("stwind_angle: failed to get line 2",line);
   //printf("%s",line);
 
   // Temp. variables for column values

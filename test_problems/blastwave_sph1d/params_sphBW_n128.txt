@@ -14,9 +14,6 @@ solver 3
 # MHDShockCloud ShockTube...}
 ics BlastWave
 
-
-# IC filename
-ICfilename IC_BW1D_phys_n128
 # Output FileName Base
 OutputFile    BW1D_phys_n128
 
@@ -74,7 +71,6 @@ OutputFileType text  #fits #both
 OutputFrequency 25
 OutputCriterion 1    # output per n-years=1, per step=0
 OPfreqTime 6.32e10   # in seconds
-
 
 # Start time
 StartTime 0.0
