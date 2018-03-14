@@ -393,7 +393,6 @@ class mp_explicit_H
   const int coord_sys; ///< Coordinate System flag
   double gamma_minus_one; ///< as named.
   double lv_nH;  ///< current number density of H nucleons.
-  struct which_physics *EP; ///< struct with flags for which extra physics we are or aren't doing.
   double Min_NeutralFrac; ///< minimum H0 fraction allowed (eps=1.0e-12)
   double Max_NeutralFrac; ///< Maximum H0 fraction allowed (1-eps)
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;

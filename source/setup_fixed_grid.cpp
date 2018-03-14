@@ -652,9 +652,12 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     if (!infile) rep.error("can't open wind evolving radiation source file",infile);
     // Skip first two lines
     char line[512];
-    fgets(line,512,infile); // compiler complains here
+    char *rval = 0;
+    rval = fgets(line,512,infile);
+    if (!rval) rep.error("setup_fixed_grid, RS, file read 1",line);
     //printf("%s",line);
-    fgets(line,512,infile); // compiler complains here
+    rval = fgets(line,512,infile);
+    if (!rval) rep.error("setup_fixed_grid, RS, file read 2",line);
     //printf("%s",line);
     // Temporary variables for column values
     // Columns are time, M, L, Teff, Mdot, vrot

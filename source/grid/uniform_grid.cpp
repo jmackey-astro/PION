@@ -923,7 +923,7 @@ int UniformGrid::SetupBCs(
   // Set ntracer and ftr, bsed on SimParams
   //
   G_ntracer = par.ntracer;
-  G_ftr     = par.ntracer;
+  G_ftr     = G_nvar - par.ntracer;
   
   ///
   /// \section Ordering of Cells in Boundary data
@@ -1257,7 +1257,7 @@ int UniformGrid::BC_setBCtypes(
       BC_bd[i].itype=REFLECTING;
       BC_bd[i].type="REFLECTING";
     }
-    else if (BC_bd[i].type=="equator_reflect") {
+    else if (BC_bd[i].type=="equator-reflect") {
       BC_bd[i].itype=JETREFLECT;
       BC_bd[i].type="JETREFLECT";
     }
@@ -1315,7 +1315,7 @@ int UniformGrid::BC_setBCtypes(
         BC_bd[i].itype=RADSH2;
         BC_bd[i].type="RADSH2";
       }
-      else if (BC_bd[i].type=="stellar_wind") {
+      else if (BC_bd[i].type=="stellar-wind") {
         BC_bd[i].itype=STWIND;
         BC_bd[i].type="STWIND";
       }
@@ -2419,6 +2419,7 @@ int UniformGrid::BC_assign_DMACH(
   b->refval[VY] = 0.0;
   b->refval[VZ] = 0.0;
   for (int v=G_ftr; v<G_nvar; v++) b->refval[v] = -1.0;
+  cout <<"G_ftr="<<G_ftr<<", G_nvar="<<G_nvar<<"\n";
 
   //
   // Run through all boundary cells, and give them either upstream or
