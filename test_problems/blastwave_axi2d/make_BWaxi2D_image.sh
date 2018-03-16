@@ -75,7 +75,7 @@ A.axes2D.autoSetTicks = 0
 A.axes2D.autoSetScaling = 0
 A.axes2D.lineWidth = 2
 A.axes2D.tickLocation = A.axes2D.Outside  # Inside, Outside, Both
-A.axes2D.tickAxes = A.Off  #A.axes2D.BottomLeft  # Off, Bottom, Left, BottomLeft, All
+A.axes2D.tickAxes = A.axes2D.Off  #A.axes2D.BottomLeft  # Off, Bottom, Left, BottomLeft, All
 A.axes2D.xAxis.title.visible = 1
 A.axes2D.xAxis.label.visible = 1
 A.axes2D.xAxis.label.font.font = A.axes2D.xAxis.label.font.Times  # Arial, Courier, Times
@@ -224,7 +224,7 @@ sw.height= 700
 sw.outputToCurrentDirectory = 0
 sw.outputDirectory = "${data_dir}"
 sw.family = 0
-sw.format=sw.TIFF
+sw.format=sw.PNG
 sw.resConstraint = sw.NoConstraint
 
 
@@ -252,7 +252,3 @@ $visit_cmd -cli -nowin -s plot_BWaxi2d_results.py
 
 #exit
 
-convert ${data_dir}/${outfile}_Dens_00.tif ${test_dir}/${outfile}_Dens_00.jpeg
-convert ${data_dir}/${outfile}_Dens_01.tif ${test_dir}/${outfile}_Dens_01.jpeg
-convert ${data_dir}/${outfile}_Dens_02.tif ${test_dir}/${outfile}_Dens_02.jpeg
-#convert ${data_dir}/${outfile}_Dens_03.tif ${test_dir}/${outfile}_Dens_03.jpeg
