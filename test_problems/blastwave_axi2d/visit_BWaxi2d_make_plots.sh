@@ -30,9 +30,9 @@ outfile_base=BWaxi2D_HalfPlane_n128_RPV_FKJav01
 ./make_BWaxi2D_image.sh $test_dir $code_dir $data_dir $visit_cmd $infile_base $outfile_base
 #
 
-convert ${test_dir}/BWaxi2D_HalfPlane_n128*_01.jpeg +append ${test_dir}/N128_01.jpeg
-convert ${test_dir}/BWaxi2D_HalfPlane_n128*_02.jpeg +append ${test_dir}/N128_02.jpeg
-convert ${test_dir}/N128_01.jpeg ${test_dir}/N128_02.jpeg -append N128_EarlyLate.jpeg
+convert ${data_dir}/BWaxi2D_HalfPlane_n128*_01.png +append ${data_dir}/N128_01.png
+convert ${data_dir}/BWaxi2D_HalfPlane_n128*_02.png +append ${data_dir}/N128_02.png
+convert ${data_dir}/N128_01.png ${data_dir}/N128_02.png -append N128_EarlyLate.png
 
 #
 #
@@ -59,10 +59,10 @@ outfile_base=BWaxi2D_HalfPlane_n064_RPV_FKJav01
 ./make_BWaxi2D_image.sh $test_dir $code_dir $data_dir $visit_cmd $infile_base $outfile_base
 #
 
-convert ${test_dir}/BWaxi2D_HalfPlane_n064*_01.jpeg +append ${test_dir}/N064_01.jpeg
-convert ${test_dir}/BWaxi2D_HalfPlane_n064*_02.jpeg +append ${test_dir}/N064_02.jpeg
-convert ${test_dir}/N064_01.jpeg ${test_dir}/N064_02.jpeg -append N064_EarlyLate.jpeg
+convert ${data_dir}/BWaxi2D_HalfPlane_n064*_01.png +append ${data_dir}/N064_01.png
+convert ${data_dir}/BWaxi2D_HalfPlane_n064*_02.png +append ${data_dir}/N064_02.png
+convert ${data_dir}/N064_01.png ${data_dir}/N064_02.png -append N064_EarlyLate.png
 
-mv N064*.jpeg N128*.jpeg ${test_dir}/../
-rm *.jpeg
+mv ${data_dir}/N064*.png ${data_dir}/N128*.png ${test_dir}/../
+rm *.png
 

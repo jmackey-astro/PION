@@ -42,32 +42,32 @@ for NNN in "n064" "n128" "n256" "n512"
 # 
 # First run some short simulations to make sure the early expansion is ok.
 #
-  echo "Running"  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  echo "Running"  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=3 \
     opfreq_time=1.0e20 finishtime=3.156e10 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=5 \
     opfreq_time=1.0e20 finishtime=3.156e10 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=6 \
     opfreq_time=1.0e20 finishtime=3.156e10 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=4 \
     opfreq_time=1.0e20 finishtime=3.156e10 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr   \
     cfl=0.3 AVtype=3 EtaVisc=0.0 solver=4 \
@@ -80,31 +80,31 @@ for NNN in "n064" "n128" "n256" "n512"
 #
 # N=064
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Hyb_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=3 \
     opfreq_time=1.0e20 finishtime=1.578e12 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_RPV_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=5 \
     opfreq_time=1.0e20 finishtime=1.578e12 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_FVS_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=6 \
     opfreq_time=1.0e20 finishtime=1.578e12 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_FKJav01 \
     cfl=0.3 AVtype=1 EtaVisc=0.1 solver=4 \
     opfreq_time=1.0e20 finishtime=1.578e12 &
 #
-  ${PION} IC_BWaxi2D_HalfPlane_${NNN}.silo 5 1 \
+  ${PION} BWaxi2D_HalfPlane_${NNN}.00000000.silo 5 1 \
     outfile=${data_dir}/BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr \
     redirect=${data_dir}/msg_BWaxi2D_HalfPlane_${NNN}_Roe_Hcorr  \
     cfl=0.3 AVtype=3 EtaVisc=0.0 solver=4 \
@@ -120,13 +120,6 @@ done
 # 0: initial conditions
 # 1: Results at  1 kyr (3.156e10)
 # 2: Results at 50 kyr (1.578e12)
-# 3: checkpoint file 1 .9999998.silo
-# 4: checkpoint file 2 .9999999.silo
-#
-# So let's get rid of the last two.
-#
-rm ${data_dir}/BWaxi2D_HalfPlane*.999999*.silo
-#
 # Now we can make visit images, and files 1 and 2 will be the ones of
 # interest.  I can tile them for each resolution.
 # --------------------------------------------------------------------
