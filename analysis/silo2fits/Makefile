@@ -128,6 +128,7 @@ OBJECTS = silo2fits.o   \
         cell_interface.o      \
         uniform_grid_pllel.o uniform_grid.o                         \
         VectorOps.o VectorOps_spherical.o stellar_wind_BC.o         \
+	stellar_wind_angle.o \
   microphysics_base.o         \
 microphysics.o \
 microphysics_v1.o \
@@ -157,7 +158,22 @@ silo2fits: $(OBJECTS)
 
 
 silo2fits.o: silo2fits.cpp ${GLOBAL} dataio.h
-cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
+
+
+cell_interface.o: cell_interface.cpp  cell_interface.h ${GLOBAL}
+uniform_grid.o:   uniform_grid.cpp  uniform_grid.h  ${GLOBAL} \
+    stellar_wind_BC.h stellar_wind_angle.h  \
+    VectorOps.h VectorOps_spherical.h
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} \
+     comms.h stellar_wind_angle.h stellar_wind_BC.h \
+    VectorOps.h VectorOps_spherical.h
+stellar_wind_BC.o: stellar_wind_BC.cpp  stellar_wind_BC.h ${GLOBAL}
+stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
+  tools/interpolate.h ${GLOBAL}
+
+VectorOps.o:  VectorOps.cpp  coord_sys/VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps_spherical.o:  VectorOps_spherical.cpp  coord_sys/VectorOps_spherical.h  coord_sys/VectorOps.h \
+		       ${GLOBAL} uniform_grid.h
 
 ########################
 # Data I/O
