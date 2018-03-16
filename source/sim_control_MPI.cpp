@@ -179,7 +179,7 @@ int sim_control_fixedgrid_pllel::Init(
 #ifdef FITS
   // ******** FITS FILE I/O ********
   else if (typeOfFile==2) {
-    if (!dataio) dataio = new DataIOFits_pllel(&mpiPM);
+    if (!dataio) dataio = new DataIOFits_pllel(SimPM, &mpiPM);
     if (!dataio) rep.error("DataIOFits initialisation",dataio);
     if (dataio->file_exists(infile)) {
 #ifdef TESTING
@@ -242,7 +242,7 @@ int sim_control_fixedgrid_pllel::Init(
       mpiPM.ReadSingleFile = false;
     }
 
-    if (!dataio) dataio = new dataio_silo_utility ("DOUBLE", &mpiPM);
+    if (!dataio) dataio = new dataio_silo_utility (SimPM, "DOUBLE", &mpiPM);
     if (!dataio) rep.error("dataio_silo_pllel initialisation",dataio);
     if (!dataio->file_exists(infile)) {
       cout <<"\tInfile doesn't exist: failing\n";
@@ -263,9 +263,9 @@ int sim_control_fixedgrid_pllel::Init(
   // the grid dimensions are.  So the header is read twice, but this
   // should be ok because it only happens during initialisation.
   //
-  err = dataio->ReadHeader(infile);
+  err = dataio->ReadHeader(infile, SimPM);
   if (err) rep.error("PLLEL Init(): failed to read header",err);
-  err = mpiPM.decomposeDomain();
+  err = mpiPM.decomposeDomain(SimPM);
   if (err) rep.error("PLLEL Init():Couldn't Decompose Domain!",err);
 
 
@@ -295,12 +295,12 @@ int sim_control_fixedgrid_pllel::Init(
     case 2: // fits
     case 3: // fits
     case 4: // fits +ascii
-      dataio = new DataIOFits_pllel(&mpiPM);
+      dataio = new DataIOFits_pllel(SimPM, &mpiPM);
       break;
 #endif
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo_utility ("DOUBLE", &mpiPM);
+      dataio = new dataio_silo_utility (SimPM, "DOUBLE", &mpiPM);
       break;
 #endif // if SILO
     default:
@@ -345,7 +345,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources();
+    err = update_evolving_RT_sources(SimPM);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;

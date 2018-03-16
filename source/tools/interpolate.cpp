@@ -514,7 +514,7 @@ double interpolate_arrays::root_find_trilinear_vec(
   double x = input[0], y = input[1], z = input[2];
 
   // Loops to determine the value of the nearest neighbours of x, y and z
-  int x_index = 0, y_index = 0, z_index = 0;
+  size_t x_index = 0, y_index = 0, z_index = 0;
   
   while(x > x_vec[x_index]) x_index++;
   while(y > y_vec[y_index]) y_index++;

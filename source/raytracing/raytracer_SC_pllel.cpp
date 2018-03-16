@@ -59,10 +59,16 @@ using namespace std;
 
 
 
-raytracer_USC_pllel::raytracer_USC_pllel(class GridBaseClass *ggg,   ///< Pointer to grid
-					 class MicroPhysicsBase *mmm ///< Pointer to MicroPhysics Class.
-					 )
-  : raytracer_USC(ggg,mmm)
+raytracer_USC_pllel::raytracer_USC_pllel(
+      class GridBaseClass *ggg,     ///< Pointer to grid
+      class MicroPhysicsBase *mmm,  ///< Pointer to MicroPhysics Class.
+      int nd,     ///< number of dimensions of grid
+      int csys,   ///< coordinate system
+      int nv,     ///< number of variables in state vector
+      int ftr,    ///< index of first tracer variable in state vector
+      int Nsources  ///< Number of radiation sources
+      )
+  : raytracer_USC(ggg,mmm,nd,csys,nv,ftr)
 {
 #ifdef RT_TESTING
   cout <<"SC PARALLEL raytracer class constructor!\n";

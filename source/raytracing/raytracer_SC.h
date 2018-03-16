@@ -590,9 +590,16 @@ class raytracer_USC : public raytracer_USC_infinity {
 class raytracer_USC_pllel : public raytracer_USC {
  public:
   /// Constructor
-  raytracer_USC_pllel(class GridBaseClass *, ///< Pointer to grid
-		class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
-		);
+  raytracer_USC_pllel(
+      class GridBaseClass *, ///< Pointer to grid
+      class MicroPhysicsBase *, ///< Pointer to MicroPhysics Class.
+      int,  ///< grid dimensionality
+      int,  ///< coordinate system
+      int,  ///< number of variables in state vector
+      int,  ///< index of first tracer variable in state vector
+      int   ///< Number of radiation sources
+      );
+  
   ~raytracer_USC_pllel(); ///< destructor.
 
   /// Adds a source to the list of sources to trace.
@@ -601,8 +608,9 @@ class raytracer_USC_pllel : public raytracer_USC {
   /// gridptr->setup_RT_boundaries() so that the grid can decide which (if any)
   /// extra corner boundaries it needs to set up for sending and receiving data.
   ///
-  virtual int Add_Source(struct rad_src_info * ///< ptr to source info.
-                        );
+  virtual int Add_Source(
+      struct rad_src_info * ///< ptr to source info.
+      );
 
   /// Processes a source's effect on the grid over a timestep.
   /// This is a generic algorithm for 1D,2D,3D.  It calls different 
@@ -611,10 +619,11 @@ class raytracer_USC_pllel : public raytracer_USC {
   /// This parallel version receives boundary column densities, calls
   /// the serial raytracer, and then sends outgoing boundary column densities.
     
-   virtual int RayTrace_SingleSource(const int,    ///< Source id
-				     const double, ///< Timestep
-				     const double  ///< eos gamma.
-				     );
+  virtual int RayTrace_SingleSource(
+      const int,    ///< Source id
+      const double, ///< Timestep
+      const double  ///< eos gamma.
+      );
 
 
   protected:
@@ -624,26 +633,26 @@ class raytracer_USC_pllel : public raytracer_USC {
   /// are on the grid.
   ///
   virtual void col2cell_2d(
-        const rad_source *,     ///< source we are working on.
-        const cell *,           ///< cell to get column to.
-        const enum direction,   ///< face ray enters cell through.
-        const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-        const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-        double []               ///< Column densities.
-        );
+      const rad_source *,     ///< source we are working on.
+      const cell *,           ///< cell to get column to.
+      const enum direction,   ///< face ray enters cell through.
+      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
+      const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
+      double []               ///< Column densities.
+      );
 
   ///\brief Short Characteristic Method of getting column density to cell.
   ///The parallel version assumes boundary cells exist, so doesn't check that we
   ///are on the grid.
   ///
   virtual void col2cell_3d(
-        const rad_source *,     ///< source we are working on.
-        const cell *,           ///< cell to get column to.
-        const enum direction,   ///< face ray enters cell through.
-        const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-        const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-        double []               ///< Column densities.
-        );
+      const rad_source *,     ///< source we are working on.
+      const cell *,           ///< cell to get column to.
+      const enum direction,   ///< face ray enters cell through.
+      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
+      const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
+      double []               ///< Column densities.
+      );
 
 };
 #endif //PARALLEL
