@@ -71,9 +71,11 @@ void CommandLineInterface::auto_console(
 
 
 void CommandLineInterface::console(
-      char *prompt
+      std::string p
       )
 {
+  char prompt[512];
+  strcpy(prompt, p.c_str());
   //
   // A command line interface which allows investigation of
   //  the grid during runtime.
@@ -81,8 +83,7 @@ void CommandLineInterface::console(
   fprintf(stderr,"\n Welcome to the command line - type \"help\"\n\n");
   read_history(".cmddemo_CLI.hist");
   //
-  // Get a command. Exercise: figure out what the vicious bit of
-  //  ptr shit (A) does! :) It's useful!
+  // Get a command.
   //
   char *comm=NULL;
   for (;;) {

@@ -503,7 +503,7 @@ int Integrator_Base::Stepper_RKCK(const int nv,   ///< number of elements in P a
     p1[v] = ptemp[v];
     if (isnan(p1[v]) || isinf(p1[v])) {
 #ifdef TESTING
-      commandline.console("Bummer>");
+      commandline.console("Error >");
 #endif
       cerr<<"\tSTEPPER:\t NANs encountered!\n";
       rep.printVec("Rel.err.",err,int_nvar);

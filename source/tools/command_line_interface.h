@@ -68,7 +68,7 @@ class CommandLineInterface {
   ~CommandLineInterface(); ///< Do-nothing Destructor.
   /// This function calls up the CLI for interactive debugging.
   void console(
-    char * ///< Optional text for prompt.
+    std::string ///< Optional text for prompt.
     );
 
   void auto_console(

@@ -53,8 +53,10 @@ using namespace std;
 
 
 DataIOFits_pllel::DataIOFits_pllel(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       class MCMDcontrol *p
       )
+ : DataIOFits(SimPM)
 {
   cout <<"Setting up DataIOFits_pllel class.\n";
   DataIOFits_pllel::mpiPM = p;
@@ -119,11 +121,10 @@ std::string DataIOFits_pllel::choose_filename(
 
 
 int DataIOFits_pllel::OutputData(
-      string outfilebase,          ///< base filename
-      class GridBaseClass *cg,     ///< pointer to data.
-//      class SimParams *sim_params, ///< pointer to simulation parameters
-//      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
-      const long int file_counter  ///< number to stamp file with (e.g. timestep)
+      string outfilebase,         ///< base filename
+      class GridBaseClass *cg,    ///< pointer to data.
+      class SimParams &SimPM,     ///< pointer to simulation parameters
+      const long int file_counter ///< number to stamp file with (e.g. timestep)
       )
 {
   string fname="DataIOFits_pllel::OutputData";
@@ -247,7 +248,7 @@ int DataIOFits_pllel::OutputData(
     // set file pointer for the header writing function.
     //
     file_ptr=ff;
-    err = write_simulation_parameters();
+    err = write_simulation_parameters(SimPM);
     if (err) rep.error("DataIOFits_pllel::OutputData() couldn't write fits header",err);
     ff=file_ptr;
     // --------------------------------------------------------
@@ -260,12 +261,12 @@ int DataIOFits_pllel::OutputData(
     for (int i=0;i<nvar;i++) {
       if (mpiPM->WriteFullImage) { // write full image, with only local part being non-zero.
 	err += create_fits_image(ff,extname[i],SimPM.ndim, SimPM.NG);
-	err += put_variable_into_data_array(extname[i], mpiPM->LocalNcell, &data);
+	err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
 	err += write_fits_image(ff,extname[i], mpiPM->LocalXmin, SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell, data);
       }
       else { // Write only part of image that is on local grid.
 	err += create_fits_image(ff,extname[i], SimPM.ndim, mpiPM->LocalNG);
-	err += put_variable_into_data_array(extname[i], mpiPM->LocalNcell, &data);
+	err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
 	err += write_fits_image(ff,extname[i], mpiPM->LocalXmin, mpiPM->LocalXmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell, data);
       }
     }
@@ -306,7 +307,7 @@ int DataIOFits_pllel::OutputData(
       // set file pointer for the header writing function.
       //
       file_ptr=ff;
-      err = write_simulation_parameters();
+      err = write_simulation_parameters(SimPM);
       if (err) rep.error("DataIOFits_pllel::OutputData() couldn't write fits header",err);
       ff=file_ptr;
       // --------------------------------------------------------
@@ -317,7 +318,7 @@ int DataIOFits_pllel::OutputData(
       for (int i=0;i<nvar;i++) {
 	err += create_fits_image(ff,extname[i], SimPM.ndim, SimPM.NG);
 	double *data=0;
-	err += put_variable_into_data_array(extname[i], mpiPM->LocalNcell, &data);
+	err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
 	err += write_fits_image(ff,extname[i],mpiPM->LocalXmin,SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG,mpiPM->LocalNcell, data);
 	data = mem.myfree(data);
       }
@@ -343,7 +344,7 @@ int DataIOFits_pllel::OutputData(
       if (err !=0) rep.error("DataIOFits_pllel::OutputData() SingleFile: image dimensions don't match",err);
       // write my portion of image.
       double *data=0;
-      err += put_variable_into_data_array(extname[i], mpiPM->LocalNcell, &data);
+      err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
       err += write_fits_image(ff,extname[i],mpiPM->LocalXmin,SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG,mpiPM->LocalNcell, data);
 	data = mem.myfree(data);
     }
@@ -380,9 +381,10 @@ int DataIOFits_pllel::OutputData(
 
 
 int DataIOFits_pllel::ReadData(
-        string infile,
-        class GridBaseClass *cg
-        )
+      string infile,
+      class GridBaseClass *cg,
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   string fname="DataIOFits_pllel::ReadData";
 
@@ -406,17 +408,32 @@ int DataIOFits_pllel::ReadData(
 
   int nvar = SimPM.nvar;
   string *var=0;
-  if (SimPM.ntracer>5) rep.error("DataIOFits_pllel::ReadData() only handles up to 5 tracer variables! Add more if needed.",SimPM.ntracer);
-  if (SimPM.eqntype==EQEUL || SimPM.eqntype==EQEUL_ISO || SimPM.eqntype==EQEUL_EINT) {
+  if (SimPM.ntracer>5) {
+    rep.error("Fits_pllel::ReadData() too many tracer variables!",
+              SimPM.ntracer);
+  }
+  if (SimPM.eqntype==EQEUL || SimPM.eqntype==EQEUL_ISO ||
+      SimPM.eqntype==EQEUL_EINT) {
     var = mem.myalloc(var,10);
-    if (SimPM.nvar>10) rep.error("DataIOFits_pllel::ReadData() need more tracers.",SimPM.nvar);
-    string t[10] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","TR0","TR1","TR2","TR3","TR4"};
+    if (SimPM.nvar>10) {
+      rep.error("DataIOFits_pllel::ReadData() too many tracers.",
+                SimPM.nvar);
+    }
+    string t[10] =
+      {"GasDens","GasPres","GasVX","GasVY","GasVZ",
+       "TR0","TR1","TR2","TR3","TR4"};
     for (int i=0;i<10;i++) var[i] = t[i];
   }
-  else if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) {
+  else if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM ||
+            SimPM.eqntype==EQFCD) {
     var = mem.myalloc(var,14);
-    if (SimPM.nvar>14) rep.error("DataIOFits_pllel::ReadData() need more tracers.",SimPM.nvar);
-    string t[14] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","Bx","By","Bz","psi","TR0","TR1","TR2","TR3","TR4"};
+    if (SimPM.nvar>14) {
+      rep.error("DataIOFits_pllel::ReadData() too many tracers.",
+                SimPM.nvar);
+    }
+    string t[14] =
+      {"GasDens","GasPres","GasVX","GasVY","GasVZ","Bx","By","Bz",
+       "psi","TR0","TR1","TR2","TR3","TR4"};
     for (int i=0;i<14;i++) var[i] = t[i];
   }
   else {
@@ -470,7 +487,7 @@ int DataIOFits_pllel::ReadData(
 	cout <<"Proc "<<mpiPM->get_myrank()<<":\t reading from file "<<infile<<"\n";
 	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, mpiPM->LocalNG);
 	if (err) rep.error("image wrong size.",err);
-	err += read_fits_image(ff, var[i], mpiPM->LocalXmin, mpiPM->LocalXmin, mpiPM->LocalNG, mpiPM->LocalNcell);
+	err += read_fits_image(SimPM, ff, var[i], mpiPM->LocalXmin, mpiPM->LocalXmin, mpiPM->LocalNG, mpiPM->LocalNcell);
 	if (err) rep.error("error reading image.",err);
       }
       else if (mpiPM->ReadSingleFile) {
@@ -479,7 +496,7 @@ int DataIOFits_pllel::ReadData(
 	cout <<"Proc "<<mpiPM->get_myrank()<<":\t reading from file "<<infile<<"\n";
 	err += check_fits_image_dimensions(ff, var[i],  SimPM.ndim, SimPM.NG);
 	if (err) rep.error("image wrong size.",err);
-	err += read_fits_image(ff, var[i], mpiPM->LocalXmin, SimPM.Xmin, mpiPM->LocalNG, mpiPM->LocalNcell);
+	err += read_fits_image(SimPM, ff, var[i], mpiPM->LocalXmin, SimPM.Xmin, mpiPM->LocalNG, mpiPM->LocalNcell);
 	if (err) rep.error("error reading image.",err);
       }
       else rep.error("DataIOFits_pllel::ReadData() logic error",mpiPM->WriteSingleFile);

@@ -1386,10 +1386,10 @@ int UniformGrid::TimeUpdateInternalBCs(
 
 
 int UniformGrid::TimeUpdateExternalBCs(
-        const double simtime,   ///< current simulation time
-        const int cstep,
-        const int maxstep
-        )
+      const double simtime,   ///< current simulation time
+      const int cstep,
+      const int maxstep
+      )
 {
   // TEMP_FIX
   //BC_printBCdata(&BC_bd[0]);

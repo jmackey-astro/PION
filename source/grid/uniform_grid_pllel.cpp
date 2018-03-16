@@ -226,7 +226,8 @@ int UniformGridParallel::BC_setBCtypes(
   // any edge boundaries with MPI communication boundaries, if the
   // local grid does not reach the global grid boundary.
   //
-  int i=0; enum axes dir;
+  int i=0;
+  enum axes dir;
   string temp;
   // Loop through boundaries, and if local boundary is not sim boundary,
   // set it to be a parallel boundary.
@@ -252,7 +253,7 @@ int UniformGridParallel::BC_setBCtypes(
   // If we have periodic boundaries, need to set neighbouring processors to
   // wrap around.  So set the number of procs in each direction.
   //
-  int nx[SimPM.ndim];
+  int nx[par.ndim];
   for (i=0;i<G_ndim;i++) {
     nx[i] =static_cast<int>(ONE_PLUS_EPS*Sim_range[i]/G_range[i]);
   }
@@ -308,7 +309,12 @@ int UniformGridParallel::BC_setBCtypes(
 
 
 
-int UniformGridParallel::assign_boundary_data()
+int UniformGridParallel::assign_boundary_data(
+        const double simtime,     ///< current simulation time
+        const double sim_start,   ///< start time of simulation
+        const double sim_finish,  ///< finish time of simulation
+        const double Tmin         ///< minimum temperature allowed
+        )
 {
 #ifdef TESTING
   cout<<"UniformGridParallel::assign_boundary_data()\n";
@@ -329,10 +335,11 @@ int UniformGridParallel::assign_boundary_data()
      case FIXED:      err += BC_assign_FIXED(     &BC_bd[i]); break;
      case JETBC:      err += BC_assign_JETBC(     &BC_bd[i]); break;
      case JETREFLECT: err += BC_assign_JETREFLECT(&BC_bd[i]); break;
-     case DMACH:      err += BC_assign_DMACH(     &BC_bd[i]); break;
+     case DMACH: err += BC_assign_DMACH(simtime,  &BC_bd[i]); break;
      case DMACH2:     err += BC_assign_DMACH2(    &BC_bd[i]); break;
      case BCMPI: err += BC_assign_BCMPI(&BC_bd[i],BC_MPItag); break;
-     case STWIND:     err += BC_assign_STWIND(    &BC_bd[i]); break;
+     case STWIND:     err += BC_assign_STWIND(simtime, sim_start,
+                                sim_finish, Tmin, &BC_bd[i]); break;
      case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
      default:
       rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
@@ -359,6 +366,7 @@ int UniformGridParallel::assign_boundary_data()
 
 
 int UniformGridParallel::TimeUpdateExternalBCs(
+      const double simtime,   ///< current simulation time
       const int cstep,
       const int maxstep
       )
@@ -376,7 +384,7 @@ int UniformGridParallel::TimeUpdateExternalBCs(
     case FIXED:      err += BC_update_FIXED(      b, cstep, maxstep); break;
     case JETBC:      err += BC_update_JETBC(      b, cstep, maxstep); break;
     case JETREFLECT: err += BC_update_JETREFLECT( b, cstep, maxstep); break;
-    case DMACH:      err += BC_update_DMACH(      b, cstep, maxstep); break;
+    case DMACH:      err += BC_update_DMACH(simtime, b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
     case BCMPI: err += BC_update_BCMPI( b, cstep, maxstep,BC_MPItag); break;
     case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
@@ -741,7 +749,10 @@ int UniformGridParallel::BC_select_data2send(
 
 
 
-int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
+int UniformGridParallel::Setup_RT_Boundaries(
+      const int src_id,
+      struct rad_sources &RS
+      )
 {
 #ifdef RT_TESTING
   cout <<"UniformGridParallel::Setup_RT_Boundaries() starting!\n";
@@ -768,9 +779,9 @@ int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
   //
   // Check that we are not past the correct number of sources!
   //
-  if (src_id >= SimPM.RS.Nsources) {
+  if (src_id >= RS.Nsources) {
       rep.error("Requested RT source which does not exist",
-                src_id-SimPM.RS.Nsources);
+                src_id-RS.Nsources);
   }
   // ----------------------- SANITY CHECKS --------------------------
 
@@ -790,7 +801,7 @@ int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
   // boundary communication differs between them.
   //
   int err=0;
-  if (!SimPM.RS.sources[src_id].at_infinity) {
+  if (!RS.sources[src_id].at_infinity) {
     err += setup_RT_finite_ptsrc_BD(
           this_src_comms.source_id,
           this_src_comms.RT_recv_list,
@@ -799,7 +810,7 @@ int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
   }
   else {
     err += setup_RT_infinite_src_BD(
-          this_src_comms.source_id,
+          this_src_comms.source_id, RS,
           this_src_comms.RT_recv_list,
           this_src_comms.RT_send_list
           );
@@ -827,6 +838,7 @@ int UniformGridParallel::Setup_RT_Boundaries(const int src_id)
 
 int UniformGridParallel::setup_RT_infinite_src_BD(
       const int src_id,
+      struct rad_sources &RS,
       std::vector<struct RT_boundary_list_element>  &RT_recv_list,
       std::vector<struct RT_boundary_list_element>  &RT_send_list
       )
@@ -838,7 +850,7 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
   //
   // Make sure src is at infinity, and has the correct type.
   //
-  if (!SimPM.RS.sources[src_id].at_infinity) {
+  if (!RS.sources[src_id].at_infinity) {
     rep.error("Source for diffuse radiation is not at infinity",src_id);
   }
   //
@@ -863,7 +875,7 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
   //
   // Get source direction:
   //
-  enum direction srcdir = RT_src_at_infty_direction(src_id);
+  enum direction srcdir = RT_src_at_infty_direction(src_id, RS);
   if (srcdir==NO) {
     rep.error("src position is not at infinity",srcdir);
   }
@@ -967,7 +979,8 @@ int UniformGridParallel::setup_RT_infinite_src_BD(
 
 
 enum direction UniformGridParallel::RT_src_at_infty_direction(
-      const int src_id
+      const int src_id,
+      struct rad_sources &RS
       )
 {
   //
@@ -977,7 +990,7 @@ enum direction UniformGridParallel::RT_src_at_infty_direction(
   //
   double srcpos[MAX_DIM];
   for (int v=0;v<G_ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[src_id].pos[v];
+    srcpos[v] = RS.sources[src_id].pos[v];
   }
   enum direction srcdir=NO;
   for (int v=0;v<G_ndim;v++) {
@@ -1041,7 +1054,7 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   enum direction srcdir[G_ndim];
   double srcpos[MAX_DIM];
   for (int v=0;v<G_ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[src_id].pos[v];
+    srcpos[v] = RS.sources[src_id].pos[v];
   }
 
 
@@ -1076,8 +1089,8 @@ int UniformGridParallel::setup_RT_finite_ptsrc_BD(
   //
   // Choose processors I need to receive data from and send data to.
   //
-  int nx[SimPM.ndim];
-  for (int i=0;i<SimPM.ndim;i++)
+  int nx[G_ndim];
+  for (int i=0;i<G_ndim;i++)
     nx[i] =static_cast<int>(ONE_PLUS_EPS*Sim_range[i]/G_range[i]);
 
   //
@@ -1476,7 +1489,8 @@ int UniformGridParallel::setup_RT_send_boundary(
 
 
 int UniformGridParallel::Receive_RT_Boundaries(
-      const int src_id ///< source id
+      const int src_id, ///< source id
+      struct rad_sources &RS
       )
 {
 #ifdef RT_TESTING
@@ -1581,10 +1595,10 @@ int UniformGridParallel::Receive_RT_Boundaries(
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      ct = b->data.size()*SimPM.RS.sources[src_id].NTau;
+      ct = b->data.size()*RS.sources[src_id].NTau;
       if (ct<1) {
         cerr <<"data size = "<< b->data.size();
-        cerr <<", NTau = "<<SimPM.RS.sources[src_id].NTau<<"\n";
+        cerr <<", NTau = "<<RS.sources[src_id].NTau<<"\n";
         rep.error("Empty boundary!",ct);
       }
       buf=0;
@@ -1619,11 +1633,11 @@ int UniformGridParallel::Receive_RT_Boundaries(
         if (count<32) {
           cout <<"col = "<<buf[count]<<" for cell "<<count<<": cell-id="<<(*c)->id;
                 cout <<", pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY];
-          if (SimPM.ndim>2) cout<<","<<(*c)->pos[ZZ]<<"]"<<"\n";
+          if (G_ndim>2) cout<<","<<(*c)->pos[ZZ]<<"]"<<"\n";
           else cout <<"]\n";
         }
 #endif  
-        for (short unsigned int v=0; v<SimPM.RS.sources[src_id].NTau; v++) {
+        for (short unsigned int v=0; v<RS.sources[src_id].NTau; v++) {
           tau[v] = buf[count];
           count++;
         }
@@ -1656,7 +1670,8 @@ int UniformGridParallel::Receive_RT_Boundaries(
 
 
 int UniformGridParallel::Send_RT_Boundaries(
-      const int src_id ///< source id
+      const int src_id, ///< source id
+      struct rad_sources &RS
       )
 {
   int err=0;
@@ -1732,7 +1747,7 @@ int UniformGridParallel::Send_RT_Boundaries(
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      int nc = b->data.size()*SimPM.RS.sources[src_id].NTau;
+      int nc = b->data.size()*RS.sources[src_id].NTau;
       data = mem.myalloc(data, nc);
 
       //
@@ -1748,7 +1763,7 @@ int UniformGridParallel::Send_RT_Boundaries(
 
         CI.get_col(*c, src_id, tau);
         for (short unsigned int v=0;
-             v<SimPM.RS.sources[src_id].NTau; v++) {
+             v<RS.sources[src_id].NTau; v++) {
           data[count] = tau[v];
           count++;
         }
@@ -1758,7 +1773,7 @@ int UniformGridParallel::Send_RT_Boundaries(
           CI.get_col(*c,src_id,tau);
           cout << tau[0] <<" for cell ";
           cout <<count<<": pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY];
-          if (SimPM.ndim>2)cout<<","<<(*c)->pos[ZZ]<<"]\n";
+          if (G_ndim>2)cout<<","<<(*c)->pos[ZZ]<<"]\n";
           else cout <<"]\n";
         }
         //if (count<32) {

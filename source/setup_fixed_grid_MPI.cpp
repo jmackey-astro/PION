@@ -66,9 +66,10 @@ setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 
 
 int setup_fixed_grid_pllel::setup_grid(
-        class GridBaseClass **grid, ///< address of pointer to computational grid.
-        class MCMDcontrol *MCMD     ///< address of MCMD controller class.
-        )
+      class GridBaseClass **grid, ///< address of pointer to computational grid.
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class MCMDcontrol *MCMD     ///< address of MCMD controller class.
+      )
 {
 #ifdef TESTING
   cout <<"setup_fixed_grid_pllel: setting up parallel grid.\n";
@@ -104,7 +105,7 @@ int setup_fixed_grid_pllel::setup_grid(
   // created unless this the number of such extra variables has been
   // set.
   //
-  setup_cell_extra_data();
+  setup_cell_extra_data(SimPM);
 
   //
   // Now set up the parallel uniform grid.
@@ -157,6 +158,7 @@ int setup_fixed_grid_pllel::setup_grid(
 
 
 int setup_fixed_grid_pllel::setup_raytracing(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
         class GridBaseClass *grid
         )
 {
@@ -207,14 +209,16 @@ int setup_fixed_grid_pllel::setup_raytracing(
     //
     // set up single source at infinity tracer, if appropriate
     //
-    RT = new raytracer_USC_infinity(grid,MP);
+    RT = new raytracer_USC_infinity(grid,MP, SimPM.ndim,
+                            SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
     if (!RT) rep.error("init pllel-rays raytracer error",RT);
   }
   else {
     //
     // set up regular tracer if simple one not already set up.
     //
-    RT = new raytracer_USC_pllel(grid,MP);
+    RT = new raytracer_USC_pllel(grid,MP, SimPM.ndim, SimPM.coord_sys,
+                          SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
     if (!RT) rep.error("init raytracer error 2",RT);
   }
 

@@ -1156,8 +1156,13 @@ class UniformGridParallel
   ///
   /// Assigns data to each boundary.  Called by SetupBCs().
   ///
-  virtual int assign_boundary_data();
-
+  virtual int assign_boundary_data(
+      const double,   ///< current simulation time (for DMACH)
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double ///< minimum temperature allowed
+      );
+  
   ///
   /// Assigns data to a periodic boundary, getting data from another
   /// process if necessary.
@@ -1223,18 +1228,20 @@ class UniformGridParallel
   /// and this function finds them and sets them up.
   ///
   int setup_RT_infinite_src_BD(
-        const int, ///< Source id.
-        std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
-        std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
-        );
+      const int, ///< Source id.
+      struct rad_sources &,
+      std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
+      std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
+      );
 
   ///
   /// If we have a source at infinity, this function returns the direction
   /// from the grid to the source.
   ///
   enum direction RT_src_at_infty_direction(
-        const int ///< source id.
-        );
+      const int, ///< source id.
+      struct rad_sources &
+      );
 
   ///
   /// If the source is a monochromatic point source (not at infinity), then this
@@ -1309,7 +1316,8 @@ class UniformGridParallel
   /// data from other processors.
   ///
   virtual int TimeUpdateExternalBCs(
-        const int, ///< Current step number in the timestep.
+        const double,   ///< current simulation time
+        const int, ///< Current step number in tsimtime,mestep.
         const int  ///< Maximum step number in timestep.
         );
 
@@ -1319,23 +1327,26 @@ class UniformGridParallel
   /// and setup extra boundaries at corners.
   ///
   virtual int Setup_RT_Boundaries(
-        const int  ///< source id
-        );
+      const int,  ///< source id
+      struct rad_sources &
+      );
 
   ///
   /// Receive all optical depths for boundaries closer to source.
   ///
   virtual int Receive_RT_Boundaries(
-        const int ///< source id
-        );
+      const int,  ///< source id
+      struct rad_sources &
+      );
 
   ///
   /// Send all optical depths for boundaries to domains further from
   /// source.
   ///
   virtual int Send_RT_Boundaries(
-        const int ///< source id
-        );
+      const int,  ///< source id
+      struct rad_sources &
+      );
 
 #endif // PLLEL_RT
 
