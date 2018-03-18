@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 
   class GridBaseClass *grid = 0;
 #ifdef PARALLEL
-  err  = MCMD.decomposeDomain();
+  err  = MCMD.decomposeDomain(SimPM);
   if (err) rep.error("main: failed to decompose domain!",err);
 #endif // if PARALLEL
   //
@@ -393,7 +393,7 @@ int main(int argc, char **argv)
     dataio = 0; dataio = new DataIOFits (SimPM);
 #endif // SERIAL
 #ifdef PARALLEL
-    dataio = 0; dataio = new DataIOFits_pllel (&MCMD);
+    dataio = 0; dataio = new DataIOFits_pllel (SimPM, &MCMD);
 #endif // PARALLEL
   }
 #endif // if fits.
@@ -409,7 +409,7 @@ int main(int argc, char **argv)
 #endif
 #ifdef PARALLEL
     cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo_pllel ("DOUBLE",&MCMD);
+    dataio=0; dataio=new dataio_silo_pllel (SimPM, "DOUBLE",&MCMD);
 #endif
   }
 #endif // if SILO defined.

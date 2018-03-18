@@ -321,6 +321,7 @@ class DataIOBase : public file_status {
   ///
   virtual int parallel_read_any_data(
       string, ///< file to read from
+      class SimParams &,  ///< pointer to simulation parameters
       class GridBaseClass * ///< pointer to data.
       ) {return -999;}
 

@@ -139,6 +139,7 @@ class RayTracingBase {
       const double, ///< Timestep
       const double  ///< EOS Gamma.
       )=0;
+
   ///
   /// Just calculate the column densities required for RT.
   ///

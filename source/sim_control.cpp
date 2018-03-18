@@ -434,7 +434,7 @@ int sim_control_fixedgrid::Init(
 #endif // if FITS
 #ifdef SILO
   case 5: // Start from Silo restart file.
-    err = dataio->parallel_read_any_data(infile, *grid);
+    err = dataio->parallel_read_any_data(infile, SimPM, *grid);
     break; 
 #endif // if SILO
   default:
