@@ -600,10 +600,11 @@ int raytracer_USC_infinity::RayTrace_Column_Density(
 
 
 
-int raytracer_USC_infinity::RayTrace_SingleSource(const int s_id, ///< Source id
-						  const double dt, ///< Timestep
-						  const double g /// eos gamma
-						  )
+int raytracer_USC_infinity::RayTrace_SingleSource(
+      const int s_id, ///< Source id
+      const double dt, ///< Timestep
+      const double g /// eos gamma
+      )
 {
   //cout <<"*******RT single source. \n";
   raytracer_USC_infinity::gamma = g;
@@ -1577,10 +1578,11 @@ void raytracer_USC::Print_SourceList()
 // ##################################################################
 
 
-int raytracer_USC::RayTrace_SingleSource(const int s_id,  ///< Source id
-					 const double dt, ///< Timestep
-					 const double g   ///< eos gamma.
-					 )
+int raytracer_USC::RayTrace_SingleSource(
+      const int s_id,  ///< Source id
+      const double dt, ///< Timestep
+      const double g   ///< eos gamma.
+      )
 {
 #ifdef RT_TESTING
   cout <<"raytracer_USC::RayTrace_SingleSource() starting.\n";

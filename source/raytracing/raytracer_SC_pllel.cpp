@@ -68,7 +68,7 @@ raytracer_USC_pllel::raytracer_USC_pllel(
       int ftr,    ///< index of first tracer variable in state vector
       int Nsources  ///< Number of radiation sources
       )
-  : raytracer_USC(ggg,mmm,nd,csys,nv,ftr)
+  : raytracer_USC(ggg,mmm,nd,csys,nv,ftr,Nsources)
 {
 #ifdef RT_TESTING
   cout <<"SC PARALLEL raytracer class constructor!\n";
@@ -92,8 +92,9 @@ raytracer_USC_pllel::~raytracer_USC_pllel()
 
 
 
-int raytracer_USC_pllel::Add_Source(struct rad_src_info *src ///< source info.
-                                   )
+int raytracer_USC_pllel::Add_Source(
+      struct rad_src_info *src ///< source info.
+      )
 {
   cout <<"\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n";
   //
@@ -146,10 +147,11 @@ int raytracer_USC_pllel::Add_Source(struct rad_src_info *src ///< source info.
 
 
 
-int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
-					       const double dt, ///< Timestep
-					       const double g   ///< eos gamma.
-					       )
+int raytracer_USC_pllel::RayTrace_SingleSource(
+      const int s_id,  ///< Source id
+      const double dt, ///< Timestep
+      const double g   ///< eos gamma.
+      )
 {
   int err=0;
   //cout <<"RT: Starting Raytracing for source: "<<s_id<<"\n";
@@ -163,7 +165,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
   //
   clk.start_timer(t2);
   //clk.start_timer(t4);
-  err += gridptr->Receive_RT_Boundaries(s_id);
+  err += gridptr->Receive_RT_Boundaries(s_id, RS);
   //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
   clk.pause_timer(t2);
 
@@ -181,15 +183,15 @@ int raytracer_USC_pllel::RayTrace_SingleSource(const int s_id,  ///< Source id
   //
   clk.start_timer(t2);
   //clk.start_timer(t4);
-  err += gridptr->Send_RT_Boundaries(s_id);
+  err += gridptr->Send_RT_Boundaries(s_id, RS);
   //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
   wait  = clk.pause_timer(t2);
   total = clk.pause_timer(t1);
 
-  if ( (SimPM.timestep%100==0) && s_id==0) {
-    cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
-    cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";
-  }
+//  if ( (SimPM.timestep%100==0) && s_id==0) {
+//    cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
+//    cout <<" secs; processing="<<run<<" secs; waiting="<<wait<<"\n";
+//  }
 
   return err;
 }

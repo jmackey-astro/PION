@@ -674,22 +674,25 @@ class UniformGrid
   /// and setup extra boundaries at corners.
   ///
   virtual int Setup_RT_Boundaries(
-        const int  ///< source id
-        ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      const int,  ///< source id
+      struct rad_sources &
+      ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
   /// Receive all optical depths for boundaries closer to source.
   ///
   virtual int Receive_RT_Boundaries(
-        const int ///< source id
-        ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      const int, ///< source id
+      struct rad_sources &
+      ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
   /// Send all optical depths for boundaries to domains further from source.
   ///
   virtual int Send_RT_Boundaries(
-        const int ///< source id
-        ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      const int, ///< source id
+      struct rad_sources &
+      ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
   /// Calculate distance between two points, where the two position
@@ -698,9 +701,9 @@ class UniformGrid
   /// physical units.
   ///
   virtual double distance(
-        const double *, ///< position 1 (physical)
-        const double *  ///< position 2 (physical)
-        );
+      const double *, ///< position 1 (physical)
+      const double *  ///< position 2 (physical)
+      );
    
   ///
   /// Calculate distance between two points, where the two position
@@ -709,9 +712,9 @@ class UniformGrid
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-        const int *, ///< position 1 (integer)
-        const int *  ///< position 2 (integer)
-        );
+      const int *, ///< position 1 (integer)
+      const int *  ///< position 2 (integer)
+      );
    
   ///
   /// Calculate distance between two cell--centres (will be between
@@ -719,9 +722,9 @@ class UniformGrid
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-        const cell *, ///< cell 1
-        const cell *  ///< cell 2
-        );
+      const cell *, ///< cell 1
+      const cell *  ///< cell 2
+      );
 
   ///
   /// Calculate distance between two cell--centres (will be between
@@ -730,9 +733,9 @@ class UniformGrid
   /// two units).
   ///
   virtual double idistance_cell2cell(
-        const cell *, ///< cell 1
-        const cell *  ///< cell 2
-        );
+      const cell *, ///< cell 1
+      const cell *  ///< cell 2
+      );
    
   ///
   /// Calculate distance between a cell-vertex and a cell--centres
@@ -740,9 +743,9 @@ class UniformGrid
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-        const double *, ///< vertex (physical)
-        const cell *    ///< cell
-        );
+      const double *, ///< vertex (physical)
+      const cell *    ///< cell
+      );
 
   ///
   /// As distance_vertex2cell(double[],cell) but for a single component
@@ -750,10 +753,10 @@ class UniformGrid
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-        const double *,  ///< vertex (double)
-        const cell *, ///< cell
-        const axes    ///< Axis to calculate.
-        );
+      const double *,  ///< vertex (double)
+      const cell *, ///< cell
+      const axes    ///< Axis to calculate.
+      );
 
    ///
    /// Calculate distance between a cell-vertex and a cell--centres
@@ -761,9 +764,9 @@ class UniformGrid
    /// geometry).  Here both input and output are code-integer units.
    ///
    virtual double idistance_vertex2cell(
-        const int *, ///< vertex (integer)
-        const cell * ///< cell
-        );
+      const int *, ///< vertex (integer)
+      const cell * ///< cell
+      );
 
    ///
    /// As idistance_vertex2cell(int,cell) but for a single component
@@ -771,10 +774,10 @@ class UniformGrid
    /// the *cell* coordinate minus the *vertex* coordinate.
    ///
    virtual double idifference_vertex2cell(
-        const int *,  ///< vertex (integer)
-        const cell *, ///< cell
-        const axes    ///< Axis to calculate.
-        );
+      const int *,  ///< vertex (integer)
+      const cell *, ///< cell
+      const axes    ///< Axis to calculate.
+      );
 
   ///
   /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
@@ -782,10 +785,10 @@ class UniformGrid
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-        const cell *, ///< cell 1
-        const cell *, ///< cell 2
-        const axes    ///< Axis.
-        );
+      const cell *, ///< cell 1
+      const cell *, ///< cell 2
+      const axes    ///< Axis.
+      );
 };
   
 
@@ -1132,7 +1135,7 @@ struct RT_boundary_list_element {
 /// the same indexing, we just make a struct.
 ///
 struct RT_source_comms_info {
-  int source_id; ///< id of the source, numbered as in global RSP class.
+  int source_id; ///< id of the source.
   std::vector<struct RT_boundary_list_element>
     RT_recv_list, ///< list of processors to receive data from, for each source.
     RT_send_list; ///< list of processors to send data to, for each source.
@@ -1250,10 +1253,11 @@ class UniformGridParallel
   /// recv lists.
   ///
   int setup_RT_finite_ptsrc_BD(
-        const int, ///< Source id.
-        std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
-        std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
-        );
+      const int, ///< Source id.
+      struct rad_sources &, ///< SimParams list of radiation sources.
+      std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
+      std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
+      );
 
 
   ///

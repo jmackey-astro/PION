@@ -558,6 +558,7 @@ int UniformGridParallel::BC_update_BCMPI(
         mpiPM->ngbprocs[b->dir], // to_rank
         &(b->send_data),        // cells list.
         b->send_data.size(),    // number of cells.
+        G_ndim, G_nvar,
         send_id,     // identifier for send.
         comm_tag
         );
@@ -645,6 +646,7 @@ int UniformGridParallel::BC_update_BCMPI(
         from_rank,  ///< rank of process we are receiving from.
         &(recv_b->data),     ///< list of cells to get data for. 
         recv_b->data.size(), ///< number of cells in list (extra checking!)
+        G_ndim, G_nvar,
         recv_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
         recv_id     ///< identifier for receive, for any book-keeping.
         );
@@ -803,7 +805,7 @@ int UniformGridParallel::Setup_RT_Boundaries(
   int err=0;
   if (!RS.sources[src_id].at_infinity) {
     err += setup_RT_finite_ptsrc_BD(
-          this_src_comms.source_id,
+          this_src_comms.source_id, RS,
           this_src_comms.RT_recv_list,
           this_src_comms.RT_send_list
           );
@@ -1014,6 +1016,7 @@ enum direction UniformGridParallel::RT_src_at_infty_direction(
 
 int UniformGridParallel::setup_RT_finite_ptsrc_BD(
       const int src_id,
+      struct rad_sources &RS,
       std::vector<struct RT_boundary_list_element>  &RT_recv_list,
       std::vector<struct RT_boundary_list_element>  &RT_send_list
       )

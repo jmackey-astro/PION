@@ -190,23 +190,26 @@ class GridBaseClass {
   /// to for a given radiation source.
   ///
   virtual int Setup_RT_Boundaries(
-    const int   ///< id of radiation source.
-    )=0;
+      const int,   ///< id of radiation source.
+      struct rad_sources &
+      )=0;
 
   ///
   /// Receive all optical depths for boundaries closer to radiation
   /// source.
   ///
   virtual int Receive_RT_Boundaries(
-    const int ///< radiation source id
-    )=0;
+      const int,   ///< id of radiation source.
+      struct rad_sources &
+      )=0;
 
   ///
   /// Send all optical depths for boundaries to domains further from
   /// radiation source.
   virtual int Send_RT_Boundaries(
-    const int ///< radiation source id
-    )=0;
+      const int,   ///< id of radiation source.
+      struct rad_sources &
+      )=0;
   // ----------- SETUP AND UPDATE BOUNDARY DATA ---------------------
 
   ///

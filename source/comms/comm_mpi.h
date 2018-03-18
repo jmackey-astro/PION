@@ -128,6 +128,8 @@ class comm_mpi : public comms_base {
       const int,           ///< rank to send to.
       std::list<cell *> *, ///< list of cells to get data from.
       long int,            ///< number of cells in list (extra checking!)
+      const int, ///< ndim
+      const int, ///< nvar
       std::string &,            ///< identifier for send, for tracking delivery later.
       const int            ///< comm_tag, to say what kind of send this is.
       );
@@ -174,6 +176,8 @@ class comm_mpi : public comms_base {
       const int,           ///< rank of process we are receiving from.
       std::list<cell *> *, ///< list of cells to get data for. 
       const long int,      ///< number of cells in list (extra checking!)
+      const int, ///< ndim
+      const int, ///< nvar
       const int,           ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
       const std::string &  ///< identifier for receive, for any book-keeping that might be needed.
       );
