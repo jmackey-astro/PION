@@ -675,7 +675,7 @@ class UniformGrid
   ///
   virtual int Setup_RT_Boundaries(
       const int,  ///< source id
-      struct rad_sources &
+      struct rad_src_info &
       ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
@@ -683,7 +683,7 @@ class UniformGrid
   ///
   virtual int Receive_RT_Boundaries(
       const int, ///< source id
-      struct rad_sources &
+      struct rad_src_info &
       ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
@@ -691,7 +691,7 @@ class UniformGrid
   ///
   virtual int Send_RT_Boundaries(
       const int, ///< source id
-      struct rad_sources &
+      struct rad_src_info &
       ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
@@ -1143,7 +1143,7 @@ struct RT_source_comms_info {
 
 #endif // PLLEL_RT
 
-  ///
+///
 /// Parallel implementation of the serial uniform grid.
 /// 
 /// This differs mostly in that it has to treat the boundaries differently.
@@ -1232,7 +1232,7 @@ class UniformGridParallel
   ///
   int setup_RT_infinite_src_BD(
       const int, ///< Source id.
-      struct rad_sources &,
+      struct rad_src_info &,
       std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
       std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
       );
@@ -1243,7 +1243,7 @@ class UniformGridParallel
   ///
   enum direction RT_src_at_infty_direction(
       const int, ///< source id.
-      struct rad_sources &
+      struct rad_src_info &
       );
 
   ///
@@ -1254,7 +1254,7 @@ class UniformGridParallel
   ///
   int setup_RT_finite_ptsrc_BD(
       const int, ///< Source id.
-      struct rad_sources &, ///< SimParams list of radiation sources.
+      struct rad_src_info &, ///< SimParams list of radiation sources.
       std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
       std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
       );
@@ -1264,25 +1264,25 @@ class UniformGridParallel
   /// allocate memory for new cells and attach them to the grid.
   ///
   int setup_RT_recv_boundary(
-        struct RT_boundary_list_element & ///< pointer to boundary info.
-        );
+      struct RT_boundary_list_element & ///< pointer to boundary info.
+      );
 
   ///
   /// find cells needed for send boundary, and add them to the list.
   ///
   int setup_RT_send_boundary(
-        struct RT_boundary_list_element & ///< pointer to boundary info.
-        );
+      struct RT_boundary_list_element & ///< pointer to boundary info.
+      );
 
   ///
   /// Add cells to the receive boundary list, so we know what to
   /// expect. 
   ///
   int RT_populate_recv_boundary(
-        struct boundary_data *, ///< pointer to RT boundary data.
-        const struct boundary_data *, ///< pointer to BC boundary data.
-        const enum direction ///< face direction
-        );
+      struct boundary_data *, ///< pointer to RT boundary data.
+      const struct boundary_data *, ///< pointer to BC boundary data.
+      const enum direction ///< face direction
+      );
 #endif // PLLEL_RT
 
   ///
@@ -1295,17 +1295,17 @@ class UniformGridParallel
   /// Constructor. Sets up a grid in the same way as the serial grid.
   /// 
   UniformGridParallel(
-        int,         ///< ndim
-        int,         ///< nvar
-        int,         ///< equation type
-        int, ///< number of boundary cells to use.
-        double *,    ///< local xmin
-        double *,    ///< local xmax
-        int *,       ///< local number of grid zones
-        double *, ///< array of min. x/y/z for full simulation.
-        double *,  ///< array of max. x/y/z for full simulation.
-        class MCMDcontrol * ///< pointer to MPI domain decomposition
-        );
+      int,         ///< ndim
+      int,         ///< nvar
+      int,         ///< equation type
+      int, ///< number of boundary cells to use.
+      double *,    ///< local xmin
+      double *,    ///< local xmax
+      int *,       ///< local number of grid zones
+      double *, ///< array of min. x/y/z for full simulation.
+      double *,  ///< array of max. x/y/z for full simulation.
+      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      );
 
   /// 
   /// Deletes the grid.
@@ -1320,10 +1320,10 @@ class UniformGridParallel
   /// data from other processors.
   ///
   virtual int TimeUpdateExternalBCs(
-        const double,   ///< current simulation time
-        const int, ///< Current step number in tsimtime,mestep.
-        const int  ///< Maximum step number in timestep.
-        );
+      const double,   ///< current simulation time
+      const int, ///< Current step number in tsimtime,mestep.
+      const int  ///< Maximum step number in timestep.
+      );
 
 #ifdef PLLEL_RT
   ///
@@ -1332,7 +1332,7 @@ class UniformGridParallel
   ///
   virtual int Setup_RT_Boundaries(
       const int,  ///< source id
-      struct rad_sources &
+      struct rad_src_info &
       );
 
   ///
@@ -1340,7 +1340,7 @@ class UniformGridParallel
   ///
   virtual int Receive_RT_Boundaries(
       const int,  ///< source id
-      struct rad_sources &
+      struct rad_src_info &
       );
 
   ///
@@ -1349,7 +1349,7 @@ class UniformGridParallel
   ///
   virtual int Send_RT_Boundaries(
       const int,  ///< source id
-      struct rad_sources &
+      struct rad_src_info &
       );
 
 #endif // PLLEL_RT
@@ -1398,17 +1398,17 @@ class uniform_grid_cyl_parallel
   /// The constructor won't do very much:
   ///
   uniform_grid_cyl_parallel(
-        int, ///< ndim, length of position vector.
-        int, ///< nvar, length of state vectors.
-        int, ///< eqntype, which equations we are using (needed by BCs).
-        int, ///< number of boundary cells to use.
-        double *, ///< array of minimum values of x,y,z.
-        double *, ///< array of maximum values of x,y,z.
-        int *, ///< array of number of cells in x,y,z directions.
-        double *, ///< array of min. x/y/z for full simulation.
-        double *,  ///< array of max. x/y/z for full simulation.
-        class MCMDcontrol * ///< pointer to MPI domain decomposition
-        );
+      int, ///< ndim, length of position vector.
+      int, ///< nvar, length of state vectors.
+      int, ///< eqntype, which equations we are using (needed by BCs).
+      int, ///< number of boundary cells to use.
+      double *, ///< array of minimum values of x,y,z.
+      double *, ///< array of maximum values of x,y,z.
+      int *, ///< array of number of cells in x,y,z directions.
+      double *, ///< array of min. x/y/z for full simulation.
+      double *,  ///< array of max. x/y/z for full simulation.
+      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      );
 
   ///
   /// Nor will the destructor
@@ -1443,17 +1443,17 @@ class uniform_grid_sph_parallel
   /// The constructor won't do very much:
   ///
   uniform_grid_sph_parallel(
-        int, ///< ndim, length of position vector.
-        int, ///< nvar, length of state vectors.
-        int, ///< eqntype, which equations we are using (needed by BCs).
-        int, ///< number of boundary cells to use.
-        double *, ///< array of minimum values of x,y,z.
-        double *, ///< array of maximum values of x,y,z.
-        int *, ///< array of number of cells in x,y,z directions.
-        double *, ///< array of min. x/y/z for full simulation.
-        double *,  ///< array of max. x/y/z for full simulation.
-        class MCMDcontrol * ///< pointer to MPI domain decomposition
-        );
+      int, ///< ndim, length of position vector.
+      int, ///< nvar, length of state vectors.
+      int, ///< eqntype, which equations we are using (needed by BCs).
+      int, ///< number of boundary cells to use.
+      double *, ///< array of minimum values of x,y,z.
+      double *, ///< array of maximum values of x,y,z.
+      int *, ///< array of number of cells in x,y,z directions.
+      double *, ///< array of min. x/y/z for full simulation.
+      double *,  ///< array of max. x/y/z for full simulation.
+      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      );
 
   ///
   /// Nor will the destructor

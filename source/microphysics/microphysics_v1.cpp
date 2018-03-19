@@ -238,7 +238,10 @@ MicroPhysics::MicroPhysics(
     // now add them if needed, and zero indices otherwise.
     if (ct>0) {
       ee[i]->nspecies = ct;
-      if (ee[i]->ion_indices) delete [] ee[i]->ion_indices; ee[i]->ion_indices=0;
+      if (ee[i]->ion_indices) {
+        delete [] ee[i]->ion_indices;
+        ee[i]->ion_indices=0;
+      }
       ee[i]->ion_indices = new int [ct];
       if (!ee[i]->ion_indices) rep.error("meminit MicroPhysics()",0);
       ct=0;
@@ -320,12 +323,18 @@ void MicroPhysics::copy_element_struct(const struct element_struct src, struct e
   dest->nspecies = src.nspecies;
   dest->mass = src.mass;
   dest->numfrac = src.numfrac;
-  if (!dest->ions.empty()) dest->ions.clear();
+  if (!dest->ions.empty())
+    dest->ions.clear();
   for (unsigned int i=0; i<src.ions.size(); i++)
     dest->ions.push_back(src.ions[i]);
-  if (dest->ion_indices) delete [] dest->ion_indices; dest->ion_indices=0;
-  if (dest->nspecies>0) dest->ion_indices = new int [dest->nspecies];
-  if (!dest->ion_indices) rep.error("meminit copy_element_struct()",dest->ion_indices);
+  if (dest->ion_indices) {
+    delete [] dest->ion_indices;
+    dest->ion_indices=0;
+  }
+  if (dest->nspecies>0)
+    dest->ion_indices = new int [dest->nspecies];
+  if (!dest->ion_indices)
+    rep.error("meminit copy_element_struct()",dest->ion_indices);
   for (int i=0; i<dest->nspecies; i++)
     dest->ion_indices[i] = src.ion_indices[i];
   return;

@@ -123,7 +123,7 @@ int raytracer_USC_pllel::Add_Source(
 #ifdef RT_TESTING
   cout <<"\t**** PARALLEL Add_Source: Setting up extra RT boundaries on grid.\n";
 #endif
-  int err = gridptr->Setup_RT_Boundaries(id);
+  int err = gridptr->Setup_RT_Boundaries(id, *src);
   if (err) rep.error("Failed to setup RT Boundaries",err);
 
   //
@@ -156,6 +156,17 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   int err=0;
   //cout <<"RT: Starting Raytracing for source: "<<s_id<<"\n";
 
+  // Find source in list.
+  struct rad_src_info *RS=0;
+  for (vector<rad_source>::iterator i=SourceList.begin();
+                                    i!=SourceList.end(); ++i)
+    if ( (*i).s->id==s_id ) RS=(*i).s;
+  if (!RS) {
+    rep.error("RayTrace_SingleSource() source not in source list.",
+              s_id);
+  }
+
+
   string t1="totalRT", t2="waitingRT", t3="doingRT", t4="tempRT";
   double total=0.0, wait=0.0, run=0.0;
 
@@ -165,7 +176,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t2);
   //clk.start_timer(t4);
-  err += gridptr->Receive_RT_Boundaries(s_id, RS);
+  err += gridptr->Receive_RT_Boundaries(s_id, *RS);
   //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
   clk.pause_timer(t2);
 
@@ -183,7 +194,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   clk.start_timer(t2);
   //clk.start_timer(t4);
-  err += gridptr->Send_RT_Boundaries(s_id, RS);
+  err += gridptr->Send_RT_Boundaries(s_id, *RS);
   //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
   wait  = clk.pause_timer(t2);
   total = clk.pause_timer(t1);

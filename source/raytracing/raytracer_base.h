@@ -15,6 +15,7 @@
 
 #include "grid/grid_base_class.h"
 #include "microphysics/microphysics_base.h"
+#include "raytracing/rad_src_data.h"
 
 // ##################################################################
 // ##################################################################
@@ -66,37 +67,6 @@ enum Quadrants {Q1=0, Q2=1, Q4=2, Q3=3};
 /// circle in the x-y plane, starting with (XP,YP).
 ///
 enum Octants {OCT1=0, OCT2=1, OCT4=2, OCT3=3, OCT5=4, OCT6=5, OCT8=6, OCT7=7};
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-///
-/// Struct to hold info on radiation sources.  An extension of rad_src_info in global.h
-///
-struct rad_source {
-  ///
-  /// pointer to source (set to SimPM.RS.source[id]) with the basic
-  /// info about the source.
-  ///
-  struct rad_src_info *s;
-
-  class cell *sc; ///< nearest cell to source.
-  bool src_on_grid; ///< true if source is at a grid cell.
-  int ipos[MAX_DIM];    ///< source position in integer form (grid units, dx=2).
-
-  ///
-  /// This struct is used by the code to pass cell and source data
-  /// to the microphysics integrator.  It contains the relevant source
-  /// information, and also some cell-source geometry information which 
-  /// must be set on a cell-by-cell basis as rays are traced.
-  /// The struct is declared in source/microphysics/microphysics_base.h
-  ///
-  struct rt_source_data data;
-};
 
 
 

@@ -182,8 +182,8 @@ raytracer_USC_infinity::~raytracer_USC_infinity()
 
 
 int raytracer_USC_infinity::Add_Source(
-        struct rad_src_info *src ///< source info.
-        )
+      struct rad_src_info *src ///< source info.
+      )
 {
   //
   // This happens in two stages: first we check all of the source properties
@@ -217,8 +217,8 @@ int raytracer_USC_infinity::Add_Source(
 
 
 void raytracer_USC_infinity::add_source_to_list(
-              struct rad_src_info *src ///< source info.
-              )
+      struct rad_src_info *src ///< source info.
+      )
 {
   rad_source rs;
   

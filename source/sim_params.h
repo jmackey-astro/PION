@@ -23,6 +23,7 @@
 
 #include "sim_constants.h"
 #include "constants.h"
+#include "raytracing/rad_src_data.h"
 
 // *******************************************************************
 ///
@@ -114,48 +115,6 @@ struct star {
     Vnow;  ///< Current wind velocity (cm/s).
 };
 
-
-///
-/// Radiation source struct.
-///
-struct rad_src_info {
-  double pos[MAX_DIM]; ///< src position (physical units).
-  double strength; ///< src strength (photons/sec, or ergs/sec for multifreq.)
-  double Rstar; ///< stellar radius in solar radii (for multifreq. photoionisation).
-  double Tstar; ///< stellar effective temperature (for multifreq. photoionisation).
-  int id;   ///< src identifier
-  int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
-  int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
-  int at_infinity; ///< set to true if source is at infinity.
-  ///
-  /// "effect" is what the source does, and this defines many of its
-  /// properties implicitly.  Options are:
-  /// - RT_EFFECT_UV_HEATING,
-  /// - RT_EFFECT_PION_MONO,
-  /// - RT_EFFECT_PION_MULTI,
-  /// - RT_EFFECT_PHOTODISS, (UNUSED)
-  /// - RT_EFFECT_PION_EQM, (UNUSED--for photoionisation equilibrium)
-  /// - RT_EFFECT_HHE_MFQ
-  ///
-  int effect;
-  ///
-  /// "NTau" sets the number of quantities traced from the source.
-  ///
-  int NTau;
-
-  int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
-  int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  std::string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
-};
-
-///
-/// Basic list of all radiation sources.  Used in SimParams class.
-///
-struct rad_sources {
-  int Nsources;
-  std::vector<struct rad_src_info> sources;
-};
-// *******************************************************************
 
 
 

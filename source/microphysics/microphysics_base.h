@@ -34,25 +34,11 @@
 #include <vector>
 #include <string>
 #include "grid/cell_interface.h"
+#include "raytracing/rad_src_data.h"
 //#define MP_DEBUG
 
 
 
-
-#define MAX_TAU 4
-///
-/// Radiation Source data struct, used for passing info to microphysics classes.
-///
-struct rt_source_data {
-  int id;   ///< source id.
-  int type; ///< diffuse-radiation or a real source.
-  double strength; ///< Luminosity (or flux if source at infinity).
-  double Vshell;   ///< Shell volume for discrete photo-ionisation/-heating rates.
-  double dS;       ///< Path length through cell.
-  short unsigned int NTau; ///< Number of LOS quantities traced for the source.
-  double Column[MAX_TAU];  ///< integral of quantities along LOS to near edge of cell.
-  double DelCol[MAX_TAU];  ///< integral of quantities along LOS through cell.
-};
 
 
 

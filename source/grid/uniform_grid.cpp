@@ -1213,7 +1213,6 @@ int UniformGrid::BC_setBCtypes(
   // Now go through each boundary and assign everything needed.
   //
   int i=0;
-  string::size_type pos;
   for (i=0; i<2*G_ndim; i++) {
     BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
     BC_bd[i].ondir = OppDir(BC_bd[i].dir);
