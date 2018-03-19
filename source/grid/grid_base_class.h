@@ -191,7 +191,7 @@ class GridBaseClass {
   ///
   virtual int Setup_RT_Boundaries(
       const int,   ///< id of radiation source.
-      struct rad_sources &
+      struct rad_src_info &
       )=0;
 
   ///
@@ -200,7 +200,7 @@ class GridBaseClass {
   ///
   virtual int Receive_RT_Boundaries(
       const int,   ///< id of radiation source.
-      struct rad_sources &
+      struct rad_src_info &
       )=0;
 
   ///
@@ -208,7 +208,7 @@ class GridBaseClass {
   /// radiation source.
   virtual int Send_RT_Boundaries(
       const int,   ///< id of radiation source.
-      struct rad_sources &
+      struct rad_src_info &
       )=0;
   // ----------- SETUP AND UPDATE BOUNDARY DATA ---------------------
 

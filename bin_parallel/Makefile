@@ -81,7 +81,7 @@ VPATH = \
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h \
-         sim_params.h sim_constants.h constants.h
+         sim_params.h sim_constants.h constants.h rad_src_data.h
 
 #######################
 ## COMPILATION RULES ##
