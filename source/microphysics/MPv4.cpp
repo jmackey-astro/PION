@@ -23,6 +23,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#ifdef LEGACY_CODE
 
 //#define MPV3_DEBUG
 
@@ -520,5 +521,6 @@ double MPv4::timescales_RT(
 // ##################################################################
 // ##################################################################
 
+#endif // LEGACY_CODE
 
 

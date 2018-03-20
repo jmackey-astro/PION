@@ -1,11 +1,11 @@
 ///
-/// \file mpv5_molecular.h
+/// \file MPv5.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
 /// This class is for modelling photoevaporation of dense molecular
 /// clouds.
-/// The file inherits from mpv3, and instead of the Wolfire et al.
+/// The file inherits from MPv3, and instead of the Wolfire et al.
 /// (2003) neutral gas heating/cooling rates, it uses the Henney et
 /// al. (2009) molecular cooling rate and heating rates.  So the only
 /// significant difference is in the Ydot() function.
@@ -14,16 +14,17 @@
 /// - getting it written: mods up until 2013.02.15
 /// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2018.03.20 JM: Renamed file.
 
-#ifndef MPV5_MOLECULAR_H
-#define MPV5_MOLECULAR_H
+#ifndef MPV5_H
+#define MPV5_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 #include "microphysics/MPv3.h"
 
-class mpv5_molecular
+class MPv5
   :
   public MPv3
 {
@@ -31,7 +32,7 @@ class mpv5_molecular
   ///
   /// Constructor
   ///
-  mpv5_molecular(
+  MPv5(
       const int,  ///< grid dimensions
       const int,  ///< Coordinate System flag
       const int,  ///< Total number of variables in state vector
@@ -45,7 +46,7 @@ class mpv5_molecular
   ///
   /// Destructor
   ///
-  ~mpv5_molecular();
+  ~MPv5();
 
 
   //---------------------------------------------------------------------------
@@ -67,7 +68,7 @@ class mpv5_molecular
   //---------------------------------------------------------------------------
 };
 
-#endif // MPV5_MOLECULAR_H
+#endif // MPV5_H
 
 
 
