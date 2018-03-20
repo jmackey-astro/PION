@@ -1,5 +1,5 @@
 ///
-/// \file mp_implicit_H.h
+/// \file MPv4.h
 /// \author Jonathan Mackey
 /// \date 2011.10.12
 ///
@@ -16,13 +16,12 @@
 
 
 
-#ifndef MP_IMPLICIT_H_H
-#define MP_IMPLICIT_H_H
+#ifndef MPV4_H
+#define MPV4_H
 
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV4
 
 
 #include <vector>
@@ -32,17 +31,17 @@
 #include "microphysics/hydrogen_recomb_Hummer94.h"
 #include "microphysics/hydrogen_photoion.h"
 #include "microphysics/cvode_integrator.h"
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 
-class mp_implicit_H
+class MPv4
   :
-  public mp_explicit_H
+  public MPv3
 {
   public:
   ///
   /// Constructor
   ///
-  mp_implicit_H(
+  MPv4(
       const int,  ///< grid dimensions
       const int,  ///< Coordinate System flag
       const int,  ///< Total number of variables in state vector
@@ -56,7 +55,7 @@ class mp_implicit_H
   ///
   /// Destructor
   ///
-  ~mp_implicit_H();
+  ~MPv4();
 
   ///
   /// This takes a copy of the primitive vector and advances it in
@@ -184,9 +183,7 @@ class mp_implicit_H
   //---------------------------------------------------------------------------
 };
 
-#endif // if not excluding MPv4
 
-
-#endif // MP_IMPLICIT_H_H
+#endif // MPV4_H
 
 

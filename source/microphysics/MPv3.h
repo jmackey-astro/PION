@@ -1,5 +1,5 @@
 ///
-/// \file mp_explicit_H.h
+/// \file MPv3.h
 /// \author Jonathan Mackey
 /// \date 2011.10.06
 ///
@@ -28,57 +28,56 @@
 ///    cooling rates per cell for postprocessing.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
+/// - 2018.03.20 JM: Renamed file.
 
-#ifndef MP_EXPLICIT_H_H
-#define MP_EXPLICIT_H_H
+#ifndef MPV3_H
+#define MPV3_H
 
 /// Description:
-/// This class is an update on the microphysics class used for my thesis.  
+/// This class is an update on the microphysics class used for JM's
+/// thesis.  It uses an explicit raytracing scheme, so the photon
+/// transmission through the cell does not have to be integrated with
+/// the rate and energy equations.
 ///
-/// - It uses multi-frequency photoionisation including spectral hardening with
-///   optical depth, using the method outlined in Frank & Mellema
-///   (1994,A&A,289,937), and updated by Mellema et al. (2006,NewA,11,374).
+/// - It uses multi-frequency photoionisation including spectral
+///   hardening with optical depth, using the method outlined in
+///   Frank & Mellema (1994,A&A,289,937), and updated by Mellema et
+///   al. (2006,NewA,11,374).
+/// - It uses the Hummer (1994,MN,268,109) rates for radiative
+///   recombination and its associated cooling, and Bremsstrahlung
+///   cooling.
+/// - For collisional ionisation the function of Voronov
+///   (1997,ADNDT,65,1) is used.
+/// - Collisional excitation of neutral H, table from Raga, Mellema,
+///   Lundqvist (1997,ApJS,109,517), using data from Aggarwal (1993).
+/// - For cooling due to heavy elements, which are not explicitly
+///  included, we use the CIE cooling curve of Sutherland & Dopita
+///  (1993,ApJS,88,253), but this time I subtract the zero-metals
+///  curve from the solar-metallicity curve so that I only have
+///  cooling due to metals.  This eliminates the potential for 
+///  double-counting which was in my previous cooling function.
+/// - Then I use various formulae from Henney et al. (2009,MN,398,
+///  157) for cooling due to collisional excitation of photoionised
+///  O,C,N (eq.A9), collisional excitation of neutral metals
+///  (eq.A10), and the Wiersma+2009 CIE metals-only curve.  I take
+///  the max of the WSS09 curve and the Henney et al. functions, to
+///  avoid double counting.  For neutral gas I use heating and
+///  cooling rates from Wolfire et al. (2003).
+/// - Photoheating from ionisation is discussed above.  Cosmic ray
+///  heating will use a standard value, X-ray heating is ignored.
+///  UV heating due to the interstellar radiation field (ISRF) is
+///  according to the optical depth from the edge of the domain to
+///  the cell in question, using e.g. HEA09 eq.A3, if requested.  UV
+///  heating from the star uses the same equation, but with the
+///  optical depth from the source (using a total H-nucleon column
+///  density).
 ///
-/// - It uses the Hummer (1994,MN,268,109) rates for radiative recombination and
-///   its associated cooling, and Bremsstrahlung cooling.
-///
-/// - For collisional ionisation the function of Voronov (1997,ADNDT,65,1) is used.
-///
-/// - Collisional excitation of neutral H, table from Raga, Mellema, & Lundqvist
-///   (1997,ApJS,109,517), using data from Aggarwal (1993).
-///
-/// - For cooling due to heavy elements, which are not explicitly included, we use
-/// the CIE cooling curve of Sutherland & Dopita (1993,ApJS,88,253), but this time I
-/// subtract the zero-metals curve from the solar-metallicity curve so that I only
-/// have cooling due to metals.  This eliminates the potential for double-counting
-/// which was in my previous cooling function.
-///
-/// - Then I use various formulae from Henney et al. (2009,MN,398,157) for cooling due
-/// to collisional excitation of photoionised O,C,N (eq.A9), collisional excitation of
-/// neutral metals (eq.A10), and the SD93 CIE curve.  I think I will take the max of
-/// the SD93 curve and the Henney et al. functions, to avoid double counting.  For 
-/// neutral gas I use heating and cooling rates from Wolfire et al. (2003).
-///
-/// - Photoheating from ionisation is discussed above.  Cosmic ray heating will use a
-/// standard value, X-ray heating I'm not yet sure about.  UV heating due to the 
-/// interstellar radiation field (ISRF) will be according to the optical depth from the
-/// edge of the domain to the cell in question, using e.g. HEA09 eq.A3.  UV heating
-/// from the star can use the same equation, but with the optical depth from the 
-/// source (using a total nucleon column density).
-///
-///
-/// The integration methods will be the same as previously, using an explicit integral
-/// for low ionisation levels, and the analytic approximation for highly photoionised
-/// gas.  I will also add the option of just calculating the optical depth in the 
-/// raytracing step, limiting the timestep so that nothing changes by very much in a 
-/// single step (esp. the optical depth), and then doing the TimeUpdateMP() call fully
-/// in parallel.  This should allow for better scaling with number of processors.
-///
-///
-///
-/// TODO: Need a global interface function for MP that lets me update the properties of
-///       the multi-frequency photoionising source, and the point UV source.
-///
+/// The integration method uses the CVODES solver from the SUNDIALS
+/// package by (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in
+/// Physics, 10, 138) available from 
+///  https://computation.llnl.gov/casc/sundials/main.html
+/// The method is backwards differencing (i.e. implicit) with Newton
+/// iteration.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -111,7 +110,7 @@
 /// not time-averaged by the microphysics integrator but rather is an 
 /// instantaneous value.
 ///
-class mp_explicit_H
+class MPv3
   :
   public Hydrogen_chem,
   public cooling_function_SD93CIE,
@@ -122,7 +121,7 @@ class mp_explicit_H
   ///
   /// Constructor
   ///
-  mp_explicit_H(
+  MPv3(
       const int,  ///< grid dimensions
       const int,  ///< Coordinate System flag
       const int,  ///< Total number of variables in state vector
@@ -136,7 +135,7 @@ class mp_explicit_H
   ///
   /// Destructor
   ///
-  ~mp_explicit_H();
+  ~MPv3();
 
 
   ///
@@ -149,33 +148,29 @@ class mp_explicit_H
   /// which can be the same pointer as the initial vector.
   ///
   int TimeUpdateMP(
-        const pion_flt *, ///< Primitive Vector to be updated.
-        pion_flt *,       ///< Destination Vector for updated values.
-        const double,   ///< Time Step to advance by.
-        const double,   ///< EOS gamma.
-        const int,      ///< Switch for what type of integration to use.
-        double *        ///< Vector of extra data (column densities, etc.).
-        );
+      const pion_flt *, ///< Primitive Vector to be updated.
+      pion_flt *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,      ///< Switch for what type of integration to use.
+      double *        ///< Vector of extra data (column densities, etc.).
+      );
 
   ///
-  /// If doing ray-tracing, the tracer can call this function to
-  /// integrate the microphysics variables forward one timestep
-  /// given an external radiation flux.  This function is for the 
-  /// implicit C2-ray type of integration, and so is not used here.
   /// UNUSED FUNCTION!!
   ///
   int TimeUpdate_RTsinglesrc(
-        const pion_flt *, ///< Primitive Vector to be updated.
-        pion_flt *,       ///< Destination Vector for updated values.
-        const double,   ///< Time Step to advance by.
-        const double,   ///< EOS gamma.
-        const int,      ///< Switch for what type of integration to use.
-        const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-        const double,   ///< path length ds through cell.
-        const double,   ///< Optical depth to entry point of ray into cell.
-        double *        ///< return optical depth through cell in this variable.
-        )
-  {cout <<"mp_explicit_H::TimeUpdate_RTsinglesrc() is not implemented!\n";return 1;}
+      const pion_flt *, ///< Primitive Vector to be updated.
+      pion_flt *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,      ///< Switch for what type of integration to use.
+      const double,   ///< flux in per unit length along ray (F/ds or L/dV)
+      const double,   ///< path length ds through cell.
+      const double,   ///< Optical depth to entry point of ray into cell.
+      double *        ///< return optical depth through cell in this variable.
+      )
+  {cout <<"MPv3::TimeUpdate_RTsinglesrc() is not implemented!\n";return 1;}
 
   ///
   /// This takes a copy of the primitive vector and advances it in time over
@@ -192,21 +187,21 @@ class mp_explicit_H
   /// - Number of UV point sources.
   ///
   virtual int TimeUpdateMP_RTnew(
-     const pion_flt *, ///< Primitive Vector to be updated.
-     const int,      ///< Number of UV heating sources.
-     const std::vector<struct rt_source_data> &,
-     ///< list of UV-heating column densities and source properties.
-     const int,      ///< number of ionising radiation sources.
-     const std::vector<struct rt_source_data> &,
-     ///< list of ionising src column densities and source properties.
-     pion_flt *,       ///< Destination Vector for updated values
+      const pion_flt *, ///< Primitive Vector to be updated.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      pion_flt *,       ///< Destination Vector for updated values
                      ///< (can be same as first Vector.
-     const double,   ///< Time Step to advance by.
-     const double,   ///< EOS gamma.
-     const int, ///< Switch for what type of integration to use.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
                 ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-     double *    ///< any returned data (final temperature?).
-     );
+      double *    ///< any returned data (final temperature?).
+      );
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
@@ -223,10 +218,10 @@ class mp_explicit_H
   /// Again only needed if you want this feature in the initial condition generator.
   ///
   int Set_Temp(
-          pion_flt *,     ///< primitive vector.
-          const double, ///< temperature
-          const double  ///< eos gamma.
-          );
+      pion_flt *,     ///< primitive vector.
+      const double, ///< temperature
+      const double  ///< eos gamma.
+      );
 
   ///
   /// This returns the minimum timescale of the times flagged in the
@@ -235,12 +230,12 @@ class mp_explicit_H
   /// the newer timescales interface.
   ///
   virtual double timescales(
-          const pion_flt *, ///< Current cell.
-          const double,   ///< EOS gamma.
-          const bool, ///< set to 'true' if including cooling time.
-          const bool, ///< set to 'true' if including recombination time.
-          const bool  ///< set to 'true' if including photo-ionsation time.
-          );
+      const pion_flt *, ///< Current cell.
+      const double,   ///< EOS gamma.
+      const bool, ///< set to 'true' if including cooling time.
+      const bool, ///< set to 'true' if including recombination time.
+      const bool  ///< set to 'true' if including photo-ionsation time.
+      );
 
   ///
   /// This returns the minimum timescale of all microphysical processes, including
@@ -249,63 +244,65 @@ class mp_explicit_H
   /// capability than the other timescales function.
   ///
   virtual double timescales_RT(
-                    const pion_flt *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    );
+      const pion_flt *, ///< Current cell.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      );
+
   ///
   /// Initialise microphysics ionisation fractions to an equilibrium value.
   /// This is optionally used in the initial condition generator.  Not implemented here.
   ///
   int Init_ionfractions(
-        pion_flt *, ///< Primitive vector to be updated.
-        const double, ///< eos gamma.
-        const double  ///< optional gas temperature to end up at. (negative means use pressure)
-        )
-  {cout <<"mp_explicit_H::Init_ionfractions() is not implemented! Write me!\n";return 1;}
+      pion_flt *, ///< Primitive vector to be updated.
+      const double, ///< eos gamma.
+      const double  ///< optional gas temperature to end up at. (negative means use pressure)
+      )
+  {cout <<"MPv3::Init_ionfractions() is not implemented! Write me!\n";return 1;}
 
   ///
   /// Return index of tracer for a given string. (only hydrogen for this class!)
   ///
-  int Tr(const string ///< name of tracer we are looking for.
-	);
+  int Tr(
+      const string ///< name of tracer we are looking for.
+      );
 
   ///
   /// Set the properties of a multifrequency ionising radiation source.
   ///
   int set_multifreq_source_properties(
-            const struct rad_src_info *
-            );
+      const struct rad_src_info *
+      );
 
   ///
   /// Get the total cooling rate.  This is for postprocessing the
   /// simulation data only -- IT IS NOT OPTIMISED FOR SPEED.
   ///
   virtual double total_cooling_rate(
-        const pion_flt *, ///< Current cell values.
-        const int,      ///< Number of UV heating sources.
-        const std::vector<struct rt_source_data> &,
-        ///< list of UV-heating column densities and source properties.
-        const int,      ///< number of ionising radiation sources.
-        const std::vector<struct rt_source_data> &,
-        ///< list of ionising src column densities and source properties.
-        const double   ///< EOS gamma.
-        );
+      const pion_flt *, ///< Current cell values.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      );
 
   ///
   /// Get the total recombination rate for an ion, given the input
   /// state vector.
   ///
   virtual double get_recombination_rate(
-          const int,      ///< ion index in tracer array (optional).
-          const pion_flt *, ///< input state vector (primitive).
-          const double    ///< EOS gamma (optional)
-          );
+      const int,      ///< ion index in tracer array (optional).
+      const pion_flt *, ///< input state vector (primitive).
+      const double    ///< EOS gamma (optional)
+      );
   
   ///
   /// Return the H mass fraction
@@ -318,19 +315,19 @@ class mp_explicit_H
   /// convert state vector from grid cell into local microphysics vector.
   ///
   virtual int convert_prim2local(
-            const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
-            double *        ///< local vector [x(H0),E](n+1).
-            );
+      const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
+      double *        ///< local vector [x(H0),E](n+1).
+      );
 
   ///
   /// Convert local microphysics vector into state vector for grid cell.
   /// This is the inverse of convert_prim2local.
   ///
   virtual int convert_local2prim(
-            const double *, ///< local (updated) vector [x(H0),E](n+1).
-            const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-            pion_flt *       ///< updated primitive vector for grid cell (length nv_prim)
-            );
+      const double *, ///< local (updated) vector [x(H0),E](n+1).
+      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *       ///< updated primitive vector for grid cell (length nv_prim)
+      );
 
   ///
   /// returns gas temperature according to E=nkT/(g-1) with n=1.1*nH*(1+x_in),
@@ -338,10 +335,10 @@ class mp_explicit_H
   /// whenever H is.
   ///
   virtual double get_temperature(
-    const double, ///< nH
-    const double, ///< E_int
-    const double  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
-    );
+      const double, ///< nH
+      const double, ///< E_int
+      const double  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
+      );
 
   ///
   /// For each cell, ydot() needs to know the local radiation field.  This function
@@ -349,15 +346,15 @@ class mp_explicit_H
   /// know for both heating and ionisation sources.
   ///
   void setup_radiation_source_parameters(
-                    const pion_flt *, ///< primitive input state vector.
-                    double *,  ///< local input state vector (x_in,E_int)
-                    const int , ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &
-                    ///< list of ionising src column densities and source properties.
-                    );
+      const pion_flt *, ///< primitive input state vector.
+      double *,  ///< local input state vector (x_in,E_int)
+      const int , ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &
+      ///< list of ionising src column densities and source properties.
+      );
 
   ///
   /// Set the size of local vectors, and index them with integers.
@@ -418,39 +415,40 @@ class mp_explicit_H
   /// calculate dy/dt for the vector of y-values (NOT IMPLEMENTED HERE).
   ///
   virtual int ydot(
-          double,         ///< current time (probably not needed for rate equations)
-          const N_Vector, ///< current Y-value
-          N_Vector,       ///< vector for Y-dot values
-          const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          );
+      double,         ///< current time (probably not needed for rate equations)
+      const N_Vector, ///< current Y-value
+      N_Vector,       ///< vector for Y-dot values
+      const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      );
 
   ///
   /// Calculate the Jacobian matrix d(dy_i/dt)/dy_j for a vector of y-values.
   ///
   virtual int Jacobian(
-          int,            ///< N (not sure what this is for! Must be internal)
-          double,         ///< time, t
-          const N_Vector, ///< current Y-value
-          const N_Vector, ///< vector for Y-dot values
-          const double *, ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          DlsMat          ///< Jacobian matrix
-          ) {cout <<"Jacobian not implemented in mp_explicit_H!\n"; return 1;}
+      int,            ///< N (not sure what this is for! Must be internal)
+      double,         ///< time, t
+      const N_Vector, ///< current Y-value
+      const N_Vector, ///< vector for Y-dot values
+      const double *, ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      DlsMat          ///< Jacobian matrix
+      ) {cout <<"Jacobian not implemented in MPv3!\n"; return 1;}
 
   ///
   /// Get the number of extra parameters and the number of equations.
   ///
-  virtual void get_problem_size(int *, ///< number of equations
-                        int *  ///< number of parameters in user_data vector.
-                        );
+  virtual void get_problem_size(
+      int *, ///< number of equations
+      int *  ///< number of parameters in user_data vector.
+      );
 
   protected:
   ///
   /// set the relative and absolute error tolerances
   ///
   virtual void get_error_tolerances(
-          double *, ///< relative error tolerance (single value)
-          double []  ///< absolute error tolerance (array)
-          );
+      double *, ///< relative error tolerance (single value)
+      double []  ///< absolute error tolerance (array)
+      );
 
   //---------------------------------------------------------------------------
   //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
@@ -474,7 +472,7 @@ class mp_explicit_H
 #endif // if not excluding MPv3
 
 
-#endif // MP_EXPLICIT_H_H
+#endif // MPV3_H
 
 
 

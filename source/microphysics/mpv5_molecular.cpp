@@ -50,7 +50,7 @@ mpv5_molecular::mpv5_molecular(
       const double g  ///< EOS Gamma
       )
   :
-  mp_explicit_H(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
   cout <<"mpv5_molecular constructor setting up.\n";

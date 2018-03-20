@@ -58,7 +58,7 @@ mpv7_TwoTempIso::mpv7_TwoTempIso(
       const double g  ///< EOS Gamma
       )
   :
-  mp_explicit_H(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
   cout <<"mpv7_TwoTempIso constructor setting up.\n";

@@ -368,7 +368,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	eqns_mhd_adiabatic.o riemannMHD.o flux_mhd_adiabatic.o \
 	solver_eqn_mhd_adi.o \
         raytracer_base.o  \
-	integrator.o cooling.o microphysics.o microphysics_v1.o raytracer_SC.o \
+	integrator.o cooling.o raytracer_SC.o \
         microphysics_base.o  \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
         file_status.o \
@@ -377,7 +377,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	flux_base.o \
       	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o
+        MPv3.o cvode_integrator.o MPv4.o
 
 IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         timer.o interpolate.o \
@@ -389,7 +389,7 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         readparams.o file_status.o \
         raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
-	integrator.o cooling.o microphysics.o microphysics_v1.o \
+	integrator.o cooling.o \
         microphysics_base.o  \
 	shock_tube.o radiative_shock.o blast_wave.o \
 	photoevaporating_clump.o basic_tests.o shock_cloud.o \
@@ -402,10 +402,16 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
 	spherical_clump.o \
         cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        mp_explicit_H.o cvode_integrator.o mp_implicit_H.o mp_v2_aifa.o \
+        MPv3.o cvode_integrator.o MPv4.o \
         StarBench_test.o \
         raytracer_SC.o \
         mp_only_cooling.o
+
+
+ifneq (,$(findstring LEGACY_CODE,$(PION_OPTIONS)))
+  OBJECTS +=  MPv0.o MPv1.o MPv2.o
+  IC_OBJ +=   MPv0.o MPv1.o MPv2.o
+endif
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
@@ -484,9 +490,9 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
 
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-		microphysics.h microphysics_lowZ.h  mp_v2_aifa.h \
+		MPv1.h microphysics_lowZ.h  MPv2.h \
 		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
-                mp_only_cooling.h mp_explicit_H.h mp_implicit_H.h
+                mp_only_cooling.h MPv3.h MPv4.h
 
 time_integrator.o: time_integrator.cpp sim_control.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
@@ -595,9 +601,9 @@ hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.
 mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
+MPv1.o:	MPv1.cpp MPv1.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h tools/interpolate.h
-microphysics_v1.o: microphysics_v1.cpp microphysics.h \
+MPv0.o: MPv0.cpp MPv1.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
 microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
    microphysics_base.h ${GLOBAL} integrator.h
@@ -608,35 +614,35 @@ hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.
 hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h \
   tools/interpolate.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+MPv2.o: MPv2.cpp MPv2.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
 cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 
-mp_explicit_H.o: mp_explicit_H.cpp mp_explicit_H.h ${GLOBAL} hydrogen_mp.h \
+MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
-mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
+MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
 
 mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 HHe_photoion.o: HHe_photoion.cpp HHe_photoion.h ${GLOBAL}
 mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
   HHe_photoion.h cvode_integrator.h ${GLOBAL}
 
 mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
-  mpv8_StarBench_heatcool.h mp_explicit_H.h microphysics_base.h ${GLOBAL}
+  mpv8_StarBench_heatcool.h MPv3.h microphysics_base.h ${GLOBAL}
 
 
 ########################
@@ -669,8 +675,8 @@ stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_B
 ##############################
 ##### IC GENERATOR FILES #####
 ##############################
-icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  mp_v2_aifa.h \
-         microphysics.h microphysics_lowZ.h dataio_silo.h dataio.h dataio_fits.h
+icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  MPv2.h \
+         MPv1.h microphysics_lowZ.h dataio_silo.h dataio.h dataio_fits.h
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
 ########################

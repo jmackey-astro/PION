@@ -42,7 +42,7 @@ mpv8_TwoTempIso::mpv8_TwoTempIso(
 	  )
   :
   nv_prim(nv)
-//,  mp_explicit_H(nv,ntracer,trtype,ephys)
+//,  MPv3(nv,ntracer,trtype,ephys)
 {
 #ifdef TESTING
   cout <<"mpv8_TwoTempIso constructor setting up.\n";
@@ -260,7 +260,7 @@ double mpv8_TwoTempIso::Temperature(
   // Check for negative pressure/density!  If either is found, return -1.0e99.
   //
   if (pv[RO]<=0.0 || pv[PG]<=0.0) {
-    cout <<"mp_explicit_H::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
+    cout <<"MPv3::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
   }
   //
@@ -400,7 +400,7 @@ int mpv8_TwoTempIso::TimeUpdateMP_RTnew(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mp_explicit_H::TimeUpdateMP_RTnew()",err);
+    rep.error("Bad input state to MPv3::TimeUpdateMP_RTnew()",err);
   }
 
   //

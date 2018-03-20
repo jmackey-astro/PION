@@ -273,9 +273,14 @@ class MPv2
   /// Constructor.  Sets index for H ion fraction in primitive variable state vector.
   ///
   MPv2(
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
       const int,          ///< Total number of variables in state vector
       const int,          ///< Number of tracer variables in state vector.
-      const std::string & ///< List of what the tracer variables mean.
+      const std::string *, ///< List of what the tracer variables mean.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
       );
 
   ~MPv2();
@@ -424,6 +429,15 @@ class MPv2
       const struct rad_src_info *
       );
 
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  double get_recombination_rate(
+      const int,      ///< ion index in tracer array (optional).
+      const pion_flt *, ///< input state vector (primitive).
+      const double    ///< EOS gamma (optional)
+      );
   
   private:
   ///
@@ -500,7 +514,10 @@ class MPv2
   double Max_IonFrac; ///< Maximum H+ fraction allowed (1-eps)
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
 
+  const int ndim; ///< Number of dimensions in grid.
   const int nv_prim; ///< Number of variables in state vector.
+  const double eos_gamma; ///< EOS gamma for ideal gas.
+  const int coord_sys; ///< Coordinate System flag
   int       nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index. 
   int lv_Hp;   ///< ionised hydrogeen local variable index.

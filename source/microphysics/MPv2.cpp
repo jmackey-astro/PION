@@ -67,7 +67,7 @@
 /// - 2011.05.02 JM: Added set_multifreq_source_properties() function
 /// - 2011.05.04 JM: Added a discretised multifreq photoionisation rate with
 ///    an approximation for dtau<<1.  Fixed bugs, simplified code.
-/// - 2011.05.06 JM: Set cooling limiting as T approaches SimPM.EP.MinTemperature so we
+/// - 2011.05.06 JM: Set cooling limiting as T approaches EP->MinTemperature so we
 ///    don't cool to too low a temperature.
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
@@ -178,7 +178,7 @@ void mp_rates_ExpH_ImpMetals::set_gamma_and_srcs(
           const int i  // No ionising sources --> 0, otherwise --> 1
           )
 {
-  gamma = SimPM.gamma; // This is a global constant in any simulation (for now!)
+  gamma = g; // This is a global constant in any simulation (for now!)
   gamma_minus_one = gamma-1.0;
 
   diff = d;
@@ -188,17 +188,17 @@ void mp_rates_ExpH_ImpMetals::set_gamma_and_srcs(
   // If we have an ionising source we need to get the luminosity.
   //
   int got=0;
-  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-    if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO) {
-      NIdot = SimPM.RS.sources[isrc].strength;
+  for (int isrc=0; isrc<RS->Nsources; isrc++) {
+    if (RS->sources[isrc].effect==RT_EFFECT_PION_MONO) {
+      NIdot = RS->sources[isrc].strength;
       ion_src_type = RT_EFFECT_PION_MONO;
       got++;
       cout <<"mp_rates_ExpH_ImpMetals::set_gamma_and_srcs: Nisrc="<<ion<<", got="<<got<<": ";
       cout <<" found mono-p-ion src id="<<isrc<<" with NIdot="<<NIdot<<"\n";
     }
-    else if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI) {
+    else if (RS->sources[isrc].effect==RT_EFFECT_PION_MULTI) {
       ion_src_type = RT_EFFECT_PION_MULTI;
-      NIdot = SimPM.RS.sources[isrc].strength;
+      NIdot = RS->sources[isrc].strength;
       //cout <<"Please code for multi-frequency photoionisation!\n";
       //rep.error("multifreq not implemented","mp_rates_ExpH_ImpMetals::set_gamma_and_srcs");
       got++;
@@ -374,7 +374,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   *Edot=0.0; // Edot is calculated in units of erg/s per H nucleon, multiplied by nH at the end.
 
 #ifdef RT_TEST_PROBS
-  if (SimPM.EP.coll_ionisation) {
+  if (EP->coll_ionisation) {
 #endif 
 
     //
@@ -448,7 +448,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   }
 
 #ifdef RT_TEST_PROBS
-  if (SimPM.EP.rad_recombination) {
+  if (EP->rad_recombination) {
     *xdot += Hii_rad_recomb_rate(T) *x_in*x_in*nH;
     //*Edot -= Hii_total_cooling(T) *x_in*x_in*nH;
     *Edot -= Hii_rad_recomb_cooling(T) *x_in*x_in*nH;
@@ -619,13 +619,13 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   // We want to limit cooling as we approach the minimum temperature, so we scale
   // the rate to linearly approach zero as we reach Tmin.
   //
-  if (*Edot<0.0 && T<2.0*SimPM.EP.MinTemperature) {
+  if (*Edot<0.0 && T<2.0*EP->MinTemperature) {
 
 #ifdef MPV2_DEBUG
     cout <<"limiting cooling: Edot="<<*Edot<<", T="<<T;
 #endif // MPV2_DEBUG
 
-    *Edot = min(0.0, (*Edot)*(T-SimPM.EP.MinTemperature)/SimPM.EP.MinTemperature);
+    *Edot = min(0.0, (*Edot)*(T-EP->MinTemperature)/EP->MinTemperature);
 
 #ifdef MPV2_DEBUG
     cout <<"... resetting Edot to "<<*Edot<<"\n";
@@ -633,7 +633,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
 
   }
 #ifdef RT_TEST_PROBS
-  if (!SimPM.EP.update_erg) {
+  if (!EP->update_erg) {
     *Edot = 0.0;
   }
 #endif
@@ -671,12 +671,17 @@ class mp_rates_ExpH_ImpMetals MPR;
 // ----------------------------------------------------------------------------
 
 MPv2::MPv2(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-    const std::string &trtype  ///< List of what the tracer variables mean.
-    )
-:
-  nv_prim(nv)
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,              ///< Total number of variables in state vector
+      const int ntracer,         ///< Number of tracer variables in state vector.
+      const std::string *tracers,  ///< List of what the tracer variables mean.
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
+: microphysics_base(ephys,rsrcs),
+  ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
 {
   cout <<"MPv2: new microphysics class.\n";
 
@@ -723,13 +728,13 @@ MPv2::MPv2(
   // radiation sources.
   //
   int ion=0, diff=0;
-  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-    if ((SimPM.RS.sources[isrc].type==RT_SRC_DIFFUSE) ||
-        (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE && SimPM.RS.sources[isrc].effect==RT_EFFECT_UV_HEATING)
+  for (int isrc=0; isrc<RS->Nsources; isrc++) {
+    if ((RS->sources[isrc].type==RT_SRC_DIFFUSE) ||
+        (RS->sources[isrc].type==RT_SRC_SINGLE && RS->sources[isrc].effect==RT_EFFECT_UV_HEATING)
         ) diff++;
-    if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
-        (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
-         SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI))  ion ++;
+    if (RS->sources[isrc].type==RT_SRC_SINGLE &&
+        (RS->sources[isrc].effect==RT_EFFECT_PION_MONO ||
+         RS->sources[isrc].effect==RT_EFFECT_PION_MULTI))  ion ++;
   }
   cout <<"\t\tMPv2:: found "<<diff<<" diffuse and "<<ion<<" ionising sources.\n";
   MPR.set_gamma_and_srcs(gamma,diff,ion);
@@ -744,30 +749,30 @@ MPv2::MPv2(
   // Set up solid angles for diffuse radiation, whether or not they are needed.
   //
   diff_angle.clear();
-  if      (SimPM.coord_sys==COORD_CRT && SimPM.ndim==3) {
+  if      (SimPM.coord_sys==COORD_CRT && ndim==3) {
     diff_angle.resize(6);
     for (int v=0;v<6;v++) diff_angle[v] = 4.0*M_PI/6.0;
   }
-  else if (SimPM.coord_sys==COORD_CRT && SimPM.ndim==2) {
+  else if (SimPM.coord_sys==COORD_CRT && ndim==2) {
     diff_angle.resize(4);
     for (int v=0;v<4;v++) diff_angle[v] = 2.0*M_PI/4.0;
   }
-  else if (SimPM.coord_sys==COORD_CRT && SimPM.ndim==1) {
+  else if (SimPM.coord_sys==COORD_CRT && ndim==1) {
     diff_angle.resize(2);
     for (int v=0;v<2;v++) diff_angle[v] = 1.0;
   }
-  else if (SimPM.coord_sys==COORD_CYL && SimPM.ndim==2) {
+  else if (SimPM.coord_sys==COORD_CYL && ndim==2) {
     diff_angle.resize(3);
     //
     // for each source in turn, we get its direction and set the angle accordingly.
     //
     int count=0;
     int dir=-1;
-    for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-      if (SimPM.RS.sources[isrc].type==RT_SRC_DIFFUSE) {
-        for (int v=0;v<SimPM.ndim;v++) {
-          if (SimPM.RS.sources[isrc].position[v] > 1.0e99) dir = 2*v+1;
-          if (SimPM.RS.sources[isrc].position[v] <-1.0e99) dir = 2*v;
+    for (int isrc=0; isrc<RS->Nsources; isrc++) {
+      if (RS->sources[isrc].type==RT_SRC_DIFFUSE) {
+        for (int v=0;v<ndim;v++) {
+          if (RS->sources[isrc].pos[v] > 1.0e99) dir = 2*v+1;
+          if (RS->sources[isrc].pos[v] <-1.0e99) dir = 2*v;
         }
         if (dir<0) rep.error("Diffuse source not at infinity!",isrc);
         //
@@ -782,7 +787,7 @@ MPv2::MPv2(
     cout <<"Angles for diffuse sources: ["<<diff_angle[0]<<", ";
     cout <<diff_angle[1]<<", "<<diff_angle[2]<<"]\n";
   }
-  else if (SimPM.coord_sys==COORD_SPH && SimPM.ndim==1) {
+  else if (SimPM.coord_sys==COORD_SPH && ndim==1) {
     //
     // for spherical symmetry the only diffuse source is at infinity
     //
@@ -790,7 +795,7 @@ MPv2::MPv2(
     diff_angle[0] = 4.0*M_PI;
   }
   else {
-    rep.error("Unhandled coord-sys/ndim combination in MPv2::MPv2",SimPM.ndim);
+    rep.error("Unhandled coord-sys/ndim combination in MPv2::MPv2",ndim);
   }
   // ----------------------- DIFFUSE RADIATION -------------------------------
 
@@ -801,10 +806,10 @@ MPv2::MPv2(
     //
     // Need to set up the multifrequency tables if needed.
     //
-    for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-      if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) {
-        if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI) {
-          int err=set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
+    for (int isrc=0; isrc<RS->Nsources; isrc++) {
+      if (RS->sources[isrc].type==RT_SRC_SINGLE) {
+        if (RS->sources[isrc].effect==RT_EFFECT_PION_MULTI) {
+          int err=set_multifreq_source_properties(&RS->sources[isrc]);
           if (err)
             rep.error("multifreq photoionisation setup failed in MPv2 const.",err);
         }
@@ -836,7 +841,7 @@ MPv2::MPv2(
   outf <<"Cooling Curve Data: Temperature(K) Rates(erg/cm^3/s) x=0.99999, x=0.00001, x=0.5 (n=1 per cc)\n";
   outf.setf( ios_base::scientific );
   outf.precision(6);
-  double t=SimPM.EP.MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
+  double t=EP->MinTemperature, Edi=0.0,Edn=0.0,Edpi=0.0,junk=0.0;
   do {
     p[pv_Hp] = 0.99999;
     Set_Temp(p,t,junk);
@@ -851,7 +856,7 @@ MPv2::MPv2(
     MPR.dYdt(1.0-p[pv_Hp],p[PG]/gamma_minus_one,&junk,&Edn);
     outf << t <<"\t"<< Edi <<"  "<< Edn <<"  "<< Edpi <<"\n";
     t *=1.05;
-  } while (T<min(1.0e9,SimPM.EP.MaxTemperature));
+  } while (T<min(1.0e9,EP->MaxTemperature));
   outf.close();  
   //
   // ------------- output cooling rates for various temperatures ---------
@@ -1213,17 +1218,17 @@ int MPv2::convert_local2prim(
   // possibly corrected xHp from p_out[]).
   //
   double T = MPR.get_temperature(lv_nH, p_local[lv_eint], p_out[pv_Hp]);
-  if (T>1.01*SimPM.EP.MaxTemperature) {
+  if (T>1.01*EP->MaxTemperature) {
     //cout <<"MPv2::convert_local2prim() HIGH temperature encountered. ";
     //cout <<"T="<<T<<", obtained from nH="<<lv_nH<<", eint="<<p_local[lv_eint]<<", x="<<p_out[pv_Hp];
-    //cout <<"...  limiting to T="<<SimPM.EP.MaxTemperature<<"\n";
-    Set_Temp(p_out,SimPM.EP.MaxTemperature,0);
+    //cout <<"...  limiting to T="<<EP->MaxTemperature<<"\n";
+    Set_Temp(p_out,EP->MaxTemperature,0);
   }
-  if (T<0.99*SimPM.EP.MinTemperature) {
+  if (T<0.99*EP->MinTemperature) {
     //cout <<"MPv2::convert_local2prim() LOW  temperature encountered. ";
     //cout <<"T="<<T<<", obtained from nH="<<lv_nH<<", eint="<<p_local[lv_eint]<<", x="<<p_out[pv_Hp];
-    //cout <<"...  limiting to T="<<SimPM.EP.MinTemperature<<"\n";
-    Set_Temp(p_out,SimPM.EP.MinTemperature,0);
+    //cout <<"...  limiting to T="<<EP->MinTemperature<<"\n";
+    Set_Temp(p_out,EP->MinTemperature,0);
   }
 
   return 0;
@@ -1245,7 +1250,7 @@ double MPv2::timescales(
   //cout <<"MPv2::timescales() is not implemented! use new timescales fn.\n";
   //return 1.0e200;
 #ifdef MP_DEBUG
-  if (SimPM.RS.Nsources!=0) {
+  if (RS->Nsources!=0) {
     cout <<"WARNING: MPv2::timescales() using non-RT version!\n";
   }
 #endif // MP_DEBUG
@@ -1736,6 +1741,37 @@ int MPv2::integrate_cvodes_step(
 // ##################################################################
 // ##################################################################
 
+
+double MPv2::get_recombination_rate(
+      const int,          ///< ion index in tracer array (optional).
+      const pion_flt *p_in, ///< input state vector (primitive).
+      const double g      ///< EOS gamma (optional)
+      )
+{
+#ifdef FUNCTION_ID
+  cout <<"MPv2::get_recombination_rate()\n";
+#endif // FUNCTION_ID
+  double rate=0.0;
+  double P[nvl];
+  //
+  // First convert to local variables.
+  //
+  convert_prim2local(p_in,P);
+  //
+  // Now get rate
+  //
+  rate = Hii_rad_recomb_rate(get_temperature(mpv_nH, P[lv_eint], 1.0-P[lv_H0]))
+          *mpv_nH*mpv_nH *(1.0-P[lv_H0])*(1.0-P[lv_H0]) *JM_NELEC;
+
+#ifdef FUNCTION_ID
+  cout <<"MPv2::get_recombination_rate()\n";
+#endif // FUNCTION_ID
+  return rate;
+}
+
+
+// ##################################################################
+// ##################################################################
 
 
 // ----------------------------------------------------------------------------
