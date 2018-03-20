@@ -15,9 +15,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#ifndef CHECK_NEW_EXCEP_ON
-#error "Only use memory_management with try/catch exceptions."
-#endif
+#include <new>
 
 #include "tools/reporting.h"
 

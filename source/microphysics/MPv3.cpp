@@ -162,7 +162,6 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV3
 
 
 // ##################################################################
@@ -451,7 +450,7 @@ MPv3::MPv3(
   double p[nv_prim];
   p[RO]=2.338e-24; p[PG]=1.0e-12;
   p[pv_Hp] = 0.99;
-  lv_nH=1.0e0;
+  mpv_nH=1.0e0;
 
   string opfile("cooling_MPv3.txt");
   ofstream outf(opfile.c_str());
@@ -483,9 +482,9 @@ MPv3::MPv3(
     ydot(0,y_in,y_out,0);
     Edn = NV_Ith_S(y_out,lv_eint);
 
-    outf << T <<"\t"<< Edi/lv_nH/lv_nH;
-    outf <<"  "<< Edn/lv_nH/lv_nH;
-    outf <<"  "<< Edpi/lv_nH/lv_nH <<"\n";
+    outf << T <<"\t"<< Edi/mpv_nH/mpv_nH;
+    outf <<"  "<< Edn/mpv_nH/mpv_nH;
+    outf <<"  "<< Edpi/mpv_nH/mpv_nH <<"\n";
     T *=1.05;
   } while (T<min(1.0e9,EP->MaxTemperature));
   outf.close();  
@@ -682,9 +681,22 @@ double MPv3::get_temperature(
   // appropriate for a gas with 10% Helium by number, and if He is singly ionised
   // whenever H is ionised (n_i=1.1n_H, n_e=1.1n_H).
   //
-  //double ntotk = k_B*n*(JM_NION+JM_NELEC*xp);
-  //cout <<"MPv3::get_temperature(): n.K="<<T<<", T="<<gamma_minus_one*E/T<<"\n";
-  return gamma_minus_one*E/(k_B*nH*(JM_NION+JM_NELEC*xp));
+  return gamma_minus_one*E/(k_B*get_ntot(nH,xp));
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+double MPv3::get_ntot(
+      const double nH, ///< nH
+      const double xp  ///< x(H+) 
+      )
+{
+  return
+    (JM_NION+JM_NELEC*xp)*nH;
 }
 
 
@@ -737,8 +749,7 @@ int MPv3::convert_prim2local(
     cout <<"MPv3::convert_prim2local: negative pressure input: p=";
     cout <<p_local[lv_eint]<<", setting to "<<EP->MinTemperature<<"K.\n";
 #endif
-    p_local[lv_eint] = (JM_NION+JM_NELEC*(1.0-p_local[lv_H0]))
-                        *mpv_nH*k_B*EP->MinTemperature/(gamma_minus_one);
+    p_local[lv_eint] = get_ntot(mpv_nH,p_in[pv_Hp])*k_B*EP->MinTemperature/(gamma_minus_one);
   }
 
 
@@ -860,7 +871,7 @@ int MPv3::Set_Temp(
   }
   double P[nvl];
   int err = convert_prim2local(p_pv,P);
-  P[lv_eint] = (JM_NION+JM_NELEC*(1.0-P[lv_H0]))*mpv_nH*k_B*T/(gamma_minus_one);
+  P[lv_eint] = get_ntot(mpv_nH, p_pv[pv_Hp])*k_B*T/(gamma_minus_one);
   err += convert_local2prim(P, p_pv, p_pv);
   return err;
 }
@@ -1624,6 +1635,4 @@ int MPv3::ydot(
   return 0;
 }
 
-
-#endif // if not excluding MPv3
 

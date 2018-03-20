@@ -370,7 +370,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	solver_eqn_hydro_iso.o solver_eqn_mhd_adi.o                            \
 	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o        \
         hydrogen_mp.o hydrogen_photoion.o                                      \
-        MPv3.o cvode_integrator.o MPv4.o
+        cvode_integrator.o
 
 IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
         timer.o  interpolate.o \
@@ -398,11 +398,20 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
         spherical_clump.o \
         mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
-        MPv3.o cvode_integrator.o MPv4.o
+        cvode_integrator.o
+
+# NEW chemistry classes.
+  OBJECTS += MPv3.o MPv5.o MPv6.o MPv7.o
+  IC_OBJ  += MPv3.o MPv5.o MPv6.o MPv7.o
+
 
 ifneq (,$(findstring LEGACY_CODE,$(PION_OPTIONS)))
-  OBJECTS +=  MPv0.o MPv1.o MPv2.o
-  IC_OBJ +=   MPv0.o MPv1.o MPv2.o
+  OBJECTS +=  MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
+  IC_OBJ +=   MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
+endif
+
+ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
+  IC_OBJ  += StarBench_test.o
 endif
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
@@ -417,15 +426,6 @@ endif
 ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
   IC_OBJ +=   read_BBurkhart_data.o
 endif
-
-ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
-  OBJECTS += mpv8_StarBench_heatcool.o
-  IC_OBJ +=  mpv8_StarBench_heatcool.o StarBench_test.o
-endif
-
-# NEW chemistry classes.
-  OBJECTS += MPv5.o MPv6.o mpv7_TwoTempIso.o
-  IC_OBJ  += MPv5.o MPv6.o mpv7_TwoTempIso.o
 
 
 #####################################################
@@ -624,11 +624,11 @@ MPv5.o: MPv5.cpp MPv5.h \
 MPv6.o: MPv6.cpp MPv6.h \
   MPv3.h microphysics_base.h ${GLOBAL}
 
-mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
+MPv7.o: MPv7.cpp MPv7.h \
   MPv3.h microphysics_base.h ${GLOBAL}
 
-mpv8_StarBench_heatcool.o: mpv8_StarBench_heatcool.cpp \
-  mpv8_StarBench_heatcool.h MPv3.h microphysics_base.h ${GLOBAL}
+MPv8.o: MPv8.cpp \
+  MPv8.h MPv3.h microphysics_base.h ${GLOBAL}
 
 
 
