@@ -35,7 +35,7 @@
 
 #ifndef EXCLUDE_MPV2
 #ifdef MP_V2_AIFA
-#include "microphysics/mp_v2_aifa.h"
+#include "microphysics/MPv2.h"
 #endif
 #endif 
 
@@ -316,13 +316,13 @@ int setup_fixed_grid::setup_microphysics(
 #ifndef EXCLUDE_MPV2
     if (mptype=="MPv2") {
 #ifdef MP_V2_AIFA
-      cout <<"\t******* setting up mp_v2_aifa module *********\n";
+      cout <<"\t******* setting up MPv2 module *********\n";
       cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_v2_aifa(SimPM.nvar, SimPM.ntracer, SimPM.tracers);
+      MP = new MPv2(SimPM.nvar, SimPM.ntracer, SimPM.tracers);
       SimPM.EP.MP_timestep_limit = 1;
 #else
-      rep.error("Enable mp_v2_aifa as an ifdef if you really want to use it",2);
+      rep.error("Enable MPv2 as an ifdef if you really want to use it",2);
 #endif
       have_set_MP=true;
     }

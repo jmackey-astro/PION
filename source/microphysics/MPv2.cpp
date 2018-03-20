@@ -1,10 +1,11 @@
 ///
-/// \file mp_v2_aifa.cc
+/// \file MPv2.cpp
 /// \author Jonathan Mackey
 /// \date 2011.03.15
 ///
 /// Description:
-/// This class is an update on the microphysics class used for my thesis.  
+/// This class is an update on the microphysics class used for JM's thesis.  
+/// THIS IS LEGACY CODE THAT IS NO LONGER USED.
 ///
 /// - It uses multi-frequency photoionisation including spectral hardening with
 ///   optical depth, using the method outlined in Frank & Mellema
@@ -43,7 +44,7 @@
 /// https://computation.llnl.gov/casc/sundials/main.html
 /// The method is backwards differencing (i.e. implicit) with Newton iteration.
 ///
-/// Electrons, ions, ion fraction:  This modules makes the (crude) approximation that
+/// Electrons, ions, ion fraction:  This module makes the (crude) approximation that
 /// He is an identical atom to H -- that it is only ever singly ionised and its ionisation
 /// and recombination rates are identical to H.  But because most photons are below the
 /// ionisation potential of He0 the opacity of He0 atoms is not counted in the optical 
@@ -87,19 +88,19 @@
 ///    much over a timestep then just do an Euler integration.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2016.06.21 JM: Temperature() threadsafe.
+/// - 2018.03.20 JM: renamed class
 ///
 /// NOTE: Oxygen abundance is set to 5.81e-4 from Lodders (2003,ApJ,591,1220)
 ///       which is the 'proto-solar nebula' value. The photospheric value is lower
 ///       4.9e-4, and that is used by Wiersma et al. (2009,MN,393,99).
 ///
 
-#ifdef MP_V2_AIFA
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 
-#ifndef EXCLUDE_MPV2
+#ifdef LEGACY_CODE
 
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
@@ -107,7 +108,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/mp_v2_aifa.h"
+#include "microphysics/MPv2.h"
 
 using namespace std;
 
@@ -121,6 +122,12 @@ using namespace std;
 // ----------------------------------------------------------------------------
 // -----------------  START OF mp_rates_ExpH_ImpMetals  -----------------------
 // ----------------------------------------------------------------------------
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 mp_rates_ExpH_ImpMetals::mp_rates_ExpH_ImpMetals()
 {
@@ -208,6 +215,13 @@ void mp_rates_ExpH_ImpMetals::set_gamma_and_srcs(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 void mp_rates_ExpH_ImpMetals::get_error_tolerances(
                 double &reltol, ///< relative error tolerance.
                 std::vector<double> &atol ///< absolute error tolerances
@@ -218,6 +232,13 @@ void mp_rates_ExpH_ImpMetals::get_error_tolerances(
   atol[1] = 1.0e-17; ///< for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 
@@ -279,6 +300,9 @@ void mp_rates_ExpH_ImpMetals::set_parameters_for_current_step(
 
 
 
+// ##################################################################
+// ##################################################################
+
 
 void mp_rates_ExpH_ImpMetals::get_problem_size(
                   int *ne, ///< number of equations
@@ -291,6 +315,8 @@ void mp_rates_ExpH_ImpMetals::get_problem_size(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
 //
@@ -311,6 +337,8 @@ double mp_rates_ExpH_ImpMetals::get_temperature(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
 // -----------------------------------------------------------
@@ -612,6 +640,12 @@ int mp_rates_ExpH_ImpMetals::dYdt(
 
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 // -----------------------------------------------------------
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -626,14 +660,17 @@ int mp_rates_ExpH_ImpMetals::dYdt(
 class mp_rates_ExpH_ImpMetals MPR;
 
 
+// ##################################################################
+// ##################################################################
+
 
 
 
 // ----------------------------------------------------------------------------
-// -----------------  START OF mp_v2_aifa WRAPPER CLASS -----------------------
+// -----------------  START OF MPv2 WRAPPER CLASS -----------------------
 // ----------------------------------------------------------------------------
 
-mp_v2_aifa::mp_v2_aifa(
+MPv2::MPv2(
           const int nv,              ///< Total number of variables in state vector
           const int ntracer,         ///< Number of tracer variables in state vector.
     const std::string &trtype  ///< List of what the tracer variables mean.
@@ -641,7 +678,7 @@ mp_v2_aifa::mp_v2_aifa(
 :
   nv_prim(nv)
 {
-  cout <<"mp_v2_aifa: new microphysics class.\n";
+  cout <<"MPv2: new microphysics class.\n";
 
   //
   // Set up tracer variables (i.e. just find which one is H+).
@@ -694,7 +731,7 @@ mp_v2_aifa::mp_v2_aifa(
         (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
          SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI))  ion ++;
   }
-  cout <<"\t\tmp_v2_aifa:: found "<<diff<<" diffuse and "<<ion<<" ionising sources.\n";
+  cout <<"\t\tMPv2:: found "<<diff<<" diffuse and "<<ion<<" ionising sources.\n";
   MPR.set_gamma_and_srcs(gamma,diff,ion);
 
   k_B = GS.kB();
@@ -753,14 +790,14 @@ mp_v2_aifa::mp_v2_aifa(
     diff_angle[0] = 4.0*M_PI;
   }
   else {
-    rep.error("Unhandled coord-sys/ndim combination in mp_v2_aifa::mp_v2_aifa",SimPM.ndim);
+    rep.error("Unhandled coord-sys/ndim combination in MPv2::MPv2",SimPM.ndim);
   }
   // ----------------------- DIFFUSE RADIATION -------------------------------
 
 
   // ------------------------- IONISING SOURCE ----------------------
   if (ion) {
-    if (ion>1) rep.error("too many ionising source in mp_v2_aifa()",ion);
+    if (ion>1) rep.error("too many ionising source in MPv2()",ion);
     //
     // Need to set up the multifrequency tables if needed.
     //
@@ -769,7 +806,7 @@ mp_v2_aifa::mp_v2_aifa(
         if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI) {
           int err=set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
           if (err)
-            rep.error("multifreq photoionisation setup failed in mp_v2_aifa const.",err);
+            rep.error("multifreq photoionisation setup failed in MPv2 const.",err);
         }
       }
     }
@@ -821,14 +858,17 @@ mp_v2_aifa::mp_v2_aifa(
   //
 #endif // MPV2_DEBUG
 
-  cout <<"mp_v2_aifa: Constructor finished and returning.\n";
+  cout <<"MPv2: Constructor finished and returning.\n";
   return;
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-mp_v2_aifa::~mp_v2_aifa()
+
+MPv2::~MPv2()
 {
   diff_angle.clear();
   //
@@ -843,10 +883,13 @@ mp_v2_aifa::~mp_v2_aifa()
   CVodeFree(&cvode_mem);
 }
 
+// ##################################################################
+// ##################################################################
 
 
 
-int mp_v2_aifa::Tr(const string t)
+
+int MPv2::Tr(const string t)
 {
   return lv_Hp;
 }
@@ -854,10 +897,13 @@ int mp_v2_aifa::Tr(const string t)
 
 
 
-//
+//// ##################################################################
+// ##################################################################
+
+
 // Set the properties of a multifrequency ionising radiation source.
 //
-int mp_v2_aifa::set_multifreq_source_properties(
+int MPv2::set_multifreq_source_properties(
               const struct rad_src_info *rsi
               )
 {
@@ -875,7 +921,7 @@ int mp_v2_aifa::set_multifreq_source_properties(
 
   double mincol=SimPM.dx*1.0e-11, maxcol=1.0e24, Emax=1000.0*1.602e-12;
   int Nspl=150, Nsub=800;
-  cout <<"#################### mp_v2_aifa::set_multifreq_source_properties() MinCol="<<mincol<<"\n";
+  cout <<"#################### MPv2::set_multifreq_source_properties() MinCol="<<mincol<<"\n";
 
   MPR.Setup_photoionisation_rate_table(
               rsi->Tstar,
@@ -887,9 +933,12 @@ int mp_v2_aifa::set_multifreq_source_properties(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::TimeUpdateMP(
+
+int MPv2::TimeUpdateMP(
         const double *p_in,   ///< Primitive Vector to be updated.
         double *p_out,        ///< Destination Vector for updated values.
         const double dt,      ///< Time Step to advance by.
@@ -904,9 +953,12 @@ int mp_v2_aifa::TimeUpdateMP(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::TimeUpdate_RTsinglesrc(
+
+int MPv2::TimeUpdate_RTsinglesrc(
         const double *, ///< Primitive Vector to be updated.
         double *,       ///< Destination Vector for updated values.
         const double,   ///< Time Step to advance by.
@@ -918,15 +970,18 @@ int mp_v2_aifa::TimeUpdate_RTsinglesrc(
         double *        ///< return optical depth through cell in this variable.
         )
 {
-  cout <<"mp_v2_aifa::TimeUpdate_RTsinglesrc() is not implemented!\n";
+  cout <<"MPv2::TimeUpdate_RTsinglesrc() is not implemented!\n";
   return 1;
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
 
-int mp_v2_aifa::TimeUpdateMP_RTnew(
+
+int MPv2::TimeUpdateMP_RTnew(
                    const double *p_in, ///< Primitive Vector to be updated.
               const int N_heat,   ///< Number of UV heating sources.
                    const std::vector<struct rt_source_data> &heat_src,
@@ -947,7 +1002,7 @@ int mp_v2_aifa::TimeUpdateMP_RTnew(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mp_v2_aifa::TimeUpdateMP_RTnew()",err);
+    rep.error("Bad input state to MPv2::TimeUpdateMP_RTnew()",err);
   }
 
   setup_radiation_source_parameters(p_in,P, N_heat, heat_src, N_ion, ion_src);
@@ -967,7 +1022,7 @@ int mp_v2_aifa::TimeUpdateMP_RTnew(
   double maxdelta=0.0;
   err = MPR.dYdt(Y0[lv_Hp],Y0[lv_eint], &(Yf[lv_Hp]), &(Yf[lv_eint]));
   if (err) 
-    rep.error("dYdt() returned an error in mp_v2_aifa::TimeUpdateMP_RTnew()",err);
+    rep.error("dYdt() returned an error in MPv2::TimeUpdateMP_RTnew()",err);
   for (int v=0;v<nvl;v++) {
     maxdelta = max(maxdelta, fabs(Yf[v]*dt/Y0[v]));
   }
@@ -986,7 +1041,7 @@ int mp_v2_aifa::TimeUpdateMP_RTnew(
   else {
     err = integrate_cvodes_step(Y0, 0, 0.0, dt, Yf);
     if (err) {
-      rep.error("integration failed: mp_v2_aifa::TimeUpdateMP_RTnew()",err);
+      rep.error("integration failed: MPv2::TimeUpdateMP_RTnew()",err);
     }
   }
 
@@ -1000,9 +1055,12 @@ int mp_v2_aifa::TimeUpdateMP_RTnew(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-double mp_v2_aifa::Temperature(
+
+double MPv2::Temperature(
       const double *pv, ///< primitive vector
       const double      ///< eos gamma
       )
@@ -1011,7 +1069,7 @@ double mp_v2_aifa::Temperature(
   // Check for negative pressure/density!  If either is found, return -1.0e99.
   //
   if (pv[RO]<=0.0 || pv[PG]<=0.0) {
-    cout <<"mp_v2_aifa::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
+    cout <<"MPv2::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
   }
   double P[nvl];
@@ -1020,9 +1078,12 @@ double mp_v2_aifa::Temperature(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::Set_Temp(
+
+int MPv2::Set_Temp(
           double *p,     ///< primitive vector.
           const double T, ///< temperature
           const double  ///< eos gamma.
@@ -1046,22 +1107,28 @@ int mp_v2_aifa::Set_Temp(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::Init_ionfractions(
+
+int MPv2::Init_ionfractions(
         double *, ///< Primitive vector to be updated.
         const double, ///< eos gamma.
         const double  ///< optional gas temperature to end up at. (negative means use pressure)
         )
 {
-  cout <<"mp_v2_aifa::Init_ionfractions() is not implemented! Write me!\n";
+  cout <<"MPv2::Init_ionfractions() is not implemented! Write me!\n";
   return 1;
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::convert_prim2local(
+
+int MPv2::convert_prim2local(
           const double *p_in, ///< primitive vector from grid cell (length nv_prim)
           double *p_local
           )
@@ -1077,7 +1144,7 @@ int mp_v2_aifa::convert_prim2local(
   // Check for negative ion fraction, and set to a minimum value if found.
   //
   if (p_local[lv_Hp]<0.0) {
-    cout <<"mp_v2_aifa::convert_prim2local: negative ion fraction input: ";
+    cout <<"MPv2::convert_prim2local: negative ion fraction input: ";
     cout <<p_local[lv_Hp] <<", setting to 1.0e-12.\n";
     p_local[lv_Hp] = Min_IonFrac;
   }
@@ -1087,7 +1154,7 @@ int mp_v2_aifa::convert_prim2local(
   // warning) and set to 10K if we find it.
   //
   if (p_local[lv_eint]<=0.0) {
-    cout <<"mp_v2_aifa::convert_prim2local: negative pressure input: p=";
+    cout <<"MPv2::convert_prim2local: negative pressure input: p=";
     cout <<p_local[lv_eint]<<", setting to 10K.\n";
     p_local[lv_eint] = (JM_NION+JM_NELEC*p_local[lv_Hp])*lv_nH*k_B*10.0/(gamma_minus_one);
   }
@@ -1106,16 +1173,19 @@ int mp_v2_aifa::convert_prim2local(
       rep.error("INF/NAN input to microphysics",p_local[v]);
   }
   if (lv_nH<0.0 || !isfinite(lv_nH))
-    rep.error("Bad density input to mp_v2_aifa::convert_prim2local",lv_nH);
+    rep.error("Bad density input to MPv2::convert_prim2local",lv_nH);
 #endif // MP_DEBUG
   
   return 0;
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::convert_local2prim(
+
+int MPv2::convert_local2prim(
             const double *p_local,
             const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
             double *p_out      ///< updated primitive vector for grid cell (length nv_prim)
@@ -1128,9 +1198,9 @@ int mp_v2_aifa::convert_local2prim(
 
 #ifdef MP_DEBUG
   if (p_out[pv_Hp]<0.0 || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp]))
-    rep.error("Bad output H+ value in mp_v2_aifa::convert_local2prim",p_out[pv_Hp]-1.0);
+    rep.error("Bad output H+ value in MPv2::convert_local2prim",p_out[pv_Hp]-1.0);
   if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in mp_v2_aifa::convert_local2prim",p_out[PG]);
+    rep.error("Bad output pressure in MPv2::convert_local2prim",p_out[PG]);
 #endif // MP_DEBUG
 
   //
@@ -1144,13 +1214,13 @@ int mp_v2_aifa::convert_local2prim(
   //
   double T = MPR.get_temperature(lv_nH, p_local[lv_eint], p_out[pv_Hp]);
   if (T>1.01*SimPM.EP.MaxTemperature) {
-    //cout <<"mp_v2_aifa::convert_local2prim() HIGH temperature encountered. ";
+    //cout <<"MPv2::convert_local2prim() HIGH temperature encountered. ";
     //cout <<"T="<<T<<", obtained from nH="<<lv_nH<<", eint="<<p_local[lv_eint]<<", x="<<p_out[pv_Hp];
     //cout <<"...  limiting to T="<<SimPM.EP.MaxTemperature<<"\n";
     Set_Temp(p_out,SimPM.EP.MaxTemperature,0);
   }
   if (T<0.99*SimPM.EP.MinTemperature) {
-    //cout <<"mp_v2_aifa::convert_local2prim() LOW  temperature encountered. ";
+    //cout <<"MPv2::convert_local2prim() LOW  temperature encountered. ";
     //cout <<"T="<<T<<", obtained from nH="<<lv_nH<<", eint="<<p_local[lv_eint]<<", x="<<p_out[pv_Hp];
     //cout <<"...  limiting to T="<<SimPM.EP.MinTemperature<<"\n";
     Set_Temp(p_out,SimPM.EP.MinTemperature,0);
@@ -1159,9 +1229,12 @@ int mp_v2_aifa::convert_local2prim(
   return 0;
 }
 
+// ##################################################################
+// ##################################################################
 
 
-double mp_v2_aifa::timescales(
+
+double MPv2::timescales(
           const double *p_in, ///< Current cell state vector.
           const double,   ///< EOS gamma.
           const bool, ///< set to 'true' if including cooling time.
@@ -1169,11 +1242,11 @@ double mp_v2_aifa::timescales(
           const bool  ///< set to 'true' if including photo-ionsation time.
           )
 {
-  //cout <<"mp_v2_aifa::timescales() is not implemented! use new timescales fn.\n";
+  //cout <<"MPv2::timescales() is not implemented! use new timescales fn.\n";
   //return 1.0e200;
 #ifdef MP_DEBUG
   if (SimPM.RS.Nsources!=0) {
-    cout <<"WARNING: mp_v2_aifa::timescales() using non-RT version!\n";
+    cout <<"WARNING: MPv2::timescales() using non-RT version!\n";
   }
 #endif // MP_DEBUG
   std::vector<struct rt_source_data> temp;
@@ -1181,6 +1254,9 @@ double mp_v2_aifa::timescales(
   temp.clear();
   return tmin;
 }
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -1191,7 +1267,7 @@ double mp_v2_aifa::timescales(
 /// It requires the radiation field as an input, so it has substantially greater
 /// capability than the other timescales function.
 ///
-double mp_v2_aifa::timescales_RT(
+double MPv2::timescales_RT(
                     const double *p_in, ///< Current cell state vector.
                     const int N_heat,      ///< Number of UV heating sources.
                     const std::vector<struct rt_source_data> &heat_src,
@@ -1209,7 +1285,7 @@ double mp_v2_aifa::timescales_RT(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mp_v2_aifa::timescales_RT()",err);
+    rep.error("Bad input state to MPv2::timescales_RT()",err);
   }
 
   //
@@ -1223,7 +1299,7 @@ double mp_v2_aifa::timescales_RT(
   double xdot=0.0, Edot=0.0;
   err = MPR.dYdt(1.0-P[lv_Hp], P[lv_eint], &xdot, &Edot);
   if (err) {
-    rep.error("dYdt() returned an error in mp_v2_aifa::timescales_RT()",err);
+    rep.error("dYdt() returned an error in MPv2::timescales_RT()",err);
   }
 
   //
@@ -1254,10 +1330,13 @@ double mp_v2_aifa::timescales_RT(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
 
-void mp_v2_aifa::setup_radiation_source_parameters(
+
+void MPv2::setup_radiation_source_parameters(
                     const double *p_in, ///< primitive input state vector.
                     double *P,  ///< local input state vector (x_in,E_int)
                     const int N_heat, ///< Number of UV heating sources.
@@ -1297,7 +1376,7 @@ void mp_v2_aifa::setup_radiation_source_parameters(
   bool single_src = false;
   if (N_ion>0) {
     if (N_ion>1)
-      rep.error("Fix mp_v2_aifa to deal with more than one ionising point source",N_ion);
+      rep.error("Fix MPv2 to deal with more than one ionising point source",N_ion);
     delta_s = ion_src[0].dS;
     Vshell  = ion_src[0].Vshell;
     single_src = true;
@@ -1435,9 +1514,12 @@ void mp_v2_aifa::setup_radiation_source_parameters(
 }
 
 
+// ##################################################################
+// ##################################################################
 
 
-int mp_v2_aifa::setup_cvodes_solver_without_Jacobian()
+
+int MPv2::setup_cvodes_solver_without_Jacobian()
 {
   if (have_setup_cvodes) {
     cout <<"Error! Trying to setup CVODES solver twice!\n";
@@ -1520,11 +1602,14 @@ int mp_v2_aifa::setup_cvodes_solver_without_Jacobian()
   // Should be all done now, so return.
   have_setup_cvodes=true;
   return 0;
-
-
 }
 
-int mp_v2_aifa::integrate_cvodes_step(
+
+// ##################################################################
+// ##################################################################
+
+
+int MPv2::integrate_cvodes_step(
               const vector<double> &Y0, ///< input vector
               double *params, ///< parameters for user_data
               double t_now,   ///< start time.
@@ -1648,10 +1733,13 @@ int mp_v2_aifa::integrate_cvodes_step(
 }
 
 
+// ##################################################################
+// ##################################################################
+
 
 
 // ----------------------------------------------------------------------------
-// -----------------    END OF mp_v2_aifa WRAPPER CLASS -----------------------
+// -----------------    END OF MPv2 WRAPPER CLASS -----------------------
 // ----------------------------------------------------------------------------
 
 int Ydot_for_cvodes(
@@ -1679,6 +1767,8 @@ int Ydot_for_cvodes(
   return err;
 }
 
-#endif // if not excluding MPv2
-#endif // if  MP_V2_AIFA is defined
+// ##################################################################
+// ##################################################################
+
+#endif // LEGACY_CODE
 
