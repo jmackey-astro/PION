@@ -223,7 +223,7 @@ class mpv9_HHe :
           const N_Vector, ///< vector for Y-dot values
           const double *, ///< extra user-data vector, P, for evaluating ydot(y,t,p)
           DlsMat          ///< Jacobian matrix
-          ) {cout <<"Jacobian not implemented in mp_explicit_H!\n"; return 1;}
+          ) {cout <<"Jacobian not implemented in MPv3!\n"; return 1;}
 
   ///
   /// Get the number of extra parameters and the number of equations.

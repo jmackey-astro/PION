@@ -45,8 +45,8 @@
 //
 //#define EXCLUDE_MPV1       // both microphysics_v1 and H-only MP.
 #define EXCLUDE_MPV2       // mp_v2_aifa
-//#define EXCLUDE_MPV3       // mp_explicit_H 
-#define EXCLUDE_MPV4       // mp_implicit_H
+//#define EXCLUDE_MPV3       // MPv3 
+#define EXCLUDE_MPV4       // MPv4
 #define EXCLUDE_HD_MODULE  // Harpreet's module.
 //#define EXCLUDE_MPV9       // mpv9_HHe module.
 
@@ -58,14 +58,14 @@
 //#define PUREHYDROGEN ///< in MPv3, disables all He+metal terms.
 
 ///
-/// This enables the mp_v2_aifa code, which is an old version of mp_explicit_H
+/// This enables the mp_v2_aifa code, which is an old version of MPv3
 ///
 //#define MP_V2_AIFA
 
 
 //
-// These flags set the timestep-limiting option for mp_explicit_H and
-// mp_implicit_H.  Only modify them if you know what you are doing.
+// These flags set the timestep-limiting option for MPv3 and
+// MPv4.  Only modify them if you know what you are doing.
 // See Mackey (2012,A&A,539,A147) for details.
 //
 #define MPV3_DTLIMIT 2

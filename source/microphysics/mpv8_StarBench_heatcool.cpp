@@ -8,7 +8,7 @@
 /// in the StarBench Workshop test problems.
 ///
 /// NB BUG: Needs a Set_Temp() function; currently this is inherited
-/// from mp_explicit_H(), which uses a different n_tot() formula.
+/// from MPv3(), which uses a different n_tot() formula.
 ///
 /// Modifications:
 /// - getting it written: mods up until 2014.06.XX
@@ -44,7 +44,7 @@ mpv8_SBheatcool::mpv8_SBheatcool(
       const double g  ///< EOS Gamma
       )
 :
-  mp_explicit_H(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
   cout <<"mpv8_SBheatcool constructor setting up.\n";

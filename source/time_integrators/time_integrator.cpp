@@ -117,7 +117,7 @@
 ///    setup_microphysics() function.
 /// - 2011.06.21 JM: Added option of 2nd-order-in-time ray-tracing/microphysics with
 ///    two microphysics updates per step.
-/// - 2011.10.13 JM: Added mp_implicit_H class.
+/// - 2011.10.13 JM: Added MPv4 class.
 /// - 2011.10.14 JM: Removed raytracer_shielding class, updated RT interface a lot.
 /// - 2011.10.22 JM: The new MP/RT interface is now default (old #deffed code
 ///    is now removed as of SVN369).  Improved RT interface, and simplified the 

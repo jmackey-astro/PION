@@ -23,8 +23,10 @@
 #include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
 
-#ifndef EXCLUDE_MPV1
-#include "microphysics/microphysics.h"
+#ifdef LEGACY_CODE
+#include "microphysics/MPv0.h"
+#include "microphysics/MPv1.h"
+#include "microphysics/MPv2.h"
 #endif 
 
 #ifndef EXCLUDE_HD_MODULE
@@ -33,18 +35,12 @@
 
 #include "microphysics/mp_only_cooling.h"
 
-#ifndef EXCLUDE_MPV2
-#ifdef MP_V2_AIFA
-#include "microphysics/MPv2.h"
-#endif
-#endif 
-
 #ifndef EXCLUDE_MPV3
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 #endif
 
 #ifndef EXCLUDE_MPV4
-#include "microphysics/mp_implicit_H.h"
+#include "microphysics/MPv4.h"
 #endif 
 
 #include "microphysics/mpv5_molecular.h"
@@ -292,68 +288,35 @@ int setup_fixed_grid::setup_microphysics(
     bool have_set_MP=false;
     cout <<"setting up MP type: "<<mptype<<"\n";
 
-
-#ifndef EXCLUDE_MPV1
-    if      (mptype=="ChAH" || mptype=="onlyH") {
-      cout <<"\t******* setting up MP_Hydrogen microphysics module *********\n";
+#ifdef LEGACY_CODE
+    if      (mptype=="MPv0") {
+      cout <<"\t******* setting up MPv0 module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MP_Hydrogen(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-      cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY mp_implicit_H. **--**\n";
+      MP = new MPv0(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+      if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
+        rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;
     }
-#endif // exclude MPv1
 
-
-#ifndef EXCLUDE_HD_MODULE
-    if (mptype=="lowZ") {
-      cout <<"\t******* setting up microphysics_lowz module *********\n";
+    if      (mptype=="MPv1") {
+      cout <<"\t******* setting up MPv1 microphysics module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+      MP = new MPv1(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+      cout <<"\t**---** WARNING, THIS MODULE HAS BEEN SUPERSEDED BY MPv4. **--**\n";
       have_set_MP=true;
     }
-#endif // exclude Harpreet's module
 
-#ifndef EXCLUDE_MPV2
-    if (mptype=="MPv2") {
-#ifdef MP_V2_AIFA
+    if      (mptype=="MPv2") {
       cout <<"\t******* setting up MPv2 module *********\n";
       cout <<"\t******* N.B. Timestep limiting is enforced. **\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MPv2(SimPM.nvar, SimPM.ntracer, SimPM.tracers);
+      MP = new MPv2(SimPM.ndim, SimPM.coord_sys, SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       SimPM.EP.MP_timestep_limit = 1;
-#else
-      rep.error("Enable MPv2 as an ifdef if you really want to use it",2);
-#endif
       have_set_MP=true;
     }
-#endif // exclude MPv2
 
-
-#ifndef EXCLUDE_MPV3
-    if (mptype=="MPv3") {
-      cout <<"\t******* setting up mp_explicit_H module *********\n";
-#if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
-      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
-      cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-#else
-#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
-#endif
-
-      MP = new mp_explicit_H(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
-                            SimPM.ntracer, SimPM.tracers,
-                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      //if (SimPM.EP.MP_timestep_limit != 1)
-      //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv3
-
-
-#ifndef EXCLUDE_MPV4
     if (mptype=="MPv4") {
-      cout <<"\t******* setting up mp_implicit_H module *********\n";
+      cout <<"\t******* setting up MPv4 module *********\n";
 #if MPV4_DTLIMIT>=5 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. dt05-12 Timestep limiting is enforced by #def";
       cout <<" DTLIMIT="<<MPV4_DTLIMIT<<". **\n";
@@ -366,15 +329,46 @@ int setup_fixed_grid::setup_microphysics(
 #error "No timestep-limiting is defined in source/defines/functionality_flags.h"
 #endif
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mp_implicit_H(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+      MP = new MPv4(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
                             SimPM.ntracer, SimPM.tracers,
                             &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      //SimPM.EP.MP_timestep_limit = 4;  // limit by recombination time only
-      //if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
+      have_set_MP=true;
+    }
+#endif // LEGACY_CODE
+
+
+#ifndef EXCLUDE_HD_MODULE
+    if (mptype=="lowZ") {
+      cout <<"\t******* setting up microphysics_lowz module *********\n";
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+      have_set_MP=true;
+    }
+#endif // exclude Harpreet's module
+
+
+
+#ifndef EXCLUDE_MPV3
+    if (mptype=="MPv3") {
+      cout <<"\t******* setting up MPv3 module *********\n";
+#if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
+      cout <<"\t******* N.B. Timestep limiting is enforced by #def";
+      cout <<" MPV3_DTLIMIT="<<MPV3_DTLIMIT<<". **\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+#else
+#error "No timestep-limiting is defined in source/defines/functionality_flags.h"
+#endif
+
+      MP = new MPv3(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+      //if (SimPM.EP.MP_timestep_limit != 1)
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;
     }
-#endif // exclude MPv4
+#endif // exclude MPv3
+
 
 
     if (mptype=="MPv5") {
@@ -431,21 +425,6 @@ int setup_fixed_grid::setup_microphysics(
     }
 #endif
 
-#ifndef EXCLUDE_MPV1
-    //
-    // Finally, if MP has not been set up yet, try to set up the v0
-    // microphysics integrator, which is slow, but can model a number
-    // of elements and ions.
-    //
-    if (!have_set_MP) {
-      cout <<"\t******* setting up MPv0 (v0) module *********\n";
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MPv0(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
-      if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
-        rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
-      have_set_MP=true;
-    }
-#endif // exclude MPv1/0
 
     if (!MP) rep.error("microphysics init",MP);
     if (!have_set_MP) rep.error("HUH? have_set_MP",have_set_MP);

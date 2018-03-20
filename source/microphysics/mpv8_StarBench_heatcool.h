@@ -22,11 +22,11 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 
 class mpv8_SBheatcool
   :
-  public mp_explicit_H
+  public MPv3
 {
   public:
   ///
