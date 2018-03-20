@@ -1,5 +1,5 @@
 ///
-/// \file mpv9_HHe.h
+/// \file MPv10.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -32,9 +32,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#ifndef EXCLUDE_MPV9
+#ifndef EXCLUDE_MPV10
 
-#include "mpv9_HHe.h"
+#include "MPv10.h"
 
 using namespace std;
 
@@ -44,7 +44,7 @@ using namespace std;
 // ##################################################################
 
 
-void mpv9_HHe::get_error_tolerances(
+void MPv10::get_error_tolerances(
                 double *reltol, ///< relative error tolerance.
                 double *atol ///< absolute error tolerances
                 )
@@ -64,7 +64,7 @@ void mpv9_HHe::get_error_tolerances(
 
 
 
-void mpv9_HHe::get_problem_size(
+void MPv10::get_problem_size(
                   int *ne, ///< number of equations
                   int *np  ///< number of parameters in user_data vector.
                   )
@@ -81,7 +81,7 @@ void mpv9_HHe::get_problem_size(
 
 
 
-mpv9_HHe::mpv9_HHe(
+MPv10::MPv10(
           const int nv,                ///< Total number of variables in state vector
           const int ntracer,           ///< Number of tracer variables in state vector.
           const std::string &trtype,   ///< List of what the tracer variables mean.
@@ -92,7 +92,7 @@ mpv9_HHe::mpv9_HHe(
   gamma(g), gamma_minus_one(g-1.0), nv_prim(nv)
 {
 #ifdef TESTING
-  cout <<"mpv9_HHe constructor setting up.\n";
+  cout <<"MPv10 constructor setting up.\n";
 #endif
 
   EP = ephys;
@@ -233,10 +233,10 @@ mpv9_HHe::mpv9_HHe(
 
 
 
-mpv9_HHe::~mpv9_HHe()
+MPv10::~MPv10()
 {
 #ifdef TESTING
-  cout <<"mpv9_HHe destructor.\n";
+  cout <<"MPv10 destructor.\n";
 #endif
   N_VDestroy_Serial(y_in);
   N_VDestroy_Serial(y_out);
@@ -252,7 +252,7 @@ mpv9_HHe::~mpv9_HHe()
 
 
 
-int mpv9_HHe::TimeUpdateMP_RTnew(
+int MPv10::TimeUpdateMP_RTnew(
           const double *p_in,
           const int N_heat,
           const std::vector<struct rt_source_data> &heat_src,
@@ -266,7 +266,7 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
           )
 {
 #ifdef FUNCTION_ID
-  cout <<"mpv9_HHe::TimeUpdateMP_RTnew()\n";
+  cout <<"MPv10::TimeUpdateMP_RTnew()\n";
 #endif // FUNCTION_ID
 
   if (N_ion!=1) rep.error("No ionising sources!",N_ion);
@@ -279,13 +279,13 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mpv9_HHe::TimeUpdateMP_RTnew()",err);
+    rep.error("Bad input state to MPv10::TimeUpdateMP_RTnew()",err);
   }
   for (size_t v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   rep.printVec("update: P",P,nvl);
   rep.printVec("update: Y",NV_DATA_S(y_in),nvl);
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
 
   interpret_radiation_data(N_heat,heat_src,N_ion,ion_src);
 
@@ -295,7 +295,7 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
   double maxdelta=0.0;
   err = ydot(0, y_in, y_out, 0);
   if (err) 
-    rep.error("dYdt() returned an error in mpv9_HHe::TimeUpdateMP_RTnew()",err);
+    rep.error("dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()",err);
   for (size_t v=0;v<nvl;v++) {
     maxdelta = max(maxdelta, fabs(NV_Ith_S(y_out,v)*dt/NV_Ith_S(y_in,v)));
   }
@@ -314,7 +314,7 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
   else {
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
-      rep.error("integration failed: mpv9_HHe::TimeUpdateMP_RTnew()",err);
+      rep.error("integration failed: MPv10::TimeUpdateMP_RTnew()",err);
     }
   }
 
@@ -328,7 +328,7 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
   err = convert_local2prim(P,p_in,p_out);
 
 #ifdef FUNCTION_ID
-  cout <<"mpv9_HHe::TimeUpdateMP_RTnew()\n";
+  cout <<"MPv10::TimeUpdateMP_RTnew()\n";
 #endif // FUNCTION_ID
   return err;
 }
@@ -340,14 +340,14 @@ int mpv9_HHe::TimeUpdateMP_RTnew(
 
 
 
-double mpv9_HHe::get_recombination_rate(
+double MPv10::get_recombination_rate(
           const int id,       ///< ion index in tracer array (optional).
           const double *p_in, ///< input state vector (primitive).
           const double g      ///< EOS gamma (optional)
           )
 {
 #ifdef FUNCTION_ID
-  cout <<"mpv9_HHe::get_recombination_rate()\n";
+  cout <<"MPv10::get_recombination_rate()\n";
 #endif // FUNCTION_ID
   double rate=0.0;
   double P[nvl];
@@ -378,7 +378,7 @@ double mpv9_HHe::get_recombination_rate(
   //cout <<"rate="<<rate<<"\n";
 
 #ifdef FUNCTION_ID
-  cout <<"mpv9_HHe::get_recombination_rate()\n";
+  cout <<"MPv10::get_recombination_rate()\n";
 #endif // FUNCTION_ID
   return rate;
 }
@@ -390,7 +390,7 @@ double mpv9_HHe::get_recombination_rate(
 
 
 
-double mpv9_HHe::get_n_el(
+double MPv10::get_n_el(
         const double *pv, ///< primitive state vector.
         const int id      ///< integer identifier for the element.
         )
@@ -408,7 +408,7 @@ double mpv9_HHe::get_n_el(
     break;
     
     default:
-    cerr <<" mpv9_HHe::get_n_el() unknown element "<<id<<"\n";
+    cerr <<" MPv10::get_n_el() unknown element "<<id<<"\n";
     ans = -1.0e99;
     break;
   }
@@ -423,7 +423,7 @@ double mpv9_HHe::get_n_el(
 
 
 
-double mpv9_HHe::Temperature(
+double MPv10::Temperature(
             const double *pv, ///< primitive vector
             const double      ///< eos gamma
             )
@@ -432,7 +432,7 @@ double mpv9_HHe::Temperature(
   // Check for negative pressure/density!  If either is found, return -1.0e99.
   //
   if (pv[RO]<=0.0 || pv[PG]<=0.0) {
-    cout <<"mpv9_HHe::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
+    cout <<"MPv10::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
   }
   //
@@ -451,7 +451,7 @@ double mpv9_HHe::Temperature(
 
 
 
-int mpv9_HHe::Set_Temp(
+int MPv10::Set_Temp(
           double *p_pv,   ///< primitive vector.
           const double T, ///< temperature
           const double g  ///< eos gamma.
@@ -491,7 +491,7 @@ int mpv9_HHe::Set_Temp(
 /// capability than the other timescales function.
 /// Default setting is DT02, which limits by 0.25/ydot (and not by E/Edot)
 ///
-double mpv9_HHe::timescales_RT(
+double MPv10::timescales_RT(
                     const double *p_in, ///< Current cell state vector.
                     const int N_heat,      ///< Number of UV heating sources.
                     const std::vector<struct rt_source_data> &heat_src,
@@ -509,13 +509,13 @@ double mpv9_HHe::timescales_RT(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mpv9_HHe::timescales_RT()",err);
+    rep.error("Bad input state to MPv10::timescales_RT()",err);
   }
   for (size_t v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   rep.printVec("update: P",P,nvl);
   rep.printVec("update: Y",NV_DATA_S(y_in),nvl);
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
 
   interpret_radiation_data(N_heat,heat_src,N_ion,ion_src);
 
@@ -524,7 +524,7 @@ double mpv9_HHe::timescales_RT(
   //
   err = ydot(0, y_in, y_out, 0);
   if (err) {
-    rep.error("dYdt() returned an error in mpv9_HHe::timescales_RT()",err);
+    rep.error("dYdt() returned an error in MPv10::timescales_RT()",err);
   }
 
   //
@@ -553,12 +553,12 @@ double mpv9_HHe::timescales_RT(
   //#endif
 
 
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   if (t<3.16e9) {
   cout <<"MP timescales: xdot="<<NV_Ith_S(y_out, lv_H0);
   cout <<", Edot="<<NV_Ith_S(y_out, lv_E)<<" t_x="<<t;
   }
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
 
   //#ifdef ENERGY_CHANGE_TIMESTEP_LIMIT
   ////
@@ -569,11 +569,11 @@ double mpv9_HHe::timescales_RT(
   ////cout <<"limit by dE: dt="<<DTFRAC*P[lv_E]/(fabs(NV_Ith_S(y_out, lv_E))+TINYVALUE)<<"\n";
   //#endif
 
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   if (t<3.16e9) {
   cout <<" and min(t_x,t_e)="<<t<<",  "; rep.printVec("P[1-x,E]",P,nvl);
   }
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
   return t;
 }
 
@@ -584,7 +584,7 @@ double mpv9_HHe::timescales_RT(
 
 
 
-int mpv9_HHe::Tr(const string t)
+int MPv10::Tr(const string t)
 {
   if      (t=="H0____" || t=="HI____") {
     return lv_H0;
@@ -619,7 +619,7 @@ int mpv9_HHe::Tr(const string t)
 
 
 
-int mpv9_HHe::convert_prim2local(
+int MPv10::convert_prim2local(
           const double *p_in, ///< primitive vector from grid cell (length nv_prim)
           double *p_local
           )
@@ -636,17 +636,17 @@ int mpv9_HHe::convert_prim2local(
   p_local[lv_H0]   = p_in[pv_H0];
   p_local[lv_He0]  = p_in[pv_He0];
   p_local[lv_He1]  = p_in[pv_He1];
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   if (p_local[lv_H0]<-0.01 ||  p_local[lv_H0]>1.01) {
-    cout <<"H0 fraction out of bounds to mpv9_HHe: ";
+    cout <<"H0 fraction out of bounds to MPv10: ";
     cout << p_local[lv_H0] <<"\n";
   }
   if (p_local[lv_He0]<-0.01 ||  p_local[lv_He0]>1.01) {
-    cout <<"He0 fraction out of bounds to mpv9_HHe: ";
+    cout <<"He0 fraction out of bounds to MPv10: ";
     cout << p_local[lv_He0] <<"\n";
   }
   if (p_local[lv_He1]<-0.01 ||  p_local[lv_He1]>1.01) {
-    cout <<"He1 fraction out of bounds to mpv9_HHe: ";
+    cout <<"He1 fraction out of bounds to MPv10: ";
     cout << p_local[lv_He1] <<"\n";
   }
 #endif
@@ -655,8 +655,8 @@ int mpv9_HHe::convert_prim2local(
   p_local[lv_He1] = max(Min_Nfrac, min(Max_Nfrac, p_local[lv_He1]));
 
   if (p_local[lv_E]<=0.0) {
-#ifdef MPV9_DEBUG
-    cout <<"Negative pressure input to mpv9_HHe: ";
+#ifdef MPV10_DEBUG
+    cout <<"Negative pressure input to MPv10: ";
     cout <<p_local[lv_E]<<"\n";
 #endif
     p_local[lv_E] = get_ntot(p_local)*kB()*EP->MinTemperature/(gamma_minus_one);
@@ -668,10 +668,10 @@ int mpv9_HHe::convert_prim2local(
   //
   for (size_t v=0;v<nvl;v++) {
     if (!isfinite(p_local[v]))
-      rep.error("INF/NAN input to mpv9_HHe",v);
+      rep.error("INF/NAN input to MPv10",v);
   }
   if (nH<0.0 || !isfinite(nH))
-    rep.error("Bad density input mpv9_HHe::convert_prim2local",nH);
+    rep.error("Bad density input MPv10::convert_prim2local",nH);
 #endif // TESTING
   
   return 0;
@@ -682,7 +682,7 @@ int mpv9_HHe::convert_prim2local(
 // ##################################################################
 
 
-int mpv9_HHe::convert_local2prim(
+int MPv10::convert_local2prim(
             const double *p_local,
             const double *p_in, ///< input primitive vector [nv_prim]
             double *p_out       ///< updated primitive vector
@@ -693,17 +693,17 @@ int mpv9_HHe::convert_local2prim(
   //
   // Set output ion fractions
   //
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   if (p_local[lv_H0]<-0.01 ||  p_local[lv_H0]>1.01) {
-    cout <<"H0 fraction out of bounds to mpv9_HHe: ";
+    cout <<"H0 fraction out of bounds to MPv10: ";
     cout << p_local[lv_H0] <<"\n";
   }
   if (p_local[lv_He0]<-0.01 ||  p_local[lv_He0]>1.01) {
-    cout <<"He0 fraction out of bounds to mpv9_HHe: ";
+    cout <<"He0 fraction out of bounds to MPv10: ";
     cout << p_local[lv_He0] <<"\n";
   }
   if (p_local[lv_He1]<-0.01 ||  p_local[lv_He1]>1.01) {
-    cout <<"He1 fraction out of bounds to mpv9_HHe: ";
+    cout <<"He1 fraction out of bounds to MPv10: ";
     cout << p_local[lv_He1] <<"\n";
   }
 #endif
@@ -725,14 +725,14 @@ int mpv9_HHe::convert_local2prim(
   double T = get_temperature(p_local);
   if (T>1.0001*EP->MaxTemperature) {
     Set_Temp(p_out,EP->MaxTemperature,0);
-    cout <<"mpv9_HHe::convert_local2prim() HIGH T. ";
+    cout <<"MPv10::convert_local2prim() HIGH T. ";
     cout <<"T="<<T<<", obtained from nH="<<nH<<", eint=";
     cout <<p_local[lv_E]<<", x="<<p_out[pv_Hp]<<"... ";
     cout <<" limiting to T="<<EP->MaxTemperature<<"\n";
   }
   if (T<0.9999*EP->MinTemperature) {
     Set_Temp(p_out,EP->MinTemperature,0);
-    cout <<"mpv9_HHe::convert_local2prim() LOW  T. ";
+    cout <<"MPv10::convert_local2prim() LOW  T. ";
     cout <<"T="<<T<<", obtained from nH="<<nH<<", eint=";
     cout <<p_local[lv_E]<<", x="<<p_out[pv_Hp]<<"... ";
     cout <<" limiting to T="<<EP->MaxTemperature<<"\n";
@@ -753,7 +753,7 @@ int mpv9_HHe::convert_local2prim(
 
 
 
-void mpv9_HHe::interpret_radiation_data(
+void MPv10::interpret_radiation_data(
           const int N_heat,
           const std::vector<struct rt_source_data> &heat_src,
           const int N_ion,
@@ -774,7 +774,7 @@ void mpv9_HHe::interpret_radiation_data(
   //
 
   if (N_ion<1) {
-    cerr <<"No rad\'n source for mpv9_HHe::interpret_radiation_data";
+    cerr <<"No rad\'n source for MPv10::interpret_radiation_data";
     cerr <<".  setting all optical depths to zero.\n";
     for (short unsigned int iT=0; iT<MAX_TAU; iT++) {
       tau[iT] = 0.0;
@@ -799,7 +799,7 @@ void mpv9_HHe::interpret_radiation_data(
 
 
 
-double mpv9_HHe::get_temperature(
+double MPv10::get_temperature(
     const double *P   ///< local vector
     )
 {
@@ -815,7 +815,7 @@ double mpv9_HHe::get_temperature(
 
 
 
-double mpv9_HHe::get_ntot(
+double MPv10::get_ntot(
     const double *P   ///< local vector
     )
 {
@@ -829,7 +829,7 @@ double mpv9_HHe::get_ntot(
 
 
 
-double mpv9_HHe::get_ne(
+double MPv10::get_ne(
     const double *P   ///< local vector
     )
 {
@@ -848,7 +848,7 @@ double mpv9_HHe::get_ne(
 // ##################################################################
 
 
-int mpv9_HHe::ydot(
+int MPv10::ydot(
           double,               ///< current time (UNUSED)
           const N_Vector y_now, ///< current Y-value
           N_Vector y_dot,       ///< vector for Y-dot values
@@ -869,10 +869,10 @@ int mpv9_HHe::ydot(
   double ne = get_ne(y);
   double T = get_temperature(y);
   double y_He2 = std::max(0.0, std::min(X_HE, X_HE -y[lv_He0] -y[lv_He1]));
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   cout <<"YDOT: "; rep.printVec("Ynow",y,4);
   cout <<"YDOT: T="<<T<<", y(HE++)="<<X_HE -y[lv_He0] -y[lv_He1]<<"\n";
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
 
   //for (short unsigned int ie=0; ie<N_equations; ie++) ydot[ie]=0.0;
 
@@ -893,9 +893,9 @@ int mpv9_HHe::ydot(
   dtau[1] = nH*y[lv_He0]*dS*get_th_xsection(ION_HE_N);
   dtau[2] = nH*y[lv_He1]*dS*get_th_xsection(ION_HE_P);
   dtau[3] = nH*     dS*get_th_xsection(ION_DUST);
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   cout <<"YDOT: "; rep.printVec("dTau",dtau,4);
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
 
   // ----------------------------------------------------------------
   //
@@ -911,7 +911,7 @@ int mpv9_HHe::ydot(
   ydot[lv_He0] = -pir[1]; // *temp;
   ydot[lv_He1] = (pir[1]-pir[2]); // *temp;
   ydot[lv_E]   = phr[0] +phr[1] +phr[2]; // *temp;
-#ifdef MPV9_DEBUG
+#ifdef MPV10_DEBUG
   cout <<"** YDOT: nH="<<nH<<", Vshell="<<Vshell<<", ds="<<dS<<"\n"; 
   cout <<"** YDOT: ionising: H0="<<-pir[0]<<", He0="<<-pir[1]<<", He1="<<-pir[2]<<"\n";
   cout <<"** YDOT: heating:  H0="<<phr[0]<<", He0="<<phr[1]<<", He1="<<phr[2]<<"\n";
@@ -920,13 +920,13 @@ int mpv9_HHe::ydot(
   //
   for (size_t v=0;v<nvl;v++) {
     if (!isfinite(ydot[v]))
-      rep.error("INF/NAN in mpv9_HHe ydot()",v);
+      rep.error("INF/NAN in MPv10 ydot()",v);
   }
-#endif // MPV9_DEBUG
+#endif // MPV10_DEBUG
   //
   // ----------------------------------------------------------------
 
-#ifdef MPV9_REC
+#ifdef MPV10_REC
   // ----------------------------------------------------------------
   //
   // Recombination rates.  Here we need only alpha_B for H0, but more
@@ -1008,7 +1008,7 @@ int mpv9_HHe::ydot(
 
   //
   // ----------------------------------------------------------------
-#endif // MPV9_REC
+#endif // MPV10_REC
 
   //
   // now multiply Edot by nH to get units of energy loss/gain per
@@ -1028,6 +1028,6 @@ int mpv9_HHe::ydot(
 }
 
 
-#endif //  if not EXCLUDE_MPV9
+#endif //  if not EXCLUDE_MPV10
 
 

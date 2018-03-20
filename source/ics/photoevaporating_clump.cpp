@@ -91,9 +91,9 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   ICsetup_base::rp = rrp;
   if (!rp) rep.error("null pointer to ReadParams",rp);
 
-  IC_photoevaporatingclump::ndim = SimPM.ndim;
-  IC_photoevaporatingclump::coords = SimPM.coord_sys;
-  IC_photoevaporatingclump::eqns = SimPM.eqntype;
+  IC_photoevaporatingclump::ndim = SimPM->ndim;
+  IC_photoevaporatingclump::coords = SimPM->coord_sys;
+  IC_photoevaporatingclump::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -102,9 +102,9 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
 
   // initialise pre and post shock vectors to zero.
   IC_photoevaporatingclump::ambient = 0;
-  ambient = new double [SimPM.nvar];
+  ambient = new double [SimPM->nvar];
   if (!ambient) rep.error("malloc pre/post shock vecs",ambient);
-  for (int v=0;v<SimPM.nvar;v++) ambient[v] = 0.0;
+  for (int v=0;v<SimPM->nvar;v++) ambient[v] = 0.0;
 
   // set ambient and cloud states.
   string seek, str;
@@ -113,14 +113,14 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   str = rp->find_parameter(seek);
   if (str=="") rep.error("didn't find parameter",seek);
   IC_photoevaporatingclump::clrad = atof(str.c_str());
-  if (ndim>1) clrad *= SimPM.Range[YY];  // radius is given in units of y-dir range.
-  else        clrad *= SimPM.Range[XX];
+  if (ndim>1) clrad *= SimPM->Range[YY];  // radius is given in units of y-dir range.
+  else        clrad *= SimPM->Range[XX];
   cout <<"Cloud Radius in cm is "<<clrad<<endl;
 
-  cltr = mem.myalloc(cltr,SimPM.ntracer);
+  cltr = mem.myalloc(cltr,SimPM->ntracer);
   ostringstream temp;
 
-  for (int v=0;v<SimPM.ntracer;v++) {
+  for (int v=0;v<SimPM->ntracer;v++) {
     temp.str(""); temp<<"PECcloudTR"<<v;
     seek = temp.str();
     str = rp->find_parameter(seek);
@@ -213,20 +213,20 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
     if (str!="") IC_photoevaporatingclump::ambient[BZ] = atof(str.c_str());
     else         IC_photoevaporatingclump::ambient[BZ] = -1.0e99;
 
-    if (SimPM.eqntype==EQGLM) ambient[SI] = 0.;
+    if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars
 
   // tracer variables
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "PEC_ambTR" << t;
     seek = temp.str();
     str = rp->find_parameter(seek);
-    if (str!="") IC_photoevaporatingclump::ambient[t+SimPM.ftr] = atof(str.c_str());
-    else         IC_photoevaporatingclump::ambient[t+SimPM.ftr] = -1.0e99;
+    if (str!="") IC_photoevaporatingclump::ambient[t+SimPM->ftr] = atof(str.c_str());
+    else         IC_photoevaporatingclump::ambient[t+SimPM->ftr] = -1.0e99;
   }
 
-  IC_photoevaporatingclump::gam = SimPM.gamma;
+  IC_photoevaporatingclump::gam = SimPM->gamma;
 
   // now make sure we are to do a photo-evaporation sim.
   string ics = rp->find_parameter("ics");
@@ -280,11 +280,11 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
    }
    
   // set cloud to be near front of grid.
-//  cloudcentre[XX] = SimPM.Xmin[XX] +SimPM.Range[XX]/4.0;
+//  cloudcentre[XX] = SimPM->Xmin[XX] +SimPM->Range[XX]/4.0;
 //  if (coords==COORD_CRT) {
 //    // cartesian coords, so centre cloud accordingly.
-//    cloudcentre[YY] = SimPM.Xmin[YY]+SimPM.Range[YY]/2.0;
-//    if (ndim>2) cloudcentre[ZZ] = SimPM.Xmin[ZZ]+SimPM.Range[ZZ]/2.0;
+//    cloudcentre[YY] = SimPM->Xmin[YY]+SimPM->Range[YY]/2.0;
+//    if (ndim>2) cloudcentre[ZZ] = SimPM->Xmin[ZZ]+SimPM->Range[ZZ]/2.0;
 //  }
 //  else if (coords==COORD_CYL) {
 //    // cylindrical (Axial symmetry), so centre cloud on axis.
@@ -310,8 +310,8 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   str = rp->find_parameter(seek);
   if (str!="") IC_photoevaporatingclump::core_radius = atof(str.c_str());
   else         IC_photoevaporatingclump::core_radius = 1.0;
-  if (ndim>1) core_radius *= SimPM.Range[YY];  // r is fraction of y-range.
-  else        core_radius *= SimPM.Range[XX];
+  if (ndim>1) core_radius *= SimPM->Range[YY];  // r is fraction of y-range.
+  else        core_radius *= SimPM->Range[XX];
   cout <<"core_radius="<<core_radius<<" cm *********************\n";
   
   //
@@ -336,7 +336,7 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   if (noise>0) {
     cout <<"\t\tNOISE!!! Adding random adiabatic noise";
     cout <<" at fractional level = "<<noise<<endl;
-    err+= AddNoise2Data(gg, 4,noise);
+    err+= AddNoise2Data(gg, *SimPM, 4,noise);
   }
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -361,17 +361,17 @@ int IC_photoevaporatingclump::setup_pec2()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" hitting TWO circular clouds with overdensity of "<<dratio<<".\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
   // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
   //  int nsub;
   //  if (ndim==2) nsub=100; else nsub=32;
   // cloudcentre[YY] -= 0.5*clrad;
   // cloudcentre[XX] -= clrad;
-  // class inside_sphere stest1(cloudcentre,clrad,SimPM.dx,nsub,ndim);
+  // class inside_sphere stest1(cloudcentre,clrad,SimPM->dx,nsub,ndim);
   
   // cloudcentre[YY] += clrad;
   // cloudcentre[XX] += 2.0*clrad;
-  // class inside_sphere stest2(cloudcentre,clrad,SimPM.dx,nsub,ndim);
+  // class inside_sphere stest2(cloudcentre,clrad,SimPM->dx,nsub,ndim);
   // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
   
   double cloud1[ndim], cloud2[ndim];
@@ -399,7 +399,7 @@ int IC_photoevaporatingclump::setup_pec2()
     //
     // Set values of primitive variables.
     //
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
 
     //
     // Get distance of point from centre of cloud 1.  Then if we are
@@ -414,15 +414,15 @@ int IC_photoevaporatingclump::setup_pec2()
       cpt->P[PG] = pg1;
       //if (eqns==2)
       //cpt->P[BX] = Bratio*cpt->P[BX];
-      for (int v=0; v<SimPM.ntracer; v++)
-	cpt->P[SimPM.ftr+v] = cltr[v];
+      for (int v=0; v<SimPM->ntracer; v++)
+	cpt->P[SimPM->ftr+v] = cltr[v];
     }
     else if (d>=edge && d<clrad) {
       cpt->P[RO] = rho1 + (ambient[RO]-rho1)*(d-edge)/(clrad-edge);
       cpt->P[PG] =  pg1 + (ambient[PG]- pg1)*(d-edge)/(clrad-edge);
-      for (int v=0; v<SimPM.ntracer; v++)
-	cpt->P[SimPM.ftr+v] = cltr[v] + 
-	  (ambient[SimPM.ftr+v]-cltr[v])*(d-edge)/(clrad-edge);
+      for (int v=0; v<SimPM->ntracer; v++)
+	cpt->P[SimPM->ftr+v] = cltr[v] + 
+	  (ambient[SimPM->ftr+v]-cltr[v])*(d-edge)/(clrad-edge);
     }
 
     //
@@ -438,15 +438,15 @@ int IC_photoevaporatingclump::setup_pec2()
       cpt->P[PG] = pg1;
       //if (eqns==2)
       //cpt->P[BX] = Bratio*cpt->P[BX];
-      for (int v=0; v<SimPM.ntracer; v++)
-	cpt->P[SimPM.ftr+v] = cltr[v];
+      for (int v=0; v<SimPM->ntracer; v++)
+	cpt->P[SimPM->ftr+v] = cltr[v];
     }
     else if (d>=edge && d<clrad) {
       cpt->P[RO] = rho1 + (ambient[RO]-rho1)*(d-edge)/(clrad-edge);
       cpt->P[PG] =  pg1 + (ambient[PG]- pg1)*(d-edge)/(clrad-edge);
-      for (int v=0; v<SimPM.ntracer; v++)
-	cpt->P[SimPM.ftr+v] = cltr[v] + 
-	  (ambient[SimPM.ftr+v]-cltr[v])*(d-edge)/(clrad-edge);
+      for (int v=0; v<SimPM->ntracer; v++)
+	cpt->P[SimPM->ftr+v] = cltr[v] + 
+	  (ambient[SimPM->ftr+v]-cltr[v])*(d-edge)/(clrad-edge);
     }
 
     // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
@@ -457,8 +457,8 @@ int IC_photoevaporatingclump::setup_pec2()
     //   cpt->P[PG] = vfrac*(pratio*cpt->P[PG]) + (1.-vfrac)*cpt->P[PG];
     //   if (eqns==2)
     // 	cpt->P[BX] = vfrac*(Bratio*cpt->P[BX]) + (1.-vfrac)*cpt->P[BX];
-    //   for (int v=0; v<SimPM.ntracer; v++)
-    // 	cpt->P[SimPM.ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM.ftr+v];
+    //   for (int v=0; v<SimPM->ntracer; v++)
+    // 	cpt->P[SimPM->ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM->ftr+v];
     // }
     // if( (vfrac=stest2.volumeFraction(cpt)) >0) {
     //   //cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
@@ -466,8 +466,8 @@ int IC_photoevaporatingclump::setup_pec2()
     //   cpt->P[PG] = vfrac*(pratio*cpt->P[PG]) + (1.-vfrac)*cpt->P[PG];
     //   if (eqns==2)
     // 	cpt->P[BX] = vfrac*(Bratio*cpt->P[BX]) + (1.-vfrac)*cpt->P[BX];
-    //   for (int v=0; v<SimPM.ntracer; v++)
-    // 	cpt->P[SimPM.ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM.ftr+v];
+    //   for (int v=0; v<SimPM->ntracer; v++)
+    // 	cpt->P[SimPM->ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM->ftr+v];
     // }
     // ******* OLD CODE FOR HARD-EDGED CLUMPS *******
 
@@ -490,17 +490,17 @@ int IC_photoevaporatingclump::setup_pec()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" hitting a circular cloud with overdensity of "<<dratio<<".\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
   int nsub;
   if (ndim==2) nsub=100; else nsub=32;
-  class inside_sphere stest(cloudcentre,clrad,SimPM.dx,nsub,ndim);
+  class inside_sphere stest(cloudcentre,clrad,SimPM->dx,nsub,ndim);
   
   cout <<"\t\tAssigning primitive vectors.\n";
   double vfrac=0.0;
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
      
     // This is where I set the state inside the cloud.
     if( (vfrac=stest.volumeFraction(cpt)) >0) {
@@ -509,8 +509,8 @@ int IC_photoevaporatingclump::setup_pec()
       cpt->P[PG] = vfrac*(pratio*cpt->P[PG]) + (1.-vfrac)*cpt->P[PG];
       if (eqns==2)
 	cpt->P[BX] = vfrac*(Bratio*cpt->P[BX]) + (1.-vfrac)*cpt->P[BX];
-      for (int v=0; v<SimPM.ntracer; v++)
-	cpt->P[SimPM.ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM.ftr+v];
+      for (int v=0; v<SimPM->ntracer; v++)
+	cpt->P[SimPM->ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM->ftr+v];
     }
   } while ( (cpt=gg->NextPt(cpt))!=NULL);
   //  cpt = firstPt();
@@ -532,7 +532,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" propagating into an ambient medium with 1/r^3 profile in Zcyl.\n";
   cout <<"WARNING: THIS FUNCTION HAS BEEN TAKEN OVER FOR A SPECIFIC PROBLEM!!\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
   
   cout <<"\t\tAssigning primitive vectors.\n";
   //double dist=0.0;
@@ -542,9 +542,9 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   //
   // source position:
   //
-  double srcpos[SimPM.ndim];
-  for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].pos[v];
+  double srcpos[SimPM->ndim];
+  for (int v=0;v<SimPM->ndim;v++) {
+    srcpos[v] = SimPM->RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
 
@@ -560,7 +560,7 @@ int IC_photoevaporatingclump::setup_powerlaw_density()
   do {
     CI.get_dpos(cpt,dpos);
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
     cpt->P[RO] = rho0*exp(3.0*log((dpos[XX]+xoffset)/x0));
   } while ( (cpt=gg->NextPt(cpt))!=0);
   //  cpt = firstPt();
@@ -582,14 +582,14 @@ int IC_photoevaporatingclump::setup_cloud_clump()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" propagating into an ambient medium with 1/r^"<<radial_slope<<" profile.\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
 
   //
   // Set up the clump-locator class.
   //
   int nsub;
   if (ndim==2) nsub=100; else nsub=32;
-  class inside_sphere stest(cloudcentre,clrad,SimPM.dx,nsub,ndim);
+  class inside_sphere stest(cloudcentre,clrad,SimPM->dx,nsub,ndim);
   double vfrac=0.0;
   
   cout <<"\t\tAssigning primitive vectors.\n";
@@ -598,28 +598,28 @@ int IC_photoevaporatingclump::setup_cloud_clump()
   //
   // source position:
   //
-  double srcpos[SimPM.ndim];
-  //if (SimPM.RS.Nsources!=1) {
-  //  rep.error("Bad number of sources",SimPM.RS.Nsources);
+  double srcpos[SimPM->ndim];
+  //if (SimPM->RS.Nsources!=1) {
+  //  rep.error("Bad number of sources",SimPM->RS.Nsources);
   //}
-  for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].pos[v];
+  for (int v=0;v<SimPM->ndim;v++) {
+    srcpos[v] = SimPM->RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
-  double ISM_centre[SimPM.ndim];
-  for (int v=0;v<SimPM.ndim;v++) {
+  double ISM_centre[SimPM->ndim];
+  for (int v=0;v<SimPM->ndim;v++) {
     ISM_centre[v]=0.0;
   }
-  rep.printVec("source position ", srcpos,      SimPM.ndim);
-  rep.printVec("clump centre    ", cloudcentre, SimPM.ndim);
-  rep.printVec("ISM Cloud centre", ISM_centre,  SimPM.ndim);
+  rep.printVec("source position ", srcpos,      SimPM->ndim);
+  rep.printVec("clump centre    ", cloudcentre, SimPM->ndim);
+  rep.printVec("ISM Cloud centre", ISM_centre,  SimPM->ndim);
 
   double dpos[ndim];
   class cell *cpt = gg->FirstPt();
   do {
     CI.get_dpos(cpt,dpos);
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
     //
     // Now if we have a radial profile in the slope, we need to adjust rho
     // Note the radial profile is measured from cloudcentre, not neccessarily
@@ -645,8 +645,8 @@ int IC_photoevaporatingclump::setup_cloud_clump()
       cpt->P[PG] = vfrac*(pratio*cpt->P[PG]) + (1.-vfrac)*cpt->P[PG];
       if (eqns==2)
 	cpt->P[BX] = vfrac*(Bratio*cpt->P[BX]) + (1.-vfrac)*cpt->P[BX];
-      for (int v=0; v<SimPM.ntracer; v++)
-	cpt->P[SimPM.ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM.ftr+v];
+      for (int v=0; v<SimPM->ntracer; v++)
+	cpt->P[SimPM->ftr+v] = vfrac*cltr[v] + (1.-vfrac)*cpt->P[SimPM->ftr+v];
     }
     //cout <<dpos[0]<<"  "<<cpt->P[RO]<<"  "<<cpt->P[PG]<<"\n";
   } while ( (cpt=gg->NextPt(cpt))!=0);
@@ -670,7 +670,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" propagating into an ambient medium with 1/r^"<<radial_slope<<" profile.\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
   
   cout <<"\t\tAssigning primitive vectors.\n";
   double dist=0.0;
@@ -678,16 +678,16 @@ int IC_photoevaporatingclump::setup_radialprofile()
   //
   // source position:
   //
-  double srcpos[SimPM.ndim];
-  //if (SimPM.RS.Nsources!=1) {
-  //  rep.error("Bad number of sources",SimPM.RS.Nsources);
+  double srcpos[SimPM->ndim];
+  //if (SimPM->RS.Nsources!=1) {
+  //  rep.error("Bad number of sources",SimPM->RS.Nsources);
   //}
-  for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].pos[v];
+  for (int v=0;v<SimPM->ndim;v++) {
+    srcpos[v] = SimPM->RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
-  rep.printVec("source position",srcpos,      SimPM.ndim);
-  rep.printVec("cloud centre   ",cloudcentre, SimPM.ndim);
+  rep.printVec("source position",srcpos,      SimPM->ndim);
+  rep.printVec("cloud centre   ",cloudcentre, SimPM->ndim);
   //
   // set scale radius of core. (TAKE CLUMP RADIUS AS THE SCALE RADIUS OF CORE!!!)
   //
@@ -698,7 +698,7 @@ int IC_photoevaporatingclump::setup_radialprofile()
   do {
     CI.get_dpos(cpt,dpos);
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
     //
     // Now if we have a radial profile in the slope, we need to adjust rho
     // Note the radial profile is measured from cloudcentre, not neccessarily
@@ -718,8 +718,8 @@ int IC_photoevaporatingclump::setup_radialprofile()
     //#define SINEWAVE_TESTING
 #ifdef SINEWAVE_TESTING
     cpt->P[RO] *= (1.0 + 
-		   pow(cos(16*M_PI*dpos[XX]/SimPM.Range[XX]),2.0)*
-		   pow(cos(16*M_PI*dpos[YY]/SimPM.Range[YY]),2.0));
+		   pow(cos(16*M_PI*dpos[XX]/SimPM->Range[XX]),2.0)*
+		   pow(cos(16*M_PI*dpos[YY]/SimPM->Range[YY]),2.0));
 #endif
   } while ( (cpt=gg->NextPt(cpt))!=0);
   //  cpt = firstPt();
@@ -740,22 +740,22 @@ int IC_photoevaporatingclump::setup_paralleltest()
 {
   cout <<"\t\tSetting up a "<<ndim<<"-D simulation with an I-front";
   cout <<" propagating into an ambient medium with parallel rays\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
   
   cout <<"\t\tAssigning primitive vectors.\n";
-  double srcpos[SimPM.ndim];
-  for (int v=0;v<SimPM.ndim;v++) {
-    srcpos[v] = SimPM.RS.sources[0].pos[v];
+  double srcpos[SimPM->ndim];
+  for (int v=0;v<SimPM->ndim;v++) {
+    srcpos[v] = SimPM->RS.sources[0].pos[v];
     if (isnan(srcpos[v])) rep.error("Bad source position",srcpos[v]);
   }
-  rep.printVec("srcpos",srcpos,SimPM.ndim);
+  rep.printVec("srcpos",srcpos,SimPM->ndim);
 
   class cell *c = gg->FirstPt(), *tmp=0;
   do {
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) c->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) c->P[v] = ambient[v];
     // Now we have a radial profile in the slope, so we need to adjust rho
-    if (ndim>1 && SimPM.NG[YY]>2 && (tmp=gg->NextPt(c,YN))!=0) {
+    if (ndim>1 && SimPM->NG[YY]>2 && (tmp=gg->NextPt(c,YN))!=0) {
       c->P[RO] = 1.1*tmp->P[RO];
       c->P[PG] = 1.1*tmp->P[PG];
     }

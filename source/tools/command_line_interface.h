@@ -68,7 +68,7 @@ class CommandLineInterface {
   ~CommandLineInterface(); ///< Do-nothing Destructor.
   /// This function calls up the CLI for interactive debugging.
   void console(
-    char * ///< Optional text for prompt.
+    std::string ///< Optional text for prompt.
     );
 
   void auto_console(
@@ -86,22 +86,27 @@ class CommandLineInterface {
   void cmd2(char *); ///< another example command, with arguments.
   void bigcmd(); ///< A further example command.
   
-  ///
   /// prints cell which dp.c points to.(DebugParams)
-  ///
   void print_cell();
-  
-  void next_point(const std::string); ///< moves to cell in direction given (XN,XP,YN,YP,ZN,ZP)
+
+  /// moves to cell in direction given (XN,XP,YN,YP,ZN,ZP)
+  void next_point(const std::string);
   
   /// moves dp.c to the first point.
   void fpt();
+
   /// moves dp.c to the last point.
   void lpt();
+
   /// moves dp.c to the edge of the grid in direction specified.
   void end_of_col(
       const std::string  ///< direction string
       );
-  void print_flux(); ///< prints flux data from intercell flux function.
+
+  /// prints flux data from intercell flux function.
+  void print_flux(
+      const int ///< length of state vectors
+      );
 
   /// given a string of XN,YN,etc, return direction.
   enum direction parse_dir(const std::string);

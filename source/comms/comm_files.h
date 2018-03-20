@@ -117,12 +117,15 @@ class comm_files : public comms_base {
    * buffer to send, and sends it to another processor, which is expected to 
    * know how to unpack the data from it's matching receive call.
    */
-  int send_cell_data(const int,           ///< rank to send to.
-		     std::list<cell *> *, ///< list of cells to get data from.
-		     long int,            ///< number of cells in list (extra checking!)
-		     std::string &,            ///< identifier for send, for tracking delivery later.
-		     const int            ///< comm_tag, to say what kind of send this is.
-		     );
+  int send_cell_data(
+      const int,           ///< rank to send to.
+      std::list<cell *> *, ///< list of cells to get data from.
+      long int,            ///< number of cells in list (extra checking!)
+      const int,           ///< ndim
+      const int,           ///< nvar
+      std::string &,            ///< identifier for send, for tracking delivery later.
+      const int            ///< comm_tag, to say what kind of send this is.
+      );
 
   /** \brief Send an array of n doubles to another processor, and return immediately, but
    * keep a record of the send so that I can tell later when the send has been received.
@@ -152,12 +155,15 @@ class comm_files : public comms_base {
    * It is up to the caller to make sure that data was packed in the right way, and that the cells
    * were sent in the same order that they are received.  No checking of this is performed.
    **/
-  int receive_cell_data(const int,           ///< rank of process we are receiving from.
-			std::list<cell *> *, ///< list of cells to get data for. 
-			const long int,      ///< number of cells in list (extra checking!)
-			const int,           ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-			const std::string &  ///< identifier for receive, for any book-keeping that might be needed.
-			);
+  int receive_cell_data(
+      const int,           ///< rank of process we are receiving from.
+      std::list<cell *> *, ///< list of cells to get data for. 
+      const long int,      ///< number of cells in list (extra checking!)
+      const int,           ///< ndim
+      const int,           ///< nvar
+      const int,           ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
+      const std::string &  ///< identifier for receive, for any book-keeping that might be needed.
+      );
 
   /** \brief Receive array of doubles from a specific process rank. 
    *

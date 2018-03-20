@@ -70,10 +70,11 @@
 
 
 dataio_silo_pllel::dataio_silo_pllel(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       std::string dtype,   ///< FLOAT or DOUBLE for files.
       class MCMDcontrol *p
       )
- : dataio_silo(dtype)
+ : dataio_silo(SimPM, dtype)
 {
 #ifdef TESTING
   cout <<"Setting up parallel Silo I/O class.\n";
@@ -104,7 +105,8 @@ dataio_silo_pllel::~dataio_silo_pllel()
 
 
 int dataio_silo_pllel::ReadHeader(
-      string infile ///< file to read from
+      string infile, ///< file to read from
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   int err=0;
@@ -142,7 +144,7 @@ int dataio_silo_pllel::ReadHeader(
   // Now read the header, and also NUM_FILES, which tells me how many files
   // there are for when I need to read in the data later on.
   //
-  err = read_simulation_parameters();
+  err = read_simulation_parameters(SimPM);
   dataio_silo::ndim = SimPM.ndim;
   if (err) {
     rep.error("dataio_silo_MPI::ReadHeader() error reading header \
@@ -179,7 +181,8 @@ int dataio_silo_pllel::ReadHeader(
 
 int dataio_silo_pllel::ReadData(
       string infile,
-      class GridBaseClass *cg
+      class GridBaseClass *cg,
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   if (!cg)
@@ -194,7 +197,7 @@ int dataio_silo_pllel::ReadData(
 
   // set grid properties for quadmesh 
   if (!have_setup_gridinfo) {
-    err = setup_grid_properties(gp);
+    err = setup_grid_properties(gp, SimPM);
     rep.errorTest("dataio_silo_pllel::ReadData() error setting up grid_props", 0, err);
   }
 
@@ -298,7 +301,7 @@ int dataio_silo_pllel::ReadData(
     cout <<"\t... resetting datatype for this file.\n";
     delete_data_arrays();
     silo_dtype = qm->datatype;
-    create_data_arrays();
+    create_data_arrays(SimPM);
   }
   //
   // qm->coords is a <void **> pointer, so we have to reinterpret
@@ -366,10 +369,10 @@ int dataio_silo_pllel::ReadData(
   //
   // now read each variable in turn from the mesh
   //
-  err = set_readvars(SimPM.eqntype);
+  err = set_readvars(SimPM);
   if (err) rep.error("failed to set readvars in ReadData",err);
   for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-    err = read_variable2grid(*db_ptr, meshname, (*i), mpiPM->LocalNcell);
+    err = read_variable2grid(SimPM, *db_ptr, meshname, (*i), mpiPM->LocalNcell);
     if (err)
       rep.error("dataio_silo_pllel::ReadData() error reading variable",(*i));
   }
@@ -403,6 +406,7 @@ int dataio_silo_pllel::ReadData(
 int dataio_silo_pllel::OutputData(
       const string outfilebase,
       class GridBaseClass *cg,
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
@@ -477,7 +481,7 @@ int dataio_silo_pllel::OutputData(
     // set grid properties for quadmesh 
     // CHANGED FOR MPI LOCAL GRID
     //cout <<"----dataio_silo_pllel::OutputData() setting up grid properties\n";
-    err = setup_grid_properties(gp);
+    err = setup_grid_properties(gp, SimPM);
     if (err)
       rep.error("dataio_silo_pllel::OutputData() error setting up grid_props", err);
     //cout <<"----dataio_silo_pllel::OutputData() grid props setup done\n";
@@ -486,7 +490,7 @@ int dataio_silo_pllel::OutputData(
     // set what data to write to the mesh.
     // NOT THE SAME AS SERIAL VERSION -- ONLY PRIMITIVE VARS!!!
     //cout <<"----dataio_silo_pllel::OutputData() setting up write variables\n";
-    err = setup_write_variables();
+    err = setup_write_variables(SimPM);
     if (err)
       rep.error("dataio_silo_pllel::OutputData() error settting up variables to write to",err);
     //cout <<"----dataio_silo_pllel::OutputData() write vars setup done\n";
@@ -512,7 +516,7 @@ int dataio_silo_pllel::OutputData(
   temp.width(4);
   temp<<mpiPM->get_myrank();
   string meshname=temp.str();
-  err = generate_quadmesh(*db_ptr, meshname);
+  err = generate_quadmesh(*db_ptr, meshname, SimPM);
   if (err)
     rep.error("dataio_silo_pllel::OutputData() error writing quadmesh to silo file",err);
   //  cout <<"----dataio_silo_pllel::OutputData() quadmesh generated\n";
@@ -521,11 +525,11 @@ int dataio_silo_pllel::OutputData(
   // now write each variable in turn to the mesh
   //
   //  cout <<"----dataio_silo_pllel::OutputData() creating data arrays\n";
-  create_data_arrays();
+  create_data_arrays(SimPM);
   //  cout <<"----dataio_silo_pllel::OutputData() arrays created\n";
   for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
     //    cout <<"\twriting variable "<<(*i)<<" to file "<<silofile<<"\n";
-    err = write_variable2mesh(*db_ptr, meshname, (*i));
+    err = write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
     //    cout <<"\t\tvariable "<<(*i)<<" written.\n";
     if (err) rep.error("dataio_silo_pllel::OutputData() error writing variable",(*i));
   }
@@ -557,7 +561,7 @@ int dataio_silo_pllel::OutputData(
     err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
     err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
     //    err = write_header(*db_ptr);
-    err = write_simulation_parameters();
+    err = write_simulation_parameters(SimPM);
     if (err)
       rep.error("dataio_silo_pllel::OutputData() error writing header to silo file",err);
 
@@ -664,7 +668,7 @@ int dataio_silo_pllel::OutputData(
     pp.set_nproc(mpiPM->get_nproc());
     for (int v=0; v<nmesh; v++) {
       pp.set_myrank(v);
-      pp.decomposeDomain();
+      pp.decomposeDomain(SimPM);
       zonecounts[v] = pp.LocalNcell;
       externalzones[v] = 0; // set to 1 if domain has zones outside multimesh.
       for (int i=0; i<ndim;i++) {
@@ -753,13 +757,13 @@ int dataio_silo_pllel::OutputData(
     // Now write a mulitmeshadj object (but only if nproc>1).
     // 
     if (mpiPM->get_nproc()>1) {
-      err = write_multimeshadj(*db_ptr, gp, mm_name, mma_name);
+      err = write_multimeshadj(SimPM, *db_ptr, gp, mm_name, mma_name);
       if (err) rep.error("Failed to write multimesh Adjacency Object",err);
     }
     //
     // Write an MRG Tree object (NOT IMPLEMENTED IN SILO/VISIT YET!!)
     //
-    //err = write_MRGtree(*db_ptr, gp, mm_name, mrgt_name);
+    //err = write_MRGtree(SimPM, *db_ptr, gp, mm_name, mrgt_name);
     //if (err) rep.error("Failed to write MRG tree Object",err);
     
   } // if root processor of whole simulation
@@ -815,8 +819,9 @@ int dataio_silo_pllel::choose_pllel_filename(
 
 
 int dataio_silo_pllel::setup_grid_properties(
-        class GridBaseClass *grid ///< pointer to data.
-        )
+      class GridBaseClass *grid, ///< pointer to data.
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
   // This version is for the local domain of the current processor.
@@ -956,7 +961,9 @@ int dataio_silo_pllel::setup_grid_properties(
 
 
 
-void dataio_silo_pllel::create_data_arrays()
+void dataio_silo_pllel::create_data_arrays(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   // first check if we have the data arrays set up yet.
   // We need at least one array for a scalar, and two more for a
@@ -1049,6 +1056,7 @@ void dataio_silo_pllel::create_data_arrays()
 // Write a mulitmesh adjacency object
 // 
 int dataio_silo_pllel::write_multimeshadj(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       DBfile *dbfile, ///< pointer to silo file.
       class GridBaseClass *ggg, ///< pointer to data.
       string mm_name, ///< multimesh  name
@@ -1086,12 +1094,12 @@ int dataio_silo_pllel::write_multimeshadj(
   std::vector<int> ngb_list;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain();
+    pp.decomposeDomain(SimPM);
     //
     // Get list of abutting domains.
     //
     std::vector<int> dl;
-    pp.get_abutting_domains(dl);
+    pp.get_abutting_domains(SimPM, dl);
     Nngb[v] = dl.size();
     for (unsigned int i=0; i<static_cast<unsigned int>(Nngb[v]); i++)
       ngb_list.push_back(dl[i]);
@@ -1145,7 +1153,7 @@ int dataio_silo_pllel::write_multimeshadj(
   //long int ct=0;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain();
+    pp.decomposeDomain(SimPM);
     long int off1 = Sk[v]; // this should be the same as ct (maybe don't need ct then!)
 
     //
@@ -1201,8 +1209,8 @@ int dataio_silo_pllel::write_multimeshadj(
       //
       int my_ix[MAX_DIM], ngb_ix[MAX_DIM];
       for (int ii=0;ii<MAX_DIM;ii++) my_ix[ii] = ngb_ix[ii] = -1;
-      pp.get_domain_ix(pp.get_myrank(),my_ix);
-      pp.get_domain_ix(ngb[off1],ngb_ix);
+      pp.get_domain_ix(SimPM, pp.get_myrank(),my_ix);
+      pp.get_domain_ix(SimPM, ngb[off1],ngb_ix);
       
       //
       // X-dir first.
@@ -1327,31 +1335,12 @@ int dataio_silo_pllel::write_multimeshadj(
 
 
 
-//
-// Write a mulitmesh object
-// 
-int dataio_silo_pllel::write_multimesh(
-      DBfile *dbfile, ///< pointer to silo file.
-      class GridBaseClass *ggg, ///< pointer to data.
-      string mm_name, ///< multimesh  name
-      string mma_name ///< multimeshadj name.
-      )
-{
-  //    cout <<"Finished writing multimesh data to file...\n";
-  rep.error("don't call me!","write_multimesh");
-  return 0;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
 
 //
 // Write a MRG tree object
 // 
 int dataio_silo_pllel::write_MRGtree(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       DBfile *dbfile, ///< pointer to silo file.
       class GridBaseClass *ggg, ///< pointer to data.
       string mm_name, ///< multimesh  name
@@ -1423,7 +1412,7 @@ int dataio_silo_pllel::write_MRGtree(
   int ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain();
+    pp.decomposeDomain(SimPM);
     //
     // Count how many neighbours we have
     //
@@ -1517,7 +1506,7 @@ int dataio_silo_pllel::write_MRGtree(
   ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain();
+    pp.decomposeDomain(SimPM);
 
     //
     // Count how many neighbours we have; length is 6 ints per

@@ -44,6 +44,7 @@
 ///    to sim_control_XX, to better reflect what the class does!
 ///    Moved MPI-parallelised class to its own new file.
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef SIM_CONTROL_H
 #define SIM_CONTROL_H
@@ -133,6 +134,11 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   // Data Variables common to all implementations.
   //
   ///
+  /// information about the simulation
+  ///
+  class SimParams SimPM;
+
+  ///
   /// information about multi-core-multi-domain simulations, used for
   /// MPI communication between processes.
   ///
@@ -202,16 +208,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   int set_equations();
 
     
-  ///
-  /// Determines what kind of boundary conditions are needed.
-  /// Sets gp.Nbc to the appropriate value for the order of accuracy used.
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  //int boundary_conditions(
-  //      class GridBaseClass * 
-  //      );
-
   ///
   /// Delete any init data and make sure things are ready to go.
   /// 

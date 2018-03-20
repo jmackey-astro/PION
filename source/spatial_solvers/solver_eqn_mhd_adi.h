@@ -80,6 +80,7 @@ class FV_solver_mhd_ideal_adi
         pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
         pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
         const double, ///< gas EOS gamma.
+        const double, ///< Min Temperature allowed on grid.
         const double  ///< Cell timestep dt.
         );
   ///
@@ -102,6 +103,7 @@ class FV_solver_mhd_ideal_adi
         pion_flt *,       ///< pointer to conserved variables.
         const double    ///< Gas constant gamma.
         );
+
   ///
   /// This calls the original version and then adds conversion of tracer variables.
   /// 
@@ -110,10 +112,12 @@ class FV_solver_mhd_ideal_adi
   /// conserved variable is the mass density of this.
   ///
   virtual int UtoP(
-        const pion_flt *, ///< pointer to conserved variables.
-        pion_flt *, ///< pointer to Primitive variables.
-        const double    ///< Gas constant gamma.
-        );
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< Min Temperature allowed on grid.
+      const double    ///< Gas constant gamma.
+      );
+
   ///
   /// This calls the original version and then adds conversion of tracer variables.
   /// 
@@ -171,20 +175,22 @@ class FV_solver_mhd_mixedGLM_adi
         );
    ~FV_solver_mhd_mixedGLM_adi();
    
-   ///
-   /// General Finite volume scheme for updating a cell's
-   /// primitive state vector, for homogeneous equations.
-   /// For the mixedGLM equations, we need to add a source term to the update of Psi.
-   ///
-   virtual int CellAdvanceTime(
-        class cell *c, ///< cell to update.
-        const pion_flt *, ///< Initial Primitive State Vector.
-        pion_flt *, ///< Update vector dU
-        pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
-        pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
-        const double, ///< gas EOS gamma.
-        const double  ///< Cell timestep dt.
-        );
+  ///
+  /// General Finite volume scheme for updating a cell's
+  /// primitive state vector, for homogeneous equations.
+  /// For the mixedGLM equations, we need to add a source term to the update of Psi.
+  ///
+  virtual int CellAdvanceTime(
+      class cell *c, ///< cell to update.
+      const pion_flt *, ///< Initial Primitive State Vector.
+      pion_flt *, ///< Update vector dU
+      pion_flt *, ///< Final Primitive state vector (can be same as initial vec.).
+      pion_flt *,  ///< Tracks change of energy if I have to correct for negative pressure
+      const double, ///< gas EOS gamma.
+      const double, ///< Min Temperature allowed on grid.
+      const double  ///< Cell timestep dt.
+      );
+
   ///
   /// This calls the original version and then adds conversion of tracer variables.
   /// 
@@ -193,10 +199,10 @@ class FV_solver_mhd_mixedGLM_adi
   /// conserved variable is the mass density of this.
   ///
   virtual void PtoU(
-        const pion_flt *, ///< pointer to Primitive variables.
-        pion_flt *,       ///< pointer to conserved variables.
-        const double    ///< Gas constant gamma.
-        );
+      const pion_flt *, ///< pointer to Primitive variables.
+      pion_flt *,       ///< pointer to conserved variables.
+      const double    ///< Gas constant gamma.
+      );
   ///
   /// This calls the original version and then adds conversion of tracer variables.
   /// 
@@ -205,17 +211,18 @@ class FV_solver_mhd_mixedGLM_adi
   /// conserved variable is the mass density of this.
   ///
   virtual int UtoP(
-        const pion_flt *, ///< pointer to conserved variables.
-        pion_flt *, ///< pointer to Primitive variables.
-        const double    ///< Gas constant gamma.
-        );
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< Min Temperature allowed on grid.
+      const double    ///< Gas constant gamma.
+      );
 
-   ///
-   /// This sets the values of GLM_chyp and GLM_cr based on the timestep.
-   ///
-   virtual void GotTimestep(
-        const double  ///< timestep dt.
-        );
+  ///
+  /// This sets the values of GLM_chyp and GLM_cr based on the timestep.
+  ///
+  virtual void GotTimestep(
+      const double  ///< timestep dt.
+      );
 };
 
 

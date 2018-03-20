@@ -111,7 +111,7 @@ if [ ! -z "$DDD" ]; then
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=imac
-  NCORES=4
+  NCORES=1
 fi
 #################################
 
@@ -185,6 +185,8 @@ PION_OPTIONS+=" -DCODE_EXT_SBII"
 export PION_OPTIONS
 echo PION_OPTIONS: $PION_OPTIONS
 
+#PION_OPTIONS="$PION_OPTIONS -DLEGACY_CODE"
+#export PION_OPTIONS
 #####################################################################
 
 #####################################################################

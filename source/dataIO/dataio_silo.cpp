@@ -77,8 +77,10 @@ using namespace std;
 
 
 dataio_silo::dataio_silo(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       std::string dtype // read/write either FLOAT or DOUBLE to/from file
       )
+: DataIOBase(SimPM)
 {
 #ifdef TESTING
   cout <<"setting up dataio_silo class.\n";
@@ -197,8 +199,9 @@ void dataio_silo::SetSolver(FV_solver_base *solver)
 
 
 int dataio_silo::WriteHeader(
-          const string overwritefile ///< file to write to (full, exact filename).
-          )
+      const string overwritefile, ///< file to write to (full, exact filename).
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //
   // File must already exist, so we call Open() with the APPEND setting
@@ -218,7 +221,7 @@ int dataio_silo::WriteHeader(
     DBMkDir(*db_ptr,"header");
     DBSetDir(*db_ptr,"/header");
   }
-  err = write_simulation_parameters();
+  err = write_simulation_parameters(SimPM);
   if (err)
     rep.error("dataio_silo::OutputData() error writing header to silo file",err);
 
@@ -234,10 +237,11 @@ int dataio_silo::WriteHeader(
 
 
 int dataio_silo::OutputData(
-        const string outfile,
-        class GridBaseClass *cg,
-        const long int file_counter   ///< number to stamp file with (e.g. timestep)
-        )
+      const string outfile,
+      class GridBaseClass *cg,
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      const long int file_counter   ///< number to stamp file with (e.g. timestep)
+      )
 {
   if (!cg)
     rep.error("dataio_silo::OutputData() null pointer to grid!",cg);
@@ -271,13 +275,13 @@ int dataio_silo::OutputData(
 
   if (!have_setup_gridinfo) {
     // set grid properties for quadmesh
-    err = dataio_silo::setup_grid_properties(gp);
+    err = dataio_silo::setup_grid_properties(gp, SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() error setting up grid_props", err);
   }
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
-    err = dataio_silo::setup_write_variables();
+    err = dataio_silo::setup_write_variables(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() error settting up variables to write to",err);
   }
@@ -288,7 +292,7 @@ int dataio_silo::OutputData(
   DBSetDir(*db_ptr,"/");
   DBMkDir(*db_ptr,"header");
   DBSetDir(*db_ptr,"/header");
-  err = write_simulation_parameters();
+  err = write_simulation_parameters(SimPM);
   if (err)
     rep.error("dataio_silo::OutputData() error writing header to silo file",err);
 
@@ -298,13 +302,13 @@ int dataio_silo::OutputData(
   //
   DBSetDir(*db_ptr,"/");
   string meshname="UniformGrid";
-  err = dataio_silo::generate_quadmesh(*db_ptr, meshname);
+  err = dataio_silo::generate_quadmesh(*db_ptr, meshname,SimPM);
   if (err)
     rep.error("dataio_silo::OutputData() error writing quadmesh to silo file",err);
 
-  dataio_silo::create_data_arrays();
+  dataio_silo::create_data_arrays(SimPM);
   for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
-    err = dataio_silo::write_variable2mesh(*db_ptr, meshname, (*i));
+    err = dataio_silo::write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
     if (err)
       rep.error("dataio_silo::OutputData() error writing variable",(*i));
   }
@@ -324,7 +328,8 @@ int dataio_silo::OutputData(
 
 
 int dataio_silo::ReadHeader(
-      string infile ///< file to read from
+      string infile, ///< file to read from
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   int err=0;
@@ -346,7 +351,7 @@ int dataio_silo::ReadHeader(
   }
 
   DBSetDir(*db_ptr,"/header");
-  err = read_simulation_parameters();
+  err = read_simulation_parameters(SimPM);
   if (err) {
     rep.error("dataio_silo::ReadHeader() error reading header \
                from silo file",err);
@@ -367,9 +372,11 @@ int dataio_silo::ReadHeader(
 
 
 
-int dataio_silo::ReadData(string infile,
-			  class GridBaseClass *cg
-			  )
+int dataio_silo::ReadData(
+      string infile,
+      class GridBaseClass *cg,
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   if (!cg)
     rep.error("dataio_silo::ReadData() null pointer to grid!",cg);
@@ -380,7 +387,7 @@ int dataio_silo::ReadData(string infile,
   if (!have_setup_gridinfo) {
     // set grid properties for quadmesh,
     // also check grid pointer is not null.
-    err = dataio_silo::setup_grid_properties(gp);
+    err = dataio_silo::setup_grid_properties(gp, SimPM);
     if (err)
       rep.error("dataio_silo::ReadData() error setting up grid_props", err);
   }
@@ -430,7 +437,7 @@ int dataio_silo::ReadData(string infile,
 //   DBSetDir(db_ptr,"/");
   
 
-  err = set_readvars(SimPM.eqntype);
+  err = set_readvars(SimPM);
   if (err) rep.error("failed to set readvars in ReadData",err);
 
   //DBSetDir(*db_ptr,"/data");
@@ -439,7 +446,7 @@ int dataio_silo::ReadData(string infile,
 
   // now read each variable in turn from the mesh
   for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-    err = dataio_silo::read_variable2grid(*db_ptr, meshname, (*i), SimPM.Ncell);
+    err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), SimPM.Ncell);
     if (err)
       rep.error("dataio_silo::ReadData() error reading variable",(*i));
   }
@@ -499,10 +506,11 @@ int dataio_silo::choose_filename(
 
 
 int dataio_silo::setup_grid_properties(
-      class GridBaseClass *grid
+      class GridBaseClass *grid, 
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
+  // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
   //double dx=gp->DX();
@@ -643,7 +651,9 @@ int dataio_silo::setup_grid_properties(
 
 
 
-int dataio_silo::setup_write_variables()
+int dataio_silo::setup_write_variables(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   if (!varnames.empty())
     rep.error("dataio_silo::setup_write_variables() variable list not empty!",varnames.size());
@@ -751,7 +761,7 @@ int dataio_silo::setup_write_variables()
 #endif // RT_TESTING_OUTPUTCOL
 
   //
-  // if there are any tracer variables, get their names from SimPM.trtype,
+  // if there are any tracer variables, get their names from SimPM.tracers,
   // if it has the info.  All we really need is "TrXXX", where the Xs are 
   // the tracer number.
   //
@@ -763,18 +773,7 @@ int dataio_silo::setup_write_variables()
       temp.str("");
       temp<< "Tr";
       temp.width(3); temp.fill('0'); temp << i;
-
-#ifdef OLD_TRACER
-
-      if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
-        temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
-      }
-
-# else
-      
-      temp <<"_"<< SimPM.trtype[i];
-
-#endif // OLD_TRACER
+      temp <<"_"<< SimPM.tracers[i];
 
       s=temp.str();
       // replace "+" with "p", and "-" with "m"
@@ -871,7 +870,11 @@ int dataio_silo::write_header_param(class pm_base *p)
 
 
 
-int dataio_silo::generate_quadmesh(DBfile *dbfile, string meshname)
+int dataio_silo::generate_quadmesh(
+      DBfile *dbfile,
+      string meshname,
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   DBClearOption(GridOpts,DBOPT_DTIME);
   DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
@@ -928,7 +931,9 @@ int dataio_silo::generate_quadmesh(DBfile *dbfile, string meshname)
 
 
 
-void dataio_silo::create_data_arrays()
+void dataio_silo::create_data_arrays(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //
   // first check if we have the data arrays set up yet.
@@ -1048,6 +1053,7 @@ void dataio_silo::delete_data_arrays()
 
 
 int dataio_silo::write_variable2mesh(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       DBfile *dbfile,  ///< pointer to silo file.
       string meshname, ///< name of mesh to write to.
       string variable  ///< variable name to write.
@@ -1058,7 +1064,7 @@ int dataio_silo::write_variable2mesh(
   
   if (variable=="Velocity" || variable=="MagneticField") {
     // put data into vec array.
-    err = get_vector_data_array(variable, vec_data);
+    err = get_vector_data_array(variable, SimPM, vec_data);
     if (err) rep.error("failed to get vector data for var.",variable);
     // write data to mesh.
     err = write_vector2mesh(dbfile, meshname, variable, vec_data);
@@ -1067,7 +1073,7 @@ int dataio_silo::write_variable2mesh(
 
   else {
     // scalar variable, already have array, so just get data and write it.
-    err = get_scalar_data_array(variable, data0);
+    err = get_scalar_data_array(variable, SimPM,  data0);
     if (err) rep.error("failed to get scalar data for var.",variable);
     err = write_scalar2mesh(dbfile, meshname, variable, data0);
     if (err) rep.error("failed to write scalar data for var.",variable);
@@ -1085,6 +1091,7 @@ int dataio_silo::write_variable2mesh(
 
 int dataio_silo::get_scalar_data_array(
       string variable, ///< variable name to get.
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       void *data_array     ///< array to write to.
       )
 {
@@ -1401,19 +1408,20 @@ int dataio_silo::get_scalar_data_array(
 
 int dataio_silo::get_vector_data_array(
       string variable, ///< variable name to get.
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       void **buffer  ///< array to write to.
       )
 {
   int err=0;
   if (variable=="Velocity") {
-    err += get_scalar_data_array("VelocityX",buffer[0]);
-    if (vec_length>1) err += get_scalar_data_array("VelocityY",buffer[1]);
-    if (vec_length>2) err += get_scalar_data_array("VelocityZ",buffer[2]);
+    err += get_scalar_data_array("VelocityX", SimPM, buffer[0]);
+    if (vec_length>1) err += get_scalar_data_array("VelocityY", SimPM, buffer[1]);
+    if (vec_length>2) err += get_scalar_data_array("VelocityZ", SimPM, buffer[2]);
   }
   else if (variable=="MagneticField") {
-    err += get_scalar_data_array("MagneticFieldX",buffer[0]);
-    if (vec_length>1) err += get_scalar_data_array("MagneticFieldY",buffer[1]);
-    if (vec_length>2) err += get_scalar_data_array("MagneticFieldZ",buffer[2]);
+    err += get_scalar_data_array("MagneticFieldX", SimPM, buffer[0]);
+    if (vec_length>1) err += get_scalar_data_array("MagneticFieldY", SimPM, buffer[1]);
+    if (vec_length>2) err += get_scalar_data_array("MagneticFieldZ", SimPM, buffer[2]);
   }
   else {
     cerr <<"Don't know variable: "<<variable<<" as a vector array.\n";
@@ -1568,8 +1576,9 @@ int dataio_silo::read_header_param(class pm_base *p)
 
 
 
-int dataio_silo::set_readvars(int eqns ///< equations we are solving.
-			      )
+int dataio_silo::set_readvars(
+      class SimParams &SimPM
+      )
 {
   // select variables based on what equations we are using.
   // All equations have density, pressure, and velocity.
@@ -1601,11 +1610,11 @@ int dataio_silo::set_readvars(int eqns ///< equations we are solving.
 #else
 #error "Must have either scalar components or vector variables defined!"
 #endif
-    if (eqns==EQGLM) 
+    if (SimPM.eqntype==EQGLM) 
       readvars.push_back("glmPSI");
   }
   //
-  // if there are any tracer variables, get their names from SimPM.trtype,
+  // if there are any tracer variables, get their names from SimPM.tracers,
   // if it contains the details.  At least it's name will start with 
   // "TrXXX", which is all we really need.
   //
@@ -1615,18 +1624,7 @@ int dataio_silo::set_readvars(int eqns ///< equations we are solving.
       s.erase(); temp.str("");
       temp<< "Tr";
       temp.width(3); temp.fill('0'); temp << i;
-
-#ifdef OLD_TRACER
-
-      if (static_cast<int>(SimPM.trtype.size()) > 6*(i+1)) {
-        temp<<"_"<< SimPM.trtype.substr(6*(i+1),6);
-      }
-
-# else
-      
-      temp <<"_"<< SimPM.trtype[i];
-
-#endif // OLD_TRACER
+      temp <<"_"<< SimPM.tracers[i];
 
       s=temp.str();
       // replace "+" with "p", and "-" with "m"
@@ -1650,6 +1648,7 @@ int dataio_silo::set_readvars(int eqns ///< equations we are solving.
 
 
 int dataio_silo::read_variable2grid(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       DBfile *dbfile,  ///< pointer to silo file.
       string, ///< name of mesh to read from (can use it for debugging)
       string variable, ///< variable name to read.
@@ -1684,7 +1683,7 @@ int dataio_silo::read_variable2grid(
     cout <<"\t... resetting datatype for this file.\n";
     delete_data_arrays();
     silo_dtype = silodata->datatype;
-    create_data_arrays();
+    create_data_arrays(SimPM);
   }
 
   //

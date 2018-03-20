@@ -110,8 +110,18 @@ struct wind_source {
 ///
 class stellar_wind {
  public:
-  stellar_wind();
+  stellar_wind(
+      const int, ///< ndim
+      const int, ///< nvar
+      const int, ///< ntracer
+      const int, ///< ftr
+      const int, ///< coord_sys
+      const int,  ///< eqn_type
+      const double ///< minimum temperature allowed
+      );
+
   virtual ~stellar_wind();
+
   ///
   /// Add a wind source, returns source id (count from zero).
   /// Note the temperature is in Kelvin if we have a pure neutral atomic
@@ -255,6 +265,13 @@ class stellar_wind {
   // --------------------------------------------------------------
 
  protected:
+  const int ndim;     ///< number of dimensions on grid
+  const int nvar;     ///< number of variables in state vec.
+  const int ntracer;  ///< number of tracer variables in state vec.
+  const int ftr;      ///< first tracer index in state vec.
+  const int coordsys; ///< identifier of coordinate system
+  const int eqntype;  ///< Type of equations to solve
+  const double Tmin;  ///< Minimum Temperature allowed on grid.
 
   ///
   /// Set values of wind_cell reference state based on Wind-Source properties
@@ -263,7 +280,8 @@ class stellar_wind {
   void set_wind_cell_reference_state(
       class GridBaseClass *,
       struct wind_cell *,
-      const struct wind_source *
+      const struct wind_source *,
+      const double ///< EOS gamma
       );
 
   std::vector<struct wind_source *> wlist; ///< list of sources.
@@ -299,9 +317,9 @@ struct evolving_wind_data {
 
 
 ///
-/// \brief stellar_wind_evolution: Derived class for time-varying stellar winds, with
-/// values set by spline interpolation of a table of values read in from a text
-/// file.
+/// \brief stellar_wind_evolution: Derived class for time-varying
+/// stellar winds, with values set by interpolation of a table of
+/// values read in from a text file.
 ///
 /// \date 2011.02.14
 /// \author Jonathan Mackey
@@ -311,7 +329,18 @@ class stellar_wind_evolution : virtual public stellar_wind {
   ///
   /// Constructor: 
   ///
-  stellar_wind_evolution();
+  stellar_wind_evolution(
+      const int, ///< ndim
+      const int, ///< nvar
+      const int, ///< ntracer
+      const int, ///< ftr
+      const int, ///< coord_sys
+      const int,  ///< eqn_type
+      const double, ///< minimum temperature allowed
+      const double, ///< Simulation start time.
+      const double  ///< Simulation finish time.
+      );
+  
   ///
   /// Destructor (Delete spline arrays, etc.)
   ///
@@ -370,6 +399,9 @@ class stellar_wind_evolution : virtual public stellar_wind {
       );
 
   protected:
+  const double sim_start;  ///< start time of simulation.
+  const double sim_finish; ///< finish time of simulation.
+
   ///
   /// If it is time to update the wind properties then this function does it, 
   /// updating both the wind properties and the state vectors of all of the
@@ -378,7 +410,8 @@ class stellar_wind_evolution : virtual public stellar_wind {
   virtual void update_source(
       class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
-      const double ///< current simulation time.
+      const double, ///< current simulation time.
+      const double  ///< EOS Gamma
       );
 
   ///

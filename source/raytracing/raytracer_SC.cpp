@@ -113,9 +113,15 @@ using namespace std;
 
 
 
-raytracer_USC_infinity::raytracer_USC_infinity(class GridBaseClass *ggg,   ///< Pointer to grid
-					       class MicroPhysicsBase *mmm ///< Pointer to MicroPhysics.
-					       )
+raytracer_USC_infinity::raytracer_USC_infinity(
+    class GridBaseClass *ggg,   ///< Pointer to grid
+    class microphysics_base *mmm, ///< Pointer to MicroPhysics.
+    int nd,         ///< number of dimensions of grid
+    int csys,  ///< coordinate system
+    int nv,         ///< number of variables in state vector
+    int ftr         ///< index of first tracer variable in state vector
+    )
+: ndim(nd), coord_sys(csys), nvar(nv), first_tr(ftr)
 {
 #ifdef RT_TESTING
   cout <<"SC src-at-infinity (parallel-rays) raytracer class constructor!\n";
@@ -129,7 +135,6 @@ raytracer_USC_infinity::raytracer_USC_infinity(class GridBaseClass *ggg,   ///< 
   raytracer_USC_infinity::mpptr=0;   mpptr   = mmm;
   if (!gridptr || !mpptr) rep.error("grid or microphysics null pointers",gridptr);
 
-  raytracer_USC_infinity::ndim = gridptr->Ndim();
 #ifdef RT_TESTING
   cout <<"  ndim = "<<ndim<<" and grid pointer = "<<gridptr<<"\n";
 #endif
@@ -177,8 +182,8 @@ raytracer_USC_infinity::~raytracer_USC_infinity()
 
 
 int raytracer_USC_infinity::Add_Source(
-        struct rad_src_info *src ///< source info.
-        )
+      struct rad_src_info *src ///< source info.
+      )
 {
   //
   // This happens in two stages: first we check all of the source properties
@@ -212,8 +217,8 @@ int raytracer_USC_infinity::Add_Source(
 
 
 void raytracer_USC_infinity::add_source_to_list(
-              struct rad_src_info *src ///< source info.
-              )
+      struct rad_src_info *src ///< source info.
+      )
 {
   rad_source rs;
   
@@ -258,9 +263,9 @@ void raytracer_USC_infinity::add_source_to_list(
   //
   // Check that opacity_var is not running off the end of the state vector.
   //
-  if (rs.s->opacity_var+SimPM.ftr >SimPM.nvar-1) {
-    cout <<"opacity_var="<<rs.s->opacity_var<<" and ftr="<<SimPM.ftr;
-    cout <<", but state-vec has only "<<SimPM.nvar;
+  if (rs.s->opacity_var+first_tr >nvar-1) {
+    cout <<"opacity_var="<<rs.s->opacity_var<<" and ftr="<<first_tr;
+    cout <<", but state-vec has only "<<nvar;
     cout <<" elements.  The opacity";
     cout <<" var will run off then end of the state vector array.\n";
     cout <<"OPACITY_VAR IS OFFSET - 1ST TRACER HAS OPACITY_VAR=0.\n";
@@ -322,7 +327,7 @@ void raytracer_USC_infinity::add_source_to_list(
   // infinity in the positive radial direction, since I need it for
   // diffuse field calculations.
   //
-  if (SimPM.coord_sys==COORD_CYL) {
+  if (coord_sys==COORD_CYL) {
     if (dir!=ZNcyl && dir!=ZPcyl && dir!=RPcyl) {
       rep.error("Cylindrical coords, but source not at infinity in z-dir",dir);
     }
@@ -595,10 +600,11 @@ int raytracer_USC_infinity::RayTrace_Column_Density(
 
 
 
-int raytracer_USC_infinity::RayTrace_SingleSource(const int s_id, ///< Source id
-						  const double dt, ///< Timestep
-						  const double g /// eos gamma
-						  )
+int raytracer_USC_infinity::RayTrace_SingleSource(
+      const int s_id, ///< Source id
+      const double dt, ///< Timestep
+      const double g /// eos gamma
+      )
 {
   //cout <<"*******RT single source. \n";
   raytracer_USC_infinity::gamma = g;
@@ -805,7 +811,7 @@ int raytracer_USC_infinity::ProcessCell(
       double col2cell[],        ///< Column to cell (optical depth)
       double ds,                ///< Path length through cell.
       const rad_source *source, ///< pointer to source struct.
-      const double dt           ///< Timestep
+      const double dt          ///< Timestep
       )
 {
   //
@@ -855,11 +861,11 @@ int raytracer_USC_infinity::ProcessCell(
       case RT_OPACITY_MINUS:
         // this is a generic flag for integrating rho*(1-y_i)*ds
 #ifdef RT_TESTING
-        if (c->Ph[source->s->opacity_var+SimPM.ftr]>0.01) {
+        if (c->Ph[source->s->opacity_var+first_tr]>0.01) {
           cout <<"RT::ProcessCell:  ds="<<ds<<", rho="<<c->Ph[RO];
           cout <<", (1-x)=";
-          cout <<(1.0-c->Ph[source->s->opacity_var+SimPM.ftr]);
-          cout <<" var="<<source->s->opacity_var+SimPM.ftr<<"\n";
+          cout <<(1.0-c->Ph[source->s->opacity_var+first_tr]);
+          cout <<" var="<<source->s->opacity_var+first_tr<<"\n";
         }
 #endif
         // if cell is an internal boundary, don't consider it's
@@ -870,7 +876,7 @@ int raytracer_USC_infinity::ProcessCell(
         }
         else {
           cell_col[0] *= c->Ph[RO]*
-                       (1.0-c->Ph[source->s->opacity_var+SimPM.ftr]);
+                       (1.0-c->Ph[source->s->opacity_var+first_tr]);
           col2cell[0] += cell_col[0];
         }
         CI.set_cell_col(c, source->s->id, cell_col);
@@ -891,7 +897,7 @@ int raytracer_USC_infinity::ProcessCell(
         }
         else {
           cell_col[0] *= c->Ph[RO]*
-                         c->Ph[source->s->opacity_var+SimPM.ftr];
+                         c->Ph[source->s->opacity_var+first_tr];
           col2cell[0] += cell_col[0];
         }
         CI.set_cell_col(c, source->s->id, cell_col);
@@ -918,20 +924,20 @@ int raytracer_USC_infinity::ProcessCell(
         // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
         // Then I(out) = S +exp(-dtau)*(I(in)-S)
         //
-        cell_col[0] = 0.22*(c->Ph[RO]*SimPM.EP.H_MassFrac/pconst.m_p())
-                  *1.1*c->Ph[source->s->opacity_var+SimPM.ftr]
-                      *c->Ph[source->s->opacity_var+SimPM.ftr]
-                  *pow(MP->Temperature(c->Ph,SimPM.gamma),-0.9);
-        //cell_col = 0.55*(c->Ph[RO]*SimPM.EP.H_MassFrac/*pconst.m_p())
-        //          *1.1*c->Ph[source->s->opacity_var+SimPM.ftr]
-        //              *c->Ph[source->s->opacity_var+SimPM.ftr]
-        //          *pow(MP->Temperature(c->Ph,SimPM.gamma),-1.0);
+        cell_col[0] = 0.22*(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())
+                  *1.1*c->Ph[source->s->opacity_var+first_tr]
+                      *c->Ph[source->s->opacity_var+first_tr]
+                  *pow(MP->Temperature(c->Ph,gamma),-0.9);
+        //cell_col = 0.55*(c->Ph[RO]*mpptr->get_X_H()/*pconst.m_p())
+        //          *1.1*c->Ph[source->s->opacity_var+first_tr]
+        //              *c->Ph[source->s->opacity_var+first_tr]
+        //          *pow(MP->Temperature(c->Ph,gamma),-1.0);
 
         //
         // now set cell_col[0] to be I(out)
         //
         cell_col[0] = cell_col[0]+
-            exp(-(c->Ph[RO]*SimPM.EP.H_MassFrac/pconst.m_p())*5.0e-22*ds)
+            exp(-(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())*5.0e-22*ds)
             *(col2cell[0]-cell_col[0]);
         //
         // set col2cell[0] to be I(out)-I(in)
@@ -944,21 +950,21 @@ int raytracer_USC_infinity::ProcessCell(
       case RT_OPACITY_RR:
         //
         // Get the radiative recombination rate *Vshell, for the 
-        // photoionisation eqiulibrium assumption (with caseB).
+        // photoionisation equilibrium assumption (with caseB).
         // For sources at infinity Vshell is ds.  In this case we
         // have to assume the cell is fully ionised, so we set the
         // first tracer value to 1.0 in c->Ph[] when we call the rate
         // function, and reset it afterwards.
         //
-        temp = c->Ph[SimPM.ftr];
-        c->Ph[SimPM.ftr] = 1.0;
+        temp = c->Ph[first_tr];
+        c->Ph[first_tr] = 1.0;
         cell_col[0] = CI.get_cell_Vshell(c,source->s->id)/
                     source->s->strength*
-                    MP->get_recombination_rate(0, c->Ph,SimPM.gamma);
+                    MP->get_recombination_rate(0, c->Ph,gamma);
         col2cell[0] += cell_col[0];
         CI.set_cell_col(c, source->s->id, cell_col);
         CI.set_col     (c, source->s->id, col2cell);
-        c->Ph[SimPM.ftr] = temp;
+        c->Ph[first_tr] = temp;
         break;
 
       case RT_OPACITY_HHE:
@@ -971,7 +977,7 @@ int raytracer_USC_infinity::ProcessCell(
         // Element/Ion constants are defined in constants.h
         //
         // ---------- H0 -----------
-        ix = source->s->opacity_var+SimPM.ftr;
+        ix = source->s->opacity_var+first_tr;
         cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
                       MP->get_th_xsection(ION_H_N)*c->Ph[ix];
         col2cell[0] += cell_col[0];
@@ -1069,7 +1075,7 @@ int raytracer_USC_infinity::ProcessCell_TimeUpdate(
             double col2cell[],        ///< Columns to cell
             double ds,                ///< Path length through cell.
             const rad_source *source, ///< pointer to source struct.
-            const double dt           ///< Timestep
+            const double dt          ///< Timestep
             )
 {
   //
@@ -1086,7 +1092,7 @@ int raytracer_USC_infinity::ProcessCell_TimeUpdate(
   // Set the column densities in the same way as for any other source:
   //
   double delcol[MAX_TAU];
-  delcol[0] = ds*c->Ph[RO]*(1.0-c->Ph[source->s->opacity_var+SimPM.ftr]);
+  delcol[0] = ds*c->Ph[RO]*(1.0-c->Ph[source->s->opacity_var+first_tr]);
   col2cell[0] += delcol[0];
 
 #ifdef RT_TESTING
@@ -1145,11 +1151,11 @@ int raytracer_USC_infinity::ProcessCell_TimeUpdate(
   //
   err += MP->TimeUpdateMP_RTnew(c->P, N_uvh_srcs, UVH_data,
                                       N_ion_srcs, ION_data,
-                                c->Ph, dt, SimPM.gamma, 0, delcol);
+                                c->Ph, dt, gamma, 0, delcol);
   //
   // update Ph and P
   //
-  for (int v=0;v<SimPM.nvar;v++) c->P[v] = c->Ph[v];
+  for (int v=0;v<nvar;v++) c->P[v] = c->Ph[v];
 
   //
   // Now replace the cell DelCol with the value returned from the MP
@@ -1166,7 +1172,7 @@ int raytracer_USC_infinity::ProcessCell_TimeUpdate(
   cout <<"New ProcessCell_TimeUpdate(): cell: "<<c->id;
   cout <<":  col2cell=" <<col2cell[0];
   cout <<":  dcol(t=0)="<<ION_data[0].DelCol[0];
-  cout <<":  <dcol>="<<delcol[0]<<"... x="<<c->P[SimPM.ftr]<<"\n";
+  cout <<":  <dcol>="<<delcol[0]<<"... x="<<c->P[first_tr]<<"\n";
 #endif // RT_TESTING
 
 
@@ -1211,17 +1217,23 @@ int raytracer_USC_infinity::ProcessCell_TimeUpdate(
 // *********************************************************************
 // ##################################################################
 // ##################################################################
-raytracer_USC::raytracer_USC(class GridBaseClass *ggg,   ///< Pointer to grid
-			     class MicroPhysicsBase *mmm ///< Pointer to MicroPhysics Class.
-			     )
-  : raytracer_USC_infinity(ggg,mmm)
+raytracer_USC::raytracer_USC(
+    class GridBaseClass *ggg,    ///< Pointer to grid
+    class microphysics_base *mmm, ///< Pointer to MicroPhysics Class.
+    int nd,     ///< number of dimensions of grid
+    int csys,   ///< coordinate system
+    int nv,     ///< number of variables in state vector
+    int ftr,    ///< index of first tracer variable in state vector
+    int Nsources  ///< Number of radiation sources
+    )
+  : raytracer_USC_infinity(ggg,mmm,nd,csys,nv,ftr)
 {
 #ifdef RT_TESTING
   cout <<"SC raytracer class constructor!\n";
   cout <<"  ndim = "<<ndim<<" and grid pointer = "<<gridptr<<"\n";
 #endif
   if (ndim <1 || ndim>3) rep.error("bad ndim for raytracing!",ndim);
-  if (SimPM.coord_sys==COORD_CYL && ndim!=2)
+  if (coord_sys==COORD_CYL && ndim!=2)
     rep.error("only know 2d cylindrical coords",ndim);
   raytracer_USC::SrcDir = std::vector<enum direction> (ndim,NO);
    
@@ -1241,7 +1253,7 @@ raytracer_USC::raytracer_USC(class GridBaseClass *ggg,   ///< Pointer to grid
   //
   // Set the source Tau-min values vector to have Nsources elements.
   //
-  TauMin.resize(SimPM.RS.Nsources);
+  TauMin.resize(Nsources);
   return;
 }
 
@@ -1422,15 +1434,15 @@ void raytracer_USC::add_source_to_list(
 
 
 void raytracer_USC::set_TauMin_for_source(
-              const struct rad_source rs
-              )
+      const struct rad_source rs
+      )
 {
   //
   // Now set TauMin for this source.  I'm hardcoding it for now, but it
   // can be made a command-line parameter later.
   //
   if (TauMin.size() <= static_cast<unsigned int>(rs.s->id)) {
-    rep.error("Source id is larger than Nsources!",rs.s->id-SimPM.RS.Nsources);
+    rep.error("Source id is larger than Nsources!",rs.s->id-TauMin.size());
   }
   TauMin[rs.s->id]=-1.0;
 
@@ -1566,10 +1578,11 @@ void raytracer_USC::Print_SourceList()
 // ##################################################################
 
 
-int raytracer_USC::RayTrace_SingleSource(const int s_id,  ///< Source id
-					 const double dt, ///< Timestep
-					 const double g   ///< eos gamma.
-					 )
+int raytracer_USC::RayTrace_SingleSource(
+      const int s_id,  ///< Source id
+      const double dt, ///< Timestep
+      const double g   ///< eos gamma.
+      )
 {
 #ifdef RT_TESTING
   cout <<"raytracer_USC::RayTrace_SingleSource() starting.\n";
@@ -2870,19 +2883,19 @@ void raytracer_USC::set_Vshell_in_cell(
   // It would be nice if I had derived classes for each geometry to get rid of these
   // if/else statements, but I don't have time now (JM: 2011.04.15).
   //
-  //if      ((ndim==3 && SimPM.coord_sys==COORD_CRT) ||
-  //         (ndim==2 && SimPM.coord_sys==COORD_CYL) ||
-  //         (ndim==1 && SimPM.coord_sys==COORD_SPH)) {
+  //if      ((ndim==3 && coord_sys==COORD_CRT) ||
+  //         (ndim==2 && coord_sys==COORD_CYL) ||
+  //         (ndim==1 && coord_sys==COORD_SPH)) {
     //
     // 3D shell, volume is 4/3.Pi.((r+dr)^3-r^3) 
     //
     Vshell = 4.0*M_PI*((rs+ds)*(rs+ds)*(rs+ds) -rs*rs*rs)/3.0; // C2Ray method.
   //}
-  //else if (ndim==2 && SimPM.coord_sys==COORD_CRT) {
+  //else if (ndim==2 && coord_sys==COORD_CRT) {
   //  // now 'Volume' is pi*r^2 and flux falls off as 1/r
   //  Vshell = M_PI*((rs+ds)*(rs+ds) -rs*rs); // C2Ray method.
   // }
-  //else if (ndim==1 && SimPM.coord_sys==COORD_CRT) {
+  //else if (ndim==1 && coord_sys==COORD_CRT) {
   //  // 1d, volume is dx and flux doesn't fall off with distance.
   //  Vshell = ds;
   //}
@@ -2925,16 +2938,16 @@ int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
   ds = 0.5*gridptr->DX(); // perpendicular distance from source to cell edge.
   // get photon flux/ds
   photdens = src->s->strength;
-  if      ((ndim==3 && SimPM.coord_sys==COORD_CRT) ||
-	   (ndim==2 && SimPM.coord_sys==COORD_CYL) ||
-	   (ndim==1 && SimPM.coord_sys==COORD_SPH) ) {
+  if      ((ndim==3 && coord_sys==COORD_CRT) ||
+	   (ndim==2 && coord_sys==COORD_CYL) ||
+	   (ndim==1 && coord_sys==COORD_SPH) ) {
     photdens /= 4.0*M_PI*ds*ds*ds/3.0; // C2Ray method.
   }
-  else if (ndim==2 && SimPM.coord_sys==COORD_CRT) {
+  else if (ndim==2 && coord_sys==COORD_CRT) {
     // now 'volume' is pi*r^2 and flux falls off as 1/r
     photdens /= M_PI*ds*ds; // C2Ray method.
   }
-  else if (ndim==1 && SimPM.coord_sys==COORD_CRT) {
+  else if (ndim==1 && coord_sys==COORD_CRT) {
     // 1d, volume is dx and flux doesn't fall off with distance.
     photdens /= ds;
   }
@@ -2952,7 +2965,7 @@ int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
   CI.get_col(c, src->s->id, col)
   MP->TimeUpdate_RTsinglesrc(c->P, c->Ph, dt, gamma, 0, photdens, ds, col, deltau);
 
-  for (int v=0;v<SimPM.nvar;v++) c->P[v]=c->Ph[v];
+  for (int v=0;v<nvar;v++) c->P[v]=c->Ph[v];
   CI.set_col(c, s->id, deltau); // deltau is time-averaged optical depth(s).
   if (deltau[0]<0.0) {
     cout <<"\tSRCCELL: deltau: "<<deltau[0]<<" setting to zero.\n";

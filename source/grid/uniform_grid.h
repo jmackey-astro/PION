@@ -56,6 +56,8 @@
 ///    boundaries). 03.24:fixed some bugs, redefined dir_XP
 /// - 2016.05.02 JM: fixed bug: parallel grid had no SIM_Xmin()/max/
 ///    range() functions, so it was returning G_xmin!
+/// - 2017.11.07-22 JM: updating boundary setup.
+/// - 2017.12.09 JM: updated function args to get rid of SimPM references.
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -178,13 +180,14 @@ class UniformGrid
   ///
   cell *G_fpt_all;
 
-  const int G_ndim; ///< Dimensionality of Grid; public b/c it's constant so can't be messed with.
-  const int G_nvar; ///< Number of variables in state vector;  public b/c it's constant so can't be messed with.
-  const int G_eqntype; ///< Which equations we are using (used in reflective BCs to get it right).
-  int *G_ng;       ///< number of grid points in each direction.
-
-  ///< Total number of grid points.
-  size_t G_ncell;
+  const int G_ndim;   ///< Dimensionality of Grid
+  const int G_nvar;   ///< Number of variables in state vector
+  const int G_eqntype; ///< Which equations we are using.
+  int G_coordsys;     ///< coordinate system (cart/cyl/sph)
+  int G_ntracer;      ///< number of tracer fields.
+  int G_ftr;          ///< index of first tracer field.
+  int *G_ng;          ///< number of grid points in each direction.
+  size_t G_ncell;   ///< Total number of grid points.
   /// Total number of grid points, including boundary points.
   size_t G_ncell_all;
 
@@ -196,14 +199,13 @@ class UniformGrid
   int *G_ixmin;  ///< Min value of x,y,z in domain (integer coordinates).
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
 
-  double G_dx;     ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
-  double G_dA;     ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
-  double G_dV;     ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
+  double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
+  double G_dA;  ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
+  double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
 
   double *Sim_range; ///< Size of full domain in x,y,z-direction.
   double *Sim_xmin;  ///< Min value of x,y,z in full domain.
   double *Sim_xmax;  ///< Max value of x,y,z in full domain.
-
   int *Sim_irange; ///< Size of full domain in x,y,z-direction (integer coordinates).
   int *Sim_ixmin;  ///< Min value of x,y,z in full domain (integer coordinates).
   int *Sim_ixmax;  ///< Max value of x,y,z in full domain (integer coordinates).
@@ -231,19 +233,24 @@ class UniformGrid
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int BC_setBCtypes(
-        string ///< list of strings describing each boundary.
+        class SimParams &  ///< reference to SimParams list.
         );
 
   ///
   /// Assigns data to each boundary.  Called by SetupBCs().
   ///
-  virtual int assign_boundary_data();
+  virtual int assign_boundary_data(
+      const double,   ///< current simulation time (for DMACH)
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double ///< minimum temperature allowed
+      );
 
   /// Assigns data to a periodic boundary.
-  virtual int BC_assign_PERIODIC(  boundary_data *);
+  virtual int BC_assign_PERIODIC( boundary_data *);
 
   /// Assigns data on an outflow (zero gradient) boundary.
-  int         BC_assign_OUTFLOW(   boundary_data *);
+  int         BC_assign_OUTFLOW( boundary_data *);
 
   ///
   /// Assigns data on a one-way outflow (zero gradient) boundary.
@@ -251,22 +258,22 @@ class UniformGrid
   /// is onto domain then I set the boundary cells to have zero normal 
   /// velocity.
   ///
-  int         BC_assign_ONEWAY_OUT(boundary_data *);
+  int         BC_assign_ONEWAY_OUT( boundary_data *);
 
   /// Assigns data on an inflow (fixed) boundary.
-  int         BC_assign_INFLOW(    boundary_data *);
+  int         BC_assign_INFLOW( boundary_data *);
 
   /// Assigns data on a reflecting boundary.
-  int         BC_assign_REFLECTING(boundary_data *);
+  int         BC_assign_REFLECTING( boundary_data *);
 
   /// Assigns data on a fixed boundary.
-  int         BC_assign_FIXED(     boundary_data *);
+  int         BC_assign_FIXED( boundary_data *);
 
   ///
   /// Sets some boundary cells to be fixed to the Jet inflow
   /// condition.
   ///
-  virtual int BC_assign_JETBC(     boundary_data *);
+  virtual int BC_assign_JETBC( boundary_data *);
 
   ///
   /// Assigns data on a JetReflect boundary, which is the same
@@ -278,10 +285,13 @@ class UniformGrid
   int         BC_assign_JETREFLECT(boundary_data *);
 
   /// Assigns data on a boundary for the Double Mach Reflection Problem.
-  int         BC_assign_DMACH(     boundary_data *);
+  int         BC_assign_DMACH(
+        const double,   ///< current simulation time (for DMACH)
+        boundary_data *
+        );
 
   /// Assigns data on The other DMR test problem boundary
-  virtual int BC_assign_DMACH2(    boundary_data *);
+  virtual int BC_assign_DMACH2( boundary_data *);
 
   /// Assigns data for the Radiative Shock Test XN boundary.
   virtual int BC_assign_RADSHOCK(  boundary_data *);
@@ -295,7 +305,13 @@ class UniformGrid
   /// the domain is given fixed values corresponding to a freely expanding wind
   /// from a cell-vertex-located source.
   ///
-  int         BC_assign_STWIND(    boundary_data *);
+  int BC_assign_STWIND(
+      const double,   ///< current simulation time
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double,   ///< minimum temperature allowed
+      boundary_data *
+      );
 
   ///
   /// Add cells to both the Wind class, and to the boundary data list
@@ -311,9 +327,7 @@ class UniformGrid
   /// Add internal boundary of a solid dense wall for the StarBench
   /// shadowing/heating/cooling test by P. Tremblin.
   ///
-  int   BC_assign_STARBENCH1(
-          boundary_data *
-          );
+  int   BC_assign_STARBENCH1( boundary_data *);
 
   ///
   /// Update internal boundary of a solid dense wall for the StarBench
@@ -390,6 +404,7 @@ class UniformGrid
 
   /// Updates data on the double mach reflection (DMR) boundary.
   int         BC_update_DMACH(
+        const double,   ///< current simulation time (for DMACH)
         boundary_data *, ///< Boundary to update.
         const int,  ///< current fractional step being taken.
         const int   ///< final step.
@@ -423,6 +438,7 @@ class UniformGrid
   /// stellar wind class SW
   ///
   int         BC_update_STWIND(
+        const double,   ///< current simulation time
         boundary_data *, ///< Boundary to update.
         const int,  ///< current fractional step being taken.
         const int   ///< final step.
@@ -630,6 +646,7 @@ class UniformGrid
   /// time update on them.
   ///
   virtual int TimeUpdateExternalBCs(
+        const double,   ///< current simulation time
         const int, ///< Current step number in the timestep.
         const int  ///< Maximum step number in timestep.
         );
@@ -639,6 +656,7 @@ class UniformGrid
   /// the appropriate time update on them.
   ///
   virtual int TimeUpdateInternalBCs(
+        const double,   ///< current simulation time
         const int, ///< Current step number in the timestep.
         const int  ///< Maximum step number in timestep.
         );
@@ -648,8 +666,7 @@ class UniformGrid
   /// specified in the input string.  Also assigns data to each boundary.
   ///
   virtual int SetupBCs(
-        int,   ///< Depth of Boundary cells, 1,2,etc.
-        std::string ///< string containing info on types of BCs on all sides.
+        class SimParams &  ///< List of simulation params (including BCs)
         );
 
   ///
@@ -657,22 +674,25 @@ class UniformGrid
   /// and setup extra boundaries at corners.
   ///
   virtual int Setup_RT_Boundaries(
-        const int  ///< source id
-        ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      const int,  ///< source id
+      struct rad_src_info &
+      ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
   /// Receive all optical depths for boundaries closer to source.
   ///
   virtual int Receive_RT_Boundaries(
-        const int ///< source id
-        ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      const int, ///< source id
+      struct rad_src_info &
+      ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
   /// Send all optical depths for boundaries to domains further from source.
   ///
   virtual int Send_RT_Boundaries(
-        const int ///< source id
-        ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      const int, ///< source id
+      struct rad_src_info &
+      ) {cerr<<"DONT CALL ME!\n"; return 0;}
 
   ///
   /// Calculate distance between two points, where the two position
@@ -681,9 +701,9 @@ class UniformGrid
   /// physical units.
   ///
   virtual double distance(
-        const double *, ///< position 1 (physical)
-        const double *  ///< position 2 (physical)
-        );
+      const double *, ///< position 1 (physical)
+      const double *  ///< position 2 (physical)
+      );
    
   ///
   /// Calculate distance between two points, where the two position
@@ -692,9 +712,9 @@ class UniformGrid
   /// integer units (but obviously the answer is not an integer).
   ///
   virtual double idistance(
-        const int *, ///< position 1 (integer)
-        const int *  ///< position 2 (integer)
-        );
+      const int *, ///< position 1 (integer)
+      const int *  ///< position 2 (integer)
+      );
    
   ///
   /// Calculate distance between two cell--centres (will be between
@@ -702,9 +722,9 @@ class UniformGrid
   /// Result returned in physical units (e.g. centimetres).
   ///
   virtual double distance_cell2cell(
-        const cell *, ///< cell 1
-        const cell *  ///< cell 2
-        );
+      const cell *, ///< cell 1
+      const cell *  ///< cell 2
+      );
 
   ///
   /// Calculate distance between two cell--centres (will be between
@@ -713,9 +733,9 @@ class UniformGrid
   /// two units).
   ///
   virtual double idistance_cell2cell(
-        const cell *, ///< cell 1
-        const cell *  ///< cell 2
-        );
+      const cell *, ///< cell 1
+      const cell *  ///< cell 2
+      );
    
   ///
   /// Calculate distance between a cell-vertex and a cell--centres
@@ -723,9 +743,9 @@ class UniformGrid
   /// geometry).  Here both input and output are physical units.
   ///
   virtual double distance_vertex2cell(
-        const double *, ///< vertex (physical)
-        const cell *    ///< cell
-        );
+      const double *, ///< vertex (physical)
+      const cell *    ///< cell
+      );
 
   ///
   /// As distance_vertex2cell(double[],cell) but for a single component
@@ -733,10 +753,10 @@ class UniformGrid
   /// the *cell* coordinate minus the *vertex* coordinate.
   ///
   virtual double difference_vertex2cell(
-        const double *,  ///< vertex (double)
-        const cell *, ///< cell
-        const axes    ///< Axis to calculate.
-        );
+      const double *,  ///< vertex (double)
+      const cell *, ///< cell
+      const axes    ///< Axis to calculate.
+      );
 
    ///
    /// Calculate distance between a cell-vertex and a cell--centres
@@ -744,9 +764,9 @@ class UniformGrid
    /// geometry).  Here both input and output are code-integer units.
    ///
    virtual double idistance_vertex2cell(
-        const int *, ///< vertex (integer)
-        const cell * ///< cell
-        );
+      const int *, ///< vertex (integer)
+      const cell * ///< cell
+      );
 
    ///
    /// As idistance_vertex2cell(int,cell) but for a single component
@@ -754,10 +774,10 @@ class UniformGrid
    /// the *cell* coordinate minus the *vertex* coordinate.
    ///
    virtual double idifference_vertex2cell(
-        const int *,  ///< vertex (integer)
-        const cell *, ///< cell
-        const axes    ///< Axis to calculate.
-        );
+      const int *,  ///< vertex (integer)
+      const cell *, ///< cell
+      const axes    ///< Axis to calculate.
+      );
 
   ///
   /// As idifference_vertex2cell(int,cell,axis) but for the coordinate
@@ -765,10 +785,10 @@ class UniformGrid
   /// It returns *cell2* coordinate minus *cell1* coordinate.
   ///
   virtual double idifference_cell2cell(
-        const cell *, ///< cell 1
-        const cell *, ///< cell 2
-        const axes    ///< Axis.
-        );
+      const cell *, ///< cell 1
+      const cell *, ///< cell 2
+      const axes    ///< Axis.
+      );
 };
   
 
@@ -1086,7 +1106,6 @@ class uniform_grid_sph
 
 
 
-#ifdef PLLEL_RT
 enum rt_dirs {
   dir_NO     =-1,
   dir_XN     =0,
@@ -1115,15 +1134,14 @@ struct RT_boundary_list_element {
 /// the same indexing, we just make a struct.
 ///
 struct RT_source_comms_info {
-  int source_id; ///< id of the source, numbered as in global RSP class.
+  int source_id; ///< id of the source.
   std::vector<struct RT_boundary_list_element>
     RT_recv_list, ///< list of processors to receive data from, for each source.
     RT_send_list; ///< list of processors to send data to, for each source.
 };
 
-#endif // PLLEL_RT
 
-  ///
+///
 /// Parallel implementation of the serial uniform grid.
 /// 
 /// This differs mostly in that it has to treat the boundaries differently.
@@ -1139,8 +1157,13 @@ class UniformGridParallel
   ///
   /// Assigns data to each boundary.  Called by SetupBCs().
   ///
-  virtual int assign_boundary_data();
-
+  virtual int assign_boundary_data(
+      const double,   ///< current simulation time (for DMACH)
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double ///< minimum temperature allowed
+      );
+  
   ///
   /// Assigns data to a periodic boundary, getting data from another
   /// process if necessary.
@@ -1182,7 +1205,7 @@ class UniformGridParallel
   /// Set the boundary conditions string and initialise BC_bd
   ///
   virtual int BC_setBCtypes(
-        string ///< list of strings describing each boundary.
+        class SimParams &  ///< reference to SimParams list.
         );
 
   int BC_select_data2send(
@@ -1191,7 +1214,6 @@ class UniformGridParallel
       boundary_data *  ///< pointer to boundary data.
       );
 
-#ifdef PLLEL_RT
   ///
   /// This is the list where element i corresponds to source i, and the struct
   /// contains the list of boundaries we need to send and receive, which in
@@ -1206,18 +1228,20 @@ class UniformGridParallel
   /// and this function finds them and sets them up.
   ///
   int setup_RT_infinite_src_BD(
-        const int, ///< Source id.
-        std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
-        std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
-        );
+      const int, ///< Source id.
+      struct rad_src_info &,
+      std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
+      std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
+      );
 
   ///
   /// If we have a source at infinity, this function returns the direction
   /// from the grid to the source.
   ///
   enum direction RT_src_at_infty_direction(
-        const int ///< source id.
-        );
+      const int, ///< source id.
+      struct rad_src_info &
+      );
 
   ///
   /// If the source is a monochromatic point source (not at infinity), then this
@@ -1226,36 +1250,36 @@ class UniformGridParallel
   /// recv lists.
   ///
   int setup_RT_finite_ptsrc_BD(
-        const int, ///< Source id.
-        std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
-        std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
-        );
+      const int, ///< Source id.
+      struct rad_src_info &, ///< SimParams list of radiation sources.
+      std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
+      std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
+      );
 
 
   ///
   /// allocate memory for new cells and attach them to the grid.
   ///
   int setup_RT_recv_boundary(
-        struct RT_boundary_list_element & ///< pointer to boundary info.
-        );
+      struct RT_boundary_list_element & ///< pointer to boundary info.
+      );
 
   ///
   /// find cells needed for send boundary, and add them to the list.
   ///
   int setup_RT_send_boundary(
-        struct RT_boundary_list_element & ///< pointer to boundary info.
-        );
+      struct RT_boundary_list_element & ///< pointer to boundary info.
+      );
 
   ///
   /// Add cells to the receive boundary list, so we know what to
   /// expect. 
   ///
   int RT_populate_recv_boundary(
-        struct boundary_data *, ///< pointer to RT boundary data.
-        const struct boundary_data *, ///< pointer to BC boundary data.
-        const enum direction ///< face direction
-        );
-#endif // PLLEL_RT
+      struct boundary_data *, ///< pointer to RT boundary data.
+      const struct boundary_data *, ///< pointer to BC boundary data.
+      const enum direction ///< face direction
+      );
 
   ///
   /// multi-core decomposition class.
@@ -1267,17 +1291,17 @@ class UniformGridParallel
   /// Constructor. Sets up a grid in the same way as the serial grid.
   /// 
   UniformGridParallel(
-        int,         ///< ndim
-        int,         ///< nvar
-        int,         ///< equation type
-        int, ///< number of boundary cells to use.
-        double *,    ///< local xmin
-        double *,    ///< local xmax
-        int *,       ///< local number of grid zones
-        double *, ///< array of min. x/y/z for full simulation.
-        double *,  ///< array of max. x/y/z for full simulation.
-        class MCMDcontrol * ///< pointer to MPI domain decomposition
-        );
+      int,         ///< ndim
+      int,         ///< nvar
+      int,         ///< equation type
+      int, ///< number of boundary cells to use.
+      double *,    ///< local xmin
+      double *,    ///< local xmax
+      int *,       ///< local number of grid zones
+      double *, ///< array of min. x/y/z for full simulation.
+      double *,  ///< array of max. x/y/z for full simulation.
+      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      );
 
   /// 
   /// Deletes the grid.
@@ -1292,35 +1316,36 @@ class UniformGridParallel
   /// data from other processors.
   ///
   virtual int TimeUpdateExternalBCs(
-        const int, ///< Current step number in the timestep.
-        const int  ///< Maximum step number in timestep.
-        );
+      const double,   ///< current simulation time
+      const int, ///< Current step number in tsimtime,mestep.
+      const int  ///< Maximum step number in timestep.
+      );
 
-#ifdef PLLEL_RT
   ///
   /// Setup lists of processors to receive data from and send data to, 
   /// and setup extra boundaries at corners.
   ///
   virtual int Setup_RT_Boundaries(
-        const int  ///< source id
-        );
+      const int,  ///< source id
+      struct rad_src_info &
+      );
 
   ///
   /// Receive all optical depths for boundaries closer to source.
   ///
   virtual int Receive_RT_Boundaries(
-        const int ///< source id
-        );
+      const int,  ///< source id
+      struct rad_src_info &
+      );
 
   ///
   /// Send all optical depths for boundaries to domains further from
   /// source.
   ///
   virtual int Send_RT_Boundaries(
-        const int ///< source id
-        );
-
-#endif // PLLEL_RT
+      const int,  ///< source id
+      struct rad_src_info &
+      );
 
   /// Returns Simulation xyz lower bounds (code units)
   virtual double SIM_Xmin(enum axes a) const
@@ -1366,17 +1391,17 @@ class uniform_grid_cyl_parallel
   /// The constructor won't do very much:
   ///
   uniform_grid_cyl_parallel(
-        int, ///< ndim, length of position vector.
-        int, ///< nvar, length of state vectors.
-        int, ///< eqntype, which equations we are using (needed by BCs).
-        int, ///< number of boundary cells to use.
-        double *, ///< array of minimum values of x,y,z.
-        double *, ///< array of maximum values of x,y,z.
-        int *, ///< array of number of cells in x,y,z directions.
-        double *, ///< array of min. x/y/z for full simulation.
-        double *,  ///< array of max. x/y/z for full simulation.
-        class MCMDcontrol * ///< pointer to MPI domain decomposition
-        );
+      int, ///< ndim, length of position vector.
+      int, ///< nvar, length of state vectors.
+      int, ///< eqntype, which equations we are using (needed by BCs).
+      int, ///< number of boundary cells to use.
+      double *, ///< array of minimum values of x,y,z.
+      double *, ///< array of maximum values of x,y,z.
+      int *, ///< array of number of cells in x,y,z directions.
+      double *, ///< array of min. x/y/z for full simulation.
+      double *,  ///< array of max. x/y/z for full simulation.
+      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      );
 
   ///
   /// Nor will the destructor
@@ -1411,17 +1436,17 @@ class uniform_grid_sph_parallel
   /// The constructor won't do very much:
   ///
   uniform_grid_sph_parallel(
-        int, ///< ndim, length of position vector.
-        int, ///< nvar, length of state vectors.
-        int, ///< eqntype, which equations we are using (needed by BCs).
-        int, ///< number of boundary cells to use.
-        double *, ///< array of minimum values of x,y,z.
-        double *, ///< array of maximum values of x,y,z.
-        int *, ///< array of number of cells in x,y,z directions.
-        double *, ///< array of min. x/y/z for full simulation.
-        double *,  ///< array of max. x/y/z for full simulation.
-        class MCMDcontrol * ///< pointer to MPI domain decomposition
-        );
+      int, ///< ndim, length of position vector.
+      int, ///< nvar, length of state vectors.
+      int, ///< eqntype, which equations we are using (needed by BCs).
+      int, ///< number of boundary cells to use.
+      double *, ///< array of minimum values of x,y,z.
+      double *, ///< array of maximum values of x,y,z.
+      int *, ///< array of number of cells in x,y,z directions.
+      double *, ///< array of min. x/y/z for full simulation.
+      double *,  ///< array of max. x/y/z for full simulation.
+      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      );
 
   ///
   /// Nor will the destructor

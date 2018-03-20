@@ -477,12 +477,15 @@ int comm_files::broadcast_data(const int sender,       ///< rank of sender.
 }
 
 
-int comm_files::send_cell_data(const int to_rank,    ///< rank to send to.
-			       std::list<cell *> *l, ///< list of cells to get data from.
-			       long int nc,          ///< number of cells in list (extra checking!)
-			       string &id,           ///< identifier for send, for tracking delivery later.
-			       const int comm_tag    ///< comm_tag, to say what kind of send this is.
-			     )
+int comm_files::send_cell_data(
+      const int to_rank,    ///< rank to send to.
+      std::list<cell *> *l, ///< list of cells to get data from.
+      long int nc,          ///< number of cells in list (extra checking!)
+      const int ndim, ///< ndim
+      const int nvar, ///< nvar
+      string &id,           ///< identifier for send, for tracking delivery later.
+      const int comm_tag    ///< comm_tag, to say what kind of send this is.
+      )
 {
 #ifdef TESTING
   cout <<"rank: "<<myrank<<"  comm_files::send_cell_data() starting. \n";
@@ -504,8 +507,8 @@ int comm_files::send_cell_data(const int to_rank,    ///< rank to send to.
   // Determine size of send buffer needed
   //
   int unitsize = 
-    SimPM.ndim*sizeof(CI.get_ipos(*c,0))
-      + SimPM.nvar*sizeof((*c)->P[0])
+    ndim*sizeof(CI.get_ipos(*c,0))
+      + nvar*sizeof((*c)->P[0])
 	+ sizeof((*c)->id);
   long int totalsize = 0;
   totalsize = sizeof(int) + nc*unitsize;
@@ -550,9 +553,9 @@ int comm_files::send_cell_data(const int to_rank,    ///< rank to send to.
   do {
     CI.get_ipos(*c,ipos);
     outfile.write(reinterpret_cast<char *>(&((*c)->id)),sizeof(int));
-    for (int i=0;i<SimPM.ndim;i++) 
+    for (int i=0;i<ndim;i++) 
       outfile.write(reinterpret_cast<char *>(&(ipos[i])),sizeof(int));
-    for (int v=0;v<SimPM.nvar;v++)
+    for (int v=0;v<nvar;v++)
       outfile.write(reinterpret_cast<char *>(&((*c)->Ph[v])),sizeof(double));
     ct++;
     ++c;  // next cell in list.
@@ -720,12 +723,15 @@ int comm_files::look_for_data_to_receive(int *from_rank, ///< rank of sender
   return err;
 }
 
-int comm_files::receive_cell_data(const int from_rank,  ///< rank of process we are receiving from.
-				  std::list<cell *> *l, ///< list of cells to get data for. 
-				  const long int nc,    ///< number of cells in list (extra checking!)
-				  const int comm_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-				  const string &id      ///< identifier for receive, for any book-keeping that might be needed.
-				  )
+int comm_files::receive_cell_data(
+      const int from_rank,  ///< rank of process we are receiving from.
+      std::list<cell *> *l, ///< list of cells to get data for. 
+      const long int nc,    ///< number of cells in list (extra checking!)
+      const int ndim, ///< ndim
+      const int nvar, ///< nvar
+      const int comm_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
+      const string &id      ///< identifier for receive, for any book-keeping that might be needed.
+      )
 {
   //  int err=0;
 #ifdef TESTING
@@ -797,9 +803,9 @@ int comm_files::receive_cell_data(const int from_rank,  ///< rank of process we 
   do {
     if (c==l->end()) rep.error("Got too many cells!",ct);
     infile.read( reinterpret_cast<char *>(&(tmp))      ,sizeof(int));
-    for (int i=0;i<SimPM.ndim;i++)
+    for (int i=0;i<ndim;i++)
       infile.read( reinterpret_cast<char *>(&(tmp2))      ,sizeof(int));
-    for (int v=0;v<SimPM.nvar;v++)
+    for (int v=0;v<nvar;v++)
       infile.read( reinterpret_cast<char *>(&((*c)->Ph[v]))      ,sizeof(double));
     ++c;
     ct++;

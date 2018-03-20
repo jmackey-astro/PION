@@ -8,6 +8,7 @@
 /// - 2015.02.09 JM: Split sim_control class into a setup class and
 ///   a derived class for running simulations.
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef SETUP_FIXED_GRID_H
 #define SETUP_FIXED_GRID_H
@@ -37,7 +38,9 @@ class setup_fixed_grid
   ///
   /// Setup cell extra data through the cell_interface class CI.
   ///
-  void setup_cell_extra_data();
+  void setup_cell_extra_data(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   /// \brief initialise the grid class with appropriate parameters.
   ///
@@ -45,9 +48,10 @@ class setup_fixed_grid
   /// UniformGrid class -- uniform, cartesian, finite volume grid.
   ///
   virtual int setup_grid(
-        class GridBaseClass **, ///< address of pointer to computational grid.
-        class MCMDcontrol *     ///< address of MCMD controller class.
-        );
+      class GridBaseClass **, ///< address of pointer to computational grid.
+      class SimParams &,  ///< pointer to simulation parameters
+      class MCMDcontrol *     ///< address of MCMD controller class.
+      );
 
   ///
   /// Determines what kind of boundary conditions are needed.
@@ -56,26 +60,32 @@ class setup_fixed_grid
   /// \retval 1 failure
   ///
   int boundary_conditions(
-        class GridBaseClass * 
-        );   
+      class SimParams &,  ///< pointer to simulation parameters
+      class GridBaseClass * 
+      );   
 
   ///
   /// Decide if I need to setup MP class, and do it if i need to.
   ///
-  virtual int setup_microphysics();
+  virtual int setup_microphysics(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
   virtual int setup_raytracing(
-        class GridBaseClass * 
-        );
+      class SimParams &,  ///< pointer to simulation parameters
+      class GridBaseClass * 
+      );
 
   ///
   /// Check for any time-evolving radiation sources, and read the evolution
   /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
   ///
-  virtual int setup_evolving_RT_sources();
+  virtual int setup_evolving_RT_sources(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   //---------------------------------------
   protected:
@@ -95,7 +105,9 @@ class setup_fixed_grid
   /// Check for any time-evolving radiation sources, and update source
   /// properties from global struct SimPM.STAR[v] if needed
   ///
-  virtual int update_evolving_RT_sources();
+  virtual int update_evolving_RT_sources(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
 
 }; // setup_fixed_grid

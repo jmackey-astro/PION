@@ -122,6 +122,7 @@ void FV_solver_mhd_ideal_adi::PtoU(
 int FV_solver_mhd_ideal_adi::UtoP(
       const pion_flt *u,
       pion_flt *p,
+      const double MinTemp, ///< Min Temperature allowed on grid.
       const double g
       )
 {
@@ -129,7 +130,7 @@ int FV_solver_mhd_ideal_adi::UtoP(
   cout <<"FV_solver_mhd_ideal_adi::UtoP ...starting.\n";
 #endif //FUNCTION_ID
 
-  int err=eqns_mhd_ideal::UtoP(u,p,g);
+  int err=eqns_mhd_ideal::UtoP(u,p,MinTemp,g);
   // we use u[eqRO] because if there was a negative density, then usually
   // the tracer sign will follow, and this way we get a positive primitive
   // variable tracer back.  usually negative densities are unrecoverable, 
@@ -244,6 +245,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
       pion_flt *Pf, // Final state vector (can be same as initial vec.).
       pion_flt *dE, // Tracks change of energy if I have to correct for negative pressure
       const double, // gas EOS gamma.
+      const double MinTemp, ///< Min Temperature allowed on grid.
       const double  // Cell timestep dt.
       )
 {
@@ -267,7 +269,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
     u1[v] += dU[v];   // Update conserved variables
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
-  if(UtoP(u1,Pf, eq_gamma)!=0) {
+  if(UtoP(u1,Pf,MinTemp, eq_gamma)!=0) {
     cout<<"(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP complained (maybe about negative pressure...) fixing\n";
 #ifdef TESTING
     //grid->PrintCell(dp.c);
@@ -279,7 +281,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
     //rep.printVec("dU ",dU, SimPM.nvar);
     PtoU(Pf, u2, eq_gamma);
     *dE += (u2[ERG]-u1[ERG]);
-    UtoP(u2,Pf, eq_gamma);
+    UtoP(u2,Pf,MinTemp, eq_gamma);
   }
 
 #ifdef TESTING
@@ -470,6 +472,7 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
       pion_flt *Pf, // Final state vector (can be same as initial vec.).
       pion_flt *dE, // Tracks change of energy if I have to correct for negative pressure
       const double, // gas EOS gamma.
+      const double MinTemp, ///< Min Temperature allowed on grid.
       const double // Cell timestep dt.
       )
 {
@@ -477,7 +480,7 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
   cout <<"FV_solver_mhd_mixedGLM_adi::CellAdvanceTime ...starting.\n";
 #endif //FUNCTION_ID
 
-  int err=FV_solver_mhd_ideal_adi::CellAdvanceTime(c,Pin,dU,Pf,dE,0,0);
+  int err=FV_solver_mhd_ideal_adi::CellAdvanceTime(c,Pin,dU,Pf,dE,0,MinTemp,0);
   GLMsource(&(Pf[eqSI]),FV_dt);
 
 #ifdef FUNCTION_ID
@@ -516,6 +519,7 @@ void FV_solver_mhd_mixedGLM_adi::PtoU(
 int FV_solver_mhd_mixedGLM_adi::UtoP(
       const pion_flt *u,
       pion_flt *p,
+      const double MinTemp, ///< Min Temperature allowed on grid.
       const double g
       )
 {
@@ -523,7 +527,7 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
   cout <<"FV_solver_mhd_mixedGLM_adi::UtoP ...starting.\n";
 #endif //FUNCTION_ID
 
-  int err=eqns_mhd_mixedGLM::UtoP(u,p,g);
+  int err=eqns_mhd_mixedGLM::UtoP(u,p,MinTemp,g);
   for (int t=0;t<FS_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
 
 #ifdef FUNCTION_ID

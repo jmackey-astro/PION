@@ -1,12 +1,17 @@
 ///
-/// \file mp_implicit_H.h
+/// \file MPv4.h
 /// \author Jonathan Mackey
 /// \date 2011.10.12
 ///
-/// This file updates the implicit (C2-ray type) integrator in
-/// microphysics.cc with a new version based on the explicit
-/// integrator and capable of treating multi-frequency
-/// photoionisation.
+/// THIS IS LEGACY CODE USED ONLY FOR TESTING (Mackey,2012,A&A).
+/// This class is an update on the microphysics class used for JMs
+/// thesis (MPV1).  It uses the same implicit raytracing scheme, so
+/// photon transmission through the cell is integrated with the rate
+/// and energy equations to obtain a time-averaged value.
+/// The main advantage here is that we can use multi-frequency
+/// photoionisation rates which depend on the optical depth.
+/// It was used in Mackey (2012,A&A) but found to be less efficient
+/// than MPv3.
 ///
 /// modifications:
 /// - getting it written: mods up until 2011.10.XX
@@ -16,14 +21,13 @@
 
 
 
-#ifndef MP_IMPLICIT_H_H
-#define MP_IMPLICIT_H_H
+#ifndef MPV4_H
+#define MPV4_H
 
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV4
-
+#ifdef LEGACY_CODE
 
 #include <vector>
 #include "microphysics/microphysics_base.h"
@@ -32,27 +36,31 @@
 #include "microphysics/hydrogen_recomb_Hummer94.h"
 #include "microphysics/hydrogen_photoion.h"
 #include "microphysics/cvode_integrator.h"
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 
-class mp_implicit_H
+class MPv4
   :
-  public mp_explicit_H
+  public MPv3
 {
   public:
   ///
   /// Constructor
   ///
-  mp_implicit_H(
-          const int,          ///< Total number of variables in state vector
-	  const int,          ///< Number of tracer variables in state vector.
-	  const std::string &, ///< List of what the tracer variables mean.
-          struct which_physics * ///< extra physics stuff.
-	  );
+  MPv4(
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
+      const int,  ///< Total number of variables in state vector
+      const int,  ///< Number of tracer variables in state vector.
+      const std::string *, ///< List of what the tracer variables mean.
+      struct which_physics *, ///< extra physics stuff.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
+      );
 
   ///
   /// Destructor
   ///
-  ~mp_implicit_H();
+  ~MPv4();
 
   ///
   /// This takes a copy of the primitive vector and advances it in
@@ -180,9 +188,8 @@ class mp_implicit_H
   //---------------------------------------------------------------------------
 };
 
-#endif // if not excluding MPv4
+#endif // LEGACY_CODE
 
-
-#endif // MP_IMPLICIT_H_H
+#endif // MPV4_H
 
 

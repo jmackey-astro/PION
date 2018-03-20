@@ -1,12 +1,12 @@
 ///
-/// \file mpv7_TwoTempIso.h
+/// \file MPv7.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
 /// This class is for running calculations with a simple 
 /// two-temperature isothermal equation of state, where T is T_low
-/// when gas is neutral, and T_high when ionised, and linearly
-/// interpolated for partial ionisation.
+/// when gas is neutral, and T_high when ionised, and interpolated
+/// for partial ionisation.
 ///
 /// The file inherits from mpv3, and instead of the Wolfire et al.
 /// (2003) and Henney et al. (2009) heating/cooling rates, it sets
@@ -28,6 +28,7 @@
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 /// - 2016.03.16 JM: Changed Min/Max neutral fraction, and the method
 ///    of calculating temperature, to try to improve code.
+/// - 2018.03.20 JM: Renamed file.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -37,7 +38,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/mpv7_TwoTempIso.h"
+#include "microphysics/MPv7.h"
 
 using namespace std;
 
@@ -47,27 +48,21 @@ using namespace std;
 // ##################################################################
 
 
-mpv7_TwoTempIso::mpv7_TwoTempIso(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-          const std::string &trtype,  ///< List of what the tracer variables mean.
-
-# else
-
-          const std::string *trtype,  ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
-          struct which_physics *ephys  ///< extra physics stuff.
-	  )
-:
-  mp_explicit_H(nv,ntracer,trtype,ephys)
+MPv7::MPv7(
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,             ///< Total number of variables in state vector
+      const int ntracer,        ///< Number of tracer variables in state vector.
+      const std::string *tracers, ///< List of what the tracer variables mean.
+      struct which_physics *ephys,  ///< extra physics stuff.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
+  :
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
-  cout <<"mpv7_TwoTempIso constructor setting up.\n";
+  cout <<"MPv7 constructor setting up.\n";
 #endif
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
@@ -110,7 +105,7 @@ mpv7_TwoTempIso::mpv7_TwoTempIso(
   Min_NeutralFrac = 1.0e-15;
   Max_NeutralFrac = 1.0-1.0e-15;
 #ifdef TESTING
-  cout <<"mpv7_TwoTempIso: Y="<< EP->Helium_MassFrac;
+  cout <<"MPv7: Y="<< EP->Helium_MassFrac;
   cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
 #endif // TESTING
@@ -120,10 +115,10 @@ mpv7_TwoTempIso::mpv7_TwoTempIso(
 // ##################################################################
 // ##################################################################
 
-mpv7_TwoTempIso::~mpv7_TwoTempIso()
+MPv7::~MPv7()
 {
 #ifdef TESTING
-  cout <<"mpv7_TwoTempIso destructor.\n";
+  cout <<"MPv7 destructor.\n";
 #endif
   return;
 }
@@ -133,10 +128,10 @@ mpv7_TwoTempIso::~mpv7_TwoTempIso()
 // ##################################################################
 
 
-int mpv7_TwoTempIso::convert_prim2local(
-          const double *p_in, ///< primitive vector from grid cell (length nv_prim)
-          double *p_local
-          )
+int MPv7::convert_prim2local(
+      const double *p_in, ///< primitive vector from grid cell (length nv_prim)
+      double *p_local
+      )
 {
   //
   // Set internal energy density, H+ fraction, and number density of H.
@@ -164,7 +159,7 @@ int mpv7_TwoTempIso::convert_prim2local(
       rep.error("INF/NAN input to microphysics",p_local[v]);
   }
   if (mpv_nH<0.0 || !isfinite(mpv_nH))
-    rep.error("Bad density input to mpv7_TwoTempIso::convert_prim2local",mpv_nH);
+    rep.error("Bad density input to MPv7::convert_prim2local",mpv_nH);
 #endif // TESTING
   
   return 0;
@@ -175,11 +170,11 @@ int mpv7_TwoTempIso::convert_prim2local(
 // ##################################################################
 
 
-int mpv7_TwoTempIso::convert_local2prim(
-            const double *p_local,
-            const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
-            double *p_out       ///< updated primitive vector for grid cell (length nv_prim)
-            )
+int MPv7::convert_local2prim(
+      const double *p_local,
+      const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
+      double *p_out       ///< updated primitive vector for grid cell (length nv_prim)
+      )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
 
@@ -206,9 +201,9 @@ int mpv7_TwoTempIso::convert_local2prim(
 
 #ifdef TESTING
   if (p_out[pv_Hp]<0.0 || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp]))
-    rep.error("Bad output H+ value in mpv7_TwoTempIso::convert_local2prim",p_out[pv_Hp]-1.0);
+    rep.error("Bad output H+ value in MPv7::convert_local2prim",p_out[pv_Hp]-1.0);
   if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in mpv7_TwoTempIso::convert_local2prim",p_out[PG]);
+    rep.error("Bad output pressure in MPv7::convert_local2prim",p_out[PG]);
 #endif // TESTING
 
   return 0;
@@ -219,11 +214,11 @@ int mpv7_TwoTempIso::convert_local2prim(
 // ##################################################################
 
 
-double mpv7_TwoTempIso::get_temperature(
-    const double,    ///< nH (per c.c.): UNUSED
-    const double,    ///< E_int (per unit volume): UNUSED
-    const double xp  ///< x(H+)
-    )
+double MPv7::get_temperature(
+      const double,    ///< nH (per c.c.): UNUSED
+      const double,    ///< E_int (per unit volume): UNUSED
+      const double xp  ///< x(H+)
+      )
 {
   //
   // returns gas temperature according to T=(2yT_hi+(1-y)*T_lo)/(1+y)
@@ -257,10 +252,10 @@ double mpv7_TwoTempIso::get_temperature(
 // ##################################################################
 
 
-double mpv7_TwoTempIso::get_ntot(
-    const double nH, ///< nH
-    const double xp  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
-    )
+double MPv7::get_ntot(
+      const double nH, ///< nH
+      const double xp  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
+      )
 {
   //
   // This allows for molecular H neutral gas, with TTI_Mol, which is
@@ -274,16 +269,16 @@ double mpv7_TwoTempIso::get_ntot(
 // ##################################################################
 
 
-int mpv7_TwoTempIso::ydot(
-          double,               ///< current time (UNUSED)
-          const N_Vector y_now, ///< current Y-value
-          N_Vector y_dot,       ///< vector for Y-dot values
-          const double *        ///< extra user-data vector (UNUSED)
-          )
+int MPv7::ydot(
+      double,               ///< current time (UNUSED)
+      const N_Vector y_now, ///< current Y-value
+      N_Vector y_dot,       ///< vector for Y-dot values
+      const double *        ///< extra user-data vector (UNUSED)
+      )
 {
 
 #ifdef TESTING
-  //cout <<"mpv7_TwoTempIso::ydot(): Y="<< EP->Helium_MassFrac;
+  //cout <<"MPv7::ydot(): Y="<< EP->Helium_MassFrac;
   //cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   //cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC;
   //cout <<", Nnt="<<TTI_Nnt<<"\n";
@@ -403,14 +398,14 @@ int mpv7_TwoTempIso::ydot(
 
 
 
-double mpv7_TwoTempIso::get_recombination_rate(
-          const int,          ///< ion index in tracer array (optional).
-          const double *p_in, ///< input state vector (primitive).
-          const double g      ///< EOS gamma (optional)
-          )
+double MPv7::get_recombination_rate(
+      const int,          ///< ion index in tracer array (optional).
+      const double *p_in, ///< input state vector (primitive).
+      const double g      ///< EOS gamma (optional)
+      )
 {
 #ifdef FUNCTION_ID
-  cout <<"mpv7_TwoTempIso::get_recombination_rate()\n";
+  cout <<"MPv7::get_recombination_rate()\n";
 #endif // FUNCTION_ID
   double rate=0.0;
   double P[nvl];
@@ -424,7 +419,7 @@ double mpv7_TwoTempIso::get_recombination_rate(
   rate = 2.7e-13*mpv_nH*mpv_nH*(1.0-P[lv_H0])*(1.0-P[lv_H0])*JM_NELEC;
 
 #ifdef FUNCTION_ID
-  cout <<"mpv7_TwoTempIso::get_recombination_rate()\n";
+  cout <<"MPv7::get_recombination_rate()\n";
 #endif // FUNCTION_ID
   return rate;
 }

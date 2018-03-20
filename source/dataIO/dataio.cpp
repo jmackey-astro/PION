@@ -50,6 +50,8 @@
 /// - 2015.07.0[6-8] JM: Started to change tracer setup in files.
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
+/// - 2017.11.07-22 JM: updating boundary setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -421,14 +423,16 @@ void pm_dvararr::set_default_val(void *v) {
 // ##################################################################
 
 
-DataIOBase::DataIOBase()
+DataIOBase::DataIOBase(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
   : Ndigits(8)
 {
   params.clear();
   jet_pm.clear();
   rt_src.clear();
   windsrc.clear();
-  set_params();
+  set_params(SimPM);
   return;
 }
 
@@ -455,7 +459,9 @@ DataIOBase::~DataIOBase()
 // ##################################################################
 
 
-void DataIOBase::set_params()
+void DataIOBase::set_params(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //
   // make sure list is empty:
@@ -498,10 +504,16 @@ void DataIOBase::set_params()
     ("Xmax",        SimPM.Xmax);
   p = p006; p->critical=true;  
   params.push_back(p);
-  pm_string  *p007 = new pm_string  
-    ("typeofbc_str",&SimPM.typeofbc);
-  p = p007; p->critical=true;  
+  //
+  // Boundary conditions
+  //
+  // Number of internal boundaries
+  pm_int     *p124 = new pm_int     
+    ("BC_Ninternal",   &SimPM.BC_Nint);
+  p = p124; p->critical=true;  
   params.push_back(p);
+  have_setup_bc_pm=false; // so we know to populate list later.
+
 
   //
   // EQUATIONS
@@ -526,36 +538,15 @@ void DataIOBase::set_params()
     ("num_tracer", &SimPM.ntracer);
   p = p011; p->critical=true;  
   params.push_back(p);
-
-#ifdef OLD_TRACER
-
-  pm_string  *p012 = new pm_string  
-    ("tracer_str", &SimPM.trtype, "NEED_TRACER_VALUES!");
-  p = p012; p->critical=false;  
-  params.push_back(p);
-
-#else // new/old tracer
-  
-  //
-  // Need a parameter for the type of chemistry we use
-  //
   pm_string  *p012a = new pm_string  
     ("chem_code", &SimPM.chem_code, "CHEM_CODE");
   p = p012a; p->critical=false;  
   params.push_back(p);
-  
-  //
-  // What to do here?  I want to set parameters for N tracers, but
-  // ntracer is not set until we read in some datafile, so we cannot
-  // know here how long the SimPM.trtype[] array is.
-  // I guess we have to leave it here and add more parameters to read
-  // once I have a number for ntracer.
-  //
   have_setup_tracers=false; // so we know to populate list later.
 
-
-#endif // OLD_TRACER
-
+  //
+  // hydro solver parameters.
+  //
   pm_int     *p013 = new pm_int     
     ("solver",     &SimPM.solverType);
   p = p013; p->critical=true;  
@@ -821,7 +812,9 @@ void DataIOBase::clear_param_list(std::list<class pm_base *> &listptr)
 // ##################################################################
 
 
-int DataIOBase::read_simulation_parameters()
+int DataIOBase::read_simulation_parameters(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   if (params.empty())
     rep.error("Parameter list is empty -- make sure it populates itself!!",0);
@@ -839,6 +832,7 @@ int DataIOBase::read_simulation_parameters()
         rep.error("Error reading parameter",p->name);
       }
       else {
+        //cout <<"parameter "<<p->name<<" not found. setting to default val.\n";
         p->set_to_default();
         err =0;
       }
@@ -846,24 +840,37 @@ int DataIOBase::read_simulation_parameters()
   }
 
   //
+  // Read boundary conditions for each edge and internal BCs
+  //
+  if (!have_setup_bc_pm) set_bc_pm_params(SimPM);
+  if (bc_pm.empty()) rep.error("Boundary parameter list is empty!!",0);
+  //
+  // now read them:
+  //
+  int ct=0;
+  for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
+    p = (*iter);
+    err = read_header_param(p);
+    //cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
+    if (err) rep.error("Error reading parameter",p->name);
+    ct++;
+  }
+
+
+  //
   // We now use num_tracer to set the position of the first tracer:
   //
   if (SimPM.ntracer>0) SimPM.ftr = SimPM.nvar-SimPM.ntracer;
   else                 SimPM.ftr = SimPM.nvar;
-
-#ifndef OLD_TRACER
-
   //
-  // Also set up tracer parameters, based on ntracer and read them in
+  // Set up tracer parameters, based on ntracer and read them in
   //
-  set_tracer_params();
+  if (!have_setup_tracers) set_tracer_params(SimPM);
   for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
     p = (*iter);
     err = read_header_param(p);
     if (err) rep.error("Error reading parameter",p->name);
   }
-
-#endif // OLD_TRACER
 
 
   //
@@ -905,7 +912,7 @@ int DataIOBase::read_simulation_parameters()
     if (!have_setup_rt_src || SimPM.RS.sources.empty()) {
       have_setup_rt_src=false;
       clear_param_list(rt_src);
-      set_rt_src_params();
+      set_rt_src_params(SimPM);
     }
     if (rt_src.empty()) {
       rep.error("RT-src parameter list is empty -- make sure it populates itself!!",0);
@@ -1184,7 +1191,7 @@ int DataIOBase::read_simulation_parameters()
   //
   // Finally run some checks to make sure parameters are sane
   //
-  err += check_header_parameters();
+  err += check_header_parameters(SimPM);
 
   return err;
 }  
@@ -1195,24 +1202,24 @@ int DataIOBase::read_simulation_parameters()
 // ##################################################################
 
 
-#ifndef OLD_TRACER
-
-void DataIOBase::set_tracer_params()
+void DataIOBase::set_tracer_params(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   if (have_setup_tracers) {
     rep.error("Trying to setup tracer parameters twice!",
               have_setup_tracers);
   }
   if (SimPM.ntracer==0) {
-    cout <<"\t*** No tracers to set up\n";
+    //cout <<"\t *** No tracers to set up\n";
     have_setup_tracers = true;
     return;
   }
   //
   // So now we have tracers and we need to add them to the list.
   //
-  if (!SimPM.trtype) {
-    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+  if (!SimPM.tracers) {
+    SimPM.tracers = mem.myalloc(SimPM.tracers,SimPM.ntracer);
   }
 
   class pm_base *p;
@@ -1220,18 +1227,16 @@ void DataIOBase::set_tracer_params()
   for (int i=0;i<SimPM.ntracer;i++) {
     ostringstream temp; temp <<"Tracer";
     temp.width(3); temp.fill('0'); temp <<i;
-    cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
+    //cout <<"i="<<i<<", setting up tracer : "<<temp.str()<<"\n";
 
     pm_string  *ptemp = new pm_string  
-      (temp.str(), &SimPM.trtype[i], "NEED_TRACER_VALUES!");
-    p = ptemp; p->critical=false;  
+      (temp.str(), &SimPM.tracers[i], "NEED_TRACER_VALUES!");
+    p = ptemp; p->critical=true;  
     tr_pm.push_back(p);
   }
   have_setup_tracers = true;
   return;
 }
-
-#endif // OLD_TRACER
 
 
 // ##################################################################
@@ -1327,7 +1332,9 @@ void DataIOBase::set_windsrc_params()
 // ##################################################################
 
 
-void DataIOBase::set_rt_src_params()
+void DataIOBase::set_rt_src_params(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //
   // Sanity checks!
@@ -1453,13 +1460,84 @@ void DataIOBase::set_jet_pm_params()
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+void DataIOBase::set_bc_pm_params(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
+{
+  //cout <<"setting up BC parameters\n";
+  if (have_setup_bc_pm || !bc_pm.empty()) {
+    cout <<"BCs FLAG: "<< have_setup_bc_pm;
+    cout <<" EMPTY?: "<< bc_pm.empty();
+    cout <<"\n";
+    rep.error("set bc parameters twice?!",have_setup_bc_pm);
+  }
+  
+  pm_string  *p007 = new pm_string  
+    ("BC_XN",&SimPM.BC_XN);
+  p007->critical=true;  
+  bc_pm.push_back(p007);
+  pm_string  *p117 = new pm_string  
+    ("BC_XP",&SimPM.BC_XP);
+  p117->critical=true;  
+  bc_pm.push_back(p117);
+  pm_string  *p118 = new pm_string  
+    ("BC_YN",&SimPM.BC_YN);
+  //p118->critical=true;  
+  bc_pm.push_back(p118);
+  pm_string  *p119 = new pm_string  
+    ("BC_YP",&SimPM.BC_YP);
+  //p119->critical=true;  
+  bc_pm.push_back(p119);
+  pm_string  *p122 = new pm_string  
+    ("BC_ZN",&SimPM.BC_ZN);
+  //p122->critical=true;  
+  bc_pm.push_back(p122);
+  pm_string  *p123 = new pm_string  
+    ("BC_ZP",&SimPM.BC_ZP);
+  //p123->critical=true;  
+  bc_pm.push_back(p123);
+
+  //
+  // Read internal boundary data
+  //
+  //SimPM.BC_INT.clear();
+  //SimPM.BC_INT.resize(SimPM.BC_Nint);
+  if (SimPM.BC_Nint>0) {
+    if (!SimPM.BC_INT)
+      SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+  }
+  //cout <<"BC_Nint = "<<SimPM.BC_Nint<<"\n";
+  for (int v=0; v<SimPM.BC_Nint; v++) {
+    //cout <<"reading internal boundary "<<v<<"\n";
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+    //cout <<"v="<<v<<", setting up Internal BC : "<<intbc.str()<<"\n";
+    pm_string  *p124 = new pm_string (intbc.str(),&(SimPM.BC_INT[v]));
+    //p124->critical=true;  
+    bc_pm.push_back(p124);
+  }
+  have_setup_bc_pm=true;
+  return;
+}
+
+
+
+
 
 // ##################################################################
 // ##################################################################
 
 
 
-int DataIOBase::write_simulation_parameters()
+int DataIOBase::write_simulation_parameters(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   if (params.empty())
     rep.error("Parameter list is empty -- make sure it populates itself!!",0);
@@ -1475,37 +1553,38 @@ int DataIOBase::write_simulation_parameters()
     if (err) rep.error("Error writing parameter",(*iter)->name);
   }
 
-
-#ifndef OLD_TRACER
+  //
+  // Write Boundary string parameters
+  //
+  if (!have_setup_bc_pm) set_bc_pm_params(SimPM);
+  if (bc_pm.empty()) rep.error("bc_pm empty, Need boundaries!","Huh?");
+  //
+  // now write them:
+  //
+  for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
+    p = (*iter);
+    //cout <<p->name<<"    "; p->show_val(); cout <<"\n";
+    err = write_header_param(p);
+    if (err) rep.error("Error writing BC parameter",p->name);
+  }
 
   //
   // Write tracer parameters
   //
-  if (!have_setup_tracers) set_tracer_params();
-  cout <<"Writing tracer names.\n";
+  if (!have_setup_tracers) set_tracer_params(SimPM);
+  //cout <<"Writing tracer names.\n";
   for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
     p = (*iter);
-    cout <<"tracer val: "; p->show_val(); cout <<"\n";
+    //cout <<"tracer val: "; p->show_val(); cout <<"\n";
     err = write_header_param(p);
-    if (err) rep.error("Error reading parameter",p->name);
+    if (err) rep.error("Error writing tracer parameter",p->name);
   }
-
-#endif // OLD_TRACER
-
 
   //
   // Write Jet parameters if doing a JET SIM
   //
   if (JP.jetic) {
-    //
-    // Check jet parameters exist
-    //
     if (!have_setup_jet_pm) set_jet_pm_params();
-    if (jet_pm.empty())
-      rep.error("jet_pm list empty, but we are apparently ouputting a Jet sim!?","HMMM");
-    //
-    // now write them:
-    //
     for (list<pm_base *>::iterator iter=jet_pm.begin(); iter!=jet_pm.end(); ++iter) {
       p = (*iter);
       err = write_header_param(p);
@@ -1523,9 +1602,9 @@ int DataIOBase::write_simulation_parameters()
     //
     // Check we have rt_src parameters
     //
-    if (!have_setup_rt_src) set_rt_src_params();
+    if (!have_setup_rt_src) set_rt_src_params(SimPM);
     if (rt_src.empty()) {
-      rep.error("rt_src list empty, but we are apparently ouputting an RT sim!?","HMMM");
+      rep.error("rt_src list empty, but running RT sim!?","HMMM");
     }
     //
     // Data should be already set up and ready to go.
@@ -1644,9 +1723,6 @@ int DataIOBase::write_simulation_parameters()
       if ( (*iter)->name.compare( nm.str() ) !=0) {
         rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
       }
-      //SW.get_src_trcr(isw,xd);
-      //for (int v=SimPM.ntracer; v<MAX_NVAR; v++) xd[v]=0.0;
-      //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->tr));
       for (int v=SimPM.ntracer; v<MAX_NVAR; v++) {
         SWP.params[isw]->tr[v]=0.0;
@@ -1719,7 +1795,9 @@ int DataIOBase::write_simulation_parameters()
 // ##################################################################
 
 
-int DataIOBase::check_header_parameters()
+int DataIOBase::check_header_parameters(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   // This is where we check that nvar,ndim,ntracer,outfile, etc. are all set to
   // something sensible.
@@ -1751,13 +1829,6 @@ int DataIOBase::check_header_parameters()
   if (SimPM.ndim>2) if (SimPM.Xmax[2]<=SimPM.Xmin[2]) rep.error("(Dataio::check_header_parameters) Xmax[2]<0 -- must not have read from file",SimPM.Xmax[2]);
 
 
-  if (SimPM.typeofbc == "") rep.error("(Dataio::check_header_parameters) Didn't get type of BC from file. ",1);
-  //
-  // We don't care about Nbc anymore -- it is determined automatically from the
-  // order of accuracy of the integration scheme.
-  //if (SimPM.Nbc <0) {
-  //  rep.warning("(Dataio::check_header_parameters) Nbc not obtained from file. Will infer it from BCs",2,SimPM.Nbc);
-  //}
   if (SimPM.spOOA!=OA1 && SimPM.spOOA!=OA2) {
     rep.warning("(Dataio::check_header_parameters) Order of Accuracy not set from file. Default to second order",2,SimPM.spOOA);
     SimPM.spOOA=OA2;
@@ -1849,7 +1920,10 @@ int DataIOBase::check_header_parameters()
 //------------------ TEXT I/O ------------------
 //----------------------------------------------
 
-dataio_text::dataio_text()
+dataio_text::dataio_text(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
+: DataIOBase(SimPM)
 {
   rp = 0;
   gp=0;
@@ -1879,7 +1953,10 @@ dataio_text::~dataio_text()
 // ##################################################################
 
 
-int dataio_text::ReadHeader(string pfile)
+int dataio_text::ReadHeader(
+      string pfile,           ///< Name of parameter file
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   // read info from parameterfile.
   cout <<"dataio_text::ReadHeader() Read simulation info from parameterfile.\n";
@@ -1887,7 +1964,7 @@ int dataio_text::ReadHeader(string pfile)
     cerr <<"dataio_text::ReadHeader() file doesn't exist.\n";
     return 99;
   }
-  int err=get_parameters(pfile);
+  int err=get_parameters(pfile, SimPM);
   cout <<"dataio_text::ReadHeader() Header info all read in.\n";
   return err;
 }
@@ -1898,18 +1975,18 @@ int dataio_text::ReadHeader(string pfile)
 // ##################################################################
 
 
-int dataio_text::ReadData(string ,
-        ///< infile not used for text, b/c all info
-        ///< was got from pfile in ReadHeader
-        class GridBaseClass *cg
-        )
+int dataio_text::ReadData(
+      string,   ///< Name of file
+      class GridBaseClass *cg, ///< Pointer to grid
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   if (!cg)
     rep.error("dataio_text::ReadData() null pointer to grid!",cg);
   dataio_text::gp = cg;
 
   cout <<"dataio_text::ReadData() Assigning initial data.\n";
-  int err = assign_initial_data();
+  int err = assign_initial_data(SimPM);
   cout <<"dataio_text::ReadData() Assigned initial data.\n";
 
   // We have read in all the parameters we need, so delete it.
@@ -1941,10 +2018,12 @@ void dataio_text::SetSolver(FV_solver_base *solver)
 // ##################################################################
 
 
-int dataio_text::OutputData(const string outfile,
-          class GridBaseClass *cg, ///< pointer to data.
-          const long int counter   ///< number to stamp file with (e.g. timestep)
-          )
+int dataio_text::OutputData(
+      const string outfile,
+      class GridBaseClass *cg, ///< pointer to data.
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      const long int counter   ///< number to stamp file with (e.g. timestep)
+      )
 {
   if (!cg)
     rep.error("dataio_text::output_ascii_data() null pointer to grid!",cg);
@@ -1952,7 +2031,7 @@ int dataio_text::OutputData(const string outfile,
 
   cout <<"dataio_text::OutputData() writing data.\n";
   string fname = set_filename(outfile, counter);
-  int err = output_ascii_data(fname);
+  int err = output_ascii_data(fname, SimPM);
   cout <<"dataio_text::OutputData() written data.\n";
   return err;
 }
@@ -1991,7 +2070,10 @@ std::string dataio_text::set_filename(
 
 
 
-int dataio_text::get_parameters(string pfile)
+int dataio_text::get_parameters(
+      string pfile,  ///< Name of parameter file
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   cout <<"(dataio_text::get_parameters) from file "<<pfile<<" starting.\n";
 
@@ -2120,9 +2202,60 @@ int dataio_text::get_parameters(string pfile)
   cout <<"\tOutFile: "<<SimPM.outFileBase<< ".xxx\t Type="<<SimPM.typeofop;
   cout <<" every "<<SimPM.opfreq<<" timesteps."<<"\n";
   
+  //
   // Boundary conditions.
-  SimPM.typeofbc = rp->find_parameter("BC");
-  SimPM.Nbc = -1; // Set it to negative so I know it's not set.
+  // First do the edges of the domain:
+  //
+  SimPM.BC_XN = rp->find_parameter("BC_XN");
+  SimPM.BC_XP = rp->find_parameter("BC_XP");
+  if (SimPM.ndim>1) {
+    SimPM.BC_YN = rp->find_parameter("BC_YN");
+    SimPM.BC_YP = rp->find_parameter("BC_YP");
+  }
+  else {
+    SimPM.BC_YN = "NONE";
+    SimPM.BC_YP = "NONE";
+  }
+  if (SimPM.ndim>2) {
+    SimPM.BC_ZN = rp->find_parameter("BC_ZN");
+    SimPM.BC_ZP = rp->find_parameter("BC_ZP");
+  }
+  else {
+    SimPM.BC_ZN = "NONE";
+    SimPM.BC_ZP = "NONE";
+  }
+  //
+  // Now do the internal boundaries (if any).  Seek the string
+  // for a given internal boundary, and add to a vector until
+  // no more are found.
+  //
+  ts = rp->find_parameter("BC_Ninternal"); 
+  if (ts=="")  SimPM.BC_Nint = 0;
+  else         SimPM.BC_Nint = atoi(ts.c_str());
+  if (SimPM.BC_Nint>0) {
+    if (SimPM.BC_INT) rep.error("BC_INT already initialized",2);
+    SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+  }
+  //SimPM.BC_INT.clear();
+  int v=0;
+  do {
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+    string temp = rp->find_parameter(intbc.str());
+    if (temp != "") {
+      SimPM.BC_INT[v] = temp;
+      v++;
+    }
+    else
+      rep.error("Didn't find internal BC",v);
+  } while (v<SimPM.BC_Nint);
+  //SimPM.BC_Nint = SimPM.BC_INT.size();
+
+  // Number of boundary cells
+  // (set automatically based on order of scheme)
+  SimPM.Nbc = -1;
 
   
   // Physics:
@@ -2234,8 +2367,9 @@ int dataio_text::get_parameters(string pfile)
 
 
 int dataio_text::output_ascii_data(
-        string outfile
-        )
+      string outfile,
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   ofstream outf(outfile.c_str());
   if(!outf.is_open()) 
@@ -2310,7 +2444,9 @@ int dataio_text::output_ascii_data(
 
 
 
-int dataio_text::assign_initial_data()
+int dataio_text::assign_initial_data(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   cout <<"(dataio_text::assign_initial_data) Assigning Data.\n";
   int err=0;
@@ -2322,7 +2458,7 @@ int dataio_text::assign_initial_data()
     int which_riemann = atoi((rp->find_parameter("RIEMANN")).c_str());
     double left[SimPM.nvar], right[SimPM.nvar];
     double interface=0.0;
-    err += get_riemann_ics(which_riemann, left, right, &interface);
+    err += get_riemann_ics(SimPM, which_riemann, left, right, &interface);
     class cell *cpt=gp->FirstPt();
     if (SimPM.ndim==1) {
       //interface = 0.5;
@@ -2452,7 +2588,7 @@ int dataio_text::assign_initial_data()
   int noise = atoi((rp->find_parameter("NoisyICS")).c_str());
   if(noise>0) {
     cout <<"\t Adding noise to Data at 0.1% level to pressure, type="<<noise;
-    err += add_noise2data(noise, 0.001);
+    err += add_noise2data(SimPM, noise, 0.001);
     cout <<"  ...Done\n";
     if (err!=0) {cerr<<"\tAdding noise to Data failed. exiting.\n"; return(1);}
   } // if noise>0;
@@ -2469,7 +2605,9 @@ int dataio_text::assign_initial_data()
 
 
 
-int dataio_text::get_riemann_ics(int sw, double *l, double *r, double *xm)
+int dataio_text::get_riemann_ics(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      int sw, double *l, double *r, double *xm)
 {
   // These are Toro's five tests on p.225 of his book.
   switch (sw) {
@@ -2819,7 +2957,11 @@ int dataio_text::get_riemann_ics(int sw, double *l, double *r, double *xm)
 // ##################################################################
 
 
-int dataio_text::add_noise2data(int n, double frac)
+int dataio_text::add_noise2data(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      int n,
+      double frac
+      )
 {
   srand(9768975);
   class cell *cpt;  double avg=0.; long int ct=0;

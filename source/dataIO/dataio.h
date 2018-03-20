@@ -21,6 +21,7 @@
 /// - 2015.08.05 JM: tidied up code; added pion_flt datatype.
 /// - 2015.10.19 JM: Fixed dvararr to always use pion_flt correctly.
 /// - 2017.08.03 JM: Added parallel_read_any_data() function to base class
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef DATAIO_H
 #define DATAIO_H
@@ -267,18 +268,23 @@ protected:
 ///
 class DataIOBase : public file_status {
   public:
-  DataIOBase();
+  DataIOBase(
+    class SimParams &  ///< pointer to simulation parameters
+    );
+
   ~DataIOBase();
-   /** \brief Set a pointer to the solver. */
-   virtual void SetSolver(FV_solver_base *
-      ///< Pointer to the solver (to get Eint,divB,Ptot)
-			  )=0;
+
+  /// Set a pointer to the solver.
+  virtual void SetSolver(
+    FV_solver_base *  ///< Pointer to solver (for Eint,divB,Ptot)
+    )=0;
   
   ///
   /// Write simulation header info to file
   ///
   virtual int WriteHeader(
-      const string ///< file to write to (full, exact filename).
+      const string, ///< file to write to (full, exact filename).
+      class SimParams &  ///< pointer to simulation parameters
       )=0;
   
 
@@ -288,6 +294,7 @@ class DataIOBase : public file_status {
   virtual int OutputData(
       const string, ///< File to write to
       class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
       const long int ///< number to stamp file with (e.g. timestep)
       )=0;
 
@@ -295,7 +302,8 @@ class DataIOBase : public file_status {
    /// Reads simulation parameters from file.
    ///
    virtual int ReadHeader(
-      string ///< file to read from
+      string,           ///< file to read from
+      class SimParams & ///< pointer to simulation parameters
       )=0;
 
    ///
@@ -304,7 +312,8 @@ class DataIOBase : public file_status {
    ///
    virtual int ReadData(
       string, ///< file to read from
-      class GridBaseClass * ///< pointer to data.
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
       )=0;
 
   ///
@@ -312,6 +321,7 @@ class DataIOBase : public file_status {
   ///
   virtual int parallel_read_any_data(
       string, ///< file to read from
+      class SimParams &,  ///< pointer to simulation parameters
       class GridBaseClass * ///< pointer to data.
       ) {return -999;}
 
@@ -322,17 +332,29 @@ class DataIOBase : public file_status {
    ///
    std::list<class pm_base *> params;
    ///
-   /// parameters for Jet simulations
+   /// parameters for Boundary Condition
    ///
-   std::list<class pm_base *> jet_pm;
-   bool have_setup_jet_pm; ///< we only want to add to the list once!
-   void set_jet_pm_params(); ///< add jet parameters to jet_pm list.
-   ///
-   /// parameters for any radiation sources.
-   ///
-   std::list<class pm_base *> rt_src;
-   bool have_setup_rt_src; ///< we only want to add to the list once!
-   void set_rt_src_params(); ///< add source parameters to rt_src list.
+   std::list<class pm_base *> bc_pm;
+   bool have_setup_bc_pm; ///< we only want to add to the list once!
+   void set_bc_pm_params(
+      class SimParams &  ///< pointer to simulation parameters
+      ); ///< add BC parameters to bc_pm list.
+
+  ///
+  /// parameters for Jet simulations
+  ///
+  std::list<class pm_base *> jet_pm;
+  bool have_setup_jet_pm; ///< we only want to add to the list once!
+  void set_jet_pm_params(); ///< add jet parameters to jet_pm list.
+  
+  ///
+  /// parameters for any radiation sources.
+  ///
+  std::list<class pm_base *> rt_src;
+  bool have_setup_rt_src; ///< we only want to add to the list once!
+  void set_rt_src_params(
+      class SimParams &  ///< pointer to simulation parameters
+      ); ///< add source parameters to rt_src list.
   
 #ifndef OLD_TRACER
 
@@ -341,7 +363,9 @@ class DataIOBase : public file_status {
   ///
   std::list<class pm_base *> tr_pm;
   bool have_setup_tracers; ///< track whether we have set up tracers
-  void set_tracer_params(); ///< add tracer parameters to tr_pm list.
+  void set_tracer_params(
+      class SimParams &  ///< pointer to simulation parameters
+      ); ///< add tracer parameters to tr_pm list.
 
 #endif // OLD_TRACER
 
@@ -355,7 +379,9 @@ class DataIOBase : public file_status {
    /// this makes a list of the params to read and should be called
    /// by the class constructor.
    ///
-   void set_params();
+   void set_params(
+      class SimParams &  ///< pointer to simulation parameters
+      );
    ///
    /// deletes the data associated with all param lists.
    ///
@@ -364,26 +390,35 @@ class DataIOBase : public file_status {
    /// general driver function to read parameters which all derived 
    /// classes can use.
    ///
-   int read_simulation_parameters();
-   ///
-   /// general driver function to write parameters which all derived 
-   /// classes can use.
-   ///
-   int write_simulation_parameters();
-   ///
-   /// Function which defines how to get the data from the file, so 
-   /// each derived class will define this differently.
-   ///
-   virtual int read_header_param(class pm_base *)=0;
-   ///
-   /// Function which defines how to write the data to the file, so 
-   /// each derived class will define this differently.
-   ///
-   virtual int write_header_param(class pm_base *)=0;
-   ///
-   /// Check that header parameters are sensible
-   ///
-   int check_header_parameters();
+   int read_simulation_parameters(
+      class SimParams &  ///< pointer to simulation parameters
+      );
+  
+  ///
+  /// general driver function to write parameters which all derived 
+  /// classes can use.
+  ///
+  int write_simulation_parameters(
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
+  ///
+  /// Function which defines how to get the data from the file, so 
+  /// each derived class will define this differently.
+  ///
+  virtual int read_header_param(class pm_base *)=0;
+  ///
+  /// Function which defines how to write the data to the file, so 
+  /// each derived class will define this differently.
+  ///
+  virtual int write_header_param(class pm_base *)=0;
+
+  ///
+  /// Check that header parameters are sensible
+  ///
+  int check_header_parameters(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
 };
 
@@ -394,33 +429,50 @@ class DataIOBase : public file_status {
 ///
 class dataio_text : public DataIOBase {
  public:
-  dataio_text();
+  dataio_text(
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
   ~dataio_text();
-   /** \brief Set a pointer to the solver. */
-   virtual void SetSolver(FV_solver_base * ///< Pointer to the solver (to get Eint,divB,Ptot)
+
+  /// Set a pointer to the solver.
+  virtual void SetSolver(
+      FV_solver_base * ///< Pointer to the solver (to get Eint,divB,Ptot)
 			  );
-   /** \brief Output simulation data to file. */
-   virtual int OutputData(const string, ///< File to write to
-			  class GridBaseClass *, ///< pointer to data.
-			  const long int ///< number to stamp file with (e.g. timestep)
-			  );
-   /** \brief Reads simulation parameters from file. */
-   virtual int ReadHeader(string ///< file to read from
-			  );
+
+  /// Write simulation data to file.
+  virtual int OutputData(
+      const string, ///< File to write to
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
+      const long int ///< number to stamp file with (e.g. timestep)
+      );
+
+  ///
+  /// Reads simulation parameters from file.
+  ///
+  virtual int ReadHeader(
+      string, ///< file to read from
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      );
 
   ///
   /// Write simulation header info to file
   ///
   virtual int WriteHeader(
-          const string ///< file to write to (full, exact filename).
-          ) {cout<<"can't write text header!\n"; return 99;}
+      const string, ///< file to write to (full, exact filename).
+      class SimParams &  ///< pointer to simulation parameters
+      ) {cout<<"can't write text header!\n"; return 99;}
 
-   /** Having set up a grid with parameters from the header, this reads
-    * data from the file and puts it on the grid.
-    * */
-   virtual int ReadData(string, ///< file to read from
-			class GridBaseClass * ///< pointer to data.
-			);
+  ///
+  /// Read Simulation data form a file.
+  ///
+  virtual int ReadData(
+      string, ///< file to read from
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
  protected:
    class GridBaseClass *gp; ///< pointer to computational grid.
    class FV_solver_base *eqn; ///< pointer to the solver, which knows the equations we are solving.
@@ -435,66 +487,83 @@ class dataio_text : public DataIOBase {
       );
 
 
-   /** \brief Reads parameters from a text file (almost vestigial at this stage).
-    * 
-    * The parameterfile is from a command-line argument.  This function is only used for 
-    * test problems which are setup algorithmically.  Usually the code starts with an 
-    * initial condition file which contains all the required parameters in its header.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int get_parameters(string /**< Name of parameterfile.*/);
+  /// Reads parameters from a text file (almost vestigial at this stage).
+  ///
+  /// The parameterfile is from a command-line argument.  This function is only used for 
+  /// test problems which are setup algorithmically.  Usually the code starts with an 
+  /// initial condition file which contains all the required parameters in its header.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int get_parameters(
+      string, ///< Name of parameterfile.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
 
-   /**  \brief Get initial conditions and populate grid with them.
-    * 
-    * Get type of IC from parameterfile.\n
-    * If shocktube, then get which_riemann and assign left and right states.\n
-    * Assign data to grid.\n
-    * 1D only so far.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int assign_initial_data();
+  /// Get initial conditions and populate grid with them.
+  /// 
+  /// Get type of IC from parameterfile.\n
+  /// If shocktube, then get which_riemann and assign left and right states.\n
+  /// Assign data to grid.\n
+  /// 1D only so far.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int assign_initial_data(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
 
-   /**  \brief Gets Initial left and right states for a Riemann Problem to solve (1D).
-    * 
-    * You pass this an integer, and pointers to left and right states, and it
-    * gives you the appropriate state.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int get_riemann_ics(int, ///< int value of which_riemann, to tell it which problem to solve
-		       double *, ///< pointer to left state.
-		       double *, ///< pointer to right state.
-		       double *  ///< pointer to left/right interface value (as a fraction of the range).
-		       );
+
+  ///  \brief Gets Initial left and right states for a Riemann Problem to solve (1D).
+  /// 
+  /// You pass this an integer, and pointers to left and right states, and it
+  /// gives you the appropriate state.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int get_riemann_ics(
+      class SimParams &,  ///< pointer to simulation parameters
+      int, ///< int value of which_riemann, to tell it which problem to solve
+      double *, ///< pointer to left state.
+      double *, ///< pointer to right state.
+      double *  ///< pointer to left/right interface value (as a fraction of the range).
+      );
 
 
-   /** \brief Add a low level of pseudo-random noise to the data.
-    * 
-    * This adds random noise to the data.  The integer flag determines what 
-    * kind of noise to add:
-    *  - n=1: add random noise to pressure, at fixed fraction of average pressure on grid.
-    *  - n=2: add random noise to each cell, at fixed fraction of specific cell value.
-    * Noise is adiabatic, so density increases with pressure to keep p/rho^gamma constant.
-    * 
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int add_noise2data(int,   ///< flag saying what kind of noise to add.
-		      double ///< fractional level of noise you want, wrt mean value on grid.
-		      );
-   /** \brief Output Data to ASCII file.
-    * 
-    * This is a text file with positions and various quantities.
-    * Restarting is not possible from these files.
-    * \retval 0 success
-    * \retval 1 failure
-    * */
-   int output_ascii_data(string ///< File name to write to.
-			 );
+  /// Add a low level of pseudo-random noise to the data.
+  /// 
+  /// This adds random noise to the data.  The integer flag determines what 
+  /// kind of noise to add:
+  ///  - n=1: add random noise to pressure, at fixed fraction
+  ///         of average pressure on grid.
+  ///  - n=2: add random noise to each cell, at fixed fraction
+  ///         of specific cell value.  Noise is adiabatic, so 
+  ///         density increases with pressure to keep p/rho^gamma
+  ///         constant.
+  /// 
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int add_noise2data(
+      class SimParams &,  ///< pointer to simulation parameters
+      int,   ///< flag saying what kind of noise to add.
+      double ///< fractional level of noise you want, wrt mean value on grid.
+      );
+
+  /// Save Data to ASCII file.
+  /// 
+  /// This is a text file with positions and various quantities.
+  /// Restarting is not possible from these files.
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  int output_ascii_data(
+      string, ///< File name to write to.
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
    int read_header_param(class pm_base *)
    {rep.error("WHY USE read_header_param FOR TEXTIO?",0); return 0;}
    int write_header_param(class pm_base *)

@@ -35,6 +35,7 @@
 ///    tracer has its own variable.
 /// - 2017.03.07 JM: changed logic so that ArtificalViscosity=4 is
 ///    allowed.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -68,8 +69,10 @@ get_sim_info::~get_sim_info()
 
 
 
-int get_sim_info::read_gridparams(string pfile ///< paramfile.
-				  )
+int get_sim_info::read_gridparams(
+      string pfile, ///< paramfile.
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   int err =0;
   get_sim_info::rp=0;
@@ -151,7 +154,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   
   //
   // tracer variables: number of tracers, and then each one gets a
-  // string name, stored in SimPM.trtype
+  // string name, stored in SimPM.tracers
   //
   str = rp->find_parameter("ntracer");
   if (str=="") {
@@ -161,26 +164,12 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SimPM.ntracer = 0;
     SimPM.ftr = SimPM.nvar;
   }
-  else if (!isnan( SimPM.ntracer=atoi(str.c_str()) ) ) {
+  else if (isfinite( SimPM.ntracer=atoi(str.c_str()) ) ) {
 #ifdef TESTING
     cout <<"using "<<SimPM.ntracer<<" passive tracer variables\n";
 #endif
     SimPM.ftr = SimPM.nvar;
     SimPM.nvar += SimPM.ntracer;
-
-
-#ifdef OLD_TRACER
-
-    //
-    // all tracers in a single parameter.
-    //
-    SimPM.trtype = rp->find_parameter("trtype");
-#ifdef TESTING
-    cout <<"using tracer(s) described as "<<SimPM.trtype<<"\n";
-#endif
-
-#else // new/old tracer
-
     //
     // Get what type of chemistry we are doing:
     //
@@ -188,26 +177,25 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
     //
     // Each tracer has its own parameter, called Tracer000, Tracer001,
-    // etc., so setup a string for each in the trtype array.
+    // etc., so setup a string for each in the tracers array.
     //
-    SimPM.trtype = mem.myalloc(SimPM.trtype,SimPM.ntracer);
+    SimPM.tracers = mem.myalloc(SimPM.tracers,SimPM.ntracer);
     for (int i=0;i<SimPM.ntracer;i++) {
       ostringstream temp;
       temp <<"Tracer";
       temp.width(3);
       temp.fill('0');
       temp <<i;
-      SimPM.trtype[i] = rp->find_parameter(temp.str());
+      SimPM.tracers[i] = rp->find_parameter(temp.str());
 #ifdef TESTING
-      cout <<"using tracer(s) described as "<<SimPM.trtype[i]<<"\n";
+      cout <<"using tracer(s) described as "<<SimPM.tracers[i]<<"\n";
 #endif
+      if (SimPM.tracers[i] == "") {
+        rep.error("Can't find tracer name for number",i);
+      }
     }
-
-#endif // OLD_TRACER
-
-
   }
-  else rep.error("number of tracers is not a number!",SimPM.ntracer);
+  else rep.error("number of tracers is not finite!",SimPM.ntracer);
   
   // coordinate system.
   str = rp->find_parameter("coordinates");
@@ -338,12 +326,52 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   //cout <<" and opfreq="<<SimPM.opfreq_time<<" code time units.\n";
 
 
-  
+  //
   // Boundary conditions.
-  seek="BC"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
-  SimPM.typeofbc = str;
+  // First do the edges of the domain:
+  //
+  SimPM.BC_XN = rp->find_parameter("BC_XN");
+  SimPM.BC_XP = rp->find_parameter("BC_XP");
+  if (SimPM.ndim>1) {
+    SimPM.BC_YN = rp->find_parameter("BC_YN");
+    SimPM.BC_YP = rp->find_parameter("BC_YP");
+  }
+  else {
+    SimPM.BC_YN = "NONE";
+    SimPM.BC_YP = "NONE";
+  }
+  if (SimPM.ndim>2) {
+    SimPM.BC_ZN = rp->find_parameter("BC_ZN");
+    SimPM.BC_ZP = rp->find_parameter("BC_ZP");
+  }
+  else {
+    SimPM.BC_ZN = "NONE";
+    SimPM.BC_ZP = "NONE";
+  }
+  //
+  // Now do the internal boundaries (if any).  Seek the string
+  // for a given internal boundary, and add to a vector until
+  // no more are found.
+  //
+  str = rp->find_parameter("BC_Ninternal"); 
+  if (str=="")  SimPM.BC_Nint = 0;
+  else          SimPM.BC_Nint = atoi(str.c_str());
+  if (SimPM.BC_Nint>0) {
+    SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+  }
+  for (int v=0; v<SimPM.BC_Nint; v++) {
+    ostringstream intbc; intbc.str("");
+    intbc << "BC_INTERNAL_";
+    intbc.width(3); intbc.fill('0');
+    intbc << v;
+    //cout <<"Looking for internal boundary: "<<intbc.str();
+    str = rp->find_parameter(intbc.str());
+    //cout <<"   Found: "<<str<<"\n";
+    SimPM.BC_INT[v] = str;
+  }
+  //rep.printVec("BC_INT",SimPM.BC_INT,SimPM.BC_Nint);
+  
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
-  //cout <<"\tBoundary Conditions: "<<SimPM.typeofbc<<"\n";
   
   // Timing
   seek="StartTime"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
@@ -384,11 +412,11 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
   else rep.error("\tUnknown viscosity requested... fix me.",str);
   //cout <<"\tArtificial Viscosity: eta="<<SimPM.etav<<"\n";
   // Which Physics
-  err += read_extra_physics();
+  err += read_extra_physics(SimPM);
   if (err) rep.error("read_extra_physics",err);   
    
   // Raytracing
-  err += read_radsources();
+  err += read_radsources(SimPM);
   if (err) rep.error("read_radsources",err);   
 
   //
@@ -404,7 +432,7 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
     SWP.Nsources = atoi(str.c_str());
     //cout <<"\tWIND_NSRC: got "<<SWP.Nsources<<" sources.\n";
     if (SWP.Nsources>0) {
-      err += read_wind_sources();
+      err += read_wind_sources(SimPM);
       if (err) rep.error("read_wind_sources",err);   
     }
   }
@@ -445,7 +473,9 @@ int get_sim_info::read_gridparams(string pfile ///< paramfile.
 
 
 
-int get_sim_info::read_radsources()
+int get_sim_info::read_radsources(
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   if (!rp) return 1;
   string a;
@@ -578,7 +608,9 @@ int get_sim_info::read_radsources()
 
 
 
-int get_sim_info::read_wind_sources()
+int get_sim_info::read_wind_sources(
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   if (!rp)
     return 1;
@@ -716,7 +748,9 @@ int get_sim_info::read_wind_sources()
 
 
 
-int get_sim_info::read_extra_physics()
+int get_sim_info::read_extra_physics(
+      class SimParams &SimPM  ///< pointer to simulation paramters.
+      )
 {
   if (!rp) return 1;
   // read extra physics parameters if present, and set them to

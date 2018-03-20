@@ -1,14 +1,11 @@
 ///
-/// \file mpv8_StarBench_heatcool.h
+/// \file MPv8.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
 /// This class is for running calculations with a simple 
 /// heating and cooling prescription for photoionization calculations
 /// in the StarBench Workshop test problems.
-///
-/// NB BUG: Needs a Set_Temp() function; currently this is inherited
-/// from mp_explicit_H(), which uses a different n_tot() formula.
 ///
 /// Modifications:
 /// - getting it written: mods up until 2014.06.XX
@@ -17,13 +14,15 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#ifdef LEGACY_CODE
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/mpv8_StarBench_heatcool.h"
+#include "microphysics/MPv8.h"
 
 using namespace std;
 
@@ -33,29 +32,23 @@ using namespace std;
 // ##################################################################
 
 
-mpv8_SBheatcool::mpv8_SBheatcool(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-          const std::string &trtype,  ///< List of what the tracer variables mean.
-
-# else
-
-          const std::string *trtype,  ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
-          struct which_physics *ephys  ///< extra physics stuff.
-	  )
+MPv8::MPv8(
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,              ///< Total number of variables in state vector
+      const int ntracer,         ///< Number of tracer variables in state vector.
+      const std::string *tracers,  ///< List of what the tracer variables mean.
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
 :
-  mp_explicit_H(nv,ntracer,trtype,ephys)
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
-  cout <<"mpv8_SBheatcool constructor setting up.\n";
+  cout <<"MPv8 constructor setting up.\n";
 #endif
-  gamma_minus_one = SimPM.gamma -1.0;
+  gamma_minus_one = eos_gamma -1.0;
 
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
@@ -100,7 +93,7 @@ mpv8_SBheatcool::mpv8_SBheatcool(
   cout <<"\tPI-heating="<<SBHC_EEqHi<<", NT-heating="<<SBHC_EEqLo<<"\n";
 
 #ifdef TESTING
-  cout <<"mpv8_SBheatcool: Y="<< EP->Helium_MassFrac;
+  cout <<"MPv8: Y="<< EP->Helium_MassFrac;
   cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
 #endif // TESTING
@@ -110,10 +103,10 @@ mpv8_SBheatcool::mpv8_SBheatcool(
 // ##################################################################
 // ##################################################################
 
-mpv8_SBheatcool::~mpv8_SBheatcool()
+MPv8::~MPv8()
 {
 #ifdef TESTING
-  cout <<"mpv8_SBheatcool destructor.\n";
+  cout <<"MPv8 destructor.\n";
 #endif
   return;
 }
@@ -123,10 +116,10 @@ mpv8_SBheatcool::~mpv8_SBheatcool()
 // ##################################################################
 
 
-int mpv8_SBheatcool::convert_prim2local(
-          const double *p_in, ///< primitive vector from grid cell (length nv_prim)
-          double *p_local
-          )
+int MPv8::convert_prim2local(
+      const double *p_in, ///< primitive vector from grid cell (length nv_prim)
+      double *p_local
+      )
 {
   //
   // Set internal energy density, H+ fraction, and number density of H.
@@ -154,7 +147,7 @@ int mpv8_SBheatcool::convert_prim2local(
       rep.error("INF/NAN input to microphysics",p_local[v]);
   }
   if (mpv_nH<0.0 || !isfinite(mpv_nH))
-    rep.error("Bad density input to mpv8_SBheatcool::convert_prim2local",mpv_nH);
+    rep.error("Bad density input to MPv8::convert_prim2local",mpv_nH);
 #endif // TESTING
   
   return 0;
@@ -165,11 +158,11 @@ int mpv8_SBheatcool::convert_prim2local(
 // ##################################################################
 
 
-int mpv8_SBheatcool::convert_local2prim(
-            const double *p_local,
-            const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
-            double *p_out       ///< updated primitive vector for grid cell (length nv_prim)
-            )
+int MPv8::convert_local2prim(
+      const double *p_local,
+      const double *p_in, ///< input primitive vector from grid cell (length nv_prim)
+      double *p_out       ///< updated primitive vector for grid cell (length nv_prim)
+      )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
 
@@ -187,38 +180,11 @@ int mpv8_SBheatcool::convert_local2prim(
   //
   p_out[PG] = p_local[lv_eint]*(gamma_minus_one);
 
-  //
-  // Set output pressure to be within required temperature range (use the 
-  // possibly corrected x(H+) from p_out[]).
-  //
-  //double T = get_temperature(mpv_nH, p_local[lv_eint], p_out[pv_Hp]);
-  //if (T>1.01*EP->MaxTemperature) {
-  //  Set_Temp(p_out,EP->MaxTemperature,0);
-#ifdef TESTING
-  //  cout <<"mpv8_SBheatcool::convert_local2prim() HIGH temperature encountered. ";
-  //  cout <<"T="<<T<<", obtained from nH="<<mpv_nH<<", eint="<<p_local[lv_eint];
-  //  cout <<", x="<<p_out[pv_Hp]<<"...  limiting to T="<<EP->MaxTemperature<<"\n";
-#endif // TESTING
-  //}
-  //if (T<0.99*EP->MinTemperature) {
-  //  Set_Temp(p_out,EP->MinTemperature,0);
-#ifdef TESTING
-  //  cout <<"mpv8_SBheatcool::convert_local2prim() LOW  temperature encountered. ";
-  //  cout <<"T="<<T<<", obtained from nH="<<mpv_nH<<", eint="<<p_local[lv_eint];
-  //  cout <<", x="<<p_out[pv_Hp]<<"...  limiting to T="<<EP->MinTemperature<<"\n";
-#endif // TESTING
-  //}
-
-#ifdef TESTING
-  //cout <<"nH="<< mpv_nH <<", xp="<< p_out[pv_Hp] <<", ntot=";
-  //cout <<get_ntot(mpv_nH,p_out[pv_Hp])<<"\n";
-#endif
-
 #ifdef TESTING
   if (p_out[pv_Hp]<0.0 || p_out[pv_Hp]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_Hp]))
-    rep.error("Bad output H+ value in mpv8_SBheatcool::convert_local2prim",p_out[pv_Hp]-1.0);
+    rep.error("Bad output H+ value in MPv8::convert_local2prim",p_out[pv_Hp]-1.0);
   if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in mpv8_SBheatcool::convert_local2prim",p_out[PG]);
+    rep.error("Bad output pressure in MPv8::convert_local2prim",p_out[PG]);
 #endif // TESTING
 
   return 0;
@@ -229,11 +195,11 @@ int mpv8_SBheatcool::convert_local2prim(
 // ##################################################################
 
 
-double mpv8_SBheatcool::get_temperature(
-    const double nH,  ///< nH (per c.c.)
-    const double E,   ///< E_int (per unit volume)
-    const double xp   ///< x(H+)
-    )
+double MPv8::get_temperature(
+      const double nH,  ///< nH (per c.c.)
+      const double E,   ///< E_int (per unit volume)
+      const double xp   ///< x(H+)
+      )
 {
   //
   // simple ideal gas EOS
@@ -246,15 +212,11 @@ double mpv8_SBheatcool::get_temperature(
 // ##################################################################
 
 
-double mpv8_SBheatcool::get_ntot(
-    const double nH, ///< nH
-    const double xp  ///< x(H+) N.B. EEqHis is ion fraction, not neutral fraction.
-    )
+double MPv8::get_ntot(
+      const double nH, ///< nH
+      const double xp  ///< x(H+)
+      )
 {
-  //
-  // EEqHis allows for molecular H neutral gas, with SBHC_Mol, which is
-  // 0.5 if molecular.  EEqHis is the (H0/H2) + (He) + (elect.+ions).
-  //
   return
     ((1.0-xp)*SBHC_Mol +(SBHC_Nnt-SBHC_Mol) +xp*(JM_NELEC+JM_NION))*nH;
 }
@@ -263,16 +225,16 @@ double mpv8_SBheatcool::get_ntot(
 // ##################################################################
 
 
-int mpv8_SBheatcool::ydot(
-          double,               ///< current time (UNUSED)
-          const N_Vector y_now, ///< current Y-value
-          N_Vector y_dot,       ///< vector for Y-dot values
-          const double *        ///< extra user-data vector (UNUSED)
-          )
+int MPv8::ydot(
+      double,               ///< current time (UNUSED)
+      const N_Vector y_now, ///< current Y-value
+      N_Vector y_dot,       ///< vector for Y-dot values
+      const double *        ///< extra user-data vector (UNUSED)
+      )
 {
 
 #ifdef TESTING
-  //cout <<"mpv8_SBheatcool::ydot(): Y="<< EP->Helium_MassFrac;
+  //cout <<"MPv8::ydot(): Y="<< EP->Helium_MassFrac;
   //cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   //cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC;
   //cout <<", Nnt="<<SBHC_Nnt<<"\n";
@@ -296,8 +258,7 @@ int mpv8_SBheatcool::ydot(
   double oneminusx_dot=0.0;
   //
   // Edot is irrelevant here, so just leave it at zero so it never
-  // affects the timesteps.  EEqHis makes it a bit inefficient, but
-  // it's never going to be used in detailed simulations.
+  // affects the timesteps.
   //
   double Edot=0.0;
 
@@ -326,7 +287,7 @@ int mpv8_SBheatcool::ydot(
       // Also, instead of using mpv_dTau0 for the cell optical depth, we use
       // the current optical depth (nH*mpv_delta_S*OneMinusX) so that we allow
       // the photoionisation rate to decrease as the number of neutral atoms
-      // decreases during the timestep.  EEqHis is more stable.
+      // decreases during the timestep.
       //
       temp1 = Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
                                           mpv_nH, mpv_delta_S, mpv_Vshell);
@@ -417,14 +378,14 @@ int mpv8_SBheatcool::ydot(
 
 
 
-double mpv8_SBheatcool::get_recombination_rate(
-          const int,          ///< ion index in tracer array (optional).
-          const double *p_in, ///< input state vector (primitive).
-          const double g      ///< EOS gamma (optional)
-          )
+double MPv8::get_recombination_rate(
+      const int,          ///< ion index in tracer array (optional).
+      const double *p_in, ///< input state vector (primitive).
+      const double g      ///< EOS gamma (optional)
+      )
 {
 #ifdef FUNCTION_ID
-  cout <<"mpv8_SBheatcool::get_recombination_rate()\n";
+  cout <<"MPv8::get_recombination_rate()\n";
 #endif // FUNCTION_ID
   double rate=0.0;
   double P[nvl];
@@ -438,7 +399,7 @@ double mpv8_SBheatcool::get_recombination_rate(
   rate = 2.7e-13*mpv_nH*mpv_nH*(1.0-P[lv_H0])*(1.0-P[lv_H0])*JM_NELEC;
 
 #ifdef FUNCTION_ID
-  cout <<"mpv8_SBheatcool::get_recombination_rate()\n";
+  cout <<"MPv8::get_recombination_rate()\n";
 #endif // FUNCTION_ID
   return rate;
 }
@@ -450,4 +411,5 @@ double mpv8_SBheatcool::get_recombination_rate(
 
 
 
+#endif // LEGACY_CODE
 

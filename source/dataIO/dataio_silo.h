@@ -26,6 +26,7 @@
 /// - 2015.06.13 JM: Changed datatype (FLOAT/DOUBLE) to a runtime
 ///    parameter, set in the constructor.
 /// - 2016.03.18 JM: better treatment of float/double coordinates.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef DATAIO_SILO_H
 #define DATAIO_SILO_H
@@ -67,6 +68,7 @@ class dataio_silo :public DataIOBase {
   /// Constructor. 
   ///
   dataio_silo(
+      class SimParams &,  ///< pointer to simulation parameters
       std::string ///< read/write either FLOAT or DOUBLE to/from file
       );
 
@@ -79,8 +81,10 @@ class dataio_silo :public DataIOBase {
   /// Class can run with or without a solver, but this function
   /// allows you to set a pointer to the solver.#
   ///
-  void SetSolver(FV_solver_base * ///< Pointer to the solver (for Eint,divB,Ptot)
-		  );
+  void SetSolver(
+      FV_solver_base * ///< Pointer to the solver (for Eint,divB,Ptot)
+      );
+  
   ///
   /// This writes the header for the simulation parameters,
   /// and then the data.
@@ -90,10 +94,11 @@ class dataio_silo :public DataIOBase {
   /// and total Pressure if the solver is an MHD solver).
   ///
   virtual int OutputData(
-        const string, ///< File to write to
-        class GridBaseClass *, ///< pointer to data.
-        const long int ///< number to stamp file with (e.g. timestep)
-        );
+      const string, ///< File to write to
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
+      const long int ///< number to stamp file with (e.g. timestep)
+      );
 
   ///
   /// Reads the header from the file specified, and puts the
@@ -102,7 +107,8 @@ class dataio_silo :public DataIOBase {
   /// the right dimensions to take the data from the file.
   ///
   virtual int ReadHeader(
-      string ///< file to read from
+      string, ///< file to read from
+      class SimParams &  ///< pointer to simulation parameters
       );
 
 
@@ -110,8 +116,9 @@ class dataio_silo :public DataIOBase {
   /// Write simulation header info to file (file must already exist!)
   ///
   virtual int WriteHeader(
-          const string ///< file to write to (full, exact filename).
-          );
+      const string, ///< file to write to (full, exact filename).
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
 
   ///
@@ -119,9 +126,11 @@ class dataio_silo :public DataIOBase {
   /// the grid points, assuming the grid has been set up with paramters
   /// from the header, which should be read first.
   ///
-   virtual int ReadData(string, ///< file to read from
-			class GridBaseClass * ///< pointer to data.
-			);
+  virtual int ReadData(
+      string, ///< file to read from
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   protected:
 
@@ -173,75 +182,101 @@ class dataio_silo :public DataIOBase {
   ///
   /// Choose a FileName to write to.
   ///
-  virtual int choose_filename(const string, ///< filebase passed in from main code.
-			       const int     ///< file counter to use (e.g. timestep).
-			       );
+  virtual int choose_filename(
+      const string, ///< filebase passed in from main code.
+      const int     ///< file counter to use (e.g. timestep).
+      );
+
   ///
   /// Call once to setup arrays with the properties of the grid, for
   /// writing to the Silo Quadmesh.
   ///
   virtual int setup_grid_properties(
-        class GridBaseClass * ///< pointer to data.
-        );
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
   ///
   /// Choose what data to write to file, based on equations being solved.*/
   ///
-  virtual int setup_write_variables();
+  virtual int setup_write_variables(
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// Generate Quadmesh and write it to silo file.
   ///
-   int generate_quadmesh(DBfile *, ///< pointer to silo file to write to.
-			 string    ///< name of mesh to write.
-			 );
+  int generate_quadmesh(
+      DBfile *, ///< pointer to silo file to write to.
+      string,    ///< name of mesh to write.
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
   ///
   /// Given a file, meshname, variable, write that variable to the mesh.*/
   ///
-   int write_variable2mesh(DBfile *, ///< pointer to silo file.
-			   string,   ///< name of mesh to write to.
-			   string    ///< variable name to write.
-			   );
+  int write_variable2mesh(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      DBfile *, ///< pointer to silo file.
+      string,   ///< name of mesh to write to.
+      string    ///< variable name to write.
+      );
+  
   ///
   /// allocate memory for arrays used to write data to files.*/
   ///
-   virtual void create_data_arrays();
+  virtual void create_data_arrays(
+      class SimParams &  ///< pointer to simulation parameters
+      );
+  
   ///
   /// deallocate memory for arrays used to write data to files.*/
   ///
-   void delete_data_arrays();
+  void delete_data_arrays();
+
   ///
   /// Get Scalar variable into array ready to write to file.
   ///
-   int get_scalar_data_array(string, ///< variable name to get.
-			     void * ///< array to write to.
-			     );
+  int get_scalar_data_array(
+      string, ///< variable name to get.
+      class SimParams &,  ///< pointer to simulation parameters
+      void * ///< array to write to.
+      );
+  
   ///
   /// Get Vector variable into 2d array ready to write to file.
   ///
-   int get_vector_data_array(string, ///< variable name to get.
-			     void ** ///< array to write to.
-			     );
+   int get_vector_data_array(
+      string, ///< variable name to get.
+      class SimParams &,  ///< pointer to simulation parameters
+      void ** ///< array to write to.
+      );
+
   ///
   /// Writes a scalar array to the specified mesh and file.
   ///
-   int write_scalar2mesh(DBfile *, ///< silo file pointer.
-			 string,   ///< mesh name
-			 string,   ///< variable name
-			 void *  ///< pointer to data array.
-			 );
+  int write_scalar2mesh(
+      DBfile *, ///< silo file pointer.
+      string,   ///< mesh name
+      string,   ///< variable name
+      void *  ///< pointer to data array.
+      );
+
   ///
   /// Writes a vector array to the specified mesh and file.
   ///
-   int write_vector2mesh(DBfile *, ///< silo file pointer.
-			 string,   ///< mesh name
-			 string,   ///< variable name
-			 void **  ///< pointer to data array.
-			 );
+  int write_vector2mesh(
+      DBfile *, ///< silo file pointer.
+      string,   ///< mesh name
+      string,   ///< variable name
+      void **  ///< pointer to data array.
+      );
 
    ///
    /// Function which defines how to get the data from a silo file.
    ///
    int read_header_param(class pm_base *);
+
    ///
    /// Function which defines how to write a parameter to a silo file.
    ///
@@ -250,16 +285,20 @@ class dataio_silo :public DataIOBase {
   ///
   /// Set list of variable names to read, based on equations to solve.
   ///
-   int set_readvars(int ///< SimPM.eqntype -- the type of equations we are solving.
-		    );
+  int set_readvars(
+      class SimParams &  ///< pointer to simulation parameters
+      );
+
   ///
   /// Given a Variable and a Silo File, read the data onto the grid.
   ///
-   int read_variable2grid(DBfile *, ///< pointer to silo file.
-			  string,   ///< name of mesh to read from.
-			  string,   ///< variable name to read.
-			  long int  ///< number of cells expected.
-			  );
+  int read_variable2grid(
+      class SimParams &,  ///< pointer to simulation parameters
+      DBfile *, ///< pointer to silo file.
+      string,   ///< name of mesh to read from.
+      string,   ///< variable name to read.
+      long int  ///< number of cells expected.
+      );
 };
 
 
@@ -274,6 +313,7 @@ class dataio_silo_pllel : public dataio_silo {
   /// Constructor.
   ///
   dataio_silo_pllel(
+      class SimParams &,  ///< pointer to simulation parameters
       std::string,         ///< FLOAT or DOUBLE for files.
       class MCMDcontrol *  ///< address of MCMD controller class.
   );
@@ -287,10 +327,12 @@ class dataio_silo_pllel : public dataio_silo {
   /// If the solver pointer is not null, it also writes some derived variables
   /// such as Temperature, Div(B), etc.
   ///
-  int OutputData(const string, ///< File to write to
-		 class GridBaseClass *, ///< pointer to data.
-		 const long int ///< number to stamp file with (e.g. timestep)
-		 );
+  int OutputData(
+      const string, ///< File to write to
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
+      const long int ///< number to stamp file with (e.g. timestep)
+      );
 
   ///
   /// Reads the header from the file specified, and puts the
@@ -301,8 +343,10 @@ class dataio_silo_pllel : public dataio_silo {
   /// the header from the root file, regardless of the number of files 
   /// present.
   ///
-  int ReadHeader(string ///< file to read from
-		 );
+  int ReadHeader(
+      string, ///< file to read from
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// This reads the data variables in turn, and puts the data into
@@ -311,9 +355,11 @@ class dataio_silo_pllel : public dataio_silo {
   /// domain decomposition has been done already, and will bug out if it
   /// hasn't.  The routine uses the PMPIO interface.
   ///
-  int ReadData(string, ///< file to read from
-	       class GridBaseClass * ///< pointer to data.
-	       );
+  int ReadData(
+      string, ///< file to read from
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
  protected:
   class MCMDcontrol *mpiPM;
@@ -333,15 +379,18 @@ class dataio_silo_pllel : public dataio_silo {
   /// processor.
   ///
   int setup_grid_properties(
-        class GridBaseClass * ///< pointer to data.
-        );
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   ///
   /// allocate memory for arrays used to write data to files.
   /// Arrays are different sizes for parallel grid -- local Ncell instead
   /// of global Ncell.
   ///
-  void create_data_arrays();
+  void create_data_arrays(
+      class SimParams &  ///< pointer to simulation parameters
+      );
   
   int numfiles; ///< number of files to split the data into.
 
@@ -349,31 +398,24 @@ class dataio_silo_pllel : public dataio_silo {
   /// Write a mulitmesh adjacency object (obsolete and doesn't work!)
   /// 
   int write_multimeshadj(
-        DBfile *, ///< pointer to silo file.
-        class GridBaseClass *, ///< pointer to data.
-        string, ///< multimesh name
-        string  ///< multimesh adjacency name.
-        );
+      class SimParams &,  ///< pointer to simulation parameters
+      DBfile *, ///< pointer to silo file.
+      class GridBaseClass *, ///< pointer to data.
+      string, ///< multimesh name
+      string  ///< multimesh adjacency name.
+      );
 
   ///
   /// Write an MRG tree object (replaces multimesh adjacency)
   /// 
   int write_MRGtree(
-        DBfile *, ///< pointer to silo file.
-        class GridBaseClass *, ///< pointer to data.
-        string, ///< multimesh name
-        string  ///< MRG tree name.
-        );
+      class SimParams &,  ///< pointer to simulation parameters
+      DBfile *, ///< pointer to silo file.
+      class GridBaseClass *, ///< pointer to data.
+      string, ///< multimesh name
+      string  ///< MRG tree name.
+      );
 
-  ///
-  /// Write a mulitmesh object
-  /// 
-  int write_multimesh(
-        DBfile *, ///< pointer to silo file.
-        class GridBaseClass *, ///< pointer to data.
-        string, ///< multimesh name
-        string  ///< multimesh adjacency name.
-        );
 };
 
 #endif // if PARALLEL

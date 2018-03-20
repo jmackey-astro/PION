@@ -43,6 +43,7 @@ using namespace std;
 class dataio_silo_utility : public dataio_silo_pllel  {
   public:
   dataio_silo_utility(
+      class SimParams &,  ///< pointer to simulation parameters
       std::string,   ///< FLOAT or DOUBLE for files.
       class MCMDcontrol *
       );
@@ -51,11 +52,13 @@ class dataio_silo_utility : public dataio_silo_pllel  {
 
   int serial_read_any_data(
       string, ///< file to read from
+      class SimParams &,  ///< pointer to simulation parameters
       class GridBaseClass * ///< pointer to data.
       );
 
   int parallel_read_any_data(
       string, ///< file to read from
+      class SimParams &,  ///< pointer to simulation parameters
       class GridBaseClass * ///< pointer to data.
       );
 
@@ -68,6 +71,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
       class GridBaseClass *, ///< pointer to data.
       const int, ///< number of files
       const int, ///< number of groups
+      class SimParams &,  ///< pointer to simulation parameters
       class MCMDcontrol * ///< pointer to class with nproc.
       );
 
@@ -81,6 +85,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
       class GridBaseClass *, ///< pointer to data.
       const string,   ///< variable name to read.
       const long int,  ///< number of cells expected.
+      class SimParams &,  ///< pointer to simulation parameters
       class MCMDcontrol * ///< pointer to class with nproc.
       );
 
@@ -100,6 +105,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   ///
   bool SRAD_point_on_my_domain(
       const cell *, ///< pointer to cell
+      class SimParams &,  ///< pointer to simulation parameters
       class MCMDcontrol * ///< pointer to class with nproc.
       );
 
@@ -139,7 +145,8 @@ class dataio_silo_utility : public dataio_silo_pllel  {
       const string, ///< directory of mesh
       const string, ///< name of mesh
       double *, ///< integer Xmin for mesh (output)
-      double *  ///< integer Xmax for mesh (output)
+      double *, ///< integer Xmax for mesh (output)
+      class SimParams &  ///< pointer to simulation parameters
       );
 
   ///
@@ -150,6 +157,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   void get_quadmesh_integer_extents(
       DBfile *,        ///< pointer to silo file.
       class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
       const string, ///< directory of mesh
       const string, ///< name of mesh
       int *, ///< integer Xmin for mesh (output)
@@ -162,7 +170,8 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   ///
   int parallel_read_serial_silodata(
       string,      ///< file to read from
-      class GridBaseClass * ///< pointer to data.
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
       );
 
   ///
@@ -172,6 +181,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   int parallel_read_parallel_silodata(
       string,    ///< file to read from
       class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
       const int, ///< number of files
       const int, ///< number of groups
       const int  ///< number of processes used to write file.
@@ -185,6 +195,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   int PP_read_var2grid(
       DBfile *, ///< pointer to silo file.
       class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
       const string,   ///< variable name to read.
       const long int,  ///< number of cells expected (not needed)
       const int *, ///< integer Xmin for mesh

@@ -29,7 +29,8 @@ using namespace std;
 
 
 
-IC_blastwave::IC_blastwave() {ambient=0; interface=0; BW_tr=0;}
+IC_blastwave::IC_blastwave()
+{ambient=0; interface=0; BW_tr=0;}
 IC_blastwave::~IC_blastwave()
 {
   if (ambient) ambient=mem.myfree(ambient);
@@ -43,9 +44,10 @@ IC_blastwave::~IC_blastwave()
 
 
 
-int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			     class GridBaseClass *ggg ///< pointer to grid
-			     )
+int IC_blastwave::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -111,10 +113,10 @@ int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter
   else         IC_blastwave::bw_BZ = atof(str.c_str());
 
   // tracer variables
-  BW_tr=mem.myalloc(BW_tr,SimPM.ntracer);
+  BW_tr=mem.myalloc(BW_tr,SimPM->ntracer);
   ostringstream temp;
   string v;
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "BW_amb_TR" << t;
     seek = temp.str();
@@ -125,9 +127,9 @@ int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter
   }
 
 
-  IC_blastwave::gam = SimPM.gamma;
+  IC_blastwave::gam = SimPM->gamma;
 
-  IC_blastwave::eqns = SimPM.eqntype;
+  IC_blastwave::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -144,19 +146,19 @@ int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter
   string ics = rp->find_parameter("ics");
 
   if (ics=="") rep.error("didn't get any ics to set up.",ics);
-  else if (ics=="BlastWave" && SimPM.coord_sys==COORD_CRT) {
+  else if (ics=="BlastWave" && SimPM->coord_sys==COORD_CRT) {
     cout <<"Setting up Cartesian BlastWave problem.\n";
     err += setup_cart_bw();
   }
-  else if (ics=="BlastWave" && SimPM.coord_sys==COORD_CYL) {
+  else if (ics=="BlastWave" && SimPM->coord_sys==COORD_CYL) {
     cout <<"Setting up Cylindrical BlastWave problem.\n";
     err += setup_cyl_bw();
   }
-  else if (ics=="BlastWave" && SimPM.coord_sys==COORD_SPH) {
+  else if (ics=="BlastWave" && SimPM->coord_sys==COORD_SPH) {
     cout <<"Setting up Spherical BlastWave problem.\n";
     err += setup_sph_bw();
   }
-  else if (ics=="BlastWave_File" && SimPM.coord_sys==COORD_SPH) {
+  else if (ics=="BlastWave_File" && SimPM->coord_sys==COORD_SPH) {
     cout <<"Setting up Spherical Blastwave with input density field.\n";
     //
     // get text file to read density, pressure etc. from.
@@ -180,11 +182,11 @@ int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter
     err += setup_sph_bw_File(fname, tr_id);
   }
   /*
-  else if (ics=="BlastWaveReflect" && SimPM.coord_sys = COORD_CRT) {
+  else if (ics=="BlastWaveReflect" && SimPM->coord_sys = COORD_CRT) {
     cout <<"Setting up Reflecting BlastWave problem.\n";
     err += setup_cart_symmetric_bw();
   }
-  else if (ics=="BlastWaveReflect" && SimPM.coord_sys = COORD_CYl) {
+  else if (ics=="BlastWaveReflect" && SimPM->coord_sys = COORD_CYl) {
     cout <<"Setting up Reflecting BlastWave problem.\n";
     err += setup_cyl_symmetric_bw();
   }
@@ -197,7 +199,7 @@ int IC_blastwave::setup_data(class ReadParams *rrp,    ///< pointer to parameter
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, *SimPM, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -220,7 +222,7 @@ void IC_blastwave::get_amb2_params()
 {
   interface=0;
   ambient=0;
-  ambient = mem.myalloc(ambient,SimPM.nvar);
+  ambient = mem.myalloc(ambient,SimPM->nvar);
 
   //
   // 2011.11.11 JM: Added Second ambient medium params list, for splitting
@@ -294,18 +296,18 @@ void IC_blastwave::get_amb2_params()
     if (str!="") ambient[BZ] = atof(str.c_str());
     else         ambient[BZ] = -1.0e99;
 
-    if (SimPM.eqntype==EQGLM) ambient[SI] = 0.;
+    if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars
 
   // tracer variables
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "BW_amb2_TR" << t;
     seek = temp.str();
     str = rp->find_parameter(seek);
-    if (str!="") ambient[t+SimPM.ftr] = atof(str.c_str());
-    else         ambient[t+SimPM.ftr] = -1.0e99;
-    cout <<"AMB2: seek="<<seek<<", str="<<str<<", val="<<ambient[t+SimPM.ftr]<<"\n";
+    if (str!="") ambient[t+SimPM->ftr] = atof(str.c_str());
+    else         ambient[t+SimPM->ftr] = -1.0e99;
+    cout <<"AMB2: seek="<<seek<<", str="<<str<<", val="<<ambient[t+SimPM->ftr]<<"\n";
   }
 
   seek = "BW_interface";
@@ -338,7 +340,7 @@ int IC_blastwave::setup_sph_bw_File(
   cout <<"Setting up a 1D spherically symmetric simulation of a blast\n";
   cout <<" wave with energy = "<<bw_energy;
   cout <<", density ="<<bw_blastRO<<" in "<<bw_nzones<<" zones,\n";
-  cout <<" and no magnetic field, and nvar="<<SimPM.nvar<<"\n";
+  cout <<" and no magnetic field, and nvar="<<SimPM->nvar<<"\n";
   cout <<"Reading input density, pressure, and y(H+) from file "<<fname<<"\n";
 
   //
@@ -352,11 +354,11 @@ int IC_blastwave::setup_sph_bw_File(
   //
   std::vector<double> radius;
   std::vector<std::vector<double> > data;
-  data.resize(SimPM.nvar);
+  data.resize(SimPM->nvar);
   //
   // now read in the data
   //
-  double r, x[SimPM.nvar];
+  double r, x[SimPM->nvar];
   string x2,line;
   int i=0;
   while (!infile.eof()) {
@@ -374,7 +376,7 @@ int IC_blastwave::setup_sph_bw_File(
       //
       // Read in the fluid variables plus the first tracer (this is H+).
       //
-      for (int v=0;v<SimPM.nvar-SimPM.ntracer+1; v++) {
+      for (int v=0;v<SimPM->nvar-SimPM->ntracer+1; v++) {
         ff >> x[v];
         //cout <<x[v]<<"  ";
         data[v].push_back(x[v]);
@@ -389,8 +391,8 @@ int IC_blastwave::setup_sph_bw_File(
   //
   // Now see if the number of lines of data equals the number of grid cells
   //
-  if (i != SimPM.Ncell) {
-    cerr<<"nlines="<<i<<"; Ncell="<<SimPM.Ncell<<"\n";
+  if (i != SimPM->Ncell) {
+    cerr<<"nlines="<<i<<"; Ncell="<<SimPM->Ncell<<"\n";
     return 1;
   }
   
@@ -431,10 +433,10 @@ int IC_blastwave::setup_sph_bw_File(
       // Now the tracer: The ion fraction of H+ is one of the tracer values
       // in Harpreet's module, but I'm not sure which one...
       //
-      for (int itr=0;itr<SimPM.ntracer;itr++) {
-        if (itr==tr_id) c->P[SimPM.ftr+itr] = data[SimPM.ftr][i];
-	else if (itr==4) c->P[SimPM.ftr+itr] = data[SimPM.ftr][i]*0.08;
-        else            c->P[SimPM.ftr+itr] = 0.0;
+      for (int itr=0;itr<SimPM->ntracer;itr++) {
+        if (itr==tr_id) c->P[SimPM->ftr+itr] = data[SimPM->ftr][i];
+	else if (itr==4) c->P[SimPM->ftr+itr] = data[SimPM->ftr][i]*0.08;
+        else            c->P[SimPM->ftr+itr] = 0.0;
       }
       // This is where I set the state inside the blast radius.
       // This is exact for spherical coords.
@@ -471,7 +473,7 @@ int IC_blastwave::setup_sph_bw()
   cout <<"Setting up a 1D spherically symmetric simulation of a blast\n";
   cout <<" wave with energy = "<<bw_energy;
   cout <<", density ="<<bw_blastRO<<" in "<<bw_nzones<<" zones,\n";
-  cout <<" and no magnetic field, and nvar="<<SimPM.nvar<<endl;
+  cout <<" and no magnetic field, and nvar="<<SimPM->nvar<<endl;
 
   //
   // Centred at [0]
@@ -500,8 +502,8 @@ int IC_blastwave::setup_sph_bw()
        cpt->P[BY] = bw_BY;
        cpt->P[BZ] = bw_BZ;
      }
-     for (int i=0;i<SimPM.ntracer;i++) {
-       cpt->P[SimPM.ftr+i] = BW_tr[i];
+     for (int i=0;i<SimPM->ntracer;i++) {
+       cpt->P[SimPM->ftr+i] = BW_tr[i];
      }
      // This is where I set the state inside the blast radius.
      // This is exact for spherical coords.
@@ -509,8 +511,8 @@ int IC_blastwave::setup_sph_bw()
      if (gg->distance(centre,dpos) <= bw_rad) {
        cpt->P[PG] = Pin;
        cpt->P[RO] = bw_blastRO;
-       //for (int i=0;i<SimPM.ntracer;i++) {
-       // cpt->P[SimPM.ftr+i] = 1.0;
+       //for (int i=0;i<SimPM->ntracer;i++) {
+       // cpt->P[SimPM->ftr+i] = 1.0;
        //}
        //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
      }
@@ -521,7 +523,7 @@ int IC_blastwave::setup_sph_bw()
     //
     //cout <<"ambient="<<ambient<<", interface="<<interface<<", dpos="<<dpos[Rsph]<<"\n";
     if (ambient!=0 && dpos[Rsph]>=interface) {
-      for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+      for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
     }
 
   } while ( (cpt=gg->NextPt(cpt))!=NULL);
@@ -546,7 +548,7 @@ int IC_blastwave::setup_cyl_bw()
   cout <<"Setting up a 2D cylindrically symmetric simulation of a blast\n";
   cout <<" wave with energy = "<<bw_energy;
   cout <<", density ="<<bw_blastRO<<" in "<<bw_nzones<<" zones,\n";
-  cout <<" and magnetic field BZ = "<<bw_BZ<<" and nvar="<<SimPM.nvar<<"\n";
+  cout <<" and magnetic field BZ = "<<bw_BZ<<" and nvar="<<SimPM->nvar<<"\n";
   // Centred at (0,0)
   double centre[ndim]; 
   centre[Zcyl] = 0.0;
@@ -558,7 +560,7 @@ int IC_blastwave::setup_cyl_bw()
   double Pin    = 3.0*bw_energy*(gam-1.0)/(4.0*M_PI*pow(bw_rad,3.0));
 
   // Set up the inside_sphere class, with 100 subpoints per cell.
-  class inside_sphere stest(centre,bw_rad,SimPM.dx,100,ndim);
+  class inside_sphere stest(centre,bw_rad,SimPM->dx,100,ndim);
   double vfrac;
 
   // Data.
@@ -575,8 +577,8 @@ int IC_blastwave::setup_cyl_bw()
        cpt->P[BY] = bw_BY;
        cpt->P[BZ] = bw_BZ;
      }
-     for (int i=0;i<SimPM.ntracer;i++) {
-       cpt->P[SimPM.ftr+i] = 1.0;
+     for (int i=0;i<SimPM->ntracer;i++) {
+       cpt->P[SimPM->ftr+i] = 1.0;
      }
      // This is where I set the state inside the blast radius.
      // This is not so exact for cyl.coords, as I assume space inside the
@@ -587,8 +589,8 @@ int IC_blastwave::setup_cyl_bw()
        vfrac=1.0;
        cpt->P[PG] = vfrac*(Pin)        + (1.-vfrac)*cpt->P[PG];
        cpt->P[RO] = vfrac*(bw_blastRO) + (1.-vfrac)*cpt->P[RO];
-       for (int i=0;i<SimPM.ntracer;i++) {
-	 cpt->P[SimPM.ftr+i] = -vfrac + (1.-vfrac);
+       for (int i=0;i<SimPM->ntracer;i++) {
+	 cpt->P[SimPM->ftr+i] = -vfrac + (1.-vfrac);
        }
        //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
      }
@@ -615,7 +617,7 @@ int IC_blastwave::setup_cart_bw()
   double centre[ndim];
   for (int i=0;i<ndim;i++) {
     centre[i] = 0.0;
-    //centre[i] = (SimPM.Xmax[i]-SimPM.Xmin[i])/2.;
+    //centre[i] = (SimPM->Xmax[i]-SimPM->Xmin[i])/2.;
   }
   //
   // Set values for the region with the SN energy:
@@ -631,7 +633,7 @@ int IC_blastwave::setup_cart_bw()
   int nsub=0;
   if (ndim==2) nsub=100;
   else         nsub=32;
-  class inside_sphere stest(centre,bw_rad,SimPM.dx,nsub,ndim);
+  class inside_sphere stest(centre,bw_rad,SimPM->dx,nsub,ndim);
   double vfrac;
 
   // Data.
@@ -647,16 +649,16 @@ int IC_blastwave::setup_cart_bw()
       cpt->P[BY] = bw_BY;
       cpt->P[BZ] = bw_BZ;
     }
-    for (int i=0;i<SimPM.ntracer;i++) {
-      cpt->P[SimPM.ftr+i] = 1.;
+    for (int i=0;i<SimPM->ntracer;i++) {
+      cpt->P[SimPM->ftr+i] = 1.;
     }
     // This is where I set the state inside the blast radius.
     if( (vfrac=stest.volumeFraction(cpt)) >0) {
       cpt->P[PG] = vfrac*(Pin)        + (1.-vfrac)*cpt->P[PG];
       cpt->P[RO] = vfrac*(bw_blastRO) + (1.-vfrac)*cpt->P[RO];
       //cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
-      for (int i=0;i<SimPM.ntracer;i++) {
-	cpt->P[SimPM.ftr+i] = -vfrac + (1.-vfrac);
+      for (int i=0;i<SimPM->ntracer;i++) {
+	cpt->P[SimPM->ftr+i] = -vfrac + (1.-vfrac);
       }
     }
   } while ( (cpt=gg->NextPt(cpt))!=NULL);

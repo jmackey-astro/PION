@@ -28,7 +28,9 @@
 
 ///
 /// Class for reading and writing uniform grid data to fits images.
-/// This deals with parallel I/O exclusively.
+/// This deals with parallel I/O, and is not very well developed or
+/// efficient.  For production simulations it is much better to use
+/// the SILO format.
 ///
 class DataIOFits_pllel : public DataIOFits {
   public:
@@ -36,6 +38,7 @@ class DataIOFits_pllel : public DataIOFits {
   /// Constructor.
   ///
   DataIOFits_pllel(
+      class SimParams &,  ///< pointer to simulation parameters
       class MCMDcontrol *  ///< address of MCMD controller class.
   );
 
@@ -46,9 +49,9 @@ class DataIOFits_pllel : public DataIOFits {
   /// Choose filename based on counter and base-name.
   ///
   std::string choose_filename(
-        const std::string, ///< filebase passed in from main code.
-        const int          ///< file counter to use (e.g. timestep).
-        );
+      const std::string, ///< filebase passed in from main code.
+      const int          ///< file counter to use (e.g. timestep).
+      );
 
   ///
   /// This writes the fits header for the simulation parameters,
@@ -59,10 +62,11 @@ class DataIOFits_pllel : public DataIOFits {
   /// if the solver is an MHD solver).
   ///
   int OutputData(
-        const string, ///< File to write to
-        class GridBaseClass *, ///< pointer to data.
-        const long int ///< number to stamp file with (e.g. timestep)
-        );
+      const string, ///< File to write to
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &,  ///< pointer to simulation parameters
+      const long int ///< number to stamp file with (e.g. timestep)
+      );
 
   ///
   /// This reads the fits images in turn, and puts the data into
@@ -70,9 +74,10 @@ class DataIOFits_pllel : public DataIOFits {
   /// from the fits header, which should be read first.
   ///
   int ReadData(
-        string, ///< file to read from
-        class GridBaseClass * ///< pointer to data.
-        );
+      string, ///< file to read from
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
   protected:
   class MCMDcontrol *mpiPM;

@@ -34,7 +34,7 @@ OutputFile FieldLoop100vz
 
 # Number and type of tracers.
 ntracer 0
-trtype none
+chem_code none
 
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
@@ -73,8 +73,12 @@ FinishTime 2.0
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNper_XPper_YNper_YPper
+# Type of Boundary Condition
+BC_XN periodic
+BC_XP periodic
+BC_YN periodic
+BC_YP periodic
+BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.666666666666666666666

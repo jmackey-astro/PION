@@ -100,9 +100,9 @@ int IC_spherical_clump::setup_data(class ReadParams *rrp,    ///< pointer to par
   if (str=="") IC_spherical_clump::SC_BZ = 0.0; // could have no field.
   else         IC_spherical_clump::SC_BZ = atof(str.c_str());
 
-  IC_spherical_clump::gam = SimPM.gamma;
+  IC_spherical_clump::gam = SimPM->gamma;
 
-  IC_spherical_clump::eqns = SimPM.eqntype;
+  IC_spherical_clump::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -113,11 +113,11 @@ int IC_spherical_clump::setup_data(class ReadParams *rrp,    ///< pointer to par
   string ics = rp->find_parameter("ics");
 
   if (ics=="") rep.error("didn't get any ics to set up.",ics);
-  else if (ics=="Clump_Spherical" && SimPM.coord_sys==COORD_SPH) {
+  else if (ics=="Clump_Spherical" && SimPM->coord_sys==COORD_SPH) {
     cout <<"Setting up Spherically symmetric 1D cloud.\n";
     err += setup_clump();
   }
-  else if (ics=="Clump_Axisymmetric" && SimPM.coord_sys==COORD_CYL) {
+  else if (ics=="Clump_Axisymmetric" && SimPM->coord_sys==COORD_CYL) {
     cout <<"Setting up Axisymmetric 2D cloud.\n";
     err += setup_clump();
   }
@@ -129,7 +129,7 @@ int IC_spherical_clump::setup_data(class ReadParams *rrp,    ///< pointer to par
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0) err+= AddNoise2Data(gg, 2,noise);
+  if (noise>0) err+= AddNoise2Data(gg, *SimPM, 2,noise);
 
   ics = rp->find_parameter("smooth");
   if (ics!="") smooth = atoi(ics.c_str());
@@ -169,8 +169,8 @@ int IC_spherical_clump::setup_clump()
       cpt->P[BY] = SC_BY;
       cpt->P[BZ] = SC_BZ;
     }
-    for (int i=0;i<SimPM.ntracer;i++) {
-      cpt->P[SimPM.ftr+i] = 0.0;
+    for (int i=0;i<SimPM->ntracer;i++) {
+      cpt->P[SimPM->ftr+i] = 0.0;
     }
     //
     // This is where I set the state inside the clump.  We overlay the clump

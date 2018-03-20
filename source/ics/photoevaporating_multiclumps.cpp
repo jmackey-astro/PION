@@ -101,14 +101,14 @@ int IC_photevap_multi_clumps::setup_data(
   //
   // Get general sim parameters:
   //
-  ndim = SimPM.ndim;
+  ndim = SimPM->ndim;
   if (ndim!=1 && ndim!=2 && ndim!=3) rep.error("Photoevaporation problem must be 1-3D",ndim);
-  coords = SimPM.coord_sys;
+  coords = SimPM->coord_sys;
   if (coords!=COORD_CRT) {
     cout <<"WARNING! using cylindrical coords, so MAKE SURE SOURCE AND ALL CLUMPS ARE ON-AXIS!!\n";
     //rep.error("Bad coord sys",coords);
   }
-  eqns = SimPM.eqntype;
+  eqns = SimPM->eqntype;
   if      (eqns==EQEUL ||
 	   eqns==EQEUL_ISO) eqns=1;
   else if (eqns==EQMHD ||
@@ -166,8 +166,8 @@ int IC_photevap_multi_clumps::get_ambient_params(
   cout <<"\t**** Getting Ambient Params...";
   if (!amb->used) {
     amb->used = true;
-    amb->ambient = mem.myalloc(amb->ambient, SimPM.nvar);
-    for (int v=0;v<SimPM.nvar;v++) amb->ambient[v] = 0.0;
+    amb->ambient = mem.myalloc(amb->ambient, SimPM->nvar);
+    for (int v=0;v<SimPM->nvar;v++) amb->ambient[v] = 0.0;
   }
 
   string seek, str;
@@ -240,17 +240,17 @@ int IC_photevap_multi_clumps::get_ambient_params(
     if (str!="") amb->ambient[BZ] = atof(str.c_str());
     else         amb->ambient[BZ] = -1.0e99;
 
-    if (SimPM.eqntype==EQGLM) amb->ambient[SI] = 0.;
+    if (SimPM->eqntype==EQGLM) amb->ambient[SI] = 0.;
   } // if mhd vars
 
   // tracer variables
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "PERC_ambTR" << t;
     seek = temp.str();
     str = rparams->find_parameter(seek);
-    if (str!="") amb->ambient[t+SimPM.ftr] = atof(str.c_str());
-    else         amb->ambient[t+SimPM.ftr] = -1.0e99;
+    if (str!="") amb->ambient[t+SimPM->ftr] = atof(str.c_str());
+    else         amb->ambient[t+SimPM->ftr] = -1.0e99;
   }
 
   //
@@ -272,8 +272,8 @@ int IC_photevap_multi_clumps::get_ambient_params(
   str = rparams->find_parameter(seek);
   if (str!="") {
     amb->cloudradius = atof(str.c_str());
-    if (ndim>1) amb->cloudradius *= SimPM.Range[YY];  // radius is given in units of y-dir range.
-    else        amb->cloudradius *= SimPM.Range[XX];
+    if (ndim>1) amb->cloudradius *= SimPM->Range[YY];  // radius is given in units of y-dir range.
+    else        amb->cloudradius *= SimPM->Range[XX];
     cout <<"Cloud Radius in cm is "<<amb->cloudradius<<endl;
   }
   else          amb->cloudradius = 0.0;
@@ -315,9 +315,9 @@ int IC_photevap_multi_clumps::get_alternate_ambient_params(
 
   cout <<"\t**** Getting Alternate Ambient Params...";
   if (!amb->ambient) {
-    amb->ambient = mem.myalloc(amb->ambient, SimPM.nvar);
+    amb->ambient = mem.myalloc(amb->ambient, SimPM->nvar);
     amb->used = true;
-    for (int v=0;v<SimPM.nvar;v++) amb->ambient[v] = 0.0;
+    for (int v=0;v<SimPM->nvar;v++) amb->ambient[v] = 0.0;
   }
 
   v="RO";
@@ -386,17 +386,17 @@ int IC_photevap_multi_clumps::get_alternate_ambient_params(
     if (str!="") amb->ambient[BZ] = atof(str.c_str());
     else         amb->ambient[BZ] = -1.0e99;
 
-    if (SimPM.eqntype==EQGLM) amb->ambient[SI] = 0.;
+    if (SimPM->eqntype==EQGLM) amb->ambient[SI] = 0.;
   } // if mhd vars
 
   // tracer variables
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "PERC_ALTambTR" << t;
     seek = temp.str();
     str = rparams->find_parameter(seek);
-    if (str!="") amb->ambient[t+SimPM.ftr] = atof(str.c_str());
-    else         amb->ambient[t+SimPM.ftr] = -1.0e99;
+    if (str!="") amb->ambient[t+SimPM->ftr] = atof(str.c_str());
+    else         amb->ambient[t+SimPM->ftr] = -1.0e99;
   }
 
   
@@ -408,11 +408,11 @@ int IC_photevap_multi_clumps::get_alternate_ambient_params(
   seek = temp.str();
   str = rparams->find_parameter(seek);
   if (str!="") ambdivider = atof(str.c_str());
-  else         ambdivider = SimPM.Xmin[XX]+0.1*SimPM.Range[XX];
+  else         ambdivider = SimPM->Xmin[XX]+0.1*SimPM->Range[XX];
   cout <<"\t\tdivision between two media at "<<ambdivider<<"\n";
 
   cout <<"\tGot Alternate Ambient Params. ****\n";
-  rep.printVec("\tAlt.Amb.",amb->ambient,SimPM.nvar);
+  rep.printVec("\tAlt.Amb.",amb->ambient,SimPM->nvar);
   return err;
 }
 
@@ -437,7 +437,7 @@ int IC_photevap_multi_clumps::add_ambient_data_to_grid(
 
   do {
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) c->P[v] = amb->ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) c->P[v] = amb->ambient[v];
     //
     // Now if we have a radial profile in the slope, we need to adjust rho
     // Note the radial profile is measured from cloudcentre, not neccessarily
@@ -492,9 +492,9 @@ int IC_photevap_multi_clumps::add_alternate_ambient_data_to_grid(
     // Set values of primitive variables.
     if (CI.get_dpos(c,XX)<cutoff) {
       //cout <<"cutoff="<<cutoff<<"\tix="<<c->pos[XX]<<"\n";
-      //rep.printVec("P old",c->P,SimPM.nvar);
-      for (int v=0;v<SimPM.nvar;v++) c->P[v] = amb->ambient[v];
-      //rep.printVec("P new",c->P,SimPM.nvar);
+      //rep.printVec("P old",c->P,SimPM->nvar);
+      for (int v=0;v<SimPM->nvar;v++) c->P[v] = amb->ambient[v];
+      //rep.printVec("P new",c->P,SimPM->nvar);
       //if (amb->radial_profile!=0) c->P[RO] *= exp(amb->radial_profile*log((c->pos[XX]-xmin)
     }
   } while ( (c=ggg->NextPt(c))!=0);
@@ -539,30 +539,30 @@ int IC_photevap_multi_clumps::get_random_clump_params(
   seek = "PERCempty_xn";
   str = rparams->find_parameter(seek);
   if (str=="") rcd->border[XN] = default_empty;
-  else         rcd->border[XN] = atof(str.c_str())*SimPM.Range[XX];
+  else         rcd->border[XN] = atof(str.c_str())*SimPM->Range[XX];
   seek = "PERCempty_xp";
   str = rparams->find_parameter(seek);
   if (str=="") rcd->border[XP] = default_empty;
-  else         rcd->border[XP] = atof(str.c_str())*SimPM.Range[XX];
+  else         rcd->border[XP] = atof(str.c_str())*SimPM->Range[XX];
   if (ndim>1) {
     seek = "PERCempty_yn";
     str = rparams->find_parameter(seek);
     if (str=="") rcd->border[YN] = default_empty;
-    else         rcd->border[YN] = atof(str.c_str())*SimPM.Range[YY];
+    else         rcd->border[YN] = atof(str.c_str())*SimPM->Range[YY];
     seek = "PERCempty_yp";
     str = rparams->find_parameter(seek);
     if (str=="") rcd->border[YP] = default_empty;
-    else         rcd->border[YP] = atof(str.c_str())*SimPM.Range[YY];
+    else         rcd->border[YP] = atof(str.c_str())*SimPM->Range[YY];
   }
   if (ndim>2) {
     seek = "PERCempty_zn";
     str = rparams->find_parameter(seek);
     if (str=="") rcd->border[ZN] = default_empty;
-    else         rcd->border[ZN] = atof(str.c_str())*SimPM.Range[ZZ];
+    else         rcd->border[ZN] = atof(str.c_str())*SimPM->Range[ZZ];
     seek = "PERCempty_zp";
     str = rparams->find_parameter(seek);
     if (str=="") rcd->border[ZP] = default_empty;
-    else         rcd->border[ZP] = atof(str.c_str())*SimPM.Range[ZZ];
+    else         rcd->border[ZP] = atof(str.c_str())*SimPM->Range[ZZ];
   }
 
   //
@@ -580,11 +580,11 @@ int IC_photevap_multi_clumps::get_random_clump_params(
   // means more if it is the total volume.
   //
   double volume=1.0;
-  volume *= SimPM.Range[XX]; //-rcd->border[XN]-rcd->border[XP];
+  volume *= SimPM->Range[XX]; //-rcd->border[XN]-rcd->border[XP];
   //cout <<"\tvolume="<<volume;
-  if (ndim>1) volume *= SimPM.Range[YY]; //-rcd->border[YN]-rcd->border[YP];
+  if (ndim>1) volume *= SimPM->Range[YY]; //-rcd->border[YN]-rcd->border[YP];
   //cout <<"\tvolume="<<volume;
-  if (ndim>2) volume *= SimPM.Range[ZZ]; //-rcd->border[ZN]-rcd->border[ZP];
+  if (ndim>2) volume *= SimPM->Range[ZZ]; //-rcd->border[ZN]-rcd->border[ZP];
   //cout <<"\tvolume="<<volume;
   rcd->total_mass = rcd->density*volume*pconst.m_p();
   cout <<"Mean number density for Random Clumps:"<<rcd->density<<", giving total mass="<<rcd->total_mass<<" grams.\n";
@@ -643,7 +643,7 @@ int IC_photevap_multi_clumps::get_random_clump_params(
   //
   // Tracer Values for Random Clumps:
   //
-  for (int v=0;v<SimPM.ntracer;v++) {
+  for (int v=0;v<SimPM->ntracer;v++) {
     temp.str(""); temp<<"PERCcloudTR"<<v;
     seek = temp.str();
     str = rparams->find_parameter(seek);
@@ -789,26 +789,26 @@ int IC_photevap_multi_clumps::rc_set_clump_properties(
 {
   int err=0;
   double
-    xmax = SimPM.Range[XX],
-    ymax = SimPM.Range[YY],
-    zmax = SimPM.Range[ZZ];
+    xmax = SimPM->Range[XX],
+    ymax = SimPM->Range[YY],
+    zmax = SimPM->Range[ZZ];
 
   for (int j=0;j<rcd->Nclumps;j++) {
     //
     // Set clump centres, allowing for empty regions.
     // If periodic BCs, we only have empty regions in the X-dir, since Y,Z are periodic
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
-      //cout <<"find = "<<SimPM.typeofbc.find("YNper")<<endl;
-      rcd->cl[j].centre[XX] = SimPM.Xmin[XX]+ rcd->border[XN] +(xmax-rcd->border[XP]-rcd->border[XN])*random_frac();
-      rcd->cl[j].centre[YY] = SimPM.Xmin[YY]+ ymax*random_frac();
-      rcd->cl[j].centre[ZZ] = SimPM.Xmin[ZZ]+ zmax*random_frac();
+    if (SimPM->BC_YN == "periodic") {
+      //cout <<"find = "<<SimPM->typeofbc.find("YNper")<<endl;
+      rcd->cl[j].centre[XX] = SimPM->Xmin[XX]+ rcd->border[XN] +(xmax-rcd->border[XP]-rcd->border[XN])*random_frac();
+      rcd->cl[j].centre[YY] = SimPM->Xmin[YY]+ ymax*random_frac();
+      rcd->cl[j].centre[ZZ] = SimPM->Xmin[ZZ]+ zmax*random_frac();
     }
     else {
       //cout <<"not periodic bcs!\n";
-      rcd->cl[j].centre[XX] = SimPM.Xmin[XX]+ rcd->border[XN] +(xmax-rcd->border[XP]-rcd->border[XN])*random_frac();
-      rcd->cl[j].centre[YY] = SimPM.Xmin[YY]+ rcd->border[YN] +(ymax-rcd->border[YP]-rcd->border[YN])*random_frac();
-      rcd->cl[j].centre[ZZ] = SimPM.Xmin[ZZ]+ rcd->border[ZN] +(zmax-rcd->border[ZP]-rcd->border[ZN])*random_frac();
+      rcd->cl[j].centre[XX] = SimPM->Xmin[XX]+ rcd->border[XN] +(xmax-rcd->border[XP]-rcd->border[XN])*random_frac();
+      rcd->cl[j].centre[YY] = SimPM->Xmin[YY]+ rcd->border[YN] +(ymax-rcd->border[YP]-rcd->border[YN])*random_frac();
+      rcd->cl[j].centre[ZZ] = SimPM->Xmin[ZZ]+ rcd->border[ZN] +(zmax-rcd->border[ZP]-rcd->border[ZN])*random_frac();
     }
 
     //
@@ -823,7 +823,7 @@ int IC_photevap_multi_clumps::rc_set_clump_properties(
     rcd->cl[j].ang[ZZ] = random_frac()*M_PI;
     //
     // zero the z-dir if 2d
-    if (SimPM.ndim==2) {
+    if (SimPM->ndim==2) {
       rcd->cl[j].ang[ZZ] = rcd->cl[j].ang[YY] = rcd->cl[j].size[ZZ] = rcd->cl[j].centre[ZZ] = 0.0;
     }
 
@@ -831,7 +831,7 @@ int IC_photevap_multi_clumps::rc_set_clump_properties(
     // set overdensity (FIX THIS SO THAT IT CAN DO OTHER THAN GAUSSIAN PROFILES!!!!)
     //
     rcd->cl[j].overdensity = rcd->cl[j].mass/ambdens;
-    for (int v=0;v<SimPM.ndim;v++) rcd->cl[j].overdensity /= sqrt(2.0*M_PI)*rcd->cl[j].size[v];
+    for (int v=0;v<SimPM->ndim;v++) rcd->cl[j].overdensity /= sqrt(2.0*M_PI)*rcd->cl[j].size[v];
 
     //
     // print clump...
@@ -884,13 +884,13 @@ int IC_photevap_multi_clumps::add_random_clumps_to_grid(
   // is based on density compared to ambient density.  Need to change it in future if I want
   // to change this.
   //
-  //cout <<"ntracer = "<<SimPM.ntracer<<"\t amb[tr1]="<<ambient[SimPM.ftr+1]<<"\tcl[tr1]="<<cltr[1];
+  //cout <<"ntracer = "<<SimPM->ntracer<<"\t amb[tr1]="<<ambient[SimPM->ftr+1]<<"\tcl[tr1]="<<cltr[1];
   c=ggg->FirstPt();
   cout <<"\tamb-density="<<ambdens<<" clump_mass="<<rcd->total_mass<<endl;
   do {
-    for (int v=SimPM.ftr; v<SimPM.nvar;v++) {
+    for (int v=SimPM->ftr; v<SimPM->nvar;v++) {
       //cout <<"trval before="<<c->P[v];
-      c->P[v] = (ambdens/c->P[RO])*amb_data.ambient[v] +(1.0-ambdens/c->P[RO])*rcd->cl[0].tracer_vals[v-SimPM.ftr];
+      c->P[v] = (ambdens/c->P[RO])*amb_data.ambient[v] +(1.0-ambdens/c->P[RO])*rcd->cl[0].tracer_vals[v-SimPM->ftr];
       //cout <<"\tafter="<<c->P[v]<<endl;
     }
   } while ( (c=ggg->NextPt(c)) !=0);
@@ -972,18 +972,18 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     temp.str(""); temp<<"PE_SC"<<c<<"_xpos"; seek=temp.str();
     str = rp->find_parameter(seek);
     if (str=="") rep.error("didn't find parameter",seek);
-    scd->cl[c].centre[XX] = SimPM.Xmin[XX] +atof(str.c_str())*SimPM.Range[YY];
+    scd->cl[c].centre[XX] = SimPM->Xmin[XX] +atof(str.c_str())*SimPM->Range[YY];
     if (ndim>1) {
       temp.str(""); temp<<"PE_SC"<<c<<"_ypos"; seek=temp.str();
       str = rp->find_parameter(seek);
       if (str=="") rep.error("didn't find parameter",seek);
-      scd->cl[c].centre[YY] = SimPM.Xmin[YY] +atof(str.c_str())*SimPM.Range[YY];
+      scd->cl[c].centre[YY] = SimPM->Xmin[YY] +atof(str.c_str())*SimPM->Range[YY];
     }
     if (ndim>2) {
       temp.str(""); temp<<"PE_SC"<<c<<"_zpos"; seek=temp.str();
       str = rp->find_parameter(seek);
       if (str=="") rep.error("didn't find parameter",seek);
-      scd->cl[c].centre[ZZ] = SimPM.Xmin[ZZ] +atof(str.c_str())*SimPM.Range[YY];
+      scd->cl[c].centre[ZZ] = SimPM->Xmin[ZZ] +atof(str.c_str())*SimPM->Range[YY];
     }
    
     //
@@ -994,7 +994,7 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     str = rp->find_parameter(seek);
     if (str=="") rep.error("didn't find parameter",seek);
     for (int v=0;v<MAX_DIM;v++)
-      scd->cl[c].size[v] = atof(str.c_str())*SimPM.Range[YY];
+      scd->cl[c].size[v] = atof(str.c_str())*SimPM->Range[YY];
 
     //
     // Clump Velocity (cm/s).
@@ -1018,7 +1018,7 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     //
     // Tracer Values for each cloud (can be different for each!)
     //
-    for (int v=0;v<SimPM.ntracer;v++) {
+    for (int v=0;v<SimPM->ntracer;v++) {
       temp.str(""); temp<<"PE_SC"<<c<<"_cloudTR"<<v;
       seek = temp.str();
       str = rp->find_parameter(seek);
@@ -1032,7 +1032,7 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     scd->cl[c].ang[ZZ] = 0.0;
     //
     // zero the z-dir if 2d
-    if (SimPM.ndim==2) {
+    if (SimPM->ndim==2) {
       scd->cl[c].ang[ZZ] = scd->cl[c].ang[YY] = scd->cl[c].size[ZZ] = scd->cl[c].centre[ZZ] = 0.0;
     }
 
@@ -1048,11 +1048,11 @@ int IC_photevap_multi_clumps::get_strategic_clump_params(
     }
     else if (scd->profile==1) {
       // Gaussian profile
-      for (int v=0;v<SimPM.ndim;v++) scd->cl[c].mass *= sqrt(2.0*M_PI)*scd->cl[c].size[v];
+      for (int v=0;v<SimPM->ndim;v++) scd->cl[c].mass *= sqrt(2.0*M_PI)*scd->cl[c].size[v];
       //
       // If axisymmetric, then 3rd dimension is same as radial dimension, so multiply again.
       //
-      if (SimPM.coord_sys==COORD_CYL) scd->cl[c].mass *= sqrt(2.0*M_PI)*scd->cl[c].size[Rcyl];
+      if (SimPM->coord_sys==COORD_CYL) scd->cl[c].mass *= sqrt(2.0*M_PI)*scd->cl[c].size[Rcyl];
     }
     else rep.error("Bad profile in get_strategic_clump_params()",scd->profile);
 
@@ -1146,17 +1146,18 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
     // get distance from centre to clump.
     // If we have periodic BCs, need to do a bit more work...
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    //if (SimPM->typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM->BC_YN == "periodic") {
       x0[XX] = dpos[XX]-cl[j].centre[XX];
       double temp;
       for (int i=1;i<ndim;i++) {
 	temp = dpos[i]-cl[j].centre[i];
 	if (temp>0.0) {
-	  if (temp >  SimPM.Range[i]/2.) x0[i] = temp -SimPM.Range[i];
+	  if (temp >  SimPM->Range[i]/2.) x0[i] = temp -SimPM->Range[i];
 	  else                           x0[i] = temp;
 	}
 	else {
-	  if (temp < -SimPM.Range[i]/2.) x0[i] = temp +SimPM.Range[i];
+	  if (temp < -SimPM->Range[i]/2.) x0[i] = temp +SimPM->Range[i];
 	  else                           x0[i] = temp;
 	}
       }
@@ -1211,8 +1212,8 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
     // Criterion: If we have added density>0.5*ambient to cell, label it with
     //            clump's tracer values.
     //if (add_rho >= 0.1*ambdens*cl[j].overdensity) {
-    //  for (int v=SimPM.ftr; v<SimPM.nvar;v++) {
-    //	c->P[v] = cl[j].tracer_vals[v-SimPM.ftr];
+    //  for (int v=SimPM->ftr; v<SimPM->nvar;v++) {
+    //	c->P[v] = cl[j].tracer_vals[v-SimPM->ftr];
     // }
     //}
 
@@ -1222,9 +1223,9 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
     // clumps have the same tracer value (and also for ambient data!).
     //
     if (add_rho/c->P[RO] > 0.001 ) {
-      for (int v=SimPM.ftr; v<SimPM.nvar;v++) {
-        c->P[v] = cl[j].tracer_vals[v-SimPM.ftr] 
-        +ambdens/c->P[RO]*(amb_data.ambient[v]-cl[j].tracer_vals[v-SimPM.ftr]);
+      for (int v=SimPM->ftr; v<SimPM->nvar;v++) {
+        c->P[v] = cl[j].tracer_vals[v-SimPM->ftr] 
+        +ambdens/c->P[RO]*(amb_data.ambient[v]-cl[j].tracer_vals[v-SimPM->ftr]);
       }
       //
       // Update 2012.02.25 JM: Add clump velocity w.r.t. grid, smoothly varying
@@ -1253,9 +1254,9 @@ int IC_photevap_multi_clumps::clumps_set_dens(class cell *c,
 void IC_photevap_multi_clumps::print_clump(struct clump *rc)
 {
   cout <<"--clump overdensity:"<<rc->overdensity<<"  mass/Msun:"<<rc->mass/pconst.Msun()<<endl;
-  rep.printVec("Centre",rc->centre,SimPM.ndim);
-  rep.printVec("Radius",rc->size,SimPM.ndim);
-  rep.printVec("Angles",rc->ang,SimPM.ndim);
+  rep.printVec("Centre",rc->centre,SimPM->ndim);
+  rep.printVec("Radius",rc->size,SimPM->ndim);
+  rep.printVec("Angles",rc->ang,SimPM->ndim);
   cout <<"-------------------\n";
   return;
 }

@@ -10,6 +10,7 @@
 /// - 2010.12.27 JM: Put all isothermal dynamics in an ifdef b/c I
 ///   updated the code structure which has broken everything and I
 ///   don't have time to fix isothermal stuff now...
+/// - 2018.01.24 JM: worked on making SimPM non-global
 ///
 
 
@@ -39,11 +40,14 @@ public:
 		     double *,       ///< pointer to conserved variables.
 		     const double    ///< Gas constant gamma.
 		     );
-   /// convert from conserved to primitive variables.
-   virtual int UtoP(const double *, ///< pointer to conserved variables.
-		    double *, ///< pointer to Primitive variables.
-		    const double    ///< Gas constant gamma.
-		    );
+  /// convert from conserved to primitive variables.
+  virtual int UtoP(
+      const double *, ///< pointer to conserved variables.
+      double *, ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
+      const double    ///< Gas constant gamma.
+      );
+
    /// Converts from primitive and conserved variables to corresponding flux.
    /// This assumes that the direction has been set correctly.
    
@@ -51,18 +55,21 @@ public:
 		const double *, ///< pointer to conserved variables.
 		double *  ///< Pointer to flux variable.
 		);
+
    /// convert direct from primitive variables to flux.
    /// Creates conserved variable array as an intermediate step, 
    /// and then calls PUtoFlux().
    virtual void PtoFlux(const double *, ///< pointer to Primitive variables.
 		       double *,       ///< Pointer to flux variable.
 		       const double    ///< Gas constant gamma.
-		       );   
-   /// Converts from conserved variables to flux.
-   virtual void UtoFlux(const double*, ///< Pointer to conserved variables state vector.
-	       double*,       ///< Pointer to flux variable state vector.
-	       const double   ///< Gas constant gamma.
-	       );
+		       );
+
+  /// Converts from conserved variables to flux.
+  virtual void UtoFlux(
+      const double*, ///< Pointer to conserved variables state vector.
+      double*,       ///< Pointer to flux variable state vector.
+      const double   ///< Gas constant gamma.
+      );
    ///  Returns the fastest wavespeed for the relevant equations.
    ///For eqns_Euler it returns the hydro speed.
    ///

@@ -15,6 +15,7 @@
 
 #include "grid/grid_base_class.h"
 #include "microphysics/microphysics_base.h"
+#include "raytracing/rad_src_data.h"
 
 // ##################################################################
 // ##################################################################
@@ -68,37 +69,6 @@ enum Quadrants {Q1=0, Q2=1, Q4=2, Q3=3};
 enum Octants {OCT1=0, OCT2=1, OCT4=2, OCT3=3, OCT5=4, OCT6=5, OCT8=6, OCT7=7};
 
 
-// ##################################################################
-// ##################################################################
-
-
-
-
-///
-/// Struct to hold info on radiation sources.  An extension of rad_src_info in global.h
-///
-struct rad_source {
-  ///
-  /// pointer to source (set to SimPM.RS.source[id]) with the basic
-  /// info about the source.
-  ///
-  struct rad_src_info *s;
-
-  class cell *sc; ///< nearest cell to source.
-  bool src_on_grid; ///< true if source is at a grid cell.
-  int ipos[MAX_DIM];    ///< source position in integer form (grid units, dx=2).
-
-  ///
-  /// This struct is used by the code to pass cell and source data
-  /// to the microphysics integrator.  It contains the relevant source
-  /// information, and also some cell-source geometry information which 
-  /// must be set on a cell-by-cell basis as rays are traced.
-  /// The struct is declared in source/microphysics/microphysics_base.h
-  ///
-  struct rt_source_data data;
-};
-
-
 
 // ##################################################################
 // ##################################################################
@@ -134,18 +104,20 @@ class RayTracingBase {
   ///
   /// Processes a single source's effect on the grid over a timestep.
   ///
-  virtual int RayTrace_SingleSource(const int, ///< Source id
-                                    const double, ///< Timestep
-                                    const double  ///< EOS Gamma.
-                                    )=0;
+  virtual int RayTrace_SingleSource(
+      const int, ///< Source id
+      const double, ///< Timestep
+      const double  ///< EOS Gamma.
+      )=0;
+
   ///
   /// Just calculate the column densities required for RT.
   ///
   virtual int RayTrace_Column_Density(
-                const int,    ///< Source id
-                const double, ///< Timestep
-                const double  ///< EOS Gamma.
-                )=0;
+      const int,    ///< Source id
+      const double, ///< Timestep
+      const double  ///< EOS Gamma.
+      )=0;
 
   /// \brief Prints list of sources with id, location, strength.
   virtual void Print_SourceList()=0;
@@ -166,8 +138,8 @@ class RayTracingBase {
   /// changes over time.
   ///
   virtual void update_RT_source_properties(
-                  const struct rad_src_info * ///< ptr to source info.
-                  )=0;
+      const struct rad_src_info * ///< ptr to source info.
+      )=0;
 
   /// Returns the number of ionising sources
   virtual int N_ionising_sources()=0;
@@ -183,8 +155,8 @@ class RayTracingBase {
   /// checking.
   ///
   virtual int populate_ionising_src_list(
-                std::vector<struct rt_source_data> & ///< list of data for ionising sources
-                )=0;
+      std::vector<struct rt_source_data> & ///< list of data for ionising sources
+      )=0;
 
   ///
   /// This function copies the UV-heating source data into two
@@ -194,8 +166,8 @@ class RayTracingBase {
   /// checking.
   ///
   virtual int populate_UVheating_src_list(
-                std::vector<struct rt_source_data> & ///< list of data for UV-heating sources
-                )=0;
+      std::vector<struct rt_source_data> & ///< list of data for UV-heating sources
+      )=0;
 
 };
 

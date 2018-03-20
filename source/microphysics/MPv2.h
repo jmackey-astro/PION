@@ -1,5 +1,5 @@
 ///
-/// \file mp_v2_aifa.h
+/// \file MPv2.h
 /// \author Jonathan Mackey
 /// \date 2011.03.15
 ///
@@ -13,12 +13,14 @@
 ///   2011.04.17 JM: Debugging.
 /// - 2011.05.02 JM: Added set_multifreq_source_properties() function
 /// - 2011.05.04 JM: Added bounding values for ion fraction [eps,1-eps].
+/// - 2018.03.20 JM: renamed class
 
-#ifndef MP_V2_AIFA_H
-#define MP_V2_AIFA_H
+#ifndef MPV2_H
+#define MPV2_H
 
 /// Description:
-/// This class is an update on the microphysics class used for my thesis.  
+/// This class is an update on the microphysics class used for JM's thesis.  
+/// THIS IS LEGACY CODE THAT IS NO LONGER USED.
 ///
 /// - It uses multi-frequency photoionisation including spectral hardening with
 ///   optical depth, using the method outlined in Frank & Mellema
@@ -51,22 +53,11 @@
 /// from the star can use the same equation, but with the optical depth from the 
 /// source (using a total nucleon column density).
 ///
-///
-/// The integration methods will be the same as previously, using an explicit integral
-/// for low ionisation levels, and the analytic approximation for highly photoionised
-/// gas.  I will also add the option of just calculating the optical depth in the 
-/// raytracing step, limiting the timestep so that nothing changes by very much in a 
-/// single step (esp. the optical depth), and then doing the TimeUpdateMP() call fully
-/// in parallel.  This should allow for better scaling with number of processors.
-///
-///
-
-#ifdef MP_V2_AIFA
 
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
+#ifdef LEGACY_CODE
 
 #include <vector>
 #include "microphysics_base.h"
@@ -75,8 +66,14 @@
 #include "hydrogen_recomb_Hummer94.h"
 #include "hydrogen_photoion.h"
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
-/// This class cannot be part of mp_v2_aifa because it cannot be the MP global pointer.
+/// This class cannot be part of MPv2 because it cannot be the MP global pointer.
 /// It needs a local initialisation (with different interface functions) which CVodes
 /// can use.
 ///
@@ -90,35 +87,35 @@ class mp_rates_ExpH_ImpMetals
   ~mp_rates_ExpH_ImpMetals();
 
   ///
-  /// This should be called by mp_v2_aifa constructor.  We can't set it up
+  /// This should be called by MPv2 constructor.  We can't set it up
   /// in this class's constructor b/c the global gamma won't be set at that
   /// stage.  If we have an ionising source then this functions gets the 
   /// source luminosity from SimPM.RS.sources (and Rstar,Teff if multifreq).
   ///
   void set_gamma_and_srcs(
-          const double, ///< gamma value
-          const int,    ///< No diffuse  sources --> 0, otherwise --> 1
-          const int     ///< No ionising sources --> 0, otherwise --> 1
-          );
+      const double, ///< gamma value
+      const int,    ///< No diffuse  sources --> 0, otherwise --> 1
+      const int     ///< No ionising sources --> 0, otherwise --> 1
+      );
 
   ///
   /// This returns the rate of change of the Hydrogen ion fraction x, and the
   /// internal energy density Eint.
   ///
   int dYdt(
-          const double, ///< (1-x_in): input neutral fraction
-          const double, ///< E_in: input internal energy density
-          double *, ///< xdot returned rate
-          double *  ///< Edot returned rate
-          );
+      const double, ///< (1-x_in): input neutral fraction
+      const double, ///< E_in: input internal energy density
+      double *, ///< xdot returned rate
+      double *  ///< Edot returned rate
+      );
 
   ///
   /// This should be called before the microphysics integration, to set the density,
   /// column densities, Vshell, etc.
   ///
   void set_parameters_for_current_step(
-          const std::vector<double> & ///< list of parameters in an array.
-          );
+      const std::vector<double> & ///< list of parameters in an array.
+      );
 
   ///
   /// returns gas temperature according to E=nkT/(g-1) with n=1.1*nH*(1+x_in),
@@ -126,26 +123,28 @@ class mp_rates_ExpH_ImpMetals
   /// whenever H is.
   ///
   double get_temperature(
-    const double, ///< nH
-    const double, ///< E_int
-    const double  ///< x(H+)
-    );
+      const double, ///< nH
+      const double, ///< E_int
+      const double  ///< x(H+)
+      );
         
   ///
   /// Get the number of extra parameters and the number of equations.
   /// Only needed by the CVodes Ydot function.
   ///
-  void get_problem_size(int *, ///< number of equations
-                        int *  ///< number of parameters in user_data vector.
-                        );
-  
+  void get_problem_size(
+      int *, ///< number of equations
+      int *  ///< number of parameters in user_data vector.
+      );
+
   ///
   /// returns the relative error tolerance required for this system of equations,
   /// and absolute error tolerances for both x(H+) and E_int
   ///
-  void get_error_tolerances(double &, ///< relative error tolerance.
-                            std::vector<double> & ///< absolute error tolerances
-                            );
+  void get_error_tolerances(
+      double &, ///< relative error tolerance.
+      std::vector<double> & ///< absolute error tolerances
+      );
   
   //
   // Public functions inherited from Hummer94_Hrecomb:
@@ -199,10 +198,28 @@ class mp_rates_ExpH_ImpMetals
 
 };
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// We need an instance of this class.
 ///
 extern class mp_rates_ExpH_ImpMetals MPR;
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 //
@@ -219,38 +236,54 @@ extern class mp_rates_ExpH_ImpMetals MPR;
 #define MAX_TRYS  50
 #define MAX_STEPS 100
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // ydot needs to be a stand-alone function for cvodes, so this function will
 // just provide the interface to call solver::ydot();
 //
 int Ydot_for_cvodes(
-          double, ///< current time
-          N_Vector, ///< current Y-value
-          N_Vector,  ///< vector for Y-dot values
-          void *    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          );
+      double, ///< current time
+      N_Vector, ///< current Y-value
+      N_Vector,  ///< vector for Y-dot values
+      void *    ///< extra user-data vector, P, for evaluating ydot(y,t,p)
+      );
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 ///
 /// This class will now just be a driver for CVodes, and using the dYdt() function from 
-/// mp_rates_ExpH_ImpMetals MPR.  It is essentially an interface class like microphysics_lowZ
+/// mp_rates_ExpH_ImpMetals MPR.  It is essentially an interface class like MPv9
 /// which interfaces between my code and Harpreet's.
 ///
-class mp_v2_aifa
+class MPv2
 :
-  public MicroPhysicsBase
-  //public Integrator_Base,
-  //public hydrogen_microphysics
+  public microphysics_base
 {
   public:
   ///
   /// Constructor.  Sets index for H ion fraction in primitive variable state vector.
   ///
-  mp_v2_aifa(const int,          ///< Total number of variables in state vector
-	     const int,          ///< Number of tracer variables in state vector.
-	     const std::string & ///< List of what the tracer variables mean.
-	     );
+  MPv2(
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
+      const int,          ///< Total number of variables in state vector
+      const int,          ///< Number of tracer variables in state vector.
+      const std::string *, ///< List of what the tracer variables mean.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
+      );
 
-  ~mp_v2_aifa();
+  ~MPv2();
 
   ///
   /// The main update function.  A primitive vector is input, and lots of optional 
@@ -264,13 +297,13 @@ class mp_v2_aifa
   /// relaxes exponentially to its equilibrium value.
   ///
   int TimeUpdateMP(
-        const double *, ///< Primitive Vector to be updated.
-        double *,       ///< Destination Vector for updated values.
-        const double,   ///< Time Step to advance by.
-        const double,   ///< EOS gamma.
-        const int,      ///< Switch for what type of integration to use.
-        double *        ///< Vector of extra data (column densities, etc.).
-        );
+      const double *, ///< Primitive Vector to be updated.
+      double *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,      ///< Switch for what type of integration to use.
+      double *        ///< Vector of extra data (column densities, etc.).
+      );
 
   ///
   /// If doing ray-tracing, the tracer can call this function to
@@ -279,16 +312,16 @@ class mp_v2_aifa
   ///
   ///
   int TimeUpdate_RTsinglesrc(
-        const double *, ///< Primitive Vector to be updated.
-        double *,       ///< Destination Vector for updated values.
-        const double,   ///< Time Step to advance by.
-        const double,   ///< EOS gamma.
-        const int,      ///< Switch for what type of integration to use.
-        const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-        const double,   ///< path length ds through cell.
-        const double,   ///< Optical depth to entry point of ray into cell.
-        double *        ///< return optical depth through cell in this variable.
-        );
+      const double *, ///< Primitive Vector to be updated.
+      double *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,      ///< Switch for what type of integration to use.
+      const double,   ///< flux in per unit length along ray (F/ds or L/dV)
+      const double,   ///< path length ds through cell.
+      const double,   ///< Optical depth to entry point of ray into cell.
+      double *        ///< return optical depth through cell in this variable.
+      );
 
   ///
   /// This takes a copy of the primitive vector and advances it in time over
@@ -305,21 +338,21 @@ class mp_v2_aifa
   /// - Number of UV point sources.
   ///
   int TimeUpdateMP_RTnew(
-                   const double *, ///< Primitive Vector to be updated.
- 	           const int,      ///< Number of UV heating sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of UV-heating column densities and source properties.
-                   const int,      ///< number of ionising radiation sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of ionising src column densities and source properties.
-		   double *,       ///< Destination Vector for updated values
-		                   ///< (can be same as first Vector.
-		   const double,   ///< Time Step to advance by.
-		   const double,   ///< EOS gamma.
-		   const int, ///< Switch for what type of integration to use.
-		              ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-		   double *    ///< final temperature (not strictly needed).
-		   );
+      const double *, ///< Primitive Vector to be updated.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      double *,       ///< Destination Vector for updated values
+                      ///< (can be same as first Vector.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int,  ///< Switch for what type of integration to use.
+                  ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *    ///< final temperature (not strictly needed).
+      );
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
@@ -327,19 +360,19 @@ class mp_v2_aifa
   /// - Is threadsafe.
   ///
   double Temperature(
-            const double *, ///< primitive vector
-            const double    ///< eos gamma
-            );
+      const double *, ///< primitive vector
+      const double    ///< eos gamma
+      );
 
   ///
   /// Set the gas temperature to a specified value.
   /// Again only needed if you want this feature in the initial condition generator.
   ///
   int Set_Temp(
-          double *,     ///< primitive vector.
-          const double, ///< temperature
-          const double  ///< eos gamma.
-          );
+      double *,     ///< primitive vector.
+      const double, ///< temperature
+      const double  ///< eos gamma.
+      );
 
   ///
   /// This returns the minimum timescale of the times flagged in the
@@ -348,12 +381,12 @@ class mp_v2_aifa
   /// the newer timescales interface.
   ///
   double timescales(
-          const double *, ///< Current cell.
-          const double,   ///< EOS gamma.
-          const bool, ///< set to 'true' if including cooling time.
-          const bool, ///< set to 'true' if including recombination time.
-          const bool  ///< set to 'true' if including photo-ionsation time.
-          );
+      const double *, ///< Current cell.
+      const double,   ///< EOS gamma.
+      const bool, ///< set to 'true' if including cooling time.
+      const bool, ///< set to 'true' if including recombination time.
+      const bool  ///< set to 'true' if including photo-ionsation time.
+      );
 
   ///
   /// This returns the minimum timescale of all microphysical processes, including
@@ -362,57 +395,68 @@ class mp_v2_aifa
   /// capability than the other timescales function.
   ///
   double timescales_RT(
-                    const double *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    );
+      const double *, ///< Current cell.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      );
+
   ///
   /// Initialise microphysics ionisation fractions to an equilibrium value.
   /// This is optionally used in the initial condition generator.  Not implemented here.
   ///
   int Init_ionfractions(
-        double *, ///< Primitive vector to be updated.
-        const double, ///< eos gamma.
-        const double  ///< optional gas temperature to end up at. (negative means use pressure)
-        );
+      double *, ///< Primitive vector to be updated.
+      const double, ///< eos gamma.
+      const double  ///< optional gas temperature to end up at. (negative means use pressure)
+      );
 
   ///
   /// Return index of tracer for a given string. (only hydrogen for this class!)
   ///
-  int Tr(const string ///< name of tracer we are looking for.
-	);
+  int Tr(
+      const string ///< name of tracer we are looking for.
+      );
 
-	///
-	/// Set the properties of a multifrequency ionising radiation source.
-	///
-	int set_multifreq_source_properties(
-								const struct rad_src_info *
-								);
+  ///
+  /// Set the properties of a multifrequency ionising radiation source.
+  ///
+  int set_multifreq_source_properties(
+      const struct rad_src_info *
+      );
 
+  ///
+  /// Get the total recombination rate for an ion, given the input
+  /// state vector.
+  ///
+  double get_recombination_rate(
+      const int,      ///< ion index in tracer array (optional).
+      const pion_flt *, ///< input state vector (primitive).
+      const double    ///< EOS gamma (optional)
+      );
   
   private:
   ///
   /// convert state vector from grid cell into local microphysics vector.
   ///
   int convert_prim2local(
-            const double *, ///< primitive vector from grid cell (length nv_prim)
-            double *        ///< local vector [x,E](n+1).
-            );
+      const double *, ///< primitive vector from grid cell (length nv_prim)
+      double *        ///< local vector [x,E](n+1).
+      );
 
   ///
   /// Convert local microphysics vector into state vector for grid cell.
   /// This is the inverse of convert_prim2local.
   ///
   int convert_local2prim(
-            const double *, ///< local (updated) vector [x,E](n+1).
-            const double *, ///< input primitive vector from grid cell (length nv_prim)
-            double *       ///< updated primitive vector for grid cell (length nv_prim)
-            );
+      const double *, ///< local (updated) vector [x,E](n+1).
+      const double *, ///< input primitive vector from grid cell (length nv_prim)
+      double *       ///< updated primitive vector for grid cell (length nv_prim)
+      );
 
   ///
   /// This initialises the CVodes solver without using a Jacobian function.
@@ -423,12 +467,12 @@ class mp_v2_aifa
   /// This takes a step dt, returning a non-zero error code if the error fails.
   ///
   int integrate_cvodes_step(
-              const std::vector<double> &,  ///< input vector
-              double *, ///< parameters for user_data
-              double,  ///< start time.
-              double,  ///< time-step.
-              std::vector<double> &  ///< output vector.
-              );
+      const std::vector<double> &,  ///< input vector
+      double *, ///< parameters for user_data
+      double,  ///< start time.
+      double,  ///< time-step.
+      std::vector<double> &  ///< output vector.
+      );
 
   ///
   /// For each cell, dYdt() needs to know the local radiation field.  This function
@@ -436,15 +480,15 @@ class mp_v2_aifa
   /// know for both heating and ionisation sources.
   ///
   void setup_radiation_source_parameters(
-                    const double *, ///< primitive input state vector.
-                    double *,  ///< local input state vector (x_in,E_int)
-                    const int , ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &
-                    ///< list of ionising src column densities and source properties.
-                    );
+      const double *, ///< primitive input state vector.
+      double *,  ///< local input state vector (x_in,E_int)
+      const int , ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &
+      ///< list of ionising src column densities and source properties.
+      );
 
   N_Vector 
     y_in,  ///< current y-vector
@@ -470,7 +514,10 @@ class mp_v2_aifa
   double Max_IonFrac; ///< Maximum H+ fraction allowed (1-eps)
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
 
+  const int ndim; ///< Number of dimensions in grid.
   const int nv_prim; ///< Number of variables in state vector.
+  const double eos_gamma; ///< EOS gamma for ideal gas.
+  const int coord_sys; ///< Coordinate System flag
   int       nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index. 
   int lv_Hp;   ///< ionised hydrogeen local variable index.
@@ -478,7 +525,10 @@ class mp_v2_aifa
   bool have_setup_cvodes; ///< flag to make sure we only set up CVODES once.
 };
 
-#endif // if MP_V2_AIFA is set
 
-#endif // MP_V2_AIFA_H
+// ##################################################################
+// ##################################################################
+
+#endif // LEGACY_CODE
+#endif // MPV2_H
 

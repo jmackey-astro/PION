@@ -29,14 +29,14 @@
 
 #include "microphysics_base.h"
 
-//#include "microphysics/mp_explicit_H.h"
+//#include "microphysics/MPv3.h"
 #define JM_MINNEU 1.0e-12  ///< minimum neutral fraction i care about.
 #define JM_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
 
 class mpv8_TwoTempIso
-: public MicroPhysicsBase
+: public microphysics_base
 //  :
-//  public mp_explicit_H
+//  public MPv3
 {
   public:
   ///
