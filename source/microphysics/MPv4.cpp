@@ -9,9 +9,10 @@
 /// thesis (MPV1).  It uses the same implicit raytracing scheme, so
 /// photon transmission through the cell is integrated with the rate
 /// and energy equations to obtain a time-averaged value.
-///
 /// The main advantage here is that we can use multi-frequency
 /// photoionisation rates which depend on the optical depth.
+/// It was used in Mackey (2012,A&A) but found to be less efficient
+/// than MPv3.
 ///
 /// Modifications:
 /// - 2011.10.13 JM: Debugging.

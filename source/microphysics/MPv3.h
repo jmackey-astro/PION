@@ -50,12 +50,6 @@
 ///   (1997,ADNDT,65,1) is used.
 /// - Collisional excitation of neutral H, table from Raga, Mellema,
 ///   Lundqvist (1997,ApJS,109,517), using data from Aggarwal (1993).
-/// - For cooling due to heavy elements, which are not explicitly
-///  included, we use the CIE cooling curve of Sutherland & Dopita
-///  (1993,ApJS,88,253), but this time I subtract the zero-metals
-///  curve from the solar-metallicity curve so that I only have
-///  cooling due to metals.  This eliminates the potential for 
-///  double-counting which was in my previous cooling function.
 /// - Then I use various formulae from Henney et al. (2009,MN,398,
 ///  157) for cooling due to collisional excitation of photoionised
 ///  O,C,N (eq.A9), collisional excitation of neutral metals
