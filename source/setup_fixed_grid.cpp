@@ -31,7 +31,7 @@
 #endif 
 
 #ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
+#include "microphysics/MPv9.h"
 #endif
 
 #include "microphysics/mp_only_cooling.h"

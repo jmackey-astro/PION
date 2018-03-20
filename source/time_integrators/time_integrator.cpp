@@ -67,7 +67,7 @@
 ///       work for all sims, not just jet sims.  Note this only works
 ///       for the XN point from the grid FirstPt(), not all boundary
 ///       points (which it really should work for!)
-///  - 2010.10.13 JM: Added option to setup new microphysics_lowZ class
+///  - 2010.10.13 JM: Added option to setup new MPv9 class
 ///       in setup_microphysics() function.
 ///       Added MP_timestep_limit override option.
 ///  - 2010.11.03 JM: Changed "endl" to "\n" for JUROPA.  Added a

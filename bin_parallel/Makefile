@@ -8,7 +8,7 @@
 # - 2010.07.28 JM: added section for klaipedaX (64GB RAM, 16 cores)
 # - 2010-09-22 JM: Added Riemann_FVS_hydro files.
 # - 2010-10-11 JM: Added 'standard' workstation; added stellar_wind_BC file.
-# - 2010.10.13 JM: Added microphysics_lowZ object file
+# - 2010.10.13 JM: Added MPv9 object file
 # - 2010.10.13 JM: moved executables to ../exe/
 # - 2010.11.09 JM: Added options for Phalanx at UCL
 # - 2010.11.15 JM: Added cell_interface.o file.
@@ -415,9 +415,9 @@ ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
 endif
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
-  OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
+  OBJECTS +=  MPv9.o HD_MetalFree_integrator.o \
               HD_MetalFree_equations.o
-  IC_OBJ +=   microphysics_lowZ.o HD_MetalFree_integrator.o \
+  IC_OBJ +=   MPv9.o HD_MetalFree_integrator.o \
               HD_MetalFree_equations.o \
               HD_2D_ShockCloud.o 
 #HD_3D_ShockCloud.o
@@ -465,7 +465,7 @@ cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h MPv1.h \
- dataio.h dataio_silo.h dataio_fits.h microphysics_lowZ.h \
+ dataio.h dataio_silo.h dataio_fits.h MPv9.h \
  microphysics_base.h mp_only_cooling.h MPv2.h \
  MCMD_control.h
 
@@ -596,7 +596,7 @@ MPv1.o:	MPv1.cpp MPv1.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h
 MPv0.o: MPv0.cpp MPv1.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
+MPv9.o: MPv9.cpp MPv9.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
 hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
@@ -691,7 +691,7 @@ comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 ##### IC GENERATOR FILES #####
 ##############################
 icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  MPv2.h \
-         MPv1.h microphysics_lowZ.h
+         MPv1.h MPv9.h
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
 ########################

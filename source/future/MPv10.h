@@ -1,5 +1,5 @@
 ///
-/// \file mpv9_HHe.h
+/// \file MPv10.h
 /// \author Jonathan Mackey
 /// \date 2013.08.19
 ///
@@ -11,20 +11,20 @@
 /// - getting it written: mods up until 2013.08.23
 
 
-#ifndef MPV9_HHE_H
-#define MPV9_HHE_H
+#ifndef MPV10_H
+#define MPV10_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#ifndef EXCLUDE_MPV9
+#ifndef EXCLUDE_MPV10
 
 #include "microphysics/microphysics_base.h"
 #include "HHe_photoion.h"
 #include "microphysics/cvode_integrator.h"
 
 
-class mpv9_HHe :
+class MPv10 :
   public microphysics_base,
   public HHe_photoion,
   public cvode_solver  
@@ -33,7 +33,7 @@ class mpv9_HHe :
   ///
   /// Constructor
   ///
-  mpv9_HHe(
+  MPv10(
           const int,              ///< Total number of variables in state vector
 	  const int,              ///< Number of tracer variables in state vector.
 	  const std::string &,    ///< List of what the tracer variables mean.
@@ -44,7 +44,7 @@ class mpv9_HHe :
   ///
   /// Destructor
   ///
-  ~mpv9_HHe();
+  ~MPv10();
 
 
   //---------------------------------------------------------------------------
@@ -339,9 +339,9 @@ class mpv9_HHe :
   double metallicity; ///< gas metallicity in units of solar (0.0142)
 };
 
-#endif //  if not EXCLUDE_MPV9
+#endif //  if not EXCLUDE_MPV10
 
-#endif // MPV9_HHE_H
+#endif // MPV10_H
 
 
 
