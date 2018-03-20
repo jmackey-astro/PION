@@ -98,7 +98,7 @@
 ///    now a few new functions to deal with the different kinds of radiative
 ///    transfer we want to do.
 /// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux calculation.
-/// - 2011.04.14 JM: Added mp_v2_aifa microphysics integration class.
+/// - 2011.04.14 JM: Added MPv2 microphysics integration class.
 /// - 2011.04.17 JM: minor debugging additions/subtractions for the new RT update.
 /// - 2011.04.18 JM: more debugging.  nearly done now.
 /// - 2011.04.22 JM: bugs for multiple point sources fixed.  Also removed isfinite

@@ -58,7 +58,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#ifndef EXCLUDE_MPV1
+#ifdef LEGACY_CODE
 
 #include "microphysics/MPv0.h"
 using namespace std;
@@ -1968,6 +1968,6 @@ double MPv0::timescales(
 
 
 
-#endif // if not excluding MPv1
+#endif // LEGACY_CODE
 
 

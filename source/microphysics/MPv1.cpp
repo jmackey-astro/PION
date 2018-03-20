@@ -57,6 +57,8 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#ifdef LEGACY_CODE
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
@@ -65,10 +67,6 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV1
 
 
 #include "microphysics/microphysics.h"
@@ -1650,5 +1648,5 @@ double MP_Hydrogen::timescales(const pion_flt *p_in,  ///< Current cell primitiv
 
 
 
-#endif // if not excluding MPv1
+#endif // LEGACY_CODE
 

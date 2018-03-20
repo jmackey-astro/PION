@@ -33,7 +33,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV1
+#ifdef LEGACY_CODE
 
 #include <map>
 #include <vector>
@@ -380,6 +380,6 @@ class MPv1 : public microphysics_base, public Integrator_Base {
 };
 
 
-#endif // if not excluding MPv1
+#endif // LEGACY_CODE
 
 #endif // MPV1_H
