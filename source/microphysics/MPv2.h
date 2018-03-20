@@ -261,7 +261,7 @@ int Ydot_for_cvodes(
 
 ///
 /// This class will now just be a driver for CVodes, and using the dYdt() function from 
-/// mp_rates_ExpH_ImpMetals MPR.  It is essentially an interface class like microphysics_lowZ
+/// mp_rates_ExpH_ImpMetals MPR.  It is essentially an interface class like MPv9
 /// which interfaces between my code and Harpreet's.
 ///
 class MPv2

@@ -8,7 +8,7 @@
 # - 2010-10-01 JM: Added spherical vector-ops file.
 # - 2010-10-05 JM: Added stellar_wind_BC object file.
 # - 2010-10-11 JM: Added 'standard' workstation
-# - 2010.10.13 JM: Added microphysics_lowZ object file
+# - 2010.10.13 JM: Added MPv9 object file
 # - 2010.10.13 JM: moved executables to ../exe/
 # - 2010.11.09 JM: Added options for Phalanx
 # - 2010.11.15 JM: Added cell_interface.o file.
@@ -421,9 +421,9 @@ ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
 endif
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
-  OBJECTS +=  microphysics_lowZ.o HD_MetalFree_integrator.o \
+  OBJECTS +=  MPv9.o HD_MetalFree_integrator.o \
               HD_MetalFree_equations.o 
-  IC_OBJ +=   microphysics_lowZ.o HD_MetalFree_integrator.o \
+  IC_OBJ +=   MPv9.o HD_MetalFree_integrator.o \
               HD_MetalFree_equations.o \
               HD_2D_ShockCloud.o 
 # HD_3D_ShockCloud.o
@@ -488,7 +488,7 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
 
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-		MPv1.h microphysics_lowZ.h  MPv2.h \
+		MPv1.h MPv9.h  MPv2.h \
 		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
                 mp_only_cooling.h MPv3.h MPv4.h
 
@@ -603,7 +603,7 @@ MPv1.o:	MPv1.cpp MPv1.h microphysics_base.h \
    ${GLOBAL} cooling.h integrator.h tools/interpolate.h
 MPv0.o: MPv0.cpp MPv1.h \
    microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
+MPv9.o: MPv9.cpp MPv9.h \
    microphysics_base.h ${GLOBAL} integrator.h
 
 hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
@@ -674,7 +674,7 @@ stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_B
 ##### IC GENERATOR FILES #####
 ##############################
 icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  MPv2.h \
-         MPv1.h microphysics_lowZ.h dataio_silo.h dataio.h dataio_fits.h
+         MPv1.h MPv9.h dataio_silo.h dataio.h dataio_fits.h
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
 ########################
