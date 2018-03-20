@@ -1594,12 +1594,13 @@ int UniformGridParallel::Receive_RT_Boundaries(
       //
       // Receive data into buffer.
       //
-      err = COMM->receive_double_data(from_rank, ///< rank of process we are receiving from.
-              comm_tag,  ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-              id, ///< identifier for receive, for any book-keeping that might be needed.
-              ct, ///< number of doubles to receive
-              buf ///< Pointer to array to write to (must be already initialised).
-              );
+      err = COMM->receive_double_data(
+          from_rank, ///< rank of process we are receiving from.
+          comm_tag,  ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
+          id, ///< identifier for receive, for any book-keeping that might be needed.
+          ct, ///< number of doubles to receive
+          buf ///< Pointer to array to write to (must be already initialised).
+          );
       if (err) rep.error("Receive_RT_Boundaries() getdata failed",err);
 
       //
