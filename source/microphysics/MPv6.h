@@ -1,5 +1,5 @@
 ///
-/// \file mpv6_PureH.h
+/// \file MPv6.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -19,15 +19,15 @@
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
-#ifndef MPV6_PUREH_H
-#define MPV6_PUREH_H
+#ifndef MPV6_H
+#define MPV6_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 #include "microphysics/MPv3.h"
 
-class mpv6_PureH
+class MPv6
   :
   public MPv3
 {
@@ -35,7 +35,7 @@ class mpv6_PureH
   ///
   /// Constructor
   ///
-  mpv6_PureH(
+  MPv6(
       const int,  ///< grid dimensions
       const int,  ///< Coordinate System flag
       const int,  ///< Total number of variables in state vector
@@ -49,7 +49,7 @@ class mpv6_PureH
   ///
   /// Destructor
   ///
-  ~mpv6_PureH();
+  ~MPv6();
 
 
   //---------------------------------------------------------------------------
@@ -71,7 +71,7 @@ class mpv6_PureH
   //---------------------------------------------------------------------------
 };
 
-#endif // MPV6_PUREH_H
+#endif // MPV6_H
 
 
 

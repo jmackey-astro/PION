@@ -41,7 +41,7 @@
 #endif
 
 #include "microphysics/MPv5.h"
-#include "microphysics/mpv6_PureH.h"
+#include "microphysics/MPv6.h"
 #include "microphysics/mpv7_TwoTempIso.h"
 #include "microphysics/mpv8_StarBench_heatcool.h"
 
@@ -379,10 +379,10 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv6") {
-      cout <<"\t******* setting up mpv6_PureH module *********\n";
+      cout <<"\t******* setting up MPv6 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv6_PureH(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+      MP = new MPv6(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
                             SimPM.ntracer, SimPM.tracers,
                             &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
