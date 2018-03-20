@@ -40,15 +40,10 @@
 
 
 //
-// These flags disable JM's microphysics modules and (in the last case)
-// Harpreet's microphysics module.
+// These flags disable microphysics modules
 //
-//#define EXCLUDE_MPV1       // both microphysics_v1 and H-only MP.
-#define EXCLUDE_MPV2       // mp_v2_aifa
-//#define EXCLUDE_MPV3       // MPv3 
-#define EXCLUDE_MPV4       // MPv4
 #define EXCLUDE_HD_MODULE  // Harpreet's module.
-//#define EXCLUDE_MPV9       // mpv9_HHe module.
+#define EXCLUDE_MPV9       // mpv9_HHe module.
 
 //
 // Comment out to disable PDR cooling in mp_explicit/implicit_H.cc
@@ -56,11 +51,6 @@
 //
 #define USE_PDR_COOLING
 //#define PUREHYDROGEN ///< in MPv3, disables all He+metal terms.
-
-///
-/// This enables the mp_v2_aifa code, which is an old version of MPv3
-///
-//#define MP_V2_AIFA
 
 
 //
@@ -114,28 +104,6 @@
 // Flags which should be removed/changed because the code is working
 // and tested.
 // -------------------------------------------------------------------
-
-
-///
-/// Use try{}catch(){} for bad_alloc in dynamic memory allocation.
-///
-#define CHECK_NEW_EXCEP_ON
-#ifdef CHECK_NEW_EXCEP_ON
-#include <new>
-#endif
-
-/// Use the memory management class for dynamic memory allocations and frees.
-#define USE_MM
-#ifndef USE_MM
-#error "MUST USE MEMORY MANAGEMENT NOW -- ALL NEW CODE ASSUMES IT IS PRESENT!!!!"
-#endif
-
-#define PLLEL_RT ///< For point sources with multiple processes (ALWAYS SET NOW)
-
-///
-/// Use an updated interface to the microphysics. (MUST USE THIS NOW!)
-/// (removed 2011.02.25 JM)
-//#define NEW_RT_MP_INTERFACE
 
 //
 // Must define either CELL_CENTRED_SRC or NON_CELL_CENTRED_SRC

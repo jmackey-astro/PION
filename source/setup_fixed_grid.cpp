@@ -42,8 +42,8 @@
 
 #include "microphysics/MPv5.h"
 #include "microphysics/MPv6.h"
-#include "microphysics/mpv7_TwoTempIso.h"
-#include "microphysics/mpv8_StarBench_heatcool.h"
+#include "microphysics/MPv7.h"
+#include "microphysics/MPv8.h"
 
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
@@ -331,6 +331,18 @@ int setup_fixed_grid::setup_microphysics(
                             &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
     }
+
+    if (mptype=="MPv8") {
+      cout <<"\t******* setting up MPv8 module *********\n";
+      cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
+      SimPM.EP.MP_timestep_limit = 1;
+      if (have_set_MP) rep.error("MP already initialised",mptype);
+      MP = new MPv8(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+                            SimPM.ntracer, SimPM.tracers,
+                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
+      have_set_MP=true;
+    }
+
 #endif // LEGACY_CODE
 
 
@@ -345,7 +357,6 @@ int setup_fixed_grid::setup_microphysics(
 
 
 
-#ifndef EXCLUDE_MPV3
     if (mptype=="MPv3") {
       cout <<"\t******* setting up MPv3 module *********\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
@@ -364,9 +375,6 @@ int setup_fixed_grid::setup_microphysics(
       //  rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;
     }
-#endif // exclude MPv3
-
-
 
     if (mptype=="MPv5") {
       cout <<"\t******* setting up MPv5 module *********\n";
@@ -389,27 +397,15 @@ int setup_fixed_grid::setup_microphysics(
     }
 
     if (mptype=="MPv7") {
-      cout <<"\t******* setting up mpv7_TwoTempIso module *********\n";
+      cout <<"\t******* setting up MPv7 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv7_TwoTempIso(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+      MP = new MPv7(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
                             SimPM.ntracer, SimPM.tracers,
                             &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;
     }
 
-#ifdef CODE_EXT_SBII
-    if (mptype=="MPSBHC") {
-      cout <<"\t******* setting up mpv8_StarBench_heatcool module *********\n";
-      cout <<"\t******* This is for StarBench test propblems with heating and cooling.\n";
-      SimPM.EP.MP_timestep_limit = 1;
-      if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv8_SBheatcool(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
-                            SimPM.ntracer, SimPM.tracers,
-                            &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
-      have_set_MP=true;
-    }
-#endif // CODE_EXT_SBII
 
 #ifdef CODE_EXT_HHE
     if (mptype=="MPv9") {

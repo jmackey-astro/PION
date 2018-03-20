@@ -81,8 +81,6 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV3
-
 
 #include <vector>
 #include "microphysics_base.h"
@@ -341,6 +339,14 @@ class MPv3
       );
 
   ///
+  /// Returns total number of particles.
+  ///
+  virtual double get_ntot(
+    const double, ///< nH
+    const double  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
+    );
+
+  ///
   /// For each cell, ydot() needs to know the local radiation field.  This function
   /// takes all of the input radiation sources and calculates what ydot() needs to
   /// know for both heating and ionisation sources.
@@ -389,7 +395,6 @@ class MPv3
   const double eos_gamma; ///< EOS gamma for ideal gas.
   const int coord_sys; ///< Coordinate System flag
   double gamma_minus_one; ///< as named.
-  double lv_nH;  ///< current number density of H nucleons.
   double Min_NeutralFrac; ///< minimum H0 fraction allowed (eps=1.0e-12)
   double Max_NeutralFrac; ///< Maximum H0 fraction allowed (1-eps)
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
@@ -468,9 +473,6 @@ class MPv3
     mpv_delta_S;///< path length through current cell.
 
 };
-
-#endif // if not excluding MPv3
-
 
 #endif // MPV3_H
 

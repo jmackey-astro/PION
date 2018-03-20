@@ -1,5 +1,5 @@
 ///
-/// \file mpv8_SBheatcool.h
+/// \file MPv8.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -21,10 +21,11 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#ifdef LEGACY_CODE
 
 #include "microphysics/MPv3.h"
 
-class mpv8_SBheatcool
+class MPv8
   :
   public MPv3
 {
@@ -32,7 +33,7 @@ class mpv8_SBheatcool
   ///
   /// Constructor
   ///
-  mpv8_SBheatcool(
+  MPv8(
       const int,  ///< grid dimensions
       const int,  ///< Coordinate System flag
       const int,  ///< Total number of variables in state vector
@@ -46,7 +47,7 @@ class mpv8_SBheatcool
   ///
   /// Destructor
   ///
-  ~mpv8_SBheatcool();
+  ~MPv8();
 
 
   //---------------------------------------------------------------------------
@@ -129,6 +130,8 @@ class mpv8_SBheatcool
   //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
   //---------------------------------------------------------------------------
 };
+
+#endif // LEGACY_CODE
 
 #endif // MPV8_SBHEATCOOL_H
 

@@ -90,12 +90,6 @@ UniformGridParallel::UniformGridParallel(
   rep.printVec("Local Npt ",nc,nd);
 #endif
 
-#ifdef PLLEL_RT
-  //RT_nbd=0;
-  //RT_nbc=0;
-  //  RT_bd=0;
-#endif // PLLEL_RT
-
 #ifdef TESTING
   rep.printVec("SIM Xmin ", Sim_xmin, G_ndim);
   rep.printVec("SIM Xmax ", Sim_xmax, G_ndim);
@@ -128,7 +122,6 @@ UniformGridParallel::~UniformGridParallel()
 #ifdef TESTING
   cout <<"UniformGridParallel destructor.\n";
 #endif
-#ifdef PLLEL_RT
   //
   // Delete cells created for RT receive boundaries.
   // Have to delete lists of cells, and boundary_data, and maybe cells.
@@ -193,7 +186,6 @@ UniformGridParallel::~UniformGridParallel()
     }
     
   }
-#endif // PLLEL_RT
 
   return;
 }
@@ -741,7 +733,6 @@ int UniformGridParallel::BC_select_data2send(
 /***************************************************************************************/
 /***************************** RAYTRACING BOUNDARY STUFF *******************************/
 /***************************************************************************************/
-#ifdef PLLEL_RT
 
 
 // ##################################################################
@@ -1827,7 +1818,6 @@ int UniformGridParallel::Send_RT_Boundaries(
 
 
 
-#endif // PLLEL_RT
 //-------------------------------------------------------------
 //------------------- CARTESIAN GRID END ----------------------
 //-------------------------------------------------------------

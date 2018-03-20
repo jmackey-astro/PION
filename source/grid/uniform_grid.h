@@ -1106,7 +1106,6 @@ class uniform_grid_sph
 
 
 
-#ifdef PLLEL_RT
 enum rt_dirs {
   dir_NO     =-1,
   dir_XN     =0,
@@ -1141,7 +1140,6 @@ struct RT_source_comms_info {
     RT_send_list; ///< list of processors to send data to, for each source.
 };
 
-#endif // PLLEL_RT
 
 ///
 /// Parallel implementation of the serial uniform grid.
@@ -1216,7 +1214,6 @@ class UniformGridParallel
       boundary_data *  ///< pointer to boundary data.
       );
 
-#ifdef PLLEL_RT
   ///
   /// This is the list where element i corresponds to source i, and the struct
   /// contains the list of boundaries we need to send and receive, which in
@@ -1283,7 +1280,6 @@ class UniformGridParallel
       const struct boundary_data *, ///< pointer to BC boundary data.
       const enum direction ///< face direction
       );
-#endif // PLLEL_RT
 
   ///
   /// multi-core decomposition class.
@@ -1325,7 +1321,6 @@ class UniformGridParallel
       const int  ///< Maximum step number in timestep.
       );
 
-#ifdef PLLEL_RT
   ///
   /// Setup lists of processors to receive data from and send data to, 
   /// and setup extra boundaries at corners.
@@ -1351,8 +1346,6 @@ class UniformGridParallel
       const int,  ///< source id
       struct rad_src_info &
       );
-
-#endif // PLLEL_RT
 
   /// Returns Simulation xyz lower bounds (code units)
   virtual double SIM_Xmin(enum axes a) const

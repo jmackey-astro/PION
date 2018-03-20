@@ -49,7 +49,6 @@
 using namespace std;
 
 #ifdef PARALLEL
-#ifdef PLLEL_RT
 
 
 
@@ -492,6 +491,5 @@ void raytracer_USC_pllel::col2cell_3d(
 
 
 
-#endif // PLLEL_RT
 #endif // PARALLEL
 
