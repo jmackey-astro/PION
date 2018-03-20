@@ -424,8 +424,8 @@ ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
 endif
 
 # NEW chemistry classes.
-  OBJECTS += MPv5.o mpv6_PureH.o mpv7_TwoTempIso.o
-  IC_OBJ  += MPv5.o mpv6_PureH.o mpv7_TwoTempIso.o
+  OBJECTS += MPv5.o MPv6.o mpv7_TwoTempIso.o
+  IC_OBJ  += MPv5.o MPv6.o mpv7_TwoTempIso.o
 
 
 #####################################################
@@ -621,7 +621,7 @@ MPv4.o: MPv4.cpp MPv4.h MPv3.h \
 MPv5.o: MPv5.cpp MPv5.h \
   MPv3.h microphysics_base.h ${GLOBAL}
 
-mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
+MPv6.o: MPv6.cpp MPv6.h \
   MPv3.h microphysics_base.h ${GLOBAL}
 
 mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
