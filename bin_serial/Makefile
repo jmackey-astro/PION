@@ -437,8 +437,8 @@ ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
 endif
 
 # New chemistry classes.
-  OBJECTS += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
-  IC_OBJ  += mpv5_molecular.o mpv6_PureH.o mpv7_TwoTempIso.o
+  OBJECTS += MPv5.o mpv6_PureH.o mpv7_TwoTempIso.o
+  IC_OBJ  += MPv5.o mpv6_PureH.o mpv7_TwoTempIso.o
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -628,7 +628,7 @@ MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
 
-mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
+MPv5.o: MPv5.cpp MPv5.h \
   MPv3.h microphysics_base.h ${GLOBAL}
 
 mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \

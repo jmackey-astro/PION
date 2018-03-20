@@ -27,6 +27,7 @@
 #include "microphysics/MPv0.h"
 #include "microphysics/MPv1.h"
 #include "microphysics/MPv2.h"
+#include "microphysics/MPv4.h"
 #endif 
 
 #ifndef EXCLUDE_HD_MODULE
@@ -39,11 +40,7 @@
 #include "microphysics/MPv3.h"
 #endif
 
-#ifndef EXCLUDE_MPV4
-#include "microphysics/MPv4.h"
-#endif 
-
-#include "microphysics/mpv5_molecular.h"
+#include "microphysics/MPv5.h"
 #include "microphysics/mpv6_PureH.h"
 #include "microphysics/mpv7_TwoTempIso.h"
 #include "microphysics/mpv8_StarBench_heatcool.h"
@@ -372,10 +369,10 @@ int setup_fixed_grid::setup_microphysics(
 
 
     if (mptype=="MPv5") {
-      cout <<"\t******* setting up mpv5_molecular module *********\n";
+      cout <<"\t******* setting up MPv5 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new mpv5_molecular(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
+      MP = new MPv5(SimPM.ndim, SimPM.coord_sys, SimPM.nvar,
                             SimPM.ntracer, SimPM.tracers,
                             &(SimPM.EP), &(SimPM.RS), SimPM.gamma);
       have_set_MP=true;

@@ -1,5 +1,5 @@
 ///
-/// \file mpv5_molecular.cpp
+/// \file MPv5.cpp
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -18,16 +18,18 @@
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.07.07 JM: New trtype array structure in constructor.
+/// - 2018.03.20 JM: Renamed file.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/mpv5_molecular.h"
+#include "microphysics/MPv5.h"
 
 
 using namespace std;
@@ -39,7 +41,7 @@ using namespace std;
 // ##################################################################
 
 
-mpv5_molecular::mpv5_molecular(
+MPv5::MPv5(
       const int nd,   ///< grid dimensions
       const int csys,   ///< Coordinate System flag
       const int nv,             ///< Total number of variables in state vector
@@ -53,7 +55,7 @@ mpv5_molecular::mpv5_molecular(
   MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
-  cout <<"mpv5_molecular constructor setting up.\n";
+  cout <<"MPv5 constructor setting up.\n";
 #endif
   return;
 }
@@ -61,10 +63,10 @@ mpv5_molecular::mpv5_molecular(
 // ##################################################################
 // ##################################################################
 
-mpv5_molecular::~mpv5_molecular()
+MPv5::~MPv5()
 {
 #ifdef TESTING
-  cout <<"mpv5_molecular destructor.\n";
+  cout <<"MPv5 destructor.\n";
 #endif
   return;
 }
@@ -74,12 +76,12 @@ mpv5_molecular::~mpv5_molecular()
 // ##################################################################
 
 
-int mpv5_molecular::ydot(
-          double,               ///< current time (UNUSED)
-          const N_Vector y_now, ///< current Y-value
-          N_Vector y_dot,       ///< vector for Y-dot values
-          const double *        ///< extra user-data vector (UNUSED)
-          )
+int MPv5::ydot(
+      double,               ///< current time (UNUSED)
+      const N_Vector y_now, ///< current Y-value
+      N_Vector y_dot,       ///< vector for Y-dot values
+      const double *        ///< extra user-data vector (UNUSED)
+      )
 {
   //
   // fixes min-neutral-fraction to Min_NeutralFrac
@@ -308,6 +310,12 @@ int mpv5_molecular::ydot(
   NV_Ith_S(y_dot,lv_eint) = Edot;
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 

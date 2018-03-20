@@ -22,7 +22,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
+#ifdef LEGACY_CODE
 
 #include <vector>
 #include "microphysics/microphysics_base.h"
@@ -183,6 +183,7 @@ class MPv4
   //---------------------------------------------------------------------------
 };
 
+#endif // LEGACY_CODE
 
 #endif // MPV4_H
 
