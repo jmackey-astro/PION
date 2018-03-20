@@ -115,7 +115,7 @@ class mp_explicit_H
   :
   public Hydrogen_chem,
   public cooling_function_SD93CIE,
-  public MicroPhysicsBase,
+  public microphysics_base,
   public cvode_solver
 {
   public:

@@ -68,7 +68,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// Constructor.
   raytracer_USC_infinity(
       class GridBaseClass *, ///< Pointer to grid
-      class MicroPhysicsBase *, ///< Pointer to MicroPhysics Class.
+      class microphysics_base *, ///< Pointer to MicroPhysics Class.
       int,  ///< grid dimensionality
       int,  ///< coordinate system
       int,  ///< number of variables in state vector
@@ -211,7 +211,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   class GridBaseClass *gridptr; 
 
   /// Pointer to the microphysics solver (to get n,T).
-  class MicroPhysicsBase *mpptr;
+  class microphysics_base *mpptr;
 
   /// pointer to source we are currently working with.
   struct rad_source *current_src;
@@ -314,7 +314,7 @@ class raytracer_USC : public raytracer_USC_infinity {
   /// Constructor.
   raytracer_USC(
       class GridBaseClass *, ///< Pointer to grid
-      class MicroPhysicsBase *, ///< Pointer to MicroPhysics Class.
+      class microphysics_base *, ///< Pointer to MicroPhysics Class.
       int,  ///< grid dimensionality
       int,  ///< coordinate system
       int,  ///< number of variables in state vector
@@ -608,7 +608,7 @@ class raytracer_USC_pllel : public raytracer_USC {
   /// Constructor
   raytracer_USC_pllel(
       class GridBaseClass *, ///< Pointer to grid
-      class MicroPhysicsBase *, ///< Pointer to MicroPhysics Class.
+      class microphysics_base *, ///< Pointer to MicroPhysics Class.
       int,  ///< grid dimensionality
       int,  ///< coordinate system
       int,  ///< number of variables in state vector

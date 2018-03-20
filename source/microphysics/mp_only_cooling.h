@@ -39,7 +39,7 @@
 ///
 class mp_only_cooling 
  :
-  virtual public MicroPhysicsBase,
+  virtual public microphysics_base,
   virtual public cooling_function_SD93CIE,
   virtual public Hummer94_Hrecomb
 {

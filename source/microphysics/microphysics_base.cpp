@@ -10,16 +10,16 @@ using namespace std;
 ///
 /// Global pointer to microphysics class.
 ///
-class MicroPhysicsBase *MP=0;
+class microphysics_base *MP=0;
 
 
-MicroPhysicsBase::MicroPhysicsBase(
+microphysics_base::microphysics_base(
       struct which_physics *ephys, ///< which physics to calculate.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
 {
 #ifdef TESTING
-  cout <<"MicroPhysicsBase:: setting up EP and RS: ";
+  cout <<"microphysics_base:: setting up EP and RS: ";
 #endif
 
   EP = ephys;

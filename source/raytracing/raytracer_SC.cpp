@@ -115,7 +115,7 @@ using namespace std;
 
 raytracer_USC_infinity::raytracer_USC_infinity(
     class GridBaseClass *ggg,   ///< Pointer to grid
-    class MicroPhysicsBase *mmm, ///< Pointer to MicroPhysics.
+    class microphysics_base *mmm, ///< Pointer to MicroPhysics.
     int nd,         ///< number of dimensions of grid
     int csys,  ///< coordinate system
     int nv,         ///< number of variables in state vector
@@ -1219,7 +1219,7 @@ int raytracer_USC_infinity::ProcessCell_TimeUpdate(
 // ##################################################################
 raytracer_USC::raytracer_USC(
     class GridBaseClass *ggg,    ///< Pointer to grid
-    class MicroPhysicsBase *mmm, ///< Pointer to MicroPhysics Class.
+    class microphysics_base *mmm, ///< Pointer to MicroPhysics Class.
     int nd,     ///< number of dimensions of grid
     int csys,   ///< coordinate system
     int nv,     ///< number of variables in state vector

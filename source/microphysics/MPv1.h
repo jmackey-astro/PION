@@ -62,7 +62,7 @@
 /// only need to deal with one tracer variable, as the ionisation fraction
 /// of hydrogen is the same as the electron fraction.
 /// 
-class MPv1 : public MicroPhysicsBase, public Integrator_Base {
+class MPv1 : public microphysics_base, public Integrator_Base {
  public:
   /// Constructor.  Takes in info on tracers to determine what sort of
   /// chemistry we are using.  The string has a specific format described in 

@@ -61,7 +61,7 @@
 ///
 class microphysics_lowz
 :
-  public MicroPhysicsBase,
+  public microphysics_base,
   public solver
 {
   //

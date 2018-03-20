@@ -49,7 +49,7 @@ mp_only_cooling::mp_only_cooling(
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
-: MicroPhysicsBase(ephys,rsrcs),
+: microphysics_base(ephys,rsrcs),
   cooling_function_SD93CIE(),
   Hummer94_Hrecomb(),
   nv_prim(nv)

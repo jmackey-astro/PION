@@ -438,9 +438,9 @@ int setup_fixed_grid::setup_microphysics(
     // of elements and ions.
     //
     if (!have_set_MP) {
-      cout <<"\t******* setting up MicroPhysics (v0) module *********\n";
+      cout <<"\t******* setting up MPv0 (v0) module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
-      MP = new MicroPhysics(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
+      MP = new MPv0(SimPM.nvar, SimPM.ntracer, SimPM.chem_code, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
       if (SimPM.EP.MP_timestep_limit <0 || SimPM.EP.MP_timestep_limit >5)
         rep.error("BAD dt LIMIT",SimPM.EP.MP_timestep_limit);
       have_set_MP=true;

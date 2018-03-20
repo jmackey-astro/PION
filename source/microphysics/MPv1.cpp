@@ -94,7 +94,7 @@ MP_Hydrogen::MP_Hydrogen(
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
-: MicroPhysicsBase(ephys,rsrcs),
+: microphysics_base(ephys,rsrcs),
   kB(pconst.kB()),
 #ifdef RT_TEST_PROBS
   m_p(2.338e-24), // this is for comparison to Krumholz,stone,gardiner(2007)
