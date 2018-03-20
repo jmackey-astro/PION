@@ -22,13 +22,8 @@ OutputFile    BWcrt3D_Octant_NR256
 
 # Number and type of tracers.
 ntracer 0
-trtype NONE__
+chem_code None
 InitIons LEAVE
-Tracer0 1.0
-Tracer1 1.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
 
 # Which physics to use
 EP_dynamics     1
@@ -85,8 +80,14 @@ FinishTime 1.58e12  # 50kyr
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNref_XPout_YNref_YPout_ZNref_ZPout_
+# Type of Boundary Condition
+BC_XN reflecting
+BC_XP outflow
+BC_YN reflecting
+BC_YP outflow
+BC_ZN reflecting
+BC_ZP outflow
+BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.666666666666666666666

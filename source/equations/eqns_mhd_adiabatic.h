@@ -9,6 +9,7 @@
 /// - 2009-10-20 Started on the file (moved from old equations.h)
 /// - 2010.12.23 JM: Added SetAvgState() function to eqns_mhd_ideal class.
 /// - 2015.08.03 JM: Added pion_flt for pion_flt *arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 ///
 
 #ifndef EQNS_MHD_ADIABATIC_H
@@ -42,6 +43,7 @@ class eqns_mhd_ideal : virtual public eqns_base {
   virtual int UtoP(
       const pion_flt *, ///< pointer to conserved variables.
       pion_flt *,       ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
       const double   ///< Gas constant gamma.
       );
    
@@ -183,57 +185,61 @@ class eqns_mhd_ideal : virtual public eqns_base {
 class eqns_mhd_mixedGLM : virtual public eqns_mhd_ideal
 {
   public:
-   eqns_mhd_mixedGLM(int);
-   ~eqns_mhd_mixedGLM();
-   /// \brief Sets the hyperbolic wavespeed ch for the Psi variable. 
-   /// 
-   /// \f[ c_{\mbox{hyp}} = \mbox{CFL} (dx/dt) \;.\f]
-   /// From Dedner, below eq.41.
-    ///
-   void GLMsetPsiSpeed(const double, ///< CFL coefficient.
+  eqns_mhd_mixedGLM(int);
+  ~eqns_mhd_mixedGLM();
+  /// \brief Sets the hyperbolic wavespeed ch for the Psi variable. 
+  /// 
+  /// \f[ c_{\mbox{hyp}} = \mbox{CFL} (dx/dt) \;.\f]
+  /// From Dedner, below eq.41.
+  ///
+  void GLMsetPsiSpeed(const double, ///< CFL coefficient.
 		       const double, ///< dx, the cell size
 		       const double  ///< dt, the timestep.
 		       );
    
-   /// \brief Converts from primitive to conserved variables. 
-   /// 
-   /// Psi conserved variable is same as primitive, so just call 
-   /// the mhd_ideal function and copy Psi into the conserved variable.
-   ///
-   void PtoU(const pion_flt *, ///< pointer to Primitive variables.
-	     pion_flt *,       ///< pointer to conserved variables.
-	     const double    ///< Gas constant gamma.
-	     );
+  /// \brief Converts from primitive to conserved variables. 
+  /// 
+  /// Psi conserved variable is same as primitive, so just call 
+  /// the mhd_ideal function and copy Psi into the conserved variable.
+  ///
+  void PtoU(
+      const pion_flt *, ///< pointer to Primitive variables.
+      pion_flt *,       ///< pointer to conserved variables.
+      const double    ///< Gas constant gamma.
+      );
    
-   /// \brief convert from conserved to primitive variables.
-   /// 
-   /// Psi conserved variable is same as primitive, so just call 
-   /// the eqns_mhd_ideal function and copy Psi into the primitive variable.
-   /// 
-   int UtoP(const pion_flt *, ///< pointer to conserved variables.
-	    pion_flt *, ///< pointer to Primitive variables.
-	    const double    ///< Gas constant gamma.
-	    );
+  /// \brief convert from conserved to primitive variables.
+  /// 
+  /// Psi conserved variable is same as primitive, so just call 
+  /// the eqns_mhd_ideal function and copy Psi into the primitive variable.
+  /// 
+  int UtoP(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
+      const double    ///< Gas constant gamma.
+      );
    
-   /// \brief Calculates the source term contribution to updating Psi
-   /// 
-   /// The source function is calculated separately via operator-splitting.
-   /// Uses Dedner et al., eq.45:
-   /// \f[ \psi^{n+1} = \exp(-\delta t_n c_h^2/c_p^2)\, \psi^{n*} \f]
-   /// solved from the differential equation 
-   /// \f$ \partial\psi/\partial t = -(c_h^2/c_p^2)\psi \f$..  I am 
-   /// using Dedner's variable \f$ c_r = c_p^2/c_h \f$ in place of \f$c_p\f$.
-   /// 
-   void GLMsource(pion_flt *, ///< Primitive Psi variable.
-		  const double ///< timestep
-		  );
+  /// \brief Calculates the source term contribution to updating Psi
+  /// 
+  /// The source function is calculated separately via operator-splitting.
+  /// Uses Dedner et al., eq.45:
+  /// \f[ \psi^{n+1} = \exp(-\delta t_n c_h^2/c_p^2)\, \psi^{n*} \f]
+  /// solved from the differential equation 
+  /// \f$ \partial\psi/\partial t = -(c_h^2/c_p^2)\psi \f$..  I am 
+  /// using Dedner's variable \f$ c_r = c_p^2/c_h \f$ in place of \f$c_p\f$.
+  /// 
+  void GLMsource(
+      pion_flt *, ///< Primitive Psi variable.
+      const double ///< timestep
+      );
 
   protected:
-   enum primitive eqSI;
-   enum conserved eqPSI;
-   double GLM_chyp; ///< Hyperbolic Wave speed of Psi, the GLM variable.
-   double GLM_cr;   ///< Parameter (below eq.46 in Dedner) 
-              ///< \f$ c_r = c_{\mbox{par}}^2/c_{\mbox{hyp}} \f$.
+  enum primitive eqSI;
+  enum conserved eqPSI;
+  double GLM_chyp; ///< Hyperbolic Wave speed of Psi, the GLM variable.
+  double GLM_cr;   ///< Parameter (below eq.46 in Dedner) 
+             ///< \f$ c_r = c_{\mbox{par}}^2/c_{\mbox{hyp}} \f$.
 };
 
 #endif // EQNS_MHD_ADIABATIC_H

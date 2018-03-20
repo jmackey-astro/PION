@@ -1,14 +1,14 @@
 ///
-/// \file microphysics_lowZ.cc
+/// \file MPv9.cc
 /// \author 
 /// \date 2010.10.12
 ///
 /// Microphysics class for low metallicity gas at high redshift.
+/// Developed by Harpreet Dhanoa as part of her PhD thesis.
 ///
 /// Modifications:
 ///
 /// - 2010.10.12 JM: Created template class.
-///
 /// - 2011.01.14 JM: moved to microphysics/ sub-dir.
 /// - 2011.03.21 JM: updated to work with Harpreet's code, and diffuse RT.
 /// - 2011.11.09 JM: Added Set_Temp() function for correcting negative pressure
@@ -24,6 +24,7 @@
 ///    not fixed to Ntracer.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2016.06.21 JM: Temperature() NOT threadsafe.
+/// - 2018.03.20 JM: Renamed file.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -36,7 +37,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/microphysics_lowZ.h"
+#include "microphysics/MPv9.h"
 using namespace std;
 
 
@@ -46,17 +47,19 @@ using namespace std;
 
 
 
-microphysics_lowz::microphysics_lowz(const int nv,
-				     const int ntracer,
-				     const std::string &trtype,
-				     struct which_physics *ephys
-				     )
+MPv9::MPv9(
+      const int nv,
+      const int ntracer,
+      const int ftr,  ///< first tracer.
+      const std::string &tracers,
+      struct which_physics *ephys
+      )
   :
   kB(GS.kB()),
   m_p(GS.m_p()),
   nv_prim(nv)
 {
-  cout <<"Welcome to microphysics_lowz: the next generation chemistry solver!\n";
+  cout <<"Welcome to MPv9: the low metallicity chemistry solver!\n";
   //
   // Note this is only called once at the start of the simulation so there is 
   // no need to be efficient.
@@ -73,7 +76,10 @@ microphysics_lowz::microphysics_lowz(const int nv,
   ep.phot_ionisation   = ephys->phot_ionisation;
   ep.raytracing        = ephys->raytracing;
   ep.update_erg        = ephys->update_erg;
-  if (!ep.chemistry) {ep.coll_ionisation = ep.rad_recombination = ep.phot_ionisation = 0;}
+  if (!ep.chemistry) {
+    ep.coll_ionisation = ep.rad_recombination =
+                         ep.phot_ionisation = 0;
+  }
   //  cout <<"\t\tExtra Physics flags set.\n";
 
   //
@@ -84,8 +90,6 @@ microphysics_lowz::microphysics_lowz(const int nv,
   cout <<"\t\tSetting up Tracer Variables.";
   get_problem_size(&Yvector_length, &Nspecies);
   Nspecies = Yvector_length-1;
-  //microphysics_lowz::Nspecies = SimPM.ntracer;
-  //microphysics_lowz::Yvector_length = Nspecies+1;
 
   //
   // Local state vector.  We have density, internal energy,
@@ -93,10 +97,10 @@ microphysics_lowz::microphysics_lowz(const int nv,
   //
   Yi.resize(Yvector_length);
   Yf.resize(Yvector_length);
-  microphysics_lowz::density = -1.0;  // mass density.
-  microphysics_lowz::Eint = -1.0;     // internal energy per unit volume.
-  microphysics_lowz::Column_density = -1.0;    // mass column density, int(rho*dx)
-  microphysics_lowz::col_data_set=false;
+  MPv9::density = -1.0;  // mass density.
+  MPv9::Eint = -1.0;     // internal energy per unit volume.
+  MPv9::Column_density = -1.0;    // mass column density, int(rho*dx)
+  MPv9::col_data_set=false;
   cout <<" Nspecies = "<<Nspecies<<", Vec-len="<<Yvector_length<<"\n";
 
 //#define TEST_KVECTOR
@@ -130,7 +134,7 @@ microphysics_lowz::microphysics_lowz(const int nv,
   //
   // All done
   //
-  cout <<"microphysics_lowz: set up finished. Returning.\n"; 
+  cout <<"MPv9: set up finished. Returning.\n"; 
   return;
 }
 
@@ -141,7 +145,7 @@ microphysics_lowz::microphysics_lowz(const int nv,
 
 
 
-microphysics_lowz::~microphysics_lowz()
+MPv9::~MPv9()
 {
   Yi.clear();
   Yf.clear();
@@ -155,12 +159,13 @@ microphysics_lowz::~microphysics_lowz()
 
 
 
-double microphysics_lowz::Temperature(const pion_flt *pv, ///< primitive vector
-				const double g   ///< eos gamma
-				)
+double MPv9::Temperature(
+      const pion_flt *pv, ///< primitive vector
+      const double g   ///< eos gamma
+      )
 {
 #ifdef THREADS
-  rep.error("microphysics_lowz::Temperature() not thread-safe!",1);
+  rep.error("MPv9::Temperature() not thread-safe!",1);
 #endif
   //
   // put data from p_in into local vectors.
@@ -187,11 +192,11 @@ double microphysics_lowz::Temperature(const pion_flt *pv, ///< primitive vector
 ///
 /// Set the gas temperature to a specified value.
 ///
-int microphysics_lowz::Set_Temp(
-                double *p_in,     ///< primitive vector.
-	        const double T_required, ///< temperature
-	        const double g            ///< eos gamma.
-	        )
+int MPv9::Set_Temp(
+      double *p_in,     ///< primitive vector.
+      const double T_required, ///< temperature
+      const double g            ///< eos gamma.
+      )
 {
   //
   // First calculate current temperature:
@@ -231,10 +236,10 @@ int microphysics_lowz::Set_Temp(
 
 
 
-int microphysics_lowz::convert_prim2local(
-          const double *p_in,
-          const double gam
-          )
+int MPv9::convert_prim2local(
+      const double *p_in,
+      const double gam
+      )
 {
   density = p_in[RO];
   Eint    = p_in[PG]/(gam-1.0);
@@ -273,11 +278,11 @@ int microphysics_lowz::convert_prim2local(
 
 
 
-int microphysics_lowz::convert_local2prim(
-          const double *p_in,
-          double *p_out,
-          const double gam
-          )
+int MPv9::convert_local2prim(
+      const double *p_in,
+      double *p_out,
+      const double gam
+      )
 {
   //
   // This is so we don't forget the velocity, B-field, etc.
@@ -314,17 +319,17 @@ int microphysics_lowz::convert_local2prim(
 
 
 
-int microphysics_lowz::TimeUpdateMP(
-          const double *p_in,
-          double *p_out,
-          const double dt,
-          const double g,
-          const int sw_int,
-          double *ttt
-          )
+int MPv9::TimeUpdateMP(
+      const double *p_in,
+      double *p_out,
+      const double dt,
+      const double g,
+      const int sw_int,
+      double *ttt
+      )
 {
   int err = 0;
-  microphysics_lowz::gamma = g;
+  MPv9::gamma = g;
 
   //
   // put data from p_in into local vectors.
@@ -372,22 +377,6 @@ int microphysics_lowz::TimeUpdateMP(
   //
   *ttt = Eint;
 
-#ifdef MP_DEBUG
-  //
-  // TESTING !!!
-  //
-  Column_density = 0.0;
-  conversion_JMcode( density, col, P );
-  calculate_X(Yf,X);
-  calculate_T(Yf,X,P[0],*ttt);
-  if (*ttt<SimPM.EP.MinTemperature) {
-    cout <<"Output temperature to MP is too low!  T_in="<<*ttt<<"\n";
-  }
-  //
-  // TESTING !!!
-  //
-#endif // MP_DEBUG
-
   //
   // put updated state vector into p_out.
   //
@@ -403,7 +392,7 @@ int microphysics_lowz::TimeUpdateMP(
 
 
 
-int microphysics_lowz::TimeUpdateMP_RTnew(
+int MPv9::TimeUpdateMP_RTnew(
           const double *p_in,
           const int N_heating_srcs,      ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &heating_srcs,
@@ -421,7 +410,7 @@ int microphysics_lowz::TimeUpdateMP_RTnew(
           )
 {
   int err = 0;
-  microphysics_lowz::gamma = g;
+  MPv9::gamma = g;
 
   //
   // put data from p_in into local vectors.
@@ -483,7 +472,7 @@ int microphysics_lowz::TimeUpdateMP_RTnew(
 
 
 
-void microphysics_lowz::get_column_densities(
+void MPv9::get_column_densities(
           const int N_heating_srcs,      ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &heating_srcs,
           ///< list of UV-heating column densities and source properties.
@@ -589,7 +578,7 @@ void microphysics_lowz::get_column_densities(
     cols[4] = Column_density;
   }
   
-  //cout <<"microphysics_lowZ: cols = [";
+  //cout <<"MPv9: cols = [";
   //for (int v=0;v<5;v++) cout <<cols[v]<<", ";
   //cout <<"\n";
 
@@ -604,7 +593,7 @@ void microphysics_lowz::get_column_densities(
 
 
 
-int microphysics_lowz::TimeUpdate_RTsinglesrc(
+int MPv9::TimeUpdate_RTsinglesrc(
           const double *p_in,   ///< Primitive Vector to be updated.
           double *p_out,        ///< Destination Vector for updated values.
           const double dt,      ///< Time Step to advance by.
@@ -638,7 +627,7 @@ int microphysics_lowz::TimeUpdate_RTsinglesrc(
 /// This returns the minimum timescale of the times flagged in the
 /// arguments.  Time is returned in seconds.
 ///
-double microphysics_lowz::timescales(
+double MPv9::timescales(
         const double *p_in,  ///< Current cell primitive vector.
         const double gam,    ///< EOS gamma.
         const bool f_cool,   ///< set to true if including cooling time.
@@ -675,7 +664,7 @@ double microphysics_lowz::timescales(
 /// It requires the radiation field as an input, so it has substantially greater
 /// capability than the other timescales function.
 ///
-double microphysics_lowz::timescales_RT(
+double MPv9::timescales_RT(
           const double *p_in,  ///< Current cell primitive vector.
           const int N_heating_srcs,      ///< Number of UV heating sources.
           const std::vector<struct rt_source_data> &heating_srcs,
@@ -687,7 +676,7 @@ double microphysics_lowz::timescales_RT(
           )
 {
   int err = 0;
-  microphysics_lowz::gamma = gam;
+  MPv9::gamma = gam;
 
   //
   // put data from p_in into local vectors.
@@ -745,19 +734,14 @@ double microphysics_lowz::timescales_RT(
 
 
 
-int microphysics_lowz::Init_ionfractions(double *p, ///< Primitive vector to be updated.
-			const double g, ///< eos gamma.
-			const double    ///< optional gas temperature to end up at. (-ve means use pressure)
-			)
+int MPv9::Init_ionfractions(
+      double *p, ///< Primitive vector to be updated.
+      const double g, ///< eos gamma.
+      const double    ///< optional gas temperature to end up at. (-ve means use pressure)
+      )
 {
   //
   // We should have Nspecies tracers, so put them in a vector.
-  //
-  //std::vector<double> Yi;
-  //for (int v=0;v<SimPM.ntracer; v++) {
-  //  Yi.push_back(-1.0);
-  //}
-  // Yi should be the right size already.
   //
   Y_init(Yi);
   cout <<"Yi = [";

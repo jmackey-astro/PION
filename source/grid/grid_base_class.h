@@ -12,6 +12,7 @@
 /// - 2015.01.08 JM: Moved old grid (v1) definition from global.h to
 ///    this file.
 /// - 2015.07.06 JM: got rid of GEOMETRIC_GRID ifdef
+/// - 2017.12.09 JM: updated function args for boundary data.
 
 
 #ifndef GRID_BASE_CLASS_H
@@ -161,8 +162,7 @@ class GridBaseClass {
   /// Assign values to boundary data based on boundary conditions.
   ///
   virtual int SetupBCs(
-    const int,     ///< Depth of Boundary cells, 1,2,etc.
-    std::string ///< boundary condition string.
+    class SimParams &  ///< List of simulation params (including BCs)
     )=0;
 
   ///
@@ -170,6 +170,7 @@ class GridBaseClass {
   /// update on them.
   ///
   virtual int TimeUpdateExternalBCs(
+    const double,   ///< current simulation time
     const int, ///< Current step number in the timestep.
     const int  ///< Maximum step number in timestep.
     )=0;
@@ -179,6 +180,7 @@ class GridBaseClass {
   /// appropriate time update on them.
   ///
   virtual int TimeUpdateInternalBCs(
+    const double,   ///< current simulation time
     const int, ///< Current step number in the timestep.
     const int  ///< Maximum step number in timestep.
     )=0;
@@ -188,23 +190,26 @@ class GridBaseClass {
   /// to for a given radiation source.
   ///
   virtual int Setup_RT_Boundaries(
-    const int   ///< id of radiation source.
-    )=0;
+      const int,   ///< id of radiation source.
+      struct rad_src_info &
+      )=0;
 
   ///
   /// Receive all optical depths for boundaries closer to radiation
   /// source.
   ///
   virtual int Receive_RT_Boundaries(
-    const int ///< radiation source id
-    )=0;
+      const int,   ///< id of radiation source.
+      struct rad_src_info &
+      )=0;
 
   ///
   /// Send all optical depths for boundaries to domains further from
   /// radiation source.
   virtual int Send_RT_Boundaries(
-    const int ///< radiation source id
-    )=0;
+      const int,   ///< id of radiation source.
+      struct rad_src_info &
+      )=0;
   // ----------- SETUP AND UPDATE BOUNDARY DATA ---------------------
 
   ///

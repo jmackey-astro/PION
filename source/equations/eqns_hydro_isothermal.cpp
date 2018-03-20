@@ -11,6 +11,7 @@
 /// - 2010.12.27 JM: Put all isothermal dynamics in an ifdef b/c I
 ///   updated the code structure which has broken everything and I
 ///   don't have time to fix isothermal stuff now...
+/// - 2018.01.24 JM: worked on making SimPM non-global
 ///
 
 #ifdef ISOTHERMAL_SOLVERS_ENABLED
@@ -45,10 +46,12 @@ void eqns_IsoEuler::PtoU(const double *p, ///< pointer to Primitive variables.
   return;
 }
 
-int eqns_IsoEuler::UtoP(const double *u, ///< pointer to conserved variables.
-			double *p,       ///< pointer to Primitive variables.
-			const double   ///< unused (for gamma)
-			)
+int eqns_IsoEuler::UtoP(
+      const double *u, ///< pointer to conserved variables.
+      double *p,       ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
+      const double   ///< unused (for gamma)
+      )
 {
   p[eqRO] = u[eqRHO];
   p[eqVX] = u[eqMMX]/u[eqRHO];
@@ -57,7 +60,7 @@ int eqns_IsoEuler::UtoP(const double *u, ///< pointer to conserved variables.
   p[eqAA] = u[eqAAA]/u[eqRHO];
   if (p[eqRO]<TINYVALUE) {
     cout <<"eqns_IsoEuler::UtoP() samll or negative density!!! rho="<<p[eqRO];
-    p[eqRO] = BASEPG*SimPM.RefVec[RO];
+    p[eqRO] = BASE_RHO:;
     cout <<"\t setting to base value. rho="<<p[eqRO]<<"\n";
     return 1;
   }

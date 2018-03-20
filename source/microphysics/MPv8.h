@@ -1,5 +1,5 @@
 ///
-/// \file mpv8_SBheatcool.h
+/// \file MPv8.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -21,38 +21,33 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#ifdef LEGACY_CODE
 
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 
-class mpv8_SBheatcool
+class MPv8
   :
-  public mp_explicit_H
+  public MPv3
 {
   public:
   ///
   /// Constructor
   ///
-  mpv8_SBheatcool(
-    const int,          ///< Total number of variables in state vector
-    const int,          ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-    const std::string &, ///< List of what the tracer variables mean.
-
-# else
-
-    const std::string *, ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
-    struct which_physics * ///< extra physics stuff.
-    );
+  MPv8(
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
+      const int,  ///< Total number of variables in state vector
+      const int,  ///< Number of tracer variables in state vector.
+      const std::string *, ///< List of what the tracer variables mean.
+      struct which_physics *, ///< extra physics stuff.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
+      );
 
   ///
   /// Destructor
   ///
-  ~mpv8_SBheatcool();
+  ~MPv8();
 
 
   //---------------------------------------------------------------------------
@@ -79,6 +74,12 @@ class mpv8_SBheatcool
           const double *, ///< input state vector (primitive).
           const double    ///< EOS gamma (optional)
           );
+
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return EP->H_MassFrac;}
 
   protected:
 
@@ -129,6 +130,8 @@ class mpv8_SBheatcool
   //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
   //---------------------------------------------------------------------------
 };
+
+#endif // LEGACY_CODE
 
 #endif // MPV8_SBHEATCOOL_H
 

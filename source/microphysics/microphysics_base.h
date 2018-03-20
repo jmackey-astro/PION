@@ -3,9 +3,10 @@
 /// \author Jonathan Mackey
 /// \date 2011.01.14
 ///
-/// Microphysics base class, moved here from global.h.  This file is 
-/// currently sourced by global.h.  I need to sort that out
-/// eventually.
+/// \description
+/// Microphysics base class, from which all microphysics classes are
+/// derived.  This defines the interface between the microphysics
+/// class and the rest of the simulation code.
 ///
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 /// - 2011.03.16 JM: Added TimeUpdateMP_RTnew() function to integrate the rate equations
@@ -35,36 +36,29 @@
 #include <vector>
 #include <string>
 #include "grid/cell_interface.h"
+#include "raytracing/rad_src_data.h"
 //#define MP_DEBUG
 
 
 
 
-#define MAX_TAU 4
-///
-/// Radiation Source data struct, used for passing info to microphysics classes.
-///
-struct rt_source_data {
-  int id;   ///< source id.
-  int type; ///< diffuse-radiation or a real source.
-  double strength; ///< Luminosity (or flux if source at infinity).
-  double Vshell;   ///< Shell volume for discrete photo-ionisation/-heating rates.
-  double dS;       ///< Path length through cell.
-  short unsigned int NTau; ///< Number of LOS quantities traced for the source.
-  double Column[MAX_TAU];  ///< integral of quantities along LOS to near edge of cell.
-  double DelCol[MAX_TAU];  ///< integral of quantities along LOS through cell.
-};
 
 
 
 
 
 
-
-/// pure virtual base/interface class for in-cell microphysics update.
-class MicroPhysicsBase {
+/// virtual base/interface class for in-cell microphysics update.
+class microphysics_base {
   public :
-  virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
+  ///
+  /// Constructor sets up parameters used by derived classes.
+  ///
+  microphysics_base(
+      struct which_physics *, ///< which physics to calculate.
+      struct rad_sources *    ///< radiation sources.
+      );
+  virtual ~microphysics_base() {} ///< non-virtual destructor.
 
   /// Non-RT microphysics update, so cooling and heating and chemistry.
   /// 
@@ -281,12 +275,24 @@ class MicroPhysicsBase {
         ) {return -1.0e99;}
 
 
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return 0.7154;}
+
+protected:
+  /// Struct with flags for which extra physics we are (not) doing.
+  struct which_physics *EP;
+  /// Struct with list of radiation sources
+  struct rad_sources *RS;
+
 };
 
 ///
 /// Global pointed to the microphysics class.
 ///
-extern class MicroPhysicsBase *MP;
+extern class microphysics_base *MP;
 
 #endif // MICROPHYSICS_BASE_H
 

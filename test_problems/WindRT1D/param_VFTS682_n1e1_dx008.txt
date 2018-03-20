@@ -15,21 +15,16 @@ solver 3 # 3=Hybrid, 6=FVS
 # MHDShockCloud ShockTube...}
 ics Uniform
 
-# IC filename
-ICfilename IC_VFTS682_n1e2_dx008
 # Output FileName Base
-OutputFile    VFTS682_n1e2_dx008
+OutputFile    VFTS682_n1e1_dx008
 
 
 # Number and type of tracers.
 ntracer 2
-trtype MPv3__H1+___Trace_
+chem_code MPv3
+Tracer000 H1+
+Tracer001 Trace
 InitIons LEAVE
-Tracer0 0.99
-Tracer1 0.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
 
 # Which physics to use
 EP_dynamics     1
@@ -81,13 +76,16 @@ OPfreqTime 1.58e10   # in seconds
 
 # Start time
 StartTime 0.0e14  # 0 Myr.
-FinishTime 0.632e13 # 0.2 Myr
+FinishTime 0.316e13 # 0.1 Myr
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNinf_XPowo_INwnd_  #ZNowo_ZPowo_
+BC_XN           inflow
+BC_XP           one-way-outflow
+BC_Ninternal    1
+BC_INTERNAL_000 stellar-wind
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.666666666666666666666
@@ -111,9 +109,14 @@ magval 1
 #############################
 # Ambient Medium Parameters #
 #############################
-PERCradialslope 0.0 # radial slope away from source in background density.
-UNIFORM_ambRO 2.338e-22 # ~100.0 per c.c.
-UNIFORM_ambPG 2.429e-10 # ~8000K (for mu=2.338e-24g per hydrogen nucleon, ionised gas).
+UNIFORM_radial_slope    0.0
+UNIFORM_radial_velocity 0.0
+UNIFORM_core_radius     0.0
+UNIFORM_core_centre_XX  -1.0e200
+UNIFORM_core_centre_YY  -1.0e200
+UNIFORM_core_centre_ZZ  -1.0e200
+UNIFORM_ambRO 2.338e-23 # ~10.0 per c.c.
+UNIFORM_ambPG 2.429e-11 # ~8000K (for mu=2.338e-24g per hydrogen nucleon, ionised gas).
 UNIFORM_ambVX 0.0
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
@@ -134,13 +137,13 @@ UNIFORM_ambTR6 0.0
 ########################
 RT_Nsources 2
 
-# This source has 2.24e50 ionising photons/sec.
+# This source has 1.22e50 ionising photons/sec.
 RT_position_0_0  0.0e18
 RT_position_0_1  0.0e18
 RT_position_0_2  0.0e18
-RT_strength_0    1.23e40  # erg/s for multifrequency source.
-RT_Rstar____0    22.0145  # Radius of star in solar radii.
-RT_Tstar____0    5.21e04  # Stellar effective temperature.
+RT_strength_0    1.22e40  # erg/s for multifrequency source.
+RT_Rstar____0    21.8   # Radius of star in solar radii.
+RT_Tstar____0    5.22e4 # Stellar effective temperature.
 RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    0  # 0=no, 1=yes.
 RT_update___0    2  # 1=C2Ray update, 2=New update.
@@ -153,7 +156,7 @@ RT_EVO_FILE_0    NOFILE
 RT_position_1_0  0.0e18
 RT_position_1_1  0.0e18
 RT_position_1_2  0.0e18
-RT_strength_1    2.63e50 # Blackbody, photons in 6-13.6eV.
+RT_strength_1    4.0e50 # 2X the ionision photon luminosity
 RT_Rstar____1    0.0  # Radius of star in solar radii.
 RT_Tstar____1    0.0  # Stellar effective temperature.
 RT_src_type_1    1  # 1=single src, 2=diffuse-radiation.
@@ -178,16 +181,17 @@ WIND_0_type   0
 WIND_0_mdot   4.0e-5
 WIND_0_vinf   2600.0
 WIND_0_temp   52200.0
-WIND_0_Rstr   6.96e14  # 10000 R_sun
+WIND_0_Rstr   6.96e15  # 1e5 R_sun
 WIND_0_TR0 1.0
 WIND_0_TR1 1.0
 WIND_0_TR2 0.0
 WIND_0_TR3 0.0
 WIND_0_TR4 0.0
 WIND_0_evofile NOFILE
-WIND_0_t_offset   0.0000    # in (unscaled) years
-WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
-WIND_0_updatefreq 1.0   # in (unscaled) years
+WIND_0_t_offset   0.0000
+WIND_0_t_scalefac 1.0
+WIND_0_updatefreq 1.0
+WIND_0_enhance_mdot 0.0
 
 # Reference Vector
 refvec0 1.0e-24  # ~1 particles /cc

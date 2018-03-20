@@ -603,14 +603,6 @@ int Riemann_Roe_MHD_CV::Roe_get_eigenvalues(
   rep.printVec("e-values",Roe_evalues,7);
 #endif
 
-#ifdef TESTING
-  //
-  // Paranoid test!  Make sure eta=0 if not using H-correction.
-  //
-  if (SimPM.artviscosity!=3 && !pconst.equalD(Hcorr_etamax,0.0))
-    rep.error("H-correction is non-zero but we're not using it!",Hcorr_etamax);
-#endif // TESTING
-
   //
   // Modify the eigenvalues by the H-correction eta value.  Note that
   // HC_etamax is set to zero in the simulation initialisation, and it

@@ -34,20 +34,33 @@ using namespace std;
 
 
 // Constructor
-stellar_wind_angle::stellar_wind_angle()
-{
-	// Constants for wind functions
-	stellar_wind_angle::c_gamma = 0.35;
-	stellar_wind_angle::c_xi    = -2.0;
-    stellar_wind_angle::c_beta  = -1.0;
-	
-    // Number of points in theta, omega and Teff vectors
-    stellar_wind_angle::npts_theta = 25;
-    stellar_wind_angle::npts_omega = 25;
-    stellar_wind_angle::npts_Teff = 22;
+stellar_wind_angle::stellar_wind_angle(
+      const int nd, ///< ndim
+      const int nv, ///< nvar
+      const int nt, ///< ntracer
+      const int ft, ///< ftr
+      const int cs, ///< coord_sys
+      const int eq, ///< eqn_type
+      const double mt, ///< Minimum temperature allowed on grid
+      const double ss, ///< Simulation start time.
+      const double sf  ///< Simulation finish time.
+      )
+: stellar_wind(nd,nv,nt,ft,cs,eq,mt),
+  stellar_wind_evolution(nd,nv,nt,ft,cs,eq,mt,ss,sf)
 
-    // Generate interpolating tables
-	setup_tables();
+{
+  // Constants for wind functions
+  stellar_wind_angle::c_gamma = 0.35;
+  stellar_wind_angle::c_xi    = -2.0;
+  stellar_wind_angle::c_beta  = -1.0;
+  
+  // Number of points in theta, omega and Teff vectors
+  stellar_wind_angle::npts_theta = 25;
+  stellar_wind_angle::npts_omega = 25;
+  stellar_wind_angle::npts_Teff = 22;
+
+  // Generate interpolating tables
+  setup_tables();
 }
 
 
@@ -491,65 +504,67 @@ double stellar_wind_angle::fn_density_interp(
 
 
 void stellar_wind_angle::set_wind_cell_reference_state(
-        class GridBaseClass *grid,
-        struct wind_cell *wc,
-        const struct wind_source *WS
-        )
+      class GridBaseClass *grid,
+      struct wind_cell *wc,
+      const struct wind_source *WS,
+      const double eos_gamma ///< EOS gamma
+      )
 {
   //
   // In this function we set the density, pressure, velocity, and tracer values
   // for the reference state of the cell.  Every timestep the cell-values will
   // be reset to this reference state.
   //
-  double pp[SimPM.ndim];
+  double pp[ndim];
   CI.get_dpos(wc->c,pp);
-  //rep.printVec("cell pos", pp, SimPM.ndim);
+  //rep.printVec("cell pos", pp, ndim);
   //cout <<"dist="<<wc->dist<<"\n";
 
-    //
-    // 3D geometry, so either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
-    //
-
-    wc->p[RO] = fn_density_interp(std::min(0.9999,pconst.sqrt2()*WS->v_rot/WS->v_esc), WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
+  //
+  // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
+  //
+  wc->p[RO] = fn_density_interp(
+          std::min(0.9999,pconst.sqrt2()*WS->v_rot/WS->v_esc),
+          WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
 #ifdef TESTING
-    if (!isfinite(wc->p[RO]) || pconst.equalD(wc->p[RO],0.0)) {
-      cout <<"bad density interpolation: "<<wc->p[RO]<<"\n";
-      cout <<pconst.sqrt2()*WS->v_rot/WS->v_esc <<"  ";
-      cout <<WS->v_esc <<"  ";
-      cout <<WS->Mdot <<"  ";
-      cout <<wc->dist <<"  ";
-      cout <<wc->theta <<"  ";
-      cout << WS->Tw <<"\n";
-      rep.error("Density",1);
-    }
+  if (!isfinite(wc->p[RO]) || pconst.equalD(wc->p[RO],0.0)) {
+    cout <<"bad density interpolation: "<<wc->p[RO]<<"\n";
+    cout <<pconst.sqrt2()*WS->v_rot/WS->v_esc <<"  ";
+    cout <<WS->v_esc <<"  ";
+    cout <<WS->Mdot <<"  ";
+    cout <<wc->dist <<"  ";
+    cout <<wc->theta <<"  ";
+    cout << WS->Tw <<"\n";
+    rep.error("Density",1);
+  }
 #endif
 
-    //
-    // Set pressure based on wind density/temperature at the stellar radius,
-    // assuming adiabatic expansion outside Rstar, and that we don't care what
-    // the temperature is inside Rstar (because this function will make it 
-    // hotter than Teff, which is not realistic):
-    //
-    // rho_star = Mdot/(4.pi.R_star^2.v_inf),
-    //   p_star = rho_star.k.T_star/(mu.m_p)
-    // So then p(r) = p_star (rho(r)/rho_star)^gamma
-    // ******************************************************************************
-    // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
-    // ******************************************************************************
-    //
-    wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-    wc->p[PG] *= pow_fast(fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-SimPM.gamma);
-    wc->p[PG] *= pow_fast(wc->p[RO], SimPM.gamma);
+  //
+  // Set pressure based on wind density/temperature at the stellar radius,
+  // assuming adiabatic expansion outside Rstar, and that we don't care what
+  // the temperature is inside Rstar (because this function will make it 
+  // hotter than Teff, which is not realistic):
+  //
+  // rho_star = Mdot/(4.pi.R_star^2.v_inf),
+  //   p_star = rho_star.k.T_star/(mu.m_p)
+  // So then p(r) = p_star (rho(r)/rho_star)^gamma
+  // ******************************************************************************
+  // *********** WARNING MU=1 HERE, PROBABLY SHOULD BE O.6 (IONISED) 1.3 (NEUTRAL).
+  // ******************************************************************************
+  //
+  wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
+  wc->p[PG] *= pow_fast(fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-eos_gamma);
+  wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
 
 
   //
-  // NOW VELOCITIES: These should be cell-average values, which are
+  // VELOCITIES: These should be cell-average values, which are
   // the values at the centre-of-volume, so we call the geometry-aware
   // grid functions.
   //
-
   // calculate terminal wind velocity
-  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, wc->theta, WS->Tw);
+  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc,
+                         WS->v_esc, wc->theta, WS->Tw);
 
   cell *c = wc->c;
 
@@ -557,24 +572,25 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   wc->p[VX] = Vinf*grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
 
   // Velocity y component (if 2D or 3D)
-  if (SimPM.ndim>1)
+  if (ndim>1)
     wc->p[VY] = Vinf*grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
   else
     wc->p[VY] = 0.0;
 
   // Velocity z component (if 3D)
-  if (SimPM.ndim>2)
+  if (ndim>2)
     wc->p[VZ] = Vinf*grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
   else
     wc->p[VZ] = 0.0;
 
-  if (SimPM.eqntype!=EQEUL && SimPM.eqntype!=EQEUL_EINT)
-    rep.error("Need to code B into winds model!",SimPM.eqntype);
+  if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
+    rep.error("Need to code B into winds model!",eqntype);
 
 
   // update tracers
-  for (int v=0;v<SimPM.ntracer;v++)
-    wc->p[SimPM.ftr+v] = WS->tracers[v];
+  for (int v=0;v<ntracer;v++)
+    wc->p[ftr+v] = WS->tracers[v];
+
   //
   // HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK!
   // Assume the first tracer variable is the H+ ion fraction, and set it so
@@ -584,29 +600,28 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 #ifdef HACK_WARNING
 #error "REMOVE HACK setting ion fraction of H+ in winds"
 #endif
-  if (SimPM.ntracer>0) {
+  if (ntracer>0) {
     if      (WS->Tw >1.25e4)
-      wc->p[SimPM.ftr] = 1.0;
+      wc->p[ftr] = 1.0;
     else if (WS->Tw <1.00e4)
-      wc->p[SimPM.ftr] = 1.0e-7;
+      wc->p[ftr] = 1.0e-7;
     else
-      wc->p[SimPM.ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
+      wc->p[ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
   }
 
-//#define TESTING
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
   // Set the minimum temperature to be 10K in the wind...
   //
   if (MP) {
-    if (MP->Temperature(wc->p,SimPM.gamma) <SimPM.EP.MinTemperature) {
-      MP->Set_Temp(wc->p,SimPM.EP.MinTemperature,SimPM.gamma);
+    if (MP->Temperature(wc->p,eos_gamma) <Tmin) {
+      MP->Set_Temp(wc->p,Tmin,eos_gamma);
     }
   }
   else {
-    // appropriate for a neutral medium.
+    // appropriate for a neutral medium, He+M mass fraction 0.285.
     wc->p[PG] = max(static_cast<double>(wc->p[PG]), 
-      SimPM.EP.MinTemperature*wc->p[RO]*pconst.kB()*(1.0-0.75*SimPM.EP.Helium_MassFrac)/pconst.m_p());
+      Tmin*wc->p[RO]*pconst.kB()*0.78625/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 #ifdef TESTING
@@ -655,9 +670,12 @@ int stellar_wind_angle::add_evolving_source(
   if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
   // Skip first two lines
   char line[512];
-  fgets(line,512,wf); // compiler complains here
+  char *rval=0;
+  rval = fgets(line,512,wf);
+  if (!rval) rep.error("stwind_angle: failed to get line 1",line);
   //printf("%s",line);
-  fgets(line,512,wf); // compiler complains here
+  rval = fgets(line,512,wf);
+  if (!rval) rep.error("stwind_angle: failed to get line 2",line);
   //printf("%s",line);
 
   // Temp. variables for column values
@@ -832,11 +850,11 @@ int stellar_wind_angle::add_rotating_source(
     break;
   }
 
-  for (int v=0;v<SimPM.ndim;v++)
+  for (int v=0;v<ndim;v++)
     ws->dpos[v] = pos[v];
-  rep.printVec("ws->dpos",ws->dpos,SimPM.ndim);
+  rep.printVec("ws->dpos",ws->dpos,ndim);
 
-  for (int v=SimPM.ndim;v<MAX_DIM;v++)
+  for (int v=ndim;v<MAX_DIM;v++)
     ws->dpos[v] = VERY_LARGE_VALUE;
 
   ws->radius = rad;
@@ -851,8 +869,8 @@ int stellar_wind_angle::add_rotating_source(
   ws->Rstar = Rstar;
 
   ws->tracers=0;
-  ws->tracers = mem.myalloc(ws->tracers,SimPM.ntracer);
-  for (int v=0;v<SimPM.ntracer; v++) {
+  ws->tracers = mem.myalloc(ws->tracers,ntracer);
+  for (int v=0;v<ntracer; v++) {
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
@@ -864,12 +882,12 @@ int stellar_wind_angle::add_rotating_source(
   //
   // Make sure the source position is compatible with the geometry:
   //
-  if (SimPM.coord_sys==COORD_SPH) {
+  if (coordsys==COORD_SPH) {
     if (!pconst.equalD(ws->dpos[Rsph],0.0))
       rep.error("Spherical symmetry but source not at origin!",
                 ws->dpos[Rsph]);
   }
-  if (SimPM.coord_sys==COORD_CYL && SimPM.ndim==2) {
+  if (coordsys==COORD_CYL && ndim==2) {
     //
     // Axisymmetry
     //
@@ -895,7 +913,9 @@ int stellar_wind_angle::add_rotating_source(
 void stellar_wind_angle::update_source(
         class GridBaseClass *grid,
         struct evolving_wind_data *wd,
-        const double t_now
+        const double t_now,
+        const double eos_gamma
+
         )
 {
   //
@@ -905,7 +925,7 @@ void stellar_wind_angle::update_source(
   if (!wd->is_active) {
     cout <<"stellar_wind_angle::update_source() activating source id=";
     cout << wd->ws->id <<" at Simulation time t="<<t_now<<"\n";
-    rep.printVec("Source position",wd->ws->dpos,SimPM.ndim);
+    rep.printVec("Source position",wd->ws->dpos,ndim);
     wd->is_active=true;
   }
 
@@ -913,7 +933,7 @@ void stellar_wind_angle::update_source(
     rep.error("Requested updating source, but it hasn't switched on yet!",wd->tstart-t_now);
   }
 
-  wd->t_next_update = t_now+SimPM.dt;
+  wd->t_next_update = t_now; // (We update every timestep now)
   wd->t_next_update = min(wd->t_next_update, wd->tfinish);
   
   //
@@ -941,7 +961,7 @@ void stellar_wind_angle::update_source(
   // updated values.
   //
   for (int i=0; i<wd->ws->ncell; i++) {
-    set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws);
+    set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws,eos_gamma);
   }
 
   //

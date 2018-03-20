@@ -57,6 +57,8 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#ifdef LEGACY_CODE
+
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "tools/interpolate.h"
@@ -65,10 +67,6 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-
-#include "defines/functionality_flags.h"
-#include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV1
 
 
 #include "microphysics/microphysics.h"
@@ -87,22 +85,14 @@ using namespace std;
 
 
 
-MP_Hydrogen::MP_Hydrogen(const int nv,
-			 const int ntracer,
-
-#ifdef OLD_TRACER
-
-			 const std::string &trtype,
-
-#else
-
-			 const std::string *trtype,
-
-#endif // OLD_TRACER
-
-			 struct which_physics *ephys
-			 )
-  :
+MP_Hydrogen::MP_Hydrogen(
+      const int nv,
+      const int ntracer,
+      const std::string *tracers,
+      struct which_physics *ephys, ///< pointer to extra physics flags.
+      struct rad_sources *rsrcs    ///< radiation sources.
+      )
+: microphysics_base(ephys,rsrcs),
   kB(pconst.kB()),
 #ifdef RT_TEST_PROBS
   m_p(2.338e-24), // this is for comparison to Krumholz,stone,gardiner(2007)
@@ -118,25 +108,19 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
 #endif // ISOTHERMAL_MP
 
   min_elecf = 1.e-12;  // minimum electron fraction (to seed reactions!).
-  // set flags for what processes we are and aren't doing.
-  ep.dynamics          = ephys->dynamics;
-  ep.cooling           = ephys->cooling;
-  ep.chemistry         = ephys->chemistry;
-  ep.coll_ionisation   = ephys->coll_ionisation;
-  ep.rad_recombination = ephys->rad_recombination;
-  ep.phot_ionisation   = ephys->phot_ionisation;
-  ep.raytracing        = ephys->raytracing;
-  ep.update_erg        = ephys->update_erg;
-  if (!ep.chemistry) {ep.coll_ionisation = ep.rad_recombination = ep.phot_ionisation = 0;}
+  if (!EP->chemistry) {
+    EP->coll_ionisation = EP->rad_recombination =
+    EP->phot_ionisation = 0;
+  }
   //  cout <<"\t\tExtra Physics flags set.\n";
 
-  if (!ep.cooling) {
+  if (!EP->cooling) {
     cout <<"\t\t cooling not needed.\n";
     cool=0;
   }
   else {
       cool=0;
-      cool = new CoolingFn(ep.cooling);
+      cool = new CoolingFn(EP->cooling);
       if (!cool) rep.error("CoolingFn init",cool);
   }
   //  cout <<"\t\tCooling Function set up.\n";
@@ -145,29 +129,13 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last "<<ntracer<<" variables in state vec.\n";
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s;
-
-#ifdef OLD_TRACER
-
-  int len = (trtype.length() +5)/6 -1; // first 6 chars are the type, then list of tracers, each 6 chars long.
-  cout <<"\t\ttrtype = "<<trtype<<"\n";
-  cout <<"\t\tlen="<<len<<", ntr="<<ntracer<<"\n";
-  if (len!=ntracer) {
-    cout <<"warning: string doesn't match ntracer.  make sure this looks ok: "<<trtype<<"\n";
-    //rep.error("string doesn't match ntracer",ntracer-len);
-  }
-
-# else
-
   int len = ntracer;
-
-#endif // OLD_TRACER
-
 
   MP_Hydrogen::lv_nh   = 0;
   MP_Hydrogen::lv_eint = 1;
   MP_Hydrogen::lv_Hp = 2;
   MP_Hydrogen::nvl = 3;
-  if (ep.phot_ionisation) {
+  if (EP->phot_ionisation) {
     //    lvar["dtau"] = 3;
     MP_Hydrogen::lv_dtau = 3;
     nvl += 1;
@@ -178,31 +146,15 @@ MP_Hydrogen::MP_Hydrogen(const int nv,
   // Find ionisation fraction in tracer variable list.
   MP_Hydrogen::pv_Hp=-1;
 
-#ifdef OLD_TRACER
-
   for (int i=0;i<len;i++) {
-    s = trtype.substr(6*(i+1),6); // Get 'i'th tracer variable.
-    if (s=="H1+___" || s=="HII__") {
-      lv_Hp = 2;
-      pv_Hp = ftr+i;
-    }
-  }
-  if (pv_Hp<0)
-   rep.error("No H ionisation fraction found in tracer list",trtype);
-  
-# else
-
-  for (int i=0;i<len;i++) {
-    s = trtype[i]; // Get 'i'th tracer variable.
+    s = tracers[i]; // Get 'i'th tracer variable.
     if (s=="H1+___" || s=="HII__" || s=="H1+" || s=="HII") {
       lv_Hp = 2;
       pv_Hp = ftr+i;
     }
   }
   if (pv_Hp<0)
-   rep.error("No H ionisation fraction found in tracer list",trtype[0]);
-
-#endif // OLD_TRACER
+   rep.error("No H ionisation fraction found in tracer list",tracers[0]);
 
  
   ion_pot = 13.59844*1.602e-12;
@@ -423,7 +375,7 @@ int MP_Hydrogen::convert_prim2local(
   p_local[lv_eint] = p_in[PG]/(gam-1.);
   if (p_in[PG]<=0.) {
 #ifdef TESTING
-    commandline.console("Bummer... negative pressure input to MP! >");
+    commandline.console("Mmmm... negative pressure input to MP! >");
 #endif // testing
     cout <<"neg.pres. input to MP: e="<<p_local[lv_eint]<<"\n";
     rep.error("Negative pressure input to RT solver!",p_in[PG]);  
@@ -437,7 +389,7 @@ int MP_Hydrogen::convert_prim2local(
   p_local[lv_Hp]   = p_in[pv_Hp];
   if (p_local[lv_Hp]<0.0 || (p_local[lv_Hp]-1.0>SMALLVALUE)) {
 #ifdef TESTING
-    //commandline.console("Bummer... bad ion frac. input to MP! >");
+    //commandline.console("Mmmm... bad ion frac. input to MP! >");
 #endif // testing
     //    rep.warning("bad ion frac. input to MP_Hydrogen()",0.5,p_local[lv_Hp]);
     //rep.error("bad ion frac. input to MP_Hydrogen()",p_local[lv_Hp]);
@@ -445,7 +397,7 @@ int MP_Hydrogen::convert_prim2local(
     else if (p_local[lv_Hp]>=1.0) p_local[lv_Hp]=1.0-SMALLVALUE;
     else cout <<"bad ion frac, but not bad enough!!! : "<<p_local[lv_Hp]<<"\n";
   }
-  if (ep.phot_ionisation) {
+  if (EP->phot_ionisation) {
     p_local[lv_dtau] = 0.0;
     tau_cell = 0.0;
   }
@@ -505,7 +457,7 @@ int MP_Hydrogen::convert_local2prim(
 
   if (p_out[PG]<0.) {
 #ifdef TESTING
-    commandline.console("Bummer... negative pressure! >");
+    commandline.console("Mmmm... negative pressure! >");
 #endif // testing
     cout <<"neg.pres. e="<<p_local[lv_eint]<<"\n";
     rep.error("Negative pressure output from RT solver!",p_out[PG]);
@@ -513,7 +465,7 @@ int MP_Hydrogen::convert_local2prim(
   p_out[pv_Hp] = max(min_elecf, p_local[lv_Hp]);
   p_out[pv_Hp] = min(static_cast<pion_flt>(1.0), p_out[pv_Hp]);
 
-  if (ep.phot_ionisation) {
+  if (EP->phot_ionisation) {
     tau_cell = p_local[lv_dtau]; // this should be int(exp(-tau),dt)
   }
 
@@ -634,7 +586,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
   cout <<", ds="<<ds<<", tau2cell="<<tau2cell<<"\n";
 #endif // RT_TESTING
 
-  if (!ep.phot_ionisation) rep.error("RT requested, but phot_ionisation not set!",ep.phot_ionisation);
+  if (!EP->phot_ionisation) rep.error("RT requested, but phot_ionisation not set!",EP->phot_ionisation);
   MP_Hydrogen::tau_cell=0.0;
   MP_Hydrogen::photons_in = phot_in; // units are photons/cm^3/s (/Hz if using frequency info).
 
@@ -669,7 +621,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
   // reached seriously cautious limits.
   //
   if (photons_in*path_length<1.0) {
-    photons_in=0.0; //ep.phot_ionisation=0;
+    photons_in=0.0; //EP->phot_ionisation=0;
   }
   //else cout <<"\tphot_in: "<<photons_in<<"  path: "<<path_length<<" \n";
 
@@ -757,7 +709,7 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
       //P2[lv_Hp] = 1.0;
       //cout <<"irate = "<<irate<<"\n";
 #ifdef TESTING
-      commandline.console("Bummer>");
+      commandline.console("Mmmm>");
 #endif
     }
     else if (!pconst.equalD(t_out,hh)) {
@@ -813,14 +765,14 @@ int MP_Hydrogen::TimeUpdate_RTsinglesrc(
       cout <<"H+ has i-frac="<<P[lv_Hp]<<"  ...setting to 1.\n";
       //      P[lv_Hp] = 1.0;
 #ifdef TESTING
-      commandline.console("Bummer>");
+      commandline.console("Mmmm>");
 #endif
       rep.error("FAILURE of method on every level! FIX ME!",P[lv_Hp]);
     }
     if (!pconst.equalD(t_out,hh)) {
       //cout <<"integration overshot, so cut short! req: "<<hh<<" did: "<<t_out<<"\n";
       //rep.printVec("p_new",P,nvl);
-      //commandline.console("interr Bummer>");
+      //commandline.console("interr Mmmm>");
       //rep.error("integration didn't go for specified time!",(t_out-hh)/(t_out+hh));
       hh = t_out;
     }
@@ -920,18 +872,6 @@ int MP_Hydrogen::implicit_step(
   //
   // Allocate memory for temp arrays.
   //
-// #ifdef USE_MM
-//   double *p_old=0, *p_now=0;
-// #ifdef TESTING
-//   p_old = mem.myalloc(p_old, nvl, "MP_H:Implicit_step: p_old");
-//   p_now = mem.myalloc(p_now, nvl, "MP_H:Implicit_step: p_now");
-// #else
-//   p_old = mem.myalloc(p_old, nvl);
-//   p_now = mem.myalloc(p_now, nvl);
-// #endif //TESTING
-// #else
-//   double p_old[nvl],p_now[nvl];
-// #endif
   double p_old[nvl],p_now[nvl];
   for (int i=0;i<nvl;i++) {
     p_old[i]=p_now[i]=1.e100;
@@ -1020,7 +960,7 @@ int MP_Hydrogen::implicit_step(
 	e_rr   = rad_recomb_energy(T); // erg (positive value)
 #endif // not HUMMER_RECOMB
 	
-	if (ep.phot_ionisation) {
+	if (EP->phot_ionisation) {
 	  tau = p_now[lv_nh]*(1.0-p_now[lv_Hp])*phot_xsection(T)*path_length;
 	  if (tau<0.01)
 	    A = photons_in*phot_xsection(T)*path_length;
@@ -1029,17 +969,17 @@ int MP_Hydrogen::implicit_step(
 	}
 	else rep.error("Why implicit if no phot_ionisation?",10);
 	
-	if (ep.coll_ionisation) {
+	if (EP->coll_ionisation) {
 	  B = coll_ion_rate(T)*p_now[lv_Hp]*p_now[lv_nh]; // This is A_ci*n_e
 	}
 	else B=0.0;
 	
-	if (ep.rad_recombination) {
+	if (EP->rad_recombination) {
 	  C = rad_recomb_rate(T)*p_now[lv_Hp]*p_now[lv_nh]; // This is alpha_rr*n_e
 	}
 	else C=0.0;
 	
-	if (ep.cooling) {
+	if (EP->cooling) {
 	  LL = cool->CoolingRate(T,p_now[lv_Hp],p_now[lv_nh],FUV_unattenuated_flux,FUV_extinction)/p_now[lv_Hp]/p_now[lv_nh]; // This is Lambda*n_e
 #ifdef NO_DOUBLECOUNTING
 	e_rr = 0.0; // Don't want to double count recombination cooling, if it
@@ -1078,7 +1018,7 @@ int MP_Hydrogen::implicit_step(
 	//cout <<(A*e_phot -B*e_ci +e_rr   +LL)<<")\n";
 #endif
       
-	if (ep.update_erg)
+	if (EP->update_erg)
 	  p_now[lv_eint] += e_int*p_now[lv_nh];
 
 	if (p_now[lv_eint]<0.) {
@@ -1333,7 +1273,7 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   }
 
 
-  if (ep.coll_ionisation) {
+  if (EP->coll_ionisation) {
     temp  = coll_ion_rate(T)*(1.0-P[lv_Hp])*P[lv_Hp]*P[lv_nh];
     R[lv_Hp]   += temp; // coll.ion. to H+ adds to R[i]
     R[lv_eint] -= temp*coll_ion_energy(T); // reduces energy by the amount it took to ionise ion (i-1)
@@ -1346,11 +1286,11 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   }
   //cout <<"  ci: rate="<<R[lv_Hp];
 
-  if (ep.rad_recombination) {
+  if (EP->rad_recombination) {
     temp  = rad_recomb_rate(T)*P[lv_Hp]*P[lv_Hp]*P[lv_nh]; // rate [1/s]
     R[lv_Hp] -= temp; // recomb from i to i-1 reduces fraction.
 #ifdef NO_DOUBLECOUNTING
-    if (!ep.cooling) // avoid double counting!
+    if (!EP->cooling) // avoid double counting!
 #endif // NO_DOUBLECOUNTING
 #ifdef HUMMER_RECOMB
       R[lv_eint] -= rad_recomb_energy(T) *P[lv_Hp]*P[lv_Hp]*P[lv_nh]; // rate [erg/s]
@@ -1376,7 +1316,7 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   //cout <<"  rr: rate="<<R[lv_Hp];
   //rep.printVec("\t\trr rate",R,nvl);
 
-  if (ep.phot_ionisation) {
+  if (EP->phot_ionisation) {
     R[lv_dtau] = P[lv_nh]*(1.0-P[lv_Hp])*phot_xsection(T)*path_length; // this is optical depth through cell.
     if (R[lv_dtau]>0.01)
       temp = photons_in*(1.0 -exp(-R[lv_dtau]))/P[lv_nh]/(1.0-P[lv_Hp]);
@@ -1410,7 +1350,7 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   //#ifdef TESTING
   //  if (dp.c->id==10446) cout <<"pre- cooling R[eint]="<<R[lv_eint]<<"\n";
   //#endif
-  if (ep.cooling) {
+  if (EP->cooling) {
     temp = cool->CoolingRate(T,P[lv_Hp],P[lv_nh],FUV_unattenuated_flux,FUV_extinction) /P[lv_nh];
 
 #ifdef TESTING
@@ -1442,7 +1382,7 @@ int MP_Hydrogen::dPdt(const int nv,    ///< number of variables we are expecting
   }
 #endif //COUNT_ENERGETICS
 
-  if (!ep.update_erg) {
+  if (!EP->update_erg) {
     //    cout <<"not updating energy.\n";
     R[lv_eint]=0.0;
   }
@@ -1646,13 +1586,13 @@ double MP_Hydrogen::timescales(const pion_flt *p_in,  ///< Current cell primitiv
   // significant cooling below this temperature, and even if there is
   // it won't be by a large fraction.
   //
-  if ((ep.cooling) && (f_cool) && (T>=10.0) ) {
+  if ((EP->cooling) && (f_cool) && (T>=10.0) ) {
     //
     // This gets the cooling rate per unit volume, first from the
     // cooling function, and then adding on the recombination cooling.
     //
     rate = cool->CoolingRate(T,P[lv_Hp],P[lv_nh], 0.0,0.0);
-    if (ep.rad_recombination)
+    if (EP->rad_recombination)
       rate += rad_recomb_energy(T) *P[lv_Hp]*P[lv_Hp]*P[lv_nh]*P[lv_nh];
     //
     // Cooling time is then the energy per unit volume divided by the rate.
@@ -1666,7 +1606,7 @@ double MP_Hydrogen::timescales(const pion_flt *p_in,  ///< Current cell primitiv
   // point is arbitrary, but setting it to 0.03 seems quite
   // reasonable, and sufficiently conservative.
   //
-  if ((ep.rad_recombination) && (f_recomb) && (P[lv_Hp]>=0.03) ) {
+  if ((EP->rad_recombination) && (f_recomb) && (P[lv_Hp]>=0.03) ) {
     //
     // Get the radiative recombination rate per ION.
     //
@@ -1694,7 +1634,7 @@ double MP_Hydrogen::timescales(const pion_flt *p_in,  ///< Current cell primitiv
   }
 #endif
 
-  if ((ep.phot_ionisation) && (f_photoion)) {
+  if ((EP->phot_ionisation) && (f_photoion)) {
     rep.error("Haven't coded for photo-ionisation time!!!",f_photoion);
   }
 
@@ -1708,5 +1648,5 @@ double MP_Hydrogen::timescales(const pion_flt *p_in,  ///< Current cell primitiv
 
 
 
-#endif // if not excluding MPv1
+#endif // LEGACY_CODE
 

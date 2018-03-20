@@ -10,6 +10,7 @@
 ///    Put units and JetParams classes into this file from global.h.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
+/// - 2017.11.07-22 JM: updating boundary setup.
 
 #ifndef SIM_PARAMS_H
 #define SIM_PARAMS_H
@@ -22,6 +23,7 @@
 
 #include "sim_constants.h"
 #include "constants.h"
+#include "raytracing/rad_src_data.h"
 
 // *******************************************************************
 ///
@@ -114,48 +116,6 @@ struct star {
 };
 
 
-///
-/// Radiation source struct.
-///
-struct rad_src_info {
-  double pos[MAX_DIM]; ///< src position (physical units).
-  double strength; ///< src strength (photons/sec, or ergs/sec for multifreq.)
-  double Rstar; ///< stellar radius in solar radii (for multifreq. photoionisation).
-  double Tstar; ///< stellar effective temperature (for multifreq. photoionisation).
-  int id;   ///< src identifier
-  int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
-  int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
-  int at_infinity; ///< set to true if source is at infinity.
-  ///
-  /// "effect" is what the source does, and this defines many of its
-  /// properties implicitly.  Options are:
-  /// - RT_EFFECT_UV_HEATING,
-  /// - RT_EFFECT_PION_MONO,
-  /// - RT_EFFECT_PION_MULTI,
-  /// - RT_EFFECT_PHOTODISS, (UNUSED)
-  /// - RT_EFFECT_PION_EQM, (UNUSED--for photoionisation equilibrium)
-  /// - RT_EFFECT_HHE_MFQ
-  ///
-  int effect;
-  ///
-  /// "NTau" sets the number of quantities traced from the source.
-  ///
-  int NTau;
-
-  int opacity_src; ///< What provides the opacity: RT_OPACITY_TOTAL, RT_OPACITY_MINUS, RT_OPACITY_TRACER.
-  int opacity_var; ///< optional tracer variable index in state vector, for opacity calculation.
-  std::string EvoFile;  ///< Optional text file with output from stellar evolution code for time-varying source.
-};
-
-///
-/// Basic list of all radiation sources.  Used in SimParams class.
-///
-struct rad_sources {
-  int Nsources;
-  std::vector<struct rad_src_info> sources;
-};
-// *******************************************************************
-
 
 
 // *******************************************************************
@@ -213,19 +173,12 @@ class SimParams {
    int eqnNDim;    ///< Dimensionality of equations, set to 3 for now.
    int ndim;       ///< Dimensionality of grid (can be one of [1,2,3]).
    int nvar;       ///< Length of State Vectors (number of variables).
-   int ntracer;    ///< Number of tracer variables.
-   int ftr;        ///< Position of first tracer variable in state vector.
 
-#ifdef OLD_TRACER
-
-   std::string trtype;  ///< String saying what type of tracer we are using.
-
-#else  // OLD_TRACER
-
+  // Tracer variables:
+  int ntracer;    ///< Number of tracer variables.
+  int ftr;        ///< Position of first tracer variable in state vector.
   std::string chem_code; ///< Code for what kind of chemistry we are running.
-  std::string *trtype;  ///< array of strings for the tracer type
-
-#endif // OLD_TRACER
+  std::string *tracers;  ///< array of strings for the tracer type
 
    // Timing
    double simtime;    ///< current time in simulation. 
@@ -234,18 +187,26 @@ class SimParams {
    bool maxtime;      ///< False if simulation is to continue, true if time to stop.
    int timestep;      ///< Integer count of the number of timesteps since the start. 
    double dt;         ///< timestep size for simulation (all cells have same step).
-   double last_dt;    ///< Remember the last timestep, and don't increase the next step by more than 30%.
-   double min_timestep; ///< Minimum value timestep can be.  If it falls below this then bug out!
+   double last_dt;    ///< Remember the last timestep.
+   double min_timestep; ///< Minimum value timestep can be; if dt<min_timestep, but out.
 
    // Grid Point data
-   int NG[MAX_DIM];       ///< Number of 'real' grid-points in each direction (Total for sim)
-   long int Ncell;            ///< Total number of 'real' grid points (within the range) (Total for sim).
+   int NG[MAX_DIM];   ///< Number of 'real' grid-points in each direction (Total for sim)
+   long int Ncell;    ///< Total number of 'real' grid points (within the range) (Total for sim).
    double Range[MAX_DIM]; ///< Size of domain in x,y,z-direction.
    double Xmin[MAX_DIM];  ///< Min value of x,y,z in domain.
    double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain.
    double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells.
    // Boundary cell data.
-   std::string typeofbc; ///< Type of boundary condition(s).
+   std::string BC_XN; ///< Type of boundary condition.
+   std::string BC_XP; ///< Type of boundary condition.
+   std::string BC_YN; ///< Type of boundary condition.
+   std::string BC_YP; ///< Type of boundary condition.
+   std::string BC_ZN; ///< Type of boundary condition.
+   std::string BC_ZP; ///< Type of boundary condition.
+   int BC_Nint;       ///< Number of internal boundary regions
+   std::string *BC_INT;   ///< List of internal boundary regions.
+
    int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
    // Integration accuracy
    int spOOA;  ///< Spatial Order of Accuracy in the code.
@@ -282,7 +243,7 @@ class SimParams {
 
 // *******************************************************************
 // *******************************************************************
-extern class SimParams SimPM;
+//extern class SimParams SimPM;
 // *******************************************************************
 // *******************************************************************
 

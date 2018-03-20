@@ -66,11 +66,11 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
   ICsetup_base::rp = rrp;
   if (!rp) rep.error("null pointer to ReadParams",rp);
 
-  IC_photevap_random_clumps::ndim = SimPM.ndim;
+  IC_photevap_random_clumps::ndim = SimPM->ndim;
   if (ndim!=1 && ndim!=2 && ndim!=3) rep.error("Photoevaporation problem must be 1-3D",ndim);
-  IC_photevap_random_clumps::coords = SimPM.coord_sys;
+  IC_photevap_random_clumps::coords = SimPM->coord_sys;
   if (coords!=COORD_CRT) rep.error("Bad coord sys",coords);
-  IC_photevap_random_clumps::eqns = SimPM.eqntype;
+  IC_photevap_random_clumps::eqns = SimPM->eqntype;
   if      (eqns==EQEUL) eqns=1;
   else if (eqns==EQMHD ||
 	   eqns==EQGLM ||
@@ -79,9 +79,9 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
 
   // initialise ambient vectors to zero.
   IC_photevap_random_clumps::ambient = 0;
-  ambient = new double [SimPM.nvar];
+  ambient = new double [SimPM->nvar];
   if (!ambient) rep.error("malloc ambient vecs",ambient);
-  for (int v=0;v<SimPM.nvar;v++) ambient[v] = 0.0;
+  for (int v=0;v<SimPM->nvar;v++) ambient[v] = 0.0;
 
   // set ambient state, and clump parameters.
   string seek, str;
@@ -97,10 +97,10 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
   if (str=="") rep.error("didn't find parameter",seek);
   IC_photevap_random_clumps::profile = atoi(str.c_str());
 
-  cltr = mem.myalloc(cltr,SimPM.ntracer);
+  cltr = mem.myalloc(cltr,SimPM->ntracer);
   ostringstream temp;
 
-  for (int v=0;v<SimPM.ntracer;v++) {
+  for (int v=0;v<SimPM->ntracer;v++) {
     temp.str(""); temp<<"PERCcloudTR"<<v;
     seek = temp.str();
     str = rp->find_parameter(seek);
@@ -190,20 +190,20 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
     if (str!="") IC_photevap_random_clumps::ambient[BZ] = atof(str.c_str());
     else         IC_photevap_random_clumps::ambient[BZ] = -1.0e99;
 
-    if (SimPM.eqntype==EQGLM) ambient[SI] = 0.;
+    if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars
 
   // tracer variables
-  for (int t=0; t<SimPM.ntracer; t++) {
+  for (int t=0; t<SimPM->ntracer; t++) {
     temp.str("");
     temp << "PERC_ambTR" << t;
     seek = temp.str();
     str = rp->find_parameter(seek);
-    if (str!="") IC_photevap_random_clumps::ambient[t+SimPM.ftr] = atof(str.c_str());
-    else         IC_photevap_random_clumps::ambient[t+SimPM.ftr] = -1.0e99;
+    if (str!="") IC_photevap_random_clumps::ambient[t+SimPM->ftr] = atof(str.c_str());
+    else         IC_photevap_random_clumps::ambient[t+SimPM->ftr] = -1.0e99;
   }
 
-  IC_photevap_random_clumps::gam = SimPM.gamma;
+  IC_photevap_random_clumps::gam = SimPM->gamma;
 
   // now make sure we are to do a photo-evaporation sim.
   seek="ics";
@@ -237,13 +237,13 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
   //
   // Set tracer values!
   //
-  //cout <<"ntracer = "<<SimPM.ntracer<<"\t amb[tr1]="<<ambient[SimPM.ftr+1]<<"\tcl[tr1]="<<cltr[1];
+  //cout <<"ntracer = "<<SimPM->ntracer<<"\t amb[tr1]="<<ambient[SimPM->ftr+1]<<"\tcl[tr1]="<<cltr[1];
   cell *c=gg->FirstPt();
   cout <<"\tamb-density="<<ambdens<<" clump_mass="<<clump_mass<<endl;
   do {
-    for (int v=SimPM.ftr; v<SimPM.nvar;v++) {
+    for (int v=SimPM->ftr; v<SimPM->nvar;v++) {
       //cout <<"trval before="<<c->P[v];
-      c->P[v] = (ambdens/c->P[RO])*ambient[v] +(1.0-ambdens/c->P[RO])*cltr[v-SimPM.ftr];
+      c->P[v] = (ambdens/c->P[RO])*ambient[v] +(1.0-ambdens/c->P[RO])*cltr[v-SimPM->ftr];
       //cout <<"\tafter="<<c->P[v]<<endl;
     }
   } while ( (c=gg->NextPt(c)) !=0);
@@ -255,7 +255,7 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
   if (ics!="") noise = atof(ics.c_str());
   else noise = -1;
   if (isnan(noise)) rep.error("noise parameter is not a number",noise);
-  if (noise>0.0) err+= AddNoise2Data(gg, 2,noise);
+  if (noise>0.0) err+= AddNoise2Data(gg, *SimPM, 2,noise);
 
   seek = "smooth";
   ics = rp->find_parameter(seek);
@@ -292,17 +292,17 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   srand(atoi(str.c_str()));
 
   // clump_mass is as a fraction of the ambient mass.
-  cout <<clump_mass*(ambient[RO]*gg->DV()*SimPM.Ncell)<<"\n\t\t(="<<clump_mass;
+  cout <<clump_mass*(ambient[RO]*gg->DV()*SimPM->Ncell)<<"\n\t\t(="<<clump_mass;
   cout <<" times ambient mass) and radial sizes of ";
   cout <<min_size<<" to "<<max_size<<" in units of y-range.\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
 
   cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
   double m1=0.0;
   do {
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
     cpt->P[RO] *= (1.0-clump_mass);
     m1 += cpt->P[RO];
   } while ( (cpt=gg->NextPt(cpt))!=0);
@@ -319,7 +319,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   //
   // Convert clump mass to an actual total mass in clumps.
   //
-  clump_mass *= ambient[RO]*gg->DV()*SimPM.Ncell;
+  clump_mass *= ambient[RO]*gg->DV()*SimPM->Ncell;
 
   cout <<"setting up clump properties...\n";
 #ifdef SERIAL
@@ -371,13 +371,13 @@ int IC_photevap_random_clumps::setup_perc()
 
   cout <<min_overdensity<<" to "<<max_overdensity<<" and radial sizes of";
   cout <<min_size<<" to "<<max_size<<" in units of y-range.\n";
-  rep.printVec("ambient ",ambient, SimPM.nvar);
+  rep.printVec("ambient ",ambient, SimPM->nvar);
 
   cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
   do {
     // Set values of primitive variables.
-    for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = ambient[v];
+    for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
   } while ( (cpt=gg->NextPt(cpt))!=NULL);
 
   cout <<"setting up clump properties...\n";
@@ -419,9 +419,9 @@ double IC_photevap_random_clumps::random_frac()
 int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
 {
   int err=0;
-  double xmax=SimPM.Range[XX];
-  double ymax=SimPM.Range[YY];
-  double zmax=SimPM.Range[ZZ];
+  double xmax=SimPM->Range[XX];
+  double ymax=SimPM->Range[YY];
+  double zmax=SimPM->Range[ZZ];
 
   //
   // Assign random values within some sensible limits. 
@@ -430,7 +430,7 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
   double empty_xn=0.0, empty_xp=0.0;
   double empty_yn=0.0, empty_yp=0.0;
   double empty_zn=0.0, empty_zp=0.0;
-  cout <<"x3 = "<<x3<<" and Xrange="<<SimPM.Range[XX]<<endl;
+  cout <<"x3 = "<<x3<<" and Xrange="<<SimPM->Range[XX]<<endl;
 
   string seek, str;
   seek = "PERCempty_xn";
@@ -517,22 +517,23 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
     //
     // This restricts clump centres to be at least 0.1*Range from the edge.
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
-      //cout <<"find = "<<SimPM.typeofbc.find("YNper")<<endl;
+    //if (SimPM->typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM->BC_YN == "periodic") {
+      //cout <<"find = "<<SimPM->typeofbc.find("YNper")<<endl;
       // for periodic BCs we don't care how near the y or z boundary a clump is, but
       // we do want it to be away from the incident radiation boundary.
       // max_size is a fraction of the y-range, so we have to modify it for x, to get
       // no clumps within a physical max_size of the XP boundary (so we don't lose 
       // lots of mass of the XP boundary).
-      cl[j].centre[XX] = SimPM.Xmin[XX]+ empty_xn +(xmax-empty_xp-empty_xn)*random_frac();
-      cl[j].centre[YY] = SimPM.Xmin[YY]+ ymax*random_frac();
-      cl[j].centre[ZZ] = SimPM.Xmin[ZZ]+ zmax*random_frac();
+      cl[j].centre[XX] = SimPM->Xmin[XX]+ empty_xn +(xmax-empty_xp-empty_xn)*random_frac();
+      cl[j].centre[YY] = SimPM->Xmin[YY]+ ymax*random_frac();
+      cl[j].centre[ZZ] = SimPM->Xmin[ZZ]+ zmax*random_frac();
     }
     else {
       //cout <<"not periodic bcs!\n";
-      cl[j].centre[XX] = SimPM.Xmin[XX]+ empty_xn +(xmax-empty_xp-empty_xn)*random_frac();
-      cl[j].centre[YY] = SimPM.Xmin[YY]+ empty_yn +(ymax-empty_yp-empty_yn)*random_frac();
-      cl[j].centre[ZZ] = SimPM.Xmin[ZZ]+ empty_zn +(zmax-empty_zp-empty_zn)*random_frac();
+      cl[j].centre[XX] = SimPM->Xmin[XX]+ empty_xn +(xmax-empty_xp-empty_xn)*random_frac();
+      cl[j].centre[YY] = SimPM->Xmin[YY]+ empty_yn +(ymax-empty_yp-empty_yn)*random_frac();
+      cl[j].centre[ZZ] = SimPM->Xmin[ZZ]+ empty_zn +(zmax-empty_zp-empty_zn)*random_frac();
     }
     // radius of clumps
     cl[j].size[XX] = min_size*ymax +(max_size-min_size)*ymax*random_frac();
@@ -544,14 +545,14 @@ int IC_photevap_random_clumps::clumps_random_setup_fixedmass()
     cl[j].ang[ZZ] = random_frac()*M_PI;
     //
     // zero the z-dir if 2d
-    if (SimPM.ndim==2) {
+    if (SimPM->ndim==2) {
       cl[j].ang[ZZ] = cl[j].ang[YY] = cl[j].size[ZZ] = cl[j].centre[ZZ] = 0.0;
     }
 
     // set overdensity
     //
     cl[j].overdensity = cl[j].mass/ambient[RO];
-    for (int v=0;v<SimPM.ndim;v++) cl[j].overdensity /= sqrt(M_PI)*cl[j].size[v];
+    for (int v=0;v<SimPM->ndim;v++) cl[j].overdensity /= sqrt(M_PI)*cl[j].size[v];
 
     //
     // print clump...
@@ -589,9 +590,9 @@ int IC_photevap_random_clumps::clumps_random_setup()
   srand(atoi(str.c_str()));
   //  srand(12);
   //
-  double xmax=SimPM.Range[XX];
-  double ymax=SimPM.Range[YY];
-  double zmax=SimPM.Range[ZZ];
+  double xmax=SimPM->Range[XX];
+  double ymax=SimPM->Range[YY];
+  double zmax=SimPM->Range[ZZ];
 
   // set up clumps
   cl = new struct clump [Nclumps];
@@ -605,8 +606,9 @@ int IC_photevap_random_clumps::clumps_random_setup()
     //
     // This restricts clump centres to be at least 0.1*Range from the edge.
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
-      //cout <<"find = "<<SimPM.typeofbc.find("YNper")<<endl;
+    //if (SimPM->typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM->BC_YN == "periodic") {
+      //cout <<"find = "<<SimPM->typeofbc.find("YNper")<<endl;
       // for periodic BCs we don't care how near the y or z boundary a clump is, but
       // we do want it to be away from the incident radiation boundary.
       // max_size is a fraction of the y-range, so we have to modify it for x, to get
@@ -632,7 +634,7 @@ int IC_photevap_random_clumps::clumps_random_setup()
     cl[j].ang[ZZ] = random_frac()*M_PI;
     //
     // zero the z-dir if 2d
-    if (SimPM.ndim==2) {
+    if (SimPM->ndim==2) {
       cl[j].ang[ZZ] = cl[j].ang[YY] = cl[j].size[ZZ] = cl[j].centre[ZZ] = 0.0;
     }
     //
@@ -822,9 +824,9 @@ int IC_photevap_random_clumps::clumps_random_setup_pllel()
 void IC_photevap_random_clumps::print_clump(struct clump *rc)
 {
   cout <<"--clump overdensity:"<<rc->overdensity<<"  mass:"<<rc->mass<<endl;
-  rep.printVec("Centre",rc->centre,SimPM.ndim);
-  rep.printVec("Radius",rc->size,SimPM.ndim);
-  rep.printVec("Angles",rc->ang,SimPM.ndim);
+  rep.printVec("Centre",rc->centre,SimPM->ndim);
+  rep.printVec("Radius",rc->size,SimPM->ndim);
+  rep.printVec("Angles",rc->ang,SimPM->ndim);
   cout <<"-------------------\n";
   return;
 }
@@ -846,17 +848,18 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c
     // get distance from centre to clump.
     // If we have periodic BCs, need to do a bit more work...
     //
-    if (SimPM.typeofbc.find("YNper") != std::string::npos) {
+    //if (SimPM->typeofbc.find("YNper") != std::string::npos) {
+    if (SimPM->BC_YN == "periodic") {
       x0[XX] = dpos[XX]-cl[j].centre[XX];
       double temp;
       for (int i=1;i<ndim;i++) {
 	temp = dpos[i]-cl[j].centre[i];
 	if (temp>0.0) {
-	  if (temp >  SimPM.Range[i]/2.) x0[i] = temp -SimPM.Range[i];
+	  if (temp >  SimPM->Range[i]/2.) x0[i] = temp -SimPM->Range[i];
 	  else                           x0[i] = temp;
 	}
 	else {
-	  if (temp < -SimPM.Range[i]/2.) x0[i] = temp +SimPM.Range[i];
+	  if (temp < -SimPM->Range[i]/2.) x0[i] = temp +SimPM->Range[i];
 	  else                           x0[i] = temp;
 	}
       }

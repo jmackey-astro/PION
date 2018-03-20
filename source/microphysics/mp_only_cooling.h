@@ -40,7 +40,7 @@
 ///
 class mp_only_cooling 
  :
-  virtual public MicroPhysicsBase,
+  virtual public microphysics_base,
   virtual public cooling_function_SD93CIE,
   virtual public Hummer94_Hrecomb
 {
@@ -50,7 +50,8 @@ class mp_only_cooling
   ///
   mp_only_cooling(
       const int, ///< length of prim. state vec.
-      struct which_physics * ///< pointer to struct of what to calc.
+      struct which_physics *, ///< pointer to extra physics flags.
+      struct rad_sources *    ///< radiation sources.
       );
 
   ///

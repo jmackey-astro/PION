@@ -282,12 +282,14 @@ int comm_mpi::broadcast_data(
 
 
 int comm_mpi::send_cell_data(
-        const int to_rank,    ///< rank to send to.
-	std::list<cell *> *l, ///< list of cells to get data from.
-	long int nc,          ///< number of cells in list (extra checking!)
-	string &id,           ///< identifier for send, for tracking delivery later.
-	const int comm_tag    ///< comm_tag, to say what kind of send this is.
-	)
+      const int to_rank,    ///< rank to send to.
+      std::list<cell *> *l, ///< list of cells to get data from.
+      long int nc,          ///< number of cells in list (extra checking!)
+      const int ndim, ///< ndim
+      const int nvar, ///< nvar
+      string &id,           ///< identifier for send, for tracking delivery later.
+      const int comm_tag    ///< comm_tag, to say what kind of send this is.
+      )
 {
 
   //
@@ -308,8 +310,8 @@ int comm_mpi::send_cell_data(
   // Determine size of send buffer needed
   //
   int unitsize = 
-    SimPM.ndim*sizeof(CI.get_ipos(*c,0))
-      + SimPM.nvar*sizeof((*c)->P[0])
+    ndim*sizeof(CI.get_ipos(*c,0))
+      + nvar*sizeof((*c)->P[0])
 	+ sizeof((*c)->id);
   long int totalsize = 0;
   totalsize = sizeof(long int) + nc*unitsize;
@@ -340,16 +342,16 @@ int comm_mpi::send_cell_data(
     err += MPI_Pack(reinterpret_cast<void *>(&((*c)->id)),       1,
       MPI_LONG,    reinterpret_cast<void *>(send_buff), totalsize,
       &position, MPI_COMM_WORLD);
-    err += MPI_Pack(reinterpret_cast<void *>(ipos),     SimPM.ndim,
+    err += MPI_Pack(reinterpret_cast<void *>(ipos),     ndim,
       MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize,
       &position, MPI_COMM_WORLD);
 
 #if defined PION_DATATYPE_DOUBLE
-    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), SimPM.nvar,
+    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), nvar,
       MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize,
       &position, MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
-    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), SimPM.nvar,
+    err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), nvar,
       MPI_FLOAT, reinterpret_cast<void *>(send_buff), totalsize,
       &position, MPI_COMM_WORLD);
 #else
@@ -578,12 +580,14 @@ int comm_mpi::look_for_data_to_receive(
 
 
 int comm_mpi::receive_cell_data(
-        const int from_rank,  ///< rank of process we are receiving from.
-        std::list<cell *> *l, ///< list of cells to get data for. 
-	const long int nc,    ///< number of cells in list (extra checking!)
-        const int comm_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-	const string &id      ///< identifier for receive, for book-keeping.
-	)
+      const int from_rank,  ///< rank of process we are receiving from.
+      std::list<cell *> *l, ///< list of cells to get data for. 
+      const long int nc,    ///< number of cells in list (extra checking!)
+      const int ndim, ///< ndim
+      const int nvar, ///< nvar
+      const int comm_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
+      const string &id      ///< identifier for receive, for book-keeping.
+      )
 {
   int err=0;
 
@@ -710,8 +714,8 @@ int comm_mpi::receive_cell_data(
 
   int *ipos = 0;
   pion_flt *p = 0;
-  ipos = mem.myalloc(ipos,SimPM.ndim);
-  p = mem.myalloc(p,SimPM.nvar);
+  ipos = mem.myalloc(ipos,ndim);
+  p = mem.myalloc(p,nvar);
 
   //
   // Data should come in in the order the boundary cells are listed in.
@@ -733,7 +737,7 @@ int comm_mpi::receive_cell_data(
     CI.get_ipos(*c,cpos);
 #ifdef TESTING
     //cout <<"position="<<position<<" : cell id = "<<(*c)->id<<" : ";
-    //rep.printVec("cpos",cpos,SimPM.ndim);
+    //rep.printVec("cpos",cpos,ndim);
     //cout.flush();
 #endif //TESTING
     err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_LONG, MPI_COMM_WORLD);
@@ -742,41 +746,41 @@ int comm_mpi::receive_cell_data(
     //cout <<"cell id = "<<c_id<<"\n";
     //cout.flush();
 #endif //TESTING
-    err += MPI_Unpack(buf, ct, &position, ipos,  SimPM.ndim, MPI_INT, MPI_COMM_WORLD);
+    err += MPI_Unpack(buf, ct, &position, ipos,  ndim, MPI_INT, MPI_COMM_WORLD);
 #ifdef TESTING
     //cout <<"position="<<position<<" : ";
-    //rep.printVec("recvd pos",ipos,SimPM.ndim);
+    //rep.printVec("recvd pos",ipos,ndim);
     //cout.flush();
 #endif //TESTING
 #if defined PION_DATATYPE_DOUBLE
-    err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_DOUBLE, MPI_COMM_WORLD);
+    err += MPI_Unpack(buf, ct, &position, p,     nvar, MPI_DOUBLE, MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
-    err += MPI_Unpack(buf, ct, &position, p,     SimPM.nvar, MPI_FLOAT, MPI_COMM_WORLD);
+    err += MPI_Unpack(buf, ct, &position, p,     nvar, MPI_FLOAT, MPI_COMM_WORLD);
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
 #ifdef TESTING
-    //rep.printVec("\tlocal",cpos,SimPM.ndim);
+    //rep.printVec("\tlocal",cpos,ndim);
     //cout <<"position="<<position<<" : ";
-    //rep.printVec("data var",p,SimPM.nvar);
+    //rep.printVec("data var",p,nvar);
     //cout.flush();
 #endif //TESTING
     if(err) rep.error("Unpack",err);
     // For a given boundary data iterator, put data into cells
     if (c==l->end()) rep.error("Got too many cells!",i);
-    for (int v=0; v<SimPM.nvar; v++) (*c)->Ph[v] = p[v];
+    for (int v=0; v<nvar; v++) (*c)->Ph[v] = p[v];
     //
     // This position checking doesn't work for periodic boundaries!
     //
-    //for (int v=0; v<SimPM.ndim; v++)       
+    //for (int v=0; v<ndim; v++)       
     //  if (ipos[v]!=cpos[v]) {
     //    cout <<"*** Position x["<<v<<"] for received cell "<<i;
     //    cout <<": got x="<<ipos[v]<<" expected x="<<cpos[v];
     //    cout <<"; distance="<<ipos[v]-cpos[v]<<"\n";
     //  }
 #ifdef TESTING
-    //rep.printVec("\trecvd",ipos,SimPM.ndim);
-    //rep.printVec("\tlocal",cpos,SimPM.ndim);
+    //rep.printVec("\trecvd",ipos,ndim);
+    //rep.printVec("\tlocal",cpos,ndim);
     //cout.flush();
 #endif
     ++c;

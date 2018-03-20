@@ -38,6 +38,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -67,12 +68,6 @@ flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi(
     riemann_MHD(nv,state,g),
     Riemann_Roe_MHD_CV(nv,g)
 {
-#ifdef TESTING
-  cout <<"flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi() constructor.\n";
-  cout <<"Default solver set to "<<SimPM.solverType<<" where ";
-  cout <<" 0=LF,1=RSlin,4=RSRoe-CV.\n";
-  cout <<" Note that only 0,1,4 are available for MHD so far!\n";
-#endif
   negPGct = negROct = 0;
   return;
 }
@@ -415,60 +410,6 @@ int flux_solver_mhd_ideal_adi::AVFalle(
 
 // ##################################################################
 // ##################################################################
-
-
-
-#ifdef LAPIDUS_VISCOSITY_ENABLED
-int flux_solver_mhd_ideal_adi::AVLapidus(
-      const cell *Cl, ///< Left state cell pointer
-      const cell *Cr, ///< Right state cell pointer
-      pion_flt *flux, 
-      const double etav,
-      const double gam
-      )
-{
-  ///
-  /// This is not working!!! Don't use it!
-  /// THIS USES A VERY BAD DIV(V) APPROXIMATION -- REALLY NEED TO CALCULATE IT
-  /// PROPERLY, SO MAYBE THE SOLVER CLASS CAN DO THIS???
-  ///
-  rep.error("Don't use Lapidus!!!",1);
-  
-  pion_flt ul[8], ur[8];
-  PtoU(left,ul,gam); PtoU(right,ur,gam);
-  //
-  // 2009-10-14 is the sign of this divergence wrong???
-  //
-  //double divu = ((left[eqVX]-right[eqVX])+(left[eqVY]-right[eqVY])+(left[eqVZ]-right[eqVZ]));
-  double divu = ((right[eqVX]-left[eqVX])+(right[eqVY]-left[eqVY])+(right[eqVZ]-left[eqVZ]));
-  //  divu = min(divu,0.0);
-  double vt; //int i=0;
-  for (int v=1;v<8;v++) {
-    vt = etav*divu*(ur[v]-ul[v]);
-    //    if (fabs(vt)>= fabs(flux[v]) && fabs(flux[v])>BASEPG) {
-    //      cout <<"\t\t\t\t\tlarge visc: var="<<v<<" vt= "<<vt<<" c.f. actual flux: "<<flux[v];
-    //      cout <<" , ratio = "<<vt/flux[v]<<" i="<<i<<"\n";i++;
-    //    }
-    //    if (v != eqBX) flux[v] += vt;
-    flux[v] -= vt;
-  }
-//   vt = etav*divu*(ul[eqERG]-ur[eqERG]);
-//   flux[eqERG] +=vt;
-  
-//   divu = left[eqVX]-right[eqVX];
-//   vt = etav*divu*(ul[eqMMX]-ur[eqMMX]);
-//   flux[eqMMX] +=vt;
-//   divu = left[eqVY]-right[eqVY];
-//   vt = etav*divu*(ul[eqMMY]-ur[eqMMY]);
-//   flux[eqMMY] +=vt;
-//   divu = left[eqVZ]-right[eqVZ];
-//   vt = etav*divu*(ul[eqMMZ]-ur[eqMMZ]);
-//   flux[eqMMZ] +=vt;
-
-  return(0);
-}
-#endif // LAPIDUS_VISCOSITY_ENABLED
-
 
 
 // ##################################################################

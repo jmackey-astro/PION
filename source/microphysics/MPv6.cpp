@@ -1,5 +1,5 @@
 ///
-/// \file mpv6_PureH.cpp
+/// \file MPv6.cpp
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -27,7 +27,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/mpv6_PureH.h"
+#include "microphysics/MPv6.h"
 
 
 
@@ -39,31 +39,26 @@ using namespace std;
 // ##################################################################
 
 
-mpv6_PureH::mpv6_PureH(
-          const int nv,              ///< Total number of variables in state vector
-          const int ntracer,         ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-          const std::string &trtype,  ///< List of what the tracer variables mean.
-
-# else
-
-          const std::string *trtype,  ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
-          struct which_physics *ephys  ///< extra physics stuff.
-	  )
-:
-  mp_explicit_H(nv,ntracer,trtype,ephys)
+MPv6::MPv6(
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,             ///< Total number of variables in state vector
+      const int ntracer,        ///< Number of tracer variables in state vector.
+      const std::string *tracers, ///< List of what the tracer variables mean.
+      struct which_physics *ephys,  ///< extra physics stuff.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
+  :
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
-  cout <<"mpv6_PureH constructor setting up.\n";
+  cout <<"MPv6 constructor setting up.\n";
 #endif
   //
   // Here we set JM_NELEC and JM_NION to 1.0 because there is only H.
   //
+  EP->H_MassFrac = 1.0;
   EP->Helium_MassFrac = 0.0;
   EP->Metal_MassFrac = 0.0;
   JM_NION  = 1.0;
@@ -72,7 +67,7 @@ mpv6_PureH::mpv6_PureH(
   mean_mass_per_H = m_p;
   
 #ifdef TESTING
-  cout <<"mpv6_PureH: Y="<< EP->Helium_MassFrac;
+  cout <<"MPv6: Y="<< EP->Helium_MassFrac;
   cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
   cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
 #endif // TESTING
@@ -82,10 +77,10 @@ mpv6_PureH::mpv6_PureH(
 // ##################################################################
 // ##################################################################
 
-mpv6_PureH::~mpv6_PureH()
+MPv6::~MPv6()
 {
 #ifdef TESTING
-  cout <<"mpv6_PureH destructor.\n";
+  cout <<"MPv6 destructor.\n";
 #endif
   return;
 }
@@ -95,7 +90,7 @@ mpv6_PureH::~mpv6_PureH()
 // ##################################################################
 
 
-int mpv6_PureH::ydot(
+int MPv6::ydot(
           double,               ///< current time (UNUSED)
           const N_Vector y_now, ///< current Y-value
           N_Vector y_dot,       ///< vector for Y-dot values
@@ -104,9 +99,10 @@ int mpv6_PureH::ydot(
 {
 
 #ifdef TESTING
-  //cout <<"mpv6_PureH::ydot(): Y="<< EP->Helium_MassFrac;
-  //cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
-  //cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
+  cout <<"MPv6::ydot(): Y="<< EP->Helium_MassFrac;
+  cout <<", Z="<< EP->Metal_MassFrac <<", mmpH="<<mean_mass_per_H;
+  cout <<", nH = "<<mpv_nH;
+  cout <<", NION="<< JM_NION <<", NELEC="<< JM_NELEC<<"\n";
 #endif // TESTING
 
   //
@@ -119,8 +115,7 @@ int mpv6_PureH::ydot(
 
   //
   // First get the temperature.  We assume the total particle number density
-  // is given by 1.1*nH*(1+x_in), appropriate for a gas with 10% Helium by 
-  // number, and if He is singly ionised whenever H is.
+  // is given by nH*(1+x_in), appropriate for a gas with 100% H.
   //
   double T = get_temperature(mpv_nH, E_in, x_in);
 
@@ -173,6 +168,12 @@ int mpv6_PureH::ydot(
                                   mpv_nH, mpv_delta_S, mpv_Vshell);
       Edot += Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
                                   mpv_nH, mpv_delta_S, mpv_Vshell);
+      //cout <<"multi-freq: ";
+      //cout <<Hi_discrete_multifreq_photoion_rate(mpv_Tau0, temp1,
+      //                            mpv_nH, mpv_delta_S, mpv_Vshell);
+      //cout <<"  "<<Hi_discrete_multifreq_photoheating_rate(mpv_Tau0, temp1,
+      //                            mpv_nH, mpv_delta_S, mpv_Vshell);
+      //cout <<"\n";
       break;
 
       case RT_EFFECT_PION_MONO:
@@ -227,9 +228,9 @@ int mpv6_PureH::ydot(
   // We want to limit cooling as we approach the minimum temperature, so we scale
   // the rate to linearly approach zero as we reach Tmin.
   //
-  if (Edot<0.0 && T<2.0*EP->MinTemperature) {
-    Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
-  }
+  //if (Edot<0.0 && T<2.0*EP->MinTemperature) {
+  //  Edot = min(0.0, (Edot)*(T-EP->MinTemperature)/SimPM.EP.MinTemperature);
+  //}
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
   NV_Ith_S(y_dot,lv_eint) = Edot;

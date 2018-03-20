@@ -33,6 +33,7 @@
 /// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
 /// - 2015.01.14 JM: Added new include statements for new PION version.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -108,6 +109,7 @@ void eqns_Euler::PtoU(
 int eqns_Euler::UtoP(
       const pion_flt *u,
       pion_flt *p,
+      const double MinTemp, ///< minimum temperature/pressure allowed
       const double gamma
       )
 {
@@ -143,7 +145,7 @@ int eqns_Euler::UtoP(
     }
     // reset all variables because a negative density will change the sign of 
     // all of the velocities!
-    p[eqRO] = BASE_RHO*SimPM.RefVec[RO];
+    p[eqRO] = BASE_RHO;
     p[eqVX] = u[eqMMX]/p[eqRO];
     p[eqVY] = u[eqMMY]/p[eqRO];
     p[eqVZ] = u[eqMMZ]/p[eqRO];
@@ -162,36 +164,35 @@ int eqns_Euler::UtoP(
     // Set minimum temperature to be 10K
     //
     if (MP) {
-      //if (MP->Temperature(p,gamma) <SimPM.EP.MinTemperature) {
 #ifdef TESTING
       cout <<"fixing negative pressure from p="<<p[eqPG]<<" to p=";
 #endif
-      MP->Set_Temp(p,SimPM.EP.MinTemperature,gamma);
+      MP->Set_Temp(p,MinTemp,gamma);
 #ifdef TESTING
       cout <<p[eqPG]<<"\n";
 #endif
     }
     else {
       //
-      // If not, assume mu*m_p=2.34e-24g, and set p=k*rho
+      // If not, assume dimensionless simulation and set p=rho/100
       //
 #ifdef TESTING
       cout <<"fixing negative pressure from p="<<p[eqPG]<<" to p=";
 #endif
-      p[eqPG] = 5.8974e8*p[eqRO];
+      p[eqPG] = 0.01*p[eqRO];
 #ifdef TESTING
       cout <<p[eqPG]<<"\n";
 #endif
     }
   }
-  else if (MP && (MP->Temperature(p,gamma) <SimPM.EP.MinTemperature)) {
+  else if (MP && (MP->Temperature(p,gamma) <MinTemp)) {
     //
     // If we have microphysics, just set T=10K.
     //
 #ifdef TESTING
     cout <<"fixing low pressure from p="<<p[eqPG]<<" to p=";
 #endif
-    MP->Set_Temp(p,SimPM.EP.MinTemperature,gamma);
+    MP->Set_Temp(p,MinTemp,gamma);
 #ifdef TESTING
     cout <<p[eqPG]<<"\n";
 #endif
@@ -210,12 +211,11 @@ int eqns_Euler::UtoP(
       cout <<"NEG.PRES.CELL:";CI.print_cell(dp.c);
 #endif
     }
-    p[eqPG] = BASEPG*SimPM.RefVec[PG]; //100*MACHINEACCURACY;
+    p[eqPG] = 0.01*p[eqRO];
     //err +=1;
   }
 #endif // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
-  //  if (err) cout <<"Error in UtoP()!!\n";
   return err;
 }
 

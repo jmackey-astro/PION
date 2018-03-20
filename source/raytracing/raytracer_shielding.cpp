@@ -21,7 +21,7 @@ using namespace std;
 
 raytracer_shielding::raytracer_shielding(
         class GridBaseClass    *ggg, ///< Pointer to grid
-        class MicroPhysicsBase *mmm  ///< Pointer to MicroPhysics Class.
+        class microphysics_base *mmm  ///< Pointer to MicroPhysics Class.
         )
 : raytracer_USC_infinity(ggg,mmm)
 {
@@ -158,7 +158,7 @@ int raytracer_shielding::ProcessCell(
 #ifdef PARALLEL
 raytracer_shielding_pllel::raytracer_shielding_pllel(
         class GridBaseClass *ggg,   ///< Pointer to grid
-        class MicroPhysicsBase *mmm ///< Pointer to MicroPhysics Class.
+        class microphysics_base *mmm ///< Pointer to MicroPhysics Class.
         )
 :
   raytracer_USC_infinity(ggg,mmm),

@@ -41,7 +41,7 @@ class raytracer_shielding
   ///
   raytracer_shielding(
                   class GridBaseClass *,   ///< Pointer to grid
-                  class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
+                  class microphysics_base * ///< Pointer to MicroPhysics Class.
                   );
   ///
   /// Destructor really doesn't do anything.
@@ -93,7 +93,7 @@ class raytracer_shielding_pllel :
   /// constructor.  Doesn't do all that much.
   ///
   raytracer_shielding_pllel(class GridBaseClass *, ///< Pointer to grid
-                            class MicroPhysicsBase * ///< Pointer to MicroPhysics Class.
+                            class microphysics_base * ///< Pointer to MicroPhysics Class.
                             );
 
   ///

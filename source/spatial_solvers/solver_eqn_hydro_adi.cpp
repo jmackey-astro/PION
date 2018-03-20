@@ -128,6 +128,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
       pion_flt *Pf, // Final state vector (can be same as initial vec.).
       pion_flt *dE, // TESTING Tracks change of energy for negative pressure correction.
       const double, // gas EOS gamma.
+      const double MinTemp, ///< Min Temperature allowed on grid.
       const double  // Cell timestep dt.
       )
 {
@@ -149,7 +150,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     u1[v] += dU[v];   // Update conserved variables
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
-  if(UtoP(u1,Pf, eq_gamma)!=0) {
+  if(UtoP(u1,Pf, MinTemp, eq_gamma)!=0) {
     cout<<"(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained \
            (maybe about negative pressure...) fixing\n";
 #ifdef TESTING
@@ -161,7 +162,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     //rep.printVec("dU ",dU, SimPM.nvar);
     PtoU(Pf, u2, eq_gamma);
     *dE += (u2[ERG]-u1[ERG]);
-    UtoP(u2,Pf, eq_gamma);
+    UtoP(u2,Pf, MinTemp, eq_gamma);
 #endif //TESTING
   }
 

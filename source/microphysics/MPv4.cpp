@@ -1,16 +1,18 @@
 ///
-/// \file mp_implicit_H.cpp
+/// \file MPv4.cpp
 /// \author Jonathan Mackey
 /// \date 2011.10.12
 ///
 /// Description:
+/// THIS IS LEGACY CODE USED ONLY FOR TESTING (Mackey,2012,A&A).
 /// This class is an update on the microphysics class used for JMs
-/// thesis.  It uses the same implicit raytracing scheme, so the
+/// thesis (MPV1).  It uses the same implicit raytracing scheme, so
 /// photon transmission through the cell is integrated with the rate
 /// and energy equations to obtain a time-averaged value.
-///
 /// The main advantage here is that we can use multi-frequency
 /// photoionisation rates which depend on the optical depth.
+/// It was used in Mackey (2012,A&A) but found to be less efficient
+/// than MPv3.
 ///
 /// Modifications:
 /// - 2011.10.13 JM: Debugging.
@@ -22,7 +24,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-#ifndef EXCLUDE_MPV4
+#ifdef LEGACY_CODE
 
 //#define MPV3_DEBUG
 
@@ -32,14 +34,14 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "microphysics/mp_implicit_H.h"
+#include "microphysics/MPv4.h"
 
 using namespace std;
 
 //
 // The timestep-limiting is set by ifdef in
 //  source/defines/functionality_flags.h
-// DT05 is recommended for mp_implicit_H (see Mackey,2012,
+// DT05 is recommended for MPv4 (see Mackey,2012,
 // A&A,539,A147), but DT02 is fine for monochromatic radiation.
 //
 #if   MPV4_DTLIMIT==0
@@ -89,12 +91,12 @@ using namespace std;
 // ##################################################################
 
 
-void mp_implicit_H::get_error_tolerances(
+void MPv4::get_error_tolerances(
           double *reltol, ///< relative error tolerance.
           double atol[] ///< absolute error tolerances
           )
 {
-  mp_explicit_H::get_error_tolerances(reltol,atol);
+  MPv3::get_error_tolerances(reltol,atol);
   //
   // Now the absolute tolerance for the integrated optical depth
   // This is exp(-dTau)*delta-t, so it can be tiny.  Basically
@@ -110,7 +112,7 @@ void mp_implicit_H::get_error_tolerances(
 // ##################################################################
 
 
-void mp_implicit_H::get_problem_size(
+void MPv4::get_problem_size(
           int *ne, ///< number of equations
           int *np  ///< number of parameters in user_data vector.
           )
@@ -125,14 +127,14 @@ void mp_implicit_H::get_problem_size(
 // ##################################################################
 
 
-void mp_implicit_H::setup_local_vectors()
+void MPv4::setup_local_vectors()
 {
   nvl     = 3;    // three local variables to integrate
   N_extradata = 0;
   N_equations = 3;
 
   //
-  // mp_explicit_H has already set these up with 2 variables each, so we
+  // MPv3 has already set these up with 2 variables each, so we
   // delete and re-init them.
   //
   N_VDestroy_Serial(y_in);
@@ -150,7 +152,7 @@ void mp_implicit_H::setup_local_vectors()
 // ##################################################################
 
 
-int mp_implicit_H::convert_prim2local(
+int MPv4::convert_prim2local(
           const double *p_in, ///< primitive vector from grid cell (length nv_prim)
           double *p_local
           )
@@ -158,7 +160,7 @@ int mp_implicit_H::convert_prim2local(
   //
   // First set x_Hp and E_int using the explicit solver
   //
-  int err = mp_explicit_H::convert_prim2local(p_in,p_local);
+  int err = MPv3::convert_prim2local(p_in,p_local);
   
   //
   // Set the integrated optical depth through the cell to zero.
@@ -173,7 +175,7 @@ int mp_implicit_H::convert_prim2local(
 // ##################################################################
 
 
-double mp_implicit_H::get_timeaveraged_rhodx(
+double MPv4::get_timeaveraged_rhodx(
             const double edtau, ///< this is int(exp(-dtau)dt)
             const double dt     ///< this is dt
             )
@@ -188,7 +190,7 @@ double mp_implicit_H::get_timeaveraged_rhodx(
   //
   double deltau = -log(edtau/dt);
 #ifdef RT_TESTING
-  cout <<"**** mp_implicit_H:  INT(exp(-dtau),dt) = "<<edtau<<" <deltau>="<<deltau<<", dt="<<dt<<"\n";
+  cout <<"**** MPv4:  INT(exp(-dtau),dt) = "<<edtau<<" <deltau>="<<deltau<<", dt="<<dt<<"\n";
 #endif 
   if (!isfinite(deltau)) {
     // this can happen if the ray is very attenuated, and we are taking -log(0.0)
@@ -199,7 +201,7 @@ double mp_implicit_H::get_timeaveraged_rhodx(
   }
   if (deltau<0.0) {
     if (deltau<-JM_RELTOL) {
-      cout <<"==EEEE== mp_implicit_H: <tau> significantly negative: "<<deltau;
+      cout <<"==EEEE== MPv4: <tau> significantly negative: "<<deltau;
       cout <<" setting to zero. edtau/dt-1="<<edtau/dt-1.0<<"\n";
       rep.error("negative Tau",deltau);
     }
@@ -211,7 +213,7 @@ double mp_implicit_H::get_timeaveraged_rhodx(
   //
   deltau *= mean_mass_per_H/Hi_monochromatic_photo_ion_xsection(2.178721e-11);
 #ifdef RT_TESTING
-  cout <<"**** mp_implicit_H:  INT(exp(-dtau),dt) = "<<edtau<<" <deltau>="<<deltau<<", dt="<<dt<<"\n";
+  cout <<"**** MPv4:  INT(exp(-dtau),dt) = "<<edtau<<" <deltau>="<<deltau<<", dt="<<dt<<"\n";
 #endif 
   return deltau;
 }
@@ -220,7 +222,7 @@ double mp_implicit_H::get_timeaveraged_rhodx(
 // ##################################################################
 
 
-int mp_implicit_H::ydot(
+int MPv4::ydot(
           double,               ///< current time (UNUSED)
           const N_Vector y_now, ///< current Y-value
           N_Vector y_dot,       ///< vector for Y-dot values
@@ -230,7 +232,7 @@ int mp_implicit_H::ydot(
   //
   // First get x_Hp_dot and E_int_dot
   //
-  int err = mp_explicit_H::ydot(0,y_now,y_dot,0);
+  int err = MPv3::ydot(0,y_now,y_dot,0);
 
   //
   // exp(-delta_Tau) = exp(-nH*(1-x)*sigma*ds), where we evaluate the
@@ -248,21 +250,25 @@ int mp_implicit_H::ydot(
 // ##################################################################
 
 
-mp_implicit_H::mp_implicit_H(
-        const int nv,             ///< Total number of variables in state vector
-        const int ntracer,        ///< Number of tracer variables in state vector.
-        const std::string &trtype, ///< List of what the tracer variables mean.
-        struct which_physics *ephys  ///< extra physics stuff.
-        )
+MPv4::MPv4(
+      const int nd,   ///< grid dimensions
+      const int csys,   ///< Coordinate System flag
+      const int nv,             ///< Total number of variables in state vector
+      const int ntracer,        ///< Number of tracer variables in state vector.
+      const std::string *tracers, ///< List of what the tracer variables mean.
+      struct which_physics *ephys,  ///< extra physics stuff.
+      struct rad_sources *rsrcs,   ///< radiation sources.
+      const double g  ///< EOS Gamma
+      )
   :
-  mp_explicit_H(nv,ntracer,trtype,ephys)
+  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
 {
   //
   // All of the setup is in the explicit solver; the only changes
   // here are that I have re-implemented some of the functions which
   // the explicit constructor calls.
   //
-  cout <<"mp_implicit_H::mp_implicit_H() constructor.\n";
+  cout <<"MPv4::MPv4() constructor.\n";
   setup_local_vectors();
   //
   // --------------------------- CVODES ----------------------------
@@ -277,9 +283,9 @@ mp_implicit_H::mp_implicit_H(
 // ##################################################################
 
 
-mp_implicit_H::~mp_implicit_H()
+MPv4::~MPv4()
 {
-  cout <<"mp_implicit_H::mp_implicit_H() destructor.\n";
+  cout <<"MPv4::MPv4() destructor.\n";
   return;
 }
 
@@ -288,28 +294,28 @@ mp_implicit_H::~mp_implicit_H()
 // ##################################################################
 
 
-int mp_implicit_H::TimeUpdateMP_RTnew(
-          const double *p_in, ///< Primitive Vector to be updated.
-          const int N_heat,   ///< Number of UV heating sources.
-          const std::vector<struct rt_source_data> &heat_src,
-            ///< list of UV-heating column densities and source properties.
-          const int N_ion,    ///< number of ionising radiation sources.
-          const std::vector<struct rt_source_data> &ion_src,
-            ///< list of ionising src column densities and source properties.
-          double *p_out,  ///< Destination Vector for updated values
-                          ///< (can be same as first Vector.
-          const double dt,   ///< Time Step to advance by.
-          const double,   ///< EOS gamma.
-          const int, ///< Switch for what type of integration to use.
-                     ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-          double *dsigma ///< Time-averaged projected neutral mass density, passed back to raytracer.
-          )
+int MPv4::TimeUpdateMP_RTnew(
+      const double *p_in, ///< Primitive Vector to be updated.
+      const int N_heat,   ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &heat_src,
+        ///< list of UV-heating column densities and source properties.
+      const int N_ion,    ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &ion_src,
+        ///< list of ionising src column densities and source properties.
+      double *p_out,  ///< Destination Vector for updated values
+                      ///< (can be same as first Vector.
+      const double dt,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
+                 ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *dsigma ///< Time-averaged projected neutral mass density, passed back to raytracer.
+      )
 {
   //
   // This does the integration, and leaves int(exp(-dtau)dt) in the
   // variable NV_Ith_S(y_out,lv_dtau).
   // 
-  int err = mp_explicit_H::TimeUpdateMP_RTnew(p_in, N_heat, heat_src, N_ion,
+  int err = MPv3::TimeUpdateMP_RTnew(p_in, N_heat, heat_src, N_ion,
                   ion_src, p_out, dt, 0, 0, dsigma);
   //
   // Now we get the time-averaged column density (in g/cm2) to return
@@ -326,17 +332,17 @@ int mp_implicit_H::TimeUpdateMP_RTnew(
 
 
 
-double mp_implicit_H::timescales(
-          const double *p_in, ///< Current cell state vector.
-          const double g,   ///< EOS gamma.
-          const bool tc,    ///< set to 'true' if including cooling time.
-          const bool tr,    ///< set to 'true' if including recombination time.
-          const bool ti     ///< set to 'true' if including photo-ionsation time.
-          )
+double MPv4::timescales(
+      const double *p_in, ///< Current cell state vector.
+      const double g,   ///< EOS gamma.
+      const bool tc,    ///< set to 'true' if including cooling time.
+      const bool tr,    ///< set to 'true' if including recombination time.
+      const bool ti     ///< set to 'true' if including photo-ionsation time.
+      )
 {
 #ifdef MPV3_DEBUG
-  if (SimPM.RS.Nsources!=0) {
-    cout <<"WARNING: mp_explicit_H::timescales() using non-RT version!\n";
+  if (RS->Nsources!=0) {
+    cout <<"WARNING: MPv3::timescales() using non-RT version!\n";
   }
 #endif // MPV3_DEBUG
   int err=0;
@@ -346,7 +352,7 @@ double mp_implicit_H::timescales(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mp_explicit_H::timescales()",err);
+    rep.error("Bad input state to MPv3::timescales()",err);
   }
   NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
   NV_Ith_S(y_in,lv_eint) = P[lv_eint];
@@ -363,7 +369,7 @@ double mp_implicit_H::timescales(
   //
   err = ydot(0, y_in, y_out, 0);
   if (err) {
-    rep.error("dYdt() returned an error in mp_explicit_H::timescales()",err);
+    rep.error("dYdt() returned an error in MPv3::timescales()",err);
   }
   double T = get_temperature(mpv_nH, NV_Ith_S(y_in,lv_eint), 1.0-NV_Ith_S(y_in,lv_H0));
 
@@ -373,7 +379,7 @@ double mp_implicit_H::timescales(
   //
   double tmin = HUGEVALUE;
 
-  if (tc && T>SimPM.EP.MinTemperature) {
+  if (tc && T>EP->MinTemperature) {
 #ifdef RT_TESTING
     cout <<"timestep limiting: cooling time=";
     cout <<NV_Ith_S(y_in,lv_eint)/(fabs(NV_Ith_S(y_out,lv_eint))+TINYVALUE)<<"\n";
@@ -421,16 +427,16 @@ double mp_implicit_H::timescales(
 /// capability than the other timescales function.
 /// Default setting is DT05, which limits by 1.0*E/Edot and 1.0/ydot
 ///
-double mp_implicit_H::timescales_RT(
-          const double *p_in, ///< Current cell state vector.
-          const int N_heat,      ///< Number of UV heating sources.
-          const std::vector<struct rt_source_data> &heat_src,
-          ///< list of UV-heating column densities and source properties.
-          const int N_ion,      ///< number of ionising radiation sources.
-          const std::vector<struct rt_source_data> &ion_src,
-          ///< list of ionising src column densities and source properties.
-          const double   ///< EOS gamma.
-          )
+double MPv4::timescales_RT(
+      const double *p_in, ///< Current cell state vector.
+      const int N_heat,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &heat_src,
+      ///< list of UV-heating column densities and source properties.
+      const int N_ion,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &ion_src,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      )
 {
   int err=0;
   //
@@ -439,7 +445,7 @@ double mp_implicit_H::timescales_RT(
   double P[nvl];
   err = convert_prim2local(p_in,P);
   if (err) {
-    rep.error("Bad input state to mp_implicit_H::timescales_RT()",err);
+    rep.error("Bad input state to MPv4::timescales_RT()",err);
   }
   NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
   NV_Ith_S(y_in,lv_eint) = P[lv_eint];
@@ -455,7 +461,7 @@ double mp_implicit_H::timescales_RT(
   //
   err = ydot(0, y_in, y_out, 0);
   if (err) {
-    rep.error("dYdt() returned an error in mp_explicit_H::timescales_RT()",err);
+    rep.error("dYdt() returned an error in MPv3::timescales_RT()",err);
   }
 
   //
@@ -516,6 +522,6 @@ double mp_implicit_H::timescales_RT(
 // ##################################################################
 // ##################################################################
 
-#endif // if not excluding MPv4
+#endif // LEGACY_CODE
 
 

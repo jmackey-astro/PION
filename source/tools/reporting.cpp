@@ -7,6 +7,7 @@
 ///
 /// Modifications:
 /// - 2015.01.08 JM: created file, moved class from global.h
+/// - 2017.12.09 JM: got rid of SimPM refs.
 
 
 #include "defines/functionality_flags.h"

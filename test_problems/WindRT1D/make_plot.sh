@@ -43,7 +43,7 @@ set bmargin 3.0
 #set log x
 set log y
 set grid
-Myr=3.16e13
+Myr=3.156e13
 PC=3.086e18
 EOF
 #
@@ -56,9 +56,9 @@ do
     set -- $TITLE
     Time=$4
     printf -v Time "%f" "$Time"
-    Myr=3.16e13
+    Myr=3.156e13
     printf -v Myr "%f" "$Myr"
-    Time=$(echo "scale=4; $Time/$Myr" | bc);
+    Time=$(echo "scale=6; $Time/$Myr" | bc);
     printf -v Time "%f" "$Time";
     TITLE="Time = $Time Myr"
     Time=${Time:2:6}
@@ -66,11 +66,13 @@ do
     OUTFILE="${FBASE}_${num}.png"  #`echo ${LIST[$ii]} | sed -e "s/txt/png/"`
     #
     cat << EOF  >> gnu.plt
+!echo "${IMGDIR}/${OUTFILE}"
 set output "${IMGDIR}/${OUTFILE}"
 set title "${TITLE}" offset 0,-0.5
 plot '${LIST[$ii]}' u (\$1/PC):(\$2*4.277e23)      w l lt 1 lc -1 lw 2 title "n(H) (cm-3)", \
                  '' u (\$1/PC):(\$$TempVar*1.0e-4) w l lt 1 lc 1 lw 2 title "Temperature (10^{4}K)", \
-                 '' u (\$1/PC):(abs(\$4/1.0e5))    w l lt 3 lc 3 lw 2 title "Velocity (km/s)", \
+                 '' u (\$1/PC):(\$4/1.0e5)    w l lt 3 lc 3 lw 2 title "Velocity (km/s)", \
+                 '' u (\$1/PC):((-1)*\$4/1.0e5)    w l lt 3 lc 3 lw 1 notitle, \
                  '' u (\$1/PC):(\$$IonFracVar)     w l lt 1 lc 4 lw 2 title "Ion fraction", \
                  '' u (\$1/PC):(\$$ColourVar)      w l lt 5 lc 0 lw 1 title "Contact"
 
@@ -79,7 +81,7 @@ done
 
 gnuplot gnu.plt
 
-ffmpeg -f image2 -r 4.0 -sameq -s 1024x768 -i ${IMGDIR}/${FBASE}_%03d.png ${IMGDIR}/${FBASE}.mp4
+ffmpeg -r 4.0 -f image2 -i ${IMGDIR}/${FBASE}_%03d.png -q:v 0 -s 1024x768 -pix_fmt yuv420p -vcodec h264 ${IMGDIR}/${FBASE}.mp4
 
 
 

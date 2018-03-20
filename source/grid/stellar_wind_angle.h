@@ -18,16 +18,26 @@
 class stellar_wind_angle
 : virtual public stellar_wind_evolution,
   virtual public interpolate_arrays  {
-	public:
-	///
-	/// Constructor: 
-	///
-	stellar_wind_angle();
+  public:
+  ///
+  /// Constructor: 
+  ///
+  stellar_wind_angle(
+      const int, ///< ndim
+      const int, ///< nvar
+      const int, ///< ntracer
+      const int, ///< ftr
+      const int, ///< coord_sys
+      const int, ///< eqn_type
+      const double, ///< minimum temperature allowed
+      const double, ///< Simulation start time.
+      const double  ///< Simulation finish time.
+      );
 
-	///
-	/// Destructor (Delete spline arrays, etc.)
-	///
-	~stellar_wind_angle();
+  ///
+  /// Destructor (Delete spline arrays, etc.)
+  ///
+  ~stellar_wind_angle();
 
   ///
   /// Add an evolving source for rotating star: takes in the filename of the source data, and 
@@ -197,7 +207,8 @@ class stellar_wind_angle
   void set_wind_cell_reference_state(
       class GridBaseClass *,
       struct wind_cell *,
-      const struct wind_source *
+      const struct wind_source *,
+      const double ///< EOS gamma
       );
 
   ///
@@ -207,7 +218,8 @@ class stellar_wind_angle
   virtual void update_source(
       class GridBaseClass *,
       struct evolving_wind_data *, ///< source to update.
-      const double ///< current simulation time.
+      const double, ///< current simulation time.
+      const double  ///< EOS Gamma
       );
  
 };

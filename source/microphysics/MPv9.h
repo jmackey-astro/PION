@@ -1,5 +1,5 @@
 ///
-/// \file microphysics_lowZ.h
+/// \file MPv9.h
 /// \author 
 /// \date 2010.10.12
 ///
@@ -20,8 +20,8 @@
 
 
 
-#ifndef MICROPHYSICS_LOWZ
-#define MICROPHYSICS_LOWZ
+#ifndef MPv9
+#define MPv9
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -29,11 +29,7 @@
 
 
 #include "microphysics/microphysics_base.h"
-
 #include "microphysics/cooling.h"
-
-
-//#ifdef INCLUDE_HARPREETS_MODULE
 
 #include <vector>
 #include "contrib/HD_MetalFree.h"
@@ -51,7 +47,7 @@
 // "primitive variables" are [density, pressure, vx,vy,vz, [Bx,By,Bz], tracers 0,1,...]
 // "local variables" are internal to microphysics and can be whatever you want.
 // 
-// Functions declared here must be defined either here or in microphysics_lowZ.cc,
+// Functions declared here must be defined either here or in MPv9.cc,
 // but must have only one definition.
 //------------------------------------- 
 
@@ -59,9 +55,9 @@
 /// Microphysics class for low and/or zero metallicity gas, including
 /// molecular chemistry and maybe dust [EXPAND ME WHEN DECIDED!]
 ///
-class microphysics_lowz
+class MPv9
 :
-  public MicroPhysicsBase,
+  public microphysics_base,
   public solver
 {
   //
@@ -72,30 +68,33 @@ class microphysics_lowz
   /// Constructor -- sets up data, allocates memory if needed.
   /// (Feel free to add more parameters; these are a minimal set).
   ///
-  microphysics_lowz(const int,          ///< Total number of variables in state vector
-		    const int,          ///< Number of tracer variables in state vector.
-		    const std::string &, ///< List of what the tracer variables mean.
-		    struct which_physics * ///< pointer to "which-physics" flags.
-		    );
+  MPv9(
+      const int,          ///< Total number of variables in state vector
+      const int,          ///< Number of tracer variables in state vector.
+      const std::string &, ///< List of what the tracer variables mean.
+      struct which_physics * ///< pointer to "which-physics" flags.
+      );
+
   ///
   /// Destructor -- frees any memory that was dynamically allocated.
   ///
-  ~microphysics_lowz();
+  ~MPv9();
 
   ///
   /// This takes a copy of the primitive vector and advances it in time over
   /// the step requested, and at the end copies the updated vector into the
   /// destination vector.  For fully local microphysics (no Radiative transfer!).
   ///
-  int TimeUpdateMP(const double *, ///< Primitive Vector to be updated.
-		   double *,       ///< Destination Vector for updated values
-		                   ///< (can be same as first Vector.
-		   const double,   ///< Time Step to advance by.
-		   const double,   ///< EOS gamma.
-		   const int, ///< Switch for what type of integration to use.
-		              ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-		   double *    ///< final temperature (not strictly needed).
-		   );
+  int TimeUpdateMP(
+      const double *, ///< Primitive Vector to be updated.
+      double *,       ///< Destination Vector for updated values
+                     ///< (can be same as first Vector.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
+                ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *    ///< final temperature (not strictly needed).
+      );
 
   ///
   /// This takes a copy of the primitive vector and advances it in time over
@@ -107,46 +106,48 @@ class microphysics_lowz
   ///
    ///
   int TimeUpdateMP_RTnew(
-                   const double *, ///< Primitive Vector to be updated.
- 	           const int,      ///< Number of UV heating sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of UV-heating column densities and source properties.
-                   const int,      ///< number of ionising radiation sources.
-                   const std::vector<struct rt_source_data> &,
-                   ///< list of ionising src column densities and source properties.
-	           double *,       ///< Destination Vector for updated values
-		                   ///< (can be same as first Vector.
-		   const double,   ///< Time Step to advance by.
-		   const double,   ///< EOS gamma.
-		   const int, ///< Switch for what type of integration to use.
-		              ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-		   double *    ///< final temperature (not strictly needed).
-		   );
+      const double *, ///< Primitive Vector to be updated.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      double *,       ///< Destination Vector for updated values
+      ///< (can be same as first Vector.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
+      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      double *    ///< final temperature (not strictly needed).
+      );
 
 
   ///
   /// Not used b/c we have no photoionisation
   ///
-  int TimeUpdate_RTsinglesrc(const double *, ///< Primitive Vector to be updated.
-			     double *,       ///< Destination Vector for updated values.
-			     const double,   ///< Time Step to advance by.
-			     const double,   ///< EOS gamma.
-			     const int, ///< Switch for what type of integration to use.
-			                ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
-			     const double,   ///< flux in per unit length along ray (F/ds or L/dV)
-			     const double,   ///< path length ds through cell.
-			     const double,   ///< Optical depth to entry point of ray into cell.
-			     double *        ///< return optical depth through cell here.
-			     );
+  int TimeUpdate_RTsinglesrc(
+      const double *, ///< Primitive Vector to be updated.
+      double *,       ///< Destination Vector for updated values.
+      const double,   ///< Time Step to advance by.
+      const double,   ///< EOS gamma.
+      const int, ///< Switch for what type of integration to use.
+      ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
+      const double,   ///< flux in per unit length along ray (F/ds or L/dV)
+      const double,   ///< path length ds through cell.
+      const double,   ///< Optical depth to entry point of ray into cell.
+      double *        ///< return optical depth through cell here.
+      );
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
   /// there is no need to make it highly optimized.
   /// - Is *NOT* threadsafe.
   ///
-  double Temperature(const pion_flt *, ///< primitive vector
-		     const double    ///< eos gamma
-		     );
+  double Temperature(
+      const pion_flt *, ///< primitive vector
+      const double    ///< eos gamma
+      );
 
   ///
   /// This returns the minimum timescale of the times flagged in the
@@ -155,12 +156,13 @@ class microphysics_lowz
   /// timestep and we need to limit the global timestep (this is a runtime
   /// option which is not really well integrated into the code yet).
   ///
-  double timescales(const double *, ///< Current cell.
-		    const double,   ///< EOS gamma.
-		    const bool, ///< set to 'true' if including cooling time.
-		    const bool, ///< set to 'true' if including recombination time.
-		    const bool  ///< set to 'true' if including photo-ionsation time.
-		    );
+  double timescales(
+      const double *, ///< Current cell.
+      const double,   ///< EOS gamma.
+      const bool, ///< set to 'true' if including cooling time.
+      const bool, ///< set to 'true' if including recombination time.
+      const bool  ///< set to 'true' if including photo-ionsation time.
+      );
 
   ///
   /// This returns the minimum timescale of all microphysical processes, including
@@ -169,20 +171,20 @@ class microphysics_lowz
   /// capability than the other timescales function.
   ///
   virtual double timescales_RT(
-                    const double *, ///< Current cell.
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    const double   ///< EOS gamma.
-                    );
+      const double *, ///< Current cell.
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      const double   ///< EOS gamma.
+      );
 
   ///
   /// Returns element number of named tracer variable in state vector.
   /// This is not important, so I define it here.  If you want you can
-  /// redefine it in microphysics_lowz.cc
+  /// redefine it in MPv9.cc
   ///
   int Tr(string ///< tracer we want to get index for;
 	 ) {return -1;}
@@ -192,31 +194,26 @@ class microphysics_lowz
   /// Only needed if you want this feature in the initial condition generator.
   /// This will call Harpreet's Yinit() function to set initial values for tracers.
   ///
-  int Init_ionfractions(double *, ///< Primitive vector to be updated.
-			const double, ///< eos gamma.
-			const double  ///< optional gas temperature to end up at. (-ve means use pressure)
-			);
+  int Init_ionfractions(
+      double *, ///< Primitive vector to be updated.
+      const double, ///< eos gamma.
+      const double  ///< optional gas temperature to end up at. (-ve means use pressure)
+      );
 
   ///
   /// Set the gas temperature to a specified value.
   ///
-  int Set_Temp(double *,     ///< primitive vector.
-	       const double, ///< temperature
-	       const double  ///< eos gamma.
-	       );
+  int Set_Temp(
+      double *,     ///< primitive vector.
+      const double, ///< temperature
+      const double  ///< eos gamma.
+      );
 
-  //
-  // Temporary function
-  //
-  //void Interface_with_JMs_code(
-  //            std::vector<double>, ///< Yinput
-  //            std::vector<double>, ///< Youtput
-  //            double, ///< density (g/cm3)
-  //            double, ///< input internal energy (erg/cm3)
-   //           double &, ///< output internal energy (erg/cm3)
-   //           double, ///< Column density (g/cm2)
-   //           double  ///< timestep to integrate
-   //           ) {return;}
+  ///
+  /// Return the H mass fraction
+  ///
+  virtual inline double get_X_H()
+    {return ep->H_MassFrac;}
 
  protected:
   ///
@@ -226,19 +223,20 @@ class microphysics_lowz
   /// dimensionless fractional abundances.  They don't have to sum up to
   /// unity or anything, just they must be dimensionsless numbers.
   ///
-  int convert_prim2local(const double *, ///< primitive vector from grid cell (length nv_prim)
-			 const double    ///< eos gamma
-			 );
+  int convert_prim2local(
+      const double *, ///< primitive vector from grid cell (length nv_prim)
+      const double    ///< eos gamma
+      );
 
   ///
   /// Convert local microphysics vector into state vector for grid cell.
   /// This is the inverse of convert_prim2local.
   ///
   int convert_local2prim(
-            const double *, ///< input primitive vector from grid cell (length nv_prim)
-            double *,       ///< updated primitive vector for grid cell (length nv_prim)
-            const double    ///< eos gamma.
-            );
+      const double *, ///< input primitive vector from grid cell (length nv_prim)
+      double *,       ///< updated primitive vector for grid cell (length nv_prim)
+      const double    ///< eos gamma.
+      );
 
   ///
   /// This function organises a 5-element array of data for Harpreet's module:
@@ -249,14 +247,14 @@ class microphysics_lowz
   ///  - minimum column density to diffuse radiation.
   ///
   void get_column_densities(
-                    const int,      ///< Number of UV heating sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of UV-heating column densities and source properties.
-                    const int,      ///< number of ionising radiation sources.
-                    const std::vector<struct rt_source_data> &,
-                    ///< list of ionising src column densities and source properties.
-                    std::vector<double> & ///< array for column densities
-                    );
+      const int,      ///< Number of UV heating sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of UV-heating column densities and source properties.
+      const int,      ///< number of ionising radiation sources.
+      const std::vector<struct rt_source_data> &,
+      ///< list of ionising src column densities and source properties.
+      std::vector<double> & ///< array for column densities
+      );
 
  private:
   //
@@ -290,4 +288,4 @@ class microphysics_lowz
 
 
 #endif // if not excluding Harpreet's module.
-#endif // MICROPHYSICS_LOWZ
+#endif // MPv9

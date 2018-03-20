@@ -52,6 +52,7 @@
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -88,11 +89,6 @@ flux_solver_hydro_adi::flux_solver_hydro_adi(
 #endif //FUNCTION_ID
 
   eq_gamma = g;
-#ifdef TESTING
-  cout <<"flux_solver_hydro_adi::flux_solver_hydro_adi() constructor: gamma="<<eq_gamma<<"\n";
-  cout <<"Default solver set to "<<SimPM.solverType<<" where ";
-  cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSRoe,5=Roe-PV,6=FVS.\n";
-#endif
 
 #ifdef FUNCTION_ID
   cout <<"flux_solver_hydro_adi::flux_solver_hydro_adi ...returning.\n";
@@ -455,6 +451,7 @@ void flux_solver_hydro_adi::PtoU(
 int flux_solver_hydro_adi::UtoP(
       const pion_flt *u,
       pion_flt *p,
+      const double MinTemp, ///< minimum temperature/pressure allowed
       const double g
       )
 {
@@ -462,7 +459,7 @@ int flux_solver_hydro_adi::UtoP(
   cout <<"flux_solver_hydro_adi::UtoP ...starting.\n";
 #endif //FUNCTION_ID
 
-  int err=eqns_Euler::UtoP(u,p,g);
+  int err=eqns_Euler::UtoP(u,p,MinTemp,g);
   for (int t=0;t<FS_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
 
 #ifdef FUNCTION_ID

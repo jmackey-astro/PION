@@ -62,7 +62,7 @@
 ///       work for all sims, not just jet sims.  Note this only works
 ///       for the XN point from the grid FirstPt(), not all boundary
 ///       points (which it really should work for!)
-/// - 2010.10.13 JM: Added option to setup new microphysics_lowZ class
+/// - 2010.10.13 JM: Added option to setup new MPv9 class
 ///       in setup_microphysics() function.
 ///       Added MP_timestep_limit override option.
 /// - 2010.11.03 JM: Changed "endl" to "\n" for JUROPA.  Added a
@@ -98,7 +98,7 @@
 ///    now a few new functions to deal with the different kinds of radiative
 ///    transfer we want to do.
 /// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux calculation.
-/// - 2011.04.14 JM: Added mp_v2_aifa microphysics integration class.
+/// - 2011.04.14 JM: Added MPv2 microphysics integration class.
 /// - 2011.04.17 JM: minor debugging additions/subtractions for the new RT update.
 /// - 2011.04.18 JM: more debugging.  nearly done now.
 /// - 2011.04.22 JM: bugs for multiple point sources fixed.  Also removed isfinite
@@ -112,7 +112,7 @@
 ///    setup_microphysics() function.
 /// - 2011.06.21 JM: Added option of 2nd-order-in-time ray-tracing/microphysics with
 ///    two microphysics updates per step.
-/// - 2011.10.13 JM: Added mp_implicit_H class.
+/// - 2011.10.13 JM: Added MPv4 class.
 /// - 2011.10.14 JM: Removed raytracer_shielding class, updated RT interface a lot.
 /// - 2011.10.22 JM: The new MP/RT interface is now default (old #deffed code
 ///    is now removed as of SVN369).  Improved RT interface, and simplified the 
@@ -142,6 +142,7 @@
 ///    structure, and non-global grid class.
 /// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL.CPP
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -366,19 +367,19 @@ int sim_control_fixedgrid::Init(
   // First get grid parameters from a file.
   switch (typeOfFile) {
   case 1: // Start From ASCII Parameterfile.
-    if (!dataio) dataio = new dataio_text();
+    if (!dataio) dataio = new dataio_text(SimPM);
     if (!dataio) rep.error("dataio_text initialisation",dataio);
     break;
 #ifdef FITS
   case 2: // Start from FITS restartfile, which may be initial conditions or a snapshot.
   case 3: // Fits restartfile in table format (slower I/O than image...)
-    if (!dataio) dataio = new DataIOFits();
+    if (!dataio) dataio = new DataIOFits(SimPM);
     if (!dataio) rep.error("DataIOFits initialisation",dataio);
     break;
 #endif // if FITS
 #ifdef SILO
   case 5: // Start from Silo ICfile or restart file.
-    if (!dataio) dataio = new dataio_silo ("DOUBLE");
+    if (!dataio) dataio = new dataio_silo (SimPM, "DOUBLE");
     if (!dataio) rep.error("dataio_silo initialisation",dataio);
     break; 
 #endif // if SILO
@@ -386,7 +387,7 @@ int sim_control_fixedgrid::Init(
     cerr <<"(UniformFV::Init) Do not understand typeOfFile="<<typeOfFile<<", so exiting.\n";
     return(1);
   }
-  err = dataio->ReadHeader(infile);
+  err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("(INIT::get_parameters) err!=0 Something went bad",0,err);
   
   // Now see if any commandline args override the Parameters from the file.
@@ -395,7 +396,7 @@ int sim_control_fixedgrid::Init(
   
   // Now set up the grid structure.
   cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
-  err = setup_grid((grid),&mpiPM);
+  err = setup_grid((grid),SimPM,&mpiPM);
   cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
   err += get_cell_size(*grid);
   if (err!=0) {
@@ -413,7 +414,7 @@ int sim_control_fixedgrid::Init(
   //
   // Now setup Microphysics, if needed.
   //
-  err = setup_microphysics();
+  err = setup_microphysics(SimPM);
   rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
   
   //
@@ -421,19 +422,19 @@ int sim_control_fixedgrid::Init(
   //
 #if defined SERIAL
 
-  err = dataio->ReadData(infile, *grid);
+  err = dataio->ReadData(infile, *grid, SimPM);
 
 #elif defined PARALLEL
 
   switch (typeOfFile) {
 #ifdef FITS
   case 2: // Start from FITS restartfile.
-  err = dataio->ReadData(infile, *grid);
+  err = dataio->ReadData(infile, *grid, SimPM);
     break;
 #endif // if FITS
 #ifdef SILO
   case 5: // Start from Silo restart file.
-    err = dataio->parallel_read_any_data(infile, *grid);
+    err = dataio->parallel_read_any_data(infile, SimPM, *grid);
     break; 
 #endif // if SILO
   default:
@@ -459,7 +460,7 @@ int sim_control_fixedgrid::Init(
 
   
   // Assign boundary conditions to boundary points.
-  err = boundary_conditions(*grid);
+  err = boundary_conditions(SimPM, *grid);
   if (err!=0){cerr<<"(INIT::boundary_conditions) err!=0 Something went bad"<<"\n";return(1);}
 
 
@@ -487,26 +488,26 @@ int sim_control_fixedgrid::Init(
     if (textio) {delete textio; textio=0;}
     switch (SimPM.typeofop) {
     case 1: // ascii, so do nothing.
-      dataio = new dataio_text ();
+      dataio = new dataio_text (SimPM);
       break;
 #ifdef FITS
     case 2: // fits
     case 3: // fits
-      dataio = new DataIOFits();
+      dataio = new DataIOFits(SimPM);
       break;
     case 4: // fits +ascii
-      dataio = new DataIOFits();
-      textio = new dataio_text();
+      dataio = new DataIOFits(SimPM);
+      textio = new dataio_text(SimPM);
       if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
       break;
 #endif // if FITS
 #ifdef SILO
     case 5: // silo
-      dataio = new dataio_silo ("DOUBLE");
+      dataio = new dataio_silo (SimPM, "DOUBLE");
       break;
     case 6: // silo + text
-      dataio = new dataio_silo ("DOUBLE");
-      textio = new dataio_text ();
+      dataio = new dataio_silo (SimPM, "DOUBLE");
+      textio = new dataio_text (SimPM);
       if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
       break;
 #endif // if SILO
@@ -1129,8 +1130,8 @@ int sim_control_fixedgrid::output_data(
       checkpoint_id=99999998;
     else
       checkpoint_id=99999999;
-    err = dataio->OutputData(SimPM.outFileBase, grid, checkpoint_id);
-    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, checkpoint_id);
+    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
+    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
     if (err) {cerr<<"\t Error writing data for checkpointing.\n"; return(1);}
   }
     
@@ -1170,8 +1171,8 @@ int sim_control_fixedgrid::output_data(
   // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
   //
   cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
-  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM.timestep);
-  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM.timestep);
+  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
+  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
   return(0);
 }
@@ -1209,8 +1210,8 @@ int sim_control_fixedgrid::ready_to_start(
   // Setup Raytracing, if they are needed.
   //
   int err=0;
-  err += setup_raytracing(grid);
-  err += setup_evolving_RT_sources();
+  err += setup_raytracing(SimPM, grid);
+  err += setup_evolving_RT_sources(SimPM);
   if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
   //
   // If we are doing raytracing, we probably want to limit the timestep by
@@ -1308,7 +1309,7 @@ int sim_control_fixedgrid::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources();
+    err = update_evolving_RT_sources(SimPM);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;

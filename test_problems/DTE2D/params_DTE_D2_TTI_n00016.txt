@@ -23,13 +23,8 @@ OutputFile    DTE_D2_TTI_n00016
 
 # Number and type of tracers.
 ntracer 1
-trtype MPv7__H1+___
-InitIons LEAVE
-Tracer0 0.0
-Tracer1 0.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
+chem_code MPv7
+Tracer000 H1+
 
 # Which physics to use
 EP_dynamics     1
@@ -83,8 +78,12 @@ FinishTime 3.7872e+12  # 0.12 Myr in seconds
 OrderOfAccSpace 2
 OrderOfAccTime  2
 
-# Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNref_XPout_YNref_YPout_  #ZNref_ZPout_
+# Type of Boundary Condition
+BC_XN reflecting
+BC_XP outflow
+BC_YN reflecting
+BC_YP outflow
+BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 1.0001

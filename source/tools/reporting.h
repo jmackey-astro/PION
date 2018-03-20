@@ -9,6 +9,7 @@
 /// - 2015.01.08 JM: created file, moved class from global.h
 /// - 2015.01.16 JM: extra flush/endl statements in error().
 /// - 2015.01.26 JM: added include for comms and cell classes.
+/// - 2017.12.09 JM: got rid of SimPM refs.
 
 
 #ifndef REPORTING_H
@@ -28,8 +29,6 @@
 
 #ifdef PARALLEL
 #include "comms/comms.h"
-//#include "comms/comm_files.h"
-//#include "comms/comm_mpi.h"
 #endif // PARALLEL
 
 using namespace std;
@@ -76,16 +75,8 @@ class reporting {
         )
   {
   cerr <<msg<<"\t error code: "<<err<<" ...exiting.\n";
-  cerr <<"\t timestep="<<SimPM.timestep;
-  cerr <<" and simtime="<<SimPM.simtime<<"\n";
   cout.flush(); cout << endl; // try to write all to stdout/file.
   cerr.flush(); cerr << endl; // try to write all to stderr.
-  // set maxtime and then Finalise will output data in the current state.
-  SimPM.maxtime=true;
-  //if (integrator) {delete integrator; integrator=0;}
-  //if (grid) {delete grid; grid=0;}
-  //if (MP) {delete MP; MP=0;}
-  //if (RT) {delete RT; RT=0;}
 #ifdef PARALLEL
   if (COMM) {
     COMM->abort();

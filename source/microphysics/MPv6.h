@@ -1,5 +1,5 @@
 ///
-/// \file mpv6_PureH.h
+/// \file MPv6.h
 /// \author Jonathan Mackey
 /// \date 2013.02.15
 ///
@@ -19,43 +19,37 @@
 /// - 2015.07.07 JM: New trtype array structure in constructor.
 
 
-#ifndef MPV6_PUREH_H
-#define MPV6_PUREH_H
+#ifndef MPV6_H
+#define MPV6_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 
-class mpv6_PureH
+class MPv6
   :
-  public mp_explicit_H
+  public MPv3
 {
   public:
   ///
   /// Constructor
   ///
-  mpv6_PureH(
-      const int,          ///< Total number of variables in state vector
-	    const int,          ///< Number of tracer variables in state vector.
-
-#ifdef OLD_TRACER
-
-	    const std::string &, ///< List of what the tracer variables mean.
-
-# else
-
-	    const std::string *, ///< List of what the tracer variables mean.
-
-#endif // OLD_TRACER
-
-      struct which_physics * ///< extra physics stuff.
-	    );
+  MPv6(
+      const int,  ///< grid dimensions
+      const int,  ///< Coordinate System flag
+      const int,  ///< Total number of variables in state vector
+      const int,  ///< Number of tracer variables in state vector.
+      const std::string *, ///< List of what the tracer variables mean.
+      struct which_physics *, ///< extra physics stuff.
+      struct rad_sources *,    ///< radiation sources.
+      const double  ///< EOS Gamma
+      );
 
   ///
   /// Destructor
   ///
-  ~mpv6_PureH();
+  ~MPv6();
 
 
   //---------------------------------------------------------------------------
@@ -77,7 +71,7 @@ class mpv6_PureH
   //---------------------------------------------------------------------------
 };
 
-#endif // MPV6_PUREH_H
+#endif // MPV6_H
 
 
 

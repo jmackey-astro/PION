@@ -38,14 +38,16 @@ class setup_fixed_grid_pllel : virtual public setup_fixed_grid
   /// parameters to the UniformGrid class.
   ///
   int setup_grid(
-        class GridBaseClass **, ///< address of pointer to computational grid.
-        class MCMDcontrol *     ///< address of MCMD controller class.
-        );
+      class GridBaseClass **, ///< address of pointer to computational grid.
+      class SimParams &,  ///< pointer to simulation parameters
+      class MCMDcontrol *     ///< address of MCMD controller class.
+      );
 
   ///
   /// Decide if I need to setup RT class, and do it if i need to.
   ///
   virtual int setup_raytracing(
+      class SimParams &,  ///< pointer to simulation parameters
         class GridBaseClass * 
         );
 

@@ -46,6 +46,7 @@
 /// - 2016.08.25 JM: Changed H-correction loop to start with
 ///    FirstPt_All() instead of FirstPt().  Now serial/parallel code
 ///    produces identical results for the 3D blastwave test.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -258,12 +259,6 @@ void FV_solver_base::post_calc_viscous_terms(
     err += AVFalle(Pl,Pr,Pstar,flux,FS_etav,eq_gamma);
     break;
 
-#ifdef LAPIDUS_VISCOSITY_ENABLED
-  case AV_LAPIDUS: // Broken Lapidus Viscosity
-    err += AVLapidus(cl,cr,flux,FS_etav,eq_gamma);
-    break;
-#endif // LAPIDUS_VISCOSITY_ENABLED
-
   default:
     // Silently continue if av_flag==0 or 3.
     break;
@@ -285,9 +280,10 @@ void FV_solver_base::post_calc_viscous_terms(
 // the flux calculations.
 //
 int FV_solver_base::preprocess_data(
-        const int csp,            // spatial order of accuracy required.
-        class GridBaseClass *grid // pointer to grid.
-        )
+      const int csp,            ///< spatial order of accuracy required.
+      class SimParams &SimPM,   ///< pointer to simulation parameters
+      class GridBaseClass *grid ///< pointer to grid.
+      )
 {
   //  cout <<"\t\t\tpreprocess_data(): Starting: ndim = "<<SimPM.ndim<<"\n";
   int err=0;
@@ -300,7 +296,7 @@ int FV_solver_base::preprocess_data(
   //
   if (csp != OA1) {
     //cout <<"\tFV_solver_base::preprocess_data: setting Edot for 2nd step.\n";
-    err = set_thermal_conduction_Edot();
+    err = set_thermal_conduction_Edot(SimPM);
     if (err) {
       rep.error("FV_solver_base::preprocess_data: set_thermal_conduction_Edot()",err);
     }
@@ -317,29 +313,6 @@ int FV_solver_base::preprocess_data(
   } while ( (c =grid->NextPt(c)) !=0);
 #endif // THERMAL CONDUCTION
 
-#ifdef TEST_LAPIDUS
-  //
-  // If we have a Lapidus-type viscosity, then we need to save div(v)
-  // for every cell.
-  //
-  if (SimPM.artviscosity==AV_LAPIDUS) {
-    //
-    // TODO: NEED FIRST BOUNDARY CELL VALUES ALSO!
-    //
-    cout <<"\t\t Lapidus viscosity: Calculating div(v).\n";
-    if (SimPM.artviscosity==AV_LAPIDUS) {
-      class cell* c = grid->FirstPt();
-      do {
-	set_div_v(c);
-      } while ( (c =grid->NextPt(c)) !=0);
-    }
-    //
-  }
-#else 
-  if (SimPM.artviscosity==AV_LAPIDUS) {
-    cout <<"\t\t*** ASKED FOR LAPIDUS VISC, BUT IFDEF IS NOT ENABLED.\n";
-  }
-#endif //TEST_LAPIDUS
 
   //
   // For the H-correction we need a maximum speed in each direction
@@ -348,7 +321,7 @@ int FV_solver_base::preprocess_data(
   //
   if (SimPM.artviscosity==AV_HCORRECTION ||
       SimPM.artviscosity==AV_HCORR_FKJ98) {
-    err += calc_Hcorrection(csp, grid);
+    err += calc_Hcorrection(csp, SimPM, grid);
   }
 
   return err;
@@ -361,9 +334,10 @@ int FV_solver_base::preprocess_data(
 
 
 int FV_solver_base::calc_Hcorrection(
-        const int csp,
-        class GridBaseClass *grid
-        )
+      const int csp,
+      class SimParams &SimPM,   ///< pointer to simulation parameters
+      class GridBaseClass *grid
+      )
 {
 #ifdef TESTING
   cout <<"\t\t\tcalc_Hcorrection() ndim = "<<SimPM.ndim<<"\n";
@@ -630,7 +604,9 @@ double FV_solver_base::select_Hcorr_eta(
 
 
 #ifdef THERMAL_CONDUCTION
-int FV_solver_base::set_thermal_conduction_Edot()
+int FV_solver_base::set_thermal_conduction_Edot(
+      class SimParams &SimPM ///< pointer to simulation parameters
+      )
 {
   //
   // This function is quite similar to calc_dU() and dU_column()

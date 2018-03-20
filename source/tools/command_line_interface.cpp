@@ -71,9 +71,11 @@ void CommandLineInterface::auto_console(
 
 
 void CommandLineInterface::console(
-      char *prompt
+      std::string p
       )
 {
+  char prompt[512];
+  strcpy(prompt, p.c_str());
   //
   // A command line interface which allows investigation of
   //  the grid during runtime.
@@ -81,8 +83,7 @@ void CommandLineInterface::console(
   fprintf(stderr,"\n Welcome to the command line - type \"help\"\n\n");
   read_history(".cmddemo_CLI.hist");
   //
-  // Get a command. Exercise: figure out what the vicious bit of
-  //  ptr shit (A) does! :) It's useful!
+  // Get a command.
   //
   char *comm=NULL;
   for (;;) {
@@ -137,7 +138,11 @@ int CommandLineInterface::execute(char *com)
   else if  (!strncmp(com,"cmd2"  ,4))  cmd2(com+4);
   else if  (!strncmp(com,"bigcmd",6))  bigcmd();
   else if  (!strncmp(com,"print_cell",10))  print_cell();
-  else if  (!strncmp(com,"print_flux",10))  print_flux();
+  else if  (!strncmp(com,"print_flux",10))  {
+    string s=com;
+    s=s.substr(11,2); cout <<s<<"\n";
+    print_flux(atoi(s.c_str()));
+  }
   else if  (!strncmp(com,"next_point",10))  {
     string s=com;
     s=s.substr(11,2); cout <<s<<"\n";
@@ -233,12 +238,14 @@ void CommandLineInterface::next_point(string s)
   return;
 }
 
-void CommandLineInterface::print_flux() 
+void CommandLineInterface::print_flux(
+    const int nvar   ///< Length of state vectors
+    ) 
 {
-  rep.printVec("left ",dp.vec2,SimPM.nvar);
-  rep.printVec("right",dp.vec3,SimPM.nvar);
-  rep.printVec("pstar",dp.vec1,SimPM.nvar);
-  rep.printVec("flux ",dp.vec4,SimPM.nvar);
+  rep.printVec("left ",dp.vec2,nvar);
+  rep.printVec("right",dp.vec3,nvar);
+  rep.printVec("pstar",dp.vec1,nvar);
+  rep.printVec("flux ",dp.vec4,nvar);
   return;
 }
 

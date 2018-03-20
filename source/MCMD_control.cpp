@@ -8,6 +8,7 @@
 /// Modifications :\n
 /// - 2015.01.27 JM: moved from sim_control_MPI.cpp
 /// - 2016.02.02 JM: Added option to decompose only along one axis.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 
 #include "MCMD_control.h"
@@ -56,7 +57,9 @@ MCMDcontrol::~MCMDcontrol() {
 // ##################################################################
 
 
-int MCMDcontrol::decomposeDomain()
+int MCMDcontrol::decomposeDomain(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   //  cout << "---MCMDcontrol::decomposeDomain() decomposing domain.\n";
 
@@ -76,7 +79,7 @@ int MCMDcontrol::decomposeDomain()
     // Set up ngbprocs array to point to neighbouring processors
     nx[XX] = nproc;
     ix[XX] = myrank;
-    pointToNeighbours();
+    pointToNeighbours(SimPM);
   } // If 1D
   
   else if (SimPM.ndim==2 || SimPM.ndim==3) {
@@ -192,7 +195,7 @@ int MCMDcontrol::decomposeDomain()
       offsets[i]    = ix[i]*LocalNG[i];
     }
     // Set up ngbprocs array to point to neighbouring processors
-    pointToNeighbours();    
+    pointToNeighbours(SimPM);
   } // if 2D or 3D
   
   else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
@@ -221,8 +224,9 @@ int MCMDcontrol::decomposeDomain()
 
 
 int MCMDcontrol::decomposeDomain(
-    const enum axes daxis   ///< Axis to decompose domain along.
-    )
+      const enum axes daxis,   ///< Axis to decompose domain along.
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   cout << "---MCMDcontrol::decomposeDomain() decomposing domain";
   cout << " along axis " << static_cast<int>(daxis) <<"\n";
@@ -283,7 +287,7 @@ int MCMDcontrol::decomposeDomain(
       offsets[i]    = ix[i]*LocalNG[i];
     }
     // Set up ngbprocs array to point to neighbouring processors
-    pointToNeighbours();    
+    pointToNeighbours(SimPM);    
   } // if 2D or 3D
   
   else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
@@ -301,7 +305,9 @@ int MCMDcontrol::decomposeDomain(
 // ##################################################################
 // ##################################################################
 
-int MCMDcontrol::pointToNeighbours()
+int MCMDcontrol::pointToNeighbours(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
 {
   ///
   /// \section PBC Periodic Boundaries
@@ -353,6 +359,7 @@ int MCMDcontrol::pointToNeighbours()
 /// Get a list of all abutting domains, including corner/edge intersections.
 ///
 void MCMDcontrol::get_abutting_domains(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
       std::vector<int> &dl ///< write list to this vector.
       )
 {
@@ -463,9 +470,11 @@ void MCMDcontrol::get_abutting_domains(
 //
 // Returns the ix array for any requested rank.
 //
-void MCMDcontrol::get_domain_ix(const int r, ///< rank ix requested for.
-				   int *arr     ///< array to put ix into.
-				   )
+void MCMDcontrol::get_domain_ix(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      const int r, ///< rank ix requested for.
+      int *arr     ///< array to put ix into.
+      )
 {
   int temp=r;
   if (SimPM.ndim==3) {

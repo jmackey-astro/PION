@@ -17,6 +17,7 @@
 ///   Moved flux_solver_base class to flux_base.h
 /// - 2011.01.03 JM: Added eq_posdir and eq_negdir direction variables.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
 #ifndef EQNS_BASE_H
 #define EQNS_BASE_H
@@ -55,6 +56,7 @@ class eqns_base {
   virtual int UtoP(
       const pion_flt *, ///< pointer to conserved variables.
       pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< minimum temperature/pressure allowed
       const double    ///< Gas constant gamma.
       ) =0;
 
