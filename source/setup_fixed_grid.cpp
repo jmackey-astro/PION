@@ -347,7 +347,7 @@ int setup_fixed_grid::setup_microphysics(
 
 
 #ifndef EXCLUDE_HD_MODULE
-    if (mptype=="lowZ") {
+    if (mptype=="MPv9") {
       cout <<"\t******* setting up microphysics_lowz module *********\n";
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new microphysics_lowz(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
@@ -408,8 +408,8 @@ int setup_fixed_grid::setup_microphysics(
 
 
 #ifdef CODE_EXT_HHE
-    if (mptype=="MPv9") {
-      cout <<"\t******* setting up mpv9_HHe module *********\n";
+    if (mptype=="MPv10") {
+      cout <<"\t******* setting up MPv10 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
       MP = new mpv9_HHe(SimPM.nvar, SimPM.ntracer, SimPM.tracers, 

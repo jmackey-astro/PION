@@ -3,10 +3,15 @@
 /// \author Jonathan Mackey
 /// \date 2011.10.12
 ///
-/// This file updates the implicit (C2-ray type) integrator in
-/// microphysics.cc with a new version based on the explicit
-/// integrator and capable of treating multi-frequency
-/// photoionisation.
+/// THIS IS LEGACY CODE USED ONLY FOR TESTING (Mackey,2012,A&A).
+/// This class is an update on the microphysics class used for JMs
+/// thesis (MPV1).  It uses the same implicit raytracing scheme, so
+/// photon transmission through the cell is integrated with the rate
+/// and energy equations to obtain a time-averaged value.
+/// The main advantage here is that we can use multi-frequency
+/// photoionisation rates which depend on the optical depth.
+/// It was used in Mackey (2012,A&A) but found to be less efficient
+/// than MPv3.
 ///
 /// modifications:
 /// - getting it written: mods up until 2011.10.XX
