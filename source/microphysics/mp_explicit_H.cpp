@@ -286,7 +286,7 @@ mp_explicit_H::mp_explicit_H(
       struct rad_sources *rsrcs,   ///< radiation sources.
       const double g  ///< EOS Gamma
       )
-: MicroPhysicsBase(ephys,rsrcs),
+: microphysics_base(ephys,rsrcs),
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
 {
   cout <<"\n---------------------------------------------------------------------\n";

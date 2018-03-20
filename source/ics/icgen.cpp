@@ -78,7 +78,7 @@
 #include <sstream>
 using namespace std;
 
-int equilibrate_MP(GridBaseClass *, MicroPhysicsBase *, ReadParams *, SimParams &);
+int equilibrate_MP(GridBaseClass *, microphysics_base *, ReadParams *, SimParams &);
 
 int main(int argc, char **argv)
 {
@@ -464,7 +464,7 @@ int main(int argc, char **argv)
 
 int equilibrate_MP(
       class GridBaseClass *gg,
-      class MicroPhysicsBase *mp,
+      class microphysics_base *mp,
       class ReadParams *rp,
       class SimParams &SimPM
       )

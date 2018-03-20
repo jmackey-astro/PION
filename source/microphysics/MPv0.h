@@ -144,7 +144,7 @@ struct element_struct {
 /// state vector from time t to t+dt.  All the details of how this is 
 /// done should be hidden.
 ///
-class MPv0 : public MicroPhysicsBase, public Integrator_Base {
+class MPv0 : public microphysics_base, public Integrator_Base {
  public:
   /// Constructor.  Takes in info on tracers to determine what sort of
   /// chemistry we are using.

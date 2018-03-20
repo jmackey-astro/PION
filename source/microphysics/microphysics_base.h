@@ -3,9 +3,10 @@
 /// \author Jonathan Mackey
 /// \date 2011.01.14
 ///
-/// Microphysics base class, moved here from global.h.  This file is 
-/// currently sourced by global.h.  I need to sort that out
-/// eventually.
+/// \description
+/// Microphysics base class, from which all microphysics classes are
+/// derived.  This defines the interface between the microphysics
+/// class and the rest of the simulation code.
 ///
 /// - 2011.02.25 JM: removed NEW_RT_MP_INTERFACE ifdef (it is assumed now)
 /// - 2011.03.16 JM: Added TimeUpdateMP_RTnew() function to integrate the rate equations
@@ -47,16 +48,16 @@
 
 
 /// virtual base/interface class for in-cell microphysics update.
-class MicroPhysicsBase {
+class microphysics_base {
   public :
   ///
   /// Constructor sets up parameters used by derived classes.
   ///
-  MicroPhysicsBase(
+  microphysics_base(
       struct which_physics *, ///< which physics to calculate.
       struct rad_sources *    ///< radiation sources.
       );
-  virtual ~MicroPhysicsBase() {} ///< non-virtual destructor.
+  virtual ~microphysics_base() {} ///< non-virtual destructor.
 
    /// Non-RT microphysics update, so cooling and heating and chemistry.
    /// 
@@ -268,7 +269,7 @@ protected:
 ///
 /// Global pointed to the microphysics class.
 ///
-extern class MicroPhysicsBase *MP;
+extern class microphysics_base *MP;
 
 #endif // MICROPHYSICS_BASE_H
 

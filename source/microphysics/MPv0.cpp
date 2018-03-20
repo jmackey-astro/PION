@@ -73,7 +73,7 @@ MPv0::MPv0(
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
-: MicroPhysicsBase(ephys,rsrcs),
+: microphysics_base(ephys,rsrcs),
   kB(pconst.kB()),
   m_p(pconst.m_p()),
   nv_prim(nv)

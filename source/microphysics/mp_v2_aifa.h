@@ -237,7 +237,7 @@ int Ydot_for_cvodes(
 ///
 class mp_v2_aifa
 :
-  public MicroPhysicsBase
+  public microphysics_base
   //public Integrator_Base,
   //public hydrogen_microphysics
 {

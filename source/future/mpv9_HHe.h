@@ -25,7 +25,7 @@
 
 
 class mpv9_HHe :
-  public MicroPhysicsBase,
+  public microphysics_base,
   public HHe_photoion,
   public cvode_solver  
 {
