@@ -32,8 +32,8 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
       const double,     ///< input gamma
-      const pion_flt,   ///< H-correction eta-max value.
-      pion_flt *,       ///< output pstar
+      //const pion_flt,   ///< H-correction eta-max value.
+      //pion_flt *,       ///< output pstar
       pion_flt *        ///< output flux
       );
 
