@@ -284,10 +284,10 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 
   for (int v=0; v<eq_nvar; v++){
     if     (S_l>0): out_flux[v] = HD_FL[v];
-    elif (SS_l>=0): out_flux[v] = HD_FLs[v];
-    elif  (S_m>=0): out_flux[v] = HD_FLss[v];
-    elif (SS_r>=0): out_flux[v] = HD_FRss[v];
-    elif  (S_r>=0): out_flux[v] = HD_FRs[v];
+    else if (SS_l>=0): out_flux[v] = HD_FLs[v];
+    else if  (S_m>=0): out_flux[v] = HD_FLss[v];
+    else if (SS_r>=0): out_flux[v] = HD_FRss[v];
+    else if  (S_r>=0): out_flux[v] = HD_FRs[v];
     else:           out_flux[v] = HD_FR[v];
 
 
