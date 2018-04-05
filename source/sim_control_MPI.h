@@ -14,7 +14,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "setup_fixed_grid_MPI.h"
 #include "sim_control.h"
 

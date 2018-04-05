@@ -11,7 +11,7 @@
 /// - 2018.01.24 JM: worked on making SimPM non-global
 
 
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "constants.h"
@@ -147,12 +147,7 @@ int MCMDcontrol::decomposeDomain(
           dsrc=-1;
         }
       }
-      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
-      // DOMAIN DECOMPOSITION.
       dsrc = -1;
-      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
-      // DOMAIN DECOMPOSITION.
-
       // --- end of RT source at infinity bit ---
       
       maxrange=0.; i=0;
@@ -302,8 +297,10 @@ int MCMDcontrol::decomposeDomain(
   return 0;
 }
 
+
 // ##################################################################
 // ##################################################################
+
 
 int MCMDcontrol::pointToNeighbours(
       class SimParams &SimPM  ///< pointer to simulation parameters
@@ -352,8 +349,10 @@ int MCMDcontrol::pointToNeighbours(
   return(0);
 }
 
+
 // ##################################################################
 // ##################################################################
+
 
 ///
 /// Get a list of all abutting domains, including corner/edge intersections.

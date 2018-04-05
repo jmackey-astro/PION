@@ -1,4 +1,4 @@
-/// \file MCMD_control.h
+/// \file decomposition/MCMD_control.h
 /// 
 /// \brief Declares class for controlling Multi-Core-Multi-Domain
 ///        simulations.
