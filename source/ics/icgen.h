@@ -31,7 +31,7 @@
 
 #include "dataIO/readparams.h"
 #ifdef PARALLEL
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #endif // PARALLEL
 
 class ICsetup_base {

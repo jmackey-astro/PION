@@ -63,7 +63,7 @@
 #include "tools/timer.h"
 #include "constants.h"
 
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "sim_control_MPI.h"
 #include "raytracing/raytracer_SC.h"
 

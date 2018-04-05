@@ -69,6 +69,26 @@ So we should set up a new nested grid class that inherits from the parallel grid
 The communication will be a bit more complicated because a coarse grid will need data from a few finer grid instead of being integrated.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Domain Decomposition}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A tree is a good structure for dealing with different levels of refinement on a grid, so we will set this up where the domain is decomposed.
+We will need to specify:
+\begin{enumerate}
+\item Number of spatial dimensions, $D$.
+\item Aspect ratio of grid, $A_x:A_y:A_z$, e.g. 4:3:3, so that the tree has the right number of base nodes in each direction.
+\item Number of processes (which is the number of domains on each level).
+This should be a multiple of $A_xA_yA_z$ and, for cubic domains, a multiple of $A_xA_yA_z2^D$.
+\item Size of coarsest domain, by specifying vectors $X_\mathrm{min}$ and $X_\mathrm{max}$.
+\item Number of grid cells in each direction, $\{N_x,N_y,N_z\}$, on the coarsest grid level.
+\item Centre of the nesting $\{x_n,y_n,z_n\}$.
+\item Number of levels in the nest.
+\end{enumerate}
+
+We could also specify the resolution multiplier in going from a coarse level to the next refined level, but this is hard-coded to 2.
+Similarly, we could specify the domain-size multiplier in going from one level to the next, but this is hard-coded to 0.5.
+
+This requires setting up a tree for each MPI process (all identical), and the process then finds itself on the tree, and finds which sub-domain on each level that it is responsible for.
 
 
 

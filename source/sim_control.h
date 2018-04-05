@@ -56,7 +56,7 @@
 #include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"
 #include "dataIO/dataio.h"
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "setup_fixed_grid.h"
 
 /// The simplest finite volume grid -- a uniform grid with cells that
