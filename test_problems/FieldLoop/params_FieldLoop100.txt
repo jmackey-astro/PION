@@ -4,7 +4,7 @@
 ndim 2
 eqn glm-mhd
 coordinates cartesian
-solver RS_Roe
+solver 7
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}

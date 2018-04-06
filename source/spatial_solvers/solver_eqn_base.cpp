@@ -190,7 +190,9 @@ int FV_solver_base::InterCellFlux(
   // or the Lapidus viscosity functions which act after the flux has
   // been calculated).
   //
-  post_calc_viscous_terms(Cl,Cr,lp,rp,pstar,f,av_flag);
+  if (solve_flag != FLUX_RS_HLLD) {
+    post_calc_viscous_terms(Cl,Cr,lp,rp,pstar,f,av_flag);
+  }
 
   //
   // Calculate tracer flux based on whether flow is to left or right.

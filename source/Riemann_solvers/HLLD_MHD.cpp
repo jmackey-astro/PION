@@ -33,20 +33,14 @@ HLLD_MHD::HLLD_MHD(
 {
   cout <<"(HLLD_MHD::HLLD_MHD) Initialising HLL Multi-State Solver Class.\n";
   if(eq_nvar<8){
-    rep.error("#elements!=8, QUIT.");
+    rep.error("#elements!=8, QUIT.",eq_nvar);
   }
   HD_nvar  = 7; // Case for Bx=const
   eq_gamma = g;
 
   HDl_lambda     = mem.myalloc(HDl_lambda,     HD_nvar);
   HDr_lambda     = mem.myalloc(HDr_lambda,     HD_nvar);
-  //HD_evalues     = mem.myalloc(HD_evalues,     HD_nvar);
-  //HD_strengths   = mem.myalloc(HD_strengths,   HD_nvar);
-  //HD_right_evecs = mem.myalloc(HD_right_evecs, HD_nvar);
-  //for (int v=0;v<HD_Nvar;v++) 
-  //  HD_right_evecs[v] = mem.myalloc(HD_right_evecs[v], HD_nvar);
 
-  //HD_meanp = mem.myalloc(HD_meanp, eq_nvar);
   HD_UL   = mem.myalloc(HD_UL,   eq_nvar); // conserved
   HD_UR   = mem.myalloc(HD_UR,   eq_nvar);
 
@@ -66,7 +60,7 @@ HLLD_MHD::HLLD_MHD(
   HD_FRss = mem.myalloc(HD_FRss, eq_nvar); 
   
 
-  cout << "(HLLD_MHD::HLLD_MHD) All set.\n"
+  cout << "(HLLD_MHD::HLLD_MHD) All set.\n";
   return;
 }
 
@@ -82,14 +76,9 @@ HLLD_MHD::~HLLD_MHD()
   cout << "(riemann_MHD::riemann_MHD) Commencing Destruction." << "\n";
   HDl_lambda     = mem.myfree(HDl_lambda);
   HDr_lambda     = mem.myfree(HDr_lambda);
-  //HD_evalue   = mem.myfree(HD_evalue);
-  //HD_strength = mem.myfree(HD_strength);
-  //for (int v=0;v<7;v++) 
-  //  HD_right_evecs[v] = mem.myfree(HD_right_evecs[v]);
 
-  //HD_meanp = mem.myfree(HD_meanp);
-  HD_UL  = mem.myfree(HD_left); 	// conserved
-  HD_UR  = mem.myfree(HD_right);
+  HD_UL  = mem.myfree(HD_UL); 	// conserved
+  HD_UR  = mem.myfree(HD_UR);
 
   HD_FL   = mem.myfree(HD_FL); 		// flux
   HD_FR   = mem.myfree(HD_FR);
@@ -124,7 +113,7 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
 
       //const pion_flt etamax, ///< H-correction eta-max value.
       //pion_flt *out_ps,       ///< output p*
-      //pion_flt *out_pss,       ///< output p**
+      //pion_flt *out_ps,       ///< output p*
       pion_flt *out_flux         ///< output flux
       )
 {
@@ -183,9 +172,9 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   double temp_l = S_l - left[eqVX];
   double temp_r = S_r - right[eqVX];
 
-  double S_m = (temp_r  * HD_UR[eqMMx] - temp_l * HD_UL[eqMMx] - tp_r + tp_l) / temp; // Sm (m05 eq 38)
+  double S_m = (temp_r  * HD_UR[eqMMX] - temp_l * HD_UL[eqMMX] - tp_r + tp_l) / temp; // Sm (m05 eq 38)
   double tp_s = (temp_r * right[eqRO]  * tp_l   - temp_l * left[eqRO] * tp_r  + left[eqRO] 
-			* right[eqRO]  * temp_r * temp_l)/temp// total pressure* (m05 eq 41)
+			* right[eqRO]  * temp_r * temp_l)/temp; // total pressure* (m05 eq 41)
  
 
   //
@@ -195,7 +184,7 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   HD_URs[eqRHO] = right[eqRO] * (S_r - left[eqVX])/(S_r - S_m);
 
   HD_ULs[eqMMX] = S_m * HD_ULs[eqRHO];    // Mx* (m05 eq 39)
-  HD_URs[eqMMx] = S_m * right[eqRO];
+  HD_URs[eqMMX] = S_m * right[eqRO];
 
   HD_ULs[eqBBX] = left[eqBBX];
   HD_URs[eqBBX] = right[eqBBX];
@@ -218,8 +207,8 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   HD_ULs[eqMMZ] = vz_sl * HD_ULs[eqRHO]; // Vz* (m05 eq. 46)
   HD_URs[eqMMZ] = vz_sr * HD_URs[eqRHO]; 
 
-  temp_l2 = left[eqRO]  * pow((S_l - left[eqVX]),2)  - pow(left[eqBx],2);
-  temp_l2 = right[eqRO] * pow((S_r - right[eqVX]),2) - pow(right[eqBx],2);
+  temp_l2 = left[eqRO]  * pow((S_l - left[eqVX]),2)  - pow(left[eqBX],2);
+  temp_l2 = right[eqRO] * pow((S_r - right[eqVX]),2) - pow(right[eqBX],2);
 	
   HD_ULs[eqBBY] = left[eqBY]  * temp_l; // By* (m05 eq. 45)
   HD_URs[eqBBY] = right[eqBY] * temp_r; 
@@ -235,13 +224,13 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   temp_l  = temp_l1 - temp_l2;
   temp_r  = temp_r1 - temp_r2;
 
-  HD_ULs[eqERG] = ((S_l - left[eqVX])  * HD_UL[eqERG] - tp_l * left[eqVX]  + tp_s * S_m + left[eqBx]  * temp_l)/(S_l - S_m);
-  HD_URs[eqERG] = ((S_r - right[eqVX]) * HD_UR[eqERG] - tp_r * right[eqVX] + tp_s * S_m + right[eqBx] * temp_r)/(S_r - S_m);
+  HD_ULs[eqERG] = ((S_l - left[eqVX])  * HD_UL[eqERG] - tp_l * left[eqVX]  + tp_s * S_m + left[eqBX]  * temp_l)/(S_l - S_m);
+  HD_URs[eqERG] = ((S_r - right[eqVX]) * HD_UR[eqERG] - tp_r * right[eqVX] + tp_s * S_m + right[eqBX] * temp_r)/(S_r - S_m);
   // e* (m05 eq 48)
 
 
-  double SS_l = S_m - abs(Bx)/np.sqrt(HD_ULs[eqRHO]);  // m05 eq 51
-  double SS_r = S_m + abs(Bx)/np.sqrt(HD_URs[eqRHO]);
+  double SS_l = S_m - abs(BX)/sqrt(HD_ULs[eqRHO]);  // m05 eq 51
+  double SS_r = S_m + abs(BX)/sqrt(HD_URs[eqRHO]);
 
   double sgn =  (left[eqBX] > 0) - (left[eqBX] < 0);  // signum
   temp_l = sqrt(HD_ULs[eqRHO]);
@@ -254,51 +243,56 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   HD_ULss[eqMMX] = S_m * HD_ULss[eqRHO] ; // Vx** eq 39
   HD_URss[eqMMX] = S_m * HD_URss[eqRHO] ; 
 
-  double vy_ss   = temp_l * vy_sl + temp_r * vy_sr + (HD_URs[eqBBY] - left[eqBY]) * sgn)/temp; 
+  double vy_ss   = (temp_l * vy_sl + temp_r * vy_sr + (HD_URs[eqBBY] - left[eqBY]) * sgn)/temp; 
   HD_ULss[eqMMY] = vy_ss * HD_ULss[eqRHO]; // Vy** eq 59
   HD_URss[eqMMY] = vy_ss * HD_URss[eqRHO]; 
 
-  double vz_ss   = temp_l * vz_sl + temp_r * vz_sr + (HD_URs[eqBBz] - left[eqBZ]) * sgn)/temp;
+  double vz_ss   = (temp_l * vz_sl + temp_r * vz_sr + (HD_URs[eqBBZ] - left[eqBZ]) * sgn)/temp;
   HD_ULss[eqMMZ] = vz_ss  * HD_ULss[eqRHO]; // Vz** eq 60
   HD_URss[eqMMZ] = vz_ss  * HD_URss[eqRHO]; 
 
   HD_ULss[eqBBX] = HD_URss[eqBBX] = left[eqBX];
   HD_ULss[eqBBY] = HD_URss[eqBBY] = (temp_l * HD_URs[eqBBY] + temp_r * left[eqBY] + temp_l * temp_r * (vy_sr - vy_sl) * sgn)/temp; //By** eq 61
-  HD_ULss[eqBBZ] = HD_URss[eqBBZ] = (temp_l * HD_URs[eqBBz] + temp_r * HD_ULs[eqBBz] + temp_l * temp_r * (vz_sr - vz_sl) * sgn)/temp; //Bz** eq 62
+  HD_ULss[eqBBZ] = HD_URss[eqBBZ] = (temp_l * HD_URs[eqBBZ] + temp_r * HD_ULs[eqBBZ] + temp_l * temp_r * (vz_sr - vz_sl) * sgn)/temp; //Bz** eq 62
 
   temp = S_m * HD_ULss[eqBBX] + vy_ss * HD_ULss[eqBBY] + vz_ss * HD_ULss[eqBBZ];
 
-  HD_ULss[eqERG] = HD_ULs[eqERG] - temp_l * (temp_l2 - temp) * sgn // E** eq 63
-  HD_URss[eqERG] = HD_URs[eqERG] + temp_r * (temp_r2 - temp) * sgn
+  HD_ULss[eqERG] = HD_ULs[eqERG] - temp_l * (temp_l2 - temp) * sgn; // E** eq 63
+  HD_URss[eqERG] = HD_URs[eqERG] + temp_r * (temp_r2 - temp) * sgn;
 
 
 
   // Fa*, Fa** from eq. 64,65
   for (int v=0; v<eq_nvar; v++){
-  HD_FLs[v] = HD_FL[v] + S_l + HD_ULs[v] - S_l * HD_UL[v];
-  HD_FRs[v] = HD_FR[v] + S_r + HD_URs[v] - S_r * HD_UR[v];
+    HD_FLs[v] = HD_FL[v] + S_l + HD_ULs[v] - S_l * HD_UL[v];
+    HD_FRs[v] = HD_FR[v] + S_r + HD_URs[v] - S_r * HD_UR[v];
 
-  HD_FLss[v] = HD_FLs[v] + SS_l * HD_ULss[v] - (SS_l - S_l) * HD_ULss[v] - S_l * HD_UL[v];
-  HD_FRss[v] = HD_FRs[v] + SS_r * HD_URss[v] - (SS_r - S_r) * HD_URss[v] - S_r * HD_UR[v];
+    HD_FLss[v] = HD_FLs[v] + SS_l * HD_ULss[v] - (SS_l - S_l) * HD_ULss[v] - S_l * HD_UL[v];
+    HD_FRss[v] = HD_FRs[v] + SS_r * HD_URss[v] - (SS_r - S_r) * HD_URss[v] - S_r * HD_UR[v];
   }	
 
-  for (int v=0; v<eq_nvar; v++){
-    if     (S_l>0)    out_flux[v] = HD_FL[v]; 
-    else if (SS_l>=0) out_flux[v] = HD_FLs[v]; 
-    else if  (S_m>=0) out_flux[v] = HD_FLss[v];
-    else if (SS_r>=0) out_flux[v] = HD_FRss[v];
-    else if  (S_r>=0) out_flux[v] = HD_FRs[v];
-    else:             out_flux[v] = HD_FR[v];
+  if     (S_l>0)
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FL[v]; 
+  else if (SS_l>=0)
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FLs[v]; 
+  else if  (S_m>=0)
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FLss[v];
+  else if (SS_r>=0)
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FRss[v];
+  else if  (S_r>=0)
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FRs[v];
+  else
+    for (int v=0; v<eq_nvar; v++) out_flux[v] = HD_FR[v];
 
+  // May need Pstar for flux calculations...
+//  if     (S_l>0)    UtoP(HD_UL[v],out_pstar,Tmin,gamma); 
+//  else if (SS_l>=0) out_pstar[v] = HD_ULs[v]; 
+//  else if  (S_m>=0) out_pstar[v] = HD_ULss[v];
+//  else if (SS_r>=0) out_pstar[v] = HD_URss[v];
+//  else if  (S_r>=0) out_pstar[v] = HD_URs[v];
+//  else              out_pstar[v] = HD_UR[v];
 
   // include sanity checks?
-
-
-
-
-  return err;
-
-
 
   return 0;
 }

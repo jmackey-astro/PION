@@ -23,6 +23,7 @@
 #include "equations/eqns_mhd_adiabatic.h"
 #include "Riemann_solvers/riemannMHD.h"
 #include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
+#include "Riemann_solvers/HLLD_MHD.h"
 #include "flux_base.h"
 
 ///
@@ -37,7 +38,8 @@
 class flux_solver_mhd_ideal_adi :
   virtual public flux_solver_base,
   virtual public riemann_MHD,
-  virtual public Riemann_Roe_MHD_CV
+  virtual public Riemann_Roe_MHD_CV,
+  virtual public HLLD_MHD
 {
 public:
   ///
