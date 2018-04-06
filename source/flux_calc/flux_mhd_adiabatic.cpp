@@ -1,5 +1,5 @@
 ///
-/// \file flux_mhd_adiabatic.cc
+/// \file flux_mhd_adiabatic.cpp
 /// \author Jonathan Mackey
 /// Function Definitions of the adiabatic hydrodynamics flux solver class
 ///
@@ -62,11 +62,11 @@ flux_solver_mhd_ideal_adi::flux_solver_mhd_ideal_adi(
        const int ntr ///< Number of tracer variables.
        )
 : eqns_base(nv),
-    //    riemann_base(nv),
     flux_solver_base(nv,eta,ntr),
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,g),
-    Riemann_Roe_MHD_CV(nv,g)
+    Riemann_Roe_MHD_CV(nv,g),
+    HLLD_MHD(nv,g)
 {
   negPGct = negROct = 0;
   return;
@@ -220,6 +220,19 @@ int flux_solver_mhd_ideal_adi::inviscid_flux(
     //
     PtoFlux(pstar, flux, eq_gamma);
   }
+
+  else if (solve_flag==FLUX_RS_HLLD) {
+    err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
+      //const pion_flt *left,  ///< input left state
+      //const pion_flt *right, ///< input right state
+      //const double gamma,    ///< input gamma
+      ////const pion_flt etamax, ///< H-correction eta-max value.
+      ////pion_flt *out_ps,       ///< output p*
+      ////pion_flt *out_pss,       ///< output p**
+      //pion_flt *out_flux         ///< output flux
+      //)
+  }
+
 
   else {
     rep.error("what sort of flux solver do you mean???",solve_flag);
@@ -441,6 +454,7 @@ flux_solver_mhd_mixedGLM_adi::flux_solver_mhd_mixedGLM_adi(
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,g),
     Riemann_Roe_MHD_CV(nv,g),
+    HLLD_MHD(nv,g),
     flux_solver_mhd_ideal_adi(nv,state,eta,g,ntr),
     eqns_mhd_mixedGLM(nv)
 {

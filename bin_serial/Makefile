@@ -363,6 +363,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	Roe_Hydro_ConservedVar_solver.o \
 	Roe_Hydro_PrimitiveVar_solver.o \
 	Roe_MHD_ConservedVar_solver.o \
+        HLLD_MHD.o \
 	flux_hydro_adiabatic.o solver_eqn_hydro_adi.o \
 	eqns_hydro_isothermal.o flux_hydro_isothermal.o solver_eqn_hydro_iso.o \
 	eqns_mhd_adiabatic.o riemannMHD.o flux_mhd_adiabatic.o \
@@ -538,6 +539,9 @@ riemannMHD.o: riemannMHD.cpp riemannMHD.h ${GLOBAL} \
 
 Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
+   ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
+
+HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
    ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
 ####################

@@ -52,6 +52,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam),
     Riemann_Roe_MHD_CV(nv,gam),
+    HLLD_MHD(nv,gam),
     flux_solver_mhd_ideal_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize)
 {
@@ -416,6 +417,7 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam),
     Riemann_Roe_MHD_CV(nv,gam),
+    HLLD_MHD(nv,gam),
     flux_solver_mhd_ideal_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize),
     FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
@@ -591,6 +593,7 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam),
     Riemann_Roe_MHD_CV(nv,gam),
+    HLLD_MHD(nv,gam),
     flux_solver_mhd_ideal_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize),
     FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
@@ -695,6 +698,7 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam), 
     Riemann_Roe_MHD_CV(nv,gam),
+    HLLD_MHD(nv,gam),
     flux_solver_mhd_ideal_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize),
     FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
