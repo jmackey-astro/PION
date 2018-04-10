@@ -47,6 +47,7 @@ SimParams::SimParams()
 
   ntracer = ftr = -1;
   chem_code = "BAD_CHEM_CODE";
+  TRTYPE = "";
   tracers=0;
 
   starttime = simtime = finishtime = dt = -1.e99; last_dt = 1.e100;
@@ -68,6 +69,7 @@ SimParams::SimParams()
   BC_ZN = "";
   BC_ZP = "";
   BC_INT = 0;
+  BC_STRING = "";
 
   outFileBase = "BAD-FILE";
   op_criterion=0; // default to per n-steps

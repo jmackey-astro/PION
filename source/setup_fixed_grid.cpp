@@ -185,8 +185,8 @@ int setup_fixed_grid::setup_grid(
 #endif // TESTING
   if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
-  else rep.error("Spatial order of accuracy unhandled by boundary \
-                  conditions!",SimPM.spOOA);
+  else
+    rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
   
   // Force Nbc=1 if using Lax-Friedrichs flux.
   if (SimPM.solverType==FLUX_LF)

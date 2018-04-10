@@ -217,8 +217,8 @@ int main(int argc, char **argv)
   string outfile    = argv[3];
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
-  rep.redirect(redir.str());
-  rep.kill_stdout_from_other_procs(0);
+  //rep.redirect(redir.str());
+  //rep.kill_stdout_from_other_procs(0);
 
   //
   // start a timer, so I can see how long each step takes.
@@ -427,6 +427,7 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
+  cout <<"OOA="<<SimPM.spOOA <<"\n";
   SimSetup->setup_grid(&grid, SimPM, &MCMD);
   if (!grid) rep.error("Grid setup failed",grid);
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";

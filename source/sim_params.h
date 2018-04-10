@@ -178,6 +178,7 @@ class SimParams {
   int ntracer;    ///< Number of tracer variables.
   int ftr;        ///< Position of first tracer variable in state vector.
   std::string chem_code; ///< Code for what kind of chemistry we are running.
+  std::string TRTYPE; ///< LEGACY CODE for what kind of chemistry we are running.
   std::string *tracers;  ///< array of strings for the tracer type
 
    // Timing
@@ -206,6 +207,7 @@ class SimParams {
    std::string BC_ZP; ///< Type of boundary condition.
    int BC_Nint;       ///< Number of internal boundary regions
    std::string *BC_INT;   ///< List of internal boundary regions.
+   std::string BC_STRING; ///< For reading pre-2018 data-files.
 
    int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
    // Integration accuracy
