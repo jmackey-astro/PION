@@ -289,49 +289,24 @@ endif
 
 ######################################################################
 ####  OS X
-####  -- may need hard-coded path to work
 ######################################################################
 ifeq ($(MAKE_UNAME), imac)
   ifeq ($(PION_OPTIMISE), HIGH)
-    #CXXFLAGS = -O3
-    CXXFLAGS = -O0 -Wall -g
+    CXXFLAGS = -O3
+    #CXXFLAGS = -O0 -Wall -g
   else
     CXXFLAGS = -O0 -Wall -g
   endif
 
-#CXXFLAGS += -arch x86_64
-# CURDIR may only work with GNU Make!  It gives absolute paths, so that
-# the executable can always link to shared libs.
   MYLIB = $(CURDIR)/../extra_libraries
-#  MYLIB = /Users/jm/Documents/CODE/pion_stable/extra_libraries
-#
-#prefix       = /Users/jm/Documents/CODE/pion_stable/extra_libraries
-#exec_prefix  = /Users/jm/Documents/CODE/pion_stable/extra_libraries
-#includedir   = /Users/jm/Documents/CODE/pion_stable/extra_libraries/include
-#libdir       = /Users/jm/Documents/CODE/pion_stable/extra_libraries/lib
-#CPP      = /opt/local/bin/gcc
-#CXX      = g++
-#CPPFLAGS = -O3 -DNDEBUG
-#CC       = /opt/local/bin/gcc
-#CFLAGS   = -O3 -DNDEBUG
-#LDFLAGS  = 
-#LIBS     =  -lm
-
-#  LINKFLAGS = -Wl,-rpath,/Users/jm/Documents/CODE/pion_stable/extra_libraries/lib
-
-#  INCLUDES = -I${includedir}
-#  LIBRARIES = -lsundials_cvode -lsundials_nvecserial ${LIBS}
-#  INC = ${INCLUDES}
-#LDFLAGS  = -L${libdir}
-#LDFLAGS += ${LIBRARIES}
-#LDFLAGS += ${LINKFLAGS}
-
   INC = -I${MYLIB}/include
+  INC += -I/opt/local/include
   INC += -I${SRCDIR}
   LDFLAGS = -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo 
+  LDFLAGS += -lsiloh5
   LDFLAGS += -lm  
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
 

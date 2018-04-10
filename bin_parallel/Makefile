@@ -279,24 +279,18 @@ ifeq ($(MAKE_UNAME), imac)
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
-  #CXXFLAGS += -Wall
-  #CXXFLAGS += -g    # enable debugging with gdb
-  #CXXFLAGS += -arch x86_64
 
-  # CURDIR may only work with GNU Make!  It gives absolute paths, so that
-  # the executable can always link to shared libs.
-  #MYLIB = /Users/jmackey/Library/JMs_stuff
   MYLIB = $(CURDIR)/../extra_libraries
   INC  = -I${MYLIB}/include
+  INC += -I/opt/local/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm  
   LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo 
-  # libs for CVODES
+  LDFLAGS += -lsiloh5 
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  #LDFLAGS += -Wl,--rpath
-  LDFLAGS += -Wl,-no_compact_unwind
+  #LDFLAGS += -Wl,-no_compact_unwind
 
 endif
 #################### --- OS X Darwin --- #############################
@@ -364,6 +358,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	Riemann_FVS_hydro.o                                                    \
 	Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o        \
 	Roe_MHD_ConservedVar_solver.o                                          \
+        HLLD_MHD.o \
 	flux_base.o flux_hydro_adiabatic.o                                     \
 	flux_hydro_isothermal.o flux_mhd_adiabatic.o                           \
 	solver_eqn_base.o solver_eqn_hydro_adi.o                               \
@@ -537,6 +532,9 @@ riemannMHD.o: riemannMHD.cpp riemannMHD.h ${GLOBAL} \
 
 Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
+   ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
+
+HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
    ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
 ####################
