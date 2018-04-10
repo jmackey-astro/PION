@@ -137,7 +137,7 @@ endif
 
 
 ###########################################
-# Specific Options for my imac
+# Specific Options for OSX 
 ###########################################
 ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(IOMODE), USE_FILE_COMMS)
@@ -154,12 +154,13 @@ ifeq ($(MAKE_UNAME), OSX)
 
   MYLIB = $(CURDIR)/../../extra_libraries
   INC += -I$(MYLIB)/include
+  INC += -I/opt/local/include
   INC += -I${srcdir}
 
   LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo 
-  # libs for CVODES
+  LDFLAGS += -lsiloh5 
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 
 endif
