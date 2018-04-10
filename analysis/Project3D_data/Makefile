@@ -86,8 +86,8 @@ ifeq ($(MAKE_UNAME), standard)
     CXX = mpicxx
   endif
   #CXXFLAGS = -O3
-  #CXXFLAGS  = -O3 -Wall
-  CXXFLAGS += -pg -g
+  CXXFLAGS  = -O3 -Wall
+  #CXXFLAGS += -pg -g
   CXXFLAGS += -Wno-unused-function
   #OPTION += -DTESTING
 
