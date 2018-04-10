@@ -135,10 +135,11 @@ double point_quantities::get_point_temperature(
     for (int v=0;v<4;v++) {
       if (pt->ngb[v]) {
         val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,gamma);
-        //if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma))) {
-        //  cout <<"Invalid Temperature in loop="<<val<<"  "<<SimPM.gamma<<"  "<<endl;
-        //  rep.printVec("pv", pt->ngb[v]->P, SimPM.nvar);
-        //  rep.printVec("pos",pt->ngb[v]->pos, SimPM.ndim);
+        //if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
+        //    MP->Temperature(pt->ngb[v]->P,gamma)==0.0) {
+        //  cout <<"Invalid Temperature in loop="<<val<<"  "<<gamma<<"  "<<endl;
+        //  rep.printVec("pv", pt->ngb[v]->P, 5);
+        //  rep.printVec("pos",pt->ngb[v]->pos, 3);
         //  //rep.printVec("img",pt->ngb[v]->Ph, SimPM.ndim);
         //}
       }
@@ -148,7 +149,7 @@ double point_quantities::get_point_temperature(
     rep.error("get_point_temperature(): no microphysics class",1);
   }
   //if (!isfinite(val))
-  //  cout <<"Invalid Temperature="<<val<<endl;
+  //cout <<"Invalid Temperature="<<val<<endl;
   return val;
 }
     

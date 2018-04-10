@@ -1426,23 +1426,15 @@ void image::calculate_pixel(
        get_point_Halpha_params(&(px->int_pts.p[v]), SimPM.ftr, SimPM.gamma, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
-	 //
 	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
 	 ans = ans*(1.0-dtau) +j*hh;
        }
        else {
-	 //
 	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
 	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
        }
     }
-
-    //*tot_mass += 0.0;  // this means nothing for emission integration...
     im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
   } // I_EMISSION
   
   else if (what_to_integrate==I_NII6584) {
@@ -1463,57 +1455,50 @@ void image::calculate_pixel(
        get_point_NII6584_params(&(px->int_pts.p[v]), SimPM.ftr, SimPM.gamma, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
-	 //
 	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
 	 ans = ans*(1.0-dtau) +j*hh;
        }
        else {
-	 //
 	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
 	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
        }
     }
-
     *tot_mass += 0.0;  // this means nothing for emission integration...
     im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
   } // I_NII6584
 
   else if (what_to_integrate==I_X01) {
-    integrate_xray_emission(pix,SimPM.ftr,0,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,0,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   }
 
   else if (what_to_integrate==I_X02) {
-    integrate_xray_emission(pix,SimPM.ftr,1,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,1,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   } // I_X02
 
   else if (what_to_integrate==I_X05) {
-    integrate_xray_emission(pix,SimPM.ftr,2,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,2,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   } // I_X05
 
   else if (what_to_integrate==I_X10) {
-    integrate_xray_emission(pix,SimPM.ftr,3,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,3,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   } // I_X10
 
   else if (what_to_integrate==I_X20) {
-    integrate_xray_emission(pix,SimPM.ftr,4,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,4,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   } // I_X20
 
   else if (what_to_integrate==I_X50) {
-    integrate_xray_emission(pix,SimPM.ftr,5,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,5,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   } // I_X50
 
   else if (what_to_integrate==I_X100) {
-    integrate_xray_emission(pix,SimPM.ftr,6,SimPM.gamma,*tot_mass,ans);
+    integrate_xray_emission(px,SimPM.ftr,6,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   } // I_X100
   
@@ -1556,7 +1541,6 @@ void image::integrate_xray_emission(
   ans += j;
   ans *= hh/3.0;
   tot_mass += ans;
-
   return;
 }
 

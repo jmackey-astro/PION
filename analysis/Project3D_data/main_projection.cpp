@@ -218,7 +218,7 @@ int main(int argc, char **argv)
 
   ostringstream redir; redir.str(""); redir<<outfile<<"_msg_";
   //rep.redirect(redir.str());
-  //rep.kill_stdout_from_other_procs(0);
+  rep.kill_stdout_from_other_procs(0);
 
   //
   // start a timer, so I can see how long each step takes.
@@ -427,7 +427,6 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  cout <<"OOA="<<SimPM.spOOA <<"\n";
   SimSetup->setup_grid(&grid, SimPM, &MCMD);
   if (!grid) rep.error("Grid setup failed",grid);
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
@@ -851,7 +850,7 @@ int main(int argc, char **argv)
           //
           // Receive data into buffer.
           //
-          cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
+          //cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
           err = COMM->receive_double_data(
                   from_rank, ///< rank of process we are receiving from.
                   recv_tag,  ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
@@ -879,8 +878,8 @@ int main(int argc, char **argv)
         //
         cout <<"RANK "<<myrank<<": SENDING DATA\n";
         string id;
-        cout <<"sending "<<nels<<" to rank 0.\n";
-        cout.flush();
+        //cout <<"sending "<<nels<<" to rank 0.\n";
+        //cout.flush();
         err = COMM->send_double_data(
               0,       ///< rank to send to.
               nels,    ///< size of buffer, in number of doubles.

@@ -889,9 +889,9 @@ int DataIOBase::read_simulation_parameters(
         else rep.error("Unrecognised BC type",SimPM.BC_STRING);
       }
     } // loop over external boundaries
-    cout <<SimPM.BC_XN <<"  "<<SimPM.BC_XP <<"  ";
-    cout <<SimPM.BC_YN <<"  "<<SimPM.BC_YP <<"  ";
-    cout <<SimPM.BC_ZN <<"  "<<SimPM.BC_ZP <<"\n";
+    //cout <<SimPM.BC_XN <<"  "<<SimPM.BC_XP <<"  ";
+    //cout <<SimPM.BC_YN <<"  "<<SimPM.BC_YP <<"  ";
+    //cout <<SimPM.BC_ZN <<"  "<<SimPM.BC_ZP <<"\n";
 
     // Now look for any internal boundaries
     int len = SimPM.BC_STRING.length(); len = (len+5)/6;
@@ -899,10 +899,10 @@ int DataIOBase::read_simulation_parameters(
       SimPM.BC_Nint = len - 2*SimPM.ndim;
       if (!SimPM.BC_INT)
         SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
-      cout <<" got "<<SimPM.BC_Nint<<" internal boundaries\n";
+      //cout <<" got "<<SimPM.BC_Nint<<" internal boundaries\n";
     }
     for (i=2*SimPM.ndim; i<len; i++) {
-      cout <<"i="<<i<<", len="<<len<<"\n";
+      //cout <<"i="<<i<<", len="<<len<<"\n";
       if ( (pos=SimPM.BC_STRING.find("IN",i*6)) ==string::npos) {
         rep.error("internal boundary condition not found",SimPM.BC_STRING);
       }
@@ -953,12 +953,13 @@ int DataIOBase::read_simulation_parameters(
   // uses chem_code and then a list called TracerIJK.
   //
   if (SimPM.TRTYPE != "") {
+    SimPM.chem_code = SimPM.TRTYPE.substr(0,6);
     int len = (SimPM.TRTYPE.length() +5)/6 -1;
     if (len!=SimPM.ntracer)
       rep.error("bad tracer string (LEGACY)",SimPM.TRTYPE);
     for (int i=0;i<len;i++) {
       SimPM.tracers[i] = SimPM.TRTYPE.substr(6*(i+1),6);
-      cout <<"tracer["<<i<<"] = "<<SimPM.tracers[i] <<"\n";
+      //cout <<"tracer["<<i<<"] = "<<SimPM.tracers[i] <<"\n";
     }
       
   } // if LEGACY tracer variables used.
