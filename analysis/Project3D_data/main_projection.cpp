@@ -105,7 +105,9 @@ using namespace std;
 /// Reset the radiation sources in the header to correspond to projected
 /// quantities and not the sources used for the simulation.
 ///
-void reset_radiation_sources(struct rad_sources *);
+void reset_radiation_sources(
+      class SimParams &SimPM
+      );
 
 // ----------- MICROPHYSICS --------------
 
@@ -128,7 +130,7 @@ void reset_domain(class MCMDcontrol *MCMD)
   }
   rep.printVec("New Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("New Xmax",SimPM.Xmax,SimPM.ndim);
-  MCMD->decomposeDomain();
+  MCMD->decomposeDomain(SimPM);
   return;
 }
 #endif
@@ -199,7 +201,7 @@ int main(int argc, char **argv)
     cout <<"fixed-dir:    string direction for axis which we rotate view around (XN,XP mean same thing).\n";
     cout <<"theta:        angle (DEGREES, in [-89,89]) which LOS makes with normal-vec (staying perp. to fixed dir).\n"; 
     cout <<"what2integrate: integer: 0=density, 1=neutral num.density, 2=los velocity, 3=VX, 4=Halpha\n";
-    cout <<"                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)";
+    cout <<"                         5=StokesQ,6=StokesU, 7=All-scalars, 8=|B|(LOS), 9=|B|(perp)\n";
     cout <<"skip:         will skip this number of input files each loop. ";
     cout <<"(0 means it will calculate every file)\n";
     cout <<"OPTIONAL VELOCITY ARGS:\n";
@@ -330,10 +332,11 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Getting List of Files to read ---------\n";
   
+  class SimParams SimPM;
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio("DOUBLE",&MCMD);
+  class dataio_silo_utility dataio(SimPM, "DOUBLE",&MCMD);
 
   //
   // Get list of files to read:
@@ -380,7 +383,7 @@ int main(int argc, char **argv)
   ostringstream temp; temp <<input_path<<"/"<<*ff;
   string first_file = temp.str();
   temp.str("");
-  err = dataio.ReadHeader(first_file);
+  err = dataio.ReadHeader(first_file, SimPM);
   if (err) rep.error("Didn't read header",err);
 
   //
@@ -403,7 +406,7 @@ int main(int argc, char **argv)
   //
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
   cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
-  MCMD.decomposeDomain(perpaxis);
+  MCMD.decomposeDomain(perpaxis,SimPM);
   if (err) rep.error("main: failed to decompose domain!",err);
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -413,7 +416,7 @@ int main(int argc, char **argv)
   // Now delete all radiation "sources" from SimPM.RS, to avoid
   // allocating memory for column densities in the cell-data.
   // *****************************************************
-  reset_radiation_sources(&(SimPM.RS));
+  reset_radiation_sources(SimPM);
 
   //
   // get a setup_grid class, and use it to set up the grid.
@@ -424,7 +427,7 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,&MCMD);
+  SimSetup->setup_grid(&grid, SimPM, &MCMD);
   if (!grid) rep.error("Grid setup failed",grid);
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
 
@@ -449,7 +452,7 @@ int main(int argc, char **argv)
   //
   // Now setup microphysics and raytracing classes
   //
-  err += SimSetup->setup_microphysics();
+  err += SimSetup->setup_microphysics(SimPM);
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
   
@@ -691,12 +694,12 @@ int main(int argc, char **argv)
     // Read header to get timestep info; 
     // also reset the domain to 1/2 the size in Y and Z (if needed).
     //
-    err = dataio.ReadHeader(infile);
+    err = dataio.ReadHeader(infile, SimPM);
 #ifdef RESET_DOMAIN
     reset_domain(&MCMD);
 #endif
     if (err) rep.error("Didn't read header",err);
-    if ( (err=MCMD.decomposeDomain(perpaxis)) !=0) 
+    if ( (err=MCMD.decomposeDomain(perpaxis, SimPM)) !=0) 
       rep.error("Couldn't Decompose Domain!",err);
 
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.156e7;
@@ -706,9 +709,7 @@ int main(int argc, char **argv)
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(infile, ///< file to read from
-					grid    ///< pointer to data.
-					);
+    err = dataio.parallel_read_any_data(infile, SimPM, grid);
     rep.errorTest("(main) Failed to read data",0,err);
     
     //cell *tt = grid->FirstPt_All();
@@ -808,6 +809,7 @@ int main(int argc, char **argv)
 	IMG.calculate_pixel(px,       ///< pointer to pixel
 			    &vps,     ///< info for velocity profiling.
 			    w2i,      ///< flag for what to integrate.
+                            SimPM,
 			    im,       ///< array of pixel data.
 			    &tot_mass ///< general purpose counter for stuff.
 			    );
@@ -1265,7 +1267,9 @@ int main(int argc, char **argv)
 /// Reset the radiation sources in the header to correspond to projected
 /// quantities and not the sources used for the simulation.
 ///
-void reset_radiation_sources(struct rad_sources *rs)
+void reset_radiation_sources(
+      class SimParams &SimPM
+      )
 {
   //
   // struct rad_sources {
@@ -1277,9 +1281,9 @@ void reset_radiation_sources(struct rad_sources *rs)
   //
   // delete any current sources
   //
-  if (rs->Nsources!=0) {
-    rs->sources.clear();
-    rs->Nsources=0;
+  if (SimPM.RS.Nsources!=0) {
+    SimPM.RS.sources.clear();
+    SimPM.RS.Nsources=0;
   }
   SimPM.EP.raytracing=0;
 

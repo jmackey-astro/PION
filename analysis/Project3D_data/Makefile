@@ -246,20 +246,11 @@ VectorOps_spherical.o \
   hydrogen_recomb_Hummer94.o  \
   hydrogen_mp.o               \
   hydrogen_photoion.o         \
-  mp_explicit_H.o             \
   cvode_integrator.o          \
-  mp_implicit_H.o             \
-  mp_v2_aifa.o                \
   integrator.o                \
   cooling.o                   \
-  microphysics.o              \
-  microphysics_v1.o           \
-  microphysics_lowZ.o         \
   mp_only_cooling.o           \
-  mpv5_molecular.o            \
-  mpv6_PureH.o                \
-  mpv7_TwoTempIso.o           \
-  mpv8_StarBench_heatcool.o   \
+  MPv3.o MPv5.o MPv6.o MPv7.o  \
   xray_emission.o
 
         
@@ -338,42 +329,25 @@ hydrogen_recomb_Hummer94.o: hydrogen_recomb_Hummer94.h hydrogen_recomb_Hummer94.
 mp_only_cooling.o: mp_only_cooling.cpp mp_only_cooling.h ${GLOBAL} \
    cooling_SD93_cie.h microphysics_base.h hydrogen_recomb_Hummer94.h
 
-microphysics.o:	microphysics.cpp microphysics.h microphysics_base.h \
-   ${GLOBAL} cooling.h integrator.h
-microphysics_v1.o: microphysics_v1.cpp microphysics.h \
-   microphysics_base.h ${GLOBAL} cooling.h integrator.h
-microphysics_lowZ.o: microphysics_lowZ.cpp microphysics_lowZ.h \
-   microphysics_base.h ${GLOBAL} integrator.h
-
 hydrogen_mp.o: hydrogen_mp.cpp hydrogen_mp.h ${GLOBAL} hydrogen_recomb_Hummer94.h \
   hydrogen_photoion.h 
 
 hydrogen_photoion.o: hydrogen_photoion.cpp hydrogen_photoion.h ${GLOBAL}
 
-mp_v2_aifa.o: mp_v2_aifa.cpp mp_v2_aifa.h ${GLOBAL} hydrogen_mp.h \
+cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
+
+MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
-cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
+MPv5.o: MPv5.cpp MPv5.h \
+  MPv3.h microphysics_base.h ${GLOBAL}
 
-mpv5_molecular.o: mpv5_molecular.cpp mpv5_molecular.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
+MPv6.o: MPv6.cpp MPv6.h \
+  MPv3.h microphysics_base.h ${GLOBAL}
 
-mpv6_PureH.o: mpv6_PureH.cpp mpv6_PureH.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
-
-mpv7_TwoTempIso.o: mpv7_TwoTempIso.cpp mpv7_TwoTempIso.h \
-  mp_explicit_H.h microphysics_base.h ${GLOBAL}
-
-cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
-
-mp_explicit_H.o: mp_explicit_H.cpp mp_explicit_H.h ${GLOBAL} hydrogen_mp.h \
-  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h
-
-mp_implicit_H.o: mp_implicit_H.cpp mp_implicit_H.h mp_explicit_H.h \
-  ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
-  cooling_SD93_cie.h microphysics_base.h
+MPv7.o: MPv7.cpp MPv7.h \
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 ###############################
 # Stuff Specific to this code #

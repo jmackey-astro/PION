@@ -96,7 +96,7 @@ GAMMA 2.0
 # CFL coefficient 0<cfl<1
 CFL 0.7
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
-ArtificialViscosity 1
+ArtificialViscosity 0
 EtaViscosity 0.15
 
 # Code Units

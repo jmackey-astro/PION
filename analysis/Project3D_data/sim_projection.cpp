@@ -1050,6 +1050,7 @@ void image::calculate_pixel(
       struct pixel *px,                 ///< pointer to pixel
       const struct vel_prof_stuff *vps, ///< struct with info for velocity binning.
       const int what_to_integrate,      ///< flag for what to integrate.
+      class SimParams &SimPM,           ///< pointer to Simulation parameters
       double *im,                       ///< array of pixel data.
       double *tot_mass                  ///< general purpose counter for stuff.
       )
@@ -1116,12 +1117,12 @@ void image::calculate_pixel(
     // Point quantity in units MJy/sr/cm
     // Projected quantity in MJy/sr
     //
-    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]));
+    ans = get_point_Bremsstrahlung20cm(&(px->int_pts.p[0]), SimPM.gamma);
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
-      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]));
+      ans += wt *get_point_Bremsstrahlung20cm(&(px->int_pts.p[v]), SimPM.gamma);
     }
-    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]));
+    ans += get_point_Bremsstrahlung20cm(&(px->int_pts.p[npt-1]), SimPM.gamma);
     ans *= hh/3.0;
     *tot_mass += ans;
     im[px->ipix] = ans;
@@ -1259,19 +1260,19 @@ void image::calculate_pixel(
     // in the temp_profile[] array, and if smooth==2 it will smooth this with a 
     // Gaussian corresponding to the Doppler broadening from the point's temperature.
     //
-    VELX.get_point_VX_profile(&(px->int_pts.p[0]), temp_profile, SimPM.ftr);
+    VELX.get_point_VX_profile(&(px->int_pts.p[0]), temp_profile, SimPM.gamma, SimPM.ftr);
     for (int v=0;v<Nbins;v++) profile[v] +=  temp_profile[v];
     
     for (int ii=1; ii<(npt-1); ii++) {
       wt=6-wt;
-      VELX.get_point_VX_profile(&(px->int_pts.p[ii]), temp_profile, SimPM.ftr);
+      VELX.get_point_VX_profile(&(px->int_pts.p[ii]), temp_profile, SimPM.gamma, SimPM.ftr);
       for (int v=0;v<Nbins;v++) profile[v] +=  wt*temp_profile[v];
       //cout <<"prof: ";
       //for (int v=0;v<Nbins;v++) cout <<" "<<temp_profile[v];
       //cout <<endl;
     }
     
-    VELX.get_point_VX_profile(&(px->int_pts.p[npt-1]), temp_profile, SimPM.ftr);
+    VELX.get_point_VX_profile(&(px->int_pts.p[npt-1]), temp_profile, SimPM.gamma, SimPM.ftr);
     for (int v=0;v<Nbins;v++) profile[v] +=  temp_profile[v];
     
     for (int v=0;v<Nbins;v++) profile[v] *= hh/3.0;
@@ -1360,16 +1361,16 @@ void image::calculate_pixel(
     // in the temp_profile[] array, and if smooth==2 it will smooth this with a 
     // Gaussian corresponding to the Doppler broadening from the point's temperature.
     //
-    VLOS.get_point_v_los_profile(&(px->int_pts.p[0]), temp_profile, SimPM.ftr);
+    VLOS.get_point_v_los_profile(&(px->int_pts.p[0]), temp_profile, SimPM.gamma, SimPM.ftr);
     for (int v=0;v<Nbins;v++) profile[v] +=  temp_profile[v];
     
     for (int ii=1; ii<(npt-1); ii++) {
       wt=6-wt;
-      VLOS.get_point_v_los_profile(&(px->int_pts.p[ii]), temp_profile, SimPM.ftr);
+      VLOS.get_point_v_los_profile(&(px->int_pts.p[ii]), temp_profile, SimPM.gamma, SimPM.ftr);
       for (int v=0;v<Nbins;v++) profile[v] +=  wt*temp_profile[v];
     }
     
-    VLOS.get_point_v_los_profile(&(px->int_pts.p[npt-1]), temp_profile, SimPM.ftr);
+    VLOS.get_point_v_los_profile(&(px->int_pts.p[npt-1]), temp_profile, SimPM.gamma, SimPM.ftr);
     for (int v=0;v<Nbins;v++) profile[v] +=  temp_profile[v];
     
     for (int v=0;v<Nbins;v++) profile[v] *= hh/3.0;
@@ -1422,7 +1423,7 @@ void image::calculate_pixel(
     // source function, eq. 1.30, and ignores scattering.
     // 
     for (int v=0; v<npt; v++) {
-       get_point_Halpha_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+       get_point_Halpha_params(&(px->int_pts.p[v]), SimPM.ftr, SimPM.gamma, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
 	 //
@@ -1459,7 +1460,7 @@ void image::calculate_pixel(
     // source function, eq. 1.30, and ignores scattering.
     // 
     for (int v=0; v<npt; v++) {
-       get_point_NII6584_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
+       get_point_NII6584_params(&(px->int_pts.p[v]), SimPM.ftr, SimPM.gamma, &alpha, &j);
        dtau = alpha*hh;
        if (dtau < 1e-7) {
 	 //
@@ -1482,244 +1483,38 @@ void image::calculate_pixel(
   } // I_NII6584
 
   else if (what_to_integrate==I_X01) {
-
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-
-    get_point_Xray_X01_params(&(px->int_pts.p[0]), SimPM.ftr, &alpha, &j);
-    ans = j;
-    for (int v=1; v<(npt-1); v++) {
-      wt = 6-wt;
-      get_point_Xray_X01_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-      ans += wt * j;
-    }
-    get_point_Xray_X01_params(&(px->int_pts.p[npt-1]), SimPM.ftr, &alpha, &j);
-    ans += j;
-    ans *= hh/3.0;
-    *tot_mass += ans;
+    integrate_xray_emission(pix,SimPM.ftr,0,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   }
 
   else if (what_to_integrate==I_X02) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X02_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
-
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
+    integrate_xray_emission(pix,SimPM.ftr,1,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
   } // I_X02
 
   else if (what_to_integrate==I_X05) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X05_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
-
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
+    integrate_xray_emission(pix,SimPM.ftr,2,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
   } // I_X05
 
-    else if (what_to_integrate==I_X10) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X10_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
-
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
+  else if (what_to_integrate==I_X10) {
+    integrate_xray_emission(pix,SimPM.ftr,3,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
   } // I_X10
 
-    else if (what_to_integrate==I_X20) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X20_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
-
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
+  else if (what_to_integrate==I_X20) {
+    integrate_xray_emission(pix,SimPM.ftr,4,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
   } // I_X20
 
-    else if (what_to_integrate==I_X50) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X50_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
-
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
+  else if (what_to_integrate==I_X50) {
+    integrate_xray_emission(pix,SimPM.ftr,5,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
   } // I_X50
 
-    else if (what_to_integrate==I_X100) {
-    //
-    // Set up class for calculating points.
-    // None of the parameters mean anything for calculating emission;
-    // they're just for velocity.
-    //
-    //class point_velocity VLOS(1,1,1,1,1.0,1.0,2.0,1);
-    double alpha=0.0, j=0.0, dtau=0.0;
-    ans=0.0;
-    //
-    // Now do an Euler Integration with forward differencing.
-    // This uses Rybicki & Lightman's basic solution for constant
-    // source function, eq. 1.30, and ignores scattering.
-    // 
-    for (int v=0; v<npt; v++) {
-       get_point_Xray_X100_params(&(px->int_pts.p[v]), SimPM.ftr, &alpha, &j);
-       dtau = alpha*hh;
-       if (dtau < 1e-7) {
-	 //
-	 // We can approximate the exponential by Taylor Series to avoid roundoff errors.
-	 // 
-	 ans = ans*(1.0-dtau) +j*hh;
-       }
-       else {
-	 //
-	 // Don't approximate the exponentials because absorption is quite strong
-	 // 
-	 ans = ans*exp(-dtau) +j*(1.0-exp(-dtau))/alpha;
-	 //cout <<" dtau = "<<dtau<<endl;
-       }
-    }
-
-    *tot_mass += 0.0;  // this means nothing for emission integration...
-    im[px->ipix] = ans; ///1.0e80;
-    //cout <<"\t\tans = "<<ans<<endl;
+  else if (what_to_integrate==I_X100) {
+    integrate_xray_emission(pix,SimPM.ftr,6,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
   } // I_X100
   
   else {
@@ -1728,6 +1523,49 @@ void image::calculate_pixel(
   //  cout <<"finished pixel "<<i<<" at address "<<px<<"\n";
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+void image::integrate_xray_emission(
+      struct pixel *pix, ///< pointer to pixel
+      const int ftr,      ///< tracer variable of H+ fraction (if exists).
+      const int index,      ///< which x-ray band to calculate (index in array)
+      const double gamma,   ///< EOS gamma
+      double &tot_mass,       ///< [OUT] tot_mass counter (not really used here)
+      double &ans        ///< [OUT] answer to return.
+      )
+{
+  // we ignore absorption for now, just sum up the emission.
+  double alpha=0.0, j=0.0, dtau=0.0;
+  double hh=pix->int_pts.dx_phys;
+  int wt=2;
+  int npt=pix->int_pts.npt;
+  ans=0.0;
+  get_point_Xray_params(&(pix->int_pts.p[0]), ftr, index, gamma, &alpha, &j);
+  ans = j;
+  for (int v=1; v<(npt-1); v++) {
+    wt = 6-wt;
+    get_point_Xray_params(&(pix->int_pts.p[v]), ftr, index, gamma, &alpha, &j);
+    ans += wt * j;
+  }
+  get_point_Xray_params(&(pix->int_pts.p[npt-1]), ftr, index, gamma, &alpha, &j);
+  ans += j;
+  ans *= hh/3.0;
+  tot_mass += ans;
+
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 // -------------------------------------------------------------
 // *************************************************************
@@ -1960,10 +1798,11 @@ void point_velocity::smooth_profile_FFT(
 
 
 void point_velocity::get_point_VX_profile(
-        const struct point_4cellavg *pt, ///< point to add to profile.
-        double *prof, ///< Array of velocity bins to put profile into.
-        const int ifrac ///< index of i-fraction in P.V.
-        )
+      const struct point_4cellavg *pt, ///< point to add to profile.
+      double *prof, ///< Array of velocity bins to put profile into.
+      const double gamma,   ///< EOS gamma
+      const int ifrac ///< index of i-fraction in P.V.
+      )
 {
   //
   // Gets the velocity profile, using VX only, ignoring projection
@@ -1983,7 +1822,7 @@ void point_velocity::get_point_VX_profile(
     prof[ibin] = norm;
   //cout <<"vx="<<vel<<" norm="<<norm<<" prof["<<ibin<<"] = "<<prof[ibin]<<endl;
   if (broaden==2) {
-    broaden_profile(pt,prof,ifrac,vel,norm);
+    broaden_profile(pt,prof,ifrac,gamma,vel,norm);
   }
   //for (int v=0;v<v_Nbins;v++) cout <<" "<<prof[v];
   //cout <<endl;  
@@ -1998,10 +1837,11 @@ void point_velocity::get_point_VX_profile(
 
 
 void point_velocity::get_point_v_los_profile(
-        const struct point_4cellavg *pt, ///< point to add to profile.
-        double *prof, ///< Array of velocity bins to put profile into.
-        const int ifrac ///< index of i-fraction in P.V.
-        )
+      const struct point_4cellavg *pt, ///< point to add to profile.
+      double *prof, ///< Array of velocity bins to put profile into.
+      const double gamma,   ///< EOS gamma
+      const int ifrac ///< index of i-fraction in P.V.
+      )
 {
   double vel, norm;
   int ibin;
@@ -2013,7 +1853,7 @@ void point_velocity::get_point_v_los_profile(
     prof[ibin] = norm;
 
   if (broaden==2) {
-    broaden_profile(pt,prof,ifrac,vel,norm);
+    broaden_profile(pt,prof,ifrac,gamma, vel,norm);
   }
   
   return;
@@ -2030,6 +1870,7 @@ void point_velocity::broaden_profile(
       const struct point_4cellavg *pt, ///< point to add to profile.
       double *prof,    ///< velocity bins.
       const int ifrac, ///< index of i-fraction in P.V.
+      const double gamma,   ///< EOS gamma
       double vel,      ///< LOS velocity of point.
       double norm      ///< Normalisation of profile.
       )
@@ -2049,7 +1890,7 @@ void point_velocity::broaden_profile(
   // ma = mass of molecule/atom we are modelling.
   // sigma = the thermal broadening sigma in the gaussian.
   //
-  double T = get_point_temperature(pt);
+  double T = get_point_temperature(pt, gamma);
   //double ma = 27.0*pconst.m_p(); // mass of 12CO molecule
   //double sigma2 = pconst.kB()*T/ma;
   //double sigma  = sqrt(sigma2);
