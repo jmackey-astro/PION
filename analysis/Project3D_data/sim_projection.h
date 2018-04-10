@@ -301,40 +301,42 @@ public:
 
   ~point_velocity() {}
 
-  /** \brief Set the line broadening technique. */
+  /// Set the line broadening technique.
   void set_broadening(
           const int,    ///< Type: 1=constant Gaussian broadening.
           const double  ///< FWHM of Gaussian to smooth profile by.
           );
 
-  /** \brief Returns the LOS velocity profile at the point in question, subject to
-   * the parameters imposed in the constructor.
-   *
-   * Adds the point's mass to the right velocity bin in the
-   * temp_profile[] array, and if smooth==2 it will smooth this with a
-   * Gaussian corresponding to the Doppler broadening from the point's
-   * temperature.  This is the primary useful function call for this
-   * class. */
+  /// Returns the LOS velocity profile at the point in question, subject to
+  /// the parameters imposed in the constructor.
+  ///
+  /// Adds the point's mass to the right velocity bin in the
+  /// temp_profile[] array, and if smooth==2 it will smooth this with a
+  /// Gaussian corresponding to the Doppler broadening from the point's
+  /// temperature.  This is the primary useful function call for this
+  /// class.
   void get_point_v_los_profile(
-          const struct point_4cellavg *, ///< point to add to profile.
-          double *, ///< Array of velocity bins to put profile into.
-          const int ///< index of ion fraction in prim.var.
-          );
+      const struct point_4cellavg *, ///< point to add to profile.
+      double *, ///< Array of velocity bins to put profile into.
+      const double,   ///< EOS gamma
+      const int ///< index of ion fraction in prim.var.
+      );
 
-  /** \brief Returns the X-velocity componoent in a velocity profile at the
-   * point in question, subject to the parameters imposed in the constructor.
-   *
-   * Adds the point's mass to the right velocity bin in the
-   * temp_profile[] array, and if smooth==2 it will smooth this with a
-   * Gaussian corresponding to the Doppler broadening from the point's
-   * temperature.  This is for diagnostics rather than to mimic a real 
-   * observation, since Vx is not a straightforward observation.
-   */
+  /// Returns the X-velocity componoent in a velocity profile at the
+  /// point in question, subject to the parameters imposed in the constructor.
+  ///
+  /// Adds the point's mass to the right velocity bin in the
+  /// temp_profile[] array, and if smooth==2 it will smooth this with a
+  /// Gaussian corresponding to the Doppler broadening from the point's
+  /// temperature.  This is for diagnostics rather than to mimic a real 
+  /// observation, since Vx is not a straightforward observation.
+  ///
   void get_point_VX_profile(
-          const struct point_4cellavg *, ///< point to add to profile.
-          double *, ///< Array of velocity bins to put profile into.
-          const int ///< index of ion fraction in prim.var.
-          );
+      const struct point_4cellavg *, ///< point to add to profile.
+      double *, ///< Array of velocity bins to put profile into.
+      const double,   ///< EOS gamma
+      const int ///< index of ion fraction in prim.var.
+      );
 
   /** \brief Smooth the profile with whatever smoothing is required.  This only has any
    * effect if using fixed-width smoothing, when it does an FFT-based smoothing with a
@@ -364,16 +366,18 @@ public:
           const double ///< point's velocity
           );
   
-  /** \brief This does Doppler broadening of a single velocity point, into a 
-   * temporary profile array.  Convolution is easy because the velocity is
-   * a delta function.
-   * */
-  void broaden_profile(const struct point_4cellavg *, ///< point to add to profile.
-		       double *,  ///< velocity bins.
-		       const int, ///< index of i-fraction in P.V.
-		       double,    ///< LOS velocity of point.
-		       double     ///< Normalisation of profile.
-		       );
+  /// This does Doppler broadening of a single velocity point, into a 
+  /// temporary profile array.  Convolution is easy because the velocity is
+  /// a delta function.
+  ///
+  void broaden_profile(
+      const struct point_4cellavg *, ///< point to add to profile.
+      double *,  ///< velocity bins.
+      const int, ///< index of i-fraction in P.V.
+      const double,   ///< EOS gamma
+      double,    ///< LOS velocity of point.
+      double     ///< Normalisation of profile.
+      );
 };
 
 
@@ -449,9 +453,20 @@ public:
       struct pixel *, ///< pointer to pixel
       const struct vel_prof_stuff *, ///< struct with info for velocity binning.
       const int,      ///< flag for what to integrate.
+      class SimParams &, ///< pointer to Simulation parameters
       double *,       ///< array of pixel data.
-      double *       ///< general purpose counter for stuff.
+      double *        ///< general purpose counter for stuff.
       );
+
+  void integrate_xray_emission(
+      struct pixel *, ///< pointer to pixel
+      const int,      ///< tracer variable of H+ fraction (if exists).
+      const int,      ///< which x-ray band to calculate (index in array)
+      const double,   ///< EOS gamma
+      double &,       ///< [OUT] tot_mass counter (not really used here)
+      double &        ///< [OUT] answer to return.
+      );
+      
 
   void find_surrounding_cells(
       const pion_flt *, ///< position of point, in simI coordinates.
