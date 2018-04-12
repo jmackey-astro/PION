@@ -105,8 +105,8 @@ endif
 
 
 ######################################################################
-# Options for a "standard" workstation.
-# make sure cfitsio and silo are compiled in ../extra_libraries/
+# Options for a "standard" workstation, assumed to be like debian linux
+# System CVODE (Sundials), Silo, and cfitsio libraries should be installed.
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
@@ -115,25 +115,13 @@ ifeq ($(MAKE_UNAME), standard)
     CXXFLAGS = -O0 -Wall -g
   endif
 
-#  MYLIB = $(CURDIR)/../extra_libraries
-#  INC = -I${MYLIB}/include
-#  INC += -I${SRCDIR}
-#  LDFLAGS = -L${MYLIB}/lib
-#  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-#  LDFLAGS += -lcfitsio
-#  LDFLAGS += -lsilo 
-#  LDFLAGS += -lm  
-#  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   INC = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS +=  -lm
-  # All libraries are in this path:
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-  # Libraries for fits, silo
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ######################################################################

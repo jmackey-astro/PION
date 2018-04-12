@@ -354,7 +354,7 @@ int setup_fixed_grid::setup_microphysics(
 
 
 
-    if (mptype=="MPv3") {
+    if (mptype=="MPv3" || mptype=="MPv3__") {
       cout <<"\t******* setting up MPv3 module *********\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. Timestep limiting is enforced by #def";
@@ -373,7 +373,7 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
 
-    if (mptype=="MPv5") {
+    if (mptype=="MPv5" || mptype=="MPv5__") {
       cout <<"\t******* setting up MPv5 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
@@ -383,7 +383,7 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
 
-    if (mptype=="MPv6") {
+    if (mptype=="MPv6" || mptype=="MPv6__") {
       cout <<"\t******* setting up MPv6 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
@@ -393,7 +393,7 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
 
-    if (mptype=="MPv7") {
+    if (mptype=="MPv7" || mptype=="MPv7__") {
       cout <<"\t******* setting up MPv7 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
