@@ -47,6 +47,7 @@
 ///    FirstPt_All() instead of FirstPt().  Now serial/parallel code
 ///    produces identical results for the 3D blastwave test.
 /// - 2018.01.24 JM: worked on making SimPM non-global
+/// - 2018.04.14 JM: Moved flux solver to FV_solver
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -75,22 +76,24 @@ FV_solver_base::FV_solver_base(
       const int ntr         ///< Number of tracer variables.
       )
   : eqns_base(nv),
-    // riemann_base(nv),
-    flux_solver_base(nv,avcoeff,ntr),
-    FV_gndim(nd), FV_cfl(cflno), FV_dx(delx)
+    FV_gndim(nd), FV_cfl(cflno), FV_dx(delx),
+    FV_etav(eta), FV_etaB(eta), FV_ntr(ntr)
 {
-  //
-  // Can't hurt to set this everywhere...
-  //
   eq_gamma = gam;
-  //
-  // Nothing else to do really...
-  //
+  eqTR = 0;
+  if (FV_ntr>0) {
+    eqTR = mem.myalloc(eqTR, FV_ntr);
+    for (int i=0;i<FV_ntr;i++) eqTR[i] = eq_nvar-FV_ntr+i;
+  }
+  HC_etamax=0.0;  
   return;
 }
 
 FV_solver_base::~FV_solver_base()
 {
+  if (FV_ntr>0) {
+    eqTR = mem.myfree(eqTR);
+  }
   return;
 }
 
@@ -222,7 +225,7 @@ void FV_solver_base::pre_calc_viscous_terms(
   switch (av_flag) {
   case AV_HCORRECTION: // H-correction
   case AV_HCORR_FKJ98: // H-correction +FKJ98 viscosity
-    flux_solver_base::HC_etamax = select_Hcorr_eta(cl,cr, grid);
+    FV_solver_base::HC_etamax = select_Hcorr_eta(cl,cr, grid);
     break;
   default:
     // Just silently continue if not doing the H-correction.
@@ -271,6 +274,40 @@ void FV_solver_base::post_calc_viscous_terms(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+void FV_solver_base::set_interface_tracer_flux(
+      const pion_flt *left, //prim.var.
+      const pion_flt *right,//prim.var.
+      pion_flt *flux
+      )
+{
+#ifdef FUNCTION_ID
+  cout <<"FV_solver_base::set_interface_tracer_flux ...starting.\n";
+#endif //FUNCTION_ID
+  //
+  // Calculate tracer flux here -- if mass flux is positive then
+  // contact is at x>0 and we advect the left state tracer across
+  // the boundary.  Otherwise we advect the right state to the left.
+  // 
+  if (FV_ntr>0) {
+    if (flux[eqRHO]>=0.0)
+      for (int t=0;t<FV_ntr;t++)
+	flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
+    else 
+      for (int t=0;t<FV_ntr;t++)
+	flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
+  }
+
+#ifdef FUNCTION_ID
+  cout <<"FV_solver_base::set_interface_tracer_flux ...returning.\n";
+#endif //FUNCTION_ID
+  return;
+}
 
 
 // ##################################################################
