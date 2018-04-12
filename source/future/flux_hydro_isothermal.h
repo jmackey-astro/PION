@@ -32,7 +32,7 @@
 
 ///
 /// Isothermal Hydrodynamics Riemann Solver Class.
-/// This can do a linear solver, and hopefully an exact solver before the day is out...
+/// This can do a linear solver, and hopefully an exact solver eventually
 ///
 class riemann_hydro_iso
 : //virtual public riemann_base,

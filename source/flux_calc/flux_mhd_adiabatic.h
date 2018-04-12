@@ -20,10 +20,6 @@
 #include "defines/testing_flags.h"
 
 
-#include "equations/eqns_mhd_adiabatic.h"
-#include "Riemann_solvers/riemannMHD.h"
-#include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
-#include "Riemann_solvers/HLLD_MHD.h"
 #include "flux_base.h"
 
 ///
@@ -37,9 +33,6 @@
 
 class flux_solver_mhd_ideal_adi :
   virtual public flux_solver_base,
-  virtual public riemann_MHD,
-  virtual public Riemann_Roe_MHD_CV,
-  virtual public HLLD_MHD
 {
 public:
   ///
@@ -58,65 +51,13 @@ public:
   /// Deletes any arrays.
   ~flux_solver_mhd_ideal_adi();
   
-  /// Calculates Flux based on a left and right state vector (primitive).
-  virtual int inviscid_flux(
-      const cell *, ///< Left state cell pointer
-      const cell *, ///< Right state cell pointer
-      const pion_flt *, ///< Left Primitive state vector.
-      const pion_flt *, ///< Right Primitive state vector.
-      pion_flt *,       ///< Resultant Flux state vector.
-      pion_flt *,      ///< State vector at interface.
-      const int, 
-      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
-      const double    ///< Gas constant gamma.
-      );
 
-protected:
-  ///
-  /// Falle, Komissarov & Joarder (1998,MNRAS,297,265) Artificial
-  /// Viscosity Calculation (one-dimensional).
-  ///
-  int AVFalle(
-      const pion_flt *, ///< Left Primitive state vector.
-      const pion_flt *, ///< Right Primitive state vector.
-      const pion_flt *, ///< Resolved (P*) state vector.
-      pion_flt *, ///< Pointer to associated Flux Vector.
-      const double, ///< Artificial Viscosity parameter, etav.
-      const double  ///< gamma
-      );
-
-#ifdef LAPIDUS_VISCOSITY_ENABLED
-  ///
-  ///Lapidus Artificial Viscosity Calculation. 
-  /// This calculates div(v) at the interface and subtracts a fraction of it from
-  /// the flux \f$ F = F + \eta \mbox{div}(v)(U_R-U_L) \f$.
-  /// THIS DOESN'T WORK! I STOPPED WRITING IT BEFORE I GOT IT WORKING.
-  ///
-  int AVLapidus(
-      const cell *, ///< Left state cell pointer
-      const cell *, ///< Right state cell pointer
-      pion_flt *,       ///< Pointer to associated Flux Vector.
-      const double, ///< Artificial Viscosity parameter, etav.
-      const double  ///< gamma
-      );
-#endif // LAPIDUS_VISCOSITY_ENABLED
-
-  /// shut off reporting if we get more than 1000 negative pressures.
-  long int negPGct;
-  /// shut off reporting if we get more than 1000 negative densities.
-  long int negROct;
 };
 
 
 
-// **********************************************************************************
-// flux_solver_mhd_mixedGLM_adi class, for the Dedner-GLM divergence cleaning method.
-// **********************************************************************************
-
-
 class flux_solver_mhd_mixedGLM_adi
 : virtual public flux_solver_mhd_ideal_adi,
-  virtual public eqns_mhd_mixedGLM
 {
   public:
   flux_solver_mhd_mixedGLM_adi(
@@ -129,35 +70,6 @@ class flux_solver_mhd_mixedGLM_adi
 
   ~flux_solver_mhd_mixedGLM_adi();
    
-  ///
-  /// Calculates Flux based on a left and right state vector (primitive).
-  /// This is the same as for ideal MHD except that we use Dedner et al. (2002)'s 
-  /// method to calculate the flux in BX and in the extra scalar field Psi.
-  ///
-  /// Uses Dedner eq.41 for the flux in Bx and Psi:
-  /// \f[ \partial_t B_x + \partial_x \psi = 0 \;, \qquad 
-  ///     \partial_t \psi + \partial_x (c_h^2 B_x) = 0 \;. \f]
-  /// where the source term has been omitted, as it is calculated separately.
-  /// 
-  /// The GLM method has Bx and Psi decoupled from all the other variables
-  /// in the Riemann Problem, so they can be solved separately as a two
-  /// variable system (Dedner eq.42)
-  /// 
-  /// \f[ F(\psi) = c_h^2 B_x^* = c_h^2 \left( \frac{1}{2}(B_x(L)+B_x(R)) - \frac{1}{2c_h}(\psi_R-\psi_L) \right) \f]
-  /// \f[ F(B_x) = \psi_* = \frac{1}{2}(\psi_L+\psi_R) - \frac{c_h}{2}(B_x(R)-B_X(L)) \f]
-  /// 
-  virtual int inviscid_flux(
-        const cell *, ///< Left state cell pointer
-        const cell *, ///< Right state cell pointer
-        const pion_flt *, ///< Left Primitive state vector.
-        const pion_flt *, ///< Right Primitive state vector.
-        pion_flt *,       ///< Resultant Flux state vector.
-        pion_flt *,      ///< State vector at interface.
-        const int,
-        ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
-        const double    ///< Gas constant gamma.
-        );
-};
 
 #endif //FLUX_MHD_ADIABATIC_H
 
