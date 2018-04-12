@@ -15,12 +15,10 @@
 #include "defines/testing_flags.h"
 
 #include "tools/reporting.h"
-
 #include "tools/command_line_interface.h"
 
 #include "sim_control.h"
 
-#include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
 
 #ifdef LEGACY_CODE
@@ -52,6 +50,7 @@
 
 #include "raytracing/raytracer_SC.h"
 
+#include "dataIO/dataio.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -60,8 +59,6 @@
 #endif // if FITS
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
-//#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
-#include "spatial_solvers/solver_eqn_hydro_iso.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
 
 

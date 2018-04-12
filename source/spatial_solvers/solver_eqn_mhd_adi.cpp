@@ -201,7 +201,7 @@ int FV_solver_mhd_ideal_adi::AVFalle(
       const pion_flt *Pright,
       const pion_flt *Pstar,
       pion_flt *flux, 
-      const double eta, ///< already set as FS_etav
+      const double eta, ///< already set as FV_etav
       const double gamma ///< already set as eq_gamma
       )
 {
@@ -246,7 +246,7 @@ int FV_solver_mhd_ideal_adi::AVFalle(
 				      0.5*(Pleft[eqBX]+Pright[eqBX]),
 				      0.5*(Pleft[eqBY]+Pright[eqBY]),
 				      0.5*(Pleft[eqBZ]+Pright[eqBZ]),
-				      eq_gamma)*FS_etav*Pstar[eqRO];
+				      eq_gamma)*FV_etav*Pstar[eqRO];
 				      
   //
   // Momentum flux
@@ -264,7 +264,7 @@ int FV_solver_mhd_ideal_adi::AVFalle(
   //
   // Magnetic field flux.
   //
-  prefactor *= FS_etaB/(FS_etav*Pstar[eqRO]);
+  prefactor *= FV_etaB/(FV_etav*Pstar[eqRO]);
   momvisc = prefactor*(Pright[eqBY]-Pleft[eqBY]);
   flux[eqBBY] -= momvisc;
   ergvisc += momvisc*Pstar[eqBY];
@@ -287,7 +287,7 @@ void FV_solver_mhd_ideal_adi::PtoU(
       )
 {
   eqns_mhd_ideal::PtoU(p,u,g);
-  for (int t=0;t<FS_ntr;t++) u[eqTR[t]] = p[eqTR[t]]*p[eqRO];
+  for (int t=0;t<FV_ntr;t++) u[eqTR[t]] = p[eqTR[t]]*p[eqRO];
   return;
 }
 
@@ -307,7 +307,7 @@ int FV_solver_mhd_ideal_adi::UtoP(
   // we use u[eqRO] because if there was a negative density, then usually
   // the tracer sign will follow, and this way we get a positive primitive
   // variable tracer back.
-  for (int t=0;t<FS_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/u[eqRO];
+  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/u[eqRO];
   return err;
 }
 
@@ -323,7 +323,7 @@ void FV_solver_mhd_ideal_adi::PUtoFlux(
       )
 {
   eqns_mhd_ideal::PUtoFlux(p,u,f);
-  for (int t=0;t<FS_ntr;t++) f[eqTR[t]] = p[eqTR[t]]*f[eqRHO];
+  for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = p[eqTR[t]]*f[eqRHO];
   return;
 }
 
@@ -339,7 +339,7 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
       )
 {
   eqns_mhd_ideal::UtoFlux(u,f,g);
-  for (int t=0;t<FS_ntr;t++) f[eqTR[t]] = u[eqTR[t]]*f[eqRHO]/u[eqRHO];
+  for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = u[eqTR[t]]*f[eqRHO]/u[eqRHO];
   return;
 }
 
@@ -535,7 +535,7 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
     HLLD_MHD(nv,gam),
     VectorOps_Cart(nd,cellsize),
     FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
-    eqns_mhd_mixedGLM(nv),
+    eqns_mhd_mixedGLM(nv)
 {
   return;
 }
@@ -692,7 +692,7 @@ void FV_solver_mhd_mixedGLM_adi::PtoU(
 #endif //FUNCTION_ID
 
   eqns_mhd_mixedGLM::PtoU(p,u,g);
-  for (int t=0;t<FS_ntr;t++) u[eqTR[t]] = p[eqTR[t]]*p[eqRO];
+  for (int t=0;t<FV_ntr;t++) u[eqTR[t]] = p[eqTR[t]]*p[eqRO];
 
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::PtoU ...returning.\n";
@@ -716,7 +716,7 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
 #endif //FUNCTION_ID
 
   int err=eqns_mhd_mixedGLM::UtoP(u,p,MinTemp,g);
-  for (int t=0;t<FS_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
+  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
 
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::UtoP ...returning.\n";

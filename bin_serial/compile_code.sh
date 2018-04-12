@@ -110,7 +110,7 @@ if [ ! -z "$DDD" ]; then
   export CXX=g++
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
-  MAKE_UNAME=imac
+  MAKE_UNAME=OSX
   NCORES=4
 fi
 #################################

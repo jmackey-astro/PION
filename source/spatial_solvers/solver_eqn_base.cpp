@@ -77,7 +77,7 @@ FV_solver_base::FV_solver_base(
       )
   : eqns_base(nv),
     FV_gndim(nd), FV_cfl(cflno), FV_dx(delx),
-    FV_etav(eta), FV_etaB(eta), FV_ntr(ntr)
+    FV_etav(avcoeff), FV_etaB(avcoeff), FV_ntr(ntr)
 {
   eq_gamma = gam;
   eqTR = 0;
@@ -124,13 +124,13 @@ int FV_solver_base::get_LaxFriedrichs_flux(
   //
   // Calculate tracer flux based on whether flow is to left or right.
   //
-  if (FS_ntr>0) {
+  if (FV_ntr>0) {
     if (f[eqRHO]>=0.) {
-      for (int t=0;t<FS_ntr;t++)
+      for (int t=0;t<FV_ntr;t++)
 	f[eqTR[t]] = l[eqTR[t]]*f[eqRHO];
     }
     else {
-      for (int t=0;t<FS_ntr;t++)
+      for (int t=0;t<FV_ntr;t++)
 	f[eqTR[t]] = r[eqTR[t]]*f[eqRHO];
     }
   }
@@ -253,7 +253,7 @@ void FV_solver_base::post_calc_viscous_terms(
       const int av_flag ///< what kind of AV?
       )
 {
-  //  cout <<"etav="<<FS_etav<<"\t";  rep.printVec("flux",flux,eq_nvar);
+  //  cout <<"etav="<<FV_etav<<"\t";  rep.printVec("flux",flux,eq_nvar);
   //  rep.printVec("flux",flux,eq_nvar);
 
   int err=0;
@@ -261,7 +261,7 @@ void FV_solver_base::post_calc_viscous_terms(
   case AV_FKJ98_1D:    // FKJ98 Viscosity
   case AV_HCORR_FKJ98: // FKJ98+HCORR
     //cout <<"FKJ98 AV being applied!\n";
-    err += AVFalle(Pl,Pr,Pstar,flux,FS_etav,eq_gamma);
+    err += AVFalle(Pl,Pr,Pstar,flux,FV_etav,eq_gamma);
     break;
 
   default:
