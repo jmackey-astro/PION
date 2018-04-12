@@ -76,7 +76,6 @@ VPATH = \
 ../source/comms:\
 ../source/coord_sys:\
 ../source/equations:\
-../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
 ../source/contrib:\
@@ -290,7 +289,7 @@ endif
 ######################################################################
 ####  OS X
 ######################################################################
-ifeq ($(MAKE_UNAME), imac)
+ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
     #CXXFLAGS = -O0 -Wall -g
@@ -337,11 +336,11 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	Riemann_FVS_hydro.o \
 	Roe_Hydro_ConservedVar_solver.o \
 	Roe_Hydro_PrimitiveVar_solver.o \
+	solver_eqn_hydro_adi.o \
+	eqns_mhd_adiabatic.o \
+        riemannMHD.o  \
 	Roe_MHD_ConservedVar_solver.o \
         HLLD_MHD.o \
-	flux_hydro_adiabatic.o solver_eqn_hydro_adi.o \
-	eqns_hydro_isothermal.o flux_hydro_isothermal.o solver_eqn_hydro_iso.o \
-	eqns_mhd_adiabatic.o riemannMHD.o flux_mhd_adiabatic.o \
 	solver_eqn_mhd_adi.o \
         raytracer_base.o  \
 	integrator.o cooling.o raytracer_SC.o \
@@ -350,7 +349,6 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         file_status.o \
 	stellar_wind_BC.o \
 	stellar_wind_angle.o \
-	flux_base.o \
       	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         cvode_integrator.o
@@ -519,44 +517,22 @@ Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
 HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
    ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
-####################
-# FLUX CALCULATORS #
-####################
-flux_base.o : flux_base.cpp flux_base.h eqns_base.h \
-              ${GLOBAL} cell_interface.h
-
-flux_hydro_adiabatic.o: flux_hydro_adiabatic.cpp flux_hydro_adiabatic.h \
-   eqns_hydro_adiabatic.h flux_base.h eqns_base.h riemann.h \
-   Roe_Hydro_ConservedVar_solver.h Roe_Hydro_PrimitiveVar_solver.h \
-   Riemann_FVS_hydro.h ${GLOBAL} cell_interface.h
-
-flux_hydro_isothermal.o: flux_hydro_isothermal.cpp flux_hydro_isothermal.h \
-   eqns_hydro_isothermal.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h
-
-flux_mhd_adiabatic.o: flux_mhd_adiabatic.cpp flux_mhd_adiabatic.h \
-   eqns_mhd_adiabatic.h riemannMHD.h flux_base.h eqns_base.h \
-   ${GLOBAL} cell_interface.h
 
 ###########
 # SOLVERS #
 ###########
 
-solver_eqn_base.o: VectorOps.h solver_eqn_base.h flux_base.h \
+solver_eqn_base.o: VectorOps.h solver_eqn_base.h \
                    eqns_base.h ${GLOBAL} cell_interface.h
 
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_adi.h flux_hydro_adiabatic.h  eqns_hydro_adiabatic.h \
+   solver_eqn_base.h eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_hydro_adi.h eqns_hydro_adiabatic.h \
    solver_eqn_hydro_adi.cpp
 
-solver_eqn_hydro_iso.o: VectorOps.h solver_eqn_base.h eqns_base.h \
-   flux_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_iso.h flux_hydro_isothermal.h eqns_hydro_isothermal.h \
-   solver_eqn_hydro_iso.cpp
-
 solver_eqn_mhd_adi.o: VectorOps.h \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_mhd_adi.h flux_mhd_adiabatic.h  eqns_mhd_adiabatic.h \
+   solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h \
    solver_eqn_mhd_adi.cpp
 
 

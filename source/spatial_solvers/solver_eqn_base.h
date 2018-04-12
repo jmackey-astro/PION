@@ -44,7 +44,6 @@
 
 #include "coord_sys/VectorOps.h"
 #include "equations/eqns_base.h"
-#include "flux_calc/flux_base.h"
 
 ///
 /// Base Class for Flux-based Finite Volume Solvers.

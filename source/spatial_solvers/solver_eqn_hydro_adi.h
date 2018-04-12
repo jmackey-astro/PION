@@ -56,7 +56,7 @@ class FV_solver_Hydro_Euler :
   virtual public riemann_Euler,
   virtual public Riemann_FVS_Euler,
   virtual public Riemann_Roe_Hydro_PV,
-  virtual public Riemann_Roe_Hydro_CV
+  virtual public Riemann_Roe_Hydro_CV,
   virtual public VectorOps_Cart
 {
  public:

@@ -22,7 +22,6 @@
 
 #include "ics/icgen.h"
 #include "equations/eqns_hydro_adiabatic.h"
-#include "equations/eqns_hydro_isothermal.h"
 #include "equations/eqns_mhd_adiabatic.h"
 #include <sstream>
 

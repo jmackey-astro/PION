@@ -154,13 +154,11 @@
 
 #include "sim_control.h"
 
-#include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
-
-
 
 #include "raytracing/raytracer_SC.h"
 
+#include "dataIO/dataio.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -169,11 +167,7 @@
 #endif // if FITS
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
-//#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
-#include "spatial_solvers/solver_eqn_hydro_iso.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
-
-
 
 #include <iostream>
 #include <sstream>
@@ -989,22 +983,6 @@ int sim_control_fixedgrid::set_equations()
       eqn = new class FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
-#ifdef ISOTHERMAL_SOLVERS_ENABLED
-    case EQEUL_ISO:
-      cout <<"set_equations() Using Isothermal Hydrodynamics Equations.\n";
-      eqn = new class FV_solver_Hydro_iso(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL_ISO);
-      break;
-#endif // ISOTHERMAL_SOLVERS_ENABLED
-#ifdef INCLUDE_EINT_ADI_HYDRO
-    case EQEUL_EINT:
-      cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
-      eqn = new class FV_solver_Hydro_Euler_Eint(SimPM.nvar,
-            SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma,
-            SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
-      break;      
-#endif // if INCLUDE_EINT_ADI_HYDRO
     case EQMHD:
       cout <<"set_equations() Using Ideal MHD Equations.\n";
       eqn = new class FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);

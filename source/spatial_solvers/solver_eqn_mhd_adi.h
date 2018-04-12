@@ -44,7 +44,7 @@ class FV_solver_mhd_ideal_adi
 : virtual public FV_solver_base,
   virtual public riemann_MHD,
   virtual public Riemann_Roe_MHD_CV,
-  virtual public HLLD_MHD
+  virtual public HLLD_MHD,
   virtual public VectorOps_Cart
 {
  public:
@@ -203,7 +203,7 @@ protected:
 class FV_solver_mhd_mixedGLM_adi
   :
   virtual public FV_solver_mhd_ideal_adi,
-  virtual public eqns_mhd_mixedGLM
+  virtual public eqns_mhd_mixedGLM,
   virtual public VectorOps_Cart
 {
   public:
@@ -306,7 +306,9 @@ class FV_solver_mhd_mixedGLM_adi
 
 /** \brief Solver for Ideal MHD equations in axial symmetry with AV and tracers. */
 class cyl_FV_solver_mhd_ideal_adi
-  : virtual public FV_solver_mhd_ideal_adi, virtual public VectorOps_Cyl
+  :
+  virtual public FV_solver_mhd_ideal_adi,
+  virtual public VectorOps_Cyl
 {
   public:
    /** \brief sets indices for tracer variables in state vector.*/
