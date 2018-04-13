@@ -221,44 +221,44 @@ fi
 #echo "********************************"
 #echo "*** EXTRACTING SILO LIBRARY ***"
 #echo "********************************"
-#tar zxf $FILE
+tar zxf $FILE
 #echo "********************************"
 #echo "*** RUNNING CONFIGURE ***"
 #echo "********************************"
-#BASE_PATH=`pwd`
-#echo "***Path = $BASE_PATH ***"
-#cd $SRC_DIR
-#make clean
+BASE_PATH=`pwd`
+echo "***Path = $BASE_PATH ***"
+cd $SRC_DIR
+make clean
 #
-#if [ "$SHARED" == "NO" ]
-#then
-#  echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
-#  ./configure --prefix=${BASE_PATH} \
-# --disable-browser \
-# --disable-fortran \
-# --disable-silex \
-# --disable-shared \
-# --enable-pythonmodule
-#else
-#  echo " ****** COMPILING SHARED LIBRARIES ****** "
-#  ./configure --prefix=${BASE_PATH} \
-# --disable-fortran \
-# --disable-silex \
-# --enable-pythonmodule
-#fi
+if [ "$SHARED" == "NO" ]
+then
+  echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
+  ./configure --prefix=${BASE_PATH} \
+ --disable-browser \
+ --disable-fortran \
+ --disable-silex \
+ --disable-shared \
+ --enable-pythonmodule
+else
+  echo " ****** COMPILING SHARED LIBRARIES ****** "
+  ./configure --prefix=${BASE_PATH} \
+ --disable-fortran \
+ --disable-silex \
+ --enable-pythonmodule
+fi
 
-#echo "********************************"
-#echo "*** RUNNING MAKE ***"
-#echo "********************************"
-#make -j$NCORES
-#echo "********************************"
-#echo "*** INSTALLING SILO LIBRARY ***"
-#echo "********************************"
-#make install
-#cd $CURDIR
-#echo "********************************"
-#echo "*** FINISHED! ***"
-#echo "********************************"
+echo "********************************"
+echo "*** RUNNING MAKE ***"
+echo "********************************"
+make -j$NCORES
+echo "********************************"
+echo "*** INSTALLING SILO LIBRARY ***"
+echo "********************************"
+make install
+cd $CURDIR
+echo "********************************"
+echo "*** FINISHED! ***"
+echo "********************************"
 
 ##################################
 ##########   SUNDIALS   ##########
