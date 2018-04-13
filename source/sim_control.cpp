@@ -869,7 +869,7 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
       cout <<"\tOVERRIDE PARAMS: resetting solver: ";
       cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS:";
       int c = atoi((args[i].substr(7)).c_str());
-      if (c<0 || c>6 )
+      if (c<0 || c>7 )
   rep.error("Bad solver flag (only 0,1,2,3,4,5,6 allowed",c);
       cout <<" solver from "<<SimPM.solverType;
       SimPM.solverType = c;
