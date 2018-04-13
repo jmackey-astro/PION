@@ -37,8 +37,8 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
       pion_flt *        ///< output flux
       );
 
-  double *HDl_lambda, *HDr_lambda, *HD_UL, *HD_UR, *HD_FL,
-         *HD_FR, *HD_ULs, *HD_URs, *HD_FLs, *HD_FRs,
+  double *HD_lambda, *HD_UL, *HD_UR, *HD_FL, *HD_FR, 
+	 *HD_ULs, *HD_URs, *HD_FLs, *HD_FRs,
          *HD_ULss, *HD_URss, *HD_FLss, *HD_FRss;
   double HD_nvar;
 };
