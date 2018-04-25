@@ -224,29 +224,11 @@ int sim_control_fixedgrid::advance_time(
   }
 
   else if (SimPM.tmOOA==OA2 && SimPM.spOOA==OA2) {
-    //
-    // C2ray-type time-update requires full splitting of microphysics
-    // and dynamics because it is implicit.  This is legacy code.
-    //
-    if (RT && RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT) {
-#ifdef RT_TESTING
-      cout <<"--- tstep_dyn_then_mp() selected for implicit RT.\n";
-#endif
-      err += timestep_dynamics_then_microphysics(grid);
-      if (err)
-        rep.error("tstep_dyn_then_mp() returned error",err);
-    }
-    //
-    // Normal update is not split; first a full 1st order step is
-    // performed, then a full second-order step.
-    //
-    else {
-      //cout <<"Second order update\n";
-      err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid);
-      err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid);
-      if (err)
-        rep.error("Second order time-update returned error",err);
-    }
+    //cout <<"Second order update\n";
+    err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid);
+    err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid);
+    if (err)
+      rep.error("Second order time-update returned error",err);
   }
   //
   // Add in 3rd order PPM at some stage???
@@ -391,140 +373,6 @@ int sim_control_fixedgrid::second_order_update(
 
 
 
-
-// ##################################################################
-// ##################################################################
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_fixedgrid::timestep_dynamics_then_microphysics(
-      class GridBaseClass *grid ///< Computational grid.
-      )
-{
-#ifdef TESTING
-  cout <<"Using  sim_control_fixedgrid::timestep_dynamics_then_microphysics() update.\n";
-#endif // TESTING
-  
-  // ----------------------------------------------------------------
-  // THIS IS PROBABLY ONLY 1ST ORDER IN TIME.  USE A DIFFERENT   ----
-  // INTEGRATOR!                                                 ----
-  // ----------------------------------------------------------------
-
-  // This is a general conservative scheme, with all the details in
-  // the calculation of the intercell fluxes.
-
-  /** \section Boundaries
-   * The boundary cells are updated by calling the function 
-   * grid->TimeUpdate[Internal/External]BCs().  This function knows how each
-   * boundary is to be updated.
-   * */
-  
-  /** \section Description
-   * This has to handle four cases so far, Space,Time accuracy of 
-   * {[1,1], [1,2], [2,1], [2,2]}, leaving aside that some of these
-   * may be unstable.
-   * 
-   * If time accuracy =1, then I only call dU once, and update the 
-   * state vector directly.\n
-   * If time accuracy =2, then I call dU twice, and update an intermediate
-   * state vector the first time, use the intermediate state for the
-   * second calculation of dU, and then update the main state vector.
-   * If I ever put in time acc. =3, then I'll need to do two intermediate
-   * steps and then a final update.  Given that it's unlikely I'll ever do 
-   * more than this, I think it's safe to not do anything too fancy with this
-   * algorithm.
-   * 
-   * */
-
-  int err=0;
-
-  //int sp = OA1;
-  //int tm = OA1;
-  //if (SimPM.tmOOA==OA1 && SimPM.spOOA==OA2) sp = OA2;
-  //  cout <<"dt = "<<SimPM.dt<<"\n";
-  
-  double dt = SimPM.dt;
-
-  if (SimPM.tmOOA ==OA1) { // First order time time
-    eqn->Setdt(dt);
-    err  = calc_dynamics_dU(dt,OA1, grid);
-    //     cout <<"updating microphysics.\n";
-    err += calc_microphysics_dU(dt, grid);
-    //    cout <<"done with mp.\n";
-
-    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA1, grid);
-    err += grid->TimeUpdateInternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    //     cout <<"updating external bcs.\n";
-    err += grid->TimeUpdateExternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    //    cout <<"done with external bcs.\n";
-    if (err) rep.error("O1 time update loop generated errors",err);
-  } // if 1st order accurate
-  
-  else if (SimPM.tmOOA==OA2) {
-    //cout <<"second order!!!\n";
-    //
-    // The Falle, Komissarov, Joarder (1998) 2nd order-accurate
-    // (time and space) time update.  BUT THERE ARE MISUNDERSTANDINGS
-    // AND THIS IS PROBABLY ONLY 1ST ORDER IN TIME.  USE A DIFFERENT
-    // INTEGRATOR!
-    //
-
-    //
-    // Halve the timestep for the first pass
-    //
-    dt /= 2.0;
-    eqn->Setdt(dt);
-    err  = calc_dynamics_dU(dt,OA1, grid);
-
-    err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,OA2, grid);
-    err += grid->TimeUpdateInternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    err += grid->TimeUpdateExternalBCs(SimPM.simtime,OA1,SimPM.tmOOA);
-    if (err) rep.error("O2 half time update loop generated errors",err);
-    
-    //
-    // Now calculate dU again, for the full timestep.
-    //
-    dt *= 2.0;
-    eqn->Setdt(dt);
-    //    cout <<"\tsecond pass.... \n";
-    err = calc_dynamics_dU(dt,OA2, grid); //,SimPM.tmOOA);
-    // Update MicroPhysics, if present
-    err += calc_microphysics_dU(dt, grid);
-
-    err += grid_update_state_vector(dt,TIMESTEP_FULL,OA2, grid);
-    err += grid->TimeUpdateInternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    err += grid->TimeUpdateExternalBCs(SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-
-    if (err) rep.error("O2 full time update loop generated errors",err);
-  } // If 2nd order accurate.
-  
-  else rep.error("Only know first and second order accuracy",SimPM.tmOOA);
-  
-#ifdef TESTING
-  if (SimPM.timestep%20 ==0) {
-    //    cout <<"dp.initERG = "<<dp.initERG<<"\n";
-    check_energy_cons(grid);
-  }
-#endif // TESTING
-  //  cout <<"now dt = "<<SimPM.dt<<"\n";
-  SimPM.simtime += SimPM.dt;
-  SimPM.last_dt  = SimPM.dt;
-  SimPM.timestep++;
-  return(0);
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 int sim_control_fixedgrid::calculate_raytracing_column_densities(
       //class GridBaseClass *grid ///< Computational grid.
       )
@@ -582,16 +430,6 @@ int sim_control_fixedgrid::calc_microphysics_dU(
     cout <<"\t\t--- calling calc_microphysics_dU_no_RT()\n";
 #endif // RT_TESTING
     err += calc_microphysics_dU_no_RT(delt, grid);
-  }
-
-  else if (RT && RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT) {
-    //
-    // This is the C2-ray single-source update which I did for my thesis.
-    //
-#ifdef RT_TESTING
-    cout <<"\t\t--- calling calc_microphysics_dU_JMs_C2ray_RT()\n";
-#endif // RT_TESTING
-    err += calc_microphysics_dU_JMs_C2ray_RT(delt, grid);
   }
 
   else {
@@ -728,61 +566,6 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
   //    cout <<"calc_microphysics_dU() Updating MicroPhysics Done!\n";
   return err;
 } // newest general-RT microphysics update.
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_fixedgrid::calc_microphysics_dU_JMs_C2ray_RT(
-      const double delt, ///< timestep to integrate
-      class GridBaseClass *grid ///< Computational grid.
-      )
-{
-#ifdef RT_TESTING
-  if (!RT) rep.error("Logic error: must have RT unless i'm an idiot","C2RAY");
-#endif // RT_TESTING
-
-  int err=0;
-  //
-  // This is the C2Ray-style implicit radiative transfer update, which does the
-  // microphysics update as the rays are traced outwards. 
-  // We have to get the UV heating rates first, so if there are any UV-heating
-  // sources we get the column densities for these sources first, and then call
-  // the ionising source update.
-  // RT source properties are already in structs for the microphysics calls.
-  //
-  //
-  // Set column densities for UV-heating sources
-  //
-  int isrc=-1;
-  for (int s=0; s<FVI_nheat; s++) {
-    isrc = FVI_heating_srcs[s].id;
-#ifdef RT_TESTING
-    cout <<" -- update_mp_JMs_C2ray_RT(): Tracing UV-heating src: id="<<isrc<<"\n";
-#endif
-    err += RT->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
-    if (err) {
-      cout <<"isrc="<<isrc<<"\t"; 
-      rep.error("RT_col_dens step in returned error",err);
-    }
-  }
-#ifdef RT_TESTING
-  if (FVI_nion != 1) 
-    rep.error("Can't do implicit update unless exactly one ionising src",FVI_nion);
-  cout <<" -- update_mp_JMs_C2ray_RT(): Tracing ionising src: id="<<isrc<<".\n";
-#endif
-  err += RT->RayTrace_SingleSource(FVI_ionising_srcs[0].id, delt, SimPM.gamma);
-  if (err) {
-    cout <<"isrc="<<SimPM.RS.sources[0].id<<"\t"; 
-    rep.error("JMs C2ray RT, returned error",err);
-  } // if error
-
-
-  return err;
-}
 
 
 

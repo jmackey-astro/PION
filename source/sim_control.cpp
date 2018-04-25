@@ -193,6 +193,7 @@ sim_control_fixedgrid::sim_control_fixedgrid()
   textio=0;
   SimPM.checkpoint_freq=INT_MAX;
   max_walltime = 1.0e100;
+  RT=0;
 }
 
 
@@ -209,6 +210,7 @@ sim_control_fixedgrid::~sim_control_fixedgrid()
   if(eqn !=0) {delete eqn; eqn=0;}
   if (dataio) {delete dataio; dataio=0;}
   if (textio) {delete textio; textio=0;}
+  if (RT)     {delete RT; RT=0;}
 #ifdef TESTING
   cout << "(sim_control_fixedgrid::Destructor) Done." <<"\n";
 #endif
@@ -1108,8 +1110,8 @@ int sim_control_fixedgrid::output_data(
       checkpoint_id=99999998;
     else
       checkpoint_id=99999999;
-    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
-    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
+    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, RT, checkpoint_id);
+    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM,RT, checkpoint_id);
     if (err) {cerr<<"\t Error writing data for checkpointing.\n"; return(1);}
   }
     
@@ -1149,8 +1151,8 @@ int sim_control_fixedgrid::output_data(
   // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
   //
   cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
-  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
-  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
+  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM,RT, SimPM.timestep);
+  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM,RT, SimPM.timestep);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
   return(0);
 }
@@ -1188,8 +1190,8 @@ int sim_control_fixedgrid::ready_to_start(
   // Setup Raytracing, if they are needed.
   //
   int err=0;
-  err += setup_raytracing(SimPM, grid);
-  err += setup_evolving_RT_sources(SimPM);
+  err += setup_raytracing(SimPM, grid, RT);
+  err += setup_evolving_RT_sources(SimPM,RT);
   if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
   //
   // If we are doing raytracing, we probably want to limit the timestep by
@@ -1287,7 +1289,7 @@ int sim_control_fixedgrid::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM);
+    err = update_evolving_RT_sources(SimPM,RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;

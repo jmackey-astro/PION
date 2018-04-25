@@ -116,12 +116,12 @@ class microphysics_base {
   /// THE C2RAY METHOD UPDATES FOR MANY SOURCES.
   ///
   virtual int Get_MP_Rates(
-                      cell *,       ///< current cell.
-                      const double, ///< timestep
-                      const double, ///< column to cell
-                      const double, ///< Flux entering cell?
-                      double *      ///< initial (and final) column density through cell?
-                      ) {return 0;}
+      cell *,       ///< current cell.
+      const double, ///< timestep
+      const double, ///< column to cell
+      const double, ///< Flux entering cell?
+      double *      ///< initial (and final) column density through cell?
+      ) {return 0;}
 
   ///
   /// This takes a copy of the primitive vector and advances it in time over

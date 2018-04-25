@@ -74,6 +74,7 @@
 #endif
 
 #include "microphysics/microphysics_base.h"
+#include "raytracing/raytracer_base.h"
 
 #include <sstream>
 using namespace std;
@@ -301,6 +302,7 @@ int main(int argc, char **argv)
   // We need to init microphysics class for some of the setups.
   //
   MP=0;  // global microphysics class pointer.
+  class RayTracingBase *RT=0;  // raytracing class 
 
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
     // don't need to set up the class, because it just does cooling and
@@ -330,8 +332,8 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
 
 
-  err += SimSetup->setup_raytracing(SimPM, grid);
-  err += SimSetup->setup_evolving_RT_sources(SimPM);
+  err += SimSetup->setup_raytracing(SimPM, grid,RT);
+  err += SimSetup->setup_evolving_RT_sources(SimPM,RT);
   if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
   // ----------------------------------------------------------------
@@ -417,7 +419,7 @@ int main(int argc, char **argv)
   else rep.error("Don't recognise I/O type (text/fits/silo)",icftype);
   if (!dataio) rep.error("IO class initialisation: ",icftype);
   
-  err = dataio->OutputData(outfile,grid, SimPM, 0);
+  err = dataio->OutputData(outfile,grid, SimPM,RT, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
   cout <<icftype<<" FILE WRITTEN in";
@@ -426,6 +428,7 @@ int main(int argc, char **argv)
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
+  if (RT)   {delete RT; RT=0;}
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
   if (grid) {delete grid; grid=0;}
   if (ic)   {delete ic; ic=0;}

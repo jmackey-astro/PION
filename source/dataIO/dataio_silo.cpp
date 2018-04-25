@@ -223,7 +223,7 @@ int dataio_silo::WriteHeader(
   }
   err = write_simulation_parameters(SimPM);
   if (err)
-    rep.error("dataio_silo::OutputData() error writing header to silo file",err);
+    rep.error("dataio_silo::WriteHeader() error writing header to silo file",err);
 
   DBClose(*db_ptr); //*db_ptr=0; 
   return 0;
@@ -240,6 +240,7 @@ int dataio_silo::OutputData(
       const string outfile,
       class GridBaseClass *cg,
       class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
@@ -281,7 +282,7 @@ int dataio_silo::OutputData(
   }
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
-    err = dataio_silo::setup_write_variables(SimPM);
+    err = dataio_silo::setup_write_variables(SimPM,RT);
     if (err)
       rep.error("dataio_silo::OutputData() error settting up variables to write to",err);
   }
@@ -652,7 +653,8 @@ int dataio_silo::setup_grid_properties(
 
 
 int dataio_silo::setup_write_variables(
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT ///< pointer to raytracing class
       )
 {
   if (!varnames.empty())
