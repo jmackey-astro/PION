@@ -39,7 +39,7 @@
 #ifdef SILO
 
 #include "dataIO/dataio.h"
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include <silo.h>
 #include <vector>
 

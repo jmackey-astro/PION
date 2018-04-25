@@ -76,7 +76,8 @@ VPATH = \
 ../source/spatial_solvers:\
 ../source/time_integrators:\
 ../source/contrib:\
-../source/tools
+../source/tools:\
+../source/decomposition
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h \

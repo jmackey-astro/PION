@@ -29,7 +29,7 @@ using namespace std;
 #include "dataIO/file_status.h"
 #include "dataIO/dataio.h"
 #include "dataIO/dataio_silo.h"
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 
 #ifndef SILO
 #error "Define SILO so this code will work!"
