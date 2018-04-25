@@ -124,6 +124,7 @@ int DataIOFits_pllel::OutputData(
       string outfilebase,         ///< base filename
       class GridBaseClass *cg,    ///< pointer to data.
       class SimParams &SimPM,     ///< pointer to simulation parameters
+      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter ///< number to stamp file with (e.g. timestep)
       )
 {

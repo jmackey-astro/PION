@@ -48,8 +48,9 @@ class setup_fixed_grid_pllel : virtual public setup_fixed_grid
   ///
   virtual int setup_raytracing(
       class SimParams &,  ///< pointer to simulation parameters
-        class GridBaseClass * 
-        );
+      class GridBaseClass *, ///< pointer to computational grid 
+      class RayTracingBase * ///< pointer to raytracing class
+      );
 
   protected:
 

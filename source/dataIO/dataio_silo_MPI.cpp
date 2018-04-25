@@ -407,6 +407,7 @@ int dataio_silo_pllel::OutputData(
       const string outfilebase,
       class GridBaseClass *cg,
       class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
@@ -490,7 +491,7 @@ int dataio_silo_pllel::OutputData(
     // set what data to write to the mesh.
     // NOT THE SAME AS SERIAL VERSION -- ONLY PRIMITIVE VARS!!!
     //cout <<"----dataio_silo_pllel::OutputData() setting up write variables\n";
-    err = setup_write_variables(SimPM);
+    err = setup_write_variables(SimPM, RT);
     if (err)
       rep.error("dataio_silo_pllel::OutputData() error settting up variables to write to",err);
     //cout <<"----dataio_silo_pllel::OutputData() write vars setup done\n";
@@ -668,14 +669,14 @@ int dataio_silo_pllel::OutputData(
     pp.set_nproc(mpiPM->get_nproc());
     for (int v=0; v<nmesh; v++) {
       pp.set_myrank(v);
-      pp.decomposeDomain(SimPM);
+      pp.decomposeDomain(SimPM,SimPM.levels[0]);
       zonecounts[v] = pp.LocalNcell;
       externalzones[v] = 0; // set to 1 if domain has zones outside multimesh.
       for (int i=0; i<ndim;i++) {
 	//extents[ext_size*v+2*i  ] = pp.LocalXmin[i];
 	//extents[ext_size*v+2*i+1] = pp.LocalXmax[i];
-	extents[ext_size*v+i     ] = SimPM.Xmin[i];
-	extents[ext_size*v+ndim+i] = SimPM.Xmax[i];
+	extents[ext_size*v+i     ] = cg->SIM_Xmin(static_cast<axes>(i));
+	extents[ext_size*v+ndim+i] = cg->SIM_Xmax(static_cast<axes>(i));
       }
     } // loop over meshes
     DBAddOption(mm_opts,DBOPT_EXTENTS_SIZE,&ext_size);
@@ -828,7 +829,6 @@ int dataio_silo_pllel::setup_grid_properties(
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
   double dx=grid->DX();
-  //double dx=SimPM.dx;
   if (node_coords || nodedims || zonedims ||
       nodex || nodey || nodez) {
     cerr<<"Have already setup variables for grid props! ";
@@ -1094,12 +1094,12 @@ int dataio_silo_pllel::write_multimeshadj(
   std::vector<int> ngb_list;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM);
+    pp.decomposeDomain(SimPM,SimPM.levels[0]);
     //
     // Get list of abutting domains.
     //
     std::vector<int> dl;
-    pp.get_abutting_domains(SimPM, dl);
+    pp.get_abutting_domains(ndim, dl);
     Nngb[v] = dl.size();
     for (unsigned int i=0; i<static_cast<unsigned int>(Nngb[v]); i++)
       ngb_list.push_back(dl[i]);
@@ -1153,7 +1153,7 @@ int dataio_silo_pllel::write_multimeshadj(
   //long int ct=0;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM);
+    pp.decomposeDomain(SimPM, SimPM.levels[0]);
     long int off1 = Sk[v]; // this should be the same as ct (maybe don't need ct then!)
 
     //
@@ -1209,8 +1209,8 @@ int dataio_silo_pllel::write_multimeshadj(
       //
       int my_ix[MAX_DIM], ngb_ix[MAX_DIM];
       for (int ii=0;ii<MAX_DIM;ii++) my_ix[ii] = ngb_ix[ii] = -1;
-      pp.get_domain_ix(SimPM, pp.get_myrank(),my_ix);
-      pp.get_domain_ix(SimPM, ngb[off1],ngb_ix);
+      pp.get_domain_ix(ndim, pp.get_myrank(),my_ix);
+      pp.get_domain_ix(ndim, ngb[off1],ngb_ix);
       
       //
       // X-dir first.
@@ -1412,7 +1412,7 @@ int dataio_silo_pllel::write_MRGtree(
   int ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM);
+    pp.decomposeDomain(SimPM, SimPM.levels[0]);
     //
     // Count how many neighbours we have
     //
@@ -1506,7 +1506,7 @@ int dataio_silo_pllel::write_MRGtree(
   ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM);
+    pp.decomposeDomain(SimPM, SimPM.levels[0]);
 
     //
     // Count how many neighbours we have; length is 6 ints per

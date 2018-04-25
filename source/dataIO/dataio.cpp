@@ -2481,6 +2481,7 @@ int dataio_text::output_ascii_data(
   }
   //  cout <<"(dataio_text::output_ascii_data) Writing data in format: x[Ndim], rho, p_g, v_x, v_y, v_z, e_int(erg/mass), [B_x, B_y, B_z, p_g+p_m].\n";
   double b2=0.; // magnetic field squared.
+  double dx = gp->DX();
 #ifdef RT_TESTING_OUTPUTCOL
   double Utemp[SimPM.nvar];
 #endif // RT_TESTING_OUTPUTCOL
@@ -2497,7 +2498,7 @@ int dataio_text::output_ascii_data(
 
   // Go through every point, output one line per point.
   class cell *cpt=gp->FirstPt(); do {
-     if(CI.get_dpos(cpt,0)<SimPM.Xmin[0]+SimPM.dx) outf <<"\n"; // put in a blank line for gnuplot
+     if(CI.get_dpos(cpt,0)<gp->SIM_Xmin(XX)+dx) outf <<"\n"; // put in a blank line for gnuplot
      // First positions.
      outf << CI.get_dpos(cpt,0) << "  ";
      if (SimPM.ndim>1) outf << CI.get_dpos(cpt,1) << "  ";
@@ -2552,6 +2553,7 @@ int dataio_text::assign_initial_data(
 {
   cout <<"(dataio_text::assign_initial_data) Assigning Data.\n";
   int err=0;
+  double dx = gp->DX();
 
   // Get initial conditions, and assign them to the grid.
   string typeofic = rp->find_parameter("IC");
@@ -2584,8 +2586,8 @@ int dataio_text::assign_initial_data(
       // Assign position of dividing line: pivot point and slope.
       double xpivot,ypivot, slope;
       if (theta >0. && theta<M_PI/2.) {
-  xpivot = SimPM.Xmin[XX]+ SimPM.Range[XX]/2.;
-  ypivot = SimPM.Xmin[YY]+ SimPM.Range[YY]/2.;
+  xpivot = gp->SIM_Xmin(XX)+ gp->SIM_Range(XX)/2.;
+  ypivot = gp->SIM_Xmin(YY)+ gp->SIM_Range(YY)/2.;
   slope = tan(theta);
   //if (!eqn) rep.error("equations not set!",eqn);
   //eqn->rotateXY(left,-(M_PI/2.-theta)); eqn->rotateXY(right,-(M_PI/2.-theta));
@@ -2610,8 +2612,8 @@ int dataio_text::assign_initial_data(
       }
       else if (theta<=0.) {
   cout <<"using theta=0\n";
-  xpivot = SimPM.Xmin[XX]+ SimPM.Range[XX]/2.;
-  ypivot = SimPM.Xmin[YY]+ SimPM.Range[YY]/2.;
+  xpivot = gp->SIM_Xmin(XX)+ gp->SIM_Range(XX)/2.;
+  ypivot = gp->SIM_Xmin(YY)+ gp->SIM_Range(YY)/2.;
   slope = 0;
   theta = 0;
       }
@@ -2632,29 +2634,29 @@ int dataio_text::assign_initial_data(
   // Slope is non-zero, so set a shock at angle theta to x-axis,
   // passing through centre of domain.
   do {
-    if      (CI.get_dpos(cpt,YY)-SimPM.dx > ypivot +slope*(CI.get_dpos(cpt,XX)+SimPM.dx/2.-xpivot))
+    if      (CI.get_dpos(cpt,YY)-dx > ypivot +slope*(CI.get_dpos(cpt,XX)+dx/2.-xpivot))
       for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = cpt->Ph[v] = left[v];
-    else if (CI.get_dpos(cpt,YY)+SimPM.dx <=ypivot +slope*(CI.get_dpos(cpt,XX)-SimPM.dx/2.-xpivot))
+    else if (CI.get_dpos(cpt,YY)+dx <=ypivot +slope*(CI.get_dpos(cpt,XX)-dx/2.-xpivot))
       for (int v=0;v<SimPM.nvar;v++) cpt->P[v] = cpt->Ph[v] = right[v];
     else {
       //      cout <<"intermediate point. x="<<CI.get_dpos(cpt,XX)<<", y="<<CI.get_dpos(cpt,YY)<<",\t";
       // intermediate region, so we have to take an average.
       // Do this by splitting cell into 32x32 subcells.
       int nint=32; double dv = 1.;
-      for (int v=0;v<SimPM.ndim;v++) {dv*= SimPM.dx/nint;}
-      double dx = SimPM.dx/nint;
+      for (int v=0;v<SimPM.ndim;v++) {dv*= dx/nint;}
+      double dxc = dx/nint;
       double startpt[SimPM.ndim]; double pos[SimPM.ndim]; double frac=0.;
       // Set first position.
       int ntot=1;
       for (int v=0;v<SimPM.ndim;v++) {
-        startpt[v] = CI.get_dpos(cpt,v)-SimPM.dx/2.+dx/2.;
+        startpt[v] = CI.get_dpos(cpt,v)-dx/2.+dxc/2.;
         ntot *=nint;
       }
       for (int i=0;i<ntot;i++) {
-        pos[XX] = startpt[XX] + (i%nint)*dx;
-        if (SimPM.ndim>1) pos[YY] = startpt[YY] + ((i/nint)%nint)*dx;
-        if (SimPM.ndim>2) pos[ZZ] = startpt[ZZ] + ((i/nint/nint)%nint)*dx;
-        if (pos[YY] > ypivot+slope*(pos[XX]+dx/2.-xpivot)) {
+        pos[XX] = startpt[XX] + (i%nint)*dxc;
+        if (SimPM.ndim>1) pos[YY] = startpt[YY] + ((i/nint)%nint)*dxc;
+        if (SimPM.ndim>2) pos[ZZ] = startpt[ZZ] + ((i/nint/nint)%nint)*dxc;
+        if (pos[YY] > ypivot+slope*(pos[XX]+dxc/2.-xpivot)) {
     frac +=dv;
         }
       }

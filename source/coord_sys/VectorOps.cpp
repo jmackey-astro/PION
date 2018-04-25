@@ -615,7 +615,7 @@ double VectorOps_Cyl::CellVolume(const cell *c)
    * \f$\delta V =\pi \delta R \delta z R_i \f$, where \f$R_i\f$ is the
    * cell centre in the radial direction.
    * */
-  return(VOdV*CI->get_dpos(c,Rcyl));
+  return(VOdV*CI.get_dpos(c,Rcyl));
 //  return(VOdV);
 }
 
@@ -640,18 +640,18 @@ double VectorOps_Cyl::CellInterface(
    * */
   switch (dir) {
    case ZNcyl: case ZPcyl:
-    return(0.5*VOdR*CI->get_dpos(c,Rcyl));
+    return(0.5*VOdR*CI.get_dpos(c,Rcyl));
     break;
    case TNcyl: case TPcyl:
     return(VOdA); // need a \delta\theta in the denominator here.
     break;
    case RNcyl:
-    if (CI->get_dpos(c,Rcyl)>0 && CI->get_dpos(c,Rcyl)<VOdR) return(0);
-    else return(VOdz*(CI->get_dpos(c,Rcyl)-VOdR/2.)*(CI->get_dpos(c,Rcyl)-VOdR/2.)/CI->get_dpos(c,Rcyl));
+    if (CI.get_dpos(c,Rcyl)>0 && CI.get_dpos(c,Rcyl)<VOdR) return(0);
+    else return(VOdz*(CI.get_dpos(c,Rcyl)-VOdR/2.)*(CI.get_dpos(c,Rcyl)-VOdR/2.)/CI.get_dpos(c,Rcyl));
     break;
    case RPcyl:
-    if ( (CI->get_dpos(c,Rcyl)<0) && (CI->get_dpos(c,Rcyl)>-VOdR) ) return(0);
-    else return(VOdz*(CI->get_dpos(c,Rcyl)+VOdR/2.)*(CI->get_dpos(c,Rcyl)+VOdR/2.)/CI->get_dpos(c,Rcyl));
+    if ( (CI.get_dpos(c,Rcyl)<0) && (CI.get_dpos(c,Rcyl)>-VOdR) ) return(0);
+    else return(VOdz*(CI.get_dpos(c,Rcyl)+VOdR/2.)*(CI.get_dpos(c,Rcyl)+VOdR/2.)/CI.get_dpos(c,Rcyl));
     break;
    default:
     rep.error("Bad direction to VectorOps_Cyl::CellInterface",dir);
@@ -693,10 +693,10 @@ double VectorOps_Cyl::max_grad_abs(
       if(temp>grad) grad = temp;
     }
     if (VOnd>2) { // Theta-dir, need scale factor 1/R
-      dT = (CI->get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI->get_dpos(c,Tcyl))*R_com(c);
+      dT = (CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI.get_dpos(c,Tcyl))*R_com(c);
       temp = fabs( grid->NextPt(c,TPcyl)->P[var] - c->P[var])/dT;
       if(temp>grad) grad = temp;
-      dT = (CI->get_dpos(c,Tcyl) -  CI->get_dpos(grid->NextPt(c,TNcyl),Tcyl))*R_com(c);
+      dT = (CI.get_dpos(c,Tcyl) -  CI.get_dpos(grid->NextPt(c,TNcyl),Tcyl))*R_com(c);
       temp = fabs( grid->NextPt(c,TNcyl)->P[var] - c->P[var])/dT;
       if(temp>grad) grad = temp;
     }
@@ -714,10 +714,10 @@ double VectorOps_Cyl::max_grad_abs(
       if(temp>grad) grad = temp;
     }
     if (VOnd>2) { // Theta-dir, need scale factor 1/R
-      dT = ( CI->get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI->get_dpos(c,Tcyl))*R_com(c);
+      dT = ( CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI.get_dpos(c,Tcyl))*R_com(c);
       temp = fabs( grid->NextPt(c,TPcyl)->Ph[var] - c->Ph[var])/dT;
       if(temp>grad) grad = temp;
-      dT =  (CI->get_dpos(c,Tcyl) - CI->get_dpos(grid->NextPt(c,TNcyl),Tcyl))*R_com(c);
+      dT =  (CI.get_dpos(c,Tcyl) - CI.get_dpos(grid->NextPt(c,TNcyl),Tcyl))*R_com(c);
       temp = fabs( grid->NextPt(c,TNcyl)->Ph[var] - c->Ph[var])/dT;
       if(temp>grad) grad = temp;
     }
@@ -759,7 +759,7 @@ void VectorOps_Cyl::Gradient(
     }
     if(VOnd>2) {
       cn = grid->NextPt(c,TNcyl); cp=grid->NextPt(c,TPcyl);
-      grad[2] = (cp->P[var] - cn->P[var])/(CI->get_dpos(cp,Tcyl) - CI->get_dpos(cn,Tcyl))/R_com(c);
+      grad[2] = (cp->P[var] - cn->P[var])/(CI.get_dpos(cp,Tcyl) - CI.get_dpos(cn,Tcyl))/R_com(c);
     }
     break;
    case 1: // Use Vector c-Ph
@@ -771,7 +771,7 @@ void VectorOps_Cyl::Gradient(
     }
     if(VOnd>2) {
       cn = grid->NextPt(c,TNcyl); cp=grid->NextPt(c,TPcyl);
-      grad[2] = (cp->Ph[var] - cn->Ph[var])/(CI->get_dpos(cp,Tcyl) - CI->get_dpos(cn,Tcyl))/R_com(c);
+      grad[2] = (cp->Ph[var] - cn->Ph[var])/(CI.get_dpos(cp,Tcyl) - CI.get_dpos(cn,Tcyl))/R_com(c);
     }
     break;
    default:
@@ -818,7 +818,7 @@ double VectorOps_Cyl::Divergence(
     }
     if (VOnd>2) { // d(V_theta)/(R*dtheta)
       cn = grid->NextPt(c,TNcyl); cp=grid->NextPt(c,TPcyl);
-      dT = (CI->get_dpos(cp,Tcyl) - CI->get_dpos(cn,Tcyl))*R_com(c);
+      dT = (CI.get_dpos(cp,Tcyl) - CI.get_dpos(cn,Tcyl))*R_com(c);
       divv  += (cp->P[var[2]] - cn->P[var[2]])/dT;
     }
     break;
@@ -836,7 +836,7 @@ double VectorOps_Cyl::Divergence(
     }
     if (VOnd>2) { // d(V_theta)/(R*dtheta)
       cn = grid->NextPt(c,TNcyl); cp=grid->NextPt(c,TPcyl);
-      dT = (CI->get_dpos(cp,Tcyl) - CI->get_dpos(cn,Tcyl))*R_com(c);
+      dT = (CI.get_dpos(cp,Tcyl) - CI.get_dpos(cn,Tcyl))*R_com(c);
       divv  += (cp->Ph[var[2]] - cn->Ph[var[2]])/dT;
     }
     break;
@@ -905,7 +905,7 @@ void VectorOps_Cyl::Curl(
     ans[Tcyl] += -(vrp[vz] - vrn[vz])/(rp-rn);
   }
   if (VOnd>2) { // now Theta derivatives if present.
-    rp = CI->get_dpos(grid->NextPt(c,TPcyl),Tcyl); rn = CI->get_dpos(grid->NextPt(c,TNcyl),Tcyl);
+    rp = CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl); rn = CI.get_dpos(grid->NextPt(c,TNcyl),Tcyl);
     ans[Zcyl] += -(vtp[vr] - vtn[vr])/(rp-rn);
     ans[Rcyl] +=  (vtp[vz] - vtn[vz])/(rp-rn);
     ans[Tcyl] +=  0.0;
@@ -942,16 +942,16 @@ int VectorOps_Cyl::SetEdgeState(
      case ZPcyl: del = VOdz/2.; break;
      case ZNcyl: del =-VOdz/2.; break;
      case RPcyl:
-      del = CI->get_dpos(c,Rcyl)+VOdR/2. - R_com(c);
+      del = CI.get_dpos(c,Rcyl)+VOdR/2. - R_com(c);
       break;
      case RNcyl:
-      del = CI->get_dpos(c,Rcyl)-VOdR/2.  - R_com(c);
+      del = CI.get_dpos(c,Rcyl)-VOdR/2.  - R_com(c);
       break;
      case TPcyl:
-       del = R_com(c)*(CI->get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI->get_dpos(c,Tcyl));
+       del = R_com(c)*(CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI.get_dpos(c,Tcyl));
       break;
      case TNcyl:
-       del = R_com(c)*(CI->get_dpos(grid->NextPt(c,TNcyl),Tcyl) - CI->get_dpos(c,Tcyl));
+       del = R_com(c)*(CI.get_dpos(grid->NextPt(c,TNcyl),Tcyl) - CI.get_dpos(c,Tcyl));
       break;
      default:
       rep.error("Bad direction in SetEdgeState",dir);
@@ -1013,8 +1013,8 @@ int VectorOps_Cyl::SetSlope(
       break;
      case Tcyl: // Need extra scale factor in denominator to get R*dtheta
       for (int v=0;v<nv;v++) {
-	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c)/(CI->get_dpos(c,Tcyl)  - CI->get_dpos(cn,Tcyl));
-	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c)/(CI->get_dpos(cp,Tcyl) - CI->get_dpos(c,Tcyl));
+	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c)/(CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
+	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c)/(CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
       break;
@@ -1070,14 +1070,14 @@ int VectorOps_Cyl::DivStateVectorComponent(
   if (d==Zcyl) for (int v=0;v<nv;v++) dudt[v] = (fn[v]-fp[v])/VOdz;
   
   else if (d==Rcyl) {
-    double rp = CI->get_dpos(c,Rcyl)+VOdR/2.; double rn=rp-VOdR;
+    double rp = CI.get_dpos(c,Rcyl)+VOdR/2.; double rn=rp-VOdR;
     for (int v=0;v<nv;v++)
-      //dudt[v] = (rn*fn[v]-rp*fp[v])/CI->get_dpos(c,Rcyl)/VOdR;
+      //dudt[v] = (rn*fn[v]-rp*fp[v])/CI.get_dpos(c,Rcyl)/VOdR;
       dudt[v] = 2.0*(rn*fn[v]-rp*fp[v])/(rp*rp-rn*rn);
   }
   else if (d==Tcyl) {
-    double dth = R_com(c)*(CI->get_dpos(grid->NextPt(c,TPcyl),Tcyl) -
-			   CI->get_dpos(c,Tcyl));
+    double dth = R_com(c)*(CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl) -
+			   CI.get_dpos(c,Tcyl));
     for (int v=0;v<nv;v++) dudt[v] = (fn[v]-fp[v])/dth;
   }
   else {

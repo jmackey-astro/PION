@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 
   class GridBaseClass *grid = 0;
 #ifdef PARALLEL
-  err  = MCMD.decomposeDomain(SimPM);
+  err  = MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
   if (err) rep.error("main: failed to decompose domain!",err);
 #endif // if PARALLEL
   //

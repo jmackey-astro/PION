@@ -799,6 +799,7 @@ int sim_control_fixedgrid::dynamics_dU_column
   int ct=0;
 #endif
   enum axes axis = eqn->GetDirection();
+  double dx = grid->DX();
 
   //
   // Run through all cells in grid, to calculate (up to) second order time and 
@@ -858,10 +859,10 @@ int sim_control_fixedgrid::dynamics_dU_column
     // rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
     // rep.errorTest("Edge States not obtained!",0,err);
     err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this,
-                              SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
+                              SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
     // rep.printVec("Fr",Fr_this,SimPM.nvar);
     // rep.errorTest("Intercell Flux not obtained!",0,err);
-    err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
+    err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
     //    rep.errorTest("dU not obtained!",0,err);
 
 #ifdef TESTING
@@ -871,7 +872,7 @@ int sim_control_fixedgrid::dynamics_dU_column
         rep.printVec("Fr",Fr_this,SimPM.nvar);
         rep.printVec("El",edgeL,SimPM.nvar);
         rep.printVec("Er",edgeR,SimPM.nvar);
-        cout <<"dt:"<<dt<<"\tdx="<<SimPM.dx<<"\n";
+        cout <<"dt:"<<dt<<"\tdx="<<dx<<"\n";
         //  rep.printVec("dU",&cpt->dU[v],1);
         CI.print_cell(cpt);
         CI.print_cell(npt);
@@ -899,10 +900,6 @@ int sim_control_fixedgrid::dynamics_dU_column
       dp.initMMY -= Fr_this[MMY]*dt*eqn->CellInterface(cpt,posdir);
       dp.initMMZ -= Fr_this[MMZ]*dt*eqn->CellInterface(cpt,posdir);
     }
-    //    if (posdir==YP && ctm==SimPM.tmOOA && cpt->x[YY]<SimPM.dx &&
-    //        cpt->x[YY]>0 && fabs(Fr_prev[MMY])>2*MACHINEACCURACY) {
-    //      cout <<"R-Momentum Flux leaving first cell at R=dR = "<<Fr_this[MMY]<<"\n";
-    //    }
 #endif //TESTING
     //
     // Now move temp arrays to prepare for moving on to the next cell.
@@ -926,8 +923,8 @@ int sim_control_fixedgrid::dynamics_dU_column
   err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
   err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
-  err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, SimPM.dx);
-  err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, SimPM.dx, dt);
+  err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
+  err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 #ifdef TESTING
   if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
     ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);

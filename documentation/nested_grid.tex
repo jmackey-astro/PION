@@ -72,7 +72,7 @@ The communication will be a bit more complicated because a coarse grid will need
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Domain Decomposition}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-A tree is a good structure for dealing with different levels of refinement on a grid, so we will set this up where the domain is decomposed.
+A tree is a good structure for dealing with different levels of refinement on a grid, but might be overkill for a simple nested grid.
 We will need to specify:
 \begin{enumerate}
 \item Number of spatial dimensions, $D$.
@@ -88,12 +88,22 @@ This should be a multiple of $A_xA_yA_z$ and, for cubic domains, a multiple of $
 We could also specify the resolution multiplier in going from a coarse level to the next refined level, but this is hard-coded to 2.
 Similarly, we could specify the domain-size multiplier in going from one level to the next, but this is hard-coded to 0.5.
 
-This requires setting up a tree for each MPI process (all identical), and the process then finds itself on the tree, and finds which sub-domain on each level that it is responsible for.
+This requires setting up a data structure for each MPI process (all identical), and the process then finds its own location on each level, and finds which sub-domain on each level that it is responsible for.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Setting up a nested grid in \pion{}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The simulation control class sets up a fixed grid, using the SimParams and MCMDcontrol data classes for the grid size and decomposition, the CellInterface class for calculating cell properties, and a finite volume solver class for calculating fluxes in and out of cells.
+Some key parameters:
+\begin{itemize}
+\item Xmin, Xmax, Range, dx in SimPM and mpiPM.
+\item dx, xmin in the cell interface.
+\item The raytracer is attached to a grid, so I need one RT class for each grid.
+\end{itemize}
+The simplest way to deal with these is to set up new SimPM, mpiPM, CI classes for each level, although it would be better to split off the data that is level-independent into a global class, and make a new class for the level-dependent data.
 
-
-
+I added a new struct called levels to SimPM, and it will contain the global grid dimensions for each level.
 
 \bibliographystyle{apj_mod.bst}
 \bibliography{refs}

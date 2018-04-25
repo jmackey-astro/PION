@@ -281,6 +281,7 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 {
   double tempdt=0.0;
   double dt=1.e100; // Set it to very large no. initially.
+  double dx=grid->DX();
 
   class cell *c=grid->FirstPt();
 #ifdef TESTING
@@ -311,7 +312,7 @@ double sim_control_fixedgrid::calc_dynamics_dt(
     tempdt = eqn->CellTimeStep(
               c, ///< pointer to cell
               SimPM.gamma, ///< gas EOS gamma.
-              SimPM.dx  ///< Cell size dx.
+              dx  ///< Cell size dx.
               );
     if(tempdt<=0.0)
       rep.error("CellTimeStep function returned failing value",c->id);

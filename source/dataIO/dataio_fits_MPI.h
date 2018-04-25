@@ -65,6 +65,7 @@ class DataIOFits_pllel : public DataIOFits {
       const string, ///< File to write to
       class GridBaseClass *, ///< pointer to data.
       class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 
