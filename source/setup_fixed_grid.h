@@ -76,7 +76,8 @@ class setup_fixed_grid
   ///
   virtual int setup_raytracing(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass * 
+      class GridBaseClass *, ///< pointer to computational grid
+      class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
       );
 
   ///
@@ -84,7 +85,8 @@ class setup_fixed_grid
   /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
   ///
   virtual int setup_evolving_RT_sources(
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
       );
 
   //---------------------------------------
@@ -106,7 +108,8 @@ class setup_fixed_grid
   /// properties from global struct SimPM.STAR[v] if needed
   ///
   virtual int update_evolving_RT_sources(
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
       );
 
 

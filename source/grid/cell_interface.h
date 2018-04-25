@@ -512,7 +512,7 @@ class cell_interface {
   int ndim;  ///< dimensionality of grid.
   int nvar;  ///< number of variables in state vector.
   double *xmin; ///< The global Xmin of the domain, for counting integer positions from.
-  double int_converter;     ///< Number of integers per cell width.
+  double int_converter;     ///< 1+EPS.
   int cell_size_int_units;  ///< size of a cell in integer units (==2)
   double cell_diameter;     ///< diameter of cell.
 
@@ -570,8 +570,5 @@ class cell_interface {
 
 };
 
-
-extern class cell_interface CI;
-  ///< Global Instance of cell interface class.
 
 #endif // CELL_INTERFACE_H

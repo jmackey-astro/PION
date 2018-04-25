@@ -80,7 +80,8 @@ VPATH = \
 ../source/time_integrators:\
 ../source/contrib:\
 ../source/tools:\
-../source/future
+../source/future:\
+../source/decomposition
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
@@ -330,7 +331,6 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	Roe_MHD_ConservedVar_solver.o \
         HLLD_MHD.o \
 	solver_eqn_mhd_adi.o \
-        raytracer_base.o  \
 	integrator.o cooling.o raytracer_SC.o \
         microphysics_base.o  \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
@@ -349,7 +349,6 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         MCMD_control.o \
         uniform_grid.o cell_interface.o \
         readparams.o file_status.o \
-        raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
 	integrator.o cooling.o \
         microphysics_base.o  \
@@ -589,8 +588,6 @@ MPv8.o: MPv8.cpp \
 ########################
 # Raytracing
 ########################
-raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
-
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
   ${GLOBAL} uniform_grid.h
 

@@ -148,6 +148,7 @@ int DataIOFits::OutputData(
       string outfilebase,          ///< base filename
       class GridBaseClass *cg,     ///< pointer to data.
       class SimParams &SimPM, ///< pointer to simulation parameters
+      class RayTracingBase *RT, ///< pointer to raytracing class
 //      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
       const long int file_counter  ///< number to stamp file with (e.g. timestep)
       )

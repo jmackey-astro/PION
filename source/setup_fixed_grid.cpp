@@ -100,7 +100,6 @@ setup_fixed_grid::~setup_fixed_grid()
   cout << "(setup_fixed_grid::Destructor) Deleting Grid Class..." <<"\n";
 #endif
   if (MP)     {delete MP; MP=0;}
-  if (RT)     {delete RT; RT=0;}
 #ifdef TESTING
   cout << "(setup_fixed_grid::Destructor) Done." <<"\n";
 #endif
@@ -454,8 +453,9 @@ int setup_fixed_grid::setup_microphysics(
 
 
 int setup_fixed_grid::setup_raytracing(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class GridBaseClass *grid
+      class SimParams &SimPM,    ///< pointer to simulation parameters
+      class GridBaseClass *grid, ///< pointer to grid
+      class RayTracingBase *RT   ///< pointer to raytracing class
       )
 {
   //
@@ -572,7 +572,8 @@ int setup_fixed_grid::setup_raytracing(
 
 
 int setup_fixed_grid::setup_evolving_RT_sources(
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT   ///< pointer to raytracing class
       )
 {
   //
@@ -691,7 +692,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
   // source properties and send the changes to the raytracing class.  Need
   // time in secs, L,T,V in cgs and R in Rsun.
   //
-  err = update_evolving_RT_sources(SimPM);
+  err = update_evolving_RT_sources(SimPM,RT);
   return err;
 }
 
@@ -704,7 +705,8 @@ int setup_fixed_grid::setup_evolving_RT_sources(
 
 
 int setup_fixed_grid::update_evolving_RT_sources(
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT   ///< pointer to raytracing class
       )
 {
   int err=0;

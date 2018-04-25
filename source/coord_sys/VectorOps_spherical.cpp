@@ -104,7 +104,7 @@ double VectorOps_Sph::CellVolume(const cell *c)
   /// \f$\delta V =4\pi R_i^2 \delta R \f$, where \f$R_i\f$ is the
   /// cell centre in the radial direction.
   ///
-  double temp = CI.get_dpos(c,Rsph);
+  double temp = CI->get_dpos(c,Rsph);
   return VOdV*temp*temp;
 }
 
@@ -122,11 +122,11 @@ double VectorOps_Sph::CellInterface(
   if (VOnd==1) {
     switch (dir) {
     case RNsph:
-      temp =  CI.get_dpos(c,Rsph) - 0.5*VOdR;
+      temp =  CI->get_dpos(c,Rsph) - 0.5*VOdR;
       return 4.0*M_PI*temp*temp;
       break;
     case RPsph:
-      temp =  CI.get_dpos(c,Rsph) + 0.5*VOdR;
+      temp =  CI->get_dpos(c,Rsph) + 0.5*VOdR;
       return 4.0*M_PI*temp*temp;
       break;
     default:
@@ -337,10 +337,10 @@ int VectorOps_Sph::SetEdgeState(
     double del=0.;
     switch (dir) {
     case RPsph:
-      del = CI.get_dpos(c,Rsph)+0.5*VOdR - R_com(c);
+      del = CI->get_dpos(c,Rsph)+0.5*VOdR - R_com(c);
       break;
     case RNsph:
-      del = CI.get_dpos(c,Rsph)-0.5*VOdR - R_com(c);
+      del = CI->get_dpos(c,Rsph)-0.5*VOdR - R_com(c);
       break;
      default:
       rep.error("Bad direction in SetEdgeState",dir);
@@ -483,7 +483,7 @@ int VectorOps_Sph::DivStateVectorComponent(
 
   if      (d==Rsph) {
     //    cout <<"updating flux divergence R\n";
-    double rc = CI.get_dpos(c,Rsph);
+    double rc = CI->get_dpos(c,Rsph);
     double rp = rc+0.5*VOdR; double rn=rp-VOdR;
     rc = (pow(rp,3.0) -pow(rn,3.0))/3.0;
     for (int v=0;v<nv;v++) dudt[v] = (rn*rn*fn[v]-rp*rp*fp[v])/rc;

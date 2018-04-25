@@ -144,6 +144,9 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   ///
   class MCMDcontrol mpiPM;
 
+  /// Pointer to the raytracing class.
+  class RayTracingBase *RT;
+
   ///
   /// Max. walltime to run for, in seconds, after which we output
   /// data and finish.
@@ -297,8 +300,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   ///
   /// Advance the simulation by one time step.  This is a wrapper function,
   /// which calls one of two specific algorithms.  If we have no raytracing,
-  /// or if we are doing the C2-ray type ray-tracing which does not limit 
-  /// the timestep by the ionisation time, then the original algorithm is
+  /// then the original algorithm is
   /// used.  If we are doing the newer update, where only column densities
   /// are calculated in the ray-tracing update, then the timestep is limited
   /// so that no microphysics quantities change by more than a certain 
@@ -322,22 +324,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   int advance_time(
         class GridBaseClass * ///< grid pointer
         );
-
-  ///
-  /// This is the original time integration algorithm used for JM's PhD thesis.
-  /// The timestep is calculated first, based on the Courant condition and
-  /// possibly microphysics timescales (excluding photoionisation time).
-  /// The dynamics is updated first, and then the microphysics update is called.
-  /// This *must* use the C2-Ray type algorithm to integrate the microphysics as
-  /// rays are being traced (if, of course, we are doing raytracing).
-  ///
-  /// This is really a legacy function now, to enable me to run the 
-  /// implicit integrator if I want to.
-  ///
-  int timestep_dynamics_then_microphysics(
-        class GridBaseClass * ///< grid pointer
-        );
-
 
   ///
   /// This performs a first-order-accurate (in time) timestep for
@@ -391,21 +377,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
         const double,   ///< dt, timestep to integrate
         class GridBaseClass * ///< grid pointer
         );
-
-
-  ///
-  /// This calculates the change in internal energy and ion fractions
-  /// for a timestep dt, by integrating the microphysics equations
-  /// for the full timestep, storing the result in a temporary array,
-  /// and differencing the initial and final states.
-  /// This version is for microphysics integrations where I am using
-  /// my old implicit photoionisation integrator based on C2-ray.
-  ///
-  int calc_microphysics_dU_JMs_C2ray_RT(
-        const double, ///< dt, timestep to integrate
-        class GridBaseClass * ///< grid pointer
-        );
-
 
   ///
   /// This calculates the change in internal energy and ion fractions
@@ -503,8 +474,6 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   virtual int output_data(
         class GridBaseClass *
         );
-
-
 
   /// Check if sim should stop.
   /// 

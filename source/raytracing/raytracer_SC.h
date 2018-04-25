@@ -227,19 +227,22 @@ class raytracer_USC_infinity : public RayTracingBase {
   ///\brief Traces a 1D column from a starting cell, in a direction, to the edge of the grid. 
   ///This function explicitly assumes rays parallel to the given direction.
   
-  int trace_column_parallel(const rad_source *,  ///< source we are tracing from.
-			     cell *,              ///< cell to start from.
-			     const enum direction ///< direction we are looking.
-			     );
+  int trace_column_parallel(
+      const rad_source *,  ///< source we are tracing from.
+      cell *,              ///< cell to start from.
+      const enum direction ///< direction we are looking.
+      );
+
   ///\brief Get column density to current cell from source, and path length through cell.
   ///This assumes parallel rays along the column, appropriate for 1D or source at infinity.
   ///
-  int cell_cols_1d(const rad_source *, ///< pointer to source struct.
-		    class cell *,       ///< Current Cell
-		    const enum direction, ///< direction to source. 
-		    double *,           ///< column to cell.
-		    double *            ///< path length of ray in cell.
-		    );
+  int cell_cols_1d(
+      const rad_source *, ///< pointer to source struct.
+      class cell *,       ///< Current Cell
+      const enum direction, ///< direction to source. 
+      double *,           ///< column to cell.
+      double *            ///< path length of ray in cell.
+      );
 
   ///
   /// Do whatever is to be done to the cell due to the ray passing through.
@@ -247,11 +250,11 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// behaviour of this function is set by rs->update and rs->opacity_src.
   ///
   virtual int ProcessCell(cell *,            ///< Current cell.
-		   double[],            ///< Column to cell.
-		   double,            ///< Path Length through cell.
-		   const rad_source *, ///< pointer to source struct.
-		   const double       ///< Timestep
-		   );
+      double[],            ///< Column to cell.
+      double,            ///< Path Length through cell.
+      const rad_source *, ///< pointer to source struct.
+      const double       ///< Timestep
+      );
 
   ///
   /// This does most of the work of Add_Source() for sources at infinity.
@@ -260,8 +263,8 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// that its properties are appropriate.
   ///
   virtual void add_source_to_list(
-              struct rad_src_info * ///< source info.
-              );
+      struct rad_src_info * ///< source info.
+      );
 
   ///
   /// Set Vshell in all cells for the current source (See Mellema et al. 2006,
@@ -270,8 +273,8 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// calculation.
   ///
   void set_Vshell_for_source(
-              struct rad_source *
-              );
+      struct rad_source *
+      );
 
   ///
   /// Set Vshell in the current cell (See Mellema et al. 2006, NewAst.).
@@ -279,22 +282,22 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// photoionisation rate calculation.
   ///
   virtual void set_Vshell_in_cell(
-            cell *, ///< current cell.
-            double,            ///< Path Length through cell.
-            const rad_source * ///< pointer to source struct.
-            );
+      cell *, ///< current cell.
+      double,            ///< Path Length through cell.
+      const rad_source * ///< pointer to source struct.
+      );
 
   ///
   /// For the C2RAY update, where we integrate the microphysics as we trace
   /// rays, we need to do quite a bit of work, so this is in its own function.
   ///
   virtual int ProcessCell_TimeUpdate(
-            cell *,            ///< Current cell.
-            double[],            ///< Column to cell.
-            double,            ///< Path Length through cell.
-            const rad_source *, ///< pointer to source struct.
-            const double       ///< Timestep
-            );
+      cell *,            ///< Current cell.
+      double[],            ///< Column to cell.
+      double,            ///< Path Length through cell.
+      const rad_source *, ///< pointer to source struct.
+      const double       ///< Timestep
+      );
 
 
 };

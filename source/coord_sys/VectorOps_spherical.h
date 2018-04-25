@@ -186,7 +186,7 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         const cell *c ///< Cell to operate on.
         )
   {
-    return (CI.get_dpos(c,Rsph) + VOdR*VOdR/12.0/CI.get_dpos(c,Rsph));
+    return (CI->get_dpos(c,Rsph) + VOdR*VOdR/12.0/CI->get_dpos(c,Rsph));
   }
 
   ///
@@ -201,9 +201,9 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         const cell *c ///< cell to operate on
         )
   {
-    double delta2 = VOdR/CI.get_dpos(c,Rsph);
+    double delta2 = VOdR/CI->get_dpos(c,Rsph);
     delta2 *= delta2;
-    return CI.get_dpos(c,Rsph)*(1.0+0.25*delta2)/(1.0+delta2/12.0);
+    return CI->get_dpos(c,Rsph)*(1.0+0.25*delta2)/(1.0+delta2/12.0);
   }
 };
 

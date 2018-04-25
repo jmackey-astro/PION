@@ -35,6 +35,7 @@
 
 #include "spatial_solvers/solver_eqn_base.h"
 #include "dataIO/file_status.h"
+#include "raytracing/raytracer_base.h"
 
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -295,6 +296,7 @@ class DataIOBase : public file_status {
       const string, ///< File to write to
       class GridBaseClass *, ///< pointer to data.
       class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       )=0;
 
@@ -445,6 +447,7 @@ class dataio_text : public DataIOBase {
       const string, ///< File to write to
       class GridBaseClass *, ///< pointer to data.
       class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 
@@ -560,8 +563,9 @@ class dataio_text : public DataIOBase {
   /// \retval 1 failure
   ///
   int output_ascii_data(
-      string, ///< File name to write to.
-      class SimParams &  ///< pointer to simulation parameters
+      string,                 ///< File name to write to.
+      class SimParams &,      ///< pointer to simulation parameters
+      class RayTracingBase *  ///< pointer to raytracing class
       );
 
    int read_header_param(class pm_base *)

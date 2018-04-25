@@ -97,6 +97,7 @@ class dataio_silo :public DataIOBase {
       const string, ///< File to write to
       class GridBaseClass *, ///< pointer to data.
       class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 
@@ -200,7 +201,8 @@ class dataio_silo :public DataIOBase {
   /// Choose what data to write to file, based on equations being solved.*/
   ///
   virtual int setup_write_variables(
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase * ///< pointer to raytracing class
       );
 
   ///

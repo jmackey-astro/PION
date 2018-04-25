@@ -41,9 +41,6 @@ struct energetics *GLOBAL_CE=0;
 ///< for tracking rates in microphysics/raytracing.
 #endif
 
-class cell_interface CI;
-///< global class for accessing cell data, positions, neigbours.
-
 
 /************************* CELL INTERFACE ***********************/
 

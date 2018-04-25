@@ -2122,6 +2122,7 @@ int dataio_text::OutputData(
       const string outfile,
       class GridBaseClass *cg, ///< pointer to data.
       class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int counter   ///< number to stamp file with (e.g. timestep)
       )
 {
@@ -2131,7 +2132,7 @@ int dataio_text::OutputData(
 
   cout <<"dataio_text::OutputData() writing data.\n";
   string fname = set_filename(outfile, counter);
-  int err = output_ascii_data(fname, SimPM);
+  int err = output_ascii_data(fname, SimPM,RT);
   cout <<"dataio_text::OutputData() written data.\n";
   return err;
 }
@@ -2468,7 +2469,8 @@ int dataio_text::get_parameters(
 
 int dataio_text::output_ascii_data(
       string outfile,
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class RayTracingBase *RT ///< pointer to raytracing class [OUTPUT]
       )
 {
   ofstream outf(outfile.c_str());
