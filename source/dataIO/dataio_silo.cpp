@@ -514,8 +514,7 @@ int dataio_silo::setup_grid_properties(
   // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
-  //double dx=gp->DX();
-  double dx=SimPM.dx;
+  double dx=grid->DX();
   if (node_coords || nodedims || zonedims ||
       nodex || nodey || nodez) {
     cerr<<"Have already setup variables for grid props! ";
@@ -556,20 +555,20 @@ int dataio_silo::setup_grid_properties(
     float *posx=0, *posy=0, *posz=0;
     posx = mem.myalloc(posx,nx);
     for (int i=0;i<nx;i++)
-      posx[i] = static_cast<float>(SimPM.Xmin[XX]+i*dx);
+      posx[i] = static_cast<float>(grid->SIM_Xmin(XX)+i*dx);
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
     if (ndim>1) {
       posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
-        posy[i] = static_cast<float>(SimPM.Xmin[YY]+i*dx);
+        posy[i] = static_cast<float>(grid->SIM_Xmin(YY)+i*dx);
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
       posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
-        posz[i] = static_cast<float>(SimPM.Xmin[ZZ]+i*dx);
+        posz[i] = static_cast<float>(grid->SIM_Xmin(ZZ)+i*dx);
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
@@ -587,21 +586,21 @@ int dataio_silo::setup_grid_properties(
     double *posx=0, *posy=0, *posz=0;
     posx = mem.myalloc(posx,nx);
     for (int i=0;i<nx;i++)
-      posx[i] = static_cast<double>(SimPM.Xmin[XX]+i*dx);
+      posx[i] = static_cast<double>(grid->SIM_Xmin(XX)+i*dx);
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim>1) {
       posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
-        posy[i] = static_cast<double>(SimPM.Xmin[YY]+i*dx);
+        posy[i] = static_cast<double>(grid->SIM_Xmin(YY)+i*dx);
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
       posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
-        posz[i] = static_cast<double>(SimPM.Xmin[ZZ]+i*dx);
+        posz[i] = static_cast<double>(grid->SIM_Xmin(ZZ)+i*dx);
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }

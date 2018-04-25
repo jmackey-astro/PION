@@ -57,7 +57,8 @@ class MCMDcontrol {
   /// a structure which contains the domain of each processor.
   ///
   int decomposeDomain(
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      struct level &     ///< pointer to domain parameters for nested grid level
       );
 
   ///
@@ -67,7 +68,8 @@ class MCMDcontrol {
   ///
   int decomposeDomain(
       const enum axes,
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      struct level &     ///< pointer to domain parameters for nested grid level
       );
 
   ///
@@ -75,7 +77,7 @@ class MCMDcontrol {
   /// intersections.
   ///
   void get_abutting_domains(
-      class SimParams &,  ///< pointer to simulation parameters
+      const int,  ///< grid dimensions
       std::vector<int> & ///< write list to this vector.
       );
 
@@ -83,7 +85,7 @@ class MCMDcontrol {
   /// Returns the ix array for any requested rank.
   ///
   void get_domain_ix(
-      class SimParams &,  ///< pointer to simulation parameters
+      const int,  ///< grid dimensions
       const int, ///< rank ix requested for.
       int *      ///< array to put ix into.
       );
@@ -125,7 +127,8 @@ class MCMDcontrol {
   /// processor along that direction.
   ///
   int pointToNeighbours(
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      struct level &     ///< pointer to domain parameters for nested grid level
       );
 };
 

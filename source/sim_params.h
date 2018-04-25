@@ -154,6 +154,19 @@ extern struct stellarwind_list SWP;
 
 
 
+// *******************************************************************
+///
+/// Grid data for each level of the nested grid.
+///
+struct level {
+  int NG[MAX_DIM];        ///< Number of 'real' grid zones in each direction (Total for level).
+  long int Ncell;         ///< Total number of 'real' grid zones within the domain (Total for level).
+  double Range[MAX_DIM];  ///< Size of domain in x,y,z-direction on this level
+  double Xmin[MAX_DIM];   ///< Min value of x,y,z in domain on this level
+  double Xmax[MAX_DIM];   ///< Max value of x,y,z in domain on this level
+  double dx;              ///< Linear side length of grid cells on this level
+};
+// *******************************************************************
 
 
 // *******************************************************************
@@ -164,15 +177,15 @@ extern struct stellarwind_list SWP;
 ///
 class SimParams {
   public:
-   SimParams();
-   ~SimParams();
-   int gridType;   ///< Uniform, Finite Volume, cubic cell grid: 1 = only option.
-   int eqntype;    ///< Euler=1, Ideal-MHD=2, GLM-MHD=3, FCD-MHD=4, IsoHydro=5.
-   int coord_sys;  ///< Cartesian=1, Cylindrical=2, Spherical=3
-   int solverType; ///< 0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS.
-   int eqnNDim;    ///< Dimensionality of equations, set to 3 for now.
-   int ndim;       ///< Dimensionality of grid (can be one of [1,2,3]).
-   int nvar;       ///< Length of State Vectors (number of variables).
+  SimParams();
+  ~SimParams();
+  int gridType;   ///< Uniform, Finite Volume, cubic cell grid: 1 = only option.
+  int eqntype;    ///< Euler=1, Ideal-MHD=2, GLM-MHD=3, FCD-MHD=4, IsoHydro=5.
+  int coord_sys;  ///< Cartesian=1, Cylindrical=2, Spherical=3
+  int solverType; ///< 0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS.
+  int eqnNDim;    ///< Dimensionality of equations, set to 3 for now.
+  int ndim;       ///< Dimensionality of grid (can be one of [1,2,3]).
+  int nvar;       ///< Length of State Vectors (number of variables).
 
   // Tracer variables:
   int ntracer;    ///< Number of tracer variables.
@@ -181,63 +194,70 @@ class SimParams {
   std::string TRTYPE; ///< LEGACY CODE for what kind of chemistry we are running.
   std::string *tracers;  ///< array of strings for the tracer type
 
-   // Timing
-   double simtime;    ///< current time in simulation. 
-   double starttime;  ///< initial time to start simulation at. 
-   double finishtime; ///< Time at which to finish the simulation.
-   bool maxtime;      ///< False if simulation is to continue, true if time to stop.
-   int timestep;      ///< Integer count of the number of timesteps since the start. 
-   double dt;         ///< timestep size for simulation (all cells have same step).
-   double last_dt;    ///< Remember the last timestep.
-   double min_timestep; ///< Minimum value timestep can be; if dt<min_timestep, but out.
+  // Timing
+  double simtime;    ///< current time in simulation. 
+  double starttime;  ///< initial time to start simulation at. 
+  double finishtime; ///< Time at which to finish the simulation.
+  bool maxtime;      ///< False if simulation is to continue, true if time to stop.
+  int timestep;      ///< Integer count of the number of timesteps since the start. 
+  double dt;         ///< timestep size for simulation (all cells have same step).
+  double last_dt;    ///< Remember the last timestep.
+  double min_timestep; ///< Minimum value timestep can be; if dt<min_timestep, but out.
 
-   // Grid Point data
-   int NG[MAX_DIM];   ///< Number of 'real' grid-points in each direction (Total for sim)
-   long int Ncell;    ///< Total number of 'real' grid points (within the range) (Total for sim).
-   double Range[MAX_DIM]; ///< Size of domain in x,y,z-direction.
-   double Xmin[MAX_DIM];  ///< Min value of x,y,z in domain.
-   double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain.
-   double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells.
-   // Boundary cell data.
-   std::string BC_XN; ///< Type of boundary condition.
-   std::string BC_XP; ///< Type of boundary condition.
-   std::string BC_YN; ///< Type of boundary condition.
-   std::string BC_YP; ///< Type of boundary condition.
-   std::string BC_ZN; ///< Type of boundary condition.
-   std::string BC_ZP; ///< Type of boundary condition.
-   int BC_Nint;       ///< Number of internal boundary regions
-   std::string *BC_INT;   ///< List of internal boundary regions.
-   std::string BC_STRING; ///< For reading pre-2018 data-files.
+  // Grid data
+  int NG[MAX_DIM];   ///< Number of 'real' grid zones in each direction (Total for sim) (top level).
+  long int Ncell;    ///< Total number of 'real' grid zones (within the range) (Total for sim) (top level).
+  double Range[MAX_DIM]; ///< Size of domain in x,y,z-direction (top level).
+  double Xmin[MAX_DIM];  ///< Min value of x,y,z in domain (top level).
+  double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain (top level).
+  double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells (top level).
 
-   int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
-   // Integration accuracy
-   int spOOA;  ///< Spatial Order of Accuracy in the code.
-   int tmOOA;  ///< Time Order of Accuracy in the code.
+  // nested grid data
+  int nlevels;
+  int aspect_ratio[MAX_DIM];
+  double nest_centre[MAX_DIM];
+  std::vector<struct level> levels;
 
-   // Physics
-   double gamma;            ///< Ideal gas constant.
-   double CFL;              ///< Courant factor, must be less than one, should be about 0.5.
-   int artviscosity;        ///< Integer flag. 0=No Artificial Viscosity; 1=Falle's version;
-                            ///< 2=Lapidus; 3=H-correction.
-   double etav;             ///< Artificial viscosity coefficient, should be between 0.01 and 0.3
-   struct which_physics EP; ///< flags for what extra physics we are going to use.
-   struct rad_sources   RS; ///< list of radiation sources.
-   std::vector<struct star>  STAR; ///< Data from stellar evolution file(s).
+  // Boundary cell data.
+  std::string BC_XN; ///< Type of boundary condition.
+  std::string BC_XP; ///< Type of boundary condition.
+  std::string BC_YN; ///< Type of boundary condition.
+  std::string BC_YP; ///< Type of boundary condition.
+  std::string BC_ZN; ///< Type of boundary condition.
+  std::string BC_ZP; ///< Type of boundary condition.
+  int BC_Nint;       ///< Number of internal boundary regions
+  std::string *BC_INT;   ///< List of internal boundary regions.
+  std::string BC_STRING; ///< For reading pre-2018 data-files.
 
-   // File I/O
-   int typeofop;       ///< Output FileType: Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
-   int typeofip;       ///< Input FileType:  Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
+  int Nbc;         ///< Depth of boundary/ghost cells from edge of grid.
+  // Integration accuracy
+  int spOOA;  ///< Spatial Order of Accuracy in the code.
+  int tmOOA;  ///< Time Order of Accuracy in the code.
 
-   std::string outFileBase; ///< Filename, with path, to write data to.
-   int opfreq;         ///< Output file every 'opfreq'th timestep.
-   int op_criterion;   ///< =0 for per n-steps, =1 for per n-years.
-   double next_optime; ///< if op_criterion=1, then this is the next time an output will happen.
-   double opfreq_time; ///< if op_criterion=1, then this is the output frequency in seconds.
-   int checkpoint_freq; ///< how often to output a checkpoint file (# timesteps).
+  // Physics
+  double gamma;            ///< Ideal gas constant.
+  double CFL;              ///< Courant factor, must be less than one, should be about 0.5.
+  int artviscosity;        ///< Integer flag. 0=No Artificial Viscosity; 1=Falle's version;
+                          ///< 2=Lapidus; 3=H-correction.
+  double etav;             ///< Artificial viscosity coefficient, should be between 0.01 and 0.3
+  struct which_physics EP; ///< flags for what extra physics we are going to use.
+  struct rad_sources   RS; ///< list of radiation sources.
+  std::vector<struct star>  STAR; ///< Data from stellar evolution file(s).
 
-   // Initial Conditions.
-   double addnoise; ///< Whether to add noise or not, 0=no, 1-3 are for different types of noise.
-   pion_flt RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
+  // File I/O
+  int typeofop;       ///< Output FileType: Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
+  int typeofip;       ///< Input FileType:  Integer flag. 1=ascii, 2=fits, 3=fitstable, 4=FITSandASCII, 5=Silo etc.
+
+  std::string outFileBase; ///< Filename, with path, to write data to.
+  int opfreq;         ///< Output file every 'opfreq'th timestep.
+  int op_criterion;   ///< =0 for per n-steps, =1 for per n-years.
+  double next_optime; ///< if op_criterion=1, then this is the next time an output will happen.
+  double opfreq_time; ///< if op_criterion=1, then this is the output frequency in seconds.
+  int checkpoint_freq; ///< how often to output a checkpoint file (# timesteps).
+
+  // Initial Conditions.
+  double addnoise; ///< Whether to add noise or not, 0=no, 1-3 are for different types of noise.
+  pion_flt RefVec[MAX_NVAR];  ///< Reference state vector for simulation.
 };
 
 

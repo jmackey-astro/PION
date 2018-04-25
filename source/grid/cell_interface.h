@@ -570,5 +570,7 @@ class cell_interface {
 
 };
 
+/// Global Instance of cell interface class.
+extern class cell_interface CI;
 
 #endif // CELL_INTERFACE_H

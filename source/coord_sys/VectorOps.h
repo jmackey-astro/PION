@@ -34,6 +34,7 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
+#include "grid/cell_interface.h"
 #include "constants.h"
 
 //
@@ -411,7 +412,6 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
 {
   protected:
   double VOdR; ///< length of cell in R-dir.
-  class cell_interface *CI; ///< pointer to cell-interface class.
 
   ///
   /// Returns centre of mass of cell in R-direction.
@@ -424,7 +424,7 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   virtual inline double R_com(
       const cell *c ///< Cell to operate on.
       )
-  {return(CI->get_dpos(c,Rcyl) + VOdR*VOdR/12./CI->get_dpos(c,Rcyl));}
+  {return(CI.get_dpos(c,Rcyl) + VOdR*VOdR/12./CI.get_dpos(c,Rcyl));}
 
   public:
   ///
@@ -453,11 +453,6 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// Destructor
   ///
   ~VectorOps_Cyl();
-
-  /// Set the pointer to the cell-interface class
-  virtual void set_cell_interface_pointer(
-      class cell_interface *c
-      ) {CI = c; return;}
 
   virtual double CellVolume(
       const cell *

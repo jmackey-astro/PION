@@ -461,7 +461,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(
       // choose myrank, and decompose domain accordingly.
       //
       filePM->set_myrank(ifile*groupsize +igroup);
-      filePM->decomposeDomain(SimPM);
+      filePM->decomposeDomain(SimPM, SimPM.levels[0]);
       
       //
       // set directory in file.
@@ -722,7 +722,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         filePM.set_myrank(ifile*groupsize +igroup);
       }
 
-      filePM.decomposeDomain(SimPM);
+      filePM.decomposeDomain(SimPM, SimPM.levels[0]);
       
       //
       // set directory in file.

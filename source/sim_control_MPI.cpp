@@ -265,7 +265,7 @@ int sim_control_fixedgrid_pllel::Init(
   //
   err = dataio->ReadHeader(infile, SimPM);
   if (err) rep.error("PLLEL Init(): failed to read header",err);
-  err = mpiPM.decomposeDomain(SimPM);
+  err = mpiPM.decomposeDomain(SimPM, SimPM.levels[0]);
   if (err) rep.error("PLLEL Init():Couldn't Decompose Domain!",err);
 
 
@@ -345,7 +345,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM);
+    err = update_evolving_RT_sources(SimPM,RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;

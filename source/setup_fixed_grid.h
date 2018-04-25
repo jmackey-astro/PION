@@ -77,7 +77,7 @@ class setup_fixed_grid
   virtual int setup_raytracing(
       class SimParams &,  ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to computational grid
-      class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
+      class RayTracingBase * ///< pointer to raytracing class
       );
 
   ///
