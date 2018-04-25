@@ -62,8 +62,8 @@ class point_quantities : public Xray_emission {
   /// interpolating.
   ///
   double get_point_electron_numberdensity(
-          const struct point_4cellavg *
-          );
+      const struct point_4cellavg *
+      );
 
   ///
   /// Get the H^+ number density, using Microphysics function to get
@@ -71,8 +71,8 @@ class point_quantities : public Xray_emission {
   /// interpolating.
   ///
   double get_point_ionizedH_numberdensity(
-          const struct point_4cellavg *
-          );
+      const struct point_4cellavg *
+      );
 
   ///
   /// Get the H^0 number density, using Microphysics function to get
@@ -80,16 +80,17 @@ class point_quantities : public Xray_emission {
   /// interpolating.
   ///
   double get_point_neutralH_numberdensity(
-          const struct point_4cellavg *
-          );
+      const struct point_4cellavg *
+      );
 
   ///
   /// Get the temperature at a point, based on 4-cell bilinear
   /// interpolation.  This uses a microphysics class to get T.
   ///
   double get_point_temperature(
-          const struct point_4cellavg * ///< point
-          );
+      const struct point_4cellavg *, ///< point
+      const double gamma   ///< EOS gamma
+      );
 
   ///
   /// Get the Stokes Q component for the perpendicular magnetic field
@@ -183,87 +184,54 @@ class point_quantities : public Xray_emission {
   /// photoionised nebulae.
   ///
   void get_point_Halpha_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
+      const struct point_4cellavg *, ///< point in question.
+      const int, ///< ifrac index in prim.vec.
+      const double,   ///< EOS gamma
+      double *,  ///< absorption coefficient (/cm)
+      double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+      );
 
   ///
   /// Get the absorption and emission coefficients for [N II] 6584AA
   /// radiation, according to a fit from Dopita (1973,A&A,29,387).
   ///
   void get_point_NII6584_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
+      const struct point_4cellavg *, ///< point in question.
+      const int, ///< ifrac index in prim.vec.
+      const double,   ///< EOS gamma
+      double *,  ///< absorption coefficient (/cm)
+      double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+      );
 
   ///
   /// Get the Emission Measure at a point, based on 4-cell bilinear
   /// interpolation.  Returns value in cm^{-6}
   ///
   double get_point_EmissionMeasure(
-          const struct point_4cellavg *
-          );
+      const struct point_4cellavg *
+      );
 
   ///
   /// Get the 20cm Bremsstrahlung at a point, based on 4-cell bilinear
   /// interpolation.  Returns value in MJy/sr/cm.
   ///
   double get_point_Bremsstrahlung20cm(
-          const struct point_4cellavg *
-          );
+      const struct point_4cellavg *, ///< point
+      const double   ///< EOS gamma
+      );
 
-  void get_point_Xray_X01_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-  
-  void get_point_Xray_X02_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-          
-  void get_point_Xray_X05_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-
-  void get_point_Xray_X10_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-
-  void get_point_Xray_X20_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-
-  void get_point_Xray_X50_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
-
-  void get_point_Xray_X100_params(
-          const struct point_4cellavg *, ///< point in question.
-          const int, ///< ifrac index in prim.vec.
-          double *,  ///< absorption coefficient (/cm)
-          double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
-          );
+  ///
+  /// function to get the X-ray emissivity at a point, by reading
+  /// from an interpolation table.
+  ///
+  void get_point_Xray_params(
+      const struct point_4cellavg *, ///< point in question.
+      const int, ///< ifrac index in prim.vec.
+      const int, ///< which X-ray emissivity to use (index in array).
+      const double,   ///< EOS gamma
+      double *,  ///< absorption coefficient (/cm)
+      double *   ///< emission coeff (erg/cm^3/s/sq.arcsec)
+      );
 
 };
 

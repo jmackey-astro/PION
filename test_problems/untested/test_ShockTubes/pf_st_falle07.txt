@@ -9,18 +9,11 @@ gridtype 1
 
 # Type of Equations to Solve {hd, mhd, ...}
 eqn  i-mhd
-eqnndim 3
-solver RSlinear
+solver RS_HLLD
 nvar 8
 
 ntracer 0
-#trtype ChALL_trace_H1+___e-____He1+__He2+__
-InitIons YES
-#Tracer0 1.0
-#Tracer1 1.0
-#Tracer2 0.0
-#Tracer3 0.0
-trtype None #color_trace_
+chem_code none
 
 # extra physics
 EP_dynamics 1
@@ -31,6 +24,12 @@ EP_chemistry    0
 EP_coll_ionisation   0
 EP_rad_recombination 0
 EP_update_erg 0
+EP_MP_timestep_limit 0
+EP_Min_Temperature 0
+EP_Max_Temperature 1.0e99
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac   0.0
+EP_Metal_MassFrac    0.0
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
@@ -71,7 +70,7 @@ Zmax 1.0
 
 
 # Data Output Path
-OutputPath ../results/
+OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType text
 # Output data to file every nth timestep. (n=0 means only at the end).
@@ -86,9 +85,8 @@ OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNout_XPout
-#BC XNout_XPfix_YNout_YPout
-#BC XNout_XPout_YNout_YPout_ZNout_ZPout
+BC_XN outflow
+BC_XP outflow
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
 GAMMA 2.0
@@ -98,7 +96,7 @@ GAMMA 2.0
 # CFL coefficient 0<cfl<1
 CFL 0.7
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
-ArtificialViscosity 1
+ArtificialViscosity 0
 EtaViscosity 0.15
 
 # Code Units
@@ -110,6 +108,9 @@ rhoval 1.0  # 1e-21 is roughly 10^3/cm3
 velval 1.0  # should be set by sqrt(p/rho) to be consistent
 lenval 1.0  # set so that time has proper units!
 magval 1.0  # determined by plasma beta = p_g/(B^2/2)
+
+RT_Nsources 0
+WIND_NSRC   0
 
 
 # Reference Vector for dimensionless Shock tubes (set all to ~1)

@@ -122,7 +122,8 @@ double point_quantities::get_point_neutralH_numberdensity(
 
 
 double point_quantities::get_point_temperature(
-        const struct point_4cellavg *pt
+        const struct point_4cellavg *pt,
+        const double gamma   ///< EOS gamma
         )
 {
   double val = 0.0;
@@ -133,11 +134,12 @@ double point_quantities::get_point_temperature(
   if (MP) {
     for (int v=0;v<4;v++) {
       if (pt->ngb[v]) {
-        val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,SimPM.gamma);
-        //if (!isfinite(MP->Temperature(pt->ngb[v]->P,SimPM.gamma))) {
-        //  cout <<"Invalid Temperature in loop="<<val<<"  "<<SimPM.gamma<<"  "<<endl;
-        //  rep.printVec("pv", pt->ngb[v]->P, SimPM.nvar);
-        //  rep.printVec("pos",pt->ngb[v]->pos, SimPM.ndim);
+        val += pt->wt[v] *MP->Temperature(pt->ngb[v]->P,gamma);
+        //if (!isfinite(MP->Temperature(pt->ngb[v]->P,gamma)) ||
+        //    MP->Temperature(pt->ngb[v]->P,gamma)==0.0) {
+        //  cout <<"Invalid Temperature in loop="<<val<<"  "<<gamma<<"  "<<endl;
+        //  rep.printVec("pv", pt->ngb[v]->P, 5);
+        //  rep.printVec("pos",pt->ngb[v]->pos, 3);
         //  //rep.printVec("img",pt->ngb[v]->Ph, SimPM.ndim);
         //}
       }
@@ -147,7 +149,7 @@ double point_quantities::get_point_temperature(
     rep.error("get_point_temperature(): no microphysics class",1);
   }
   //if (!isfinite(val))
-  //  cout <<"Invalid Temperature="<<val<<endl;
+  //cout <<"Invalid Temperature="<<val<<endl;
   return val;
 }
     
@@ -410,11 +412,12 @@ double point_quantities::get_point_RotationMeasure(
 /// seem to be more reliable.
 ///
 void point_quantities::get_point_Halpha_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (photons/cm)
-        double *j        ///< emission coeff (phot/cm^3/s/ster)
-        )
+      const struct point_4cellavg *pt, ///< point in question.
+      const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+      const double gamma,   ///< EOS gamma
+      double *alpha,   ///< absorption coefficient (photons/cm)
+      double *j        ///< emission coeff (phot/cm^3/s/ster)
+      )
 {
   //
   // I need the H+ number density, neutral number density, and
@@ -422,7 +425,7 @@ void point_quantities::get_point_Halpha_params(
   // neutral_density).
   // 
   double T, ni, nn, ne;
-  T  = get_point_temperature(pt);
+  T  = get_point_temperature(pt,gamma);
   nn = get_point_neutralH_numberdensity(pt);
   ni = get_point_ionizedH_numberdensity(pt);
   ne = get_point_electron_numberdensity(pt);
@@ -465,11 +468,12 @@ void point_quantities::get_point_Halpha_params(
 /// (1973,A&A,29,387)
 /// 
 void point_quantities::get_point_NII6584_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j        ///< emission coeff (erg/cm^3/s/sq.arcsec)
-        )
+      const struct point_4cellavg *pt, ///< point in question.
+      const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+      const double gamma,   ///< EOS gamma
+      double *alpha,   ///< absorption coefficient (/cm)
+      double *j        ///< emission coeff (erg/cm^3/s/sq.arcsec)
+      )
 {
   //
   // I need the H+ number density, neutral number density, and
@@ -477,7 +481,7 @@ void point_quantities::get_point_NII6584_params(
   // neutral_density).
   // 
   double T, ni, nn, ne;
-  T  = get_point_temperature(pt);
+  T  = get_point_temperature(pt,gamma);
   nn = get_point_neutralH_numberdensity(pt);
   ni = get_point_ionizedH_numberdensity(pt);
   ne = get_point_electron_numberdensity(pt);
@@ -542,7 +546,8 @@ double point_quantities::get_point_EmissionMeasure(
 
 
 double point_quantities::get_point_Bremsstrahlung20cm(
-      const struct point_4cellavg *pt
+      const struct point_4cellavg *pt,
+      const double gamma   ///< EOS gamma
       )
 {
   //
@@ -563,7 +568,7 @@ double point_quantities::get_point_Bremsstrahlung20cm(
       val += pt->wt[v]
               * MP->get_n_elec(pt->ngb[v]->P)
               * MP->get_n_Hplus(pt->ngb[v]->P)
-              * sqrt(MP->Temperature(pt->ngb[v]->P,SimPM.gamma));
+              * sqrt(MP->Temperature(pt->ngb[v]->P,gamma));
     }
   }
   //
@@ -580,24 +585,22 @@ double point_quantities::get_point_Bremsstrahlung20cm(
 ///
 /// Get the emission coefficients for X-ray emissivity at E>0.1kev.
 ///
-void point_quantities::get_point_Xray_X01_params(
+void point_quantities::get_point_Xray_params(
         const struct point_4cellavg *pt, ///< point in question.
         const int ifrac, ///< index of Prim.Vector with Ion. fraction.
+        const int index, ///< which X-ray emissivity to use (index in array).
+        const double gamma,   ///< EOS gamma
         double *alpha,   ///< absorption coefficient (/cm)
         double *j
         )
 {
   // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
+  double xr[7], T, ne;
+  T  = get_point_temperature(pt,gamma);
   ne = get_point_electron_numberdensity(pt);
-
   // Assume n_e=n_p (i.e. ignore electrons from Helium).
   get_xray_emissivity(T,xr);
-
+ 
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
     *j = 0.0;
@@ -605,247 +608,11 @@ void point_quantities::get_point_Xray_X01_params(
   }
   else {
     // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[0] * ne * ne;
-    *alpha = 0.0;
-  }
-  //printf("%15.5e %15.5e %15.5e\n", T,  ne, xr[0]);
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
-///
-void point_quantities::get_point_Xray_X02_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j
-        )
-{
-  // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
-  ne = get_point_electron_numberdensity(pt);
-
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
-
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[1] * ne * ne;
+    *j = 1.870e-12 * xr[index] * ne * ne;
     *alpha = 0.0;
   }
   return;
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
-///
-void point_quantities::get_point_Xray_X05_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j
-        )
-{
-  // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
-  ne = get_point_electron_numberdensity(pt);
-
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
-
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[2] * ne * ne;
-    *alpha = 0.0;
-  }
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
-///
-void point_quantities::get_point_Xray_X10_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j
-        )
-{
-  // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
-  ne = get_point_electron_numberdensity(pt);
-
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
-
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[3] * ne * ne;
-    *alpha = 0.0;
-  }
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
-///
-void point_quantities::get_point_Xray_X20_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j
-        )
-{
-  // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
-  ne = get_point_electron_numberdensity(pt);
-
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
-
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[4] * ne * ne;
-    *alpha = 0.0;
-  }
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
-///
-void point_quantities::get_point_Xray_X50_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j
-        )
-{
-  // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
-  ne = get_point_electron_numberdensity(pt);
-
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
-
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[5] * ne * ne;
-    *alpha = 0.0;
-  }
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-///
-/// Get the emission coefficients for X-ray emissivity at E>0.1kev.
-///
-void point_quantities::get_point_Xray_X100_params(
-        const struct point_4cellavg *pt, ///< point in question.
-        const int ifrac, ///< index of Prim.Vector with Ion. fraction.
-        double *alpha,   ///< absorption coefficient (/cm)
-        double *j
-        )
-{
-  // Need the electron number density and temperature.
-
-  double T, ne;
-  double xr[7]; xr[0]=xr[1]=xr[2]=xr[3]=xr[4]=xr[5]=xr[6]=0.0;
-
-  T  = get_point_temperature(pt);
-  ne = get_point_electron_numberdensity(pt);
-
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
-
-  if (T<1.0) {
-    // can get zero temperature if point is off-grid.
-    *j = 0.0;
-    *alpha = 0.0;
-  }
-  else {
-    // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[6] * ne * ne;
-    *alpha = 0.0;
-  }
-  return;
-}
-
 
 
 // ##################################################################

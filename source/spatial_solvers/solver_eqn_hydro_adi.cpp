@@ -27,11 +27,13 @@
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.04.14 JM: Moved flux solver to FV_solver
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
+#include "constants.h"
 #include "solver_eqn_hydro_adi.h"
 using namespace std;
 
@@ -54,13 +56,12 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
         const int ntr         ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
-    eqns_Euler(nv), riemann_Euler(nv,state,gam),
+    eqns_Euler(nv),
+    riemann_Euler(nv,state,gam),
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
-    flux_solver_hydro_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize)
 {
 #ifdef TESTING
@@ -88,6 +89,246 @@ FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 // ##################################################################
 
 
+
+int FV_solver_Hydro_Euler::inviscid_flux(
+      const cell *Cl, ///< Left state cell pointer
+      const cell *Cr, ///< Right state cell pointer
+      const pion_flt *Pl,///< Left Primitive state vector.
+      const pion_flt *Pr,///< Right Primitive state vector.
+      pion_flt *flux,   ///< Resultant Flux state vector.
+      pion_flt *pstar,  ///< State vector at interface.
+      const int solve_flag,
+      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double g  ///< Gas constant gamma.
+      )
+{
+#ifdef FUNCTION_ID
+  cout <<"FV_solver_Hydro_Euler::inviscid_flux ...starting.\n";
+#endif //FUNCTION_ID
+
+  //
+  // Check input density and pressure are 'reasonably large'
+  //
+  if (Pl[eqRO]<TINYVALUE || Pl[eqPG]<TINYVALUE ||
+      Pr[eqRO]<TINYVALUE || Pr[eqPG]<TINYVALUE) {
+    rep.printVec("left ",Pl,eq_nvar);
+    rep.printVec("right",Pr,eq_nvar);
+    rep.error("FV_solver_Hydro_Euler::calculate_flux() Density/Pressure too small",
+	      Pl[eqRO]);
+  }
+  int err=0;
+
+  //
+  // Set flux and pstar vector to zero.
+  //
+  for (int v=0;v<eq_nvar;v++) flux[v]  = 0.0;
+  for (int v=0;v<eq_nvar;v++) pstar[v]  = 0.0;
+  //
+  // Set EOS gamma in riemann solver class:
+  //
+  eq_gamma = g;
+
+
+  //
+  // Choose which Solver to use.  Each of these must set the values of
+  // the flux[] and pstar[] arrays.  I've commented out the calls to
+  // set_interface_tracer_flux(Pl,Pr,flux) b/c this is called by the
+  // solver which calls this function, after applying any requested
+  // viscous corrections.  So it is redundant work to calculate it
+  // now.
+  //
+  if      (solve_flag==FLUX_LF) {
+    //
+    // Lax-Friedrichs Method, so just get the flux.
+    //
+    err += get_LaxFriedrichs_flux(Pl,Pr,flux,eq_gamma);
+    for (int v=0;v<eq_nvar;v++) pstar[v] = 0.5*(Pl[v]+Pr[v]);
+ }
+
+  else if (solve_flag==FLUX_FVS) {
+    //
+    // Flux Vector Splitting (van Leer, 1982): This function takes the
+    // left and right state and returns the FVS flux in 'flux' and the
+    // Roe-average state in 'pstar'.
+    //
+    err += FVS_flux(Pl,Pr, flux, pstar, eq_gamma);
+    //set_interface_tracer_flux(Pl,Pr,flux);
+  }
+
+  else if (solve_flag==FLUX_RSlinear ||
+	   solve_flag==FLUX_RSexact ||
+	   solve_flag==FLUX_RShybrid) {
+    //
+    // These are all Riemann Solver Methods, so call the solver:
+    //
+    err += JMs_riemann_solve(Pl,Pr,pstar,solve_flag,eq_gamma);
+    PtoFlux(pstar, flux, eq_gamma);
+    //set_interface_tracer_flux(Pl,Pr,flux);
+  }
+
+  else if (solve_flag==FLUX_RSroe) {
+    //
+    // Roe conserved variables flux solver (Toro 1999), using the
+    // symmetric calculation.
+    //
+    err += Roe_flux_solver_symmetric(
+            Pl,Pr,eq_gamma, HC_etamax, pstar,flux);
+    //set_interface_tracer_flux(Pl,Pr,flux);
+  }
+
+  else if (solve_flag==FLUX_RSroe_pv) {
+    //
+    // Roe primitive variables linear solver:
+    //
+    err += Roe_prim_var_solver(Pl,Pr,eq_gamma,pstar);
+    //
+    // Convert pstar to a flux:
+    //
+    PtoFlux(pstar, flux, eq_gamma);
+    //set_interface_tracer_flux(Pl,Pr,flux);
+  }
+
+  else {
+    rep.error("what sort of flux solver do you mean???",solve_flag);
+  }
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+void FV_solver_Hydro_Euler::PtoU(
+      const pion_flt *p,
+      pion_flt *u,
+      const double g
+      )
+{
+  eqns_Euler::PtoU(p,u,g);
+  for (int t=0;t<FV_ntr;t++) u[eqTR[t]] = p[eqTR[t]]*p[eqRO];
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int FV_solver_Hydro_Euler::UtoP(
+      const pion_flt *u,
+      pion_flt *p,
+      const double MinTemp, ///< minimum temperature/pressure allowed
+      const double g
+      )
+{
+  int err=eqns_Euler::UtoP(u,p,MinTemp,g);
+  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
+  return err;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void FV_solver_Hydro_Euler::PUtoFlux(
+      const pion_flt *p,
+      const pion_flt *u,
+      pion_flt *f
+      )
+{
+  eqns_Euler::PUtoFlux(p,u,f);
+  for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = p[eqTR[t]]*f[eqRHO];
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void FV_solver_Hydro_Euler::UtoFlux(
+      const pion_flt *u,
+      pion_flt *f,
+      const double g
+      )
+{
+  eqns_Euler::UtoFlux(u,f,g);
+  for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = u[eqTR[t]]*f[eqRHO]/u[eqRHO];
+  return;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int FV_solver_Hydro_Euler::AVFalle(
+      const pion_flt *Pl,
+      const pion_flt *Pr,
+      const pion_flt *pstar,
+      pion_flt *flux, 
+      const double etav,
+      const double gam
+      )
+{
+  /// \section Equations
+  /// Currently the equations are as follows (for flux along x-direction):
+  /// \f[ F[p_x] = F[p_x] - \eta \rho^{*} c^{*}_f (v_{xR}-v_{xL})  \,,\f]
+  /// \f[ F[p_y] = F[p_y] - \eta \rho^{*} c^{*}_f (v_{yR}-v_{yL})  \,,\f]
+  /// \f[ F[p_z] = F[p_z] - \eta \rho^{*} c^{*}_f (v_{zR}-v_{zL})  \,,\f]
+  /// \f[ F[e]   = F[e]   - \eta \rho^{*} c^{*}_f \left( v^{*}_x (v_{xR}-v_{xL}) + v^{*}_y (v_{yR}-v_{yL}) + v^{*}_z (v_{zR}-v_{zL}) \right)\,.\f]
+  /// This follows from assuming a 1D problem, with non-zero bulk viscosity, and
+  /// a non-zero shear viscosity.  The bulk viscosity gives the viscosity 
+  /// in the x-direction, opposing stretching and compression.  The shear
+  /// viscosity given the y and z terms, opposing slipping across boundaries.
+  /// 
+  /// The identification of the velocities and density with the
+  /// resultant state from the Riemann Solver is a bit ad-hoc, and could easily
+  /// be changed to using the mean of the left and right states, or something
+  /// else. (See my notes on artificial viscosity).
+  ///
+  double prefactor = maxspeed(pstar, gam)*etav*pstar[eqRO];
+
+  //
+  // x-dir first.
+  //
+  double momvisc = prefactor*(Pr[eqVX]-Pl[eqVX]);
+  double ergvisc = momvisc*pstar[eqVX];
+  flux[eqMMX] -= momvisc;
+
+  // y-dir
+  momvisc = prefactor*(Pr[eqVY]-Pl[eqVY]);
+  flux[eqMMY] -= momvisc;
+  ergvisc += momvisc*pstar[eqVY];
+
+  // z-dir
+  momvisc = prefactor*(Pr[eqVZ]-Pl[eqVZ]);
+  flux[eqMMZ] -= momvisc;
+  ergvisc += momvisc*pstar[eqVZ];
+
+  // update energy flux
+  flux[eqERG] -= ergvisc;
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Adds the contribution from flux in the current direction to dU.
 ///
@@ -107,7 +348,6 @@ int FV_solver_Hydro_Euler::dU_Cell(
   //
   // This calculates -dF/dx
   //
-  //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
@@ -133,10 +373,6 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
       )
 {
   pion_flt u1[eq_nvar];
-#ifdef TESTING
-  pion_flt u2[eq_nvar];
-#endif //TESTING
-
   //
   // First convert from Primitive to Conserved Variables
   //
@@ -153,30 +389,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   if(UtoP(u1,Pf, MinTemp, eq_gamma)!=0) {
     cout<<"(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained \
            (maybe about negative pressure...) fixing\n";
-#ifdef TESTING
-    //grid->PrintCell(dp.c);
-    //grid->PrintCell(dp.c->ngb[XP]);
-    //rep.printVec("pin",Pin,SimPM.nvar);
-    //PtoU(Pin,u1, eq_gamma);
-    //rep.printVec("Uin",u1,SimPM.nvar);
-    //rep.printVec("dU ",dU, SimPM.nvar);
-    PtoU(Pf, u2, eq_gamma);
-    *dE += (u2[ERG]-u1[ERG]);
-    UtoP(u2,Pf, MinTemp, eq_gamma);
-#endif //TESTING
   }
-
-//#ifdef TEST_MP7
-//  double Ta = Pf[PG]*GS.m_p()/((1.0+Pf[SimPM.ftr])*GS.kB()*Pf[RO]);
-//  double Tt = MP->Temperature(Pf,SimPM.gamma);
-//  if (fabs(Ta-Tt)/Tt >1.0e-2) {
-//    cout <<"T_now="<<Ta<<", but it should be "<<Tt<<"\n";
-//  }
-//  MP->Set_Temp(Pf,Tt,SimPM.gamma);
-//#endif // TEST_MP7
-
-  //  for (int v=0;v<eq_nvar;v++) dU[v] = 0.; // Reset the dU array for the next timestep.
-
   return 0;
 }
 
@@ -193,14 +406,14 @@ double FV_solver_Hydro_Euler::CellTimeStep(
       const double  ///< Cell size dx.
       )
 {
-  /** \section Algorithm
-   * First Get the maximum fluid velocity in each of the three directions.
-   * Add the sound speed to the abs. value of this to get the max signal 
-   * propagation speed.  Then dt=dx/max.vel.
-   * Next test if the pressure gradient can induce a larger speed in the
-   * timestep, and if it can, divide the timestep by the appropriate factor.
-   * Finally multiply by the CFl no. and return.
-   * */
+  /// \section Algorithm
+  /// First Get the maximum fluid velocity in each of the three directions.
+  /// Add the sound speed to the abs. value of this to get the max signal 
+  /// propagation speed.  Then dt=dx/max.vel.
+  /// Next test if the pressure gradient can induce a larger speed in the
+  /// timestep, and if it can, divide the timestep by the appropriate factor.
+  /// Finally multiply by the CFl no. and return.
+  ///
 
   //
   // Get Max velocity along a grid direction.
@@ -214,29 +427,6 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   //
   temp += chydro(c->P,eq_gamma);
   FV_dt = FV_dx/temp;
-
-  
-  //
-  // Check the gradient of pressure with neighbouring cells, since this can 
-  // dramatically shorten the timestep.  (CAN'T REMEMBER WHY!!!)
-  //
-  // int pg = static_cast<int>(eqPG);
-  // if (c->isgd) {
-  //   double grad = maxGradAbs(c,0,pg)/c->P[RO];
-  //   if( (temp = grad*FV_dt/temp) >1.) {
-  //     FV_dt /= temp;
-  //     //      if (temp>3) cout <<"gradient adjusting timestep\n";
-  //   }
-  // }
-  // else if (grid->NextPt(c,XP)) {
-  //   //  cout <<"grid="<<grid<<"\n";
-  //   double grad = fabs(c->P[PG]-grid->NextPt(c,XP)->P[PG])/FV_dx/c->P[RO];
-  //   if( (temp = grad*FV_dt/temp) >1.) {
-  //     FV_dt /= temp;
-  //   }
-  // }
-  // else rep.error("No neighbour to gradient test",c);    
-  
   //
   // Now scale the max. allowed timestep by the CFL number we are using (<1).
   //
@@ -267,20 +457,15 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
         const int ntr         ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
     eqns_Euler(nv), riemann_Euler(nv,state,gam),
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
-    flux_solver_hydro_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize),
     FV_solver_Hydro_Euler(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
     VectorOps_Cyl(nd,cellsize)
 {
-#ifdef TESTING
-  cout <<"cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler() constructor.\n";
-#endif
   if (nd!=2) rep.error("Cylindrical coordinates only implemented for \
                         2d axial symmetry so far.  Sort it out!",nd);
   return;
@@ -291,12 +476,7 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
 // ##################################################################
 
 cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler()
-{
-#ifdef TESTING
-  cout <<"cyl_FV_solver_Hydro_Euler DESTRUCTOR.\n";
-#endif
-}
-
+{ } 
 
 // ##################################################################
 // ##################################################################
@@ -317,7 +497,6 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(
   //
   // This calculates -dF/dx
   //
-  //if (d!=eq_dir) rep.error("direction problem!!!!!!!!",d);
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   //
@@ -327,23 +506,9 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(
     switch (OA) {
      case OA1:
       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]/CI.get_dpos(c,Rcyl));
-      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;
-      //u1[1] = u1[0]+VOdR;
-      //u1[2] = 2.0*(u1[1]*u1[3] - u1[0]*u1[2])/(u1[1]*u1[1]-u1[0]*u1[0]);
-      //cout <<"O1: rel.diff. Src Term: "<< (c->Ph[eqPG]/CI.get_dpos(c,Rcyl) -u1[2])/u1[2];
-      //cout <<"  old = "<< FV_dt*c->Ph[eqPG]/CI.get_dpos(c,Rcyl)<<",  new = "<<FV_dt*u1[2]<<",  p="<<c->Ph[eqPG]<<"\n";
-      //c->dU[eqMMX] += FV_dt*u1[2];
       break;
      case OA2:
       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c)))/CI.get_dpos(c,Rcyl);
-      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;              // r-
-      //u1[1] = u1[0]+VOdR;                                // r+
-      //u1[2] = c->Ph[eqPG] +dpdx[eqPG]*(u1[0]-R_com(c));  // P-
-      //u1[3] = c->Ph[eqPG] +dpdx[eqPG]*(u1[1]-R_com(c));  // P+
-      //u1[4] = 2.0*(u1[1]*u1[3] - u1[0]*u1[2])/(u1[1]*u1[1]-u1[0]*u1[0]) -
-      //            (u1[3]-u1[2])/(u1[1]-u1[0]);
-      //c->dU[eqMMX] += FV_dt*u1[4];
-      //cout <<"O2: r-="<<u1[0]<<", r+="<<u1[1]<<", p-="<<u1[2]<<", p+="<<u1[3]<<", <p/r>="<<u1[4]<<", old p/r="<<(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c)))/CI.get_dpos(c,Rcyl)<<"\n";
       break;
      default:
       rep.error("Bad OOA in cyl_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);
@@ -377,22 +542,16 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
         const int ntr         ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    //riemann_base(nv),
-    flux_solver_base(nv,avcoeff,ntr),
     FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
     eqns_Euler(nv), riemann_Euler(nv,state,gam),
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
-    flux_solver_hydro_adi(nv,state,avcoeff,gam,ntr),
     VectorOps_Cart(nd,cellsize),
     FV_solver_Hydro_Euler(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
     VectorOps_Cyl(nd,cellsize),
     VectorOps_Sph(nd,cellsize)
 {
-#ifdef TESTING
-  cout <<"sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler() constructor.\n";
-#endif
   if (nd!=1) rep.error("Spherical coordinates only implemented for 1D \
                         spherical symmetry so far.  Sort it out!",nd);
   return;
@@ -403,9 +562,7 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
 // ##################################################################
 
 sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler()
-{
-  //  cout <<"sph_FV_solver_Hydro_Euler DESTRUCTOR.\n";
-}
+{ }
 
 
 // ##################################################################
@@ -439,28 +596,11 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(
     switch (OA) {
       case OA1:
       c->dU[eqMMX] += FV_dt*2.0*c->Ph[eqPG]/R3(c);
-      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;
-      //u1[1] = u1[0]+VOdR;
-      //u1[2] = 3.0*(u1[1]*u1[1]*c->Ph[eqPG] - u1[0]*u1[0]*c->Ph[eqPG])/(u1[1]*u1[1]*u1[1]-u1[0]*u1[0]*u1[0]);
-      //if (fabs(u1[2]-2.0*c->Ph[eqPG]/R3(c))/u1[2] >1.0e-15) {
-      //  cout <<"O1: rel.diff. Src Term: "<< (2.0*c->Ph[eqPG]/R3(c) -u1[2])/u1[2];
-      //  cout <<"  old = "<< 2.0*c->Ph[eqPG]/R3(c)<<",  new = "<<u1[2]<<",  p="<<c->Ph[eqPG]<<"\n";
-      //}
-      //c->dU[eqMMX] += FV_dt*u1[2];
       break;
 
       case OA2:
       c->dU[eqMMX] += FV_dt*2.0*
        ( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG] );
-      //u1[0] = CI.get_dpos(c,Rsph)-0.5*VOdR;              // r-
-      //u1[1] = u1[0]+VOdR;                                // r+
-      //u1[2] = c->Ph[eqPG] +dpdx[eqPG]*(u1[0]-R_com(c));  // P-
-      //u1[3] = c->Ph[eqPG] +dpdx[eqPG]*(u1[1]-R_com(c));  // P+
-      //u1[4] = 3.0*(u1[1]*u1[1]*u1[3] - u1[0]*u1[0]*u1[2])/(pow(u1[1],3.0)-pow(u1[0],3.0)) -
-      //            (u1[3]-u1[2])/(u1[1]-u1[0]);
-      //c->dU[eqMMX] += FV_dt*u1[4];
-      //if (fabs(u1[4]-2.0*((c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG]))/u1[4] >1.0e-15)
-      //  cout <<"O2: r-="<<u1[0]<<", r+="<<u1[1]<<", p-="<<u1[2]<<", p+="<<u1[3]<<", new <2p/r>="<<u1[4]<<", old <2p/r>="<<2.0*( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG] )<<"\n";
       break;
      default:
       rep.error("Bad OOA in sph_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);

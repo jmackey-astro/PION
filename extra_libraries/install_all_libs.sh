@@ -218,18 +218,18 @@ else
           exit
         fi
 fi 
-echo "********************************"
-echo "*** EXTRACTING SILO LIBRARY ***"
-echo "********************************"
+#echo "********************************"
+#echo "*** EXTRACTING SILO LIBRARY ***"
+#echo "********************************"
 tar zxf $FILE
-echo "********************************"
-echo "*** RUNNING CONFIGURE ***"
-echo "********************************"
+#echo "********************************"
+#echo "*** RUNNING CONFIGURE ***"
+#echo "********************************"
 BASE_PATH=`pwd`
 echo "***Path = $BASE_PATH ***"
 cd $SRC_DIR
-#make clean
-
+make clean
+#
 if [ "$SHARED" == "NO" ]
 then
   echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
@@ -247,21 +247,10 @@ else
  --enable-pythonmodule
 fi
 
-# Silex is broken because I can't get Qt working...
-#--enable-silex \
-#--with-Qt-include-dir=/usr/include/qt4 --with-Qt-bin-dir=/usr/lib/x86_64-linux-gnu/qt4/bin --with-Qt-lib-dir=/usr/lib/x86_64-linux-gnu --with-Qt-dir=/usr/lib/x86_64-linux-gnu/qt4
-#--with-readline \
-
 echo "********************************"
 echo "*** RUNNING MAKE ***"
 echo "********************************"
 make -j$NCORES
-#echo "********************************"
-#echo "*** RUNNING TESTS ***"
-#echo "********************************"
-#cd tests/
-#make check
-#cd ..
 echo "********************************"
 echo "*** INSTALLING SILO LIBRARY ***"
 echo "********************************"
@@ -351,60 +340,60 @@ echo "********************************"
 echo "*** FINISHED! ***"
 echo "********************************"
 
+###################################
+###########   CFITSIO    ##########
+###################################
+#echo "*******************************"
+#echo "*** INSTALLING FITS LIBRARY ***"
+#echo "*******************************"
 ##################################
-##########   CFITSIO    ##########
+## Change these for new versions:
+#FILE=cfitsio3390.tar.gz
+#SRC_DIR=cfitsio
+#REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
 ##################################
-echo "*******************************"
-echo "*** INSTALLING FITS LIBRARY ***"
-echo "*******************************"
-#################################
-# Change these for new versions:
-FILE=cfitsio3390.tar.gz
-SRC_DIR=cfitsio
-REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
-#################################
-
-if [ -e $FILE ]; then
-	echo "*** File exists, no need to download ***"
-else 
-	echo "***** File does not exist ******"
-	echo "*******************************"
-	echo "*** DOWNLOADING FITS LIBRARY ***"
-	echo "*******************************"
-        if [ $MAKE_UNAME == "osx" ]; then
-          curl  $REMOTE_URL -o $FILE
-        else
-          $WGET --no-check-certificate $REMOTE_URL -O $FILE
-        fi
-        # check it downloaded.
-        if [ ! -f $FILE ]; then
-          echo "File not found! : $FILE"
-          echo "Download of Silo Library Failed... quitting"
-          exit
-        fi
-fi
-echo "*******************************"
-echo "*** EXTRACTING FITS LIBRARY ***"
-echo "*******************************"
-tar zxf $FILE
-echo "*******************************"
-echo "*** RUNNING CONFIGURE ***"
-echo "*******************************"
-BASE_PATH=`pwd`
-echo "***Path = $BASE_PATH ***"
-cd $SRC_DIR
-make clean
-./configure --prefix=${BASE_PATH}
-echo "*******************************"
-echo "*** RUNNING MAKE ***"
-echo "*******************************"
-make -j$NCORES
-echo "*******************************"
-echo "*** INSTALLING CFITSIO ***"
-echo "*******************************"
-make install
-echo "*******************************"
-echo "*** FINISHED! ***"
-echo "*******************************"
-cd $CURDIR
+#
+#if [ -e $FILE ]; then
+#	echo "*** File exists, no need to download ***"
+#else 
+#	echo "***** File does not exist ******"
+#	echo "*******************************"
+#	echo "*** DOWNLOADING FITS LIBRARY ***"
+#	echo "*******************************"
+#        if [ $MAKE_UNAME == "osx" ]; then
+#          curl  $REMOTE_URL -o $FILE
+#        else
+#          $WGET --no-check-certificate $REMOTE_URL -O $FILE
+#        fi
+#        # check it downloaded.
+#        if [ ! -f $FILE ]; then
+#          echo "File not found! : $FILE"
+#          echo "Download of Silo Library Failed... quitting"
+#          exit
+#        fi
+#fi
+#echo "*******************************"
+#echo "*** EXTRACTING FITS LIBRARY ***"
+#echo "*******************************"
+#tar zxf $FILE
+#echo "*******************************"
+#echo "*** RUNNING CONFIGURE ***"
+#echo "*******************************"
+#BASE_PATH=`pwd`
+#echo "***Path = $BASE_PATH ***"
+#cd $SRC_DIR
+#make clean
+#./configure --prefix=${BASE_PATH}
+#echo "*******************************"
+#echo "*** RUNNING MAKE ***"
+#echo "*******************************"
+#make -j$NCORES
+#echo "*******************************"
+#echo "*** INSTALLING CFITSIO ***"
+#echo "*******************************"
+#make install
+#echo "*******************************"
+#echo "*** FINISHED! ***"
+#echo "*******************************"
+#cd $CURDIR
 

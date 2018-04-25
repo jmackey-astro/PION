@@ -510,9 +510,16 @@ void DataIOBase::set_params(
   // Number of internal boundaries
   pm_int     *p124 = new pm_int     
     ("BC_Ninternal",   &SimPM.BC_Nint);
-  p = p124; p->critical=true;  
+  p = p124; p->critical=false;  
   params.push_back(p);
   have_setup_bc_pm=false; // so we know to populate list later.
+
+  // LEGACY: look for a string parameter called BC, in case the
+  // data file was written with a pre-2018 version of PION.
+  pm_string     *p125 = new pm_string     
+    ("typeofbc_str",   &SimPM.BC_STRING);
+  p = p125; p->critical=false;  
+  params.push_back(p);
 
 
   //
@@ -543,6 +550,12 @@ void DataIOBase::set_params(
   p = p012a; p->critical=false;  
   params.push_back(p);
   have_setup_tracers=false; // so we know to populate list later.
+  // LEGACY: look for a string parameter called trtype, in case the
+  // data file was written with a pre-2018 version of PION.
+  pm_string     *p312 = new pm_string     
+    ("tracer_str",   &SimPM.TRTYPE);
+  p = p312; p->critical=false;  
+  params.push_back(p);
 
   //
   // hydro solver parameters.
@@ -841,19 +854,86 @@ int DataIOBase::read_simulation_parameters(
 
   //
   // Read boundary conditions for each edge and internal BCs
+  // Two options: lecacy code uses BC_STRING, new code uses individual
+  // parameters.  Test for legacy code first.
   //
-  if (!have_setup_bc_pm) set_bc_pm_params(SimPM);
-  if (bc_pm.empty()) rep.error("Boundary parameter list is empty!!",0);
-  //
-  // now read them:
-  //
-  int ct=0;
-  for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
-    p = (*iter);
-    err = read_header_param(p);
-    //cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
-    if (err) rep.error("Error reading parameter",p->name);
-    ct++;
+  if (SimPM.BC_STRING != "") {
+    int i=0;
+    string::size_type pos;
+    string temp;
+
+    // First get the external boundaries
+    string d[6] = {"XN","XP","YN","YP","ZN","ZP"};
+    string *par[6];
+    par[0] = &(SimPM.BC_XN);
+    par[1] = &(SimPM.BC_XP);
+    par[2] = &(SimPM.BC_YN);
+    par[3] = &(SimPM.BC_YP);
+    par[4] = &(SimPM.BC_ZN);
+    par[5] = &(SimPM.BC_ZP);
+    //rep.printVec("par",par,6);
+    for (i=0; i<2*SimPM.ndim; i++) {
+      if ( (pos=SimPM.BC_STRING.find(d[i])) == string::npos)
+        rep.error("Couldn't find boundary condition for ",d[i]);
+      else {
+        temp = SimPM.BC_STRING.substr(pos+2,3);
+        if      (temp=="per") *par[i] = "periodic";
+        else if (temp=="out") *par[i] = "outflow";
+        else if (temp=="owo") *par[i] = "one-way-outflow";
+        else if (temp=="inf") *par[i] = "inflow";
+        else if (temp=="ref") *par[i] = "reflecting";
+        else if (temp=="jrf") *par[i] = "equator-reflect";
+        else if (temp=="fix") *par[i] = "fixed";
+        else if (temp=="dmr") *par[i] = "DMR";
+        else if (temp=="sb1") *par[i] = "SB1";
+        else rep.error("Unrecognised BC type",SimPM.BC_STRING);
+      }
+    } // loop over external boundaries
+    //cout <<SimPM.BC_XN <<"  "<<SimPM.BC_XP <<"  ";
+    //cout <<SimPM.BC_YN <<"  "<<SimPM.BC_YP <<"  ";
+    //cout <<SimPM.BC_ZN <<"  "<<SimPM.BC_ZP <<"\n";
+
+    // Now look for any internal boundaries
+    int len = SimPM.BC_STRING.length(); len = (len+5)/6;
+    if (len > 2*SimPM.ndim) {
+      SimPM.BC_Nint = len - 2*SimPM.ndim;
+      if (!SimPM.BC_INT)
+        SimPM.BC_INT = mem.myalloc(SimPM.BC_INT,SimPM.BC_Nint);
+      //cout <<" got "<<SimPM.BC_Nint<<" internal boundaries\n";
+    }
+    for (i=2*SimPM.ndim; i<len; i++) {
+      //cout <<"i="<<i<<", len="<<len<<"\n";
+      if ( (pos=SimPM.BC_STRING.find("IN",i*6)) ==string::npos) {
+        rep.error("internal boundary condition not found",SimPM.BC_STRING);
+      }
+      else {
+        temp = SimPM.BC_STRING.substr(pos+2,3);
+        if      (temp=="jet") SimPM.BC_INT[i-2*SimPM.ndim] = "jet";
+        else if (temp=="dm2") SimPM.BC_INT[i-2*SimPM.ndim] = "DMR2";
+        else if (temp=="rsh") SimPM.BC_INT[i-2*SimPM.ndim] = "RadShock";
+        else if (temp=="rs2") SimPM.BC_INT[i-2*SimPM.ndim] = "RadShock2";
+        else if (temp=="wnd") SimPM.BC_INT[i-2*SimPM.ndim] = "stellar-wind";
+        else rep.error("Unrecognised INT BC type",SimPM.BC_STRING);
+      }
+    } // loop over internal boundaries
+
+  } // if OLD LEGACY BC STRING
+
+  else {
+    // New boundary conditions format
+    if (!have_setup_bc_pm) set_bc_pm_params(SimPM);
+    if (bc_pm.empty()) rep.error("Boundary parameter list is empty!!",0);
+    //
+    // now read them:
+    //
+    int ct=0;
+    for (list<pm_base *>::iterator iter=bc_pm.begin(); iter!=bc_pm.end(); ++iter) {
+      p = (*iter);
+      err = read_header_param(p);
+      //cout <<"boundary list "<<ct<<", parameter "<<p->name<<"\n";
+      if (err) rep.error("Error reading parameter",p->name);
+      ct++;
+    }
   }
 
 
@@ -866,10 +946,30 @@ int DataIOBase::read_simulation_parameters(
   // Set up tracer parameters, based on ntracer and read them in
   //
   if (!have_setup_tracers) set_tracer_params(SimPM);
-  for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
-    p = (*iter);
-    err = read_header_param(p);
-    if (err) rep.error("Error reading parameter",p->name);
+  
+  //
+  // Two options: first legacy code, which uses a string
+  // called trtype to set all tracers, or new code, which
+  // uses chem_code and then a list called TracerIJK.
+  //
+  if (SimPM.TRTYPE != "") {
+    SimPM.chem_code = SimPM.TRTYPE.substr(0,6);
+    int len = (SimPM.TRTYPE.length() +5)/6 -1;
+    if (len!=SimPM.ntracer)
+      rep.error("bad tracer string (LEGACY)",SimPM.TRTYPE);
+    for (int i=0;i<len;i++) {
+      SimPM.tracers[i] = SimPM.TRTYPE.substr(6*(i+1),6);
+      //cout <<"tracer["<<i<<"] = "<<SimPM.tracers[i] <<"\n";
+    }
+      
+  } // if LEGACY tracer variables used.
+
+  else {
+    for (list<pm_base *>::iterator iter=tr_pm.begin(); iter!=tr_pm.end(); ++iter) {
+      p = (*iter);
+      err = read_header_param(p);
+      if (err) rep.error("Error reading parameter",p->name);
+    }
   }
 
 

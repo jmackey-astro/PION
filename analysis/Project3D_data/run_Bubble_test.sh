@@ -5,10 +5,13 @@
 
 DATA_DIR=~/DIAS/comp_astrophysics/3d_test
 OP_DIR=~/DIAS/comp_astrophysics/3d_test
-mkdir $OP_DIR
 
-MAKE_UNAME=standard make clean
-MAKE_UNAME=standard make -j8
+DATA_DIR=/Users/jm/data
+OP_DIR=/Users/jm/data
+mkdir -p $OP_DIR
+
+#MAKE_UNAME=OSX make clean
+MAKE_UNAME=OSX make -j8
 
 #
 # projection <data_dir> <input-file> <output-path+file> <ftype=1(FITS)> 
@@ -19,10 +22,10 @@ MAKE_UNAME=standard make -j8
 
 SNAPSHOT=bubble3D_1b_medres_0000.0
 VTKFILE=proj3d_ZY_bubble3D_1b_medres
-mpirun -np 4 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t15 3 1 ZN YP 15 7 > tmp.txt
-#mpirun -np 8 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t30 3 1 ZN YP 30 7
-#mpirun -np 8 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t45 3 1 ZN YP 45 7
-#mpirun -np 8 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t00 3 1 ZN YP 00 7
+mpirun -np 1 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t15 3 1 ZN YP 25 7 0
+#mpirun -np 8 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t30 3 1 ZN YP 30 7 0
+#mpirun -np 8 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t45 3 1 ZN YP 45 7 0
+#mpirun -np 8 ./projection ${DATA_DIR} $SNAPSHOT ${OP_DIR}/${VTKFILE}_t00 3 1 ZN YP 00 7 0
 
 exit
 

@@ -76,7 +76,6 @@ VPATH = \
 ../source/comms:\
 ../source/coord_sys:\
 ../source/equations:\
-../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
 ../source/contrib:\
@@ -106,8 +105,8 @@ endif
 
 
 ######################################################################
-# Options for a "standard" workstation.
-# make sure cfitsio and silo are compiled in ../extra_libraries/
+# Options for a "standard" workstation, assumed to be like debian linux
+# System CVODE (Sundials), Silo, and cfitsio libraries should be installed.
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
@@ -116,25 +115,13 @@ ifeq ($(MAKE_UNAME), standard)
     CXXFLAGS = -O0 -Wall -g
   endif
 
-#  MYLIB = $(CURDIR)/../extra_libraries
-#  INC = -I${MYLIB}/include
-#  INC += -I${SRCDIR}
-#  LDFLAGS = -L${MYLIB}/lib
-#  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-#  LDFLAGS += -lcfitsio
-#  LDFLAGS += -lsilo 
-#  LDFLAGS += -lm  
-#  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   INC = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS +=  -lm
-  # All libraries are in this path:
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-  # Libraries for fits, silo
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ######################################################################
@@ -289,49 +276,24 @@ endif
 
 ######################################################################
 ####  OS X
-####  -- may need hard-coded path to work
 ######################################################################
-ifeq ($(MAKE_UNAME), imac)
+ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(PION_OPTIMISE), HIGH)
-    #CXXFLAGS = -O3
-    CXXFLAGS = -O0 -Wall -g
+    CXXFLAGS = -O3
+    #CXXFLAGS = -O0 -Wall -g
   else
     CXXFLAGS = -O0 -Wall -g
   endif
 
-#CXXFLAGS += -arch x86_64
-# CURDIR may only work with GNU Make!  It gives absolute paths, so that
-# the executable can always link to shared libs.
   MYLIB = $(CURDIR)/../extra_libraries
-#  MYLIB = /Users/jm/Documents/CODE/pion_stable/extra_libraries
-#
-#prefix       = /Users/jm/Documents/CODE/pion_stable/extra_libraries
-#exec_prefix  = /Users/jm/Documents/CODE/pion_stable/extra_libraries
-#includedir   = /Users/jm/Documents/CODE/pion_stable/extra_libraries/include
-#libdir       = /Users/jm/Documents/CODE/pion_stable/extra_libraries/lib
-#CPP      = /opt/local/bin/gcc
-#CXX      = g++
-#CPPFLAGS = -O3 -DNDEBUG
-#CC       = /opt/local/bin/gcc
-#CFLAGS   = -O3 -DNDEBUG
-#LDFLAGS  = 
-#LIBS     =  -lm
-
-#  LINKFLAGS = -Wl,-rpath,/Users/jm/Documents/CODE/pion_stable/extra_libraries/lib
-
-#  INCLUDES = -I${includedir}
-#  LIBRARIES = -lsundials_cvode -lsundials_nvecserial ${LIBS}
-#  INC = ${INCLUDES}
-#LDFLAGS  = -L${libdir}
-#LDFLAGS += ${LIBRARIES}
-#LDFLAGS += ${LINKFLAGS}
-
   INC = -I${MYLIB}/include
+  INC += -I/opt/local/include
   INC += -I${SRCDIR}
   LDFLAGS = -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo 
+  LDFLAGS += -lsiloh5
   LDFLAGS += -lm  
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
 
@@ -362,10 +324,11 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	Riemann_FVS_hydro.o \
 	Roe_Hydro_ConservedVar_solver.o \
 	Roe_Hydro_PrimitiveVar_solver.o \
+	solver_eqn_hydro_adi.o \
+	eqns_mhd_adiabatic.o \
+        riemannMHD.o  \
 	Roe_MHD_ConservedVar_solver.o \
-	flux_hydro_adiabatic.o solver_eqn_hydro_adi.o \
-	eqns_hydro_isothermal.o flux_hydro_isothermal.o solver_eqn_hydro_iso.o \
-	eqns_mhd_adiabatic.o riemannMHD.o flux_mhd_adiabatic.o \
+        HLLD_MHD.o \
 	solver_eqn_mhd_adi.o \
         raytracer_base.o  \
 	integrator.o cooling.o raytracer_SC.o \
@@ -374,7 +337,6 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         file_status.o \
 	stellar_wind_BC.o \
 	stellar_wind_angle.o \
-	flux_base.o \
       	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
         hydrogen_mp.o hydrogen_photoion.o \
         cvode_integrator.o
@@ -540,44 +502,25 @@ Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
    ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
-####################
-# FLUX CALCULATORS #
-####################
-flux_base.o : flux_base.cpp flux_base.h eqns_base.h \
-              ${GLOBAL} cell_interface.h
+HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
+   ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
-flux_hydro_adiabatic.o: flux_hydro_adiabatic.cpp flux_hydro_adiabatic.h \
-   eqns_hydro_adiabatic.h flux_base.h eqns_base.h riemann.h \
-   Roe_Hydro_ConservedVar_solver.h Roe_Hydro_PrimitiveVar_solver.h \
-   Riemann_FVS_hydro.h ${GLOBAL} cell_interface.h
-
-flux_hydro_isothermal.o: flux_hydro_isothermal.cpp flux_hydro_isothermal.h \
-   eqns_hydro_isothermal.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h
-
-flux_mhd_adiabatic.o: flux_mhd_adiabatic.cpp flux_mhd_adiabatic.h \
-   eqns_mhd_adiabatic.h riemannMHD.h flux_base.h eqns_base.h \
-   ${GLOBAL} cell_interface.h
 
 ###########
 # SOLVERS #
 ###########
 
-solver_eqn_base.o: VectorOps.h solver_eqn_base.h flux_base.h \
+solver_eqn_base.o: VectorOps.h solver_eqn_base.h \
                    eqns_base.h ${GLOBAL} cell_interface.h
 
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_adi.h flux_hydro_adiabatic.h  eqns_hydro_adiabatic.h \
+   solver_eqn_base.h eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_hydro_adi.h eqns_hydro_adiabatic.h \
    solver_eqn_hydro_adi.cpp
 
-solver_eqn_hydro_iso.o: VectorOps.h solver_eqn_base.h eqns_base.h \
-   flux_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_iso.h flux_hydro_isothermal.h eqns_hydro_isothermal.h \
-   solver_eqn_hydro_iso.cpp
-
 solver_eqn_mhd_adi.o: VectorOps.h \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_mhd_adi.h flux_mhd_adiabatic.h  eqns_mhd_adiabatic.h \
+   solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h \
    solver_eqn_mhd_adi.cpp
 
 

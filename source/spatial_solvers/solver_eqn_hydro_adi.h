@@ -20,6 +20,7 @@
 /// - 2015.01.14 JM: Modified for new code structure; added the grid
 ///    pointer everywhere.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
+/// - 2018.04.14 JM: Moved flux solver to FV_solver
 
 #ifndef SOLVER_EQN_HYDRO_ADI_H
 #define SOLVER_EQN_HYDRO_ADI_H
@@ -30,8 +31,14 @@
 
 
 #include "spatial_solvers/solver_eqn_base.h"
-#include "flux_calc/flux_hydro_adiabatic.h"
+#include "equations/eqns_base.h"
+#include "grid/cell_interface.h" // to get the 'cell' class.
+#include "Riemann_solvers/riemann.h"
+#include "Riemann_solvers/Riemann_FVS_hydro.h"
+#include "Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.h"
+#include "Riemann_solvers/Roe_Hydro_ConservedVar_solver.h"
 #include "coord_sys/VectorOps_spherical.h"
+
 
 ///
 /// The main solver the code uses for integrating the Euler Equations (adiabatic).
@@ -44,7 +51,13 @@
 /// 5= Roe primitive variable solver: linear solver using the Roe-average state.
 /// 6= van Leer's Flux Vector Splitting: very robust, diffusive contact discontinuity.
 ///
-class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux_solver_hydro_adi, virtual public VectorOps_Cart
+class FV_solver_Hydro_Euler :
+  virtual public FV_solver_base, 
+  virtual public riemann_Euler,
+  virtual public Riemann_FVS_Euler,
+  virtual public Riemann_Roe_Hydro_PV,
+  virtual public Riemann_Roe_Hydro_CV,
+  virtual public VectorOps_Cart
 {
  public:
   FV_solver_Hydro_Euler(
@@ -59,6 +72,71 @@ class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux
       );
 
   ~FV_solver_Hydro_Euler();
+
+  ///
+  /// This calls the equations version and then adds conversion of tracer variables.
+  /// 
+  /// For purely passive tracers, the primitive variable is just a number,
+  /// such as the 'colour' of the gas, or where it started out.  The 
+  /// conserved variable is the mass density of this.
+  ///
+  virtual void PtoU(
+      const pion_flt *, ///< pointer to Primitive variables.
+      pion_flt *,       ///< pointer to conserved variables.
+      const double    ///< Gas constant gamma.
+      );
+
+  ///
+  /// This calls the equations version and then adds conversion of tracer variables.
+  /// 
+  /// For purely passive tracers, the primitive variable is just a number,
+  /// such as the 'colour' of the gas, or where it started out.  The 
+  /// conserved variable is the mass density of this.
+  ///
+  virtual int UtoP(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *,       ///< pointer to Primitive variables.
+      const double,     ///< minimum temperature/pressure allowed
+      const double      ///< Gas constant gamma.
+      );
+
+  ///
+  /// This calls the equations version and then adds conversion of tracer variables.
+  /// 
+  /// The flux of a passive tracer is equal to the mass flux times 
+  /// the value of the primitive tracer variable.  I take the left
+  /// state tracer var. if the mass flux is to the right, and vice versa.
+  ///
+  virtual void PUtoFlux(
+      const pion_flt *, ///< pointer to Primitive variables.
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *  ///< Pointer to flux variable.
+      );
+
+  ///
+  /// This calls the equations version and then adds conversion of tracer variables.
+  /// 
+  /// The flux of a passive tracer is equal to the mass flux times 
+  /// the value of the primitive tracer variable.  I take the left
+  /// state tracer var. if the mass flux is to the right, and vice versa.
+  ///
+  virtual void UtoFlux(
+      const pion_flt *, ///< Pointer to conserved variables state vector.
+      pion_flt *,       ///< Pointer to flux variable state vector.
+      const double   ///< Gas constant gamma.
+      );
+
+  /// Calculates Flux based on a left and right state vector (primitive).
+  int inviscid_flux(
+      const cell *, ///< Left state cell pointer
+      const cell *, ///< Right state cell pointer
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      pion_flt *,       ///< Resultant Flux state vector.
+      pion_flt *,      ///< Resultant Pstar state vector.
+      const int,      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double    ///< Gas constant gamma.
+      );
 
   ///
   /// Adds the contribution from flux in the current direction to dU.
@@ -98,6 +176,19 @@ class FV_solver_Hydro_Euler : virtual public FV_solver_base, virtual public flux
       const double, ///< gas EOS gamma.
       const double  ///< Cell size dx.
       );
+
+  protected:
+  ///
+  /// Falle et al. (1998) Artificial Viscosity Calculation.
+  ///
+  int AVFalle(
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      const pion_flt *, ///< Resolved (P*) state vector.
+      pion_flt *, ///< Pointer to associated Flux Vector.
+      const double, ///< Artificial Viscosity parameter, etav.
+      const double  ///< gamma
+      );  
 };
 
 

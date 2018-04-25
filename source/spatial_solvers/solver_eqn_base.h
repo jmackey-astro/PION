@@ -33,6 +33,7 @@
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2018.01.24 JM: worked on making SimPM non-global
+/// - 2018.04.14 JM: Moved flux solver to FV_solver
 
 #ifndef SOLVER_EQN_BASE_H
 #define SOLVER_EQN_BASE_H
@@ -43,13 +44,12 @@
 
 #include "coord_sys/VectorOps.h"
 #include "equations/eqns_base.h"
-#include "flux_calc/flux_base.h"
 
 ///
 /// Base Class for Flux-based Finite Volume Solvers.
 /// This defines the interface to the main equations solvers.
 ///
-class FV_solver_base : virtual public flux_solver_base, virtual public BaseVectorOps
+class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
 {
  public :
   FV_solver_base(const int, ///< number of variables in state vector.
@@ -137,6 +137,21 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
         const double  ///< Cell size dx.
         );
 
+  ///
+  /// Calculates Flux based on a left and right state vector (primitive).
+  ///
+  virtual int inviscid_flux(
+      const cell *,  ///< Left state cell pointer
+      const cell *,  ///< Right state cell pointer
+      const pion_flt *,///< Left Primitive state vector.
+      const pion_flt *,///< Right Primitive state vector.
+      pion_flt *,      ///< Resultant Flux state vector.
+      pion_flt *,      ///< State vector at interface.
+      const int, 
+      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double    ///< Gas constant gamma.
+      ) =0;
+
   /// Adds the contribution from flux in the current direction to dU.
   virtual int dU_Cell(
         class GridBaseClass *grid,
@@ -214,12 +229,20 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
 
  protected:
   const int FV_gndim;  ///< number of spatial directions in grid.
-  //  const int FV_ntr;  ///< Number of tracer Variables.
   const double FV_cfl;  ///< Courant-Friedrichs-Levy parameter (<1 for stability).
-  // INHERITED   const double FV_etav; ///< Artificial Viscosity parameter.
-  // INHERITED  double FV_gamma;   ///< EOS gamma
   double FV_dx;      ///< Grid spacing delta-x
   double FV_dt;      ///< Timestep
+  /// coefficient of (artificial) viscosity for velocity field.
+  const double FV_etav;
+  /// coefficient of (artificial) viscosity for magnetic field.
+  const double FV_etaB;
+  /// max. value of eta used for H-correction, if required.
+  double HC_etamax;
+  /// Number of passive tracer variables.
+  const int FV_ntr;
+  /// Pointer to array of indices of tracer variables in the state vector.
+  int *eqTR;
+
   ///
   /// This calculates the Lax-Friedrichs flux across an interface, but the 
   /// implementation has to be in the general solver classes because LF flux
@@ -233,6 +256,19 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
       pion_flt *,    ///< Resulting Flux vector.
       const double  ///< gamma
       );
+
+  ///
+  /// Falle, Komissarov & Joarder (1998,MNRAS,297,265) Artificial
+  /// Viscosity Calculation (one-dimensional).
+  ///
+  virtual int AVFalle(
+      const pion_flt *, ///< Left Primitive state vector.
+      const pion_flt *, ///< Right Primitive state vector.
+      const pion_flt *, ///< Resolved (P*) state vector.
+      pion_flt *,     ///< Pointer to associated Flux Vector.
+      const double, ///< Artificial Viscosity parameter, etav.
+      const double  ///< gamma
+      )=0;
 
   ///
   /// Function to calculate viscosity-related quantities before the
@@ -271,6 +307,19 @@ class FV_solver_base : virtual public flux_solver_base, virtual public BaseVecto
         const cell *, ///< cell to right of interface
         class GridBaseClass *  ///< pointer to computational grid.
         );
+
+  ///
+  /// Calculate tracer flux based on a flux vector and left and right
+  /// states.  If mass flux is positive, then tracer flux is advected
+  /// from the left state; if negative then from the right state.
+  /// Flux must be already calculated for the physical variables!
+  ///
+  void set_interface_tracer_flux(
+      const pion_flt *, ///< input left state.
+      const pion_flt *, ///< input right state
+      pion_flt *        ///< Flux vector.
+      );
+
 };
 
 

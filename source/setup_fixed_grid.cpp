@@ -15,12 +15,10 @@
 #include "defines/testing_flags.h"
 
 #include "tools/reporting.h"
-
 #include "tools/command_line_interface.h"
 
 #include "sim_control.h"
 
-#include "dataIO/dataio.h"
 #include "microphysics/microphysics_base.h"
 
 #ifdef LEGACY_CODE
@@ -52,6 +50,7 @@
 
 #include "raytracing/raytracer_SC.h"
 
+#include "dataIO/dataio.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -60,8 +59,6 @@
 #endif // if FITS
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
-//#include "spatial_solvers/solver_eqn_hydro_adi_Eint.h"
-#include "spatial_solvers/solver_eqn_hydro_iso.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
 
 
@@ -185,8 +182,8 @@ int setup_fixed_grid::setup_grid(
 #endif // TESTING
   if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
-  else rep.error("Spatial order of accuracy unhandled by boundary \
-                  conditions!",SimPM.spOOA);
+  else
+    rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
   
   // Force Nbc=1 if using Lax-Friedrichs flux.
   if (SimPM.solverType==FLUX_LF)
@@ -357,7 +354,7 @@ int setup_fixed_grid::setup_microphysics(
 
 
 
-    if (mptype=="MPv3") {
+    if (mptype=="MPv3" || mptype=="MPv3__") {
       cout <<"\t******* setting up MPv3 module *********\n";
 #if MPV3_DTLIMIT>=0 && MPV4_DTLIMIT<=12
       cout <<"\t******* N.B. Timestep limiting is enforced by #def";
@@ -376,7 +373,7 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
 
-    if (mptype=="MPv5") {
+    if (mptype=="MPv5" || mptype=="MPv5__") {
       cout <<"\t******* setting up MPv5 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
@@ -386,7 +383,7 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
 
-    if (mptype=="MPv6") {
+    if (mptype=="MPv6" || mptype=="MPv6__") {
       cout <<"\t******* setting up MPv6 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);
@@ -396,7 +393,7 @@ int setup_fixed_grid::setup_microphysics(
       have_set_MP=true;
     }
 
-    if (mptype=="MPv7") {
+    if (mptype=="MPv7" || mptype=="MPv7__") {
       cout <<"\t******* setting up MPv7 module *********\n";
       SimPM.EP.MP_timestep_limit = 1;
       if (have_set_MP) rep.error("MP already initialised",mptype);

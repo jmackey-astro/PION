@@ -73,7 +73,6 @@ VPATH = \
 ../source/comms:\
 ../source/coord_sys:\
 ../source/equations:\
-../source/flux_calc:\
 ../source/spatial_solvers:\
 ../source/time_integrators:\
 ../source/contrib:\
@@ -272,32 +271,26 @@ endif
 #################### --- DOUGAL --- #################################
 
 ###########################################
-# Specific Options for my imac
+# Specific Options for OSX
 ###########################################
-ifeq ($(MAKE_UNAME), imac)
+ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
-  #CXXFLAGS += -Wall
-  #CXXFLAGS += -g    # enable debugging with gdb
-  #CXXFLAGS += -arch x86_64
 
-  # CURDIR may only work with GNU Make!  It gives absolute paths, so that
-  # the executable can always link to shared libs.
-  #MYLIB = /Users/jmackey/Library/JMs_stuff
   MYLIB = $(CURDIR)/../extra_libraries
   INC  = -I${MYLIB}/include
+  INC += -I/opt/local/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm  
   LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo 
-  # libs for CVODES
+  LDFLAGS += -lsiloh5 
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  #LDFLAGS += -Wl,--rpath
-  LDFLAGS += -Wl,-no_compact_unwind
+  #LDFLAGS += -Wl,-no_compact_unwind
 
 endif
 #################### --- OS X Darwin --- #############################
@@ -360,15 +353,14 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	stellar_wind_BC.o                                                      \
 	stellar_wind_angle.o \
 	eqns_base.o eqns_hydro_adiabatic.o                                     \
-	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o                           \
+	eqns_mhd_adiabatic.o                           \
 	riemann.o findroot.o riemannMHD.o                                      \
 	Riemann_FVS_hydro.o                                                    \
 	Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o        \
 	Roe_MHD_ConservedVar_solver.o                                          \
-	flux_base.o flux_hydro_adiabatic.o                                     \
-	flux_hydro_isothermal.o flux_mhd_adiabatic.o                           \
+        HLLD_MHD.o \
 	solver_eqn_base.o solver_eqn_hydro_adi.o                               \
-	solver_eqn_hydro_iso.o solver_eqn_mhd_adi.o                            \
+	solver_eqn_mhd_adi.o                            \
 	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o        \
         hydrogen_mp.o hydrogen_photoion.o                                      \
         cvode_integrator.o
@@ -393,7 +385,7 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
 	VectorOps.o VectorOps_spherical.o  cell_interface.o \
 	comm_mpi.o comm_files.o photoevaporating_multiclumps.o \
 	utility_fits_class.o eqns_base.o eqns_hydro_adiabatic.o \
-	eqns_hydro_isothermal.o eqns_mhd_adiabatic.o laser_ablation.o \
+	eqns_mhd_adiabatic.o laser_ablation.o \
 	stellar_wind_BC.o \
 	stellar_wind_angle.o \
         spherical_clump.o \
@@ -507,9 +499,6 @@ eqns_base.o: eqns_base.cpp eqns_base.h ${GLOBAL}
 eqns_hydro_adiabatic.o: eqns_hydro_adiabatic.cpp eqns_hydro_adiabatic.h \
  eqns_base.h ${GLOBAL}
 
-eqns_hydro_isothermal.o: eqns_hydro_isothermal.cpp \
- eqns_hydro_isothermal.h eqns_base.h ${GLOBAL}
-
 eqns_mhd_adiabatic.o: eqns_mhd_adiabatic.cpp eqns_mhd_adiabatic.h \
  eqns_base.h ${GLOBAL}
 
@@ -540,42 +529,23 @@ Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
    ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
-####################
-# FLUX CALCULATORS #
-####################
-flux_base.o : flux_base.cpp flux_base.h eqns_base.h \
-              ${GLOBAL} cell_interface.h
-
-flux_hydro_adiabatic.o: flux_hydro_adiabatic.cpp flux_hydro_adiabatic.h \
-   eqns_hydro_adiabatic.h flux_base.h eqns_base.h riemann.h \
-   Roe_Hydro_ConservedVar_solver.h Roe_Hydro_PrimitiveVar_solver.h \
-   Riemann_FVS_hydro.h ${GLOBAL} cell_interface.h
-
-flux_hydro_isothermal.o: flux_hydro_isothermal.cpp flux_hydro_isothermal.h \
-   eqns_hydro_isothermal.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h
-
-flux_mhd_adiabatic.o: flux_mhd_adiabatic.cpp flux_mhd_adiabatic.h \
-   eqns_mhd_adiabatic.h riemannMHD.h flux_base.h eqns_base.h \
-   ${GLOBAL} cell_interface.h
+HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
+   ${GLOBAL} eqns_mhd_adiabatic.h eqns_base.h
 
 ###########
 # SOLVERS #
 ###########
 
-solver_eqn_base.o: VectorOps.h solver_eqn_base.h flux_base.h \
+solver_eqn_base.o: VectorOps.h solver_eqn_base.h  \
  eqns_base.h ${GLOBAL} cell_interface.h
 
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_adi.h flux_hydro_adiabatic.h  eqns_hydro_adiabatic.h
-
-solver_eqn_hydro_iso.o: VectorOps.h solver_eqn_base.h eqns_base.h \
-   flux_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_hydro_iso.h flux_hydro_isothermal.h eqns_hydro_isothermal.h 
+   solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_hydro_adi.h   eqns_hydro_adiabatic.h
 
 solver_eqn_mhd_adi.o: VectorOps.h \
-   solver_eqn_base.h flux_base.h eqns_base.h ${GLOBAL} cell_interface.h \
-   solver_eqn_mhd_adi.h flux_mhd_adiabatic.h  eqns_mhd_adiabatic.h
+   solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
+   solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h
 
 ######################
 # MICROPHYSICS STUFF #
@@ -655,12 +625,12 @@ dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} \
     solver_eqn_base.h file_status.h
 
 dataio_fits.o:  dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL} \
-    solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
+    solver_eqn_base.h solver_eqn_hydro_adi.h  \
     file_status.h
 
 dataio_fits_MPI.o:  dataio_fits_MPI.cpp dataio_fits_MPI.h \
     dataio_fits.h dataio.h ${GLOBAL} \
-    solver_eqn_base.h solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h \
+    solver_eqn_base.h solver_eqn_hydro_adi.h  \
     file_status.h
 
 readparams.o:	readparams.cpp readparams.h ${GLOBAL}

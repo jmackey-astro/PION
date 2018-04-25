@@ -139,7 +139,7 @@ if [ ! -z "$DDD" ]; then
   export CXX=mpicxx
   export CC=mpicc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
-  MAKE_UNAME=imac
+  MAKE_UNAME=OSX
   #NCORES=1
   path=`pwd`
 fi
