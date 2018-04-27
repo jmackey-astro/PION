@@ -504,6 +504,27 @@ void DataIOBase::set_params(
     ("Xmax",        SimPM.Xmax);
   p = p006; p->critical=true;  
   params.push_back(p);
+
+  //
+  // Nested grid parameters
+  //
+  pm_int     *n001 = new pm_int     
+    ("grid_nlevels",      &SimPM.grid_nlevels);
+  p = n001; p->critical=false;  
+  params.push_back(p);
+
+  pm_idimarr *n002 = new pm_idimarr     
+    ("grid_aspect_ratio", SimPM.grid_aspect_ratio);
+  p = n002; p->critical=false;  
+  params.push_back(p);
+
+  pm_ddimarr *n003 = new pm_ddimarr 
+    ("grid_nest_centre",  SimPM.grid_nest_centre);
+  p = n003; p->critical=false;  
+  params.push_back(p);
+
+
+
   //
   // Boundary conditions
   //

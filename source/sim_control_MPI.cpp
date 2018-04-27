@@ -265,7 +265,7 @@ int sim_control_fixedgrid_pllel::Init(
   //
   err = dataio->ReadHeader(infile, SimPM);
   if (err) rep.error("PLLEL Init(): failed to read header",err);
-  err = mpiPM.decomposeDomain(SimPM, SimPM.levels[0]);
+  err = mpiPM.decomposeDomain(SimPM, SimPM.nest_levels[0]);
   if (err) rep.error("PLLEL Init():Couldn't Decompose Domain!",err);
 
 

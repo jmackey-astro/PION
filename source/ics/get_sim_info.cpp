@@ -282,6 +282,36 @@ int get_sim_info::read_gridparams(
     }
   }
 
+  // Nested grid info (all optional for now)
+  seek="grid_nlevels"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nlevels = 1;
+  else          SimPM.grid_nlevels = atoi(str.c_str());
+
+  seek="grid_aspect_ratio_XX"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_aspect_ratio[XX] =1;
+  else          SimPM.grid_aspect_ratio[XX] =  atoi(str.c_str());
+
+  seek="grid_aspect_ratio_YY"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_aspect_ratio[YY] =1;
+  else          SimPM.grid_aspect_ratio[YY] =  atoi(str.c_str());
+
+  seek="grid_aspect_ratio_ZZ"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_aspect_ratio[ZZ] =1;
+  else          SimPM.grid_aspect_ratio[ZZ] =  atoi(str.c_str());
+
+  seek="grid_nest_centre_XX"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nest_centre[XX] = 0.0;
+  else          SimPM.grid_nest_centre[XX] =  atof(str.c_str());
+
+  seek="grid_nest_centre_YY"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nest_centre[YY] = 0.0;
+  else          SimPM.grid_nest_centre[YY] =  atof(str.c_str());
+
+  seek="grid_nest_centre_ZZ"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nest_centre[ZZ] = 0.0;
+  else          SimPM.grid_nest_centre[ZZ] =  atof(str.c_str());
+
+
   // output info
   str = rp->find_parameter("OutputPath");
   if (str=="") rep.error("outputpath",str);

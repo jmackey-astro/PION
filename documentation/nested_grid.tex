@@ -78,7 +78,7 @@ We will need to specify:
 \item Number of spatial dimensions, $D$.
 \item Aspect ratio of grid, $A_x:A_y:A_z$, e.g. 4:3:3, so that the tree has the right number of base nodes in each direction.
 \item Number of processes (which is the number of domains on each level).
-This should be a multiple of $A_xA_yA_z$ and, for cubic domains, a multiple of $A_xA_yA_z2^D$.
+This should be a multiple of $A_xA_yA_z$ and a multiple of $A_xA_yA_z2^D$ to get cubic domains.
 \item Size of coarsest domain, by specifying vectors $X_\mathrm{min}$ and $X_\mathrm{max}$.
 \item Number of grid cells in each direction, $\{N_x,N_y,N_z\}$, on the coarsest grid level.
 \item Centre of the nesting $\{x_n,y_n,z_n\}$.

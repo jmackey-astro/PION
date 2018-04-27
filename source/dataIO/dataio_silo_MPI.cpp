@@ -669,7 +669,7 @@ int dataio_silo_pllel::OutputData(
     pp.set_nproc(mpiPM->get_nproc());
     for (int v=0; v<nmesh; v++) {
       pp.set_myrank(v);
-      pp.decomposeDomain(SimPM,SimPM.levels[0]);
+      pp.decomposeDomain(SimPM,SimPM.nest_levels[0]);
       zonecounts[v] = pp.LocalNcell;
       externalzones[v] = 0; // set to 1 if domain has zones outside multimesh.
       for (int i=0; i<ndim;i++) {
@@ -1094,7 +1094,7 @@ int dataio_silo_pllel::write_multimeshadj(
   std::vector<int> ngb_list;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM,SimPM.levels[0]);
+    pp.decomposeDomain(SimPM,SimPM.nest_levels[0]);
     //
     // Get list of abutting domains.
     //
@@ -1153,7 +1153,7 @@ int dataio_silo_pllel::write_multimeshadj(
   //long int ct=0;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.nest_levels[0]);
     long int off1 = Sk[v]; // this should be the same as ct (maybe don't need ct then!)
 
     //
@@ -1412,7 +1412,7 @@ int dataio_silo_pllel::write_MRGtree(
   int ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.nest_levels[0]);
     //
     // Count how many neighbours we have
     //
@@ -1506,7 +1506,7 @@ int dataio_silo_pllel::write_MRGtree(
   ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.nest_levels[0]);
 
     //
     // Count how many neighbours we have; length is 6 ints per
