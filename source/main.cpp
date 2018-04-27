@@ -10,14 +10,11 @@
 /// starts the time integration, and cleans up when the simulation is 
 /// finished.
 /// 
-/// Arguments: \<main\> \<icfile\> \<typeoffile\> \<solver-type\> [override options]\n
+/// Arguments: \<main\> \<icfile\> [override options]\n
 /// Parameters:
 /// - \<icfile\> Can be an ASCII text parameter-file for 1D and 2D shocktube
 /// test problems; otherwise should be an initial-condition file or a
-/// restartfile in fits format.
-/// - \<typeoffile\> Integer flag to tell me what type of file I am starting from.
-/// Can be one of [1=text paramfile, 2=fits restart/ICfile, 3=fitstable file].
-/// - \<solvetype\> Integer =1 for uniform finite-volume, no other options.
+/// restartfile in fits/silo format.
 /// - [override options] are optional and of the format \<name\>=\<value\> with no spaces.
 ///    - redirect=PATH: Path to redirect stdout/stderr to, (with trailing forward slash).
 ///    - opfreq=N  : modify output frequency to every Nth timestep.
@@ -49,6 +46,7 @@
 /// - 2015.01.(10-26) JM: New include statements for new file
 ///    structure, and non-global grid class.
 /// - 2015.04.30 JM: tidying up.
+/// - 2018.04.27 JM: removed some args (simpler command-line running).
 
 #include <iostream>
 using namespace std;
@@ -90,7 +88,7 @@ int main(int argc, char **argv)
   //
   // Check that command-line arguments are sufficient.
   //
-  if (argc<4) {
+  if (argc<2) {
     sim_control->print_command_line_options(argc,argv);
     rep.error("Bad arguments",argc);
   }
@@ -113,28 +111,21 @@ int main(int argc, char **argv)
   cout <<"---------   pion v.0.1  running   ---------------------\n";
   cout <<"-------------------------------------------------------\n\n";
 
-  // Set what type of file to open: 1=parameterfile, 2=restartfile.
+  // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
-  ft=atoi(argv[2]);
-  if(ft <1 || ft>5) {cerr<<"(*pion*) Bad file type specifier.\n";return(1);}
-  switch (ft) {
-   case 1:
-    cout <<"(pion) ft = "<<ft<<" so reading ICs from text parameterfile "<<argv[2]<<"\n";
-    break;
-   case 2:
-   case 3:
-    cout <<"(pion) ft = "<<ft<<" so reading ICs from Fits ICfile "<<argv[2]<<"\n";
-    break;
-  case 5:
-    cout <<"(pion) ft = "<<ft<<" so reading ICs from SILO IC file "<<argv[2]<<"\n";
-    break;
-   default:
-    rep.error("Bad filetype input to main",ft);
+  if      (args[1].find(".silo") != string::npos) {
+    cout <<"(pion) reading ICs from SILO IC file "<<args[1]<<"\n";
+    ft=5;
+  }
+  else if (args[1].find(".fits") != string::npos) {
+    cout <<"(pion) reading ICs from Fits ICfile "<<args[1]<<"\n";
+    ft=2;
+  }
+  else {
+    cout <<"(pion) IC file not fits/silo: assuming text parameterfile "<<args[1]<<"\n";
+    ft=1;
   }
 
-  int type = atoi(argv[3]);
-  if (type!=1) rep.error("Only know uniform FV solver (=1)",type);
- 
   //
   // set up pointer to grid base class.
   //
@@ -144,7 +135,7 @@ int main(int argc, char **argv)
   // Initialise the grid.
   // inputs are infile_name, infile_type, nargs, *args[]
   //
-  err = sim_control->Init(argv[1], ft, argc, args, &grid);
+  err = sim_control->Init(args[1], ft, argc, args, &grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
     delete sim_control;
