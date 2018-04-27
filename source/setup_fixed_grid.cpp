@@ -65,6 +65,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <string>
 #include <sys/time.h>
 #include <time.h>
 #include <climits>
@@ -103,6 +104,57 @@ setup_fixed_grid::~setup_fixed_grid()
 #ifdef TESTING
   cout << "(setup_fixed_grid::Destructor) Done." <<"\n";
 #endif
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_fixed_grid::setup_nested_grid_levels(
+      class SimParams &SimPM  ///< pointer to simulation parameters
+      )
+{
+  //
+  // populate "levels" struct in SimPM based on nested grid parameters.
+  //
+  SimPM.nest_levels.clear();
+  SimPM.nest_levels.resize(SimPM.grid_nlevels);
+
+  for (int i=0;i<SimPM.grid_nlevels;i++) {
+    for (int v=0;v<MAX_DIM;v++)
+      SimPM.nest_levels[i].NG[v] = SimPM.NG[v];
+    SimPM.nest_levels[i].Ncell = SimPM.Ncell;
+    if (i==0) {
+      for (int v=0;v<MAX_DIM;v++)
+        SimPM.nest_levels[i].Range[v] = SimPM.Range[v];
+      for (int v=0;v<MAX_DIM;v++)
+        SimPM.nest_levels[i].Xmin[v] = SimPM.Xmin[v];
+      for (int v=0;v<MAX_DIM;v++)
+        SimPM.nest_levels[i].Xmax[v] = SimPM.Xmax[v];
+      SimPM.nest_levels[i].dx = SimPM.Range[XX]/SimPM.NG[XX];
+    }
+    else {
+      for (int v=0;v<MAX_DIM;v++) 
+        SimPM.nest_levels[i].Range[v] = 0.5*SimPM.nest_levels[i-1].Range[v];
+      for (int v=0;v<MAX_DIM;v++)
+        SimPM.nest_levels[i].Xmin[v] = 0.5*(SimPM.nest_levels[i-1].Xmin[v]+SimPM.grid_nest_centre[v]);
+      for (int v=0;v<MAX_DIM;v++)
+        SimPM.nest_levels[i].Xmax[v] = 0.5*(SimPM.nest_levels[i-1].Xmax[v]+SimPM.grid_nest_centre[v]);
+      SimPM.nest_levels[i].dx = 0.5*SimPM.nest_levels[i-1].dx;
+    }
+    
+    ostringstream temp; temp<<i;
+    string lv = "level data"+temp.str();
+    rep.printVec(lv,SimPM.nest_levels[i].Range,SimPM.ndim);
+    rep.printVec(lv,SimPM.nest_levels[i].Xmin,SimPM.ndim);
+    rep.printVec(lv,SimPM.nest_levels[i].Xmax,SimPM.ndim);
+    cout <<"dx="<<SimPM.nest_levels[i].dx<<"\n";
+  }
+  return;
 }
 
 
@@ -153,6 +205,7 @@ void setup_fixed_grid::setup_cell_extra_data(
 int setup_fixed_grid::setup_grid(
       class GridBaseClass **grid,
       class SimParams &SimPM,  ///< pointer to simulation parameters
+      const int level,    ///< level in nested grid to set up.
       class MCMDcontrol * ///< unused for serial code.
       )
 {
@@ -162,12 +215,6 @@ int setup_fixed_grid::setup_grid(
 #ifdef TESTING
   cout <<"Init::setup_grid: &grid="<< grid<<", and grid="<<*grid<<"\n";
 #endif // TESTING
-
-  if (SimPM.gridType!=1) {
-    rep.warning("gridType not set correctly: Only know Uniform finite\
-                 volume grid, so resetting to 1!",1,SimPM.gridType);
-    SimPM.gridType=1;
-  }
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);

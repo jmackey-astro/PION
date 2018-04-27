@@ -2098,13 +2098,13 @@ int dataio_text::ReadHeader(
 
 int dataio_text::ReadData(
       string,   ///< Name of file
-      class GridBaseClass *cg, ///< Pointer to grid
+      vector<class GridBaseClass *> &cg, ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  if (!cg)
-    rep.error("dataio_text::ReadData() null pointer to grid!",cg);
-  dataio_text::gp = cg;
+  if (!cg[0])
+    rep.error("dataio_text::ReadData() null pointer to grid!",cg[0]);
+  dataio_text::gp = cg[0];
 
   cout <<"dataio_text::ReadData() Assigning initial data.\n";
   int err = assign_initial_data(SimPM);
@@ -2141,15 +2141,15 @@ void dataio_text::SetSolver(FV_solver_base *solver)
 
 int dataio_text::OutputData(
       const string outfile,
-      class GridBaseClass *cg, ///< pointer to data.
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
       class RayTracingBase *RT, ///< pointer to raytracing class
       const long int counter   ///< number to stamp file with (e.g. timestep)
       )
 {
-  if (!cg)
-    rep.error("dataio_text::output_ascii_data() null pointer to grid!",cg);
-  dataio_text::gp = cg;
+  if (!cg[0])
+    rep.error("dataio_text::output_ascii_data() null pointer to grid!",cg[0]);
+  dataio_text::gp = cg[0];
 
   cout <<"dataio_text::OutputData() writing data.\n";
   string fname = set_filename(outfile, counter);

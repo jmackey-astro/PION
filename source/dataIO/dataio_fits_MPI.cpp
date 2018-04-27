@@ -122,7 +122,7 @@ std::string DataIOFits_pllel::choose_filename(
 
 int DataIOFits_pllel::OutputData(
       string outfilebase,         ///< base filename
-      class GridBaseClass *cg,    ///< pointer to data.
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,     ///< pointer to simulation parameters
       class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter ///< number to stamp file with (e.g. timestep)
@@ -130,9 +130,9 @@ int DataIOFits_pllel::OutputData(
 {
   string fname="DataIOFits_pllel::OutputData";
 
-  if (!cg)
-    rep.error("DataIOFits_pllel::OutputData() null pointer to grid!",cg);
-  DataIOFits_pllel::gp = cg;
+  if (!cg[0])
+    rep.error("DataIOFits_pllel::OutputData() null pointer to grid!",cg[0]);
+  DataIOFits_pllel::gp = cg[0];
 
   if (DataIOFits_pllel::eqn==0) {
     //cout <<"WARNING: DataIOFits_pllel::OutputData() Set up Equations pointer before outputting data!\n";
@@ -383,15 +383,15 @@ int DataIOFits_pllel::OutputData(
 
 int DataIOFits_pllel::ReadData(
       string infile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   string fname="DataIOFits_pllel::ReadData";
 
-  if (!cg)
-    rep.error("DataIOFits_pllel::ReadData() null pointer to grid!",cg);
-  DataIOFits_pllel::gp = cg;
+  if (!cg[0])
+    rep.error("DataIOFits_pllel::ReadData() null pointer to grid!",cg[0]);
+  DataIOFits_pllel::gp = cg[0];
 
   int err=0; int status=0; fitsfile *ff;
   //cout <<"DataIOFits_pllel::ReadData() opening fits file to read data...";

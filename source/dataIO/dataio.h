@@ -294,7 +294,7 @@ class DataIOBase : public file_status {
   ///
   virtual int OutputData(
       const string, ///< File to write to
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
       class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
@@ -314,7 +314,7 @@ class DataIOBase : public file_status {
    ///
    virtual int ReadData(
       string, ///< file to read from
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &  ///< pointer to simulation parameters
       )=0;
 
@@ -445,7 +445,7 @@ class dataio_text : public DataIOBase {
   /// Write simulation data to file.
   virtual int OutputData(
       const string, ///< File to write to
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
       class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
@@ -472,7 +472,7 @@ class dataio_text : public DataIOBase {
   ///
   virtual int ReadData(
       string, ///< file to read from
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &  ///< pointer to simulation parameters
       );
 
