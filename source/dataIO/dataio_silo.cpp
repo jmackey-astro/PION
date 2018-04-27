@@ -238,15 +238,15 @@ int dataio_silo::WriteHeader(
 
 int dataio_silo::OutputData(
       const string outfile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
       class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
-  if (!cg)
-    rep.error("dataio_silo::OutputData() null pointer to grid!",cg);
-  dataio_silo::gp = cg;
+  if (!cg[0])
+    rep.error("dataio_silo::OutputData() null pointer to grid!",cg[0]);
+  dataio_silo::gp = cg[0];
 
   int err=0;
 
@@ -375,13 +375,13 @@ int dataio_silo::ReadHeader(
 
 int dataio_silo::ReadData(
       string infile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  if (!cg)
-    rep.error("dataio_silo::ReadData() null pointer to grid!",cg);
-  dataio_silo::gp = cg;
+  if (!cg[0])
+    rep.error("dataio_silo::ReadData() null pointer to grid!",cg[0]);
+  dataio_silo::gp = cg[0];
   silofile=infile;
 
   int err=0;

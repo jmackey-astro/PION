@@ -88,12 +88,12 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// \retval 1 failure
   ///
   virtual int Init(
-        string,   ///< Name of input file.
-        int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
-        int,      ///< Number of command-line arguments.
-        string *, ///< Pointer to array of command-line arguments.
-        class GridBaseClass **  ///< address of pointer to grid.
-        );
+      string,   ///< Name of input file.
+      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
+      int,      ///< Number of command-line arguments.
+      string *, ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
   ///
   /// Time integration
@@ -104,23 +104,23 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// all in a loop which runs until end-of-sim is reached.
   ///
   virtual int Time_Int(
-        class GridBaseClass *  ///< pointer to grid.
-        );
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
   ///
   /// finalise the simulation, clean up, delete data.
   /// This function finished the simulation gracefully (hopefully!).
   ///
-   int Finalise(
-        class GridBaseClass *  ///< pointer to grid.
-        );
+  int Finalise(
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
   ///
   /// Set the maximum runtime to a new value. Should be set in main()
   ///
   void set_max_walltime(
-        double ///< New Max. runtime in seconde.
-        );
+      double ///< New Max. runtime in seconde.
+      );
   ///
   /// Get the maximum runtime in seconds.
   ///
@@ -144,8 +144,10 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   ///
   class MCMDcontrol mpiPM;
 
-  /// Pointer to the raytracing class.
-  class RayTracingBase *RT;
+  ///
+  /// Pointer to the raytracing class (one for each level of grid).
+  ///
+  std::vector<class RayTracingBase *> RT;
 
   ///
   /// Max. walltime to run for, in seconds, after which we output
@@ -157,10 +159,12 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// pointer to class for reading/writing data.
   ///
   class DataIOBase *dataio;
+
   ///
   /// pointer to class for reading/writing textdata.
   ///
   class DataIOBase *textio;
+
   ///
   /// Pointer to equations to solve, initialised to some derived
   /// class at runtime when the equations are set.
@@ -173,8 +177,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// pressure on the full domain and outputs it to screen
   ///
   void calculate_magnetic_pressure(
-        class GridBaseClass * 
-        );
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 #endif // CHECK_MAGP
 
 #ifdef BLAST_WAVE_CHECK
@@ -183,28 +187,19 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// position and output to screen.
   ///
   void calculate_blastwave_radius(
-        class GridBaseClass * 
-        );
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 #endif // BLAST_WAVE_CHECK
-
-  ///
-  /// Get cell dimensions from UniformGrid class.
-  /// 
-  /// This requests the cell dimensions from UniformGrid and assigns values to 
-  /// the appropriate variables in GridParams (dx,dA,dV).
-  ///
-  int get_cell_size(
-        class GridBaseClass * 
-        );
 
   ///
   /// See if any command-line arguments should override those
   /// specified in the IC file, and if so, reset the parameters.
   ///
   int override_params(
-        int,      ///< Number of command-line arguments.
-        string *  ///< Pointer to array of command-line arguments.
-        );
+      int,      ///< Number of command-line arguments.
+      string *  ///< Pointer to array of command-line arguments.
+      );
+
   ///
   /// Initialise the correct Equations to solve, based on paramters.
   ///
@@ -215,8 +210,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// Delete any init data and make sure things are ready to go.
   /// 
   virtual int ready_to_start(
-        class GridBaseClass * 
-        );
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
    
 
 
@@ -239,8 +234,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// \retval 1 failure
   ///
   virtual int calc_timestep(
-        class GridBaseClass * 
-        );
+      class GridBaseClass * 
+      );
 
 
   ///
@@ -248,22 +243,22 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// rates.  Returns the minimum timestep of the local grid (negative if error).
   /// 
   double calc_microphysics_dt(
-        class GridBaseClass * 
-        );
+      class GridBaseClass * 
+      );
 
   ///
   /// Old microphysics timescales calculation with no radiation field.
   ///
   double get_mp_timescales_no_radiation(
-        class GridBaseClass * 
-        );
+      class GridBaseClass * 
+      );
 
   ///
   /// New microphysics timescales calculation with pre-calculated radiation field.
   ///
   double get_mp_timescales_with_radiation(
-        class GridBaseClass * 
-        );
+      class GridBaseClass * 
+      );
 
   ///
   /// Calculate the dynamics timestep, based on the Courant condition that
@@ -271,8 +266,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// the minimum timestep on the local grid, or negative if an error occurs.
   ///
   double calc_dynamics_dt(
-        class GridBaseClass * 
-        );
+      class GridBaseClass * 
+      );
  
 
 #ifdef THERMAL_CONDUCTION
@@ -322,8 +317,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// \retval 1 failure
   ///
   int advance_time(
-        class GridBaseClass * ///< grid pointer
-        );
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This performs a first-order-accurate (in time) timestep for
@@ -336,10 +331,10 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// if this is a half step, you should pass 0.5*dt to the function.
   ///
   int first_order_update(
-        const double,  ///< dt, time interval to advance by.
-        const int,     ///< time order of accuracy OA1/OA2.
-        class GridBaseClass * ///< grid pointer
-        );
+      const double,  ///< dt, time interval to advance by.
+      const int,     ///< time order of accuracy OA1/OA2.
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This performs a second-order-accurate (in time) timestep for
@@ -348,10 +343,10 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// the half-step must have been already called before this one.
   ///
   int second_order_update(
-        const double, ///< dt, time interval to advance by.
-        const int,    ///< time order of accuracy (must be OA2).
-        class GridBaseClass * ///< grid pointer
-        );
+      const double, ///< dt, time interval to advance by.
+      const int,    ///< time order of accuracy (must be OA2).
+      class GridBaseClass * ///< grid pointer
+      );
   
   ///
   /// This function does some checking on radiation sources to see
@@ -361,9 +356,9 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// calc_microphysics_dU_no_RT().
   ///
   int calc_microphysics_dU(
-        const double, ///< dt, timestep to integrate MP eqns.
-        class GridBaseClass * ///< grid pointer
-        );
+      const double, ///< dt, timestep to integrate MP eqns.
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This calculates the change in internal energy and ion fractions
@@ -374,9 +369,9 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// radiation sources involved.
   ///
   int calc_microphysics_dU_general_RT(
-        const double,   ///< dt, timestep to integrate
-        class GridBaseClass * ///< grid pointer
-        );
+      const double,   ///< dt, timestep to integrate
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This calculates the change in internal energy and ion fractions
@@ -388,9 +383,9 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// processes only).
   ///
   int calc_microphysics_dU_no_RT(
-        const double, ///< dt, timestep to integrate
-        class GridBaseClass * ///< grid pointer
-        );
+      const double, ///< dt, timestep to integrate
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This calculates the change in the state vector for each point
@@ -402,10 +397,10 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// calc_dU().
   ///
   int calc_dynamics_dU(
-        const double, ///< dt, timestep to integrate
-        const int,    ///< spatial order of accuracy for update.
-        class GridBaseClass * ///< grid pointer
-        );
+      const double, ///< dt, timestep to integrate
+      const int,    ///< spatial order of accuracy for update.
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This function used to be called calc_dU -- for every column of
@@ -416,10 +411,10 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// grid that are active.
   ///
   int set_dynamics_dU(
-        const double,    ///< dt, timestep for this calculation
-        const int,       ///< space OOA for this calculation
-        class GridBaseClass * ///< grid pointer
-        );
+      const double,    ///< dt, timestep for this calculation
+      const int,       ///< space OOA for this calculation
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// Calculate dU, rate of change of conserved variables, in a 1D
@@ -434,15 +429,15 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
   ///
   int dynamics_dU_column(const class cell *, ///< starting point for column.
-        const enum direction, ///< direction to traverse column in. 
-        const enum direction, ///< opposite direction.
-        const double,    ///< dt, timestep for this calculation
+      const enum direction, ///< direction to traverse column in. 
+      const enum direction, ///< opposite direction.
+      const double,    ///< dt, timestep for this calculation
 #ifdef TESTING
-        const int,       ///< Time Order of accuracy to use.
+      const int,       ///< Time Order of accuracy to use.
 #endif
-        const int,        ///< Spatial Order of accuracy to use.
-        class GridBaseClass * ///< grid pointer
-        );
+      const int,        ///< Spatial Order of accuracy to use.
+      class GridBaseClass * ///< grid pointer
+      );
 
   ///
   /// This function takes the contents of each cell->dU[] vector and
@@ -450,11 +445,11 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// also updates P[] so that it and Ph[] are identical.
   ///
   int grid_update_state_vector(
-        const double ,  ///< dt, timestep
-        const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-        const int,       ///< Full order of accuracy of simulation
-        class GridBaseClass * ///< grid pointer
-        );
+      const double ,  ///< dt, timestep
+      const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int,       ///< Full order of accuracy of simulation
+      class GridBaseClass * ///< grid pointer
+      );
 
 
   ///
@@ -472,8 +467,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// function to write the data.
   ///
   virtual int output_data(
-        class GridBaseClass *
-        );
+      class GridBaseClass *
+      );
 
   /// Check if sim should stop.
   /// 
@@ -491,15 +486,15 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// message if not.
   ///
   int check_energy_cons(
-        class GridBaseClass * 
-        );
+      class GridBaseClass * 
+      );
 
   ///
   /// Calculates total values of conserved quantities.
   ///
   int initial_conserved_quantities(
-        class GridBaseClass * 
-        );
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 }; // sim_control_fixedgrid
    
 /*************************************************************************/

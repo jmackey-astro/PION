@@ -351,7 +351,7 @@ int sim_control_fixedgrid::Init(
       int typeOfFile,
       int narg,
       string *args,
-      class GridBaseClass **grid
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
 #ifdef TESTING
@@ -390,11 +390,20 @@ int sim_control_fixedgrid::Init(
   err = override_params(narg, args);
   rep.errorTest("(INIT::override_params) err!=0 Something went bad",0,err);
   
-  // Now set up the grid structure.
-  cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
-  err = setup_grid((grid),SimPM,&mpiPM);
-  cout <<"Init: &grid="<< grid<<", and grid="<< *grid <<"\n";
-  err += get_cell_size(*grid);
+  //
+  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  //
+  setup_nested_grid_levels(SimPM);
+  grid.resize(SimPM.grid_nlevels);
+  RT.resize(SimPM.grid_nlevels);
+
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    // Now set up the grid structure.
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+    err = setup_grid(&(grid[l]),SimPM,l,&mpiPM);
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  }
+  SimPM.dx = grid[0]->DX();
   if (err!=0) {
     cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
     return(1);
@@ -418,19 +427,19 @@ int sim_control_fixedgrid::Init(
   //
 #if defined SERIAL
 
-  err = dataio->ReadData(infile, *grid, SimPM);
+  err = dataio->ReadData(infile, grid, SimPM);
 
 #elif defined PARALLEL
 
   switch (typeOfFile) {
 #ifdef FITS
   case 2: // Start from FITS restartfile.
-  err = dataio->ReadData(infile, *grid, SimPM);
+  err = dataio->ReadData(infile, grid, SimPM);
     break;
 #endif // if FITS
 #ifdef SILO
   case 5: // Start from Silo restart file.
-    err = dataio->parallel_read_any_data(infile, SimPM, *grid);
+    err = dataio->parallel_read_any_data(infile, SimPM, grid);
     break; 
 #endif // if SILO
   default:
@@ -444,8 +453,12 @@ int sim_control_fixedgrid::Init(
   //
   // Set Ph=P in every cell.
   //
-  cell *cpt = (*grid)->FirstPt();
-  do {for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];} while ((cpt=(*grid)->NextPt(cpt))!=0);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cell *cpt = grid[l]->FirstPt();
+    do {
+      for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];
+    } while ((cpt=grid[l]->NextPt(cpt))!=0);
+  }
 
   // If we are to add noise to data, do it.
 //  if (SimPM.addnoise >0) {
@@ -456,7 +469,7 @@ int sim_control_fixedgrid::Init(
 
   
   // Assign boundary conditions to boundary points.
-  err = boundary_conditions(SimPM, *grid);
+  err = boundary_conditions(SimPM, grid);
   if (err!=0){cerr<<"(INIT::boundary_conditions) err!=0 Something went bad"<<"\n";return(1);}
 
 
@@ -464,7 +477,7 @@ int sim_control_fixedgrid::Init(
 #ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start? \n";
 #endif
-  err = ready_to_start(*grid);
+  err = ready_to_start(grid);
   rep.errorTest("(INIT::ready_to_start) err!=0 Something went bad",0,err);
 
 #ifdef TESTING
@@ -517,7 +530,7 @@ int sim_control_fixedgrid::Init(
 
   if (SimPM.timestep==0) {
     cout << "(INIT) Saving initial data.\n";
-    err=output_data(*grid);
+    err=output_data(grid);
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
   }
@@ -525,11 +538,13 @@ int sim_control_fixedgrid::Init(
 #endif // SERIAL
   
 #ifdef TESTING
-  cell *c = (*grid)->FirstPt_All();
-  do {
-    if (pconst.equalD(c->P[RO],0.0))
-      CI.print_cell(c);
-  } while ( (c=(*grid)->NextPt_All(c)) !=0 );
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cell *c = (grid[l])->FirstPt_All();
+    do {
+      if (pconst.equalD(c->P[RO],0.0))
+        CI.print_cell(c);
+    } while ( (c=(grid[l])->NextPt_All(c)) !=0 );
+  }
 #endif // TESTING
   
   return(0);
@@ -940,24 +955,6 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
 
 
 
-int sim_control_fixedgrid::get_cell_size(
-      class GridBaseClass *grid 
-      )
-{
-//  cout <<"\tGetting Cell Dimensions from UniformGrid.\n";
-  SimPM.dx = grid->DX();
-//  SimPM.dA = grid->DA();
-//  SimPM.dV = grid->DV();
-  return(0);
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 int sim_control_fixedgrid::set_equations()
 {
   cout <<"------------------------------------------------------\n";
@@ -1165,7 +1162,7 @@ int sim_control_fixedgrid::output_data(
 
 
 int sim_control_fixedgrid::ready_to_start(
-      class GridBaseClass *grid
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
@@ -1173,12 +1170,15 @@ int sim_control_fixedgrid::ready_to_start(
   //
   cell *c=0;
   if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
+
 #ifdef TESTING
     cout <<"Initial state, zero-ing glm variable.\n";
 #endif
-    c = grid->FirstPt(); do {
-      c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
-    } while ( (c=grid->NextPt(c)) !=0);
+    for (int l=0; l<SimPM.grid_nlevels; l++) {
+      c = grid[l]->FirstPt(); do {
+        c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
+      } while ( (c=grid[l]->NextPt(c)) !=0);
+    }
   }
   
   //
@@ -1190,9 +1190,11 @@ int sim_control_fixedgrid::ready_to_start(
   // Setup Raytracing, if they are needed.
   //
   int err=0;
-  err += setup_raytracing(SimPM, grid, RT);
-  err += setup_evolving_RT_sources(SimPM,RT);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    err += setup_raytracing(SimPM, grid[l], RT[l]);
+    err += setup_evolving_RT_sources(SimPM,RT[l]);
   if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
+  }
   //
   // If we are doing raytracing, we probably want to limit the timestep by
   // the ionisation timescale, so we call a very short time update here (to
@@ -1230,7 +1232,7 @@ int sim_control_fixedgrid::ready_to_start(
 
 
 int sim_control_fixedgrid::initial_conserved_quantities(
-      class GridBaseClass *grid
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   // Energy, and Linear Momentum in x-direction.
@@ -1240,14 +1242,17 @@ int sim_control_fixedgrid::initial_conserved_quantities(
   dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
   dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
   //  cout <<"initERG: "<<dp.initERG<<"\n";
-  class cell *cpt=grid->FirstPt();
-  do {
-     eqn->PtoU(cpt->P,u,SimPM.gamma);
-     dp.initERG += u[ERG]*eqn->CellVolume(cpt);
-     dp.initMMX += u[MMX]*eqn->CellVolume(cpt);
-     dp.initMMY += u[MMY]*eqn->CellVolume(cpt);
-     dp.initMMZ += u[MMZ]*eqn->CellVolume(cpt);
-  } while ( (cpt = grid->NextPt(cpt)) !=0);
+
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    class cell *cpt=grid[l]->FirstPt();
+    do {
+       eqn->PtoU(cpt->P,u,SimPM.gamma);
+       dp.initERG += u[ERG]*eqn->CellVolume(cpt);
+       dp.initMMX += u[MMX]*eqn->CellVolume(cpt);
+       dp.initMMY += u[MMY]*eqn->CellVolume(cpt);
+       dp.initMMZ += u[MMZ]*eqn->CellVolume(cpt);
+    } while ( (cpt = grid[l]->NextPt(cpt)) !=0);
+  }
   //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
   cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";
   cout <<"(LFMethod::InitialconservedQuantities) Total x-Momentum = "<< dp.initMMX <<"\n";

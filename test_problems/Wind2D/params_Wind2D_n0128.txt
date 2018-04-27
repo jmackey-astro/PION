@@ -53,8 +53,8 @@ Xmin   0.000e18
 Ymin   0.000e18
 Zmin   0.000e18
 # Max values of x,y,z
-Xmax   3.086e18
-Ymax   3.086e18
+Xmax   3.160064e18
+Ymax   3.160064e18
 Zmax   0.000000e8
 
 # Nested grid

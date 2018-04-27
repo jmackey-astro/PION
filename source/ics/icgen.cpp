@@ -172,17 +172,29 @@ int main(int argc, char **argv)
 #error "Define SERIAL or PARALLEL"
 #endif
 
+  //
+  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  //
+  SimSetup->setup_nested_grid_levels(SimPM);
 
-  class GridBaseClass *grid = 0;
+  vector<class GridBaseClass *> grid;
+
 #ifdef PARALLEL
   err  = MCMD.decomposeDomain(SimPM,SimPM.nest_levels[0]);
   if (err) rep.error("main: failed to decompose domain!",err);
 #endif // if PARALLEL
+
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,SimPM,&MCMD);
-  if (!grid) rep.error("Grid setup failed",grid);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    // Now set up the grid structure.
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+    err = SimSetup->setup_grid(&(grid[l]),SimPM,l,&MCMD);
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  }
+  SimPM.dx = grid[0]->DX();
+  if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
   //
   // read in what kind of ICs we are setting up.
@@ -213,7 +225,7 @@ int main(int argc, char **argv)
   else if (ics=="Jet" || ics=="JET" || ics=="jet") {
     ic = new IC_jet();
     ic->set_SimPM(&SimPM);
-    err += ic->setup_data(rp,grid);
+    err += ic->setup_data(rp,grid[0]);
   }
 
   else if (ics=="DoubleMachRef")
@@ -328,17 +340,17 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  grid->SetupBCs(SimPM);
+  SimSetup->boundary_conditions(SimPM,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
 
 
-  err += SimSetup->setup_raytracing(SimPM, grid,RT);
+  err += SimSetup->setup_raytracing(SimPM, grid[0],RT);
   err += SimSetup->setup_evolving_RT_sources(SimPM,RT);
   if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
-  err += ic->setup_data(rp,grid);
+  err += ic->setup_data(rp,grid[0]);
   if (err) rep.error("Initial conditions setup failed.",err);
   // ----------------------------------------------------------------
 
@@ -356,7 +368,7 @@ int main(int argc, char **argv)
     bool uerg = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
 
-    err = equilibrate_MP(grid,MP,rp,SimPM);
+    err = equilibrate_MP(grid[0],MP,rp,SimPM);
     if (err)
       rep.error("setting chemical states to equilibrium failed",err);
 
@@ -430,7 +442,7 @@ int main(int argc, char **argv)
   if (MP)   {delete MP; MP=0;}
   if (RT)   {delete RT; RT=0;}
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
-  if (grid) {delete grid; grid=0;}
+  //if (grid) {??grid; grid=0;}
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}
 

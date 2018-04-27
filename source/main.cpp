@@ -127,15 +127,15 @@ int main(int argc, char **argv)
   }
 
   //
-  // set up pointer to grid base class.
+  // set up vector of grids.
   //
-  class GridBaseClass *grid = 0;
+  vector<class GridBaseClass *> grid;
 
   //
   // Initialise the grid.
   // inputs are infile_name, infile_type, nargs, *args[]
   //
-  err = sim_control->Init(args[1], ft, argc, args, &grid);
+  err = sim_control->Init(args[1], ft, argc, args, grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
     delete sim_control;
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
     delete sim_control;
-    delete grid;
+    //delete grid;
     return 1;
   }
   //
@@ -158,12 +158,12 @@ int main(int argc, char **argv)
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
     delete sim_control;
-    delete grid;
+    //delete grid;
     return 1;
   }
 
   delete sim_control; sim_control=0;
-  delete grid; grid=0;
+  //delete grid; grid=0;
   delete [] args; args=0;
   
   cout <<"-------------------------------------------------------\n";

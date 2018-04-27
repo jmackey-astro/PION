@@ -146,7 +146,7 @@ void DataIOFits::SetSolver(
 
 int DataIOFits::OutputData(
       string outfilebase,          ///< base filename
-      class GridBaseClass *cg,     ///< pointer to data.
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM, ///< pointer to simulation parameters
       class RayTracingBase *RT, ///< pointer to raytracing class
 //      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
@@ -155,9 +155,9 @@ int DataIOFits::OutputData(
 {
   string fname="DataIOFits::OutputData";
 
-  if (!cg)
-    rep.error("DataIOFits::OutputData() null pointer to grid!",cg);
-  DataIOFits::gp = cg;
+  if (!cg[0])
+    rep.error("DataIOFits::OutputData() null pointer to grid!",cg[0]);
+  DataIOFits::gp = cg[0];
 
   if (DataIOFits::eqn==0) {
     //cout <<"WARNING: DataIOFits::OutputData() Set up Equations pointer before outputting data!\n";
@@ -412,15 +412,15 @@ int DataIOFits::WriteHeader(
 
 int DataIOFits::ReadData(
       string infile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   string fname="DataIOFits::ReadData";
 
-  if (!cg)
-    rep.error("DataIOFits::ReadData() null pointer to grid!",cg);
-  DataIOFits::gp = cg;
+  if (!cg[0])
+    rep.error("DataIOFits::ReadData() null pointer to grid!",cg[0]);
+  DataIOFits::gp = cg[0];
 
   int err=0; int status=0; fitsfile *ff;
   //cout <<"DataIOFits::ReadData() opening fits file to read data...";
