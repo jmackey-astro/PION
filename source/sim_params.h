@@ -213,10 +213,10 @@ class SimParams {
   double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells (top level).
 
   // nested grid data
-  int nlevels;
-  int aspect_ratio[MAX_DIM];
-  double nest_centre[MAX_DIM];
-  std::vector<struct level> levels;
+  int grid_nlevels;
+  int grid_aspect_ratio[MAX_DIM];
+  double grid_nest_centre[MAX_DIM];
+  std::vector<struct level> nest_levels;
 
   // Boundary cell data.
   std::string BC_XN; ///< Type of boundary condition.

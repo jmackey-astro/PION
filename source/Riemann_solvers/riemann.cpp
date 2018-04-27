@@ -229,12 +229,6 @@ void riemann_Euler::testing()
   cout <<"(riemann_Euler::testing) No. Solves: linear="<<linct<<" exact="<<exact<<" total="<<total<<"."<<"\n";
   cout <<"\tFraction linear/total: "<< static_cast<double>(linct)/(linct+exact) <<"\n";
   cout <<"Number of solves with same-state = "<<samestate<< " out of total numbe of solves above.\n";
-#ifdef RSTESTING
-  cout <<"\tNumber of fails: "<<fails<<"  out of "<<linct<<" linear solves corresponding to ";
-  cout <<static_cast<double>(fails*100)/linct<< "%."<<"\n";
-  cout<<"\tWhy not linear solver: pratio:"<<failplr<<" pstar:"<<failpst<<" ustar<<1:"<<failust;
-  cout <<" rarefaction:"<< failrare <<" compression:"<<failcomp <<" dratio:"<<faildens<<"\n";
-#endif //RSTESTING
 }
 
 
@@ -378,15 +372,6 @@ int riemann_Euler::JMs_riemann_solve(
 	//for(int i=0;i<rs_nvar; i++) ans[i] = rs_pstar[i];
 	//return(1);
       }
-#ifdef RSTESTING
-      // 
-      // For testing we do both the linear and exact solver and compare the results.
-      // Assign the linear result to a temp variable, to compare with the exact one.
-      //
-      for(int i=0; i<rs_nvar;i++) {
-	linearpstar[i] = rs_pstar[i];
-      }
-#endif //RSTESTING
       //
       // If linear solver failed, or if the left and right states are
       // too different, then call the exact solver.
@@ -401,54 +386,6 @@ int riemann_Euler::JMs_riemann_solve(
 	}
 	exact++;linct--;
       }
-#ifdef RSTESTING
-      // ***TESTING***
-      else {
-	err = exact_solver();
-	if (err != 0) {
-	  cerr << "(riemann_Euler::solve) exact_solver() returned abnormally!" << "\n";
-	  rs_pstar[eqPG] = rs_pstar[eqRO] = TINYVALUE;
-	  for(int i=0;i<rs_nvar; i++) ans[i] = rs_pstar[i];
-	  return(1);
-	}
-	// Check the exact pstar compared to the linear one.
-	//Verbose output
-	//    cout <<"Linear Solver obtained: ";
-	// 	   cout << "[rho,v,p] = ["<< linearpstar[eqRO] <<", "<< linearpstar[eqVX] <<", "<< linearpstar[eqPG] << " ]"<< "\n";
-	// 	   cout <<"Difference in liner/exact solver: delta";
-	// 	   cout << "[rho,v,p] = ["<< (rs_pstar[eqRO]-linearpstar[eqRO])/rs_pstar[eqRO];
-	// 	   cout <<", "<< (rs_pstar[eqVX]-linearpstar[eqVX]) <<", ";
-	// 	   cout << (rs_pstar[eqPG]-linearpstar[eqPG])/rs_pstar[eqPG] << " ]"<<"\n";
-	// 	   cout <<"Differences are fractional error in rho,p, and absolute error in vx."<<"\n";
-	lineartol = 0.1;
-	if( (fabs(rs_pstar[eqRO]-linearpstar[eqRO])/(rs_pstar[eqRO]+linearpstar[eqRO])>lineartol) ||
-	    (fabs(rs_pstar[eqVX]-linearpstar[eqVX])/(eq_refvec[eqVX]+fabs(rs_pstar[eqVX]))>lineartol) ||
-	    (fabs(rs_pstar[eqPG]-linearpstar[eqPG])/(rs_pstar[eqPG]+linearpstar[eqPG])>lineartol) ) {
-	  rep.printVec("refvec",eq_refvec,rs_nvar);
-	  cout <<"!!! "<<fabs(rs_pstar[eqRO]-linearpstar[eqRO])/(rs_pstar[eqRO]+linearpstar[eqRO]);
-	  cout <<"    "<<fabs(rs_pstar[eqVX]-linearpstar[eqVX])/(eq_refvec[eqVX]+fabs(rs_pstar[eqVX]));
-	  cout <<"    "<<fabs(rs_pstar[eqPG]-linearpstar[eqPG])/(rs_pstar[eqPG]+linearpstar[eqPG])<<"\n";
-	  fails++;
-	  cout << "Left " << "                    [rho,v,p] =";
-	  cout << " ["<< rs_left[eqRO]  <<", "<< rs_left[eqVX]  <<", "<< rs_left[eqPG]  << " ]\n";
-	  cout << "Right" << "                    [rho,v,p] =";
-	  cout << " ["<< rs_right[eqRO] <<", "<< rs_right[eqVX] <<", "<< rs_right[eqPG] << " ]\n";
-	  cout <<"Linear Solver obtained: ";
-	  cout << "[rho,v,p] = ["<< linearpstar[eqRO] <<", "<< linearpstar[eqVX] <<", "<< linearpstar[eqPG] << " ]"<< "\n";
-	  cout <<" Exact Solver obtained: ";
-	  cout << "[rho,v,p] = ["<< rs_pstar[eqRO] <<", "<< rs_pstar[eqVX] <<", "<< rs_pstar[eqPG] << " ]"<< "\n";
-	  cout <<"Difference :       delta";
-	  cout << "[rho,v,p] = ["<< (rs_pstar[eqRO]-linearpstar[eqRO])/rs_pstar[eqRO];
-	  cout <<", "<< (rs_pstar[eqVX]-linearpstar[eqVX]) <<", ";
-	  cout << (rs_pstar[eqPG]-linearpstar[eqPG])/rs_pstar[eqPG] << " ]";
-	  cout <<"c*: "<< sqrt(eq_gamma*rs_pstar[eqPG]/rs_pstar[eqRO]) << " u*: "<< rs_pstar[eqVX]<<"\n";
-	}
-	// Set pstar back to linear result, as that is what the code will calculate when not in testing mode.
-	rs_pstar[eqRO] = linearpstar[eqRO];
-	rs_pstar[eqPG] = linearpstar[eqPG];
-	rs_pstar[eqVX] = linearpstar[eqVX];
-      }
-#endif //RSTESTING
       break;
     default:
       rep.error("Error - switch not known in RiemannEul::solve()",mode);
@@ -464,14 +401,6 @@ int riemann_Euler::JMs_riemann_solve(
   //
   else if ((rs_right[eqVX]-rs_left[eqVX])<=2.*(cl+cr)/(eq_gamma-1.) ) {
     // Two rarefactions, so write down solution.
-    //    cout << "(reimann::solve) Definitely two rarefactions!" <<"\n";
-    //      cout << "Left " << " [rho,v,p] = ["<< rs_left[eqRO]  <<", "<< rs_left[eqVX]  <<", "<< rs_left[eqPG]  << " ]\n";
-    //      cout << "Right" << " [rho,v,p] = ["<< rs_right[eqRO] <<", "<< rs_right[eqVX] <<", "<< rs_right[eqPG] << " ]\n";
-    //      cout << " (ur-ul) - 2(cl+sqrt((g-1)/2g)cr)/(g-1) = ";
-    //      cout << (rs_right[eqVX]-rs_left[eqVX]) -2.*(cl+sqrt((eq_gamma-1.)/2./eq_gamma)*cr)/(eq_gamma-1.) << "\n";
-    //      cout << " (ur-ul) - 2(cl+cr)/(g-1) = ";
-    //      cout << (rs_right[eqVX]-rs_left[eqVX]) -2.*(cl+cr)/(eq_gamma-1.);
-    //      cout << " ... cl,cr="<<cl<<", "<<cr << "\n";
     // Solve for two rarefactions (checking of wave locations is done inside solve_rarerare()).
     err = solve_rarerare();
     if (err != 0) {
@@ -488,12 +417,6 @@ int riemann_Euler::JMs_riemann_solve(
   // often the code can recover in the next step.
   //
   else {
-    //    cout << "(reimann::solve) Cavitation!"<<"\n";
-    //      cout << "Left " << " [rho,v,p] = ["<< rs_left[eqRO]  <<", "<< rs_left[eqVX]  <<", "<< rs_left[eqPG]  << " ]\n";
-    //      cout << "Right" << " [rho,v,p] = ["<< rs_right[eqRO] <<", "<< rs_right[eqVX] <<", "<< rs_right[eqPG] << " ]\n";
-    //      cout << " (ur-ul) - 2(cl+cr)/(g-1) = ";
-    //      cout << (rs_right[eqVX]-rs_left[eqVX]) -2.*(cl+cr)/(eq_gamma-1.);
-    //      cout << " ... cl,cr="<<cl<<", "<<cr << "\n";
     // Solve for cavitation solution.
     err = solve_cavitation();
     if (err) {
@@ -518,10 +441,8 @@ int riemann_Euler::JMs_riemann_solve(
     rs_pstar[eqVY] = rs_right[eqVY];		    
     rs_pstar[eqVZ] = rs_right[eqVZ];
   }
-  //  cout << "(riemann_Euler::solve) Success!" << "\n";
 
   //
-  //  if(rs_pstar[eqPG]<0.) cerr<<"error in riemann solver! pg="<<rs_pstar[eqPG]<<"\n";
   // TINYVALUE is 1.0e-50
   //
   if (rs_pstar[eqPG]<=TINYVALUE) { 
@@ -535,13 +456,6 @@ int riemann_Euler::JMs_riemann_solve(
   // Now copy pstar into the ans[] pointer.
   //
   for(int i=0;i<rs_nvar; i++) ans[i] = rs_pstar[i];
-  //
-  // [DEBUGGING] Check that we haven't altered rs_left or rs_right!
-  //
-  // for (int v=0; v<rs_nvar; v++) {
-  //   if (!pconst.equalD(l[v],rs_left[v] )) rep.error("changed  left state vector!",v);
-  //   if (!pconst.equalD(r[v],rs_right[v])) rep.error("changed right state vector!",v);
-  // }
 
 #ifdef FUNCTION_ID
   cout <<"riemann_Euler::JMs_riemann_solve ...returning.\n";
@@ -587,8 +501,6 @@ int riemann_Euler::check_wave_locations()
       if (rs_pstar[eqVX] > cstar) {
 	//
 	// in this case the rarefaction straddles the origin.
-	//
-	//	cout << "Xi_B >0 :x=0 inside left rarefaction: u*-c* = " << rs_pstar[eqVX]-cstar << "\n";
 	// Have to find where x=0, and solve for p,u,rho there.
 	// Equation 15,16,17 from my rarefaction.ps notes, with \xi=0
 	rs_pstar[eqVX] = (2.*cl + rs_left[eqVX]*(eq_gamma -1.))/(eq_gamma +1.);
@@ -610,8 +522,6 @@ int riemann_Euler::check_wave_locations()
       rs_pstar[eqPG] = rs_right[eqPG];
       rs_pstar[eqRO] = rs_right[eqRO];
       rs_pstar[eqVX] = rs_right[eqVX];
-      //cout << "Shock-Rarefaction... because (v_r < -c_r), the resolved state IS the right state. cr= " 
-      //	   << cr << "\n";
       return(0);
     }
     else if (rs_pstar[eqVX] < 0.) {
@@ -622,9 +532,6 @@ int riemann_Euler::check_wave_locations()
       if (rs_pstar[eqVX] < -cstar) {
 	//
 	// in this case the rarefaction straddles the origin.
-	//
-	//	cout << "Xi_B <0 :x=0 inside right rarefaction: u*-c* = " << rs_pstar[eqVX]-cstar << "\n";
-	//	cout << "Starred rho: " << rs_pstar[eqRO] << "  v: " <<  rs_pstar[eqVX] << "   p: " << rs_pstar[eqPG] << " cstar: " << cstar << "\n";
 	// Have to find where x=0, and solve for p,u,rho there.
 	// Equation 15,16,17 from my rarefaction.ps notes, with \xi=0
 	rs_pstar[eqVX] = (-2.*cr + rs_right[eqVX]*(eq_gamma -1.))/(eq_gamma +1.);
