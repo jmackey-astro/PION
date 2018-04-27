@@ -19,6 +19,7 @@
 /// - 2015.01.08 JM: Moved grid definition to this file from global.h
 /// - 2015.01.26 JM: updates, moving mpiPM from global to sim_control
 /// - 2015.04.30 JM: tidying up.
+/// - 2018.04.27 JM: removed some args (simpler command-line running).
 
 #include <iostream>
 #include <sstream>
@@ -93,7 +94,7 @@ int main(int argc, char **argv)
   //
   // Check that command-line arguments are sufficient.
   //
-  if (argc<4) {
+  if (argc<2) {
     sim_control->print_command_line_options(argc,argv);
     rep.error("Bad arguments",argc);
   }
@@ -103,29 +104,19 @@ int main(int argc, char **argv)
     cout <<"arg "<<i<<" = "<<args[i]<<"\n";
   }
   
-  //
-  // Check that we can read the input file type.
-  //
+  // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
-  ft=atoi(argv[2]);
-  if(ft <1 || ft>5) {cerr<<"(PION) Bad file type specifier.\n";return(1);}
-  switch (ft) {
-  case 1:
-    cout <<"(PION) ft = "<<ft<<" so reading ICs from text parameterfile "<<argv[2]<<"\n";
-    break;
-#ifdef FITS
-  case 2:
-  case 3:
-    cout <<"(PION) ft = "<<ft<<" so reading ICs from Fits ICfile "<<argv[2]<<"\n";
-    break;
-#endif // if FITS
-#ifdef SILO
-  case 5:
-    cout <<"(PION) ft = "<<ft<<" so reading ICs from Silo ICfile "<<argv[2]<<"\n";
-    break;
-#endif // if SILO
-  default:
-    rep.error("Bad filetype input to main",ft);
+  if      (args[1].find(".silo") != string::npos) {
+    cout <<"(pion) reading ICs from SILO IC file "<<args[1]<<"\n";
+    ft=5;
+  }
+  else if (args[1].find(".fits") != string::npos) {
+    cout <<"(pion) reading ICs from Fits ICfile "<<args[1]<<"\n";
+    ft=2;
+  }
+  else {
+    cout <<"(pion) IC file not fits/silo: assuming text parameterfile "<<args[1]<<"\n";
+    ft=1;
   }
   
   //
@@ -157,7 +148,7 @@ int main(int argc, char **argv)
   //
   // Initialise code.
   //
-  err = sim_control->Init(argv[1], ft, argc, args, &grid);
+  err = sim_control->Init(args[1], ft, argc, args, &grid);
   if (err!=0) {
     cerr<<"(PION) err!=0 Something went bad"<<"\n";
     delete sim_control;
