@@ -548,7 +548,7 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Overriding parameters if requested ---------\n";
   // Find command line params and assign them to SimPM.whatever.
-  for (int i=4;i<narg;i++) {
+  for (int i=2;i<narg;i++) {
 
     if ( args[i].find("eqntype=") != string::npos) {
       /** \section eqntype Changing Equations
