@@ -156,18 +156,16 @@ UniformGrid::UniformGrid(
   G_range=0;
   
   G_ng     = mem.myalloc(G_ng,    G_ndim);
-
   G_xmin   = mem.myalloc(G_xmin,  G_ndim);
   G_xmax   = mem.myalloc(G_xmax,  G_ndim);
   G_range  = mem.myalloc(G_range, G_ndim);
-
   G_ixmin  = mem.myalloc(G_ixmin, G_ndim);
   G_ixmax  = mem.myalloc(G_ixmax, G_ndim);
   G_irange = mem.myalloc(G_irange,G_ndim);
 
   //
-  // For serial code the Sim_XXX arrays are the same as G_XXX arrays,
-  // but for parallel code with many grids this is useful.
+  // Useful for nested/parallel grids, where simulation domain
+  // may be larger than this grid.
   //
   Sim_xmin   = mem.myalloc(Sim_xmin,  G_ndim);
   Sim_xmax   = mem.myalloc(Sim_xmax,  G_ndim);

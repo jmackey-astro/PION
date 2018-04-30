@@ -181,7 +181,7 @@
 using namespace std;
 
 
-#define TIMESTEP_FULL OA2
+#define TIMESTEP_FULL       OA2
 #define TIMESTEP_FIRST_PART OA1
 
 
@@ -266,7 +266,7 @@ int sim_control_fixedgrid::first_order_update(
   // Set dt for equations class
   // MULTITHREADING RISK!
   //
-  eqn->Setdt(dt);
+  spatial_solver->Setdt(dt);
 
   //
   // May need to do raytracing, if it wasn't needed for calculating
@@ -325,7 +325,7 @@ int sim_control_fixedgrid::second_order_update(
   // Set dt for equations class
   // MULTITHREADING RISK!
   //
-  eqn->Setdt(dt);
+  spatial_solver->Setdt(dt);
 
   //
   // Raytracing, to get column densities for microphysics update.
@@ -374,23 +374,24 @@ int sim_control_fixedgrid::second_order_update(
 
 
 int sim_control_fixedgrid::calculate_raytracing_column_densities(
-      //class GridBaseClass *grid ///< Computational grid.
+      //class GridBaseClass *grid       ///< Computational grid.
+      class RayTracingBase *raytracer ///< raytracer for this grid.
       )
 {
   int err=0;
   //
-  // If we have raytracing, we call the new ray-tracing function 
-  // to get Tau0, dTau, Vshell in cell->extra_data[n].
+  // If we have raytracing, we call the ray-tracing routines 
+  // to get Tau0, dTau, Vshell in cell->extra_data[].
   //
-  if (RT) {
+  if (raytracer) {
     for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-#ifdef RT_TESTING
-      cout <<"sim_control_fixedgrid::calc_RT_col_dens: SRC-ID: "<<isrc<<"\n";
+#ifdef raytracer_TESTING
+      cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
 #endif
-      err += RT->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
+      err += raytracer->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
       if (err) {
         cout <<"isrc="<<isrc<<"\t"; 
-        rep.error("calc_RT_col_dens step in returned error",err);
+        rep.error("calc_raytracing_col_dens step in returned error",err);
       } // if error
     } // loop over sources
   }
@@ -557,8 +558,8 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
       //
       // New state is p[], old state is c->P[].  Get dU from these.
       //
-      eqn->PtoU(c->P,ui,SimPM.gamma);
-      eqn->PtoU(p,   uf,SimPM.gamma);
+      spatial_solver->PtoU(c->P,ui,SimPM.gamma);
+      spatial_solver->PtoU(p,   uf,SimPM.gamma);
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
 
     } // if not boundary data.
@@ -619,8 +620,8 @@ int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
       //
       // New state is p[], old state is c->P[].  Get dU from these.
       //
-      eqn->PtoU(c->P,ui,SimPM.gamma);
-      eqn->PtoU(p,   uf,SimPM.gamma);
+      spatial_solver->PtoU(c->P,ui,SimPM.gamma);
+      spatial_solver->PtoU(p,   uf,SimPM.gamma);
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
 
     } // if not boundary data.
@@ -662,15 +663,14 @@ int sim_control_fixedgrid::calc_dynamics_dU(
   // genuinely multi-dimensional viscosity such as Lapidus-like AV or
   // the H-Correction.
   //
-  err = eqn->preprocess_data(space_ooa, SimPM, grid);
+  err = spatial_solver->preprocess_data(space_ooa, SimPM, grid);
 
   //
   // Now calculate the directionally-unsplit time update for the
   // conserved variables:
   //
   err = set_dynamics_dU(dt, space_ooa, grid); //,time_ooa);
-  rep.errorTest("calc_dynamics_dU() eqn->set_dynamics_dU returned error.",
-                0,err);
+  rep.errorTest("calc_dynamics_dU() set_dynamics_dU returned error.", 0,err);
 
   //
   // Post-processing is for if we are doing something like Constrained
@@ -680,8 +680,8 @@ int sim_control_fixedgrid::calc_dynamics_dU(
   // robust than e.g. Toth (2000) Field-CT method.  (well the internal
   // energy solver uses it, but it's not really worth using).
   //
-  err = eqn->PostProcess_dU(dt, space_ooa, grid); //,time_ooa);
-  rep.errorTest("calc_dynamics_dU() eqn->PostProcess_dU()",0,err);
+  err = spatial_solver->PostProcess_dU(dt, space_ooa, grid); //,time_ooa);
+  rep.errorTest("calc_dynamics_dU() spatial_solver->PostProcess_dU()",0,err);
 
   return 0;
 }
@@ -725,7 +725,7 @@ int sim_control_fixedgrid::set_dynamics_dU(
   //
   for (int i=0;i<SimPM.ndim;i++) {
     //    cout <<"\t\t\tidim="<<i<<"\n";
-    eqn->SetDirection(axis[i]);
+    spatial_solver->SetDirection(axis[i]);
     class cell *cpt    = grid->FirstPt();
     class cell *marker = grid->FirstPt();
     
@@ -759,7 +759,7 @@ int sim_control_fixedgrid::set_dynamics_dU(
     } // Loop over columns.
     if (return_value!=-1) rep.error("dUdtColumn returned abnormally.",return_value);
   } // Loop over three directions.
-  eqn->SetDirection(axis[0]); // Reset fluxes to x-dir, (just to be safe!).
+  spatial_solver->SetDirection(axis[0]); // Reset fluxes to x-dir, (just to be safe!).
   //  cout <<"\t\t\tCALC_DU done.\n";
 
   //
@@ -798,7 +798,7 @@ int sim_control_fixedgrid::dynamics_dU_column
 #ifdef TESTING
   int ct=0;
 #endif
-  enum axes axis = eqn->GetDirection();
+  enum axes axis = spatial_solver->GetDirection();
   double dx = grid->DX();
 
   //
@@ -853,16 +853,16 @@ int sim_control_fixedgrid::dynamics_dU_column
     cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
     // Get the flux from left and right states, adding artificial viscosity if needed.
-    err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
-    err += eqn->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
-    err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+    err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+    err += spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
+    err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
     // rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
     // rep.errorTest("Edge States not obtained!",0,err);
-    err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this,
+    err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this,
                               SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
     // rep.printVec("Fr",Fr_this,SimPM.nvar);
     // rep.errorTest("Intercell Flux not obtained!",0,err);
-    err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+    err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
     //    rep.errorTest("dU not obtained!",0,err);
 
 #ifdef TESTING
@@ -882,11 +882,11 @@ int sim_control_fixedgrid::dynamics_dU_column
     // Track energy, momentum entering domain.
     if(ctm==SimPM.tmOOA && !(cpt->isgd) && npt->isgd) {
       ct++; if (ct>1) rep.error("Entering domain more than once! (dUcolumn)",ct);
-      //      cout <<"Entering Domain Dir = "<<posdir<<" and interface area = "<<eqn->CellInterface(cpt,posdir)<<"\n";
-      dp.initERG += Fr_this[ERG]*dt*eqn->CellInterface(cpt,posdir);
-      dp.initMMX += Fr_this[MMX]*dt*eqn->CellInterface(cpt,posdir);
-      dp.initMMY += Fr_this[MMY]*dt*eqn->CellInterface(cpt,posdir);
-      dp.initMMZ += Fr_this[MMZ]*dt*eqn->CellInterface(cpt,posdir);
+      //      cout <<"Entering Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir)<<"\n";
+      dp.initERG += Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
+      dp.initMMX += Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
+      dp.initMMY += Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
+      dp.initMMZ += Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
       //      if (posdir==YP && fabs(Fr_this[MMY])>2*MACHINEACCURACY) {
       //  cout <<"R-momentum flux entering domain from R=0(!) = "<<Fr_this[MMY]<<"\n";
       //  cout <<"v_R in first cell = "<<npt->Ph[VY]<<", "<<npt->P[VY]<<"\n";
@@ -894,11 +894,11 @@ int sim_control_fixedgrid::dynamics_dU_column
     }
     else if (ctm==SimPM.tmOOA && !(npt->isgd) && cpt->isgd) {
       ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-      //      cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<eqn->CellInterface(cpt,posdir)<<"\n";
-      dp.initERG -= Fr_this[ERG]*dt*eqn->CellInterface(cpt,posdir);
-      dp.initMMX -= Fr_this[MMX]*dt*eqn->CellInterface(cpt,posdir);
-      dp.initMMY -= Fr_this[MMY]*dt*eqn->CellInterface(cpt,posdir);
-      dp.initMMZ -= Fr_this[MMZ]*dt*eqn->CellInterface(cpt,posdir);
+      //      cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir)<<"\n";
+      dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
+      dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
+      dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
+      dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
     }
 #endif //TESTING
     //
@@ -920,19 +920,19 @@ int sim_control_fixedgrid::dynamics_dU_column
 #ifdef TESTING
   dp.c = cpt;
 #endif
-  err += eqn->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+  err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-  err += eqn->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
-  err += eqn->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
-  err += eqn->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+  err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+  err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
+  err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 #ifdef TESTING
   if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
     ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-    // cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<eqn->CellInterface(cpt,posdir)<<"\n";
-    dp.initERG -= Fr_this[ERG]*dt*eqn->CellInterface(cpt,posdir);
-    dp.initMMX -= Fr_this[MMX]*dt*eqn->CellInterface(cpt,posdir);
-    dp.initMMY -= Fr_this[MMY]*dt*eqn->CellInterface(cpt,posdir);
-    dp.initMMZ -= Fr_this[MMZ]*dt*eqn->CellInterface(cpt,posdir);
+    // cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir)<<"\n";
+    dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
+    dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
+    dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
+    dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
   }
 #endif //TESTING
  
@@ -995,7 +995,7 @@ int sim_control_fixedgrid::grid_update_state_vector(
     dp.ergTotChange = 0.;temperg =0.;
     dp.c = c;
 #endif
-    err += eqn->CellAdvanceTime(c, c->P, c->dU, c->Ph, &temperg,
+    err += spatial_solver->CellAdvanceTime(c, c->P, c->dU, c->Ph, &temperg,
                         SimPM.gamma, SimPM.EP.MinTemperature, dt);
 #ifdef TESTING
     if (err) {
@@ -1016,7 +1016,7 @@ int sim_control_fixedgrid::grid_update_state_vector(
       // update variables.
       //
       dp.ergTotChange = temperg;
-      dp.initERG += dp.ergTotChange*eqn->CellVolume(c);
+      dp.initERG += dp.ergTotChange*spatial_solver->CellVolume(c);
 #endif // TESTING
     }
 

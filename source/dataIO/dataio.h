@@ -296,7 +296,6 @@ class DataIOBase : public file_status {
       const string, ///< File to write to
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       )=0;
 
@@ -447,7 +446,6 @@ class dataio_text : public DataIOBase {
       const string, ///< File to write to
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 
@@ -563,9 +561,8 @@ class dataio_text : public DataIOBase {
   /// \retval 1 failure
   ///
   int output_ascii_data(
-      string,                 ///< File name to write to.
-      class SimParams &,      ///< pointer to simulation parameters
-      class RayTracingBase *  ///< pointer to raytracing class
+      string,            ///< File name to write to.
+      class SimParams &  ///< pointer to simulation parameters
       );
 
    int read_header_param(class pm_base *)

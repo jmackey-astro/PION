@@ -80,10 +80,10 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control_fixedgrid *sim_control = 0;
-  sim_control = new class sim_control_fixedgrid();
+  class sim_control *sim_control = 0;
+  sim_control = new class sim_control();
   if (!sim_control)
-    rep.error("(pion) Couldn't initialise sim_control_fixedgrid", sim_control);
+    rep.error("(pion) Couldn't initialise sim_control", sim_control);
 
   //
   // Check that command-line arguments are sufficient.

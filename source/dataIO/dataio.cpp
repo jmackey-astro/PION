@@ -2143,18 +2143,27 @@ int dataio_text::OutputData(
       const string outfile,
       vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int counter   ///< number to stamp file with (e.g. timestep)
       )
 {
   if (!cg[0])
     rep.error("dataio_text::output_ascii_data() null pointer to grid!",cg[0]);
-  dataio_text::gp = cg[0];
 
-  cout <<"dataio_text::OutputData() writing data.\n";
-  string fname = set_filename(outfile, counter);
-  int err = output_ascii_data(fname, SimPM,RT);
-  cout <<"dataio_text::OutputData() written data.\n";
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+
+    // for now write a different file for each level in the nested grid.
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    ostringstream temp; temp << outfile << "_level";
+    temp.width(2); temp.fill('0');
+    temp << l;
+    dataio_text::gp = cg[l];
+
+    cout <<"dataio_text::OutputData() writing data.\n";
+    string fname = set_filename(temp.str(), counter);
+    int err = output_ascii_data(fname, SimPM);
+    cout <<"dataio_text::OutputData() written data.\n";
+
+  }
   return err;
 }
 
@@ -2490,8 +2499,7 @@ int dataio_text::get_parameters(
 
 int dataio_text::output_ascii_data(
       string outfile,
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT ///< pointer to raytracing class [OUTPUT]
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   ofstream outf(outfile.c_str());
@@ -2543,13 +2551,11 @@ int dataio_text::output_ascii_data(
       outf <<"  "<< eqn->Divergence(cpt,0,vars,gp);
     }
 #ifdef RT_TESTING_OUTPUTCOL
-    if (RT) {
-      for (int v=0;v<SimPM.RS.Nsources;v++) {
-        //cout <<"hello";
-        CI.get_col(cpt, v, Utemp);
-        for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++)
-          outf <<"  "<< Utemp[iT];
-      }
+    for (int v=0;v<SimPM.RS.Nsources;v++) {
+      //cout <<"hello";
+      CI.get_col(cpt, v, Utemp);
+      for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++)
+        outf <<"  "<< Utemp[iT];
     }
 #endif // RT_TESTING_OUTPUTCOL
     outf  <<"\n";

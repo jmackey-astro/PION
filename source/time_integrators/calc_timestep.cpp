@@ -182,7 +182,7 @@ double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
   // c->dU[ERG] since this is where it will be updated.
   //
   //cout <<"\tCCdt: setting Edot.\n";
-  eqn->set_thermal_conduction_Edot();
+  spatial_solver->set_thermal_conduction_Edot();
   //cout <<"\tCCdt: Done with div(Q).  Now getting timestep.\n";
 
   //
@@ -309,7 +309,7 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 #ifdef TESTING
     dp.c = c;
 #endif
-    tempdt = eqn->CellTimeStep(
+    tempdt = spatial_solver->CellTimeStep(
               c, ///< pointer to cell
               SimPM.gamma, ///< gas EOS gamma.
               dx  ///< Cell size dx.

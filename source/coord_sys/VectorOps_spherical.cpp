@@ -81,8 +81,8 @@ void VectorOps_Sph::set_dx(const double x)
   //
   // Now modify Volume and Area for Spherical coords.
   //
-  VOdV = 4.0*M_PI*VOdR;
-  VOdA = 4.0*M_PI;
+  VOdV = 4.0 * M_PI / 3.0;
+  VOdA = 4.0 * M_PI;
   return;
 }
 
@@ -101,11 +101,12 @@ double VectorOps_Sph::CellVolume(const cell *c)
 {
   ///
   /// The volume of a cell is 
-  /// \f$\delta V =4\pi R_i^2 \delta R \f$, where \f$R_i\f$ is the
-  /// cell centre in the radial direction.
+  /// \f$\delta V =4\pi (R_+^3-R_i^3) /3 \f$, where \f$R_\pm\f$ is the
+  /// positive/negative cell edge position in the radial direction.
   ///
   double temp = CI.get_dpos(c,Rsph);
-  return VOdV*temp*temp;
+  temp = pow(temp+0.5*VOdR, 3) - pow(temp-0.5*VOdR, 3);
+  return VOdV*temp;
 }
 
 
