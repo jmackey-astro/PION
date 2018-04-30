@@ -167,7 +167,6 @@ class DataIOFits : public utility_fitsio, public DataIOBase {
       const string, ///< File to write to
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 

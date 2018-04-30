@@ -24,23 +24,23 @@
 
 /// The Parallel implementation of the Uniform FV Integrator.
 /// 
-/// This class reimplements some functions of sim_control_fixedgrid, so that they
+/// This class reimplements some functions of sim_control, so that they
 /// work on multiple processors with the domain split between them.
 /// 
-class sim_control_fixedgrid_pllel : 
-  virtual public sim_control_fixedgrid,
+class sim_control_pllel : 
+  virtual public sim_control,
   virtual public setup_fixed_grid_pllel
 {
   public:
-   sim_control_fixedgrid_pllel();
-   ~sim_control_fixedgrid_pllel();
+   sim_control_pllel();
+   ~sim_control_pllel();
 
   ///
   /// initialisation.
   ///
   /// This function checks if we are reading from single or multiple files,
   /// modifies the input file string accordingly, checks the file exists, 
-  /// and then calls the sim_control_fixedgrid::Init() function.
+  /// and then calls the sim_control::Init() function.
   ///
   /// \retval 0 success
   /// \retval 1 failure
@@ -87,7 +87,7 @@ class sim_control_fixedgrid_pllel :
         class GridBaseClass * 
         );
 
-}; // sim_control_fixedgrid_pllel
+}; // sim_control_pllel
 
 #endif // PARALLEL
 #endif // if not SIM_CONTROL_MPI_H

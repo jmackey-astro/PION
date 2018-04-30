@@ -240,83 +240,95 @@ int dataio_silo::OutputData(
       const string outfile,
       vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
-  if (!cg[0])
-    rep.error("dataio_silo::OutputData() null pointer to grid!",cg[0]);
-  dataio_silo::gp = cg[0];
 
-  int err=0;
-
-  err = dataio_silo::choose_filename(outfile, file_counter);
-  if (err) {
-    cerr<<"dataio_silo::OutputData() error choosing filename.\n";
-    return err;
-  }
-  cout <<"\tWriting to file: "<<silofile<<"\n";
-  ofstream fff;
-  fff.open(silofile.c_str());
-  if (!fff) rep.error("!!!**** Can't write to file.  Does directory exist???",silofile);
-  fff.close();
-
-  //
-  // Create file
-  //
-  *db_ptr = 0;
-  if (silo_filetype==DB_HDF5) {
-    DBSetCompression("METHOD=GZIP LEVEL=1");
-    DBSetFriendlyHDF5Names(1);
-  }
-  *db_ptr = DBCreate(silofile.c_str(), DB_CLOBBER, DB_LOCAL, "PION data", silo_filetype);
-  if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
-  //cout <<"\tdb_ptr="<<db_ptr<<"\n";
-  //cout <<"\t*db_ptr="<<*db_ptr<<"\n";
-
-  if (!have_setup_gridinfo) {
-    // set grid properties for quadmesh
-    err = dataio_silo::setup_grid_properties(gp, SimPM);
-    if (err)
-      rep.error("dataio_silo::OutputData() error setting up grid_props", err);
-  }
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
-    err = dataio_silo::setup_write_variables(SimPM,RT);
+    err = dataio_silo::setup_write_variables(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() error settting up variables to write to",err);
   }
 
-  //
-  // now write the simulation parameters to the header part of the file.
-  //
-  DBSetDir(*db_ptr,"/");
-  DBMkDir(*db_ptr,"header");
-  DBSetDir(*db_ptr,"/header");
-  err = write_simulation_parameters(SimPM);
-  if (err)
-    rep.error("dataio_silo::OutputData() error writing header to silo file",err);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-  //
-  // Create data directory, generate the mesh in the file, and then write each
-  // variable in turn to the mesh.
-  //
-  DBSetDir(*db_ptr,"/");
-  string meshname="UniformGrid";
-  err = dataio_silo::generate_quadmesh(*db_ptr, meshname,SimPM);
-  if (err)
-    rep.error("dataio_silo::OutputData() error writing quadmesh to silo file",err);
+    // for now write a different file for each level in the nested grid.
+    CI.set_dx(SimPM.nest_levels[l].dx);
 
-  dataio_silo::create_data_arrays(SimPM);
-  for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
+    ostringstream temp; temp << outfile << "_level";
+    temp.width(2); temp.fill('0');
+    temp << l;
+    dataio_text::gp = cg[l];
+
+    if (!cg[l])
+      rep.error("dataio_silo::OutputData() null pointer to grid!",cg[l]);
+    dataio_silo::gp = cg[l];
+
+    int err=0;
+
+    err = dataio_silo::choose_filename(temp.str(), file_counter);
+    if (err) {
+      cerr<<"dataio_silo::OutputData() error choosing filename.\n";
+      return err;
+    }
+    cout <<"\tWriting to file: "<<silofile<<"\n";
+    ofstream fff;
+    fff.open(silofile.c_str());
+    if (!fff) rep.error("!!!**** Can't write to file.  Does directory exist???",silofile);
+    fff.close();
+
+    //
+    // Create file
+    //
+    *db_ptr = 0;
+    if (silo_filetype==DB_HDF5) {
+      DBSetCompression("METHOD=GZIP LEVEL=1");
+      DBSetFriendlyHDF5Names(1);
+    }
+    *db_ptr = DBCreate(silofile.c_str(), DB_CLOBBER, DB_LOCAL, "PION data", silo_filetype);
+    if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
+    //cout <<"\tdb_ptr="<<db_ptr<<"\n";
+    //cout <<"\t*db_ptr="<<*db_ptr<<"\n";
+
+    //if (!have_setup_gridinfo) {
+    // set grid properties for quadmesh
+    err = dataio_silo::setup_grid_properties(gp, SimPM);
+    if (err)
+      rep.error("dataio_silo::OutputData() error setting up grid_props", err);
+    //}
+
+    //
+    // now write the simulation parameters to the header part of the file.
+    //
+    DBSetDir(*db_ptr,"/");
+    DBMkDir(*db_ptr,"header");
+    DBSetDir(*db_ptr,"/header");
+    err = write_simulation_parameters(SimPM);
+    if (err)
+      rep.error("dataio_silo::OutputData() error writing header to silo file",err);
+
+    //
+    // Create data directory, generate the mesh in the file, and then write each
+    // variable in turn to the mesh.
+    //
+    DBSetDir(*db_ptr,"/");
+    string meshname="UniformGrid";
+    err = dataio_silo::generate_quadmesh(*db_ptr, meshname,SimPM);
+    if (err)
+      rep.error("dataio_silo::OutputData() error writing quadmesh to silo file",err);
+
+    dataio_silo::create_data_arrays(SimPM);
+    for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
     err = dataio_silo::write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
     if (err)
       rep.error("dataio_silo::OutputData() error writing variable",(*i));
-  }
-  dataio_silo::delete_data_arrays();
-  DBSetDir(*db_ptr,"/");
-  DBClose(*db_ptr); //*db_ptr=0; 
+    }
+    dataio_silo::delete_data_arrays();
+    DBSetDir(*db_ptr,"/");
+    DBClose(*db_ptr); //*db_ptr=0;
 
+  } // loop over levels.
 
   return 0;
 }
@@ -515,20 +527,20 @@ int dataio_silo::setup_grid_properties(
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
   double dx=grid->DX();
-  if (node_coords || nodedims || zonedims ||
-      nodex || nodey || nodez) {
-    cerr<<"Have already setup variables for grid props! ";
-    cerr<<"You shouldn't have called me! crazy fool...\n";
-    return 1000000;
-  }
+  //if (node_coords || nodedims || zonedims ||
+  //    nodex || nodey || nodez) {
+  //  cerr<<"Have already setup variables for grid props! ";
+  //  cerr<<"You shouldn't have called me! crazy fool...\n";
+  //  return 1000000;
+  //}
 
   dataio_silo::ndim = SimPM.ndim;
   dataio_silo::vec_length = SimPM.eqnNDim;
   //  dataio_silo::vec_length = ndim;
   //  cout <<"************VEC_LENGTH="<<vec_length<<"\n";
 
-  nodedims = mem.myalloc(nodedims,ndim);
-  zonedims = mem.myalloc(zonedims,ndim);
+  if (!nodedims) nodedims = mem.myalloc(nodedims,ndim);
+  if (!zonedims) zonedims = mem.myalloc(zonedims,ndim);
 
   //
   // node_coords is a void pointer, so if we are writing silo data in
@@ -547,28 +559,38 @@ int dataio_silo::setup_grid_properties(
     // Allocate memory for node_coords, and set pointers.
     //
     float **d = 0;
-    d = mem.myalloc(d,ndim);
-    node_coords = reinterpret_cast<void **>(d);
-    //
-    // Allocate memory for nodex, nodey, nodez
-    //
     float *posx=0, *posy=0, *posz=0;
-    posx = mem.myalloc(posx,nx);
+
+    if (node_coords) {
+      //d = reinterpret_cast<float **>(node_coords);
+      posx = reinterpret_cast<float *>(nodex);
+      posy = reinterpret_cast<float *>(nodey);
+      posz = reinterpret_cast<float *>(nodez);
+    }
+    else {
+      d = mem.myalloc(d,ndim);
+      node_coords = reinterpret_cast<void **>(d);
+      posx = mem.myalloc(posx,nx);
+      if (ndim>1) posy = mem.myalloc(posy,ny);
+      if (ndim>2) posz = mem.myalloc(posz,nz);
+    }
+
+    //
+    // Assign data for nodex, nodey, nodez for this grid
+    //
     for (int i=0;i<nx;i++)
-      posx[i] = static_cast<float>(grid->SIM_Xmin(XX)+i*dx);
+      posx[i] = static_cast<float>(grid->Xmin(XX)+i*dx);
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
     if (ndim>1) {
-      posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
-        posy[i] = static_cast<float>(grid->SIM_Xmin(YY)+i*dx);
+        posy[i] = static_cast<float>(grid->Xmin(YY)+i*dx);
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
-      posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
-        posz[i] = static_cast<float>(grid->SIM_Xmin(ZZ)+i*dx);
+        posz[i] = static_cast<float>(grid->Xmin(ZZ)+i*dx);
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
@@ -578,29 +600,40 @@ int dataio_silo::setup_grid_properties(
     // Allocate memory for node_coords, and set pointers.
     //
     double **d=0;
+    double *posx=0, *posy=0, *posz=0;
+
+    if (node_coords) {
+      //d = reinterpret_cast<float **>(node_coords);
+      posx = reinterpret_cast<double *>(nodex);
+      posy = reinterpret_cast<double *>(nodey);
+      posz = reinterpret_cast<double *>(nodez);
+    }
+    else {
+      d = mem.myalloc(d,ndim);
+      node_coords = reinterpret_cast<void **>(d);
+      posx = mem.myalloc(posx,nx);
+      if (ndim>1) posy = mem.myalloc(posy,ny);
+      if (ndim>2) posz = mem.myalloc(posz,nz);
+    }
     d = mem.myalloc(d,ndim);
     node_coords = reinterpret_cast<void **>(d);
     //
-    // Allocate memory for nodex, nodey, nodez
+    // Assign data for nodex, nodey, nodez for this grid
     //
-    double *posx=0, *posy=0, *posz=0;
-    posx = mem.myalloc(posx,nx);
     for (int i=0;i<nx;i++)
-      posx[i] = static_cast<double>(grid->SIM_Xmin(XX)+i*dx);
+      posx[i] = static_cast<double>(grid->Xmin(XX)+i*dx);
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim>1) {
-      posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
-        posy[i] = static_cast<double>(grid->SIM_Xmin(YY)+i*dx);
+        posy[i] = static_cast<double>(grid->Xmin(YY)+i*dx);
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
-      posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
-        posz[i] = static_cast<double>(grid->SIM_Xmin(ZZ)+i*dx);
+        posz[i] = static_cast<double>(grid->Xmin(ZZ)+i*dx);
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
@@ -652,8 +685,7 @@ int dataio_silo::setup_grid_properties(
 
 
 int dataio_silo::setup_write_variables(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT ///< pointer to raytracing class
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   if (!varnames.empty())
@@ -714,7 +746,7 @@ int dataio_silo::setup_write_variables(
   //
   // output extra variables if doing ionising-RT and we want to look at energetics.
   //
-  if (RT!=0 && SimPM.EP.phot_ionisation) {
+  if (SimPM.RS.Nsources>0 && SimPM.EP.phot_ionisation) {
     varnames.push_back("ci_cooling");
     varnames.push_back("rr_cooling");
     varnames.push_back("fn_cooling");
@@ -734,31 +766,29 @@ int dataio_silo::setup_write_variables(
   //
   // If testing diffuse/ionising RT, output extra column density data:
   //
-  if (RT) {
-    for (int v=0;v<SimPM.RS.Nsources;v++) {
-      ostringstream var;
-      for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++) {
-        var.str("");
-        switch (SimPM.RS.sources[v].type) {
-          case RT_SRC_SINGLE:
-          var << "Col_Src_" << v;
-          var << "_T"<<iT;
-          varnames.push_back(var.str());
-          break;
+  for (int v=0;v<SimPM.RS.Nsources;v++) {
+    ostringstream var;
+    for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++) {
+      var.str("");
+      switch (SimPM.RS.sources[v].type) {
+        case RT_SRC_SINGLE:
+        var << "Col_Src_" << v;
+        var << "_T"<<iT;
+        varnames.push_back(var.str());
+        break;
 
-          case RT_SRC_DIFFUSE:
-          var << "ColDiff_" << v;
-          var << "_T"<<iT;
-          varnames.push_back(var.str());
-          break;
+        case RT_SRC_DIFFUSE:
+        var << "ColDiff_" << v;
+        var << "_T"<<iT;
+        varnames.push_back(var.str());
+        break;
 
-          default:
-          rep.error("Bad radiation source type",SimPM.RS.sources[v].type);
-          break;
-        } // switch
-      } // loop over Tau vars for source
-    } // loop over Nsources
-  } // if RT
+        default:
+        rep.error("Bad radiation source type",SimPM.RS.sources[v].type);
+        break;
+      } // switch
+    } // loop over Tau vars for source
+  } // loop over Nsources
 #endif // RT_TESTING_OUTPUTCOL
 
   //

@@ -65,11 +65,11 @@
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control_fixedgrid : virtual public setup_fixed_grid
+class sim_control : virtual public setup_fixed_grid
 {
   public:
-  sim_control_fixedgrid();  ///< Simple constructor, initialises value.
-  virtual ~sim_control_fixedgrid(); ///< Deletes any dynamic memory, if not already done.
+  sim_control();  ///< Simple constructor, initialises value.
+  virtual ~sim_control(); ///< Deletes any dynamic memory, if not already done.
 
   ///
   /// Function to print command-line options for PION.
@@ -131,7 +131,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   protected:
   //---------------------------------------
   //---------------------------------------
-  // Data Variables common to all implementations.
+  // Class Member data:
   //
   ///
   /// information about the simulation
@@ -150,7 +150,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   std::vector<class RayTracingBase *> RT;
 
   ///
-  /// Max. walltime to run for, in seconds, after which we output
+  /// Max. walltime to run for, in seconds, after which we save
   /// data and finish.
   ///
   double max_walltime;
@@ -161,15 +161,17 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   class DataIOBase *dataio;
 
   ///
-  /// pointer to class for reading/writing textdata.
+  /// pointer to class for reading/writing ascii-text-data.
   ///
   class DataIOBase *textio;
 
   ///
-  /// Pointer to equations to solve, initialised to some derived
-  /// class at runtime when the equations are set.
+  /// Pointer to equations to solve, and routines for calculating
+  /// fluxes on the grid.
   ///
-  class FV_solver_base *eqn;
+  class FV_solver_base *spatial_solver;
+  //---------------------------------------
+  //---------------------------------------
 
 #ifdef CHECK_MAGP
   ///
@@ -276,7 +278,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// without conduction changing the gas temperature by more than 30%.
   /// It also calls the solver function set_thermal_conduction_Edot() so it 
   /// knows what the flux in and out of cells is.  This Edot value is multiplied
-  /// by the timestep dt in eqn->preprocess_data().
+  /// by the timestep dt in spatial_solver->preprocess_data().
   ///
   double calc_conduction_dt_and_Edot();
 #endif // THERMAL CONDUCTION
@@ -356,7 +358,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// calc_microphysics_dU_no_RT().
   ///
   int calc_microphysics_dU(
-      const double, ///< dt, timestep to integrate MP eqns.
+      const double, ///< dt, timestep to integrate MP spatial_solvers.
       class GridBaseClass * ///< grid pointer
       );
 
@@ -391,8 +393,8 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// This calculates the change in the state vector for each point
   /// due to the dynamics, for a timestep dt, using either 1st or 
   /// 2nd order accuracy in space.
-  /// It calls eqn->preprocess_data(), then set_dynamics_dU(), and
-  /// finally eqn->PostProcess_dU().
+  /// It calls spatial_solver->preprocess_data(), then set_dynamics_dU(), and
+  /// finally spatial_solver->PostProcess_dU().
   /// set_dynamics_dU() is the function that used to be called
   /// calc_dU().
   ///
@@ -457,7 +459,9 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// densities through the grid for each one.  Tau, DTau, and Vshell are stored
   /// in extra_data[i] for each cell.
   ///
-  int calculate_raytracing_column_densities();
+  int calculate_raytracing_column_densities(
+      class RayTracingBase * ///< raytracer for this grid.
+      );
 
   ///
   /// Output the data to file if required.
@@ -467,7 +471,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// function to write the data.
   ///
   virtual int output_data(
-      class GridBaseClass *
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
   /// Check if sim should stop.
@@ -486,7 +490,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   /// message if not.
   ///
   int check_energy_cons(
-      class GridBaseClass * 
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
   ///
@@ -495,7 +499,7 @@ class sim_control_fixedgrid : virtual public setup_fixed_grid
   int initial_conserved_quantities(
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
-}; // sim_control_fixedgrid
+}; // sim_control
    
 /*************************************************************************/
 /*************************************************************************/

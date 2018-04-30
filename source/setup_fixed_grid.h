@@ -69,7 +69,8 @@ class setup_fixed_grid
   ///
   int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass * 
+      class GridBaseClass *grid,  ///< pointer to grid.
+      const int              ///< level in nested grid to set up.
       );   
 
   ///

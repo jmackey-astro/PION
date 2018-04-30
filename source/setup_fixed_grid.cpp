@@ -205,7 +205,7 @@ void setup_fixed_grid::setup_cell_extra_data(
 int setup_fixed_grid::setup_grid(
       class GridBaseClass **grid,
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      const int level,    ///< level in nested grid to set up.
+      const int l,    ///< level in nested grid to set up.
       class MCMDcontrol * ///< unused for serial code.
       )
 {
@@ -245,22 +245,22 @@ int setup_fixed_grid::setup_grid(
   // Now we can setup the grid:
   //
 #ifdef TESTING
-  cout <<"(UniformFV::setup_grid) Setting up grid...\n";
+  cout <<"(setup_fixed_grid::setup_grid) Setting up grid...\n";
 #endif
   if (*grid) rep.error("Grid already set up!",*grid);
 
   if      (SimPM.coord_sys==COORD_CRT)
-    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_CYL)
-    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_SPH)
-    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
   if (*grid==0) rep.error("(setup_fixed_grid::setup_grid) Couldn't assign data!", *grid);
 #ifdef TESTING
-  cout <<"(UniformFV::setup_grid) Done. &grid="<< grid<<", and grid="<<*grid<<"\n";
+  cout <<"(setup_fixed_grid::setup_grid) Done. &grid="<< grid<<", and grid="<<*grid<<"\n";
   cout <<"DX = "<<(*grid)->DX()<<"\n";
   dp.grid = (*grid);
 #endif
@@ -278,16 +278,18 @@ int setup_fixed_grid::setup_grid(
 
 int setup_fixed_grid::boundary_conditions(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class GridBaseClass *grid 
+      class GridBaseClass *grid,  ///< pointer to grid.
+      const int level          ///< level of grid in nested grid struct
       )
 {
   // For uniform fixed cartesian grid.
 #ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
 #endif
+
   int err = grid->SetupBCs(SimPM);
-  if (err) rep.error("setup_fixed_grid::boundary_conditions() Couldn't \
-                      set up boundary conditions class.",err);
+  rep.errorTest("setup_fixed_grid::boundary_conditions()",0,err);
+
 #ifdef TESTING
   cout <<"(setup_fixed_grid::boundary_conditions) Done.\n";
 #endif

@@ -592,7 +592,7 @@ void VectorOps_Cyl::set_dx(const double x)
   //
   VOdR = VOdx;
   VOdA = VOdz*VOdR;
-  VOdV = 0.5*VOdz*VOdR;
+  VOdV = M_PI * VOdz;
   //  VOdV = VOdz*VOdR;
   //  VOdA = VOdz*VOdR;  
   return;
@@ -610,13 +610,10 @@ VectorOps_Cyl::~VectorOps_Cyl() {}
 
 double VectorOps_Cyl::CellVolume(const cell *c)
 {
-  /** \brief Calculation
-   * The volume of a cell is 
-   * \f$\delta V =\pi \delta R \delta z R_i \f$, where \f$R_i\f$ is the
-   * cell centre in the radial direction.
-   * */
-  return(VOdV*CI.get_dpos(c,Rcyl));
-//  return(VOdV);
+  /// cell vol = pi * (R+^2 - R-^2) * dz
+  double r = CI.get_dpos(c,Rcyl);
+  r = (r+0.5*VOdR)*(r+0.5*VOdR) - (r-0.5*VOdR)*(r-0.5*VOdR);
+  return(VOdV*r);
 }
 
 

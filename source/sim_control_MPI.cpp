@@ -5,7 +5,7 @@
 /// \author Jonathan Mackey
 /// 
 /// This file contains the definitions of the member functions for 
-/// the "sim_control_fixedgrid_pllel" class, which is a modification
+/// the "sim_control_pllel" class, which is a modification
 /// of the basic 1st/2nd order Finite Volume Solver according to the
 /// method outlined in Falle, Komissarov, \& Joarder (1998),MNRAS,297,265.
 /// 
@@ -90,11 +90,11 @@ using namespace std;
 // ##################################################################
 
 
-sim_control_fixedgrid_pllel::sim_control_fixedgrid_pllel()
-  : sim_control_fixedgrid()
+sim_control_pllel::sim_control_pllel()
+  : sim_control()
 {
 #ifdef TESTING
-  cout <<"sim_control_fixedgrid_pllel constructor.\n";
+  cout <<"sim_control_pllel constructor.\n";
 #endif
 }
 
@@ -104,10 +104,10 @@ sim_control_fixedgrid_pllel::sim_control_fixedgrid_pllel()
 // ##################################################################
 
 
-sim_control_fixedgrid_pllel::~sim_control_fixedgrid_pllel()
+sim_control_pllel::~sim_control_pllel()
 {
 #ifdef TESTING    
-  cout <<"sim_control_fixedgrid_pllel destructor.\n";
+  cout <<"sim_control_pllel destructor.\n";
 #endif
 }
 
@@ -118,7 +118,7 @@ sim_control_fixedgrid_pllel::~sim_control_fixedgrid_pllel()
 
 
 
-int sim_control_fixedgrid_pllel::Init(
+int sim_control_pllel::Init(
       string infile,
       int typeOfFile,
       int narg,
@@ -139,9 +139,9 @@ int sim_control_fixedgrid_pllel::Init(
   /// filename, and all processes will read from the same file.  If restarting
   /// from multiple input files, however, the given input filename should be the
   /// restart file for processor 0 (i.e. restartfile\_0.\<timestep\>.fits), and
-  /// the function sim_control_fixedgrid_pllel::init() will parse the input
+  /// the function sim_control_pllel::init() will parse the input
   /// filename and replace the \"\_0.\" with \"\_\<myrank\>.\", followed by a
-  /// call to the original serial function sim_control_fixedgrid::init() with the new
+  /// call to the original serial function sim_control::init() with the new
   /// filename, if it exists.
   ///
   /// For Silo data I/O the model is a little different.  The number of files
@@ -155,7 +155,7 @@ int sim_control_fixedgrid_pllel::Init(
   /// files as much as anything else.
 
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid_pllel::init) Initialising grid: infile = "<<infile<<"\n";
+  cout <<"(sim_control_pllel::init) Initialising grid: infile = "<<infile<<"\n";
 #endif
   int err=0;
 
@@ -271,9 +271,9 @@ int sim_control_fixedgrid_pllel::Init(
 
 
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid_pllel::init) Calling serial code sim_control_fixedgrid::init() on infile."<<"\n";
+  cout <<"(sim_control_pllel::init) Calling serial code sim_control::init() on infile."<<"\n";
 #endif
-  err = sim_control_fixedgrid::Init(infile, typeOfFile, narg, args, grid);
+  err = sim_control::Init(infile, typeOfFile, narg, args, grid);
   if (err) rep.error("failed to do serial init",err);
 
 
@@ -282,7 +282,7 @@ int sim_control_fixedgrid_pllel::Init(
   // This is ifdeffed out in the serial code because parallel I/O classes need to be set up.
   if (SimPM.typeofip != SimPM.typeofop) {
 #ifdef TESTING
-    cout <<"(sim_control_fixedgrid_pllel::INIT) infile-type="<<SimPM.typeofip;
+    cout <<"(sim_control_pllel::INIT) infile-type="<<SimPM.typeofip;
     cout <<" and outfile-type="<<SimPM.typeofop;
     cout <<", so deleting and renewing dataio.\n";
 #endif
@@ -331,12 +331,12 @@ int sim_control_fixedgrid_pllel::Init(
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int sim_control_fixedgrid_pllel::Time_Int(
+int sim_control_pllel::Time_Int(
         class GridBaseClass *grid
         )
 {
   cout <<"                               **************************************\n";
-  cout <<"(sim_control_fixedgrid_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   int err=0;
   int log_freq=10;
   SimPM.maxtime=false;
@@ -391,7 +391,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
       return(1);
     }
   }
-  cout <<"(sim_control_fixedgrid_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
+  cout <<"(sim_control_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
   tsf=clk.time_so_far("time_int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
   cout <<", sim-time="<<SimPM.simtime;
@@ -420,7 +420,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
 // ##################################################################
 
 
-int sim_control_fixedgrid_pllel::calc_timestep(
+int sim_control_pllel::calc_timestep(
         class GridBaseClass *grid
         )
 {

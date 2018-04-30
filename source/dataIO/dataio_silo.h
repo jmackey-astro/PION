@@ -97,7 +97,6 @@ class dataio_silo :public DataIOBase {
       const string, ///< File to write to
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 
@@ -201,8 +200,7 @@ class dataio_silo :public DataIOBase {
   /// Choose what data to write to file, based on equations being solved.*/
   ///
   virtual int setup_write_variables(
-      class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase * ///< pointer to raytracing class
+      class SimParams &  ///< pointer to simulation parameters
       );
 
   ///
@@ -331,9 +329,8 @@ class dataio_silo_pllel : public dataio_silo {
   ///
   int OutputData(
       const string, ///< File to write to
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 

@@ -4,7 +4,7 @@
 /// 
 /// \author Jonathan Mackey
 /// 
-/// This file contains the definitions of the member functions for sim_control_fixedgrid 
+/// This file contains the definitions of the member functions for sim_control 
 /// class, which is the basic 1st/2nd order Finite Volume Solver according to
 /// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
 /// 
@@ -20,7 +20,7 @@
 /// - 2007-11-01 Added dataio class last week, cleaning up today.
 /// - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
 ///
-/// - JM 2009-12-16 Added ifdef in sim_control_fixedgrid::Time_Int() so that I
+/// - JM 2009-12-16 Added ifdef in sim_control::Time_Int() so that I
 ///      can get the code to output magnetic pressure instead of
 ///      timing info every timestep.  This is purely to make a plot of
 ///      magnetic pressure for the Field Loop Advection Test and
@@ -186,14 +186,13 @@ using namespace std;
 // ##################################################################
 
 
-sim_control_fixedgrid::sim_control_fixedgrid()
+sim_control::sim_control()
 {
-  eqn=0;
+  spatial_solver=0;
   dataio=0;
   textio=0;
   SimPM.checkpoint_freq=INT_MAX;
   max_walltime = 1.0e100;
-  RT=0;
 }
 
 
@@ -202,17 +201,19 @@ sim_control_fixedgrid::sim_control_fixedgrid()
 // ##################################################################
 
 
-sim_control_fixedgrid::~sim_control_fixedgrid()
+sim_control::~sim_control()
 {
 #ifdef TESTING
-  cout << "(sim_control_fixedgrid::Destructor) Deleting Grid Class..." <<"\n";
+  cout << "(sim_control::Destructor) Deleting Grid Class..." <<"\n";
 #endif
-  if(eqn !=0) {delete eqn; eqn=0;}
+  if (spatial_solver) {delete spatial_solver; spatial_solver=0;}
   if (dataio) {delete dataio; dataio=0;}
   if (textio) {delete textio; textio=0;}
-  if (RT)     {delete RT; RT=0;}
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    if (RT[l]) delete RT[l];
+  }
 #ifdef TESTING
-  cout << "(sim_control_fixedgrid::Destructor) Done." <<"\n";
+  cout << "(sim_control::Destructor) Done." <<"\n";
 #endif
 }
 
@@ -221,7 +222,7 @@ sim_control_fixedgrid::~sim_control_fixedgrid()
 // ##################################################################
 
 
-double sim_control_fixedgrid::get_max_walltime()
+double sim_control::get_max_walltime()
 {
   return max_walltime;
 }
@@ -231,7 +232,7 @@ double sim_control_fixedgrid::get_max_walltime()
 // ##################################################################
 
 
-void sim_control_fixedgrid::set_max_walltime(
+void sim_control::set_max_walltime(
         double t ///< New Max. runtime in seconds.
         )
 {
@@ -255,7 +256,7 @@ void sim_control_fixedgrid::set_max_walltime(
 //
 // Function to output commandline options for code.
 //
-void sim_control_fixedgrid::print_command_line_options(
+void sim_control::print_command_line_options(
         int argc,
         char **argv
         )
@@ -292,12 +293,10 @@ void sim_control_fixedgrid::print_command_line_options(
   cout <<             " [1,text]=TEXT,[2,fits]=FITS,[4,both]=FITS+TEXT,[5,silo]=SILO,[6]=SILO+TEXT.\n";
   cout <<"\t outfile=NAME    : Replacement output filename, with path.\n";
 
-  cout <<"\n*********** PHYSICS OPTIONS *************\n";
+  cout <<"\n*********** PHYSICS/Grid OPTIONS *************\n";
   cout <<"\t ooa=N         : modify order of accuracy (either 1 or 2).\n";
 
-  cout <<"\t eqntype=N     : modify type of equations,";
-  cout <<" Euler=1, Ideal-MHD=2, GLM-MHD=3, FCD-MHD=4, IsoHydro=5.\n";
-  cout <<"\t\t\t WARNING -- IT IS DANGEROUS TO CHANGE EQUATIONS!\n";
+  cout <<"\t nlevels=N     : modify number of levels in nested grid.";
 
   cout <<"\t AVtype=N      : modify type of artificial viscosity:";
   cout <<" 0=none, 1=Falle,Komissarov,Joarder(1998), 2=Colella+Woodward(1984), 3=Sanders et al.(1998)[H-correction].\n";
@@ -320,6 +319,7 @@ void sim_control_fixedgrid::print_command_line_options(
   cout <<"\t\t 5 = Roe Primitive Variables flux solver : EULER ONLY";
   cout  <<" (e.g. Stone, Gardiner et al. 2008)\n";
   cout <<"\t\t 6 = Flux vector splitting : EULER ONLY (van Leer, 1982) \n";
+  cout <<"\t\t 7 = HLLD solver : MHD only (REF) \n";
 
   cout <<"\t timestep_limit=N:\n";
   cout <<"\t\t 0 = only dynamical Courant condition.\n";
@@ -346,7 +346,7 @@ void sim_control_fixedgrid::print_command_line_options(
 // ##################################################################
 
 
-int sim_control_fixedgrid::Init(
+int sim_control::Init(
       string infile,
       int typeOfFile,
       int narg,
@@ -400,6 +400,8 @@ int sim_control_fixedgrid::Init(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     // Now set up the grid structure.
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
     err = setup_grid(&(grid[l]),SimPM,l,&mpiPM);
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   }
@@ -451,13 +453,35 @@ int sim_control_fixedgrid::Init(
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
 
   //
-  // Set Ph=P in every cell.
+  // For each grid in the nested grid, set Ph[] = P[],
+  // and then implement the boundary conditions on the grid and ghost cells.
   //
   for (int l=0; l<SimPM.grid_nlevels; l++) {
+
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
+
+    //
+    // Set Ph=P in every cell.
+    //
     cell *cpt = grid[l]->FirstPt();
     do {
       for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];
     } while ((cpt=grid[l]->NextPt(cpt))!=0);
+
+    //
+    // Assign boundary conditions to boundary points.
+    //
+    err = boundary_conditions(SimPM, grid[l], l);
+    rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+
+    //
+    // Setup Raytracing on each grid, if needed.
+    //
+    err += setup_raytracing(SimPM, grid[l], RT[l]);
+    err += setup_evolving_RT_sources(SimPM, RT[l]);
+    rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
+
   }
 
   // If we are to add noise to data, do it.
@@ -466,23 +490,17 @@ int sim_control_fixedgrid::Init(
 //    addNoise2Data(2,SimPM.addnoise); // 1=to pressure, 2=adiabatic+random, 3=adiabatic+wave
 //  }
 
-
-  
-  // Assign boundary conditions to boundary points.
-  err = boundary_conditions(SimPM, grid);
-  if (err!=0){cerr<<"(INIT::boundary_conditions) err!=0 Something went bad"<<"\n";return(1);}
-
-
   // Now do some checks that everything is ready to start.
 #ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start? \n";
 #endif
   err = ready_to_start(grid);
-  rep.errorTest("(INIT::ready_to_start) err!=0 Something went bad",0,err);
+  rep.errorTest("(INIT::ready_to_start) err!=0",0,err);
 
 #ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start. Starting simulation."<<"\n";
 #endif
+
 #ifdef SERIAL
   // If outfile-type is different to infile-type, we need to delete dataio and set it up again.
   // This is ifdeffed because parallel version of init() will do it itself,
@@ -525,8 +543,8 @@ int sim_control_fixedgrid::Init(
     }
     if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
-  dataio->SetSolver(eqn);
-  if (textio) textio->SetSolver(eqn);
+  dataio->SetSolver(spatial_solver);
+  if (textio) textio->SetSolver(spatial_solver);
 
   if (SimPM.timestep==0) {
     cout << "(INIT) Saving initial data.\n";
@@ -557,116 +575,28 @@ int sim_control_fixedgrid::Init(
 
 
 
-
-int sim_control_fixedgrid::override_params(int narg, string *args)
+int sim_control::override_params(int narg, string *args)
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Overriding parameters if requested ---------\n";
   // Find command line params and assign them to SimPM.whatever.
   for (int i=2;i<narg;i++) {
 
-    if ( args[i].find("eqntype=") != string::npos) {
-      /** \section eqntype Changing Equations
-       * Over-riding the equations is tricky, and only some changes are allowed,
-       * so each possibility has to be gone through one by one and the number
-       * of variables changed, etc.  In short, this is potentially buggy, and 
-       * should be done with care, especially when the reference state vector
-       * is not just a list of ones.  In fact it's better not to do it, unless
-       * you are testing the MHD divergence cleaning algorithm.  One situation 
-       * that should work well, is when you are just solving the Euler equations
-       * on a dimensionless problem with no tracers or microphysics, and want to
-       * solve the same problem with the MHD Riemann Solver.  In this case I have
-       * tested it quite a lot and it works fine.
-       */
-      // assign eqntype 1=hd, 2=mhd, 3=glm-mhd. string is 'eqntype=N'
-      int e =  atoi((args[i].substr(8)).c_str());
-      if      ((SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM) && e==1)
-  rep.error("Can't override eqntype from mhd to euler.",e);
-      else if (SimPM.eqntype ==e) {
-  // Don't do anything if not changing eqntype
-      }
-
-//#ifdef INCLUDE_EINT_ADI_HYDRO
-//      else if (SimPM.eqntype==EQEUL && e==EQEUL_EINT) {
-//  //
-//  // This shouldn't cause any problems.
-//  //
-//  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from Euler";
-//  cout <<" (Etot) to Euler-Eint -- non-conservative.\n";
-//  SimPM.eqntype=e;
-//#ifdef        EINT_ETOT_PARALLEL
-//  SimPM.nvar+=1; SimPM.ftr +=1;
-//#endif //     EINT_ETOT_PARALLEL
-//      }
-//      else if (SimPM.eqntype==EQEUL_EINT && e==EQEUL) {
-//  //
-//  // This shouldn't cause any problems,.
-//  //
-//  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from Euler-Eint";
-//  cout <<" (non-conservative) to Euler (total energy).\n";
-//  SimPM.eqntype=e;
-//#ifdef        EINT_ETOT_PARALLEL
-//  SimPM.nvar-=1; SimPM.ftr -=1;
-//#endif //     EINT_ETOT_PARALLEL
-//      }
-//#endif // if INCLUDE_EINT_ADI_HYDRO
-
-      else {
-  cout <<"\tOVERRIDE PARAMS: Resetting eqntype from ";
-  cout <<SimPM.eqntype<<" to "<<e<<", (1=HD,2=MHD,3=GLM-MHD,9=HD-EINT)\n";
-  cout <<"\t WARNING: DON'T OVERRIDE EQNTYPE FOR JET SIMS, AS IT MESSES UP THE JETSTATE VEC FOR THE BCs.\n";
-  cout <<"\t GENERIC WARNING: THIS COULD HAVE BIZARRE/UNPREDICTABLE CONSEQUENCES, SO BEST NOT TO DO IT!\n";
-
-  if (SimPM.eqntype==EQEUL ) {
-    if      (e==EQMHD || e==EQFCD) {
-      SimPM.eqntype=e; SimPM.nvar+=3; SimPM.ftr +=3;
-    }
-    else if (e==EQGLM) {
-      SimPM.eqntype=e; SimPM.nvar+=4; SimPM.ftr +=4;
-    }
-    else rep.error("What am i changing eqntype to?",e);
-  } // if EQEUL
-
-  else if (SimPM.eqntype==EQMHD) {
-    if (e==EQGLM) {
-      SimPM.eqntype=e; SimPM.nvar+=1; SimPM.ftr +=1;
-    }
-    else if (e==EQFCD) {
-      cout <<"\t\t setting equations to FieldCD method.\n"; SimPM.eqntype=e;
-    }
-    else rep.error("Can only change eqntype from i-mhd to glm-mhd or fcd-mhd!",e);
-  } // if EQMHD
-
-  else if (SimPM.eqntype==EQFCD) {
-    if (e==EQGLM) {
-      SimPM.eqntype=e; SimPM.nvar+=1; SimPM.ftr +=1;
-    }
-    else if (e==EQMHD) {
-      cout <<"\t\t setting equations to ideal-mhd method.\n"; SimPM.eqntype=e;
-    }
-    else rep.error("Can only change eqntype from fcd-mhd to glm-mhd or i-mhd!",e);
-  } // if EQFCD
-
-  else if (SimPM.eqntype==EQGLM) {
-    if (e==EQMHD) {
-      SimPM.eqntype=e; SimPM.nvar-=1; SimPM.ftr -=1;
-    }
-    else if (e==EQFCD) {
-      cout <<"\t\t setting equations to FieldCD method.\n";
-      SimPM.eqntype=e; SimPM.nvar-=1; SimPM.ftr -=1;
-    }
-    else rep.error("Can only change eqntype from glm-mhd to i-mhd or FieldCD-mhd!",e);
-  } // if EQGLM
-      } // if we need to reset eqntype and modify nvar, ftr.
-    } // if "eqntype" found in args.
-    
-    else if (args[i].find("ooa=") != string::npos) {
+    if      (args[i].find("ooa=") != string::npos) {
       // Assign order of accuracy;  string is 'ooa=N', where N=1 or 2.
       int tmp=SimPM.spOOA;
       SimPM.spOOA = atoi((args[i].substr(4)).c_str());
       SimPM.tmOOA = SimPM.spOOA;
       cout <<"\tOVERRIDE PARAMS: Resetting OOA from ooa="<<tmp;
       cout <<" to command-line value = "<<SimPM.spOOA<<"\n";
+    }
+
+    else if (args[i].find("nlevels=") != string::npos) {
+      // Assign number of grid levels;  string is 'nlevels=N', where N>=1.
+      int tmp=SimPM.grid_nlevels;
+      SimPM.grid_nlevels = atoi((args[i].substr(8)).c_str());
+      cout <<"\tOVERRIDE PARAMS: Resetting nlevels from nlevels="<<tmp;
+      cout <<" to command-line value = "<<SimPM.grid_nlevels<<"\n";
     }
 
     else if (args[i].find("AVtype=") != string::npos) {
@@ -946,7 +876,7 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
   }
   cout <<"------------------------------------------------------\n\n";
   return(0);
-} // sim_control_fixedgrid::override_params
+} // sim_control::override_params
 
 
 
@@ -955,7 +885,7 @@ int sim_control_fixedgrid::override_params(int narg, string *args)
 
 
 
-int sim_control_fixedgrid::set_equations()
+int sim_control::set_equations()
 {
   cout <<"------------------------------------------------------\n";
   cout <<"--------  Setting up solver for eqauations------------\n";
@@ -972,25 +902,25 @@ int sim_control_fixedgrid::set_equations()
   //  double *meanvec = new double [SimPM.nvar];
   // for (int v=0;v<SimPM.nvar;v++) meanvec[v] = 1.;
 
-  if (eqn) eqn=0;
+  if (spatial_solver) spatial_solver=0;
 
   if (SimPM.coord_sys==COORD_CRT) {
     cout <<"set_equations() Using Cartesian coord. system.\n";
     switch (SimPM.eqntype) {
     case EQEUL:
       cout <<"set_equations() Using Euler Equations.\n";
-      eqn = new class FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL);
+      spatial_solver = new class FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
     case EQMHD:
       cout <<"set_equations() Using Ideal MHD Equations.\n";
-      eqn = new class FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQMHD);
+      spatial_solver = new class FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQMHD);
       break;
     case EQGLM:
       cout <<"set_equations() Using GLM MHD Equations.\n";
-      eqn = new class FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQGLM);
+      spatial_solver = new class FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQGLM);
       break;
     case EQFCD:
       cout <<"set_equations() Using Field-CD MHD Equations.\n";
@@ -1007,27 +937,27 @@ int sim_control_fixedgrid::set_equations()
     switch (SimPM.eqntype) {
     case EQEUL:
       cout <<"set_equations() Using Euler Equations.\n";
-      eqn = new class cyl_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL);
+      spatial_solver = new class cyl_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
 #ifdef INCLUDE_EINT_ADI_HYDRO
     case EQEUL_EINT:
       cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
-      eqn = new class cyl_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
+      spatial_solver = new class cyl_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
             SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma,
             SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
       break;      
 #endif // if INCLUDE_EINT_ADI_HYDRO
     case EQMHD:
       cout <<"set_equations() Using Ideal MHD Equations.\n";
-      eqn = new class cyl_FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQMHD);
+      spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQMHD);
       break;
     case EQGLM:
       cout <<"set_equations() Using GLM MHD Equations.\n";
-      eqn = new class cyl_FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQGLM);
+      spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQGLM);
       break;
     default:
       rep.error("not implemented yet for axisymmetry (only adiabatic hydro!)!!!!!!!!!!!",SimPM.eqntype);
@@ -1039,18 +969,18 @@ int sim_control_fixedgrid::set_equations()
     switch (SimPM.eqntype) {
     case EQEUL:
       cout <<"set_equations() Using Euler Equations.\n";
-      eqn = new class sph_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL,
+      spatial_solver = new class sph_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL,
             SimPM.dx, SimPM.gamma, SimPM.RefVec,
             SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
 #ifdef INCLUDE_EINT_ADI_HYDRO
     case EQEUL_EINT:
       cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
-      eqn = new class sph_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
+      spatial_solver = new class sph_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
             SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma,
             SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!eqn) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
+      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
       break;      
 #endif // if INCLUDE_EINT_ADI_HYDRO
      default:
@@ -1062,8 +992,8 @@ int sim_control_fixedgrid::set_equations()
   //
   // Check that we set up an equations class!
   //
-  if (!eqn)
-    rep.error("sim_control_fixedgrid::set_equations() Failed to initialise an equations class.",eqn);
+  if (!spatial_solver)
+    rep.error("sim_control::set_equations() Failed to initialise an equations class.",spatial_solver);
 
   cout <<"------------------------------------------------------\n\n";
   return(0);
@@ -1077,8 +1007,8 @@ int sim_control_fixedgrid::set_equations()
 
 
 
-int sim_control_fixedgrid::output_data(
-      class GridBaseClass *grid
+int sim_control::output_data(
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   ///
@@ -1107,8 +1037,9 @@ int sim_control_fixedgrid::output_data(
       checkpoint_id=99999998;
     else
       checkpoint_id=99999999;
-    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, RT, checkpoint_id);
-    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM,RT, checkpoint_id);
+    
+    err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
+    if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
     if (err) {cerr<<"\t Error writing data for checkpointing.\n"; return(1);}
   }
     
@@ -1148,8 +1079,8 @@ int sim_control_fixedgrid::output_data(
   // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
   //
   cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
-  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM,RT, SimPM.timestep);
-  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM,RT, SimPM.timestep);
+  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
+  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
   return(0);
 }
@@ -1161,7 +1092,7 @@ int sim_control_fixedgrid::output_data(
 
 
 
-int sim_control_fixedgrid::ready_to_start(
+int sim_control::ready_to_start(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
@@ -1184,28 +1115,7 @@ int sim_control_fixedgrid::ready_to_start(
   //
   // Set the value of gamma in the equations.
   //
-  eqn->SetEOS(SimPM.gamma);
-  
-  //
-  // Setup Raytracing, if they are needed.
-  //
-  int err=0;
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-    err += setup_raytracing(SimPM, grid[l], RT[l]);
-    err += setup_evolving_RT_sources(SimPM,RT[l]);
-  if (err) rep.error("Failed to setup raytracer and/or microphysics",err);
-  }
-  //
-  // If we are doing raytracing, we probably want to limit the timestep by
-  // the ionisation timescale, so we call a very short time update here (to
-  // advance time by 1 second) in order to set the column densities in each 
-  // cell so that calc_timestep() can get the correct reaction rates.
-  //
-
-  //
-  // If testing the code, this calculates the momentum and energy on the domain.
-  //
-  initial_conserved_quantities(grid);
+  spatial_solver->SetEOS(SimPM.gamma);
   
   //
   // If using opfreq_time, set the next output time correctly.
@@ -1224,48 +1134,6 @@ int sim_control_fixedgrid::ready_to_start(
   return(0);
 }
 
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_fixedgrid::initial_conserved_quantities(
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
-      )
-{
-  // Energy, and Linear Momentum in x-direction.
-#ifdef TESTING 
-  // Only track the totals if I am testing the code.
-  pion_flt u[SimPM.nvar];
-  dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
-  dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
-  //  cout <<"initERG: "<<dp.initERG<<"\n";
-
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-    class cell *cpt=grid[l]->FirstPt();
-    do {
-       eqn->PtoU(cpt->P,u,SimPM.gamma);
-       dp.initERG += u[ERG]*eqn->CellVolume(cpt);
-       dp.initMMX += u[MMX]*eqn->CellVolume(cpt);
-       dp.initMMY += u[MMY]*eqn->CellVolume(cpt);
-       dp.initMMZ += u[MMZ]*eqn->CellVolume(cpt);
-    } while ( (cpt = grid[l]->NextPt(cpt)) !=0);
-  }
-  //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total x-Momentum = "<< dp.initMMX <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total y-Momentum = "<< dp.initMMY <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total z-Momentum = "<< dp.initMMZ <<"\n";
-#endif //TESTING
-  return(0);
-} //initial_conserved_quantities()
-
-
-
-
-
 // ##################################################################
 // ##############     SIMULATION CONTROL FUNCTIONS     ##############
 // ##################################################################
@@ -1274,12 +1142,12 @@ int sim_control_fixedgrid::initial_conserved_quantities(
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int sim_control_fixedgrid::Time_Int(
-      class GridBaseClass *grid
+int sim_control::Time_Int(
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control_fixedgrid::Time_Int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"(sim_control::Time_Int) STARTING TIME INTEGRATION."<<"\n";
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
@@ -1320,7 +1188,7 @@ int sim_control_fixedgrid::Time_Int(
     if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went bad\n";return(1);}
   }
 
-  cout <<"(sim_control_fixedgrid::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
+  cout <<"(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
 
   tsf=clk.time_so_far("Time_Int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
@@ -1347,20 +1215,26 @@ int sim_control_fixedgrid::Time_Int(
 /// This is only for a test problem -- it checks the magnetic
 /// pressure on the full domain and outputs it to screen
 ///
-void sim_control_fixedgrid::calculate_magnetic_pressure(
-      class GridBaseClass *grid
+void sim_control::calculate_magnetic_pressure(
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
   // Calculate the total magnetic pressure on the domain, normalised to the
   // initial value.
   //
-  cell *c=grid->FirstPt();
-  double magp=0.0;
+  double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
-  do {
-    magp += eqn->Ptot(c->P,0.0) - c->P[PG];
-  } while ( (c =grid->NextPt(c)) !=0);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    
+    cell *c=grid[l]->FirstPt();
+    do {
+      if (!c->isbd) 
+        magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG]) * spatial_solver->CellVolume(c);
+    } while ( (c =grid[l]->NextPt(c)) !=0);
+  }
   if (init_magp<0) init_magp = magp;
   cout <<SimPM.simtime<<"\t"<<magp/init_magp<<"\t"<<magp<<"\n";
   return;
@@ -1376,29 +1250,43 @@ void sim_control_fixedgrid::calculate_magnetic_pressure(
 
 #ifdef BLAST_WAVE_CHECK
 ///
-/// If running a spherical blast wave, calculate the shock position
+/// If running a 1D spherical blast wave, calculate the shock position
 /// and output to screen.
 ///
-void sim_control_fixedgrid::calculate_blastwave_radius(
-      class GridBaseClass *grid
+void sim_control::calculate_blastwave_radius(
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
   // Calculate the blast wave outer shock position.
+  // If a nested grid, start on the finest grid and work outwards
   //
-  cell *c=grid->LastPt();
   double shockpos=0.0;
   static double old_pos=0.0;
+  bool shock_found = false;
   //  static double last_dt=0.0;
-  do {
-    c = grid->NextPt(c,RNsph);
-    //cout <<c->id<<", vx="<<c->P[VX]<<"\n";
-  } while ( c!=0 && fabs(c->P[VX])<1.0e4);
-  if (!c)
-    shockpos = 0.0;
-  else
-    shockpos = CI.get_dpos(c,Rsph);
-  if (old_pos<0.4*grid->DX()) old_pos = shockpos;
+  for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
+
+    if (shock_found) continue;
+    cell *c=grid->LastPt();
+    if (fabs(c->P[VX])>=1.0e4) {
+      cout<<"level "<<l<<" does not contain shock.\n";
+    }
+    else {
+      do {
+        c = grid->NextPt(c,RNsph);
+        //cout <<c->id<<", vx="<<c->P[VX]<<"\n";
+      } while ( c!=0 && fabs(c->P[VX])<1.0e4);
+      if (c && (c->P[VX] >= 1.0e4)) {
+        shockpos = CI.get_dpos(c,Rsph);
+        shock_found=true;
+      }
+    }
+  }
+  if (pconst.equalD(old_pos,0.0))
+    old_pos = shockpos;
   cout <<SimPM.simtime<<"\t"<<shockpos;
   //cout <<"\t"<<(shockpos-old_pos)/(SimPM.dt+TINYVALUE);
   cout <<"\n";
@@ -1415,7 +1303,7 @@ void sim_control_fixedgrid::calculate_blastwave_radius(
 
 
 
-int sim_control_fixedgrid::calc_timestep(
+int sim_control::calc_timestep(
       class GridBaseClass *grid
       )
 {
@@ -1438,7 +1326,7 @@ int sim_control_fixedgrid::calc_timestep(
   // we need to actually calcuate the multidimensional energy fluxes
   // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
   // by the actual dt later (since at this stage we don't know dt).  This
-  // later multiplication is done in eqn->preprocess_data()
+  // later multiplication is done in spatial_solver->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
 #ifdef TESTING
@@ -1456,7 +1344,7 @@ int sim_control_fixedgrid::calc_timestep(
   // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
   // an artificially larger speed associated with a shortened timestep.
   //
-  eqn->GotTimestep(t_dyn);
+  spatial_solver->GotTimestep(t_dyn);
 
   //
   // Check that the timestep doesn't increase too much between steps, and that it 
@@ -1466,7 +1354,7 @@ int sim_control_fixedgrid::calc_timestep(
   timestep_checking_and_limiting();
 
   // sets the timestep info in the solver class.
-  eqn->Setdt(SimPM.dt);
+  spatial_solver->Setdt(SimPM.dt);
 
   return 0;
 }
@@ -1485,7 +1373,7 @@ int sim_control_fixedgrid::calc_timestep(
 
 
 
-int sim_control_fixedgrid::check_eosim()
+int sim_control::check_eosim()
 {
   //  cout <<"Checking eosim.";
   //  cout <<"finishtime="<<SimPM.finishtime<<"\n";
@@ -1511,67 +1399,6 @@ int sim_control_fixedgrid::check_eosim()
   return(0);
 }
 
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control_fixedgrid::check_energy_cons(
-      class GridBaseClass *grid
-      )
-{
-#ifdef TESTING
-  // Energy, and Linear Momentum in x-direction.
-  pion_flt u[SimPM.nvar];
-  double ergNow=0., mmxNow = 0., mmyNow = 0., mmzNow = 0.;
-  class cell *cpt = grid->FirstPt();
-  do {
-     eqn->PtoU(cpt->P,u,SimPM.gamma);
-     ergNow += u[ERG]*eqn->CellVolume(cpt);
-     mmxNow += u[MMX]*eqn->CellVolume(cpt);
-     mmyNow += u[MMY]*eqn->CellVolume(cpt);
-     mmzNow += u[MMZ]*eqn->CellVolume(cpt);
-  } while ( (cpt =grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
-  double relerror=0.0;
-//  cout <<"(LFMethod::check_energy_cons) Initial Monentum: "<<dp.initMMX<<"\n";
-//  cout <<"(LFMethod::check_energy_cons) Initial Energy:   "<<dp.initERG<<"\n";
-//  cout <<"dp = "<<&dp<<"\n";
-  
-  relerror = fabs(ergNow-dp.initERG)/(dp.initERG+TINYVALUE);
-  if (relerror>1.e5*MACHINEACCURACY) { // && ergNow>2*MACHINEACCURACY) {
-    cout <<"(LFMethod::check_energy_cons) Total Energy = "<<ergNow;
-    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initERG<<"\n";
-  }
-
-  relerror = fabs(mmxNow-dp.initMMX)/(dp.initMMX+TINYVALUE);
-  if (relerror>1.e5*MACHINEACCURACY && fabs(mmxNow)>1.e5*MACHINEACCURACY) {
-    cout <<"(LFMethod::check_energy_cons) Total x-Momentum = "<<mmxNow;
-    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initMMX<<"\n";
-  }
-
-  relerror = fabs(mmyNow-dp.initMMY)/(dp.initMMY+TINYVALUE);
-//  if (relerror>1.e5*MACHINEACCURACY && fabs(mmyNow)>1.e5*MACHINEACCURACY) {
-//    cout <<"(LFMethod::check_energy_cons) Total y-Momentum = "<<mmyNow;
-//    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-//    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initMMY<<"\n";
-//  }
-
-  relerror = fabs(mmzNow-dp.initMMZ)/(dp.initMMZ+TINYVALUE);
-//  if (relerror>1.e5*MACHINEACCURACY && fabs(mmzNow)>1.e5*MACHINEACCURACY) {
-//    cout <<"(LFMethod::check_energy_cons) Total z-Momentum = "<<mmzNow;
-//    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-//  }
-
-#endif //TESTING
-  return(0);
-}
-
-
 // ##################################################################
 // ##################################################################
 
@@ -1579,14 +1406,13 @@ int sim_control_fixedgrid::check_energy_cons(
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
-int sim_control_fixedgrid::Finalise(
-      class GridBaseClass *grid
+int sim_control::Finalise(
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   int err=0;
   cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control_fixedgrid::Finalise) FINALISING SIMULATION."<<"\n";
-  err += check_energy_cons(grid);
+  cout <<"(sim_control::Finalise) FINALISING SIMULATION."<<"\n";
   err+= output_data(grid);
   if (err!=0){
     cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";
@@ -1594,7 +1420,7 @@ int sim_control_fixedgrid::Finalise(
   }
   cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid::Finalise) DONE.\n";
+  cout <<"(sim_control::Finalise) DONE.\n";
 #endif
   cout <<"------------------------------------------------------------\n";
   return(0);
