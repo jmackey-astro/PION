@@ -108,58 +108,6 @@ setup_fixed_grid::~setup_fixed_grid()
 
 
 
-
-// ##################################################################
-// ##################################################################
-
-
-
-void setup_fixed_grid::setup_nested_grid_levels(
-      class SimParams &SimPM  ///< pointer to simulation parameters
-      )
-{
-  //
-  // populate "levels" struct in SimPM based on nested grid parameters.
-  //
-  SimPM.nest_levels.clear();
-  SimPM.nest_levels.resize(SimPM.grid_nlevels);
-
-  for (int i=0;i<SimPM.grid_nlevels;i++) {
-    for (int v=0;v<MAX_DIM;v++)
-      SimPM.nest_levels[i].NG[v] = SimPM.NG[v];
-    SimPM.nest_levels[i].Ncell = SimPM.Ncell;
-    if (i==0) {
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.nest_levels[i].Range[v] = SimPM.Range[v];
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.nest_levels[i].Xmin[v] = SimPM.Xmin[v];
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.nest_levels[i].Xmax[v] = SimPM.Xmax[v];
-      SimPM.nest_levels[i].dx = SimPM.Range[XX]/SimPM.NG[XX];
-    }
-    else {
-      for (int v=0;v<MAX_DIM;v++) 
-        SimPM.nest_levels[i].Range[v] = 0.5*SimPM.nest_levels[i-1].Range[v];
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.nest_levels[i].Xmin[v] = 0.5*(SimPM.nest_levels[i-1].Xmin[v]+SimPM.grid_nest_centre[v]);
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.nest_levels[i].Xmax[v] = 0.5*(SimPM.nest_levels[i-1].Xmax[v]+SimPM.grid_nest_centre[v]);
-      SimPM.nest_levels[i].dx = 0.5*SimPM.nest_levels[i-1].dx;
-    }
-    
-    ostringstream temp; temp<<i;
-    string lv = "level data"+temp.str();
-    rep.printVec(lv,SimPM.nest_levels[i].Range,SimPM.ndim);
-    rep.printVec(lv,SimPM.nest_levels[i].Xmin,SimPM.ndim);
-    rep.printVec(lv,SimPM.nest_levels[i].Xmax,SimPM.ndim);
-    cout <<"dx="<<SimPM.nest_levels[i].dx<<"\n";
-  }
-  return;
-}
-
-
-
-
 // ##################################################################
 // ##################################################################
 
@@ -205,7 +153,6 @@ void setup_fixed_grid::setup_cell_extra_data(
 int setup_fixed_grid::setup_grid(
       class GridBaseClass **grid,
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      const int l,    ///< level in nested grid to set up.
       class MCMDcontrol * ///< unused for serial code.
       )
 {
@@ -250,11 +197,11 @@ int setup_fixed_grid::setup_grid(
   if (*grid) rep.error("Grid already set up!",*grid);
 
   if      (SimPM.coord_sys==COORD_CRT)
-    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_CYL)
-    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_SPH)
-    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
@@ -278,8 +225,7 @@ int setup_fixed_grid::setup_grid(
 
 int setup_fixed_grid::boundary_conditions(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      const int level          ///< level of grid in nested grid struct
+      class GridBaseClass *grid ///< pointer to grid.
       )
 {
   // For uniform fixed cartesian grid.
