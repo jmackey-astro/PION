@@ -334,6 +334,8 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	integrator.o cooling.o raytracer_SC.o \
         microphysics_base.o  \
 	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
+        dataio_base.o \
+        dataio_text.o \
         file_status.o \
 	stellar_wind_BC.o \
 	stellar_wind_angle.o \
@@ -350,6 +352,8 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         uniform_grid.o cell_interface.o \
         readparams.o file_status.o \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
+        dataio_base.o \
+        dataio_text.o \
 	integrator.o cooling.o \
         microphysics_base.o  \
 	shock_tube.o radiative_shock.o blast_wave.o \
@@ -598,6 +602,8 @@ raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
 file_status.o:  file_status.cpp file_status.h ${GLOBAL}
 dataio.o:       dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
 		stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
+dataio_base.o:  dataio_base.cpp dataio_base.h dataio.h ${GLOBAL} solver_eqn_base.h
+dataio_text.o:  dataio_text.cpp dataio_text.h dataio.h ${GLOBAL} solver_eqn_text.h
 dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h
 dataio_fits.o:  dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
         solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h

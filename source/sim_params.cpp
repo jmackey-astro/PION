@@ -56,6 +56,8 @@ SimParams::SimParams()
     NG[i] = -1;
     Range[i] = Xmin[i] = Xmax[i] = -1.e99;
   }
+  grid_nlevels = 1;
+  nest_levels.resize(1);
   Ncell = Nbc = -1;
   spOOA = tmOOA = OA1;
   dx = gamma = CFL = etav = -1.e99;

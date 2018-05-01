@@ -136,7 +136,7 @@
 ///    variables, so heating/ionising source syntax has changed.
 /// - 2015.01.13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
-/// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
+/// - 2015.01.26 JM: Renamed class to sim_control.
 /// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
 ///    boundaries).
 
@@ -175,7 +175,7 @@ using namespace std;
 
 
 #ifdef THERMAL_CONDUCTION
-double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
+double sim_control::calc_conduction_dt_and_Edot()
 {
   //
   // First we need to set Edot() in every cell.  This is stored in
@@ -224,7 +224,7 @@ double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
 // ##################################################################
 
 
-void sim_control_fixedgrid::timestep_checking_and_limiting()
+void sim_control::timestep_checking_and_limiting()
 {
   //
   // If the timestep is less than the minimum allowed, report an error
@@ -245,11 +245,6 @@ void sim_control_fixedgrid::timestep_checking_and_limiting()
     cout <<"limiting step from "<<SimPM.dt<<" to "<<1.3*SimPM.last_dt<<"\n";
   SimPM.dt = min(SimPM.dt,1.3*SimPM.last_dt);
 #endif // TIMESTEP_LIMITING
-
-  //TESTING RT
-  //SimPM.dt = 0.1*SimPM.finishtime*SimPM.CFL;
-  // so we can do between 10 and 10^4 timesteps per sim.
-  //TESTING RT
 
   //
   // If we are outputting every n-years, then check if we need to adjust dt.
@@ -275,7 +270,7 @@ void sim_control_fixedgrid::timestep_checking_and_limiting()
 // ##################################################################
 
 
-double sim_control_fixedgrid::calc_dynamics_dt(
+double sim_control::calc_dynamics_dt(
         class GridBaseClass *grid
         )
 {
@@ -352,9 +347,10 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 // ##################################################################
 
 
-double sim_control_fixedgrid::calc_microphysics_dt(
-        class GridBaseClass *grid
-        )
+double sim_control::calc_microphysics_dt(
+      class GridBaseClass *grid, ///< pointer to grid.
+      class RayTracingBase *raytracer ///< raytracer for this grid.
+      )
 {
   //
   // If we have microphysics, we may want to limit the timestep by
@@ -386,7 +382,7 @@ double sim_control_fixedgrid::calc_microphysics_dt(
     // need column densities, so do raytracing, and then get dt.
     //
     //cout <<"calc_timestep, getting column densities.\n";
-    int err = calculate_raytracing_column_densities();
+    int err = calculate_raytracing_column_densities(raytracer);
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
     dt = get_mp_timescales_with_radiation(grid);
     if (dt<=0.0)
@@ -414,7 +410,7 @@ double sim_control_fixedgrid::calc_microphysics_dt(
 // ##################################################################
 
 
-double sim_control_fixedgrid::get_mp_timescales_no_radiation(
+double sim_control::get_mp_timescales_no_radiation(
         class GridBaseClass *grid
         )
 {
@@ -423,7 +419,7 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
   // paranoid checking...
   //
   if (SimPM.EP.MP_timestep_limit==0) {
-    cout <<"sim_control_fixedgrid::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
+    cout <<"sim_control::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
     return -1.0;
   }
 #endif // TESTING
@@ -478,7 +474,8 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
   // all neutral initially, but only for a few seconds!!!
   // (DON'T WANT TO SET THIS FOR NON-DYNAMICS TEST PROBLEMS)
   //
-  if (SimPM.timestep<3 && (RT) && SimPM.EP.phot_ionisation) {
+  if ((SimPM.timestep<3) && (SimPM.RS.Nsources>0) &&
+      (SimPM.EP.phot_ionisation)) {
     //
     // adjust first timestep so that it corresponds to ionised cell.
     // 
@@ -498,7 +495,7 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
   // Since we must have microphysics set up here, it is safe to assume
   // the code is using cgs units for density.
   //
-  if ((SimPM.timestep==0) && (RT)) {
+  if ((SimPM.timestep==0) && (SimPM.RS.Nsources>0)) {
     c=grid->FirstPt();
     cout <<"rho="<<c->Ph[RO]<<", old dt="<<dt;
     dt = min(dt, 3.009e-12/c->Ph[RO]);
@@ -514,19 +511,20 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
 // ##################################################################
 
 
-double sim_control_fixedgrid::get_mp_timescales_with_radiation(
-        class GridBaseClass *grid
-        )
+double sim_control::get_mp_timescales_with_radiation(
+      class GridBaseClass *grid
+      )
 {
 #ifdef TESTING
   //
   // paranoid checking...
   //
   if (SimPM.EP.MP_timestep_limit==0) {
-    cout <<"sim_control_fixedgrid::get_mp_timescales_with_radiation() called, but no MP-dt limiting!\n";
+    cout <<"sim_control::get_mp_timescales_with_radiation() no MP-dt limiting\n";
     return -1.0;
   }
-  if (!RT) rep.error("Called sim_control_fixedgrid::get_mp_timescales_with_radiation() but RT=0",1);
+  if (SimPM.RS.Nsources==0)
+    rep.error("sim_control::get_mp_timescales_with_radiation() no sources",1);
 #endif // TESTING
 
   //
