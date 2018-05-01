@@ -134,24 +134,16 @@ int dataio_text::OutputData(
       const long int counter   ///< number to stamp file with (e.g. timestep)
       )
 {
+  int err=0;
   if (!cg[0])
     rep.error("dataio_text::output_ascii_data() null pointer to grid!",cg[0]);
+  dataio_text::gp = cg[0];
 
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
+  cout <<"dataio_text::OutputData() writing data.\n";
+  string fname = set_filename(outfile, counter);
+  err = output_ascii_data(fname, SimPM);
+  cout <<"dataio_text::OutputData() written data.\n";
 
-    // for now write a different file for each level in the nested grid.
-    CI.set_dx(SimPM.nest_levels[l].dx);
-    ostringstream temp; temp << outfile << "_level";
-    temp.width(2); temp.fill('0');
-    temp << l;
-    dataio_text::gp = cg[l];
-
-    cout <<"dataio_text::OutputData() writing data.\n";
-    string fname = set_filename(temp.str(), counter);
-    int err = output_ascii_data(fname, SimPM);
-    cout <<"dataio_text::OutputData() written data.\n";
-
-  }
   return err;
 }
 

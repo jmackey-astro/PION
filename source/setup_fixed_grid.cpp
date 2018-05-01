@@ -50,7 +50,7 @@
 
 #include "raytracing/raytracer_SC.h"
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -450,7 +450,7 @@ int setup_fixed_grid::setup_microphysics(
 int setup_fixed_grid::setup_raytracing(
       class SimParams &SimPM,    ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid
-      class RayTracingBase *RT   ///< pointer to raytracing class
+      class RayTracingBase **RT   ///< pointer to raytracing class
       )
 {
   //
@@ -465,7 +465,7 @@ int setup_fixed_grid::setup_raytracing(
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
   cout <<"\n----------------- RAYTRACER SETUP STARTING -----------------------\n";
-  RT=0;
+  *RT=0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
   // rays tracer.  Otherwise the more complicated one is required.
@@ -477,17 +477,17 @@ int setup_fixed_grid::setup_raytracing(
     //
     // set up single source at infinity tracer, if appropriate
     //
-    RT = new raytracer_USC_infinity(grid, MP, SimPM.ndim,
+    *RT = new raytracer_USC_infinity(grid, MP, SimPM.ndim,
                             SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
-    if (!RT) rep.error("init pllel-rays raytracer error",RT);
+    if (!(*RT)) rep.error("init pllel-rays raytracer error",*RT);
   }
   else {
     //
     // set up regular tracer if simple one not already set up.
     //
-    RT = new raytracer_USC(grid, MP, SimPM.ndim, SimPM.coord_sys,
+    *RT = new raytracer_USC(grid, MP, SimPM.ndim, SimPM.coord_sys,
                           SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
-    if (!RT) rep.error("init raytracer error 2",RT);
+    if (!(*RT)) rep.error("init raytracer error 2",*RT);
   }
 
   //
@@ -503,7 +503,7 @@ int setup_fixed_grid::setup_raytracing(
       // sources.
       //
       cout <<"Adding IONISING or UV single-source with id: ";
-      cout << RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << (*RT)->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
       if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
           SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI)
         ion_count++;
@@ -515,7 +515,7 @@ int setup_fixed_grid::setup_raytracing(
       // be an intensity not a flux, so it is multiplied by a solid angle appropriate
       // to its location in order to get a flux.
       cout <<"Adding DIFFUSE radiation source with id: ";
-      cout << RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << (*RT)->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
       uv_count++;
       dif_count++;
     } // if diffuse source
@@ -525,7 +525,7 @@ int setup_fixed_grid::setup_raytracing(
   }
   cout <<"Added "<<ion_count<<" ionising and "<<uv_count<<" non-ionising";
   cout <<" radiation sources, of which "<<dif_count<<" are diffuse radiation.\n";
-  RT->Print_SourceList();
+  (*RT)->Print_SourceList();
 
   //
   // Now that we have added all of the sources, we query the raytracer to get
@@ -533,20 +533,20 @@ int setup_fixed_grid::setup_raytracing(
   // NOTE THAT IF THE NUMBER OF SOURCES OR THEIR PROPERTIES CHANGE OVER TIME,
   // I WILL HAVE TO WRITE NEW CODE TO UPDATE THIS!
   //
-  FVI_nheat = RT->N_heating_sources();
-  FVI_nion  = RT->N_ionising_sources();
+  FVI_nheat = (*RT)->N_heating_sources();
+  FVI_nion  = (*RT)->N_ionising_sources();
   FVI_heating_srcs.resize(FVI_nheat);
   FVI_ionising_srcs.resize(FVI_nion);
-  RT->populate_UVheating_src_list(FVI_heating_srcs);
-  RT->populate_ionising_src_list( FVI_ionising_srcs);
+  (*RT)->populate_UVheating_src_list(FVI_heating_srcs);
+  (*RT)->populate_ionising_src_list( FVI_ionising_srcs);
 
   //
   // See if we need column densities for the timestep calculation
   //
-  if (RT->type_of_RT_integration()==RT_UPDATE_EXPLICIT) {
+  if ((*RT)->type_of_RT_integration()==RT_UPDATE_EXPLICIT) {
     FVI_need_column_densities_4dt = true;
   }
-  else if (RT && RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT
+  else if ((*RT) && (*RT)->type_of_RT_integration()==RT_UPDATE_IMPLICIT
             && SimPM.EP.MP_timestep_limit==5) {
     // For implicit updates to limit by xdot and/or edot
     // Here the raytracing has not already been done, so we call it here.

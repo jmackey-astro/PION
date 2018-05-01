@@ -6,8 +6,8 @@
 /// modified:\n 
 /// - 2018.05.01 JM: moved dataio_text from dataio.cpp.
 
-#ifndef DATAIO_FITS_H
-#define DATAIO_FITS_H
+#ifndef DATAIO_TEXT_H
+#define DATAIO_TEXT_H
 
 
 #include "defines/functionality_flags.h"
@@ -165,4 +165,6 @@ class dataio_text : public DataIOBase {
    int write_header_param(class pm_base *)
    {rep.error("WHY USE write_header_param FOR TEXTIO?",0); return 0;}
 };
+
+#endif // DATAIO_TEXT_H
 

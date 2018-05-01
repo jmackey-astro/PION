@@ -158,7 +158,8 @@
 
 #include "raytracing/raytracer_SC.h"
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
+#include "dataIO/dataio_text.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -391,14 +392,12 @@ int sim_control::Init(
   //
   grid.resize(1);
   RT.resize(1);
-  spatial_solver->set_dx(SimPM.dx);
   CI.set_dx(SimPM.dx);
 
   // Now set up the grid structure.
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   err = setup_grid(&(grid[0]),SimPM,&mpiPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  
   SimPM.dx = grid[0]->DX();
   if (err!=0) {
     cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
@@ -411,7 +410,8 @@ int sim_control::Init(
   //
   err = set_equations();
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
-
+  spatial_solver->set_dx(SimPM.dx);
+  
   //
   // Now setup Microphysics, if needed.
   //
@@ -463,7 +463,7 @@ int sim_control::Init(
   //
   // Setup Raytracing on each grid, if needed.
   //
-  err += setup_raytracing(SimPM, grid[0], RT[0]);
+  err += setup_raytracing(SimPM, grid[0], &(RT[0]));
   err += setup_evolving_RT_sources(SimPM, RT[0]);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
@@ -1138,13 +1138,13 @@ int sim_control::initial_conserved_quantities(
   //  cout <<"initERG: "<<dp.initERG<<"\n";
   class cell *cpt=grid->FirstPt();
   do {
-     eqn->PtoU(cpt->P,u,SimPM.gamma);
-     dp.initERG += u[ERG]*eqn->CellVolume(cpt);
-     dp.initMMX += u[MMX]*eqn->CellVolume(cpt);
-     dp.initMMY += u[MMY]*eqn->CellVolume(cpt);
-     dp.initMMZ += u[MMZ]*eqn->CellVolume(cpt);
+     spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
+     dp.initERG += u[ERG]*spatial_solver->CellVolume(cpt);
+     dp.initMMX += u[MMX]*spatial_solver->CellVolume(cpt);
+     dp.initMMY += u[MMY]*spatial_solver->CellVolume(cpt);
+     dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(cpt);
   } while ( (cpt = grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
+  //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
   cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";
   cout <<"(LFMethod::InitialconservedQuantities) Total x-Momentum = "<< dp.initMMX <<"\n";
   cout <<"(LFMethod::InitialconservedQuantities) Total y-Momentum = "<< dp.initMMY <<"\n";
@@ -1323,6 +1323,9 @@ int sim_control::calc_timestep(
       class RayTracingBase *raytracer ///< raytracer for this grid.
       )
 {
+#ifdef TESTING
+  cout <<"sim_control::calc_timestep(): g="<<grid<<", rt="<<raytracer<<"\n";
+#endif
   //
   // This is a wrapper function.  First we get the dynamics
   // timestep, and then the microphysics timestep.
@@ -1372,15 +1375,11 @@ int sim_control::calc_timestep(
   // sets the timestep info in the solver class.
   spatial_solver->Setdt(SimPM.dt);
 
+#ifdef TESTING
+  cout <<"sim_control::calc_timestep() finished.\n";
+#endif
   return 0;
 }
-
-
-
-// ##################################################################
-// ###########    END OF SIMULATION CONTROL FUNCTIONS     ###########
-// ##################################################################
-
 
 
 
@@ -1430,13 +1429,13 @@ int sim_control::check_energy_cons(
   double ergNow=0., mmxNow = 0., mmyNow = 0., mmzNow = 0.;
   class cell *cpt = grid->FirstPt();
   do {
-     eqn->PtoU(cpt->P,u,SimPM.gamma);
-     ergNow += u[ERG]*eqn->CellVolume(cpt);
-     mmxNow += u[MMX]*eqn->CellVolume(cpt);
-     mmyNow += u[MMY]*eqn->CellVolume(cpt);
-     mmzNow += u[MMZ]*eqn->CellVolume(cpt);
+     spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
+     ergNow += u[ERG]*spatial_solver->CellVolume(cpt);
+     mmxNow += u[MMX]*spatial_solver->CellVolume(cpt);
+     mmyNow += u[MMY]*spatial_solver->CellVolume(cpt);
+     mmzNow += u[MMZ]*spatial_solver->CellVolume(cpt);
   } while ( (cpt =grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
+  //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
   double relerror=0.0;
 //  cout <<"(LFMethod::check_energy_cons) Initial Monentum: "<<dp.initMMX<<"\n";
 //  cout <<"(LFMethod::check_energy_cons) Initial Energy:   "<<dp.initERG<<"\n";

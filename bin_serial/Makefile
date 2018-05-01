@@ -333,7 +333,7 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	solver_eqn_mhd_adi.o \
 	integrator.o cooling.o raytracer_SC.o \
         microphysics_base.o  \
-	dataio.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
+	parameter_defs.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
         dataio_base.o \
         dataio_text.o \
         file_status.o \
@@ -351,7 +351,7 @@ IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
         MCMD_control.o \
         uniform_grid.o cell_interface.o \
         readparams.o file_status.o \
-	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
+	parameter_defs.o dataio_silo.o get_sim_info.o inside_sphere.o \
         dataio_base.o \
         dataio_text.o \
 	integrator.o cooling.o \
@@ -454,7 +454,7 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
 
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
 		MPv1.h MPv9.h  MPv2.h \
-		dataio.h dataio_silo.h dataio_fits.h microphysics_base.h \
+		parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
                 mp_only_cooling.h MPv3.h MPv4.h
 
 time_integrator.o: time_integrator.cpp sim_control.h \
@@ -600,16 +600,16 @@ raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
 # Data I/O
 ########################
 file_status.o:  file_status.cpp file_status.h ${GLOBAL}
-dataio.o:       dataio.cpp dataio.h ${GLOBAL} solver_eqn_base.h readparams.h \
+parameter_defs.o:       parameter_defs.cpp parameter_defs.h ${GLOBAL} solver_eqn_base.h readparams.h \
 		stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
-dataio_base.o:  dataio_base.cpp dataio_base.h dataio.h ${GLOBAL} solver_eqn_base.h
-dataio_text.o:  dataio_text.cpp dataio_text.h dataio.h ${GLOBAL} solver_eqn_text.h
-dataio_silo.o:  dataio_silo.cpp dataio_silo.h dataio.h ${GLOBAL} solver_eqn_base.h
-dataio_fits.o:  dataio_fits.cpp dataio_fits.h dataio.h ${GLOBAL} solver_eqn_base.h \
+dataio_base.o:  dataio_base.cpp dataio_base.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
+dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
+dataio_fits.o:  dataio_fits.cpp dataio_fits.h parameter_defs.h ${GLOBAL} solver_eqn_base.h \
         solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h
 
 readparams.o:   readparams.cpp readparams.h ${GLOBAL}
-utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cpp dataio_fits.h parameter_defs.h ${GLOBAL}
 
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
   tools/interpolate.h ${GLOBAL}
@@ -620,7 +620,7 @@ stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_B
 ##### IC GENERATOR FILES #####
 ##############################
 icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  MPv2.h \
-         MPv1.h MPv9.h dataio_silo.h dataio.h dataio_fits.h
+         MPv1.h MPv9.h dataio_silo.h parameter_defs.h dataio_fits.h
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
 ########################
@@ -641,7 +641,7 @@ StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
 ###############################################
 ## Contributed and/or project-specific code. ##
 ###############################################
-read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen.h ${GLOBAL} dataio_fits.h dataio.h
+read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen.h ${GLOBAL} dataio_fits.h parameter_defs.h
 
 HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
 HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen.h ${GLOBAL}

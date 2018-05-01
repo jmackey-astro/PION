@@ -55,7 +55,8 @@
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
+#include "dataIO/dataio_text.h"
 #include "dataIO/readparams.h"
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
@@ -175,7 +176,7 @@ int main(int argc, char **argv)
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
   //
-  SimSetup->setup_nested_grid_levels(SimPM);
+  //SimSetup->setup_nested_grid_levels(SimPM);
 
   vector<class GridBaseClass *> grid;
 
@@ -187,12 +188,14 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-    // Now set up the grid structure.
-    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-    err = SimSetup->setup_grid(&(grid[l]),SimPM,l,&MCMD);
-    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-  }
+  //for (int l=0; l<SimPM.grid_nlevels; l++) {
+  int l=0;
+  grid.resize(1);
+  // Now set up the grid structure.
+  cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  err = SimSetup->setup_grid(&(grid[l]),SimPM,&MCMD);
+  cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  //}
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
@@ -344,7 +347,7 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
 
 
-  err += SimSetup->setup_raytracing(SimPM, grid[0],RT);
+  err += SimSetup->setup_raytracing(SimPM, grid[0],&RT);
   err += SimSetup->setup_evolving_RT_sources(SimPM,RT);
   if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
@@ -431,7 +434,7 @@ int main(int argc, char **argv)
   else rep.error("Don't recognise I/O type (text/fits/silo)",icftype);
   if (!dataio) rep.error("IO class initialisation: ",icftype);
   
-  err = dataio->OutputData(outfile,grid, SimPM,RT, 0);
+  err = dataio->OutputData(outfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
   cout <<icftype<<" FILE WRITTEN in";

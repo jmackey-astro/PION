@@ -157,7 +157,7 @@
 #endif // TESTING
 
 #include "sim_control.h"
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
@@ -274,7 +274,7 @@ int sim_control::first_order_update(
   // May need to do raytracing, if it wasn't needed for calculating
   // the timestep.
   //
-  if (!FVI_need_column_densities_4dt) {
+  if (!FVI_need_column_densities_4dt && raytracer) {
     err += calculate_raytracing_column_densities(raytracer);
     if (err) 
       rep.error("first_order_update: error from first calc_rt_cols()",err);
@@ -333,9 +333,11 @@ int sim_control::second_order_update(
   //
   // Raytracing, to get column densities for microphysics update.
   //
-  err += calculate_raytracing_column_densities(raytracer);
-  if (err) {
-    rep.error("second_order_update: error from first calc_rt_cols()",err);
+  if (raytracer) {
+    err += calculate_raytracing_column_densities(raytracer);
+    if (err) {
+      rep.error("second_order_update: error from first calc_rt_cols()",err);
+    }
   }
 
   //
@@ -382,22 +384,21 @@ int sim_control::calculate_raytracing_column_densities(
       )
 {
   int err=0;
+  if (!raytracer) rep.error("calculate_raytracing_column_densities() no RT",0);
   //
   // If we have raytracing, we call the ray-tracing routines 
   // to get Tau0, dTau, Vshell in cell->extra_data[].
   //
-  if (raytracer) {
-    for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
 #ifdef raytracer_TESTING
-      cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
+    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
 #endif
-      err += raytracer->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
-      if (err) {
-        cout <<"isrc="<<isrc<<"\t"; 
-        rep.error("calc_raytracing_col_dens step in returned error",err);
-      } // if error
-    } // loop over sources
-  }
+    err += raytracer->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
+    if (err) {
+      cout <<"isrc="<<isrc<<"\t"; 
+      rep.error("calc_raytracing_col_dens step in returned error",err);
+    } // if error
+  } // loop over sources
   return err;
 }
 
