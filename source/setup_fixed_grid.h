@@ -36,13 +36,6 @@ class setup_fixed_grid
 
 
   ///
-  /// Populate the array SimPM.nest_levels with Xmin,Xmax,Range,dx,etc.
-  ///
-  void setup_nested_grid_levels(
-      class SimParams &  ///< pointer to simulation parameters
-      );
-
-  ///
   /// Setup cell extra data through the cell_interface class CI.
   ///
   void setup_cell_extra_data(
@@ -57,7 +50,6 @@ class setup_fixed_grid
   virtual int setup_grid(
       class GridBaseClass **, ///< address of pointer to grid.
       class SimParams &,      ///< pointer to simulation parameters
-      const int,              ///< level in nested grid to set up.
       class MCMDcontrol *     ///< address of MCMD controller class.
       );
 
@@ -69,8 +61,7 @@ class setup_fixed_grid
   ///
   int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      const int              ///< level in nested grid to set up.
+      class GridBaseClass *grid  ///< pointer to grid.
       );   
 
   ///
