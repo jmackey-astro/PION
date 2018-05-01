@@ -76,6 +76,13 @@ class BaseVectorOps {
       )=0; ///< Returns Surface area of interface.
 
   ///
+  /// Specify delta-x for the grid (if a uniform grid!)
+  ///
+  virtual void set_dx(
+      const double ///< size of grid cell.
+      )=0;
+  
+  ///
   /// Returns maximum of all gradients with neighbouring cells
   /// 
   /// Pass in a point, and a primitive variable to calculate on, and it

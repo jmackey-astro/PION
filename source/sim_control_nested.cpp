@@ -209,7 +209,9 @@ sim_control::~sim_control()
   if (spatial_solver) {delete spatial_solver; spatial_solver=0;}
   if (dataio) {delete dataio; dataio=0;}
   if (textio) {delete textio; textio=0;}
-  if (RT[0]) delete RT[0];
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    if (RT[l]) delete RT[l];
+  }
 #ifdef TESTING
   cout << "(sim_control::Destructor) Done." <<"\n";
 #endif
@@ -293,6 +295,9 @@ void sim_control::print_command_line_options(
 
   cout <<"\n*********** PHYSICS/Grid OPTIONS *************\n";
   cout <<"\t ooa=N         : modify order of accuracy (either 1 or 2).\n";
+
+  cout <<"\t nlevels=N     : modify number of levels in nested grid.";
+
   cout <<"\t AVtype=N      : modify type of artificial viscosity:";
   cout <<" 0=none, 1=Falle,Komissarov,Joarder(1998), 2=Colella+Woodward(1984), 3=Sanders et al.(1998)[H-correction].\n";
   cout <<"\t\t\t WARNING -- AVtype=2 IS NOT WORKING WELL.  ONLY USE FKJ98/H-corr.";
@@ -325,9 +330,8 @@ void sim_control::print_command_line_options(
 
   cout <<"\n*********** PARALLEL CODE ONLY *************\n";
   cout <<"\t maxwalltime=D : change the max. runtime to D in seconds.\n";
-  cout <<"\n";
-  cout <<"\n*********** NESTED GRID CODE ONLY *************\n";
-  cout <<"\t nlevels=N     : modify number of levels in nested grid.";
+  
+
   cout <<"\n";
   cout <<"********* DEPRECATED -- STILL HERE FOR LEGACY SCRIPTS... ******\n";
   cout <<"\t artvisc=D : modify artificial viscosity, 0=none, Otherwise FalleAV with eta=D,\n";
@@ -389,16 +393,18 @@ int sim_control::Init(
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
   //
-  grid.resize(1);
-  RT.resize(1);
-  spatial_solver->set_dx(SimPM.dx);
-  CI.set_dx(SimPM.dx);
+  setup_nested_grid_levels(SimPM);
+  grid.resize(SimPM.grid_nlevels);
+  RT.resize(SimPM.grid_nlevels);
 
-  // Now set up the grid structure.
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  err = setup_grid(&(grid[0]),SimPM,&mpiPM);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    // Now set up the grid structure.
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    err = setup_grid(&(grid[l]),SimPM,l,&mpiPM);
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  }
   SimPM.dx = grid[0]->DX();
   if (err!=0) {
     cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
@@ -447,25 +453,36 @@ int sim_control::Init(
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
 
   //
-  // Set Ph[] = P[], and then implement the boundary conditions.
+  // For each grid in the nested grid, set Ph[] = P[],
+  // and then implement the boundary conditions on the grid and ghost cells.
   //
-  cell *cpt = grid[0]->FirstPt();
-  do {
-    for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];
-  } while ((cpt=grid[0]->NextPt(cpt))!=0);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-  //
-  // Assign boundary conditions to boundary points.
-  //
-  err = boundary_conditions(SimPM, grid[0]);
-  rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
 
-  //
-  // Setup Raytracing on each grid, if needed.
-  //
-  err += setup_raytracing(SimPM, grid[0], RT[0]);
-  err += setup_evolving_RT_sources(SimPM, RT[0]);
-  rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
+    //
+    // Set Ph=P in every cell.
+    //
+    cell *cpt = grid[l]->FirstPt();
+    do {
+      for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];
+    } while ((cpt=grid[l]->NextPt(cpt))!=0);
+
+    //
+    // Assign boundary conditions to boundary points.
+    //
+    err = boundary_conditions(SimPM, grid[l], l);
+    rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+
+    //
+    // Setup Raytracing on each grid, if needed.
+    //
+    err += setup_raytracing(SimPM, grid[l], RT[l]);
+    err += setup_evolving_RT_sources(SimPM, RT[l]);
+    rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
+
+  }
 
   // If we are to add noise to data, do it.
 //  if (SimPM.addnoise >0) {
@@ -477,7 +494,7 @@ int sim_control::Init(
 #ifdef TESTING
   cout <<"(UniformFV::Init) Ready to start? \n";
 #endif
-  err = ready_to_start(grid[0]);
+  err = ready_to_start(grid);
   rep.errorTest("(INIT::ready_to_start) err!=0",0,err);
 
 #ifdef TESTING
@@ -539,11 +556,13 @@ int sim_control::Init(
 #endif // SERIAL
   
 #ifdef TESTING
-  cell *c = (grid[0])->FirstPt_All();
-  do {
-    if (pconst.equalD(c->P[RO],0.0))
-      CI.print_cell(c);
-  } while ( (c=(grid[0])->NextPt_All(c)) !=0 );
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cell *c = (grid[l])->FirstPt_All();
+    do {
+      if (pconst.equalD(c->P[RO],0.0))
+        CI.print_cell(c);
+    } while ( (c=(grid[l])->NextPt_All(c)) !=0 );
+  }
 #endif // TESTING
   
   return(0);
@@ -1060,8 +1079,8 @@ int sim_control::output_data(
   // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
   //
   cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
-  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
-  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
+  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
+  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, checkpoint_id);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
   return(0);
 }
@@ -1074,7 +1093,7 @@ int sim_control::output_data(
 
 
 int sim_control::ready_to_start(
-      class GridBaseClass *grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
@@ -1086,20 +1105,17 @@ int sim_control::ready_to_start(
 #ifdef TESTING
     cout <<"Initial state, zero-ing glm variable.\n";
 #endif
-    c = grid->FirstPt(); do {
-      c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
-    } while ( (c=grid->NextPt(c)) !=0);
+    for (int l=0; l<SimPM.grid_nlevels; l++) {
+      c = grid[l]->FirstPt(); do {
+        c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
+      } while ( (c=grid[l]->NextPt(c)) !=0);
+    }
   }
   
   //
   // Set the value of gamma in the equations.
   //
   spatial_solver->SetEOS(SimPM.gamma);
-  
-  //
-  // If testing the code, this calculates the momentum and energy on the domain.
-  //
-  initial_conserved_quantities(grid);
   
   //
   // If using opfreq_time, set the next output time correctly.
@@ -1117,43 +1133,6 @@ int sim_control::ready_to_start(
 
   return(0);
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control::initial_conserved_quantities(
-      class GridBaseClass *grid
-      )
-{
-  // Energy, and Linear Momentum in x-direction.
-#ifdef TESTING 
-  // Only track the totals if I am testing the code.
-  pion_flt u[SimPM.nvar];
-  dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
-  dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
-  //  cout <<"initERG: "<<dp.initERG<<"\n";
-  class cell *cpt=grid->FirstPt();
-  do {
-     eqn->PtoU(cpt->P,u,SimPM.gamma);
-     dp.initERG += u[ERG]*eqn->CellVolume(cpt);
-     dp.initMMX += u[MMX]*eqn->CellVolume(cpt);
-     dp.initMMY += u[MMY]*eqn->CellVolume(cpt);
-     dp.initMMZ += u[MMZ]*eqn->CellVolume(cpt);
-  } while ( (cpt = grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total x-Momentum = "<< dp.initMMX <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total y-Momentum = "<< dp.initMMY <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total z-Momentum = "<< dp.initMMZ <<"\n";
-#endif //TESTING
-  return(0);
-} //initial_conserved_quantities()
-
-
 
 // ##################################################################
 // ##############     SIMULATION CONTROL FUNCTIONS     ##############
@@ -1176,21 +1155,21 @@ int sim_control::Time_Int(
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
-    calculate_magnetic_pressure(grid[0]);
+    calculate_magnetic_pressure(grid);
 #elif defined (BLAST_WAVE_CHECK)
-    calculate_blastwave_radius(grid[0]);
+    calculate_blastwave_radius(grid);
 #endif
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,RT[0]);
+    err = update_evolving_RT_sources(SimPM,RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;
     }
 
     //clk.start_timer("advance_time");
-    err+= advance_time(grid[0],RT[0]);
+    err+= advance_time(grid);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad\n";return(1);}
 
@@ -1237,7 +1216,7 @@ int sim_control::Time_Int(
 /// pressure on the full domain and outputs it to screen
 ///
 void sim_control::calculate_magnetic_pressure(
-      class GridBaseClass *grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
@@ -1246,13 +1225,16 @@ void sim_control::calculate_magnetic_pressure(
   //
   double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
     
-  cell *c=grid->FirstPt();
-  do {
-    if (!c->isbd) 
-      magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG]) *
-                spatial_solver->CellVolume(c);
-  } while ( (c =grid->NextPt(c)) !=0);
+    cell *c=grid[l]->FirstPt();
+    do {
+      if (!c->isbd) 
+        magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG]) * spatial_solver->CellVolume(c);
+    } while ( (c =grid[l]->NextPt(c)) !=0);
+  }
   if (init_magp<0) init_magp = magp;
   cout <<SimPM.simtime<<"\t"<<magp/init_magp<<"\t"<<magp<<"\n";
   return;
@@ -1272,34 +1254,37 @@ void sim_control::calculate_magnetic_pressure(
 /// and output to screen.
 ///
 void sim_control::calculate_blastwave_radius(
-      class GridBaseClass *grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
   // Calculate the blast wave outer shock position.
+  // If a nested grid, start on the finest grid and work outwards
   //
   double shockpos=0.0;
   static double old_pos=0.0;
-  //bool shock_found = false;
+  bool shock_found = false;
   //  static double last_dt=0.0;
+  for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
+    eqn->set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.nest_levels[l].dx);
 
-  //if (shock_found) continue;
-  cell *c=grid->LastPt();
-  if (fabs(c->P[VX])>=1.0e4) {
-    cout<<"grid "<<l<<" does not contain shock.\n";
-    shockpos = CI.get_dpos(c,Rsph);
-  }
-  else {
-    do {
-      c = grid->NextPt(c,RNsph);
-      //cout <<c->id<<", vx="<<c->P[VX]<<"\n";
-    } while ( c!=0 && fabs(c->P[VX])<1.0e4);
-    if (c && fabs(c->P[VX] >= 1.0e4)) {
-      shockpos = CI.get_dpos(c,Rsph);
-      //shock_found=true;
+    if (shock_found) continue;
+    cell *c=grid->LastPt();
+    if (fabs(c->P[VX])>=1.0e4) {
+      cout<<"level "<<l<<" does not contain shock.\n";
+    }
+    else {
+      do {
+        c = grid->NextPt(c,RNsph);
+        //cout <<c->id<<", vx="<<c->P[VX]<<"\n";
+      } while ( c!=0 && fabs(c->P[VX])<1.0e4);
+      if (c && (c->P[VX] >= 1.0e4)) {
+        shockpos = CI.get_dpos(c,Rsph);
+        shock_found=true;
+      }
     }
   }
-  
   if (pconst.equalD(old_pos,0.0))
     old_pos = shockpos;
   cout <<SimPM.simtime<<"\t"<<shockpos;
@@ -1319,17 +1304,16 @@ void sim_control::calculate_blastwave_radius(
 
 
 int sim_control::calc_timestep(
-      class GridBaseClass *grid, ///< pointer to grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
+      class GridBaseClass *grid
       )
 {
   //
-  // This is a wrapper function.  First we get the dynamics
+  // This is now basically a wrapper function.  First we get the dynamics
   // timestep, and then the microphysics timestep.
   //
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(grid);
-  t_mp  = calc_microphysics_dt(grid,raytracer);
+  t_mp  = calc_microphysics_dt(grid);
 #ifdef TESTING
   if (t_mp<t_dyn)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
@@ -1339,7 +1323,7 @@ int sim_control::calc_timestep(
 #ifdef THERMAL_CONDUCTION
   //
   // In order to calculate the timestep limit imposed by thermal conduction,
-  // we need to calcuate the multidimensional energy fluxes
+  // we need to actually calcuate the multidimensional energy fluxes
   // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
   // by the actual dt later (since at this stage we don't know dt).  This
   // later multiplication is done in spatial_solver->preprocess_data()
@@ -1355,7 +1339,7 @@ int sim_control::calc_timestep(
 #endif // THERMAL CONDUCTION
 
   //
-  // If using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
+  // if using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
   // If not, it does nothing.  By setting it here and using t_dyn, we ensure that the
   // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
   // an artificially larger speed associated with a shortened timestep.
@@ -1419,65 +1403,6 @@ int sim_control::check_eosim()
 // ##################################################################
 
 
-
-int sim_control::check_energy_cons(
-      class GridBaseClass *grid
-      )
-{
-#ifdef TESTING
-  // Energy, and Linear Momentum in x-direction.
-  pion_flt u[SimPM.nvar];
-  double ergNow=0., mmxNow = 0., mmyNow = 0., mmzNow = 0.;
-  class cell *cpt = grid->FirstPt();
-  do {
-     eqn->PtoU(cpt->P,u,SimPM.gamma);
-     ergNow += u[ERG]*eqn->CellVolume(cpt);
-     mmxNow += u[MMX]*eqn->CellVolume(cpt);
-     mmyNow += u[MMY]*eqn->CellVolume(cpt);
-     mmzNow += u[MMZ]*eqn->CellVolume(cpt);
-  } while ( (cpt =grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<eqn->CellVolume(cpt)<< "\n";
-  double relerror=0.0;
-//  cout <<"(LFMethod::check_energy_cons) Initial Monentum: "<<dp.initMMX<<"\n";
-//  cout <<"(LFMethod::check_energy_cons) Initial Energy:   "<<dp.initERG<<"\n";
-//  cout <<"dp = "<<&dp<<"\n";
-  
-  relerror = fabs(ergNow-dp.initERG)/(dp.initERG+TINYVALUE);
-  if (relerror>1.e5*MACHINEACCURACY) { // && ergNow>2*MACHINEACCURACY) {
-    cout <<"(LFMethod::check_energy_cons) Total Energy = "<<ergNow;
-    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initERG<<"\n";
-  }
-
-  relerror = fabs(mmxNow-dp.initMMX)/(dp.initMMX+TINYVALUE);
-  if (relerror>1.e5*MACHINEACCURACY && fabs(mmxNow)>1.e5*MACHINEACCURACY) {
-    cout <<"(LFMethod::check_energy_cons) Total x-Momentum = "<<mmxNow;
-    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initMMX<<"\n";
-  }
-
-  relerror = fabs(mmyNow-dp.initMMY)/(dp.initMMY+TINYVALUE);
-//  if (relerror>1.e5*MACHINEACCURACY && fabs(mmyNow)>1.e5*MACHINEACCURACY) {
-//    cout <<"(LFMethod::check_energy_cons) Total y-Momentum = "<<mmyNow;
-//    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-//    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initMMY<<"\n";
-//  }
-
-  relerror = fabs(mmzNow-dp.initMMZ)/(dp.initMMZ+TINYVALUE);
-//  if (relerror>1.e5*MACHINEACCURACY && fabs(mmzNow)>1.e5*MACHINEACCURACY) {
-//    cout <<"(LFMethod::check_energy_cons) Total z-Momentum = "<<mmzNow;
-//    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-//  }
-
-#endif //TESTING
-  return(0);
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
 /*****************************************************************/
 /*********************** FINISH SIMULATION ***********************/
 /*****************************************************************/
@@ -1488,7 +1413,6 @@ int sim_control::Finalise(
   int err=0;
   cout <<"------------------------------------------------------------\n";
   cout <<"(sim_control::Finalise) FINALISING SIMULATION."<<"\n";
-  err += check_energy_cons(grid[0]);
   err+= output_data(grid);
   if (err!=0){
     cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";

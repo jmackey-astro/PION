@@ -1,12 +1,12 @@
-/// \file gridMethods.cc
+/// \file time_integrator.cc
 /// 
-/// \brief Grid Methods Class Member Function definitions.
+/// \brief time integration routines for sim_control class.
 /// 
 /// \author Jonathan Mackey
 /// 
-/// This file contains the definitions of the member functions for sim_control_fixedgrid 
-/// class, which is the basic 1st/2nd order Finite Volume Solver according to
-/// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
+/// This file contains the definitions of the member functions for sim_control 
+/// class, which is a 1st/2nd order Finite Volume Solver following
+/// Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
 /// 
 /// 
 /// Modifications:
@@ -20,7 +20,7 @@
 ///  - 2007-11-01 Added dataio class last week, cleaning up today.
 ///  - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
 ///
-///  - JM 2009-12-16 Added ifdef in sim_control_fixedgrid::Time_Int() so that I
+///  - JM 2009-12-16 Added ifdef in sim_control::Time_Int() so that I
 ///      can get the code to output magnetic pressure instead of
 ///      timing info every timestep.  This is purely to make a plot of
 ///      magnetic pressure for the Field Loop Advection Test and
@@ -143,7 +143,7 @@
 /// - 2013.12.03 JM: Modified NO_COOLING_ON_AXIS hack.
 /// - 2015.01.12/13 JM: Modified for new code structure; began adding
 ///    the grid pointer everywhere.
-/// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
+/// - 2015.01.26 JM: Renamed class to sim_control.
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2018.01.24 JM: worked on making SimPM non-global
 
@@ -193,8 +193,9 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-int sim_control_fixedgrid::advance_time(
-      class GridBaseClass *grid ///< Computational grid.
+int sim_control::advance_time(
+      class GridBaseClass *grid, ///< Computational grid.
+      class RayTracingBase *raytracer ///< raytracer for this grid.
       )
 {
   int err=0;
@@ -204,7 +205,7 @@ int sim_control_fixedgrid::advance_time(
   // on the ray-tracing column densities, and if so all the column densities
   // will be calculated with raytracing calls in calc_mp_timestep()
   //
-  err += calc_timestep(grid);
+  err += calc_timestep(grid,raytracer);
   if (err) 
     rep.error("advance_time: bad return value from calc_timestep()",err);
 
@@ -218,15 +219,15 @@ int sim_control_fixedgrid::advance_time(
     // function knows whether to update P[i] as well as Ph[i]
     //
     //cout <<"First order update\n";
-    err += first_order_update(SimPM.dt, SimPM.tmOOA, grid);
+    err += first_order_update(SimPM.dt, SimPM.tmOOA, grid, raytracer);
     if (err)
       rep.error("first_order_update() returned error",err);
   }
 
   else if (SimPM.tmOOA==OA2 && SimPM.spOOA==OA2) {
     //cout <<"Second order update\n";
-    err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid);
-    err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid);
+    err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid, raytracer);
+    err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid, raytracer);
     if (err)
       rep.error("Second order time-update returned error",err);
   }
@@ -255,10 +256,11 @@ int sim_control_fixedgrid::advance_time(
 
 
 
-int sim_control_fixedgrid::first_order_update(
+int sim_control::first_order_update(
       const double dt,
       const int   ooa,
-      class GridBaseClass *grid ///< Computational grid.
+      class GridBaseClass *grid, ///< Computational grid.
+      class RayTracingBase *raytracer ///< raytracer for this grid.
       )
 {
   int err=0;
@@ -273,7 +275,7 @@ int sim_control_fixedgrid::first_order_update(
   // the timestep.
   //
   if (!FVI_need_column_densities_4dt) {
-    err += calculate_raytracing_column_densities();
+    err += calculate_raytracing_column_densities(raytracer);
     if (err) 
       rep.error("first_order_update: error from first calc_rt_cols()",err);
   }
@@ -314,10 +316,11 @@ int sim_control_fixedgrid::first_order_update(
 
 
 
-int sim_control_fixedgrid::second_order_update(
+int sim_control::second_order_update(
       const double dt,
       const int   ooa,
-      class GridBaseClass *grid ///< Computational grid.
+      class GridBaseClass *grid, ///< Computational grid.
+      class RayTracingBase *raytracer ///< raytracer for this grid.
       )
 {
   int err=0;
@@ -330,7 +333,7 @@ int sim_control_fixedgrid::second_order_update(
   //
   // Raytracing, to get column densities for microphysics update.
   //
-  err += calculate_raytracing_column_densities();
+  err += calculate_raytracing_column_densities(raytracer);
   if (err) {
     rep.error("second_order_update: error from first calc_rt_cols()",err);
   }
@@ -373,7 +376,7 @@ int sim_control_fixedgrid::second_order_update(
 
 
 
-int sim_control_fixedgrid::calculate_raytracing_column_densities(
+int sim_control::calculate_raytracing_column_densities(
       //class GridBaseClass *grid       ///< Computational grid.
       class RayTracingBase *raytracer ///< raytracer for this grid.
       )
@@ -404,7 +407,7 @@ int sim_control_fixedgrid::calculate_raytracing_column_densities(
 
 
 
-int sim_control_fixedgrid::calc_microphysics_dU(
+int sim_control::calc_microphysics_dU(
       const double delt, ///< timestep to integrate MP eqns.
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -423,26 +426,25 @@ int sim_control_fixedgrid::calc_microphysics_dU(
 #endif // TESTING
   int err = 0;
 
-  if (!RT) {
+  if (SimPM.RS.Nsources==0) {
     //
     // If no radiative transfer, then just do a simple MP update.
     //
 #ifdef RT_TESTING
-    cout <<"\t\t--- calling calc_microphysics_dU_no_RT()\n";
+    cout <<"\t\t--- calling calc_noRT_microphysics_dU()\n";
 #endif // RT_TESTING
-    err += calc_microphysics_dU_no_RT(delt, grid);
+    err += calc_noRT_microphysics_dU(delt, grid);
   }
 
   else {
     //
-    // must have at least one radiation source, and the RT and microphysics
-    // are run separately, and we may have diffuse radiation, so we do the
-    // new RT update:
+    // must have at least one radiation source, so we call a newer
+    // update function with a bit more overhead.
     //
 #ifdef RT_TESTING
-    cout <<"\t\t--- calling calc_microphysics_dU_general_RT()\n";
+    cout <<"\t\t--- calling calc_RT_microphysics_dU()\n";
 #endif // RT_TESTING
-    err += calc_microphysics_dU_general_RT(delt, grid);
+    err += calc_RT_microphysics_dU(delt, grid);
   }
     
   //cout <<"\tcalc_microphysics_dU finished.\n";
@@ -455,7 +457,7 @@ int sim_control_fixedgrid::calc_microphysics_dU(
 
 
 
-int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
+int sim_control::calc_RT_microphysics_dU(
       const double delt, // timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -471,12 +473,7 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
 
   int err=0;
   //
-  // Update microphyiscs with new interface.
-  // RT source properties are already in structs for the microphysics calls.
-  //
-
-  //
-  // Now do MP update.  Only new MP classes have the  XX_RTnew() defined,
+  // Do MP update.  Only new MP classes have the  XX_RTnew() defined,
   // so if we try to call this with old code then it should return with 
   // a non-zero error code.
   //
@@ -493,7 +490,7 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
     //
     if (c->isbd) {
 #ifdef TESTING
-      cout <<"skipping cell "<<c->id<<" in calc_microphysics_dU_general_RT() c->isbd.\n";
+      cout <<"skipping cell "<<c->id<<" in calc_RT_microphysics_dU() c->isbd.\n";
 #endif
     }
     else {
@@ -519,17 +516,11 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
         for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
           FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
       }
-      //if (c->id<=3) {
-      //  cout <<"*-*-*-*-*- i="<<c->id<<", --Tau="<<FVI_ionising_srcs[0].Column[0];
-      //  cout <<", dTau="<<FVI_ionising_srcs[0].DelCol[0];
-      //  cout <<", NTau="<<FVI_ionising_srcs[0].NTau<<"\n";
-      //}
       //
-      // integer 9th argument determines type of integration substepping:
-      // 0 = adaptive RK5 Cash-Karp method (use this!).
       // 4th and 5th args are for ionising sources.
       //
-      err += MP->TimeUpdateMP_RTnew(c->P, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs,
+      err += MP->TimeUpdateMP_RTnew(c->P, FVI_nheat,FVI_heating_srcs,
+                                    FVI_nion, FVI_ionising_srcs,
                                     p, delt, SimPM.gamma, 0, &tt);
 
 //#define NO_COOLING_ON_AXIS
@@ -566,7 +557,7 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
   } while ( (c=grid->NextPt(c)) !=0);
   //    cout <<"calc_microphysics_dU() Updating MicroPhysics Done!\n";
   return err;
-} // newest general-RT microphysics update.
+} // RT microphysics update.
 
 
 
@@ -575,17 +566,17 @@ int sim_control_fixedgrid::calc_microphysics_dU_general_RT(
 
 
 
-int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
+int sim_control::calc_noRT_microphysics_dU(
       const double delt, ///< timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
 {
 #ifdef TESTING
-  cout <<"calc_microphysics_dU_no_RT starting.\n";
+  cout <<"calc_noRT_microphysics_dU starting.\n";
 #endif
   //
-  // No radiation sources at all, and no diffuse radiation optical depths,
-  // so just do my original microphysics update.
+  // No radiation sources and no diffuse radiation optical depths,
+  // so call a simple microphysics update.
   //
   cell *c = grid->FirstPt();
   pion_flt p[SimPM.nvar]; // temporary state vector for output state.
@@ -600,22 +591,21 @@ int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
     //
     if (c->isbd) {
 #ifdef TESTING
-      cout <<"skipping cell "<<c->id<<" in calc_microphysics_dU_no_RT() c->isbd.\n";
+      cout <<"skipping cell "<<c->id<<" in calc_noRT_microphysics_dU() c->isbd.\n";
 #endif
     }
     else {
       //
       // integer 5th argument determines type of integration substepping:
       // 0 = adaptive RK5 Cash-Karp method.
-      // 1 = dumb adaptive euler integration.
+      // 1 = adaptive euler integration.
       // 2 = single step RK4 method (at your own risk!)
       //
       err += MP->TimeUpdateMP(c->P, p, delt, SimPM.gamma, 0, &tt);
-      //err += MP->TimeUpdateMP(c->P, p, delt, SimPM.gamma, 2);
-      //err += ump->TimeUpdateMP(c->P, p, delt, gamma, MP_ADAPTIVE);
       //rep.printVec("Original vector P",c->P,nvar);
       //rep.printVec("Updated  vector p",p   ,nvar);
-      if (err) rep.error("calc_microphysics_dU_no_RT returned error: cell id",c->id);
+      if (err)
+        rep.error("calc_noRT_microphysics_dU returned error: cell id",c->id);
 
       //
       // New state is p[], old state is c->P[].  Get dU from these.
@@ -626,7 +616,7 @@ int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
 
     } // if not boundary data.
   } while ( (c=grid->NextPt(c)) !=0);
-  //    cout <<"calc_microphysics_dU() Updating MicroPhysics Done!\n";
+  //    cout <<"calc_noRT_microphysics_dU() Updating MicroPhysics Done!\n";
   return err;
 } 
 
@@ -637,7 +627,7 @@ int sim_control_fixedgrid::calc_microphysics_dU_no_RT(
 
 
   
-int sim_control_fixedgrid::calc_dynamics_dU(
+int sim_control::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
       const int space_ooa, ///< spatial order of accuracy for update.
       class GridBaseClass *grid ///< Computational grid.
@@ -692,18 +682,16 @@ int sim_control_fixedgrid::calc_dynamics_dU(
 
 
 
-int sim_control_fixedgrid::set_dynamics_dU(
+int sim_control::set_dynamics_dU(
       const double dt,     ///< timestep for this calculation
       const int space_ooa, ///< space OOA for this calculation
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  //  cout <<"\t\t\tStarting set_dynamics_dU: ndim = "<<SimPM.ndim<<"\n";
-  int return_value=0;
-
   // 
   // Allocate arrays
   //
+  int return_value=0;
   enum direction posdirs[MAX_DIM], negdirs[MAX_DIM];
   enum axes axis[MAX_DIM];
   posdirs[0] = XP; posdirs[1] = YP; posdirs[2] = ZP;
@@ -724,7 +712,6 @@ int sim_control_fixedgrid::set_dynamics_dU(
   // internal boundaries which are also grid data.
   //
   for (int i=0;i<SimPM.ndim;i++) {
-    //    cout <<"\t\t\tidim="<<i<<"\n";
     spatial_solver->SetDirection(axis[i]);
     class cell *cpt    = grid->FirstPt();
     class cell *marker = grid->FirstPt();
@@ -746,10 +733,7 @@ int sim_control_fixedgrid::set_dynamics_dU(
                                         space_ooa,
 #endif
                                         space_ooa, grid)) ==0) {
-      //cout <<"next dir= "<<(i+1)%SimPM.ndim<<"\n";
-      //rep.printVec("cpt",cpt->pos,SimPM.ndim);
       if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim]))->isgd ) {
-        //cout <<"next dir= "<<(i+2)%SimPM.ndim<<"\n";
         if ( !(cpt=grid->NextPt(marker,posdirs[(i+2)%SimPM.ndim]))->isgd ) {
           CI.print_cell(cpt);
           rep.error("set_dynamics_dU: Got to edge of box before last point!",cpt);
@@ -760,11 +744,6 @@ int sim_control_fixedgrid::set_dynamics_dU(
     if (return_value!=-1) rep.error("dUdtColumn returned abnormally.",return_value);
   } // Loop over three directions.
   spatial_solver->SetDirection(axis[0]); // Reset fluxes to x-dir, (just to be safe!).
-  //  cout <<"\t\t\tCALC_DU done.\n";
-
-  //
-  // all done, so return
-  //
   return 0;
 }   // set_dynamics_dU()
 
@@ -775,7 +754,7 @@ int sim_control_fixedgrid::set_dynamics_dU(
 
   
 
-int sim_control_fixedgrid::dynamics_dU_column
+int sim_control::dynamics_dU_column
       (
       const class cell *startingPt, ///< sterting point of column.
       const enum direction posdir, ///< direction to trace column.
@@ -788,8 +767,6 @@ int sim_control_fixedgrid::dynamics_dU_column
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  //  cout <<"Starting dU_column in direction "<<posdir<<" at ";
-  //  rep.printVec("starting position",startingPt->x,SimPM.ndim);
   if ( (SimPM.spOOA>2) || (SimPM.tmOOA>2) || (csp>2)  ) {
     cerr<<"(RSMethod::calc_dUdt) Error, only know 1st and 2nd order accurate methods.\n";
     return(1);
@@ -800,11 +777,6 @@ int sim_control_fixedgrid::dynamics_dU_column
 #endif
   enum axes axis = spatial_solver->GetDirection();
   double dx = grid->DX();
-
-  //
-  // Run through all cells in grid, to calculate (up to) second order time and 
-  // space update.
-  //
 
   // Calculate Flux at positive (right) boundary of cell and store in temporary arrays
   // for the current cell (Fr_this) and the negative neighbour (Fr_prev)
@@ -827,8 +799,6 @@ int sim_control_fixedgrid::dynamics_dU_column
   cell *npt  = grid->NextPt(cpt,posdir);
   cell *n2pt = grid->NextPt(npt,posdir);
   if (npt==0 || n2pt==0) rep.error("Couldn't find two real cells in column",0);
-  //  cout<<"First Cell:"; CI.print_cell(cpt);
-  //  cout<<"Next Cell: "; CI.print_cell(npt);
   
   //
   // Left Ghost Cell (doesn't get updated)
@@ -856,14 +826,9 @@ int sim_control_fixedgrid::dynamics_dU_column
     err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
     err += spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
     err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
-    // rep.printVec("El",edgeL,SimPM.nvar); rep.printVec("Er",edgeR,SimPM.nvar);
-    // rep.errorTest("Edge States not obtained!",0,err);
     err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this,
                               SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
-    // rep.printVec("Fr",Fr_this,SimPM.nvar);
-    // rep.errorTest("Intercell Flux not obtained!",0,err);
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
-    //    rep.errorTest("dU not obtained!",0,err);
 
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {
@@ -901,6 +866,8 @@ int sim_control_fixedgrid::dynamics_dU_column
       dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
     }
 #endif //TESTING
+
+
     //
     // Now move temp arrays to prepare for moving on to the next cell.
     //
@@ -920,15 +887,16 @@ int sim_control_fixedgrid::dynamics_dU_column
 #ifdef TESTING
   dp.c = cpt;
 #endif
+
   err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
   err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
   err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
   err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+
 #ifdef TESTING
   if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
     ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-    // cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir)<<"\n";
     dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
     dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
     dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
@@ -946,7 +914,7 @@ int sim_control_fixedgrid::dynamics_dU_column
   for (int v=0;v<SimPM.nvar;v++) cpt->dU[v] +=0.; // nothing to calculate for it.
 
 
-  if (err!=0) {cerr<<"(RSMethod::calc_dUdt) Riemann solver returned abnormally... exiting.\n";return(err);}
+  rep.errorTest("(dU_Column) encountered an error",0,err);
   
   Fr_this   = mem.myfree(Fr_this);
   Fr_prev   = mem.myfree(Fr_prev);
@@ -972,7 +940,7 @@ int sim_control_fixedgrid::dynamics_dU_column
 // ##################################################################
 
   
-int sim_control_fixedgrid::grid_update_state_vector(
+int sim_control::grid_update_state_vector(
       const double dt,  ///< timestep
       const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa,   ///< Full order of accuracy of simulation
@@ -995,8 +963,10 @@ int sim_control_fixedgrid::grid_update_state_vector(
     dp.ergTotChange = 0.;temperg =0.;
     dp.c = c;
 #endif
-    err += spatial_solver->CellAdvanceTime(c, c->P, c->dU, c->Ph, &temperg,
-                        SimPM.gamma, SimPM.EP.MinTemperature, dt);
+    
+    err += spatial_solver->CellAdvanceTime(c, c->P, c->dU, c->Ph,
+                &temperg, SimPM.gamma, SimPM.EP.MinTemperature, dt);
+
 #ifdef TESTING
     if (err) {
       cout <<"______ Error in Cell-advance-time: "; CI.print_cell(c);
@@ -1010,6 +980,7 @@ int sim_control_fixedgrid::grid_update_state_vector(
     //
     if (step==ooa) {
       for (int v=0;v<SimPM.nvar;v++) c->P[v] = c->Ph[v];
+
 #ifdef TESTING
       //
       // Update Total Energy from fixing negative pressures. Reset
@@ -1018,6 +989,7 @@ int sim_control_fixedgrid::grid_update_state_vector(
       dp.ergTotChange = temperg;
       dp.initERG += dp.ergTotChange*spatial_solver->CellVolume(c);
 #endif // TESTING
+
     }
 
   } while ( (c =grid->NextPt(c)) !=0);

@@ -145,8 +145,7 @@ class sim_control : virtual public setup_fixed_grid
   class MCMDcontrol mpiPM;
 
   ///
-  /// Pointer to the raytracing class (for uniform grid this is a
-  /// vector of length 1.
+  /// Pointer to the raytracing class (one for each level of grid).
   ///
   std::vector<class RayTracingBase *> RT;
 
@@ -180,7 +179,7 @@ class sim_control : virtual public setup_fixed_grid
   /// pressure on the full domain and outputs it to screen
   ///
   void calculate_magnetic_pressure(
-      class GridBaseClass *  ///< address of grid pointer.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 #endif // CHECK_MAGP
 
@@ -190,7 +189,7 @@ class sim_control : virtual public setup_fixed_grid
   /// position and output to screen.
   ///
   void calculate_blastwave_radius(
-      class GridBaseClass *  ///< address of grid pointer.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 #endif // BLAST_WAVE_CHECK
 
@@ -213,7 +212,7 @@ class sim_control : virtual public setup_fixed_grid
   /// Delete any init data and make sure things are ready to go.
   /// 
   virtual int ready_to_start(
-      class GridBaseClass *  ///< address of grid pointer.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
    
 
@@ -237,8 +236,7 @@ class sim_control : virtual public setup_fixed_grid
   /// \retval 1 failure
   ///
   virtual int calc_timestep(
-      class GridBaseClass *, ///< pointer to grid.
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * 
       );
 
 
@@ -247,8 +245,7 @@ class sim_control : virtual public setup_fixed_grid
   /// rates.  Returns the minimum timestep of the local grid (negative if error).
   /// 
   double calc_microphysics_dt(
-      class GridBaseClass *, ///< pointer to grid.
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * 
       );
 
   ///
@@ -298,53 +295,66 @@ class sim_control : virtual public setup_fixed_grid
   // *********************** TIMESTEP CALCULATION **************************
   // ***********************************************************************
   ///
-  /// Advance the simulation by one time step.  This is the main time
-  /// integration function, and calls calc_timestep, followed by either a
-  /// first-order or second-order time update.
+  /// Advance the simulation by one time step.  This is a wrapper function,
+  /// which calls one of two specific algorithms.  If we have no raytracing,
+  /// then the original algorithm is
+  /// used.  If we are doing the newer update, where only column densities
+  /// are calculated in the ray-tracing update, then the timestep is limited
+  /// so that no microphysics quantities change by more than a certain 
+  /// percentage, then the microphysics is updated and finally the dynamics 
+  /// is updated.
   ///
+  /// This is the main time integration function.  If we're first order,
+  /// it calls calc_dU once, which calculates the update for each cell in
+  /// all directions (dimensionally unsplit method), and then adds dU to U
+  /// to get the new state vectors.  It then increments the time and timestep
+  /// counter.
+  ///
+  /// If we're second order, it halves the timestep, calls calc_dU once, and 
+  /// adds dU to U to get the half-time state vector cpt->Ph, and then 
+  /// doubles the timestep (to the full value), calls calc_dU again, and
+  /// updates the full timestep to get the new state vector, then increments
+  /// the time and timestep.
   /// \retval 0 success
   /// \retval 1 failure
   ///
   int advance_time(
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< grid pointer
       );
 
   ///
   /// This performs a first-order-accurate (in time) timestep for
-  /// dynamics, microphysics, thermal conduction.
-  ///
+  /// dynamics, microphysics, thermal conduction, everything.
   /// If the order-of-accuracy parameter is OA1 then it assumes this
   /// is a full step and updates both P[] and Ph[].
   /// If it is OA2, then the functions assumes this is the half-step
   /// as part of a full second-order step, so it only updates Ph[].
   /// It advances by an interval of dt regardless of OA1 or OA2, so 
-  /// if this is a half step 0.5*dt is passed to the function.
+  /// if this is a half step, you should pass 0.5*dt to the function.
   ///
   int first_order_update(
       const double,  ///< dt, time interval to advance by.
       const int,     ///< time order of accuracy OA1/OA2.
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< grid pointer
       );
 
   ///
   /// This performs a second-order-accurate (in time) timestep for
-  /// dynamics, microphysics, thermal conduction.
+  /// dynamics, microphysics, thermal conduction, everything.
   /// This performs the second part of a full second-order step, so
   /// the half-step must have been already called before this one.
   ///
   int second_order_update(
       const double, ///< dt, time interval to advance by.
       const int,    ///< time order of accuracy (must be OA2).
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< grid pointer
       );
   
   ///
   /// This function does some checking on radiation sources to see
   /// what microphysics update to call, then calls one of 
-  /// calc_RT_microphysics_dU() or
+  /// calc_RT_microphysics_dU(),
+  /// calc_microphysics_dU_JMs_C2ray_RT(), or
   /// calc_microphysics_dU().
   ///
   int calc_microphysics_dU(
@@ -374,7 +384,7 @@ class sim_control : virtual public setup_fixed_grid
   /// no radiation sources (e.g. pure heating+cooling, or collisional
   /// processes only).
   ///
-  int calc_noRT_microphysics_dU(
+  int calc_microphysics_dU(
       const double, ///< dt, timestep to integrate
       class GridBaseClass * ///< grid pointer
       );
@@ -480,14 +490,14 @@ class sim_control : virtual public setup_fixed_grid
   /// message if not.
   ///
   int check_energy_cons(
-      class GridBaseClass *  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
   ///
   /// Calculates total values of conserved quantities.
   ///
   int initial_conserved_quantities(
-      class GridBaseClass *  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 }; // sim_control
    
