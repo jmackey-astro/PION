@@ -14,6 +14,7 @@
 #endif // TESTING
 
 #include "dataio_base.h"
+#include <sstream>
 using namespace std;
 
 // ##################################################################

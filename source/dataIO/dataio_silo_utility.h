@@ -27,7 +27,7 @@
 using namespace std;
 
 #include "dataIO/file_status.h"
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
 #include "decomposition/MCMD_control.h"
 

@@ -1,4 +1,4 @@
-/// \file dataio.h
+/// \file parameter_defs.h
 /// \author Jonathan Mackey
 /// 
 /// modified:\n
@@ -24,8 +24,8 @@
 /// - 2018.01.24 JM: worked on making SimPM non-global
 /// - 2018.05.01 JM: moved DataIOBase and dataio_text to other files.
 
-#ifndef DATAIO_H
-#define DATAIO_H
+#ifndef PARAMETER_DEFS_H
+#define PARAMETER_DEFS_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -33,10 +33,6 @@
 
 #include <cstring>
 #include <list>
-
-#include "spatial_solvers/solver_eqn_base.h"
-#include "dataIO/file_status.h"
-#include "raytracing/raytracer_base.h"
 
 // -----------------------------------------------------------
 // -----------------------------------------------------------
@@ -262,4 +258,4 @@ protected:
 
 
 
-#endif // DATAIO_H
+#endif // PARAMETER_DEFS_H

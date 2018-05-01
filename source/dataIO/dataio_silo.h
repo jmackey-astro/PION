@@ -38,7 +38,7 @@
 
 #ifdef SILO
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
 #include <silo.h>
 #include <vector>

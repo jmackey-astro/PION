@@ -7,7 +7,10 @@
 #ifndef DATAIO_BASE_H
 #define DATAIO_BASE_H
 
-#include "dataio.h"
+#include "parameter_defs.h"
+#include "sim_params.h"
+#include "dataIO/file_status.h"
+#include "spatial_solvers/solver_eqn_base.h"
 
 ///
 /// Abstract base class for Data I/O in my finite-volume code.

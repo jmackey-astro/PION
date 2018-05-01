@@ -20,7 +20,7 @@
 
 #ifdef FITS
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "dataIO/dataio_fits.h"
 #include "fitsio.h"
 #include "decomposition/MCMD_control.h"

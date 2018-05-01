@@ -309,8 +309,11 @@ double sim_control::calc_dynamics_dt(
               SimPM.gamma, ///< gas EOS gamma.
               dx  ///< Cell size dx.
               );
-    if(tempdt<=0.0)
+    if(tempdt<=0.0) {
+      CI.print_cell(c);
+      cout <<"celltimestep="<<tempdt<<", gamma="<<SimPM.gamma<<", dx="<<dx<<"\n";
       rep.error("CellTimeStep function returned failing value",c->id);
+    }
     //    commandline.console("timestep -> ");
     dt = min(dt, tempdt);
     //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
@@ -381,7 +384,7 @@ double sim_control::calc_microphysics_dt(
     //
     // need column densities, so do raytracing, and then get dt.
     //
-    //cout <<"calc_timestep, getting column densities.\n";
+    //cout <<"calc_timestep, getting column densities rt="<<raytracer<<".\n";
     int err = calculate_raytracing_column_densities(raytracer);
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
     dt = get_mp_timescales_with_radiation(grid);

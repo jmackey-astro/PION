@@ -1,4 +1,4 @@
-/// \file dataio.cpp
+/// \file parameter_defs.cpp
 /// \author Jonathan Mackey
 ///
 /// Class definitions for simulation parameter types.
@@ -64,7 +64,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "dataIO/readparams.h"
 #include "grid/stellar_wind_BC.h"
 #include "raytracing/raytracer_base.h"

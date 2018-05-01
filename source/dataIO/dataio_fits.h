@@ -5,7 +5,7 @@
 /// versions of the Fits data I/O class.  Info on FITS can be found at
 /// http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html at 
 /// NASA.
-/// This file is forked off from dataio.h
+/// This file is forked off from dataio_base.h
 ///
 /// modified:\n 
 /// - 2010-02-03 JM: made ~utility_fitsio() virtual function.
@@ -35,7 +35,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "dataio.h"
+#include "dataio_base.h"
 #include "fitsio.h"
 
 ///

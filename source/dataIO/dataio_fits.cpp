@@ -221,27 +221,12 @@ int DataIOFits::OutputData(
   } // if RT
 #endif // RT_TESTING_OUTPUTCOL
 
-
-
-
-
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-
-    // for now write a different file for each level in the nested grid.
-    CI.set_dx(SimPM.nest_levels[l].dx);
-    ostringstream temp; temp << outfile << "_level";
-    temp.width(2); temp.fill('0');
-    temp << l;
-
-  if (!cg[l])
-    rep.error("DataIOFits::OutputData() null pointer to grid!",cg[l]);
-  DataIOFits::gp = cg[l];
+  if (!cg[0])
+    rep.error("DataIOFits::OutputData() null pointer to grid!",cg[0]);
+  DataIOFits::gp = cg[0];
 
   fitsfile *ff=0;
   int status=0,err=0;
-
-
-
   //
   // Choose filename based on the basename and the counter passed to
   // this function.

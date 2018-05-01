@@ -158,7 +158,7 @@
 
 #include "raytracing/raytracer_SC.h"
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
