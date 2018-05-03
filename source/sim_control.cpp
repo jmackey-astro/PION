@@ -360,12 +360,12 @@ int sim_control::Init(
   SimPM.typeofip=typeOfFile;
   setup_dataio_class(typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("(INIT::get_parameters) err!=0 Something went bad",0,err);
+  rep.errorTest("(INIT::get_parameters) err!=0 Something went wrong",0,err);
 #endif // SERIAL
 
   // Now see if any commandline args override the Parameters from the file.
   err = override_params(narg, args);
-  rep.errorTest("(INIT::override_params) err!=0 Something went bad",0,err);
+  rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
   
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
@@ -379,10 +379,7 @@ int sim_control::Init(
   err = setup_grid(&(grid[0]),SimPM,&mpiPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
-  if (err!=0) {
-    cerr<<"(INIT::setup_grid) err!=0 Something went bad"<<"\n";
-    return(1);
-  }
+  rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
 
   //
   // All grid parameters are now set, so I can set up the appropriate
@@ -391,7 +388,8 @@ int sim_control::Init(
   err = set_equations();
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
   spatial_solver->set_dx(SimPM.dx);
-  
+  spatial_solver->SetEOS(SimPM.gamma);
+
   //
   // Now setup Microphysics, if needed.
   //
@@ -402,15 +400,28 @@ int sim_control::Init(
   // Now assign data to the grid, either from file, or via some function.
   //
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
+  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
 
   //
   // Set Ph[] = P[], and then implement the boundary conditions.
   //
-  cell *cpt = grid[0]->FirstPt();
+  cell *c = grid[0]->FirstPt();
   do {
-    for(int v=0;v<SimPM.nvar;v++) cpt->Ph[v]=cpt->P[v];
-  } while ((cpt=grid[0]->NextPt(cpt))!=0);
+    for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
+  } while ((c=grid[0]->NextPt(c))!=0);
+
+  //
+  // If I'm using the GLM method, make sure Psi variable is
+  // initialised to zero.
+  //
+  if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
+#ifdef TESTING
+    cout <<"Initial state, zero-ing glm variable.\n";
+#endif
+    c = grid->FirstPt(); do {
+      c->P[SI] = c->Ph[SI] = 0.;
+    } while ( (c=grid->NextPt(c)) !=0);
+  }
 
   //
   // Assign boundary conditions to boundary points.
@@ -425,9 +436,23 @@ int sim_control::Init(
   err += setup_evolving_RT_sources(SimPM, RT[0]);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
-  // Now do some checks that everything is ready to start.
-  err = ready_to_start(grid[0]);
-  rep.errorTest("(INIT::ready_to_start) err!=0",0,err);
+  //
+  // If testing the code, this calculates the momentum and energy on the domain.
+  //
+  initial_conserved_quantities(grid);
+
+  //
+  // If using opfreq_time, set the next output time correctly.
+  //
+  if (SimPM.op_criterion==1) {
+    if (SimPM.opfreq_time < TINYVALUE)
+      rep.error("opfreq_time not set right and is needed!",SimPM.opfreq_time);
+    SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
+    double tmp = 
+      ((SimPM.simtime/SimPM.opfreq_time)-
+       floor(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
+    SimPM.next_optime-= tmp;
+  }
 
   //
   // If outfile-type is different to infile-type, we need to delete
@@ -1030,59 +1055,6 @@ int sim_control::output_data(
 }
 
 
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_control::ready_to_start(
-      class GridBaseClass *grid  ///< address of vector of grid pointers.
-      )
-{
-  //
-  // If I'm using the GLM method, make sure Psi variable is initialised.
-  //
-  cell *c=0;
-  if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
-
-#ifdef TESTING
-    cout <<"Initial state, zero-ing glm variable.\n";
-#endif
-    c = grid->FirstPt(); do {
-      c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
-    } while ( (c=grid->NextPt(c)) !=0);
-  }
-  
-  //
-  // Set the value of gamma in the equations.
-  //
-  spatial_solver->SetEOS(SimPM.gamma);
-  
-  //
-  // If testing the code, this calculates the momentum and energy on the domain.
-  //
-  initial_conserved_quantities(grid);
-  
-  //
-  // If using opfreq_time, set the next output time correctly.
-  // 'floor' is a cmath function returning the largest integer NOT LARGER
-  // THAN the double precision argument (should be identical to (int (x)) 
-  // at least for x>0).
-  //
-  if (SimPM.op_criterion==1) {
-    if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!",SimPM.opfreq_time);
-    SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
-    double tmp = ((SimPM.simtime/SimPM.opfreq_time)-floor(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
-    SimPM.next_optime-= tmp;
-  }
-
-  return(0);
-}
-
-
-
 // ##################################################################
 // ##################################################################
 
@@ -1155,7 +1127,7 @@ int sim_control::Time_Int(
     //clk.start_timer("advance_time");
     err+= advance_time(grid[0],RT[0]);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
-    if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went bad\n";return(1);}
+    if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went wrong\n";return(1);}
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
@@ -1166,10 +1138,10 @@ int sim_control::Time_Int(
 #endif
 
     err+= output_data(grid);
-    if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went bad\n";return(1);}
+    if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went wrong\n";return(1);}
 
     err+= check_eosim();
-    if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went bad\n";return(1);}
+    if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went wrong\n";return(1);}
   }
 
   cout <<"(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
@@ -1452,10 +1424,7 @@ int sim_control::Finalise(
   cout <<"(sim_control::Finalise) FINALISING SIMULATION."<<"\n";
   err += check_energy_cons(grid[0]);
   err+= output_data(grid);
-  if (err!=0){
-    cerr<<"(FINALISE::output_data) final state data output. err!=0 Something went bad"<<"\n";
-    return(1);
-  }
+  rep.errorTest("(FINALISE::output_data) Something went wrong",0,err);
   cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
 #ifdef TESTING
   cout <<"(sim_control::Finalise) DONE.\n";

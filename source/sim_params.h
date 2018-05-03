@@ -165,6 +165,8 @@ struct level {
   double Xmin[MAX_DIM];   ///< Min value of x,y,z in domain on this level
   double Xmax[MAX_DIM];   ///< Max value of x,y,z in domain on this level
   double dx;              ///< Linear side length of grid cells on this level
+  double simtime;         ///< simulation time at this level.
+  double dt;              ///< current timestep at this level.
 };
 // *******************************************************************
 

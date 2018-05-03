@@ -63,17 +63,7 @@ class nested_grid
   class GridBaseClass *parent; ///< pointer to parent grid in nest.
   class GridBaseClass *child;  ///< pointer to child grid in nest.
 
-  ///
-  /// Set cell dimensions based on grid properties.
-  ///
-  int set_cell_size();
 
-  ///
-  /// Set the boundary conditions string and initialise BC_bd
-  ///
-  virtual int BC_setBCtypes(
-        class SimParams &  ///< reference to SimParams list.
-        );
 
   public:
   /// 
@@ -122,17 +112,15 @@ class nested_grid
         const int  ///< Maximum step number in timestep.
         );
    
-  ///
-  /// Sets up boundary data on each boundary, and any extra
-  /// boundaries specified in the input string.  Also assigns data to
-  /// each boundary. This is different from the UniformGrid in that
-  /// the outer boundaries of a refined grid are not the same as for
-  /// the coarse grid, so we need to replace some.
-  ///
-  virtual int SetupBCs(
-        class SimParams &  ///< List of simulation params (including BCs)
-        );
+  /// Set pointer to parent grid.
+  void set_parent_grid(
+      class GridBaseClass *  ///< pointer to parent grid.
+      );
 
+  /// Set pointer to child grid.
+  void set_child_grid(
+      class GridBaseClass *  ///< pointer to child grid.
+      );
 };
   
 

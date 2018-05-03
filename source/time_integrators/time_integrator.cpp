@@ -181,10 +181,6 @@
 using namespace std;
 
 
-#define TIMESTEP_FULL       OA2
-#define TIMESTEP_FIRST_PART OA1
-
-
 
 // ##################################################################
 // #################    TIME UPDATE FUNCTIONS     ###################

@@ -116,6 +116,9 @@ void setup_nested_grid::setup_nested_grid_levels(
         SimPM.nest_levels[i].Xmax[v] = 0.5*(SimPM.nest_levels[i-1].Xmax[v]+SimPM.grid_nest_centre[v]);
       SimPM.nest_levels[i].dx = 0.5*SimPM.nest_levels[i-1].dx;
     }
+    SimPM.nest_levels[i].simtime = SimPM.simtime;
+    SimPM.nest_levels[i].dt = 0.0;
+
     
     ostringstream temp; temp<<i;
     string lv = "level data"+temp.str();
@@ -170,6 +173,14 @@ int setup_nested_grid::setup_grid(
   //
   setup_cell_extra_data(SimPM);
 
+  //
+  // Set values cell interface class; note dx changes with level.
+  //
+  CI.set_dx((SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX]);
+  CI.set_ndim(SimPM.ndim);
+  CI.set_nvar(SimPM.nvar);
+  CI.set_xmin(SimPM.Xmin);
+  
   //
   // Now we can setup the grid:
   //
