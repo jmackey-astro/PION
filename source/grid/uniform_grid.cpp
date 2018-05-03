@@ -760,13 +760,6 @@ int UniformGrid::set_cell_size()
 
   G_dx = G_range[0]/(G_ng[0]);
 
-  //
-  // Set Cell dx in cell interface class, and also xmin.
-  //
-  CI.set_dx(G_dx);
-  CI.set_ndim(G_ndim);
-  CI.set_nvar(G_nvar);
-  CI.set_xmin(Sim_xmin);
 
   if(G_ndim>1) {
     if (!pconst.equalD(G_range[1]/G_dx, static_cast<double>(G_ng[1])))

@@ -195,7 +195,7 @@ class sim_control : virtual public setup_fixed_grid
   /// If running a spherical blast wave, calculate the shock
   /// position and output to screen.
   ///
-  void calculate_blastwave_radius(
+  virtual void calculate_blastwave_radius(
       class GridBaseClass *  ///< address of grid pointer.
       );
 #endif // BLAST_WAVE_CHECK
@@ -215,13 +215,6 @@ class sim_control : virtual public setup_fixed_grid
   int set_equations();
 
     
-  ///
-  /// Delete any init data and make sure things are ready to go.
-  /// 
-  virtual int ready_to_start(
-      class GridBaseClass *  ///< address of grid pointer.
-      );
-   
 
 
    /********************************************************************/
