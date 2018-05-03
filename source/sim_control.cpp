@@ -356,11 +356,13 @@ int sim_control::Init(
 #endif
   int err=0;
   
+#ifdef SERIAL
   SimPM.typeofip=typeOfFile;
   setup_dataio_class(typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("(INIT::get_parameters) err!=0 Something went bad",0,err);
-  
+#endif // SERIAL
+
   // Now see if any commandline args override the Parameters from the file.
   err = override_params(narg, args);
   rep.errorTest("(INIT::override_params) err!=0 Something went bad",0,err);
@@ -424,26 +426,14 @@ int sim_control::Init(
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
   // Now do some checks that everything is ready to start.
-#ifdef TESTING
-  cout <<"(sim_control::Init) Ready to start? \n";
-#endif
   err = ready_to_start(grid[0]);
   rep.errorTest("(INIT::ready_to_start) err!=0",0,err);
 
-#ifdef TESTING
-  cout <<"(sim_control::Init) Ready to start. Starting simulation."<<"\n";
-#endif
-
-#ifdef SERIAL
-  // If outfile-type is different to infile-type, we need to delete dataio and set it up again.
-  // This is ifdeffed because parallel version of init() will do it itself,
-  // with parallel I/O classes.
+  //
+  // If outfile-type is different to infile-type, we need to delete
+  // dataio and set it up again.
+  //
   if (SimPM.typeofip != SimPM.typeofop) {
-#ifdef TESTING
-    cout <<"(sim_control::INIT) infile-type="<<SimPM.typeofip;
-    cout <<" and outfile-type="<<SimPM.typeofop;
-    cout <<", so deleting and renewing dataio.\n";
-#endif
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
     setup_dataio_class(SimPM.typeofop);
@@ -452,8 +442,9 @@ int sim_control::Init(
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
 
+#ifdef SERIAL
   if (SimPM.timestep==0) {
-    cout << "(INIT) Saving initial data.\n";
+    cout << "(INIT) Writing initial data.\n";
     err=output_data(grid);
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
