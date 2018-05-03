@@ -87,6 +87,11 @@ class sim_control_pllel :
         class GridBaseClass * 
         );
 
+  /// function to setup parallel data-I/O class.
+  void setup_dataio_class(
+      const int  ///< type of I/O: 2=fits,5=silo
+      );
+
 }; // sim_control_pllel
 
 #endif // PARALLEL
