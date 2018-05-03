@@ -174,6 +174,12 @@ class sim_control : virtual public setup_fixed_grid
   //---------------------------------------
   //---------------------------------------
 
+
+  /// function to setup data-I/O class.
+  virtual void setup_dataio_class(
+      const int  ///< type of I/O: 1=text,2=fits,5=silo
+      );
+  
 #ifdef CHECK_MAGP
   ///
   /// This is only for a test problem -- it checks the magnetic

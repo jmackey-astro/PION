@@ -352,34 +352,12 @@ int sim_control::Init(
       )
 {
 #ifdef TESTING
-  cout <<"(UniformFV::Init) Initialising grid"<<"\n";
+  cout <<"(sim_control::Init) Initialising grid"<<"\n";
 #endif
   int err=0;
   
   SimPM.typeofip=typeOfFile;
-  // First get grid parameters from a file.
-  switch (typeOfFile) {
-  case 1: // Start From ASCII Parameterfile.
-    if (!dataio) dataio = new dataio_text(SimPM);
-    if (!dataio) rep.error("dataio_text initialisation",dataio);
-    break;
-#ifdef FITS
-  case 2: // Start from FITS restartfile, which may be initial conditions or a snapshot.
-  case 3: // Fits restartfile in table format (slower I/O than image...)
-    if (!dataio) dataio = new DataIOFits(SimPM);
-    if (!dataio) rep.error("DataIOFits initialisation",dataio);
-    break;
-#endif // if FITS
-#ifdef SILO
-  case 5: // Start from Silo ICfile or restart file.
-    if (!dataio) dataio = new dataio_silo (SimPM, "DOUBLE");
-    if (!dataio) rep.error("dataio_silo initialisation",dataio);
-    break; 
-#endif // if SILO
-  default:
-    cerr <<"(UniformFV::Init) Do not understand typeOfFile="<<typeOfFile<<", so exiting.\n";
-    return(1);
-  }
+  setup_dataio_class(typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("(INIT::get_parameters) err!=0 Something went bad",0,err);
   
@@ -421,29 +399,7 @@ int sim_control::Init(
   //
   // Now assign data to the grid, either from file, or via some function.
   //
-#if defined SERIAL
-
   err = dataio->ReadData(infile, grid, SimPM);
-
-#elif defined PARALLEL
-
-  switch (typeOfFile) {
-#ifdef FITS
-  case 2: // Start from FITS restartfile.
-  err = dataio->ReadData(infile, grid, SimPM);
-    break;
-#endif // if FITS
-#ifdef SILO
-  case 5: // Start from Silo restart file.
-    err = dataio->parallel_read_any_data(infile, SimPM, grid);
-    break; 
-#endif // if SILO
-  default:
-    cerr <<"(UniformFV::Init) Bad file type: "<<typeOfFile<<"\n";
-    return(1);
-  }
-
-#endif  // PARALLEL/SERIAL
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went bad",0,err);
 
   //
@@ -467,21 +423,15 @@ int sim_control::Init(
   err += setup_evolving_RT_sources(SimPM, RT[0]);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
-  // If we are to add noise to data, do it.
-//  if (SimPM.addnoise >0) {
-//    cout <<"\tAdding noise to data, at fractional level "<<SimPM.addnoise<<"\n";
-//    addNoise2Data(2,SimPM.addnoise); // 1=to pressure, 2=adiabatic+random, 3=adiabatic+wave
-//  }
-
   // Now do some checks that everything is ready to start.
 #ifdef TESTING
-  cout <<"(UniformFV::Init) Ready to start? \n";
+  cout <<"(sim_control::Init) Ready to start? \n";
 #endif
   err = ready_to_start(grid[0]);
   rep.errorTest("(INIT::ready_to_start) err!=0",0,err);
 
 #ifdef TESTING
-  cout <<"(UniformFV::Init) Ready to start. Starting simulation."<<"\n";
+  cout <<"(sim_control::Init) Ready to start. Starting simulation."<<"\n";
 #endif
 
 #ifdef SERIAL
@@ -490,40 +440,13 @@ int sim_control::Init(
   // with parallel I/O classes.
   if (SimPM.typeofip != SimPM.typeofop) {
 #ifdef TESTING
-    cout <<"(UniformFV::INIT) infile-type="<<SimPM.typeofip;
+    cout <<"(sim_control::INIT) infile-type="<<SimPM.typeofip;
     cout <<" and outfile-type="<<SimPM.typeofop;
     cout <<", so deleting and renewing dataio.\n";
 #endif
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
-    switch (SimPM.typeofop) {
-    case 1: // ascii, so do nothing.
-      dataio = new dataio_text (SimPM);
-      break;
-#ifdef FITS
-    case 2: // fits
-    case 3: // fits
-      dataio = new DataIOFits(SimPM);
-      break;
-    case 4: // fits +ascii
-      dataio = new DataIOFits(SimPM);
-      textio = new dataio_text(SimPM);
-      if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
-      break;
-#endif // if FITS
-#ifdef SILO
-    case 5: // silo
-      dataio = new dataio_silo (SimPM, "DOUBLE");
-      break;
-    case 6: // silo + text
-      dataio = new dataio_silo (SimPM, "DOUBLE");
-      textio = new dataio_text (SimPM);
-      if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
-      break;
-#endif // if SILO
-    default:
-      rep.error("Bad type of Output",SimPM.typeofop);
-    }
+    setup_dataio_class(SimPM.typeofop);
     if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
@@ -541,14 +464,63 @@ int sim_control::Init(
 #ifdef TESTING
   cell *c = (grid[0])->FirstPt_All();
   do {
-    if (pconst.equalD(c->P[RO],0.0))
+    if (pconst.equalD(c->P[RO],0.0)) {
+      cout <<"zero data in cell: ";
       CI.print_cell(c);
+    }
   } while ( (c=(grid[0])->NextPt_All(c)) !=0 );
 #endif // TESTING
   
   return(0);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void sim_control::setup_dataio_class(
+      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
+      )
+{
+  //
+  // set up the right kind of data I/O class depending on the input.
+  //
+  switch (typeOfFile) {
+
+  case 1: // Start From ASCII Parameterfile.
+    dataio = new dataio_text(SimPM);
+    rep.error("dataio_text initialisation",dataio);
+    break;
+
+#ifdef FITS
+  case 2: // Start from FITS restartfile.
+  case 3: // Fits restartfile in table format (slower I/O than image...)
+    dataio = new DataIOFits(SimPM);
+    break;
+  case 4: // fits +ascii
+    dataio = new DataIOFits(SimPM);
+    textio = new dataio_text(SimPM);
+    break;
+#endif // if FITS
+
+#ifdef SILO
+  case 5: // Start from Silo snapshot.
+    dataio = new dataio_silo (SimPM, "DOUBLE");
+    break; 
+  case 6: // silo + text
+    dataio = new dataio_silo (SimPM, "DOUBLE");
+    textio = new dataio_text (SimPM);
+    if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
+    break;
+#endif // if SILO
+  default:
+    rep.error("sim_control::Init unhandled filetype",typeOfFile);
+  }
+  return;
+}
 
 
 // ##################################################################

@@ -185,6 +185,14 @@ int setup_fixed_grid::setup_grid(
   setup_cell_extra_data(SimPM);
 
   //
+  // Set Cell dx in cell interface class, and also xmin.
+  //
+  CI.set_dx((SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX]);
+  CI.set_ndim(SimPM.ndim);
+  CI.set_nvar(SimPM.nvar);
+  CI.set_xmin(SimPM.Xmin);
+
+  //
   // Now we can setup the grid:
   //
 #ifdef TESTING
