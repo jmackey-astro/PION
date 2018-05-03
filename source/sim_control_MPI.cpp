@@ -183,27 +183,13 @@ int sim_control_pllel::Init(
 
 
 
-  // If outfile-type is different to infile-type, we need to delete dataio and set it up again.
-  // This is ifdeffed out in the serial code because parallel I/O classes need to be set up.
-  if (SimPM.typeofip != SimPM.typeofop) {
-#ifdef TESTING
-    cout <<"(sim_control_pllel::INIT) infile-type="<<SimPM.typeofip;
-    cout <<" and outfile-type="<<SimPM.typeofop;
-    cout <<", so deleting and renewing dataio.\n";
-#endif
-    if (dataio) {delete dataio; dataio=0;}
-    setup_dataio_class(SimPM.typeofop);
-    if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
-  }
-  dataio->SetSolver(eqn);
   if (SimPM.timestep==0) {
 #ifdef TESTING
-     cout << "(P\'LLEL INIT) Outputting initial data.\n";
+     cout << "(PARALLEL INIT) Writing initial data.\n";
 #endif
      output_data(*grid);
   }
-  cout <<"                                   ******************************\n";
-
+  cout <<"------------------------------------------------------------\n";
   return(err);
 }
 
