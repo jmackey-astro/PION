@@ -32,13 +32,6 @@
 #include "microphysics/MPv9.h"
 #endif
 
-#ifdef LEGACY_CODE
-#include "microphysics/MPv0.h"
-#include "microphysics/MPv1.h"
-#include "microphysics/MPv2.h"
-#include "microphysics/MPv4.h"
-#endif 
-
 #ifdef CODE_EXT_HHE
 #include "future/mpv9_HHe.h"
 #endif
@@ -62,10 +55,6 @@
 #include <time.h>
 #include <climits>
 using namespace std;
-
-
-#define TIMESTEP_FULL 1
-#define TIMESTEP_FIRST_PART 2
 
 
 
@@ -148,33 +137,28 @@ void setup_nested_grid::setup_nested_grid_levels(
 
 
 int setup_nested_grid::setup_grid(
-      class GridBaseClass **grid,
+      vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      const int l,    ///< level in nested grid to set up.
       class MCMDcontrol * ///< unused for serial code.
       )
 {
   cout <<"------------------------------------------------------\n";
-  cout <<"--------  Setting up nested grid --------------\n";
-
-#ifdef TESTING
-  cout <<"Init::setup_grid: &grid="<< grid<<", and grid="<<*grid<<"\n";
-#endif // TESTING
+  cout <<"------------  Setting up nested grid -----------------\n";
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
 
-  //
-  // Nbc is the depth of the boundary layer.
-  //
 #ifdef TESTING
   cout <<"Setting number of boundary cells == spatial OOA: ";
   cout <<SimPM.spOOA<<"\n";
 #endif // TESTING
+
+  //
+  // Nbc is the depth of the boundary layer around each grid.
+  //
   if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
-  else
-    rep.error("Spatial order of accuracy unhandled by boundary conditions!",SimPM.spOOA);
+  else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   
   // Force Nbc=1 if using Lax-Friedrichs flux.
   if (SimPM.solverType==FLUX_LF)
@@ -192,23 +176,40 @@ int setup_nested_grid::setup_grid(
 #ifdef TESTING
   cout <<"(setup_nested_grid::setup_grid) Setting up grid...\n";
 #endif
-  if (*grid) rep.error("Grid already set up!",*grid);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    
+    if (grid[l]) rep.error("Grid already set up!",grid[l]);
 
-  if      (SimPM.coord_sys==COORD_CRT)
-    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
-  else if (SimPM.coord_sys==COORD_CYL)
-    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
-  else if (SimPM.coord_sys==COORD_SPH)
-    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax, SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
-  else 
-    rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
+    if      (SimPM.coord_sys==COORD_CRT)
+      grid[l] = new nested_grid (
+              SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+              SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax,
+              SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+    else if (SimPM.coord_sys==COORD_CYL)
+      grid[l] = new nested_grid_cyl (
+              SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+              SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax,
+              SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+    else if (SimPM.coord_sys==COORD_SPH)
+      grid[l] = new nested_grid_sph (
+              SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
+              SimPM.nest_levels[l].Xmin, SimPM.nest_levels[l].Xmax,
+              SimPM.nest_levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+    else 
+      rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
-  if (*grid==0) rep.error("(setup_nested_grid::setup_grid) Couldn't assign data!", *grid);
+    if (grid[l]==0)
+      rep.error("(setup_nested_grid::setup_grid) Couldn't assign data!", grid[l]);
+
 #ifdef TESTING
-  cout <<"(setup_nested_grid::setup_grid) Done. &grid="<< grid<<", and grid="<<*grid<<"\n";
-  cout <<"DX = "<<(*grid)->DX()<<"\n";
-  dp.grid = (*grid);
+    cout <<"(setup_nested_grid::setup_grid) Done. &grid=";
+    cout << &(grid[l])<<", and grid="<<grid[l]<<"\n";
+    cout <<"DX = "<<(grid[l])->DX()<<"\n";
+    dp.grid = (grid[l]);
 #endif
+  }
   cout <<"------------------------------------------------------\n\n";
 
   return(0);
@@ -222,19 +223,26 @@ int setup_nested_grid::setup_grid(
 
 
 int setup_nested_grid::boundary_conditions(
+      vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      const int level          ///< level of grid in nested grid struct
       )
 {
   // For uniform fixed cartesian grid.
 #ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
 #endif
+  int err = 0;
+  for (int i=0;i<SimPM.grid_nlevels;i++) {
 
-  int err = grid->SetupBCs(SimPM);
-  rep.errorTest("setup_nested_grid::boundary_conditions()",0,err);
+    if (l!=0) grid[l]->set_parent_grid(grid[l-1]);
+    else      grid[l]->set_parent_grid(0);
 
+    if (l!=SimPM.grid_nlevels-1) grid[l]->set_child_grid(grid[l+1]);
+    else                         grid[l]->set_child_grid(0);
+
+    err = grid[l]->SetupBCs(SimPM);
+    rep.errorTest("setup_nested_grid::boundary_conditions()",0,err);
+  }
 #ifdef TESTING
   cout <<"(setup_nested_grid::boundary_conditions) Done.\n";
 #endif
