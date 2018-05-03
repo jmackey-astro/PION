@@ -46,10 +46,9 @@ class setup_nested_grid
   /// 
   /// Sets up a nested grid.
   ///
-  virtual int setup_grid(
-      class GridBaseClass **, ///< address of pointer to grid.
+  int setup_grid(
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,      ///< pointer to simulation parameters
-      const int,              ///< level in nested grid to set up.
       class MCMDcontrol *     ///< address of MCMD controller class.
       );
 
@@ -60,9 +59,8 @@ class setup_nested_grid
   /// \retval 1 failure
   ///
   int boundary_conditions(
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      const int              ///< level in nested grid to set up.
       );   
 
 

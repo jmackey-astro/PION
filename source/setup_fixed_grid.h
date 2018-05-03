@@ -21,6 +21,10 @@
 #include "grid/uniform_grid.h"
 #include "decomposition/MCMD_control.h"
 
+#define TIMESTEP_FULL 1
+#define TIMESTEP_FIRST_PART 2
+
+
 ///
 /// The simplest finite volume grid - a uniform grid with cells that
 /// are cubes in the chosen coordinates.  This class sets up the grid and
