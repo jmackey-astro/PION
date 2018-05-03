@@ -355,7 +355,7 @@ class dataio_silo_pllel : public dataio_silo {
   /// domain decomposition has been done already, and will bug out if it
   /// hasn't.  The routine uses the PMPIO interface.
   ///
-  int ReadData(
+  virtual int ReadData(
       string, ///< file to read from
       class GridBaseClass *, ///< pointer to data.
       class SimParams &  ///< pointer to simulation parameters
