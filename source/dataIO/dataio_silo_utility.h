@@ -13,6 +13,7 @@
 /// - 2015.03.26 JM: updated for pion v0.2
 /// - 2015.06.13/18 JM: tidied up code.
 
+
 #ifndef DATAIO_UTILITY_H
 #define DATAIO_UTILITY_H
 
@@ -56,10 +57,13 @@ class dataio_silo_utility : public dataio_silo_pllel  {
       class GridBaseClass * ///< pointer to data.
       );
 
-  int parallel_read_any_data(
+  ///
+  /// Parallel code to read any data.
+  ///
+  int ReadData(
       string, ///< file to read from
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass * ///< pointer to data.
+      class GridBaseClass *, ///< pointer to data.
+      class SimParams &  ///< pointer to simulation parameters
       );
 
   protected:
