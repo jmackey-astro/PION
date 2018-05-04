@@ -1,5 +1,5 @@
 ///
-/// \file dataio_silo.cc
+/// \file dataio_silo.cpp
 /// This has the class definitions for the serial I/O class
 /// dataio_silo. Note that the variable SILO must be set in
 /// the Makefile for this code to be compiled.

@@ -29,8 +29,8 @@ MAKE_UNAME=standard
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 NCORES=8
-#export PION_OPTIMISE=LOW
-#CORES=1
+export PION_OPTIMISE=LOW
+NCORES=1
 export CXX=g++
 
 #################################
@@ -194,7 +194,8 @@ echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
-make -j${NCORES}
+#make -j${NCORES} uni
+make -j${NCORES} nest
 #####################################################################
 
 exit 

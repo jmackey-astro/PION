@@ -2974,6 +2974,7 @@ int UniformGrid::BC_assign_STWIND_add_cells2src(
     // It makes no difference for Cartesian grids b/c the centre-of-
     // volume coincides the midpoint.
     //
+    cout <<"cell: "<<distance_vertex2cell(srcpos,c)<<"\n";
     if (distance_vertex2cell(srcpos,c) <= srcrad) {
       ncell++;
       err += Wind->add_cell(this, id,c);
@@ -3014,8 +3015,14 @@ int UniformGrid::BC_update_STWIND(
   // for each source, together with pre-calculated state vectors,
   // so we just call the set_cell_values() function.
   //
+#ifdef TESTING
+  cout <<"UniformGrid: updating wind boundary\n";
+#endif
   int err=0;
   for (int id=0;id<Wind->Nsources();id++) {
+#ifdef TESTING
+    cout <<"UniformGrid: updating wind boundary for id="<<id<<"\n";
+#endif
     err += Wind->set_cell_values(this, id,simtime);
   }
 

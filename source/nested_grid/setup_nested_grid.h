@@ -29,7 +29,7 @@
 /// for simulation analysis.  PION itself uses a derived class to
 /// setup and run simulations.
 ///
-class setup_nested_grid
+class setup_nested_grid : virtual public setup_fixed_grid
 {
   public:
   setup_nested_grid();  ///< Simple constructor, initialises value.
@@ -60,8 +60,18 @@ class setup_nested_grid
   ///
   int boundary_conditions(
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
-      class SimParams &,  ///< pointer to simulation parameters
+      class SimParams &  ///< pointer to simulation parameters
       );   
+
+  ///
+  /// Decide if I need to setup RT class and, if so, set up a
+  /// raytracer associated with each grid.
+  ///
+  int setup_raytracing(
+      class SimParams &,    ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      vector<class RayTracingBase *> &  ///< address of vector of grid pointers.
+      );
 
 
   //---------------------------------------

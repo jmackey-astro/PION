@@ -15,7 +15,8 @@
 #include "tools/command_line_interface.h"
 #include "raytracing/raytracer_SC.h"
 
-#include "setup_nested_grid.h"
+#include "nested_grid/setup_nested_grid.h"
+#include "nested_grid/nested_grid.h"
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
@@ -235,15 +236,17 @@ int setup_nested_grid::setup_grid(
 
 int setup_nested_grid::boundary_conditions(
       vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
-      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   // For uniform fixed cartesian grid.
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
-#endif
+//#endif
   int err = 0;
-  for (int i=0;i<SimPM.grid_nlevels;i++) {
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    cout <<"level "<<l<<", setting up boundaries\n";
 
     if (l!=0) grid[l]->set_parent_grid(grid[l-1]);
     else      grid[l]->set_parent_grid(0);
@@ -254,11 +257,33 @@ int setup_nested_grid::boundary_conditions(
     err = grid[l]->SetupBCs(SimPM);
     rep.errorTest("setup_nested_grid::boundary_conditions()",0,err);
   }
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"(setup_nested_grid::boundary_conditions) Done.\n";
-#endif
+//#endif
   return 0;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_nested_grid::setup_raytracing(
+      class SimParams &SimPM,    ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
+      vector<class RayTracingBase *> &RT  ///< address of vector of grid pointers.
+      )
+{
+  int err = 0;
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    err += setup_fixed_grid::setup_raytracing(SimPM,grid[l],&(RT[l]));
+    err += setup_evolving_RT_sources(SimPM,RT[l]);
+    rep.errorTest("setup_nested_grid::setup_raytracing()",0,err);
+  }
+  return 0;
+}
 
 

@@ -1,48 +1,9 @@
-/// \file icgen.cpp
-/// \brief Program to generate Initial Conditions for a uniform grid
+/// \file icgen_nested.cpp
+/// \brief Program to generate Initial Conditions for a nested grid.
 /// \author Jonathan Mackey
 /// 
 /// Modifications:
-///  - 2007-06-28 Started to write an ND shocktube function.  Need to test it.
-///  - 2007-07-17 ND MHD shock-cloud interaction problem added to list.  Works well.
-///  - 2007-07-24 Added passive tracer variable support.
-///  - 2007-08 to 2008-02 Added more functions.
-///  - 2009-12-18 Added in Laser Ablation check.
-/// - 2010.12.04 JM: Added geometry-dependent grids, in a
-///   GEOMETRIC_GRID ifdef. (only serial so far).
-/// - 2010.01.06 JM: New stellar wind interface.
-/// - 2011.04.14 JM: Added mp_v2_aifa microphysics integration class.
-/// - 2011.04.26 JM: removed endl statements.
-/// - 2011.04.29 JM: in AddNoise2data() and equilibrate_MP() functions, check
-///    for edge cells and internal boundary data, and don't add noise to these
-///    cells.  If we have e.g. inflow boundaries, which are set by the edge
-///    cell value, we don't that to be a random number!
-///
-/// - 2011.05.02 JM: AddNoise2data() -- don't add noise to MPI boundaries.
-///
-/// - 2011.10.13 JM: Added mp_[ex,im]plicit_H classes. (updated 2011.10.22)
-/// - 2012.01.23 JM: Added ifdefs for microphysics classes.
-/// - 2012.02.07 JM: Added class for Harpreet's 1D to 2D mapping.
-/// - 2012.07.25 JM: Fixed bug where noise was added to edge cells in the
-///    YZ-face for parallel grids.
-/// - 2013.01.10 JM: Added setup lines for StarBench Tests.
-/// - 2013.02.15 JM: Added NEW_METALLICITY flag for testing the new
-///    microphysics classes.
-/// - 2013.02.27 JM: Added IC_read_BBurkhart_data() class for
-///    turbulent simulations.
-/// - 2013.02.27 JM: Added class for Harpreet's 1D to 3D mapping.
-/// - 2013.03.23 JM: Added setup lines for StarBench Tests.
-/// - 2013.03.24 JM: Added another StarBench test.
-/// - 2013.06.13 JM: Added StarBench_TremblinCooling test.
-/// - 2013.08.23 JM: Added new mpv9_HHe module code.
-/// - 2014.07.11 JM: Added isothermal noise perturbation option.
-/// - 2015.01.(15-26) JM: Added new include statements for new PION version.
-/// - 2015.02.03 JM: changed to use IC_base class MCMD pointer.
-/// - 2016.05.02 JM: Changed order of code so that MP is initialised
-///    before the "setup" function is called.
-/// - 2017.08.03 JM: Don't write IC_filename.silo, just name it like
-///    a normal snapshot.
-/// - 2018.05.04 JM: moved parallel code to icgen_parallel.cpp
+/// - 2018.05.04 JM: adapted from icgen.cpp
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -62,11 +23,11 @@
 #include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
-#include "dataIO/dataio_silo.h"
+#include "nested_grid/dataio_silo_nestedgrid.h"
 #endif // if SILO
 
-#include "grid/uniform_grid.h"
-#include "setup_fixed_grid.h"
+#include "nested_grid/nested_grid.h"
+#include "nested_grid/setup_nested_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
@@ -86,7 +47,7 @@ int main(int argc, char **argv)
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
-    cerr<<"Usage <icgen> <paramfile> [ic-filetype]\n";
+    cerr<<"Usage <icgen_nest_serial> <paramfile> [ic-filetype]\n";
     return(1);
   }
 
@@ -109,7 +70,6 @@ int main(int argc, char **argv)
   class ReadParams   *rp=0;
   class SimParams SimPM;
   MP=0;  // global microphysics class pointer.
-  class RayTracingBase *RT=0;  // raytracing class 
 
   string pfile = argv[1];
   string icftype;
@@ -124,27 +84,17 @@ int main(int argc, char **argv)
   delete siminfo; siminfo=0;
 
 
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid();
-
-  //
-  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
-  //
-  //SimSetup->setup_nested_grid_levels(SimPM);
-
+  class setup_nested_grid *SimSetup = new setup_nested_grid();
+  SimSetup->setup_nested_grid_levels(SimPM);
   vector<class GridBaseClass *> grid;
+  vector<class RayTracingBase *> RT;  // raytracing class 
+  grid.resize(SimPM.grid_nlevels);
+  RT.resize(SimPM.grid_nlevels);
 
   //
-  // Now we have read in parameters from the file, so set up a grid.
+  // Set up the grids.
   //
-  //for (int l=0; l<SimPM.grid_nlevels; l++) {
-  int l=0;
-  grid.resize(1);
-  // Now set up the grid structure.
-  cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-  err = SimSetup->setup_grid(&(grid[l]),SimPM,&MCMD);
-  cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-  //}
+  err = SimSetup->setup_grid(grid,SimPM,&MCMD);
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
@@ -175,7 +125,11 @@ int main(int argc, char **argv)
   // have to setup jet simulation before setting up boundary
   // conditions because jet boundary needs some grid data values.
   if (ics=="Jet" || ics=="JET" || ics=="jet") {
-    ic->setup_data(rp,grid[0]);
+    for (int l=0;l<SimPM.grid_nlevels;l++) {
+      CI.set_dx(SimPM.nest_levels[l].dx);
+      err += ic->setup_data(rp,grid[l]);
+      if (err) rep.error("Initial conditions setup failed.",err);
+    }
   }
 
   //
@@ -183,16 +137,19 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(SimPM,grid[0]);
-  if (err) rep.error("icgen Couldn't set up boundaries.",err);
-  err += SimSetup->setup_raytracing(SimPM, grid[0],&RT);
-  err += SimSetup->setup_evolving_RT_sources(SimPM,RT);
-  if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
+  SimSetup->boundary_conditions(grid,SimPM);
+  if (err) rep.error("icgen: Couldn't set up boundaries.",err);
+
+  err += SimSetup->setup_raytracing(SimPM,grid,RT);
+  if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
-  err += ic->setup_data(rp,grid[0]);
-  if (err) rep.error("Initial conditions setup failed.",err);
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    CI.set_dx(SimPM.nest_levels[l].dx);
+    err += ic->setup_data(rp,grid[l]);
+    if (err) rep.error("Initial conditions setup failed.",err);
+  }
   // ----------------------------------------------------------------
 
 
@@ -245,7 +202,7 @@ int main(int argc, char **argv)
     cout <<"WRITING SILO FILE: ";
     //    icfile = icfile+".silo";
     cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_silo (SimPM, "DOUBLE");
+    dataio=0; dataio=new dataio_nested_silo (SimPM, "DOUBLE");
   }
 #endif // if SILO defined.
   if (!dataio) rep.error("IO class initialisation: ",icftype);
@@ -256,9 +213,8 @@ int main(int argc, char **argv)
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
-  if (RT)   {delete RT; RT=0;}
+//  if (RT)   {delete RT; RT=0;}
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
-  //if (grid) {??grid; grid=0;}
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}
 

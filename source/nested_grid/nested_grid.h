@@ -28,12 +28,12 @@
 #include <list>
 using namespace std;
 
-#include "grid/uniform_grid.h"
 #include "sim_constants.h"
 #include "sim_params.h"
 
 
 #include "grid/grid_base_class.h"
+#include "grid/uniform_grid.h"
 #include "grid/stellar_wind_BC.h"
 #include "grid/stellar_wind_angle.h"
 #include "coord_sys/VectorOps.h"
@@ -93,11 +93,11 @@ class nested_grid
   /// because finer levels get data from coarser levels, rather than
   /// implementing the outer boundary conditions.
   ///
-  virtual int TimeUpdateExternalBCs(
-        const double,   ///< current simulation time
-        const int, ///< Current step number in the timestep.
-        const int  ///< Maximum step number in timestep.
-        );
+  //virtual int TimeUpdateExternalBCs(
+  //      const double,   ///< current simulation time
+  //      const int, ///< Current step number in the timestep.
+  //      const int  ///< Maximum step number in timestep.
+  //      );
 
   ///
   /// Runs through boundary cells which are grid cells and does
@@ -106,11 +106,11 @@ class nested_grid
   /// and so are labelled "boundary data" and are updated by getting
   /// data from the finer level grid.
   ///
-  virtual int TimeUpdateInternalBCs(
-        const double,   ///< current simulation time
-        const int, ///< Current step number in the timestep.
-        const int  ///< Maximum step number in timestep.
-        );
+  //virtual int TimeUpdateInternalBCs(
+  //      const double,   ///< current simulation time
+  //      const int, ///< Current step number in the timestep.
+  //      const int  ///< Maximum step number in timestep.
+  //      );
    
   /// Set pointer to parent grid.
   void set_parent_grid(

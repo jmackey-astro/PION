@@ -28,49 +28,12 @@
 
 #include "grid/grid_base_class.h"
 #include "ics/inside_sphere.h"
+#include "ics/icgen_base.h"
 
 #include "dataIO/readparams.h"
 #ifdef PARALLEL
 #include "decomposition/MCMD_control.h"
 #endif // PARALLEL
-
-class ICsetup_base {
-  public :
-  virtual ~ICsetup_base() {}
-
-  virtual int setup_data(class ReadParams *, ///< pointer to parameter list.
-			  class GridBaseClass * ///< pointer to grid
-			  )=0;
-  void set_SimPM(
-      class SimParams *sp
-      )
-  {SimPM = sp; return;}
-#ifdef PARALLEL
-  void set_MCMD_pointer(
-      class MCMDcontrol *m
-      )
-  {MCMD = m; return;}
-#endif // PARALLEL
-  protected:
-
-  int AddNoise2Data(
-      class GridBaseClass *,
-      class SimParams &,
-      int,   ///< type of noise (1=pressure,2=adiabatic,3=adiabatic wave)
-      double ///< Noise level (in pressure) in fractional level.
-      );
-  
-  int SmoothData(
-      int ///< Number of cell diameters to smooth over.
-      );
-  
-   class GridBaseClass *gg; ///< pointer to grid.
-   class ReadParams *rp;    ///< pointer to readparams.
-   class SimParams *SimPM;  ///< pointer to simulation parameters
-#ifdef PARALLEL
-   class MCMDcontrol *MCMD;
-#endif // PARALLEL
-};
 
 
 class IC_basic_tests : public ICsetup_base {

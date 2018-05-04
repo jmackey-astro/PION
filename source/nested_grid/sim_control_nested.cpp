@@ -126,7 +126,7 @@ int sim_control_nestedgrid::Init(
   //
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-    eqn->set_dx(SimPM.nest_levels[l].dx);
+    spatial_solver->set_dx(SimPM.nest_levels[l].dx);
     CI.set_dx(SimPM.nest_levels[l].dx);
 
     //
@@ -150,20 +150,13 @@ int sim_control_nestedgrid::Init(
       }
     }
 
-    //
-    // Assign boundary conditions to boundary points.
-    //
-    err = boundary_conditions(SimPM, grid[l], l);
-    rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-
-    //
-    // Setup Raytracing on each grid, if needed.
-    //
-    err += setup_raytracing(SimPM, grid[l], &(RT[l]));
-    err += setup_evolving_RT_sources(SimPM, RT[l]);
-    rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
-
   }
+
+  err = boundary_conditions(grid, SimPM);
+  rep.errorTest("(INIT::boundary_conditions) error",0,err);
+  err += setup_raytracing(SimPM, grid, RT);
+  rep.errorTest("(INIT::setup_raytracing) error",0,err);
+
 
   //
   // If using opfreq_time, set the next output time correctly.
@@ -238,7 +231,7 @@ int sim_control_nestedgrid::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,RT);
+    err = update_evolving_RT_sources(SimPM,RT[0]);
     rep.errorTest("(TIME_INT::update_evolving_RT_sources()) error",0,err);
 
     //clk.start_timer("advance_time");
@@ -298,7 +291,7 @@ void sim_control_nestedgrid::calculate_magnetic_pressure(
   double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    eqn->set_dx(SimPM.nest_levels[l].dx);
+    spatial_solver->set_dx(SimPM.nest_levels[l].dx);
     CI.set_dx(SimPM.nest_levels[l].dx);
     
     cell *c=grid[l]->FirstPt();
@@ -338,7 +331,7 @@ void sim_control_nestedgrid::calculate_blastwave_radius(
   bool shock_found = false;
   //  static double last_dt=0.0;
   for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
-    eqn->set_dx(SimPM.nest_levels[l].dx);
+    spatial_solver->set_dx(SimPM.nest_levels[l].dx);
     CI.set_dx(SimPM.nest_levels[l].dx);
 
     if (shock_found) continue;
@@ -374,23 +367,6 @@ void sim_control_nestedgrid::calculate_blastwave_radius(
 
 
 
-
-int sim_control_nestedgrid::calc_timestep(
-      class GridBaseClass *grid
-      )
-{
-  //
-  // This is now basically a wrapper function.  First we get the dynamics
-  // timestep, and then the microphysics timestep.
-  //
-  return 0;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
 int sim_control_nestedgrid::advance_time(
       vector<class GridBaseClass *> &g,  ///< grid pointer
       vector<class RayTracingBase *> &r  ///< raytracer for this grid.
@@ -398,6 +374,11 @@ int sim_control_nestedgrid::advance_time(
 {
   return 0;
 }
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 

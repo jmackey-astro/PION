@@ -52,6 +52,7 @@
 # - 2016.08.29 JM: removed *Eint solvers.
 # - 2017-07-29 JM: updated for latitude-dependent winds.
 # - 2017-08-03 JM: updated standard workstation to use system libs.
+# - 2018-05-04 JM: Nested grid executable.
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -81,7 +82,8 @@ VPATH = \
 ../source/contrib:\
 ../source/tools:\
 ../source/future:\
-../source/decomposition
+../source/decomposition\
+../source/nested_grid
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
@@ -309,99 +311,69 @@ endif
 #####################################################
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
-
-OBJECTS = reporting.o mem_manage.o command_line_interface.o \
-        timer.o interpolate.o \
-        constants.o \
-  sim_params.o \
-        main.o \
-        uniform_grid.o cell_interface.o \
-        setup_fixed_grid.o sim_control.o  \
-        MCMD_control.o \
-        time_integrator.o calc_timestep.o \
-	VectorOps.o VectorOps_spherical.o \
-	eqns_base.o solver_eqn_base.o \
-	eqns_hydro_adiabatic.o riemann.o findroot.o \
-	Riemann_FVS_hydro.o \
-	Roe_Hydro_ConservedVar_solver.o \
-	Roe_Hydro_PrimitiveVar_solver.o \
-	solver_eqn_hydro_adi.o \
-	eqns_mhd_adiabatic.o \
-        riemannMHD.o  \
-	Roe_MHD_ConservedVar_solver.o \
-        HLLD_MHD.o \
-	solver_eqn_mhd_adi.o \
-	integrator.o cooling.o raytracer_SC.o \
-        microphysics_base.o  \
-	parameter_defs.o readparams.o dataio_silo.o dataio_fits.o utility_fits_class.o \
-        dataio_base.o \
-        dataio_text.o \
-        file_status.o \
-	stellar_wind_BC.o \
-	stellar_wind_angle.o \
-      	mp_only_cooling.o cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
-        hydrogen_mp.o hydrogen_photoion.o \
-        cvode_integrator.o
-
-IC_OBJ	= reporting.o mem_manage.o command_line_interface.o \
-        timer.o interpolate.o \
-        constants.o \
-  sim_params.o \
-        setup_fixed_grid.o icgen.o \
-        MCMD_control.o \
-        uniform_grid.o cell_interface.o \
-        readparams.o file_status.o \
-	parameter_defs.o dataio_silo.o get_sim_info.o inside_sphere.o \
-        dataio_base.o \
-        dataio_text.o \
-	integrator.o cooling.o \
-        microphysics_base.o  \
-	shock_tube.o radiative_shock.o blast_wave.o \
-	photoevaporating_clump.o basic_tests.o shock_cloud.o \
-	photoevaporating_random_clumps.o dataio_fits.o utility_fits_class.o \
-	VectorOps.o VectorOps_spherical.o photoevaporating_multiclumps.o \
-	eqns_base.o eqns_hydro_adiabatic.o eqns_hydro_isothermal.o \
-	eqns_mhd_adiabatic.o laser_ablation.o jet.o \
-	stellar_wind_BC.o \
-	stellar_wind_angle.o \
-	spherical_clump.o \
-        cooling_SD93_cie.o hydrogen_recomb_Hummer94.o \
-        hydrogen_mp.o hydrogen_photoion.o \
-        cvode_integrator.o \
-        raytracer_SC.o \
-        mp_only_cooling.o
-
-# New chemistry classes.
-  OBJECTS += MPv3.o MPv5.o MPv6.o MPv7.o
-  IC_OBJ  += MPv3.o MPv5.o MPv6.o MPv7.o
-
+OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
+ hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
+ microphysics_base.o mp_only_cooling.o \
+ MPv3.o MPv5.o MPv6.o MPv7.o 
 
 ifneq (,$(findstring LEGACY_CODE,$(PION_OPTIONS)))
-  OBJECTS +=  MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
-  IC_OBJ +=   MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
-endif
-
-ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
-  IC_OBJ  += StarBench_test.o
+  OBJ_CHEM +=  MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
 endif
 
 ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
-  OBJECTS +=  MPv9.o HD_MetalFree_integrator.o \
-              HD_MetalFree_equations.o 
-  IC_OBJ +=   MPv9.o HD_MetalFree_integrator.o \
-              HD_MetalFree_equations.o \
-              HD_2D_ShockCloud.o 
-# HD_3D_ShockCloud.o
-endif
-
-ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
-  IC_OBJ +=   read_BBurkhart_data.o
+  OBJ_CHEM +=  MPv9.o HD_MetalFree_integrator.o HD_MetalFree_equations.o
 endif
 
 ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
-  OBJECTS += HHe_photoion.o mpv9_HHe.o
-  IC_OBJ += HHe_photoion.o mpv9_HHe.o
+  OBJ_CHEM += HHe_photoion.o mpv9_HHe.o
 endif
+
+OBJ_GEN = reporting.o mem_manage.o command_line_interface.o timer.o interpolate.o constants.o sim_params.o 
+
+OBJ_IO =  parameter_defs.o file_status.o readparams.o \
+          dataio_silo.o dataio_fits.o utility_fits_class.o \
+          dataio_base.o dataio_text.o
+
+OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
+            stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o raytracer_SC.o
+
+OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
+
+OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
+            riemann.o findroot.o Riemann_FVS_hydro.o \
+            Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
+            solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
+
+OBJ_CRD = VectorOps.o VectorOps_spherical.o 
+
+OBJ_ICS = shock_tube.o radiative_shock.o blast_wave.o basic_tests.o \
+          shock_cloud.o jet.o laser_ablation.o spherical_clump.o \
+          photoevaporating_clump.o photoevaporating_random_clumps.o \
+          photoevaporating_multiclumps.o inside_sphere.o \
+          icgen_base.o
+
+ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
+  OBJ_ICS += StarBench_test.o
+endif
+
+ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
+  OBJ_ICS += read_BBurkhart_data.o
+endif
+
+ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
+  OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
+endif
+
+OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o 
+
+OBJ_NEST = dataio_silo_nestedgrid.o nested_grid.o setup_nested_grid.o
+
+OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
+
+OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD)
+
+OBJECTS_NEST_PION = main_nested.o sim_control_nested.o $(OBJ_NEST) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD)
+OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST)  
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -410,16 +382,24 @@ endif
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/pion_serial ${bindir}/icgen_serial
+all: ${bindir}/pion_serial ${bindir}/icgen_serial ${bindir}/pion_nest_serial ${bindir}/icgen_nest_serial
+uni: ${bindir}/pion_serial ${bindir}/icgen_serial
+nest: ${bindir}/icgen_nest_serial  #   ${bindir}/pion_nest_serial 
 
-${bindir}/pion_serial : $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o ${bindir}/pion_serial $(LDFLAGS)
+${bindir}/pion_serial : $(OBJECTS_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_serial $(LDFLAGS)
 
-${bindir}/icgen_serial: $(IC_OBJ)
-	$(CXX) $(CXXFLAGS) $(INC) $(IC_OBJ) -o ${bindir}/icgen_serial $(LDFLAGS)
+${bindir}/icgen_serial: $(OBJECTS_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_serial $(LDFLAGS)
+
+${bindir}/pion_nest_serial : $(OBJECTS_NEST_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NEST_PION) -o ${bindir}/pion_nest_serial $(LDFLAGS)
+
+${bindir}/icgen_nest_serial: $(OBJECTS_NEST_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NEST_ICGEN) -o ${bindir}/icgen_nest_serial $(LDFLAGS)
 
 clean:
-	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial
+	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial ${bindir}/pion_nest_serial ${bindir}/icgen_nest_serial
 
 
 ####################################
@@ -436,12 +416,25 @@ sim_params.o: sim_params.cpp ${GLOBAL}
 
 main.o:         main.cpp sim_control.h ${GLOBAL}
 
+icgen.o: icgen.cpp icgen.h get_sim_info.h icgen_base.h grid_base_class.h \
+  uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
+  dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h
+
+
+#####################
+# GRID CLASSES      #
+#####################
+
 cell_interface.o: cell_interface.cpp cell_interface.h ${GLOBAL}
 
-
-uniform_grid.o:  uniform_grid.cpp uniform_grid.h ${GLOBAL} \
+uniform_grid.o: uniform_grid.cpp uniform_grid.h grid_base_class.h ${GLOBAL} \
     stellar_wind_angle.h stellar_wind_BC.h \
     VectorOps.h VectorOps_spherical.h
+
+nested_grid.o : nested_grid.cpp nested_grid.h uniform_grid.h grid_base_class.h \
+    stellar_wind_angle.h stellar_wind_BC.h \
+    VectorOps.h VectorOps_spherical.h  ${GLOBAL}
+
 
 VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
@@ -452,10 +445,17 @@ MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
 
+setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
+  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
+  nested_grid.h
+
+#####################
+# CONTROL CLASSES   #
+#####################
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-		MPv1.h MPv9.h  MPv2.h \
-		parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
-                mp_only_cooling.h MPv3.h MPv4.h
+  MPv0.h MPv1.h MPv2.h MPv3.h MPv4.h MPv5.h MPv6.h MPv7.h MPv8.h MPv9.h \
+  mp_only_cooling.h \
+  parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
 
 time_integrator.o: time_integrator.cpp sim_control.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
@@ -463,6 +463,8 @@ time_integrator.o: time_integrator.cpp sim_control.h \
 calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h\
  solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
+sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
+  sim_control.h ${GLOBAL} solver_eqn_base.h \
 #####################
 # EQUATIONS CLASSES #
 #####################
@@ -616,35 +618,38 @@ stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
 stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
   tools/interpolate.h ${GLOBAL}
 
+dataio_silo_nestedgrid.o : dataio_silo_nestedgrid.cpp \
+  dataio_silo_nestedgrid.h dataio_silo.h parameter_defs.h ${GLOBAL} \
+  solver_eqn_base.h 
+
 ##############################
 ##### IC GENERATOR FILES #####
 ##############################
-icgen.o: icgen.cpp icgen.h uniform_grid.h ${GLOBAL} microphysics_base.h  MPv2.h \
-         MPv1.h MPv9.h dataio_silo.h parameter_defs.h dataio_fits.h
+icgen_base.o: icgen_base.cpp icgen_base.h ${GLOBAL}
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
 ########################
-shock_tube.o: shock_tube.cpp icgen.h ${GLOBAL}
-radiative_shock.o: radiative_shock.cpp icgen.h ${GLOBAL}
-blast_wave.o:      blast_wave.cpp icgen.h ${GLOBAL} inside_sphere.h
-photoevaporating_clump.o:  photoevaporating_clump.cpp icgen.h ${GLOBAL} inside_sphere.h
-basic_tests.o: basic_tests.cpp icgen.h ${GLOBAL} 
-photoevaporating_random_clumps.o: photoevaporating_random_clumps.cpp icgen.h ${GLOBAL}
-shock_cloud.o: shock_cloud.cpp icgen.h ${GLOBAL} inside_sphere.h
-photoevaporating_multiclumps.o: photoevaporating_multiclumps.cpp icgen.h ${GLOBAL}
-laser_ablation.o:   laser_ablation.cpp icgen.h ${GLOBAL}
-jet.o:		    jet.cpp icgen.h ${GLOBAL}
-spherical_clump.o: spherical_clump.cpp icgen.h ${GLOBAL}
-StarBench_test.o: StarBench_test.cpp icgen.h ${GLOBAL}
+shock_tube.o: shock_tube.cpp icgen_base.h icgen.h ${GLOBAL}
+radiative_shock.o: radiative_shock.cpp icgen_base.h icgen.h ${GLOBAL}
+blast_wave.o:      blast_wave.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
+photoevaporating_clump.o:  photoevaporating_clump.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
+basic_tests.o: basic_tests.cpp icgen_base.h icgen.h ${GLOBAL} 
+photoevaporating_random_clumps.o: photoevaporating_random_clumps.cpp icgen_base.h icgen.h ${GLOBAL}
+shock_cloud.o: shock_cloud.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
+photoevaporating_multiclumps.o: photoevaporating_multiclumps.cpp icgen_base.h icgen.h ${GLOBAL}
+laser_ablation.o:   laser_ablation.cpp icgen_base.h icgen.h ${GLOBAL}
+jet.o:		    jet.cpp icgen_base.h icgen.h ${GLOBAL}
+spherical_clump.o: spherical_clump.cpp icgen_base.h icgen.h ${GLOBAL}
+StarBench_test.o: StarBench_test.cpp icgen_base.h icgen.h ${GLOBAL}
 #######################
 
 ###############################################
 ## Contributed and/or project-specific code. ##
 ###############################################
-read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen.h ${GLOBAL} dataio_fits.h parameter_defs.h
+read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen_base.h icgen.h ${GLOBAL} dataio_fits.h parameter_defs.h
 
-HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
-HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen.h ${GLOBAL}
+HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen_base.h icgen.h ${GLOBAL}
+HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen_base.h icgen.h ${GLOBAL}
 HD_MetalFree_equations.o:  HD_MetalFree_equations.cpp HD_MetalFree.h ${GLOBAL}
 HD_MetalFree_integrator.o: HD_MetalFree_integrator.cpp HD_MetalFree.h ${GLOBAL}
 ###############################################

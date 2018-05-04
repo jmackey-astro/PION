@@ -14,7 +14,7 @@
 #include "defines/testing_flags.h"
 
 
-#include "grid/nested_grid.h"
+#include "nested_grid/nested_grid.h"
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "constants.h"
@@ -45,7 +45,8 @@ nested_grid::nested_grid(
     double *sim_xp
     )
   : 
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp)
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  VectorOps_Cart(nd)
 {
 
 #ifdef TESTING
@@ -61,7 +62,7 @@ nested_grid::nested_grid(
 #endif
 
   parent = 0;
-  chile  = 0;
+  child  = 0;
 
 #ifdef TESTING
   cout <<"nested_grid Constructor done.\n";
@@ -85,5 +86,129 @@ nested_grid::~nested_grid()
 
 // ##################################################################
 // ##################################################################
+
+
+
+/// Set pointer to parent grid.
+void nested_grid::set_parent_grid(
+      class GridBaseClass *gp  ///< pointer to parent grid.
+      )
+{
+  parent = gp;
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+/// Set pointer to child grid.
+void nested_grid::set_child_grid(
+      class GridBaseClass *gp  ///< pointer to child grid.
+      )
+{
+  child = gp;
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Constructor
+///
+nested_grid_cyl::nested_grid_cyl(
+    int nd,         ///< ndim, length of position vector.
+    int nv,         ///< nvar, length of state vectors.
+    int eqt,        ///< eqntype, which equations we are using (needed by BCs).
+    int Nbc,        ///< Number of boundary cells to use.
+    double *g_xn,   ///< array of minimum values of x,y,z for this grid.
+    double *g_xp,   ///< array of maximum values of x,y,z for this grid.
+    int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *sim_xn, ///< array of min. x/y/z for full simulation.
+    double *sim_xp  ///< array of max. x/y/z for full simulation.
+    )
+  : 
+  VectorOps_Cart(nd),
+  nested_grid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  uniform_grid_cyl(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  VectorOps_Cyl(nd)
+{
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+nested_grid_cyl::~nested_grid_cyl()
+{
+#ifdef TESTING
+  cout <<"nested_grid_cyl destructor. Present and correct!\n";
+#endif
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+nested_grid_sph::nested_grid_sph(
+    int nd,         ///< ndim, length of position vector.
+    int nv,         ///< nvar, length of state vectors.
+    int eqt,        ///< eqntype, which equations we are using (needed by BCs).
+    int Nbc,        ///< Number of boundary cells to use.
+    double *g_xn,   ///< array of minimum values of x,y,z for this grid.
+    double *g_xp,   ///< array of maximum values of x,y,z for this grid.
+    int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *sim_xn, ///< array of min. x/y/z for full simulation.
+    double *sim_xp  ///< array of max. x/y/z for full simulation.
+    )
+  : 
+  VectorOps_Cart(nd),
+  nested_grid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  uniform_grid_sph(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  VectorOps_Cyl(nd),
+  VectorOps_Sph(nd)
+{
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+nested_grid_sph::~nested_grid_sph()
+{
+#ifdef TESTING
+  cout <<"nested_grid_sph destructor. Present and correct!\n";
+#endif
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 

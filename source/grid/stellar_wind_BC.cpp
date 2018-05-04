@@ -509,6 +509,7 @@ int stellar_wind::set_cell_values(
   cout <<"updating source "<<id<<" which has "<<WS->ncell<<" cells.\n";
 #endif
   for (int i=0; i<WS->ncell; i++) {
+    cout <<"i="<<i<<", density = "<<WS->wcells[i]->p[RO]<<"\n";
     for (int v=0;v<nvar;v++)
       WS->wcells[i]->c->P[v]  = WS->wcells[i]->p[v];
     for (int v=0;v<nvar;v++)

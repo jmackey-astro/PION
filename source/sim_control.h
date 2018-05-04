@@ -304,7 +304,7 @@ class sim_control : virtual public setup_fixed_grid
   /// \retval 0 success
   /// \retval 1 failure
   ///
-  int advance_time(
+  virtual int advance_time(
       class GridBaseClass *, ///< grid pointer
       class RayTracingBase * ///< raytracer for this grid.
       );
