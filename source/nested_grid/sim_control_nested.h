@@ -4,12 +4,8 @@
 /// 
 /// \author Jonathan Mackey
 /// 
-/// IntegratorBaseFV is an abstract base class for finite volume grids.
-/// 
-/// IntUniformFV is a 1st/2nd order accurate finite volume solver, modelled on 
-/// the solver presented in Falle, Komissarov, \& Joarder (1998) MNRAS, 297, 265.
-/// 
 /// Modifications :\n
+/// - 2018.05.04 JM: worked on class.
 
 #ifndef SIM_CONTROL_NESTED_H
 #define SIM_CONTROL_NESTED_H
@@ -22,7 +18,8 @@
 #include "grid/uniform_grid.h"
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
-#include "setup_fixed_grid.h"
+#include "nested_grid/setup_nested_grid.h"
+#include "sim_control.h" 
 
 /// The simplest finite volume grid -- a uniform grid with cells that
 /// are cube-shaped in the chosen coordinates.
@@ -30,27 +27,19 @@
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control : virtual public setup_fixed_grid
+class sim_control_nestedgrid : public setup_nested_grid, public sim_control
 {
   public:
-  sim_control();  ///< Simple constructor, initialises value.
-  virtual ~sim_control(); ///< Deletes any dynamic memory, if not already done.
+  sim_control_nestedgrid();  ///< Simple constructor
+  virtual ~sim_control_nestedgrid(); ///< Destructor
 
-  ///
-  /// Function to print command-line options for PION.
-  ///
-  void print_command_line_options(int, char **);
 
   ///
   /// initialisation.
   ///
   /// This function calls a sequence of other functions to set up the grid
   /// and populate it with the initial conditions, and give it the appropriate
-  /// boundary conditions.  It gets the simulation ready to start, and checks 
-  /// that everything is ready to start before returning.
-  ///
-  /// \retval 0 success
-  /// \retval 1 failure
+  /// boundary conditions. 
   ///
   virtual int Init(
       string,   ///< Name of input file.
@@ -81,7 +70,6 @@ class sim_control : virtual public setup_fixed_grid
       );
 
 
-
    //---------------------------------------
   protected:
 
@@ -105,6 +93,8 @@ class sim_control : virtual public setup_fixed_grid
       vector<class GridBaseClass *> &, ///< grid pointer
       vector<class RayTracingBase *> & ///< raytracer for this grid.
       );
+
+
 
 }; // sim_control_nestedgrid
    

@@ -27,6 +27,7 @@
 #endif // TESTING
 
 #include "ics/icgen.h"
+#include "ics/icgen_base.h"
 #include "coord_sys/VectorOps.h"
 using namespace std;
 #include <sstream>

@@ -1,4 +1,5 @@
-/// \file silo.h
+/// \file dataio_silo.h
+///
 /// This file contains class declarations for the serial and parallel
 /// versions of the Silo dataio Class.  Info on Silo can be found at
 /// https://wci.llnl.gov/codes/silo/ on LLNL website.  It's advantage

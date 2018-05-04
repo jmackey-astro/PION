@@ -418,9 +418,9 @@ int sim_control::Init(
 #ifdef TESTING
     cout <<"Initial state, zero-ing glm variable.\n";
 #endif
-    c = grid->FirstPt(); do {
+    c = grid[0]->FirstPt(); do {
       c->P[SI] = c->Ph[SI] = 0.;
-    } while ( (c=grid->NextPt(c)) !=0);
+    } while ( (c=grid[0]->NextPt(c)) !=0);
   }
 
   //
@@ -439,7 +439,7 @@ int sim_control::Init(
   //
   // If testing the code, this calculates the momentum and energy on the domain.
   //
-  initial_conserved_quantities(grid);
+  initial_conserved_quantities(grid[0]);
 
   //
   // If using opfreq_time, set the next output time correctly.
