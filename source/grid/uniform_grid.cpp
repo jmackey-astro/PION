@@ -249,7 +249,7 @@ UniformGrid::UniformGrid(
   //
   // Leave boundaries uninitialised.
   //
-  BC_bd=0; BC_nbd=-1;
+  BC_bd.clear(); BC_nbd=-1;
   Wind =0;
 
   //
@@ -296,7 +296,7 @@ UniformGrid::~UniformGrid()
   //  
   // Delete the boudary data lists.
   //
-  if (BC_bd !=0) BC_deleteBoundaryData();
+  if (BC_bd.size() >0) BC_deleteBoundaryData();
 
   //
   // Delete the grid data.
@@ -952,7 +952,7 @@ int UniformGrid::SetupBCs(
       for (int v=0; v<BC_nbc; v++) c = NextPt(c, XN);
       if (!c) rep.error("Got lost on grid! XN",cy->id);
       for (int v=0; v<BC_nbc; v++) {
-        BC_bd[XN].data.push_back(c);
+        BC_bd[XN]->data.push_back(c);
 #ifdef TESTING
         cout << " Adding cell "<<c->id<<" to XN boundary.\n";
 #endif // TESTING
@@ -963,7 +963,7 @@ int UniformGrid::SetupBCs(
     if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
 #ifdef TESTING
-  cout <<"** Setup XN boundary, got "<<BC_bd[XN].data.size();
+  cout <<"** Setup XN boundary, got "<<BC_bd[XN]->data.size();
   cout <<" grid cells.\n";
 #endif // TESTING
   // ----------------------------------------------------------------
@@ -988,7 +988,7 @@ int UniformGrid::SetupBCs(
           CI.print_cell(cy);
           rep.error("Got lost on grid! XP",cy->id);
         }
-        BC_bd[XP].data.push_back(c);
+        BC_bd[XP]->data.push_back(c);
 #ifdef TESTING
         cout << " Adding cell "<<c->id<<" to XP boundary.\n";
 #endif // TESTING
@@ -998,7 +998,7 @@ int UniformGrid::SetupBCs(
     if (G_ndim>2) cz=NextPt(cz,ZP);
   } while (G_ndim>2 && cz!=0 && cz->isgd);
 #ifdef TESTING
-  cout <<"** Setup XP boundary, got "<<BC_bd[XP].data.size();
+  cout <<"** Setup XP boundary, got "<<BC_bd[XP]->data.size();
   cout <<" grid cells.\n";
 #endif // TESTING
   // ----------------------------------------------------------------
@@ -1029,7 +1029,7 @@ int UniformGrid::SetupBCs(
       // region, and add all the cells.
       //
       do {
-        BC_bd[YN].data.push_back(cy);
+        BC_bd[YN]->data.push_back(cy);
         //cout << " Adding cell "<<cy->id<<" to YN boundary.\n";
         cy = NextPt_All(cy);
       } while (cy->pos[YY] < G_ixmin[YY]);
@@ -1037,7 +1037,7 @@ int UniformGrid::SetupBCs(
       if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->pos[ZZ]<G_ixmax[ZZ]);
 #ifdef TESTING
-    cout <<"** Setup YN boundary, got "<<BC_bd[YN].data.size();
+    cout <<"** Setup YN boundary, got "<<BC_bd[YN]->data.size();
     cout <<" grid cells.\n";
 #endif // TESTING
     // --------------------------------------------------------------
@@ -1063,7 +1063,7 @@ int UniformGrid::SetupBCs(
       // region, and add all the cells.
       //
       do {
-        BC_bd[YP].data.push_back(cy);
+        BC_bd[YP]->data.push_back(cy);
         //cout << " Adding cell "<<cy->id<<" to YP boundary.\n";
         cy = NextPt_All(cy);
       } while ((cy !=0) && (cy->pos[YY] > G_ixmax[YY]));
@@ -1071,7 +1071,7 @@ int UniformGrid::SetupBCs(
       if (G_ndim>2) cz = NextPt(cz, ZP);
     } while (G_ndim>2 && cz!=0 && cz->pos[ZZ]<G_ixmax[ZZ]);
 #ifdef TESTING
-    cout <<"** Setup YP boundary, got "<<BC_bd[YP].data.size();
+    cout <<"** Setup YP boundary, got "<<BC_bd[YP]->data.size();
     cout <<" grid cells.\n";
 #endif // TESTING
     // --------------------------------------------------------------
@@ -1088,12 +1088,12 @@ int UniformGrid::SetupBCs(
     //
     cz = FirstPt_All();
     do {
-      BC_bd[ZN].data.push_back(cz);
+      BC_bd[ZN]->data.push_back(cz);
       //cout << " Adding cell "<<cz->id<<" to ZN boundary.\n";
       cz = NextPt_All(cz);
     } while (cz->pos[ZZ] < G_ixmin[ZZ]);
 #ifdef TESTING
-    cout <<"** Setup ZN boundary, got "<<BC_bd[ZN].data.size();
+    cout <<"** Setup ZN boundary, got "<<BC_bd[ZN]->data.size();
     cout <<" grid cells.\n";
 #endif // TESTING
     //
@@ -1102,12 +1102,12 @@ int UniformGrid::SetupBCs(
     cz = LastPt();
     while (cz->pos[ZZ] < G_ixmax[ZZ]) cz = NextPt_All(cz);
     do {
-      BC_bd[ZP].data.push_back(cz);
+      BC_bd[ZP]->data.push_back(cz);
       //cout << " Adding cell "<<cz->id<<" to ZP boundary.\n";
       cz = NextPt_All(cz);
     } while (cz!=0);
 #ifdef TESTING
-    cout <<"** Setup ZP boundary, got "<<BC_bd[ZP].data.size();
+    cout <<"** Setup ZP boundary, got "<<BC_bd[ZP]->data.size();
     cout <<" grid cells.\n";
 #endif // TESTING
   }
@@ -1141,24 +1141,26 @@ int UniformGrid::assign_boundary_data(
   // Loop through all boundaries, and assign data to them.
   //
   for (int i=0; i<BC_nbd; i++) {
-    switch (BC_bd[i].itype) {
-     case PERIODIC:   err += BC_assign_PERIODIC(  &BC_bd[i]); break;
-     case OUTFLOW:    err += BC_assign_OUTFLOW(   &BC_bd[i]); break;
-     case ONEWAY_OUT: err += BC_assign_ONEWAY_OUT(&BC_bd[i]); break;
-     case INFLOW:     err += BC_assign_INFLOW(    &BC_bd[i]); break;
-     case REFLECTING: err += BC_assign_REFLECTING(&BC_bd[i]); break;
-     case FIXED:      err += BC_assign_FIXED(     &BC_bd[i]); break;
-     case JETBC:      err += BC_assign_JETBC(     &BC_bd[i]); break;
-     case JETREFLECT: err += BC_assign_JETREFLECT(&BC_bd[i]); break;
-     case DMACH:  err += BC_assign_DMACH(simtime, &BC_bd[i]); break;
-     case DMACH2:     err += BC_assign_DMACH2(    &BC_bd[i]); break;
-     case RADSHOCK:   err += BC_assign_RADSHOCK(  &BC_bd[i]); break;
-     case RADSH2:     err += BC_assign_RADSH2(    &BC_bd[i]); break;
+    switch (BC_bd[i]->itype) {
+     case PERIODIC:   err += BC_assign_PERIODIC(  BC_bd[i]); break;
+     case OUTFLOW:    err += BC_assign_OUTFLOW(   BC_bd[i]); break;
+     case ONEWAY_OUT: err += BC_assign_ONEWAY_OUT(BC_bd[i]); break;
+     case INFLOW:     err += BC_assign_INFLOW(    BC_bd[i]); break;
+     case REFLECTING: err += BC_assign_REFLECTING(BC_bd[i]); break;
+     case FIXED:      err += BC_assign_FIXED(     BC_bd[i]); break;
+     case JETBC:      err += BC_assign_JETBC(     BC_bd[i]); break;
+     case JETREFLECT: err += BC_assign_JETREFLECT(BC_bd[i]); break;
+     case DMACH:  err += BC_assign_DMACH(simtime, BC_bd[i]); break;
+     case DMACH2:     err += BC_assign_DMACH2(    BC_bd[i]); break;
+     case RADSHOCK:   err += BC_assign_RADSHOCK(  BC_bd[i]); break;
+     case RADSH2:     err += BC_assign_RADSH2(    BC_bd[i]); break;
      case STWIND: err += BC_assign_STWIND(simtime, sim_start,
-                                sim_finish, Tmin, &BC_bd[i]); break;
-     case STARBENCH1: err += BC_assign_STARBENCH1(&BC_bd[i]); break;
+                                sim_finish, Tmin, BC_bd[i]); break;
+     case STARBENCH1: err += BC_assign_STARBENCH1(BC_bd[i]); break;
+     case NEST_FINE: break; // assigned in nested grid class
+     case NEST_COARSE: break; // assigned in nested grid class
      default:
-      rep.warning("Unhandled BC",BC_bd[i].itype,-1); err+=1; break;
+      rep.warning("Unhandled BC",BC_bd[i]->itype,-1); err+=1; break;
     }
 
   }
@@ -1184,9 +1186,9 @@ int UniformGrid::BC_setBCtypes(
 #ifdef TESTING
   cout <<"Got "<<len<<" boundaries to set up.\n";
 #endif
-  BC_bd=0;
-  BC_bd = mem.myalloc(BC_bd, len);
+  BC_bd.resize(len);
   UniformGrid::BC_nbd = len;
+  for (int b=0;b<len;b++) BC_bd[b] = mem.myalloc(BC_bd[b],1);
 
   //
   // First the 2N external boundaries.  Put the strings into an array.
@@ -1205,73 +1207,73 @@ int UniformGrid::BC_setBCtypes(
   //
   int i=0;
   for (i=0; i<2*G_ndim; i++) {
-    BC_bd[i].dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
-    BC_bd[i].ondir = OppDir(BC_bd[i].dir);
+    BC_bd[i]->dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
+    BC_bd[i]->ondir = OppDir(BC_bd[i]->dir);
 #ifdef TESTING
-    cout <<"i="<<i<<", dir = "<<BC_bd[i].dir<<", ondir="<< BC_bd[i].ondir<<"\n";
+    cout <<"i="<<i<<", dir = "<<BC_bd[i]->dir<<", ondir="<< BC_bd[i]->ondir<<"\n";
 #endif
-    BC_bd[i].baxis = static_cast<axes>(i/2);
+    BC_bd[i]->baxis = static_cast<axes>(i/2);
     //
     // odd values of i are positive boundaries, others are negative.
     //
     if ((i+2)%2 !=0) {
-      BC_bd[i].bloc  = G_xmax[BC_bd[i].baxis];
-      BC_bd[i].bpos  = true;
+      BC_bd[i]->bloc  = G_xmax[BC_bd[i]->baxis];
+      BC_bd[i]->bpos  = true;
     }
     else {
-      BC_bd[i].bloc  = G_xmin[BC_bd[i].baxis];
-      BC_bd[i].bpos  = false;
+      BC_bd[i]->bloc  = G_xmin[BC_bd[i]->baxis];
+      BC_bd[i]->bpos  = false;
     }
     //
     // find boundary condition specified:
     //
-    BC_bd[i].type = bc_strings[i];
+    BC_bd[i]->type = bc_strings[i];
 
-    if      (BC_bd[i].type=="periodic") {
-      BC_bd[i].itype=PERIODIC;
-      BC_bd[i].type="PERIODIC";
+    if      (BC_bd[i]->type=="periodic") {
+      BC_bd[i]->itype=PERIODIC;
+      BC_bd[i]->type="PERIODIC";
     }
-    else if (BC_bd[i].type=="outflow" || BC_bd[i].type=="zero-gradient") {
-      BC_bd[i].itype=OUTFLOW;
-      BC_bd[i].type="OUTFLOW";
+    else if (BC_bd[i]->type=="outflow" || BC_bd[i]->type=="zero-gradient") {
+      BC_bd[i]->itype=OUTFLOW;
+      BC_bd[i]->type="OUTFLOW";
     }
-    else if (BC_bd[i].type=="one-way-outflow") {
-      BC_bd[i].itype=ONEWAY_OUT;
-      BC_bd[i].type="ONEWAY_OUT";
+    else if (BC_bd[i]->type=="one-way-outflow") {
+      BC_bd[i]->itype=ONEWAY_OUT;
+      BC_bd[i]->type="ONEWAY_OUT";
     }
-    else if (BC_bd[i].type=="inflow") {
-      BC_bd[i].itype=INFLOW ;
-      BC_bd[i].type="INFLOW";
+    else if (BC_bd[i]->type=="inflow") {
+      BC_bd[i]->itype=INFLOW ;
+      BC_bd[i]->type="INFLOW";
     }
-    else if (BC_bd[i].type=="reflecting") {
-      BC_bd[i].itype=REFLECTING;
-      BC_bd[i].type="REFLECTING";
+    else if (BC_bd[i]->type=="reflecting") {
+      BC_bd[i]->itype=REFLECTING;
+      BC_bd[i]->type="REFLECTING";
     }
-    else if (BC_bd[i].type=="equator-reflect") {
-      BC_bd[i].itype=JETREFLECT;
-      BC_bd[i].type="JETREFLECT";
+    else if (BC_bd[i]->type=="equator-reflect") {
+      BC_bd[i]->itype=JETREFLECT;
+      BC_bd[i]->type="JETREFLECT";
     }
-    else if (BC_bd[i].type=="fixed") {
-      BC_bd[i].itype=FIXED;
-      BC_bd[i].type="FIXED";
+    else if (BC_bd[i]->type=="fixed") {
+      BC_bd[i]->itype=FIXED;
+      BC_bd[i]->type="FIXED";
     }
-    else if (BC_bd[i].type=="DMR") {
-      BC_bd[i].itype=DMACH;
-      BC_bd[i].type="DMACH";
+    else if (BC_bd[i]->type=="DMR") {
+      BC_bd[i]->itype=DMACH;
+      BC_bd[i]->type="DMACH";
     }
-    else if (BC_bd[i].type=="SB1") {
-      BC_bd[i].itype=STARBENCH1;
-      BC_bd[i].type="STARBENCH1";  // Wall for Tremblin mixing test.
+    else if (BC_bd[i]->type=="SB1") {
+      BC_bd[i]->itype=STARBENCH1;
+      BC_bd[i]->type="STARBENCH1";  // Wall for Tremblin mixing test.
     }
     else {
-      rep.error("Don't know this BC type",BC_bd[i].type);
+      rep.error("Don't know this BC type",BC_bd[i]->type);
     }
 
-    if(!BC_bd[i].data.empty())
-      rep.error("Boundary data not empty in constructor!",BC_bd[i].data.size());
-    BC_bd[i].refval=0;
+    if(!BC_bd[i]->data.empty())
+      rep.error("Boundary data not empty in constructor!",BC_bd[i]->data.size());
+    BC_bd[i]->refval=0;
 #ifdef TESTING
-    cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
+    cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i]->type<<"\n";
 #endif
   }
 
@@ -1281,45 +1283,45 @@ int UniformGrid::BC_setBCtypes(
     cout <<"Must have extra BCs... checking for internal BCs\n";
 #endif
     do {
-      BC_bd[i].dir = NO;
+      BC_bd[i]->dir = NO;
       if (par.BC_Nint < i-2*G_ndim) {
         rep.error("Bad Number of boundaries",par.BC_Nint);
       }
       else {
-        BC_bd[i].type = par.BC_INT[i-2*G_ndim];
+        BC_bd[i]->type = par.BC_INT[i-2*G_ndim];
       }
 
-      if      (BC_bd[i].type=="jet") {
-        BC_bd[i].itype=JETBC;
-        BC_bd[i].type="JETBC";
+      if      (BC_bd[i]->type=="jet") {
+        BC_bd[i]->itype=JETBC;
+        BC_bd[i]->type="JETBC";
       }
-      else if (BC_bd[i].type=="DMR2") {
-        BC_bd[i].itype=DMACH2;
-        BC_bd[i].type="DMACH2";
+      else if (BC_bd[i]->type=="DMR2") {
+        BC_bd[i]->itype=DMACH2;
+        BC_bd[i]->type="DMACH2";
       }
-      else if (BC_bd[i].type=="RadShock") {
-        BC_bd[i].itype=RADSHOCK;
-        BC_bd[i].type="RADSHOCK";
+      else if (BC_bd[i]->type=="RadShock") {
+        BC_bd[i]->itype=RADSHOCK;
+        BC_bd[i]->type="RADSHOCK";
       }
-      else if (BC_bd[i].type=="RadShock2") {
-        BC_bd[i].itype=RADSH2;
-        BC_bd[i].type="RADSH2";
+      else if (BC_bd[i]->type=="RadShock2") {
+        BC_bd[i]->itype=RADSH2;
+        BC_bd[i]->type="RADSH2";
       }
-      else if (BC_bd[i].type=="stellar-wind") {
-        BC_bd[i].itype=STWIND;
-        BC_bd[i].type="STWIND";
+      else if (BC_bd[i]->type=="stellar-wind") {
+        BC_bd[i]->itype=STWIND;
+        BC_bd[i]->type="STWIND";
       }
       else {
-        rep.error("Don't know this BC type",BC_bd[i].type);
+        rep.error("Don't know this BC type",BC_bd[i]->type);
       }
 
-      if(!BC_bd[i].data.empty()) {
+      if(!BC_bd[i]->data.empty()) {
         rep.error("Boundary data not empty in constructor!",
-                  BC_bd[i].data.size());
+                  BC_bd[i]->data.size());
       }
-      BC_bd[i].refval=0;
+      BC_bd[i]->refval=0;
 #ifdef TESTING
-      cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i].type<<"\n";
+      cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i]->type<<"\n";
 #endif
       i++;
     } while (i<BC_nbd);
@@ -1346,7 +1348,7 @@ int UniformGrid::TimeUpdateInternalBCs(
   struct boundary_data *b;
   int i=0; int err=0;
   for (i=0;i<BC_nbd;i++) {
-    b = &BC_bd[i];
+    b = BC_bd[i];
     switch (b->itype) {
      case RADSHOCK:   err += BC_update_RADSHOCK(   b, cstep, maxstep); break;
      case RADSH2:     err += BC_update_RADSH2(     b, cstep, maxstep); break;
@@ -1387,7 +1389,7 @@ int UniformGrid::TimeUpdateExternalBCs(
   struct boundary_data *b;
   int i=0; int err=0;
   for (i=0;i<BC_nbd;i++) {
-    b = &BC_bd[i];
+    b = BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
     switch (b->itype) {
     case PERIODIC:   err += BC_update_PERIODIC(   b, cstep, maxstep); break;
@@ -3247,7 +3249,7 @@ void UniformGrid::BC_deleteBoundaryData()
 #endif
   struct boundary_data *b;
   for (int ibd=0; ibd<BC_nbd; ibd++) {
-    b = &BC_bd[ibd];
+    b = BC_bd[ibd];
     if (b->refval !=0) {
       b->refval = mem.myfree(b->refval);
     }
@@ -3278,7 +3280,7 @@ void UniformGrid::BC_deleteBoundaryData()
     }
 
   } // loop over all boundaries.
-  BC_bd = mem.myfree(BC_bd);
+  BC_bd.clear();
   return;
 }
   

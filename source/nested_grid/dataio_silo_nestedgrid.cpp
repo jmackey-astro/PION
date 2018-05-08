@@ -202,6 +202,10 @@ int dataio_nested_silo::ReadData(
       cout <<"p="<<p<<"  string="<<t2<<", silofile="<<silofile<<"\n";
     }
 
+    if (!cg[l])
+      rep.error("dataio_nested_silo::OutputData() null pointer to grid!",cg[l]);
+    dataio_silo::gp = cg[l];
+
     *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
     if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
 
