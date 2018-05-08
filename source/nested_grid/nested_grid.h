@@ -121,6 +121,53 @@ class nested_grid
   void set_child_grid(
       class GridBaseClass *  ///< pointer to child grid.
       );
+
+  ///
+  /// Calls UniformGrid SetupBCs function and then adds nested-grid
+  /// boundaries to internal data for which finer-level data exists,
+  /// and external data for which coarser-level data exists.
+  ///
+  virtual int BC_setBCtypes(
+        class SimParams &  ///< reference to SimParams list.
+        );
+
+
+
+  protected:
+
+  ///
+  /// Set grid cells that are not leaves (i.e. there is a child grid
+  /// underneath them with finer-scale data) to be boundary data so
+  /// that they are not updated.  Called by BC_setBCtypes().
+  ///
+  void set_nonleaf_cells_as_BD();
+
+  ///
+  /// External boundaries on refined levels may get data from the 
+  /// coarser level above them, not from the pre-defined external
+  /// boundary conditions.  This function checks this and resets
+  /// the boundaries appropriately.  Called by BC_setBCtypes().
+  ///
+  void set_external_bcs_from_parent();
+
+  ///
+  /// Assigns data to each boundary.  Called by SetupBCs().  This
+  /// version calls the UniformGrid version and then checks for 
+  /// nested grid boundaries and assigns data for them if present.
+  ///
+  virtual int assign_boundary_data(
+      const double,   ///< current simulation time (for DMACH)
+      const double, ///< Simulation start time.
+      const double,  ///< Simulation finish time.
+      const double ///< minimum temperature allowed
+      );
+
+  /// Assigns data to a nested grid from finer grid.
+  virtual int BC_assign_NEST_FINE( boundary_data *);
+
+  /// Assigns data to an external boundary from coarser grid.
+  virtual int BC_assign_NEST_COARSE( boundary_data *);
+
 };
   
 

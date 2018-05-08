@@ -101,7 +101,9 @@ enum BoundaryTypes {
     RADSH2     =12, ///< Outflow augmented with fixed outflow speed.
     ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
     STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
-    STARBENCH1 =15  ///< StarBench test for mixing with a solid wall.
+    STARBENCH1 =15, ///< StarBench test for mixing with a solid wall.
+    NEST_FINE  =16, ///< data in this cell should be obtained from finer-scale data on a nested grid.
+    NEST_COARSE   =17  ///< data should be obtained from coarser level in a nested grid.
 };
 
 
@@ -456,7 +458,7 @@ class UniformGrid
   ///
   void BC_deleteBoundaryData();
 
-  struct boundary_data *BC_bd; ///< pointer to array of all boundaries.
+  std::vector<struct boundary_data *> BC_bd; ///< pointer to array of all boundaries.
   int BC_nbd; ///< Number of Boundaries.
   ///
   /// Depth of boundary cells (1 or 2 cells so far).
