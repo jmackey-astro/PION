@@ -598,14 +598,6 @@ class cell_interface {
       ) {return n_idx[level];}
 
 
-  ///
-  /// Return physical size of one internal unit for
-  /// this level in the nested grid.
-  ///
-  inline double phys_per_int(
-      const int level ///< level in nested grid
-      ) {return n_dxo2[level];}
-
 };
 
 /// Global Instance of cell interface class.

@@ -168,6 +168,17 @@ class nested_grid
   /// Assigns data to an external boundary from coarser grid.
   virtual int BC_assign_NEST_COARSE( boundary_data *);
 
+
+  /// Updates data to a nested grid from finer grid.
+  virtual int BC_update_NEST_FINE( boundary_data *);
+
+  /// Updates data to an external boundary from coarser grid.
+  virtual int BC_update_NEST_COARSE(
+      boundary_data *, ///< pointer to boudary struct
+      const int,  ///< current fractional step being taken.
+      const int   ///< full step.
+      );
+
 };
   
 
