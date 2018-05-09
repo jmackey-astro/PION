@@ -325,24 +325,6 @@ class UniformGrid
         boundary_data * ///< boundary ptr.
         );
 
-  ///
-  /// Add internal boundary of a solid dense wall for the StarBench
-  /// shadowing/heating/cooling test by P. Tremblin.
-  ///
-  int   BC_assign_STARBENCH1( boundary_data *);
-
-  ///
-  /// Update internal boundary of a solid dense wall for the StarBench
-  /// shadowing/heating/cooling test by P. Tremblin.  This just ignores
-  /// the fluxes and sets dU to zero again, because it is a fixed and
-  /// static wall.
-  ///
-  int   BC_update_STARBENCH1(
-          boundary_data *, ///< Boundary to update.
-          const int,  ///< current fractional step being taken.
-          const int   ///< final step.
-          );
-
   /// Updates data on a periodic boundary.
   virtual int BC_update_PERIODIC(
         boundary_data *, ///< Boundary to update.
