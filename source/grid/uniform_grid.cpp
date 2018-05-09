@@ -261,6 +261,8 @@ UniformGrid::UniformGrid(
   CI.get_ipos_vec(G_xmin, G_ixmin );
   CI.get_ipos_vec(G_xmax, G_ixmax );
   for (int v=0;v<G_ndim;v++) G_irange[v] = G_ixmax[v]-G_ixmin[v];
+  G_idx = G_irange[XX]/G_ng[XX];
+  
 #ifdef TESTING
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);

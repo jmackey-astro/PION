@@ -131,6 +131,12 @@ struct boundary_data {
   /// processor (parallel only; for serial code this is unused).
   ///
   list<cell *> send_data;
+  ///
+  /// STL linked list for grid cells in a parent/child grid needed
+  /// for the external boundaries of a child grid (unused for uniform
+  /// grid) or the non-leaf data of a parent grid.
+  ///
+  list<cell*> nest;
   pion_flt *refval;  ///< Optional reference state vector.
 };
 
@@ -202,6 +208,7 @@ class UniformGrid
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
 
   double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
+  double G_idx;  ///< diameter of grid cells in integer units.
   double G_dA;  ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
   double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
 
@@ -537,29 +544,33 @@ class UniformGrid
   {return(G_range[a]);}
 
 
-  /// Returns x/y/z lower boundary of grid in integer coords (dx=2).
+  /// Returns x/y/z lower boundary of grid in integer coords.
   virtual int  iXmin(enum axes a) const
   {return(G_ixmin[a] );}
 
-  /// Returns x/y/z upper boundary of grid in integer coords (dx=2).
+  /// Returns x/y/z upper boundary of grid in integer coords.
   virtual int  iXmax(enum axes a) const
   {return(G_ixmax[a] );}
 
-  /// Returns x/y/z range of grid in integer coords (dx=2).
+  /// Returns x/y/z range of grid in integer coords.
   virtual int iRange(enum axes a) const
   {return(G_irange[a]);}
 
-  /// Returns Simulation x,y,z lower bounds in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z lower bounds in cell integer coords
   virtual int  SIM_iXmin(enum axes a) const
   {return(G_ixmin[a] );}
 
-  /// Returns Simulation x,y,z upper bounds in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z upper bounds in cell integer coords
   virtual int  SIM_iXmax(enum axes a) const
   {return(G_ixmax[a] );}
 
-  /// Returns Simulation x,y,z range in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z range in cell integer coords
   virtual int SIM_iRange(enum axes a) const
   {return(G_irange[a]);}
+
+  /// Return cell size in integer units
+  int idx() const
+  {return G_idx;}
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 

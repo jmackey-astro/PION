@@ -267,6 +267,79 @@ int nested_grid::BC_assign_NEST_FINE(
       boundary_data *b
       )
 {
+  //
+  // Need to give each of these cells a pointer to a cell on the
+  // finer level grid, if possible.
+  //
+  if (b->data.empty())
+    rep.error("BC_assign_NEST_COARSE: empty boundary data",b->itype);
+  b->nest.clear();
+
+  list<cell*>::iterator bpt=b->data.begin();
+  class GridBaseClass *cg = child; // child (finer) grid.
+  cell *cc = cg->FirstPt_All(); // child cell.
+  int cdx = 0.5*cg->idx();
+  double distance =  0.0;
+
+  // Map each bpt cell to a cell in b->nest list, which is the first
+  // cell in the finer grid that is part of the coarse cell (i.e. the
+  // one with the most negative coordinates).
+  do{
+    cc = cg->FirstPt_All();
+    for (int v=0;v<G_ndim;v++) {
+      while (cc && cc->pos[v] < (*bpt)->pos[v]-cdx)
+        cc = cg->NextPt(cc,static_cast<direction>(2*v+1));
+    }
+    if (!cc) rep.error("BC_assign_NEST_FINE: lost on fine grid",0);
+    b->nest.push_back(cc);
+    
+    ++bpt;
+  }  while (bpt !=b->data.end());
+
+  return 0;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int nested_grid::BC_update_NEST_FINE(
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
+{
+  //
+  // This is relatively straighforward, in that we just weight each
+  // fine cell by its volume.  Assume there are two cells in each
+  // dimension in the fine grid, and so we can loop over this.
+  //
+  list<cell*>::iterator coarse=b->data.begin();
+  list<cell*>::iterator fine=b->nest.begin();
+  cell *c, *f;
+  double c[G_nvar];
+
+  for (coarse=b->data.begin(); coarse!=b->data.end(); ++coarse) {
+    c = (*coarse);
+    f = (*fine);
+
+    // 1D
+    for (int i=0;i<2;i++) {
+      // Need to convert to conserved variables!!!!  Can only do this
+      // in sim_control_nested.
+
+
+    // constant data:
+    (*c)->Ph[v] = (*c)->npt->Ph[v]
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+    }
+
+    ++fine;
+  }
   return 0;
 }
 
@@ -286,24 +359,94 @@ int nested_grid::BC_assign_NEST_COARSE(
   // onto this (finer) grid external boundary, and then write an
   // alogrithm to interpolate the coarse data onto the finer grid.
   //
-  enum direction ondir  = b->ondir;
   if (b->data.empty())
     rep.error("BC_assign_NEST_COARSE: empty boundary data",b->itype);
-  
+  b->nest.clear();
+
   list<cell*>::iterator bpt=b->data.begin();
   class GridBaseClass *pg = parent; // parent (coarser) grid.
+  int pidx = pg->idx();
+  //cout <<"BC_assign_NEST_COARSE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
 
-  cell *pc = pg->FirstPt();; // parent cell.
-  double pcpos[MAX_DIM];
+  cell *pc = pg->FirstPt_All(); // parent cell.
 
+  double distance =  0.0;
+  bool loop;
+  
   do{
-    // Find parent cell that covers this boundary cell.
-
-    pc = pg->FirstPt();
-
+    loop = false;
+    distance = idistance(pc->pos, (*bpt)->pos);
+    // Find parent cell that covers this boundary cell.  It should be
+    // G_idx/2 away from the boundary cell in each direction.
+    //rep.printVec("bpt pos",(*bpt)->pos,G_ndim);
+    while (distance > G_idx && pc!=0) {
+      //cout <<"distance="<<distance<<"; "; rep.printVec("pc pos",pc->pos,G_ndim);
+      pc = pg->NextPt_All(pc);
+      if (!pc && !loop) { // hack: if get to the end, then go back...
+        pc = b->nest.front();
+        loop = true;
+      }
+      distance = idistance(pc->pos, (*bpt)->pos);
+    }
+    if (!pc) rep.error("BC_assign_NEST_COARSE() left parent grid",0);
+    
+    // add this parent cell to the "parent" list of this boundary.
+    b->nest.push_back(pc);
+    (*bpt)->npt = pc;
     ++bpt;
   }  while (bpt !=b->data.end());
 
+  // add data to boundary cells.
+  BC_update_NEST_COARSE(b,OA2,OA2);
+
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+/// Updates data to an external boundary from coarser grid.
+int nested_grid::BC_update_NEST_COARSE(
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
+{
+  //
+  // This is a complicated problem to use linear interpolation (or
+  // higher order), because you have to conserve mass, momentum and
+  // energy between the two levels.  It should also be monotonic and
+  // produce cell-averaged values. Flash, amrvac and pluto all seem
+  // to use very old Fortran code to accomplish this, and the code is
+  // almost impenetrable.
+  //
+  // For now we just do contant data.  Will fix this eventually once
+  // the rest of the code is working.  It actually doesn't really
+  // matter for expanding nebulae because there is supersonic outflow
+  // but this really needs to be improved for solving more general
+  // problems.
+  //
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    // set slope along x-direction in parent cell.
+    // parent->SetSlope((*c)->npt,XX,G_nvar,sx,2,parent);
+    // get physical offset distance between cell and parent.
+    //dist = idifference_cell2cell(*c,(*c)->npt,XX)*CI.phys_per_int();
+    // interpolate linearly to cell position.
+    //for (int v=0;v<G_nvar;v++)
+    //  (*c)->Ph[v] = (*c)->npt->Ph[v] + sx[v]*dist;
+
+    // constant data:
+    (*c)->Ph[v] = (*c)->npt->Ph[v]
+    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
+    if (cstep==maxstep) {
+      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+    }
+  }
   return 0;
 }
 
@@ -320,22 +463,22 @@ int nested_grid::BC_assign_NEST_COARSE(
 
 
 nested_grid_cyl::nested_grid_cyl(
-    int nd,         ///< ndim, length of position vector.
-    int nv,         ///< nvar, length of state vectors.
-    int eqt,        ///< eqntype, which equations we are using (needed by BCs).
-    int Nbc,        ///< Number of boundary cells to use.
-    double *g_xn,   ///< array of minimum values of x,y,z for this grid.
-    double *g_xp,   ///< array of maximum values of x,y,z for this grid.
-    int *g_nc,      ///< array of number of cells in x,y,z directions.
-    double *sim_xn, ///< array of min. x/y/z for full simulation.
-    double *sim_xp  ///< array of max. x/y/z for full simulation.
-    )
-  : 
-  VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
-  nested_grid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
-  VectorOps_Cyl(nd),
-  uniform_grid_cyl(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp)
+  int nd,         ///< ndim, length of position vector.
+  int nv,         ///< nvar, length of state vectors.
+  int eqt,        ///< eqntype, which equations we are using (needed by BCs).
+  int Nbc,        ///< Number of boundary cells to use.
+  double *g_xn,   ///< array of minimum values of x,y,z for this grid.
+  double *g_xp,   ///< array of maximum values of x,y,z for this grid.
+  int *g_nc,      ///< array of number of cells in x,y,z directions.
+  double *sim_xn, ///< array of min. x/y/z for full simulation.
+  double *sim_xp  ///< array of max. x/y/z for full simulation.
+  )
+: 
+VectorOps_Cart(nd),
+UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+nested_grid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+VectorOps_Cyl(nd),
+uniform_grid_cyl(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp)
 {
 }
 
@@ -349,7 +492,7 @@ nested_grid_cyl::nested_grid_cyl(
 nested_grid_cyl::~nested_grid_cyl()
 {
 #ifdef TESTING
-  cout <<"nested_grid_cyl destructor.\n";
+cout <<"nested_grid_cyl destructor.\n";
 #endif
 }
 
@@ -365,23 +508,23 @@ nested_grid_cyl::~nested_grid_cyl()
 
 
 nested_grid_sph::nested_grid_sph(
-    int nd,         ///< ndim, length of position vector.
-    int nv,         ///< nvar, length of state vectors.
-    int eqt,        ///< eqntype, which equations we are using (needed by BCs).
-    int Nbc,        ///< Number of boundary cells to use.
-    double *g_xn,   ///< array of minimum values of x,y,z for this grid.
-    double *g_xp,   ///< array of maximum values of x,y,z for this grid.
-    int *g_nc,      ///< array of number of cells in x,y,z directions.
-    double *sim_xn, ///< array of min. x/y/z for full simulation.
-    double *sim_xp  ///< array of max. x/y/z for full simulation.
-    )
-  : 
-  VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
-  nested_grid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
-  VectorOps_Cyl(nd),
-  VectorOps_Sph(nd),
-  uniform_grid_sph(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp)
+  int nd,         ///< ndim, length of position vector.
+  int nv,         ///< nvar, length of state vectors.
+  int eqt,        ///< eqntype, which equations we are using (needed by BCs).
+  int Nbc,        ///< Number of boundary cells to use.
+  double *g_xn,   ///< array of minimum values of x,y,z for this grid.
+  double *g_xp,   ///< array of maximum values of x,y,z for this grid.
+  int *g_nc,      ///< array of number of cells in x,y,z directions.
+  double *sim_xn, ///< array of min. x/y/z for full simulation.
+  double *sim_xp  ///< array of max. x/y/z for full simulation.
+  )
+: 
+VectorOps_Cart(nd),
+UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+nested_grid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+VectorOps_Cyl(nd),
+VectorOps_Sph(nd),
+uniform_grid_sph(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp)
 {
 }
 
@@ -395,7 +538,7 @@ nested_grid_sph::nested_grid_sph(
 nested_grid_sph::~nested_grid_sph()
 {
 #ifdef TESTING
-  cout <<"nested_grid_sph destructor.\n";
+cout <<"nested_grid_sph destructor.\n";
 #endif
 }
 
