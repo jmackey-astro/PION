@@ -186,6 +186,10 @@ void nested_grid::set_nonleaf_cells_as_BD()
   // of the child grid (if it exists) then we label the cells as
   // boundary data and add them to a new NEST_FINE boundary.
   //
+  // This code assumes that the UniformGrid class has setup the
+  // boundary as a regular external boundary and added cells to the
+  // list of data.
+  //
   double cxmin[MAX_DIM], cxmax[MAX_DIM], cpos[MAX_DIM];
   bool within_child=true;
   struct boundary_data *bd = new boundary_data;
@@ -277,6 +281,29 @@ int nested_grid::BC_assign_NEST_COARSE(
       boundary_data *b
       )
 {
+  //
+  // Make a list of pointers to cells in the coarser grid that map
+  // onto this (finer) grid external boundary, and then write an
+  // alogrithm to interpolate the coarse data onto the finer grid.
+  //
+  enum direction ondir  = b->ondir;
+  if (b->data.empty())
+    rep.error("BC_assign_NEST_COARSE: empty boundary data",b->itype);
+  
+  list<cell*>::iterator bpt=b->data.begin();
+  class GridBaseClass *pg = parent; // parent (coarser) grid.
+
+  cell *pc = pg->FirstPt();; // parent cell.
+  double pcpos[MAX_DIM];
+
+  do{
+    // Find parent cell that covers this boundary cell.
+
+    pc = pg->FirstPt();
+
+    ++bpt;
+  }  while (bpt !=b->data.end());
+
   return 0;
 }
 

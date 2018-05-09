@@ -87,8 +87,6 @@ int dataio_nested_silo::OutputData(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
     // for now write a different file for each level in the nested grid.
-    CI.set_dx(SimPM.nest_levels[l].dx);
-
     ostringstream temp; temp << outfile << "_level";
     temp.width(2); temp.fill('0');
     temp << l;
@@ -189,8 +187,7 @@ int dataio_nested_silo::ReadData(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
     // for now write a different file for each level in the nested grid.
-    CI.set_dx(SimPM.nest_levels[l].dx);
-    
+
     string::size_type p;
     if ((p=silofile.find("_level"))==string::npos) {
       rep.error("dataio_nested_silo::ReadData() level",silofile);

@@ -43,6 +43,8 @@
 #include "constants.h"
 #include "sim_constants.h"
 
+#include <vector>
+
 #ifdef RT_TESTING
 #include <iostream>
 #endif
@@ -567,6 +569,42 @@ class cell_interface {
   /// the cell data, it is in extra_data[iDivV]].
   ///
   short unsigned int iDivV;
+
+  // ----------------------------------------------------------------
+  // *** Methods for a nested grid ***
+  // ----------------------------------------------------------------
+  
+  protected:
+  int nlevels; ///< Number of refinement levels.
+  std::vector<double> n_dx;   ///< cell diameter at eack level.
+  std::vector<double> n_dxo2; ///< half of cell diameter at each level.
+  std::vector<int>    n_idx;  ///< cell diameter in integer units at each level.
+  
+  public:
+  ///
+  /// Set the number of grid refinement levels.
+  ///
+  void set_nlevels(
+      const double, ///< dx on coarsest grid.
+      const int     ///< number of levels in nested grid.
+      );
+
+  ///
+  /// Returns the size of a cell in the internal integer units for
+  /// this level in the nested grid.
+  ///
+  inline int get_integer_cell_size(
+      const int level ///< level in nested grid
+      ) {return n_idx[level];}
+
+
+  ///
+  /// Return physical size of one internal unit for
+  /// this level in the nested grid.
+  ///
+  inline double phys_per_int(
+      const int level ///< level in nested grid
+      ) {return n_dxo2[level];}
 
 };
 

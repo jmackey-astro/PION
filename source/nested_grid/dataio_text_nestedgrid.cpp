@@ -21,7 +21,6 @@ int dataio_text::OutputData(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
     // for now write a different file for each level in the nested grid.
-    CI.set_dx(SimPM.nest_levels[l].dx);
     ostringstream temp; temp << outfile << "_level";
     temp.width(2); temp.fill('0');
     temp << l;

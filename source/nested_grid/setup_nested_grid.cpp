@@ -177,10 +177,12 @@ int setup_nested_grid::setup_grid(
   //
   // Set values cell interface class; note dx changes with level.
   //
-  CI.set_dx((SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX]);
+  double dx=(SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX];
+  CI.set_dx(dx);
   CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
+  CI.set_nlevels(dx,SimPM.grid_nlevels);
   
   //
   // Now we can setup the grid:
@@ -190,7 +192,6 @@ int setup_nested_grid::setup_grid(
 #endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-    CI.set_dx(SimPM.nest_levels[l].dx);
     
     if (grid[l]) rep.error("Grid already set up!",grid[l]);
 
@@ -245,7 +246,6 @@ int setup_nested_grid::boundary_conditions(
 //#endif
   int err = 0;
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    CI.set_dx(SimPM.nest_levels[l].dx);
     cout <<"level "<<l<<", setting up boundaries\n";
 
     if (l!=0) grid[l]->set_parent_grid(grid[l-1]);
@@ -278,7 +278,6 @@ int setup_nested_grid::setup_raytracing(
 {
   int err = 0;
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    CI.set_dx(SimPM.nest_levels[l].dx);
     err += setup_fixed_grid::setup_raytracing(SimPM,grid[l],&(RT[l]));
     err += setup_evolving_RT_sources(SimPM,RT[l]);
     rep.errorTest("setup_nested_grid::setup_raytracing()",0,err);

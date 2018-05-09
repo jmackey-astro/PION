@@ -96,6 +96,9 @@
 ///    boundaries).
 /// - 2017.11.07-22 JM: updating boundary setup.
 /// - 2017.12.09 JM: got rid of SimPM references.
+/// - 2018.05.09 JM: set cell positions using physical pos, not
+///    integer pos (b/c nested grids don't all have cell-size=2
+///    units) and removed STARBENCH1 boundary.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -368,14 +371,14 @@ int UniformGrid::assign_grid_structure()
   // First cell is at [1,1,1], so the offset has 1 added to it
   // (because the cell centre is 1 unit from xmin).
   //
-  int ipos[MAX_DIM], offset[MAX_DIM];
-  for (int i=0; i<MAX_DIM; i++) ipos[i] = offset[i] = 0;
-  for (int i=0; i<G_ndim; i++) {
-    offset[i] = 1+ 2*static_cast<int>(ONE_PLUS_EPS*(G_xmin[i]-Sim_xmin[i])/G_dx);
+  //int ipos[MAX_DIM], offset[MAX_DIM];
+  //for (int i=0; i<MAX_DIM; i++) ipos[i] = offset[i] = 0;
+  //for (int i=0; i<G_ndim; i++) {
+  //  offset[i] = 1+ 2*static_cast<int>(ONE_PLUS_EPS*(G_xmin[i]-Sim_xmin[i])/G_dx);
 #ifdef TESTING
-    cout <<"************OFFSET["<<i<<"] = "<<offset[i]<<"\n";
+  //  cout <<"************OFFSET["<<i<<"] = "<<offset[i]<<"\n";
 #endif
-  }
+  //}
 
   // ----------------------------------------------------------------
   // ---------------------- SET CELL POSITIONS ----------------------
@@ -400,8 +403,12 @@ int UniformGrid::assign_grid_structure()
     // cell is at [3,1,1] etc.
     // Boundary cells can have negative positions.
     //
-    for (int i=0; i<G_ndim; i++) ipos[i] = offset[i] + 2*ix[i];
-    CI.set_pos(c,ipos);
+    // Here we use the physical position as input, and the
+    // cell-interface class assigns an integer position based on
+    // this physical position.
+    //
+    for (int i=0; i<G_ndim; i++) dpos[i] = G_xmin[i] + G_dx*(ix[i]+0.5);
+    CI.set_pos(c,dpos);
 #ifdef TESTING
     //rep.printVec("    pos", c->pos, G_ndim);
 #endif // TESTING
@@ -1156,7 +1163,6 @@ int UniformGrid::assign_boundary_data(
      case RADSH2:     err += BC_assign_RADSH2(    BC_bd[i]); break;
      case STWIND: err += BC_assign_STWIND(simtime, sim_start,
                                 sim_finish, Tmin, BC_bd[i]); break;
-     case STARBENCH1: err += BC_assign_STARBENCH1(BC_bd[i]); break;
      case NEST_FINE: break; // assigned in nested grid class
      case NEST_COARSE: break; // assigned in nested grid class
      default:
@@ -1261,10 +1267,6 @@ int UniformGrid::BC_setBCtypes(
       BC_bd[i]->itype=DMACH;
       BC_bd[i]->type="DMACH";
     }
-    else if (BC_bd[i]->type=="SB1") {
-      BC_bd[i]->itype=STARBENCH1;
-      BC_bd[i]->type="STARBENCH1";  // Wall for Tremblin mixing test.
-    }
     else {
       rep.error("Don't know this BC type",BC_bd[i]->type);
     }
@@ -1355,7 +1357,6 @@ int UniformGrid::TimeUpdateInternalBCs(
      case STWIND:     err += BC_update_STWIND(simtime, b, cstep, maxstep); break;
     case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW: case REFLECTING:
     case FIXED: case JETBC: case JETREFLECT: case DMACH: case DMACH2: case BCMPI:
-    case STARBENCH1:
       //
       // External BCs updated elsewhere
       //     
@@ -1402,7 +1403,6 @@ int UniformGrid::TimeUpdateExternalBCs(
     case JETREFLECT: err += BC_update_JETREFLECT( b, cstep, maxstep); break;
     case DMACH:      err += BC_update_DMACH(simtime, b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     b, cstep, maxstep); break;
-    case STARBENCH1: err += BC_update_STARBENCH1( b, cstep, maxstep); break;
     case RADSHOCK: case RADSH2: case STWIND: case BCMPI:
       //
       // internal bcs updated separately
@@ -3029,194 +3029,6 @@ int UniformGrid::BC_update_STWIND(
   }
 
   return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_assign_STARBENCH1(boundary_data *b)
-{
-  //
-  // First set up outflow boundaries.
-  //
-  int err=BC_assign_OUTFLOW(b);
-  if (err) rep.error("BC_assign_STARBENCH1 error in OUTFLOW",err);
-
-  //
-  // Now do some checks, and then set the column density in the 
-  // cells that we want to shadow.
-  //
-  if (b->dir != XN) rep.error("RADSH2 not XN boundary!",b->dir);
-  if (b->data.empty()) {
-    rep.error("BC_assign_STARBENCH1: empty boundary data",b->itype);
-  }
-
-  //
-  // Set the column density (in g/cm2) to some large values in the
-  // range 1.4pc<y<2.6pc, and to zero for the others.
-  //
-  list<cell*>::iterator bpt=b->data.begin();
-  unsigned int ct=0;
-  double dpos[G_ndim];
-  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-  do{
-    //
-    // Set cell optical depth to be something big in the 
-    // relevant region for the first radiation source.
-    //
-    CI.get_dpos((*bpt),dpos);
-    if (dpos[YY]>4.3204e18 &&
-        dpos[YY]<8.0235e18 &&
-        dpos[XX]<Sim_xmin[XX]+G_dx) {
-      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-      CI.set_col((*bpt), 0, &column);
-    }
-    else {
-      column = 0.00; // zero optical depth outside the barrier
-      CI.set_col((*bpt), 0, &column);
-    }
-    ++bpt;
-    ct++;
-  } while (bpt !=b->data.end());
-  if (ct != b->data.size()) {
-    rep.error("BC_assign_STARBENCH1: missed some cells!",
-              ct-b->data.size());
-  }
-  
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int UniformGrid::BC_update_STARBENCH1(
-        struct boundary_data *b,
-        const int cstep,
-        const int maxstep
-        )
-{
-  //
-  // Outflow or Absorbing BCs; boundary cells are same as edge cells.
-  // This is zeroth order outflow bcs.
-  //
-  // For the one-way boundary we set the normal velocity to be zero
-  // if the flow wants to be onto the domain.
-  //
-
-  //
-  // First get the normal velocity component, and whether the offdir
-  // is positive or negative.
-  //
-  enum direction offdir = b->dir;
-  enum primitive Vnorm = RO;
-  int norm_sign = 0;
-  switch (offdir) {
-  case XN: case XP:
-    Vnorm = VX;
-    break;
-  case YN: case YP:
-    Vnorm = VY;
-    break;
-  case ZN: case ZP:
-    Vnorm = VZ;
-    break;
-  default:
-    rep.error("bad dir",offdir);
-  }
-  if (Vnorm == RO) {
-    rep.error("Failed to set normal velocity component",Vnorm);
-  }
-
-  switch (offdir) {
-  case XN: case YN: case ZN:
-    norm_sign = -1; break;
-  case XP: case YP: case ZP:
-    norm_sign =  1; break;
-  default:
-    rep.error("bad dir",offdir);
-  }
-
-  //
-  // Now run through all cells in the boundary
-  //
-  double dpos[G_ndim];
-  double column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-  list<cell*>::iterator c=b->data.begin();
-
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {
-    //
-    //exactly same routine as for periodic and zero-gradient.
-    //
-    for (int v=0;v<G_nvar;v++) {
-      (*c)->Ph[v] = (*c)->npt->Ph[v];
-      (*c)->dU[v] = 0.;
-    }
-    //
-    // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
-    //
-    (*c)->Ph[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
-                                    (*c)->Ph[Vnorm]*norm_sign);
-
-
-    //
-    // Set cell optical depth to be something big in the 
-    // relevant region for the first radiation source.
-    //
-    CI.get_dpos((*c),dpos);
-    if (dpos[YY]>4.3204e18 && dpos[YY]<8.0235e18 && dpos[XX]<Sim_xmin[XX]+G_dx) {
-      column = 1.67; // g/cm^2 so, in number this is 1.0e24.
-      CI.set_col((*c), 0, &column);
-    }
-    else {
-      column = 0.00; // zero optical depth outside the barrier
-      CI.set_col((*c), 0, &column);
-    }
-
-
-    if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->npt->P[v];
-      //
-      // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
-      //
-      if (cstep==maxstep) {
-        (*c)->P[Vnorm] = norm_sign*max(static_cast<pion_flt>(0.0),
-                                        (*c)->P[Vnorm]*norm_sign);
-      }
-    }
-
-#ifdef GLM_ZERO_BOUNDARY
-    if (G_eqntype==EQGLM) {
-      (*c)->P[SI]  = 0.0;
-      (*c)->Ph[SI] = 0.0;
-    }
-#endif // GLM_ZERO_BOUNDARY
-#ifdef GLM_NEGATIVE_BOUNDARY
-    if (G_eqntype==EQGLM) {
-
-      if      ((*c)->isedge == -1) {
-        (*c)->P[SI]  = -(*c)->npt->P[SI];
-        (*c)->Ph[SI] = -(*c)->npt->Ph[SI];
-      }
-      else if ((*c)->isedge == -2) {
-        (*c)->P[SI]  = -NextPt(((*c)->npt),b->ondir)->P[SI];
-        (*c)->Ph[SI] = -NextPt(((*c)->npt),b->ondir)->Ph[SI];
-      }
-      else {
-        rep.error("only know 1st/2nd order bcs",(*c)->id);
-      }
-    }
-#endif // GLM_NEGATIVE_BOUNDARY
-
-  } // all cells.
-  return 0;
 }
 
 

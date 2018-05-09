@@ -58,11 +58,15 @@ cell_interface::cell_interface()
   nvar = -1;
   xmin = 0;
   //
-  // this means I can have grids with up to 5e5 zones before it fails...
+  // nested grid parameters
   //
+  nlevels = 1;
+  n_idx.resize(1);
+  n_dxo2.resize(1);
+  n_dx.resize(1);
+
   if (sizeof(pion_flt)==sizeof(double)) {
     //cout <<"int_converter = 1+EPS\n";
-    //int_converter = 1.0+1.0e-7; //ONE_PLUS_EPS;
     int_converter = ONE_PLUS_EPS;
   }
   else {
@@ -590,6 +594,54 @@ void cell_interface::print_cell(const cell *c)
   cout <<"\t"; rep.printVec("ngb[]",c->ngb,2*ndim);
   return;
 }
+
+  
+
+// ##################################################################
+// ##################################################################
+
+// ----------------------------------------------------------------
+// *** Methods for a nested grid ***
+// ----------------------------------------------------------------
+
+// ##################################################################
+// ##################################################################
+
+
+
+void cell_interface::set_nlevels(
+      const double dx, ///< dx on coarsest grid.
+      const int n ///< number of levels in nested grid.
+      )
+{
+  nlevels=n;
+  n_idx.resize(n);
+  n_dxo2.resize(n);
+  n_dx.resize(n);
+
+  n_idx[n-1] = 2; // cell diameter is 2 units on finest level.
+  // each coarser level has 2x larger cells.
+  for (int l=n-2; l>=0; l--) n_idx[l] = 2*n_idx[l+1];
+
+  n_dx[0] = dx;
+  for (int l=1;l<n;l++) n_dx[l] = n_dx[l-1]*0.5;
+
+  n_dxo2[0] = 0.5*dx;
+  for (int l=1;l<n;l++) n_dxo2[l] = n_dxo2[l-1]*0.5;
+
+  cell_diameter = n_dx[n-1];
+  dxo2 = n_dxo2[n-1]; // refers to the finest grid now.
+  
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
 
