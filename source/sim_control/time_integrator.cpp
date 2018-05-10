@@ -297,8 +297,8 @@ int sim_control::first_order_update(
   //
   // Update boundary data.
   //
-  err += grid->TimeUpdateInternalBCs(SimPM.simtime,OA1,ooa);
-  err += grid->TimeUpdateExternalBCs(SimPM.simtime,OA1,ooa);
+  err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,OA1,ooa);
+  err += TimeUpdateExternalBCs(SimPM, grid, SimPM.simtime,OA1,ooa);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
@@ -357,8 +357,8 @@ int sim_control::second_order_update(
   //
   // Update boundary data.
   //
-  err += grid->TimeUpdateInternalBCs(SimPM.simtime,   OA2, ooa);
-  err += grid->TimeUpdateExternalBCs(SimPM.simtime,   OA2, ooa);
+  err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,   OA2, ooa);
+  err += TimeUpdateExternalBCs(SimPM, grid, SimPM.simtime,   OA2, ooa);
   if (err) 
     rep.error("second_order_update: error from bounday update",err);
 

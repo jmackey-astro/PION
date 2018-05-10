@@ -470,6 +470,24 @@ int get_sim_info::read_gridparams(
   }
 
   //
+  // Jets?
+  //
+  seek="N_JET";
+  str=rp->find_parameter(seek); 
+  if (str=="") {
+    cout<< "\tN_JET: param not found, setting to 0\n";
+    JP.jetic = 0;
+  }
+  else {
+    JP.jetic = atoi(str.c_str());
+    if (JP.jetic) {
+      err += read_jet_params(SimPM,JP);
+      rep.errorTest("read_jet_params",0,err);
+    }
+  }
+
+
+  //
   // Reference State Vector.  Only look for the first nvar elements and set
   // the rest to zero.
   //
@@ -719,8 +737,7 @@ int get_sim_info::read_wind_sources(
 	trcr[v]=atof(a.c_str());
       else rep.error("param not found in pfile",temp.str());
     }
-    for (int v=SimPM.ntracer; v<MAX_NVAR; v++)
-    trcr[v] = 0.0;
+    for (int v=SimPM.ntracer; v<MAX_NVAR; v++) trcr[v] = 0.0;
 
     //
     // new stuff for evolving winds:
@@ -927,6 +944,60 @@ int get_sim_info::read_units()
 // ##################################################################
 // ##################################################################
 
+int get_sim_info::read_jet_params(
+      class SimParams &s_par,  ///< pointer to simulation paramters.
+      class JetParams &jpar   ///< pointer to jet parameters class.
+      )
+{
+  string a;
+  if ( (a=rp->find_parameter("JETradius")) !="")
+    jpar.jetradius = atoi(a.c_str());
+  else rep.error("failed to find par: JETradius",0);
+
+  if ( (a=rp->find_parameter("JETdensity")) !="")
+    jpar.jetstate[RO] = atof(a.c_str());
+  else rep.error("failed to find par: JETdensity",0);
+
+  if ( (a=rp->find_parameter("JETpressure")) !="")
+    jpar.jetstate[PG] = atof(a.c_str());
+  else rep.error("failed to find par: JETpressure",0);
+
+  if ( (a=rp->find_parameter("JETvelocity")) !="")
+    jpar.jetstate[VX] = atof(a.c_str());
+  else rep.error("failed to find par: JETvelocity",0);
+  jpar.jetstate[VY] = 0.0;
+  jpar.jetstate[VZ] = 0.0;
+
+  if ( (a=rp->find_parameter("JETambBX")) !="")
+    jpar.jetstate[BX] = atof(a.c_str());
+  if ( (a=rp->find_parameter("JETambBY")) !="")
+    jpar.jetstate[BY] = atof(a.c_str());
+  if ( (a=rp->find_parameter("JETambBZ")) !="")
+    jpar.jetstate[BZ] = atof(a.c_str());
+
+  if (s_par.eqntype == EQGLM) {
+    jpar.jetstate[SI] = 0.0;
+  }
+
+  ostringstream temp;
+  for (int v=0;v<s_par.ntracer;v++) {
+    temp.str(""); temp<<"JETjetTR"<<v;
+    if ( (a=rp->find_parameter(temp.str())) !="")
+      jpar.jetstate[s_par.ftr+v]=atof(a.c_str());
+    else rep.error("param not found in pfile",temp.str());
+  }
+  for (int v=s_par.ftr+s_par.ntracer; v<MAX_NVAR; v++)
+    jpar.jetstate[v] = 0.0;
+
+
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 

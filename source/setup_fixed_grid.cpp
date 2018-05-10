@@ -16,8 +16,7 @@
 
 #include "tools/reporting.h"
 #include "tools/command_line_interface.h"
-
-#include "sim_control.h"
+#include "tools/mem_manage.h"
 
 #include "microphysics/microphysics_base.h"
 
@@ -60,7 +59,9 @@
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
-
+#include "setup_fixed_grid.h"
+#include "grid/grid_base_class.h"
+#include "grid/uniform_grid.h"
 
 #include <iostream>
 #include <sstream>
@@ -83,6 +84,7 @@ setup_fixed_grid::setup_fixed_grid()
   FVI_heating_srcs.clear();
   FVI_ionising_srcs.clear();
   FVI_need_column_densities_4dt = false;
+  eqn=0;
 }
 
 
@@ -97,6 +99,7 @@ setup_fixed_grid::~setup_fixed_grid()
   cout << "(setup_fixed_grid::Destructor) Deleting Grid Class..." <<"\n";
 #endif
   if (MP)     {delete MP; MP=0;}
+  if (eqn)    {delete eqn; eqn=0;}
 #ifdef TESTING
   cout << "(setup_fixed_grid::Destructor) Done." <<"\n";
 #endif
@@ -219,33 +222,6 @@ int setup_fixed_grid::setup_grid(
 
   return(0);
 } // setup_grid()
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-int setup_fixed_grid::boundary_conditions(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
-      )
-{
-  // For uniform fixed cartesian grid.
-#ifdef TESTING
-  cout <<"Setting up BCs in Grid with Nbc="<<SimPM.Nbc<<"\n";
-#endif
-
-  int err = grid->SetupBCs(SimPM);
-  rep.errorTest("setup_fixed_grid::boundary_conditions()",0,err);
-
-#ifdef TESTING
-  cout <<"(setup_fixed_grid::boundary_conditions) Done.\n";
-#endif
-  return 0;
-}
-
 
 
 
@@ -814,6 +790,1340 @@ int setup_fixed_grid::update_evolving_RT_sources(
   
   return 0;
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+int setup_fixed_grid::boundary_conditions(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid ///< pointer to grid.
+      )
+{
+  // For uniform fixed cartesian grid.
+#ifdef TESTING
+  cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";
+#endif
+  //
+  // Choose what BCs to set up based on BC strings.
+  //
+  int err = setup_boundary_structs(par,grid);
+  rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
+
+  //
+  // Ask grid to set up data for external boundaries.
+  //
+  err = grid->SetupBCs(par,BC_bd);
+  rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
+
+#ifdef TESTING
+  cout <<"(setup_fixed_grid::boundary_conditions) Done.\n";
+#endif
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::setup_boundary_structs(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid ///< pointer to grid.
+      )
+{
+#ifdef TESTING
+  cout <<"Set BC types...\n";
+#endif
+
+  // Set number of boundaries: 2 for each dimension, plus internal.
+  int len = 2*par.ndim + par.BC_Nint;
+#ifdef TESTING
+  cout <<"Got "<<len<<" boundaries to set up.\n";
+#endif
+  BC_bd.resize(len);  // class member data
+  BC_nbd = len;       // class member data
+  for (int b=0;b<len;b++) BC_bd[b] = mem.myalloc(BC_bd[b],1);
+
+  //
+  // First the 2N external boundaries.  Put the strings into an array.
+  //
+  std::vector<std::string> bc_strings(2*par.ndim);
+  bc_strings[0] = par.BC_XN; bc_strings[1] = par.BC_XP;
+  if (par.ndim>1) {
+    bc_strings[2] = par.BC_YN; bc_strings[3] = par.BC_YP;
+  }
+  if (par.ndim>2) {
+    bc_strings[4] = par.BC_ZN; bc_strings[5] = par.BC_ZP;
+  }
+
+  //
+  // Now go through each boundary and assign everything needed.
+  //
+  int i=0;
+  for (i=0; i<2*par.ndim; i++) {
+    BC_bd[i]->dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
+    BC_bd[i]->ondir = grid->OppDir(BC_bd[i]->dir);
+#ifdef TESTING
+    cout <<"i="<<i<<", dir = "<<BC_bd[i]->dir<<", ondir="<< BC_bd[i]->ondir<<"\n";
+#endif
+    BC_bd[i]->baxis = static_cast<axes>(i/2);
+    //
+    // odd values of i are positive boundaries, others are negative.
+    //
+    if ((i+2)%2 !=0) {
+      BC_bd[i]->bloc  = grid->Xmax(BC_bd[i]->baxis);
+      BC_bd[i]->bpos  = true;
+    }
+    else {
+      BC_bd[i]->bloc  = grid->Xmin(BC_bd[i]->baxis);
+      BC_bd[i]->bpos  = false;
+    }
+    //
+    // find boundary condition specified:
+    //
+    BC_bd[i]->type = bc_strings[i];
+
+    if      (BC_bd[i]->type=="periodic") {
+      BC_bd[i]->itype=PERIODIC;
+      BC_bd[i]->type="PERIODIC";
+    }
+    else if (BC_bd[i]->type=="outflow" || BC_bd[i]->type=="zero-gradient") {
+      BC_bd[i]->itype=OUTFLOW;
+      BC_bd[i]->type="OUTFLOW";
+    }
+    else if (BC_bd[i]->type=="one-way-outflow") {
+      BC_bd[i]->itype=ONEWAY_OUT;
+      BC_bd[i]->type="ONEWAY_OUT";
+    }
+    else if (BC_bd[i]->type=="inflow") {
+      BC_bd[i]->itype=INFLOW ;
+      BC_bd[i]->type="INFLOW";
+    }
+    else if (BC_bd[i]->type=="reflecting") {
+      BC_bd[i]->itype=REFLECTING;
+      BC_bd[i]->type="REFLECTING";
+    }
+    else if (BC_bd[i]->type=="equator-reflect") {
+      BC_bd[i]->itype=JETREFLECT;
+      BC_bd[i]->type="JETREFLECT";
+    }
+    else if (BC_bd[i]->type=="fixed") {
+      BC_bd[i]->itype=FIXED;
+      BC_bd[i]->type="FIXED";
+    }
+    else if (BC_bd[i]->type=="DMR") {
+      BC_bd[i]->itype=DMACH;
+      BC_bd[i]->type="DMACH";
+    }
+    else {
+      rep.error("Don't know this BC type",BC_bd[i]->type);
+    }
+
+    if(!BC_bd[i]->data.empty())
+      rep.error("Boundary data not empty in constructor!",BC_bd[i]->data.size());
+    BC_bd[i]->refval=0;
+#ifdef TESTING
+    cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i]->type<<"\n";
+#endif
+  }
+
+  if (i<BC_nbd) {
+#ifdef TESTING
+    cout <<"Got "<<i<<" boundaries, but have "<<BC_nbd<<" boundaries.\n";
+    cout <<"Must have extra BCs... checking for internal BCs\n";
+#endif
+    do {
+      BC_bd[i]->dir = NO;
+      if (par.BC_Nint < i-2*par.ndim) {
+        rep.error("Bad Number of boundaries",par.BC_Nint);
+      }
+      else {
+        BC_bd[i]->type = par.BC_INT[i-2*par.ndim];
+      }
+
+      if      (BC_bd[i]->type=="jet") {
+        BC_bd[i]->itype=JETBC;
+        BC_bd[i]->type="JETBC";
+      }
+      else if (BC_bd[i]->type=="DMR2") {
+        BC_bd[i]->itype=DMACH2;
+        BC_bd[i]->type="DMACH2";
+      }
+      else if (BC_bd[i]->type=="stellar-wind") {
+        BC_bd[i]->itype=STWIND;
+        BC_bd[i]->type="STWIND";
+      }
+      else {
+        rep.error("Don't know this BC type",BC_bd[i]->type);
+      }
+
+      if(!BC_bd[i]->data.empty()) {
+        rep.error("Boundary data not empty in constructor!",
+                  BC_bd[i]->data.size());
+      }
+      BC_bd[i]->refval=0;
+#ifdef TESTING
+      cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i]->type<<"\n";
+#endif
+      i++;
+    } while (i<BC_nbd);
+  }
+#ifdef TESTING
+  cout <<"BC structs set up.\n";
+#endif
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::assign_boundary_data(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid  ///< pointer to grid.
+      )
+{
+  // ----------------------------------------------------------------
+  // only needed for nested grid I think... maybe also for stellar
+  // wind.
+  switch (par.eqntype) {
+  case EQEUL:
+    eqn = new eqns_Euler(par.nvar);
+    break;
+  case EQMHD:
+    eqn = new eqns_mhd_ideal(par.nvar);
+    break;
+  case EQGLM:
+    eqn = new eqns_mhd_mixedGLM(par.nvar);
+    break;
+  default:
+    rep.error("Don't know the specified equations...",par.eqntype);
+    break;
+  }
+  // ----------------------------------------------------------------
+  int err=0;
+  //
+  // Loop through all boundaries, and assign data to them.
+  //
+  for (int i=0; i<BC_nbd; i++) {
+    switch (BC_bd[i]->itype) {
+     case PERIODIC:   err += BC_assign_PERIODIC(  par,grid,BC_bd[i]); break;
+     case OUTFLOW:    err += BC_assign_OUTFLOW(   par,grid,BC_bd[i]); break;
+     case ONEWAY_OUT: err += BC_assign_ONEWAY_OUT(par,grid,BC_bd[i]); break;
+     case INFLOW:     err += BC_assign_INFLOW(    par,grid,BC_bd[i]); break;
+     case REFLECTING: err += BC_assign_REFLECTING(par,grid,BC_bd[i]); break;
+     case FIXED:      err += BC_assign_FIXED(     par,grid,BC_bd[i]); break;
+     case JETBC:      err += BC_assign_JETBC(     par,grid,BC_bd[i]); break;
+     case JETREFLECT: err += BC_assign_JETREFLECT(par,grid,BC_bd[i]); break;
+     case DMACH:      err += BC_assign_DMACH(     par,grid,BC_bd[i]); break;
+     case DMACH2:     err += BC_assign_DMACH2(    par,grid,BC_bd[i]); break;
+     case STWIND:     err += BC_assign_STWIND(    par,grid,BC_bd[i]); break;
+     case NEST_FINE: break; // assigned in nested grid class
+     case NEST_COARSE: break; // assigned in nested grid class
+     default:
+      rep.warning("Unhandled BC",BC_bd[i]->itype,-1); err+=1; break;
+    }
+
+  }
+  return(err);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_PERIODIC(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  enum direction ondir  = b->ondir;
+  if (b->data.empty())
+    rep.error("BC_assign_PERIODIC: empty boundary data",b->itype);
+
+  // loop through all cells in boundary, and make the cell's "npt"
+  // pointer point to the corresponding cell wrapped around on the
+  // other side of the grid.  Assign data from that cell too.
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp; unsigned int ct=0;
+  do{
+    //
+    // Go across the grid NG[baxis] cells, so that we map onto the
+    // cell on the other side of the grid.
+    //
+    temp=(*bpt);
+    for (int v=0; v<par.NG[b->baxis]; v++) {
+      temp=grid->NextPt(temp,ondir);
+    }
+    for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = temp->P[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->dU[v] = 0.0;
+    (*bpt)->npt = temp;
+    //
+    // increment counters.
+    //
+    ct++;
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size())
+    rep.error("BC_assign_PERIODIC: missed some cells!",ct-b->data.size());
+  return 0;
+}
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_OUTFLOW(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  //
+  // Zero order extrapolation, if edge cell is index k, and boundary cells
+  // k+1 and k+2, then P_{k+1} = P_{k+2} = P_{k}
+  // First order extrapolation would be P_{k+1} = 2P_{k} - P_{k-1} but is
+  // said to have stability problems sometimes (LeVeque, S.7.2.1, p131-132)
+  //
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_OUTFLOW: empty boundary data",b->itype);
+  }
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp = 0;
+  unsigned int ct = 0;  // counter (for accounting).
+
+  //
+  // loop through all boundary cells, set npt to point to the grid
+  // cell where we get the data.
+  //
+  //cout <<"\t\t**** PRINTING CELLS FOR BOUNDARY DIR = "<<b->dir<<" ****\n\n";
+  do{
+    //
+    // Find the cell to point to.  This should be the first cell on
+    // the other side of the boundary, located at x[baxis]=bloc.
+    // Can't just use the ->isgd property because in y and z dirs
+    // the "ondir" direction will sometimes never hit the grid.
+    //
+    temp = (*bpt);
+    //
+    // If nbc==2, then we have two pointers to two sheets of cells,
+    // and we want both of them to point to the first on-grid cell,
+    // so we use "isedge" to move 1 or 2 cells on-grid to get the 
+    // on-grid value.
+    //
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      //CI.print_cell(temp);
+      //cout <<"ondir="<<ondir<<"\n";
+      temp = grid->NextPt(temp,ondir);
+    }
+
+    for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = temp->P[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    (*bpt)->npt = temp;
+    //CI.print_cell((*bpt));
+
+    //
+    // The GLM boundary is somewhat different, because I found
+    // that zero-gradient didn't work well (Mackey & Lim, 2011,
+    // MNRAS,412,2079).  So we switch the sign instead.
+    //
+
+#ifdef GLM_ZERO_BOUNDARY
+    if (par.eqntype==EQGLM) {
+      (*bpt)->P[SI]=(*bpt)->Ph[SI]=0.0;
+    }
+#endif // GLM_ZERO_BOUNDARY
+#ifdef GLM_NEGATIVE_BOUNDARY
+    if (par.eqntype==EQGLM) {
+      if (par.ndim==1) {
+        rep.error("Psi outflow boundary condition doesn't work for 1D!",99);
+      }
+      if ((*bpt)->isedge == -1) {
+        (*bpt)->P[SI]  = -temp->P[SI];
+        (*bpt)->Ph[SI] = -temp->Ph[SI];
+      }
+      else if ((*bpt)->isedge == -2) {
+        //
+        // Get data from 2nd on-grid cell.
+        //
+        (*bpt)->P[SI]  = -grid->NextPt(temp,ondir)->P[SI];
+        (*bpt)->Ph[SI] = -grid->NextPt(temp,ondir)->Ph[SI];
+      }
+      else rep.error("only know 1st/2nd order bcs",(*bpt)->id);
+    }
+#endif // GLM_NEGATIVE_BOUNDARY
+    ct++;
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_OUTFLOW: missed some cells!",
+              ct-b->data.size());
+  }
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_ONEWAY_OUT(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  //
+  // The setup for this is identical to outflow, so just call
+  // outflow() setup function.
+  //
+  int err=BC_assign_OUTFLOW(par,grid,b);
+  return err;
+}
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_INFLOW(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_INFLOW: empty boundary data",b->itype);
+  }
+
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp;
+  unsigned int ct=0;
+  do{
+    //
+    // Find the cell to point to.  This should be the first cell on
+    // the other side of the boundary, located at x[baxis]=bloc.
+    // Can't just use the ->isgd property because in y and z dirs
+    // the "ondir" direction will sometimes never hit the grid.
+    //
+    temp = (*bpt);
+
+    //
+    // If nbc==2, then we have two pointers to two sheets of cells,
+    // and we want both of them to point to the first on-grid cell,
+    // so we use "isedge" to move 1 or 2 cells on-grid to get the 
+    // on-grid value.
+    //
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = grid->NextPt(temp,ondir);
+    }
+
+    //
+    // Now set inflow data to be the first on-grid cell's values.
+    //
+    for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = temp->P[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = temp->P[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->dU[v] = 0.0;
+    ct++;
+    ++bpt;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size())
+    rep.error("BC_assign_INFLOW: missed some cells!",ct-b->data.size());
+  
+  return 0;
+}
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_REFLECTING(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  enum direction offdir = b->dir;
+  enum direction ondir  = b->ondir;
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_REFLECTING: empty boundary data",b->itype);
+  }
+  //
+  // set reference state so that it is mostly zeros but has some +/-1
+  // entries to flip the signs of the velocity and B-field (as 
+  // appropriate).
+  //
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, par.nvar);
+    for (int v=0;v<par.nvar;v++)
+      b->refval[v] = 1.0;
+    //
+    // velocity:
+    //
+    switch (offdir) {
+     case XN: case XP:
+      b->refval[VX] = -1.0;
+      break;
+     case  YN: case YP:
+      b->refval[VY] = -1.0;
+      break;
+     case  ZN: case ZP:
+      b->refval[VZ] = -1.0;
+      break;
+     default:
+      rep.error("BAD DIRECTION REFLECTING",offdir);
+      break;
+    } // Set Normal velocity direction.
+    
+    //
+    // B-field:
+    //
+    if (par.eqntype==EQMHD || par.eqntype==EQGLM || par.eqntype==EQFCD) {
+      switch (offdir) {
+       case XN: case XP:
+        b->refval[BX] = -1.0;
+        break;
+       case  YN: case YP:
+        b->refval[BY] = -1.0;
+        break;
+       case  ZN: case ZP:
+        b->refval[BZ] = -1.0;
+        break;
+       default:
+        rep.error("BAD DIRECTION REFLECTING",offdir);
+        break;
+      } // Set normal b-field direction.
+    } // Setting up reference value.
+  } // if we needed to set up refval.
+
+  //
+  // Now go through each of the boundary points and assign values
+  // to them, multiplying the relevant entries by -1.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp=0;
+  unsigned int ct=0;
+  //cout <<"\t\t**** PRINTING CELLS FOR BOUNDARY DIR = "<<b->dir<<" ****\n\n";
+  do{
+    temp = (*bpt);
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = grid->NextPt(temp,ondir);
+    }
+    if(!temp) {
+      rep.error("Got lost assigning reflecting bcs.",temp->id);
+    }
+    for (int v=0;v<par.nvar;v++)
+      (*bpt)->P[v]  = temp->P[v]*b->refval[v];
+    for (int v=0;v<par.nvar;v++)
+      (*bpt)->Ph[v] = temp->Ph[v]*b->refval[v];
+    for (int v=0;v<par.nvar;v++)
+      (*bpt)->dU[v] = 0.0;
+    (*bpt)->npt = temp;
+    //CI.print_cell((*bpt));
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_REFLECTING: missed some cells!",
+              ct-b->data.size());
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_FIXED(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  cout <<" setup_fixed_grid::BC_assign_FIXED starting\n";
+  enum direction ondir  = b->ondir;
+  if (b->data.empty()) {
+    rep.error("BC_assign_FIXED: empty boundary data",b->itype);
+  }
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, par.nvar);
+  }
+
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp=0;
+  unsigned int ct=0;
+  //
+  // First find an on-grid cell near a boundary point.  Because of
+  // corner cells, we can't guarantee that every boundary cell will
+  // reach an on-grid cell by moving in the on-grid direction.
+  //
+  cout <<"Finding first on-grid cell, size="<<b->data.size()<<".\n";
+  do {
+    //++bpt;
+    temp = (*bpt);
+    CI.print_cell(temp);
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = grid->NextPt(temp,ondir);
+    }
+  } while (!temp->isgd);
+  if(!temp) rep.error("Got lost assigning FIXED bcs.",temp->id);
+
+  //
+  // Now set reference value to be the on-grid value.
+  //
+  cout <<"Setting reference value.\n";
+  for (int v=0;v<par.nvar;v++) b->refval[v] = temp->P[v];
+  //
+  // Initialise all the values to be the fixed value.
+  //
+  bpt=b->data.begin();
+  do{
+    for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = b->refval[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = b->refval[v];
+    for (int v=0;v<par.nvar;v++) (*bpt)->dU[v] = 0.;
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_FIXED: missed some cells!",
+              ct-b->data.size());
+  }
+  
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_JETBC(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  if (!JP.jetic) {
+    rep.error("BC_assign_JETBC: not a jet simulation!",JP.jetic);
+  }
+  if (b->dir != NO) {
+    rep.error("BC_assign_JETBC: boundary is not an internal one!",
+              b->dir);
+  }
+  cell *c = grid->FirstPt();
+  cell *temp=0, *cy=0;
+  int ct=0;
+  int ctot=0;
+  int maxnv=0;
+
+  //
+  // Set the physical radius of jet.
+  //
+  double jr = JP.jetradius*grid->DX();
+#ifdef TESTING
+  cout <<"jetrad="<<JP.jetradius<<" dx="<<grid->DX()<<"\n";
+#endif // TESTING
+
+  //
+  // Assign reference values, containing Jet parameters:
+  //
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, par.nvar);
+  }
+
+  if (par.eqntype==EQEUL || par.eqntype==EQEUL_ISO ||
+      par.eqntype==EQEUL_EINT || par.eqntype==EQMHD ||
+      par.eqntype==EQGLM || par.eqntype==EQFCD) {
+    rep.printVec("JetState",JP.jetstate,MAX_NVAR);
+    b->refval[RO] = JP.jetstate[RO];
+    b->refval[PG] = JP.jetstate[PG];
+    b->refval[VX] = JP.jetstate[VX];
+    b->refval[VY] = JP.jetstate[VY];
+    b->refval[VZ] = JP.jetstate[VZ];
+    maxnv=5;
+  }
+  else {
+    rep.error("BC_assign_JETBC: bad equation type",par.eqntype);
+  }
+
+  if (par.eqntype==EQMHD || par.eqntype==EQGLM || par.eqntype==EQFCD) {
+    b->refval[BX] = JP.jetstate[BX];
+    b->refval[BY] = JP.jetstate[BY];
+    b->refval[BZ] = JP.jetstate[BZ];
+    maxnv=8;
+  }
+
+  if (par.eqntype==EQGLM) {
+    b->refval[SI] = JP.jetstate[SI];
+    maxnv=9;
+  }
+
+  for (int v=maxnv; v<par.nvar; v++) {
+    b->refval[v] = JP.jetstate[v];
+  }
+  
+  if (!b->data.empty()) {
+    rep.error("BC_assign_JETBC: boundary data exists!",b->itype);
+  }
+
+  //
+  // Simplest jet -- zero opening angle.  Check that this domain
+  // is at the edge of the full simulation domain, if not then we
+  // don't need to add any cells so skip this whole loop.
+  //
+  if (JP.jetic==1  && pconst.equalD(grid->Xmin(XX),par.Xmin[XX])) {
+    //
+    // Axi-symmetry first -- this is relatively easy to set up.
+    //
+    if (par.ndim==2 && par.coord_sys==COORD_CYL) {
+      c = grid->FirstPt();
+      do {
+        temp=c;
+        while ( (temp=grid->NextPt(temp,XN))!=0 ) {
+          for (int v=0;v<par.nvar;v++) temp->P[v]  = b->refval[v];
+          for (int v=0;v<par.nvar;v++) temp->Ph[v] = b->refval[v];
+#ifdef SOFTJET
+          //
+          // jetradius is in number of cells, jr is in physical units.
+          // Jet centre is along Z_cyl axis, centred on origin.
+          //
+          temp->P[VX]  = b->refval[VX]
+                          *min(1., 4.0-4.0*CI.get_dpos(temp,YY)/jr);
+          temp->Ph[VX] = temp->P[VX];
+#endif //SOFTJET
+          b->data.push_back(temp);
+          ctot++;
+          if (temp->isgd){
+            rep.error("Looking for Boundary cells! setupjet",temp);
+          }
+        }
+        ct++;
+      } while ( (c=grid->NextPt(c,YP)) && ct<JP.jetradius);
+      if (ct!=JP.jetradius) {
+        rep.error("Not enough cells for jet",ct);
+      }
+      cout <<"Got "<<ctot<<" Cells in total for jet boundary.\n";
+    } // 2D Axial Symmetry
+
+    //
+    // 3D now, more difficult.
+    //
+    else if (par.ndim==3 && par.coord_sys==COORD_CRT) {
+      double dist=0.0;
+      c = grid->FirstPt();
+      //
+      // 3D, so we need to convert the jet radius to a real length.
+      // Also, the jet will come in at the centre of the XN boundary,
+      // which must be the origin.
+      //
+      do { // loop over ZZ axis
+        cy=c;
+        do { // loop over YY axis
+          dist = sqrt(CI.get_dpos(cy,YY)*CI.get_dpos(cy,YY) +
+                      CI.get_dpos(cy,ZZ)*CI.get_dpos(cy,ZZ)  );
+          //
+          // if dist <= jr, then we are within the jet inflow, and we
+          // add the cells to the boundary.
+          //
+          if (dist <= jr) {
+            temp = cy;
+            while ( (temp=grid->NextPt(temp,XN))!=0 ) {
+              for (int v=0;v<par.nvar;v++) temp->P[v]  = b->refval[v];
+              for (int v=0;v<par.nvar;v++) temp->Ph[v] = b->refval[v];
+# ifdef SOFTJET
+              temp->P[VX]  = b->refval[VX] *min(1., 4.0-4.0*dist/jr);
+              temp->Ph[VX] = temp->P[VX];
+# endif //SOFTJET
+              b->data.push_back(temp);
+              ctot++;
+              if (temp->isgd) {
+                rep.error("Looking for Boundary cells! setupjet",
+                          temp);
+              }
+            }
+          } // if within jet radius
+        } while ( (cy=grid->NextPt(cy,YP)) ); // through cells on YY axis.
+      } while ( (c=grid->NextPt(c,ZP)) );     // through cells on ZZ axis.
+      //      BC_printBCdata(b);
+    } // 3D Cartesian
+
+    else {
+      rep.error("Only know how to set up jet in 2Dcyl or 3Dcart",
+                par.ndim);
+    }
+
+  } // jetic==1
+  else {
+    rep.error("Only know simple jet with jetic=1",JP.jetic);
+  }
+
+  return 0;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_JETREFLECT(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  enum direction offdir = b->dir;
+  enum direction ondir  = b->ondir;
+  if (b->data.empty()) {
+    rep.error("BC_assign_: empty boundary data",b->itype);
+  }
+
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, par.nvar);
+  }
+
+  for (int v=0;v<par.nvar;v++) b->refval[v] = 1.0;
+  //
+  // Set Normal velocity multiplier to -1 for reflection.
+  //
+  switch (offdir) {
+   case XN: case XP:
+    b->refval[VX] = -1.0;
+    break;
+   case  YN: case YP:
+    b->refval[VY] = -1.0;
+    break;
+   case  ZN: case ZP:
+    b->refval[VZ] = -1.0;
+    break;
+   default:
+    rep.error("BAD DIRECTION",offdir);
+  } // Set Normal velocity direction.
+  //
+  // Set normal B-field multiplier to -1 for reflection.
+  //
+  if (par.eqntype==EQMHD || par.eqntype==EQGLM || par.eqntype==EQFCD) {
+    switch (offdir) {
+     case XN: case XP:
+      b->refval[BY] = b->refval[BZ] = -1.0;
+      break;
+     case  YN: case YP:
+      b->refval[BX] = b->refval[BZ] = -1.0;
+      break;
+     case  ZN: case ZP:
+      b->refval[BX] = b->refval[BY] = -1.0;
+      break;
+     default:
+      rep.error("BAD DIRECTION",offdir);
+    } // Set normal b-field direction.
+  } // if B-field exists
+
+  //
+  // Now go through each column of boundary points and assign values
+  // to them.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  cell *temp=0;
+  unsigned int ct=0;
+
+  do{
+    temp = (*bpt);
+    for (int v=0; v>(*bpt)->isedge; v--) {
+      temp = grid->NextPt(temp,ondir);
+    }
+    if(!temp) {
+      rep.error("Got lost assigning jet-reflecting bcs.",temp->id);
+    }
+    for (int v=0;v<par.nvar;v++)
+      (*bpt)->P[v]  = temp->P[v]*b->refval[v];
+    for (int v=0;v<par.nvar;v++)
+      (*bpt)->Ph[v] = temp->P[v]*b->refval[v];
+    for (int v=0;v<par.nvar;v++)
+      (*bpt)->dU[v] = 0.0;
+    (*bpt)->npt = temp;
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+  
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_: missed some cells!",ct-b->data.size());
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_DMACH(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+#ifdef TESTING
+  cout <<"Setting up DMACH boundary... starting.\n";
+#endif // TESTING
+
+  if (b->data.empty()) {
+    rep.error("BC_assign_DMACH: empty boundary data",b->itype);
+  }
+  //
+  // Set reference value to be downstream values.
+  //
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, par.nvar);
+  }
+
+  b->refval[RO] = 1.4;
+  b->refval[PG] = 1.0;
+  b->refval[VX] = 0.0;
+  b->refval[VY] = 0.0;
+  b->refval[VZ] = 0.0;
+  for (int v=par.ftr; v<par.nvar; v++) b->refval[v] = -1.0;
+  cout <<"par.ftr="<<par.ftr<<", par.nvar="<<par.nvar<<"\n";
+
+  //
+  // Run through all boundary cells, and give them either upstream or
+  // downstream value, depending on their position.
+  //
+  list<cell*>::iterator bpt=b->data.begin();
+  unsigned int ct=0;
+  double bpos = 0.0;
+  do {
+    //
+    // This is the boundary position:
+    //
+    bpos =  10.0*par.simtime/sin(M_PI/3.0)
+          + 1.0/6.0
+          + CI.get_dpos(*bpt,YY)/tan(M_PI/3.0);
+
+    if (CI.get_dpos(*bpt,XX) <= bpos) {
+      (*bpt)->P[RO] = 8.0;
+      (*bpt)->P[PG] = 116.5;
+      (*bpt)->P[VX] = 7.14470958;
+      (*bpt)->P[VY] = -4.125;
+      (*bpt)->P[VZ] = 0.0;
+      for (int v=par.ftr; v<par.nvar; v++) (*bpt)->P[v]  = 1.0;
+      (*bpt)->Ph[RO] = 8.0;
+      (*bpt)->Ph[PG] = 116.5;
+      (*bpt)->Ph[VX] = 7.14470958;
+      (*bpt)->Ph[VY] = -4.125;
+      (*bpt)->Ph[VZ] = 0.0;
+      for (int v=par.ftr; v<par.nvar; v++) (*bpt)->Ph[v] = 1.0;
+    }
+    else {
+      for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = b->refval[v];
+      for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = b->refval[v];
+    }
+    ++bpt;
+    ct++;
+  } while (bpt !=b->data.end());
+
+  if (ct != b->data.size()) {
+    rep.error("BC_assign_: missed some cells!",ct-b->data.size());
+  }
+#ifdef TESTING
+  cout <<"Setting up DMACH boundary... finished.\n";
+#endif // TESTING
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_DMACH2( 
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+#ifdef TESTING
+  cout <<"Setting up DMACH2 boundary... starting.\n";
+#endif // TESTING
+
+  if (b->dir != NO) {
+    rep.error("DMACH2 not internal boundary!",b->dir);
+  }
+  cout <<"DMACH2 boundary, from x=0 to x=1/6 at y=0, fixed bd.\n";
+  if (b->refval) {
+    rep.error("Already initialised memory in DMACH2 boundary refval",
+              b->refval);
+  }
+  b->refval = mem.myalloc(b->refval, par.nvar);
+
+  b->refval[RO] = 8.0;
+  b->refval[PG] = 116.5;
+  b->refval[VX] = 7.14470958;
+  b->refval[VY] = -4.125;
+  b->refval[VZ] = 0.0;
+  for (int v=par.ftr; v<par.nvar; v++) b->refval[v] = 1.0;
+
+  //
+  // Now have to go from first point onto boundary and across to
+  // x<=1/6
+  //
+  if (!b->data.empty()) {
+    rep.error("BC_assign_DMACH2: Not empty boundary data",b->itype);
+  }
+  cell *c = grid->FirstPt();
+  cell *temp=0;
+  do {
+    //
+    // check if we are <1/6 in case we are in a parallel grid where
+    // the domain is outside the DMR region.  This saves having to
+    // rewrite the function in the parallel uniform grid.
+    //
+    if (CI.get_dpos(c,XX)<=1./6.) {
+      temp=c;
+      while ( (temp=grid->NextPt(temp,YN)) !=0 ) {
+        for (int v=0;v<par.nvar;v++) temp->P[v]  = b->refval[v];
+        for (int v=0;v<par.nvar;v++) temp->Ph[v] = b->refval[v];
+        b->data.push_back(temp);
+        if (temp->isgd) {
+          rep.error("BC_assign_DMACH2: Looking for Boundary cells!",
+                    temp);
+        }
+      }
+    }
+  } while ( (c=grid->NextPt(c,XP)) && (CI.get_dpos(c,XX)<=1./6.));
+
+#ifdef TESTING
+  cout <<"Setting up DMACH2 boundary... finished.\n";
+#endif // TESTING
+  return 0;
+}
+
+
+
+//
+// Add internal stellar wind boundaries -- these are (possibly
+// time-varying) winds defined by a mass-loss-rate and a terminal
+// velocity.  A region within the domain is given fixed values
+// corresponding to a freely expanding wind from a
+// cell-vertex-located source.
+//
+int setup_fixed_grid::BC_assign_STWIND(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b
+      )
+{
+  //
+  // Check that we have an internal boundary struct, and that we have
+  // a stellar wind source to set up.
+  //
+  if (b->dir != NO)
+    rep.error("STWIND not external boundary!",b->dir);
+#ifdef TESTING
+  cout <<"Assigning data to STWIND boundary. Nsrc=";
+  cout <<SWP.Nsources<<"\n";
+#endif
+  if (SWP.Nsources<1) {
+    rep.error("BC_assign_STWIND() No Sources!",SWP.Nsources);
+  }
+
+  //
+  // Setup reference state vector and initialise to zero.
+  //
+  if (b->refval) {
+    rep.error("Initialised STWIND boundary refval",b->refval);
+  }
+  b->refval = mem.myalloc(b->refval, par.nvar);
+  if (!b->data.empty()) {
+    rep.error("BC_assign_STWIND: Not empty boundary data",b->itype);
+  }
+  for (int v=0;v<par.nvar;v++) b->refval[v]=0.0;
+
+  //
+  // New structure: we need to initialise the stellar wind class with
+  // all of the wind sources in the global parameter list (this was
+  // formerly done in DataIOBase::read_simulation_parameters()).
+  //
+  // The type of class we set up is determined first.
+  // stellar_wind_evolution is derived from stellar_wind, and 
+  // stellar_wind_angle is derived from stellar_wind_evolution.
+  //
+  int err=0;
+  int Ns = SWP.Nsources;
+  for (int isw=0; isw<Ns; isw++) {
+    if (SWP.params[isw]->type ==WINDTYPE_EVOLVING) err=1;
+  }
+  for (int isw=0; isw<Ns; isw++) {
+    if (SWP.params[isw]->type ==WINDTYPE_ANGLE) err=2;
+  }
+  Wind = 0;
+  if (Ns>0) {
+    cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
+    if      (err==0) {
+      Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer, par.ftr,
+                              par.coord_sys, par.eqntype,
+                              par.EP.MinTemperature);
+    }
+    else if (err==1) {
+      Wind = new stellar_wind_evolution(par.ndim, par.nvar, par.ntracer,
+            par.ftr, par.coord_sys, par.eqntype, par.EP.MinTemperature,
+            par.starttime, par.finishtime);
+      err=0;
+    }
+    else if (err==2) {
+      cout <<"Setting up stellar_wind_angle class\n";
+      Wind = new stellar_wind_angle(par.ndim, par.nvar, par.ntracer, par.ftr,
+                  par.coord_sys, par.eqntype, par.EP.MinTemperature,
+                  par.starttime, par.finishtime);
+    }
+  }
+
+  //
+  // Run through sources and add sources.
+  //
+  for (int isw=0; isw<Ns; isw++) {
+    cout <<"\tUniGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
+    if (SWP.params[isw]->type==WINDTYPE_CONSTANT) {
+      //
+      // This is for spherically symmetric winds that are constant
+      // in time.
+      //
+      err = Wind->add_source(
+        SWP.params[isw]->dpos,
+        SWP.params[isw]->radius,
+        SWP.params[isw]->type,
+        SWP.params[isw]->Mdot,
+        SWP.params[isw]->Vinf,
+        SWP.params[isw]->Tstar,
+        SWP.params[isw]->Rstar,
+        SWP.params[isw]->tr
+        );
+    }
+    else  {
+      //
+      // This works for spherically symmetric winds and for
+      // latitude-dependent winds that evolve over time.
+      //
+      cout <<"Adding source "<<isw<<" with filename "<<SWP.params[isw]->evolving_wind_file<<"\n";
+      err = Wind->add_evolving_source(
+        SWP.params[isw]->dpos,
+        SWP.params[isw]->radius,
+        SWP.params[isw]->type,
+        SWP.params[isw]->Rstar,
+        SWP.params[isw]->tr,
+        SWP.params[isw]->evolving_wind_file,
+        SWP.params[isw]->enhance_mdot,
+        SWP.params[isw]->time_offset,
+        par.simtime,
+        SWP.params[isw]->update_freq,
+        SWP.params[isw]->t_scalefactor
+        );
+    }
+    if (err) rep.error("Error adding wind source",isw);
+  }
+
+  //
+  // loop over sources, adding cells to boundary data list in order.
+  //
+  for (int id=0;id<Ns;id++) {
+    cout <<"\tUniGrid::BC_assign_STWIND: Adding cells to source ";
+    cout <<id<<"\n";
+    BC_assign_STWIND_add_cells2src(par,grid, id);
+  }
+  //
+  // Now we should have set everything up, so we assign the boundary
+  // cells with their boundary values.
+  //
+  //err += BC_update_STWIND(par.simtime, b,0,0);
+  cout <<"\tFinished setting up wind parameters\n";
+  cout <<"------ DONE SETTING UP STELLAR WIND CLASS ----------\n\n";
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_assign_STWIND_add_cells2src(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      //struct boundary_data *b,
+      const int id ///< source id
+      )
+{
+  //
+  // We run through each cell, and if it is within the 
+  // source's radius of influence, then we add it to the lists.
+  //
+  int err=0;
+  int ncell=0;
+  double srcpos[MAX_DIM];
+  double srcrad;
+  Wind->get_src_posn(id,srcpos);
+  Wind->get_src_drad(id,&srcrad);
+
+#ifdef TESTING
+  cout <<"*** srcrad="<<srcrad<<"\n";
+  rep.printVec("src", srcpos, par.ndim);
+#endif
+
+  cell *c = grid->FirstPt_All();
+  do {
+    //
+    // GEOMETRY: This is to the centre-of-volume of cell.
+    // It makes no difference for Cartesian grids b/c the centre-of-
+    // volume coincides the midpoint, but for non-cartesian geometry
+    // it is different.
+    //
+#ifdef TESTING
+    cout <<"cell: "<<grid->distance_vertex2cell(srcpos,c)<<"\n";
+#endif
+    if (grid->distance_vertex2cell(srcpos,c) <= srcrad) {
+      ncell++;
+      err += Wind->add_cell(grid, id,c);
+    }
+  } while ((c=grid->NextPt_All(c))!=0);
+  
+  err += Wind->set_num_cells(id,ncell);
+
+#ifdef TESTING
+  cout <<"setup_fixed_grid: Added "<<ncell;
+  cout <<" cells to wind boundary for WS "<<id<<"\n";
+#endif
+  return err;
+}
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_fixed_grid::BC_printBCdata(boundary_data *b)
+{
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {  
+    CI.print_cell(*c);
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_fixed_grid::BC_deleteBoundaryData()
+{
+#ifdef TESTING
+  cout <<"BC destructor: deleting Boundary data...\n";
+#endif
+  struct boundary_data *b;
+  for (int ibd=0; ibd<BC_nbd; ibd++) {
+    b = BC_bd[ibd];
+    if (b->refval !=0) {
+      b->refval = mem.myfree(b->refval);
+    }
+
+    if (b->data.empty()) {
+#ifdef TESTING
+      cout <<"BC destructor: No boundary cells to delete.\n";
+#endif
+    }
+    else {
+      list<cell *>::iterator i=b->data.begin();
+      do {
+        b->data.erase(i);
+        i=b->data.begin();
+      }  while(i!=b->data.end());
+      if(b->data.empty()) {
+#ifdef TESTING
+        cout <<"\t done.\n";
+#endif
+      }
+      else {
+#ifdef TESTING
+        cout <<"\t not empty list! FIX ME!!!\n";
+#endif
+      }
+    }
+
+  } // loop over all boundaries.
+  BC_bd.clear();
+  return;
+}
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

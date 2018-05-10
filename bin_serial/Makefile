@@ -78,7 +78,7 @@ VPATH = \
 ../source/coord_sys:\
 ../source/equations:\
 ../source/spatial_solvers:\
-../source/time_integrators:\
+../source/sim_control:\
 ../source/contrib:\
 ../source/tools:\
 ../source/future:\
@@ -364,7 +364,7 @@ ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
 endif
 
-OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o 
+OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o
 
 OBJ_NEST = dataio_silo_nestedgrid.o nested_grid.o setup_nested_grid.o
 
@@ -454,7 +454,7 @@ setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
 #####################
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
   MPv0.h MPv1.h MPv2.h MPv3.h MPv4.h MPv5.h MPv6.h MPv7.h MPv8.h MPv9.h \
-  mp_only_cooling.h \
+  mp_only_cooling.h setup_fixed_grid.h \
   parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
 
 time_integrator.o: time_integrator.cpp sim_control.h \
@@ -462,6 +462,9 @@ time_integrator.o: time_integrator.cpp sim_control.h \
 
 calc_timestep.o: calc_timestep.cpp sim_control.h microphysics_base.h\
  solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+
+update_boundaries.o: update_boundaries.cpp update_boundaries.h \
+  ${GLOBAL} setup_fixed_grid.h grid_base_class.h
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
   sim_control.h ${GLOBAL} solver_eqn_base.h \

@@ -35,9 +35,10 @@ IC_jet::~IC_jet()
   return;
 }
 
-int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			     class GridBaseClass *ggg ///< pointer to grid
-			     )
+int IC_jet::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -104,37 +105,6 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
   if (str=="") rep.error("didn't find parameter",seek);
   IC_jet::jvel  = atof(str.c_str());
 
-  //
-  // Set jet state parameters for writing to file.
-  //
-  JP.jetic = 1;
-  JP.jetradius    = jetrad;
-  JP.jetstate[RO] = jdens;
-  JP.jetstate[PG] = jpres;
-  JP.jetstate[VX] = jvel;
-  JP.jetstate[VY] = JP.jetstate[VZ] = 0.;
-  if (eqns==2) {
-    JP.jetstate[BX] = ambient[BX];
-    JP.jetstate[BY] = ambient[BY];
-    JP.jetstate[BZ] = ambient[BZ];
-  }
-  if (SimPM->eqntype==EQGLM) {
-    JP.jetstate[SI]=0.0;
-  }
-  //
-  // Jet tracer values
-  //
-  for (int t=0; t<SimPM->ntracer; t++) {
-    ostringstream temp;
-    temp.str("");
-    temp << "JETjetTR" << t;
-    seek = temp.str();
-    str = rp->find_parameter(seek);
-    if (str!="") JP.jetstate[t+SimPM->ftr] = atof(str.c_str());
-    else         JP.jetstate[t+SimPM->ftr] = 0.0;
-  }
-  for (int v=SimPM->nvar; v<MAX_NVAR; v++) JP.jetstate[v]=0.0;
-  rep.printVec("JetState",JP.jetstate,SimPM->nvar);
   //------------------------------------------------------------------
 
   //------------------------------------------------------------------
@@ -221,7 +191,7 @@ int IC_jet::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
     else         IC_jet::ambient[t+SimPM->ftr] = -1.0e99;
   }
   //------------------------------------------------------------------
-
+  rep.printVec("JetState",JP.jetstate,SimPM->nvar);
 
   //
   // now make sure we are to do a jet sim.
