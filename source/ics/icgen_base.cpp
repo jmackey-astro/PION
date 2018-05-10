@@ -65,8 +65,6 @@ void setup_ics_type(
      ics=="LaserAblation3D")
     *ic = new IC_laser_ablation ();
 
-  //  else if (ics=="Jet")        *ic = new IC_jet ();
-
   else if (ics=="ShockCloud")
     *ic = new IC_shock_cloud ();
 

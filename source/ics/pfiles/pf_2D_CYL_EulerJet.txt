@@ -99,6 +99,7 @@ velval 1
 magval 1
 
 ## Parameters specific for various problems
+N_JET 1
 JETradius 4
 JETdensity 1.0
 JETpressure 1.0

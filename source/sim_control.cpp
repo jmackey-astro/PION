@@ -428,6 +428,8 @@ int sim_control::Init(
   //
   err = boundary_conditions(SimPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+  err = assign_boundary_data(SimPM, grid[0]);
+  rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
   // Setup Raytracing on each grid, if needed.
@@ -440,6 +442,13 @@ int sim_control::Init(
   // If testing the code, this calculates the momentum and energy on the domain.
   //
   initial_conserved_quantities(grid[0]);
+
+  err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  if (err) 
+    rep.error("first_order_update: error from bounday update",err);
+
+
 
   //
   // If using opfreq_time, set the next output time correctly.
@@ -478,7 +487,7 @@ int sim_control::Init(
 #endif // SERIAL
   
 #ifdef TESTING
-  cell *c = (grid[0])->FirstPt_All();
+  c = (grid[0])->FirstPt_All();
   do {
     if (pconst.equalD(c->P[RO],0.0)) {
       cout <<"zero data in cell: ";

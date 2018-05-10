@@ -58,6 +58,7 @@
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
 #include "setup_fixed_grid.h"
+#include "sim_control/update_boundaries.h"
 
 /// The simplest finite volume grid -- a uniform grid with cells that
 /// are cube-shaped in the chosen coordinates.
@@ -65,7 +66,7 @@
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control : virtual public setup_fixed_grid
+class sim_control : virtual public setup_fixed_grid, virtual public update_boundaries
 {
   public:
   sim_control();  ///< Simple constructor, initialises value.

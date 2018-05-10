@@ -58,17 +58,6 @@ class setup_fixed_grid
       );
 
   ///
-  /// Determines what kind of boundary conditions are needed.
-  /// Sets gp.Nbc to the appropriate value for the order of accuracy used.
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  int boundary_conditions(
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *grid  ///< pointer to grid.
-      );   
-
-  ///
   /// Decide if I need to setup MP class, and do it if i need to.
   ///
   virtual int setup_microphysics(
@@ -93,6 +82,25 @@ class setup_fixed_grid
       class RayTracingBase * ///< pointer to raytracing class
       );
 
+  ///
+  /// Determines what kind of boundary conditions are needed and
+  /// creates the boundary data structures.  Asks the grid to create
+  /// grid cells for the external boundaries, and label internal
+  /// boundary cells as such.
+  ///
+  int boundary_conditions(
+      class SimParams &,  ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to grid.
+      );
+
+  ///
+  /// Assigns data to each boundary.
+  ///
+  virtual int assign_boundary_data(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to grid.
+      );
+
   //---------------------------------------
   protected:
   //---------------------------------------
@@ -101,12 +109,22 @@ class setup_fixed_grid
   bool FVI_need_column_densities_4dt;
 
   int FVI_nheat; ///< number of RT heating sources
+
   int FVI_nion;  ///< number of ionising sources
+
   /// vector of RT heating sources, of size FVI_nheat
   std::vector<struct rt_source_data> FVI_heating_srcs;
+
   /// vector of RT ionising sources, of size FVI_nion
   std::vector<struct rt_source_data> FVI_ionising_srcs;
-  
+
+  /// pointer to array of all boundaries.
+  std::vector<struct boundary_data *> BC_bd;  
+  int BC_nbd; ///< Number of Boundaries.
+  /// equations class for assigning boundary data
+  class eqns_base *eqn;
+  class stellar_wind *Wind; ///< stellar wind boundary condition.
+
   ///
   /// Check for any time-evolving radiation sources, and update source
   /// properties from global struct SimPM.STAR[v] if needed
@@ -116,6 +134,133 @@ class setup_fixed_grid
       class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
       );
 
+  ///
+  /// Set the boundary conditions string and initialise BC_bd
+  ///
+  virtual int setup_boundary_structs(
+      class SimParams &,  ///< reference to SimParams list.
+      class GridBaseClass *  ///< pointer to grid.
+      );
+
+  /// Assigns data to a periodic boundary.
+  virtual int BC_assign_PERIODIC(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  /// Assigns data on an outflow (zero gradient) boundary.
+  int BC_assign_OUTFLOW(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  ///
+  /// Assigns data on a one-way outflow (zero gradient) boundary.
+  /// If the flow is off-domain, then I use zero-gradient, but if flow
+  /// is onto domain then I set the boundary cells to have zero normal 
+  /// velocity.
+  ///
+  int BC_assign_ONEWAY_OUT(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  /// Assigns data on an inflow (fixed) boundary.
+  int BC_assign_INFLOW(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  /// Assigns data on a reflecting boundary.
+  int BC_assign_REFLECTING(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  /// Assigns data on a fixed boundary.
+  int BC_assign_FIXED(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  ///
+  /// Sets some boundary cells to be fixed to the Jet inflow
+  /// condition.
+  ///
+  virtual int BC_assign_JETBC(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  ///
+  /// Assigns data on a JetReflect boundary, which is the same
+  /// as a reflecting boundary, except the B-field is reflected differently.
+  /// It is the base of a jet, so there is assumed to be another jet
+  /// in the opposite direction, so the normal B-field is unchanged across
+  /// the boundary and the tangential field is reversed.
+  ///
+  int BC_assign_JETREFLECT(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  /// Assigns data on a boundary for the Double Mach Reflection Problem.
+  int BC_assign_DMACH(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  /// Assigns data on The other DMR test problem boundary
+  virtual int BC_assign_DMACH2(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  ///
+  /// Add internal stellar wind boundaries -- these are (possibly time-varying)
+  /// winds defined by a mass-loss-rate and a terminal velocity.  A region within
+  /// the domain is given fixed values corresponding to a freely expanding wind
+  /// from a cell-vertex-located source.
+  ///
+  int BC_assign_STWIND(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *
+      );
+
+  ///
+  /// Add cells to both the Wind class, and to the boundary data list
+  /// of cells.  This is re-defined for cylindrical and spherical
+  /// coords below.
+  ///
+  virtual int BC_assign_STWIND_add_cells2src(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      //boundary_data *, ///< boundary ptr.
+      const int    ///< source id
+      );
+
+  ///
+  /// prints all the cells in the given boundary data pointer.
+  ///
+  int BC_printBCdata(boundary_data *);
+
+  ///
+  /// Destructor for all the boundary data, BC_bd.  Needed because 
+  /// we need to delete some cells in the list, and others we just need to
+  /// delete the pointers to them.
+  ///
+  void BC_deleteBoundaryData();
 
 }; // setup_fixed_grid
    

@@ -137,14 +137,12 @@ int main(int argc, char **argv)
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  //for (int l=0; l<SimPM.grid_nlevels; l++) {
   int l=0;
   grid.resize(1);
   // Now set up the grid structure.
-  cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   err = SimSetup->setup_grid(&(grid[l]),SimPM,&MCMD);
-  cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-  //}
+  cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
@@ -172,16 +170,8 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
-  // have to setup jet simulation before setting up boundary
-  // conditions because jet boundary needs some grid data values.
-  if (ics=="Jet" || ics=="JET" || ics=="jet") {
-    ic->setup_data(rp,grid[0]);
-  }
-
   //
-  // Set up the boundary conditions, since internal boundary data
-  // should really be already set to its correct value in the initial
-  // conditions file.
+  // Set up the boundary conditions and data
   //
   SimSetup->boundary_conditions(SimPM,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
@@ -195,6 +185,8 @@ int main(int argc, char **argv)
   if (err) rep.error("Initial conditions setup failed.",err);
   // ----------------------------------------------------------------
 
+  err = SimSetup->assign_boundary_data(SimPM,grid[0]);
+  rep.errorTest("icgen::assign_boundary_data",0,err);
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the 
