@@ -1,151 +1,14 @@
-/// \file time_integrator.cc
-/// 
+/// \file time_integrator.cpp
 /// \brief time integration routines for sim_control class.
-/// 
 /// \author Jonathan Mackey
 /// 
 /// This file contains the definitions of the member functions for sim_control 
 /// class, which is a 1st/2nd order Finite Volume Solver following
 /// Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
 /// 
-/// 
 /// Modifications:
-///  - 2007-06-26 Hunted for bugs, but they were in another file.
-///  - 2007-07-13 New Class structure implemented.
-///  - 2007-07-16 New Class structure works (modified from Friday a little).  Same as old, but a bit faster.
-///  - 2007-07-17 2D riemann problem initial setup improved (area averaged interface cells).
-///  - 2007-07-24 Added passive tracer variable support.
-///  - 2007-08-07 cylindrical coordinates working for 2d axi-symmetry.
-///  - 2007-10-11 Cleaning up.
-///  - 2007-11-01 Added dataio class last week, cleaning up today.
-///  - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
-///
-///  - JM 2009-12-16 Added ifdef in sim_control::Time_Int() so that I
-///      can get the code to output magnetic pressure instead of
-///      timing info every timestep.  This is purely to make a plot of
-///      magnetic pressure for the Field Loop Advection Test and
-///      should be switched off in general (although it makes no
-///      difference to the running of the code!).
-///
-/// - 2009-12-18 JM: Added Axisymmetric Class
-///    (cyl_FV_solver_Hydro_Euler) in set_equations().
-///
-/// - 2010-01-05 JM: Added check for microphysics timestep limiting in
-///     calc_timestep().  This is controlled by the flag
-///     SimPM.EP.MP_timestep_limit, which is set to true to turn it
-///     on.
-///
-/// - 2010-01-21 JM: Added override option for SimPM.gamma, the
-///    equation of state parameter.
-///
-/// - 2010-04-10 JM: fixed width timestep in text and fits filenames.
-///
-/// - 2010-04-21 JM: Changed filename setup so that i can write
-/// checkpoint files with fname.999999.txt/silo/fits.  Added a check
-/// for checkpointing in output_data() and removed all of the outfile
-/// string generation (moved to dataio classes).
-///
-/// - 2010-04-25 JM: Added an extra command-line parameter to set the
-///  minimum allowed timestep.  If the step is shorter than this then
-///  in calc_timestep() we will bug out because something has gone
-///  seriously wrong.
-/// - 2010-07-20 JM: Changed spOOA,tmOOA to integers.
-/// - 2010-07-21 JM: Set SimPM.next_optime in ready_to_start() instead
-///    of ReadHeader().
-/// - 2010-07-23 JM: Swtiched checkpointing to use two files and overwrite
-///    alternate files, ensuring there will always be at least one valid
-///    checkpoint file to restart from.
-///  - 2010.07.23 JM: New RSP source position class interface.
-///  - 2010.09.27 JM: took out comments and old ifdefs from dU_column().
-///  - 2010.09.30 JM: Added div(V) calculation to calc_dU() function for viscosity.
-///  - 2010.10.01 JM: Spherical coordinates(1D only) for Euler equations.
-///       Cut out testing myalloc/myfree
-///  - 2010.10.04 JM: Moved the field-loop magnetic pressure output to
-///       an ifdeffed function.  Added a new function to calculate the
-///       1D blast wave radius in spherical coordinates (also ifdeffed).
-///  - 2010.10.05 JM: Changed boundary point timestep calculation to
-///       work for all sims, not just jet sims.  Note this only works
-///       for the XN point from the grid FirstPt(), not all boundary
-///       points (which it really should work for!)
-///  - 2010.10.13 JM: Added option to setup new MPv9 class
-///       in setup_microphysics() function.
-///       Added MP_timestep_limit override option.
-///  - 2010.11.03 JM: Changed "endl" to "\n" for JUROPA.  Added a
-///       digit to output file counters.
-/// - 2010.11.12 JM: Changed ->col to use cell interface for
-///   extra_data.
-/// - 2010.11.15 JM: Modified update_dynamics() so it has pre- and
-///   post-processing functions before and after calc_dU().
-///   Added routine to calculate the H-correction eta values for
-///   pre-processing.  Added extra_data setting in setup_grid().
-///   2010.11.19 JM: Debugged the H-corr stuff.
-/// - 2010.12.04 JM: Added geometry-dependent grids, in a
-///   GEOMETRIC_GRID ifdef.  Will probably keep it since it is the way
-///   things will go eventually.
-/// - 2010.12.27 JM: Enclosed isothermal solver in an ifdef (it's
-///   broken at the moment and I have no time to fix it).
-/// - 2010.12.28 JM: Added Internal energy integrators to the
-///   set_equations() function, enclosed in a hash-ifdef for testing.
-///   (30.12 and 31.12) More on internal energy integration.
-/// - 2011.01.03 JM: Moved preprocess_dU() to solver_eqn_base.h/.cc
-///   so that it can be re-defined for the internal energy update.
-/// - 2011.01.17 JM: Added override for checkpt_freq=N steps.
-///                  Added new mp_only_cooling() class in MP setup.
-/// - 2011.02.17 JM: Added new optype==6 for outputting text+silo files.
-///                  Raytracer header file moved to raytracing/ subdir.
-///                  More ray-tracing options for CI.setup_extra_data
-/// - 2011.02.25 JM: New setup_raytracing() and update_microphysics() functions.
-///    The interface is simpler, and the logic is much clearer, and it should
-///    now work for multiple sources.
-/// - 2011.03.21 JM: moved cell setup_extra_data() to its own function, to save 
-///    on copy-paste for the parallel version.
-///    Rewrote setup_raytracing() and atomised update_microphysics() so there are
-///    now a few new functions to deal with the different kinds of radiative
-///    transfer we want to do.
-/// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux calculation.
-/// - 2011.04.14 JM: Added mp_v2_aifa microphysics integration class.
-/// - 2011.04.17 JM: minor debugging additions/subtractions for the new RT update.
-/// - 2011.04.18 JM: more debugging.  nearly done now.
-/// - 2011.04.22 JM: bugs for multiple point sources fixed.  Also removed isfinite
-///    checks for ints.  the intel compiler bugs out with them!  I guess they are
-///    redundant if an int doesn't have a bit combination for NAN or INF.
-/// - 2011.04.29 JM: changed logic: replaced some if (c->isbd) to if (!c->isgd)
-///  because the two are no longer mutually exclusive (grid data can be internal
-///  boundary data also.  Added a check in update_microphysics so that if a cell
-///  is boundary data it is not updated (and in microphysics calc_timestep).
-/// - 2011.05.02 JM: Added set_multifreq_source_properties() call to 
-///    setup_microphysics() function.
-/// - 2011.06.21 JM: Added option of 2nd-order-in-time ray-tracing/microphysics with
-///    two microphysics updates per step.
-/// - 2011.10.13 JM: Added MPv4 class.
-/// - 2011.10.14 JM: Removed raytracer_shielding class, updated RT interface a lot.
-/// - 2011.10.22 JM: The new MP/RT interface is now default (old #deffed code
-///    is now removed as of SVN369).  Improved RT interface, and simplified the 
-///    logic again, so it should now be easier to add to.
-/// - 2012.01.16 JM: Added setup_evolving_RT_sources() and
-///    update_evolving_RT_sources() for stellar evolution models.
-/// - 2012.01.20 JM: Updated setup_evolving_RT_sources() to scale luminosity to
-///    match luminosities of Diaz-Miller+(1998,Table 1).
-/// - 2012.01.23 JM: Added ifdefs for microphysics classes.
-/// - 2012.07.24 JM: Changed time-update to improve stability (photoionisation
-///    models with R-type I-fronts were developing ripples/waves in solution).
-///
-/// - 2012.08.05 JM: Moved time-integration functions from
-///    gridMethods.cc to time_integrators/time_integrator.cpp (with
-///    old code ifdeffed out).  Started working on new integration
-///    scheme which should be more accurate (and truly 2nd order).
-/// - 2012.08.16 JM: Debugging.  It seems to be working well now, but
-///    there is still more testing to do.
-/// - 2013.08.19 JM: Some cosmetic changes only.
-/// - 2013.08.20 JM: Modified cell_interface for optical depth vars.
-/// - 2013.10.13 JM: Fixed bug in dU_Column relating to internal
-///    boundaries; seems it never arose before.
-/// - 2013.12.03 JM: Modified NO_COOLING_ON_AXIS hack.
-/// - 2015.01.12/13 JM: Modified for new code structure; began adding
-///    the grid pointer everywhere.
-/// - 2015.01.26 JM: Renamed class to sim_control.
-/// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2018.01.24 JM: worked on making SimPM non-global
+/// - 2018.05.10 JM: moved calc_timestep function to its own class.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -201,7 +64,7 @@ int sim_control::advance_time(
   // on the ray-tracing column densities, and if so all the column densities
   // will be calculated with raytracing calls in calc_mp_timestep()
   //
-  err += calc_timestep(grid,raytracer);
+  err += calculate_timestep(SimPM, grid,raytracer,spatial_solver);
   if (err) 
     rep.error("advance_time: bad return value from calc_timestep()",err);
 
@@ -271,7 +134,7 @@ int sim_control::first_order_update(
   // the timestep.
   //
   if (!FVI_need_column_densities_4dt && raytracer) {
-    err += calculate_raytracing_column_densities(raytracer);
+    err += calculate_raytracing_column_densities(SimPM,raytracer);
     if (err) 
       rep.error("first_order_update: error from first calc_rt_cols()",err);
   }
@@ -330,7 +193,7 @@ int sim_control::second_order_update(
   // Raytracing, to get column densities for microphysics update.
   //
   if (raytracer) {
-    err += calculate_raytracing_column_densities(raytracer);
+    err += calculate_raytracing_column_densities(SimPM,raytracer);
     if (err) {
       rep.error("second_order_update: error from first calc_rt_cols()",err);
     }
@@ -366,37 +229,6 @@ int sim_control::second_order_update(
 }
 
 
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int sim_control::calculate_raytracing_column_densities(
-      //class GridBaseClass *grid       ///< Computational grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
-      )
-{
-  int err=0;
-  if (!raytracer) rep.error("calculate_raytracing_column_densities() no RT",0);
-  //
-  // If we have raytracing, we call the ray-tracing routines 
-  // to get Tau0, dTau, Vshell in cell->extra_data[].
-  //
-  for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
-#ifdef raytracer_TESTING
-    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
-#endif
-    err += raytracer->RayTrace_Column_Density(isrc, 0.0, SimPM.gamma);
-    if (err) {
-      cout <<"isrc="<<isrc<<"\t"; 
-      rep.error("calc_raytracing_col_dens step in returned error",err);
-    } // if error
-  } // loop over sources
-  return err;
-}
 
 
 // ##################################################################
