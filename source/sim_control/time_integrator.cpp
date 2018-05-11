@@ -19,7 +19,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "sim_control.h"
+#include "sim_control/time_integrator.h"
 #include "dataIO/dataio_base.h"
 
 #include "microphysics/microphysics_base.h"
@@ -40,33 +40,45 @@
 #include <fstream>
 #include <sys/time.h>
 #include <time.h>
-#include <climits>
 using namespace std;
 
-
-
-// ##################################################################
-// #################    TIME UPDATE FUNCTIONS     ###################
-// ##################################################################
-
 // ##################################################################
 // ##################################################################
 
-int sim_control::advance_time(
+
+
+time_integrator::time_integrator()
+{
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+time_integrator::~time_integrator()
+{
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+int time_integrator::advance_time(
       class GridBaseClass *grid, ///< Computational grid.
       class RayTracingBase *raytracer ///< raytracer for this grid.
       )
 {
   int err=0;
 
-  //
-  // First we calculate the timestep.  The microphysics timescales may depend
-  // on the ray-tracing column densities, and if so all the column densities
-  // will be calculated with raytracing calls in calc_mp_timestep()
-  //
+  // calculate the timestep.
   err += calculate_timestep(SimPM, grid,raytracer,spatial_solver);
-  if (err) 
-    rep.error("advance_time: bad return value from calc_timestep()",err);
+  rep.errorTest("time_integrator::advance_time calc_timestep()",0,err);
 
   //
   // Check order-of-accuracy (OOA) requested, and perform the
@@ -115,7 +127,7 @@ int sim_control::advance_time(
 
 
 
-int sim_control::first_order_update(
+int time_integrator::first_order_update(
       const double dt,
       const int   ooa,
       class GridBaseClass *grid, ///< Computational grid.
@@ -175,7 +187,7 @@ int sim_control::first_order_update(
 
 
 
-int sim_control::second_order_update(
+int time_integrator::second_order_update(
       const double dt,
       const int   ooa,
       class GridBaseClass *grid, ///< Computational grid.
@@ -236,7 +248,7 @@ int sim_control::second_order_update(
 
 
 
-int sim_control::calc_microphysics_dU(
+int time_integrator::calc_microphysics_dU(
       const double delt, ///< timestep to integrate MP eqns.
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -286,7 +298,7 @@ int sim_control::calc_microphysics_dU(
 
 
 
-int sim_control::calc_RT_microphysics_dU(
+int time_integrator::calc_RT_microphysics_dU(
       const double delt, // timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -395,7 +407,7 @@ int sim_control::calc_RT_microphysics_dU(
 
 
 
-int sim_control::calc_noRT_microphysics_dU(
+int time_integrator::calc_noRT_microphysics_dU(
       const double delt, ///< timestep to integrate
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -456,7 +468,7 @@ int sim_control::calc_noRT_microphysics_dU(
 
 
   
-int sim_control::calc_dynamics_dU(
+int time_integrator::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
       const int space_ooa, ///< spatial order of accuracy for update.
       class GridBaseClass *grid ///< Computational grid.
@@ -511,7 +523,7 @@ int sim_control::calc_dynamics_dU(
 
 
 
-int sim_control::set_dynamics_dU(
+int time_integrator::set_dynamics_dU(
       const double dt,     ///< timestep for this calculation
       const int space_ooa, ///< space OOA for this calculation
       class GridBaseClass *grid ///< Computational grid.
@@ -583,7 +595,7 @@ int sim_control::set_dynamics_dU(
 
   
 
-int sim_control::dynamics_dU_column
+int time_integrator::dynamics_dU_column
       (
       const class cell *startingPt, ///< sterting point of column.
       const enum direction posdir, ///< direction to trace column.
@@ -769,7 +781,7 @@ int sim_control::dynamics_dU_column
 // ##################################################################
 
   
-int sim_control::grid_update_state_vector(
+int time_integrator::grid_update_state_vector(
       const double dt,  ///< timestep
       const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa,   ///< Full order of accuracy of simulation

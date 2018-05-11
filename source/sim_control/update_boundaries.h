@@ -17,6 +17,7 @@
 #include "defines/testing_flags.h"
 
 #include "setup_fixed_grid.h"
+//#include "sim_control/sim_init.h"
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "equations/eqns_base.h"
