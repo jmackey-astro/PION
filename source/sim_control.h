@@ -58,52 +58,27 @@
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
 #include "setup_fixed_grid.h"
+#include "sim_control/sim_init.h"
 #include "sim_control/update_boundaries.h"
 #include "sim_control/calc_timestep.h"
+#include "sim_control/time_integrator.h"
 
-/// The simplest finite volume grid -- a uniform grid with cells that
-/// are cube-shaped in the chosen coordinates.
 /// 
-/// This can integrate any system of equations if given the right solver class.
-/// It can solve the equations in 1st or 2nd order accuracy in space and time.
+/// Simulation 
 ///
-class sim_control : virtual public setup_fixed_grid, virtual public update_boundaries, virtual public calc_timestep
+class sim_control : virtual public time_integrator
 {
   public:
   sim_control();  ///< Simple constructor, initialises value.
   virtual ~sim_control(); ///< Deletes any dynamic memory, if not already done.
 
   ///
-  /// Function to print command-line options for PION.
-  ///
-  void print_command_line_options(int, char **);
-
-  ///
-  /// initialisation.
-  ///
-  /// This function calls a sequence of other functions to set up the grid
-  /// and populate it with the initial conditions, and give it the appropriate
-  /// boundary conditions.  It gets the simulation ready to start, and checks 
-  /// that everything is ready to start before returning.
-  ///
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  virtual int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
-      int,      ///< Number of command-line arguments.
-      string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-      );
-
-  ///
   /// Time integration
   ///
-  /// This is the main part of the code -- It does all the time integration
+  /// This is the main part of the code -- It does the time integration
   /// until the stopping condition is reached and then returns.
-  /// It calls a sequence of functions to advance the time by one timestep,
-  /// all in a loop which runs until end-of-sim is reached.
+  /// It calls a sequence of functions to advance the time by one timestep
+  /// repeatedly until end-of-sim is reached.
   ///
   virtual int Time_Int(
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
@@ -117,72 +92,10 @@ class sim_control : virtual public setup_fixed_grid, virtual public update_bound
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
-  ///
-  /// Set the maximum runtime to a new value. Should be set in main()
-  ///
-  void set_max_walltime(
-      double ///< New Max. runtime in seconde.
-      );
-  ///
-  /// Get the maximum runtime in seconds.
-  ///
-  double get_max_walltime();
 
 
    //---------------------------------------
   protected:
-  //---------------------------------------
-  //---------------------------------------
-  // Class Member data:
-  //
-
-  ///
-  /// information about multi-core-multi-domain simulations, used for
-  /// MPI communication between processes.
-  ///
-  class MCMDcontrol mpiPM;
-
-  ///
-  /// Pointer to the raytracing class (for uniform grid this is a
-  /// vector of length 1.
-  ///
-  std::vector<class RayTracingBase *> RT;
-
-  ///
-  /// Max. walltime to run for, in seconds, after which we save
-  /// data and finish.
-  ///
-  double max_walltime;
-
-  ///
-  /// pointer to class for reading/writing data.
-  ///
-  class DataIOBase *dataio;
-
-  ///
-  /// pointer to class for reading/writing ascii-text-data.
-  ///
-  class DataIOBase *textio;
-
-  ///
-  /// Pointer to equations to solve, and routines for calculating
-  /// fluxes on the grid.
-  ///
-  class FV_solver_base *spatial_solver;
-
-  ///
-  /// information about the simulation
-  ///
-  class SimParams SimPM;
-  
-  //---------------------------------------
-  //---------------------------------------
-
-
-  /// function to setup data-I/O class.
-  virtual void setup_dataio_class(
-      const int  ///< type of I/O: 1=text,2=fits,5=silo
-      );
   
 #ifdef CHECK_MAGP
   ///
@@ -204,177 +117,7 @@ class sim_control : virtual public setup_fixed_grid, virtual public update_bound
       );
 #endif // BLAST_WAVE_CHECK
 
-  ///
-  /// See if any command-line arguments should override those
-  /// specified in the IC file, and if so, reset the parameters.
-  ///
-  int override_params(
-      int,      ///< Number of command-line arguments.
-      string *  ///< Pointer to array of command-line arguments.
-      );
 
-  ///
-  /// Initialise the correct Equations to solve, based on paramters.
-  ///
-  int set_equations();
-
-  ///
-  /// Advance the simulation by one time step.  This is the main time
-  /// integration function, and calls calculate_timestep, followed by
-  /// either a first-order or second-order time update.
-  ///
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  virtual int advance_time(
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
-      );
-
-  ///
-  /// This performs a first-order-accurate (in time) timestep for
-  /// dynamics, microphysics, thermal conduction.
-  ///
-  /// If the order-of-accuracy parameter is OA1 then it assumes this
-  /// is a full step and updates both P[] and Ph[].
-  /// If it is OA2, then the functions assumes this is the half-step
-  /// as part of a full second-order step, so it only updates Ph[].
-  /// It advances by an interval of dt regardless of OA1 or OA2, so 
-  /// if this is a half step 0.5*dt is passed to the function.
-  ///
-  int first_order_update(
-      const double,  ///< dt, time interval to advance by.
-      const int,     ///< time order of accuracy OA1/OA2.
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
-      );
-
-  ///
-  /// This performs a second-order-accurate (in time) timestep for
-  /// dynamics, microphysics, thermal conduction.
-  /// This performs the second part of a full second-order step, so
-  /// the half-step must have been already called before this one.
-  ///
-  int second_order_update(
-      const double, ///< dt, time interval to advance by.
-      const int,    ///< time order of accuracy (must be OA2).
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
-      );
-  
-  ///
-  /// This function does some checking on radiation sources to see
-  /// what microphysics update to call, then calls one of 
-  /// calc_RT_microphysics_dU() or
-  /// calc_microphysics_dU().
-  ///
-  int calc_microphysics_dU(
-      const double, ///< dt, timestep to integrate MP spatial_solvers.
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
-  /// This calculates the change in internal energy and ion fractions
-  /// for a timestep dt, by integrating the microphysics equations
-  /// for the full timestep, storing the result in a temporary array,
-  /// and differencing the initial and final states.
-  /// This version is for microphysics integrations where there are
-  /// radiation sources involved.
-  ///
-  int calc_RT_microphysics_dU(
-      const double,   ///< dt, timestep to integrate
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
-  /// This calculates the change in internal energy and ion fractions
-  /// for a timestep dt, by integrating the microphysics equations
-  /// for the full timestep, storing the result in a temporary array,
-  /// and differencing the initial and final states.
-  /// This version is for microphysics integrations where there are
-  /// no radiation sources (e.g. pure heating+cooling, or collisional
-  /// processes only).
-  ///
-  int calc_noRT_microphysics_dU(
-      const double, ///< dt, timestep to integrate
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
-  /// This calculates the change in the state vector for each point
-  /// due to the dynamics, for a timestep dt, using either 1st or 
-  /// 2nd order accuracy in space.
-  /// It calls spatial_solver->preprocess_data(), then set_dynamics_dU(), and
-  /// finally spatial_solver->PostProcess_dU().
-  /// set_dynamics_dU() is the function that used to be called
-  /// calc_dU().
-  ///
-  int calc_dynamics_dU(
-      const double, ///< dt, timestep to integrate
-      const int,    ///< spatial order of accuracy for update.
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
-  /// This function used to be called calc_dU -- for every column of
-  /// simulation data on the grid this calls dU_Column() to get the
-  /// changes in the state vectors arising from the hydrodynamics
-  /// over the timestep dt.  It uses the requested spatial order of
-  /// accuracy.  This function also loops over all directions on the 
-  /// grid that are active.
-  ///
-  int set_dynamics_dU(
-      const double,    ///< dt, timestep for this calculation
-      const int,       ///< space OOA for this calculation
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
-  /// Calculate dU, rate of change of conserved variables, in a 1D
-  /// column of grid cells, according to the fluid dynamics equations.
-  ///
-  /// This runs through every cell in a 1D column in turn, and calculates the flux
-  /// between the cell in question and its neighbour to the right, by obtaining
-  /// an interface flux.
-  /// 
-  /// It then calculates dU for each cell according to the exact formula (if the 
-  /// flux calculation were exact) given by Toro eq.5.76\n
-  /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
-  ///
-  int dynamics_dU_column(const class cell *, ///< starting point for column.
-      const enum direction, ///< direction to traverse column in. 
-      const enum direction, ///< opposite direction.
-      const double,    ///< dt, timestep for this calculation
-#ifdef TESTING
-      const int,       ///< Time Order of accuracy to use.
-#endif
-      const int,        ///< Spatial Order of accuracy to use.
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
-  /// This function takes the contents of each cell->dU[] vector and
-  /// updates Ph[] the changes.  If we are on the full-step then it
-  /// also updates P[] so that it and Ph[] are identical.
-  ///
-  int grid_update_state_vector(
-      const double ,  ///< dt, timestep
-      const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int,       ///< Full order of accuracy of simulation
-      class GridBaseClass * ///< grid pointer
-      );
-
-
-  ///
-  /// Output the data to file if required.
-  ///
-  /// This checks if I want to output data in this timestep, then
-  /// checks what format to write in, and calls the appropriate 
-  /// function to write the data.
-  ///
-  virtual int output_data(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-      );
 
   /// Check if sim should stop.
   /// 
@@ -395,12 +138,6 @@ class sim_control : virtual public setup_fixed_grid, virtual public update_bound
       class GridBaseClass *  ///< address of vector of grid pointers.
       );
 
-  ///
-  /// Calculates total values of conserved quantities.
-  ///
-  int initial_conserved_quantities(
-      class GridBaseClass *  ///< address of vector of grid pointers.
-      );
 }; // sim_control
    
 /*************************************************************************/

@@ -364,7 +364,7 @@ ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
 endif
 
-OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o
+OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
 
 OBJ_NEST = dataio_silo_nestedgrid.o nested_grid.o setup_nested_grid.o
 
@@ -453,11 +453,14 @@ setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
 # CONTROL CLASSES   #
 #####################
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-  MPv0.h MPv1.h MPv2.h MPv3.h MPv4.h MPv5.h MPv6.h MPv7.h MPv8.h MPv9.h \
-  mp_only_cooling.h setup_fixed_grid.h  calc_timestep.h update_boundaries.h \
+  setup_fixed_grid.h  calc_timestep.h update_boundaries.h \
   parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
+  sim_init.h setup_fixed_grid.h
 
-time_integrator.o: time_integrator.cpp sim_control.h \
+sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+
+time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h update_boundaries.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
