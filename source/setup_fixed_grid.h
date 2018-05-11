@@ -98,7 +98,8 @@ class setup_fixed_grid
   ///
   virtual int assign_boundary_data(
       class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *  ///< pointer to grid.
+      class GridBaseClass *,  ///< pointer to grid.
+      std::vector<struct boundary_data *> & ///< pointer to boundary structs
       );
 
   //---------------------------------------
@@ -119,7 +120,7 @@ class setup_fixed_grid
   std::vector<struct rt_source_data> FVI_ionising_srcs;
 
   /// pointer to array of all boundaries.
-  std::vector<struct boundary_data *> BC_bd;  
+  std::vector<struct boundary_data *> bdata;  
   int BC_nbd; ///< Number of Boundaries.
   /// equations class for assigning boundary data
   class eqns_base *eqn;
@@ -139,7 +140,8 @@ class setup_fixed_grid
   ///
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
-      class GridBaseClass *  ///< pointer to grid.
+      class GridBaseClass *,  ///< pointer to grid.
+      std::vector<struct boundary_data *> & ///< pointer to boundary structs
       );
 
   /// Assigns data to a periodic boundary.

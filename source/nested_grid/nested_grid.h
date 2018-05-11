@@ -58,10 +58,6 @@ class nested_grid
   virtual public GridBaseClass,
   virtual public VectorOps_Cart
 {
-  protected:
-
-  class GridBaseClass *parent; ///< pointer to parent grid in nest.
-  class GridBaseClass *child;  ///< pointer to child grid in nest.
 
 
 
@@ -113,23 +109,23 @@ class nested_grid
   //      );
    
   /// Set pointer to parent grid.
-  void set_parent_grid(
-      class GridBaseClass *  ///< pointer to parent grid.
-      );
+  //void set_parent_grid(
+  //    class GridBaseClass *  ///< pointer to parent grid.
+  //    );
 
   /// Set pointer to child grid.
-  void set_child_grid(
-      class GridBaseClass *  ///< pointer to child grid.
-      );
+  //void set_child_grid(
+  //    class GridBaseClass *  ///< pointer to child grid.
+  //    );
 
   ///
   /// Calls UniformGrid SetupBCs function and then adds nested-grid
   /// boundaries to internal data for which finer-level data exists,
   /// and external data for which coarser-level data exists.
   ///
-  virtual int BC_setBCtypes(
-        class SimParams &  ///< reference to SimParams list.
-        );
+  //virtual int BC_setBCtypes(
+  //      class SimParams &  ///< reference to SimParams list.
+  //      );
 
 
 

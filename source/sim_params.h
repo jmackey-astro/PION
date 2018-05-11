@@ -218,7 +218,7 @@ class SimParams {
   int grid_nlevels;
   int grid_aspect_ratio[MAX_DIM];
   double grid_nest_centre[MAX_DIM];
-  std::vector<struct level> nest_levels;
+  std::vector<struct level> levels;
 
   // Boundary cell data.
   std::string BC_XN; ///< Type of boundary condition.

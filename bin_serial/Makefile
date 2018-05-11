@@ -366,7 +366,7 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
 
-OBJ_NEST = dataio_silo_nestedgrid.o nested_grid.o setup_nested_grid.o
+OBJ_NEST = dataio_silo_nestedgrid.o  setup_nested_grid.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
 
