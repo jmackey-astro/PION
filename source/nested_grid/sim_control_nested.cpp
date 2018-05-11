@@ -126,7 +126,7 @@ int sim_control_nestedgrid::Init(
   //
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-    spatial_solver->set_dx(SimPM.nest_levels[l].dx);
+    spatial_solver->set_dx(SimPM.levels[l].dx);
     //
     // Set Ph=P in every cell.
     //
@@ -289,7 +289,7 @@ void sim_control_nestedgrid::calculate_magnetic_pressure(
   double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    spatial_solver->set_dx(SimPM.nest_levels[l].dx);
+    spatial_solver->set_dx(SimPM.levels[l].dx);
     
     cell *c=grid[l]->FirstPt();
     do {
@@ -328,7 +328,7 @@ void sim_control_nestedgrid::calculate_blastwave_radius(
   bool shock_found = false;
   //  static double last_dt=0.0;
   for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
-    spatial_solver->set_dx(SimPM.nest_levels[l].dx);
+    spatial_solver->set_dx(SimPM.levels[l].dx);
 
     if (shock_found) continue;
     cell *c=grid->LastPt();

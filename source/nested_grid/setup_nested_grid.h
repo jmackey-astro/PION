@@ -37,7 +37,7 @@ class setup_nested_grid : virtual public setup_fixed_grid
 
 
   ///
-  /// Populate the array SimPM.nest_levels with Xmin,Xmax,Range,dx,etc.
+  /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
   ///
   void setup_nested_grid_levels(
       class SimParams &  ///< pointer to simulation parameters
@@ -53,14 +53,14 @@ class setup_nested_grid : virtual public setup_fixed_grid
       );
 
   ///
-  /// Determines what kind of boundary conditions are needed.
-  /// Sets gp.Nbc to the appropriate value for the order of accuracy used.
-  /// \retval 0 success
-  /// \retval 1 failure
+  /// Determines what kind of boundary conditions are needed and
+  /// creates the boundary data structures.  Asks the grid to create
+  /// grid cells for the external boundaries, and label internal
+  /// boundary cells as such.
   ///
   int boundary_conditions(
-      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &,  ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );   
 
   ///
@@ -73,10 +73,38 @@ class setup_nested_grid : virtual public setup_fixed_grid
       vector<class RayTracingBase *> &  ///< address of vector of grid pointers.
       );
 
+  ///
+  /// Set the boundary conditions string and initialise BC_bd
+  ///
+  virtual int setup_boundary_structs(
+      class SimParams &,  ///< reference to SimParams list.
+      class GridBaseClass *,  ///< pointer to grid.
+      const int,          ///< level of grid in nest
+      std::vector<struct boundary_data *> &  ///< pointer to boundary data vector for this level
+      );
+
+  ///
+  /// Assigns data to each boundary.
+  ///
+  virtual int assign_boundary_data(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      std::vector<struct boundary_data *> & ///< pointer to boundary structs
+      );
+
 
   //---------------------------------------
   protected:
   //---------------------------------------
+  /// vector of all boundaries, at each level.
+  std::vector<std::vector<struct boundary_data *> > bdata_nest;  
+
+  /// Assigns data to a nested grid from finer grid.
+  virtual int BC_assign_NEST_FINE( boundary_data *);
+
+  /// Assigns data to an external boundary from coarser grid.
+  virtual int BC_assign_NEST_COARSE( boundary_data *);
+
 
 }; // setup_nested_grid
    

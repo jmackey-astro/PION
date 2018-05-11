@@ -810,13 +810,13 @@ int setup_fixed_grid::boundary_conditions(
   //
   // Choose what BCs to set up based on BC strings.
   //
-  int err = setup_boundary_structs(par,grid);
+  int err = setup_boundary_structs(par,grid,bdata);
   rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
 
   //
   // Ask grid to set up data for external boundaries.
   //
-  err = grid->SetupBCs(par,BC_bd);
+  err = grid->SetupBCs(par,bdata);
   rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
 
 #ifdef TESTING
@@ -834,7 +834,8 @@ int setup_fixed_grid::boundary_conditions(
 
 int setup_fixed_grid::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
+      class GridBaseClass *grid, ///< pointer to grid.
+      std::vector<struct boundary_data *> &BC_bd ///< pointer to boundary structs
       )
 {
 #ifdef TESTING
@@ -989,7 +990,8 @@ int setup_fixed_grid::setup_boundary_structs(
 
 int setup_fixed_grid::assign_boundary_data(
       class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid  ///< pointer to grid.
+      class GridBaseClass *grid,  ///< pointer to grid.
+      std::vector<struct boundary_data *> &BC_bd ///< pointer to boundary structs
       )
 {
   // ----------------------------------------------------------------
@@ -2074,7 +2076,7 @@ void setup_fixed_grid::BC_deleteBoundaryData()
 #endif
   struct boundary_data *b;
   for (int ibd=0; ibd<BC_nbd; ibd++) {
-    b = BC_bd[ibd];
+    b = bdata[ibd];
     if (b->refval !=0) {
       b->refval = mem.myfree(b->refval);
     }
@@ -2103,7 +2105,7 @@ void setup_fixed_grid::BC_deleteBoundaryData()
     }
 
   } // loop over all boundaries.
-  BC_bd.clear();
+  bdata.clear();
   return;
 }
   

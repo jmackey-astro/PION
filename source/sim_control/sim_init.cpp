@@ -281,7 +281,7 @@ int sim_init::Init(
   //
   err = boundary_conditions(SimPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM, grid[0]);
+  err = assign_boundary_data(SimPM, grid[0],bdata);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //

@@ -26,7 +26,7 @@
 #include "nested_grid/dataio_silo_nestedgrid.h"
 #endif // if SILO
 
-#include "nested_grid/nested_grid.h"
+#include "grid/uniform_grid.h"
 #include "nested_grid/setup_nested_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
   // conditions because jet boundary needs some grid data values.
   if (ics=="Jet" || ics=="JET" || ics=="jet") {
     for (int l=0;l<SimPM.grid_nlevels;l++) {
-      CI.set_dx(SimPM.nest_levels[l].dx);
+      CI.set_dx(SimPM.levels[l].dx);
       err += ic->setup_data(rp,grid[l]);
       if (err) rep.error("Initial conditions setup failed.",err);
     }
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(grid,SimPM);
+  SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
   err += SimSetup->setup_raytracing(SimPM,grid,RT);
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    CI.set_dx(SimPM.nest_levels[l].dx);
+    CI.set_dx(SimPM.levels[l].dx);
     err += ic->setup_data(rp,grid[l]);
     if (err) rep.error("Initial conditions setup failed.",err);
   }
