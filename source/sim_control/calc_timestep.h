@@ -56,7 +56,6 @@ class calc_timestep : virtual public setup_fixed_grid
   virtual int calculate_timestep(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to grid.
-      class RayTracingBase *, ///< raytracer for this grid.
       class FV_solver_base * ///< solver/equations class
       );
 
@@ -68,8 +67,7 @@ class calc_timestep : virtual public setup_fixed_grid
   /// 
   double calc_microphysics_dt(
       class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *, ///< pointer to grid.
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< pointer to grid.
       );
 
   ///

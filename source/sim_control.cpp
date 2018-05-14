@@ -225,7 +225,7 @@ int sim_control::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,RT[0]);
+    err = update_evolving_RT_sources(SimPM,grid[0]->RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;
@@ -233,7 +233,7 @@ int sim_control::Time_Int(
 
     //clk.start_timer("advance_time");
     // step forward by dt.
-    err+= advance_time(grid[0],RT[0]);
+    err+= advance_time(grid[0]);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went wrong\n";return(1);}
 

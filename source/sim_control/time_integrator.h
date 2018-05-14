@@ -51,8 +51,7 @@ class time_integrator : virtual public sim_init, virtual public calc_timestep
   /// \retval 1 failure
   ///
   virtual int advance_time(
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< grid pointer
       );
 
   ///
@@ -69,8 +68,7 @@ class time_integrator : virtual public sim_init, virtual public calc_timestep
   int first_order_update(
       const double,  ///< dt, time interval to advance by.
       const int,     ///< time order of accuracy OA1/OA2.
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< grid pointer
       );
 
   ///
@@ -82,8 +80,7 @@ class time_integrator : virtual public sim_init, virtual public calc_timestep
   int second_order_update(
       const double, ///< dt, time interval to advance by.
       const int,    ///< time order of accuracy (must be OA2).
-      class GridBaseClass *, ///< grid pointer
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass * ///< grid pointer
       );
   
   ///

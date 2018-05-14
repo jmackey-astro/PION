@@ -68,7 +68,6 @@ sim_init::~sim_init()
   if (spatial_solver) {delete spatial_solver; spatial_solver=0;}
   if (dataio) {delete dataio; dataio=0;}
   if (textio) {delete textio; textio=0;}
-  if (RT[0]) delete RT[0];
   return;
 }
 
@@ -224,7 +223,6 @@ int sim_init::Init(
   // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
   //
   grid.resize(1);
-  RT.resize(1);
   CI.set_dx(SimPM.dx);
 
   // Now set up the grid structure.
@@ -281,14 +279,14 @@ int sim_init::Init(
   //
   err = boundary_conditions(SimPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM, grid[0],bdata);
+  err = assign_boundary_data(SimPM, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
   // Setup Raytracing on each grid, if needed.
   //
-  err += setup_raytracing(SimPM, grid[0], &(RT[0]));
-  err += setup_evolving_RT_sources(SimPM, RT[0]);
+  err += setup_raytracing(SimPM, grid[0]);
+  err += setup_evolving_RT_sources(SimPM, grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
   //

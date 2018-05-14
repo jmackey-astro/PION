@@ -69,8 +69,7 @@ class setup_fixed_grid
   ///
   virtual int setup_raytracing(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *, ///< pointer to computational grid
-      class RayTracingBase ** ///< pointer to raytracing class [OUTPUT]
+      class GridBaseClass * ///< pointer to computational grid
       );
 
   ///
@@ -98,8 +97,7 @@ class setup_fixed_grid
   ///
   virtual int assign_boundary_data(
       class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      std::vector<struct boundary_data *> & ///< pointer to boundary structs
+      class GridBaseClass *  ///< pointer to grid.
       );
 
   //---------------------------------------
@@ -119,12 +117,9 @@ class setup_fixed_grid
   /// vector of RT ionising sources, of size FVI_nion
   std::vector<struct rt_source_data> FVI_ionising_srcs;
 
-  /// pointer to array of all boundaries.
-  std::vector<struct boundary_data *> bdata;  
   int BC_nbd; ///< Number of Boundaries.
   /// equations class for assigning boundary data
   class eqns_base *eqn;
-  class stellar_wind *Wind; ///< stellar wind boundary condition.
 
   ///
   /// Check for any time-evolving radiation sources, and update source
@@ -140,8 +135,7 @@ class setup_fixed_grid
   ///
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
-      class GridBaseClass *,  ///< pointer to grid.
-      std::vector<struct boundary_data *> & ///< pointer to boundary structs
+      class GridBaseClass *  ///< pointer to grid.
       );
 
   /// Assigns data to a periodic boundary.
@@ -251,18 +245,6 @@ class setup_fixed_grid
       //boundary_data *, ///< boundary ptr.
       const int    ///< source id
       );
-
-  ///
-  /// prints all the cells in the given boundary data pointer.
-  ///
-  int BC_printBCdata(boundary_data *);
-
-  ///
-  /// Destructor for all the boundary data, BC_bd.  Needed because 
-  /// we need to delete some cells in the list, and others we just need to
-  /// delete the pointers to them.
-  ///
-  void BC_deleteBoundaryData();
 
 }; // setup_fixed_grid
    

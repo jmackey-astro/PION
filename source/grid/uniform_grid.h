@@ -406,9 +406,20 @@ class UniformGrid
   /// specified (internal, e.g. stellar wind).
   ///
   virtual int SetupBCs(
-      class SimParams &,  ///< List of simulation params (including BCs)
-      std::vector<struct boundary_data *> &BC_bd
+      class SimParams &  ///< List of simulation params (including BCs)
       );
+
+  ///
+  /// prints all the cells in the given boundary data pointer.
+  ///
+  int BC_printBCdata(boundary_data *);
+
+  ///
+  /// Destructor for all the boundary data, BC_bd.  Needed because 
+  /// we need to delete some cells in the list, and others we just need to
+  /// delete the pointers to them.
+  ///
+  void BC_deleteBoundaryData();
 
   ///
   /// Setup lists of processors to receive data from and send data to, 

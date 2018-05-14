@@ -86,12 +86,6 @@ class sim_init : virtual public setup_fixed_grid, virtual public update_boundari
   class MCMDcontrol mpiPM;
 
   ///
-  /// Pointer to the raytracing class (for uniform grid this is a
-  /// vector of length 1.
-  ///
-  std::vector<class RayTracingBase *> RT;
-
-  ///
   /// Max. walltime to run for, in seconds, after which we save
   /// data and finish.
   ///

@@ -70,14 +70,13 @@ time_integrator::~time_integrator()
 // ##################################################################
 
 int time_integrator::advance_time(
-      class GridBaseClass *grid, ///< Computational grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
+      class GridBaseClass *grid ///< Computational grid.
       )
 {
   int err=0;
 
   // calculate the timestep.
-  err += calculate_timestep(SimPM, grid,raytracer,spatial_solver);
+  err += calculate_timestep(SimPM, grid,spatial_solver);
   rep.errorTest("time_integrator::advance_time calc_timestep()",0,err);
 
   //
@@ -90,15 +89,15 @@ int time_integrator::advance_time(
     // function knows whether to update P[i] as well as Ph[i]
     //
     //cout <<"First order update\n";
-    err += first_order_update(SimPM.dt, SimPM.tmOOA, grid, raytracer);
+    err += first_order_update(SimPM.dt, SimPM.tmOOA, grid);
     if (err)
       rep.error("first_order_update() returned error",err);
   }
 
   else if (SimPM.tmOOA==OA2 && SimPM.spOOA==OA2) {
     //cout <<"Second order update\n";
-    err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid, raytracer);
-    err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid, raytracer);
+    err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid);
+    err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid);
     if (err)
       rep.error("Second order time-update returned error",err);
   }
@@ -130,8 +129,7 @@ int time_integrator::advance_time(
 int time_integrator::first_order_update(
       const double dt,
       const int   ooa,
-      class GridBaseClass *grid, ///< Computational grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
+      class GridBaseClass *grid ///< Computational grid.
       )
 {
   int err=0;
@@ -145,8 +143,8 @@ int time_integrator::first_order_update(
   // May need to do raytracing, if it wasn't needed for calculating
   // the timestep.
   //
-  if (!FVI_need_column_densities_4dt && raytracer) {
-    err += calculate_raytracing_column_densities(SimPM,raytracer);
+  if (!FVI_need_column_densities_4dt && grid->RT) {
+    err += calculate_raytracing_column_densities(SimPM,grid->RT);
     if (err) 
       rep.error("first_order_update: error from first calc_rt_cols()",err);
   }
@@ -190,8 +188,7 @@ int time_integrator::first_order_update(
 int time_integrator::second_order_update(
       const double dt,
       const int   ooa,
-      class GridBaseClass *grid, ///< Computational grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
+      class GridBaseClass *grid ///< Computational grid.
       )
 {
   int err=0;
@@ -204,8 +201,8 @@ int time_integrator::second_order_update(
   //
   // Raytracing, to get column densities for microphysics update.
   //
-  if (raytracer) {
-    err += calculate_raytracing_column_densities(SimPM,raytracer);
+  if (grid->RT) {
+    err += calculate_raytracing_column_densities(SimPM,grid->RT);
     if (err) {
       rep.error("second_order_update: error from first calc_rt_cols()",err);
     }
