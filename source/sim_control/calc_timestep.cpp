@@ -68,12 +68,11 @@ calc_timestep::~calc_timestep()
 int calc_timestep::calculate_timestep(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      class RayTracingBase *raytracer, ///< raytracer for this grid.
       class FV_solver_base *sp_solver ///< solver/equations class
       )
 {
 #ifdef TESTING
-  cout <<"calc_timestep::calc_timestep(): g="<<grid<<", rt="<<raytracer<<"\n";
+  cout <<"calc_timestep::calc_timestep(): g="<<grid<<", rt="<<grid->RT<<"\n";
 #endif
   //
   // This is a wrapper function.  First we get the dynamics
@@ -81,7 +80,7 @@ int calc_timestep::calculate_timestep(
   //
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
-  t_mp  = calc_microphysics_dt(par,grid,raytracer);
+  t_mp  = calc_microphysics_dt(par,grid);
 #ifdef TESTING
   if (t_mp<t_dyn)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
@@ -326,8 +325,7 @@ double calc_timestep::calc_dynamics_dt(
 
 double calc_timestep::calc_microphysics_dt(
       class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *grid, ///< pointer to grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
+      class GridBaseClass *grid ///< pointer to grid.
       )
 {
   //
@@ -360,7 +358,7 @@ double calc_timestep::calc_microphysics_dt(
     // need column densities, so do raytracing, and then get dt.
     //
     //cout <<"calc_timestep, getting column densities rt="<<raytracer<<".\n";
-    int err = calculate_raytracing_column_densities(par,raytracer);
+    int err = calculate_raytracing_column_densities(par,grid->RT);
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
     dt = get_mp_timescales_with_radiation(par,grid);
     if (dt<=0.0)

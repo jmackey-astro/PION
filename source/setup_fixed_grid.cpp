@@ -429,8 +429,7 @@ int setup_fixed_grid::setup_microphysics(
 
 int setup_fixed_grid::setup_raytracing(
       class SimParams &SimPM,    ///< pointer to simulation parameters
-      class GridBaseClass *grid, ///< pointer to grid
-      class RayTracingBase **RT   ///< pointer to raytracing class
+      class GridBaseClass *grid ///< pointer to grid
       )
 {
   //
@@ -445,7 +444,6 @@ int setup_fixed_grid::setup_raytracing(
   //
   if (!MP) rep.error("can't do raytracing without microphysics",MP);
   cout <<"\n----------------- RAYTRACER SETUP STARTING -----------------------\n";
-  *RT=0;
   //
   // If the ionising source is at infinity then set up the simpler parallel
   // rays tracer.  Otherwise the more complicated one is required.
@@ -457,17 +455,17 @@ int setup_fixed_grid::setup_raytracing(
     //
     // set up single source at infinity tracer, if appropriate
     //
-    *RT = new raytracer_USC_infinity(grid, MP, SimPM.ndim,
+    grid->RT = new raytracer_USC_infinity(grid, MP, SimPM.ndim,
                             SimPM.coord_sys, SimPM.nvar, SimPM.ftr);
-    if (!(*RT)) rep.error("init pllel-rays raytracer error",*RT);
+    if (!(grid->RT)) rep.error("init pllel-rays raytracer error",grid->RT);
   }
   else {
     //
     // set up regular tracer if simple one not already set up.
     //
-    *RT = new raytracer_USC(grid, MP, SimPM.ndim, SimPM.coord_sys,
+    grid->RT = new raytracer_USC(grid, MP, SimPM.ndim, SimPM.coord_sys,
                           SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
-    if (!(*RT)) rep.error("init raytracer error 2",*RT);
+    if (!(grid->RT)) rep.error("init raytracer error 2",grid->RT);
   }
 
   //
@@ -483,7 +481,7 @@ int setup_fixed_grid::setup_raytracing(
       // sources.
       //
       cout <<"Adding IONISING or UV single-source with id: ";
-      cout << (*RT)->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
       if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
           SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI)
         ion_count++;
@@ -495,7 +493,7 @@ int setup_fixed_grid::setup_raytracing(
       // be an intensity not a flux, so it is multiplied by a solid angle appropriate
       // to its location in order to get a flux.
       cout <<"Adding DIFFUSE radiation source with id: ";
-      cout << (*RT)->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
+      cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
       uv_count++;
       dif_count++;
     } // if diffuse source
@@ -505,7 +503,7 @@ int setup_fixed_grid::setup_raytracing(
   }
   cout <<"Added "<<ion_count<<" ionising and "<<uv_count<<" non-ionising";
   cout <<" radiation sources, of which "<<dif_count<<" are diffuse radiation.\n";
-  (*RT)->Print_SourceList();
+  grid->RT->Print_SourceList();
 
   //
   // Now that we have added all of the sources, we query the raytracer to get
@@ -513,20 +511,20 @@ int setup_fixed_grid::setup_raytracing(
   // NOTE THAT IF THE NUMBER OF SOURCES OR THEIR PROPERTIES CHANGE OVER TIME,
   // I WILL HAVE TO WRITE NEW CODE TO UPDATE THIS!
   //
-  FVI_nheat = (*RT)->N_heating_sources();
-  FVI_nion  = (*RT)->N_ionising_sources();
+  FVI_nheat = grid->RT->N_heating_sources();
+  FVI_nion  = grid->RT->N_ionising_sources();
   FVI_heating_srcs.resize(FVI_nheat);
   FVI_ionising_srcs.resize(FVI_nion);
-  (*RT)->populate_UVheating_src_list(FVI_heating_srcs);
-  (*RT)->populate_ionising_src_list( FVI_ionising_srcs);
+  grid->RT->populate_UVheating_src_list(FVI_heating_srcs);
+  grid->RT->populate_ionising_src_list( FVI_ionising_srcs);
 
   //
   // See if we need column densities for the timestep calculation
   //
-  if ((*RT)->type_of_RT_integration()==RT_UPDATE_EXPLICIT) {
+  if (grid->RT->type_of_RT_integration()==RT_UPDATE_EXPLICIT) {
     FVI_need_column_densities_4dt = true;
   }
-  else if ((*RT) && (*RT)->type_of_RT_integration()==RT_UPDATE_IMPLICIT
+  else if (grid->RT && grid->RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT
             && SimPM.EP.MP_timestep_limit==5) {
     // For implicit updates to limit by xdot and/or edot
     // Here the raytracing has not already been done, so we call it here.
@@ -810,13 +808,13 @@ int setup_fixed_grid::boundary_conditions(
   //
   // Choose what BCs to set up based on BC strings.
   //
-  int err = setup_boundary_structs(par,grid,bdata);
+  int err = setup_boundary_structs(par,grid);
   rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
 
   //
   // Ask grid to set up data for external boundaries.
   //
-  err = grid->SetupBCs(par,bdata);
+  err = grid->SetupBCs(par);
   rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
 
 #ifdef TESTING
@@ -834,8 +832,7 @@ int setup_fixed_grid::boundary_conditions(
 
 int setup_fixed_grid::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid, ///< pointer to grid.
-      std::vector<struct boundary_data *> &BC_bd ///< pointer to boundary structs
+      class GridBaseClass *grid ///< pointer to grid.
       )
 {
 #ifdef TESTING
@@ -847,9 +844,9 @@ int setup_fixed_grid::setup_boundary_structs(
 #ifdef TESTING
   cout <<"Got "<<len<<" boundaries to set up.\n";
 #endif
-  BC_bd.resize(len);  // class member data
+  grid->BC_bd.resize(len);  // class member data
   BC_nbd = len;       // class member data
-  for (int b=0;b<len;b++) BC_bd[b] = mem.myalloc(BC_bd[b],1);
+  for (int b=0;b<len;b++) grid->BC_bd[b] = mem.myalloc(grid->BC_bd[b],1);
 
   //
   // First the 2N external boundaries.  Put the strings into an array.
@@ -868,69 +865,69 @@ int setup_fixed_grid::setup_boundary_structs(
   //
   int i=0;
   for (i=0; i<2*par.ndim; i++) {
-    BC_bd[i]->dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
-    BC_bd[i]->ondir = grid->OppDir(BC_bd[i]->dir);
+    grid->BC_bd[i]->dir = static_cast<direction>(i); //XN=0,XP=1,YN=2,YP=3,ZN=4,ZP=5
+    grid->BC_bd[i]->ondir = grid->OppDir(grid->BC_bd[i]->dir);
 #ifdef TESTING
-    cout <<"i="<<i<<", dir = "<<BC_bd[i]->dir<<", ondir="<< BC_bd[i]->ondir<<"\n";
+    cout <<"i="<<i<<", dir = "<<grid->BC_bd[i]->dir<<", ondir="<< grid->BC_bd[i]->ondir<<"\n";
 #endif
-    BC_bd[i]->baxis = static_cast<axes>(i/2);
+    grid->BC_bd[i]->baxis = static_cast<axes>(i/2);
     //
     // odd values of i are positive boundaries, others are negative.
     //
     if ((i+2)%2 !=0) {
-      BC_bd[i]->bloc  = grid->Xmax(BC_bd[i]->baxis);
-      BC_bd[i]->bpos  = true;
+      grid->BC_bd[i]->bloc  = grid->Xmax(grid->BC_bd[i]->baxis);
+      grid->BC_bd[i]->bpos  = true;
     }
     else {
-      BC_bd[i]->bloc  = grid->Xmin(BC_bd[i]->baxis);
-      BC_bd[i]->bpos  = false;
+      grid->BC_bd[i]->bloc  = grid->Xmin(grid->BC_bd[i]->baxis);
+      grid->BC_bd[i]->bpos  = false;
     }
     //
     // find boundary condition specified:
     //
-    BC_bd[i]->type = bc_strings[i];
+    grid->BC_bd[i]->type = bc_strings[i];
 
-    if      (BC_bd[i]->type=="periodic") {
-      BC_bd[i]->itype=PERIODIC;
-      BC_bd[i]->type="PERIODIC";
+    if      (grid->BC_bd[i]->type=="periodic") {
+      grid->BC_bd[i]->itype=PERIODIC;
+      grid->BC_bd[i]->type="PERIODIC";
     }
-    else if (BC_bd[i]->type=="outflow" || BC_bd[i]->type=="zero-gradient") {
-      BC_bd[i]->itype=OUTFLOW;
-      BC_bd[i]->type="OUTFLOW";
+    else if (grid->BC_bd[i]->type=="outflow" || grid->BC_bd[i]->type=="zero-gradient") {
+      grid->BC_bd[i]->itype=OUTFLOW;
+      grid->BC_bd[i]->type="OUTFLOW";
     }
-    else if (BC_bd[i]->type=="one-way-outflow") {
-      BC_bd[i]->itype=ONEWAY_OUT;
-      BC_bd[i]->type="ONEWAY_OUT";
+    else if (grid->BC_bd[i]->type=="one-way-outflow") {
+      grid->BC_bd[i]->itype=ONEWAY_OUT;
+      grid->BC_bd[i]->type="ONEWAY_OUT";
     }
-    else if (BC_bd[i]->type=="inflow") {
-      BC_bd[i]->itype=INFLOW ;
-      BC_bd[i]->type="INFLOW";
+    else if (grid->BC_bd[i]->type=="inflow") {
+      grid->BC_bd[i]->itype=INFLOW ;
+      grid->BC_bd[i]->type="INFLOW";
     }
-    else if (BC_bd[i]->type=="reflecting") {
-      BC_bd[i]->itype=REFLECTING;
-      BC_bd[i]->type="REFLECTING";
+    else if (grid->BC_bd[i]->type=="reflecting") {
+      grid->BC_bd[i]->itype=REFLECTING;
+      grid->BC_bd[i]->type="REFLECTING";
     }
-    else if (BC_bd[i]->type=="equator-reflect") {
-      BC_bd[i]->itype=JETREFLECT;
-      BC_bd[i]->type="JETREFLECT";
+    else if (grid->BC_bd[i]->type=="equator-reflect") {
+      grid->BC_bd[i]->itype=JETREFLECT;
+      grid->BC_bd[i]->type="JETREFLECT";
     }
-    else if (BC_bd[i]->type=="fixed") {
-      BC_bd[i]->itype=FIXED;
-      BC_bd[i]->type="FIXED";
+    else if (grid->BC_bd[i]->type=="fixed") {
+      grid->BC_bd[i]->itype=FIXED;
+      grid->BC_bd[i]->type="FIXED";
     }
-    else if (BC_bd[i]->type=="DMR") {
-      BC_bd[i]->itype=DMACH;
-      BC_bd[i]->type="DMACH";
+    else if (grid->BC_bd[i]->type=="DMR") {
+      grid->BC_bd[i]->itype=DMACH;
+      grid->BC_bd[i]->type="DMACH";
     }
     else {
-      rep.error("Don't know this BC type",BC_bd[i]->type);
+      rep.error("Don't know this BC type",grid->BC_bd[i]->type);
     }
 
-    if(!BC_bd[i]->data.empty())
-      rep.error("Boundary data not empty in constructor!",BC_bd[i]->data.size());
-    BC_bd[i]->refval=0;
+    if(!grid->BC_bd[i]->data.empty())
+      rep.error("Boundary data not empty in constructor!",grid->BC_bd[i]->data.size());
+    grid->BC_bd[i]->refval=0;
 #ifdef TESTING
-    cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i]->type<<"\n";
+    cout <<"\tBoundary type "<<i<<" is "<<grid->BC_bd[i]->type<<"\n";
 #endif
   }
 
@@ -940,43 +937,45 @@ int setup_fixed_grid::setup_boundary_structs(
     cout <<"Must have extra BCs... checking for internal BCs\n";
 #endif
     do {
-      BC_bd[i]->dir = NO;
+      grid->BC_bd[i]->dir = NO;
       if (par.BC_Nint < i-2*par.ndim) {
         rep.error("Bad Number of boundaries",par.BC_Nint);
       }
       else {
-        BC_bd[i]->type = par.BC_INT[i-2*par.ndim];
+        grid->BC_bd[i]->type = par.BC_INT[i-2*par.ndim];
       }
 
-      if      (BC_bd[i]->type=="jet") {
-        BC_bd[i]->itype=JETBC;
-        BC_bd[i]->type="JETBC";
+      if      (grid->BC_bd[i]->type=="jet") {
+        grid->BC_bd[i]->itype=JETBC;
+        grid->BC_bd[i]->type="JETBC";
       }
-      else if (BC_bd[i]->type=="DMR2") {
-        BC_bd[i]->itype=DMACH2;
-        BC_bd[i]->type="DMACH2";
+      else if (grid->BC_bd[i]->type=="DMR2") {
+        grid->BC_bd[i]->itype=DMACH2;
+        grid->BC_bd[i]->type="DMACH2";
       }
-      else if (BC_bd[i]->type=="stellar-wind") {
-        BC_bd[i]->itype=STWIND;
-        BC_bd[i]->type="STWIND";
+      else if (grid->BC_bd[i]->type=="stellar-wind") {
+        grid->BC_bd[i]->itype=STWIND;
+        grid->BC_bd[i]->type="STWIND";
       }
       else {
-        rep.error("Don't know this BC type",BC_bd[i]->type);
+        rep.error("Don't know this BC type",grid->BC_bd[i]->type);
       }
 
-      if(!BC_bd[i]->data.empty()) {
+      if(!grid->BC_bd[i]->data.empty()) {
         rep.error("Boundary data not empty in constructor!",
-                  BC_bd[i]->data.size());
+                  grid->BC_bd[i]->data.size());
       }
-      BC_bd[i]->refval=0;
+      grid->BC_bd[i]->refval=0;
 #ifdef TESTING
-      cout <<"\tBoundary type "<<i<<" is "<<BC_bd[i]->type<<"\n";
+      cout <<"\tBoundary type "<<i<<" is "<<grid->BC_bd[i]->type<<"\n";
 #endif
       i++;
     } while (i<BC_nbd);
   }
+
+  BC_nbd = grid->BC_bd.size();
 #ifdef TESTING
-  cout <<"BC structs set up.\n";
+  cout <<BC_nbd<<" BC structs set up.\n";
 #endif
   return 0;
 }
@@ -990,8 +989,7 @@ int setup_fixed_grid::setup_boundary_structs(
 
 int setup_fixed_grid::assign_boundary_data(
       class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      std::vector<struct boundary_data *> &BC_bd ///< pointer to boundary structs
+      class GridBaseClass *grid  ///< pointer to grid.
       )
 {
   // ----------------------------------------------------------------
@@ -1017,22 +1015,22 @@ int setup_fixed_grid::assign_boundary_data(
   // Loop through all boundaries, and assign data to them.
   //
   for (int i=0; i<BC_nbd; i++) {
-    switch (BC_bd[i]->itype) {
-     case PERIODIC:   err += BC_assign_PERIODIC(  par,grid,BC_bd[i]); break;
-     case OUTFLOW:    err += BC_assign_OUTFLOW(   par,grid,BC_bd[i]); break;
-     case ONEWAY_OUT: err += BC_assign_ONEWAY_OUT(par,grid,BC_bd[i]); break;
-     case INFLOW:     err += BC_assign_INFLOW(    par,grid,BC_bd[i]); break;
-     case REFLECTING: err += BC_assign_REFLECTING(par,grid,BC_bd[i]); break;
-     case FIXED:      err += BC_assign_FIXED(     par,grid,BC_bd[i]); break;
-     case JETBC:      err += BC_assign_JETBC(     par,grid,BC_bd[i]); break;
-     case JETREFLECT: err += BC_assign_JETREFLECT(par,grid,BC_bd[i]); break;
-     case DMACH:      err += BC_assign_DMACH(     par,grid,BC_bd[i]); break;
-     case DMACH2:     err += BC_assign_DMACH2(    par,grid,BC_bd[i]); break;
-     case STWIND:     err += BC_assign_STWIND(    par,grid,BC_bd[i]); break;
+    switch (grid->BC_bd[i]->itype) {
+     case PERIODIC:   err += BC_assign_PERIODIC(  par,grid,grid->BC_bd[i]); break;
+     case OUTFLOW:    err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]); break;
+     case ONEWAY_OUT: err += BC_assign_ONEWAY_OUT(par,grid,grid->BC_bd[i]); break;
+     case INFLOW:     err += BC_assign_INFLOW(    par,grid,grid->BC_bd[i]); break;
+     case REFLECTING: err += BC_assign_REFLECTING(par,grid,grid->BC_bd[i]); break;
+     case FIXED:      err += BC_assign_FIXED(     par,grid,grid->BC_bd[i]); break;
+     case JETBC:      err += BC_assign_JETBC(     par,grid,grid->BC_bd[i]); break;
+     case JETREFLECT: err += BC_assign_JETREFLECT(par,grid,grid->BC_bd[i]); break;
+     case DMACH:      err += BC_assign_DMACH(     par,grid,grid->BC_bd[i]); break;
+     case DMACH2:     err += BC_assign_DMACH2(    par,grid,grid->BC_bd[i]); break;
+     case STWIND:     err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]); break;
      case NEST_FINE: break; // assigned in nested grid class
      case NEST_COARSE: break; // assigned in nested grid class
      default:
-      rep.warning("Unhandled BC",BC_bd[i]->itype,-1); err+=1; break;
+      rep.warning("Unhandled BC",grid->BC_bd[i]->itype,-1); err+=1; break;
     }
 
   }
@@ -1908,23 +1906,22 @@ int setup_fixed_grid::BC_assign_STWIND(
   for (int isw=0; isw<Ns; isw++) {
     if (SWP.params[isw]->type ==WINDTYPE_ANGLE) err=2;
   }
-  Wind = 0;
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (err==0) {
-      Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer, par.ftr,
+      grid->Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer, par.ftr,
                               par.coord_sys, par.eqntype,
                               par.EP.MinTemperature);
     }
     else if (err==1) {
-      Wind = new stellar_wind_evolution(par.ndim, par.nvar, par.ntracer,
+      grid->Wind = new stellar_wind_evolution(par.ndim, par.nvar, par.ntracer,
             par.ftr, par.coord_sys, par.eqntype, par.EP.MinTemperature,
             par.starttime, par.finishtime);
       err=0;
     }
     else if (err==2) {
       cout <<"Setting up stellar_wind_angle class\n";
-      Wind = new stellar_wind_angle(par.ndim, par.nvar, par.ntracer, par.ftr,
+      grid->Wind = new stellar_wind_angle(par.ndim, par.nvar, par.ntracer, par.ftr,
                   par.coord_sys, par.eqntype, par.EP.MinTemperature,
                   par.starttime, par.finishtime);
     }
@@ -1940,7 +1937,7 @@ int setup_fixed_grid::BC_assign_STWIND(
       // This is for spherically symmetric winds that are constant
       // in time.
       //
-      err = Wind->add_source(
+      err = grid->Wind->add_source(
         SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
         SWP.params[isw]->type,
@@ -1957,7 +1954,7 @@ int setup_fixed_grid::BC_assign_STWIND(
       // latitude-dependent winds that evolve over time.
       //
       cout <<"Adding source "<<isw<<" with filename "<<SWP.params[isw]->evolving_wind_file<<"\n";
-      err = Wind->add_evolving_source(
+      err = grid->Wind->add_evolving_source(
         SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
         SWP.params[isw]->type,
@@ -2014,8 +2011,8 @@ int setup_fixed_grid::BC_assign_STWIND_add_cells2src(
   int ncell=0;
   double srcpos[MAX_DIM];
   double srcrad;
-  Wind->get_src_posn(id,srcpos);
-  Wind->get_src_drad(id,&srcrad);
+  grid->Wind->get_src_posn(id,srcpos);
+  grid->Wind->get_src_drad(id,&srcrad);
 
 #ifdef TESTING
   cout <<"*** srcrad="<<srcrad<<"\n";
@@ -2035,11 +2032,11 @@ int setup_fixed_grid::BC_assign_STWIND_add_cells2src(
 #endif
     if (grid->distance_vertex2cell(srcpos,c) <= srcrad) {
       ncell++;
-      err += Wind->add_cell(grid, id,c);
+      err += grid->Wind->add_cell(grid, id,c);
     }
   } while ((c=grid->NextPt_All(c))!=0);
   
-  err += Wind->set_num_cells(id,ncell);
+  err += grid->Wind->set_num_cells(id,ncell);
 
 #ifdef TESTING
   cout <<"setup_fixed_grid: Added "<<ncell;
@@ -2048,86 +2045,10 @@ int setup_fixed_grid::BC_assign_STWIND_add_cells2src(
   return err;
 }
 
-// ##################################################################
-// ##################################################################
-
-
-
-int setup_fixed_grid::BC_printBCdata(boundary_data *b)
-{
-  list<cell*>::iterator c=b->data.begin();
-  for (c=b->data.begin(); c!=b->data.end(); ++c) {  
-    CI.print_cell(*c);
-  }
-  return 0;
-}
-
 
 
 // ##################################################################
 // ##################################################################
-
-
-
-void setup_fixed_grid::BC_deleteBoundaryData()
-{
-#ifdef TESTING
-  cout <<"BC destructor: deleting Boundary data...\n";
-#endif
-  struct boundary_data *b;
-  for (int ibd=0; ibd<BC_nbd; ibd++) {
-    b = bdata[ibd];
-    if (b->refval !=0) {
-      b->refval = mem.myfree(b->refval);
-    }
-
-    if (b->data.empty()) {
-#ifdef TESTING
-      cout <<"BC destructor: No boundary cells to delete.\n";
-#endif
-    }
-    else {
-      list<cell *>::iterator i=b->data.begin();
-      do {
-        b->data.erase(i);
-        i=b->data.begin();
-      }  while(i!=b->data.end());
-      if(b->data.empty()) {
-#ifdef TESTING
-        cout <<"\t done.\n";
-#endif
-      }
-      else {
-#ifdef TESTING
-        cout <<"\t not empty list! FIX ME!!!\n";
-#endif
-      }
-    }
-
-  } // loop over all boundaries.
-  bdata.clear();
-  return;
-}
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

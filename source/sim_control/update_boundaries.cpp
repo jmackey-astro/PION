@@ -44,7 +44,7 @@ int update_boundaries::TimeUpdateInternalBCs(
   struct boundary_data *b;
   int i=0; int err=0;
   for (i=0;i<BC_nbd;i++) {
-    b = BC_bd[i];
+    b = grid->BC_bd[i];
     switch (b->itype) {
     case STWIND:     err += BC_update_STWIND(  par,grid, simtime, b, cstep, maxstep); break;
     case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW: case REFLECTING:
@@ -84,7 +84,7 @@ int update_boundaries::TimeUpdateExternalBCs(
   struct boundary_data *b;
   int i=0; int err=0;
   for (i=0;i<BC_nbd;i++) {
-    b = BC_bd[i];
+    b = grid->BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
     switch (b->itype) {
     case PERIODIC:   err += BC_update_PERIODIC(   par,grid, b, cstep, maxstep); break;
@@ -554,11 +554,11 @@ int update_boundaries::BC_update_STWIND(
   cout <<"update_boundaries: updating wind boundary\n";
 #endif
   int err=0;
-  for (int id=0;id<Wind->Nsources();id++) {
+  for (int id=0;id<grid->Wind->Nsources();id++) {
 #ifdef TESTING
     cout <<"update_boundaries: updating wind boundary for id="<<id<<"\n";
 #endif
-    err += Wind->set_cell_values(grid, id,simtime);
+    err += grid->Wind->set_cell_values(grid, id,simtime);
   }
 
   return err;

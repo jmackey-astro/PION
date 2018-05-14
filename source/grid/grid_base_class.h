@@ -29,6 +29,9 @@
 
 #include "constants.h"
 #include "grid/cell_interface.h"
+#include "grid/stellar_wind_BC.h"
+#include "raytracing/raytracer_base.h"
+
 #include <string>
 #include <list>
 #include <vector>
@@ -195,9 +198,25 @@ class GridBaseClass {
   /// Add boundary cells to a grid.
   ///
   virtual int SetupBCs(
-      class SimParams &,  ///< List of simulation params (including BCs)
-      std::vector<struct boundary_data *> & ///< list of boundary structs
+      class SimParams &  ///< List of simulation params (including BCs)
       )=0;
+
+  /// pointer to array of all boundaries.
+  std::vector<struct boundary_data *> BC_bd;  
+  class stellar_wind *Wind; ///< stellar wind boundary condition.
+  class RayTracingBase *RT;   ///< pointer to raytracing class
+
+  ///
+  /// prints all the cells in the given boundary data pointer.
+  ///
+  virtual int BC_printBCdata(boundary_data *)=0;
+
+  ///
+  /// Destructor for all the boundary data, BC_bd.  Needed because 
+  /// we need to delete some cells in the list, and others we just need to
+  /// delete the pointers to them.
+  ///
+  virtual void BC_deleteBoundaryData()=0;
 
   ///
   /// Setup lists of processors to receive data from and send data

@@ -907,8 +907,7 @@ class cell* UniformGrid::PrevPt(
 
 
 int UniformGrid::SetupBCs(
-      class SimParams &par,  ///< List of simulation params (including BCs)
-      std::vector<struct boundary_data *> &BC_bd
+      class SimParams &par  ///< List of simulation params (including BCs)
       )
 {
   //
@@ -1117,6 +1116,67 @@ int UniformGrid::SetupBCs(
 }
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::BC_printBCdata(boundary_data *b)
+{
+  list<cell*>::iterator c=b->data.begin();
+  for (c=b->data.begin(); c!=b->data.end(); ++c) {  
+    CI.print_cell(*c);
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void UniformGrid::BC_deleteBoundaryData()
+{
+#ifdef TESTING
+  cout <<"BC destructor: deleting Boundary data...\n";
+#endif
+  struct boundary_data *b;
+  for (int ibd=0; ibd<BC_bd.size(); ibd++) {
+    b = BC_bd[ibd];
+    if (b->refval !=0) {
+      b->refval = mem.myfree(b->refval);
+    }
+
+    if (b->data.empty()) {
+#ifdef TESTING
+      cout <<"BC destructor: No boundary cells to delete.\n";
+#endif
+    }
+    else {
+      list<cell *>::iterator i=b->data.begin();
+      do {
+        b->data.erase(i);
+        i=b->data.begin();
+      }  while(i!=b->data.end());
+      if(b->data.empty()) {
+#ifdef TESTING
+        cout <<"\t done.\n";
+#endif
+      }
+      else {
+#ifdef TESTING
+        cout <<"\t not empty list! FIX ME!!!\n";
+#endif
+      }
+    }
+
+  } // loop over all boundaries.
+  BC_bd.clear();
+  return;
+}
+  
 
 
 // ##################################################################
