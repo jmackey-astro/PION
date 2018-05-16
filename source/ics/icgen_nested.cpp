@@ -87,9 +87,7 @@ int main(int argc, char **argv)
   class setup_nested_grid *SimSetup = new setup_nested_grid();
   SimSetup->setup_nested_grid_levels(SimPM);
   vector<class GridBaseClass *> grid;
-  vector<class RayTracingBase *> RT;  // raytracing class 
   grid.resize(SimPM.grid_nlevels);
-  RT.resize(SimPM.grid_nlevels);
 
   //
   // Set up the grids.
@@ -122,16 +120,6 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
-  // have to setup jet simulation before setting up boundary
-  // conditions because jet boundary needs some grid data values.
-  if (ics=="Jet" || ics=="JET" || ics=="jet") {
-    for (int l=0;l<SimPM.grid_nlevels;l++) {
-      CI.set_dx(SimPM.levels[l].dx);
-      err += ic->setup_data(rp,grid[l]);
-      if (err) rep.error("Initial conditions setup failed.",err);
-    }
-  }
-
   //
   // Set up the boundary conditions, since internal boundary data
   // should really be already set to its correct value in the initial
@@ -140,7 +128,7 @@ int main(int argc, char **argv)
   SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
-  err += SimSetup->setup_raytracing(SimPM,grid,RT);
+  err += SimSetup->setup_raytracing(SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   // ----------------------------------------------------------------
@@ -149,6 +137,17 @@ int main(int argc, char **argv)
     CI.set_dx(SimPM.levels[l].dx);
     err += ic->setup_data(rp,grid[l]);
     if (err) rep.error("Initial conditions setup failed.",err);
+
+    if (l==0) {
+      err = SimSetup->assign_boundary_data(SimPM,grid[l],0,grid[l+1]);
+    }
+    else if (l==SimPM.grid_nlevels-1) {
+      err = SimSetup->assign_boundary_data(SimPM,grid[l],grid[l-1],0);
+    }
+    else {
+      err = SimSetup->assign_boundary_data(SimPM,grid[l],grid[l-1],grid[l+1]);
+    }
+    rep.errorTest("icgen_nest::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
@@ -213,7 +212,6 @@ int main(int argc, char **argv)
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
-//  if (RT)   {delete RT; RT=0;}
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}

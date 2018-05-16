@@ -63,6 +63,7 @@ using namespace std;
 // ##################################################################
 
 
+
 setup_nested_grid::setup_nested_grid()
 {
 }
@@ -73,10 +74,10 @@ setup_nested_grid::setup_nested_grid()
 // ##################################################################
 
 
+
 setup_nested_grid::~setup_nested_grid()
 {
 }
-
 
 
 
@@ -130,8 +131,6 @@ void setup_nested_grid::setup_nested_grid_levels(
   }
   return;
 }
-
-
 
 
 
@@ -230,9 +229,9 @@ int setup_nested_grid::setup_grid(
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
 
 
 int setup_nested_grid::boundary_conditions(
@@ -245,7 +244,6 @@ int setup_nested_grid::boundary_conditions(
   cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";
 //#endif
   int err = 0;
-  bdata_nest.resize(par.grid_nlevels);
 
   for (int l=0;l<par.grid_nlevels;l++) {
     cout <<"level "<<l<<", setting up boundaries\n";
@@ -253,7 +251,7 @@ int setup_nested_grid::boundary_conditions(
     //
     // Choose what BCs to set up based on BC strings.
     //
-    int err = setup_boundary_structs(par,grid[l],l,bdata_nest[l]);
+    int err = setup_boundary_structs(par,grid[l],l);
     rep.errorTest("sng::boundary_conditions sb_structs",0,err);
 
 
@@ -263,7 +261,7 @@ int setup_nested_grid::boundary_conditions(
     //if (l!=par.grid_nlevels-1) grid[l]->set_child_grid(grid[l+1]);
     //else                         grid[l]->set_child_grid(0);
 
-    err = grid[l]->SetupBCs(par,bdata_nest[l]);
+    err = grid[l]->SetupBCs(par);
     rep.errorTest("sng::boundary_conditions SetupBCs",0,err);
   }
 //#ifdef TESTING
@@ -279,12 +277,10 @@ int setup_nested_grid::boundary_conditions(
 
 
 
-
 int setup_nested_grid::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      const int l,
-      std::vector<struct boundary_data *> &BC_bd  ///< pointer to boundary data vector for this level
+      const int l   ///< level in nested grid
       )
 {
 #ifdef TESTING
@@ -292,7 +288,7 @@ int setup_nested_grid::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid::setup_boundary_structs(par,grid,BC_bd);
+  int err = setup_fixed_grid::setup_boundary_structs(par,grid);
 
   //
   // Now check for nested grid boundaries if this grid has a parent
@@ -302,13 +298,13 @@ int setup_nested_grid::setup_boundary_structs(
     for (int i=0; i<par.ndim; i++) {
       if (!pconst.equalD(par.levels[l-1].Xmin[i],par.levels[l].Xmin[i])) {
         cout <<"reassigning neg. bc for axis "<<i<<" to NEST_COARSE\n";
-        BC_bd[2*i]->itype = NEST_COARSE;
-        BC_bd[2*i]->type  = "NEST_COARSE";
+        grid->BC_bd[2*i]->itype = NEST_COARSE;
+        grid->BC_bd[2*i]->type  = "NEST_COARSE";
       }
       if (!pconst.equalD(par.levels[l-1].Xmax[i],par.levels[l].Xmax[i])) {
         cout <<"reassigning pos. bc for axis "<<i<<" to NEST_COARSE\n";
-        BC_bd[2*i+1]->itype = NEST_COARSE;
-        BC_bd[2*i+1]->type  = "NEST_COARSE";
+        grid->BC_bd[2*i+1]->itype = NEST_COARSE;
+        grid->BC_bd[2*i+1]->type  = "NEST_COARSE";
       }
     }
   }
@@ -350,7 +346,7 @@ int setup_nested_grid::setup_boundary_structs(
       }
     } while ((c=grid->NextPt(c)) !=0);
 
-    BC_bd.push_back(bd);
+    grid->BC_bd.push_back(bd);
   }
   
 #ifdef TESTING
@@ -361,30 +357,48 @@ int setup_nested_grid::setup_boundary_structs(
 
 
 
-
-
 // ##################################################################
 // ##################################################################
 
 
 
 int setup_nested_grid::assign_boundary_data(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      std::vector<struct boundary_data *> &BC_bd ///< pointer to boundary structs
+      class SimParams &par,        ///< pointer to simulation parameters
+      class GridBaseClass *grid,   ///< pointer to grid.
+      class GridBaseClass *parent, ///< pointer to parent grid.
+      class GridBaseClass *child   ///< pointer to child grid.
       )
 {
   // THIS NEEDS THE LEVELS AND POINTERS TO PARENT AND CHILD GRIDS!
   // first call the UniformGrid version.
-  int err = UniformGrid::assign_boundary_data(par,grid,BC_bd);
+  int err = setup_fixed_grid::assign_boundary_data(par,grid);
+
+  // ----------------------------------------------------------------
+  // only needed for nested grid I think... maybe also for stellar
+  // wind.
+  switch (par.eqntype) {
+  case EQEUL:
+    eqn = new eqns_Euler(par.nvar);
+    break;
+  case EQMHD:
+    eqn = new eqns_mhd_ideal(par.nvar);
+    break;
+  case EQGLM:
+    eqn = new eqns_mhd_mixedGLM(par.nvar);
+    break;
+  default:
+    rep.error("Don't know the specified equations...",par.eqntype);
+    break;
+  }
+  // ----------------------------------------------------------------
 
   //
   // Then check for nested-grid boundaries and assign data for them.
   //
   for (int i=0; i<BC_nbd; i++) {
-    switch (BC_bd[i]->itype) {
-      case NEST_FINE:   err += BC_assign_NEST_FINE(  BC_bd[i]);break;
-      case NEST_COARSE: err += BC_assign_NEST_COARSE(BC_bd[i]);break;
+    switch (grid->BC_bd[i]->itype) {
+      case NEST_FINE:   err += BC_assign_NEST_FINE(  par, grid,grid->BC_bd[i],child);break;
+      case NEST_COARSE: err += BC_assign_NEST_COARSE(par, grid,grid->BC_bd[i],parent);break;
       default:
       break;
     }
@@ -400,7 +414,10 @@ int setup_nested_grid::assign_boundary_data(
 
 
 int setup_nested_grid::BC_assign_NEST_FINE(
-      boundary_data *b
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b,  ///< boundary data
+      class GridBaseClass *child  ///< pointer to child grid.
       )
 {
   //
@@ -412,19 +429,18 @@ int setup_nested_grid::BC_assign_NEST_FINE(
   b->nest.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
-  class GridBaseClass *cg = child; // child (finer) grid.
-  cell *cc = cg->FirstPt_All(); // child cell.
-  int cdx = 0.5*cg->idx();
+  cell *cc = child->FirstPt_All(); // child cell.
+  int cdx = 0.5*child->idx();
   double distance =  0.0;
 
   // Map each bpt cell to a cell in b->nest list, which is the first
   // cell in the finer grid that is part of the coarse cell (i.e. the
   // one with the most negative coordinates).
   do{
-    cc = cg->FirstPt_All();
-    for (int v=0;v<G_ndim;v++) {
+    cc = child->FirstPt_All();
+    for (int v=0;v<par.ndim;v++) {
       while (cc && cc->pos[v] < (*bpt)->pos[v]-cdx)
-        cc = cg->NextPt(cc,static_cast<direction>(2*v+1));
+        cc = child->NextPt(cc,static_cast<direction>(2*v+1));
     }
     if (!cc) rep.error("BC_assign_NEST_FINE: lost on fine grid",0);
     b->nest.push_back(cc);
@@ -443,9 +459,10 @@ int setup_nested_grid::BC_assign_NEST_FINE(
 
 
 int setup_nested_grid::BC_assign_NEST_COARSE(
-      class SimParams &,  ///< reference to SimParams list.
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *b
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to grid.
+      boundary_data *b,  ///< boundary data
+      class GridBaseClass *parent  ///< pointer to parent grid.
       )
 {
   //
@@ -458,29 +475,29 @@ int setup_nested_grid::BC_assign_NEST_COARSE(
   b->nest.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
-  class GridBaseClass *pg = parent; // parent (coarser) grid.
-  int pidx = pg->idx();
+  int pidx = parent->idx();
+  int gidx = grid->idx();
   //cout <<"BC_assign_NEST_COARSE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
 
-  cell *pc = pg->FirstPt_All(); // parent cell.
+  cell *pc = parent->FirstPt_All(); // parent cell.
 
   double distance =  0.0;
   bool loop;
   
   do{
     loop = false;
-    distance = idistance(pc->pos, (*bpt)->pos);
+    distance = grid->idistance(pc->pos, (*bpt)->pos);
     // Find parent cell that covers this boundary cell.  It should be
     // G_idx/2 away from the boundary cell in each direction.
     //rep.printVec("bpt pos",(*bpt)->pos,G_ndim);
-    while (distance > G_idx && pc!=0) {
+    while (distance > gidx && pc!=0) {
       //cout <<"distance="<<distance<<"; "; rep.printVec("pc pos",pc->pos,G_ndim);
-      pc = pg->NextPt_All(pc);
+      pc = parent->NextPt_All(pc);
       if (!pc && !loop) { // hack: if get to the end, then go back...
         pc = b->nest.front();
         loop = true;
       }
-      distance = idistance(pc->pos, (*bpt)->pos);
+      distance = grid->idistance(pc->pos, (*bpt)->pos);
     }
     if (!pc) rep.error("BC_assign_NEST_COARSE() left parent grid",0);
     
@@ -498,8 +515,6 @@ int setup_nested_grid::BC_assign_NEST_COARSE(
 
 
 
-
-
 // ##################################################################
 // ##################################################################
 
@@ -507,17 +522,22 @@ int setup_nested_grid::BC_assign_NEST_COARSE(
 
 int setup_nested_grid::setup_raytracing(
       class SimParams &SimPM,    ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
-      vector<class RayTracingBase *> &RT  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   int err = 0;
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err += setup_fixed_grid::setup_raytracing(SimPM,grid[l],&(RT[l]));
-    err += setup_evolving_RT_sources(SimPM,RT[l]);
+    err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
+    err += setup_evolving_RT_sources(SimPM,grid[l]->RT);
     rep.errorTest("setup_nested_grid::setup_raytracing()",0,err);
   }
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
