@@ -118,8 +118,6 @@ class setup_fixed_grid
   std::vector<struct rt_source_data> FVI_ionising_srcs;
 
   int BC_nbd; ///< Number of Boundaries.
-  /// equations class for assigning boundary data
-  class eqns_base *eqn;
 
   ///
   /// Check for any time-evolving radiation sources, and update source

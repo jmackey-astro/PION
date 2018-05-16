@@ -78,13 +78,14 @@ using namespace std;
 // ##################################################################
 
 
+
 setup_fixed_grid::setup_fixed_grid()
 {
   FVI_nheat = FVI_nion = 0;
   FVI_heating_srcs.clear();
   FVI_ionising_srcs.clear();
   FVI_need_column_densities_4dt = false;
-  eqn=0;
+  //eqn=0;
 }
 
 
@@ -93,13 +94,14 @@ setup_fixed_grid::setup_fixed_grid()
 // ##################################################################
 
 
+
 setup_fixed_grid::~setup_fixed_grid()
 {
 #ifdef TESTING
   cout << "(setup_fixed_grid::Destructor) Deleting Grid Class..." <<"\n";
 #endif
   if (MP)     {delete MP; MP=0;}
-  if (eqn)    {delete eqn; eqn=0;}
+  //if (eqn)    {delete eqn; eqn=0;}
 #ifdef TESTING
   cout << "(setup_fixed_grid::Destructor) Done." <<"\n";
 #endif
@@ -992,24 +994,6 @@ int setup_fixed_grid::assign_boundary_data(
       class GridBaseClass *grid  ///< pointer to grid.
       )
 {
-  // ----------------------------------------------------------------
-  // only needed for nested grid I think... maybe also for stellar
-  // wind.
-  switch (par.eqntype) {
-  case EQEUL:
-    eqn = new eqns_Euler(par.nvar);
-    break;
-  case EQMHD:
-    eqn = new eqns_mhd_ideal(par.nvar);
-    break;
-  case EQGLM:
-    eqn = new eqns_mhd_mixedGLM(par.nvar);
-    break;
-  default:
-    rep.error("Don't know the specified equations...",par.eqntype);
-    break;
-  }
-  // ----------------------------------------------------------------
   int err=0;
   //
   // Loop through all boundaries, and assign data to them.

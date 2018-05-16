@@ -23,11 +23,8 @@
 #include "decomposition/MCMD_control.h"
 
 ///
-/// The simplest finite volume grid - a uniform grid with cells that
-/// are cubes in the chosen coordinates.  This class sets up the grid and
-/// other things to get a simulation ready to run, so it is useful
-/// for simulation analysis.  PION itself uses a derived class to
-/// setup and run simulations.
+/// Set up a static nested grid structure.  Serial code, so each
+/// level of the nest has a single grid.
 ///
 class setup_nested_grid : virtual public setup_fixed_grid
 {
@@ -53,6 +50,15 @@ class setup_nested_grid : virtual public setup_fixed_grid
       );
 
   ///
+  /// Decide if I need to setup RT class and, if so, set up a
+  /// raytracer associated with each grid.
+  ///
+  int setup_raytracing(
+      class SimParams &,    ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
+
+  ///
   /// Determines what kind of boundary conditions are needed and
   /// creates the boundary data structures.  Asks the grid to create
   /// grid cells for the external boundaries, and label internal
@@ -64,13 +70,37 @@ class setup_nested_grid : virtual public setup_fixed_grid
       );   
 
   ///
-  /// Decide if I need to setup RT class and, if so, set up a
-  /// raytracer associated with each grid.
+  /// Assigns data to each boundary.
   ///
-  int setup_raytracing(
-      class SimParams &,    ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
-      vector<class RayTracingBase *> &  ///< address of vector of grid pointers.
+  virtual int assign_boundary_data(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      class GridBaseClass *,  ///< pointer to parent.
+      class GridBaseClass *  ///< pointer to child.
+      );
+
+
+  //---------------------------------------
+  protected:
+  //---------------------------------------
+
+  /// equations class for assigning boundary data
+  class eqns_base *eqn;
+
+  /// Assigns data to a nested grid from finer grid.
+  virtual int BC_assign_NEST_FINE(
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,  ///< boundary data
+      class GridBaseClass *  ///< pointer to child grid.
+      );
+
+  /// Assigns data to an external boundary from coarser grid.
+  virtual int BC_assign_NEST_COARSE(
+      class SimParams &,     ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to grid.
+      boundary_data *,  ///< boundary data
+      class GridBaseClass *  ///< pointer to parent grid.
       );
 
   ///
@@ -79,31 +109,8 @@ class setup_nested_grid : virtual public setup_fixed_grid
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
       class GridBaseClass *,  ///< pointer to grid.
-      const int,          ///< level of grid in nest
-      std::vector<struct boundary_data *> &  ///< pointer to boundary data vector for this level
+      const int          ///< level of grid in nest
       );
-
-  ///
-  /// Assigns data to each boundary.
-  ///
-  virtual int assign_boundary_data(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      std::vector<struct boundary_data *> & ///< pointer to boundary structs
-      );
-
-
-  //---------------------------------------
-  protected:
-  //---------------------------------------
-  /// vector of all boundaries, at each level.
-  std::vector<std::vector<struct boundary_data *> > bdata_nest;  
-
-  /// Assigns data to a nested grid from finer grid.
-  virtual int BC_assign_NEST_FINE( boundary_data *);
-
-  /// Assigns data to an external boundary from coarser grid.
-  virtual int BC_assign_NEST_COARSE( boundary_data *);
 
 
 }; // setup_nested_grid
