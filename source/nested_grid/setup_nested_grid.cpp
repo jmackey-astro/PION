@@ -97,6 +97,8 @@ void setup_nested_grid::setup_nested_grid_levels(
   SimPM.levels.resize(SimPM.grid_nlevels);
 
   for (int i=0;i<SimPM.grid_nlevels;i++) {
+    SimPM.levels[i].parent=0;
+    SimPM.levels[i].child=0;
     for (int v=0;v<MAX_DIM;v++)
       SimPM.levels[i].NG[v] = SimPM.NG[v];
     SimPM.levels[i].Ncell = SimPM.Ncell;
@@ -222,7 +224,24 @@ int setup_nested_grid::setup_grid(
     dp.grid = (grid[l]);
 #endif
   }
-  cout <<"------------------------------------------------------\n\n";
+
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    if (l==0) {
+      SimPM.levels[l].parent = 0;
+      SimPM.levels[l].child  = grid[l+1];
+    }
+    else if (l==SimPM.grid_nlevels-1) {
+      SimPM.levels[l].parent = grid[l-1];
+      SimPM.levels[l].child  = 0;
+    }
+    else {
+      SimPM.levels[l].parent = grid[l-1];
+      SimPM.levels[l].child  = grid[l+1];
+    }
+  }
+
+
+cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()

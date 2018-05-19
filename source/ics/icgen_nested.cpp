@@ -138,15 +138,7 @@ int main(int argc, char **argv)
     err += ic->setup_data(rp,grid[l]);
     if (err) rep.error("Initial conditions setup failed.",err);
 
-    if (l==0) {
-      err = SimSetup->assign_boundary_data(SimPM,grid[l],0,grid[l+1]);
-    }
-    else if (l==SimPM.grid_nlevels-1) {
-      err = SimSetup->assign_boundary_data(SimPM,grid[l],grid[l-1],0);
-    }
-    else {
-      err = SimSetup->assign_boundary_data(SimPM,grid[l],grid[l-1],grid[l+1]);
-    }
+    err = SimSetup->assign_boundary_data(SimPM,grid[l],SimPM.levels[l].parent, SimPM.levels[l].child);
     rep.errorTest("icgen_nest::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------

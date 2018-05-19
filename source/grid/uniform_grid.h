@@ -84,30 +84,6 @@ using namespace std;
 #include "coord_sys/VectorOps_spherical.h"
 
 
-///
-/// enum for the types of boundary condition.
-///
-enum BoundaryTypes {
-    PERIODIC   = 1, ///< periodic bcs.
-    OUTFLOW    = 2, ///< outflow or absorbing bcs.
-    INFLOW     = 3, ///< inflow bcs., value on boundary doesn't change.
-    REFLECTING = 4, ///< reflecting bcs., hard wall.
-    FIXED      = 5, ///< fixed bcs, means every point on boundary has same unchanging value.
-    JETBC      = 6, ///< A jet boundary, internal boundary.
-    JETREFLECT = 7, ///< Sort-of reflection for bi-directional jet, 
-                    ///< where normal B field passes through, but tangential is reversed.
-    DMACH      = 8, ///< Outflow boundary for double mach reflection test problem only.
-    DMACH2     = 9, ///< Fixed boundary on y=0, x in [0,1/6] fixed to postshock state.
-    BCMPI      =10, ///< boundary between processor domains in parallel grid.
-    RADSHOCK   =11, ///< Boundary condition adjacent to cold wall for radiative shock test problem.
-    RADSH2     =12, ///< Outflow augmented with fixed outflow speed.
-    ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
-    STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
-    STARBENCH1 =15, ///< StarBench test for mixing with a solid wall.
-    NEST_FINE  =16, ///< data in this cell should be obtained from finer-scale data on a nested grid.
-    NEST_COARSE   =17  ///< data should be obtained from coarser level in a nested grid.
-};
-
 
 
 
