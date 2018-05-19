@@ -167,6 +167,8 @@ struct level {
   double dx;              ///< Linear side length of grid cells on this level
   double simtime;         ///< simulation time at this level.
   double dt;              ///< current timestep at this level.
+  class GridBaseClass *parent;  ///< pointer to parent grid.
+  class GridBaseClass *child;  ///< pointer to child grid.
 };
 // *******************************************************************
 
