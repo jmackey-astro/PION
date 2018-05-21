@@ -15,7 +15,7 @@
 #include "tools/command_line_interface.h"
 #include "raytracing/raytracer_SC.h"
 
-#include "nested_grid/setup_nested_grid.h"
+#include "grid/setup_nested_grid.h"
 #include "grid/uniform_grid.h"
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
@@ -41,7 +41,7 @@
 
 #include "dataIO/dataio_base.h"
 #ifdef SILO
-#include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_nestedgrid.h"
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"

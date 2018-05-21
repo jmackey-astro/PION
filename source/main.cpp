@@ -51,27 +51,12 @@
 #include <iostream>
 using namespace std;
 
-//
-// These tell code what to compile and what to leave out.
-//
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
 #include "sim_constants.h"
-
-//
-// reporting class, for dealing with stdio/stderr
-//
 #include "tools/reporting.h"
-
-//
-// grid base class
-//
 #include "grid/grid_base_class.h"
-//
-// simulation control toolkit class.
-//
-#include "sim_control.h"
+#include "sim_control/sim_control.h"
 
 
 int main(int argc, char **argv)

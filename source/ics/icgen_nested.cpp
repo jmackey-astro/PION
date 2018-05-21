@@ -23,11 +23,12 @@
 #include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
-#include "nested_grid/dataio_silo_nestedgrid.h"
+#include "dataIO/dataio_silo_nestedgrid.h"
 #endif // if SILO
 
 #include "grid/uniform_grid.h"
-#include "nested_grid/setup_nested_grid.h"
+#include "grid/setup_nested_grid.h"
+#include "sim_control/sim_init_nested.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
   delete siminfo; siminfo=0;
 
 
-  class setup_nested_grid *SimSetup = new setup_nested_grid();
+  class sim_init_nested *SimSetup = new sim_init_nested();
   SimSetup->setup_nested_grid_levels(SimPM);
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);

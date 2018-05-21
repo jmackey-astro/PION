@@ -10,18 +10,19 @@
 /// - 2018.05.11 JM: moved code from sim_control.h
 ///
 
-#ifndef SIM_INIT_H
-#define SIM_INIT_H
+#ifndef SIM_INIT_NESTED_H
+#define SIM_INIT_NESTED_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-#include "setup_fixed_grid.h"
+#include "grid/setup_nested_grid.h"
 #include "grid/grid_base_class.h"
+#include "sim_control/update_boundaries_nested.h"
+#include "sim_control/sim_init.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "equations/eqns_base.h"
 
-#include "nested_grid/update_boundaries_nested.h"
 
 
 // ##################################################################
@@ -31,7 +32,11 @@
 /// Class to set up a simulation so that everything is ready to run.
 /// Inherits from setup_nested_grid and update_boundaries_nested.
 ///
-class sim_init_nested : virtual public setup_nested_grid, virtual public update_boundaries_nested
+class sim_init_nested
+  :
+  virtual public setup_nested_grid,
+  virtual public sim_init,
+  virtual public update_boundaries_nested
 {
   public:
   sim_init_nested();
@@ -82,5 +87,5 @@ class sim_init_nested : virtual public setup_nested_grid, virtual public update_
 
 
 
-#endif // SIM_INIT_H
+#endif // SIM_INIT_NESTED_H
 
