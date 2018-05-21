@@ -20,7 +20,7 @@
 #endif // TESTING
 
 #include "sim_control/calc_timestep.h"
-#include "setup_fixed_grid.h"
+#include "grid/setup_fixed_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
 #include "spatial_solvers/solver_eqn_base.h"

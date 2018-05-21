@@ -194,7 +194,7 @@ echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
-#make -j${NCORES} uni
+make -j${NCORES} uni
 make -j${NCORES} nest
 #####################################################################
 

@@ -366,7 +366,7 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
 
-OBJ_NEST = dataio_silo_nestedgrid.o  setup_nested_grid.o
+OBJ_NEST = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
 
@@ -431,11 +431,6 @@ uniform_grid.o: uniform_grid.cpp uniform_grid.h grid_base_class.h ${GLOBAL} \
     stellar_wind_angle.h stellar_wind_BC.h \
     VectorOps.h VectorOps_spherical.h
 
-nested_grid.o : nested_grid.cpp nested_grid.h uniform_grid.h grid_base_class.h \
-    stellar_wind_angle.h stellar_wind_BC.h \
-    VectorOps.h VectorOps_spherical.h  ${GLOBAL}
-
-
 VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
 		       ${GLOBAL} uniform_grid.h
@@ -446,8 +441,7 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
 
 setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
-  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
-  nested_grid.h
+  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h
 
 #####################
 # CONTROL CLASSES   #
@@ -460,6 +454,10 @@ sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
 sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
+sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
+ ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h \
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h update_boundaries.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
@@ -470,6 +468,10 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
 
 update_boundaries.o: update_boundaries.cpp update_boundaries.h \
   ${GLOBAL} setup_fixed_grid.h grid_base_class.h
+
+update_boundaries_nested.o: update_boundaries_nested.cpp \
+  update_boundaries_nested.h update_boundaries.h \
+  ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} solver_eqn_base.h \

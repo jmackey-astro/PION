@@ -13,7 +13,7 @@
 
 #ifdef SILO
 
-#include "nested_grid/dataio_silo_nestedgrid.h"
+#include "dataIO/dataio_silo_nestedgrid.h"
 #include "microphysics/microphysics_base.h"
 
 #include "tools/reporting.h"

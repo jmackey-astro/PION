@@ -53,11 +53,11 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
-#include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"
+#include "grid/setup_fixed_grid.h"
+#include "spatial_solvers/solver_eqn_base.h"
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
-#include "setup_fixed_grid.h"
 #include "sim_control/sim_init.h"
 #include "sim_control/update_boundaries.h"
 #include "sim_control/calc_timestep.h"

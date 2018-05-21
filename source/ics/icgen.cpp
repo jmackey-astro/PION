@@ -66,7 +66,7 @@
 #endif // if SILO
 
 #include "grid/uniform_grid.h"
-#include "setup_fixed_grid.h"
+#include "grid/setup_fixed_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
