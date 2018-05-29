@@ -26,7 +26,7 @@
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_text.h"
 #ifdef SILO
-#include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_nestedgrid.h"
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
@@ -165,10 +165,6 @@ int sim_init_nested::Init(
   // ----------------------------------------------------------------
 
 
-  //
-  // If testing the code, this calculates the momentum and energy on the domain.
-  //
-  initial_conserved_quantities(grid);
 
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     spatial_solver->set_dx(SimPM.levels[l].dx);
@@ -177,7 +173,10 @@ int sim_init_nested::Init(
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
 
-
+  //
+  // If testing the code, this calculates the momentum and energy on the domain.
+  //
+  initial_conserved_quantities(grid);
 
   //
   // If using opfreq_time, set the next output time correctly.

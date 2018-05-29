@@ -78,7 +78,7 @@ class sim_init_nested
   /// Calculates total values of conserved quantities.
   ///
   int initial_conserved_quantities(
-      class GridBaseClass *  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
 

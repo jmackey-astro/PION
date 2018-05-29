@@ -20,6 +20,7 @@
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "equations/eqns_base.h"
+#include "sim_control/update_boundaries.h"
 
 
 
@@ -27,7 +28,7 @@
 // ##################################################################
 
 
-class update_boundaries_nested : virtual public setup_nested_grid
+class update_boundaries_nested : virtual public setup_nested_grid, virtual public update_boundaries
 {
   public:
   update_boundaries_nested();
@@ -61,10 +62,16 @@ class update_boundaries_nested : virtual public setup_nested_grid
 
 
   /// Updates data to a nested grid from finer grid.
-  virtual int BC_update_NEST_FINE( boundary_data *);
+  virtual int BC_update_FINE_TO_COARSE(
+      class SimParams &,      ///< pointer to simulation parameters
+      struct boundary_data *,
+      const int,
+      const int
+      );
 
   /// Updates data to an external boundary from coarser grid.
-  virtual int BC_update_NEST_COARSE(
+  virtual int BC_update_COARSE_TO_FINE(
+      class SimParams &,      ///< pointer to simulation parameters
       boundary_data *, ///< pointer to boudary struct
       const int,  ///< current fractional step being taken.
       const int   ///< full step.

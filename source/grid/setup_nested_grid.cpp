@@ -316,14 +316,14 @@ int setup_nested_grid::setup_boundary_structs(
   if (l>0) {
     for (int i=0; i<par.ndim; i++) {
       if (!pconst.equalD(par.levels[l-1].Xmin[i],par.levels[l].Xmin[i])) {
-        cout <<"reassigning neg. bc for axis "<<i<<" to NEST_COARSE\n";
-        grid->BC_bd[2*i]->itype = NEST_COARSE;
-        grid->BC_bd[2*i]->type  = "NEST_COARSE";
+        cout <<"reassigning neg. bc for axis "<<i<<" to COARSE_TO_FINE\n";
+        grid->BC_bd[2*i]->itype = COARSE_TO_FINE;
+        grid->BC_bd[2*i]->type  = "COARSE_TO_FINE";
       }
       if (!pconst.equalD(par.levels[l-1].Xmax[i],par.levels[l].Xmax[i])) {
-        cout <<"reassigning pos. bc for axis "<<i<<" to NEST_COARSE\n";
-        grid->BC_bd[2*i+1]->itype = NEST_COARSE;
-        grid->BC_bd[2*i+1]->type  = "NEST_COARSE";
+        cout <<"reassigning pos. bc for axis "<<i<<" to COARSE_TO_FINE\n";
+        grid->BC_bd[2*i+1]->itype = COARSE_TO_FINE;
+        grid->BC_bd[2*i+1]->type  = "COARSE_TO_FINE";
       }
     }
   }
@@ -337,7 +337,7 @@ int setup_nested_grid::setup_boundary_structs(
   // a single grid covers the full domain at each level.  So we go
   // through all cells on the grid, and if they are within the domain
   // of the child grid (if it exists) then we label the cells as
-  // boundary data and add them to a new NEST_FINE boundary.
+  // boundary data and add them to a new FINE_TO_COARSE boundary.
   //
   if (l < par.grid_nlevels) {
     double cxmin[MAX_DIM], cxmax[MAX_DIM], cpos[MAX_DIM];
@@ -347,8 +347,8 @@ int setup_nested_grid::setup_boundary_structs(
       cxmax[v] = par.levels[l+1].Xmax[v];
     }
     struct boundary_data *bd = new boundary_data;
-    bd->itype = NEST_FINE;
-    bd->type  = "NEST_FINE";
+    bd->itype = FINE_TO_COARSE;
+    bd->type  = "FINE_TO_COARSE";
     bd->dir = NO;
     bd->ondir = NO;
     bd->refval=0;
@@ -416,8 +416,8 @@ int setup_nested_grid::assign_boundary_data(
   //
   for (int i=0; i<BC_nbd; i++) {
     switch (grid->BC_bd[i]->itype) {
-      case NEST_FINE:   err += BC_assign_NEST_FINE(  par, grid,grid->BC_bd[i],child);break;
-      case NEST_COARSE: err += BC_assign_NEST_COARSE(par, grid,grid->BC_bd[i],parent);break;
+      case FINE_TO_COARSE:   err += BC_assign_FINE_TO_COARSE(  par, grid,grid->BC_bd[i],child);break;
+      case COARSE_TO_FINE: err += BC_assign_COARSE_TO_FINE(par, grid,grid->BC_bd[i],parent);break;
       default:
       break;
     }
@@ -432,7 +432,7 @@ int setup_nested_grid::assign_boundary_data(
 
 
 
-int setup_nested_grid::BC_assign_NEST_FINE(
+int setup_nested_grid::BC_assign_FINE_TO_COARSE(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
@@ -444,7 +444,7 @@ int setup_nested_grid::BC_assign_NEST_FINE(
   // finer level grid, if possible.
   //
   if (b->data.empty())
-    rep.error("BC_assign_NEST_COARSE: empty boundary data",b->itype);
+    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
   b->nest.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
@@ -461,7 +461,7 @@ int setup_nested_grid::BC_assign_NEST_FINE(
       while (cc && cc->pos[v] < (*bpt)->pos[v]-cdx)
         cc = child->NextPt(cc,static_cast<direction>(2*v+1));
     }
-    if (!cc) rep.error("BC_assign_NEST_FINE: lost on fine grid",0);
+    if (!cc) rep.error("BC_assign_FINE_TO_COARSE: lost on fine grid",0);
     b->nest.push_back(cc);
     
     ++bpt;
@@ -477,7 +477,7 @@ int setup_nested_grid::BC_assign_NEST_FINE(
 
 
 
-int setup_nested_grid::BC_assign_NEST_COARSE(
+int setup_nested_grid::BC_assign_COARSE_TO_FINE(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
@@ -490,13 +490,13 @@ int setup_nested_grid::BC_assign_NEST_COARSE(
   // alogrithm to interpolate the coarse data onto the finer grid.
   //
   if (b->data.empty())
-    rep.error("BC_assign_NEST_COARSE: empty boundary data",b->itype);
+    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
   b->nest.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
   int pidx = parent->idx();
   int gidx = grid->idx();
-  //cout <<"BC_assign_NEST_COARSE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
+  //cout <<"BC_assign_COARSE_TO_FINE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
 
   cell *pc = parent->FirstPt_All(); // parent cell.
 
@@ -518,7 +518,7 @@ int setup_nested_grid::BC_assign_NEST_COARSE(
       }
       distance = grid->idistance(pc->pos, (*bpt)->pos);
     }
-    if (!pc) rep.error("BC_assign_NEST_COARSE() left parent grid",0);
+    if (!pc) rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
     
     // add this parent cell to the "parent" list of this boundary.
     b->nest.push_back(pc);
@@ -527,7 +527,7 @@ int setup_nested_grid::BC_assign_NEST_COARSE(
   }  while (bpt !=b->data.end());
 
   // add data to boundary cells.
-  //BC_update_NEST_COARSE(b,OA2,OA2);
+  //BC_update_COARSE_TO_FINE(b,OA2,OA2);
 
   return 0;
 }

@@ -88,7 +88,7 @@ class setup_nested_grid : virtual public setup_fixed_grid
   class eqns_base *eqn;
 
   /// Assigns data to a nested grid from finer grid.
-  virtual int BC_assign_NEST_FINE(
+  virtual int BC_assign_FINE_TO_COARSE(
       class SimParams &,     ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
       boundary_data *,  ///< boundary data
@@ -96,7 +96,7 @@ class setup_nested_grid : virtual public setup_fixed_grid
       );
 
   /// Assigns data to an external boundary from coarser grid.
-  virtual int BC_assign_NEST_COARSE(
+  virtual int BC_assign_COARSE_TO_FINE(
       class SimParams &,     ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
       boundary_data *,  ///< boundary data
