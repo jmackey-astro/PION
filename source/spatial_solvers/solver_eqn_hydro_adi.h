@@ -76,7 +76,7 @@ class FV_solver_Hydro_Euler :
   ///
   /// This calls the equations version and then adds conversion of tracer variables.
   /// 
-  /// For purely passive tracers, the primitive variable is just a number,
+  /// For passive tracers, the primitive variable is just a number,
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
@@ -89,7 +89,7 @@ class FV_solver_Hydro_Euler :
   ///
   /// This calls the equations version and then adds conversion of tracer variables.
   /// 
-  /// For purely passive tracers, the primitive variable is just a number,
+  /// For passive tracers, the primitive variable is just a number,
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///

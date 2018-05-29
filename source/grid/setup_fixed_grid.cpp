@@ -1011,8 +1011,8 @@ int setup_fixed_grid::assign_boundary_data(
      case DMACH:      err += BC_assign_DMACH(     par,grid,grid->BC_bd[i]); break;
      case DMACH2:     err += BC_assign_DMACH2(    par,grid,grid->BC_bd[i]); break;
      case STWIND:     err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]); break;
-     case NEST_FINE: break; // assigned in nested grid class
-     case NEST_COARSE: break; // assigned in nested grid class
+     case FINE_TO_COARSE: break; // assigned in nested grid class
+     case COARSE_TO_FINE: break; // assigned in nested grid class
      default:
       rep.warning("Unhandled BC",grid->BC_bd[i]->itype,-1); err+=1; break;
     }

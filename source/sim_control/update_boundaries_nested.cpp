@@ -68,8 +68,8 @@ int update_boundaries_nested::TimeUpdateInternalBCs(
       //     
       break;
 
-    case NEST_FINE:
-      err += BC_update_NEST_FINE( b, cstep, maxstep); break;
+    case FINE_TO_COARSE:
+      err += BC_update_FINE_TO_COARSE(par, b, cstep, maxstep); break;
     default:
       //      cout <<"no internal boundaries to update.\n";
       rep.warning("Unhandled BC: serial update internal",b->itype,-1); err+=1; break;
@@ -98,7 +98,7 @@ int update_boundaries_nested::TimeUpdateExternalBCs(
   rep.errorTest("update_boundaries_nested: uni-grid ext. BC update",0,err);
 
   struct boundary_data *b;
-  int i=0; int err=0;
+  int i=0;
   for (i=0;i<BC_nbd;i++) {
     b = grid->BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
@@ -110,8 +110,8 @@ int update_boundaries_nested::TimeUpdateExternalBCs(
       break;
 
       // get outer boundary of this grid from coarser grid.
-      case NEST_COARSE:
-      err += BC_update_NEST_FINE( b, cstep, maxstep); break;
+      case COARSE_TO_FINE:
+      err += BC_update_COARSE_TO_FINE(par, b, cstep, maxstep); break;
 
       default:
       rep.warning("Unhandled BC: serial update external",b->itype,-1); err+=1; break;
@@ -128,7 +128,7 @@ int update_boundaries_nested::TimeUpdateExternalBCs(
 
 
 
-int update_boundaries_nested::BC_update_NEST_FINE(
+int update_boundaries_nested::BC_update_FINE_TO_COARSE(
       class SimParams &par,      ///< pointer to simulation parameters
       struct boundary_data *b,
       const int cstep,
@@ -144,16 +144,26 @@ int update_boundaries_nested::BC_update_NEST_FINE(
   list<cell*>::iterator fine=b->nest.begin();
   cell *c, *f;
   double cd[par.nvar], u[par.nvar], vol=0.0;
+  int cpos[MAX_DIM],fpos[MAX_DIM];
 
   for (coarse=b->data.begin(); coarse!=b->data.end(); ++coarse) {
     c = (*coarse);
     f = (*fine);
-
+    CI.get_ipos(c,cpos);
+    CI.get_ipos(f,fpos);
+    rep.printVec("coarse pos:",cpos,par.ndim);
+    rep.printVec("fine   pos:",fpos,par.ndim);
+    
     // 1D
     // get conserved vars for cell 1 in fine grid, *cellvol.
-    eqn->PtoU(
+    eqn->PtoU(f->P, u, par.gamma);
+    // need grid to get cell-volume.
     for (int v=0;v<par.nvar;v++) {
+      cd[v] = u[v];
+    }
+
     // get conserved vars for cell 2 in fine grid, *cellvol.
+    f = 0; // need pointer to fine grid to get next point!
 
     // if 2D
     // get conserved vars for cell 3 in fine grid, *cellvol.
@@ -165,16 +175,22 @@ int update_boundaries_nested::BC_update_NEST_FINE(
     // get conserved vars for cell 7 in fine grid, *cellvol.
     // get conserved vars for cell 8 in fine grid, *cellvol.
 
+    //
+    // divide by coarse cell volume.
+    // convert conserved averaged data to primitive
+    //
 
-      
-
+    //
+    // assign to coarse cell, to P and Ph if full step, and only to Ph
+    // if half-step.
+    //
 
     // constant data:
-    (*c)->Ph[v] = (*c)->npt->Ph[v]
-    for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
-    if (cstep==maxstep) {
-      for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
-    }
+    //(*c)->Ph[v] = (*c)->npt->Ph[v]
+    //for (int v=0;v<G_nvar;v++) (*c)->dU[v] = 0.;
+    //if (cstep==maxstep) {
+    //  for (int v=0;v<G_nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+    //}
 
     ++fine;
   }
@@ -189,7 +205,7 @@ int update_boundaries_nested::BC_update_NEST_FINE(
 
 
 /// Updates data to an external boundary from coarser grid.
-int update_boundaries_nested::BC_update_NEST_COARSE(
+int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       class SimParams &par,      ///< pointer to simulation parameters
       struct boundary_data *b,
       const int cstep,

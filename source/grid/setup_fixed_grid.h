@@ -44,8 +44,8 @@ enum BoundaryTypes {
     ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
     STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
     STARBENCH1 =15, ///< StarBench test for mixing with a solid wall.
-    NEST_FINE  =16, ///< data in this cell should be obtained from finer-scale data on a nested grid.
-    NEST_COARSE   =17  ///< data should be obtained from coarser level in a nested grid.
+    FINE_TO_COARSE  =16, ///< data in this cell should be obtained from finer-scale data on a nested grid.
+    COARSE_TO_FINE   =17  ///< data should be obtained from coarser level in a nested grid.
 };
 
 
