@@ -43,12 +43,13 @@ int update_boundaries::TimeUpdateInternalBCs(
 {
   struct boundary_data *b;
   int i=0; int err=0;
-  for (i=0;i<BC_nbd;i++) {
+  for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     switch (b->itype) {
     case STWIND:     err += BC_update_STWIND(  par,grid, simtime, b, cstep, maxstep); break;
     case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW: case REFLECTING:
     case FIXED: case JETBC: case JETREFLECT: case DMACH: case DMACH2: case BCMPI:
+    case FINE_TO_COARSE: case COARSE_TO_FINE:
       //
       // External BCs updated elsewhere
       //     
@@ -56,7 +57,7 @@ int update_boundaries::TimeUpdateInternalBCs(
       
     default:
       //      cout <<"no internal boundaries to update.\n";
-      rep.warning("Unhandled BC: serial update internal",b->itype,-1); err+=1; break;
+      rep.error("Unhandled BC: serial update internal",b->itype);
       break;
     }
   }
@@ -83,7 +84,7 @@ int update_boundaries::TimeUpdateExternalBCs(
   // TEMP_FIX
   struct boundary_data *b;
   int i=0; int err=0;
-  for (i=0;i<BC_nbd;i++) {
+  for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
     switch (b->itype) {
@@ -97,14 +98,14 @@ int update_boundaries::TimeUpdateExternalBCs(
     case JETREFLECT: err += BC_update_JETREFLECT( par,grid, b, cstep, maxstep); break;
     case DMACH:      err += BC_update_DMACH(      par,grid, simtime, b, cstep, maxstep); break;
     case DMACH2:     err += BC_update_DMACH2(     par,grid, b, cstep, maxstep); break;
-    case RADSHOCK: case RADSH2: case STWIND: case BCMPI:
+    case RADSHOCK: case RADSH2: case STWIND: case BCMPI: case FINE_TO_COARSE: case COARSE_TO_FINE:
       //
       // internal bcs updated separately
       //
       break;
     default:
       //      cout <<"do i have a bc to update?? no.\n";
-      rep.warning("Unhandled BC: serial update external",b->itype,-1); err+=1; break;
+      rep.error("Unhandled BC: serial update external",b->itype);
       break;
     }
   }

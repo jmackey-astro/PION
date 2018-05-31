@@ -225,12 +225,6 @@ class UniformGrid
   virtual double DX() const {return(G_dx);}
 
 
-  /// Returns dA (assuming cells are cubes).
-  virtual double DA() const {return(G_dA);}
-
-  /// Returns dV (assuming cells are cubes).
-  virtual double DV() const {return(G_dV);}
-
   ///
   /// Returns cell diameter for a given cell along a given axis.
   ///
@@ -238,20 +232,6 @@ class UniformGrid
     const cell *,   ///< cell to get dx for
     const enum axes ///< axis along which to get dx.
     ) const {return G_dx;}
-
-  ///
-  /// Returns cell boundary area for a given cell in a given
-  /// direction.
-  ///
-  virtual double DA(
-    const cell *,   ///< cell to get dA for
-    const enum direction ///< direction in which to get dA.
-    ) const {return G_dA;}
-
-  ///
-  /// Returns cell volume for a given cell.
-  ///
-  virtual double DV(const cell *) const {return G_dV;}
 
   /// Returns dimensionality of grid.
   virtual int Ndim() const {return(G_ndim);}
@@ -312,6 +292,15 @@ class UniformGrid
   /// Return cell size in integer units
   int idx() const
   {return G_idx;}
+
+  virtual double CellVolume(
+      const cell *c
+      ) {return VectorOps_Cart::CellVolume(c);}
+
+  virtual double CellInterface(
+      const cell *c, ///< Cell
+      const direction dir ///< outward normal to interface.
+      ) {return VectorOps_Cart::CellInterface(c,dir);}
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
@@ -391,11 +380,14 @@ class UniformGrid
   int BC_printBCdata(boundary_data *);
 
   ///
-  /// Destructor for all the boundary data, BC_bd.  Needed because 
-  /// we need to delete some cells in the list, and others we just need to
-  /// delete the pointers to them.
+  /// Destructor for all the boundary data, BC_bd. 
   ///
   void BC_deleteBoundaryData();
+
+  ///
+  /// Destructor for a boundary data struct.
+  ///
+  void BC_deleteBoundaryData(boundary_data *);
 
   ///
   /// Setup lists of processors to receive data from and send data to, 
@@ -650,6 +642,16 @@ class uniform_grid_cyl
               const cell *, ///< cell 2
               const axes    ///< Axis.
               );
+
+  virtual double CellVolume(
+      const cell *c
+      ) {return VectorOps_Cyl::CellVolume(c);}
+
+  virtual double CellInterface(
+      const cell *c, ///< Cell
+      const direction dir ///< outward normal to interface.
+      ) {return VectorOps_Cyl::CellInterface(c,dir);}
+
  protected:
 
   ///
@@ -792,6 +794,15 @@ class uniform_grid_sph
       const cell *, ///< cell 2
       const axes    ///< Axis.
       );
+
+  virtual double CellVolume(
+      const cell *c
+      ) {return VectorOps_Sph::CellVolume(c);}
+
+  virtual double CellInterface(
+      const cell *c, ///< Cell
+      const direction dir ///< outward normal to interface.
+      ) {return VectorOps_Sph::CellInterface(c,dir);}
 
  protected:
 

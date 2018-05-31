@@ -286,13 +286,14 @@ ifeq ($(MAKE_UNAME), OSX)
     #CXXFLAGS = -O0 -Wall -g
   else
     CXXFLAGS = -O0 -Wall -g
+    LDFLAGS = -lreadline
   endif
 
   MYLIB = $(CURDIR)/../extra_libraries
   INC = -I${MYLIB}/include
   INC += -I/opt/local/include
   INC += -I${SRCDIR}
-  LDFLAGS = -L${MYLIB}/lib
+  LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lcfitsio
@@ -366,14 +367,14 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
 
-OBJ_NEST = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o
+OBJ_NEST = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o update_boundaries.o sim_init.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
 
 OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD)
 
 OBJECTS_NEST_PION = main_nested.o sim_control_nested.o $(OBJ_NEST) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD)
-OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST)  
+OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST) $(OBJ_SOLVE) 
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -431,9 +432,9 @@ uniform_grid.o: uniform_grid.cpp uniform_grid.h grid_base_class.h ${GLOBAL} \
     stellar_wind_angle.h stellar_wind_BC.h \
     VectorOps.h VectorOps_spherical.h
 
-VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h
+VectorOps.o:           VectorOps.cpp VectorOps.h ${GLOBAL} uniform_grid.h grid_base_class.h
 VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h \
-		       ${GLOBAL} uniform_grid.h
+		       ${GLOBAL} uniform_grid.h grid_base_class.h
 
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 
@@ -449,21 +450,21 @@ setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
   setup_fixed_grid.h  calc_timestep.h update_boundaries.h \
   parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
-  sim_init.h setup_fixed_grid.h
+  sim_init.h setup_fixed_grid.h grid_base_class.h
 
 sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} grid_base_class.h
 
 sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
- ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h \
+ ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
- setup_fixed_grid.h calc_timestep.h update_boundaries.h \
+ setup_fixed_grid.h calc_timestep.h update_boundaries.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 calc_timestep.o: calc_timestep.cpp calc_timestep.h \
- setup_fixed_grid.h microphysics_base.h \
+ setup_fixed_grid.h microphysics_base.h grid_base_class.h \
  solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 update_boundaries.o: update_boundaries.cpp update_boundaries.h \
@@ -474,7 +475,9 @@ update_boundaries_nested.o: update_boundaries_nested.cpp \
   ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
-  sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} solver_eqn_base.h \
+  sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
+  solver_eqn_base.h grid_base_class.h \
+
 #####################
 # EQUATIONS CLASSES #
 #####################
@@ -525,15 +528,15 @@ HLLD_MHD.o : HLLD_MHD.cpp HLLD_MHD.h  \
 # SOLVERS #
 ###########
 
-solver_eqn_base.o: VectorOps.h solver_eqn_base.h \
+solver_eqn_base.o: VectorOps.h solver_eqn_base.h grid_base_class.h \
                    eqns_base.h ${GLOBAL} cell_interface.h
 
 solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
    solver_eqn_base.h eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_hydro_adi.h eqns_hydro_adiabatic.h \
-   solver_eqn_hydro_adi.cpp
+   solver_eqn_hydro_adi.cpp grid_base_class.h
 
-solver_eqn_mhd_adi.o: VectorOps.h \
+solver_eqn_mhd_adi.o: VectorOps.h  grid_base_class.h\
    solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h \
    solver_eqn_mhd_adi.cpp
@@ -605,7 +608,7 @@ MPv8.o: MPv8.cpp \
 # Raytracing
 ########################
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
-  ${GLOBAL} uniform_grid.h
+  ${GLOBAL} uniform_grid.h grid_base_class.h
 
 
 ########################
@@ -615,22 +618,22 @@ file_status.o:  file_status.cpp file_status.h ${GLOBAL}
 parameter_defs.o:       parameter_defs.cpp parameter_defs.h ${GLOBAL} solver_eqn_base.h readparams.h \
 		stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
 dataio_base.o:  dataio_base.cpp dataio_base.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
-dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
-dataio_silo.o:  dataio_silo.cpp dataio_silo.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
+dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h ${GLOBAL} solver_eqn_base.h grid_base_class.h
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h parameter_defs.h ${GLOBAL} solver_eqn_base.h grid_base_class.h
 dataio_fits.o:  dataio_fits.cpp dataio_fits.h parameter_defs.h ${GLOBAL} solver_eqn_base.h \
-        solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h
+        solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h grid_base_class.h
 
 readparams.o:   readparams.cpp readparams.h ${GLOBAL}
-utility_fits_class.o: utility_fits_class.cpp dataio_fits.h parameter_defs.h ${GLOBAL}
+utility_fits_class.o: utility_fits_class.cpp dataio_fits.h parameter_defs.h ${GLOBAL} grid_base_class.h
 
 stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
-  tools/interpolate.h ${GLOBAL}
+   grid_base_class.h tools/interpolate.h ${GLOBAL}
 stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
-  tools/interpolate.h ${GLOBAL}
+   grid_base_class.h tools/interpolate.h ${GLOBAL}
 
 dataio_silo_nestedgrid.o : dataio_silo_nestedgrid.cpp \
   dataio_silo_nestedgrid.h dataio_silo.h parameter_defs.h ${GLOBAL} \
-  solver_eqn_base.h 
+  solver_eqn_base.h grid_base_class.h
 
 ##############################
 ##### IC GENERATOR FILES #####

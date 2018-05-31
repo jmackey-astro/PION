@@ -667,7 +667,7 @@ int dataio_text::assign_initial_data(
     frac +=dv;
         }
       }
-      frac /= gp->DV();
+      frac /= gp->CellVolume(cpt);
       //cout <<"frac = "<<frac<<"\n";
       for (int v=0;v<SimPM.nvar;v++)
         cpt->P[v] = cpt->Ph[v] = frac*left[v] + (1.-frac)*right[v];

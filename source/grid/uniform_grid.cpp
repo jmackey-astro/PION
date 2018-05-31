@@ -1137,6 +1137,35 @@ int UniformGrid::BC_printBCdata(boundary_data *b)
 
 
 
+void UniformGrid::BC_deleteBoundaryData(
+      boundary_data *b
+      )
+{
+  if (b->refval !=0) {
+    b->refval = mem.myfree(b->refval);
+  }
+
+  if (b->data.empty()) {
+#ifdef TESTING
+    cout <<"BC destructor: No boundary cells to delete.\n";
+#endif
+  }
+  else {
+    list<cell *>::iterator i=b->data.begin();
+    do {
+      b->data.erase(i);
+      i=b->data.begin();
+    }  while(i!=b->data.end());
+  }
+  return;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void UniformGrid::BC_deleteBoundaryData()
 {
 #ifdef TESTING
@@ -1145,33 +1174,7 @@ void UniformGrid::BC_deleteBoundaryData()
   struct boundary_data *b;
   for (int ibd=0; ibd<BC_bd.size(); ibd++) {
     b = BC_bd[ibd];
-    if (b->refval !=0) {
-      b->refval = mem.myfree(b->refval);
-    }
-
-    if (b->data.empty()) {
-#ifdef TESTING
-      cout <<"BC destructor: No boundary cells to delete.\n";
-#endif
-    }
-    else {
-      list<cell *>::iterator i=b->data.begin();
-      do {
-        b->data.erase(i);
-        i=b->data.begin();
-      }  while(i!=b->data.end());
-      if(b->data.empty()) {
-#ifdef TESTING
-        cout <<"\t done.\n";
-#endif
-      }
-      else {
-#ifdef TESTING
-        cout <<"\t not empty list! FIX ME!!!\n";
-#endif
-      }
-    }
-
+    BC_deleteBoundaryData(b);
   } // loop over all boundaries.
   BC_bd.clear();
   return;
@@ -1471,18 +1474,17 @@ double uniform_grid_cyl::iR_cov(const cell *c)
 }
   
 
-
 // ##################################################################
 // ##################################################################
 
 
 
-///
-/// Calculate distance between two points, where the two position
-/// are interpreted in the appropriate geometry.
-/// This function takes input in physical units, and outputs in 
-/// physical units.
-///
+//
+// Calculate distance between two points, where the two position
+// are interpreted in the appropriate geometry.
+// This function takes input in physical units, and outputs in 
+// physical units.
+//
 double uniform_grid_cyl::distance(
           const double *p1, ///< position 1 (physical)
           const double *p2  ///< position 2 (physical)

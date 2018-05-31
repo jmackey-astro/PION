@@ -135,15 +135,32 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    CI.set_dx(SimPM.levels[l].dx);
     err += ic->setup_data(rp,grid[l]);
     if (err) rep.error("Initial conditions setup failed.",err);
+  }
 
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    cout <<"icgen_nested: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(SimPM,grid[l],SimPM.levels[l].parent, SimPM.levels[l].child);
     rep.errorTest("icgen_nest::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cout <<"updating external boundaries for level "<<l<<"\n";
+    err += SimSetup->TimeUpdateExternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+    cout <<"updating internal boundaries for level "<<l<<"\n";
+    err += SimSetup->TimeUpdateInternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the 

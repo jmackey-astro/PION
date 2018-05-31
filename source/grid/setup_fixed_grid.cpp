@@ -846,9 +846,11 @@ int setup_fixed_grid::setup_boundary_structs(
 #ifdef TESTING
   cout <<"Got "<<len<<" boundaries to set up.\n";
 #endif
-  grid->BC_bd.resize(len);  // class member data
-  BC_nbd = len;       // class member data
-  for (int b=0;b<len;b++) grid->BC_bd[b] = mem.myalloc(grid->BC_bd[b],1);
+  for (int b=0;b<len;b++) {
+    struct boundary_data *bd = new boundary_data;
+    grid->BC_bd.push_back(bd);
+  }
+
 
   //
   // First the 2N external boundaries.  Put the strings into an array.
@@ -933,9 +935,9 @@ int setup_fixed_grid::setup_boundary_structs(
 #endif
   }
 
-  if (i<BC_nbd) {
+  if (i<len) {
 #ifdef TESTING
-    cout <<"Got "<<i<<" boundaries, but have "<<BC_nbd<<" boundaries.\n";
+    cout <<"Got "<<i<<" boundaries, but have "<<len<<" boundaries.\n";
     cout <<"Must have extra BCs... checking for internal BCs\n";
 #endif
     do {
@@ -972,12 +974,11 @@ int setup_fixed_grid::setup_boundary_structs(
       cout <<"\tBoundary type "<<i<<" is "<<grid->BC_bd[i]->type<<"\n";
 #endif
       i++;
-    } while (i<BC_nbd);
+    } while (i<len);
   }
 
-  BC_nbd = grid->BC_bd.size();
 #ifdef TESTING
-  cout <<BC_nbd<<" BC structs set up.\n";
+  cout <<len<<" BC structs set up.\n";
 #endif
   return 0;
 }
@@ -998,7 +999,7 @@ int setup_fixed_grid::assign_boundary_data(
   //
   // Loop through all boundaries, and assign data to them.
   //
-  for (int i=0; i<BC_nbd; i++) {
+  for (int i=0; i<grid->BC_bd.size(); i++) {
     switch (grid->BC_bd[i]->itype) {
      case PERIODIC:   err += BC_assign_PERIODIC(  par,grid,grid->BC_bd[i]); break;
      case OUTFLOW:    err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]); break;
@@ -1011,10 +1012,12 @@ int setup_fixed_grid::assign_boundary_data(
      case DMACH:      err += BC_assign_DMACH(     par,grid,grid->BC_bd[i]); break;
      case DMACH2:     err += BC_assign_DMACH2(    par,grid,grid->BC_bd[i]); break;
      case STWIND:     err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]); break;
-     case FINE_TO_COARSE: break; // assigned in nested grid class
-     case COARSE_TO_FINE: break; // assigned in nested grid class
+     case FINE_TO_COARSE:
+     case COARSE_TO_FINE:
+      break; // assigned in nested grid class
      default:
-      rep.warning("Unhandled BC",grid->BC_bd[i]->itype,-1); err+=1; break;
+      rep.error("Unhandled BC",grid->BC_bd[i]->itype);
+      break;
     }
 
   }
@@ -2022,10 +2025,10 @@ int setup_fixed_grid::BC_assign_STWIND_add_cells2src(
   
   err += grid->Wind->set_num_cells(id,ncell);
 
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"setup_fixed_grid: Added "<<ncell;
   cout <<" cells to wind boundary for WS "<<id<<"\n";
-#endif
+//#endif
   return err;
 }
 

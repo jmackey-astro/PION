@@ -551,8 +551,7 @@ VectorOps_Cyl::VectorOps_Cyl(int n, double del)
   cout <<"Setting up VectorOps_Cyl with ndim="<<VOnd;
   cout <<" and dz=dR="<<VOdz<<"\n";
 #endif
-  //if (VOnd!=2 && VOnd!=3) rep.error("Why use cylindrical coords in not 2 or 3D?",VOnd);
-  if (VOnd>2) rep.warning("VectorOps_Cyl NOT TESTED IN 3D YET",2,VOnd);
+  if (VOnd>2) rep.error("VectorOps_Cyl NOT TESTED IN 3D YET",VOnd);
 
   // Volume assumes 2D, per unit azimuthal angle.
   VOdV = 0.5*VOdz*VOdR;
