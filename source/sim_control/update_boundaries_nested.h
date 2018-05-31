@@ -40,6 +40,7 @@ class update_boundaries_nested : virtual public setup_nested_grid, virtual publi
   virtual int TimeUpdateExternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
+      const int, ///< level of grid in nested grid struct.
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.
       const int  ///< Maximum step number in timestep.
@@ -52,6 +53,7 @@ class update_boundaries_nested : virtual public setup_nested_grid, virtual publi
   virtual int TimeUpdateInternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
+      const int, ///< level of grid in nested grid struct.
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.
       const int  ///< Maximum step number in timestep.
@@ -64,6 +66,7 @@ class update_boundaries_nested : virtual public setup_nested_grid, virtual publi
   /// Updates data to a nested grid from finer grid.
   virtual int BC_update_FINE_TO_COARSE(
       class SimParams &,      ///< pointer to simulation parameters
+      const int, ///< level of grid in nested grid struct.
       struct boundary_data *,
       const int,
       const int
@@ -72,6 +75,7 @@ class update_boundaries_nested : virtual public setup_nested_grid, virtual publi
   /// Updates data to an external boundary from coarser grid.
   virtual int BC_update_COARSE_TO_FINE(
       class SimParams &,      ///< pointer to simulation parameters
+      const int, ///< level of grid in nested grid struct.
       boundary_data *, ///< pointer to boudary struct
       const int,  ///< current fractional step being taken.
       const int   ///< full step.

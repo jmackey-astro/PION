@@ -137,8 +137,16 @@ class GridBaseClass {
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
   virtual double DX() const =0; ///< Returns dx (assuming cells are cubes).
   virtual int idx() const =0; ///< Returns idx.
-  virtual double DA() const =0; ///< Returns dA (assuming cells are cubes).
-  virtual double DV() const =0; ///< Returns dV (assuming cells are cubes).
+
+  virtual double CellVolume(
+      const cell *
+      )=0; ///< Returns Volume of cell.
+
+  virtual double CellInterface(
+      const cell *, ///< Cell
+      const direction ///< outward normal to interface.
+      )=0; ///< Returns Surface area of interface.
+
 
   ///
   /// Returns cell diameter for a given cell along a given axis.
@@ -147,18 +155,6 @@ class GridBaseClass {
     const cell *,   ///< cell to get dx for
     const enum axes ///< axis along which to get dx.
     ) const =0;
-  ///
-  /// Returns cell boundary area for a given cell in a given
-  /// direction.
-  ///
-  virtual double DA(
-    const cell *,   ///< cell to get dA for
-    const enum direction ///< direction in which to get dA.
-    ) const =0;
-  ///
-  /// Returns cell volume for a given cell.
-  ///
-  virtual double DV(const cell *) const =0;
 
   virtual int Ndim() const =0; ///< Returns dimensionality of grid.
   virtual int Nvar() const =0; ///< Returns length of state vectors.
@@ -217,6 +213,13 @@ class GridBaseClass {
   /// delete the pointers to them.
   ///
   virtual void BC_deleteBoundaryData()=0;
+
+  ///
+  /// Destructor for a boundary data struct.  Needed because 
+  /// we need to delete some cells in the list, and others we just need to
+  /// delete the pointers to them.
+  ///
+  virtual void BC_deleteBoundaryData(boundary_data *)=0;
 
   ///
   /// Setup lists of processors to receive data from and send data

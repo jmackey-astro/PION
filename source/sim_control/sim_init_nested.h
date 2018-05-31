@@ -34,7 +34,6 @@
 ///
 class sim_init_nested
   :
-  virtual public setup_nested_grid,
   virtual public sim_init,
   virtual public update_boundaries_nested
 {

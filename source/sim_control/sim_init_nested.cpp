@@ -158,7 +158,6 @@ int sim_init_nested::Init(
 
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    CI.set_dx(SimPM.levels[l].dx);
     err = assign_boundary_data(SimPM, grid[l], SimPM.levels[l].parent, SimPM.levels[l].child);
     rep.errorTest("icgen_nest::assign_boundary_data",0,err);
   }
@@ -166,12 +165,22 @@ int sim_init_nested::Init(
 
 
 
+  // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
-    err += TimeUpdateInternalBCs(SimPM, grid[l], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    err += TimeUpdateExternalBCs(SimPM, grid[l], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    cout <<"updating external boundaries for level "<<l<<"\n";
+    err += TimeUpdateExternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+    spatial_solver->set_dx(SimPM.levels[l].dx);
+    cout <<"updating internal boundaries for level "<<l<<"\n";
+    err += TimeUpdateInternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  // ----------------------------------------------------------------
 
   //
   // If testing the code, this calculates the momentum and energy on the domain.
@@ -280,11 +289,11 @@ int sim_init_nested::initial_conserved_quantities(
     class cell *c=grid[l]->FirstPt();
     do {
       if (!c->isbd) {
-         spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-         dp.initERG += u[ERG]*spatial_solver->CellVolume(cpt);
-         dp.initMMX += u[MMX]*spatial_solver->CellVolume(cpt);
-         dp.initMMY += u[MMY]*spatial_solver->CellVolume(cpt);
-         dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(cpt);
+         spatial_solver->PtoU(c->P,u,SimPM.gamma);
+         dp.initERG += u[ERG]*spatial_solver->CellVolume(c);
+         dp.initMMX += u[MMX]*spatial_solver->CellVolume(c);
+         dp.initMMY += u[MMY]*spatial_solver->CellVolume(c);
+         dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(c);
       }
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }

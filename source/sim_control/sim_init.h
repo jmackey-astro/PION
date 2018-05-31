@@ -30,7 +30,7 @@
 /// Class to set up a simulation so that everything is ready to run.
 /// Inherits from setup_fixed_grid.
 ///
-class sim_init : virtual public setup_fixed_grid, virtual public update_boundaries
+class sim_init : virtual public update_boundaries
 {
   public:
   sim_init();

@@ -141,8 +141,6 @@ class setup_fixed_grid
   /// vector of RT ionising sources, of size FVI_nion
   std::vector<struct rt_source_data> FVI_ionising_srcs;
 
-  int BC_nbd; ///< Number of Boundaries.
-
   ///
   /// Check for any time-evolving radiation sources, and update source
   /// properties from global struct SimPM.STAR[v] if needed

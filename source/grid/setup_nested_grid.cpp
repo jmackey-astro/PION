@@ -226,6 +226,7 @@ int setup_nested_grid::setup_grid(
   }
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+    SimPM.levels[l].grid = grid[l];
     if (l==0) {
       SimPM.levels[l].parent = 0;
       SimPM.levels[l].child  = grid[l+1];
@@ -259,9 +260,9 @@ int setup_nested_grid::boundary_conditions(
       )
 {
   // For uniform fixed cartesian grid.
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";
-//#endif
+#endif
   int err = 0;
 
   for (int l=0;l<par.grid_nlevels;l++) {
@@ -283,9 +284,9 @@ int setup_nested_grid::boundary_conditions(
     err = grid[l]->SetupBCs(par);
     rep.errorTest("sng::boundary_conditions SetupBCs",0,err);
   }
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"(setup_nested_grid::boundary_conditions) Done.\n";
-//#endif
+#endif
   return 0;
 }
 
@@ -339,9 +340,10 @@ int setup_nested_grid::setup_boundary_structs(
   // of the child grid (if it exists) then we label the cells as
   // boundary data and add them to a new FINE_TO_COARSE boundary.
   //
-  if (l < par.grid_nlevels) {
+  if (l < par.grid_nlevels-1) {
     double cxmin[MAX_DIM], cxmax[MAX_DIM], cpos[MAX_DIM];
     bool within_child=true;
+    size_t ct = 0;
     for (int v=0;v<par.ndim;v++) {
       cxmin[v] = par.levels[l+1].Xmin[v];
       cxmax[v] = par.levels[l+1].Xmax[v];
@@ -361,11 +363,29 @@ int setup_nested_grid::setup_boundary_structs(
       }
       if (within_child) {
         c->isbd = true;
+        //cout <<"Nested-grid: FINE_TO_COARSE setup, cell added.\n";
         bd->data.push_back(c);
+        ct++;
       }
     } while ((c=grid->NextPt(c)) !=0);
-
+    cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, "<<bd->data.size() <<"\n";
     grid->BC_bd.push_back(bd);
+    cout <<"BC_data: "<<grid->BC_bd[grid->BC_bd.size()-1]->data.size()<<"\n";
+  }
+  
+  //
+  // Now check if we are at the deepest level in the grid and, if not,
+  // then remove the stellar wind boundary condition.
+  //
+  if (l < par.grid_nlevels-1) {
+    for (int b=0;b<grid->BC_bd.size();b++) {
+      if (grid->BC_bd[b]->itype == STWIND) {
+        cout <<"erasing wind boundary: size="<<grid->BC_bd.size();
+        grid->BC_deleteBoundaryData(grid->BC_bd[b]);
+        grid->BC_bd.erase(grid->BC_bd.begin()+b);
+        cout <<", and after deleting, size="<<grid->BC_bd.size()<<"\n";
+      }
+    }
   }
   
 #ifdef TESTING
@@ -391,6 +411,7 @@ int setup_nested_grid::assign_boundary_data(
   // THIS NEEDS THE LEVELS AND POINTERS TO PARENT AND CHILD GRIDS!
   // first call the UniformGrid version.
   int err = setup_fixed_grid::assign_boundary_data(par,grid);
+  rep.errorTest("setup_fixed_grid::assign_boundary_data",err,0);
 
   // ----------------------------------------------------------------
   // only needed for nested grid I think... maybe also for stellar
@@ -414,11 +435,21 @@ int setup_nested_grid::assign_boundary_data(
   //
   // Then check for nested-grid boundaries and assign data for them.
   //
-  for (int i=0; i<BC_nbd; i++) {
+  for (int i=0; i<grid->BC_bd.size(); i++) {
+    cout <<"nested grid assign BCs: BC["<<i<<"] starting.\n";
     switch (grid->BC_bd[i]->itype) {
-      case FINE_TO_COARSE:   err += BC_assign_FINE_TO_COARSE(  par, grid,grid->BC_bd[i],child);break;
-      case COARSE_TO_FINE: err += BC_assign_COARSE_TO_FINE(par, grid,grid->BC_bd[i],parent);break;
+      case FINE_TO_COARSE:
+      cout <<"nested grid setup: Assigning FINE_TO_COARSE BC\n";
+      err += BC_assign_FINE_TO_COARSE(par,grid,grid->BC_bd[i],child);
+      break;
+
+      case COARSE_TO_FINE:
+      cout <<"nested grid setup: Assigning COARSE_TO_FINE BC\n";
+      err += BC_assign_COARSE_TO_FINE(par,grid,grid->BC_bd[i],parent);
+      break;
+
       default:
+      cout <<"leaving BC "<<i<<" alone in nested grid assign fn.\n";
       break;
     }
   }
@@ -440,11 +471,10 @@ int setup_nested_grid::BC_assign_FINE_TO_COARSE(
       )
 {
   //
-  // Need to give each of these cells a pointer to a cell on the
-  // finer level grid, if possible.
+  // Make a list of child-grid cells to map onto the coarse grid
   //
   if (b->data.empty())
-    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
+    rep.error("BC_assign_FINE_TO_COARSE: empty boundary data",b->itype);
   b->nest.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
