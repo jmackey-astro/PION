@@ -45,6 +45,8 @@
 ///    Moved MPI-parallelised class to its own new file.
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 /// - 2018.01.24 JM: worked on making SimPM non-global
+/// - 2018.05.** JM: moved most functions to new classes for calculating timestep,
+///    updating boundaries, and time integration.
 
 #ifndef SIM_CONTROL_H
 #define SIM_CONTROL_H

@@ -52,6 +52,9 @@ using namespace std;
 
 sim_control_nestedgrid::sim_control_nestedgrid()
 {
+#ifdef TESTING
+  cout << "(sim_control_nestedgrid::Constructor)\n";
+#endif
 }
 
 
@@ -63,10 +66,7 @@ sim_control_nestedgrid::sim_control_nestedgrid()
 sim_control_nestedgrid::~sim_control_nestedgrid()
 {
 #ifdef TESTING
-  cout << "(sim_control_nestedgrid::Destructor) starting" <<"\n";
-#endif
-#ifdef TESTING
-  cout << "(sim_control_nestedgrid::Destructor) Done." <<"\n";
+  cout << "(sim_control_nestedgrid::Destructor)\n";
 #endif
 }
 
@@ -84,11 +84,19 @@ int sim_control_nestedgrid::Time_Int(
       )
 {
   cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control_nestedgrid::Time_Int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"(sim_control_nestedgrid::Time_Int) STARTING TIME INTEGRATION\n";
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
   clk.start_timer("Time_Int"); double tsf=0;
+
+  // make sure all levels start at the same time.
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    SimPM.levels[l].dt = 0.0;
+    SimPM.levels[l].simtime = SimPM.simtime;
+  }
+
+
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
@@ -99,10 +107,35 @@ int sim_control_nestedgrid::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,RT[0]);
-    rep.errorTest("(TIME_INT::update_evolving_RT_sources()) error",0,err);
+    for (int l=0; l<SimPM.grid_nlevels; l++) {
+      err = update_evolving_RT_sources(SimPM,grid[l]->RT);
+      rep.errorTest("(TIME_INT::update_evolving_RT_sources()) error",0,err);
+    }
 
     //clk.start_timer("advance_time");
+    //
+    // Get timestep on each level
+    //
+    int scale = 1;
+    double mindt = 1.0e99;
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+      spatial_solver->set_dx(SimPM.levels[l].dx);
+      err += calculate_timestep(SimPM, grid[0],spatial_solver);
+      rep.errorTest("TIME_INT::calc_timestep()",0,err);
+      mindt = std::min(mindt, SimPM.dt/scale);
+      SimPM.levels[l].dt = SimPM.dt
+      scale *= 2;
+    }
+    // make sure all levels use the same step (scaled by factors of 2).
+    scale = 1;
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+      SimPM.levels[l].dt = std::min(mindt*scale, SimPM.levels[l].dt);
+      scale *= 2;
+    }
+
+
+
+
     err+= advance_time(grid,RT);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     rep.errorTest("TIME_INT::advance_time()",0,err);

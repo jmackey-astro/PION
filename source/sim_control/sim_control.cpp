@@ -143,6 +143,8 @@
 /// - 2015.01.26 JM: CHANGED FILENAME TO SIM_CONTROL.CPP
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 /// - 2018.01.24 JM: worked on making SimPM non-global
+/// - 2018.05.** JM: moved most functions to new classes for calculating timestep,
+///    updating boundaries, and time integration.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -233,9 +235,11 @@ int sim_control::Time_Int(
 
     //clk.start_timer("advance_time");
     // step forward by dt.
+    err += calculate_timestep(SimPM, grid[0],spatial_solver);
+    rep.errorTest("TIME_INT::calc_timestep()",0,err);
     err+= advance_time(grid[0]);
+    rep.errorTest("(TIME_INT::advance_time) error",0,err);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
-    if (err!=0){cerr<<"(TIME_INT::advance_time) err!=0 Something went wrong\n";return(1);}
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)

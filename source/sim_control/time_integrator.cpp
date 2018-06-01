@@ -75,10 +75,6 @@ int time_integrator::advance_time(
 {
   int err=0;
 
-  // calculate the timestep.
-  err += calculate_timestep(SimPM, grid,spatial_solver);
-  rep.errorTest("time_integrator::advance_time calc_timestep()",0,err);
-
   //
   // Check order-of-accuracy (OOA) requested, and perform the
   // appropriate update.
