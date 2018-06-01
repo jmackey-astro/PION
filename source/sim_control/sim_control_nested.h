@@ -14,40 +14,25 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
-#include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"
+#include "spatial_solvers/solver_eqn_base.h"
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
-#include "nested_grid/setup_nested_grid.h"
-#include "sim_control.h" 
+#include "sim_control/sim_control.h" 
+#include "sim_control/sim_init_nested.h"
+#include "sim_control/update_boundaries_nested.h"
+#include "sim_control/calc_timestep.h"
+#include "sim_control/time_integrator.h"
 
-/// The simplest finite volume grid -- a uniform grid with cells that
-/// are cube-shaped in the chosen coordinates.
 /// 
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control_nestedgrid : public setup_nested_grid, public sim_control
+class sim_control_nestedgrid : virtual public sim_control, virtual public time_integrator
 {
   public:
   sim_control_nestedgrid();  ///< Simple constructor
   virtual ~sim_control_nestedgrid(); ///< Destructor
-
-
-  ///
-  /// initialisation.
-  ///
-  /// This function calls a sequence of other functions to set up the grid
-  /// and populate it with the initial conditions, and give it the appropriate
-  /// boundary conditions. 
-  ///
-  virtual int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
-      int,      ///< Number of command-line arguments.
-      string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-      );
 
   ///
   /// Time integration
@@ -83,16 +68,6 @@ class sim_control_nestedgrid : public setup_nested_grid, public sim_control
       );
 #endif // BLAST_WAVE_CHECK
 
-
-  ///
-  /// For a nested grid we need to start at the finest level and work
-  /// upwards through the levels.  This is a wrapper function that
-  /// calls the uniform_grid version of advance_time on each level.
-  ///
-  int advance_time(
-      vector<class GridBaseClass *> &, ///< grid pointer
-      vector<class RayTracingBase *> & ///< raytracer for this grid.
-      );
 
 
 
