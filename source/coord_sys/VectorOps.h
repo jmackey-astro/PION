@@ -249,15 +249,7 @@ class VectorOps_Cart : virtual public BaseVectorOps
 
   public:
   ///
-  /// constructor, sets number of spatial dimensions of grid.
-  ///
-  VectorOps_Cart(
-      int, ///< Number of spatial dimensions of grid
-      double ///< Length of cell (must be the same in all directions).
-      );
-
-  ///
-  /// Alternate constructor which doesn't take delta-x as a parameter.
+  /// Constructor, sets number of spatial dimensions.
   ///
   VectorOps_Cart(
       const int ///< number of spatial dimensions of grid
@@ -435,15 +427,7 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
 
   public:
   ///
-  /// constructor, sets number of spatial dimensions of grid.
-  ///
-  VectorOps_Cyl(
-      int, ///< Number of spatial dimensions of grid
-      double ///< diameter of cell (same in all directions).
-      );
-
-  ///
-  /// Alternate constructor which doesn't take delta-x as a parameter.
+  /// Constructor, sets number of spatial dimensions.
   ///
   VectorOps_Cyl(
       const int ///< number of spatial dimensions of grid

@@ -35,7 +35,9 @@
 /// Class to integrate a finite-volume grid of data forward in time,
 /// for PION simulations of hydro/MHD.
 ///
-class time_integrator : virtual public sim_init, virtual public calc_timestep
+class time_integrator :
+  virtual public sim_init,
+  virtual public calc_timestep
 {
   public:
   time_integrator();

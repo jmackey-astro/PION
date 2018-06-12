@@ -17,7 +17,7 @@
 #include "tools/command_line_interface.h"
 #include "sim_control/update_boundaries_nested.h"
 
-#define TEST_NEST
+//#define TEST_NEST
 
 // ##################################################################
 // ##################################################################
@@ -61,7 +61,7 @@ int update_boundaries_nested::TimeUpdateInternalBCs(
 
   struct boundary_data *b;
   int i=0;
-  cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
+  //cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     switch (b->itype) {
@@ -75,7 +75,7 @@ int update_boundaries_nested::TimeUpdateInternalBCs(
       break;
 
     case FINE_TO_COARSE:
-      cout <<"found FINE_TO_COARSE boundary to update\n";
+      //cout <<"found FINE_TO_COARSE boundary to update\n";
       err += BC_update_FINE_TO_COARSE(par, level, b, cstep, maxstep);
       break;
 
@@ -115,7 +115,7 @@ int update_boundaries_nested::TimeUpdateExternalBCs(
 
   struct boundary_data *b;
   int i=0;
-  cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
+  //cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
@@ -128,8 +128,11 @@ int update_boundaries_nested::TimeUpdateExternalBCs(
 
       // get outer boundary of this grid from coarser grid.
       case COARSE_TO_FINE:
-      cout <<"found COARSE_TO_FINE boundary to update\n";
-      err += BC_update_COARSE_TO_FINE(par, level, b, cstep, maxstep);
+      // only update if at the start of a full step.
+      if (cstep==maxstep) {
+        //cout <<"found COARSE_TO_FINE boundary to update\n";
+        err += BC_update_COARSE_TO_FINE(par, level, b, par.levels[level].step);
+      }
       break;
 
       default:
@@ -166,8 +169,8 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
   list<cell*>::iterator c_iter=b->data.begin();
   list<cell*>::iterator f_iter=b->nest.begin();
   cell *c, *f;
-  cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
-  cout << b->data.size() <<",  :"<<b->nest.size()<<"\n";
+  //cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
+  //cout << b->data.size() <<",  :"<<b->nest.size()<<"\n";
 
   // pointers to coarse and fine grids:
   class GridBaseClass *coarse = par.levels[level].grid;
@@ -324,8 +327,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       class SimParams &par,      ///< pointer to simulation parameters
       const int level, ///< level in the nested grid structure
       struct boundary_data *b,
-      const int cstep,
-      const int maxstep
+      const int step
       )
 {
   //
@@ -358,6 +360,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
   //list<cell*>::iterator c_iter=b->nest.begin();
   list<cell*>::iterator f_iter=b->data.begin();
   cell *c, *f;
+  double U[par.nvar], P[par.nvar];
 
   for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
     f = (*f_iter);
@@ -371,14 +374,26 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
     //for (int v=0;v<G_nvar;v++)
     //  (*c)->Ph[v] = (*c)->npt->Ph[v] + sx[v]*dist;
 
-    // constant data:
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v];
-    if (cstep==maxstep) {
+    // ----- constant data -----
+    if (step%2==0) {
+      // we are on the first of two steps at this level, so just
+      // update from coarse grid as normal.
+      for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v];
       for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+      for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
     }
-    
-    // iterate to next coarse cell.
-    //++c;
+    else {
+      // We are on the second of two steps, so we need data from half
+      // way through the coarse grid step.  Assume dU has been
+      // calculated for the coarse grid, but the state vector not
+      // updated, so we can convert U+0.5*dU into a new primitive
+      // state for the half step.
+      eqn->PtoU(c->P, U, par.gamma);
+      for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
+      eqn->UtoP(U,f->Ph, par.EP.MinTemperature, par.gamma);
+      for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+    }
+    // ----- constant data -----
   }
   return 0;
 }

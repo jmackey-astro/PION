@@ -367,14 +367,16 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
 
-OBJ_NEST = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o update_boundaries.o sim_init.o
+OBJ_NEST_ICS = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o update_boundaries.o sim_init.o
+
+OBJ_NEST_SIM = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o sim_control_nested.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
 
 OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD)
 
-OBJECTS_NEST_PION = main_nested.o sim_control_nested.o $(OBJ_NEST) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD)
-OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST) $(OBJ_SOLVE) 
+OBJECTS_NEST_PION = main_nested.o $(OBJ_NEST_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD)
+OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST_ICS) $(OBJ_SOLVE) 
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -385,7 +387,7 @@ OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_
 ##########################
 all: ${bindir}/pion_serial ${bindir}/icgen_serial ${bindir}/pion_nest_serial ${bindir}/icgen_nest_serial
 uni: ${bindir}/pion_serial ${bindir}/icgen_serial
-nest: ${bindir}/icgen_nest_serial  #   ${bindir}/pion_nest_serial 
+nest: ${bindir}/icgen_nest_serial  ${bindir}/pion_nest_serial 
 
 ${bindir}/pion_serial : $(OBJECTS_PION)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_serial $(LDFLAGS)

@@ -42,11 +42,6 @@ class sim_init_nested
   ~sim_init_nested();
    
   ///
-  /// Function to print command-line options for PION.
-  ///
-  void print_command_line_options(int, char **);
-
-  ///
   /// initialisation.
   ///
   /// This function calls a sequence of other functions to set up the grid

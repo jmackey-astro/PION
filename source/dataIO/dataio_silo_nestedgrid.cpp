@@ -193,10 +193,11 @@ int dataio_nested_silo::ReadData(
       rep.error("dataio_nested_silo::ReadData() level",silofile);
     }
     else {
-      char temp[2]; sprintf(temp,"%2d",l);
-      string t2(temp);
-      silofile.replace(p+6,2,t2);
-      cout <<"p="<<p<<"  string="<<t2<<", silofile="<<silofile<<"\n";
+      ostringstream temp; temp.str("");
+      temp.width(2); temp.fill('0');
+      temp << l;
+      silofile.replace(p+6,2,temp.str());
+      cout <<"p="<<p<<"  string="<<temp.str()<<", silofile="<<silofile<<"\n";
     }
 
     if (!cg[l])

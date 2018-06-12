@@ -36,28 +36,6 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-VectorOps_Sph::VectorOps_Sph(
-      int n,
-      double del
-      )
-: VectorOps_Cart(n,del), VectorOps_Cyl(n,del)
-{
-#ifdef TESTING
-  cout <<"Setting up 1D spherical coordinates with ndim="<<VOnd;
-  cout <<" and dR="<<VOdR<<"\n";
-#endif
-  if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",
-                          VOnd);
-  
-  VOdV = 4.0*M_PI*VOdR;
-  VOdA = 4.0*M_PI;
-  return;
-}
-
-
-// ##################################################################
-// ##################################################################
-
 VectorOps_Sph::VectorOps_Sph(int n)
   : VectorOps_Cart(n), VectorOps_Cyl(n)
 {

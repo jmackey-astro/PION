@@ -52,20 +52,21 @@
 class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
 {
  public :
-  FV_solver_base(const int, ///< number of variables in state vector.
-		 const int, ///< number of space dimensions in grid.
-		 const double, ///< CFL number
-		 const double, ///< dx, cell size.
-		 const double, ///< gas eos gamma.
-		 const double, ///< Artificial Viscosity Parameter etav.
-		 const int  ///< Number of tracer variables.
-		 ); ///< Constructor.
+  FV_solver_base(
+      const int, ///< number of variables in state vector.
+      const int, ///< number of space dimensions in grid.
+      const double, ///< CFL number
+      const double, ///< gas eos gamma.
+      const double, ///< Artificial Viscosity Parameter etav.
+      const int  ///< Number of tracer variables.
+      ); ///< Constructor.
 
   ~FV_solver_base(); ///< Destructor.
 
   /// \brief Calculates GLM wave-speed -- only used by GLM-MHD equations. 
   virtual void GotTimestep(
-      const double ///< Current timestep value.
+      const double, ///< Current timestep value.
+      const double ///< grid cell size dx.
       ) {return;}
 
   /// \brief sets current timestep value in the solver class. 
@@ -149,6 +150,7 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       pion_flt *,      ///< State vector at interface.
       const int, 
       ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double,  ///< cell-size dx (for LF method)
       const double    ///< Gas constant gamma.
       ) =0;
 
@@ -230,7 +232,6 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
  protected:
   const int FV_gndim;  ///< number of spatial directions in grid.
   const double FV_cfl;  ///< Courant-Friedrichs-Levy parameter (<1 for stability).
-  double FV_dx;      ///< Grid spacing delta-x
   double FV_dt;      ///< Timestep
   /// coefficient of (artificial) viscosity for velocity field.
   const double FV_etav;
@@ -254,6 +255,7 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       const pion_flt *, ///< Left  Primitive var. state vector.
       const pion_flt *, ///< Right Primitive var. state vector.
       pion_flt *,    ///< Resulting Flux vector.
+      const double, ///< cell size dx
       const double  ///< gamma
       );
 

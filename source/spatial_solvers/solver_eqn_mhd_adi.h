@@ -52,7 +52,6 @@ class FV_solver_mhd_ideal_adi
         const int, ///< number of variables in state vector.
         const int, ///< number of space dimensions in grid.
         const double, ///< CFL number
-        const double, ///< dx, cell size.
         const double, ///< gas eos gamma.
         pion_flt *,     ///< State vector of mean values for simulation.
         const double, ///< Artificial Viscosity Parameter etav.
@@ -70,6 +69,7 @@ class FV_solver_mhd_ideal_adi
       pion_flt *,      ///< State vector at interface.
       const int, 
       ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
+      const double,  ///< cell-size dx (for LF method)
       const double    ///< Gas constant gamma.
       );
   
@@ -211,7 +211,6 @@ class FV_solver_mhd_mixedGLM_adi
         const int, ///< number of variables in state vector.
         const int, ///< number of space dimensions in grid.
         const double, ///< CFL number
-        const double, ///< dx, cell size.
         const double, ///< gas eos gamma.
         pion_flt *,     ///< State vector of mean values for simulation.
         const double, ///< Artificial Viscosity Parameter etav.
@@ -265,7 +264,8 @@ class FV_solver_mhd_mixedGLM_adi
   /// This sets the values of GLM_chyp and GLM_cr based on the timestep.
   ///
   virtual void GotTimestep(
-      const double  ///< timestep dt.
+      const double,  ///< timestep dt.
+      const double ///< grid cell size dx.
       );
 
   ///
@@ -294,6 +294,7 @@ class FV_solver_mhd_mixedGLM_adi
         pion_flt *,      ///< State vector at interface.
         const int,
         ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
+      const double dx,  ///< cell-size dx (for LF method)
         const double    ///< Gas constant gamma.
         );
 };
@@ -316,7 +317,6 @@ class cyl_FV_solver_mhd_ideal_adi
         const int, ///< number of variables in state vector.
         const int, ///< number of space dimensions in grid.
         const double, ///< CFL number
-        const double, ///< dx, cell size.
         const double, ///< gas eos gamma.
         pion_flt *,     ///< State vector of mean values for simulation.
         const double, ///< Artificial Viscosity Parameter etav.
@@ -353,7 +353,6 @@ class cyl_FV_solver_mhd_mixedGLM_adi
         const int, ///< number of variables in state vector.
         const int, ///< number of space dimensions in grid.
         const double, ///< CFL number
-        const double, ///< dx, cell size.
         const double, ///< gas eos gamma.
         pion_flt *,     ///< State vector of mean values for simulation.
         const double, ///< Artificial Viscosity Parameter etav.

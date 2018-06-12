@@ -159,17 +159,18 @@ extern struct stellarwind_list SWP;
 /// Grid data for each level of the nested grid.
 ///
 struct level {
+  class GridBaseClass *grid;   ///< grid at this level
+  class GridBaseClass *parent; ///< pointer to parent grid.
+  class GridBaseClass *child;  ///< pointer to child grid.
   int NG[MAX_DIM];        ///< Number of 'real' grid zones in each direction (Total for level).
   long int Ncell;         ///< Total number of 'real' grid zones within the domain (Total for level).
+  long int step;          ///< number of steps taken on this level.
   double Range[MAX_DIM];  ///< Size of domain in x,y,z-direction on this level
   double Xmin[MAX_DIM];   ///< Min value of x,y,z in domain on this level
   double Xmax[MAX_DIM];   ///< Max value of x,y,z in domain on this level
   double dx;              ///< Linear side length of grid cells on this level
   double simtime;         ///< simulation time at this level.
   double dt;              ///< current timestep at this level.
-  class GridBaseClass *grid;   ///< grid at this level
-  class GridBaseClass *parent; ///< pointer to parent grid.
-  class GridBaseClass *child;  ///< pointer to child grid.
 };
 // *******************************************************************
 

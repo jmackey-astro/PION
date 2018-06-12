@@ -68,7 +68,8 @@
 /// 
 /// Simulation 
 ///
-class sim_control : virtual public time_integrator
+class sim_control :
+  virtual public time_integrator
 {
   public:
   sim_control();  ///< Simple constructor, initialises value.

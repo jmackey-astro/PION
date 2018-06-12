@@ -122,15 +122,23 @@ void setup_nested_grid::setup_nested_grid_levels(
     }
     SimPM.levels[i].simtime = SimPM.simtime;
     SimPM.levels[i].dt = 0.0;
+  }
 
+  for (int i=SimPM.grid_nlevels-1;i>=0; i--) {
+    if (i==SimPM.grid_nlevels-1)
+      SimPM.levels[i].step = SimPM.timestep;
+    else
+      SimPM.levels[i].step = SimPM.levels[i+1].step/2;
     
     ostringstream temp; temp<<i;
-    string lv = "level data"+temp.str();
+    string lv = "level "+temp.str();
     rep.printVec(lv,SimPM.levels[i].Range,SimPM.ndim);
     rep.printVec(lv,SimPM.levels[i].Xmin,SimPM.ndim);
     rep.printVec(lv,SimPM.levels[i].Xmax,SimPM.ndim);
-    cout <<"dx="<<SimPM.levels[i].dx<<"\n";
+    cout <<"dx="<<SimPM.levels[i].dx;
+    cout <<", step="<<SimPM.levels[i].step<<"\n";
   }
+
   return;
 }
 
@@ -161,7 +169,7 @@ int setup_nested_grid::setup_grid(
   //
   // Nbc is the depth of the boundary layer around each grid.
   //
-  if      (SimPM.spOOA==OA2) SimPM.Nbc = 2;
+  if      (SimPM.spOOA==OA2) SimPM.Nbc = 3;
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 1;
   else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   

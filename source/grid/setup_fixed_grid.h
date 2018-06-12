@@ -21,8 +21,8 @@
 #include "grid/uniform_grid.h"
 #include "decomposition/MCMD_control.h"
 
-#define TIMESTEP_FULL 1
-#define TIMESTEP_FIRST_PART 2
+#define TIMESTEP_FULL 2
+#define TIMESTEP_FIRST_PART 1
 
 ///
 /// enum for the types of boundary condition.

@@ -84,6 +84,7 @@ int calc_timestep::calculate_timestep(
 #ifdef TESTING
   if (t_mp<t_dyn)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
+  cout <<"t_dyn = "<<t_dyn<<"  and t_mp = "<<t_mp<<"\n";
 #endif
   par.dt = min(t_dyn,t_mp);
 
@@ -111,7 +112,7 @@ int calc_timestep::calculate_timestep(
   // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
   // an artificially larger speed associated with a shortened timestep.
   //
-  sp_solver->GotTimestep(t_dyn);
+  sp_solver->GotTimestep(t_dyn,grid->DX());
 
   //
   // Check that the timestep doesn't increase too much between steps, and that it 
