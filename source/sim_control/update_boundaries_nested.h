@@ -28,7 +28,9 @@
 // ##################################################################
 
 
-class update_boundaries_nested : virtual public setup_nested_grid, virtual public update_boundaries
+class update_boundaries_nested :
+  virtual public setup_nested_grid,
+  virtual public update_boundaries
 {
   public:
   update_boundaries_nested();
@@ -77,8 +79,7 @@ class update_boundaries_nested : virtual public setup_nested_grid, virtual publi
       class SimParams &,      ///< pointer to simulation parameters
       const int, ///< level of grid in nested grid struct.
       boundary_data *, ///< pointer to boudary struct
-      const int,  ///< current fractional step being taken.
-      const int   ///< full step.
+      const int  ///< current step for fine grid (odd or even).
       );
 
 };

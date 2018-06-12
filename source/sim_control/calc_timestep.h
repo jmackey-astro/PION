@@ -34,7 +34,8 @@
 /// It inherits from setup_fixed_grid, and is inherited by
 /// sim_control.
 ///
-class calc_timestep : virtual public setup_fixed_grid
+class calc_timestep :
+  virtual public setup_fixed_grid
 {
   public:
 

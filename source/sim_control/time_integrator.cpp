@@ -92,8 +92,16 @@ int time_integrator::advance_time(
 
   else if (SimPM.tmOOA==OA2 && SimPM.spOOA==OA2) {
     //cout <<"Second order update\n";
-    err += first_order_update( 0.5*SimPM.dt, SimPM.tmOOA, grid);
-    err += second_order_update(SimPM.dt,     SimPM.tmOOA, grid);
+    err += first_order_update( 0.5*SimPM.dt, OA2, grid);
+    if (err)
+      rep.error("1st order time-update returned error",err);
+    // Update boundary data.
+    err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,   OA1, OA2);
+    err += TimeUpdateExternalBCs(SimPM, grid, SimPM.simtime,   OA1, OA2);
+    if (err) 
+      rep.error("second_order_update: error from bounday update",err);
+
+    err += second_order_update(SimPM.dt,     OA2, grid);
     if (err)
       rep.error("Second order time-update returned error",err);
   }
@@ -131,7 +139,6 @@ int time_integrator::first_order_update(
   int err=0;
   //
   // Set dt for equations class
-  // MULTITHREADING RISK!
   //
   spatial_solver->Setdt(dt);
 
@@ -162,14 +169,6 @@ int time_integrator::first_order_update(
   err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,ooa, grid);
   if (err) 
     rep.error("first_order_update: error from state-vec update",err);
-
-  //
-  // Update boundary data.
-  //
-  err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,OA1,ooa);
-  err += TimeUpdateExternalBCs(SimPM, grid, SimPM.simtime,OA1,ooa);
-  if (err) 
-    rep.error("first_order_update: error from bounday update",err);
 
   return 0;
 }
@@ -221,14 +220,6 @@ int time_integrator::second_order_update(
   err += grid_update_state_vector(  dt, TIMESTEP_FULL, ooa, grid);
   if (err) 
     rep.error("second_order_update: error from state-vec update",err);
-
-  //
-  // Update boundary data.
-  //
-  err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,   OA2, ooa);
-  err += TimeUpdateExternalBCs(SimPM, grid, SimPM.simtime,   OA2, ooa);
-  if (err) 
-    rep.error("second_order_update: error from bounday update",err);
 
   return 0;
 }
@@ -652,7 +643,6 @@ int time_integrator::dynamics_dU_column
   do {
 #ifdef TESTING
     dp.c = cpt;
-    //    if (SimPM.timestep==2959 && dp.c->id==93) commandline.console("-ve density> ");
     cout<<"First Cell:"; CI.print_cell(cpt);
     cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
@@ -803,7 +793,8 @@ int time_integrator::grid_update_state_vector(
 
 #ifdef TESTING
     if (err) {
-      cout <<"______ Error in Cell-advance-time: "; CI.print_cell(c);
+      cout <<"______ Error in Cell-advance-time: ";
+      CI.print_cell(c);
       err=0;
     }
 #endif // TESTING

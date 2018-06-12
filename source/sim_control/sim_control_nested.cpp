@@ -20,7 +20,7 @@
 #include "tools/timer.h"
 #include "constants.h"
 
-#include "nested_grid/sim_control_nested.h"
+#include "sim_control/sim_control_nested.h"
 
 //#include "microphysics/microphysics_base.h"
 //#include "raytracing/raytracer_SC.h"
@@ -105,14 +105,27 @@ int sim_control_nestedgrid::Time_Int(
     calculate_blastwave_radius(grid);
 #endif
     //
-    // Update RT sources.
+    // ----------------------------------------------------------------
+    // Update RT sources and boundaries.
     //
     for (int l=0; l<SimPM.grid_nlevels; l++) {
       err = update_evolving_RT_sources(SimPM,grid[l]->RT);
-      rep.errorTest("(TIME_INT::update_evolving_RT_sources()) error",0,err);
-    }
+      rep.errorTest("nested TIME_INT::update_evolving_RT_sources error",0,err);
 
-    //clk.start_timer("advance_time");
+      //cout <<"updating external boundaries for level "<<l<<"\n";
+      err += TimeUpdateExternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    }
+    rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
+    // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+      //cout <<"updating internal boundaries for level "<<l<<"\n";
+      err += TimeUpdateInternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    }
+    rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
+    // ----------------------------------------------------------------
+
+
     //
     // Get timestep on each level
     //
@@ -120,29 +133,35 @@ int sim_control_nestedgrid::Time_Int(
     double mindt = 1.0e99;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
       spatial_solver->set_dx(SimPM.levels[l].dx);
-      err += calculate_timestep(SimPM, grid[0],spatial_solver);
+      //cout <<"dx="<<SimPM.levels[l].dx<<"\n";
+      err += calculate_timestep(SimPM, grid[l],spatial_solver);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       mindt = std::min(mindt, SimPM.dt/scale);
-      SimPM.levels[l].dt = SimPM.dt
+      //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
+      SimPM.levels[l].dt = SimPM.dt;
       scale *= 2;
     }
     // make sure all levels use the same step (scaled by factors of 2).
     scale = 1;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-      SimPM.levels[l].dt = std::min(mindt*scale, SimPM.levels[l].dt);
+      //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
+      SimPM.levels[l].dt = mindt*scale;
       scale *= 2;
+      //cout <<", new dt="<<SimPM.levels[l].dt<<"\n";
     }
 
-
-
-
-    err+= advance_time(grid,RT);
-    //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
-    rep.errorTest("TIME_INT::advance_time()",0,err);
+    //clk.start_timer("advance_time");
+    //
+    // Use a recursive algorithm to update the coarsest level.  This
+    // function also updates the next level twice, by calling itself
+    // for the finer level, and so on.
+    //
+    advance_time(0);
+    SimPM.simtime = SimPM.levels[0].simtime;
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
-    cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
+    cout <<"dt="<<SimPM.levels[0].dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
     tsf=clk.time_so_far("Time_Int");
     cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
 #endif
@@ -173,6 +192,8 @@ int sim_control_nestedgrid::Time_Int(
 
 // ##################################################################
 // ##################################################################
+
+
 
 
 
@@ -266,18 +287,91 @@ void sim_control_nestedgrid::calculate_blastwave_radius(
 
 
 
-int sim_control_nestedgrid::advance_time(
-      vector<class GridBaseClass *> &g,  ///< grid pointer
-      vector<class RayTracingBase *> &r  ///< raytracer for this grid.
+double sim_control_nestedgrid::advance_time(
+      const int l       ///< level to advance.
       )
 {
-  return 0;
+#ifdef TESTING
+  cout <<"advance_time, level="<<l<<", starting.\n";
+#endif
+  int err=0;
+  double dt2_fine=0.0; // timestep for two finer level steps.
+  double dt2_this=0.0; // two timesteps for this level.
+  class GridBaseClass *grid = SimPM.levels[l].grid;
+
+  // take the first finer grid step, if there is a finer grid.
+  if (l<SimPM.grid_nlevels-1) {
+    dt2_fine = advance_time(l+1);
+    
+    // timestep for this level is equal to two steps of finer level,
+    // where we take the sum of the fine step just taken and the next
+    // step (not yet taken).
+    SimPM.levels[l].dt = dt2_fine;
+  }
+  dt2_this = SimPM.levels[l].dt;
+
+  // now calculate dU, the change in conserved variables on this grid,
+  // for this step.
+  spatial_solver->set_dx(SimPM.levels[l].dx);
+  spatial_solver->Setdt(SimPM.levels[l].dt);
+  // May need to do raytracing
+  if (!FVI_need_column_densities_4dt && grid->RT) {
+    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
+  }
+  err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt,OA1, grid);
+#ifdef THERMAL_CONDUCTION
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,OA1, grid);
+#endif // THERMAL_CONDUCTION
+  rep.errorTest("scn::advance_time: calc_x_dU",0,err);
+
+  // take the second finer grid step, if there is a finer grid.
+  if (l<SimPM.grid_nlevels-1) {
+    dt2_fine = advance_time(l+1);
+  }
+
+  //
+  // Now update Ph[i] to new values (and P[i] also if full step).
+  //
+  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
+  rep.errorTest("scn::advance_time: state-vec update",0,err);  
+
+  // increment time and timestep for this level
+  SimPM.levels[l].simtime += SimPM.levels[l].dt;
+  SimPM.levels[l].step ++;
+  if (l==SimPM.grid_nlevels-1) {
+    SimPM.timestep ++;
+  }
+
+  //
+  // update internal and external boundaries.
+  //
+  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
+
+  // Now calculate next timestep: function stores dt in SimPM.dt
+  err += calculate_timestep(SimPM, grid,spatial_solver);
+  rep.errorTest("scn::advance_time: calc_timestep",0,err);
+
+  // make sure step is not more than half of the coarser grid step.
+  if (l>0) {
+    SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
+  }
+  else {
+    SimPM.levels[l].dt = SimPM.dt;
+  }
+
+#ifdef TESTING
+  cout <<"advance_time, level="<<l<<", returning. t=";
+  cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
+#endif
+  return dt2_this + SimPM.levels[l].dt;
 }
 
 
 // ##################################################################
 // ##################################################################
-
 
 
 

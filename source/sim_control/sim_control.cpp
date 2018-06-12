@@ -171,10 +171,6 @@
 using namespace std;
 
 
-#define TIMESTEP_FULL 1
-#define TIMESTEP_FIRST_PART 2
-
-
 // ##################################################################
 // ##################################################################
 
@@ -235,6 +231,15 @@ int sim_control::Time_Int(
 
     //clk.start_timer("advance_time");
     // step forward by dt.
+
+    //
+    // Update boundary data.
+    //
+    err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateExternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
+    if (err) 
+      rep.error("Boundary update at start of full step",err);
+
     err += calculate_timestep(SimPM, grid[0],spatial_solver);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
     err+= advance_time(grid[0]);

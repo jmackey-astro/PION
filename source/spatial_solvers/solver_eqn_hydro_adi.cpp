@@ -49,20 +49,19 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
         const int nv, ///< number of variables in state vector.
         const int nd, ///< number of space dimensions in grid.
         const double cflno,   ///< CFL number
-        const double cellsize,    ///< dx, cell size.
         const double gam,     ///< gas eos gamma.
         pion_flt *state,     ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr         ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_Euler(nv),
     riemann_Euler(nv,state,gam),
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
-    VectorOps_Cart(nd,cellsize)
+    VectorOps_Cart(nd)
 {
 #ifdef TESTING
   cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor.\n";
@@ -99,6 +98,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
       pion_flt *pstar,  ///< State vector at interface.
       const int solve_flag,
       ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double dx,  ///< cell-size dx (for LF method)
       const double g  ///< Gas constant gamma.
       )
 {
@@ -141,7 +141,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     //
     // Lax-Friedrichs Method, so just get the flux.
     //
-    err += get_LaxFriedrichs_flux(Pl,Pr,flux,eq_gamma);
+    err += get_LaxFriedrichs_flux(Pl,Pr,flux,dx,eq_gamma);
     for (int v=0;v<eq_nvar;v++) pstar[v] = 0.5*(Pl[v]+Pr[v]);
  }
 
@@ -403,16 +403,14 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 double FV_solver_Hydro_Euler::CellTimeStep(
       const cell *c, ///< pointer to cell
       const double, ///< gas EOS gamma.
-      const double  ///< Cell size dx.
+      const double dx ///< Cell size dx.
       )
 {
   /// \section Algorithm
   /// First Get the maximum fluid velocity in each of the three directions.
   /// Add the sound speed to the abs. value of this to get the max signal 
   /// propagation speed.  Then dt=dx/max.vel.
-  /// Next test if the pressure gradient can induce a larger speed in the
-  /// timestep, and if it can, divide the timestep by the appropriate factor.
-  /// Finally multiply by the CFl no. and return.
+  /// Then multiply by the CFl no. and return.
   ///
 
   //
@@ -426,7 +424,7 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   // Add the sound speed to this, and it is the max wavespeed.
   //
   temp += chydro(c->P,eq_gamma);
-  FV_dt = FV_dx/temp;
+  FV_dt = dx/temp;
   //
   // Now scale the max. allowed timestep by the CFL number we are using (<1).
   //
@@ -450,21 +448,20 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
         const int nv, ///< number of variables in state vector.
         const int nd, ///< number of space dimensions in grid.
         const double cflno, ///< CFL number
-        const double cellsize, ///< dx, cell size.
         const double gam,     ///< gas eos gamma.
         pion_flt *state, ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr         ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_Euler(nv), riemann_Euler(nv,state,gam),
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
-    VectorOps_Cart(nd,cellsize),
-    FV_solver_Hydro_Euler(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
-    VectorOps_Cyl(nd,cellsize)
+    VectorOps_Cart(nd),
+    FV_solver_Hydro_Euler(nv,nd,cflno,gam,state,avcoeff,ntr),
+    VectorOps_Cyl(nd)
 {
   if (nd!=2) rep.error("Cylindrical coordinates only implemented for \
                         2d axial symmetry so far.  Sort it out!",nd);
@@ -535,22 +532,21 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
         const int nv, ///< number of variables in state vector.
         const int nd, ///< number of space dimensions in grid.
         const double cflno, ///< CFL number
-        const double cellsize, ///< dx, cell size.
         const double gam,     ///< gas eos gamma.
         pion_flt *state, ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr         ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_Euler(nv), riemann_Euler(nv,state,gam),
     Riemann_FVS_Euler(nv,gam),
     Riemann_Roe_Hydro_PV(nv,gam),
     Riemann_Roe_Hydro_CV(nv,gam),
-    VectorOps_Cart(nd,cellsize),
-    FV_solver_Hydro_Euler(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
-    VectorOps_Cyl(nd,cellsize),
-    VectorOps_Sph(nd,cellsize)
+    VectorOps_Cart(nd),
+    FV_solver_Hydro_Euler(nv,nd,cflno,gam,state,avcoeff,ntr),
+    VectorOps_Cyl(nd),
+    VectorOps_Sph(nd)
 {
   if (nd!=1) rep.error("Spherical coordinates only implemented for 1D \
                         spherical symmetry so far.  Sort it out!",nd);
@@ -627,11 +623,7 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(
   // cell.
   //
   if (d==Rsph) {
-    //cout <<"FVdx="<<FV_dx;
     double rc = CI.get_dpos(c,Rsph);
-    // double temp = GRAV_NORM*(pow(rc+0.5*FV_dx,3.0-GRAV_ALPHA) -
-    // 			     pow(rc-0.5*FV_dx,3.0-GRAV_ALPHA))
-    //   /( (3.0-GRAV_ALPHA)*rc*FV_dx*R3(c) );
     double temp = c->Ph[eqRO]*GRAV_NORM/(rc*R3(c)); // GM/r^2
     if (rc<0.0) temp *= -1.0; // so that we always point towards the origin! 
     //cout <<"  r="<<rc<<"  GM/r^2="<<temp;

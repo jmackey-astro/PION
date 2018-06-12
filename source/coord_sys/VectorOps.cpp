@@ -110,37 +110,6 @@ int BaseVectorOps::CrossProduct(
 /// *************  CARTESIAN COORDINATES X,Y,Z **********************
 /// *****************************************************************
 
-// ##################################################################
-// ##################################################################
-
-
-VectorOps_Cart::VectorOps_Cart(
-          int n,
-          double del
-          )
-  : VOnd(n), VOdx(del)
-{
-#ifdef TESTING
-  cout <<"Setting up VectorOpsCart with ndim="<<VOnd;
-  cout <<" and dx="<<VOdx<<"\n";
-#endif
-  if (VOnd>3) rep.error("Can't do more than 3D simulations!",VOnd);
-  //
-  // Surface area of interface: It is assumed extra dimensions are
-  // per unit length.
-  //
-  if (VOnd==1) VOdA = 1.; 
-  else if (VOnd==2) VOdA = VOdx;
-  else VOdA = VOdx*VOdx;
-  //
-  // Volume of cell.
-  //
-  if (VOnd==1) VOdV = VOdx;
-  else if (VOnd==2) VOdV = VOdx*VOdx;
-  else  VOdV = VOdx*VOdx*VOdx;
-  have_set_dx=true;
-}
-
 
 // ##################################################################
 // ##################################################################
@@ -540,26 +509,6 @@ int VectorOps_Cart::DivStateVectorComponent(
 ///******************************************************************
 ///************  CYLINDRICAL COORDINATES Z,R,THETA ******************
 ///******************************************************************
-
-// ##################################################################
-// ##################################################################
-
-VectorOps_Cyl::VectorOps_Cyl(int n, double del)
-  : VectorOps_Cart(n,del), VOdR(del)
-{
-#ifdef TESTING
-  cout <<"Setting up VectorOps_Cyl with ndim="<<VOnd;
-  cout <<" and dz=dR="<<VOdz<<"\n";
-#endif
-  if (VOnd>2) rep.error("VectorOps_Cyl NOT TESTED IN 3D YET",VOnd);
-
-  // Volume assumes 2D, per unit azimuthal angle.
-  VOdV = 0.5*VOdz*VOdR;
-  VOdA = VOdz*VOdR;  
-//  VOdV = VOdz*VOdR;
-//  VOdA = VOdz*VOdR;  
-}
-
 
 // ##################################################################
 // ##################################################################

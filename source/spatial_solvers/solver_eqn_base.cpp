@@ -70,13 +70,12 @@ FV_solver_base::FV_solver_base(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
       const double cflno,   ///< CFL number
-      const double delx,    ///< dx, cell size.
       const double gam,     ///< gas eos gamma.
       const double avcoeff, ///< Artificial Viscosity Parameter etav.
       const int ntr         ///< Number of tracer variables.
       )
   : eqns_base(nv),
-    FV_gndim(nd), FV_cfl(cflno), FV_dx(delx),
+    FV_gndim(nd), FV_cfl(cflno),
     FV_etav(avcoeff), FV_etaB(avcoeff), FV_ntr(ntr)
 {
   eq_gamma = gam;
@@ -108,6 +107,7 @@ int FV_solver_base::get_LaxFriedrichs_flux(
       const pion_flt *l,
       const pion_flt *r,
       pion_flt *f,
+      const double dx, ///< cell size dx
       const double
       )
 {
@@ -119,7 +119,7 @@ int FV_solver_base::get_LaxFriedrichs_flux(
   UtoFlux(u1, f1, eq_gamma);  UtoFlux(u2, f2, eq_gamma);
   // Then get inter-cell flux from this.
   for (int v=0;v<eq_nvar;v++)
-    f[v] = 0.5*(f1[v]+f2[v] +FV_dx/FV_dt*(u1[v]-u2[v])/FV_gndim);
+    f[v] = 0.5*(f1[v]+f2[v] +dx/FV_dt*(u1[v]-u2[v])/FV_gndim);
 
   //
   // Calculate tracer flux based on whether flow is to left or right.
@@ -186,7 +186,7 @@ int FV_solver_base::InterCellFlux(
   // Get the flux from the flux solver:
   // I CAN GET RID OF CL,CR,G FROM THIS.
   //
-  int err = inviscid_flux(Cl,Cr,lp, rp, f, pstar, solve_flag, g);
+  int err = inviscid_flux(Cl,Cr,lp, rp, f, pstar, solve_flag, dx, g);
 
   //
   // Post-calculate anthing needed for the viscosity (calls the FKJ98

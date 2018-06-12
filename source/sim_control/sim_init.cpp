@@ -738,17 +738,17 @@ int sim_init::set_equations()
     switch (SimPM.eqntype) {
     case EQEUL:
       cout <<"set_equations() Using Euler Equations.\n";
-      spatial_solver = new class FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      spatial_solver = new class FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
     case EQMHD:
       cout <<"set_equations() Using Ideal MHD Equations.\n";
-      spatial_solver = new class FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      spatial_solver = new class FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQMHD);
       break;
     case EQGLM:
       cout <<"set_equations() Using GLM MHD Equations.\n";
-      spatial_solver = new class FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      spatial_solver = new class FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQGLM);
       break;
     case EQFCD:
@@ -766,26 +766,26 @@ int sim_init::set_equations()
     switch (SimPM.eqntype) {
     case EQEUL:
       cout <<"set_equations() Using Euler Equations.\n";
-      spatial_solver = new class cyl_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      spatial_solver = new class cyl_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
 #ifdef INCLUDE_EINT_ADI_HYDRO
     case EQEUL_EINT:
       cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
       spatial_solver = new class cyl_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
-            SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma,
+            SimPM.ndim, SimPM.CFL, SimPM.gamma,
             SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
       break;      
 #endif // if INCLUDE_EINT_ADI_HYDRO
     case EQMHD:
       cout <<"set_equations() Using Ideal MHD Equations.\n";
-      spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQMHD);
       break;
     case EQGLM:
       cout <<"set_equations() Using GLM MHD Equations.\n";
-      spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
+      spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQGLM);
       break;
     default:
@@ -798,8 +798,9 @@ int sim_init::set_equations()
     switch (SimPM.eqntype) {
     case EQEUL:
       cout <<"set_equations() Using Euler Equations.\n";
-      spatial_solver = new class sph_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL,
-            SimPM.dx, SimPM.gamma, SimPM.RefVec,
+      spatial_solver = new class sph_FV_solver_Hydro_Euler(
+            SimPM.nvar, SimPM.ndim, SimPM.CFL,
+            SimPM.gamma, SimPM.RefVec,
             SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
       break;
@@ -807,7 +808,7 @@ int sim_init::set_equations()
     case EQEUL_EINT:
       cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
       spatial_solver = new class sph_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
-            SimPM.ndim, SimPM.CFL, SimPM.dx, SimPM.gamma,
+            SimPM.ndim, SimPM.CFL, SimPM.gamma,
             SimPM.RefVec, SimPM.etav, SimPM.ntracer);
       if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
       break;      

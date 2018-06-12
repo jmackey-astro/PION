@@ -34,15 +34,7 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
 {
  public:
   ///
-  /// constructor, sets number of spatial dimensions of grid.
-  ///
-  VectorOps_Sph(
-        int,   ///< Number of spatial dimensions of grid
-        double ///< Length of cell in z and R directions.
-        );
-
-  ///
-  /// Alternate constructor which doesn't take delta-x as a parameter.
+  /// Constructor, sets number of spatial dimensions.
   ///
   VectorOps_Sph(
         const int ///< number of spatial dimensions of grid

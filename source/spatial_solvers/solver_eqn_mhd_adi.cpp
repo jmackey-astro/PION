@@ -42,19 +42,18 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
       const double cflno, ///< CFL number
-      const double cellsize, ///< dx, cell size.
       const double gam, ///< gas eos gamma.
       pion_flt *state, ///< State vector of mean values for simulation.
       const double avcoeff, ///< Artificial Viscosity Parameter etav.
       const int ntr ///< Number of tracer variables.
       )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam),
     Riemann_Roe_MHD_CV(nv,gam),
     HLLD_MHD(nv,gam),
-    VectorOps_Cart(nd,cellsize)
+    VectorOps_Cart(nd)
 {
 #ifdef TESTING
   cout <<"::FV_solver_mhd_ideal_adi() constructor.\n";
@@ -100,6 +99,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       pion_flt *flux,///< Resultant Flux vector.
       pion_flt *pstar, ///< State vector at interface.
       const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
+      const double dx,  ///< cell-size dx (for LF method)
       const double g        ///< Gas constant gamma.
       )
 {
@@ -132,7 +132,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     //
     // Lax-Friedrichs Method, so just get the flux
     //
-    err += get_LaxFriedrichs_flux(Pl,Pr,flux,eq_gamma);
+    err += get_LaxFriedrichs_flux(Pl,Pr,flux,dx,eq_gamma);
     for (int v=0;v<eq_nvar;v++) pstar[v] = 0.5*(Pl[v]+Pr[v]);
   }
 
@@ -428,7 +428,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
 double FV_solver_mhd_ideal_adi::CellTimeStep(
         const cell *c, ///< pointer to cell
         const double, ///< gas EOS gamma.
-        const double  ///< Cell size dx.
+        const double dx ///< Cell size dx.
         )
 {
 #ifdef FUNCTION_ID
@@ -470,26 +470,8 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
     }
     else temp += cfast(c->P, eq_gamma);
   }
-  FV_dt = FV_dx/temp;
+  FV_dt = dx/temp;
 
-  //
-  // Check the gradient of pressure with neighbouring cells, since this can 
-  // dramatically shorten the timestep.  (CAN'T REMEMBER WHY!!!)
-  //
-  //if (c->isgd) {
-  //  int pg = static_cast<int>(eqPG);
-  //  double grad = max_grad_abs(c,0,pg, grid)/c->P[RO];
-  //  if( (temp = grad*FV_dt/temp) >1.) FV_dt /= temp;
-  //}
-  //else if (grid->NextPt(c,XP)) {
-  //  double grad = fabs(c->P[PG]-grid->NextPt(c,XP)->P[PG])/FV_dx/c->P[RO];
-  //  if( (temp = grad*FV_dt/temp) >1.) {
-  //    FV_dt /= temp;
-  //  }
-  //}
-  //else rep.error("No neighbour to gradient test",c);    
-
-  
   //
   // Now scale the max. allowed timestep by the CFL number we are using (<1).
   //
@@ -521,20 +503,19 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
       const double cflno,   ///< CFL number
-      const double cellsize,    ///< dx, cell size.
       const double gam,     ///< gas eos gamma.
       pion_flt *state,     ///< State vector of mean values for simulation.
       const double avcoeff, ///< Artificial Viscosity Parameter etav.
       const int ntr         ///< Number of tracer variables.
       )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam),
     Riemann_Roe_MHD_CV(nv,gam),
     HLLD_MHD(nv,gam),
-    VectorOps_Cart(nd,cellsize),
-    FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
+    VectorOps_Cart(nd),
+    FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
     eqns_mhd_mixedGLM(nv)
 {
   return;
@@ -561,6 +542,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
       pion_flt *flux, ///< Resultant Flux state vector.
       pion_flt *pstar, ///< State vector at interface.
       const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
+      const double dx,  ///< cell-size dx (for LF method)
       const double g ///< Gas constant gamma.
       )
 {
@@ -625,7 +607,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   //
   err=FV_solver_mhd_ideal_adi::inviscid_flux(Cl,Cr,left,right,
 					       flux,pstar,
-					       solve_flag,eq_gamma);
+					       solve_flag,dx,eq_gamma);
 
 
   //
@@ -729,7 +711,8 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
 // ##################################################################
 
 void FV_solver_mhd_mixedGLM_adi::GotTimestep(
-        const double delt ///< timestep dt.
+        const double delt, ///< timestep dt.
+        const double delx ///< cell size dx.
 	)
 {
 #ifdef FUNCTION_ID
@@ -737,7 +720,7 @@ void FV_solver_mhd_mixedGLM_adi::GotTimestep(
 #endif //FUNCTION_ID
 
   //     cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep() setting wave speeds.\n";
-  GLMsetPsiSpeed(FV_cfl,FV_dx,delt);
+  GLMsetPsiSpeed(FV_cfl,delx,delt);
 
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep ...returning.\n";
@@ -766,21 +749,20 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
       const double cflno, ///< CFL number
-      const double cellsize, ///< dx, cell size.
       const double gam, ///< gas eos gamma.
       pion_flt *state,   ///< State vector of mean values for simulation.
       const double avcoeff, ///< Artificial Viscosity Parameter etav.
       const int ntr    ///< Number of tracer variables.
       )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam),
     Riemann_Roe_MHD_CV(nv,gam),
     HLLD_MHD(nv,gam),
-    VectorOps_Cart(nd,cellsize),
-    FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
-    VectorOps_Cyl(nd,cellsize)
+    VectorOps_Cart(nd),
+    FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
+    VectorOps_Cyl(nd)
 {
 #ifdef FUNCTION_ID
   cout <<"::cyl_FV_solver_mhd_ideal_adi ...starting.\n";
@@ -869,23 +851,22 @@ cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
         const int nv, ///< number of variables in state vector.
         const int nd, ///< number of space dimensions in grid.
         const double cflno, ///< CFL number
-        const double cellsize, ///< dx, cell size.
         const double gam, ///< gas eos gamma.
         pion_flt *state,   ///< State vector of mean values for simulation.
         const double avcoeff, ///< Artificial Viscosity Parameter etav.
         const int ntr    ///< Number of tracer variables.
         )
   : eqns_base(nv),
-    FV_solver_base(nv,nd,cflno,cellsize,gam,avcoeff,ntr),
+    FV_solver_base(nv,nd,cflno,gam,avcoeff,ntr),
     eqns_mhd_ideal(nv),
     riemann_MHD(nv,state,gam), 
     Riemann_Roe_MHD_CV(nv,gam),
     HLLD_MHD(nv,gam),
-    VectorOps_Cart(nd,cellsize),
-    FV_solver_mhd_ideal_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
+    VectorOps_Cart(nd),
+    FV_solver_mhd_ideal_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
     eqns_mhd_mixedGLM(nv),
-    FV_solver_mhd_mixedGLM_adi(nv,nd,cflno,cellsize,gam,state,avcoeff,ntr),
-    VectorOps_Cyl(nd,cellsize)
+    FV_solver_mhd_mixedGLM_adi(nv,nd,cflno,gam,state,avcoeff,ntr),
+    VectorOps_Cyl(nd)
 {
 #ifdef FUNCTION_ID
   cout <<"::cyl_FV_solver_mhd_mixedGLM_adi ...starting.\n";

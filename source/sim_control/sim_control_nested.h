@@ -28,7 +28,10 @@
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control_nestedgrid : virtual public sim_control, virtual public time_integrator
+class sim_control_nestedgrid :
+  virtual public sim_control,
+  virtual public sim_init_nested
+
 {
   public:
   sim_control_nestedgrid();  ///< Simple constructor
@@ -50,9 +53,9 @@ class sim_control_nestedgrid : virtual public sim_control, virtual public time_i
   /// finalise the simulation, clean up, delete data.
   /// This function finished the simulation gracefully (hopefully!).
   ///
-  int Finalise(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-      );
+  ///int Finalise(
+  ///    vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+  ///    );
 
 
    //---------------------------------------
@@ -69,6 +72,16 @@ class sim_control_nestedgrid : virtual public sim_control, virtual public time_i
 #endif // BLAST_WAVE_CHECK
 
 
+  ///
+  /// Advance a grid by one time step for a given level in a nested grid.
+  /// This is a recursive function that calls itself on the next finer level
+  /// if it exists.  Currently only 1st order in space/time.
+  /// Returns the sum of delta-t for the timestep just completed, and the
+  /// step to come.
+  ///
+  virtual double advance_time(
+      const int ///< level in nested grid.
+      );
 
 
 }; // sim_control_nestedgrid
