@@ -339,13 +339,6 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
   // almost impenetrable.  AMRVAC uses linear/bilinear/trilinear
   // interpolation with renormalisation to conserve mass/P/E.
   //
-  // For now we just do contant data.  Will fix this eventually once
-  // the rest of the code is working.  It actually doesn't really
-  // matter for expanding nebulae because there is supersonic outflow
-  // but this needs to be improved for solving more general problems.
-  //
-  // piecewise-linear data can be done using slopes of primitive 
-  // variables in the cell, using bi/tri/linear interpolation
 
   // number of fine-grid cells for each coarse grid cell.
   int nfine = 1;
@@ -362,39 +355,160 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
   cell *c, *f;
   double U[par.nvar], P[par.nvar];
 
-  for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
-    f = (*f_iter);
-    c = f->npt;
-
-    // set slope along x-direction in parent cell.
-    // parent->SetSlope((*c)->npt,XX,G_nvar,sx,2,parent);
-    // get physical offset distance between cell and parent.
-    //dist = idifference_cell2cell(*c,(*c)->npt,XX)*CI.phys_per_int();
-    // interpolate linearly to cell position.
-    //for (int v=0;v<G_nvar;v++)
-    //  (*c)->Ph[v] = (*c)->npt->Ph[v] + sx[v]*dist;
-
-    // ----- constant data -----
-    if (step%2==0) {
-      // we are on the first of two steps at this level, so just
-      // update from coarse grid as normal.
+  //
+  // if on an odd-numbered step, then need to update the data on the
+  // coarse grid to half way through a coarse step.  Assume dU has
+  // been calculated for the coarse grid, but the state vector not
+  // updated, so we can convert U+0.5*dU into a new primitive
+  // state for the half step.
+  // NB: We overwrite Ph[] in the coarse cell, assuming it is not
+  // needed anymore on the coarse grid because dU[] is already
+  // calculated.
+  //
+  if (step%2 != 0) {
+    for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+      f = (*f_iter);
+      c = f->npt;
+      eqn->PtoU(c->P, U, par.gamma);
+      for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
+      eqn->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
+    }
+  }
+  
+  if (par.spOOA == OA1) {
+    for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+      f = (*f_iter);
+      c = f->npt;
+      // ----- constant data -----
       for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v];
       for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
       for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+      // ----- constant data -----
     }
-    else {
-      // We are on the second of two steps, so we need data from half
-      // way through the coarse grid step.  Assume dU has been
-      // calculated for the coarse grid, but the state vector not
-      // updated, so we can convert U+0.5*dU into a new primitive
-      // state for the half step.
-      eqn->PtoU(c->P, U, par.gamma);
-      for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
-      eqn->UtoP(U,f->Ph, par.EP.MinTemperature, par.gamma);
-      for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-    }
-    // ----- constant data -----
   }
+
+  else if (par.spOOA == OA2) {
+    //
+    // Each dimension is sufficiently different that we have an if/else
+    // loop for each dimension, and then do linear/bilinear/trilinear
+    // interpolation as needed.
+    //
+    if (par.ndim ==1) {
+      double sx[par.nvar]; // slope in x-dir
+      double dx = fine->DX(); // dx
+      //
+      // Do two fine cells at a time: they have the same parent.
+      // In 1D the geometry is very easy.
+      //
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        f = (*f_iter);
+        c = f->npt;
+        coarse->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0-0.25*dx*sx[v]);
+        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+        
+        f_iter++;
+        f = (*f_iter);
+        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0+0.25*dx*sx[v]);
+        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+
+        // Now need to check mass/momentum/energy conservation between
+        // coarse and fine levels!
+        rep.error("Check conservation 1D",9);
+      } // loop over fine cells
+    } // 1D
+
+    else if (par.ndim == 2) {
+      //
+      // Need to do bilinear interpolation.  Would ideally do 4
+      // cells at a time, but for now just do 2 (ordering in the
+      // list is not ideal).
+      //
+      double sx[par.nvar], sy[par.nvar]; // slope in x-dir
+      double dxo2 = 0.5*fine->DX(); // dx
+      double P00[par.nvar], P10[par.nvar], P01[par.nvar], P11[par.nvar];
+      int signx=0, signy=0;
+      //
+      // Do two fine cells at a time: they have the same parent.
+      // First get the values at the 4 corners of coarse-cell c.
+      // Then interpolate with bilinear interpolation to the fine-cell
+      // positions as 0.25*dx in each direction from the corners.
+      //
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        f = (*f_iter);
+        c = f->npt;
+        coarse->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        coarse->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        for (int v=0;v<par.nvar;v++) sx[v] *= dx02;
+        for (int v=0;v<par.nvar;v++) sy[v] *= dx02;
+        for (int v=0;v<par.nvar;v++) P00[v] = c->Ph[v] * (1.0-sx) * (1.0-sy);
+        for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] * (1.0+sx) * (1.0-sy);
+        for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] * (1.0-sx) * (1.0+sy);
+        for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] * (1.0+sx) * (1.0+sy);
+
+        if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
+          // 1/4,1/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
+        }
+        else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
+          // 3/4,1/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
+        }
+        else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
+          // 1/4,3/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
+        }
+        else {
+          // 3/4,3/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
+        }
+        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+        
+        // second cell in row, should also have c as parent if we always
+        // update the fine cells two by two.
+        f_iter++;
+        f = (*f_iter);
+        if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
+          // 1/4,1/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
+        }
+        else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
+          // 3/4,1/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
+        }
+        else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
+          // 1/4,3/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
+        }
+        else {
+          // 3/4,3/4
+          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                        (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
+        }
+        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+      } // loop over fine cells
+    } // 2D
+    else if (par.ndim == 3) {
+      //
+      // Need to do trilinear interpolation.  Would ideally do 8
+      // cells at a time, but for now just do 2 (ordering in the
+      // list is not ideal).
+      //
+      rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
+    } // 3D
+  } // 2nd-order accuracy
+
   return 0;
 }
 
