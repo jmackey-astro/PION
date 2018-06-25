@@ -82,6 +82,16 @@ class update_boundaries_nested :
       const int  ///< current step for fine grid (odd or even).
       );
 
+  virtual void bilinear_interp(
+      class SimParams &,      ///< pointer to simulation parameters
+      cell *,  ///< coarse level cell
+      cell *,  ///< fine level cell
+      const double *,  ///< prim. vec. at corner of coarse cell
+      const double *,  ///< prim. vec. at corner of coarse cell
+      const double *,  ///< prim. vec. at corner of coarse cell
+      const double *   ///< prim. vec. at corner of coarse cell
+      );
+
 };
 
 #endif // UPDATE_BOUNDARIES_NESTED_H

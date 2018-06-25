@@ -286,14 +286,15 @@ int sim_init_nested::initial_conserved_quantities(
   //  cout <<"initERG: "<<dp.initERG<<"\n";
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     spatial_solver->set_dx(SimPM.levels[l].dx);
+    double dx = SimPM.levels[l].dx;
     class cell *c=grid[l]->FirstPt();
     do {
       if (!c->isbd) {
          spatial_solver->PtoU(c->P,u,SimPM.gamma);
-         dp.initERG += u[ERG]*spatial_solver->CellVolume(c);
-         dp.initMMX += u[MMX]*spatial_solver->CellVolume(c);
-         dp.initMMY += u[MMY]*spatial_solver->CellVolume(c);
-         dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(c);
+         dp.initERG += u[ERG]*spatial_solver->CellVolume(c,dx);
+         dp.initMMX += u[MMX]*spatial_solver->CellVolume(c,dx);
+         dp.initMMY += u[MMY]*spatial_solver->CellVolume(c,dx);
+         dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(c,dx);
       }
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }

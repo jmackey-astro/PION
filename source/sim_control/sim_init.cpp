@@ -46,7 +46,6 @@ sim_init::sim_init()
 #ifdef TESTING
   cout << "(sim_control::Constructor)\n";
 #endif
-  spatial_solver=0;
   dataio=0;
   textio=0;
   SimPM.checkpoint_freq=INT_MAX;
@@ -65,7 +64,6 @@ sim_init::~sim_init()
 #ifdef TESTING
   cout << "(sim_init::Destructor)\n";
 #endif
-  if (spatial_solver) {delete spatial_solver; spatial_solver=0;}
   if (dataio) {delete dataio; dataio=0;}
   if (textio) {delete textio; textio=0;}
   return;
@@ -929,16 +927,17 @@ int sim_init::initial_conserved_quantities(
 #ifdef TESTING 
   // Only track the totals if I am testing the code.
   pion_flt u[SimPM.nvar];
+  double dx = grid->DX();
   dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
   dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
   //  cout <<"initERG: "<<dp.initERG<<"\n";
   class cell *cpt=grid->FirstPt();
   do {
      spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-     dp.initERG += u[ERG]*spatial_solver->CellVolume(cpt);
-     dp.initMMX += u[MMX]*spatial_solver->CellVolume(cpt);
-     dp.initMMY += u[MMY]*spatial_solver->CellVolume(cpt);
-     dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(cpt);
+     dp.initERG += u[ERG]*spatial_solver->CellVolume(cpt,dx);
+     dp.initMMX += u[MMX]*spatial_solver->CellVolume(cpt,dx);
+     dp.initMMY += u[MMY]*spatial_solver->CellVolume(cpt,dx);
+     dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(cpt,dx);
   } while ( (cpt = grid->NextPt(cpt)) !=0);
   //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
   cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";

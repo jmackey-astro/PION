@@ -58,6 +58,12 @@ class update_boundaries : virtual public setup_fixed_grid
    
  
   protected:
+  ///
+  /// Pointer to equations to solve, and routines for calculating
+  /// fluxes on the grid.
+  ///
+  class FV_solver_base *spatial_solver;
+
   /// Updates data on a periodic boundary.
   virtual int BC_update_PERIODIC(
       class SimParams &,      ///< pointer to simulation parameters

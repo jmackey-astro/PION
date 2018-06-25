@@ -54,14 +54,16 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
 
   /// Returns Volume of cell.
   virtual double CellVolume(
-        const cell *
-        );
+      const cell *, ///< cell pointer
+      const double  ///< cell diameter
+      );
 
   /// Returns Surface area of interface.
   virtual double CellInterface(
-        const cell *,   ///< Cell
-        const direction ///< outward normal to interface.
-        );
+      const cell *,   ///< Cell
+      const direction, ///< outward normal to interface.
+      const double  ///< cell diameter
+      );
 
   ///
   /// Returns maximum of all gradients with neighbouring cells for Spherical Coordinates.
@@ -175,10 +177,11 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
   /// for evaluating volume averages of source terms.
   ///
   virtual inline double R3(
-        const cell *c ///< Cell to operate on.
+        const cell *c,  ///< Cell to operate on.
+        const double dR ///< cell diameter
         )
   {
-    return (CI.get_dpos(c,Rsph) + VOdR*VOdR/12.0/CI.get_dpos(c,Rsph));
+    return (CI.get_dpos(c,Rsph) + dR*dR/12.0/CI.get_dpos(c,Rsph));
   }
 
   ///
@@ -190,10 +193,11 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
   /// \f[ r>>\delta r \f] it approaches the midpoint.
   ///
   virtual inline double R_com(
-        const cell *c ///< cell to operate on
+        const cell *c, ///< cell to operate on
+        const double dR ///< cell diameter
         )
   {
-    double delta2 = VOdR/CI.get_dpos(c,Rsph);
+    double delta2 = dR/CI.get_dpos(c,Rsph);
     delta2 *= delta2;
     return CI.get_dpos(c,Rsph)*(1.0+0.25*delta2)/(1.0+delta2/12.0);
   }

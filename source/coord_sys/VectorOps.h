@@ -56,8 +56,6 @@
 //
 //#define TRACER_SLOPES_CONSERVED_VARS
 
-#define VOdz VOdx
-
 ///
 /// Class to hold vector differential operations which depend on 
 /// the coordinate system.  This is a virtual base class.
@@ -67,12 +65,14 @@ class BaseVectorOps {
   virtual ~BaseVectorOps();
 
   virtual double CellVolume(
-      const cell *
+      const cell *, ///< cell pointer
+      const double ///< cell diameter
       )=0; ///< Returns Volume of cell.
 
   virtual double CellInterface(
       const cell *, ///< Cell
-      const direction ///< outward normal to interface.
+      const direction, ///< outward normal to interface.
+      const double ///< cell diameter
       )=0; ///< Returns Surface area of interface.
 
   ///
@@ -268,12 +268,14 @@ class VectorOps_Cart : virtual public BaseVectorOps
   ~VectorOps_Cart();
 
   virtual double CellVolume(
-      const cell *
+      const cell *, ///< cell pointer
+      const double ///< cell diameter
       ); ///< Returns Volume of cell.
 
   virtual double CellInterface(
       const cell *,   ///< Cell
-      const direction ///< outward normal to interface.
+      const direction, ///< outward normal to interface.
+      const double ///< cell diameter
       ); ///< Returns Surface area of interface.
 
   ///
@@ -410,7 +412,6 @@ class VectorOps_Cart : virtual public BaseVectorOps
 class VectorOps_Cyl : virtual public VectorOps_Cart
 {
   protected:
-  double VOdR; ///< length of cell in R-dir.
 
   ///
   /// Returns centre of mass of cell in R-direction.
@@ -421,9 +422,10 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// midpoint of cell i.
   ///
   virtual inline double R_com(
-      const cell *c ///< Cell to operate on.
+      const cell *c, ///< Cell to operate on.
+      const double dR
       )
-  {return(CI.get_dpos(c,Rcyl) + VOdR*VOdR/12./CI.get_dpos(c,Rcyl));}
+  {return(CI.get_dpos(c,Rcyl) + dR*dR/12./CI.get_dpos(c,Rcyl));}
 
   public:
   ///
@@ -446,12 +448,14 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   ~VectorOps_Cyl();
 
   virtual double CellVolume(
-      const cell *
+      const cell *, ///< cell pointer
+      const double ///< cell diameter
       ); ///< Returns Volume of cell.
 
   virtual double CellInterface(
       const cell *,   ///< Cell
-      const direction ///< outward normal to interface.
+      const direction, ///< outward normal to interface.
+      const double ///< cell diameter
       ); ///< Returns Surface area of interface.
   
   ///

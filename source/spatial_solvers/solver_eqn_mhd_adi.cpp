@@ -807,7 +807,7 @@ int cyl_FV_solver_mhd_ideal_adi::dU_Cell(
         const pion_flt *fp, ///< Positive direction flux.
         const pion_flt *dpdx, ///< slope vector for cell c.
         const int OA,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
+        const double dR, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
         )
 {
@@ -827,7 +827,7 @@ int cyl_FV_solver_mhd_ideal_adi::dU_Cell(
       break;
      case OA2:
       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]+pm + 
-			  (CI.get_dpos(c,Rcyl)-R_com(c))*
+			  (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
 		   (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]))
                    /CI.get_dpos(c,Rcyl);
       break;
@@ -910,7 +910,7 @@ int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(
         const pion_flt *fp, ///< Positive direction flux.
         const pion_flt *dpdx, ///< slope vector for cell c.
         const int OA,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
+        const double dR, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
         )
 {
@@ -930,10 +930,10 @@ int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(
       break;
      case OA2:
       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]+pm + 
-			 (CI.get_dpos(c,Rcyl)-R_com(c))*
+			 (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
 			 (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]))
 	                /CI.get_dpos(c,Rcyl);
-      c->dU[eqBBX] += FV_dt*(c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c))*dpdx[eqSI])/CI.get_dpos(c,Rcyl);
+      c->dU[eqBBX] += FV_dt*(c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))*dpdx[eqSI])/CI.get_dpos(c,Rcyl);
       break;
      default:
       rep.error("Bad OOA in cyl_glmMHD_RS::dU, only know 1st,2nd",OA);
