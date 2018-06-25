@@ -486,7 +486,7 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(
         const pion_flt *fp, ///< Positive direction flux.
         const pion_flt *dpdx, ///< slope vector for cell c.
         const int OA,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
+        const double dR, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
         )
 {
@@ -505,7 +505,7 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(
       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]/CI.get_dpos(c,Rcyl));
       break;
      case OA2:
-      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c)))/CI.get_dpos(c,Rcyl);
+      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c,dR)))/CI.get_dpos(c,Rcyl);
       break;
      default:
       rep.error("Bad OOA in cyl_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);
@@ -572,7 +572,7 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(
         const pion_flt *fp, ///< Positive direction flux.
         const pion_flt *dpdx, ///< slope vector for cell c.
         const int OA,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
+        const double dR, ///< cell length dx.
         const double  ///< cell TimeStep, dt.
         )
 {
@@ -591,12 +591,12 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(
   if (d==Rsph) {
     switch (OA) {
       case OA1:
-      c->dU[eqMMX] += FV_dt*2.0*c->Ph[eqPG]/R3(c);
+      c->dU[eqMMX] += FV_dt*2.0*c->Ph[eqPG]/R3(c,dR);
       break;
 
       case OA2:
       c->dU[eqMMX] += FV_dt*2.0*
-       ( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c))/R3(c) +dpdx[eqPG] );
+       ( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c,dR))/R3(c,dR) +dpdx[eqPG] );
       break;
      default:
       rep.error("Bad OOA in sph_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);

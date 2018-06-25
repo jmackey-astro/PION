@@ -459,7 +459,7 @@ sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
 
 sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
  ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h update_boundaries.h grid_base_class.h \

@@ -18,6 +18,7 @@
 #include "sim_control/update_boundaries_nested.h"
 
 //#define TEST_NEST
+#define TEST_OOA
 
 // ##################################################################
 // ##################################################################
@@ -353,7 +354,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
   //list<cell*>::iterator c_iter=b->nest.begin();
   list<cell*>::iterator f_iter=b->data.begin();
   cell *c, *f;
-  double U[par.nvar], P[par.nvar];
+  double U[par.nvar], P[par.nvar], U1[par.nvar], U2[par.nvar];
 
   //
   // if on an odd-numbered step, then need to update the data on the
@@ -403,7 +404,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         f = (*f_iter);
         c = f->npt;
-        coarse->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        spatial_solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
         for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0-0.25*dx*sx[v]);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
         for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
@@ -411,25 +412,45 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         f_iter++;
         f = (*f_iter);
         for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0+0.25*dx*sx[v]);
-        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
         for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
 
         // Now need to check mass/momentum/energy conservation between
         // coarse and fine levels!
-        rep.error("Check conservation 1D",9);
+        // sum energy of fine cells.
+        eqn->PtoU(f->Ph, U1, par.gamma);
+        f_iter--; f = (*f_iter);
+        eqn->PtoU(f->Ph, U2, par.gamma);
+        for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
+        // compare with coarse cell.
+        eqn->PtoU(c->Ph, P, par.gamma);
+#ifdef TEST_OOA
+        rep.printVec("1D coarse", P,par.nvar);
+        rep.printVec("1D fine  ", U,par.nvar);
+#endif
+        // scale U1, U2 by ratio of coarse to fine energy.
+        for (int v=0;v<par.nvar;v++) U1[v] *= P[v] / U[v];
+        for (int v=0;v<par.nvar;v++) U2[v] *= P[v] / U[v];
+#ifdef TEST_OOA
+        for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
+        rep.printVec("1D fine 2", U, par.nvar); 
+#endif
+        eqn->UtoP(U2,f->Ph, par.EP.MinTemperature, par.gamma);
+        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+        f_iter++; f = (*f_iter);
+        eqn->UtoP(U1,f->Ph, par.EP.MinTemperature, par.gamma);
+        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
       } // loop over fine cells
     } // 1D
 
     else if (par.ndim == 2) {
       //
-      // Need to do bilinear interpolation.  Would ideally do 4
-      // cells at a time, but for now just do 2 (ordering in the
-      // list is not ideal).
+      // Need to do bilinear interpolation, 4 cells at a time.
       //
       double sx[par.nvar], sy[par.nvar]; // slope in x-dir
       double dxo2 = 0.5*fine->DX(); // dx
       double P00[par.nvar], P10[par.nvar], P01[par.nvar], P11[par.nvar];
       int signx=0, signy=0;
+      double c_vol=0.0, f_vol[4];
       //
       // Do two fine cells at a time: they have the same parent.
       // First get the values at the 4 corners of coarse-cell c.
@@ -439,64 +460,99 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         f = (*f_iter);
         c = f->npt;
-        coarse->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-        coarse->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
-        for (int v=0;v<par.nvar;v++) sx[v] *= dx02;
-        for (int v=0;v<par.nvar;v++) sy[v] *= dx02;
-        for (int v=0;v<par.nvar;v++) P00[v] = c->Ph[v] * (1.0-sx) * (1.0-sy);
-        for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] * (1.0+sx) * (1.0-sy);
-        for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] * (1.0-sx) * (1.0+sy);
-        for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] * (1.0+sx) * (1.0+sy);
 
-        if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
-          // 1/4,1/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
+        // only do this on every second row (because we update 4
+        // cells at a time.
+        if (!fine->NextPt(f,YP) || fine->NextPt(f,YP)->npt != c) {
+          continue;
         }
-        else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
-          // 3/4,1/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
+
+#ifdef TEST_OOA
+        cout <<"c="<<c<<"\n";
+        cout <<"sps="<<spatial_solver<<"\n";
+        CI.print_cell(f);
+        CI.print_cell(c);
+#endif
+        // use slopes in each direction to get corner values for the
+        // coarse cell.
+        spatial_solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        spatial_solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        for (int v=0;v<par.nvar;v++) sx[v] *= dxo2;
+        for (int v=0;v<par.nvar;v++) sy[v] *= dxo2;
+        for (int v=0;v<par.nvar;v++) P00[v] = c->Ph[v] * (1.0-sx[v]) * (1.0-sy[v]);
+        for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] * (1.0+sx[v]) * (1.0-sy[v]);
+        for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] * (1.0-sx[v]) * (1.0+sy[v]);
+        for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] * (1.0+sx[v]) * (1.0+sy[v]);
+#ifdef TEST_OOA
+        rep.printVec("coarse00",c->Ph,par.nvar);
+        rep.printVec("coarse01",sx,par.nvar);
+        rep.printVec("coarse10",sy,par.nvar);
+        rep.printVec("coarse11",P11,par.nvar);
+#endif
+        // now interpolate all four cells using the 4 corner states.
+        bilinear_interp(par, c, f, P00, P01, P10, P11);
+        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
+        f_iter++; f = (*f_iter);
+        bilinear_interp(par, c, f, P00, P01, P10, P11);
+        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
+
+        f_iter--; f = (*f_iter);
+        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
+        f_iter++; f = (*f_iter);
+        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
+
+        // Now need to check mass/momentum/energy conservation between
+        // coarse and fine levels!
+        //
+        c_vol = coarse->CellVolume(c);
+        f_iter--; f = (*f_iter);
+        // two have same parent, so calculate conservation.
+        eqn->PtoU(f->P, P00, par.gamma);
+        f_vol[0] = fine->CellVolume(f);
+        eqn->PtoU(fine->NextPt(f,YP)->P, P10, par.gamma);
+        f_vol[1] = fine->CellVolume(fine->NextPt(f,YP));
+        f_iter++; f = (*f_iter);
+        eqn->PtoU(f->P, P01, par.gamma);
+        f_vol[2] = fine->CellVolume(f);
+        eqn->PtoU(fine->NextPt(f,YP)->P, P11, par.gamma);
+        f_vol[3] = fine->CellVolume(fine->NextPt(f,YP));
+        for (int v=0;v<par.nvar;v++)
+          U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
+        // compare with coarse cell.
+        eqn->PtoU(c->Ph, P, par.gamma);
+        rep.printVec("2D coarse Cons", P,par.nvar);
+        rep.printVec("2D coarse Prim", c->Ph,par.nvar);
+        for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
+
+#ifdef TEST_OOA
+        rep.printVec("2D coarse", P,par.nvar);
+        rep.printVec("2D fine  ", U,par.nvar);
+#endif
+        // scale fine conserved vec by ratio of coarse to fine energy.
+        for (int v=0;v<par.nvar;v++) {
+          if (!pconst.equalD(P[v],U[v])) {
+            P00[v] *= P[v] / U[v];
+            P01[v] *= P[v] / U[v];
+            P10[v] *= P[v] / U[v];
+            P11[v] *= P[v] / U[v];
+          }
         }
-        else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
-          // 1/4,3/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
-        }
-        else {
-          // 3/4,3/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
-        }
+#ifdef TEST_OOA
+        for (int v=0;v<par.nvar;v++) U[v] = P00[v]+P01[v]+P10[v]+P11[v];
+        rep.printVec("2D fine 2", U, par.nvar); 
+#endif
+        eqn->UtoP(P01,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-        
-        // second cell in row, should also have c as parent if we always
-        // update the fine cells two by two.
-        f_iter++;
-        f = (*f_iter);
-        if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
-          // 1/4,1/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
-        }
-        else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
-          // 3/4,1/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
-        }
-        else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
-          // 1/4,3/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
-        }
-        else {
-          // 3/4,3/4
-          for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
-                        (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
-        }
+        eqn->UtoP(P11,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
+        for (int v=0;v<par.nvar;v++)
+          fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
+        f_iter--; f = (*f_iter);
+        eqn->UtoP(P00,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+        eqn->UtoP(P10,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
+        for (int v=0;v<par.nvar;v++)
+          fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
+        f_iter++; f = (*f_iter);
       } // loop over fine cells
     } // 2D
     else if (par.ndim == 3) {
@@ -518,5 +574,39 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
 // ##################################################################
 
 
+void update_boundaries_nested::bilinear_interp(
+      class SimParams &par,      ///< pointer to simulation parameters
+      cell *c,  ///< coarse level cell
+      cell *f,  ///< fine level cell
+      const double *P00,  ///< prim. vec. at corner of coarse cell
+      const double *P01,  ///< prim. vec. at corner of coarse cell
+      const double *P10,  ///< prim. vec. at corner of coarse cell
+      const double *P11   ///< prim. vec. at corner of coarse cell
+      )
+{
+  if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
+    // 1/4,1/4
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                  (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
+  }
+  else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
+    // 3/4,1/4
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                  (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
+  }
+  else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
+    // 1/4,3/4
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                  (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
+  }
+  else {
+    // 3/4,3/4
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+                  (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
+  }
+  for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+  for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
 
+  return;
+}
 

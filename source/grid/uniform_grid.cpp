@@ -1172,7 +1172,7 @@ void UniformGrid::BC_deleteBoundaryData()
   cout <<"BC destructor: deleting Boundary data...\n";
 #endif
   struct boundary_data *b;
-  for (int ibd=0; ibd<BC_bd.size(); ibd++) {
+  for (unsigned int ibd=0; ibd<BC_bd.size(); ibd++) {
     b = BC_bd[ibd];
     BC_deleteBoundaryData(b);
   } // loop over all boundaries.
@@ -1470,7 +1470,7 @@ double uniform_grid_cyl::iR_cov(const cell *c)
 #endif
   //cout <<" Cell radius: "<< R_com(c)/CI.phys_per_int() +G_ixmin[Rcyl];
   //rep.printVec("  cell centre",c->pos,G_ndim);
-  return (R_com(c)-G_xmin[Rcyl])/CI.phys_per_int() +G_ixmin[Rcyl];
+  return (R_com(c, G_dx)-G_xmin[Rcyl])/CI.phys_per_int() +G_ixmin[Rcyl];
 }
   
 
@@ -1552,7 +1552,7 @@ double uniform_grid_cyl::distance_cell2cell(
   double d=0.0, temp=0.0;
   temp = CI.get_dpos(c1,Zcyl)-CI.get_dpos(c2,Zcyl);
   d += temp*temp;
-  temp = R_com(c1) - R_com(c2);
+  temp = R_com(c1,G_dx) - R_com(c2,G_dx);
   d += temp*temp;
   return sqrt(d);
 }
@@ -1612,7 +1612,7 @@ double uniform_grid_cyl::distance_vertex2cell(
   double d=0.0, temp=0.0;
   temp = v[Zcyl] -CI.get_dpos(c,Zcyl);
   d += temp*temp;
-  temp = v[Rcyl] - R_com(c);
+  temp = v[Rcyl] - R_com(c,G_dx);
   d += temp*temp;
   return sqrt(d);
 }
@@ -1639,7 +1639,7 @@ double uniform_grid_cyl::difference_vertex2cell(
     return (CI.get_dpos(c,a)-v[a]);
   }
   else if (a==Rcyl) {
-    return R_com(c) - v[Rcyl];
+    return R_com(c,G_dx) - v[Rcyl];
   }
   else {
     cerr <<" Requested cylindrical distance in theta dir.\n";
@@ -1724,10 +1724,10 @@ double uniform_grid_cyl::idifference_vertex2cell(const int *v,  ///< vertex (int
 /// It returns *cell2* coordinate minus *cell1* coordinate.
 ///
 double uniform_grid_cyl::idifference_cell2cell(
-              const cell *c1, ///< cell 1
-              const cell *c2, ///< cell 2
-              const axes a    ///< Axis.
-              )
+      const cell *c1, ///< cell 1
+      const cell *c2, ///< cell 2
+      const axes a    ///< Axis.
+      )
 {
   if      (a==Zcyl)
     return (CI.get_ipos(c2,a)-CI.get_ipos(c1,a));
@@ -1825,7 +1825,7 @@ double uniform_grid_sph::iR_cov(const cell *c)
 #endif
   //cout <<"R_com(c)="<<R_com(c)<<", ppi="<<CI.phys_per_int()<<", ixmin="<<G_ixmin[Rsph]<<"\n";
   //cout <<"So iR_cov(c)="<<(R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]<<"\n";
-  return ((R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]);
+  return ((R_com(c,G_dx)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]);
 }
 
 
@@ -1884,7 +1884,7 @@ double uniform_grid_sph::distance_cell2cell(const cell *c1, ///< cell 1
               const cell *c2  ///< cell 2
               )
 {
-  return fabs(R_com(c1)-R_com(c2));
+  return fabs(R_com(c1,G_dx)-R_com(c2,G_dx));
 }
 
 
@@ -1904,7 +1904,7 @@ double uniform_grid_sph::idistance_cell2cell(const cell *c1, ///< cell 1
                const cell *c2  ///< cell 2
                )
 {
-  return fabs(R_com(c1)-R_com(c2))/CI.phys_per_int();
+  return fabs(R_com(c1,G_dx)-R_com(c2,G_dx))/CI.phys_per_int();
 }
 
 
@@ -1923,7 +1923,7 @@ double uniform_grid_sph::distance_vertex2cell(const double *v, ///< vertex (phys
                 const cell *c    ///< cell
                 )
 {
-  return fabs(v[Rsph] - R_com(c));
+  return fabs(v[Rsph] - R_com(c,G_dx));
 }
 
 
@@ -1946,7 +1946,7 @@ double uniform_grid_sph::difference_vertex2cell(
       )
 {
   if      (a==Rsph) {
-    return R_com(c) - v[Rsph];
+    return R_com(c,G_dx) - v[Rsph];
   }
   else {
     cerr <<" Requested spherical distance in not-radial dir.\n";

@@ -295,12 +295,12 @@ class UniformGrid
 
   virtual double CellVolume(
       const cell *c
-      ) {return VectorOps_Cart::CellVolume(c);}
+      ) {return VectorOps_Cart::CellVolume(c,G_dx);}
 
   virtual double CellInterface(
       const cell *c, ///< Cell
       const direction dir ///< outward normal to interface.
-      ) {return VectorOps_Cart::CellInterface(c,dir);}
+      ) {return VectorOps_Cart::CellInterface(c,dir,G_dx);}
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
@@ -645,12 +645,12 @@ class uniform_grid_cyl
 
   virtual double CellVolume(
       const cell *c
-      ) {return VectorOps_Cyl::CellVolume(c);}
+      ) {return VectorOps_Cyl::CellVolume(c,G_dx);}
 
   virtual double CellInterface(
       const cell *c, ///< Cell
       const direction dir ///< outward normal to interface.
-      ) {return VectorOps_Cyl::CellInterface(c,dir);}
+      ) {return VectorOps_Cyl::CellInterface(c,dir,G_dx);}
 
  protected:
 
@@ -797,12 +797,12 @@ class uniform_grid_sph
 
   virtual double CellVolume(
       const cell *c
-      ) {return VectorOps_Sph::CellVolume(c);}
+      ) {return VectorOps_Sph::CellVolume(c,G_dx);}
 
   virtual double CellInterface(
       const cell *c, ///< Cell
       const direction dir ///< outward normal to interface.
-      ) {return VectorOps_Sph::CellInterface(c,dir);}
+      ) {return VectorOps_Sph::CellInterface(c,dir,G_dx);}
 
  protected:
 

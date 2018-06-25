@@ -71,6 +71,16 @@ class sim_init : virtual public update_boundaries
   ///
   double get_max_walltime();
 
+  ///
+  /// Initialise the correct Equations to solve, based on paramters.
+  ///
+  int set_equations();
+
+  ///
+  /// information about the simulation
+  ///
+  class SimParams SimPM;
+
   protected:
 
   //---------------------------------------
@@ -100,16 +110,6 @@ class sim_init : virtual public update_boundaries
   ///
   class DataIOBase *textio;
 
-  ///
-  /// Pointer to equations to solve, and routines for calculating
-  /// fluxes on the grid.
-  ///
-  class FV_solver_base *spatial_solver;
-
-  ///
-  /// information about the simulation
-  ///
-  class SimParams SimPM;
   
   //---------------------------------------
   //---------------------------------------
@@ -128,11 +128,6 @@ class sim_init : virtual public update_boundaries
       int,      ///< Number of command-line arguments.
       string *  ///< Pointer to array of command-line arguments.
       );
-
-  ///
-  /// Initialise the correct Equations to solve, based on paramters.
-  ///
-  int set_equations();
 
   ///
   /// Output the data to file if required.

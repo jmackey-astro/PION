@@ -303,7 +303,7 @@ void sim_control::calculate_magnetic_pressure(
   do {
     if (!c->isbd) 
       magp += (spatial_solver->Ptot(c->P,0.0) - c->P[PG]) *
-                spatial_solver->CellVolume(c);
+                spatial_solver->CellVolume(c,grid->DX());
   } while ( (c =grid->NextPt(c)) !=0);
   if (init_magp<0) init_magp = magp;
   cout <<SimPM.simtime<<"\t"<<magp/init_magp<<"\t"<<magp<<"\n";
@@ -409,12 +409,13 @@ int sim_control::check_energy_cons(
   pion_flt u[SimPM.nvar];
   double ergNow=0., mmxNow = 0., mmyNow = 0., mmzNow = 0.;
   class cell *cpt = grid->FirstPt();
+  double dR=grid->DX();
   do {
      spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-     ergNow += u[ERG]*spatial_solver->CellVolume(cpt);
-     mmxNow += u[MMX]*spatial_solver->CellVolume(cpt);
-     mmyNow += u[MMY]*spatial_solver->CellVolume(cpt);
-     mmzNow += u[MMZ]*spatial_solver->CellVolume(cpt);
+     ergNow += u[ERG]*spatial_solver->CellVolume(cpt,dR);
+     mmxNow += u[MMX]*spatial_solver->CellVolume(cpt,dR);
+     mmyNow += u[MMY]*spatial_solver->CellVolume(cpt,dR);
+     mmzNow += u[MMZ]*spatial_solver->CellVolume(cpt,dR);
   } while ( (cpt =grid->NextPt(cpt)) !=0);
   //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
   double relerror=0.0;

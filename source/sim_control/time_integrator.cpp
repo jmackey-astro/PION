@@ -671,11 +671,11 @@ int time_integrator::dynamics_dU_column
     // Track energy, momentum entering domain.
     if(ctm==SimPM.tmOOA && !(cpt->isgd) && npt->isgd) {
       ct++; if (ct>1) rep.error("Entering domain more than once! (dUcolumn)",ct);
-      //      cout <<"Entering Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir)<<"\n";
-      dp.initERG += Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
-      dp.initMMX += Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
-      dp.initMMY += Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
-      dp.initMMZ += Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
+      //      cout <<"Entering Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir,dx)<<"\n";
+      dp.initERG += Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      dp.initMMX += Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      dp.initMMY += Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      dp.initMMZ += Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
       //      if (posdir==YP && fabs(Fr_this[MMY])>2*MACHINEACCURACY) {
       //  cout <<"R-momentum flux entering domain from R=0(!) = "<<Fr_this[MMY]<<"\n";
       //  cout <<"v_R in first cell = "<<npt->Ph[VY]<<", "<<npt->P[VY]<<"\n";
@@ -683,11 +683,11 @@ int time_integrator::dynamics_dU_column
     }
     else if (ctm==SimPM.tmOOA && !(npt->isgd) && cpt->isgd) {
       ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-      //      cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir)<<"\n";
-      dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
-      dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
-      dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
-      dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
+      //      cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir,dx)<<"\n";
+      dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
     }
 #endif //TESTING
 
@@ -721,10 +721,10 @@ int time_integrator::dynamics_dU_column
 #ifdef TESTING
   if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
     ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-    dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir);
-    dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir);
-    dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir);
-    dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir);
+    dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+    dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+    dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+    dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
   }
 #endif //TESTING
  
@@ -776,6 +776,7 @@ int time_integrator::grid_update_state_vector(
   // temp variable to handle change of energy when correcting for negative pressure.
   //
   pion_flt temperg =0.0;
+  double dx = grid->DX();
 
   //
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
@@ -812,7 +813,7 @@ int time_integrator::grid_update_state_vector(
       // update variables.
       //
       dp.ergTotChange = temperg;
-      dp.initERG += dp.ergTotChange*spatial_solver->CellVolume(c);
+      dp.initERG += dp.ergTotChange*spatial_solver->CellVolume(c,dx);
 #endif // TESTING
 
     }

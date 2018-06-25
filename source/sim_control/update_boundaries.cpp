@@ -23,11 +23,13 @@
 
 update_boundaries::update_boundaries()
 {
+  spatial_solver=0;
   return;
 }
 
 update_boundaries::~update_boundaries()
 {
+  if (spatial_solver) {delete spatial_solver; spatial_solver=0;}
   return;
 }
 
