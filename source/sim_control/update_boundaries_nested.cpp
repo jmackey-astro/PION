@@ -401,6 +401,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
     //
     if (par.ndim ==1) {
       double sx[par.nvar]; // slope in x-dir
+      double f_vol[2], c_vol;
       double dx = fine->DX(); // dx
       //
       // Do two fine cells at a time: they have the same parent.
@@ -423,18 +424,26 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         // coarse and fine levels!
         // sum energy of fine cells.
         spatial_solver->PtoU(f->Ph, U1, par.gamma);
+        f_vol[0] = fine->CellVolume(f);
         f_iter--; f = (*f_iter);
         spatial_solver->PtoU(f->Ph, U2, par.gamma);
-        for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
+        f_vol[1] = fine->CellVolume(f);
+        for (int v=0;v<par.nvar;v++) U[v] = U1[v]*f_vol[0] + U2[v]*f_vol[1];
         // compare with coarse cell.
         spatial_solver->PtoU(c->Ph, P, par.gamma);
+        c_vol = coarse->CellVolume(c);
+        for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
 #ifdef TEST_OOA
         rep.printVec("1D coarse", P,par.nvar);
         rep.printVec("1D fine  ", U,par.nvar);
 #endif
         // scale U1, U2 by ratio of coarse to fine energy.
-        for (int v=0;v<par.nvar;v++) U1[v] *= P[v] / U[v];
-        for (int v=0;v<par.nvar;v++) U2[v] *= P[v] / U[v];
+        for (int v=0;v<par.nvar;v++) {
+          if (!pconst.equalD(P[v],U[v])) {
+            U1[v] *= P[v] / U[v];
+            U2[v] *= P[v] / U[v];
+          }
+        }
 #ifdef TEST_OOA
         for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
         rep.printVec("1D fine 2", U, par.nvar); 
