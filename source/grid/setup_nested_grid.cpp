@@ -272,14 +272,13 @@ int setup_nested_grid::boundary_conditions(
   cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";
 #endif
   int err = 0;
-
   for (int l=0;l<par.grid_nlevels;l++) {
     cout <<"level "<<l<<", setting up boundaries\n";
 
     //
     // Choose what BCs to set up based on BC strings.
     //
-    int err = setup_boundary_structs(par,grid[l],l);
+    err = setup_boundary_structs(par,grid[l],l);
     rep.errorTest("sng::boundary_conditions sb_structs",0,err);
 
 
@@ -317,6 +316,7 @@ int setup_nested_grid::setup_boundary_structs(
 
   // first call fixed grid version
   int err = setup_fixed_grid::setup_boundary_structs(par,grid);
+  rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
   //
   // Now check for nested grid boundaries if this grid has a parent
@@ -386,7 +386,7 @@ int setup_nested_grid::setup_boundary_structs(
   // then remove the stellar wind boundary condition.
   //
   if (l < par.grid_nlevels-1) {
-    for (int b=0;b<grid->BC_bd.size();b++) {
+    for (unsigned int b=0;b<grid->BC_bd.size();b++) {
       if (grid->BC_bd[b]->itype == STWIND) {
         cout <<"erasing wind boundary: size="<<grid->BC_bd.size();
         grid->BC_deleteBoundaryData(grid->BC_bd[b]);
@@ -421,29 +421,10 @@ int setup_nested_grid::assign_boundary_data(
   int err = setup_fixed_grid::assign_boundary_data(par,grid);
   rep.errorTest("setup_fixed_grid::assign_boundary_data",err,0);
 
-  // ----------------------------------------------------------------
-  // only needed for nested grid I think... maybe also for stellar
-  // wind.
-  switch (par.eqntype) {
-  case EQEUL:
-    eqn = new eqns_Euler(par.nvar);
-    break;
-  case EQMHD:
-    eqn = new eqns_mhd_ideal(par.nvar);
-    break;
-  case EQGLM:
-    eqn = new eqns_mhd_mixedGLM(par.nvar);
-    break;
-  default:
-    rep.error("Don't know the specified equations...",par.eqntype);
-    break;
-  }
-  // ----------------------------------------------------------------
-
   //
   // Then check for nested-grid boundaries and assign data for them.
   //
-  for (int i=0; i<grid->BC_bd.size(); i++) {
+  for (size_t i=0; i<grid->BC_bd.size(); i++) {
     cout <<"nested grid assign BCs: BC["<<i<<"] starting.\n";
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE:
@@ -488,7 +469,6 @@ int setup_nested_grid::BC_assign_FINE_TO_COARSE(
   list<cell*>::iterator bpt=b->data.begin();
   cell *cc = child->FirstPt_All(); // child cell.
   int cdx = 0.5*child->idx();
-  double distance =  0.0;
 
   // Map each bpt cell to a cell in b->nest list, which is the first
   // cell in the finer grid that is part of the coarse cell (i.e. the
@@ -532,7 +512,7 @@ int setup_nested_grid::BC_assign_COARSE_TO_FINE(
   b->nest.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
-  int pidx = parent->idx();
+  //int pidx = parent->idx();
   int gidx = grid->idx();
   //cout <<"BC_assign_COARSE_TO_FINE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
 
