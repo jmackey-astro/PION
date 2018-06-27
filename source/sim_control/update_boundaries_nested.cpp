@@ -61,7 +61,7 @@ int update_boundaries_nested::TimeUpdateInternalBCs(
 #endif
 
   struct boundary_data *b;
-  int i=0;
+  size_t i=0;
   //cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
@@ -115,7 +115,7 @@ int update_boundaries_nested::TimeUpdateExternalBCs(
 #endif
 
   struct boundary_data *b;
-  int i=0;
+  size_t i=0;
   //cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
@@ -179,15 +179,20 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
 
   // vol_sum is for testing only (make sure that fine grid cells
   // have the same cumulative volume as the coarse cell).
-  double cd[par.nvar], u[par.nvar], vol=0.0, vol_sum=0.0;
-  int cpos[MAX_DIM],fpos[MAX_DIM];
+  double cd[par.nvar], u[par.nvar], vol=0.0;
+#ifdef TEST_NEST
+  double vol_sum=0.0;
+  int cpos[MAX_DIM];
+  int fpos[MAX_DIM];
+#endif
 
   for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
     c = (*c_iter);
     f = (*f_iter);
-    vol=0.0, vol_sum=0.0;
+    vol=0.0;
 
 #ifdef TEST_NEST
+    vol_sum=0.0;
     //CI.get_ipos(c,cpos);
     //CI.get_ipos(f,fpos);
     //rep.printVec("coarse pos:",cpos,par.ndim);
@@ -198,7 +203,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
     // get conserved vars for cell 1 in fine grid, multiply by cell
     // volume.
     //
-    eqn->PtoU(f->Ph, u, par.gamma);
+    spatial_solver->PtoU(f->Ph, u, par.gamma);
     vol = fine->CellVolume(f);
     for (int v=0;v<par.nvar;v++) cd[v] = u[v]*vol;
 #ifdef TEST_NEST
@@ -207,7 +212,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
 
     // get conserved vars for cell 2 in fine grid, *cellvol.
     f = fine->NextPt(f,XP);
-    eqn->PtoU(f->Ph, u, par.gamma);
+    spatial_solver->PtoU(f->Ph, u, par.gamma);
     vol = fine->CellVolume(f);
     for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -220,7 +225,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
     if (par.ndim>1) {
       // get conserved vars for cell 3 in fine grid, *cellvol.
       f =  fine->NextPt((*f_iter),YP);
-      eqn->PtoU(f->Ph, u, par.gamma);
+      spatial_solver->PtoU(f->Ph, u, par.gamma);
       vol = fine->CellVolume(f);
       for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -231,7 +236,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
 
       // get conserved vars for cell 4 in fine grid, *cellvol.
       f = fine->NextPt(f,XP);
-      eqn->PtoU(f->Ph, u, par.gamma);
+      spatial_solver->PtoU(f->Ph, u, par.gamma);
       vol = fine->CellVolume(f);
       for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -246,7 +251,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
     if (par.ndim>2) {
       // get conserved vars for cell 5 in fine grid, *cellvol.
       f =  fine->NextPt((*f_iter),ZP);
-      eqn->PtoU(f->Ph, u, par.gamma);
+      spatial_solver->PtoU(f->Ph, u, par.gamma);
       vol = fine->CellVolume(f);
       for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -257,7 +262,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
 
       // get conserved vars for cell 6 in fine grid, *cellvol.
       f = fine->NextPt(f,XP);
-      eqn->PtoU(f->Ph, u, par.gamma);
+      spatial_solver->PtoU(f->Ph, u, par.gamma);
       vol = fine->CellVolume(f);
       for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -268,7 +273,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
 
       // get conserved vars for cell 7 in fine grid, *cellvol.
       f = fine->NextPt(f,YP);
-      eqn->PtoU(f->Ph, u, par.gamma);
+      spatial_solver->PtoU(f->Ph, u, par.gamma);
       vol = fine->CellVolume(f);
       for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -279,7 +284,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
 
       // get conserved vars for cell 8 in fine grid, *cellvol.
       f = fine->NextPt(f,XN);
-      eqn->PtoU(f->Ph, u, par.gamma);
+      spatial_solver->PtoU(f->Ph, u, par.gamma);
       vol = fine->CellVolume(f);
       for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
 #ifdef TEST_NEST
@@ -298,7 +303,7 @@ int update_boundaries_nested::BC_update_FINE_TO_COARSE(
     //cout <<"coarse vol="<<vol<<", fine vol="<<vol_sum<<"\n";
 #endif
     for (int v=0;v<par.nvar;v++) cd[v] /= vol;
-    eqn->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
+    spatial_solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
     //
     // if full step then assign to c->P as well as c->Ph.
     //
@@ -370,9 +375,9 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
-      eqn->PtoU(c->P, U, par.gamma);
+      spatial_solver->PtoU(c->P, U, par.gamma);
       for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
-      eqn->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
+      spatial_solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
     }
   }
   
@@ -417,12 +422,12 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         // Now need to check mass/momentum/energy conservation between
         // coarse and fine levels!
         // sum energy of fine cells.
-        eqn->PtoU(f->Ph, U1, par.gamma);
+        spatial_solver->PtoU(f->Ph, U1, par.gamma);
         f_iter--; f = (*f_iter);
-        eqn->PtoU(f->Ph, U2, par.gamma);
+        spatial_solver->PtoU(f->Ph, U2, par.gamma);
         for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
         // compare with coarse cell.
-        eqn->PtoU(c->Ph, P, par.gamma);
+        spatial_solver->PtoU(c->Ph, P, par.gamma);
 #ifdef TEST_OOA
         rep.printVec("1D coarse", P,par.nvar);
         rep.printVec("1D fine  ", U,par.nvar);
@@ -434,10 +439,10 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
         rep.printVec("1D fine 2", U, par.nvar); 
 #endif
-        eqn->UtoP(U2,f->Ph, par.EP.MinTemperature, par.gamma);
+        spatial_solver->UtoP(U2,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
         f_iter++; f = (*f_iter);
-        eqn->UtoP(U1,f->Ph, par.EP.MinTemperature, par.gamma);
+        spatial_solver->UtoP(U1,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
       } // loop over fine cells
     } // 1D
@@ -449,7 +454,6 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       double sx[par.nvar], sy[par.nvar]; // slope in x-dir
       double dxo2 = 0.5*fine->DX(); // dx
       double P00[par.nvar], P10[par.nvar], P01[par.nvar], P11[par.nvar];
-      int signx=0, signy=0;
       double c_vol=0.0, f_vol[4];
       //
       // Do two fine cells at a time: they have the same parent.
@@ -507,19 +511,19 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         c_vol = coarse->CellVolume(c);
         f_iter--; f = (*f_iter);
         // two have same parent, so calculate conservation.
-        eqn->PtoU(f->P, P00, par.gamma);
+        spatial_solver->PtoU(f->P, P00, par.gamma);
         f_vol[0] = fine->CellVolume(f);
-        eqn->PtoU(fine->NextPt(f,YP)->P, P10, par.gamma);
+        spatial_solver->PtoU(fine->NextPt(f,YP)->P, P10, par.gamma);
         f_vol[1] = fine->CellVolume(fine->NextPt(f,YP));
         f_iter++; f = (*f_iter);
-        eqn->PtoU(f->P, P01, par.gamma);
+        spatial_solver->PtoU(f->P, P01, par.gamma);
         f_vol[2] = fine->CellVolume(f);
-        eqn->PtoU(fine->NextPt(f,YP)->P, P11, par.gamma);
+        spatial_solver->PtoU(fine->NextPt(f,YP)->P, P11, par.gamma);
         f_vol[3] = fine->CellVolume(fine->NextPt(f,YP));
         for (int v=0;v<par.nvar;v++)
           U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
         // compare with coarse cell.
-        eqn->PtoU(c->Ph, P, par.gamma);
+        spatial_solver->PtoU(c->Ph, P, par.gamma);
         rep.printVec("2D coarse Cons", P,par.nvar);
         rep.printVec("2D coarse Prim", c->Ph,par.nvar);
         for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
@@ -541,15 +545,15 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         for (int v=0;v<par.nvar;v++) U[v] = P00[v]+P01[v]+P10[v]+P11[v];
         rep.printVec("2D fine 2", U, par.nvar); 
 #endif
-        eqn->UtoP(P01,f->Ph, par.EP.MinTemperature, par.gamma);
+        spatial_solver->UtoP(P01,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-        eqn->UtoP(P11,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
+        spatial_solver->UtoP(P11,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++)
           fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
         f_iter--; f = (*f_iter);
-        eqn->UtoP(P00,f->Ph, par.EP.MinTemperature, par.gamma);
+        spatial_solver->UtoP(P00,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-        eqn->UtoP(P10,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
+        spatial_solver->UtoP(P10,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++)
           fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
         f_iter++; f = (*f_iter);

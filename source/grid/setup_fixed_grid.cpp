@@ -999,7 +999,7 @@ int setup_fixed_grid::assign_boundary_data(
   //
   // Loop through all boundaries, and assign data to them.
   //
-  for (int i=0; i<grid->BC_bd.size(); i++) {
+  for (size_t i=0; i<grid->BC_bd.size(); i++) {
     switch (grid->BC_bd[i]->itype) {
      case PERIODIC:   err += BC_assign_PERIODIC(  par,grid,grid->BC_bd[i]); break;
      case OUTFLOW:    err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]); break;

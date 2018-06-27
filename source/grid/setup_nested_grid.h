@@ -84,9 +84,6 @@ class setup_nested_grid : virtual public setup_fixed_grid
   protected:
   //---------------------------------------
 
-  /// equations class for assigning boundary data
-  class eqns_base *eqn;
-
   /// Assigns data to a nested grid from finer grid.
   virtual int BC_assign_FINE_TO_COARSE(
       class SimParams &,     ///< pointer to simulation parameters

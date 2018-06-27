@@ -44,8 +44,8 @@ int update_boundaries::TimeUpdateInternalBCs(
       )
 {
   struct boundary_data *b;
-  int i=0; int err=0;
-  for (i=0;i<grid->BC_bd.size();i++) {
+  int err=0;
+  for (size_t i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     switch (b->itype) {
     case STWIND:     err += BC_update_STWIND(  par,grid, simtime, b, cstep, maxstep); break;
@@ -85,8 +85,8 @@ int update_boundaries::TimeUpdateExternalBCs(
   //BC_printBCdata(&BC_bd[0]);
   // TEMP_FIX
   struct boundary_data *b;
-  int i=0; int err=0;
-  for (i=0;i<grid->BC_bd.size();i++) {
+  int err=0;
+  for (size_t i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
     switch (b->itype) {
