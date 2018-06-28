@@ -294,6 +294,31 @@ double sim_control_nestedgrid::advance_time(
 #ifdef TESTING
   cout <<"advance_time, level="<<l<<", starting.\n";
 #endif
+  double step=0.0;
+  if (SimPM.tmOOA==1) {
+    step = advance_step_OA1(l);
+  }
+  else if (SimPM.tmOOA==2) {
+    step = advance_step_OA2(l);
+  }
+  return step;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double sim_control_nestedgrid::advance_step_OA1(
+      const int l       ///< level to advance.
+      )
+{
+#ifdef TESTING
+  cout <<"advance_step_OA1, level="<<l<<", starting.\n";
+#endif
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
@@ -301,7 +326,7 @@ double sim_control_nestedgrid::advance_time(
 
   // take the first finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
-    dt2_fine = advance_time(l+1);
+    dt2_fine = advance_step_OA1(l+1);
     
     // timestep for this level is equal to two steps of finer level,
     // where we take the sum of the fine step just taken and the next
@@ -324,18 +349,18 @@ double sim_control_nestedgrid::advance_time(
 #ifdef THERMAL_CONDUCTION
   err += calc_thermal_conduction_dU(SimPM.levels[l].dt,OA1, grid);
 #endif // THERMAL_CONDUCTION
-  rep.errorTest("scn::advance_time: calc_x_dU",0,err);
+  rep.errorTest("scn::advance_step_OA1: calc_x_dU",0,err);
 
   // take the second finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
-    dt2_fine = advance_time(l+1);
+    dt2_fine = advance_step_OA1(l+1);
   }
 
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
-  rep.errorTest("scn::advance_time: state-vec update",0,err);  
+  rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);  
 
   // increment time and timestep for this level
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
@@ -352,7 +377,7 @@ double sim_control_nestedgrid::advance_time(
 
   // Now calculate next timestep: function stores dt in SimPM.dt
   err += calculate_timestep(SimPM, grid,spatial_solver);
-  rep.errorTest("scn::advance_time: calc_timestep",0,err);
+  rep.errorTest("scn::advance_step_OA1: calc_timestep",0,err);
 
   // make sure step is not more than half of the coarser grid step.
   if (l>0) {
@@ -363,11 +388,103 @@ double sim_control_nestedgrid::advance_time(
   }
 
 #ifdef TESTING
-  cout <<"advance_time, level="<<l<<", returning. t=";
+  cout <<"advance_step_OA1, level="<<l<<", returning. t=";
   cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
 #endif
   return dt2_this + SimPM.levels[l].dt;
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+double sim_control_nestedgrid::advance_step_OA2(
+      const int l       ///< level to advance.
+      )
+{
+#ifdef TESTING
+  cout <<"advance_step_OA2, level="<<l<<", starting.\n";
+#endif
+  int err=0;
+  double dt2_fine=0.0; // timestep for two finer level steps.
+  double dt2_this=0.0; // two timesteps for this level.
+  class GridBaseClass *grid = SimPM.levels[l].grid;
+
+  // take the first finer grid step, if there is a finer grid.
+  if (l<SimPM.grid_nlevels-1) {
+    dt2_fine = advance_step_OA2(l+1);
+    
+    // timestep for this level is equal to two steps of finer level,
+    // where we take the sum of the fine step just taken and the next
+    // step (not yet taken).
+    SimPM.levels[l].dt = dt2_fine;
+  }
+  dt2_this = SimPM.levels[l].dt;
+
+  // now calculate dU, the change in conserved variables on this grid,
+  // for this step.
+  spatial_solver->set_dx(SimPM.levels[l].dx);
+  spatial_solver->Setdt(SimPM.levels[l].dt);
+  // May need to do raytracing
+  if (!FVI_need_column_densities_4dt && grid->RT) {
+    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
+  }
+  err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt,OA2, grid);
+#ifdef THERMAL_CONDUCTION
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,OA2, grid);
+#endif // THERMAL_CONDUCTION
+  rep.errorTest("scn::advance_step_OA2: calc_x_dU",0,err);
+
+  // take the second finer grid step, if there is a finer grid.
+  if (l<SimPM.grid_nlevels-1) {
+    dt2_fine = advance_step_OA2(l+1);
+  }
+
+  //
+  // Now update Ph[i] to new values (and P[i] also if full step).
+  //
+  err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
+  rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);  
+
+  // increment time and timestep for this level
+  SimPM.levels[l].simtime += SimPM.levels[l].dt;
+  SimPM.levels[l].step ++;
+  if (l==SimPM.grid_nlevels-1) {
+    SimPM.timestep ++;
+  }
+
+  //
+  // update internal and external boundaries.
+  //
+  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
+
+  // Now calculate next timestep: function stores dt in SimPM.dt
+  err += calculate_timestep(SimPM, grid,spatial_solver);
+  rep.errorTest("scn::advance_step_OA2: calc_timestep",0,err);
+
+  // make sure step is not more than half of the coarser grid step.
+  if (l>0) {
+    SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
+  }
+  else {
+    SimPM.levels[l].dt = SimPM.dt;
+  }
+
+#ifdef TESTING
+  cout <<"advance_step_OA2, level="<<l<<", returning. t=";
+  cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
+#endif
+  return dt2_this + SimPM.levels[l].dt;
+}
+
 
 
 // ##################################################################
