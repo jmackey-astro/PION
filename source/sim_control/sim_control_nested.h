@@ -75,11 +75,28 @@ class sim_control_nestedgrid :
   ///
   /// Advance a grid by one time step for a given level in a nested grid.
   /// This is a recursive function that calls itself on the next finer level
-  /// if it exists.  Currently only 1st order in space/time.
+  /// if it exists.  This is a wrapper function that calls either the
+  /// first-order or second-order update.
+  ///
+  virtual double advance_time(
+      const int ///< level in nested grid.
+      );
+
+  ///
+  /// First-order-accurate time integration for a single step on level l.
   /// Returns the sum of delta-t for the timestep just completed, and the
   /// step to come.
   ///
-  virtual double advance_time(
+  virtual double advance_step_OA1(
+      const int ///< level in nested grid.
+      );
+
+  ///
+  /// Second-order-accurate time integration for a single step on level l.
+  /// Returns the sum of delta-t for the timestep just completed, and the
+  /// step to come.
+  ///
+  virtual double advance_step_OA2(
       const int ///< level in nested grid.
       );
 
