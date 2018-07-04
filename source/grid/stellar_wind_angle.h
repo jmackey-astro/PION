@@ -31,7 +31,8 @@ class stellar_wind_angle
       const int, ///< eqn_type
       const double, ///< minimum temperature allowed
       const double, ///< Simulation start time.
-      const double  ///< Simulation finish time.
+      const double, ///< Simulation finish time.
+      const double  ///< xi value for equatorial flattening of wind
       );
 
   ///
