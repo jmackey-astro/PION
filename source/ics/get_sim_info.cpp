@@ -282,6 +282,36 @@ int get_sim_info::read_gridparams(
     }
   }
 
+  // Nested grid info (all optional for now)
+  seek="grid_nlevels"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nlevels = 1;
+  else          SimPM.grid_nlevels = atoi(str.c_str());
+
+  seek="grid_aspect_ratio_XX"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_aspect_ratio[XX] =1;
+  else          SimPM.grid_aspect_ratio[XX] =  atoi(str.c_str());
+
+  seek="grid_aspect_ratio_YY"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_aspect_ratio[YY] =1;
+  else          SimPM.grid_aspect_ratio[YY] =  atoi(str.c_str());
+
+  seek="grid_aspect_ratio_ZZ"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_aspect_ratio[ZZ] =1;
+  else          SimPM.grid_aspect_ratio[ZZ] =  atoi(str.c_str());
+
+  seek="grid_nest_centre_XX"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nest_centre[XX] = 0.0;
+  else          SimPM.grid_nest_centre[XX] =  atof(str.c_str());
+
+  seek="grid_nest_centre_YY"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nest_centre[YY] = 0.0;
+  else          SimPM.grid_nest_centre[YY] =  atof(str.c_str());
+
+  seek="grid_nest_centre_ZZ"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.grid_nest_centre[ZZ] = 0.0;
+  else          SimPM.grid_nest_centre[ZZ] =  atof(str.c_str());
+
+
   // output info
   str = rp->find_parameter("OutputPath");
   if (str=="") rep.error("outputpath",str);
@@ -440,6 +470,24 @@ int get_sim_info::read_gridparams(
   }
 
   //
+  // Jets?
+  //
+  seek="N_JET";
+  str=rp->find_parameter(seek); 
+  if (str=="") {
+    cout<< "\tN_JET: param not found, setting to 0\n";
+    JP.jetic = 0;
+  }
+  else {
+    JP.jetic = atoi(str.c_str());
+    if (JP.jetic) {
+      err += read_jet_params(SimPM,JP);
+      rep.errorTest("read_jet_params",0,err);
+    }
+  }
+
+
+  //
   // Reference State Vector.  Only look for the first nvar elements and set
   // the rest to zero.
   //
@@ -472,6 +520,11 @@ int get_sim_info::read_gridparams(
   // seek=""; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -610,6 +663,11 @@ int get_sim_info::read_radsources(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 int get_sim_info::read_wind_sources(
       class SimParams &SimPM  ///< pointer to simulation paramters.
       )
@@ -680,8 +738,7 @@ int get_sim_info::read_wind_sources(
 	trcr[v]=atof(a.c_str());
       else rep.error("param not found in pfile",temp.str());
     }
-    for (int v=SimPM.ntracer; v<MAX_NVAR; v++)
-    trcr[v] = 0.0;
+    for (int v=SimPM.ntracer; v<MAX_NVAR; v++) trcr[v] = 0.0;
 
     //
     // new stuff for evolving winds:
@@ -754,6 +811,11 @@ int get_sim_info::read_wind_sources(
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -838,6 +900,11 @@ int get_sim_info::read_extra_physics(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 int get_sim_info::read_units()
 {
   if (!rp) return 1;
@@ -878,5 +945,66 @@ int get_sim_info::read_units()
   else {rep.error("Don't recognise units system",unit);}
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+int get_sim_info::read_jet_params(
+      class SimParams &s_par,  ///< pointer to simulation paramters.
+      class JetParams &jpar   ///< pointer to jet parameters class.
+      )
+{
+  string a;
+  if ( (a=rp->find_parameter("JETradius")) !="")
+    jpar.jetradius = atoi(a.c_str());
+  else rep.error("failed to find par: JETradius",0);
+
+  if ( (a=rp->find_parameter("JETdensity")) !="")
+    jpar.jetstate[RO] = atof(a.c_str());
+  else rep.error("failed to find par: JETdensity",0);
+
+  if ( (a=rp->find_parameter("JETpressure")) !="")
+    jpar.jetstate[PG] = atof(a.c_str());
+  else rep.error("failed to find par: JETpressure",0);
+
+  if ( (a=rp->find_parameter("JETvelocity")) !="")
+    jpar.jetstate[VX] = atof(a.c_str());
+  else rep.error("failed to find par: JETvelocity",0);
+  jpar.jetstate[VY] = 0.0;
+  jpar.jetstate[VZ] = 0.0;
+
+  if ( (a=rp->find_parameter("JETambBX")) !="")
+    jpar.jetstate[BX] = atof(a.c_str());
+  if ( (a=rp->find_parameter("JETambBY")) !="")
+    jpar.jetstate[BY] = atof(a.c_str());
+  if ( (a=rp->find_parameter("JETambBZ")) !="")
+    jpar.jetstate[BZ] = atof(a.c_str());
+
+  if (s_par.eqntype == EQGLM) {
+    jpar.jetstate[SI] = 0.0;
+  }
+
+  ostringstream temp;
+  for (int v=0;v<s_par.ntracer;v++) {
+    temp.str(""); temp<<"JETjetTR"<<v;
+    if ( (a=rp->find_parameter(temp.str())) !="")
+      jpar.jetstate[s_par.ftr+v]=atof(a.c_str());
+    else rep.error("param not found in pfile",temp.str());
+  }
+  for (int v=s_par.ftr+s_par.ntracer; v<MAX_NVAR; v++)
+    jpar.jetstate[v] = 0.0;
+
+
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 

@@ -20,10 +20,10 @@
 
 #ifdef FITS
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "dataIO/dataio_fits.h"
 #include "fitsio.h"
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 
 
 ///
@@ -65,6 +65,7 @@ class DataIOFits_pllel : public DataIOFits {
       const string, ///< File to write to
       class GridBaseClass *, ///< pointer to data.
       class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 

@@ -1,0 +1,157 @@
+/// \file sim_init.h
+/// \author Jonathan Mackey
+/// \date 2018.05.10
+///
+/// Description:\n
+/// Class declaration for sim_init, which sets up a PION simulation
+/// and gets everything ready to run.
+///
+/// Modifications:\n
+/// - 2018.05.11 JM: moved code from sim_control.h
+///
+
+#ifndef SIM_INIT_H
+#define SIM_INIT_H
+
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
+#include "grid/setup_fixed_grid.h"
+#include "grid/grid_base_class.h"
+#include "spatial_solvers/solver_eqn_base.h"
+#include "equations/eqns_base.h"
+#include "sim_control/update_boundaries.h"
+
+
+// ##################################################################
+// ##################################################################
+
+///
+/// Class to set up a simulation so that everything is ready to run.
+/// Inherits from setup_fixed_grid.
+///
+class sim_init : virtual public update_boundaries
+{
+  public:
+  sim_init();
+  ~sim_init();
+   
+  ///
+  /// Function to print command-line options for PION.
+  ///
+  void print_command_line_options(int, char **);
+
+  ///
+  /// initialisation.
+  ///
+  /// This function calls a sequence of other functions to set up the grid
+  /// and populate it with the initial conditions, and give it the appropriate
+  /// boundary conditions.  It gets the simulation ready to start, and checks 
+  /// that everything is ready to start before returning.
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  virtual int Init(
+      string,   ///< Name of input file.
+      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
+      int,      ///< Number of command-line arguments.
+      string *, ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
+
+  ///
+  /// Set the maximum runtime to a new value. Should be set in main()
+  ///
+  void set_max_walltime(
+      double ///< New Max. runtime in seconde.
+      );
+  ///
+  /// Get the maximum runtime in seconds.
+  ///
+  double get_max_walltime();
+
+  ///
+  /// Initialise the correct Equations to solve, based on paramters.
+  ///
+  int set_equations();
+
+  ///
+  /// information about the simulation
+  ///
+  class SimParams SimPM;
+
+  protected:
+
+  //---------------------------------------
+  //---------------------------------------
+  // Class Member data:
+  //
+
+  ///
+  /// information about multi-core-multi-domain simulations, used for
+  /// MPI communication between processes.
+  ///
+  class MCMDcontrol mpiPM;
+
+  ///
+  /// Max. walltime to run for, in seconds, after which we save
+  /// data and finish.
+  ///
+  double max_walltime;
+
+  ///
+  /// pointer to class for reading/writing data.
+  ///
+  class DataIOBase *dataio;
+
+  ///
+  /// pointer to class for reading/writing ascii-text-data.
+  ///
+  class DataIOBase *textio;
+
+  
+  //---------------------------------------
+  //---------------------------------------
+
+
+  /// function to setup data-I/O class.
+  virtual void setup_dataio_class(
+      const int  ///< type of I/O: 1=text,2=fits,5=silo
+      );
+
+  ///
+  /// See if any command-line arguments should override those
+  /// specified in the IC file, and if so, reset the parameters.
+  ///
+  int override_params(
+      int,      ///< Number of command-line arguments.
+      string *  ///< Pointer to array of command-line arguments.
+      );
+
+  ///
+  /// Output the data to file if required.
+  ///
+  /// This checks if I want to output data in this timestep, then
+  /// checks what format to write in, and calls the appropriate 
+  /// function to write the data.
+  ///
+  virtual int output_data(
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
+
+  ///
+  /// Calculates total values of conserved quantities.
+  ///
+  int initial_conserved_quantities(
+      class GridBaseClass *  ///< address of vector of grid pointers.
+      );
+
+
+};
+
+
+
+
+#endif // SIM_INIT_H
+

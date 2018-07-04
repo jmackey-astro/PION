@@ -38,6 +38,14 @@ private:
   int read_wind_sources(
       class SimParams &  ///< pointer to simulation paramters.
       );
+  
+  ///
+  /// Read in parameters for a stellar jet, if requested by N_jet !=0
+  ///
+  int read_jet_params(
+      class SimParams &spar,  ///< pointer to simulation paramters.
+      class JetParams &jpar   ///< pointer to jet parameters class.
+      );
 
   class ReadParams *rp;
 };

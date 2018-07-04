@@ -52,21 +52,6 @@ public:
   ~Riemann_Roe_Hydro_CV();
 
   ///
-  /// Roe's Flux solver for the Euler Equations, from Toro (1999)
-  /// chapter 11.2.2, pp.350-353. (Asymmetric version -- DON'T EVER
-  /// USE THIS UNLESS YOU KNOW WHAT YOU ARE DOING!!!  SYMMETRIC
-  /// VERSION IS MUCH BETTER)
-  ///
-  int Roe_flux_solver_onesided(
-      const pion_flt *, ///< input left state
-      const pion_flt *, ///< input right state
-      const double,   ///< input gamma
-      const double, ///< H-correction eta-max value.
-      pion_flt *, ///< output pstar
-      pion_flt *  ///< output flux
-      );
-
-  ///
   /// Symmetric version of Roe's Flux solver for the Euler Equations,
   /// from Toro (1999), chapter 11.2.2, pp.350-353.
   ///

@@ -39,6 +39,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
+#include "ics/icgen_base.h"
 #include "icgen.h"
 #include <sstream>
 

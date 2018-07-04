@@ -43,6 +43,8 @@
 #include "constants.h"
 #include "sim_constants.h"
 
+#include <vector>
+
 #ifdef RT_TESTING
 #include <iostream>
 #endif
@@ -512,7 +514,7 @@ class cell_interface {
   int ndim;  ///< dimensionality of grid.
   int nvar;  ///< number of variables in state vector.
   double *xmin; ///< The global Xmin of the domain, for counting integer positions from.
-  double int_converter;     ///< Number of integers per cell width.
+  double int_converter;     ///< 1+EPS.
   int cell_size_int_units;  ///< size of a cell in integer units (==2)
   double cell_diameter;     ///< diameter of cell.
 
@@ -568,10 +570,37 @@ class cell_interface {
   ///
   short unsigned int iDivV;
 
+  // ----------------------------------------------------------------
+  // *** Methods for a nested grid ***
+  // ----------------------------------------------------------------
+  
+  protected:
+  int nlevels; ///< Number of refinement levels.
+  std::vector<double> n_dx;   ///< cell diameter at eack level.
+  std::vector<double> n_dxo2; ///< half of cell diameter at each level.
+  std::vector<int>    n_idx;  ///< cell diameter in integer units at each level.
+  
+  public:
+  ///
+  /// Set the number of grid refinement levels.
+  ///
+  void set_nlevels(
+      const double, ///< dx on coarsest grid.
+      const int     ///< number of levels in nested grid.
+      );
+
+  ///
+  /// Returns the size of a cell in the internal integer units for
+  /// this level in the nested grid.
+  ///
+  inline int get_integer_cell_size(
+      const int level ///< level in nested grid
+      ) {return n_idx[level];}
+
+
 };
 
-
+/// Global Instance of cell interface class.
 extern class cell_interface CI;
-  ///< Global Instance of cell interface class.
 
 #endif // CELL_INTERFACE_H

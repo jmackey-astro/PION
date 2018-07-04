@@ -146,39 +146,25 @@ void DataIOFits::SetSolver(
 
 int DataIOFits::OutputData(
       string outfilebase,          ///< base filename
-      class GridBaseClass *cg,     ///< pointer to data.
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM, ///< pointer to simulation parameters
 //      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
       const long int file_counter  ///< number to stamp file with (e.g. timestep)
       )
 {
   string fname="DataIOFits::OutputData";
-
-  if (!cg)
-    rep.error("DataIOFits::OutputData() null pointer to grid!",cg);
-  DataIOFits::gp = cg;
-
-  if (DataIOFits::eqn==0) {
-    //cout <<"WARNING: DataIOFits::OutputData() Set up Equations pointer before outputting data!\n";
-    //cout <<"WARNING: DataIOFits::OutputData() Not outputting Eint/divB/Ptot b/c no way to calculate it!\n";
-  }
-  fitsfile *ff=0;
-  int status=0,err=0;
-
-  // Add variables to list based on what equations we are solving.
   int nvar = SimPM.nvar;
   string *extname=0;
-  if (SimPM.ntracer>5) rep.error("OutputFitsData:: only handles up to 5 tracer variables! Add more if needed.",SimPM.ntracer);
-
+  if (SimPM.ntracer>5) 
+    rep.error("OutputFitsData:: only accepts <=5 tracers!",SimPM.ntracer);
 #ifdef RT_TESTING_OUTPUTCOL
-  // output column densities!
-  if (RT!=0 && SimPM.RS.Nsources>0) {
+  // save column densities
+  if (SimPM.RS.Nsources>0) {
     for (int si=0; si<SimPM.RS.Nsources; si++) {
-      nvar += SimPM.RS.sources[si].NTau; // for column densities
+      nvar += SimPM.RS.sources[si].NTau;
     }
   }
 #endif // RT_TESTING_OUTPUTCOL
-
   if (SimPM.eqntype==EQEUL || SimPM.eqntype==EQEUL_ISO || SimPM.eqntype==EQEUL_EINT) {
     extname=mem.myalloc(extname,nvar+1);
     string pvar[10] = {"GasDens","GasPres","GasVX","GasVY","GasVZ","TR0","TR1","TR2","TR3","TR4"};
@@ -214,10 +200,9 @@ int DataIOFits::OutputData(
     extname=mem.myalloc(extname,10);
     rep.error("What equations?!",SimPM.eqntype);
   }
-
 #ifdef RT_TESTING_OUTPUTCOL
-  // output column densities!
-  if (RT!=0 && SimPM.RS.Nsources>0) {
+  // save column densities
+  if (SimPM.RS.Nsources>0) {
     if (extname[SimPM.nvar]!="")
       rep.error("Tau not writeable!",extname[SimPM.nvar]);
     //
@@ -236,6 +221,12 @@ int DataIOFits::OutputData(
   } // if RT
 #endif // RT_TESTING_OUTPUTCOL
 
+  if (!cg[0])
+    rep.error("DataIOFits::OutputData() null pointer to grid!",cg[0]);
+  DataIOFits::gp = cg[0];
+
+  fitsfile *ff=0;
+  int status=0,err=0;
   //
   // Choose filename based on the basename and the counter passed to
   // this function.
@@ -307,6 +298,7 @@ int DataIOFits::OutputData(
     fits_clear_errmsg();
     return(status);
   }
+
   return err;
 }
 
@@ -411,15 +403,15 @@ int DataIOFits::WriteHeader(
 
 int DataIOFits::ReadData(
       string infile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   string fname="DataIOFits::ReadData";
 
-  if (!cg)
-    rep.error("DataIOFits::ReadData() null pointer to grid!",cg);
-  DataIOFits::gp = cg;
+  if (!cg[0])
+    rep.error("DataIOFits::ReadData() null pointer to grid!",cg[0]);
+  DataIOFits::gp = cg[0];
 
   int err=0; int status=0; fitsfile *ff;
   //cout <<"DataIOFits::ReadData() opening fits file to read data...";

@@ -64,7 +64,6 @@ class FV_solver_Hydro_Euler :
       const int, ///< number of variables in state vector.
       const int, ///< number of space dimensions in grid.
       const double, ///< CFL number
-      const double, ///< dx, cell size.
       const double, ///< gas eos gamma.
       pion_flt *,     ///< State vector of mean values for simulation.
       const double, ///< Artificial Viscosity Parameter etav.
@@ -76,7 +75,7 @@ class FV_solver_Hydro_Euler :
   ///
   /// This calls the equations version and then adds conversion of tracer variables.
   /// 
-  /// For purely passive tracers, the primitive variable is just a number,
+  /// For passive tracers, the primitive variable is just a number,
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
@@ -89,7 +88,7 @@ class FV_solver_Hydro_Euler :
   ///
   /// This calls the equations version and then adds conversion of tracer variables.
   /// 
-  /// For purely passive tracers, the primitive variable is just a number,
+  /// For passive tracers, the primitive variable is just a number,
   /// such as the 'colour' of the gas, or where it started out.  The 
   /// conserved variable is the mass density of this.
   ///
@@ -135,6 +134,7 @@ class FV_solver_Hydro_Euler :
       pion_flt *,       ///< Resultant Flux state vector.
       pion_flt *,      ///< Resultant Pstar state vector.
       const int,      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      const double,  ///< cell-size dx (for LF method)
       const double    ///< Gas constant gamma.
       );
 
@@ -205,7 +205,6 @@ class cyl_FV_solver_Hydro_Euler
       const int, ///< number of variables in state vector.
       const int, ///< number of space dimensions in grid.
       const double, ///< CFL number
-      const double, ///< dx, cell size.
       const double, ///< gas eos gamma.
       pion_flt *,     ///< State vector of mean values for simulation.
       const double, ///< Artificial Viscosity Parameter etav.
@@ -244,7 +243,6 @@ class sph_FV_solver_Hydro_Euler
       const int, ///< number of variables in state vector.
       const int, ///< number of space dimensions in grid.
       const double, ///< CFL number
-      const double, ///< dx, cell size.
       const double, ///< gas eos gamma.
       pion_flt *,     ///< State vector of mean values for simulation.
       const double, ///< Artificial Viscosity Parameter etav.

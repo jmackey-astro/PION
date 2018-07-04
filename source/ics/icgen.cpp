@@ -1,5 +1,5 @@
-/// \file icgen.cc
-/// \brief Program to generate Initial Conditions for my Uniform Grid code.
+/// \file icgen.cpp
+/// \brief Program to generate Initial Conditions for a uniform grid
 /// \author Jonathan Mackey
 /// 
 /// Modifications:
@@ -42,6 +42,7 @@
 ///    before the "setup" function is called.
 /// - 2017.08.03 JM: Don't write IC_filename.silo, just name it like
 ///    a normal snapshot.
+/// - 2018.05.04 JM: moved parallel code to icgen_parallel.cpp
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -52,54 +53,36 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
+#include "ics/icgen_base.h"
 #include "ics/icgen.h"
 #include "ics/get_sim_info.h"
 
-#include "dataIO/dataio.h"
-#include "dataIO/readparams.h"
+#include "dataIO/dataio_base.h"
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
-#include "dataIO/dataio_fits_MPI.h"
 #endif // if FITS
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
 
-#include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
-
-#include "setup_fixed_grid.h"
-#ifdef PARALLEL
-#include "setup_fixed_grid_MPI.h"
-#endif
-
+#include "grid/setup_fixed_grid.h"
 #include "microphysics/microphysics_base.h"
+#include "raytracing/raytracer_base.h"
 
 #include <sstream>
 using namespace std;
 
-int equilibrate_MP(GridBaseClass *, microphysics_base *, ReadParams *, SimParams &);
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int main(int argc, char **argv)
 {
-  /** \todo This routine needs to be parallelised: decomposing the 
-   * domain, setting up a parallel grid, adding noise equally on
-   * subdomains, writing the data.  This ignores the various setup
-   * classes, who should check if they need alterations for parallel
-   * grids on a case-by-case basis.
-   */
-#ifdef PARALLEL
-  int err = COMM->init(&argc, &argv);
-  if (err) rep.error("comms init error",err);
-#endif // PARALLEL
-
   class MCMDcontrol MCMD;
-#ifdef PARALLEL
-  int r=-1, np=-1;
-  COMM->get_rank_nproc(&r,&np);
-  MCMD.set_myrank(r);
-  MCMD.set_nproc(np);
-#endif // PARALLEL
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
@@ -107,28 +90,6 @@ int main(int argc, char **argv)
     return(1);
   }
 
-#ifdef PARALLEL
-  string *args=0;
-  args = new string [argc];
-  for (int i=0;i<argc;i++) args[i] = argv[i];
-  // Redirect stdout/stderr if required.
-  for (int i=0;i<argc; i++) {
-    if (args[i].find("redirect=") != string::npos) {
-      string outpath = (args[i].substr(9));
-      ostringstream path; path << outpath <<"_"<<MCMD.get_myrank()<<"_";
-      outpath = path.str();
-      if (MCMD.get_myrank()==0) {
-        cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
-      }
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
-    }
-  }
-#ifndef TESTING
-  rep.kill_stdout_from_other_procs(0);
-#endif
-  //cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
-#endif //PARALLEL
-#ifdef SERIAL
   int err=0;
   string *args=0;
   args = new string [argc];
@@ -141,13 +102,13 @@ int main(int argc, char **argv)
       rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
     }
   }
-#endif // SERIAL
 
   class DataIOBase   *dataio=0;
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
   class SimParams SimPM;
+  MP=0;  // global microphysics class pointer.
 
   string pfile = argv[1];
   string icftype;
@@ -163,25 +124,26 @@ int main(int argc, char **argv)
 
 
   class setup_fixed_grid *SimSetup =0;
-#if   defined (PARALLEL)
-  SimSetup = new setup_fixed_grid_pllel();
-#elif defined (SERIAL)
   SimSetup = new setup_fixed_grid();
-#else
-#error "Define SERIAL or PARALLEL"
-#endif
 
+  //
+  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  //
+  //SimSetup->setup_nested_grid_levels(SimPM);
 
-  class GridBaseClass *grid = 0;
-#ifdef PARALLEL
-  err  = MCMD.decomposeDomain(SimPM);
-  if (err) rep.error("main: failed to decompose domain!",err);
-#endif // if PARALLEL
+  vector<class GridBaseClass *> grid;
+
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,SimPM,&MCMD);
-  if (!grid) rep.error("Grid setup failed",grid);
+  int l=0;
+  grid.resize(1);
+  // Now set up the grid structure.
+  cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  err = SimSetup->setup_grid(&(grid[l]),SimPM,&MCMD);
+  cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+  SimPM.dx = grid[0]->DX();
+  if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
   //
   // read in what kind of ICs we are setting up.
@@ -190,117 +152,11 @@ int main(int argc, char **argv)
   if (!rp) rep.error("icgen:: initialising RP",rp);
   err += rp->read_paramfile(pfile);
   if (err) rep.error("Error reading parameterfile", pfile);
-  //
-  // Now we want to assign data to the grid, so we call whichever
-  // function is requested.
-  //
   string seek="ics";
   string ics = rp->find_parameter(seek);
-  
-  // invoke an appropriate class for whatever 'ics' is.
-  if      (ics=="ShockTube")
-    ic = new IC_shocktube ();
-  // some basic tests...
-  else if (ics=="OrszagTang" ||
-     ics=="Uniform" ||
-     ics=="Advection" || ics=="AdvectSineWave" ||
-     ics=="KelvinHelmholz" || ics=="KelvinHelmholzStone" ||
-     ics=="FieldLoop" || ics=="FieldLoopVz" || ics=="FieldLoopStatic"
-     )
-    ic = new IC_basic_tests();
-
-  else if (ics=="Jet" || ics=="JET" || ics=="jet") {
-    ic = new IC_jet();
-    ic->set_SimPM(&SimPM);
-    err += ic->setup_data(rp,grid);
-  }
-
-  else if (ics=="DoubleMachRef")
-    ic = new IC_basic_tests();
-
-  else if (ics=="RadiativeShock" ||
-     ics=="RadiativeShockOutflow")
-    ic = new IC_radiative_shock ();
-
-  else if (ics=="LaserAblationAxi" ||
-     ics=="LaserAblation3D")
-    ic = new IC_laser_ablation ();
-
-  //  else if (ics=="Jet")        ic = new IC_jet ();
-
-  else if (ics=="ShockCloud")
-    ic = new IC_shock_cloud ();
-
-  else if (ics=="BlastWave" ||
-           ics=="BlastWave_File")
-    ic = new IC_blastwave ();
-
-  else if (ics=="PhotoEvaporatingClump" ||
-     ics=="PhotoEvaporatingClump2" ||
-     ics=="PhotoEvap_radial" ||
-     ics=="PhotoEvap_powerlaw" ||
-     ics=="PhotoEvap_paralleltest" ||
-     ics=="PhotoEvap_CloudClump")
-    ic = new IC_photoevaporatingclump();
-
-  else if (ics=="PhotEvap_RandomClumps" ||
-     ics=="PERC" || ics=="PERC2" ||
-     ics=="PhotEvap_RandomClumps2")
-    ic = new IC_photevap_random_clumps();
-
-  else if (ics=="PhotEvap_MultiClumps_FixNum" ||
-     ics=="PE_MC_FN" || ics=="PE_MC_FM" ||
-     ics=="PhotEvap_MultiClumps_FixMass")
-    ic = new IC_photevap_multi_clumps();
-
-  else if (ics=="Clump_Spherical" ||
-           ics=="Clump_Axisymmetric")
-    ic = new IC_spherical_clump();
-
-#ifdef CODE_EXT_SBII
-  else if (ics=="StarBench_ContactDiscontinuity1" ||
-           ics=="StarBench_ContactDiscontinuity2" ||
-           ics=="StarBench_ContactDiscontinuity3" ||
-           ics=="StarBench_ContactDiscontinuity4" ||
-           ics=="StarBench_IFI_testA"             ||
-           ics=="StarBench_IFI_testB"             ||
-           ics=="StarBench_IFI_testC"             ||
-           ics=="StarBench_IFI_V2"                ||
-           ics=="StarBench_IrrCloud_Uniform"      ||
-           ics=="StarBench_IrrCloud_IsoSph"       ||
-           ics=="StarBench_TremblinCooling"       ||
-           ics=="StarBench_Cone") {
-    ic = new IC_StarBench_Tests();
-  }
-#endif // CODE_EXT_SBII
-
-#ifdef HARPREETS_CODE_EXT
-#ifndef EXCLUDE_HD_MODULE
-  else if (ics=="HD_2D_ShockCloud")
-    ic = new IC_HD_2D_ShockCloud();
-//  else if (ics=="HD_3D_ShockCloud")
-//    ic = new IC_HD_3D_ShockCloud();
-#endif
-#endif // HARPREETS_CODE_EXT
-
-#ifdef BBTURBULENCE_CODE_EXT
-  else if (ics=="ReadBBTurbulence") {
-    ic = new IC_read_BBurkhart_data();
-  }
-#endif // BBTURBULENCE_CODE_EXT
-
-  else rep.error("BAD IC identifier",ics);
-  if (!ic) rep.error("failed to init",ics);
-
+  setup_ics_type(ics,&ic);
   ic->set_SimPM(&SimPM);
-#ifdef PARALLEL
-  ic->set_MCMD_pointer(&MCMD);
-#endif // PARALLEL
 
-  // ----------------------------------------------------------------
-  // We need to init microphysics class for some of the setups.
-  //
-  MP=0;  // global microphysics class pointer.
 
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
     // don't need to set up the class, because it just does cooling and
@@ -308,38 +164,28 @@ int main(int argc, char **argv)
   }
   else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
     cout <<"MAIN: setting up microphysics module\n";
-
-    cout <<"TRTYPE: \n";
-    for (int i=0;i<SimPM.ntracer;i++) {
-      cout <<"\t"<<i<<"\t"<<SimPM.tracers[i]<<"\n";
-    }
     SimSetup->setup_microphysics(SimPM);
     if (!MP) rep.error("microphysics init",MP);
-  }
-  else {
-    cout <<"MAIN: not doing ray-tracing or microphysics.\n";
   }
   // ----------------------------------------------------------------
 
   //
-  // Set up the boundary conditions, since internal boundary data
-  // should really be already set to its correct value in the initial
-  // conditions file.
+  // Set up the boundary conditions and data
   //
-  grid->SetupBCs(SimPM);
+  SimSetup->boundary_conditions(SimPM,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
-
-
-  err += SimSetup->setup_raytracing(SimPM, grid);
-  err += SimSetup->setup_evolving_RT_sources(SimPM);
+  err += SimSetup->setup_raytracing(SimPM, grid[0]);
+  err += SimSetup->setup_evolving_RT_sources(SimPM,grid[0]->RT);
   if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
-  err += ic->setup_data(rp,grid);
+  err += ic->setup_data(rp,grid[0]);
   if (err) rep.error("Initial conditions setup failed.",err);
   // ----------------------------------------------------------------
 
+  err = SimSetup->assign_boundary_data(SimPM,grid[0]);
+  rep.errorTest("icgen::assign_boundary_data",0,err);
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the 
@@ -353,8 +199,7 @@ int main(int argc, char **argv)
     // setting update_erg to false.
     bool uerg = SimPM.EP.update_erg;
     SimPM.EP.update_erg = false;
-
-    err = equilibrate_MP(grid,MP,rp,SimPM);
+    err = ic->equilibrate_MP(grid[0],MP,rp,SimPM);
     if (err)
       rep.error("setting chemical states to equilibrium failed",err);
 
@@ -364,70 +209,46 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
 
 
-  clk.start_timer("io"); double tsf=0;
-  // MPI: WRITE PARALLEL FILES HERE
-  // write data to file.
   cout <<"IC file-type is "<<icftype<<"\n";
   seek="OutputFile";
   string icfile   = rp->find_parameter(seek);
-  string outfile;
   if (icfile=="") {
     cout <<"WARNING: no filename for ic file.  writing to IC_temp.****\n";
     icfile = "IC_temp";
   }
 
   dataio = 0; // zero the class pointer.
-
   if (icftype=="text") {
     cout <<"WRITING ASCII TEXT FILE: ";
-    outfile=icfile;
-    cout << outfile << "\n";
+    cout << icfile << "\n";
   }
 
 #ifdef FITS    
-  else if (icftype=="fits") {
+  if (icftype=="fits") {
     cout <<"WRITING FITS FILE: ";
-    outfile=icfile;
-    cout << outfile << "\n";
-#ifdef SERIAL
+    cout << icfile << "\n";
     dataio = 0; dataio = new DataIOFits (SimPM);
-#endif // SERIAL
-#ifdef PARALLEL
-    dataio = 0; dataio = new DataIOFits_pllel (SimPM, &MCMD);
-#endif // PARALLEL
   }
 #endif // if fits.
 
 #ifdef SILO
-  else if (icftype=="silo") {
+  if (icftype=="silo") {
     cout <<"WRITING SILO FILE: ";
-    outfile=icfile;
-#ifdef SERIAL
-    //    outfile = icfile+".silo";
-    cout <<outfile <<"\n";
+    //    icfile = icfile+".silo";
+    cout <<icfile <<"\n";
     dataio=0; dataio=new dataio_silo (SimPM, "DOUBLE");
-#endif
-#ifdef PARALLEL
-    cout <<outfile <<"\n";
-    dataio=0; dataio=new dataio_silo_pllel (SimPM, "DOUBLE",&MCMD);
-#endif
   }
 #endif // if SILO defined.
-
-  else rep.error("Don't recognise I/O type (text/fits/silo)",icftype);
   if (!dataio) rep.error("IO class initialisation: ",icftype);
-  
-  err = dataio->OutputData(outfile,grid, SimPM, 0);
+  err = dataio->OutputData(icfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
-  cout <<icftype<<" FILE WRITTEN in";
-  tsf=clk.stop_timer("io");
-  cout <<" "<<tsf<<" seconds.\n";
+  cout <<icftype<<" FILE WRITTEN... exiting\n";
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
-  if (grid) {delete grid; grid=0;}
+  //if (grid) {??grid; grid=0;}
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}
 
@@ -443,390 +264,15 @@ int main(int argc, char **argv)
     temp = mem.myfree(temp); // delete struct.
   }
 
-#ifdef PARALLEL
-  cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
-  COMM->finalise();
-  delete COMM; COMM=0;
-#endif
   delete [] args; args=0;
   return err;
 }
 
 
-
-
-
 // ##################################################################
 // ##################################################################
 
 
 
-
-int equilibrate_MP(
-      class GridBaseClass *gg,
-      class microphysics_base *mp,
-      class ReadParams *rp,
-      class SimParams &SimPM
-      )
-{
-
-  if (!mp || !gg || !rp) rep.error("microphysics or grid not initialised.",mp);
-  rep.printVec("Init left  vec",gg->FirstPt()->P,SimPM.nvar);
-  rep.printVec("Init right vec", gg->LastPt()->P,SimPM.nvar);
-
-  string seek="InitIons";
-  string s=rp->find_parameter(seek);
-  if (s=="" || s=="YES" || s=="Y" || s=="y") {
-    // integrate ion fractions to equilibrium
-    cell *c = gg->FirstPt();
-    do {
-      //
-      // Check if cell is boundary data or not (can only be an internal boundary, such as
-      // a stellar wind, since we are looping over cells which are grid data).  If it is
-      // boundary data, then we don't want to update anything, so we skip it
-      //
-      if (c->isbd) {
-#ifdef TESTING
-        cout <<"skipping cell "<<c->id<<" in equilibrate_MP() c->isbd.\n";
-#endif
-      }
-      else {
-        mp->Init_ionfractions(c->P,SimPM.gamma,-1);
-      }
-    } while ((c=gg->NextPt(c)) !=0);
-    rep.printVec("init left  vec",gg->FirstPt()->P,SimPM.nvar);
-    rep.printVec("init right vec", gg->LastPt()->P,SimPM.nvar);
-    
-    // now do a long time integration to get to equilibrium.
-    c = gg->FirstPt(); pion_flt *p = c->P;
-    double tint = sqrt(SimPM.gamma*p[PG]/p[RO]);
-    tint = 50.*gg->DX()/tint; // gives us 50 times the dynamical time for a cell.
-    cout <<"time to step by="<<tint<<"\n";
-    double tt=0.;
-    c = gg->FirstPt();
-    do {
-      if (!c->isbd) {
-        for (int i=0;i<50;i++){
-          mp->TimeUpdateMP(c->P, c->P, tint, SimPM.gamma, 0, &tt);
-          //rep.printVec("Final left  vec",gg->FirstPt()->P,SimPM.nvar);
-          cout <<"t="<<tt<<"\n";
-        }
-      }
-    } while ((c=gg->NextPt(c)) !=0);
-    rep.printVec("Final left  vec",gg->FirstPt()->P,SimPM.nvar);
-    rep.printVec("Final right vec", gg->LastPt()->P,SimPM.nvar);
-    c = gg->FirstPt();
-    do {
-      if (!c->isbd) {
-        for (int i=0;i<50;i++){
-          mp->TimeUpdateMP(c->P, c->P, tint, SimPM.gamma, 0, &tt);
-        }
-      }
-    } while ((c=gg->NextPt(c)) !=0);
-    rep.printVec("Final left  vec",gg->FirstPt()->P,SimPM.nvar);
-    rep.printVec("Final right vec", gg->LastPt()->P,SimPM.nvar);
-  }
-  else if (s=="NO" || s=="N" || s=="n" || s=="no") {
-    // initial values should be read from paramfile.
-    string vb="Tracer"; cell *c=0;
-    for (int i=0; i<SimPM.ntracer; i++) {
-      ostringstream t; t<<vb<<i;
-      string var=t.str(); cout <<"var: "<<var<<"\n";
-      s=rp->find_parameter(var);
-      if (s=="") rep.error("Don't know what to set tracer to.",s);
-      else {
-        double tr=atof(s.c_str());
-        c = gg->FirstPt();
-        do {c->P[SimPM.ftr+i] = tr;} while ((c=gg->NextPt(c)) !=0);
-      }
-    }
-    rep.printVec("Final left  vec",gg->FirstPt()->P,SimPM.nvar);
-    rep.printVec("Final right vec", gg->LastPt()->P,SimPM.nvar);
-  }
-  else if (s=="LEAVE") {
-    // do nothing! hopefully a subroutine has set them already.
-  }
-  else rep.error("Bad InitIons specifier:",s);
-
-  return 0;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int ICsetup_base::AddNoise2Data(
-      class GridBaseClass *grid,
-      class SimParams &SimPM,
-      int n,
-      double frac
-      )
-{
-  int seed= 975;
-#ifdef PARALLEL
-  seed += MCMD->get_myrank();
-  bool true_edge=false;
-#endif
-  srand(seed);
-  class cell *cpt;  double avg=0.; long int ct=0;
-  switch (n) {
-    case 1:
-    cout <<"\tAdding random noise to pressure at fractional level of "<<frac<<"\n";
-    cpt=grid->FirstPt();
-    do {
-      if (!cpt->isbd) {
-        avg += cpt->P[PG];
-        ct++;
-      }
-    } while ( (cpt=grid->NextPt(cpt)) !=0);
-#ifdef PARALLEL
-    avg = COMM->global_operation_double("SUM",avg);
-#endif
-    cout <<"avg = "<<avg<< "\t ct= "<<ct;
-    avg /= static_cast<double>(SimPM.Ncell);
-    avg *= frac;  // avg is now a fraction 'frac' of the mean pressure on the grid.
-    cout <<"avg = "<<avg<<"\n";
-    cpt=grid->FirstPt();
-    do {
-#ifdef SERIAL
-       if (!cpt->isedge && !cpt->isbd)
-#endif 
-#ifdef PARALLEL
-      //
-      // We want to exclude edge cells, but only those at the edge of the
-      // full domain, not the local domain.
-      //
-      true_edge=false;
-      if (cpt->isedge) {
-        //
-        // find out which direction the edge is (may be more than one!).
-        // If any edge has no neighbour process, then it must be a full-domain
-        // boundary.  If the neigbour doesn't exist, ngbproc(dir)<0.
-        //
-        //cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
-        //cout <<"  true_edge="<<true_edge<<"\n";
-        // x-dir
-        if      (cpt->isedge %3 ==1) { // XN boundary
-          //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (MCMD->ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<MCMD->ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
-        }
-        else if (cpt->isedge %3 ==2) { // XP boundary
-          if (MCMD->ngbprocs[XP] <0) true_edge=true;
-        }
-        // y-dir
-        if (SimPM.ndim>1) {
-          if      ((cpt->isedge%9)/3 ==1) { // YN boundary
-            //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (MCMD->ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<MCMD->ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
-          }
-          else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (MCMD->ngbprocs[YP] <0) true_edge=true;
-          }
-        }
-        // z-dir
-        if (SimPM.ndim>2) {
-          if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (MCMD->ngbprocs[ZN] <0) true_edge=true;
-          }
-          else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (MCMD->ngbprocs[ZP] <0) true_edge=true;
-          }
-        }
-        //cout <<"true_edge="<<true_edge<<"\n";
-      }
-      if (true_edge==false && !cpt->isbd)
-#endif
-       {    // Don't want to alter any edge cells.
-        //cout <<"PG before : "<<cpt->P[PG];
-        cpt->P[PG] += avg*(static_cast<double>(rand())/RAND_MAX -0.5);
-        //cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
-      }
-    } while ( (cpt=grid->NextPt(cpt)) !=0);
-    break;
-
-    case 2:
-    cout <<"Adding adiabatic random noise to cells at fractional level of "<<frac<<"\n";
-    cpt=grid->FirstPt();
-    do {
-#ifdef SERIAL
-       if (!cpt->isedge && !cpt->isbd)
-#endif 
-#ifdef PARALLEL
-      //
-      // We want to exclude edge cells, but only those at the edge of the
-      // full domain, not the local domain.
-      //
-      true_edge=false;
-      if (cpt->isedge) {
-        //
-        // find out which direction the edge is (may be more than one!).
-        // If any edge has no neighbour process, then it must be a full-domain
-        // boundary.  If the neigbour doesn't exist, ngbproc(dir)<0.
-        //
-        //cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
-        //cout <<"  true_edge="<<true_edge<<"\n";
-        // x-dir
-        if      (cpt->isedge %3 ==1) { // XN boundary
-          //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (MCMD->ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<MCMD->ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
-        }
-        else if (cpt->isedge %3 ==2) { // XP boundary
-          if (MCMD->ngbprocs[XP] <0) true_edge=true;
-        }
-        // y-dir
-        if (SimPM.ndim>1) {
-          if      ((cpt->isedge%9)/3 ==1) { // YN boundary
-            //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (MCMD->ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<MCMD->ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
-          }
-          else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (MCMD->ngbprocs[YP] <0) true_edge=true;
-          }
-        }
-        // z-dir
-        if (SimPM.ndim>2) {
-          if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (MCMD->ngbprocs[ZN] <0) true_edge=true;
-          }
-          else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (MCMD->ngbprocs[ZP] <0) true_edge=true;
-          }
-        }
-        //cout <<"true_edge="<<true_edge<<"\n";
-      }
-      if (true_edge==false && !cpt->isbd)
-#endif
-       {    // Don't want to alter any edge cells.
-
-         double temp;
-         //if(cpt->isedge==0) {    // Don't want to alter any edge cells.
-         //cout <<"PG before : "<<cpt->P[PG];
-         //
-         // final pressure = initial pressure * (1 +/- frac)
-         // rho = pressure^(1/gamma)
-         //
-         temp = 2.*frac*(static_cast<double>(rand())/RAND_MAX -0.5);
-         cpt->P[PG] *= 1+temp;
-         cpt->P[RO] *= exp(log(1+temp)/SimPM.gamma);
-         //cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
-         //}
-      }
-    } while ( (cpt=grid->NextPt(cpt)) !=0);
-    break;
-     
-    case 3:
-    cout <<"Adding adiabatic wave to cells at fractional level of "<<frac<<"\n";
-#ifdef PARALLEL
-    rep.error("adiabatic wave noise not implemented in parallel",3);
-#endif
-    // First get average pressure value.
-    cpt=grid->FirstPt();
-    do {if (!cpt->isedge && !cpt->isbd) avg += cpt->P[PG]; ct++;}
-    while ( (cpt=grid->NextPt(cpt)) !=0);
-    cout <<"avg = "<<avg<< "\t ct= "<<ct<<"\n";
-    avg /= static_cast<double>(ct);
-    // Now add wave to preshock state.
-    cpt=grid->FirstPt();
-    do {
-       double temp;
-       if(cpt->isedge==0 && !cpt->isbd && cpt->P[PG]<avg) {    // Don't want to alter any edge cells.
-        //cout <<"PG before : "<<cpt->P[PG];
-        temp = frac*sin(2.*M_PI*(CI.get_dpos(cpt,YY)/SimPM.Range[YY]) *(SimPM.NG[YY]/50));
-         cpt->P[PG] *= 1+temp;
-         cpt->P[RO] *= exp(log(1+temp)/SimPM.gamma);
-         //cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
-       }
-     } while ( (cpt=grid->NextPt(cpt)) !=0);
-    break;
-
-    //
-    // Isothermal perturbation.
-    //
-   case 4:
-    cout <<"Adding isothermal random noise to cells at fractional level of "<<frac<<"\n";
-    cpt=grid->FirstPt();
-    do {
-#ifdef SERIAL
-       if (!cpt->isedge && !cpt->isbd)
-#endif 
-#ifdef PARALLEL
-      //
-      // We want to exclude edge cells, but only those at the edge of the
-      // full domain, not the local domain.
-      //
-      true_edge=false;
-      if (cpt->isedge) {
-        //
-        // find out which direction the edge is (may be more than one!).
-        // If any edge has no neighbour process, then it must be a full-domain
-        // boundary.  If the neigbour doesn't exist, ngbproc(dir)<0.
-        //
-        //cout <<"Edge?: cpt="<<cpt->id<<", isedge="<<cpt->isedge;
-        //cout <<"  true_edge="<<true_edge<<"\n";
-        // x-dir
-        if      (cpt->isedge %3 ==1) { // XN boundary
-          //cout <<"got XN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-          if (MCMD->ngbprocs[XN] <0) true_edge=true;
-          //cout <<" ngb="<<MCMD->ngbprocs[XN]<<", true_edge="<<true_edge<<"\n";
-        }
-        else if (cpt->isedge %3 ==2) { // XP boundary
-          if (MCMD->ngbprocs[XP] <0) true_edge=true;
-        }
-        // y-dir
-        if (SimPM.ndim>1) {
-          if      ((cpt->isedge%9)/3 ==1) { // YN boundary
-            //cout <<"got YN true boundary: cpt="<<cpt->id<<", isedge="<<cpt->isedge<<" ";
-            if (MCMD->ngbprocs[YN] <0) true_edge=true;
-            //cout <<" ngb="<<MCMD->ngbprocs[YN]<<", true_edge="<<true_edge<<"\n";
-          }
-          else if ((cpt->isedge%9)/3 ==2) { // YP boundary
-            if (MCMD->ngbprocs[YP] <0) true_edge=true;
-          }
-        }
-        // z-dir
-        if (SimPM.ndim>2) {
-          if      (cpt->isedge/9 ==1) { // ZN boundary
-            if (MCMD->ngbprocs[ZN] <0) true_edge=true;
-          }
-          else if (cpt->isedge/9 ==2) { // ZP boundary
-            if (MCMD->ngbprocs[ZP] <0) true_edge=true;
-          }
-        }
-        //cout <<"true_edge="<<true_edge<<"\n";
-      }
-      if (true_edge==false && !cpt->isbd)
-#endif
-      {
-        // Don't want to alter any edge cells.
-        double temp;
-        //
-        // final pressure = initial pressure * (1 +/- frac)
-        // final density  = initial density  * (1 +/- frac)
-        //
-        temp = 2.0*frac*(static_cast<double>(rand())/RAND_MAX -0.5);
-        cpt->P[PG] *= 1.0+temp;
-        cpt->P[RO] *= 1.0+temp;
-        //cout <<"\tPG after : "<<cpt->P[PG]<<"\n";
-      }
-    } while ( (cpt=grid->NextPt(cpt)) !=0);
-    break;
-
-    default:
-    cerr <<"\t Error, don't know what type of noise corresponds to "<<n<<"...\n";
-    return(1);
-  }
-  return(0);
-} // AddNoise2Data()
-
-int ICsetup_base::SmoothData(int smooth) {return(0);}
 
 

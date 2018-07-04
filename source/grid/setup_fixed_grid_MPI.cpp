@@ -19,7 +19,7 @@
 #include "tools/reporting.h"
 #include "tools/command_line_interface.h"
 
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "setup_fixed_grid.h"
 #include "setup_fixed_grid_MPI.h"
 #include "raytracing/raytracer_SC.h"
@@ -159,8 +159,9 @@ int setup_fixed_grid_pllel::setup_grid(
 
 int setup_fixed_grid_pllel::setup_raytracing(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-        class GridBaseClass *grid
-        )
+      class GridBaseClass *grid,
+      class RayTracingBase *RT ///< pointer to raytracing class
+      )
 {
   //
   // This function is identical to the serial setup function, except

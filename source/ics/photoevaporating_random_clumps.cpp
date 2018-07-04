@@ -14,6 +14,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
+#include "ics/icgen_base.h"
 #include "ics/icgen.h"
 #include <sstream>
 
@@ -292,21 +293,21 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   srand(atoi(str.c_str()));
 
   // clump_mass is as a fraction of the ambient mass.
-  cout <<clump_mass*(ambient[RO]*gg->DV()*SimPM->Ncell)<<"\n\t\t(="<<clump_mass;
+  class cell *cpt = gg->FirstPt();
+  double vol = gg->CellVolume(cpt);
+  cout <<clump_mass*(ambient[RO]*vol*SimPM->Ncell)<<"\n\t\t(="<<clump_mass;
   cout <<" times ambient mass) and radial sizes of ";
   cout <<min_size<<" to "<<max_size<<" in units of y-range.\n";
   rep.printVec("ambient ",ambient, SimPM->nvar);
 
   cout <<"\t\tAssigning primitive vectors.\n";
-  class cell *cpt = gg->FirstPt();
   double m1=0.0;
   do {
     // Set values of primitive variables.
     for (int v=0;v<SimPM->nvar;v++) cpt->P[v] = ambient[v];
     cpt->P[RO] *= (1.0-clump_mass);
-    m1 += cpt->P[RO];
+    m1 += cpt->P[RO] *vol;
   } while ( (cpt=gg->NextPt(cpt))!=0);
-  m1 *= gg->DV();
 #ifdef PARALLEL
   double m2 = COMM->global_operation_double("SUM", m1);
   m1 = m2;
@@ -319,7 +320,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   //
   // Convert clump mass to an actual total mass in clumps.
   //
-  clump_mass *= ambient[RO]*gg->DV()*SimPM->Ncell;
+  clump_mass *= ambient[RO]*vol*SimPM->Ncell;
 
   cout <<"setting up clump properties...\n";
 #ifdef SERIAL
@@ -333,9 +334,8 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
   double mass=0.0;
   do {
     err += clumps_random_set_dens(cpt);
-    mass += cpt->P[RO];
+    mass += cpt->P[RO] *vol;
   } while ( (cpt=gg->NextPt(cpt))!=0);
-  mass *= gg->DV();
 #ifdef PARALLEL
   double mtot = COMM->global_operation_double("SUM", mass);
   mass = mtot;

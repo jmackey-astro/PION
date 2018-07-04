@@ -1,144 +1,15 @@
-/// \file gridMethods.cc
-/// 
-/// \brief Grid Methods Class Member Function definitions.
-/// 
+/// \file calc_timestep.cpp
+/// \brief routines for calculating the timestep on a grid.
 /// \author Jonathan Mackey
+/// \date 2018.05.10
 /// 
-/// This file contains the definitions of the member functions for IntUniformFV 
-/// class, which is the basic 1st/2nd order Finite Volume Solver according to
-/// the method outlined in Falle, Komissarov, \& Joarder (1998), MNRAS, 297, 265.
-/// 
+/// Description:\n
+/// Has a set of routines for calculating the timestep for fluid
+/// dynamics simulations in PION.
 /// 
 /// Modifications:
-///  - 2007-06-26 Hunted for bugs, but they were in another file.
-///  - 2007-07-13 New Class structure implemented.
-///  - 2007-07-16 New Class structure works (modified from Friday a little).  Same as old, but a bit faster.
-///  - 2007-07-17 2D riemann problem initial setup improved (area averaged interface cells).
-///  - 2007-07-24 Added passive tracer variable support.
-///  - 2007-08-07 cylindrical coordinates working for 2d axi-symmetry.
-///  - 2007-10-11 Cleaning up.
-///  - 2007-11-01 Added dataio class last week, cleaning up today.
-///  - 2008-09-20 Removed text I/O into its own class. ifdeffed silo/fits.
-///
-///  - JM 2009-12-16 Added ifdef in IntUniformFV::Time_Int() so that I
-///      can get the code to output magnetic pressure instead of
-///      timing info every timestep.  This is purely to make a plot of
-///      magnetic pressure for the Field Loop Advection Test and
-///      should be switched off in general (although it makes no
-///      difference to the running of the code!).
-///
-/// - 2009-12-18 JM: Added Axisymmetric Class
-///    (cyl_FV_solver_Hydro_Euler) in set_equations().
-///
-/// - 2010-01-05 JM: Added check for microphysics timestep limiting in
-///     calc_timestep().  This is controlled by the flag
-///     SimPM.EP.MP_timestep_limit, which is set to true to turn it
-///     on.
-///
-/// - 2010-01-21 JM: Added override option for SimPM.gamma, the
-///    equation of state parameter.
-///
-/// - 2010-04-10 JM: fixed width timestep in text and fits filenames.
-///
-/// - 2010-04-21 JM: Changed filename setup so that i can write
-/// checkpoint files with fname.999999.txt/silo/fits.  Added a check
-/// for checkpointing in output_data() and removed all of the outfile
-/// string generation (moved to dataio classes).
-///
-/// - 2010-04-25 JM: Added an extra command-line parameter to set the
-///  minimum allowed timestep.  If the step is shorter than this then
-///  in calc_timestep() we will bug out because something has gone
-///  seriously wrong.
-/// - 2010-07-20 JM: Changed spOOA,tmOOA to integers.
-/// - 2010-07-21 JM: Set SimPM.next_optime in ready_to_start() instead
-///    of ReadHeader().
-/// - 2010-07-23 JM: Swtiched checkpointing to use two files and overwrite
-///    alternate files, ensuring there will always be at least one valid
-///    checkpoint file to restart from.
-///  - 2010.07.23 JM: New RSP source position class interface.
-///  - 2010.09.27 JM: took out comments and old ifdefs from dU_column().
-///  - 2010.09.30 JM: Added div(V) calculation to calc_dU() function for viscosity.
-///  - 2010.10.01 JM: Spherical coordinates(1D only) for Euler equations.
-///       Cut out testing myalloc/myfree
-///  - 2010.10.04 JM: Moved the field-loop magnetic pressure output to
-///       an ifdeffed function.  Added a new function to calculate the
-///       1D blast wave radius in spherical coordinates (also ifdeffed).
-///  - 2010.10.05 JM: Changed boundary point timestep calculation to
-///       work for all sims, not just jet sims.  Note this only works
-///       for the XN point from the grid FirstPt(), not all boundary
-///       points (which it really should work for!)
-///  - 2010.10.13 JM: Added option to setup new MPv9 class
-///       in setup_microphysics() function.
-///       Added MP_timestep_limit override option.
-///  - 2010.11.03 JM: Changed "endl" to "\n" for JUROPA.  Added a
-///       digit to output file counters.
-/// - 2010.11.12 JM: Changed ->col to use cell interface for
-///   extra_data.
-/// - 2010.11.15 JM: Modified update_dynamics() so it has pre- and
-///   post-processing functions before and after calc_dU().
-///   Added routine to calculate the H-correction eta values for
-///   pre-processing.  Added extra_data setting in setup_grid().
-///   2010.11.19 JM: Debugged the H-corr stuff.
-/// - 2010.12.04 JM: Added geometry-dependent grids, in a
-///   GEOMETRIC_GRID ifdef.  Will probably keep it since it is the way
-///   things will go eventually.
-/// - 2010.12.27 JM: Enclosed isothermal solver in an ifdef (it's
-///   broken at the moment and I have no time to fix it).
-/// - 2010.12.28 JM: Added Internal energy integrators to the
-///   set_equations() function, enclosed in a hash-ifdef for testing.
-///   (30.12 and 31.12) More on internal energy integration.
-/// - 2011.01.03 JM: Moved preprocess_dU() to solver_eqn_base.h/.cc
-///   so that it can be re-defined for the internal energy update.
-/// - 2011.01.17 JM: Added override for checkpt_freq=N steps.
-///                  Added new mp_only_cooling() class in MP setup.
-/// - 2011.02.17 JM: Added new optype==6 for outputting text+silo files.
-///                  Raytracer header file moved to raytracing/ subdir.
-///                  More ray-tracing options for CI.setup_extra_data
-/// - 2011.02.25 JM: New setup_raytracing() and update_microphysics() functions.
-///    The interface is simpler, and the logic is much clearer, and it should
-///    now work for multiple sources.
-/// - 2011.03.21 JM: moved cell setup_extra_data() to its own function, to save 
-///    on copy-paste for the parallel version.
-///    Rewrote setup_raytracing() and atomised update_microphysics() so there are
-///    now a few new functions to deal with the different kinds of radiative
-///    transfer we want to do.
-/// - 2011.04.06 JM: Added thermal-conduction timestep limiting and flux calculation.
-/// - 2011.04.14 JM: Added mp_v2_aifa microphysics integration class.
-/// - 2011.04.17 JM: minor debugging additions/subtractions for the new RT update.
-/// - 2011.04.18 JM: more debugging.  nearly done now.
-/// - 2011.04.22 JM: bugs for multiple point sources fixed.  Also removed isfinite
-///    checks for ints.  the intel compiler bugs out with them!  I guess they are
-///    redundant if an int doesn't have a bit combination for NAN or INF.
-/// - 2011.04.29 JM: changed logic: replaced some if (c->isbd) to if (!c->isgd)
-///  because the two are no longer mutually exclusive (grid data can be internal
-///  boundary data also.  Added a check in update_microphysics so that if a cell
-///  is boundary data it is not updated (and in microphysics calc_timestep).
-/// - 2011.05.02 JM: Added set_multifreq_source_properties() call to 
-///    setup_microphysics() function.
-/// - 2011.06.21 JM: Added option of 2nd-order-in-time ray-tracing/microphysics with
-///    two microphysics updates per step.
-/// - 2011.10.13 JM: Added MPv4 class.
-/// - 2011.10.14 JM: Removed raytracer_shielding class, updated RT interface a lot.
-/// - 2011.10.22 JM: The new MP/RT interface is now default (old #deffed code
-///    is now removed as of SVN369).  Improved RT interface, and simplified the 
-///    logic again, so it should now be easier to add to.
-/// - 2012.01.16 JM: Added setup_evolving_RT_sources() and
-///    update_evolving_RT_sources() for stellar evolution models.
-/// - 2012.01.20 JM: Updated setup_evolving_RT_sources() to scale luminosity to
-///    match luminosities of Diaz-Miller+(1998,Table 1).
-/// - 2012.01.23 JM: Added ifdefs for microphysics classes.
-/// - 2012.07.24 JM: Changed time-update to improve stability (photoionisation
-///    models with R-type I-fronts were developing ripples/waves in solution).
-/// - 2012.08.05 JM: Moved timestep-calculation functions from gridMethods.cc
-///    to time_integrators/calc_timestep.cpp.
-/// - 2013.02.07 JM: Tidied up for pion v.0.1 release.
-/// - 2013.08.20 JM: Changed cell_interface for radiative transfer
-///    variables, so heating/ionising source syntax has changed.
-/// - 2015.01.13 JM: Modified for new code structure; began adding
-///    the grid pointer everywhere.
-/// - 2015.01.26 JM: Renamed class to sim_control_fixedgrid.
-/// - 2016.03.14 JM: Worked on parallel Grid_v2 update (full
-///    boundaries).
+/// - 2018.05.10 JM: moved from sim_control into its own class that
+///    inherits from setup_fixed_grid.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -148,7 +19,8 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "sim_control.h"
+#include "sim_control/calc_timestep.h"
+#include "grid/setup_fixed_grid.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_SC.h"
 #include "spatial_solvers/solver_eqn_base.h"
@@ -166,23 +38,121 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-/*****************************************************************/
-/********************* TIMESTEP CALCULATION **********************/
-/*****************************************************************/
+
+
+calc_timestep::calc_timestep()
+{
+  return;
+}
+
+
 
 // ##################################################################
 // ##################################################################
+
+
+
+calc_timestep::~calc_timestep()
+{
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+int calc_timestep::calculate_timestep(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid, ///< pointer to grid.
+      class FV_solver_base *sp_solver ///< solver/equations class
+      )
+{
+#ifdef TESTING
+  cout <<"calc_timestep::calc_timestep(): g="<<grid<<", rt="<<grid->RT<<"\n";
+#endif
+  //
+  // This is a wrapper function.  First we get the dynamics
+  // timestep, and then the microphysics timestep.
+  //
+  double t_dyn=0.0, t_mp=0.0;
+  t_dyn = calc_dynamics_dt(par,grid,sp_solver);
+  t_mp  = calc_microphysics_dt(par,grid);
+#ifdef TESTING
+  if (t_mp<t_dyn)
+    cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
+  cout <<"t_dyn = "<<t_dyn<<"  and t_mp = "<<t_mp<<"\n";
+#endif
+  par.dt = min(t_dyn,t_mp);
+
+#ifdef THERMAL_CONDUCTION
+  //
+  // In order to calculate the timestep limit imposed by thermal conduction,
+  // we need to calcuate the multidimensional energy fluxes
+  // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
+  // by the actual dt later (since at this stage we don't know dt).  This
+  // later multiplication is done in sp_solver->preprocess_data()
+  //
+  double t_cond = calc_conduction_dt_and_Edot();
+#ifdef TESTING
+  if (t_cond<t_dyn && t_cond<t_mp) {
+    cout <<"CONDUCTION IS LIMITING TIMESTEP: t_c="<<t_cond<<", t_m="<<t_mp;
+    cout <<", t_dyn="<<t_dyn<<"\n";
+  }
+#endif
+  par.dt = min(par.dt, t_cond);
+#endif // THERMAL CONDUCTION
+
+  //
+  // If using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
+  // If not, it does nothing.  By setting it here and using t_dyn, we ensure that the
+  // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
+  // an artificially larger speed associated with a shortened timestep.
+  //
+  sp_solver->GotTimestep(t_dyn,grid->DX());
+
+  //
+  // Check that the timestep doesn't increase too much between steps, and that it 
+  // won't bring us past the next output time or the end of the simulation.
+  // This function operates on par.dt, resetting it to a smaller value if needed.
+  //
+  timestep_checking_and_limiting(par);
+
+  // sets the timestep info in the solver class.
+  sp_solver->Setdt(par.dt);
+
+#ifdef TESTING
+  cout <<"calc_timestep::calc_timestep() finished.\n";
+#endif
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 #ifdef THERMAL_CONDUCTION
-double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
+double calc_timestep::calc_conduction_dt_and_Edot(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid, ///< pointer to grid.
+      class FV_solver_base *sp_solver ///< solver/equations class
+      )
 {
+  //
+  // N.B. THIS IS VERY AD-HOC CODE THAT HAS NEVER BEEN USED FOR
+  // PRODUCTION SIMULATIONS.  USE AT YOUR OWN RISK!
   //
   // First we need to set Edot() in every cell.  This is stored in
   // c->dU[ERG] since this is where it will be updated.
   //
   //cout <<"\tCCdt: setting Edot.\n";
-  eqn->set_thermal_conduction_Edot();
+  sp_solver->set_thermal_conduction_Edot();
   //cout <<"\tCCdt: Done with div(Q).  Now getting timestep.\n";
 
   //
@@ -193,7 +163,7 @@ double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
   // want more energy to leave than is already in it.  So we only count a cell
   // in the timestep limiting if Edot is negative.
   //
-  double dt=1.0e200, gm1=SimPM.gamma-1.0, tempdt=0.0, minP=SimPM.RefVec[PG]*1.0e-3;
+  double dt=1.0e200, gm1=par.gamma-1.0, tempdt=0.0, minP=par.RefVec[PG]*1.0e-3;
   cell *c = grid->FirstPt();
   do {
     // DIDN'T WORK -- CHECKERBOARDING!
@@ -210,7 +180,7 @@ double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
   // first timestep can be dodgy with conduction and stellar winds,
   // so set it to a very small value
   //
-  if (SimPM.timestep==0) dt=min(dt,1.0e3);
+  if (par.timestep==0) dt=min(dt,1.0e3);
 
   //
   // Set timestep to be 1/10th of the thermal conduction timescale.
@@ -224,48 +194,45 @@ double sim_control_fixedgrid::calc_conduction_dt_and_Edot()
 // ##################################################################
 
 
-void sim_control_fixedgrid::timestep_checking_and_limiting()
+void calc_timestep::timestep_checking_and_limiting(
+      class SimParams &par      ///< pointer to simulation parameters
+      )
 {
   //
   // If the timestep is less than the minimum allowed, report an error
   // and bug out!  This must be before we check for the next output
   // time because that can limit the step arbitrarily.
   //
-  if (SimPM.dt < SimPM.min_timestep) {
+  if (par.dt < par.min_timestep) {
     ostringstream temp; temp.str("");
-    temp <<"Timestep too short! dt="<<SimPM.dt<<"  min-step="<<SimPM.min_timestep;
-    rep.error(temp.str(),SimPM.dt);
+    temp <<"Timestep too short! dt="<<par.dt<<"  min-step="<<par.min_timestep;
+    rep.error(temp.str(),par.dt);
   }
 
   //
   // So that we don't increase the timestep by more than 30% over last step:
   //
 #ifdef TIMESTEP_LIMITING
-  if (SimPM.dt > 1.3*SimPM.last_dt)
-    cout <<"limiting step from "<<SimPM.dt<<" to "<<1.3*SimPM.last_dt<<"\n";
-  SimPM.dt = min(SimPM.dt,1.3*SimPM.last_dt);
+  if (par.dt > 1.3*par.last_dt)
+    cout <<"limiting step from "<<par.dt<<" to "<<1.3*par.last_dt<<"\n";
+  par.dt = min(par.dt,1.3*par.last_dt);
 #endif // TIMESTEP_LIMITING
-
-  //TESTING RT
-  //SimPM.dt = 0.1*SimPM.finishtime*SimPM.CFL;
-  // so we can do between 10 and 10^4 timesteps per sim.
-  //TESTING RT
 
   //
   // If we are outputting every n-years, then check if we need to adjust dt.
   //
-  if (SimPM.op_criterion==1) {
-    SimPM.dt = min(SimPM.dt, SimPM.next_optime-SimPM.simtime);
-    if (SimPM.dt <= 0.0)
-      rep.error("Went past output time without outputting!",SimPM.dt);
+  if (par.op_criterion==1) {
+    par.dt = min(par.dt, par.next_optime-par.simtime);
+    if (par.dt <= 0.0)
+      rep.error("Went past output time without outputting!",par.dt);
   }
 
   //
   // Make sure we end up exactly at finishtime:
   //
-  SimPM.dt = min(SimPM.dt, SimPM.finishtime-SimPM.simtime);
-  if (SimPM.dt <= 0.0)
-    rep.error("Went past Finish time without Stopping!",SimPM.dt);
+  par.dt = min(par.dt, par.finishtime-par.simtime);
+  if (par.dt <= 0.0)
+    rep.error("Went past Finish time without Stopping!",par.dt);
 
   return;
 }
@@ -275,12 +242,15 @@ void sim_control_fixedgrid::timestep_checking_and_limiting()
 // ##################################################################
 
 
-double sim_control_fixedgrid::calc_dynamics_dt(
-        class GridBaseClass *grid
-        )
+double calc_timestep::calc_dynamics_dt(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,
+      class FV_solver_base *sp_solver ///< solver/equations class
+      )
 {
   double tempdt=0.0;
   double dt=1.e100; // Set it to very large no. initially.
+  double dx=grid->DX();
 
   class cell *c=grid->FirstPt();
 #ifdef TESTING
@@ -294,7 +264,7 @@ double sim_control_fixedgrid::calc_dynamics_dt(
   // immediately.
   //
 #ifndef RT_TEST_PROBS
-  if (SimPM.timestep<=10) {
+  if (par.timestep<=10) {
      c = grid->FirstPt_All();
   }
 #endif // not RT_TEST_PROBS
@@ -308,13 +278,16 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 #ifdef TESTING
     dp.c = c;
 #endif
-    tempdt = eqn->CellTimeStep(
+    tempdt = sp_solver->CellTimeStep(
               c, ///< pointer to cell
-              SimPM.gamma, ///< gas EOS gamma.
-              SimPM.dx  ///< Cell size dx.
+              par.gamma, ///< gas EOS gamma.
+              dx  ///< Cell size dx.
               );
-    if(tempdt<=0.0)
+    if(tempdt<=0.0) {
+      CI.print_cell(c);
+      cout <<"celltimestep="<<tempdt<<", gamma="<<par.gamma<<", dx="<<dx<<"\n";
       rep.error("CellTimeStep function returned failing value",c->id);
+    }
     //    commandline.console("timestep -> ");
     dt = min(dt, tempdt);
     //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
@@ -325,7 +298,7 @@ double sim_control_fixedgrid::calc_dynamics_dt(
     // NextPt() command to only take grid cells.
     //
 #ifndef RT_TEST_PROBS
-    if (SimPM.timestep<=10) {
+    if (par.timestep<=10) {
       c = grid->NextPt_All(c);
     }
     else {
@@ -351,9 +324,10 @@ double sim_control_fixedgrid::calc_dynamics_dt(
 // ##################################################################
 
 
-double sim_control_fixedgrid::calc_microphysics_dt(
-        class GridBaseClass *grid
-        )
+double calc_timestep::calc_microphysics_dt(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid ///< pointer to grid.
+      )
 {
   //
   // If we have microphysics, we may want to limit the timestep by
@@ -369,7 +343,7 @@ double sim_control_fixedgrid::calc_microphysics_dt(
   // Now we know we have microphysics, so check that MP_timestep_limit is set
   // to a non-zero value.
   //
-  if (SimPM.EP.MP_timestep_limit==0) {
+  if (par.EP.MP_timestep_limit==0) {
     return 1.0e99;
   }
 
@@ -384,10 +358,10 @@ double sim_control_fixedgrid::calc_microphysics_dt(
     //
     // need column densities, so do raytracing, and then get dt.
     //
-    //cout <<"calc_timestep, getting column densities.\n";
-    int err = calculate_raytracing_column_densities();
+    //cout <<"calc_timestep, getting column densities rt="<<raytracer<<".\n";
+    int err = calculate_raytracing_column_densities(par,grid->RT);
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
-    dt = get_mp_timescales_with_radiation(grid);
+    dt = get_mp_timescales_with_radiation(par,grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_with_radiation() returned error",dt);
   }
@@ -396,7 +370,7 @@ double sim_control_fixedgrid::calc_microphysics_dt(
     // don't need column densities, so call the no-RT version
     //
     //cout <<" getting timestep with no radiation\n";
-    dt = get_mp_timescales_no_radiation(grid);
+    dt = get_mp_timescales_no_radiation(par,grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_no_radiation() returned error",dt);
   }
@@ -413,7 +387,8 @@ double sim_control_fixedgrid::calc_microphysics_dt(
 // ##################################################################
 
 
-double sim_control_fixedgrid::get_mp_timescales_no_radiation(
+double calc_timestep::get_mp_timescales_no_radiation(
+      class SimParams &par,      ///< pointer to simulation parameters
         class GridBaseClass *grid
         )
 {
@@ -421,8 +396,8 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
   //
   // paranoid checking...
   //
-  if (SimPM.EP.MP_timestep_limit==0) {
-    cout <<"sim_control_fixedgrid::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
+  if (par.EP.MP_timestep_limit==0) {
+    cout <<"calc_timestep::get_mp_timescales_no_radiation() called, but no MP-dt limiting!\n";
     return -1.0;
   }
 #endif // TESTING
@@ -450,21 +425,21 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
       //
       // timescales(state-vec, gamma, t_cool?, t_rec?, t_photoion?)
       //
-      switch (SimPM.EP.MP_timestep_limit) {
+      switch (par.EP.MP_timestep_limit) {
       case 1: // cooling time only.
-        tempdt = MP->timescales(c->Ph, SimPM.gamma, true, false, false);
+        tempdt = MP->timescales(c->Ph, par.gamma, true, false, false);
         break;
       case 4: // recomb only
-        tempdt = MP->timescales(c->Ph, SimPM.gamma, false, true, false);
+        tempdt = MP->timescales(c->Ph, par.gamma, false, true, false);
         break;
       case 2: // cooling+recomb
-        tempdt = MP->timescales(c->Ph, SimPM.gamma, true,  true, false);
+        tempdt = MP->timescales(c->Ph, par.gamma, true,  true, false);
         break;
       case 3: // cooling+recomb+ionisation (not working!)
-        tempdt = MP->timescales(c->Ph, SimPM.gamma, true,  true, true);
+        tempdt = MP->timescales(c->Ph, par.gamma, true,  true, true);
         break;
       default:
-        rep.error("Bad MP_timestep_limit",SimPM.EP.MP_timestep_limit);
+        rep.error("Bad MP_timestep_limit",par.EP.MP_timestep_limit);
       }
       dt = min(dt, tempdt);
       //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<dt<<"\n";
@@ -477,11 +452,12 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
   // all neutral initially, but only for a few seconds!!!
   // (DON'T WANT TO SET THIS FOR NON-DYNAMICS TEST PROBLEMS)
   //
-  if (SimPM.timestep<3 && (RT) && SimPM.EP.phot_ionisation) {
+  if ((par.timestep<3) && (par.RS.Nsources>0) &&
+      (par.EP.phot_ionisation)) {
     //
     // adjust first timestep so that it corresponds to ionised cell.
     // 
-    dt = min(dt, grid->DX()*SimPM.CFL/2.0e6); // 20 km/s wavespeed.
+    dt = min(dt, grid->DX()*par.CFL/2.0e6); // 20 km/s wavespeed.
     //
     // Also make sure it is not larger than 1.0e6 seconds (0.03 years).
     // With photoionisation we must be using CGS units, so it is ok to 
@@ -497,7 +473,7 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
   // Since we must have microphysics set up here, it is safe to assume
   // the code is using cgs units for density.
   //
-  if ((SimPM.timestep==0) && (RT)) {
+  if ((par.timestep==0) && (par.RS.Nsources>0)) {
     c=grid->FirstPt();
     cout <<"rho="<<c->Ph[RO]<<", old dt="<<dt;
     dt = min(dt, 3.009e-12/c->Ph[RO]);
@@ -513,19 +489,21 @@ double sim_control_fixedgrid::get_mp_timescales_no_radiation(
 // ##################################################################
 
 
-double sim_control_fixedgrid::get_mp_timescales_with_radiation(
-        class GridBaseClass *grid
-        )
+double calc_timestep::get_mp_timescales_with_radiation(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid
+      )
 {
 #ifdef TESTING
   //
   // paranoid checking...
   //
-  if (SimPM.EP.MP_timestep_limit==0) {
-    cout <<"sim_control_fixedgrid::get_mp_timescales_with_radiation() called, but no MP-dt limiting!\n";
+  if (par.EP.MP_timestep_limit==0) {
+    cout <<"calc_timestep::get_mp_timescales_with_radiation() no MP-dt limiting\n";
     return -1.0;
   }
-  if (!RT) rep.error("Called sim_control_fixedgrid::get_mp_timescales_with_radiation() but RT=0",1);
+  if (par.RS.Nsources==0)
+    rep.error("calc_timestep::get_mp_timescales_with_radiation() no sources",1);
 #endif // TESTING
 
   //
@@ -571,17 +549,17 @@ double sim_control_fixedgrid::get_mp_timescales_with_radiation(
       //
       // For the new update we assume we want to limit by all relevant timescales.
       //
-      tempdt = MP->timescales_RT(c->Ph, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs, SimPM.gamma);
+      tempdt = MP->timescales_RT(c->Ph, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs, par.gamma);
 #ifdef TESTING
       if (tempdt<dt) {
         cout <<"(get_min_timestep) id="<<c->id<<":  dt="<<tempdt<<", min-dt="<<dt;
-        cout <<".\t 1-x="<<1.0-c->Ph[SimPM.ftr]<<", pg="<<c->Ph[PG]<<"\n";
+        cout <<".\t 1-x="<<1.0-c->Ph[par.ftr]<<", pg="<<c->Ph[PG]<<"\n";
       }
 #endif
       if (tempdt<=0.0) {
         cout <<"get_mp_timescales_with_radiation() negative timestep... ";
         cout <<"c->id="<<c->id<<"\tdt="<<tempdt<<"\n";
-        rep.printVec("Ph",c->Ph,SimPM.nvar);
+        rep.printVec("Ph",c->Ph,par.nvar);
         rep.error("Negative timestep from microphysics with RT!",tempdt);
       }
       //if (tempdt<dt)
@@ -592,6 +570,39 @@ double sim_control_fixedgrid::get_mp_timescales_with_radiation(
 
   return dt;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+int calc_timestep::calculate_raytracing_column_densities(
+      class SimParams &par,      ///< pointer to simulation parameters
+      //class GridBaseClass *grid       ///< Computational grid.
+      class RayTracingBase *raytracer ///< raytracer for this grid.
+      )
+{
+  int err=0;
+  if (!raytracer) rep.error("calculate_raytracing_column_densities() no RT",0);
+  //
+  // If we have raytracing, we call the ray-tracing routines 
+  // to get Tau0, dTau, Vshell in cell->extra_data[].
+  //
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+#ifdef raytracer_TESTING
+    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
+#endif
+    err += raytracer->RayTrace_Column_Density(isrc, 0.0, par.gamma);
+    if (err) {
+      cout <<"isrc="<<isrc<<"\t"; 
+      rep.error("calc_raytracing_col_dens step in returned error",err);
+    } // if error
+  } // loop over sources
+  return err;
+}
+
 
 
 // ##################################################################

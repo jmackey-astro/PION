@@ -1,4 +1,5 @@
-/// \file silo.h
+/// \file dataio_silo.h
+///
 /// This file contains class declarations for the serial and parallel
 /// versions of the Silo dataio Class.  Info on Silo can be found at
 /// https://wci.llnl.gov/codes/silo/ on LLNL website.  It's advantage
@@ -38,8 +39,8 @@
 
 #ifdef SILO
 
-#include "dataIO/dataio.h"
-#include "MCMD_control.h"
+#include "dataIO/dataio_base.h"
+#include "decomposition/MCMD_control.h"
 #include <silo.h>
 #include <vector>
 
@@ -95,7 +96,7 @@ class dataio_silo :public DataIOBase {
   ///
   virtual int OutputData(
       const string, ///< File to write to
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
       const long int ///< number to stamp file with (e.g. timestep)
       );
@@ -128,7 +129,7 @@ class dataio_silo :public DataIOBase {
   ///
   virtual int ReadData(
       string, ///< file to read from
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &  ///< pointer to simulation parameters
       );
 
@@ -329,7 +330,7 @@ class dataio_silo_pllel : public dataio_silo {
   ///
   int OutputData(
       const string, ///< File to write to
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
       const long int ///< number to stamp file with (e.g. timestep)
       );
@@ -355,7 +356,7 @@ class dataio_silo_pllel : public dataio_silo {
   /// domain decomposition has been done already, and will bug out if it
   /// hasn't.  The routine uses the PMPIO interface.
   ///
-  int ReadData(
+  virtual int ReadData(
       string, ///< file to read from
       class GridBaseClass *, ///< pointer to data.
       class SimParams &  ///< pointer to simulation parameters

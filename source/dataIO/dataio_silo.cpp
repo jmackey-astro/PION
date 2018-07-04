@@ -1,5 +1,5 @@
 ///
-/// \file dataio_silo.cc
+/// \file dataio_silo.cpp
 /// This has the class definitions for the serial I/O class
 /// dataio_silo. Note that the variable SILO must be set in
 /// the Makefile for this code to be compiled.
@@ -223,7 +223,7 @@ int dataio_silo::WriteHeader(
   }
   err = write_simulation_parameters(SimPM);
   if (err)
-    rep.error("dataio_silo::OutputData() error writing header to silo file",err);
+    rep.error("dataio_silo::WriteHeader() error writing header to silo file",err);
 
   DBClose(*db_ptr); //*db_ptr=0; 
   return 0;
@@ -238,16 +238,23 @@ int dataio_silo::WriteHeader(
 
 int dataio_silo::OutputData(
       const string outfile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
-  if (!cg)
-    rep.error("dataio_silo::OutputData() null pointer to grid!",cg);
-  dataio_silo::gp = cg;
-
   int err=0;
+
+  if (!cg[0])
+    rep.error("dataio_silo::OutputData() null pointer to grid!",cg[0]);
+  dataio_silo::gp = cg[0];
+
+  if (!have_setup_writevars) {
+    // set what data to write to the mesh.
+    err = dataio_silo::setup_write_variables(SimPM);
+    if (err)
+      rep.error("dataio_silo::OutputData() write vars",err);
+  }
 
   err = dataio_silo::choose_filename(outfile, file_counter);
   if (err) {
@@ -279,12 +286,6 @@ int dataio_silo::OutputData(
     if (err)
       rep.error("dataio_silo::OutputData() error setting up grid_props", err);
   }
-  if (!have_setup_writevars) {
-    // set what data to write to the mesh.
-    err = dataio_silo::setup_write_variables(SimPM);
-    if (err)
-      rep.error("dataio_silo::OutputData() error settting up variables to write to",err);
-  }
 
   //
   // now write the simulation parameters to the header part of the file.
@@ -314,8 +315,7 @@ int dataio_silo::OutputData(
   }
   dataio_silo::delete_data_arrays();
   DBSetDir(*db_ptr,"/");
-  DBClose(*db_ptr); //*db_ptr=0; 
-
+  DBClose(*db_ptr); //*db_ptr=0;
 
   return 0;
 }
@@ -374,13 +374,13 @@ int dataio_silo::ReadHeader(
 
 int dataio_silo::ReadData(
       string infile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  if (!cg)
-    rep.error("dataio_silo::ReadData() null pointer to grid!",cg);
-  dataio_silo::gp = cg;
+  if (!cg[0])
+    rep.error("dataio_silo::ReadData() null pointer to grid!",cg[0]);
+  dataio_silo::gp = cg[0];
   silofile=infile;
 
   int err=0;
@@ -513,8 +513,7 @@ int dataio_silo::setup_grid_properties(
   // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
-  //double dx=gp->DX();
-  double dx=SimPM.dx;
+  double dx=grid->DX();
   if (node_coords || nodedims || zonedims ||
       nodex || nodey || nodez) {
     cerr<<"Have already setup variables for grid props! ";
@@ -713,7 +712,7 @@ int dataio_silo::setup_write_variables(
   //
   // output extra variables if doing ionising-RT and we want to look at energetics.
   //
-  if (RT!=0 && SimPM.EP.phot_ionisation) {
+  if (SimPM.RS.Nsources>0 && SimPM.EP.phot_ionisation) {
     varnames.push_back("ci_cooling");
     varnames.push_back("rr_cooling");
     varnames.push_back("fn_cooling");
@@ -733,31 +732,29 @@ int dataio_silo::setup_write_variables(
   //
   // If testing diffuse/ionising RT, output extra column density data:
   //
-  if (RT) {
-    for (int v=0;v<SimPM.RS.Nsources;v++) {
-      ostringstream var;
-      for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++) {
-        var.str("");
-        switch (SimPM.RS.sources[v].type) {
-          case RT_SRC_SINGLE:
-          var << "Col_Src_" << v;
-          var << "_T"<<iT;
-          varnames.push_back(var.str());
-          break;
+  for (int v=0;v<SimPM.RS.Nsources;v++) {
+    ostringstream var;
+    for (int iT=0; iT<SimPM.RS.sources[v].NTau; iT++) {
+      var.str("");
+      switch (SimPM.RS.sources[v].type) {
+        case RT_SRC_SINGLE:
+        var << "Col_Src_" << v;
+        var << "_T"<<iT;
+        varnames.push_back(var.str());
+        break;
 
-          case RT_SRC_DIFFUSE:
-          var << "ColDiff_" << v;
-          var << "_T"<<iT;
-          varnames.push_back(var.str());
-          break;
+        case RT_SRC_DIFFUSE:
+        var << "ColDiff_" << v;
+        var << "_T"<<iT;
+        varnames.push_back(var.str());
+        break;
 
-          default:
-          rep.error("Bad radiation source type",SimPM.RS.sources[v].type);
-          break;
-        } // switch
-      } // loop over Tau vars for source
-    } // loop over Nsources
-  } // if RT
+        default:
+        rep.error("Bad radiation source type",SimPM.RS.sources[v].type);
+        break;
+      } // switch
+    } // loop over Tau vars for source
+  } // loop over Nsources
 #endif // RT_TESTING_OUTPUTCOL
 
   //

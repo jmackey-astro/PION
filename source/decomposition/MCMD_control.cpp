@@ -11,7 +11,7 @@
 /// - 2018.01.24 JM: worked on making SimPM non-global
 
 
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "tools/mem_manage.h"
 #include "tools/reporting.h"
 #include "constants.h"
@@ -58,7 +58,8 @@ MCMDcontrol::~MCMDcontrol() {
 
 
 int MCMDcontrol::decomposeDomain(
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      struct level &level     ///< pointer to domain parameters for nested grid level
       )
 {
   //  cout << "---MCMDcontrol::decomposeDomain() decomposing domain.\n";
@@ -70,25 +71,25 @@ int MCMDcontrol::decomposeDomain(
   //
   if (SimPM.ndim==1) {
     // 1D is so simple it's worth putting in it's own section.
-    LocalRange[XX] = SimPM.Range[XX]/nproc;
-    LocalXmin[XX] = SimPM.Xmin[XX] + myrank*LocalRange[XX];
+    LocalRange[XX] = level.Range[XX]/nproc;
+    LocalXmin[XX] = level.Xmin[XX] + myrank*LocalRange[XX];
     LocalXmax[XX] = LocalXmin[XX] + LocalRange[XX];
-    LocalNG[XX] = SimPM.NG[XX]/nproc;
+    LocalNG[XX] = level.NG[XX]/nproc;
     offsets[XX] = 0;
     LocalNcell = LocalNG[XX];
     // Set up ngbprocs array to point to neighbouring processors
     nx[XX] = nproc;
     ix[XX] = myrank;
-    pointToNeighbours(SimPM);
+    pointToNeighbours(SimPM,level);
   } // If 1D
   
   else if (SimPM.ndim==2 || SimPM.ndim==3) {
     for (int i=0;i<SimPM.ndim;i++) {
-      LocalRange[i] = SimPM.Range[i];
-      LocalXmin[i]  = SimPM.Xmin[i];
-      LocalXmax[i]  = SimPM.Xmax[i];
-      LocalNG[i]    = SimPM.NG[i];
-      LocalNcell    = SimPM.Ncell;
+      LocalRange[i] = level.Range[i];
+      LocalXmin[i]  = level.Xmin[i];
+      LocalXmax[i]  = level.Xmax[i];
+      LocalNG[i]    = level.NG[i];
+      LocalNcell    = level.Ncell;
     }
     double maxrange=0.;
     enum axes maxdir=XX;
@@ -147,12 +148,7 @@ int MCMDcontrol::decomposeDomain(
           dsrc=-1;
         }
       }
-      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
-      // DOMAIN DECOMPOSITION.
       dsrc = -1;
-      // HACK -- DISABLE PARALLEL RAYS APPROX ALWAYS SO I CAN DO NORMAL
-      // DOMAIN DECOMPOSITION.
-
       // --- end of RT source at infinity bit ---
       
       maxrange=0.; i=0;
@@ -176,7 +172,7 @@ int MCMDcontrol::decomposeDomain(
     // This requires myrank to count from zero!
     //
     for (int i=0;i<SimPM.ndim;i++)
-      nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/LocalRange[i]);
+      nx[i] =static_cast<int>(ONE_PLUS_EPS*level.Range[i]/LocalRange[i]);
     int temp=myrank;
     if (SimPM.ndim==3) {
       ix[ZZ] = temp/nx[XX]/nx[YY];
@@ -186,16 +182,16 @@ int MCMDcontrol::decomposeDomain(
     temp -= ix[YY]*nx[XX];
     ix[XX] = temp;
     
-    LocalNcell = SimPM.Ncell;
+    LocalNcell = level.Ncell;
     for (int i=0;i<SimPM.ndim;i++) {
-      LocalXmin[i]  = SimPM.Xmin[i] +ix[i]*LocalRange[i];
-      LocalXmax[i]  = SimPM.Xmin[i] +(ix[i]+1)*LocalRange[i];
-      LocalNG[i]    = SimPM.NG[i]/nx[i];
+      LocalXmin[i]  = level.Xmin[i] +ix[i]*LocalRange[i];
+      LocalXmax[i]  = level.Xmin[i] +(ix[i]+1)*LocalRange[i];
+      LocalNG[i]    = level.NG[i]/nx[i];
       LocalNcell   /= nx[i];
       offsets[i]    = ix[i]*LocalNG[i];
     }
     // Set up ngbprocs array to point to neighbouring processors
-    pointToNeighbours(SimPM);
+    pointToNeighbours(SimPM,level);
   } // if 2D or 3D
   
   else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
@@ -203,9 +199,9 @@ int MCMDcontrol::decomposeDomain(
   // Display some debugging info.
   //  if (myrank==0) {
   //    for (int i=0;i<SimPM.ndim;i++) {
-  //     cout <<"Sim: idim="<<i<<"  \tRange="<<SimPM.Range[i];
-  //     cout <<",\t  xmin,xmax = "<<SimPM.Xmin[i]<<", "<<SimPM.Xmax[i];
-  //     cout <<"    \t Ncell = "<<SimPM.Ncell<<"\n";
+  //     cout <<"Sim: idim="<<i<<"  \tRange="<<level.Range[i];
+  //     cout <<",\t  xmin,xmax = "<<level.Xmin[i]<<", "<<level.Xmax[i];
+  //     cout <<"    \t Ncell = "<<level.Ncell<<"\n";
   //   }
   // }
   // for (int i=0;i<SimPM.ndim;i++) {
@@ -225,7 +221,8 @@ int MCMDcontrol::decomposeDomain(
 
 int MCMDcontrol::decomposeDomain(
       const enum axes daxis,   ///< Axis to decompose domain along.
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      struct level &level     ///< pointer to domain parameters for nested grid level
       )
 {
   cout << "---MCMDcontrol::decomposeDomain() decomposing domain";
@@ -240,11 +237,11 @@ int MCMDcontrol::decomposeDomain(
   
   else if (SimPM.ndim==2 || SimPM.ndim==3) {
     for (int i=0;i<SimPM.ndim;i++) {
-      LocalRange[i] = SimPM.Range[i];
-      LocalXmin[i]  = SimPM.Xmin[i];
-      LocalXmax[i]  = SimPM.Xmax[i];
-      LocalNG[i]    = SimPM.NG[i];
-      LocalNcell    = SimPM.Ncell;
+      LocalRange[i] = level.Range[i];
+      LocalXmin[i]  = level.Xmin[i];
+      LocalXmax[i]  = level.Xmax[i];
+      LocalNG[i]    = level.NG[i];
+      LocalNcell    = level.Ncell;
     }
     //
     // npcounter counts how many sub-domains I have.
@@ -268,7 +265,7 @@ int MCMDcontrol::decomposeDomain(
     // This requires myrank to count from zero!
     //
     for (int i=0;i<SimPM.ndim;i++)
-      nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/LocalRange[i]);
+      nx[i] =static_cast<int>(ONE_PLUS_EPS*level.Range[i]/LocalRange[i]);
     int temp=myrank;
     if (SimPM.ndim==3) {
       ix[ZZ] = temp/nx[XX]/nx[YY];
@@ -278,16 +275,16 @@ int MCMDcontrol::decomposeDomain(
     temp -= ix[YY]*nx[XX];
     ix[XX] = temp;
     
-    LocalNcell = SimPM.Ncell;
+    LocalNcell = level.Ncell;
     for (int i=0;i<SimPM.ndim;i++) {
-      LocalXmin[i]  = SimPM.Xmin[i] +ix[i]*LocalRange[i];
-      LocalXmax[i]  = SimPM.Xmin[i] +(ix[i]+1)*LocalRange[i];
-      LocalNG[i]    = SimPM.NG[i]/nx[i];
+      LocalXmin[i]  = level.Xmin[i] +ix[i]*LocalRange[i];
+      LocalXmax[i]  = level.Xmin[i] +(ix[i]+1)*LocalRange[i];
+      LocalNG[i]    = level.NG[i]/nx[i];
       LocalNcell   /= nx[i];
       offsets[i]    = ix[i]*LocalNG[i];
     }
     // Set up ngbprocs array to point to neighbouring processors
-    pointToNeighbours(SimPM);    
+    pointToNeighbours(SimPM,level);    
   } // if 2D or 3D
   
   else rep.error("Bad NDIM in DecomposeDomain",SimPM.ndim);
@@ -302,11 +299,14 @@ int MCMDcontrol::decomposeDomain(
   return 0;
 }
 
+
 // ##################################################################
 // ##################################################################
 
+
 int MCMDcontrol::pointToNeighbours(
-      class SimParams &SimPM  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      struct level &level     ///< pointer to domain parameters for nested grid level
       )
 {
   ///
@@ -324,7 +324,7 @@ int MCMDcontrol::pointToNeighbours(
   ///
   int nx[SimPM.ndim];
   for (int i=0;i<SimPM.ndim;i++) {
-    nx[i] =static_cast<int>(ONE_PLUS_EPS*SimPM.Range[i]/LocalRange[i]);
+    nx[i] =static_cast<int>(ONE_PLUS_EPS*level.Range[i]/LocalRange[i]);
   }
   // Point to neigbours
   if (ngbprocs) {
@@ -335,31 +335,33 @@ int MCMDcontrol::pointToNeighbours(
   if (!ngbprocs) rep.error("Memory Allocation of neighbours.",ngbprocs);
   ngbprocs[XN] = myrank -1;
   ngbprocs[XP] = myrank +1;
-  if (pconst.equalD(LocalXmin[XX],SimPM.Xmin[XX])) ngbprocs[XN] = -999;
-  if (pconst.equalD(LocalXmax[XX],SimPM.Xmax[XX])) ngbprocs[XP] = -999;
+  if (pconst.equalD(LocalXmin[XX],level.Xmin[XX])) ngbprocs[XN] = -999;
+  if (pconst.equalD(LocalXmax[XX],level.Xmax[XX])) ngbprocs[XP] = -999;
   if (SimPM.ndim >1) {
     ngbprocs[YN] = myrank -nx[XX];
     ngbprocs[YP] = myrank +nx[XX];
-    if (pconst.equalD(LocalXmin[YY],SimPM.Xmin[YY])) ngbprocs[YN] = -999;
-    if (pconst.equalD(LocalXmax[YY],SimPM.Xmax[YY])) ngbprocs[YP] = -999;
+    if (pconst.equalD(LocalXmin[YY],level.Xmin[YY])) ngbprocs[YN] = -999;
+    if (pconst.equalD(LocalXmax[YY],level.Xmax[YY])) ngbprocs[YP] = -999;
   }
   if (SimPM.ndim >2) {
     ngbprocs[ZN] = myrank -nx[XX]*nx[YY];
     ngbprocs[ZP] = myrank +nx[XX]*nx[YY];
-    if (pconst.equalD(LocalXmin[ZZ],SimPM.Xmin[ZZ])) ngbprocs[ZN] = -999;
-    if (pconst.equalD(LocalXmax[ZZ],SimPM.Xmax[ZZ])) ngbprocs[ZP] = -999;
+    if (pconst.equalD(LocalXmin[ZZ],level.Xmin[ZZ])) ngbprocs[ZN] = -999;
+    if (pconst.equalD(LocalXmax[ZZ],level.Xmax[ZZ])) ngbprocs[ZP] = -999;
   }
   return(0);
 }
 
+
 // ##################################################################
 // ##################################################################
+
 
 ///
 /// Get a list of all abutting domains, including corner/edge intersections.
 ///
 void MCMDcontrol::get_abutting_domains(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
+      const int ndim,  ///< grid dimensions
       std::vector<int> &dl ///< write list to this vector.
       )
 {
@@ -393,7 +395,7 @@ void MCMDcontrol::get_abutting_domains(
   bool d[2*MAX_DIM];
   for (int v=0;v<2*MAX_DIM;v++) d[v] = false;
   enum direction posdir, negdir;
-  for (int v=0;v<SimPM.ndim;v++) {
+  for (int v=0;v<ndim;v++) {
     negdir = static_cast<direction>(2*v);
     posdir = static_cast<direction>(2*v+1);
     if (ngbprocs[negdir]>=0) d[negdir] = true;
@@ -403,7 +405,7 @@ void MCMDcontrol::get_abutting_domains(
   //
   // Add coordinate directions to list.
   //
-  for (int v=0; v<2*SimPM.ndim; v++) {
+  for (int v=0; v<2*ndim; v++) {
     if (d[v]) full_ngb_list.push_back(ngbprocs[v]);
   }
 
@@ -471,17 +473,17 @@ void MCMDcontrol::get_abutting_domains(
 // Returns the ix array for any requested rank.
 //
 void MCMDcontrol::get_domain_ix(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
+      const int ndim,  ///< grid dimensions
       const int r, ///< rank ix requested for.
       int *arr     ///< array to put ix into.
       )
 {
   int temp=r;
-  if (SimPM.ndim==3) {
+  if (ndim==3) {
     arr[ZZ] = temp/nx[XX]/nx[YY];
     temp -= arr[ZZ]*nx[XX]*nx[YY];
   }
-  if (SimPM.ndim>1) {
+  if (ndim>1) {
     arr[YY] = temp/nx[XX];
     temp -= arr[YY]*nx[XX];
   }

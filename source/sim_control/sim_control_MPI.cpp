@@ -5,7 +5,7 @@
 /// \author Jonathan Mackey
 /// 
 /// This file contains the definitions of the member functions for 
-/// the "sim_control_fixedgrid_pllel" class, which is a modification
+/// the "sim_control_pllel" class, which is a modification
 /// of the basic 1st/2nd order Finite Volume Solver according to the
 /// method outlined in Falle, Komissarov, \& Joarder (1998),MNRAS,297,265.
 /// 
@@ -63,7 +63,7 @@
 #include "tools/timer.h"
 #include "constants.h"
 
-#include "MCMD_control.h"
+#include "decomposition/MCMD_control.h"
 #include "sim_control_MPI.h"
 #include "raytracing/raytracer_SC.h"
 
@@ -90,11 +90,11 @@ using namespace std;
 // ##################################################################
 
 
-sim_control_fixedgrid_pllel::sim_control_fixedgrid_pllel()
-  : sim_control_fixedgrid()
+sim_control_pllel::sim_control_pllel()
+  : sim_control()
 {
 #ifdef TESTING
-  cout <<"sim_control_fixedgrid_pllel constructor.\n";
+  cout <<"sim_control_pllel constructor.\n";
 #endif
 }
 
@@ -104,10 +104,10 @@ sim_control_fixedgrid_pllel::sim_control_fixedgrid_pllel()
 // ##################################################################
 
 
-sim_control_fixedgrid_pllel::~sim_control_fixedgrid_pllel()
+sim_control_pllel::~sim_control_pllel()
 {
 #ifdef TESTING    
-  cout <<"sim_control_fixedgrid_pllel destructor.\n";
+  cout <<"sim_control_pllel destructor.\n";
 #endif
 }
 
@@ -118,7 +118,7 @@ sim_control_fixedgrid_pllel::~sim_control_fixedgrid_pllel()
 
 
 
-int sim_control_fixedgrid_pllel::Init(
+int sim_control_pllel::Init(
       string infile,
       int typeOfFile,
       int narg,
@@ -126,36 +126,8 @@ int sim_control_fixedgrid_pllel::Init(
       class GridBaseClass **grid
       )
 {
-
-  /// \userguide \section icfiles Parallel IC/Restart files.
-  ///
-  /// [FITS IS NOT COMPILED BY DEFAULT ANYMORE; USE SILO; SEE BELOW] 
-  ///
-  /// When running in parallel, outputs are named according to the rank as
-  /// follows: \'outfile\_\<myrank\>.\<timestep\>.fits\'. Because of this, an
-  /// initial condition file should never have the string \'_\<number\>.\' in
-  /// it.  This will confuse the data I/O routines.  If reading from a single
-  /// initial conditions (or restart) file, this string should not be in the
-  /// filename, and all processes will read from the same file.  If restarting
-  /// from multiple input files, however, the given input filename should be the
-  /// restart file for processor 0 (i.e. restartfile\_0.\<timestep\>.fits), and
-  /// the function sim_control_fixedgrid_pllel::init() will parse the input
-  /// filename and replace the \"\_0.\" with \"\_\<myrank\>.\", followed by a
-  /// call to the original serial function sim_control_fixedgrid::init() with the new
-  /// filename, if it exists.
-  ///
-  /// For Silo data I/O the model is a little different.  The number of files
-  /// can be smaller than the number of processors.  Serial files should still
-  /// never have the substring "\_0" in them.  Parallel files are named in a
-  /// similar way as for fits files, but each file can contain data from a
-  /// number of processors, stored in different subdirectories within the file.
-  /// Also, filenames are now stored as follows: \'ouftile\_0000.00000.silo\'
-  /// where the first zeros are for the number of the file, and the second are
-  /// for the timestep.  It made sense to have a fixed width number, for listing
-  /// files as much as anything else.
-
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid_pllel::init) Initialising grid: infile = "<<infile<<"\n";
+  cout <<"(sim_control_pllel::init) Initialising grid: infile = "<<infile<<"\n";
 #endif
   int err=0;
 
@@ -167,95 +139,28 @@ int sim_control_fixedgrid_pllel::Init(
   mpiPM.set_myrank(myrank);
   mpiPM.set_nproc(nproc);
 
-
   //
-  // Now find out what kind of file we are to read, and then read it.
+  // Setup dataI/O class and check if we read from a single file or
+  // multiple files.  Should be a single file, but for FITS it might
+  // not be.
   //
-  if (typeOfFile==1) {
-      rep.error("Don't give me text file for parallel I/O! Crazy fool!",typeOfFile);
-  }
-  // -------------------------------
-
-#ifdef FITS
-  // ******** FITS FILE I/O ********
-  else if (typeOfFile==2) {
-    if (!dataio) dataio = new DataIOFits_pllel(SimPM, &mpiPM);
-    if (!dataio) rep.error("DataIOFits initialisation",dataio);
-    if (dataio->file_exists(infile)) {
-#ifdef TESTING
-      cout <<"\t Reading from file : "<< infile<<"\n";
-      cout <<"\t Assume if filename contains \'_0000.\', that it is the first of multiple files.\n";
-#endif
-      string::size_type pos =infile.find("_0000.");
-      if (pos==string::npos) {
-#ifdef TESTING
-	cout <<"\t Couldn't find \'_0000.\' in file, so reading from single file.\n";
-#endif
-	mpiPM.ReadSingleFile = true;
-      }
-      else {
-#ifdef TESTING
-	cout <<"\t Found \'_0000.\' in file, so replacing that with myrank.\n";
-#endif
-	mpiPM.ReadSingleFile = false;
-#ifdef TESTING
-	cout <<"\t Old infile: "<<infile<<"\n";
-#endif
-	ostringstream t; t.str("");
-        t<<"_"; t.width(4); t.fill('0'); t<<mpiPM.get_myrank()<<".";
-        string t2=t.str();
-	infile.replace(pos,6,t2);
-#ifdef TESTING
-	cout <<"\t New infile: "<<infile<<"\n";
-#endif
-	if (!dataio->file_exists(infile))
-          rep.error("infile doesn't exist!",infile);
-      }
-    }
-    else {
-      cout <<"\tInfile doesn't exist: failing\n";
-      return(1);
-    }
-  }
-  // ******** FITS FILE I/O ********
-#endif // FITS
-  // -------------------------------
-
-#ifdef SILO
-  // -------------------------------
-  // ******** SILO FILE I/0 ********
-  else if (typeOfFile==5) {
-    string::size_type pos =infile.find("_0");
+  setup_dataio_class(typeOfFile);
+  if (dataio->file_exists(infile)) {
+    string::size_type pos =infile.find("_0000.");
     if (pos==string::npos) {
-#ifdef TESTING
-      cout <<"\t Couldn't find \'_0\' in file, so assume reading from single file.\n";
-#endif
-      //cout <<"\t But using parallel I/O, so need parallel multimesh objects... failing!\n";
-      //return 99;
       mpiPM.ReadSingleFile = true;
     }
     else {
-#ifdef TESTING
-      cout <<"\t Found \'_0\' in file, so assume reading from multiple files.\n";
-      cout <<"silo class knows how to get to the right file name when reading data.\n";
-#endif
       mpiPM.ReadSingleFile = false;
+      ostringstream t; t.str("");
+      t<<"_"; t.width(4); t.fill('0'); t<<mpiPM.get_myrank()<<".";
+      string t2=t.str();
+      infile.replace(pos,6,t2);
     }
+  }
+  if (!dataio->file_exists(infile))
+    rep.error("infile doesn't exist!",infile);
 
-    if (!dataio) dataio = new dataio_silo_utility (SimPM, "DOUBLE", &mpiPM);
-    if (!dataio) rep.error("dataio_silo_pllel initialisation",dataio);
-    if (!dataio->file_exists(infile)) {
-      cout <<"\tInfile doesn't exist: failing\n";
-      return(1);
-    }
-  }  
-  // ******** SILO FILE I/0 ********
-  // -------------------------------
-#endif // if SILO
-
-  else
-    rep.error("Bad file type specifier for parallel grids (2=fits,\
-               5=silo) IS IT COMPILED IN???",typeOfFile);
   
   //
   // We need to decompose the domain here, because setup_grid() needs
@@ -265,60 +170,67 @@ int sim_control_fixedgrid_pllel::Init(
   //
   err = dataio->ReadHeader(infile, SimPM);
   if (err) rep.error("PLLEL Init(): failed to read header",err);
-  err = mpiPM.decomposeDomain(SimPM);
+  err = mpiPM.decomposeDomain(SimPM, SimPM.levels[0]);
   if (err) rep.error("PLLEL Init():Couldn't Decompose Domain!",err);
 
 
 
 #ifdef TESTING
-  cout <<"(sim_control_fixedgrid_pllel::init) Calling serial code sim_control_fixedgrid::init() on infile."<<"\n";
+  cout <<"(sim_control_pllel::init) Calling serial code sim_control::init() on infile."<<"\n";
 #endif
-  err = sim_control_fixedgrid::Init(infile, typeOfFile, narg, args, grid);
+  err = sim_control::Init(infile, typeOfFile, narg, args, grid);
   if (err) rep.error("failed to do serial init",err);
 
 
 
-  // If outfile-type is different to infile-type, we need to delete dataio and set it up again.
-  // This is ifdeffed out in the serial code because parallel I/O classes need to be set up.
-  if (SimPM.typeofip != SimPM.typeofop) {
-#ifdef TESTING
-    cout <<"(sim_control_fixedgrid_pllel::INIT) infile-type="<<SimPM.typeofip;
-    cout <<" and outfile-type="<<SimPM.typeofop;
-    cout <<", so deleting and renewing dataio.\n";
-#endif
-
-    if (dataio) {delete dataio; dataio=0;}
-    switch (SimPM.typeofop) {
-    case 1: // ascii, so do nothing.
-      break;
-#ifdef FITS
-    case 2: // fits
-    case 3: // fits
-    case 4: // fits +ascii
-      dataio = new DataIOFits_pllel(SimPM, &mpiPM);
-      break;
-#endif
-#ifdef SILO
-    case 5: // silo
-      dataio = new dataio_silo_utility (SimPM, "DOUBLE", &mpiPM);
-      break;
-#endif // if SILO
-    default:
-      rep.error("PARALLEL INIT: Bad type of Output",SimPM.typeofop);
-    }
-    if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
-  }
-  dataio->SetSolver(eqn);
   if (SimPM.timestep==0) {
 #ifdef TESTING
-     cout << "(P\'LLEL INIT) Outputting initial data.\n";
+     cout << "(PARALLEL INIT) Writing initial data.\n";
 #endif
      output_data(*grid);
   }
-  cout <<"                                   ******************************\n";
-
+  cout <<"------------------------------------------------------------\n";
   return(err);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void sim_control_pllel::setup_dataio_class(
+      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
+      )
+{
+  //
+  // set up the right kind of data I/O class depending on the input.
+  //
+  switch (typeOfFile) {
+
+  case 1: // Start From ASCII Parameterfile.
+    rep.error("No text file for parallel I/O! Crazy fool!",typeOfFile);
+    break;
+
+#ifdef FITS
+  case 2: // Start from FITS restartfile
+  case 3: // Fits restartfile in table format (slower I/O than image...)
+    dataio = new DataIOFits_pllel(SimPM, &mpiPM);
+    break;
+#endif // if FITS
+
+#ifdef SILO
+  case 5: // Start from Silo ICfile or restart file.
+    dataio = new dataio_silo_utility (SimPM, "DOUBLE", &mpiPM);
+    break; 
+#endif // if SILO
+  default:
+    rep.error("sim_control::Init unhandled filetype",typeOfFile);
+  }
+  return;
+}
+
 
 
 
@@ -331,12 +243,12 @@ int sim_control_fixedgrid_pllel::Init(
 /*****************************************************************/
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
-int sim_control_fixedgrid_pllel::Time_Int(
+int sim_control_pllel::Time_Int(
         class GridBaseClass *grid
         )
 {
   cout <<"                               **************************************\n";
-  cout <<"(sim_control_fixedgrid_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
+  cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   int err=0;
   int log_freq=10;
   SimPM.maxtime=false;
@@ -345,7 +257,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM);
+    err = update_evolving_RT_sources(SimPM,RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
       return err;
@@ -391,7 +303,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
       return(1);
     }
   }
-  cout <<"(sim_control_fixedgrid_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
+  cout <<"(sim_control_pllel::time_int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM."<<"\n";
   tsf=clk.time_so_far("time_int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
   cout <<", sim-time="<<SimPM.simtime;
@@ -420,7 +332,7 @@ int sim_control_fixedgrid_pllel::Time_Int(
 // ##################################################################
 
 
-int sim_control_fixedgrid_pllel::calc_timestep(
+int sim_control_pllel::calc_timestep(
         class GridBaseClass *grid
         )
 {

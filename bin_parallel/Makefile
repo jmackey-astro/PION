@@ -76,7 +76,8 @@ VPATH = \
 ../source/spatial_solvers:\
 ../source/time_integrators:\
 ../source/contrib:\
-../source/tools
+../source/tools:\
+../source/decomposition
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h \
@@ -347,7 +348,6 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
         file_status.o                                                          \
 	dataio_silo_MPI.o dataio_silo_utility.o sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
-        raytracer_base.o  \
 	comm_mpi.o comm_files.o                                                \
 	stellar_wind_BC.o                                                      \
 	stellar_wind_angle.o \
@@ -371,7 +371,6 @@ IC_OBJ = reporting.o mem_manage.o command_line_interface.o \
         MCMD_control.o \
         setup_fixed_grid.o setup_fixed_grid_MPI.o \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
-        raytracer_base.o  \
 	dataio.o dataio_silo.o get_sim_info.o inside_sphere.o \
         file_status.o                                                          \
 	integrator.o cooling.o \
@@ -606,8 +605,6 @@ MPv8.o: MPv8.cpp \
 ########################
 # Raytracing
 ########################
-raytracer_base.o: raytracer_base.cpp raytracer_base.h ${GLOBAL}
-
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
 

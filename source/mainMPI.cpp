@@ -58,10 +58,10 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control_fixedgrid_pllel *sim_control = 0;
-  sim_control = new class sim_control_fixedgrid_pllel();
+  class sim_control_pllel *sim_control = 0;
+  sim_control = new class sim_control_pllel();
   if (!sim_control)
-    rep.error("(PION) Couldn't initialise sim_control_fixedgrid_pllel", sim_control);
+    rep.error("(PION) Couldn't initialise sim_control_pllel", sim_control);
 
   //
   // copy cmd-line args into an array of strings (for ease of use.

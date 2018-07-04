@@ -51,27 +51,12 @@
 #include <iostream>
 using namespace std;
 
-//
-// These tell code what to compile and what to leave out.
-//
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
-
 #include "sim_constants.h"
-
-//
-// reporting class, for dealing with stdio/stderr
-//
 #include "tools/reporting.h"
-
-//
-// grid base class
-//
 #include "grid/grid_base_class.h"
-//
-// simulation control toolkit class.
-//
-#include "sim_control.h"
+#include "sim_control/sim_control.h"
 
 
 int main(int argc, char **argv)
@@ -80,10 +65,10 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control_fixedgrid *sim_control = 0;
-  sim_control = new class sim_control_fixedgrid();
+  class sim_control *sim_control = 0;
+  sim_control = new class sim_control();
   if (!sim_control)
-    rep.error("(pion) Couldn't initialise sim_control_fixedgrid", sim_control);
+    rep.error("(pion) Couldn't initialise sim_control", sim_control);
 
   //
   // Check that command-line arguments are sufficient.
@@ -127,15 +112,15 @@ int main(int argc, char **argv)
   }
 
   //
-  // set up pointer to grid base class.
+  // set up vector of grids.
   //
-  class GridBaseClass *grid = 0;
+  vector<class GridBaseClass *> grid;
 
   //
   // Initialise the grid.
   // inputs are infile_name, infile_type, nargs, *args[]
   //
-  err = sim_control->Init(args[1], ft, argc, args, &grid);
+  err = sim_control->Init(args[1], ft, argc, args, grid);
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Init"<<"\n";
     delete sim_control;
@@ -148,7 +133,7 @@ int main(int argc, char **argv)
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Time_Int"<<"\n";
     delete sim_control;
-    delete grid;
+    //delete grid;
     return 1;
   }
   //
@@ -158,12 +143,12 @@ int main(int argc, char **argv)
   if (err!=0){
     cerr<<"(*pion*) err!=0 from Finalise"<<"\n";
     delete sim_control;
-    delete grid;
+    //delete grid;
     return 1;
   }
 
   delete sim_control; sim_control=0;
-  delete grid; grid=0;
+  //delete grid; grid=0;
   delete [] args; args=0;
   
   cout <<"-------------------------------------------------------\n";

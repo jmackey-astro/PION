@@ -36,28 +36,6 @@ using namespace std;
 // ##################################################################
 // ##################################################################
 
-VectorOps_Sph::VectorOps_Sph(
-      int n,
-      double del
-      )
-: VectorOps_Cart(n,del), VectorOps_Cyl(n,del)
-{
-#ifdef TESTING
-  cout <<"Setting up 1D spherical coordinates with ndim="<<VOnd;
-  cout <<" and dR="<<VOdR<<"\n";
-#endif
-  if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",
-                          VOnd);
-  
-  VOdV = 4.0*M_PI*VOdR;
-  VOdA = 4.0*M_PI;
-  return;
-}
-
-
-// ##################################################################
-// ##################################################################
-
 VectorOps_Sph::VectorOps_Sph(int n)
   : VectorOps_Cart(n), VectorOps_Cyl(n)
 {
@@ -81,8 +59,8 @@ void VectorOps_Sph::set_dx(const double x)
   //
   // Now modify Volume and Area for Spherical coords.
   //
-  VOdV = 4.0*M_PI*VOdR;
-  VOdA = 4.0*M_PI;
+  VOdV = 4.0 * M_PI / 3.0;
+  VOdA = 4.0 * M_PI;
   return;
 }
 
@@ -97,15 +75,19 @@ VectorOps_Sph::~VectorOps_Sph()
 // ##################################################################
 // ##################################################################
 
-double VectorOps_Sph::CellVolume(const cell *c)
+double VectorOps_Sph::CellVolume(
+      const cell *c,
+      const double dR
+      )
 {
   ///
   /// The volume of a cell is 
-  /// \f$\delta V =4\pi R_i^2 \delta R \f$, where \f$R_i\f$ is the
-  /// cell centre in the radial direction.
+  /// \f$\delta V =4\pi (R_+^3-R_i^3) /3 \f$, where \f$R_\pm\f$ is the
+  /// positive/negative cell edge position in the radial direction.
   ///
   double temp = CI.get_dpos(c,Rsph);
-  return VOdV*temp*temp;
+  temp = pow(temp+0.5*dR, 3) - pow(temp-0.5*dR, 3);
+  return VOdV*temp;
 }
 
 
@@ -113,20 +95,21 @@ double VectorOps_Sph::CellVolume(const cell *c)
 // ##################################################################
 
 double VectorOps_Sph::CellInterface(
-        const cell *c,
-        const direction dir
-        )
+      const cell *c,
+      const direction dir,
+      const double dR
+      )
 {
   double temp=0.0;
 
   if (VOnd==1) {
     switch (dir) {
     case RNsph:
-      temp =  CI.get_dpos(c,Rsph) - 0.5*VOdR;
+      temp =  CI.get_dpos(c,Rsph) - 0.5*dR;
       return 4.0*M_PI*temp*temp;
       break;
     case RPsph:
-      temp =  CI.get_dpos(c,Rsph) + 0.5*VOdR;
+      temp =  CI.get_dpos(c,Rsph) + 0.5*dR;
       return 4.0*M_PI*temp*temp;
       break;
     default:
@@ -162,22 +145,23 @@ double VectorOps_Sph::maxGradAbs(
   // 1D gradient in radial direction is just df/dr
   //
   double grad=0, temp=0;
+  double dR=grid->DX();
   cell *cn;
   switch (sv) {
   case 0: // Use vector c->P
     cn = grid->NextPt(c,RPsph);
-    temp = fabs( cn->P[var] - c->P[var])/(R_com(cn)-R_com(c));
+    temp = fabs( cn->P[var] - c->P[var])/(R_com(cn,dR)-R_com(c,dR));
     if(temp>grad) grad = temp;
     cn = grid->NextPt(c,RNsph);
-    temp = fabs( cn->P[var] - c->P[var])/(R_com(c)-R_com(cn));
+    temp = fabs( cn->P[var] - c->P[var])/(R_com(c,dR)-R_com(cn,dR));
     if(temp>grad) grad = temp;
     break;
   case 1: // Use Vector c-Ph
     cn = grid->NextPt(c,RPsph);
-    temp = fabs( cn->Ph[var] - c->Ph[var])/(R_com(cn)-R_com(c));
+    temp = fabs( cn->Ph[var] - c->Ph[var])/(R_com(cn,dR)-R_com(c,dR));
     if(temp>grad) grad = temp;
     cn = grid->NextPt(c,RNsph);
-    temp = fabs( cn->Ph[var] - c->Ph[var])/(R_com(c)-R_com(cn));
+    temp = fabs( cn->Ph[var] - c->Ph[var])/(R_com(c,dR)-R_com(cn,dR));
     if(temp>grad) grad = temp;
     break;
    default:
@@ -212,16 +196,17 @@ void VectorOps_Sph::Gradient(
   // modifications.
   //
   cell *cn,*cp;
+  double dR=grid->DX();
   double rn=0.0, rp=0.0;
   switch (sv) {
   case 0: // Use vector c->P
     cn = grid->NextPt(c,RNsph); cp=grid->NextPt(c,RPsph);
-    rn = R_com(cn); rp = R_com(cp);
+    rn = R_com(cn,dR); rp = R_com(cp,dR);
     grad[0] = (cp->P[var] - cn->P[var])/(rp-rn);
     break;
   case 1: // Use Vector c-Ph
     cn = grid->NextPt(c,RNsph); cp=grid->NextPt(c,RPsph);
-    rn = R_com(cn); rp = R_com(cp);
+    rn = R_com(cn,dR); rp = R_com(cp,dR);
     grad[0] = (cp->Ph[var] - cn->Ph[var])/(rp-rn);
     break;
   default:
@@ -255,21 +240,22 @@ double VectorOps_Sph::Divergence(
   //
   double divv=0.0, rn=0.0, rp=0.0;
   cell *cn,*cp;
+  double dR=grid->DX();
   
   switch (sv) {
   case 0: // Use vector c->P
     // r^{-2}d(r^2 V_r)/dr or (2/r)V_r +d(V_r)/dr
     cn = grid->NextPt(c,RNsph); cp=grid->NextPt(c,RPsph);
-    rn = R_com(cn); rp = R_com(cp);
+    rn = R_com(cn,dR); rp = R_com(cp,dR);
     //divv = (rp*rp*cp->P[var[0]] - rn*rn*cn->P[var[0]])*3.0/(pow(rp,3.0)-pow(rn,3.0));
-    divv = 2.0*c->P[var[0]]/R_com(c) +(cp->P[var[0]]-cn->P[var[0]])/(rp-rn);
+    divv = 2.0*c->P[var[0]]/R_com(c,dR) +(cp->P[var[0]]-cn->P[var[0]])/(rp-rn);
     break;
   case 1: // Use Vector c-Ph
     // r^{-2}d(r^2 V_r)/dr or (2/r)V_r+dV_r/dr
     cn = grid->NextPt(c,RNsph); cp=grid->NextPt(c,RPsph);
-    rn = R_com(cn); rp = R_com(cp);
+    rn = R_com(cn,dR); rp = R_com(cp,dR);
     //divv = (rp*rp*cp->P[var[0]] - rn*rn*cn->P[var[0]])*3.0/(pow(rp,3.0)-pow(rn,3.0));
-    divv = 2.0*c->P[var[0]]/R_com(c) +(cp->P[var[0]]-cn->P[var[0]])/(rp-rn);
+    divv = 2.0*c->P[var[0]]/R_com(c,dR) +(cp->P[var[0]]-cn->P[var[0]])/(rp-rn);
     break;
   default:
     rep.error("Don't know what state vector to use for calculating divergence.",sv);
@@ -322,6 +308,7 @@ int VectorOps_Sph::SetEdgeState(
 {
   
   if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",VOnd);
+  double dR=grid->DX();
 
   //
   // 1st order, constant data.
@@ -337,10 +324,10 @@ int VectorOps_Sph::SetEdgeState(
     double del=0.;
     switch (dir) {
     case RPsph:
-      del = CI.get_dpos(c,Rsph)+0.5*VOdR - R_com(c);
+      del = CI.get_dpos(c,Rsph)+0.5*dR - R_com(c,dR);
       break;
     case RNsph:
-      del = CI.get_dpos(c,Rsph)-0.5*VOdR - R_com(c);
+      del = CI.get_dpos(c,Rsph)-0.5*dR - R_com(c,dR);
       break;
      default:
       rep.error("Bad direction in SetEdgeState",dir);
@@ -393,6 +380,7 @@ int VectorOps_Sph::SetSlope(
   else if (OA==OA2) {
     pion_flt slpn[nv], slpp[nv];
     cell *cn=0,*cp=0;
+    double dR=grid->DX();
     enum direction dp=NO,dn=NO;
 
     //
@@ -413,8 +401,8 @@ int VectorOps_Sph::SetSlope(
     switch (d) {
     case Rsph:
       for (int v=0;v<nv;v++) {
-	slpn[v] = (c->Ph[v] -cn->Ph[v])/ (R_com(c) - R_com(cn));
-	slpp[v] = (cp->Ph[v]- c->Ph[v])/ (R_com(cp)- R_com(c) );
+	slpn[v] = (c->Ph[v] -cn->Ph[v])/ (R_com(c,dR) - R_com(cn,dR));
+	slpp[v] = (cp->Ph[v]- c->Ph[v])/ (R_com(cp,dR)- R_com(c,dR) );
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
       break;
@@ -428,8 +416,8 @@ int VectorOps_Sph::SetSlope(
     //
     if (SimPM.ntracer>0) {
       for (int v=SimPM.ftr; v<nv; v++) {
-	slpn[v] = (c->Ph[v]*c->Ph[RO] -cn->Ph[v]*cn->Ph[RO])/ (R_com(c) - R_com(cn));
-	slpp[v] = (cp->Ph[v]*cp->Ph[RO]- c->Ph[v]*c->Ph[RO])/ (R_com(cp)- R_com(c) );
+	slpn[v] = (c->Ph[v]*c->Ph[RO] -cn->Ph[v]*cn->Ph[RO])/ (R_com(c,dR) - R_com(cn,dR));
+	slpp[v] = (cp->Ph[v]*cp->Ph[RO]- c->Ph[v]*c->Ph[RO])/ (R_com(cp,dR)- R_com(c,dR) );
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
     }
@@ -461,7 +449,7 @@ int VectorOps_Sph::SetSlope(
 
 int VectorOps_Sph::DivStateVectorComponent(
         const cell *c,    ///< current cell.
-        class GridBaseClass *,
+        class GridBaseClass *grid,
         const axes d,     ///< current coordinate axis we are looking along.
         const int nv,     ///< length of state vectors.
         const pion_flt *fn, ///< Negative direction flux.
@@ -480,11 +468,12 @@ int VectorOps_Sph::DivStateVectorComponent(
   /// For boundary cells with r<0, the cubic nature of the denominator
   /// ensures the signs cancel and the answer is correct.
   ///
+  double dR = grid->DX();
 
   if      (d==Rsph) {
     //    cout <<"updating flux divergence R\n";
     double rc = CI.get_dpos(c,Rsph);
-    double rp = rc+0.5*VOdR; double rn=rp-VOdR;
+    double rp = rc+0.5*dR; double rn=rp-dR;
     rc = (pow(rp,3.0) -pow(rn,3.0))/3.0;
     for (int v=0;v<nv;v++) dudt[v] = (rn*rn*fn[v]-rp*rp*fp[v])/rc;
   }

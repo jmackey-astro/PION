@@ -34,6 +34,7 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
+#include "grid/cell_interface.h"
 #include "constants.h"
 
 //
@@ -55,8 +56,6 @@
 //
 //#define TRACER_SLOPES_CONSERVED_VARS
 
-#define VOdz VOdx
-
 ///
 /// Class to hold vector differential operations which depend on 
 /// the coordinate system.  This is a virtual base class.
@@ -64,15 +63,25 @@
 class BaseVectorOps {
   public:
   virtual ~BaseVectorOps();
+
   virtual double CellVolume(
-        const cell *
-        )=0; ///< Returns Volume of cell.
+      const cell *, ///< cell pointer
+      const double ///< cell diameter
+      )=0; ///< Returns Volume of cell.
 
   virtual double CellInterface(
-        const cell *, ///< Cell
-        const direction ///< outward normal to interface.
-        )=0; ///< Returns Surface area of interface.
+      const cell *, ///< Cell
+      const direction, ///< outward normal to interface.
+      const double ///< cell diameter
+      )=0; ///< Returns Surface area of interface.
 
+  ///
+  /// Specify delta-x for the grid (if a uniform grid!)
+  ///
+  virtual void set_dx(
+      const double ///< size of grid cell.
+      )=0;
+  
   ///
   /// Returns maximum of all gradients with neighbouring cells
   /// 
@@ -82,11 +91,11 @@ class BaseVectorOps {
   /// differences, calculated w.r.t. all 2n neighbours.
   ///
   virtual double max_grad_abs(
-        const cell *,      ///< current point.
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int,    ///< Index of Primitive Variable to get gradient of.
-        class GridBaseClass *  ///< pointer to computational grid.
-        )=0;
+      const cell *,      ///< current point.
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int,    ///< Index of Primitive Variable to get gradient of.
+      class GridBaseClass *  ///< pointer to computational grid.
+      )=0;
 
   ///
   /// Vector Gradient Operator for Cartesian Coordinates.
@@ -96,12 +105,12 @@ class BaseVectorOps {
   ///     \frac{\phi(x_{i+1})-\phi(x_{i-1})}{2\delta x} \f]
   ///
   virtual void Gradient(
-        const cell *, ///< Cell to calculate gradient of
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        pion_flt *      ///< Pointer to array to put gradient vector.
-        )=0;
+      const cell *, ///< Cell to calculate gradient of
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      pion_flt *      ///< Pointer to array to put gradient vector.
+      )=0;
            
   ///
   /// Calculate Vector Diff. Op. Divergence of a vector at a point.
@@ -111,12 +120,12 @@ class BaseVectorOps {
   /// for the x-component of the divergence.  
   ///
   virtual double Divergence(
-        const cell *, ///< point for which to calculate div(B)
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
-                      ///< Should contain 3 elements, ordered as x,y,z components.
-        class GridBaseClass *  ///< pointer to computational grid.
-        )=0;
+      const cell *, ///< point for which to calculate div(B)
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
+                    ///< Should contain 3 elements, ordered as x,y,z components.
+      class GridBaseClass *  ///< pointer to computational grid.
+      )=0;
   
   ///
   /// Calculate Curl of Vector Quantity at a point.
@@ -126,13 +135,13 @@ class BaseVectorOps {
   /// to calculate derivatives.
   ///
   virtual void Curl(
-        const cell *, ///< point for which to calculate curl
-        const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
-        const int *,  ///< Indices of vector quantity (in state vector) to calculate curl of.
-                      ///< Should contain 3 elements, ordered as x,y,z components.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        pion_flt *      ///< Pointer to array to put curl vector.
-        )=0;
+      const cell *, ///< point for which to calculate curl
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int *,  ///< Indices of vector quantity (in state vector) to calculate curl of.
+                    ///< Should contain 3 elements, ordered as x,y,z components.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      pion_flt *      ///< Pointer to array to put curl vector.
+      )=0;
 
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
@@ -147,38 +156,38 @@ class BaseVectorOps {
   /// gradient for the grid point in question.
   ///
   virtual int SetEdgeState(
-        const cell *,    ///< Current Cell.
-        const direction, ///< Add or subtract the slope depending on direction.
-        const int,       ///< length of state vectors.
-        const pion_flt *,  ///< Slope vector.
-        pion_flt *,        ///< vector for edge state. 
-        const int,       ///< Order of spatial Accuracy.
-        class GridBaseClass *  ///< pointer to computational grid.
-        )=0;
+      const cell *,    ///< Current Cell.
+      const direction, ///< Add or subtract the slope depending on direction.
+      const int,       ///< length of state vectors.
+      const pion_flt *,  ///< Slope vector.
+      pion_flt *,        ///< vector for edge state. 
+      const int,       ///< Order of spatial Accuracy.
+      class GridBaseClass *  ///< pointer to computational grid.
+      )=0;
 
   /// Calculate the slope (dP/dx) in cell i.
   virtual int SetSlope(
-        const cell *, ///< Current Cell.
-        const axes,   ///< Which direction to calculate slope in.
-        const int,  ///< length of state vectors.
-        pion_flt *,     ///< Slope vector to be written to.
-        const int,    ///< Order of spatial Accuracy.
-        class GridBaseClass *  ///< pointer to computational grid.
-        )=0;
+      const cell *, ///< Current Cell.
+      const axes,   ///< Which direction to calculate slope in.
+      const int,  ///< length of state vectors.
+      pion_flt *,     ///< Slope vector to be written to.
+      const int,    ///< Order of spatial Accuracy.
+      class GridBaseClass *  ///< pointer to computational grid.
+      )=0;
 
   ///
   /// Calculates the i-th term of the divergence for a vector of 
   /// variables, given a cell and positive and negative flux vectors.
   ///
   virtual int DivStateVectorComponent(
-        const cell *,   ///< current cell.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        const axes,     ///< current coordinate axis we are looking along.
-        const int,      ///< length of state vectors.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
-        pion_flt *        ///< Vector to assign divergence component to.
-        )=0;
+      const cell *,   ///< current cell.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      const axes,     ///< current coordinate axis we are looking along.
+      const int,      ///< length of state vectors.
+      const pion_flt *, ///< Negative direction flux.
+      const pion_flt *, ///< Positive direction flux.
+      pion_flt *        ///< Vector to assign divergence component to.
+      )=0;
 
   ///
   /// Calculates the average of a left and right slope, using limiters.
@@ -187,9 +196,9 @@ class BaseVectorOps {
   /// known as the symmetric Van Albada limiter.
   ///
   double AvgFalle(
-        const double, ///< Left Slope.
-        const double  ///< Right Slope.
-        );
+      const double, ///< Left Slope.
+      const double  ///< Right Slope.
+      );
 
   ///
   /// Calculates Dot product of two vectors.
@@ -199,10 +208,10 @@ class BaseVectorOps {
   /// is independent of the coordinates used.
   ///
   double DotProduct(
-        const pion_flt *, ///< Vector 1.
-        const pion_flt *, ///< Vector 2.
-        const int       ///< length of vectors.
-        );
+      const pion_flt *, ///< Vector 1.
+      const pion_flt *, ///< Vector 2.
+      const int       ///< length of vectors.
+      );
 
   ///
   /// Calculates Cross (aka vector) Product of two vectors. 
@@ -214,11 +223,11 @@ class BaseVectorOps {
   /// it is an orthonormal system).
   ///
   int CrossProduct(
-        const pion_flt *, ///< Vector 1.
-        const pion_flt *, ///< Vector 2.
-        const int,      ///< length of vectors.
-        pion_flt *        ///< Result vector
-        );
+      const pion_flt *, ///< Vector 1.
+      const pion_flt *, ///< Vector 2.
+      const int,      ///< length of vectors.
+      pion_flt *        ///< Result vector
+      );
 };
 
 
@@ -240,39 +249,34 @@ class VectorOps_Cart : virtual public BaseVectorOps
 
   public:
   ///
-  /// constructor, sets number of spatial dimensions of grid.
+  /// Constructor, sets number of spatial dimensions.
   ///
   VectorOps_Cart(
-        int, ///< Number of spatial dimensions of grid
-        double ///< Length of cell (must be the same in all directions).
-        );
-
-  ///
-  /// Alternate constructor which doesn't take delta-x as a parameter.
-  ///
-  VectorOps_Cart(
-        const int ///< number of spatial dimensions of grid
-        );
+      const int ///< number of spatial dimensions of grid
+      );
 
   ///
   /// Specify delta-x for the grid (if a uniform grid!)
   ///
   virtual void set_dx(
-        const double ///< size of grid cell.
-        );
- 
+      const double ///< size of grid cell.
+      );
+
   ///
   /// Destructor
   ///
   ~VectorOps_Cart();
 
   virtual double CellVolume(
-        const cell *); ///< Returns Volume of cell.
+      const cell *, ///< cell pointer
+      const double ///< cell diameter
+      ); ///< Returns Volume of cell.
 
   virtual double CellInterface(
-        const cell *,   ///< Cell
-        const direction ///< outward normal to interface.
-        ); ///< Returns Surface area of interface.
+      const cell *,   ///< Cell
+      const direction, ///< outward normal to interface.
+      const double ///< cell diameter
+      ); ///< Returns Surface area of interface.
 
   ///
   /// Returns maximum of all gradients with neighbouring cells
@@ -283,11 +287,11 @@ class VectorOps_Cart : virtual public BaseVectorOps
   /// differences, calculated w.r.t. all 2n neighbours.
   ///
   virtual double max_grad_abs(
-        const cell *,      ///< current point.
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int,    ///< Index of Primitive Variable to get gradient of.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *,      ///< current point.
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int,    ///< Index of Primitive Variable to get gradient of.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   ///
   /// Vector Gradient Operator for Cartesian Coordinates.
@@ -297,13 +301,13 @@ class VectorOps_Cart : virtual public BaseVectorOps
   ///     \frac{\phi(x_{i+1})-\phi(x_{i-1})}{2\delta x} \f]
   ///
   virtual void Gradient(
-        const cell *, ///< Cell to calculate gradient of
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        pion_flt *      ///< Pointer to array to put gradient vector.
-        );
-           
+      const cell *, ///< Cell to calculate gradient of
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      pion_flt *      ///< Pointer to array to put gradient vector.
+      );
+         
   ///
   /// Calculate Vector Diff. Op. Divergence of a vector at a point.
   /// 
@@ -313,12 +317,12 @@ class VectorOps_Cart : virtual public BaseVectorOps
   /// \note It assumes cartesian geometry.
   ///
   virtual double Divergence(
-        const cell *, ///< point for which to calculate div(B)
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
-                      ///< Should contain 3 elements, ordered as x,y,z components.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *, ///< point for which to calculate div(B)
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
+                    ///< Should contain 3 elements, ordered as x,y,z components.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   ///
   /// Calculate Curl of Vector Quantity at a point.
@@ -329,13 +333,13 @@ class VectorOps_Cart : virtual public BaseVectorOps
   /// \note It assumes cartesian geometry, and square/cubic cells.
   ///
   virtual void Curl(
-        const cell *, ///< point for which to calculate curl
-        const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
-        const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
-                      ///< Should contain 3 elements, ordered as x,y,z components.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        pion_flt *      ///< Pointer to array to put curl vector.
-        );
+      const cell *, ///< point for which to calculate curl
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
+                    ///< Should contain 3 elements, ordered as x,y,z components.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      pion_flt *      ///< Pointer to array to put curl vector.
+      );
 
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
@@ -350,38 +354,38 @@ class VectorOps_Cart : virtual public BaseVectorOps
   /// gradient for the grid point in question.
   ///
   virtual int SetEdgeState(
-        const cell *,    ///< Current Cell.
-        const direction, ///< Add or subtract the slope depending on direction.
-        const int,       ///< length of state vectors.
-        const pion_flt *,  ///< Slope vector.
-        pion_flt *,        ///< vector for edge state. 
-        const int,       ///< Order of spatial Accuracy.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *,    ///< Current Cell.
+      const direction, ///< Add or subtract the slope depending on direction.
+      const int,       ///< length of state vectors.
+      const pion_flt *,  ///< Slope vector.
+      pion_flt *,        ///< vector for edge state. 
+      const int,       ///< Order of spatial Accuracy.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   /// Calculate the slope (dP/dx) in cell i.
   virtual int SetSlope(
-        const cell *, ///< Current Cell.
-        const axes,   ///< Which direction to calculate slope in.
-        const int,    ///< length of state vectors.
-        pion_flt *,     ///< Slope vector to be written to.
-        const int,    ///< Order of spatial Accuracy.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *, ///< Current Cell.
+      const axes,   ///< Which direction to calculate slope in.
+      const int,    ///< length of state vectors.
+      pion_flt *,     ///< Slope vector to be written to.
+      const int,    ///< Order of spatial Accuracy.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   ///
   /// Calculates the i-th term of the divergence for a vector of 
   /// variables, given a cell and positive and negative flux vectors.
   ///
   virtual int DivStateVectorComponent(
-        const cell *,   ///< current cell.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        const axes,     ///< current coordinate axis we are looking along.
-        const int,      ///< length of state vectors.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
-        pion_flt *        ///< Vector to assign divergence component to.
-        );
+      const cell *,   ///< current cell.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      const axes,     ///< current coordinate axis we are looking along.
+      const int,      ///< length of state vectors.
+      const pion_flt *, ///< Negative direction flux.
+      const pion_flt *, ///< Positive direction flux.
+      pion_flt *        ///< Vector to assign divergence component to.
+      );
 
 };
 
@@ -408,7 +412,6 @@ class VectorOps_Cart : virtual public BaseVectorOps
 class VectorOps_Cyl : virtual public VectorOps_Cart
 {
   protected:
-  double VOdR; ///< length of cell in R-dir.
 
   ///
   /// Returns centre of mass of cell in R-direction.
@@ -419,32 +422,25 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// midpoint of cell i.
   ///
   virtual inline double R_com(
-        const cell *c ///< Cell to operate on.
-        )
-  {return(CI.get_dpos(c,Rcyl) + VOdR*VOdR/12./CI.get_dpos(c,Rcyl));}
+      const cell *c, ///< Cell to operate on.
+      const double dR
+      )
+  {return(CI.get_dpos(c,Rcyl) + dR*dR/12./CI.get_dpos(c,Rcyl));}
 
   public:
   ///
-  /// constructor, sets number of spatial dimensions of grid.
+  /// Constructor, sets number of spatial dimensions.
   ///
   VectorOps_Cyl(
-        int, ///< Number of spatial dimensions of grid
-        double ///< diameter of cell (same in all directions).
-        );
-
-  ///
-  /// Alternate constructor which doesn't take delta-x as a parameter.
-  ///
-  VectorOps_Cyl(
-        const int ///< number of spatial dimensions of grid
-        );
+      const int ///< number of spatial dimensions of grid
+      );
 
   ///
   /// Specify delta-x for the grid (if a uniform grid!)
   ///
   virtual void set_dx(
-        const double ///< size of grid cell.
-        );
+      const double ///< size of grid cell.
+      );
 
   ///
   /// Destructor
@@ -452,13 +448,15 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   ~VectorOps_Cyl();
 
   virtual double CellVolume(
-        const cell *
-        ); ///< Returns Volume of cell.
+      const cell *, ///< cell pointer
+      const double ///< cell diameter
+      ); ///< Returns Volume of cell.
 
   virtual double CellInterface(
-        const cell *,   ///< Cell
-        const direction ///< outward normal to interface.
-        ); ///< Returns Surface area of interface.
+      const cell *,   ///< Cell
+      const direction, ///< outward normal to interface.
+      const double ///< cell diameter
+      ); ///< Returns Surface area of interface.
   
   ///
   /// Returns maximum of all gradients with neighbouring cells for
@@ -470,11 +468,11 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// differences, calculated w.r.t. all 2n neighbours.
   ///
   virtual double max_grad_abs(
-        const cell *, ///< current point.
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int,    ///< Index of Primitive Variable to get gradient of.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *, ///< current point.
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int,    ///< Index of Primitive Variable to get gradient of.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   ///
   /// Vector Gradient Operator for Cylindrical Coordinates.
@@ -484,12 +482,12 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   ///     \frac{\phi(x_{i+1})-\phi(x_{i-1})}{2\delta x} \f]
   ///
   virtual void Gradient(
-        const cell *, ///< Cell to calculate gradient of
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        pion_flt *      ///< Pointer to array to put gradient vector.
-        );
+      const cell *, ///< Cell to calculate gradient of
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int,    ///< Index of Scalar (in state vector) to calculate gradient of.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      pion_flt *      ///< Pointer to array to put gradient vector.
+      );
            
   ///
   /// Calculate Vector Diff. Op. Divergence of a vector at a point for
@@ -503,12 +501,12 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// the relevant scale factors for each derivative.
   /// */
   virtual double Divergence(
-        const cell *, ///< point for which to calculate div(B)
-        const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
-        const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
-                      ///< Should contain 3 elements, ordered as x,y,z components.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *, ///< point for which to calculate div(B)
+      const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
+      const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
+                    ///< Should contain 3 elements, ordered as x,y,z components.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   ///
   /// Calculate Curl of Vector Quantity at a point for Cylindrical
@@ -522,13 +520,13 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// the relevant scale factors for each derivative. THIS FUNCTION DOESN'T WORK!!!
   ///
   virtual void Curl(
-        const cell *, ///< point for which to calculate curl
-        const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
-        const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
-                      ///< Should contain 3 elements, ordered as x,y,z components.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        pion_flt *      ///< Pointer to array to put curl vector.
-        );
+      const cell *, ///< point for which to calculate curl
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
+                    ///< Should contain 3 elements, ordered as x,y,z components.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      pion_flt *      ///< Pointer to array to put curl vector.
+      );
 
   ///
   /// Given a cell-centred state vector, and a slope (dP/dx),
@@ -544,38 +542,38 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// gradient for the grid point in question.
   ///
   int SetEdgeState(
-        const cell *,    ///< Current Cell.
-        const direction, ///< Add or subtract the slope depending on direction.
-        const int,       ///< length of state vectors.
-        const pion_flt *,  ///< Slope vector.
-        pion_flt *,        ///< vector for edge state. 
-        const int,        ///< Order of spatial Accuracy.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *,    ///< Current Cell.
+      const direction, ///< Add or subtract the slope depending on direction.
+      const int,       ///< length of state vectors.
+      const pion_flt *,  ///< Slope vector.
+      pion_flt *,        ///< vector for edge state. 
+      const int,        ///< Order of spatial Accuracy.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   /// Calculate the slope (dP/dx) in cell i.
   int SetSlope(
-        const cell *, ///< Current Cell.
-        const axes,   ///< Which direction to calculate slope in.
-        const int ,   ///< length of state vectors.
-        pion_flt *,     ///< Slope vector to be written to.
-        const int,    ///< Order of spatial Accuracy.
-        class GridBaseClass *  ///< pointer to computational grid.
-        );
+      const cell *, ///< Current Cell.
+      const axes,   ///< Which direction to calculate slope in.
+      const int ,   ///< length of state vectors.
+      pion_flt *,     ///< Slope vector to be written to.
+      const int,    ///< Order of spatial Accuracy.
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
   ///
   /// Calculates the i-th term of the divergence for a vector of 
   /// variables, given a cell and positive and negative flux vectors.
   ///
   int DivStateVectorComponent(
-        const cell *,   ///< current cell.
-        class GridBaseClass *,  ///< pointer to computational grid.
-        const axes,     ///< current coordinate axis we are looking along.
-        const int,      ///< length of state vectors.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
-        pion_flt *        ///< Vector to assign divergence component to.
-        );
+      const cell *,   ///< current cell.
+      class GridBaseClass *,  ///< pointer to computational grid.
+      const axes,     ///< current coordinate axis we are looking along.
+      const int,      ///< length of state vectors.
+      const pion_flt *, ///< Negative direction flux.
+      const pion_flt *, ///< Positive direction flux.
+      pion_flt *        ///< Vector to assign divergence component to.
+      );
 };
 
 #endif // VECTOROPS_H

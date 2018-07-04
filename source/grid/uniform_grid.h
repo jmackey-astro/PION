@@ -58,6 +58,8 @@
 ///    range() functions, so it was returning G_xmin!
 /// - 2017.11.07-22 JM: updating boundary setup.
 /// - 2017.12.09 JM: updated function args to get rid of SimPM references.
+/// - 2018.05.10 JM: Moved boundary assignment to setup_fixed_grid,
+///    and boundary updates to update_boundaries.cpp
 
 #ifndef UNIFORM_GRID_H
 #define UNIFORM_GRID_H
@@ -82,56 +84,11 @@ using namespace std;
 #include "coord_sys/VectorOps_spherical.h"
 
 
-///
-/// enum for the types of boundary condition.
-///
-enum BoundaryTypes {
-    PERIODIC   = 1, ///< periodic bcs.
-    OUTFLOW    = 2, ///< outflow or absorbing bcs.
-    INFLOW     = 3, ///< inflow bcs., value on boundary doesn't change.
-    REFLECTING = 4, ///< reflecting bcs., hard wall.
-    FIXED      = 5, ///< fixed bcs, means every point on boundary has same unchanging value.
-    JETBC      = 6, ///< A jet boundary, internal boundary.
-    JETREFLECT = 7, ///< Sort-of reflection for bi-directional jet, 
-                    ///< where normal B field passes through, but tangential is reversed.
-    DMACH      = 8, ///< Outflow boundary for double mach reflection test problem only.
-    DMACH2     = 9, ///< Fixed boundary on y=0, x in [0,1/6] fixed to postshock state.
-    BCMPI      =10, ///< boundary between processor domains in parallel grid.
-    RADSHOCK   =11, ///< Boundary condition adjacent to cold wall for radiative shock test problem.
-    RADSH2     =12, ///< Outflow augmented with fixed outflow speed.
-    ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
-    STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
-    STARBENCH1 =15  ///< StarBench test for mixing with a solid wall.
-};
-
 
 
 
 // ##################################################################
 // ##################################################################
-
-
-
-///
-/// Struct to contain all the information for a grid boundary.
-///
-struct boundary_data {
-  enum direction dir; ///< Outward Normal direction of boundary (NO dir if internal).
-  enum direction ondir; ///< direction back onto grid.
-  string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
-  int itype;         ///< Integer flag for boundary type.
-  int bloc;          ///< boundary location, e.g. x=0
-  bool bpos;         ///< whether boundary is in +ve direction?
-  enum axes baxis;   ///< index in position vector relating to bpos.
-  list<cell *> data; ///< STL linked list for boundary data cells.
-  ///
-  /// STL linked list for grid cells to send to neighbouring
-  /// processor (parallel only; for serial code this is unused).
-  ///
-  list<cell *> send_data;
-  pion_flt *refval;  ///< Optional reference state vector.
-};
-
 
 
 // ##################################################################
@@ -154,7 +111,6 @@ class UniformGrid
   virtual public VectorOps_Cart
 {
  protected:
-  class stellar_wind *Wind; ///< stellar wind boundary condition class.
 
   ///
   /// Pointer to last point on grid (opposite corner of grid to
@@ -200,6 +156,7 @@ class UniformGrid
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
 
   double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
+  double G_idx;  ///< diameter of grid cells in integer units.
   double G_dA;  ///< Area of one surface of the (uniform, cube-shaped, cartesian) grid cells.
   double G_dV;  ///< Volume of one cube-shaped, cartesian grid cell (same for all cells).
 
@@ -229,234 +186,9 @@ class UniformGrid
   ///
   int assign_grid_structure();
 
-  ///
-  /// Set the boundary conditions string and initialise BC_bd
-  ///
-  virtual int BC_setBCtypes(
-        class SimParams &  ///< reference to SimParams list.
-        );
 
-  ///
-  /// Assigns data to each boundary.  Called by SetupBCs().
-  ///
-  virtual int assign_boundary_data(
-      const double,   ///< current simulation time (for DMACH)
-      const double, ///< Simulation start time.
-      const double,  ///< Simulation finish time.
-      const double ///< minimum temperature allowed
-      );
 
-  /// Assigns data to a periodic boundary.
-  virtual int BC_assign_PERIODIC( boundary_data *);
 
-  /// Assigns data on an outflow (zero gradient) boundary.
-  int         BC_assign_OUTFLOW( boundary_data *);
-
-  ///
-  /// Assigns data on a one-way outflow (zero gradient) boundary.
-  /// If the flow is off-domain, then I use zero-gradient, but if flow
-  /// is onto domain then I set the boundary cells to have zero normal 
-  /// velocity.
-  ///
-  int         BC_assign_ONEWAY_OUT( boundary_data *);
-
-  /// Assigns data on an inflow (fixed) boundary.
-  int         BC_assign_INFLOW( boundary_data *);
-
-  /// Assigns data on a reflecting boundary.
-  int         BC_assign_REFLECTING( boundary_data *);
-
-  /// Assigns data on a fixed boundary.
-  int         BC_assign_FIXED( boundary_data *);
-
-  ///
-  /// Sets some boundary cells to be fixed to the Jet inflow
-  /// condition.
-  ///
-  virtual int BC_assign_JETBC( boundary_data *);
-
-  ///
-  /// Assigns data on a JetReflect boundary, which is the same
-  /// as a reflecting boundary, except the B-field is reflected differently.
-  /// It is the base of a jet, so there is assumed to be another jet
-  /// in the opposite direction, so the normal B-field is unchanged across
-  /// the boundary and the tangential field is reversed.
-  ///
-  int         BC_assign_JETREFLECT(boundary_data *);
-
-  /// Assigns data on a boundary for the Double Mach Reflection Problem.
-  int         BC_assign_DMACH(
-        const double,   ///< current simulation time (for DMACH)
-        boundary_data *
-        );
-
-  /// Assigns data on The other DMR test problem boundary
-  virtual int BC_assign_DMACH2( boundary_data *);
-
-  /// Assigns data for the Radiative Shock Test XN boundary.
-  virtual int BC_assign_RADSHOCK(  boundary_data *);
-
-  /// Assigns data for the alternative Radiative Shock XN boundary.
-  virtual int BC_assign_RADSH2(    boundary_data *);
-
-  ///
-  /// Add internal stellar wind boundaries -- these are (possibly time-varying)
-  /// winds defined by a mass-loss-rate and a terminal velocity.  A region within
-  /// the domain is given fixed values corresponding to a freely expanding wind
-  /// from a cell-vertex-located source.
-  ///
-  int BC_assign_STWIND(
-      const double,   ///< current simulation time
-      const double, ///< Simulation start time.
-      const double,  ///< Simulation finish time.
-      const double,   ///< minimum temperature allowed
-      boundary_data *
-      );
-
-  ///
-  /// Add cells to both the Wind class, and to the boundary data list
-  /// of cells.  This is re-defined for cylindrical and spherical
-  /// coords below.
-  ///
-  virtual int BC_assign_STWIND_add_cells2src(
-        const int,    ///< source id
-        boundary_data * ///< boundary ptr.
-        );
-
-  ///
-  /// Add internal boundary of a solid dense wall for the StarBench
-  /// shadowing/heating/cooling test by P. Tremblin.
-  ///
-  int   BC_assign_STARBENCH1( boundary_data *);
-
-  ///
-  /// Update internal boundary of a solid dense wall for the StarBench
-  /// shadowing/heating/cooling test by P. Tremblin.  This just ignores
-  /// the fluxes and sets dU to zero again, because it is a fixed and
-  /// static wall.
-  ///
-  int   BC_update_STARBENCH1(
-          boundary_data *, ///< Boundary to update.
-          const int,  ///< current fractional step being taken.
-          const int   ///< final step.
-          );
-
-  /// Updates data on a periodic boundary.
-  virtual int BC_update_PERIODIC(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on an outflow (zero gradient) boundary.
-  int         BC_update_OUTFLOW(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  ///
-  /// Update the one-way outflow (zero gradient) boundary.
-  /// If the flow is off-domain, then I use zero-gradient, but if flow
-  /// is onto domain then I set the boundary cells to have zero normal 
-  /// velocity.
-  ///
-  int         BC_update_ONEWAY_OUT(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on inflow boundary (data fixed to initial values).
-  int         BC_update_INFLOW(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on reflecting boundary.
-  int         BC_update_REFLECTING(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on fixed boundary (data doesn't change).
-  int         BC_update_FIXED(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on boundary where jet enters domain (keeps inflow fixed).
-  virtual int BC_update_JETBC(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on JetReflect boundary (see BC_assign_JETREFLECT description).
-  int         BC_update_JETREFLECT(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on the double mach reflection (DMR) boundary.
-  int         BC_update_DMACH(
-        const double,   ///< current simulation time (for DMACH)
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on the other DMR test problem boundary.
-  virtual int BC_update_DMACH2(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on the Radiative Shock Test Problem XN boundary.
-  virtual int BC_update_RADSHOCK(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  /// Updates data on the alternative RadShock boundary.
-  virtual int BC_update_RADSH2(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  ///
-  /// Update internal stellar wind boundaries -- these are (possibly time-varying)
-  /// winds defined by a mass-loss-rate and a terminal velocity.  If fixed in time
-  /// the wind is updated with b->refval, otherwise with a (slower) call to the 
-  /// stellar wind class SW
-  ///
-  int         BC_update_STWIND(
-        const double,   ///< current simulation time
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-
-  ///
-  /// prints all the cells in the given boundary data pointer.
-  ///
-  int BC_printBCdata(boundary_data *);
-
-  ///
-  /// Destructor for all the boundary data, BC_bd.  Needed because 
-  /// we need to delete some cells in the list, and others we just need to
-  /// delete the pointers to them.
-  ///
-  void BC_deleteBoundaryData();
-
-  struct boundary_data *BC_bd; ///< pointer to array of all boundaries.
   int BC_nbd; ///< Number of Boundaries.
   ///
   /// Depth of boundary cells (1 or 2 cells so far).
@@ -493,12 +225,6 @@ class UniformGrid
   virtual double DX() const {return(G_dx);}
 
 
-  /// Returns dA (assuming cells are cubes).
-  virtual double DA() const {return(G_dA);}
-
-  /// Returns dV (assuming cells are cubes).
-  virtual double DV() const {return(G_dV);}
-
   ///
   /// Returns cell diameter for a given cell along a given axis.
   ///
@@ -506,20 +232,6 @@ class UniformGrid
     const cell *,   ///< cell to get dx for
     const enum axes ///< axis along which to get dx.
     ) const {return G_dx;}
-
-  ///
-  /// Returns cell boundary area for a given cell in a given
-  /// direction.
-  ///
-  virtual double DA(
-    const cell *,   ///< cell to get dA for
-    const enum direction ///< direction in which to get dA.
-    ) const {return G_dA;}
-
-  ///
-  /// Returns cell volume for a given cell.
-  ///
-  virtual double DV(const cell *) const {return G_dV;}
 
   /// Returns dimensionality of grid.
   virtual int Ndim() const {return(G_ndim);}
@@ -553,29 +265,42 @@ class UniformGrid
   {return(G_range[a]);}
 
 
-  /// Returns x/y/z lower boundary of grid in integer coords (dx=2).
+  /// Returns x/y/z lower boundary of grid in integer coords.
   virtual int  iXmin(enum axes a) const
   {return(G_ixmin[a] );}
 
-  /// Returns x/y/z upper boundary of grid in integer coords (dx=2).
+  /// Returns x/y/z upper boundary of grid in integer coords.
   virtual int  iXmax(enum axes a) const
   {return(G_ixmax[a] );}
 
-  /// Returns x/y/z range of grid in integer coords (dx=2).
+  /// Returns x/y/z range of grid in integer coords.
   virtual int iRange(enum axes a) const
   {return(G_irange[a]);}
 
-  /// Returns Simulation x,y,z lower bounds in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z lower bounds in cell integer coords
   virtual int  SIM_iXmin(enum axes a) const
   {return(G_ixmin[a] );}
 
-  /// Returns Simulation x,y,z upper bounds in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z upper bounds in cell integer coords
   virtual int  SIM_iXmax(enum axes a) const
   {return(G_ixmax[a] );}
 
-  /// Returns Simulation x,y,z range in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z range in cell integer coords
   virtual int SIM_iRange(enum axes a) const
   {return(G_irange[a]);}
+
+  /// Return cell size in integer units
+  int idx() const
+  {return G_idx;}
+
+  virtual double CellVolume(
+      const cell *c
+      ) {return VectorOps_Cart::CellVolume(c,G_dx);}
+
+  virtual double CellInterface(
+      const cell *c, ///< Cell
+      const direction dir ///< outward normal to interface.
+      ) {return VectorOps_Cart::CellInterface(c,dir,G_dx);}
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
@@ -642,32 +367,27 @@ class UniformGrid
   virtual enum direction OppDir(enum direction );
   
   ///
-  /// Runs through ghost boundary cells and does the appropriate
-  /// time update on them.
-  ///
-  virtual int TimeUpdateExternalBCs(
-        const double,   ///< current simulation time
-        const int, ///< Current step number in the timestep.
-        const int  ///< Maximum step number in timestep.
-        );
-
-  ///
-  /// Runs through boundary cells which are grid cells and does
-  /// the appropriate time update on them.
-  ///
-  virtual int TimeUpdateInternalBCs(
-        const double,   ///< current simulation time
-        const int, ///< Current step number in the timestep.
-        const int  ///< Maximum step number in timestep.
-        );
-   
-  ///
-  /// Sets up boundary data on each boundary, and any extra boundaries
-  /// specified in the input string.  Also assigns data to each boundary.
+  /// Sets up grid cells on each boundary, and any extra boundaries
+  /// specified (internal, e.g. stellar wind).
   ///
   virtual int SetupBCs(
-        class SimParams &  ///< List of simulation params (including BCs)
-        );
+      class SimParams &  ///< List of simulation params (including BCs)
+      );
+
+  ///
+  /// prints all the cells in the given boundary data pointer.
+  ///
+  int BC_printBCdata(boundary_data *);
+
+  ///
+  /// Destructor for all the boundary data, BC_bd. 
+  ///
+  void BC_deleteBoundaryData();
+
+  ///
+  /// Destructor for a boundary data struct.
+  ///
+  void BC_deleteBoundaryData(boundary_data *);
 
   ///
   /// Setup lists of processors to receive data from and send data to, 
@@ -922,16 +642,17 @@ class uniform_grid_cyl
               const cell *, ///< cell 2
               const axes    ///< Axis.
               );
+
+  virtual double CellVolume(
+      const cell *c
+      ) {return VectorOps_Cyl::CellVolume(c,G_dx);}
+
+  virtual double CellInterface(
+      const cell *c, ///< Cell
+      const direction dir ///< outward normal to interface.
+      ) {return VectorOps_Cyl::CellInterface(c,dir,G_dx);}
+
  protected:
-  ///
-  /// Add cells to both the Wind class, and to the boundary data list
-  /// of cells.  This is re-defined for cylindrical and spherical
-  /// coords below.
-  ///
-  virtual int BC_assign_STWIND_add_cells2src(
-      const int,    ///< source id
-      boundary_data * ///< boundary ptr.
-      );
 
   ///
   /// Returns the centre of volume of a cell (in the radial
@@ -1074,16 +795,16 @@ class uniform_grid_sph
       const axes    ///< Axis.
       );
 
+  virtual double CellVolume(
+      const cell *c
+      ) {return VectorOps_Sph::CellVolume(c,G_dx);}
+
+  virtual double CellInterface(
+      const cell *c, ///< Cell
+      const direction dir ///< outward normal to interface.
+      ) {return VectorOps_Sph::CellInterface(c,dir,G_dx);}
+
  protected:
-  ///
-  /// Add cells to both the Wind class, and to the boundary data list
-  /// of cells.  This is re-defined for cylindrical and spherical
-  /// coords below.
-  ///
-  virtual int BC_assign_STWIND_add_cells2src(
-      const int,    ///< source id
-      boundary_data * ///< boundary ptr.
-      );
 
   ///
   /// Returns the centre of volume of a cell (in the radial

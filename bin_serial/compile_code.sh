@@ -22,7 +22,7 @@
 #
 # We first need to set MAKE_UNAME which is an identifier for the computer
 # we are compiling on.  If it is not a known computer we just set it to
-# "standard" which is a standard linux system, assumed to have 4 cores (for
+# "standard" which is a standard linux system, assumed to have 8 cores (for
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
@@ -111,7 +111,7 @@ if [ ! -z "$DDD" ]; then
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=OSX
-  NCORES=4
+  NCORES=2
 fi
 #################################
 
@@ -194,7 +194,8 @@ echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
-make -j${NCORES}
+make -j${NCORES} uni
+make -j${NCORES} nest
 #####################################################################
 
 exit 

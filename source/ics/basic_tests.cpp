@@ -27,6 +27,7 @@
 #endif // TESTING
 
 #include "ics/icgen.h"
+#include "ics/icgen_base.h"
 #include "coord_sys/VectorOps.h"
 using namespace std;
 #include <sstream>
@@ -628,7 +629,8 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   //
   int els[3] = {BX,BY,BZ};
   pion_flt ans[3];
-  class VectorOps_Cart *vec = new VectorOps_Cart (ndim,gg->DX());
+  class VectorOps_Cart *vec = new VectorOps_Cart (ndim);
+  vec->set_dx(gg->DX());
   c = gg->FirstPt();
   do {
 
