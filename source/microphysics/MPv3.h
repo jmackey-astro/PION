@@ -411,7 +411,7 @@ class MPv3
   //---------------------------------------------------------------------------
   public:
   ///
-  /// calculate dy/dt for the vector of y-values (NOT IMPLEMENTED HERE).
+  /// calculate dy/dt for the vector of y-values.
   ///
   virtual int ydot(
       double,         ///< current time (probably not needed for rate equations)

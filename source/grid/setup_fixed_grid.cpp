@@ -1893,6 +1893,19 @@ int setup_fixed_grid::BC_assign_STWIND(
   for (int isw=0; isw<Ns; isw++) {
     if (SWP.params[isw]->type ==WINDTYPE_ANGLE) err=2;
   }
+
+  //
+  // check values of xi.  At the moment we assume it is the same for
+  // all wind sources, so it is not source-dependent.
+  //
+  double xi=0.0;
+  for (int isw=0; isw<Ns; isw++) {
+    if (isw==0) xi = SWP.params[isw]->xi;
+    else {
+      rep.errorTest("wind xi values don't match",xi,SWP.params[isw]->xi);
+    }
+  }
+
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (err==0) {
@@ -1910,7 +1923,7 @@ int setup_fixed_grid::BC_assign_STWIND(
       cout <<"Setting up stellar_wind_angle class\n";
       grid->Wind = new stellar_wind_angle(par.ndim, par.nvar, par.ntracer, par.ftr,
                   par.coord_sys, par.eqntype, par.EP.MinTemperature,
-                  par.starttime, par.finishtime);
+                  par.starttime, par.finishtime, xi);
     }
   }
 

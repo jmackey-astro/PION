@@ -682,8 +682,9 @@ int get_sim_info::read_wind_sources(
     //cout <<"\tREADING WIND SOURCE "<<i<<"\n";
     string a;
     ostringstream temp;
-    double Mdot=0.0, rad=0.0, posn[MAX_DIM],
-    Vinf=0.0, Tw=0.0, Rstar=0.0, trcr[MAX_NVAR];
+    double
+      Mdot=0.0, rad=0.0, posn[MAX_DIM], Vinf=0.0, Tw=0.0, Rstar=0.0,
+      trcr[MAX_NVAR], xi=0.0;
     int type=0;
     //
     // new stuff for evolving winds:
@@ -770,6 +771,11 @@ int get_sim_info::read_wind_sources(
       time_scalefac=1.0; //default value
     }
 
+    temp.str(""); temp<<"WIND_"<<i<<"_xi";
+    if ( (a=rp->find_parameter(temp.str())) !="")
+    {      xi = atof(a.c_str()); }
+    else { xi = -0.43;} // default value from Bjorkman & Cassinelli (1993)
+
     //
     // Now we should have got all the sources, so add the source to 
     // the global list.
@@ -793,6 +799,7 @@ int get_sim_info::read_wind_sources(
     //
     wind->evolving_wind_file = evofile;
     wind->enhance_mdot = enhance_mdot;
+    wind->xi = xi;
     wind->time_offset = time_offset;
     wind->update_freq = update_freq;
     wind->t_scalefactor = time_scalefac;
