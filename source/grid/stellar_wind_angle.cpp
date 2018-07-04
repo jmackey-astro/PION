@@ -43,7 +43,8 @@ stellar_wind_angle::stellar_wind_angle(
       const int eq, ///< eqn_type
       const double mt, ///< Minimum temperature allowed on grid
       const double ss, ///< Simulation start time.
-      const double sf  ///< Simulation finish time.
+      const double sf, ///< Simulation finish time.
+      const double xi  ///< exponent of wind equatorial enhancement
       )
 : stellar_wind(nd,nv,nt,ft,cs,eq,mt),
   stellar_wind_evolution(nd,nv,nt,ft,cs,eq,mt,ss,sf)
@@ -51,7 +52,8 @@ stellar_wind_angle::stellar_wind_angle(
 {
   // Constants for wind functions
   stellar_wind_angle::c_gamma = 0.35;
-  stellar_wind_angle::c_xi    = -2.0;
+  stellar_wind_angle::c_xi    = xi;
+  cout <<"stellar_wind_angle::c_xi    = "<<c_xi<<"\n";
   stellar_wind_angle::c_beta  = -1.0;
   
   // Number of points in theta, omega and Teff vectors

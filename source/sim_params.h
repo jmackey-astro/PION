@@ -142,6 +142,11 @@ struct stellarwind_params {
   /// Evolution of wind happens this factor faster than normal (for factor>1)
   /// Should probably only be used for Main Sequence evolution!
   double t_scalefactor;
+  /// for rotating stars, this sets how strongly the mass-loss is
+  /// focussed onto the equator.  It is a power law index on a term
+  /// (1-Omega*sin(theta))^xi.  Default is xi = -0.43.
+  /// See e.g. Langer, Garcia-Segura & Mac Low (1999,ApJ,520,L49).
+  double xi;
 };
 
 struct stellarwind_list {

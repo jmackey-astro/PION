@@ -2852,8 +2852,7 @@ int UniformGrid::BC_assign_STWIND(
 
   //
   // New structure: we need to initialise the stellar wind class with
-  // all of the wind sources in the global parameter list (this was
-  // formerly done in DataIOBase::read_simulation_parameters()).
+  // all of the wind sources in the global parameter list.
   //
   // The type of class we set up is determined first.
   // stellar_wind_evolution is derived from stellar_wind, and 
@@ -2868,6 +2867,20 @@ int UniformGrid::BC_assign_STWIND(
     if (SWP.params[isw]->type ==WINDTYPE_ANGLE) err=2;
   }
   Wind = 0;
+
+  //
+  // check values of xi.  At the moment we assume it is the same for
+  // all wind sources, so it is not source-dependent.
+  //
+  double xi=0.0;
+  for (int isw=0; isw<Ns; isw++) {
+    if (isw==0) xi = SWP.params[isw]->xi;
+    else {
+      rep.errorTest("wind xi values don't match",xi,SWP.params[isw]->xi);
+    }
+  }
+
+
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (err==0) {
@@ -2882,7 +2895,7 @@ int UniformGrid::BC_assign_STWIND(
     else if (err==2) {
       cout <<"Setting up stellar_wind_angle class\n";
       Wind = new stellar_wind_angle(G_ndim, G_nvar, G_ntracer, G_ftr,
-                  G_coordsys, G_eqntype, mt, sim_start, sim_finish);
+                  G_coordsys, G_eqntype, mt, sim_start, sim_finish, xi);
     }
   }
 
