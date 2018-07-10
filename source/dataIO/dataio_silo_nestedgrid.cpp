@@ -228,7 +228,11 @@ int dataio_nested_silo::ReadData(
 
     // now read each variable in turn from the mesh
     for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-      err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), SimPM.Ncell);
+#ifdef WRITE_GHOST_ZONES
+      err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), gp->Ncell_all());
+#else
+      err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), gp->Ncell());
+#endif
       if (err)
         rep.error("dataio_nested_silo::ReadData() error reading variable",(*i));
     }
@@ -274,10 +278,16 @@ int dataio_nested_silo::setup_grid_properties(
   //
   // We setup arrays with locations of nodes in coordinate directions.
   //
+#ifdef WRITE_GHOST_ZONES
+  int nx = SimPM.NG[XX] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int ny = SimPM.NG[YY] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int nz = SimPM.NG[ZZ] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+#else
   int nx = SimPM.NG[XX]+1; // for N cells, have N+1 nodes.
   int ny = SimPM.NG[YY]+1; // for N cells, have N+1 nodes.
   int nz = SimPM.NG[ZZ]+1; // for N cells, have N+1 nodes.
-  
+#endif
+
   //node_coords = mem.myalloc(node_coords,ndim);
   if (silo_dtype==DB_FLOAT) {
     //
@@ -303,19 +313,34 @@ int dataio_nested_silo::setup_grid_properties(
     //
     // Assign data for nodex, nodey, nodez for this grid
     //
-    for (int i=0;i<nx;i++)
+    for (int i=0;i<nx;i++) {
+#ifdef WRITE_GHOST_ZONES
+      posx[i] = static_cast<float>(grid->Xmin(XX) -SimPM.Nbc*dx +i*dx);
+#else
       posx[i] = static_cast<float>(grid->Xmin(XX)+i*dx);
+#endif
+    }
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
     if (ndim>1) {
-      for (int i=0;i<ny;i++)
+      for (int i=0;i<ny;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posy[i] = static_cast<float>(grid->Xmin(YY) -SimPM.Nbc*dx +i*dx);
+#else
         posy[i] = static_cast<float>(grid->Xmin(YY)+i*dx);
+#endif
+      }
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
-      for (int i=0;i<nz;i++)
+      for (int i=0;i<nz;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posz[i] = static_cast<float>(grid->Xmin(ZZ) -SimPM.Nbc*dx +i*dx);
+#else
         posz[i] = static_cast<float>(grid->Xmin(ZZ)+i*dx);
+#endif
+      }
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
@@ -345,20 +370,35 @@ int dataio_nested_silo::setup_grid_properties(
     //
     // Assign data for nodex, nodey, nodez for this grid
     //
-    for (int i=0;i<nx;i++)
+    for (int i=0;i<nx;i++) {
+#ifdef WRITE_GHOST_ZONES
+      posx[i] = static_cast<double>(grid->Xmin(XX) -SimPM.Nbc*dx +i*dx);
+#else
       posx[i] = static_cast<double>(grid->Xmin(XX)+i*dx);
+#endif
+    }
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim>1) {
-      for (int i=0;i<ny;i++)
+      for (int i=0;i<ny;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posy[i] = static_cast<double>(grid->Xmin(YY) -SimPM.Nbc*dx +i*dx);
+#else
         posy[i] = static_cast<double>(grid->Xmin(YY)+i*dx);
+#endif
+      }
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
-      for (int i=0;i<nz;i++)
+      for (int i=0;i<nz;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posz[i] = static_cast<double>(grid->Xmin(ZZ) -SimPM.Nbc*dx +i*dx);
+#else
         posz[i] = static_cast<double>(grid->Xmin(ZZ)+i*dx);
+#endif
+      }
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }

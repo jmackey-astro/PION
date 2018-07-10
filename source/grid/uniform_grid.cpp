@@ -285,6 +285,8 @@ UniformGrid::UniformGrid(
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
   set_dx(G_dx);
 
+  RT=0;
+
 #ifdef TESTING
   cout <<"UniformGrid Constructor done.\n";
 #endif

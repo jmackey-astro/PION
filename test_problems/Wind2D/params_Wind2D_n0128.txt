@@ -75,8 +75,8 @@ FinishTime 3.156e11
 OutputPath ./
 OutputFile fastwind_n0128
 OutputFileType silo
-OutputCriterion 1
-OutputFrequency 1
+OutputCriterion 0
+OutputFrequency 100
 OPfreqTime 1.578e10
 ########################
 

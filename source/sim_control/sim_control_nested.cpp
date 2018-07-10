@@ -10,7 +10,7 @@
 /// much, just the moving up and down between levels.
 /// 
 /// Modifications:
-/// - 2018.05.03 JM: Started on neste grid simulation control.
+/// - 2018.05.03 JM: Started on nested grid simulation control.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -43,7 +43,7 @@
 //#include <climits>
 using namespace std;
 
-
+#define NEST_INT_TEST
 
 
 // ##################################################################
@@ -299,6 +299,9 @@ double sim_control_nestedgrid::advance_time(
     step = advance_step_OA1(l);
   }
   else if (SimPM.tmOOA==2) {
+#ifdef NEST_INT_TEST
+    //cout <<"Calling advance_step_OA2: level "<<l<<"\n";
+#endif
     step = advance_step_OA2(l);
   }
   return step;
@@ -407,8 +410,9 @@ double sim_control_nestedgrid::advance_step_OA2(
       const int l       ///< level to advance.
       )
 {
-#ifdef TESTING
-  cout <<"advance_step_OA2, level="<<l<<", starting.\n";
+#ifdef NEST_INT_TEST
+  cout <<"advance_step_OA2, level="<<l<<", starting. ";
+  cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
 #endif
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
@@ -426,8 +430,6 @@ double sim_control_nestedgrid::advance_step_OA2(
   }
   dt2_this = SimPM.levels[l].dt;
 
-  // now calculate dU, the change in conserved variables on this grid,
-  // for this step.
   spatial_solver->set_dx(SimPM.levels[l].dx);
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing
@@ -435,14 +437,57 @@ double sim_control_nestedgrid::advance_step_OA2(
     err += calculate_raytracing_column_densities(SimPM,grid->RT);
     rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
   }
+
+  //
+  // now calculate dU, the change in conserved variables on this grid
+  // for the half step of the 2nd order step.
+  //
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" half step, start calc_microphysics_dU\n";
+#endif
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-  err += calc_dynamics_dU(SimPM.levels[l].dt,OA2, grid);
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" half step, start calc_dynamics_dU\n";
+#endif
+  err += calc_dynamics_dU(SimPM.levels[l].dt, OA1, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,OA2, grid);
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt, OA1, grid);
 #endif // THERMAL_CONDUCTION
-  rep.errorTest("scn::advance_step_OA2: calc_x_dU",0,err);
+  rep.errorTest("scn::advance_step_OA2: calc_x_dU OA1",0,err);
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" half step, done with dU, grid_update_state_vector\n";
+#endif
+  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA2, grid);
+  rep.errorTest("scn::advance_step_OA2: state-vec update OA1",0,err);  
+  // Update boundary data.
+  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA2);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA2);
+  rep.errorTest("scn::advance_step_OA2: bounday update OA1",0,err);
+
+  //
+  // Now calculate dU for the full step (OA2)
+  //
+  if (grid->RT) {
+    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
+  }
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" full step, start calc_microphysics_dU\n";
+#endif
+  err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" full step, start calc_dynamics_dU\n";
+#endif
+  err += calc_dynamics_dU(SimPM.levels[l].dt, OA2, grid);
+#ifdef THERMAL_CONDUCTION
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt, OA2, grid);
+#endif // THERMAL_CONDUCTION
+  rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
 
   // take the second finer grid step, if there is a finer grid.
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" full step, call 2nd l+1 update\n";
+#endif
   if (l<SimPM.grid_nlevels-1) {
     dt2_fine = advance_step_OA2(l+1);
   }
@@ -450,8 +495,11 @@ double sim_control_nestedgrid::advance_step_OA2(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
+#ifdef NEST_INT_TEST
+  cout <<"l="<<l<<" full step, done with dU, grid_update_state_vector\n";
+#endif
   err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);  
+  rep.errorTest("scn::advance_step_OA2: state-vec update OA2",0,err);  
 
   // increment time and timestep for this level
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
@@ -478,7 +526,7 @@ double sim_control_nestedgrid::advance_step_OA2(
     SimPM.levels[l].dt = SimPM.dt;
   }
 
-#ifdef TESTING
+#ifdef NEST_INT_TEST
   cout <<"advance_step_OA2, level="<<l<<", returning. t=";
   cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
 #endif

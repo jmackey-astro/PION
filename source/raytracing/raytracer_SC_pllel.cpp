@@ -43,7 +43,7 @@
 #include "tools/command_line_interface.h"
 #endif // TESTING
 
-#include "raytracing/raytracer_SC.h"
+#include "raytracing/raytracer_SC_pllel.h"
 #include <fstream>
 #include <iostream>
 using namespace std;

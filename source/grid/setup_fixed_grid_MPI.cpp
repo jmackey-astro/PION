@@ -23,6 +23,7 @@
 #include "setup_fixed_grid.h"
 #include "setup_fixed_grid_MPI.h"
 #include "raytracing/raytracer_SC.h"
+#include "raytracing/raytracer_SC_pllel.h"
 
 
 #include <iostream>

@@ -134,6 +134,9 @@ int main(int argc, char **argv)
 
   delete sim_control; sim_control=0;
   //delete grid; grid=0;
+  for (unsigned int v=0; v<grid.size(); v++) {
+    delete grid[v];
+  }
   delete [] args; args=0;
   
   cout <<"-------------------------------------------------------\n";
