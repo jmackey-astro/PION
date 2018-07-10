@@ -137,6 +137,8 @@ class GridBaseClass {
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
   virtual double DX() const =0; ///< Returns dx (assuming cells are cubes).
   virtual int idx() const =0; ///< Returns idx.
+  virtual size_t Ncell() const =0; ///< number of cells on grid
+  virtual size_t Ncell_all() const =0; ///< number of grid+ghost cells
 
   virtual double CellVolume(
       const cell *

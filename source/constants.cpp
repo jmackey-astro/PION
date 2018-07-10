@@ -53,8 +53,10 @@ bool constants::equalD(
     return(true);
   }
   if (fabs(a)+fabs(b)<TINYVALUE) {
+#ifdef TESTING
     cout <<"tiny numbers in equalD(a,b); a,b <1.e-100... a=";
     cout <<a<<", b="<<b<<"; returning true.\n";
+#endif
     return(true);
   }
   if ( (fabs(a-b)/(fabs(a)+fabs(b)+TINYVALUE)) <SMALLVALUE) {

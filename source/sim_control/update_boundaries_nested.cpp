@@ -18,7 +18,9 @@
 #include "sim_control/update_boundaries_nested.h"
 
 //#define TEST_NEST
-#define TEST_OOA
+//#define TEST_C2F
+//#define TEST_F2C
+#define TEST_INF
 
 // ##################################################################
 // ##################################################################
@@ -372,12 +374,23 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
   // calculated.
   //
   if (step%2 != 0) {
+#ifdef TEST_C2F
+    cout <<"C2F: odd step, interpolating coarse data in time.\n";
+#endif
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
       spatial_solver->PtoU(c->P, U, par.gamma);
       for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
       spatial_solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
+#ifdef TEST_INF
+      for (int v=0;v<par.nvar;v++) {
+        if (!isfinite(c->Ph[v])) {
+          rep.printVec("NAN c->P ",c->P,par.nvar);
+          rep.printVec("NAN c->Ph",c->Ph,par.nvar);
+        }
+      }
+#endif
     }
   }
   
@@ -411,13 +424,13 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         f = (*f_iter);
         c = f->npt;
         spatial_solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0-0.25*dx*sx[v]);
+        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0-0.5*dx*sx[v]);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
         for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
         
         f_iter++;
         f = (*f_iter);
-        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0+0.25*dx*sx[v]);
+        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0+0.5*dx*sx[v]);
         for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
 
         // Now need to check mass/momentum/energy conservation between
@@ -433,7 +446,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         spatial_solver->PtoU(c->Ph, P, par.gamma);
         c_vol = coarse->CellVolume(c);
         for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
-#ifdef TEST_OOA
+#ifdef TEST_C2F
         rep.printVec("1D coarse", P,par.nvar);
         rep.printVec("1D fine  ", U,par.nvar);
 #endif
@@ -444,7 +457,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
             U2[v] *= P[v] / U[v];
           }
         }
-#ifdef TEST_OOA
+#ifdef TEST_C2F
         for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
         rep.printVec("1D fine 2", U, par.nvar); 
 #endif
@@ -465,7 +478,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       double P00[par.nvar], P10[par.nvar], P01[par.nvar], P11[par.nvar];
       double c_vol=0.0, f_vol[4];
       //
-      // Do two fine cells at a time: they have the same parent.
+      // Do 4 fine cells at a time: they have the same parent.
       // First get the values at the 4 corners of coarse-cell c.
       // Then interpolate with bilinear interpolation to the fine-cell
       // positions as 0.25*dx in each direction from the corners.
@@ -480,8 +493,8 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
           continue;
         }
 
-#ifdef TEST_OOA
-        cout <<"c="<<c<<"\n";
+#ifdef TEST_C2F
+        cout <<"c="<<c<<"  ";
         cout <<"sps="<<spatial_solver<<"\n";
         CI.print_cell(f);
         CI.print_cell(c);
@@ -490,16 +503,18 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         // coarse cell.
         spatial_solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
         spatial_solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
-        for (int v=0;v<par.nvar;v++) sx[v] *= dxo2;
-        for (int v=0;v<par.nvar;v++) sy[v] *= dxo2;
-        for (int v=0;v<par.nvar;v++) P00[v] = c->Ph[v] * (1.0-sx[v]) * (1.0-sy[v]);
-        for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] * (1.0+sx[v]) * (1.0-sy[v]);
-        for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] * (1.0-sx[v]) * (1.0+sy[v]);
-        for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] * (1.0+sx[v]) * (1.0+sy[v]);
-#ifdef TEST_OOA
-        rep.printVec("coarse00",c->Ph,par.nvar);
-        rep.printVec("coarse01",sx,par.nvar);
-        rep.printVec("coarse10",sy,par.nvar);
+        for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
+        for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
+        for (int v=0;v<par.nvar;v++) P00[v] = c->Ph[v] -sx[v] -sy[v];
+        for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] +sx[v] -sy[v];
+        for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] -sx[v] +sy[v];
+        for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] +sx[v] +sy[v];
+#ifdef TEST_C2F
+        rep.printVec("** sx **",sx,par.nvar);
+        rep.printVec("** sy **",sy,par.nvar);
+        rep.printVec("coarse00",P00,par.nvar);
+        rep.printVec("coarse01",P01,par.nvar);
+        rep.printVec("coarse10",P10,par.nvar);
         rep.printVec("coarse11",P11,par.nvar);
 #endif
         // now interpolate all four cells using the 4 corner states.
@@ -529,17 +544,32 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         f_vol[2] = fine->CellVolume(f);
         spatial_solver->PtoU(fine->NextPt(f,YP)->P, P11, par.gamma);
         f_vol[3] = fine->CellVolume(fine->NextPt(f,YP));
+#ifdef TEST_C2F
+        rep.printVec("U fine00",P00,par.nvar);
+        rep.printVec("U fine01",P01,par.nvar);
+        rep.printVec("U fine10",P10,par.nvar);
+        rep.printVec("U fine11",P11,par.nvar);
+#endif
         for (int v=0;v<par.nvar;v++)
           U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
         // compare with coarse cell.
         spatial_solver->PtoU(c->Ph, P, par.gamma);
+#ifdef TEST_C2F
         rep.printVec("2D coarse Cons", P,par.nvar);
         rep.printVec("2D coarse Prim", c->Ph,par.nvar);
+        double p=P[RO];
+        if (!pconst.equalD(P00[RO],p) || !pconst.equalD(P01[RO],p) ||
+            !pconst.equalD(P10[RO],p) || !pconst.equalD(P11[RO],p)) {
+          cout <<"SLOPE SLOPE c="<<p<<", f="<<P00[RO]<<", f="<<P01[RO]<<", f="<<P10[RO]<<", f="<<P11[RO]<<"\n";
+        }
+#endif
         for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
 
-#ifdef TEST_OOA
-        rep.printVec("2D coarse", P,par.nvar);
-        rep.printVec("2D fine  ", U,par.nvar);
+#ifdef TEST_C2F
+        cout <<"2D coarse vol = "<<c_vol<<";  ";
+        rep.printVec("2D fine vol",f_vol,4);
+        rep.printVec("2D coarse cons*vol", P,par.nvar);
+        rep.printVec("2D fine   cons*vol", U,par.nvar);
 #endif
         // scale fine conserved vec by ratio of coarse to fine energy.
         for (int v=0;v<par.nvar;v++) {
@@ -550,21 +580,34 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
             P11[v] *= P[v] / U[v];
           }
         }
-#ifdef TEST_OOA
-        for (int v=0;v<par.nvar;v++) U[v] = P00[v]+P01[v]+P10[v]+P11[v];
-        rep.printVec("2D fine 2", U, par.nvar); 
+#ifdef TEST_C2F
+        for (int v=0;v<par.nvar;v++)
+          U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
+        rep.printVec("2D fine 2 cons*vol", U, par.nvar); 
 #endif
         spatial_solver->UtoP(P01,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
         spatial_solver->UtoP(P11,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++)
           fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
+        
+        for (int v=0;v<par.nvar;v++) {
+          if (!isfinite(f->P[v]) || !isfinite(fine->NextPt(f,YP)->P[v]))
+            rep.error("fine 1,2 not finite",f->P[v]);
+        }
+
         f_iter--; f = (*f_iter);
         spatial_solver->UtoP(P00,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
         spatial_solver->UtoP(P10,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++)
           fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
+        
+        for (int v=0;v<par.nvar;v++) {
+          if (!isfinite(f->P[v]) || !isfinite(fine->NextPt(f,YP)->P[v]))
+            rep.error("fine 3,4 not finite",f->P[v]);
+        }
+
         f_iter++; f = (*f_iter);
       } // loop over fine cells
     } // 2D
@@ -577,6 +620,14 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
     } // 3D
   } // 2nd-order accuracy
+
+#ifdef TEST_C2F
+  for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+    f = (*f_iter);
+    rep.printVec("END STATE f->P",f->P,par.nvar);
+    rep.printVec("END STATE c->P",f->npt->P,par.nvar);
+  }
+#endif
 
   return 0;
 }
@@ -599,22 +650,22 @@ void update_boundaries_nested::bilinear_interp(
 {
   if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
     // 1/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
   }
   else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
     // 3/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
   }
   else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
     // 1/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
   }
   else {
     // 3/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] /16.0 *
+    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
   }
   for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];

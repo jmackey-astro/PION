@@ -538,8 +538,8 @@ int time_integrator::set_dynamics_dU(
   //
   for (int i=0;i<SimPM.ndim;i++) {
     spatial_solver->SetDirection(axis[i]);
-    class cell *cpt    = grid->FirstPt();
-    class cell *marker = grid->FirstPt();
+    class cell *cpt    = grid->FirstPt_All();
+    class cell *marker = grid->FirstPt_All();
     
 #ifdef TESTING
     rep.printVec("cpt",cpt->pos,SimPM.ndim);
@@ -558,9 +558,9 @@ int time_integrator::set_dynamics_dU(
                                         space_ooa,
 #endif
                                         space_ooa, grid)) ==0) {
-      if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim]))->isgd ) {
-        if ( !(cpt=grid->NextPt(marker,posdirs[(i+2)%SimPM.ndim]))->isgd ) {
-          CI.print_cell(cpt);
+      if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim])) ) {
+        if ( !(cpt=grid->NextPt(marker,posdirs[(i+2)%SimPM.ndim])) ) {
+          //CI.print_cell(cpt);
           rep.error("set_dynamics_dU: Got to edge of box before last point!",cpt);
         }
         marker = cpt;
@@ -749,12 +749,11 @@ int time_integrator::dynamics_dU_column
   pstar     = mem.myfree(pstar);
 
   //
-  // Check if this is the last column or not. (first track back from bd to grid).
+  // Check if this is the last column or not. 
   // If it is the last column, return -1 instead of 0 to indicate this. (A positive
   // return value from errors is picked up in the calling function).
   //
-  do{} while( !(cpt=grid->NextPt(cpt,negdir))->isgd );
-  if (cpt->id == grid->LastPt()->id) return(-1);
+  if (cpt->id == grid->LastPt_All()->id) return(-1);
   else return(0);
 }
 
@@ -781,7 +780,7 @@ int time_integrator::grid_update_state_vector(
   //
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
   //
-  class cell* c = grid->FirstPt();
+  class cell* c = grid->FirstPt_All();
   do {
 
 #ifdef TESTING
@@ -796,8 +795,12 @@ int time_integrator::grid_update_state_vector(
     if (err) {
       cout <<"______ Error in Cell-advance-time: ";
       CI.print_cell(c);
+      CI.print_cell(c->npt);
       err=0;
     }
+#else
+    // ignore negative pressures and try to continue
+    if (err) err=0;
 #endif // TESTING
     
     //
@@ -818,7 +821,7 @@ int time_integrator::grid_update_state_vector(
 
     }
 
-  } while ( (c =grid->NextPt(c)) !=0);
+  } while ( (c =grid->NextPt_All(c)) !=0);
 
 #ifdef TESTING
   cout <<"\tcalc_dynamics_dU done. error="<<err<<"\n";

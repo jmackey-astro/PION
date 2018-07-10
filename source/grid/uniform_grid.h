@@ -223,7 +223,8 @@ class UniformGrid
 
   /// Returns the diameter of a grid cell.
   virtual double DX() const {return(G_dx);}
-
+  size_t Ncell() const {return G_ncell;} ///< number of cells on grid
+  size_t Ncell_all() const {return G_ncell_all;} ///< number of grid+ghost cells
 
   ///
   /// Returns cell diameter for a given cell along a given axis.
@@ -396,7 +397,7 @@ class UniformGrid
   virtual int Setup_RT_Boundaries(
       const int,  ///< source id
       struct rad_src_info &
-      ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      ) {cerr<<"DONT CALL ME 1!\n"; return 0;}
 
   ///
   /// Receive all optical depths for boundaries closer to source.
@@ -404,7 +405,7 @@ class UniformGrid
   virtual int Receive_RT_Boundaries(
       const int, ///< source id
       struct rad_src_info &
-      ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      ) {cerr<<"DONT CALL ME 2!\n"; return 0;}
 
   ///
   /// Send all optical depths for boundaries to domains further from source.
@@ -412,7 +413,7 @@ class UniformGrid
   virtual int Send_RT_Boundaries(
       const int, ///< source id
       struct rad_src_info &
-      ) {cerr<<"DONT CALL ME!\n"; return 0;}
+      ) {cerr<<"DONT CALL ME 3!\n"; return 0;}
 
   ///
   /// Calculate distance between two points, where the two position

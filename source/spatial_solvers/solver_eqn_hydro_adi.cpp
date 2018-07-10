@@ -384,13 +384,25 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   //
   for (int v=0;v<eq_nvar;v++) {
     u1[v] += dU[v];   // Update conserved variables
+    //dU[v] = 0.;       // Reset the dU array for the next timestep.
+  }
+  int err;
+  if((err=UtoP(u1,Pf, MinTemp, eq_gamma))!=0) {
+#ifdef TESTING
+    cout<<"(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained";
+    cout<<" (maybe about negative pressure...) fixing\n";
+    rep.printVec("pin",Pin,eq_nvar);
+    rep.printVec("dU ",dU, eq_nvar);
+    rep.printVec("u1 ",u1, eq_nvar);
+    PtoU(Pin,u1, eq_gamma);
+    rep.printVec("Uin",u1, eq_nvar);
+    rep.printVec("Pf ",Pf, eq_nvar);
+#endif
+  }
+  for (int v=0;v<eq_nvar;v++) {
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
-  if(UtoP(u1,Pf, MinTemp, eq_gamma)!=0) {
-    cout<<"(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained \
-           (maybe about negative pressure...) fixing\n";
-  }
-  return 0;
+  return err;
 }
 
 
