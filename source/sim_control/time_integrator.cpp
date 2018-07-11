@@ -288,7 +288,7 @@ int time_integrator::calc_RT_microphysics_dU(
       )
 {
 #ifdef RT_TESTING
-  if (!RT)
+  if (!grid->RT)
     rep.error("Logic error: must have RT unless i'm an idiot",
               "GENERAL-RT");
   if (SimPM.RS.Nsources<1)

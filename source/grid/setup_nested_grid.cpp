@@ -564,9 +564,17 @@ int setup_nested_grid::setup_raytracing(
 {
   int err = 0;
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+    cout <<"setting up raytracing for grid level "<<l<<"\n";
     err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
-    err += setup_evolving_RT_sources(SimPM,grid[l]->RT);
     rep.errorTest("setup_nested_grid::setup_raytracing()",0,err);
+  }
+  
+  err += setup_evolving_RT_sources(SimPM);
+  rep.errorTest("setup_nested_grid::setup_evolving_RT_sources()",0,err);
+  
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
+    rep.errorTest("setup_nested_grid::update_evolving_RT_sources()",0,err);
   }
   return 0;
 }

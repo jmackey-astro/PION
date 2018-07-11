@@ -153,8 +153,7 @@ int sim_init_nested::Init(
   // Setup Raytracing on each grid, if needed.
   //
   err += setup_raytracing(SimPM, grid);
-  err += setup_evolving_RT_sources(SimPM, grid[0]->RT);
-  rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
+  rep.errorTest("Failed to setup raytracer",0,err);
 
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {

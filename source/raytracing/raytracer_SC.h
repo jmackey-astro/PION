@@ -287,17 +287,6 @@ class raytracer_USC_infinity : public RayTracingBase {
       const rad_source * ///< pointer to source struct.
       );
 
-  ///
-  /// For the C2RAY update, where we integrate the microphysics as we trace
-  /// rays, we need to do quite a bit of work, so this is in its own function.
-  ///
-  virtual int ProcessCell_TimeUpdate(
-      cell *,            ///< Current cell.
-      double[],            ///< Column to cell.
-      double,            ///< Path Length through cell.
-      const rad_source *, ///< pointer to source struct.
-      const double       ///< Timestep
-      );
 
 
 };
@@ -326,7 +315,7 @@ class raytracer_USC : public raytracer_USC_infinity {
       );
   ~raytracer_USC(); ///< destructor.
 
-  /// \brief Adds a source to the list of sources to trace.
+  /// Adds a source to the list of sources to trace.
   ///
   /// Returns the sources id, which starts at zero and increases 
   /// linearly.  So if we have 10 sources, and add another source,

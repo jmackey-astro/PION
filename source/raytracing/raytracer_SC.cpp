@@ -420,8 +420,8 @@ void raytracer_USC_infinity::update_local_variables_for_new_source(
 
 
 void raytracer_USC_infinity::update_RT_source_properties(
-                  const struct rad_src_info *rs ///< ptr to source info.
-                  )
+      const struct rad_src_info *rs ///< ptr to source info.
+      )
 {
   //
   // rs contains updated strength, Rstar, and Tstar data, so update strength
@@ -467,9 +467,9 @@ void raytracer_USC_infinity::update_RT_source_properties(
 
 
 int raytracer_USC_infinity::populate_ionising_src_list(
-                std::vector<struct rt_source_data> &ion_list
-                ///< list of data for ionising sources
-                )
+      std::vector<struct rt_source_data> &ion_list
+      ///< list of data for ionising sources
+      )
 {
 #ifdef RT_TESTING
   if (ion_list.size() != static_cast<unsigned int>(N_ion_srcs)) {
@@ -491,9 +491,9 @@ int raytracer_USC_infinity::populate_ionising_src_list(
 
 
 int raytracer_USC_infinity::populate_UVheating_src_list(
-                std::vector<struct rt_source_data> &uvh_list
-                ///< list of data for UV-heating sources
-                )
+      std::vector<struct rt_source_data> &uvh_list
+      ///< list of data for UV-heating sources
+      )
 {
 #ifdef RT_TESTING
   if (uvh_list.size() != static_cast<unsigned int>(N_uvh_srcs)) {
@@ -552,23 +552,16 @@ void raytracer_USC_infinity::Print_SourceList()
 
 
 int raytracer_USC_infinity::RayTrace_Column_Density(
-                const int s_id,  ///< Source id
-                const double dt, ///< Timestep
-                const double g   ///< EOS Gamma.
-                )
+      const int s_id,  ///< Source id
+      const double dt, ///< Timestep
+      const double g   ///< EOS Gamma.
+      )
 {
 #ifdef RT_TESTING
   cout <<"raytracer_USC_infinity::RayTrace_Column_Density() calling RayTrace_SingleSource().\n";
 #endif // RT_TESTING
 
-  //
-  // Here we know we just want to trace column densities, so if the source
-  // is an implicitly-updated ionising source, we change it to an explicit
-  // update so that the column density will be calculated.  This is a bit
-  // of a hack, but it should work ok.
-  //
   struct rad_source *source=0;
-  bool changed_src=false;
   for (vector<rad_source>::iterator i=SourceList.begin();
                                     i!=SourceList.end(); ++i) {
     if ( (*i).s->id==s_id ) source=&(*i);
@@ -577,19 +570,9 @@ int raytracer_USC_infinity::RayTrace_Column_Density(
     cerr <<"Couldn't find source "<<s_id<<" in source list.\n";
     return 1;
   }
-  if (source->s->update==RT_UPDATE_IMPLICIT) {
-    source->s->update=RT_UPDATE_EXPLICIT;
-    changed_src=true;
-  }
 
   // now trace the source.
   int err = RayTrace_SingleSource(s_id,dt,g);
-
-  // change source update back to implicit, if needed.
-  if (changed_src) {
-    source->s->update=RT_UPDATE_IMPLICIT;
-  }
-
   return err;
 }
 
@@ -679,7 +662,7 @@ int raytracer_USC_infinity::trace_parallel_rays(
     else rep.error("Source not in xy plane in 2d sim!",dir);
     do {
       err += trace_column_parallel(source,c,oppdir);
-    } while ( (c=gridptr->NextPt(c,perpdir))!=0 && c->isgd);
+    } while ( (c=gridptr->NextPt(c,perpdir))!=0);
   } // 2D
   
   else if (ndim==3) {
@@ -692,8 +675,8 @@ int raytracer_USC_infinity::trace_parallel_rays(
     do {
       cp=c;
       do {err += trace_column_parallel(source,cp,oppdir);}
-      while ( (cp=gridptr->NextPt(cp,pdir1))!=0 && cp->isgd);
-    } while ( (c =gridptr->NextPt(c, pdir2))!=0 &&  c->isgd);
+      while ( (cp=gridptr->NextPt(cp,pdir1))!=0);
+    } while ( (c =gridptr->NextPt(c, pdir2))!=0);
   } // 3D
   
   return err;
@@ -729,24 +712,19 @@ int raytracer_USC_infinity::trace_column_parallel(
   }
 #endif // RT_TESTING
   
-  //
-  // need to check in case we have moved from source cell off grid.
-  //
-  if ( c!=0 && c->isgd ) {
-    do {
+  do {
 #ifdef TESTING
-      //      cout <<"setting cell pointer.\n";
-      dp.c = c;
+    //      cout <<"setting cell pointer.\n";
+    dp.c = c;
 #endif
-      err += cell_cols_1d(source, c, oppdir, Nc, &ds);
-      err += ProcessCell(c,Nc,ds,source,delt);
-      
-      //cout <<"testing...\n";
-      if (c->Ph[PG]<0.0 || !isfinite(c->Ph[PG]))
-        rep.error("ProcessCell() gives negative energy!",c->Ph[PG]);
+    err += cell_cols_1d(source, c, oppdir, Nc, &ds);
+    err += ProcessCell(c,Nc,ds,source,delt);
+    
+    //cout <<"testing...\n";
+    if (c->Ph[PG]<0.0 || !isfinite(c->Ph[PG]))
+      rep.error("ProcessCell() gives negative energy!",c->Ph[PG]);
 
-    } while ( (c=gridptr->NextPt(c,dir))!=0 && c->isgd );
-  }
+  } while ( (c=gridptr->NextPt(c,dir))!=0 && c->isgd );
 
   return err;
 }
@@ -815,229 +793,210 @@ int raytracer_USC_infinity::ProcessCell(
       )
 {
   //
-  // This is now a switcher function, depending on the source type.
-  // If we are doing the C2RAY type update, where the MP update is
-  // done as rays are traced, then we call the old ProcessCell 
-  // function.  Otherwise we just add the cell column to the col2cell
-  // and assign cell values.
-  //
   // TODO: Switch this to actually use optical depths, because
   //   otherwise TauMin is not dimensionless, and it is confusing
   //   to use it.
   //
   int err=0;
 
-  if      (source->s->update==RT_UPDATE_IMPLICIT) {
-#ifdef RT_TESTING
-    cout <<"\tsrc "<<source->s->id<<": processing cell with time-update!\n";
-#endif // RT_TESTING
-    err = ProcessCell_TimeUpdate(c,col2cell,ds,source,dt);
-  }
+  double cell_col[MAX_TAU];
+  //
+  // ds is physical path length of ray through cell centre from
+  // entry to exit.
+  //
+  for (unsigned short int iT=0; iT<source->s->NTau; iT++)
+    cell_col[iT] = ds;
 
-  else if (source->s->update==RT_UPDATE_EXPLICIT) {
-    double cell_col[MAX_TAU];
-    //
-    // ds is physical path length of ray through cell centre from
-    // entry to exit.
-    //
-    for (unsigned short int iT=0; iT<source->s->NTau; iT++)
-      cell_col[iT] = ds;
-
-    double temp=0.0;
-    short unsigned int ix=0;
+  double temp=0.0;
+  short unsigned int ix=0;
 #ifdef RT_TESTING
-    cout <<"\tsrc "<<source->s->id<<": Updating cell id="<<c->id;
-    cout <<" with opacity-only step.  N[0]="<<col2cell[0]<<"\n";
+  cout <<"\tsrc "<<source->s->id<<": Updating cell id="<<c->id;
+  cout <<" with opacity-only step.  N[0]="<<col2cell[0]<<"\n";
 #endif // RT_TESTING
 
-    //
-    // Set column from source to far side of current cell, and column
-    // through cell.  Most source types only have one value of Tau
-    // per source, so we only set the zeroth value.  HHe-MFQ sources
-    // have four values of Tau.
-    //
-    switch (source->s->opacity_src) {
+  //
+  // Set column from source to far side of current cell, and column
+  // through cell.  Most source types only have one value of Tau
+  // per source, so we only set the zeroth value.  HHe-MFQ sources
+  // have four values of Tau.
+  //
+  switch (source->s->opacity_src) {
 
-      case RT_OPACITY_MINUS:
-        // this is a generic flag for integrating rho*(1-y_i)*ds
+    case RT_OPACITY_MINUS:
+      // this is a generic flag for integrating rho*(1-y_i)*ds
 #ifdef RT_TESTING
-        if (c->Ph[source->s->opacity_var+first_tr]>0.01) {
-          cout <<"RT::ProcessCell:  ds="<<ds<<", rho="<<c->Ph[RO];
-          cout <<", (1-x)=";
-          cout <<(1.0-c->Ph[source->s->opacity_var+first_tr]);
-          cout <<" var="<<source->s->opacity_var+first_tr<<"\n";
-        }
+      if (c->Ph[source->s->opacity_var+first_tr]>0.01) {
+        cout <<"RT::ProcessCell:  ds="<<ds<<", rho="<<c->Ph[RO];
+        cout <<", (1-x)=";
+        cout <<(1.0-c->Ph[source->s->opacity_var+first_tr]);
+        cout <<" var="<<source->s->opacity_var+first_tr<<"\n";
+      }
 #endif
-        // if cell is an internal boundary, don't consider it's
-        // absorption... This is a bit sketchy, and may only be
-        // suitable for a single star, or highly resolved nebulae.
-        if (c->isbd) {
-          cell_col[0] = 0.0;
-        }
-        else {
-          cell_col[0] *= c->Ph[RO]*
-                       (1.0-c->Ph[source->s->opacity_var+first_tr]);
-          col2cell[0] += cell_col[0];
-        }
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_TOTAL:
-        cell_col[0] *= c->Ph[RO];
+      // if cell is an internal boundary, don't consider it's
+      // absorption... This is a bit sketchy, and may only be
+      // suitable for a single star, or highly resolved nebulae.
+      //if (c->isbd) {
+      //  cell_col[0] = 0.0;
+      //}
+      //else {
+        cell_col[0] *= c->Ph[RO]*
+                     (1.0-c->Ph[source->s->opacity_var+first_tr]);
         col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_TRACER:
-        // this is a generic flag for integrating rho*y_i*ds
-        if (c->isbd) {
-          cell_col[0] = 0.0;
-        }
-        else {
-          cell_col[0] *= c->Ph[RO]*
-                         c->Ph[source->s->opacity_var+first_tr];
-          col2cell[0] += cell_col[0];
-        }
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_VSHELL:
-        //
-        // this is only applied in the AddSource() function to set Vshell in 
-        // each grid cell at the start of the simulation.
-        //
-        set_Vshell_in_cell(c, ds, source);
-        cell_col[0] = ds;
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_HALPHA:
-        //
-        // This calculate the H-alpha intensity along a line-of-sight, assuming
-        // a constant source function within a cell, and a grey opacity which
-        // scales with the total gas density dtau=n(H)*5.0e-22*ds.
-        // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
-        // Then I(out) = S +exp(-dtau)*(I(in)-S)
-        //
-        cell_col[0] = 0.22*(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())
-                  *1.1*c->Ph[source->s->opacity_var+first_tr]
-                      *c->Ph[source->s->opacity_var+first_tr]
-                  *pow(MP->Temperature(c->Ph,gamma),-0.9);
-        //cell_col = 0.55*(c->Ph[RO]*mpptr->get_X_H()/*pconst.m_p())
-        //          *1.1*c->Ph[source->s->opacity_var+first_tr]
-        //              *c->Ph[source->s->opacity_var+first_tr]
-        //          *pow(MP->Temperature(c->Ph,gamma),-1.0);
-
-        //
-        // now set cell_col[0] to be I(out)
-        //
-        cell_col[0] = cell_col[0]+
-            exp(-(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())*5.0e-22*ds)
-            *(col2cell[0]-cell_col[0]);
-        //
-        // set col2cell[0] to be I(out)-I(in)
-        //
-        col2cell[0] = cell_col[0]-col2cell[0];
-        CI.set_cell_col(c, source->s->id, col2cell);
-        CI.set_col     (c, source->s->id, cell_col);
-        break;
-
-      case RT_OPACITY_RR:
-        //
-        // Get the radiative recombination rate *Vshell, for the 
-        // photoionisation equilibrium assumption (with caseB).
-        // For sources at infinity Vshell is ds.  In this case we
-        // have to assume the cell is fully ionised, so we set the
-        // first tracer value to 1.0 in c->Ph[] when we call the rate
-        // function, and reset it afterwards.
-        //
-        temp = c->Ph[first_tr];
-        c->Ph[first_tr] = 1.0;
-        cell_col[0] = CI.get_cell_Vshell(c,source->s->id)/
-                    source->s->strength*
-                    MP->get_recombination_rate(0, c->Ph,gamma);
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        c->Ph[first_tr] = temp;
-        break;
-
-      case RT_OPACITY_HHE:
-        //
-        // Here we have four column densities to set.
-        // dTaui[i] = n[i]*sigma[i]*ds
-        // n[i] = rho*X_i/m_i
-        // 
-        // Here 0 = H0,  1 = He0,  2 = He+,  3 = Dust
-        // Element/Ion constants are defined in constants.h
-        //
-        // ---------- H0 -----------
-        ix = source->s->opacity_var+first_tr;
-        cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
-                      MP->get_th_xsection(ION_H_N)*c->Ph[ix];
-        col2cell[0] += cell_col[0];
-        //if (c->id==2) {
-        //  cout <<"H: ix="<<ix;
-        //  cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
-        //  cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
-        //  cout <<", yn = "<<c->Ph[ix];
-        //  cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
-        //}
-#ifdef MP9_TESTING
-        cout <<"H: ix="<<ix;
-        cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
-        cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
-        cout <<", yn = "<<c->Ph[ix];
-        cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
-#endif  // MP9_TESTING
-
-        // ---------- He0 -----------
-        ix++;
-        cell_col[1] = ds*MP->get_n_el(c->Ph, EL_HE)*
-                      MP->get_th_xsection(ION_HE_N)*c->Ph[ix];
-        col2cell[1] += cell_col[1];
-#ifdef MP9_TESTING
-        cout <<"  He: ix="<<ix;
-        cout <<", n="<<MP->get_n_el(c->Ph, EL_HE);
-        cout <<", sigma="<< MP->get_th_xsection(ION_HE_N);
-        cout <<", yn = "<<c->Ph[ix];
-        cout <<", tau= "<<cell_col[ION_HE_N]<<"\n";
-#endif  // MP9_TESTING
-
-        // ---------- He+ -----------
-        ix++;
-        cell_col[2] = ds*MP->get_n_el(c->Ph, EL_HE)*
-                      MP->get_th_xsection(ION_HE_P)*c->Ph[ix];
-        col2cell[2] += cell_col[2];
-
-        // ---------- DUST -----------
-        cell_col[3] = ds*MP->get_n_el(c->Ph, EL_H)*
-                      MP->get_th_xsection(ION_DUST);
-        col2cell[3] += cell_col[3];
-        
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-
-  
+      //}
+      CI.set_cell_col(c, source->s->id, cell_col);
+      CI.set_col     (c, source->s->id, col2cell);
       break;
 
-      default:
-        rep.error("RT_USC_infinity::ProcessCell What sort of \
-                   opacity?",source->s->opacity_src);
+    case RT_OPACITY_TOTAL:
+      cell_col[0] *= c->Ph[RO];
+      col2cell[0] += cell_col[0];
+      CI.set_cell_col(c, source->s->id, cell_col);
+      CI.set_col     (c, source->s->id, col2cell);
+      break;
+
+    case RT_OPACITY_TRACER:
+      // this is a generic flag for integrating rho*y_i*ds
+      //if (c->isbd) {
+      //  cell_col[0] = 0.0;
+      //}
+      //else {
+        cell_col[0] *= c->Ph[RO]*
+                       c->Ph[source->s->opacity_var+first_tr];
+        col2cell[0] += cell_col[0];
+      //}
+      CI.set_cell_col(c, source->s->id, cell_col);
+      CI.set_col     (c, source->s->id, col2cell);
+      break;
+
+    case RT_OPACITY_VSHELL:
+      //
+      // this is only applied in the AddSource() function to set Vshell in 
+      // each grid cell at the start of the simulation.
+      //
+      set_Vshell_in_cell(c, ds, source);
+      cell_col[0] = ds;
+      col2cell[0] += cell_col[0];
+      CI.set_cell_col(c, source->s->id, cell_col);
+      CI.set_col     (c, source->s->id, col2cell);
+      break;
+
+    case RT_OPACITY_HALPHA:
+      //
+      // This calculate the H-alpha intensity along a line-of-sight, assuming
+      // a constant source function within a cell, and a grey opacity which
+      // scales with the total gas density dtau=n(H)*5.0e-22*ds.
+      // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
+      // Then I(out) = S +exp(-dtau)*(I(in)-S)
+      //
+      cell_col[0] = 0.22*(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())
+                *1.1*c->Ph[source->s->opacity_var+first_tr]
+                    *c->Ph[source->s->opacity_var+first_tr]
+                *pow(MP->Temperature(c->Ph,gamma),-0.9);
+      //cell_col = 0.55*(c->Ph[RO]*mpptr->get_X_H()/*pconst.m_p())
+      //          *1.1*c->Ph[source->s->opacity_var+first_tr]
+      //              *c->Ph[source->s->opacity_var+first_tr]
+      //          *pow(MP->Temperature(c->Ph,gamma),-1.0);
+
+      //
+      // now set cell_col[0] to be I(out)
+      //
+      cell_col[0] = cell_col[0]+
+          exp(-(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())*5.0e-22*ds)
+          *(col2cell[0]-cell_col[0]);
+      //
+      // set col2cell[0] to be I(out)-I(in)
+      //
+      col2cell[0] = cell_col[0]-col2cell[0];
+      CI.set_cell_col(c, source->s->id, col2cell);
+      CI.set_col     (c, source->s->id, cell_col);
+      break;
+
+    case RT_OPACITY_RR:
+      //
+      // Get the radiative recombination rate *Vshell, for the 
+      // photoionisation equilibrium assumption (with caseB).
+      // For sources at infinity Vshell is ds.  In this case we
+      // have to assume the cell is fully ionised, so we set the
+      // first tracer value to 1.0 in c->Ph[] when we call the rate
+      // function, and reset it afterwards.
+      //
+      temp = c->Ph[first_tr];
+      c->Ph[first_tr] = 1.0;
+      cell_col[0] = CI.get_cell_Vshell(c,source->s->id)/
+                  source->s->strength*
+                  MP->get_recombination_rate(0, c->Ph,gamma);
+      col2cell[0] += cell_col[0];
+      CI.set_cell_col(c, source->s->id, cell_col);
+      CI.set_col     (c, source->s->id, col2cell);
+      c->Ph[first_tr] = temp;
+      break;
+
+    case RT_OPACITY_HHE:
+      //
+      // Here we have four column densities to set.
+      // dTaui[i] = n[i]*sigma[i]*ds
+      // n[i] = rho*X_i/m_i
+      // 
+      // Here 0 = H0,  1 = He0,  2 = He+,  3 = Dust
+      // Element/Ion constants are defined in constants.h
+      //
+      // ---------- H0 -----------
+      ix = source->s->opacity_var+first_tr;
+      cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
+                    MP->get_th_xsection(ION_H_N)*c->Ph[ix];
+      col2cell[0] += cell_col[0];
+      //if (c->id==2) {
+      //  cout <<"H: ix="<<ix;
+      //  cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
+      //  cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
+      //  cout <<", yn = "<<c->Ph[ix];
+      //  cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
+      //}
+#ifdef MP9_TESTING
+      cout <<"H: ix="<<ix;
+      cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
+      cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
+      cout <<", yn = "<<c->Ph[ix];
+      cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
+#endif  // MP9_TESTING
+
+      // ---------- He0 -----------
+      ix++;
+      cell_col[1] = ds*MP->get_n_el(c->Ph, EL_HE)*
+                    MP->get_th_xsection(ION_HE_N)*c->Ph[ix];
+      col2cell[1] += cell_col[1];
+#ifdef MP9_TESTING
+      cout <<"  He: ix="<<ix;
+      cout <<", n="<<MP->get_n_el(c->Ph, EL_HE);
+      cout <<", sigma="<< MP->get_th_xsection(ION_HE_N);
+      cout <<", yn = "<<c->Ph[ix];
+      cout <<", tau= "<<cell_col[ION_HE_N]<<"\n";
+#endif  // MP9_TESTING
+
+      // ---------- He+ -----------
+      ix++;
+      cell_col[2] = ds*MP->get_n_el(c->Ph, EL_HE)*
+                    MP->get_th_xsection(ION_HE_P)*c->Ph[ix];
+      col2cell[2] += cell_col[2];
+
+      // ---------- DUST -----------
+      cell_col[3] = ds*MP->get_n_el(c->Ph, EL_H)*
+                    MP->get_th_xsection(ION_DUST);
+      col2cell[3] += cell_col[3];
+      
+      CI.set_cell_col(c, source->s->id, cell_col);
+      CI.set_col     (c, source->s->id, col2cell);
+
+
+    break;
+
+    default:
+      rep.error("RT_USC_infinity::ProcessCell What sort of \
+                 opacity?",source->s->opacity_src);
         break;
-    }
-
-
-  } // update opacity only.
-  else {
-    rep.error("RT_USC_infinity::ProcessCell What sort of update?",
-              source->s->update);
   }
+
+
   return err;
 }
 
@@ -1062,123 +1021,6 @@ void raytracer_USC_infinity::set_Vshell_in_cell(
   CI.set_cell_deltaS(c, rs->s->id, ds);
   return;
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int raytracer_USC_infinity::ProcessCell_TimeUpdate(
-            cell *c,                  ///< Current cell.
-            double col2cell[],        ///< Columns to cell
-            double ds,                ///< Path length through cell.
-            const rad_source *source, ///< pointer to source struct.
-            const double dt          ///< Timestep
-            )
-{
-  //
-  // We want to use the new microphysics integrator to integrate everything.
-  //
-  // Requirements:
-  // - (1) MP integrator which returns time-averaged column density.
-  // - (2) That any other sources (UV-heating) have been already traced, so
-  //       this source should be the last one to be traced.
-  // - (3) That column-densities for this cell have been set.
-  //
-
-  //
-  // Set the column densities in the same way as for any other source:
-  //
-  double delcol[MAX_TAU];
-  delcol[0] = ds*c->Ph[RO]*(1.0-c->Ph[source->s->opacity_var+first_tr]);
-  col2cell[0] += delcol[0];
-
-#ifdef RT_TESTING
-  //cout <<"col2cell="<<CI.get_col(c, source->s->id)-CI.get_cell_col(c, source->s->id);
-  //cout <<"  delcol="<<CI.get_cell_col(c, source->s->id);
-  cout <<"ProcessCell_TimeUpdate::: input c2c="<<col2cell[0]<<", dc="<<delcol[0]<<"\n";
-#endif // RT_TESTING
-  CI.set_cell_col(c, source->s->id, delcol);
-  CI.set_col     (c, source->s->id, col2cell);
-  int err=0;
-  //
-  // RT source properties are already organised into heating and
-  // ionising source lists for the microphysics calls, so we don't
-  // need to set them up as in a call from gridMethods.cc
-  //
-  //
-  // Get column densities and Vshell in struct for each source.
-  // Column is the column-density to the front edge of the cell,
-  // whereas the cell-interface returns column-density to the back
-  // edge of the cell, so  we subtract off DelCol.
-  //
-  for (int v=0; v<N_uvh_srcs; v++) {
-    UVH_data[v].Vshell  = CI.get_cell_Vshell(c, UVH_data[v].id);
-    UVH_data[v].dS      = CI.get_cell_deltaS(c, UVH_data[v].id);
-    CI.get_cell_col(c, UVH_data[v].id, UVH_data[v].DelCol);
-    CI.get_col(     c, UVH_data[v].id, UVH_data[v].Column);
-    for (short unsigned int iT=0; iT<UVH_data[v].NTau; iT++)
-      UVH_data[v].Column[iT] -=UVH_data[v].DelCol[iT];
-  }
-  for (int v=0; v<N_ion_srcs; v++) {
-    ION_data[v].Vshell = CI.get_cell_Vshell(c, ION_data[v].id);
-    ION_data[v].dS     = CI.get_cell_deltaS(c, ION_data[v].id);
-    CI.get_cell_col(c, ION_data[v].id, ION_data[v].DelCol);
-    CI.get_col(     c, ION_data[v].id, ION_data[v].Column);
-    for (short unsigned int iT=0; iT<ION_data[v].NTau; iT++)
-      ION_data[v].Column[iT] -=ION_data[v].DelCol[iT];
-  }
-#ifdef RT_TESTING
-  cout <<"N_uvh_srcs="<<N_uvh_srcs;
-  cout <<", N_ion_srcs="<<N_ion_srcs<<"\n";
-  for (int v=0; v<N_uvh_srcs; v++) {
-    cout <<"UV ["<<v<<"]: Vshell="<<UVH_data[v].Vshell;
-    cout <<", ds="<<UVH_data[v].dS;
-    cout <<", DelCol="<<UVH_data[v].DelCol[0];
-    cout <<", Column="<<UVH_data[v].Column[0]<<"\n";
-  }
-  for (int v=0; v<N_ion_srcs; v++) {
-    cout <<"ION["<<v<<"]: Ndot="<<ION_data[v].strength;
-    cout <<", Vshell="<<ION_data[v].Vshell<<", ds="<<ION_data[v].dS;
-    cout <<", DelCol="<<ION_data[v].DelCol[0];
-    cout <<", Column="<<ION_data[v].Column[0]<<"\n";
-  }
-#endif // RT_TESTING
-  //
-  // Now call the integrator.
-  //
-  err += MP->TimeUpdateMP_RTnew(c->P, N_uvh_srcs, UVH_data,
-                                      N_ion_srcs, ION_data,
-                                c->Ph, dt, gamma, 0, delcol);
-  //
-  // update Ph and P
-  //
-  for (int v=0;v<nvar;v++) c->P[v] = c->Ph[v];
-
-  //
-  // Now replace the cell DelCol with the value returned from the MP
-  // integrator.
-  //
-#ifdef RT_TESTING
-  cout <<"::: final dc="<<delcol<<"\n";
-#endif // RT_TESTING
-  CI.set_cell_col(c, source->s->id, delcol);
-  col2cell[0] += delcol[0];
-  CI.set_col     (c, source->s->id, col2cell);
-
-#ifdef RT_TESTING
-  cout <<"New ProcessCell_TimeUpdate(): cell: "<<c->id;
-  cout <<":  col2cell=" <<col2cell[0];
-  cout <<":  dcol(t=0)="<<ION_data[0].DelCol[0];
-  cout <<":  <dcol>="<<delcol[0]<<"... x="<<c->P[first_tr]<<"\n";
-#endif // RT_TESTING
-
-
-  return 0;
-}
-
 
 // ##################################################################
 // ##################################################################
@@ -1320,8 +1162,8 @@ int raytracer_USC::Add_Source(struct rad_src_info *src ///< source info.
 
 
 void raytracer_USC::add_source_to_list(
-              struct rad_src_info *src ///< source info.
-              )
+      struct rad_src_info *src ///< source info.
+      )
 {
   //
   // Create a new radiation source struct.
@@ -1377,19 +1219,6 @@ void raytracer_USC::add_source_to_list(
   // Now determine if source is on grid or not.
   //
   rs.src_on_grid = true;
-#ifdef CELL_CENTRED_SRC
-  for (int i=0; i<ndim; i++) {
-    if (rs.s->pos[i]<gridptr->Xmin(static_cast<axes>(i)) &&
-	!pconst.equalD(rs.s->pos[i],gridptr->Xmin(static_cast<axes>(i)))) {
-      rs.src_on_grid=false;
-    }
-    if (rs.s->pos[i]>gridptr->Xmax(static_cast<axes>(i)) &&
-	!pconst.equalD(rs.s->pos[i],gridptr->Xmax(static_cast<axes>(i)))) {
-      rs.src_on_grid=false;
-    }
-  }
-#endif // CELL_CENTRED_SRC
-#ifdef NON_CELL_CENTRED_SRC
   //
   // For non-cell-centred source, if it is at a cell corner then I
   // assume the source cell is the one with the source at its most
@@ -1397,16 +1226,15 @@ void raytracer_USC::add_source_to_list(
   // if it is on the boundary.
   //
   for (int i=0; i<ndim; i++) {
-    if (rs.ipos[i]<=gridptr->iXmin(static_cast<axes>(i)))
+    if (rs.ipos[i]<=gridptr->iXmin_all(static_cast<axes>(i)))
       rs.src_on_grid=false;
-    if (rs.ipos[i]>=gridptr->iXmax(static_cast<axes>(i)))
+    if (rs.ipos[i]>=gridptr->iXmax_all(static_cast<axes>(i)))
       rs.src_on_grid=false;
   }
   //
   // ipos can be overloaded if source is at infinity, so extra check:
   //
   if (rs.s->at_infinity) rs.src_on_grid=false;
-#endif // NON_CELL_CENTRED_SRC
 
   //
   // nearly all done, so now add the source to the list, update local
@@ -1484,22 +1312,6 @@ void raytracer_USC::set_TauMin_for_source(
     //TauMin[rs.id] = 6.0e-7; // original value
     TauMin[rs.s->id] = 7.0e-7;
 #endif
-  }
-  else if ((rs.s->update==RT_UPDATE_IMPLICIT) &&
-           (rs.s->opacity_src==RT_OPACITY_MINUS) &&
-           (rs.s->effect==RT_EFFECT_PION_MONO)) {
-    // OLD C2Ray update had Tau as the variable, so we set it to 0.7.
-    // NEW Implicit update works just like the explicit integrator,
-    // so 5e-7 is ok.
-    TauMin[rs.s->id]=2.6e-7;
-  }
-  else if ((rs.s->update==RT_UPDATE_IMPLICIT) &&
-           (rs.s->opacity_src==RT_OPACITY_MINUS) &&
-           (rs.s->effect==RT_EFFECT_PION_MULTI)) {
-    // Photoionisation, sigma=6.3e-18, Tau=sigma*NH*(1-x)
-    // This value seem to give best results for multifrequency
-    // sources, tested for Teff of both 30000 and 39750K.
-    TauMin[rs.s->id] = 5.0e-7;
   }
   else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
            (rs.s->effect==RT_EFFECT_UV_HEATING) ) {
@@ -1595,12 +1407,12 @@ int raytracer_USC::RayTrace_SingleSource(
   //
   // Testing, to make sure we assign column densities to all cells.
   //
-  cell *sc = gridptr->FirstPt();
+  cell *sc = gridptr->FirstPt_All();
   double tau[MAX_TAU];
   for (unsigned short int iT=0;iT<MAX_TAU;iT++) tau[iT]=-1.0;
   do {
     CI.set_col(sc, s_id, tau);
-  } while ( (sc=gridptr->NextPt(sc)) !=0);
+  } while ( (sc=gridptr->NextPt_All(sc)) !=0);
 #endif // RT_TESTING
 
   rad_source *source=0;
@@ -1626,18 +1438,12 @@ int raytracer_USC::RayTrace_SingleSource(
       enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
       enum direction negdir = gridptr->OppDir(posdir);
       
-#ifdef CELL_CENTRED_SRC
-      if (source->s->pos[a] <= gridptr->Xmin(a)) src_off_grid[a] = negdir;
-      if (source->s->pos[a] >= gridptr->Xmax(a)) src_off_grid[a] = posdir;
-#endif // CELL_CENTRED_SRC
-#ifdef NON_CELL_CENTRED_SRC
       //
       // Use integer positions (note these are not used if the source is
       // at infinity, so it doesn't matter if ipos[] is out_of_range.
       //
-      if (source->ipos[a] <= gridptr->iXmin(a)) src_off_grid[a] = negdir;
-      if (source->ipos[a] >= gridptr->iXmax(a)) src_off_grid[a] = posdir;
-#endif // NON_CELL_CENTRED_SRC
+      if (source->ipos[a] <= gridptr->iXmin_all(a)) src_off_grid[a] = negdir;
+      if (source->ipos[a] >= gridptr->iXmax_all(a)) src_off_grid[a] = posdir;
       
       if (source->s->pos[a] <=-1.e99) src_at_infty[a] = negdir;
       if (source->s->pos[a] >= 1.e99) src_at_infty[a] = posdir;
@@ -1723,10 +1529,11 @@ int raytracer_USC::RayTrace_SingleSource(
 // ##################################################################
 
 
-void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell nearest to source if off grid.
-				   cell **startcell, ///< list of startcells for each line/quadrant/octant.
-				   enum direction *src_off_grid ///< list of dirs if source is off grid.
-				   )
+void raytracer_USC::set_startcells(
+      cell *sc,      ///< source cell, or cell nearest to source if off grid.
+      cell **startcell, ///< list of startcells for each line/quadrant/octant.
+      enum direction *src_off_grid ///< list of dirs if source is off grid.
+      )
 {
   if (ndim==1) {
     bool in_my_half = false;
@@ -1745,11 +1552,11 @@ void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell near
 	if      (src_off_grid[XX]==XN) in_my_half = false;
 	else if (src_off_grid[XX]==NO) {
 	  c = gridptr->NextPt(c,dir);
-	  if ( (c!=0) && (c->isgd) ) in_my_half = true;
+	  if ( (c!=0) ) in_my_half = true;
 	  else in_my_half=false;
 	}
 	else if (src_off_grid[XX]==XP) {
-	  if ( (c!=0) && (c->isgd) ) in_my_half = true;
+	  if ( (c!=0) ) in_my_half = true;
 	  else rep.error("logic error in RayTraceSource()",c);
 	}
 	else rep.error("Bad direction",src_off_grid[XX]);
@@ -1777,7 +1584,7 @@ void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell near
 	if (src_off_grid[XX]==XN || src_off_grid[YY]==YP) in_my_quad = false; // src off grid to top or left.
 	else if (src_off_grid[XX]!=XP) { // source is on grid in x-dir, so sc is in Q1, so move one cell left.
 	  c = gridptr->NextPt(c,XN);
-	  if ( (c) && (c->isgd) ) in_my_quad = true;
+	  if (c) in_my_quad = true;
 	  else in_my_quad = false;
 	}
 	else // src off grid to right, so sc is first cell in Q2.
@@ -1789,7 +1596,7 @@ void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell near
 	if (src_off_grid[XX]==XP || src_off_grid[YY]==YN) in_my_quad = false; // src off grid to bottom or right.
 	else if (src_off_grid[YY]!=YP) { // source is on grid in y-dir, so sc is in Q1, so move one cell YN.
 	  c = gridptr->NextPt(c,YN);
-	  if ( (c) && (c->isgd) ) in_my_quad = true;
+	  if (c) in_my_quad = true;
 	  else in_my_quad = false;
 	}
 	else // src off grid to top but not to right, so sc is first cell in Q4.
@@ -1804,7 +1611,7 @@ void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell near
 	if (c!=0 && src_off_grid[XX]!=XP) { // source is not off-grid in +ve x-dir, so move one cell XN.
 	  c = gridptr->NextPt(c,XN);
 	}
-	if (c!=0 && c->isgd) in_my_quad = true;
+	if (c!=0) in_my_quad = true;
 	else in_my_quad = false;
 	if (in_my_quad) startcell[i] = c; else startcell[i]=0;
       }
@@ -1898,8 +1705,6 @@ void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell near
 	}
 	else rep.error("RayTracing3D::RayTraceSource bad octant",oct);
 	
-	// if startcell is off-grid, then set it to zero.
-	if (startcell[oct]!=0 && !startcell[oct]->isgd) startcell[oct]=0;
       } // octant may have cells, so set the starting cell.
 #ifdef RT_TESTING
       cout <<"octant "<<oct<<", start_cell:"; CI.print_cell(startcell[oct]);
@@ -1915,13 +1720,14 @@ void raytracer_USC::set_startcells(cell *sc,      ///< source cell, or cell near
 // ##################################################################
 
 
-cell * raytracer_USC::find_source_cell(double *pos ///< position of source.
-				      )
+cell * raytracer_USC::find_source_cell(
+      double *pos ///< position of source.
+      )
 {
 #ifdef RT_TESTING
   cout <<"find source cell N-Dim algorithm. ndim="<<ndim<<"\n";
 #endif
-  cell *sc=gridptr->FirstPt();
+  cell *sc=gridptr->FirstPt_All();
   for (int i=0;i<ndim;i++) {
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
@@ -1933,48 +1739,21 @@ cell * raytracer_USC::find_source_cell(double *pos ///< position of source.
     //
     centre_source_on_cell(pos,a);
 
-#ifdef CELL_CENTRED_SRC
-#ifdef RT_TESTING
-    cout <<"Now have centred source on a cell, so move on grid to find it.\n";
-#endif
-    if      (pos[a]<gridptr->Xmin(a) && !pconst.equalD(pos[a],gridptr->Xmin(a))) {
-#ifdef RT_TESTING
-      cout <<"don't need to do anything as we are already at most negative cell in this axis.\n";
-#endif
-      // don't need to do anything as we are already at most negative cell in this axis.
-    }
-    else if (pos[a]>gridptr->Xmax(a) && !pconst.equalD(pos[a],gridptr->Xmax(a))) {
-#ifdef RT_TESTING
-      cout <<"source off the positive end of grid, so go to last cell.\n";
-#endif
-      // source off the positive end of grid, so go to last cell.
-      while (gridptr->NextPt(sc,posdir)!=0 && gridptr->NextPt(sc,posdir)->isgd) sc=gridptr->NextPt(sc,posdir);
-    }
-    else {
-#ifdef RT_TESTING
-      cout <<"source is on grid, so go in posdir until we find it!\n";
-#endif
-      // source is on grid, so go in posdir until we find it.
-      sc = find_src_on_grid(pos, sc, a);
-    }
-#endif // CELL_CENTRED_SRC
-
-#ifdef NON_CELL_CENTRED_SRC
 #ifdef RT_TESTING
     cout <<"Now have centred source on a cell vertex, so move on grid to find it.\n";
 #endif
-    if      (pos[a]<gridptr->Xmin(a) || pconst.equalD(pos[a],gridptr->Xmin(a))) {
+    if      (pos[a]<gridptr->Xmin_all(a) || pconst.equalD(pos[a],gridptr->Xmin_all(a))) {
 #ifdef RT_TESTING
       cout <<"don't need to do anything as we are already at most negative cell in this axis.\n";
 #endif
       // don't need to do anything as we are already at most negative cell in this axis.
     }
-    else if (pos[a]>gridptr->Xmax(a) || pconst.equalD(pos[a],gridptr->Xmax(a))) {
+    else if (pos[a]>gridptr->Xmax_all(a) || pconst.equalD(pos[a],gridptr->Xmax_all(a))) {
 #ifdef RT_TESTING
       cout <<"source off/at the positive end of grid, so go to last cell.\n";
 #endif
       // source off the positive end of grid, so go to last cell.
-      while (gridptr->NextPt(sc,posdir)!=0 && gridptr->NextPt(sc,posdir)->isgd)
+      while (gridptr->NextPt(sc,posdir)!=0)
 	sc=gridptr->NextPt(sc,posdir);
     }
     else {
@@ -1984,8 +1763,6 @@ cell * raytracer_USC::find_source_cell(double *pos ///< position of source.
       // source is on grid, so go in posdir until we find it.
       sc = find_src_on_grid(pos, sc, a);
     }
-#endif // NON_CELL_CENTRED_SRC
-    
   } // loop over ndim axes.
     
 #ifdef RT_TESTING
@@ -1999,18 +1776,11 @@ cell * raytracer_USC::find_source_cell(double *pos ///< position of source.
 // ##################################################################
 
 
-void raytracer_USC::centre_source_on_cell(double *pos,   ///< position of source (size ndim).
-					  enum axes axis ///< axis to find source along.
-					  )
+void raytracer_USC::centre_source_on_cell(
+      double *pos,   ///< position of source (size ndim).
+      enum axes axis ///< axis to find source along.
+      )
 {
-  //
-  // CELL-CENTRED SOURCES: This function moves the source to the
-  // centre of the cell it is in, even if this 'cell' is off the
-  // domain, so the source is at the centre of where a cell would be.
-  // This is mostly for the parallel version, where the source could
-  // be on one processor's domain, but not another's, so they all need
-  // to have a consistent source location, and it must be within a
-  // cell and not on a cell boundary.
   //
   // CORNER-CENTRED SOURCES: This function moves the source to a cell
   // corner, if it's not already there.  If the source is within a
@@ -2019,28 +1789,6 @@ void raytracer_USC::centre_source_on_cell(double *pos,   ///< position of source
   //
   //bool changed_pos=false;
 
-#ifdef CELL_CENTRED_SRC
-  double dist = pos[axis]-gridptr->Xmin(axis);
-  cout <<"dist="<<dist<<"\n";
-  int x = static_cast<int>(dist/gridptr->DX());
-  dist -= x*gridptr->DX();
-  cout <<"dist="<<dist<<" and dx/2="<<gridptr->DX()/2.0<<"\n";
-  //
-  //if source is not at a cell centre, we move it to the centre of its cell.
-  //
-  if (!pconst.equalD(dist, 0.5*gridptr->DX())) {
-    cout <<"WARNING: source is not at centre of cell, moving source to cell centre.\n";
-    cout << "Old Source Location: x = "<<pos[axis]<<"\n";
-    if (dist>0.0)
-      pos[axis] += 0.5*gridptr->DX() -dist;
-    else 
-      pos[axis] -= 0.5*gridptr->DX() +dist;
-    cout << "New Source Location: x = "<<pos[axis]<<"\n";
-    //changed_pos=true;
-  }
-#endif // CELL_CENTRED_SRC
-
-#ifdef NON_CELL_CENTRED_SRC
   double dist = pos[axis]-gridptr->Xmin(axis);
 #ifdef RT_TESTING
   cout <<"axis:"<<axis<<"\tdist="<<dist<<" pos="<<pos[axis]<<" xmin="<<gridptr->Xmin(axis)<<"  ";//"\n";
@@ -2073,7 +1821,6 @@ void raytracer_USC::centre_source_on_cell(double *pos,   ///< position of source
 #endif
     //changed_pos=true;
   }
-#endif // NON_CELL_CENTRED_SRC
 
   //
   // We don't change the global position here, but we do check back in the
@@ -2092,22 +1839,19 @@ void raytracer_USC::centre_source_on_cell(double *pos,   ///< position of source
 // ##################################################################
 
 
-cell * raytracer_USC::find_src_on_grid(double *pos,   ///< position of source.
-				       cell *sc,      ///< starting cell.
-				       enum axes axis ///< axis to find source along.
-				       )
+cell * raytracer_USC::find_src_on_grid(
+      double *pos,   ///< position of source.
+      cell *sc,      ///< starting cell.
+      enum axes axis ///< axis to find source along.
+      )
 {
 #ifdef RT_TESTING
   cout <<"finding source on grid!\n";
 #endif
-  if (!sc || !sc->isgd) rep.error("No starting cell for find_src_on_grid()",sc);
+  if (!sc) rep.error("No starting cell for find_src_on_grid()",sc);
   enum direction posdir; //,negdir;
   posdir = static_cast<direction>(2*axis+1);
   //negdir = static_cast<direction>(2*axis);
-
-#ifdef CELL_CENTRED_SRC
-  double halfdx = gridptr->DX()/2.;
-#endif // CELL_CENTRED_SRC
   double dist = pos[axis]-CI.get_dpos(sc,axis);
   //    cout <<"dist="<<dist<<" and dx/2 = "<<halfdx<<"\n";
 
@@ -2116,29 +1860,13 @@ cell * raytracer_USC::find_src_on_grid(double *pos,   ///< position of source.
   //
   if (dist <0.0) rep.error("Logic error in find_src_on_grid()",axis);
 
-#ifdef CELL_CENTRED_SRC
-  while (dist>halfdx && gridptr->NextPt(sc,posdir)!=0 && gridptr->NextPt(sc,posdir)->isgd) {
-    sc=gridptr->NextPt(sc,posdir);
-    dist = pos[axis]-CI.get_dpos(sc,axis);
-  }
-  // now we could have a case where the source is at the [X/Y/Z]P edge, so maybe go one more
-  //if ((pconst.equalD(dist,halfdx)) && (pos[axis]>CI.get_dpos(sc,axis)))
-  //  sc=gridptr->NextPt(sc,posdir); // Don't want sc to be a boundary cell!!!
-#ifdef RT_TESTING
-  cout <<"dist="<<dist<<" and dx/2 = "<<halfdx<<"\n";
-  cout <<"finding source on grid! done!\n";
-#endif
-#endif // CELL_CENTRED_SRC
-
-#ifdef NON_CELL_CENTRED_SRC
-  while (dist>0.0 && gridptr->NextPt(sc,posdir)!=0 && gridptr->NextPt(sc,posdir)->isgd) {
+  while (dist>0.0 && gridptr->NextPt(sc,posdir)!=0) {
     sc=gridptr->NextPt(sc,posdir);
     dist = pos[axis]-CI.get_dpos(sc,axis);
   }
 #ifdef RT_TESTING
   cout <<"dist="<<dist<<", finding source on grid! done!\n";
 #endif
-#endif // NON_CELL_CENTRED_SRC
 
   dist = fabs(pos[axis]-CI.get_dpos(sc,axis));
   return sc;
@@ -2149,10 +1877,11 @@ cell * raytracer_USC::find_src_on_grid(double *pos,   ///< position of source.
 // ##################################################################
 
 
-int raytracer_USC::trace_column(const rad_source *source, ///< source we are tracing from.
-				cell *c,                  ///< cell to start from.
-				const enum direction dir  ///< direction we are looking.
-				)
+int raytracer_USC::trace_column(
+      const rad_source *source, ///< source we are tracing from.
+      cell *c,                  ///< cell to start from.
+      const enum direction dir  ///< direction we are looking.
+      )
 {
   double ds=0.0, Nc[MAX_TAU];
   for (unsigned short int iT=0; iT<source->s->NTau; iT++)
@@ -2160,20 +1889,7 @@ int raytracer_USC::trace_column(const rad_source *source, ///< source we are tra
 
   int    err=0;
   
-#ifdef CELL_CENTRED_SRC
-  //
-  // If we are at the source cell, we don't get the column to it, so we treat it specially.
-  // (But only for cell-centred sources; for corner-centred sources every cell is equal).
-  // NEW 2011.04.15: THIS ONLY WORKS FOR THE C2RAY UPDATE!
-  //
-  if ( c==source->sc && source->src_on_grid && source->s->update==RT_UPDATE_IMPLICIT) {
-    //    cout <<"trace_1d_column() starting at source cell.\n";
-    err += ProcessSourceCell(c,source,delt);
-    c = gridptr->NextPt(c,dir);
-  }
-#endif // CELL_CENTRED_SRC
-
-  if ( c!=0 && c->isgd ) // need to check in case we have moved from source cell off the grid.
+  if ( c!=0 ) // need to check in case we have moved from source cell off the grid.
 #ifdef RT_TESTING
     cout <<"raytracer_USC::trace_column() running.\n";
 #endif 
@@ -2183,7 +1899,7 @@ int raytracer_USC::trace_column(const rad_source *source, ///< source we are tra
 #endif
       err += get_cell_columns(source, c, Nc, &ds);
       err += ProcessCell(c,Nc,ds,source,delt);
-    } while ( (c=gridptr->NextPt(c,dir))!=0 && c->isgd );
+    } while ( (c=gridptr->NextPt(c,dir))!=0 );
   return err;
 }
 
@@ -2192,22 +1908,24 @@ int raytracer_USC::trace_column(const rad_source *source, ///< source we are tra
 // ##################################################################
 
 
-int raytracer_USC::trace_plane(const rad_source *source,
-			       cell *cy, 
-			       const enum direction xdir,
-			       const enum direction ydir
-			       )
+int raytracer_USC::trace_plane(
+      const rad_source *source,
+      cell *cy, 
+      const enum direction xdir,
+      const enum direction ydir
+      )
 {
   int err = 0;
   cell *cx = 0;
-  if (cy!=0 && cy->isgd) { // just to make sure
+  if (cy!=0) {
     do {
 #ifdef RT_TESTING
-      cout <<"new column in 2d.\n";
+      cout <<"new column in 2d. cy="<<cy<<", id="<<cy->id<<"\n";
+      CI.print_cell(cy);
 #endif 
       cx = cy;
       err += trace_column(source,cx,xdir);
-    } while (gridptr->NextPt(cy,ydir)!=0 && (cy=gridptr->NextPt(cy,ydir))->isgd );
+    } while ((cy=gridptr->NextPt(cy,ydir))!=0);
   }
   return err;
 }
@@ -2217,21 +1935,22 @@ int raytracer_USC::trace_plane(const rad_source *source,
 // ##################################################################
 
 
-int raytracer_USC::trace_octant(const rad_source *source,  ///< source we are dealing with.
-				cell *cz,                  ///< starting cell in octant
-				const enum direction xdir, ///< x-direction from starting cell to go in.
-				const enum direction ydir, ///< y-direction from starting cell to go in.
-				const enum direction zdir  ///< z-direction from starting cell to go in.
-				)
+int raytracer_USC::trace_octant(
+      const rad_source *source,  ///< source we are dealing with.
+      cell *cz,                  ///< starting cell in octant
+      const enum direction xdir, ///< x-direction from starting cell to go in.
+      const enum direction ydir, ///< y-direction from starting cell to go in.
+      const enum direction zdir  ///< z-direction from starting cell to go in.
+      )
 {
   int err = 0;
   cell *cy = 0;
-  if (cz!=0 && cz->isgd) { // just to make sure
+  if (cz!=0) {
     do {
       //      cout <<"new plane in 3d.\n";
       cy = cz;
       err += trace_plane(source,cy,xdir,ydir);
-    } while (gridptr->NextPt(cz,zdir)!=0 && (cz=gridptr->NextPt(cz,zdir))->isgd );
+    } while (gridptr->NextPt(cz,zdir)!=0);
   }
   return err;
 }
@@ -2241,11 +1960,12 @@ int raytracer_USC::trace_octant(const rad_source *source,  ///< source we are de
 // ##################################################################
 
 
-int raytracer_USC::get_cell_columns(const rad_source *s,
-				    cell *c,
-				    double *Nc,
-				    double *ds
-				    )
+int raytracer_USC::get_cell_columns(
+      const rad_source *s,
+      cell *c,
+      double *Nc,
+      double *ds
+      )
 {
   int err=0;
   if (ndim==3) {
@@ -2267,22 +1987,21 @@ int raytracer_USC::get_cell_columns(const rad_source *s,
 // ##################################################################
 
 
-int raytracer_USC::cell_cols_2d(const rad_source *src,
-				cell *c,
-				double Nc[],
-				double *ds
-				)
+int raytracer_USC::cell_cols_2d(
+      const rad_source *src,
+      cell *c,
+      double Nc[],
+      double *ds
+      )
 {
   //  cout <<"raytracer_USC::cell_cols_2d() start\n";
   double delta=0.0;
   enum direction entryface=NO, perpface=NO;
   int diffx = abs(CI.get_ipos(c,XX) - src->ipos[XX]);
   int diffy = abs(CI.get_ipos(c,YY) - src->ipos[YY]);
-#ifdef NON_CELL_CENTRED_SRC
   int mindiff=0;
   //cout <<"diffx="<<diffx<<" and diffy="<<diffy<<"\n";
   //cout <<"srcdir: xx="<<SrcDir[XX]<<" yy="<<SrcDir[YY]<<"\n";
-#endif
   *ds = 0.0;
 #ifdef RT_TESTING
   cout <<"\tGetting cell-cols 2D for cell id="<<c->id;
@@ -2297,17 +2016,13 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
     entryface = SrcDir[XX];
     perpface  = SrcDir[YY];
     delta = static_cast<double>(diffy)/static_cast<double>(diffx);
-#ifdef NON_CELL_CENTRED_SRC
     mindiff=diffy;
-#endif
   }
   else {
     entryface = SrcDir[YY];
     perpface  = SrcDir[XX];
     delta = static_cast<double>(diffx)/static_cast<double>(diffy);
-#ifdef NON_CELL_CENTRED_SRC
     mindiff=diffx;
-#endif
   }
 
   //
@@ -2318,14 +2033,6 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
   cout <<"ds="<<*ds<<" delta="<<delta<<"\n";
 #endif // RT_TESTING
   
-
-#ifdef CELL_CENTRED_SRC
-  //
-  // get column to cell, assuming cell centred source.
-  //
-  col2cell_2d(src, c, entryface, &perpface, &delta, Nc);
-#endif // CELL_CENTRED_SRC
-#ifdef NON_CELL_CENTRED_SRC
   //
   // this bit of code is if we have non-cell-centred sources (e.g. for axisymmetry).
   // if the source is within the column (i.e. within x+-dx/2) then do a 1D column.
@@ -2392,7 +2099,6 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
     //
     col2cell_2d(src, c, entryface, &perpface, &delta, Nc);
   }
-#endif // NON_CELL_CENTRED_SRC
   //  cout <<"\t...\tcol = "<<*Nc<<"\t";
   //  cout <<"cell id: "<<c->id<<"  and col in cell = "<<*ds<<"\n";
   //  cout <<"raytracer_USC::cell_cols_2d() done\n";
@@ -2404,11 +2110,12 @@ int raytracer_USC::cell_cols_2d(const rad_source *src,
 // ##################################################################
 
 
-int raytracer_USC::cell_cols_3d(const rad_source *src,
-				cell *c,
-				double Nc[],
-				double *ds
-				)
+int raytracer_USC::cell_cols_3d(
+      const rad_source *src,
+      cell *c,
+      double Nc[],
+      double *ds
+      )
 {
 
   int dx[3]; // relative position vector.
@@ -2446,11 +2153,6 @@ int raytracer_USC::cell_cols_3d(const rad_source *src,
   *ds = gridptr->DX()* sqrt(1.+ deltas[0]*deltas[0]+deltas[1]*deltas[1]);
 
 
-#ifdef CELL_CENTRED_SRC
-  col2cell_3d(src, c, entryface, perpdirs, deltas, Nc);
-#endif // CELL_CENTRED_SRC
-
-#ifdef NON_CELL_CENTRED_SRC
 #ifdef RT_TESTING
   cout <<"******* Getting col2cell:\n"; //CI.print_cell(c);
   //cout <<"******* Neighbours:";
@@ -2597,7 +2299,6 @@ int raytracer_USC::cell_cols_3d(const rad_source *src,
 #endif // RT_TESTING
     col2cell_3d(src, c, entryface, perpdirs, deltas, Nc);
   }
-#endif // NON_CELL_CENTRED_SRC
 
   //   cout <<"RayTracing3D::GetCellColumns()\tcell id: "<<c->id<<"\t: col to cell = "<<*Nc<<"  ";
   //   cout <<"\tand ds="<<*ds<<"\n";   
@@ -2613,39 +2314,27 @@ int raytracer_USC::cell_cols_3d(const rad_source *src,
 
 
 void raytracer_USC::col2cell_2d(
-        const rad_source *src,            ///< source we are working on.
-        const cell *c,                  ///< cell to get column to.
-        const enum direction entryface, ///< face ray enters cell through.
-        const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-        const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
-        double *Nc ///< Column densities.
-        )
+      const rad_source *src,            ///< source we are working on.
+      const cell *c,                  ///< cell to get column to.
+      const enum direction entryface, ///< face ray enters cell through.
+      const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
+      const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
+      double *Nc ///< Column densities.
+      )
 {
   double col1[MAX_TAU], col2[MAX_TAU];
   cell *c1 = gridptr->NextPt(c,  entryface);
-  if (!c1 || !c1->isgd) {
+  if (!c1) {
     for (short unsigned int iT=0; iT<src->s->NTau; iT++)
       col1[iT] = col2[iT] = 0.0;
   }
   else {
     cell *c2 = gridptr->NextPt(c1, (*perpdir) );
-    if (!c2 || !c2->isgd) {
+    if (!c2) {
       CI.get_col(c1, src->s->id, col1);
       for (short unsigned int iT=0; iT<src->s->NTau; iT++)
         col2[iT] = 0.0;
     }
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-    else if (c2 == src->sc && src->src_on_grid ) {
-      // Need to check if c2 is source cell, b/c if it is, the column is wrong by root2.
-      CI.get_col(c2, src->s->id, col2);
-      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-        col1[iT]  = 0.0;
-        col2[iT] *= sqrt(2.0);
-      }
-    }
-#endif // CELL_CENTRED_SRC
-#endif // NO_SOURCE_CELL_GEOMETRY
     else {
       CI.get_col(c1, src->s->id, col1);
       CI.get_col(c2, src->s->id, col2);
@@ -2669,13 +2358,13 @@ void raytracer_USC::col2cell_2d(
 
 
 void raytracer_USC::col2cell_3d(
-        const rad_source *src,          ///< source we are working on.
-        const cell *c,                  ///< cell to get column to.
-        const enum direction entryface, ///< face ray enters cell through.
-        const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-        const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
-        double *Nc ///< Column densities.
-        )
+      const rad_source *src,          ///< source we are working on.
+      const cell *c,                  ///< cell to get column to.
+      const enum direction entryface, ///< face ray enters cell through.
+      const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
+      const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
+      double *Nc ///< Column densities.
+      )
 {
   // Algorithm is the same as that describe in Mellema et al.,2006, NewA, 11,374,
   // appendix A.  Good for 3D cartesian geometry.
@@ -2684,7 +2373,7 @@ void raytracer_USC::col2cell_3d(
   double col1[MAX_TAU], col2[MAX_TAU], col3[MAX_TAU], col4[MAX_TAU];
 
   c1 = gridptr->NextPt(c,  entryface);
-  if (!c1 || !c1->isgd) {
+  if (!c1) {
     for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
       col1[iT] = col2[iT] = col3[iT] = col4[iT] = 0.0;
     }
@@ -2693,55 +2382,28 @@ void raytracer_USC::col2cell_3d(
     CI.get_col(c1,src->s->id, col1);
 
     c2 = gridptr->NextPt(c1,  perpdir[0]);
-    if (!c2 || !c2->isgd) {
+    if (!c2) {
       for (short unsigned int iT=0; iT<src->s->NTau; iT++)
         col2[iT] = 0.0;
     }
     else {
       CI.get_col(c2,src->s->id, col2);
-
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-      if (c2==src->sc && src->src_on_grid ) {
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col2[iT] *= sqrt(2.0);
-      }
-#endif // CELL_CENTRED_SRC
-#endif // NO_SOURCE_CELL_GEOMETRY
     }
     
     c3 = gridptr->NextPt(c1,  perpdir[1]);
-    if (!c3 || !c3->isgd) {
+    if (!c3) {
       for (short unsigned int iT=0; iT<src->s->NTau; iT++)
         col3[iT] = 0.0;
     }
     else {
       CI.get_col(c3, src->s->id, col3);
-
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-      if (c3==s->sc && s->src_on_grid ) {
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col3[iT] *= sqrt(2.);
-      }
-#endif // CELL_CENTRED_SRC
-#endif // NO_SOURCE_CELL_GEOMETRY
     }
     
-    if (c2 && c2->isgd && c3 && c3->isgd) {
+    if (c2 && c3) {
       c4 = gridptr->NextPt(c2, perpdir[1]);
-      if (!c4 || !c4->isgd)
+      if (!c4)
         rep.error("lost on grid -- corner cell doesn't exist",c4);
       CI.get_col(c4, src->s->id, col4);
-
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-      if (c4==src->sc && src->src_on_grid ) {
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col4[iT] *= sqrt(3.0);
-      }
-#endif // CELL_CENTRED_SRC
-#endif // NO_SOURCE_CELL_GEOMETRY
     }
     else {
       for (short unsigned int iT=0; iT<src->s->NTau; iT++)
@@ -2774,11 +2436,11 @@ void raytracer_USC::col2cell_3d(
 /// Apply the appropriate weighting scheme to get an interpolated optical depth for 2D
 ///
 double raytracer_USC::interpolate_2D(
-          const int src_id, ///< source id
-          const double delta0, ///< delta = min(abs(dy/dx),abs(dx/dy));
-          const double tau1, ///< first optical depth tau_1
-          const double tau2  ///< second optical depth tau_2
-          )
+      const int src_id, ///< source id
+      const double delta0, ///< delta = min(abs(dy/dx),abs(dx/dy));
+      const double tau1, ///< first optical depth tau_1
+      const double tau2  ///< second optical depth tau_2
+      )
 {
   //
   // This is the standard weighting used in C2Ray.
@@ -2802,14 +2464,14 @@ double raytracer_USC::interpolate_2D(
 /// Apply the appropriate weighting scheme to get an interpolated optical depth for 3D
 ///
 double raytracer_USC::interpolate_3D(
-          const int src_id, ///< source id
-          const double delta0, ///< delta0 = abs(dy/dx)
-          const double delta1, ///< delta1 = abs(dz/dx)
-          const double tau1, ///< first optical depth tau_1
-          const double tau2, ///< second optical depth tau_2
-          const double tau3, ///< third optical depth tau_3
-          const double tau4 ///< fourth optical depth tau_4
-          )
+      const int src_id, ///< source id
+      const double delta0, ///< delta0 = abs(dy/dx)
+      const double delta1, ///< delta1 = abs(dz/dx)
+      const double tau1, ///< first optical depth tau_1
+      const double tau2, ///< second optical depth tau_2
+      const double tau3, ///< third optical depth tau_3
+      const double tau4 ///< fourth optical depth tau_4
+      )
 {
   //
   // This is the standard weighting used in C2Ray.
@@ -2834,10 +2496,10 @@ double raytracer_USC::interpolate_3D(
 
 
 void raytracer_USC::set_Vshell_in_cell(
-            cell *c, ///< current cell.
-            double ds,           ///< Path Length through cell.
-            const rad_source *source ///< pointer to source struct.
-            )
+      cell *c, ///< current cell.
+      double ds,           ///< Path Length through cell.
+      const rad_source *source ///< pointer to source struct.
+      )
 {
   //
   // First set ds through the cell.
@@ -2868,8 +2530,8 @@ void raytracer_USC::set_Vshell_in_cell(
   // Get the distance to the geometric cell-centre, *NOT* the
   // centre of volume since that makes the short characteristics
   // method horrendously complicated!!  The method is only 1st 
-  // order anyway, and the position offset is 2nd order, so it shouldn't
-  // make any difference.
+  // order anyway, and the position offset is 2nd order, so it
+  // shouldn't make any difference.
   // Distance is from source to entry point of ray to cell.
   //
   CI.get_dpos(c,c_pos);
@@ -2880,26 +2542,9 @@ void raytracer_USC::set_Vshell_in_cell(
 #endif // RT_TESTING
 
   //
-  // It would be nice if I had derived classes for each geometry to get rid of these
-  // if/else statements, but I don't have time now (JM: 2011.04.15).
+  // 3D shell, volume is 4/3.Pi.((r+dr)^3-r^3) 
   //
-  //if      ((ndim==3 && coord_sys==COORD_CRT) ||
-  //         (ndim==2 && coord_sys==COORD_CYL) ||
-  //         (ndim==1 && coord_sys==COORD_SPH)) {
-    //
-    // 3D shell, volume is 4/3.Pi.((r+dr)^3-r^3) 
-    //
-    Vshell = 4.0*M_PI*((rs+ds)*(rs+ds)*(rs+ds) -rs*rs*rs)/3.0; // C2Ray method.
-  //}
-  //else if (ndim==2 && coord_sys==COORD_CRT) {
-  //  // now 'Volume' is pi*r^2 and flux falls off as 1/r
-  //  Vshell = M_PI*((rs+ds)*(rs+ds) -rs*rs); // C2Ray method.
-  // }
-  //else if (ndim==1 && coord_sys==COORD_CRT) {
-  //  // 1d, volume is dx and flux doesn't fall off with distance.
-  //  Vshell = ds;
-  //}
-  //else rep.error("bad ndim/coord_sys combination in process_cell()",ndim);
+  Vshell = 4.0*M_PI*((rs+ds)*(rs+ds)*(rs+ds) -rs*rs*rs)/3.0; // C2Ray method.
 
 #ifdef RT_TESTING
   cout <<"Vshell="<<Vshell<<"\n";
@@ -2912,71 +2557,6 @@ void raytracer_USC::set_Vshell_in_cell(
   return;
 }
 
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-#ifdef CELL_CENTRED_SRC
-int raytracer_USC::ProcessSourceCell(cell *c,             ///< Current cell.
-				     const rad_source *src, ///< pointer to source struct.
-				     const double dt      ///< Timestep
-				     )
-{
-  if (c!= src->sc)
-    rep.error("cell is not source!, but called ProcessSourceCell()!",c);
-  /**** TESTING ****/
-  //c->Ph[PG] = c->col  = 0.0; // assume fully ionised, so no column of neutral material.
-  //  cout <<"SOURCE cell id: "<<c->id<<"  and col in cell = "<<c->Ph[RO] *grid->DX()/2./1.67e-24<<"\n";
-  //return 0;
-  /**** TESTING ****/
-
-  CI.set_col(c, src->s->id, 0.0); // column at source is zero.
-  double photdens, deltau[MAX_TAU], ds;
-  ds = 0.5*gridptr->DX(); // perpendicular distance from source to cell edge.
-  // get photon flux/ds
-  photdens = src->s->strength;
-  if      ((ndim==3 && coord_sys==COORD_CRT) ||
-	   (ndim==2 && coord_sys==COORD_CYL) ||
-	   (ndim==1 && coord_sys==COORD_SPH) ) {
-    photdens /= 4.0*M_PI*ds*ds*ds/3.0; // C2Ray method.
-  }
-  else if (ndim==2 && coord_sys==COORD_CRT) {
-    // now 'volume' is pi*r^2 and flux falls off as 1/r
-    photdens /= M_PI*ds*ds; // C2Ray method.
-  }
-  else if (ndim==1 && coord_sys==COORD_CRT) {
-    // 1d, volume is dx and flux doesn't fall off with distance.
-    photdens /= ds;
-  }
-  else rep.error("bad ndim/coord_sys combination in process_cell()",ndim);
-
-  //deltau = 0.0;
-
-  // RTsinglesrc(p_in, p_out, dt, gamma, int-type, flux_in/ds, ds, &<dTau>);
-#ifdef COUNT_ENERGETICS
-  GLOBAL_CE = &(c->e);
-  //cout <<"SOURCE CELL:: CE ptr="<<GLOBAL_CE<<" and pi_rate="<<GLOBAL_CE->pi_rate<<"\n";
-#endif
-
-  double col[MAX_TAU];
-  CI.get_col(c, src->s->id, col)
-  MP->TimeUpdate_RTsinglesrc(c->P, c->Ph, dt, gamma, 0, photdens, ds, col, deltau);
-
-  for (int v=0;v<nvar;v++) c->P[v]=c->Ph[v];
-  CI.set_col(c, s->id, deltau); // deltau is time-averaged optical depth(s).
-  if (deltau[0]<0.0) {
-    cout <<"\tSRCCELL: deltau: "<<deltau[0]<<" setting to zero.\n";
-    CI.print_cell(c);
-    CI.set_col(c, s->id, deltau);
-    rep.error("negative tau",c->col);
-  }
-
-  return 0;
-}
-#endif // CELL_CENTRED_SRC
 
 
 // ##################################################################

@@ -164,9 +164,15 @@ UniformGrid::UniformGrid(
   G_xmin   = mem.myalloc(G_xmin,  G_ndim);
   G_xmax   = mem.myalloc(G_xmax,  G_ndim);
   G_range  = mem.myalloc(G_range, G_ndim);
+  G_xmin_all  = mem.myalloc(G_xmin_all, G_ndim);
+  G_xmax_all  = mem.myalloc(G_xmax_all, G_ndim);
+  G_range_all = mem.myalloc(G_range_all,G_ndim);
   G_ixmin  = mem.myalloc(G_ixmin, G_ndim);
   G_ixmax  = mem.myalloc(G_ixmax, G_ndim);
   G_irange = mem.myalloc(G_irange,G_ndim);
+  G_ixmin_all  = mem.myalloc(G_ixmin_all, G_ndim);
+  G_ixmax_all  = mem.myalloc(G_ixmax_all, G_ndim);
+  G_irange_all = mem.myalloc(G_irange_all,G_ndim);
 
   //
   // Useful for nested/parallel grids, where simulation domain
@@ -216,6 +222,11 @@ UniformGrid::UniformGrid(
   //
   set_cell_size();
 
+  // grid dimensions including boundary data
+  for (int v=0;v<G_ndim;v++) G_xmin_all[v] = G_xmin[v] - BC_nbc*G_dx;
+  for (int v=0;v<G_ndim;v++) G_xmax_all[v] = G_xmax[v] + BC_nbc*G_dx;
+  for (int v=0;v<G_ndim;v++) G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
+
   //
   // Now create the first cell, and then allocate data from there.
   // Safe to assume we have at least one cell...
@@ -263,14 +274,23 @@ UniformGrid::UniformGrid(
   CI.get_ipos_vec(G_xmax, G_ixmax );
   for (int v=0;v<G_ndim;v++) G_irange[v] = G_ixmax[v]-G_ixmin[v];
   G_idx = G_irange[XX]/G_ng[XX];
+  for (int v=0;v<G_ndim;v++) G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
+  for (int v=0;v<G_ndim;v++) G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
+  for (int v=0;v<G_ndim;v++) G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
   
 #ifdef TESTING
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange,G_ndim);
+  rep.printVec("grid ixmin_all ", G_ixmin_all, G_ndim);
+  rep.printVec("grid ixmax_all ", G_ixmax_all, G_ndim);
+  rep.printVec("grid irange_all", G_irange_all,G_ndim);
   rep.printVec("grid xmin ", G_xmin, G_ndim);
   rep.printVec("grid xmax ", G_xmax, G_ndim);
   rep.printVec("grid range", G_range,G_ndim);
+  rep.printVec("grid xmin_all ", G_xmin_all, G_ndim);
+  rep.printVec("grid xmax_all ", G_xmax_all, G_ndim);
+  rep.printVec("grid range_all", G_range_all,G_ndim);
 #endif
 
   //

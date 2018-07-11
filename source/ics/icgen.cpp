@@ -175,7 +175,8 @@ int main(int argc, char **argv)
   SimSetup->boundary_conditions(SimPM,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
-  err += SimSetup->setup_evolving_RT_sources(SimPM,grid[0]->RT);
+  err += SimSetup->setup_evolving_RT_sources(SimPM);
+  err += SimSetup->update_evolving_RT_sources(SimPM,grid[0]->RT);
   if (err) rep.error("icgen: Failed to setup raytracer and/or microphysics",err);
 
   // ----------------------------------------------------------------
