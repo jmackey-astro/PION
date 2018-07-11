@@ -136,11 +136,11 @@ int eqns_Euler::UtoP(
   if (p[eqRO] <=0.0) {
     if (ct_rho<1000) {
       ct_rho ++;
-      cout <<"(eqns_Euler::UtoP) negative density!  ";
-      rep.printVec("u",u,eq_nvar);
-      rep.printVec("p",p,eq_nvar);
+      cout <<"(eqns_Euler::UtoP) negative density!\n";
+    //  rep.printVec("u",u,eq_nvar);
+    //  rep.printVec("p",p,eq_nvar);
 #ifdef TESTING
-      cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
+    //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
 #endif
     }
     // reset all variables because a negative density will change the sign of 

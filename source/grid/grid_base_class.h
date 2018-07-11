@@ -168,6 +168,16 @@ class GridBaseClass {
   /// Returns x/y/z range of grid in code units.
   virtual double Range(enum axes) const =0;
 
+  /// Returns x/y/z lower boundary of grid in code units
+  /// including boundary data.
+  virtual double  Xmin_all(enum axes) const =0;
+  /// Returns x/y/z upper boundary of grid in code units
+  /// including boundary data.
+  virtual double  Xmax_all(enum axes) const =0;
+  /// Returns x/y/z range of grid in code units including
+  /// boundary data.
+  virtual double Range_all(enum axes) const =0;
+
   /// Returns Simulation x,y,z lower bounds in code units.
   virtual double  SIM_Xmin(enum axes) const =0;
   /// Returns Simulation x,y,z upper bounds in code units.
@@ -175,19 +185,29 @@ class GridBaseClass {
   /// Returns Simulation x,y,z range in code units.
   virtual double SIM_Range(enum axes) const =0;
 
-  /// Returns x/y/z lower boundary of grid in integer coords (dx=2).
+  /// Returns x/y/z lower boundary of grid in integer coords.
   virtual int  iXmin(enum axes) const =0;
-  /// Returns x/y/z upper boundary of grid in integer coords (dx=2).
+  /// Returns x/y/z upper boundary of grid in integer coords.
   virtual int  iXmax(enum axes) const =0;
-  /// Returns x/y/z range of grid in integer coords (dx=2).
+  /// Returns x/y/z range of grid in integer coords.
   virtual int iRange(enum axes) const =0;
 
+  /// Returns x/y/z lower boundary of grid in integer coords
+  /// including boundary data.
+  virtual int  iXmin_all(enum axes) const =0;
+  /// Returns x/y/z upper boundary of grid in integer coords
+  /// including boundary data.
+  virtual int  iXmax_all(enum axes) const =0;
+  /// Returns x/y/z range of grid in integer coords including
+  /// boundary data.
+  virtual int iRange_all(enum axes) const =0;
 
-  /// Returns Simulation x,y,z lower bounds in cell integer coords (dx=2)
+
+  /// Returns Simulation x,y,z lower bounds in cell integer coords
   virtual int  SIM_iXmin(enum axes) const =0;
-  /// Returns Simulation x,y,z upper bounds in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z upper bounds in cell integer coords
   virtual int  SIM_iXmax(enum axes) const =0;
-  /// Returns Simulation x,y,z range in cell integer coords (dx=2)
+  /// Returns Simulation x,y,z range in cell integer coords
   virtual int SIM_iRange(enum axes) const =0;
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 

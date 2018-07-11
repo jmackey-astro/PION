@@ -101,10 +101,18 @@ class setup_fixed_grid
   /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
   ///
   virtual int setup_evolving_RT_sources(
-      class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase * ///< pointer to raytracing class
+      class SimParams &  ///< pointer to simulation parameters
       );
 
+  ///
+  /// Check for any time-evolving radiation sources, and update source
+  /// properties from global struct SimPM.STAR[v] if needed
+  ///
+  virtual int update_evolving_RT_sources(
+      class SimParams &,  ///< pointer to simulation parameters
+      class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
+      );
+  
   ///
   /// Determines what kind of boundary conditions are needed and
   /// creates the boundary data structures.  Asks the grid to create
@@ -141,14 +149,6 @@ class setup_fixed_grid
   /// vector of RT ionising sources, of size FVI_nion
   std::vector<struct rt_source_data> FVI_ionising_srcs;
 
-  ///
-  /// Check for any time-evolving radiation sources, and update source
-  /// properties from global struct SimPM.STAR[v] if needed
-  ///
-  virtual int update_evolving_RT_sources(
-      class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
-      );
 
   ///
   /// Set the boundary conditions string and initialise BC_bd

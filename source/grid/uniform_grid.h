@@ -150,10 +150,16 @@ class UniformGrid
   double *G_range; ///< Size of domain in x,y,z-direction.
   double *G_xmin;  ///< Min value of x,y,z in domain.
   double *G_xmax;  ///< Max value of x,y,z in domain.
+  double *G_range_all; ///< as G_range but including boundary data.
+  double *G_xmin_all;  ///< as G_xmin but including boundary data.
+  double *G_xmax_all;  ///< as G_xmax but including boundary data.
 
   int *G_irange; ///< Size of domain in x,y,z-direction (integer coordinates).
   int *G_ixmin;  ///< Min value of x,y,z in domain (integer coordinates).
   int *G_ixmax;  ///< Max value of x,y,z in domain (integer coordinates).
+  int *G_irange_all; ///< as G_irange but including boundary data.
+  int *G_ixmin_all;  ///< as G_ixmin but including boundary data.
+  int *G_ixmax_all;  ///< as G_ixmax but including boundary data.
 
   double G_dx;  ///< Linear side length of (uniform, cube-shaped, cartesian) grid cells.
   double G_idx;  ///< diameter of grid cells in integer units.
@@ -266,6 +272,19 @@ class UniformGrid
   {return(G_range[a]);}
 
 
+  /// Returns x/y/z min of grid in integer coords.
+  virtual double  Xmin_all(enum axes a) const
+  {return(G_xmin_all[a] );}
+
+  /// Returns x/y/z max of grid in integer coords.
+  virtual double  Xmax_all(enum axes a) const
+  {return(G_xmax_all[a] );}
+
+  /// Returns x/y/z range of grid in integer coords.
+  virtual double Range_all(enum axes a) const
+  {return(G_range_all[a]);}
+
+
   /// Returns x/y/z lower boundary of grid in integer coords.
   virtual int  iXmin(enum axes a) const
   {return(G_ixmin[a] );}
@@ -277,6 +296,18 @@ class UniformGrid
   /// Returns x/y/z range of grid in integer coords.
   virtual int iRange(enum axes a) const
   {return(G_irange[a]);}
+
+  /// Returns x/y/z min of grid in integer coords.
+  virtual int  iXmin_all(enum axes a) const
+  {return(G_ixmin_all[a] );}
+
+  /// Returns x/y/z max of grid in integer coords.
+  virtual int  iXmax_all(enum axes a) const
+  {return(G_ixmax_all[a] );}
+
+  /// Returns x/y/z range of grid in integer coords.
+  virtual int iRange_all(enum axes a) const
+  {return(G_irange_all[a]);}
 
   /// Returns Simulation x,y,z lower bounds in cell integer coords
   virtual int  SIM_iXmin(enum axes a) const

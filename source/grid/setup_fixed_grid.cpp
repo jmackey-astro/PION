@@ -547,8 +547,7 @@ int setup_fixed_grid::setup_raytracing(
 
 
 int setup_fixed_grid::setup_evolving_RT_sources(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT   ///< pointer to raytracing class
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   //
@@ -661,14 +660,16 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     // initialise to zero.
     istar->Lnow = istar->Tnow = istar->Rnow = istar->Vnow = 0.0;
   }
+  
+  return 0;
 
   //
   // All done setting up the source.  Now we need to update the SimPM.RS.
   // source properties and send the changes to the raytracing class.  Need
   // time in secs, L,T,V in cgs and R in Rsun.
   //
-  err = update_evolving_RT_sources(SimPM,RT);
-  return err;
+  //err = update_evolving_RT_sources(SimPM,RT);
+  //return err;
 }
 
 
@@ -690,6 +691,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
   // Loop over all sources with Evolution files.
   //
   for (unsigned int isrc=0; isrc<SimPM.STAR.size(); isrc++) {
+    //cout <<"isrc="<<isrc<<" of "<<SimPM.STAR.size()<<"\n";
     struct star *istar = &(SimPM.STAR[isrc]);
     istar->t_now = SimPM.simtime;
     size_t i = istar->last_line;
@@ -768,7 +770,6 @@ int setup_fixed_grid::update_evolving_RT_sources(
       }
 
       RT->update_RT_source_properties(rs);
-
       if (rs->effect==RT_EFFECT_PION_MULTI) {
         err += MP->set_multifreq_source_properties(rs);
         if (err) rep.error("update_evolving_RT_sources() failed to update MP for source id",rs->id);

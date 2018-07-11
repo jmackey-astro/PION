@@ -43,7 +43,7 @@
 //#include <climits>
 using namespace std;
 
-#define NEST_INT_TEST
+//#define NEST_INT_TEST
 
 
 // ##################################################################
