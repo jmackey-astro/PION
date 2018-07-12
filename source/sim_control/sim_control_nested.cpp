@@ -43,7 +43,7 @@
 //#include <climits>
 using namespace std;
 
-//#define NEST_INT_TEST
+#define NEST_INT_TEST
 
 
 // ##################################################################
@@ -133,7 +133,9 @@ int sim_control_nestedgrid::Time_Int(
     double mindt = 1.0e99;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
       spatial_solver->set_dx(SimPM.levels[l].dx);
-      //cout <<"dx="<<SimPM.levels[l].dx<<"\n";
+#ifdef NEST_INT_TEST
+      cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
+#endif
       err += calculate_timestep(SimPM, grid[l],spatial_solver);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       mindt = std::min(mindt, SimPM.dt/scale);
