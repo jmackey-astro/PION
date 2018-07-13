@@ -100,6 +100,16 @@ class sim_control_nestedgrid :
       const int ///< level in nested grid.
       );
 
+  ///
+  /// Run through all diffuse and direct radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell are stored
+  /// in extra_data[i] for each cell.
+  ///
+  int calculate_raytracing_column_densities(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of nested grid.
+      );
 
 }; // sim_control_nestedgrid
    

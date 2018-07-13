@@ -339,7 +339,11 @@ cell * cell_interface::new_cell()
   for (int v=0; v<2*ndim; v++) c->ngb[v] = 0;
   c->npt = 0;
   c->npt_all = 0;
-  c->id  = -9999; c->isedge=-999; c->isbd=c->isgd=false;
+  c->id  = -9999;
+  c->isedge=-999;
+  c->isbd=false;
+  c->isgd=false;
+  c->isdomain=false;
 
   //
   // If we need all the [dU,Ph] arrays, initialise them, but if we have
@@ -556,12 +560,15 @@ void cell_interface::copy_cell(
     c2->dU[v] = c1->dU[v];
   }
   for (int i=0;i<2*ndim;i++) c2->ngb[i]=c1->ngb[i];
+  for (short unsigned int v=0;v<N_extra_data;v++)
+    c2->extra_data[v] = c1->extra_data[v];
   c2->npt = c1->npt;
   c2->npt_all = c1->npt_all;
   c2->id = c1->id;
   c2->isedge = c1->isedge;
   c2->isbd = c1->isbd;
   c2->isgd = c1->isgd;
+  c2->isdomain = c1->isdomain;
   return;
 }
  

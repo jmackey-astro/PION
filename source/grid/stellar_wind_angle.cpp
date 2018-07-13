@@ -592,32 +592,29 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // update tracers
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
-
   //
-  // HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK! HACK!
   // Assume the first tracer variable is the H+ ion fraction, and set it so
-  // that it goes from y=1 at T>12500K to y=1.0e-7 at T<10000, with linear
-  // interpolation.
+  // that it goes from y=1 at T>tp to y=1.0e-7 at T<tm, with linear
+  // interpolation.  THIS IS A CRUDE APPROXIMATION!
   //
-#ifdef HACK_WARNING
-#error "REMOVE HACK setting ion fraction of H+ in winds"
-#endif
+  double tm=0.5e4, tp=0.75e4;
   if (ntracer>0) {
-    if      (WS->Tw >1.25e4)
+    if      (WS->Tw > tp)
       wc->p[ftr] = 1.0;
-    else if (WS->Tw <1.00e4)
+    else if (WS->Tw < tm)
       wc->p[ftr] = 1.0e-7;
     else
-      wc->p[ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
+      wc->p[ftr] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
   }
+
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
-  // Set the minimum temperature to be 10K in the wind...
+  // Set the minimum temperature to be Tstar in the wind...
   //
   if (MP) {
-    if (MP->Temperature(wc->p,eos_gamma) <Tmin) {
-      MP->Set_Temp(wc->p,Tmin,eos_gamma);
+    if (MP->Temperature(wc->p,eos_gamma) < WS->Tw) {
+      MP->Set_Temp(wc->p, WS->Tw ,eos_gamma);
     }
   }
   else {

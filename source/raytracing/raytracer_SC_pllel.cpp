@@ -158,8 +158,9 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   // Find source in list.
   struct rad_src_info *RS=0;
   for (vector<rad_source>::iterator i=SourceList.begin();
-                                    i!=SourceList.end(); ++i)
+                                    i!=SourceList.end(); ++i) {
     if ( (*i).s->id==s_id ) RS=(*i).s;
+  }
   if (!RS) {
     rep.error("RayTrace_SingleSource() source not in source list.",
               s_id);
@@ -215,13 +216,13 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
 
 
 void raytracer_USC_pllel::col2cell_2d(
-        const rad_source *src,          ///< source we are working on.
-        const cell *c,                  ///< cell to get column to.
-        const enum direction entryface, ///< face ray enters cell through.
-        const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-        const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
-        double *Nc                      ///< Column densities.
-        )
+      const rad_source *src,          ///< source we are working on.
+      const cell *c,                  ///< cell to get column to.
+      const enum direction entryface, ///< face ray enters cell through.
+      const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
+      const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
+      double *Nc                      ///< Column densities.
+      )
 {
   //
   // Get column densities of the two cells closer to the source.
@@ -243,17 +244,6 @@ void raytracer_USC_pllel::col2cell_2d(
       for (short unsigned int iT=0; iT<src->s->NTau; iT++)
         col2[iT] = 0.0;
     }
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-    else if (c2 == src->sc && src->src_on_grid ) {
-      // Need to check if c2 is source cell, b/c if it is, the column is wrong by root2.
-      CI.get_col(c2, src->s->id, col2);
-      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-        col1[iT]  = 0.0;
-        col2[iT] *= sqrt(2.0);
-    }
-#endif // CELL_CENTRED_SRC
-#endif // NO_SOURCE_CELL_GEOMETRY
     else {
       CI.get_col(c1, src->s->id, col1);
       CI.get_col(c2, src->s->id, col2);
@@ -283,13 +273,13 @@ void raytracer_USC_pllel::col2cell_2d(
 
 
 void raytracer_USC_pllel::col2cell_3d(
-        const rad_source *src,            ///< source we are working on
-        const cell *c,                  ///< cell to get column to.
-        const enum direction entryface, ///< face ray enters cell through.
-        const enum direction *perpdir,  ///< array of perp directions towards source (2 els in 3d)
-        const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
-        double *Nc                      ///< Column densities.
-        )
+      const rad_source *src,            ///< source we are working on
+      const cell *c,                  ///< cell to get column to.
+      const enum direction entryface, ///< face ray enters cell through.
+      const enum direction *perpdir,  ///< array of perp directions towards source (2 els in 3d)
+      const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
+      double *Nc                      ///< Column densities.
+      )
 {
   //
   // Algorithm is the same as that describe in Mellema et al.,2006, NewA, 11,374,

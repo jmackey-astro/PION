@@ -467,6 +467,7 @@ int UniformGrid::assign_grid_structure()
       //cout <<"    cell NOT on grid";
 #endif // TESTING
     }
+    c->isdomain=true; // assume all cells are part of the domain.
 
     ///
     /// \section Edges
