@@ -240,7 +240,7 @@ int sim_control::Time_Int(
     if (err) 
       rep.error("Boundary update at start of full step",err);
 
-    err += calculate_timestep(SimPM, grid[0],spatial_solver);
+    err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
     err+= advance_time(grid[0]);
     rep.errorTest("(TIME_INT::advance_time) error",0,err);

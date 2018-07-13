@@ -104,6 +104,7 @@ class cell {
   int isedge;
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
+  bool isdomain; ///< True if cell is part of the domain.
 
 #ifdef COUNT_ENERGETICS
   struct energetics e; ///< to count up the energetics properties of the current cell.

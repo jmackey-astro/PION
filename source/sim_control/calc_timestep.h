@@ -57,7 +57,8 @@ class calc_timestep :
   virtual int calculate_timestep(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to grid.
-      class FV_solver_base * ///< solver/equations class
+      class FV_solver_base *, ///< solver/equations class
+      const int ///< level in nested grid (if applicable)
       );
 
   protected:
@@ -68,7 +69,8 @@ class calc_timestep :
   /// 
   double calc_microphysics_dt(
       class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass * ///< pointer to grid.
+      class GridBaseClass *, ///< pointer to grid.
+      const int ///< level in nested grid (if applicable)
       );
 
   ///
@@ -84,7 +86,7 @@ class calc_timestep :
   ///
   double get_mp_timescales_with_radiation(
       class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass * 
+      class GridBaseClass *
       );
 
   ///
@@ -92,9 +94,10 @@ class calc_timestep :
   /// densities through the grid for each one.  Tau, DTau, and Vshell are stored
   /// in extra_data[i] for each cell.
   ///
-  int calculate_raytracing_column_densities(
+  virtual int calculate_raytracing_column_densities(
       class SimParams &,      ///< pointer to simulation parameters
-      class RayTracingBase * ///< raytracer for this grid.
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< unused here (level of nested grid).
       );
 
   ///

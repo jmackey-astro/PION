@@ -136,6 +136,8 @@ int time_integrator::first_order_update(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
+  // NB Only used for uniform grid.  update for nested grid is in
+  // sim_control_nested.cpp
   int err=0;
   //
   // Set dt for equations class
@@ -147,7 +149,7 @@ int time_integrator::first_order_update(
   // the timestep.
   //
   if (!FVI_need_column_densities_4dt && grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    err += calculate_raytracing_column_densities(SimPM,grid,0);
     if (err) 
       rep.error("first_order_update: error from first calc_rt_cols()",err);
   }
@@ -186,6 +188,8 @@ int time_integrator::second_order_update(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
+  // NB Only used for uniform grid.  update for nested grid is in
+  // sim_control_nested.cpp
   int err=0;
   //
   // Set dt for equations class
@@ -197,7 +201,7 @@ int time_integrator::second_order_update(
   // Raytracing, to get column densities for microphysics update.
   //
   if (grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    err += calculate_raytracing_column_densities(SimPM,grid,0);
     if (err) {
       rep.error("second_order_update: error from first calc_rt_cols()",err);
     }
@@ -309,13 +313,12 @@ int time_integrator::calc_RT_microphysics_dU(
   double tt=0.; // temperature returned at end of microphysics step.
   do {
     //
-    // Check if cell is boundary data or not (can only be an internal boundary, such as
-    // a stellar wind, since we are looping over cells which are grid data).  If it is
+    // Check if cell is internal boundary data or not.  If it is
     // boundary data, then we don't want to update anything, so we skip it
     //
-    if (c->isbd) {
+    if (!c->isdomain) {
 #ifdef TESTING
-      cout <<"skipping cell "<<c->id<<" in calc_RT_microphysics_dU() c->isbd.\n";
+      cout <<"skipping cell "<<c->id<<" in calc_RT_microphysics_dU() c->isdomain.\n";
 #endif
     }
     else {
@@ -410,13 +413,12 @@ int time_integrator::calc_noRT_microphysics_dU(
   int err=0;
   do {
     //
-    // Check if cell is boundary data or not (can only be an internal boundary, such as
-    // a stellar wind, since we are looping over cells which are grid data).  If it is
+    // Check if cell is internal boundary data or not.  If it is
     // boundary data, then we don't want to update anything, so we skip it
     //
-    if (c->isbd) {
+    if (!c->isdomain) {
 #ifdef TESTING
-      cout <<"skipping cell "<<c->id<<" in calc_noRT_microphysics_dU() c->isbd.\n";
+      cout <<"skipping cell "<<c->id<<" in calc_noRT_microphysics_dU() c->isdomain.\n";
 #endif
     }
     else {
@@ -775,7 +777,6 @@ int time_integrator::grid_update_state_vector(
   // temp variable to handle change of energy when correcting for negative pressure.
   //
   pion_flt temperg =0.0;
-  double dx = grid->DX();
 
   //
   // Loop through grid, updating Ph[] with CellAdvanceTime function.
@@ -784,12 +785,18 @@ int time_integrator::grid_update_state_vector(
   do {
 
 #ifdef TESTING
+    double dx = grid->DX();
     dp.ergTotChange = 0.;temperg =0.;
     dp.c = c;
 #endif
-    
-    err += spatial_solver->CellAdvanceTime(c, c->P, c->dU, c->Ph,
+    if (!c->isdomain) {
+      // skip cell if is has been cut out of the domain.
+      for (int v=0;v<SimPM.nvar;v++) c->dU[v]=0.0;
+    }
+    else {
+      err += spatial_solver->CellAdvanceTime(c, c->P, c->dU, c->Ph,
                 &temperg, SimPM.gamma, SimPM.EP.MinTemperature, dt);
+    }
 
 #ifdef TESTING
     if (err) {

@@ -68,7 +68,8 @@ calc_timestep::~calc_timestep()
 int calc_timestep::calculate_timestep(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      class FV_solver_base *sp_solver ///< solver/equations class
+      class FV_solver_base *sp_solver, ///< solver/equations class
+      const int l       ///< level to advance (for nested grid)
       )
 {
 #ifdef TESTING
@@ -80,7 +81,7 @@ int calc_timestep::calculate_timestep(
   //
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
-  t_mp  = calc_microphysics_dt(par,grid);
+  t_mp  = calc_microphysics_dt(par,grid,l);
 #ifdef TESTING
   if (t_mp<t_dyn)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
@@ -326,7 +327,8 @@ double calc_timestep::calc_dynamics_dt(
 
 double calc_timestep::calc_microphysics_dt(
       class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
+      class GridBaseClass *grid, ///< pointer to grid.
+      const int l       ///< level to advance (for nested grid)
       )
 {
   //
@@ -359,7 +361,7 @@ double calc_timestep::calc_microphysics_dt(
     // need column densities, so do raytracing, and then get dt.
     //
     //cout <<"calc_timestep, getting column densities rt="<<raytracer<<".\n";
-    int err = calculate_raytracing_column_densities(par,grid->RT);
+    int err = calculate_raytracing_column_densities(par,grid,l);
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
     dt = get_mp_timescales_with_radiation(par,grid);
     if (dt<=0.0)
@@ -389,8 +391,8 @@ double calc_timestep::calc_microphysics_dt(
 
 double calc_timestep::get_mp_timescales_no_radiation(
       class SimParams &par,      ///< pointer to simulation parameters
-        class GridBaseClass *grid
-        )
+      class GridBaseClass *grid
+      )
 {
 #ifdef TESTING
   //
@@ -580,12 +582,12 @@ double calc_timestep::get_mp_timescales_with_radiation(
 
 int calc_timestep::calculate_raytracing_column_densities(
       class SimParams &par,      ///< pointer to simulation parameters
-      //class GridBaseClass *grid       ///< Computational grid.
-      class RayTracingBase *raytracer ///< raytracer for this grid.
+      class GridBaseClass *grid,       ///< Computational grid.
+      const int
       )
 {
   int err=0;
-  if (!raytracer) rep.error("calculate_raytracing_column_densities() no RT",0);
+  if (!grid->RT) rep.error("calculate_raytracing_column_densities() no RT",0);
   //
   // If we have raytracing, we call the ray-tracing routines 
   // to get Tau0, dTau, Vshell in cell->extra_data[].
@@ -594,7 +596,7 @@ int calc_timestep::calculate_raytracing_column_densities(
 #ifdef raytracer_TESTING
     cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
 #endif
-    err += raytracer->RayTrace_Column_Density(isrc, 0.0, par.gamma);
+    err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
     if (err) {
       cout <<"isrc="<<isrc<<"\t"; 
       rep.error("calc_raytracing_col_dens step in returned error",err);

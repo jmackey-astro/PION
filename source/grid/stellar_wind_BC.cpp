@@ -261,6 +261,7 @@ int stellar_wind::add_cell(
   // that it is now boundary data (while also grid data).
   //
   c->isbd=true;
+  c->isdomain=false;
   wc->c = c;
 
   //
@@ -411,16 +412,17 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[ftr+v] = WS->tracers[v];
   //
   // Assume the first tracer variable is the H+ ion fraction, and set it so
-  // that it goes from y=1 at T>12500K to y=1.0e-7 at T<10000, with linear
+  // that it goes from y=1 at T>tp to y=1.0e-7 at T<tm, with linear
   // interpolation.  THIS IS A CRUDE APPROXIMATION!
   //
+  double tm=0.5e4, tp=0.75e4;
   if (ntracer>0) {
-    if      (WS->Tw >1.25e4)
+    if      (WS->Tw > tp)
       wc->p[ftr] = 1.0;
-    else if (WS->Tw <1.00e4)
+    else if (WS->Tw < tm)
       wc->p[ftr] = 1.0e-7;
     else
-      wc->p[ftr] = std::max((WS->Tw-1.0e4)*4e-4,1.0e-7);
+      wc->p[ftr] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
   }
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -428,8 +430,8 @@ void stellar_wind::set_wind_cell_reference_state(
   // Set a minimum temperature in the wind
   //
   if (MP) {
-    if (MP->Temperature(wc->p,gamma) <Tmin) {
-      MP->Set_Temp(wc->p,Tmin,gamma);
+    if (MP->Temperature(wc->p,gamma) <WS->Tw) {
+      MP->Set_Temp(wc->p,WS->Tw,gamma);
     }
   }
   else {
@@ -499,10 +501,7 @@ int stellar_wind::set_cell_values(
     rep.error("bad src id",id);
 
   //
-  // Since we have the list here we may as well go through
-  // every cell in one go and update them all.  This is hard-coded
-  // for non-varying winds, so if I want to model that I'll need to
-  // add quite a bit here.
+  // go through every cell in one go and update them all
   //
   struct wind_source *WS = wlist[id];
 #ifdef TESTING

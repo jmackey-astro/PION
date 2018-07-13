@@ -43,7 +43,7 @@
 //#include <climits>
 using namespace std;
 
-#define NEST_INT_TEST
+//#define NEST_INT_TEST
 
 
 // ##################################################################
@@ -136,7 +136,7 @@ int sim_control_nestedgrid::Time_Int(
 #ifdef NEST_INT_TEST
       cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
 #endif
-      err += calculate_timestep(SimPM, grid[l],spatial_solver);
+      err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       mindt = std::min(mindt, SimPM.dt/scale);
       //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
@@ -346,7 +346,7 @@ double sim_control_nestedgrid::advance_step_OA1(
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing
   if (!FVI_need_column_densities_4dt && grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    err += calculate_raytracing_column_densities(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
   }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
@@ -381,7 +381,7 @@ double sim_control_nestedgrid::advance_step_OA1(
   err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
 
   // Now calculate next timestep: function stores dt in SimPM.dt
-  err += calculate_timestep(SimPM, grid,spatial_solver);
+  err += calculate_timestep(SimPM, grid,spatial_solver,l);
   rep.errorTest("scn::advance_step_OA1: calc_timestep",0,err);
 
   // make sure step is not more than half of the coarser grid step.
@@ -436,7 +436,7 @@ double sim_control_nestedgrid::advance_step_OA2(
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing
   if (!FVI_need_column_densities_4dt && grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    err += calculate_raytracing_column_densities(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
   }
 
@@ -470,7 +470,7 @@ double sim_control_nestedgrid::advance_step_OA2(
   // Now calculate dU for the full step (OA2)
   //
   if (grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid->RT);
+    err += calculate_raytracing_column_densities(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
 #ifdef NEST_INT_TEST
@@ -517,7 +517,7 @@ double sim_control_nestedgrid::advance_step_OA2(
   err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
 
   // Now calculate next timestep: function stores dt in SimPM.dt
-  err += calculate_timestep(SimPM, grid,spatial_solver);
+  err += calculate_timestep(SimPM, grid,spatial_solver,l);
   rep.errorTest("scn::advance_step_OA2: calc_timestep",0,err);
 
   // make sure step is not more than half of the coarser grid step.
@@ -541,4 +541,166 @@ double sim_control_nestedgrid::advance_step_OA2(
 // ##################################################################
 
 
+
+int sim_control_nestedgrid::calculate_raytracing_column_densities(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid, ///< Computational grid.
+      const int l  ///< level of grid in nested grid hierarchy
+      )
+{
+  int err=0;
+  if (!grid->RT) rep.error("scn::calculate_raytracing_column_densities() no RT",0);
+
+  //
+  // First we have to copy finer-level optical depths from the
+  // finer-level grid onto this one.
+  //
+  if (l != par.grid_nlevels-1) {
+#ifdef RT_TESTING
+    cout <<"level "<<l<<", nlevels = "<<par.grid_nlevels<<"\n";
+#endif
+    struct boundary_data *b=0;
+    for (size_t i=0;i<grid->BC_bd.size();i++) {
+#ifdef RT_TESTING
+      cout <<"i="<<i<<", "<<grid->BC_bd[i]->type<<"\n";
+#endif
+      if (grid->BC_bd[i]->itype == FINE_TO_COARSE) {
+        b = grid->BC_bd[i];
+      }
+    }
+    if (!b) rep.error("didn't find coarse to fine boundary: RT",b);
+    
+    // data needed for getting fine cell Taus onto coarse grid.
+    double Tau1[MAX_TAU], Tau2[MAX_TAU], Tau3[MAX_TAU], Tau4[MAX_TAU], tmp[MAX_TAU];
+    class cell *c, *f1, *f2, *f3, *f4;
+    list<class cell*>::iterator c_iter=b->data.begin();
+    list<class cell*>::iterator f_iter=b->nest.begin();
+    struct rad_src_info *s;
+    double cpos[MAX_DIM];
+    double diffx,diffy;
+    class GridBaseClass *fine   = par.levels[l].child;
+
+    if (par.ndim == 1) {
+      // loop through coarse cells in boundary list
+      for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
+        c = (*c_iter);
+        CI.get_dpos(c,cpos);
+        f1 = (*f_iter);
+        f2 = fine->NextPt(f1,XP);
+
+        for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+          s = &(par.RS.sources[isrc]);
+          CI.get_col(f1, s->id, Tau1);
+          CI.get_col(f2, s->id, Tau2);
+          // column from source through cell depends on
+          // which direction is to the source
+          if (s->pos[XX] > cpos[XX]) {
+            CI.set_col(c, s->id, Tau1);
+          }
+          else {
+            CI.set_col(c, s->id, Tau2);
+          }
+          // column through cell is sum of two fine cells.
+          CI.get_cell_col(f1, s->id, Tau1);
+          CI.get_cell_col(f2, s->id, Tau2);
+          for (int v=0; v<s->NTau; v++) {
+            Tau1[v] += Tau2[v];
+          }
+          CI.set_cell_col(c, s->id, Tau1);
+        }
+        ++f_iter;
+      } // loop over cells.
+    } // if 1D
+
+    else if (par.ndim == 2) {
+      for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
+        c = (*c_iter);
+        CI.get_dpos(c,cpos);
+        f1 = (*f_iter);
+        f2 = fine->NextPt(f1,XP);
+        f3 = fine->NextPt(f1,YP);
+        f4 = fine->NextPt(f3,XP);
+#ifdef RT_TESTING
+        cout <<"f: ["<<f1->pos[XX]<<","<<f1->pos[YY]<<"], c: ["<<c->pos[XX]<<","<<c->pos[YY]<<"] : ";
+#endif
+        for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+          s = &(par.RS.sources[isrc]);
+          CI.get_col(f1, s->id, Tau1);
+          CI.get_col(f2, s->id, Tau2);
+          CI.get_col(f3, s->id, Tau3);
+          CI.get_col(f4, s->id, Tau4);
+          diffx = s->pos[XX] - cpos[XX];
+          diffy = s->pos[YY] - cpos[YY];
+#ifdef RT_TESTING
+          cout <<"t1="<<*Tau1<<", t2="<<*Tau2<<", t3="<<*Tau3<<", t4="<<*Tau4;
+#endif
+          // column from source through cell depends on
+          // which direction is to the source
+          if      (diffx>0 && fabs(diffx)>=fabs(diffy)) {
+            // Source in Q1 coming from dir XP
+            for (int v=0; v<s->NTau; v++) {
+              tmp[v] = 0.5*(Tau1[v]+Tau3[v]);
+            }
+          }
+          else if (diffy>0 && fabs(diffx)<fabs(diffy)) {
+            // source in Q2, coming from dir YP
+            for (int v=0; v<s->NTau; v++) {
+              tmp[v] = 0.5*(Tau1[v]+Tau2[v]);
+            }
+          }
+          else if (diffx<0 && fabs(diffx)>=fabs(diffy)) {
+            // source in Q3, coming from XN
+            for (int v=0; v<s->NTau; v++) {
+              tmp[v] = 0.5*(Tau2[v]+Tau4[v]);
+            }
+          }
+          else {
+            // source in Q4, coming from YN
+            for (int v=0; v<s->NTau; v++) {
+              tmp[v] = 0.5*(Tau3[v]+Tau4[v]);
+            }
+          }
+          CI.set_col(c, s->id, tmp);
+#ifdef RT_TESTING
+          cout <<"  tc="<<*tmp;
+#endif
+          // column through cell is sum of 4 fine cells divided by 2.
+          CI.get_cell_col(f1, s->id, Tau1);
+          CI.get_cell_col(f2, s->id, Tau2);
+          CI.get_cell_col(f3, s->id, Tau3);
+          CI.get_cell_col(f4, s->id, Tau4);
+          for (int v=0; v<s->NTau; v++) {
+            tmp[v] = 0.5*(Tau1[v] + Tau2[v] + Tau3[v] + Tau4[v]);
+          }
+          CI.set_cell_col(c, s->id, tmp);
+#ifdef RT_TESTING
+          cout <<"  dtc="<<*tmp;
+#endif
+        }
+        ++f_iter;
+      } // loop over cells.
+    } // if 2D
+
+    else {
+      rep.error("3D RT not implemented yet in nested grid",par.ndim);
+    } // if 3D
+  } // if there is a finer level
+
+
+  //
+  // If we have raytracing, we call the ray-tracing routines 
+  // to get Tau0, dTau, Vshell in cell->extra_data[].
+  //
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+#ifdef raytracer_TESTING
+    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
+#endif
+    err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
+    if (err) {
+      cout <<"isrc="<<isrc<<"\t"; 
+      rep.error("calc_raytracing_col_dens step in returned error",err);
+    } // if error
+  } // loop over sources
+  return err;
+}
 
