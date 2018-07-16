@@ -169,6 +169,8 @@ int sim_control_nestedgrid::Time_Int(
 #endif
 #endif
 
+    err += check_energy_cons(grid);
+
     err+= output_data(grid);
     rep.errorTest("TIME_INT::output_data()",0,err);
     err+= check_eosim();
@@ -704,3 +706,54 @@ int sim_control_nestedgrid::calculate_raytracing_column_densities(
   return err;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_nestedgrid::check_energy_cons(
+      vector<class GridBaseClass *> &grid
+      )
+{
+  // Energy, and Linear Momentum in x-direction.
+#ifdef TEST_CONSERVATION 
+  pion_flt u[SimPM.nvar];
+  //dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
+  //  cout <<"initERG: "<<dp.initERG<<"\n";
+  nowERG=0.;
+  nowMMX = 0.;
+  nowMMY = 0.;
+  nowMMZ = 0.;
+  double totmom=0.0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    spatial_solver->set_dx(SimPM.levels[l].dx);
+    double dx = SimPM.levels[l].dx;
+    double dv = 0.0;
+    class cell *c=grid[l]->FirstPt();
+    do {
+      if (!c->isbd && c->isgd) {
+        dv = spatial_solver->CellVolume(c,dx);
+        spatial_solver->PtoU(c->P,u,SimPM.gamma);
+        nowERG += u[ERG]*dv;
+        nowMMX += u[MMX]*dv;
+        nowMMY += u[MMY]*dv;
+        nowMMZ += u[MMZ]*dv;
+        totmom += sqrt( u[MMX]*u[MMX]  + u[MMY]*u[MMY] + u[MMZ]*u[MMZ] )
+                   *dv;
+      }
+    } while ( (c =grid[l]->NextPt(c)) !=0);
+  }
+
+  cout <<"(conserved quantities) ["<< nowERG <<", ";
+  cout << nowMMX <<", ";
+  cout << nowMMY <<", ";
+  cout << nowMMZ <<"]\n";
+  cout <<"(relative error      ) ["<< (nowERG-initERG)/(initERG) <<", ";
+  cout << (nowMMX-initMMX)/(totmom) <<", ";
+  cout << (nowMMY-initMMY)/(totmom) <<", ";
+  cout << (nowMMZ-initMMZ)/(totmom) <<"]\n";
+
+#endif // TEST_CONSERVATION
+  return(0);
+}

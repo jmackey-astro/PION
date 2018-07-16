@@ -253,6 +253,7 @@ int sim_control::Time_Int(
     cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
 #endif
 #endif
+    err += check_energy_cons(grid[0]);
 
     err+= output_data(grid);
     if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went wrong\n";return(1);}
@@ -338,7 +339,7 @@ void sim_control::calculate_blastwave_radius(
   //if (shock_found) continue;
   cell *c=grid->LastPt();
   if (fabs(c->P[VX])>=1.0e4) {
-    cout<<"grid "<<l<<" does not contain shock.\n";
+    cout<<"grid does not contain shock.\n";
     shockpos = CI.get_dpos(c,Rsph);
   }
   else {
@@ -404,53 +405,36 @@ int sim_control::check_energy_cons(
       class GridBaseClass *grid
       )
 {
-#ifdef TESTING
+#ifdef TEST_CONSERVATION 
   // Energy, and Linear Momentum in x-direction.
   pion_flt u[SimPM.nvar];
-  double ergNow=0., mmxNow = 0., mmyNow = 0., mmzNow = 0.;
+  nowERG=0.;
+  nowMMX = 0.;
+  nowMMY = 0.;
+  nowMMZ = 0.;
+  double totmom=0.0;
+
   class cell *cpt = grid->FirstPt();
   double dR=grid->DX();
   do {
      spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-     ergNow += u[ERG]*spatial_solver->CellVolume(cpt,dR);
-     mmxNow += u[MMX]*spatial_solver->CellVolume(cpt,dR);
-     mmyNow += u[MMY]*spatial_solver->CellVolume(cpt,dR);
-     mmzNow += u[MMZ]*spatial_solver->CellVolume(cpt,dR);
+     nowERG += u[ERG]*spatial_solver->CellVolume(cpt,dR);
+     nowMMX += u[MMX]*spatial_solver->CellVolume(cpt,dR);
+     nowMMY += u[MMY]*spatial_solver->CellVolume(cpt,dR);
+     nowMMZ += u[MMZ]*spatial_solver->CellVolume(cpt,dR);
+     totmom += sqrt( u[MMX]*u[MMX]  + u[MMY]*u[MMY] + u[MMZ]*u[MMZ] )
+                *spatial_solver->CellVolume(cpt,dR);
   } while ( (cpt =grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
-  double relerror=0.0;
-//  cout <<"(LFMethod::check_energy_cons) Initial Monentum: "<<dp.initMMX<<"\n";
-//  cout <<"(LFMethod::check_energy_cons) Initial Energy:   "<<dp.initERG<<"\n";
-//  cout <<"dp = "<<&dp<<"\n";
+  cout <<"(conserved quantities) ["<< nowERG <<", ";
+  cout << nowMMX <<", ";
+  cout << nowMMY <<", ";
+  cout << nowMMZ <<"]\n";
+  cout <<"(relative error      ) ["<< (nowERG-initERG)/(initERG+TINYVALUE) <<", ";
+  cout << (nowMMX-initMMX)/(totmom) <<", ";
+  cout << (nowMMY-initMMY)/(totmom) <<", ";
+  cout << (nowMMZ-initMMZ)/(totmom) <<"]\n";
   
-  relerror = fabs(ergNow-dp.initERG)/(dp.initERG+TINYVALUE);
-  if (relerror>1.e5*MACHINEACCURACY) { // && ergNow>2*MACHINEACCURACY) {
-    cout <<"(LFMethod::check_energy_cons) Total Energy = "<<ergNow;
-    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initERG<<"\n";
-  }
-
-  relerror = fabs(mmxNow-dp.initMMX)/(dp.initMMX+TINYVALUE);
-  if (relerror>1.e5*MACHINEACCURACY && fabs(mmxNow)>1.e5*MACHINEACCURACY) {
-    cout <<"(LFMethod::check_energy_cons) Total x-Momentum = "<<mmxNow;
-    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initMMX<<"\n";
-  }
-
-  relerror = fabs(mmyNow-dp.initMMY)/(dp.initMMY+TINYVALUE);
-//  if (relerror>1.e5*MACHINEACCURACY && fabs(mmyNow)>1.e5*MACHINEACCURACY) {
-//    cout <<"(LFMethod::check_energy_cons) Total y-Momentum = "<<mmyNow;
-//    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-//    cout <<"(LFMethod::check_energy_cons) accounting says it is "<<dp.initMMY<<"\n";
-//  }
-
-  relerror = fabs(mmzNow-dp.initMMZ)/(dp.initMMZ+TINYVALUE);
-//  if (relerror>1.e5*MACHINEACCURACY && fabs(mmzNow)>1.e5*MACHINEACCURACY) {
-//    cout <<"(LFMethod::check_energy_cons) Total z-Momentum = "<<mmzNow;
-//    cout <<" and relative error is "<<relerror<<" at timestep "<<SimPM.timestep<<"\n";
-//  }
-
-#endif //TESTING
+#endif // TEST_CONSERVATION
   return(0);
 }
 

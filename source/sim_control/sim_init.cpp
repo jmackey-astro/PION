@@ -925,27 +925,25 @@ int sim_init::initial_conserved_quantities(
       )
 {
   // Energy, and Linear Momentum in x-direction.
-#ifdef TESTING 
-  // Only track the totals if I am testing the code.
+#ifdef TEST_CONSERVATION 
   pion_flt u[SimPM.nvar];
   double dx = grid->DX();
-  dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
-  dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
-  //  cout <<"initERG: "<<dp.initERG<<"\n";
+  double dv = 0.0;
+  initERG = 0.;  initMMX = initMMY = initMMZ = 0.;
   class cell *cpt=grid->FirstPt();
   do {
-     spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-     dp.initERG += u[ERG]*spatial_solver->CellVolume(cpt,dx);
-     dp.initMMX += u[MMX]*spatial_solver->CellVolume(cpt,dx);
-     dp.initMMY += u[MMY]*spatial_solver->CellVolume(cpt,dx);
-     dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(cpt,dx);
+    spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
+    dv = spatial_solver->CellVolume(cpt,dx);
+    initERG += u[ERG]*dv;
+    initMMX += u[MMX]*dv;
+    initMMY += u[MMY]*dv;
+    initMMZ += u[MMZ]*dv;
   } while ( (cpt = grid->NextPt(cpt)) !=0);
-  //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total x-Momentum = "<< dp.initMMX <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total y-Momentum = "<< dp.initMMY <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total z-Momentum = "<< dp.initMMZ <<"\n";
-#endif //TESTING
+  cout <<"(sim_init::InitialconservedQuantities) ["<< initERG <<", ";
+  cout << initMMX <<", ";
+  cout << initMMY <<", ";
+  cout << initMMZ <<"]\n";
+#endif // TEST_CONSERVATION
   return(0);
 } //initial_conserved_quantities()
 
