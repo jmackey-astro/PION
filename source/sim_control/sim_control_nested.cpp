@@ -725,6 +725,7 @@ int sim_control_nestedgrid::check_energy_cons(
   nowMMX = 0.;
   nowMMY = 0.;
   nowMMZ = 0.;
+  nowMASS = 0.0;
   double totmom=0.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     spatial_solver->set_dx(SimPM.levels[l].dx);
@@ -739,6 +740,7 @@ int sim_control_nestedgrid::check_energy_cons(
         nowMMX += u[MMX]*dv;
         nowMMY += u[MMY]*dv;
         nowMMZ += u[MMZ]*dv;
+        nowMASS += u[RHO]*dv;
         totmom += sqrt( u[MMX]*u[MMX]  + u[MMY]*u[MMY] + u[MMZ]*u[MMZ] )
                    *dv;
       }
@@ -748,11 +750,13 @@ int sim_control_nestedgrid::check_energy_cons(
   cout <<"(conserved quantities) ["<< nowERG <<", ";
   cout << nowMMX <<", ";
   cout << nowMMY <<", ";
-  cout << nowMMZ <<"]\n";
+  cout << nowMMZ <<", ";
+  cout << nowMASS <<"]\n";
   cout <<"(relative error      ) ["<< (nowERG-initERG)/(initERG) <<", ";
   cout << (nowMMX-initMMX)/(totmom) <<", ";
   cout << (nowMMY-initMMY)/(totmom) <<", ";
-  cout << (nowMMZ-initMMZ)/(totmom) <<"]\n";
+  cout << (nowMMZ-initMMZ)/(totmom) <<", ";
+  cout << (nowMASS-initMASS)/initMASS <<"]\n";
 
 #endif // TEST_CONSERVATION
   return(0);
