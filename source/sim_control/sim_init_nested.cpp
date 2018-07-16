@@ -281,20 +281,21 @@ int sim_init_nested::initial_conserved_quantities(
   pion_flt u[SimPM.nvar];
   //dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
   //  cout <<"initERG: "<<dp.initERG<<"\n";
-  initERG = 0.;  initMMX = initMMY = initMMZ = 0.;
+  initERG = 0.;  initMMX = initMMY = initMMZ = 0.; initMASS = 0.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     spatial_solver->set_dx(SimPM.levels[l].dx);
     double dx = SimPM.levels[l].dx;
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd) {
+      if (!c->isbd && c->isgd) {
         dv = spatial_solver->CellVolume(c,dx);
         spatial_solver->PtoU(c->P,u,SimPM.gamma);
         initERG += u[ERG]*dv;
         initMMX += u[MMX]*dv;
         initMMY += u[MMY]*dv;
         initMMZ += u[MMZ]*dv;
+        initMASS += u[RHO]*dv;
       }
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
@@ -302,7 +303,8 @@ int sim_init_nested::initial_conserved_quantities(
   cout <<"(conserved quantities) ["<< initERG <<", ";
   cout << initMMX <<", ";
   cout << initMMY <<", ";
-  cout << initMMZ <<"]\n";
+  cout << initMMZ <<", ";
+  cout << initMASS <<"]\n";
 
 #endif // TEST_CONSERVATION
   return(0);
