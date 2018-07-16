@@ -277,35 +277,36 @@ int sim_init_nested::initial_conserved_quantities(
       )
 {
   // Energy, and Linear Momentum in x-direction.
-#ifdef TESTING 
-  // Only track the totals if I am testing the code.
+#ifdef TEST_CONSERVATION 
   pion_flt u[SimPM.nvar];
-  dp.initERG = 0.;  dp.initMMX = dp.initMMY = dp.initMMZ = 0.;
-  dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
+  //dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
   //  cout <<"initERG: "<<dp.initERG<<"\n";
+  initERG = 0.;  initMMX = initMMY = initMMZ = 0.;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     spatial_solver->set_dx(SimPM.levels[l].dx);
     double dx = SimPM.levels[l].dx;
+    double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
       if (!c->isbd) {
-         spatial_solver->PtoU(c->P,u,SimPM.gamma);
-         dp.initERG += u[ERG]*spatial_solver->CellVolume(c,dx);
-         dp.initMMX += u[MMX]*spatial_solver->CellVolume(c,dx);
-         dp.initMMY += u[MMY]*spatial_solver->CellVolume(c,dx);
-         dp.initMMZ += u[MMZ]*spatial_solver->CellVolume(c,dx);
+        dv = spatial_solver->CellVolume(c,dx);
+        spatial_solver->PtoU(c->P,u,SimPM.gamma);
+        initERG += u[ERG]*dv;
+        initMMX += u[MMX]*dv;
+        initMMY += u[MMY]*dv;
+        initMMZ += u[MMZ]*dv;
       }
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
 
-  //cout <<"!!!!! cellvol="<<spatial_solver->CellVolume(cpt)<< "\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total Energy = "<< dp.initERG <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total x-Momentum = "<< dp.initMMX <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total y-Momentum = "<< dp.initMMY <<"\n";
-  cout <<"(LFMethod::InitialconservedQuantities) Total z-Momentum = "<< dp.initMMZ <<"\n";
-#endif //TESTING
+  cout <<"(conserved quantities) ["<< initERG <<", ";
+  cout << initMMX <<", ";
+  cout << initMMY <<", ";
+  cout << initMMZ <<"]\n";
+
+#endif // TEST_CONSERVATION
   return(0);
-} //initial_conserved_quantities()
+}
 
 
 

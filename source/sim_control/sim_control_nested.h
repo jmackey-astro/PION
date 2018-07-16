@@ -111,6 +111,14 @@ class sim_control_nestedgrid :
       const int               ///< level of nested grid.
       );
 
+  ///
+  /// Checks Total energy relative to initial value, and prints a
+  /// message if not.
+  ///
+  int check_energy_cons(
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
+
 }; // sim_control_nestedgrid
    
 /*************************************************************************/

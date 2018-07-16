@@ -87,6 +87,10 @@ class sim_init : virtual public update_boundaries
   //---------------------------------------
   // Class Member data:
   //
+#ifdef TEST_CONSERVATION 
+  double initERG, initMMX, initMMY, initMMZ;
+  double nowERG,  nowMMX,  nowMMY, nowMMZ;
+#endif
 
   ///
   /// information about multi-core-multi-domain simulations, used for

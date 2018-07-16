@@ -16,6 +16,11 @@
 #define TESTING_FLAGS_H
 
 //
+// check conservation of energy and momentum
+//
+#define TEST_CONSERVATION
+
+//
 // Various defines for testing bits of the code.
 //
 //#define TESTING ///< Comment this out if not testing the code.
