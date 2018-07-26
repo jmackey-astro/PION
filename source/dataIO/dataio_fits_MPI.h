@@ -63,9 +63,8 @@ class DataIOFits_pllel : public DataIOFits {
   ///
   int OutputData(
       const string, ///< File to write to
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
-      class RayTracingBase *, ///< pointer to raytracing class
       const long int ///< number to stamp file with (e.g. timestep)
       );
 
@@ -76,7 +75,7 @@ class DataIOFits_pllel : public DataIOFits {
   ///
   int ReadData(
       string, ///< file to read from
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &  ///< pointer to simulation parameters
       );
 

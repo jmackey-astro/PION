@@ -59,7 +59,7 @@
 #ifndef PARALLEL
 #error "PARALLEL not defined!  don't compile dataio_silo_MPI.cc without it!"
 #endif
-#include "dataio_silo.h"
+#include "dataio_silo_MPI.h"
 #include <cstring>
 #include <sstream>
 
@@ -181,13 +181,13 @@ int dataio_silo_pllel::ReadHeader(
 
 int dataio_silo_pllel::ReadData(
       string infile,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  if (!cg)
-    rep.error("dataio_silo_pllel::ReadData() null pointer to grid!",cg);
-  dataio_silo::gp = cg;
+  dataio_silo::gp = cg[0];
+  if (!gp)
+    rep.error("dataio_silo_pllel::ReadData() null pointer to grid!",gp);
 
   int err=0;
 #ifdef TESTING
@@ -405,16 +405,15 @@ int dataio_silo_pllel::ReadData(
 
 int dataio_silo_pllel::OutputData(
       const string outfilebase,
-      class GridBaseClass *cg,
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT, ///< pointer to raytracing class
       const long int file_counter   ///< number to stamp file with (e.g. timestep)
       )
 {
   int err=0;
-  if (!cg)
-    rep.error("dataio_silo_pllel::OutputData() null pointer to grid!",cg);
-  dataio_silo::gp = cg;
+  dataio_silo::gp = cg[0];
+  if (!gp)
+    rep.error("dataio_silo_pllel::OutputData() null pointer to grid!",gp);
 
   //  COMM->barrier("dataio_silo_pllel::OutputData() starting");
 #ifdef TESTING
@@ -491,7 +490,7 @@ int dataio_silo_pllel::OutputData(
     // set what data to write to the mesh.
     // NOT THE SAME AS SERIAL VERSION -- ONLY PRIMITIVE VARS!!!
     //cout <<"----dataio_silo_pllel::OutputData() setting up write variables\n";
-    err = setup_write_variables(SimPM, RT);
+    err = setup_write_variables(SimPM);
     if (err)
       rep.error("dataio_silo_pllel::OutputData() error settting up variables to write to",err);
     //cout <<"----dataio_silo_pllel::OutputData() write vars setup done\n";
@@ -669,14 +668,14 @@ int dataio_silo_pllel::OutputData(
     pp.set_nproc(mpiPM->get_nproc());
     for (int v=0; v<nmesh; v++) {
       pp.set_myrank(v);
-      pp.decomposeDomain(SimPM,SimPM.nest_levels[0]);
+      pp.decomposeDomain(SimPM,SimPM.levels[0]);
       zonecounts[v] = pp.LocalNcell;
       externalzones[v] = 0; // set to 1 if domain has zones outside multimesh.
       for (int i=0; i<ndim;i++) {
 	//extents[ext_size*v+2*i  ] = pp.LocalXmin[i];
 	//extents[ext_size*v+2*i+1] = pp.LocalXmax[i];
-	extents[ext_size*v+i     ] = cg->SIM_Xmin(static_cast<axes>(i));
-	extents[ext_size*v+ndim+i] = cg->SIM_Xmax(static_cast<axes>(i));
+	extents[ext_size*v+i     ] = gp->SIM_Xmin(static_cast<axes>(i));
+	extents[ext_size*v+ndim+i] = gp->SIM_Xmax(static_cast<axes>(i));
       }
     } // loop over meshes
     DBAddOption(mm_opts,DBOPT_EXTENTS_SIZE,&ext_size);
@@ -1094,7 +1093,7 @@ int dataio_silo_pllel::write_multimeshadj(
   std::vector<int> ngb_list;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM,SimPM.nest_levels[0]);
+    pp.decomposeDomain(SimPM,SimPM.levels[0]);
     //
     // Get list of abutting domains.
     //
@@ -1153,7 +1152,7 @@ int dataio_silo_pllel::write_multimeshadj(
   //long int ct=0;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.nest_levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.levels[0]);
     long int off1 = Sk[v]; // this should be the same as ct (maybe don't need ct then!)
 
     //
@@ -1412,7 +1411,7 @@ int dataio_silo_pllel::write_MRGtree(
   int ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.nest_levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.levels[0]);
     //
     // Count how many neighbours we have
     //
@@ -1506,7 +1505,7 @@ int dataio_silo_pllel::write_MRGtree(
   ct=0;
   for (int v=0; v<nsegs; v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.nest_levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.levels[0]);
 
     //
     // Count how many neighbours we have; length is 6 ints per

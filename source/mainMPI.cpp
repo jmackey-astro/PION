@@ -38,8 +38,8 @@ using namespace std;
 //
 // simulation control toolkit class.
 //
-#include "sim_control.h"
-#include "sim_control_MPI.h"
+#include "sim_control/sim_control.h"
+#include "sim_control/sim_control_MPI.h"
 
 
 #ifndef PARALLEL
@@ -62,6 +62,14 @@ int main(int argc, char **argv)
   sim_control = new class sim_control_pllel();
   if (!sim_control)
     rep.error("(PION) Couldn't initialise sim_control_pllel", sim_control);
+
+  //
+  // Check that command-line arguments are sufficient.
+  //
+  if (argc<2) {
+    sim_control->print_command_line_options(argc,argv);
+    rep.error("Bad arguments",argc);
+  }
 
   //
   // copy cmd-line args into an array of strings (for ease of use.
@@ -90,14 +98,10 @@ int main(int argc, char **argv)
 #ifndef TESTING
   rep.kill_stdout_from_other_procs(0);
 #endif
+  cout <<"-------------------------------------------------------\n";
+  cout <<"---------   pion v.1.0  running   ---------------------\n";
+  cout <<"-------------------------------------------------------\n\n";
 
-  //
-  // Check that command-line arguments are sufficient.
-  //
-  if (argc<2) {
-    sim_control->print_command_line_options(argc,argv);
-    rep.error("Bad arguments",argc);
-  }
 
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   for (int i=0;i<argc;i++) {
@@ -122,8 +126,7 @@ int main(int argc, char **argv)
   //
   // set up pointer to grid base class.
   //
-  class GridBaseClass *grid = 0;
-
+  vector<class GridBaseClass *> grid;
 
   //
   // Reset max. walltime to run the simulation for, if needed.
@@ -148,9 +151,9 @@ int main(int argc, char **argv)
   //
   // Initialise code.
   //
-  err = sim_control->Init(args[1], ft, argc, args, &grid);
+  err = sim_control->Init(args[1], ft, argc, args, grid);
   if (err!=0) {
-    cerr<<"(PION) err!=0 Something went bad"<<"\n";
+    cerr<<"(PION) err!=0 from Init"<<"\n";
     delete sim_control;
     return(1);
   }
@@ -159,7 +162,7 @@ int main(int argc, char **argv)
   //
   err+= sim_control->Time_Int(grid);
   if (err!=0) {
-    cerr<<"(PION) err!=0 Something went bad"<<"\n";
+    cerr<<"(PION) err!=0 from Time_Int"<<"\n";
     delete sim_control;
     return(1);
   }
@@ -168,20 +171,21 @@ int main(int argc, char **argv)
   //
   err+= sim_control->Finalise(grid);
   if (err!=0) {
-    cerr<<"(PION) err!=0 Something went bad"<<"\n";
+    cerr<<"(PION) err!=0 from Finalise"<<"\n";
     delete sim_control;
-    delete grid;
     return(1);
   }
 
   
   delete sim_control; sim_control=0;
-  if (grid) {delete grid; grid=0;}
   delete [] args; args=0;
 
   COMM->finalise();
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   delete COMM; COMM=0;
+  cout <<"-------------------------------------------------------\n";
+  cout <<"---------   pion v.1.0  finsihed  ---------------------\n";
+  cout <<"-------------------------------------------------------\n";
 
   return(0);
 }

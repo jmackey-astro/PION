@@ -15,8 +15,8 @@
 #include "defines/testing_flags.h"
 
 #include "decomposition/MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
-#include "sim_control.h"
+#include "grid/setup_fixed_grid_MPI.h"
+#include "sim_control/sim_control.h"
 
 
 #ifdef PARALLEL
@@ -46,12 +46,12 @@ class sim_control_pllel :
   /// \retval 1 failure
   ///
   int Init(
-        string,   ///< Name of input file.
-        int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
-        int,      ///< Number of command-line arguments.
-        string *, ///< Pointer to array of command-line arguments.
-        class GridBaseClass ** ///< grid pointer.
-        );
+      string,   ///< Name of input file.
+      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
+      int,      ///< Number of command-line arguments.
+      string *, ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
   ///
   /// Time integration
@@ -68,8 +68,8 @@ class sim_control_pllel :
   /// near the end of the allowed runtime.
   ///
   int Time_Int(
-        class GridBaseClass * 
-        );
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
   protected:
 
@@ -80,12 +80,13 @@ class sim_control_pllel :
   /// of all calculated steps.  This function calls the calc_timestep() function
   /// for the local grid, and then gets the min of all processor's local
   /// timesteps, and uses that as the timestep.
-  /// \retval 0 success
-  /// \retval 1 failure
   ///
-  int calc_timestep(
-        class GridBaseClass * 
-        );
+  int calculate_timestep(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *, ///< pointer to grid.
+      class FV_solver_base *, ///< solver/equations class
+      const int ///< level in nested grid (if applicable)
+      );
 
   /// function to setup parallel data-I/O class.
   void setup_dataio_class(

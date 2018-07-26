@@ -50,8 +50,8 @@
 #include "constants.h"
 
 
-#include "grid/uniform_grid.h"
-#include "sim_control_MPI.h"
+#include "grid/uniform_grid_pllel.h"
+//#include "sim_control_MPI.h"
 #include "microphysics/microphysics_base.h"
 #include <fstream>
 #include <iostream>
