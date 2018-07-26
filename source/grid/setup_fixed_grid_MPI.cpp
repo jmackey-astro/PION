@@ -24,7 +24,7 @@
 #include "setup_fixed_grid_MPI.h"
 #include "raytracing/raytracer_SC.h"
 #include "raytracing/raytracer_SC_pllel.h"
-
+#include "grid/uniform_grid_pllel.h"
 
 #include <iostream>
 using namespace std;

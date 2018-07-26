@@ -373,9 +373,10 @@ void dataio_silo_utility::set_dir_in_file(
 int dataio_silo_utility::serial_read_any_data(
       string firstfile,        ///< file to read from
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      class GridBaseClass *ggg ///< pointer to data.
+      vector<class GridBaseClass *> &cg  ///< address of vector of grid pointers.
       )
 {
+  class GridBaseClass *ggg = cg[0];
   if (!ggg) rep.error("null pointer to computational grid!",ggg);
 
   //
@@ -396,7 +397,7 @@ int dataio_silo_utility::serial_read_any_data(
     // must be reading serial file, so use serial ReadData() function:
     //
     groupsize   = 1;
-    err = dataio_silo::ReadData(firstfile,ggg, SimPM);
+    err = dataio_silo::ReadData(firstfile,cg, SimPM);
     rep.errorTest("Failed to read serial data",0,err);
   }
   else {
@@ -461,7 +462,7 @@ int dataio_silo_utility::serial_read_pllel_silodata(
       // choose myrank, and decompose domain accordingly.
       //
       filePM->set_myrank(ifile*groupsize +igroup);
-      filePM->decomposeDomain(SimPM, SimPM.nest_levels[0]);
+      filePM->decomposeDomain(SimPM, SimPM.levels[0]);
       
       //
       // set directory in file.
@@ -505,10 +506,11 @@ int dataio_silo_utility::serial_read_pllel_silodata(
 
 int dataio_silo_utility::ReadData(
       string firstfile,        ///< file to read from
-      class GridBaseClass *ggg, ///< pointer to data.
+      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
+  class GridBaseClass *ggg = cg[0];
   if (!ggg) rep.error("null pointer to computational grid!",ggg);
   int err=0;
 
@@ -722,7 +724,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         filePM.set_myrank(ifile*groupsize +igroup);
       }
 
-      filePM.decomposeDomain(SimPM, SimPM.nest_levels[0]);
+      filePM.decomposeDomain(SimPM, SimPM.levels[0]);
       
       //
       // set directory in file.

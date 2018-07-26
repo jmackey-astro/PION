@@ -30,6 +30,7 @@ using namespace std;
 #include "dataIO/file_status.h"
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_MPI.h"
 #include "decomposition/MCMD_control.h"
 
 #ifndef SILO
@@ -54,7 +55,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   int serial_read_any_data(
       string, ///< file to read from
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass * ///< pointer to data.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
   ///
@@ -62,7 +63,7 @@ class dataio_silo_utility : public dataio_silo_pllel  {
   ///
   int ReadData(
       string, ///< file to read from
-      class GridBaseClass *, ///< pointer to data.
+      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
       class SimParams &  ///< pointer to simulation parameters
       );
 

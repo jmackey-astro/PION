@@ -51,9 +51,6 @@ class calc_timestep :
   /// the microphysics timestep (if needed), and another to get the dynamics
   /// timestep.
   ///
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
   virtual int calculate_timestep(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to grid.

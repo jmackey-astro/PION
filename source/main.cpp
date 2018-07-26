@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     }
   }
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion v.0.1  running   ---------------------\n";
+  cout <<"---------   pion v.1.0  running   ---------------------\n";
   cout <<"-------------------------------------------------------\n\n";
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
   delete [] args; args=0;
   
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion v.0.1  finsihed  ---------------------\n";
+  cout <<"---------   pion v.1.0  finsihed  ---------------------\n";
   cout <<"-------------------------------------------------------\n";
 
   return 0;

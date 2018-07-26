@@ -447,6 +447,10 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
 setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h
 
+raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
+  ${GLOBAL} uniform_grid.h grid_base_class.h
+
+
 #####################
 # CONTROL CLASSES   #
 #####################
@@ -479,7 +483,7 @@ update_boundaries_nested.o: update_boundaries_nested.cpp \
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
-  solver_eqn_base.h grid_base_class.h \
+  solver_eqn_base.h grid_base_class.h 
 
 #####################
 # EQUATIONS CLASSES #
@@ -517,7 +521,7 @@ Roe_Hydro_PrimitiveVar_solver.o: Roe_Hydro_PrimitiveVar_solver.cpp \
    ${GLOBAL} eqns_hydro_adiabatic.h eqns_base.h
 
 riemannMHD.o: riemannMHD.cpp riemannMHD.h ${GLOBAL} \
-              eqns_mhd_adiabatic.h eqns_base.h ${GLOBAL} 
+              eqns_mhd_adiabatic.h eqns_base.h  
 
 Roe_MHD_ConservedVar_solver.o : Roe_MHD_ConservedVar_solver.cpp \
    Roe_MHD_ConservedVar_solver.h riemannMHD.h \
@@ -539,7 +543,7 @@ solver_eqn_hydro_adi.o:	VectorOps.h VectorOps_spherical.h \
    solver_eqn_hydro_adi.h eqns_hydro_adiabatic.h \
    solver_eqn_hydro_adi.cpp grid_base_class.h
 
-solver_eqn_mhd_adi.o: VectorOps.h  grid_base_class.h\
+solver_eqn_mhd_adi.o: VectorOps.h grid_base_class.h \
    solver_eqn_base.h  eqns_base.h ${GLOBAL} cell_interface.h \
    solver_eqn_mhd_adi.h   eqns_mhd_adiabatic.h \
    solver_eqn_mhd_adi.cpp
@@ -608,23 +612,21 @@ MPv8.o: MPv8.cpp \
 
 
 ########################
-# Raytracing
-########################
-raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
-  ${GLOBAL} uniform_grid.h grid_base_class.h
-
-
-########################
 # Data I/O
 ########################
 file_status.o:  file_status.cpp file_status.h ${GLOBAL}
-parameter_defs.o:       parameter_defs.cpp parameter_defs.h ${GLOBAL} solver_eqn_base.h readparams.h \
-		stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
-dataio_base.o:  dataio_base.cpp dataio_base.h parameter_defs.h ${GLOBAL} solver_eqn_base.h
-dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h ${GLOBAL} solver_eqn_base.h grid_base_class.h
-dataio_silo.o:  dataio_silo.cpp dataio_silo.h parameter_defs.h ${GLOBAL} solver_eqn_base.h grid_base_class.h
-dataio_fits.o:  dataio_fits.cpp dataio_fits.h parameter_defs.h ${GLOBAL} solver_eqn_base.h \
-        solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h grid_base_class.h
+parameter_defs.o:       parameter_defs.cpp parameter_defs.h ${GLOBAL}\
+    solver_eqn_base.h readparams.h \
+    stellar_wind_angle.h stellar_wind_BC.h cell_interface.h
+dataio_base.o:  dataio_base.cpp dataio_base.h parameter_defs.h \
+    ${GLOBAL} solver_eqn_base.h
+dataio_text.o:  dataio_text.cpp dataio_text.h parameter_defs.h \
+    ${GLOBAL} solver_eqn_base.h grid_base_class.h
+dataio_silo.o:  dataio_silo.cpp dataio_silo.h parameter_defs.h \
+    ${GLOBAL} solver_eqn_base.h grid_base_class.h
+dataio_fits.o:  dataio_fits.cpp dataio_fits.h parameter_defs.h \
+    ${GLOBAL} solver_eqn_base.h \
+    solver_eqn_hydro_adi.h solver_eqn_hydro_iso.h grid_base_class.h
 
 readparams.o:   readparams.cpp readparams.h ${GLOBAL}
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h parameter_defs.h ${GLOBAL} grid_base_class.h
