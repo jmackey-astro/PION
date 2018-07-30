@@ -550,6 +550,14 @@ int time_integrator::set_dynamics_dU(
     if (SimPM.ndim>2) rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->pos,SimPM.ndim);
 #endif
     
+    //
+    // loop over the number of cells in the line/plane of starting
+    // cells
+    //
+    //enum direction d1 = posdirs[(i+1)%SimPM.ndim];
+    //enum direction d2 = posdirs[(i+2)%SimPM.ndim];
+
+
     while (
       (return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
 #ifdef TESTING
@@ -595,7 +603,7 @@ int time_integrator::dynamics_dU_column
       )
 {
   if ( (SimPM.spOOA>2) || (SimPM.tmOOA>2) || (csp>2)  ) {
-    cerr<<"(RSMethod::calc_dUdt) Error, only know 1st and 2nd order accurate methods.\n";
+    cerr<<"(RSMethod::calc_dU_column) Error, only know 1st and 2nd order accurate methods.\n";
     return(1);
   }
   int err = 0;
@@ -622,7 +630,7 @@ int time_integrator::dynamics_dU_column
   //
   cell *cpt = grid->NextPt(startingPt,posdir); //=grid->NextPt(startingPt,negdir);
   while (grid->NextPt(cpt,negdir)) {cpt = grid->NextPt(cpt,negdir);} // CI.print_cell(cpt);}
-  if(cpt==0) {cerr<<"(RSMethod::calc_dUdt) error finding left boundary cell.\n";return(1);}
+  if(cpt==0) {cerr<<"(RSMethod::calc_dU_column) error finding left boundary cell.\n";return(1);}
   cell *npt  = grid->NextPt(cpt,posdir);
   cell *n2pt = grid->NextPt(npt,posdir);
   if (npt==0 || n2pt==0) rep.error("Couldn't find two real cells in column",0);

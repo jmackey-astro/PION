@@ -15,6 +15,7 @@
 /// - 2017.12.09 JM: updated function args for boundary data.
 /// - 2018.05.10 JM: moved boundary functions from grid to setup-grid
 ///    and sim-control.
+/// - 2018.07.30 JM: added interface flux calculation data structures
 
 
 #ifndef GRID_BASE_CLASS_H
@@ -63,6 +64,18 @@ struct boundary_data {
   pion_flt *refval;  ///< Optional reference state vector.
 };
 
+
+///
+/// Struct for adding up the flux crossing a grid-boundary interface,
+/// for ensuring conservation between different refinement levels in
+/// a SMR/AMR simulation.
+///
+struct flux_interface {
+  std::vector<class cell *> c; ///< list of cells with faces on this interface
+  std::vector<double> area;  ///< area of each face for cells c, ordered as is c
+  double flux;   ///< flux through interface.
+  int Ncells;    ///< number of cells contributing.
+};
 
 
 ///
@@ -219,8 +232,61 @@ class GridBaseClass {
       class SimParams &  ///< List of simulation params (including BCs)
       )=0;
 
-  /// pointer to array of all boundaries.
-  std::vector<struct boundary_data *> BC_bd;  
+  ///
+  /// Setup the flux struct flux_update_recv with list of interfaces
+  /// that need to be updated with fluxes from a finer level grid.
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  virtual int setup_flux_recv(
+      class SimParams &,  ///< simulation params (including BCs)
+      const int           ///< level to receive from
+      )=0;
+
+  ///
+  /// Setup the flux struct flux_update_send with list of interfaces
+  /// that need to be sent to a coarser level grid.
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  virtual int setup_flux_send(
+      class SimParams &,  ///< simulation params (including BCs)
+      const int           ///< level to send to
+      )=0;
+
+  /// array of all boundaries.
+  std::vector<struct boundary_data *> BC_bd;
+
+  /// array of interfaces for a finer grid within this grid.
+  /// Each element contains a single cell that needs to be updated.
+  ///
+  /// The list has each direction as an element of the outer array
+  /// index, and each interface in that direction as the inner index.
+  /// Note that it is not a matix because each direction doesn't
+  /// necessarily have any elements.
+  ///
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  std::vector< std::vector<struct flux_interface *> > flux_update_recv;
+
+  /// Array of interfaces for a coarser grid encompassing this grid.
+  /// Each element contains 2^(ndim-1) cells.
+  ///
+  /// The list has each direction as an element of the outer array
+  /// index, and each interface in that direction as the inner index.
+  /// Note that it is not a matix because each direction doesn't
+  /// necessarily have any elements.
+  ///
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  std::vector< std::vector<struct flux_interface *> > flux_update_send;
+
   class stellar_wind *Wind; ///< stellar wind boundary condition.
   class RayTracingBase *RT;   ///< pointer to raytracing class
 

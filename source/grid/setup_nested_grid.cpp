@@ -281,13 +281,6 @@ int setup_nested_grid::boundary_conditions(
     err = setup_boundary_structs(par,grid[l],l);
     rep.errorTest("sng::boundary_conditions sb_structs",0,err);
 
-
-    //if (l!=0) grid[l]->set_parent_grid(grid[l-1]);
-    //else      grid[l]->set_parent_grid(0);
-
-    //if (l!=par.grid_nlevels-1) grid[l]->set_child_grid(grid[l+1]);
-    //else                         grid[l]->set_child_grid(0);
-
     err = grid[l]->SetupBCs(par);
     rep.errorTest("sng::boundary_conditions SetupBCs",0,err);
   }
