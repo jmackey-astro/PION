@@ -1210,6 +1210,391 @@ void UniformGrid::BC_deleteBoundaryData()
 
 
 
+int UniformGrid::setup_flux_recv(
+      class SimParams &par, ///< simulation params (including BCs)
+      const int l           ///< level to receive from
+      )
+{
+  //
+  // Get size of interface region and number of cells.
+  //
+  size_t nc  = 1; // number of cells in each interface
+  int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM]; // interface
+  int lxmin[MAX_DIM], lxmax[MAX_DIM]; // finer grid
+  bool recv[2*G_ndim];  // whether to get data in this direction
+  size_t nel[2*G_ndim]; // number of interfaces in each direction
+  struct flux_interface *fi = 0;
+
+  if (this != par.levels[l].parent)
+    rep.error("level l is not my child!",l);
+
+  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+
+  // define interface region of fine and coarse grids, and whether
+  // each direction is to be included or not.  Note that this allows
+  // for a fine grid that is not completely encompassed by the coarse
+  // grid.
+  for (int v=0;v<G_ndim;v++) {
+    ixmin[v] = std::max(G_ixmin[v], lxmin[v]);
+    if (G_ixmin[v] < lxmin[v]) recv[2*v] = true;
+    else                       recv[2*v] = false;
+    
+    ixmax[v] = std::min(G_ixmax[v], lxmax[v]);
+    if (G_ixmax[v] > lxmax[v]) recv[2*v+1] = true;
+    else                       recv[2*v+1] = false;
+
+    ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
+    if ( (ixmax[v]-ixmin[v]) % G_idx !=0) {
+      rep.error("interface region not divisible!",ixmax[v]-ixmin[v]);
+    }
+
+  }
+
+  // different number of interfaces depending on dimensionality.
+  switch (G_ndim) {
+  case 1:
+    if (recv[XN]) nel[XN] = 1;
+    if (recv[XP]) nel[XP] = 1;
+    break;
+  case 2:
+    if (recv[XN]) nel[XN] = ncell[YY];
+    if (recv[XP]) nel[XP] = ncell[YY];
+    if (recv[YN]) nel[YN] = ncell[XX];
+    if (recv[YP]) nel[YP] = ncell[XX];
+    break;
+  case 3:
+    if (recv[XN]) nel[XN] = ncell[YY]*ncell[ZZ];
+    if (recv[XP]) nel[XP] = ncell[YY]*ncell[ZZ];
+    if (recv[YN]) nel[YN] = ncell[XX]*ncell[ZZ];
+    if (recv[YP]) nel[YP] = ncell[XX]*ncell[ZZ];
+    if (recv[ZN]) nel[ZN] = ncell[XX]*ncell[YY];
+    if (recv[ZP]) nel[ZP] = ncell[XX]*ncell[YY];
+    break;
+  default:
+    rep.error("bad ndim in setup_flux_recv",G_ndim);
+    break;
+  }
+
+  // initialize arrays
+  flux_update_recv.resize(2*G_ndim);
+  for (int v=0; v<2*G_ndim; v++) {
+    if (recv[v] == true) {
+      flux_update_recv[v].resize(nel[v]);
+    }
+    for (size_t i=0; i<nel[v]; i++) {
+      fi = flux_update_recv[v][i];
+      fi->Ncells = nc;
+      fi->c.resize(nc);
+      fi->area.resize(nc);
+      fi->flux = 0;
+    }
+  }
+
+  // For each interface, find the cell that is outside the fine grid
+  // and that includes the interface.
+  for (int v=0; v<2*G_ndim; v++) {
+    if (recv[v]) {
+      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,ncell,1);
+    }
+  }
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::setup_flux_send(
+      class SimParams &par, ///< simulation params (including BCs)
+      const int l           ///< level to send to
+      )
+{
+  //
+  // Get size of interface region and number of cells.
+  //
+  size_t nc  = 1; // number of cells in each interface
+  int ixmin[MAX_DIM], ixmax[MAX_DIM],
+           ncell[MAX_DIM], nface[MAX_DIM]; // interface
+  int lxmin[MAX_DIM], lxmax[MAX_DIM]; // coarser grid
+  bool send[2*G_ndim];  // whether to send data in this direction
+  size_t nel[2*G_ndim]; // number of interfaces in each direction
+  struct flux_interface *fi = 0;
+
+  if (this != par.levels[l].child)
+    rep.error("level l is not my parent!",l);
+
+  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+
+  // define interface region of fine and coarse grids, and whether
+  // each direction is to be included or not.  Note that this allows
+  // for a fine grid that is not completely encompassed by the coarse
+  // grid.
+  for (int v=0;v<G_ndim;v++) {
+    ixmin[v] = std::max(G_ixmin[v], lxmin[v]);
+    if (G_ixmin[v] > lxmin[v]) send[2*v] = true;
+    else                       send[2*v] = false;
+    
+    ixmax[v] = std::min(G_ixmax[v], lxmax[v]);
+    if (G_ixmax[v] < lxmax[v]) send[2*v+1] = true;
+    else                       send[2*v+1] = false;
+
+    ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
+    nface[v] = ncell[v]/2;  // number of face elements on coarse grid
+    if ( (ixmax[v]-ixmin[v]) % 2*G_idx !=0) {
+      rep.error("interface region not divisible (send)!",ixmax[v]-ixmin[v]);
+    }
+
+  }
+
+  // different number of interfaces depending on dimensionality.
+  switch (G_ndim) {
+  case 1:
+    if (send[XN]) nel[XN] = 1;
+    if (send[XP]) nel[XP] = 1;
+    nc = 1;
+    break;
+  case 2:
+    if (send[XN]) nel[XN] = nface[YY];
+    if (send[XP]) nel[XP] = nface[YY];
+    if (send[YN]) nel[YN] = nface[XX];
+    if (send[YP]) nel[YP] = nface[XX];
+    nc = 2;
+    break;
+  case 3:
+    if (send[XN]) nel[XN] = nface[YY]*nface[ZZ];
+    if (send[XP]) nel[XP] = nface[YY]*nface[ZZ];
+    if (send[YN]) nel[YN] = nface[XX]*nface[ZZ];
+    if (send[YP]) nel[YP] = nface[XX]*nface[ZZ];
+    if (send[ZN]) nel[ZN] = nface[XX]*nface[YY];
+    if (send[ZP]) nel[ZP] = nface[XX]*nface[YY];
+    nc = 4;
+    break;
+  default:
+    rep.error("bad ndim in setup_flux_send",G_ndim);
+    break;
+  }
+
+  // initialize arrays
+  flux_update_send.resize(2*G_ndim);
+  for (int v=0; v<2*G_ndim; v++) {
+    if (send[v] == true) {
+      flux_update_send[v].resize(nel[v]);
+    }
+    for (size_t i=0; i<nel[v]; i++) {
+      fi = flux_update_send[v][i];
+      fi->Ncells = nc;
+      fi->c.resize(nc);
+      fi->area.resize(nc);
+      fi->flux = 0;
+    }
+  }
+
+  // For each interface, find the cell that is outside the fine grid
+  // and that includes the interface.
+  for (int v=0; v<2*G_ndim; v++) {
+    if (send[v]) {
+      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,nface,2);
+    }
+  }
+
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGrid::add_cells_to_face(
+      enum direction d,  ///< which direction we're facing
+      int *ixmin,   ///< xmin of interface region (integer units)
+      int *ixmax,   ///< xmax of interface region (integer units)
+      int *nface,   ///< number of elements in interface region
+      const int ncell    ///< number of cells per face, per dim.
+      )
+{
+  cell *c = FirstPt_All();
+  std::vector<struct flux_interface *> fi = flux_update_recv[d];
+
+  //
+  // Split code for different dimensionality of grid:
+  //
+  if (G_ndim==1) {
+    if (d == XN) {
+      while (c->pos[XX] < ixmin[XX]-G_idx) c = NextPt(c,XP);
+    }
+    else if (d == XP) {
+      while (c->pos[XX] < ixmax[XX]) c = NextPt(c,XP);
+    }
+    fi[0]->c[0] = c;
+    fi[0]->area[0] = CellInterface(c,OppDir(d));
+  } // 1D
+
+  else if (G_ndim==2) {
+    enum direction perpdir = XP;
+    enum axes perpaxis = XX;
+    //
+    // get to first cell at interface, most negative position in all
+    // directions.
+    //
+    switch (d) {
+    case XN:
+      while (c->pos[XX] < ixmin[XX]-G_idx) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
+      perpdir = YP;
+      perpaxis = YY;
+      break;
+    case XP:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
+      perpdir = YP;
+      perpaxis = YY;
+      break;
+    case YN:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]-G_idx) c = NextPt(c,YP);
+      perpdir = XP;
+      perpaxis = XX;
+      break;
+    case YP:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
+      perpdir = XP;
+      perpaxis = XX;
+      break;
+    default:
+      rep.error("bad direction in add_cells_to_face 2D",d);
+    }
+
+    // loop over cells in interface:
+    if (nface[perpaxis] != static_cast<int>(fi.size()))
+      rep.error("wrong number of cells 2D interface",fi.size());
+
+    for (int i=0;i<nface[perpaxis]; i++) {
+      for (int ic=0;ic<ncell;ic++) {
+        fi[i]->c[ic] = c;
+        fi[i]->area[ic] = CellInterface(c,OppDir(d));
+        c = NextPt(c,perpdir);
+      }
+    }
+  }  // 2D
+
+  else {
+    cell *marker = c, *m2=c;
+    enum direction perpdir1 = XP, perpdir2 = XP;
+    enum axes perpaxis1 = XX, perpaxis2 = XX;
+
+    //
+    // get to first cell at interface, most negative position in all
+    // directions.
+    //
+    switch (d) {
+    case XN:
+      while (c->pos[XX] < ixmin[XX]-G_idx) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
+      while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
+      perpdir1 = YP;
+      perpdir2 = ZP;
+      perpaxis1 = YY;
+      perpaxis2 = ZZ;
+      break;
+    case XP:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
+      perpdir1 = YP;
+      perpdir2 = ZP;
+      perpaxis1 = YY;
+      perpaxis2 = ZZ;
+      break;
+    case YN:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]-G_idx) c = NextPt(c,XP);
+      while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
+      perpdir1 = XP;
+      perpdir2 = ZP;
+      perpaxis1 = XX;
+      perpaxis2 = ZZ;
+      break;
+    case YP:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
+      perpdir1 = XP;
+      perpdir2 = ZP;
+      perpaxis1 = XX;
+      perpaxis2 = ZZ;
+      break;
+    case ZN:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[ZZ] < ixmin[ZZ]-G_idx) c = NextPt(c,ZP);
+      perpdir1 = XP;
+      perpdir2 = YP;
+      perpaxis1 = XX;
+      perpaxis2 = YY;
+      break;
+    case ZP:
+      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
+      perpdir1 = XP;
+      perpdir2 = YP;
+      perpaxis1 = XX;
+      perpaxis2 = YY;
+      break;
+    default:
+      rep.error("bad direction in add_cells_to_face 3D",d);
+    }
+
+    // loop over cells in interface:
+    if (nface[perpaxis1]*nface[perpaxis2] != static_cast<int>(fi.size()))
+      rep.error("wrong number of cells 3D interface",fi.size());
+    marker = c;
+    for (int i=0;i<nface[perpaxis2]; i++) {
+      for (int j=0;i<nface[perpaxis1]; j++) {
+        if (ncell==1) {
+          fi[i*nface[perpaxis1]+j]->c[0] = c;
+          fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
+        }
+        else {
+          // need to get 4 cells onto this face.
+          fi[i*nface[perpaxis1]+j]->c[0] = c;
+          fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
+          m2 = NextPt(c,perpdir1);
+          fi[i*nface[perpaxis1]+j]->c[1] = m2;
+          fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d));
+          m2 = NextPt(c,perpdir2);
+          fi[i*nface[perpaxis1]+j]->c[2] = m2;
+          fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d));
+          m2 = NextPt(m2,perpdir1);
+          fi[i*nface[perpaxis1]+j]->c[3] = m2;
+          fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d));
+        }
+        for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);
+      }
+      for (int ic=0;ic<ncell;ic++) marker = NextPt(marker,perpdir2);
+      c = marker;
+    }
+  }  // 3D
+
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 ///
 /// Calculate distance between two points, where the two position
 /// are interpreted in the appropriate geometry.
