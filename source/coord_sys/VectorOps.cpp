@@ -588,26 +588,30 @@ double VectorOps_Cyl::CellInterface(
    *  - In the \f$\theta\f$ direction, the area is just
    * \f$\delta A = \delta R \delta z\f$.
    *  - In the \f$z\f$ direction, the area is 
-   * \f$\delta A = \pi \delta R R_i\f$.
+   * \f$\delta A = \pi ((R_i+\frac{\delta R}{2})^2-(R_i-\frac{\delta R}{2})^2)\f$.
    *  - In the positive/negative radial direction, the area is 
    * \f$\delta A = 2\pi \delta z (R_i \pm \frac{\delta R}{2})\f$.
    * */
   double dZ = dR;
+  double pos[MAX_DIM];
+  CI.get_dpos(c,pos);
 
   switch (dir) {
    case ZNcyl: case ZPcyl:
-    return(0.5*dR*CI.get_dpos(c,Rcyl));
+    return M_PI*( (pos[Rcyl]+0.5*dR)*(pos[Rcyl]+0.5*dR) - 
+                  (pos[Rcyl]-0.5*dR)*(pos[Rcyl]-0.5*dR) );
     break;
    case TNcyl: case TPcyl:
-    return(VOdA); // need a \delta\theta in the denominator here.
+    rep.error("3D cylindrical not implemented in CellInterface",dir);
+    return VOdA; // need a \delta\theta in the denominator here.
     break;
    case RNcyl:
-    if (CI.get_dpos(c,Rcyl)>0 && CI.get_dpos(c,Rcyl)<dR) return(0);
-    else return(dZ*(CI.get_dpos(c,Rcyl)-dR/2.)*(CI.get_dpos(c,Rcyl)-dR/2.)/CI.get_dpos(c,Rcyl));
+    if (pos[Rcyl]>0 && pos[Rcyl]<dR) return 0.0;
+    else return 2.0*M_PI*dZ*(pos[Rcyl]-0.5*dR);
     break;
    case RPcyl:
-    if ( (CI.get_dpos(c,Rcyl)<0) && (CI.get_dpos(c,Rcyl)>-dR) ) return(0);
-    else return(dZ*(CI.get_dpos(c,Rcyl)+dR/2.)*(CI.get_dpos(c,Rcyl)+dR/2.)/CI.get_dpos(c,Rcyl));
+    if (pos[Rcyl]<0 && pos[Rcyl]>-dR) return 0.0;
+    else return 2.0*M_PI*dZ*(pos[Rcyl]+0.5*dR);
     break;
    default:
     rep.error("Bad direction to VectorOps_Cyl::CellInterface",dir);

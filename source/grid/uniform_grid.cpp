@@ -156,11 +156,13 @@ UniformGrid::UniformGrid(
   // Allocate arrays for dimensions of grid.
   //
   G_ng=0;
+  G_ng_all=0;
   G_xmin=0;
   G_xmax=0;
   G_range=0;
   
-  G_ng     = mem.myalloc(G_ng,    G_ndim);
+  G_ng     = mem.myalloc(G_ng,    MAX_DIM);
+  G_ng_all = mem.myalloc(G_ng_all,MAX_DIM);
   G_xmin   = mem.myalloc(G_xmin,  G_ndim);
   G_xmax   = mem.myalloc(G_xmax,  G_ndim);
   G_range  = mem.myalloc(G_range, G_ndim);
@@ -191,9 +193,15 @@ UniformGrid::UniformGrid(
   //
   G_ncell = 1;
   G_ncell_all = 1;
+  // initialise to 1 for routines that loop over unused dimensions.
+  for (int i=0;i<MAX_DIM;i++) {
+    G_ng_all[i] = 1;
+    G_ng[i] = 1;
+  }
 
   for (int i=0;i<G_ndim;i++) {
     G_ng[i] = g_nc[i];
+    G_ng_all[i] = g_nc[i] + 2*BC_nbc;
     G_ncell *= G_ng[i]; // Get total number of cells.
     G_ncell_all *= G_ng[i] +2*BC_nbc; // all cells including boundary.
     G_xmin[i] = g_xn[i];

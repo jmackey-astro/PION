@@ -164,15 +164,15 @@ class time_integrator :
   /// flux calculation were exact) given by Toro eq.5.76\n
   /// \f$ U_i^{n+1}-U_i^n =dU = \frac{\Delta t}{\Delta x}(F_{i-\frac{1}{2}} -F_{i+\frac{1}{2}}) \f$.
   ///
-  int dynamics_dU_column(const class cell *, ///< starting point for column.
+  int dynamics_dU_column(
+      class cell *, ///< starting point for column.
       const enum direction, ///< direction to traverse column in. 
       const enum direction, ///< opposite direction.
       const double,    ///< dt, timestep for this calculation
-#ifdef TESTING
-      const int,       ///< Time Order of accuracy to use.
-#endif
       const int,        ///< Spatial Order of accuracy to use.
-      class GridBaseClass * ///< grid pointer
+      class GridBaseClass *, ///< grid pointer
+      double *f_xn, ///< flux crossing grid boundary in negdir dir
+      double *f_xp  ///< flux crossing grid boundary in posdir dir
       );
 
   ///

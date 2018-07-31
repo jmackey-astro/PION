@@ -174,6 +174,18 @@ class GridBaseClass {
   virtual int Ndim() const =0; ///< Returns dimensionality of grid.
   virtual int Nvar() const =0; ///< Returns length of state vectors.
   
+  /// Returns number of grid cells along given axis, excluding
+  /// boundary cells.
+  virtual int NG(
+    const enum axes ///< axis of grid.
+    ) const =0;
+  
+  /// Returns number of grid cells along given axis, including
+  /// boundary cells.
+  virtual int NG_All(
+    const enum axes ///< axis of grid.
+    ) const =0;
+  
   /// Returns x/y/z lower boundary of grid in code units.
   virtual double  Xmin(enum axes) const =0;
   /// Returns x/y/z upper boundary of grid in code units.
