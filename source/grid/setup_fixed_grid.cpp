@@ -554,7 +554,6 @@ int setup_fixed_grid::setup_evolving_RT_sources(
   // Loop through list of sources, and see if any of them have an evolution
   // file (if none, then the string is set to NOFILE in the data I/O stage).
   //
-  int err=0;
   int Nevo=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
     if (SimPM.RS.sources[isrc].EvoFile == "NOFILE") {

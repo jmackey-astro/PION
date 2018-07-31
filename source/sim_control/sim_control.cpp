@@ -412,27 +412,33 @@ int sim_control::check_energy_cons(
   nowMMX = 0.;
   nowMMY = 0.;
   nowMMZ = 0.;
+  nowMASS = 0.0;
   double totmom=0.0;
 
   class cell *cpt = grid->FirstPt();
   double dR=grid->DX();
+  double dv = 0.0;
   do {
-     spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-     nowERG += u[ERG]*spatial_solver->CellVolume(cpt,dR);
-     nowMMX += u[MMX]*spatial_solver->CellVolume(cpt,dR);
-     nowMMY += u[MMY]*spatial_solver->CellVolume(cpt,dR);
-     nowMMZ += u[MMZ]*spatial_solver->CellVolume(cpt,dR);
-     totmom += sqrt( u[MMX]*u[MMX]  + u[MMY]*u[MMY] + u[MMZ]*u[MMZ] )
-                *spatial_solver->CellVolume(cpt,dR);
+    dv = spatial_solver->CellVolume(cpt,dR);
+    spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
+    nowERG += u[ERG]*dv;
+    nowMMX += u[MMX]*dv;
+    nowMMY += u[MMY]*dv;
+    nowMMZ += u[MMZ]*dv;
+    nowMASS += u[RHO]*dv;
+    totmom += sqrt( u[MMX]*u[MMX]  + u[MMY]*u[MMY] + u[MMZ]*u[MMZ] )
+              *dv;
   } while ( (cpt =grid->NextPt(cpt)) !=0);
   cout <<"(conserved quantities) ["<< nowERG <<", ";
   cout << nowMMX <<", ";
   cout << nowMMY <<", ";
-  cout << nowMMZ <<"]\n";
-  cout <<"(relative error      ) ["<< (nowERG-initERG)/(initERG+TINYVALUE) <<", ";
+  cout << nowMMZ <<", ";
+  cout << nowMASS <<"]\n";
+  cout <<"(relative error      ) ["<< (nowERG-initERG)/(initERG) <<", ";
   cout << (nowMMX-initMMX)/(totmom) <<", ";
   cout << (nowMMY-initMMY)/(totmom) <<", ";
-  cout << (nowMMZ-initMMZ)/(totmom) <<"]\n";
+  cout << (nowMMZ-initMMZ)/(totmom) <<", ";
+  cout << (nowMASS-initMASS)/initMASS <<"]\n";
   
 #endif // TEST_CONSERVATION
   return(0);

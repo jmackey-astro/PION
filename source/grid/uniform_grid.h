@@ -144,6 +144,8 @@ class UniformGrid
   int G_ftr;          ///< index of first tracer field.
   int *G_ng;          ///< number of grid points in each direction.
   size_t G_ncell;   ///< Total number of grid points.
+  /// number of grid points in each direction, including boundary cells
+  int *G_ng_all;
   /// Total number of grid points, including boundary points.
   size_t G_ncell_all;
 
@@ -246,6 +248,17 @@ class UniformGrid
   /// Returns length of state vectors.
   virtual int Nvar() const {return(G_nvar);}
 
+  /// Returns number of grid cells along given axis, excluding
+  /// boundary cells.
+  virtual int NG(
+    const enum axes ax ///< axis of grid.
+    ) const {return G_ng[ax];} 
+  
+  /// Returns number of grid cells along given axis, including
+  /// boundary cells.
+  virtual int NG_All(
+    const enum axes ax ///< axis of grid.
+    ) const {return G_ng_all[ax];}
 
   /// Returns x/y/z lower boundary of grid in code units.
   virtual double  Xmin(enum axes a) const

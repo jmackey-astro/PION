@@ -541,42 +541,49 @@ int time_integrator::set_dynamics_dU(
   for (int i=0;i<SimPM.ndim;i++) {
     spatial_solver->SetDirection(axis[i]);
     class cell *cpt    = grid->FirstPt_All();
-    class cell *marker = grid->FirstPt_All();
-    
-#ifdef TESTING
+    class cell *marker = cpt;
+
+#ifdef DEBUG
+    cout <<"Direction="<<axis[i]<<", i="<<i<<"\n";
     rep.printVec("cpt",cpt->pos,SimPM.ndim);
-    rep.printVec("+XX",(grid->NextPt(cpt,XP))->pos,SimPM.ndim);
-    if (SimPM.ndim>1) rep.printVec("+YY",(grid->NextPt(cpt,YP))->pos,SimPM.ndim);
-    if (SimPM.ndim>2) rep.printVec("+ZZ",(grid->NextPt(cpt,ZP))->pos,SimPM.ndim);
 #endif
     
     //
     // loop over the number of cells in the line/plane of starting
-    // cells
+    // cells.
     //
-    //enum direction d1 = posdirs[(i+1)%SimPM.ndim];
-    //enum direction d2 = posdirs[(i+2)%SimPM.ndim];
+    enum direction d1 = posdirs[(i+1)%3];
+    enum direction d2 = posdirs[(i+2)%3];
+    enum axes x1 = axis[(i+1)%3];
+    enum axes x2 = axis[(i+2)%3];
+    // flux onto and off domain for this column.
+    double f_xn[SimPM.nvar], f_xp[SimPM.nvar];
 
-
-    while (
-      (return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
-#ifdef TESTING
-      // this is a hack, assuming spatial o-o-a is the same as the
-      // time o-o-a.  But this is only needed for checking energy
-      // and momentum conservation (to know if we are on the full
-      // or half step) so it is not too important.
-                                        space_ooa,
+    //
+    // loop over the two perpendicular axes, to trace out a plane of
+    // starting cells for calculating fluxes along columns along this
+    // axis.  Note that the NG_All() array is initialised so that
+    // unused dimensions have NG=1, so the plane can be a single cell
+    // (in 1D) or a line (in 2D) or a plane (in 3D).
+    //
+    for (int ax2=0; ax2<grid->NG_All(x2); ax2++) {
+      for (int ax1=0; ax1<grid->NG_All(x1); ax1++) {
+#ifdef DEBUG
+        cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i<<", cpt="<<cpt<<":  ";
+        //CI.print_cell(cpt);
+        cout <<"\n";
 #endif
-                                        space_ooa, grid)) ==0) {
-      if ( !(cpt=grid->NextPt(cpt,posdirs[(i+1)%SimPM.ndim])) ) {
-        if ( !(cpt=grid->NextPt(marker,posdirs[(i+2)%SimPM.ndim])) ) {
-          //CI.print_cell(cpt);
-          rep.error("set_dynamics_dU: Got to edge of box before last point!",cpt);
-        }
-        marker = cpt;
-      } // if null pointer.
-    } // Loop over columns.
-    if (return_value!=-1) rep.error("dUdtColumn returned abnormally.",return_value);
+        return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
+                                        space_ooa, grid, f_xn, f_xp);
+        rep.errorTest("set_dynamics_dU: column",0,return_value);
+
+
+        cpt = grid->NextPt(cpt,d1);
+      }
+      marker = grid->NextPt(marker,d2);
+      cpt = marker;
+    }
+
   } // Loop over three directions.
   spatial_solver->SetDirection(axis[0]); // Reset fluxes to x-dir, (just to be safe!).
   return 0;
@@ -589,21 +596,19 @@ int time_integrator::set_dynamics_dU(
 
   
 
-int time_integrator::dynamics_dU_column
-      (
-      const class cell *startingPt, ///< sterting point of column.
+int time_integrator::dynamics_dU_column(
+      class cell *startingPt, ///< starting point of column.
       const enum direction posdir, ///< direction to trace column.
       const enum direction negdir, ///< reverse direction
       const double dt, ///< timestep we are advancing by.
-#ifdef TESTING
-      const int ctm, ///< time order-of-accuracy (for conservation)
-#endif
       const int csp,  ///< spatial order-of-accuracy for this step.
-      class GridBaseClass *grid ///< Computational grid.
+      class GridBaseClass *grid, ///< Computational grid.
+      double *f_xn, ///< flux crossing grid boundary in negdir dir
+      double *f_xp  ///< flux crossing grid boundary in posdir dir
       )
 {
   if ( (SimPM.spOOA>2) || (SimPM.tmOOA>2) || (csp>2)  ) {
-    cerr<<"(RSMethod::calc_dU_column) Error, only know 1st and 2nd order accurate methods.\n";
+    cerr<<"(dynamics_dU_column) Error, only know 1st and 2nd order accurate methods.\n";
     return(1);
   }
   int err = 0;
@@ -628,11 +633,14 @@ int time_integrator::dynamics_dU_column
   //
   // Set starting point, and next two points in the column.
   //
-  cell *cpt = grid->NextPt(startingPt,posdir); //=grid->NextPt(startingPt,negdir);
-  while (grid->NextPt(cpt,negdir)) {cpt = grid->NextPt(cpt,negdir);} // CI.print_cell(cpt);}
-  if(cpt==0) {cerr<<"(RSMethod::calc_dU_column) error finding left boundary cell.\n";return(1);}
+  cell *cpt = startingPt; //grid->NextPt(startingPt,posdir); //=grid->NextPt(startingPt,negdir);
+//  while (grid->NextPt(cpt,negdir)) {cpt = grid->NextPt(cpt,negdir);} // CI.print_cell(cpt);}
+  if(cpt==0) {cerr<<"(dynamics_dU_column) error finding left boundary cell.\n";return(1);}
   cell *npt  = grid->NextPt(cpt,posdir);
   cell *n2pt = grid->NextPt(npt,posdir);
+#ifdef DEBUG
+  cout <<cpt<<", "<<npt<<", "<<n2pt<<"\n";
+#endif
   if (npt==0 || n2pt==0) rep.error("Couldn't find two real cells in column",0);
   
   //
@@ -664,6 +672,14 @@ int time_integrator::dynamics_dU_column
                               SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
+    // record flux entering and leaving domain
+    if      (!cpt->isgd && npt->isgd) {
+      for (int v=0;v<SimPM.nvar;v++) f_xn[v] = Fr_this[v];
+    }
+    else if (cpt->isgd && !npt->isgd) {
+      for (int v=0;v<SimPM.nvar;v++) f_xp[v] = Fr_this[v];
+    }
+
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {
       if(!isfinite(cpt->dU[v])) {
@@ -678,28 +694,47 @@ int time_integrator::dynamics_dU_column
         rep.error("nans!!!",2);
       }
     }
-    // Track energy, momentum entering domain.
-    if(ctm==SimPM.tmOOA && !(cpt->isgd) && npt->isgd) {
-      ct++; if (ct>1) rep.error("Entering domain more than once! (dUcolumn)",ct);
+#endif //TESTING
+
+#ifdef TEST_CONSERVATION 
+    // Track energy, momentum entering/leaving domain, if outside boundary
+    double dA=spatial_solver->CellInterface(cpt,posdir,dx);
+    if(csp==SimPM.tmOOA &&
+       pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
+       !(cpt->isgd) && npt->isgd) {
+      //cout <<"entering domain\n";
+      //ct++; if (ct>1) rep.error("Entering domain more than once! (dUcolumn)",ct);
       //      cout <<"Entering Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir,dx)<<"\n";
-      dp.initERG += Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-      dp.initMMX += Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-      dp.initMMY += Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-      dp.initMMZ += Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      initMASS+= Fr_this[RHO]*dt*dA;
+      initERG += Fr_this[ERG]*dt*dA;
+      initMMX += Fr_this[MMX]*dt*dA;
+      initMMY += Fr_this[MMY]*dt*dA;
+      initMMZ += Fr_this[MMZ]*dt*dA;
+      //if (fabs(Fr_this[RHO]*dt*dA)/initMASS>1e-20) {
+      //  cout <<SimPM.timestep<<", mass flux negdir["<<axis<<"]= "<< Fr_this[RHO]*dt*dA<<", "<<Fr_this[RHO]*grid->CellVolume(cpt)<<"\n";
+      //}
       //      if (posdir==YP && fabs(Fr_this[MMY])>2*MACHINEACCURACY) {
       //  cout <<"R-momentum flux entering domain from R=0(!) = "<<Fr_this[MMY]<<"\n";
       //  cout <<"v_R in first cell = "<<npt->Ph[VY]<<", "<<npt->P[VY]<<"\n";
       //      }
     }
-    else if (ctm==SimPM.tmOOA && !(npt->isgd) && cpt->isgd) {
-      ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
+    else if (csp==SimPM.tmOOA &&
+       pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
+       !(npt->isgd) && cpt->isgd) {
+      //cout <<"leaving domain\n";
+      //ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
       //      cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir,dx)<<"\n";
-      dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-      dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-      dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-      dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+      initMASS-= Fr_this[RHO]*dt*dA;
+      initERG -= Fr_this[ERG]*dt*dA;
+      initMMX -= Fr_this[MMX]*dt*dA;
+      initMMY -= Fr_this[MMY]*dt*dA;
+      initMMZ -= Fr_this[MMZ]*dt*dA;
+      //if (fabs(Fr_this[RHO]*dt*dA)/initMASS>1e-20) {
+      //  cout <<SimPM.timestep<<", mass flux posdir["<<axis<<"]= "<< Fr_this[RHO]*dt*dA<<", "<<Fr_this[RHO]*grid->CellVolume(cpt)<<"\n";
+      //}
+
     }
-#endif //TESTING
+#endif // TEST_CONSERVATION
 
 
     //
@@ -728,15 +763,24 @@ int time_integrator::dynamics_dU_column
   err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
   err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
-#ifdef TESTING
-  if (ctm==SimPM.tmOOA && cpt->isgd && !(npt->isgd)) {
-    ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-    dp.initERG -= Fr_this[ERG]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-    dp.initMMX -= Fr_this[MMX]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-    dp.initMMY -= Fr_this[MMY]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
-    dp.initMMZ -= Fr_this[MMZ]*dt*spatial_solver->CellInterface(cpt,posdir,dx);
+#ifdef TEST_CONSERVATION 
+  // Track energy, momentum entering/leaving domain, if outside boundary
+  double dA=spatial_solver->CellInterface(cpt,posdir,dx);
+  if (csp==SimPM.tmOOA &&
+      pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
+      !(npt->isgd) && cpt->isgd) {
+    //cout <<"leaving domain 2\n";
+    initMASS-= Fr_this[RHO]*dt*dA;
+    initERG -= Fr_this[ERG]*dt*dA;
+    initMMX -= Fr_this[MMX]*dt*dA;
+    initMMY -= Fr_this[MMY]*dt*dA;
+    initMMZ -= Fr_this[MMZ]*dt*dA;
+    //if (fabs(Fr_this[RHO]*dt*dA)/initMASS>1e-20) {
+    //  cout <<SimPM.timestep<<", mass flux posdir["<<axis<<"]= "<< Fr_this[RHO]*dt*dA<<", "<<Fr_this[RHO]*grid->CellVolume(cpt)<<"\n";
+    //}
   }
-#endif //TESTING
+#endif // TEST_CONSERVATION
+
  
   //
   // Right Ghost Cell-- have to calculate it's left interface differently,
@@ -763,8 +807,9 @@ int time_integrator::dynamics_dU_column
   // If it is the last column, return -1 instead of 0 to indicate this. (A positive
   // return value from errors is picked up in the calling function).
   //
-  if (cpt->id == grid->LastPt_All()->id) return(-1);
-  else return(0);
+  //if (cpt->id == grid->LastPt_All()->id) return(-1);
+  //else
+  return 0;
 }
 
 

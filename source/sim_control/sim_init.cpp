@@ -929,7 +929,7 @@ int sim_init::initial_conserved_quantities(
   pion_flt u[SimPM.nvar];
   double dx = grid->DX();
   double dv = 0.0;
-  initERG = 0.;  initMMX = initMMY = initMMZ = 0.;
+  initERG = 0.;  initMMX = initMMY = initMMZ = 0.; initMASS = 0.0;
   class cell *cpt=grid->FirstPt();
   do {
     spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
@@ -938,11 +938,13 @@ int sim_init::initial_conserved_quantities(
     initMMX += u[MMX]*dv;
     initMMY += u[MMY]*dv;
     initMMZ += u[MMZ]*dv;
+    initMASS += u[RHO]*dv;
   } while ( (cpt = grid->NextPt(cpt)) !=0);
   cout <<"(sim_init::InitialconservedQuantities) ["<< initERG <<", ";
   cout << initMMX <<", ";
   cout << initMMY <<", ";
-  cout << initMMZ <<"]\n";
+  cout << initMMZ <<", ";
+  cout << initMASS <<"]\n";
 #endif // TEST_CONSERVATION
   return(0);
 } //initial_conserved_quantities()
