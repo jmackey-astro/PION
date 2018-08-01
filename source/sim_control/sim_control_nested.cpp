@@ -43,7 +43,7 @@
 //#include <climits>
 using namespace std;
 
-//#define NEST_INT_TEST
+#define NEST_INT_TEST
 
 
 // ##################################################################
@@ -352,9 +352,9 @@ double sim_control_nestedgrid::advance_step_OA1(
     rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
   }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-  err += calc_dynamics_dU(SimPM.levels[l].dt,OA1, grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,OA1, grid);
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA1: calc_x_dU",0,err);
 
@@ -453,15 +453,15 @@ double sim_control_nestedgrid::advance_step_OA2(
 #ifdef NEST_INT_TEST
   cout <<"l="<<l<<" half step, start calc_dynamics_dU\n";
 #endif
-  err += calc_dynamics_dU(SimPM.levels[l].dt, OA1, grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt, TIMESTEP_FIRST_PART, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt, OA1, grid);
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt, TIMESTEP_FIRST_PART, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA1",0,err);
 #ifdef NEST_INT_TEST
   cout <<"l="<<l<<" half step, done with dU, grid_update_state_vector\n";
 #endif
-  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA2, grid);
+  err += grid_update_state_vector(SimPM.levels[l].dt,TIMESTEP_FIRST_PART,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA1",0,err);  
   // Update boundary data.
   err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA2);
@@ -482,9 +482,9 @@ double sim_control_nestedgrid::advance_step_OA2(
 #ifdef NEST_INT_TEST
   cout <<"l="<<l<<" full step, start calc_dynamics_dU\n";
 #endif
-  err += calc_dynamics_dU(SimPM.levels[l].dt, OA2, grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt, TIMESTEP_FULL, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt, OA2, grid);
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt, TIMESTEP_FULL, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
 
@@ -502,7 +502,7 @@ double sim_control_nestedgrid::advance_step_OA2(
 #ifdef NEST_INT_TEST
   cout <<"l="<<l<<" full step, done with dU, grid_update_state_vector\n";
 #endif
-  err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
+  err += grid_update_state_vector(SimPM.levels[l].dt,TIMESTEP_FULL,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA2",0,err);  
 
   // increment time and timestep for this level
@@ -761,3 +761,89 @@ int sim_control_nestedgrid::check_energy_cons(
 #endif // TEST_CONSERVATION
   return(0);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_nestedgrid::grid_update_state_vector(
+      const double dt,  ///< timestep
+      const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int ooa,   ///< Full order of accuracy of simulation
+      class GridBaseClass *grid ///< Computational grid.
+      )
+{
+  
+  // get current level of grid in hierarchy.
+  int level=0;
+  if (SimPM.grid_nlevels >1) {
+    for (int v=0;v<SimPM.grid_nlevels;v++) {
+      if (grid == SimPM.levels[v].grid) level = v;
+    }
+  }
+
+  //
+  // loop through the faces, and compare the fine with coarse level
+  // fluxes.  Subtract the right flux from the cells adjacent to the
+  // face.
+  //
+  if (level < SimPM.grid_nlevels-1) {
+    class GridBaseClass *fine = SimPM.levels[level].child;
+    cell *ngb=0;
+    struct flux_interface *fc=0;
+    struct flux_interface *ff=0;
+    
+    if (fine->flux_update_send.size() != grid->flux_update_recv.size())
+      rep.error("fine and parent face arrays are different size",1);
+
+    for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
+      if (fine->flux_update_send[d].size() != grid->flux_update_recv[d].size())
+        rep.error("fine and parent face arrays are different size",2);
+      
+      if (grid->flux_update_recv[d][0] ==0) continue;
+
+      for (unsigned int f=0; f<grid->flux_update_recv[d].size(); f++) {
+        fc = grid->flux_update_recv[d][f];
+        ff = fine->flux_update_send[d][f];
+        cout <<"f="<<f<<"grid="<<fc<<"  "; cout.flush();
+        rep.printVec("fc->flux",fc->flux,SimPM.nvar);
+        cout <<"fine="<<ff<<"  ";
+        rep.printVec("ff->flux",ff->flux,SimPM.nvar);
+        
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->flux[v] += ff->flux[v];
+          fc->flux[v] /= fc->area[0];
+        }
+        // fc->flux is now the error in dU made for both coarse cells.
+        // Correct dU in both cells.
+        rep.printVec("  Error",fc->flux,SimPM.nvar);
+        rep.printVec("     dU",fc->c[0]->dU,SimPM.nvar);
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->c[0]->dU[v] += fc->flux[v];
+        }
+        ngb = grid->NextPt(fc->c[0], static_cast<direction>(d));
+        for (int v=0;v<SimPM.nvar;v++) {
+          ngb->dU[v] -= fc->flux[v];
+        }
+      } // loop over faces in this direction.
+    } // loop over directions.
+  } // if not at finest level.
+
+  int err = time_integrator::grid_update_state_vector(dt,step,ooa,grid);
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+  
+
+  
+
+

@@ -357,6 +357,28 @@ UniformGrid::~UniformGrid()
   Sim_irange = mem.myfree(Sim_irange);
 
 
+  struct flux_interface *fi=0;
+  for (unsigned int d=0; d<flux_update_recv.size(); d++) {
+    for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
+      fi = flux_update_recv[d][f];
+      fi->c.clear();
+      fi->area.clear();
+      fi->flux = mem.myfree(fi->flux);
+      flux_update_recv[d][f] = mem.myfree(flux_update_recv[d][f]);
+    }
+    flux_update_recv[d].clear();
+  }
+  for (unsigned int d=0; d<flux_update_send.size(); d++) {
+    for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
+      fi = flux_update_send[d][f];
+      fi->c.clear();
+      fi->area.clear();
+      fi->flux = mem.myfree(fi->flux);
+      flux_update_send[d][f] = mem.myfree(flux_update_send[d][f]);
+    }
+    flux_update_send.clear();
+  }
+
 #ifdef TESTING
   cout <<"UniformGrid Destructor:\tdone.\n";
 #endif
@@ -1223,6 +1245,7 @@ int UniformGrid::setup_flux_recv(
       const int l           ///< level to receive from
       )
 {
+  cout <<" UniformGrid::setup_flux_recv() recv from level="<<l<<"\n";
   //
   // Get size of interface region and number of cells.
   //
@@ -1256,8 +1279,8 @@ int UniformGrid::setup_flux_recv(
     if ( (ixmax[v]-ixmin[v]) % G_idx !=0) {
       rep.error("interface region not divisible!",ixmax[v]-ixmin[v]);
     }
-
   }
+  for (int v=0;v<2*G_ndim;v++) nel[v]=0;
 
   // different number of interfaces depending on dimensionality.
   switch (G_ndim) {
@@ -1290,12 +1313,17 @@ int UniformGrid::setup_flux_recv(
     if (recv[v] == true) {
       flux_update_recv[v].resize(nel[v]);
     }
+    else {
+      flux_update_recv[v].resize(1);
+      flux_update_recv[v][0] = 0;
+    }
     for (size_t i=0; i<nel[v]; i++) {
+      flux_update_recv[v][i] = mem.myalloc(flux_update_recv[v][i],1);
       fi = flux_update_recv[v][i];
       fi->Ncells = nc;
       fi->c.resize(nc);
       fi->area.resize(nc);
-      fi->flux = 0;
+      fi->flux = mem.myalloc(fi->flux,G_nvar);
     }
   }
 
@@ -1303,7 +1331,7 @@ int UniformGrid::setup_flux_recv(
   // and that includes the interface.
   for (int v=0; v<2*G_ndim; v++) {
     if (recv[v]) {
-      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,ncell,1);
+      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,ncell,1,flux_update_recv[v]);
     }
   }
   return 0;
@@ -1321,6 +1349,7 @@ int UniformGrid::setup_flux_send(
       const int l           ///< level to send to
       )
 {
+  cout <<" UniformGrid::setup_flux_send() send to level="<<l<<"\n";
   //
   // Get size of interface region and number of cells.
   //
@@ -1356,8 +1385,8 @@ int UniformGrid::setup_flux_send(
     if ( (ixmax[v]-ixmin[v]) % 2*G_idx !=0) {
       rep.error("interface region not divisible (send)!",ixmax[v]-ixmin[v]);
     }
-
   }
+  for (int v=0;v<2*G_ndim;v++) nel[v]=0;
 
   // different number of interfaces depending on dimensionality.
   switch (G_ndim) {
@@ -1391,14 +1420,21 @@ int UniformGrid::setup_flux_send(
   flux_update_send.resize(2*G_ndim);
   for (int v=0; v<2*G_ndim; v++) {
     if (send[v] == true) {
+      cout <<"d="<<v<<", nel="<<nel[v]<<"\n";
       flux_update_send[v].resize(nel[v]);
     }
+    else {
+      flux_update_send[v].resize(1);
+      flux_update_send[v][0] = 0;
+    }
+    cout <<"d="<<v<<", nel="<<nel[v]<<"... allocating memory for "<<nel[v]<<" elements\n";
     for (size_t i=0; i<nel[v]; i++) {
+      flux_update_send[v][i] = mem.myalloc(flux_update_send[v][i],1);
       fi = flux_update_send[v][i];
       fi->Ncells = nc;
       fi->c.resize(nc);
       fi->area.resize(nc);
-      fi->flux = 0;
+      fi->flux = mem.myalloc(fi->flux,G_nvar);
     }
   }
 
@@ -1406,7 +1442,8 @@ int UniformGrid::setup_flux_send(
   // and that includes the interface.
   for (int v=0; v<2*G_ndim; v++) {
     if (send[v]) {
-      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,nface,2);
+      cout <<"d="<<v<<", nel="<<nel[v]<<"... adding cells to face\n";
+      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,nface,2,flux_update_send[v]);
     }
   }
 
@@ -1425,14 +1462,24 @@ int UniformGrid::add_cells_to_face(
       int *ixmin,   ///< xmin of interface region (integer units)
       int *ixmax,   ///< xmax of interface region (integer units)
       int *nface,   ///< number of elements in interface region
-      const int ncell    ///< number of cells per face, per dim.
+      const int ncell,    ///< number of cells per face, per dim.
+      std::vector<struct flux_interface *> &fi ///< list to populate      
       )
 {
+  
+#ifdef DEBUG
+  int a=static_cast<int>(d)/2;
+  cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
+  cout <<", "<<nface[a]<<", "<<ncell<<")\n";
+#endif
+  
   cell *c = FirstPt_All();
-  std::vector<struct flux_interface *> fi = flux_update_recv[d];
+  //std::vector<struct flux_interface *> *fi = &(flux_update_recv[d]);
 
   //
   // Split code for different dimensionality of grid:
+  // For all dimensions, every cell on the face needs to have an
+  // extra Flux vector allocated, c->F, to store it.
   //
   if (G_ndim==1) {
     if (d == XN) {
@@ -1442,6 +1489,12 @@ int UniformGrid::add_cells_to_face(
       while (c->pos[XX] < ixmax[XX]) c = NextPt(c,XP);
     }
     fi[0]->c[0] = c;
+    c->F = mem.myalloc(c->F,G_nvar);
+    switch (d) {
+      case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
+      case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
+      default: rep.error("Bad direction1",d);
+    }
     fi[0]->area[0] = CellInterface(c,OppDir(d));
   } // 1D
 
@@ -1460,7 +1513,7 @@ int UniformGrid::add_cells_to_face(
       perpaxis = YY;
       break;
     case XP:
-      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[XX] < ixmax[XX]) c = NextPt(c,XP);
       while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
       perpdir = YP;
       perpaxis = YY;
@@ -1473,7 +1526,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case YP:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
+      while (c->pos[YY] < ixmax[YY]) c = NextPt(c,YP);
       perpdir = XP;
       perpaxis = XX;
       break;
@@ -1482,13 +1535,24 @@ int UniformGrid::add_cells_to_face(
     }
 
     // loop over cells in interface:
+#ifdef DEBUG
+    cout <<nface[perpaxis]<<", ";
+    cout <<fi.size()<<"\n";
+#endif
     if (nface[perpaxis] != static_cast<int>(fi.size()))
       rep.error("wrong number of cells 2D interface",fi.size());
 
     for (int i=0;i<nface[perpaxis]; i++) {
       for (int ic=0;ic<ncell;ic++) {
         fi[i]->c[ic] = c;
+        c->F = mem.myalloc(c->F,G_nvar);
+        switch (d) {
+          case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
+          case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
+          default: rep.error("Bad direction2",d);
+        }
         fi[i]->area[ic] = CellInterface(c,OppDir(d));
+        cout <<"area["<<ic<<"] = "<<fi[i]->area[ic]<<"\n";
         c = NextPt(c,perpdir);
       }
     }
@@ -1570,20 +1634,50 @@ int UniformGrid::add_cells_to_face(
       for (int j=0;i<nface[perpaxis1]; j++) {
         if (ncell==1) {
           fi[i*nface[perpaxis1]+j]->c[0] = c;
+          c->F = mem.myalloc(c->F,G_nvar);
+          switch (d) {
+            case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
+            case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
+            default: rep.error("Bad direction3",d);
+          }
           fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
         }
         else {
           // need to get 4 cells onto this face.
           fi[i*nface[perpaxis1]+j]->c[0] = c;
+          c->F = mem.myalloc(c->F,G_nvar);
+          switch (d) {
+            case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
+            case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
+            default: rep.error("Bad direction4",d);
+          }
           fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
           m2 = NextPt(c,perpdir1);
           fi[i*nface[perpaxis1]+j]->c[1] = m2;
+          m2->F = mem.myalloc(m2->F,G_nvar);
+          switch (d) {
+            case XP: case YP: case ZP: m2->isbd_ref_pos=true; break;
+            case XN: case YN: case ZN: m2->isbd_ref_neg=true; break;
+            default: rep.error("Bad direction5",d);
+          }
           fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d));
           m2 = NextPt(c,perpdir2);
           fi[i*nface[perpaxis1]+j]->c[2] = m2;
+          m2->F = mem.myalloc(m2->F,G_nvar);
+          switch (d) {
+            case XP: case YP: case ZP: m2->isbd_ref_pos=true; break;
+            case XN: case YN: case ZN: m2->isbd_ref_neg=true; break;
+            default: rep.error("Bad direction6",d);
+          }
           fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d));
           m2 = NextPt(m2,perpdir1);
           fi[i*nface[perpaxis1]+j]->c[3] = m2;
+          m2->F = mem.myalloc(m2->F,G_nvar);
+          switch (d) {
+            case XP: case YP: case ZP: m2->isbd_ref_pos=true; break;
+            case XN: case YN: case ZN: m2->isbd_ref_neg=true; break;
+            default: rep.error("Bad direction7",d);
+          }
           fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d));
         }
         for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);
@@ -1603,12 +1697,94 @@ int UniformGrid::add_cells_to_face(
 
 
 
-///
-/// Calculate distance between two points, where the two position
-/// are interpreted in the appropriate geometry.
-/// This function takes input in physical units, and outputs in 
-/// physical units.
-///
+void UniformGrid::save_fine_fluxes(
+    const int level_step,
+    const double dt
+    )
+{
+#ifdef DEBUG
+  cout <<"save_fine_fluxes() \n";
+  cout <<"size of flux_update_send = "<<flux_update_send.size()<<"\n";
+#endif
+  struct flux_interface *fi=0;
+
+  for (unsigned int d=0; d<flux_update_send.size(); d++) {
+    cout <<"size of flux_update_send["<<d<<"] = "<<flux_update_send[d].size()<<"\n";
+    for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
+      // these faces have 2^(ndim-1) cells.
+      fi = flux_update_send[d][f];
+#ifdef DEBUG
+      cout <<"save_fine_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
+#endif
+      if (fi==0 && f==0) continue;
+      else if (fi==0) rep.error("save_fine_fluxes fi=0",d);
+      
+      // zero the fine fluxes only every 2nd step, because the 2
+      // steps sum to a full step on the coarser grid.
+      if (level_step %2==0) {
+        for (int v=0;v<G_nvar;v++) fi->flux[v] = 0.0;
+      }
+      for (int i=0;i<fi->Ncells;i++) {
+        if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
+        // Add cell flux to the full flux for this face over 2 steps.
+        cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
+        cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
+        for (int v=0;v<G_nvar;v++) {
+          fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void UniformGrid::save_coarse_fluxes(
+    const double dt
+    )
+{
+  cout <<"save_coarse_fluxes() \n";
+  cout <<"size of flux_update_recv = "<<flux_update_recv.size()<<"\n";
+  struct flux_interface *fi=0;
+
+  for (unsigned int d=0; d<flux_update_recv.size(); d++) {
+    for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
+      // these elements have only one cell per face.
+      fi = flux_update_recv[d][f];
+
+      // if first element is null then list is empty.
+      if (fi==0 && f==0) continue;
+      else if (fi==0) rep.error("save_fine_fluxes fi=0",d);
+
+      if (!fi->c[0]->F) rep.error("flux is not allocated!",f);
+      // set face flux to be the negative of the intercell flux
+      for (int v=0;v<G_nvar;v++) {
+        fi->flux[v] = -fi->c[0]->F[v]*fi->area[0]*dt;
+      }
+    }
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+//
+// Calculate distance between two points, where the two position
+// are interpreted in the appropriate geometry.
+// This function takes input in physical units, and outputs in 
+// physical units.
+//
 double UniformGrid::distance(
       const double *p1, ///< position 1 (physical)
       const double *p2  ///< position 2 (physical)
@@ -1627,12 +1803,12 @@ double UniformGrid::distance(
 
 
 
-///
-/// Calculate distance between two points, where the two position
-/// are interpreted in the appropriate geometry.
-/// This function takes input in code integer units, and outputs in
-/// integer units (but obviously the answer is not an integer).
-///
+//
+// Calculate distance between two points, where the two position
+// are interpreted in the appropriate geometry.
+// This function takes input in code integer units, and outputs in
+// integer units (but obviously the answer is not an integer).
+//
 double UniformGrid::idistance(
       const int *p1, ///< position 1 (integer)
       const int *p2  ///< position 2 (integer)
@@ -1651,11 +1827,11 @@ double UniformGrid::idistance(
 
 
 
-///
-/// Calculate distance between two cell--centres (will be between
-/// centre-of-volume of cells if non-cartesian geometry).
-/// Result returned in physical units (e.g. centimetres).
-///
+//
+// Calculate distance between two cell--centres (will be between
+// centre-of-volume of cells if non-cartesian geometry).
+// Result returned in physical units (e.g. centimetres).
+//
 double UniformGrid::distance_cell2cell(
       const cell *c1, ///< cell 1
       const cell *c2  ///< cell 2
@@ -1674,12 +1850,12 @@ double UniformGrid::distance_cell2cell(
 
 
 
-///
-/// Calculate distance between two cell--centres (will be between
-/// centre-of-volume of cells if non-cartesian geometry).
-/// Result returned in grid--integer units (one cell has a diameter
-/// two units).
-///
+//
+// Calculate distance between two cell--centres (will be between
+// centre-of-volume of cells if non-cartesian geometry).
+// Result returned in grid--integer units (one cell has a diameter
+// two units).
+//
 double UniformGrid::idistance_cell2cell(
       const cell *c1, ///< cell 1
       const cell *c2  ///< cell 2
@@ -1700,11 +1876,11 @@ double UniformGrid::idistance_cell2cell(
 
 
 
-///
-/// Calculate distance between a cell-vertex and a cell--centres
-/// (will be between centre-of-volume of cells if non-cartesian
-/// geometry).  Here both input and output are physical units.
-///
+//
+// Calculate distance between a cell-vertex and a cell--centres
+// (will be between centre-of-volume of cells if non-cartesian
+// geometry).  Here both input and output are physical units.
+//
 double UniformGrid::distance_vertex2cell(
       const double *v, ///< vertex (physical)
       const cell *c    ///< cell
@@ -1723,11 +1899,11 @@ double UniformGrid::distance_vertex2cell(
 
 
 
-///
-/// As distance_vertex2cell(double[],cell) but for a single component
-/// of the position vector, and not the absolute value.  It returns
-/// the *cell* coordinate minus the *vertex* coordinate.
-///
+//
+// As distance_vertex2cell(double[],cell) but for a single component
+// of the position vector, and not the absolute value.  It returns
+// the *cell* coordinate minus the *vertex* coordinate.
+//
 double UniformGrid::difference_vertex2cell(
       const double *v,  ///< vertex (double)
       const cell *c, ///< cell
@@ -1744,11 +1920,11 @@ double UniformGrid::difference_vertex2cell(
 
 
 
-///
-/// Calculate distance between a cell-vertex and a cell--centres
-/// (will be between centre-of-volume of cells if non-cartesian
-/// geometry).  Here both input and output are code-integer units.
-///
+//
+// Calculate distance between a cell-vertex and a cell--centres
+// (will be between centre-of-volume of cells if non-cartesian
+// geometry).  Here both input and output are code-integer units.
+//
 double UniformGrid::idistance_vertex2cell(
       const int *v, ///< vertex (integer)
       const cell *c ///< cell
@@ -1767,11 +1943,11 @@ double UniformGrid::idistance_vertex2cell(
 
 
 
-///
-/// As idistance_vertex2cell(int,cell) but for a single component
-/// of the position vector, and not the absolute value.  It returns
-/// the *cell* coordinate minus the *vertex* coordinate.
-///
+//
+// As idistance_vertex2cell(int,cell) but for a single component
+// of the position vector, and not the absolute value.  It returns
+// the *cell* coordinate minus the *vertex* coordinate.
+//
 double UniformGrid::idifference_vertex2cell(
       const int *v,  ///< vertex (integer)
       const cell *c, ///< cell
@@ -1788,11 +1964,11 @@ double UniformGrid::idifference_vertex2cell(
 
 
 
-///
-/// As idifference_vertex2cell(int,cell,axis) but for the coordinate
-/// difference between two cell positions along a given axis.
-/// It returns *cell2* coordinate minus *cell1* coordinate.
-///
+//
+// As idifference_vertex2cell(int,cell,axis) but for the coordinate
+// difference between two cell positions along a given axis.
+// It returns *cell2* coordinate minus *cell1* coordinate.
+//
 double UniformGrid::idifference_cell2cell(
               const cell *c1, ///< cell 1
               const cell *c2, ///< cell 2
@@ -1820,9 +1996,9 @@ double UniformGrid::idifference_cell2cell(
 // ##################################################################
 
 
-///
-/// Constructor
-///
+//
+// Constructor
+//
 uniform_grid_cyl::uniform_grid_cyl(
     int nd,         ///< ndim, length of position vector.
     int nv,         ///< nvar, length of state vectors.
@@ -1923,12 +2099,12 @@ double uniform_grid_cyl::distance(
 
 
 
-///
-/// Calculate distance between two points, where the two position
-/// are interpreted in the appropriate geometry.
-/// This function takes input in code integer units, and outputs in
-/// integer units (but obviously the answer is not an integer).
-///
+//
+// Calculate distance between two points, where the two position
+// are interpreted in the appropriate geometry.
+// This function takes input in code integer units, and outputs in
+// integer units (but obviously the answer is not an integer).
+//
 double uniform_grid_cyl::idistance(
           const int *p1, ///< position 1 (integer)
           const int *p2  ///< position 2 (integer)
@@ -1951,11 +2127,11 @@ double uniform_grid_cyl::idistance(
 
 
 
-///
-/// Calculate distance between two cell--centres (will be between
-/// centre-of-volume of cells if non-cartesian geometry).
-/// Result returned in physical units (e.g. centimetres).
-///
+//
+// Calculate distance between two cell--centres (will be between
+// centre-of-volume of cells if non-cartesian geometry).
+// Result returned in physical units (e.g. centimetres).
+//
 double uniform_grid_cyl::distance_cell2cell(
       const cell *c1, ///< cell 1
       const cell *c2  ///< cell 2
@@ -1980,12 +2156,12 @@ double uniform_grid_cyl::distance_cell2cell(
 
 
 
-///
-/// Calculate distance between two cell--centres (will be between
-/// centre-of-volume of cells if non-cartesian geometry).
-/// Result returned in grid--integer units (one cell has a diameter
-/// two units).
-///
+//
+// Calculate distance between two cell--centres (will be between
+// centre-of-volume of cells if non-cartesian geometry).
+// Result returned in grid--integer units (one cell has a diameter
+// two units).
+//
 double uniform_grid_cyl::idistance_cell2cell(
       const cell *c1, ///< cell 1
       const cell *c2  ///< cell 2
@@ -2011,11 +2187,11 @@ double uniform_grid_cyl::idistance_cell2cell(
 
 
 
-///
-/// Calculate distance between a cell-vertex and a cell--centres
-/// (will be between centre-of-volume of cells if non-cartesian
-/// geometry).  Here both input and output are physical units.
-///
+//
+// Calculate distance between a cell-vertex and a cell--centres
+// (will be between centre-of-volume of cells if non-cartesian
+// geometry).  Here both input and output are physical units.
+//
 double uniform_grid_cyl::distance_vertex2cell(
           const double *v, ///< vertex (physical)
           const cell *c    ///< cell
@@ -2040,11 +2216,11 @@ double uniform_grid_cyl::distance_vertex2cell(
 
 
 
-///
-/// As distance_vertex2cell(double[],cell) but for a single component
-/// of the position vector, and not the absolute value.  It returns
-/// the *cell* coordinate minus the *vertex* coordinate.
-///
+//
+// As distance_vertex2cell(double[],cell) but for a single component
+// of the position vector, and not the absolute value.  It returns
+// the *cell* coordinate minus the *vertex* coordinate.
+//
 double uniform_grid_cyl::difference_vertex2cell(
       const double *v,  ///< vertex (double)
       const cell *c, ///< cell
@@ -2069,11 +2245,11 @@ double uniform_grid_cyl::difference_vertex2cell(
 // ##################################################################
 
 
-///
-/// Calculate distance between a cell-vertex and a cell--centres
-/// (will be between centre-of-volume of cells if non-cartesian
-/// geometry).  Here both input and output are code-integer units.
-///
+//
+// Calculate distance between a cell-vertex and a cell--centres
+// (will be between centre-of-volume of cells if non-cartesian
+// geometry).  Here both input and output are code-integer units.
+//
 double uniform_grid_cyl::idistance_vertex2cell(
           const int *v, ///< vertex (integer)
           const cell *c ///< cell
@@ -2105,11 +2281,11 @@ double uniform_grid_cyl::idistance_vertex2cell(
 // ##################################################################
 
 
-///
-/// As idistance_vertex2cell(int,cell) but for a single component
-/// of the position vector, and not the absolute value.  It returns
-/// the *cell* coordinate minus the *vertex* coordinate.
-///
+//
+// As idistance_vertex2cell(int,cell) but for a single component
+// of the position vector, and not the absolute value.  It returns
+// the *cell* coordinate minus the *vertex* coordinate.
+//
 double uniform_grid_cyl::idifference_vertex2cell(const int *v,  ///< vertex (integer)
              const cell *c, ///< cell
              const axes a   ///< Axis to calculate.
@@ -2134,11 +2310,11 @@ double uniform_grid_cyl::idifference_vertex2cell(const int *v,  ///< vertex (int
 
 
 
-///
-/// As idifference_vertex2cell(int,cell,axis) but for the coordinate
-/// difference between two cell positions along a given axis.
-/// It returns *cell2* coordinate minus *cell1* coordinate.
-///
+//
+// As idifference_vertex2cell(int,cell,axis) but for the coordinate
+// difference between two cell positions along a given axis.
+// It returns *cell2* coordinate minus *cell1* coordinate.
+//
 double uniform_grid_cyl::idifference_cell2cell(
       const cell *c1, ///< cell 1
       const cell *c2, ///< cell 2
@@ -2251,12 +2427,12 @@ double uniform_grid_sph::iR_cov(const cell *c)
 
 
 
-///
-/// Calculate distance between two points, where the two position
-/// are interpreted in the appropriate geometry.
-/// This function takes input in physical units, and outputs in 
-/// physical units.
-///
+//
+// Calculate distance between two points, where the two position
+// are interpreted in the appropriate geometry.
+// This function takes input in physical units, and outputs in 
+// physical units.
+//
 double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
           const double *p2  ///< position 2 (physical)
           )
@@ -2271,12 +2447,12 @@ double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
 
 
 
-///
-/// Calculate distance between two points, where the two position
-/// are interpreted in the appropriate geometry.
-/// This function takes input in code integer units, and outputs in
-/// integer units (but obviously the answer is not an integer).
-///
+//
+// Calculate distance between two points, where the two position
+// are interpreted in the appropriate geometry.
+// This function takes input in code integer units, and outputs in
+// integer units (but obviously the answer is not an integer).
+//
 double uniform_grid_sph::idistance(const int *p1, ///< position 1 (integer)
            const int *p2  ///< position 2 (integer)
            )
@@ -2291,14 +2467,15 @@ double uniform_grid_sph::idistance(const int *p1, ///< position 1 (integer)
 
 
 
-///
-/// Calculate distance between two cell--centres (will be between
-/// centre-of-volume of cells if non-cartesian geometry).
-/// Result returned in physical units (e.g. centimetres).
-///
-double uniform_grid_sph::distance_cell2cell(const cell *c1, ///< cell 1
-              const cell *c2  ///< cell 2
-              )
+//
+// Calculate distance between two cell--centres (will be between
+// centre-of-volume of cells if non-cartesian geometry).
+// Result returned in physical units (e.g. centimetres).
+//
+double uniform_grid_sph::distance_cell2cell(
+      const cell *c1, ///< cell 1
+      const cell *c2  ///< cell 2
+      )
 {
   return fabs(R_com(c1,G_dx)-R_com(c2,G_dx));
 }
@@ -2310,15 +2487,16 @@ double uniform_grid_sph::distance_cell2cell(const cell *c1, ///< cell 1
 
 
 
-///
-/// Calculate distance between two cell--centres (will be between
-/// centre-of-volume of cells if non-cartesian geometry).
-/// Result returned in grid--integer units (one cell has a diameter
-/// two units).
-///
-double uniform_grid_sph::idistance_cell2cell(const cell *c1, ///< cell 1
-               const cell *c2  ///< cell 2
-               )
+//
+// Calculate distance between two cell--centres (will be between
+// centre-of-volume of cells if non-cartesian geometry).
+// Result returned in grid--integer units (one cell has a diameter
+// two units).
+//
+double uniform_grid_sph::idistance_cell2cell(
+      const cell *c1, ///< cell 1
+      const cell *c2  ///< cell 2
+      )
 {
   return fabs(R_com(c1,G_dx)-R_com(c2,G_dx))/CI.phys_per_int();
 }
@@ -2330,14 +2508,15 @@ double uniform_grid_sph::idistance_cell2cell(const cell *c1, ///< cell 1
 
 
 
-///
-/// Calculate distance between a cell-vertex and a cell--centres
-/// (will be between centre-of-volume of cells if non-cartesian
-/// geometry).  Here both input and output are physical units.
-///
-double uniform_grid_sph::distance_vertex2cell(const double *v, ///< vertex (physical)
-                const cell *c    ///< cell
-                )
+//
+// Calculate distance between a cell-vertex and a cell--centres
+// (will be between centre-of-volume of cells if non-cartesian
+// geometry).  Here both input and output are physical units.
+//
+double uniform_grid_sph::distance_vertex2cell(
+      const double *v, ///< vertex (physical)
+      const cell *c    ///< cell
+      )
 {
   return fabs(v[Rsph] - R_com(c,G_dx));
 }
@@ -2350,11 +2529,11 @@ double uniform_grid_sph::distance_vertex2cell(const double *v, ///< vertex (phys
 
 
 
-///
-/// As distance_vertex2cell(double[],cell) but for a single component
-/// of the position vector, and not the absolute value.  It returns
-/// the *cell* coordinate minus the *vertex* coordinate.
-///
+//
+// As distance_vertex2cell(double[],cell) but for a single component
+// of the position vector, and not the absolute value.  It returns
+// the *cell* coordinate minus the *vertex* coordinate.
+//
 double uniform_grid_sph::difference_vertex2cell(
       const double *v,  ///< vertex (double)
       const cell *c, ///< cell
@@ -2377,14 +2556,15 @@ double uniform_grid_sph::difference_vertex2cell(
 
 
 
-///
-/// Calculate distance between a cell-vertex and a cell--centres
-/// (will be between centre-of-volume of cells if non-cartesian
-/// geometry).  Here both input and output are code-integer units.
-///
-double uniform_grid_sph::idistance_vertex2cell(const int *v, ///< vertex (integer)
-                 const cell *c ///< cell
-                 )
+//
+// Calculate distance between a cell-vertex and a cell--centres
+// (will be between centre-of-volume of cells if non-cartesian
+// geometry).  Here both input and output are code-integer units.
+//
+double uniform_grid_sph::idistance_vertex2cell(
+      const int *v, ///< vertex (integer)
+      const cell *c ///< cell
+      )
 {
   //cout <<"idist_v2c: iV[0]="<<v[Rsph]<<", iR(c)="<<iR_cov(c);
   //cout <<", idist="<<fabs(static_cast<double>(v[Rsph]) -iR_cov(c))<<"\n";
@@ -2399,15 +2579,16 @@ double uniform_grid_sph::idistance_vertex2cell(const int *v, ///< vertex (intege
 
 
 
-///
-/// As idistance_vertex2cell(int,cell) but for a single component
-/// of the position vector, and not the absolute value.  It returns
-/// the *cell* coordinate minus the *vertex* coordinate.
-///
-double uniform_grid_sph::idifference_vertex2cell(const int *v,  ///< vertex (integer)
-             const cell *c, ///< cell
-             const axes a   ///< Axis to calculate.
-             )
+//
+// As idistance_vertex2cell(int,cell) but for a single component
+// of the position vector, and not the absolute value.  It returns
+// the *cell* coordinate minus the *vertex* coordinate.
+//
+double uniform_grid_sph::idifference_vertex2cell(
+      const int *v,  ///< vertex (integer)
+      const cell *c, ///< cell
+      const axes a   ///< Axis to calculate.
+      )
 {
   if (a==Rsph)
     return (iR_cov(c) -static_cast<double>(v[a]));
@@ -2424,16 +2605,16 @@ double uniform_grid_sph::idifference_vertex2cell(const int *v,  ///< vertex (int
 
 
 
-///
-/// As idifference_vertex2cell(int,cell,axis) but for the coordinate
-/// difference between two cell positions along a given axis.
-/// It returns *cell2* coordinate minus *cell1* coordinate.
-///
+//
+// As idifference_vertex2cell(int,cell,axis) but for the coordinate
+// difference between two cell positions along a given axis.
+// It returns *cell2* coordinate minus *cell1* coordinate.
+//
 double uniform_grid_sph::idifference_cell2cell(
-              const cell *c1, ///< cell 1
-              const cell *c2, ///< cell 2
-              const axes a    ///< Axis.
-              )
+      const cell *c1, ///< cell 1
+      const cell *c2, ///< cell 2
+      const axes a    ///< Axis.
+      )
 {
   if (a==Rsph)
     return (iR_cov(c2) -iR_cov(c1));

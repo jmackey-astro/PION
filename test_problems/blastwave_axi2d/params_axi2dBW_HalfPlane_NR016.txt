@@ -65,7 +65,7 @@ Zmax  4.629e18
 
 
 # Data Output Path
-OutputPath ../results
+OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo  #fits #both
 # Output data to file every nth timestep. (n=0 means only at the end).

@@ -119,6 +119,21 @@ class sim_control_nestedgrid :
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
+  ///
+  /// This function takes the contents of each cell->dU[] vector and
+  /// updates Ph[] the changes.  If we are on the full-step then it
+  /// also updates P[] so that Ph[] is identical.
+  /// For the nested grid, it performs an additional step of
+  /// correcting the fluxes for cells that have an interface above
+  /// the boundary of a grid on the next finer level.
+  ///
+  int grid_update_state_vector(
+      const double ,  ///< dt, timestep
+      const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int,       ///< Full order of accuracy of simulation
+      class GridBaseClass * ///< grid pointer
+      );
+
 }; // sim_control_nestedgrid
    
 /*************************************************************************/

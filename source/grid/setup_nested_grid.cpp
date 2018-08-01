@@ -249,6 +249,13 @@ int setup_nested_grid::setup_grid(
     }
   }
 
+  // setup arrays for fluxes into and out of fine grid, and
+  // equivalent cells on coarse grid, for making the fluxes
+  // consistent across levels.
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    if (l!=0) grid[l]->setup_flux_send(SimPM,l-1);
+    if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
+  }
 
 cout <<"------------------------------------------------------\n\n";
 

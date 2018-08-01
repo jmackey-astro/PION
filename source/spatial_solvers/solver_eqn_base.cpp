@@ -849,9 +849,40 @@ int FV_solver_base::set_thermal_conduction_Edot(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+int FV_solver_base::PostProcess_dU(
+      const double dt,  ///< current timestep, dt.
+      const int step,   ///< TIMESTEP_FIRST_PART or TIMESTEP_FULL
+      class SimParams &par, ///< pointer to simulation parameters
+      class GridBaseClass *grid ///< pointer to computational grid.
+      )
+{
+  if (par.grid_nlevels >1 && step==par.tmOOA) {
+    int level=0;
+    for (int v=0;v<par.grid_nlevels;v++) {
+      if (grid == par.levels[v].grid) level = v;
+    }
+    if (level!=0) {
+      grid->save_fine_fluxes(par.levels[level].step, par.levels[level].dt);
+    }
+    if (level!=par.grid_nlevels-1) {
+      grid->save_coarse_fluxes(par.levels[level].dt);
+    }
+  }
+  return 0;
+}
+
+
 
 // ##################################################################
 // ##################################################################
 
 
+
+
+  
 

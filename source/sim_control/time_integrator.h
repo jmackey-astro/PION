@@ -180,7 +180,7 @@ class time_integrator :
   /// updates Ph[] the changes.  If we are on the full-step then it
   /// also updates P[] so that it and Ph[] are identical.
   ///
-  int grid_update_state_vector(
+  virtual int grid_update_state_vector(
       const double ,  ///< dt, timestep
       const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int,       ///< Full order of accuracy of simulation

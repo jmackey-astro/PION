@@ -92,6 +92,9 @@ class cell {
   pion_flt *P;   ///< Primitive Variables.
   pion_flt *Ph;  ///< Primitive State vector at half timestep.
   pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
+  /// Flux vector for use in SMR grids to ensure consistency between
+  /// fluxes at different levels in the hierarchy of grids.
+  pion_flt *F;
  private:
   double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
  public:
@@ -105,6 +108,12 @@ class cell {
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
   bool isdomain; ///< True if cell is part of the domain.
+  /// True if needed for ensuring flux consistency between different
+  /// refinement levels, for a negative-facing grid boundary.
+  bool isbd_ref_neg;
+  /// True if needed for ensuring flux consistency between different
+  /// refinement levels, for a positive-facing grid boundary.
+  bool isbd_ref_pos;
 
 #ifdef COUNT_ENERGETICS
   struct energetics e; ///< to count up the energetics properties of the current cell.

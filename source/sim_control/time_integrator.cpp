@@ -158,9 +158,9 @@ int time_integrator::first_order_update(
   // Calculate updates for each physics module
   //
   err += calc_microphysics_dU(dt, grid);
-  err += calc_dynamics_dU(dt,OA1, grid);
+  err += calc_dynamics_dU(dt,TIMESTEP_FIRST_PART, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt,OA1, grid);
+  err += calc_thermal_conduction_dU(dt,TIMESTEP_FIRST_PART, grid);
 #endif // THERMAL_CONDUCTION
   if (err) 
     rep.error("first_order_update: error from calc_*_dU",err);
@@ -211,9 +211,9 @@ int time_integrator::second_order_update(
   // Calculate updates for each physics module
   //
   err += calc_microphysics_dU(      dt,      grid);
-  err += calc_dynamics_dU(          dt, OA2, grid);
+  err += calc_dynamics_dU(          dt, TIMESTEP_FULL, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt, OA2, grid);
+  err += calc_thermal_conduction_dU(dt, TIMESTEP_FULL, grid);
 #endif // THERMAL_CONDUCTION
   if (err) 
     rep.error("second_order_update: error from calc_*_dU",err);
@@ -456,7 +456,7 @@ int time_integrator::calc_noRT_microphysics_dU(
   
 int time_integrator::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
-      const int space_ooa, ///< spatial order of accuracy for update.
+      const int step, ///< whether TIMESTEP_FIRST_PART or TIMESTEP_FULL.
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -468,40 +468,40 @@ int time_integrator::calc_dynamics_dU(
   int err=0;
 
 #ifdef TESTING
-  if (space_ooa==OA1)
+  if (step==TIMESTEP_FIRST_PART)
     cout <<"*****Updating dynamics: OA1\n";
-  else if (space_ooa==OA2)
+  else if (step==TIMESTEP_FULL)
     cout <<"*****Updating dynamics: OA2\n";
   else rep.error("Bad ooa",space_ooa);
 #endif //TESTING
 
   //
   // First we pre-process the cells, if needed.  This is required for
-  // genuinely multi-dimensional viscosity such as Lapidus-like AV or
-  // the H-Correction.
+  // multi-dimensional viscosity such as the H-Correction.
   //
-  err = spatial_solver->preprocess_data(space_ooa, SimPM, grid);
+  err = spatial_solver->preprocess_data(step, SimPM, grid);
 
   //
   // Now calculate the directionally-unsplit time update for the
   // conserved variables:
   //
-  err = set_dynamics_dU(dt, space_ooa, grid); //,time_ooa);
+  err = set_dynamics_dU(dt, step, grid); //,time_ooa);
   rep.errorTest("calc_dynamics_dU() set_dynamics_dU returned error.", 0,err);
 
   //
-  // Post-processing is for if we are doing something like Constrained
-  // Transport, where we have to change the B-field update.  At the
-  // moment there is *NO* solver which does anything here since I
-  // found the Dedner et al. (2002) divergence cleaning to be more
-  // robust than e.g. Toth (2000) Field-CT method.  (well the internal
-  // energy solver uses it, but it's not really worth using).
+  // This function is used for refined grids, to make the flux across
+  // grid boundaries be consistent across all levels.
   //
-  err = spatial_solver->PostProcess_dU(dt, space_ooa, grid); //,time_ooa);
+  // Other potential uses of post-processing include if we are doing
+  // something like Constrained Transport, where we have to change
+  // the B-field update.
+  //
+  err = spatial_solver->PostProcess_dU(dt, step, SimPM, grid);;
   rep.errorTest("calc_dynamics_dU() spatial_solver->PostProcess_dU()",0,err);
 
   return 0;
 }
+
 
 
 // ##################################################################
@@ -511,7 +511,7 @@ int time_integrator::calc_dynamics_dU(
 
 int time_integrator::set_dynamics_dU(
       const double dt,     ///< timestep for this calculation
-      const int space_ooa, ///< space OOA for this calculation
+      const int step, ///< whether half-step or full-step
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -524,6 +524,12 @@ int time_integrator::set_dynamics_dU(
   posdirs[0] = XP; posdirs[1] = YP; posdirs[2] = ZP;
   negdirs[0] = XN; negdirs[1] = YN; negdirs[2] = ZN;
   axis[0] = XX; axis[1] = YY; axis[2] = ZZ;
+
+  int space_ooa;
+  if (step == TIMESTEP_FIRST_PART)
+    space_ooa=OA1;
+  else
+    space_ooa=OA2;
 
 
   //
@@ -543,10 +549,10 @@ int time_integrator::set_dynamics_dU(
     class cell *cpt    = grid->FirstPt_All();
     class cell *marker = cpt;
 
-#ifdef DEBUG
+//#ifdef DEBUG
     cout <<"Direction="<<axis[i]<<", i="<<i<<"\n";
     rep.printVec("cpt",cpt->pos,SimPM.ndim);
-#endif
+//#endif
     
     //
     // loop over the number of cells in the line/plane of starting
@@ -568,21 +574,19 @@ int time_integrator::set_dynamics_dU(
     //
     for (int ax2=0; ax2<grid->NG_All(x2); ax2++) {
       for (int ax1=0; ax1<grid->NG_All(x1); ax1++) {
-#ifdef DEBUG
+//#ifdef DEBUG
         cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i<<", cpt="<<cpt<<":  ";
         //CI.print_cell(cpt);
         cout <<"\n";
-#endif
+//#endif
         return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
                                         space_ooa, grid, f_xn, f_xp);
         rep.errorTest("set_dynamics_dU: column",0,return_value);
-
-
         cpt = grid->NextPt(cpt,d1);
       }
       marker = grid->NextPt(marker,d2);
       cpt = marker;
-    }
+    } // loop over all columns
 
   } // Loop over three directions.
   spatial_solver->SetDirection(axis[0]); // Reset fluxes to x-dir, (just to be safe!).
@@ -608,7 +612,8 @@ int time_integrator::dynamics_dU_column(
       )
 {
   if ( (SimPM.spOOA>2) || (SimPM.tmOOA>2) || (csp>2)  ) {
-    cerr<<"(dynamics_dU_column) Error, only know 1st and 2nd order accurate methods.\n";
+    cerr <<"(dynamics_dU_column) Error, ooa="<< SimPM.spOOA <<", ";
+    cerr << SimPM.tmOOA <<".\n";
     return(1);
   }
   int err = 0;
@@ -673,12 +678,20 @@ int time_integrator::dynamics_dU_column(
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
     // record flux entering and leaving domain
-    if      (!cpt->isgd && npt->isgd) {
-      for (int v=0;v<SimPM.nvar;v++) f_xn[v] = Fr_this[v];
+    if (cpt->isbd_ref_neg) {
+      for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_this[v];
     }
-    else if (cpt->isgd && !npt->isgd) {
-      for (int v=0;v<SimPM.nvar;v++) f_xp[v] = Fr_this[v];
+    if (cpt->isbd_ref_pos) {
+      for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_prev[v];
     }
+
+    // this code is probably not needed anymore.
+    //if      (!cpt->isgd && npt->isgd) {
+    //  for (int v=0;v<SimPM.nvar;v++) f_xn[v] = Fr_this[v];
+    //}
+    //else if (cpt->isgd && !npt->isgd) {
+    //  for (int v=0;v<SimPM.nvar;v++) f_xp[v] = Fr_this[v];
+    //}
 
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {
@@ -703,40 +716,23 @@ int time_integrator::dynamics_dU_column(
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
        !(cpt->isgd) && npt->isgd) {
       //cout <<"entering domain\n";
-      //ct++; if (ct>1) rep.error("Entering domain more than once! (dUcolumn)",ct);
-      //      cout <<"Entering Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir,dx)<<"\n";
       initMASS+= Fr_this[RHO]*dt*dA;
       initERG += Fr_this[ERG]*dt*dA;
       initMMX += Fr_this[MMX]*dt*dA;
       initMMY += Fr_this[MMY]*dt*dA;
       initMMZ += Fr_this[MMZ]*dt*dA;
-      //if (fabs(Fr_this[RHO]*dt*dA)/initMASS>1e-20) {
-      //  cout <<SimPM.timestep<<", mass flux negdir["<<axis<<"]= "<< Fr_this[RHO]*dt*dA<<", "<<Fr_this[RHO]*grid->CellVolume(cpt)<<"\n";
-      //}
-      //      if (posdir==YP && fabs(Fr_this[MMY])>2*MACHINEACCURACY) {
-      //  cout <<"R-momentum flux entering domain from R=0(!) = "<<Fr_this[MMY]<<"\n";
-      //  cout <<"v_R in first cell = "<<npt->Ph[VY]<<", "<<npt->P[VY]<<"\n";
-      //      }
     }
     else if (csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
        !(npt->isgd) && cpt->isgd) {
       //cout <<"leaving domain\n";
-      //ct++; if (ct>2) rep.error("Leaving domain more than once! (dUcolumn)",ct);
-      //      cout <<"Leaving Domain Dir = "<<posdir<<" and interface area = "<<spatial_solver->CellInterface(cpt,posdir,dx)<<"\n";
       initMASS-= Fr_this[RHO]*dt*dA;
       initERG -= Fr_this[ERG]*dt*dA;
       initMMX -= Fr_this[MMX]*dt*dA;
       initMMY -= Fr_this[MMY]*dt*dA;
       initMMZ -= Fr_this[MMZ]*dt*dA;
-      //if (fabs(Fr_this[RHO]*dt*dA)/initMASS>1e-20) {
-      //  cout <<SimPM.timestep<<", mass flux posdir["<<axis<<"]= "<< Fr_this[RHO]*dt*dA<<", "<<Fr_this[RHO]*grid->CellVolume(cpt)<<"\n";
-      //}
-
     }
 #endif // TEST_CONSERVATION
-
-
     //
     // Now move temp arrays to prepare for moving on to the next cell.
     //
@@ -748,15 +744,13 @@ int time_integrator::dynamics_dU_column(
     slope_npt = temp;
     cpt = npt; npt = n2pt;
   }  while ( (n2pt=grid->NextPt(n2pt,posdir)) );
-  
-  
+
   //
   // Now n2pt=null. npt = bd-data, cpt= (gd/bd)-data. So have to do something different.
   //
 #ifdef TESTING
   dp.c = cpt;
 #endif
-
   err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
   for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
   err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
@@ -775,13 +769,9 @@ int time_integrator::dynamics_dU_column(
     initMMX -= Fr_this[MMX]*dt*dA;
     initMMY -= Fr_this[MMY]*dt*dA;
     initMMZ -= Fr_this[MMZ]*dt*dA;
-    //if (fabs(Fr_this[RHO]*dt*dA)/initMASS>1e-20) {
-    //  cout <<SimPM.timestep<<", mass flux posdir["<<axis<<"]= "<< Fr_this[RHO]*dt*dA<<", "<<Fr_this[RHO]*grid->CellVolume(cpt)<<"\n";
-    //}
   }
 #endif // TEST_CONSERVATION
 
- 
   //
   // Right Ghost Cell-- have to calculate it's left interface differently,
   //
@@ -790,8 +780,6 @@ int time_integrator::dynamics_dU_column(
   dp.c = cpt;
 #endif
   for (int v=0;v<SimPM.nvar;v++) cpt->dU[v] +=0.; // nothing to calculate for it.
-
-
   rep.errorTest("(dU_Column) encountered an error",0,err);
   
   Fr_this   = mem.myfree(Fr_this);
@@ -801,14 +789,6 @@ int time_integrator::dynamics_dU_column(
   edgeL     = mem.myfree(edgeL);
   edgeR     = mem.myfree(edgeR);
   pstar     = mem.myfree(pstar);
-
-  //
-  // Check if this is the last column or not. 
-  // If it is the last column, return -1 instead of 0 to indicate this. (A positive
-  // return value from errors is picked up in the calling function).
-  //
-  //if (cpt->id == grid->LastPt_All()->id) return(-1);
-  //else
   return 0;
 }
 
