@@ -127,9 +127,34 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
+  // call "setup" to set up the data on the computational grid.
+  for (int l=0;l<SimPM->grid_nlevels;l++) {
+    err += ic->setup_data(rp,grid[l]);
+    if (err) rep.error("Initial conditions setup failed.",err);
+  }
+
+  for (int l=0; l<SimPM->grid_nlevels; l++) {
+    // Set Ph=P in every cell.
+    cell *c = grid[l]->FirstPt();
+    do {
+      for(int v=0;v<SimPM->nvar;v++) c->Ph[v]=c->P[v];
+    } while ((c=grid[l]->NextPt(c))!=0);
+    //
+    // If I'm using the GLM method, make sure Psi variable is initialised.
+    //
+    if (SimPM->eqntype==EQGLM && SimPM->timestep==0) {
+      for (int l=0; l<SimPM->grid_nlevels; l++) {
+        c = grid[l]->FirstPt(); do {
+          c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
+        } while ( (c=grid[l]->NextPt(c)) !=0);
+      }
+    }
+  }
+
   //
   // Set up the boundary conditions, since internal boundary data
-  // should really be already set to its correct value in the initial
+  // should be already set to its correct value in the initial
   // conditions file.
   //
   SimSetup->boundary_conditions(*SimPM,grid);
@@ -137,13 +162,6 @@ int main(int argc, char **argv)
 
   err += SimSetup->setup_raytracing(*SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
-
-  // ----------------------------------------------------------------
-  // call "setup" to set up the data on the computational grid.
-  for (int l=0;l<SimPM->grid_nlevels;l++) {
-    err += ic->setup_data(rp,grid[l]);
-    if (err) rep.error("Initial conditions setup failed.",err);
-  }
 
   for (int l=0;l<SimPM->grid_nlevels;l++) {
     cout <<"icgen_nested: assigning boundary data for level "<<l<<"\n";

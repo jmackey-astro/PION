@@ -592,9 +592,11 @@ double VectorOps_Cyl::CellInterface(
    *  - In the positive/negative radial direction, the area is 
    * \f$\delta A = 2\pi \delta z (R_i \pm \frac{\delta R}{2})\f$.
    * */
+  //cout <<"CellInterface:"<<dir<<", "<<dR<<"\n";
   double dZ = dR;
   double pos[MAX_DIM];
   CI.get_dpos(c,pos);
+  //rep.printVec("pos",pos,2);
 
   switch (dir) {
    case ZNcyl: case ZPcyl:
@@ -610,8 +612,14 @@ double VectorOps_Cyl::CellInterface(
     else return 2.0*M_PI*dZ*(pos[Rcyl]-0.5*dR);
     break;
    case RPcyl:
-    if (pos[Rcyl]<0 && pos[Rcyl]>-dR) return 0.0;
-    else return 2.0*M_PI*dZ*(pos[Rcyl]+0.5*dR);
+    //cout <<"area: "; rep.printVec("pos",pos,2);
+    if (pos[Rcyl]<0 && pos[Rcyl]>-dR) {
+      return 0.0;
+    }
+    else {
+      //cout <<"area: "<<dZ<<", "<<pos[Rcyl]<<", "<<dR<<"\n";
+      return 2.0*M_PI*dZ*(pos[Rcyl]+0.5*dR);
+    }
     break;
    default:
     rep.error("Bad direction to VectorOps_Cyl::CellInterface",dir);

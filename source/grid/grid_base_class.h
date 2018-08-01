@@ -73,7 +73,7 @@ struct boundary_data {
 struct flux_interface {
   std::vector<class cell *> c; ///< list of cells with faces on this interface
   std::vector<double> area;  ///< area of each face for cells c, ordered as is c
-  double flux;   ///< flux through interface.
+  pion_flt *flux;   ///< flux through interface.
   int Ncells;    ///< number of cells contributing.
 };
 
@@ -266,6 +266,28 @@ class GridBaseClass {
   virtual int setup_flux_send(
       class SimParams &,  ///< simulation params (including BCs)
       const int           ///< level to send to
+      )=0;
+
+  ///
+  /// Add fluxes from boundary cells to grid structures.
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  virtual void save_fine_fluxes(
+      const int,   ///< step number for this grid level
+      const double ///< dt for this grid level
+      )=0;
+
+  ///
+  /// Add fluxes from internal cells to grid structures, for cells
+  /// that sit above a grid boundary at a finer level.
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  virtual void save_coarse_fluxes(
+      const double ///< dt for this grid level
       )=0;
 
   /// array of all boundaries.

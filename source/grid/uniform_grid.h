@@ -455,7 +455,37 @@ class UniformGrid
       int *,   ///< xmin of interface region (integer units)
       int *,   ///< xmax of interface region (integer units)
       int *,   ///< number of elements in interface region
-      const int     ///< number of cells per face, per dim.
+      const int,     ///< number of cells per face, per dim.
+      std::vector<struct flux_interface *> & ///< list to populate
+      );
+
+  ///
+  /// Add fluxes from boundary cells to grid structures, for cells
+  /// at the grid boundary, to be sent to the coarser level grid.
+  /// Assumes that fluxes have already been calculated and saved in
+  /// array "F" of all relevant cells.
+  ///  
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  virtual void save_fine_fluxes(
+      const int,   ///< step number for this grid level
+      const double ///< dt for this grid level
+      );
+
+  ///
+  /// Add fluxes from internal cells to grid structures, for cells
+  /// that sit above a grid boundary at a finer level.
+  /// Assumes that fluxes have already been calculated and saved in
+  /// array "F" of all relevant cells.
+  ///
+  /// These fluxes are used to correct the fluxes on the coarse grid,
+  /// to ensure that they are consistent across all levels, following
+  /// Berger & Colella (1989,JCP,82,64).
+  ///
+  virtual void save_coarse_fluxes(
+      const double ///< dt for this grid level
       );
 
   ///

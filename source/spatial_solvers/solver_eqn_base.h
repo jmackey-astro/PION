@@ -213,25 +213,29 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       class GridBaseClass *  ///< pointer to computational grid.
       );
 
-
   ///
-  /// This function is a place-holder for integrations which need to 
+  /// This function is for integrations which need to 
   /// add a multi-dimensional correction/addition to the update
   /// vector.  Examples are the Field-CD method which processes the
   /// update vector to ensure that the B-field remains divergence free
   /// (not really working), and the Pdiv(V) term in the internal--
   /// energy solver for the Euler equations.
-  /// For most solvers it just returns immediately.
+  ///
+  /// This base implementation saves the fluxes at grid boundaries
+  /// for simulations with multiple refinement levels, so that fluxes
+  /// can be made consistent between levels.
   ///
   virtual int PostProcess_dU(
-        const double,  ///< current timestep, dt.
-        const int,     ///< Spatial order-of-accuracy for this call.
-        class GridBaseClass *  ///< pointer to computational grid.
-        ) {return 0;}
+      const double,  ///< current timestep, dt.
+      const int,     ///< TIMESTEP_FIRST_PART orTIMESTEP_FULL
+      class SimParams &, ///< pointer to simulation parameters
+      class GridBaseClass *  ///< pointer to computational grid.
+      );
 
  protected:
   const int FV_gndim;  ///< number of spatial directions in grid.
-  const double FV_cfl;  ///< Courant-Friedrichs-Levy parameter (<1 for stability).
+  /// Courant-Friedrichs-Levy parameter (<1 for stability).
+  const double FV_cfl;
   double FV_dt;      ///< Timestep
   /// coefficient of (artificial) viscosity for velocity field.
   const double FV_etav;

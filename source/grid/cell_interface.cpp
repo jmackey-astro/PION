@@ -50,6 +50,8 @@ class cell_interface CI;
 // ##################################################################
 // ##################################################################
 
+
+
 cell_interface::cell_interface()
 {
   minimal_cell = false;
@@ -99,8 +101,11 @@ cell_interface::cell_interface()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 cell_interface::~cell_interface()
 {
@@ -116,8 +121,11 @@ cell_interface::~cell_interface()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_minimal_cell_data()
 {
@@ -126,8 +134,10 @@ void cell_interface::set_minimal_cell_data()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::unset_minimal_cell_data()
@@ -137,8 +147,10 @@ void cell_interface::unset_minimal_cell_data()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::set_dx(const double dx)
@@ -149,8 +161,10 @@ void cell_interface::set_dx(const double dx)
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::set_ndim(const int nd)
@@ -160,8 +174,10 @@ void cell_interface::set_ndim(const int nd)
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::set_nvar(const int nv)
@@ -174,6 +190,7 @@ void cell_interface::set_nvar(const int nv)
 
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::set_xmin(const double *xm)
@@ -191,6 +208,8 @@ void cell_interface::set_xmin(const double *xm)
 
 // ##################################################################
 // ##################################################################
+
+
 
 //
 // Set variables for extra_data based on what we need per cell.
@@ -297,8 +316,10 @@ void cell_interface::setup_extra_data(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // returns true if using minimal cells.
@@ -306,8 +327,11 @@ bool cell_interface::query_minimal_cells()
 {return minimal_cell;}
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 cell * cell_interface::new_cell()
 {
@@ -331,12 +355,12 @@ cell * cell_interface::new_cell()
   // Allocate memory and initialise to zero.
   //
   c->P   = mem.myalloc(c->P,  nvar);
-  c->ngb = mem.myalloc(c->ngb, 2*ndim);
+  c->ngb = mem.myalloc(c->ngb, 2*MAX_DIM);
   c->pos = mem.myalloc(c->pos, ndim);
 
   for (int v=0;v<ndim;v++) c->pos[v]=0;
   for (int v=0;v<nvar;v++) c->P[v] = 0.0;
-  for (int v=0; v<2*ndim; v++) c->ngb[v] = 0;
+  for (int v=0; v<2*MAX_DIM; v++) c->ngb[v] = 0;
   c->npt = 0;
   c->npt_all = 0;
   c->id  = -9999;
@@ -344,6 +368,8 @@ cell * cell_interface::new_cell()
   c->isbd=false;
   c->isgd=false;
   c->isdomain=false;
+  c->isbd_ref_neg=false;
+  c->isbd_ref_pos=false;
 
   //
   // If we need all the [dU,Ph] arrays, initialise them, but if we have
@@ -360,6 +386,7 @@ cell * cell_interface::new_cell()
     c->dU  = mem.myalloc(c->dU, nvar);
     for (int v=0;v<nvar;v++) c->Ph[v] = c->dU[v] = 0.0;
   }
+  c->F = 0;
 
   //cout <<"Nxd="<<N_extra_data<<"\n";
   if (N_extra_data>=1) {
@@ -372,8 +399,11 @@ cell * cell_interface::new_cell()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::delete_cell(cell *c)
 {
@@ -382,6 +412,7 @@ void cell_interface::delete_cell(cell *c)
   c->Ph = mem.myfree(c->Ph);
   c->dU = mem.myfree(c->dU);
   c->ngb = mem.myfree(c->ngb);
+  if (c->F) c->F = mem.myfree(c->F);
 
   if (N_extra_data>=1)
     c->extra_data = mem.myfree(c->extra_data);
@@ -391,8 +422,11 @@ void cell_interface::delete_cell(cell *c)
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_pos(
       cell *c, ///< pointer to cell
@@ -412,8 +446,11 @@ void cell_interface::set_pos(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::set_pos(
       cell *c, ///< pointer to cell
@@ -433,8 +470,11 @@ void cell_interface::set_pos(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::get_dpos(
       const cell *c, ///< pointer to cell
@@ -447,8 +487,11 @@ void cell_interface::get_dpos(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double cell_interface::get_dpos(
       const cell *c, ///< pointer to cell
@@ -459,8 +502,11 @@ double cell_interface::get_dpos(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::get_ipos(
       const cell *c, ///< pointer to cell
@@ -473,8 +519,11 @@ void cell_interface::get_ipos(
 }  
   
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int cell_interface::get_ipos(
       const cell *c, ///< pointer to cell
@@ -485,8 +534,11 @@ int cell_interface::get_ipos(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::get_ipos_vec(
       const double *p_in, ///< physical position (input)
@@ -508,8 +560,10 @@ void cell_interface::get_ipos_vec(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::get_ipos_as_double(
@@ -529,8 +583,10 @@ void cell_interface::get_ipos_as_double(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::get_dpos_vec(
@@ -544,8 +600,10 @@ void cell_interface::get_dpos_vec(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void cell_interface::copy_cell(
@@ -554,11 +612,10 @@ void cell_interface::copy_cell(
     )
 {
   for (int i=0;i<ndim;i++) c2->pos[i] = c1->pos[i];
-  for (int v=0;v<nvar;v++) {
-    c2->P[v]  = c1->P[v];
-    c2->Ph[v] = c1->Ph[v];
-    c2->dU[v] = c1->dU[v];
-  }
+  for (int v=0;v<nvar;v++) c2->P[v]  = c1->P[v];
+  for (int v=0;v<nvar;v++) c2->Ph[v] = c1->Ph[v];
+  for (int v=0;v<nvar;v++) c2->dU[v] = c1->dU[v];
+  if (c1->F) for (int v=0;v<nvar;v++) c2->F[v] = c1->F[v];
   for (int i=0;i<2*ndim;i++) c2->ngb[i]=c1->ngb[i];
   for (short unsigned int v=0;v<N_extra_data;v++)
     c2->extra_data[v] = c1->extra_data[v];
@@ -569,12 +626,17 @@ void cell_interface::copy_cell(
   c2->isbd = c1->isbd;
   c2->isgd = c1->isgd;
   c2->isdomain = c1->isdomain;
+  c2->isbd_ref_neg = c1->isbd_ref_neg;
+  c2->isbd_ref_pos = c1->isbd_ref_pos;
   return;
 }
- 
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 void cell_interface::print_cell(const cell *c)
 {
@@ -582,6 +644,8 @@ void cell_interface::print_cell(const cell *c)
   cout <<"cell:\t id = "<<c->id<<"\n";
   cout <<"\tcell pointer= "<<c<<"\n";
   cout <<"\tisedge:"<<c->isedge<<"\tisbd:"<<c->isbd<<"\tisgd:"<<c->isgd<<"\n";
+  cout <<"\tisdomain:"<<c->isdomain<<"\tisbd_ref_neg:"<<c->isbd_ref_neg;
+  cout <<"\tisbd_ref_pos:"<<c->isbd_ref_pos<<"\n";
   cout<<"\tnpt: "<<c->npt;
   if (c->npt!=0) cout <<"\tnpt[id]: "<<c->npt->id<<"\n";
   else cout <<"\tnpt is not addressed (last point?).\n";
@@ -599,6 +663,9 @@ void cell_interface::print_cell(const cell *c)
   if (!minimal_cell) {
     cout <<"\t"; rep.printVec("Ph[] ",c->Ph,nvar);
     cout <<"\t"; rep.printVec("dU[] ",c->dU,nvar);
+  }
+  if (c->F) {
+    cout <<"\t"; rep.printVec("F[] ",c->F,nvar);
   }
   cout <<"\t"; rep.printVec("ngb[]",c->ngb,2*ndim);
   return;
