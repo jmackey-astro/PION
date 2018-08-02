@@ -44,8 +44,8 @@ EP_Metal_MassFrac  0.0142   # solar metallicity
 
 ########################
 ## Grid Parameters
-NGridX  128
-NGridY  128
+NGridX  256
+NGridY  256
 NGridZ  1
 
 # Boundaries of Simulation box:
@@ -73,7 +73,7 @@ StartTime  0.000e11
 FinishTime 3.156e11
 
 OutputPath ./
-OutputFile fastwind_n0128
+OutputFile fastwind_n0256_l4
 OutputFileType silo
 OutputCriterion 0
 OutputFrequency 100
@@ -140,12 +140,12 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 3.0e17
+WIND_0_radius 0.75e17  # about 50 cells for 256^2 and 4 levels
 WIND_0_type   0
 WIND_0_mdot   1.0e-7
 WIND_0_vinf   1500.0
 WIND_0_temp   3.0e4
-WIND_0_Rstr   3.0e17
+WIND_0_Rstr   0.75e17
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
