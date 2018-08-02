@@ -499,8 +499,9 @@ int VectorOps_Cart::DivStateVectorComponent(
    * the divergence.  This is b/c it is used in the finite volume time update
    * where what is needed is the negative of div(F).
    * */
+  double dx=grid->DX();
   for (int v=0;v<nv;v++) {
-    dudt[v] = (fn[v]-fp[v])/VOdx;
+    dudt[v] = (fn[v]-fp[v])/dx;
   }
   return(0);
 } // DivStateVectorComponent
@@ -1063,12 +1064,12 @@ int VectorOps_Cyl::DivStateVectorComponent(
 
   double dZ = grid->DX();
   double dR = dZ;
+  
   if (d==Zcyl) for (int v=0;v<nv;v++) dudt[v] = (fn[v]-fp[v])/dZ;
   
   else if (d==Rcyl) {
     double rp = CI.get_dpos(c,Rcyl)+dR/2.; double rn=rp-dR;
     for (int v=0;v<nv;v++)
-      //dudt[v] = (rn*fn[v]-rp*fp[v])/CI.get_dpos(c,Rcyl)/dR;
       dudt[v] = 2.0*(rn*fn[v]-rp*fp[v])/(rp*rp-rn*rn);
   }
   else if (d==Tcyl) {

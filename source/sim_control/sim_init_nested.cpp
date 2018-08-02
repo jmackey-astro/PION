@@ -166,7 +166,9 @@ int sim_init_nested::Init(
 
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
     cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
     err += TimeUpdateExternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
@@ -175,7 +177,9 @@ int sim_init_nested::Init(
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
     spatial_solver->set_dx(SimPM.levels[l].dx);
+#ifdef TESTING
     cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
     err += TimeUpdateInternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
