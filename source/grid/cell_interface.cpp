@@ -368,8 +368,8 @@ cell * cell_interface::new_cell()
   c->isbd=false;
   c->isgd=false;
   c->isdomain=false;
-  c->isbd_ref_neg=false;
-  c->isbd_ref_pos=false;
+  c->isbd_ref = mem.myalloc(c->isbd_ref, 2*MAX_DIM);
+  for (int v=0; v<2*MAX_DIM; v++) c->isbd_ref[v]=false;
 
   //
   // If we need all the [dU,Ph] arrays, initialise them, but if we have
@@ -412,6 +412,7 @@ void cell_interface::delete_cell(cell *c)
   c->Ph = mem.myfree(c->Ph);
   c->dU = mem.myfree(c->dU);
   c->ngb = mem.myfree(c->ngb);
+  c->isbd_ref = mem.myfree(c->isbd_ref);
   if (c->F) c->F = mem.myfree(c->F);
 
   if (N_extra_data>=1)
@@ -626,8 +627,7 @@ void cell_interface::copy_cell(
   c2->isbd = c1->isbd;
   c2->isgd = c1->isgd;
   c2->isdomain = c1->isdomain;
-  c2->isbd_ref_neg = c1->isbd_ref_neg;
-  c2->isbd_ref_pos = c1->isbd_ref_pos;
+  for (int i=0;i<2*ndim;i++) c2->isbd_ref[i]=c1->isbd_ref[i];
   return;
 }
 
@@ -644,8 +644,7 @@ void cell_interface::print_cell(const cell *c)
   cout <<"cell:\t id = "<<c->id<<"\n";
   cout <<"\tcell pointer= "<<c<<"\n";
   cout <<"\tisedge:"<<c->isedge<<"\tisbd:"<<c->isbd<<"\tisgd:"<<c->isgd<<"\n";
-  cout <<"\tisdomain:"<<c->isdomain<<"\tisbd_ref_neg:"<<c->isbd_ref_neg;
-  cout <<"\tisbd_ref_pos:"<<c->isbd_ref_pos<<"\n";
+  cout <<"\tisdomain:"<<c->isdomain<<"\n";
   cout<<"\tnpt: "<<c->npt;
   if (c->npt!=0) cout <<"\tnpt[id]: "<<c->npt->id<<"\n";
   else cout <<"\tnpt is not addressed (last point?).\n";
@@ -668,6 +667,7 @@ void cell_interface::print_cell(const cell *c)
     cout <<"\t"; rep.printVec("F[] ",c->F,nvar);
   }
   cout <<"\t"; rep.printVec("ngb[]",c->ngb,2*ndim);
+  cout <<"\t"; rep.printVec("isbd_ref[]",c->isbd_ref,2*ndim);
   return;
 }
 

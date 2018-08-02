@@ -109,11 +109,8 @@ class cell {
   bool isgd;   ///< True if cell is grid data, false if not.
   bool isdomain; ///< True if cell is part of the domain.
   /// True if needed for ensuring flux consistency between different
-  /// refinement levels, for a negative-facing grid boundary.
-  bool isbd_ref_neg;
-  /// True if needed for ensuring flux consistency between different
-  /// refinement levels, for a positive-facing grid boundary.
-  bool isbd_ref_pos;
+  /// refinement levels.  Array of length 2*MAX_DIM
+  bool *isbd_ref;
 
 #ifdef COUNT_ENERGETICS
   struct energetics e; ///< to count up the energetics properties of the current cell.

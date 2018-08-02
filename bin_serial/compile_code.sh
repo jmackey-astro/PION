@@ -30,7 +30,7 @@ export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 NCORES=8
 #export PION_OPTIMISE=LOW
-NCORES=1
+#NCORES=1
 export CXX=g++
 
 #################################
