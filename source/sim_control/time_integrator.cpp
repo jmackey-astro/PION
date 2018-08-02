@@ -531,6 +531,16 @@ int time_integrator::set_dynamics_dU(
   else
     space_ooa=OA2;
 
+#ifdef DEBUG
+  // get current level of grid in hierarchy.
+  int level=0;
+  if (SimPM.grid_nlevels >1) {
+    for (int v=0;v<SimPM.grid_nlevels;v++) {
+      if (grid == SimPM.levels[v].grid) level = v;
+    }
+  }
+  cout <<"*** Calculating DU dynamics on level "<<level<<".\n";
+#endif
 
   //
   // Loop over all directions, and in each direction, calculate fluxes
@@ -549,10 +559,11 @@ int time_integrator::set_dynamics_dU(
     class cell *cpt    = grid->FirstPt_All();
     class cell *marker = cpt;
 
-//#ifdef DEBUG
+#ifdef DEBUG
     cout <<"Direction="<<axis[i]<<", i="<<i<<"\n";
     rep.printVec("cpt",cpt->pos,SimPM.ndim);
-//#endif
+    
+#endif
     
     //
     // loop over the number of cells in the line/plane of starting
@@ -562,8 +573,6 @@ int time_integrator::set_dynamics_dU(
     enum direction d2 = posdirs[(i+2)%3];
     enum axes x1 = axis[(i+1)%3];
     enum axes x2 = axis[(i+2)%3];
-    // flux onto and off domain for this column.
-    double f_xn[SimPM.nvar], f_xp[SimPM.nvar];
 
     //
     // loop over the two perpendicular axes, to trace out a plane of
@@ -574,13 +583,13 @@ int time_integrator::set_dynamics_dU(
     //
     for (int ax2=0; ax2<grid->NG_All(x2); ax2++) {
       for (int ax1=0; ax1<grid->NG_All(x1); ax1++) {
-//#ifdef DEBUG
+#ifdef DEBUG
         cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i<<", cpt="<<cpt<<":  ";
         //CI.print_cell(cpt);
         cout <<"\n";
-//#endif
+#endif
         return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
-                                        space_ooa, grid, f_xn, f_xp);
+                                        space_ooa, grid);
         rep.errorTest("set_dynamics_dU: column",0,return_value);
         cpt = grid->NextPt(cpt,d1);
       }
@@ -606,9 +615,7 @@ int time_integrator::dynamics_dU_column(
       const enum direction negdir, ///< reverse direction
       const double dt, ///< timestep we are advancing by.
       const int csp,  ///< spatial order-of-accuracy for this step.
-      class GridBaseClass *grid, ///< Computational grid.
-      double *f_xn, ///< flux crossing grid boundary in negdir dir
-      double *f_xp  ///< flux crossing grid boundary in posdir dir
+      class GridBaseClass *grid ///< Computational grid.
       )
 {
   if ( (SimPM.spOOA>2) || (SimPM.tmOOA>2) || (csp>2)  ) {
@@ -678,20 +685,21 @@ int time_integrator::dynamics_dU_column(
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
     // record flux entering and leaving domain
-    if (cpt->isbd_ref_neg) {
+    if (cpt->isbd_ref[negdir]) {
       for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_this[v];
     }
-    if (cpt->isbd_ref_pos) {
-      for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_prev[v];
+    if (npt->isbd_ref[posdir]) {
+      for (int v=0;v<SimPM.nvar;v++) npt->F[v] = Fr_this[v];
+#ifdef DEBUG
+      if (posdir==3) {
+        rep.printVec("d=3, cpt Ph",cpt->Ph,SimPM.nvar);
+        rep.printVec("d=3, npt Ph",npt->Ph,SimPM.nvar);
+        rep.printVec("edge L",edgeL,SimPM.nvar);
+        rep.printVec("edge R",edgeR,SimPM.nvar);
+        rep.printVec("1 FLUX",Fr_this,SimPM.nvar);
+      }
+#endif
     }
-
-    // this code is probably not needed anymore.
-    //if      (!cpt->isgd && npt->isgd) {
-    //  for (int v=0;v<SimPM.nvar;v++) f_xn[v] = Fr_this[v];
-    //}
-    //else if (cpt->isgd && !npt->isgd) {
-    //  for (int v=0;v<SimPM.nvar;v++) f_xp[v] = Fr_this[v];
-    //}
 
 #ifdef TESTING
     for (int v=0;v<SimPM.nvar;v++) {

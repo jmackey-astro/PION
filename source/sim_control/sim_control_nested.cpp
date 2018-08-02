@@ -95,7 +95,7 @@ int sim_control_nestedgrid::Time_Int(
     SimPM.levels[l].dt = 0.0;
     SimPM.levels[l].simtime = SimPM.simtime;
   }
-
+  bool first_step = true;
 
   while (SimPM.maxtime==false) {
 
@@ -129,27 +129,30 @@ int sim_control_nestedgrid::Time_Int(
     //
     // Get timestep on each level
     //
-    int scale = 1;
-    double mindt = 1.0e99;
-    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-      spatial_solver->set_dx(SimPM.levels[l].dx);
+    if (first_step) {
+      int scale = 1;
+      double mindt = 1.0e99;
+      for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+        spatial_solver->set_dx(SimPM.levels[l].dx);
 #ifdef NEST_INT_TEST
-      cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
+        cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
 #endif
-      err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
-      rep.errorTest("TIME_INT::calc_timestep()",0,err);
-      mindt = std::min(mindt, SimPM.dt/scale);
-      //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
-      SimPM.levels[l].dt = SimPM.dt;
-      scale *= 2;
-    }
-    // make sure all levels use the same step (scaled by factors of 2).
-    scale = 1;
-    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-      //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
-      SimPM.levels[l].dt = mindt*scale;
-      scale *= 2;
-      //cout <<", new dt="<<SimPM.levels[l].dt<<"\n";
+        err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
+        rep.errorTest("TIME_INT::calc_timestep()",0,err);
+        mindt = std::min(mindt, SimPM.dt/scale);
+        //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
+        SimPM.levels[l].dt = SimPM.dt;
+        scale *= 2;
+      }
+      // make sure all levels use the same step (scaled by factors of 2).
+      scale = 1;
+      for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+        //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
+        SimPM.levels[l].dt = mindt*scale;
+        scale *= 2;
+        //cout <<", new dt="<<SimPM.levels[l].dt<<"\n";
+      }
+      first_step=false;
     }
 
     //clk.start_timer("advance_time");
@@ -787,19 +790,31 @@ int sim_control_nestedgrid::grid_update_state_vector(
 
   //
   // loop through the faces, and compare the fine with coarse level
-  // fluxes.  Subtract the right flux from the cells adjacent to the
-  // face.
+  // fluxes.  Subtract the flux difference from the cells adjacent to
+  // the face.
   //
   if (level < SimPM.grid_nlevels-1) {
+#ifdef DEBUG
+    cout <<"level "<<level<<": correcting fluxes from finer grid\n";
+#endif
     class GridBaseClass *fine = SimPM.levels[level].child;
-    cell *ngb=0;
     struct flux_interface *fc=0;
     struct flux_interface *ff=0;
+    double ftmp[SimPM.nvar],utmp[SimPM.nvar];
+    for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
+    for (int v=0;v<SimPM.nvar;v++) utmp[v]=0.0;
+    enum axes ax;
+
     
     if (fine->flux_update_send.size() != grid->flux_update_recv.size())
       rep.error("fine and parent face arrays are different size",1);
 
     for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
+#ifdef DEBUG
+      cout <<"Direction: "<<d<<", looping through faces.\n";
+#endif
+      ax = static_cast<enum axes>(d/2);
+
       if (fine->flux_update_send[d].size() != grid->flux_update_recv[d].size())
         rep.error("fine and parent face arrays are different size",2);
       
@@ -808,27 +823,51 @@ int sim_control_nestedgrid::grid_update_state_vector(
       for (unsigned int f=0; f<grid->flux_update_recv[d].size(); f++) {
         fc = grid->flux_update_recv[d][f];
         ff = fine->flux_update_send[d][f];
-        cout <<"f="<<f<<"grid="<<fc<<"  "; cout.flush();
+#ifdef DEBUG
+        cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
         rep.printVec("fc->flux",fc->flux,SimPM.nvar);
-        cout <<"fine="<<ff<<"  ";
+        cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
         rep.printVec("ff->flux",ff->flux,SimPM.nvar);
+#endif
         
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] += ff->flux[v];
           fc->flux[v] /= fc->area[0];
         }
         // fc->flux is now the error in dU made for both coarse cells.
-        // Correct dU in both cells.
-        rep.printVec("  Error",fc->flux,SimPM.nvar);
-        rep.printVec("     dU",fc->c[0]->dU,SimPM.nvar);
-        for (int v=0;v<SimPM.nvar;v++) {
-          fc->c[0]->dU[v] += fc->flux[v];
+        // Correct dU in outer cell only, because inner cell is on 
+        // top of fine grid and gets overwritten anyway.
+#ifdef DEBUG
+        rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
+        rep.printVec("**********  Error",fc->flux,    SimPM.nvar);
+        if (d==3) {
+          rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
+          rep.printVec("n state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
+          rep.printVec("p state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
         }
-        ngb = grid->NextPt(fc->c[0], static_cast<direction>(d));
-        for (int v=0;v<SimPM.nvar;v++) {
-          ngb->dU[v] -= fc->flux[v];
+#endif
+        //
+        // If we are at a negative boundary, then it is the positive
+        // face of the cell that we correct, and vice versa for a
+        // positive boundary.  So we call the DivStateVectorComponent
+        // function with the flux in different order, depending on 
+        // what direction the boundary is in.
+        // This function is aware of geometry, so it calculates the
+        // divergence correctly for curvilinear grids (important!!!).
+        //
+        if (d%2 ==0) {
+          spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax , SimPM.nvar,ftmp,fc->flux,utmp);
         }
-      } // loop over faces in this direction.
+        else {
+          spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax , SimPM.nvar,fc->flux,ftmp,utmp);
+        }
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->c[0]->dU[v] += utmp[v];
+        }
+     } // loop over faces in this direction.
+#ifdef DEBUG
+      cout <<"Direction: "<<d<<", finished.\n";
+#endif
     } // loop over directions.
   } // if not at finest level.
 

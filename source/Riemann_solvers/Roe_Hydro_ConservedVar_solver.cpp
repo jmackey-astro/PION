@@ -208,6 +208,18 @@ int Riemann_Roe_Hydro_CV::Roe_flux_solver_symmetric(
 
   set_pstar_from_meanp(out_pstar);
 
+#ifdef DEBUG
+//  if (fabs(out_flux[0])>1.0e-50) {
+//    rep.printVec("RCV_meanp",RCV_meanp,5);
+//    cout <<"RCV_a_mean="<<RCV_a_mean<<",  RCV_v2_mean="<<RCV_v2_mean<<"\n";
+//    rep.printVec("RCV_eval",RCV_eval,5);
+//    rep.printVec("RCV_udiff",RCV_udiff,5);
+//    rep.printVec("RCV_strength",RCV_strength,5);
+//    rep.printVec("out_flux",out_flux,5);
+//    rep.printVec("out_pstar",out_pstar,5);
+//  }
+#endif // DEBUG
+
   //
   // Note that out_pstar[] and out_flux[] only have the first 5
   // physical elements set.  The tracer values need to be set
@@ -431,8 +443,12 @@ void Riemann_Roe_Hydro_CV::set_ul_ur_udiff(
   // We need the difference states for this:
   //
   //  rep.printVec("ud",udiff,rs_nvar);
-  for (int v=0;v<rs_nvar;v++) 
-    RCV_udiff[v] = RCV_ur[v]-RCV_ul[v];
+  for (int v=0;v<rs_nvar;v++) {
+    if (pconst.equalD(RCV_ur[v],RCV_ul[v]))
+      RCV_udiff[v] = 0.0;
+    else
+      RCV_udiff[v] = RCV_ur[v]-RCV_ul[v];
+  }
   //rep.printVec("ul",RCV_ul,rs_nvar);
   //rep.printVec("ur",RCV_ur,rs_nvar);
   //rep.printVec("ud",RCV_udiff,rs_nvar);

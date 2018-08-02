@@ -187,6 +187,15 @@ int FV_solver_base::InterCellFlux(
   // I CAN GET RID OF CL,CR,G FROM THIS.
   //
   int err = inviscid_flux(Cl,Cr,lp, rp, f, pstar, solve_flag, dx, g);
+  
+#ifdef DEBUG
+  if (fabs(f[0]) > 1.0e-50) {
+    rep.printVec("flux=",f,eq_nvar);
+    rep.printVec("left=",lp,eq_nvar);
+    rep.printVec("rght=",rp,eq_nvar);
+    rep.printVec("pstr=",pstar,eq_nvar);
+  }
+#endif
 
   //
   // Post-calculate anthing needed for the viscosity (calls the FKJ98

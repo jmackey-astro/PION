@@ -361,20 +361,24 @@ UniformGrid::~UniformGrid()
   for (unsigned int d=0; d<flux_update_recv.size(); d++) {
     for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
       fi = flux_update_recv[d][f];
-      fi->c.clear();
-      fi->area.clear();
-      fi->flux = mem.myfree(fi->flux);
-      flux_update_recv[d][f] = mem.myfree(flux_update_recv[d][f]);
+      if (fi) {
+        fi->c.clear();
+        fi->area.clear();
+        fi->flux = mem.myfree(fi->flux);
+        flux_update_recv[d][f] = mem.myfree(flux_update_recv[d][f]);
+      }
     }
     flux_update_recv[d].clear();
   }
   for (unsigned int d=0; d<flux_update_send.size(); d++) {
     for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
       fi = flux_update_send[d][f];
-      fi->c.clear();
-      fi->area.clear();
-      fi->flux = mem.myfree(fi->flux);
-      flux_update_send[d][f] = mem.myfree(flux_update_send[d][f]);
+      if (fi) {
+        fi->c.clear();
+        fi->area.clear();
+        fi->flux = mem.myfree(fi->flux);
+        flux_update_send[d][f] = mem.myfree(flux_update_send[d][f]);
+      }
     }
     flux_update_send.clear();
   }
@@ -1324,6 +1328,7 @@ int UniformGrid::setup_flux_recv(
       fi->c.resize(nc);
       fi->area.resize(nc);
       fi->flux = mem.myalloc(fi->flux,G_nvar);
+      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
     }
   }
 
@@ -1435,6 +1440,7 @@ int UniformGrid::setup_flux_send(
       fi->c.resize(nc);
       fi->area.resize(nc);
       fi->flux = mem.myalloc(fi->flux,G_nvar);
+      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
     }
   }
 
@@ -1490,11 +1496,7 @@ int UniformGrid::add_cells_to_face(
     }
     fi[0]->c[0] = c;
     c->F = mem.myalloc(c->F,G_nvar);
-    switch (d) {
-      case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
-      case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
-      default: rep.error("Bad direction1",d);
-    }
+    c->isbd_ref[d] = true;
     fi[0]->area[0] = CellInterface(c,OppDir(d));
   } // 1D
 
@@ -1546,13 +1548,11 @@ int UniformGrid::add_cells_to_face(
       for (int ic=0;ic<ncell;ic++) {
         fi[i]->c[ic] = c;
         c->F = mem.myalloc(c->F,G_nvar);
-        switch (d) {
-          case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
-          case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
-          default: rep.error("Bad direction2",d);
-        }
+        c->isbd_ref[d] = true;
         fi[i]->area[ic] = CellInterface(c,OppDir(d));
+#ifdef DEBUG
         cout <<"area["<<ic<<"] = "<<fi[i]->area[ic]<<"\n";
+#endif
         c = NextPt(c,perpdir);
       }
     }
@@ -1635,49 +1635,29 @@ int UniformGrid::add_cells_to_face(
         if (ncell==1) {
           fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
-          switch (d) {
-            case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
-            case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
-            default: rep.error("Bad direction3",d);
-          }
+          c->isbd_ref[d] = true;
           fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
         }
         else {
           // need to get 4 cells onto this face.
           fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
-          switch (d) {
-            case XP: case YP: case ZP: c->isbd_ref_pos=true; break;
-            case XN: case YN: case ZN: c->isbd_ref_neg=true; break;
-            default: rep.error("Bad direction4",d);
-          }
+          c->isbd_ref[d] = true;
           fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
           m2 = NextPt(c,perpdir1);
           fi[i*nface[perpaxis1]+j]->c[1] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
-          switch (d) {
-            case XP: case YP: case ZP: m2->isbd_ref_pos=true; break;
-            case XN: case YN: case ZN: m2->isbd_ref_neg=true; break;
-            default: rep.error("Bad direction5",d);
-          }
+          c->isbd_ref[d] = true;
           fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d));
           m2 = NextPt(c,perpdir2);
           fi[i*nface[perpaxis1]+j]->c[2] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
-          switch (d) {
-            case XP: case YP: case ZP: m2->isbd_ref_pos=true; break;
-            case XN: case YN: case ZN: m2->isbd_ref_neg=true; break;
-            default: rep.error("Bad direction6",d);
-          }
+          c->isbd_ref[d] = true;
           fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d));
           m2 = NextPt(m2,perpdir1);
           fi[i*nface[perpaxis1]+j]->c[3] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
-          switch (d) {
-            case XP: case YP: case ZP: m2->isbd_ref_pos=true; break;
-            case XN: case YN: case ZN: m2->isbd_ref_neg=true; break;
-            default: rep.error("Bad direction7",d);
-          }
+          c->isbd_ref[d] = true;
           fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d));
         }
         for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);
@@ -1709,7 +1689,9 @@ void UniformGrid::save_fine_fluxes(
   struct flux_interface *fi=0;
 
   for (unsigned int d=0; d<flux_update_send.size(); d++) {
+#ifdef DEBUG
     cout <<"size of flux_update_send["<<d<<"] = "<<flux_update_send[d].size()<<"\n";
+#endif
     for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
       // these faces have 2^(ndim-1) cells.
       fi = flux_update_send[d][f];
@@ -1727,11 +1709,17 @@ void UniformGrid::save_fine_fluxes(
       for (int i=0;i<fi->Ncells;i++) {
         if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
+#ifdef DEBUG
         cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
+#endif
         for (int v=0;v<G_nvar;v++) {
           fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
         }
+#ifdef DEBUG
+        cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
+        cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
+#endif
       }
     }
   }
@@ -1749,21 +1737,30 @@ void UniformGrid::save_coarse_fluxes(
     const double dt
     )
 {
+#ifdef DEBUG
   cout <<"save_coarse_fluxes() \n";
   cout <<"size of flux_update_recv = "<<flux_update_recv.size()<<"\n";
+#endif
   struct flux_interface *fi=0;
 
   for (unsigned int d=0; d<flux_update_recv.size(); d++) {
     for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
       // these elements have only one cell per face.
       fi = flux_update_recv[d][f];
+#ifdef DEBUG
+      cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
+#endif
 
       // if first element is null then list is empty.
       if (fi==0 && f==0) continue;
       else if (fi==0) rep.error("save_fine_fluxes fi=0",d);
-
       if (!fi->c[0]->F) rep.error("flux is not allocated!",f);
+
       // set face flux to be the negative of the intercell flux
+#ifdef DEBUG
+      cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
+      cout <<", f0="<<fi->c[0]->F[0]<<", area="<<fi->area[0]<<", dt="<<dt<<"\n";
+#endif
       for (int v=0;v<G_nvar;v++) {
         fi->flux[v] = -fi->c[0]->F[v]*fi->area[0]*dt;
       }

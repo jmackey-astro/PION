@@ -170,9 +170,7 @@ class time_integrator :
       const enum direction, ///< opposite direction.
       const double,    ///< dt, timestep for this calculation
       const int,        ///< Spatial Order of accuracy to use.
-      class GridBaseClass *, ///< grid pointer
-      double *f_xn, ///< flux crossing grid boundary in negdir dir
-      double *f_xp  ///< flux crossing grid boundary in posdir dir
+      class GridBaseClass * ///< grid pointer
       );
 
   ///
