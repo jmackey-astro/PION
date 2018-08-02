@@ -122,6 +122,9 @@ void setup_nested_grid::setup_nested_grid_levels(
     }
     SimPM.levels[i].simtime = SimPM.simtime;
     SimPM.levels[i].dt = 0.0;
+
+    if (i==0) SimPM.levels[i].multiplier = 1;
+    else      SimPM.levels[i].multiplier = 2*SimPM.levels[i-1].multiplier;
   }
 
   for (int i=SimPM.grid_nlevels-1;i>=0; i--) {
@@ -325,12 +328,16 @@ int setup_nested_grid::setup_boundary_structs(
   if (l>0) {
     for (int i=0; i<par.ndim; i++) {
       if (!pconst.equalD(par.levels[l-1].Xmin[i],par.levels[l].Xmin[i])) {
+#ifdef TESTING
         cout <<"reassigning neg. bc for axis "<<i<<" to COARSE_TO_FINE\n";
+#endif
         grid->BC_bd[2*i]->itype = COARSE_TO_FINE;
         grid->BC_bd[2*i]->type  = "COARSE_TO_FINE";
       }
       if (!pconst.equalD(par.levels[l-1].Xmax[i],par.levels[l].Xmax[i])) {
+#ifdef TESTING
         cout <<"reassigning pos. bc for axis "<<i<<" to COARSE_TO_FINE\n";
+#endif
         grid->BC_bd[2*i+1]->itype = COARSE_TO_FINE;
         grid->BC_bd[2*i+1]->type  = "COARSE_TO_FINE";
       }
@@ -376,9 +383,13 @@ int setup_nested_grid::setup_boundary_structs(
         ct++;
       }
     } while ((c=grid->NextPt(c)) !=0);
+#ifdef TESTING
     cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, "<<bd->data.size() <<"\n";
+#endif
     grid->BC_bd.push_back(bd);
+#ifdef TESTING
     cout <<"BC_data: "<<grid->BC_bd[grid->BC_bd.size()-1]->data.size()<<"\n";
+#endif
   }
   
   //
@@ -388,10 +399,14 @@ int setup_nested_grid::setup_boundary_structs(
   if (l < par.grid_nlevels-1) {
     for (unsigned int b=0;b<grid->BC_bd.size();b++) {
       if (grid->BC_bd[b]->itype == STWIND) {
+#ifdef TESTING
         cout <<"erasing wind boundary: size="<<grid->BC_bd.size();
+#endif
         grid->BC_deleteBoundaryData(grid->BC_bd[b]);
         grid->BC_bd.erase(grid->BC_bd.begin()+b);
+#ifdef TESTING
         cout <<", and after deleting, size="<<grid->BC_bd.size()<<"\n";
+#endif
       }
     }
   }
@@ -425,20 +440,28 @@ int setup_nested_grid::assign_boundary_data(
   // Then check for nested-grid boundaries and assign data for them.
   //
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
+#ifdef TESTING
     cout <<"nested grid assign BCs: BC["<<i<<"] starting.\n";
+#endif
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE:
+#ifdef TESTING
       cout <<"nested grid setup: Assigning FINE_TO_COARSE BC\n";
+#endif
       err += BC_assign_FINE_TO_COARSE(par,grid,grid->BC_bd[i],child);
       break;
 
       case COARSE_TO_FINE:
+#ifdef TESTING
       cout <<"nested grid setup: Assigning COARSE_TO_FINE BC\n";
+#endif
       err += BC_assign_COARSE_TO_FINE(par,grid,grid->BC_bd[i],parent);
       break;
 
       default:
+#ifdef TESTING
       cout <<"leaving BC "<<i<<" alone in nested grid assign fn.\n";
+#endif
       break;
     }
   }

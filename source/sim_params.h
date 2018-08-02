@@ -167,7 +167,6 @@ struct level {
   class GridBaseClass *grid;   ///< grid at this level
   class GridBaseClass *parent; ///< pointer to parent grid.
   class GridBaseClass *child;  ///< pointer to child grid.
-  int NG[MAX_DIM];        ///< Number of 'real' grid zones in each direction (Total for level).
   long int Ncell;         ///< Total number of 'real' grid zones within the domain (Total for level).
   long int step;          ///< number of steps taken on this level.
   double Range[MAX_DIM];  ///< Size of domain in x,y,z-direction on this level
@@ -176,6 +175,8 @@ struct level {
   double dx;              ///< Linear side length of grid cells on this level
   double simtime;         ///< simulation time at this level.
   double dt;              ///< current timestep at this level.
+  int NG[MAX_DIM];        ///< Number of 'real' grid zones in each direction (Total for level).
+  int multiplier;         ///< 2^l, l=0=coarsest.
 };
 // *******************************************************************
 

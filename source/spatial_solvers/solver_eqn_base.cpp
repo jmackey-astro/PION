@@ -875,10 +875,18 @@ int FV_solver_base::PostProcess_dU(
     for (int v=0;v<par.grid_nlevels;v++) {
       if (grid == par.levels[v].grid) level = v;
     }
+
     if (level!=0) {
+#ifdef DEBUG
+      cout <<"saving fine fluxes on level "<<level<<" to send up.\n";
+#endif
       grid->save_fine_fluxes(par.levels[level].step, par.levels[level].dt);
     }
+
     if (level!=par.grid_nlevels-1) {
+#ifdef DEBUG
+      cout <<"saving coarse fluxes on level "<<level<<" to correct.\n";
+#endif
       grid->save_coarse_fluxes(par.levels[level].dt);
     }
   }

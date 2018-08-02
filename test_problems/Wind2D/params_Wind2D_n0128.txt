@@ -15,7 +15,7 @@ solver 4
 OrderOfAccSpace 2
 OrderOfAccTime  2
 CFL 0.3
-ArtificialViscosity 1
+ArtificialViscosity 4
 EtaViscosity 0.15
 
 

@@ -43,7 +43,7 @@
 //#include <climits>
 using namespace std;
 
-#define NEST_INT_TEST
+//#define NEST_INT_TEST
 
 
 // ##################################################################
@@ -95,7 +95,6 @@ int sim_control_nestedgrid::Time_Int(
     SimPM.levels[l].dt = 0.0;
     SimPM.levels[l].simtime = SimPM.simtime;
   }
-  bool first_step = true;
 
   while (SimPM.maxtime==false) {
 
@@ -129,31 +128,31 @@ int sim_control_nestedgrid::Time_Int(
     //
     // Get timestep on each level
     //
-    if (first_step) {
-      int scale = 1;
-      double mindt = 1.0e99;
-      for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-        spatial_solver->set_dx(SimPM.levels[l].dx);
+    int scale = 1;
+    double mindt = 1.0e99;
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+      spatial_solver->set_dx(SimPM.levels[l].dx);
 #ifdef NEST_INT_TEST
-        cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
+      cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
 #endif
-        err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
-        rep.errorTest("TIME_INT::calc_timestep()",0,err);
-        mindt = std::min(mindt, SimPM.dt/scale);
-        //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
-        SimPM.levels[l].dt = SimPM.dt;
-        scale *= 2;
-      }
-      // make sure all levels use the same step (scaled by factors of 2).
-      scale = 1;
-      for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-        //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
-        SimPM.levels[l].dt = mindt*scale;
-        scale *= 2;
-        //cout <<", new dt="<<SimPM.levels[l].dt<<"\n";
-      }
-      first_step=false;
+      err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
+      rep.errorTest("TIME_INT::calc_timestep()",0,err);
+      mindt = std::min(mindt, SimPM.dt/scale);
+      //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
+      SimPM.levels[l].dt = SimPM.dt;
+      scale *= 2;
     }
+    // make sure all levels use the same step (scaled by factors of 2).
+    scale = 1;
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+      //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
+      SimPM.levels[l].dt = mindt*scale;
+      scale *= 2;
+#ifdef NEST_INT_TEST
+      cout <<"new dt="<<SimPM.levels[l].dt<<", t="<<SimPM.levels[l].simtime<<"\n";
+#endif
+    }
+  
 
     //clk.start_timer("advance_time");
     //
@@ -386,20 +385,30 @@ double sim_control_nestedgrid::advance_step_OA1(
   err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
 
   // Now calculate next timestep: function stores dt in SimPM.dt
-  err += calculate_timestep(SimPM, grid,spatial_solver,l);
-  rep.errorTest("scn::advance_step_OA1: calc_timestep",0,err);
+  //if (SimPM.levels[l].step % SimPM.levels[l].multiplier ==0) {
+  //  err += calculate_timestep(SimPM, grid,spatial_solver,l);
+  //  if (l<SimPM.grid_nlevels-1) {
+  //    SimPM.dt = min(SimPM.dt, 2.0*SimPM.levels[l+1].dt);
+  //  }
+  //}
+  //else {
+  //  // repeat the same timestep.
+  //  SimPM.dt = SimPM.levels[l].dt;
+  //}
+  //rep.errorTest("scn::advance_step_OA1: calc_timestep",0,err);
 
   // make sure step is not more than half of the coarser grid step.
-  if (l>0) {
-    SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
-  }
-  else {
-    SimPM.levels[l].dt = SimPM.dt;
-  }
+  //if (l>0) {
+  //  SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
+  //}
+  //else {
+  //  SimPM.levels[l].dt = SimPM.dt;
+  //}
 
 #ifdef TESTING
   cout <<"advance_step_OA1, level="<<l<<", returning. t=";
-  cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
+  cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step;
+  cout <<", next dt="<<SimPM.levels[l].dt<<" next time="<< SimPM.levels[l].simtime + SimPM.levels[l].dt <<"\n";
 #endif
   return dt2_this + SimPM.levels[l].dt;
 }
@@ -823,6 +832,13 @@ int sim_control_nestedgrid::grid_update_state_vector(
       for (unsigned int f=0; f<grid->flux_update_recv[d].size(); f++) {
         fc = grid->flux_update_recv[d][f];
         ff = fine->flux_update_send[d][f];
+
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->flux[v] /= fc->area[0];
+        }
+        for (int v=0;v<SimPM.nvar;v++) {
+          ff->flux[v] /= fc->area[0];
+        }
 #ifdef DEBUG
         cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
         rep.printVec("fc->flux",fc->flux,SimPM.nvar);
@@ -832,19 +848,18 @@ int sim_control_nestedgrid::grid_update_state_vector(
         
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] += ff->flux[v];
-          fc->flux[v] /= fc->area[0];
+          //fc->flux[v] /= fc->area[0];
         }
         // fc->flux is now the error in dU made for both coarse cells.
         // Correct dU in outer cell only, because inner cell is on 
         // top of fine grid and gets overwritten anyway.
 #ifdef DEBUG
         rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
-        rep.printVec("**********  Error",fc->flux,    SimPM.nvar);
-        if (d==3) {
-          rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
-          rep.printVec("n state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
-          rep.printVec("p state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
-        }
+        //if (d==3) {
+        //  rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
+        //  rep.printVec("n state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
+        //  rep.printVec("p state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
+        //}
 #endif
         //
         // If we are at a negative boundary, then it is the positive
@@ -861,6 +876,9 @@ int sim_control_nestedgrid::grid_update_state_vector(
         else {
           spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax , SimPM.nvar,fc->flux,ftmp,utmp);
         }
+#ifdef DEBUG
+        rep.printVec("**********  Error",utmp, SimPM.nvar);
+#endif
         for (int v=0;v<SimPM.nvar;v++) {
           fc->c[0]->dU[v] += utmp[v];
         }

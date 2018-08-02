@@ -1480,7 +1480,6 @@ int UniformGrid::add_cells_to_face(
 #endif
   
   cell *c = FirstPt_All();
-  //std::vector<struct flux_interface *> *fi = &(flux_update_recv[d]);
 
   //
   // Split code for different dimensionality of grid:
@@ -1689,15 +1688,19 @@ void UniformGrid::save_fine_fluxes(
   struct flux_interface *fi=0;
 
   for (unsigned int d=0; d<flux_update_send.size(); d++) {
+
 #ifdef DEBUG
     cout <<"size of flux_update_send["<<d<<"] = "<<flux_update_send[d].size()<<"\n";
 #endif
+
     for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
       // these faces have 2^(ndim-1) cells.
       fi = flux_update_send[d][f];
+
 #ifdef DEBUG
       cout <<"save_fine_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
+
       if (fi==0 && f==0) continue;
       else if (fi==0) rep.error("save_fine_fluxes fi=0",d);
       
