@@ -384,27 +384,6 @@ double sim_control_nestedgrid::advance_step_OA1(
   err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
   err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
 
-  // Now calculate next timestep: function stores dt in SimPM.dt
-  //if (SimPM.levels[l].step % SimPM.levels[l].multiplier ==0) {
-  //  err += calculate_timestep(SimPM, grid,spatial_solver,l);
-  //  if (l<SimPM.grid_nlevels-1) {
-  //    SimPM.dt = min(SimPM.dt, 2.0*SimPM.levels[l+1].dt);
-  //  }
-  //}
-  //else {
-  //  // repeat the same timestep.
-  //  SimPM.dt = SimPM.levels[l].dt;
-  //}
-  //rep.errorTest("scn::advance_step_OA1: calc_timestep",0,err);
-
-  // make sure step is not more than half of the coarser grid step.
-  //if (l>0) {
-  //  SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
-  //}
-  //else {
-  //  SimPM.levels[l].dt = SimPM.dt;
-  //}
-
 #ifdef TESTING
   cout <<"advance_step_OA1, level="<<l<<", returning. t=";
   cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step;
@@ -833,13 +812,13 @@ int sim_control_nestedgrid::grid_update_state_vector(
         fc = grid->flux_update_recv[d][f];
         ff = fine->flux_update_send[d][f];
 
+#ifdef DEBUG
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] /= fc->area[0];
         }
         for (int v=0;v<SimPM.nvar;v++) {
           ff->flux[v] /= fc->area[0];
         }
-#ifdef DEBUG
         cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
         rep.printVec("fc->flux",fc->flux,SimPM.nvar);
         cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
@@ -848,11 +827,10 @@ int sim_control_nestedgrid::grid_update_state_vector(
         
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] += ff->flux[v];
-          //fc->flux[v] /= fc->area[0];
+#ifndef DEBUG
+          fc->flux[v] /= fc->area[0];
+#endif
         }
-        // fc->flux is now the error in dU made for both coarse cells.
-        // Correct dU in outer cell only, because inner cell is on 
-        // top of fine grid and gets overwritten anyway.
 #ifdef DEBUG
         rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
         //if (d==3) {
@@ -862,6 +840,10 @@ int sim_control_nestedgrid::grid_update_state_vector(
         //}
 #endif
         //
+        // fc->flux is now the error in dU made for both coarse cells.
+        // Correct dU in outer cell only, because inner cell is on 
+        // top of fine grid and gets overwritten anyway.
+        //
         // If we are at a negative boundary, then it is the positive
         // face of the cell that we correct, and vice versa for a
         // positive boundary.  So we call the DivStateVectorComponent
@@ -869,7 +851,7 @@ int sim_control_nestedgrid::grid_update_state_vector(
         // what direction the boundary is in.
         // This function is aware of geometry, so it calculates the
         // divergence correctly for curvilinear grids (important!!!).
-        //
+        // The other face of the cell is set to zero flux.
         if (d%2 ==0) {
           spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax , SimPM.nvar,ftmp,fc->flux,utmp);
         }
