@@ -214,8 +214,8 @@ void calc_timestep::timestep_checking_and_limiting(
   // So that we don't increase the timestep by more than 30% over last step:
   //
 #ifdef TIMESTEP_LIMITING
-  if (par.dt > 1.3*par.last_dt)
-    cout <<"limiting step from "<<par.dt<<" to "<<1.3*par.last_dt<<"\n";
+  //if (par.dt > 1.3*par.last_dt)
+  //  cout <<"limiting step from "<<par.dt<<" to "<<1.3*par.last_dt<<"\n";
   par.dt = min(par.dt,1.3*par.last_dt);
 #endif // TIMESTEP_LIMITING
 
