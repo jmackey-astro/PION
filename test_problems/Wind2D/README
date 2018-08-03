@@ -44,13 +44,11 @@ long to run.
 
 ---------------------------------------------------------------------
 
-* Default solver is 4: the Roe Conserved Variable solver.
+* Default solver is 6: Flux Vector Splitting (Van Leer).  This is
+very robust, but also very diffusive, in that respect similar to HLL.
 
-* Default viscosity setting is 4: using the H-correction together
-with the 1D viscosity of Falle et al. (1998).
-
-* This is the slowest setting: PION could run significantly faster
-with solver=6 and AVtype=1.
+* Default viscosity setting is 1: the 1D viscosity of Falle et al.
+(1998).  This helps to minimize the carbuncle instability.
 
 * A colour tracer variable is used to track the mixing of wind and
 ISM material.

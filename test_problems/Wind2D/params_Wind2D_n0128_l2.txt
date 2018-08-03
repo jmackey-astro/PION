@@ -11,11 +11,11 @@ GAMMA 1.6666666666666666666
 ########################
 
 ########################
-solver 4
+solver 6
 OrderOfAccSpace 2
 OrderOfAccTime  2
 CFL 0.3
-ArtificialViscosity 4
+ArtificialViscosity 1
 EtaViscosity 0.15
 
 

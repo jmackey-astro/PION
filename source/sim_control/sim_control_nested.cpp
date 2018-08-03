@@ -88,6 +88,7 @@ int sim_control_nestedgrid::Time_Int(
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
+  bool first_step=true;
   clk.start_timer("Time_Int"); double tsf=0;
 
   // make sure all levels start at the same time.
@@ -135,6 +136,7 @@ int sim_control_nestedgrid::Time_Int(
 #ifdef NEST_INT_TEST
       cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
 #endif
+      if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
       err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       mindt = std::min(mindt, SimPM.dt/scale);
@@ -152,6 +154,15 @@ int sim_control_nestedgrid::Time_Int(
       cout <<"new dt="<<SimPM.levels[l].dt<<", t="<<SimPM.levels[l].simtime<<"\n";
 #endif
     }
+    if (first_step) {
+      // take a 10x smaller timestep for the first timestep.
+      for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+        //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
+        SimPM.levels[l].dt *=0.1;
+      }
+      first_step=false;
+    }
+
   
 
     //clk.start_timer("advance_time");
