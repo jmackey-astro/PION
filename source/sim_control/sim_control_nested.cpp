@@ -348,10 +348,12 @@ double sim_control_nestedgrid::advance_step_OA1(
   // for this step.
   spatial_solver->set_dx(SimPM.levels[l].dx);
   spatial_solver->Setdt(SimPM.levels[l].dt);
-  // May need to do raytracing
-  if (!FVI_need_column_densities_4dt && grid->RT) {
+  // May need to do raytracing, if not already completed for getting
+  // the timestep.
+  if (grid->RT && (!FVI_need_column_densities_4dt ||
+    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
     err += calculate_raytracing_column_densities(SimPM,grid,l);
-    rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
+    rep.errorTest("scn::advance_step_OA1: calc_rt_cols()",0,err);
   }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
   err += calc_dynamics_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART, grid);
@@ -381,8 +383,8 @@ double sim_control_nestedgrid::advance_step_OA1(
   //
   // update internal and external boundaries.
   //
-  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
+  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA1);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA1);
 
 #ifdef TESTING
   cout <<"advance_step_OA1, level="<<l<<", returning. t=";
@@ -428,9 +430,10 @@ double sim_control_nestedgrid::advance_step_OA2(
   spatial_solver->set_dx(SimPM.levels[l].dx);
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing
-  if (!FVI_need_column_densities_4dt && grid->RT) {
+  if (grid->RT && (!FVI_need_column_densities_4dt ||
+    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
     err += calculate_raytracing_column_densities(SimPM,grid,l);
-    rep.errorTest("scn::advance_time: calc_rt_cols()",0,err);
+    rep.errorTest("scn::advance_step_OA2: calc_rt_cols()",0,err);
   }
 
   //
@@ -510,16 +513,16 @@ double sim_control_nestedgrid::advance_step_OA2(
   err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
 
   // Now calculate next timestep: function stores dt in SimPM.dt
-  err += calculate_timestep(SimPM, grid,spatial_solver,l);
-  rep.errorTest("scn::advance_step_OA2: calc_timestep",0,err);
+  //err += calculate_timestep(SimPM, grid,spatial_solver,l);
+  //rep.errorTest("scn::advance_step_OA2: calc_timestep",0,err);
 
   // make sure step is not more than half of the coarser grid step.
-  if (l>0) {
-    SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
-  }
-  else {
-    SimPM.levels[l].dt = SimPM.dt;
-  }
+  //if (l>0) {
+  //  SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
+  //}
+  //else {
+  //  SimPM.levels[l].dt = SimPM.dt;
+  //}
 
 #ifdef NEST_INT_TEST
   cout <<"advance_step_OA2, level="<<l<<", returning. t=";
@@ -782,7 +785,7 @@ int sim_control_nestedgrid::grid_update_state_vector(
   // the face.
   //
   if (level < SimPM.grid_nlevels-1) {
-#ifdef DEBUG
+#ifdef DEBUG_SMR
     cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif
     class GridBaseClass *fine = SimPM.levels[level].child;
@@ -798,7 +801,7 @@ int sim_control_nestedgrid::grid_update_state_vector(
       rep.error("fine and parent face arrays are different size",1);
 
     for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"Direction: "<<d<<", looping through faces.\n";
 #endif
       ax = static_cast<enum axes>(d/2);
@@ -812,7 +815,7 @@ int sim_control_nestedgrid::grid_update_state_vector(
         fc = grid->flux_update_recv[d][f];
         ff = fine->flux_update_send[d][f];
 
-#ifdef DEBUG
+#ifdef DEBUG_SMR
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] /= fc->area[0];
         }
@@ -827,11 +830,11 @@ int sim_control_nestedgrid::grid_update_state_vector(
         
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] += ff->flux[v];
-#ifndef DEBUG
+#ifndef DEBUG_SMR
           fc->flux[v] /= fc->area[0];
 #endif
         }
-#ifdef DEBUG
+#ifdef DEBUG_SMR
         rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
         //if (d==3) {
         //  rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
@@ -858,14 +861,14 @@ int sim_control_nestedgrid::grid_update_state_vector(
         else {
           spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax , SimPM.nvar,fc->flux,ftmp,utmp);
         }
-#ifdef DEBUG
+#ifdef DEBUG_SMR
         rep.printVec("**********  Error",utmp, SimPM.nvar);
 #endif
         for (int v=0;v<SimPM.nvar;v++) {
           fc->c[0]->dU[v] += utmp[v];
         }
      } // loop over faces in this direction.
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"Direction: "<<d<<", finished.\n";
 #endif
     } // loop over directions.

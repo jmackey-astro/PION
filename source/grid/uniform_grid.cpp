@@ -1249,7 +1249,9 @@ int UniformGrid::setup_flux_recv(
       const int l           ///< level to receive from
       )
 {
+#ifdef DEBUG_SMR
   cout <<" UniformGrid::setup_flux_recv() recv from level="<<l<<"\n";
+#endif
   //
   // Get size of interface region and number of cells.
   //
@@ -1354,7 +1356,9 @@ int UniformGrid::setup_flux_send(
       const int l           ///< level to send to
       )
 {
+#ifdef DEBUG_SMR
   cout <<" UniformGrid::setup_flux_send() send to level="<<l<<"\n";
+#endif
   //
   // Get size of interface region and number of cells.
   //
@@ -1366,8 +1370,10 @@ int UniformGrid::setup_flux_send(
   size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
 
+#ifdef DEBUG_SMR
   if (this != par.levels[l].child)
     rep.error("level l is not my parent!",l);
+#endif
 
   CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
   CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
@@ -1387,9 +1393,11 @@ int UniformGrid::setup_flux_send(
 
     ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
     nface[v] = ncell[v]/2;  // number of face elements on coarse grid
+#ifdef DEBUG_SMR
     if ( (ixmax[v]-ixmin[v]) % 2*G_idx !=0) {
       rep.error("interface region not divisible (send)!",ixmax[v]-ixmin[v]);
     }
+#endif
   }
   for (int v=0;v<2*G_ndim;v++) nel[v]=0;
 
@@ -1425,14 +1433,18 @@ int UniformGrid::setup_flux_send(
   flux_update_send.resize(2*G_ndim);
   for (int v=0; v<2*G_ndim; v++) {
     if (send[v] == true) {
+#ifdef DEBUG_SMR
       cout <<"d="<<v<<", nel="<<nel[v]<<"\n";
+#endif
       flux_update_send[v].resize(nel[v]);
     }
     else {
       flux_update_send[v].resize(1);
       flux_update_send[v][0] = 0;
     }
+#ifdef DEBUG_SMR
     cout <<"d="<<v<<", nel="<<nel[v]<<"... allocating memory for "<<nel[v]<<" elements\n";
+#endif
     for (size_t i=0; i<nel[v]; i++) {
       flux_update_send[v][i] = mem.myalloc(flux_update_send[v][i],1);
       fi = flux_update_send[v][i];
@@ -1448,7 +1460,9 @@ int UniformGrid::setup_flux_send(
   // and that includes the interface.
   for (int v=0; v<2*G_ndim; v++) {
     if (send[v]) {
+#ifdef DEBUG_SMR
       cout <<"d="<<v<<", nel="<<nel[v]<<"... adding cells to face\n";
+#endif
       add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,nface,2,flux_update_send[v]);
     }
   }
@@ -1473,7 +1487,7 @@ int UniformGrid::add_cells_to_face(
       )
 {
   
-#ifdef DEBUG
+#ifdef DEBUG_SMR
   int a=static_cast<int>(d)/2;
   cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
   cout <<", "<<nface[a]<<", "<<ncell<<")\n";
@@ -1536,7 +1550,7 @@ int UniformGrid::add_cells_to_face(
     }
 
     // loop over cells in interface:
-#ifdef DEBUG
+#ifdef DEBUG_SMR
     cout <<nface[perpaxis]<<", ";
     cout <<fi.size()<<"\n";
 #endif
@@ -1549,7 +1563,7 @@ int UniformGrid::add_cells_to_face(
         c->F = mem.myalloc(c->F,G_nvar);
         c->isbd_ref[d] = true;
         fi[i]->area[ic] = CellInterface(c,OppDir(d));
-#ifdef DEBUG
+#ifdef DEBUG_SMR
         cout <<"area["<<ic<<"] = "<<fi[i]->area[ic]<<"\n";
 #endif
         c = NextPt(c,perpdir);
@@ -1681,7 +1695,7 @@ void UniformGrid::save_fine_fluxes(
     const double dt
     )
 {
-#ifdef DEBUG
+#ifdef DEBUG_SMR
   cout <<"save_fine_fluxes() \n";
   cout <<"size of flux_update_send = "<<flux_update_send.size()<<"\n";
 #endif
@@ -1689,7 +1703,7 @@ void UniformGrid::save_fine_fluxes(
 
   for (unsigned int d=0; d<flux_update_send.size(); d++) {
 
-#ifdef DEBUG
+#ifdef DEBUG_SMR
     cout <<"size of flux_update_send["<<d<<"] = "<<flux_update_send[d].size()<<"\n";
 #endif
 
@@ -1697,7 +1711,7 @@ void UniformGrid::save_fine_fluxes(
       // these faces have 2^(ndim-1) cells.
       fi = flux_update_send[d][f];
 
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"save_fine_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
 
@@ -1712,14 +1726,14 @@ void UniformGrid::save_fine_fluxes(
       for (int i=0;i<fi->Ncells;i++) {
         if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
-#ifdef DEBUG
+#ifdef DEBUG_SMR
         cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
 #endif
         for (int v=0;v<G_nvar;v++) {
           fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
         }
-#ifdef DEBUG
+#ifdef DEBUG_SMR
         cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
 #endif
@@ -1740,7 +1754,7 @@ void UniformGrid::save_coarse_fluxes(
     const double dt
     )
 {
-#ifdef DEBUG
+#ifdef DEBUG_SMR
   cout <<"save_coarse_fluxes() \n";
   cout <<"size of flux_update_recv = "<<flux_update_recv.size()<<"\n";
 #endif
@@ -1750,7 +1764,7 @@ void UniformGrid::save_coarse_fluxes(
     for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
       // these elements have only one cell per face.
       fi = flux_update_recv[d][f];
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
 
@@ -1760,7 +1774,7 @@ void UniformGrid::save_coarse_fluxes(
       if (!fi->c[0]->F) rep.error("flux is not allocated!",f);
 
       // set face flux to be the negative of the intercell flux
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
       cout <<", f0="<<fi->c[0]->F[0]<<", area="<<fi->area[0]<<", dt="<<dt<<"\n";
 #endif

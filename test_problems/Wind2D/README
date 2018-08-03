@@ -1,0 +1,59 @@
+---------------------------------------------------------------------
+Test problem for 2D stellar wind simulations, using axisymmetry and
+a nested grid (static mesh-refinement).
+---------------------------------------------------------------------
+
+This simulates a spherically symmetric wind expanding at 1500 km/s
+with mass-injection rate of 1e-7 Msun/year, corresponding roughly to
+an O star of 20-30 Msun.
+
+There is no chemistry or cooling, so the shocked regions evolve
+adiabatically, with EOS gamma=5/3.
+
+The system evolves in a cylindrical domain of approxmately 1 parsec
+radius and 2 parsec in height, and the outer shock reaches the
+boundary after about 50,000 years, at which point the simulation
+stops.
+
+---------------------------------------------------------------------
+
+The parameter files "params_Wind2D_nXXXX_lY.txt" use different spatial
+resolution and different numbers of nested-grid levels, where only
+half of the full space is simulated, with reflecting boundary
+conditions imposed at the equator.
+
+- The files with "n0128" have 128x128 grid zones per level, and those
+with "n0256" have 256 grid zones per level.
+
+- "Y" refers to the number of refinement levels.
+
+- The n0128 setups have an inner wind-boundary at radius 1.543e17 cm,
+and the n0256 setups have it at radius 0.75e17 cm (i.e. about 2x
+smaller).
+
+- These simulations can be run with a single core using "run.sh"
+
+
+---------------------------------------------------------------------
+
+The parameter files "params_Wind2Dhp_nXXXX_lY.txt" are the same
+except that the full space is simulated, so they will take twice as
+long to run.
+
+- These simulations can be run with a single core using "run_hp.sh"
+
+---------------------------------------------------------------------
+
+* Default solver is 4: the Roe Conserved Variable solver.
+
+* Default viscosity setting is 4: using the H-correction together
+with the 1D viscosity of Falle et al. (1998).
+
+* This is the slowest setting: PION could run significantly faster
+with solver=6 and AVtype=1.
+
+* A colour tracer variable is used to track the mixing of wind and
+ISM material.
+
+
+
