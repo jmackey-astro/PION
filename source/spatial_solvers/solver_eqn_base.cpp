@@ -48,6 +48,8 @@
 ///    produces identical results for the 3D blastwave test.
 /// - 2018.01.24 JM: worked on making SimPM non-global
 /// - 2018.04.14 JM: Moved flux solver to FV_solver
+/// - 2018.08.03 JM: Added Berger & Colella (1989) flux correction
+///    algorithm to PostProcess_dU()
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -877,14 +879,14 @@ int FV_solver_base::PostProcess_dU(
     }
 
     if (level!=0) {
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"saving fine fluxes on level "<<level<<" to send up.\n";
 #endif
       grid->save_fine_fluxes(par.levels[level].step, par.levels[level].dt);
     }
 
     if (level!=par.grid_nlevels-1) {
-#ifdef DEBUG
+#ifdef DEBUG_SMR
       cout <<"saving coarse fluxes on level "<<level<<" to correct.\n";
 #endif
       grid->save_coarse_fluxes(par.levels[level].dt);
