@@ -795,7 +795,7 @@ int sim_control_nestedgrid::grid_update_state_vector(
   // fluxes.  Subtract the flux difference from the cells adjacent to
   // the face.
   //
-  if (level < SimPM.grid_nlevels-1) {
+  if (step==ooa && level < SimPM.grid_nlevels-1) {
 #ifdef DEBUG_SMR
     cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif

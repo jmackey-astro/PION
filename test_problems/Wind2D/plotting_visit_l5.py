@@ -1,13 +1,13 @@
 
 
-OPDIR="/mnt/data/jm/nested_pion/Wind2D"
-#OPDIR="/vol/aibn129/data1/jmackey/scratch/Wind2D"
+#OPDIR="/mnt/data/jm/nested_pion/Wind2D"
+OPDIR="/vol/aibn129/data1/jmackey/scratch/Wind2Dhp"
 
-DB_level00="localhost:"+OPDIR+"/OA2_n0128_l5_level00.*.silo database"
-DB_level01="localhost:"+OPDIR+"/OA2_n0128_l5_level01.*.silo database"
-DB_level02="localhost:"+OPDIR+"/OA2_n0128_l5_level02.*.silo database"
-DB_level03="localhost:"+OPDIR+"/OA2_n0128_l5_level03.*.silo database"
-DB_level04="localhost:"+OPDIR+"/OA2_n0128_l5_level04.*.silo database"
+DB_level00="localhost:"+OPDIR+"/OA2_hp_n0128_l5_level00.*.silo database"
+DB_level01="localhost:"+OPDIR+"/OA2_hp_n0128_l5_level01.*.silo database"
+DB_level02="localhost:"+OPDIR+"/OA2_hp_n0128_l5_level02.*.silo database"
+DB_level03="localhost:"+OPDIR+"/OA2_hp_n0128_l5_level03.*.silo database"
+DB_level04="localhost:"+OPDIR+"/OA2_hp_n0128_l5_level04.*.silo database"
 
 SetDatabaseCorrelationOptions(0,0)
 OpenComputeEngine("localhost", ("-np", "2"))
@@ -127,7 +127,7 @@ SubsetAtts = SubsetAttributes()
 SubsetAtts.colorType = SubsetAtts.ColorBySingleColor
 SubsetAtts.colorTableName = "Default"
 SubsetAtts.invertColorTable = 0
-SubsetAtts.legendFlag = 1
+SubsetAtts.legendFlag = 0
 SubsetAtts.lineStyle = SubsetAtts.SOLID
 SubsetAtts.lineWidth = 0
 SubsetAtts.singleColor = (255, 255, 255, 255)

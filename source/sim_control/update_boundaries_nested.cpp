@@ -361,7 +361,16 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
   //list<cell*>::iterator c_iter=b->nest.begin();
   list<cell*>::iterator f_iter=b->data.begin();
   cell *c, *f;
-  double U[par.nvar], P[par.nvar], U1[par.nvar], U2[par.nvar];
+  double *U   = new double [par.nvar];
+  double *P   = new double [par.nvar];
+  double *U1  = new double [par.nvar];
+  double *U2  = new double [par.nvar];
+  double *P00 = new double [par.nvar];
+  double *P10 = new double [par.nvar];
+  double *P01 = new double [par.nvar];
+  double *P11 = new double [par.nvar];
+  double *sx  = new double [par.nvar];
+  double *sy  = new double [par.nvar];
 
   //
   // if on an odd-numbered step, then need to update the data on the
@@ -473,9 +482,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
       //
       // Need to do bilinear interpolation, 4 cells at a time.
       //
-      double sx[par.nvar], sy[par.nvar]; // slope in x-dir
       double dxo2 = 0.5*fine->DX(); // dx
-      double P00[par.nvar], P10[par.nvar], P01[par.nvar], P11[par.nvar];
       double c_vol=0.0, f_vol[4];
       //
       // Do 4 fine cells at a time: they have the same parent.
@@ -493,12 +500,6 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
           continue;
         }
 
-#ifdef TEST_C2F
-        cout <<"c="<<c<<"  ";
-        cout <<"sps="<<spatial_solver<<"\n";
-        CI.print_cell(f);
-        CI.print_cell(c);
-#endif
         // use slopes in each direction to get corner values for the
         // coarse cell.
         spatial_solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
@@ -509,14 +510,7 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] +sx[v] -sy[v];
         for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] -sx[v] +sy[v];
         for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] +sx[v] +sy[v];
-#ifdef TEST_C2F
-        rep.printVec("** sx **",sx,par.nvar);
-        rep.printVec("** sy **",sy,par.nvar);
-        rep.printVec("coarse00",P00,par.nvar);
-        rep.printVec("coarse01",P01,par.nvar);
-        rep.printVec("coarse10",P10,par.nvar);
-        rep.printVec("coarse11",P11,par.nvar);
-#endif
+
         // now interpolate all four cells using the 4 corner states.
         bilinear_interp(par, c, f, P00, P01, P10, P11);
         bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
@@ -534,7 +528,8 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         //
         c_vol = coarse->CellVolume(c);
         f_iter--; f = (*f_iter);
-        // two have same parent, so calculate conservation.
+
+        // four have same parent, so calculate conservation.
         spatial_solver->PtoU(f->P, P00, par.gamma);
         f_vol[0] = fine->CellVolume(f);
         spatial_solver->PtoU(fine->NextPt(f,YP)->P, P10, par.gamma);
@@ -544,69 +539,56 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
         f_vol[2] = fine->CellVolume(f);
         spatial_solver->PtoU(fine->NextPt(f,YP)->P, P11, par.gamma);
         f_vol[3] = fine->CellVolume(fine->NextPt(f,YP));
-#ifdef TEST_C2F
-        rep.printVec("U fine00",P00,par.nvar);
-        rep.printVec("U fine01",P01,par.nvar);
-        rep.printVec("U fine10",P10,par.nvar);
-        rep.printVec("U fine11",P11,par.nvar);
-#endif
+
         for (int v=0;v<par.nvar;v++)
           U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
         // compare with coarse cell.
         spatial_solver->PtoU(c->Ph, P, par.gamma);
-#ifdef TEST_C2F
-        rep.printVec("2D coarse Cons", P,par.nvar);
-        rep.printVec("2D coarse Prim", c->Ph,par.nvar);
-        double p=P[RO];
-        if (!pconst.equalD(P00[RO],p) || !pconst.equalD(P01[RO],p) ||
-            !pconst.equalD(P10[RO],p) || !pconst.equalD(P11[RO],p)) {
-          cout <<"SLOPE SLOPE c="<<p<<", f="<<P00[RO]<<", f="<<P01[RO]<<", f="<<P10[RO]<<", f="<<P11[RO]<<"\n";
-        }
-#endif
         for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
 
-#ifdef TEST_C2F
-        cout <<"2D coarse vol = "<<c_vol<<";  ";
-        rep.printVec("2D fine vol",f_vol,4);
-        rep.printVec("2D coarse cons*vol", P,par.nvar);
-        rep.printVec("2D fine   cons*vol", U,par.nvar);
-#endif
-        // scale fine conserved vec by ratio of coarse to fine energy.
+#ifdef DEBUG_SMR
         for (int v=0;v<par.nvar;v++) {
-          if (!pconst.equalD(P[v],U[v])) {
-            P00[v] *= P[v] / U[v];
-            P01[v] *= P[v] / U[v];
-            P10[v] *= P[v] / U[v];
-            P11[v] *= P[v] / U[v];
+          if (!isfinite(P00[v]) || !isfinite(P01[v]) || !isfinite(P10[v]) || !isfinite(P11[v])) {
+            rep.printVec("Unscaled fine00",P00,par.nvar);
+            rep.printVec("Unscaled fine01",P01,par.nvar);
+            rep.printVec("Unscaled fine10",P10,par.nvar);
+            rep.printVec("Unscaled fine11",P11,par.nvar);
           }
         }
-#ifdef TEST_C2F
-        for (int v=0;v<par.nvar;v++)
-          U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
-        rep.printVec("2D fine 2 cons*vol", U, par.nvar); 
 #endif
+
+        // scale fine conserved vec by adding the difference between
+        // conserved quantities on the fine and coarse grids.
+        for (int v=0;v<par.nvar;v++) {
+          P[v] = 0.25*(P[v] - U[v])/c_vol;
+          P00[v] += P[v];
+          P01[v] += P[v];
+          P10[v] += P[v];
+          P11[v] += P[v];
+        }
+        
+        // put scaled conserved variable vectors back into fine cells
         spatial_solver->UtoP(P01,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+
         spatial_solver->UtoP(P11,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++)
           fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
-        
-        for (int v=0;v<par.nvar;v++) {
-          if (!isfinite(f->P[v]) || !isfinite(fine->NextPt(f,YP)->P[v]))
-            rep.error("fine 1,2 not finite",f->P[v]);
-        }
 
         f_iter--; f = (*f_iter);
         spatial_solver->UtoP(P00,f->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
+
         spatial_solver->UtoP(P10,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
         for (int v=0;v<par.nvar;v++)
           fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
         
+#ifdef DEBUG_SMR
         for (int v=0;v<par.nvar;v++) {
           if (!isfinite(f->P[v]) || !isfinite(fine->NextPt(f,YP)->P[v]))
             rep.error("fine 3,4 not finite",f->P[v]);
         }
+#endif
 
         f_iter++; f = (*f_iter);
       } // loop over fine cells
@@ -621,14 +603,16 @@ int update_boundaries_nested::BC_update_COARSE_TO_FINE(
     } // 3D
   } // 2nd-order accuracy
 
-#ifdef TEST_C2F
-  for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
-    f = (*f_iter);
-    rep.printVec("END STATE f->P",f->P,par.nvar);
-    rep.printVec("END STATE c->P",f->npt->P,par.nvar);
-  }
-#endif
-
+  delete [] U;
+  delete [] P;
+  delete [] U1;
+  delete [] U2;
+  delete [] P00;
+  delete [] P10;
+  delete [] P01;
+  delete [] P11;
+  delete [] sx;
+  delete [] sy;
   return 0;
 }
 
