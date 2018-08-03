@@ -340,8 +340,8 @@ int FV_solver_Hydro_Euler::dU_Cell(
         const pion_flt *fp, // Positive direction flux.
         const pion_flt *,   // slope vector for cell c.
         const int,        // spatial order of accuracy.
-        const double,     // cell length dx.
-        const double      // cell TimeStep, dt.
+        const double dx,     // cell length dx.
+        const double dt     // cell TimeStep, dt.
         )
 {
   pion_flt u1[eq_nvar];
@@ -349,7 +349,7 @@ int FV_solver_Hydro_Euler::dU_Cell(
   // This calculates -dF/dx
   //
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
-  for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
+  for (int v=0;v<eq_nvar;v++) c->dU[v] += dt*u1[v];
   return(err);
 }
 

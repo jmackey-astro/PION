@@ -873,6 +873,9 @@ int FV_solver_base::PostProcess_dU(
       )
 {
   if (par.grid_nlevels >1 && step==par.tmOOA) {
+#ifdef DEBUG_SMR
+    cout <<"step="<<step<<" and OOA="<<par.tmOOA<<"\n";
+#endif
     int level=0;
     for (int v=0;v<par.grid_nlevels;v++) {
       if (grid == par.levels[v].grid) level = v;
