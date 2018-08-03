@@ -1,6 +1,12 @@
+# python script to open silo files for each level of the refined
+# grid, and create a database correlation for them so that all files
+# step through in time together.
+# It starts the GUI and quits, leaving the GUI in control of
+# plotting.  It just sets up the environment so that the simulation
+# is easy to visualise.
 
-OPDIR="/mnt/data/jm/nested_pion/Wind2D"
-#OPDIR="/vol/aibn129/data1/jmackey/scratch/Wind2D"
+#OPDIR="/mnt/data/jm/nested_pion/Wind2D"
+OPDIR="/vol/aibn129/data1/jmackey/scratch/Wind2D"
 
 DB_level00="localhost:"+OPDIR+"/OA2_n0128_l3_level00.*.silo database"
 DB_level01="localhost:"+OPDIR+"/OA2_n0128_l3_level01.*.silo database"

@@ -160,11 +160,11 @@ ReflectAtts.useYBoundary = 1
 ReflectAtts.specifiedY = 0
 ReflectAtts.useZBoundary = 1
 ReflectAtts.specifiedZ = 0
-ReflectAtts.reflections = (1, 1, 1, 1, 0, 0, 0, 0)
+ReflectAtts.reflections = (1, 0, 1, 0, 0, 0, 0, 0)
 SetOperatorOptions(ReflectAtts, 0)
 
 SetActivePlots((1,6))
-AddOperator("Reflect", 0)
+#AddOperator("Reflect", 0)
 ReflectAtts = ReflectAttributes()
 ReflectAtts.octant = ReflectAtts.PXPYPZ
 ReflectAtts.useXBoundary = 1
@@ -174,10 +174,10 @@ ReflectAtts.specifiedY = 0
 ReflectAtts.useZBoundary = 1
 ReflectAtts.specifiedZ = 0
 ReflectAtts.reflections = (1, 1, 1, 1, 0, 0, 0, 0)
-SetOperatorOptions(ReflectAtts, 0)
+#SetOperatorOptions(ReflectAtts, 0)
 
 SetActivePlots((2,7))
-AddOperator("Reflect", 0)
+#AddOperator("Reflect", 0)
 ReflectAtts = ReflectAttributes()
 ReflectAtts.octant = ReflectAtts.PXPYPZ
 ReflectAtts.useXBoundary = 1
@@ -187,10 +187,10 @@ ReflectAtts.specifiedY = 0
 ReflectAtts.useZBoundary = 1
 ReflectAtts.specifiedZ = 0
 ReflectAtts.reflections = (1, 1, 1, 0, 0, 0, 0, 0)
-SetOperatorOptions(ReflectAtts, 0)
+#SetOperatorOptions(ReflectAtts, 0)
 
 SetActivePlots((3,8))
-AddOperator("Reflect", 0)
+#AddOperator("Reflect", 0)
 ReflectAtts = ReflectAttributes()
 ReflectAtts.octant = ReflectAtts.PXPYPZ
 ReflectAtts.useXBoundary = 1
@@ -200,10 +200,10 @@ ReflectAtts.specifiedY = 0
 ReflectAtts.useZBoundary = 1
 ReflectAtts.specifiedZ = 0
 ReflectAtts.reflections = (1, 0, 1, 0, 0, 0, 0, 0)
-SetOperatorOptions(ReflectAtts, 0)
+#SetOperatorOptions(ReflectAtts, 0)
 
 SetActivePlots((4,9))
-AddOperator("Reflect", 0)
+#AddOperator("Reflect", 0)
 ReflectAtts = ReflectAttributes()
 ReflectAtts.octant = ReflectAtts.PXPYPZ
 ReflectAtts.useXBoundary = 1
@@ -213,8 +213,9 @@ ReflectAtts.specifiedY = 0
 ReflectAtts.useZBoundary = 1
 ReflectAtts.specifiedZ = 0
 ReflectAtts.reflections = (1, 0, 0, 0, 0, 0, 0, 0)
-SetOperatorOptions(ReflectAtts, 0)
+#SetOperatorOptions(ReflectAtts, 0)
 
+SetActivePlots((0,1,2,3,4))
 DrawPlots()
 OpenGUI()
 exit()
