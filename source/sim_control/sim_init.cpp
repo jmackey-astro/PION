@@ -44,7 +44,7 @@ using namespace std;
 sim_init::sim_init()
 {
 #ifdef TESTING
-  cout << "(sim_control::Constructor)\n";
+  cout << "(sim_init::Constructor)\n";
 #endif
   dataio=0;
   textio=0;

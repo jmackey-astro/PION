@@ -21,12 +21,15 @@
 #include "setup_fixed_grid.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
+#include "boundaries/assign_update_bcs_SMR.h"
 
 ///
 /// Set up a static nested grid structure.  Serial code, so each
 /// level of the nest has a single grid.
 ///
-class setup_nested_grid : virtual public setup_fixed_grid
+class setup_nested_grid :
+  virtual public setup_fixed_grid,
+  virtual public assign_update_bcs_SMR
 {
   public:
   setup_nested_grid();  ///< Simple constructor, initialises value.
@@ -69,36 +72,11 @@ class setup_nested_grid : virtual public setup_fixed_grid
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );   
 
-  ///
-  /// Assigns data to each boundary.
-  ///
-  virtual int assign_boundary_data(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      class GridBaseClass *,  ///< pointer to parent.
-      class GridBaseClass *  ///< pointer to child.
-      );
 
 
   //---------------------------------------
   protected:
   //---------------------------------------
-
-  /// Assigns data to a nested grid from finer grid.
-  virtual int BC_assign_FINE_TO_COARSE(
-      class SimParams &,     ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *,  ///< boundary data
-      class GridBaseClass *  ///< pointer to child grid.
-      );
-
-  /// Assigns data to an external boundary from coarser grid.
-  virtual int BC_assign_COARSE_TO_FINE(
-      class SimParams &,     ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *,  ///< boundary data
-      class GridBaseClass *  ///< pointer to parent grid.
-      );
 
   ///
   /// Set the boundary conditions string and initialise BC_bd

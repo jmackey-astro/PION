@@ -115,6 +115,7 @@ int main(int argc, char **argv)
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   //spatial_solver->set_dx(SimPM.dx);
   //spatial_solver->SetEOS(SimPM.gamma);
+  class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
   if (SimPM->EP.cooling && !SimPM->EP.chemistry) {
     // don't need to set up the class, because it just does cooling and
@@ -173,7 +174,7 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM->grid_nlevels; l++) {
     cout <<"updating external boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateExternalBCs(*SimPM, grid[l], l, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateExternalBCs(*SimPM, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
   // ----------------------------------------------------------------
@@ -181,7 +182,7 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=SimPM->grid_nlevels-1; l>=0; l--) {
     cout <<"updating internal boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateInternalBCs(*SimPM, grid[l], l, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateInternalBCs(*SimPM, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
   // ----------------------------------------------------------------

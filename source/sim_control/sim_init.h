@@ -20,7 +20,6 @@
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "equations/eqns_base.h"
-#include "sim_control/update_boundaries.h"
 
 
 // ##################################################################
@@ -30,7 +29,7 @@
 /// Class to set up a simulation so that everything is ready to run.
 /// Inherits from setup_fixed_grid.
 ///
-class sim_init : virtual public update_boundaries
+class sim_init : virtual public setup_fixed_grid
 {
   public:
   sim_init();
@@ -75,6 +74,11 @@ class sim_init : virtual public update_boundaries
   /// Initialise the correct Equations to solve, based on paramters.
   ///
   int set_equations();
+
+  ///
+  /// Get pointer to equations class.
+  ///
+  class FV_solver_base * get_solver_ptr() {return spatial_solver;}
 
   ///
   /// information about the simulation

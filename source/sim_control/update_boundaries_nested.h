@@ -35,63 +35,9 @@ class update_boundaries_nested :
   public:
   update_boundaries_nested();
   ~update_boundaries_nested();
-  ///
-  /// Runs through ghost boundary cells and does the appropriate
-  /// time update on them.
-  ///
-  virtual int TimeUpdateExternalBCs(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in nested grid struct.
-      const double,   ///< current simulation time
-      const int, ///< Current step number in the timestep.
-      const int  ///< Maximum step number in timestep.
-      );
-
-  ///
-  /// Runs through boundary cells which are grid cells and does
-  /// the appropriate time update on them.
-  ///
-  virtual int TimeUpdateInternalBCs(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in nested grid struct.
-      const double,   ///< current simulation time
-      const int, ///< Current step number in the timestep.
-      const int  ///< Maximum step number in timestep.
-      );
    
  
   protected:
-
-
-  /// Updates data to a nested grid from finer grid.
-  virtual int BC_update_FINE_TO_COARSE(
-      class SimParams &,      ///< pointer to simulation parameters
-      const int, ///< level of grid in nested grid struct.
-      struct boundary_data *,
-      const int,
-      const int
-      );
-
-  /// Updates data to an external boundary from coarser grid.
-  virtual int BC_update_COARSE_TO_FINE(
-      class SimParams &,      ///< pointer to simulation parameters
-      const int, ///< level of grid in nested grid struct.
-      boundary_data *, ///< pointer to boudary struct
-      const int  ///< current step for fine grid (odd or even).
-      );
-
-  virtual void bilinear_interp(
-      class SimParams &,      ///< pointer to simulation parameters
-      cell *,  ///< coarse level cell
-      cell *,  ///< fine level cell
-      const double *,  ///< prim. vec. at corner of coarse cell
-      const double *,  ///< prim. vec. at corner of coarse cell
-      const double *,  ///< prim. vec. at corner of coarse cell
-      const double *   ///< prim. vec. at corner of coarse cell
-      );
-
 };
 
 #endif // UPDATE_BOUNDARIES_NESTED_H
