@@ -89,65 +89,6 @@ class UniformGridParallel
 {
   protected:
 
-  ///
-  /// Assigns data to each boundary.  Called by SetupBCs().
-  ///
-  virtual int assign_boundary_data(
-      const double,   ///< current simulation time (for DMACH)
-      const double, ///< Simulation start time.
-      const double,  ///< Simulation finish time.
-      const double ///< minimum temperature allowed
-      );
-  
-  ///
-  /// Assigns data to a periodic boundary, getting data from another
-  /// process if necessary.
-  ///
-  virtual int BC_assign_PERIODIC(  boundary_data *);
-  
-  ///
-  /// Updates data on a periodic boundary, getting data from another
-  /// process if necessary. 
-  virtual int BC_update_PERIODIC(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int   ///< final step.
-        );
-   
-  ///
-  /// Get boundary data from other processor.
-  /// Int tag is to distinguish between periodic and internal boundaries, 
-  /// as the domain can be split between two processors, so that proc 0 is
-  /// getting a periodic and an internal boundary from proc 1, and vice
-  /// versa.
-  ///
-  virtual int BC_assign_BCMPI(
-        boundary_data *, ///< pointer to boundary we are assigning.
-        int              ///< tag, either BC_MPItag or BC_PERtag.
-        );
-
-  ///
-  /// Updates data on an inter-process communicating boundary.
-  ///
-  virtual int BC_update_BCMPI(
-        boundary_data *, ///< Boundary to update.
-        const int,  ///< current fractional step being taken.
-        const int,   ///< final step.
-        int              ///< tag, either BC_MPItag or BC_PERtag.
-        );
-
-  ///
-  /// Set the boundary conditions string and initialise BC_bd
-  ///
-  virtual int BC_setBCtypes(
-        class SimParams &  ///< reference to SimParams list.
-        );
-
-  int BC_select_data2send(
-      list<cell *> *,  ///< list of cells (returned by this func.)
-      int *,         ///< number of cells in list.
-      boundary_data *  ///< pointer to boundary data.
-      );
 
   ///
   /// This is the list where element i corresponds to source i, and the struct

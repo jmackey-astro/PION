@@ -472,7 +472,7 @@ int time_integrator::calc_dynamics_dU(
     cout <<"*****Updating dynamics: OA1\n";
   else if (step==TIMESTEP_FULL)
     cout <<"*****Updating dynamics: OA2\n";
-  else rep.error("Bad ooa",space_ooa);
+  else rep.error("Bad ooa",step);
 #endif //TESTING
 
   //
@@ -624,9 +624,6 @@ int time_integrator::dynamics_dU_column(
     return(1);
   }
   int err = 0;
-#ifdef TESTING
-  int ct=0;
-#endif
   enum axes axis = spatial_solver->GetDirection();
   double dx = grid->DX();
 
