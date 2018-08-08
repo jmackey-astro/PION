@@ -32,37 +32,11 @@
 #include "grid/cell_interface.h"
 #include "grid/stellar_wind_BC.h"
 #include "raytracing/raytracer_base.h"
+#include "boundaries/boundaries.h"
 
 #include <string>
 #include <list>
 #include <vector>
-
-
-///
-/// Struct to contain all the information for a grid boundary.
-///
-struct boundary_data {
-  enum direction dir; ///< Outward Normal direction of boundary (NO dir if internal).
-  enum direction ondir; ///< direction back onto grid.
-  std::string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
-  int itype;         ///< Integer flag for boundary type.
-  int bloc;          ///< boundary location, e.g. x=0
-  bool bpos;         ///< whether boundary is in +ve direction?
-  enum axes baxis;   ///< index in position vector relating to bpos.
-  std::list<cell *> data; ///< STL linked list for boundary data cells.
-  ///
-  /// STL linked list for grid cells to send to neighbouring
-  /// processor (parallel only; for serial code this is unused).
-  ///
-  std::list<cell *> send_data;
-  ///
-  /// STL linked list for grid cells in a parent/child grid needed
-  /// for the external boundaries of a child grid (unused for uniform
-  /// grid) or the non-leaf data of a parent grid.
-  ///
-  std::list<cell*> nest;
-  pion_flt *refval;  ///< Optional reference state vector.
-};
 
 
 ///

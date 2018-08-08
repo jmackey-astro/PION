@@ -394,7 +394,7 @@ ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
 endif
 
-OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
+OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o update_boundaries_MPI.o
 
 OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
 
@@ -504,6 +504,10 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
 
 update_boundaries.o: update_boundaries.cpp update_boundaries.h \
   ${GLOBAL} setup_fixed_grid.h grid_base_class.h
+
+update_boundaries_MPI.o: update_boundaries_MPI.cpp update_boundaries_MPI.h \
+  ${GLOBAL} setup_fixed_grid.h setup_fixed_grid_MPI.h  grid_base_class.h \
+  uniform_grid.h uniform_grid_pllel.h
 
 update_boundaries_nested.o: update_boundaries_nested.cpp \
   update_boundaries_nested.h update_boundaries.h \

@@ -83,7 +83,8 @@ VPATH = \
 ../source/tools:\
 ../source/future:\
 ../source/decomposition\
-../source/nested_grid
+../source/nested_grid\
+../source/boundaries
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
@@ -354,6 +355,13 @@ OBJ_ICS = shock_tube.o radiative_shock.o blast_wave.o basic_tests.o \
           photoevaporating_multiclumps.o inside_sphere.o \
           icgen_base.o
 
+OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
+          outflow_boundaries.o inflow_boundaries.o \
+          reflecting_boundaries.o oneway_out_boundaries.o \
+          fixed_boundaries.o jet_boundaries.o \
+          jetreflect_boundaries.o double_Mach_ref_boundaries.o \
+          stellar_wind_boundaries.o
+
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
   OBJ_ICS += StarBench_test.o
 endif
@@ -372,12 +380,12 @@ OBJ_NEST_ICS = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o up
 
 OBJ_NEST_SIM = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o sim_control_nested.o
 
-OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
+OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD)
+OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_NEST_PION = main_nested.o $(OBJ_NEST_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD)
-OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST_ICS) $(OBJ_SOLVE) 
+OBJECTS_NEST_PION = main_nested.o $(OBJ_NEST_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
+OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST_ICS) $(OBJ_SOLVE) $(OBJ_BCS)
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -449,6 +457,52 @@ setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
   ${GLOBAL} uniform_grid.h grid_base_class.h
+
+
+#####################
+# BOUNDARY CLASSES  #
+#####################
+
+periodic_boundaries.o: periodic_boundaries.cpp periodic_boundaries.h\
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+outflow_boundaries.o: outflow_boundaries.cpp outflow_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+oneway_out_boundaries.o: oneway_out_boundaries.cpp \
+  oneway_out_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h outflow_boundaries.h
+
+inflow_boundaries.o: inflow_boundaries.cpp inflow_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+reflecting_boundaries.o: reflecting_boundaries.cpp \
+  reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+jet_boundaries.o: jet_boundaries.cpp jet_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+jetreflect_boundaries.o: jetreflect_boundaries.cpp \
+  jetreflect_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+double_Mach_ref_boundaries.o: double_Mach_ref_boundaries.cpp \
+  double_Mach_ref_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h
+
+stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
+  stellar_wind_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h stellar_wind_BC.h
+
+assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
+  periodic_boundaries.h outflow_boundaries.h \
+  oneway_out_boundaries.h inflow_boundaries.h \
+  reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
 
 
 #####################

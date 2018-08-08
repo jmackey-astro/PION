@@ -17,36 +17,13 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
-#include "spatial_solvers/solver_eqn_base.h"
 #include "grid/uniform_grid.h"
 #include "decomposition/MCMD_control.h"
+#include "boundaries/assign_update_bcs.h"
 
 #define TIMESTEP_FULL 2
 #define TIMESTEP_FIRST_PART 1
 
-///
-/// enum for the types of boundary condition.
-///
-enum BoundaryTypes {
-    PERIODIC   = 1, ///< periodic bcs.
-    OUTFLOW    = 2, ///< outflow or absorbing bcs.
-    INFLOW     = 3, ///< inflow bcs., value on boundary doesn't change.
-    REFLECTING = 4, ///< reflecting bcs., hard wall.
-    FIXED      = 5, ///< fixed bcs, means every point on boundary has same unchanging value.
-    JETBC      = 6, ///< A jet boundary, internal boundary.
-    JETREFLECT = 7, ///< Sort-of reflection for bi-directional jet, 
-                    ///< where normal B field passes through, but tangential is reversed.
-    DMACH      = 8, ///< Outflow boundary for double mach reflection test problem only.
-    DMACH2     = 9, ///< Fixed boundary on y=0, x in [0,1/6] fixed to postshock state.
-    BCMPI      =10, ///< boundary between processor domains in parallel grid.
-    RADSHOCK   =11, ///< Boundary condition adjacent to cold wall for radiative shock test problem.
-    RADSH2     =12, ///< Outflow augmented with fixed outflow speed.
-    ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
-    STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
-    STARBENCH1 =15, ///< StarBench test for mixing with a solid wall.
-    FINE_TO_COARSE  =16, ///< data in this cell should be obtained from finer-scale data on a nested grid.
-    COARSE_TO_FINE   =17  ///< data should be obtained from coarser level in a nested grid.
-};
 
 
 ///
@@ -56,7 +33,7 @@ enum BoundaryTypes {
 /// for simulation analysis.  PION itself uses a derived class to
 /// setup and run simulations.
 ///
-class setup_fixed_grid
+class setup_fixed_grid : virtual public assign_update_bcs
 {
   public:
   setup_fixed_grid();  ///< Simple constructor, initialises value.
@@ -124,13 +101,6 @@ class setup_fixed_grid
       class GridBaseClass *  ///< pointer to grid.
       );
 
-  ///
-  /// Assigns data to each boundary.
-  ///
-  virtual int assign_boundary_data(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *  ///< pointer to grid.
-      );
 
   //---------------------------------------
   protected:
@@ -149,6 +119,12 @@ class setup_fixed_grid
   /// vector of RT ionising sources, of size FVI_nion
   std::vector<struct rt_source_data> FVI_ionising_srcs;
 
+  ///
+  /// Pointer to equations to solve, and routines for calculating
+  /// fluxes on the grid.
+  ///
+  class FV_solver_base *spatial_solver;
+
 
   ///
   /// Set the boundary conditions string and initialise BC_bd
@@ -158,113 +134,9 @@ class setup_fixed_grid
       class GridBaseClass *  ///< pointer to grid.
       );
 
-  /// Assigns data to a periodic boundary.
-  virtual int BC_assign_PERIODIC(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
 
-  /// Assigns data on an outflow (zero gradient) boundary.
-  int BC_assign_OUTFLOW(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
 
-  ///
-  /// Assigns data on a one-way outflow (zero gradient) boundary.
-  /// If the flow is off-domain, then I use zero-gradient, but if flow
-  /// is onto domain then I set the boundary cells to have zero normal 
-  /// velocity.
-  ///
-  int BC_assign_ONEWAY_OUT(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
 
-  /// Assigns data on an inflow (fixed) boundary.
-  int BC_assign_INFLOW(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  /// Assigns data on a reflecting boundary.
-  int BC_assign_REFLECTING(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  /// Assigns data on a fixed boundary.
-  int BC_assign_FIXED(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  ///
-  /// Sets some boundary cells to be fixed to the Jet inflow
-  /// condition.
-  ///
-  virtual int BC_assign_JETBC(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  ///
-  /// Assigns data on a JetReflect boundary, which is the same
-  /// as a reflecting boundary, except the B-field is reflected differently.
-  /// It is the base of a jet, so there is assumed to be another jet
-  /// in the opposite direction, so the normal B-field is unchanged across
-  /// the boundary and the tangential field is reversed.
-  ///
-  int BC_assign_JETREFLECT(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  /// Assigns data on a boundary for the Double Mach Reflection Problem.
-  int BC_assign_DMACH(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  /// Assigns data on The other DMR test problem boundary
-  virtual int BC_assign_DMACH2(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  ///
-  /// Add internal stellar wind boundaries -- these are (possibly time-varying)
-  /// winds defined by a mass-loss-rate and a terminal velocity.  A region within
-  /// the domain is given fixed values corresponding to a freely expanding wind
-  /// from a cell-vertex-located source.
-  ///
-  int BC_assign_STWIND(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *
-      );
-
-  ///
-  /// Add cells to both the Wind class, and to the boundary data list
-  /// of cells.  This is re-defined for cylindrical and spherical
-  /// coords below.
-  ///
-  virtual int BC_assign_STWIND_add_cells2src(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      //boundary_data *, ///< boundary ptr.
-      const int    ///< source id
-      );
 
 }; // setup_fixed_grid
    
