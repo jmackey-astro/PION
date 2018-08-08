@@ -362,6 +362,11 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           jetreflect_boundaries.o double_Mach_ref_boundaries.o \
           stellar_wind_boundaries.o
 
+OBJ_SMR_BCS = assign_update_bcs_SMR.o     \
+          SMR_coarse_to_fine_boundaries.o \
+          SMR_fine_to_coarse_boundaries.o
+
+
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
   OBJ_ICS += StarBench_test.o
 endif
@@ -374,18 +379,19 @@ ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
 endif
 
-OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o
+OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o sim_init.o
 
-OBJ_NEST_ICS = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o update_boundaries.o sim_init.o
+OBJ_SMR_ICS = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o sim_init.o
 
-OBJ_NEST_SIM = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o update_boundaries_nested.o sim_control_nested.o
+OBJ_SMR_SIM = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o sim_control_nested.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
 
 OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_NEST_PION = main_nested.o $(OBJ_NEST_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
-OBJECTS_NEST_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NEST_ICS) $(OBJ_SOLVE) $(OBJ_BCS)
+OBJECTS_SMR_PION = main_nested.o $(OBJ_SMR_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SMR_BCS)
+
+OBJECTS_SMR_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_SMR_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_SMR_BCS)
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -404,11 +410,11 @@ ${bindir}/pion_serial : $(OBJECTS_PION)
 ${bindir}/icgen_serial: $(OBJECTS_ICGEN)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_serial $(LDFLAGS)
 
-${bindir}/pion_nest_serial : $(OBJECTS_NEST_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NEST_PION) -o ${bindir}/pion_nest_serial $(LDFLAGS)
+${bindir}/pion_nest_serial : $(OBJECTS_SMR_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_PION) -o ${bindir}/pion_nest_serial $(LDFLAGS)
 
-${bindir}/icgen_nest_serial: $(OBJECTS_NEST_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NEST_ICGEN) -o ${bindir}/icgen_nest_serial $(LDFLAGS)
+${bindir}/icgen_nest_serial: $(OBJECTS_SMR_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_ICGEN) -o ${bindir}/icgen_nest_serial $(LDFLAGS)
 
 clean:
 	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial ${bindir}/pion_nest_serial ${bindir}/icgen_nest_serial
@@ -432,6 +438,12 @@ icgen.o: icgen.cpp icgen.h get_sim_info.h icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h
 
+icgen_nested.o: icgen_nested.cpp icgen.h get_sim_info.h \
+  icgen_base.h grid_base_class.h \
+  uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
+  dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h \
+  setup_nested_grid.h sim_init_nested.h sim_init.h \
+  assign_update_bcs_SMR.h
 
 #####################
 # GRID CLASSES      #
@@ -453,7 +465,8 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
 
 setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
-  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h
+  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
+  assign_update_bcs_SMR.h
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
   ${GLOBAL} uniform_grid.h grid_base_class.h
@@ -504,40 +517,49 @@ assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
   reflecting_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
+assign_update_bcs_SMR.o: assign_update_bcs_SMR.cpp \
+  assign_update_bcs_SMR.h SMR_coarse_to_fine_boundaries.h \
+  SMR_fine_to_coarse_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h
+
+SMR_coarse_to_fine_boundaries.o: SMR_coarse_to_fine_boundaries.h \
+  SMR_coarse_to_fine_boundaries.cpp solver_eqn_base.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+SMR_fine_to_coarse_boundaries.o: SMR_fine_to_coarse_boundaries.h \
+  SMR_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
 
 #####################
 # CONTROL CLASSES   #
 #####################
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-  setup_fixed_grid.h  calc_timestep.h update_boundaries.h \
+  setup_fixed_grid.h  calc_timestep.h assign_update_bcs.h \
   parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
   sim_init.h setup_fixed_grid.h grid_base_class.h
 
 sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} grid_base_class.h
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
+ grid_base_class.h assign_update_bcs.h
 
 sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
  ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h \
+ assign_update_bcs_SMR.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
- setup_fixed_grid.h calc_timestep.h update_boundaries.h grid_base_class.h \
+ setup_fixed_grid.h calc_timestep.h assign_update_bcs.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 calc_timestep.o: calc_timestep.cpp calc_timestep.h \
  setup_fixed_grid.h microphysics_base.h grid_base_class.h \
  solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
-update_boundaries.o: update_boundaries.cpp update_boundaries.h \
-  ${GLOBAL} setup_fixed_grid.h grid_base_class.h
-
-update_boundaries_nested.o: update_boundaries_nested.cpp \
-  update_boundaries_nested.h update_boundaries.h \
-  ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
-  solver_eqn_base.h grid_base_class.h 
+  solver_eqn_base.h grid_base_class.h assign_update_bcs_SMR.h
 
 #####################
 # EQUATIONS CLASSES #

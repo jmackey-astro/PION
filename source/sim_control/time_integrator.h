@@ -22,8 +22,8 @@
 #include "spatial_solvers/solver_eqn_base.h"
 #include "equations/eqns_base.h"
 #include "sim_control/sim_init.h"
-#include "sim_control/update_boundaries.h"
 #include "sim_control/calc_timestep.h"
+#include "boundaries/assign_update_bcs.h"
 
 
 

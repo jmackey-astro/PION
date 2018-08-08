@@ -113,14 +113,14 @@ int sim_control_nestedgrid::Time_Int(
       rep.errorTest("nested TIME_INT::update_evolving_RT_sources error",0,err);
 
       //cout <<"updating external boundaries for level "<<l<<"\n";
-      err += TimeUpdateExternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+      err += TimeUpdateExternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
     rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
       //cout <<"updating internal boundaries for level "<<l<<"\n";
-      err += TimeUpdateInternalBCs(SimPM, grid[l], l, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+      err += TimeUpdateInternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
     rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
     // ----------------------------------------------------------------
@@ -394,8 +394,8 @@ double sim_control_nestedgrid::advance_step_OA1(
   //
   // update internal and external boundaries.
   //
-  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA1);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA1);
+  err += TimeUpdateInternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA1);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA1);
 
 #ifdef TESTING
   cout <<"advance_step_OA1, level="<<l<<", returning. t=";
@@ -469,8 +469,8 @@ double sim_control_nestedgrid::advance_step_OA2(
   err += grid_update_state_vector(SimPM.levels[l].dt,TIMESTEP_FIRST_PART,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA1",0,err);  
   // Update boundary data.
-  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA2);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA1, OA2);
+  err += TimeUpdateInternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA2);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA2);
   rep.errorTest("scn::advance_step_OA2: bounday update OA1",0,err);
 
   //
@@ -520,8 +520,8 @@ double sim_control_nestedgrid::advance_step_OA2(
   //
   // update internal and external boundaries.
   //
-  err += TimeUpdateInternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, SimPM.simtime, OA2, OA2);
+  err += TimeUpdateInternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA2, OA2);
+  err += TimeUpdateExternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA2, OA2);
 
   // Now calculate next timestep: function stores dt in SimPM.dt
   //err += calculate_timestep(SimPM, grid,spatial_solver,l);

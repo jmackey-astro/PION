@@ -16,9 +16,9 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include "boundaries/assign_update_bcs_SMR.h"
 #include "grid/setup_nested_grid.h"
 #include "grid/grid_base_class.h"
-#include "sim_control/update_boundaries_nested.h"
 #include "sim_control/sim_init.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "equations/eqns_base.h"
@@ -35,7 +35,7 @@
 class sim_init_nested
   :
   virtual public sim_init,
-  virtual public update_boundaries_nested
+  virtual public setup_nested_grid
 {
   public:
   sim_init_nested();

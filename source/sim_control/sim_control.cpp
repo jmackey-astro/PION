@@ -153,14 +153,10 @@
 #include "tools/reporting.h"
 #include "tools/timer.h"
 #include "constants.h"
-
-#include "sim_control.h"
-
 #include "microphysics/microphysics_base.h"
-
 #include "raytracing/raytracer_SC.h"
-
 #include "dataIO/dataio_base.h"
+#include "sim_control.h"
 
 
 #include <iostream>
