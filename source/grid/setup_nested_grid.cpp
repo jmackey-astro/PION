@@ -176,10 +176,6 @@ int setup_nested_grid::setup_grid(
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 2;
   else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   
-  // Force Nbc=1 if using Lax-Friedrichs flux.
-  if (SimPM.solverType==FLUX_LF)
-  {SimPM.spOOA = SimPM.tmOOA = OA1; SimPM.Nbc=1;}
-
   //
   // May need to setup extra data in each cell for ray-tracing optical
   // depths and/or viscosity variables.

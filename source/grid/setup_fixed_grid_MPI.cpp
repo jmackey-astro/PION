@@ -119,19 +119,19 @@ int setup_fixed_grid_pllel::setup_grid(
     *grid = new UniformGridParallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
-      SimPM.Xmin, SimPM.Xmax, MCMD);
+      SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
     *grid = new uniform_grid_cyl_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
-      SimPM.Xmin, SimPM.Xmax, MCMD);
+      SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
     *grid = new uniform_grid_sph_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
-      SimPM.Xmin, SimPM.Xmax, MCMD);
+      SimPM.Xmin, SimPM.Xmax);
   }
   else {
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
@@ -303,8 +303,8 @@ int setup_fixed_grid_pllel::setup_raytracing(
 
 int setup_fixed_grid_pllel::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,  ///< domain decomposition info
       class GridBaseClass *grid ///< pointer to grid.
-      class MCMDcontrol &ppar   ///< domain decomposition info
       )
 {
   string fname="setup_fixed_grid_pllel::setup_boundary_structs";
@@ -328,16 +328,16 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   string temp;
   // Loop through boundaries, and if local boundary is not sim boundary,
   // set it to be a parallel boundary.
-  for (i=0; i<SimPM.ndim; i++) {
-    if (!pconst.equalD(G_xmin[i], Sim_xmin[i])) {
+  for (i=0; i<par.ndim; i++) {
+    if (!pconst.equalD(grid->Xmin(static_cast<axes>(i)), par.Xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
-      BC_bd[2*i].itype=BCMPI;
-      BC_bd[2*i].type="BCMPI";
+      grid->BC_bd[2*i]->itype=BCMPI;
+      grid->BC_bd[2*i]->type="BCMPI";
     }
-    if (!pconst.equalD(G_xmax[i], Sim_xmax[i])) {
+    if (!pconst.equalD(grid->Xmax(static_cast<axes>(i)), par.Xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
-      BC_bd[2*i+1].itype=BCMPI;
-      BC_bd[2*i+1].type="BCMPI";
+      grid->BC_bd[2*i+1]->itype=BCMPI;
+      grid->BC_bd[2*i+1]->type="BCMPI";
     }
   }
   
@@ -350,30 +350,31 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   // wrap around.  So set the number of procs in each direction.
   //
   int nx[par.ndim];
-  for (i=0;i<SimPM.ndim;i++) {
-    nx[i] =static_cast<int>(ONE_PLUS_EPS*Sim_range[i]/G_range[i]);
+  for (i=0;i<par.ndim;i++) {
+    nx[i] =static_cast<int>(ONE_PLUS_EPS*par.Range[i]/
+                            grid->Range(static_cast<axes>(i)));
   }
-  for (i=0; i<2*SimPM.ndim; i++) {
-    if (BC_bd[i].itype == PERIODIC) {
+  for (i=0; i<2*par.ndim; i++) {
+    if (grid->BC_bd[i]->itype == PERIODIC) {
       switch (i) {
        case XN:
-        ppar->ngbprocs[XN] = ppar->get_myrank() +nx[XX] -1;
+        ppar.ngbprocs[XN] = ppar.get_myrank() +nx[XX] -1;
         break;
        case XP:
-        ppar->ngbprocs[XP] = ppar->get_myrank() -nx[XX] +1;
+        ppar.ngbprocs[XP] = ppar.get_myrank() -nx[XX] +1;
         break;
        case YN:
-        ppar->ngbprocs[YN] = ppar->get_myrank() +(nx[YY]-1)*nx[XX];
+        ppar.ngbprocs[YN] = ppar.get_myrank() +(nx[YY]-1)*nx[XX];
         break;
        case YP:
-        ppar->ngbprocs[YP] = ppar->get_myrank() -(nx[YY]-1)*nx[XX];
+        ppar.ngbprocs[YP] = ppar.get_myrank() -(nx[YY]-1)*nx[XX];
         break;
        case ZN:
-        ppar->ngbprocs[ZN] = ppar->get_myrank() +
+        ppar.ngbprocs[ZN] = ppar.get_myrank() +
                               (nx[ZZ]-1)*nx[YY]*nx[XX];
         break;
        case ZP:
-        ppar->ngbprocs[ZP] = ppar->get_myrank() -
+        ppar.ngbprocs[ZP] = ppar.get_myrank() -
                               (nx[ZZ]-1)*nx[YY]*nx[XX];
         break;
        default:
@@ -381,18 +382,18 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
         break;
       } // set neighbour according to direction.
 
-      if ( (ppar->ngbprocs[i]<0) ||
-           (ppar->ngbprocs[i]>=ppar->get_nproc()) )
+      if ( (ppar.ngbprocs[i]<0) ||
+           (ppar.ngbprocs[i]>=ppar.get_nproc()) )
         rep.error("setup_fixed_grid_pllel::setup_boundary_structs: Bad periodic \
-                   neighbour",ppar->ngbprocs[i]);
-      if (ppar->ngbprocs[i] == ppar->get_myrank()) {
+                   neighbour",ppar.ngbprocs[i]);
+      if (ppar.ngbprocs[i] == ppar.get_myrank()) {
         //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: only one proc in dir [i]: "<<i<<"\n";
         //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: periodic on single proc, so setting ngb to -999.\n";
-        ppar->ngbprocs[i] = -999;
+        ppar.ngbprocs[i] = -999;
       }
     } // if periodic  
 #ifdef TESTING
-    cout<<"Neighbouring processor in dir "<<i<<" = "<<ppar->ngbprocs[i]<<"\n";
+    cout<<"Neighbouring processor in dir "<<i<<" = "<<ppar.ngbprocs[i]<<"\n";
 #endif // TESTING
   } // loop over directions.
   return(0);
@@ -402,228 +403,6 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
 
 // ##################################################################
 // ##################################################################
-
-
-
-int setup_fixed_grid_pllel::assign_boundary_data(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      class MCMDcontrol &ppar   ///< domain decomposition info
-      )
-{
-#ifdef TESTING
-  cout<<"setup_fixed_grid_pllel::assign_boundary_data()\n";
-#endif // TESTING
-  //
-  // Loop through all boundaries, and assign data to them.
-  // This is only different to the serial version in that it includes
-  // BCMPI boundaries (MPI communication of internal boundaries).
-  //
-  int err=0;
-  for (int i=0; i<BC_nbd; i++) {
-    switch (BC_bd[i].itype) {
-    case PERIODIC:
-      err += BC_assign_PERIODIC(  par,ppar,grid,grid->BC_bd[i]);
-      break;
-    case OUTFLOW:
-      err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]);
-      break;
-    case ONEWAY_OUT:
-      err += BC_assign_ONEWAY_OUT(par,grid,grid->BC_bd[i]);
-      break;
-    case INFLOW:
-      err += BC_assign_INFLOW(    par,grid,grid->BC_bd[i]);
-      break;
-    case REFLECTING:
-      err += BC_assign_REFLECTING(par,grid,grid->BC_bd[i]);
-      break;
-    case FIXED:
-      err += BC_assign_FIXED(     par,grid,grid->BC_bd[i]);
-      break;
-    case JETBC:
-      err += BC_assign_JETBC(     par,grid,grid->BC_bd[i]);
-      break;
-    case JETREFLECT:
-      err += BC_assign_JETREFLECT(par,grid,grid->BC_bd[i]);
-      break;
-    case DMACH:
-      err += BC_assign_DMACH(     par,grid,grid->BC_bd[i]);
-      break;
-    case DMACH2:
-      err += BC_assign_DMACH2(    par,grid,grid->BC_bd[i]);
-      break;
-    case BCMPI:
-      err += BC_assign_BCMPI(par,ppar,grid,grid->BC_bd[i],BC_MPItag);
-      break;
-    case STWIND:
-      err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]);
-      break;
-     case FINE_TO_COARSE:
-     case COARSE_TO_FINE:
-      break; // assigned in nested grid class
-     default:
-      rep.error("Unhandled BC",grid->BC_bd[i]->itype);
-      break;
-    }
-    if (i==XP || (i==YP && SimPM.ndim>1) || (i==ZP && SimPM.ndim==3)) {
-      // Need to make sure all processors are updating boundaries along
-      // each axis together, so that there is no deadlock from one 
-      // process sending data in y/z-dir into a processor that is still
-      // working on x-dir.
-      COMM->barrier("setup_fixed_grid_pllel__SetupBCs");
-    }
-  }
-#ifdef TESTING
-  cout<<"setup_fixed_grid_pllel::assign_boundary_data() finished\n";
-#endif // TESTING
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int setup_fixed_grid_pllel::BC_assign_PERIODIC(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,   ///< domain decomposition info
-      class GridBaseClass *grid,  ///< pointer to grid.
-      boundary_data *b
-      )
-{
-  //
-  // For parallel grid, periodic data may be on a different proc.,
-  // which is already pointed to by ppar->ngbprocs[b->dir]
-  // So I just have to call BC_assign_BCMPI and it will do the job.
-  int err=0;
-  if (ppar->ngbprocs[b->dir] <0) {
-    // cout <<"BC_assign_PERIODIC: non comm periodic in direction "<<b->dir<<"\n";
-    err = setup_fixed_grid::BC_assign_PERIODIC(par,grid,b);
-  }
-  else {
-    // cout<<"BC_assign_PERIODIC: communicating periodic bc in direction "<<b->dir<<"\n";
-    // cout<<"BC_assign_PERIODIC: calling mpi assign BC function\n";
-    err = BC_assign_BCMPI(par,ppar,grid,b,BC_PERtag);
-  }
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int setup_fixed_grid_pllel::BC_assign_BCMPI(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,   ///< domain decomposition info
-      class GridBaseClass *grid,  ///< pointer to grid.
-      boundary_data *b,
-      int comm_tag
-      )
-{
-  //
-  // first choose cells to send to the appropriate processor.  This
-  // is stored in a separate list "send_data" that is part of the
-  // boundary_data struct.
-  //
-  int err = 0;
-#ifdef TESTING
-  cout <<"*******************************************\n";
-  cout <<"BC_assign_BCMPI: sending data in dir: "<<b->dir<<"\n";
-#endif
-  int ncell =0;
-  if (b->send_data.size() != 0) {
-    rep.error("send_data is not empty!",b->send_data.size());
-  }
-  err += BC_select_data2send(&(b->send_data), &ncell, b);
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: got "<<ncell<<" cells in send_data\n";
-#endif
-
-  //
-  // This is the same as the update function, except that we want
-  // to set P[] and Ph[] vectors to the same values, so we set cstep
-  // equal to maxstep.
-  //
-#ifdef TESTING
-  cout <<"*******************************************\n";
-  cout <<"BC_assign_BCMPI: starting\n";
-#endif 
-  err = BC_update_BCMPI(par,ppar,grid,b,2,2,comm_tag);
-#ifdef TESTING
-  cout <<"BC_assign_BCMPI: finished\n";
-  cout <<"*******************************************\n";
-#endif 
-  return err;
-}
-
-
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int setup_fixed_grid_pllel::BC_select_data2send(
-      list<cell *> *l,
-      int *nc,
-      boundary_data *b
-      )
-{
-  // Check inputs.
-  if ( !(*l).empty() ) {
-#ifdef TESTING
-    rep.warning("BC_select_data2send: List not empty! Emptying it now.",0,(*l).size());
-#endif
-    (*l).clear(); if(!(*l).empty()) rep.error("emptying list.",(*l).empty());
-  }
-  if ( *nc !=0 ) {
-#ifdef TESTING
-    rep.warning("BC_select_data2send: uninitialized counter in input. setting it to zero.",0,*nc);
-#endif
-    *nc=0;
-  }
-  
-  //
-  // We want to get all cells on the grid that are adjacent to the
-  // boundary data, so we just go BC_nbc cells in the "ondir"
-  // direction from every boundary cell, and this is a "send" cell.
-  //
-  int count=0;
-  list<cell*>::iterator c=b->data.begin();
-  cell *temp =0;
-  do {
-    temp = *c;
-    for (int v=0;v<BC_nbc;v++) temp = NextPt(temp,b->ondir);
-    (*l).push_back(temp);
-    count++;
-    ++c;
-  } while (c!=b->data.end());
-
-#ifdef TESTING
-  cout <<"Got "<<count<<" cells, expected "<<b->data.size();
-  cout <<"  list size = "<< (*l).size() <<"\n";
-#endif
-  *nc = count;
-
-
-  return 0;
-}
-
-
 
 
 

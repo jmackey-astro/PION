@@ -87,7 +87,8 @@ VPATH = \
 ../source/boundaries
 
 
-GLOBAL = functionality_flags.h testing_flags.h reporting.h sim_params.h sim_constants.h constants.h
+GLOBAL = functionality_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h
 
 ifneq ($(PION_OPTIMISE), HIGH)
   GLOBAL += command_line_interface.h

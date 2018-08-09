@@ -27,53 +27,10 @@ using namespace std;
 #include "grid/stellar_wind_angle.h"
 #include "coord_sys/VectorOps.h"
 #include "coord_sys/VectorOps_spherical.h"
+#include "decomposition/MCMD_control.h"
 
 
 #ifdef PARALLEL
-
-//
-// integer flags for MPI communication labels.
-//
-#define BC_ANYtag 0 ///< works for either sort of communication.
-#define BC_MPItag 1 ///< This is an integer tag on send/receive operations, to label that this communicates MPI boundary data.
-#define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
-#define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
-
-
-
-enum rt_dirs {
-  dir_NO     =-1,
-  dir_XN     =0,
-  dir_XP     =1,
-  dir_YN     =2,
-  dir_YP     =3,
-  dir_ZN     =4,
-  dir_ZP     =5,
-};
-
-///
-/// Struct containing the information required for a boundary communication in
-/// the ray-tracing algorithm.  RT_bd contains a list of cells which participate
-/// in the communication (either the receiving or sending cells).
-///
-struct RT_boundary_list_element {
-  int rank;
-  int dir;
-  struct boundary_data *RT_bd;
-};
-
-///
-/// This is a boundary data struct.  Each boundary needs a source ID, a list of
-/// boundaries to receive (which may be empty), and a list of boundaries to send
-/// (which may also be empty).  Rather than have three separate lists which have
-/// the same indexing, we just make a struct.
-///
-struct RT_source_comms_info {
-  int source_id; ///< id of the source.
-  std::vector<struct RT_boundary_list_element>
-    RT_recv_list, ///< list of processors to receive data from, for each source.
-    RT_send_list; ///< list of processors to send data to, for each source.
-};
 
 
 ///
@@ -87,80 +44,6 @@ struct RT_source_comms_info {
 class UniformGridParallel
 : virtual public UniformGrid
 {
-  protected:
-
-
-  ///
-  /// This is the list where element i corresponds to source i, and the struct
-  /// contains the list of boundaries we need to send and receive, which in
-  /// turn contain the (ordered) list of cells which participate in the given
-  /// boundary communication.
-  ///
-  std::vector<struct RT_source_comms_info> RT_source_list;
-	
-  ///
-  /// If the source is for the purpose of calculating optical depth to diffuse
-  /// radiation, then there is at most one send and one receive boundary element,
-  /// and this function finds them and sets them up.
-  ///
-  int setup_RT_infinite_src_BD(
-      const int, ///< Source id.
-      struct rad_src_info &,
-      std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
-      std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
-      );
-
-  ///
-  /// If we have a source at infinity, this function returns the direction
-  /// from the grid to the source.
-  ///
-  enum direction RT_src_at_infty_direction(
-      const int, ///< source id.
-      struct rad_src_info &
-      );
-
-  ///
-  /// If the source is a monochromatic point source (not at infinity), then this
-  /// function finds all the send and recv abutting domains and adds them, and a
-  /// list of their constituent cells (in the correct order!) to the send and 
-  /// recv lists.
-  ///
-  int setup_RT_finite_ptsrc_BD(
-      const int, ///< Source id.
-      struct rad_src_info &, ///< SimParams list of radiation sources.
-      std::vector<struct RT_boundary_list_element>  &, ///< RECV list for this source.
-      std::vector<struct RT_boundary_list_element>  &  ///< SEND list for this source.
-      );
-
-
-  ///
-  /// allocate memory for new cells and attach them to the grid.
-  ///
-  int setup_RT_recv_boundary(
-      struct RT_boundary_list_element & ///< pointer to boundary info.
-      );
-
-  ///
-  /// find cells needed for send boundary, and add them to the list.
-  ///
-  int setup_RT_send_boundary(
-      struct RT_boundary_list_element & ///< pointer to boundary info.
-      );
-
-  ///
-  /// Add cells to the receive boundary list, so we know what to
-  /// expect. 
-  ///
-  int RT_populate_recv_boundary(
-      struct boundary_data *, ///< pointer to RT boundary data.
-      const struct boundary_data *, ///< pointer to BC boundary data.
-      const enum direction ///< face direction
-      );
-
-  ///
-  /// multi-core decomposition class.
-  ///
-  class MCMDcontrol *mpiPM;
 
   public:
   /// 
@@ -175,53 +58,13 @@ class UniformGridParallel
       double *,    ///< local xmax
       int *,       ///< local number of grid zones
       double *, ///< array of min. x/y/z for full simulation.
-      double *,  ///< array of max. x/y/z for full simulation.
-      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      double *  ///< array of max. x/y/z for full simulation.
       );
 
   /// 
   /// Deletes the grid.
   /// 
-  ~UniformGridParallel();
-
-
-  /// 
-  /// Runs through ghost boundary cells and does the appropriate time update on them.
-  /// 
-  /// This is different from the serial version, as some boundaries need to get
-  /// data from other processors.
-  ///
-  virtual int TimeUpdateExternalBCs(
-      const double,   ///< current simulation time
-      const int, ///< Current step number in tsimtime,mestep.
-      const int  ///< Maximum step number in timestep.
-      );
-
-  ///
-  /// Setup lists of processors to receive data from and send data to, 
-  /// and setup extra boundaries at corners.
-  ///
-  virtual int Setup_RT_Boundaries(
-      const int,  ///< source id
-      struct rad_src_info &
-      );
-
-  ///
-  /// Receive all optical depths for boundaries closer to source.
-  ///
-  virtual int Receive_RT_Boundaries(
-      const int,  ///< source id
-      struct rad_src_info &
-      );
-
-  ///
-  /// Send all optical depths for boundaries to domains further from
-  /// source.
-  ///
-  virtual int Send_RT_Boundaries(
-      const int,  ///< source id
-      struct rad_src_info &
-      );
+  ~UniformGridParallel() {return;}
 
   /// Returns Simulation xyz lower bounds (code units)
   virtual double SIM_Xmin(enum axes a) const
@@ -275,8 +118,7 @@ class uniform_grid_cyl_parallel
       double *, ///< array of maximum values of x,y,z.
       int *, ///< array of number of cells in x,y,z directions.
       double *, ///< array of min. x/y/z for full simulation.
-      double *,  ///< array of max. x/y/z for full simulation.
-      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      double *  ///< array of max. x/y/z for full simulation.
       );
 
   ///
@@ -320,8 +162,7 @@ class uniform_grid_sph_parallel
       double *, ///< array of maximum values of x,y,z.
       int *, ///< array of number of cells in x,y,z directions.
       double *, ///< array of min. x/y/z for full simulation.
-      double *,  ///< array of max. x/y/z for full simulation.
-      class MCMDcontrol * ///< pointer to MPI domain decomposition
+      double *  ///< array of max. x/y/z for full simulation.
       );
 
   ///

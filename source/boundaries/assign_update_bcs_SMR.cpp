@@ -31,7 +31,7 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
       )
 {
   int err = assign_update_bcs::TimeUpdateInternalBCs(par,grid,simtime,cstep,maxstep);
-  rep.errorTest("update_boundaries_nested: uni-grid int. BC update",0,err);
+  rep.errorTest("assign_update_bcs_SMR: uni-grid int. BC update",0,err);
 #ifdef TEST_NEST
   cout <<"updated unigrid serial internal BCs\n";
 #endif
@@ -95,7 +95,7 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       )
 {
   int err = assign_update_bcs::TimeUpdateExternalBCs(par,grid,simtime,cstep,maxstep);
-  rep.errorTest("update_boundaries_nested: uni-grid ext. BC update",0,err);
+  rep.errorTest("assign_update_bcs_SMR: uni-grid ext. BC update",0,err);
 #ifdef TEST_NEST
   cout <<"updated unigrid serial external BCs\n";
 #endif
@@ -149,7 +149,7 @@ int assign_update_bcs_SMR::assign_boundary_data(
 {
   // first call the Uniform Grid version.
   int err = assign_update_bcs::assign_boundary_data(par,grid);
-  rep.errorTest("setup_fixed_grid::assign_boundary_data",err,0);
+  rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
 
   //
   // Then check for nested-grid boundaries and assign data for them.
@@ -168,7 +168,7 @@ int assign_update_bcs_SMR::assign_boundary_data(
 
       case COARSE_TO_FINE:
 #ifdef TESTING
-      cout <<"nested grid setup: Assigning COARSE_TO_FINE BC\n";
+      cout <<"assign_update_bcs_SMR:: Assigning COARSE_TO_FINE BC\n";
 #endif
       err += BC_assign_COARSE_TO_FINE(par,grid,grid->BC_bd[i],parent);
       break;
