@@ -8,6 +8,9 @@
 #ifndef ASSIGN_UPDATE_BCS_SMR_H
 #define ASSIGN_UPDATE_BCS_SMR_H
 
+#include "defines/functionality_flags.h"
+#include "defines/testing_flags.h"
+
 #include "boundaries/boundaries.h"
 #include "boundaries/assign_update_bcs.h"
 #include "boundaries/SMR_coarse_to_fine_boundaries.h"

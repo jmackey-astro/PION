@@ -268,7 +268,7 @@ int sim_control_pllel::Time_Int(
     // Update boundary data.
     //
     err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
-    err += TimeUpdateExternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateExternalBCs(SimPM, mpiPM, grid[0], SimPM.simtime,OA2,OA2);
     if (err) 
       rep.error("Boundary update at start of full step",err);
 

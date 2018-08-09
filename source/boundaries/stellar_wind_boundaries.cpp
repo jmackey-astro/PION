@@ -248,12 +248,12 @@ int stellar_wind_bc::BC_update_STWIND(
   // so we just call the set_cell_values() function.
   //
 #ifdef TESTING
-  cout <<"update_boundaries: updating wind boundary\n";
+  cout <<"stellar_wind_bc: updating wind boundary\n";
 #endif
   int err=0;
   for (int id=0;id<grid->Wind->Nsources();id++) {
 #ifdef TESTING
-    cout <<"update_boundaries: updating wind boundary for id="<<id<<"\n";
+    cout <<"stellar_wind_bc: updating wind boundary for id="<<id<<"\n";
 #endif
     err += grid->Wind->set_cell_values(grid, id,simtime);
   }

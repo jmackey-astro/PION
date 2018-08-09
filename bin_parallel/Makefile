@@ -79,7 +79,8 @@ VPATH = \
 ../source/contrib:\
 ../source/tools:\
 ../source/decomposition\
-../source/nested_grid
+../source/nested_grid\
+../source/boundaries
 
 
 GLOBAL = functionality_flags.h testing_flags.h reporting.h \
@@ -382,6 +383,20 @@ OBJ_ICS = shock_tube.o radiative_shock.o blast_wave.o basic_tests.o \
           photoevaporating_multiclumps.o inside_sphere.o \
           icgen_base.o
 
+OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
+          outflow_boundaries.o inflow_boundaries.o \
+          reflecting_boundaries.o oneway_out_boundaries.o \
+          fixed_boundaries.o jet_boundaries.o \
+          jetreflect_boundaries.o double_Mach_ref_boundaries.o \
+          stellar_wind_boundaries.o MCMD_boundaries.o \
+          periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
+          RT_MPI_boundaries.o
+
+OBJ_SMR_BCS = assign_update_bcs_SMR.o     \
+          SMR_coarse_to_fine_boundaries.o \
+          SMR_fine_to_coarse_boundaries.o
+
+
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
   OBJ_ICS += StarBench_test.o
 endif
@@ -394,11 +409,11 @@ ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
 endif
 
-OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o update_boundaries.o sim_init.o update_boundaries_MPI.o
+OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o sim_init.o
 
-OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) 
+OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD)
+OBJECTS_ICGEN =  icgen_parallel.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_BCS)
 
 
 
@@ -435,7 +450,8 @@ sim_params.o: sim_params.cpp ${GLOBAL}
 
 mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
 
-icgen.o: icgen.cpp icgen.h get_sim_info.h icgen_base.h grid_base_class.h \
+icgen_parallel.o: icgen_parallel.cpp icgen.h get_sim_info.h \
+  icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h
 
@@ -469,21 +485,95 @@ raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
     ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
 
 setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
-    setup_fixed_grid.h ${GLOBAL} \
+    setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
     grid_base_class.h uniform_grid.h
 
-uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid.h ${GLOBAL} \
+uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
+    uniform_grid.h ${GLOBAL} \
     comms.h stellar_wind_angle.h stellar_wind_BC.h \
     VectorOps.h VectorOps_spherical.h
 
+#####################
+# BOUNDARY CLASSES  #
+#####################
 
+periodic_boundaries.o: periodic_boundaries.cpp periodic_boundaries.h\
+  boundaries.h ${GLOBAL} grid_base_class.h
 
+outflow_boundaries.o: outflow_boundaries.cpp outflow_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+oneway_out_boundaries.o: oneway_out_boundaries.cpp \
+  oneway_out_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h outflow_boundaries.h
+
+inflow_boundaries.o: inflow_boundaries.cpp inflow_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+reflecting_boundaries.o: reflecting_boundaries.cpp \
+  reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+fixed_boundaries.o: fixed_boundaries.cpp fixed_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+jet_boundaries.o: jet_boundaries.cpp jet_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+jetreflect_boundaries.o: jetreflect_boundaries.cpp \
+  jetreflect_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+double_Mach_ref_boundaries.o: double_Mach_ref_boundaries.cpp \
+  double_Mach_ref_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h
+
+stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
+  stellar_wind_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h stellar_wind_BC.h
+
+assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
+  periodic_boundaries.h outflow_boundaries.h \
+  oneway_out_boundaries.h inflow_boundaries.h \
+  reflecting_boundaries.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+assign_update_bcs_SMR.o: assign_update_bcs_SMR.cpp \
+  assign_update_bcs_SMR.h SMR_coarse_to_fine_boundaries.h \
+  SMR_fine_to_coarse_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h
+
+SMR_coarse_to_fine_boundaries.o: SMR_coarse_to_fine_boundaries.h \
+  SMR_coarse_to_fine_boundaries.cpp solver_eqn_base.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+SMR_fine_to_coarse_boundaries.o: SMR_fine_to_coarse_boundaries.h \
+  SMR_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+assign_update_bcs_MPI.o: assign_update_bcs_SMR.cpp \
+  assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
+  MCMD_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h MCMD_control.h 
+
+periodic_boundaries_MPI.o: periodic_boundaries_MPI.cpp \
+  periodic_boundaries_MPI.h boundaries.h ${GLOBAL} \
+  grid_base_class.h MCMD_control.h MCMD_boundaries.h
+
+MCMD_boundaries.o: MCMD_boundaries.cpp \
+  MCMD_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h MCMD_control.h
+
+RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
+  boundaries.h ${GLOBAL} \
+  grid_base_class.h MCMD_control.h
+  
 #####################
 # CONTROL CLASSES   #
 #####################
 
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
-  setup_fixed_grid.h  calc_timestep.h update_boundaries.h \
+  setup_fixed_grid.h  calc_timestep.h assign_update_bcs.h \
   parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
   sim_init.h setup_fixed_grid.h grid_base_class.h
 
@@ -495,23 +585,12 @@ sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
- setup_fixed_grid.h calc_timestep.h update_boundaries.h grid_base_class.h \
+ setup_fixed_grid.h calc_timestep.h assign_update_bcs.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 calc_timestep.o: calc_timestep.cpp calc_timestep.h \
  setup_fixed_grid.h microphysics_base.h grid_base_class.h \
  solver_eqn_base.h raytracer_SC.h ${GLOBAL}
-
-update_boundaries.o: update_boundaries.cpp update_boundaries.h \
-  ${GLOBAL} setup_fixed_grid.h grid_base_class.h
-
-update_boundaries_MPI.o: update_boundaries_MPI.cpp update_boundaries_MPI.h \
-  ${GLOBAL} setup_fixed_grid.h setup_fixed_grid_MPI.h  grid_base_class.h \
-  uniform_grid.h uniform_grid_pllel.h
-
-update_boundaries_nested.o: update_boundaries_nested.cpp \
-  update_boundaries_nested.h update_boundaries.h \
-  ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
@@ -666,22 +745,22 @@ dataio_fits_MPI.o:  dataio_fits_MPI.cpp dataio_fits_MPI.h \
     dataio_fits.h ${GLOBAL} dataio_base.h \
     solver_eqn_base.h solver_eqn_hydro_adi.h  \
     parameter_defs.h  grid_base_class.h \
-    file_status.h
+    file_status.h uniform_grid_pllel.h
 
 readparams.o:	readparams.cpp readparams.h ${GLOBAL}
 
 dataio_silo_MPI.o:    dataio_silo_MPI.cpp dataio_silo.h dataio_base.h \
     parameter_defs.h  grid_base_class.h solver_eqn_base.h \
-    ${GLOBAL} comms.h file_status.h
+    ${GLOBAL} comms.h file_status.h uniform_grid_pllel.h
 
 dataio_silo_utility.o:    dataio_silo_utility.cpp dataio_silo_utility.h \
     dataio_silo.h dataio_base.h solver_eqn_base.h \
     parameter_defs.h  grid_base_class.h \
-    ${GLOBAL} comms.h file_status.h
+    ${GLOBAL} comms.h file_status.h uniform_grid_pllel.h
 
 utility_fits_class.o: utility_fits_class.cpp dataio_fits.h dataio_base.h \
     parameter_defs.h  grid_base_class.h \
-    ${GLOBAL} file_status.h
+    ${GLOBAL} file_status.h uniform_grid_pllel.h
 
 
 #######################
