@@ -226,7 +226,7 @@ int sim_init::Init(
 
   // Now set up the grid structure.
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  err = setup_grid(&(grid[0]),SimPM,&mpiPM);
+  err = setup_grid(&(grid[0]),SimPM,&ppar);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
@@ -276,7 +276,7 @@ int sim_init::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, grid[0]);
+  err = boundary_conditions(SimPM, ppar, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
   err = assign_boundary_data(SimPM,ppar, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
@@ -573,13 +573,6 @@ int sim_init::override_params(int narg, string *args)
     }
 
     else if (args[i].find("maxwalltime=") != string::npos) {
-      /** \section walltime Max. Walltime
-       * Max. Walltime is only used by parallel code for now, so it is
-       * read in mainMPI.cc, and resets the value of mpiPM.max_walltime,
-       * but it is ignored by the serial code.  I might want to change
-       * this at some time in the future, because there is no reason why
-       * the walltime limit should be only a parallel code feature.
-       */
       // this is already handled by mainMPI.cc, and ignored for serial code.
     }
     

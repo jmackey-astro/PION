@@ -383,6 +383,8 @@ UniformGrid::~UniformGrid()
     flux_update_send.clear();
   }
 
+  BC_deleteBoundaryData();
+  
 #ifdef TESTING
   cout <<"UniformGrid Destructor:\tdone.\n";
 #endif

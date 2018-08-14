@@ -32,7 +32,7 @@ class periodic_pllel_bc :
   /// Assigns data to a periodic boundary, getting data from another
   /// process if necessary.
   ///
-  virtual int BC_assign_PERIODIC(
+  int BC_assign_PERIODIC(
       class SimParams &,     ///< pointer to simulation parameters
       class MCMDcontrol &,   ///< domain decomposition info
       class GridBaseClass *, ///< pointer to grid.
@@ -40,7 +40,7 @@ class periodic_pllel_bc :
       );
 
   /// Updates data on a periodic boundary.
-  virtual int BC_update_PERIODIC(
+  int BC_update_PERIODIC(
       class SimParams &,      ///< pointer to simulation parameters
       class MCMDcontrol &,   ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.

@@ -180,7 +180,7 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(SimPM,grid[0]);
+  SimSetup->boundary_conditions(SimPM,MCMD,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);

@@ -39,7 +39,6 @@ using namespace std;
 
 
 setup_fixed_grid_pllel::setup_fixed_grid_pllel()
-  : setup_fixed_grid()
 {
 #ifdef TESTING
   cout <<"setup_fixed_grid_pllel constructor.\n";
@@ -419,7 +418,6 @@ int setup_fixed_grid_pllel::boundary_conditions(
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
-#error "REMOVE function when mpiPM is in serial code"
   // For uniform fixed cartesian grid.
 #ifdef TESTING
   cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";

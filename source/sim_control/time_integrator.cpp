@@ -70,11 +70,11 @@ time_integrator::~time_integrator()
 // ##################################################################
 
 int time_integrator::advance_time(
+      class MCMDcontrol &ppar,   ///< domain decomposition info
       class GridBaseClass *grid ///< Computational grid.
       )
 {
   int err=0;
-  class MCMDcontrol ppar; // unused for serial code.
   //
   // Check order-of-accuracy (OOA) requested, and perform the
   // appropriate update.

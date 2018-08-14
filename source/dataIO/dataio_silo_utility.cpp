@@ -1145,7 +1145,7 @@ int dataio_silo_utility::PP_read_var2grid(
         //if (v2>0) cx->P[v2] = data[1][qv_index];
         //if (v3>0) cx->P[v3] = data[2][qv_index];
         
-#ifdef TESTING
+#ifdef DEBUG
         if (v1==RO) {
           cout <<"id="<<cx->id<<",  x="<<CI.get_dpos(cx,XX)<<" : ";
           cout <<"iXmax="<<iXmax[XX]<<" : ";

@@ -176,7 +176,7 @@ int main(int argc, char **argv)
     return(1);
   }
 
-  
+  delete grid[0];
   delete sim_control; sim_control=0;
   delete [] args; args=0;
 

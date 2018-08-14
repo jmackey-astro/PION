@@ -149,6 +149,7 @@ int sim_control_pllel::Init(
     rep.error("infile doesn't exist!",infile);
 
   if (typeOfFile==2) {
+    // FITS
     string::size_type pos =infile.find("_0000.");
     if (pos==string::npos) {
       mpiPM.ReadSingleFile = true;
@@ -162,6 +163,7 @@ int sim_control_pllel::Init(
     }
   }
   else if (typeOfFile==5) {
+    // SILO
     string::size_type pos =infile.find("_0000.");
     if (pos==string::npos) {
       mpiPM.ReadSingleFile = true;
@@ -185,6 +187,7 @@ int sim_control_pllel::Init(
 
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
+  SimPM.grid_nlevels = 1;
   SimPM.levels.clear();
   SimPM.levels.resize(1);
   SimPM.levels[0].parent=0;
@@ -202,8 +205,6 @@ int sim_control_pllel::Init(
   err = mpiPM.decomposeDomain(SimPM, SimPM.levels[0]);
   rep.errorTest("PLLEL Init():Couldn't Decompose Domain!",0,err);
 
-#error "revert to calling serial init function here?"
-
   // Now see if any commandline args override the Parameters from the file.
   err = override_params(narg, args);
   rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
@@ -219,6 +220,7 @@ int sim_control_pllel::Init(
   err = setup_grid(&(grid[0]),SimPM,&mpiPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
+  SimPM.levels[0].grid=grid[0];
   rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
 
   //
@@ -268,7 +270,7 @@ int sim_control_pllel::Init(
   //
   err = boundary_conditions(SimPM, mpiPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM, mpiPM, grid[0]);
+  err = assign_boundary_data(SimPM,mpiPM, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
@@ -285,7 +287,7 @@ int sim_control_pllel::Init(
   initial_conserved_quantities(grid[0]);
 
   err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  err += TimeUpdateExternalBCs(SimPM, mpiPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM, mpiPM,grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
@@ -317,6 +319,12 @@ int sim_control_pllel::Init(
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
 
+  if (SimPM.timestep==0) {
+#ifdef TESTING
+     cout << "(PARALLEL INIT) Writing initial data.\n";
+#endif
+     output_data(grid);
+  }
   
 #ifdef TESTING
   c = (grid[0])->FirstPt_All();
@@ -327,21 +335,6 @@ int sim_control_pllel::Init(
     }
   } while ( (c=(grid[0])->NextPt_All(c)) !=0 );
 #endif // TESTING
-
-//#ifdef TESTING
-//  cout <<"(sim_control_pllel::init) Calling serial Init() code."<<"\n";
-//#endif
-//  err = sim_control::Init(infile, typeOfFile, narg, args, grid);
-//  if (err) rep.error("failed to do serial init",err);
-
-
-
-  if (SimPM.timestep==0) {
-#ifdef TESTING
-     cout << "(PARALLEL INIT) Writing initial data.\n";
-#endif
-     output_data(grid);
-  }
   cout <<"------------------------------------------------------------\n";
   return(err);
 }
@@ -416,25 +409,41 @@ int sim_control_pllel::Time_Int(
       cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
       return err;
     }
-
+    
     //
     // Update boundary data.
     //
+#ifdef TESTING
+    cout <<"MPI time_int: updating internal boundaries\n";
+#endif
     err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
+#ifdef TESTING
+    cout <<"MPI time_int: updating external boundaries\n";
+#endif
     err += TimeUpdateExternalBCs(SimPM, mpiPM, grid[0], SimPM.simtime,OA2,OA2);
     if (err) 
       rep.error("Boundary update at start of full step",err);
 
     //clk.start_timer("advance_time");
+#ifdef TESTING
+    cout <<"MPI time_int: calculating dt\n";
+#endif
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
-    err+= advance_time(grid[0]);
+
+#ifdef TESTING
+    cout <<"MPI time_int: stepping forward in time\n";
+#endif
+    err+= advance_time(mpiPM, grid[0]);
     rep.errorTest("(TIME_INT::advance_time) error",0,err);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0) {
       cerr<<"(TIME_INT::advance_time) err! "<<err<<"\n";
       return(1);
     }
+#ifdef TESTING
+    cout <<"MPI time_int: finished timestep\n";
+#endif
 
     if (mpiPM.get_myrank()==0 && (SimPM.timestep%log_freq)==0) {
       cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;

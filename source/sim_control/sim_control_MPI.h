@@ -74,6 +74,12 @@ class sim_control_pllel :
   protected:
 
   ///
+  /// information about multi-core-multi-domain simulations, used for
+  /// MPI communication between processes.
+  ///
+  class MCMDcontrol mpiPM;
+
+  ///
   /// Calculate the appropriate timestep for all processors
   /// 
   /// For a uniform grid, all cells have the same timestep equal to the minimum
