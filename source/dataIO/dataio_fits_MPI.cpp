@@ -147,7 +147,7 @@ int DataIOFits_pllel::OutputData(
 
 #ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
-  if (RT!=0 && SimPM.RS.Nsources>0) {
+  if (gp->RT!=0 && SimPM.RS.Nsources>0) {
     for (int si=0; si<SimPM.RS.Nsources; si++) {
       nvar += SimPM.RS.sources[si].NTau; // for column densities
     }
@@ -192,7 +192,7 @@ int DataIOFits_pllel::OutputData(
 
 #ifdef RT_TESTING_OUTPUTCOL
   // output column densities!
-  if (RT!=0 && SimPM.RS.Nsources>0) {
+  if (gp->RT!=0 && SimPM.RS.Nsources>0) {
     if (extname[SimPM.nvar]!="")
       rep.error("Tau not writeable!",extname[SimPM.nvar]);
     //

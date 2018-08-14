@@ -27,13 +27,13 @@
 #include "dataIO/dataio_fits_MPI.h"
 #endif // if FITS
 #ifdef SILO
-#include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_MPI.h"
 #endif // if SILO
 
 #include "grid/grid_base_class.h"
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
-#include "setup_fixed_grid_MPI.h"
+#include "grid/setup_fixed_grid_MPI.h"
 
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
@@ -104,6 +104,22 @@ int main(int argc, char **argv)
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
+  // have to do something with SimPM.levels[0] because this
+  // is used to set the local domain size in decomposeDomain
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].parent=0;
+  SimPM.levels[0].child=0;
+  SimPM.levels[0].Ncell = SimPM.Ncell;
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+  SimPM.levels[0].simtime = SimPM.simtime;
+  SimPM.levels[0].dt = 0.0;
+  SimPM.levels[0].multiplier = 1;
+
 
   class setup_fixed_grid *SimSetup =0;
   SimSetup = new setup_fixed_grid_pllel();
@@ -112,7 +128,7 @@ int main(int argc, char **argv)
   // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
   //
   vector<class GridBaseClass *> grid;
-  err  = MCMD.decomposeDomain(SimPM,SimPM.nest_levels[0]);
+  err  = MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
   if (err) rep.error("main: failed to decompose domain!",err);
 
   //

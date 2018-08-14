@@ -411,9 +411,13 @@ endif
 
 OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o sim_init.o
 
-OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
+OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) \
+  $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
+  $(OBJ_BCS)
 
-OBJECTS_ICGEN =  icgen_parallel.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_BCS)
+OBJECTS_ICGEN = icgen_parallel.o get_sim_info.o $(OBJ_GEN) \
+  $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
+  $(OBJ_CRD) $(OBJ_BCS)
 
 
 
@@ -430,8 +434,8 @@ all: ${bindir}/pion_parallel ${bindir}/icgen_parallel
 ${bindir}/pion_parallel: $(OBJECTS_PION)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_parallel $(LDFLAGS)
 
-${bindir}/icgen_parallel: $(OBJECTS_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/icgen_parallel $(LDFLAGS)
+${bindir}/icgen_parallel: $(OBJECTS_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_parallel $(LDFLAGS)
 
 clean:
 	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
@@ -773,22 +777,45 @@ comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 ##############################
 ##### IC GENERATOR FILES #####
 ##############################
+
+icgen_parallel.o: icgen_parallel.cpp icgen_base.h icgen.h \
+  ${GLOBAL} get_sim_info.h dataio_base.h \
+  setup_fixed_grid_MPI.h setup_fixed_grid.h \
+  uniform_grid_pllel.h grid_base_class.h uniform_grid.h
+
+
 icgen_base.o: icgen_base.cpp icgen_base.h ${GLOBAL}
+
 get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
+
 inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
+
 ########################
+
 shock_tube.o: shock_tube.cpp icgen_base.h icgen.h ${GLOBAL}
+
 radiative_shock.o: radiative_shock.cpp icgen_base.h icgen.h ${GLOBAL}
+
 blast_wave.o:      blast_wave.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
+
 photoevaporating_clump.o:  photoevaporating_clump.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
-basic_tests.o: basic_tests.cpp icgen_base.h icgen.h ${GLOBAL} 
+
+basic_tests.o: basic_tests.cpp icgen_base.h icgen.h ${GLOBAL}
+
 photoevaporating_random_clumps.o: photoevaporating_random_clumps.cpp icgen_base.h icgen.h ${GLOBAL}
+
 shock_cloud.o: shock_cloud.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
+
 photoevaporating_multiclumps.o: photoevaporating_multiclumps.cpp icgen_base.h icgen.h ${GLOBAL}
+
 laser_ablation.o:   laser_ablation.cpp icgen_base.h icgen.h ${GLOBAL}
+
 jet.o:		    jet.cpp icgen_base.h icgen.h ${GLOBAL}
+
 spherical_clump.o: spherical_clump.cpp icgen_base.h icgen.h ${GLOBAL}
+
 StarBench_test.o: StarBench_test.cpp icgen_base.h icgen.h ${GLOBAL}
+
 #######################
 
 ###############################################

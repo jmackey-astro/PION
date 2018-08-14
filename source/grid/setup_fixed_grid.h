@@ -96,7 +96,7 @@ class setup_fixed_grid : virtual public assign_update_bcs
   /// grid cells for the external boundaries, and label internal
   /// boundary cells as such.
   ///
-  int boundary_conditions(
+  virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
       class GridBaseClass *  ///< pointer to grid.
       );

@@ -49,8 +49,19 @@ class setup_fixed_grid_pllel :
   ///
   virtual int setup_raytracing(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *, ///< pointer to computational grid 
-      class RayTracingBase * ///< pointer to raytracing class
+      class GridBaseClass * ///< pointer to computational grid 
+      );
+
+  ///
+  /// Determines what kind of boundary conditions are needed and
+  /// creates the boundary data structures.  Asks the grid to create
+  /// grid cells for the external boundaries, and label internal
+  /// boundary cells as such.
+  ///
+  virtual int boundary_conditions(
+      class SimParams &,  ///< pointer to simulation parameters
+      class MCMDcontrol &,  ///< address of MCMD controller class.
+      class GridBaseClass *  ///< pointer to grid.
       );
 
   protected:
