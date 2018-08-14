@@ -90,6 +90,7 @@ int sim_control_nestedgrid::Time_Int(
   SimPM.maxtime=false;
   bool first_step=true;
   clk.start_timer("Time_Int"); double tsf=0;
+  class MCMDcontrol *ppar = 0; // unused for serial code.
 
   // make sure all levels start at the same time.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -113,7 +114,7 @@ int sim_control_nestedgrid::Time_Int(
       rep.errorTest("nested TIME_INT::update_evolving_RT_sources error",0,err);
 
       //cout <<"updating external boundaries for level "<<l<<"\n";
-      err += TimeUpdateExternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+      err += TimeUpdateExternalBCs(SimPM, ppar, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
     rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
     // ----------------------------------------------------------------
@@ -342,6 +343,7 @@ double sim_control_nestedgrid::advance_step_OA1(
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
+  class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
 
   // take the first finer grid step, if there is a finer grid.
@@ -395,7 +397,7 @@ double sim_control_nestedgrid::advance_step_OA1(
   // update internal and external boundaries.
   //
   err += TimeUpdateInternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA1);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA1);
+  err += TimeUpdateExternalBCs(SimPM, ppar,grid, l, spatial_solver, SimPM.simtime, OA1, OA1);
 
 #ifdef TESTING
   cout <<"advance_step_OA1, level="<<l<<", returning. t=";
@@ -425,6 +427,7 @@ double sim_control_nestedgrid::advance_step_OA2(
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
+  class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
 
   // take the first finer grid step, if there is a finer grid.
@@ -470,7 +473,7 @@ double sim_control_nestedgrid::advance_step_OA2(
   rep.errorTest("scn::advance_step_OA2: state-vec update OA1",0,err);  
   // Update boundary data.
   err += TimeUpdateInternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA2);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA1, OA2);
+  err += TimeUpdateExternalBCs(SimPM, ppar,grid, l, spatial_solver, SimPM.simtime, OA1, OA2);
   rep.errorTest("scn::advance_step_OA2: bounday update OA1",0,err);
 
   //
@@ -521,19 +524,8 @@ double sim_control_nestedgrid::advance_step_OA2(
   // update internal and external boundaries.
   //
   err += TimeUpdateInternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA2, OA2);
-  err += TimeUpdateExternalBCs(SimPM, grid, l, spatial_solver, SimPM.simtime, OA2, OA2);
+  err += TimeUpdateExternalBCs(SimPM, ppar,grid, l, spatial_solver, SimPM.simtime, OA2, OA2);
 
-  // Now calculate next timestep: function stores dt in SimPM.dt
-  //err += calculate_timestep(SimPM, grid,spatial_solver,l);
-  //rep.errorTest("scn::advance_step_OA2: calc_timestep",0,err);
-
-  // make sure step is not more than half of the coarser grid step.
-  //if (l>0) {
-  //  SimPM.levels[l].dt = min(SimPM.dt, 0.5*SimPM.levels[l-1].dt);
-  //}
-  //else {
-  //  SimPM.levels[l].dt = SimPM.dt;
-  //}
 
 #ifdef NEST_INT_TEST
   cout <<"advance_step_OA2, level="<<l<<", returning. t=";

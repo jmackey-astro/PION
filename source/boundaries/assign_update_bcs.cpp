@@ -73,6 +73,7 @@ int assign_update_bcs::TimeUpdateInternalBCs(
 
 int assign_update_bcs::TimeUpdateExternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid,  ///< pointer to grid.
       const double simtime,   ///< current simulation time
       const int cstep,
@@ -85,7 +86,7 @@ int assign_update_bcs::TimeUpdateExternalBCs(
     b = grid->BC_bd[i];
     switch (b->itype) {
     case PERIODIC:
-      err += BC_update_PERIODIC(   par,grid, b, cstep, maxstep);
+      err += BC_update_PERIODIC(   par,ppar,grid, b, cstep, maxstep);
       break;
     case OUTFLOW:
       err += BC_update_OUTFLOW(    par,grid, b, cstep, maxstep);
@@ -139,6 +140,7 @@ int assign_update_bcs::TimeUpdateExternalBCs(
 
 int assign_update_bcs::assign_boundary_data(
       class SimParams &par,     ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid  ///< pointer to grid.
       )
 {
@@ -149,7 +151,7 @@ int assign_update_bcs::assign_boundary_data(
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
     switch (grid->BC_bd[i]->itype) {
     case PERIODIC:
-     err += BC_assign_PERIODIC(  par,grid,grid->BC_bd[i]);
+     err += BC_assign_PERIODIC(  par,ppar,grid,grid->BC_bd[i]);
      break;
     case OUTFLOW:
       err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]);

@@ -44,7 +44,6 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  class MCMDcontrol MCMD;
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
@@ -69,6 +68,7 @@ int main(int argc, char **argv)
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
+  class MCMDcontrol MCMD;
   class SimParams *SimPM;
   MP=0;  // global microphysics class pointer.
 
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 
   for (int l=0;l<SimPM->grid_nlevels;l++) {
     cout <<"icgen_nested: assigning boundary data for level "<<l<<"\n";
-    err = SimSetup->assign_boundary_data(*SimPM,grid[l],SimPM->levels[l].parent, SimPM->levels[l].child);
+    err = SimSetup->assign_boundary_data(*SimPM,MCMD,grid[l],SimPM->levels[l].parent, SimPM->levels[l].child);
     rep.errorTest("icgen_nest::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM->grid_nlevels; l++) {
     cout <<"updating external boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateExternalBCs(*SimPM, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateExternalBCs(*SimPM, MCMD, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
   // ----------------------------------------------------------------

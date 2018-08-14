@@ -209,6 +209,7 @@ int sim_control::Time_Int(
   int err=0;
   SimPM.maxtime=false;
   clk.start_timer("Time_Int"); double tsf=0;
+  class MCMDcontrol ppar; // unused for serial code.
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
@@ -232,7 +233,7 @@ int sim_control::Time_Int(
     // Update boundary data.
     //
     err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
-    err += TimeUpdateExternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateExternalBCs(SimPM, ppar, grid[0], SimPM.simtime,OA2,OA2);
     if (err) 
       rep.error("Boundary update at start of full step",err);
 

@@ -74,6 +74,7 @@ int time_integrator::advance_time(
       )
 {
   int err=0;
+  class MCMDcontrol ppar; // unused for serial code.
 
   //
   // Check order-of-accuracy (OOA) requested, and perform the
@@ -97,7 +98,7 @@ int time_integrator::advance_time(
       rep.error("1st order time-update returned error",err);
     // Update boundary data.
     err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,   OA1, OA2);
-    err += TimeUpdateExternalBCs(SimPM, grid, SimPM.simtime,   OA1, OA2);
+    err += TimeUpdateExternalBCs(SimPM, ppar,grid, SimPM.simtime,   OA1, OA2);
     if (err) 
       rep.error("second_order_update: error from bounday update",err);
 

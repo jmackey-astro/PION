@@ -29,7 +29,7 @@ int periodic_pllel_bc::BC_assign_PERIODIC(
   int err=0;
   if (ppar.ngbprocs[b->dir] <0) {
     // cout <<"BC_assign_PERIODIC: non comm periodic in direction "<<b->dir<<"\n";
-    err = periodic_bc::BC_assign_PERIODIC(par,grid,b);
+    err = periodic_bc::BC_assign_PERIODIC(par,ppar,grid,b);
   }
   else {
     // cout<<"BC_assign_PERIODIC: communicating periodic bc in direction "<<b->dir<<"\n";
@@ -67,7 +67,7 @@ int periodic_pllel_bc::BC_update_PERIODIC(
     cout <<"direction "<<b->dir<<"\n";
 #endif
     err = periodic_bc::BC_update_PERIODIC(
-                                          par,grid,b,cstep,maxstep);
+                                      par,ppar,grid,b,cstep,maxstep);
   }
   else {
 #ifdef TESTING

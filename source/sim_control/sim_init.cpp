@@ -205,6 +205,7 @@ int sim_init::Init(
   cout <<"(sim_init::Init) Initialising grid"<<"\n";
 #endif
   int err=0;
+  class MCMDcontrol ppar; // unused for serial code.
   
 #ifdef SERIAL
   SimPM.typeofip=typeOfFile;
@@ -277,7 +278,7 @@ int sim_init::Init(
   //
   err = boundary_conditions(SimPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM, grid[0]);
+  err = assign_boundary_data(SimPM,ppar, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
@@ -294,7 +295,7 @@ int sim_init::Init(
   initial_conserved_quantities(grid[0]);
 
   err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  err += TimeUpdateExternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM, ppar,grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
