@@ -145,7 +145,10 @@ int sim_control_pllel::Init(
   // not be.
   //
   setup_dataio_class(typeOfFile);
-  if (dataio->file_exists(infile)) {
+  if (!dataio->file_exists(infile))
+    rep.error("infile doesn't exist!",infile);
+
+  if (typeOfFile==2) {
     string::size_type pos =infile.find("_0000.");
     if (pos==string::npos) {
       mpiPM.ReadSingleFile = true;
@@ -158,8 +161,17 @@ int sim_control_pllel::Init(
       infile.replace(pos,6,t2);
     }
   }
-  if (!dataio->file_exists(infile))
-    rep.error("infile doesn't exist!",infile);
+  else if (typeOfFile==5) {
+    string::size_type pos =infile.find("_0000.");
+    if (pos==string::npos) {
+      mpiPM.ReadSingleFile = true;
+    }
+    else {
+      mpiPM.ReadSingleFile = false;
+    }
+  }
+  else 
+    rep.error("bad input file type in Init",typeOfFile);
 
   
   //
@@ -170,16 +182,157 @@ int sim_control_pllel::Init(
   //
   err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("PLLEL Init(): failed to read header",0,err);
+
+  // have to do something with SimPM.levels[0] because this
+  // is used to set the local domain size in decomposeDomain
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].parent=0;
+  SimPM.levels[0].child=0;
+  SimPM.levels[0].Ncell = SimPM.Ncell;
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+  SimPM.levels[0].simtime = SimPM.simtime;
+  SimPM.levels[0].dt = 0.0;
+  SimPM.levels[0].multiplier = 1;
+
   err = mpiPM.decomposeDomain(SimPM, SimPM.levels[0]);
   rep.errorTest("PLLEL Init():Couldn't Decompose Domain!",0,err);
 
+#error "revert to calling serial init function here?"
 
+  // Now see if any commandline args override the Parameters from the file.
+  err = override_params(narg, args);
+  rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
+  
+  //
+  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  //
+  grid.resize(1);
+  CI.set_dx(SimPM.dx);
 
+  // Now set up the grid structure.
+  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  err = setup_grid(&(grid[0]),SimPM,&mpiPM);
+  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  SimPM.dx = grid[0]->DX();
+  rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
+
+  //
+  // All grid parameters are now set, so I can set up the appropriate
+  // equations/solver class.
+  //
+  err = set_equations();
+  rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
+  spatial_solver->set_dx(SimPM.dx);
+  spatial_solver->SetEOS(SimPM.gamma);
+
+  //
+  // Now setup Microphysics, if needed.
+  //
+  err = setup_microphysics(SimPM);
+  rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
+  
+  //
+  // Now assign data to the grid, either from file, or via some function.
+  //
+  err = dataio->ReadData(infile, grid, SimPM);
+  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
+
+  //
+  // Set Ph[] = P[], and then implement the boundary conditions.
+  //
+  cell *c = grid[0]->FirstPt();
+  do {
+    for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
+  } while ((c=grid[0]->NextPt(c))!=0);
+
+  //
+  // If I'm using the GLM method, make sure Psi variable is
+  // initialised to zero.
+  //
+  if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
 #ifdef TESTING
-  cout <<"(sim_control_pllel::init) Calling serial Init() code."<<"\n";
+    cout <<"Initial state, zero-ing glm variable.\n";
 #endif
-  err = sim_control::Init(infile, typeOfFile, narg, args, grid);
-  if (err) rep.error("failed to do serial init",err);
+    c = grid[0]->FirstPt(); do {
+      c->P[SI] = c->Ph[SI] = 0.;
+    } while ( (c=grid[0]->NextPt(c)) !=0);
+  }
+
+  //
+  // Assign boundary conditions to boundary points.
+  //
+  err = boundary_conditions(SimPM, mpiPM, grid[0]);
+  rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+  err = assign_boundary_data(SimPM, mpiPM, grid[0]);
+  rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
+
+  //
+  // Setup Raytracing on each grid, if needed.
+  //
+  err += setup_raytracing(SimPM, grid[0]);
+  err += setup_evolving_RT_sources(SimPM);
+  err += update_evolving_RT_sources(SimPM,grid[0]->RT);
+  rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
+
+  //
+  // If testing the code, this calculates the momentum and energy on the domain.
+  //
+  initial_conserved_quantities(grid[0]);
+
+  err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM, mpiPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  if (err) 
+    rep.error("first_order_update: error from bounday update",err);
+
+
+
+  //
+  // If using opfreq_time, set the next output time correctly.
+  //
+  if (SimPM.op_criterion==1) {
+    if (SimPM.opfreq_time < TINYVALUE)
+      rep.error("opfreq_time not set right and is needed!",SimPM.opfreq_time);
+    SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
+    double tmp = 
+      ((SimPM.simtime/SimPM.opfreq_time)-
+       floor(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
+    SimPM.next_optime-= tmp;
+  }
+
+  //
+  // If outfile-type is different to infile-type, we need to delete
+  // dataio and set it up again.
+  //
+  if (SimPM.typeofip != SimPM.typeofop) {
+    if (dataio) {delete dataio; dataio=0;}
+    if (textio) {delete textio; textio=0;}
+    setup_dataio_class(SimPM.typeofop);
+    if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
+  }
+  dataio->SetSolver(spatial_solver);
+  if (textio) textio->SetSolver(spatial_solver);
+
+  
+#ifdef TESTING
+  c = (grid[0])->FirstPt_All();
+  do {
+    if (pconst.equalD(c->P[RO],0.0)) {
+      cout <<"zero data in cell: ";
+      CI.print_cell(c);
+    }
+  } while ( (c=(grid[0])->NextPt_All(c)) !=0 );
+#endif // TESTING
+
+//#ifdef TESTING
+//  cout <<"(sim_control_pllel::init) Calling serial Init() code."<<"\n";
+//#endif
+//  err = sim_control::Init(infile, typeOfFile, narg, args, grid);
+//  if (err) rep.error("failed to do serial init",err);
 
 
 
@@ -258,7 +411,7 @@ int sim_control_pllel::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,RT);
+    err = update_evolving_RT_sources(SimPM,grid[0]->RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
       return err;
@@ -321,7 +474,7 @@ int sim_control_pllel::Time_Int(
   cout <<", sim-time="<<SimPM.simtime;
   cout <<", wall-time=" <<tsf;
   cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
-  if (RT!=0) {
+  if (grid[0]->RT!=0) {
     //
     // output raytracing timing info.  Have to start and stop timers to get 
     // the correct runtime (this is sort of a bug... there is no function to

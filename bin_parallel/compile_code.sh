@@ -40,8 +40,8 @@ export CXX=mpicxx
 # Debugging code options, using text files to communicate data:
 #
 #export PION_OPTIONS="-DPARALLEL -DUSE_FILE_COMMS -DSILO -DFITS"
-export PION_OPTIMISE=LOW
-NCORES=1
+#export PION_OPTIMISE=LOW
+#NCORES=1
 #export CXX=g++
 
 ################### --- FIONN at ICHEC.IE ---######################
@@ -242,7 +242,7 @@ echo PION_OPTIONS: $PION_OPTIONS
 #####################################################################
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
-make -j${NCORES} -f Makefile
+make -j${NCORES} -f Makefile all
 #####################################################################
 
 exit

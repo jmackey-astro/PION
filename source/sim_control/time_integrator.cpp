@@ -74,7 +74,7 @@ int time_integrator::advance_time(
       )
 {
   int err=0;
-
+#error "ADVANCE_TIME NEEDS MPIPM POINTER FOR TimeUpdateExternalBCs()"
   //
   // Check order-of-accuracy (OOA) requested, and perform the
   // appropriate update.
