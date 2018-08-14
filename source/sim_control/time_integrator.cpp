@@ -75,7 +75,6 @@ int time_integrator::advance_time(
 {
   int err=0;
   class MCMDcontrol ppar; // unused for serial code.
-
   //
   // Check order-of-accuracy (OOA) requested, and perform the
   // appropriate update.
