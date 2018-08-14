@@ -104,6 +104,7 @@ GLOBAL = functionality_flags.h testing_flags.h reporting.h \
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -612,7 +613,7 @@ sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
  sim_control.h MCMD_control.h ${GLOBAL} comms.h \
  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
- RT_MPI_boundaries.h
+ RT_MPI_boundaries.h setup_fixed_grid.h setup_fixed_grid_MPI.h
 
 #####################
 # EQUATIONS CLASSES #

@@ -440,7 +440,7 @@ void cell_interface::set_pos(
   for (int v=0;v<ndim;v++) {
     c->pos[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
   }
-#ifdef TESTING
+#ifdef DEBUG
   rep.printVec("int-pos from double",c->pos,ndim);
 #endif
   return;

@@ -800,6 +800,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
 int setup_fixed_grid::boundary_conditions(
       class SimParams &par,     ///< pointer to simulation parameters
+      class MCMDcontrol &,  ///< MCMD controller class.
       class GridBaseClass *grid ///< pointer to grid.
       )
 {

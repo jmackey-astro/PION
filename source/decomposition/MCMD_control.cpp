@@ -309,6 +309,9 @@ int MCMDcontrol::pointToNeighbours(
       struct level &level     ///< pointer to domain parameters for nested grid level
       )
 {
+#ifdef TESTING
+  cout <<"Setting up neighbour pointers in MCMD.\n";
+#endif
   ///
   /// \section PBC Periodic Boundaries
   /// Note that if there are periodic boundaries, the pointers to the 
@@ -349,6 +352,10 @@ int MCMDcontrol::pointToNeighbours(
     if (pconst.equalD(LocalXmin[ZZ],level.Xmin[ZZ])) ngbprocs[ZN] = -999;
     if (pconst.equalD(LocalXmax[ZZ],level.Xmax[ZZ])) ngbprocs[ZP] = -999;
   }
+  #ifdef TESTING
+  rep.printVec("ngbprocs",ngbprocs,2*SimPM.ndim);
+  #endif
+
   return(0);
 }
 

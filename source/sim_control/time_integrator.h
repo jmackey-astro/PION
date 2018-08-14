@@ -53,6 +53,7 @@ class time_integrator :
   /// \retval 1 failure
   ///
   virtual int advance_time(
+      class MCMDcontrol &,   ///< domain decomposition info
       class GridBaseClass * ///< grid pointer
       );
 

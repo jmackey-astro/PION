@@ -98,6 +98,7 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
+      class MCMDcontrol &,  ///< unused for serial code
       class GridBaseClass *  ///< pointer to grid.
       );
 

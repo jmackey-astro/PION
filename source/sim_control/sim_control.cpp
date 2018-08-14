@@ -239,7 +239,7 @@ int sim_control::Time_Int(
 
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
-    err+= advance_time(grid[0]);
+    err+= advance_time(ppar, grid[0]);
     rep.errorTest("(TIME_INT::advance_time) error",0,err);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 
