@@ -27,7 +27,7 @@ int assign_update_bcs_MPI::assign_boundary_data(
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
-  int err= assign_update_bcs::assign_boundary_data(par,grid);
+  int err= assign_update_bcs::assign_boundary_data(par,ppar,grid);
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
   //
   // Loop through all boundaries, and assign data to MPI one.
@@ -39,10 +39,10 @@ int assign_update_bcs_MPI::assign_boundary_data(
       break;      
     case PERIODIC:
       // periodic was set up wrongly in serial call (1st line of this
-      // function, so we delete the boundary that was set up and 
+      // function), so we delete the boundary that was set up and 
       // reset it here.
-      grid->BC_deleteBoundaryData(grid->BC_bd[i]);
-      err += BC_assign_PERIODIC(  par,ppar,grid,grid->BC_bd[i]);
+      //grid->BC_deleteBoundaryData(grid->BC_bd[i]);
+      //err += BC_assign_PERIODIC(  par,ppar,grid,grid->BC_bd[i]);
       break;
     case OUTFLOW:
     case ONEWAY_OUT:

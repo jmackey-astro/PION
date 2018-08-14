@@ -258,7 +258,7 @@ int sim_control_pllel::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,RT);
+    err = update_evolving_RT_sources(SimPM,grid[0]->RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
       return err;
@@ -321,7 +321,7 @@ int sim_control_pllel::Time_Int(
   cout <<", sim-time="<<SimPM.simtime;
   cout <<", wall-time=" <<tsf;
   cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
-  if (RT!=0) {
+  if (grid[0]->RT!=0) {
     //
     // output raytracing timing info.  Have to start and stop timers to get 
     // the correct runtime (this is sort of a bug... there is no function to

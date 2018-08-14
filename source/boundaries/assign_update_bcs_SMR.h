@@ -16,6 +16,7 @@
 #include "boundaries/SMR_coarse_to_fine_boundaries.h"
 #include "boundaries/SMR_fine_to_coarse_boundaries.h"
 #include "spatial_solvers/solver_eqn_base.h"
+#include "decomposition/MCMD_control.h"
 
 
 class assign_update_bcs_SMR : 
@@ -29,6 +30,7 @@ class assign_update_bcs_SMR :
   ///
   virtual int assign_boundary_data(
       class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       class GridBaseClass *,  ///< pointer to parent.
       class GridBaseClass *  ///< pointer to child.
@@ -41,6 +43,7 @@ class assign_update_bcs_SMR :
   ///
   virtual int TimeUpdateExternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
       const int, ///< level of grid in nested grid struct.
       class FV_solver_base *, ///< pointer to equations

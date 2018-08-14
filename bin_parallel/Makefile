@@ -473,10 +473,11 @@ VectorOps_spherical.o: VectorOps_spherical.cpp VectorOps_spherical.h VectorOps.h
 MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
-    grid_base_class.h uniform_grid.h
+    grid_base_class.h uniform_grid.h assign_update_bcs.h
 
 setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
-  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h
+  setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
+  assign_update_bcs.h assign_update_bcs_SMR.h
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
@@ -486,7 +487,10 @@ raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
 
 setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
     setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
-    grid_base_class.h uniform_grid.h
+    grid_base_class.h uniform_grid.h assign_update_bcs.h \
+ periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+ RT_MPI_boundaries.h
+
 
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
     uniform_grid.h ${GLOBAL} \
@@ -575,29 +579,36 @@ RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
 sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
   setup_fixed_grid.h  calc_timestep.h assign_update_bcs.h \
   parameter_defs.h dataio_silo.h dataio_fits.h microphysics_base.h \
-  sim_init.h setup_fixed_grid.h grid_base_class.h
+  sim_init.h setup_fixed_grid.h grid_base_class.h assign_update_bcs.h 
 
 sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} grid_base_class.h
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
+ grid_base_class.h assign_update_bcs.h 
 
 sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
  ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h \
+ assign_update_bcs_SMR.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h assign_update_bcs.h grid_base_class.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+ microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
+ assign_update_bcs.h
 
 calc_timestep.o: calc_timestep.cpp calc_timestep.h \
  setup_fixed_grid.h microphysics_base.h grid_base_class.h \
- solver_eqn_base.h raytracer_SC.h ${GLOBAL}
+ solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
+ assign_update_bcs.h
 
 sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
-  solver_eqn_base.h grid_base_class.h
+  solver_eqn_base.h grid_base_class.h \
+ assign_update_bcs.h assign_update_bcs_SMR.h
 
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
- sim_control.h MCMD_control.h ${GLOBAL} comms.h
+ sim_control.h MCMD_control.h ${GLOBAL} comms.h \
+ periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+ RT_MPI_boundaries.h
 
 #####################
 # EQUATIONS CLASSES #

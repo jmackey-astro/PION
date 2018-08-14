@@ -107,6 +107,7 @@ int main(int argc, char **argv)
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
+  class MCMDcontrol ppar; // unused for serial code.
   class SimParams SimPM;
   MP=0;  // global microphysics class pointer.
 
@@ -185,7 +186,7 @@ int main(int argc, char **argv)
   if (err) rep.error("Initial conditions setup failed.",err);
   // ----------------------------------------------------------------
 
-  err = SimSetup->assign_boundary_data(SimPM,grid[0]);
+  err = SimSetup->assign_boundary_data(SimPM,ppar,grid[0]);
   rep.errorTest("icgen::assign_boundary_data",0,err);
 
   // ----------------------------------------------------------------

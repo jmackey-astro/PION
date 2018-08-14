@@ -17,6 +17,7 @@ using namespace std;
 
 int periodic_bc::BC_assign_PERIODIC(
       class SimParams &par,     ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b
       )
@@ -64,6 +65,7 @@ int periodic_bc::BC_assign_PERIODIC(
 
 int periodic_bc::BC_update_PERIODIC(
       class SimParams &par,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info
       class GridBaseClass *grid,  ///< pointer to grid.
       struct boundary_data *b,
       const int cstep,

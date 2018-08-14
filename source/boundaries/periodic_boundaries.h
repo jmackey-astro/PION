@@ -14,6 +14,7 @@
 #include "sim_params.h"
 #include "boundaries/boundaries.h"
 #include "grid/grid_base_class.h"
+#include "decomposition/MCMD_control.h"
 
 
 ///
@@ -25,6 +26,7 @@ class periodic_bc {
   /// Assigns data to a periodic boundary.
   virtual int BC_assign_PERIODIC(
       class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info (unused)
       class GridBaseClass *,  ///< pointer to grid.
       boundary_data *
       );
@@ -32,6 +34,7 @@ class periodic_bc {
   /// Updates data on a periodic boundary.
   virtual int BC_update_PERIODIC(
       class SimParams &,      ///< pointer to simulation parameters
+      class MCMDcontrol &,    ///< domain decomposition info (unused)
       class GridBaseClass *,  ///< pointer to grid.
       boundary_data *, ///< Boundary to update.
       const int,  ///< current fractional step being taken.

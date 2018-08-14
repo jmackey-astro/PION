@@ -79,6 +79,7 @@ int sim_init_nested::Init(
   cout <<"(sim_init_nested::Init) Initialising grid"<<"\n";
 #endif
   int err=0;
+  class MCMDcontrol ppar; // unused for serial code.
   
   SimPM.typeofip=typeOfFile;
   setup_dataio_class(typeOfFile);
@@ -157,7 +158,7 @@ int sim_init_nested::Init(
 
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err = assign_boundary_data(SimPM, grid[l], SimPM.levels[l].parent, SimPM.levels[l].child);
+    err = assign_boundary_data(SimPM, ppar,grid[l], SimPM.levels[l].parent, SimPM.levels[l].child);
     rep.errorTest("icgen_nest::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
@@ -169,7 +170,7 @@ int sim_init_nested::Init(
 #ifdef TESTING
     cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
-    err += TimeUpdateExternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += TimeUpdateExternalBCs(SimPM, ppar,grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_nested: error from bounday update",0,err);
   // ----------------------------------------------------------------

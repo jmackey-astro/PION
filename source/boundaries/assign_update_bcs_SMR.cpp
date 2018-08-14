@@ -86,6 +86,7 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
 
 int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid,  ///< pointer to grid.
       const int level, ///< level in the nested grid structure
       class FV_solver_base *solver, ///< pointer to equations
@@ -94,7 +95,7 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       const int maxstep
       )
 {
-  int err = assign_update_bcs::TimeUpdateExternalBCs(par,grid,simtime,cstep,maxstep);
+  int err = assign_update_bcs::TimeUpdateExternalBCs(par,ppar,grid,simtime,cstep,maxstep);
   rep.errorTest("assign_update_bcs_SMR: uni-grid ext. BC update",0,err);
 #ifdef TEST_NEST
   cout <<"updated unigrid serial external BCs\n";
@@ -142,13 +143,14 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
 
 int assign_update_bcs_SMR::assign_boundary_data(
       class SimParams &par,        ///< pointer to simulation parameters
+      class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid,   ///< pointer to grid.
       class GridBaseClass *parent, ///< pointer to parent grid.
       class GridBaseClass *child   ///< pointer to child grid.
       )
 {
   // first call the Uniform Grid version.
-  int err = assign_update_bcs::assign_boundary_data(par,grid);
+  int err = assign_update_bcs::assign_boundary_data(par,ppar,grid);
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
 
   //
