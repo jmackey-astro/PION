@@ -35,7 +35,7 @@ class SMR_coarse_to_fine_bc {
   virtual int BC_update_COARSE_TO_FINE(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
-      const int, ///< level of grid in nested grid struct.
+      const int, ///< level of grid in SMR grid struct.
       boundary_data *, ///< pointer to boudary struct
       const int  ///< current step for fine grid (odd or even).
       );

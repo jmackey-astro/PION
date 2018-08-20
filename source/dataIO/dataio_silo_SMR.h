@@ -1,10 +1,10 @@
-/// \file dataio_silo_nestedgrid.h
+/// \file dataio_silo_SMR.h
 /// \author Jonathan Mackey
 /// \date   2018-05-04
 /// 
 ///
 /// Modifications:\n
-/// - 2018.05.04 JM: new read/write functions for a nested grid.
+/// - 2018.05.04 JM: new read/write functions for a SMR grid.
 /// 
 
 #ifndef DATAIO_SILO_NESTEDGRID_H
@@ -29,12 +29,12 @@
 ///
 /// Class for reading and writing uniform grid data to silo files. 
 ///
-class dataio_nested_silo : public dataio_silo {
+class dataio_SMR_silo : public dataio_silo {
   public:
   ///
   /// Constructor. 
   ///
-  dataio_nested_silo(
+  dataio_SMR_silo(
       class SimParams &,  ///< pointer to simulation parameters
       std::string ///< read/write either FLOAT or DOUBLE to/from file
       );
@@ -42,7 +42,7 @@ class dataio_nested_silo : public dataio_silo {
   ///
   /// destructor
   ///
-  virtual ~dataio_nested_silo();
+  virtual ~dataio_SMR_silo();
 
   ///
   /// This writes the header for the simulation parameters,

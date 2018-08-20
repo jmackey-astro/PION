@@ -1,9 +1,9 @@
-/// \file sim_init_nested.cpp
+/// \file sim_init_SMR.cpp
 /// \author Jonathan Mackey
 /// \date 2018.05.10
 ///
 /// Description:\n
-/// Class declaration for sim_init_nested, which sets up a PION simulation
+/// Class declaration for sim_init_SMR, which sets up a PION simulation
 /// and gets everything ready to run.
 ///
 /// Modifications:\n
@@ -15,7 +15,7 @@
 
 #include "tools/reporting.h"
 #include "tools/command_line_interface.h"
-#include "sim_control/sim_init_nested.h"
+#include "sim_control/sim_init_SMR.h"
 
 #include "raytracing/raytracer_SC.h"
 #include "microphysics/microphysics_base.h"
@@ -26,7 +26,7 @@
 #include "dataIO/dataio_base.h"
 #include "dataIO/dataio_text.h"
 #ifdef SILO
-#include "dataIO/dataio_silo_nestedgrid.h"
+#include "dataIO/dataio_silo_SMR.h"
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
@@ -41,10 +41,10 @@ using namespace std;
 // ##################################################################
 
 
-sim_init_nested::sim_init_nested()
+sim_init_SMR::sim_init_SMR()
 {
 #ifdef TESTING
-  cout << "(sim_init_nested::Constructor)\n";
+  cout << "(sim_init_SMR::Constructor)\n";
 #endif
   return;
 }
@@ -55,10 +55,10 @@ sim_init_nested::sim_init_nested()
 // ##################################################################
 
 
-sim_init_nested::~sim_init_nested()
+sim_init_SMR::~sim_init_SMR()
 {
 #ifdef TESTING
-  cout << "(sim_init_nested::Destructor)\n";
+  cout << "(sim_init_SMR::Destructor)\n";
 #endif
   return;
 }
@@ -67,7 +67,7 @@ sim_init_nested::~sim_init_nested()
 // ##################################################################
 
 
-int sim_init_nested::Init(
+int sim_init_SMR::Init(
       string infile,
       int typeOfFile,
       int narg,
@@ -76,7 +76,7 @@ int sim_init_nested::Init(
       )
 {
 #ifdef TESTING
-  cout <<"(sim_init_nested::Init) Initialising grid"<<"\n";
+  cout <<"(sim_init_SMR::Init) Initialising grid"<<"\n";
 #endif
   int err=0;
   class MCMDcontrol ppar; // unused for serial code.
@@ -91,11 +91,11 @@ int sim_init_nested::Init(
   rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
   
   //
-  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  // Set up the Xmin/Xmax/Range/dx of each level in the SMR grid
   //
-  setup_nested_grid_levels(SimPM);
+  setup_SMR_grid_levels(SimPM);
   grid.resize(SimPM.grid_nlevels);
-  err = setup_grid(grid,SimPM,&mpiPM);
+  err = setup_grid(grid,SimPM,&ppar);
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(INIT::setup_grid) Something went wrong",0,err);
 
@@ -118,7 +118,7 @@ int sim_init_nested::Init(
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
 
   //
-  // For each grid in the nested grid, set Ph[] = P[],
+  // For each grid in the SMR grid, set Ph[] = P[],
   // and then implement the boundary conditions on the grid and ghost cells.
   //
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -148,7 +148,7 @@ int sim_init_nested::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, grid);
+  err = boundary_conditions(SimPM, ppar, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
   //
   // Setup Raytracing on each grid, if needed.
@@ -159,7 +159,7 @@ int sim_init_nested::Init(
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     err = assign_boundary_data(SimPM, ppar,grid[l], SimPM.levels[l].parent, SimPM.levels[l].child);
-    rep.errorTest("icgen_nest::assign_boundary_data",0,err);
+    rep.errorTest("icgen_SMR::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
@@ -172,7 +172,7 @@ int sim_init_nested::Init(
 #endif
     err += TimeUpdateExternalBCs(SimPM, ppar,grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  rep.errorTest("sim_init_SMR: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -183,7 +183,7 @@ int sim_init_nested::Init(
 #endif
     err += TimeUpdateInternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  rep.errorTest("sim_init_SMR: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   //
@@ -249,7 +249,7 @@ int sim_init_nested::Init(
 
 
 
-void sim_init_nested::setup_dataio_class(
+void sim_init_SMR::setup_dataio_class(
       const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
       )
 {
@@ -260,12 +260,12 @@ void sim_init_nested::setup_dataio_class(
 
 #ifdef SILO
   case 5: // Start from Silo snapshot.
-    dataio = new dataio_nested_silo (SimPM, "DOUBLE");
+    dataio = new dataio_SMR_silo (SimPM, "DOUBLE");
     break; 
 #endif // if SILO
 
   default:
-    rep.error("sim_init_nested::Init unhandled filetype",typeOfFile);
+    rep.error("sim_init_SMR::Init unhandled filetype",typeOfFile);
   }
   return;
 }
@@ -277,7 +277,7 @@ void sim_init_nested::setup_dataio_class(
 
 
 
-int sim_init_nested::initial_conserved_quantities(
+int sim_init_SMR::initial_conserved_quantities(
       vector<class GridBaseClass *> &grid
       )
 {

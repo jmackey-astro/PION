@@ -55,7 +55,7 @@ class calc_timestep :
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to grid.
       class FV_solver_base *, ///< solver/equations class
-      const int ///< level in nested grid (if applicable)
+      const int ///< level in SMR grid (if applicable)
       );
 
   protected:
@@ -67,7 +67,7 @@ class calc_timestep :
   double calc_microphysics_dt(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to grid.
-      const int ///< level in nested grid (if applicable)
+      const int ///< level in SMR grid (if applicable)
       );
 
   ///
@@ -94,7 +94,7 @@ class calc_timestep :
   virtual int calculate_raytracing_column_densities(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< grid to trace rays on.
-      const int               ///< unused here (level of nested grid).
+      const int               ///< unused here (level of SMR grid).
       );
 
   ///

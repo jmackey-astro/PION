@@ -299,17 +299,17 @@ int get_sim_info::read_gridparams(
   if (str=="")  SimPM.grid_aspect_ratio[ZZ] =1;
   else          SimPM.grid_aspect_ratio[ZZ] =  atoi(str.c_str());
 
-  seek="grid_nest_centre_XX"; str=rp->find_parameter(seek);
-  if (str=="")  SimPM.grid_nest_centre[XX] = 0.0;
-  else          SimPM.grid_nest_centre[XX] =  atof(str.c_str());
+  seek="SMR_centre_XX"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.SMR_centre[XX] = 0.0;
+  else          SimPM.SMR_centre[XX] =  atof(str.c_str());
 
-  seek="grid_nest_centre_YY"; str=rp->find_parameter(seek);
-  if (str=="")  SimPM.grid_nest_centre[YY] = 0.0;
-  else          SimPM.grid_nest_centre[YY] =  atof(str.c_str());
+  seek="SMR_centre_YY"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.SMR_centre[YY] = 0.0;
+  else          SimPM.SMR_centre[YY] =  atof(str.c_str());
 
-  seek="grid_nest_centre_ZZ"; str=rp->find_parameter(seek);
-  if (str=="")  SimPM.grid_nest_centre[ZZ] = 0.0;
-  else          SimPM.grid_nest_centre[ZZ] =  atof(str.c_str());
+  seek="SMR_centre_ZZ"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.SMR_centre[ZZ] = 0.0;
+  else          SimPM.SMR_centre[ZZ] =  atof(str.c_str());
 
 
   // output info

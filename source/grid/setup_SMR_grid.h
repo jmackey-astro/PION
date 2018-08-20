@@ -1,6 +1,6 @@
-/// \file setup_nested_grid.h
+/// \file setup_SMR_grid.h
 /// 
-/// \brief Declares a class for setting up nested grids.
+/// \brief Declares a class for setting up SMR grids.
 /// 
 /// \author Jonathan Mackey
 /// 
@@ -24,27 +24,27 @@
 #include "boundaries/assign_update_bcs_SMR.h"
 
 ///
-/// Set up a static nested grid structure.  Serial code, so each
-/// level of the nest has a single grid.
+/// Set up a static SMR grid structure.  Serial code, so each
+/// level of the SMR has a single grid.
 ///
-class setup_nested_grid :
+class setup_SMR_grid :
   virtual public setup_fixed_grid,
   virtual public assign_update_bcs_SMR
 {
   public:
-  setup_nested_grid();  ///< Simple constructor, initialises value.
-  virtual ~setup_nested_grid(); ///< Deletes any dynamic memory, if not already done.
+  setup_SMR_grid();  ///< Simple constructor, initialises value.
+  virtual ~setup_SMR_grid(); ///< Deletes any dynamic memory, if not already done.
 
 
   ///
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
   ///
-  void setup_nested_grid_levels(
+  void setup_SMR_grid_levels(
       class SimParams &  ///< pointer to simulation parameters
       );
 
   /// 
-  /// Sets up a nested grid.
+  /// Sets up a SMR grid.
   ///
   int setup_grid(
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
@@ -85,11 +85,11 @@ class setup_nested_grid :
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
       class GridBaseClass *,  ///< pointer to grid.
-      const int          ///< level of grid in nest
+      const int          ///< level of grid in SMR
       );
 
 
-}; // setup_nested_grid
+}; // setup_SMR_grid
    
 /*************************************************************************/
 /*************************************************************************/

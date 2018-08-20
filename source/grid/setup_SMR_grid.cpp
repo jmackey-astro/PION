@@ -1,6 +1,6 @@
-/// \file setup_nested_grid.cpp
+/// \file setup_SMR_grid.cpp
 /// 
-/// \brief Class for setting up nested grids.
+/// \brief Class for setting up SMR grids.
 /// 
 /// \author Jonathan Mackey
 /// 
@@ -15,7 +15,7 @@
 #include "tools/command_line_interface.h"
 #include "raytracing/raytracer_SC.h"
 
-#include "grid/setup_nested_grid.h"
+#include "grid/setup_SMR_grid.h"
 #include "grid/uniform_grid.h"
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
@@ -41,7 +41,7 @@
 
 #include "dataIO/dataio_base.h"
 #ifdef SILO
-#include "dataIO/dataio_silo_nestedgrid.h"
+#include "dataIO/dataio_silo_SMR.h"
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
@@ -64,7 +64,7 @@ using namespace std;
 
 
 
-setup_nested_grid::setup_nested_grid()
+setup_SMR_grid::setup_SMR_grid()
 {
 }
 
@@ -75,7 +75,7 @@ setup_nested_grid::setup_nested_grid()
 
 
 
-setup_nested_grid::~setup_nested_grid()
+setup_SMR_grid::~setup_SMR_grid()
 {
 }
 
@@ -86,12 +86,12 @@ setup_nested_grid::~setup_nested_grid()
 
 
 
-void setup_nested_grid::setup_nested_grid_levels(
+void setup_SMR_grid::setup_SMR_grid_levels(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   //
-  // populate "levels" struct in SimPM based on nested grid parameters.
+  // populate "levels" struct in SimPM based on SMR grid parameters.
   //
   SimPM.levels.clear();
   SimPM.levels.resize(SimPM.grid_nlevels);
@@ -115,9 +115,9 @@ void setup_nested_grid::setup_nested_grid_levels(
       for (int v=0;v<MAX_DIM;v++) 
         SimPM.levels[i].Range[v] = 0.5*SimPM.levels[i-1].Range[v];
       for (int v=0;v<MAX_DIM;v++)
-        SimPM.levels[i].Xmin[v] = 0.5*(SimPM.levels[i-1].Xmin[v]+SimPM.grid_nest_centre[v]);
+        SimPM.levels[i].Xmin[v] = 0.5*(SimPM.levels[i-1].Xmin[v]+SimPM.SMR_centre[v]);
       for (int v=0;v<MAX_DIM;v++)
-        SimPM.levels[i].Xmax[v] = 0.5*(SimPM.levels[i-1].Xmax[v]+SimPM.grid_nest_centre[v]);
+        SimPM.levels[i].Xmax[v] = 0.5*(SimPM.levels[i-1].Xmax[v]+SimPM.SMR_centre[v]);
       SimPM.levels[i].dx = 0.5*SimPM.levels[i-1].dx;
     }
     SimPM.levels[i].simtime = SimPM.simtime;
@@ -152,14 +152,14 @@ void setup_nested_grid::setup_nested_grid_levels(
 
 
 
-int setup_nested_grid::setup_grid(
+int setup_SMR_grid::setup_grid(
       vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
       class MCMDcontrol * ///< unused for serial code.
       )
 {
   cout <<"------------------------------------------------------\n";
-  cout <<"------------  Setting up nested grid -----------------\n";
+  cout <<"------------  Setting up SMR grid -----------------\n";
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
@@ -196,7 +196,7 @@ int setup_nested_grid::setup_grid(
   // Now we can setup the grid:
   //
 #ifdef TESTING
-  cout <<"(setup_nested_grid::setup_grid) Setting up grid...\n";
+  cout <<"(setup_SMR_grid::setup_grid) Setting up grid...\n";
 #endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
@@ -222,10 +222,10 @@ int setup_nested_grid::setup_grid(
       rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
     if (grid[l]==0)
-      rep.error("(setup_nested_grid::setup_grid) Couldn't assign data!", grid[l]);
+      rep.error("(setup_SMR_grid::setup_grid) Couldn't assign data!", grid[l]);
 
 #ifdef TESTING
-    cout <<"(setup_nested_grid::setup_grid) Done. &grid=";
+    cout <<"(setup_SMR_grid::setup_grid) Done. &grid=";
     cout << &(grid[l])<<", and grid="<<grid[l]<<"\n";
     cout <<"DX = "<<(grid[l])->DX()<<"\n";
     dp.grid = (grid[l]);
@@ -268,7 +268,7 @@ cout <<"------------------------------------------------------\n\n";
 
 
 
-int setup_nested_grid::boundary_conditions(
+int setup_SMR_grid::boundary_conditions(
       class SimParams &par,  ///< pointer to simulation parameters
       class MCMDcontrol &,  ///< unused for serial code
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
@@ -292,7 +292,7 @@ int setup_nested_grid::boundary_conditions(
     rep.errorTest("sng::boundary_conditions SetupBCs",0,err);
   }
 #ifdef TESTING
-  cout <<"(setup_nested_grid::boundary_conditions) Done.\n";
+  cout <<"(setup_SMR_grid::boundary_conditions) Done.\n";
 #endif
   return 0;
 }
@@ -304,10 +304,10 @@ int setup_nested_grid::boundary_conditions(
 
 
 
-int setup_nested_grid::setup_boundary_structs(
+int setup_SMR_grid::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      const int l   ///< level in nested grid
+      const int l   ///< level in SMR grid
       )
 {
 #ifdef TESTING
@@ -319,7 +319,7 @@ int setup_nested_grid::setup_boundary_structs(
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
   //
-  // Now check for nested grid boundaries if this grid has a parent
+  // Now check for SMR grid boundaries if this grid has a parent
   // grid (i.e. if l > 0).
   //
   if (l>0) {
@@ -342,7 +342,7 @@ int setup_nested_grid::setup_boundary_structs(
   }
 
   //
-  // Now check for nested grid boundaries if this grid has a child
+  // Now check for SMR grid boundaries if this grid has a child
   // grid (i.e. if l < nlevels), and set non-leaf cells to boundary
   // data.
   //
@@ -421,7 +421,7 @@ int setup_nested_grid::setup_boundary_structs(
 
 
 
-int setup_nested_grid::setup_raytracing(
+int setup_SMR_grid::setup_raytracing(
       class SimParams &SimPM,    ///< pointer to simulation parameters
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
@@ -430,15 +430,15 @@ int setup_nested_grid::setup_raytracing(
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     cout <<"setting up raytracing for grid level "<<l<<"\n";
     err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
-    rep.errorTest("setup_nested_grid::setup_raytracing()",0,err);
+    rep.errorTest("setup_SMR_grid::setup_raytracing()",0,err);
   }
   
   err += setup_evolving_RT_sources(SimPM);
-  rep.errorTest("setup_nested_grid::setup_evolving_RT_sources()",0,err);
+  rep.errorTest("setup_SMR_grid::setup_evolving_RT_sources()",0,err);
   
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     err += update_evolving_RT_sources(SimPM,grid[l]->RT);
-    rep.errorTest("setup_nested_grid::update_evolving_RT_sources()",0,err);
+    rep.errorTest("setup_SMR_grid::update_evolving_RT_sources()",0,err);
   }
   return 0;
 }

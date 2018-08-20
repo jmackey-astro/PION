@@ -23,7 +23,7 @@
 class SMR_fine_to_coarse_bc {
   protected:
   
-  /// Assigns data to a nested grid from finer grid.
+  /// Assigns data to a SMR grid from finer grid.
   virtual int BC_assign_FINE_TO_COARSE(
       class SimParams &,     ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
@@ -31,11 +31,11 @@ class SMR_fine_to_coarse_bc {
       class GridBaseClass *  ///< pointer to child grid.
       );
 
-  /// Updates data to a nested grid from finer grid.
+  /// Updates data to a SMR grid from finer grid.
   virtual int BC_update_FINE_TO_COARSE(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
-      const int, ///< level of grid in nested grid struct.
+      const int, ///< level of grid in SMR grid struct.
       struct boundary_data *,
       const int,
       const int

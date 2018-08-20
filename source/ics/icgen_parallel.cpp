@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   SimSetup = new setup_fixed_grid_pllel();
 
   //
-  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  // Set up the Xmin/Xmax/Range/dx of each level in the SMR grid
   //
   vector<class GridBaseClass *> grid;
   err  = MCMD.decomposeDomain(SimPM,SimPM.levels[0]);

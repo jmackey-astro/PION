@@ -69,7 +69,7 @@ int calc_timestep::calculate_timestep(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
       class FV_solver_base *sp_solver, ///< solver/equations class
-      const int l       ///< level to advance (for nested grid)
+      const int l       ///< level to advance (for SMR grid)
       )
 {
 #ifdef TESTING
@@ -328,7 +328,7 @@ double calc_timestep::calc_dynamics_dt(
 double calc_timestep::calc_microphysics_dt(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      const int l       ///< level to advance (for nested grid)
+      const int l       ///< level to advance (for SMR grid)
       )
 {
   //

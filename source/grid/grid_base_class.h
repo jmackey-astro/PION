@@ -439,12 +439,12 @@ class GridBaseClass {
     const axes    ///< Axis.
     )=0;
 
-  /// Set pointer to child grid (for nested grids)
+  /// Set pointer to child grid (for SMR grids)
   virtual void set_child_grid(
       class GridBaseClass *  ///< pointer to child grid.
       ) {return;}
 
-  /// Set pointer to parent grid (for nested grids)
+  /// Set pointer to parent grid (for SMR grids)
   virtual void set_parent_grid(
       class GridBaseClass *  ///< pointer to parent grid.
       ) {return;}

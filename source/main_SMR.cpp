@@ -1,5 +1,5 @@
-/// \file main_nested.cpp
-/// \brief Main program which sets up a nested grid and runs the simulation.
+/// \file main_SMR.cpp
+/// \brief Main program which sets up a SMR grid and runs the simulation.
 /// \author Jonathan Mackey
 /// 
 /// This file just contains the main() function, which sets a number of 
@@ -7,7 +7,7 @@
 /// starts the time integration, and cleans up when the simulation is 
 /// finished.
 /// 
-/// Arguments: \<pion_nested\> \<icfile\> [override options]\n
+/// Arguments: \<pion_SMR\> \<icfile\> [override options]\n
 /// Parameters:
 /// - \<icfile\> Can be an ASCII text parameter-file for 1D and 2D shocktube
 /// test problems; otherwise should be an initial-condition file or a
@@ -41,7 +41,7 @@ using namespace std;
 #include "sim_constants.h"
 #include "tools/reporting.h"
 #include "grid/grid_base_class.h"
-#include "sim_control/sim_control_nested.h"
+#include "sim_control/sim_control_SMR.h"
 
 
 int main(int argc, char **argv)
@@ -50,8 +50,9 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control_nestedgrid *sim_control = 0;
-  sim_control = new class sim_control_nestedgrid();
+  class sim_control_SMR *sim_control = 0;
+
+  sim_control = new class sim_control_SMR();
   if (!sim_control)
     rep.error("(pion) Couldn't initialise sim_control", sim_control);
 
