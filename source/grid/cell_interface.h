@@ -578,7 +578,7 @@ class cell_interface {
   short unsigned int iDivV;
 
   // ----------------------------------------------------------------
-  // *** Methods for a nested grid ***
+  // *** Methods for a SMR grid ***
   // ----------------------------------------------------------------
   
   protected:
@@ -593,15 +593,15 @@ class cell_interface {
   ///
   void set_nlevels(
       const double, ///< dx on coarsest grid.
-      const int     ///< number of levels in nested grid.
+      const int     ///< number of levels in SMR grid.
       );
 
   ///
   /// Returns the size of a cell in the internal integer units for
-  /// this level in the nested grid.
+  /// this level in the SMR grid.
   ///
   inline int get_integer_cell_size(
-      const int level ///< level in nested grid
+      const int level ///< level in SMR grid
       ) {return n_idx[level];}
 
 

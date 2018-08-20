@@ -30,7 +30,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   //
   if (b->data.empty())
     rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
-  b->nest.clear();
+  b->SMR.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
   //int pidx = parent->idx();
@@ -52,7 +52,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       //cout <<"distance="<<distance<<"; "; rep.printVec("pc pos",pc->pos,G_ndim);
       pc = parent->NextPt_All(pc);
       if (!pc && !loop) { // hack: if get to the end, then go back...
-        pc = b->nest.front();
+        pc = b->SMR.front();
         loop = true;
       }
       distance = grid->idistance(pc->pos, (*bpt)->pos);
@@ -60,7 +60,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     if (!pc) rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
     
     // add this parent cell to the "parent" list of this boundary.
-    b->nest.push_back(pc);
+    b->SMR.push_back(pc);
     (*bpt)->npt = pc;
     ++bpt;
   }  while (bpt !=b->data.end());
@@ -81,7 +81,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
 int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
-      const int level, ///< level in the nested grid structure
+      const int level, ///< level in the SMR grid structure
       struct boundary_data *b,
       const int step
       )
@@ -106,7 +106,7 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   class GridBaseClass *fine   = par.levels[level].grid;
   // pointers to lists of cells in coarse and fine grids that are
   // part of this boundary.
-  //list<cell*>::iterator c_iter=b->nest.begin();
+  //list<cell*>::iterator c_iter=b->SMR.begin();
   list<cell*>::iterator f_iter=b->data.begin();
   cell *c, *f;
   double *U   = new double [par.nvar];

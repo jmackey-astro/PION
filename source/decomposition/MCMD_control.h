@@ -58,7 +58,7 @@ class MCMDcontrol {
   ///
   int decomposeDomain(
       class SimParams &,  ///< pointer to simulation parameters
-      struct level &     ///< pointer to domain parameters for nested grid level
+      struct level &     ///< pointer to domain parameters for SMR grid level
       );
 
   ///
@@ -69,7 +69,7 @@ class MCMDcontrol {
   int decomposeDomain(
       const enum axes,
       class SimParams &,  ///< pointer to simulation parameters
-      struct level &     ///< pointer to domain parameters for nested grid level
+      struct level &     ///< pointer to domain parameters for SMR grid level
       );
 
   ///
@@ -128,7 +128,7 @@ class MCMDcontrol {
   ///
   int pointToNeighbours(
       class SimParams &,  ///< pointer to simulation parameters
-      struct level &     ///< pointer to domain parameters for nested grid level
+      struct level &     ///< pointer to domain parameters for SMR grid level
       );
 };
 

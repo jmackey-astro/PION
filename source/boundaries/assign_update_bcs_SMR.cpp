@@ -23,7 +23,7 @@ using namespace std;
 int assign_update_bcs_SMR::TimeUpdateInternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
-      const int level, ///< level in the nested grid structure
+      const int level, ///< level in the SMR grid structure
       class FV_solver_base *solver, ///< pointer to equations
       const double simtime,   ///< current simulation time
       const int cstep,
@@ -56,7 +56,7 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
     case BCMPI:
     case COARSE_TO_FINE:
       //
-      // boundaries not affected by nested grid are updated elsewhere
+      // boundaries not affected by SMR grid are updated elsewhere
       //     
       break;
 
@@ -67,12 +67,12 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
 
     default:
       //      cout <<"no internal boundaries to update.\n";
-      rep.error("Unhandled BC: serial nested update internal",b->itype);
+      rep.error("Unhandled BC: serial SMR update internal",b->itype);
       break;
     }
   }
 #ifdef TEST_NEST
-  cout <<"updated nested-grid serial internal BCs\n";
+  cout <<"updated SMR-grid serial internal BCs\n";
 #endif
   return 0;
 }
@@ -88,7 +88,7 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
       class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid,  ///< pointer to grid.
-      const int level, ///< level in the nested grid structure
+      const int level, ///< level in the SMR grid structure
       class FV_solver_base *solver, ///< pointer to equations
       const double simtime,   ///< current simulation time
       const int cstep,
@@ -124,12 +124,12 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       break;
 
       default:
-      rep.error("Unhandled BC: serial nested update external",b->itype);
+      rep.error("Unhandled BC: serial SMR update external",b->itype);
       break;
     }
   }
 #ifdef TEST_NEST
-  cout <<"updated nested-grid serial external BCs\n";
+  cout <<"updated SMR-grid serial external BCs\n";
 #endif
   return(0);
 }
@@ -154,16 +154,16 @@ int assign_update_bcs_SMR::assign_boundary_data(
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
 
   //
-  // Then check for nested-grid boundaries and assign data for them.
+  // Then check for SMR-grid boundaries and assign data for them.
   //
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
 #ifdef TESTING
-    cout <<"nested grid assign BCs: BC["<<i<<"] starting.\n";
+    cout <<"SMR grid assign BCs: BC["<<i<<"] starting.\n";
 #endif
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE:
 #ifdef TESTING
-      cout <<"nested grid setup: Assigning FINE_TO_COARSE BC\n";
+      cout <<"SMR grid setup: Assigning FINE_TO_COARSE BC\n";
 #endif
       err += BC_assign_FINE_TO_COARSE(par,grid,grid->BC_bd[i],child);
       break;
@@ -177,7 +177,7 @@ int assign_update_bcs_SMR::assign_boundary_data(
 
       default:
 #ifdef TESTING
-      cout <<"leaving BC "<<i<<" alone in nested grid assign fn.\n";
+      cout <<"leaving BC "<<i<<" alone in SMR grid assign fn.\n";
 #endif
       break;
     }

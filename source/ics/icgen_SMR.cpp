@@ -1,5 +1,5 @@
-/// \file icgen_nested.cpp
-/// \brief Program to generate Initial Conditions for a nested grid.
+/// \file icgen_SMR.cpp
+/// \brief Program to generate Initial Conditions for a SMR grid.
 /// \author Jonathan Mackey
 /// 
 /// Modifications:
@@ -23,12 +23,12 @@
 #include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
-#include "dataIO/dataio_silo_nestedgrid.h"
+#include "dataIO/dataio_silo_SMR.h"
 #endif // if SILO
 
 #include "grid/uniform_grid.h"
-#include "grid/setup_nested_grid.h"
-#include "sim_control/sim_init_nested.h"
+#include "grid/setup_SMR_grid.h"
+#include "sim_control/sim_init_SMR.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
-    cerr<<"Usage <icgen_nest_serial> <paramfile> [ic-filetype]\n";
+    cerr<<"Usage <icgen_SMR_serial> <paramfile> [ic-filetype]\n";
     return(1);
   }
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
   if (argc>2) icftype=argv[2];
   else icftype="fits"; // This is the default for now.
   
-  class sim_init_nested *SimSetup = new sim_init_nested();
+  class sim_init_SMR *SimSetup = new sim_init_SMR();
   SimPM = &(SimSetup->SimPM);
 
   siminfo=0; siminfo = new class get_sim_info ();
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
   delete siminfo; siminfo=0;
 
 
-  SimSetup->setup_nested_grid_levels(*SimPM);
+  SimSetup->setup_SMR_grid_levels(*SimPM);
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM->grid_nlevels);
 
@@ -165,9 +165,9 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM->grid_nlevels;l++) {
-    cout <<"icgen_nested: assigning boundary data for level "<<l<<"\n";
+    cout <<"icgen_SMR: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(*SimPM,MCMD,grid[l],SimPM->levels[l].parent, SimPM->levels[l].child);
-    rep.errorTest("icgen_nest::assign_boundary_data",0,err);
+    rep.errorTest("icgen_SMR::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
     cout <<"updating external boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateExternalBCs(*SimPM, MCMD, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
-  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  rep.errorTest("sim_init_SMR: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     cout <<"updating internal boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(*SimPM, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
-  rep.errorTest("sim_init_nested: error from bounday update",0,err);
+  rep.errorTest("sim_init_SMR: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -236,7 +236,7 @@ int main(int argc, char **argv)
     cout <<"WRITING SILO FILE: ";
     //    icfile = icfile+".silo";
     cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_nested_silo (*SimPM, "DOUBLE");
+    dataio=0; dataio=new dataio_SMR_silo (*SimPM, "DOUBLE");
   }
 #endif // if SILO defined.
   if (!dataio) rep.error("IO class initialisation: ",icftype);

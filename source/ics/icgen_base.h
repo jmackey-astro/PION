@@ -4,7 +4,7 @@
 ///
 /// Description:\n
 /// This implements a set of routines that are common to serial,
-/// parallel, and nested grid code for generating initial conditions.
+/// parallel, and SMR grid code for generating initial conditions.
 ///
 /// Modifications:\n
 /// 2018.05.04 JM: moved code from icgen.cpp/.h

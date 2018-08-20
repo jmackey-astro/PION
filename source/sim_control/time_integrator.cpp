@@ -136,8 +136,8 @@ int time_integrator::first_order_update(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  // NB Only used for uniform grid.  update for nested grid is in
-  // sim_control_nested.cpp
+  // NB Only used for uniform grid.  update for SMR grid is in
+  // sim_control_SMR.cpp
   int err=0;
   //
   // Set dt for equations class
@@ -188,8 +188,8 @@ int time_integrator::second_order_update(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  // NB Only used for uniform grid.  update for nested grid is in
-  // sim_control_nested.cpp
+  // NB Only used for uniform grid.  update for SMR grid is in
+  // sim_control_SMR.cpp
   int err=0;
   //
   // Set dt for equations class

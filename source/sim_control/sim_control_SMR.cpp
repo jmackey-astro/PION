@@ -1,16 +1,16 @@
-/// \file sim_control_nested.cpp
+/// \file sim_control_SMR.cpp
 /// 
 /// \brief Simulation Control Class for Nested Grids.
 /// 
 /// \author Jonathan Mackey
 /// 
 /// This file contains the definitions of the member functions for
-/// the nested-grid simulation control class.  This is built on top
+/// the SMR-grid simulation control class.  This is built on top
 /// of the control class for uniform grids, and so doesn't add too
 /// much, just the moving up and down between levels.
 /// 
 /// Modifications:
-/// - 2018.05.03 JM: Started on nested grid simulation control.
+/// - 2018.05.03 JM: Started on SMR grid simulation control.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -20,7 +20,7 @@
 #include "tools/timer.h"
 #include "constants.h"
 
-#include "sim_control/sim_control_nested.h"
+#include "sim_control/sim_control_SMR.h"
 
 //#include "microphysics/microphysics_base.h"
 //#include "raytracing/raytracer_SC.h"
@@ -50,10 +50,10 @@ using namespace std;
 // ##################################################################
 
 
-sim_control_nestedgrid::sim_control_nestedgrid()
+sim_control_SMR::sim_control_SMR()
 {
 #ifdef TESTING
-  cout << "(sim_control_nestedgrid::Constructor)\n";
+  cout << "(sim_control_SMR::Constructor)\n";
 #endif
 }
 
@@ -63,10 +63,10 @@ sim_control_nestedgrid::sim_control_nestedgrid()
 // ##################################################################
 
 
-sim_control_nestedgrid::~sim_control_nestedgrid()
+sim_control_SMR::~sim_control_SMR()
 {
 #ifdef TESTING
-  cout << "(sim_control_nestedgrid::Destructor)\n";
+  cout << "(sim_control_SMR::Destructor)\n";
 #endif
 }
 
@@ -79,18 +79,18 @@ sim_control_nestedgrid::~sim_control_nestedgrid()
 
 
 
-int sim_control_nestedgrid::Time_Int(
+int sim_control_SMR::Time_Int(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control_nestedgrid::Time_Int) STARTING TIME INTEGRATION\n";
+  cout <<"(sim_control_SMR::Time_Int) STARTING TIME INTEGRATION\n";
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
   bool first_step=true;
   clk.start_timer("Time_Int"); double tsf=0;
-  class MCMDcontrol *ppar = 0; // unused for serial code.
+  class MCMDcontrol ppar; // unused for serial code.
 
   // make sure all levels start at the same time.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -111,19 +111,19 @@ int sim_control_nestedgrid::Time_Int(
     //
     for (int l=0; l<SimPM.grid_nlevels; l++) {
       err = update_evolving_RT_sources(SimPM,grid[l]->RT);
-      rep.errorTest("nested TIME_INT::update_evolving_RT_sources error",0,err);
+      rep.errorTest("SMR TIME_INT::update_evolving_RT_sources error",0,err);
 
       //cout <<"updating external boundaries for level "<<l<<"\n";
       err += TimeUpdateExternalBCs(SimPM, ppar, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
-    rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
+    rep.errorTest("sim_control_SMR: error from bounday update",0,err);
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
       //cout <<"updating internal boundaries for level "<<l<<"\n";
       err += TimeUpdateInternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
-    rep.errorTest("sim_control_nestedgrid: error from bounday update",0,err);
+    rep.errorTest("sim_control_SMR: error from bounday update",0,err);
     // ----------------------------------------------------------------
 
 
@@ -191,7 +191,7 @@ int sim_control_nestedgrid::Time_Int(
     rep.errorTest("TIME_INT::check_eosim()",0,err);
   }
 
-  cout <<"(sim_control_nestedgrid::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
+  cout <<"(sim_control_SMR::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
 
   tsf=clk.time_so_far("Time_Int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
@@ -220,7 +220,7 @@ int sim_control_nestedgrid::Time_Int(
 /// This is only for a test problem -- it checks the magnetic
 /// pressure on the full domain and outputs it to screen
 ///
-void sim_control_nestedgrid::calculate_magnetic_pressure(
+void sim_control_SMR::calculate_magnetic_pressure(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
@@ -257,13 +257,13 @@ void sim_control_nestedgrid::calculate_magnetic_pressure(
 /// If running a 1D spherical blast wave, calculate the shock position
 /// and output to screen.
 ///
-void sim_control_nestedgrid::calculate_blastwave_radius(
+void sim_control_SMR::calculate_blastwave_radius(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
   // Calculate the blast wave outer shock position.
-  // If a nested grid, start on the finest grid and work outwards
+  // If a SMR grid, start on the finest grid and work outwards
   //
   double shockpos=0.0;
   static double old_pos=0.0;
@@ -305,7 +305,7 @@ void sim_control_nestedgrid::calculate_blastwave_radius(
 
 
 
-double sim_control_nestedgrid::advance_time(
+double sim_control_SMR::advance_time(
       const int l       ///< level to advance.
       )
 {
@@ -333,7 +333,7 @@ double sim_control_nestedgrid::advance_time(
 
 
 
-double sim_control_nestedgrid::advance_step_OA1(
+double sim_control_SMR::advance_step_OA1(
       const int l       ///< level to advance.
       )
 {
@@ -416,7 +416,7 @@ double sim_control_nestedgrid::advance_step_OA1(
 
 
 
-double sim_control_nestedgrid::advance_step_OA2(
+double sim_control_SMR::advance_step_OA2(
       const int l       ///< level to advance.
       )
 {
@@ -541,10 +541,10 @@ double sim_control_nestedgrid::advance_step_OA2(
 
 
 
-int sim_control_nestedgrid::calculate_raytracing_column_densities(
+int sim_control_SMR::calculate_raytracing_column_densities(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< Computational grid.
-      const int l  ///< level of grid in nested grid hierarchy
+      const int l  ///< level of grid in SMR grid hierarchy
       )
 {
   int err=0;
@@ -573,7 +573,7 @@ int sim_control_nestedgrid::calculate_raytracing_column_densities(
     double Tau1[MAX_TAU], Tau2[MAX_TAU], Tau3[MAX_TAU], Tau4[MAX_TAU], tmp[MAX_TAU];
     class cell *c, *f1, *f2, *f3, *f4;
     list<class cell*>::iterator c_iter=b->data.begin();
-    list<class cell*>::iterator f_iter=b->nest.begin();
+    list<class cell*>::iterator f_iter=b->SMR.begin();
     struct rad_src_info *s;
     double cpos[MAX_DIM];
     double diffx,diffy;
@@ -681,7 +681,7 @@ int sim_control_nestedgrid::calculate_raytracing_column_densities(
     } // if 2D
 
     else {
-      rep.error("3D RT not implemented yet in nested grid",par.ndim);
+      rep.error("3D RT not implemented yet in SMR grid",par.ndim);
     } // if 3D
   } // if there is a finer level
 
@@ -709,7 +709,7 @@ int sim_control_nestedgrid::calculate_raytracing_column_densities(
 
 
 
-int sim_control_nestedgrid::check_energy_cons(
+int sim_control_SMR::check_energy_cons(
       vector<class GridBaseClass *> &grid
       )
 {
@@ -766,7 +766,7 @@ int sim_control_nestedgrid::check_energy_cons(
 
 
 
-int sim_control_nestedgrid::grid_update_state_vector(
+int sim_control_SMR::grid_update_state_vector(
       const double dt,  ///< timestep
       const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa,   ///< Full order of accuracy of simulation

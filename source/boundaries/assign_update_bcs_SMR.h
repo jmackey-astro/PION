@@ -45,7 +45,7 @@ class assign_update_bcs_SMR :
       class SimParams &,      ///< pointer to simulation parameters
       class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in nested grid struct.
+      const int, ///< level of grid in SMR grid struct.
       class FV_solver_base *, ///< pointer to equations
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.
@@ -59,7 +59,7 @@ class assign_update_bcs_SMR :
   virtual int TimeUpdateInternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in nested grid struct.
+      const int, ///< level of grid in SMR grid struct.
       class FV_solver_base *, ///< pointer to equations
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.

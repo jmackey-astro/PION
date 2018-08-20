@@ -52,7 +52,7 @@
 # - 2016.08.29 JM: removed *Eint solvers.
 # - 2017-07-29 JM: updated for latitude-dependent winds.
 # - 2017-08-03 JM: updated standard workstation to use system libs.
-# - 2018-05-04 JM: Nested grid executable.
+# - 2018-[05-09] JM: added static mesh-refinement
 #
 ############################
 ### BASIC INFO AND PATHS ###
@@ -83,7 +83,7 @@ VPATH = \
 ../source/tools:\
 ../source/future:\
 ../source/decomposition\
-../source/nested_grid\
+../source/SMR_grid\
 ../source/boundaries
 
 
@@ -382,17 +382,17 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o sim_init.o
 
-OBJ_SMR_ICS = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o sim_init.o
+OBJ_SMR_ICS = dataio_silo_SMR.o setup_SMR_grid.o sim_init_SMR.o sim_init.o
 
-OBJ_SMR_SIM = dataio_silo_nestedgrid.o setup_nested_grid.o sim_init_nested.o sim_control_nested.o
+OBJ_SMR_SIM = dataio_silo_SMR.o setup_SMR_grid.o sim_init_SMR.o sim_control_SMR.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
 
 OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_SMR_PION = main_nested.o $(OBJ_SMR_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SMR_BCS)
+OBJECTS_SMR_PION = main_SMR.o $(OBJ_SMR_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SMR_BCS)
 
-OBJECTS_SMR_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_SMR_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_SMR_BCS)
+OBJECTS_SMR_ICGEN = icgen_SMR.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_SMR_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_SMR_BCS)
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -401,24 +401,32 @@ OBJECTS_SMR_ICGEN = icgen_nested.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_I
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/pion_serial ${bindir}/icgen_serial ${bindir}/pion_nest_serial ${bindir}/icgen_nest_serial
+all: ${bindir}/pion_serial ${bindir}/icgen_serial  \
+     ${bindir}/pion_SMR_serial ${bindir}/icgen_SMR_serial
+
 uni: ${bindir}/pion_serial ${bindir}/icgen_serial
-nest: ${bindir}/icgen_nest_serial  ${bindir}/pion_nest_serial 
+
+SMR: ${bindir}/icgen_SMR_serial  ${bindir}/pion_SMR_serial 
 
 ${bindir}/pion_serial : $(OBJECTS_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_serial $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) \
+        -o ${bindir}/pion_serial $(LDFLAGS)
 
 ${bindir}/icgen_serial: $(OBJECTS_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_serial $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) \
+        -o ${bindir}/icgen_serial $(LDFLAGS)
 
-${bindir}/pion_nest_serial : $(OBJECTS_SMR_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_PION) -o ${bindir}/pion_nest_serial $(LDFLAGS)
+${bindir}/pion_SMR_serial : $(OBJECTS_SMR_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_PION) \
+        -o ${bindir}/pion_SMR_serial $(LDFLAGS)
 
-${bindir}/icgen_nest_serial: $(OBJECTS_SMR_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_ICGEN) -o ${bindir}/icgen_nest_serial $(LDFLAGS)
+${bindir}/icgen_SMR_serial: $(OBJECTS_SMR_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_ICGEN) \
+        -o ${bindir}/icgen_SMR_serial $(LDFLAGS)
 
 clean:
-	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial ${bindir}/pion_nest_serial ${bindir}/icgen_nest_serial
+	rm -f *.o ${bindir}/pion_serial ${bindir}/icgen_serial \
+        ${bindir}/pion_SMR_serial ${bindir}/icgen_SMR_serial
 
 
 ####################################
@@ -439,11 +447,11 @@ icgen.o: icgen.cpp icgen.h get_sim_info.h icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h
 
-icgen_nested.o: icgen_nested.cpp icgen.h get_sim_info.h \
+icgen_SMR.o: icgen_SMR.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h \
-  setup_nested_grid.h sim_init_nested.h sim_init.h \
+  setup_SMR_grid.h sim_init_SMR.h sim_init.h \
   assign_update_bcs_SMR.h
 
 #####################
@@ -465,7 +473,7 @@ MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h
 
-setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
+setup_SMR_grid.o: setup_SMR_grid.cpp setup_SMR_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
   assign_update_bcs_SMR.h
 
@@ -544,8 +552,8 @@ sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
  grid_base_class.h assign_update_bcs.h
 
-sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
- ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h \
+sim_init_SMR.o: sim_init_SMR.h sim_init_SMR.cpp sim_init.h \
+ ${GLOBAL} setup_SMR_grid.h setup_fixed_grid.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h \
  assign_update_bcs_SMR.h
 
@@ -558,7 +566,7 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
  solver_eqn_base.h raytracer_SC.h ${GLOBAL}
 
 
-sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
+sim_control_SMR.o : sim_control_SMR.cpp sim_control_SMR.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h assign_update_bcs_SMR.h
 
@@ -713,8 +721,8 @@ stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
 stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h stellar_wind_BC.h \
    grid_base_class.h tools/interpolate.h ${GLOBAL}
 
-dataio_silo_nestedgrid.o : dataio_silo_nestedgrid.cpp \
-  dataio_silo_nestedgrid.h dataio_silo.h parameter_defs.h ${GLOBAL} \
+dataio_silo_SMR.o : dataio_silo_SMR.cpp \
+  dataio_silo_SMR.h dataio_silo.h parameter_defs.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h
 
 ##############################

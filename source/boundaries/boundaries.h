@@ -34,8 +34,8 @@ enum BoundaryTypes {
     ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
     STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
     STARBENCH1 =15, ///< StarBench test for mixing with a solid wall.
-    FINE_TO_COARSE  =16, ///< data in this cell should be obtained from finer-scale data on a nested grid.
-    COARSE_TO_FINE   =17  ///< data should be obtained from coarser level in a nested grid.
+    FINE_TO_COARSE  =16, ///< data in this cell should be obtained from finer-scale data on a SMR grid.
+    COARSE_TO_FINE   =17  ///< data should be obtained from coarser level in a SMR grid.
 };
 
 
@@ -70,7 +70,7 @@ struct boundary_data {
   /// for the external boundaries of a child grid (unused for uniform
   /// grid) or the non-leaf data of a parent grid.
   ///
-  std::list<cell*> nest;
+  std::list<cell*> SMR;
   pion_flt *refval;  ///< Optional reference state vector.
 };
 

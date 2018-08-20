@@ -49,6 +49,7 @@
 # - 2016.08.29 JM: removed *Eint solvers.
 # - 2017-07-29 JM: updated for latitude-dependent winds.
 # - 2017-08-03 JM: updated standard workstation to use system libs.
+# - 2018-[07-09] JM: added static mesh-refinement
 ###
 
 ############################
@@ -79,7 +80,7 @@ VPATH = \
 ../source/contrib:\
 ../source/tools:\
 ../source/decomposition\
-../source/nested_grid\
+../source/SMR_grid\
 ../source/boundaries
 
 
@@ -104,7 +105,7 @@ GLOBAL = functionality_flags.h testing_flags.h reporting.h \
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -420,6 +421,9 @@ OBJECTS_ICGEN = icgen_parallel.o get_sim_info.o $(OBJ_GEN) \
   $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
   $(OBJ_CRD) $(OBJ_BCS)
 
+OBJECTS_SMR_PION = main_MPI_SMR.o $(OBJ_SMR_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SMR_BCS)
+
+OBJECTS_SMR_ICGEN = icgen_MPI_SMR.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_SMR_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_SMR_BCS)
 
 
 #####################################################
@@ -438,6 +442,12 @@ ${bindir}/pion_parallel: $(OBJECTS_PION)
 ${bindir}/icgen_parallel: $(OBJECTS_ICGEN)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_parallel $(LDFLAGS)
 
+${bindir}/pion_SMR_parallel : $(OBJECTS_SMR_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_PION) -o ${bindir}/pion_SMR_parallel $(LDFLAGS)
+
+${bindir}/icgen_SMR_parallel: $(OBJECTS_SMR_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_ICGEN) -o ${bindir}/icgen_SMR_parallel $(LDFLAGS)
+
 clean:
 	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
 
@@ -453,9 +463,9 @@ interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 sim_params.o: sim_params.cpp ${GLOBAL}
 
-mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
+main_MPI_SMR.o: main_MPI_SMR.cpp sim_control.h ${GLOBAL} comms.h
 
-icgen_parallel.o: icgen_parallel.cpp icgen.h get_sim_info.h \
+icgen_MPI_SMR.o: icgen_MPI_SMR.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h
@@ -480,7 +490,7 @@ MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h assign_update_bcs.h
 
-setup_nested_grid.o: setup_nested_grid.cpp setup_nested_grid.h \
+setup_SMR_grid.o: setup_SMR_grid.cpp setup_SMR_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
   assign_update_bcs.h assign_update_bcs_SMR.h
 
@@ -590,8 +600,8 @@ sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
  grid_base_class.h assign_update_bcs.h 
 
-sim_init_nested.o: sim_init_nested.h sim_init_nested.cpp sim_init.h \
- ${GLOBAL} setup_nested_grid.h setup_fixed_grid.h grid_base_class.h \
+sim_init_SMR.o: sim_init_SMR.h sim_init_SMR.cpp sim_init.h \
+ ${GLOBAL} setup_SMR_grid.h setup_fixed_grid.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h \
  assign_update_bcs_SMR.h
 
@@ -605,7 +615,7 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
  solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
  assign_update_bcs.h
 
-sim_control_nested.o : sim_control_nested.cpp sim_control_nested.h \
+sim_control_SMR.o : sim_control_SMR.cpp sim_control_SMR.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h \
  assign_update_bcs.h assign_update_bcs_SMR.h

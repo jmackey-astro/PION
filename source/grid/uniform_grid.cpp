@@ -97,7 +97,7 @@
 /// - 2017.11.07-22 JM: updating boundary setup.
 /// - 2017.12.09 JM: got rid of SimPM references.
 /// - 2018.05.09 JM: set cell positions using physical pos, not
-///    integer pos (b/c nested grids don't all have cell-size=2
+///    integer pos (b/c SMR grids don't all have cell-size=2
 ///    units) and removed STARBENCH1 boundary.
 /// - 2018.05.10 JM: Moved boundary assignment to setup_fixed_grid,
 ///    and boundary updates to update_boundaries.cpp
@@ -177,7 +177,7 @@ UniformGrid::UniformGrid(
   G_irange_all = mem.myalloc(G_irange_all,G_ndim);
 
   //
-  // Useful for nested/parallel grids, where simulation domain
+  // Useful for SMR/parallel grids, where simulation domain
   // may be larger than this grid.
   //
   Sim_xmin   = mem.myalloc(Sim_xmin,  G_ndim);

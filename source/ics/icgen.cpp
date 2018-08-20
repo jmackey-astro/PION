@@ -128,9 +128,9 @@ int main(int argc, char **argv)
   SimSetup = new setup_fixed_grid();
 
   //
-  // Set up the Xmin/Xmax/Range/dx of each level in the nested grid
+  // Set up the Xmin/Xmax/Range/dx of each level in the SMR grid
   //
-  //SimSetup->setup_nested_grid_levels(SimPM);
+  //SimSetup->setup_SMR_grid_levels(SimPM);
 
   vector<class GridBaseClass *> grid;
 
