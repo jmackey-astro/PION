@@ -475,7 +475,8 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
 
 setup_SMR_grid.o: setup_SMR_grid.cpp setup_SMR_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
-  assign_update_bcs_SMR.h
+  assign_update_bcs_SMR.h SMR_coarse_to_fine_boundaries.h \
+  SMR_fine_to_coarse_boundaries.h boundaries.h
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
   ${GLOBAL} uniform_grid.h grid_base_class.h
@@ -555,7 +556,8 @@ sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
 sim_init_SMR.o: sim_init_SMR.h sim_init_SMR.cpp sim_init.h \
  ${GLOBAL} setup_SMR_grid.h setup_fixed_grid.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h \
- assign_update_bcs_SMR.h
+ assign_update_bcs_SMR.h SMR_coarse_to_fine_boundaries.h \
+  SMR_fine_to_coarse_boundaries.h boundaries.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h assign_update_bcs.h grid_base_class.h \
@@ -568,7 +570,9 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
 
 sim_control_SMR.o : sim_control_SMR.cpp sim_control_SMR.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
-  solver_eqn_base.h grid_base_class.h assign_update_bcs_SMR.h
+  solver_eqn_base.h grid_base_class.h assign_update_bcs_SMR.h \
+  SMR_coarse_to_fine_boundaries.h \
+  SMR_fine_to_coarse_boundaries.h boundaries.h
 
 #####################
 # EQUATIONS CLASSES #

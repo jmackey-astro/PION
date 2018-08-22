@@ -51,6 +51,31 @@ class SMR_coarse_to_fine_bc {
       const double *,  ///< prim. vec. at corner of coarse cell
       const double *   ///< prim. vec. at corner of coarse cell
       );
+
+  /// interpolate data from one coarse cell onto 2 fine cells in 1D
+  virtual void interpolate_coarse2fine1D(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to coarse grid
+      class GridBaseClass *,  ///< pointer to fine grid
+      class FV_solver_base *, ///< pointer to equations
+      cell *, ///< pointer to cell on coarse grid
+      cell *, ///< pointer to first fine cell  (XN)
+      cell *  ///< pointer to second fine cell (XP)
+      );
+
+  /// interpolate data from one coarse cell onto 4 fine cells in 2D
+  virtual void interpolate_coarse2fine2D(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *,  ///< pointer to coarse grid
+      class GridBaseClass *,  ///< pointer to fine grid
+      class FV_solver_base *, ///< pointer to equations
+      cell *, ///< pointer to cell on coarse grid
+      cell *, ///< pointer to first fine cell  (XN,YN)
+      cell *, ///< pointer to second fine cell (XP,YN)
+      cell *, ///< pointer to third fine cell  (XN,YP)
+      cell *  ///< pointer to fourth fine cell (XP,YP)
+      );
+
 };
 
 
