@@ -94,31 +94,13 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // to use very old Fortran code to accomplish this, and the code is
   // almost impenetrable.  AMRVAC uses linear/bilinear/trilinear
   // interpolation with renormalisation to conserve mass/P/E.
-  //
-
-  // number of fine-grid cells for each coarse grid cell.
-  int nfine = 1;
-  for (int v=0;v<par.ndim;v++) nfine *=2;
-
+  // I'm doing what AMRVAC does, I think.
 
   // pointers to coarse and fine grids:
   class GridBaseClass *coarse = par.levels[level].parent;
   class GridBaseClass *fine   = par.levels[level].grid;
-  // pointers to lists of cells in coarse and fine grids that are
-  // part of this boundary.
-  //list<cell*>::iterator c_iter=b->SMR.begin();
   list<cell*>::iterator f_iter=b->data.begin();
-  cell *c, *f;
-  double *U   = new double [par.nvar];
-  double *P   = new double [par.nvar];
-  double *U1  = new double [par.nvar];
-  double *U2  = new double [par.nvar];
-  double *P00 = new double [par.nvar];
-  double *P10 = new double [par.nvar];
-  double *P01 = new double [par.nvar];
-  double *P11 = new double [par.nvar];
-  double *sx  = new double [par.nvar];
-  double *sy  = new double [par.nvar];
+  cell *f, *c;
 
   //
   // if on an odd-numbered step, then need to update the data on the
@@ -134,6 +116,7 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 #ifdef TEST_C2F
     cout <<"C2F: odd step, interpolating coarse data in time.\n";
 #endif
+    double U[par.nvar];
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
       c = f->npt;
@@ -151,6 +134,8 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     }
   }
   
+  // if spatial order of accuracy is 1, then we have piecewise
+  // constant data, so there is no interpolation to be done.
   if (par.spOOA == OA1) {
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
       f = (*f_iter);
@@ -170,60 +155,14 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     // interpolation as needed.
     //
     if (par.ndim ==1) {
-      double sx[par.nvar]; // slope in x-dir
-      double f_vol[2], c_vol;
-      double dx = fine->DX(); // dx
-      //
-      // Do two fine cells at a time: they have the same parent.
-      // In 1D the geometry is very easy.
-      //
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
-        f = (*f_iter);
-        c = f->npt;
-        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0-0.5*dx*sx[v]);
-        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-        
+        cell *f1, *f2, *c;
+        f1 = (*f_iter);
+        c = f1->npt;
         f_iter++;
-        f = (*f_iter);
-        for (int v=0;v<par.nvar;v++) f->Ph[v] = c->Ph[v] * (1.0+0.5*dx*sx[v]);
-        for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-
-        // Now need to check mass/momentum/energy conservation between
-        // coarse and fine levels!
-        // sum energy of fine cells.
-        solver->PtoU(f->Ph, U1, par.gamma);
-        f_vol[0] = fine->CellVolume(f);
-        f_iter--; f = (*f_iter);
-        solver->PtoU(f->Ph, U2, par.gamma);
-        f_vol[1] = fine->CellVolume(f);
-        for (int v=0;v<par.nvar;v++) U[v] = U1[v]*f_vol[0] + U2[v]*f_vol[1];
-        // compare with coarse cell.
-        solver->PtoU(c->Ph, P, par.gamma);
-        c_vol = coarse->CellVolume(c);
-        for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
-#ifdef TEST_C2F
-        rep.printVec("1D coarse", P,par.nvar);
-        rep.printVec("1D fine  ", U,par.nvar);
-#endif
-        // scale U1, U2 by ratio of coarse to fine energy.
-        for (int v=0;v<par.nvar;v++) {
-          if (!pconst.equalD(P[v],U[v])) {
-            U1[v] *= P[v] / U[v];
-            U2[v] *= P[v] / U[v];
-          }
-        }
-#ifdef TEST_C2F
-        for (int v=0;v<par.nvar;v++) U[v] = U1[v]+U2[v];
-        rep.printVec("1D fine 2", U, par.nvar); 
-#endif
-        solver->UtoP(U2,f->Ph, par.EP.MinTemperature, par.gamma);
-        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-        f_iter++; f = (*f_iter);
-        solver->UtoP(U1,f->Ph, par.EP.MinTemperature, par.gamma);
-        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-      } // loop over fine cells
+        f2 = (*f_iter);
+        interpolate_coarse2fine1D(par,coarse,fine,solver,c,f1,f2);
+      }
     } // 1D
 
     else if (par.ndim == 2) {
@@ -239,128 +178,34 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       // positions as 0.25*dx in each direction from the corners.
       //
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
-        f = (*f_iter);
-        c = f->npt;
-
-        // only do this on every second row (because we update 4
+        // only do this on every second row because we update 4
         // cells at a time.
         if (!fine->NextPt(f,YP) || fine->NextPt(f,YP)->npt != c) {
           continue;
         }
 
-        // use slopes in each direction to get corner values for the
-        // coarse cell.
-        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-        solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
-        for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-        for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-        for (int v=0;v<par.nvar;v++) P00[v] = c->Ph[v] -sx[v] -sy[v];
-        for (int v=0;v<par.nvar;v++) P10[v] = c->Ph[v] +sx[v] -sy[v];
-        for (int v=0;v<par.nvar;v++) P01[v] = c->Ph[v] -sx[v] +sy[v];
-        for (int v=0;v<par.nvar;v++) P11[v] = c->Ph[v] +sx[v] +sy[v];
+        // get list of four fine cells and one coarse cell.
+        cell *f1, *f2, *f3, *f4, *c;
+        f1 = (*f_iter);
+        f_iter++;
+        f2 = (*f_iter);
+        f3 = fine->NextPt(f1,YP);
+        f4 = fine->NextPt(f2,YP);
+        c = f1->npt;
 
-        // now interpolate all four cells using the 4 corner states.
-        bilinear_interp(par, c, f, P00, P01, P10, P11);
-        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
-        f_iter++; f = (*f_iter);
-        bilinear_interp(par, c, f, P00, P01, P10, P11);
-        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
+        interpolate_coarse2fine2D(par,coarse,fine,solver,c,f1,f2,f3,f4);
 
-        f_iter--; f = (*f_iter);
-        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
-        f_iter++; f = (*f_iter);
-        bilinear_interp(par, c, fine->NextPt(f,YP), P00, P01, P10, P11);
-
-        // Now need to check mass/momentum/energy conservation between
-        // coarse and fine levels!
-        //
-        c_vol = coarse->CellVolume(c);
-        f_iter--; f = (*f_iter);
-
-        // four have same parent, so calculate conservation.
-        solver->PtoU(f->P, P00, par.gamma);
-        f_vol[0] = fine->CellVolume(f);
-        solver->PtoU(fine->NextPt(f,YP)->P, P10, par.gamma);
-        f_vol[1] = fine->CellVolume(fine->NextPt(f,YP));
-        f_iter++; f = (*f_iter);
-        solver->PtoU(f->P, P01, par.gamma);
-        f_vol[2] = fine->CellVolume(f);
-        solver->PtoU(fine->NextPt(f,YP)->P, P11, par.gamma);
-        f_vol[3] = fine->CellVolume(fine->NextPt(f,YP));
-
-        for (int v=0;v<par.nvar;v++)
-          U[v] = P00[v]*f_vol[0] + P10[v]*f_vol[1] + P01[v]*f_vol[2] + P11[v]*f_vol[3];
-        // compare with coarse cell.
-        solver->PtoU(c->Ph, P, par.gamma);
-        for (int v=0;v<par.nvar;v++) P[v] *= c_vol;
-
-#ifdef DEBUG_SMR
-        for (int v=0;v<par.nvar;v++) {
-          if (!isfinite(P00[v]) || !isfinite(P01[v]) || !isfinite(P10[v]) || !isfinite(P11[v])) {
-            rep.printVec("Unscaled fine00",P00,par.nvar);
-            rep.printVec("Unscaled fine01",P01,par.nvar);
-            rep.printVec("Unscaled fine10",P10,par.nvar);
-            rep.printVec("Unscaled fine11",P11,par.nvar);
-          }
-        }
-#endif
-
-        // scale fine conserved vec by adding the difference between
-        // conserved quantities on the fine and coarse grids.
-        for (int v=0;v<par.nvar;v++) {
-          P[v] = 0.25*(P[v] - U[v])/c_vol;
-          P00[v] += P[v];
-          P01[v] += P[v];
-          P10[v] += P[v];
-          P11[v] += P[v];
-        }
-        
-        // put scaled conserved variable vectors back into fine cells
-        solver->UtoP(P01,f->Ph, par.EP.MinTemperature, par.gamma);
-        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-
-        solver->UtoP(P11,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
-        for (int v=0;v<par.nvar;v++)
-          fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
-
-        f_iter--; f = (*f_iter);
-        solver->UtoP(P00,f->Ph, par.EP.MinTemperature, par.gamma);
-        for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-
-        solver->UtoP(P10,fine->NextPt(f,YP)->Ph, par.EP.MinTemperature, par.gamma);
-        for (int v=0;v<par.nvar;v++)
-          fine->NextPt(f,YP)->P[v] = fine->NextPt(f,YP)->Ph[v];
-        
-#ifdef DEBUG_SMR
-        for (int v=0;v<par.nvar;v++) {
-          if (!isfinite(f->P[v]) || !isfinite(fine->NextPt(f,YP)->P[v]))
-            rep.error("fine 3,4 not finite",f->P[v]);
-        }
-#endif
-
-        f_iter++; f = (*f_iter);
       } // loop over fine cells
     } // 2D
+
     else if (par.ndim == 3) {
       //
-      // Need to do trilinear interpolation.  Would ideally do 8
-      // cells at a time, but for now just do 2 (ordering in the
-      // list is not ideal).
+      // Need to do trilinear interpolation on 8 fine cells.
       //
       rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
     } // 3D
   } // 2nd-order accuracy
 
-  delete [] U;
-  delete [] P;
-  delete [] U1;
-  delete [] U2;
-  delete [] P00;
-  delete [] P10;
-  delete [] P01;
-  delete [] P11;
-  delete [] sx;
-  delete [] sy;
   return 0;
 }
 
@@ -375,10 +220,10 @@ void SMR_coarse_to_fine_bc::bilinear_interp(
       class SimParams &par,      ///< pointer to simulation parameters
       cell *c,  ///< coarse level cell
       cell *f,  ///< fine level cell
-      const double *P00,  ///< prim. vec. at corner of coarse cell
-      const double *P01,  ///< prim. vec. at corner of coarse cell
-      const double *P10,  ///< prim. vec. at corner of coarse cell
-      const double *P11   ///< prim. vec. at corner of coarse cell
+      const double *P00,  ///< prim. vec. at XN,YN corner of cell
+      const double *P01,  ///< prim. vec. at XP,YN corner of cell
+      const double *P10,  ///< prim. vec. at YP,XN corner of cell
+      const double *P11   ///< prim. vec. at XP,YP corner of cell
       )
 {
   if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
@@ -404,6 +249,176 @@ void SMR_coarse_to_fine_bc::bilinear_interp(
   for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
   for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
 
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void SMR_coarse_to_fine_bc::interpolate_coarse2fine1D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *coarse,  ///< pointer to coarse grid
+      class GridBaseClass *fine,    ///< pointer to fine grid
+      class FV_solver_base *solver, ///< pointer to equations
+      cell *c,  ///< pointer to cell on coarse grid
+      cell *f1, ///< pointer to first fine cell  (XN)
+      cell *f2  ///< pointer to second fine cell (XP)
+      )
+{
+  double sx[par.nvar]; // slope in x-dir
+  double fU[par.nvar], f1U[par.nvar], f2U[par.nvar], cU[par.nvar];
+  double f_vol[2], c_vol;
+  double dx = fine->DX(); // dx
+  //
+  // In 1D the geometry is very easy.
+  //
+  solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+  for (int v=0;v<par.nvar;v++) f1->Ph[v] = c->Ph[v] * (1.0-0.5*dx*sx[v]);
+  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
+  for (int v=0;v<par.nvar;v++) f1->dU[v] = 0.0;
+    
+  for (int v=0;v<par.nvar;v++) f2->Ph[v] = c->Ph[v] * (1.0+0.5*dx*sx[v]);
+  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
+  for (int v=0;v<par.nvar;v++) f2->dU[v] = 0.0;
+
+  // Now need to check mass/momentum/energy conservation between
+  // coarse and fine levels (Berger & Colella, 1989)
+  // sum energy of fine cells.
+  solver->PtoU(f1->Ph, f1U, par.gamma);
+  f_vol[0] = fine->CellVolume(f1);
+  solver->PtoU(f2->Ph, f2U, par.gamma);
+  f_vol[1] = fine->CellVolume(f2);
+  for (int v=0;v<par.nvar;v++) fU[v] = f1U[v]*f_vol[0] + f2U[v]*f_vol[1];
+  // compare with coarse cell.
+  solver->PtoU(c->Ph, cU, par.gamma);
+  c_vol = coarse->CellVolume(c);
+  for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
+#ifdef TEST_C2F
+  rep.printVec("1D coarse", cU,par.nvar);
+  rep.printVec("1D fine  ", fU,par.nvar);
+#endif
+  // scale f1U, f2U by ratio of coarse to fine energy.
+  // scale fine conserved vec by adding the difference between
+  // conserved quantities on the fine and coarse grids.
+  for (int v=0;v<par.nvar;v++) cU[v] = 0.5*(cU[v] - fU[v])/c_vol;
+  for (int v=0;v<par.nvar;v++) f1U[v] += cU[v];
+  for (int v=0;v<par.nvar;v++) f2U[v] += cU[v];
+#ifdef TEST_C2F
+  for (int v=0;v<par.nvar;v++) fU[v] = f1U[v]+f2U[v];
+  rep.printVec("1D fine 2", fU, par.nvar); 
+#endif
+  solver->UtoP(f2U,f2->Ph, par.EP.MinTemperature, par.gamma);
+  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
+  solver->UtoP(f1U,f1->Ph, par.EP.MinTemperature, par.gamma);
+  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void SMR_coarse_to_fine_bc::interpolate_coarse2fine2D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *coarse,  ///< pointer to coarse grid
+      class GridBaseClass *fine,    ///< pointer to fine grid
+      class FV_solver_base *solver, ///< pointer to equations
+      cell *c,  ///< pointer to cell on coarse grid
+      cell *f1, ///< pointer to first fine cell  (XN,YN)
+      cell *f2, ///< pointer to second fine cell (XP,YN)
+      cell *f3, ///< pointer to third fine cell  (XN,YP)
+      cell *f4  ///< pointer to fourth fine cell (XP,YP)
+      )
+{
+  double sx[par.nvar], sy[par.nvar]; // slopes in coarse cell
+  double fU[par.nvar], f1U[par.nvar], f2U[par.nvar];
+  double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
+  double dxo2 = 0.5*fine->DX(); // dx
+  double c_vol=0.0, f_vol[4];
+  //
+  // Need to do bilinear interpolation, 4 cells at a time.
+  // use slopes in each direction to get corner values for the
+  // coarse cell.
+  //
+  solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+  solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+  for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
+  for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
+  for (int v=0;v<par.nvar;v++) f1U[v] = c->Ph[v] -sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f2U[v] = c->Ph[v] +sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f3U[v] = c->Ph[v] -sx[v] +sy[v];
+  for (int v=0;v<par.nvar;v++) f4U[v] = c->Ph[v] +sx[v] +sy[v];
+
+  // interpolate all four cells using the 4 corner states.
+  bilinear_interp(par, c, f1, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f2, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f3, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f4, f1U, f2U, f3U, f4U);
+
+  // Need to check mass/momentum/energy conservation between
+  // coarse and fine levels
+  //
+  c_vol = coarse->CellVolume(c);
+  solver->PtoU(f1->P, f1U, par.gamma);
+  solver->PtoU(f2->P, f2U, par.gamma);
+  solver->PtoU(f3->P, f3U, par.gamma);
+  solver->PtoU(f4->P, f4U, par.gamma);
+  f_vol[0] = fine->CellVolume(f1);
+  f_vol[1] = fine->CellVolume(f2);
+  f_vol[2] = fine->CellVolume(f3);
+  f_vol[3] = fine->CellVolume(f4);
+
+  for (int v=0;v<par.nvar;v++)
+    fU[v] = f1U[v]*f_vol[0] + f3U[v]*f_vol[1] +
+            f2U[v]*f_vol[2] + f4U[v]*f_vol[3];
+  // compare with coarse cell.
+  solver->PtoU(c->Ph, cU, par.gamma);
+  for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
+
+#ifdef DEBUG_SMR
+  for (int v=0;v<par.nvar;v++) {
+    if (!isfinite(f1U[v]) || !isfinite(f1U[v]) ||
+        !isfinite(f3U[v]) || !isfinite(f4U[v])) {
+      rep.printVec("Unscaled fine00",f1U,par.nvar);
+      rep.printVec("Unscaled fine10",f2U,par.nvar);
+      rep.printVec("Unscaled fine01",f3U,par.nvar);
+      rep.printVec("Unscaled fine11",f4U,par.nvar);
+    }
+  }
+#endif
+
+  // scale fine conserved vec by adding the difference between
+  // conserved quantities on the fine and coarse grids.
+  for (int v=0;v<par.nvar;v++) cU[v] = 0.25*(cU[v] - fU[v])/c_vol;
+  for (int v=0;v<par.nvar;v++) f1U[v] += cU[v];
+  for (int v=0;v<par.nvar;v++) f2U[v] += cU[v];
+  for (int v=0;v<par.nvar;v++) f3U[v] += cU[v];
+  for (int v=0;v<par.nvar;v++) f4U[v] += cU[v];
+  
+  // put scaled conserved variable vectors back into fine cells
+  solver->UtoP(f1U,f1->Ph, par.EP.MinTemperature, par.gamma);
+  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
+  solver->UtoP(f2U,f2->Ph, par.EP.MinTemperature, par.gamma);
+  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
+  solver->UtoP(f3U,f3->Ph, par.EP.MinTemperature, par.gamma);
+  for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v];
+  solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
+  for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
+
+#ifdef DEBUG_SMR
+  for (int v=0;v<par.nvar;v++) {
+    if (!isfinite(f3->P[v]) || !isfinite(f4->P[v]))
+      rep.error("fine 3,4 not finite",f3->P[v]);
+  }
+#endif
   return;
 }
 
