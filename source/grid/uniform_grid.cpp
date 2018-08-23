@@ -1802,9 +1802,9 @@ void UniformGrid::save_coarse_fluxes(
 // physical units.
 //
 double UniformGrid::distance(
-      const double *p1, ///< position 1 (physical)
-      const double *p2  ///< position 2 (physical)
-      )
+    const double *p1, ///< position 1 (physical)
+    const double *p2  ///< position 2 (physical)
+    )
 {
   double temp=0.0;
   for (int i=0;i<G_ndim;i++)
@@ -1826,9 +1826,9 @@ double UniformGrid::distance(
 // integer units (but obviously the answer is not an integer).
 //
 double UniformGrid::idistance(
-      const int *p1, ///< position 1 (integer)
-      const int *p2  ///< position 2 (integer)
-      )
+    const int *p1, ///< position 1 (integer)
+    const int *p2  ///< position 2 (integer)
+    )
 {
   double temp=0.0;
   for (int i=0;i<G_ndim;i++)
@@ -1849,9 +1849,9 @@ double UniformGrid::idistance(
 // Result returned in physical units (e.g. centimetres).
 //
 double UniformGrid::distance_cell2cell(
-      const cell *c1, ///< cell 1
-      const cell *c2  ///< cell 2
-      )
+    const cell *c1, ///< cell 1
+    const cell *c2  ///< cell 2
+    )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -1873,9 +1873,9 @@ double UniformGrid::distance_cell2cell(
 // two units).
 //
 double UniformGrid::idistance_cell2cell(
-      const cell *c1, ///< cell 1
-      const cell *c2  ///< cell 2
-      )
+    const cell *c1, ///< cell 1
+    const cell *c2  ///< cell 2
+    )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -1898,9 +1898,9 @@ double UniformGrid::idistance_cell2cell(
 // geometry).  Here both input and output are physical units.
 //
 double UniformGrid::distance_vertex2cell(
-      const double *v, ///< vertex (physical)
-      const cell *c    ///< cell
-      )
+    const double *v, ///< vertex (physical)
+    const cell *c    ///< cell
+    )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -1921,10 +1921,10 @@ double UniformGrid::distance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double UniformGrid::difference_vertex2cell(
-      const double *v,  ///< vertex (double)
-      const cell *c, ///< cell
-      const axes a   ///< Axis to calculate.
-      )
+    const double *v,  ///< vertex (double)
+    const cell *c, ///< cell
+    const axes a   ///< Axis to calculate.
+    )
 {
   return (CI.get_dpos(c,a)-v[a]);
 }
@@ -1942,9 +1942,9 @@ double UniformGrid::difference_vertex2cell(
 // geometry).  Here both input and output are code-integer units.
 //
 double UniformGrid::idistance_vertex2cell(
-      const int *v, ///< vertex (integer)
-      const cell *c ///< cell
-      )
+    const int *v, ///< vertex (integer)
+    const cell *c ///< cell
+    )
 {
   double temp = 0.0;
   for (int i=0;i<G_ndim;i++)
@@ -1965,10 +1965,10 @@ double UniformGrid::idistance_vertex2cell(
 // the *cell* coordinate minus the *vertex* coordinate.
 //
 double UniformGrid::idifference_vertex2cell(
-      const int *v,  ///< vertex (integer)
-      const cell *c, ///< cell
-      const axes a   ///< Axis to calculate.
-      )
+    const int *v,  ///< vertex (integer)
+    const cell *c, ///< cell
+    const axes a   ///< Axis to calculate.
+    )
 {
   return (CI.get_ipos(c,a)-v[a]);
 }
@@ -1986,13 +1986,32 @@ double UniformGrid::idifference_vertex2cell(
 // It returns *cell2* coordinate minus *cell1* coordinate.
 //
 double UniformGrid::idifference_cell2cell(
-              const cell *c1, ///< cell 1
-              const cell *c2, ///< cell 2
-              const axes a    ///< Axis.
-              )
+    const cell *c1, ///< cell 1
+    const cell *c2, ///< cell 2
+    const axes a    ///< Axis.
+    )
 {
   return (CI.get_ipos(c2,a)-CI.get_ipos(c1,a));
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+bool UniformGrid::point_on_grid(
+    const double *pos ///< position
+    )
+{
+  bool on=true;
+  for (int v=0;v<G_ndim;v++) {
+    if (pos[v] < G_xmin[v]  ||  pos[v] > G_xmax[v]) on=false;
+  }
+  return on;
+}
+
 
 
 // ##################################################################

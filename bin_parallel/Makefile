@@ -80,7 +80,7 @@ VPATH = \
 ../source/contrib:\
 ../source/tools:\
 ../source/decomposition\
-../source/SMR_grid\
+../source/NG_grid\
 ../source/boundaries
 
 
@@ -394,9 +394,9 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
           RT_MPI_boundaries.o
 
-OBJ_SMR_BCS = assign_update_bcs_SMR.o     \
-          SMR_coarse_to_fine_boundaries.o \
-          SMR_fine_to_coarse_boundaries.o
+OBJ_NG_BCS = assign_update_bcs_NG.o     \
+          NG_coarse_to_fine_boundaries.o \
+          NG_fine_to_coarse_boundaries.o
 
 
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
@@ -421,9 +421,9 @@ OBJECTS_ICGEN = icgen_parallel.o get_sim_info.o $(OBJ_GEN) \
   $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
   $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_SMR_PION = main_MPI_SMR.o $(OBJ_SMR_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SMR_BCS)
+OBJECTS_NG_PION = main_MPI_NG.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
 
-OBJECTS_SMR_ICGEN = icgen_MPI_SMR.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_SMR_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_SMR_BCS)
+OBJECTS_NG_ICGEN = icgen_MPI_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
 
 
 #####################################################
@@ -442,11 +442,11 @@ ${bindir}/pion_parallel: $(OBJECTS_PION)
 ${bindir}/icgen_parallel: $(OBJECTS_ICGEN)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_parallel $(LDFLAGS)
 
-${bindir}/pion_SMR_parallel : $(OBJECTS_SMR_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_PION) -o ${bindir}/pion_SMR_parallel $(LDFLAGS)
+${bindir}/pion_NG_parallel : $(OBJECTS_NG_PION)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_PION) -o ${bindir}/pion_NG_parallel $(LDFLAGS)
 
-${bindir}/icgen_SMR_parallel: $(OBJECTS_SMR_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_SMR_ICGEN) -o ${bindir}/icgen_SMR_parallel $(LDFLAGS)
+${bindir}/icgen_NG_parallel: $(OBJECTS_NG_ICGEN)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_ICGEN) -o ${bindir}/icgen_NG_parallel $(LDFLAGS)
 
 clean:
 	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
@@ -463,9 +463,9 @@ interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 sim_params.o: sim_params.cpp ${GLOBAL}
 
-main_MPI_SMR.o: main_MPI_SMR.cpp sim_control.h ${GLOBAL} comms.h
+main_MPI_NG.o: main_MPI_NG.cpp sim_control.h ${GLOBAL} comms.h
 
-icgen_MPI_SMR.o: icgen_MPI_SMR.cpp icgen.h get_sim_info.h \
+icgen_MPI_NG.o: icgen_MPI_NG.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h
@@ -490,9 +490,9 @@ MCMD_control.o: MCMD_control.cpp MCMD_control.h ${GLOBAL}
 setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
     grid_base_class.h uniform_grid.h assign_update_bcs.h
 
-setup_SMR_grid.o: setup_SMR_grid.cpp setup_SMR_grid.h \
+setup_NG_grid.o: setup_NG_grid.cpp setup_NG_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
-  assign_update_bcs.h assign_update_bcs_SMR.h
+  assign_update_bcs.h assign_update_bcs_NG.h
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
@@ -557,20 +557,20 @@ assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
   reflecting_boundaries.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
-assign_update_bcs_SMR.o: assign_update_bcs_SMR.cpp \
-  assign_update_bcs_SMR.h SMR_coarse_to_fine_boundaries.h \
-  SMR_fine_to_coarse_boundaries.h boundaries.h ${GLOBAL} \
+assign_update_bcs_NG.o: assign_update_bcs_NG.cpp \
+  assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h boundaries.h ${GLOBAL} \
   grid_base_class.h solver_eqn_base.h
 
-SMR_coarse_to_fine_boundaries.o: SMR_coarse_to_fine_boundaries.h \
-  SMR_coarse_to_fine_boundaries.cpp solver_eqn_base.h \
+NG_coarse_to_fine_boundaries.o: NG_coarse_to_fine_boundaries.h \
+  NG_coarse_to_fine_boundaries.cpp solver_eqn_base.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
-SMR_fine_to_coarse_boundaries.o: SMR_fine_to_coarse_boundaries.h \
-  SMR_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
+NG_fine_to_coarse_boundaries.o: NG_fine_to_coarse_boundaries.h \
+  NG_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
-assign_update_bcs_MPI.o: assign_update_bcs_SMR.cpp \
+assign_update_bcs_MPI.o: assign_update_bcs_NG.cpp \
   assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
   MCMD_boundaries.h boundaries.h ${GLOBAL} \
   grid_base_class.h solver_eqn_base.h MCMD_control.h 
@@ -600,10 +600,10 @@ sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
  grid_base_class.h assign_update_bcs.h 
 
-sim_init_SMR.o: sim_init_SMR.h sim_init_SMR.cpp sim_init.h \
- ${GLOBAL} setup_SMR_grid.h setup_fixed_grid.h grid_base_class.h \
+sim_init_NG.o: sim_init_NG.h sim_init_NG.cpp sim_init.h \
+ ${GLOBAL} setup_NG_grid.h setup_fixed_grid.h grid_base_class.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h \
- assign_update_bcs_SMR.h
+ assign_update_bcs_NG.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h assign_update_bcs.h grid_base_class.h \
@@ -615,10 +615,10 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
  solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
  assign_update_bcs.h
 
-sim_control_SMR.o : sim_control_SMR.cpp sim_control_SMR.h \
+sim_control_NG.o : sim_control_NG.cpp sim_control_NG.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h \
- assign_update_bcs.h assign_update_bcs_SMR.h
+ assign_update_bcs.h assign_update_bcs_NG.h
 
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
  sim_control.h MCMD_control.h ${GLOBAL} comms.h \

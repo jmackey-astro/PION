@@ -390,20 +390,37 @@ int setup_NG_grid::setup_boundary_structs(
   }
   
   //
-  // Now check if we are at the deepest level in the grid and, if not,
-  // then remove the stellar wind boundary condition.
+  // Now check if we are at the deepest level in the grid that
+  // contains the stellar wind source, and if not then remove it.
   //
-  if (l < par.grid_nlevels-1) {
-    for (unsigned int b=0;b<grid->BC_bd.size();b++) {
-      if (grid->BC_bd[b]->itype == STWIND) {
-#ifdef TESTING
+  for (unsigned int b=0;b<grid->BC_bd.size();b++) {
+    if (grid->BC_bd[b]->itype == STWIND) {
+
+      // see if at least one wind source is on-grid:
+      bool ongrid=true, del_wind[SWP.Nsources], q=true;
+      for (int isw=0; isw<SWP.Nsources; isw++) {
+        del_wind[isw]=false;
+        ongrid = grid->point_on_grid(SWP.params[isw]->dpos);
+        if (!ongrid) del_wind[isw]=true;
+
+        if (l < par.grid_nlevels-1) {
+          ongrid = par.levels[l].child->point_on_grid(SWP.params[isw]->dpos);
+          if (ongrid) del_wind[isw]=true;
+        }
+      }
+      for (int isw=0; isw<SWP.Nsources; isw++) {
+        if (!del_wind[isw]) q=false;
+      }
+      if (q) {
+//#ifdef TESTING
+        cout <<"Level "<<l<<": ";
         cout <<"erasing wind boundary: size="<<grid->BC_bd.size();
-#endif
+//#endif
         grid->BC_deleteBoundaryData(grid->BC_bd[b]);
         grid->BC_bd.erase(grid->BC_bd.begin()+b);
-#ifdef TESTING
+//#ifdef TESTING
         cout <<", and after deleting, size="<<grid->BC_bd.size()<<"\n";
-#endif
+//#endif
       }
     }
   }

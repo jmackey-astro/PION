@@ -439,6 +439,13 @@ class GridBaseClass {
     const axes    ///< Axis.
     )=0;
 
+  ///
+  /// Returns true if the position is on the grid, false otherwise
+  ///
+  virtual bool point_on_grid(
+    const double * ///< position
+    )=0;
+
   /// Set pointer to child grid (for NG grids)
   virtual void set_child_grid(
       class GridBaseClass *  ///< pointer to child grid.

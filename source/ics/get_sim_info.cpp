@@ -406,7 +406,8 @@ int get_sim_info::read_gridparams(
   SimPM.Nbc = -1; // Set it to negative so I know it's not set.
   
   // Timing
-  seek="StartTime"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  seek="StartTime"; str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.starttime = atof(str.c_str());
   SimPM.simtime = SimPM.starttime;
   seek="FinishTime"; str=rp->find_parameter(seek);
@@ -414,27 +415,33 @@ int get_sim_info::read_gridparams(
   else SimPM.finishtime = atof(str.c_str());
   SimPM.timestep = 0; // Counter for what timestep we are on.
   
-  seek="OrderOfAccSpace"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  seek="OrderOfAccSpace"; str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.spOOA = atoi(str.c_str());
-  seek="OrderOfAccTime"; str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  seek="OrderOfAccTime"; str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.tmOOA = atoi(str.c_str());
   
   // Physics
   seek="GAMMA";
-  str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.gamma = atof(str.c_str());
   seek="CFL";
-  str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   SimPM.CFL   = atof(str.c_str());
 
   seek="ArtificialViscosity";
-  str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+  str=rp->find_parameter(seek);
+  if (str=="") rep.error("param not found",seek);
   if( (SimPM.artviscosity=atoi(str.c_str())) ==0) {
     SimPM.etav=0.;
   }
   else if ( SimPM.artviscosity == 1  || SimPM.artviscosity == 4) {
     seek="EtaViscosity";
-    str=rp->find_parameter(seek); if (str=="") rep.error("param not found",seek);
+    str=rp->find_parameter(seek);
+    if (str=="") rep.error("param not found",seek);
     SimPM.etav = atof(str.c_str());
   }
   else if ( SimPM.artviscosity == 3) {
@@ -653,10 +660,13 @@ int get_sim_info::read_radsources(
     cout <<", update="<<rs_temp.update;
     cout <<" and pos[]="; rep.printVec("",rs_temp.pos,SimPM.ndim);
 
-    //cout <<"\tRT-src: i="<<i<<": strength="<<SimPM.RS.sources[i].strength;
-    //cout <<" type="<<SimPM.RS.sources[i].type<<" at_inf="<<SimPM.RS.sources[i].at_infinity;
+    //cout <<"\tRT-src: i="<<i<<": strength=";
+    //cout <<SimPM.RS.sources[i].strength;
+    //cout <<" type="<<SimPM.RS.sources[i].type<<" at_inf=";
+    //cout <<SimPM.RS.sources[i].at_infinity;
     //cout <<", update="<<SimPM.RS.sources[i].update;
-    //cout <<" and pos[]="; rep.printVec("",SimPM.RS.sources[i].pos,SimPM.ndim);
+    //cout <<" and pos[]=";
+    //rep.printVec("",SimPM.RS.sources[i].pos,SimPM.ndim);
   }
   return 0;
 }
@@ -683,9 +693,9 @@ int get_sim_info::read_wind_sources(
     string a;
     ostringstream temp;
     double
-      Mdot=0.0, rad=0.0, posn[MAX_DIM], Vinf=0.0, Tw=0.0, Rstar=0.0,
+      Mdot=0.0, posn[MAX_DIM], Vinf=0.0, Tw=0.0, Rstar=0.0,
       trcr[MAX_NVAR], xi=0.0;
-    int type=0;
+    int type=0, rad=0;
     //
     // new stuff for evolving winds:
     //
@@ -703,7 +713,7 @@ int get_sim_info::read_wind_sources(
 
     temp.str(""); temp<<"WIND_"<<i<<"_radius";
     if ( (a=rp->find_parameter(temp.str())) !="")
-      rad=atof(a.c_str());
+      rad=atoi(a.c_str());
     else rep.error("param not found in pfile",temp.str());
 
     temp.str(""); temp<<"WIND_"<<i<<"_type";

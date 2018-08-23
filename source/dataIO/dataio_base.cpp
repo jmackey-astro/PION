@@ -998,7 +998,7 @@ void DataIOBase::set_windsrc_params()
     
     pm_ddimarr *w001 = new pm_ddimarr (temp1.str()); // position of source.
     windsrc.push_back(w001);
-    pm_double  *w002 = new pm_double  (temp2.str()); // radius of wind BC (cm)
+    pm_int     *w002 = new pm_int     (temp2.str()); // radius of wind BC (cells)
     windsrc.push_back(w002);
     pm_double  *w003 = new pm_double  (temp3.str()); // Mdot (Msun/yr)
     windsrc.push_back(w003);

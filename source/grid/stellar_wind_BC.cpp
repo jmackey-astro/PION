@@ -208,7 +208,7 @@ int stellar_wind::add_source(
   cout <<"\tAdded wind source id="<<nsrc-1<<" to list of ";
   cout <<nsrc<<" elements.\n";
 #endif // TESTING
-  return ws->id;
+  return 0;
 }
 
 

@@ -82,9 +82,9 @@ OPfreqTime 1.578e10
 
 ########################
 BC_XN reflecting
-BC_XP outflow
+BC_XP one-way-outflow
 BC_YN reflecting
-BC_YP outflow
+BC_YP one-way-outflow
 BC_Ninternal 1
 BC_INTERNAL_000 stellar-wind
 ########################
