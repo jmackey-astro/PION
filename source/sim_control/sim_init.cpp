@@ -178,7 +178,7 @@ void sim_init::print_command_line_options(
   cout <<"\t maxwalltime=D : change the max. runtime to D in seconds.\n";
   cout <<"\n";
   cout <<"\n*********** NESTED GRID CODE ONLY *************\n";
-  cout <<"\t nlevels=N     : modify number of levels in SMR grid.";
+  cout <<"\t nlevels=N     : modify number of levels in NG grid.";
   cout <<"\n";
   cout <<"********* DEPRECATED -- STILL HERE FOR LEGACY SCRIPTS... ******\n";
   cout <<"\t artvisc=D : modify artificial viscosity, 0=none, Otherwise FalleAV with eta=D,\n";
@@ -219,7 +219,7 @@ int sim_init::Init(
   rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
   
   //
-  // Set up the Xmin/Xmax/Range/dx of each level in the SMR grid
+  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
   //
   grid.resize(1);
   CI.set_dx(SimPM.dx);

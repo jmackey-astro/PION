@@ -18,7 +18,7 @@
 //
 // check conservation of energy and momentum
 //
-//#define TEST_CONSERVATION
+#define TEST_CONSERVATION
 
 //
 // Various defines for testing bits of the code.
@@ -26,6 +26,8 @@
 //#define TESTING ///< Comment this out if not testing the code.
 
 //
+//#define TEST_INT
+
 // This counts the energy loss/gain in microphysics (SLOW!!!)
 //
 //#define COUNT_ENERGETICS

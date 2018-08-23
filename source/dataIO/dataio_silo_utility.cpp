@@ -268,7 +268,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
         start = ggg->NextPt(start,posdir[i]);
     }
     //
-    // Now use SMR for-loops to only go through cells in the local domain.
+    // Now use NG for-loops to only go through cells in the local domain.
     // We assume we go through x-dir column first, then along y, and finally Z
     //
     class cell 

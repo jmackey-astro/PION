@@ -161,7 +161,7 @@ extern struct stellarwind_list SWP;
 
 // *******************************************************************
 ///
-/// Grid data for each level of the SMR grid.
+/// Grid data for each level of the NG grid.
 ///
 struct level {
   class GridBaseClass *grid;   ///< grid at this level
@@ -224,10 +224,10 @@ class SimParams {
   double Xmax[MAX_DIM];  ///< Max value of x,y,z in domain (top level).
   double dx;            ///< Linear side length of (uniform, cubic, cartesian) grid cells (top level).
 
-  // SMR grid data
+  // NG grid data
   int grid_nlevels;
   int grid_aspect_ratio[MAX_DIM];
-  double SMR_centre[MAX_DIM];
+  double NG_centre[MAX_DIM];
   std::vector<struct level> levels;
 
   // Boundary cell data.

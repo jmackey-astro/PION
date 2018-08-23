@@ -1,16 +1,16 @@
-/// \file sim_control_SMR.cpp
+/// \file sim_control_NG.cpp
 /// 
 /// \brief Simulation Control Class for Nested Grids.
 /// 
 /// \author Jonathan Mackey
 /// 
 /// This file contains the definitions of the member functions for
-/// the SMR-grid simulation control class.  This is built on top
+/// the NG-grid simulation control class.  This is built on top
 /// of the control class for uniform grids, and so doesn't add too
 /// much, just the moving up and down between levels.
 /// 
 /// Modifications:
-/// - 2018.05.03 JM: Started on SMR grid simulation control.
+/// - 2018.05.03 JM: Started on NG grid simulation control.
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -20,7 +20,7 @@
 #include "tools/timer.h"
 #include "constants.h"
 
-#include "sim_control/sim_control_SMR.h"
+#include "sim_control/sim_control_NG.h"
 
 //#include "microphysics/microphysics_base.h"
 //#include "raytracing/raytracer_SC.h"
@@ -43,17 +43,16 @@
 //#include <climits>
 using namespace std;
 
-//#define NEST_INT_TEST
 
 
 // ##################################################################
 // ##################################################################
 
 
-sim_control_SMR::sim_control_SMR()
+sim_control_NG::sim_control_NG()
 {
 #ifdef TESTING
-  cout << "(sim_control_SMR::Constructor)\n";
+  cout << "(sim_control_NG::Constructor)\n";
 #endif
 }
 
@@ -63,10 +62,10 @@ sim_control_SMR::sim_control_SMR()
 // ##################################################################
 
 
-sim_control_SMR::~sim_control_SMR()
+sim_control_NG::~sim_control_NG()
 {
 #ifdef TESTING
-  cout << "(sim_control_SMR::Destructor)\n";
+  cout << "(sim_control_NG::Destructor)\n";
 #endif
 }
 
@@ -79,12 +78,12 @@ sim_control_SMR::~sim_control_SMR()
 
 
 
-int sim_control_SMR::Time_Int(
+int sim_control_NG::Time_Int(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   cout <<"------------------------------------------------------------\n";
-  cout <<"(sim_control_SMR::Time_Int) STARTING TIME INTEGRATION\n";
+  cout <<"(sim_control_NG::Time_Int) STARTING TIME INTEGRATION\n";
   cout <<"------------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
@@ -106,25 +105,31 @@ int sim_control_SMR::Time_Int(
     calculate_blastwave_radius(grid);
 #endif
     //
-    // ----------------------------------------------------------------
+    // --------------------------------------------------------------
     // Update RT sources and boundaries.
     //
     for (int l=0; l<SimPM.grid_nlevels; l++) {
       err = update_evolving_RT_sources(SimPM,grid[l]->RT);
-      rep.errorTest("SMR TIME_INT::update_evolving_RT_sources error",0,err);
+      rep.errorTest("NG TIME_INT::update_evolving_RT_sources error",0,err);
 
-      //cout <<"updating external boundaries for level "<<l<<"\n";
-      err += TimeUpdateExternalBCs(SimPM, ppar, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+#ifdef TEST_INT
+      cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+      err += TimeUpdateExternalBCs(SimPM, ppar, grid[l], l,
+              spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
-    rep.errorTest("sim_control_SMR: error from bounday update",0,err);
-    // ----------------------------------------------------------------
-    // ----------------------------------------------------------------
+    rep.errorTest("sim_control_NG: external bounday update",0,err);
+    // --------------------------------------------------------------
+    // --------------------------------------------------------------
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-      //cout <<"updating internal boundaries for level "<<l<<"\n";
-      err += TimeUpdateInternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+#ifdef TEST_INT
+      cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
+      err += TimeUpdateInternalBCs(SimPM, grid[l], l, spatial_solver,
+                              SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
-    rep.errorTest("sim_control_SMR: error from bounday update",0,err);
-    // ----------------------------------------------------------------
+    rep.errorTest("sim_control_NG: internal boundary update",0,err);
+    // --------------------------------------------------------------
 
 
     //
@@ -134,14 +139,18 @@ int sim_control_SMR::Time_Int(
     double mindt = 1.0e99;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
       spatial_solver->set_dx(SimPM.levels[l].dx);
-#ifdef NEST_INT_TEST
-      cout <<"Calculate timestep, level "<<l<<", dx="<<SimPM.levels[l].dx<<"\n";
+#ifdef TEST_INT
+      cout <<"Calculate timestep, level "<<l<<", dx=";
+      cout <<SimPM.levels[l].dx<<"\n";
 #endif
       if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
       err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       mindt = std::min(mindt, SimPM.dt/scale);
-      //cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and "<<SimPM.dt/scale <<"\n";
+#ifdef TEST_INT
+      cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and ";
+      cout <<SimPM.dt/scale <<"\n";
+#endif
       SimPM.levels[l].dt = SimPM.dt;
       scale *= 2;
     }
@@ -151,8 +160,9 @@ int sim_control_SMR::Time_Int(
       //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
       SimPM.levels[l].dt = mindt*scale;
       scale *= 2;
-#ifdef NEST_INT_TEST
-      cout <<"new dt="<<SimPM.levels[l].dt<<", t="<<SimPM.levels[l].simtime<<"\n";
+#ifdef TEST_INT
+      cout <<"new dt="<<SimPM.levels[l].dt<<", t=";
+      cout <<SimPM.levels[l].simtime<<"\n";
 #endif
     }
     if (first_step) {
@@ -177,7 +187,8 @@ int sim_control_SMR::Time_Int(
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
-    cout <<"dt="<<SimPM.levels[0].dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
+    cout <<"dt="<<SimPM.levels[0].dt<<"\tNew time: "<<SimPM.simtime;
+    cout <<"\t timestep: "<<SimPM.timestep;
     tsf=clk.time_so_far("Time_Int");
     cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
 #endif
@@ -191,7 +202,8 @@ int sim_control_SMR::Time_Int(
     rep.errorTest("TIME_INT::check_eosim()",0,err);
   }
 
-  cout <<"(sim_control_SMR::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";
+  cout <<"(sim_control_NG::Time_Int) TIME_INT FINISHED.";
+  cout <<" MOVING ON TO FINALISE SIM.\n";
 
   tsf=clk.time_so_far("Time_Int");
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep<<" wall-time=";
@@ -220,7 +232,7 @@ int sim_control_SMR::Time_Int(
 /// This is only for a test problem -- it checks the magnetic
 /// pressure on the full domain and outputs it to screen
 ///
-void sim_control_SMR::calculate_magnetic_pressure(
+void sim_control_NG::calculate_magnetic_pressure(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
@@ -257,13 +269,13 @@ void sim_control_SMR::calculate_magnetic_pressure(
 /// If running a 1D spherical blast wave, calculate the shock position
 /// and output to screen.
 ///
-void sim_control_SMR::calculate_blastwave_radius(
+void sim_control_NG::calculate_blastwave_radius(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
   //
   // Calculate the blast wave outer shock position.
-  // If a SMR grid, start on the finest grid and work outwards
+  // If a NG grid, start on the finest grid and work outwards
   //
   double shockpos=0.0;
   static double old_pos=0.0;
@@ -305,7 +317,7 @@ void sim_control_SMR::calculate_blastwave_radius(
 
 
 
-double sim_control_SMR::advance_time(
+double sim_control_NG::advance_time(
       const int l       ///< level to advance.
       )
 {
@@ -317,7 +329,7 @@ double sim_control_SMR::advance_time(
     step = advance_step_OA1(l);
   }
   else if (SimPM.tmOOA==2) {
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
     //cout <<"Calling advance_step_OA2: level "<<l<<"\n";
 #endif
     step = advance_step_OA2(l);
@@ -333,7 +345,7 @@ double sim_control_SMR::advance_time(
 
 
 
-double sim_control_SMR::advance_step_OA1(
+double sim_control_NG::advance_step_OA1(
       const int l       ///< level to advance.
       )
 {
@@ -416,11 +428,11 @@ double sim_control_SMR::advance_step_OA1(
 
 
 
-double sim_control_SMR::advance_step_OA2(
+double sim_control_NG::advance_step_OA2(
       const int l       ///< level to advance.
       )
 {
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"advance_step_OA2, level="<<l<<", starting. ";
   cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
 #endif
@@ -454,11 +466,11 @@ double sim_control_SMR::advance_step_OA2(
   // now calculate dU, the change in conserved variables on this grid
   // for the half step of the 2nd order step.
   //
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" half step, start calc_microphysics_dU\n";
 #endif
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" half step, start calc_dynamics_dU\n";
 #endif
   err += calc_dynamics_dU(SimPM.levels[l].dt, TIMESTEP_FIRST_PART, grid);
@@ -466,7 +478,7 @@ double sim_control_SMR::advance_step_OA2(
   err += calc_thermal_conduction_dU(SimPM.levels[l].dt, TIMESTEP_FIRST_PART, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA1",0,err);
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" half step, done with dU, grid_update_state_vector\n";
 #endif
   err += grid_update_state_vector(SimPM.levels[l].dt,TIMESTEP_FIRST_PART,OA2, grid);
@@ -483,11 +495,11 @@ double sim_control_SMR::advance_step_OA2(
     err += calculate_raytracing_column_densities(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" full step, start calc_microphysics_dU\n";
 #endif
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" full step, start calc_dynamics_dU\n";
 #endif
   err += calc_dynamics_dU(SimPM.levels[l].dt, TIMESTEP_FULL, grid);
@@ -497,7 +509,7 @@ double sim_control_SMR::advance_step_OA2(
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
 
   // take the second finer grid step, if there is a finer grid.
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" full step, call 2nd l+1 update\n";
 #endif
   if (l<SimPM.grid_nlevels-1) {
@@ -507,7 +519,7 @@ double sim_control_SMR::advance_step_OA2(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"l="<<l<<" full step, done with dU, grid_update_state_vector\n";
 #endif
   err += grid_update_state_vector(SimPM.levels[l].dt,TIMESTEP_FULL,OA2, grid);
@@ -527,7 +539,7 @@ double sim_control_SMR::advance_step_OA2(
   err += TimeUpdateExternalBCs(SimPM, ppar,grid, l, spatial_solver, SimPM.simtime, OA2, OA2);
 
 
-#ifdef NEST_INT_TEST
+#ifdef TEST_INT
   cout <<"advance_step_OA2, level="<<l<<", returning. t=";
   cout <<SimPM.levels[l].simtime<<", step="<<SimPM.levels[l].step<<"\n";
 #endif
@@ -541,10 +553,10 @@ double sim_control_SMR::advance_step_OA2(
 
 
 
-int sim_control_SMR::calculate_raytracing_column_densities(
+int sim_control_NG::calculate_raytracing_column_densities(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< Computational grid.
-      const int l  ///< level of grid in SMR grid hierarchy
+      const int l  ///< level of grid in NG grid hierarchy
       )
 {
   int err=0;
@@ -573,7 +585,7 @@ int sim_control_SMR::calculate_raytracing_column_densities(
     double Tau1[MAX_TAU], Tau2[MAX_TAU], Tau3[MAX_TAU], Tau4[MAX_TAU], tmp[MAX_TAU];
     class cell *c, *f1, *f2, *f3, *f4;
     list<class cell*>::iterator c_iter=b->data.begin();
-    list<class cell*>::iterator f_iter=b->SMR.begin();
+    list<class cell*>::iterator f_iter=b->NG.begin();
     struct rad_src_info *s;
     double cpos[MAX_DIM];
     double diffx,diffy;
@@ -681,7 +693,7 @@ int sim_control_SMR::calculate_raytracing_column_densities(
     } // if 2D
 
     else {
-      rep.error("3D RT not implemented yet in SMR grid",par.ndim);
+      rep.error("3D RT not implemented yet in NG grid",par.ndim);
     } // if 3D
   } // if there is a finer level
 
@@ -709,7 +721,7 @@ int sim_control_SMR::calculate_raytracing_column_densities(
 
 
 
-int sim_control_SMR::check_energy_cons(
+int sim_control_NG::check_energy_cons(
       vector<class GridBaseClass *> &grid
       )
 {
@@ -766,7 +778,7 @@ int sim_control_SMR::check_energy_cons(
 
 
 
-int sim_control_SMR::grid_update_state_vector(
+int sim_control_NG::grid_update_state_vector(
       const double dt,  ///< timestep
       const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa,   ///< Full order of accuracy of simulation
@@ -788,7 +800,7 @@ int sim_control_SMR::grid_update_state_vector(
   // the face.
   //
   if (step==ooa && level < SimPM.grid_nlevels-1) {
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
     cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif
     class GridBaseClass *fine = SimPM.levels[level].child;
@@ -804,7 +816,7 @@ int sim_control_SMR::grid_update_state_vector(
       rep.error("fine and parent face arrays are different size",1);
 
     for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
       cout <<"Direction: "<<d<<", looping through faces.\n";
 #endif
       ax = static_cast<enum axes>(d/2);
@@ -818,7 +830,7 @@ int sim_control_SMR::grid_update_state_vector(
         fc = grid->flux_update_recv[d][f];
         ff = fine->flux_update_send[d][f];
 
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] /= fc->area[0];
         }
@@ -833,11 +845,11 @@ int sim_control_SMR::grid_update_state_vector(
         
         for (int v=0;v<SimPM.nvar;v++) {
           fc->flux[v] += ff->flux[v];
-#ifndef DEBUG_SMR
+#ifndef DEBUG_NG
           fc->flux[v] /= fc->area[0];
 #endif
         }
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
         rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
         //if (d==3) {
         //  rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
@@ -864,14 +876,14 @@ int sim_control_SMR::grid_update_state_vector(
         else {
           spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax , SimPM.nvar,fc->flux,ftmp,utmp);
         }
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
         rep.printVec("**********  Error",utmp, SimPM.nvar);
 #endif
         for (int v=0;v<SimPM.nvar;v++) {
           fc->c[0]->dU[v] += utmp[v];
         }
      } // loop over faces in this direction.
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
       cout <<"Direction: "<<d<<", finished.\n";
 #endif
     } // loop over directions.

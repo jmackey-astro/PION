@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   SimSetup = new setup_fixed_grid_pllel();
 
   //
-  // Set up the Xmin/Xmax/Range/dx of each level in the SMR grid
+  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
   //
   vector<class GridBaseClass *> grid;
   err  = MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
@@ -253,6 +253,7 @@ int main(int argc, char **argv)
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}
+  delete grid[0];
 
   //
   // Also delete any dynamic memory in the stellarwind_list in

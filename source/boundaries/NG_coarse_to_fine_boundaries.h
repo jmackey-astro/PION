@@ -1,12 +1,12 @@
-/// \file SMR_coarse_to_fine_boundaries.h
-/// \brief Class declaration for SMR_coarse_to_fine boundaries
+/// \file NG_coarse_to_fine_boundaries.h
+/// \brief Class declaration for NG_coarse_to_fine boundaries
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
-#ifndef SMR_COARSE_TO_FINE_BOUNDARIES_H
-#define SMR_COARSE_TO_FINE_BOUNDARIES_H
+#ifndef NG_COARSE_TO_FINE_BOUNDARIES_H
+#define NG_COARSE_TO_FINE_BOUNDARIES_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -18,9 +18,9 @@
 
 
 ///
-/// Implements SMR_coarse_to_fine boundaries for a uniform grid.
+/// Implements NG_coarse_to_fine boundaries for a uniform grid.
 ///
-class SMR_coarse_to_fine_bc {
+class NG_coarse_to_fine_bc {
   protected:
   
   /// Assigns data to an external boundary from coarser grid.
@@ -35,7 +35,7 @@ class SMR_coarse_to_fine_bc {
   virtual int BC_update_COARSE_TO_FINE(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
-      const int, ///< level of grid in SMR grid struct.
+      const int, ///< level of grid in NG grid struct.
       boundary_data *, ///< pointer to boudary struct
       const int  ///< current step for fine grid (odd or even).
       );
@@ -79,5 +79,5 @@ class SMR_coarse_to_fine_bc {
 };
 
 
-#endif // SMR_COARSE_TO_FINE_BOUNDARIES_H
+#endif // NG_COARSE_TO_FINE_BOUNDARIES_H
 

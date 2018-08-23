@@ -92,7 +92,7 @@ class cell {
   pion_flt *P;   ///< Primitive Variables.
   pion_flt *Ph;  ///< Primitive State vector at half timestep.
   pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
-  /// Flux vector for use in SMR grids to ensure consistency between
+  /// Flux vector for use in NG grids to ensure consistency between
   /// fluxes at different levels in the hierarchy of grids.
   pion_flt *F;
  private:
@@ -578,7 +578,7 @@ class cell_interface {
   short unsigned int iDivV;
 
   // ----------------------------------------------------------------
-  // *** Methods for a SMR grid ***
+  // *** Methods for a NG grid ***
   // ----------------------------------------------------------------
   
   protected:
@@ -593,15 +593,15 @@ class cell_interface {
   ///
   void set_nlevels(
       const double, ///< dx on coarsest grid.
-      const int     ///< number of levels in SMR grid.
+      const int     ///< number of levels in NG grid.
       );
 
   ///
   /// Returns the size of a cell in the internal integer units for
-  /// this level in the SMR grid.
+  /// this level in the NG grid.
   ///
   inline int get_integer_cell_size(
-      const int level ///< level in SMR grid
+      const int level ///< level in NG grid
       ) {return n_idx[level];}
 
 

@@ -117,7 +117,7 @@ void DataIOBase::set_params(
   params.push_back(p);
 
   pm_ddimarr *n003 = new pm_ddimarr 
-    ("SMR_centre",  SimPM.SMR_centre);
+    ("NG_centre",  SimPM.NG_centre);
   p = n003; p->critical=false;  
   params.push_back(p);
 

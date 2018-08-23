@@ -1,7 +1,7 @@
-/// \file dataio_text_SMR.cpp
+/// \file dataio_text_NG.cpp
 /// \author Jonathan Mackey
 ///
-/// Class definitions for ASCII Text data I/O for a SMR grid
+/// Class definitions for ASCII Text data I/O for a NG grid
 /// 
 
 // ##################################################################
@@ -20,7 +20,7 @@ int dataio_text::OutputData(
 
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-    // for now write a different file for each level in the SMR grid.
+    // for now write a different file for each level in the NG grid.
     ostringstream temp; temp << outfile << "_level";
     temp.width(2); temp.fill('0');
     temp << l;

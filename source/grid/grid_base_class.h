@@ -42,7 +42,7 @@
 ///
 /// Struct for adding up the flux crossing a grid-boundary interface,
 /// for ensuring conservation between different refinement levels in
-/// a SMR/AMR simulation.
+/// a NG/AMR simulation.
 ///
 struct flux_interface {
   std::vector<class cell *> c; ///< list of cells with faces on this interface
@@ -439,12 +439,12 @@ class GridBaseClass {
     const axes    ///< Axis.
     )=0;
 
-  /// Set pointer to child grid (for SMR grids)
+  /// Set pointer to child grid (for NG grids)
   virtual void set_child_grid(
       class GridBaseClass *  ///< pointer to child grid.
       ) {return;}
 
-  /// Set pointer to parent grid (for SMR grids)
+  /// Set pointer to parent grid (for NG grids)
   virtual void set_parent_grid(
       class GridBaseClass *  ///< pointer to parent grid.
       ) {return;}

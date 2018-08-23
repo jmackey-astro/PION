@@ -1,6 +1,6 @@
-/// \file assign_update_bcs_SMR.cpp
+/// \file assign_update_bcs_NG.cpp
 /// \brief Defines a class that inherits boundary types related to
-///   static mesh-refinement (SMR) and implements assignment and
+///   static mesh-refinement (NG) and implements assignment and
 ///   update functions.
 /// \author Jonathan Mackey
 /// 
@@ -11,7 +11,7 @@
 #include "defines/testing_flags.h"
 
 #include "tools/reporting.h"
-#include "assign_update_bcs_SMR.h"
+#include "assign_update_bcs_NG.h"
 using namespace std;
 
 
@@ -20,10 +20,10 @@ using namespace std;
 
 
 
-int assign_update_bcs_SMR::TimeUpdateInternalBCs(
+int assign_update_bcs_NG::TimeUpdateInternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
-      const int level, ///< level in the SMR grid structure
+      const int level, ///< level in the NG grid structure
       class FV_solver_base *solver, ///< pointer to equations
       const double simtime,   ///< current simulation time
       const int cstep,
@@ -31,7 +31,7 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
       )
 {
   int err = assign_update_bcs::TimeUpdateInternalBCs(par,grid,simtime,cstep,maxstep);
-  rep.errorTest("assign_update_bcs_SMR: uni-grid int. BC update",0,err);
+  rep.errorTest("assign_update_bcs_NG: uni-grid int. BC update",0,err);
 #ifdef TEST_NEST
   cout <<"updated unigrid serial internal BCs\n";
 #endif
@@ -56,7 +56,7 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
     case BCMPI:
     case COARSE_TO_FINE:
       //
-      // boundaries not affected by SMR grid are updated elsewhere
+      // boundaries not affected by NG grid are updated elsewhere
       //     
       break;
 
@@ -67,12 +67,12 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
 
     default:
       //      cout <<"no internal boundaries to update.\n";
-      rep.error("Unhandled BC: serial SMR update internal",b->itype);
+      rep.error("Unhandled BC: serial NG update internal",b->itype);
       break;
     }
   }
 #ifdef TEST_NEST
-  cout <<"updated SMR-grid serial internal BCs\n";
+  cout <<"updated NG-grid serial internal BCs\n";
 #endif
   return 0;
 }
@@ -84,11 +84,11 @@ int assign_update_bcs_SMR::TimeUpdateInternalBCs(
 
 
 
-int assign_update_bcs_SMR::TimeUpdateExternalBCs(
+int assign_update_bcs_NG::TimeUpdateExternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
       class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid,  ///< pointer to grid.
-      const int level, ///< level in the SMR grid structure
+      const int level, ///< level in the NG grid structure
       class FV_solver_base *solver, ///< pointer to equations
       const double simtime,   ///< current simulation time
       const int cstep,
@@ -96,7 +96,7 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       )
 {
   int err = assign_update_bcs::TimeUpdateExternalBCs(par,ppar,grid,simtime,cstep,maxstep);
-  rep.errorTest("assign_update_bcs_SMR: uni-grid ext. BC update",0,err);
+  rep.errorTest("assign_update_bcs_NG: uni-grid ext. BC update",0,err);
 #ifdef TEST_NEST
   cout <<"updated unigrid serial external BCs\n";
 #endif
@@ -124,12 +124,12 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
       break;
 
       default:
-      rep.error("Unhandled BC: serial SMR update external",b->itype);
+      rep.error("Unhandled BC: serial NG update external",b->itype);
       break;
     }
   }
 #ifdef TEST_NEST
-  cout <<"updated SMR-grid serial external BCs\n";
+  cout <<"updated NG-grid serial external BCs\n";
 #endif
   return(0);
 }
@@ -141,7 +141,7 @@ int assign_update_bcs_SMR::TimeUpdateExternalBCs(
 
 
 
-int assign_update_bcs_SMR::assign_boundary_data(
+int assign_update_bcs_NG::assign_boundary_data(
       class SimParams &par,        ///< pointer to simulation parameters
       class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *grid,   ///< pointer to grid.
@@ -154,30 +154,30 @@ int assign_update_bcs_SMR::assign_boundary_data(
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
 
   //
-  // Then check for SMR-grid boundaries and assign data for them.
+  // Then check for NG-grid boundaries and assign data for them.
   //
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
 #ifdef TESTING
-    cout <<"SMR grid assign BCs: BC["<<i<<"] starting.\n";
+    cout <<"NG grid assign BCs: BC["<<i<<"] starting.\n";
 #endif
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE:
 #ifdef TESTING
-      cout <<"SMR grid setup: Assigning FINE_TO_COARSE BC\n";
+      cout <<"NG grid setup: Assigning FINE_TO_COARSE BC\n";
 #endif
       err += BC_assign_FINE_TO_COARSE(par,grid,grid->BC_bd[i],child);
       break;
 
       case COARSE_TO_FINE:
 #ifdef TESTING
-      cout <<"assign_update_bcs_SMR:: Assigning COARSE_TO_FINE BC\n";
+      cout <<"assign_update_bcs_NG:: Assigning COARSE_TO_FINE BC\n";
 #endif
       err += BC_assign_COARSE_TO_FINE(par,grid,grid->BC_bd[i],parent);
       break;
 
       default:
 #ifdef TESTING
-      cout <<"leaving BC "<<i<<" alone in SMR grid assign fn.\n";
+      cout <<"leaving BC "<<i<<" alone in NG grid assign fn.\n";
 #endif
       break;
     }

@@ -1,4 +1,4 @@
-/// \file sim_control_SMR.h
+/// \file sim_control_NG.h
 /// 
 /// \brief Declares grid parameter class, and grid methods classes.
 /// 
@@ -19,7 +19,7 @@
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
 #include "sim_control/sim_control.h" 
-#include "sim_control/sim_init_SMR.h"
+#include "sim_control/sim_init_NG.h"
 #include "sim_control/calc_timestep.h"
 #include "sim_control/time_integrator.h"
 
@@ -27,14 +27,14 @@
 /// This can integrate any system of equations if given the right solver class.
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
-class sim_control_SMR :
+class sim_control_NG :
   virtual public sim_control,
-  virtual public sim_init_SMR
+  virtual public sim_init_NG
 
 {
   public:
-  sim_control_SMR();  ///< Simple constructor
-  virtual ~sim_control_SMR(); ///< Destructor
+  sim_control_NG();  ///< Simple constructor
+  virtual ~sim_control_NG(); ///< Destructor
 
   ///
   /// Time integration
@@ -72,13 +72,13 @@ class sim_control_SMR :
 
 
   ///
-  /// Advance a grid by one time step for a given level in a SMR grid.
+  /// Advance a grid by one time step for a given level in a NG grid.
   /// This is a recursive function that calls itself on the next finer level
   /// if it exists.  This is a wrapper function that calls either the
   /// first-order or second-order update.
   ///
   virtual double advance_time(
-      const int ///< level in SMR grid.
+      const int ///< level in NG grid.
       );
 
   ///
@@ -87,7 +87,7 @@ class sim_control_SMR :
   /// step to come.
   ///
   virtual double advance_step_OA1(
-      const int ///< level in SMR grid.
+      const int ///< level in NG grid.
       );
 
   ///
@@ -96,7 +96,7 @@ class sim_control_SMR :
   /// step to come.
   ///
   virtual double advance_step_OA2(
-      const int ///< level in SMR grid.
+      const int ///< level in NG grid.
       );
 
   ///
@@ -107,7 +107,7 @@ class sim_control_SMR :
   int calculate_raytracing_column_densities(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< grid to trace rays on.
-      const int               ///< level of SMR grid.
+      const int               ///< level of NG grid.
       );
 
   ///
@@ -122,7 +122,7 @@ class sim_control_SMR :
   /// This function takes the contents of each cell->dU[] vector and
   /// updates Ph[] the changes.  If we are on the full-step then it
   /// also updates P[] so that Ph[] is identical.
-  /// For the SMR grid, it performs an additional step of
+  /// For the NG grid, it performs an additional step of
   /// correcting the fluxes for cells that have an interface above
   /// the boundary of a grid on the next finer level.
   ///
@@ -133,7 +133,7 @@ class sim_control_SMR :
       class GridBaseClass * ///< grid pointer
       );
 
-}; // sim_control_SMR
+}; // sim_control_NG
    
 /*************************************************************************/
 /*************************************************************************/

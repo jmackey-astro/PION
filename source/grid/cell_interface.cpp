@@ -60,7 +60,7 @@ cell_interface::cell_interface()
   nvar = -1;
   xmin = 0;
   //
-  // SMR grid parameters
+  // NG grid parameters
   //
   nlevels = 1;
   n_idx.resize(1);
@@ -677,7 +677,7 @@ void cell_interface::print_cell(const cell *c)
 // ##################################################################
 
 // ----------------------------------------------------------------
-// *** Methods for a SMR grid ***
+// *** Methods for a NG grid ***
 // ----------------------------------------------------------------
 
 // ##################################################################
@@ -687,7 +687,7 @@ void cell_interface::print_cell(const cell *c)
 
 void cell_interface::set_nlevels(
       const double dx, ///< dx on coarsest grid.
-      const int n ///< number of levels in SMR grid.
+      const int n ///< number of levels in NG grid.
       )
 {
   nlevels=n;

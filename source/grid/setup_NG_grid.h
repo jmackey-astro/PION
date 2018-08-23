@@ -1,6 +1,6 @@
-/// \file setup_SMR_grid.h
+/// \file setup_NG_grid.h
 /// 
-/// \brief Declares a class for setting up SMR grids.
+/// \brief Declares a class for setting up NG grids.
 /// 
 /// \author Jonathan Mackey
 /// 
@@ -21,30 +21,30 @@
 #include "setup_fixed_grid.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
-#include "boundaries/assign_update_bcs_SMR.h"
+#include "boundaries/assign_update_bcs_NG.h"
 
 ///
-/// Set up a static SMR grid structure.  Serial code, so each
-/// level of the SMR has a single grid.
+/// Set up a static NG grid structure.  Serial code, so each
+/// level of the NG has a single grid.
 ///
-class setup_SMR_grid :
+class setup_NG_grid :
   virtual public setup_fixed_grid,
-  virtual public assign_update_bcs_SMR
+  virtual public assign_update_bcs_NG
 {
   public:
-  setup_SMR_grid();  ///< Simple constructor, initialises value.
-  virtual ~setup_SMR_grid(); ///< Deletes any dynamic memory, if not already done.
+  setup_NG_grid();  ///< Simple constructor, initialises value.
+  virtual ~setup_NG_grid(); ///< Deletes any dynamic memory, if not already done.
 
 
   ///
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
   ///
-  void setup_SMR_grid_levels(
+  void setup_NG_grid_levels(
       class SimParams &  ///< pointer to simulation parameters
       );
 
   /// 
-  /// Sets up a SMR grid.
+  /// Sets up a NG grid.
   ///
   int setup_grid(
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
@@ -85,11 +85,11 @@ class setup_SMR_grid :
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
       class GridBaseClass *,  ///< pointer to grid.
-      const int          ///< level of grid in SMR
+      const int          ///< level of grid in NG
       );
 
 
-}; // setup_SMR_grid
+}; // setup_NG_grid
    
 /*************************************************************************/
 /*************************************************************************/

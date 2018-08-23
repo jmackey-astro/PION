@@ -1,11 +1,11 @@
 ///
-/// \file   dataio_SMR_silo.cc
+/// \file   dataio_NG_silo.cc
 /// \author Jonathan Mackey
 /// \date   2018-05-04
 /// 
 ///
 /// Modifications:\n
-/// - 2018.05.04 JM: new read/write functions for a SMR grid.
+/// - 2018.05.04 JM: new read/write functions for a NG grid.
 
 
 #include "defines/functionality_flags.h"
@@ -13,7 +13,7 @@
 
 #ifdef SILO
 
-#include "dataIO/dataio_silo_SMR.h"
+#include "dataIO/dataio_silo_NG.h"
 #include "microphysics/microphysics_base.h"
 
 #include "tools/reporting.h"
@@ -37,14 +37,14 @@ using namespace std;
 // ##################################################################
 
 
-dataio_SMR_silo::dataio_SMR_silo(
+dataio_NG_silo::dataio_NG_silo(
       class SimParams &SimPM,  ///< pointer to simulation parameters
       std::string dtype // read/write either FLOAT or DOUBLE to/from file
       )
 : dataio_silo(SimPM,dtype)
 {
 #ifdef TESTING
-  cout <<"setting up dataio_SMR_silo class.\n";
+  cout <<"setting up dataio_NG_silo class.\n";
 #endif
   return;
 }
@@ -56,10 +56,10 @@ dataio_SMR_silo::dataio_SMR_silo(
 // ##################################################################
 
 
-dataio_SMR_silo::~dataio_SMR_silo()
+dataio_NG_silo::~dataio_NG_silo()
 {
 #ifdef TESTING
-  cout <<"deleting dataio_SMR_silo class.\n";
+  cout <<"deleting dataio_NG_silo class.\n";
 #endif
 }
 
@@ -70,7 +70,7 @@ dataio_SMR_silo::~dataio_SMR_silo()
 
 
 
-int dataio_SMR_silo::OutputData(
+int dataio_NG_silo::OutputData(
       const string outfile,
       vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM,  ///< pointer to simulation parameters
@@ -81,25 +81,25 @@ int dataio_SMR_silo::OutputData(
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
     err = setup_write_variables(SimPM);
-    rep.errorTest("dataio_SMR_silo::OutputData() setup_write_variables",0,err);
+    rep.errorTest("dataio_NG_silo::OutputData() setup_write_variables",0,err);
   }
 
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-    // for now write a different file for each level in the SMR grid.
+    // for now write a different file for each level in the NG grid.
     ostringstream temp; temp << outfile << "_level";
     temp.width(2); temp.fill('0');
     temp << l;
 
     if (!cg[l])
-      rep.error("dataio_SMR_silo::OutputData() null pointer to grid!",cg[l]);
+      rep.error("dataio_NG_silo::OutputData() null pointer to grid!",cg[l]);
     dataio_silo::gp = cg[l];
 
     int err=0;
 
     err = choose_filename(temp.str(), file_counter);
     if (err) {
-      cerr<<"dataio_SMR_silo::OutputData() error choosing filename.\n";
+      cerr<<"dataio_NG_silo::OutputData() error choosing filename.\n";
       return err;
     }
     cout <<"\tWriting to file: "<<silofile<<"\n";
@@ -122,12 +122,12 @@ int dataio_SMR_silo::OutputData(
     //cout <<"\t*db_ptr="<<*db_ptr<<"\n";
 
     //
-    // set grid properties for quadmesh: each level of the SMR
+    // set grid properties for quadmesh: each level of the NG
     // grid has different zone and node coordinates so we need to
     // call this each time.
     //
     err = setup_grid_properties(gp, SimPM);
-    rep.errorTest("dataio_SMR_silo::OutputData() setup_grid_properties",0, err);
+    rep.errorTest("dataio_NG_silo::OutputData() setup_grid_properties",0, err);
 
     //
     // now write the simulation parameters to the header part of the file.
@@ -137,7 +137,7 @@ int dataio_SMR_silo::OutputData(
     DBSetDir(*db_ptr,"/header");
     err = write_simulation_parameters(SimPM);
     if (err)
-      rep.error("dataio_SMR_silo::OutputData() error writing header to silo file",err);
+      rep.error("dataio_NG_silo::OutputData() error writing header to silo file",err);
 
     //
     // Create data directory, generate the mesh in the file, and then write each
@@ -147,13 +147,13 @@ int dataio_SMR_silo::OutputData(
     string meshname="UniformGrid";
     err = generate_quadmesh(*db_ptr, meshname,SimPM);
     if (err)
-      rep.error("dataio_SMR_silo::OutputData() error writing quadmesh to silo file",err);
+      rep.error("dataio_NG_silo::OutputData() error writing quadmesh to silo file",err);
 
     create_data_arrays(SimPM);
     for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
     err = dataio_silo::write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
     if (err)
-      rep.error("dataio_SMR_silo::OutputData() error writing variable",(*i));
+      rep.error("dataio_NG_silo::OutputData() error writing variable",(*i));
     }
     delete_data_arrays();
     DBSetDir(*db_ptr,"/");
@@ -171,14 +171,14 @@ int dataio_SMR_silo::OutputData(
 
 
 
-int dataio_SMR_silo::ReadData(
+int dataio_NG_silo::ReadData(
       string infile,
       vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   if (!cg[0])
-    rep.error("dataio_SMR_silo::ReadData() null pointer to grid!",cg[0]);
+    rep.error("dataio_NG_silo::ReadData() null pointer to grid!",cg[0]);
   dataio_silo::gp = cg[0];
   silofile=infile;
   int err=0;
@@ -186,11 +186,11 @@ int dataio_SMR_silo::ReadData(
   // Loop over grid levels, and read data for each level.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-    // for now write a different file for each level in the SMR grid.
+    // for now write a different file for each level in the NG grid.
 
     string::size_type p;
     if ((p=silofile.find("_level"))==string::npos) {
-      rep.error("dataio_SMR_silo::ReadData() level",silofile);
+      rep.error("dataio_NG_silo::ReadData() level",silofile);
     }
     else {
       ostringstream temp; temp.str("");
@@ -201,7 +201,7 @@ int dataio_SMR_silo::ReadData(
     }
 
     if (!cg[l])
-      rep.error("dataio_SMR_silo::OutputData() null pointer to grid!",cg[l]);
+      rep.error("dataio_NG_silo::OutputData() null pointer to grid!",cg[l]);
     dataio_silo::gp = cg[l];
 
     *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
@@ -216,12 +216,12 @@ int dataio_SMR_silo::ReadData(
     err = set_readvars(SimPM);
     if (err) rep.error("failed to set readvars in ReadData",err);
     //
-    // set grid properties for quadmesh: each level of the SMR
+    // set grid properties for quadmesh: each level of the NG
     // grid has different zone and node coordinates so we need to
     // call this each time.
     //
     err = setup_grid_properties(gp, SimPM);
-    rep.errorTest("dataio_SMR_silo::OutputData() setup_grid_properties",0, err);
+    rep.errorTest("dataio_NG_silo::OutputData() setup_grid_properties",0, err);
 
     DBSetDir(*db_ptr,"/");
     string meshname="UniformGrid";
@@ -234,7 +234,7 @@ int dataio_SMR_silo::ReadData(
       err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), gp->Ncell());
 #endif
       if (err)
-        rep.error("dataio_SMR_silo::ReadData() error reading variable",(*i));
+        rep.error("dataio_NG_silo::ReadData() error reading variable",(*i));
     }
     DBSetDir(*db_ptr,"/");
     DBClose(*db_ptr); //*db_ptr=0; 
@@ -249,14 +249,14 @@ int dataio_SMR_silo::ReadData(
 
 
 
-int dataio_SMR_silo::setup_grid_properties(
+int dataio_NG_silo::setup_grid_properties(
       class GridBaseClass *grid, 
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
-    rep.error("dataio_SMR_silo::setup_grid_properties() null grid pointer!",grid);
+    rep.error("dataio_NG_silo::setup_grid_properties() null grid pointer!",grid);
   double dx=grid->DX();
   //if (node_coords || nodedims || zonedims ||
   //    nodex || nodey || nodez) {

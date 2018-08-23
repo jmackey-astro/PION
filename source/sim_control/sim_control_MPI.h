@@ -91,7 +91,7 @@ class sim_control_pllel :
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *, ///< pointer to grid.
       class FV_solver_base *, ///< solver/equations class
-      const int ///< level in SMR grid (if applicable)
+      const int ///< level in NG grid (if applicable)
       );
 
   /// function to setup parallel data-I/O class.

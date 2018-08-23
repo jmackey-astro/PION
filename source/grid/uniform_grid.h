@@ -446,7 +446,7 @@ class UniformGrid
   ///
   /// Add cells to the flux_update_recv and flux_update_send lists,
   /// for keeping track of flux entering/leaving a grid on one level.
-  /// This is book-keeping for SMR/AMR to ensure fluxes are
+  /// This is book-keeping for NG/AMR to ensure fluxes are
   /// consistent across all levels, following Berger & Colella
   /// (1989,JCP,82,64).
   /// 
