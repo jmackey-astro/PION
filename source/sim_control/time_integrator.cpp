@@ -136,8 +136,8 @@ int time_integrator::first_order_update(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  // NB Only used for uniform grid.  update for SMR grid is in
-  // sim_control_SMR.cpp
+  // NB Only used for uniform grid.  update for NG grid is in
+  // sim_control_NG.cpp
   int err=0;
   //
   // Set dt for equations class
@@ -188,8 +188,8 @@ int time_integrator::second_order_update(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  // NB Only used for uniform grid.  update for SMR grid is in
-  // sim_control_SMR.cpp
+  // NB Only used for uniform grid.  update for NG grid is in
+  // sim_control_NG.cpp
   int err=0;
   //
   // Set dt for equations class
@@ -332,9 +332,6 @@ int time_integrator::calc_RT_microphysics_dU(
         CI.get_col(     c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].Column);
         for (short unsigned int iC=0; iC<FVI_heating_srcs[v].NTau; iC++)
           FVI_heating_srcs[v].Column[iC] -= FVI_heating_srcs[v].DelCol[iC];
-#ifdef TESTING
-        //cout <<"HEAT: Vs="<<FVI_heating_srcs[v].Vshell<<", dS="<<FVI_heating_srcs[v].dS<<", dC="<<FVI_heating_srcs[v].DelCol<<", Col="<<FVI_heating_srcs[v].Column<<"\n";
-#endif
       }
       for (int v=0; v<FVI_nion; v++) {
         FVI_ionising_srcs[v].Vshell = CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
@@ -531,7 +528,7 @@ int time_integrator::set_dynamics_dU(
   else
     space_ooa=OA2;
 
-#ifdef DEBUG
+#ifdef TEST_INT
   // get current level of grid in hierarchy.
   int level=0;
   if (SimPM.grid_nlevels >1) {
@@ -559,10 +556,9 @@ int time_integrator::set_dynamics_dU(
     class cell *cpt    = grid->FirstPt_All();
     class cell *marker = cpt;
 
-#ifdef DEBUG
+#ifdef TEST_INT
     cout <<"Direction="<<axis[i]<<", i="<<i<<"\n";
     rep.printVec("cpt",cpt->pos,SimPM.ndim);
-    
 #endif
     
     //
@@ -583,8 +579,9 @@ int time_integrator::set_dynamics_dU(
     //
     for (int ax2=0; ax2<grid->NG_All(x2); ax2++) {
       for (int ax1=0; ax1<grid->NG_All(x1); ax1++) {
-#ifdef DEBUG
-        cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i<<", cpt="<<cpt<<":  ";
+#ifdef TEST_INT
+        cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i;
+        cout<<", cpt="<<cpt<<":  ";
         //CI.print_cell(cpt);
         cout <<"\n";
 #endif
@@ -627,10 +624,10 @@ int time_integrator::dynamics_dU_column(
   enum axes axis = spatial_solver->GetDirection();
   double dx = grid->DX();
 
-  // Calculate Flux at positive (right) boundary of cell and store in temporary arrays
-  // for the current cell (Fr_this) and the negative neighbour (Fr_prev)
-  // Have to do it this way b/c ISO C++ forbids re-assignment of arrays.
-  pion_flt *Fr_this=0, *Fr_prev=0, *temp=0, *slope_cpt=0, *slope_npt=0, *edgeR=0, *edgeL=0, *pstar=0;
+  // Calculate Flux at positive (right) boundary of cell for the
+  // current cell (Fr_this) and the negative neighbour (Fr_prev).
+  pion_flt *Fr_this=0, *Fr_prev=0, *temp=0, *slope_cpt=0,
+           *slope_npt=0, *edgeR=0, *edgeL=0, *pstar=0;
   Fr_prev   = mem.myalloc(Fr_prev,   SimPM.nvar);
   Fr_this   = mem.myalloc(Fr_this,   SimPM.nvar);
   slope_cpt = mem.myalloc(slope_cpt, SimPM.nvar);
@@ -642,13 +639,15 @@ int time_integrator::dynamics_dU_column(
   //
   // Set starting point, and next two points in the column.
   //
-  cell *cpt = startingPt; //grid->NextPt(startingPt,posdir); //=grid->NextPt(startingPt,negdir);
-//  while (grid->NextPt(cpt,negdir)) {cpt = grid->NextPt(cpt,negdir);} // CI.print_cell(cpt);}
-  if(cpt==0) {cerr<<"(dynamics_dU_column) error finding left boundary cell.\n";return(1);}
+  cell *cpt = startingPt; 
+  if(cpt==0) {
+    cerr<<"(dynamics_dU_column) error finding left boundary cell.\n";
+    return(1);
+  }
   cell *npt  = grid->NextPt(cpt,posdir);
   cell *n2pt = grid->NextPt(npt,posdir);
-#ifdef DEBUG
-  cout <<cpt<<", "<<npt<<", "<<n2pt<<"\n";
+#ifdef TEST_INT
+  cout <<"Column: "<<cpt<<", "<<npt<<", "<<n2pt<<"\n";
 #endif
   if (npt==0 || n2pt==0) rep.error("Couldn't find two real cells in column",0);
   
@@ -670,6 +669,8 @@ int time_integrator::dynamics_dU_column(
   do {
 #ifdef TESTING
     dp.c = cpt;
+#endif
+#ifdef TEST_INT
     cout<<"First Cell:"; CI.print_cell(cpt);
     cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
@@ -698,7 +699,7 @@ int time_integrator::dynamics_dU_column(
 #endif
     }
 
-#ifdef TESTING
+#ifdef TEST_INT
     for (int v=0;v<SimPM.nvar;v++) {
       if(!isfinite(cpt->dU[v])) {
         rep.printVec("Fl",Fr_prev,SimPM.nvar);
@@ -751,16 +752,22 @@ int time_integrator::dynamics_dU_column(
   }  while ( (n2pt=grid->NextPt(n2pt,posdir)) );
 
   //
-  // Now n2pt=null. npt = bd-data, cpt= (gd/bd)-data. So have to do something different.
+  // Now n2pt=null. npt = bd-data, cpt= (gd/bd)-data.
+  // So have to do something different.
   //
 #ifdef TESTING
   dp.c = cpt;
 #endif
-  err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
-  for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-  err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
-  err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
-  err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+  err += spatial_solver->SetEdgeState(
+          cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
+  for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell 1st order.
+  err += spatial_solver->SetEdgeState(
+          npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
+  err += spatial_solver->InterCellFlux(
+          grid, cpt, npt, edgeL, edgeR, Fr_this, SimPM.solverType,
+          SimPM.artviscosity, SimPM.gamma, dx);
+  err += spatial_solver->dU_Cell(
+          grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
 #ifdef TEST_CONSERVATION 
   // Track energy, momentum entering/leaving domain, if outside boundary

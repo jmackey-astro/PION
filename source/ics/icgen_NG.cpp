@@ -1,5 +1,5 @@
-/// \file icgen_SMR.cpp
-/// \brief Program to generate Initial Conditions for a SMR grid.
+/// \file icgen_NG.cpp
+/// \brief Program to generate Initial Conditions for a NG grid.
 /// \author Jonathan Mackey
 /// 
 /// Modifications:
@@ -23,12 +23,12 @@
 #include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
-#include "dataIO/dataio_silo_SMR.h"
+#include "dataIO/dataio_silo_NG.h"
 #endif // if SILO
 
 #include "grid/uniform_grid.h"
-#include "grid/setup_SMR_grid.h"
-#include "sim_control/sim_init_SMR.h"
+#include "grid/setup_NG_grid.h"
+#include "sim_control/sim_init_NG.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
-    cerr<<"Usage <icgen_SMR_serial> <paramfile> [ic-filetype]\n";
+    cerr<<"Usage <icgen_NG_serial> <paramfile> [ic-filetype]\n";
     return(1);
   }
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
   if (argc>2) icftype=argv[2];
   else icftype="fits"; // This is the default for now.
   
-  class sim_init_SMR *SimSetup = new sim_init_SMR();
+  class sim_init_NG *SimSetup = new sim_init_NG();
   SimPM = &(SimSetup->SimPM);
 
   siminfo=0; siminfo = new class get_sim_info ();
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
   delete siminfo; siminfo=0;
 
 
-  SimSetup->setup_SMR_grid_levels(*SimPM);
+  SimSetup->setup_NG_grid_levels(*SimPM);
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM->grid_nlevels);
 
@@ -165,9 +165,9 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM->grid_nlevels;l++) {
-    cout <<"icgen_SMR: assigning boundary data for level "<<l<<"\n";
+    cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(*SimPM,MCMD,grid[l],SimPM->levels[l].parent, SimPM->levels[l].child);
-    rep.errorTest("icgen_SMR::assign_boundary_data",0,err);
+    rep.errorTest("icgen_NG::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
@@ -176,7 +176,7 @@ int main(int argc, char **argv)
     cout <<"updating external boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateExternalBCs(*SimPM, MCMD, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
-  rep.errorTest("sim_init_SMR: error from bounday update",0,err);
+  rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     cout <<"updating internal boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(*SimPM, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
-  rep.errorTest("sim_init_SMR: error from bounday update",0,err);
+  rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -236,7 +236,7 @@ int main(int argc, char **argv)
     cout <<"WRITING SILO FILE: ";
     //    icfile = icfile+".silo";
     cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_SMR_silo (*SimPM, "DOUBLE");
+    dataio=0; dataio=new dataio_NG_silo (*SimPM, "DOUBLE");
   }
 #endif // if SILO defined.
   if (!dataio) rep.error("IO class initialisation: ",icftype);
@@ -250,6 +250,10 @@ int main(int argc, char **argv)
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}
+  
+  for (unsigned int v=0; v<grid.size(); v++) {
+    delete grid[v];
+  }
 
   //
   // Also delete any dynamic memory in the stellarwind_list in

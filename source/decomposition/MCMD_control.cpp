@@ -59,7 +59,7 @@ MCMDcontrol::~MCMDcontrol() {
 
 int MCMDcontrol::decomposeDomain(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      struct level &level     ///< pointer to domain parameters for SMR grid level
+      struct level &level     ///< pointer to domain parameters for NG grid level
       )
 {
   //  cout << "---MCMDcontrol::decomposeDomain() decomposing domain.\n";
@@ -222,7 +222,7 @@ int MCMDcontrol::decomposeDomain(
 int MCMDcontrol::decomposeDomain(
       const enum axes daxis,   ///< Axis to decompose domain along.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      struct level &level     ///< pointer to domain parameters for SMR grid level
+      struct level &level     ///< pointer to domain parameters for NG grid level
       )
 {
   cout << "---MCMDcontrol::decomposeDomain() decomposing domain";
@@ -306,7 +306,7 @@ int MCMDcontrol::decomposeDomain(
 
 int MCMDcontrol::pointToNeighbours(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      struct level &level     ///< pointer to domain parameters for SMR grid level
+      struct level &level     ///< pointer to domain parameters for NG grid level
       )
 {
 #ifdef TESTING

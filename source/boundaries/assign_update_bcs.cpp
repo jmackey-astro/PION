@@ -186,7 +186,7 @@ int assign_update_bcs::assign_boundary_data(
     case BCMPI:
     case FINE_TO_COARSE:
     case COARSE_TO_FINE:
-      break; // assigned in SMR grid class
+      break; // assigned in NG grid class
     default:
       rep.error("assign_update_bcs::Unhandled BC: assign",grid->BC_bd[i]->itype);
       break;

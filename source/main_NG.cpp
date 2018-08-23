@@ -1,5 +1,5 @@
-/// \file main_SMR.cpp
-/// \brief Main program which sets up a SMR grid and runs the simulation.
+/// \file main_NG.cpp
+/// \brief Main program which sets up a NG grid and runs the simulation.
 /// \author Jonathan Mackey
 /// 
 /// This file just contains the main() function, which sets a number of 
@@ -7,7 +7,7 @@
 /// starts the time integration, and cleans up when the simulation is 
 /// finished.
 /// 
-/// Arguments: \<pion_SMR\> \<icfile\> [override options]\n
+/// Arguments: \<pion_NG\> \<icfile\> [override options]\n
 /// Parameters:
 /// - \<icfile\> Can be an ASCII text parameter-file for 1D and 2D shocktube
 /// test problems; otherwise should be an initial-condition file or a
@@ -41,7 +41,7 @@ using namespace std;
 #include "sim_constants.h"
 #include "tools/reporting.h"
 #include "grid/grid_base_class.h"
-#include "sim_control/sim_control_SMR.h"
+#include "sim_control/sim_control_NG.h"
 
 
 int main(int argc, char **argv)
@@ -50,9 +50,9 @@ int main(int argc, char **argv)
   //
   // Set up simulation controller class.
   //
-  class sim_control_SMR *sim_control = 0;
+  class sim_control_NG *sim_control = 0;
 
-  sim_control = new class sim_control_SMR();
+  sim_control = new class sim_control_NG();
   if (!sim_control)
     rep.error("(pion) Couldn't initialise sim_control", sim_control);
 
@@ -134,7 +134,6 @@ int main(int argc, char **argv)
   }
 
   delete sim_control; sim_control=0;
-  //delete grid; grid=0;
   for (unsigned int v=0; v<grid.size(); v++) {
     delete grid[v];
   }

@@ -830,13 +830,13 @@ int raytracer_USC_infinity::ProcessCell(
   }
   else if (c->isbd && c->isgd) {
     // cell is internal boundary, but not stellar-wind.  This can
-    // only be for SMR grid, where we get finer-level data onto
+    // only be for NG grid, where we get finer-level data onto
     // this coarser grid.  In that case we ignore the cell here,
-    // assuming that the SMR grid has populated the column
+    // assuming that the NG grid has populated the column
     // density already.
     //
 #ifdef RT_TESTING
-    cout <<"SMR grid cell: "<<c->id;
+    cout <<"NG grid cell: "<<c->id;
 #endif
     CI.get_col(c,source->s->id, col2cell);
     CI.get_cell_col(c, source->s->id, cell_col);

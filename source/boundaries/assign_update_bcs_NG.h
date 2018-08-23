@@ -1,28 +1,28 @@
-/// \file assign_update_bcs_SMR.h
+/// \file assign_update_bcs_NG.h
 /// \brief Declares a class that inherits all boundary types
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
-#ifndef ASSIGN_UPDATE_BCS_SMR_H
-#define ASSIGN_UPDATE_BCS_SMR_H
+#ifndef ASSIGN_UPDATE_BCS_NG_H
+#define ASSIGN_UPDATE_BCS_NG_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 #include "boundaries/boundaries.h"
 #include "boundaries/assign_update_bcs.h"
-#include "boundaries/SMR_coarse_to_fine_boundaries.h"
-#include "boundaries/SMR_fine_to_coarse_boundaries.h"
+#include "boundaries/NG_coarse_to_fine_boundaries.h"
+#include "boundaries/NG_fine_to_coarse_boundaries.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
 
 
-class assign_update_bcs_SMR : 
+class assign_update_bcs_NG : 
   virtual public assign_update_bcs,
-  virtual public SMR_fine_to_coarse_bc,
-  virtual public SMR_coarse_to_fine_bc
+  virtual public NG_fine_to_coarse_bc,
+  virtual public NG_coarse_to_fine_bc
 {
   public:  
   ///
@@ -45,7 +45,7 @@ class assign_update_bcs_SMR :
       class SimParams &,      ///< pointer to simulation parameters
       class MCMDcontrol &ppar,    ///< domain decomposition info
       class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in SMR grid struct.
+      const int, ///< level of grid in NG grid struct.
       class FV_solver_base *, ///< pointer to equations
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.
@@ -59,7 +59,7 @@ class assign_update_bcs_SMR :
   virtual int TimeUpdateInternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in SMR grid struct.
+      const int, ///< level of grid in NG grid struct.
       class FV_solver_base *, ///< pointer to equations
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.
@@ -69,5 +69,5 @@ class assign_update_bcs_SMR :
 
 };
 
-#endif // ASSIGN_UPDATE_BCS_SMR_H
+#endif // ASSIGN_UPDATE_BCS_NG_H
 

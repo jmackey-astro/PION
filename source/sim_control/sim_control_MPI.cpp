@@ -210,7 +210,7 @@ int sim_control_pllel::Init(
   rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
   
   //
-  // Set up the Xmin/Xmax/Range/dx of each level in the SMR grid
+  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
   //
   grid.resize(1);
   CI.set_dx(SimPM.dx);
@@ -510,7 +510,7 @@ int sim_control_pllel::calculate_timestep(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
       class FV_solver_base *sp_solver, ///< solver/equations class
-      const int l       ///< level to advance (for SMR grid)
+      const int l       ///< level to advance (for NG grid)
       )
 {
   //

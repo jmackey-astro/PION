@@ -1,22 +1,23 @@
-/// \file SMR_coarse_to_fine_boundaries.cpp
-/// \brief Class definitions for SMR_coarse_to_fine boundaries
+/// \file NG_coarse_to_fine_boundaries.cpp
+/// \brief Class definitions for NG_coarse_to_fine boundaries
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
 
-#include "boundaries/SMR_coarse_to_fine_boundaries.h"
+#include "boundaries/NG_coarse_to_fine_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
 
+//#define TEST_C2F
 
 // ##################################################################
 // ##################################################################
 
 
 
-int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
+int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
@@ -30,7 +31,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   //
   if (b->data.empty())
     rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
-  b->SMR.clear();
+  b->NG.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
   //int pidx = parent->idx();
@@ -52,7 +53,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       //cout <<"distance="<<distance<<"; "; rep.printVec("pc pos",pc->pos,G_ndim);
       pc = parent->NextPt_All(pc);
       if (!pc && !loop) { // hack: if get to the end, then go back...
-        pc = b->SMR.front();
+        pc = b->NG.front();
         loop = true;
       }
       distance = grid->idistance(pc->pos, (*bpt)->pos);
@@ -60,7 +61,7 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     if (!pc) rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
     
     // add this parent cell to the "parent" list of this boundary.
-    b->SMR.push_back(pc);
+    b->NG.push_back(pc);
     (*bpt)->npt = pc;
     ++bpt;
   }  while (bpt !=b->data.end());
@@ -78,14 +79,18 @@ int SMR_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
 
 
 
-int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
+int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
-      const int level, ///< level in the SMR grid structure
+      const int level, ///< level in the NG grid structure
       struct boundary_data *b,
       const int step
       )
 {
+#ifdef TEST_C2F
+    cout <<"C2F: updating boundary data from coarse grid to level ";
+    cout <<level<<"\n";
+#endif
   //
   // This is a complicated problem to use linear interpolation (or
   // higher order), because you have to conserve mass, momentum and
@@ -166,33 +171,38 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     } // 1D
 
     else if (par.ndim == 2) {
+#ifdef TEST_C2F
+        cout <<"interpolating coarse to fine 2d: ncells="<< b->data.size()<<"\n";
+#endif
+
       //
       // Need to do bilinear interpolation, 4 cells at a time.
       //
-      double dxo2 = 0.5*fine->DX(); // dx
-      double c_vol=0.0, f_vol[4];
-      //
-      // Do 4 fine cells at a time: they have the same parent.
       // First get the values at the 4 corners of coarse-cell c.
-      // Then interpolate with bilinear interpolation to the fine-cell
+      // Then interpolate with bilinear interp. to the fine-cell
       // positions as 0.25*dx in each direction from the corners.
       //
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        cell *f1, *f2, *f3, *f4, *c;
+        c = (*f_iter)->npt;
         // only do this on every second row because we update 4
         // cells at a time.
-        if (!fine->NextPt(f,YP) || fine->NextPt(f,YP)->npt != c) {
+        if (!fine->NextPt((*f_iter),YP) ||
+             fine->NextPt((*f_iter),YP)->npt != c) {
           continue;
         }
-
-        // get list of four fine cells and one coarse cell.
-        cell *f1, *f2, *f3, *f4, *c;
+        // get list of four fine cells.
         f1 = (*f_iter);
         f_iter++;
         f2 = (*f_iter);
         f3 = fine->NextPt(f1,YP);
         f4 = fine->NextPt(f2,YP);
-        c = f1->npt;
-
+        
+#ifdef TEST_C2F
+        cout <<"interpolating coarse to fine 2d: coarse="<<c->id;
+        cout <<", f1="<<f1->id<<", f2="<<f2->id;
+        cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+#endif
         interpolate_coarse2fine2D(par,coarse,fine,solver,c,f1,f2,f3,f4);
 
       } // loop over fine cells
@@ -216,7 +226,7 @@ int SMR_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
 
 
-void SMR_coarse_to_fine_bc::bilinear_interp(
+void NG_coarse_to_fine_bc::bilinear_interp(
       class SimParams &par,      ///< pointer to simulation parameters
       cell *c,  ///< coarse level cell
       cell *f,  ///< fine level cell
@@ -259,7 +269,7 @@ void SMR_coarse_to_fine_bc::bilinear_interp(
 
 
 
-void SMR_coarse_to_fine_bc::interpolate_coarse2fine1D(
+void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *coarse,  ///< pointer to coarse grid
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -326,7 +336,7 @@ void SMR_coarse_to_fine_bc::interpolate_coarse2fine1D(
 
 
 
-void SMR_coarse_to_fine_bc::interpolate_coarse2fine2D(
+void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *coarse,  ///< pointer to coarse grid
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -383,7 +393,7 @@ void SMR_coarse_to_fine_bc::interpolate_coarse2fine2D(
   solver->PtoU(c->Ph, cU, par.gamma);
   for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
 
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
   for (int v=0;v<par.nvar;v++) {
     if (!isfinite(f1U[v]) || !isfinite(f1U[v]) ||
         !isfinite(f3U[v]) || !isfinite(f4U[v])) {
@@ -413,7 +423,7 @@ void SMR_coarse_to_fine_bc::interpolate_coarse2fine2D(
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
 
-#ifdef DEBUG_SMR
+#ifdef DEBUG_NG
   for (int v=0;v<par.nvar;v++) {
     if (!isfinite(f3->P[v]) || !isfinite(f4->P[v]))
       rep.error("fine 3,4 not finite",f3->P[v]);

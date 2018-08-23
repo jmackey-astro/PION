@@ -1,12 +1,12 @@
-/// \file SMR_fine_to_coarse_boundaries.cpp
-/// \brief Class definitions for SMR_fine_to_coarse boundaries
+/// \file NG_fine_to_coarse_boundaries.cpp
+/// \brief Class definitions for NG_fine_to_coarse boundaries
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
 
-#include "boundaries/SMR_fine_to_coarse_boundaries.h"
+#include "boundaries/NG_fine_to_coarse_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
 
@@ -16,7 +16,7 @@ using namespace std;
 
 
 
-int SMR_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
+int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
@@ -28,13 +28,13 @@ int SMR_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   //
   if (b->data.empty())
     rep.error("BC_assign_FINE_TO_COARSE: empty boundary data",b->itype);
-  b->SMR.clear();
+  b->NG.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
   cell *cc = child->FirstPt_All(); // child cell.
   int cdx = 0.5*child->idx();
 
-  // Map each bpt cell to a cell in b->SMR list, which is the first
+  // Map each bpt cell to a cell in b->NG list, which is the first
   // cell in the finer grid that is part of the coarse cell (i.e. the
   // one with the most negative coordinates).
   do{
@@ -44,7 +44,7 @@ int SMR_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
         cc = child->NextPt(cc,static_cast<direction>(2*v+1));
     }
     if (!cc) rep.error("BC_assign_FINE_TO_COARSE: lost on fine grid",0);
-    b->SMR.push_back(cc);
+    b->NG.push_back(cc);
     
     ++bpt;
   }  while (bpt !=b->data.end());
@@ -59,10 +59,10 @@ int SMR_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
 
 
 
-int SMR_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
+int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
-      const int level, ///< level in the SMR grid structure
+      const int level, ///< level in the NG grid structure
       struct boundary_data *b,
       const int cstep,
       const int maxstep
@@ -74,10 +74,10 @@ int SMR_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   // dimension in the fine grid, and so we can loop over this.
   //
   list<cell*>::iterator c_iter=b->data.begin();
-  list<cell*>::iterator f_iter=b->SMR.begin();
+  list<cell*>::iterator f_iter=b->NG.begin();
   cell *c, *f;
   //cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
-  //cout << b->data.size() <<",  :"<<b->SMR.size()<<"\n";
+  //cout << b->data.size() <<",  :"<<b->NG.size()<<"\n";
 
   // pointers to coarse and fine grids:
   class GridBaseClass *coarse = par.levels[level].grid;
