@@ -18,13 +18,15 @@
 //
 // check conservation of energy and momentum
 //
-#define TEST_CONSERVATION
+//#define TEST_CONSERVATION
 
 //
 // Various defines for testing bits of the code.
 //
 //#define TESTING ///< Comment this out if not testing the code.
 
+//
+// displays debugging information for time integration.
 //
 //#define TEST_INT
 

@@ -133,8 +133,7 @@ struct stellarwind_params {
   double Rstar; ///< radius at which to set pressure based on Tstar.
   double Tstar; ///< stellar temperature (sets pressure at r=Rstar).
   pion_flt tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
-  double radius;
-  ///< Radius out to which boundary condition is imposed (physical).
+  int radius; ///< Radius of boundary region (# cells).
   std::string evolving_wind_file; ///< name of file containing evolving wind data.
   int enhance_mdot;     ///< 0=no, 1=yes, for rapidly rotating stars.
   double time_offset;   ///< time offset between wind-data-file and sim-time (YEARS!).

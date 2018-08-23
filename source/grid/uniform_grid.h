@@ -592,22 +592,22 @@ class UniformGrid
       const axes    ///< Axis to calculate.
       );
 
-   ///
-   /// Calculate distance between a cell-vertex and a cell--centres
-   /// (will be between centre-of-volume of cells if non-cartesian
-   /// geometry).  Here both input and output are code-integer units.
-   ///
-   virtual double idistance_vertex2cell(
+  ///
+  /// Calculate distance between a cell-vertex and a cell--centres
+  /// (will be between centre-of-volume of cells if non-cartesian
+  /// geometry).  Here both input and output are code-integer units.
+  ///
+  virtual double idistance_vertex2cell(
       const int *, ///< vertex (integer)
       const cell * ///< cell
       );
 
-   ///
-   /// As idistance_vertex2cell(int,cell) but for a single component
-   /// of the position vector, and not the absolute value.  It returns
-   /// the *cell* coordinate minus the *vertex* coordinate.
-   ///
-   virtual double idifference_vertex2cell(
+  ///
+  /// As idistance_vertex2cell(int,cell) but for a single component
+  /// of the position vector, and not the absolute value.  It returns
+  /// the *cell* coordinate minus the *vertex* coordinate.
+  ///
+  virtual double idifference_vertex2cell(
       const int *,  ///< vertex (integer)
       const cell *, ///< cell
       const axes    ///< Axis to calculate.
@@ -623,6 +623,13 @@ class UniformGrid
       const cell *, ///< cell 2
       const axes    ///< Axis.
       );
+
+  ///
+  /// Returns true if the position is on the grid, false otherwise
+  ///
+  bool point_on_grid(
+    const double * ///< position
+    );
 };
   
 

@@ -817,9 +817,11 @@ int raytracer_USC_infinity::ProcessCell(
   //cout <<" with opacity-only step.  N[0]="<<col2cell[0]<<"\n";
 #endif // RT_TESTING
 
-  if (!c->isdomain) {
+  if (!c->isdomain &&
+      c->P[source->s->opacity_var+first_tr]>0.1  // HACK
+      ) {
     // if cell is not in the domain, set its column to be zero,
-    // because this is meaningless.  e.g. stellar-wind boundary.
+    // unless wind tracer values is <0.1 (neutral wind).
 #ifdef RT_TESTING
     cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", "<<c->pos[YY]<<"]\n";
 #endif
@@ -828,7 +830,7 @@ int raytracer_USC_infinity::ProcessCell(
     CI.set_cell_col(c, source->s->id, cell_col);
     CI.set_col     (c, source->s->id, col2cell);
   }
-  else if (c->isbd && c->isgd) {
+  else if (c->isbd && c->isgd  && c->isdomain) {
     // cell is internal boundary, but not stellar-wind.  This can
     // only be for NG grid, where we get finer-level data onto
     // this coarser grid.  In that case we ignore the cell here,
@@ -836,7 +838,7 @@ int raytracer_USC_infinity::ProcessCell(
     // density already.
     //
 #ifdef RT_TESTING
-    cout <<"NG grid cell: "<<c->id;
+    cout <<"NG grid cell: "<<c->id <<" isdomain="<<c->isdomain;
 #endif
     CI.get_col(c,source->s->id, col2cell);
     CI.get_cell_col(c, source->s->id, cell_col);

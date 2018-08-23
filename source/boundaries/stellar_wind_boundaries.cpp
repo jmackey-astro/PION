@@ -83,28 +83,30 @@ int stellar_wind_bc::BC_assign_STWIND(
   for (int isw=0; isw<Ns; isw++) {
     if (isw==0) xi = SWP.params[isw]->xi;
     else {
-      rep.errorTest("wind xi values don't match",xi,SWP.params[isw]->xi);
+      rep.errorTest("wind xi values don't match",xi,
+                    SWP.params[isw]->xi);
     }
   }
 
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (err==0) {
-      grid->Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer, par.ftr,
-                              par.coord_sys, par.eqntype,
-                              par.EP.MinTemperature);
+      grid->Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer,
+            par.ftr, par.coord_sys, par.eqntype,
+            par.EP.MinTemperature);
     }
     else if (err==1) {
-      grid->Wind = new stellar_wind_evolution(par.ndim, par.nvar, par.ntracer,
-            par.ftr, par.coord_sys, par.eqntype, par.EP.MinTemperature,
-            par.starttime, par.finishtime);
+      grid->Wind = new stellar_wind_evolution(par.ndim, par.nvar,
+            par.ntracer, par.ftr, par.coord_sys, par.eqntype,
+            par.EP.MinTemperature, par.starttime, par.finishtime);
       err=0;
     }
     else if (err==2) {
       cout <<"Setting up stellar_wind_angle class\n";
-      grid->Wind = new stellar_wind_angle(par.ndim, par.nvar, par.ntracer, par.ftr,
-                  par.coord_sys, par.eqntype, par.EP.MinTemperature,
-                  par.starttime, par.finishtime, xi);
+      grid->Wind = new stellar_wind_angle(par.ndim, par.nvar,
+            par.ntracer, par.ftr, par.coord_sys, par.eqntype,
+            par.EP.MinTemperature, par.starttime, par.finishtime,
+            xi);
     }
   }
 
@@ -120,7 +122,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       //
       err = grid->Wind->add_source(
         SWP.params[isw]->dpos,
-        SWP.params[isw]->radius,
+        SWP.params[isw]->radius*grid->DX(),
         SWP.params[isw]->type,
         SWP.params[isw]->Mdot,
         SWP.params[isw]->Vinf,
@@ -134,10 +136,11 @@ int stellar_wind_bc::BC_assign_STWIND(
       // This works for spherically symmetric winds and for
       // latitude-dependent winds that evolve over time.
       //
-      cout <<"Adding source "<<isw<<" with filename "<<SWP.params[isw]->evolving_wind_file<<"\n";
+      cout <<"Adding source "<<isw<<" with filename ";
+      cout <<SWP.params[isw]->evolving_wind_file<<"\n";
       err = grid->Wind->add_evolving_source(
         SWP.params[isw]->dpos,
-        SWP.params[isw]->radius,
+        SWP.params[isw]->radius*grid->DX(),
         SWP.params[isw]->type,
         SWP.params[isw]->Rstar,
         SWP.params[isw]->tr,
@@ -180,7 +183,6 @@ int stellar_wind_bc::BC_assign_STWIND(
 int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
-      //struct boundary_data *b,
       const int id ///< source id
       )
 {
