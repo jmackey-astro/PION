@@ -14,6 +14,10 @@
 #include <list>
 
 
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// enum for the types of boundary condition.
 ///
@@ -28,24 +32,55 @@ enum BoundaryTypes {
                     ///< where normal B field passes through, but tangential is reversed.
     DMACH      = 8, ///< Outflow boundary for double mach reflection test problem only.
     DMACH2     = 9, ///< Fixed boundary on y=0, x in [0,1/6] fixed to postshock state.
-    BCMPI      =10, ///< boundary between processor domains in parallel grid.
-    RADSHOCK   =11, ///< Boundary condition adjacent to cold wall for radiative shock test problem.
+    BCMPI      =10,
+    ///< boundary between processor domains in parallel grid (on one
+    ///< level)
+    RADSHOCK   =11,
+    ///< Boundary condition adjacent to cold wall for radiative shock
+    ///< test problem.
     RADSH2     =12, ///< Outflow augmented with fixed outflow speed.
-    ONEWAY_OUT =13, ///< One-way valve -- allows outflow but not inflow (zero gradient OR reflecting).
-    STWIND     =14, ///< Stellar wind sources exist, so apply internal boundaries.
+    ONEWAY_OUT =13,
+    ///< One-way valve -- allows outflow but not inflow (zero
+    ///< gradient OR reflecting).
+    STWIND     =14,
+    ///< Stellar wind sources exist, so apply internal boundaries.
     STARBENCH1 =15, ///< StarBench test for mixing with a solid wall.
-    FINE_TO_COARSE  =16, ///< data in this cell should be obtained from finer-scale data on a NG grid.
-    COARSE_TO_FINE   =17  ///< data should be obtained from coarser level in a NG grid.
+    FINE_TO_COARSE  =16,
+    ///< data in this cell should be obtained from finer-scale data
+    ///< on a NG grid.
+    COARSE_TO_FINE   =17,
+    ///< data should be obtained from coarser level in a NG grid.
+    FINE_TO_COARSE_SEND = 18,
+    ///< boundary for sending data from this grid to coarser-level
+    ///< grid on another MPI process.
+    FINE_TO_COARSE_RECV = 19,
+    ///< boundary for receiving data onto this grid from finer-level
+    ///< grid on another MPI process.
+    COARSE_TO_FINE_SEND = 20,
+    ///< boundary for sending data from this grid to external
+    ///< boundary of finer-level grid on another MPI process.
+    COARSE_TO_FINE_RECV = 21
+    ///< boundary for receiving data onto the external boundary of
+    ///< this grid from a coarser-level grid on another MPI process.
 };
+
+
+// ##################################################################
+// ##################################################################
 
 
 //
 // integer flags for MPI communication labels.
 //
 #define BC_ANYtag 0 ///< works for either sort of communication.
-#define BC_MPItag 1 ///< This is an integer tag on send/receive operations, to label that this communicates MPI boundary data.
+#define BC_MPItag 1 ///< Integer tag on MPI send/receive operations, to label that this communicates MPI boundary data.
 #define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
 #define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
+#define BC_MPI_NG_tag 4 ///< Integer tag on MPI send/receive ops that transfer data between levels on a nested grid.
+
+
+// ##################################################################
+// ##################################################################
 
 
 ///

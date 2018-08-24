@@ -67,13 +67,13 @@ setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 
 int setup_fixed_grid_pllel::setup_grid(
       class GridBaseClass **grid, ///< address of pointer to computational grid.
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class MCMDcontrol *MCMD     ///< address of MCMD controller class.
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
 #ifdef TESTING
   cout <<"setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
+  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   if (SimPM.gridType!=1) {
     rep.warning("gridType not set correctly: Only know Uniform finite\
@@ -114,7 +114,7 @@ int setup_fixed_grid_pllel::setup_grid(
   CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
-
+  CI.set_nlevels(SimPM.levels[0].dx,1);
   //
   // Now set up the parallel uniform grid.
   //

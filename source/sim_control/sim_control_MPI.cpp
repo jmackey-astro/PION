@@ -136,8 +136,11 @@ int sim_control_pllel::Init(
   //
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
-  mpiPM.set_myrank(myrank);
-  mpiPM.set_nproc(nproc);
+  SimPM.grid_nlevels = 1;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
 
   //
   // Setup dataI/O class and check if we read from a single file or
@@ -152,12 +155,13 @@ int sim_control_pllel::Init(
     // FITS
     string::size_type pos =infile.find("_0000.");
     if (pos==string::npos) {
-      mpiPM.ReadSingleFile = true;
+      SimPM.levels[0].MCMD.ReadSingleFile = true;
     }
     else {
-      mpiPM.ReadSingleFile = false;
+      SimPM.levels[0].MCMD.ReadSingleFile = false;
       ostringstream t; t.str("");
-      t<<"_"; t.width(4); t.fill('0'); t<<mpiPM.get_myrank()<<".";
+      t<<"_"; t.width(4); t.fill('0');
+      t<<SimPM.levels[0].MCMD.get_myrank()<<".";
       string t2=t.str();
       infile.replace(pos,6,t2);
     }
@@ -166,10 +170,10 @@ int sim_control_pllel::Init(
     // SILO
     string::size_type pos =infile.find("_0000.");
     if (pos==string::npos) {
-      mpiPM.ReadSingleFile = true;
+      SimPM.levels[0].MCMD.ReadSingleFile = true;
     }
     else {
-      mpiPM.ReadSingleFile = false;
+      SimPM.levels[0].MCMD.ReadSingleFile = false;
     }
   }
   else 
@@ -187,9 +191,6 @@ int sim_control_pllel::Init(
 
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
-  SimPM.grid_nlevels = 1;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
   SimPM.levels[0].parent=0;
   SimPM.levels[0].child=0;
   SimPM.levels[0].Ncell = SimPM.Ncell;
@@ -202,7 +203,7 @@ int sim_control_pllel::Init(
   SimPM.levels[0].dt = 0.0;
   SimPM.levels[0].multiplier = 1;
 
-  err = mpiPM.decomposeDomain(SimPM, SimPM.levels[0]);
+  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
   rep.errorTest("PLLEL Init():Couldn't Decompose Domain!",0,err);
 
   // Now see if any commandline args override the Parameters from the file.
@@ -217,7 +218,7 @@ int sim_control_pllel::Init(
 
   // Now set up the grid structure.
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  err = setup_grid(&(grid[0]),SimPM,&mpiPM);
+  err = setup_grid(&(grid[0]),SimPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   SimPM.levels[0].grid=grid[0];
@@ -268,9 +269,9 @@ int sim_control_pllel::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, mpiPM, grid[0]);
+  err = boundary_conditions(SimPM, SimPM.levels[0].MCMD, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM,mpiPM, grid[0]);
+  err = assign_boundary_data(SimPM,SimPM.levels[0].MCMD, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
@@ -286,8 +287,10 @@ int sim_control_pllel::Init(
   //
   initial_conserved_quantities(grid[0]);
 
-  err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  err += TimeUpdateExternalBCs(SimPM, mpiPM,grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,
+                    SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM, SimPM.levels[0].MCMD,
+                    grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
@@ -298,7 +301,8 @@ int sim_control_pllel::Init(
   //
   if (SimPM.op_criterion==1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!",SimPM.opfreq_time);
+      rep.error("opfreq_time not set right and is needed!",
+                SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
     double tmp = 
       ((SimPM.simtime/SimPM.opfreq_time)-
@@ -362,13 +366,13 @@ void sim_control_pllel::setup_dataio_class(
 #ifdef FITS
   case 2: // Start from FITS restartfile
   case 3: // Fits restartfile in table format (slower I/O than image...)
-    dataio = new DataIOFits_pllel(SimPM, &mpiPM);
+    dataio = new DataIOFits_pllel(SimPM, &(SimPM.levels[0].MCMD));
     break;
 #endif // if FITS
 
 #ifdef SILO
   case 5: // Start from Silo ICfile or restart file.
-    dataio = new dataio_silo_utility (SimPM, "DOUBLE", &mpiPM);
+    dataio = new dataio_silo_utility (SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
     break; 
 #endif // if SILO
   default:
@@ -416,11 +420,13 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: updating internal boundaries\n";
 #endif
-    err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,
+                                                        OA2,OA2);
 #ifdef TESTING
     cout <<"MPI time_int: updating external boundaries\n";
 #endif
-    err += TimeUpdateExternalBCs(SimPM, mpiPM, grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateExternalBCs(SimPM, SimPM.levels[0].MCMD,
+                                  grid[0], SimPM.simtime,OA2,OA2);
     if (err) 
       rep.error("Boundary update at start of full step",err);
 
@@ -434,7 +440,7 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: stepping forward in time\n";
 #endif
-    err+= advance_time(mpiPM, grid[0]);
+    err+= advance_time(SimPM.levels[0].MCMD, grid[0]);
     rep.errorTest("(TIME_INT::advance_time) error",0,err);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0) {
@@ -445,7 +451,8 @@ int sim_control_pllel::Time_Int(
     cout <<"MPI time_int: finished timestep\n";
 #endif
 
-    if (mpiPM.get_myrank()==0 && (SimPM.timestep%log_freq)==0) {
+    if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
+         (SimPM.timestep%log_freq)==0) {
       cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
@@ -528,10 +535,12 @@ int sim_control_pllel::calculate_timestep(
   //
   //par.dt = t_dyn;
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
-  //cout <<"proc "<<mpiPM.myrank<<":\t my t_dyn="<<par.dt<<" and global t_dyn="<<t_dyn<<"\n";
+  //cout <<"proc "<<SimPM.levels[0].MCMD.get_myrank();
+  //cout<<":\t my t_dyn="<<par.dt<<" and global t_dyn="<<t_dyn<<"\n";
   //par.dt = t_mp;
   t_mp = COMM->global_operation_double("MIN", t_mp);
-  //cout <<"proc "<<mpiPM.myrank<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
+  //cout <<"proc "<<SimPM.levels[0].MCMDM.get_myrank();
+  //cout<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
   
   // Write step-limiting info every tenth timestep.
   if (t_mp<t_dyn && (par.timestep%10)==0)

@@ -54,8 +54,7 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   virtual int setup_grid(
       class GridBaseClass **, ///< address of pointer to grid.
-      class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol *     ///< address of MCMD controller class.
+      class SimParams &      ///< pointer to simulation parameters
       );
 
   ///

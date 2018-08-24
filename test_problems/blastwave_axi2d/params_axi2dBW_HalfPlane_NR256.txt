@@ -71,7 +71,7 @@ OutputFileType silo  #fits #both
 # Output data to file every nth timestep. (n=0 means only at the end).
 OutputFrequency 50
 OutputCriterion 1    # output per n-years=1, per step=0
-OPfreqTime 6.32e10    # in seconds
+OPfreqTime 6.312e10    # in seconds
 
 
 # Start time

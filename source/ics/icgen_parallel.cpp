@@ -52,11 +52,13 @@ int main(int argc, char **argv)
   int err = COMM->init(&argc, &argv);
   if (err) rep.error("comms init error",err);
 
-  class MCMDcontrol MCMD;
   int r=-1, np=-1;
   COMM->get_rank_nproc(&r,&np);
-  MCMD.set_myrank(r);
-  MCMD.set_nproc(np);
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(r);
+  SimPM.levels[0].MCMD.set_nproc(np);
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
@@ -71,24 +73,25 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      ostringstream path; path << outpath <<"_"<<MCMD.get_myrank()<<"_";
+      ostringstream path;
+      path << outpath <<"_"<<SimPM.levels[0].MCMD.get_myrank()<<"_";
       outpath = path.str();
-      if (MCMD.get_myrank()==0) {
+      if (SimPM.levels[0].MCMD.get_myrank()==0) {
         cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
       }
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+      rep.redirect(outpath); // Redirects cout and cerr to text file.
     }
   }
 #ifndef TESTING
   rep.kill_stdout_from_other_procs(0);
 #endif
-  //cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
+  //cout << "rank: " << MCMD.get_myrank();
+  //cout << " nproc: " << MCMD.get_nproc() << "\n";
 
   class DataIOBase   *dataio=0;
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
-  class SimParams SimPM;
   MP=0;  // global microphysics class pointer.
   class RayTracingBase *RT=0;  // raytracing class 
 
@@ -106,8 +109,7 @@ int main(int argc, char **argv)
 
   // have to do something with SimPM.levels[0] because this
   // is used to set the local domain size in decomposeDomain
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
+  SimPM.grid_nlevels = 1;
   SimPM.levels[0].parent=0;
   SimPM.levels[0].child=0;
   SimPM.levels[0].Ncell = SimPM.Ncell;
@@ -128,15 +130,19 @@ int main(int argc, char **argv)
   // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
   //
   vector<class GridBaseClass *> grid;
-  err  = MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
-  if (err) rep.error("main: failed to decompose domain!",err);
+  // have to do something with SimPM.levels[0] because this
+  // is used to set the local domain size in decomposeDomain
+  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
+  rep.errorTest("Couldn't Decompose Domain!",0,err);
+
+  class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
   grid.resize(1);
   // Now set up the grid structure.
-  err = SimSetup->setup_grid(&(grid[0]),SimPM,&MCMD);
+  err = SimSetup->setup_grid(&(grid[0]),SimPM);
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
@@ -156,7 +162,7 @@ int main(int argc, char **argv)
   string ics = rp->find_parameter(seek);
   setup_ics_type(ics,&ic);
   ic->set_SimPM(&SimPM);
-  ic->set_MCMD_pointer(&MCMD);
+  ic->set_MCMD_pointer(MCMD);
 
 
   if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
@@ -180,7 +186,7 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(SimPM,MCMD,grid[0]);
+  SimSetup->boundary_conditions(SimPM,*MCMD,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);
@@ -229,7 +235,7 @@ int main(int argc, char **argv)
   if (icftype=="fits") {
     cout <<"WRITING FITS FILE: ";
     cout << icfile << "\n";
-    dataio = 0; dataio = new DataIOFits_pllel (SimPM, &MCMD);
+    dataio = 0; dataio = new DataIOFits_pllel (SimPM, MCMD);
   }
 #endif // if fits.
 
@@ -237,7 +243,7 @@ int main(int argc, char **argv)
   if (icftype=="silo") {
     cout <<"WRITING SILO FILE: ";
     cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_silo_pllel (SimPM, "DOUBLE",&MCMD);
+    dataio=0; dataio=new dataio_silo_pllel (SimPM, "DOUBLE",MCMD);
   }
 #endif // if SILO defined.
 
@@ -267,7 +273,8 @@ int main(int argc, char **argv)
     temp = mem.myfree(temp); // delete struct.
   }
 
-  cout << "rank: " << MCMD.get_myrank() << " nproc: " << MCMD.get_nproc() << "\n";
+  cout << "rank: " << MCMD->get_myrank();
+  cout << " nproc: " << MCMD->get_nproc() << "\n";
   COMM->finalise();
   delete COMM; COMM=0;
   delete [] args; args=0;
