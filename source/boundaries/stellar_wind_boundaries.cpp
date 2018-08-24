@@ -122,7 +122,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       //
       err = grid->Wind->add_source(
         SWP.params[isw]->dpos,
-        SWP.params[isw]->radius*grid->DX(),
+        SWP.params[isw]->radius,
         SWP.params[isw]->type,
         SWP.params[isw]->Mdot,
         SWP.params[isw]->Vinf,
@@ -140,7 +140,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       cout <<SWP.params[isw]->evolving_wind_file<<"\n";
       err = grid->Wind->add_evolving_source(
         SWP.params[isw]->dpos,
-        SWP.params[isw]->radius*grid->DX(),
+        SWP.params[isw]->radius,
         SWP.params[isw]->type,
         SWP.params[isw]->Rstar,
         SWP.params[isw]->tr,

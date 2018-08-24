@@ -996,17 +996,17 @@ void DataIOBase::set_windsrc_params()
     ostringstream temp12; temp12.str(""); temp12<< "WIND_"<<n<<"_t_scalefac";
 
     
-    pm_ddimarr *w001 = new pm_ddimarr (temp1.str()); // position of source.
+    pm_ddimarr *w001 = new pm_ddimarr (temp1.str()); // position of source (cm)
     windsrc.push_back(w001);
-    pm_int     *w002 = new pm_int     (temp2.str()); // radius of wind BC (cells)
+    pm_double  *w002 = new pm_double  (temp2.str()); // radius of wind BC (cm)
     windsrc.push_back(w002);
     pm_double  *w003 = new pm_double  (temp3.str()); // Mdot (Msun/yr)
     windsrc.push_back(w003);
-    pm_double  *w004 = new pm_double  (temp4.str()); // v_inf (cm/s)
+    pm_double  *w004 = new pm_double  (temp4.str()); // v_inf (km/s)
     windsrc.push_back(w004);
     pm_double  *w005 = new pm_double  (temp5.str()); // Twind (K)
     windsrc.push_back(w005);
-    pm_double  *w008 = new pm_double  (temp8.str()); // radius at which T=Twind
+    pm_double  *w008 = new pm_double  (temp8.str()); // radius at which T=Twind (cm)
     windsrc.push_back(w008);
     pm_int     *w006 = new pm_int     (temp6.str()); // wind type flag
     windsrc.push_back(w006);
