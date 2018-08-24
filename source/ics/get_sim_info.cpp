@@ -694,8 +694,8 @@ int get_sim_info::read_wind_sources(
     ostringstream temp;
     double
       Mdot=0.0, posn[MAX_DIM], Vinf=0.0, Tw=0.0, Rstar=0.0,
-      trcr[MAX_NVAR], xi=0.0;
-    int type=0, rad=0;
+      trcr[MAX_NVAR], xi=0.0, rad=0.0;
+    int type=0;
     //
     // new stuff for evolving winds:
     //
@@ -713,7 +713,7 @@ int get_sim_info::read_wind_sources(
 
     temp.str(""); temp<<"WIND_"<<i<<"_radius";
     if ( (a=rp->find_parameter(temp.str())) !="")
-      rad=atoi(a.c_str());
+      rad=atof(a.c_str());
     else rep.error("param not found in pfile",temp.str());
 
     temp.str(""); temp<<"WIND_"<<i<<"_type";
