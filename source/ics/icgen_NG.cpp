@@ -95,7 +95,7 @@ int main(int argc, char **argv)
   //
   // Set up the grids.
   //
-  err = SimSetup->setup_grid(grid,*SimPM,&MCMD);
+  err = SimSetup->setup_grid(grid,*SimPM);
   SimPM->dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   

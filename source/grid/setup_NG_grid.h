@@ -39,24 +39,23 @@ class setup_NG_grid :
   ///
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
   ///
-  void setup_NG_grid_levels(
+  virtual void setup_NG_grid_levels(
       class SimParams &  ///< pointer to simulation parameters
       );
 
   /// 
   /// Sets up a NG grid.
   ///
-  int setup_grid(
+  virtual int setup_grid(
       vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
-      class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol *     ///< address of MCMD controller class.
+      class SimParams &      ///< pointer to simulation parameters
       );
 
   ///
   /// Decide if I need to setup RT class and, if so, set up a
   /// raytracer associated with each grid.
   ///
-  int setup_raytracing(
+  virtual int setup_raytracing(
       class SimParams &,    ///< pointer to simulation parameters
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
@@ -67,7 +66,7 @@ class setup_NG_grid :
   /// grid cells for the external boundaries, and label internal
   /// boundary cells as such.
   ///
-  int boundary_conditions(
+  virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
       class MCMDcontrol &,  ///< unused for serial code
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.

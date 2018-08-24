@@ -36,10 +36,11 @@ MCMDcontrol::MCMDcontrol()
     LocalXmin[i] = LocalXmax[i] = LocalRange[i] = -1.e99;
   }
   ngbprocs=0;
+  parent_proc=-1;
 
   ReadSingleFile  =true; ///< If the ICs are in a single file, set this to true.
-  WriteSingleFile =false; ///< If you want all the processors to write to one file, set this (BUGGY!)
-  WriteFullImage  =false; ///< If you want multiple fits files, but each one is the full domain size (bad!), set this.
+  WriteSingleFile =false; ///< If all processes to write to one file, set this
+  WriteFullImage  =false; ///< If multiple fits files, but each one is the full domain size, set this.
 }
 
 // ##################################################################
@@ -59,7 +60,7 @@ MCMDcontrol::~MCMDcontrol() {
 
 int MCMDcontrol::decomposeDomain(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      struct level &level     ///< pointer to domain parameters for NG grid level
+      class level &level     ///< pointer to domain parameters for NG grid level
       )
 {
   //  cout << "---MCMDcontrol::decomposeDomain() decomposing domain.\n";
@@ -215,14 +216,16 @@ int MCMDcontrol::decomposeDomain(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MCMDcontrol::decomposeDomain(
       const enum axes daxis,   ///< Axis to decompose domain along.
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      struct level &level     ///< pointer to domain parameters for NG grid level
+      class level &level     ///< pointer to domain parameters for NG grid level
       )
 {
   cout << "---MCMDcontrol::decomposeDomain() decomposing domain";
@@ -306,7 +309,7 @@ int MCMDcontrol::decomposeDomain(
 
 int MCMDcontrol::pointToNeighbours(
       class SimParams &SimPM,  ///< pointer to simulation parameters
-      struct level &level     ///< pointer to domain parameters for NG grid level
+      class level &level     ///< pointer to domain parameters for NG grid level
       )
 {
 #ifdef TESTING
@@ -476,6 +479,13 @@ void MCMDcontrol::get_abutting_domains(
   return;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // Returns the ix array for any requested rank.
 //
@@ -498,8 +508,106 @@ void MCMDcontrol::get_domain_ix(
   return;
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
+
+void MCMDcontrol::set_NG_hierarchy(
+      class SimParams &par,  ///< pointer to simulation parameters
+      const int l  ///< level to work on
+      )
+{
+  double centre[MAX_DIM];
+  int ir[MAX_DIM];
+  bool ongrid=false;
+  child_procs.resize(0);
+  double px[8] = {0.25,0.75,0.25,0.75,0.25,0.75,0.25,0.75};
+  double py[8] = {0.25,0.25,0.75,0.75,0.25,0.25,0.75,0.75};
+  double pz[8] = {0.25,0.25,0.25,0.25,0.75,0.75,0.75,0.75};
+
+  // set rank of parent for each grid except root level 0
+  if (l>0) {
+    for (int i=0;i<par.ndim;i++)
+      centre[i] = 0.5*(LocalXmin[i]+LocalXmax[i]);
+    for (int i=0;i<par.ndim;i++)
+      ir[i] = nx[i]*(centre[i]-par.levels[l-1].Xmin[i])/
+                                    par.levels[l-1].Range[i];
+    parent_proc = ir[XX];
+    if (par.ndim>1) parent_proc += nx[XX]*ir[YY];
+    if (par.ndim>2) parent_proc += nx[XX]*nx[YY]*ir[ZZ];
+    cout <<"level "<<l<<", parent process is "<<parent_proc<<"\n";
+  }
+
+  // set rank of child grids, if they exist.
+  if (l<par.grid_nlevels-1) {
+    if (par.ndim==1) {
+      for (int v=0;v<2;v++) {
+        centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
+        centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
+        ongrid=true;
+        for (int i=0;i<par.ndim;i++) {
+          if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
+        }
+        if (ongrid) {
+          child_procs.push_back(ir[XX]);
+          cout <<"v="<<v<<": ";
+          rep.printVec("1D Child ir",ir,par.ndim);
+        }
+      }
+
+    } // if 1D
+
+    else if (par.ndim==2) {
+
+      for (int v=0;v<4;v++) {
+        centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
+        centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
+        ongrid=true;
+        for (int i=0;i<par.ndim;i++) {
+          if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
+        }
+        if (ongrid) {
+          child_procs.push_back( nx[XX]*ir[YY]+ ir[XX]);
+          cout <<"v="<<v<<": ";
+          rep.printVec("2D Child ir",ir,par.ndim);
+        }
+      }
+
+    } // if 2D
+
+    else {
+      // 3D
+
+      for (int v=0;v<8;v++) {
+        centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
+        centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
+        centre[ZZ] = pz[v]*(LocalXmin[ZZ]+LocalXmax[ZZ]);
+        ongrid=true;
+        for (int i=0;i<par.ndim;i++) {
+          if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
+        }
+        if (ongrid) {
+          child_procs.push_back( nx[XX]*ir[YY]+ ir[XX]);
+          cout <<"v="<<v<<": ";
+          rep.printVec("3D Child ir",ir,par.ndim);
+        }
+      }
+
+    } // if 3D
+  } // if not on finest level grid (set children)
+  
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 //------------------------------------------------
 //-------------- MPI PARAMETERS ------------------
 //------------------------------------------------

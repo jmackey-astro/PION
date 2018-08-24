@@ -77,7 +77,7 @@ class sim_control_pllel :
   /// information about multi-core-multi-domain simulations, used for
   /// MPI communication between processes.
   ///
-  class MCMDcontrol mpiPM;
+  //class MCMDcontrol mpiPM;
 
   ///
   /// Calculate the appropriate timestep for all processors

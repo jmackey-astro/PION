@@ -40,8 +40,7 @@ class setup_fixed_grid_pllel :
   ///
   int setup_grid(
       class GridBaseClass **, ///< address of pointer to computational grid.
-      class SimParams &,  ///< pointer to simulation parameters
-      class MCMDcontrol *     ///< address of MCMD controller class.
+      class SimParams &  ///< pointer to simulation parameters
       );
 
   ///

@@ -153,8 +153,7 @@ void setup_fixed_grid::setup_cell_extra_data(
 
 int setup_fixed_grid::setup_grid(
       class GridBaseClass **grid,
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class MCMDcontrol * ///< unused for serial code.
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   cout <<"------------------------------------------------------\n";
@@ -206,17 +205,26 @@ int setup_fixed_grid::setup_grid(
   if (*grid) rep.error("Grid already set up!",*grid);
 
   if      (SimPM.coord_sys==COORD_CRT)
-    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype,
+                             SimPM.Nbc, SimPM.Xmin, SimPM.Xmax,
+                             SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_CYL)
-    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar,
+                      SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
+                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_SPH)
-    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc, SimPM.Xmin, SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+    *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar,
+                      SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
+                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
-  if (*grid==0) rep.error("(setup_fixed_grid::setup_grid) Couldn't assign data!", *grid);
+  if (*grid==0)
+    rep.error("(setup_fixed_grid::setup_grid) Couldn't assign data!",
+                *grid);
 #ifdef TESTING
-  cout <<"(setup_fixed_grid::setup_grid) Done. &grid="<< grid<<", and grid="<<*grid<<"\n";
+  cout <<"(setup_fixed_grid::setup_grid) Done. &grid="<< grid;
+  cout <<", and grid="<<*grid<<"\n";
   cout <<"DX = "<<(*grid)->DX()<<"\n";
   dp.grid = (*grid);
 #endif

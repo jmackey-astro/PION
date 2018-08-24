@@ -154,8 +154,7 @@ void setup_NG_grid::setup_NG_grid_levels(
 
 int setup_NG_grid::setup_grid(
       vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class MCMDcontrol * ///< unused for serial code.
+      class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   cout <<"------------------------------------------------------\n";

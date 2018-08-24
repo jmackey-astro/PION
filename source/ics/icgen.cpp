@@ -82,7 +82,6 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  class MCMDcontrol MCMD;
 
   if (argc<2) {
     cerr<<"Error, please give a filename to read IC parameters from.\n";
@@ -141,7 +140,7 @@ int main(int argc, char **argv)
   grid.resize(1);
   // Now set up the grid structure.
   cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-  err = SimSetup->setup_grid(&(grid[l]),SimPM,&MCMD);
+  err = SimSetup->setup_grid(&(grid[l]),SimPM);
   cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);

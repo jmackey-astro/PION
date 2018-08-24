@@ -48,6 +48,9 @@ class MCMDcontrol {
 
   int *ngbprocs;  ///< list with processor rank of neighbours in each direction.
 
+  int parent_proc; ///< process of the parent grid, if NG and l>0
+  std::vector<int> child_procs; ///< a process can have up to 2**NDIM grids.
+
   bool ReadSingleFile; ///< If the ICs are in a single file, set this to true.
   bool WriteSingleFile; ///< If you want all the processors to write to one file, set this (BUGGY!)
   bool WriteFullImage;  ///< If you want multiple fits files, but each one is the full domain size (bad!)
@@ -58,7 +61,7 @@ class MCMDcontrol {
   ///
   int decomposeDomain(
       class SimParams &,  ///< pointer to simulation parameters
-      struct level &     ///< pointer to domain parameters for NG grid level
+      class level &     ///< pointer to domain parameters for NG grid level
       );
 
   ///
@@ -69,7 +72,15 @@ class MCMDcontrol {
   int decomposeDomain(
       const enum axes,
       class SimParams &,  ///< pointer to simulation parameters
-      struct level &     ///< pointer to domain parameters for NG grid level
+      class level &     ///< pointer to domain parameters for NG grid level
+      );
+
+  ///
+  /// For nested grid, set process ranks of parent and child grid(s).
+  ///
+  void set_NG_hierarchy(
+      class SimParams &, ///< pointer to simulation parameters
+      const int  ///< level in grid hierarchy.
       );
 
   ///
@@ -128,7 +139,7 @@ class MCMDcontrol {
   ///
   int pointToNeighbours(
       class SimParams &,  ///< pointer to simulation parameters
-      struct level &     ///< pointer to domain parameters for NG grid level
+      class level &     ///< pointer to domain parameters for NG grid level
       );
 };
 

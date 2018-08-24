@@ -24,6 +24,7 @@
 #include "sim_constants.h"
 #include "constants.h"
 #include "raytracing/rad_src_data.h"
+#include "decomposition/MCMD_control.h"
 
 // *******************************************************************
 ///
@@ -162,7 +163,8 @@ extern struct stellarwind_list SWP;
 ///
 /// Grid data for each level of the NG grid.
 ///
-struct level {
+class level {
+  public:
   class GridBaseClass *grid;   ///< grid at this level
   class GridBaseClass *parent; ///< pointer to parent grid.
   class GridBaseClass *child;  ///< pointer to child grid.
@@ -176,6 +178,7 @@ struct level {
   double dt;              ///< current timestep at this level.
   int NG[MAX_DIM];        ///< Number of 'real' grid zones in each direction (Total for level).
   int multiplier;         ///< 2^l, l=0=coarsest.
+  class MCMDcontrol MCMD; ///< domain decomposition on this level
 };
 // *******************************************************************
 
@@ -227,7 +230,7 @@ class SimParams {
   int grid_nlevels;
   int grid_aspect_ratio[MAX_DIM];
   double NG_centre[MAX_DIM];
-  std::vector<struct level> levels;
+  std::vector<class level> levels;
 
   // Boundary cell data.
   std::string BC_XN; ///< Type of boundary condition.
