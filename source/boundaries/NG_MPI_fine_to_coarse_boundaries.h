@@ -1,4 +1,4 @@
-/// \file NG_fine_to_coarse_boundaries_MPI.h
+/// \file NG_MPI_fine_to_coarse_boundaries.h
 /// \brief Class declaration for NG_fine_to_coarse boundaries
 /// \author Jonathan Mackey
 /// 
@@ -22,29 +22,34 @@
 /// parallelised with MPI.  The fine-level data are averaged and
 /// sent to the coarse-level grid, where they replace whatever
 /// was calculated on the coarse grid.
+/// This class is set up on both fine and coarse grids, and one
+/// calls the send function and the other the receive function.
 ///
 class NG_fine_to_coarse_MPI_bc :
   virtual public NG_fine_to_coarse_bc
 {
   protected:
   
-  /// Assigns data to a NG grid from finer grid.
+  /// Assigns cells to a nested grid boundary whose data are to
+  /// be averaged and sent to a coarser grid.
   virtual int BC_assign_FINE_TO_COARSE_SEND(
       class SimParams &,     ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *,  ///< boundary data
-      class GridBaseClass *  ///< pointer to child grid.
+      const int,  ///< level of this grid.
+      boundary_data *  ///< boundary data
+      //class GridBaseClass *  ///< pointer to coarser grid.
       );
 
-  /// Assigns data to a NG grid from finer grid.
+  /// Assigns cells to a nested grid boundary whose data are to
+  /// be overwritten by data from a finer grid.
   virtual int BC_assign_FINE_TO_COARSE_RECV(
       class SimParams &,     ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to grid.
-      boundary_data *,  ///< boundary data
-      class GridBaseClass *  ///< pointer to child grid.
+      const int,  ///< level of this grid.
+      boundary_data *  ///< boundary data
+      //class GridBaseClass *  ///< pointer to finer grid.
       );
 
-  /// Updates data to a NG grid from finer grid.
+  /// Receive data from a finer grid (maybe on another MPI
+  /// process) and overwrite data on this grid.
   virtual int BC_update_FINE_TO_COARSE_RECV(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
@@ -54,7 +59,8 @@ class NG_fine_to_coarse_MPI_bc :
       const int
       );
 
-  /// Updates data to a NG grid from finer grid.
+  /// Send data from this grid to a coarser grid (maybe on another
+  /// MPI process) 
   virtual int BC_update_FINE_TO_COARSE_SEND(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
@@ -63,6 +69,12 @@ class NG_fine_to_coarse_MPI_bc :
       const int,
       const int
       );
+
+  ///
+  /// Delete the temporary arrays used to send data to another
+  /// MPI process
+  int BC_FINE_TO_COARSE_SEND_clear_sends();
+
 };
 
 
