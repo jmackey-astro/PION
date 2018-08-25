@@ -105,109 +105,29 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     //rep.printVec("fine 1 pos:",fpos,par.ndim);
 #endif
     
-    // 1D
-    // get conserved vars for cell 1 in fine grid, multiply by cell
-    // volume.
-    //
-    solver->PtoU(f->Ph, u, par.gamma);
-    vol = fine->CellVolume(f);
-    for (int v=0;v<par.nvar;v++) cd[v] = u[v]*vol;
-#ifdef TEST_NEST
-    //vol_sum += vol;
-#endif
+    int nc = 1;
+    for (int i=0;i<par.ndim;i++) nc*=2;
+    list<cell *> c;
 
-    // get conserved vars for cell 2 in fine grid, *cellvol.
-    f = fine->NextPt(f,XP);
-    solver->PtoU(f->Ph, u, par.gamma);
-    vol = fine->CellVolume(f);
-    for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-    //CI.get_ipos(f,fpos);
-    //rep.printVec("fine 2 pos:",fpos,par.ndim);
-    //vol_sum += vol;
-#endif
-
-    // if 2D
-    if (par.ndim>1) {
-      // get conserved vars for cell 3 in fine grid, *cellvol.
-      f =  fine->NextPt((*f_iter),YP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 3 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 4 in fine grid, *cellvol.
-      f = fine->NextPt(f,XP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 4 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
+    c.push_back(f);
+    c.push_back(fine->NextPt(f,XP));
+    if (ndim>1) {
+      c.push_back(fine->NextPt(f,YP));
+      c.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
     }
-    
-    
-    // if 3D
-    if (par.ndim>2) {
-      // get conserved vars for cell 5 in fine grid, *cellvol.
-      f =  fine->NextPt((*f_iter),ZP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 5 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 6 in fine grid, *cellvol.
-      f = fine->NextPt(f,XP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 6 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 7 in fine grid, *cellvol.
-      f = fine->NextPt(f,YP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 7 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 8 in fine grid, *cellvol.
-      f = fine->NextPt(f,XN);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 8 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
+    if (ndim>2) {
+      f=fine->NextPt(f,ZP);
+      c.push_back(f);
+      c.push_back(fine->NextPt(f,XP));
+      c.push_back(fine->NextPt(f,YP));
+      c.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
     }
 
-    //
-    // divide by coarse cell volume.
-    // convert conserved averaged data to primitive
-    //
+    for (int v=0;v<par.nvar;v++) cd[v]=0.0;
+    
+    average_cells(par,solver,fine,nc,c,cd);
+
     vol = coarse->CellVolume(c);
-#ifdef TEST_NEST
-    //cout <<"coarse vol="<<vol<<", fine vol="<<vol_sum<<"\n";
-#endif
     for (int v=0;v<par.nvar;v++) cd[v] /= vol;
     solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
     //
@@ -236,4 +156,32 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
 
 
 
+int NG_fine_to_coarse_bc::average_cells(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class FV_solver_base *solver, ///< pointer to equations
+      class GridBaseClass *grid, ///< fine-level grid
+      const int ncells,  ///< number of fine-level cells
+      list<cell *> &c,   ///< list of cells
+      pion_flt *cd       ///< [OUTPUT] averaged data (conserved var, *vol).
+      )
+{
+  pion_flt u[par.nvar];
+  //
+  // simple: loop through list, adding conserved var * cell-vol,
+  // then divide by coarse cell vol.
+  //
+  list<cell*>::iterator c_iter;
+  for (c_iter=c.begin(); c_iter!=c.end(); ++c_iter) {
+    cell *f = (*c_iter);
+#ifdef TEST_MPI_NG
+    if (!f) rep.error("cell doesn't exist average_cells",f);
+#endif
+    // get conserved vars for cell in fine grid, *cellvol.
+    solver->PtoU(f->Ph, u, par.gamma);
+    vol = grid->CellVolume(f);
+    for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
+  }
+
+  return 0;
+}
 

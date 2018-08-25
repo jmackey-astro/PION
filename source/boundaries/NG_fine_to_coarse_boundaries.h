@@ -40,6 +40,18 @@ class NG_fine_to_coarse_bc {
       const int,
       const int
       );
+
+  /// averages conserved vars of a list of cells, weighted by
+  /// volume, using coarse-cell volume to normalise
+  int average_cells(
+      class SimParams &,      ///< pointer to simulation parameters
+      class FV_solver_base *, ///< pointer to equations
+      class GridBaseClass *, ///< fine-level grid
+      const int,      ///< number of fine-level cells
+      list<cell *> &, ///< list of cells
+      pion_flt *      ///< [OUTPUT] averaged data (conserved var, *vol).
+      );
+
 };
 
 

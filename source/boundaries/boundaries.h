@@ -82,6 +82,19 @@ enum BoundaryTypes {
 // ##################################################################
 // ##################################################################
 
+///
+/// Struct to hold data on 2^ndim cells on a fine grid that should
+/// be averaged to be sent to a coarser grid.
+struct averaging {
+  std::vector<cell *> c; ///< list of cells to be averaged
+  pion_flt cpos[MAX_DIM];
+  pion_flt *avg_state;
+};
+
+
+// ##################################################################
+// ##################################################################
+
 
 ///
 /// Struct to contain all the information for a grid boundary.
@@ -107,8 +120,17 @@ struct boundary_data {
   ///
   std::list<cell*> NG;
   pion_flt *refval;  ///< Optional reference state vector.
+
+  /// vector of data to be sent to coarser level grid (MPI-NG only)
+  std::vector<struct averaging *> avg;
 };
 
-
+///
+/// Struct to hold data on 2^ndim cells on a fine grid that should
+/// be averaged to be sent to a coarser grid.
+struct averaging {
+  std::vector<cell *> c; ///< list of cells to be averaged
+  pion_flt cpos[MAX_DIM];
+  pion_flt *state;  ///< averaged state vector.
 
 #endif // BOUNDARIES_H
