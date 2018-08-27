@@ -20,7 +20,6 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_SEND(
       class SimParams &par,     ///< pointer to simulation parameters
       const int l,  ///< level of this grid.
       boundary_data *b  ///< boundary data
-      //class GridBaseClass *child  ///< pointer to child grid.
       )
 {
   // Check if parent grid is on my MPI process
@@ -133,23 +132,6 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_SEND(
 
 
 
-int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
-      boundary_data *b  ///< boundary data
-      //class GridBaseClass *parent  ///< pointer to parent grid.
-      )
-{
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
@@ -173,184 +155,59 @@ int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
     cout <<"my rank == parent rank, no need to send anything ";
     cout <<"FINE_TO_COARSE_SEND\n";
 #endif
-    //NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(par,solver,level,b,cstep,maxstep);
+    return;
   }
-  else {
-    class GridBaseClass *grid = par.level[l].grid;
-    double dxo2 = 0.5*grid->DX();
-    int nc = b->avg[0]->c.size();
-    int nel = b->avg.size();
 
-    // loop through avg vector and add cells and positions
-    int v=0, ix=0, iy=0, iz=0;
-    double cd[par.nvar];
-    for (v=0;v<nel;v++) {
+  // else we have to send data to another MPI process:
+  class GridBaseClass *grid = par.level[l].grid;
+  double dxo2 = 0.5*grid->DX();
+  int nc = b->avg[0]->c.size();
+  int nel = b->avg.size();
 
-      for (int v=0;v<par.nvar;v++) cd[v]=0.0;
-      average_cells(par,solver,grid,nc,b->avg[v]->c,cd);
-    } // go to next avg element.
+  // data to send will be ordered as position,conserved-var
+  // for each averaged cell.
+  pion_flt *data = mem.myalloc(data,nel*(par.nvar+par.ndim));
 
-    // pack data to send
-    
-  } // if parent is not on a different MPI process
-
+  // loop through avg vector and add cells and positions to
+  // data array.
+  int v=0, ix=0, iy=0, iz=0;
+  double cd[par.nvar];
+  size_t ct=0;
+  for (v=0;v<nel;v++) {
+    for (int j=0;j<par.nvar;j++) cd[j]=0.0;
+    average_cells(par,solver,grid,nc,b->avg[v]->c,cd);
+    for (int i=0;i<par.ndim;i++) data[ct+i] = b->avg[v]->cpos[i];
+    ct += par.ndim;
+    for (int i=0;i<par.nvar;i++) data[ct+i] = cd[i];
+  } // go to next avg element.
 
   //
-  // This is relatively straighforward, in that we just weight each
-  // fine cell by its volume.  Assume there are two cells in each
-  // dimension in the fine grid, and so we can loop over this.
+  // Send data using a non-blocking MPI send
   //
-  list<cell*>::iterator c_iter=b->data.begin();
-  list<cell*>::iterator f_iter=b->NG.begin();
-  cell *c, *f;
-  //cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
-  //cout << b->data.size() <<",  :"<<b->NG.size()<<"\n";
-
-  // pointers to coarse and fine grids:
-  class GridBaseClass *coarse = par.levels[level].grid;
-  class GridBaseClass *fine   = par.levels[level].child;
-
-  // vol_sum is for testing only (make sure that fine grid cells
-  // have the same cumulative volume as the coarse cell).
-  double cd[par.nvar], u[par.nvar], vol=0.0;
-#ifdef TEST_NEST
-  double vol_sum=0.0;
-  int cpos[MAX_DIM];
-  int fpos[MAX_DIM];
+  string id;
+  //id <<"F2C_"<<MCMD->get_myrank()<<"_to_"<<pproc;
+#ifdef TEST_MPI_NG
+  cout <<"BC_update_FINE_TO_COARSE_SEND: Sending "<<ct;
+  cout <<" doubles from proc "<<MCMD->get_myrank();
+  cout <<" to parent proc "<<pproc<<"\n";
+#endif
+  err += COMM->send_double_data(
+        pproc, ///< rank to send to.
+        ct,      ///< size of buffer, in number of doubles.
+        data,    ///< pointer to double array.
+        id.str(), ///< identifier for send, for tracking delivery.
+        BC_MPI_NG_tag ///< comm_tag, to say what kind of send this is
+        );
+  if (err) rep.error("Send_F2C send_data failed.",err);
+#ifdef TEST_MPI_NG
+  cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id[i];
+  cout <<"\n";
 #endif
 
-  for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
-    c = (*c_iter);
-    f = (*f_iter);
-    vol=0.0;
-
-#ifdef TEST_NEST
-    vol_sum=0.0;
-    //CI.get_ipos(c,cpos);
-    //CI.get_ipos(f,fpos);
-    //rep.printVec("coarse pos:",cpos,par.ndim);
-    //rep.printVec("fine 1 pos:",fpos,par.ndim);
-#endif
-    
-    // 1D
-    // get conserved vars for cell 1 in fine grid, multiply by cell
-    // volume.
-    //
-    solver->PtoU(f->Ph, u, par.gamma);
-    vol = fine->CellVolume(f);
-    for (int v=0;v<par.nvar;v++) cd[v] = u[v]*vol;
-#ifdef TEST_NEST
-    //vol_sum += vol;
-#endif
-
-    // get conserved vars for cell 2 in fine grid, *cellvol.
-    f = fine->NextPt(f,XP);
-    solver->PtoU(f->Ph, u, par.gamma);
-    vol = fine->CellVolume(f);
-    for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-    //CI.get_ipos(f,fpos);
-    //rep.printVec("fine 2 pos:",fpos,par.ndim);
-    //vol_sum += vol;
-#endif
-
-    // if 2D
-    if (par.ndim>1) {
-      // get conserved vars for cell 3 in fine grid, *cellvol.
-      f =  fine->NextPt((*f_iter),YP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 3 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 4 in fine grid, *cellvol.
-      f = fine->NextPt(f,XP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 4 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-    }
-    
-    
-    // if 3D
-    if (par.ndim>2) {
-      // get conserved vars for cell 5 in fine grid, *cellvol.
-      f =  fine->NextPt((*f_iter),ZP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 5 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 6 in fine grid, *cellvol.
-      f = fine->NextPt(f,XP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 6 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 7 in fine grid, *cellvol.
-      f = fine->NextPt(f,YP);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 7 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-
-      // get conserved vars for cell 8 in fine grid, *cellvol.
-      f = fine->NextPt(f,XN);
-      solver->PtoU(f->Ph, u, par.gamma);
-      vol = fine->CellVolume(f);
-      for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
-#ifdef TEST_NEST
-      //CI.get_ipos(f,fpos);
-      //rep.printVec("fine 8 pos:",fpos,par.ndim);
-      //vol_sum += vol;
-#endif
-    }
-
-    //
-    // divide by coarse cell volume.
-    // convert conserved averaged data to primitive
-    //
-    vol = coarse->CellVolume(c);
-#ifdef TEST_NEST
-    //cout <<"coarse vol="<<vol<<", fine vol="<<vol_sum<<"\n";
-#endif
-    for (int v=0;v<par.nvar;v++) cd[v] /= vol;
-    solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
-    //
-    // if full step then assign to c->P as well as c->Ph.
-    //
-    if (cstep==maxstep) {
-      for (int v=0;v<par.nvar;v++) c->P[v] = c->Ph[v];
-    }
-
-#ifdef TEST_NEST
-//    rep.printVec("coarse data",c->Ph,par.nvar);
-//    rep.printVec("fine data",f->Ph,par.nvar);
-#endif
-
-    ++f_iter;
-  }
+  // store ID to clear the send later (and delete the MPI temp data)
+  NG_send_list.push_back(id);
+  data = mem.myfree(data);
+  
   return 0;
 }
 
@@ -362,5 +219,77 @@ int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
 // ##################################################################
 
 
-void 
+
+void NG_fine_to_coarse_MPI_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
+{
+  for (int i=0;i<NG_send_list.size();i++) {
+    COMM->wait_for_send_to_finish(NG_send_list[i];
+  }
+  NG_send_list.clear();
+  return;
+}
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
+      class SimParams &par,     ///< pointer to simulation parameters
+      const int l,  ///< level of this grid.
+      boundary_data *b  ///< boundary data
+      )
+{
+  // Check if child grids exist or are on my MPI process
+  int err=0;
+  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  int nchild = MCMD->child_procs.size();
+  b->NGrecv.resize(nchild);
+
+  // loop over children:
+  for (int i=0;i<nchild;i++) {
+
+    if (MCMD->get_myrank() == child_procs[i].rank) {
+      // If child is on my grid call serial version that just grabs data
+      // directly from the child grid.
+#ifdef TEST_MPI_NG
+      cout <<"my rank == child rank, calling serial ";
+      cout <<"FINE_TO_COARSE\n";
+#endif
+      err = NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
+          par, par.level[l].grid, b, par.level[l].child);
+      rep.errorTest("BC_assign_FINE_TO_COARSE_RECV serial",0,err);
+    }
+    else {
+      //
+      // else we have to create a list of cells for each off-grid
+      // child, and add them to b->NGrec[i]
+      //
+#ifdef TEST_MPI_NG
+      cout <<"my rank != child rank, running parallel ";
+      cout <<"FINE_TO_COARSE_RECV\n";
+#endif
+      // get dimensions of child grid from struct
+      
+
+  } // if child is on a different MPI process
+
+  return 0;
+}
+
+
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 

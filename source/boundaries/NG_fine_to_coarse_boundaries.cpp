@@ -127,8 +127,8 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     
     average_cells(par,solver,fine,nc,c,cd);
 
-    vol = coarse->CellVolume(c);
-    for (int v=0;v<par.nvar;v++) cd[v] /= vol;
+    //vol = coarse->CellVolume(c);
+    //for (int v=0;v<par.nvar;v++) cd[v] /= vol;
     solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
     //
     // if full step then assign to c->P as well as c->Ph.
@@ -162,7 +162,7 @@ int NG_fine_to_coarse_bc::average_cells(
       class GridBaseClass *grid, ///< fine-level grid
       const int ncells,  ///< number of fine-level cells
       list<cell *> &c,   ///< list of cells
-      pion_flt *cd       ///< [OUTPUT] averaged data (conserved var, *vol).
+      pion_flt *cd       ///< [OUTPUT] averaged data (conserved var).
       )
 {
   pion_flt u[par.nvar];
@@ -170,6 +170,7 @@ int NG_fine_to_coarse_bc::average_cells(
   // simple: loop through list, adding conserved var * cell-vol,
   // then divide by coarse cell vol.
   //
+  double sum_vol=0.0;
   list<cell*>::iterator c_iter;
   for (c_iter=c.begin(); c_iter!=c.end(); ++c_iter) {
     cell *f = (*c_iter);
@@ -179,9 +180,10 @@ int NG_fine_to_coarse_bc::average_cells(
     // get conserved vars for cell in fine grid, *cellvol.
     solver->PtoU(f->Ph, u, par.gamma);
     vol = grid->CellVolume(f);
+    sum_vol += vol;
     for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
   }
-
+  for (int v=0;v<par.nvar;v++) cd[v] /= sum_vol;
   return 0;
 }
 

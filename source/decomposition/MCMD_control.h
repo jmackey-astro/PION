@@ -19,6 +19,27 @@
 #include "constants.h"
 #include <vector>
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+/// struct to hold rank of child grids and Xmin/Xmax arrays.
+struct cgrid {
+  double xmin[MAX_DIM]; ///< Xmin of the child grid.
+  double xmax[MAX_DIM]; ///< Xmax of the child grid.
+  int rank; ///< rank of process that holds child grid.
+};
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 ///
 /// Class to hold information about Multi-Core-Multi-Domain
 /// simulations, including the domain decomposition, the rank and 
@@ -49,7 +70,8 @@ class MCMDcontrol {
   int *ngbprocs;  ///< list with processor rank of neighbours in each direction.
 
   int parent_proc; ///< process of the parent grid, if NG and l>0
-  std::vector<int> child_procs; ///< a process can have up to 2**NDIM grids.
+  /// a process can have up to 2**NDIM child grids.
+  std::vector<struct cgrid> child_procs;
 
   bool ReadSingleFile; ///< If the ICs are in a single file, set this to true.
   bool WriteSingleFile; ///< If you want all the processors to write to one file, set this (BUGGY!)
