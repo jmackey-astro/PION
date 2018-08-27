@@ -49,7 +49,7 @@ class NG_fine_to_coarse_bc {
       class GridBaseClass *, ///< fine-level grid
       const int,      ///< number of fine-level cells
       list<cell *> &, ///< list of cells
-      pion_flt *      ///< [OUTPUT] averaged data (conserved var, *vol).
+      pion_flt *      ///< [OUTPUT] averaged data (conserved var).
       );
 
 };

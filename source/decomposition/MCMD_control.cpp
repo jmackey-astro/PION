@@ -527,6 +527,10 @@ void MCMDcontrol::set_NG_hierarchy(
   double px[8] = {0.25,0.75,0.25,0.75,0.25,0.75,0.25,0.75};
   double py[8] = {0.25,0.25,0.75,0.75,0.25,0.25,0.75,0.75};
   double pz[8] = {0.25,0.25,0.25,0.25,0.75,0.75,0.75,0.75};
+  double xn[8] = {0.0,0.5,0.0,0.5,0.0,0.5,0.0,0.5};
+  double yn[8] = {0.0,0.0,0.5,0.5,0.0,0.0,0.5,0.5};
+  double zn[8] = {0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.5};
+  struct cgrid child;
 
   // set rank of parent for each grid except root level 0
   if (l>0) {
@@ -546,13 +550,16 @@ void MCMDcontrol::set_NG_hierarchy(
     if (par.ndim==1) {
       for (int v=0;v<2;v++) {
         centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
-        centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
+        //centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
         ongrid=true;
         for (int i=0;i<par.ndim;i++) {
           if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
         }
         if (ongrid) {
-          child_procs.push_back(ir[XX]);
+          child.rank = ir[XX];
+          child.xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+          child.xmax[XX] = child.xmin[XX] + 0.5*LocalRange[XX];
+          child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("1D Child ir",ir,par.ndim);
         }
@@ -570,7 +577,12 @@ void MCMDcontrol::set_NG_hierarchy(
           if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
         }
         if (ongrid) {
-          child_procs.push_back( nx[XX]*ir[YY]+ ir[XX]);
+          child.rank = nx[XX]*ir[YY]+ ir[XX];
+          child.xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+          child.xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+          child.xmax[XX] = child.xmin[XX] + 0.5*LocalRange[XX];
+          child.xmax[YY] = child.xmin[YY] + 0.5*LocalRange[YY];
+          child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("2D Child ir",ir,par.ndim);
         }
@@ -590,7 +602,15 @@ void MCMDcontrol::set_NG_hierarchy(
           if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
         }
         if (ongrid) {
-          child_procs.push_back( nx[XX]*ir[YY]+ ir[XX]);
+          child.rank =  nx[XX]*ir[YY]+ ir[XX];
+          child.xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+          child.xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+          child.xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
+          child.xmax[XX] = child.xmin[XX] + 0.5*LocalRange[XX];
+          child.xmax[YY] = child.xmin[YY] + 0.5*LocalRange[YY];
+          child.xmax[ZZ] = child.xmin[ZZ] + 0.5*LocalRange[ZZ];
+          child_procs.push_back(child);
+          child_procs.push_back();
           cout <<"v="<<v<<": ";
           rep.printVec("3D Child ir",ir,par.ndim);
         }

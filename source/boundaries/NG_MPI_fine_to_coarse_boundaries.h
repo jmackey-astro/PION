@@ -32,16 +32,27 @@ class NG_fine_to_coarse_MPI_bc :
   
   /// Assigns cells to a nested grid boundary whose data are to
   /// be averaged and sent to a coarser grid.
-  virtual int BC_assign_FINE_TO_COARSE_SEND(
+  int BC_assign_FINE_TO_COARSE_SEND(
       class SimParams &,     ///< pointer to simulation parameters
       const int,  ///< level of this grid.
       boundary_data *  ///< boundary data
       //class GridBaseClass *  ///< pointer to coarser grid.
       );
 
+  /// Send data from this grid to a coarser grid (maybe on another
+  /// MPI process) 
+  int BC_update_FINE_TO_COARSE_SEND(
+      class SimParams &,      ///< pointer to simulation parameters
+      class FV_solver_base *, ///< pointer to equations
+      const int, ///< level of grid in NG grid struct.
+      struct boundary_data *,
+      const int,
+      const int
+      );
+
   /// Assigns cells to a nested grid boundary whose data are to
   /// be overwritten by data from a finer grid.
-  virtual int BC_assign_FINE_TO_COARSE_RECV(
+  int BC_assign_FINE_TO_COARSE_RECV(
       class SimParams &,     ///< pointer to simulation parameters
       const int,  ///< level of this grid.
       boundary_data *  ///< boundary data
@@ -50,7 +61,7 @@ class NG_fine_to_coarse_MPI_bc :
 
   /// Receive data from a finer grid (maybe on another MPI
   /// process) and overwrite data on this grid.
-  virtual int BC_update_FINE_TO_COARSE_RECV(
+  int BC_update_FINE_TO_COARSE_RECV(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
       const int, ///< level of grid in NG grid struct.
@@ -59,21 +70,15 @@ class NG_fine_to_coarse_MPI_bc :
       const int
       );
 
-  /// Send data from this grid to a coarser grid (maybe on another
-  /// MPI process) 
-  virtual int BC_update_FINE_TO_COARSE_SEND(
-      class SimParams &,      ///< pointer to simulation parameters
-      class FV_solver_base *, ///< pointer to equations
-      const int, ///< level of grid in NG grid struct.
-      struct boundary_data *,
-      const int,
-      const int
-      );
 
   ///
   /// Delete the temporary arrays used to send data to another
   /// MPI process
-  int BC_FINE_TO_COARSE_SEND_clear_sends();
+  void BC_FINE_TO_COARSE_SEND_clear_sends();
+
+  /// List of IDs for all sends, should be cleared at the beginning
+  /// of each timestep.
+  std::vector<string> NG_send_list;
 
 };
 
