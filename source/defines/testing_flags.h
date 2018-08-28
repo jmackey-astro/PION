@@ -18,7 +18,7 @@
 //
 // check conservation of energy and momentum
 //
-//#define TEST_CONSERVATION
+#define TEST_CONSERVATION
 
 //
 // Various defines for testing bits of the code.

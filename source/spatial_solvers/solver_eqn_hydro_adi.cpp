@@ -338,8 +338,8 @@ int FV_solver_Hydro_Euler::dU_Cell(
         const axes d,     // Which axis we are looking along.
         const pion_flt *fn, // Negative direction flux.
         const pion_flt *fp, // Positive direction flux.
-        const pion_flt *,   // slope vector for cell c.
-        const int,        // spatial order of accuracy.
+        const pion_flt *slope,   // slope vector for cell c.
+        const int ooa,        // spatial order of accuracy.
         const double dx,     // cell length dx.
         const double dt     // cell TimeStep, dt.
         )
@@ -349,6 +349,8 @@ int FV_solver_Hydro_Euler::dU_Cell(
   // This calculates -dF/dx
   //
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
+  // add source terms
+  geometric_source(c, d, slope, ooa, dx, u1);
   for (int v=0;v<eq_nvar;v++) c->dU[v] += dt*u1[v];
   return(err);
 }
@@ -456,6 +458,8 @@ double FV_solver_Hydro_Euler::CellTimeStep(
 // ##################################################################
 // ##################################################################
 
+
+
 cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
         const int nv, ///< number of variables in state vector.
         const int nd, ///< number of space dimensions in grid.
@@ -481,51 +485,51 @@ cyl_FV_solver_Hydro_Euler::cyl_FV_solver_Hydro_Euler(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 cyl_FV_solver_Hydro_Euler::~cyl_FV_solver_Hydro_Euler()
 { } 
 
+
+
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_Hydro_Euler::dU_Cell(
-        class GridBaseClass *grid,
-        cell *c, ///< Current cell.
-        const axes d, ///< Which axis we are looking along.
-        const pion_flt *fn, ///< Negative direction flux.
-        const pion_flt *fp, ///< Positive direction flux.
-        const pion_flt *dpdx, ///< slope vector for cell c.
-        const int OA,      ///< spatial order of accuracy.
-        const double dR, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        )
+
+
+void cyl_FV_solver_Hydro_Euler::geometric_source(
+      cell *c, ///< Current cell.
+      const axes d, ///< Which axis we are looking along.
+      const pion_flt *dpdx, ///< slope vector for cell c.
+      const int OA,      ///< spatial order of accuracy.
+      const double dR, ///< cell length dx.
+      pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      )
 {
-  pion_flt u1[eq_nvar];
-  //
-  // This calculates -dF/dx
-  //
-  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
-  for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
-  //
-  // Add source term for the radial direction.
-  //
+
   if (d==Rcyl) {
     switch (OA) {
      case OA1:
-      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]/CI.get_dpos(c,Rcyl));
+      dU[eqMMX] += c->Ph[eqPG]/CI.get_dpos(c,Rcyl);
       break;
      case OA2:
-      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG] + dpdx[eqPG]*(CI.get_dpos(c,Rcyl)-R_com(c,dR)))/CI.get_dpos(c,Rcyl);
+      dU[eqMMX] += (c->Ph[eqPG] +
+                   (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
+                   dpdx[eqPG] )
+                   /CI.get_dpos(c,Rcyl);
       break;
      default:
-      rep.error("Bad OOA in cyl_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);
+      rep.error("Bad OOA in cyl_IdealMHD_RS::dU, only know 1st,2nd",OA);
     }
   }
 
-  return err;
+  return;
 }
+
 
 
 // ##################################################################
@@ -539,6 +543,8 @@ int cyl_FV_solver_Hydro_Euler::dU_Cell(
 
 // ##################################################################
 // ##################################################################
+
+
 
 sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
         const int nv, ///< number of variables in state vector.
@@ -566,56 +572,50 @@ sph_FV_solver_Hydro_Euler::sph_FV_solver_Hydro_Euler(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 sph_FV_solver_Hydro_Euler::~sph_FV_solver_Hydro_Euler()
 { }
 
 
+
 // ##################################################################
 // ##################################################################
 
-int sph_FV_solver_Hydro_Euler::dU_Cell(
-        class GridBaseClass *grid,
-        cell *c, ///< Current cell.
-        const axes d, ///< Which axis we are looking along.
-        const pion_flt *fn, ///< Negative direction flux.
-        const pion_flt *fp, ///< Positive direction flux.
-        const pion_flt *dpdx, ///< slope vector for cell c.
-        const int OA,      ///< spatial order of accuracy.
-        const double dR, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        )
+
+
+void sph_FV_solver_Hydro_Euler::geometric_source(
+      cell *c, ///< Current cell.
+      const axes d, ///< Which axis we are looking along.
+      const pion_flt *dpdx, ///< slope vector for cell c.
+      const int OA,      ///< spatial order of accuracy.
+      const double dR, ///< cell length dx.
+      pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      )
 {
-  pion_flt u1[eq_nvar];
-  //
-  // This calculates the negative of the ith component of divergence
-  //
-  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
-  for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
-  //
-  // Add source term for the radial direction (2p_g/r).
-  //
-  // This is more complicated than axisymmetry, but the equations
-  // are easy enough to derive.
-  //
+
   if (d==Rsph) {
     switch (OA) {
+      //
       case OA1:
-      c->dU[eqMMX] += FV_dt*2.0*c->Ph[eqPG]/R3(c,dR);
+      dU[eqMMX] += 2.0*c->Ph[eqPG]/R3(c,dR);
       break;
-
+      //
       case OA2:
-      c->dU[eqMMX] += FV_dt*2.0*
+      dU[eqMMX] += 2.0*
        ( (c->Ph[eqPG]-dpdx[eqPG]*R_com(c,dR))/R3(c,dR) +dpdx[eqPG] );
       break;
-     default:
-      rep.error("Bad OOA in sph_FV_solver_Hydro_Euler::dU, only know 1st,2nd",OA);
+      //
+      default:
+      rep.error("Bad OOA in sph_hydro_RS::dU, only know 1st,2nd",OA);
     }
   }
 
-
+  
   //#define GRAVITY
 #ifdef GRAVITY
   //
@@ -640,15 +640,15 @@ int sph_FV_solver_Hydro_Euler::dU_Cell(
     if (rc<0.0) temp *= -1.0; // so that we always point towards the origin! 
     //cout <<"  r="<<rc<<"  GM/r^2="<<temp;
     //cout <<" d(MMX)/d(MMX,grav) = "<<c->dU[eqMMX]<<" / "<< -FV_dt*temp;
-    c->dU[eqMMX] -= FV_dt*temp;
+    c->dU[eqMMX] -= temp;
     //cout <<" d(ERG)/d(ERG,grav) = "<<c->dU[eqERG]<<" / "<< -FV_dt*temp*c->Ph[eqVX]<<"\n";
-    c->dU[eqERG] -= FV_dt*c->Ph[eqVX]*temp;
+    c->dU[eqERG] -= c->Ph[eqVX]*temp;
   }
 
 #endif // GRAVITY
-
-  return err;
+  return;
 }
+
 
 
 // ##################################################################

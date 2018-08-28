@@ -154,6 +154,18 @@ class FV_solver_Hydro_Euler :
         );
 
   ///
+  /// Geometric source terms (does nothing for Cartesian geometry).
+  ///
+  virtual void geometric_source(
+      cell *,           ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      pion_flt *  ///< update vector to add source term to [OUTPUT]
+      ) {return;}
+
+  ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
   ///
@@ -192,7 +204,8 @@ class FV_solver_Hydro_Euler :
 };
 
 
-/** \brief Solver for Euler equations in axial symmetry with AV and tracers. */
+/// Solver for Euler equations in cylindrical coordinates with AV
+/// and tracers.
 class cyl_FV_solver_Hydro_Euler
 : virtual public FV_solver_Hydro_Euler,
   virtual public VectorOps_Cyl
@@ -212,20 +225,20 @@ class cyl_FV_solver_Hydro_Euler
       );
 
   ~cyl_FV_solver_Hydro_Euler();
+
   ///
-  /// Adds the contribution from flux in the current direction to dU.
+  /// Geometric source terms.
+  /// Includes geometric source term p/R for 1st and 2nd order
+  /// spatial accuracy.
   ///
-  virtual int dU_Cell(
-        class GridBaseClass *,
-        cell *, ///< Current cell.
-        const axes, ///< Which axis we are looking along.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
-        const pion_flt *, ///< slope vector for cell c.
-        const int,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        );
+  virtual void geometric_source(
+      cell *,           ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      pion_flt *  ///< update vector to add source term to [OUTPUT]
+      );
 };
 
 ///
@@ -250,21 +263,20 @@ class sph_FV_solver_Hydro_Euler
       );
 
   ~sph_FV_solver_Hydro_Euler();
+
   ///
-  /// Adds the contribution from flux in the current direction to dU.
-  /// Includes source terms for spherical polar coordinates.
+  /// Geometric source terms.
+  /// Includes geometric source term p/R for 1st and 2nd order
+  /// spatial accuracy.
   ///
-  virtual int dU_Cell(
-        class GridBaseClass *,
-        cell *, ///< Current cell.
-        const axes, ///< Which axis we are looking along.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
-        const pion_flt *, ///< slope vector for cell c.
-        const int,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        );
+  virtual void geometric_source(
+      cell *,           ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      pion_flt *  ///< update vector to add source term to [OUTPUT]
+      );
 };
 
 #endif // SOLVER_EQN_HYDRO_ADI_H
