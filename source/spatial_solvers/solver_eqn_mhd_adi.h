@@ -109,7 +109,7 @@ class FV_solver_mhd_ideal_adi
       const pion_flt *, ///< slope vector for cell c.
       const int,        ///< spatial order of accuracy.
       const double,     ///< cell length dx.
-      const pion_flt *  ///< update vector to add source term to [OUTPUT]
+      pion_flt *  ///< update vector to add source term to [OUTPUT]
       ) {return;}
 
 
@@ -377,7 +377,7 @@ class cyl_FV_solver_mhd_ideal_adi
       const pion_flt *, ///< slope vector for cell c.
       const int,        ///< spatial order of accuracy.
       const double,     ///< cell length dx.
-      const pion_flt *  ///< update vector to add source term to [OUTPUT]
+      pion_flt *  ///< update vector to add source term to [OUTPUT]
       );
 
 };
@@ -419,7 +419,7 @@ class cyl_FV_solver_mhd_mixedGLM_adi
       const pion_flt *, ///< slope vector for cell c.
       const int,        ///< spatial order of accuracy.
       const double,     ///< cell length dx.
-      const pion_flt *  ///< update vector to add source term to [OUTPUT]
+      pion_flt *  ///< update vector to add source term to [OUTPUT]
       );
 
 };

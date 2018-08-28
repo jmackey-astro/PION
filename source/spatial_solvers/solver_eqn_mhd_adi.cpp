@@ -365,14 +365,30 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
 
 
 void FV_solver_mhd_ideal_adi::Powell_source_terms(
-      class GridBaseClass *, ///< pointer to grid
+      class GridBaseClass *grid, ///< pointer to grid
       cell *c,               ///< Current cell.
-      const axes,            ///< Which axis we are looking along.
+      const axes d,            ///< Which axis we are looking along.
       const pion_flt *slope, ///< slope vector for cell c.
       pion_flt *S            ///< return source term 
       )
 {
-  pion_flt dBdx = slope[eqBX];
+  // use two-sided gradient, second-order accurate in dx, to get
+  // d/dx (B_x)
+  pion_flt dBdx;
+  enum direction pos,neg;
+  pos = static_cast<direction>(static_cast<int>(d)*2+1);
+  neg = static_cast<direction>(static_cast<int>(d)*2);
+  cell *p=c, *n=c;
+  double dx=0.0;
+  if (grid->NextPt(c,pos)) {
+    p = grid->NextPt(c,pos);
+    dx += grid->DX();
+  }
+  if (grid->NextPt(c,neg)) {
+    n = grid->NextPt(c,neg);
+    dx += grid->DX();
+  }
+  dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
   
   S[eqRHO] += 0;
   S[eqMMX] += -dBdx * c->Ph[eqBX];
@@ -883,7 +899,7 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
       const pion_flt *dpdx, ///< slope vector for cell c.
       const int OA,      ///< spatial order of accuracy.
       const double dR, ///< cell length dx.
-      const pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      pion_flt *dU ///< update vector to add source term to [OUTPUT]
       )
 {
 
@@ -892,10 +908,10 @@ void cyl_FV_solver_mhd_ideal_adi::geometric_source(
                  c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
     switch (OA) {
      case OA1:
-      c->dU[eqMMX] += (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
+      dU[eqMMX] += (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
       break;
      case OA2:
-      c->dU[eqMMX] += (c->Ph[eqPG]+pm +
+      dU[eqMMX] += (c->Ph[eqPG]+pm +
                    (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
                    (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +
                     c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]) )
@@ -925,18 +941,33 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
         pion_flt *S           ///< return source term 
         )
 {
-  pion_flt dBdx = slope[eqBX];
-  
+  pion_flt dBdx;
+  double dx=0.0;
+  enum direction pos,neg;
+  pos = static_cast<direction>(static_cast<int>(d)*2+1);
+  neg = static_cast<direction>(static_cast<int>(d)*2);
+  cell *p=c, *n=c;
+  if (grid->NextPt(c,pos)) {
+    p = grid->NextPt(c,pos);
+    dx += grid->DX();
+  }
+  if (grid->NextPt(c,neg)) {
+    n = grid->NextPt(c,neg);
+    dx += grid->DX();
+  }
+
   // this is a divergence term, not a gradient, so the radial
   // direction is different from z-direction.  d(R f)/(RdR)
-  if (d==Rcyl) {
-    double dRo2 = 0.5*grid->DX();
+  if (d==Zcyl) {
+    dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
+  }
+  else if (d==Rcyl) {
     double cpos[2];
-    CI.get_dpos(c,cpos);
-    double Rp = cpos[Rcyl]+dRo2;
-    double Rm = cpos[Rcyl]-dRo2;
-    dBdx = 2.0*(Rp*(c->Ph[eqBX] + slope[eqBX]*dRo2) -
-                Rm*(c->Ph[eqBX] - slope[eqBX]*dRo2) ) /
+    CI.get_dpos(p,cpos);
+    double Rp = cpos[Rcyl];
+    CI.get_dpos(n,cpos);
+    double Rm = cpos[Rcyl];
+    dBdx = 2.0*(Rp*p->Ph[eqBX] - Rm*n->Ph[eqBX]) /
                 (Rp*Rp - Rm*Rm);
   }
 
@@ -1029,7 +1060,7 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
       const pion_flt *dpdx, ///< slope vector for cell c.
       const int OA,      ///< spatial order of accuracy.
       const double dR, ///< cell length dx.
-      const pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      pion_flt *dU ///< update vector to add source term to [OUTPUT]
       )
 {
 
@@ -1037,17 +1068,24 @@ void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
     double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +
                  c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
     switch (OA) {
-     case OA1:
-      c->dU[eqMMX] += (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
-      c->dU[eqBBX] += c->Ph[eqSI]/CI.get_dpos(c,Rcyl);
+      case OA1:
+      //if (c->pos[Rcyl]<4 && c->pos[Rcyl]>0) {
+      //  cout <<"pos="<<c->pos[Rcyl]<<", dU = "<<c->dU[eqMMX] <<"  ";
+      //  cout << (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
+      //}
+      dU[eqMMX] += (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
+      //if (c->pos[Rcyl]<4 && c->pos[Rcyl]>0) {
+      //  cout <<"  "<<c->dU[eqMMX]<<"\n";
+      //}
+      dU[eqBBX] += c->Ph[eqSI]/CI.get_dpos(c,Rcyl);
       break;
      case OA2:
-      c->dU[eqMMX] += (c->Ph[eqPG]+pm +
+      dU[eqMMX] += (c->Ph[eqPG]+pm +
                    (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
                    (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +
                     c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]) )
                    /CI.get_dpos(c,Rcyl);
-      c->dU[eqBBX] += (c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))
+      dU[eqBBX] += (c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))
                       *dpdx[eqSI] ) /CI.get_dpos(c,Rcyl);
       break;
      default:

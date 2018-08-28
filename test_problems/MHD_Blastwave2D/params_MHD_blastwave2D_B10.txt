@@ -13,7 +13,7 @@ solver 7
 ics BlastWave
 
 # Output FileName Base
-OutputFile    BW2d_StoneMHD_n200_beta0p2
+OutputFile    BW2d_StoneMHD_n200_B10
 
 # Number and type of tracers.
 ntracer 0

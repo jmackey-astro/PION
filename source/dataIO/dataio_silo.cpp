@@ -689,7 +689,7 @@ int dataio_silo::setup_write_variables(
     if (SimPM.eqntype==EQGLM) 
       varnames.push_back("glmPSI");
 
-#ifdef SERIAL
+//#ifdef SERIAL
     //
     // if equations are set up, can output divB and Ptot
     // If doing a 2D sim, also output Curl(B) which is a 
@@ -701,7 +701,7 @@ int dataio_silo::setup_write_variables(
       varnames.push_back("Ptot");
       if (ndim==2 && SimPM.coord_sys==COORD_CRT) varnames.push_back("CurlB");
     }
-#endif // SERIAL
+//#endif // SERIAL
   }
 
   //#ifdef SERIAL
