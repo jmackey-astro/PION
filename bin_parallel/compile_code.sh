@@ -243,7 +243,7 @@ echo PION_OPTIONS: $PION_OPTIONS
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES} -f Makefile uni
-make -j${NCORES} -f Makefile NG
+#make -j${NCORES} -f Makefile NG
 
 #####################################################################
 

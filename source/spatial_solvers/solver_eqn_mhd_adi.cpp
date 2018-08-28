@@ -34,8 +34,10 @@ using namespace std;
 // *****************************************
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
@@ -65,8 +67,11 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 {
@@ -191,6 +196,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -276,8 +282,10 @@ int FV_solver_mhd_ideal_adi::AVFalle(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void FV_solver_mhd_ideal_adi::PtoU(
@@ -292,8 +300,10 @@ void FV_solver_mhd_ideal_adi::PtoU(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int FV_solver_mhd_ideal_adi::UtoP(
@@ -312,8 +322,10 @@ int FV_solver_mhd_ideal_adi::UtoP(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void FV_solver_mhd_ideal_adi::PUtoFlux(
@@ -328,8 +340,10 @@ void FV_solver_mhd_ideal_adi::PUtoFlux(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void FV_solver_mhd_ideal_adi::UtoFlux(
@@ -342,6 +356,38 @@ void FV_solver_mhd_ideal_adi::UtoFlux(
   for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = u[eqTR[t]]*f[eqRHO]/u[eqRHO];
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void FV_solver_mhd_ideal_adi::Powell_source_terms(
+      class GridBaseClass *, ///< pointer to grid
+      cell *c,               ///< Current cell.
+      const axes,            ///< Which axis we are looking along.
+      const pion_flt *slope, ///< slope vector for cell c.
+      pion_flt *S            ///< return source term 
+      )
+{
+  pion_flt dBdx = slope[eqBX];
+  
+  S[eqRHO] += 0;
+  S[eqMMX] += -dBdx * c->Ph[eqBX];
+  S[eqMMY] += -dBdx * c->Ph[eqBY];
+  S[eqMMZ] += -dBdx * c->Ph[eqBZ];
+  S[eqERG] += -dBdx * (c->Ph[eqVX]*c->Ph[eqBX] +
+                       c->Ph[eqVY]*c->Ph[eqBY] +
+                       c->Ph[eqVZ]*c->Ph[eqBZ]);
+  S[eqBBX] += -dBdx * c->Ph[eqVX];
+  S[eqBBY] += -dBdx * c->Ph[eqVY];
+  S[eqBBZ] += -dBdx * c->Ph[eqVZ];
+
+  return;
+}
+
 
 
 // ##################################################################
@@ -358,10 +404,10 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
         const axes d,     // Which axis we are looking along.
         const pion_flt *fn, // Negative direction flux.
         const pion_flt *fp, // Positive direction flux.
-        const pion_flt *,   // slope vector for cell c.
-        const int,        // spatial order of accuracy.
-        const double,     // cell length dx.
-        const double      // cell TimeStep, dt.
+        const pion_flt *slope,   // slope vector for cell c.
+        const int ooa,        // spatial order of accuracy.
+        const double dx,     // cell length dx.
+        const double dt     // cell TimeStep, dt.
         )
 {
   pion_flt u1[eq_nvar];
@@ -369,13 +415,20 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
   // This calculates -dF/dx
   //
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
+  // add source terms
+  geometric_source(c, d, slope, ooa, dx, u1);
+  Powell_source_terms(grid, c, d, slope, u1);
+
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 ///
 /// General Finite volume scheme for updating a cell's
@@ -420,6 +473,7 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
 
 // ##################################################################
 // ##################################################################
+
 
 
 ///
@@ -499,6 +553,7 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
 // ##################################################################
 
 
+
 FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
@@ -522,8 +577,11 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 {
@@ -531,8 +589,11 @@ FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
       const cell *Cl, ///< Left state cell pointer
@@ -660,8 +721,11 @@ int FV_solver_mhd_mixedGLM_adi::CellAdvanceTime(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void FV_solver_mhd_mixedGLM_adi::PtoU(
       const pion_flt *p,
@@ -683,8 +747,11 @@ void FV_solver_mhd_mixedGLM_adi::PtoU(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 int FV_solver_mhd_mixedGLM_adi::UtoP(
       const pion_flt *u,
@@ -707,8 +774,11 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void FV_solver_mhd_mixedGLM_adi::GotTimestep(
         const double delt, ///< timestep dt.
@@ -745,6 +815,8 @@ void FV_solver_mhd_mixedGLM_adi::GotTimestep(
 // ##################################################################
 // ##################################################################
 
+
+
 cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
@@ -780,8 +852,10 @@ cyl_FV_solver_mhd_ideal_adi::cyl_FV_solver_mhd_ideal_adi(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
@@ -796,39 +870,35 @@ cyl_FV_solver_mhd_ideal_adi::~cyl_FV_solver_mhd_ideal_adi()
 }
 
 
+
+
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_mhd_ideal_adi::dU_Cell(
-        class GridBaseClass *grid,
-        cell *c, ///< Current cell.
-        const axes d, ///< Which axis we are looking along.
-        const pion_flt *fn, ///< Negative direction flux.
-        const pion_flt *fp, ///< Positive direction flux.
-        const pion_flt *dpdx, ///< slope vector for cell c.
-        const int OA,      ///< spatial order of accuracy.
-        const double dR, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        )
+
+
+void cyl_FV_solver_mhd_ideal_adi::geometric_source(
+      cell *c, ///< Current cell.
+      const axes d, ///< Which axis we are looking along.
+      const pion_flt *dpdx, ///< slope vector for cell c.
+      const int OA,      ///< spatial order of accuracy.
+      const double dR, ///< cell length dx.
+      const pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      )
 {
-#ifdef FUNCTION_ID
-  cout <<"cyl_FV_solver_mhd_ideal_adi::dU_Cell ...starting.\n";
-#endif //FUNCTION_ID
 
-  pion_flt u1[eq_nvar];
-
-  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
-  for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   if (d==Rcyl) {
-    double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
+    double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +
+                 c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
     switch (OA) {
      case OA1:
-       c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
+      c->dU[eqMMX] += (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
       break;
      case OA2:
-      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]+pm + 
-			  (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
-		   (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]))
+      c->dU[eqMMX] += (c->Ph[eqPG]+pm +
+                   (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
+                   (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +
+                    c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]) )
                    /CI.get_dpos(c,Rcyl);
       break;
      default:
@@ -836,15 +906,61 @@ int cyl_FV_solver_mhd_ideal_adi::dU_Cell(
     }
   }
 
-#ifdef FUNCTION_ID
-  cout <<"cyl_FV_solver_mhd_ideal_adi::dU_Cell ...returning.\n";
-#endif //FUNCTION_ID
-  return(err);
-} 
+  return;
+}
+
+
 
 
 // ##################################################################
 // ##################################################################
+
+
+
+void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
+        class GridBaseClass *grid, ///< pointer to grid
+        cell *c,           ///< Current cell.
+        const axes d,       ///< Which axis we are looking along.
+        const pion_flt *slope, ///< slope vector for cell c.
+        pion_flt *S           ///< return source term 
+        )
+{
+  pion_flt dBdx = slope[eqBX];
+  
+  // this is a divergence term, not a gradient, so the radial
+  // direction is different from z-direction.  d(R f)/(RdR)
+  if (d==Rcyl) {
+    double dRo2 = 0.5*grid->DX();
+    double cpos[2];
+    CI.get_dpos(c,cpos);
+    double Rp = cpos[Rcyl]+dRo2;
+    double Rm = cpos[Rcyl]-dRo2;
+    dBdx = 2.0*(Rp*(c->Ph[eqBX] + slope[eqBX]*dRo2) -
+                Rm*(c->Ph[eqBX] - slope[eqBX]*dRo2) ) /
+                (Rp*Rp - Rm*Rm);
+  }
+
+  S[eqRHO] += 0;
+  S[eqMMX] += -dBdx * c->Ph[eqBX];
+  S[eqMMY] += -dBdx * c->Ph[eqBY];
+  S[eqMMZ] += -dBdx * c->Ph[eqBZ];
+  S[eqERG] += -dBdx * (c->Ph[eqVX]*c->Ph[eqBX] +
+                       c->Ph[eqVY]*c->Ph[eqBY] +
+                       c->Ph[eqVZ]*c->Ph[eqBZ]);
+  S[eqBBX] += -dBdx * c->Ph[eqVX];
+  S[eqBBY] += -dBdx * c->Ph[eqVY];
+  S[eqBBZ] += -dBdx * c->Ph[eqVZ];
+
+  return;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //------------------------------------------------------------------//
 cyl_FV_solver_mhd_mixedGLM_adi::cyl_FV_solver_mhd_mixedGLM_adi(
@@ -899,52 +1015,49 @@ cyl_FV_solver_mhd_mixedGLM_adi::~cyl_FV_solver_mhd_mixedGLM_adi()
 }
 
 
+
+
+
 // ##################################################################
 // ##################################################################
 
-int cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell(
-        class GridBaseClass *grid,
-        cell *c, ///< Current cell.
-        const axes d, ///< Which axis we are looking along.
-        const pion_flt *fn, ///< Negative direction flux.
-        const pion_flt *fp, ///< Positive direction flux.
-        const pion_flt *dpdx, ///< slope vector for cell c.
-        const int OA,      ///< spatial order of accuracy.
-        const double dR, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        )
+
+
+void cyl_FV_solver_mhd_mixedGLM_adi::geometric_source(
+      cell *c, ///< Current cell.
+      const axes d, ///< Which axis we are looking along.
+      const pion_flt *dpdx, ///< slope vector for cell c.
+      const int OA,      ///< spatial order of accuracy.
+      const double dR, ///< cell length dx.
+      const pion_flt *dU ///< update vector to add source term to [OUTPUT]
+      )
 {
-#ifdef FUNCTION_ID
-  cout <<"cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell ...starting.\n";
-#endif //FUNCTION_ID
 
-  pion_flt u1[eq_nvar];
-  int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
-  for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   if (d==Rcyl) {
-    double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
+    double pm = (c->Ph[eqBX]*c->Ph[eqBX] +c->Ph[eqBY]*c->Ph[eqBY] +
+                 c->Ph[eqBZ]*c->Ph[eqBZ])/2.;
     switch (OA) {
      case OA1:
-      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
-      c->dU[eqBBX] += FV_dt*c->Ph[eqSI]/CI.get_dpos(c,Rcyl);
+      c->dU[eqMMX] += (c->Ph[eqPG]+pm)/CI.get_dpos(c,Rcyl);
+      c->dU[eqBBX] += c->Ph[eqSI]/CI.get_dpos(c,Rcyl);
       break;
      case OA2:
-      c->dU[eqMMX] += FV_dt*(c->Ph[eqPG]+pm + 
-			 (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
-			 (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]))
-	                /CI.get_dpos(c,Rcyl);
-      c->dU[eqBBX] += FV_dt*(c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))*dpdx[eqSI])/CI.get_dpos(c,Rcyl);
+      c->dU[eqMMX] += (c->Ph[eqPG]+pm +
+                   (CI.get_dpos(c,Rcyl)-R_com(c,dR))*
+                   (dpdx[eqPG] +c->Ph[eqBX]*dpdx[eqBX] +
+                    c->Ph[eqBY]*dpdx[eqBY] +c->Ph[eqBZ]*dpdx[eqBZ]) )
+                   /CI.get_dpos(c,Rcyl);
+      c->dU[eqBBX] += (c->Ph[eqSI] +(CI.get_dpos(c,Rcyl)-R_com(c,dR))
+                      *dpdx[eqSI] ) /CI.get_dpos(c,Rcyl);
       break;
      default:
-      rep.error("Bad OOA in cyl_glmMHD_RS::dU, only know 1st,2nd",OA);
+      rep.error("Bad OOA in cyl_glmMHD::dU, only know 1st,2nd",OA);
     }
   }
 
-#ifdef FUNCTION_ID
-  cout <<"cyl_FV_solver_mhd_mixedGLM_adi::dU_Cell ...returning.\n";
-#endif //FUNCTION_ID
-  return(err);
-} 
+  return;
+}
+
 
 
 // ##################################################################
