@@ -88,6 +88,31 @@ class FV_solver_mhd_ideal_adi
         const double  ///< cell TimeStep, dt.
         );
 
+
+  ///
+  /// Powell source terms including divB
+  /// 
+  virtual void Powell_source_terms(
+        class GridBaseClass *, ///< pointer to grid
+        cell *,           ///< Current cell.
+        const axes,       ///< Which axis we are looking along.
+        const pion_flt *, ///< slope vector for cell c.
+        pion_flt *        ///< return source term 
+        );
+
+  ///
+  /// Geometric source terms (does nothing for Cartesian geometry).
+  ///
+  virtual void geometric_source(
+      cell *,           ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      const pion_flt *  ///< update vector to add source term to [OUTPUT]
+      ) {return;}
+
+
   ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
@@ -305,76 +330,98 @@ class FV_solver_mhd_mixedGLM_adi
 /// ---------------------------------------------------------------------
 
 
-/** \brief Solver for Ideal MHD equations in axial symmetry with AV and tracers. */
+// ##################################################################
+// ##################################################################
+
+
+/// Solver for Ideal MHD equations in axial symmetry with AV and
+/// tracers.
 class cyl_FV_solver_mhd_ideal_adi
   :
   virtual public FV_solver_mhd_ideal_adi,
   virtual public VectorOps_Cyl
 {
   public:
-   /** \brief sets indices for tracer variables in state vector.*/
-   cyl_FV_solver_mhd_ideal_adi(
-        const int, ///< number of variables in state vector.
-        const int, ///< number of space dimensions in grid.
-        const double, ///< CFL number
-        const double, ///< gas eos gamma.
-        pion_flt *,     ///< State vector of mean values for simulation.
-        const double, ///< Artificial Viscosity Parameter etav.
-        const int     ///< Number of tracer variables.
-        );
-   ~cyl_FV_solver_mhd_ideal_adi();
+  /// sets indices for tracer variables in state vector.
+  cyl_FV_solver_mhd_ideal_adi(
+      const int, ///< number of variables in state vector.
+      const int, ///< number of space dimensions in grid.
+      const double, ///< CFL number
+      const double, ///< gas eos gamma.
+      pion_flt *,     ///< State vector of mean values for simulation.
+      const double, ///< Artificial Viscosity Parameter etav.
+      const int     ///< Number of tracer variables.
+      );
 
-   /** \brief Adds the contribution from flux in the current direction to dU.
-    * 
-    * Includes geometric source term (p^2+B^2/2)/R for 1st and 2nd order
-    * spatial accuracy.
-    */
-   virtual int dU_Cell(
-        class GridBaseClass *,
-        cell *, ///< Current cell.
-        const axes, ///< Which axis we are looking along.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
+  ~cyl_FV_solver_mhd_ideal_adi();
+
+  ///
+  /// Powell source terms including divB
+  /// 
+  virtual void Powell_source_terms(
+        class GridBaseClass *, ///< pointer to grid
+        cell *,           ///< Current cell.
+        const axes,       ///< Which axis we are looking along.
         const pion_flt *, ///< slope vector for cell c.
-        const int,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
+        pion_flt *        ///< return source term 
         );
+
+  ///
+  /// Geometric source terms.
+  /// Includes geometric source term (p^2+B^2/2)/R for 1st and 2nd order
+  /// spatial accuracy.
+  ///
+  virtual void geometric_source(
+      cell *,           ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      const pion_flt *  ///< update vector to add source term to [OUTPUT]
+      );
+
 };
 
-/** \brief Solver for mixed-GLM MHD equations with AV and tracers, in 
- * axial symmetry. */
+
+// ##################################################################
+// ##################################################################
+
+
+/// Solver for mixed-GLM MHD equations with AV and tracers, in 
+/// axial symmetry.
 class cyl_FV_solver_mhd_mixedGLM_adi
-  : virtual public FV_solver_mhd_mixedGLM_adi, virtual public VectorOps_Cyl
+  :
+  virtual public FV_solver_mhd_mixedGLM_adi,
+  virtual public VectorOps_Cyl
 {
   public:
-   /** \brief sets indices for tracer variables in state vector.*/
-   cyl_FV_solver_mhd_mixedGLM_adi(
-        const int, ///< number of variables in state vector.
-        const int, ///< number of space dimensions in grid.
-        const double, ///< CFL number
-        const double, ///< gas eos gamma.
-        pion_flt *,     ///< State vector of mean values for simulation.
-        const double, ///< Artificial Viscosity Parameter etav.
-        const int     ///< Number of tracer variables.
-        );
+  /// sets indices for tracer variables in state vector.
+  cyl_FV_solver_mhd_mixedGLM_adi(
+      const int, ///< number of variables in state vector.
+      const int, ///< number of space dimensions in grid.
+      const double, ///< CFL number
+      const double, ///< gas eos gamma.
+      pion_flt *,     ///< State vector of mean values for simulation.
+      const double, ///< Artificial Viscosity Parameter etav.
+      const int     ///< Number of tracer variables.
+      );
+
    ~cyl_FV_solver_mhd_mixedGLM_adi();
-   /** \brief Adds the contribution from flux in the current direction to dU.
-    * 
-    * Includes geometric source term (p^2+B^2/2)/R for 1st and 2nd order
-    * spatial accuracy.
-    */
-   virtual int dU_Cell(
-        class GridBaseClass *,
-        cell *, ///< Current cell.
-        const axes, ///< Which axis we are looking along.
-        const pion_flt *, ///< Negative direction flux.
-        const pion_flt *, ///< Positive direction flux.
-        const pion_flt *, ///< slope vector for cell c.
-        const int,      ///< spatial order of accuracy.
-        const double, ///< cell length dx.
-        const double  ///< cell TimeStep, dt.
-        );
+
+  ///
+  /// Geometric source terms.
+  /// Includes geometric source term (p^2+B^2/2)/R for 1st and 2nd order
+  /// spatial accuracy, and the GLM Psi source terms.
+  ///
+  virtual void geometric_source(
+      cell *,           ///< Current cell.
+      const axes,       ///< Which axis we are looking along.
+      const pion_flt *, ///< slope vector for cell c.
+      const int,        ///< spatial order of accuracy.
+      const double,     ///< cell length dx.
+      const pion_flt *  ///< update vector to add source term to [OUTPUT]
+      );
+
 };
 
 
