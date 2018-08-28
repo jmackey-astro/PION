@@ -1216,36 +1216,36 @@ void UniformGrid::BC_deleteBoundaryData(
       i=b->data.begin();
     }  while(i!=b->data.end());
 
-    i=b->send_data.begin();
-    do {
-      b->send_data.erase(i);
+    if (b->send_data.size()>0) {
       i=b->send_data.begin();
-    }  while(i!=b->send_data.end());
+      do {
+        b->send_data.erase(i);
+        i=b->send_data.begin();
+      }  while(i!=b->send_data.end());
+    }
 
-    i=b->NG.begin();
-    do {
-      b->NG.erase(i);
+    if (b->NG.size()>0) {
       i=b->NG.begin();
-    }  while(i!=b->NG.end());
+      do {
+        b->NG.erase(i);
+        i=b->NG.begin();
+      }  while(i!=b->NG.end());
+    }
 
-    for (int j=0; j<b->NGrecv.size(); j++) {
+    for (unsigned int j=0; j<b->NGrecv.size(); j++) {
       i=b->NGrecv[j].begin();
       do {
         b->NGrecv[j].erase(i);
         i=b->NGrecv[j].begin();
       }  while(i!=b->NGrecv[j].end());
     }
-    NGrecv.erase();
+    b->NGrecv.clear();
 
-    for (int j=0; j<b->avg.size(); j++) {
-      b->avg[j]->avg_state = mem.myfree( b->avg[j]->avg_state);
-      i=b->avg[j].begin();
-      do {
-        b->avg[j].erase(i);
-        i=b->avg[j].begin();
-      }  while(i!=b->avg[j].end());
+    for (unsigned int j=0; j<b->avg.size(); j++) {
+      b->avg[j].avg_state = mem.myfree( b->avg[j].avg_state);
+      b->avg[j].c.clear();
     }
-    b->avg.erase();
+    b->avg.clear();
 
 
   }

@@ -5,8 +5,8 @@
 /// Modifications :\n
 /// - 2018.08.24 JM: writing parallel algorithms
 
-#ifndef NG_FINE_TO_COARSE_BOUNDARIES_MPI_H
-#define NG_FINE_TO_COARSE_BOUNDARIES_MPI_H
+#ifndef NG_MPI_FINE_TO_COARSE_BOUNDARIES_H
+#define NG_MPI_FINE_TO_COARSE_BOUNDARIES_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -83,5 +83,5 @@ class NG_fine_to_coarse_MPI_bc :
 };
 
 
-#endif // NG_FINE_TO_COARSE_BOUNDARIES_MPI_H
+#endif // NG_MPI_FINE_TO_COARSE_BOUNDARIES_H
 

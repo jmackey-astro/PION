@@ -862,8 +862,10 @@ void dataio_silo_utility::get_quadmesh_extents(
     create_data_arrays(SimPM);
   }
   
+#ifdef TESTING
   cout.setf( ios_base::scientific );
   cout.precision(15);
+#endif // TESTING
   if (silo_dtype==DB_FLOAT) {
     float  *fqmmin = qm->min_extents;
     float  *fqmmax = qm->max_extents;

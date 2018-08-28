@@ -135,7 +135,7 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_SEND(
 int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
-      const int level, ///< level in the NG grid structure
+      const int l, ///< level in the NG grid structure
       struct boundary_data *b,
       const int cstep,
       const int maxstep
@@ -166,7 +166,7 @@ int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
 
   // data to send will be ordered as position,conserved-var
   // for each averaged cell.
-  pion_flt *data = mem.myalloc(data,nel*(par.nvar+par.ndim));
+  double *data = mem.myalloc(data,nel*(par.nvar+par.ndim));
 
   // loop through avg vector and add cells and positions to
   // data array.
@@ -253,7 +253,7 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
   // loop over children:
   for (int i=0;i<nchild;i++) {
 
-    if (MCMD->get_myrank() == child_procs[i].rank) {
+    if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
       // If child is on my grid call serial version that just grabs data
       // directly from the child grid.
 #ifdef TEST_MPI_NG
@@ -266,7 +266,7 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
     }
     else {
       //
-      // else we have to create a list of cells for each off-grid
+      // else we have to create a list of cells for each
       // child, and add them to b->NGrec[i]
       //
 #ifdef TEST_MPI_NG
@@ -274,13 +274,158 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
       cout <<"FINE_TO_COARSE_RECV\n";
 #endif
       // get dimensions of child grid from struct
-      
+      int ixmin[MAX_DIM], ixmax[MAX_DIM];
+      CI.get_ipos_vec(MCMD->child_procs[i].xmin, ixmin);
+      CI.get_ipos_vec(MCMD->child_procs[i].xmax, ixmax);
 
-  } // if child is on a different MPI process
+      class GridBaseClass *grid = par.level[l].grid;
+      cell *c = grid->FirstPt();
+      size_t ct=0;
+      do {
+        bool ongrid=true;
+        for (int j=0;j<par.ndim;j++) {
+          if (c->pos[j]<ixmin[j] || c->pos[j]>ixmax[j]) ongrid=false;
+        }
+        if (ongrid) {
+          b->NGrecv[i].push_back(c);
+          ct++;
+        }
+      } while ((c=grid->NextPt(c)) !=0);
+
+#ifdef TEST_MPI_NG
+    cout <<"i="<<i<<" added "<<ct<<" cells to boundary, ";
+    cout <<"Ncell/2^ndim="<<grid->Ncell()/pow(2,par.ndim)<<"\n";
+#endif
+    } // if child is on a different MPI process
+
+  } // loop over child grids
 
   return 0;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_RECV(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class FV_solver_base *solver, ///< pointer to equations
+      const int l, ///< level in the NG grid structure
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
+      )
+{
+  // Check if child grids exist or are on my MPI process
+  int err=0;
+  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  int nchild =  b->NGrecv.size();
+  int ichild = 0;
+
+  // loop over children twice, once for child grids that are on my
+  // MPI process, and once for grids that on other processes
+  for (int i=0;i<nchild;i++) {
+
+    if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
+      // If child is on my grid call serial version that just grabs data
+      // directly from the child grid.
+#ifdef TEST_MPI_NG
+      cout <<"my rank == child rank, calling serial ";
+      cout <<"FINE_TO_COARSE update\n";
+#endif
+      err = NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
+          par, solver, l, b, cstep, maxstep);
+      rep.errorTest("BC_update_FINE_TO_COARSE_RECV serial",0,err);
+      ichild++;
+    }
+  }
+
+  while (ichild < nchild) {
+
+    //
+    // else we go through the list of cells for each on-grid
+    // child (b->NGrec[i]), get the data from another MPI process,
+    // and then update the cells
+    //
+#ifdef TEST_MPI_NG
+    cout <<"my rank != child rank, running parallel ";
+    cout <<"FINE_TO_COARSE_RECV\n";
+#endif
+    
+    //
+    // receive data.
+    //
+    string recv_id; int recv_tag=-1; int from_rank=-1;
+    err = COMM->look_for_data_to_receive(
+          &from_rank, // rank of sender (output)
+          recv_id,    // identifier for receive (output).
+          &recv_tag,  // comm_tag associated with data (output)
+          COMM_DOUBLEDATA // type of data we want.
+          );
+    if (err) rep.error("look for double data failed",err);
+#ifdef TEST_MPI_NG
+    cout <<"BC_update_FINE_TO_COARSE_RECV: got data from rank ";
+    cout <<from_rank<<"\n";
+#endif 
+    // associate data with one of the child grids:
+    int i=-1;
+    for (int v=0;v<nchild;v++) {
+      if (MCMD->get_myrank() == MCMD->child_procs[v].rank) i = v;
+    }
+    if (i<0) rep.error("receiving data, but don't know why",v);
+
+    // receive the data
+    size_t nel = b->NGrecv[i].size();
+    size_t ct = nel*(par.nvar+par.ndim);
+    double *buf = mem.myalloc(data,ct);
+#ifdef TEST_MPI_NG
+    cout <<"BC_update_FINE_TO_COARSE_RECV: get "<<nel<<" cells.\n";
+#endif 
+    //
+    // Receive data into buffer.
+    //
+    err = COMM->receive_double_data(from_rank, recv_tag, recv_id,
+                                    ct, buf);
+    if (err) rep.error("(BC_update_F2C_RECV) getdata failed",err);
+
+    // Go through list of cells in child i, and put the received
+    // data onto these cells.
+    list<cell*>::iterator c_iter=b->NGrecv[i].begin();
+    cell *c=0;
+    double pos[MAX_DIM], prim[par.nvar];
+    size_t i_el=0;
+    for (c_iter=b->NGrecv[i].begin();
+         c_iter!=b->NGrecv[i].end(); ++c_iter) {
+      c = (*c_iter);
+      CI.get_dpos(c,pos);
+#ifdef TEST_MPI_NG
+      rep.printVec("cell pos", pos, par.ndim);
+      rep.printVec("recv pos", &(buf[i_el]), par.ndim);
+#endif
+      i_el += par.ndim;
+      solver->UtoP(&(buf[i_el]),prim,
+                   par.EP.MinTemperature,par.gamma);
+#ifdef TEST_MPI_NG
+      rep.printVec("cell Prim", c->Ph, par.nvar);
+      rep.printVec("recv Prim", prim, par.nvar);
+#endif
+      for (int v=0;v<par.ndim;v++) c->Ph[v] = prim[v];
+      if (cstep==maxstep) {
+        for (int v=0;v<par.ndim;v++) c->P[v] = c->Ph[v];
+      }
+      i_el += par.nvar;
+    } // loop over cells
+
+#ifdef TEST_MPI_NG
+    cout <<"(BC_update_F2C_RECV) i_el="<<i_el<<" of "<<ct;
+    cout <<" total elements.\n";
+#endif
+    buf = mem.myfree(buf);
+    ichild++;
+  } // loop until we got through all child grids.
 
   return 0;
 }
@@ -290,6 +435,7 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
 
 // ##################################################################
 // ##################################################################
+
 
 
 

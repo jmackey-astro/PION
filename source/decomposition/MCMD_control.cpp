@@ -610,7 +610,6 @@ void MCMDcontrol::set_NG_hierarchy(
           child.xmax[YY] = child.xmin[YY] + 0.5*LocalRange[YY];
           child.xmax[ZZ] = child.xmin[ZZ] + 0.5*LocalRange[ZZ];
           child_procs.push_back(child);
-          child_procs.push_back();
           cout <<"v="<<v<<": ";
           rep.printVec("3D Child ir",ir,par.ndim);
         }
