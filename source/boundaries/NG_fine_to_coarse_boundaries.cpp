@@ -107,25 +107,25 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     
     int nc = 1;
     for (int i=0;i<par.ndim;i++) nc*=2;
-    list<cell *> c;
+    list<cell *> lc;
 
-    c.push_back(f);
-    c.push_back(fine->NextPt(f,XP));
-    if (ndim>1) {
-      c.push_back(fine->NextPt(f,YP));
-      c.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
+    lc.push_back(f);
+    lc.push_back(fine->NextPt(f,XP));
+    if (par.ndim>1) {
+      lc.push_back(fine->NextPt(f,YP));
+      lc.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
     }
-    if (ndim>2) {
+    if (par.ndim>2) {
       f=fine->NextPt(f,ZP);
-      c.push_back(f);
-      c.push_back(fine->NextPt(f,XP));
-      c.push_back(fine->NextPt(f,YP));
-      c.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
+      lc.push_back(f);
+      lc.push_back(fine->NextPt(f,XP));
+      lc.push_back(fine->NextPt(f,YP));
+      lc.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
     }
 
     for (int v=0;v<par.nvar;v++) cd[v]=0.0;
     
-    average_cells(par,solver,fine,nc,c,cd);
+    average_cells(par,solver,fine,nc,lc,cd);
 
     //vol = coarse->CellVolume(c);
     //for (int v=0;v<par.nvar;v++) cd[v] /= vol;
@@ -170,7 +170,7 @@ int NG_fine_to_coarse_bc::average_cells(
   // simple: loop through list, adding conserved var * cell-vol,
   // then divide by coarse cell vol.
   //
-  double sum_vol=0.0;
+  double sum_vol=0.0, vol=0.0;
   list<cell*>::iterator c_iter;
   for (c_iter=c.begin(); c_iter!=c.end(); ++c_iter) {
     cell *f = (*c_iter);
