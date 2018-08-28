@@ -435,6 +435,8 @@ OBJECTS_NG_ICGEN = icgen_MPI_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO
 ### -- EXECTUTABLES -- ###
 ##########################
 all: ${bindir}/pion_parallel ${bindir}/icgen_parallel
+uni: ${bindir}/pion_parallel ${bindir}/icgen_parallel
+NG:  ${bindir}/pion_NG_parallel ${bindir}/icgen_NG_parallel
 
 ${bindir}/pion_parallel: $(OBJECTS_PION)
 	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_parallel $(LDFLAGS)
