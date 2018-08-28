@@ -95,7 +95,7 @@ int sim_init_NG::Init(
   //
   setup_NG_grid_levels(SimPM);
   grid.resize(SimPM.grid_nlevels);
-  err = setup_grid(grid,SimPM,&ppar);
+  err = setup_grid(grid,SimPM);
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(INIT::setup_grid) Something went wrong",0,err);
 
