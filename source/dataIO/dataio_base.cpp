@@ -78,10 +78,10 @@ void DataIOBase::set_params(
   //
   pm_base *p;
 
-  pm_int     *p001 = new pm_int     
-    ("gridtype",    &SimPM.gridType);
-  p = p001; p->critical=true;  
-  params.push_back(p);
+  //pm_int     *p001 = new pm_int     
+  //  ("gridtype",    &SimPM.gridType);
+  //p = p001; p->critical=true;  
+  //params.push_back(p);
   pm_int     *p002 = new pm_int     
     ("gridndim",    &SimPM.ndim);
   p = p002; p->critical=true;  
@@ -107,17 +107,21 @@ void DataIOBase::set_params(
   // Nested grid parameters
   //
   pm_int     *n001 = new pm_int     
-    ("grid_nlevels",      &SimPM.grid_nlevels);
+    ("grid_nlevels",      &SimPM.grid_nlevels, 1);
   p = n001; p->critical=false;  
   params.push_back(p);
 
+  int *defaspect = new int [MAX_DIM];
+  for (int v=0;v<MAX_DIM;v++) defaspect[v]=1;
   pm_idimarr *n002 = new pm_idimarr     
-    ("grid_aspect_ratio", SimPM.grid_aspect_ratio);
+    ("grid_aspect_ratio", SimPM.grid_aspect_ratio,defaspect);
   p = n002; p->critical=false;  
   params.push_back(p);
 
+  double *defngcentre = new double [MAX_DIM];
+  for (int v=0;v<MAX_DIM;v++) defngcentre[v]=0.0;
   pm_ddimarr *n003 = new pm_ddimarr 
-    ("NG_centre",  SimPM.NG_centre);
+    ("NG_centre",  SimPM.NG_centre,defngcentre);
   p = n003; p->critical=false;  
   params.push_back(p);
 
@@ -845,6 +849,26 @@ int DataIOBase::read_simulation_parameters(
       ++iter;
       //cout<<nm.str()<<" = "<<wind->enhance_mdot<<"\n";
 
+      //
+      // Value of xi, power-law index of term that focusses stellar
+      // wind onto the equator for rotating stars.
+      /// (1-Omega*sin(theta))^xi
+      /// See e.g. Langer, Garcia-Segura & Mac Low (1999,ApJ,520,L49).
+      //
+      nm.str(""); nm << "WIND_"<<isw<<"_xi";
+      if ( (*iter)->name.compare( nm.str() ) !=0) {
+        rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&wind->xi));
+      err = read_header_param(*iter);
+      if (err) {
+        cout <<"failed to find WIND_"<<isw<<"_xi parameter, setting to -0.43.\n";
+        wind->xi = -0.43;
+        //rep.error("Error reading parameter",(*iter)->name);
+      }
+      ++iter;
+      //cout<<nm.str()<<" = "<<wind->xi<<"\n";
+
       nm.str(""); nm << "WIND_"<<isw<<"_t_offset";
       if ( (*iter)->name.compare( nm.str() ) !=0) {
         rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
@@ -991,6 +1015,7 @@ void DataIOBase::set_windsrc_params()
     //
     ostringstream temp11; temp11.str(""); temp11<< "WIND_"<<n<<"_evofile";
     ostringstream temp13; temp13.str(""); temp13<< "WIND_"<<n<<"_enhance_mdot";
+    ostringstream temp14; temp14.str(""); temp14<< "WIND_"<<n<<"_xi";
     ostringstream temp9;  temp9.str("");  temp9 << "WIND_"<<n<<"_t_offset";
     ostringstream temp10; temp10.str(""); temp10<< "WIND_"<<n<<"_updatefreq";
     ostringstream temp12; temp12.str(""); temp12<< "WIND_"<<n<<"_t_scalefac";
@@ -1024,6 +1049,11 @@ void DataIOBase::set_windsrc_params()
     pm_int  *w013 = new pm_int        (temp13.str());
     w013->critical=false;
     windsrc.push_back(w013);
+
+    // power-law index xi for rotating stars
+    pm_double  *w014 = new pm_double  (temp14.str());
+    w014->critical=false;
+    windsrc.push_back(w014);
 
     // time offset
     pm_double  *w009 = new pm_double  (temp9.str());
@@ -1471,6 +1501,16 @@ int DataIOBase::write_simulation_parameters(
       if (err) rep.error("Error writing parameter",(*iter)->name);
       ++iter;
       //cout<<nm<<" = "<<wind->enhance_mdot<<"\n";
+
+      nm.str(""); nm << "WIND_"<<isw<<"_xi";
+      if ( (*iter)->name.compare( nm.str() ) !=0) {
+        rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
+      }
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->xi));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing parameter",(*iter)->name);
+      ++iter;
+      //cout<<nm<<" = "<<wind->xi<<"\n";
 
       nm.str(""); nm << "WIND_"<<isw<<"_t_offset";
       if ( (*iter)->name.compare( nm.str() ) !=0) {

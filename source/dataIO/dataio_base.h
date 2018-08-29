@@ -70,15 +70,6 @@ class DataIOBase : public file_status {
       class SimParams &  ///< pointer to simulation parameters
       )=0;
 
-  ///
-  /// Read silo data from any PION silo file
-  ///
-  virtual int parallel_read_any_data(
-      string, ///< file to read from
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass * ///< pointer to data.
-      ) {return -999;}
-
  protected:
    const int Ndigits; ///< number of digits for counter in filenames.
    ///

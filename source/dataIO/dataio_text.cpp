@@ -244,11 +244,11 @@ int dataio_text::get_parameters(
     rep.error("\'eqn\' not in param-file: Don't know what equations to set",ts);
   }
 
-  ts=rp->find_parameter("gridtype"); 
-  if(ts!="")
-    SimPM.gridType =atoi(ts.c_str());
-  else {rep.warning("No GridType set; using Uniform Finite-Volume.",1,SimPM.gridType); SimPM.gridType=1;}
-  if (SimPM.gridType!=1) rep.error("GridType not set to Uniform Finite-Volume; need to set later.",SimPM.gridType);
+//  ts=rp->find_parameter("gridtype"); 
+//  if(ts!="")
+//    SimPM.gridType =atoi(ts.c_str());
+//  else {rep.warning("No GridType set; using Uniform Finite-Volume.",1,SimPM.gridType); SimPM.gridType=1;}
+//  if (SimPM.gridType!=1) rep.error("GridType not set to Uniform Finite-Volume; need to set later.",SimPM.gridType);
   
   ts = rp->find_parameter("ndim");
   if (ts!="")  SimPM.ndim = atoi(ts.c_str());
