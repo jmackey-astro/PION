@@ -109,9 +109,6 @@ int sim_control_NG::Time_Int(
     // Update RT sources and boundaries.
     //
     for (int l=0; l<SimPM.grid_nlevels; l++) {
-      err = update_evolving_RT_sources(SimPM,grid[l]->RT);
-      rep.errorTest("NG TIME_INT::update_evolving_RT_sources error",0,err);
-
 #ifdef TEST_INT
       cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
@@ -324,6 +321,9 @@ double sim_control_NG::advance_time(
 #ifdef TESTING
   cout <<"advance_time, level="<<l<<", starting.\n";
 #endif
+  int err = update_evolving_RT_sources(SimPM,SimPM.levels[l].grid->RT);
+  rep.errorTest("NG TIME_INT::update_evolving_RT_sources error",0,err);
+
   double step=0.0;
   if (SimPM.tmOOA==1) {
     step = advance_step_OA1(l);

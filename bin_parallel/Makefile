@@ -79,8 +79,8 @@ VPATH = \
 ../source/time_integrators:\
 ../source/contrib:\
 ../source/tools:\
-../source/decomposition\
-../source/NG_grid\
+../source/decomposition:\
+../source/NG_grid:\
 ../source/boundaries
 
 
