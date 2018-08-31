@@ -26,6 +26,7 @@
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
+MAKE_UNAME=locallibs
 export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
 export PION_OPTIMISE=HIGH
 NCORES=8

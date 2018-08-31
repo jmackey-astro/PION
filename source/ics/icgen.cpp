@@ -172,7 +172,7 @@ int main(int argc, char **argv)
   //
   // Set up the boundary conditions and data
   //
-  SimSetup->boundary_conditions(SimPM,ppar,grid[0]);
+  SimSetup->boundary_conditions(SimPM,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
   if (err) rep.error("Initial conditions setup failed.",err);
   // ----------------------------------------------------------------
 
-  err = SimSetup->assign_boundary_data(SimPM,ppar,grid[0]);
+  err = SimSetup->assign_boundary_data(SimPM,0,grid[0]);
   rep.errorTest("icgen::assign_boundary_data",0,err);
 
   // ----------------------------------------------------------------

@@ -269,8 +269,7 @@ cout <<"------------------------------------------------------\n\n";
 
 int setup_NG_grid::boundary_conditions(
       class SimParams &par,  ///< pointer to simulation parameters
-      class MCMDcontrol &,  ///< unused for serial code
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< grid pointers.
       )
 {
   // For uniform fixed cartesian grid.

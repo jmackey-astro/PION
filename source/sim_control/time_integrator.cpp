@@ -70,7 +70,7 @@ time_integrator::~time_integrator()
 // ##################################################################
 
 int time_integrator::advance_time(
-      class MCMDcontrol &ppar,   ///< domain decomposition info
+      const int level,          ///< level in grid hierarchy
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -96,8 +96,10 @@ int time_integrator::advance_time(
     if (err)
       rep.error("1st order time-update returned error",err);
     // Update boundary data.
-    err += TimeUpdateInternalBCs(SimPM, grid, SimPM.simtime,   OA1, OA2);
-    err += TimeUpdateExternalBCs(SimPM, ppar,grid, SimPM.simtime,   OA1, OA2);
+    err += TimeUpdateInternalBCs(SimPM, level, grid, spatial_solver,
+                                        SimPM.simtime,   OA1, OA2);
+    err += TimeUpdateExternalBCs(SimPM, level, grid, spatial_solver,
+                                        SimPM.simtime,   OA1, OA2);
     if (err) 
       rep.error("second_order_update: error from bounday update",err);
 
@@ -674,13 +676,19 @@ int time_integrator::dynamics_dU_column(
     cout<<"First Cell:"; CI.print_cell(cpt);
     cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
-    // Get the flux from left and right states, adding artificial viscosity if needed.
-    err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
-    err += spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt, csp, grid);
-    err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
-    err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL, edgeR, Fr_this,
-                              SimPM.solverType, SimPM.artviscosity, SimPM.gamma, dx);
-    err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+    // Get the flux from left and right states, adding artificial
+    // viscosity if needed.
+    err += spatial_solver->SetEdgeState(cpt, posdir, SimPM.nvar,
+                                slope_cpt, edgeL, csp, grid);
+    err += spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt,
+                                csp, grid);
+    err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar,
+                                slope_npt, edgeR, csp, grid);
+    err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL,
+                                edgeR, Fr_this, SimPM.solverType,
+                                SimPM.artviscosity, SimPM.gamma, dx);
+    err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this,
+                                slope_cpt, csp, dx, dt);
 
     // record flux entering and leaving domain
     if (cpt->isbd_ref[negdir]) {
@@ -716,7 +724,8 @@ int time_integrator::dynamics_dU_column(
 #endif //TESTING
 
 #ifdef TEST_CONSERVATION 
-    // Track energy, momentum entering/leaving domain, if outside boundary
+    // Track energy, momentum entering/leaving domain, if outside
+    // boundary
     double dA=spatial_solver->CellInterface(cpt,posdir,dx);
     if(csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
@@ -740,11 +749,11 @@ int time_integrator::dynamics_dU_column(
     }
 #endif // TEST_CONSERVATION
     //
-    // Now move temp arrays to prepare for moving on to the next cell.
+    // Now move temp arrays for moving on to the next cell
     //
     temp=Fr_prev;
     Fr_prev = Fr_this;
-    Fr_this = temp; // just point to the free memory to be overwritten next step.
+    Fr_this = temp;
     temp = slope_cpt;
     slope_cpt = slope_npt;
     slope_npt = temp;
@@ -758,9 +767,10 @@ int time_integrator::dynamics_dU_column(
 #ifdef TESTING
   dp.c = cpt;
 #endif
+  // last cell 1st order.
   err += spatial_solver->SetEdgeState(
           cpt, posdir, SimPM.nvar, slope_cpt, edgeL, csp, grid);
-  for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell 1st order.
+  for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.;
   err += spatial_solver->SetEdgeState(
           npt, negdir, SimPM.nvar, slope_npt, edgeR, csp, grid);
   err += spatial_solver->InterCellFlux(
@@ -770,7 +780,8 @@ int time_integrator::dynamics_dU_column(
           grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
 
 #ifdef TEST_CONSERVATION 
-  // Track energy, momentum entering/leaving domain, if outside boundary
+  // Track energy, momentum entering/leaving domain, if outside
+  // boundary
   double dA=spatial_solver->CellInterface(cpt,posdir,dx);
   if (csp==SimPM.tmOOA &&
       pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&

@@ -124,6 +124,31 @@ ifeq ($(MAKE_UNAME), standard)
 endif
 ################### --- STANDARD WORKSTATION ---######################
 
+######################################################################
+# Options for a workstation with locally installled libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), locallibs)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -lm
+  # All libraries are in this path:
+  # Libraries for fits, silo, cvode
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- local libs WORKSTATION ---######################
+
 ################### --- FIONN at ICHEC.IE ---######################
 # Options for fionn.ichec.ie
 ######################################################################
@@ -421,9 +446,9 @@ OBJECTS_ICGEN = icgen_parallel.o get_sim_info.o $(OBJ_GEN) \
   $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
   $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_NG_PION = main_MPI_NG.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
+OBJECTS_NG_PION = main_NG_MPI.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
 
-OBJECTS_NG_ICGEN = icgen_MPI_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
+OBJECTS_NG_ICGEN = icgen_NG_MPI.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
 
 
 #####################################################
@@ -465,9 +490,9 @@ interpolate.o: tools/interpolate.cpp tools/interpolate.h ${GLOBAL}
 constants.o: constants.cpp ${GLOBAL}
 sim_params.o: sim_params.cpp ${GLOBAL}
 
-main_MPI_NG.o: main_MPI_NG.cpp sim_control.h ${GLOBAL} comms.h
+main_NG_MPI.o: main_NG_MPI.cpp sim_control.h ${GLOBAL} comms.h
 
-icgen_MPI_NG.o: icgen_MPI_NG.cpp icgen.h get_sim_info.h \
+icgen_NG_MPI.o: icgen_NG_MPI.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h

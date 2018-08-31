@@ -93,7 +93,6 @@ int main(int argc, char **argv)
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
   MP=0;  // global microphysics class pointer.
-  class RayTracingBase *RT=0;  // raytracing class 
 
   string pfile = argv[1];
   string icftype;
@@ -186,7 +185,7 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(SimPM,*MCMD,grid[0]);
+  SimSetup->boundary_conditions(SimPM,grid[0]);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);
@@ -255,7 +254,6 @@ int main(int argc, char **argv)
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
-  if (RT)   {delete RT; RT=0;}
   if (rp)   {delete rp; rp=0;} // Delete the read_parameters class.
   if (ic)   {delete ic; ic=0;}
   if (SimSetup) {delete SimSetup; SimSetup =0;}

@@ -29,6 +29,7 @@
 # compiling code only, not running).
 #
 MAKE_UNAME=standard
+MAKE_UNAME=locallibs
 NCORES=8
 #
 # Production code options:
@@ -243,7 +244,7 @@ echo PION_OPTIONS: $PION_OPTIONS
 export MAKE_UNAME
 echo "COMPILING WITH MACHINE: $MAKE_UNAME"
 make -j${NCORES} -f Makefile uni
-#make -j${NCORES} -f Makefile NG
+make -j${NCORES} -f Makefile NG
 
 #####################################################################
 

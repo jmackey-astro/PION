@@ -534,17 +534,18 @@ int setup_fixed_grid::setup_raytracing(
   if (grid->RT->type_of_RT_integration()==RT_UPDATE_EXPLICIT) {
     FVI_need_column_densities_4dt = true;
   }
-  else if (grid->RT && grid->RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT
-            && SimPM.EP.MP_timestep_limit==5) {
+  else if (grid->RT && 
+           grid->RT->type_of_RT_integration()==RT_UPDATE_IMPLICIT &&
+           SimPM.EP.MP_timestep_limit==5) {
     // For implicit updates to limit by xdot and/or edot
-    // Here the raytracing has not already been done, so we call it here.
+    // The raytracing has not already been done, so we call it here.
     FVI_need_column_densities_4dt = true;
   }
   else {
     FVI_need_column_densities_4dt = false;
   }
 
-  cout <<"----------------- RAYTRACER SETUP COMPLETE -----------------------\n";
+  cout <<"------------- RAYTRACER SETUP COMPLETE ----------------\n";
   return 0;
 }
 
@@ -559,24 +560,24 @@ int setup_fixed_grid::setup_evolving_RT_sources(
       )
 {
   //
-  // Loop through list of sources, and see if any of them have an evolution
-  // file (if none, then the string is set to NOFILE in the data I/O stage).
+  // Loop through list of sources, and see if any of them have an
+  // evolution file (if none, then the string is set to NOFILE in
+  // the data I/O stage).
   //
   int Nevo=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
     if (SimPM.RS.sources[isrc].EvoFile == "NOFILE") {
 #ifdef TESTING
-      cout <<"setup_evolving_RT_sources() Source "<<isrc<<" has no evolution file.\n";
+      cout <<"setup_evolving_RT_sources() Source "<<isrc;
+      cout <<" has no evolution file.\n";
 #endif
     }
     else {
-      //if (SimPM.RS.sources[isrc].effect != RT_EFFECT_PION_MULTI) {
-      //  rep.error("setup_evolving_RT_sources() Source is not multifreq but has EvoFile",isrc);
-      //}
       Nevo++;
       struct star istar;
 #ifdef TESTING
-      cout <<"setup_evolving_RT_sources() Source "<<isrc<<" has EvoFile "<<istar.file_name<<"\n";
+      cout <<"setup_evolving_RT_sources() Source "<<isrc;
+      cout <<" has EvoFile "<<istar.file_name<<"\n";
 #endif
       istar.file_name = SimPM.RS.sources[isrc].EvoFile;
       istar.src_id    = isrc;
@@ -600,7 +601,9 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     //
     FILE *infile=0;
     infile = fopen(istar->file_name.c_str(), "r");
-    if (!infile) rep.error("can't open wind evolving radiation source file",infile);
+    if (!infile)
+      rep.error("can't open wind evolving radiation source file",
+                infile);
     // Skip first two lines
     char line[512];
     char *rval = 0;
@@ -614,7 +617,8 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     // Columns are time, M, L, Teff, Mdot, vrot
     double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
     size_t iline=0;
-    while (fscanf(infile, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
+    while (fscanf(infile, "   %lE   %lE %lE %lE %lE %lE",
+                          &t1, &t2, &t3, &t4, &t5, &t6) != EOF ) {
       //cout.precision(16);
       //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
       //cout <<t1 <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
@@ -648,17 +652,13 @@ int setup_fixed_grid::setup_evolving_RT_sources(
       t6 = sqrt( pow(10.0,istar->Log_L[iline])*pconst.Lsun()/ 
                 (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(t4, 4.0)));
       istar->Log_R.push_back( log10(t6/pconst.Rsun() ));
-
-      //if (SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
-      //  cout <<t1 <<"!!"<< pow(10.0,istar->Log_L[iline])*pconst.Lsun()  <<"  "<< pow(10.0,istar->Log_T[iline]) <<"  "<< t5 <<"  "<< pow(10.0,istar->Log_V[iline]) <<"\n";
-      //}
       iline ++;
     }
     fclose(infile);
 
     //
-    // Finally set the last_line counter to be the array index nearest to
-    // (but less than) the current time.
+    // Finally set the last_line counter to be the array index
+    // nearest to (but less than) the current time.
     //
     iline=0;
     while (istar->time[iline] < SimPM.simtime) iline++;
@@ -668,15 +668,13 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     istar->Lnow = istar->Tnow = istar->Rnow = istar->Vnow = 0.0;
   }
   
-  return 0;
-
   //
-  // All done setting up the source.  Now we need to update the SimPM.RS.
-  // source properties and send the changes to the raytracing class.  Need
+  // Finshed setting up the source.  Now we need to update the
+  // source properties and send the changes to the RT class.  Need
   // time in secs, L,T,V in cgs and R in Rsun.
   //
   //err = update_evolving_RT_sources(SimPM,RT);
-  //return err;
+  return 0;
 }
 
 
@@ -787,9 +785,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
   }
   
-
   //
-  // Finally get the data back from RT into the structs for MP updates.
+  // Get the data back from RT into the structs for MP updates.
   //
   if (updated) {
     RT->populate_UVheating_src_list(FVI_heating_srcs);
@@ -801,14 +798,13 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
 
 
 int setup_fixed_grid::boundary_conditions(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &,  ///< MCMD controller class.
+      class SimParams &par,     ///< simulation parameters
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
@@ -842,7 +838,7 @@ int setup_fixed_grid::boundary_conditions(
 
 
 int setup_fixed_grid::setup_boundary_structs(
-      class SimParams &par,     ///< pointer to simulation parameters
+      class SimParams &par,     ///< simulation parameters
       class GridBaseClass *grid ///< pointer to grid.
       )
 {

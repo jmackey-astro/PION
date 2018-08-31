@@ -148,7 +148,7 @@ int sim_init_NG::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, ppar, grid);
+  err = boundary_conditions(SimPM, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
   //
   // Setup Raytracing on each grid, if needed.
@@ -158,7 +158,7 @@ int sim_init_NG::Init(
 
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err = assign_boundary_data(SimPM, ppar,grid[l], SimPM.levels[l].parent, SimPM.levels[l].child);
+    err = assign_boundary_data(SimPM, l, grid[l]);
     rep.errorTest("icgen_NG::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
@@ -170,7 +170,8 @@ int sim_init_NG::Init(
 #ifdef TESTING
     cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
-    err += TimeUpdateExternalBCs(SimPM, ppar,grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
@@ -181,13 +182,15 @@ int sim_init_NG::Init(
 #ifdef TESTING
     cout <<"updating internal boundaries for level "<<l<<"\n";
 #endif
-    err += TimeUpdateInternalBCs(SimPM, grid[l], l, spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   //
-  // If testing the code, this calculates the momentum and energy on the domain.
+  // If testing the code, this calculates the momentum and energy on
+  // the domain.
   //
   initial_conserved_quantities(grid);
 
@@ -196,7 +199,8 @@ int sim_init_NG::Init(
   //
   if (SimPM.op_criterion==1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!",SimPM.opfreq_time);
+      rep.error("opfreq_time not set right and is needed!",
+                SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
     double tmp = 
       ((SimPM.simtime/SimPM.opfreq_time)-
@@ -212,7 +216,8 @@ int sim_init_NG::Init(
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
     setup_dataio_class(SimPM.typeofop);
-    if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
+    if (!dataio)
+      rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
@@ -224,7 +229,7 @@ int sim_init_NG::Init(
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
   }
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
 #endif // SERIAL
   
 #ifdef TESTING

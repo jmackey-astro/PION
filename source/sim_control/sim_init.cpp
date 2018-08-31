@@ -276,9 +276,9 @@ int sim_init::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, ppar, grid[0]);
+  err = boundary_conditions(SimPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM,ppar, grid[0]);
+  err = assign_boundary_data(SimPM, 0, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
@@ -294,8 +294,10 @@ int sim_init::Init(
   //
   initial_conserved_quantities(grid[0]);
 
-  err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  err += TimeUpdateExternalBCs(SimPM, ppar,grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateInternalBCs(SimPM, 0,grid[0], spatial_solver,
+                          SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM, 0,grid[0], spatial_solver,
+                          SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
@@ -306,7 +308,7 @@ int sim_init::Init(
   //
   if (SimPM.op_criterion==1) {
     if (SimPM.opfreq_time < TINYVALUE)
-      rep.error("opfreq_time not set right and is needed!",SimPM.opfreq_time);
+      rep.error("opfreq_time not set right!",SimPM.opfreq_time);
     SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
     double tmp = 
       ((SimPM.simtime/SimPM.opfreq_time)-
@@ -322,7 +324,8 @@ int sim_init::Init(
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
     setup_dataio_class(SimPM.typeofop);
-    if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
+    if (!dataio)
+      rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
@@ -334,7 +337,7 @@ int sim_init::Init(
     if (err)
       rep.error("Failed to write file!","maybe dir does not exist?");
   }
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
 #endif // SERIAL
   
 #ifdef TESTING
@@ -881,29 +884,41 @@ int sim_init::output_data(
   // If not, return.
   //
   else if (SimPM.op_criterion==0) {
-    if( (SimPM.opfreq==0) && (SimPM.maxtime==false) &&(SimPM.timestep!=0) ) return 0;
+    if( (SimPM.opfreq==0) && (SimPM.maxtime==false)
+                          && (SimPM.timestep!=0) )
+      return 0;
     // Next check if we are in an outputting timestep.
-    else if( (SimPM.maxtime==false) && (SimPM.timestep%SimPM.opfreq)!=0 &&(SimPM.timestep!=0) ) return(0);
+    else if( (SimPM.maxtime==false) &&
+             (SimPM.timestep%SimPM.opfreq)!=0 &&
+             (SimPM.timestep!=0) )
+      return(0);
   }
   //
-  // If outputting every D time units, see if we are at an output time, and if not
-  // then return.
+  // If outputting every D time units, see if we are at an output
+  // time, and if not then return.
   //
   else if (SimPM.op_criterion==1) {
-    if (!pconst.equalD(SimPM.simtime,SimPM.next_optime) && (SimPM.maxtime==false))
+    if (!pconst.equalD(SimPM.simtime,SimPM.next_optime) &&
+        (SimPM.maxtime==false))
       return 0;
     else 
-      // we are to output data, so advance the 'next' counter and continue.
+      // we are to output data, so advance the 'next' counter and
+      //  continue.
       SimPM.next_optime += SimPM.opfreq_time;
   }
   else rep.error("op_criterion must be 0 or 1",SimPM.op_criterion);
 
   //
-  // Since we got past all that, we are in a timestep that should be outputted, so go and do it...
+  // Since we got past all that, we are in a timestep that should be
+  // saved, so go and do it...
   //
-  cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file "<<SimPM.outFileBase<<"\n";
-  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
-  if (textio) err += textio->OutputData(SimPM.outFileBase, grid, SimPM, SimPM.timestep);
+  cout <<"\tSaving data, at simtime: "<<SimPM.simtime << " to file ";
+  cout <<SimPM.outFileBase<<"\n";
+  err = dataio->OutputData(SimPM.outFileBase, grid, SimPM,
+                           SimPM.timestep);
+  if (textio)
+    err += textio->OutputData(SimPM.outFileBase, grid, SimPM,
+                                                    SimPM.timestep);
   if (err) {cerr<<"\t Error writing data.\n"; return(1);}
   return(0);
 }

@@ -29,8 +29,8 @@ class assign_update_bcs_MPI :
   ///
   virtual int assign_boundary_data(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
-      class GridBaseClass *  ///< pointer to grid.
+      const int,              ///< level in grid hierarchy
+      class GridBaseClass *   ///< pointer to grid.
       );
 
   ///
@@ -38,10 +38,11 @@ class assign_update_bcs_MPI :
   /// time update on them.
   ///
   virtual int TimeUpdateExternalBCs(
-      class SimParams &,   ///< pointer to simulation parameters
-      class MCMDcontrol &,    ///< domain decomposition info
+      class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
-      const double ,   ///< current simulation time
+      class FV_solver_base *, ///< pointer to equations
+      const double ,          ///< current simulation time
       const int, ///< Current step number in the timestep.
       const int  ///< Maximum step number in timestep.
       );
