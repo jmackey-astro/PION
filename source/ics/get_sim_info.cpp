@@ -127,19 +127,19 @@ int get_sim_info::read_gridparams(
     SimPM.solverType = 4; // Roe-type solver (as opposed to lax-friedrichs).
   else if (str=="LF" || str=="LAX-FRIEDRICHS" || str=="0")
     SimPM.solverType = 0;
-  else if (str=="RSlinear" || str=="RS_linear" || str=="1")
+  else if (str=="LINEAR" || str=="linear" || str=="1")
     SimPM.solverType = 1;
-  else if (str=="RSexact"  || str=="RS_exact"  || str=="2")
+  else if (str=="EXACT"  || str=="exact"  || str=="2")
     SimPM.solverType = 2;
-  else if (str=="RShybrid" || str=="RS_hybrid" || str=="3")
+  else if (str=="HYBRID" || str=="hybrid" || str=="3")
     SimPM.solverType = 3;
-  else if (str=="RSRoe"    || str=="RS_Roe"    || str=="4")
+  else if (str=="ROE"    || str=="roe"    || str=="4")
     SimPM.solverType = 4;
-  else if (str=="RSRoePV"  || str=="RS_RoePV"  || str=="5")
+  else if (str=="ROEPV"  || str=="roepv"  || str=="5")
     SimPM.solverType = 5;
-  else if (str=="RSFVS"    || str=="RS_FVS"    || str=="6")
+  else if (str=="FVS"    || str=="fvs"    || str=="6")
     SimPM.solverType = 6;
-  else if (str=="RSHLLD"    || str=="RS_HLLD"    || str=="7")
+  else if (str=="HLLD"    || str=="hlld"    || str=="7")
     SimPM.solverType = 7;
   else 
     rep.error("what kind of solver is this???",str);
