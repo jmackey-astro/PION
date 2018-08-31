@@ -30,10 +30,8 @@ class assign_update_bcs_NG :
   ///
   virtual int assign_boundary_data(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,    ///< domain decomposition info
-      class GridBaseClass *,  ///< pointer to grid.
-      class GridBaseClass *,  ///< pointer to parent.
-      class GridBaseClass *  ///< pointer to child.
+      const int,              ///< level in grid hierarchy
+      class GridBaseClass *   ///< pointer to grid.
       );
 
 
@@ -43,11 +41,10 @@ class assign_update_bcs_NG :
   ///
   virtual int TimeUpdateExternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,    ///< domain decomposition info
+      const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in NG grid struct.
       class FV_solver_base *, ///< pointer to equations
-      const double,   ///< current simulation time
+      const double,           ///< current simulation time
       const int, ///< Current step number in the timestep.
       const int  ///< Maximum step number in timestep.
       );
@@ -58,8 +55,8 @@ class assign_update_bcs_NG :
   ///
   virtual int TimeUpdateInternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
+      const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
-      const int, ///< level of grid in NG grid struct.
       class FV_solver_base *, ///< pointer to equations
       const double,   ///< current simulation time
       const int, ///< Current step number in the timestep.

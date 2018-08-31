@@ -17,7 +17,6 @@
 #include "grid/grid_base_class.h"
 #include "boundaries/periodic_boundaries.h"
 #include "boundaries/MCMD_boundaries.h"
-#include "decomposition/MCMD_control.h"
 
 ///
 /// Implements periodic boundaries for a uniform grid.
@@ -34,7 +33,7 @@ class periodic_pllel_bc :
   ///
   int BC_assign_PERIODIC(
       class SimParams &,     ///< pointer to simulation parameters
-      class MCMDcontrol &,   ///< domain decomposition info
+      const int,              ///< level in grid hierarchy
       class GridBaseClass *, ///< pointer to grid.
       boundary_data *        ///< pointer to boundary data.
       );
@@ -42,7 +41,7 @@ class periodic_pllel_bc :
   /// Updates data on a periodic boundary.
   int BC_update_PERIODIC(
       class SimParams &,      ///< pointer to simulation parameters
-      class MCMDcontrol &,   ///< domain decomposition info
+      const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
       boundary_data *, ///< Boundary to update.
       const int,  ///< current fractional step being taken.

@@ -68,7 +68,6 @@ int main(int argc, char **argv)
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
-  class MCMDcontrol MCMD;
   class SimParams *SimPM;
   MP=0;  // global microphysics class pointer.
 
@@ -158,7 +157,7 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(*SimPM,MCMD,grid);
+  SimSetup->boundary_conditions(*SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
   err += SimSetup->setup_raytracing(*SimPM,grid);
@@ -166,7 +165,7 @@ int main(int argc, char **argv)
 
   for (int l=0;l<SimPM->grid_nlevels;l++) {
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
-    err = SimSetup->assign_boundary_data(*SimPM,MCMD,grid[l],SimPM->levels[l].parent, SimPM->levels[l].child);
+    err = SimSetup->assign_boundary_data(*SimPM,l,grid[l]);
     rep.errorTest("icgen_NG::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
@@ -174,7 +173,8 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM->grid_nlevels; l++) {
     cout <<"updating external boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateExternalBCs(*SimPM, MCMD, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateExternalBCs(*SimPM,l,grid[l], 
+                  solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
@@ -182,7 +182,8 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=SimPM->grid_nlevels-1; l>=0; l--) {
     cout <<"updating internal boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateInternalBCs(*SimPM, grid[l], l,solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateInternalBCs(*SimPM,l,grid[l], 
+                  solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------

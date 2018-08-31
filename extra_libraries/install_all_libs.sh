@@ -244,7 +244,8 @@ else
   ./configure --prefix=${BASE_PATH} \
  --disable-fortran \
  --disable-silex \
- --enable-pythonmodule
+ --enable-pythonmodule \
+ --with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial
 fi
 
 echo "********************************"
@@ -259,6 +260,7 @@ cd $CURDIR
 echo "********************************"
 echo "*** FINISHED! ***"
 echo "********************************"
+exit
 
 ##################################
 ##########   SUNDIALS   ##########
@@ -342,58 +344,58 @@ echo "********************************"
 
 ###################################
 ###########   CFITSIO    ##########
-###################################
-#echo "*******************************"
-#echo "*** INSTALLING FITS LIBRARY ***"
-#echo "*******************************"
 ##################################
-## Change these for new versions:
-#FILE=cfitsio3390.tar.gz
-#SRC_DIR=cfitsio
-#REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
-##################################
-#
-#if [ -e $FILE ]; then
-#	echo "*** File exists, no need to download ***"
-#else 
-#	echo "***** File does not exist ******"
-#	echo "*******************************"
-#	echo "*** DOWNLOADING FITS LIBRARY ***"
-#	echo "*******************************"
-#        if [ $MAKE_UNAME == "osx" ]; then
-#          curl  $REMOTE_URL -o $FILE
-#        else
-#          $WGET --no-check-certificate $REMOTE_URL -O $FILE
-#        fi
-#        # check it downloaded.
-#        if [ ! -f $FILE ]; then
-#          echo "File not found! : $FILE"
-#          echo "Download of Silo Library Failed... quitting"
-#          exit
-#        fi
-#fi
-#echo "*******************************"
-#echo "*** EXTRACTING FITS LIBRARY ***"
-#echo "*******************************"
-#tar zxf $FILE
-#echo "*******************************"
-#echo "*** RUNNING CONFIGURE ***"
-#echo "*******************************"
-#BASE_PATH=`pwd`
-#echo "***Path = $BASE_PATH ***"
-#cd $SRC_DIR
-#make clean
-#./configure --prefix=${BASE_PATH}
-#echo "*******************************"
-#echo "*** RUNNING MAKE ***"
-#echo "*******************************"
-#make -j$NCORES
-#echo "*******************************"
-#echo "*** INSTALLING CFITSIO ***"
-#echo "*******************************"
-#make install
-#echo "*******************************"
-#echo "*** FINISHED! ***"
-#echo "*******************************"
-#cd $CURDIR
+echo "*******************************"
+echo "*** INSTALLING FITS LIBRARY ***"
+echo "*******************************"
+#################################
+# Change these for new versions:
+FILE=cfitsio3390.tar.gz
+SRC_DIR=cfitsio
+REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
+#################################
+
+if [ -e $FILE ]; then
+	echo "*** File exists, no need to download ***"
+else 
+	echo "***** File does not exist ******"
+	echo "*******************************"
+	echo "*** DOWNLOADING FITS LIBRARY ***"
+	echo "*******************************"
+        if [ $MAKE_UNAME == "osx" ]; then
+          curl  $REMOTE_URL -o $FILE
+        else
+          $WGET --no-check-certificate $REMOTE_URL -O $FILE
+        fi
+        # check it downloaded.
+        if [ ! -f $FILE ]; then
+          echo "File not found! : $FILE"
+          echo "Download of Silo Library Failed... quitting"
+          exit
+        fi
+fi
+echo "*******************************"
+echo "*** EXTRACTING FITS LIBRARY ***"
+echo "*******************************"
+tar zxf $FILE
+echo "*******************************"
+echo "*** RUNNING CONFIGURE ***"
+echo "*******************************"
+BASE_PATH=`pwd`
+echo "***Path = $BASE_PATH ***"
+cd $SRC_DIR
+make clean
+./configure --prefix=${BASE_PATH}
+echo "*******************************"
+echo "*** RUNNING MAKE ***"
+echo "*******************************"
+make -j$NCORES
+echo "*******************************"
+echo "*** INSTALLING CFITSIO ***"
+echo "*******************************"
+make install
+echo "*******************************"
+echo "*** FINISHED! ***"
+echo "*******************************"
+cd $CURDIR
 

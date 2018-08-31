@@ -307,9 +307,42 @@ int setup_fixed_grid_pllel::setup_raytracing(
 
 
 
+int setup_fixed_grid_pllel::boundary_conditions(
+      class SimParams &par,     ///< pointer to simulation parameters
+      class GridBaseClass *grid ///< pointer to grid.
+      )
+{
+  // For uniform fixed cartesian grid.
+#ifdef TESTING
+  cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";
+#endif
+  //
+  // Choose what BCs to set up based on BC strings.
+  //
+  int err = setup_boundary_structs(par,grid);
+  rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
+
+  //
+  // Ask grid to set up data for external boundaries.
+  //
+  err = grid->SetupBCs(par);
+  rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
+
+#ifdef TESTING
+  cout <<"(setup_fixed_grid::boundary_conditions) Done.\n";
+#endif
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int setup_fixed_grid_pllel::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,  ///< domain decomposition info
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
@@ -356,6 +389,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   // wrap around.  So set the number of procs in each direction.
   //
   int nx[par.ndim];
+  class MCMDcontrol *ppar = &(par.levels[0].MCMD);
   for (i=0;i<par.ndim;i++) {
     nx[i] =static_cast<int>(ONE_PLUS_EPS*par.Range[i]/
                             grid->Range(static_cast<axes>(i)));
@@ -364,23 +398,23 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
     if (grid->BC_bd[i]->itype == PERIODIC) {
       switch (i) {
        case XN:
-        ppar.ngbprocs[XN] = ppar.get_myrank() +nx[XX] -1;
+        ppar->ngbprocs[XN] = ppar->get_myrank() +nx[XX] -1;
         break;
        case XP:
-        ppar.ngbprocs[XP] = ppar.get_myrank() -nx[XX] +1;
+        ppar->ngbprocs[XP] = ppar->get_myrank() -nx[XX] +1;
         break;
        case YN:
-        ppar.ngbprocs[YN] = ppar.get_myrank() +(nx[YY]-1)*nx[XX];
+        ppar->ngbprocs[YN] = ppar->get_myrank() +(nx[YY]-1)*nx[XX];
         break;
        case YP:
-        ppar.ngbprocs[YP] = ppar.get_myrank() -(nx[YY]-1)*nx[XX];
+        ppar->ngbprocs[YP] = ppar->get_myrank() -(nx[YY]-1)*nx[XX];
         break;
        case ZN:
-        ppar.ngbprocs[ZN] = ppar.get_myrank() +
+        ppar->ngbprocs[ZN] = ppar->get_myrank() +
                               (nx[ZZ]-1)*nx[YY]*nx[XX];
         break;
        case ZP:
-        ppar.ngbprocs[ZP] = ppar.get_myrank() -
+        ppar->ngbprocs[ZP] = ppar->get_myrank() -
                               (nx[ZZ]-1)*nx[YY]*nx[XX];
         break;
        default:
@@ -388,58 +422,22 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
         break;
       } // set neighbour according to direction.
 
-      if ( (ppar.ngbprocs[i]<0) ||
-           (ppar.ngbprocs[i]>=ppar.get_nproc()) )
+      if ( (ppar->ngbprocs[i]<0) ||
+           (ppar->ngbprocs[i]>=ppar->get_nproc()) )
         rep.error("setup_fixed_grid_pllel::setup_boundary_structs: Bad periodic \
-                   neighbour",ppar.ngbprocs[i]);
-      if (ppar.ngbprocs[i] == ppar.get_myrank()) {
+                   neighbour",ppar->ngbprocs[i]);
+      if (ppar->ngbprocs[i] == ppar->get_myrank()) {
         //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: only one proc in dir [i]: "<<i<<"\n";
         //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: periodic on single proc, so setting ngb to -999.\n";
-        ppar.ngbprocs[i] = -999;
+        ppar->ngbprocs[i] = -999;
       }
     } // if periodic  
 #ifdef TESTING
-    cout<<"Neighbouring processor in dir "<<i<<" = "<<ppar.ngbprocs[i]<<"\n";
+    cout<<"Neighbouring processor in dir "<<i<<" = "<<ppar->ngbprocs[i]<<"\n";
 #endif // TESTING
   } // loop over directions.
   return(0);
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int setup_fixed_grid_pllel::boundary_conditions(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,  ///< domain decomposition info
-      class GridBaseClass *grid ///< pointer to grid.
-      )
-{
-  // For uniform fixed cartesian grid.
-#ifdef TESTING
-  cout <<"Setting up BCs in Grid with Nbc="<<par.Nbc<<"\n";
-#endif
-  //
-  // Choose what BCs to set up based on BC strings.
-  //
-  int err = setup_boundary_structs(par,ppar,grid);
-  rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
-
-  //
-  // Ask grid to set up data for external boundaries.
-  //
-  err = grid->SetupBCs(par);
-  rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
-
-#ifdef TESTING
-  cout <<"(setup_fixed_grid::boundary_conditions) Done.\n";
-#endif
-  return 0;
-}
-
 
 
 

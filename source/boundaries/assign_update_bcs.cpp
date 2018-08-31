@@ -14,6 +14,73 @@
 using namespace std;
 
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int assign_update_bcs::assign_boundary_data(
+      class SimParams &par,     ///< simulation parameters
+      const int level,          ///< level in grid hierarchy
+      class GridBaseClass *grid  ///< pointer to grid.
+      )
+{
+  int err=0;
+  //
+  // Loop through all boundaries, and assign data to them.
+  //
+  for (size_t i=0; i<grid->BC_bd.size(); i++) {
+    switch (grid->BC_bd[i]->itype) {
+    case PERIODIC:
+     err += BC_assign_PERIODIC(  par,level,grid,grid->BC_bd[i]);
+     break;
+    case OUTFLOW:
+      err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]);
+      break;
+    case ONEWAY_OUT:
+      err += BC_assign_ONEWAY_OUT(par,grid,grid->BC_bd[i]);
+      break;
+    case INFLOW:
+      err += BC_assign_INFLOW(    par,grid,grid->BC_bd[i]);
+      break;
+    case REFLECTING:
+      err += BC_assign_REFLECTING(par,grid,grid->BC_bd[i]);
+      break;
+    case FIXED:
+      err += BC_assign_FIXED(     par,grid,grid->BC_bd[i]);
+      break;
+    case JETBC:
+      err += BC_assign_JETBC(     par,grid,grid->BC_bd[i]);
+      break;
+    case JETREFLECT:
+      err += BC_assign_JETREFLECT(par,grid,grid->BC_bd[i]);
+      break;
+    case DMACH:
+      err += BC_assign_DMACH(     par,grid,grid->BC_bd[i]);
+      break;
+    case DMACH2:
+      err += BC_assign_DMACH2(    par,grid,grid->BC_bd[i]);
+      break;
+    case STWIND:
+      err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]);
+      break;
+    case BCMPI:
+    case FINE_TO_COARSE:
+    case COARSE_TO_FINE:
+      break; // assigned in NG grid class
+    default:
+      rep.error("assign_update_bcs::Unhandled BC: assign",grid->BC_bd[i]->itype);
+      break;
+    }
+
+  }
+  return(err);
+}
+
+
+
 // ##################################################################
 // ##################################################################
 
@@ -23,7 +90,9 @@ using namespace std;
 
 int assign_update_bcs::TimeUpdateInternalBCs(
       class SimParams &par,      ///< pointer to simulation parameters
+      const int level,          ///< level in grid hierarchy
       class GridBaseClass *grid,  ///< pointer to grid.
+      class FV_solver_base *solver, ///< pointer to equations
       const double simtime,   ///< current simulation time
       const int cstep,
       const int maxstep
@@ -72,10 +141,11 @@ int assign_update_bcs::TimeUpdateInternalBCs(
 
 
 int assign_update_bcs::TimeUpdateExternalBCs(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,    ///< domain decomposition info
-      class GridBaseClass *grid,  ///< pointer to grid.
-      const double simtime,   ///< current simulation time
+      class SimParams &par,     ///< simulation parameters
+      const int level,          ///< level in grid hierarchy
+      class GridBaseClass *grid,    ///< pointer to grid.
+      class FV_solver_base *solver, ///< pointer to equations
+      const double simtime,     ///< current simulation time
       const int cstep,
       const int maxstep
       )
@@ -86,7 +156,7 @@ int assign_update_bcs::TimeUpdateExternalBCs(
     b = grid->BC_bd[i];
     switch (b->itype) {
     case PERIODIC:
-      err += BC_update_PERIODIC(   par,ppar,grid, b, cstep, maxstep);
+      err += BC_update_PERIODIC(  par,level,grid, b, cstep, maxstep);
       break;
     case OUTFLOW:
       err += BC_update_OUTFLOW(    par,grid, b, cstep, maxstep);
@@ -132,70 +202,6 @@ int assign_update_bcs::TimeUpdateExternalBCs(
   }
   return(0);
 }
-
-// ##################################################################
-// ##################################################################
-
-
-
-int assign_update_bcs::assign_boundary_data(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,    ///< domain decomposition info
-      class GridBaseClass *grid  ///< pointer to grid.
-      )
-{
-  int err=0;
-  //
-  // Loop through all boundaries, and assign data to them.
-  //
-  for (size_t i=0; i<grid->BC_bd.size(); i++) {
-    switch (grid->BC_bd[i]->itype) {
-    case PERIODIC:
-     err += BC_assign_PERIODIC(  par,ppar,grid,grid->BC_bd[i]);
-     break;
-    case OUTFLOW:
-      err += BC_assign_OUTFLOW(   par,grid,grid->BC_bd[i]);
-      break;
-    case ONEWAY_OUT:
-      err += BC_assign_ONEWAY_OUT(par,grid,grid->BC_bd[i]);
-      break;
-    case INFLOW:
-      err += BC_assign_INFLOW(    par,grid,grid->BC_bd[i]);
-      break;
-    case REFLECTING:
-      err += BC_assign_REFLECTING(par,grid,grid->BC_bd[i]);
-      break;
-    case FIXED:
-      err += BC_assign_FIXED(     par,grid,grid->BC_bd[i]);
-      break;
-    case JETBC:
-      err += BC_assign_JETBC(     par,grid,grid->BC_bd[i]);
-      break;
-    case JETREFLECT:
-      err += BC_assign_JETREFLECT(par,grid,grid->BC_bd[i]);
-      break;
-    case DMACH:
-      err += BC_assign_DMACH(     par,grid,grid->BC_bd[i]);
-      break;
-    case DMACH2:
-      err += BC_assign_DMACH2(    par,grid,grid->BC_bd[i]);
-      break;
-    case STWIND:
-      err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]);
-      break;
-    case BCMPI:
-    case FINE_TO_COARSE:
-    case COARSE_TO_FINE:
-      break; // assigned in NG grid class
-    default:
-      rep.error("assign_update_bcs::Unhandled BC: assign",grid->BC_bd[i]->itype);
-      break;
-    }
-
-  }
-  return(err);
-}
-
 
 
 

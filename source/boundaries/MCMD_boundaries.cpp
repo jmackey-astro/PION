@@ -17,7 +17,7 @@ using namespace std;
 
 int MCMD_bc::BC_assign_BCMPI(
       class SimParams &par,     ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,   ///< domain decomposition info
+      const int level,          ///< level in grid hierarchy
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,
       int comm_tag
@@ -51,7 +51,7 @@ int MCMD_bc::BC_assign_BCMPI(
   cout <<"*******************************************\n";
   cout <<"BC_assign_BCMPI: starting\n";
 #endif 
-  err = BC_update_BCMPI(par,ppar,grid,b,2,2,comm_tag);
+  err = BC_update_BCMPI(par,level,grid,b,2,2,comm_tag);
 #ifdef TESTING
   cout <<"BC_assign_BCMPI: finished\n";
   cout <<"*******************************************\n";
@@ -124,7 +124,7 @@ int MCMD_bc::BC_select_data2send(
 
 int MCMD_bc::BC_update_BCMPI(
       class SimParams &par,      ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,   ///< domain decomposition info
+      const int level,          ///< level in grid hierarchy
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,
       const int cstep,
@@ -145,12 +145,13 @@ int MCMD_bc::BC_update_BCMPI(
   // send the data.
   //
   int err = 0;
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   string send_id;
 #ifdef TESTING
   cout <<"BC_update_BCMPI: sending data...\n";
 #endif 
   err += COMM->send_cell_data(
-        ppar.ngbprocs[b->dir], // to_rank
+        ppar->ngbprocs[b->dir], // to_rank
         &(b->send_data),        // cells list.
         b->send_data.size(),    // number of cells.
         par.ndim, par.nvar,
@@ -185,7 +186,7 @@ int MCMD_bc::BC_update_BCMPI(
 #endif 
   enum direction dir=NO;
   for (int i=0; i<2*par.ndim; i++) {
-    if (from_rank == ppar.ngbprocs[i]) {
+    if (from_rank == ppar->ngbprocs[i]) {
       if (dir==NO) dir = static_cast<direction>(i);
       else {
         //
@@ -198,22 +199,22 @@ int MCMD_bc::BC_update_BCMPI(
         //
         if (recv_tag == BC_PERtag) {
           // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
-          if      ( from_rank>ppar.get_myrank() && 
+          if      ( from_rank>ppar->get_myrank() && 
                     (i==XN || i==YN || i==ZN)) {
             dir = static_cast<direction>(i);
           }
-          else if ( from_rank<ppar.get_myrank() &&
+          else if ( from_rank<ppar->get_myrank() &&
                     (i==XP || i==YP || i==ZP)) {
             dir = static_cast<direction>(i);
           }
         }
         else if (recv_tag == BC_MPItag) {
           // Internal boundary, so in neg.dir. from_rank should be < myrank.
-          if      ( from_rank<ppar.get_myrank() &&
+          if      ( from_rank<ppar->get_myrank() &&
                     (i==XN || i==YN || i==ZN)) {
             dir = static_cast<direction>(i);
           }
-          else if ( from_rank>ppar.get_myrank() &&
+          else if ( from_rank>ppar->get_myrank() &&
                     (i==XP || i==YP || i==ZP)) {
             dir = static_cast<direction>(i);
           }
@@ -224,7 +225,7 @@ int MCMD_bc::BC_update_BCMPI(
   }
   if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
 #ifdef TESTING
-  cout <<ppar.get_myrank()<<"\tBC_update_BCMPI: Receiving Data type ";
+  cout <<ppar->get_myrank()<<"\tBC_update_BCMPI: Receiving Data type ";
   cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
 #endif 
 

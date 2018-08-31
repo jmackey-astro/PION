@@ -133,6 +133,30 @@ endif
 ######################################################################
 ######################################################################
 
+######################################################################
+# Options for a workstation with locally installled libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), locallibs)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -lm
+  # All libraries are in this path:
+  # Libraries for fits, silo, cvode
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- local libs WORKSTATION ---######################
 
 ######################## -- JUROPA -- ################################
 # Options for the Juelich Supercomputer JUROPA

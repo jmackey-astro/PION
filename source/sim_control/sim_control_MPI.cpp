@@ -269,9 +269,9 @@ int sim_control_pllel::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, SimPM.levels[0].MCMD, grid[0]);
+  err = boundary_conditions(SimPM, grid[0]);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM,SimPM.levels[0].MCMD, grid[0]);
+  err = assign_boundary_data(SimPM,0, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
@@ -287,10 +287,10 @@ int sim_control_pllel::Init(
   //
   initial_conserved_quantities(grid[0]);
 
-  err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,
-                    SimPM.tmOOA,SimPM.tmOOA);
-  err += TimeUpdateExternalBCs(SimPM, SimPM.levels[0].MCMD,
-                    grid[0], SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateInternalBCs(SimPM,0,grid[0], spatial_solver,
+                    SimPM.simtime, SimPM.tmOOA,SimPM.tmOOA);
+  err += TimeUpdateExternalBCs(SimPM,0,grid[0], spatial_solver,
+                   SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   if (err) 
     rep.error("first_order_update: error from bounday update",err);
 
@@ -420,13 +420,13 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: updating internal boundaries\n";
 #endif
-    err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,
-                                                        OA2,OA2);
+    err += TimeUpdateInternalBCs(SimPM,0,grid[0], spatial_solver,
+                    SimPM.simtime, OA2,OA2);
 #ifdef TESTING
     cout <<"MPI time_int: updating external boundaries\n";
 #endif
-    err += TimeUpdateExternalBCs(SimPM, SimPM.levels[0].MCMD,
-                                  grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateExternalBCs(SimPM,0,grid[0], spatial_solver,
+                   SimPM.simtime, OA2,OA2);
     if (err) 
       rep.error("Boundary update at start of full step",err);
 
@@ -440,7 +440,7 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: stepping forward in time\n";
 #endif
-    err+= advance_time(SimPM.levels[0].MCMD, grid[0]);
+    err+= advance_time(0, grid[0]);
     rep.errorTest("(TIME_INT::advance_time) error",0,err);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
     if (err!=0) {

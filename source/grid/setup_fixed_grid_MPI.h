@@ -59,7 +59,6 @@ class setup_fixed_grid_pllel :
   ///
   virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      class MCMDcontrol &,  ///< address of MCMD controller class.
       class GridBaseClass *  ///< pointer to grid.
       );
 
@@ -70,7 +69,6 @@ class setup_fixed_grid_pllel :
   ///
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
-      class MCMDcontrol &,  ///< address of MCMD controller class.
       class GridBaseClass *grid ///< pointer to grid.
       );
 

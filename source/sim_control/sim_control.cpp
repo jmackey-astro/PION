@@ -232,14 +232,16 @@ int sim_control::Time_Int(
     //
     // Update boundary data.
     //
-    err += TimeUpdateInternalBCs(SimPM, grid[0], SimPM.simtime,OA2,OA2);
-    err += TimeUpdateExternalBCs(SimPM, ppar, grid[0], SimPM.simtime,OA2,OA2);
+    err += TimeUpdateInternalBCs(SimPM, 0, grid[0], spatial_solver,
+                                        SimPM.simtime,   OA1, OA2);
+    err += TimeUpdateExternalBCs(SimPM, 0, grid[0], spatial_solver,
+                                        SimPM.simtime,   OA1, OA2);
     if (err) 
       rep.error("Boundary update at start of full step",err);
 
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
-    err+= advance_time(ppar, grid[0]);
+    err+= advance_time(0, grid[0]);
     rep.errorTest("(TIME_INT::advance_time) error",0,err);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 

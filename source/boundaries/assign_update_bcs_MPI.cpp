@@ -22,13 +22,14 @@ using namespace std;
 
 
 int assign_update_bcs_MPI::assign_boundary_data(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,    ///< domain decomposition info
+      class SimParams &par,     ///< pointer to simulation parameters
+      const int level,          ///< level in grid hierarchy
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
-  cout <<ppar.get_myrank()<<" Setting up MPI boundaries...\n";
-  int err= assign_update_bcs::assign_boundary_data(par,ppar,grid);
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
+  cout <<ppar->get_myrank()<<" Setting up MPI boundaries...\n";
+  int err= assign_update_bcs::assign_boundary_data(par,level,grid);
 
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
   //
@@ -37,15 +38,10 @@ int assign_update_bcs_MPI::assign_boundary_data(
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
     switch (grid->BC_bd[i]->itype) {
     case BCMPI:
-      cout <<ppar.get_myrank()<<" assigning MPI boundary in dir "<<i<<"\n";
-      err += BC_assign_BCMPI(par,ppar,grid,grid->BC_bd[i],BC_MPItag);
+      cout <<ppar->get_myrank()<<" assigning MPI boundary in dir "<<i<<"\n";
+      err += BC_assign_BCMPI(par,level,grid,grid->BC_bd[i],BC_MPItag);
       break;      
     case PERIODIC:
-      // periodic was set up wrongly in serial call (1st line of this
-      // function), so we delete the boundary that was set up and 
-      // reset it here.
-      //grid->BC_deleteBoundaryData(grid->BC_bd[i]);
-      //err += BC_assign_PERIODIC(  par,ppar,grid,grid->BC_bd[i]);
       break;
     case OUTFLOW:
     case ONEWAY_OUT:
@@ -61,7 +57,8 @@ int assign_update_bcs_MPI::assign_boundary_data(
     case COARSE_TO_FINE:
       break; // assigned in NG grid class
     default:
-      rep.error("assign_update_bcs_MPI::Unhandled BC: assign",grid->BC_bd[i]->itype);
+      rep.error("assign_update_bcs_MPI::Unhandled BC: assign",
+                grid->BC_bd[i]->itype);
       break;
     }
 
@@ -77,10 +74,11 @@ int assign_update_bcs_MPI::assign_boundary_data(
 
 
 int assign_update_bcs_MPI::TimeUpdateExternalBCs(
-      class SimParams &par,   ///< pointer to simulation parameters
-      class MCMDcontrol &ppar,    ///< domain decomposition info
-      class GridBaseClass *grid,  ///< pointer to grid.
-      const double simtime,   ///< current simulation time
+      class SimParams &par,     ///< pointer to sim parameters
+      const int level,          ///< level in grid hierarchy
+      class GridBaseClass *grid,    ///< pointer to grid.
+      class FV_solver_base *solver, ///< pointer to equations
+      const double simtime,     ///< current simulation time
       const int cstep,
       const int maxstep
       )
@@ -92,10 +90,10 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     switch (b->itype) {
       
     case PERIODIC:
-      err += BC_update_PERIODIC(par,ppar,grid, b, cstep, maxstep);
+      err += BC_update_PERIODIC(par,level,grid, b, cstep, maxstep);
       break;
     case BCMPI:
-      err += BC_update_BCMPI(par, ppar, grid, b, cstep, maxstep,
+      err += BC_update_BCMPI(par,level,grid, b, cstep, maxstep,
                                                         BC_MPItag);
       break;
     case OUTFLOW:

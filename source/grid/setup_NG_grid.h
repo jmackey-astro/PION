@@ -68,7 +68,6 @@ class setup_NG_grid :
   ///
   virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      class MCMDcontrol &,  ///< unused for serial code
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );   
 
