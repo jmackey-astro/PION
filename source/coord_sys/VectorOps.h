@@ -76,13 +76,6 @@ class BaseVectorOps {
       )=0; ///< Returns Surface area of interface.
 
   ///
-  /// Specify delta-x for the grid (if a uniform grid!)
-  ///
-  virtual void set_dx(
-      const double ///< size of grid cell.
-      )=0;
-  
-  ///
   /// Returns maximum of all gradients with neighbouring cells
   /// 
   /// Pass in a point, and a primitive variable to calculate on, and it
@@ -242,10 +235,9 @@ class VectorOps_Cart : virtual public BaseVectorOps
 {
   protected:
   const int VOnd;   ///< Number of spatial dimensions in grid.
-  double VOdx;      ///< Length of cell side.
-  bool have_set_dx; ///< set to true once VOdx has been set.
-  double VOdA;      ///< Cell surface area.
-  double VOdV;      ///< Cell volume.
+  //double VOdx;      ///< Length of cell side.
+  //double VOdA;      ///< Cell surface area.
+  //double VOdV;      ///< Cell volume.
 
   public:
   ///
@@ -253,13 +245,6 @@ class VectorOps_Cart : virtual public BaseVectorOps
   ///
   VectorOps_Cart(
       const int ///< number of spatial dimensions of grid
-      );
-
-  ///
-  /// Specify delta-x for the grid (if a uniform grid!)
-  ///
-  virtual void set_dx(
-      const double ///< size of grid cell.
       );
 
   ///
@@ -433,13 +418,6 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   ///
   VectorOps_Cyl(
       const int ///< number of spatial dimensions of grid
-      );
-
-  ///
-  /// Specify delta-x for the grid (if a uniform grid!)
-  ///
-  virtual void set_dx(
-      const double ///< size of grid cell.
       );
 
   ///

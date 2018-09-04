@@ -122,44 +122,22 @@ VectorOps_Cart::VectorOps_Cart(int n)
   cout <<"Setting up VectorOpsCart with ndim="<<VOnd<<"\n";
 #endif
   if (VOnd>3) rep.error("Can't do more than 3D simulations!",VOnd);
-  have_set_dx=false;
 }
 
 
-// ##################################################################
-// ##################################################################
-
-
-
-void VectorOps_Cart::set_dx(const double x)
-{
-  VOdx = x;
-  have_set_dx=true;
-
-  //
-  // Surface area of interface: It is assumed extra dimensions are per
-  // unit length.
-  //
-  if (VOnd==1) VOdA = 1.; 
-  else if (VOnd==2) VOdA = VOdx;
-  else VOdA = VOdx*VOdx;
-  // Volume of cell.
-  if (VOnd==1) VOdV = VOdx;
-  else if (VOnd==2) VOdV = VOdx*VOdx;
-  else  VOdV = VOdx*VOdx*VOdx;
-  return;
-}
-
 
 // ##################################################################
 // ##################################################################
+
 
 
 VectorOps_Cart::~VectorOps_Cart() {}
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double VectorOps_Cart::CellVolume(
@@ -167,12 +145,9 @@ double VectorOps_Cart::CellVolume(
       const double dR
       )
 {
-  /// \section Volume
-  /// This function assumes cells are cube-shaped, so Volume is
-  /// exp(ndim*log(dx)).
-  ///
   return dR*dR*dR;
 }
+
 
 
 // ##################################################################
@@ -186,10 +161,6 @@ double VectorOps_Cart::CellInterface(
       const double dR ///< cell diameter
       )
 {
-  /// \section Interfaces
-  /// This function assumes cells are cube-shaped, so all surfaces
-  /// have the same area.
-  ///
   return dR*dR;
 }
 
@@ -199,6 +170,7 @@ double VectorOps_Cart::CellInterface(
 // ##################################################################
 
 
+
 double VectorOps_Cart::max_grad_abs(
         const cell *cpt,
         const int sv,
@@ -206,6 +178,7 @@ double VectorOps_Cart::max_grad_abs(
         class GridBaseClass *grid
         )
 {
+  double VOdx = grid->DX();
 #ifdef TESTING
   for (int i=0;i<2*VOnd; i++)
     if (!grid->NextPt(cpt,static_cast<direction>(i)))
@@ -251,6 +224,7 @@ void VectorOps_Cart::Gradient(
     if (!grid->NextPt(c,static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Grad: Some neighbour cells don't exist",i);
 #endif //TESTING
+  double VOdx = grid->DX();
   
   switch (sv) {
    case 0: // Use vector c->P
@@ -289,6 +263,7 @@ double VectorOps_Cart::Divergence(
 #endif //TESTING
 
   double divv=0;
+  double VOdx = grid->DX();
   switch (sv) {
    case 0: // Use vector c->P
                 divv  = grid->NextPt(c,XP)->P[var[0]] - grid->NextPt(c,XN)->P[var[0]];
@@ -325,7 +300,8 @@ void VectorOps_Cart::Curl(
     if (!grid->NextPt(c,static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Curl: Some neighbour cells don't exist",i);
 #endif //TESTING
-  if (!c->isgd) rep.error("Not Grid Cell! can't calculate curl. id follows",c->id);
+  if (!c->isgd) rep.error("Not Grid Cell! can't get curl. id:",c->id);
+  double VOdx = grid->DX();
 
   int vx=var[0], vy=var[1], vz=var[2];
   pion_flt *vxp=0, *vxn=0, *vyp=0, *vyn=0, *vzp=0, *vzn=0;
@@ -333,48 +309,60 @@ void VectorOps_Cart::Curl(
    case 0: // c->P
 //    cout <<"using P.\n";
     vxp = grid->NextPt(c,XP)->P; vxn = grid->NextPt(c,XN)->P;
-    if (VOnd>1) { vyp = grid->NextPt(c,YP)->P; vyn = grid->NextPt(c,YN)->P; }
-    if (VOnd>2) { vzp = grid->NextPt(c,ZP)->P; vzn = grid->NextPt(c,ZN)->P; }
+    if (VOnd>1) {
+      vyp = grid->NextPt(c,YP)->P;
+      vyn = grid->NextPt(c,YN)->P;
+    }
+    if (VOnd>2) {
+      vzp = grid->NextPt(c,ZP)->P;
+      vzn = grid->NextPt(c,ZN)->P;
+    }
     break;
    case 1: // c->Ph
 //    cout <<"using Ph = ["<<c->Ph[vx]<<", "<<c->Ph[vy]<<", "<<c->Ph[vz]<<" ]\n";
     vxp = grid->NextPt(c,XP)->Ph; vxn = grid->NextPt(c,XN)->Ph;
-    if (VOnd>1) { vyp = grid->NextPt(c,YP)->Ph; vyn = grid->NextPt(c,YN)->Ph; }
-    if (VOnd>2) { vzp = grid->NextPt(c,ZP)->Ph; vzn = grid->NextPt(c,ZN)->Ph; }
+    if (VOnd>1) {
+      vyp = grid->NextPt(c,YP)->Ph;
+      vyn = grid->NextPt(c,YN)->Ph;
+    }
+    if (VOnd>2) {
+      vzp = grid->NextPt(c,ZP)->Ph;
+      vzn = grid->NextPt(c,ZN)->Ph;
+    }
     break;
    case 2: // c->dU
 //    cout <<"using dU.\n";
     vxp = grid->NextPt(c,XP)->dU; vxn = grid->NextPt(c,XN)->dU;
-    if (VOnd>1) { vyp = grid->NextPt(c,YP)->dU; vyn = grid->NextPt(c,YN)->dU; }
-    if (VOnd>2) { vzp = grid->NextPt(c,ZP)->dU; vzn = grid->NextPt(c,ZN)->dU; }
+    if (VOnd>1) {
+      vyp = grid->NextPt(c,YP)->dU;
+      vyn = grid->NextPt(c,YN)->dU;
+    }
+    if (VOnd>2) {
+      vzp = grid->NextPt(c,ZP)->dU;
+      vzn = grid->NextPt(c,ZN)->dU;
+    }
     break;
    default:
     rep.error("Which vector to calculate on?  (VecCurl), don't know!",vec);
   }
 
   ans[0] =   0.0;
-//  if (equalD(vxp[vz],vxn[vz])) ans[1] = 0.0;
-//  else                         ans[1] = -(vxp[vz] - vxn[vz]);
   ans[1] = -(vxp[vz] - vxn[vz]);
   ans[2] =  (vxp[vy] - vxn[vy]);
-//  rep.printVec("curl: x-dir: ",ans,3);
   if (VOnd>1) {
     ans[0] +=  (vyp[vz] - vyn[vz]);
     ans[1] +=   0.0;
     ans[2] += -(vyp[vx] - vyn[vx]);
-//    rep.printVec("curl: y-dir: ",ans,3);
   }
   if (VOnd>2) {
     ans[0] += -(vzp[vy] - vzn[vy]);
     ans[1] +=  (vzp[vx] - vzn[vx]);
     ans[2] +=  0.0;
-//    rep.printVec("curl: z-dir: ",ans,3);
   }
   // All differences have the same denominator in cartesian cubic cells:
   ans[0] /= (2.*VOdx);
   ans[1] /= (2.*VOdx);
   ans[2] /= (2.*VOdx);
-//  rep.printVec("curl: total: ",ans,3);
   return;
 }
   
@@ -393,6 +381,7 @@ int VectorOps_Cart::SetEdgeState(
         class GridBaseClass *grid
         )
 {
+  double VOdx = grid->DX();
   switch (OA) {
     
    case OA1: // First Order Spatial Accuracy.
@@ -519,6 +508,8 @@ int VectorOps_Cart::DivStateVectorComponent(
 // ##################################################################
 // ##################################################################
 
+
+
 VectorOps_Cyl::VectorOps_Cyl(int n)
   : VectorOps_Cart(n)
 {
@@ -530,48 +521,33 @@ VectorOps_Cyl::VectorOps_Cyl(int n)
 }
 
 
-// ##################################################################
-// ##################################################################
-
-void VectorOps_Cyl::set_dx(const double x)
-{
-  //
-  // This will set VOdx, VOdA, VOdV for Cartesian.
-  //
-  VectorOps_Cart::set_dx(x);
-
-  //
-  // Now modify Volume and Area for Axi-symmetry.
-  // Volume assumes 2D, per unit azimuthal angle.
-  //
-  double dR = VOdx, dZ = VOdx;
-  VOdA = dZ*dR;
-  VOdV = M_PI * dZ;
-  //  VOdV = dZ*dR;
-  //  VOdA = dZ*dR;  
-  return;
-}
-
 
 // ##################################################################
 // ##################################################################
+
+
 
 VectorOps_Cyl::~VectorOps_Cyl() {}
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double VectorOps_Cyl::CellVolume(
       const cell *c,
       const double dR
       )
 {
-  /// cell vol = pi * (R+^2 - R-^2) * dz
+  /// cell vol = pi * (R+^2 - R-^2) * dz, where dz=dR
   double r = CI.get_dpos(c,Rcyl);
   r = (r+0.5*dR)*(r+0.5*dR) - (r-0.5*dR)*(r-0.5*dR);
-  return(VOdV*r);
+  return(M_PI*r*dR);
 }
+
+
 
 
 // ##################################################################
@@ -606,7 +582,6 @@ double VectorOps_Cyl::CellInterface(
     break;
    case TNcyl: case TPcyl:
     rep.error("3D cylindrical not implemented in CellInterface",dir);
-    return VOdA; // need a \delta\theta in the denominator here.
     break;
    case RNcyl:
     if (pos[Rcyl]>0 && pos[Rcyl]<dR) return 0.0;
@@ -629,8 +604,10 @@ double VectorOps_Cyl::CellInterface(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 double VectorOps_Cyl::max_grad_abs(
         const cell *c, 

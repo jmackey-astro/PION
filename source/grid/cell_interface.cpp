@@ -153,20 +153,6 @@ void cell_interface::unset_minimal_cell_data()
 
 
 
-void cell_interface::set_dx(const double dx)
-{
-  cell_diameter = dx;
-  dxo2 = 0.5*dx;
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 void cell_interface::set_ndim(const int nd)
 {
   ndim = nd;

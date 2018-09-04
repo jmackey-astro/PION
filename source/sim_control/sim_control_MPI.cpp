@@ -210,13 +210,8 @@ int sim_control_pllel::Init(
   err = override_params(narg, args);
   rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
   
-  //
-  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
-  //
-  grid.resize(1);
-  CI.set_dx(SimPM.dx);
-
   // Now set up the grid structure.
+  grid.resize(1);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   err = setup_grid(&(grid[0]),SimPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
@@ -230,7 +225,6 @@ int sim_control_pllel::Init(
   //
   err = set_equations();
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
-  spatial_solver->set_dx(SimPM.dx);
   spatial_solver->SetEOS(SimPM.gamma);
 
   //

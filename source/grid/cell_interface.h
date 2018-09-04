@@ -173,11 +173,6 @@ class cell_interface {
   void set_nvar(const int);
 
   ///
-  /// Set the cell size (for cells that are cubes).
-  ///
-  void set_dx(const double);
-
-  ///
   /// Set the global Xmin of the grid.
   ///
   void set_xmin(const double *);

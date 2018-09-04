@@ -182,14 +182,13 @@ int setup_NG_grid::setup_grid(
   setup_cell_extra_data(SimPM);
 
   //
-  // Set values cell interface class; note dx changes with level.
+  // Set values cell interface class.
   //
   double dx=(SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX];
-  CI.set_dx(dx);
+  CI.set_nlevels(dx,SimPM.grid_nlevels); // sets dx on all levels.
   CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
-  CI.set_nlevels(dx,SimPM.grid_nlevels);
   
   //
   // Now we can setup the grid:

@@ -41,13 +41,6 @@ class VectorOps_Sph : virtual public VectorOps_Cyl
         );
   
   ///
-  /// Specify delta-x for the grid (if a uniform grid!)
-  ///
-  virtual void set_dx(
-        const double ///< size of grid cell.
-        );
-  
-  ///
   /// Destructor
   /// 
   ~VectorOps_Sph();

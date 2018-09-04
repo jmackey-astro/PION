@@ -26,14 +26,14 @@
 #include "sim_control/sim_control_NG_MPI.h"
 #include "raytracing/raytracer_SC.h"
 
-#ifdef SILO
+//#ifdef SILO
 //#include "dataIO/dataio_silo.h"
-#include "dataIO/dataio_silo_utility.h"
-#endif // if SILO
-#ifdef FITS
+//#include "dataIO/dataio_silo_utility.h"
+//#endif // if SILO
+//#ifdef FITS
 //#include "dataIO/dataio_fits.h"
-#include "dataIO/dataio_fits_MPI.h"
-#endif // if FITS
+//#include "dataIO/dataio_fits_MPI.h"
+//#endif // if FITS
 
 #include <iostream>
 #include <sstream>
@@ -94,85 +94,27 @@ int sim_control_NG_MPI::Init(
   //
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
-  SimPM.grid_nlevels = 1;
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(myrank);
-  SimPM.levels[0].MCMD.set_nproc(nproc);
 
-  //
-  // Setup dataI/O class and check if we read from a single file or
-  // multiple files.  Should be a single file, but for FITS it might
-  // not be.
-  //
+  SimPM.typeofip=typeOfFile;
   setup_dataio_class(typeOfFile);
   if (!dataio->file_exists(infile))
     rep.error("infile doesn't exist!",infile);
 
-  if (typeOfFile==2) {
-    // FITS
-    string::size_type pos =infile.find("_0000.");
-    if (pos==string::npos) {
-      SimPM.levels[0].MCMD.ReadSingleFile = true;
-    }
-    else {
-      SimPM.levels[0].MCMD.ReadSingleFile = false;
-      ostringstream t; t.str("");
-      t<<"_"; t.width(4); t.fill('0');
-      t<<SimPM.levels[0].MCMD.get_myrank()<<".";
-      string t2=t.str();
-      infile.replace(pos,6,t2);
-    }
-  }
-  else if (typeOfFile==5) {
-    // SILO
-    string::size_type pos =infile.find("_0000.");
-    if (pos==string::npos) {
-      SimPM.levels[0].MCMD.ReadSingleFile = true;
-    }
-    else {
-      SimPM.levels[0].MCMD.ReadSingleFile = false;
-    }
-  }
-  else 
-    rep.error("bad input file type in Init",typeOfFile);
-
-  
-  //
-  // We need to decompose the domain here, because setup_grid() needs
-  // this, but this means we need to read the header to find out what
-  // the grid dimensions are.  So the header is read twice, but this
-  // should be ok because it only happens during initialisation.
-  //
   err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("PLLEL Init(): failed to read header",0,err);
 
-  // have to do something with SimPM.levels[0] because this
-  // is used to set the local domain size in decomposeDomain
-  SimPM.levels[0].parent=0;
-  SimPM.levels[0].child=0;
-  SimPM.levels[0].Ncell = SimPM.Ncell;
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
-  SimPM.levels[0].simtime = SimPM.simtime;
-  SimPM.levels[0].dt = 0.0;
-  SimPM.levels[0].multiplier = 1;
-
-  err = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
-  rep.errorTest("PLLEL Init():Couldn't Decompose Domain!",0,err);
-
-  // Now see if any commandline args override the Parameters from the file.
+  // Check if any commandline args override the file parameters.
   err = override_params(narg, args);
-  rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
+  rep.errorTest("(INIT::override_params)",0,err);
   
-  //
-  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
-  //
-  grid.resize(1);
-  CI.set_dx(SimPM.dx);
+  // setup the nested grid levels, and decompose the domain on each
+  // level
+  setup_NG_grid_levels(SimPM);
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    err = SimPM.levels[l].MCMD.decomposeDomain(SimPM, SimPM.levels[l]);
+    rep.errorTest("PLLEL Init():Decompose Domain!",0,err);
+    SimPM.levels[l].MCMD.ReadSingleFile = true; // legacy option.
+  }
 
   // Now set up the grid structure.
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";

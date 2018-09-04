@@ -17,6 +17,8 @@
 #include "decomposition/MCMD_control.h"
 #include "grid/setup_fixed_grid_MPI.h"
 #include "sim_control/sim_control.h"
+#include "sim_control/sim_control_NG.h"
+#include "sim_control/sim_control_MPI.h"
 
 
 #ifdef PARALLEL
@@ -28,7 +30,7 @@
 /// work on multiple processors with the domain split between them.
 /// 
 class sim_control_NG_MPI : 
-  virtual public sim_control_MPI,
+  virtual public sim_control_pllel,
   virtual public sim_control_NG,
   virtual public setup_grid_NG_MPI
 {
@@ -37,11 +39,11 @@ class sim_control_NG_MPI :
    ~sim_control_NG_MPI();
 
   ///
-  /// initialisation.
+  /// initialisation of a PION simulation.
   ///
-  /// This function checks if we are reading from single or multiple files,
-  /// modifies the input file string accordingly, checks the file exists, 
-  /// and then calls the sim_control::Init() function.
+  /// This function checks if the input file exists, reads the header
+  /// and sets up the grids, then reads the input file and puts the
+  /// data on the grid.
   ///
   /// \retval 0 success
   /// \retval 1 failure

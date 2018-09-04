@@ -161,7 +161,7 @@ uniform_grid_cyl_parallel::uniform_grid_cyl_parallel(
 #ifdef TESTING
   cout <<"cylindrical grid: dR="<<G_dx<<"\n";
 #endif 
-  set_dx(G_dx);
+  return;
 }
 
 
@@ -248,7 +248,7 @@ uniform_grid_sph_parallel::uniform_grid_sph_parallel(
 #ifdef TESTING
   cout <<"spherical grid: dr="<<G_dx<<"\n";
 #endif 
-  set_dx(G_dx);
+  return;
 }
 
 
