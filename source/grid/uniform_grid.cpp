@@ -311,8 +311,6 @@ UniformGrid::UniformGrid(
   }
 
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
-  set_dx(G_dx);
-
   RT=0;
 
 #ifdef TESTING
@@ -2094,7 +2092,7 @@ uniform_grid_cyl::uniform_grid_cyl(
 #ifdef TESTING
   cout <<"cylindrical grid: dr="<<G_dx<<"\n";
 #endif
-  set_dx(G_dx);
+  return;
 }
 
 
@@ -2449,7 +2447,7 @@ uniform_grid_sph::uniform_grid_sph(
 #ifdef TESTING
   cout <<"spherical grid: dr="<<G_dx<<"\n";
 #endif
-  set_dx(G_dx);
+  return;
 }
 
 

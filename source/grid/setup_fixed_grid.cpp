@@ -191,7 +191,8 @@ int setup_fixed_grid::setup_grid(
   //
   // Set Cell dx in cell interface class, and also xmin.
   //
-  CI.set_dx((SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX]);
+  double dx((SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX]);
+  CI.set_nlevels(dx,SimPM.grid_nlevels); // sets dx on all levels.
   CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);

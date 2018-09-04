@@ -27,7 +27,7 @@
 #endif // if SILO
 
 #include "grid/uniform_grid.h"
-#include "grid/setup_NG_MPI_grid.h"
+#include "grid/setup_grid_NG_MPI.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
@@ -121,8 +121,6 @@ int main(int argc, char **argv)
 
   err = SimSetup->set_equations();
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
-  //spatial_solver->set_dx(SimPM.dx);
-  //spatial_solver->SetEOS(SimPM.gamma);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
   if (SimPM->EP.cooling && !SimPM->EP.chemistry) {

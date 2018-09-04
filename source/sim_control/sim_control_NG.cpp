@@ -134,7 +134,6 @@ int sim_control_NG::Time_Int(
     int scale = 1;
     double mindt = 1.0e99;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-      spatial_solver->set_dx(SimPM.levels[l].dx);
 #ifdef TEST_INT
       cout <<"Calculate timestep, level "<<l<<", dx=";
       cout <<SimPM.levels[l].dx<<"\n";
@@ -241,7 +240,6 @@ void sim_control_NG::calculate_magnetic_pressure(
   double magp=0.0, cellvol=0.0;
   static double init_magp=-1.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
     
     cell *c=grid[l]->FirstPt();
     do {
@@ -281,7 +279,6 @@ void sim_control_NG::calculate_blastwave_radius(
   bool shock_found = false;
   //  static double last_dt=0.0;
   for (int l=SimPM.grid_nlevels-1; l>=0; l++) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
 
     if (shock_found) continue;
     cell *c=grid->LastPt();
@@ -373,7 +370,6 @@ double sim_control_NG::advance_step_OA1(
 
   // now calculate dU, the change in conserved variables on this grid,
   // for this step.
-  spatial_solver->set_dx(SimPM.levels[l].dx);
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing, if not already completed for getting
   // the timestep.
@@ -458,7 +454,6 @@ double sim_control_NG::advance_step_OA2(
   }
   dt2_this = SimPM.levels[l].dt;
 
-  spatial_solver->set_dx(SimPM.levels[l].dx);
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing
   if (grid->RT && (!FVI_need_column_densities_4dt ||
@@ -752,7 +747,6 @@ int sim_control_NG::check_energy_cons(
   nowMASS = 0.0;
   double totmom=0.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
     double dx = SimPM.levels[l].dx;
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();

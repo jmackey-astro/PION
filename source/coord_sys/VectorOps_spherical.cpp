@@ -41,39 +41,25 @@ VectorOps_Sph::VectorOps_Sph(int n)
 {
   cout <<"Setting up 1D spherical coordinates with ndim="<<VOnd<<"\n";
   if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",VOnd);
-  have_set_dx=false;
   return;
 }
 
 
-// ##################################################################
-// ##################################################################
-
-void VectorOps_Sph::set_dx(const double x)
-{
-  //
-  // This will set VOdx, VOdA, VOdV for Cartesian and Cylindrical.
-  //
-  VectorOps_Cyl::set_dx(x);
-
-  //
-  // Now modify Volume and Area for Spherical coords.
-  //
-  VOdV = 4.0 * M_PI / 3.0;
-  VOdA = 4.0 * M_PI;
-  return;
-}
-
 
 // ##################################################################
 // ##################################################################
+
+
 
 VectorOps_Sph::~VectorOps_Sph()
 {}
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double VectorOps_Sph::CellVolume(
       const cell *c,
@@ -87,12 +73,15 @@ double VectorOps_Sph::CellVolume(
   ///
   double temp = CI.get_dpos(c,Rsph);
   temp = pow(temp+0.5*dR, 3) - pow(temp-0.5*dR, 3);
-  return VOdV*temp;
+  return 4.0*M_PI*temp/3.0;
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double VectorOps_Sph::CellInterface(
       const cell *c,
@@ -121,10 +110,13 @@ double VectorOps_Sph::CellInterface(
   rep.error("VectorOps_Sph::CellInterface","fix me");
   return -1.0;
 }
-    
+
+
 
 // ##################################################################
 // ##################################################################
+
+
 
 double VectorOps_Sph::maxGradAbs(
         const cell *c,
@@ -171,8 +163,10 @@ double VectorOps_Sph::maxGradAbs(
 } // maxGradAbs
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void VectorOps_Sph::Gradient(
@@ -216,10 +210,12 @@ void VectorOps_Sph::Gradient(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
-// get divergence of vector quantity.
+
+
 double VectorOps_Sph::Divergence(
         const cell *c,
         const int sv,
@@ -264,8 +260,10 @@ double VectorOps_Sph::Divergence(
 } // Div
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void VectorOps_Sph::Curl(
@@ -292,8 +290,10 @@ void VectorOps_Sph::Curl(
 } // VecCurl
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Sph::SetEdgeState(
@@ -354,8 +354,10 @@ int VectorOps_Sph::SetEdgeState(
 } // SetEdgeState
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Sph::SetSlope(
@@ -443,8 +445,10 @@ int VectorOps_Sph::SetSlope(
 } // SetSlope
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Sph::DivStateVectorComponent(
@@ -483,6 +487,7 @@ int VectorOps_Sph::DivStateVectorComponent(
 
   return 0;
 } // DivStateVectorComponent
+
 
 
 // ##################################################################

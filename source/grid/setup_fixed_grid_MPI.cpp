@@ -110,11 +110,11 @@ int setup_fixed_grid_pllel::setup_grid(
   //
   // Set Cell dx in cell interface class, and also xmin.
   //
-  CI.set_dx((SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX]);
+  double dx = (SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX];
+  CI.set_nlevels(dx,1);
   CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
-  CI.set_nlevels(SimPM.levels[0].dx,1);
   //
   // Now set up the parallel uniform grid.
   //

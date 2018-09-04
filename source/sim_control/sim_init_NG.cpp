@@ -79,7 +79,6 @@ int sim_init_NG::Init(
   cout <<"(sim_init_NG::Init) Initialising grid"<<"\n";
 #endif
   int err=0;
-  class MCMDcontrol ppar; // unused for serial code.
   
   SimPM.typeofip=typeOfFile;
   setup_dataio_class(typeOfFile);
@@ -105,7 +104,6 @@ int sim_init_NG::Init(
   //
   err = set_equations();
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
-  spatial_solver->set_dx(SimPM.dx);
   spatial_solver->SetEOS(SimPM.gamma);
 
   err = setup_microphysics(SimPM);
@@ -122,7 +120,6 @@ int sim_init_NG::Init(
   // and then implement the boundary conditions on the grid and ghost cells.
   //
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
     //
     // Set Ph=P in every cell.
     //
@@ -178,7 +175,6 @@ int sim_init_NG::Init(
 
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
 #ifdef TESTING
     cout <<"updating internal boundaries for level "<<l<<"\n";
 #endif
@@ -293,7 +289,6 @@ int sim_init_NG::initial_conserved_quantities(
   //  cout <<"initERG: "<<dp.initERG<<"\n";
   initERG = 0.;  initMMX = initMMY = initMMZ = 0.; initMASS = 0.0;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    spatial_solver->set_dx(SimPM.levels[l].dx);
     double dx = SimPM.levels[l].dx;
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
