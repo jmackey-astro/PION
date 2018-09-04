@@ -24,8 +24,6 @@
 ///    - cfl=D     : change the CFL no. for the simulation, in range (0,1).
 ///    - cooling=N : cooling=0 for no cooling, 1 for Sutherland&Dopita1993.
 /// 
-/// Written on 2006-12-22-Friday
-/// 
 /// Modifications:
 /// - 2018.08.30 JM: wrote code.
 
@@ -37,7 +35,7 @@ using namespace std;
 #include "sim_constants.h"
 #include "tools/reporting.h"
 #include "grid/grid_base_class.h"
-#include "sim_control/sim_control_NG.h"
+#include "sim_control/sim_control_NG_MPI.h"
 
 
 int main(int argc, char **argv)
@@ -75,8 +73,8 @@ int main(int argc, char **argv)
     }
   }
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion NG MPI v1 running   ------------------\n";
-  cout <<"-------------------------------------------------------\n\n";
+  cout <<"---------   pion NG MPI v1.0 running   ----------------\n";
+  cout <<"-------------------------------------------------------\n";
 
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
@@ -89,7 +87,8 @@ int main(int argc, char **argv)
     ft=2;
   }
   else {
-    cout <<"(pion) IC file not fits/silo: assuming text parameterfile "<<args[1]<<"\n";
+    cout <<"(pion) IC file not fits/silo: assuming parameter file";
+    cout <<args[1]<<"\n";
     ft=1;
   }
 
@@ -135,7 +134,7 @@ int main(int argc, char **argv)
   delete [] args; args=0;
   
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion v.0.1  finsihed  ---------------------\n";
+  cout <<"---------   pion NG MPI v1.0 finsihed  ----------------\n";
   cout <<"-------------------------------------------------------\n";
 
   return 0;
