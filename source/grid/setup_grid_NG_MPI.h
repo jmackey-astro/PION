@@ -1,38 +1,42 @@
-/// \file setup_NG_MPI_grid.h
+/// \file setup_NG_grid.h
 /// 
-/// \brief Declares a class for setting up NG MPI grids.
+/// \brief Declares a class for setting up NG grids.
 /// 
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
-/// - 2018.08.31 JM: modified from NG grid setup class
+/// - 2015.02.09 JM: Split sim_control class into a setup class and
+///   a derived class for running simulations.
+/// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
+/// - 2018.01.24 JM: worked on making SimPM non-global
 
-#ifndef SETUP_NG_MPI_GRID_H
-#define SETUP_NG_MPI_GRID_H
+#ifndef SETUP_NESTED_GRID_H
+#define SETUP_NESTED_GRID_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
-#include "setup_fixed_grid_MPI.h"
+#include "setup_fixed_grid.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
-#include "boundaries/assign_update_bcs_NG_MPI.h"
+#include "boundaries/assign_update_bcs_NG.h"
+#include "setup_NG_grid.h"
+#include "setup_fixed_grid_MPI.h"
 
 ///
 /// Set up a static NG grid structure.  Serial code, so each
 /// level of the NG has a single grid.
 ///
-class setup_NG_MPI_grid :
-  virtual public setup_fixed_grid_MPI,
-  virtual public setup_NG_MPI_grid,
-  virtual public assign_update_bcs_NG_MPI
+class setup_NG_grid_MPI :
+  virtual public setup_NG_grid,
+  virturl public setup_
+  virtual public assign_update_bcs_NG
 {
   public:
-  setup_NG_MPI_grid();  ///< Simple constructor, initialises value.
-  virtual ~setup_NG_MPI_grid(); ///< Deletes any dynamic memory, if not already done.
-
+  setup_NG_grid_MPI() {}
+  ~setup_NG_grid_MPI() {}
 
   ///
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
@@ -45,7 +49,7 @@ class setup_NG_MPI_grid :
   /// Sets up a NG grid.
   ///
   int setup_grid(
-      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &, ///< vector of grids.
       class SimParams &      ///< pointer to simulation parameters
       );
 
@@ -55,7 +59,7 @@ class setup_NG_MPI_grid :
   ///
   int setup_raytracing(
       class SimParams &,    ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> & ///< address of vector of grid.
       );
 
   ///
@@ -66,30 +70,29 @@ class setup_NG_MPI_grid :
   ///
   int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> & ///< address of vector of grid.
       );   
-
 
 
   //---------------------------------------
   protected:
   //---------------------------------------
-
+  
   ///
   /// Set the boundary conditions string and initialise BC_bd
   ///
-  int setup_boundary_structs(
+  virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
       class GridBaseClass *,  ///< pointer to grid.
       const int          ///< level of grid in NG
       );
 
 
-}; // setup_NG_MPI_grid
+}; // setup_NG_grid
    
 /*************************************************************************/
 /*************************************************************************/
 /*************************************************************************/
 
 
-#endif // if not SETUP_NG_MPI_GRID_H
+#endif // if not SETUP_NESTED_GRID_H
