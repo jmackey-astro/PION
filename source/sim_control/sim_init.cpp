@@ -46,8 +46,6 @@ sim_init::sim_init()
 #ifdef TESTING
   cout << "(sim_init::Constructor)\n";
 #endif
-  dataio=0;
-  textio=0;
   SimPM.checkpoint_freq=INT_MAX;
   max_walltime = 1.0e100;
   return;
@@ -209,7 +207,7 @@ int sim_init::Init(
   
 #ifdef SERIAL
   SimPM.typeofip=typeOfFile;
-  setup_dataio_class(typeOfFile);
+  setup_dataio_class(SimPM,typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
   rep.errorTest("(INIT::get_parameters) err!=0 Something went wrong",0,err);
 #endif // SERIAL
@@ -230,7 +228,7 @@ int sim_init::Init(
   // All grid parameters are now set, so I can set up the appropriate
   // equations/solver class.
   //
-  err = set_equations();
+  err = set_equations(SimPM);
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
   spatial_solver->SetEOS(SimPM.gamma);
 
@@ -317,7 +315,7 @@ int sim_init::Init(
   if (SimPM.typeofip != SimPM.typeofop) {
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
-    setup_dataio_class(SimPM.typeofop);
+    setup_dataio_class(SimPM,SimPM.typeofop);
     if (!dataio)
       rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
@@ -345,54 +343,6 @@ int sim_init::Init(
 #endif // TESTING
   
   return(0);
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void sim_init::setup_dataio_class(
-      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
-      )
-{
-  //
-  // set up the right kind of data I/O class depending on the input.
-  //
-  switch (typeOfFile) {
-
-  case 1: // Start From ASCII Parameterfile.
-    dataio = new dataio_text(SimPM);
-    rep.error("dataio_text initialisation",dataio);
-    break;
-
-#ifdef FITS
-  case 2: // Start from FITS restartfile.
-  case 3: // Fits restartfile in table format (slower I/O than image...)
-    dataio = new DataIOFits(SimPM);
-    break;
-  case 4: // fits +ascii
-    dataio = new DataIOFits(SimPM);
-    textio = new dataio_text(SimPM);
-    break;
-#endif // if FITS
-
-#ifdef SILO
-  case 5: // Start from Silo snapshot.
-    dataio = new dataio_silo (SimPM, "DOUBLE");
-    break; 
-  case 6: // silo + text
-    dataio = new dataio_silo (SimPM, "DOUBLE");
-    textio = new dataio_text (SimPM);
-    if (!textio) rep.error("INIT:: textio initialisation",SimPM.typeofop);
-    break;
-#endif // if SILO
-  default:
-    rep.error("sim_init::Init unhandled filetype",typeOfFile);
-  }
-  return;
 }
 
 
@@ -696,128 +646,6 @@ int sim_init::override_params(int narg, string *args)
   cout <<"------------------------------------------------------\n\n";
   return(0);
 } // sim_init::override_params
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int sim_init::set_equations()
-{
-  cout <<"------------------------------------------------------\n";
-  cout <<"--------  Setting up solver for eqauations------------\n";
-
-  if (SimPM.solverType <0) rep.error("set_equations: solverType not set yet.",SimPM.solverType);
-  if (SimPM.eqntype <=0) rep.error("set_equations: eqntype not set yet.",SimPM.eqntype);
-  if (SimPM.eqnNDim !=3) rep.error("set_equations: eqnNDim not set right.",SimPM.eqnNDim);
-  if (SimPM.nvar <=0) rep.error("set_equations: nvar not set yet.",SimPM.nvar);
-  if (SimPM.ndim <=0) rep.error("set_equations: ndim not set yet.",SimPM.ndim);
-  if (SimPM.artviscosity <0) rep.error("set_equations: artviscosity not set yet.",SimPM.artviscosity);
-  if (SimPM.coord_sys <0) rep.error("set_equations: coordinate system not set.",SimPM.coord_sys);
-  
-  // Set the mean state vector to unity for now (passed into Riemann Solver, if needed.)
-  //  double *meanvec = new double [SimPM.nvar];
-  // for (int v=0;v<SimPM.nvar;v++) meanvec[v] = 1.;
-
-  if (spatial_solver) spatial_solver=0;
-
-  if (SimPM.coord_sys==COORD_CRT) {
-    cout <<"set_equations() Using Cartesian coord. system.\n";
-    switch (SimPM.eqntype) {
-    case EQEUL:
-      cout <<"set_equations() Using Euler Equations.\n";
-      spatial_solver = new class FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
-      break;
-    case EQMHD:
-      cout <<"set_equations() Using Ideal MHD Equations.\n";
-      spatial_solver = new class FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQMHD);
-      break;
-    case EQGLM:
-      cout <<"set_equations() Using GLM MHD Equations.\n";
-      spatial_solver = new class FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQGLM);
-      break;
-    case EQFCD:
-      cout <<"set_equations() Using Field-CD MHD Equations.\n";
-      rep.error("Field CD got lost in some code updates -- can re-do it from svn rev.100 or so",EQFCD);
-      break;
-    default:
-      rep.error("Don't know the specified equations...",SimPM.eqntype);
-      break;
-    }
-  } // cartesian
-
-  else if (SimPM.coord_sys==COORD_CYL) {
-    cout <<"set_equations() Using Cylindrical coord. system.\n";
-    switch (SimPM.eqntype) {
-    case EQEUL:
-      cout <<"set_equations() Using Euler Equations.\n";
-      spatial_solver = new class cyl_FV_solver_Hydro_Euler(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
-      break;
-#ifdef INCLUDE_EINT_ADI_HYDRO
-    case EQEUL_EINT:
-      cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
-      spatial_solver = new class cyl_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
-            SimPM.ndim, SimPM.CFL, SimPM.gamma,
-            SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
-      break;      
-#endif // if INCLUDE_EINT_ADI_HYDRO
-    case EQMHD:
-      cout <<"set_equations() Using Ideal MHD Equations.\n";
-      spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQMHD);
-      break;
-    case EQGLM:
-      cout <<"set_equations() Using GLM MHD Equations.\n";
-      spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(SimPM.nvar, SimPM.ndim, SimPM.CFL, SimPM.gamma, SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQGLM);
-      break;
-    default:
-      rep.error("not implemented yet for axisymmetry (only adiabatic hydro!)!!!!!!!!!!!",SimPM.eqntype);
-    }
-  } // axisymmetric
-  
-  else if (SimPM.coord_sys==COORD_SPH) {
-    cout <<"set_equations() Using Spherical coordinate system.\n";
-    switch (SimPM.eqntype) {
-    case EQEUL:
-      cout <<"set_equations() Using Euler Equations.\n";
-      spatial_solver = new class sph_FV_solver_Hydro_Euler(
-            SimPM.nvar, SimPM.ndim, SimPM.CFL,
-            SimPM.gamma, SimPM.RefVec,
-            SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL);
-      break;
-#ifdef INCLUDE_EINT_ADI_HYDRO
-    case EQEUL_EINT:
-      cout <<"set_equations() Using Euler Equations, integrating ***INTERNAL ENERGY***.\n";
-      spatial_solver = new class sph_FV_solver_Hydro_Euler_Eint(SimPM.nvar,
-            SimPM.ndim, SimPM.CFL, SimPM.gamma,
-            SimPM.RefVec, SimPM.etav, SimPM.ntracer);
-      if (!spatial_solver) rep.error("Couldn't set up solver/equations class.",EQEUL_EINT);
-      break;      
-#endif // if INCLUDE_EINT_ADI_HYDRO
-     default:
-      rep.error("not implemented yet for spherical (only hydro in 1D!)",SimPM.eqntype);
-    }
-  } // axisymmetric
-
-
-  //
-  // Check that we set up an equations class!
-  //
-  if (!spatial_solver)
-    rep.error("sim_init::set_equations() Failed to initialise an equations class.",spatial_solver);
-
-  cout <<"------------------------------------------------------\n\n";
-  return(0);
-} // set_equations.
 
 
 

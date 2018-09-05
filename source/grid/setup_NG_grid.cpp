@@ -153,12 +153,12 @@ void setup_NG_grid::setup_NG_grid_levels(
 
 
 int setup_NG_grid::setup_grid(
-      vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid,  ///< grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
   cout <<"------------------------------------------------------\n";
-  cout <<"------------  Setting up NG grid -----------------\n";
+  cout <<"----------------  Setting up NG grid -----------------\n";
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
@@ -176,8 +176,7 @@ int setup_NG_grid::setup_grid(
   else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   
   //
-  // May need to setup extra data in each cell for ray-tracing optical
-  // depths and/or viscosity variables.
+  // May need to setup extra data in each cell.
   //
   setup_cell_extra_data(SimPM);
 
@@ -258,6 +257,35 @@ cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_NG_grid::setup_raytracing(
+      class SimParams &SimPM,    ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      )
+{
+  int err = 0;
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    cout <<"setting up raytracing for grid level "<<l<<"\n";
+    err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
+    rep.errorTest("setup_NG_grid::setup_raytracing()",0,err);
+  }
+  
+  err += setup_evolving_RT_sources(SimPM);
+  rep.errorTest("setup_NG_grid::setup_evolving_RT_sources()",0,err);
+  
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
+    rep.errorTest("setup_NG_grid::update_evolving_RT_sources()",0,err);
+  }
+  return 0;
+}
 
 
 
@@ -400,27 +428,28 @@ int setup_NG_grid::setup_boundary_structs(
 
 
 
-int setup_NG_grid::setup_raytracing(
-      class SimParams &SimPM,    ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+void setup_NG_grid::setup_dataio_class(
+      class SimParams &par,     ///< simulation parameters
+      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
       )
 {
-  int err = 0;
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    cout <<"setting up raytracing for grid level "<<l<<"\n";
-    err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
-    rep.errorTest("setup_NG_grid::setup_raytracing()",0,err);
+  //
+  // set up the right kind of data I/O class depending on the input.
+  //
+  switch (typeOfFile) {
+
+#ifdef SILO
+  case 5: // Start from Silo snapshot.
+    dataio = new dataio_NG_silo (par, "DOUBLE");
+    break; 
+#endif // if SILO
+
+  default:
+    rep.error("sim_control_NG::Init unhandled filetype",typeOfFile);
   }
-  
-  err += setup_evolving_RT_sources(SimPM);
-  rep.errorTest("setup_NG_grid::setup_evolving_RT_sources()",0,err);
-  
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
-    rep.errorTest("setup_NG_grid::update_evolving_RT_sources()",0,err);
-  }
-  return 0;
+  return;
 }
+
 
 
 

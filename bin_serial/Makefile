@@ -406,17 +406,23 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o sim_init.o
 
-OBJ_NG_ICS = dataio_silo_NG.o setup_NG_grid.o sim_init_NG.o sim_init.o
+OBJ_NG_ICS = dataio_silo_NG.o setup_NG_grid.o sim_init.o
 
-OBJ_NG_SIM = dataio_silo_NG.o setup_NG_grid.o sim_init_NG.o sim_control_NG.o
+OBJ_NG_SIM = dataio_silo_NG.o setup_NG_grid.o sim_control_NG.o
 
-OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
+OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) \
+  $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_BCS)
+OBJECTS_ICGEN =  icgen.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) \
+  $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
 
-OBJECTS_NG_PION = main_NG.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
+OBJECTS_NG_PION = main_NG.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) \
+  $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
+  $(OBJ_BCS) $(OBJ_NG_BCS)
 
-OBJECTS_NG_ICGEN = icgen_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
+OBJECTS_NG_ICGEN = icgen_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) \
+  $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
+  $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####
@@ -475,8 +481,7 @@ icgen_NG.o: icgen_NG.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
   uniform_grid.h ${GLOBAL} microphysics_base.h dataio_base.h \
   dataio_silo.h dataio_fits.h setup_fixed_grid.h raytracer_base.h \
-  setup_NG_grid.h sim_init_NG.h sim_init.h \
-  assign_update_bcs_NG.h
+  setup_NG_grid.h sim_init.h assign_update_bcs_NG.h
 
 #####################
 # GRID CLASSES      #
@@ -576,12 +581,6 @@ sim_control.o:  sim_control.cpp sim_control.h ${GLOBAL} solver_eqn_base.h \
 sim_init.o: sim_init.h sim_init.cpp ${GLOBAL} setup_fixed_grid.h \
  microphysics_base.h solver_eqn_base.h raytracer_SC.h ${GLOBAL} \
  grid_base_class.h assign_update_bcs.h
-
-sim_init_NG.o: sim_init_NG.h sim_init_NG.cpp sim_init.h \
- ${GLOBAL} setup_NG_grid.h setup_fixed_grid.h grid_base_class.h \
- microphysics_base.h solver_eqn_base.h raytracer_SC.h \
- assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
-  NG_fine_to_coarse_boundaries.h boundaries.h
 
 time_integrator.o: time_integrator.cpp time_integrator.h sim_control.h \
  setup_fixed_grid.h calc_timestep.h assign_update_bcs.h grid_base_class.h \

@@ -15,7 +15,7 @@
 #include "defines/testing_flags.h"
 
 #include "decomposition/MCMD_control.h"
-#include "grid/setup_fixed_grid_MPI.h"
+#include "grid/setup_grid_NG_MPI.h"
 #include "sim_control/sim_control.h"
 #include "sim_control/sim_control_NG.h"
 #include "sim_control/sim_control_MPI.h"
@@ -86,9 +86,9 @@ class sim_control_NG_MPI :
   //    );
 
   /// function to setup parallel data-I/O class.
-  //void setup_dataio_class(
-  //    const int  ///< type of I/O: 2=fits,5=silo
-  //    );
+  void setup_dataio_class(
+      const int  ///< type of I/O: 2=fits,5=silo
+      );
 
 }; // sim_control_NG_MPI
 

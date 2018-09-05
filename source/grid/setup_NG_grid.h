@@ -10,8 +10,8 @@
 /// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
 /// - 2018.01.24 JM: worked on making SimPM non-global
 
-#ifndef SETUP_NESTED_GRID_H
-#define SETUP_NESTED_GRID_H
+#ifndef SETUP_NG_GRID_H
+#define SETUP_NG_GRID_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -32,8 +32,8 @@ class setup_NG_grid :
   virtual public assign_update_bcs_NG
 {
   public:
-  setup_NG_grid();  ///< Simple constructor, initialises value.
-  virtual ~setup_NG_grid(); ///< Deletes any dynamic memory, if not already done.
+  setup_NG_grid();
+  virtual ~setup_NG_grid();
 
 
   ///
@@ -76,6 +76,12 @@ class setup_NG_grid :
   //---------------------------------------
   protected:
   //---------------------------------------
+
+  /// function to setup data-I/O class.
+  virtual void setup_dataio_class(
+      class SimParams &,  ///< pointer to simulation parameters
+      const int  ///< type of I/O: 1=text,2=fits,5=silo
+      );
 
   ///
   /// Set the boundary conditions string and initialise BC_bd

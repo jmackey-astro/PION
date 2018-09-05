@@ -41,40 +41,6 @@ class sim_init_NG
   sim_init_NG();
   ~sim_init_NG();
    
-  ///
-  /// initialisation.
-  ///
-  /// This function calls a sequence of other functions to set up the grid
-  /// and populate it with the initial conditions, and give it the appropriate
-  /// boundary conditions.  It gets the simulation ready to start, and checks 
-  /// that everything is ready to start before returning.
-  ///
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  virtual int Init(
-      string,   ///< Name of input file.
-      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
-      int,      ///< Number of command-line arguments.
-      string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-      );
-
-
-  protected:
-
-  /// function to setup data-I/O class.
-  virtual void setup_dataio_class(
-      const int  ///< type of I/O: 1=text,2=fits,5=silo
-      );
-
-  ///
-  /// Calculates total values of conserved quantities.
-  ///
-  int initial_conserved_quantities(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-      );
-
 
 };
 

@@ -7,8 +7,8 @@
 /// Modifications :\n
 /// - 2018.05.04 JM: worked on class.
 
-#ifndef SIM_CONTROL_NESTED_H
-#define SIM_CONTROL_NESTED_H
+#ifndef SIM_CONTROL_NG_H
+#define SIM_CONTROL_NG_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -19,7 +19,6 @@
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
 #include "sim_control/sim_control.h" 
-#include "sim_control/sim_init_NG.h"
 #include "sim_control/calc_timestep.h"
 #include "sim_control/time_integrator.h"
 
@@ -28,13 +27,30 @@
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
 class sim_control_NG :
-  virtual public sim_control,
-  virtual public sim_init_NG
-
+  virtual public sim_control
 {
   public:
   sim_control_NG();  ///< Simple constructor
   virtual ~sim_control_NG(); ///< Destructor
+
+  ///
+  /// initialisation.
+  ///
+  /// This function calls a sequence of other functions to set up the grid
+  /// and populate it with the initial conditions, and give it the appropriate
+  /// boundary conditions.  It gets the simulation ready to start, and checks 
+  /// that everything is ready to start before returning.
+  ///
+  /// \retval 0 success
+  /// \retval 1 failure
+  ///
+  virtual int Init(
+      string,   ///< Name of input file.
+      int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
+      int,      ///< Number of command-line arguments.
+      string *, ///< Pointer to array of command-line arguments.
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
   ///
   /// Time integration
@@ -48,17 +64,15 @@ class sim_control_NG :
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 
-  ///
-  /// finalise the simulation, clean up, delete data.
-  /// This function finished the simulation gracefully (hopefully!).
-  ///
-  ///int Finalise(
-  ///    vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
-  ///    );
-
-
-   //---------------------------------------
+  //---------------------------------------
   protected:
+
+  ///
+  /// Calculates total values of conserved quantities.
+  ///
+  int initial_conserved_quantities(
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
 
 #ifdef BLAST_WAVE_CHECK
   ///
@@ -140,4 +154,4 @@ class sim_control_NG :
 /*************************************************************************/
 
 
-#endif // if not SIM_CONTROL_NESTED_H
+#endif // if not SIM_CONTROL_NG_H

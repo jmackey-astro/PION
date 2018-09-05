@@ -20,6 +20,7 @@
 #include "grid/uniform_grid.h"
 #include "decomposition/MCMD_control.h"
 #include "boundaries/assign_update_bcs.h"
+#include "spatial_solvers/solver_eqn_base.h"
 
 #define TIMESTEP_FULL 2
 #define TIMESTEP_FIRST_PART 1
@@ -28,7 +29,7 @@
 
 ///
 /// The simplest finite volume grid - a uniform grid with cells that
-/// are cubes in the chosen coordinates.  This class sets up the grid and
+/// are cubes in the chosen coordinates.  This sets up the grid and
 /// other things to get a simulation ready to run, so it is useful
 /// for simulation analysis.  PION itself uses a derived class to
 /// setup and run simulations.
@@ -36,9 +37,8 @@
 class setup_fixed_grid : virtual public assign_update_bcs
 {
   public:
-  setup_fixed_grid();  ///< Simple constructor, initialises value.
-  virtual ~setup_fixed_grid(); ///< Deletes any dynamic memory, if not already done.
-
+  setup_fixed_grid();
+  virtual ~setup_fixed_grid();
 
   ///
   /// Setup cell extra data through the cell_interface class CI.
@@ -73,8 +73,9 @@ class setup_fixed_grid : virtual public assign_update_bcs
       );
 
   ///
-  /// Check for any time-evolving radiation sources, and read the evolution
-  /// file if there are any.  Data is stored in global struct SimPM.STAR[v]
+  /// Check for any time-evolving radiation sources, and read
+  /// the evolution file if there are any.  Data is stored in
+  /// global struct SimPM.STAR[v]
   ///
   virtual int setup_evolving_RT_sources(
       class SimParams &  ///< pointer to simulation parameters
@@ -100,12 +101,24 @@ class setup_fixed_grid : virtual public assign_update_bcs
       class GridBaseClass *  ///< pointer to grid.
       );
 
+  ///
+  /// Initialise the correct Equations to solve, based on paramters.
+  ///
+  int set_equations(
+      class SimParams &  ///< simulation parameters
+      );
+
+  ///
+  /// Get pointer to equations class.
+  ///
+  class FV_solver_base * get_solver_ptr() {return spatial_solver;}
+
 
   //---------------------------------------
   protected:
   //---------------------------------------
 
-  /// flag: true if timestep limit needs raytracing column densities
+  /// flag: true if calc_timestep needs raytracing column densities
   bool FVI_need_column_densities_4dt;
 
   int FVI_nheat; ///< number of RT heating sources
@@ -124,7 +137,22 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   class FV_solver_base *spatial_solver;
 
+  ///
+  /// pointer to class for reading/writing data.
+  ///
+  class DataIOBase *dataio;
 
+  ///
+  /// pointer to class for reading/writing ascii-text-data.
+  ///
+  class DataIOBase *textio;
+
+  /// function to setup data-I/O class.
+  virtual void setup_dataio_class(
+      class SimParams &,  ///< pointer to simulation parameters
+      const int  ///< type of I/O: 1=text,2=fits,5=silo
+      );
+ 
   ///
   /// Set the boundary conditions string and initialise BC_bd
   ///
@@ -132,10 +160,6 @@ class setup_fixed_grid : virtual public assign_update_bcs
       class SimParams &,  ///< reference to SimParams list.
       class GridBaseClass *  ///< pointer to grid.
       );
-
-
-
-
 
 }; // setup_fixed_grid
    
