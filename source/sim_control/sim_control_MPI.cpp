@@ -355,7 +355,7 @@ int sim_control_pllel::Time_Int(
   cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   cout <<"------------------------------------------------------------\n";
   int err=0;
-  int log_freq=10;
+  int log_freq=1;
   SimPM.maxtime=false;
   clk.start_timer("time_int"); double tsf=0.0;
   while (SimPM.maxtime==false) {
@@ -495,7 +495,9 @@ int sim_control_pllel::calculate_timestep(
   t_mp = COMM->global_operation_double("MIN", t_mp);
   //cout <<"proc "<<SimPM.levels[0].MCMDM.get_myrank();
   //cout<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
-  
+
+  par.dt = min(t_dyn,t_mp);
+
   // Write step-limiting info every tenth timestep.
   if (t_mp<t_dyn && (par.timestep%10)==0)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
@@ -524,11 +526,6 @@ int sim_control_pllel::calculate_timestep(
   // an artificially larger speed associated with a shortened timestep.
   //
   sp_solver->GotTimestep(t_dyn,grid->DX());
-
-  //
-  // Now the timestep is the min of the global microphysics and Dynamics timesteps.
-  //
-  SimPM.dt = min(t_dyn,t_mp);
 
   //
   // Check that the timestep doesn't increase too much between step, and that it 

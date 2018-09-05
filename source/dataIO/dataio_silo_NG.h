@@ -76,10 +76,10 @@ class dataio_NG_silo : public dataio_silo {
   /// Call once to setup arrays with the properties of the grid, for
   /// writing to the Silo Quadmesh.
   ///
-  virtual int setup_grid_properties(
-      class GridBaseClass *, ///< pointer to data.
-      class SimParams &  ///< pointer to simulation parameters
-      );
+  //virtual int setup_grid_properties(
+  //    class GridBaseClass *, ///< pointer to data.
+  //    class SimParams &  ///< pointer to simulation parameters
+  //    );
   
 };
 

@@ -81,6 +81,8 @@ int calc_timestep::calculate_timestep(
   //
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
+  //cout <<"proc 0";
+  //cout<<":\t my t_dyn="<<t_dyn<<" and global t_dyn="<<t_dyn<<"\n";
   t_mp  = calc_microphysics_dt(par,grid,l);
 #ifdef TESTING
   if (t_mp<t_dyn)
@@ -264,11 +266,11 @@ double calc_timestep::calc_dynamics_dt(
   // inflow (such as a jet), which doesn't appear on the grid
   // immediately.
   //
-#ifndef RT_TEST_PROBS
-  if (par.timestep<=10) {
-     c = grid->FirstPt_All();
-  }
-#endif // not RT_TEST_PROBS
+//#ifndef RT_TEST_PROBS
+//  if (par.timestep<=10) {
+//     c = grid->FirstPt_All();
+//  }
+//#endif // not RT_TEST_PROBS
 
   //
   // Now go through all of the cells on the local grid.
@@ -298,16 +300,16 @@ double calc_timestep::calc_dynamics_dt(
     // boundary data in this, using NextPt_All(); otherwise use the
     // NextPt() command to only take grid cells.
     //
-#ifndef RT_TEST_PROBS
-    if (par.timestep<=10) {
-      c = grid->NextPt_All(c);
-    }
-    else {
-#endif // not RT_TEST_PROBS
+//#ifndef RT_TEST_PROBS
+//    if (par.timestep<=10) {
+//      c = grid->NextPt_All(c);
+//    }
+//    else {
+//#endif // not RT_TEST_PROBS
       c = grid->NextPt(c);
-#ifndef RT_TEST_PROBS
-    }
-#endif // not RT_TEST_PROBS
+//#ifndef RT_TEST_PROBS
+//    }
+//#endif // not RT_TEST_PROBS
 
   } while (c != 0);
 

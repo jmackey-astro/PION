@@ -23,7 +23,7 @@
 #include "dataIO/dataio_fits.h"
 #endif // if FITS
 #ifdef SILO
-#include "dataIO/dataio_silo_NG.h"
+#include "dataIO/dataio_silo.h"
 #endif // if SILO
 
 #include "grid/uniform_grid.h"
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   class get_sim_info *siminfo=0;
   class ICsetup_base *ic=0;
   class ReadParams   *rp=0;
-  class SimParams *SimPM;
+  class SimParams SimPM;
   MP=0;  // global microphysics class pointer.
 
   string pfile = argv[1];
@@ -77,25 +77,24 @@ int main(int argc, char **argv)
   else icftype="fits"; // This is the default for now.
   
   class setup_NG_grid *SimSetup = new setup_NG_grid();
-  SimPM = &(SimSetup->SimPM);
 
   siminfo=0; siminfo = new class get_sim_info ();
   if (!siminfo) rep.error("Sim Info class init error",siminfo);
   err = 0;
-  err += siminfo->read_gridparams(pfile, *SimPM);
+  err += siminfo->read_gridparams(pfile, SimPM);
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
 
-  SimSetup->setup_NG_grid_levels(*SimPM);
+  SimSetup->setup_NG_grid_levels(SimPM);
   vector<class GridBaseClass *> grid;
-  grid.resize(SimPM->grid_nlevels);
+  grid.resize(SimPM.grid_nlevels);
 
   //
   // Set up the grids.
   //
-  err = SimSetup->setup_grid(grid,*SimPM);
-  SimPM->dx = grid[0]->DX();
+  err = SimSetup->setup_grid(grid,SimPM);
+  SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
   //
@@ -108,41 +107,41 @@ int main(int argc, char **argv)
   string seek="ics";
   string ics = rp->find_parameter(seek);
   setup_ics_type(ics,&ic);
-  ic->set_SimPM(SimPM);
+  ic->set_SimPM(&SimPM);
 
   err = SimSetup->set_equations(SimPM);
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
-  if (SimPM->EP.cooling && !SimPM->EP.chemistry) {
+  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
     // don't need to set up the class, because it just does cooling and
     // there is no need to equilibrate anything.
   }
-  else if (SimPM->ntracer>0 && (SimPM->EP.cooling || SimPM->EP.chemistry)) {
+  else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
     cout <<"MAIN: setting up microphysics module\n";
-    SimSetup->setup_microphysics(*SimPM);
+    SimSetup->setup_microphysics(SimPM);
     if (!MP) rep.error("microphysics init",MP);
   }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
-  for (int l=0;l<SimPM->grid_nlevels;l++) {
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
     err += ic->setup_data(rp,grid[l]);
     if (err) rep.error("Initial conditions setup failed.",err);
   }
 
-  for (int l=0; l<SimPM->grid_nlevels; l++) {
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
     // Set Ph=P in every cell.
     cell *c = grid[l]->FirstPt();
     do {
-      for(int v=0;v<SimPM->nvar;v++) c->Ph[v]=c->P[v];
+      for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
     } while ((c=grid[l]->NextPt(c))!=0);
     //
     // If I'm using the GLM method, make sure Psi variable is initialised.
     //
-    if (SimPM->eqntype==EQGLM && SimPM->timestep==0) {
-      for (int l=0; l<SimPM->grid_nlevels; l++) {
+    if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
+      for (int l=0; l<SimPM.grid_nlevels; l++) {
         c = grid[l]->FirstPt(); do {
           c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
         } while ( (c=grid[l]->NextPt(c)) !=0);
@@ -155,33 +154,33 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(*SimPM,grid);
+  SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
-  err += SimSetup->setup_raytracing(*SimPM,grid);
+  err += SimSetup->setup_raytracing(SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
-  for (int l=0;l<SimPM->grid_nlevels;l++) {
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
-    err = SimSetup->assign_boundary_data(*SimPM,l,grid[l]);
+    err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
     rep.errorTest("icgen_NG::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  for (int l=0; l<SimPM->grid_nlevels; l++) {
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
     cout <<"updating external boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateExternalBCs(*SimPM,l,grid[l], 
-                  solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], 
+                  solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("setup_NG_grid: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
-  for (int l=SimPM->grid_nlevels-1; l>=0; l--) {
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
     cout <<"updating internal boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateInternalBCs(*SimPM,l,grid[l], 
-                  solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
+    err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], 
+                  solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("setup_NG_grid: error from bounday update",0,err);
   // ----------------------------------------------------------------
@@ -190,19 +189,19 @@ int main(int argc, char **argv)
   // if data initialised ok, maybe we need to equilibrate the 
   // chemistry...
   //
-  if (SimPM->ntracer>0 && (SimPM->EP.chemistry)) {
+  if (SimPM.ntracer>0 && (SimPM.EP.chemistry)) {
     cout <<"MAIN: equilibrating the chemical species.\n";
     if (!MP) rep.error("microphysics init",MP);
 
     // first avoid cooling the gas in getting to equilbrium, by
     // setting update_erg to false.
-    bool uerg = SimPM->EP.update_erg;
-    SimPM->EP.update_erg = false;
-    err = ic->equilibrate_MP(grid[0],MP,rp,*SimPM);
+    bool uerg = SimPM.EP.update_erg;
+    SimPM.EP.update_erg = false;
+    err = ic->equilibrate_MP(grid[0],MP,rp,SimPM);
     if (err)
       rep.error("setting chemical states to equilibrium failed",err);
 
-    SimPM->EP.update_erg = uerg;
+    SimPM.EP.update_erg = uerg;
     cout <<"MAIN: finished equilibrating the chemical species.\n";
   }
   // ----------------------------------------------------------------
@@ -217,29 +216,26 @@ int main(int argc, char **argv)
   }
 
   dataio = 0; // zero the class pointer.
-  if (icftype=="text") {
-    cout <<"WRITING ASCII TEXT FILE: ";
-    cout << icfile << "\n";
-  }
-
 #ifdef FITS    
   if (icftype=="fits") {
     cout <<"WRITING FITS FILE: ";
     cout << icfile << "\n";
-    dataio = 0; dataio = new DataIOFits (*SimPM);
+    dataio = 0;
+    dataio = new DataIOFits (SimPM);
   }
 #endif // if fits.
 
 #ifdef SILO
   if (icftype=="silo") {
     cout <<"WRITING SILO FILE: ";
-    //    icfile = icfile+".silo";
     cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_NG_silo (*SimPM, "DOUBLE");
+    dataio=0;
+    dataio=new dataio_silo (SimPM, "DOUBLE");
   }
 #endif // if SILO defined.
+
   if (!dataio) rep.error("IO class initialisation: ",icftype);
-  err = dataio->OutputData(icfile,grid, *SimPM, 0);
+  err = dataio->OutputData(icfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
   cout <<icftype<<" FILE WRITTEN in";

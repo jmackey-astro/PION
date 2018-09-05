@@ -26,6 +26,15 @@
 #include "raytracing/raytracer_SC_pllel.h"
 #include "grid/uniform_grid_pllel.h"
 
+#include "dataIO/dataio_base.h"
+#include "dataIO/dataio_text.h"
+#ifdef SILO
+#include "dataIO/dataio_silo_utility.h"
+#endif // if SILO
+#ifdef FITS
+#include "dataIO/dataio_fits_MPI.h"
+#endif // if FITS
+
 #include <iostream>
 using namespace std;
 

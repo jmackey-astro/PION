@@ -200,7 +200,7 @@ sim_control::~sim_control()
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
 int sim_control::Time_Int(
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< grid pointers.
       )
 {
   cout <<"------------------------------------------------------------\n";
@@ -247,7 +247,8 @@ int sim_control::Time_Int(
 
 #if ! defined (CHECK_MAGP)
 #if ! defined (BLAST_WAVE_CHECK)
-    cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
+    cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
+    cout <<"\t timestep: "<<SimPM.timestep;
     tsf=clk.time_so_far("Time_Int");
     cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
 #endif
@@ -255,10 +256,16 @@ int sim_control::Time_Int(
     err += check_energy_cons(grid[0]);
 
     err+= output_data(grid);
-    if (err!=0){cerr<<"(TIME_INT::output_data) err!=0 Something went wrong\n";return(1);}
+    if (err!=0) {
+      cerr<<"(TIME_INT::output_data) err!=0 Something went wrong\n";
+      return(1);
+    }
 
     err+= check_eosim();
-    if (err!=0){cerr<<"(TIME_INT::) err!=0 Something went wrong\n";return(1);}
+    if (err!=0) {
+      cerr<<"(TIME_INT::) err!=0 Something went wrong\n";
+      return(1);
+    }
   }
 
   cout <<"(sim_control::Time_Int) TIME_INT FINISHED.  MOVING ON TO FINALISE SIM.\n";

@@ -39,16 +39,6 @@
 #endif
 
 
-
-#include "dataIO/dataio_base.h"
-#ifdef SILO
-#include "dataIO/dataio_silo_NG.h"
-#endif // if SILO
-#ifdef FITS
-#include "dataIO/dataio_fits.h"
-#endif // if FITS
-
-
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -388,6 +378,36 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #endif
   return 0;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_grid_NG_MPI::setup_dataio_class(
+      class SimParams &par,     ///< simulation parameters
+      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
+      )
+{
+  //
+  // set up the right kind of data I/O class depending on the input.
+  //
+  switch (typeOfFile) {
+
+#ifdef SILO
+  case 5: // Start from Silo snapshot.
+    dataio = new dataio_silo_utility (par, "DOUBLE");
+    break; 
+#endif // if SILO
+
+  default:
+    rep.error("sim_control_NG::Init unhandled filetype",typeOfFile);
+  }
+  return;
+}
+
 
 
 // ##################################################################

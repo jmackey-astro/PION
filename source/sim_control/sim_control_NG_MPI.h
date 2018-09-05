@@ -85,11 +85,6 @@ class sim_control_NG_MPI :
   //    const int ///< level in NG grid (if applicable)
   //    );
 
-  /// function to setup parallel data-I/O class.
-  void setup_dataio_class(
-      const int  ///< type of I/O: 2=fits,5=silo
-      );
-
 }; // sim_control_NG_MPI
 
 #endif // PARALLEL

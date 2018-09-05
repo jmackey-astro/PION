@@ -22,6 +22,16 @@
 #include "grid/setup_NG_grid.h"
 #include "grid/setup_fixed_grid_MPI.h"
 
+
+#include "dataIO/dataio_base.h"
+#ifdef SILO
+#include "dataIO/dataio_silo_utility.h"
+#endif // if SILO
+#ifdef FITS
+#include "dataIO/dataio_fits.h"
+#endif // if FITS
+
+
 ///
 /// Set up a static NG grid structure.  Serial code, so each
 /// level of the NG has a single grid.
@@ -84,6 +94,11 @@ class setup_grid_NG_MPI :
       const int          ///< level of grid in NG
       );
 
+  /// function to setup parallel data-I/O class.
+  void setup_dataio_class(
+      class SimParams &,  ///< pointer to simulation parameters
+      const int  ///< type of I/O: 2=fits,5=silo
+      );
 
 }; // setup_grid_NG_MPI
    
