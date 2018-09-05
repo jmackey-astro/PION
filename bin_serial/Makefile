@@ -406,9 +406,9 @@ endif
 
 OBJ_SIM = sim_control.o time_integrator.o calc_timestep.o sim_init.o
 
-OBJ_NG_ICS = dataio_silo_NG.o setup_NG_grid.o sim_init.o
+OBJ_NG_ICS = setup_NG_grid.o sim_init.o
 
-OBJ_NG_SIM = dataio_silo_NG.o setup_NG_grid.o sim_control_NG.o
+OBJ_NG_SIM = setup_NG_grid.o sim_control_NG.o
 
 OBJECTS_PION = main.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) \
   $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS)
@@ -422,7 +422,7 @@ OBJECTS_NG_PION = main_NG.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) \
 
 OBJECTS_NG_ICGEN = icgen_NG.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) \
   $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
-  $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
+  $(OBJ_NG_ICS) $(OBJ_BCS)  $(OBJ_NG_BCS)
 
 #####################################################
 ##### END OF LIST OF OBJECT FILES               #####

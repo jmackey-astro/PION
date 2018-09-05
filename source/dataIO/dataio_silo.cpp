@@ -244,78 +244,91 @@ int dataio_silo::OutputData(
       )
 {
   int err=0;
-
-  if (!cg[0])
-    rep.error("dataio_silo::OutputData() null pointer to grid!",cg[0]);
-  dataio_silo::gp = cg[0];
-
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
     err = dataio_silo::setup_write_variables(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() write vars",err);
   }
+  string filename=outfile;
 
-  err = dataio_silo::choose_filename(outfile, file_counter);
-  if (err) {
-    cerr<<"dataio_silo::OutputData() error choosing filename.\n";
-    return err;
-  }
-  cout <<"\tWriting to file: "<<silofile<<"\n";
-  ofstream fff;
-  fff.open(silofile.c_str());
-  if (!fff) rep.error("!!!**** Can't write to file.  Does directory exist???",silofile);
-  fff.close();
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-  //
-  // Create file
-  //
-  *db_ptr = 0;
-  if (silo_filetype==DB_HDF5) {
-    DBSetCompression("METHOD=GZIP LEVEL=1");
-    DBSetFriendlyHDF5Names(1);
-  }
-  *db_ptr = DBCreate(silofile.c_str(), DB_CLOBBER, DB_LOCAL, "PION data", silo_filetype);
-  if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
-  //cout <<"\tdb_ptr="<<db_ptr<<"\n";
-  //cout <<"\t*db_ptr="<<*db_ptr<<"\n";
+    // write a different file for each level in the NG grid.
+    if (SimPM.grid_nlevels>1) {
+      ostringstream temp;
+      temp << outfile << "_level";
+      temp.width(2); temp.fill('0');
+      temp << l;
+      filename=temp.str();
+    }
+  
+  
+    err = dataio_silo::choose_filename(outfile, file_counter);
+    if (err) {
+      cerr<<"dataio_silo::OutputData() error choosing filename.\n";
+      return err;
+    }
+    cout <<"\tWriting to file: "<<silofile<<"\n";
+    ofstream fff;
+    fff.open(silofile.c_str());
+    if (!fff) {
+      rep.error("!!!**** Can't write file.  directory exists???",
+                silofile);
+    }
+    fff.close();
 
-  if (!have_setup_gridinfo) {
+    //
+    // Create file
+    //
+    *db_ptr = 0;
+    if (silo_filetype==DB_HDF5) {
+      DBSetCompression("METHOD=GZIP LEVEL=1");
+      DBSetFriendlyHDF5Names(1);
+    }
+    *db_ptr = DBCreate(silofile.c_str(), DB_CLOBBER, DB_LOCAL,
+                       "PION data", silo_filetype);
+    if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
+
     // set grid properties for quadmesh
     err = dataio_silo::setup_grid_properties(gp, SimPM);
+    if (err) {
+      rep.error("dataio_silo::OutputData() grid props", err);
+    }
+
+    //
+    // now write the simulation parameters to the header part of
+    // the file.
+    //
+    DBSetDir(*db_ptr,"/");
+    DBMkDir(*db_ptr,"header");
+    DBSetDir(*db_ptr,"/header");
+    err = write_simulation_parameters(SimPM);
     if (err)
-      rep.error("dataio_silo::OutputData() error setting up grid_props", err);
-  }
+      rep.error("dataio_silo::OutputData() writing header",err);
 
-  //
-  // now write the simulation parameters to the header part of the file.
-  //
-  DBSetDir(*db_ptr,"/");
-  DBMkDir(*db_ptr,"header");
-  DBSetDir(*db_ptr,"/header");
-  err = write_simulation_parameters(SimPM);
-  if (err)
-    rep.error("dataio_silo::OutputData() error writing header to silo file",err);
-
-  //
-  // Create data directory, generate the mesh in the file, and then write each
-  // variable in turn to the mesh.
-  //
-  DBSetDir(*db_ptr,"/");
-  string meshname="UniformGrid";
-  err = dataio_silo::generate_quadmesh(*db_ptr, meshname,SimPM);
-  if (err)
-    rep.error("dataio_silo::OutputData() error writing quadmesh to silo file",err);
-
-  dataio_silo::create_data_arrays(SimPM);
-  for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
-    err = dataio_silo::write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
+    //
+    // Create data directory, generate the mesh in the file, and
+    // then write each variable in turn to the mesh.
+    //
+    DBSetDir(*db_ptr,"/");
+    string meshname="UniformGrid";
+    err = dataio_silo::generate_quadmesh(*db_ptr, meshname,SimPM);
     if (err)
-      rep.error("dataio_silo::OutputData() error writing variable",(*i));
-  }
-  dataio_silo::delete_data_arrays();
-  DBSetDir(*db_ptr,"/");
-  DBClose(*db_ptr); //*db_ptr=0;
+      rep.error("dataio_silo::OutputData() writing quadmesh",err);
+
+    dataio_silo::create_data_arrays(SimPM);
+    for (std::vector<string>::iterator i=varnames.begin();
+         i!=varnames.end(); ++i) {
+      err = dataio_silo::write_variable2mesh(
+                                  SimPM, *db_ptr, meshname, (*i));
+      if (err)
+        rep.error("dataio_silo::OutputData() writing var",(*i));
+    }
+    dataio_silo::delete_data_arrays();
+    DBSetDir(*db_ptr,"/");
+    DBClose(*db_ptr); //*db_ptr=0;
+  } // loop over levels.
 
   return 0;
 }
@@ -378,85 +391,72 @@ int dataio_silo::ReadData(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  if (!cg[0])
-    rep.error("dataio_silo::ReadData() null pointer to grid!",cg[0]);
-  dataio_silo::gp = cg[0];
   silofile=infile;
 
   int err=0;
-  if (!have_setup_gridinfo) {
-    // set grid properties for quadmesh,
-    // also check grid pointer is not null.
-    err = dataio_silo::setup_grid_properties(gp, SimPM);
-    if (err)
-      rep.error("dataio_silo::ReadData() error setting up grid_props", err);
-  }
+  // Loop over grid levels, and read data for each level.
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-  *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
-  if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
+    // for now read a different file for each level in the NG grid.
+    // If more than one level of grid, look for level in filename:
+    string::size_type p;
+    if ((p=silofile.find("_level"))==string::npos && 
+        SimPM.grid_nlevels>1) {
+      rep.error("dataio_silo::ReadData() level",silofile);
+    }
+    else if (SimPM.grid_nlevels>1) {
+      ostringstream temp; temp.str("");
+      temp.width(2); temp.fill('0');
+      temp << l;
+      silofile.replace(p+6,2,temp.str());
+      cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
+      cout <<silofile<<"\n";
+    }
 
-  int ftype = DBGetDriverType(*db_ptr);
-  if (ftype==DB_HDF5) {
-    //cout <<"READING HDF5 FILE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+    if (!cg[l])
+      rep.error("dataio_NG_silo::OutputData() null pointer to grid!",cg[l]);
+    dataio_silo::gp = cg[l];
+    
+    *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
+    if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
+
+    int ftype = DBGetDriverType(*db_ptr);
+    if (ftype==DB_HDF5) {
+      int friendly=DBGetFriendlyHDF5Names();
+      DBSetFriendlyHDF5Names(friendly);
+    }
+
+    err = set_readvars(SimPM);
+    if (err) rep.error("failed to set readvars in ReadData",err);
+
     //
-    // I think you don't need to get the compression for reading a file...
-    // Either way this code is buggy and it works fine without it.
+    // set grid properties for quadmesh: each level of the NG
+    // grid has different zone and node coordinates so we need to
+    // call this each time.
     //
-    //char *ccc = DBGetCompression();
-    //char compress[strlength];
-    //strcpy(compress,ccc);
-    //cout <<"compression="<<compress<<"\n";
-    //DBSetCompression(compress);
-    //
-    // Not sure if we need this either for reading, but set it anyway.
-    //
-    int friendly=DBGetFriendlyHDF5Names();
-    DBSetFriendlyHDF5Names(friendly);
-  }
+    err = setup_grid_properties(gp, SimPM);
+    rep.errorTest("dataio_silo::ReadData() setup_grid_properties",0, err);
 
-// This is another way of reading the data, but not really better.
-//   DBtoc *toc=0;
-//   DBSetDir(db_ptr,"/data");
-//   toc = DBGetToc(db_ptr);
-//   if (!toc) rep.error("didn't get table of contents",toc);
-//   cout <<"READING TOC:  nvar="<<toc->nqvar<<"\n";
-//   for(int i=0;i<toc->nqvar;i++){ 
-//     if(i==0){
-//       printf("%d Quad mesh variables \n",toc->nqvar);
-//     }
-//     printf(" %s \n",toc->qvar_names[i]);
-//   }
-//   if (toc->nqvar <SimPM.nvar)
-//     rep.error("not enough variables in file!",SimPM.nvar-toc->nqvar);
-//   // now read each variable in turn from the mesh
-//   for (int i=0;i<toc->nqvar;i+) {
-//     err = dataio_silo::read_variable2grid(db_ptr, meshname, toc->qvar_names[i]);
-//     if (err)
-//       rep.error("dataio_silo::ReadData() error reading variable",toc->qvar_names[i]);
-//   }
-//   DBSetDir(db_ptr,"/");
-  
+    DBSetDir(*db_ptr,"/");
+    string meshname="UniformGrid";
 
-  err = set_readvars(SimPM);
-  if (err) rep.error("failed to set readvars in ReadData",err);
-
-  //DBSetDir(*db_ptr,"/data");
-  DBSetDir(*db_ptr,"/");
-  string meshname="UniformGrid";
-
-  // now read each variable in turn from the mesh
-  for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
+    // now read each variable in turn from the mesh
+    for (std::vector<string>::iterator i=readvars.begin();
+         i!=readvars.end(); ++i) {
 #ifdef WRITE_GHOST_ZONES
-    err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), gp->Ncell_all());
+      err = dataio_silo::read_variable2grid(
+                  SimPM, *db_ptr, meshname, (*i), gp->Ncell_all());
 #else
-    err = dataio_silo::read_variable2grid(SimPM, *db_ptr, meshname, (*i), SimPM.Ncell);
+      err = dataio_silo::read_variable2grid(
+                  SimPM, *db_ptr, meshname, (*i), gp->Ncell());
 #endif
-    if (err)
-      rep.error("dataio_silo::ReadData() error reading variable",(*i));
-  }
-  DBSetDir(*db_ptr,"/");
+      if (err)
+        rep.error("dataio_silo::ReadData() error reading variable",(*i));
+    }
+    DBSetDir(*db_ptr,"/");
 
-  DBClose(*db_ptr); //*db_ptr=0; 
+    DBClose(*db_ptr);
+  } // loop over levels
 
   return err;
 }
@@ -504,6 +504,7 @@ int dataio_silo::choose_filename(
 
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -516,22 +517,14 @@ int dataio_silo::setup_grid_properties(
 {
   // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
-    rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
+    rep.error("dataio_NG_silo::setup_grid_properties() null grid pointer!",grid);
   double dx=grid->DX();
-  if (node_coords || nodedims || zonedims ||
-      nodex || nodey || nodez) {
-    cerr<<"Have already setup variables for grid props! ";
-    cerr<<"You shouldn't have called me! crazy fool...\n";
-    return 1000000;
-  }
 
   dataio_silo::ndim = SimPM.ndim;
   dataio_silo::vec_length = SimPM.eqnNDim;
-  //  dataio_silo::vec_length = ndim;
-  //  cout <<"************VEC_LENGTH="<<vec_length<<"\n";
 
-  nodedims = mem.myalloc(nodedims,ndim);
-  zonedims = mem.myalloc(zonedims,ndim);
+  if (!nodedims) nodedims = mem.myalloc(nodedims,ndim);
+  if (!zonedims) zonedims = mem.myalloc(zonedims,ndim);
 
   //
   // node_coords is a void pointer, so if we are writing silo data in
@@ -540,38 +533,69 @@ int dataio_silo::setup_grid_properties(
   //
   // We setup arrays with locations of nodes in coordinate directions.
   //
+#ifdef WRITE_GHOST_ZONES
+  int nx = SimPM.NG[XX] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int ny = SimPM.NG[YY] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int nz = SimPM.NG[ZZ] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+#else
   int nx = SimPM.NG[XX]+1; // for N cells, have N+1 nodes.
   int ny = SimPM.NG[YY]+1; // for N cells, have N+1 nodes.
   int nz = SimPM.NG[ZZ]+1; // for N cells, have N+1 nodes.
-  
+#endif
+
   //node_coords = mem.myalloc(node_coords,ndim);
   if (silo_dtype==DB_FLOAT) {
     //
     // Allocate memory for node_coords, and set pointers.
     //
     float **d = 0;
-    d = mem.myalloc(d,ndim);
-    node_coords = reinterpret_cast<void **>(d);
-    //
-    // Allocate memory for nodex, nodey, nodez
-    //
     float *posx=0, *posy=0, *posz=0;
-    posx = mem.myalloc(posx,nx);
-    for (int i=0;i<nx;i++)
-      posx[i] = static_cast<float>(SimPM.Xmin[XX]+i*dx);
+
+    if (node_coords) {
+      //d = reinterpret_cast<float **>(node_coords);
+      posx = reinterpret_cast<float *>(nodex);
+      posy = reinterpret_cast<float *>(nodey);
+      posz = reinterpret_cast<float *>(nodez);
+    }
+    else {
+      d = mem.myalloc(d,ndim);
+      node_coords = reinterpret_cast<void **>(d);
+      posx = mem.myalloc(posx,nx);
+      if (ndim>1) posy = mem.myalloc(posy,ny);
+      if (ndim>2) posz = mem.myalloc(posz,nz);
+    }
+
+    //
+    // Assign data for nodex, nodey, nodez for this grid
+    //
+    for (int i=0;i<nx;i++) {
+#ifdef WRITE_GHOST_ZONES
+      posx[i] = static_cast<float>(grid->Xmin(XX) -SimPM.Nbc*dx +i*dx);
+#else
+      posx[i] = static_cast<float>(grid->Xmin(XX)+i*dx);
+#endif
+    }
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
     if (ndim>1) {
-      posy = mem.myalloc(posy,ny);
-      for (int i=0;i<ny;i++)
-        posy[i] = static_cast<float>(SimPM.Xmin[YY]+i*dx);
+      for (int i=0;i<ny;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posy[i] = static_cast<float>(grid->Xmin(YY) -SimPM.Nbc*dx +i*dx);
+#else
+        posy[i] = static_cast<float>(grid->Xmin(YY)+i*dx);
+#endif
+      }
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
-      posz = mem.myalloc(posz,nz);
-      for (int i=0;i<nz;i++)
-        posz[i] = static_cast<float>(SimPM.Xmin[ZZ]+i*dx);
+      for (int i=0;i<nz;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posz[i] = static_cast<float>(grid->Xmin(ZZ) -SimPM.Nbc*dx +i*dx);
+#else
+        posz[i] = static_cast<float>(grid->Xmin(ZZ)+i*dx);
+#endif
+      }
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }
@@ -581,29 +605,55 @@ int dataio_silo::setup_grid_properties(
     // Allocate memory for node_coords, and set pointers.
     //
     double **d=0;
+    double *posx=0, *posy=0, *posz=0;
+
+    if (node_coords) {
+      //d = reinterpret_cast<float **>(node_coords);
+      posx = reinterpret_cast<double *>(nodex);
+      posy = reinterpret_cast<double *>(nodey);
+      posz = reinterpret_cast<double *>(nodez);
+    }
+    else {
+      d = mem.myalloc(d,ndim);
+      node_coords = reinterpret_cast<void **>(d);
+      posx = mem.myalloc(posx,nx);
+      if (ndim>1) posy = mem.myalloc(posy,ny);
+      if (ndim>2) posz = mem.myalloc(posz,nz);
+    }
     d = mem.myalloc(d,ndim);
     node_coords = reinterpret_cast<void **>(d);
     //
-    // Allocate memory for nodex, nodey, nodez
+    // Assign data for nodex, nodey, nodez for this grid
     //
-    double *posx=0, *posy=0, *posz=0;
-    posx = mem.myalloc(posx,nx);
-    for (int i=0;i<nx;i++)
-      posx[i] = static_cast<double>(SimPM.Xmin[XX]+i*dx);
+    for (int i=0;i<nx;i++) {
+#ifdef WRITE_GHOST_ZONES
+      posx[i] = static_cast<double>(grid->Xmin(XX) -SimPM.Nbc*dx +i*dx);
+#else
+      posx[i] = static_cast<double>(grid->Xmin(XX)+i*dx);
+#endif
+    }
     nodex = reinterpret_cast<void *>(posx);
     node_coords[XX] = nodex;
 
     if (ndim>1) {
-      posy = mem.myalloc(posy,ny);
-      for (int i=0;i<ny;i++)
-        posy[i] = static_cast<double>(SimPM.Xmin[YY]+i*dx);
+      for (int i=0;i<ny;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posy[i] = static_cast<double>(grid->Xmin(YY) -SimPM.Nbc*dx +i*dx);
+#else
+        posy[i] = static_cast<double>(grid->Xmin(YY)+i*dx);
+#endif
+      }
       nodey = reinterpret_cast<void *>(posy);
       node_coords[YY] = nodey;
     }
     if (ndim>2) {
-      posz = mem.myalloc(posz,nz);
-      for (int i=0;i<nz;i++)
-        posz[i] = static_cast<double>(SimPM.Xmin[ZZ]+i*dx);
+      for (int i=0;i<nz;i++) {
+#ifdef WRITE_GHOST_ZONES
+        posz[i] = static_cast<double>(grid->Xmin(ZZ) -SimPM.Nbc*dx +i*dx);
+#else
+        posz[i] = static_cast<double>(grid->Xmin(ZZ)+i*dx);
+#endif
+      }
       nodez = reinterpret_cast<void *>(posz);
       node_coords[ZZ] = nodez;
     }

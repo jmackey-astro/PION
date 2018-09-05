@@ -15,6 +15,7 @@
 
 #include "grid/grid_base_class.h"
 #include "grid/uniform_grid.h"
+#include "grid/setup_NG_grid.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "dataIO/dataio_base.h"
 #include "decomposition/MCMD_control.h"
@@ -27,7 +28,8 @@
 /// It can solve the equations in 1st or 2nd order accuracy in space and time.
 ///
 class sim_control_NG :
-  virtual public sim_control
+  virtual public sim_control,
+  virtual public setup_NG_grid
 {
   public:
   sim_control_NG();  ///< Simple constructor

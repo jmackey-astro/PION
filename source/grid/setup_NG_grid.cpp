@@ -41,7 +41,7 @@
 
 #include "dataIO/dataio_base.h"
 #ifdef SILO
-#include "dataIO/dataio_silo_NG.h"
+#include "dataIO/dataio_silo.h"
 #endif // if SILO
 #ifdef FITS
 #include "dataIO/dataio_fits.h"
@@ -440,7 +440,7 @@ void setup_NG_grid::setup_dataio_class(
 
 #ifdef SILO
   case 5: // Start from Silo snapshot.
-    dataio = new dataio_NG_silo (par, "DOUBLE");
+    dataio = new dataio_silo (par, "DOUBLE");
     break; 
 #endif // if SILO
 

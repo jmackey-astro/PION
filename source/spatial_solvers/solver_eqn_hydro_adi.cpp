@@ -427,17 +427,21 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   /// Then multiply by the CFl no. and return.
   ///
 
+  pion_flt temp = 0.0;
+  for (int v=0;v<FV_gndim;v++) temp += c->P[eqVX+v]*c->P[eqVX+v];
+  temp = sqrt(temp);
+  temp += chydro(c->P,eq_gamma);
+
   //
   // Get Max velocity along a grid direction.
   //
-  pion_flt temp = fabs(c->P[eqVX]);
-  if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
-  if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
-  
+  //pion_flt temp = fabs(c->P[eqVX]);
+  //if (FV_gndim>1) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVY])));
+  //if (FV_gndim>2) temp = max(temp,static_cast<pion_flt>(fabs(c->P[eqVZ])));
   //
   // Add the sound speed to this, and it is the max wavespeed.
   //
-  temp += chydro(c->P,eq_gamma);
+  //temp += chydro(c->P,eq_gamma);
   FV_dt = dx/temp;
   //
   // Now scale the max. allowed timestep by the CFL number we are using (<1).

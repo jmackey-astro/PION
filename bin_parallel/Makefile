@@ -436,7 +436,8 @@ ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
   OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
 endif
 
-OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o calc_timestep.o sim_init.o
+OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o \
+  calc_timestep.o sim_init.o
 
 OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) \
   $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
@@ -444,11 +445,15 @@ OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) \
 
 OBJECTS_ICGEN = icgen_parallel.o get_sim_info.o $(OBJ_GEN) \
   $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
-  $(OBJ_CRD) $(OBJ_BCS)
+  $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SOLVE)
 
-OBJECTS_NG_PION = main_NG_MPI.o $(OBJ_NG_SIM) $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
+OBJECTS_NG_PION = main_NG_MPI.o $(OBJ_NG_SIM) $(OBJ_SIM) \
+  $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) \
+  $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
 
-OBJECTS_NG_ICGEN = icgen_NG_MPI.o get_sim_info.o $(OBJ_GEN) $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
+OBJECTS_NG_ICGEN = icgen_NG_MPI.o get_sim_info.o $(OBJ_GEN) \
+  $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
+  $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
 
 
 #####################################################
@@ -528,10 +533,11 @@ raytracer_SC_pllel.o : raytracer_SC_pllel.cpp raytracer_SC.h \
     ${GLOBAL} uniform_grid.h comms.h raytracer_base.h
 
 setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
-    setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
-    grid_base_class.h uniform_grid.h assign_update_bcs.h \
- periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
- RT_MPI_boundaries.h VectorOps.h
+  setup_fixed_grid.h ${GLOBAL} uniform_grid_pllel.h \
+  grid_base_class.h uniform_grid.h assign_update_bcs.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
+  solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp
 
 
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
