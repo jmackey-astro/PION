@@ -43,28 +43,28 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
 #ifdef TEST_MPI_NG
       cout <<"NG grid setup: Assigning FINE_TO_COARSE_SEND BC\n";
 #endif
-      err += BC_assign_FINE_TO_COARSE_SEND(par,grid,grid->BC_bd[i]);
+      err += BC_assign_FINE_TO_COARSE_SEND(par,level,grid->BC_bd[i]);
       break;
 
       case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
       cout <<"NG grid setup: Assigning FINE_TO_COARSE_RECV BC\n";
 #endif
-      err += BC_assign_FINE_TO_COARSE_RECV(par,grid,grid->BC_bd[i]);
+      err += BC_assign_FINE_TO_COARSE_RECV(par,level,grid->BC_bd[i]);
       break;
 
       case COARSE_TO_FINE_SEND:
 #ifdef TEST_MPI_NG
       cout <<"assign_update_bcs_NG_MPI:: Assigning COARSE_TO_FINE_SEND BC\n";
 #endif
-      err += BC_assign_COARSE_TO_FINE_SEND(par,grid,grid->BC_bd[i]);
+      err += BC_assign_COARSE_TO_FINE_SEND(par,level,grid->BC_bd[i]);
       break;
 
       case COARSE_TO_FINE_RECV:
 #ifdef TEST_MPI_NG
       cout <<"assign_update_bcs_NG_MPI:: Assigning COARSE_TO_FINE_RECV BC\n";
 #endif
-      err += BC_assign_COARSE_TO_FINE_RECV(par,grid,grid->BC_bd[i]);
+      err += BC_assign_COARSE_TO_FINE_RECV(par,level,grid->BC_bd[i]);
       break;
 
       default:

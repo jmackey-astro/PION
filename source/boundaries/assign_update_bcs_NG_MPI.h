@@ -15,34 +15,32 @@
 
 #include "boundaries/boundaries.h"
 #include "boundaries/assign_update_bcs_MPI.h"
-#include "boundaries/assign_update_bcs_NG.h"
 #include "boundaries/NG_MPI_fine_to_coarse_boundaries.h"
+#include "boundaries/NG_MPI_coarse_to_fine_boundaries.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
 
 
 class assign_update_bcs_NG_MPI : 
   virtual public assign_update_bcs_MPI,
-  virtual public assign_update_bcs_NG,
-  virtual public NG_fine_to_coarse_bc,
-  virtual public NG_coarse_to_fine_bc
+  virtual public NG_fine_to_coarse_MPI_bc,
+  virtual public NG_coarse_to_fine_MPI_bc
 {
   public:  
   ///
   /// Assigns data to each boundary.
   ///
-  virtual int assign_boundary_data(
+  int assign_boundary_data(
       class SimParams &,      ///< pointer to simulation parameters
       const int,              ///< level in grid hierarchy
       class GridBaseClass *   ///< pointer to grid.
       );
 
-
   ///
   /// Runs through ghost boundary cells and does the appropriate
   /// time update on them.
   ///
-  virtual int TimeUpdateExternalBCs(
+  int TimeUpdateExternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
       const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
@@ -56,7 +54,7 @@ class assign_update_bcs_NG_MPI :
   /// Runs through boundary cells which are grid cells and does
   /// the appropriate time update on them.
   ///
-  virtual int TimeUpdateInternalBCs(
+  int TimeUpdateInternalBCs(
       class SimParams &,      ///< pointer to simulation parameters
       const int,              ///< level in grid hierarchy
       class GridBaseClass *,  ///< pointer to grid.
@@ -65,8 +63,6 @@ class assign_update_bcs_NG_MPI :
       const int, ///< Current step number in the timestep.
       const int  ///< Maximum step number in timestep.
       );
-
-
 };
 
 #endif // ASSIGN_UPDATE_BCS_NG_MPI_H

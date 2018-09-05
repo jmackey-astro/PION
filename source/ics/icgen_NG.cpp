@@ -73,7 +73,7 @@ int main(int argc, char **argv)
   string pfile = argv[1];
   string icftype;
   if (argc>2) icftype=argv[2];
-  else icftype="fits"; // This is the default for now.
+  else icftype="silo"; // This is the default for now.
   
   class setup_NG_grid *SimSetup = new setup_NG_grid();
 

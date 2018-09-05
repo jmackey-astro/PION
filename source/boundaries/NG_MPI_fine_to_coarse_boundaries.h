@@ -13,6 +13,7 @@
 
 #include "sim_params.h"
 #include "boundaries/boundaries.h"
+#include "boundaries/NG_fine_to_coarse_boundaries.h"
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
 
