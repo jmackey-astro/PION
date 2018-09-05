@@ -254,6 +254,11 @@ int dataio_silo::OutputData(
 
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
+    if (!cg[l])
+      rep.error("dataio_silo::OutputData() null pointer!",
+                cg[l]);
+    dataio_silo::gp = cg[l];
+
     // write a different file for each level in the NG grid.
     if (SimPM.grid_nlevels>1) {
       ostringstream temp;
@@ -414,7 +419,7 @@ int dataio_silo::ReadData(
     }
 
     if (!cg[l])
-      rep.error("dataio_NG_silo::OutputData() null pointer to grid!",cg[l]);
+      rep.error("dataio_silo::ReadData() null pointer to grid!",cg[l]);
     dataio_silo::gp = cg[l];
     
     *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
@@ -517,7 +522,8 @@ int dataio_silo::setup_grid_properties(
 {
   // set grid parameters -- UNIFORM FIXED GRID
   if (!grid)
-    rep.error("dataio_NG_silo::setup_grid_properties() null grid pointer!",grid);
+    rep.error("dataio_silo::setup_grid_properties() null pointer!",
+              grid);
   double dx=grid->DX();
 
   dataio_silo::ndim = SimPM.ndim;
