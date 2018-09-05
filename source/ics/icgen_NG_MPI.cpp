@@ -72,10 +72,13 @@ int main(int argc, char **argv)
   class setup_grid_NG_MPI *SimSetup =0;
   MP=0;  // global microphysics class pointer.
 
+  SimSetup = new setup_grid_NG_MPI();
+
+
   string pfile = argv[1];
   string icftype;
   if (argc>2) icftype=argv[2];
-  else icftype="fits"; // This is the default for now.
+  else icftype="silo"; // This is the default for now.
 
   siminfo=0; siminfo = new class get_sim_info ();
   if (!siminfo) rep.error("Sim Info class init error",siminfo);

@@ -419,7 +419,7 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
           RT_MPI_boundaries.o
 
-OBJ_NG_BCS = assign_update_bcs_NG.o     \
+OBJ_NG_BCS = assign_update_bcs_NG_MPI.o     \
           NG_coarse_to_fine_boundaries.o \
           NG_fine_to_coarse_boundaries.o
 
