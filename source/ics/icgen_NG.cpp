@@ -28,7 +28,6 @@
 
 #include "grid/uniform_grid.h"
 #include "grid/setup_NG_grid.h"
-#include "sim_control/sim_init_NG.h"
 #include "microphysics/microphysics_base.h"
 #include "raytracing/raytracer_base.h"
 
