@@ -50,6 +50,7 @@
 #include "raytracing/raytracer_SC.h"
 
 #include "dataIO/dataio_base.h"
+#include "dataIO/dataio_text.h"
 #ifdef SILO
 #include "dataIO/dataio_silo.h"
 #endif // if SILO
@@ -86,6 +87,8 @@ setup_fixed_grid::setup_fixed_grid()
   FVI_ionising_srcs.clear();
   FVI_need_column_densities_4dt = false;
   spatial_solver=0;
+  dataio=0;
+  textio=0;
 }
 
 
@@ -991,9 +994,194 @@ int setup_fixed_grid::setup_boundary_structs(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_fixed_grid::setup_dataio_class(
+      class SimParams &par,     ///< simulation parameters
+      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
+      )
+{
+  //
+  // set up the right kind of data I/O class depending on the input.
+  //
+  switch (typeOfFile) {
+
+  case 1: // Start From ASCII Parameterfile.
+    dataio = new dataio_text(par);
+    rep.error("dataio_text initialisation",dataio);
+    break;
+
+#ifdef FITS
+  case 2: // Start from FITS restartfile.
+    dataio = new DataIOFits(par);
+    break;
+  case 4: // fits +ascii
+    dataio = new DataIOFits(par);
+    textio = new dataio_text(par);
+    break;
+#endif // if FITS
+
+#ifdef SILO
+  case 5: // Start from Silo snapshot.
+    dataio = new dataio_silo (par, "DOUBLE");
+    break; 
+  case 6: // silo + text
+    dataio = new dataio_silo (par, "DOUBLE");
+    textio = new dataio_text (par);
+    if (!textio)
+      rep.error("INIT:: textio initialisation",par.typeofop);
+    break;
+#endif // if SILO
+  default:
+    rep.error("setup_fixed_grid::Init unhandled filetype",
+              typeOfFile);
+  }
+  return;
+}
+
+
 
 // ##################################################################
 // ##################################################################
+
+
+
+int setup_fixed_grid::set_equations(
+      class SimParams &par  ///< simulation parameters
+      )
+{
+  cout <<"------------------------------------------------------\n";
+  cout <<"--------  Setting up solver for eqauations------------\n";
+
+  if (par.solverType <0)
+    rep.error("set_equations: solverType not set yet.",
+              par.solverType);
+  if (par.eqntype <=0)
+    rep.error("set_equations: eqntype not set yet.",par.eqntype);
+  if (par.eqnNDim !=3)
+    rep.error("set_equations: eqnNDim not set right.",par.eqnNDim);
+  if (par.nvar <=0)
+    rep.error("set_equations: nvar not set yet.",par.nvar);
+  if (par.ndim <=0)
+    rep.error("set_equations: ndim not set yet.",par.ndim);
+  if (par.artviscosity <0)
+    rep.error("set_equations: artviscosity not set yet.",
+              par.artviscosity);
+  if (par.coord_sys <0)
+    rep.error("set_equations: coordinate system not set.",
+              par.coord_sys);
+  
+  if (spatial_solver) {
+    delete spatial_solver;
+    spatial_solver=0;
+  }
+
+  if (par.coord_sys==COORD_CRT) {
+    cout <<"set_equations() Using Cartesian coord. system.\n";
+    switch (par.eqntype) {
+    case EQEUL:
+      cout <<"set_equations() Using Euler Equations.\n";
+      spatial_solver = new class FV_solver_Hydro_Euler(
+          par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
+          par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQEUL);
+      break;
+    case EQMHD:
+      cout <<"set_equations() Using Ideal MHD Equations.\n";
+      spatial_solver = new class FV_solver_mhd_ideal_adi(
+          par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
+          par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQMHD);
+      break;
+    case EQGLM:
+      cout <<"set_equations() Using GLM MHD Equations.\n";
+      spatial_solver = new class FV_solver_mhd_mixedGLM_adi(
+          par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
+          par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQGLM);
+      break;
+    case EQFCD:
+      cout <<"set_equations() Using Field-CD MHD Equations.\n";
+      rep.error("Field CD got lost in some code updates",EQFCD);
+      break;
+    default:
+      rep.error("Don't know the specified equations...",par.eqntype);
+      break;
+    }
+  } // cartesian
+
+  else if (par.coord_sys==COORD_CYL) {
+    cout <<"set_equations() Using Cylindrical coord. system.\n";
+    switch (par.eqntype) {
+    case EQEUL:
+      cout <<"set_equations() Using Euler Equations.\n";
+      spatial_solver = new class cyl_FV_solver_Hydro_Euler(
+          par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
+          par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQEUL);
+      break;
+    case EQMHD:
+      cout <<"set_equations() Using Ideal MHD Equations.\n";
+      spatial_solver = new class cyl_FV_solver_mhd_ideal_adi(
+          par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
+          par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQMHD);
+      break;
+    case EQGLM:
+      cout <<"set_equations() Using GLM MHD Equations.\n";
+      spatial_solver = new class cyl_FV_solver_mhd_mixedGLM_adi(
+          par.nvar, par.ndim, par.CFL, par.gamma, par.RefVec,
+          par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQGLM);
+      break;
+    default:
+      rep.error("not implemented yet for axisymmetry",par.eqntype);
+    }
+  } // axisymmetric
+  
+  else if (par.coord_sys==COORD_SPH) {
+    cout <<"set_equations() Using Spherical coordinate system.\n";
+    switch (par.eqntype) {
+    case EQEUL:
+      cout <<"set_equations() Using Euler Equations.\n";
+      spatial_solver = new class sph_FV_solver_Hydro_Euler(
+            par.nvar, par.ndim, par.CFL,
+            par.gamma, par.RefVec, par.etav, par.ntracer);
+      if (!spatial_solver)
+        rep.error("Couldn't set up solver/equations class.",EQEUL);
+      break;
+     default:
+      rep.error("not implemented yet for spherical",par.eqntype);
+    }
+  } // spherically symmetric
+
+
+  //
+  // Check that we set up an equations class!
+  //
+  if (!spatial_solver)
+    rep.error("setup_fixed_grid::set_equations() Failed",
+              spatial_solver);
+
+  cout <<"------------------------------------------------------\n\n";
+  return(0);
+} // set_equations.
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 

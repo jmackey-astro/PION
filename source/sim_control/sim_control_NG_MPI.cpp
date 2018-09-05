@@ -96,7 +96,7 @@ int sim_control_NG_MPI::Init(
   COMM->get_rank_nproc(&myrank, &nproc);
 
   SimPM.typeofip=typeOfFile;
-  setup_dataio_class(typeOfFile);
+  setup_dataio_class(SimPM, typeOfFile);
   if (!dataio->file_exists(infile))
     rep.error("infile doesn't exist!",infile);
 
@@ -110,11 +110,6 @@ int sim_control_NG_MPI::Init(
   // setup the nested grid levels, and decompose the domain on each
   // level
   setup_NG_grid_levels(SimPM);
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err = SimPM.levels[l].MCMD.decomposeDomain(SimPM, SimPM.levels[l]);
-    rep.errorTest("PLLEL Init():Decompose Domain!",0,err);
-    SimPM.levels[l].MCMD.ReadSingleFile = true; // legacy option.
-  }
 
   // Now set up the grid structure.
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
@@ -128,7 +123,7 @@ int sim_control_NG_MPI::Init(
   // All grid parameters are now set, so I can set up the appropriate
   // equations/solver class.
   //
-  err = set_equations();
+  err = set_equations(SimPM);
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
   spatial_solver->set_dx(SimPM.dx);
   spatial_solver->SetEOS(SimPM.gamma);
@@ -217,7 +212,7 @@ int sim_control_NG_MPI::Init(
   if (SimPM.typeofip != SimPM.typeofop) {
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
-    setup_dataio_class(SimPM.typeofop);
+    setup_dataio_class(SimPM, SimPM.typeofop);
     if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);

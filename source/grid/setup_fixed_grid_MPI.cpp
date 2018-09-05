@@ -447,6 +447,49 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
 
 
 
+void setup_fixed_grid_pllel::setup_dataio_class(
+      class SimParams &par,     ///< simulation parameters
+      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
+      )
+{
+  //
+  // set up the right kind of data I/O class depending on the input.
+  //
+  switch (typeOfFile) {
+
+  case 1: // Start From ASCII Parameterfile.
+    rep.error("No text file for parallel I/O!",typeOfFile);
+    break;
+
+#ifdef FITS
+  case 2: // Start from FITS restartfile
+    dataio = new DataIOFits_pllel
+              (par, &(par.levels[0].MCMD));
+    break;
+#endif // if FITS
+
+#ifdef SILO
+  case 5: // Start from Silo ICfile or restart file.
+    dataio = new dataio_silo_utility 
+              (par, "DOUBLE", &(par.levels[0].MCMD));
+    break; 
+#endif // if SILO
+  default:
+    rep.error("sim_control::Init unhandled filetype",typeOfFile);
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
+
+
 #endif // PARALLEL
 
 

@@ -63,7 +63,13 @@ class setup_fixed_grid_pllel :
       );
 
   protected:
-  
+
+  /// function to setup data-I/O class.
+  virtual void setup_dataio_class(
+      class SimParams &,  ///< pointer to simulation parameters
+      const int  ///< type of I/O: 1=text,2=fits,5=silo
+      );
+
   ///
   /// Set the boundary conditions string and initialise BC_bd
   ///
@@ -71,7 +77,6 @@ class setup_fixed_grid_pllel :
       class SimParams &,  ///< reference to SimParams list.
       class GridBaseClass *grid ///< pointer to grid.
       );
-
 
 }; // setup_fixed_grid_pllel
 

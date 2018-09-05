@@ -15,14 +15,15 @@
 
 #include "boundaries/boundaries.h"
 #include "boundaries/assign_update_bcs_MPI.h"
-#include "boundaries/NG_coarse_to_fine_boundaries.h"
-#include "boundaries/NG_fine_to_coarse_boundaries.h"
+#include "boundaries/assign_update_bcs_NG.h"
+#include "boundaries/NG_MPI_fine_to_coarse_boundaries.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
 
 
 class assign_update_bcs_NG_MPI : 
   virtual public assign_update_bcs_MPI,
+  virtual public assign_update_bcs_NG,
   virtual public NG_fine_to_coarse_bc,
   virtual public NG_coarse_to_fine_bc
 {

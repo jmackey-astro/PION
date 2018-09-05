@@ -71,16 +71,6 @@ class sim_init : virtual public setup_fixed_grid
   double get_max_walltime();
 
   ///
-  /// Initialise the correct Equations to solve, based on paramters.
-  ///
-  int set_equations();
-
-  ///
-  /// Get pointer to equations class.
-  ///
-  class FV_solver_base * get_solver_ptr() {return spatial_solver;}
-
-  ///
   /// information about the simulation
   ///
   class SimParams SimPM;
@@ -102,26 +92,9 @@ class sim_init : virtual public setup_fixed_grid
   ///
   double max_walltime;
 
-  ///
-  /// pointer to class for reading/writing data.
-  ///
-  class DataIOBase *dataio;
-
-  ///
-  /// pointer to class for reading/writing ascii-text-data.
-  ///
-  class DataIOBase *textio;
-
-  
+ 
   //---------------------------------------
   //---------------------------------------
-
-
-  /// function to setup data-I/O class.
-  virtual void setup_dataio_class(
-      const int  ///< type of I/O: 1=text,2=fits,5=silo
-      );
-
   ///
   /// See if any command-line arguments should override those
   /// specified in the IC file, and if so, reset the parameters.

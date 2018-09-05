@@ -1,17 +1,14 @@
-/// \file setup_NG_grid.h
+/// \file setup_grid_NG_MPI.h
 /// 
-/// \brief Declares a class for setting up NG grids.
+/// \brief Declares a class for setting up NG-MPI grids.
 /// 
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
-/// - 2015.02.09 JM: Split sim_control class into a setup class and
-///   a derived class for running simulations.
-/// - 2017.08.24 JM: moved evolving_RT_sources functions to setup.
-/// - 2018.01.24 JM: worked on making SimPM non-global
+/// - 2018.09.05 JM: worked on code
 
-#ifndef SETUP_NESTED_GRID_H
-#define SETUP_NESTED_GRID_H
+#ifndef SETUP_GRID_NG_MPI_H
+#define SETUP_GRID_NG_MPI_H
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -21,22 +18,22 @@
 #include "setup_fixed_grid.h"
 #include "spatial_solvers/solver_eqn_base.h"
 #include "decomposition/MCMD_control.h"
-#include "boundaries/assign_update_bcs_NG.h"
-#include "setup_NG_grid.h"
-#include "setup_fixed_grid_MPI.h"
+#include "boundaries/assign_update_bcs_NG_MPI.h"
+#include "grid/setup_NG_grid.h"
+#include "grid/setup_fixed_grid_MPI.h"
 
 ///
 /// Set up a static NG grid structure.  Serial code, so each
 /// level of the NG has a single grid.
 ///
-class setup_NG_grid_MPI :
+class setup_grid_NG_MPI :
   virtual public setup_NG_grid,
-  virturl public setup_
-  virtual public assign_update_bcs_NG
+  virtual public setup_fixed_grid_pllel,
+  virtual public assign_update_bcs_NG_MPI
 {
   public:
-  setup_NG_grid_MPI() {}
-  ~setup_NG_grid_MPI() {}
+  setup_grid_NG_MPI();
+  ~setup_grid_NG_MPI();
 
   ///
   /// Populate the array SimPM.levels with Xmin,Xmax,Range,dx,etc.
@@ -88,11 +85,11 @@ class setup_NG_grid_MPI :
       );
 
 
-}; // setup_NG_grid
+}; // setup_grid_NG_MPI
    
 /*************************************************************************/
 /*************************************************************************/
 /*************************************************************************/
 
 
-#endif // if not SETUP_NESTED_GRID_H
+#endif // if not SETUP_GRID_NG_MPI_H

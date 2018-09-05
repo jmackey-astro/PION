@@ -119,7 +119,7 @@ int main(int argc, char **argv)
   setup_ics_type(ics,&ic);
   ic->set_SimPM(SimPM);
 
-  err = SimSetup->set_equations();
+  err = SimSetup->set_equations(SimPM);
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 

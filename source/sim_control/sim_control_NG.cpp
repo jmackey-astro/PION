@@ -49,6 +49,7 @@ using namespace std;
 // ##################################################################
 
 
+
 sim_control_NG::sim_control_NG()
 {
 #ifdef TESTING
@@ -62,6 +63,7 @@ sim_control_NG::sim_control_NG()
 // ##################################################################
 
 
+
 sim_control_NG::~sim_control_NG()
 {
 #ifdef TESTING
@@ -71,10 +73,235 @@ sim_control_NG::~sim_control_NG()
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_NG::Init(
+      string infile,
+      int typeOfFile,
+      int narg,
+      string *args,
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      )
+{
+#ifdef TESTING
+  cout <<"(sim_control_NG::Init) Initialising grid"<<"\n";
+#endif
+  int err=0;
+  
+  SimPM.typeofip=typeOfFile;
+  setup_dataio_class(SimPM, typeOfFile);
+  err = dataio->ReadHeader(infile, SimPM);
+  rep.errorTest("(INIT::get_parameters) err!=0 Something went wrong",0,err);
+
+  // Now see if any commandline args override the Parameters from the file.
+  err = override_params(narg, args);
+  rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
+  
+  //
+  // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
+  //
+  setup_NG_grid_levels(SimPM);
+  grid.resize(SimPM.grid_nlevels);
+  err = setup_grid(grid,SimPM);
+  SimPM.dx = grid[0]->DX();
+  rep.errorTest("(INIT::setup_grid) Something went wrong",0,err);
+
+  //
+  // All grid parameters are now set, so set up the appropriate
+  // equations/solver class.
+  //
+  err = set_equations(SimPM);
+  rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
+  spatial_solver->SetEOS(SimPM.gamma);
+
+  err = setup_microphysics(SimPM);
+  rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
+  
+  //
+  // Now assign data to the grid, either from file, or via some function.
+  //
+  err = dataio->ReadData(infile, grid, SimPM);
+  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
+
+  //
+  // For each grid in the NG grid, set Ph[] = P[],
+  // and then implement the boundary conditions on the grid and ghost cells.
+  //
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    //
+    // Set Ph=P in every cell.
+    //
+    cell *c = grid[l]->FirstPt();
+    do {
+      for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
+    } while ((c=grid[l]->NextPt(c))!=0);
+    //
+    // If I'm using the GLM method, make sure Psi variable is initialised.
+    //
+    if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
+#ifdef TESTING
+      cout <<"Initial state, zero-ing glm variable.\n";
+#endif
+      for (int l=0; l<SimPM.grid_nlevels; l++) {
+        c = grid[l]->FirstPt(); do {
+          c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
+        } while ( (c=grid[l]->NextPt(c)) !=0);
+      }
+    }
+  }
+
+  //
+  // Assign boundary conditions to boundary points.
+  //
+  err = boundary_conditions(SimPM, grid);
+  rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+  //
+  // Setup Raytracing on each grid, if needed.
+  //
+  err += setup_raytracing(SimPM, grid);
+  rep.errorTest("Failed to setup raytracer",0,err);
+
+  // ----------------------------------------------------------------
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    err = assign_boundary_data(SimPM, l, grid[l]);
+    rep.errorTest("icgen_NG::assign_boundary_data",0,err);
+  }
+  // ----------------------------------------------------------------
+
+
+
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TESTING
+    cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  //
+  // If testing the code, this calculates the momentum and energy on
+  // the domain.
+  //
+  initial_conserved_quantities(grid);
+
+  //
+  // If using opfreq_time, set the next output time correctly.
+  //
+  if (SimPM.op_criterion==1) {
+    if (SimPM.opfreq_time < TINYVALUE)
+      rep.error("opfreq_time not set right and is needed!",
+                SimPM.opfreq_time);
+    SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;
+    double tmp = 
+      ((SimPM.simtime/SimPM.opfreq_time)-
+       floor(SimPM.simtime/SimPM.opfreq_time))*SimPM.opfreq_time;
+    SimPM.next_optime-= tmp;
+  }
+
+  //
+  // If outfile-type is different to infile-type, we need to delete
+  // dataio and set it up again.
+  //
+  if (SimPM.typeofip != SimPM.typeofop) {
+    if (dataio) {delete dataio; dataio=0;}
+    if (textio) {delete textio; textio=0;}
+    setup_dataio_class(SimPM,SimPM.typeofop);
+    if (!dataio)
+      rep.error("INIT:: dataio initialisation",SimPM.typeofop);
+  }
+  dataio->SetSolver(spatial_solver);
+  if (textio) textio->SetSolver(spatial_solver);
+
+#ifdef SERIAL
+  if (SimPM.timestep==0) {
+    cout << "(INIT) Writing initial data.\n";
+    err=output_data(grid);
+    if (err)
+      rep.error("Failed to write file!","maybe dir does not exist?");
+  }
+  cout <<"-------------------------------------------------------\n";
+#endif // SERIAL
+  
+#ifdef TESTING
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cell *c = (grid[l])->FirstPt_All();
+    do {
+      if (pconst.equalD(c->P[RO],0.0)) {
+        cout <<"zero data in cell: ";
+        CI.print_cell(c);
+      }
+    } while ( (c=(grid[l])->NextPt_All(c)) !=0 );
+  }
+#endif // TESTING
+  
+  return(0);
+}
+
+
 
 // ##################################################################
 // ##################################################################
 
+
+
+int sim_control_NG::initial_conserved_quantities(
+      vector<class GridBaseClass *> &grid
+      )
+{
+  // Energy, and Linear Momentum in x-direction.
+#ifdef TEST_CONSERVATION 
+  pion_flt u[SimPM.nvar];
+  //dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
+  //  cout <<"initERG: "<<dp.initERG<<"\n";
+  initERG = 0.;  initMMX = initMMY = initMMZ = 0.; initMASS = 0.0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    double dx = SimPM.levels[l].dx;
+    double dv = 0.0;
+    class cell *c=grid[l]->FirstPt();
+    do {
+      if (!c->isbd && c->isgd) {
+        dv = spatial_solver->CellVolume(c,dx);
+        spatial_solver->PtoU(c->P,u,SimPM.gamma);
+        initERG += u[ERG]*dv;
+        initMMX += u[MMX]*dv;
+        initMMY += u[MMY]*dv;
+        initMMZ += u[MMZ]*dv;
+        initMASS += u[RHO]*dv;
+      }
+    } while ( (c =grid[l]->NextPt(c)) !=0);
+  }
+
+  cout <<"(conserved quantities) ["<< initERG <<", ";
+  cout << initMMX <<", ";
+  cout << initMMY <<", ";
+  cout << initMMZ <<", ";
+  cout << initMASS <<"]\n";
+
+#endif // TEST_CONSERVATION
+  return(0);
+}
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 

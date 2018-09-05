@@ -1,4 +1,4 @@
-/// \file setup_NG_grid_MPI.cpp
+/// \file setup_grid_NG_MPI.cpp
 /// 
 /// \brief Class for setting up parallel NG grids.
 /// 
@@ -16,7 +16,7 @@
 #include "tools/command_line_interface.h"
 #include "raytracing/raytracer_SC.h"
 
-#include "grid/setup_NG_grid_MPI.h"
+#include "grid/setup_grid_NG_MPI.h"
 #include "grid/uniform_grid.h"
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
@@ -59,6 +59,19 @@
 using namespace std;
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+setup_grid_NG_MPI::setup_grid_NG_MPI()
+{
+#ifdef TESTING
+  cout <<"setup_grid_NG_MPI constructor called.\n";
+#endif
+  return;
+}
+
 
 
 // ##################################################################
@@ -66,7 +79,22 @@ using namespace std;
 
 
 
-void setup_NG_grid_MPI::setup_NG_grid_levels(
+setup_grid_NG_MPI::~setup_grid_NG_MPI()
+{
+#ifdef TESTING
+  cout <<"setup_grid_NG_MPI destructor called.\n";
+#endif
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_grid_NG_MPI::setup_NG_grid_levels(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
@@ -76,7 +104,8 @@ void setup_NG_grid_MPI::setup_NG_grid_levels(
   // For each level, do a domain decomposition
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     err = SimPM.levels[l].MCMD.decomposeDomain(SimPM, SimPM.levels[l]);
-    rep.errorTest("PLLEL Init():Couldn't Decompose Domain!",0,err);
+    rep.errorTest("PLLEL Init():Decompose Domain!",0,err);
+    SimPM.levels[l].MCMD.ReadSingleFile = true; // legacy option.
   }
 
   // For each level, get rank of process for parent grid and each
@@ -95,8 +124,8 @@ void setup_NG_grid_MPI::setup_NG_grid_levels(
 
 
 
-int setup_NG_grid_MPI::setup_grid(
-      vector<class GridBaseClass *> &grid,  ///< address of vector of grid pointers.
+int setup_grid_NG_MPI::setup_grid(
+      vector<class GridBaseClass *> &grid,  ///< grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
@@ -116,11 +145,11 @@ int setup_NG_grid_MPI::setup_grid(
   //
   if      (SimPM.spOOA==OA2) SimPM.Nbc = 4;
   else if (SimPM.spOOA==OA1) SimPM.Nbc = 2;
-  else rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
+  else
+    rep.error("unhandles spatial order of accuracy",SimPM.spOOA);
   
   //
-  // May need to setup extra data in each cell for ray-tracing optical
-  // depths and/or viscosity variables.
+  // May need to setup extra data in each cell.
   //
   setup_cell_extra_data(SimPM);
 
@@ -128,17 +157,16 @@ int setup_NG_grid_MPI::setup_grid(
   // Set values cell interface class; note dx changes with level.
   //
   double dx=(SimPM.Xmax[XX]-SimPM.Xmin[XX])/SimPM.NG[XX];
-  CI.set_dx(dx);
+  CI.set_nlevels(dx,SimPM.grid_nlevels);
   CI.set_ndim(SimPM.ndim);
   CI.set_nvar(SimPM.nvar);
   CI.set_xmin(SimPM.Xmin);
-  CI.set_nlevels(dx,SimPM.grid_nlevels);
   
   //
   // Now we can setup the grid:
   //
 #ifdef TESTING
-  cout <<"(setup_NG_grid_MPI::setup_grid) Setting up grid...\n";
+  cout <<"(setup_grid_NG_MPI::setup_grid) Setting up grid...\n";
 #endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l]);
@@ -171,10 +199,10 @@ int setup_NG_grid_MPI::setup_grid(
       rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
     if (grid[l]==0)
-      rep.error("(setup_NG_grid_MPI::setup_grid)", grid[l]);
+      rep.error("(setup_grid_NG_MPI::setup_grid)", grid[l]);
 
 #ifdef TESTING
-    cout <<"(setup_NG_grid_MPI::setup_grid) Done. &grid=";
+    cout <<"(setup_grid_NG_MPI::setup_grid) Done. &grid=";
     cout << &(grid[l])<<", and grid="<<grid[l]<<"\n";
     cout <<"DX = "<<(grid[l])->DX()<<"\n";
     dp.grid = (grid[l]);
@@ -183,18 +211,8 @@ int setup_NG_grid_MPI::setup_grid(
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     SimPM.levels[l].grid = grid[l];
-    if (l==0) {
-      SimPM.levels[l].parent = 0;
-      SimPM.levels[l].child  = grid[l+1];
-    }
-    else if (l==SimPM.grid_nlevels-1) {
-      SimPM.levels[l].parent = grid[l-1];
-      SimPM.levels[l].child  = 0;
-    }
-    else {
-      SimPM.levels[l].parent = grid[l-1];
-      SimPM.levels[l].child  = grid[l+1];
-    }
+    SimPM.levels[l].parent = 0; // this is used for serial code
+    SimPM.levels[l].child = 0;  // this is used for serial code
   }
 
   // setup arrays for fluxes into and out of fine grid, and
@@ -217,7 +235,37 @@ cout <<"------------------------------------------------------\n\n";
 
 
 
-int setup_NG_grid_MPI::boundary_conditions(
+int setup_grid_NG_MPI::setup_raytracing(
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &grid ///< vec of grid pointers.
+      )
+{
+  int err = 0;
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    cout <<"setting up raytracing for grid level "<<l<<"\n";
+    err += setup_fixed_grid_pllel::setup_raytracing(SimPM,grid[l]);
+    rep.errorTest("setup_grid_NG_MPI::setup_raytracing()",0,err);
+  }
+  
+  err += setup_evolving_RT_sources(SimPM);
+  rep.errorTest("setup_grid_NG_MPI::setup_evolving_RT_sources()",0,err);
+  
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
+    rep.errorTest("setup_grid_NG_MPI::update_evolving_RT_sources()",0,err);
+  }
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int setup_grid_NG_MPI::boundary_conditions(
       class SimParams &par,  ///< pointer to simulation parameters
       vector<class GridBaseClass *> &grid  ///< vec of grid pointers.
       )
@@ -225,21 +273,10 @@ int setup_NG_grid_MPI::boundary_conditions(
 #ifdef TESTING
   cout <<"Setting up BCs in MPI-NG Grid with Nbc="<<par.Nbc<<"\n";
 #endif
-  int err = 0;
-  for (int l=0;l<par.grid_nlevels;l++) {
-    cout <<"level "<<l<<", setting up boundaries\n";
-
-    //
-    // Choose what BCs to set up based on BC strings.
-    //
-    err = setup_boundary_structs(par,grid[l],l);
-    rep.errorTest("sng::boundary_conditions sb_structs",0,err);
-
-    err = grid[l]->SetupBCs(par);
-    rep.errorTest("sng::boundary_conditions SetupBCs",0,err);
-  }
+  int err = setup_NG_grid::boundary_conditions(par,grid);
+  rep.errorTest("setup_grid_NG_MPI::boundary_conditions",0,err);
 #ifdef TESTING
-  cout <<"(setup_NG_grid_MPI::boundary_conditions) Done.\n";
+  cout <<"(setup_grid_NG_MPI::boundary_conditions) Done.\n";
 #endif
   return 0;
 }
@@ -251,7 +288,7 @@ int setup_NG_grid_MPI::boundary_conditions(
 
 
 
-int setup_NG_grid_MPI::setup_boundary_structs(
+int setup_grid_NG_MPI::setup_boundary_structs(
       class SimParams &par,     ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
       const int l   ///< level in NG grid
@@ -262,7 +299,7 @@ int setup_NG_grid_MPI::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid::setup_boundary_structs(par,grid);
+  int err = setup_fixed_grid_MPI::setup_boundary_structs(par,grid);
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
 
@@ -272,72 +309,77 @@ int setup_NG_grid_MPI::setup_boundary_structs(
   // grid (i.e. if l > 0).
   //
   if (l>0) {
+    // replace external boundary conditions with one that
+    // receives data from a coarser level grid.
     for (int i=0; i<par.ndim; i++) {
-      if (!pconst.equalD(par.levels[l-1].Xmin[i],par.levels[l].Xmin[i])) {
+      if (!pconst.equalD(par.levels[l-1].Xmin[i],
+                         par.levels[l].Xmin[i])) {
 #ifdef TESTING
         cout <<"reassigning neg. bc for axis "<<i<<" to COARSE_TO_FINE\n";
 #endif
-        grid->BC_bd[2*i]->itype = COARSE_TO_FINE;
-        grid->BC_bd[2*i]->type  = "COARSE_TO_FINE";
+        grid->BC_bd[2*i]->itype = COARSE_TO_FINE_RECV;
+        grid->BC_bd[2*i]->type  = "COARSE_TO_FINE_RECV";
       }
-      if (!pconst.equalD(par.levels[l-1].Xmax[i],par.levels[l].Xmax[i])) {
+      if (!pconst.equalD(par.levels[l-1].Xmax[i],
+                         par.levels[l].Xmax[i])) {
 #ifdef TESTING
         cout <<"reassigning pos. bc for axis "<<i<<" to COARSE_TO_FINE\n";
 #endif
-        grid->BC_bd[2*i+1]->itype = COARSE_TO_FINE;
-        grid->BC_bd[2*i+1]->type  = "COARSE_TO_FINE";
+        grid->BC_bd[2*i+1]->itype = COARSE_TO_FINE_RECV;
+        grid->BC_bd[2*i+1]->type  = "COARSE_TO_FINE_RECV";
       }
     }
+
+    // Add internal boundary to send averaged local data
+    // to the parent grid.  Whether any data need to 
+    // be sent/received is decided later in the function
+    // assign_boundary_data().
+
+#ifdef TESTING
+    cout <<"Adding FINE_TO_COARSE_SEND boundary for level ";
+    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
+#endif
+    struct boundary_data *bd = new boundary_data;
+    bd->itype = FINE_TO_COARSE_SEND;
+    bd->type  = "FINE_TO_COARSE_SEND";
+    bd->dir = NO;
+    bd->ondir = NO;
+    bd->refval=0;
+    grid->BC_bd.push_back(bd);
   }
 
   //
   // Now check for NG grid boundaries if this grid has a child
-  // grid (i.e. if l < nlevels), and set non-leaf cells to boundary
-  // data.
-  //
-  // for serial code, a grid can only have one child grid, because
-  // a single grid covers the full domain at each level.  So we go
-  // through all cells on the grid, and if they are within the domain
-  // of the child grid (if it exists) then we label the cells as
-  // boundary data and add them to a new FINE_TO_COARSE boundary.
+  // grid (i.e. if l < nlevels-1) and, if so, add boundary structs
+  // to receive averaged data from a finer grid, and to send 
+  // external boundary data to the finer grid.  Whether any data
+  // need to be sent/received is decided later in the function
+  // assign_boundary_data().
   //
   if (l < par.grid_nlevels-1) {
-    double cxmin[MAX_DIM], cxmax[MAX_DIM], cpos[MAX_DIM];
-    bool within_child=true;
-    size_t ct = 0;
-    for (int v=0;v<par.ndim;v++) {
-      cxmin[v] = par.levels[l+1].Xmin[v];
-      cxmax[v] = par.levels[l+1].Xmax[v];
-    }
+#ifdef TESTING
+    cout <<"Adding FINE_TO_COARSE_RECV boundary for level ";
+    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
+#endif
     struct boundary_data *bd = new boundary_data;
-    bd->itype = FINE_TO_COARSE;
-    bd->type  = "FINE_TO_COARSE";
+    bd->itype = FINE_TO_COARSE_RECV;
+    bd->type  = "FINE_TO_COARSE_RECV";
     bd->dir = NO;
     bd->ondir = NO;
     bd->refval=0;
-    cell *c = grid->FirstPt();
-    do {
-      within_child=true;
-      CI.get_dpos(c,cpos);
-      for (int v=0;v<par.ndim;v++) {
-        if (cpos[v]<cxmin[v] || cpos[v]>cxmax[v]) within_child=false;
-      }
-      if (within_child) {
-        c->isbd = true;
-        //cout <<"Nested-grid: FINE_TO_COARSE setup, cell added.\n";
-        bd->data.push_back(c);
-        ct++;
-      }
-    } while ((c=grid->NextPt(c)) !=0);
-#ifdef TESTING
-    cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, ";
-    cout <<bd->data.size() <<"\n";
-#endif
     grid->BC_bd.push_back(bd);
+
 #ifdef TESTING
-    cout <<"BC_data: ";
-    cout <<grid->BC_bd[grid->BC_bd.size()-1]->data.size()<<"\n";
+    cout <<"Adding COARSE_TO_FINE_SEND boundary for level ";
+    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
 #endif
+    struct boundary_data *bd2 = new boundary_data;
+    bd2->itype = COARSE_TO_FINE_SEND;
+    bd2->type  = "COARSE_TO_FINE_SEND";
+    bd2->dir = NO;
+    bd2->ondir = NO;
+    bd2->refval=0;
+    grid->BC_bd.push_back(bd2);
   }
   
   
@@ -346,36 +388,6 @@ int setup_NG_grid_MPI::setup_boundary_structs(
 #endif
   return 0;
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int setup_NG_grid_MPI::setup_raytracing(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &grid ///< vec of grid pointers.
-      )
-{
-  int err = 0;
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    cout <<"setting up raytracing for grid level "<<l<<"\n";
-    err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
-    rep.errorTest("setup_NG_grid_MPI::setup_raytracing()",0,err);
-  }
-  
-  err += setup_evolving_RT_sources(SimPM);
-  rep.errorTest("setup_NG_grid_MPI::setup_evolving_RT_sources()",0,err);
-  
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
-    rep.errorTest("setup_NG_grid_MPI::update_evolving_RT_sources()",0,err);
-  }
-  return 0;
-}
-
 
 
 // ##################################################################

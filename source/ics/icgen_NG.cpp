@@ -76,7 +76,7 @@ int main(int argc, char **argv)
   if (argc>2) icftype=argv[2];
   else icftype="fits"; // This is the default for now.
   
-  class sim_init_NG *SimSetup = new sim_init_NG();
+  class setup_NG_grid *SimSetup = new setup_NG_grid();
   SimPM = &(SimSetup->SimPM);
 
   siminfo=0; siminfo = new class get_sim_info ();
@@ -110,10 +110,8 @@ int main(int argc, char **argv)
   setup_ics_type(ics,&ic);
   ic->set_SimPM(SimPM);
 
-  err = SimSetup->set_equations();
+  err = SimSetup->set_equations(SimPM);
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
-  //spatial_solver->set_dx(SimPM.dx);
-  //spatial_solver->SetEOS(SimPM.gamma);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
   if (SimPM->EP.cooling && !SimPM->EP.chemistry) {
@@ -176,7 +174,7 @@ int main(int argc, char **argv)
     err += SimSetup->TimeUpdateExternalBCs(*SimPM,l,grid[l], 
                   solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
-  rep.errorTest("sim_init_NG: error from bounday update",0,err);
+  rep.errorTest("setup_NG_grid: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -185,7 +183,7 @@ int main(int argc, char **argv)
     err += SimSetup->TimeUpdateInternalBCs(*SimPM,l,grid[l], 
                   solver, SimPM->simtime,SimPM->tmOOA,SimPM->tmOOA);
   }
-  rep.errorTest("sim_init_NG: error from bounday update",0,err);
+  rep.errorTest("setup_NG_grid: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------

@@ -147,7 +147,7 @@ int sim_control_pllel::Init(
   // multiple files.  Should be a single file, but for FITS it might
   // not be.
   //
-  setup_dataio_class(typeOfFile);
+  setup_dataio_class(SimPM, typeOfFile);
   if (!dataio->file_exists(infile))
     rep.error("infile doesn't exist!",infile);
 
@@ -223,7 +223,7 @@ int sim_control_pllel::Init(
   // All grid parameters are now set, so I can set up the appropriate
   // equations/solver class.
   //
-  err = set_equations();
+  err = set_equations(SimPM);
   rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
   spatial_solver->SetEOS(SimPM.gamma);
 
@@ -311,7 +311,7 @@ int sim_control_pllel::Init(
   if (SimPM.typeofip != SimPM.typeofop) {
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
-    setup_dataio_class(SimPM.typeofop);
+    setup_dataio_class(SimPM, SimPM.typeofop);
     if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
@@ -336,46 +336,6 @@ int sim_control_pllel::Init(
   cout <<"------------------------------------------------------------\n";
   return(err);
 }
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void sim_control_pllel::setup_dataio_class(
-      const int typeOfFile ///< type of I/O: 1=text,2=fits,5=silo
-      )
-{
-  //
-  // set up the right kind of data I/O class depending on the input.
-  //
-  switch (typeOfFile) {
-
-  case 1: // Start From ASCII Parameterfile.
-    rep.error("No text file for parallel I/O! Crazy fool!",typeOfFile);
-    break;
-
-#ifdef FITS
-  case 2: // Start from FITS restartfile
-  case 3: // Fits restartfile in table format (slower I/O than image...)
-    dataio = new DataIOFits_pllel(SimPM, &(SimPM.levels[0].MCMD));
-    break;
-#endif // if FITS
-
-#ifdef SILO
-  case 5: // Start from Silo ICfile or restart file.
-    dataio = new dataio_silo_utility (SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
-    break; 
-#endif // if SILO
-  default:
-    rep.error("sim_control::Init unhandled filetype",typeOfFile);
-  }
-  return;
-}
-
-
 
 
 // ##################################################################

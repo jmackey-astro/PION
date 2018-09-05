@@ -36,7 +36,6 @@ class NG_fine_to_coarse_MPI_bc :
       class SimParams &,     ///< pointer to simulation parameters
       const int,  ///< level of this grid.
       boundary_data *  ///< boundary data
-      //class GridBaseClass *  ///< pointer to coarser grid.
       );
 
   /// Send data from this grid to a coarser grid (maybe on another
@@ -56,7 +55,6 @@ class NG_fine_to_coarse_MPI_bc :
       class SimParams &,     ///< pointer to simulation parameters
       const int,  ///< level of this grid.
       boundary_data *  ///< boundary data
-      //class GridBaseClass *  ///< pointer to finer grid.
       );
 
   /// Receive data from a finer grid (maybe on another MPI
