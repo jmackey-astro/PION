@@ -92,6 +92,21 @@ struct averaging {
 };
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+/// struct to hold cells that should be sent to a finer-level grid
+struct c2f {
+  std::vector<cell *> c; ///< list of cells to be sent
+  int rank; ///< rank of process to send to.
+  int dir;  ///< location of boundary on finer-level grid.
+};
+
+
+
 // ##################################################################
 // ##################################################################
 
@@ -110,7 +125,7 @@ struct boundary_data {
   std::list<cell *> data; ///< STL linked list for boundary data cells.
   ///
   /// STL linked list for grid cells to send to neighbouring
-  /// processor (parallel only; for serial code this is unused).
+  /// MPI process (parallel only), on the same grid level.
   ///
   std::list<cell *> send_data;
   ///
@@ -128,6 +143,12 @@ struct boundary_data {
   /// receives data from a number of child grids to replace the
   /// on-grid data.  Vector length is the number of children.
   std::vector<std::list<cell *> > NGrecv;
+
+  /// (MPI-NG only) list of lists of cells, for a coarse grid that
+  /// sends data to a number of child grids for their external
+  /// boundaries.  Vector length is the number of child boundaries
+  /// to update.
+  std::list<struct c2f> NGsend;
 };
 
 #endif // BOUNDARIES_H
