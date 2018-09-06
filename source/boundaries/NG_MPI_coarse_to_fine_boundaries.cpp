@@ -1,12 +1,12 @@
-/// \file NG_coarse_to_fine_boundaries.cpp
-/// \brief Class definitions for NG_coarse_to_fine boundaries
+/// \file NG_MPI_coarse_to_fine_boundaries.cpp
+/// \brief Class definitions for NG_MPI_coarse_to_fine boundaries
 /// \author Jonathan Mackey
 /// 
 /// Modifications :\n
-/// - 2018.08.08 JM: moved code.
+/// - 2018.09.06 JM: started writing code.
 
 
-#include "boundaries/NG_coarse_to_fine_boundaries.h"
+#include "boundaries/NG_MPI_coarse_to_fine_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
 
@@ -17,58 +17,80 @@ using namespace std;
 
 
 
-int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid,  ///< pointer to grid.
+int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
+      class SimParams &par,  ///< simulation parameters
+      const int l,  ///< level of this grid.
       boundary_data *b,  ///< boundary data
-      class GridBaseClass *parent  ///< pointer to parent grid.
       )
 {
-  //
-  // Make a list of pointers to cells in the coarser grid that map
-  // onto this (finer) grid external boundary, and then write an
-  // alogrithm to interpolate the coarse data onto the finer grid.
-  //
-  if (b->data.empty())
-    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
-  b->NG.clear();
 
-  list<cell*>::iterator bpt=b->data.begin();
-  //int pidx = parent->idx();
+  class GridBaseClass *grid = par.levels[l].grid;
   int gidx = grid->idx();
-  //cout <<"BC_assign_COARSE_TO_FINE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
 
-  cell *pc = parent->FirstPt_All(); // parent cell.
+  // see how many child grids I have
+  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  int nchild = MCMD->child_procs.size();
+  b->NGsend.clear();
 
-  double distance =  0.0;
-  bool loop;
-  
-  do{
-    loop = false;
-    distance = grid->idistance(pc->pos, (*bpt)->pos);
-    // Find parent cell that covers this boundary cell.  It should be
-    // G_idx/2 away from the boundary cell in each direction.
-    //rep.printVec("bpt pos",(*bpt)->pos,G_ndim);
-    while (distance > gidx && pc!=0) {
-      //cout <<"distance="<<distance<<"; "; rep.printVec("pc pos",pc->pos,G_ndim);
-      pc = parent->NextPt_All(pc);
-      if (!pc && !loop) { // hack: if get to the end, then go back...
-        pc = b->NG.front();
-        loop = true;
-      }
-      distance = grid->idistance(pc->pos, (*bpt)->pos);
+  // loop over child grids
+  for (int i=0;i<nchild;i++) {
+
+    if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
+      // if child is on my process, do nothing because child grid
+      // can grab the data directly.
+#ifdef TEST_MPI_NG
+      cout <<"my rank ("<<MCMD->get_myrank()<<") == child rank (";
+      cout <<MCMD->child_procs[i].rank<<"), no need to set up ";
+      cout <<"COARSE_TO_FINE_SEND\n";
+#endif
     }
-    if (!pc) rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
-    
-    // add this parent cell to the "parent" list of this boundary.
-    b->NG.push_back(pc);
-    (*bpt)->npt = pc;
-    ++bpt;
-  }  while (bpt !=b->data.end());
+    else {
+      // if child is on another process, make a list of cells that
+      // we need to send.  One list for each external boundary that
+      // we need to update.  Only external boundaries of the whole
+      // domain are included.
+#ifdef TEST_MPI_NG
+      cout <<"my rank != child rank, running parallel ";
+      cout <<"COARSE_TO_FINE_SEND\n";
+#endif
+      // get dimensions of child grid from struct
+      int ixmin[MAX_DIM], ixmax[MAX_DIM];
+      CI.get_ipos_vec(MCMD->child_procs[i].xmin, ixmin);
+      CI.get_ipos_vec(MCMD->child_procs[i].xmax, ixmax);
 
-  // add data to boundary cells.
-  //BC_update_COARSE_TO_FINE(b,OA2,OA2);
+      // loop over dimensions
+      for (int d=0;d<par.ndim;d++) {
+        // if child xmin == its level xmin, but > my level xmin,
+        // then we need to send data, so set up a list.
+        if ( (pconst.equalD(MCMD->child_procs[i].xmin[d],
+                            par.level[l+1].xmin[d]))        &&
+             (MCMD->child_procs[i].xmin[d] > 
+              par.level[l].xmin[d]*ONE_PLUS_EPS) ) {
+          struct c2f *bdata = new struct c2f;
+          bdata->rank = MCMD->child_procs[i].rank;
+          bdata->dir  = 2*d;
+          bdata->c.clear();
 
+          // find cells along this boundary.
+          add_cells_to_C2F_send_list(grid,bdata,ixmin,ixmax);
+        }
+        // if child xmax == its level xmax, but < my level xmax,
+        // then we need to send data, so set up a list.
+        else if ((pconst.equalD(MCMD->child_procs[i].xmax[d],
+                                par.level[l+1].xmax[d]))    &&
+                 (MCMD->child_procs[i].xmax[d] < 
+                  par.level[l].xmax[d]*ONE_MINUS_EPS) ) {
+          struct c2f *bd = new struct c2f;
+          bdata->rank = MCMD->child_procs[i].rank;
+          bdata->dir  = 2*d+1;
+          bdata->c.clear();
+
+          // find cells along this boundary.
+          add_cells_to_C2F_send_list(grid,bdata,ixmin,ixmax);
+        }
+      } // loop over dimensions
+    } // if child is not on my process
+  } // loop over child grids
   return 0;
 }
 
@@ -79,12 +101,49 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
 
 
 
-int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
+int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
-      const int level, ///< level in the NG grid structure
+      const int l, ///< level in the NG grid structure
       struct boundary_data *b,
-      const int step
+      const int cstep,
+      const int maxstep
+      )
+{
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
+      class SimParams &par,     ///< pointer to simulation parameters
+      const int l,  ///< level of this grid.
+      boundary_data *b,  ///< boundary data
+      )
+{
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class FV_solver_base *solver, ///< pointer to equations
+      const int l, ///< level in the NG grid structure
+      struct boundary_data *b,
+      const int cstep,
+      const int maxstep
       )
 {
 #ifdef TEST_C2F
@@ -226,9 +285,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
 
 
-void NG_coarse_to_fine_bc::bilinear_interp(
+void NG_MPI_coarse_to_fine_bc::bilinear_interp(
       class SimParams &par,      ///< pointer to simulation parameters
-      const int *cpos,  ///< coarse level cell integer position
+      cell *c,  ///< coarse level cell
       cell *f,  ///< fine level cell
       const double *P00,  ///< prim. vec. at XN,YN corner of cell
       const double *P01,  ///< prim. vec. at XP,YN corner of cell
@@ -236,17 +295,17 @@ void NG_coarse_to_fine_bc::bilinear_interp(
       const double *P11   ///< prim. vec. at XP,YP corner of cell
       )
 {
-  if ( (f->pos[XX] < cpos[XX]) && (f->pos[YY] < cpos[YY]) ) {
+  if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
     // 1/4,1/4
     for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
   }
-  else if ( (f->pos[XX] > cpos[XX]) && (f->pos[YY] < cpos[YY]) ) {
+  else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
     // 3/4,1/4
     for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
   }
-  else if ( (f->pos[XX] < cpos[XX]) && (f->pos[YY] > cpos[YY]) ) {
+  else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
     // 1/4,3/4
     for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
                   (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
@@ -269,7 +328,7 @@ void NG_coarse_to_fine_bc::bilinear_interp(
 
 
 
-void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
+void NG_MPI_coarse_to_fine_bc::interpolate_coarse2fine1D(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *coarse,  ///< pointer to coarse grid
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -336,7 +395,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
 
 
 
-void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
+void NG_MPI_coarse_to_fine_bc::interpolate_coarse2fine2D(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *coarse,  ///< pointer to coarse grid
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -368,10 +427,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   for (int v=0;v<par.nvar;v++) f4U[v] = c->Ph[v] +sx[v] +sy[v];
 
   // interpolate all four cells using the 4 corner states.
-  bilinear_interp(par, c->pos, f1, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c->pos, f2, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c->pos, f3, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c->pos, f4, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f1, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f2, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f3, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, c, f4, f1U, f2U, f3U, f4U);
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels
@@ -437,5 +496,14 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
 // ##################################################################
 // ##################################################################
 
+void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      )
+{
+  return;
+}
 
 
