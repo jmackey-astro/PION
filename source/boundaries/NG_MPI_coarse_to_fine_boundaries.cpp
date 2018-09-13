@@ -72,7 +72,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           bdata->c.clear();
 
           // find cells along this boundary.
-          add_cells_to_C2F_send_list(grid,bdata,ixmin,ixmax);
+          add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
@@ -86,7 +86,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           bdata->c.clear();
 
           // find cells along this boundary.
-          add_cells_to_C2F_send_list(grid,bdata,ixmin,ixmax);
+          add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+          b->NGsend.push_back(bdata);
         }
       } // loop over dimensions
     } // if child is not on my process
@@ -496,14 +497,233 @@ void NG_MPI_coarse_to_fine_bc::interpolate_coarse2fine2D(
 // ##################################################################
 // ##################################################################
 
+
+
 void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
+      class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to coarse-level grid
       struct c2f *bdata,          ///< pointer to list of cells
       int *ixmin,                 ///< child grid xmin (integer)
       int *ixmax                  ///< child grid xmax (integer)
       )
 {
+  // In XN,XP direction we add cells with faces that touch the fine-
+  // level grid from the outside.
+  // In YN,YP direction we also add corner data
+  // In ZN,ZP direction we also add edge data
+  //
+  // easier to have a function for different grid dimensions.
+  if (par.ndim==1)
+    add_cells_to_C2F_send_list_1D(par,grid,bdata,ixmin,ixmax);
+  else if (par.ndim==2)
+    add_cells_to_C2F_send_list_2D(par,grid,bdata,ixmin,ixmax);
+  else
+    add_cells_to_C2F_send_list_3D(par,grid,bdata,ixmin,ixmax);
+
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      )
+{
+  cell *c = grid->FirstPt();
+  int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
+  
+  // define domain of boundary region
+  int xn,xp;
+  switch (bdata->dir) {
+    case XN:
+    xn = ixmin[XX]-bsize;
+    xp = ixmin[XX];
+    break;
+
+    case XP:
+    xn = ixmax[XX];
+    xp = ixmax[XX]+bsize;
+    break;
+
+    default:
+    rep.error("bad direction in 1D C2F",bdata->dir);
+  }
+
+  do {
+    if (c->pos[XX]>xn && c->pos[XX]<xp)
+      bdata->c.push_back(c);
+  } while ((c=grid->NextPt(c)) !=0);
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      )
+{
+  cell *c = grid->FirstPt();
+  int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
+  
+  // define domain of boundary region
+  int xn,xp,yn,yp;
+  switch (bdata->dir) {
+    case XN:
+    xn = ixmin[XX]-bsize;
+    xp = ixmin[XX];
+    yn = ixmin[YY];
+    yp = ixmax[YY];
+    break;
+
+    case XP:
+    xn = ixmax[XX];
+    xp = ixmax[XX]+bsize;
+    yn = ixmin[YY];
+    yp = ixmax[YY];
+    break;
+
+    case YN:
+    xn = ixmin[XX]-bsize;
+    xp = ixmax[XX]+bsize;
+    yn = ixmin[YY]-bsize;
+    yp = ixmin[YY];
+    break;
+
+    case YP:
+    xn = ixmin[XX]-bsize;
+    xp = ixmax[XX]+bsize;
+    yn = ixmax[YY];
+    yp = ixmax[YY]+bsize;
+    break;
+
+
+    default:
+    rep.error("bad direction in 2D C2F",bdata->dir);
+  }
+
+  do {
+    if (c->pos[XX]>xn && c->pos[XX]<xp &&
+        c->pos[YY]>yn && c->pos[YY]<yp)
+      bdata->c.push_back(c);
+  } while ((c=grid->NextPt(c)) !=0);
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      )
+{
+  cell *c = grid->FirstPt();
+  int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
+  
+  // define domain of boundary region
+  int xn,xp,yn,yp,zn,zp;
+  switch (bdata->dir) {
+    case XN:
+    xn = ixmin[XX]-bsize;
+    xp = ixmin[XX];
+    yn = ixmin[YY];
+    yp = ixmax[YY];
+    zn = ixmin[ZZ];
+    zp = ixmax[ZZ];
+    break;
+
+    case XP:
+    xn = ixmax[XX];
+    xp = ixmax[XX]+bsize;
+    yn = ixmin[YY];
+    yp = ixmax[YY];
+    zn = ixmin[ZZ];
+    zp = ixmax[ZZ];
+    break;
+
+    case YN:
+    xn = ixmin[XX]-bsize;
+    xp = ixmax[XX]+bsize;
+    yn = ixmin[YY]-bsize;
+    yp = ixmin[YY];
+    zn = ixmin[ZZ];
+    zp = ixmax[ZZ];
+    break;
+
+    case YP:
+    xn = ixmin[XX]-bsize;
+    xp = ixmax[XX]+bsize;
+    yn = ixmax[YY];
+    yp = ixmax[YY]+bsize;
+    zn = ixmin[ZZ];
+    zp = ixmax[ZZ];
+    break;
+    
+    case ZN:
+    xn = ixmin[XX]-bsize;
+    xp = ixmax[XX]+bsize;
+    yn = ixmin[YY]-bsize;
+    yp = ixmax[YY]+bsize;
+    zn = ixmin[ZZ]-bsize;
+    zp = ixmin[ZZ];
+    break;
+
+    case ZP:
+    xn = ixmin[XX]-bsize;
+    xp = ixmax[XX]+bsize;
+    yn = ixmin[YY]-bsize;
+    yp = ixmax[YY]+bsize;
+    zn = ixmax[ZZ];
+    zp = ixmax[ZZ]+bsize;
+    break;
+
+    default:
+    rep.error("bad direction in 3D C2F",bdata->dir);
+  }
+
+  do {
+    if (c->pos[XX]>xn && c->pos[XX]<xp &&
+        c->pos[YY]>yn && c->pos[YY]<yp &&
+        c->pos[ZZ]>zn && c->pos[ZZ]<zp)
+      bdata->c.push_back(c);
+  } while ((c=grid->NextPt(c)) !=0);
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
