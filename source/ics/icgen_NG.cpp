@@ -237,7 +237,6 @@ int main(int argc, char **argv)
   err = dataio->OutputData(icfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
-  cout <<icftype<<" FILE WRITTEN in";
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}

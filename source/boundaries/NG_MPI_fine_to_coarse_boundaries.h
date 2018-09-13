@@ -77,7 +77,7 @@ class NG_MPI_fine_to_coarse_bc :
 
   /// List of IDs for all sends, should be cleared at the beginning
   /// of each timestep.
-  std::vector<string> NG_send_list;
+  std::vector<string> NG_F2C_send_list;
 
 };
 
