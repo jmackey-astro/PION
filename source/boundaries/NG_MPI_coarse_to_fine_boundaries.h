@@ -15,7 +15,7 @@
 #include "boundaries/boundaries.h"
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
-
+#include "boundaries/NG_coarse_to_fine_boundaries.h"
 
 ///
 /// Implements NG_MPI_coarse_to_fine boundaries for a uniform grid.
@@ -67,12 +67,39 @@ class NG_MPI_coarse_to_fine_bc :
 
   /// do what it says
   void add_cells_to_C2F_send_list(
+      class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *grid,  ///< pointer to coarse-level grid
       struct c2f *bdata,          ///< pointer to list of cells
       int *ixmin,                 ///< child grid xmin (integer)
       int *ixmax                  ///< child grid xmax (integer)
       );
 
+  /// do what it says for 1D grids
+  void add_cells_to_C2F_send_list_1D(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      );
+
+  /// do what it says for 2D grids
+  void add_cells_to_C2F_send_list_2D(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      );
+
+  /// do what it says for 3D grids
+  void add_cells_to_C2F_send_list_3D(
+      class SimParams &,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      struct c2f *bdata,          ///< pointer to list of cells
+      int *ixmin,                 ///< child grid xmin (integer)
+      int *ixmax                  ///< child grid xmax (integer)
+      );
 };
 
 

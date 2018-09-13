@@ -26,7 +26,7 @@
 /// This class is set up on both fine and coarse grids, and one
 /// calls the send function and the other the receive function.
 ///
-class NG_fine_to_coarse_MPI_bc :
+class NG_MPI_fine_to_coarse_bc :
   virtual public NG_fine_to_coarse_bc
 {
   protected:

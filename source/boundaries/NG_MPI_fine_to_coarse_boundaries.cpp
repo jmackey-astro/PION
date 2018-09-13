@@ -16,7 +16,7 @@ using namespace std;
 
 
 
-int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_SEND(
+int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
       class SimParams &par,     ///< pointer to simulation parameters
       const int l,  ///< level of this grid.
       boundary_data *b  ///< boundary data
@@ -132,7 +132,7 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_SEND(
 
 
 
-int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
+int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
       const int l, ///< level in the NG grid structure
@@ -220,7 +220,7 @@ int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_SEND(
 
 
 
-void NG_fine_to_coarse_MPI_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
+void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 {
   for (int i=0;i<NG_send_list.size();i++) {
     COMM->wait_for_send_to_finish(NG_send_list[i];
@@ -238,7 +238,7 @@ void NG_fine_to_coarse_MPI_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 
 
 
-int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
+int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       class SimParams &par,     ///< pointer to simulation parameters
       const int l,  ///< level of this grid.
       boundary_data *b  ///< boundary data
@@ -310,7 +310,7 @@ int NG_fine_to_coarse_MPI_bc::BC_assign_FINE_TO_COARSE_RECV(
 
 
 
-int NG_fine_to_coarse_MPI_bc::BC_update_FINE_TO_COARSE_RECV(
+int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       class SimParams &par,      ///< pointer to simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
       const int l, ///< level in the NG grid structure
