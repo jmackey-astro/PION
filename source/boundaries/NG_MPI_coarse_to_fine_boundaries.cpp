@@ -30,7 +30,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // see how many child grids I have
   class MCMDcontrol *MCMD = &(par.level[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  b->NGsend.clear();
+  b->NGsendC2F.clear();
 
   // loop over child grids
   for (int i=0;i<nchild;i++) {
@@ -87,7 +87,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
-          b->NGsend.push_back(bdata);
+          b->NGsendC2F.push_back(bdata);
         }
       } // loop over dimensions
     } // if child is not on my process
@@ -103,7 +103,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
-      class SimParams &par,      ///< pointer to simulation parameters
+      class SimParams &par,      ///< simulation parameters
+      class GridBaseClass *grid,  ///< pointer to coarse-level grid
       class FV_solver_base *solver, ///< pointer to equations
       const int l, ///< level in the NG grid structure
       struct boundary_data *b,
@@ -111,6 +112,93 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       const int maxstep
       )
 {
+  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  //
+  // if on an odd-numbered step, then need to update the data on the
+  // coarse grid to half way through a coarse step.  Assume dU has
+  // been calculated for the coarse grid, but not updated to Ph[]
+  //
+  if (cstep != maxstep) {
+#ifdef TEST_C2F
+    cout <<"MPI C2F SEND: odd step, interpolating data in time.\n";
+#endif
+    double U[par.nvar];
+    for (unsigned int ib=0; ib<b->NGsendC2F.size(); ib++) {
+      for ( c_iter=b->NGsendC2F[ib].c.begin();
+            c_iter!=b->NGsendC2F[ib].c.end(); ++c_iter) {
+        cell *c = (*c_iter);
+        solver->PtoU(c->P, U, par.gamma);
+        for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
+        solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
+#ifdef TEST_INF
+        for (int v=0;v<par.nvar;v++) {
+          if (!isfinite(c->Ph[v])) {
+            rep.printVec("NAN c->P ",c->P,par.nvar);
+            rep.printVec("NAN c->Ph",c->Ph,par.nvar);
+          }
+        }
+#endif
+      } // loop over cells in boundary
+    } // loop over send boundaries
+  } // if not at a full step update
+
+  // loop over send boundaries, pack and send the data.
+  for (unsigned int ib=0; ib<b->NGsendC2F.size(); ib++) {
+    //
+    // if 1st order accuracy, then just need Ph[]+cell-vol.
+    // if 2nd order accuracy, also a slope vector for each dimension
+    //
+    size_t n_cell = b->NGsendC2F[ib].c.size();
+    size_t n_el = 0;
+    if      (par.spOOA == OA1) n_el = n_cell*(par.nvar +1);
+    else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1);
+    else rep.error("bad spOOA in MPI C2F",par.spOOA);
+    pion_flt *buf = new pion_flt [n_el];
+    double slope[par.nvar];
+
+    // loop over cells, add Ph[], cell-vol, slopes to send buffer
+    for ( c_iter=b->NGsendC2F[ib].c.begin();
+          c_iter!=b->NGsendC2F[ib].c.end(); ++c_iter) {
+      size_t ibuf=0;
+      cell *c = (*c_iter);
+      for (int v=0;v<par.nvar;v++) buf[ibuf+v]= c->Ph[v];
+      ibuf += par.nvar;
+      buf[ibuf] = grid->CellVolume(c);
+      ibuf++;
+
+      if (par.spOOA == OA2) {
+        for (int idim=0;idim<par.ndim; idim++) {
+          enum axes a = static_cast<axes>(idim);
+          solver->SetSlope(c,a,par.nvar,slope,OA2,grid);
+          for (int v=0;v<par.nvar;v++) buf[ibuf+v]= slope[v];
+          ibuf += par.nvar;
+        } // idim
+      } // if 2nd order
+    } // loop over cells for this send boundary
+
+    if (ibuf != n_el) rep.error("C2F MPI SEND counting",ibuf);
+
+    //
+    // Send data using a non-blocking MPI send
+    //
+    string id;
+    id <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib].rank;
+#ifdef TEST_MPI_NG
+    cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
+    cout <<" doubles from proc "<<MCMD->get_myrank();
+    cout <<" to parent proc "<<pproc<<"\n";
+#endif
+    err += COMM->send_double_data(b->NGsendC2F[ib].rank,n_el,buf,
+                                  id.str(),BC_MPI_NGC2F_tag);
+    if (err) rep.error("Send_F2C send_data failed.",err);
+#ifdef TEST_MPI_NG
+    cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id[i];
+    cout <<"\n";
+#endif
+    // store ID to clear the send later (and delete the MPI temp data)
+    NG_C2F_send_list.push_back(id);
+    buf = mem.myfree(buf);
+  } // loop over send boundaries
   return 0;
 }
 
@@ -121,12 +209,89 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 
 
 
+void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
+{
+  for (unsigned int ib=0; ib<NG_C2F_send_list.size(); ib++) {
+    COMM->wait_for_send_to_finish(NG_C2F_send_list[i];
+  }
+  NG_C2F_send_list.clear();
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
-      class SimParams &par,     ///< pointer to simulation parameters
+      class SimParams &par,     ///< simulation parameters
       const int l,  ///< level of this grid.
       boundary_data *b,  ///< boundary data
       )
 {
+  // Not much to do here because the boundary was set
+  // up already as a regular external boundary.
+  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  int pproc = MCMD->parent;
+
+  if (MCMD->get_myrank() == pproc) {
+#ifdef TEST_MPI_NG
+    cout <<"my rank == parent rank, not setting up ";
+    cout <<"COARSE_TO_FINE_RECV\n";
+#endif
+  }
+  else {
+#ifdef TEST_MPI_NG
+    cout <<"my rank != parent rank, so will need MPI for ";
+    cout <<"COARSE_TO_FINE_RECV";
+    cout <<"me="<<MCMD->get_myrank();
+    cout <<", parent="<<pproc<<"\n";
+#endif
+
+    //
+    // group cells into lists that are child cells of a coarse cell
+    //
+    size_t n_cell = b->data.size();
+    for (int idim=0;idim<par.ndim;idim++) n_cell /=2;
+    b->NGrecvC2F.resize(n_cell);
+    size_t ic = 0;
+    list<cell*>::iterator f_iter=b->data.begin();
+
+    if      (par.ndim==1) {
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        cell *c = (*f_iter);
+        b->NGrecvC2F[ic].push_back(c);
+        f_iter++;
+        c = (*f_iter);
+        b->NGrecvC2F[ic].push_back(c);
+        ic++;
+      } // loop over cells
+    } // if 1D
+    
+    else if (par.ndim==2) {
+      f_iter=b->data.begin();
+      cell *c = (*f_iter);
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        (*f_iter);
+        b->NGrecvC2F[ic].push_back(c);
+        f_iter++;
+        c = (*f_iter);
+        b->NGrecvC2F[ic].push_back(c);
+        ic++;
+      } // loop over cells
+    } // if 1D
+
+
+
+
+      
+
+
+
+  }
+
   return 0;
 }
 
@@ -139,18 +304,71 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
 
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
-      class SimParams &par,      ///< pointer to simulation parameters
+      class SimParams &par,      ///< simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
-      const int l, ///< level in the NG grid structure
-      struct boundary_data *b,
-      const int cstep,
-      const int maxstep
+      const int l,    ///< level in the NG grid structure
+      struct boundary_data *b,  ///< boundary to update
+      const int step  ///< timestep on this (fine) grid
       )
 {
 #ifdef TEST_C2F
-    cout <<"C2F: updating boundary data from coarse grid to level ";
-    cout <<level<<"\n";
+    cout <<"C2F_MPI: receiving boundary data to level ";
+    cout <<l<<"\n";
 #endif
+  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  int pproc = MCMD->parent;
+  class GridBaseClass *grid   = par.levels[level].grid;
+
+  if (MCMD->get_myrank() == pproc) {
+#ifdef TEST_MPI_NG
+    cout <<"my rank == parent rank, calling serial ";
+    cout <<"COARSE_TO_FINE\n";
+#endif
+    NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
+                                              par,solver,l,b,step);
+  }
+  else {
+#ifdef TEST_MPI_NG
+    cout <<"my rank != parent rank, so updating ";
+    cout <<"COARSE_TO_FINE_RECV";
+    cout <<"me="<<MCMD->get_myrank();
+    cout <<", parent="<<pproc<<"\n";
+#endif
+
+    //
+    // receive data.
+    //
+    string recv_id; int recv_tag=-1; int from_rank=-1;
+    err = COMM->look_for_data_to_receive(
+                    &from_rank, recv_id, &recv_tag, COMM_DOUBLEDATA);
+    if (err) rep.error("look for double data failed",err);
+#ifdef TEST_MPI_NG
+    cout <<"BC_update_COARSE_TO_FINE_RECV: found data from rank ";
+    cout <<from_rank<<"\n";
+#endif 
+
+    // receive the data: nel is the number of coarse grid cells
+    size_t n_cell = b->data.size();
+    for (int idim=0;idim<par.ndim;idim++) n_cell /=2;
+    size_t n_el = 0;
+    if      (par.spOOA == OA1) n_el = n_cell*(par.nvar +1);
+    else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1);
+    else rep.error("bad spOOA in MPI C2F",par.spOOA);
+    pion_flt *buf = mem.myalloc(buf,n_el);
+#ifdef TEST_MPI_NG
+    cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<nel<<" cells.\n";
+#endif 
+    //
+    // Receive data into buffer.
+    //
+    err = COMM->receive_double_data(
+                              from_rank, recv_tag, recv_id, ct, buf);
+    if (err) rep.error("(BC_update_C2F_RECV) getdata failed",err);
+
+
+  }
+
+
   //
   // This is a complicated problem to use linear interpolation (or
   // higher order), because you have to conserve mass, momentum and

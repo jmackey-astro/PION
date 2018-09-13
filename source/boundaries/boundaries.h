@@ -76,7 +76,8 @@ enum BoundaryTypes {
 #define BC_MPItag 1 ///< Integer tag on MPI send/receive operations, to label that this communicates MPI boundary data.
 #define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
 #define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
-#define BC_MPI_NG_tag 4 ///< Integer tag on MPI send/receive ops that transfer data between levels on a nested grid.
+#define BC_MPI_NGF2C_tag 4 ///< MPI send/receive from fine to coarse grid.
+#define BC_MPI_NGC2F_tag 5 ///< MPI send/receive from coarse to fine grid.
 
 
 // ##################################################################
@@ -100,8 +101,8 @@ struct averaging {
 
 /// struct to hold cells that should be sent to a finer-level grid
 struct c2f {
-  std::vector<cell *> c; ///< list of cells to be sent
-  int rank; ///< rank of process to send to.
+  std::vector<cell *> c; ///< list of cells to be sent/received
+  int rank; ///< rank of process to send to/receive from.
   int dir;  ///< location of boundary on finer-level grid.
 };
 
@@ -142,13 +143,14 @@ struct boundary_data {
   /// (MPI-NG only) vector of lists of cells, for a coarse grid that
   /// receives data from a number of child grids to replace the
   /// on-grid data.  Vector length is the number of children.
-  std::vector<std::list<cell *> > NGrecv;
+  std::vector<std::list<cell *> > NGrecvF2C;
+  std::vector<std::list<cell *> > NGrecvC2F;  ///< as NGrecvF2C, but C2F
 
   /// (MPI-NG only) list of lists of cells, for a coarse grid that
   /// sends data to a number of child grids for their external
   /// boundaries.  Vector length is the number of child boundaries
   /// to update.
-  std::list<struct c2f> NGsend;
+  std::list<struct *c2f> NGsendC2F;
 };
 
 #endif // BOUNDARIES_H

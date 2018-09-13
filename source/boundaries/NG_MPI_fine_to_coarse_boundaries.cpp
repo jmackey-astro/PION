@@ -196,7 +196,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
         ct,      ///< size of buffer, in number of doubles.
         data,    ///< pointer to double array.
         id.str(), ///< identifier for send, for tracking delivery.
-        BC_MPI_NG_tag ///< comm_tag, to say what kind of send this is
+        BC_MPI_NGF2C_tag ///< comm_tag, to say what kind of send this is
         );
   if (err) rep.error("Send_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG
@@ -205,7 +205,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 #endif
 
   // store ID to clear the send later (and delete the MPI temp data)
-  NG_send_list.push_back(id);
+  NG_F2C_send_list.push_back(id);
   data = mem.myfree(data);
   
   return 0;
@@ -222,10 +222,10 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 
 void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 {
-  for (int i=0;i<NG_send_list.size();i++) {
-    COMM->wait_for_send_to_finish(NG_send_list[i];
+  for (int i=0;i<NG_F2C_send_list.size();i++) {
+    COMM->wait_for_send_to_finish(NG_F2C_send_list[i];
   }
-  NG_send_list.clear();
+  NG_F2C_send_list.clear();
   return;
 }
 
@@ -248,7 +248,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   int err=0;
   class MCMDcontrol *MCMD = &(par.level[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  b->NGrecv.resize(nchild);
+  b->NGrecvF2C.resize(nchild);
 
   // loop over children:
   for (int i=0;i<nchild;i++) {
@@ -287,7 +287,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
           if (c->pos[j]<ixmin[j] || c->pos[j]>ixmax[j]) ongrid=false;
         }
         if (ongrid) {
-          b->NGrecv[i].push_back(c);
+          b->NGrecvF2C[i].push_back(c);
           ct++;
         }
       } while ((c=grid->NextPt(c)) !=0);
@@ -322,7 +322,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
   // Check if child grids exist or are on my MPI process
   int err=0;
   class MCMDcontrol *MCMD = &(par.level[l].MCMD);
-  int nchild =  b->NGrecv.size();
+  int nchild =  b->NGrecvF2C.size();
   int ichild = 0;
 
   // loop over children twice, once for child grids that are on my
@@ -367,7 +367,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
           );
     if (err) rep.error("look for double data failed",err);
 #ifdef TEST_MPI_NG
-    cout <<"BC_update_FINE_TO_COARSE_RECV: got data from rank ";
+    cout <<"BC_update_FINE_TO_COARSE_RECV: found data from rank ";
     cout <<from_rank<<"\n";
 #endif 
     // associate data with one of the child grids:
@@ -378,12 +378,12 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     if (i<0) rep.error("receiving data, but don't know why",v);
 
     // receive the data
-    size_t nel = b->NGrecv[i].size();
+    size_t nel = b->NGrecvF2C[i].size();
     size_t ct = nel*(par.nvar+par.ndim);
-    double *buf = mem.myalloc(data,ct);
+    pion_flt *buf = mem.myalloc(buf,ct);
 #ifdef TEST_MPI_NG
     cout <<"BC_update_FINE_TO_COARSE_RECV: get "<<nel<<" cells.\n";
-#endif 
+#endif
     //
     // Receive data into buffer.
     //
@@ -393,12 +393,12 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 
     // Go through list of cells in child i, and put the received
     // data onto these cells.
-    list<cell*>::iterator c_iter=b->NGrecv[i].begin();
+    list<cell*>::iterator c_iter=b->NGrecvF2C[i].begin();
     cell *c=0;
-    double pos[MAX_DIM], prim[par.nvar];
+    pion_flt pos[MAX_DIM], prim[par.nvar];
     size_t i_el=0;
-    for (c_iter=b->NGrecv[i].begin();
-         c_iter!=b->NGrecv[i].end(); ++c_iter) {
+    for (c_iter=b->NGrecvF2C[i].begin();
+         c_iter!=b->NGrecvF2C[i].end(); ++c_iter) {
       c = (*c_iter);
       CI.get_dpos(c,pos);
 #ifdef TEST_MPI_NG

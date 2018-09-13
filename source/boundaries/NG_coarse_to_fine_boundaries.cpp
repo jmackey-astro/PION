@@ -34,10 +34,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   b->NG.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
-  //int pidx = parent->idx();
   int gidx = grid->idx();
-  //cout <<"BC_assign_COARSE_TO_FINE: dx="<<G_idx<<", parent dx="<<pidx<<"\n";
-
   cell *pc = parent->FirstPt_All(); // parent cell.
 
   double distance =  0.0;
@@ -50,7 +47,6 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     // G_idx/2 away from the boundary cell in each direction.
     //rep.printVec("bpt pos",(*bpt)->pos,G_ndim);
     while (distance > gidx && pc!=0) {
-      //cout <<"distance="<<distance<<"; "; rep.printVec("pc pos",pc->pos,G_ndim);
       pc = parent->NextPt_All(pc);
       if (!pc && !loop) { // hack: if get to the end, then go back...
         pc = b->NG.front();
@@ -58,16 +54,14 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       }
       distance = grid->idistance(pc->pos, (*bpt)->pos);
     }
-    if (!pc) rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
+    if (!pc)
+      rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
     
     // add this parent cell to the "parent" list of this boundary.
     b->NG.push_back(pc);
     (*bpt)->npt = pc;
     ++bpt;
   }  while (bpt !=b->data.end());
-
-  // add data to boundary cells.
-  //BC_update_COARSE_TO_FINE(b,OA2,OA2);
 
   return 0;
 }
@@ -172,7 +166,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
     else if (par.ndim == 2) {
 #ifdef TEST_C2F
-        cout <<"interpolating coarse to fine 2d: ncells="<< b->data.size()<<"\n";
+        cout <<"interpolating coarse to fine 2d: ncells=";
+        cout << b->data.size()<<"\n";
 #endif
 
       //
