@@ -269,7 +269,7 @@ int dataio_silo::OutputData(
     }
   
   
-    err = dataio_silo::choose_filename(outfile, file_counter);
+    err = dataio_silo::choose_filename(filename, file_counter);
     if (err) {
       cerr<<"dataio_silo::OutputData() error choosing filename.\n";
       return err;

@@ -23,8 +23,8 @@
 
 class assign_update_bcs_NG_MPI : 
   virtual public assign_update_bcs_MPI,
-  virtual public NG_fine_to_coarse_MPI_bc,
-  virtual public NG_coarse_to_fine_MPI_bc
+  virtual public NG_MPI_fine_to_coarse_bc,
+  virtual public NG_MPI_coarse_to_fine_bc
 {
   public:  
   ///
