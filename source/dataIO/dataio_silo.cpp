@@ -203,35 +203,7 @@ int dataio_silo::WriteHeader(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  //
-  // File must already exist, so we call Open() with the APPEND setting
-  // so we can overwrite existing parameters.
-  //
-  *db_ptr = 0;
-  *db_ptr = DBOpen(overwritefile.c_str(), DB_UNKNOWN, DB_APPEND);
-  if (!(*db_ptr)) rep.error("open silo file failed.",*db_ptr);
-
-  //
-  // Create header directory if it doesn't exist, move to it,
-  // and write the sim parameters.
-  //
-  int err = DBSetDir(*db_ptr,"/header");
-  if (err==-1) {
-    DBSetDir(*db_ptr,"/");
-    DBMkDir(*db_ptr,"header");
-    DBSetDir(*db_ptr,"/header");
-  }
-  // write numfiles and nproc, for compatibility with parallel files.
-  int dim1[1];
-  dim1[0]=1;
-  int numfiles=1, nproc=1;
-  err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
-  err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
-  err = write_simulation_parameters(SimPM);
-  if (err)
-    rep.error("dataio_silo::WriteHeader() error writing header to silo file",err);
-
-  DBClose(*db_ptr); //*db_ptr=0; 
+  rep.error("dataio_silo::WriteHeader() don't call me!",1);
   return 0;
 }
 
@@ -314,6 +286,14 @@ int dataio_silo::OutputData(
     DBSetDir(*db_ptr,"/");
     DBMkDir(*db_ptr,"header");
     DBSetDir(*db_ptr,"/header");
+    // write numfiles and nproc, for compatibility with parallel files.
+    // Also write grid_level, for python postprocessing.
+    int dim1[1];
+    dim1[0]=1;
+    int numfiles=1, nproc=1;
+    err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"grid_level",  &l,    dim1,1,DB_INT);
     err = write_simulation_parameters(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() writing header",err);
