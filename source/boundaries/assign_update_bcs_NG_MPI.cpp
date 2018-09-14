@@ -220,7 +220,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       cout <<"found COARSE_TO_FINE_SEND boundary to update\n";
 #endif
       err += BC_update_COARSE_TO_FINE_SEND(
-                    par,solver,level,b, par.levels[level].step);
+                    par,grid,solver,level,b, cstep, maxstep);
       break;
 
       default:

@@ -37,9 +37,9 @@
 /// level of the NG has a single grid.
 ///
 class setup_grid_NG_MPI :
+  virtual public assign_update_bcs_NG_MPI,
   virtual public setup_NG_grid,
-  virtual public setup_fixed_grid_pllel,
-  virtual public assign_update_bcs_NG_MPI
+  virtual public setup_fixed_grid_pllel
 {
   public:
   setup_grid_NG_MPI();

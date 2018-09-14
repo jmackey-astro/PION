@@ -28,8 +28,8 @@
 
 /// struct to hold rank of child grids and Xmin/Xmax arrays.
 struct cgrid {
-  double xmin[MAX_DIM]; ///< Xmin of the child grid.
-  double xmax[MAX_DIM]; ///< Xmax of the child grid.
+  double Xmin[MAX_DIM]; ///< Xmin of the child grid.
+  double Xmax[MAX_DIM]; ///< Xmax of the child grid.
   int rank; ///< rank of process that holds child grid.
 };
 

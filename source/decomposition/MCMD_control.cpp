@@ -557,8 +557,8 @@ void MCMDcontrol::set_NG_hierarchy(
         }
         if (ongrid) {
           child.rank = ir[XX];
-          child.xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-          child.xmax[XX] = child.xmin[XX] + 0.5*LocalRange[XX];
+          child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+          child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("1D Child ir",ir,par.ndim);
@@ -578,10 +578,10 @@ void MCMDcontrol::set_NG_hierarchy(
         }
         if (ongrid) {
           child.rank = nx[XX]*ir[YY]+ ir[XX];
-          child.xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-          child.xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
-          child.xmax[XX] = child.xmin[XX] + 0.5*LocalRange[XX];
-          child.xmax[YY] = child.xmin[YY] + 0.5*LocalRange[YY];
+          child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+          child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+          child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
+          child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("2D Child ir",ir,par.ndim);
@@ -603,12 +603,12 @@ void MCMDcontrol::set_NG_hierarchy(
         }
         if (ongrid) {
           child.rank =  nx[XX]*ir[YY]+ ir[XX];
-          child.xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-          child.xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
-          child.xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
-          child.xmax[XX] = child.xmin[XX] + 0.5*LocalRange[XX];
-          child.xmax[YY] = child.xmin[YY] + 0.5*LocalRange[YY];
-          child.xmax[ZZ] = child.xmin[ZZ] + 0.5*LocalRange[ZZ];
+          child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+          child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+          child.Xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
+          child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
+          child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
+          child.Xmax[ZZ] = child.Xmin[ZZ] + 0.5*LocalRange[ZZ];
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("3D Child ir",ir,par.ndim);

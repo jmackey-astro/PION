@@ -149,18 +149,23 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
   else if (par.spOOA == OA2) {
     //
-    // Each dimension is sufficiently different that we have an if/else
+    // Dimensions is sufficiently different that we have an if/else
     // loop for each dimension, and then do linear/bilinear/trilinear
     // interpolation as needed.
     //
     if (par.ndim ==1) {
+      pion_flt slope[par.nvar], c_vol=0;
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         cell *f1, *f2, *c;
         f1 = (*f_iter);
-        c = f1->npt;
         f_iter++;
         f2 = (*f_iter);
-        interpolate_coarse2fine1D(par,coarse,fine,solver,c,f1,f2);
+        // coarse cell properties:
+        c = f1->npt;
+        c_vol = coarse->CellVolume(c);
+        solver->SetSlope(c,XX,par.nvar,slope,OA2,coarse);
+        interpolate_coarse2fine1D(
+                            par,fine,solver,c->Ph,c_vol,slope,f1,f2);
       }
     } // 1D
 
@@ -169,6 +174,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         cout <<"interpolating coarse to fine 2d: ncells=";
         cout << b->data.size()<<"\n";
 #endif
+      pion_flt sx[par.nvar], sy[par.nvar], c_vol=0;
 
       //
       // Need to do bilinear interpolation, 4 cells at a time.
@@ -180,6 +186,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         cell *f1, *f2, *f3, *f4, *c;
         c = (*f_iter)->npt;
+        c_vol = coarse->CellVolume(c);
+        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        solver->SetSlope(c,XX,par.nvar,sy,OA2,coarse);
         // only do this on every second row because we update 4
         // cells at a time.
         if (!fine->NextPt((*f_iter),YP) ||
@@ -198,7 +207,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         cout <<", f1="<<f1->id<<", f2="<<f2->id;
         cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
 #endif
-        interpolate_coarse2fine2D(par,coarse,fine,solver,c,f1,f2,f3,f4);
+        interpolate_coarse2fine2D(
+                      par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
 
       } // loop over fine cells
     } // 2D
@@ -265,28 +275,27 @@ void NG_coarse_to_fine_bc::bilinear_interp(
 
 
 void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *coarse,  ///< pointer to coarse grid
+      class SimParams &par,         ///< simulation parameters
       class GridBaseClass *fine,    ///< pointer to fine grid
       class FV_solver_base *solver, ///< pointer to equations
-      cell *c,  ///< pointer to cell on coarse grid
+      const pion_flt *P,    ///< state vector of coarse cell.
+      const pion_flt c_vol, ///< volume of coarse cell.
+      pion_flt *sx,   ///< dP/dx in coarse cell.
       cell *f1, ///< pointer to first fine cell  (XN)
       cell *f2  ///< pointer to second fine cell (XP)
       )
 {
-  double sx[par.nvar]; // slope in x-dir
   double fU[par.nvar], f1U[par.nvar], f2U[par.nvar], cU[par.nvar];
-  double f_vol[2], c_vol;
+  double f_vol[2];
   double dx = fine->DX(); // dx
   //
   // In 1D the geometry is very easy.
   //
-  solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-  for (int v=0;v<par.nvar;v++) f1->Ph[v] = c->Ph[v] * (1.0-0.5*dx*sx[v]);
+  for (int v=0;v<par.nvar;v++) f1->Ph[v] = P[v] * (1.0-0.5*dx*sx[v]);
   for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
   for (int v=0;v<par.nvar;v++) f1->dU[v] = 0.0;
     
-  for (int v=0;v<par.nvar;v++) f2->Ph[v] = c->Ph[v] * (1.0+0.5*dx*sx[v]);
+  for (int v=0;v<par.nvar;v++) f2->Ph[v] = P[v] * (1.0+0.5*dx*sx[v]);
   for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
   for (int v=0;v<par.nvar;v++) f2->dU[v] = 0.0;
 
@@ -299,8 +308,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   f_vol[1] = fine->CellVolume(f2);
   for (int v=0;v<par.nvar;v++) fU[v] = f1U[v]*f_vol[0] + f2U[v]*f_vol[1];
   // compare with coarse cell.
-  solver->PtoU(c->Ph, cU, par.gamma);
-  c_vol = coarse->CellVolume(c);
+  solver->PtoU(P, cU, par.gamma);
   for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
 #ifdef TEST_C2F
   rep.printVec("1D coarse", cU,par.nvar);
@@ -333,45 +341,44 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
 
 void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
       class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *coarse,  ///< pointer to coarse grid
       class GridBaseClass *fine,    ///< pointer to fine grid
       class FV_solver_base *solver, ///< pointer to equations
-      cell *c,  ///< pointer to cell on coarse grid
+      const pion_flt *P,    ///< state vector of coarse cell.
+      const int *cpos,      ///< position of coarse cell.
+      const pion_flt c_vol, ///< volume of coarse cell.
+      pion_flt *sx,   ///< dP/dx in coarse cell.
+      pion_flt *sy,   ///< dP/dy in coarse cell.
       cell *f1, ///< pointer to first fine cell  (XN,YN)
       cell *f2, ///< pointer to second fine cell (XP,YN)
       cell *f3, ///< pointer to third fine cell  (XN,YP)
       cell *f4  ///< pointer to fourth fine cell (XP,YP)
       )
 {
-  double sx[par.nvar], sy[par.nvar]; // slopes in coarse cell
   double fU[par.nvar], f1U[par.nvar], f2U[par.nvar];
   double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
   double dxo2 = 0.5*fine->DX(); // dx
-  double c_vol=0.0, f_vol[4];
+  double f_vol[4];
   //
   // Need to do bilinear interpolation, 4 cells at a time.
   // use slopes in each direction to get corner values for the
   // coarse cell.
   //
-  solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-  solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
   for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
   for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) f1U[v] = c->Ph[v] -sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f2U[v] = c->Ph[v] +sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f3U[v] = c->Ph[v] -sx[v] +sy[v];
-  for (int v=0;v<par.nvar;v++) f4U[v] = c->Ph[v] +sx[v] +sy[v];
+  for (int v=0;v<par.nvar;v++) f1U[v] = P[v] -sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f2U[v] = P[v] +sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f3U[v] = P[v] -sx[v] +sy[v];
+  for (int v=0;v<par.nvar;v++) f4U[v] = P[v] +sx[v] +sy[v];
 
   // interpolate all four cells using the 4 corner states.
-  bilinear_interp(par, c->pos, f1, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c->pos, f2, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c->pos, f3, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c->pos, f4, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, cpos, f1, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, cpos, f2, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, cpos, f3, f1U, f2U, f3U, f4U);
+  bilinear_interp(par, cpos, f4, f1U, f2U, f3U, f4U);
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels
   //
-  c_vol = coarse->CellVolume(c);
   solver->PtoU(f1->P, f1U, par.gamma);
   solver->PtoU(f2->P, f2U, par.gamma);
   solver->PtoU(f3->P, f3U, par.gamma);
@@ -385,7 +392,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
     fU[v] = f1U[v]*f_vol[0] + f3U[v]*f_vol[1] +
             f2U[v]*f_vol[2] + f4U[v]*f_vol[3];
   // compare with coarse cell.
-  solver->PtoU(c->Ph, cU, par.gamma);
+  solver->PtoU(P, cU, par.gamma);
   for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
 
 #ifdef DEBUG_NG
