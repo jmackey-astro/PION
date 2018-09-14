@@ -221,6 +221,12 @@ int dataio_silo::WriteHeader(
     DBMkDir(*db_ptr,"header");
     DBSetDir(*db_ptr,"/header");
   }
+  // write numfiles and nproc, for compatibility with parallel files.
+  int dim1[1];
+  dim1[0]=1;
+  int numfiles=1, nproc=1;
+  err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
+  err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
   err = write_simulation_parameters(SimPM);
   if (err)
     rep.error("dataio_silo::WriteHeader() error writing header to silo file",err);
