@@ -80,14 +80,14 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   //cout << b->data.size() <<",  :"<<b->NG.size()<<"\n";
 
   // pointers to coarse and fine grids:
-  class GridBaseClass *coarse = par.levels[level].grid;
+  //class GridBaseClass *coarse = par.levels[level].grid;
   class GridBaseClass *fine   = par.levels[level].child;
 
   // vol_sum is for testing only (make sure that fine grid cells
   // have the same cumulative volume as the coarse cell).
-  double cd[par.nvar], u[par.nvar], vol=0.0;
+  double cd[par.nvar];
 #ifdef TEST_NEST
-  double vol_sum=0.0;
+  double vol_sum=0.0, vol=0.0;
   int cpos[MAX_DIM];
   int fpos[MAX_DIM];
 #endif
@@ -95,9 +95,9 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
     c = (*c_iter);
     f = (*f_iter);
-    vol=0.0;
 
 #ifdef TEST_NEST
+    vol=0.0;
     vol_sum=0.0;
     //CI.get_ipos(c,cpos);
     //CI.get_ipos(f,fpos);
@@ -107,7 +107,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     
     int nc = 1;
     for (int i=0;i<par.ndim;i++) nc*=2;
-    list<cell *> lc;
+    vector<cell *> lc;
 
     lc.push_back(f);
     lc.push_back(fine->NextPt(f,XP));
@@ -161,7 +161,7 @@ int NG_fine_to_coarse_bc::average_cells(
       class FV_solver_base *solver, ///< pointer to equations
       class GridBaseClass *grid, ///< fine-level grid
       const int ncells,  ///< number of fine-level cells
-      list<cell *> &c,   ///< list of cells
+      std::vector<cell *> &c,   ///< list of cells
       pion_flt *cd       ///< [OUTPUT] averaged data (conserved var).
       )
 {
@@ -171,7 +171,7 @@ int NG_fine_to_coarse_bc::average_cells(
   // then divide by coarse cell vol.
   //
   double sum_vol=0.0, vol=0.0;
-  list<cell*>::iterator c_iter;
+  vector<cell*>::iterator c_iter;
   for (c_iter=c.begin(); c_iter!=c.end(); ++c_iter) {
     cell *f = (*c_iter);
 #ifdef TEST_MPI_NG

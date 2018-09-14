@@ -8,6 +8,7 @@
 
 #include "boundaries/NG_MPI_coarse_to_fine_boundaries.h"
 #include "tools/mem_manage.h"
+#include <sstream>
 using namespace std;
 
 //#define TEST_C2F
@@ -20,15 +21,15 @@ using namespace std;
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       class SimParams &par,  ///< simulation parameters
       const int l,  ///< level of this grid.
-      boundary_data *b,  ///< boundary data
+      boundary_data *b  ///< boundary data
       )
 {
 
   class GridBaseClass *grid = par.levels[l].grid;
-  int gidx = grid->idx();
+  //int gidx = grid->idx();
 
   // see how many child grids I have
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
   b->NGsendC2F.clear();
 
@@ -55,17 +56,17 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 #endif
       // get dimensions of child grid from struct
       int ixmin[MAX_DIM], ixmax[MAX_DIM];
-      CI.get_ipos_vec(MCMD->child_procs[i].xmin, ixmin);
-      CI.get_ipos_vec(MCMD->child_procs[i].xmax, ixmax);
+      CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
+      CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
 
       // loop over dimensions
       for (int d=0;d<par.ndim;d++) {
         // if child xmin == its level xmin, but > my level xmin,
         // then we need to send data, so set up a list.
-        if ( (pconst.equalD(MCMD->child_procs[i].xmin[d],
-                            par.level[l+1].xmin[d]))        &&
-             (MCMD->child_procs[i].xmin[d] > 
-              par.level[l].xmin[d]*ONE_PLUS_EPS) ) {
+        if ( (pconst.equalD(MCMD->child_procs[i].Xmin[d],
+                            par.levels[l+1].Xmin[d]))        &&
+             (MCMD->child_procs[i].Xmin[d] > 
+              par.levels[l].Xmin[d]*ONE_PLUS_EPS) ) {
           struct c2f *bdata = new struct c2f;
           bdata->rank = MCMD->child_procs[i].rank;
           bdata->dir  = 2*d;
@@ -76,11 +77,11 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
-        else if ((pconst.equalD(MCMD->child_procs[i].xmax[d],
-                                par.level[l+1].xmax[d]))    &&
-                 (MCMD->child_procs[i].xmax[d] < 
-                  par.level[l].xmax[d]*ONE_MINUS_EPS) ) {
-          struct c2f *bd = new struct c2f;
+        else if ((pconst.equalD(MCMD->child_procs[i].Xmax[d],
+                                par.levels[l+1].Xmax[d]))    &&
+                 (MCMD->child_procs[i].Xmax[d] < 
+                  par.levels[l].Xmax[d]*ONE_MINUS_EPS) ) {
+          struct c2f *bdata = new struct c2f;
           bdata->rank = MCMD->child_procs[i].rank;
           bdata->dir  = 2*d+1;
           bdata->c.clear();
@@ -103,16 +104,17 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 
 
 int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
-      class SimParams &par,      ///< simulation parameters
-      class GridBaseClass *grid,  ///< pointer to coarse-level grid
+      class SimParams &par,         ///< simulation parameters
+      class GridBaseClass *grid,    ///< pointer to coarse-level grid
       class FV_solver_base *solver, ///< pointer to equations
-      const int l, ///< level in the NG grid structure
-      struct boundary_data *b,
-      const int cstep,
-      const int maxstep
+      const int l,                  ///< level in the NG hierarchy
+      struct boundary_data *b,      ///< pointer to boundary struct
+      const int cstep,              ///< fractional step
+      const int maxstep             ///< number of fractional steps
       )
 {
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int err=0;
   //
   // if on an odd-numbered step, then need to update the data on the
   // coarse grid to half way through a coarse step.  Assume dU has
@@ -124,9 +126,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #endif
     double U[par.nvar];
     for (unsigned int ib=0; ib<b->NGsendC2F.size(); ib++) {
-      for ( c_iter=b->NGsendC2F[ib].c.begin();
-            c_iter!=b->NGsendC2F[ib].c.end(); ++c_iter) {
-        cell *c = (*c_iter);
+      for (unsigned int c_iter=0; c_iter<b->NGsendC2F[ib]->c.size();
+                                                          c_iter++) {
+        cell *c = b->NGsendC2F[ib]->c[c_iter];
         solver->PtoU(c->P, U, par.gamma);
         for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
         solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
@@ -148,7 +150,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // if 1st order accuracy, then just need Ph[]+cell-vol.
     // if 2nd order accuracy, also a slope vector for each dimension
     //
-    size_t n_cell = b->NGsendC2F[ib].c.size();
+    size_t n_cell = b->NGsendC2F[ib]->c.size();
     size_t n_el = 0;
     if      (par.spOOA == OA1) n_el = n_cell*(par.nvar +1);
     else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1);
@@ -157,10 +159,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     double slope[par.nvar];
 
     // loop over cells, add Ph[], cell-vol, slopes to send buffer
-    for ( c_iter=b->NGsendC2F[ib].c.begin();
-          c_iter!=b->NGsendC2F[ib].c.end(); ++c_iter) {
-      size_t ibuf=0;
-      cell *c = (*c_iter);
+    size_t ibuf=0;
+    for (unsigned int c_iter=0; c_iter<b->NGsendC2F[ib]->c.size();
+                                                        c_iter++) {
+      cell *c = b->NGsendC2F[ib]->c[c_iter];
       for (int v=0;v<par.nvar;v++) buf[ibuf+v]= c->Ph[v];
       ibuf += par.nvar;
       buf[ibuf] = grid->CellVolume(c);
@@ -181,15 +183,16 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     //
     // Send data using a non-blocking MPI send
     //
-    string id;
-    id <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib].rank;
+    ostringstream tmp;
+    tmp <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib]->rank;
+    string id = tmp.str();
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
     cout <<" doubles from proc "<<MCMD->get_myrank();
     cout <<" to parent proc "<<pproc<<"\n";
 #endif
-    err += COMM->send_double_data(b->NGsendC2F[ib].rank,n_el,buf,
-                                  id.str(),BC_MPI_NGC2F_tag);
+    err += COMM->send_double_data(b->NGsendC2F[ib]->rank,n_el,buf,
+                                  id,BC_MPI_NGC2F_tag);
     if (err) rep.error("Send_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG
     cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id[i];
@@ -212,7 +215,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
 {
   for (unsigned int ib=0; ib<NG_C2F_send_list.size(); ib++) {
-    COMM->wait_for_send_to_finish(NG_C2F_send_list[i];
+    COMM->wait_for_send_to_finish(NG_C2F_send_list[ib]);
   }
   NG_C2F_send_list.clear();
   return;
@@ -226,15 +229,16 @@ void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
 
 
 int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
-      class SimParams &par,     ///< simulation parameters
-      const int l,  ///< level of this grid.
-      boundary_data *b,  ///< boundary data
+      class SimParams &par,   ///< simulation parameters
+      const int l,            ///< level of this grid.
+      boundary_data *b        ///< boundary data
       )
 {
   // Not much to do here because the boundary was set
   // up already as a regular external boundary.
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
-  int pproc = MCMD->parent;
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  class GridBaseClass *grid = par.levels[l].grid;
+  int pproc = MCMD->parent_proc;
 
   if (MCMD->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG
@@ -271,26 +275,79 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     } // if 1D
     
     else if (par.ndim==2) {
+      // 4 fine cells per coarse cell
       f_iter=b->data.begin();
-      cell *c = (*f_iter);
+      cell *c = (*f_iter), *temp=0;
+      int row_y = c->pos[YY];
+      int idx = grid->idx();
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
-        (*f_iter);
-        b->NGrecvC2F[ic].push_back(c);
-        f_iter++;
         c = (*f_iter);
-        b->NGrecvC2F[ic].push_back(c);
-        ic++;
+        if (c->pos[YY]-row_y == 2*idx) {
+          // move to next row of cells
+          row_y = c->pos[YY];
+        }
+        if (c->pos[YY] == row_y) {
+          // on same row of cells so continue adding cells
+          b->NGrecvC2F[ic].push_back(c);
+          f_iter++;
+          temp = (*f_iter);
+          b->NGrecvC2F[ic].push_back(temp);
+          b->NGrecvC2F[ic].push_back(grid->NextPt(c,YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(temp,YP));
+          ic++;
+        }
+        else if (c->pos[YY]-row_y == idx) {
+          // odd-numbered row, already dealt with.
+          continue;
+        }
+        else
+          rep.error("error in 3d logic C2FR_setup",c->pos[YY]-row_y);
       } // loop over cells
-    } // if 1D
+    } // if 2D
 
-
-
-
-      
-
-
-
-  }
+    else if (par.ndim==3) {
+      // 8 fine cells per coarse cell
+      f_iter=b->data.begin();
+      cell *c = (*f_iter), *temp=0;
+      int row_y = c->pos[YY];
+      int row_z = c->pos[ZZ];
+      int idx = grid->idx();
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        c = (*f_iter);
+        if (c->pos[ZZ]-row_z == 2*idx) {
+          // move to next plane of cells
+          row_z = c->pos[ZZ];
+        }
+        if (c->pos[YY]-row_y == 2*idx) {
+          // move to next row of cells in z-plane
+          row_y = c->pos[YY];
+        }
+        if (c->pos[YY] == row_y && c->pos[ZZ] == row_z) {
+          // on same row of cells so continue adding cells
+          f_iter++;
+          temp = (*f_iter);
+          b->NGrecvC2F[ic].push_back(c);
+          b->NGrecvC2F[ic].push_back(temp);
+          b->NGrecvC2F[ic].push_back(grid->NextPt(c,YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(temp,YP));
+          c = grid->NextPt(c,ZP);
+          temp = grid->NextPt(temp,YP);
+          b->NGrecvC2F[ic].push_back(c);
+          b->NGrecvC2F[ic].push_back(temp);
+          b->NGrecvC2F[ic].push_back(grid->NextPt(c,YP));
+          b->NGrecvC2F[ic].push_back(grid->NextPt(temp,YP));
+          ic++;
+        }
+        else if (c->pos[YY]-row_y == idx ||
+                 c->pos[ZZ]-row_z == idx) {
+          // odd-numbered row/plane, already dealt with.
+          continue;
+        }
+        else
+          rep.error("error in 3d logic C2FR_setup",c->pos[YY]-row_y);
+      } // loop over cells
+    } // if 3D
+  } // if parent is on other MPI process
 
   return 0;
 }
@@ -312,12 +369,13 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       )
 {
 #ifdef TEST_C2F
-    cout <<"C2F_MPI: receiving boundary data to level ";
-    cout <<l<<"\n";
+  cout <<"C2F_MPI: receiving boundary data to level ";
+  cout <<l<<"\n";
 #endif
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
-  int pproc = MCMD->parent;
-  class GridBaseClass *grid   = par.levels[level].grid;
+  int err=0;
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int pproc = MCMD->parent_proc;
+  class GridBaseClass *grid   = par.levels[l].grid;
 
   if (MCMD->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG
@@ -354,17 +412,25 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     if      (par.spOOA == OA1) n_el = n_cell*(par.nvar +1);
     else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1);
     else rep.error("bad spOOA in MPI C2F",par.spOOA);
-    pion_flt *buf = mem.myalloc(buf,n_el);
+    pion_flt *buf = 0;
+    buf = mem.myalloc(buf,n_el);
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<nel<<" cells.\n";
 #endif 
     //
     // Receive data into buffer.
     //
+    long int ct=0;
     err = COMM->receive_double_data(
                               from_rank, recv_tag, recv_id, ct, buf);
     if (err) rep.error("(BC_update_C2F_RECV) getdata failed",err);
+    if (static_cast<size_t>(ct) != n_el)
+      rep.error("(BC_update_C2F_RECV) wrong data count",ct-n_el);
 
+    //
+    // Get Ph and slopes from coarse cells, and interpolate into
+    // groups of fine cells that are children of each coarse cell.
+    //
 
   }
 
@@ -378,10 +444,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   // almost impenetrable.  AMRVAC uses linear/bilinear/trilinear
   // interpolation with renormalisation to conserve mass/P/E.
   // I'm doing what AMRVAC does, I think.
-
+/*
   // pointers to coarse and fine grids:
-  class GridBaseClass *coarse = par.levels[level].parent;
-  class GridBaseClass *fine   = par.levels[level].grid;
+  class GridBaseClass *coarse = par.levels[l].parent;
+  class GridBaseClass *fine   = par.levels[l].grid;
   list<cell*>::iterator f_iter=b->data.begin();
   cell *f, *c;
 
@@ -493,7 +559,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
     } // 3D
   } // 2nd-order accuracy
-
+*/
   return 0;
 }
 
@@ -503,212 +569,6 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 // ##################################################################
 
 
-
-void NG_MPI_coarse_to_fine_bc::bilinear_interp(
-      class SimParams &par,      ///< pointer to simulation parameters
-      cell *c,  ///< coarse level cell
-      cell *f,  ///< fine level cell
-      const double *P00,  ///< prim. vec. at XN,YN corner of cell
-      const double *P01,  ///< prim. vec. at XP,YN corner of cell
-      const double *P10,  ///< prim. vec. at YP,XN corner of cell
-      const double *P11   ///< prim. vec. at XP,YP corner of cell
-      )
-{
-  if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
-    // 1/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
-  }
-  else if ( (f->pos[XX] > c->pos[XX]) && (f->pos[YY] < c->pos[YY]) ) {
-    // 3/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
-  }
-  else if ( (f->pos[XX] < c->pos[XX]) && (f->pos[YY] > c->pos[YY]) ) {
-    // 1/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
-  }
-  else {
-    // 3/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
-  }
-  for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-  for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void NG_MPI_coarse_to_fine_bc::interpolate_coarse2fine1D(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *coarse,  ///< pointer to coarse grid
-      class GridBaseClass *fine,    ///< pointer to fine grid
-      class FV_solver_base *solver, ///< pointer to equations
-      cell *c,  ///< pointer to cell on coarse grid
-      cell *f1, ///< pointer to first fine cell  (XN)
-      cell *f2  ///< pointer to second fine cell (XP)
-      )
-{
-  double sx[par.nvar]; // slope in x-dir
-  double fU[par.nvar], f1U[par.nvar], f2U[par.nvar], cU[par.nvar];
-  double f_vol[2], c_vol;
-  double dx = fine->DX(); // dx
-  //
-  // In 1D the geometry is very easy.
-  //
-  solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-  for (int v=0;v<par.nvar;v++) f1->Ph[v] = c->Ph[v] * (1.0-0.5*dx*sx[v]);
-  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
-  for (int v=0;v<par.nvar;v++) f1->dU[v] = 0.0;
-    
-  for (int v=0;v<par.nvar;v++) f2->Ph[v] = c->Ph[v] * (1.0+0.5*dx*sx[v]);
-  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
-  for (int v=0;v<par.nvar;v++) f2->dU[v] = 0.0;
-
-  // Now need to check mass/momentum/energy conservation between
-  // coarse and fine levels (Berger & Colella, 1989)
-  // sum energy of fine cells.
-  solver->PtoU(f1->Ph, f1U, par.gamma);
-  f_vol[0] = fine->CellVolume(f1);
-  solver->PtoU(f2->Ph, f2U, par.gamma);
-  f_vol[1] = fine->CellVolume(f2);
-  for (int v=0;v<par.nvar;v++) fU[v] = f1U[v]*f_vol[0] + f2U[v]*f_vol[1];
-  // compare with coarse cell.
-  solver->PtoU(c->Ph, cU, par.gamma);
-  c_vol = coarse->CellVolume(c);
-  for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
-#ifdef TEST_C2F
-  rep.printVec("1D coarse", cU,par.nvar);
-  rep.printVec("1D fine  ", fU,par.nvar);
-#endif
-  // scale f1U, f2U by ratio of coarse to fine energy.
-  // scale fine conserved vec by adding the difference between
-  // conserved quantities on the fine and coarse grids.
-  for (int v=0;v<par.nvar;v++) cU[v] = 0.5*(cU[v] - fU[v])/c_vol;
-  for (int v=0;v<par.nvar;v++) f1U[v] += cU[v];
-  for (int v=0;v<par.nvar;v++) f2U[v] += cU[v];
-#ifdef TEST_C2F
-  for (int v=0;v<par.nvar;v++) fU[v] = f1U[v]+f2U[v];
-  rep.printVec("1D fine 2", fU, par.nvar); 
-#endif
-  solver->UtoP(f2U,f2->Ph, par.EP.MinTemperature, par.gamma);
-  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
-  solver->UtoP(f1U,f1->Ph, par.EP.MinTemperature, par.gamma);
-  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
-
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void NG_MPI_coarse_to_fine_bc::interpolate_coarse2fine2D(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *coarse,  ///< pointer to coarse grid
-      class GridBaseClass *fine,    ///< pointer to fine grid
-      class FV_solver_base *solver, ///< pointer to equations
-      cell *c,  ///< pointer to cell on coarse grid
-      cell *f1, ///< pointer to first fine cell  (XN,YN)
-      cell *f2, ///< pointer to second fine cell (XP,YN)
-      cell *f3, ///< pointer to third fine cell  (XN,YP)
-      cell *f4  ///< pointer to fourth fine cell (XP,YP)
-      )
-{
-  double sx[par.nvar], sy[par.nvar]; // slopes in coarse cell
-  double fU[par.nvar], f1U[par.nvar], f2U[par.nvar];
-  double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
-  double dxo2 = 0.5*fine->DX(); // dx
-  double c_vol=0.0, f_vol[4];
-  //
-  // Need to do bilinear interpolation, 4 cells at a time.
-  // use slopes in each direction to get corner values for the
-  // coarse cell.
-  //
-  solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
-  solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
-  for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) f1U[v] = c->Ph[v] -sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f2U[v] = c->Ph[v] +sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f3U[v] = c->Ph[v] -sx[v] +sy[v];
-  for (int v=0;v<par.nvar;v++) f4U[v] = c->Ph[v] +sx[v] +sy[v];
-
-  // interpolate all four cells using the 4 corner states.
-  bilinear_interp(par, c, f1, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c, f2, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c, f3, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, c, f4, f1U, f2U, f3U, f4U);
-
-  // Need to check mass/momentum/energy conservation between
-  // coarse and fine levels
-  //
-  c_vol = coarse->CellVolume(c);
-  solver->PtoU(f1->P, f1U, par.gamma);
-  solver->PtoU(f2->P, f2U, par.gamma);
-  solver->PtoU(f3->P, f3U, par.gamma);
-  solver->PtoU(f4->P, f4U, par.gamma);
-  f_vol[0] = fine->CellVolume(f1);
-  f_vol[1] = fine->CellVolume(f2);
-  f_vol[2] = fine->CellVolume(f3);
-  f_vol[3] = fine->CellVolume(f4);
-
-  for (int v=0;v<par.nvar;v++)
-    fU[v] = f1U[v]*f_vol[0] + f3U[v]*f_vol[1] +
-            f2U[v]*f_vol[2] + f4U[v]*f_vol[3];
-  // compare with coarse cell.
-  solver->PtoU(c->Ph, cU, par.gamma);
-  for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
-
-#ifdef DEBUG_NG
-  for (int v=0;v<par.nvar;v++) {
-    if (!isfinite(f1U[v]) || !isfinite(f1U[v]) ||
-        !isfinite(f3U[v]) || !isfinite(f4U[v])) {
-      rep.printVec("Unscaled fine00",f1U,par.nvar);
-      rep.printVec("Unscaled fine10",f2U,par.nvar);
-      rep.printVec("Unscaled fine01",f3U,par.nvar);
-      rep.printVec("Unscaled fine11",f4U,par.nvar);
-    }
-  }
-#endif
-
-  // scale fine conserved vec by adding the difference between
-  // conserved quantities on the fine and coarse grids.
-  for (int v=0;v<par.nvar;v++) cU[v] = 0.25*(cU[v] - fU[v])/c_vol;
-  for (int v=0;v<par.nvar;v++) f1U[v] += cU[v];
-  for (int v=0;v<par.nvar;v++) f2U[v] += cU[v];
-  for (int v=0;v<par.nvar;v++) f3U[v] += cU[v];
-  for (int v=0;v<par.nvar;v++) f4U[v] += cU[v];
-  
-  // put scaled conserved variable vectors back into fine cells
-  solver->UtoP(f1U,f1->Ph, par.EP.MinTemperature, par.gamma);
-  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v];
-  solver->UtoP(f2U,f2->Ph, par.EP.MinTemperature, par.gamma);
-  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v];
-  solver->UtoP(f3U,f3->Ph, par.EP.MinTemperature, par.gamma);
-  for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v];
-  solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
-  for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
-
-#ifdef DEBUG_NG
-  for (int v=0;v<par.nvar;v++) {
-    if (!isfinite(f3->P[v]) || !isfinite(f4->P[v]))
-      rep.error("fine 3,4 not finite",f3->P[v]);
-  }
-#endif
-  return;
-}
 
 
 

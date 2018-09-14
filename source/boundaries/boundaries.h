@@ -150,7 +150,7 @@ struct boundary_data {
   /// sends data to a number of child grids for their external
   /// boundaries.  Vector length is the number of child boundaries
   /// to update.
-  std::list<struct *c2f> NGsendC2F;
+  std::vector<struct c2f *> NGsendC2F;
 };
 
 #endif // BOUNDARIES_H

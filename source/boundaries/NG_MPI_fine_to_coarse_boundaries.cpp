@@ -1,12 +1,17 @@
-/// \file NG_fine_to_coarse_boundaries_MPI.cpp
-/// \brief Class definitions for NG_fine_to_coarse_MPI boundaries
+/// \file NG_MPI_fine_to_coarse_boundaries.cpp
+/// \brief Class definitions for NG_MPI_fine_to_coarse boundaries
 /// \author Jonathan Mackey
+/// 
+/// \section Description
+/// Coarse-to-Fine boundary updates send grid data from a coarse grid
+/// to update the external boundaries of a fine grid contained within
+/// the coarse grid.  This version is parallelised with MPI.
 /// 
 /// Modifications :\n
 /// - 2018.08.08 JM: moved code.
 
 
-#include "boundaries/NG_fine_to_coarse_boundaries.h"
+#include "boundaries/NG_MPI_fine_to_coarse_boundaries.h"
 #include "tools/mem_manage.h"
 using namespace std;
 
@@ -23,9 +28,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
       )
 {
   // Check if parent grid is on my MPI process
-  int pproc = par.level[l].MCMD.parent_proc;
-  int err=0;
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  int pproc = par.levels[l].MCMD.parent_proc;
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
   // If so, do nothing because the parent grid will call the 
   // serial NG setup function, which just grabs the data from 
@@ -40,7 +44,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     // Else, make a vector of structs with a list of cells contained
     // in each coarse cell (2,4,or 8) of the parent grid.  This grid
     // is (by design) entirely contained within the parent.
-    class GridBaseClass *grid = par.level[l].grid;
+    class GridBaseClass *grid = par.levels[l].grid;
     double dxo2 = 0.5*grid->DX();
     int ipos[MAX_DIM];
     int nc=1;  // number of fine cells per coarse cell
@@ -49,32 +53,33 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     // initialise the "avg" vector to hold the average state.
     b->avg.resize(nel);
     for (int v=0;v<nel;v++) {
-      b->avg[v]->c.resize(nc);
-      b->avg[v]->state = mem.myalloc(b->avg[v]->state,par.nvar);
+      b->avg[v].c.resize(nc);
+      b->avg[v].avg_state = mem.myalloc(b->avg[v].avg_state,
+                                                  par.nvar);
     }
     // loop through avg vector and add cells and positions
     cell *f = grid->FirstPt();
     int v=0, ix=0, iy=0, iz=0;
     for (v=0;v<nel;v++) {
       // add fine cells to each avg struct
-      b->avg[v]->c[0] = f;
-      b->avg[v]->c[1] = grid->NextPt(f,XP);
-      if (ndim>1) {
-        b->avg[v]->c[2] = grid->NextPt(b->avg[v]->c[0],YP);
-        b->avg[v]->c[3] = grid->NextPt(b->avg[v]->c[1],YP);
+      b->avg[v].c[0] = f;
+      b->avg[v].c[1] = grid->NextPt(f,XP);
+      if (par.ndim>1) {
+        b->avg[v].c[2] = grid->NextPt(b->avg[v].c[0],YP);
+        b->avg[v].c[3] = grid->NextPt(b->avg[v].c[1],YP);
       }
-      if (ndim>2) {
-        b->avg[v]->c[4] = grid->NextPt(b->avg[v]->c[0],ZP);
-        b->avg[v]->c[5] = grid->NextPt(b->avg[v]->c[1],ZP);
-        b->avg[v]->c[6] = grid->NextPt(b->avg[v]->c[2],ZP);
-        b->avg[v]->c[7] = grid->NextPt(b->avg[v]->c[3],ZP);
+      if (par.ndim>2) {
+        b->avg[v].c[4] = grid->NextPt(b->avg[v].c[0],ZP);
+        b->avg[v].c[5] = grid->NextPt(b->avg[v].c[1],ZP);
+        b->avg[v].c[6] = grid->NextPt(b->avg[v].c[2],ZP);
+        b->avg[v].c[7] = grid->NextPt(b->avg[v].c[3],ZP);
       }
       // add position of coarse cell centre (for testing)
       for (int i=0;i<par.ndim;i++)
-        ipos[v] = b->avg[v]->c[0]->pos[v]+dxo2;
+        ipos[v] = b->avg[v].c[0]->pos[v]+dxo2;
       for (int i=par.ndim;i<MAX_DIM;i++)
         ipos[v] = 0.0;
-      CI.get_dpos(ipos,b->avg[v]->cpos);
+      CI.get_dpos_vec(ipos,b->avg[v].cpos);
 
       // get to next cell.
       f = grid->NextPt(f);
@@ -90,7 +95,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
 #endif
         f = grid->NextPt(f);
         ix = 0;
-        if (ndim>1) {
+        if (par.ndim>1) {
           iy++;
           if (iy<grid->NG(YY)) {
             f = grid->NextPt(f,YP);
@@ -102,7 +107,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
             cout <<"eop: "<<ix<<","<<iy<<","<<iz<<"\n";
 #endif
             iy = 0;
-            if (ndim>2) {
+            if (par.ndim>2) {
               iz++;
               if (iz<grid->NG(ZZ)) {
                 f = grid->NextPt(f,ZP);
@@ -143,9 +148,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 {
 
   // Check if parent grid is on my MPI process
-  int pproc = par.level[l].MCMD.parent_proc;
+  int pproc = par.levels[l].MCMD.parent_proc;
   int err=0;
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
   // If so, do nothing because the parent grid will call the 
   // serial NG setup function, which just grabs the data from 
@@ -155,13 +160,13 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
     cout <<"my rank == parent rank, no need to send anything ";
     cout <<"FINE_TO_COARSE_SEND\n";
 #endif
-    return;
+    return 0;
   }
 
   // else we have to send data to another MPI process:
-  class GridBaseClass *grid = par.level[l].grid;
+  class GridBaseClass *grid = par.levels[l].grid;
   double dxo2 = 0.5*grid->DX();
-  int nc = b->avg[0]->c.size();
+  int nc = b->avg[0].c.size();
   int nel = b->avg.size();
 
   // data to send will be ordered as position,conserved-var
@@ -175,10 +180,11 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   size_t ct=0;
   for (v=0;v<nel;v++) {
     for (int j=0;j<par.nvar;j++) cd[j]=0.0;
-    average_cells(par,solver,grid,nc,b->avg[v]->c,cd);
-    for (int i=0;i<par.ndim;i++) data[ct+i] = b->avg[v]->cpos[i];
+    average_cells(par,solver,grid,nc,b->avg[v].c,cd);
+    for (int i=0;i<par.ndim;i++) data[ct+i] = b->avg[v].cpos[i];
     ct += par.ndim;
     for (int i=0;i<par.nvar;i++) data[ct+i] = cd[i];
+    ct += par.nvar;
   } // go to next avg element.
 
   //
@@ -246,7 +252,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 {
   // Check if child grids exist or are on my MPI process
   int err=0;
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
   b->NGrecvF2C.resize(nchild);
 
@@ -261,7 +267,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       cout <<"FINE_TO_COARSE\n";
 #endif
       err = NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
-          par, par.level[l].grid, b, par.level[l].child);
+          par, par.levels[l].grid, b, par.levels[l].child);
       rep.errorTest("BC_assign_FINE_TO_COARSE_RECV serial",0,err);
     }
     else {
@@ -278,7 +284,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       CI.get_ipos_vec(MCMD->child_procs[i].xmin, ixmin);
       CI.get_ipos_vec(MCMD->child_procs[i].xmax, ixmax);
 
-      class GridBaseClass *grid = par.level[l].grid;
+      class GridBaseClass *grid = par.levels[l].grid;
       cell *c = grid->FirstPt();
       size_t ct=0;
       do {
@@ -321,7 +327,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 {
   // Check if child grids exist or are on my MPI process
   int err=0;
-  class MCMDcontrol *MCMD = &(par.level[l].MCMD);
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild =  b->NGrecvF2C.size();
   int ichild = 0;
 

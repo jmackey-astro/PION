@@ -55,15 +55,14 @@ class NG_MPI_coarse_to_fine_bc :
       );
 
   /// Updates data to an external boundary from coarser grid.
-  /// Receives data if parent is on a different MPI process.  If parent
-  /// is on the same process, just grab the data from the parent grid.
+  /// Receives data if parent is on a different MPI process or, if
+  /// on the same process, just grab the data from the parent grid.
   virtual int BC_update_COARSE_TO_FINE_RECV(
       class SimParams &,      ///< pointer to simulation parameters
       class FV_solver_base *, ///< pointer to equations
       const int, ///< level of grid in NG grid struct.
       struct boundary_data *,
-      const int,
-      const int
+      const int  ///< timestep on this (fine) grid
       );
 
   /// do what it says

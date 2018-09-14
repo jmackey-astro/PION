@@ -421,7 +421,9 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
 
 OBJ_NG_BCS = assign_update_bcs_NG_MPI.o     \
           NG_coarse_to_fine_boundaries.o \
-          NG_fine_to_coarse_boundaries.o
+          NG_fine_to_coarse_boundaries.o \
+          NG_MPI_coarse_to_fine_boundaries.o \
+          NG_MPI_fine_to_coarse_boundaries.o \
 
 
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
@@ -601,6 +603,16 @@ NG_coarse_to_fine_boundaries.o: NG_coarse_to_fine_boundaries.h \
 
 NG_fine_to_coarse_boundaries.o: NG_fine_to_coarse_boundaries.h \
   NG_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+NG_MPI_coarse_to_fine_boundaries.o: \
+  NG_MPI_coarse_to_fine_boundaries.h NG_coarse_to_fine_boundaries.h \
+  NG_MPI_coarse_to_fine_boundaries.cpp solver_eqn_base.h \
+  boundaries.h ${GLOBAL} grid_base_class.h
+
+NG_MPI_fine_to_coarse_boundaries.o: \
+  NG_MPI_fine_to_coarse_boundaries.h NG_fine_to_coarse_boundaries.h \
+  NG_MPI_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
 assign_update_bcs_MPI.o: assign_update_bcs_NG.cpp \

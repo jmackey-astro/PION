@@ -30,7 +30,7 @@
 #
 MAKE_UNAME=standard
 MAKE_UNAME=locallibs
-NCORES=8
+NCORES=1
 #
 # Production code options:
 #

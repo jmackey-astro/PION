@@ -15,6 +15,7 @@
 #include "boundaries/boundaries.h"
 #include "grid/grid_base_class.h"
 #include "spatial_solvers/solver_eqn_base.h"
+#include <vector>
 
 
 ///
@@ -48,7 +49,7 @@ class NG_fine_to_coarse_bc {
       class FV_solver_base *, ///< pointer to equations
       class GridBaseClass *, ///< fine-level grid
       const int,      ///< number of fine-level cells
-      list<cell *> &, ///< list of cells
+      std::vector<cell *> &, ///< list of cells
       pion_flt *      ///< [OUTPUT] averaged data (conserved var).
       );
 

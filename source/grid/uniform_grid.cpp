@@ -1230,14 +1230,29 @@ void UniformGrid::BC_deleteBoundaryData(
       }  while(i!=b->NG.end());
     }
 
-    for (unsigned int j=0; j<b->NGrecv.size(); j++) {
-      i=b->NGrecv[j].begin();
+    for (unsigned int j=0; j<b->NGrecvF2C.size(); j++) {
+      i=b->NGrecvF2C[j].begin();
       do {
-        b->NGrecv[j].erase(i);
-        i=b->NGrecv[j].begin();
-      }  while(i!=b->NGrecv[j].end());
+        b->NGrecvF2C[j].erase(i);
+        i=b->NGrecvF2C[j].begin();
+      }  while(i!=b->NGrecvF2C[j].end());
     }
-    b->NGrecv.clear();
+    b->NGrecvF2C.clear();
+
+    for (unsigned int j=0; j<b->NGrecvC2F.size(); j++) {
+      i=b->NGrecvC2F[j].begin();
+      do {
+        b->NGrecvC2F[j].erase(i);
+        i=b->NGrecvC2F[j].begin();
+      }  while(i!=b->NGrecvC2F[j].end());
+    }
+    b->NGrecvC2F.clear();
+
+    for (unsigned int j=0; j<b->NGsendC2F.size(); j++) {
+      b->NGsendC2F[j]->c.clear();
+      b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
+    }
+    b->NGsendC2F.clear();
 
     for (unsigned int j=0; j<b->avg.size(); j++) {
       b->avg[j].avg_state = mem.myfree( b->avg[j].avg_state);

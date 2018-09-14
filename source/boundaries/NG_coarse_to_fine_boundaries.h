@@ -54,11 +54,12 @@ class NG_coarse_to_fine_bc {
 
   /// interpolate data from one coarse cell onto 2 fine cells in 1D
   virtual void interpolate_coarse2fine1D(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to coarse grid
+      class SimParams &,      ///< simulation parameters
       class GridBaseClass *,  ///< pointer to fine grid
       class FV_solver_base *, ///< pointer to equations
-      cell *, ///< pointer to cell on coarse grid
+      const pion_flt *,     ///< state vector of coarse cell.
+      const pion_flt ,      ///< volume of coarse cell.
+      pion_flt *,           ///< dP/dx in coarse cell.
       cell *, ///< pointer to first fine cell  (XN)
       cell *  ///< pointer to second fine cell (XP)
       );
@@ -66,10 +67,13 @@ class NG_coarse_to_fine_bc {
   /// interpolate data from one coarse cell onto 4 fine cells in 2D
   virtual void interpolate_coarse2fine2D(
       class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< pointer to coarse grid
       class GridBaseClass *,  ///< pointer to fine grid
       class FV_solver_base *, ///< pointer to equations
-      cell *, ///< pointer to cell on coarse grid
+      const pion_flt *,     ///< state vector of coarse cell.
+      const int *,          ///< position of coarse cell.
+      const pion_flt ,      ///< volume of coarse cell.
+      pion_flt *,           ///< dP/dx in coarse cell.
+      pion_flt *,           ///< dP/dy in coarse cell.
       cell *, ///< pointer to first fine cell  (XN,YN)
       cell *, ///< pointer to second fine cell (XP,YN)
       cell *, ///< pointer to third fine cell  (XN,YP)
