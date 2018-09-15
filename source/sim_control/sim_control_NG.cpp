@@ -94,11 +94,11 @@ int sim_control_NG::Init(
   SimPM.typeofip=typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("(INIT::get_parameters) err!=0 Something went wrong",0,err);
+  rep.errorTest("(NG_INIT::get_parameters) error",0,err);
 
-  // Now see if any commandline args override the Parameters from the file.
+  // Check for commandline args that override the file parameters.
   err = override_params(narg, args);
-  rep.errorTest("(INIT::override_params) err!=0 Something went wrong",0,err);
+  rep.errorTest("(NG_INIT::override_params) error",0,err);
   
   //
   // Set up the Xmin/Xmax/Range/dx of each level in the NG grid
@@ -109,65 +109,57 @@ int sim_control_NG::Init(
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(INIT::setup_grid) Something went wrong",0,err);
 
-  //
   // All grid parameters are now set, so set up the appropriate
   // equations/solver class.
-  //
+  // ----------------------------------------------------------------
   err = set_equations(SimPM);
-  rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
+  rep.errorTest("(NG_INIT::set_equations)",0,err);
   spatial_solver->SetEOS(SimPM.gamma);
 
+  // ----------------------------------------------------------------
   err = setup_microphysics(SimPM);
-  rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
+  rep.errorTest("(NG_INIT::setup_microphysics)",0,err);
   
-  //
-  // Now assign data to the grid, either from file, or via some function.
-  //
+  // assign data to the grid from snapshot file.
+  // ----------------------------------------------------------------
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
+  rep.errorTest("(NG_INIT::assign_initial_data)",0,err);
 
-  //
   // For each grid in the NG grid, set Ph[] = P[],
-  // and then implement the boundary conditions on the grid and ghost cells.
-  //
+  // and then implement the boundary conditions on the grid and
+  // ghost cells.
+  // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    //
     // Set Ph=P in every cell.
-    //
     cell *c = grid[l]->FirstPt();
     do {
       for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
     } while ((c=grid[l]->NextPt(c))!=0);
-    //
-    // If I'm using the GLM method, make sure Psi variable is initialised.
-    //
+
     if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
 #ifdef TESTING
       cout <<"Initial state, zero-ing glm variable.\n";
 #endif
-      for (int l=0; l<SimPM.grid_nlevels; l++) {
-        c = grid[l]->FirstPt(); do {
-          c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
-        } while ( (c=grid[l]->NextPt(c)) !=0);
-      }
+      c = grid[l]->FirstPt(); do {
+        c->P[SI] = c->Ph[SI] = 0.;//grid->divB(c);
+      } while ( (c=grid[l]->NextPt(c)) !=0);
     }
-  }
+  } // loop over levels
 
-  //
   // Assign boundary conditions to boundary points.
-  //
+  // ----------------------------------------------------------------
   err = boundary_conditions(SimPM, grid);
-  rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  //
+  rep.errorTest("(NG_INIT::boundary_conditions) err!=0",0,err);
+
   // Setup Raytracing on each grid, if needed.
-  //
+  // ----------------------------------------------------------------
   err += setup_raytracing(SimPM, grid);
   rep.errorTest("Failed to setup raytracer",0,err);
 
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     err = assign_boundary_data(SimPM, l, grid[l]);
-    rep.errorTest("icgen_NG::assign_boundary_data",0,err);
+    rep.errorTest("NG_INIT::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
@@ -181,7 +173,7 @@ int sim_control_NG::Init(
     err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  rep.errorTest("sim_control_NG: error from bounday update",0,err);
+  rep.errorTest("NG_INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -192,7 +184,7 @@ int sim_control_NG::Init(
     err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  rep.errorTest("sim_control_NG: error from bounday update",0,err);
+  rep.errorTest("NG_INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   //
@@ -224,7 +216,7 @@ int sim_control_NG::Init(
     if (textio) {delete textio; textio=0;}
     setup_dataio_class(SimPM,SimPM.typeofop);
     if (!dataio)
-      rep.error("INIT:: dataio initialisation",SimPM.typeofop);
+      rep.error("NG_INIT:: dataio initialisation",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
@@ -234,7 +226,7 @@ int sim_control_NG::Init(
     cout << "(INIT) Writing initial data.\n";
     err=output_data(grid);
     if (err)
-      rep.error("Failed to write file!","maybe dir does not exist?");
+      rep.error("Failed to write file!","path does not exist?");
   }
   cout <<"-------------------------------------------------------\n";
 #endif // SERIAL
@@ -306,12 +298,12 @@ int sim_control_NG::initial_conserved_quantities(
 
 
 int sim_control_NG::Time_Int(
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< vector of grids
       )
 {
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
   cout <<"(sim_control_NG::Time_Int) STARTING TIME INTEGRATION\n";
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
   int err=0;
   SimPM.maxtime=false;
   bool first_step=true;
@@ -330,10 +322,8 @@ int sim_control_NG::Time_Int(
 #elif defined (BLAST_WAVE_CHECK)
     calculate_blastwave_radius(grid);
 #endif
-    //
     // --------------------------------------------------------------
     // Update RT sources and boundaries.
-    //
     for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TEST_INT
       cout <<"updating external boundaries for level "<<l<<"\n";
@@ -355,9 +345,7 @@ int sim_control_NG::Time_Int(
     // --------------------------------------------------------------
 
 
-    //
     // Get timestep on each level
-    //
     int scale = 1;
     double mindt = 1.0e99;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
@@ -366,8 +354,10 @@ int sim_control_NG::Time_Int(
       cout <<SimPM.levels[l].dx<<"\n";
 #endif
       if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
+
       err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
+      
       mindt = std::min(mindt, SimPM.dt/scale);
 #ifdef TEST_INT
       cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and ";
@@ -376,10 +366,9 @@ int sim_control_NG::Time_Int(
       SimPM.levels[l].dt = SimPM.dt;
       scale *= 2;
     }
-    // make sure all levels use the same step (scaled by factors of 2).
+    // make sure all levels use same step (scaled by factors of 2).
     scale = 1;
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-      //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
       SimPM.levels[l].dt = mindt*scale;
       scale *= 2;
 #ifdef TEST_INT
@@ -547,8 +536,9 @@ double sim_control_NG::advance_time(
 #ifdef TESTING
   cout <<"advance_time, level="<<l<<", starting.\n";
 #endif
-  int err = update_evolving_RT_sources(SimPM,SimPM.levels[l].grid->RT);
-  rep.errorTest("NG TIME_INT::update_evolving_RT_sources error",0,err);
+  int err = update_evolving_RT_sources(
+                                    SimPM,SimPM.levels[l].grid->RT);
+  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
   double step=0.0;
   if (SimPM.tmOOA==1) {

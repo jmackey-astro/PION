@@ -165,17 +165,17 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 
   // else we have to send data to another MPI process:
   class GridBaseClass *grid = par.levels[l].grid;
-  double dxo2 = 0.5*grid->DX();
   int nc = b->avg[0].c.size();
   int nel = b->avg.size();
 
   // data to send will be ordered as position,conserved-var
   // for each averaged cell.
-  double *data = mem.myalloc(data,nel*(par.nvar+par.ndim));
+  double *data = 0;
+  data = mem.myalloc(data,nel*(par.nvar+par.ndim));
 
   // loop through avg vector and add cells and positions to
   // data array.
-  int v=0, ix=0, iy=0, iz=0;
+  int v=0;
   double cd[par.nvar];
   size_t ct=0;
   for (v=0;v<nel;v++) {
@@ -198,12 +198,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   cout <<" to parent proc "<<pproc<<"\n";
 #endif
   err += COMM->send_double_data(
-        pproc, ///< rank to send to.
-        ct,      ///< size of buffer, in number of doubles.
-        data,    ///< pointer to double array.
-        id.str(), ///< identifier for send, for tracking delivery.
-        BC_MPI_NGF2C_tag ///< comm_tag, to say what kind of send this is
-        );
+        pproc,ct,data,id,BC_MPI_NGF2C_tag);
   if (err) rep.error("Send_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG
   cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id[i];
@@ -228,8 +223,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 
 void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 {
-  for (int i=0;i<NG_F2C_send_list.size();i++) {
-    COMM->wait_for_send_to_finish(NG_F2C_send_list[i];
+  for (unsigned int i=0;i<NG_F2C_send_list.size();i++) {
+    COMM->wait_for_send_to_finish(NG_F2C_send_list[i]);
   }
   NG_F2C_send_list.clear();
   return;
@@ -281,8 +276,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 #endif
       // get dimensions of child grid from struct
       int ixmin[MAX_DIM], ixmax[MAX_DIM];
-      CI.get_ipos_vec(MCMD->child_procs[i].xmin, ixmin);
-      CI.get_ipos_vec(MCMD->child_procs[i].xmax, ixmax);
+      CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
+      CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
 
       class GridBaseClass *grid = par.levels[l].grid;
       cell *c = grid->FirstPt();
@@ -381,7 +376,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     for (int v=0;v<nchild;v++) {
       if (MCMD->get_myrank() == MCMD->child_procs[v].rank) i = v;
     }
-    if (i<0) rep.error("receiving data, but don't know why",v);
+    if (i<0) rep.error("receiving data, but don't know why",i);
 
     // receive the data
     size_t nel = b->NGrecvF2C[i].size();

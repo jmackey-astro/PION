@@ -95,105 +95,118 @@ int sim_control_NG_MPI::Init(
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
 
+  // ----------------------------------------------------------------
   SimPM.typeofip=typeOfFile;
   setup_dataio_class(SimPM, typeOfFile);
   if (!dataio->file_exists(infile))
     rep.error("infile doesn't exist!",infile);
 
+  // ----------------------------------------------------------------
   err = dataio->ReadHeader(infile, SimPM);
-  rep.errorTest("PLLEL Init(): failed to read header",0,err);
+  rep.errorTest("NG_MPI Init(): failed to read header",0,err);
 
   // Check if any commandline args override the file parameters.
+  // ----------------------------------------------------------------
   err = override_params(narg, args);
-  rep.errorTest("(INIT::override_params)",0,err);
+  rep.errorTest("(NG_MPI INIT::override_params)",0,err);
   
   // setup the nested grid levels, and decompose the domain on each
   // level
+  // ----------------------------------------------------------------
   setup_NG_grid_levels(SimPM);
-
-  // Now set up the grid structure.
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  err = setup_grid(&(grid[0]),SimPM);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  grid.resize(SimPM.grid_nlevels);
+  cout <<"NG_MPI Init: grid setup\n";
+  err = setup_grid(grid,SimPM);
+  cout <<"NG_MPI Init: grid setup finished\n";
   SimPM.dx = grid[0]->DX();
-  SimPM.levels[0].grid=grid[0];
-  rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
+  rep.errorTest("(NG_MPI INIT::setup_grid) error",0,err);
 
-  //
-  // All grid parameters are now set, so I can set up the appropriate
+  // All grid parameters are now set, so set up the appropriate
   // equations/solver class.
-  //
+  // ----------------------------------------------------------------
   err = set_equations(SimPM);
-  rep.errorTest("(INIT::set_equations) err!=0 Fix me!",0,err);
-  spatial_solver->set_dx(SimPM.dx);
+  rep.errorTest("(NG_MPI INIT::set_equations)",0,err);
   spatial_solver->SetEOS(SimPM.gamma);
 
-  //
-  // Now setup Microphysics, if needed.
-  //
+  // set up Microphysics, if needed.
+  // ----------------------------------------------------------------
   err = setup_microphysics(SimPM);
-  rep.errorTest("(INIT::setup_microphysics) err!=0",0,err);
+  rep.errorTest("(NG_MPI INIT::setup_microphysics)",0,err);
   
-  //
-  // Now assign data to the grid, either from file, or via some function.
-  //
+  // assign data to the grid from snapshot file.
+  // ----------------------------------------------------------------
   err = dataio->ReadData(infile, grid, SimPM);
-  rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
+  rep.errorTest("(NG_MPI INIT::assign_initial_data)",0,err);
 
-  //
+  // ----------------------------------------------------------------
   // Set Ph[] = P[], and then implement the boundary conditions.
-  //
-  cell *c = grid[0]->FirstPt();
-  do {
-    for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
-  } while ((c=grid[0]->NextPt(c))!=0);
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cell *c = grid[l]->FirstPt();
+    do {
+      for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
+    } while ((c=grid[l]->NextPt(c))!=0);
 
-  //
-  // If I'm using the GLM method, make sure Psi variable is
-  // initialised to zero.
-  //
-  if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
+    if (SimPM.eqntype==EQGLM && SimPM.timestep==0) {
 #ifdef TESTING
-    cout <<"Initial state, zero-ing glm variable.\n";
+      cout <<"Initial state, zero-ing glm variable.\n";
 #endif
-    c = grid[0]->FirstPt(); do {
-      c->P[SI] = c->Ph[SI] = 0.;
-    } while ( (c=grid[0]->NextPt(c)) !=0);
+      c = grid[l]->FirstPt(); do {
+        c->P[SI] = c->Ph[SI] = 0.;
+      } while ( (c=grid[l]->NextPt(c)) !=0);
+    }
+  } // loop over levels
+
+  // ----------------------------------------------------------------
+  err = boundary_conditions(SimPM, grid);
+  rep.errorTest("(NG_MPI INIT::boundary_conditions) err!=0",0,err);
+
+  // ----------------------------------------------------------------
+  err += setup_raytracing(SimPM, grid);
+  rep.errorTest("Failed to setup raytracer",0,err);
+
+  // ----------------------------------------------------------------
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    err = assign_boundary_data(SimPM, l, grid[l]);
+    rep.errorTest("NG_MPI INIT::assign_boundary_data",0,err);
   }
+  // ----------------------------------------------------------------
+
+
+
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TESTING
+    cout <<"NG_MPI updating internal boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+
 
   //
-  // Assign boundary conditions to boundary points.
+  // If testing the code, this calculates the momentum and energy
+  // on the domain.
   //
-  err = boundary_conditions(SimPM, grid[0]);
-  rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
-  err = assign_boundary_data(SimPM,0, grid[0]);
-  rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
-
-  //
-  // Setup Raytracing on each grid, if needed.
-  //
-  err += setup_raytracing(SimPM, grid[0]);
-  err += setup_evolving_RT_sources(SimPM);
-  err += update_evolving_RT_sources(SimPM,grid[0]->RT);
-  rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
-
-  //
-  // If testing the code, this calculates the momentum and energy on the domain.
-  //
-  initial_conserved_quantities(grid[0]);
-
-  err += TimeUpdateInternalBCs(SimPM,0,grid[0], spatial_solver,
-                    SimPM.simtime, SimPM.tmOOA,SimPM.tmOOA);
-  err += TimeUpdateExternalBCs(SimPM,0,grid[0], spatial_solver,
-                   SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  if (err) 
-    rep.error("first_order_update: error from bounday update",err);
-
+  // ----------------------------------------------------------------
+  initial_conserved_quantities(grid);
 
 
   //
   // If using opfreq_time, set the next output time correctly.
   //
+  // ----------------------------------------------------------------
   if (SimPM.op_criterion==1) {
     if (SimPM.opfreq_time < TINYVALUE)
       rep.error("opfreq_time not set right and is needed!",
@@ -209,32 +222,36 @@ int sim_control_NG_MPI::Init(
   // If outfile-type is different to infile-type, we need to delete
   // dataio and set it up again.
   //
+  // ----------------------------------------------------------------
   if (SimPM.typeofip != SimPM.typeofop) {
     if (dataio) {delete dataio; dataio=0;}
     if (textio) {delete textio; textio=0;}
     setup_dataio_class(SimPM, SimPM.typeofop);
-    if (!dataio) rep.error("INIT:: dataio initialisation",SimPM.typeofop);
+    if (!dataio) rep.error("NG_MPI INIT:: dataio",SimPM.typeofop);
   }
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
 
   if (SimPM.timestep==0) {
 #ifdef TESTING
-     cout << "(PARALLEL INIT) Writing initial data.\n";
+     cout << "(NG_MPI INIT) Writing initial data.\n";
 #endif
      output_data(grid);
   }
   
+  // ----------------------------------------------------------------
 #ifdef TESTING
-  c = (grid[0])->FirstPt_All();
-  do {
-    if (pconst.equalD(c->P[RO],0.0)) {
-      cout <<"zero data in cell: ";
-      CI.print_cell(c);
-    }
-  } while ( (c=(grid[0])->NextPt_All(c)) !=0 );
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+    c = (grid[l])->FirstPt_All();
+    do {
+      if (pconst.equalD(c->P[RO],0.0)) {
+        cout <<"zero data in cell: ";
+        CI.print_cell(c);
+      }
+    } while ( (c=(grid[l])->NextPt_All(c)) !=0 );
+  }
 #endif // TESTING
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
   return(err);
 }
 
@@ -256,49 +273,89 @@ int sim_control_NG_MPI::Time_Int(
   int log_freq=10;
   SimPM.maxtime=false;
   clk.start_timer("time_int"); double tsf=0.0;
+
+  // make sure all levels start at the same time.
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    SimPM.levels[l].dt = 0.0;
+    SimPM.levels[l].simtime = SimPM.simtime;
+  }
+  
   while (SimPM.maxtime==false) {
-    //
-    // Update RT sources.
-    //
-    err = update_evolving_RT_sources(SimPM,grid[0]->RT);
-    if (err) {
-      cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
-      return err;
-    }
     
-    //
-    // Update boundary data.
-    //
-#ifdef TESTING
-    cout <<"MPI time_int: updating internal boundaries\n";
+    // --------------------------------------------------------------
+    // Update RT sources and boundaries.
+    for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TEST_INT
+      cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
-    err += TimeUpdateInternalBCs(SimPM,0,grid[0], spatial_solver,
-                    SimPM.simtime, OA2,OA2);
-#ifdef TESTING
-    cout <<"MPI time_int: updating external boundaries\n";
-#endif
-    err += TimeUpdateExternalBCs(SimPM,0,grid[0], spatial_solver,
-                   SimPM.simtime, OA2,OA2);
-    if (err) 
-      rep.error("Boundary update at start of full step",err);
-
-    //clk.start_timer("advance_time");
-#ifdef TESTING
-    cout <<"MPI time_int: calculating dt\n";
-#endif
-    err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
-    rep.errorTest("TIME_INT::calc_timestep()",0,err);
-
-#ifdef TESTING
-    cout <<"MPI time_int: stepping forward in time\n";
-#endif
-    err+= advance_time(0, grid[0]);
-    rep.errorTest("(TIME_INT::advance_time) error",0,err);
-    //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
-    if (err!=0) {
-      cerr<<"(TIME_INT::advance_time) err! "<<err<<"\n";
-      return(1);
+      err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
+                    SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
     }
+    rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
+
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TEST_INT
+      cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
+      err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
+                    SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+    }
+    rep.errorTest("sim_control_NG_MPI: internal boundary",0,err);
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+    // Get timestep on each level
+    int scale = 1;
+    double mindt = 1.0e99;
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TEST_INT
+      cout <<"Calculate timestep, level "<<l<<", dx=";
+      cout <<SimPM.levels[l].dx<<"\n";
+#endif
+      if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
+
+      err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
+      rep.errorTest("TIME_INT::calc_timestep()",0,err);
+      
+      mindt = std::min(mindt, SimPM.dt/scale);
+      mindt = COMM->global_op_double("MIN",mindt);
+#ifdef TEST_INT
+      cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and ";
+      cout <<SimPM.dt/scale <<"\n";
+#endif
+      SimPM.levels[l].dt = SimPM.dt;
+      scale *= 2;
+    }
+    // make sure all levels use same step (scaled by factors of 2).
+    scale = 1;
+    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+      SimPM.levels[l].dt = mindt*scale;
+      scale *= 2;
+#ifdef TEST_INT
+      cout <<"new dt="<<SimPM.levels[l].dt<<", t=";
+      cout <<SimPM.levels[l].simtime<<"\n";
+#endif
+    }
+    if (first_step) {
+      // take a 10x smaller timestep for the first timestep.
+      for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+        //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
+        SimPM.levels[l].dt *=0.1;
+      }
+      first_step=false;
+    }
+    // --------------------------------------------------------------
+
+    // --------------------------------------------------------------
+#ifdef TESTING
+    cout <<"NG_MPI time_int: stepping forward in time\n";
+#endif
+    // Use a recursive algorithm to update the coarsest level.  This
+    // function also updates the next level twice, by calling itself
+    // for the finer level, and so on.
+    //
+    advance_time(0);
+    SimPM.simtime = SimPM.levels[0].simtime;
 #ifdef TESTING
     cout <<"MPI time_int: finished timestep\n";
 #endif
@@ -309,10 +366,11 @@ int sim_control_NG_MPI::Time_Int(
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-//#ifdef TESTING
+#ifdef TESTING
       cout.flush();
-//#endif // TESTING
+#endif // TESTING
     }
+    // --------------------------------------------------------------
 	
     //
     // check if we are at time limit yet.
@@ -325,16 +383,10 @@ int sim_control_NG_MPI::Time_Int(
     }
 	
     err+= output_data(grid);
-    if (err!=0){
-      cerr<<"(TIME_INT::output_data) err!=0 Something went bad"<<"\n";
-      return(1);
-    }
+    rep.errorTest("MPI_NG TIME_INT::output_data()",0,err);
 
     err+= check_eosim();
-    if (err!=0) {
-      cerr<<"(TIME_INT::) err!=0 Something went bad"<<"\n";
-      return(1);
-    }
+    rep.errorTest("MPI_NG TIME_INT::check_eosim()",0,err);
   }
   cout <<"sim_control_NG_MPI:: TIME_INT FINISHED.  MOVING ON TO ";
   cout <<"FINALISE SIM.\n";
@@ -342,21 +394,20 @@ int sim_control_NG_MPI::Time_Int(
   cout <<"TOTALS ###: Nsteps="<<SimPM.timestep;
   cout <<", sim-time="<<SimPM.simtime;
   cout <<", wall-time=" <<tsf;
-  cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep) <<"\n";
+  cout <<", time/step="<<tsf/static_cast<double>(SimPM.timestep);
+  cout <<"\n";
   if (grid[0]->RT!=0) {
-    //
-    // output raytracing timing info.  Have to start and stop timers to get 
-    // the correct runtime (this is sort of a bug... there is no function to
-    // get the elapsed time of a non-running timer.  I should add that.
-    //
+    // print raytracing timing info.  Start and stop timers to get 
+    // the correct runtime
     string t1="totalRT", t2="waitingRT", t3="doingRT";
     double total=0.0, wait=0.0, run=0.0;
     clk.start_timer(t1); total = clk.pause_timer(t1);
     clk.start_timer(t2); wait  = clk.pause_timer(t2);
     clk.start_timer(t3); run   = clk.pause_timer(t3);
-    cout <<"TOTALS RT#: active="<<run<<" idle="<<wait<<" total="<<total<<"\n";
+    cout <<"TOTALS RT#: active="<<run<<" idle="<<wait;
+    cout <<" total="<<total<<"\n";
   }
-  cout <<"                               **************************************\n\n";
+  cout <<"                *************************************\n\n";
   return(0);
 }
 

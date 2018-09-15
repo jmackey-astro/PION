@@ -152,8 +152,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     //
     size_t n_cell = b->NGsendC2F[ib]->c.size();
     size_t n_el = 0;
-    if      (par.spOOA == OA1) n_el = n_cell*(par.nvar +1);
-    else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1);
+    if      (par.spOOA == OA1) n_el = n_cell*(par.nvar+1+par.ndim);
+    else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1+par.ndim);
     else rep.error("bad spOOA in MPI C2F",par.spOOA);
     pion_flt *buf = new pion_flt [n_el];
     double slope[par.nvar];
@@ -167,6 +167,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       ibuf += par.nvar;
       buf[ibuf] = grid->CellVolume(c);
       ibuf++;
+      for (int v=0;v<par.ndim;v++)
+        buf[ibuf+v]= static_cast<double>(c->pos[v]);
+      ibuf += par.ndim;
 
       if (par.spOOA == OA2) {
         for (int idim=0;idim<par.ndim; idim++) {
@@ -418,7 +421,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<nel<<" cells.\n";
 #endif 
     //
-    // Receive data into buffer.
+    // Receive data into buffer.  Data stored for each coarse cell:
+    // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
     long int ct=0;
     err = COMM->receive_double_data(
@@ -431,7 +435,123 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     // Get Ph and slopes from coarse cells, and interpolate into
     // groups of fine cells that are children of each coarse cell.
     //
+    size_t ibuf=0;
+    if (par.spOOA==OA1) {
+      // 1st order, so no averaging.  Fine cells have exactly the
+      // same state as the coarse one.
+      double Ph[par.nvar];
+      double cpos[par.ndim], c_vol=0.0;
+      cell *c=0;
+      for (unsigned int ic=0; ic<b->NGrecvC2F.size(); ic++) {
+        // read data for this coarse cell into arrays
+        for (int v=0;v<par.nvar;v++) Ph[v] = buf[ibuf+v];
+        ibuf += par.nvar;
+        c_vol = buf[ibuf];
+        ibuf++;
+        for (int v=0;v<par.ndim;v++) cpos[v] = buf[ibuf+v];
+        ibuf += par.ndim;
 
+        list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
+        for (f_iter=b->NGrecvC2F[ic].begin();
+              f_iter!=b->NGrecvC2F[ic].end(); ++f_iter) {
+          c = (*f_iter);
+#ifdef TEST_MPI_NG
+          for (int v=0;v<par.ndim;v++) cpos[v] -= c->pos[v];
+          cout <<"ic="<<ic<<", cell is "<<c<<"  ";
+          rep.printVec("offset is:",cpos,par.ndim);
+#endif
+          for (int v=0;v<par.nvar;v++) c->Ph[v] = Ph[v];
+        } // loop over fine cells
+      } // loop over coarse cells
+    } // if 1st order accurate
+
+    else if (par.spOOA==OA2) {
+      // 2nd order needs a slope for each dimension, so split the 
+      // put different ndim in if/else statements.
+      if (par.ndim==1) {
+        double Ph[par.nvar];
+        double cpos[par.ndim], c_vol=0.0;
+        double sx[par.nvar];
+        cell *f[2];
+        for (unsigned int ic=0; ic<b->NGrecvC2F.size(); ic++) {
+          // read data for this coarse cell into arrays
+          for (int v=0;v<par.nvar;v++) Ph[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          c_vol = buf[ibuf];
+          ibuf++;
+          for (int v=0;v<par.ndim;v++) cpos[v] = buf[ibuf+v];
+          ibuf += par.ndim;
+          for (int v=0;v<par.nvar;v++) sx[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
+          for (int v=0;v<2;v++) {
+            f[v] = *f_iter;
+            f_iter++;
+          }
+          interpolate_coarse2fine1D(
+                        par,grid,solver,Ph,c_vol,sx,f[0],f[1]);
+        } // loop over coarse cells
+      }   // if 1D
+      else if (par.ndim==2) {
+        double Ph[par.nvar];
+        double cpos[par.ndim], c_vol=0.0;
+        double sx[par.nvar], sy[par.nvar];
+        cell *f[4];
+        for (unsigned int ic=0; ic<b->NGrecvC2F.size(); ic++) {
+          // read data for this coarse cell into arrays
+          for (int v=0;v<par.nvar;v++) Ph[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          c_vol = buf[ibuf];
+          ibuf++;
+          for (int v=0;v<par.ndim;v++) cpos[v] = buf[ibuf+v];
+          ibuf += par.ndim;
+          for (int v=0;v<par.nvar;v++) sx[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          for (int v=0;v<par.nvar;v++) sy[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
+          for (int v=0;v<4;v++) {
+            f[v] = *f_iter;
+            f_iter++;
+          }
+          interpolate_coarse2fine2D(
+                  par,grid,solver,Ph,c_vol,sx,sy,f[0],f[1],f[2],f[3]);
+        } // loop over coarse cells
+      }   // if 2D
+      else {
+        double Ph[par.nvar];
+        double cpos[par.ndim], c_vol=0.0;
+        double sx[par.nvar], sy[par.nvar], sz[par.nvar];
+        cell *f[8];
+        for (unsigned int ic=0; ic<b->NGrecvC2F.size(); ic++) {
+          // read data for this coarse cell into arrays
+          for (int v=0;v<par.nvar;v++) Ph[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          c_vol = buf[ibuf];
+          ibuf++;
+          for (int v=0;v<par.ndim;v++) cpos[v] = buf[ibuf+v];
+          ibuf += par.ndim;
+          for (int v=0;v<par.nvar;v++) sx[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          for (int v=0;v<par.nvar;v++) sy[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          for (int v=0;v<par.nvar;v++) sz[v] = buf[ibuf+v];
+          ibuf += par.nvar;
+          list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
+          for (int v=0;v<8;v++) {
+            f[v] = *f_iter;
+            f_iter++;
+          }
+          interpolate_coarse2fine2D(
+                  par,grid,solver,Ph,c_vol,sx,sy,f[0],f[1],f[2],f[3]);
+          rep.error("write 3D interpolation routine C2F",par.ndim);
+        } // loop over coarse cells
+      }   // if 3D  
+    } // if 2nd order accurate 
+      
+
+    buf = mem.myfree(buf);
+    buf=0;
   }
 
 

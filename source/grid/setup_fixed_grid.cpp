@@ -690,8 +690,9 @@ int setup_fixed_grid::setup_evolving_RT_sources(
 
 
 int setup_fixed_grid::update_evolving_RT_sources(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class RayTracingBase *RT   ///< pointer to raytracing class
+      class SimParams &SimPM,   ///< simulation parameters
+      const double time,        ///< current simulation time
+      class RayTracingBase *RT  ///< pointer to raytracing class
       )
 {
   int err=0;
@@ -702,54 +703,48 @@ int setup_fixed_grid::update_evolving_RT_sources(
   for (unsigned int isrc=0; isrc<SimPM.STAR.size(); isrc++) {
     //cout <<"isrc="<<isrc<<" of "<<SimPM.STAR.size()<<"\n";
     struct star *istar = &(SimPM.STAR[isrc]);
-    istar->t_now = SimPM.simtime;
+    istar->t_now = time;
     size_t i = istar->last_line;
 
-    //
     // Check if we have reached the last line of the file!
-    //
     if (i==(istar->Nlines-1)) {
-      cout <<"\n\n*#*#*#*#* WARNING #*#*#*#*#*#* update_evolving_RT_sources()";
-      cout <<" Last line, assuming star is constant luminosity from now on!\n\n";
+      cout <<"\n\n*#*#* WARNING #*#*#* update_evolving_RT_sources()";
+      cout <<" Last line, assuming constant Lum from now on!\n\n";
       return 0;
     }
-    //
-    // Check if we have moved forward one line in the code, in which
+    // Check if we have moved forward one line in table, in which
     // case we need to increment i.
-    //
     while (istar->t_now > istar->time[i+1]) {
-      //cout <<"update_evolving_RT_sources() Source has moved to next line. i="<<i<<" time="<<istar->time[i]<<"\n";
       i++;
       istar->last_line = i;
     }
 
-    //
-    // Now we know the star properties are bracketed by line i and line i+1,
-    // so we can do a simple linear interpolation between them.
-    //
-    // First interpolate in log space.
-    //
+    // The star properties are bracketed by line i and line i+1,
+    // so we can do a simple interpolation between them.
     double Lnow, Tnow, Rnow, Vnow;
     Lnow = istar->Log_L[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_L[i+1]-istar->Log_L[i])/(istar->time[i+1]-istar->time[i]);
+        (istar->Log_L[i+1]-istar->Log_L[i])/
+        (istar->time[i+1]-istar->time[i]);
     Tnow = istar->Log_T[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_T[i+1]-istar->Log_T[i])/(istar->time[i+1]-istar->time[i]);
+        (istar->Log_T[i+1]-istar->Log_T[i])/
+        (istar->time[i+1]-istar->time[i]);
     Rnow = istar->Log_R[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_R[i+1]-istar->Log_R[i])/(istar->time[i+1]-istar->time[i]);
+        (istar->Log_R[i+1]-istar->Log_R[i])/
+        (istar->time[i+1]-istar->time[i]);
     Vnow = istar->Log_V[i] +(istar->t_now-istar->time[i])*
-        (istar->Log_V[i+1]-istar->Log_V[i])/(istar->time[i+1]-istar->time[i]);
-    //
-    // Now convert units (Radius is ok, but all others need conversion).
-    //
+        (istar->Log_V[i+1]-istar->Log_V[i])/
+        (istar->time[i+1]-istar->time[i]);
+
+    // convert units
     Lnow = exp(pconst.ln10()*(Lnow))*pconst.Lsun();   // erg/s
     Tnow = exp(pconst.ln10()*(Tnow));                 // K
-    Rnow = exp(pconst.ln10()*(Rnow));                 // Rsun  (!!!)
-    Vnow = exp(pconst.ln10()*(Vnow));                 // km/s  (!!!)
+    Rnow = exp(pconst.ln10()*(Rnow));                 // Rsun
+    Vnow = exp(pconst.ln10()*(Vnow));                 // km/s
 
-    //
-    // If L or T change by more than 1% then update them; otherwise leave as they are.
-    //
-    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.01 || fabs(Tnow-istar->Tnow)/istar->Tnow >0.01 ) {
+    // If L or T change by more than 1% then update them; otherwise
+    // leave as they are.
+    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.01 ||
+         fabs(Tnow-istar->Tnow)/istar->Tnow >0.01 ) {
       cout <<"update_evolving_RT_sources() NOW: t="<<istar->t_now;
       cout <<"\tL="<< Lnow;
       cout <<"\tT="<< Tnow;
@@ -760,30 +755,25 @@ int setup_fixed_grid::update_evolving_RT_sources(
       istar->Rnow = Rnow;
       istar->Vnow = Vnow;
 
-      //
-      // Copy new data into SimPM.RS, and send updates to RayTracing and
+      // Copy new data into SimPM.RS, send updates to RayTracing and
       // microphysics classes.
-      //
       struct rad_src_info *rs = &(SimPM.RS.sources[istar->src_id]);
-      
       rs->strength = istar->Lnow;
       rs->Rstar    = istar->Rnow;
       rs->Tstar    = istar->Tnow;
       
-      //
-      // This is a horrible hack, fix it to something sensible ASAP!!!
-      //
+      // This is a horrible hack, fix it to something sensible
       if (rs->effect == RT_EFFECT_UV_HEATING) {
-        rs->strength = 1.0e48*(rs->strength/1.989e38)*exp(-1e4/rs->Tstar);
+        rs->strength = 1.0e48*(rs->strength/1.989e38)*
+                                            exp(-1e4/rs->Tstar);
         cout <<"FUV source: strength="<<rs->strength<<"\n";
       }
 
       RT->update_RT_source_properties(rs);
       if (rs->effect==RT_EFFECT_PION_MULTI) {
         err += MP->set_multifreq_source_properties(rs);
-        if (err) rep.error("update_evolving_RT_sources() failed to update MP for source id",rs->id);
+        if (err) rep.error("update_evolving_RT_sources()",rs->id);
       }
-
       updated=true;
     }
 
