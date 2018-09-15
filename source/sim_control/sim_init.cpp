@@ -278,7 +278,7 @@ int sim_init::Init(
   //
   err += setup_raytracing(SimPM, grid[0]);
   err += setup_evolving_RT_sources(SimPM);
-  err += update_evolving_RT_sources(SimPM,grid[0]->RT);
+  err += update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
   //
