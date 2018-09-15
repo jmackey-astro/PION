@@ -220,7 +220,7 @@ int sim_control::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,grid[0]->RT);
+    err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
     rep.errorTest("TIME_INT::update_RT_sources()",0,err);
 
     //clk.start_timer("advance_time");

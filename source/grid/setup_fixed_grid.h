@@ -87,6 +87,7 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   virtual int update_evolving_RT_sources(
       class SimParams &,  ///< pointer to simulation parameters
+      const double,       ///< current time
       class RayTracingBase * ///< pointer to raytracing class [OUTPUT]
       );
   

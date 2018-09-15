@@ -273,7 +273,7 @@ int sim_control_pllel::Init(
   //
   err += setup_raytracing(SimPM, grid[0]);
   err += setup_evolving_RT_sources(SimPM);
-  err += update_evolving_RT_sources(SimPM,grid[0]->RT);
+  err += update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
   //
@@ -348,12 +348,12 @@ int sim_control_pllel::Init(
 /*********************** TIME INTEGRATION ************************/
 /*****************************************************************/
 int sim_control_pllel::Time_Int(
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &grid  ///< vector of grids.
       )
 {
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
   cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
-  cout <<"------------------------------------------------------------\n";
+  cout <<"-------------------------------------------------------\n";
   int err=0;
   int log_freq=1;
   SimPM.maxtime=false;
@@ -362,7 +362,8 @@ int sim_control_pllel::Time_Int(
     //
     // Update RT sources.
     //
-    err = update_evolving_RT_sources(SimPM,grid[0]->RT);
+    err = update_evolving_RT_sources(SimPM,SimPM.simtime,
+                                                    grid[0]->RT);
     if (err) {
       cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
       return err;

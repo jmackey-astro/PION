@@ -266,8 +266,8 @@ cout <<"------------------------------------------------------\n\n";
 
 
 int setup_NG_grid::setup_raytracing(
-      class SimParams &SimPM,    ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      class SimParams &SimPM,    ///< simulation parameters
+      vector<class GridBaseClass *> &grid  ///< vector of grids.
       )
 {
   int err = 0;
@@ -281,8 +281,9 @@ int setup_NG_grid::setup_raytracing(
   rep.errorTest("setup_NG_grid::setup_evolving_RT_sources()",0,err);
   
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
-    rep.errorTest("setup_NG_grid::update_evolving_RT_sources()",0,err);
+    err += update_evolving_RT_sources(SimPM,SimPM.levels[l].simtime, 
+                                                        grid[l]->RT);
+    rep.errorTest("setup_NG_grid::update_RT_sources()",0,err);
   }
   return 0;
 }

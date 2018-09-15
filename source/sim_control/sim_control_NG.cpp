@@ -537,7 +537,7 @@ double sim_control_NG::advance_time(
   cout <<"advance_time, level="<<l<<", starting.\n";
 #endif
   int err = update_evolving_RT_sources(
-                                    SimPM,SimPM.levels[l].grid->RT);
+            SimPM,SimPM.levels[l].simtime,SimPM.levels[l].grid->RT);
   rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
   double step=0.0;
