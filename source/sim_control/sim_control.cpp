@@ -221,10 +221,7 @@ int sim_control::Time_Int(
     // Update RT sources.
     //
     err = update_evolving_RT_sources(SimPM,grid[0]->RT);
-    if (err) {
-      cerr <<"(TIME_INT::update_evolving_RT_sources()) something went wrong!\n";
-      return err;
-    }
+    rep.errorTest("TIME_INT::update_RT_sources()",0,err);
 
     //clk.start_timer("advance_time");
     // step forward by dt.

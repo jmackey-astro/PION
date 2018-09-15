@@ -69,14 +69,14 @@ class comm_mpi : public comms_base {
       int *  ///< nproc
       );
 
-  /// Tell other processes that I am exiting, and either exit, or wait for the
+  /// Tell other processes that I am exiting, and wait for the
   /// others and then exit. 
   int finalise();
 
   /// Tell other processes to abort! 
   int abort();
 
-  /// Set up a barrier, and don't return until all other processes have also 
+  /// Set up a barrier, and return when all processes have also 
   /// set up their own barrier. 
   int barrier(
       const std::string
@@ -91,11 +91,11 @@ class comm_mpi : public comms_base {
       );
  
   /// 
-  /// Do a global operation on local data, options are MAX,MIN,SUM,but easy to
-  /// add in others if needed.  Receives in local value, performs global 
-  /// operation on it, and returns global value.  This function works with
-  /// N-element arrays, and should work "in-place" i.e. send and recv buffers
-  /// are the same.
+  /// Do a global operation on local data, options are MAX,MIN,SUM.
+  /// Receives in local value, performs global operation on it,
+  /// and returns global value.  This function works with
+  /// N-element arrays, and should work "in-place" i.e. send and recv
+  /// buffers are the same.
   ///
   void global_op_double_array(
       const std::string, ///< MAX,MIN,SUM
@@ -112,58 +112,58 @@ class comm_mpi : public comms_base {
       void *             ///< pointer to data.
       );
 
-  /// Send cell data to another processor, and return immediately, but
-  /// keep a record of the send so that I can tell later when the send has been 
+  /// Send cell data to another processor, return immediately, but
+  /// keep a record of the send for later to know the send has been 
   /// received.
   ///
-  /// This receives a list of cells, extracts specific data from each cell into a 
-  /// buffer to send, and sends it to another processor, which is expected to 
+  /// receives a list of cells, puts data from each cell into a 
+  /// buffer to send, sends it to another processor, which should 
   /// know how to unpack the data from it's matching receive call.
   ///
-  /// Note that this function copies the data into its own buffer, so the user is
-  /// free to delete the list of cells on return, even though the send may not be
+  /// Ccopies the data into its own buffer, so the user is
+  /// free to delete the list of cells even if the send is not
   /// complete.
   ///
   int send_cell_data(
       const int,           ///< rank to send to.
       std::list<cell *> *, ///< list of cells to get data from.
-      long int,            ///< number of cells in list (extra checking!)
-      const int, ///< ndim
-      const int, ///< nvar
-      std::string &,            ///< identifier for send, for tracking delivery later.
-      const int            ///< comm_tag, to say what kind of send this is.
+      long int,            ///< number of cells in list
+      const int,           ///< ndim
+      const int,           ///< nvar
+      std::string &,       ///< identifier for send, delivery tracking
+      const int            ///< comm_tag, kind of send this is.
       );
 
   ///
-  /// Send an array of n doubles to another processor, and return immediately, but
-  /// keep a record of the send so that I can tell later when the send has been received.
+  /// Send an array of n doubles to another processor, return but
+  /// keep a record for later when the send has been received.
   ///
-  /// Note that this function copies the data into its own buffer, so the user is
-  /// free to delete the data on return, even though the send may not be complete.
+  /// copies the data into its own buffer, so the user is
+  /// free to delete the data on return, before the send is complete.
   ///
   int send_double_data(
       const int,      ///< rank to send to.
       const long int, ///< size of buffer, in number of doubles.
       const double *, ///< pointer to double array.
-      std::string &,       ///< identifier for send, for tracking delivery later.
-      const int       ///< comm_tag, to say what kind of send this is.
+      std::string &,  ///< identifier for send, for tracking delivery
+      const int       ///< comm_tag, for what kind of send this is.
       );
 
-  /// This function is called when we need to make sure a send has been received.
-  /// It only returns once the receiver has confirmed that it has got the data.
+  /// Called when we need to make sure a send has been received.
+  /// It returns once the receiver confirms that it has got the data.
   ///
   int wait_for_send_to_finish(
       std::string & ///< identifier for the send we are waiting on.
       );
 
   /// Look for some data that is being sent to us.  Does not return
-  /// until it finds some, so it is up to the programmer to prevent deadlock!
+  /// until it finds some, so it is up to you to prevent deadlock!
   ///
   int look_for_data_to_receive(
       int *,    ///< rank of sender
       std::string &, ///< identifier for receive.
       int *,     ///< comm_tag associated with data.
-      const int  ///< type of data to look for (COMM_CELLDATA,COMM_DOUBLEDATA)
+      const int  ///< type of data to look for (e.g. COMM_DOUBLEDATA)
       );
 
   /// Receive Cell data from a specific process rank. 
@@ -175,23 +175,20 @@ class comm_mpi : public comms_base {
   int receive_cell_data(
       const int,           ///< rank of process we are receiving from.
       std::list<cell *> *, ///< list of cells to get data for. 
-      const long int,      ///< number of cells in list (extra checking!)
-      const int, ///< ndim
-      const int, ///< nvar
-      const int,           ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-      const std::string &  ///< identifier for receive, for any book-keeping that might be needed.
+      const long int,      ///< number of cells in list
+      const int,           ///< ndim
+      const int,           ///< nvar
+      const int,           ///< comm_tag: what sort of comm (PER,MPI)
+      const std::string &  ///< identifier for receive.
       );
 
   /// Receive array of doubles from a specific process rank. 
-  ///
-  /// It is up to the caller to make sure that it knows what to do with the list!
-  ///
   int receive_double_data(
       const int,      ///< rank of process we are receiving from.
-      const int,      ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-      const std::string &, ///< identifier for receive, for any book-keeping that might be needed.
+      const int,      ///< comm_tag: what sort of comm (PER,MPI,etc.)
+      const std::string &, ///< identifier for receive.
       const long int, ///< number of doubles to receive
-      double *        ///< Pointer to array to write to (must be already initialised).
+      double *        ///< Pointer to array to write to (initialised).
       );
 
 #ifdef SILO

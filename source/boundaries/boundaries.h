@@ -30,8 +30,8 @@ enum BoundaryTypes {
     JETBC      = 6, ///< A jet boundary, internal boundary.
     JETREFLECT = 7, ///< Sort-of reflection for bi-directional jet, 
                     ///< where normal B field passes through, but tangential is reversed.
-    DMACH      = 8, ///< Outflow boundary for double mach reflection test problem only.
-    DMACH2     = 9, ///< Fixed boundary on y=0, x in [0,1/6] fixed to postshock state.
+    DMACH      = 8, ///< Outflow boundary for double mach reflection.
+    DMACH2     = 9, ///< Fixed boundary on y=0, x in [0,1/6].
     BCMPI      =10,
     ///< boundary between processor domains in parallel grid (on one
     ///< level)
@@ -144,7 +144,8 @@ struct boundary_data {
   /// receives data from a number of child grids to replace the
   /// on-grid data.  Vector length is the number of children.
   std::vector<std::list<cell *> > NGrecvF2C;
-  std::vector<std::list<cell *> > NGrecvC2F;  ///< as NGrecvF2C, but C2F
+  /// as NGrecvF2C, but C2F
+  std::vector<std::list<cell *> > NGrecvC2F;
 
   /// (MPI-NG only) list of lists of cells, for a coarse grid that
   /// sends data to a number of child grids for their external

@@ -30,9 +30,9 @@
 /// work on multiple processors with the domain split between them.
 /// 
 class sim_control_NG_MPI : 
+  virtual public setup_grid_NG_MPI,
   virtual public sim_control_pllel,
-  virtual public sim_control_NG,
-  virtual public setup_grid_NG_MPI
+  virtual public sim_control_NG
 {
   public:
    sim_control_NG_MPI();

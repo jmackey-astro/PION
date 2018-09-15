@@ -306,6 +306,7 @@ endif
 ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -440,6 +441,9 @@ endif
 
 OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o \
   calc_timestep.o sim_init.o
+
+OBJ_NG_SIM = sim_control_NG.o sim_control_NG_MPI.o \
+  setup_grid_NG_MP.o
 
 OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) \
   $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
