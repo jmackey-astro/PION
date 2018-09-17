@@ -592,13 +592,37 @@ Density, pressure, velocity can be set by parameters, \lstinline|BW_amb2_RO|, \l
 \bibpunct{(}{)}{;}{a}{,}{,}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{StarBench test problems}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Cosmological radiative transfer test problems}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\chapter{Information for Developers}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+There is a lot of documentation in the comments within the \pion{} source code, which can be pulled together using \textsc{doxygen}\footnote{\href{http://www.doxygen.nl/index.html}{http://www.doxygen.nl/index.html}, in combination with the file \texttt{Doxyfile} in \lstinline|source/|.
+You will have to edit this file at line 61:
+\begin{verbatim}
+OUTPUT_DIRECTORY       = /Users/jm/Documents/CODE/docs/
+\end{verbatim}
+so that it generates HTML and \LaTeX documentation in a directory that exists on your system.
+This will generate flow diagrams and class inheritance graphs, with links to the class declaration/definition and the source code.
+The more complicated inheritance diagrams tend to be the more important bits of code in terms of how \pion{} sets itself up and runs.
+
+Most classes and their inheritance by other classes are well-structured, but for some it is less clear.
+In particular, the classes \lstinline|sim_init|, \lstinline|calc_timestep|, \lstinline|time_integrator|, \lstinline|sim_control| are rather arbitrarily divided, and this could be much better organised.
+The equations, solvers, microphysics, and raytracing are much better organised.
+
+If you want to add to the code, the best first option is to mail the mailing list \hl{which doesn't exist!}
+
+% How to figure out the flow of the code
+% 
 
 \bibliographystyle{plainnat}
 %\bibliographystyle{natbib}
