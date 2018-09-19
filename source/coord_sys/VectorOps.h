@@ -389,11 +389,6 @@ class VectorOps_Cart : virtual public BaseVectorOps
 /// the calculated centre of mass.  Centre of mass in z and theta directions is of
 /// course the geometric centre of the cell.
 ///
-/// \todo Since switching cell positions to integer values, I think I could gain 
-/// a good bit in terms of efficiency by not calling double precision positions 
-/// all the time in the div/curl calculations.  So I would like to do that eventually,
-/// but it's a bit low on priorities at the moment.
-///
 class VectorOps_Cyl : virtual public VectorOps_Cart
 {
   protected:
