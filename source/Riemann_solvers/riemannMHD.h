@@ -204,14 +204,6 @@ class riemann_MHD :
   /// 
   void get_eigenvalues();
 
-  /// \brief  Constructs eigenvectors in an inefficient way and multiplies in the normalisation afterwards
-  /// 
-  /// This has not been used in anger, and hasn't got out of testing yet, so it
-  /// probably never will.
-  ///  (SHOULD TAKE THIS OUT AT SOME STAGE!!!)
-  /// 
-  int falle_evectors(); 
-
   /// \brief  Check and output the values of the evectors and their dot products
   /// 
   /// 
@@ -243,16 +235,6 @@ class riemann_MHD :
       pion_flt *, ///< Pointer to Vector 2.
       int ///< Length of vectors.
       );
-
-  /// \brief  Calculate the (normalised) eigenvectors for each e-value.
-  /// 
-  /// This should be redundant soon.  The Roe and Balsara eigenvectors are
-  /// already normalised, so should not call this function.
-  /// 
-  /// \retval 0 success
-  /// \retval 1 failure
-  /// 
-  int normalise_evectors();
 
   /// \brief Calculates the wave strengths alpha_i
   /// 
@@ -305,28 +287,6 @@ class riemann_MHD :
 
 };
 
-
-/// \page MHDdescription  MHD Linear Riemann Solver Description
-/// This page describes the MHD Riemann solver I'm using.
-/// 
-/// \section Coordinates
-/// Since my primitive variables are stored in an eight-element vector
-/// and the velocity and B-field are a right-handed set (x,y,z), and
-/// since the Riemann Problem loses one of the B-field variables, I need
-/// to do something about this.  What I decided in the end was to have 
-/// two enums, one called 'primitive' for the main code primitive variable
-/// vector, and one called 'rsvars' for the same vector in the riemann 
-/// solver.  rsvars puts B_x at the end of the vector.  So when I start
-/// the solver I change the order of the left and right variables, and 
-/// at the end I change the order back to what the main code expects in the
-/// result state.
-/// 
-/// 
-/// \section References
-/// Falle, Komissarov & Joarder, 1998, MNRAS, 297, 265.\n
-/// Roe \& Balsara, 1996, SIAM J. Applied Math., 56, 57.
-/// 
-///
 
 #endif
 

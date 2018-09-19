@@ -429,7 +429,7 @@ int dataio_silo_pllel::OutputData(
   }
 
   ///
-  /// \todo not too sure what to do about numfiles -- I have it hardcoded for
+  /// Not too sure what to do about numfiles -- I have it hardcoded for
   /// now, but could set it as a runtime parameter at some stage. 
   /// I have set it to produce files of up to about 1.2GB and then split.
   ///

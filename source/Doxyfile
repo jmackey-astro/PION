@@ -59,6 +59,7 @@ PROJECT_LOGO           =
 # left blank the current directory will be used.
 
 OUTPUT_DIRECTORY       = /Users/jm/Documents/CODE/docs/
+#OUTPUT_DIRECTORY       = /vol/aibn129/data1/jmackey/scratch/smr_pion/doxygen/
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -820,8 +821,8 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which doxygen is
 # run.
 
-EXCLUDE                = CVS/ \
-                         .svn/ \
+EXCLUDE                = .hg/ \
+                         old_code/ \
                          html/ \
                          latex/
 
