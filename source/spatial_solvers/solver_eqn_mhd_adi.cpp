@@ -687,13 +687,13 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 					       solve_flag,dx,eq_gamma);
 
 
-  //
-  // Now we have to add in the flux in BX and PSI, based on Dedner et
-  // al.'s method.
-  //
-  // NOTE: Dedner doesn't say what to do about the energy flux, so this is a
-  // modification to ensure consistency (Mackey & Lim, 2011).
-  // Derigs et al. (2017/2018) have a more consistent calculation...
+  ///
+  /// Now we have to add in the flux in BX and PSI, based on Dedner et
+  /// al.'s method.
+  ///
+  /// NOTE: Dedner doesn't say what to do about the energy flux, so this is a
+  /// modification to ensure consistency (Mackey & Lim, 2011).
+  /// Derigs et al. (2017/2018) have a more consistent calculation...
   // 
   flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
   flux[eqBBX]  = psistar;
