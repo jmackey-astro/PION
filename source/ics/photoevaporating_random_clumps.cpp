@@ -879,7 +879,8 @@ int IC_photevap_random_clumps::clumps_random_set_dens(class cell *c
     // add density from clump.
     if (profile==0) {
       // top-hat profile
-      /** \todo Need to make this trace ellipses, not postage stamps!!! */
+      string e="Need to make this trace ellipses, not postage stamps!!!";
+      rep.error("Fix IC code for top-hat density profile",e);
       bool inside=true;
       for (int k=0;k<ndim;k++) if (fabs(x1[k])> cl[j].size[k]) inside=false;
       if (inside) {

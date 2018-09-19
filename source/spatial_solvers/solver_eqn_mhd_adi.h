@@ -214,15 +214,15 @@ protected:
 
 
 ///
-/// The main solver the code uses for integrating the ideal MHD Equations (adiabatic),
-/// with the mixed GLM method of divergence cleaning (Dedner et al., 2002).
+/// The main solver PION uses for integrating the ideal MHD Equations,
+/// with the mixed GLM method of divergence cleaning (Dedner et al., 2002),
+/// including modifications documented in Mackey \& Lim 2011.
 ///
-/// This will eventually do a few types of flux solution:
+/// This can do a few types of flux solution:
 ///  - 0=Lax-Friedrichs,
 ///  - 1=Linear Riemann,
-///  - 2=Exact Riemann,
-///  - 3=Hybrid Riemann (Linear/Exact)
-///  - 4=Roe-Averaged approximate solver.
+///  - 4=Roe-Averaged approximate solver (Cargo & Galice, 1997).
+///  - 7=HLLD solver
 ///
 ///
 class FV_solver_mhd_mixedGLM_adi
