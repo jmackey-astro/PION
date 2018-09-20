@@ -272,6 +272,10 @@ int sim_control_NG_MPI::Time_Int(
   int err=0;
   int log_freq=10;
   SimPM.maxtime=false;
+
+  bool first_step=true;
+  if (SimPM.timestep!=0) first_step=false;
+
   clk.start_timer("time_int"); double tsf=0.0;
 
   // make sure all levels start at the same time.
@@ -318,7 +322,7 @@ int sim_control_NG_MPI::Time_Int(
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       
       mindt = std::min(mindt, SimPM.dt/scale);
-      mindt = COMM->global_op_double("MIN",mindt);
+      mindt = COMM->global_operation_double("MIN",mindt);
 #ifdef TEST_INT
       cout <<"level "<<l<<" got dt="<<SimPM.dt<<" and ";
       cout <<SimPM.dt/scale <<"\n";
@@ -409,103 +413,6 @@ int sim_control_NG_MPI::Time_Int(
   }
   cout <<"                *************************************\n\n";
   return(0);
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-int sim_control_NG_MPI::calculate_timestep(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *grid, ///< pointer to grid.
-      class FV_solver_base *sp_solver, ///< solver/equations class
-      const int l       ///< level to advance (for NG grid)
-      )
-{
-  //
-  // First get the local grid dynamics and microphysics timesteps.
-  //
-  double t_dyn=0.0, t_mp=0.0;
-  t_dyn = calc_dynamics_dt(par,grid,sp_solver);
-  t_mp  = calc_microphysics_dt(par,grid,l);
-  
-  //
-  // Now get global min over all grids for dynamics and microphysics timesteps.
-  // We only need both if we are doing Dedner et al. 2002, mixed-GLM divergence
-  // cleaning of the magnetic field, since there the dynamical dt is an important
-  // quantity (see next block of code).
-  //
-  //par.dt = t_dyn;
-  t_dyn = COMM->global_operation_double("MIN", t_dyn);
-  //cout <<"proc "<<SimPM.levels[0].MCMD.get_myrank();
-  //cout<<":\t my t_dyn="<<par.dt<<" and global t_dyn="<<t_dyn<<"\n";
-  //par.dt = t_mp;
-  t_mp = COMM->global_operation_double("MIN", t_mp);
-  //cout <<"proc "<<SimPM.levels[0].MCMDM.get_myrank();
-  //cout<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
-  
-  // Write step-limiting info every tenth timestep.
-  if (t_mp<t_dyn && (par.timestep%10)==0)
-    cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
-
-#ifdef THERMAL_CONDUCTION
-  //
-  // In order to calculate the timestep limit imposed by thermal conduction,
-  // we need to actually calcuate the multidimensional energy fluxes
-  // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
-  // by the actual dt later (since at this stage we don't know dt).  This
-  // later multiplication is done in eqn->preprocess_data()
-  //
-  double t_cond = calc_conduction_dt_and_Edot();
-  t_cond = COMM->global_operation_double("MIN", t_cond);
-  if (t_cond<par.dt) {
-    cout <<"PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c="<<t_cond<<", t_m="<<t_mp;
-    cout <<", t_dyn="<<t_dyn<<"\n";
-  }
-  par.dt = min(par.dt, t_cond);
-#endif // THERMAL CONDUCTION
-
-  //
-  // if using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
-  // If not, it does nothing.  By setting it here and using t_dyn, we ensure that the
-  // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
-  // an artificially larger speed associated with a shortened timestep.
-  //
-  sp_solver->GotTimestep(t_dyn,grid->DX());
-
-  //
-  // Now the timestep is the min of the global microphysics and Dynamics timesteps.
-  //
-  SimPM.dt = min(t_dyn,t_mp);
-
-  //
-  // Check that the timestep doesn't increase too much between step, and that it 
-  // won't bring us past the next output time or the end of the simulation.
-  // This function operates on SimPM.dt, resetting it to a smaller value if needed.
-  //
-  timestep_checking_and_limiting(par);
-  
-  //
-  // Tell the solver class what the resulting timestep is.
-  //
-  sp_solver->Setdt(par.dt);
-  
-#ifdef TESTING
-  //
-  // Check (sanity) that if my processor has modified dt to get to either
-  // an output time or finishtime, then all processors have done this too!
-  // This is really paranoid testing, and involves communication, so only 
-  // do it when testing.
-  //
-  t_dyn=par.dt;
-  t_mp = COMM->global_operation_double("MIN", t_dyn);
-  if (!pconst.equalD(t_dyn,t_mp))
-    rep.error("synchonisation trouble in timesteps!",t_dyn-t_mp);
-#endif // TESTING
-
-  return 0;
 }
 
 

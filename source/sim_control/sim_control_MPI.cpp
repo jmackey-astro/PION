@@ -521,17 +521,19 @@ int sim_control_pllel::calculate_timestep(
 #endif // THERMAL CONDUCTION
 
   //
-  // if using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
-  // If not, it does nothing.  By setting it here and using t_dyn, we ensure that the
-  // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
-  // an artificially larger speed associated with a shortened timestep.
+  // If using MHD with GLM divB cleaning, the following sets the
+  // hyperbolic wavespeed.  If not, it does nothing.  By setting it
+  // here and using t_dyn, we ensure that the hyperbolic wavespeed is
+  // equal to the maximum signal speed on the grid, and not an
+  // artificially larger speed associated with a shortened timestep.
   //
   sp_solver->GotTimestep(t_dyn,grid->DX());
 
   //
-  // Check that the timestep doesn't increase too much between step, and that it 
-  // won't bring us past the next output time or the end of the simulation.
-  // This function operates on SimPM.dt, resetting it to a smaller value if needed.
+  // Check that the timestep doesn't increase too much between step,
+  // and that it  won't bring us past the next output time or the end
+  // of the simulation. This function operates on SimPM.dt, resetting
+  // it to a smaller value if needed.
   //
   timestep_checking_and_limiting(par);
   
