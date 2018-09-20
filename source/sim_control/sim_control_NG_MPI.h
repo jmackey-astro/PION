@@ -70,21 +70,6 @@ class sim_control_NG_MPI :
 
   protected:
 
-  ///
-  /// Calculate the appropriate timestep for all processors
-  /// 
-  /// For a uniform grid, all cells have the same timestep equal to the minimum
-  /// of all calculated steps.  This function calls the calc_timestep() function
-  /// for the local grid, and then gets the min of all processor's local
-  /// timesteps, and uses that as the timestep.
-  ///
-  //int calculate_timestep(
-  //    class SimParams &,      ///< pointer to simulation parameters
-  //    class GridBaseClass *, ///< pointer to grid.
-  //    class FV_solver_base *, ///< solver/equations class
-  //    const int ///< level in NG grid (if applicable)
-  //    );
-
 }; // sim_control_NG_MPI
 
 #endif // PARALLEL

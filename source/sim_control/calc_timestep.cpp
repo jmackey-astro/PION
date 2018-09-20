@@ -81,14 +81,14 @@ int calc_timestep::calculate_timestep(
   //
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
-  //cout <<"proc 0";
-  //cout<<":\t my t_dyn="<<t_dyn<<" and global t_dyn="<<t_dyn<<"\n";
   t_mp  = calc_microphysics_dt(par,grid,l);
+
 #ifdef TESTING
   if (t_mp<t_dyn)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
   cout <<"t_dyn = "<<t_dyn<<"  and t_mp = "<<t_mp<<"\n";
 #endif
+
   par.dt = min(t_dyn,t_mp);
 
 #ifdef THERMAL_CONDUCTION
@@ -110,10 +110,11 @@ int calc_timestep::calculate_timestep(
 #endif // THERMAL CONDUCTION
 
   //
-  // If using MHD with GLM divB cleaning, the following sets the hyperbolic wavespeed.
-  // If not, it does nothing.  By setting it here and using t_dyn, we ensure that the
-  // hyperbolic wavespeed is equal to the maximum signal speed on the grid, and not
-  // an artificially larger speed associated with a shortened timestep.
+  // If using MHD with GLM divB cleaning, the following sets the
+  // hyperbolic wavespeed.  If not, it does nothing.  By setting it
+  // here and using t_dyn, we ensure that the hyperbolic wavespeed is
+  // equal to the maximum signal speed on the grid, and not an
+  // artificially larger speed associated with a shortened timestep.
   //
   sp_solver->GotTimestep(t_dyn,grid->DX());
 
