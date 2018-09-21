@@ -420,7 +420,7 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
           periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
           RT_MPI_boundaries.o
 
-OBJ_NG_BCS = assign_update_bcs_NG_MPI.o     \
+OBJ_NG_BCS = assign_update_bcs_NG_MPI.o   assign_update_bcs_NG.o   \
           NG_coarse_to_fine_boundaries.o \
           NG_fine_to_coarse_boundaries.o \
           NG_MPI_coarse_to_fine_boundaries.o \
@@ -443,7 +443,9 @@ OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o \
   calc_timestep.o sim_init.o
 
 OBJ_NG_SIM = sim_control_NG.o sim_control_NG_MPI.o \
-  setup_grid_NG_MPI.o
+  setup_grid_NG_MPI.o setup_NG_grid.o
+  
+OBJ_NG_ICS = setup_grid_NG_MPI.o setup_NG_grid.o
 
 OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) \
   $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \

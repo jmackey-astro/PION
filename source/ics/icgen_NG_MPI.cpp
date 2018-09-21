@@ -176,7 +176,8 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cout <<"updating external boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateExternalBCs(SimPM, MCMD, grid[l], l,solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
@@ -184,7 +185,8 @@ int main(int argc, char **argv)
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
     cout <<"updating internal boundaries for level "<<l<<"\n";
-    err += SimSetup->TimeUpdateInternalBCs(SimPM, grid[l], l,solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
@@ -238,7 +240,8 @@ int main(int argc, char **argv)
     cout <<"WRITING SILO FILE: ";
     //    icfile = icfile+".silo";
     cout <<icfile <<"\n";
-    dataio=0; dataio=new dataio_NG_silo (SimPM, "DOUBLE");
+    dataio=0; dataio=new dataio_silo_utility
+                      (SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
   }
 #endif // if SILO defined.
   if (!dataio) rep.error("IO class initialisation: ",icftype);
