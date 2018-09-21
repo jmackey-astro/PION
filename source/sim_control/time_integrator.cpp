@@ -88,6 +88,14 @@ int time_integrator::advance_time(
     err += first_order_update(SimPM.dt, SimPM.tmOOA, grid);
     if (err)
       rep.error("first_order_update() returned error",err);
+
+    // Update boundary data.
+    err += TimeUpdateInternalBCs(SimPM, level, grid, spatial_solver,
+                                        SimPM.simtime,   OA1, OA1);
+    err += TimeUpdateExternalBCs(SimPM, level, grid, spatial_solver,
+                                        SimPM.simtime,   OA1, OA1);
+    if (err) 
+      rep.error("second_order_update: error from bounday update",err);
   }
 
   else if (SimPM.tmOOA==OA2 && SimPM.spOOA==OA2) {
@@ -106,6 +114,14 @@ int time_integrator::advance_time(
     err += second_order_update(SimPM.dt,     OA2, grid);
     if (err)
       rep.error("Second order time-update returned error",err);
+
+    // Update boundary data.
+    err += TimeUpdateInternalBCs(SimPM, level, grid, spatial_solver,
+                                        SimPM.simtime,   OA2, OA2);
+    err += TimeUpdateExternalBCs(SimPM, level, grid, spatial_solver,
+                                        SimPM.simtime,   OA2, OA2);
+    if (err) 
+      rep.error("second_order_update: error from bounday update",err);
   }
   //
   // Add in 3rd order PPM at some stage???

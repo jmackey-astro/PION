@@ -44,7 +44,7 @@
 #include <silo.h>
 #include <vector>
 
-//#define WRITE_GHOST_ZONES
+#define WRITE_GHOST_ZONES
 
 ///
 /// write vectors (velocity,B) in component form as scalar variables

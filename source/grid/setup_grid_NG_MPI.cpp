@@ -18,6 +18,7 @@
 
 #include "grid/setup_grid_NG_MPI.h"
 #include "grid/uniform_grid.h"
+#include "grid/uniform_grid_pllel.h"
 
 #include "spatial_solvers/solver_eqn_hydro_adi.h"
 #include "spatial_solvers/solver_eqn_mhd_adi.h"
@@ -89,6 +90,7 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
       )
 {
   // call serial version to set global properties of each level.
+  int err=0;
   setup_NG_grid::setup_NG_grid_levels(SimPM);
 
   // For each level, do a domain decomposition
@@ -241,7 +243,7 @@ int setup_grid_NG_MPI::setup_raytracing(
   rep.errorTest("setup_grid_NG_MPI::setup_evolving_RT_sources()",0,err);
   
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    err += update_evolving_RT_sources(SimPM,grid[l]->RT);
+    err += update_evolving_RT_sources(SimPM,SimPM.levels[l].simtime,grid[l]->RT);
     rep.errorTest("setup_grid_NG_MPI::update_evolving_RT_sources()",0,err);
   }
   return 0;
@@ -289,7 +291,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid_MPI::setup_boundary_structs(par,grid);
+  int err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid);
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
 
@@ -398,7 +400,8 @@ void setup_grid_NG_MPI::setup_dataio_class(
 
 #ifdef SILO
   case 5: // Start from Silo snapshot.
-    dataio = new dataio_silo_utility (par, "DOUBLE");
+    dataio = new dataio_silo_utility
+                             (par, "DOUBLE", &(par.levels[0].MCMD));
     break; 
 #endif // if SILO
 

@@ -226,16 +226,6 @@ int sim_control::Time_Int(
     //clk.start_timer("advance_time");
     // step forward by dt.
 
-    //
-    // Update boundary data.
-    //
-    err += TimeUpdateInternalBCs(SimPM, 0, grid[0], spatial_solver,
-                                        SimPM.simtime,   OA1, OA2);
-    err += TimeUpdateExternalBCs(SimPM, 0, grid[0], spatial_solver,
-                                        SimPM.simtime,   OA1, OA2);
-    if (err) 
-      rep.error("Boundary update at start of full step",err);
-
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
     err+= advance_time(0, grid[0]);

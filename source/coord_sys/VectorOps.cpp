@@ -261,6 +261,11 @@ double VectorOps_Cart::Divergence(
     if (!grid->NextPt(c,static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Div: Some neighbour cells don't exist",i);
 #endif //TESTING
+  if (!c->isgd) {
+    //cout <<"divergence of non-grid-cell, returning 0";
+    return 0.0;
+    //rep.error("Not Grid Cell! can't get div. id:",c->id);
+  }
 
   double divv=0;
   double VOdx = grid->DX();
@@ -300,7 +305,12 @@ void VectorOps_Cart::Curl(
     if (!grid->NextPt(c,static_cast<direction>(i)))
       rep.error("VectorOps_Cart::Curl: Some neighbour cells don't exist",i);
 #endif //TESTING
-  if (!c->isgd) rep.error("Not Grid Cell! can't get curl. id:",c->id);
+  if (!c->isgd) {
+    //cout <<"curl of non-grid-cell, returning 0";
+    ans[0] = ans[1] = ans[2] =0.0;
+    return;
+    //rep.error("Not Grid Cell! can't get curl. id:",c->id);
+  }
   double VOdx = grid->DX();
 
   int vx=var[0], vy=var[1], vz=var[2];
