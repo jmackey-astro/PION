@@ -98,10 +98,10 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // pointers to coarse and fine grids:
   class GridBaseClass *coarse = par.levels[level].parent;
   class GridBaseClass *fine   = par.levels[level].grid;
-//#ifdef TEST_C2F
+#ifdef TEST_C2F
   cout <<"C2F: fine="<<fine<<", parent="<<coarse<<", level=";
   cout <<level<<"\n";
-//#endif
+#endif
 
   list<cell*>::iterator f_iter=b->data.begin();
   cell *f, *c;
