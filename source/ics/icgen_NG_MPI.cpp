@@ -87,11 +87,6 @@ int main(int argc, char **argv)
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
-  SimPM.levels.clear();
-  SimPM.levels.resize(1);
-  SimPM.levels[0].MCMD.set_myrank(r);
-  SimPM.levels[0].MCMD.set_nproc(np);
-
   SimSetup->setup_NG_grid_levels(SimPM);
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);

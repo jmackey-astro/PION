@@ -93,15 +93,15 @@ class MCMDcontrol {
   ///
   int decomposeDomain(
       const enum axes,
-      class SimParams &,  ///< pointer to simulation parameters
-      class level &     ///< pointer to domain parameters for NG grid level
+      class SimParams &,  ///< simulation parameters
+      class level &     ///< domain parameters for NG grid level
       );
 
   ///
   /// For nested grid, set process ranks of parent and child grid(s).
   ///
   void set_NG_hierarchy(
-      class SimParams &, ///< pointer to simulation parameters
+      class SimParams &, ///< simulation parameters
       const int  ///< level in grid hierarchy.
       );
 
@@ -121,6 +121,16 @@ class MCMDcontrol {
       const int,  ///< grid dimensions
       const int, ///< rank ix requested for.
       int *      ///< array to put ix into.
+      );
+
+  ///
+  /// Return rank of process that has grid that contains the
+  /// requested position on a given refinement level.
+  ///
+  int get_grid_rank(
+      class SimParams &,  ///< simulation parameters
+      const double *, ///< location sought
+      const int     ///< grid level
       );
 
   /// get my process rank

@@ -17,7 +17,7 @@ using namespace std;
 
 
 int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
-      class SimParams &par,     ///< pointer to simulation parameters
+      class SimParams &par,     ///< simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
       class GridBaseClass *child  ///< pointer to child grid.
@@ -26,11 +26,12 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   //
   // Make a list of child-grid cells to map onto the coarse grid
   //
-  if (b->data.empty())
-    rep.error("BC_assign_FINE_TO_COARSE: empty boundary data",b->itype);
+  if (b->NGrecvF2C[0].empty())
+    rep.error("BC_assign_FINE_TO_COARSE: empty boundary data",
+                                                        b->itype);
   b->NG.clear();
 
-  list<cell*>::iterator bpt=b->data.begin();
+  list<cell*>::iterator bpt=b->NGrecvF2C[0].begin();
   cell *cc = child->FirstPt_All(); // child cell.
   int cdx = 0.5*child->idx();
 
@@ -47,7 +48,7 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
     b->NG.push_back(cc);
     
     ++bpt;
-  }  while (bpt !=b->data.end());
+  }  while (bpt !=b->NGrecvF2C[0].end());
 
   return 0;
 }
@@ -73,7 +74,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   // fine cell by its volume.  Assume there are two cells in each
   // dimension in the fine grid, and so we can loop over this.
   //
-  list<cell*>::iterator c_iter=b->data.begin();
+  list<cell*>::iterator c_iter=b->NGrecvF2C[0].begin();
   list<cell*>::iterator f_iter=b->NG.begin();
   cell *c, *f;
   //cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
@@ -92,7 +93,9 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   int fpos[MAX_DIM];
 #endif
 
-  for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
+  for (c_iter=b->NGrecvF2C[0].begin();
+       c_iter!=b->NGrecvF2C[0].end();
+       ++c_iter) {
     c = (*c_iter);
     f = (*f_iter);
 

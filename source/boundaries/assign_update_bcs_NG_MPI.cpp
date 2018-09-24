@@ -197,6 +197,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       case REFLECTING: case FIXED: case JETBC: case JETREFLECT:
       case DMACH: case DMACH2:
       case STWIND: case BCMPI: case FINE_TO_COARSE:
+      case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
       cout <<"skipping this boundary in MPI_NG \n";
 #endif

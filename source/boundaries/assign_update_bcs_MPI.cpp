@@ -53,8 +53,9 @@ int assign_update_bcs_MPI::assign_boundary_data(
     case DMACH:
     case DMACH2:
     case STWIND:
-    case FINE_TO_COARSE:
-    case COARSE_TO_FINE:
+    case FINE_TO_COARSE: case COARSE_TO_FINE:
+    case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
+    case COARSE_TO_FINE_SEND: case COARSE_TO_FINE_RECV:
       break; // assigned in NG grid class
     default:
       rep.error("assign_update_bcs_MPI::Unhandled BC: assign",
@@ -127,8 +128,9 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     case RADSHOCK:
     case RADSH2:
     case STWIND:
-    case FINE_TO_COARSE:
-    case COARSE_TO_FINE:
+    case FINE_TO_COARSE: case COARSE_TO_FINE:
+    case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
+    case COARSE_TO_FINE_SEND: case COARSE_TO_FINE_RECV:
       //
       // internal bcs updated separately
       //

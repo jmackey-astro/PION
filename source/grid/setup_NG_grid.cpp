@@ -392,6 +392,7 @@ int setup_NG_grid::setup_boundary_structs(
     bd->dir = NO;
     bd->ondir = NO;
     bd->refval=0;
+    bd->NGrecvF2C.resize(1);
     cell *c = grid->FirstPt();
     do {
       within_child=true;
@@ -402,7 +403,7 @@ int setup_NG_grid::setup_boundary_structs(
       if (within_child) {
         c->isbd = true;
         //cout <<"Nested-grid: FINE_TO_COARSE setup, cell added.\n";
-        bd->data.push_back(c);
+        bd->NGrecvF2C[0].push_back(c);
         ct++;
       }
     } while ((c=grid->NextPt(c)) !=0);
@@ -411,7 +412,9 @@ int setup_NG_grid::setup_boundary_structs(
 #endif
     grid->BC_bd.push_back(bd);
 #ifdef TESTING
-    cout <<"BC_data: "<<grid->BC_bd[grid->BC_bd.size()-1]->data.size()<<"\n";
+    cout <<"BC_data: "<<;
+    cout << grid->BC_bd[grid->BC_bd.size()-1]->NGrecvF2C[0].size();
+    cout << <<"\n";
 #endif
   }
   

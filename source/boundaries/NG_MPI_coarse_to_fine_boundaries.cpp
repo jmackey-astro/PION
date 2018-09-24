@@ -192,13 +192,13 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
     cout <<" doubles from proc "<<MCMD->get_myrank();
-    cout <<" to parent proc "<<pproc<<"\n";
+    cout <<" to parent proc "<<b->NGsendC2F[ib]->rank<<"\n";
 #endif
     err += COMM->send_double_data(b->NGsendC2F[ib]->rank,n_el,buf,
                                   id,BC_MPI_NGC2F_tag);
     if (err) rep.error("Send_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG
-    cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id[i];
+    cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id;
     cout <<"\n";
 #endif
     // store ID to clear the send later (and delete the MPI temp data)
@@ -418,7 +418,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     pion_flt *buf = 0;
     buf = mem.myalloc(buf,n_el);
 #ifdef TEST_MPI_NG
-    cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<nel<<" cells.\n";
+    cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<n_el<<" cells.\n";
 #endif 
     //
     // Receive data into buffer.  Data stored for each coarse cell:
