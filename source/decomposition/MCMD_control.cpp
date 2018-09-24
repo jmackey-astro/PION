@@ -583,16 +583,6 @@ void MCMDcontrol::set_NG_hierarchy(
     if (par.ndim>1) parent_proc += nx[XX]*ir[YY];
     if (par.ndim>2) parent_proc += nx[XX]*nx[YY]*ir[ZZ];
     cout <<"level "<<l<<", parent process is "<<parent_proc<<"\n";
-
-//    // set pointer to parent grid, if on my grid.
-//    if (parent_proc==myrank) {
-//      par.levels[l].parent = par.levels[l-1].grid;
-//      cout <<"setting parent grid pointer to "<<par.levels[l].parent;
-//      cout <<"\n";
-//    }
-//    else {
-//      par.levels[l].parent = 0;
-//    }
   }
 
   // set rank of child grids, if they exist.
@@ -619,9 +609,6 @@ void MCMDcontrol::set_NG_hierarchy(
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("1D Child ir",ir,par.ndim);
-
-//          if (child.rank==myrank)
-//            par.levels[l].child = par.levels[l+1].grid;
         }
       }
 
@@ -651,13 +638,6 @@ void MCMDcontrol::set_NG_hierarchy(
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("2D Child ir",ir,par.ndim);
-//          if (child.rank==myrank) {
-//            cout <<"level "<<l<<": setting child grid = "<<par.levels[l+1].grid<<"\n";
-//            par.levels[l].child = par.levels[l+1].grid;
-//          }
-//          else {
-//            cout <<"Child grid is on a different MPI process\n";
-//          }
         }
       }
 
@@ -688,8 +668,6 @@ void MCMDcontrol::set_NG_hierarchy(
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("3D Child ir",ir,par.ndim);
-//          if (child.rank==myrank)
-//            par.levels[l].child = par.levels[l+1].grid;
         }
       }
 
