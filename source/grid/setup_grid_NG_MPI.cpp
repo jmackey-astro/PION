@@ -197,12 +197,12 @@ int setup_grid_NG_MPI::setup_grid(
     if (grid[l]==0)
       rep.error("(setup_grid_NG_MPI::setup_grid)", grid[l]);
 
-#ifdef TESTING
+//#ifdef TESTING
     cout <<"(setup_grid_NG_MPI::setup_grid) Done. &grid=";
     cout << &(grid[l])<<", and grid="<<grid[l]<<"\n";
     cout <<"DX = "<<(grid[l])->DX()<<"\n";
-    dp.grid = (grid[l]);
-#endif
+    //dp.grid = (grid[l]);
+//#endif
   }
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
