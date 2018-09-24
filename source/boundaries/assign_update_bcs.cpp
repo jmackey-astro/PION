@@ -67,11 +67,13 @@ int assign_update_bcs::assign_boundary_data(
       err += BC_assign_STWIND(    par,grid,grid->BC_bd[i]);
       break;
     case BCMPI:
-    case FINE_TO_COARSE:
-    case COARSE_TO_FINE:
+    case FINE_TO_COARSE: case COARSE_TO_FINE:
+    case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
+    case COARSE_TO_FINE_SEND: case COARSE_TO_FINE_RECV:
       break; // assigned in NG grid class
     default:
-      rep.error("assign_update_bcs::Unhandled BC: assign",grid->BC_bd[i]->itype);
+      rep.error("assign_update_bcs::Unhandled BC: assign",
+                                            grid->BC_bd[i]->itype);
       break;
     }
 

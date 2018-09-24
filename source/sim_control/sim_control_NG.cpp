@@ -324,24 +324,24 @@ int sim_control_NG::Time_Int(
 #endif
     // --------------------------------------------------------------
     // Update RT sources and boundaries.
-    for (int l=0; l<SimPM.grid_nlevels; l++) {
+    //for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TEST_INT
-      cout <<"updating external boundaries for level "<<l<<"\n";
+    //  cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
-      err += TimeUpdateExternalBCs(SimPM, l, grid[l],
-              spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    }
-    rep.errorTest("sim_control_NG: external bounday update",0,err);
+    //  err += TimeUpdateExternalBCs(SimPM, l, grid[l],
+    //          spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    //}
+    //rep.errorTest("sim_control_NG: external bounday update",0,err);
     // --------------------------------------------------------------
     // --------------------------------------------------------------
-    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+    //for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
-      cout <<"updating internal boundaries for level "<<l<<"\n";
+    //  cout <<"updating internal boundaries for level "<<l<<"\n";
 #endif
-      err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
-                              SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    }
-    rep.errorTest("sim_control_NG: internal boundary update",0,err);
+    //  err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
+    //                          SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+    //}
+    //rep.errorTest("sim_control_NG: internal boundary update",0,err);
     // --------------------------------------------------------------
 
 

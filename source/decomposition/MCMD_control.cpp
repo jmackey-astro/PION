@@ -164,7 +164,7 @@ int MCMDcontrol::decomposeDomain(
       LocalRange[maxdir] /= 2.0;
       npcounter *=2;
     }
-    if (npcounter != nproc) rep.error("nproc not a power of 2!",nproc);
+    if (npcounter != nproc) rep.error("1: nproc not a power of 2!",nproc);
     
     //
     // Now we know the range of each subcell, so calculate where I fit into
@@ -258,7 +258,7 @@ int MCMDcontrol::decomposeDomain(
       npcounter *=2;
     }
     if (npcounter != nproc) {
-      rep.error("nproc not a power of 2!",nproc);
+      rep.error("2: nproc not a power of 2!",nproc);
     }
     
     //
@@ -515,13 +515,51 @@ void MCMDcontrol::get_domain_ix(
 
 
 
+int MCMDcontrol::get_grid_rank(
+      class SimParams &par,  ///< simulation parameters
+      const double *loc, ///< location sought
+      const int l      ///< grid level
+      )
+{
+  int proc=-1;
+  // ir[] is index of grid in each direction on level l.
+  int ir[par.ndim];
+  //rep.printVec("NX",nx,par.ndim);
+  //rep.printVec("Loc",loc,par.ndim);
+  //rep.printVec("Xmin",par.levels[l].Xmin,par.ndim);
+  //rep.printVec("Range",par.levels[l].Range,par.ndim);
+  for (int i=0;i<par.ndim;i++) {
+    ir[i] = static_cast<int>(nx[i]*(loc[i]-par.levels[l].Xmin[i]) /
+                                            par.levels[l].Range[i]);
+  }
+  //rep.printVec("IR",ir,par.ndim);
+  // check validity (>0 and <nx[])
+  for (int i=0;i<par.ndim;i++) {
+    if (ir[i]<0  || ir[i]>=nx[i]) {
+      return -1;
+    }
+  }
+  proc = ir[XX];
+  if (par.ndim>1) proc += nx[XX]*ir[YY];
+  if (par.ndim>2) proc += nx[XX]*nx[YY]*ir[ZZ];
+  return proc;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void MCMDcontrol::set_NG_hierarchy(
-      class SimParams &par,  ///< pointer to simulation parameters
+      class SimParams &par,  ///< simulation parameters
       const int l  ///< level to work on
       )
 {
   double centre[MAX_DIM];
   int ir[MAX_DIM];
+  for (int i=0;i<MAX_DIM;i++) ir[i]=0;
   bool ongrid=false;
   child_procs.resize(0);
   double px[8] = {0.25,0.75,0.25,0.75,0.25,0.75,0.25,0.75};
@@ -534,8 +572,10 @@ void MCMDcontrol::set_NG_hierarchy(
 
   // set rank of parent for each grid except root level 0
   if (l>0) {
+    // centre[] is centre of local grid on level l.
     for (int i=0;i<par.ndim;i++)
       centre[i] = 0.5*(LocalXmin[i]+LocalXmax[i]);
+    // ir[] is rank of parent grid in each direction.
     for (int i=0;i<par.ndim;i++)
       ir[i] = nx[i]*(centre[i]-par.levels[l-1].Xmin[i])/
                                     par.levels[l-1].Range[i];
@@ -543,25 +583,45 @@ void MCMDcontrol::set_NG_hierarchy(
     if (par.ndim>1) parent_proc += nx[XX]*ir[YY];
     if (par.ndim>2) parent_proc += nx[XX]*nx[YY]*ir[ZZ];
     cout <<"level "<<l<<", parent process is "<<parent_proc<<"\n";
+
+//    // set pointer to parent grid, if on my grid.
+//    if (parent_proc==myrank) {
+//      par.levels[l].parent = par.levels[l-1].grid;
+//      cout <<"setting parent grid pointer to "<<par.levels[l].parent;
+//      cout <<"\n";
+//    }
+//    else {
+//      par.levels[l].parent = 0;
+//    }
   }
 
   // set rank of child grids, if they exist.
   if (l<par.grid_nlevels-1) {
+
     if (par.ndim==1) {
       for (int v=0;v<2;v++) {
+        // centre[] is centre of this child grid.
         centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
-        //centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
+        
+        // check if child grid exists, and get its rank.
         ongrid=true;
-        for (int i=0;i<par.ndim;i++) {
-          if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
-        }
+        ir[0] = get_grid_rank(par, centre,l+1);
+        if (ir[0]<0) ongrid=false;
+
         if (ongrid) {
-          child.rank = ir[XX];
+          child.rank = ir[0];
           child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
           child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
+          child.Xmin[YY] = 0.0;
+          child.Xmax[YY] = 0.0;
+          child.Xmin[ZZ] = 0.0;
+          child.Xmax[ZZ] = 0.0;
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("1D Child ir",ir,par.ndim);
+
+//          if (child.rank==myrank)
+//            par.levels[l].child = par.levels[l+1].grid;
         }
       }
 
@@ -570,21 +630,34 @@ void MCMDcontrol::set_NG_hierarchy(
     else if (par.ndim==2) {
 
       for (int v=0;v<4;v++) {
+
+        // centre[] is centre of this child grid.
         centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
         centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
+
+        // check if child grid exists, and get its rank.
         ongrid=true;
-        for (int i=0;i<par.ndim;i++) {
-          if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
-        }
+        ir[0] = get_grid_rank(par, centre,l+1);
+        if (ir[0]<0) ongrid=false;
+
         if (ongrid) {
-          child.rank = nx[XX]*ir[YY]+ ir[XX];
+          child.rank = ir[0];
           child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
           child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+          child.Xmin[ZZ] = 0.0;
           child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
           child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
+          child.Xmax[ZZ] = 0.0;
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("2D Child ir",ir,par.ndim);
+//          if (child.rank==myrank) {
+//            cout <<"level "<<l<<": setting child grid = "<<par.levels[l+1].grid<<"\n";
+//            par.levels[l].child = par.levels[l+1].grid;
+//          }
+//          else {
+//            cout <<"Child grid is on a different MPI process\n";
+//          }
         }
       }
 
@@ -594,15 +667,18 @@ void MCMDcontrol::set_NG_hierarchy(
       // 3D
 
       for (int v=0;v<8;v++) {
+        // centre[] is centre of this child grid.
         centre[XX] = px[v]*(LocalXmin[XX]+LocalXmax[XX]);
         centre[YY] = py[v]*(LocalXmin[YY]+LocalXmax[YY]);
         centre[ZZ] = pz[v]*(LocalXmin[ZZ]+LocalXmax[ZZ]);
+
+        // check if child grid exists, and get its rank.
         ongrid=true;
-        for (int i=0;i<par.ndim;i++) {
-          if (ir[i]<0 || ir[i]>=nx[i]) ongrid=false;
-        }
+        ir[0] = get_grid_rank(par, centre,l+1);
+        if (ir[0]<0) ongrid=false;
+
         if (ongrid) {
-          child.rank =  nx[XX]*ir[YY]+ ir[XX];
+          child.rank = ir[0];
           child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
           child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
           child.Xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
@@ -612,6 +688,8 @@ void MCMDcontrol::set_NG_hierarchy(
           child_procs.push_back(child);
           cout <<"v="<<v<<": ";
           rep.printVec("3D Child ir",ir,par.ndim);
+//          if (child.rank==myrank)
+//            par.levels[l].child = par.levels[l+1].grid;
         }
       }
 

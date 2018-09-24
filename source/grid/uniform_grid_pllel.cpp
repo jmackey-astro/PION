@@ -115,6 +115,46 @@ UniformGridParallel::UniformGridParallel(
 // ##################################################################
 
 
+
+int UniformGridParallel::setup_flux_recv(
+      class SimParams &par, ///< simulation params (including BCs)
+      const int l           ///< level to receive from
+      )
+{
+//#ifdef DEBUG_NG
+  cout <<" UniformGridParallel::setup_flux_recv() recv from level=";
+  cout <<l<<"\n";
+//#endif
+
+  return 0;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int UniformGridParallel::setup_flux_send(
+      class SimParams &par, ///< simulation params (including BCs)
+      const int l           ///< level to send to
+      )
+{
+//#ifdef DEBUG_NG
+  cout <<" UniformGridParallel::setup_flux_send() send to level=";
+  cout <<l<<"\n";
+//#endif
+
+  return 0;
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
 //-------------------------------------------------------------
 //------------------- CARTESIAN GRID END ----------------------
 //-------------------------------------------------------------

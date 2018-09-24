@@ -420,6 +420,135 @@ int sim_control_NG_MPI::Time_Int(
 // ##################################################################
 
 
+int sim_control_NG_MPI::grid_update_state_vector(
+      const double dt,  ///< timestep
+      const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int ooa,   ///< Full order of accuracy of simulation
+      class GridBaseClass *grid ///< Computational grid.
+      )
+{
+  return 0;
+  
+  // get current level of grid in hierarchy.
+  int level=0;
+  if (SimPM.grid_nlevels >1) {
+    for (int v=0;v<SimPM.grid_nlevels;v++) {
+      if (grid == SimPM.levels[v].grid) level = v;
+    }
+  }
+
+  //
+  // loop through the faces, and compare the fine with coarse level
+  // fluxes.  Subtract the flux difference from the cells adjacent to
+  // the face.
+  //
+  if (step==ooa && level < SimPM.grid_nlevels-1) {
+#ifdef DEBUG_NG
+    cout <<"level "<<level<<": correcting fluxes from finer grid\n";
+#endif
+    class GridBaseClass *fine = SimPM.levels[level].child;
+    struct flux_interface *fc=0;
+    struct flux_interface *ff=0;
+    double ftmp[SimPM.nvar],utmp[SimPM.nvar];
+    for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
+    for (int v=0;v<SimPM.nvar;v++) utmp[v]=0.0;
+    enum axes ax;
+
+    
+    if (fine->flux_update_send.size() !=
+        grid->flux_update_recv.size())
+      rep.error("fine and parent face arrays are different size",1);
+
+    for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
+#ifdef DEBUG_NG
+      cout <<"Direction: "<<d<<", looping through faces.\n";
+#endif
+      ax = static_cast<enum axes>(d/2);
+
+      if (fine->flux_update_send[d].size() !=
+          grid->flux_update_recv[d].size())
+        rep.error("fine and parent face arrays r different size",2);
+      
+      if (grid->flux_update_recv[d][0] ==0) continue;
+
+      for (unsigned int f=0;
+           f<grid->flux_update_recv[d].size();
+           f++) {
+        fc = grid->flux_update_recv[d][f];
+        ff = fine->flux_update_send[d][f];
+
+#ifdef DEBUG_NG
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->flux[v] /= fc->area[0];
+        }
+        for (int v=0;v<SimPM.nvar;v++) {
+          ff->flux[v] /= fc->area[0];
+        }
+        cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
+        rep.printVec("fc->flux",fc->flux,SimPM.nvar);
+        cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
+        rep.printVec("ff->flux",ff->flux,SimPM.nvar);
+#endif
+        
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->flux[v] += ff->flux[v];
+#ifndef DEBUG_NG
+          fc->flux[v] /= fc->area[0];
+#endif
+        }
+#ifdef DEBUG_NG
+        rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
+        //if (d==3) {
+        //  rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
+        //  rep.printVec("n state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
+        //  rep.printVec("p state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
+        //}
+#endif
+        //
+        // fc->flux is now the error in dU made for both coarse cells.
+        // Correct dU in outer cell only, because inner cell is on 
+        // top of fine grid and gets overwritten anyway.
+        //
+        // If we are at a negative boundary, then it is the positive
+        // face of the cell that we correct, and vice versa for a
+        // positive boundary.  So we call the DivStateVectorComponent
+        // function with the flux in different order, depending on 
+        // what direction the boundary is in.
+        // This function is aware of geometry, so it calculates the
+        // divergence correctly for curvilinear grids (important!!!).
+        // The other face of the cell is set to zero flux.
+        if (d%2 ==0) {
+          spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax,
+                                      SimPM.nvar,ftmp,fc->flux,utmp);
+        }
+        else {
+          spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax,
+                                      SimPM.nvar,fc->flux,ftmp,utmp);
+        }
+#ifdef DEBUG_NG
+        rep.printVec("**********  Error",utmp, SimPM.nvar);
+#endif
+        for (int v=0;v<SimPM.nvar;v++) {
+          fc->c[0]->dU[v] += utmp[v];
+        }
+     } // loop over faces in this direction.
+#ifdef DEBUG_NG
+      cout <<"Direction: "<<d<<", finished.\n";
+#endif
+    } // loop over directions.
+  } // if not at finest level.
+
+  int err = time_integrator::grid_update_state_vector(dt,step,
+                                                      ooa,grid);
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 #endif // PARALLEL
 

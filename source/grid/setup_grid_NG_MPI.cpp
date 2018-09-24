@@ -94,7 +94,11 @@ void setup_grid_NG_MPI::setup_NG_grid_levels(
   setup_NG_grid::setup_NG_grid_levels(SimPM);
 
   // For each level, do a domain decomposition
+  int myrank=-1, nproc=-1;
+  COMM->get_rank_nproc(&myrank,&nproc);
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+    SimPM.levels[l].MCMD.set_myrank(myrank);
+    SimPM.levels[l].MCMD.set_nproc(nproc);
     err = SimPM.levels[l].MCMD.decomposeDomain(SimPM, SimPM.levels[l]);
     rep.errorTest("PLLEL Init():Decompose Domain!",0,err);
     SimPM.levels[l].MCMD.ReadSingleFile = true; // legacy option.
@@ -203,8 +207,18 @@ int setup_grid_NG_MPI::setup_grid(
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     SimPM.levels[l].grid = grid[l];
-    SimPM.levels[l].parent = 0; // this is used for serial code
-    SimPM.levels[l].child = 0;  // this is used for serial code
+    if (l==0) {
+      SimPM.levels[l].parent = 0;
+      SimPM.levels[l].child  = grid[l+1];
+    }
+    else if (l==SimPM.grid_nlevels-1) {
+      SimPM.levels[l].parent = grid[l-1];
+      SimPM.levels[l].child  = 0;
+    }
+    else {
+      SimPM.levels[l].parent = grid[l-1];
+      SimPM.levels[l].child  = grid[l+1];
+    }
   }
 
   // setup arrays for fluxes into and out of fine grid, and

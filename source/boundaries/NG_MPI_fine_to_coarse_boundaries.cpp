@@ -201,7 +201,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
         pproc,ct,data,id,BC_MPI_NGF2C_tag);
   if (err) rep.error("Send_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG
-  cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id[i];
+  cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id;
   cout <<"\n";
 #endif
 
@@ -245,6 +245,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       boundary_data *b  ///< boundary data
       )
 {
+  cout <<"NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()";
+  cout <<": starting... \n";
   // Check if child grids exist or are on my MPI process
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
@@ -254,12 +256,38 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   // loop over children:
   for (int i=0;i<nchild;i++) {
 
+    // get dimensions of child grid from struct
+    int ixmin[MAX_DIM], ixmax[MAX_DIM];
+    CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
+    CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
+
+    class GridBaseClass *grid = par.levels[l].grid;
+    cell *c = grid->FirstPt();
+    size_t ct=0;
+    do {
+      bool ongrid=true;
+      for (int j=0;j<par.ndim;j++) {
+        if (c->pos[j]<ixmin[j] || c->pos[j]>ixmax[j]) ongrid=false;
+      }
+      if (ongrid) {
+        b->NGrecvF2C[i].push_back(c);
+        ct++;
+      }
+    } while ((c=grid->NextPt(c)) !=0);
+
+#ifdef TEST_MPI_NG
+    cout <<"i="<<i<<" added "<<ct<<" cells to boundary, ";
+    cout <<"Ncell/2^ndim="<<grid->Ncell()/pow(2,par.ndim)<<"\n";
+#endif
+
     if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
       // If child is on my grid call serial version that just grabs data
       // directly from the child grid.
 #ifdef TEST_MPI_NG
       cout <<"my rank == child rank, calling serial ";
       cout <<"FINE_TO_COARSE\n";
+      cout <<"level "<<l<<": my grid="<<par.levels[l].grid<<", ";
+      cout <<"child grid="<<par.levels[l].child<<"\n";
 #endif
       err = NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
           par, par.levels[l].grid, b, par.levels[l].child);
@@ -273,29 +301,6 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 #ifdef TEST_MPI_NG
       cout <<"my rank != child rank, running parallel ";
       cout <<"FINE_TO_COARSE_RECV\n";
-#endif
-      // get dimensions of child grid from struct
-      int ixmin[MAX_DIM], ixmax[MAX_DIM];
-      CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
-      CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
-
-      class GridBaseClass *grid = par.levels[l].grid;
-      cell *c = grid->FirstPt();
-      size_t ct=0;
-      do {
-        bool ongrid=true;
-        for (int j=0;j<par.ndim;j++) {
-          if (c->pos[j]<ixmin[j] || c->pos[j]>ixmax[j]) ongrid=false;
-        }
-        if (ongrid) {
-          b->NGrecvF2C[i].push_back(c);
-          ct++;
-        }
-      } while ((c=grid->NextPt(c)) !=0);
-
-#ifdef TEST_MPI_NG
-    cout <<"i="<<i<<" added "<<ct<<" cells to boundary, ";
-    cout <<"Ncell/2^ndim="<<grid->Ncell()/pow(2,par.ndim)<<"\n";
 #endif
     } // if child is on a different MPI process
 

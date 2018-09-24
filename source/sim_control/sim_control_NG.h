@@ -142,7 +142,7 @@ class sim_control_NG :
   /// correcting the fluxes for cells that have an interface above
   /// the boundary of a grid on the next finer level.
   ///
-  int grid_update_state_vector(
+  virtual int grid_update_state_vector(
       const double ,  ///< dt, timestep
       const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int,       ///< Full order of accuracy of simulation
