@@ -237,17 +237,23 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
       boundary_data *b        ///< boundary data
       )
 {
-  // Not much to do here because the boundary was set
-  // up already as a regular external boundary.
+  // The boundary is already a regular external boundary, so just
+  // need to decide if parent is on the same MPI process (and call
+  // the serial version) or on a different MPI process (and set up
+  // some data structures to receive the coarse-grid data for
+  // interpolation).
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   class GridBaseClass *grid = par.levels[l].grid;
   int pproc = MCMD->parent_proc;
 
   if (MCMD->get_myrank() == pproc) {
 #ifdef TEST_MPI_NG
-    cout <<"my rank == parent rank, not setting up ";
+    cout <<"my rank == parent rank, setting up serial ";
     cout <<"COARSE_TO_FINE_RECV\n";
 #endif
+    int err = NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
+                par,grid,b,par.levels[l].parent);
+    rep.errorTest("serial C2F BC setup",0,err);
   }
   else {
 #ifdef TEST_MPI_NG

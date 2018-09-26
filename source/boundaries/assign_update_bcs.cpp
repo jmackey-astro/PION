@@ -119,8 +119,9 @@ int assign_update_bcs::TimeUpdateInternalBCs(
     case DMACH:
     case DMACH2:
     case BCMPI:
-    case FINE_TO_COARSE:
-    case COARSE_TO_FINE:
+    case FINE_TO_COARSE: case COARSE_TO_FINE:
+    case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
+    case COARSE_TO_FINE_SEND: case COARSE_TO_FINE_RECV:
       //
       // External BCs updated elsewhere
       //     

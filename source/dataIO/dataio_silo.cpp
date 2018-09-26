@@ -216,9 +216,9 @@ int dataio_silo::WriteHeader(
 
 int dataio_silo::OutputData(
       const string outfile,
-      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      const long int file_counter   ///< number to stamp file with (e.g. timestep)
+      vector<class GridBaseClass *> &cg, ///< grid pointers.
+      class SimParams &SimPM,            ///< simulation parameters
+      const long int file_counter        ///< timestep
       )
 {
   int err=0;
