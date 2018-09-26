@@ -41,14 +41,12 @@ class dataio_silo_pllel : public dataio_silo {
   virtual ~dataio_silo_pllel();
 
   ///
-  /// This writes the header and data for the simulation parameters.
+  /// Loops through levels in the nested-grid structure, and calls
+  /// SaveLevelData() on each level.
   /// 
-  /// If the solver pointer is not null, it also writes some derived variables
-  /// such as Temperature, Div(B), etc.
-  ///
   int OutputData(
       const string, ///< File to write to
-      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &,  ///< grid pointers.
       class SimParams &,  ///< pointer to simulation parameters
       const long int ///< number to stamp file with (e.g. timestep)
       );
@@ -64,7 +62,7 @@ class dataio_silo_pllel : public dataio_silo {
   ///
   int ReadHeader(
       string, ///< file to read from
-      class SimParams &  ///< pointer to simulation parameters
+      class SimParams &  ///< simulation parameters
       );
 
   ///
@@ -76,8 +74,8 @@ class dataio_silo_pllel : public dataio_silo {
   ///
   virtual int ReadData(
       string, ///< file to read from
-      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
-      class SimParams &  ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &  ///<simulation parameters
       );
 
  protected:
@@ -91,6 +89,20 @@ class dataio_silo_pllel : public dataio_silo {
         const int,    ///< file counter to use (e.g. timestep).
         string &      ///< string to return filename in.
         );
+
+  ///
+  /// This writes the header and data for the simulation parameters, for
+  /// a given level in the nested-grid structure.
+  /// 
+  /// If the solver pointer is not null, it also writes some derived
+  /// variables such as Temperature, Div(B), etc.
+  ///
+  int SaveLevelData(
+      const string,       ///< File-base to write to
+      class GridBaseClass *,  ///< grid pointer.
+      class SimParams &,  ///< simulation parameters
+      const long int      ///< timestep
+      );
 
   ///
   /// Call once to setup arrays with the properties of the grid, for

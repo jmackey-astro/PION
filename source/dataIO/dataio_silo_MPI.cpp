@@ -411,12 +411,52 @@ int dataio_silo_pllel::OutputData(
       )
 {
   int err=0;
-  dataio_silo::gp = cg[0];
+  // loop over grid refinement levels, save one file per level
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+
+    if (!cg[l])
+      rep.error("dataio_silo::OutputData() null pointer!",
+                cg[l]);
+    dataio_silo::gp = cg[l];
+    mpiPM = &(SimPM.levels[l].MCMD);
+
+    // write a different file for each level in the NG grid.
+    string fbase;
+    if (SimPM.grid_nlevels>1) {
+      ostringstream temp;
+      temp << outfilebase << "_level";
+      temp.width(2); temp.fill('0');
+      temp << l;
+      fbase=temp.str();
+    }
+
+    err = SaveLevelData(fbase,cg[l],SimPM,file_counter);
+    rep.errorTest("saveleveldata",0,err);
+  }
+  return err;
+} 
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int dataio_silo_pllel::SaveLevelData(
+      const string outfilebase,
+      class GridBaseClass *cg, ///< grid pointers.
+      class SimParams &SimPM,            ///< simulation parameters
+      const long int file_counter        ///< timestep
+      )
+{
+  int err=0;
+  dataio_silo::gp = cg;
   if (!gp)
-    rep.error("dataio_silo_pllel::OutputData() null grid!",gp);
+    rep.error("dataio_silo_pllel::SaveLevelData() null grid!",gp);
 
 #ifdef TEST_SILO_IO
-  cout <<"\n----dataio_silo_pllel::OutputData() Writing data to ";
+  cout <<"\n----dataio_silo_pllel::SaveLevelData() Writing data to ";
   cout <<"filebase: "<<outfilebase<<"\n";
 #endif
 
@@ -445,7 +485,7 @@ int dataio_silo_pllel::OutputData(
     numfiles=mpiPM->get_nproc();
 
 #ifdef TEST_SILO_IO
-  cout <<"----dataio_silo_pllel::OutputData() running pmpio_init\n";
+  cout <<"----dataio_silo_pllel::SaveLevelData() running pmpio_init\n";
 #endif
 
   int group_rank=0, myrank_ingroup=0;
@@ -486,65 +526,76 @@ int dataio_silo_pllel::OutputData(
   temp << myrank_ingroup;
   mydir = temp.str();
   temp.str("");
-  if (mydir.size()+1>=strlength) rep.error("string too large",mydir);
-  //  cout <<"string for my directory in file set...\n";
+  if (mydir.size()+1>=strlength)
+    rep.error("string too large",mydir);
 
   err=0;
-  if (!have_setup_gridinfo) {
-    // set grid properties for quadmesh 
-    // CHANGED FOR MPI LOCAL GRID
-    //cout <<"----dataio_silo_pllel::OutputData() setting up grid properties\n";
-    err = setup_grid_properties(gp, SimPM);
-    if (err)
-      rep.error("dataio_silo_pllel::OutputData() error setting up grid_props", err);
-    //cout <<"----dataio_silo_pllel::OutputData() grid props setup done\n";
-  }
+  // set grid properties for quadmesh 
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::SaveLevelData() grid properties\n";
+#endif
+  err = setup_grid_properties(gp, SimPM);
+  if (err)
+    rep.error("dataio_silo_pllel::SaveLevelData() grid_props", err);
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::SaveLevelData() grid props done\n";
+#endif
+
   if (!have_setup_writevars) {
     // set what data to write to the mesh.
-    // NOT THE SAME AS SERIAL VERSION -- ONLY PRIMITIVE VARS!!!
-    //cout <<"----dataio_silo_pllel::OutputData() setting up write variables\n";
+#ifdef TEST_SILO_IO
+    cout <<"----dataio_silo_pllel::SaveLevelData() write variables\n";
+#endif
     err = setup_write_variables(SimPM);
     if (err)
-      rep.error("dataio_silo_pllel::OutputData() error settting up variables to write to",err);
-    //cout <<"----dataio_silo_pllel::OutputData() write vars setup done\n";
+      rep.error("dataio_silo_pllel::SaveLevelData() write-vars",err);
+#ifdef TEST_SILO_IO
+    cout <<"----dataio_silo_pllel::SaveLevelData() write vars done\n";
+#endif
   }
 
   //
   // Wait for my turn to write to the file.
   //
-  //  cout <<"----dataio_silo_pllel::OutputData() waiting for baton\n";
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::SaveLevelData() waiting for baton\n";
+#endif
   *db_ptr=0;
   err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
-  if (err || !(*db_ptr)) rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
+  if (err || !(*db_ptr))
+    rep.error("COMM->silo_pllel_wait_for_file() returned err",err);
 
-  //rep.printVec("node_coords",reinterpret_cast<double *>(node_coords[XX]),SimPM.NG[XX]+1);
   //
   // Have got the baton, now, so the file is mine to write to.
   // local work here... each proc write their part of the grid.
   //
   // Generate Mesh in file.
   //
-  //  cout <<"----dataio_silo_pllel::OutputData() generating quadmesh\n";
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::SaveLevelData() generating quadmesh\n";
+#endif
   temp.str(""); temp <<"unigrid";
   temp.width(4);
   temp<<mpiPM->get_myrank();
   string meshname=temp.str();
   err = generate_quadmesh(*db_ptr, meshname, SimPM);
   if (err)
-    rep.error("dataio_silo_pllel::OutputData() error writing quadmesh to silo file",err);
-  //  cout <<"----dataio_silo_pllel::OutputData() quadmesh generated\n";
+    rep.error("dataio_silo_pllel::SaveLevelData() quadmesh",err);
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::SaveLevelData() quadmesh generated\n";
+#endif
 
   //
   // now write each variable in turn to the mesh
   //
 #ifdef TEST_SILO_IO
-  cout <<"----dataio_silo_pllel::OutputData() creating data arrays\n";
+  cout <<"----dataio_silo_pllel::SaveLevelData() create data arrays\n";
 #endif
 
   create_data_arrays(SimPM);
 
 #ifdef TEST_SILO_IO
-  cout <<"----dataio_silo_pllel::OutputData() arrays created\n";
+  cout <<"----dataio_silo_pllel::SaveLevelData() arrays created\n";
 #endif
 
   for (std::vector<string>::iterator i=varnames.begin();
@@ -560,18 +611,18 @@ int dataio_silo_pllel::OutputData(
 #endif
 
     if (err)
-      rep.error("dataio_silo_pllel::OutputData() writing variable",
+      rep.error("dataio_silo_pllel::SaveLevelData() writing variable",
                                                               (*i));
   }
 
 #ifdef TEST_SILO_IO
-  cout <<"----dataio_silo_pllel::OutputData() deleting arrays\n";
+  cout <<"----dataio_silo_pllel::SaveLevelData() deleting arrays\n";
 #endif
 
   delete_data_arrays();
   
 #ifdef TEST_SILO_IO
-  cout <<"----dataio_silo_pllel::OutputData() arrays deleted\n";
+  cout <<"----dataio_silo_pllel::SaveLevelData() arrays deleted\n";
 #endif
 
   // ONLY DO THIS IF I AM ROOT PROCESSOR *IN EACH GROUP*
@@ -600,7 +651,7 @@ int dataio_silo_pllel::OutputData(
     //    err = write_header(*db_ptr);
     err = write_simulation_parameters(SimPM);
     if (err)
-      rep.error("dataio_silo_pllel::OutputData() error writing header to silo file",err);
+      rep.error("dataio_silo_pllel::SaveLevelData() header",err);
 
     DBSetDir(*db_ptr,"/");
     DBSetDir(*db_ptr,datadir);
@@ -723,7 +774,8 @@ int dataio_silo_pllel::OutputData(
 
     // write the multimesh
     err = DBPutMultimesh(*db_ptr, mm_name.c_str(), nmesh, mm_names, meshtypes, mm_opts);
-    if (err) rep.error("dataio_silo_pllel::OutputData() error writing multimesh info",err);
+    if (err)
+      rep.error("dataio_silo_pllel::SaveLevelData()multimesh",err);
     DBClearOptlist(mm_opts);
    
     // now write the multivars
@@ -770,7 +822,7 @@ int dataio_silo_pllel::OutputData(
 
       err = DBPutMultivar(*db_ptr, vname.c_str(), nmesh, mm_names, meshtypes, mm_opts);
       if (err)
-	rep.error("dataio_silo_pllel::OutputData() error writing variable",(*i));
+	rep.error("dataio_silo_pllel::SaveLevelData() variable",(*i));
       DBClearOptlist(mm_opts);
     }
 
@@ -795,7 +847,8 @@ int dataio_silo_pllel::OutputData(
     // 
     if (mpiPM->get_nproc()>1) {
       err = write_multimeshadj(SimPM, *db_ptr, gp, mm_name, mma_name);
-      if (err) rep.error("Failed to write multimesh Adjacency Object",err);
+      if (err)
+        rep.error("Failed to write multimesh Adjacency Object",err);
     }
     //
     // Write an MRG Tree object (NOT IMPLEMENTED IN SILO/VISIT YET!!)
@@ -810,12 +863,12 @@ int dataio_silo_pllel::OutputData(
   //
   err = COMM->silo_pllel_finish_with_file(file_id,db_ptr);
   if (err) rep.error("COMM->silo_pllel_finish_with_file() returned err",err);
-  COMM->barrier("dataio_silo_pllel__OutputData");
+  COMM->barrier("dataio_silo_pllel__SaveLevelData");
 
   //   cout <<"Got past barrier... finished outputting silo data.\n\n";
   
 #ifdef TESTING
-  cout <<"----dataio_silo_pllel::OutputData() Finished writing data to file: "<<silofile<<"\n"<<"\n";
+  cout <<"----dataio_silo_pllel::SaveLevelData() Finished writing data to file: "<<silofile<<"\n"<<"\n";
 #endif
   return err;
 }
@@ -863,66 +916,73 @@ int dataio_silo_pllel::setup_grid_properties(
   // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
   // This version is for the local domain of the current processor.
   if (!grid)
-    rep.error("dataio_silo::setup_grid_properties() null grid pointer!",grid);
+    rep.error("dataio_silo::setup_grid_properties() null ptr",grid);
   double dx=grid->DX();
-  if (node_coords || nodedims || zonedims ||
-      nodex || nodey || nodez) {
-    cerr<<"Have already setup variables for grid props! ";
-    cerr<<"You shouldn't have called me! crazy fool...\n";
-    return 1000000;
-  }
-
   dataio_silo::ndim = SimPM.ndim;
   dataio_silo::vec_length = SimPM.eqnNDim;
-  //  dataio_silo::vec_length = ndim;
-  //  cout <<"************VEC_LENGTH="<<vec_length<<"\n";
 
-  nodedims    = mem.myalloc(nodedims,    ndim);
-  zonedims    = mem.myalloc(zonedims,    ndim);
+  if (!nodedims) nodedims = mem.myalloc(nodedims, ndim);
+  if (!zonedims) zonedims = mem.myalloc(zonedims, ndim);
 
   //
-  // node_coords is a void pointer, so if we are writing silo data in
+  // node_coords is a void pointer, so if we are writing data in
   // single or double precision then we need different allocation
   // calls.  Same for nodex, nodey, nodez.
   //
-  // We setup arrays with locations of nodes in coordinate directions.
+  // setup arrays with locations of nodes in coordinate directions.
   // This differs from the serial code in that we use LocalNG, not
   // the global number of points NG.
   //
+#ifdef WRITE_GHOST_ZONES
+  int nx = SimPM.NG[XX] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
+  int ny = SimPM.NG[YY] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
+  int nz = SimPM.NG[ZZ] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
+#else
   int nx = mpiPM->LocalNG[XX]+1; // for N cells, have N+1 nodes.
   int ny = mpiPM->LocalNG[YY]+1; // for N cells, have N+1 nodes.
   int nz = mpiPM->LocalNG[ZZ]+1; // for N cells, have N+1 nodes.
+#endif
   
   if (silo_dtype==DB_FLOAT) {
     //
     // Allocate memory for node_coords, and set pointers.
     //
     float **d = 0;
-    d = mem.myalloc(d,ndim);
-    node_coords = reinterpret_cast<void **>(d);
-    //
-    // Allocate memory for nodex, nodey, nodez
-    //
     float *posx=0, *posy=0, *posz=0;
-    posx = mem.myalloc(posx,nx);
+
+    if (node_coords) {
+      posx = reinterpret_cast<float *>(nodex);
+      posy = reinterpret_cast<float *>(nodey);
+      posz = reinterpret_cast<float *>(nodez);
+    }
+    else {
+      d = mem.myalloc(d,ndim);
+      node_coords = reinterpret_cast<void **>(d);
+      posx = mem.myalloc(posx,nx);
+      if (ndim>1) posy = mem.myalloc(posy,ny);
+      if (ndim>2) posz = mem.myalloc(posy,nz);
+    }
+
+    //
+    // Assign data for nodex, nodey, nodez for this grid
+    //
     for (int i=0;i<nx;i++)
       posx[i] = static_cast<float>(mpiPM->LocalXmin[XX]+i*dx);
     nodex = reinterpret_cast<void *>(posx);
-    //rep.printVec("DBG nodex",posx,nx);
+    node_coords[XX] = nodex;
 
     if (ndim>1) {
-      posy = mem.myalloc(posy,ny);
       for (int i=0;i<ny;i++)
         posy[i] = static_cast<float>(mpiPM->LocalXmin[YY]+i*dx);
       nodey = reinterpret_cast<void *>(posy);
-      //rep.printVec("DBG nodey",posy,ny);
+      node_coords[YY] = nodey;
     }
     if (ndim>2) {
       posz = mem.myalloc(posz,nz);
       for (int i=0;i<nz;i++)
         posz[i] = static_cast<float>(mpiPM->LocalXmin[ZZ]+i*dx);
       nodez = reinterpret_cast<void *>(posz);
-      //rep.printVec("DBG nodez",posz,nz);
+      node_coords[ZZ] = nodez;
     }
   }
   else {
@@ -931,45 +991,57 @@ int dataio_silo_pllel::setup_grid_properties(
     // pointers.
     //
     double **d=0;
-    d = mem.myalloc(d,ndim);
-    node_coords = reinterpret_cast<void **>(d);
-    //
-    // Allocate memory for nodex, nodey, nodez
-    //
     double *posx=0, *posy=0, *posz=0;
-    posx = mem.myalloc(posx,nx);
-    for (int i=0;i<nx;i++)
+ 
+    if (node_coords) {
+      posx = reinterpret_cast<double *>(nodex);
+      posy = reinterpret_cast<double *>(nodey);
+      posz = reinterpret_cast<double *>(nodez);
+    }
+    else {
+      d = mem.myalloc(d,ndim);
+      node_coords = reinterpret_cast<void **>(d);
+      posx = mem.myalloc(posx,nx);
+      if (ndim>1) posy = mem.myalloc(posy,ny);
+      if (ndim>2) posz = mem.myalloc(posz,nz);
+    }
+
+    //
+    // Assign data for nodex, nodey, nodez for this grid
+    //
+    for (int i=0;i<nx;i++) {
       posx[i] = static_cast<double>(mpiPM->LocalXmin[XX]+i*dx);
+    }
     nodex = reinterpret_cast<void *>(posx);
+    node_coords[XX] = nodex;
 
     if (ndim>1) {
-      posy = mem.myalloc(posy,ny);
-      for (int i=0;i<ny;i++)
+      for (int i=0;i<ny;i++) {
         posy[i] = static_cast<double>(mpiPM->LocalXmin[YY]+i*dx);
+      }
       nodey = reinterpret_cast<void *>(posy);
+      node_coords[YY] = nodey;
     }
     if (ndim>2) {
       posz = mem.myalloc(posz,nz);
-      for (int i=0;i<nz;i++)
+      for (int i=0;i<nz;i++) {
         posz[i] = static_cast<double>(mpiPM->LocalXmin[ZZ]+i*dx);
+      }
       nodez = reinterpret_cast<void *>(posz);
+      node_coords[ZZ] = nodez;
     }
-    //rep.printVec("nodex",posx,nx);
-    //rep.printVec("nodey",posx,ny);
-    //rep.printVec("nodez",posx,nz);
-    //cout <<"dx="<<dx<<"\n";
   }
 
-  nodedims[0] = nx;   zonedims[0] = nx-1;
-  node_coords[XX] = nodex;
+  nodedims[0] = nx;
+  zonedims[0] = nx-1;
 
   if (ndim>1) {
-    nodedims[1] = ny; zonedims[1] = ny-1;
-    node_coords[YY] = nodey;
+    nodedims[1] = ny;
+    zonedims[1] = ny-1;
   }
   if (ndim>2) {
-    nodedims[2] = nz; zonedims[2] = nz-1;
-    node_coords[ZZ] = nodez;
+    nodedims[2] = nz;
+    zonedims[2] = nz-1;
   }
 
 
