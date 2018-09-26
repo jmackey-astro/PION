@@ -535,7 +535,6 @@ int dataio_silo::setup_grid_properties(
   int nz = SimPM.NG[ZZ]+1; // for N cells, have N+1 nodes.
 #endif
 
-  //node_coords = mem.myalloc(node_coords,ndim);
   if (silo_dtype==DB_FLOAT) {
     //
     // Allocate memory for node_coords, and set pointers.
@@ -544,7 +543,6 @@ int dataio_silo::setup_grid_properties(
     float *posx=0, *posy=0, *posz=0;
 
     if (node_coords) {
-      //d = reinterpret_cast<float **>(node_coords);
       posx = reinterpret_cast<float *>(nodex);
       posy = reinterpret_cast<float *>(nodey);
       posz = reinterpret_cast<float *>(nodez);
@@ -600,7 +598,6 @@ int dataio_silo::setup_grid_properties(
     double *posx=0, *posy=0, *posz=0;
 
     if (node_coords) {
-      //d = reinterpret_cast<float **>(node_coords);
       posx = reinterpret_cast<double *>(nodex);
       posy = reinterpret_cast<double *>(nodey);
       posz = reinterpret_cast<double *>(nodez);
@@ -612,8 +609,6 @@ int dataio_silo::setup_grid_properties(
       if (ndim>1) posy = mem.myalloc(posy,ny);
       if (ndim>2) posz = mem.myalloc(posz,nz);
     }
-    d = mem.myalloc(d,ndim);
-    node_coords = reinterpret_cast<void **>(d);
     //
     // Assign data for nodex, nodey, nodez for this grid
     //
