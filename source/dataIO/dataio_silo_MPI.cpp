@@ -405,33 +405,34 @@ int dataio_silo_pllel::ReadData(
 
 int dataio_silo_pllel::OutputData(
       const string outfilebase,
-      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      const long int file_counter   ///< number to stamp file with (e.g. timestep)
+      vector<class GridBaseClass *> &cg, ///< grid pointers.
+      class SimParams &SimPM,            ///< simulation parameters
+      const long int file_counter        ///< timestep
       )
 {
   int err=0;
   dataio_silo::gp = cg[0];
   if (!gp)
-    rep.error("dataio_silo_pllel::OutputData() null pointer to grid!",gp);
+    rep.error("dataio_silo_pllel::OutputData() null grid!",gp);
 
-  //  COMM->barrier("dataio_silo_pllel::OutputData() starting");
-#ifdef TESTING
-  cout <<"\n----dataio_silo_pllel::OutputData() Writing data to filebase: "<<outfilebase<<"\n";
+#ifdef TEST_SILO_IO
+  cout <<"\n----dataio_silo_pllel::OutputData() Writing data to ";
+  cout <<"filebase: "<<outfilebase<<"\n";
 #endif
+
   // First initialise the I/O.
   if (silo_filetype==DB_HDF5) {
     DBSetCompression("METHOD=GZIP LEVEL=1");
     DBSetFriendlyHDF5Names(1);
-#ifdef TESTING
+#ifdef TEST_SILO_IO
     cout <<" *** setting compression.\n";
 #endif
   }
 
   ///
-  /// Not too sure what to do about numfiles -- I have it hardcoded for
-  /// now, but could set it as a runtime parameter at some stage. 
-  /// I have set it to produce files of up to about 1.2GB and then split.
+  /// numfiles is hardcoded for now, but could set it as a runtime
+  /// parameter at some stage.  It produces files of up to about
+  /// 1.2GB at the moment, and then split into 2 files.
   ///
   int threshold=static_cast<int>(SimPM.Ncell/3.0e7)+1;
   if (threshold<1) threshold=1;
@@ -443,23 +444,35 @@ int dataio_silo_pllel::OutputData(
   else
     numfiles=mpiPM->get_nproc();
 
-  //  cout <<"----dataio_silo_pllel::OutputData() running pmpio_init\n";
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::OutputData() running pmpio_init\n";
+#endif
+
   int group_rank=0, myrank_ingroup=0;
   string file_id="write_data";
-  err = COMM->silo_pllel_init(numfiles,"WRITE", file_id, &group_rank, &myrank_ingroup);
+  err = COMM->silo_pllel_init(numfiles,"WRITE", file_id,
+                              &group_rank, &myrank_ingroup);
   if (err) rep.error("COMM->silo_pllel_init() returned err",err);
 
-#ifdef TESTING
-  cout <<"myrank: "<<mpiPM->get_myrank()<<"\tnumfiles: "<<numfiles<<"\tmy_group: ";
+#ifdef TEST_SILO_IO
+  cout <<"myrank: "<<mpiPM->get_myrank()<<"\tnumfiles: ";
+  cout <<numfiles<<"\tmy_group: ";
   cout <<group_rank <<"\tmy_index_in_group: "<<myrank_ingroup<<"\n";
 #endif // TESTING
 
   //
   // Choose output filename:
   //
-  //  cout <<"setting strings... outfilebase="<<outfilebase<<"\n";
-  choose_pllel_filename(outfilebase,group_rank,file_counter,silofile);
-  //  cout <<"string for outfile set...\n";
+#ifdef TEST_SILO_IO
+  cout <<"setting strings... outfilebase="<<outfilebase<<"\n";
+#endif // TESTING
+
+  choose_pllel_filename(outfilebase,group_rank,file_counter,
+                                                          silofile);
+#ifdef TEST_SILO_IO
+  cout <<"string for outfile set...\n";
+#endif // TESTING
+
 
   //
   // Choose directory within silo file.
@@ -524,18 +537,42 @@ int dataio_silo_pllel::OutputData(
   //
   // now write each variable in turn to the mesh
   //
-  //  cout <<"----dataio_silo_pllel::OutputData() creating data arrays\n";
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::OutputData() creating data arrays\n";
+#endif
+
   create_data_arrays(SimPM);
-  //  cout <<"----dataio_silo_pllel::OutputData() arrays created\n";
-  for (std::vector<string>::iterator i=varnames.begin(); i!=varnames.end(); ++i) {
-    //    cout <<"\twriting variable "<<(*i)<<" to file "<<silofile<<"\n";
+
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::OutputData() arrays created\n";
+#endif
+
+  for (std::vector<string>::iterator i=varnames.begin();
+                                     i!=varnames.end(); ++i) {
+#ifdef TEST_SILO_IO
+    cout <<"\twriting variable "<<(*i)<<" to file "<<silofile<<"\n";
+#endif
+
     err = write_variable2mesh(SimPM, *db_ptr, meshname, (*i));
-    //    cout <<"\t\tvariable "<<(*i)<<" written.\n";
-    if (err) rep.error("dataio_silo_pllel::OutputData() error writing variable",(*i));
+
+#ifdef TEST_SILO_IO
+    cout <<"\t\tvariable "<<(*i)<<" written.\n";
+#endif
+
+    if (err)
+      rep.error("dataio_silo_pllel::OutputData() writing variable",
+                                                              (*i));
   }
-  //  cout <<"----dataio_silo_pllel::OutputData() deleting arrays\n";
+
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::OutputData() deleting arrays\n";
+#endif
+
   delete_data_arrays();
-  //  cout <<"----dataio_silo_pllel::OutputData() arrays deleted\n";
+  
+#ifdef TEST_SILO_IO
+  cout <<"----dataio_silo_pllel::OutputData() arrays deleted\n";
+#endif
 
   // ONLY DO THIS IF I AM ROOT PROCESSOR *IN EACH GROUP*
   // GET CURRENT DIR, MOVE OUT, MAKE HEADER,

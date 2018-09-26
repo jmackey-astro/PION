@@ -18,7 +18,7 @@ using namespace std;
 
 
 int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
-      class SimParams &par,     ///< pointer to simulation parameters
+      class SimParams &par,     ///< simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
       class GridBaseClass *parent  ///< pointer to parent grid.
@@ -30,7 +30,8 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   // alogrithm to interpolate the coarse data onto the finer grid.
   //
   if (b->data.empty())
-    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",b->itype);
+    rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",
+                                                        b->itype);
   b->NG.clear();
 
   list<cell*>::iterator bpt=b->data.begin();
@@ -74,7 +75,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
 
 
 int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
-      class SimParams &par,      ///< pointer to simulation parameters
+      class SimParams &par,      ///< simulation parameters
       class FV_solver_base *solver, ///< pointer to equations
       const int level, ///< level in the NG grid structure
       struct boundary_data *b,
@@ -213,7 +214,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
 #endif
         interpolate_coarse2fine2D(
-                      par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
+              par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
 
       } // loop over fine cells
     } // 2D
