@@ -429,6 +429,9 @@ int dataio_silo_pllel::OutputData(
       temp << l;
       fbase=temp.str();
     }
+    else {
+      fbase = outfilebase;
+    }
 
     err = SaveLevelData(fbase,cg[l],SimPM,file_counter);
     rep.errorTest("saveleveldata",0,err);
