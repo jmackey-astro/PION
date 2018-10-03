@@ -298,7 +298,7 @@ MPv3::MPv3(
     
     else if (s=="He1+___" || s=="HeII__"       || s=="He+" || s=="HeII")
         {pv_He1p = ftr+i; cout <<"\t\tGot He1+ as the "<<pv_He1p<<"th element of P[] (zero offset).\n";}
-    else if (s=="He2+___" || s=="HeIII__"      || s=="He+" || s=="HeIII")
+    else if (s=="He2+___" || s=="HeIII__"      || s=="He+" || s=="HeIII") 
         {pv_He2p = ftr+i; cout <<"\t\tGot He2+ as the "<<pv_He2p<<"th element of P[] (zero offset).\n";}
 
         
