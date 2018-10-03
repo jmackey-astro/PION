@@ -1,0 +1,240 @@
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps.cpp:1036: warning: multiple use of section label 'Sign' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/coord_sys/VectorOps.cpp, line 486)
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps.h:337: warning: multiple use of section label 'Slope' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/coord_sys/VectorOps.h, line 147)
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps.h:518: warning: multiple use of section label 'Slope' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/coord_sys/VectorOps.h, line 147)
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps_spherical.cpp:465: warning: multiple use of section label 'Sign' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/coord_sys/VectorOps.cpp, line 486)
+/home/maggie/nested_grid_pion/source/equations/eqns_mhd_adiabatic.cpp:293: warning: multiple use of section label 'Equations' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_base.cpp, line 161)
+/home/maggie/nested_grid_pion/source/equations/eqns_mhd_adiabatic.cpp:345: warning: multiple use of section label 'Directions' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_base.cpp, line 156)
+/home/maggie/nested_grid_pion/source/old_code/global.h:185: warning: multiple use of section label 'Introduction' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/old_code/global.h, line 176)
+/home/maggie/nested_grid_pion/source/old_code/global.h:190: warning: multiple use of section label 'Introduction' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/old_code/global.h, line 176)
+/home/maggie/nested_grid_pion/source/old_code/global.h:255: warning: multiple use of section label 'chyp' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_mhd_adiabatic.cpp, line 542)
+/home/maggie/nested_grid_pion/source/Riemann_solvers/riemannMHD.h:77: warning: multiple use of section label 'References' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_mhd_adiabatic.h, line 182)
+/home/maggie/nested_grid_pion/source/Riemann_solvers/riemannMHD.h:325: warning: multiple use of section label 'References' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_mhd_adiabatic.h, line 182)
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_hydro_adi.cpp:285: warning: multiple use of section label 'Equations' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_base.cpp, line 161)
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_mhd_adi.cpp:214: warning: multiple use of section label 'Equations' while adding section, (first occurrence: /home/maggie/nested_grid_pion/source/equations/eqns_base.cpp, line 161)
+/home/maggie/nested_grid_pion/source/comms/comm_files.cpp:1: warning: the name `comm_files.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/comms/comm_mpi.cpp:1: warning: the name `comm_mpi.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/contrib/HD_2D_ShockCloud.cpp:1: warning: the name `IC_2D_ShockCloud.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/contrib/HD_3D_ShockCloud.cpp:1: warning: the name `IC_3D_ShockCloud.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps.cpp:2: warning: the name `VectorOps.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps_spherical.cpp:2: warning: the name `VectorOps_spherical.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/dataIO/dataio_fits.cpp:1: warning: the name `dataio_fits.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/dataIO/dataio_fits_MPI.cpp:1: warning: the name `dataio_fits_pllel.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/dataIO/dataio_silo_MPI.cpp:2: warning: the name `dataio_silo_MPI.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/dataIO/readparams.cpp:1: warning: the name `readparams.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/dataIO/utility_fits_class.cpp:1: warning: the name `utility_fits_class.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/equations/eqns_base.cpp:2: warning: the name `eqns_base.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/equations/eqns_hydro_adiabatic.cpp:2: warning: the name `eqns_hydro_adiabatic.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/equations/eqns_mhd_adiabatic.cpp:2: warning: the name `eqns_mhd_adiabatic.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/future/eqns_hydro_isothermal.cpp:2: warning: the name `equations_isothermal.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/future/flux_hydro_isothermal.cpp:2: warning: the name `flux_hydro_isothermal.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/future/solver_eqn_hydro_iso.cpp:2: warning: the name `solver_eqn_hydro_iso.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_BC.cpp:2: warning: the name `stellar_wind_BC.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/basic_tests.cpp:1: warning: the name `basic_tests.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/blast_wave.cpp:1: warning: the name `blast_wave.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/get_sim_info.cpp:1: warning: the name `get_sim_info.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/inside_sphere.cpp:1: warning: the name `inside_sphere.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/jet.cpp:1: warning: the name `jet.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/laser_ablation.cpp:1: warning: the name `laser_ablation.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/photoevaporating_clump.cpp:1: warning: the name `photoevaporating_clump.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/photoevaporating_multiclumps.cpp:1: warning: the name `photoevaporating_multiclumps.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/photoevaporating_random_clumps.cpp:1: warning: the name `photoevaporating_random_clumps.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/radiative_shock.cpp:1: warning: the name `radiative_shock.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/shock_cloud.cpp:1: warning: the name `shock_cloud.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/shock_tube.cpp:1: warning: the name `shock_tube.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/spherical_clump.cpp:2: warning: the name `spherical_clump.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/ics/wave.cpp:1: warning: the name `wave.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/cooling.cpp:1: warning: the name `cooling.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/cooling_SD93_cie.cpp:2: warning: the name `cooling_SD93_cie.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/hydrogen_mp.cpp:1: warning: the name `hydrogen_mp.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/hydrogen_photoion.cpp:1: warning: the name `hydrogen_photoion.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/hydrogen_recomb_Hummer94.cpp:1: warning: the name `hydrogen_recomb_Hummer94.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/integrator.cpp:2: warning: the name `integrator.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/mp_only_cooling.cpp:2: warning: the name `mp_only_cooling.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/MPv0.cpp:1: warning: the name `microphysics_v1.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/MPv1.cpp:1: warning: the name `microphysics.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/microphysics/MPv9.cpp:2: warning: the name `MPv9.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/old_code/dataioHDF5.cpp:1: warning: the name `dataioHDF5.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/old_code/eqns_hydro_adi_Eint.cpp:2: warning: the name `eqns_hydro_adi_Eint.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/old_code/flux_hydro_adi_Eint.cpp:2: warning: the name `flux_hydro_adi_Eint.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/old_code/global.cpp:2: warning: the name `global.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/old_code/solver_eqn_hydro_adi_Eint.cpp:2: warning: the name `solver_eqn_hydro_adi_Eint.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/old_code/static_grid.cpp:1: warning: the name `static_grid.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/raytracing/raytracer_SC.cpp:1: warning: the name `raytracer_SC.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/raytracing/raytracer_SC_pllel.cpp:1: warning: the name `raytracer_SC_pllel.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/raytracing/raytracer_shielding.cpp:2: warning: the name `raytracer_shielding.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/findroot.cpp:1: warning: the name `findroot.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/riemann.cpp:2: warning: the name `riemann.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/Riemann_FVS_hydro.cpp:2: warning: the name `Riemann_FVS_hydro.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/riemannMHD.cpp:1: warning: the name `riemannMHD.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/Roe_Hydro_ConservedVar_solver.cpp:2: warning: the name `Roe_Hydro_ConservedVar_solver.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/Roe_Hydro_PrimitiveVar_solver.cpp:2: warning: the name `Roe_Hydro_PrimitiveVar_solver.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/Riemann_solvers/Roe_MHD_ConservedVar_solver.cpp:2: warning: the name `Roe_MHD_ConservedVar_solver.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/SMR_grid/dataio_fits_NG.cpp:1: warning: the name `dataio_fits.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_base.cpp:1: warning: the name `solver_eqn_base.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_hydro_adi.cpp:2: warning: the name `solver_eqn_hydro_adi.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_mhd_adi.cpp:2: warning: the name `solver_eqn_mhd_adi.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/tools/timer.cpp:2: warning: the name `timer.cc' supplied as the second argument in the \file statement is not an input file
+/home/maggie/nested_grid_pion/source/contrib/HD_2D_ShockCloud.cpp:22: warning: documented symbol `IC_HD_2D_ShockCloud::IC_HD_2D_ShockCloud' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/HD_2D_ShockCloud.cpp:29: warning: documented symbol `IC_HD_2D_ShockCloud::~IC_HD_2D_ShockCloud' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/HD_2D_ShockCloud.cpp:38: warning: no uniquely matching class member found for 
+  int IC_HD_2D_ShockCloud::setup_data(class ReadParams *rrp, class GridBaseClass *ggg)
+
+/home/maggie/nested_grid_pion/source/contrib/HD_2D_ShockCloud.cpp:224: warning: documented symbol `void IC_HD_2D_ShockCloud::get_data_vals' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/HD_3D_ShockCloud.cpp:17: warning: documented symbol `IC_HD_3D_ShockCloud::IC_HD_3D_ShockCloud' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/HD_3D_ShockCloud.cpp:18: warning: documented symbol `IC_HD_3D_ShockCloud::~IC_HD_3D_ShockCloud' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/HD_3D_ShockCloud.cpp:21: warning: no uniquely matching class member found for 
+  int IC_HD_3D_ShockCloud::setup_data(class ReadParams *rrp, class GridBaseClass *ggg)
+
+/home/maggie/nested_grid_pion/source/contrib/HD_3D_ShockCloud.cpp:201: warning: documented symbol `void IC_HD_3D_ShockCloud::get_data_vals' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/read_BBurkhart_data.cpp:34: warning: documented symbol `IC_read_BBurkhart_data::IC_read_BBurkhart_data' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/read_BBurkhart_data.cpp:41: warning: documented symbol `IC_read_BBurkhart_data::~IC_read_BBurkhart_data' was not declared or defined.
+/home/maggie/nested_grid_pion/source/contrib/read_BBurkhart_data.cpp:51: warning: no uniquely matching class member found for 
+  int IC_read_BBurkhart_data::setup_data(class ReadParams *rrp, class GridBaseClass *ggg)
+
+/home/maggie/nested_grid_pion/source/contrib/read_BBurkhart_data.cpp:359: warning: documented symbol `void IC_read_BBurkhart_data::read_file' was not declared or defined.
+/home/maggie/nested_grid_pion/source/sim_control/sim_control_NG_MPI.cpp:369: warning: no uniquely matching class member found for 
+  int sim_control_NG_MPI::calculate_timestep(class SimParams &par, class GridBaseClass *grid, class FV_solver_base *sp_solver, const int l)
+
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\sim'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\pi'
+warning: Included by graph for 'constants.h' not generated, too many nodes. Consider increasing DOT_GRAPH_MAX_NODES.
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps.h:15: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/dataIO/dataio_silo.cpp:15: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/dataIO/dataio_silo.cpp:36: warning: explicit link request to 'ifdef' could not be resolved
+/home/maggie/nested_grid_pion/source/dataIO/dataio_silo_utility.cpp:20: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/dataIO/parameter_defs.cpp:15: warning: Invalid list item found
+warning: Included by graph for 'functionality_flags.h' not generated, too many nodes. Consider increasing DOT_GRAPH_MAX_NODES.
+warning: Included by graph for 'testing_flags.h' not generated, too many nodes. Consider increasing DOT_GRAPH_MAX_NODES.
+/home/maggie/nested_grid_pion/source/equations/eqns_base.h:10: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/equations/eqns_base.h:13: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/grid/uniform_grid.cpp:17: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/ics/icgen.cpp:10: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/ics/icgen_base.h:68: warning: argument 'ics' of command @param is not found in the argument list of setup_ics_type(std::string, class ICsetup_base **)
+/home/maggie/nested_grid_pion/source/ics/icgen_base.h:68: warning: argument 'ic' of command @param is not found in the argument list of setup_ics_type(std::string, class ICsetup_base **)
+/home/maggie/nested_grid_pion/source/microphysics/hydrogen_photoion.h:6: warning: Found unknown command `\description'
+/home/maggie/nested_grid_pion/source/microphysics/microphysics_base.h:6: warning: Found unknown command `\description'
+/home/maggie/nested_grid_pion/source/microphysics/MPv0.h:18: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/microphysics/MPv1.h:5: warning: Found unknown command `\description'
+/home/maggie/nested_grid_pion/source/microphysics/MPv1.h:19: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/old_code/global.h:27: warning: explicit link request to 'define' could not be resolved
+/home/maggie/nested_grid_pion/source/old_code/global.h:28: warning: explicit link request to 'defs' could not be resolved
+/home/maggie/nested_grid_pion/source/old_code/global.h:37: warning: explicit link request to 'defs' could not be resolved
+/home/maggie/nested_grid_pion/source/old_code/global.h:70: warning: explicit link request to 'defines' could not be resolved
+/home/maggie/nested_grid_pion/source/raytracing/raytracer_SC.h:18: warning: explicit link request to 'defs' could not be resolved
+/home/maggie/nested_grid_pion/source/Riemann_solvers/riemann.h:17: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/Riemann_solvers/Riemann_FVS_hydro.h:18: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/sim_control/sim_control.cpp:115: warning: explicit link request to 'deffed' could not be resolved
+/home/maggie/nested_grid_pion/source/sim_control/sim_control_MPI.cpp:13: warning: explicit link request to 'ifdef' could not be resolved
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_base.h:17: warning: Invalid list item found
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_base.h:50: warning: Invalid list item found
+warning: Included by graph for 'command_line_interface.h' not generated, too many nodes. Consider increasing DOT_GRAPH_MAX_NODES.
+warning: Included by graph for 'mem_manage.h' not generated, too many nodes. Consider increasing DOT_GRAPH_MAX_NODES.
+warning: Included by graph for 'reporting.h' not generated, too many nodes. Consider increasing DOT_GRAPH_MAX_NODES.
+/home/maggie/nested_grid_pion/source/sim_control/calc_timestep.h:105: warning: The following parameters of calc_timestep::calc_dynamics_dt(class SimParams &par, class GridBaseClass *grid, class FV_solver_base *sp_solver) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/sim_control/calc_timestep.h:76: warning: The following parameters of calc_timestep::get_mp_timescales_no_radiation(class SimParams &par, class GridBaseClass *grid) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/sim_control/calc_timestep.h:84: warning: The following parameters of calc_timestep::get_mp_timescales_with_radiation(class SimParams &par, class GridBaseClass *grid) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/grid/cell_interface.h:331: warning: The following parameters of cell_interface::get_cell_col(const cell *c, const int s, double *dtau) are not documented:
+  parameter 'c'
+/home/maggie/nested_grid_pion/source/grid/cell_interface.h:350: warning: The following parameters of cell_interface::set_cell_col(cell *c, const int s, const double dtau[]) are not documented:
+  parameter 'c'
+/home/maggie/nested_grid_pion/source/grid/cell_interface.h:415: warning: The following parameters of cell_interface::set_cell_deltaS(cell *c, const int s, const double deltaS) are not documented:
+  parameter 'c'
+  parameter 'deltaS'
+/home/maggie/nested_grid_pion/source/grid/cell_interface.h:369: warning: The following parameters of cell_interface::set_cell_Vshell(cell *c, const int s, const double Vs) are not documented:
+  parameter 'c'
+/home/maggie/nested_grid_pion/source/grid/cell_interface.h:312: warning: The following parameters of cell_interface::set_col(cell *c, const int s, const double tau[]) are not documented:
+  parameter 'c'
+<Ydot_for_cvode>:1: warning: argument 't' of command @param is not found in the argument list of cvode_solver::Ydot_for_cvode(double, N_Vector, N_Vector, void *)
+<Ydot_for_cvode>:1: warning: argument 'y' of command @param is not found in the argument list of cvode_solver::Ydot_for_cvode(double, N_Vector, N_Vector, void *)
+<Ydot_for_cvode>:1: warning: argument 'yd' of command @param is not found in the argument list of cvode_solver::Ydot_for_cvode(double, N_Vector, N_Vector, void *)
+<Ydot_for_cvode>:1: warning: argument 'data' of command @param is not found in the argument list of cvode_solver::Ydot_for_cvode(double, N_Vector, N_Vector, void *)
+/home/maggie/nested_grid_pion/source/dataIO/dataio_silo_utility.h:47: warning: The following parameters of dataio_silo_utility::dataio_silo_utility(class SimParams &SimPM, std::string dtype, class MCMDcontrol *p) are not documented:
+  parameter 'p'
+/home/maggie/nested_grid_pion/source/dataIO/dataio_text.h:80: warning: The following parameters of dataio_text::set_filename(const std::string outfile, const long int counter) are not documented:
+  parameter 'outfile'
+/home/maggie/nested_grid_pion/source/boundaries/double_Mach_ref_boundaries.h:27: warning: The following parameters of double_Mach_ref_bc::BC_assign_DMACH(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/double_Mach_ref_boundaries.h:34: warning: The following parameters of double_Mach_ref_bc::BC_assign_DMACH2(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/fixed_boundaries.h:26: warning: The following parameters of fixed_bc::BC_assign_FIXED(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_base.h:128: warning: The following parameters of FV_solver_base::InterCellFlux(class GridBaseClass *grid, const cell *Cl, const cell *Cr, pion_flt *lp, pion_flt *rp, pion_flt *f, const int solve_flag, const int av_flag, const double g, const double dx) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_base.h:90: warning: The following parameters of FV_solver_base::set_div_v(class cell *c, class GridBaseClass *grid) are not documented:
+  parameter 'c'
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_hydro_adi.h:144: warning: The following parameters of FV_solver_Hydro_Euler::dU_Cell(class GridBaseClass *grid, cell *c, const axes d, const pion_flt *fn, const pion_flt *fp, const pion_flt *slope, const int ooa, const double dx, const double dt) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/spatial_solvers/solver_eqn_mhd_adi.h:79: warning: The following parameters of FV_solver_mhd_ideal_adi::dU_Cell(class GridBaseClass *grid, cell *c, const axes d, const pion_flt *fn, const pion_flt *fp, const pion_flt *slope, const int ooa, const double dx, const double dt) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/ics/icgen_base.h:47: warning: The following parameters of ICsetup_base::AddNoise2Data(class GridBaseClass *grid, class SimParams &SimPM, int n, double frac) are not documented:
+  parameter 'grid'
+  parameter 'SimPM'
+/home/maggie/nested_grid_pion/source/boundaries/inflow_boundaries.h:26: warning: The following parameters of inflow_bc::BC_assign_INFLOW(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/jet_boundaries.h:27: warning: The following parameters of jet_bc::BC_assign_JETBC(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/jetreflect_boundaries.h:37: warning: The following parameters of jetreflect_bc::BC_assign_JETREFLECT(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\sim'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\pi'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\sim'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\pi'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\sim'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\pi'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\sim'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\pi'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\sim'
+/home/maggie/nested_grid_pion/source/microphysics/MPv3.h:461: warning: Found unknown command `\pi'
+/home/maggie/nested_grid_pion/source/boundaries/NG_fine_to_coarse_boundaries.h:36: warning: The following parameters of NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(class SimParams &par, class FV_solver_base *solver, const int level, struct boundary_data *b, const int cstep, const int maxstep) are not documented:
+  parameter 'b'
+  parameter 'cstep'
+  parameter 'maxstep'
+/home/maggie/nested_grid_pion/source/boundaries/NG_MPI_fine_to_coarse_boundaries.h:63: warning: The following parameters of NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(class SimParams &par, class FV_solver_base *solver, const int l, struct boundary_data *b, const int cstep, const int maxstep) are not documented:
+  parameter 'b'
+  parameter 'cstep'
+  parameter 'maxstep'
+/home/maggie/nested_grid_pion/source/boundaries/NG_MPI_fine_to_coarse_boundaries.h:44: warning: The following parameters of NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(class SimParams &par, class FV_solver_base *solver, const int l, struct boundary_data *b, const int cstep, const int maxstep) are not documented:
+  parameter 'b'
+  parameter 'cstep'
+  parameter 'maxstep'
+/home/maggie/nested_grid_pion/source/boundaries/oneway_out_boundaries.h:34: warning: The following parameters of oneway_out_bc::BC_assign_ONEWAY_OUT(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/outflow_boundaries.h:26: warning: The following parameters of outflow_bc::BC_assign_OUTFLOW(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/periodic_boundaries.h:27: warning: The following parameters of periodic_bc::BC_assign_PERIODIC(class SimParams &par, const int, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/reflecting_boundaries.h:26: warning: The following parameters of reflecting_bc::BC_assign_REFLECTING(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/boundaries/RT_MPI_boundaries.h:113: warning: The following parameters of RT_MPI_bc::Receive_RT_Boundaries(class SimParams &par, class MCMDcontrol &ppar, class GridBaseClass *grid, const int src_id, struct rad_src_info &RS) are not documented:
+  parameter 'RS'
+/home/maggie/nested_grid_pion/source/boundaries/RT_MPI_boundaries.h:148: warning: The following parameters of RT_MPI_bc::RT_src_at_infty_direction(class SimParams &par, const int src_id, struct rad_src_info &RS) are not documented:
+  parameter 'RS'
+/home/maggie/nested_grid_pion/source/boundaries/RT_MPI_boundaries.h:125: warning: The following parameters of RT_MPI_bc::Send_RT_Boundaries(class SimParams &par, class MCMDcontrol &ppar, class GridBaseClass *grid, const int src_id, struct rad_src_info &RS) are not documented:
+  parameter 'RS'
+/home/maggie/nested_grid_pion/source/boundaries/RT_MPI_boundaries.h:102: warning: The following parameters of RT_MPI_bc::Setup_RT_Boundaries(class SimParams &par, class MCMDcontrol &ppar, class GridBaseClass *grid, const int src_id, struct rad_src_info &RS) are not documented:
+  parameter 'RS'
+/home/maggie/nested_grid_pion/source/boundaries/RT_MPI_boundaries.h:148: warning: The following parameters of RT_MPI_bc::setup_RT_infinite_src_BD(class SimParams &par, class MCMDcontrol &ppar, class GridBaseClass *grid, const int src_id, struct rad_src_info &RS, std::vector< struct RT_boundary_list_element > &RT_recv_list, std::vector< struct RT_boundary_list_element > &RT_send_list) are not documented:
+  parameter 'RS'
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_BC.h:186: warning: The following parameters of stellar_wind::add_cell(class GridBaseClass *grid, const int id, cell *c) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_BC.h:280: warning: The following parameters of stellar_wind::set_wind_cell_reference_state(class GridBaseClass *grid, struct wind_cell *wc, const struct wind_source *WS, const double gamma) are not documented:
+  parameter 'grid'
+  parameter 'wc'
+  parameter 'WS'
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_angle.h:208: warning: The following parameters of stellar_wind_angle::set_wind_cell_reference_state(class GridBaseClass *grid, struct wind_cell *wc, const struct wind_source *WS, const double eos_gamma) are not documented:
+  parameter 'grid'
+  parameter 'wc'
+  parameter 'WS'
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_angle.h:219: warning: The following parameters of stellar_wind_angle::update_source(class GridBaseClass *grid, struct evolving_wind_data *wd, const double t_now, const double eos_gamma) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/boundaries/stellar_wind_boundaries.h:34: warning: The following parameters of stellar_wind_bc::BC_assign_STWIND(class SimParams &par, class GridBaseClass *grid, boundary_data *b) are not documented:
+  parameter 'b'
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_BC.h:395: warning: The following parameters of stellar_wind_evolution::set_cell_values(class GridBaseClass *grid, const int id, const double t_now) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/grid/stellar_wind_BC.h:410: warning: The following parameters of stellar_wind_evolution::update_source(class GridBaseClass *grid, struct evolving_wind_data *wd, const double t_now, const double gamma) are not documented:
+  parameter 'grid'
+/home/maggie/nested_grid_pion/source/coord_sys/VectorOps.h:409: warning: The following parameters of VectorOps_Cyl::R_com(const cell *c, const double dR) are not documented:
+  parameter 'dR'

@@ -58,8 +58,13 @@ PROJECT_LOGO           =
 # entered, it will be relative to the location where doxygen was started. If
 # left blank the current directory will be used.
 
+<<<<<<< working copy
+#OUTPUT_DIRECTORY       = /Users/jm/Documents/CODE/docs/
+OUTPUT_DIRECTORY       = ../
+=======
 OUTPUT_DIRECTORY       = /Users/jm/Documents/CODE/docs/
 #OUTPUT_DIRECTORY       = /vol/aibn129/data1/jmackey/scratch/smr_pion/doxygen/
+>>>>>>> destination
 
 # If the CREATE_SUBDIRS tag is set to YES then doxygen will create 4096 sub-
 # directories (in 2 levels) under the output directory of each output format and
@@ -301,7 +306,7 @@ MARKDOWN_SUPPORT       = YES
 # Minimum value: 0, maximum value: 99, default value: 0.
 # This tag requires that the tag MARKDOWN_SUPPORT is set to YES.
 
-TOC_INCLUDE_HEADINGS   = 0
+#TOC_INCLUDE_HEADINGS   = 0
 
 # When enabled doxygen tries to link words that correspond to documented
 # classes, or namespaces to their corresponding documentation. Such a link can
@@ -2368,7 +2373,7 @@ PLANTUML_JAR_PATH      =
 # When using plantuml, the PLANTUML_CFG_FILE tag can be used to specify a
 # configuration file for plantuml.
 
-PLANTUML_CFG_FILE      =
+#PLANTUML_CFG_FILE      =
 
 # When using plantuml, the specified paths are searched for files specified by
 # the !include statement in a plantuml block.
