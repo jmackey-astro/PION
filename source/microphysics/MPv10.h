@@ -30,8 +30,8 @@
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2018.03.20 JM: Renamed file.
 
-#ifndef MPV3_H
-#define MPV3_H
+#ifndef MPv10_H
+#define MPv10_H
 
 /// Description:
 /// This class is an update on the microphysics class used for JM's
@@ -102,7 +102,7 @@
 /// not time-averaged by the microphysics integrator but rather is an 
 /// instantaneous value.
 ///
-class MPv3
+class MPv10
   :
   public Hydrogen_chem,
   public cooling_function_SD93CIE,
@@ -113,7 +113,7 @@ class MPv3
   ///
   /// Constructor
   ///
-  MPv3(
+  MPv10(
       const int,  ///< grid dimensions
       const int,  ///< Coordinate System flag
       const int,  ///< Total number of variables in state vector
@@ -127,7 +127,7 @@ class MPv3
   ///
   /// Destructor
   ///
-  ~MPv3();
+  ~MPv10();
 
 
   ///
@@ -162,7 +162,7 @@ class MPv3
       const double,   ///< Optical depth to entry point of ray into cell.
       double *        ///< return optical depth through cell in this variable.
       )
-  {cout <<"MPv3::TimeUpdate_RTsinglesrc() is not implemented!\n";return 1;}
+  {cout <<"MPv10::TimeUpdate_RTsinglesrc() is not implemented!\n";return 1;}
 
   ///
   /// This takes a copy of the primitive vector and advances it in time over
@@ -255,7 +255,7 @@ class MPv3
       const double, ///< eos gamma.
       const double  ///< optional gas temperature to end up at. (negative means use pressure)
       )
-  {cout <<"MPv3::Init_ionfractions() is not implemented! Write me!\n";return 1;}
+  {cout <<"MPv10::Init_ionfractions() is not implemented! Write me!\n";return 1;}
 
   ///
   /// Return index of tracer for a given string. (only hydrogen for this class!)
@@ -400,9 +400,10 @@ class MPv3
   int lv_eint; ///< internal energy local variable index. 
   int lv_H0;   ///< neutral hydrogeen local variable index.
   // NOTE \Maggie{ I have added definitions for all the other tracers we might like to include
+  int pv_Hp;    ///< legacy, should ideally remove
   int pv_H1p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_He1p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_He2p;   ///< index for element of Primitive vector that holds ionisation pot.
+  int pv_He1p;  ///< index for element of Primitive vector that holds ionisation pot.
+  int pv_He2p;  ///< index for element of Primitive vector that holds ionisation pot.
   int pv_C1p;   ///< index for element of Primitive vector that holds ionisation pot.
   int pv_C2p;   ///< index for element of Primitive vector that holds ionisation pot.
   int pv_C3p;   ///< index for element of Primitive vector that holds ionisation pot.
@@ -454,7 +455,7 @@ class MPv3
       const N_Vector, ///< vector for Y-dot values
       const double *, ///< extra user-data vector, P, for evaluating ydot(y,t,p)
       DlsMat          ///< Jacobian matrix
-      ) {cout <<"Jacobian not implemented in MPv3!\n"; return 1;}
+      ) {cout <<"Jacobian not implemented in MPv10!\n"; return 1;}
 
   ///
   /// Get the number of extra parameters and the number of equations.
@@ -492,7 +493,7 @@ class MPv3
 
 };
 
-#endif // MPV3_H
+#endif // MPv10_H
 
 
 

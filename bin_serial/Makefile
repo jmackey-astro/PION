@@ -702,22 +702,22 @@ MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
 
+MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
+  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
+  microphysics_base.h
+
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
   cooling_SD93_cie.h microphysics_base.h
 
 MPv5.o: MPv5.cpp MPv5.h \
-  MPv3.h MPv10.h microphysics_base.h ${GLOBAL}
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 MPv6.o: MPv6.cpp MPv6.h \
-  MPv3.h MPv10.h microphysics_base.h ${GLOBAL}
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 MPv7.o: MPv7.cpp MPv7.h \
-  MPv3.h MPv10.h microphysics_base.h ${GLOBAL}
-
-MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
-  hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h
+  MPv3.h microphysics_base.h ${GLOBAL}
 
 HHe_photoion.o: HHe_photoion.cpp HHe_photoion.h ${GLOBAL}
 mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
