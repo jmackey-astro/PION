@@ -412,10 +412,16 @@ class MPv10
   std::vector<int> y_ion_index; ///<primitive vector indices, analogous to pv_Hp before.
   std::vector<int> X_elem_index; /// < primitive vector indeices, used to trace X_H etc, like pv_Hp. 
   std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
-  
+  std::vector<int> H_ion_index; ///< records # species in each element, to iterate over later.
+  std::vector<int> He_ion_index; ///< records # species in each element, to iterate over later.
+
   std::vector<int> y_ion_num_elec; ///<records the number of electrons corresponding to each y_ion (e.g. C6+ = 6)
   std::vector<pion_flt> y_elem_mass_frac; ///<same length as y_ion_index, records elemental number density corresponding to each species. Analogous to mpv_nH.
   std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
+  
+  //Need following arrays for MPv10::Tr(), i.e. to get the index of a species based on user input string tracer.
+  
+  //std::vector<int> He_ion_index;
   
   int pv_H1p;    ///< legacy, should ideally remove
 

@@ -91,6 +91,7 @@ SimParams::SimParams()
   EP.MinTemperature = 0.0;
   EP.MaxTemperature = 1.0e100;
   
+  EP.H_MassFrac = 0.73;
   EP.Helium_MassFrac = 0.2703;
   EP.Metal_MassFrac  = 0.0142;
 

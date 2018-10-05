@@ -328,10 +328,13 @@ MPv10::MPv10(
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
     // Define mass fraction for this element first.
     if((*it)=="H"){
-      mass_frac = 0.73;//EP->H_MassFrac;
+      mass_frac = EP->H_MassFrac;
+      cout << mass_frac <<"\n\n\n\n\n";
+      //H_ion_index.push_back(0);
+      //He_ion_index.push_back(0);
     }
     else if ((*it)=="He"){
-     mass_frac = 0.27;//EP->Helium_MassFrac;
+      mass_frac = EP->Helium_MassFrac;
     }
           
     // Loop over every tracer and assign species index / mass fraction / num electrons to vectors if that tracer corresponds to the current element.
@@ -345,7 +348,7 @@ MPv10::MPv10(
         y_ion_num_elec.push_back(int(s[2]));
         N_species++;
       }
-      else if (s.substr(0,1)==(*it) & s.substr(0,2)!="He"){
+      else if (s.substr(0,1)==(*it) & s.substr(0,2)!="He" & s.substr(0,1)=="H"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
         y_elem_mass_frac.push_back(mass_frac);
@@ -364,6 +367,10 @@ MPv10::MPv10(
   cout <<"MPv10:: EP and RS: "<<EP<<"\t"<<RS<<endl;
 #endif
 
+  
+  
+  
+  
 
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
@@ -373,7 +380,6 @@ MPv10::MPv10(
 
   //
   // Get the mean mass per H atom from the He and Z mass fractions.
-  // Assume metal content is low enough to ignore it.
   // NOTE \Maggie{or let's not assume that...} Assume metal content is low enough to ignore it.
   double X = 1.0-EP->Helium_MassFrac;
   mean_mass_per_H = m_p/X;
@@ -559,12 +565,12 @@ void MPv10::setup_local_vectors()
   //
   // This is in a function so it can be replaced in an inherited class.
   //
-  nvl     = 2;    // two local variables to integrate
+  nvl     = N_species +1;    // two local variables to integrate
   N_extradata = 0;
-  N_equations = 2;
+  N_equations = N_elem;
   y_in  = N_VNew_Serial(N_equations);
   y_out = N_VNew_Serial(N_equations);
-  lv_H0   = 0;    // x(H0) is the first element in the array
+  lv_H0   = 0;    // x(H0) is the first element in the array NOTE \Maggie{ LEGACY CODE; REMOVE LATER.}
   lv_eint = 1;    // E_{int} is the second element.
   //cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
@@ -652,12 +658,10 @@ MPv10::~MPv10()
 // ##################################################################
 
 
-// A switch statement with a hash table might be slightly faster here; not sure if it'll be called enough for optimising it to be worth the time.
-// \Maggie { I have added in ifelse statements for all tracers we want to track.}
+
 int MPv10::Tr(const string s)
 {
-// NOTE \Maggie{ need to change all mentions of pv_Hp to pv_H1p}
-  if      (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       {return pv_H1p;}
+  if      (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       {return pv_H1p;} // NOTE LEGACY CODE -- DELETE AS SOON AS IT WON'T BREAK THINGS
   else { return -1;}
 }
 
@@ -1179,7 +1183,7 @@ double MPv10::total_cooling_rate(
 }
 
 
-// ##################################################################
+// ########################################################http://www.cplusplus.com/reference/string/string/substr/##########
 // ##################################################################
 
 
