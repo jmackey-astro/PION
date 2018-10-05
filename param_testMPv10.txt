@@ -21,12 +21,11 @@ OutputFile    MPv10_test
 
 # Number and type of tracers.
 chem_code MPv10
-ntracer 2
+ntracer 4
 Tracer000 H1+
 Tracer001 Trace
 Tracer002 He1+
 Tracer003 He2+
-Tracer004 C4+
 InitIons LEAVE
 
 # Which physics to use

@@ -279,32 +279,33 @@ MPv10::MPv10(
   cout <<"MPv10: a microphysics class.\n";
 
   // ----------------------------------------------------------------
-  // ------- Set up tracer variables (find which one is H+). --------
+  // ------- Set up tracer variables:                       ---------
+  // ------- 1) Identify elements present in tracer list    ---------
+  // ------- 2) Record X_elem_index vector, N_elem          ---------
+  // ------- 3) Record: y_ion_index (index in primitive vector),
+  //            y_elem_mass_frac (mass frac of y_ion_index spec elem),
+  //            y_ion_num_elec (# electrons of y_ion_index species),
+  //            N_species_by_elem (arranged to match X_elem_index)
+  //            
   // ----------------------------------------------------------------
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last ";
   cout <<ntracer<<" variables in state vec.\n";
   int len = ntracer;
-
-  //
-  // Find H+ fraction in tracer variable list.
-  // NOTE \Maggie{ I think I should add the other tracer variables here too? I'm just gonna do that }
-  //    Do this as well for elements, set in vector format, keep track of number of species, num elements, all that stuff, set up vector of element number densities up where 
-  //map elements into the number density array as it'll need to be populated each time step, not currently implemented at all.
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s; pv_H1p=-1;
-
+  
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
-    // Record elements present according to tracers listed by user.
-    if (s[0]=='C' || s[0]=='O' || s[0]=='N'){
-        set_elem.insert( string(1, s[0]) ); //<needed because of char vs string stuff
-      }
+    // 1) Identify elements present in tracer list. Set keeps only unique objects; no doubling up.
+    if (s.substr(0,2)=="He"){
+      set_elem.insert("He");
+    }
     else if (s[0]=='H'){
-        if (s[1]=='e')
-          {set_elem.insert("He");}
-        else
-          {set_elem.insert("H");}
-      }  
+      set_elem.insert("H");
+    }
+    else if (s[0]=='C'){
+      set_elem.insert("C");
+    }
     
     // NOTE \Maggie{ LEGACY CODE; REMOVE.}
     if  (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       
@@ -312,41 +313,51 @@ MPv10::MPv10(
     }
   
   set<string>::iterator it; /// < iterator for set_elem
-  // First, setup X_elem_index / N_elem.
+  // 2) Record X_elem_index vector, N_elem
   N_elem = 0;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
-      X_elem_index.push_back(ftr + N_elem);
+      X_elem_index.push_back(ftr + N_elem); ///<record primitive vector index of each element
       N_species_by_elem.push_back(0);
       N_elem++;
   }
   
-  // Now that N_elem has been fixed, can get the indices of each species by iterating through tracers once again.
+  // 3) Establish N_species_by_elem, N_species, y_ion_index, y_ion_num_elec, y_elem_mass_frac
   N_species=0;
   int elem_counter=0;
+  float mass_frac;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
-      cout << (*it) << "\n";
-      for (int i=0;i<len;i++) {
-        s = tracers[i]; // Get 'i'th tracer variable.
-        cout << s[0] <<"\n";
-        if (string(1,s[0])==(*it) & s[1]!='e'){
-          N_species_by_elem[elem_counter]++;//another species corresponding to this element has been added!
-          y_ion_index.push_back(ftr + N_elem + N_species);
-          N_species++;
-        }
-        else if (s[0]==(*it)[0] & s[1]==(*it)[1]){
-          N_species_by_elem[elem_counter]++;
-          y_ion_index.push_back(ftr + N_elem + N_species);
-          N_species++;
-        }
+    // Define mass fraction for this element first.
+    if((*it)=="H"){
+      mass_frac = 0.73;//EP->H_MassFrac;
+    }
+    else if ((*it)=="He"){
+     mass_frac = 0.27;//EP->Helium_MassFrac;
+    }
+          
+    // Loop over every tracer and assign species index / mass fraction / num electrons to vectors if that tracer corresponds to the current element.
+    for (int i=0;i<len;i++) {
+      s = tracers[i];
+      // He compared separately as it is the first two characters.
+      if (s.substr(0,2)=="He" & (*it)=="He"){
+        N_species_by_elem[elem_counter]++;
+        y_ion_index.push_back(ftr + N_elem + N_species);
+        y_elem_mass_frac.push_back(mass_frac);
+        y_ion_num_elec.push_back(int(s[2]));
+        N_species++;
       }
-      elem_counter++;
+      else if (s.substr(0,1)==(*it) & s.substr(0,2)!="He"){
+        N_species_by_elem[elem_counter]++;
+        y_ion_index.push_back(ftr + N_elem + N_species);
+        y_elem_mass_frac.push_back(mass_frac);
+        y_ion_num_elec.push_back(int(s[1]));
+        N_species++;
+      }
+    }
+    elem_counter++;
   }
-  cout << N_species << "," << N_elem << "\n\n\n\n\n\n\n\n\n\n";
+  cout << "N_species=" << N_species << ", N_elements=" << N_elem << "\n";  
   
-  // NOTE \Maggie{LEGACY CODE, REMOVE}
-  if (pv_H1p<0)
-   rep.error("No H ionisation fraction found in tracer list",tracers[0]);
-
+  
   // ================================================================
   // ================================================================
 #ifdef TESTING
@@ -646,36 +657,7 @@ MPv10::~MPv10()
 int MPv10::Tr(const string s)
 {
 // NOTE \Maggie{ need to change all mentions of pv_Hp to pv_H1p}
-// \Maggie{ Also, I'm not sure if I need to include the neutral element or not?}
   if      (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       {return pv_H1p;}
-  /*//else if (s=="H0___"   || s=="HI__"         || s=="H0"  || s=="HI")        {return pv_H0;}
-  //else if (s=="He0___"  || s=="HeI__"        || s=="He0" || s=="HeI")       {return pv_He0;}
-  else if (s=="He1+___" || s=="HeII__"       || s=="He+" || s=="HeII")      {return pv_He1p;}
-  else if (s=="He2+___" || s=="HeIII__"      || s=="He+" || s=="HeIII")     {return pv_He2p;}
-  //else if (s=="C0___"   || s=="CI__"         || s=="C0"  || s=="CI")        {return pv_C0;}
-  else if (s=="C1+___"  || s=="CII__"        || s=="C1+" || s=="CII")       {return pv_C1p;}
-  else if (s=="C2+___"  || s=="CIII__"       || s=="C2+" || s=="CIII")      {return pv_C2p;}
-  else if (s=="C3+___"  || s=="CIIII__"      || s=="C3+" || s=="CIIII")     {return pv_C3p;}
-  else if (s=="C4+___"  || s=="CIIIII__"     || s=="C4+" || s=="CIIIII")    {return pv_C4p;}
-  else if (s=="C5+___"  || s=="CIIIIII__"    || s=="C5+" || s=="CIIIIII")   {return pv_C5p;}
-  else if (s=="C6+___"  || s=="CIIIIIII__"   || s=="C6+" || s=="CIIIIIII")  {return pv_C6p;}
-  //else if (s=="N0___"   || s=="NI__"         || s=="N0"  || s=="NI")        {return pv_N0p;}
-  else if (s=="N1+___"  || s=="NII__"        || s=="N1+" || s=="NII")       {return pv_N1p;}
-  else if (s=="N2+___"  || s=="NIII__"       || s=="N2+" || s=="NIII")      {return pv_N2p;}
-  else if (s=="N3+___"  || s=="NIIII__"      || s=="N3+" || s=="NIIII")     {return pv_N3p;}
-  else if (s=="N4+___"  || s=="NIIIII__"     || s=="N4+" || s=="NIIIII")    {return pv_N4p;}
-  else if (s=="N5+___"  || s=="NIIIIII__"    || s=="N5+" || s=="NIIIIII")   {return pv_N5p;}
-  else if (s=="N6+___"  || s=="NIIIIIII__"   || s=="N6+" || s=="NIIIIIII")  {return pv_N6p;}
-  else if (s=="N7+___"  || s=="NIIIIIIII__"  || s=="N7+" || s=="NIIIIIIII") {return pv_N7p;}
-  //else if (s=="O0___"   || s=="OI__"         || s=="O0"  || s=="OI")        {return pv_O0p;}
-  else if (s=="O1+___"  || s=="OII__"        || s=="O1+" || s=="OII")       {return pv_O1p;}
-  else if (s=="O2+___"  || s=="OIII__"       || s=="O2+" || s=="OIII")      {return pv_O2p;}
-  else if (s=="O3+___"  || s=="OIIII__"      || s=="O3+" || s=="OIIII")     {return pv_O3p;}
-  else if (s=="O4+___"  || s=="OIIIII__"     || s=="O4+" || s=="OIIIII")    {return pv_O4p;}
-  else if (s=="O5+___"  || s=="OIIIIII__"    || s=="O5+" || s=="OIIIIII")   {return pv_O5p;}
-  else if (s=="O6+___"  || s=="OIIIIIII__"   || s=="O6+" || s=="OIIIIIII")  {return pv_O6p;}
-  else if (s=="O7+___"  || s=="OIIIIIIII__"  || s=="O7+" || s=="OIIIIIIII") {return pv_O7p;}
-  else if (s=="O8+___"  || s=="OIIIIIIIII__" || s=="O8+" || s=="OIIIIIIIII"){return pv_O8p;}*/
   else { return -1;}
 }
 
