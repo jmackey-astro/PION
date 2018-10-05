@@ -165,6 +165,7 @@
 #include "tools/reporting.h"
 #include "tools/mem_manage.h"
 #include "constants.h"
+#include <set>
 #ifdef TESTING
 #include "tools/command_line_interface.h"
 #endif // TESTING
@@ -287,68 +288,62 @@ MPv10::MPv10(
   //
   // Find H+ fraction in tracer variable list.
   // NOTE \Maggie{ I think I should add the other tracer variables here too? I'm just gonna do that }
+  //    Do this as well for elements, set in vector format, keep track of number of species, num elements, all that stuff, set up vector of element number densities up where 
+  //map elements into the number density array as it'll need to be populated each time step, not currently implemented at all.
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s; pv_H1p=-1;
 
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
-    // \Maggie{ Also, I'm not sure if I need to include the neutral species of each element or not?}
+    // Record elements present according to tracers listed by user.
+    if (s[0]=='C' || s[0]=='O' || s[0]=='N'){
+        set_elem.insert( string(1, s[0]) ); //<needed because of char vs string stuff
+      }
+    else if (s[0]=='H'){
+        if (s[1]=='e')
+          {set_elem.insert("He");}
+        else
+          {set_elem.insert("H");}
+      }  
+    
+    // NOTE \Maggie{ LEGACY CODE; REMOVE.}
     if  (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       
         {pv_H1p = ftr+i; cout <<"\t\tGot H+ as the "<<pv_H1p<<"th element of P[] (zero offset).\n";}
-    
-    else if (s=="He1+___" || s=="HeII__"       || s=="He+" || s=="HeII")
-        {pv_He1p = ftr+i; cout <<"\t\tGot He1+ as the "<<pv_He1p<<"th element of P[] (zero offset).\n";}
-    else if (s=="He2+___" || s=="HeIII__"      || s=="He+" || s=="HeIII") 
-        {pv_He2p = ftr+i; cout <<"\t\tGot He2+ as the "<<pv_He2p<<"th element of P[] (zero offset).\n";}
-
-        
-    else if (s=="C1+___"  || s=="CII__"        || s=="C1+" || s=="CII")
-        {pv_C1p = ftr+i; cout <<"\t\tGot C1+ as the "<<pv_C1p<<"th element of P[] (zero offset).\n";}
-    else if (s=="C2+___"  || s=="CIII__"       || s=="C2+" || s=="CIII")
-        {pv_C2p = ftr+i; cout <<"\t\tGot C2+ as the "<<pv_C2p<<"th element of P[] (zero offset).\n";}
-    else if (s=="C3+___"  || s=="CIIII__"      || s=="C3+" || s=="CIIII")
-        {pv_C3p = ftr+i; cout <<"\t\tGot C3+ as the "<<pv_C3p<<"th element of P[] (zero offset).\n";}
-    else if (s=="C4+___"  || s=="CIIIII__"     || s=="C4+" || s=="CIIIII") 
-        {pv_C4p = ftr+i; cout <<"\t\tGot C4+ as the "<<pv_C4p<<"th element of P[] (zero offset).\n";}
-    else if (s=="C5+___"  || s=="CIIIIII__"    || s=="C5+" || s=="CIIIIII")
-        {pv_C5p = ftr+i; cout <<"\t\tGot C5+ as the "<<pv_C5p<<"th element of P[] (zero offset).\n";}
-    else if (s=="C6+___"  || s=="CIIIIIII__"   || s=="C6+" || s=="CIIIIIII") 
-        {pv_C6p = ftr+i; cout <<"\t\tGot C6+ as the "<<pv_C6p<<"th element of P[] (zero offset).\n";}
-
-        
-    else if (s=="N1+___"  || s=="NII__"        || s=="N1+" || s=="NII")
-        {pv_N1p = ftr+i; cout <<"\t\tGot N1+ as the "<<pv_N1p<<"th element of P[] (zero offset).\n";}
-    else if (s=="N2+___"  || s=="NIII__"       || s=="N2+" || s=="NIII") 
-        {pv_N2p = ftr+i; cout <<"\t\tGot N2+ as the "<<pv_N2p<<"th element of P[] (zero offset).\n";}
-    else if (s=="N3+___"  || s=="NIIII__"      || s=="N3+" || s=="NIIII")
-        {pv_N3p = ftr+i; cout <<"\t\tGot N3+ as the "<<pv_N3p<<"th element of P[] (zero offset).\n";}
-    else if (s=="N4+___"  || s=="NIIIII__"     || s=="N4+" || s=="NIIIII")
-        {pv_N4p = ftr+i; cout <<"\t\tGot N4+ as the "<<pv_N4p<<"th element of P[] (zero offset).\n";}
-    else if (s=="N5+___"  || s=="NIIIIII__"    || s=="N5+" || s=="NIIIIII") 
-        {pv_N5p = ftr+i; cout <<"\t\tGot N5+ as the "<<pv_N5p<<"th element of P[] (zero offset).\n";}
-    else if (s=="N6+___"  || s=="NIIIIIII__"   || s=="N6+" || s=="NIIIIIII")
-        {pv_N6p = ftr+i; cout <<"\t\tGot N6+ as the "<<pv_N6p<<"th element of P[] (zero offset).\n";}
-    else if (s=="N7+___"  || s=="NIIIIIIII__"  || s=="N7+" || s=="NIIIIIIII")
-        {pv_N7p = ftr+i; cout <<"\t\tGot N7+ as the "<<pv_N7p<<"th element of P[] (zero offset).\n";}
-
-        
-    else if (s=="O1+___"  || s=="OII__"        || s=="O1+" || s=="OII")
-        {pv_O1p = ftr+i; cout <<"\t\tGot O1+ as the "<<pv_O1p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O2+___"  || s=="OIII__"       || s=="O2+" || s=="OIII") 
-        {pv_O2p = ftr+i; cout <<"\t\tGot O2+ as the "<<pv_O2p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O3+___"  || s=="OIIII__"      || s=="O3+" || s=="OIIII")
-        {pv_O3p = ftr+i; cout <<"\t\tGot O3+ as the "<<pv_O3p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O4+___"  || s=="OIIIII__"     || s=="O4+" || s=="OIIIII")
-        {pv_O4p = ftr+i; cout <<"\t\tGot O4+ as the "<<pv_O4p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O5+___"  || s=="OIIIIII__"    || s=="O5+" || s=="OIIIIII")
-        {pv_O5p = ftr+i; cout <<"\t\tGot O5+ as the "<<pv_O5p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O6+___"  || s=="OIIIIIII__"   || s=="O6+" || s=="OIIIIIII")
-        {pv_O6p = ftr+i; cout <<"\t\tGot O6+ as the "<<pv_O6p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O7+___"  || s=="OIIIIIIII__"  || s=="O7+" || s=="OIIIIIIII")
-        {pv_O6p = ftr+i; cout <<"\t\tGot H+ as the "<<pv_O6p<<"th element of P[] (zero offset).\n";}
-    else if (s=="O8+___"  || s=="OIIIIIIIII__" || s=="O8+" || s=="OIIIIIIIII")
-        {pv_O8p = ftr+i; cout <<"\t\tGot H+ as the "<<pv_O8p<<"th element of P[] (zero offset).\n";}
     }
+  
+  set<string>::iterator it; /// < iterator for set_elem
+  // First, setup X_elem_index / N_elem.
+  N_elem = 0;
+  for (it = set_elem.begin(); it != set_elem.end(); ++it) {
+      X_elem_index.push_back(ftr + N_elem);
+      N_species_by_elem.push_back(0);
+      N_elem++;
+  }
+  
+  // Now that N_elem has been fixed, can get the indices of each species by iterating through tracers once again.
+  N_species=0;
+  int elem_counter=0;
+  for (it = set_elem.begin(); it != set_elem.end(); ++it) {
+      cout << (*it) << "\n";
+      for (int i=0;i<len;i++) {
+        s = tracers[i]; // Get 'i'th tracer variable.
+        cout << s[0] <<"\n";
+        if (string(1,s[0])==(*it) & s[1]!='e'){
+          N_species_by_elem[elem_counter]++;//another species corresponding to this element has been added!
+          y_ion_index.push_back(ftr + N_elem + N_species);
+          N_species++;
+        }
+        else if (s[0]==(*it)[0] & s[1]==(*it)[1]){
+          N_species_by_elem[elem_counter]++;
+          y_ion_index.push_back(ftr + N_elem + N_species);
+          N_species++;
+        }
+      }
+      elem_counter++;
+  }
+  cout << N_species << "," << N_elem << "\n\n\n\n\n\n\n\n\n\n";
+  
+  // NOTE \Maggie{LEGACY CODE, REMOVE}
   if (pv_H1p<0)
    rep.error("No H ionisation fraction found in tracer list",tracers[0]);
 
@@ -653,7 +648,7 @@ int MPv10::Tr(const string s)
 // NOTE \Maggie{ need to change all mentions of pv_Hp to pv_H1p}
 // \Maggie{ Also, I'm not sure if I need to include the neutral element or not?}
   if      (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       {return pv_H1p;}
-  //else if (s=="H0___"   || s=="HI__"         || s=="H0"  || s=="HI")        {return pv_H0;}
+  /*//else if (s=="H0___"   || s=="HI__"         || s=="H0"  || s=="HI")        {return pv_H0;}
   //else if (s=="He0___"  || s=="HeI__"        || s=="He0" || s=="HeI")       {return pv_He0;}
   else if (s=="He1+___" || s=="HeII__"       || s=="He+" || s=="HeII")      {return pv_He1p;}
   else if (s=="He2+___" || s=="HeIII__"      || s=="He+" || s=="HeIII")     {return pv_He2p;}
@@ -680,7 +675,7 @@ int MPv10::Tr(const string s)
   else if (s=="O5+___"  || s=="OIIIIII__"    || s=="O5+" || s=="OIIIIII")   {return pv_O5p;}
   else if (s=="O6+___"  || s=="OIIIIIII__"   || s=="O6+" || s=="OIIIIIII")  {return pv_O6p;}
   else if (s=="O7+___"  || s=="OIIIIIIII__"  || s=="O7+" || s=="OIIIIIIII") {return pv_O7p;}
-  else if (s=="O8+___"  || s=="OIIIIIIIII__" || s=="O8+" || s=="OIIIIIIIII"){return pv_O8p;}
+  else if (s=="O8+___"  || s=="OIIIIIIIII__" || s=="O8+" || s=="OIIIIIIIII"){return pv_O8p;}*/
   else { return -1;}
 }
 
@@ -863,7 +858,7 @@ int MPv10::convert_local2prim(
     rep.printVec("p_in",p_in, nv_prim);
     rep.printVec("p_out",p_out, nv_prim);
     rep.printVec("p_local",p_local, nvl);
-    rep.error("Bad output H+ value in MPv10::convert_local2prim",p_out[pv_H1p]-1.0);
+    rep.error("Bad output H+ value in MPv10::convert_local2prim",p_out[pv_H1p]-1.0); 
   }
   if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
     rep.error("Bad output pressure in MPv10::convert_local2prim",p_out[PG]);
@@ -1004,17 +999,9 @@ int MPv10::TimeUpdateMP_RTnew(
   if (err) {
     rep.error("Bad input state to MPv10::TimeUpdateMP_RTnew()",err);
   }
-  setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
+  //setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
 
-  //
-  // update radiation source properties, if needed (re-calculate
-  // multi-frequency photoionisation rates if the source properties
-  // have changed).
-  // TODO: CODE THIS SOMEWHERE!! BUT MAYBE put this somewhere else -- 
-  //       update the source properties when they change,
-  //       and through a different interface function!!
-  //
-
+  //Populates CVODE vector index by index with initial conditions (input)
   for (int v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
   //
   // Calculate y-dot[] to see if anything is changing significantly over dt
@@ -1428,6 +1415,9 @@ void MPv10::setup_radiation_source_parameters(
 // ##################################################################
 
 
+
+
+
 int MPv10::ydot(
       double,               ///< current time (UNUSED)
       const N_Vector y_now, ///< current Y-value
@@ -1438,10 +1428,11 @@ int MPv10::ydot(
   //
   // fixes min-neutral-fraction to Min_NeutralFrac
   // NOTE \Maggie { I thiiiink quite a few things need changing here...}
-  double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac);
+  double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac); //y0
   double E_in      = NV_Ith_S(y_now,lv_eint);
   double x_in      = 1.0-OneMinusX;
-
+    
+  // NOTE \Maggie{this should be updated so as to add up all the electrons freed from ions}
   double ne        = JM_NELEC*x_in*mpv_nH;
 
   //
@@ -1603,27 +1594,6 @@ int MPv10::ydot(
   //
   oneminusx_dot -= 1.8e-17*OneMinusX;
 
-  //
-  // Diffuse UV Heating rate (Wolfire+,2003,eq.20,21, Fig.10,b).  This is a fit
-  // to the curve in the top-right panel of Fig.10.
-  //Edot += 1.66e-26*pow(mpv_nH,0.2602)*OneMinusX;
-  //
-  // This is a better function, using the first term of eq.19, with
-  // phi_{PAH}=0.5 and G_0=1.7.  I multiply by the neutral fraction OneMinusX
-  // because this heating term is only calculated for warm neutral medium.
-  //
-  // HACK!!!
-#ifndef BETELGEUSE
-  Edot += 1.083e-25*METALLICITY*OneMinusX/(1.0+9.77e-3*pow(sqrt(T)/ne,0.73));
-  //cout<<"FUV-HR="<<1.083e-25*METALLICITY*OneMinusX
-  //                 /(1.0+9.77e-3*pow(sqrt(T)/ne,0.73))<<"\n";
-#endif // BETELGEUSE
-  
-//#ifdef BETELGEUSE
-//  Edot -= METALLICITY*mpv_nH* (2.0e-19*exp(-1.184e5/(T+1.0e3)) +2.8e-28*sqrt(T)*exp(-92.0/T));
-//#endif // BETELGEUSE
-
-//#ifndef BETELGEUSE
   //
   // Now COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
   // HII regions.  This is collisionally excited lines of photoionised metals.

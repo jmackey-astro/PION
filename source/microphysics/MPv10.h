@@ -77,6 +77,7 @@
 #include "defines/testing_flags.h"
 
 #include <vector>
+#include <set>
 #include "microphysics_base.h"
 #include "cooling_SD93_cie.h"
 #include "hydrogen_mp.h"
@@ -397,34 +398,26 @@ class MPv10
   double METALLICITY; ///< Metallicity of gas, in units of solar.
 
   int       nvl;     ///< number of variables in local state vector.
-  int lv_eint; ///< internal energy local variable index. 
-  int lv_H0;   ///< neutral hydrogeen local variable index.
-  // NOTE \Maggie{ I have added definitions for all the other tracers we might like to include
-  int pv_Hp;    ///< legacy, should ideally remove
-  int pv_H1p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_He1p;  ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_He2p;  ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_C1p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_C2p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_C3p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_C4p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_C5p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_C6p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N1p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N2p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N3p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N4p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N5p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N6p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_N7p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O1p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O2p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O3p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O4p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O5p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O6p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O7p;   ///< index for element of Primitive vector that holds ionisation pot.
-  int pv_O8p;   ///< index for element of Primitive vector that holds ionisation pot.
+  int lv_eint; ///< internal energy local variable index.
+  int lv_H0;   ///< neutral hydrogeen local variable index. 
+  
+  // NOTE \Maggie{ can obtain analogous to lv_H0 by using y_ion_index[i] - N_species.
+  int N_elem;
+  int N_species;
+  int N_eqns; ///< := n species
+  int N_cons_eqns; /// < := n_species + 1, due to E_int.
+  
+  
+  // NOTE \Maggie{ Added vector variables to keep track of tracers.}
+  std::vector<int> y_ion_index; ///<primitive vector indices, analogous to pv_Hp before.
+  std::vector<int> X_elem_index; /// < primitive vector indeices, used to trace X_H etc, like pv_Hp. 
+  std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
+  
+  std::vector<int> y_ion_num_elec; ///<records the number of electrons corresponding to each y_ion (e.g. C6+ = 6)
+  std::vector<pion_flt> y_elem_number_density; ///<same length as y_ion_index, records elemental number density corresponding to each species. Analogous to mpv_nH.
+  std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
+  
+  int pv_H1p;    ///< legacy, should ideally remove
 
   int
     N_diff_srcs, ///< No diffuse sources --> 0, otherwise --> 1
