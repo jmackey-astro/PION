@@ -588,6 +588,7 @@ void MPv10::setup_local_vectors()
   y_out = N_VNew_Serial(N_equations);
   lv_H0   = 0;    // x(H0) is the first element in the array NOTE \Maggie{ LEGACY CODE; REMOVE LATER.}
   lv_eint = 1;    // E_{int} is the second element.
+  lv_eint = N_species;
   //cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
 }
