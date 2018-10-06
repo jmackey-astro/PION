@@ -59,6 +59,10 @@ class constants {
   ///
   inline double m_H()     {return 1.6738e-24;}
   ///
+  /// Helium mass
+  ///
+  inline double m_He()     {return 6.6464764e-24;}
+  ///
   /// Gravitational constant
   ///
   inline double G()       {return 6.67408e-8;}

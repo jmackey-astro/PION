@@ -275,6 +275,12 @@ MPv10::MPv10(
 : microphysics_base(ephys,rsrcs),
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
 {
+  
+  k_B = pconst.kB();  // Boltzmann constant.
+  m_p = pconst.m_p(); // Proton mass.
+  m_H = pconst.m_H(); // Hydrogen mass.
+  m_He = pconst.m_He(); // Helium mass.
+
   cout <<"\n---------------------------------------------------------------------\n";
   cout <<"MPv10: a microphysics class.\n";
 
@@ -294,9 +300,9 @@ MPv10::MPv10(
   int ftr = nv_prim -ntracer; // first tracer variable.
   string s; pv_H1p=-1;
   
+  // 1) Identify elements present in tracer list. Set keeps only unique objects; no doubling up.
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
-    // 1) Identify elements present in tracer list. Set keeps only unique objects; no doubling up.
     if (s.substr(0,2)=="He"){
       set_elem.insert("He");
     }
@@ -325,16 +331,20 @@ MPv10::MPv10(
   N_species=0;
   int elem_counter=0;
   float mass_frac;
+  float mass;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
-    // Define mass fraction for this element first.
+    // Define mass fraction / atomic mass (grams) for this element first.
     if((*it)=="H"){
       mass_frac = EP->H_MassFrac;
-      cout << mass_frac <<"\n\n\n\n\n";
-      //H_ion_index.push_back(0);
-      //He_ion_index.push_back(0);
+      mass = m_H;
+      X_elem_vector.push_back(mass);
+      H_ion_index.push_back(0);
     }
     else if ((*it)=="He"){
       mass_frac = EP->Helium_MassFrac;
+      mass = m_He;
+      X_elem_vector.push_back(mass);
+      He_ion_index.push_back(0); He_ion_index.push_back(0);
     }
           
     // Loop over every tracer and assign species index / mass fraction / num electrons to vectors if that tracer corresponds to the current element.
@@ -344,15 +354,24 @@ MPv10::MPv10(
       if (s.substr(0,2)=="He" & (*it)=="He"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
-        y_elem_mass_frac.push_back(mass_frac);
-        y_ion_num_elec.push_back(int(s[2]));
+        y_ion_mass_frac.push_back(mass_frac);
+        y_elem_atom_mass.push_back(mass);
+        int num_elec_int;
+        stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+        y_ion_num_elec.push_back(num_elec_int);
+        cout << s.substr(2,1) << ", " << num_elec_int <<"\n\n\n\n\n\n";
+        He_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
         N_species++;
       }
       else if (s.substr(0,1)==(*it) & s.substr(0,2)!="He" & s.substr(0,1)=="H"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
-        y_elem_mass_frac.push_back(mass_frac);
-        y_ion_num_elec.push_back(int(s[1]));
+        y_ion_mass_frac.push_back(mass_frac);
+        y_elem_atom_mass.push_back(mass);
+        int num_elec_int;
+        stringstream ss; ss << s.substr(1,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+        y_ion_num_elec.push_back(num_elec_int);
+        H_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
         N_species++;
       }
     }
@@ -375,10 +394,7 @@ MPv10::MPv10(
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
   // ----------------------------------------------------------------
-  k_B = pconst.kB();  // Boltzmann constant.
-  m_p = pconst.m_p(); // Proton mass.
 
-  //
   // Get the mean mass per H atom from the He and Z mass fractions.
   // NOTE \Maggie{or let's not assume that...} Assume metal content is low enough to ignore it.
   double X = 1.0-EP->Helium_MassFrac;
@@ -661,8 +677,22 @@ MPv10::~MPv10()
 
 int MPv10::Tr(const string s)
 {
-  if      (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       {return pv_H1p;} // NOTE LEGACY CODE -- DELETE AS SOON AS IT WON'T BREAK THINGS
-  else { return -1;}
+  /*if      (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       {return pv_H1p;} // NOTE LEGACY CODE -- DELETE AS SOON AS IT WON'T BREAK THINGS
+  else { return -1;}*/
+  if (s.substr(0,2)=="He"){
+    int num_elec_int;
+    stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+    int ion_index = He_ion_index[num_elec_int-1];
+    return ion_index;
+  }
+  else if (s.substr(0,1)=="H"){
+    int num_elec_int;
+    stringstream ss; ss << s.substr(1,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+    int ion_index = H_ion_index[num_elec_int-1];
+    return ion_index;
+  }
+  else { return-1;}
+    
 }
 
 
