@@ -26,14 +26,6 @@
 #include "sim_control/sim_control_NG_MPI.h"
 #include "raytracing/raytracer_SC.h"
 
-//#ifdef SILO
-//#include "dataIO/dataio_silo.h"
-//#include "dataIO/dataio_silo_utility.h"
-//#endif // if SILO
-//#ifdef FITS
-//#include "dataIO/dataio_fits.h"
-//#include "dataIO/dataio_fits_MPI.h"
-//#endif // if FITS
 
 #include <iostream>
 #include <sstream>
@@ -178,6 +170,7 @@ int sim_control_NG_MPI::Init(
 #ifdef TESTING
     cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
 #endif
+    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
     err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -189,6 +182,7 @@ int sim_control_NG_MPI::Init(
 #ifdef TESTING
     cout <<"NG_MPI updating internal boundaries for level "<<l<<"\n";
 #endif
+    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
     err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -283,30 +277,30 @@ int sim_control_NG_MPI::Time_Int(
     SimPM.levels[l].dt = 0.0;
     SimPM.levels[l].simtime = SimPM.simtime;
   }
+
+  // --------------------------------------------------------------
+  // Update RT sources and boundaries.
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TEST_INT
+    cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
+                  SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
+
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TEST_INT
+    cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
+                  SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG_MPI: internal boundary",0,err);
+  // --------------------------------------------------------------
+
   
   while (SimPM.maxtime==false) {
-    
-    // --------------------------------------------------------------
-    // Update RT sources and boundaries.
-    for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TEST_INT
-      cout <<"updating external boundaries for level "<<l<<"\n";
-#endif
-      err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
-                    SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
-    }
-    rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
-
-    for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-#ifdef TEST_INT
-      cout <<"updating internal boundaries for level "<<l<<"\n";
-#endif
-      err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
-                    SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
-    }
-    rep.errorTest("sim_control_NG_MPI: internal boundary",0,err);
-    // --------------------------------------------------------------
-
     // --------------------------------------------------------------
     // Get timestep on each level
     int scale = 1;
@@ -427,7 +421,9 @@ int sim_control_NG_MPI::grid_update_state_vector(
       class GridBaseClass *grid ///< Computational grid.
       )
 {
-  return 0;
+  int err = time_integrator::grid_update_state_vector(dt,step,
+                                                      ooa,grid);
+  return err;
   
   // get current level of grid in hierarchy.
   int level=0;
@@ -538,8 +534,8 @@ int sim_control_NG_MPI::grid_update_state_vector(
     } // loop over directions.
   } // if not at finest level.
 
-  int err = time_integrator::grid_update_state_vector(dt,step,
-                                                      ooa,grid);
+  //int err = time_integrator::grid_update_state_vector(dt,step,
+  //                                                    ooa,grid);
   return err;
 }
 

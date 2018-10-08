@@ -360,10 +360,6 @@ int dataio_silo_pllel::ReadData(
       }
     }
   }
-  //
-  // this is probably enough checking! -- if all these are right
-  // then it should all be right.
-  //
   DBFreeQuadmesh(qm); //qm=0;
 
   //
@@ -447,10 +443,10 @@ int dataio_silo_pllel::OutputData(
 
 
 int dataio_silo_pllel::SaveLevelData(
-      const string outfilebase,
-      class GridBaseClass *cg, ///< grid pointers.
-      class SimParams &SimPM,            ///< simulation parameters
-      const long int file_counter        ///< timestep
+      const string outfilebase,     ///< filename
+      class GridBaseClass *cg,      ///< grid pointers.
+      class SimParams &SimPM,       ///< simulation parameters
+      const long int file_counter   ///< timestep
       )
 {
   int err=0;
@@ -916,7 +912,7 @@ int dataio_silo_pllel::setup_grid_properties(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  // set grid parameters -- EXPLICITLY UNIFORM FIXED GRID
+  // set grid parameters
   // This version is for the local domain of the current processor.
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null ptr",grid);
@@ -937,9 +933,9 @@ int dataio_silo_pllel::setup_grid_properties(
   // the global number of points NG.
   //
 #ifdef WRITE_GHOST_ZONES
-  int nx = SimPM.NG[XX] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
-  int ny = SimPM.NG[YY] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
-  int nz = SimPM.NG[ZZ] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
+  int nx = mpiPM->LocalNG[XX] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
+  int ny = mpiPM->LocalNG[YY] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
+  int nz = mpiPM->LocalNG[ZZ] +2*SimPM.Nbc +1; // N cells, have N+1 nodes.
 #else
   int nx = mpiPM->LocalNG[XX]+1; // for N cells, have N+1 nodes.
   int ny = mpiPM->LocalNG[YY]+1; // for N cells, have N+1 nodes.

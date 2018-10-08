@@ -172,45 +172,18 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   //
   list<cell*>::iterator c_iter=b->NGrecvF2C[i].begin();
   cell *c;
-  //cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
-  //cout << b->data.size() <<",  :"<<b->NG.size()<<"\n";
-
-  // pointers to coarse and fine grids:
-  //class GridBaseClass *coarse = par.levels[level].grid;
   class GridBaseClass *fine   = par.levels[level].child;
-
-  // vol_sum is for testing only (make sure that fine grid cells
-  // have the same cumulative volume as the coarse cell).
   double cd[par.nvar];
-#ifdef TEST_NEST
-  double vol_sum=0.0, vol=0.0;
-  int cpos[MAX_DIM];
-  int fpos[MAX_DIM];
-#endif
-
   size_t i_el=0;
   int nc = b->avg[0].c.size();
 
-  for (c_iter=b->NGrecvF2C[i].begin();
+  for (c_iter =b->NGrecvF2C[i].begin();
        c_iter!=b->NGrecvF2C[i].end();
-       ++c_iter) {
+                              ++c_iter) {
     c = (*c_iter);
-
-#ifdef TEST_NEST
-    vol=0.0;
-    vol_sum=0.0;
-    //CI.get_ipos(c,cpos);
-    //CI.get_ipos(f,fpos);
-    //rep.printVec("coarse pos:",cpos,par.ndim);
-    //rep.printVec("fine 1 pos:",fpos,par.ndim);
-#endif
-    
     for (int v=0;v<par.nvar;v++) cd[v]=0.0;
     
     average_cells(par,solver,fine,nc,b->avg[i_el].c,cd);
-
-    //vol = coarse->CellVolume(c);
-    //for (int v=0;v<par.nvar;v++) cd[v] /= vol;
     solver->UtoP(cd,c->Ph,par.EP.MinTemperature,par.gamma);
     //
     // if full step then assign to c->P as well as c->Ph.
@@ -218,12 +191,6 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     if (cstep==maxstep) {
       for (int v=0;v<par.nvar;v++) c->P[v] = c->Ph[v];
     }
-
-#ifdef TEST_NEST
-//    rep.printVec("coarse data",c->Ph,par.nvar);
-//    rep.printVec("fine data",f->Ph,par.nvar);
-#endif
-
     i_el++;
   }
   return 0;

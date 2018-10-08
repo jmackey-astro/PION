@@ -69,6 +69,16 @@ class dataio_silo_utility : public dataio_silo_pllel  {
 
   protected:
   ///
+  /// Parallel code to read any data onto one level of a nested grid.
+  ///
+  int ReadLevelData(
+      string, ///< file to read from
+      class GridBaseClass *,  ///< address of vector of grid pointers.
+      class SimParams &,  ///< pointer to simulation parameters
+      const int  ///< level in grid hierarchy
+      );
+
+  ///
   /// Read data from a parallel file using a single processor.
   ///
   int serial_read_pllel_silodata(
@@ -189,7 +199,8 @@ class dataio_silo_utility : public dataio_silo_pllel  {
       class SimParams &,  ///< pointer to simulation parameters
       const int, ///< number of files
       const int, ///< number of groups
-      const int  ///< number of processes used to write file.
+      const int,  ///< number of processes used to write file.
+      const int  ///< level in grid hierarchy
       );
 
   ///
