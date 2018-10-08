@@ -426,6 +426,7 @@ class MPv10
 
   std::vector<float> X_atom_mass; /// < vector of atomic masses corresponding to X_elem_index, e.g. for ["H", "He"], X_atom_mass=[1.6738e-24, 6.6464764e-24 
   std::vector<int> X_elem_index; /// < primitive vector ineices, used to trace X_H etc, like pv_Hp. 
+  std::vector<pion_flt> X_elem_number_density;
   std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
   std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
   
