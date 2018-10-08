@@ -505,11 +505,12 @@ int comm_mpi::wait_for_send_to_finish(
 
 
 int comm_mpi::look_for_data_to_receive(
-        int *from_rank, ///< rank of sender
-        string &id,     ///< identifier for receive.
-	int *comm_tag,  ///< comm_tag associated with data.
-	const int type  ///< type of data we are looking for.
-        )
+      int *from_rank, ///< rank of sender
+      string &id,     ///< identifier for receive.
+      int *recv_tag,  ///< comm_tag associated with data.
+      const int comm_tag,   ///< comm_tag: (PER,MPI,F2C,C2F)
+      const int type  ///< type of data we are looking for.
+      )
 {
 
 #ifdef TESTING
@@ -536,7 +537,8 @@ int comm_mpi::look_for_data_to_receive(
   // Find a message that has been sent to us.
   // int MPI_Probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
   //
-  int err = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &(ri->status));
+  //int err = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &(ri->status));
+  int err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, MPI_COMM_WORLD, &(ri->status));
   if (err) rep.error("mpi probe failed",err);
   
 #ifdef TESTING
@@ -548,20 +550,22 @@ int comm_mpi::look_for_data_to_receive(
   // Now get the size and source of the data.
   //
   *from_rank = ri->status.MPI_SOURCE;
-  *comm_tag  = ri->status.MPI_TAG;
+  *recv_tag  = ri->status.MPI_TAG;
+  if (*recv_tag != comm_tag)
+    rep.error("bad comm_tag received",*recv_tag);
   ostringstream temp; temp.str("");
-  temp <<"from "<<*from_rank<<" to "<<myrank<<" tag="<<*comm_tag;
+  temp <<"from "<<*from_rank<<" to "<<myrank<<" tag="<<*recv_tag;
   id = temp.str(); temp.str("");
 
 #ifdef TESTING
   cout <<"comm_mpi::look_for_data_to_receive: found data from ";
-  cout <<*from_rank<<" with tag:"<<*comm_tag<<"\n";
+  cout <<*from_rank<<" with tag:"<<*recv_tag<<"\n";
 #endif //TESTING
   
   //
   // Set record of where data is coming from.
   ri->id     = id;
-  ri->comm_tag  = *comm_tag;
+  ri->comm_tag  = *recv_tag;
   ri->from_rank = *from_rank;
   comm_mpi::recv_list.push_back(ri);
 
@@ -585,7 +589,7 @@ int comm_mpi::receive_cell_data(
       const long int nc,    ///< number of cells in list (extra checking!)
       const int ndim, ///< ndim
       const int nvar, ///< nvar
-      const int comm_tag,   ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
+      const int comm_tag,   ///< comm_tag: (PER,MPI,F2C,C2F)
       const string &id      ///< identifier for receive, for book-keeping.
       )
 {
@@ -835,8 +839,8 @@ int comm_mpi::send_double_data(
       const int to_rank,      ///< rank to send to.
       const long int n_el, ///< size of buffer, in number of doubles.
       const double *data, ///< pointer to double array.
-      string &id,       ///< identifier for send, for tracking delivery later.
-      const int comm_tag      ///< comm_tag, to say what kind of send this is.
+      string &id,       ///< identifier for send, for tracking delivery.
+      const int comm_tag      ///< comm_tag, to say what kind of send.
       )
 {
   if (!data) rep.error("comm_mpi::send_double_data() null pointer!",data);
@@ -948,7 +952,7 @@ int comm_mpi::receive_double_data(
   if (ct<0) rep.error("bad buffer size count",ct);
   if (ct != nel) {
     cout <<"comm_mpi::receive_double_data: getting "<<ct<<" doubles, but expecting "<<nel<<"\n";
-    if (ct > nel) rep.error("Getting more data than expected, may overflow buffer!!!",ct-nel);
+    rep.error("Getting wrong amount of data",ct-nel);
   }
 
   //
@@ -967,7 +971,7 @@ int comm_mpi::receive_double_data(
   // Free memory and delete entry from recv_list
   //
 #ifdef TESTING
-  cout <<"comm_mpi::receive_cell_data: freeing memory\n";
+  cout <<"comm_mpi::receive_double_data: freeing memory\n";
 #endif //TESTING
   if (recv_list.size()==1) {
     recv_list.pop_front();

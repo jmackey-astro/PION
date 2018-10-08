@@ -532,7 +532,8 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
 
 setup_NG_grid.o: setup_NG_grid.cpp setup_NG_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
-  assign_update_bcs.h assign_update_bcs_NG.h
+  assign_update_bcs.h assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h 
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
@@ -670,13 +671,25 @@ calc_timestep.o: calc_timestep.cpp calc_timestep.h \
 sim_control_NG.o : sim_control_NG.cpp sim_control_NG.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h VectorOps.h \
-  assign_update_bcs.h assign_update_bcs_NG.h
+  assign_update_bcs.h assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h 
 
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
   sim_control.h MCMD_control.h ${GLOBAL} comms.h \
   periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
   RT_MPI_boundaries.h setup_fixed_grid.h setup_fixed_grid_MPI.h \
   VectorOps.h
+
+sim_control_NG_MPI.o: sim_control_NG_MPI.cpp sim_control_NG_MPI.h \
+  sim_control_MPI.h sim_control_NG.h \
+  sim_control.h MCMD_control.h ${GLOBAL} comms.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h setup_fixed_grid.h setup_fixed_grid_MPI.h \
+  VectorOps.h  assign_update_bcs.h assign_update_bcs_NG.h \
+  NG_coarse_to_fine_boundaries.h assign_update_bcs_NG_MPI.h \
+  NG_fine_to_coarse_boundaries.h NG_MPI_coarse_to_fine_boundaries.h \
+  NG_MPI_fine_to_coarse_boundaries.h 
+
 
 #####################
 # EQUATIONS CLASSES #

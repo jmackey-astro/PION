@@ -123,8 +123,8 @@ int MCMD_bc::BC_select_data2send(
 
 
 int MCMD_bc::BC_update_BCMPI(
-      class SimParams &par,      ///< pointer to simulation parameters
-      const int level,          ///< level in grid hierarchy
+      class SimParams &par,       ///< simulation parameters
+      const int level,            ///< level in grid hierarchy
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,
       const int cstep,
@@ -161,13 +161,30 @@ int MCMD_bc::BC_update_BCMPI(
   if (err) rep.error("sending data failed",err);
 
   //
-  // receive data.
+  // receive data.  Expect to receive data from the opposite
+  // direction to which we sent data, unless external boundary is
+  // not periodic, in which case we just wait to receive from the
+  // same direction that we sent in.
   //
+  struct boundary_data *recv_b = 0;
+  int seek_tag=0;
+  enum direction recv_dir = grid->OppDir(b->dir);
+  recv_b = grid->BC_bd[static_cast<int>(recv_dir)];
+  if      (recv_b->itype == PERIODIC) seek_tag = BC_PERtag;
+  else if (recv_b->itype == BCMPI)    seek_tag = BC_MPItag;
+  else {
+    // opposite direction is not an MPI boundary, so just wait for
+    // return message from where we sent our data to.
+    recv_dir = b->dir;
+    seek_tag = comm_tag;
+  }
+
   string recv_id; int recv_tag=-1; int from_rank=-1;
   err = COMM->look_for_data_to_receive(
         &from_rank, ///< rank of sender
         recv_id,    ///< identifier for receive.
         &recv_tag,  ///< comm_tag associated with data.
+        seek_tag,   ///< requested comm_tag
         COMM_CELLDATA ///< type of data we want.
         );
   if (err) rep.error("look for cell data failed",err);
@@ -190,7 +207,7 @@ int MCMD_bc::BC_update_BCMPI(
       if (dir==NO) dir = static_cast<direction>(i);
       else {
         //
-        // must be receiving periodic and internal boundary from same proc.
+        // must be receiving periodic and MPI boundary from same proc.
         // In this case we need to decide which it is, and whether the source
         // direction is the positive or negative direction.
         // N.B. if none of the conditions below are satisfied, then the earlier 
@@ -198,7 +215,8 @@ int MCMD_bc::BC_update_BCMPI(
         // assignment was the wrong one.
         //
         if (recv_tag == BC_PERtag) {
-          // Periodic boundary, so in neg.dir, from_rank should be > myrank, and vice versa.
+          // Periodic boundary, so in neg.dir, from_rank should be > myrank,
+          // and vice versa.
           if      ( from_rank>ppar->get_myrank() && 
                     (i==XN || i==YN || i==ZN)) {
             dir = static_cast<direction>(i);
@@ -229,11 +247,6 @@ int MCMD_bc::BC_update_BCMPI(
   cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
 #endif 
 
-  //
-  // Now choose the boundary data associated with boundary we are
-  // receiving:
-  //
-  struct boundary_data *recv_b = grid->BC_bd[static_cast<int>(dir)];
 
   //
   // Receive the data:

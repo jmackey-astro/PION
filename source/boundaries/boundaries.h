@@ -74,7 +74,7 @@ enum BoundaryTypes {
 //
 // integer flags for MPI communication labels.
 //
-#define BC_ANYtag 0 ///< works for either sort of communication.
+#define BC_ANYtag 0 ///< works for any sort of communication.
 #define BC_MPItag 1 ///< Integer tag on MPI send/receive operations, to label that this communicates MPI boundary data.
 #define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
 #define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.

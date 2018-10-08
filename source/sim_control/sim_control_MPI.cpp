@@ -126,9 +126,9 @@ int sim_control_pllel::Init(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"(sim_control_pllel::init) Initialising grid: infile = "<<infile<<"\n";
-#endif
+//#endif
   int err=0;
 
   //
@@ -136,6 +136,10 @@ int sim_control_pllel::Init(
   //
   int myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
 
   //
   // Setup dataI/O class and check if we read from a single file or

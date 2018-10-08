@@ -28,6 +28,7 @@
 /// - 2018.08.30 JM: wrote code.
 
 #include <iostream>
+#include <sstream>
 using namespace std;
 
 #include "defines/functionality_flags.h"
@@ -41,6 +42,13 @@ using namespace std;
 int main(int argc, char **argv)
 {
   
+
+  int err = COMM->init(&argc,&argv);
+  //cout <<"argc="<<argc<<"\n";
+  
+  int myrank = -1, nproc = -1;
+  COMM->get_rank_nproc(&myrank, &nproc);
+
   //
   // Set up simulation controller class.
   //
@@ -58,7 +66,6 @@ int main(int argc, char **argv)
     rep.error("Bad arguments",argc);
   }
   
-  int err=0;
   string *args=0;
   args = new string [argc];
   for (int i=0;i<argc;i++) args[i] = argv[i];
@@ -67,11 +74,18 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      ostringstream path; path << outpath <<"_"<<myrank<<"_";
+      outpath = path.str();
+      if (myrank==0) {
+        cout <<"\tRedirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      }
       // Redirects cout and cerr to text files in the directory specified.
       rep.redirect(outpath);
     }
   }
+#ifndef TESTING
+  //rep.kill_stdout_from_other_procs(0);
+#endif
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion NG MPI v1.0 running   ----------------\n";
   cout <<"-------------------------------------------------------\n";
@@ -133,6 +147,9 @@ int main(int argc, char **argv)
   }
   delete [] args; args=0;
   
+  COMM->finalise();
+  cout << "rank: " << myrank << " nproc: " << nproc << "\n";
+  delete COMM; COMM=0;
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion NG MPI v1.0 finsihed  ----------------\n";
   cout <<"-------------------------------------------------------\n";

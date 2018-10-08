@@ -20,37 +20,132 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
       class SimParams &par,     ///< simulation parameters
       class GridBaseClass *grid,  ///< pointer to grid.
       boundary_data *b,  ///< boundary data
-      class GridBaseClass *child  ///< pointer to child grid.
+      class GridBaseClass *child,  ///< pointer to child grid.
+      const int i        ///< which element of NGrecvF2C to use
       )
 {
   //
   // Make a list of child-grid cells to map onto the coarse grid
   //
-  if (b->NGrecvF2C[0].empty())
+  if (b->NGrecvF2C.size() <= static_cast<unsigned int>(i))
+    rep.error("BC_assign_FINE_TO_COARSE: recv vec too small",i);
+  if (b->NGrecvF2C[i].empty())
     rep.error("BC_assign_FINE_TO_COARSE: empty boundary data",
                                                         b->itype);
-  b->NG.clear();
+  //cell *cc = child->FirstPt_All(); // child cell.
+  //int cdx = 0.5*child->idx();
+  int nc=1;  // number of fine cells per coarse cell
+  for (int i=0;i<par.ndim;i++) nc*=2;
+  int nel = b->NGrecvF2C[i].size();
+  b->avg.resize(nel);
+  for (int v=0;v<nel;v++) {
+    b->avg[v].c.resize(nc);
+    b->avg[v].avg_state = mem.myalloc(b->avg[v].avg_state,
+                                                par.nvar);
+  }
 
-  list<cell*>::iterator bpt=b->NGrecvF2C[0].begin();
-  cell *cc = child->FirstPt_All(); // child cell.
-  int cdx = 0.5*child->idx();
-
-  // Map each bpt cell to a cell in b->NG list, which is the first
-  // cell in the finer grid that is part of the coarse cell (i.e. the
-  // one with the most negative coordinates).
-  do{
-    cc = child->FirstPt_All();
-    for (int v=0;v<par.ndim;v++) {
-      while (cc && cc->pos[v] < (*bpt)->pos[v]-cdx)
-        cc = child->NextPt(cc,static_cast<direction>(2*v+1));
-    }
-    if (!cc) rep.error("BC_assign_FINE_TO_COARSE: lost on fine grid",0);
-    b->NG.push_back(cc);
-    
-    ++bpt;
-  }  while (bpt !=b->NGrecvF2C[0].end());
-
+  // add each cell in the child grid to the "avg" vector:
+  add_cells_to_avg(par.ndim,child,nel,b->avg);
   return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void NG_fine_to_coarse_bc::add_cells_to_avg(
+      int ndim,                   ///< grid dimension
+      class GridBaseClass *grid, ///< pointer to child grid.
+      int nel,                    ///< number of coarse cells
+      std::vector<struct averaging> &avg ///< avg list
+      )
+{
+#ifdef TEST_MPI_NG
+  cout <<"NG_fine_to_coarse_bc::add_cells_to_avg()";
+  cout <<" nd="<<ndim<<", grid="<<grid<<", nel="<<nel;
+  cout <<", avg.size="<<avg.size()<<"\n";
+  cout <<"NG="<<grid->NG(XX)<<"\n";
+#endif
+  // loop through avg vector and add cells and positions
+  cell *f = grid->FirstPt();
+  int v=0, ix=0, iy=0, iz=0;
+  int ipos[MAX_DIM];
+  double dxo2 = 0.5*grid->DX();
+  
+  for (v=0;v<nel;v++) {
+#ifdef TEST_MPI_NG
+    cout <<"v="<<v<<" working! ix="<<ix<<"\n";
+#endif
+    // add fine cells to each avg struct
+    avg[v].c[0] = f;
+    avg[v].c[1] = grid->NextPt(f,XP);
+    if (ndim>1) {
+      avg[v].c[2] = grid->NextPt(avg[v].c[0],YP);
+      avg[v].c[3] = grid->NextPt(avg[v].c[1],YP);
+    }
+    if (ndim>2) {
+      avg[v].c[4] = grid->NextPt(avg[v].c[0],ZP);
+      avg[v].c[5] = grid->NextPt(avg[v].c[1],ZP);
+      avg[v].c[6] = grid->NextPt(avg[v].c[2],ZP);
+      avg[v].c[7] = grid->NextPt(avg[v].c[3],ZP);
+    }
+    // add position of coarse cell centre (for testing)
+    for (int i=0;i<ndim;i++)
+      ipos[i] = avg[v].c[0]->pos[i]+dxo2;
+    for (int i=ndim;i<MAX_DIM;i++)
+      ipos[i] = 0.0;
+    CI.get_dpos_vec(ipos,avg[v].cpos);
+    for (unsigned int i=0;i<avg[0].c.size();i++) {
+      rep.printVec("cellpos",avg[v].c[i]->pos,ndim);
+    }
+    // get to next cell.
+    f = grid->NextPt(f);
+    ix++;
+    f = grid->NextPt(f);
+    ix++;
+    if (ix>=grid->NG(XX)) {
+      // end of column, loop to next y-column
+#ifdef TEST_MPI_NG
+      cout <<"eoc: "<<ix<<","<<iy<<","<<iz<<"\n";
+#endif
+      //f = grid->NextPt(f);
+      ix = 0;
+      if (ndim>1) {
+        iy++;
+        if (iy<grid->NG(YY)) {
+          f = grid->NextPt(f,YP);
+          iy++;
+#ifdef TEST_MPI_NG
+          cout <<"moving to next plane, iy="<<iy<<"\n";
+#endif
+        }
+        else {
+          // end of plane, loop to next z-column
+#ifdef TEST_MPI_NG
+          cout <<"eop: "<<ix<<","<<iy<<","<<iz<<"\n";
+#endif
+          iy = 0;
+          if (ndim>2) {
+            iz++;
+            if (iz<grid->NG(ZZ)) {
+              f = grid->NextPt(f,ZP);
+              iz++;
+            }
+            else {
+              // must be at end of grid.
+#ifdef TEST_MPI_NG
+              cout <<"eog: "<<ix<<","<<iy<<","<<iz<<"\n";
+#endif
+            }
+          } // ndim==3
+        } // end of plane
+      } // ndim>1
+    } // end of column
+  } // go to next avg element.
+  return;
 }
 
 
@@ -65,6 +160,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
       class FV_solver_base *solver, ///< pointer to equations
       const int level, ///< level in the NG grid structure
       struct boundary_data *b,
+      const int i,        ///< which element of NGrecvF2C to use
       const int cstep,
       const int maxstep
       )
@@ -74,9 +170,8 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   // fine cell by its volume.  Assume there are two cells in each
   // dimension in the fine grid, and so we can loop over this.
   //
-  list<cell*>::iterator c_iter=b->NGrecvF2C[0].begin();
-  list<cell*>::iterator f_iter=b->NG.begin();
-  cell *c, *f;
+  list<cell*>::iterator c_iter=b->NGrecvF2C[i].begin();
+  cell *c;
   //cout <<"Fine to Coarse boundary update (internal).  list sizes: ";
   //cout << b->data.size() <<",  :"<<b->NG.size()<<"\n";
 
@@ -93,11 +188,13 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   int fpos[MAX_DIM];
 #endif
 
-  for (c_iter=b->NGrecvF2C[0].begin();
-       c_iter!=b->NGrecvF2C[0].end();
+  size_t i_el=0;
+  int nc = b->avg[0].c.size();
+
+  for (c_iter=b->NGrecvF2C[i].begin();
+       c_iter!=b->NGrecvF2C[i].end();
        ++c_iter) {
     c = (*c_iter);
-    f = (*f_iter);
 
 #ifdef TEST_NEST
     vol=0.0;
@@ -108,27 +205,9 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
     //rep.printVec("fine 1 pos:",fpos,par.ndim);
 #endif
     
-    int nc = 1;
-    for (int i=0;i<par.ndim;i++) nc*=2;
-    vector<cell *> lc;
-
-    lc.push_back(f);
-    lc.push_back(fine->NextPt(f,XP));
-    if (par.ndim>1) {
-      lc.push_back(fine->NextPt(f,YP));
-      lc.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
-    }
-    if (par.ndim>2) {
-      f=fine->NextPt(f,ZP);
-      lc.push_back(f);
-      lc.push_back(fine->NextPt(f,XP));
-      lc.push_back(fine->NextPt(f,YP));
-      lc.push_back(fine->NextPt(fine->NextPt(f,XP),YP));
-    }
-
     for (int v=0;v<par.nvar;v++) cd[v]=0.0;
     
-    average_cells(par,solver,fine,nc,lc,cd);
+    average_cells(par,solver,fine,nc,b->avg[i_el].c,cd);
 
     //vol = coarse->CellVolume(c);
     //for (int v=0;v<par.nvar;v++) cd[v] /= vol;
@@ -145,7 +224,7 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
 //    rep.printVec("fine data",f->Ph,par.nvar);
 #endif
 
-    ++f_iter;
+    i_el++;
   }
   return 0;
 }

@@ -45,8 +45,6 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     // in each coarse cell (2,4,or 8) of the parent grid.  This grid
     // is (by design) entirely contained within the parent.
     class GridBaseClass *grid = par.levels[l].grid;
-    double dxo2 = 0.5*grid->DX();
-    int ipos[MAX_DIM];
     int nc=1;  // number of fine cells per coarse cell
     for (int i=0;i<par.ndim;i++) nc*=2;
     int nel = grid->Ncell()/nc; // number of coarse cells
@@ -57,74 +55,9 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
       b->avg[v].avg_state = mem.myalloc(b->avg[v].avg_state,
                                                   par.nvar);
     }
-    // loop through avg vector and add cells and positions
-    cell *f = grid->FirstPt();
-    int v=0, ix=0, iy=0, iz=0;
-    for (v=0;v<nel;v++) {
-      // add fine cells to each avg struct
-      b->avg[v].c[0] = f;
-      b->avg[v].c[1] = grid->NextPt(f,XP);
-      if (par.ndim>1) {
-        b->avg[v].c[2] = grid->NextPt(b->avg[v].c[0],YP);
-        b->avg[v].c[3] = grid->NextPt(b->avg[v].c[1],YP);
-      }
-      if (par.ndim>2) {
-        b->avg[v].c[4] = grid->NextPt(b->avg[v].c[0],ZP);
-        b->avg[v].c[5] = grid->NextPt(b->avg[v].c[1],ZP);
-        b->avg[v].c[6] = grid->NextPt(b->avg[v].c[2],ZP);
-        b->avg[v].c[7] = grid->NextPt(b->avg[v].c[3],ZP);
-      }
-      // add position of coarse cell centre (for testing)
-      for (int i=0;i<par.ndim;i++)
-        ipos[v] = b->avg[v].c[0]->pos[v]+dxo2;
-      for (int i=par.ndim;i<MAX_DIM;i++)
-        ipos[v] = 0.0;
-      CI.get_dpos_vec(ipos,b->avg[v].cpos);
-
-      // get to next cell.
-      f = grid->NextPt(f);
-      ix++;
-      if (ix<grid->NG(XX)) {
-        f = grid->NextPt(f);
-        ix++;
-      }
-      else {
-        // end of column, loop to next y-column
-#ifdef TEST_MPI_NG
-        cout <<"eoc: "<<ix<<","<<iy<<","<<iz<<"\n";
-#endif
-        f = grid->NextPt(f);
-        ix = 0;
-        if (par.ndim>1) {
-          iy++;
-          if (iy<grid->NG(YY)) {
-            f = grid->NextPt(f,YP);
-            iy++;
-          }
-          else {
-            // end of plane, loop to next z-column
-#ifdef TEST_MPI_NG
-            cout <<"eop: "<<ix<<","<<iy<<","<<iz<<"\n";
-#endif
-            iy = 0;
-            if (par.ndim>2) {
-              iz++;
-              if (iz<grid->NG(ZZ)) {
-                f = grid->NextPt(f,ZP);
-                iz++;
-              }
-              else {
-                // must be at end of grid.
-#ifdef TEST_MPI_NG
-                cout <<"eog: "<<ix<<","<<iy<<","<<iz<<"\n";
-#endif
-              }
-            } // ndim==3
-          } // end of plane
-        } // ndim>1
-      } // end of column
-
-    } // go to next avg element.
+    // add cells from this grid to the avg vectors.
+    add_cells_to_avg(par.ndim,grid,nel,b->avg);
+    
   } // if parent is not on a different MPI process
 
   return 0;
@@ -224,6 +157,11 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 {
   for (unsigned int i=0;i<NG_F2C_send_list.size();i++) {
+#ifdef TEST_MPI_NG
+    cout <<"F2C_send: clearing send # "<<i<<" of ";
+    cout <<NG_F2C_send_list.size()<<"\n";
+    cout.flush();
+#endif
     COMM->wait_for_send_to_finish(NG_F2C_send_list[i]);
   }
   NG_F2C_send_list.clear();
@@ -251,6 +189,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
+  cout <<"nchild="<<nchild<<"\n";
   b->NGrecvF2C.resize(nchild);
 
   // loop over children:
@@ -290,7 +229,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       cout <<"child grid="<<par.levels[l].child<<"\n";
 #endif
       err = NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
-          par, par.levels[l].grid, b, par.levels[l].child);
+          par, par.levels[l].grid, b, par.levels[l].child, i);
       rep.errorTest("BC_assign_FINE_TO_COARSE_RECV serial",0,err);
     }
     else {
@@ -334,6 +273,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
   // loop over children twice, once for child grids that are on my
   // MPI process, and once for grids that on other processes
   for (int i=0;i<nchild;i++) {
+#ifdef TEST_MPI_NG
+    cout <<"F2C_RECV: child "<<i<<", receiving...\n";
+#endif
 
     if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
       // If child is on my grid call serial version that just grabs data
@@ -343,13 +285,27 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       cout <<"FINE_TO_COARSE update\n";
 #endif
       err = NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
-          par, solver, l, b, cstep, maxstep);
+          par, solver, l, b, i, cstep, maxstep);
       rep.errorTest("BC_update_FINE_TO_COARSE_RECV serial",0,err);
       ichild++;
     }
+    else {
+#ifdef TEST_MPI_NG
+      cout <<"my rank != child rank, will update in next loop.\n";
+#endif
+    }
   }
 
-  while (ichild < nchild) {
+  for (int i=0;i<nchild;i++) {
+#ifdef TEST_MPI_NG
+    cout <<"F2C_RECV: child "<<i<<", receiving again...\n";
+#endif
+    if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
+#ifdef TEST_MPI_NG
+      cout <<"my rank == child rank, already updated.\n";
+#endif
+      continue;
+    }
 
     //
     // else we go through the list of cells for each on-grid
@@ -369,6 +325,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
           &from_rank, // rank of sender (output)
           recv_id,    // identifier for receive (output).
           &recv_tag,  // comm_tag associated with data (output)
+          BC_MPI_NGF2C_tag,
           COMM_DOUBLEDATA // type of data we want.
           );
     if (err) rep.error("look for double data failed",err);
@@ -377,11 +334,11 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     cout <<from_rank<<"\n";
 #endif 
     // associate data with one of the child grids:
-    int i=-1;
+    int irecv=-1;
     for (int v=0;v<nchild;v++) {
-      if (MCMD->get_myrank() == MCMD->child_procs[v].rank) i = v;
+      if (MCMD->get_myrank() == MCMD->child_procs[v].rank) irecv = v;
     }
-    if (i<0) rep.error("receiving data, but don't know why",i);
+    if (irecv<0) rep.error("receiving data, but don't know why",irecv);
 
     // receive the data
     size_t nel = b->NGrecvF2C[i].size();

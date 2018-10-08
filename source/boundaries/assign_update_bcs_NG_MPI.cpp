@@ -129,6 +129,20 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
       //     
       break;
 
+    case FINE_TO_COARSE_RECV:
+#ifdef TEST_MPI_NG
+      cout <<"found FINE_TO_COARSE_RECV boundary to update\n";
+#endif
+      err += BC_update_FINE_TO_COARSE_RECV(
+                                  par,solver,level,b,cstep,maxstep);
+      BC_FINE_TO_COARSE_SEND_clear_sends();
+      break;
+
+    default:
+      //      cout <<"no internal boundaries to update.\n";
+      rep.error("Unhandled BC: MPI-NG update internal",b->itype);
+      break;
+
     case FINE_TO_COARSE_SEND:
 #ifdef TEST_MPI_NG
       cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
@@ -136,23 +150,13 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
       err += BC_update_FINE_TO_COARSE_SEND(
                                   par,solver,level,b,cstep,maxstep);
       break;
-    case FINE_TO_COARSE_RECV:
-#ifdef TEST_MPI_NG
-      cout <<"found FINE_TO_COARSE_RECV boundary to update\n";
-#endif
-      err += BC_update_FINE_TO_COARSE_RECV(
-                                  par,solver,level,b,cstep,maxstep);
-      break;
-
-    default:
-      //      cout <<"no internal boundaries to update.\n";
-      rep.error("Unhandled BC: MPI-NG update internal",b->itype);
-      break;
+      
     }
   }
 #ifdef TEST_MPI_NG
   cout <<"updated NG-grid serial internal BCs\n";
 #endif
+
   return 0;
 }
   
@@ -173,6 +177,9 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       const int maxstep
       )
 {
+#ifdef TEST_MPI_NG
+  cout <<"update_bcs_NG_MPI: external boundary update"<<endl;
+#endif
   int err = assign_update_bcs_MPI::TimeUpdateExternalBCs(
               par,level,grid,solver,simtime,cstep,maxstep);
   rep.errorTest("assign_update_bcs_NG_MPI: uni-grid ext. BC update",
@@ -189,7 +196,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
 #ifdef TEST_MPI_NG
-    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
+    //cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
 #endif
     switch (b->itype) {
       // skip all these:
@@ -199,7 +206,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       case STWIND: case BCMPI: case FINE_TO_COARSE:
       case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
-      cout <<"skipping this boundary in MPI_NG \n";
+      //cout <<"skipping this boundary in MPI_NG \n";
 #endif
       break;
 
@@ -212,6 +219,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       if (cstep==maxstep) {
         err += BC_update_COARSE_TO_FINE_RECV(par,solver,level,b,
                                         par.levels[level].step);
+        BC_COARSE_TO_FINE_SEND_clear_sends();
       }
       break;
 
@@ -232,6 +240,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
 #ifdef TEST_MPI_NG
   cout <<"updated NG-MPI-grid serial external BCs\n";
 #endif
+
   return(0);
 }
 

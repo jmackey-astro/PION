@@ -60,10 +60,18 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+      ostringstream path;
+      path << outpath <<"_"<<r<<"_";
+      outpath = path.str();
+      if (r==0) {
+        cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      }
+      rep.redirect(outpath); // Redirects cout and cerr to text file.
     }
   }
+#ifndef TESTING
+//  rep.kill_stdout_from_other_procs(0);
+#endif
 
   class DataIOBase   *dataio=0;
   class get_sim_info *siminfo=0;
@@ -87,7 +95,9 @@ int main(int argc, char **argv)
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
+  cout <<"ICGEN setting up grid levels\n";
   SimSetup->setup_NG_grid_levels(SimPM);
+  cout <<"ICGEN: grid levels set up.\n";
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);
 
@@ -170,7 +180,7 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    cout <<"updating external boundaries for level "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -179,7 +189,7 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-    cout <<"updating internal boundaries for level "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -243,7 +253,7 @@ int main(int argc, char **argv)
   err = dataio->OutputData(icfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
-  cout <<icftype<<" FILE WRITTEN in";
+  cout <<icftype<<" FILE WRITTEN\n";
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
@@ -252,7 +262,8 @@ int main(int argc, char **argv)
   if (SimSetup) {delete SimSetup; SimSetup =0;}
   
   for (unsigned int v=0; v<grid.size(); v++) {
-    delete grid[v];
+    class GridBaseClass *g = grid[v];
+    delete g;
   }
 
   //
@@ -268,6 +279,10 @@ int main(int argc, char **argv)
   }
 
   delete [] args; args=0;
+  cout << "rank: " << SimPM.levels[0].MCMD.get_myrank();
+  cout << " nproc: " << SimPM.levels[0].MCMD.get_nproc() << "\n";
+  COMM->finalise();
+  delete COMM; COMM=0;
   return err;
 }
 

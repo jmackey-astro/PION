@@ -44,7 +44,7 @@ int assign_update_bcs_NG::assign_boundary_data(
       cout <<"NG grid setup: Assigning FINE_TO_COARSE BC\n";
 #endif
       err += BC_assign_FINE_TO_COARSE(par,grid,grid->BC_bd[i],
-                                      par.levels[level].child);
+                                      par.levels[level].child,0);
       break;
 
       case COARSE_TO_FINE:
@@ -116,7 +116,8 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
 
     case FINE_TO_COARSE:
       //cout <<"found FINE_TO_COARSE boundary to update\n";
-      err += BC_update_FINE_TO_COARSE(par,solver,level,b,cstep,maxstep);
+      err += BC_update_FINE_TO_COARSE(par,solver,level,b,0,
+                                                    cstep,maxstep);
       break;
 
     default:
@@ -148,6 +149,9 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
       const int maxstep
       )
 {
+#ifdef TEST_MPI_NG
+  cout <<"update_bcs_NG: external boundary update"<<endl;
+#endif
   int err = assign_update_bcs::TimeUpdateExternalBCs(par,level,grid,
                                       solver,simtime,cstep,maxstep);
   rep.errorTest("assign_update_bcs_NG: uni-grid ext. BC up",0,err);

@@ -56,9 +56,9 @@ grid_nlevels 4
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-grid_nest_centre_XX 0.0e18
-grid_nest_centre_YY 0.0e18
-grid_nest_centre_ZZ 0.0e18
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
 
 solver 4
 OrderOfAccSpace 2
@@ -128,6 +128,7 @@ RT_Nsources 0
 # stellar wind sources #
 ########################
 WIND_NSRC 0
+N_JET 0
 
 ####################
 # Reference Vector #

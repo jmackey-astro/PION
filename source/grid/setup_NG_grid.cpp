@@ -135,9 +135,12 @@ void setup_NG_grid::setup_NG_grid_levels(
     
     ostringstream temp; temp<<i;
     string lv = "level "+temp.str();
-    rep.printVec(lv,SimPM.levels[i].Range,SimPM.ndim);
-    rep.printVec(lv,SimPM.levels[i].Xmin,SimPM.ndim);
-    rep.printVec(lv,SimPM.levels[i].Xmax,SimPM.ndim);
+    string t2=lv+"_Range";
+    rep.printVec(t2,SimPM.levels[i].Range,SimPM.ndim);
+    t2 = lv+"_Xmin";
+    rep.printVec(t2,SimPM.levels[i].Xmin,SimPM.ndim);
+    t2 = lv+"_Xmax";
+    rep.printVec(t2,SimPM.levels[i].Xmax,SimPM.ndim);
     cout <<"dx="<<SimPM.levels[i].dx;
     cout <<", step="<<SimPM.levels[i].step<<"\n";
   }

@@ -28,7 +28,9 @@ int assign_update_bcs_MPI::assign_boundary_data(
       )
 {
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
-  cout <<ppar->get_myrank()<<" Setting up MPI boundaries...\n";
+#ifdef TEST_MPI_NG
+  cout <<ppar->get_myrank()<<" Setting up MPI boundaries..."<<endl;
+#endif
   int err= assign_update_bcs::assign_boundary_data(par,level,grid);
 
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
@@ -84,6 +86,9 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
       const int maxstep
       )
 {
+#ifdef TEST_MPI_NG
+  cout <<"update_bcs_MPI: external boundary update"<<endl;
+#endif
   struct boundary_data *b;
   int err=0;
   for (size_t i=0;i<grid->BC_bd.size();i++) {
@@ -91,37 +96,70 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     switch (b->itype) {
       
     case PERIODIC:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_PERIODIC(par,level,grid, b, cstep, maxstep);
       break;
     case BCMPI:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_BCMPI(par,level,grid, b, cstep, maxstep,
                                                         BC_MPItag);
       break;
     case OUTFLOW:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_OUTFLOW(    par,grid, b, cstep, maxstep);
       break;
     case ONEWAY_OUT:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_ONEWAY_OUT( par,grid, b, cstep, maxstep);
       break;
     case INFLOW:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_INFLOW(     par,grid, b, cstep, maxstep);
       break;
     case REFLECTING:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_REFLECTING( par,grid, b, cstep, maxstep);
       break;
     case FIXED:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_FIXED(      par,grid, b, cstep, maxstep);
       break;
     case JETBC:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_JETBC(      par,grid, b, cstep, maxstep);
       break;
     case JETREFLECT:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_JETREFLECT( par,grid, b, cstep, maxstep);
       break;
     case DMACH:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_DMACH(      par,grid, simtime, b, cstep, maxstep);
       break;
     case DMACH2:
+#ifdef TEST_MPI_NG
+      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_DMACH2(     par,grid, b, cstep, maxstep);
       break;
 

@@ -29,7 +29,8 @@ class NG_fine_to_coarse_bc {
       class SimParams &,     ///< pointer to simulation parameters
       class GridBaseClass *,  ///< pointer to grid.
       boundary_data *,  ///< boundary data
-      class GridBaseClass *  ///< pointer to child grid.
+      class GridBaseClass *,  ///< pointer to child grid.
+      const int         ///< element in NGrecvF2C boundary struct
       );
 
   /// Updates data to a NG grid from finer grid.
@@ -38,6 +39,7 @@ class NG_fine_to_coarse_bc {
       class FV_solver_base *, ///< pointer to equations
       const int, ///< level of grid in NG grid struct.
       struct boundary_data *,
+      const int,    ///< element in NGrecvF2C boundary struct
       const int,
       const int
       );
@@ -51,6 +53,17 @@ class NG_fine_to_coarse_bc {
       const int,      ///< number of fine-level cells
       std::vector<cell *> &, ///< list of cells
       pion_flt *      ///< [OUTPUT] averaged data (conserved var).
+      );
+
+  ///
+  /// on a child grid, add all cells on the grid to the "avg" struct
+  /// associated with a fine-to-coarse boundary.
+  ///
+  void add_cells_to_avg(
+      int ,                   ///< grid dimension
+      class GridBaseClass *,  ///< pointer to child grid.
+      int ,                   ///< number of coarse cells
+      std::vector<struct averaging> & ///< avg list
       );
 
 };
