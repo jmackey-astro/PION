@@ -414,18 +414,23 @@ class MPv10
   
   
   // NOTE \Maggie{ Added vector variables to keep track of tracers.}
-  std::vector<int> y_ion_index; ///<primitive vector indices, analogous to pv_Hp before.
-  std::vector<int> X_elem_index; /// < primitive vector ineices, used to trace X_H etc, like pv_Hp. 
-  std::vector<float> X_elem_vector; /// < vector of X_elem corresponding to X_elem_index, e.g. for ["H", "He"], X_elem_vector=[1.6738e-24, 6.6464764e-24 
-  std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
-
-  std::vector<int> y_ion_num_elec; ///<records the number of electrons corresponding to each y_ion (e.g. C6+ = 6)
-  std::vector<pion_flt> y_ion_mass_frac; ///<same length as y_ion_index, records elemental number density corresponding to each species. Analogous to mpv_nH.
+  
+  //**********************************************************************
+  //******************* PRIMITIVE VECTOR INDICES *************************
+  //**********************************************************************
+  std::vector<int> y_ion_index; ///<index matching y_ion fration, analogous to pv_Hp before.
+  std::vector<int> y_ion_num_elec; ///<index matching number of electrons corresponding to each y_ion (e.g. C6+ = 6)
+  std::vector<int> y_ion_mass_frac_index; ///<same length as y_ion_index, records X_elem index as corresponding to each y_ion
+  std::vector<pion_flt> y_ion_number_density; ///<X number density at current cell, organised to match y_ion.
   std::vector<pion_flt> y_elem_atom_mass; ///<same length as y_ion_index, records the proper mass of each element, analogous to m_p
+
+  std::vector<float> X_atom_mass; /// < vector of atomic masses corresponding to X_elem_index, e.g. for ["H", "He"], X_atom_mass=[1.6738e-24, 6.6464764e-24 
+  std::vector<int> X_elem_index; /// < primitive vector ineices, used to trace X_H etc, like pv_Hp. 
+  std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
   std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
   
   //Need following arrays for MPv10::Tr(), i.e. to get the index of a species based on user input string tracer.
-  std::vector<int> H_ion_index; 
+  std::vector<int> H_ion_index; //Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position.
   std::vector<int> He_ion_index;
   
   int pv_H1p;    ///< legacy, should ideally remove

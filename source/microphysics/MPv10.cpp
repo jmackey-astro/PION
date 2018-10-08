@@ -330,20 +330,19 @@ MPv10::MPv10(
   // 3) Establish N_species_by_elem, N_species, y_ion_index, y_ion_num_elec, y_elem_mass_frac
   N_species=0;
   int elem_counter=0;
-  float mass_frac;
   float mass;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
     // Define mass fraction / atomic mass (grams) for this element first.
     if((*it)=="H"){
-      mass_frac = EP->H_MassFrac;
+      //mass_frac = EP->H_MassFrac;
       mass = m_H;
-      X_elem_vector.push_back(mass);
+      X_atom_mass.push_back(mass);
       H_ion_index.push_back(0);
     }
     else if ((*it)=="He"){
-      mass_frac = EP->Helium_MassFrac;
+      //mass_frac = EP->Helium_MassFrac;
       mass = m_He;
-      X_elem_vector.push_back(mass);
+      X_atom_mass.push_back(mass);
       He_ion_index.push_back(0); He_ion_index.push_back(0);
     }
           
@@ -354,7 +353,7 @@ MPv10::MPv10(
       if (s.substr(0,2)=="He" & (*it)=="He"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
-        y_ion_mass_frac.push_back(mass_frac);
+        y_ion_mass_frac_index.push_back(X_elem_index[elem_counter]);
         y_elem_atom_mass.push_back(mass);
         int num_elec_int;
         stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
@@ -366,7 +365,7 @@ MPv10::MPv10(
       else if (s.substr(0,1)==(*it) & s.substr(0,2)!="He" & s.substr(0,1)=="H"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
-        y_ion_mass_frac.push_back(mass_frac);
+        y_ion_mass_frac_index.push_back(X_elem_index[elem_counter]);
         y_elem_atom_mass.push_back(mass);
         int num_elec_int;
         stringstream ss; ss << s.substr(1,1); ss >> num_elec_int; //Use stringstream to convert string to int.
@@ -520,12 +519,17 @@ MPv10::MPv10(
   // ----------------------------------------------------------------
   // ---------- output cooling rates for various temperatures -------
   // ----------------------------------------------------------------
-#ifdef MPv10_DEBUG
+  
   double p[nv_prim];
   p[RO]=2.338e-24; p[PG]=1.0e-12;
   p[pv_H1p] = 0.99;
+  for (int i=0;i<N_species;i++){
+    float n_X_y = p[RO]*( p[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
+    y_ion_number_density.push_back(n_X_y);  //X number density at current cell, organised to match y_ion.
+  }
   mpv_nH=1.0e0;
 
+  #ifdef MPv10_DEBUG
   string opfile("cooling_MPv10.txt");
   ofstream outf(opfile.c_str());
   if(!outf.is_open()) rep.error("couldn't open outfile",1);
@@ -570,6 +574,26 @@ MPv10::MPv10(
   cout <<"---------------------------------------------------------------------\n\n";
   return;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ##################################################################
@@ -800,6 +824,17 @@ int MPv10::convert_prim2local(
   // NOTE \Maggie{ Should also include number densities of all other elements, I think}
   p_local[lv_eint] = p_in[PG]/(gamma_minus_one);
   p_local[lv_H0]   = 1.0-p_in[pv_H1p];
+  // loop over N_species instead of just having lv_H0, to identify y(species). Want first element to occur at p_local[0].
+  for (int i=0;i<N_species;i++){
+    float n_X_y = p_in[RO]*( p_in[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
+    y_ion_number_density[i] = n_X_y;
+  }
+  // loop over N_elem instead of just having "mean_mass_per_H", to identify n_H etc. Want first element to occur at p_local[0].
+  for (int i=0;i<N_elem;i++){
+    //p_local[y_ion_index[i]-y_ion_index[0]] = 
+    float n_X = p_in[RO]*( p_in[ X_elem_index[i]] / X_atom_mass[i]);
+    //cout << n_X << "\n\n\n";
+  }
   mpv_nH = p_in[RO]/mean_mass_per_H;
 
 
