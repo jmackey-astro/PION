@@ -298,7 +298,6 @@ MPv10::MPv10(
   cout <<ntracer<<" variables in state vec.\n";
   int len = ntracer;
   int ftr = nv_prim -ntracer; // first tracer variable.
-  cout << ftr;
   lv_y0_offset = ftr;
   string s; pv_H1p=-1;
   
@@ -314,11 +313,7 @@ MPv10::MPv10(
     else if (s[0]=='C'){
       set_elem.insert("C");
     }
-    
-    // NOTE \Maggie{ LEGACY CODE; REMOVE.}
-    if  (s=="H1+___"  || s=="HII__"        || s=="H1+" || s=="HII")       
-        {pv_H1p = ftr+i; cout <<"\t\tGot H+ as the "<<pv_H1p<<"th element of P[] (zero offset).\n";}
-    }
+  }
   
   set<string>::iterator it; /// < iterator for set_elem
   // 2) Record X_elem_index vector, N_elem
@@ -387,11 +382,6 @@ MPv10::MPv10(
   cout <<"MPv10:: EP and RS: "<<EP<<"\t"<<RS<<endl;
 #endif
 
-  
-  
-  
-  
-
   // ----------------------------------------------------------------
   // --- Set up local variables: ion fraction and internal energy density.
   // ----------------------------------------------------------------
@@ -400,17 +390,6 @@ MPv10::MPv10(
   // NOTE \Maggie{or let's not assume that...} Assume metal content is low enough to ignore it.
   double X = 1.0-EP->Helium_MassFrac;
   mean_mass_per_H = m_p/X;
-  // NOTE  \MAGGIE {This definitely needs changing -- can't just assume metals don't matter}
-  // Assume He is singly ionised whenever H is, and no metals exist
-  // as far as number density of electrons/ions are concerned.
-  //
-  JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
-  JM_NELEC = 1.0 +0.25*EP->Helium_MassFrac/X;
-#ifdef HE_INERT
-  // JM_NION is the number of neutral atoms per H atom
-  JM_NION  = 1.0 +0.25*EP->Helium_MassFrac/X;
-  JM_NELEC = 1.0; // if He is always neutral.
-#endif // HE_INERT
   METALLICITY = EP->Metal_MassFrac/0.0142; // in units of solar.
   cout <<"Metallicity = "<<METALLICITY<<" of solar (0.0142)\n";
 
@@ -522,14 +501,14 @@ MPv10::MPv10(
   // ---------- output cooling rates for various temperatures -------
   // ----------------------------------------------------------------
   
-  double p[nv_prim];
-  p[RO]=2.338e-24; p[PG]=1.0e-12;
+  //double p[nv_prim];
+  //p[RO]=2.338e-24; p[PG]=1.0e-12;
   for (int i=0;i<N_species;i++){
-    float n_X_y = p[RO]*( p[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
+    float n_X_y = 1.0;//p[RO]*( p[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
     y_ion_number_density.push_back(n_X_y);  //X number density at current cell, organised to match y_ion.
   }
   for (int i=0;i<N_elem;i++){
-    float n_X = p[RO]*( p[ X_elem_index[i]] / X_atom_mass[i]);
+    float n_X = 1.0;//p[RO]*( p[ X_elem_index[i]] / X_atom_mass[i]);
     X_elem_number_density.push_back(n_X);  //X number density at current cell, organised to match y_ion.
   }
 
@@ -772,11 +751,8 @@ double MPv10::get_temperature(
       )
 {
   //
-  // returns gas temperature according to E=nkT/(g-1) with n=nH*(1.1+1.1*x), => T = E*(g-1)/(K*n)
-  // appropriate for a gas with 10% Helium by number, and if He is singly ionised
-  // whenever H is ionised (n_i=1.1n_H, n_e=1.1n_H).
-  // NOTE   \Maggie{ Need to change this, as gas may not be 10% helium by number, or singly ionised.}
-  return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,y_ion_number_density));
+  // returns gas temperature according to E=nkT/(g-1), => T = E*(g-1)/(K*n)
+ return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,y_ion_number_density));
 }
 
 // ##################################################################
@@ -826,17 +802,15 @@ int MPv10::convert_prim2local(
   // Set internal energy density, H+ fraction, and number density of H.
   // NOTE \Maggie{ Should also include number densities of all other elements, I think}
   p_local[lv_eint] = p_in[PG]/(gamma_minus_one);
-  p_local[lv_H0]   = 1.0-p_in[pv_H1p];
+  //p_local[lv_H0]   = 1.0-p_in[pv_H1p];
   // loop over N_species instead of just having lv_H0, to identify y(species). Want first element to occur at p_local[0].
   for (int i=0;i<N_species;i++){
     float n_X_y = p_in[RO]*( p_in[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
     y_ion_number_density[i] = n_X_y;
+    local_index = y_ion_index[i] - lv_y0_offset;
+    p_local[ local_index] = p_in[ y_ion_index[i]]
   }
-  // loop over N_elem instead of just having "mean_mass_per_H", to identify n_H etc. Want first element to occur at p_local[0].
-  /*for (int i=0;i<N_elem;i++){
-    float n_X = p_in[RO]*( p_in[ X_elem_index[i]] / X_atom_mass[i]);
-  }*/
-  mpv_nH = p_in[RO]/mean_mass_per_H;
+  //mpv_nH = p_in[RO]/mean_mass_per_H;
 
 
 #ifdef MPv10_DEBUG
@@ -908,7 +882,7 @@ int MPv10::convert_local2prim(
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
 
   p_out[PG]    = p_local[lv_eint]*(gamma_minus_one);
-  p_out[pv_H1p] = 1.0-p_local[lv_H0];
+  //p_out[pv_H1p] = 1.0-p_local[lv_H0];
 
 #ifdef MPv10_DEBUG
   if (p_out[pv_H1p]<-10.0*JM_RELTOL || p_out[pv_H1p]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_H1p])) {
@@ -924,7 +898,7 @@ int MPv10::convert_local2prim(
   //
   // Set xHp to be within the required range (not too close to zero or 1).
   //
-  p_out[pv_H1p] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_H1p])));
+  //p_out[pv_H1p] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_H1p])));
 
   //
   // Set output pressure to be within required temperature range (use the 
@@ -1524,7 +1498,7 @@ int MPv10::ydot(
     ne += y_ion_frac[s]*y_ion_num_elec[s]*X_elem_mass_frac;
   }
   double T = get_temperature(y_ion_frac, y_ion_number_density, E_in);
-  cout << "Temperature="<< T<<"\n\n\n\n\n";
+  cout << "Temperature="<< T<<"\n"<<"Electron density="<<ne<<"\n\n\n";
   //double T = get_temperature_local(mpv_nH, E_in, x_in);
 
 
@@ -1540,7 +1514,7 @@ int MPv10::ydot(
   // (Sofia,1997), approximately, so I add this to the electron number density
   // with an exponential cutoff at high densities.
   // NOTE \Maggie{ this definitely needs a modification}
-  ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
+  //ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
 
 
   //
@@ -1624,8 +1598,8 @@ int MPv10::ydot(
   //
 #ifndef HE_INERT
   // Only if He is ionised, otherwise it has no free-free.
-  //
-  Edot -= 1.68e-27*(JM_NION-1.0)*sqrt(T)*x_in*ne;
+  //NOTE: \Maggie{ JM_NION needs to go as it's just a hack. Come back to this.}
+  //Edot -= 1.68e-27*(JM_NION-1.0)*sqrt(T)*x_in*ne;
 #endif // HE_INERT
 
   //
