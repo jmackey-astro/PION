@@ -22,25 +22,6 @@
 
 #include "sim_control/sim_control_NG.h"
 
-//#include "microphysics/microphysics_base.h"
-//#include "raytracing/raytracer_SC.h"
-//#include "dataIO/dataio_base.h"
-//#ifdef SILO
-//#include "dataIO/dataio_silo.h"
-//#endif // if SILO
-//#ifdef FITS
-//#include "dataIO/dataio_fits.h"
-//#endif // if FITS
-
-//#include "spatial_solvers/solver_eqn_hydro_adi.h"
-//#include "spatial_solvers/solver_eqn_mhd_adi.h"
-
-//#include <iostream>
-//#include <sstream>
-//#include <fstream>
-//#include <sys/time.h>
-//#include <time.h>
-//#include <climits>
 using namespace std;
 
 
@@ -315,6 +296,28 @@ int sim_control_NG::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
+  // --------------------------------------------------------------
+  // Update RT sources and boundaries.
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TEST_INT
+    cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateExternalBCs(SimPM, l, grid[l],
+            spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG: external bounday update",0,err);
+  // --------------------------------------------------------------
+  // --------------------------------------------------------------
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TEST_INT
+    cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG: internal boundary update",0,err);
+  // --------------------------------------------------------------
+
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
@@ -322,28 +325,6 @@ int sim_control_NG::Time_Int(
 #elif defined (BLAST_WAVE_CHECK)
     calculate_blastwave_radius(grid);
 #endif
-    // --------------------------------------------------------------
-    // Update RT sources and boundaries.
-    //for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TEST_INT
-    //  cout <<"updating external boundaries for level "<<l<<"\n";
-#endif
-    //  err += TimeUpdateExternalBCs(SimPM, l, grid[l],
-    //          spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    //}
-    //rep.errorTest("sim_control_NG: external bounday update",0,err);
-    // --------------------------------------------------------------
-    // --------------------------------------------------------------
-    //for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-#ifdef TEST_INT
-    //  cout <<"updating internal boundaries for level "<<l<<"\n";
-#endif
-    //  err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
-    //                          SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-    //}
-    //rep.errorTest("sim_control_NG: internal boundary update",0,err);
-    // --------------------------------------------------------------
-
 
     // Get timestep on each level
     int scale = 1;

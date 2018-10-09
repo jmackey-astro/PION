@@ -82,21 +82,17 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
       const int maxstep
       )
 {
-  int err = assign_update_bcs::TimeUpdateInternalBCs(par,level,grid,
-                                      solver,simtime,cstep,maxstep);
-  rep.errorTest("assign_update_bcs_NG: uni-grid int. BC update",
-                                                            0,err);
-#ifdef TEST_NEST
-  cout <<"updated unigrid serial internal BCs\n";
-#endif
-
   struct boundary_data *b;
+  int err = 0;
   size_t i=0;
   //cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     switch (b->itype) {
     case STWIND:
+      err += BC_update_STWIND(par,grid, simtime, b, cstep, maxstep);
+      break;
+      
     case PERIODIC:
     case OUTFLOW:
     case ONEWAY_OUT:
@@ -152,29 +148,52 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
 #ifdef TEST_MPI_NG
   cout <<"update_bcs_NG: external boundary update"<<endl;
 #endif
-  int err = assign_update_bcs::TimeUpdateExternalBCs(par,level,grid,
-                                      solver,simtime,cstep,maxstep);
-  rep.errorTest("assign_update_bcs_NG: uni-grid ext. BC up",0,err);
-#ifdef TEST_NEST
-  cout <<"updated unigrid serial external BCs\n";
-#endif
 
   struct boundary_data *b;
+  int err = 0;
   size_t i=0;
   //cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     //    cout <<"updating bc "<<i<<" with type "<<b->type<<"\n";
     switch (b->itype) {
-      // skip all these:
-      case PERIODIC: case OUTFLOW: case ONEWAY_OUT: case INFLOW:
-      case REFLECTING: case FIXED: case JETBC: case JETREFLECT:
-      case DMACH: case DMACH2:
-      case STWIND: case BCMPI: case FINE_TO_COARSE:
+    case PERIODIC:
+      err += BC_update_PERIODIC(  par,level,grid, b, cstep, maxstep);
+      break;
+    case OUTFLOW:
+      err += BC_update_OUTFLOW(    par,grid, b, cstep, maxstep);
+      break;
+    case ONEWAY_OUT:
+      err += BC_update_ONEWAY_OUT( par,grid, b, cstep, maxstep);
+      break;
+    case INFLOW:
+      err += BC_update_INFLOW(     par,grid, b, cstep, maxstep);
+      break;
+    case REFLECTING:
+      err += BC_update_REFLECTING( par,grid, b, cstep, maxstep);
+      break;
+    case FIXED:
+      err += BC_update_FIXED(      par,grid, b, cstep, maxstep);
+      break;
+    case JETBC:
+      err += BC_update_JETBC(      par,grid, b, cstep, maxstep);
+      break;
+    case JETREFLECT:
+      err += BC_update_JETREFLECT( par,grid, b, cstep, maxstep);
+      break;
+    case DMACH:
+      err += BC_update_DMACH(      par,grid, simtime, b, cstep, maxstep);
+      break;
+    case DMACH2:
+      err += BC_update_DMACH2(     par,grid, b, cstep, maxstep);
+      break;
+
+    // skip these:
+    case STWIND: case BCMPI: case FINE_TO_COARSE:
       break;
 
       // get outer boundary of this grid from coarser grid.
-      case COARSE_TO_FINE:
+    case COARSE_TO_FINE:
       // only update if at the start of a full step.
       if (cstep==maxstep) {
         //cout <<"found COARSE_TO_FINE boundary to update\n";
@@ -183,7 +202,7 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
       }
       break;
 
-      default:
+    default:
       rep.error("Unhandled BC: serial NG update external",b->itype);
       break;
     }

@@ -96,79 +96,43 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     switch (b->itype) {
       
     case PERIODIC:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_PERIODIC(par,level,grid, b, cstep, maxstep);
       break;
     case BCMPI:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_BCMPI(par,level,grid, b, cstep, maxstep,
                                                         BC_MPItag);
       break;
     case OUTFLOW:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_OUTFLOW(    par,grid, b, cstep, maxstep);
       break;
     case ONEWAY_OUT:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_ONEWAY_OUT( par,grid, b, cstep, maxstep);
       break;
     case INFLOW:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_INFLOW(     par,grid, b, cstep, maxstep);
       break;
     case REFLECTING:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_REFLECTING( par,grid, b, cstep, maxstep);
       break;
     case FIXED:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_FIXED(      par,grid, b, cstep, maxstep);
       break;
     case JETBC:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_JETBC(      par,grid, b, cstep, maxstep);
       break;
     case JETREFLECT:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_JETREFLECT( par,grid, b, cstep, maxstep);
       break;
     case DMACH:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_DMACH(      par,grid, simtime, b, cstep, maxstep);
       break;
     case DMACH2:
-#ifdef TEST_MPI_NG
-      cout <<"update_bcs_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
-#endif
       err += BC_update_DMACH2(     par,grid, b, cstep, maxstep);
       break;
 
     case RADSHOCK:
     case RADSH2:
     case STWIND:
-    case FINE_TO_COARSE: case COARSE_TO_FINE:
-    case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
-    case COARSE_TO_FINE_SEND: case COARSE_TO_FINE_RECV:
       //
       // internal bcs updated separately
       //
