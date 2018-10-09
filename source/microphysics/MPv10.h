@@ -331,17 +331,17 @@ class MPv10
   /// whenever H is.
   ///
   virtual double get_temperature(
-      const double, ///< nH
-      const double, ///< E_int
-      const double  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
+      double *,//const double, ///< nH //< y_ion_fraction (by y_ion_index)
+      vector<pion_flt>&, ///< y_ion_number_density
+      const double  ///< E_int (per unit volume)
       );
 
   ///
   /// Returns total number of particles.
   ///
   virtual double get_ntot(
-    const double, ///< nH
-    const double  ///< x(H+) N.B. This is ion fraction, not neutral fraction.
+      double *,//const double, ///< nH //< y_ion_fraction (by y_ion_index)
+      vector<pion_flt>& ///< y_ion_number_density
     );
 
   ///
@@ -405,6 +405,7 @@ class MPv10
   int       nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index.
   int lv_H0;   ///< neutral hydrogeen local variable index. 
+  int lv_y0_offset; ///<offset from X_elem_index[0] (i.e. primitive vector index) and local vector index.
   
   // NOTE \Maggie{ can obtain analogous to lv_H0 by using y_ion_index[i] - N_species.
   int N_elem;

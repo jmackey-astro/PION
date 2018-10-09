@@ -298,6 +298,8 @@ MPv10::MPv10(
   cout <<ntracer<<" variables in state vec.\n";
   int len = ntracer;
   int ftr = nv_prim -ntracer; // first tracer variable.
+  cout << ftr;
+  lv_y0_offset = ftr;
   string s; pv_H1p=-1;
   
   // 1) Identify elements present in tracer list. Set keeps only unique objects; no doubling up.
@@ -528,7 +530,7 @@ MPv10::MPv10(
   }
   for (int i=0;i<N_elem;i++){
     float n_X = p[RO]*( p[ X_elem_index[i]] / X_atom_mass[i]);
-    X_elem_number_density.push_back(n_X_y);  //X number density at current cell, organised to match y_ion.
+    X_elem_number_density.push_back(n_X);  //X number density at current cell, organised to match y_ion.
   }
 
   #ifdef MPv10_DEBUG
@@ -578,25 +580,6 @@ MPv10::MPv10(
   cout <<"---------------------------------------------------------------------\n\n";
   return;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -783,7 +766,7 @@ int MPv10::set_multifreq_source_properties(
 
 
 double MPv10::get_temperature(
-      double *pv, //< primitive vector
+      double *y_ion_frac, //< y_ion_fraction (by y_ion_index)
       vector<pion_flt>& y_ion_number_density,//const double nH, ///< nH
       const double E ///< E_int (per unit volume)
       )
@@ -793,7 +776,7 @@ double MPv10::get_temperature(
   // appropriate for a gas with 10% Helium by number, and if He is singly ionised
   // whenever H is ionised (n_i=1.1n_H, n_e=1.1n_H).
   // NOTE   \Maggie{ Need to change this, as gas may not be 10% helium by number, or singly ionised.}
-  return gamma_minus_one*E/(k_B*get_ntot(pv,y_ion_number_density));
+  return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,y_ion_number_density));
 }
 
 // ##################################################################
@@ -801,25 +784,24 @@ double MPv10::get_temperature(
 
 
 double MPv10::get_ntot(
-      double *pv,//<primitive vector
-      vector<pion_flt>& y_ion_number_density,//const double nH, ///< nH
+      double *y_ion_frac,//<y_ion_fraction (by y_ion_index)
+      vector<pion_flt>& y_ion_number_density//const double nH, ///< nH
       )
 {
   int species_counter = 0;
   pion_flt n_tot=0;
   
   for (int i=0;i<N_elem;i++){//loop over every element
-    N_elem_species=N_species_by_elem[i];
+    int N_elem_species=N_species_by_elem[i];
     pion_flt neutral_frac = 1; //neutral frac, got by subtracting off the ion fractions in the next loop.
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
       pion_flt number_density = y_ion_number_density[species_counter];
-      pion_flt y_ion_frac = pv[y_ion_index[species_counter]];
       int num_elec = y_ion_num_elec[species_counter];
       
-      n_tot += (1+num_elec)*y_ion_frac*number_density; //add on number of particles got by electrons + ionised atom
+      n_tot += (1+num_elec)*y_ion_frac[species_counter]*number_density; //add on number of particles got by electrons + ionised atom
       
-      neutral_frac -= y_ion_frac;
+      neutral_frac -= y_ion_frac[species_counter];
       species_counter ++;
     }
     n_tot += neutral_frac*y_ion_number_density[species_counter-1];
@@ -889,7 +871,11 @@ int MPv10::convert_prim2local(
     cout <<"MPv10::convert_prim2local: negative pressure input: p=";
     cout <<p_local[lv_eint]<<", setting to "<<EP->MinTemperature<<"K.\n";
 #endif
-    p_local[lv_eint] = get_ntot(pv,y_ion_number_density)*k_B*EP->MinTemperature/(gamma_minus_one);
+    pion_flt y_ion_frac[N_species];
+    for (int s=0;s<N_species;s++){
+      y_ion_frac[s] = p_in[y_ion_index[s]];
+    }
+    p_local[lv_eint] = get_ntot(y_ion_frac,y_ion_number_density)*k_B*EP->MinTemperature/(gamma_minus_one);
   }
 
 
@@ -944,7 +930,11 @@ int MPv10::convert_local2prim(
   // Set output pressure to be within required temperature range (use the 
   // possibly corrected x(H+) from p_out[]).
   //
-  double T = get_temperature(p_out, y_ion_number_density, p_local[lv_eint]);
+  pion_flt y_ion_frac[N_species];
+  for (int s=0;s<N_species;s++){
+    y_ion_frac[s] = p_out[y_ion_index[s]];
+  }
+  double T = get_temperature(y_ion_frac, y_ion_number_density, p_local[lv_eint]);
   if (T>1.01*EP->MaxTemperature) {
     Set_Temp(p_out,EP->MaxTemperature,0);
 #ifdef MPv10_DEBUG
@@ -986,7 +976,11 @@ double MPv10::Temperature(
   //
   double P[nvl];
   convert_prim2local(pv,P);
-  return get_temperature( get_temperature(pv, y_ion_number_density, P[lv_eint]));
+  pion_flt y_ion_frac[N_species];
+  for (int s=0;s<N_species;s++){
+    y_ion_frac[s] = pv[y_ion_index[s]];
+  }
+  return (get_temperature(y_ion_frac, y_ion_number_density, P[lv_eint]));
 }
 
 
@@ -1011,7 +1005,11 @@ int MPv10::Set_Temp(
   }
   double P[nvl];
   int err = convert_prim2local(p_pv,P);
-  P[lv_eint] = get_ntot(p_pv,y_ion_number_density)*k_B*T/(gamma_minus_one);
+  pion_flt y_ion_frac[N_species];
+  for (int s=0;s<N_species;s++){
+    y_ion_frac[s] = p_pv[y_ion_index[s]];
+  }
+  P[lv_eint] = get_ntot(y_ion_frac,y_ion_number_density)*k_B*T/(gamma_minus_one);
   err += convert_local2prim(P, p_pv, p_pv);
   return err;
 }
@@ -1292,7 +1290,12 @@ double MPv10::get_recombination_rate(
   //
   // Now get rate
   //
-  rate = Hii_rad_recomb_rate(get_temperature(p_in, y_ion_number_density, P[lv_eint]))
+  pion_flt y_ion_frac[N_species];
+  for (int s=0;s<N_species;s++){
+    y_ion_frac[s] = p_in[y_ion_index[s]];
+  }
+  //NOTE \Maggie{This still needs changing!}
+  rate = Hii_rad_recomb_rate(get_temperature(y_ion_frac, y_ion_number_density, P[lv_eint]))
           *mpv_nH*mpv_nH *(1.0-P[lv_H0])*(1.0-P[lv_H0]) *JM_NELEC;
 
 #ifdef FUNCTION_ID
@@ -1512,9 +1515,14 @@ int MPv10::ydot(
   // number, and if He is singly ionised whenever H is.
   //
   // NOTE \Maggie{get_temperature currently uses the primitve vector, not the local vector... Gonna need to tweak that a little bit.
-  get_temperature(p_in, y_ion_number_density, P[lv_eint])
+  double y_ion_frac[N_species];
+  for (int s=0;s<N_species;s++){
+    int this_ion_index = y_ion_index[s] - lv_y0_offset; //basically, lv_H1 (equivalent to 1 - y[lv_H0])
+    y_ion_frac[s] = NV_Ith_S(y_now,this_ion_index);
+  }
+  double T = get_temperature(y_ion_frac, y_ion_number_density, E_in);
   
-  double T = get_temperature_local(mpv_nH, E_in, x_in);
+  //double T = get_temperature_local(mpv_nH, E_in, x_in);
 
 
   double temp1=0.0, temp2=0.0;
