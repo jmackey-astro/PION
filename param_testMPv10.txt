@@ -130,13 +130,12 @@ UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 0.0
 UNIFORM_ambBY 0.0
 UNIFORM_ambBZ 0.0
-UNIFORM_ambTR0 1.0e-8
-UNIFORM_ambTR1 0.0
-UNIFORM_ambTR2 0.0
-UNIFORM_ambTR3 0.0
-UNIFORM_ambTR4 0.0
+UNIFORM_ambTR0 0.73   # most of ISM is H
+UNIFORM_ambTR1 0.27   # Some of ISM is He
+UNIFORM_ambTR2 0.1    # ISM is mostly neutral
+UNIFORM_ambTR3 0.1
+UNIFORM_ambTR4 0.01
 UNIFORM_ambTR5 0.0
-UNIFORM_ambTR6 0.0
 
 
 ########################
