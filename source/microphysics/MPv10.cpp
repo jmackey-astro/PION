@@ -1507,21 +1507,24 @@ int MPv10::ydot(
   double x_in      = 1.0-OneMinusX;
     
   // NOTE \Maggie{this should be updated so as to add up all the electrons freed from ions}
-  double ne        = JM_NELEC*x_in*mpv_nH;
-
+  //double ne        = JM_NELEC*x_in*mpv_nH;
   //
   // First get the temperature.  We assume the total particle number density
   // is given by 1.1*nH*(1+x_in), appropriate for a gas with 10% Helium by 
   // number, and if He is singly ionised whenever H is.
   //
-  // NOTE \Maggie{get_temperature currently uses the primitve vector, not the local vector... Gonna need to tweak that a little bit.
+  double ne=0;
   double y_ion_frac[N_species];
+  
   for (int s=0;s<N_species;s++){
     int this_ion_index = y_ion_index[s] - lv_y0_offset; //basically, lv_H1 (equivalent to 1 - y[lv_H0])
+    int this_elem_mass_frac_index = y_ion_mass_frac_index[s] - lv_y0_offset;
     y_ion_frac[s] = NV_Ith_S(y_now,this_ion_index);
+    double X_elem_mass_frac = NV_Ith_S(y_now,this_elem_mass_frac_index);
+    ne += y_ion_frac[s]*y_ion_num_elec[s]*X_elem_mass_frac;
   }
   double T = get_temperature(y_ion_frac, y_ion_number_density, E_in);
-  
+  cout << "Temperature="<< T<<"\n\n\n\n\n";
   //double T = get_temperature_local(mpv_nH, E_in, x_in);
 
 
