@@ -1,70 +1,18 @@
 ///
 /// \file MPv10.h
-/// \author Jonathan Mackey
-/// \date 2011.10.06
+/// \author Maggie Goulden
+/// \date 2018.10
 ///
 /// modifications:
-/// - getting it written: mods up until 2011.03.XX
-/// - 2011.03.21 JM: Updated  RTnew() interface for more sources.  It is now simpler.
-/// - 2011.03.29 JM: Added intermediate class mp_rates_ExpH_ImpMetals (Explicit-Hydrogen,
-///    Implicit-Metal treatments).  This is so it will work with CVodes.
-/// - 2011.03.31 JM: Finished coding, fixed a lot of bugs, need to test it now.
-/// - 2011.04.14 JM: In process of testing.  fixed a few things.
-///   2011.04.17 JM: Debugging.
-/// - 2011.05.02 JM: Added set_multifreq_source_properties() function
-/// - 2011.05.04 JM: Added bounding values for ion fraction [eps,1-eps].
-///
-/// Next generation modifications:
-/// - 2011.10.06 JM: NEW FILE!! Getting it written.  Based on mp_v2_aifa.h
-/// - 2011.10.12 JM: Changed local variable from ion fraction to neutral fraction.
-/// - 2011.10.17 JM: Debugging.
-/// - 2012.04.19 JM: Added "PUREHYDROGEN" ifdef for the Iliev et al. 2009 tests.
-/// - 2013.02.14 JM: Started modifying this to include He/Metal mass
-///    fractions as EP parameters, to make metallicity and mu into
-///    variables that can be set from the parameterfile.
-/// - 2013.03.21 JM: Removed redundant ifdeffed stuff.
-/// - 2013.08.12 JM: added get_recombination_rate() public function.
-/// - 2014.09.22 JM: Added  total_cooling_rate() function to get the
-///    cooling rates per cell for postprocessing.
-/// - 2015.07.07 JM: New trtype array structure in constructor.
-/// - 2015.07.16 JM: added pion_flt datatype (double or float).
-/// - 2018.03.20 JM: Renamed file.
+/// - 2018.10 .
 
 #ifndef MPv10_H
 #define MPv10_H
 
 /// Description:
-/// This class is an update on the microphysics class used for JM's
-/// thesis.  It uses an explicit raytracing scheme, so the photon
-/// transmission through the cell does not have to be integrated with
-/// the rate and energy equations.
-///
-/// - It uses multi-frequency photoionisation including spectral
-///   hardening with optical depth, using the method outlined in
-///   Frank & Mellema (1994,A&A,289,937), and updated by Mellema et
-///   al. (2006,NewA,11,374).
-/// - It uses the Hummer (1994,MN,268,109) rates for radiative
-///   recombination and its associated cooling, and Bremsstrahlung
-///   cooling.
-/// - For collisional ionisation the function of Voronov
-///   (1997,ADNDT,65,1) is used.
-/// - Collisional excitation of neutral H, table from Raga, Mellema,
-///   Lundqvist (1997,ApJS,109,517), using data from Aggarwal (1993).
-/// - Then I use various formulae from Henney et al. (2009,MN,398,
-///  157) for cooling due to collisional excitation of photoionised
-///  O,C,N (eq.A9), collisional excitation of neutral metals
-///  (eq.A10), and the Wiersma+2009 CIE metals-only curve.  I take
-///  the max of the WSS09 curve and the Henney et al. functions, to
-///  avoid double counting.  For neutral gas I use heating and
-///  cooling rates from Wolfire et al. (2003).
-/// - Photoheating from ionisation is discussed above.  Cosmic ray
-///  heating will use a standard value, X-ray heating is ignored.
-///  UV heating due to the interstellar radiation field (ISRF) is
-///  according to the optical depth from the edge of the domain to
-///  the cell in question, using e.g. HEA09 eq.A3, if requested.  UV
-///  heating from the star uses the same equation, but with the
-///  optical depth from the source (using a total H-nucleon column
-///  density).
+/// A multi-ion chemistry solver with non-equilibrium ionization and
+/// recombination of different species, and with elemental abundances
+/// that are input for each solve (i.e. can vary within simulation).
 ///
 /// The integration method uses the CVODES solver from the SUNDIALS
 /// package by (Cohen, S. D., & Hindmarsh, A. C. 1996, Computers in
@@ -101,10 +49,7 @@
 
 ///
 /// Integrator for the microphysics equations for the non-equilibrium ion
-/// fraction of hydrogen, and for the internal energy density.
-/// It is explicit in the sense of the raytracer -- the column density is 
-/// not time-averaged by the microphysics integrator but rather is an 
-/// instantaneous value.
+/// fraction of various ions, and for the internal energy density.
 ///
 class MPv10
   :
@@ -136,12 +81,12 @@ class MPv10
 
   ///
   /// The NON-RT MICROPHYSICS update function.
-  /// THIS FUNCTION JUST CALLS TimeUpdateMP_RTnew() WITH NO RADIATION SOURCES.
   ///
-  /// A primitive vector is input, and lots of optional extra data in the
-  /// last argument, and the ion fraction(s) and internal energy are updated
-  /// by the requested timestep.  Results are output to the destination vector,
-  /// which can be the same pointer as the initial vector.
+  /// A primitive vector is input, and lots of optional extra data in
+  /// the last argument, and the ion fraction(s) and internal energy
+  /// are updated by the requested timestep.  Results are saved to
+  /// the destination vector, which can be the same pointer as the
+  /// input vector.
   ///
   int TimeUpdateMP(
       const pion_flt *, ///< Primitive Vector to be updated.
@@ -166,21 +111,10 @@ class MPv10
       const double,   ///< Optical depth to entry point of ray into cell.
       double *        ///< return optical depth through cell in this variable.
       )
-  {cout <<"MPv10::TimeUpdate_RTsinglesrc() is not implemented!\n";return 1;}
+  {cout <<"MPv10::TimeUpdate_RTsinglesrc() not implemented\n";return 1;}
 
   ///
-  /// This takes a copy of the primitive vector and advances it in time over
-  /// the step requested, and at the end copies the updated vector into the
-  /// destination vector.  For fully local microphysics but WITH radiative transfer,
-  /// where the column densities for diffuse and direct radiation are included as 
-  /// parameters.  The input list of column densities is ordered by the number of 
-  /// sources in each category in the vector of integers.
-  ///
-  /// Integers refer to:
-  /// - Number of diffuse ionising sources (at infinity), 
-  /// - Number of diffuse UV sources (at infinity),
-  /// - Number of ionising point sources,
-  /// - Number of UV point sources.
+  /// Not used for this class, so far
   ///
   virtual int TimeUpdateMP_RTnew(
       const pion_flt *, ///< Primitive Vector to be updated.
@@ -191,13 +125,12 @@ class MPv10
       const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       pion_flt *,       ///< Destination Vector for updated values
-                     ///< (can be same as first Vector.
       const double,   ///< Time Step to advance by.
       const double,   ///< EOS gamma.
       const int, ///< Switch for what type of integration to use.
-                ///< (0=adaptive RK5, 1=adaptive Euler,2=onestep o4-RK)
       double *    ///< any returned data (final temperature?).
-      );
+      )
+  {cout <<"MPv10::TimeUpdateMP_RTnew() not implemented\n";return 1;}
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
@@ -211,7 +144,7 @@ class MPv10
 
   ///
   /// Set the gas temperature to a specified value.
-  /// Again only needed if you want this feature in the initial condition generator.
+  /// Needed if you want this feature to set initial conditions.
   ///
   int Set_Temp(
       pion_flt *,     ///< primitive vector.
@@ -221,9 +154,7 @@ class MPv10
 
   ///
   /// This returns the minimum timescale of the times flagged in the
-  /// arguments.  Not implemented for this class, so this will just print
-  /// out a warning and return an unconstrainingly large timescale.  Use
-  /// the newer timescales interface.
+  /// arguments. 
   ///
   virtual double timescales(
       const pion_flt *, ///< Current cell.
@@ -234,10 +165,11 @@ class MPv10
       );
 
   ///
-  /// This returns the minimum timescale of all microphysical processes, including
-  /// reaction times for each species and the total heating/cooling time for the gas.
-  /// It requires the radiation field as an input, so it has substantially greater
-  /// capability than the other timescales function.
+  /// This returns the minimum timescale of all microphysical
+  /// processes, including reaction times for each species and the
+  /// total heating/cooling time for the gas.
+  /// It requires the radiation field as an input, but this is not
+  /// used for now so the vectors can be null.
   ///
   virtual double timescales_RT(
       const pion_flt *, ///< Current cell.
@@ -251,28 +183,22 @@ class MPv10
       );
 
   ///
-  /// Initialise microphysics ionisation fractions to an equilibrium value.
-  /// This is optionally used in the initial condition generator.  Not implemented here.
+  /// Initialise microphysics ionisation fractions to an equilibrium
+  /// value. This is optionally used in the initial condition
+  /// generator.  Not implemented here.
   ///
   int Init_ionfractions(
       pion_flt *, ///< Primitive vector to be updated.
       const double, ///< eos gamma.
-      const double  ///< optional gas temperature to end up at. (negative means use pressure)
+      const double  ///< optional gas temperature to end up at.
       )
-  {cout <<"MPv10::Init_ionfractions() is not implemented! Write me!\n";return 1;}
+  {cout <<"MPv10::Init_ionfractions() not implemented\n";return 1;}
 
   ///
-  /// Return index of tracer for a given string. (only hydrogen for this class!)
+  /// Return index of tracer for a given string.
   ///
   int Tr(
       const string ///< name of tracer we are looking for.
-      );
-
-  ///
-  /// Set the properties of a multifrequency ionising radiation source.
-  ///
-  int set_multifreq_source_properties(
-      const struct rad_src_info *
       );
 
   ///
@@ -288,7 +214,8 @@ class MPv10
       const std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       const double   ///< EOS gamma.
-      );
+      )
+  {cout <<"MPv10::total_cooling_rate() not implemented\n";return 1;}
 
   ///
   /// Get the total recombination rate for an ion, given the input
@@ -298,7 +225,8 @@ class MPv10
       const int,      ///< ion index in tracer array (optional).
       const pion_flt *, ///< input state vector (primitive).
       const double    ///< EOS gamma (optional)
-      );
+      )
+  {cout <<"MPv10::get_recombination_rate() not implemented\n";return 1;}
   
   ///
   /// Return the H mass fraction
@@ -345,31 +273,9 @@ class MPv10
     );
 
   ///
-  /// For each cell, ydot() needs to know the local radiation field.  This function
-  /// takes all of the input radiation sources and calculates what ydot() needs to
-  /// know for both heating and ionisation sources.
-  ///
-  void setup_radiation_source_parameters(
-      const pion_flt *, ///< primitive input state vector.
-      double *,  ///< local input state vector (x_in,E_int)
-      const int , ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data> &,
-      ///< list of UV-heating column densities and source properties.
-      const int,      ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data> &
-      ///< list of ionising src column densities and source properties.
-      );
-
-  ///
   /// Set the size of local vectors, and index them with integers.
   ///
   virtual void setup_local_vectors();
-
-  ///
-  /// Sets the solid angles associated with diffuse sources at infinity (they are not 
-  /// identical for non-cartesian geometries).
-  ///
-  void setup_diffuse_RT_angle();
 
   //
   // ********* STUFF FROM THE mp_v2_aifa CLASS **********
@@ -381,7 +287,6 @@ class MPv10
   int N_extradata; ///< number of elements in user-data array.
 
 
-  std::vector<double> diff_angle; ///< solid angle of each diffuse radiation source.
   //
   // Any data which can be calculated/set at the start of the simulation
   // can be defined here.

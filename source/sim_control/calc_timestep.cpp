@@ -552,9 +552,10 @@ double calc_timestep::get_mp_timescales_with_radiation(
           FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
       }
       //
-      // For the new update we assume we want to limit by all relevant timescales.
+      // We assume we want to limit by all relevant timescales.
       //
-      tempdt = MP->timescales_RT(c->Ph, FVI_nheat, FVI_heating_srcs, FVI_nion, FVI_ionising_srcs, par.gamma);
+      tempdt = MP->timescales_RT(c->Ph, FVI_nheat, FVI_heating_srcs,
+                            FVI_nion, FVI_ionising_srcs, par.gamma);
 #ifdef TESTING
       if (tempdt<dt) {
         cout <<"(get_min_timestep) id="<<c->id<<":  dt="<<tempdt<<", min-dt="<<dt;

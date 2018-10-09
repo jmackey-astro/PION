@@ -122,6 +122,20 @@ int main(int argc, char **argv)
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.grid_nlevels=1;
+  SimPM.levels[0].parent=0;
+  SimPM.levels[0].child=0;
+  SimPM.levels[0].Ncell = SimPM.Ncell;
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+  SimPM.levels[0].simtime = SimPM.simtime;
+  SimPM.levels[0].dt = 0.0;
+  SimPM.levels[0].multiplier = 1;
 
   class setup_fixed_grid *SimSetup =0;
   SimSetup = new setup_fixed_grid();
