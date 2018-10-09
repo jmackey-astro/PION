@@ -21,11 +21,13 @@ OutputFile    MPv10_test
 
 # Number and type of tracers.
 chem_code MPv10
-ntracer 4
-Tracer000 H1+
-Tracer001 Trace
-Tracer002 He1+
-Tracer003 He2+
+ntracer 6
+Tracer000 X_H   # H  mass fraction (element)
+Tracer001 X_He  # He mass fraction (element)
+Tracer002 H1+   # H+   mass fraction (ion)
+Tracer003 He1+  # He+  mass fraction (ion)
+Tracer004 He2+  # He2+ mass fraction (ion)
+Tracer005 Trace # distinguish wind from ISM
 InitIons LEAVE
 
 # Which physics to use
@@ -187,11 +189,12 @@ WIND_0_mdot   1.0e-6
 WIND_0_vinf   1500.0
 WIND_0_temp   37500.0
 WIND_0_Rstr   6.96e15  # 1e5 R_sun
-WIND_0_TR0 1.0
-WIND_0_TR1 1.0
-WIND_0_TR2 0.0
-WIND_0_TR3 0.0
-WIND_0_TR4 0.0
+WIND_0_TR0 0.5  # Half of the wind is H
+WIND_0_TR1 0.5  # The other half is He
+WIND_0_TR2 0.999  
+WIND_0_TR3 0.899
+WIND_0_TR4 0.1
+WIND_0_TR5 0.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000
 WIND_0_t_scalefac 1.0

@@ -157,16 +157,18 @@ MPv10::MPv10(
   // 3) Establish N_species_by_elem, N_species, y_ion_index, y_ion_num_elec, y_elem_mass_frac
   N_species=0;
   int elem_counter=0;
-  float mass;
+  double mass;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
     // Define mass fraction / atomic mass (grams) for this element first.
-    if((*it)=="H"){
+    if((*it)=="X_H"){
+      cout <<"Found element H in list of tracers\n";
       //mass_frac = EP->H_MassFrac;
       mass = m_H;
       X_atom_mass.push_back(mass);
       H_ion_index.push_back(0);
     }
-    else if ((*it)=="He"){
+    else if ((*it)=="X_He"){
+      cout <<"Found element He in list of tracers\n";
       //mass_frac = EP->Helium_MassFrac;
       mass = m_He;
       X_atom_mass.push_back(mass);
@@ -177,7 +179,7 @@ MPv10::MPv10(
     for (int i=0;i<len;i++) {
       s = tracers[i];
       // He compared separately as it is the first two characters.
-      if (s.substr(0,2)=="He" & (*it)=="He"){
+      if (s.substr(0,2)=="He" && (*it)=="He"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
         y_ion_mass_frac_index.push_back(X_elem_index[elem_counter]);
@@ -189,7 +191,7 @@ MPv10::MPv10(
         He_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
         N_species++;
       }
-      else if (s.substr(0,1)==(*it) & s.substr(0,2)!="He" & s.substr(0,1)=="H"){
+      else if (s.substr(0,1)==(*it) && s.substr(0,2)!="He" && s.substr(0,1)=="H"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
         y_ion_mass_frac_index.push_back(X_elem_index[elem_counter]);
@@ -270,11 +272,11 @@ MPv10::MPv10(
   //double p[nv_prim];
   //p[RO]=2.338e-24; p[PG]=1.0e-12;
   for (int i=0;i<N_species;i++){
-    float n_X_y = 1.0;//p[RO]*( p[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
+    double n_X_y = 1.0;//p[RO]*( p[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
     y_ion_number_density.push_back(n_X_y);  //X number density at current cell, organised to match y_ion.
   }
   for (int i=0;i<N_elem;i++){
-    float n_X = 1.0;//p[RO]*( p[ X_elem_index[i]] / X_atom_mass[i]);
+    double n_X = 1.0;//p[RO]*( p[ X_elem_index[i]] / X_atom_mass[i]);
     X_elem_number_density.push_back(n_X);  //X number density at current cell, organised to match y_ion.
   }
 
@@ -417,7 +419,7 @@ int MPv10::convert_prim2local(
   // loop over N_species instead of just having lv_H0, to identify y(species). Want first element to occur at p_local[0].
   int local_index=-1;
   for (int i=0;i<N_species;i++){
-    float n_X_y = p_in[RO]*( p_in[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
+    double n_X_y = p_in[RO]*( p_in[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
     y_ion_number_density[i] = n_X_y;
     local_index = y_ion_index[i] - lv_y0_offset;
     p_local[ local_index] = p_in[ y_ion_index[i]];
