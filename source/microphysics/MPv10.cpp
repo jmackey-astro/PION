@@ -69,7 +69,7 @@ void MPv10::get_error_tolerances(
 {
   *reltol = JM_RELTOL;
   atol[lv_H0]   = JM_MINNEU; ///< minimum neutral fraction I care about.
-  atol[lv_eint] = JM_MINERG; ///< E_{int}: for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
+  atol[lv_eint] = JM_MINERG; ///< E_int: for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
   return;
 }
 
@@ -114,24 +114,30 @@ MPv10::MPv10(
   cout <<"\n---------------------------------------------------------------------\n";
   cout <<"MPv10: a microphysics class.\n";
 
-  // ----------------------------------------------------------------
-  // ------- Set up tracer variables:                       ---------
-  // ------- 1) Identify elements present in tracer list    ---------
-  // ------- 2) Record X_elem_index vector, N_elem          ---------
-  // ------- 3) Record: y_ion_index (index in primitive vector),
-  //            y_elem_mass_frac (mass frac of y_ion_index spec elem),
-  //            y_ion_num_elec (# electrons of y_ion_index species),
-  //            N_species_by_elem (arranged to match X_elem_index)
-  //            
-  // ----------------------------------------------------------------
+  // -----------------------------------------------------------------------------
+  // --------- Set up tracer variables:                                  ---------
+  // --------- (i) Identify elements present in tracer list              ---------
+  // --------- (ii) Record X_mass_frac_index vector, N_elem              ---------
+  // --------- (iii) Record: y_ion_index (index in primitive vector),    ---------
+  // ---------       y_ion_num_elec (# electrons of y_ion_index species),---------
+  // ---------       N_species_by_elem (ordered like X_mass_frac_index)  ---------
+  // ---------                                                           ---------
+  // -----------------------------------------------------------------------------
   cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last ";
   cout <<ntracer<<" variables in state vec.\n";
+  
   int len = ntracer;
   int ftr = nv_prim -ntracer; // first tracer variable.
-  lv_y0_offset = ftr;
-  string s; pv_H1p=-1;
   
-  // 1) Identify elements present in tracer list. Set keeps only unique objects; no doubling up.
+  lv_y0_offset = ftr;
+  
+  std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
+  string s; //pv_H1p=-1;
+  //
+  // ================================================================
+  //          (i) Identify elements present in tracer list
+  // ================================================================
+  //
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
     if (s.substr(0,2)=="He"){
@@ -145,61 +151,65 @@ MPv10::MPv10(
     }
   }
   
+  //
+  // ================================================================
+  //          (ii) Record X_mass_frac_index vector, N_elem  
+  // ================================================================
+  //
   set<string>::iterator it; /// < iterator for set_elem
-  // 2) Record X_elem_index vector, N_elem
   N_elem = 0;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
-      X_elem_index.push_back(ftr + N_elem); ///<record primitive vector index of each element
+      X_mass_frac_index.push_back(ftr + N_elem); ///<record primitive vector index of each element
       N_species_by_elem.push_back(0);
       N_elem++;
   }
   
-  // 3) Establish N_species_by_elem, N_species, y_ion_index, y_ion_num_elec, y_elem_mass_frac
+  // ================================================================
+  //        (iii) Record:
+  //                    N_species,    N_species_by_elem, 
+  //                    y_ion_index,  y_ion_num_elec
+  // ================================================================
   N_species=0;
   int elem_counter=0;
-  double mass;
+  int num_elec_int;
   for (it = set_elem.begin(); it != set_elem.end(); ++it) {
-    // Define mass fraction / atomic mass (grams) for this element first.
-    if((*it)=="X_H"){
+    if((*it)=="H"){
       cout <<"Found element H in list of tracers\n";
-      //mass_frac = EP->H_MassFrac;
-      mass = m_H;
-      X_atom_mass.push_back(mass);
-      H_ion_index.push_back(0);
+      X_elem_atomic_mass.push_back(m_H);
+      X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
+      H_ion_index.push_back(0); //initialise the length of H_ion_index
     }
-    else if ((*it)=="X_He"){
+    else if ((*it)=="He"){
       cout <<"Found element He in list of tracers\n";
-      //mass_frac = EP->Helium_MassFrac;
-      mass = m_He;
-      X_atom_mass.push_back(mass);
+      X_elem_atomic_mass.push_back(m_He);
+      X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
       He_ion_index.push_back(0); He_ion_index.push_back(0);
     }
           
     // Loop over every tracer and assign species index / mass fraction / num electrons to vectors if that tracer corresponds to the current element.
     for (int i=0;i<len;i++) {
       s = tracers[i];
-      // He compared separately as it is the first two characters.
+      // He compared separately as it is the first two characters instead of the first character.
       if (s.substr(0,2)=="He" && (*it)=="He"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
-        y_ion_mass_frac_index.push_back(X_elem_index[elem_counter]);
-        y_elem_atom_mass.push_back(mass);
-        int num_elec_int;
-        stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+        
+        //Use stringstream to convert electron number string to int.
+        stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; 
         y_ion_num_elec.push_back(num_elec_int);
-        cout << s.substr(2,1) << ", " << num_elec_int <<"\n\n\n\n\n\n";
         He_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
+        
         N_species++;
       }
       else if (s.substr(0,1)==(*it) && s.substr(0,2)!="He" && s.substr(0,1)=="H"){
         N_species_by_elem[elem_counter]++;
         y_ion_index.push_back(ftr + N_elem + N_species);
-        y_ion_mass_frac_index.push_back(X_elem_index[elem_counter]);
-        y_elem_atom_mass.push_back(mass);
-        int num_elec_int;
-        stringstream ss; ss << s.substr(1,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+        
+        //Use stringstream to convert electron number string to int.
+        stringstream ss; ss << s.substr(1,1); ss >> num_elec_int;
         y_ion_num_elec.push_back(num_elec_int);
         H_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
+        
         N_species++;
       }
     }
@@ -234,9 +244,9 @@ MPv10::MPv10(
   // initialise all the radiation variables to values that limit their heating
   // and cooling abilities.
   //
-  mpv_nH   = 1.0;  // Hydrogen number density (density of H+ and H)
+  mpv_nH   = 1.0;  // Hydrogen number density (density of H+ and H) -- change that where y_now is, and
   mpv_Vshell  = 1.0e54;
-  mpv_Tau0     = 1.0e6;
+  mpv_Tau0     = 1.0e6;  
   mpv_dTau0    = 1.0;
   mpv_G0_UV   = 0.0;
   mpv_G0_IR   = 0.0;
@@ -268,18 +278,6 @@ MPv10::MPv10(
   // ----------------------------------------------------------------
   // ---------- output cooling rates for various temperatures -------
   // ----------------------------------------------------------------
-  
-  //double p[nv_prim];
-  //p[RO]=2.338e-24; p[PG]=1.0e-12;
-  for (int i=0;i<N_species;i++){
-    double n_X_y = 1.0;//p[RO]*( p[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
-    y_ion_number_density.push_back(n_X_y);  //X number density at current cell, organised to match y_ion.
-  }
-  for (int i=0;i<N_elem;i++){
-    double n_X = 1.0;//p[RO]*( p[ X_elem_index[i]] / X_atom_mass[i]);
-    X_elem_number_density.push_back(n_X);  //X number density at current cell, organised to match y_ion.
-  }
-
   // ================================================================
   // ================================================================
 
@@ -305,11 +303,14 @@ void MPv10::setup_local_vectors()
   y_in  = N_VNew_Serial(N_equations);
   y_out = N_VNew_Serial(N_equations);
   lv_H0   = 0;    // x(H0) is the first element in the array NOTE \Maggie{ LEGACY CODE; REMOVE LATER.}
-  lv_eint = 1;    // E_{int} is the second element.
+  //lv_eint = 1;    // E_{int} is the LAST element.
   lv_eint = N_species;
   //cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
-}
+  /*for (int s=0;s<N_species;s++){
+    int this_ion_index = y_ion_index[s] - lv_y0_offset; //basically, lv_H1 (equivalent to 1 - y[lv_H0])
+    y_ion_frac[s] = NV_Ith_S(y_now,this_ion_index);*/
+  }
 
 
 
@@ -329,8 +330,6 @@ MPv10::~MPv10()
 
 // ##################################################################
 // ##################################################################
-
-
 
 int MPv10::Tr(const string s)
 {
@@ -359,13 +358,13 @@ int MPv10::Tr(const string s)
 
 double MPv10::get_temperature(
       double *y_ion_frac, //< y_ion_fraction (by y_ion_index)
-      vector<pion_flt>& y_ion_number_density,//const double nH, ///< nH
+      vector<pion_flt>& X_number_density,//const double nH, ///< nH
       const double E ///< E_int (per unit volume)
       )
 {
   //
   // returns gas temperature according to E=nkT/(g-1), => T = E*(g-1)/(K*n)
- return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,y_ion_number_density));
+  return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,X_number_density));
 }
 
 // ##################################################################
@@ -374,7 +373,7 @@ double MPv10::get_temperature(
 
 double MPv10::get_ntot(
       double *y_ion_frac,//<y_ion_fraction (by y_ion_index)
-      vector<pion_flt>& y_ion_number_density//const double nH, ///< nH
+      vector<pion_flt>& X_number_density//const double nH, ///< nH
       )
 {
   int species_counter = 0;
@@ -385,15 +384,15 @@ double MPv10::get_ntot(
     pion_flt neutral_frac = 1; //neutral frac, got by subtracting off the ion fractions in the next loop.
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      pion_flt number_density = y_ion_number_density[species_counter];
+      pion_flt number_density = X_number_density[i]*y_ion_frac[species_counter];
       int num_elec = y_ion_num_elec[species_counter];
       
-      n_tot += (1+num_elec)*y_ion_frac[species_counter]*number_density; //add on number of particles got by electrons + ionised atom
+      n_tot += (1+num_elec)*number_density; //add on number of particles got by electrons + ionised atom
       
       neutral_frac -= y_ion_frac[species_counter];
       species_counter ++;
     }
-    n_tot += neutral_frac*y_ion_number_density[species_counter-1];
+    n_tot += neutral_frac*X_number_density[i];
   }
   return n_tot;
 }
@@ -412,20 +411,29 @@ int MPv10::convert_prim2local(
       )
 {
   //
-  // Set internal energy density, H+ fraction, and number density of H.
-  // NOTE \Maggie{ Should also include number densities of all other elements, I think}
-  p_local[lv_eint] = p_in[PG]/(gamma_minus_one);
-  //p_local[lv_H0]   = 1.0-p_in[pv_H1p];
-  // loop over N_species instead of just having lv_H0, to identify y(species). Want first element to occur at p_local[0].
-  int local_index=-1;
-  for (int i=0;i<N_species;i++){
-    double n_X_y = p_in[RO]*( p_in[ y_ion_mass_frac_index[i]] / y_elem_atom_mass[i]);
-    y_ion_number_density[i] = n_X_y;
-    local_index = y_ion_index[i] - lv_y0_offset;
-    p_local[ local_index] = p_in[ y_ion_index[i]];
+  // ==============================================================
+  //                 Set NUMBER DENSITY VECTOR.
+  // ==============================================================
+  //
+  for (int i=0;i<N_elem;i++){//loop over every element
+    double n_X = p_in[RO]*( p_in[ X_mass_frac_index[i]] / X_elem_atomic_mass[i]);
+    X_elem_number_density[i] = n_X;
   }
-  //mpv_nH = p_in[RO]/mean_mass_per_H;
-
+  //
+  // ==============================================================
+  //                 Set INTERNAL ENERGY in local vector.
+  // ==============================================================
+  //
+  p_local[lv_eint] = p_in[PG]/(gamma_minus_one);
+  //
+  // ==============================================================
+  //                 Set ION FRACTIONS in local vector.
+  // ==============================================================
+  //  
+  for (int i=0;i<N_species;i++){//loop over every species
+    int local_index         = y_ion_index[i] - lv_y0_offset;
+    p_local[ local_index]   = p_in[ y_ion_index[i]];
+  }
 
 #ifdef MPv10_DEBUG
   //
@@ -463,7 +471,7 @@ int MPv10::convert_prim2local(
     for (int s=0;s<N_species;s++){
       y_ion_frac[s] = p_in[y_ion_index[s]];
     }
-    p_local[lv_eint] = get_ntot(y_ion_frac,y_ion_number_density)*k_B*EP->MinTemperature/(gamma_minus_one);
+    p_local[lv_eint] = get_ntot(y_ion_frac,X_elem_number_density)*k_B*EP->MinTemperature/(gamma_minus_one);
   }
 
 
@@ -494,11 +502,18 @@ int MPv10::convert_local2prim(
       )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
-
+  //
+  //=================================================================
+  //     Update output primitive vector according to local vector
+  //=================================================================
+  //
   p_out[PG]    = p_local[lv_eint]*(gamma_minus_one);
-  //p_out[pv_H1p] = 1.0-p_local[lv_H0];
+  for (int i=0;i<N_species;i++){
+    int local_index         = y_ion_index[i] - lv_y0_offset;
+    p_out[ y_ion_index[i]]   = p_local[ local_index];
+  }
 
-#ifdef MPv10_DEBUG
+  #ifdef MPv10_DEBUG
   if (p_out[pv_H1p]<-10.0*JM_RELTOL || p_out[pv_H1p]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_H1p])) {
     rep.printVec("p_in",p_in, nv_prim);
     rep.printVec("p_out",p_out, nv_prim);
@@ -509,7 +524,7 @@ int MPv10::convert_local2prim(
     rep.error("Bad output pressure in MPv10::convert_local2prim",p_out[PG]);
 #endif // MPv10_DEBUG
 
-  //
+  // NOTE \Maggie{Must come up with alternative to this for every element
   // Set xHp to be within the required range (not too close to zero or 1).
   //
   //p_out[pv_H1p] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_H1p])));
@@ -520,9 +535,10 @@ int MPv10::convert_local2prim(
   //
   pion_flt y_ion_frac[N_species];
   for (int s=0;s<N_species;s++){
-    y_ion_frac[s] = p_out[y_ion_index[s]];
+    y_ion_frac[s] = p_out[ y_ion_index[s]];
   }
-  double T = get_temperature(y_ion_frac, y_ion_number_density, p_local[lv_eint]);
+  
+  double T = get_temperature(y_ion_frac, X_elem_number_density, p_local[lv_eint]);
   if (T>1.01*EP->MaxTemperature) {
     Set_Temp(p_out,EP->MaxTemperature,0);
 #ifdef MPv10_DEBUG
@@ -557,7 +573,6 @@ double MPv10::Temperature(
 {
   //
   // Check for negative pressure/density!  If either is found, return -1.0e99.
-  // NOTE \Maggie{ This needs changing, too, as the vector only contains hydrogen.}
   if (pv[RO]<=0.0 || pv[PG]<=0.0) {
     //cout <<"MPv10::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
@@ -571,7 +586,7 @@ double MPv10::Temperature(
   for (int s=0;s<N_species;s++){
     y_ion_frac[s] = pv[y_ion_index[s]];
   }
-  return (get_temperature(y_ion_frac, y_ion_number_density, P[lv_eint]));
+  return (get_temperature(y_ion_frac, X_elem_number_density, P[lv_eint]));
 }
 
 
@@ -598,11 +613,17 @@ int MPv10::Set_Temp(
   }
   double P[nvl];
   int err = convert_prim2local(p_pv,P);
+  
+  //Determine y_ion_frac from the primitive vector
   pion_flt y_ion_frac[N_species];
   for (int s=0;s<N_species;s++){
     y_ion_frac[s] = p_pv[y_ion_index[s]];
   }
-  P[lv_eint] = get_ntot(y_ion_frac,y_ion_number_density)*k_B*T/(gamma_minus_one);
+  
+  //Determine internal energy using get_ntot
+  P[lv_eint] = get_ntot(y_ion_frac,X_elem_number_density)*k_B*T/(gamma_minus_one);
+  
+  //Call convert_local2prim with the new local vector; this will generate a new temperature value;
   err += convert_local2prim(P, p_pv, p_pv);
   return err;
 }
@@ -629,7 +650,6 @@ int MPv10::TimeUpdateMP(
     rep.error("Bad input state to MPv10::TimeUpdateMP()",err);
   }
   // Populates CVODE vector with initial conditions (input)
-  for (int v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
 
   //
   // Calculate y-dot[] to see if anything is changing significantly over dt
@@ -727,7 +747,7 @@ double MPv10::timescales_RT(
   if (err) {
     rep.error("Bad input state to MPv10::timescales_RT()",err);
   }
-  NV_Ith_S(y_in,lv_H0  ) = P[lv_H0];
+  for (int v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
   NV_Ith_S(y_in,lv_eint) = P[lv_eint];
 
   //
@@ -802,29 +822,32 @@ int MPv10::ydot(
 {
   //
   // fixes min-neutral-fraction to Min_NeutralFrac
-  // NOTE \Maggie { I thiiiink quite a few things need changing here...}
-  double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac); //y0
-  double E_in      = NV_Ith_S(y_now,lv_eint);
-  double x_in      = 1.0-OneMinusX;
-    
-  // NOTE \Maggie{this should be updated so as to add up all the electrons freed from ions}
-  //double ne        = JM_NELEC*x_in*mpv_nH;
-  //
-  // First get the temperature.  We assume the total particle number density
-  // is given by 1.1*nH*(1+x_in), appropriate for a gas with 10% Helium by 
-  // number, and if He is singly ionised whenever H is.
-  //
+  double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac); //NOTE \Maggie{LEGACY CODE; REMOVE}
+  double x_in      = 1.0-OneMinusX; //NOTE \Maggie{LEGACY CODE; REMOVE}
+
   double ne=0;
   double y_ion_frac[N_species];
   
-  for (int s=0;s<N_species;s++){
-    int this_ion_index = y_ion_index[s] - lv_y0_offset; //basically, lv_H1 (equivalent to 1 - y[lv_H0])
-    int this_elem_mass_frac_index = y_ion_mass_frac_index[s] - lv_y0_offset;
-    y_ion_frac[s] = NV_Ith_S(y_now,this_ion_index);
-    double X_elem_mass_frac = NV_Ith_S(y_now,this_elem_mass_frac_index);
-    ne += y_ion_frac[s]*y_ion_num_elec[s]*X_elem_mass_frac;
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
+    int species_counter=0;
+    int N_elem_species=N_species_by_elem[elem];
+    
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+      //add to y_ion_frac
+      int this_ion_index = y_ion_index[species_counter] - lv_y0_offset;
+      y_ion_frac[species_counter] = NV_Ith_S(y_now,this_ion_index);
+      
+      //add to ne based on the number of electrons liberated to obtain this ion
+      pion_flt number_density = X_elem_number_density[elem]*y_ion_frac[species_counter];
+      int num_elec = y_ion_num_elec[species_counter];
+      ne += num_elec*number_density;
+      
+      species_counter ++;
+    }
   }
-  double T = get_temperature(y_ion_frac, y_ion_number_density, E_in);
+  double E_in      = NV_Ith_S(y_now,lv_eint);
+
+  double T = get_temperature(y_ion_frac, X_elem_number_density, E_in);
   cout << "Temperature="<< T<<"\n"<<"Electron density="<<ne<<"\n\n\n";
   //double T = get_temperature_local(mpv_nH, E_in, x_in);
 
@@ -925,5 +948,6 @@ int MPv10::ydot(
   NV_Ith_S(y_dot,lv_eint) = Edot;
   return 0;
 }
+
 
 
