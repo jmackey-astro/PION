@@ -151,7 +151,7 @@ int main(int argc, char **argv)
   cout << "rank: " << myrank << " nproc: " << nproc << "\n";
   delete COMM; COMM=0;
   cout <<"-------------------------------------------------------\n";
-  cout <<"---------   pion NG MPI v1.0 finsihed  ----------------\n";
+  cout <<"---------   pion NG MPI v1.0 finished  ----------------\n";
   cout <<"-------------------------------------------------------\n";
 
   return 0;

@@ -32,8 +32,6 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   if (b->data.empty())
     rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",
                                                         b->itype);
-  b->NG.clear();
-
   list<cell*>::iterator bpt=b->data.begin();
   int gidx = grid->idx();
   cell *pc = parent->FirstPt_All(); // parent cell.
@@ -50,7 +48,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     while (distance > gidx && pc!=0) {
       pc = parent->NextPt_All(pc);
       if (!pc && !loop) { // hack: if get to the end, then go back...
-        pc = b->NG.front();
+        pc =  parent->FirstPt_All();
         loop = true;
       }
       distance = grid->idistance(pc->pos, (*bpt)->pos);
@@ -58,8 +56,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     if (!pc)
       rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
     
-    // add this parent cell to the "parent" list of this boundary.
-    b->NG.push_back(pc);
+    // set boundary cell's 'npt' pointer to point to the parent cell.
     (*bpt)->npt = pc;
     ++bpt;
   }  while (bpt !=b->data.end());
@@ -128,7 +125,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       solver->PtoU(c->P, U, par.gamma);
       for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
       solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
-#ifdef TEST_INF
+#ifdef TEST_C2F
       for (int v=0;v<par.nvar;v++) {
         if (!isfinite(c->Ph[v])) {
           rep.printVec("NAN c->P ",c->P,par.nvar);
@@ -209,12 +206,28 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f4 = fine->NextPt(f2,YP);
         
 #ifdef TEST_C2F
-        cout <<"interpolating coarse to fine 2d: coarse="<<c->id;
+        cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
         cout <<", f1="<<f1->id<<", f2="<<f2->id;
         cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+        CI.print_cell(c);
+        //CI.print_cell(f1);
+        //CI.print_cell(f2);
+        //CI.print_cell(f3);
+        //CI.print_cell(f4);
 #endif
         interpolate_coarse2fine2D(
               par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
+        
+#ifdef TEST_C2F
+        cout <<"AFTER interpolating coarse to fine 2d: coarse="<<c->id;
+        cout <<", f1="<<f1->id<<", f2="<<f2->id;
+        cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+        CI.print_cell(c);
+        CI.print_cell(f1);
+        //CI.print_cell(f2);
+        //CI.print_cell(f3);
+        //CI.print_cell(f4);
+#endif
 
       } // loop over fine cells
     } // 2D

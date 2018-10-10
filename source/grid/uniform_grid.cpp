@@ -1202,66 +1202,57 @@ void UniformGrid::BC_deleteBoundaryData(
     b->refval = mem.myfree(b->refval);
   }
 
+  list<cell *>::iterator i=b->data.begin();
   if (b->data.empty()) {
 #ifdef TESTING
     cout <<"BC destructor: No boundary cells to delete.\n";
 #endif
   }
   else {
-    list<cell *>::iterator i=b->data.begin();
     do {
       b->data.erase(i);
       i=b->data.begin();
     }  while(i!=b->data.end());
-
-    if (b->send_data.size()>0) {
-      i=b->send_data.begin();
-      do {
-        b->send_data.erase(i);
-        i=b->send_data.begin();
-      }  while(i!=b->send_data.end());
-    }
-
-    if (b->NG.size()>0) {
-      i=b->NG.begin();
-      do {
-        b->NG.erase(i);
-        i=b->NG.begin();
-      }  while(i!=b->NG.end());
-    }
-
-    for (unsigned int j=0; j<b->NGrecvF2C.size(); j++) {
-      i=b->NGrecvF2C[j].begin();
-      do {
-        b->NGrecvF2C[j].erase(i);
-        i=b->NGrecvF2C[j].begin();
-      }  while(i!=b->NGrecvF2C[j].end());
-    }
-    b->NGrecvF2C.clear();
-
-    for (unsigned int j=0; j<b->NGrecvC2F.size(); j++) {
-      i=b->NGrecvC2F[j].begin();
-      do {
-        b->NGrecvC2F[j].erase(i);
-        i=b->NGrecvC2F[j].begin();
-      }  while(i!=b->NGrecvC2F[j].end());
-    }
-    b->NGrecvC2F.clear();
-
-    for (unsigned int j=0; j<b->NGsendC2F.size(); j++) {
-      b->NGsendC2F[j]->c.clear();
-      b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
-    }
-    b->NGsendC2F.clear();
-
-    for (unsigned int j=0; j<b->avg.size(); j++) {
-      b->avg[j].avg_state = mem.myfree( b->avg[j].avg_state);
-      b->avg[j].c.clear();
-    }
-    b->avg.clear();
-
-
   }
+
+  if (b->send_data.size()>0) {
+    i=b->send_data.begin();
+    do {
+      b->send_data.erase(i);
+      i=b->send_data.begin();
+    }  while(i!=b->send_data.end());
+  }
+
+  for (unsigned int j=0; j<b->NGrecvF2C.size(); j++) {
+    i=b->NGrecvF2C[j].begin();
+    do {
+      b->NGrecvF2C[j].erase(i);
+      i=b->NGrecvF2C[j].begin();
+    }  while(i!=b->NGrecvF2C[j].end());
+  }
+  b->NGrecvF2C.clear();
+
+  for (unsigned int j=0; j<b->NGrecvC2F.size(); j++) {
+    i=b->NGrecvC2F[j].begin();
+    do {
+      b->NGrecvC2F[j].erase(i);
+      i=b->NGrecvC2F[j].begin();
+    }  while(i!=b->NGrecvC2F[j].end());
+  }
+  b->NGrecvC2F.clear();
+
+  for (unsigned int j=0; j<b->NGsendC2F.size(); j++) {
+    b->NGsendC2F[j]->c.clear();
+    b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
+  }
+  b->NGsendC2F.clear();
+
+  for (unsigned int j=0; j<b->avg.size(); j++) {
+    b->avg[j].avg_state = mem.myfree( b->avg[j].avg_state);
+    b->avg[j].c.clear();
+  }
+  b->avg.clear();
+
   return;
 }
 

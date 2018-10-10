@@ -468,13 +468,16 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       // 1st order, so no averaging.  Fine cells have exactly the
       // same state as the coarse one.
       double Ph[par.nvar];
-      double cpos[par.ndim], c_vol=0.0;
+#ifdef TEST_MPI_NG
+      double cpos[par.ndim];
+#endif
+      //double c_vol=0.0;
       cell *c=0;
       for (unsigned int ic=0; ic<b->NGrecvC2F.size(); ic++) {
         // read data for this coarse cell into arrays
         for (int v=0;v<par.nvar;v++) Ph[v] = buf[ibuf+v];
         ibuf += par.nvar;
-        c_vol = buf[ibuf];
+        //c_vol = buf[ibuf];
         ibuf++;
         for (int v=0;v<par.ndim;v++) cpos[v] = buf[ibuf+v];
         ibuf += par.ndim;
@@ -483,11 +486,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         for (f_iter=b->NGrecvC2F[ic].begin();
               f_iter!=b->NGrecvC2F[ic].end(); ++f_iter) {
           c = (*f_iter);
-//#ifdef TEST_MPI_NG
+#ifdef TEST_MPI_NG
           for (int v=0;v<par.ndim;v++) cpos[v] -= c->pos[v];
           cout <<"ic="<<ic<<", cell is "<<c<<"  ";
           rep.printVec("offset is:",cpos,par.ndim);
-//#endif
+#endif
           for (int v=0;v<par.nvar;v++) c->Ph[v] = Ph[v];
         } // loop over fine cells
       } // loop over coarse cells

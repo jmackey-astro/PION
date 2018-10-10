@@ -146,7 +146,7 @@ int assign_update_bcs_NG::TimeUpdateExternalBCs(
       )
 {
 #ifdef TEST_MPI_NG
-  cout <<"update_bcs_NG: external boundary update"<<endl;
+  //cout <<"update_bcs_NG: external boundary update"<<endl;
 #endif
 
   struct boundary_data *b;

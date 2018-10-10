@@ -36,40 +36,40 @@ int assign_update_bcs_NG_MPI::assign_boundary_data(
   //
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
 #ifdef TEST_MPI_NG
-    cout <<"NG grid assign BCs: BC["<<i<<"] starting.\n";
+    cout <<"LEVEL "<<level<<": NG grid assign BCs: BC["<<i<<"] starting.\n";
 #endif
     switch (grid->BC_bd[i]->itype) {
       case FINE_TO_COARSE_SEND:
 #ifdef TEST_MPI_NG
-      cout <<"NG grid setup: Assigning FINE_TO_COARSE_SEND BC\n";
+      cout <<"LEVEL "<<level<<": NG grid setup: Assigning FINE_TO_COARSE_SEND BC\n";
 #endif
       err += BC_assign_FINE_TO_COARSE_SEND(par,level,grid->BC_bd[i]);
       break;
 
       case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
-      cout <<"NG grid setup: Assigning FINE_TO_COARSE_RECV BC\n";
+      cout <<"LEVEL "<<level<<": NG grid setup: Assigning FINE_TO_COARSE_RECV BC\n";
 #endif
       err += BC_assign_FINE_TO_COARSE_RECV(par,level,grid->BC_bd[i]);
       break;
 
       case COARSE_TO_FINE_SEND:
 #ifdef TEST_MPI_NG
-      cout <<"assign_update_bcs_NG_MPI:: Assigning COARSE_TO_FINE_SEND BC\n";
+      cout <<"LEVEL "<<level<<": assign_update_bcs_NG_MPI:: Assigning COARSE_TO_FINE_SEND BC\n";
 #endif
       err += BC_assign_COARSE_TO_FINE_SEND(par,level,grid->BC_bd[i]);
       break;
 
       case COARSE_TO_FINE_RECV:
 #ifdef TEST_MPI_NG
-      cout <<"assign_update_bcs_NG_MPI:: Assigning COARSE_TO_FINE_RECV BC\n";
+      cout <<"LEVEL "<<level<<": assign_update_bcs_NG_MPI:: Assigning COARSE_TO_FINE_RECV BC\n";
 #endif
       err += BC_assign_COARSE_TO_FINE_RECV(par,level,grid->BC_bd[i]);
       break;
 
       default:
 #ifdef TEST_MPI_NG
-      cout <<"leaving BC "<<i<<" alone in NG grid assign fn.\n";
+      cout <<"LEVEL "<<level<<": leaving BC "<<i<<" alone in NG grid assign fn.\n";
 #endif
       break;
     }
@@ -102,12 +102,15 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
   int err = 0;
   size_t i=0;
 #ifdef TEST_MPI_NG
-  cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
+  cout <<"LEVEL "<<level<<": BC_nbd = "<<grid->BC_bd.size()<<"\n";
 #endif
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
     switch (b->itype) {
     case STWIND:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_STWIND(par,grid, simtime, b, cstep, maxstep);
       break;
     case PERIODIC:
@@ -130,8 +133,10 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
 
     case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
       cout <<"found FINE_TO_COARSE_RECV boundary to update\n";
 #endif
+      // receive these data in every case
       err += BC_update_FINE_TO_COARSE_RECV(
                                   par,solver,level,b,cstep,maxstep);
       BC_FINE_TO_COARSE_SEND_clear_sends();
@@ -143,11 +148,17 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
       break;
 
     case FINE_TO_COARSE_SEND:
+      // only send data every 2nd step (OA1 update) or every full
+      // step update (OA2 update).
+      if ( (par.tmOOA==1 && (par.levels[level].step%2)==0) ||
+           (par.tmOOA==2 &&  cstep==maxstep) ) {
 #ifdef TEST_MPI_NG
-      cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
+        cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+        cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
 #endif
-      err += BC_update_FINE_TO_COARSE_SEND(
+        err += BC_update_FINE_TO_COARSE_SEND(
                                   par,solver,level,b,cstep,maxstep);
+      }
       break;
       
     }
@@ -177,14 +188,14 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       )
 {
 #ifdef TEST_MPI_NG
-  cout <<"update_bcs_NG_MPI: external boundary update"<<endl;
+  cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: external boundary update"<<endl;
 #endif
 
   struct boundary_data *b;
   int err = 0;
   size_t i=0;
 #ifdef TEST_MPI_NG
-  cout <<"BC_nbd = "<<grid->BC_bd.size()<<"\n";
+  cout <<"LEVEL "<<level<<": BC_nbd = "<<grid->BC_bd.size()<<"\n";
 #endif
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[i];
@@ -193,37 +204,70 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
 #endif
     switch (b->itype) {
     case PERIODIC:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_PERIODIC(  par,level,grid, b, cstep, maxstep);
       break;
     case BCMPI:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_BCMPI(par,level,grid, b, cstep, maxstep,
                                                         BC_MPItag);
       break;
     case OUTFLOW:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_OUTFLOW(    par,grid, b, cstep, maxstep);
       break;
     case ONEWAY_OUT:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_ONEWAY_OUT( par,grid, b, cstep, maxstep);
       break;
     case INFLOW:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_INFLOW(     par,grid, b, cstep, maxstep);
       break;
     case REFLECTING:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_REFLECTING( par,grid, b, cstep, maxstep);
       break;
     case FIXED:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_FIXED(      par,grid, b, cstep, maxstep);
       break;
     case JETBC:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_JETBC(      par,grid, b, cstep, maxstep);
       break;
     case JETREFLECT:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_JETREFLECT( par,grid, b, cstep, maxstep);
       break;
     case DMACH:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_DMACH(      par,grid, simtime, b, cstep, maxstep);
       break;
     case DMACH2:
+#ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
+#endif
       err += BC_update_DMACH2(     par,grid, b, cstep, maxstep);
       break;
       case STWIND:
@@ -236,6 +280,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       // get outer boundary of this grid from coarser grid.
       case COARSE_TO_FINE_RECV:
 #ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
       cout <<"found COARSE_TO_FINE_RECV boundary to update\n";
 #endif
       // only update if at the start of a full step.
@@ -249,6 +294,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
       // send data from this grid to outer boundary of finer grid.
       case COARSE_TO_FINE_SEND:
 #ifdef TEST_MPI_NG
+      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc "<<i<<" with type "<<b->type<<"\n";
       cout <<"found COARSE_TO_FINE_SEND boundary to update\n";
 #endif
       err += BC_update_COARSE_TO_FINE_SEND(
@@ -261,7 +307,7 @@ int assign_update_bcs_NG_MPI::TimeUpdateExternalBCs(
     }
   }
 #ifdef TEST_MPI_NG
-  cout <<"updated NG-MPI-grid serial external BCs\n";
+  cout <<"LEVEL "<<level<<": updated NG-MPI-grid serial external BCs\n";
 #endif
 
   return(0);

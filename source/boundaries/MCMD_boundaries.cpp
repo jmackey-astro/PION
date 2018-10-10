@@ -132,14 +132,14 @@ int MCMD_bc::BC_update_BCMPI(
       int comm_tag
       )
 {
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"*******************************************\n";
   cout <<"BC_update_BCMPI: sending data in dir: "<<b->dir<<"\n";
   cout <<"BC_update_BCMPI: sending "<<b->send_data.size();
   cout <<" cells.  Boundary data contains "<<b->data.size();
   cout <<" cells.\n";
   cout.flush();
-#endif // TESTING
+#endif
 
   //
   // send the data.
@@ -147,7 +147,7 @@ int MCMD_bc::BC_update_BCMPI(
   int err = 0;
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   string send_id;
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"BC_update_BCMPI: sending data...\n";
 #endif 
   err += COMM->send_cell_data(
@@ -177,6 +177,7 @@ int MCMD_bc::BC_update_BCMPI(
     // return message from where we sent our data to.
     recv_dir = b->dir;
     seek_tag = comm_tag;
+    recv_b = grid->BC_bd[b->dir];
   }
 
   string recv_id; int recv_tag=-1; int from_rank=-1;
@@ -188,7 +189,7 @@ int MCMD_bc::BC_update_BCMPI(
         COMM_CELLDATA ///< type of data we want.
         );
   if (err) rep.error("look for cell data failed",err);
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"BC_update_BCMPI: got data to receive from rank: "<<from_rank<<"\n";
 #endif 
 
@@ -198,7 +199,7 @@ int MCMD_bc::BC_update_BCMPI(
   // periodic boundary from the same process -- we need to decide
   // which one we are getting.
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"BC_update_BCMPI: associating direction with rank.\n";
 #endif 
   enum direction dir=NO;
@@ -242,7 +243,7 @@ int MCMD_bc::BC_update_BCMPI(
     }
   }
   if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<ppar->get_myrank()<<"\tBC_update_BCMPI: Receiving Data type ";
   cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
 #endif 
@@ -269,6 +270,9 @@ int MCMD_bc::BC_update_BCMPI(
     list<cell*>::iterator c=b2->data.begin();
     for (c=b2->data.begin(); c!=b2->data.end(); ++c) {
       for (int v=0;v<par.nvar;v++) (*c)->P[v] = (*c)->Ph[v];
+#ifdef TEST_COMMS
+      rep.printVec("P",(*c)->P,par.nvar);
+#endif
     } // all cells.
   } // if full timestep.
   

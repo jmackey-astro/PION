@@ -577,9 +577,11 @@ double sim_control_NG::advance_step_OA1(
     rep.errorTest("scn::advance_step_OA1: calc_rt_cols()",0,err);
   }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-  err += calc_dynamics_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART, grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART,
+                                                            grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART, grid);
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,
+                                        TIMESTEP_FIRST_PART, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA1: calc_x_dU",0,err);
 
@@ -652,7 +654,10 @@ double sim_control_NG::advance_step_OA2(
   }
   dt2_this = SimPM.levels[l].dt;
 
-  spatial_solver->Setdt(SimPM.levels[l].dt);
+  // Predictor step: use 0.5*dt to get to time-centred state
+  double dt_now = dt2_this*0.5;             // half of the timestep
+  double ctime = SimPM.levels[l].simtime; // current time
+  spatial_solver->Setdt(dt_now);
   // May need to do raytracing
   if (grid->RT && (!FVI_need_column_densities_4dt ||
     (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
@@ -667,33 +672,33 @@ double sim_control_NG::advance_step_OA2(
 #ifdef TEST_INT
   cout <<"l="<<l<<" half step, start calc_microphysics_dU\n";
 #endif
-  err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
+  err += calc_microphysics_dU(dt_now, grid);
 #ifdef TEST_INT
   cout <<"l="<<l<<" half step, start calc_dynamics_dU\n";
 #endif
-  err += calc_dynamics_dU(SimPM.levels[l].dt,
-                                    TIMESTEP_FIRST_PART, grid);
+  err += calc_dynamics_dU(dt_now,TIMESTEP_FIRST_PART, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,
-                                    TIMESTEP_FIRST_PART, grid);
+  err += calc_thermal_conduction_dU(dt_now,TIMESTEP_FIRST_PART, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA1",0,err);
 #ifdef TEST_INT
-  cout <<"l="<<l<<" half step, done with dU, grid_update_state_vector\n";
+  cout <<"l="<<l<<" half step, grid_update_state_vector\n";
 #endif
-  err += grid_update_state_vector(SimPM.levels[l].dt,
+  err += grid_update_state_vector(dt_now,
                                     TIMESTEP_FIRST_PART,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA1",0,err);  
   // Update boundary data.
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
-                                    SimPM.simtime, OA1, OA2);
+                                    ctime+dt_now, OA1, OA2);
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                                    SimPM.simtime, OA1, OA2);
+                                    ctime+dt_now, OA1, OA2);
   rep.errorTest("scn::advance_step_OA2: bounday update OA1",0,err);
 
   //
   // Now calculate dU for the full step (OA2)
   //
+  dt_now = dt2_this;  // full step
+  spatial_solver->Setdt(dt_now);
   if (grid->RT) {
     err += calculate_raytracing_column_densities(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
@@ -701,14 +706,13 @@ double sim_control_NG::advance_step_OA2(
 #ifdef TEST_INT
   cout <<"l="<<l<<" full step, start calc_microphysics_dU\n";
 #endif
-  err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
+  err += calc_microphysics_dU(dt_now, grid);
 #ifdef TEST_INT
   cout <<"l="<<l<<" full step, start calc_dynamics_dU\n";
 #endif
-  err += calc_dynamics_dU(SimPM.levels[l].dt, TIMESTEP_FULL, grid);
+  err += calc_dynamics_dU(dt_now, TIMESTEP_FULL, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,
-                                    TIMESTEP_FULL, grid);
+  err += calc_thermal_conduction_dU(dt_now,TIMESTEP_FULL, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
 
@@ -724,10 +728,9 @@ double sim_control_NG::advance_step_OA2(
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
 #ifdef TEST_INT
-  cout <<"l="<<l<<" full step, done with dU, grid_update_state_vector\n";
+  cout <<"l="<<l<<" full step, grid_update_state_vector\n";
 #endif
-  err += grid_update_state_vector(SimPM.levels[l].dt,
-                                    TIMESTEP_FULL,OA2, grid);
+  err += grid_update_state_vector(dt_now,TIMESTEP_FULL,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA2",0,err);  
 
   // increment time and timestep for this level
@@ -741,9 +744,9 @@ double sim_control_NG::advance_step_OA2(
   // update internal and external boundaries.
   //
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
-                                    SimPM.simtime, OA2, OA2);
+                                SimPM.levels[l].simtime, OA2, OA2);
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                                    SimPM.simtime, OA2, OA2);
+                                SimPM.levels[l].simtime, OA2, OA2);
 
 
 #ifdef TEST_INT
@@ -795,7 +798,7 @@ int sim_control_NG::calculate_raytracing_column_densities(
            Tau4[MAX_TAU], tmp[MAX_TAU];
     class cell *c, *f1, *f2, *f3, *f4;
     list<class cell*>::iterator c_iter=b->data.begin();
-    list<class cell*>::iterator f_iter=b->NG.begin();
+    list<class cell*>::iterator f_iter=b->NGrecvF2C[0].begin();
     struct rad_src_info *s;
     double cpos[MAX_DIM];
     double diffx,diffy;

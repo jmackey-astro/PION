@@ -315,7 +315,7 @@ int comm_mpi::send_cell_data(
 	+ sizeof((*c)->id);
   long int totalsize = 0;
   totalsize = sizeof(long int) + nc*unitsize;
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<" Send buffer unitsize= "<<unitsize;
   cout <<" total size = "<< totalsize <<"\n";
 #endif
@@ -346,6 +346,12 @@ int comm_mpi::send_cell_data(
       MPI_INT,    reinterpret_cast<void *>(send_buff), totalsize,
       &position, MPI_COMM_WORLD);
 
+#ifdef TEST_COMMS
+    rep.printVec("cpos",(*c)->pos,ndim);
+    rep.printVec("P ",(*c)->P,nvar);
+    rep.printVec("Ph",(*c)->Ph,nvar);
+#endif
+    
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Pack(reinterpret_cast<void *>((*c)->Ph), nvar,
       MPI_DOUBLE, reinterpret_cast<void *>(send_buff), totalsize,
@@ -387,21 +393,22 @@ int comm_mpi::send_cell_data(
   si->type = COMM_CELLDATA;
   comm_mpi::sent_list.push_back(si);
 
+#ifdef TEST_COMMS
+  rep.printVec("send_buff",reinterpret_cast<pion_flt *>(send_buff),113);
+#endif
+  
   //
-  // Send data. (non-blocking, so i can return and receive a boundary!!!)
+  // Send data. (non-blocking, so i can return and receive a boundary)
   //
-  //  BLOCKING:      int MPI_Send(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm)
-  //  NON-BLOCKING: int MPI_Isend(void* buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
-  //err += MPI_Isend(reinterpret_cast<void *>(send_buff), position, MPI_PACKED, si->to_rank, si->comm_tag, MPI_COMM_WORLD, si->request);
   err += MPI_Isend(si->data, position, MPI_PACKED, si->to_rank, si->comm_tag, MPI_COMM_WORLD, &(si->request));
   if (err) rep.error("MPI_Send failed",err);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::send_cell_data: sending "<<position;
   cout <<" bytes in buffer size: "<<totalsize<<" to rank ";
   cout <<to_rank<<"\n";
   cout.flush();
-#endif //TESTING
+#endif
 
   ostringstream temp; temp.str("");
   temp <<"from "<<myrank<<" to "<<to_rank<<" tag="<<comm_tag;

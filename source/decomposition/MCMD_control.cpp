@@ -63,9 +63,11 @@ int MCMDcontrol::decomposeDomain(
       class level &level     ///< pointer to domain parameters for NG grid level
       )
 {
+#ifdef TESTING
   cout << "---MCMDcontrol::decomposeDomain() decomposing domain. ";
   cout << " Nproc="<<nproc<<", myrank="<<myrank<<"\n";
-
+#endif
+  
   //
   // We subdivide the domain in half recursively, where the axis we cut along
   // is always the one in which the domain is longest.  In this way we minimize

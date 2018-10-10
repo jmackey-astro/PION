@@ -98,18 +98,18 @@ class sim_control_NG :
       );
 
   ///
-  /// First-order-accurate time integration for a single step on level l.
-  /// Returns the sum of delta-t for the timestep just completed, and the
-  /// step to come.
+  /// First-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed and
+  /// the step to come.
   ///
   virtual double advance_step_OA1(
       const int ///< level in NG grid.
       );
 
   ///
-  /// Second-order-accurate time integration for a single step on level l.
-  /// Returns the sum of delta-t for the timestep just completed, and the
-  /// step to come.
+  /// Second-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed, and
+  /// the step to come.
   ///
   virtual double advance_step_OA2(
       const int ///< level in NG grid.
