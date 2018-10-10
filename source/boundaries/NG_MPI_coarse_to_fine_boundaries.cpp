@@ -208,13 +208,20 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     ostringstream tmp;
     tmp <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib]->rank;
     string id = tmp.str();
+    // Need to add direction to comm-tag because we might be sending
+    // more than one boundary to the same process.  Also add level, 
+    // because it can happen that more than one level sends the same
+    // boundary to the same proc.
+    // So the tag is 1000 + 100*dir + level+1.
+    // This is unique as long as level<99.
+    int comm_tag = BC_MPI_NGC2F_tag+100*b->NGsendC2F[ib]->dir +l+1;
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
     cout <<" doubles from proc "<<MCMD->get_myrank();
     cout <<" to child proc "<<b->NGsendC2F[ib]->rank<<"\n";
 #endif
     err += COMM->send_double_data(b->NGsendC2F[ib]->rank,n_el,buf,
-                                  id,BC_MPI_NGC2F_tag);
+                                  id,comm_tag);
     if (err) rep.error("Send_C2F send_data failed.",err);
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_SEND: returned with id="<<id;
@@ -238,11 +245,16 @@ void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
 {
   for (unsigned int ib=0; ib<NG_C2F_send_list.size(); ib++) {
 #ifdef TEST_MPI_NG
-    cout <<"C2F_send: clearing send # "<<ib<<" of ";
-    cout <<NG_C2F_send_list.size()<<"\n";
+    cout <<"C2F_send: clearing send # "<<ib+1<<" of ";
+    cout <<NG_C2F_send_list.size()<<", id=";
+    cout <<NG_C2F_send_list[ib]<<"...";
     cout.flush();
 #endif
     COMM->wait_for_send_to_finish(NG_C2F_send_list[ib]);
+#ifdef TEST_MPI_NG
+    cout <<" ... done!\n";
+    cout.flush();
+#endif
   }
   NG_C2F_send_list.clear();
   return;
@@ -430,12 +442,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     // receive data.
     //
     string recv_id; int recv_tag=-1; int from_rank=-1;
+    int comm_tag = BC_MPI_NGC2F_tag+100*b->dir +l;
     err = COMM->look_for_data_to_receive(&from_rank, recv_id,
-                        &recv_tag,BC_MPI_NGC2F_tag, COMM_DOUBLEDATA);
+                        &recv_tag,comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed",err);
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_RECV: found data from rank ";
-    cout <<from_rank<<", with tag "<< recv_tag<<"\n";
+    cout <<from_rank<<", with tag "<< recv_tag<<" and id ";
+    cout <<recv_id<<".  Looked for comm_tag="<<comm_tag<<"\n";
 #endif 
 
     // receive the data: nel is the number of coarse grid cells
@@ -468,8 +482,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       // 1st order, so no averaging.  Fine cells have exactly the
       // same state as the coarse one.
       double Ph[par.nvar];
-#ifdef TEST_MPI_NG
       double cpos[par.ndim];
+#ifdef TEST_MPI_NG
+      double off[par.ndim];
 #endif
       //double c_vol=0.0;
       cell *c=0;
@@ -487,11 +502,12 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
               f_iter!=b->NGrecvC2F[ic].end(); ++f_iter) {
           c = (*f_iter);
 #ifdef TEST_MPI_NG
-          for (int v=0;v<par.ndim;v++) cpos[v] -= c->pos[v];
-          cout <<"ic="<<ic<<", cell is "<<c<<"  ";
-          rep.printVec("offset is:",cpos,par.ndim);
+          //for (int v=0;v<par.ndim;v++) off[v] = cpos[v]- c->pos[v];
+          //cout <<"ic="<<ic<<", cell is "<<c<<"  ";
+          //rep.printVec("offset is:",off,par.ndim);
 #endif
           for (int v=0;v<par.nvar;v++) c->Ph[v] = Ph[v];
+          for (int v=0;v<par.nvar;v++) c->P[v] = Ph[v];
         } // loop over fine cells
       } // loop over coarse cells
     } // if 1st order accurate
@@ -733,7 +749,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
   size_t ct=0;
   cell *c = grid->FirstPt_All();
   do {
-    rep.printVec("cpos",c->pos,par.ndim);
+    //rep.printVec("cpos",c->pos,par.ndim);
     if (c->pos[XX]>xn && c->pos[XX]<xp &&
         c->pos[YY]>yn && c->pos[YY]<yp) {
       bdata->c.push_back(c);

@@ -1243,7 +1243,9 @@ void UniformGrid::BC_deleteBoundaryData(
 
   for (unsigned int j=0; j<b->NGsendC2F.size(); j++) {
     b->NGsendC2F[j]->c.clear();
-    b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
+    struct c2f *t = b->NGsendC2F[j];
+    delete t;
+    //b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
   }
   b->NGsendC2F.clear();
 

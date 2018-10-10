@@ -23,15 +23,7 @@
 class NG_MPI_coarse_to_fine_bc :
   virtual public NG_coarse_to_fine_bc
 {
-  protected:
-  
-  /// Assigns cells to lists for sending to external boundaries of
-  /// child cells.
-  virtual int BC_assign_COARSE_TO_FINE_SEND(
-      class SimParams &,     ///< pointer to simulation parameters
-      const int,  ///< level of this grid.
-      boundary_data *  ///< boundary data
-      );
+  public:
 
   /// Sends data from a coarser grid to set the external boundaries
   /// of any/all child grids.  If a child is on the same MPI process
@@ -44,6 +36,21 @@ class NG_MPI_coarse_to_fine_bc :
       struct boundary_data *,
       const int,
       const int
+      );
+
+  ///
+  /// Delete the temporary arrays used to send data to another
+  /// MPI process
+  void BC_COARSE_TO_FINE_SEND_clear_sends();
+
+  protected:
+  
+  /// Assigns cells to lists for sending to external boundaries of
+  /// child cells.
+  virtual int BC_assign_COARSE_TO_FINE_SEND(
+      class SimParams &,     ///< pointer to simulation parameters
+      const int,  ///< level of this grid.
+      boundary_data *  ///< boundary data
       );
 
   /// Assigns data to an external boundary from coarser grid.  Sets
@@ -100,11 +107,6 @@ class NG_MPI_coarse_to_fine_bc :
       int *ixmin,                 ///< child grid xmin (integer)
       int *ixmax                  ///< child grid xmax (integer)
       );
-
-  ///
-  /// Delete the temporary arrays used to send data to another
-  /// MPI process
-  void BC_COARSE_TO_FINE_SEND_clear_sends();
 
   /// List of IDs for all sends, should be cleared at the beginning
   /// of each timestep.

@@ -577,8 +577,8 @@ void cell_interface::get_ipos_as_double(
 
 
 void cell_interface::get_dpos_vec(
-      const int *p_in, ///< integer position (output)
-      double *p_out    ///< physical position (input)
+      const int *p_in, ///< integer position (input)
+      double *p_out    ///< physical position (output)
       )
 {
   for (int v=0;v<ndim;v++)

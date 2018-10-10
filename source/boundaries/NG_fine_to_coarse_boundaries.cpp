@@ -73,11 +73,11 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
   cell *f = grid->FirstPt();
   int v=0, ix=0, iy=0, iz=0;
   int ipos[MAX_DIM];
-  double dxo2 = 0.5*grid->DX();
+  int dxo2 = 0.5*grid->idx();
   
   for (v=0;v<nel;v++) {
 #ifdef TEST_MPI_NG
-    cout <<"v="<<v<<" working! ix="<<ix<<"\n";
+    //cout <<"v="<<v<<" working! ix="<<ix<<"\n";
 #endif
     // add fine cells to each avg struct
     avg[v].c[0] = f;
@@ -98,9 +98,12 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
     for (int i=ndim;i<MAX_DIM;i++)
       ipos[i] = 0.0;
     CI.get_dpos_vec(ipos,avg[v].cpos);
-    for (unsigned int i=0;i<avg[0].c.size();i++) {
-      rep.printVec("cellpos",avg[v].c[i]->pos,ndim);
-    }
+#ifdef TEST_MPI_NG
+    //for (unsigned int i=0;i<avg[0].c.size();i++) {
+    //  rep.printVec("cellpos",avg[v].c[0]->pos,ndim);
+    //rep.printVec("cellpos",avg[v].cpos,ndim);
+    //}
+#endif
     // get to next cell.
     f = grid->NextPt(f);
     ix++;
@@ -109,9 +112,8 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
     if (ix>=grid->NG(XX)) {
       // end of column, loop to next y-column
 #ifdef TEST_MPI_NG
-      cout <<"eoc: "<<ix<<","<<iy<<","<<iz<<"\n";
+      //cout <<"eoc: "<<ix<<","<<iy<<","<<iz<<"\n";
 #endif
-      //f = grid->NextPt(f);
       ix = 0;
       if (ndim>1) {
         iy++;
@@ -119,13 +121,13 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
           f = grid->NextPt(f,YP);
           iy++;
 #ifdef TEST_MPI_NG
-          cout <<"moving to next plane, iy="<<iy<<"\n";
+          //cout <<"moving to next plane, iy="<<iy<<"\n";
 #endif
         }
         else {
           // end of plane, loop to next z-column
 #ifdef TEST_MPI_NG
-          cout <<"eop: "<<ix<<","<<iy<<","<<iz<<"\n";
+          //cout <<"eop: "<<ix<<","<<iy<<","<<iz<<"\n";
 #endif
           iy = 0;
           if (ndim>2) {

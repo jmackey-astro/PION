@@ -243,9 +243,15 @@ int MCMD_bc::BC_update_BCMPI(
     }
   }
   if (dir==NO) rep.error("Message is not from a neighbour!",from_rank);
+  if (dir != recv_dir) {
+    recv_b = grid->BC_bd[dir];
+    recv_dir = dir;
+  }
+
 #ifdef TEST_COMMS
   cout <<ppar->get_myrank()<<"\tBC_update_BCMPI: Receiving Data type ";
-  cout <<recv_tag<<" from rank: "<<from_rank<<" from direction "<<dir<<"\n";
+  cout <<recv_tag<<" from rank: "<<from_rank<<" from direction ";
+  cout <<dir<<" and recv_dir="<<recv_dir<<"\n";
 #endif 
 
 

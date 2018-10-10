@@ -160,20 +160,34 @@ int sim_control_NG_MPI::Init(
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     err = assign_boundary_data(SimPM, l, grid[l]);
     rep.errorTest("NG_MPI INIT::assign_boundary_data",0,err);
+    COMM->barrier("level assign boundary data");
   }
   // ----------------------------------------------------------------
 
 
 
   // ----------------------------------------------------------------
+  int c2f = -1;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TESTING
     cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
 #endif
-    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
+    c2f = -1;
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
+      }
+    }
+    if (c2f>=0) {
+      err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                spatial_solver, l, grid[l]->BC_bd[c2f], 2,2);
+    }
     err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
+  BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
@@ -182,7 +196,8 @@ int sim_control_NG_MPI::Init(
 #ifdef TESTING
     cout <<"NG_MPI updating internal boundaries for level "<<l<<"\n";
 #endif
-    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
     err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -234,17 +249,18 @@ int sim_control_NG_MPI::Init(
   }
   
   // ----------------------------------------------------------------
-#ifdef TESTING
+//#ifdef TESTING
+  cell *c=0;
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
     c = (grid[l])->FirstPt_All();
     do {
       if (pconst.equalD(c->P[RO],0.0)) {
-        cout <<"zero data in cell: ";
+        cout <<"ZERO DATA IN CELL: ";
         CI.print_cell(c);
       }
     } while ( (c=(grid[l])->NextPt_All(c)) !=0 );
   }
-#endif // TESTING
+//#endif // TESTING
   cout <<"-------------------------------------------------------\n";
   return(err);
 }
@@ -280,13 +296,25 @@ int sim_control_NG_MPI::Time_Int(
 
   // --------------------------------------------------------------
   // Update RT sources and boundaries.
+  int c2f = -1;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TEST_INT
     cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
+    c2f = -1;
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
+      }
+    }
+    if (c2f>=0) {
+      err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                spatial_solver, l, grid[l]->BC_bd[c2f], 2,2);
+    }
     err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
                   SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
+  BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
@@ -298,6 +326,9 @@ int sim_control_NG_MPI::Time_Int(
   }
   rep.errorTest("sim_control_NG_MPI: internal boundary",0,err);
   // --------------------------------------------------------------
+  err+= output_data(grid);
+  rep.errorTest("MPI_NG TIME_INT::output_data()",0,err);
+
 
   
   while (SimPM.maxtime==false) {
@@ -343,7 +374,7 @@ int sim_control_NG_MPI::Time_Int(
       first_step=false;
     }
     // --------------------------------------------------------------
-
+    
     // --------------------------------------------------------------
 #ifdef TESTING
     cout <<"NG_MPI time_int: stepping forward in time\n";
@@ -352,8 +383,15 @@ int sim_control_NG_MPI::Time_Int(
     // function also updates the next level twice, by calling itself
     // for the finer level, and so on.
     //
-    advance_time(0);
+    //advance_time(0);
+    advance_step_OA1(0);
+    // coarsest level has to update its own boundary data.
+    err += TimeUpdateInternalBCs(SimPM, 0, SimPM.levels[0].grid,
+                  spatial_solver, SimPM.levels[0].simtime, OA1, OA1);
+    err += TimeUpdateExternalBCs(SimPM, 0, SimPM.levels[0].grid,
+                  spatial_solver, SimPM.levels[0].simtime, OA1, OA1);
     SimPM.simtime = SimPM.levels[0].simtime;
+    COMM->barrier("step");
 #ifdef TESTING
     cout <<"MPI time_int: finished timestep\n";
 #endif
@@ -417,10 +455,10 @@ int sim_control_NG_MPI::Time_Int(
 
 
 double sim_control_NG_MPI::advance_step_OA1(
-      const int l       ///< level to advance.
+      const int l  ///< level to advance.
       )
 {
-#ifdef TESTING
+#ifdef TEST_INT
   cout <<"NG-MPI advance_step_OA1, level="<<l<<", starting.\n";
 #endif
   int err=0;
@@ -428,9 +466,31 @@ double sim_control_NG_MPI::advance_step_OA1(
   double dt2_this=0.0; // two timesteps for this level.
   class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
+  class GridBaseClass *child = SimPM.levels[l].child;
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: child="<<child<<"\n";
+#endif
 
-  // take the first finer grid step, if there is a finer grid.
+  // 0. See if there are coarse-to-fine boundary data to send
+  int c2f = -1;
   if (l<SimPM.grid_nlevels-1) {
+    for (size_t i=0;i<grid->BC_bd.size();i++) {
+      if (grid->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
+    }
+  }
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" c2f = "<<c2f<<"\n";
+#endif
+
+
+
+  // --------------------------------------------------------
+  // 1. advance finer-level by one step, if it exists
+  // --------------------------------------------------------
+  if (l<SimPM.grid_nlevels-1) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" first fine step\n";
+#endif
     dt2_fine = advance_step_OA1(l+1);
     
     // timestep for this level is equal to two steps of finer level,
@@ -439,51 +499,150 @@ double sim_control_NG_MPI::advance_step_OA1(
     SimPM.levels[l].dt = dt2_fine;
   }
   dt2_this = SimPM.levels[l].dt;
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" dt="<<dt2_this<<"\n";
+#endif
 
-  // now calculate dU, the change in conserved variables on this grid,
-  // for this step.
-  spatial_solver->Setdt(SimPM.levels[l].dt);
-  // May need to do raytracing, if not already completed for getting
-  // the timestep.
+  // --------------------------------------------------------
+  // 2. Calculate dU for this level (1st order)
+  // --------------------------------------------------------
+  spatial_solver->Setdt(dt2_this);
   if (grid->RT && (!FVI_need_column_densities_4dt ||
     (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" raytracing\n";
+#endif
     err += calculate_raytracing_column_densities(SimPM,grid,l);
     rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()",0,err);
   }
-  err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-  err += calc_dynamics_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART,
-                                                            grid);
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" microphysics\n";
+#endif
+  err += calc_microphysics_dU(dt2_this, grid);
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" dynamics\n";
+#endif
+  err += calc_dynamics_dU(dt2_this,TIMESTEP_FIRST_PART, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,
-                                        TIMESTEP_FIRST_PART, grid);
+  err += calc_thermal_conduction_dU(dt2_this,TIMESTEP_FIRST_PART,grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("NG-MPI scn::advance_step_OA1: calc_x_dU",0,err);
 
-  // take the second finer grid step, if there is a finer grid.
+
+  // --------------------------------------------------------
+  // 3. Send external boundary data to finer grid (C2F)
+  //    The (1,2) tells it that we are only half way
+  //    through the coarse-level step.
+  // --------------------------------------------------------
+  if (c2f>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" C2F SEND\n";
+#endif
+    err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
+                                         l, grid->BC_bd[c2f], 1,2);
+  }
+
+  // --------------------------------------------------------
+  // 4. Update internal and external boundaries on finer grid
+  // --------------------------------------------------------
   if (l<SimPM.grid_nlevels-1) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" update l+1 boundaries\n";
+#endif
+    err += TimeUpdateInternalBCs(SimPM, l+1, child, spatial_solver,
+                                SimPM.levels[l+1].simtime, OA1, OA1);
+    err += TimeUpdateExternalBCs(SimPM, l+1, child, spatial_solver,
+                                SimPM.levels[l+1].simtime, OA1, OA1);
+  }
+
+  // --------------------------------------------------------
+  // 5. Wait for sends (C2F) to finish
+  // --------------------------------------------------------
+  if (c2f>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" C2F CLEAR SEND\n";
+#endif
+    BC_COARSE_TO_FINE_SEND_clear_sends();
+  }
+
+  // --------------------------------------------------------
+  // 6. Take another step on finer grid
+  // --------------------------------------------------------
+  if (l<SimPM.grid_nlevels-1) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" second fine step\n";
+#endif
     dt2_fine = advance_step_OA1(l+1);
   }
 
-  //
-  // Now update Ph[i] to new values (and P[i] also if full step).
-  //
-  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
-  rep.errorTest("NG-MPI::advance_step_OA1: state-vec update",0,err);  
+  // --------------------------------------------------------
+  // 7. Receive level fluxes from finer grid (FLUX)
+  // (Should incorporate this into grid_update_state_vector?)
+  // --------------------------------------------------------
 
-  // increment time and timestep for this level
+  // --------------------------------------------------------
+  // 8. Update local grid to new time
+  // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" update grid\n";
+#endif
+  spatial_solver->Setdt(dt2_this);
+  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
+  rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
+
+  // --------------------------------------------------------
+  // 9. Send level fluxes to coarser grid
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // 10. Send external boundary data to finer grid (C2F)
+  //    The (2,2) tells it that we are all the way through
+  //    the coarse-level step.
+  // --------------------------------------------------------
+  if (c2f>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" C2F SEND\n";
+#endif
+    err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
+                                         l, grid->BC_bd[c2f], 2,2);
+  }
+
+  // --------------------------------------------------------
+  // 11. Update internal and external boundaries on finer grid
+  // --------------------------------------------------------
+  if (l<SimPM.grid_nlevels-1) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" update l+1 boundaries\n";
+#endif
+    err += TimeUpdateInternalBCs(SimPM, l+1, child, spatial_solver,
+                                SimPM.levels[l+1].simtime, OA1, OA1);
+    err += TimeUpdateExternalBCs(SimPM, l+1, child, spatial_solver,
+                                SimPM.levels[l+1].simtime, OA1, OA1);
+  }
+
+  // --------------------------------------------------------
+  // 12. Wait for sends (C2F) to finish
+  // --------------------------------------------------------
+  if (c2f>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" C2F CLEAR SEND\n";
+#endif
+    BC_COARSE_TO_FINE_SEND_clear_sends();
+  }
+
+
+  // --------------------------------------------------------
+  // 14. increment time and timestep for this level
+  // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" advancing time and return\n";
+#endif
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
   SimPM.levels[l].step ++;
   if (l==SimPM.grid_nlevels-1) {
     SimPM.timestep ++;
   }
 
-  //
-  // update internal and external boundaries.
-  //
-  err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
-                                      SimPM.simtime, OA1, OA1);
-  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                                      SimPM.simtime, OA1, OA1);
 
 #ifdef TESTING
   cout <<"NG-MPI advance_step_OA1, level="<<l<<", returning. t=";

@@ -20,7 +20,7 @@
 ///    compiler warnings.
 /// - 2012.05.15 JM: Added function for global-reduce (max/min/sum)
 ///    of arrays.
-/// - 2013.01.17 JM: Made class less verbose; wrapped cout in TESTING
+/// - 2013.01.17 JM: Made class less verbose; wrapped cout in TEST_COMMS
 ///    flags.
 /// - 2015.01.26 JM: removed references to mpiPM (no longer global),
 ///    added COMM pointer setup, added get_rank_nproc()
@@ -31,6 +31,7 @@
 #ifdef PARALLEL
 #ifdef USE_MPI
 
+//#define TEST_COMMS
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -54,7 +55,7 @@ class comms_base *COMM = new comm_mpi ();
 
 comm_mpi::comm_mpi()
 {
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"*** comm_mpi constructor. ***\n";
 #endif
   myrank = -1;
@@ -68,7 +69,7 @@ comm_mpi::comm_mpi()
 
 comm_mpi::~comm_mpi()
 {
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"*** comm_mpi  destructor. ***\n";
 #endif
 }
@@ -114,7 +115,7 @@ int comm_mpi::get_rank_nproc(
 {
   *r = myrank;
   *n = nproc;
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout << "comm_mpi::get_rank_nproc():  rank: " << myrank;
   cout << " nproc: " << nproc << "\n";
 #endif
@@ -131,7 +132,7 @@ int comm_mpi::get_rank_nproc(
 int comm_mpi::finalise()
 {
   MPI_Barrier(MPI_COMM_WORLD);
-#ifdef TESTING
+#ifdef TEST_COMMS
   int i=-1;
   cout << "comm_mpi::finalise():  rank: ";
   MPI_Comm_rank(MPI_COMM_WORLD, &i);
@@ -316,8 +317,9 @@ int comm_mpi::send_cell_data(
   long int totalsize = 0;
   totalsize = sizeof(long int) + nc*unitsize;
 #ifdef TEST_COMMS
-  cout <<" Send buffer unitsize= "<<unitsize;
+  cout <<"comm_mpi::send_cell_data() Send buffer unitsize= "<<unitsize;
   cout <<" total size = "<< totalsize <<"\n";
+  cout.flush();
 #endif
 
   //
@@ -347,9 +349,9 @@ int comm_mpi::send_cell_data(
       &position, MPI_COMM_WORLD);
 
 #ifdef TEST_COMMS
-    rep.printVec("cpos",(*c)->pos,ndim);
-    rep.printVec("P ",(*c)->P,nvar);
-    rep.printVec("Ph",(*c)->Ph,nvar);
+    //rep.printVec("cpos",(*c)->pos,ndim);
+    //rep.printVec("P ",(*c)->P,nvar);
+    //rep.printVec("Ph",(*c)->Ph,nvar);
 #endif
     
 #if defined PION_DATATYPE_DOUBLE
@@ -394,7 +396,7 @@ int comm_mpi::send_cell_data(
   comm_mpi::sent_list.push_back(si);
 
 #ifdef TEST_COMMS
-  rep.printVec("send_buff",reinterpret_cast<pion_flt *>(send_buff),113);
+  //rep.printVec("send_buff",reinterpret_cast<pion_flt *>(send_buff),113);
 #endif
   
   //
@@ -431,9 +433,11 @@ int comm_mpi::wait_for_send_to_finish(
         string &id ///< identifier for the send we are waiting on.
         )
 {
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() starting\n";
-#endif //TESTING
+  //cout <<"   send_id = "<<id<<"\n";
+  cout.flush();
+#endif //TEST_COMMS
   //
   // Find the send in the list of active sends.
   //
@@ -441,48 +445,52 @@ int comm_mpi::wait_for_send_to_finish(
   list<sent_info *>::iterator i;
   struct sent_info *si=0;
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"rank: "<<myrank;
-  cout <<"  comm_mpi::wait_for_send_to_finish() more than one send,";
-  cout <<" so finding in list.\n";
-  cout <<"\t\tsend id="<<id<<"\n";
-#endif //TESTING
+  cout <<"  comm_mpi::wait_for_send_to_finish() ";
+  cout <<" finding in list, ";
+  cout <<"send id="<<id<<"\n";
+#endif //TEST_COMMS
 
   for (i=sent_list.begin(); i!=sent_list.end(); ++i) {
     si = (*i); el++;
+#ifdef TEST_COMMS
+    cout <<"\t\t el="<<el<<", id = "<<si->id<<"\n";
+    cout.flush();
+#endif //TEST_COMMS
     if (si->id==id) break;
   }
   if (i==sent_list.end())
     rep.error("Failed to find send with id:",id);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"found send id="<<si->id<<" and looking for id="<<id<<"\n";
-  cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() found this send.\n";
-#endif //TESTING
+  //cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() found this send.\n";
+#endif //TEST_COMMS
 
   //
   // Use MPI to wait for the send to complete:
   //
   MPI_Status status;
 
-#ifdef TESTING
-  cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() waiting for send.\n";
+#ifdef TEST_COMMS
+  //cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() waiting for send.\n";
   //cout <<"request: "<<si->request<<" and address: "<<&(si->request)<<"\n";
-#endif //TESTING
+#endif //TEST_COMMS
 
   int err = MPI_Wait(&(si->request), &status);
   if (err) rep.error("Waiting for send to complete!", err);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() send has finished\n";
-#endif //TESTING
+#endif //TEST_COMMS
 
   //
   // Now free the data, and remove the send from the list.
   //
-#ifdef TESTING
-  cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() deleting send record\n";
-#endif //TESTING
+#ifdef TEST_COMMS
+  //cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() deleting send record\n";
+#endif //TEST_COMMS
 
   if      (si->type==COMM_CELLDATA) {
     char *t = reinterpret_cast<char *>(si->data);
@@ -497,9 +505,9 @@ int comm_mpi::wait_for_send_to_finish(
   sent_list.erase(i);
 
 
-#ifdef TESTING
-  cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() returning\n";
-#endif //TESTING
+#ifdef TEST_COMMS
+  //cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() returning\n";
+#endif //TEST_COMMS
   return 0;
 }
 
@@ -520,10 +528,10 @@ int comm_mpi::look_for_data_to_receive(
       )
 {
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"rank: "<<myrank;
   cout <<"  comm_mpi::look_for_data_to_receive() starting\n";
-#endif //TESTING
+#endif //TEST_COMMS
   //
   // Create a new received info record.
   //
@@ -535,10 +543,21 @@ int comm_mpi::look_for_data_to_receive(
     rep.error("only know two types of data to look for!",type);
   ri->type = type;
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"rank: "<<myrank;
-  cout <<"  comm_mpi::look_for_data_to_receive() looking for source\n";
-#endif //TESTING
+  cout <<"  comm_mpi::look_for_data_to_receive() looking for source";
+  cout <<" for comm_tag: "<<comm_tag<<"\n";
+  cout.flush();
+
+  list<sent_info *>::iterator i;
+  struct sent_info *si=0;
+  int el=0;
+  for (i=sent_list.begin(); i!=sent_list.end(); ++i) {
+    si = (*i); el++;
+    cout <<"SENT LIST: el="<<el<<", id = "<<si->id<<"\n";
+    cout.flush();
+  }
+#endif //TEST_COMMS
   //
   // First Look for Data, and wait till we find some.
   // Find a message that has been sent to us.
@@ -548,10 +567,11 @@ int comm_mpi::look_for_data_to_receive(
   int err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, MPI_COMM_WORLD, &(ri->status));
   if (err) rep.error("mpi probe failed",err);
   
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"rank: "<<myrank;
   cout <<"  comm_mpi::look_for_data_to_receive() found data, parsing...\n";
-#endif //TESTING
+  cout.flush();
+#endif //TEST_COMMS
 
   //
   // Now get the size and source of the data.
@@ -564,10 +584,11 @@ int comm_mpi::look_for_data_to_receive(
   temp <<"from "<<*from_rank<<" to "<<myrank<<" tag="<<*recv_tag;
   id = temp.str(); temp.str("");
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::look_for_data_to_receive: found data from ";
   cout <<*from_rank<<" with tag:"<<*recv_tag<<"\n";
-#endif //TESTING
+  cout.flush();
+#endif //TEST_COMMS
   
   //
   // Set record of where data is coming from.
@@ -576,9 +597,10 @@ int comm_mpi::look_for_data_to_receive(
   ri->from_rank = *from_rank;
   comm_mpi::recv_list.push_back(ri);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::look_for_data_to_receive: returning.\n";
-#endif //TESTING
+  cout.flush();
+#endif //TEST_COMMS
 
   return err;
 }
@@ -602,17 +624,17 @@ int comm_mpi::receive_cell_data(
 {
   int err=0;
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: starting.\n";
-#endif //TESTING
+#endif //TEST_COMMS
 
   //
   // Find the recv in the list of active receives.
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: recv_list size="<<recv_list.size()<<"\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   if (recv_list.empty()) rep.error("Call look4data before receive_data",recv_list.size());
 
@@ -625,11 +647,11 @@ int comm_mpi::receive_cell_data(
   if (iget==recv_list.end())
     rep.error("Failed to find recv with id:",id);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"found recv id="<<info->id<<" and looking for id="<<id<<"\n";
   cout <<"comm_mpi::receive_cell_data: found recv id\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   //
   // Check that everthing matches.
@@ -642,19 +664,19 @@ int comm_mpi::receive_cell_data(
   // See how many bytes we are getting!
   // int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int *count) 
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: getting size of buffer.\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   int ct = 0;
   err += MPI_Get_count(&(info->status), MPI_PACKED, &ct);
   if (err) rep.error("getting size of message to receive",err);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: buffer is "<<ct<<" bytes.\n.";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   if (ct<0) rep.error("bad buffer size count",ct);
 
@@ -668,39 +690,39 @@ int comm_mpi::receive_cell_data(
   // Now Receive the data in recv_buff
   // int MPI_Recv(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: receiving buffer of ";
   cout <<"data from rank: "<<from_rank<<"\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   err += MPI_Recv(buf, ct, MPI_PACKED, from_rank, comm_tag, MPI_COMM_WORLD, &(info->status));
   if (err) rep.error("MPI_Recv failed", err);
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"\tcomm_receive_any_data: status: "<<info->status.MPI_SOURCE;
   cout <<", "<<info->status.MPI_TAG<<", ct="<<ct<<"\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   //  
   // First unpack the cells received count.
   //
   //   int MPI_Unpack(void* inbuf, int insize, int *position, void *outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: getting number of cells received\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   int position=0;
   long int ncell=0;
 
   err = MPI_Unpack(buf, ct, &position, &ncell, 1, MPI_LONG, MPI_COMM_WORLD);
   if (err) rep.error("Unpack",err);
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: got "<<ncell<<" cells.\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
   
 
   if (ncell != static_cast<int>(l->size()) || (ncell !=nc)) {
@@ -710,18 +732,18 @@ int comm_mpi::receive_cell_data(
     cerr <<myrank<<"\tcomm_mpi:recv: Bugging out!\n"; return(-99);
   }
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<myrank<<"\tcomm_mpi:recv: got "<<ncell<<" cells, as expected.\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
   
   // 
   // Allocate arrays to unpack data into.
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: allocating arrays to unpack data into.\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   int *ipos = 0;
   pion_flt *p = 0;
@@ -731,38 +753,38 @@ int comm_mpi::receive_cell_data(
   //
   // Data should come in in the order the boundary cells are listed in.
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: unpacking data into list of cells.\n";
   cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 
   int cpos[MAX_DIM];
   long int c_id=0;
   list<cell*>::iterator c=l->begin();
 
   for (int i=0; i<ncell; i++) {
-#ifdef TESTING
+#ifdef TEST_COMMS
     //cout <<"comm_mpi::receive_cell_data: unpacking cell "<<i<<".\n";
     //cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
     CI.get_ipos(*c,cpos);
-#ifdef TESTING
+#ifdef TEST_COMMS
     //cout <<"position="<<position<<" : cell id = "<<(*c)->id<<" : ";
     //rep.printVec("cpos",cpos,ndim);
     //cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
     err += MPI_Unpack(buf, ct, &position, &c_id, 1,          MPI_LONG, MPI_COMM_WORLD);
-#ifdef TESTING
+#ifdef TEST_COMMS
     //cout <<"position="<<position<<" : ";
     //cout <<"cell id = "<<c_id<<"\n";
     //cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
     err += MPI_Unpack(buf, ct, &position, ipos,  ndim, MPI_INT, MPI_COMM_WORLD);
-#ifdef TESTING
+#ifdef TEST_COMMS
     //cout <<"position="<<position<<" : ";
     //rep.printVec("recvd pos",ipos,ndim);
     //cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
 #if defined PION_DATATYPE_DOUBLE
     err += MPI_Unpack(buf, ct, &position, p,     nvar, MPI_DOUBLE, MPI_COMM_WORLD);
 #elif defined PION_DATATYPE_FLOAT
@@ -770,12 +792,12 @@ int comm_mpi::receive_cell_data(
 #else
 #error "MUST define either PION_DATATYPE_FLOAT or PION_DATATYPE_DOUBLE"
 #endif
-#ifdef TESTING
+#ifdef TEST_COMMS
     //rep.printVec("\tlocal",cpos,ndim);
     //cout <<"position="<<position<<" : ";
     //rep.printVec("data var",p,nvar);
     //cout.flush();
-#endif //TESTING
+#endif //TEST_COMMS
     if(err) rep.error("Unpack",err);
     // For a given boundary data iterator, put data into cells
     if (c==l->end()) rep.error("Got too many cells!",i);
@@ -789,7 +811,7 @@ int comm_mpi::receive_cell_data(
     //    cout <<": got x="<<ipos[v]<<" expected x="<<cpos[v];
     //    cout <<"; distance="<<ipos[v]-cpos[v]<<"\n";
     //  }
-#ifdef TESTING
+#ifdef TEST_COMMS
     //rep.printVec("\trecvd",ipos,ndim);
     //rep.printVec("\tlocal",cpos,ndim);
     //cout.flush();
@@ -802,9 +824,9 @@ int comm_mpi::receive_cell_data(
   //
   //  cout <<myrank<<"\tcomm_unpack_data: length of data in boundary = "<<b->data.size()<<"\n";
   //  cout <<myrank<<"\tcomm_unpack_data: cells received for boundary= "<<ncell<<"\n";
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: checking we got the right amount of data.\n";
-#endif //TESTING
+#endif //TEST_COMMS
   if (c!=l->end()) {
     cerr <<"length of data = "<<l->size()<<"\n";
     rep.error("Didn't get enough cells!",CI.get_ipos((*c),XX));
@@ -814,9 +836,9 @@ int comm_mpi::receive_cell_data(
   //
   // Free memory and delete entry from recv_list
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: freeing memory\n";
-#endif //TESTING
+#endif //TEST_COMMS
   if (recv_list.size()==1) {
     recv_list.pop_front();
   }
@@ -827,9 +849,9 @@ int comm_mpi::receive_cell_data(
   ipos = mem.myfree(ipos);
   p = mem.myfree(p);
 
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_cell_data: returning\n";
-#endif //TESTING
+#endif //TEST_COMMS
   return 0;
 }
 
@@ -910,16 +932,16 @@ int comm_mpi::receive_double_data(
 	)
 {
   int err=0;
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_double_data: starting.\n";
-#endif //TESTING
+#endif //TEST_COMMS
 
   //
   // Find the recv in the list of active receives.
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_double_data: recv_list size="<<recv_list.size()<<"\n";
-#endif //TESTING
+#endif //TEST_COMMS
   if (recv_list.empty()) rep.error("Call look4data before receive_data",recv_list.size());
 
   struct recv_info *info=0;
@@ -930,10 +952,10 @@ int comm_mpi::receive_double_data(
   }
   if (iget==recv_list.end())
     rep.error("Failed to find recv with id:",id);
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"found recv id="<<info->id<<" and looking for id="<<id<<"\n";
   cout <<"comm_mpi::receive_double_data: found recv id\n";
-#endif //TESTING
+#endif //TEST_COMMS
 
   //
   // Check that everthing matches.
@@ -947,15 +969,15 @@ int comm_mpi::receive_double_data(
   // See how many doubles we are getting.
   // int MPI_Get_count(MPI_Status *status, MPI_Datatype datatype, int *count) 
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_double_data: getting size of buffer.\n";
-#endif //TESTING
+#endif //TEST_COMMS
   int ct = 0;
   err += MPI_Get_count(&(info->status), MPI_DOUBLE, &ct);
   if (err) rep.error("getting size of message to receive",err);
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_double_data: buffer is "<<ct<<" elements.\n.";
-#endif //TESTING
+#endif //TEST_COMMS
   if (ct<0) rep.error("bad buffer size count",ct);
   if (ct != nel) {
     cout <<"comm_mpi::receive_double_data: getting "<<ct<<" doubles, but expecting "<<nel<<"\n";
@@ -966,9 +988,9 @@ int comm_mpi::receive_double_data(
   // Now Receive the data
   // int MPI_Recv(void* buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Status *status)
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_double_data: receiving buffer of data from rank: "<<from_rank<<"\n";
-#endif //TESTING
+#endif //TEST_COMMS
   void *buf = data;
   err += MPI_Recv(buf, ct, MPI_DOUBLE, info->from_rank, info->comm_tag, MPI_COMM_WORLD, &(info->status));
   if (err) rep.error("MPI_Recv failed", err);
@@ -977,9 +999,9 @@ int comm_mpi::receive_double_data(
   //
   // Free memory and delete entry from recv_list
   //
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::receive_double_data: freeing memory\n";
-#endif //TESTING
+#endif //TEST_COMMS
   if (recv_list.size()==1) {
     recv_list.pop_front();
   }
@@ -1042,7 +1064,7 @@ int comm_mpi::silo_pllel_wait_for_file(
         DBfile **dbfile ///< pointer that file gets returned in.
         )
 {
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::silo_pllel_wait_for_file() opening file: ";
   cout <<filename<<" into directory: "<<dir<<"\n";
 #endif
@@ -1065,7 +1087,7 @@ int comm_mpi::silo_pllel_finish_with_file(
 	DBfile **dbfile ///< pointer to file we have been working on.
 	)
 {
-#ifdef TESTING
+#ifdef TEST_COMMS
   cout <<"comm_mpi::silo_pllel_finish_with_file() passing file on to next proc.\n";
 #endif
   if (id!=silo_id) rep.error(id, silo_id);

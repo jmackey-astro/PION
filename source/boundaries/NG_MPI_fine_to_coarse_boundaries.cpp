@@ -103,7 +103,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 
   // data to send will be ordered as position,conserved-var
   // for each averaged cell.
-  double *data = 0;
+  pion_flt *data = 0;
   data = mem.myalloc(data,nel*(par.nvar+par.ndim));
 
   // loop through avg vector and add cells and positions to
@@ -140,6 +140,9 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
 
   // store ID to clear the send later (and delete the MPI temp data)
   NG_F2C_send_list.push_back(id);
+#ifdef TEST_MPI_NG
+  cout <<"F2C_Send: id=[ "<<id<<" ]  size="<<NG_F2C_send_list.size()<<"\n";
+#endif
   data = mem.myfree(data);
   
   return 0;
@@ -158,11 +161,16 @@ void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
 {
   for (unsigned int i=0;i<NG_F2C_send_list.size();i++) {
 #ifdef TEST_MPI_NG
-    cout <<"F2C_send: clearing send # "<<i<<" of ";
-    cout <<NG_F2C_send_list.size()<<"\n";
+    cout <<"F2C_send: clearing send # "<<i+1<<" of ";
+    cout <<NG_F2C_send_list.size()<<", id=";
+    cout <<NG_F2C_send_list[i]<<"...";
     cout.flush();
 #endif
     COMM->wait_for_send_to_finish(NG_F2C_send_list[i]);
+#ifdef TEST_MPI_NG
+    cout <<" ... done!\n";
+    cout.flush();
+#endif
   }
   NG_F2C_send_list.clear();
   return;
@@ -365,15 +373,15 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       c = (*c_iter);
       CI.get_dpos(c,pos);
 #ifdef TEST_MPI_NG
-      rep.printVec("cell pos", pos, par.ndim);
-      rep.printVec("recv pos", &(buf[i_el]), par.ndim);
+      //rep.printVec("cell pos", pos, par.ndim);
+      //rep.printVec("recv pos", &(buf[i_el]), par.ndim);
 #endif
       i_el += par.ndim;
       solver->UtoP(&(buf[i_el]),prim,
                    par.EP.MinTemperature,par.gamma);
 #ifdef TEST_MPI_NG
-      rep.printVec("cell Prim", c->Ph, par.nvar);
-      rep.printVec("recv Prim", prim, par.nvar);
+      //rep.printVec("cell Prim", c->Ph, par.nvar);
+      //rep.printVec("recv Prim", prim, par.nvar);
 #endif
       for (int v=0;v<par.ndim;v++) c->Ph[v] = prim[v];
       if (cstep==maxstep) {

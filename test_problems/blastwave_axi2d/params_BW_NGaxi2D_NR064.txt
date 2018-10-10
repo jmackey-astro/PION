@@ -52,7 +52,7 @@ Xmax  30.86e18
 Ymax  30.86e18 
 Zmax  4.629e18
 
-grid_nlevels 4
+grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1

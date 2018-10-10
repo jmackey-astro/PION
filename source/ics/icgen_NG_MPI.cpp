@@ -174,16 +174,29 @@ int main(int argc, char **argv)
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
+    COMM->barrier("level assign boundary data");
     rep.errorTest("icgen_NG_MPI::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
+  int c2f = -1;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
+    c2f = -1;
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
+      }
+    }
+    if (c2f>=0) {
+      err += SimSetup->BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                solver, l, grid[l]->BC_bd[c2f], 2,2);
+    }
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
