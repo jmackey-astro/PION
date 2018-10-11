@@ -148,6 +148,7 @@ struct boundary_data {
   ///    - NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()
   ///    - NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV()
   std::vector<std::list<cell *> > NGrecvF2C;
+  std::vector<int> NGrecvF2C_ranks;
   /// as NGrecvF2C, but C2F
   std::vector<std::list<cell *> > NGrecvC2F;
 
