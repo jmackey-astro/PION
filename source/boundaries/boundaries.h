@@ -19,6 +19,7 @@
 
 //#define TEST_MPI_NG
 //#define TEST_C2F
+//#define TEST_MPI_NG_F2C
 
 ///
 /// enum for the types of boundary condition.
@@ -131,11 +132,8 @@ struct boundary_data {
   /// MPI process (parallel only), on the same grid level.
   ///
   std::list<cell *> send_data;
-  pion_flt *refval;  ///< Optional reference state vector.
-
   /// vector of data to be sent to coarser level grid (MPI-NG only)
   std::vector<struct averaging> avg;
-
   /// Vector of lists of cells, for a coarse grid that
   /// receives data from a number of child grids to replace the
   /// on-grid data.  Vector length is the number of children.
@@ -148,14 +146,17 @@ struct boundary_data {
   ///    - NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()
   ///    - NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV()
   std::vector<std::list<cell *> > NGrecvF2C;
+  std::vector<int> NGrecvF2C_ranks;
   /// as NGrecvF2C, but C2F
   std::vector<std::list<cell *> > NGrecvC2F;
-
   /// (MPI-NG only) list of lists of cells, for a coarse grid that
   /// sends data to a number of child grids for their external
   /// boundaries.  Vector length is the number of child boundaries
   /// to update.
   std::vector<struct c2f *> NGsendC2F;
+  pion_flt *refval;  ///< Optional reference state vector.
+
+
 };
 
 #endif // BOUNDARIES_H

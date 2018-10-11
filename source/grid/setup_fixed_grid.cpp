@@ -927,7 +927,8 @@ int setup_fixed_grid::setup_boundary_structs(
     }
 
     if(!grid->BC_bd[i]->data.empty())
-      rep.error("Boundary data not empty in constructor!",grid->BC_bd[i]->data.size());
+      rep.error("Boundary data not empty in constructor!",
+                                  grid->BC_bd[i]->data.size());
     grid->BC_bd[i]->refval=0;
 #ifdef TESTING
     cout <<"\tBoundary type "<<i<<" is "<<grid->BC_bd[i]->type<<"\n";

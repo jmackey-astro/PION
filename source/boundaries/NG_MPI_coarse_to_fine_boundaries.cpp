@@ -31,7 +31,11 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // see how many child grids I have
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  b->NGsendC2F.clear();
+  //b->NGsendC2F.reserve(nchild);
+  //if (b->NGsendC2F.size() !=0) {
+  //  rep.error("NGsendC2F init",b->NGsendC2F.size());
+  //}
+  //b->NGsendC2F.clear();
 
 #ifdef TEST_MPI_NG
   if (nchild==0) {
@@ -84,6 +88,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
           b->NGsendC2F.push_back(bdata);
+          cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
+          cout <<b->NGsendC2F.size()-1<<"\n";
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
@@ -100,6 +106,8 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
           b->NGsendC2F.push_back(bdata);
+          cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
+          cout <<b->NGsendC2F.size()-1<<"\n";
         }
       } // loop over dimensions
     } // if child is not on my process
@@ -562,11 +570,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
             f[v] = *f_iter;
             f_iter++;
           }
-          rep.printVec("cpos",cpos,par.ndim);
-          rep.printVec("Ph",Ph,par.nvar);
+          //rep.printVec("cpos",cpos,par.ndim);
+          //rep.printVec("Ph",Ph,par.nvar);
           CI.get_ipos_vec(cpos,ipos);
-          interpolate_coarse2fine2D(
-                  par,grid,solver,Ph,ipos,c_vol,sx,sy,f[0],f[1],f[2],f[3]);
+          interpolate_coarse2fine2D(par,grid,solver,
+                        Ph,ipos,c_vol,sx,sy,f[0],f[1],f[2],f[3]);
         } // loop over coarse cells
       }   // if 2D
       else {

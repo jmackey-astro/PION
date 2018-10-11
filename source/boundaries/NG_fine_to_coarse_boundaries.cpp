@@ -98,12 +98,12 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
     for (int i=ndim;i<MAX_DIM;i++)
       ipos[i] = 0.0;
     CI.get_dpos_vec(ipos,avg[v].cpos);
-#ifdef TEST_MPI_NG
+//#ifdef TEST_MPI_NG
     //for (unsigned int i=0;i<avg[0].c.size();i++) {
     //  rep.printVec("cellpos",avg[v].c[0]->pos,ndim);
     //rep.printVec("cellpos",avg[v].cpos,ndim);
     //}
-#endif
+//#endif
     // get to next cell.
     f = grid->NextPt(f);
     ix++;

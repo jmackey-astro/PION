@@ -91,8 +91,35 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
 #endif
   struct boundary_data *b;
   int err=0;
-  for (size_t i=0;i<grid->BC_bd.size();i++) {
-    b = grid->BC_bd[i];
+  size_t i=0;
+
+  // make a map so that boundaries are updated pairwise.
+  // ix[] is the position of this process in each direction of the
+  // block of MPI processes.
+  int nb=grid->BC_bd.size();
+  int map[nb];
+  int rank = par.levels[level].MCMD.get_myrank();
+  int ix[MAX_DIM];
+  par.levels[level].MCMD.get_domain_ix(par.ndim,rank,ix);
+  // x-direction
+  for (int j=0;j<par.ndim;j++) {
+    if (ix[j]%2==0) {
+      map[2*j]   = 2*j;
+      map[2*j+1] = 2*j+1;
+    }
+    else {
+      map[2*j]   = 2*j+1;
+      map[2*j+1] = 2*j;
+    }
+  }
+  for (int j=2*par.ndim;j<nb;j++) {
+    map[j] = j;
+  }
+
+  for (i=0;i<grid->BC_bd.size();i++) {
+    b = grid->BC_bd[map[i]];
+    cout <<"updating bc "<<map[i]<<" with type "<<b->type<<"\n";
+    cout.flush();
     switch (b->itype) {
       
     case PERIODIC:
@@ -143,18 +170,21 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
       break;
     }
 
-    if (i==XP || (i==YP && par.ndim>=2) || (i==ZP && par.ndim==3)) {
-      // Need to make sure all processors are updating boundaries along
-      // each axis together, so that there is no deadlock from one 
-      // process sending data in y/z-dir into a processor that is still
-      // working on x-dir.
-      //      cout <<"Barrier synching for dir="<<i<<" with 1=XP,2=YP,3=ZP.\n";
-      ostringstream tmp;
-      tmp <<"assign_update_bcs_MPI_TimeUpdateExternalBCs_"<<i;
-      COMM->barrier(tmp.str());
-      tmp.str("");
-    }
+    COMM->barrier("External BC update");
+    
+    //if (i==XP || (i==YP && par.ndim>=2) || (i==ZP && par.ndim==3)) {
+    //  // Need to make sure all processors are updating boundaries along
+    //  // each axis together, so that there is no deadlock from one 
+    //  // process sending data in y/z-dir into a processor that is still
+    //  // working on x-dir.
+    //  //      cout <<"Barrier synching for dir="<<i<<" with 1=XP,2=YP,3=ZP.\n";
+    //  ostringstream tmp;
+    //  tmp <<"assign_update_bcs_MPI_TimeUpdateExternalBCs_"<<i;
+    //  COMM->barrier(tmp.str());
+    //  tmp.str("");
+    //}
   }
+
   return 0;
 }
 

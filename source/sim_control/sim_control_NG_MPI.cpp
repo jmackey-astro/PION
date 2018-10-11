@@ -165,39 +165,68 @@ int sim_control_NG_MPI::Init(
   // ----------------------------------------------------------------
 
 
-
   // ----------------------------------------------------------------
-  int c2f = -1;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TESTING
     cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
-#endif
     cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
-    c2f = -1;
-    if (l<SimPM.grid_nlevels-1) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
-      }
-    }
-    if (c2f>=0) {
-      err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
-                spatial_solver, l, grid[l]->BC_bd[c2f], 2,2);
-    }
+#endif
     err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING C2F BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
+#endif
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+          err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                      l,grid[l]->BC_bd[i],SimPM.levels[l].step);
+        }
+      }
+    }
   }
   BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
+#endif
+    err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+
+  // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TESTING
     cout <<"NG_MPI updating internal boundaries for level "<<l<<"\n";
-#endif
     cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
+#endif
     err += TimeUpdateInternalBCs(SimPM,l,grid[l], spatial_solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -252,6 +281,7 @@ int sim_control_NG_MPI::Init(
 //#ifdef TESTING
   cell *c=0;
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+    //cout <<"LEVEL-ZERO-CHECK L="<<l<<"\n";
     c = (grid[l])->FirstPt_All();
     do {
       if (pconst.equalD(c->P[RO],0.0)) {
@@ -294,27 +324,42 @@ int sim_control_NG_MPI::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
+  // ----------------------------------------------------------------
+  // update coarse-to-fine level boundaries
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
+    cout <<l<<"\n";
+#endif
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+          err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                      l,grid[l]->BC_bd[i],SimPM.levels[l].step);
+        }
+      }
+    }
+  }
+  BC_COARSE_TO_FINE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
   // --------------------------------------------------------------
-  // Update RT sources and boundaries.
-  int c2f = -1;
+  // Update internal and external boundaries.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TEST_INT
     cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
-    c2f = -1;
-    if (l<SimPM.grid_nlevels-1) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
-      }
-    }
-    if (c2f>=0) {
-      err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
-                spatial_solver, l, grid[l]->BC_bd[c2f], 2,2);
-    }
     err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
                   SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
@@ -406,6 +451,7 @@ int sim_control_NG_MPI::Time_Int(
       cout.flush();
 #endif // TESTING
     }
+    cout.flush();
     // --------------------------------------------------------------
 	
     //
@@ -549,6 +595,12 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" update l+1 boundaries\n";
 #endif
+    for (size_t i=0;i<child->BC_bd.size();i++) {
+      if (child->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+        err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                    l+1,child->BC_bd[i],SimPM.levels[l+1].step);
+      }
+    }
     err += TimeUpdateInternalBCs(SimPM, l+1, child, spatial_solver,
                                 SimPM.levels[l+1].simtime, OA1, OA1);
     err += TimeUpdateExternalBCs(SimPM, l+1, child, spatial_solver,
@@ -614,6 +666,12 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" update l+1 boundaries\n";
 #endif
+    for (size_t i=0;i<child->BC_bd.size();i++) {
+      if (child->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+        err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                    l+1,child->BC_bd[i],SimPM.levels[l+1].step);
+      }
+    }
     err += TimeUpdateInternalBCs(SimPM, l+1, child, spatial_solver,
                                 SimPM.levels[l+1].simtime, OA1, OA1);
     err += TimeUpdateExternalBCs(SimPM, l+1, child, spatial_solver,
