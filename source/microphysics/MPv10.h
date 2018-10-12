@@ -310,7 +310,7 @@ class MPv10
   int nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index.
   int lv_H0;   ///< neutral hydrogeen local variable index. 
-  int lv_y0_offset; ///<offset from X_elem_index[0] (i.e. primitive vector index) and local vector index.
+  int lv_y_ion_index_offset; ///< gives the index at which ions first occur in primitive vector, maps to first index of local vector
   
   int N_elem;
   int N_species;
@@ -322,7 +322,7 @@ class MPv10
   ///               Vectors to Access Primitive / Local vectors
   /// ===========================================================================
   std::vector<int> X_mass_frac_index; /// < primitive vector indices, used to trace X_H etc, like pv_Hp. 
-  std::vector<int> y_ion_index; ///<index matching y_ion fration, analogous to pv_Hp before.
+  std::vector<int> y_ion_index; ///<index matching y_ion mass fraction in prim vector, analogous to pv_Hp before.
   
   std::vector<int> H_ion_index; ///<Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position. Used with MPv10::Tr().
   std::vector<int> He_ion_index;///""
