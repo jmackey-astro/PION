@@ -42,6 +42,7 @@
 ///    compiles but buggy...) 03.24:fixed some bugs, redefined dir_XP
 /// - 2017.11.07-22 JM: updating boundary setup.
 /// - 2018.08.09 JM: moved all boundary stuff to new classes.
+/// - 2018.10.12 JM: added flux_update functions for BC89 refinement.
 
 
 #include "defines/functionality_flags.h"
@@ -122,9 +123,105 @@ int UniformGridParallel::setup_flux_recv(
       )
 {
 //#ifdef DEBUG_NG
-  cout <<" UniformGridParallel::setup_flux_recv() recv from level=";
+  cout <<"UniformGridParallel::setup_flux_recv() recv from level=";
   cout <<l<<"\n";
 //#endif
+
+  if (par.levels[0].MCMD.get_nproc()==1) {
+    cout <<"setup_flux_recv(): nproc=1, calling serial version.\n";
+    return UniformGrid::setup_flux_recv(par,l);
+  }
+  else return 0;
+
+  //
+  // Get size of interface region and number of cells.
+  //
+  size_t nc  = 1; // number of cells in each interface
+  int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM]; // interface
+  int lxmin[MAX_DIM], lxmax[MAX_DIM]; // finer grid
+  bool recv[2*G_ndim];  // whether to get data in this direction
+  size_t nel[2*G_ndim]; // number of interfaces in each direction
+  struct flux_interface *fi = 0;
+  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+
+  // Modify the following so that there can be up to 2^Ndim child
+  // grids, all of which can have an external level boundary.  Should
+  // be straightforward...
+
+  // define interface region of fine and coarse grids, and whether
+  // each direction is to be included or not.  Note that this allows
+  // for a fine grid that is not completely encompassed by the coarse
+  // grid.
+  for (int v=0;v<G_ndim;v++) {
+    ixmin[v] = std::max(G_ixmin[v], lxmin[v]);
+    if (G_ixmin[v] < lxmin[v]) recv[2*v] = true;
+    else                       recv[2*v] = false;
+    
+    ixmax[v] = std::min(G_ixmax[v], lxmax[v]);
+    if (G_ixmax[v] > lxmax[v]) recv[2*v+1] = true;
+    else                       recv[2*v+1] = false;
+
+    ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
+    if ( (ixmax[v]-ixmin[v]) % G_idx !=0) {
+      rep.error("interface region not divisible!",ixmax[v]-ixmin[v]);
+    }
+  }
+  for (int v=0;v<2*G_ndim;v++) nel[v]=0;
+
+  // different number of interfaces depending on dimensionality.
+  switch (G_ndim) {
+  case 1:
+    if (recv[XN]) nel[XN] = 1;
+    if (recv[XP]) nel[XP] = 1;
+    break;
+  case 2:
+    if (recv[XN]) nel[XN] = ncell[YY];
+    if (recv[XP]) nel[XP] = ncell[YY];
+    if (recv[YN]) nel[YN] = ncell[XX];
+    if (recv[YP]) nel[YP] = ncell[XX];
+    break;
+  case 3:
+    if (recv[XN]) nel[XN] = ncell[YY]*ncell[ZZ];
+    if (recv[XP]) nel[XP] = ncell[YY]*ncell[ZZ];
+    if (recv[YN]) nel[YN] = ncell[XX]*ncell[ZZ];
+    if (recv[YP]) nel[YP] = ncell[XX]*ncell[ZZ];
+    if (recv[ZN]) nel[ZN] = ncell[XX]*ncell[YY];
+    if (recv[ZP]) nel[ZP] = ncell[XX]*ncell[YY];
+    break;
+  default:
+    rep.error("bad ndim in setup_flux_recv",G_ndim);
+    break;
+  }
+
+  // initialize arrays
+  flux_update_recv.resize(2*G_ndim);
+  for (int v=0; v<2*G_ndim; v++) {
+    if (recv[v] == true) {
+      flux_update_recv[v].resize(nel[v]);
+    }
+    else {
+      flux_update_recv[v].resize(1);
+      flux_update_recv[v][0] = 0;
+    }
+    for (size_t i=0; i<nel[v]; i++) {
+      flux_update_recv[v][i] = mem.myalloc(flux_update_recv[v][i],1);
+      fi = flux_update_recv[v][i];
+      fi->Ncells = nc;
+      fi->c.resize(nc);
+      fi->area.resize(nc);
+      fi->flux = mem.myalloc(fi->flux,G_nvar);
+      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+    }
+  }
+
+  // For each interface, find the cell that is outside the fine grid
+  // and that includes the interface.
+  for (int v=0; v<2*G_ndim; v++) {
+    if (recv[v]) {
+      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,ncell,1,flux_update_recv[v]);
+    }
+  }
 
   return 0;
 }
@@ -147,7 +244,12 @@ int UniformGridParallel::setup_flux_send(
   cout <<l<<"\n";
 //#endif
 
-  return 0;
+  if (par.levels[0].MCMD.get_nproc()==1) {
+    cout <<"setup_flux_recv(): nproc=1, calling serial version.\n";
+    return UniformGrid::setup_flux_send(par,l);
+  }
+  else return 0;
+
 }
 
 

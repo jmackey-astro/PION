@@ -116,6 +116,8 @@ class UniformGridParallel
       const int           ///< level to receive from
       );
 
+  protected:
+
 };
 
 ///
