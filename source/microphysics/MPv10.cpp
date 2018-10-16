@@ -68,8 +68,9 @@ void MPv10::get_error_tolerances(
       )
 {
   *reltol = JM_RELTOL;
-  atol[lv_H0]   = JM_MINNEU; ///< minimum neutral fraction I care about.
-  atol[lv_eint] = JM_MINERG; ///< E_int: for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
+  // NOTE \Maggie{hardcoded this for now, but must change atol after.}
+  atol[0] = JM_MINNEU; ///< minimum neutral fraction I care about.
+  atol[1] = JM_MINERG; ///< E_int: for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
   return;
 }
 
@@ -138,13 +139,14 @@ MPv10::MPv10(
   //
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
-    if (s.substr(0,2)=="He"){
+
+    if (s.substr(2,2)=="He"){
       set_elem.insert("He");
     }
-    else if (s[0]=='H'){
+    else if (s[2]=='H'){
       set_elem.insert("H");
     }
-    else if (s[0]=='C'){
+    else if (s[2]=='C'){
       set_elem.insert("C");
     }
   }
@@ -366,7 +368,6 @@ double MPv10::get_temperature(
 // ##################################################################
 // ##################################################################
 
-
 double MPv10::get_ntot(
       double *y_ion_frac,//<y_ion_fraction (by y_ion_index)
       vector<pion_flt>& X_number_density//const double nH, ///< nH
@@ -434,10 +435,14 @@ int MPv10::convert_prim2local(
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
       int local_index = y_ion_index[species_counter] - lv_y_ion_index_offset;
-      p_local[ local_index] = p_in[ y_ion_index[s]]/p_in[ X_mass_frac_index[e]];
+      p_local[ local_index] = p_in[ y_ion_index[species_counter]]/p_in[ X_mass_frac_index[e]];
       species_counter ++;
     }
   }
+  
+  for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
+  for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
+  cout << JM_MINNEU <<"\n\n";
 
 #ifdef MPv10_DEBUG
   //
@@ -474,7 +479,7 @@ int MPv10::convert_prim2local(
     //Define y_ion_frac
     pion_flt y_ion_frac[N_species];
     for (int s=0;s<N_species;s++){
-       y_ion_frac[ s] = p_local[ s];
+      y_ion_frac[ s] = p_local[ s];
     }
     //reset the internal energy (requires using y_ion_frac in get_ntot)
     p_local[lv_eint] = get_ntot(y_ion_frac,X_elem_number_density)*k_B*EP->MinTemperature/(gamma_minus_one);
@@ -681,6 +686,11 @@ int MPv10::TimeUpdateMP(
   //
   double maxdelta=0.0;
   err = ydot(0, y_in, y_out, 0);
+  cout <<"H+-ion-frac="<< NV_Ith_S(y_in,0) <<"\n";
+  cout <<"He+-ion-frac="<< NV_Ith_S(y_in,1) <<"\n";
+  cout <<"He2+-ion-frac="<< NV_Ith_S(y_in,2) <<"\n";
+  cout <<"E_int="<< NV_Ith_S(y_in,3) <<"\n";
+
   if (err) 
     rep.error("dYdt() returned an error in MPv10::TimeUpdateMP_RTnew()",err);
   for (int v=0;v<nvl;v++) {
@@ -854,6 +864,11 @@ int MPv10::ydot(
   double y_ion_frac[N_species];
   
   int species_counter=0;
+  //
+  //  ========================================================
+  //        Determine ne, y_ion_frac, and number density
+  //  ========================================================
+  //
   for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     
@@ -867,16 +882,16 @@ int MPv10::ydot(
       int num_elec = y_ion_num_elec[species_counter];
       ne += num_elec*number_density;
       
+      //cout <<"y-ion-frac="<<y_ion_frac[species_counter] << ", y-ion number density="<<number_density <<"\n";
       species_counter ++;
     }
   }
+  // Find internal energy
   double E_in      = NV_Ith_S(y_now,lv_eint);
 
+  // Use E_in, y_ion_frac and number density to determine temperature
   double T = get_temperature(y_ion_frac, X_elem_number_density, E_in);
   cout << "Temperature="<< T<<"\n"<<"Electron density="<<ne<<"\n\n\n";
-  //NOTE \Maggie{Might just make a get_temperature_local function -- undecided as of yet.
-  //double T = get_temperature_local(mpv_nH, E_in, x_in);
-
 
   double temp1=0.0, temp2=0.0;
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
@@ -890,13 +905,20 @@ int MPv10::ydot(
   // (Sofia,1997), approximately, so I add this to the electron number density
   // with an exponential cutoff at high densities.
   // NOTE \Maggie{ this definitely needs a modification}
-  //ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
+  // ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
 
 
   //
   // collisional ionisation of H, with its associated cooling.
   // scales with n_e*nH0
   // NOTE \Maggie {again, lookup table instead of calculation}
+  
+  //
+  //  ========================================================
+  //        Collisional ionisation of each element
+  //  ========================================================
+  //
+
   Hi_coll_ion_rates(T, &temp1, &temp2);
   oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
   Edot -= temp2*ne*OneMinusX;
@@ -942,6 +964,8 @@ int MPv10::ydot(
   //
   oneminusx_dot -= 1.8e-17*OneMinusX;
 
+  // =========================================================================
+  //
   //
   // Now COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
   // HII regions.  This is collisionally excited lines of photoionised metals.

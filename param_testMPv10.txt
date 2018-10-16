@@ -188,11 +188,12 @@ WIND_0_mdot   1.0e-6
 WIND_0_vinf   1500.0
 WIND_0_temp   37500.0
 WIND_0_Rstr   6.96e15  # 1e5 R_sun
+#NOTE \Maggie{Can't figure out why, but for some reason the hydrogen mass fraction keeps fixing to 1, regardless of what the initial value is.}
 WIND_0_TR0 0.5  # Half of the wind is H
 WIND_0_TR1 0.5  # The other half is He
-WIND_0_TR2 0.999  
-WIND_0_TR3 0.899
-WIND_0_TR4 0.1
+WIND_0_TR2 0.4995  
+WIND_0_TR3 0.4495
+WIND_0_TR4 0.05
 WIND_0_TR5 0.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000
