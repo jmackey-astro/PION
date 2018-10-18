@@ -57,7 +57,6 @@ using namespace std;
 //
 #define DTFRAC 0.25
 
-
 // ##################################################################
 // ##################################################################
 
@@ -92,7 +91,6 @@ void MPv10::get_problem_size(
 // ##################################################################
 // ##################################################################
 
-
 MPv10::MPv10(
       const int nd,   ///< grid dimensions
       const int csys,   ///< Coordinate System flag
@@ -104,8 +102,25 @@ MPv10::MPv10(
       const double g  ///< EOS Gamma
       )
 : microphysics_base(ephys,rsrcs),
-  ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
-{
+  ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys),
+  T_min(1e0), T_max(1e9), Num_temps(1e2), delta_log_temp((log10f(T_max) - log10f(T_min))/(Num_temps-1))
+{ 
+  /// ===================================================================
+  ///  Initialise Temperature, Recombination (radiative + dielectronic),
+  ///       Ionisation, and (recomb and ionisation) Slopes Tables
+  ///  NOTE: SHOULD PROBABLY READ THESE FROM FILES EVENTUALLY... BUT I DON'T FEEL LIKE IT RIGHT NOW, AND I JUST WANT THEM TO WORK FIRST.
+  /// ===================================================================
+
+  float Temp_table[Num_temps] = { 1, 1.23285, 1.51991, 1.87382, 2.31013, 2.84804, 3.51119, 4.32876, 5.3367, 6.57933, 8.11131, 10, 12.3285, 15.1991, 18.7382, 23.1013, 28.4804, 35.1119, 43.2876, 53.367, 65.7933, 81.1131, 100, 123.285, 151.991, 187.382, 231.013, 284.804, 351.119, 432.876, 533.67, 657.933, 811.131, 1000, 1232.85, 1519.91, 1873.82, 2310.13, 2848.04, 3511.19, 4328.76, 5336.7, 6579.33, 8111.31, 10000, 12328.5, 15199.1, 18738.2, 23101.3, 28480.4, 35111.9, 43287.6, 53367, 65793.4, 81113.1, 100000, 123285, 151991, 187382, 231013, 284804, 351119, 432876, 533670, 657934, 811131, 1e+06, 1.23285e+06, 1.51991e+06, 1.87382e+06, 2.31013e+06, 2.84804e+06, 3.5112e+06, 4.32876e+06, 5.3367e+06, 6.57934e+06, 8.11131e+06, 1e+07, 1.23285e+07, 1.51991e+07, 1.87382e+07, 2.31013e+07, 2.84804e+07, 3.5112e+07, 4.32876e+07, 5.3367e+07, 6.57933e+07, 8.11131e+07, 1e+08, 1.23285e+08, 1.51991e+08, 1.87382e+08, 2.31013e+08, 2.84804e+08, 3.5112e+08, 4.32876e+08, 5.3367e+08, 6.57934e+08, 8.11131e+08, 1e+09};
+  
+  float recomb_rate_table[Num_temps][5] = {
+{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{ 3.41202e-10, 2.89621e-10, 2.45838e-10, 2.08674e-10, 1.77128e-10, 1.50351e-10, 1.27622e-10, 1.08329e-10, 9.19525e-11, 7.80517e-11, 6.62524e-11, 5.62368e-11, 4.77353e-11, 4.0519e-11, 3.43936e-11, 2.91942e-11, 2.47808e-11, 2.10346e-11, 1.78547e-11, 1.51556e-11, 1.28645e-11, 1.09197e-11, 9.26893e-12, 7.86771e-12, 6.67832e-12, 5.66874e-12, 4.81178e-12, 4.08436e-12, 3.46692e-12, 2.94281e-12, 2.49794e-12, 2.12032e-12, 1.79978e-12, 1.5277e-12, 1.29675e-12, 1.10072e-12, 9.34319e-13, 7.93075e-13, 6.73184e-13, 5.71416e-13, 4.85033e-13, 4.11709e-13, 3.4947e-13, 2.96639e-13, 2.51795e-13, 2.13731e-13, 1.8142e-13, 1.53994e-13, 1.30714e-13, 1.10954e-13, 9.41806e-14, 7.9943e-14, 6.78577e-14, 5.75995e-14, 4.8892e-14, 4.15008e-14, 3.5227e-14, 2.99016e-14, 2.53813e-14, 2.15443e-14, 1.82874e-14, 1.55228e-14, 1.31762e-14, 1.11843e-14, 9.49352e-15, 8.05836e-15, 6.84015e-15, 5.8061e-15, 4.92837e-15, 4.18333e-15, 3.55092e-15, 3.01412e-15, 2.55846e-15, 2.17169e-15, 1.84339e-15, 1.56472e-15, 1.32818e-15, 1.12739e-15, 9.56959e-16, 8.12292e-16, 6.89495e-16, 5.85262e-16, 4.96786e-16, 4.21685e-16, 3.57938e-16, 3.03827e-16, 2.57896e-16, 2.18909e-16, 1.85816e-16, 1.57726e-16, 1.33882e-16, 1.13642e-16, 9.64626e-17, 8.18801e-17, 6.9502e-17, 5.89951e-17, 5.00767e-17, 4.25064e-17, 3.60806e-17},
+{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+{ 1.33093e-10, 1.17666e-10, 1.03994e-10, 9.18837e-11, 8.11612e-11, 7.16715e-11, 6.32763e-11, 5.58519e-11, 4.92884e-11, 4.34877e-11, 3.83627e-11, 3.38359e-11, 2.98384e-11, 2.63091e-11, 2.3194e-11, 2.04448e-11, 1.8019e-11, 1.5879e-11, 1.39914e-11, 1.23265e-11, 1.08584e-11, 9.56392e-12, 8.42264e-12, 7.41655e-12, 6.52971e-12, 5.74807e-12, 5.0592e-12, 4.45214e-12, 3.91723e-12, 3.44593e-12, 3.0307e-12, 2.6649e-12, 2.34268e-12, 2.05887e-12, 1.80891e-12, 1.58879e-12, 1.39495e-12, 1.2243e-12, 1.07406e-12, 9.41811e-13, 8.25422e-13, 7.23005e-13, 6.32898e-13, 5.5364e-13, 4.8394e-13, 4.22663e-13, 3.68807e-13, 3.2149e-13, 2.79936e-13, 2.43486e-13, 2.11883e-13, 1.87118e-13, 1.791e-13, 2.12928e-13, 3.25733e-13, 5.44478e-13, 8.59022e-13, 1.21617e-12, 1.54153e-12, 1.77147e-12, 1.87401e-12, 1.85128e-12, 1.72897e-12, 1.54243e-12, 1.32565e-12, 1.10534e-12, 8.9925e-13, 7.17141e-13, 5.62742e-13, 4.35843e-13, 3.34002e-13, 2.53772e-13, 1.91481e-13, 1.43671e-13, 1.0731e-13, 7.98579e-14, 5.92515e-14, 4.38562e-14, 3.23971e-14, 2.38937e-14, 1.7599e-14, 1.29486e-14, 9.51838e-15, 6.9916e-15, 5.13234e-15, 3.76548e-15, 2.76137e-15, 2.02421e-15, 1.48333e-15, 1.08664e-15, 7.95822e-16, 5.82695e-16, 4.26555e-16, 3.12194e-16, 2.28454e-16, 1.67149e-16, 1.22278e-16, 8.94407e-17, 6.54141e-17},
+{ 5.39147e-10, 4.82303e-10, 4.31218e-10, 3.85324e-10, 3.4411e-10, 3.07114e-10, 2.73921e-10, 2.44153e-10, 2.17473e-10, 1.93575e-10, 1.72182e-10, 1.53045e-10, 1.35938e-10, 1.20656e-10, 1.07016e-10, 9.48513e-11, 8.40103e-11, 7.43571e-11, 6.57686e-11, 5.81336e-11, 5.13516e-11, 4.53321e-11, 3.99936e-11, 3.52626e-11, 3.10731e-11, 2.73656e-11, 2.4087e-11, 2.11895e-11, 1.86304e-11, 1.63716e-11, 1.43789e-11, 1.2622e-11, 1.10736e-11, 9.70986e-12, 8.50918e-12, 7.45259e-12, 6.5232e-12, 5.70605e-12, 4.98789e-12, 4.35698e-12, 3.80298e-12, 3.3167e-12, 2.89006e-12, 2.51593e-12, 2.18799e-12, 1.9007e-12, 1.64915e-12, 1.42904e-12, 1.23657e-12, 1.06839e-12, 9.21565e-13, 7.93493e-13, 6.81901e-13, 5.84779e-13, 5.00362e-13, 4.27095e-13, 3.63609e-13, 3.087e-13, 2.61305e-13, 2.20488e-13, 1.85424e-13, 1.55385e-13, 1.29728e-13, 1.07884e-13, 8.93538e-14, 7.36932e-14, 6.05118e-14, 4.94646e-14, 4.02482e-14, 3.25956e-14, 2.62727e-14, 2.10751e-14, 1.68247e-14, 1.33675e-14, 1.05704e-14, 8.31963e-15, 6.51816e-15, 5.08399e-15, 3.9482e-15, 3.05334e-15, 2.3518e-15, 1.80449e-15, 1.37947e-15, 1.0509e-15, 7.97955e-16, 6.04022e-16, 4.55896e-16, 3.43163e-16, 2.57653e-16, 1.92997e-16, 1.44251e-16, 1.076e-16, 8.01122e-17, 5.95447e-17, 4.41881e-17, 3.27448e-17, 2.4233e-17, 1.79121e-17, 1.32255e-17}
+};
+  
   
   k_B = pconst.kB();  // Boltzmann constant.
   m_p = pconst.m_p(); // Proton mass.
@@ -119,8 +134,8 @@ MPv10::MPv10(
   // --------- Set up tracer variables:                                  ---------
   // --------- (i) Identify elements present in tracer list              ---------
   // --------- (ii) Record X_mass_frac_index vector, N_elem              ---------
-  // --------- (iii) Record: y_ion_index (index in primitive vector),    ---------
-  // ---------       y_ion_num_elec (# electrons of y_ion_index species),---------
+  // --------- (iii) Record: y_ion_index_prim (index in primitive vector),    ---------
+  // ---------       y_ion_num_elec (# electrons of y_ion_index_prim species),---------
   // ---------       N_species_by_elem (ordered like X_mass_frac_index)  ---------
   // ---------                                                           ---------
   // -----------------------------------------------------------------------------
@@ -130,12 +145,11 @@ MPv10::MPv10(
   int len = ntracer;
   int ftr = nv_prim -ntracer; // first tracer variable.
     
-  std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
   string s; //pv_H1p=-1;
   
   N_elem = 0; N_species=0;
   int H_index; int He_index; // used to update N_species_by_elem
-
+ 
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
     
@@ -169,7 +183,7 @@ MPv10::MPv10(
   //
   // ================================================================
   // (iii) Record:   N_species,    N_species_by_elem,  y_ion_num_elec
-  //                 y_ion_index,  y_ip1_index,        y_im1_index
+  //                 y_ion_index_prim,  y_ip1_index,        y_im1_index
   // ================================================================
   //
   
@@ -181,11 +195,25 @@ MPv10::MPv10(
     if (s.substr(0,2)=="He"){
       cout << "\n\nTesting " << s << "\n";
       species_tracer_initialise(tracers, i, s, "He", 2, He_index, len);
+      if (s[2]=='1'){
+        cout << s <<"\n";
+        y_ip1_index_tables.push_back(4); //index of He2+ in tables
+        y_ion_index_tables.push_back(3); //index of He1+ in tables
+        y_im1_index_tables.push_back(2); //index of He0 in tables
+      }
+      else if (s[2]=='2'){
+        y_ip1_index_tables.push_back(-1); //doesn't exist in tables
+        y_ion_index_tables.push_back(4); //index of He2+ in tables
+        y_im1_index_tables.push_back(3); //index of He1+ in tables
+      }
     }
     //=======Hydrogen========
     else if (s[0] =='H'){
       cout << "\n\nTesting " << s << "\n";
       species_tracer_initialise(tracers, i, s, "H", 1, H_index, len);
+      y_ip1_index_tables.push_back(-1); //doesn't exist in tables
+      y_ion_index_tables.push_back(1); //index of H1+ in tables
+      y_im1_index_tables.push_back(0); //index of H0 in tables
     }
   }
 
@@ -218,7 +246,7 @@ MPv10::MPv10(
   // initialise all the radiation variables to values that limit their heating
   // and cooling abilities.
   //
-  mpv_nH   = 1.0;  // Hydrogen number density (density of H+ and H) -- change that where y_now is, and
+  /*mpv_nH   = 1.0;  // Hydrogen number density (density of H+ and H) -- change that where y_now is, and
   mpv_Vshell  = 1.0e54;
   mpv_Tau0     = 1.0e6;  
   mpv_dTau0    = 1.0;
@@ -228,7 +256,7 @@ MPv10::MPv10(
   mpv_NIdot   = 0.0;
   ion_src_type = -1;
   N_ion_srcs  = 0;
-  N_diff_srcs = 0;
+  N_diff_srcs = 0;*/
   // ================================================================
   // ================================================================
   
@@ -274,7 +302,8 @@ void MPv10::species_tracer_initialise(
     int length /// < length of tracers vector
     ){
   N_species_by_elem[el_index]++;
-  y_ion_index.push_back(lv_y_ion_index_offset + N_species);
+  y_ion_index_prim.push_back(lv_y_ion_index_offset + N_species);
+  y_ion_index_local.push_back(N_species);
      
   /// Use stringstream to convert electron number string to int.
   int num_elec_int;
@@ -301,28 +330,28 @@ void MPv10::species_tracer_initialise(
   if (i+1 < length){
     if ( ip1==tracers[i+1] ){
       cout << "Next ion up = " << ip1<<"\n";
-      y_ip1_index.push_back(lv_y_ion_index_offset + N_species + 1); 
+      y_ip1_index_local.push_back(N_species + 1); 
     }
     else{
       cout <<"Next ion up doesn't exist\n";
-      y_ip1_index.push_back(-1); // -1 flag => species doesn't exist 
+      y_ip1_index_local.push_back(-1); // -1 flag => species doesn't exist 
     }
   }
   else{
     cout <<"Next ion up doesn't exist\n";
-    y_ip1_index.push_back(-1); // -1 flag => species doesn't exist 
+    y_ip1_index_local.push_back(-1); // -1 flag => species doesn't exist 
   }
   ///< due to ordering in tracer list, if the previous ion exists, its index will be 1 below the current index.
   if ( im1 == neutral){
     cout <<"Next ion down is neutral \n";
-    y_im1_index.push_back(-2); // -2 flag => species is neutral
+    y_im1_index_local.push_back(-2); // -2 flag => species is neutral
   }
   else if (im1==tracers[i-1] ){//check if the next lowest ion is the neutral species
     cout << "Next ion down = " << im1<<"\n";
-    y_im1_index.push_back(lv_y_ion_index_offset + N_species - 1); 
+    y_im1_index_local.push_back(lv_y_ion_index_offset + N_species - 1); 
   }
   else{
-    y_im1_index.push_back(-1); // -1 flag => species doesn't exist
+    y_im1_index_local.push_back(-1); // -1 flag => species doesn't exist
     cout <<"Next ion down doesn't exist.\n";
   }
   N_species++;
@@ -370,6 +399,7 @@ MPv10::~MPv10()
 // ##################################################################
 // ##################################################################
 
+//NOTE This is currently incorrect, but I'm not sure if it's ever called anywhere, so I'll leave it for now...
 int MPv10::Tr(const string s)
 {
   if (s.substr(0,2)=="He"){
@@ -396,7 +426,7 @@ int MPv10::Tr(const string s)
 
 
 double MPv10::get_temperature(
-      double *y_ion_frac, //< y_ion_fraction (by y_ion_index)
+      double *y_ion_frac, //< y_ion_fraction (by y_ion_index_prim)
       vector<pion_flt>& X_number_density,//const double nH, ///< nH
       const double E ///< E_int (per unit volume)
       )
@@ -410,7 +440,7 @@ double MPv10::get_temperature(
 // ##################################################################
 
 double MPv10::get_ntot(
-      double *y_ion_frac,//<y_ion_fraction (by y_ion_index)
+      double *y_ion_frac,//<y_ion_fraction (by y_ion_index_prim)
       vector<pion_flt>& X_number_density//const double nH, ///< nH
       )
 {
@@ -475,8 +505,7 @@ int MPv10::convert_prim2local(
     int N_elem_species=N_species_by_elem[e];
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      int local_index = y_ion_index[species_counter] - lv_y_ion_index_offset;
-      p_local[ local_index] = p_in[ y_ion_index[species_counter]]/p_in[ X_mass_frac_index[e]];
+      p_local[ y_ion_index_local[species_counter]] = p_in[ y_ion_index_prim[species_counter]]/p_in[ X_mass_frac_index[e]];
       species_counter ++;
     }
   }
@@ -568,9 +597,8 @@ int MPv10::convert_local2prim(
     int N_elem_species=N_species_by_elem[e];
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      int local_index = y_ion_index[species_counter] - lv_y_ion_index_offset;
-      p_out[ y_ion_index[ species_counter]] = p_local[ local_index] * p_in[ X_mass_frac_index[e]];
-      y_ion_frac[ species_counter] = p_local[ local_index];
+      p_out[ y_ion_index_prim[ species_counter]] = p_local[ y_ion_index_local[species_counter]] * p_in[ X_mass_frac_index[e]];
+      y_ion_frac[ species_counter] = p_local[ y_ion_index_local[species_counter]];
       species_counter ++;
     }
   }
@@ -647,7 +675,7 @@ double MPv10::Temperature(
     int N_elem_species=N_species_by_elem[e];
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      y_ion_frac[ species_counter] = pv[ y_ion_index[ species_counter]] / pv[ X_mass_frac_index[e]];
+      y_ion_frac[ species_counter] = pv[ y_ion_index_prim[ species_counter]] / pv[ X_mass_frac_index[e]];
       species_counter ++;
     }
   }
@@ -686,7 +714,7 @@ int MPv10::Set_Temp(
     int N_elem_species=N_species_by_elem[e];
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      y_ion_frac[ species_counter] = p_pv[ y_ion_index[ species_counter]] / p_pv[ X_mass_frac_index[e]];
+      y_ion_frac[ species_counter] = p_pv[ y_ion_index_prim[ species_counter]] / p_pv[ X_mass_frac_index[e]];
       species_counter ++;
     }
   }
@@ -915,8 +943,8 @@ int MPv10::ydot(
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
       //add to y_ion_frac
-      int this_ion_index = y_ion_index[species_counter] - lv_y_ion_index_offset;
-      y_ion_frac[species_counter] = NV_Ith_S(y_now,this_ion_index);
+      //int this_ion_index = y_ion_index[species_counter] - lv_y_ion_index_offset;
+      y_ion_frac[species_counter] = NV_Ith_S(y_now,y_ion_index_local[species_counter]);
       
       //add to ne based on the number of electrons liberated to obtain this ion
       pion_flt number_density = X_elem_number_density[elem]*y_ion_frac[species_counter];
@@ -956,9 +984,25 @@ int MPv10::ydot(
   
   //
   //  ========================================================
-  //        Collisional ionisation of each element
+  //          Get Rate of Change of Each Species
   //  ========================================================
   //
+  /*species_counter = 0;
+  pion_flt coll_ion_out;
+  pion_flt coll_ion_in;
+  pion_flt recomb_out;
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
+    int N_elem_species=N_species_by_elem[elem];
+    
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+      ///  =============Collisional Ionisation Terms=================
+      if (y_ip1_index[species_counter] != -1){ //<<< no species more ionised
+         //coll_ion_out = ;
+        
+      
+      species_counter ++;
+    }
+  }*/
 
   Hi_coll_ion_rates(T, &temp1, &temp2);
   oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.

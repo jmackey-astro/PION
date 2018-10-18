@@ -334,7 +334,8 @@ class MPv10
   ///               Vectors to Access Primitive / Local vectors
   /// ===========================================================================
   std::vector<int> X_mass_frac_index; /// < primitive vector indices, used to trace X_H etc, like pv_Hp. 
-  std::vector<int> y_ion_index; ///<index matching y_ion mass fraction in prim vector, analogous to pv_Hp before.
+  std::vector<int> y_ion_index_prim; ///<index matching y_ion mass fraction in prim vector, analogous to pv_Hp before.
+  std::vector<int> y_ion_index_local; ///<index matching y_ion fraction in local vector.
   
   std::vector<int> H_ion_index; ///<Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position. Used with MPv10::Tr().
   std::vector<int> He_ion_index;///""
@@ -342,9 +343,12 @@ class MPv10
   /// ===========================================================================
   ///               Vectors to Access Adjacent Ions
   /// ===========================================================================
-  std::vector<int> y_ip1_index; ///< index of ion p1 (plus 1); ion one stage higher. If ion doesn't exist, sets to -1.
-  std::vector<int> y_im1_index; ///< index of ion m1 (minus 1); ion one stage lower. if lower stage ion is neutral species, sets to -2.
-                                ///   also, if we're just not tracking lower stage (i.e. "doesn't exist"), also sets to -1.
+  std::vector<int> y_ip1_index_local; ///< local index of ion p1 (plus 1); ion one stage higher. If ion doesn't exist, sets to -1.
+  std::vector<int> y_im1_index_local; ///< local index of ion m1 (minus 1); ion one stage lower. if lower stage ion is neutral species, sets to -2.
+                                      ///   also, if we're just not tracking lower stage (i.e. "doesn't exist"), also sets to -1.
+  std::vector<int> y_ip1_index_tables; ///< index of the ip1 species in tables. This follows the order "H0", "H1+", "He0", "He1+", "He2+" etc.
+  std::vector<int> y_ion_index_tables;
+  std::vector<int> y_im1_index_tables; ///< index of the im1 species in tables. Follows same order as above.
   
   /// ===========================================================================
   ///           Vectors to Store Other Ion / Element info
@@ -354,6 +358,20 @@ class MPv10
   std::vector<pion_flt> X_elem_number_density;
   std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
 
+  /// ===========================================================================
+  ///  Variables to store table (temp, ionisation / recomb rates, etc)information
+  /// ===========================================================================
+  float Temp_Table[];
+  //float recomb_rate_table[][5];
+  float ionise_rate_table[];
+  float recomb_slope_table[];
+  float ionise_slope_table[];
+  
+  const float T_min;
+  const float T_max;
+  const int Num_temps; //NB this needs to be const so can initialise arrays with it. If this is >=1e4, get stack overflow errors.
+  const float delta_log_temp;
+  
   
   
   int pv_H1p;    ///< legacy, should ideally remove
