@@ -132,92 +132,64 @@ MPv10::MPv10(
     
   std::set<std::string> set_elem; ///<set of element characters e.g. {"C", "He"}. Used to get Nelem from user's tracer input.
   string s; //pv_H1p=-1;
-  //
-  // ================================================================
-  //          (i) Identify elements present in tracer list
-  // ================================================================
-  //
+  
+  N_elem = 0; N_species=0;
+  int H_index; int He_index; // used to update N_species_by_elem
+
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
-
-    if (s.substr(2,2)=="He"){
-      set_elem.insert("He");
-    }
-    else if (s[2]=='H'){
-      set_elem.insert("H");
-    }
-    else if (s[2]=='C'){
-      set_elem.insert("C");
-    }
-  }
-  
-  //
-  // ================================================================
-  //          (ii) Record X_mass_frac_index vector, N_elem  
-  // ================================================================
-  //
-  set<string>::iterator it; /// < iterator for set_elem
-  N_elem = 0;
-  for (it = set_elem.begin(); it != set_elem.end(); ++it) {
+    
+    // ================================================================
+    //          (i) Identify elements present in tracer list
+    //          (ii) Record X_mass_frac_index vector, N_elem,
+    //               X_elem_atomic_mass, X_elem_number_density
+    // ================================================================
+    if (s[0]=='X'){
       X_mass_frac_index.push_back(ftr + N_elem); ///<record primitive vector index of each element
       N_species_by_elem.push_back(0);
+      
+      //=======Helium========
+      if (s.substr(2,2)=="He"){
+        He_index = N_elem;
+        X_elem_atomic_mass.push_back(m_He);
+        X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
+        He_ion_index.push_back(0); He_ion_index.push_back(0); //initialise the length of H_ion_index
+      }
+      //=======Hydrogen======
+      else if (s[2]=='H'){
+        H_index = N_elem;
+        X_elem_atomic_mass.push_back(m_H);
+        X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
+        H_ion_index.push_back(0); //initialise the length of H_ion_index
+      }
       N_elem++;
+    } 
   }
+
+  //
+  // ================================================================
+  // (iii) Record:   N_species,    N_species_by_elem,  y_ion_num_elec
+  //                 y_ion_index,  y_ip1_index,        y_im1_index
+  // ================================================================
+  //
   
   lv_y_ion_index_offset = ftr + N_elem; // gives the index at which ions first occur in primitive vector, maps to first index of local vector
 
-  // ================================================================
-  //        (iii) Record:
-  //                    N_species,    N_species_by_elem, 
-  //                    y_ion_index,  y_ion_num_elec
-  // ================================================================
-  N_species=0;
-  int elem_counter=0;
-  int num_elec_int;
-  for (it = set_elem.begin(); it != set_elem.end(); ++it) {
-    if((*it)=="H"){
-      cout <<"Found element H in list of tracers\n";
-      X_elem_atomic_mass.push_back(m_H);
-      X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-      H_ion_index.push_back(0); //initialise the length of H_ion_index
+  for (int i=0;i<len;i++) {
+    s = tracers[i]; // Get 'i'th tracer variable.
+    //=======Helium========
+    if (s.substr(0,2)=="He"){
+      cout << "\n\nTesting " << s << "\n";
+      species_tracer_initialise(tracers, i, s, "He", 2, He_index, len);
     }
-    else if ((*it)=="He"){
-      cout <<"Found element He in list of tracers\n";
-      X_elem_atomic_mass.push_back(m_He);
-      X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-      He_ion_index.push_back(0); He_ion_index.push_back(0);
+    //=======Hydrogen========
+    else if (s[0] =='H'){
+      cout << "\n\nTesting " << s << "\n";
+      species_tracer_initialise(tracers, i, s, "H", 1, H_index, len);
     }
-          
-    // Loop over every tracer and assign species index / mass fraction / num electrons to vectors if that tracer corresponds to the current element.
-    for (int i=0;i<len;i++) {
-      s = tracers[i];
-      // He compared separately as it is the first two characters instead of the first character.
-      if (s.substr(0,2)=="He" && (*it)=="He"){
-        N_species_by_elem[elem_counter]++;
-        y_ion_index.push_back(ftr + N_elem + N_species);
-        
-        //Use stringstream to convert electron number string to int.
-        stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; 
-        y_ion_num_elec.push_back(num_elec_int);
-        He_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
-        
-        N_species++;
-      }
-      else if (s.substr(0,1)==(*it) && s.substr(0,2)!="He" && s.substr(0,1)=="H"){
-        N_species_by_elem[elem_counter]++;
-        y_ion_index.push_back(ftr + N_elem + N_species);
-        
-        //Use stringstream to convert electron number string to int.
-        stringstream ss; ss << s.substr(1,1); ss >> num_elec_int;
-        y_ion_num_elec.push_back(num_elec_int);
-        H_ion_index[num_elec_int-1] = ftr + N_elem + N_species;
-        
-        N_species++;
-      }
-    }
-    elem_counter++;
   }
-  cout << "N_species=" << N_species << ", N_elements=" << N_elem << "\n";  
+
+  cout << "\nAfter reading in tracers, N_species=" << N_species << ", N_elements=" << N_elem << "\n\n";  
   
   
   // ================================================================
@@ -288,6 +260,75 @@ MPv10::MPv10(
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+void MPv10::species_tracer_initialise(
+    const std::string *tracers,  ///< List of what the tracer variables mean.
+    int i, ///<index of current tracer in for loop
+    string s, /// < current tracer in for loop
+    string el_symbol, ///< element symbol, e.g. "He", "H"
+    int el_symbol_length, ///< e.g. "H" is of length 1, "He" of length 2.
+    int el_index, /// element index in N_species_by_elem, used in for loops for densities etc
+    int length /// < length of tracers vector
+    ){
+  N_species_by_elem[el_index]++;
+  y_ion_index.push_back(lv_y_ion_index_offset + N_species);
+     
+  /// Use stringstream to convert electron number string to int.
+  int num_elec_int;
+  stringstream ss_e; 
+  ss_e << s.substr(el_symbol_length,1); 
+  ss_e >> num_elec_int; 
+  /// Record the electron number and He_ion_index vector (used to identify tracer index from string)
+  y_ion_num_elec.push_back(num_elec_int);
+  He_ion_index[num_elec_int-1] = lv_y_ion_index_offset + N_species;
+        
+  /// Define the tracer for the next ion up / down in tracers list
+  stringstream ss_ip1;        
+  stringstream ss_im1;
+  stringstream ss_neutral;
+  ss_ip1 << el_symbol << num_elec_int +1 << "+";  
+  ss_im1 << el_symbol << num_elec_int -1 << "+";
+  ss_neutral << el_symbol << 0 << "+";
+  string neutral = ss_neutral.str();
+  string ip1 = ss_ip1.str();
+  string im1 = ss_im1.str();
+      
+  /// Check if the next ion up / down exists in tracer list (or if it's neutral) to define y_ip1_index and y_im1_index.
+  ///< due to ordering in tracer list, if the next ion exists, its index will be 1 above the current index.
+  if (i+1 < length){
+    if ( ip1==tracers[i+1] ){
+      cout << "Next ion up = " << ip1<<"\n";
+      y_ip1_index.push_back(lv_y_ion_index_offset + N_species + 1); 
+    }
+    else{
+      cout <<"Next ion up doesn't exist\n";
+      y_ip1_index.push_back(-1); // -1 flag => species doesn't exist 
+    }
+  }
+  else{
+    cout <<"Next ion up doesn't exist\n";
+    y_ip1_index.push_back(-1); // -1 flag => species doesn't exist 
+  }
+  ///< due to ordering in tracer list, if the previous ion exists, its index will be 1 below the current index.
+  if ( im1 == neutral){
+    cout <<"Next ion down is neutral \n";
+    y_im1_index.push_back(-2); // -2 flag => species is neutral
+  }
+  else if (im1==tracers[i-1] ){//check if the next lowest ion is the neutral species
+    cout << "Next ion down = " << im1<<"\n";
+    y_im1_index.push_back(lv_y_ion_index_offset + N_species - 1); 
+  }
+  else{
+    y_im1_index.push_back(-1); // -1 flag => species doesn't exist
+    cout <<"Next ion down doesn't exist.\n";
+  }
+  N_species++;
+  
+  return;
+}
 
 
 // ##################################################################
@@ -440,8 +481,8 @@ int MPv10::convert_prim2local(
     }
   }
   
-  for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
-  for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
+  //for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
+  //for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
   cout << JM_MINNEU <<"\n\n";
 
 #ifdef MPv10_DEBUG

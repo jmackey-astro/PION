@@ -77,7 +77,19 @@ class MPv10
   /// Destructor
   ///
   ~MPv10();
-
+  
+  ///
+  /// Function for updating vectors according to species found in tracer list.
+  ///
+  void species_tracer_initialise(
+      const std::string *,  ///< List of what the tracer variables mean.
+      int, ///< index of current tracer in for loop (i in s=tracers[i])
+      std::string , /// < current tracer in for loop
+      std::string, ///< element symbol, e.g. "He", "H"
+      int, ///< element length, e.g. "H" is of length 1, "He" of length 2.
+      int, ///< element index in N_species_by_elem, used in for loops for densities etc
+      int ///< length of tracers vector
+      );
 
   ///
   /// The NON-RT MICROPHYSICS update function.
@@ -327,6 +339,12 @@ class MPv10
   std::vector<int> H_ion_index; ///<Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position. Used with MPv10::Tr().
   std::vector<int> He_ion_index;///""
 
+  /// ===========================================================================
+  ///               Vectors to Access Adjacent Ions
+  /// ===========================================================================
+  std::vector<int> y_ip1_index; ///< index of ion p1 (plus 1); ion one stage higher. If ion doesn't exist, sets to -1.
+  std::vector<int> y_im1_index; ///< index of ion m1 (minus 1); ion one stage lower. if lower stage ion is neutral species, sets to -2.
+                                ///   also, if we're just not tracking lower stage (i.e. "doesn't exist"), also sets to -1.
   
   /// ===========================================================================
   ///           Vectors to Store Other Ion / Element info
@@ -405,6 +423,9 @@ class MPv10
     mpv_NIdot,  ///< photon luminosity of monochromatic ionising source (ionising photons/s).
     mpv_delta_S;///< path length through current cell.
 
+    
+  
+  
 };
 
 #endif // MPv10_H
