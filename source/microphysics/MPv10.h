@@ -361,18 +361,16 @@ class MPv10
   /// ===========================================================================
   ///  Variables to store table (temp, ionisation / recomb rates, etc)information
   /// ===========================================================================
-  float Temp_Table[];
-  //float recomb_rate_table[][5];
-  float ionise_rate_table[];
-  float recomb_slope_table[];
-  float ionise_slope_table[];
+  std::vector<pion_flt> Temp_Table;
+  std::vector<pion_flt> recomb_rate_table;
+  std::vector<pion_flt> ionise_rate_table;
+  std::vector<pion_flt> recomb_slope_table;
+  std::vector<pion_flt> ionise_slope_table;
   
   const float T_min;
   const float T_max;
   const int Num_temps; //NB this needs to be const so can initialise arrays with it. If this is >=1e4, get stack overflow errors.
-  const float delta_log_temp;
-  
-  
+  float delta_log_temp;
   
   int pv_H1p;    ///< legacy, should ideally remove
 
