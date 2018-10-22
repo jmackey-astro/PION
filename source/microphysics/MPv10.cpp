@@ -105,13 +105,22 @@ MPv10::MPv10(
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys),
   T_min(1e0), T_max(1e9), Num_temps(1e2)
   {
-    /// ===================================================================
+  float erg_per_eV = 1.60218e-12;
+  /// ===================================================================
+  /// Initialise ionisation potentials vector
+  /// ===================================================================
+  float ionisation_pot_arr[5] = {13.59844*erg_per_eV, -1.0e99, 24.58741*erg_per_eV, 54.41778*erg_per_eV, -1.0e99}; //energy required to raise ion from species i to species i+1
+  ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[5]);
+   
+  /// ===================================================================
   ///  Initialise Temperature, Recombination (radiative + dielectronic),
   ///       Ionisation, and (recomb and ionisation) Slopes Tables
   ///  NOTE: SHOULD SET THIS TO READ FROM FILE EVENTUALLY;
   /// ===================================================================
   delta_log_temp=(log10f(T_max) - log10f(T_min))/(Num_temps-1);
   //int Num_temps = 1e2;
+  // NOTE 2D arrays were acting up with initialising in the header file, so instead I've flattened into 1D arrays, where
+  //  1D_array[ x + width*y] = 2D_array[x,y]
   float Temp_arr[Num_temps] = { 1, 1.23285, 1.51991, 1.87382, 2.31013, 2.84804, 3.51119, 4.32876, 5.3367, 6.57933, 8.11131, 10, 12.3285, 15.1991, 18.7382, 23.1013, 28.4804, 35.1119, 43.2876, 53.367, 65.7933, 81.1131, 100, 123.285, 151.991, 187.382, 231.013, 284.804, 351.119, 432.876, 533.67, 657.933, 811.131, 1000, 1232.85, 1519.91, 1873.82, 2310.13, 2848.04, 3511.19, 4328.76, 5336.7, 6579.33, 8111.31, 10000, 12328.5, 15199.1, 18738.2, 23101.3, 28480.4, 35111.9, 43287.6, 53367, 65793.4, 81113.1, 100000, 123285, 151991, 187382, 231013, 284804, 351119, 432876, 533670, 657934, 811131, 1e+06, 1.23285e+06, 1.51991e+06, 1.87382e+06, 2.31013e+06, 2.84804e+06, 3.5112e+06, 4.32876e+06, 5.3367e+06, 6.57934e+06, 8.11131e+06, 1e+07, 1.23285e+07, 1.51991e+07, 1.87382e+07, 2.31013e+07, 2.84804e+07, 3.5112e+07, 4.32876e+07, 5.3367e+07, 6.57933e+07, 8.11131e+07, 1e+08, 1.23285e+08, 1.51991e+08, 1.87382e+08, 2.31013e+08, 2.84804e+08, 3.5112e+08, 4.32876e+08, 5.3367e+08, 6.57934e+08, 8.11131e+08, 1e+09};
   
   Temp_Table.insert(Temp_Table.end(), &Temp_arr[0], &Temp_arr[Num_temps]);
@@ -1065,18 +1074,24 @@ int MPv10::ydot(
       
       if (y_ip1_index_local[species_counter] != -1){ //<<< does exist a species more ionised
         /// ============== Collisional ionisation OUT of this species ======================
-        float lower_ion_rate = ionise_rate_table[y_ion_index_tables[species_counter] + 5*temp_index];
-        float upper_ion_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index];
-        float ionisation_out_rate = lower_ion_rate + upper_ion_rate_contrib;
+        float lower_ion_rate = ionise_rate_table[y_ion_index_tables[species_counter] + 5*temp_index]; //rate at lower bound of temperature
+        float upper_ion_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index]; //contribution from upper bound of temperature
+        float ionisation_out_rate = lower_ion_rate + upper_ion_rate_contrib; //interpolated rate for exact temperature
         
         /// ============== Radiative recombination IN to this species ======================
         float lower_recomb_rate = recomb_rate_table[y_ip1_index_tables[species_counter] + 5*temp_index];
         float upper_recomb_rate_contrib = dT * ionise_slope_table[y_ip1_index_tables[species_counter] + 5*temp_index];
         float recombination_in_rate = lower_recomb_rate + upper_recomb_rate_contrib;
         
+        /// =========  COOLING / HEATING DUE TO IONISATION / RECOMBINATION OUT OF /INTO THIS SPECIES ===========
+        float ion_pot = ionisation_potentials[ y_ion_index_tables[species_counter]];
+        Edot -= ion_pot*ionisation_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        Edot += ion_pot*recombination_in_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+       
         /// ============== Combine the radiative recombination IN + collisional ionisation OUT =
         this_y_dot += recombination_in_rate*NV_Ith_S(y_now, y_ip1_index_local[species_counter])*ne;
         this_y_dot -= ionisation_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        
       }
       if (y_im1_index_local[species_counter] != -1){ //<<< if the less ionised species exists
         /// ================= Collisional ionisation INTO this species ======================
@@ -1088,14 +1103,21 @@ int MPv10::ydot(
         float lower_recomb_rate = recomb_rate_table[y_ion_index_tables[species_counter] + 5*temp_index];
         float upper_recomb_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index];
         float recombination_out_rate = lower_recomb_rate + upper_recomb_rate_contrib;
+
+
+        /// =========  HEATING / COOLING DUE TO IONISATION / RECOMBINATION INTO / OUT OF THIS SPECIES ===========
+        float ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
+        Edot += ion_pot*ionisation_in_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
         
         /// ============== Combine the radiative recombination OUT + collisional ionisation IN =
         //if the less ionised species ISN'T neutral:
         if (y_im1_index_local[species_counter] !=-2){
           this_y_dot -= recombination_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+          Edot -= ion_pot*recombination_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
         }
         else{
           this_y_dot -= recombination_out_rate*neutral_frac*ne;
+          Edot -= ion_pot*recombination_out_rate*neutral_frac*ne;
         }
         this_y_dot += ionisation_in_rate*NV_Ith_S(y_now, y_im1_index_local[species_counter])*ne;
       }

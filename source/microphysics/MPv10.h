@@ -366,6 +366,8 @@ class MPv10
   std::vector<pion_flt> ionise_rate_table;
   std::vector<pion_flt> recomb_slope_table;
   std::vector<pion_flt> ionise_slope_table;
+  std::vector<pion_flt> ionisation_potentials; //array of ionisation potentials, in the same order as ionise_slope
+  
   
   const float T_min;
   const float T_max;
