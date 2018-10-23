@@ -212,6 +212,9 @@ int FV_solver_base::InterCellFlux(
   // Calculate tracer flux based on whether flow is to left or right.
   //
   set_interface_tracer_flux(lp,rp,f);
+  //rep.printVec("left=",lp,eq_nvar);
+  //rep.printVec("rght=",rp,eq_nvar);
+  //rep.printVec("flux",f,eq_nvar);
 
   return err;
 }

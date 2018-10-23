@@ -68,7 +68,7 @@ void MPv10::get_error_tolerances(
 {
   *reltol = JM_RELTOL;
   // NOTE \Maggie{hardcoded this for now, but must change atol after.}
-  for (int i=0;i<N_species; i++) atol[i] = JM_MINNEU; ///< species
+  for (int i=0;i<N_species; i++) atol[i] = MPv10_ABSTOL; ///< species
   atol[N_equations-1] = JM_MINERG; ///< internal energy is last element
   return;
 }
@@ -305,8 +305,8 @@ MPv10::MPv10(
 
   setup_local_vectors();
   gamma_minus_one = eos_gamma -1.0;
-  Min_NeutralFrac     = JM_MINNEU;
-  Max_NeutralFrac     = 1.0-JM_MINNEU;
+  Min_NeutralFrac     = MPv10_ABSTOL;
+  Max_NeutralFrac     = 1.0-MPv10_ABSTOL;
 
   //
   // initialise all the radiation variables to values that limit their heating
@@ -565,6 +565,7 @@ int MPv10::convert_prim2local(
     double n_X = p_in[RO]*( p_in[ X_mass_frac_index[i]] / X_elem_atomic_mass[i]);
     X_elem_number_density[i] = n_X;
   }
+  //rep.printSTLVec("n_x",X_elem_number_density);
   //
   // ==============================================================
   //                 Set INTERNAL ENERGY in local vector.
@@ -583,36 +584,44 @@ int MPv10::convert_prim2local(
     int N_elem_species=N_species_by_elem[e];
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      p_local[ y_ion_index_local[species_counter]] = p_in[ y_ion_index_prim[species_counter]]/p_in[ X_mass_frac_index[e]];
+      p_local[ y_ion_index_local[species_counter]] = 
+        p_in[y_ion_index_prim[species_counter]]/p_in[ X_mass_frac_index[e]];
       species_counter ++;
     }
   }
+  //rep.printVec("local",p_local,nvl);
+  //rep.printVec("prim ",p_in,nv_prim);
   
   //for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
   //for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
 
-#ifdef MPv10_DEBUG
-  //
-  // Check for negative ion fraction, and set to a minimum value if found.
-  //
-  if (p_local[lv_H0]>1.0) {
-    cout <<"MPv10::convert_prim2local: negative ion fraction input: ";
-    cout <<"x(H0)="<<p_local[lv_H0] <<", resetting to "<<Max_NeutralFrac<<"\n";
-    p_local[lv_H0] = Max_NeutralFrac;
-  }
-  //
-  // Check for bad values:
-  //
-  if (p_local[lv_H0]>1.01 || p_local[lv_H0]<-0.01) {
-    cout <<"MPv10::convert_prim2local: bad ion fraction: ";
-    cout <<"x(H0)="<<p_local[lv_H0] <<", resetting to [0,1]\n";
-  }
-#endif
-
   //
   // Set x(H0) to be within the required range (not too close to zero or 1).
   //
-  p_local[lv_H0] = max(Min_NeutralFrac, min(Max_NeutralFrac, p_local[lv_H0]));
+  species_counter=0;
+  for (int e=0;e<N_elem;e++){//loop over every element
+    int N_elem_species=N_species_by_elem[e];
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+#ifdef MPv10_DEBUG
+      cout <<"e="<<e<<", s="<<s;
+      cout <<", species_counter="<<species_counter;
+      cout <<", ion index=";
+      cout <<y_ion_index_local[species_counter]<<"\n";
+      cout <<"Min_NeutralFrac="<<Min_NeutralFrac;
+      cout <<", 1-Max_NeutralFrac="<<1.0-Max_NeutralFrac<<"\n";
+      if (p_local[y_ion_index_local[species_counter]]>1.01 || 
+          p_local[y_ion_index_local[species_counter]]<-0.01) {
+        cout <<"MPv10::convert_prim2local: bad ion fraction: ";
+        cout <<"x(H0)="<<p_local[y_ion_index_local[species_counter]];
+        cout <<", resetting to [0,1]\n";
+      }
+#endif
+      //p_local[y_ion_index_local[species_counter]] =
+      //      max(Min_NeutralFrac, min(Max_NeutralFrac,
+      //                               p_local[y_ion_index_local[species_counter]]));
+      species_counter ++;
+    }
+  }
 
   //
   // Check for negative pressure (note this shouldn't happen, so we output a
@@ -644,7 +653,10 @@ int MPv10::convert_prim2local(
   if (mpv_nH<0.0 || !isfinite(mpv_nH))
     rep.error("Bad density input to MPv10::convert_prim2local",mpv_nH);
 #endif // MPv10_DEBUG
-  
+
+  //rep.printVec("prim2local local",p_local,nvl);
+  //rep.printVec("prim2local prim ",p_in,nv_prim);
+
   return 0;
 }
 
@@ -674,7 +686,6 @@ int MPv10::convert_local2prim(
   int species_counter=0;
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
-    
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
       p_out[ y_ion_index_prim[ species_counter]] = p_local[ y_ion_index_local[species_counter]] * p_in[ X_mass_frac_index[e]];
       y_ion_frac[ species_counter] = p_local[ y_ion_index_local[species_counter]];
@@ -682,21 +693,19 @@ int MPv10::convert_local2prim(
     }
   }
 
-  #ifdef MPv10_DEBUG
-  if (p_out[pv_H1p]<-10.0*JM_RELTOL || p_out[pv_H1p]>1.0*(1.0+JM_RELTOL) || !isfinite(p_out[pv_H1p])) {
-    rep.printVec("p_in",p_in, nv_prim);
-    rep.printVec("p_out",p_out, nv_prim);
-    rep.printVec("p_local",p_local, nvl);
-    rep.error("Bad output H+ value in MPv10::convert_local2prim",p_out[pv_H1p]-1.0); 
-  }
-  if (p_out[PG]<0.0 || !isfinite(p_out[PG]))
-    rep.error("Bad output pressure in MPv10::convert_local2prim",p_out[PG]);
-#endif // MPv10_DEBUG
 
   // NOTE \Maggie{Must come up with alternative to this for every element
   // Set xHp to be within the required range (not too close to zero or 1).
   //
-  //p_out[pv_H1p] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[pv_H1p])));
+  species_counter=0;
+  for (int e=0;e<N_elem;e++){//loop over every element
+    int N_elem_species=N_species_by_elem[e];
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+      //p_out[ y_ion_index_prim[ species_counter]] = 
+      //      max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
+      species_counter ++;
+    }
+  }
 
   //
   // Set output pressure to be within required temperature range (use the 
@@ -721,6 +730,8 @@ int MPv10::convert_local2prim(
 #endif // MPv10_DEBUG
   }
 
+  //rep.printVec("local2prim local",p_local,nvl);
+  //rep.printVec("local2prim prim ",p_out,nv_prim);
   return 0;
 }
 
@@ -752,7 +763,6 @@ double MPv10::Temperature(
   int species_counter=0;
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
-    
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
       y_ion_frac[ species_counter] = pv[ y_ion_index_prim[ species_counter]] / pv[ X_mass_frac_index[e]];
       species_counter ++;
@@ -825,10 +835,13 @@ int MPv10::TimeUpdateMP(
   int err=0;
   double P[nvl];
   err = convert_prim2local(p_in,P);
+  rep.printVec("p2l start prim ",p_in,nv_prim);
+  rep.printVec("p2l start local",P,nvl);
   if (err) {
     rep.error("Bad input state to MPv10::TimeUpdateMP()",err);
   }
   // Populates CVODE vector with initial conditions (input)
+  for (int v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
 
   //
   // Calculate y-dot[] to see if anything is changing significantly over dt
@@ -850,6 +863,7 @@ int MPv10::TimeUpdateMP(
   // Now if nothing is changing much, just to a forward Euler integration.
   //
   if (maxdelta < EULER_CUTOFF) {
+    cout <<"maxdelta="<<maxdelta<<", Doing euler integration...\n";
     for (int v=0;v<nvl;v++) {
       NV_Ith_S(y_out,v) = NV_Ith_S(y_in,v) + dt*NV_Ith_S(y_out,v);
     }
@@ -858,6 +872,7 @@ int MPv10::TimeUpdateMP(
   // Otherwise do the implicit CVODE integration
   //
   else {
+    cout <<"maxdelta="<<maxdelta<<", Doing CVODE integration...\n";
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
       rep.error("integration failed: MPv10::TimeUpdateMP_RTnew()",err);
@@ -869,6 +884,8 @@ int MPv10::TimeUpdateMP(
   //
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
   err = convert_local2prim(P,p_in,p_out);
+  rep.printVec("l2p end prim ",p_out,nv_prim);
+  rep.printVec("l2p end local",P,nvl);
 
   return err;
 }
@@ -1007,11 +1024,6 @@ int MPv10::ydot(
       )
 {
   //
-  // fixes min-neutral-fraction to Min_NeutralFrac
-  double OneMinusX = max(NV_Ith_S(y_now,lv_H0),Min_NeutralFrac); //NOTE \Maggie{LEGACY CODE; REMOVE}
-  double x_in      = 1.0-OneMinusX; //NOTE \Maggie{LEGACY CODE; REMOVE}
-  
-  //
   //  ========================================================
   //        Determine ne, y_ion_frac, and number density
   //        Also determine neutral fraction for later
@@ -1022,10 +1034,10 @@ int MPv10::ydot(
   double X_neutral_frac[N_elem];
   
   int species_counter=0;
-  for (int elem=0;elem<N_elem;elem++){//loop over every element
+  for (int elem=0;elem<N_elem;elem++) {//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     
-    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+    for (int s=0;s<N_elem_species;s++) {//loop over every species in THIS element
       //add to y_ion_frac
       //int this_ion_index = y_ion_index[species_counter] - lv_y_ion_index_offset;
       y_ion_frac[species_counter] = NV_Ith_S(y_now,y_ion_index_local[species_counter]);
@@ -1039,31 +1051,43 @@ int MPv10::ydot(
       species_counter ++;
     }
   }
+
   // Find internal energy
   double E_in      = NV_Ith_S(y_now,lv_eint);
 
   // Use E_in, y_ion_frac and number density to determine temperature
   double T = get_temperature(y_ion_frac, X_elem_number_density, E_in);
-  double temp1=0.0, temp2=0.0;
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
   double Edot=0.0;
   // Edot is calculated in units of erg/s per H nucleon, multiplied by mpv_nH
   // at the end.
 
-  //
-  // We set a minimum electron density based on the idea that Carbon is singly
-  // ionised in low density gas.  y(C)=1.5e-4 in the gas phase (by number)
-  // (Sofia,1997), approximately, so I add this to the electron number density
-  // with an exponential cutoff at high densities.
-  // NOTE \Maggie{ this definitely needs a modification}
-  // ne += mpv_nH*1.5e-4*METALLICITY*exp(-mpv_nH/1.0e4);
+  // get neutral fractions
+  species_counter=0;
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
+    int N_elem_species=N_species_by_elem[elem];
+    X_neutral_frac[elem] =1.0;
+    //cout << "\n neutral_frac=" << neutral_frac << "\n";
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+      X_neutral_frac[elem] -=  y_ion_frac[species_counter];
+      species_counter ++;
+    }
+  }
+  rep.printVec("ydot X_neutral_frac",X_neutral_frac,N_elem);
+  rep.printVec("ydot y_ion_frac",y_ion_frac,N_species);
+  double yyy[N_equations];
+  for (int v=0;v<N_equations;v++) yyy[v] = NV_Ith_S(y_now,v);
+  rep.printVec("ynow",yyy,N_equations);
+
 
 
   //
   // collisional ionisation of H, with its associated cooling.
   // scales with n_e*nH0
   // NOTE \Maggie {again, lookup table instead of calculation}
-  
+
+
+
   //
   //
   //  ========================================================
@@ -1087,13 +1111,18 @@ int MPv10::ydot(
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
   double dT = T - Temp_Table[temp_index];
  
-  /*for (int elem=0;elem<N_elem;elem++){//loop over every element
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     double neutral_frac = X_neutral_frac[elem];
     //cout << "\n neutral_frac=" << neutral_frac << "\n";
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
       double this_y_dot = 0;
+
+      // **JM** Somewhere there is a problem here, because the y fraction of He+ goes negative
+      // Also all of the rates for the species seem to be negative.
+      // I'd ignore the chemical heating/cooling for now, so I set Edot to zero at the end.
+      // We should be able to get sensible abundances without the heating/cooling first.
       
       if (y_ip1_index_local[species_counter] != -1){ //<<< does exist a species more ionised
         /// ============== Collisional ionisation OUT of this species ======================
@@ -1142,91 +1171,28 @@ int MPv10::ydot(
           this_y_dot -= recombination_out_rate*neutral_frac*ne;
           Edot -= ion_pot*recombination_out_rate*neutral_frac*ne;
         }
+        // **JM** HERE IS A PROBLEM!  SEE PRINTOUTS.
         this_y_dot += ionisation_in_rate*NV_Ith_S(y_now, y_im1_index_local[species_counter])*ne;
+        cout <<"vals " << species_counter <<"  "<< y_im1_index_local[species_counter];
+        cout <<"  "<< NV_Ith_S(y_now, y_im1_index_local[species_counter]);
+        cout <<"  "<< ne <<"  "<< ionisation_in_rate <<"\n";
       }
       //cout << "this_y_dot index = " << y_ion_index_local[species_counter] << "\n";
       NV_Ith_S(y_dot, y_ion_index_local[species_counter]) = this_y_dot;
       species_counter ++;
     }
-  }*/
-
-  Hi_coll_ion_rates(T, &temp1, &temp2);
-  oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
-  Edot -= temp2*ne*OneMinusX;
-  //cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
+  }
 
   //
-  // radiative recombination of H+
+  // The Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
   //
-  oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*ne;
-  //
-  // Total H+ cooling: recombination plus free-free
-  //
-  Edot -= Hii_total_cooling(T) *x_in*ne;
-  //cout <<"HII-TC="<<Hii_total_cooling(T) *x_in*ne<<"\n";
-
-  //
-  // Add Helium free-free (Z^2*n(He)/n(H) = 0.25*X(He)/X(H) of the H+ free-free
-  // rate) The normalisation is scaled so that I multiply by ne*nHp to get the
-  // correct cooling rate (i.e. the abundance of He is included in the
-  // prefactor).
-  //
-#ifndef HE_INERT
-  // Only if He is ionised, otherwise it has no free-free.
-  //NOTE: \Maggie{ JM_NION needs to go as it's just a hack. Come back to this.}
-  //Edot -= 1.68e-27*(JM_NION-1.0)*sqrt(T)*x_in*ne;
-#endif // HE_INERT
-
-  //
-  // collisional excitation cooling of H0 Aggarwal (1983) and Raga+(1997,ApJS).
-  //
-  Edot -= Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne *exp(-T*T/5.0e10);
-  //cout <<"CE-CR="<<Hi_coll_excitation_cooling_rate(T)*OneMinusX*ne *exp(-T*T/5.0e10)<<"\n";
-
-
-  //
-  // Cosmic ray heating (HAdCM09 eq.A7).
-  //
-  Edot += 5.0e-28*OneMinusX;
-  //cout <<"CR-HR="<<5.0e-28*OneMinusX<<"\n";
-
-  //
-  // Cosmic Ray ionisation rate (Wolfire+,2003,eq.16) in solar neighbourhood.
-  //
-  oneminusx_dot -= 1.8e-17*OneMinusX;
-
-  // =========================================================================
-  //
-  //
-  // Now COOLING: First forbidden line cooling of e.g. OII,OIII, dominant in
-  // HII regions.  This is collisionally excited lines of photoionised metals.
-  // (HAdCM09 eq.A9) I have exponentially damped this at high temperatures!
-  // This was important!  Oxygen abundance set to 5.37e-4 from
-  // Asplund+(2009,ARAA), times 0.77 to account for 23% of O in solid dust.
-  //
-  temp1 = 1.20e-22*METALLICITY *exp(-33610.0/T -(2180.0*2180.0/T/T))
-                               *x_in*ne*exp(-T*T/5.0e10);
-  //
-  // Fit to Raga, Mellema, Lundqvist (1997) rates for CNO if all are only
-  // singly ionised, and for gas phase abundances of CNO of - n(C)/nH =
-  // 2.95e-4*0.508 = 1.5e-4 (Sofia+,1997) - n(N)/nH = 7.41e-5 - n(O)/nH =
-  // 5.37e-4*0.77 (0.23 goes in solids) These are taken from Asplund et al.
-  // 2009.
-  //
-  //temp1 = 3.0e-22*METALLICITY*exp(-pow(1.4e5/T,0.6))
-  //        *exp(-sqrt(mpv_nH/3.0e4)) *x_in*ne*exp(-T*T/5.0e10);
-
-
-  //
-  // Now the Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.  We
-  // take the actual cooling rate to be the max of SD93-CIE and the previous
-  // two terms.
-  //
-  temp2 = cooling_rate_SD93CIE(T) *x_in*x_in*mpv_nH*METALLICITY;
-  Edot -= max(temp1,temp2);
-
-  NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
+  Edot -= cooling_rate_SD93CIE(T) *ne;
+  Edot = 0.0;
   NV_Ith_S(y_dot,lv_eint) = Edot;
+
+  double dydt[N_equations];
+  for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
+  rep.printVec("ydot",dydt,N_equations);
   return 0;
 }
 

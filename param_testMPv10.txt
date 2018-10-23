@@ -54,15 +54,15 @@ noise -1
 ## Grid Parameters
 # Number of gridpoints in each direction
 # INT
-NGridX  256
+NGridX  16
 NGridY  1
 NGridZ  1
 # Boundaries of Simulation box:
-Xmin   1.9635572093023254e+17
+Xmin   2.0e+17
 Ymin   0.000000e18
 Zmin   0.000000e18
 # Max values of x,y,z
-Xmax   25.329888e18
+Xmax   18.0e17
 Ymax   0.000000e18
 Zmax   0.000000e18
 # Nested grid
@@ -130,8 +130,8 @@ UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 0.0
 UNIFORM_ambBY 0.0
 UNIFORM_ambBZ 0.0
-UNIFORM_ambTR0 0.73   # most of ISM is H
-UNIFORM_ambTR1 0.27   # Some of ISM is He
+UNIFORM_ambTR0 0.6   # most of ISM is H
+UNIFORM_ambTR1 0.4   # Some of ISM is He
 UNIFORM_ambTR2 0.1    # ISM is mostly neutral
 UNIFORM_ambTR3 0.1
 UNIFORM_ambTR4 0.01
@@ -182,19 +182,19 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 1.9788975e17  # 2 cells
+WIND_0_radius 2.0e17  # 2 cells
 WIND_0_type   0
-WIND_0_mdot   1.0e-6
-WIND_0_vinf   1500.0
+WIND_0_mdot   1.0e-7
+WIND_0_vinf   300.0
 WIND_0_temp   37500.0
-WIND_0_Rstr   6.96e15  # 1e5 R_sun
+WIND_0_Rstr   2.0e17  # 1e5 R_sun
 #NOTE \Maggie{Can't figure out why, but for some reason the hydrogen mass fraction keeps fixing to 1, regardless of what the initial value is.}
-WIND_0_TR0 0.5  # Half of the wind is H
-WIND_0_TR1 0.5  # The other half is He
-WIND_0_TR2 0.4995  
-WIND_0_TR3 0.4495
-WIND_0_TR4 0.05
-WIND_0_TR5 0.0
+WIND_0_TR0 0.4  # Half of the wind is H
+WIND_0_TR1 0.6  # The other half is He
+WIND_0_TR2 0.39999  
+WIND_0_TR3 0.19999
+WIND_0_TR4 0.40000
+WIND_0_TR5 1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000
 WIND_0_t_scalefac 1.0
