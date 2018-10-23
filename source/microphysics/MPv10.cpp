@@ -1053,18 +1053,22 @@ int MPv10::ydot(
   //
   species_counter = 0;
   /// Start by getting the relevant temperature index:
-  if (T > 0){ //effectively checking for nan values
-    cout << "temp="<<T <<", Ein=" << E_in << "\n";
+  if (T > T_min & T < T_max){ //effectively checking for nan values
+    //cout << "temp="<<T <<", Ein=" << E_in << "\n";
+  }
+  else if (T > T_max){
+    T = T_max;
+    //cout << "Temperature > T_max";
   }
   else{
     T = 1;
-    cout << "Temperature is either 0 or nan\n";
-    cout << "temp="<<T << ", Ein=" << E_in << "\n";
+    //cout << "Temperature is either 0 or nan\n";
+    //cout << "temp="<<T << ", Ein=" << E_in << "\n";
   }
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
   float dT = T - Temp_Table[temp_index];
  
-  for (int elem=0;elem<N_elem;elem++){//loop over every element
+  /*for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     double neutral_frac = X_neutral_frac[elem];
     //cout << "\n neutral_frac=" << neutral_frac << "\n";
@@ -1125,7 +1129,7 @@ int MPv10::ydot(
       NV_Ith_S(y_dot, y_ion_index_local[species_counter]) = this_y_dot;
       species_counter ++;
     }
-  }
+  }*/
 
   Hi_coll_ion_rates(T, &temp1, &temp2);
   oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.
