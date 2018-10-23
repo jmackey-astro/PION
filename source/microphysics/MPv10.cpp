@@ -67,7 +67,6 @@ void MPv10::get_error_tolerances(
       )
 {
   *reltol = JM_RELTOL;
-  // NOTE \Maggie{hardcoded this for now, but must change atol after.}
   for (int i=0;i<N_species; i++) atol[i] = JM_MINNEU; ///< species
   atol[N_equations-1] = JM_MINERG; ///< internal energy is last element
   return;
@@ -588,8 +587,8 @@ int MPv10::convert_prim2local(
     }
   }
   
-  //for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
-  //for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
+  for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
+  for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
 
 #ifdef MPv10_DEBUG
   //
@@ -1087,7 +1086,7 @@ int MPv10::ydot(
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
   double dT = T - Temp_Table[temp_index];
  
-  /*for (int elem=0;elem<N_elem;elem++){//loop over every element
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     double neutral_frac = X_neutral_frac[elem];
     //cout << "\n neutral_frac=" << neutral_frac << "\n";
@@ -1148,7 +1147,7 @@ int MPv10::ydot(
       NV_Ith_S(y_dot, y_ion_index_local[species_counter]) = this_y_dot;
       species_counter ++;
     }
-  }*/
+  }
 
   Hi_coll_ion_rates(T, &temp1, &temp2);
   oneminusx_dot -= temp1*ne*OneMinusX; // the nH is divided out on both sides.

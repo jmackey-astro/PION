@@ -79,11 +79,11 @@ OutputPath ./
 OutputFileType silo
 OutputFrequency 1
 OutputCriterion 1    # output per n-seconds=1, per n-steps=0
-OPfreqTime 1.58e11   # in seconds
+OPfreqTime 1.58e10  # in seconds
 
 # Start time
 StartTime 0.0e13  # 0 Myr.
-FinishTime 0.3156e13 # 0.1 Myr
+FinishTime 1e11 # should get done faster for testing#0.1 Myr
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
