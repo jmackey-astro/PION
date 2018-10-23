@@ -68,8 +68,8 @@ void MPv10::get_error_tolerances(
 {
   *reltol = JM_RELTOL;
   // NOTE \Maggie{hardcoded this for now, but must change atol after.}
-  atol[0] = JM_MINNEU; ///< minimum neutral fraction I care about.
-  atol[1] = JM_MINERG; ///< E_int: for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
+  for (int i=0;i<N_species; i++) atol[i] = JM_MINNEU; ///< species
+  atol[N_equations-1] = JM_MINERG; ///< internal energy is last element
   return;
 }
 
@@ -103,13 +103,13 @@ MPv10::MPv10(
       )
 : microphysics_base(ephys,rsrcs),
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys),
-  T_min(1e0), T_max(1e9), Num_temps(1e2)
+  T_min(1.0e0), T_max(1.0e9), Num_temps(1.0e2)
   {
-  float erg_per_eV = 1.60218e-12;
+  double erg_per_eV = 1.60218e-12;
   /// ===================================================================
   /// Initialise ionisation potentials vector
   /// ===================================================================
-  float ionisation_pot_arr[5] = {13.59844*erg_per_eV, -1.0e99, 24.58741*erg_per_eV, 54.41778*erg_per_eV, -1.0e99}; //energy required to raise ion from species i to species i+1
+  double ionisation_pot_arr[5] = {13.59844*erg_per_eV, -1.0e99, 24.58741*erg_per_eV, 54.41778*erg_per_eV, -1.0e99}; //energy required to raise ion from species i to species i+1
   ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[5]);
    
   /// ===================================================================
@@ -121,12 +121,12 @@ MPv10::MPv10(
   //int Num_temps = 1e2;
   // NOTE 2D arrays were acting up with initialising in the header file, so instead I've flattened into 1D arrays, where
   //  1D_array[ x + width*y] = 2D_array[x,y]
-  float Temp_arr[Num_temps] = { 1, 1.23285, 1.51991, 1.87382, 2.31013, 2.84804, 3.51119, 4.32876, 5.3367, 6.57933, 8.11131, 10, 12.3285, 15.1991, 18.7382, 23.1013, 28.4804, 35.1119, 43.2876, 53.367, 65.7933, 81.1131, 100, 123.285, 151.991, 187.382, 231.013, 284.804, 351.119, 432.876, 533.67, 657.933, 811.131, 1000, 1232.85, 1519.91, 1873.82, 2310.13, 2848.04, 3511.19, 4328.76, 5336.7, 6579.33, 8111.31, 10000, 12328.5, 15199.1, 18738.2, 23101.3, 28480.4, 35111.9, 43287.6, 53367, 65793.4, 81113.1, 100000, 123285, 151991, 187382, 231013, 284804, 351119, 432876, 533670, 657934, 811131, 1e+06, 1.23285e+06, 1.51991e+06, 1.87382e+06, 2.31013e+06, 2.84804e+06, 3.5112e+06, 4.32876e+06, 5.3367e+06, 6.57934e+06, 8.11131e+06, 1e+07, 1.23285e+07, 1.51991e+07, 1.87382e+07, 2.31013e+07, 2.84804e+07, 3.5112e+07, 4.32876e+07, 5.3367e+07, 6.57933e+07, 8.11131e+07, 1e+08, 1.23285e+08, 1.51991e+08, 1.87382e+08, 2.31013e+08, 2.84804e+08, 3.5112e+08, 4.32876e+08, 5.3367e+08, 6.57934e+08, 8.11131e+08, 1e+09};
+  double Temp_arr[Num_temps] = { 1, 1.23285, 1.51991, 1.87382, 2.31013, 2.84804, 3.51119, 4.32876, 5.3367, 6.57933, 8.11131, 10, 12.3285, 15.1991, 18.7382, 23.1013, 28.4804, 35.1119, 43.2876, 53.367, 65.7933, 81.1131, 100, 123.285, 151.991, 187.382, 231.013, 284.804, 351.119, 432.876, 533.67, 657.933, 811.131, 1000, 1232.85, 1519.91, 1873.82, 2310.13, 2848.04, 3511.19, 4328.76, 5336.7, 6579.33, 8111.31, 10000, 12328.5, 15199.1, 18738.2, 23101.3, 28480.4, 35111.9, 43287.6, 53367, 65793.4, 81113.1, 100000, 123285, 151991, 187382, 231013, 284804, 351119, 432876, 533670, 657934, 811131, 1e+06, 1.23285e+06, 1.51991e+06, 1.87382e+06, 2.31013e+06, 2.84804e+06, 3.5112e+06, 4.32876e+06, 5.3367e+06, 6.57934e+06, 8.11131e+06, 1e+07, 1.23285e+07, 1.51991e+07, 1.87382e+07, 2.31013e+07, 2.84804e+07, 3.5112e+07, 4.32876e+07, 5.3367e+07, 6.57933e+07, 8.11131e+07, 1e+08, 1.23285e+08, 1.51991e+08, 1.87382e+08, 2.31013e+08, 2.84804e+08, 3.5112e+08, 4.32876e+08, 5.3367e+08, 6.57934e+08, 8.11131e+08, 1e+09};
   
   Temp_Table.insert(Temp_Table.end(), &Temp_arr[0], &Temp_arr[Num_temps]);
   
   
-  float recomb_arr[Num_temps*5] = { 0, 3.41202e-10, 0, 1.33093e-10, 5.39147e-10, 0, 2.89621e-10, 0, 1.17666e-10, 4.82303e-10, 0, 2.45838e-10, 0, 1.03994e-10,
+  double recomb_arr[Num_temps*5] = { 0, 3.41202e-10, 0, 1.33093e-10, 5.39147e-10, 0, 2.89621e-10, 0, 1.17666e-10, 4.82303e-10, 0, 2.45838e-10, 0, 1.03994e-10,
     4.31218e-10, 0, 2.08674e-10, 0, 9.18837e-11, 3.85324e-10, 0, 1.77128e-10, 0, 8.11612e-11, 3.4411e-10, 0, 1.50351e-10, 0, 7.16715e-11, 3.07114e-10, 0, 1.27622e-10, 0, 6.32763e-11, 2.73921e-10, 0, 1.08329e-10, 0, 5.58519e-11, 2.44153e-10, 0, 9.19525e-11, 0, 4.92884e-11, 2.17473e-10, 0, 7.80517e-11, 0, 4.34877e-11, 1.93575e-10, 0, 6.62524e-11, 0, 3.83627e-11, 1.72182e-10, 0, 5.62368e-11, 0, 3.38359e-11, 1.53045e-10, 0, 4.77353e-11, 0, 2.98384e-11, 1.35938e-10, 0, 4.0519e-11, 0,
     2.63091e-11, 1.20656e-10, 0, 3.43936e-11, 0, 2.3194e-11, 1.07016e-10, 0, 2.91942e-11, 0, 2.04448e-11, 9.48513e-11, 0, 2.47808e-11, 0, 1.8019e-11, 8.40103e-11, 0, 2.10346e-11, 0, 1.5879e-11, 7.43571e-11, 0, 1.78547e-11, 0, 1.39914e-11, 6.57686e-11, 0, 1.51556e-11, 0, 1.23265e-11, 5.81336e-11, 0, 1.28645e-11, 0, 1.08584e-11, 5.13516e-11, 0, 1.09197e-11, 0, 9.56392e-12, 4.53321e-11, 0, 9.26893e-12, 0, 8.42264e-12, 3.99936e-11, 0, 7.86771e-12, 0, 7.41655e-12, 3.52626e-11, 0, 6.67832e-12, 0, 6.52971e-12, 3.10731e-11, 0, 5.66874e-12, 0, 5.74807e-12, 2.73656e-11, 0, 4.81178e-12, 0, 5.0592e-12, 2.4087e-11, 0, 4.08436e-12, 0, 4.45214e-12, 2.11895e-11, 0, 3.46692e-12, 0, 3.91723e-12, 1.86304e-11, 0, 2.94281e-12, 0, 3.44593e-12, 1.63716e-11, 0, 2.49794e-12, 0, 3.0307e-12, 1.43789e-11, 0, 2.12032e-12, 0, 2.6649e-12, 1.2622e-11, 0, 1.79978e-12, 0, 2.34268e-12, 1.10736e-11, 0, 1.5277e-12, 0, 2.05887e-12, 9.70986e-12, 0, 1.29675e-12, 0,
     1.80891e-12, 8.50918e-12, 0, 1.10072e-12, 0, 1.58879e-12, 7.45259e-12, 0, 9.34319e-13, 0, 1.39495e-12, 6.5232e-12, 0, 7.93075e-13, 0, 1.2243e-12, 5.70605e-12, 0, 6.73184e-13, 0, 1.07406e-12, 4.98789e-12, 0, 5.71416e-13, 0, 9.41811e-13, 4.35698e-12, 0, 4.85033e-13, 0, 8.25422e-13, 3.80298e-12, 0, 4.11709e-13, 0,
@@ -140,7 +140,7 @@ MPv10::MPv10(
   
   
   
-  float ionise_arr[Num_temps*5] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  double ionise_arr[Num_temps*5] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.28882e-22, 0, 7.98674e-33, 0, 0, 1.59626e-19, 0, 2.21776e-28, 0, 0, 1.67741e-17, 0, 9.14578e-25, 0, 0, 7.48925e-16, 0, 8.02956e-22, 3.09045e-37, 0,
     1.66962e-14, 0, 2.00991e-19, 4.97378e-32, 0, 2.11854e-13, 0, 1.81788e-17, 8.42609e-28, 0, 1.70127e-12, 0, 7.19909e-16, 2.29911e-24, 0, 9.42312e-12, 0, 1.45878e-14, 1.42686e-21, 0, 3.85978e-11, 0, 1.71622e-13, 2.66468e-19, 0, 1.23704e-10, 0, 1.29871e-12, 1.87911e-17, 0, 3.24709e-10, 0, 6.86858e-12, 6.01558e-16, 0, 7.24291e-10, 0, 2.71553e-11, 1.01498e-14, 0, 1.41442e-09, 0, 8.47503e-11, 1.01881e-13, 0, 2.4769e-09, 0, 2.18214e-10, 6.71149e-13, 0, 3.96526e-09, 0,
@@ -153,7 +153,7 @@ MPv10::MPv10(
   ionise_rate_table.insert(ionise_rate_table.end(), &ionise_arr[0], &ionise_arr[Num_temps*5]);
   
   
-  float recomb_slope_arr[Num_temps*5] = { 0, -2.21522e-10, 0, -6.62552e-11, -2.44128e-10, 0, -1.5252e-10, 0, -4.76266e-11, -1.77957e-10, 0, -1.05011e-10, 0, 
+  double recomb_slope_arr[Num_temps*5] = { 0, -2.21522e-10, 0, -6.62552e-11, -2.44128e-10, 0, -1.5252e-10, 0, -4.76266e-11, -1.77957e-10, 0, -1.05011e-10, 0, 
     -3.42193e-11, -1.29677e-10, 0, -7.23013e-11, 0, -2.45753e-11, -9.44596e-11, 0, -4.97802e-11, 0, -1.76418e-11, -6.87773e-11, 0, -3.42741e-11, 0, -1.26596e-11, -5.00543e-11, 0, -2.35981e-11, 0, -9.08102e-12, -3.64096e-11, 0, -1.62475e-11, 0, -6.51184e-12, -2.64697e-11, 0, -1.11865e-11, 0, -4.66806e-12, -1.92319e-11, 0, 
     -7.70204e-12, 0, -3.34536e-12, -1.39643e-11, 0, -5.30293e-12, 0, -2.39681e-12, -1.01326e-11, 0, -3.65112e-12, 0, -1.71679e-12, -7.34706e-12, 0, -2.51383e-12, 0, -1.22942e-12, -5.32334e-12, 0, -1.73079e-12, 0, -8.80227e-13, -3.85409e-12, 0, -1.19167e-12, 0, -6.30093e-13, -2.78815e-12, 0, -8.20475e-13, 0, -4.5096e-13, -2.0154e-12, 0, -5.64905e-13, 0, -3.22701e-13, -1.45564e-12, 0, -3.88942e-13, 0, -2.30886e-13, -1.05049e-12, 0, -2.6779e-13, 0, -1.65172e-13, -7.57493e-13, 0,
     -1.84376e-13, 0, -1.18146e-13, -5.45775e-13, 0, -1.26945e-13, 0, -8.44984e-14, -3.92921e-13, 0, -8.74027e-14, 0, -6.0427e-14, -2.82656e-13, 0, -6.01776e-14, 0, -4.32085e-14, -2.03181e-13, 0, -4.14328e-14, 0, -3.08933e-14, -1.45945e-13, 0, -2.85269e-14, 0, -2.20862e-14, -1.04758e-13, 0, -1.9641e-14, 0, -1.57884e-14,
@@ -168,11 +168,12 @@ MPv10::MPv10(
     -1.19203e-23, 0, -2.54489e-24, 0, -4.81181e-23, -7.35869e-24, 0, -1.75218e-24, 0, -2.86382e-23, -4.52745e-24, 0, -1.20639e-24, 0, -1.70365e-23, -2.77678e-24, 0, -8.30613e-25, 0, -1.01307e-23, -1.69809e-24, 0, -5.71884e-25, 0, -6.02207e-24, -1.03561e-24, 0, -3.93747e-25, 0, -3.57863e-24, -6.29999e-25, 0, -2.71099e-25, 0, -2.12604e-24, -3.82362e-25, 0, -1.86654e-25, 0, -1.26275e-24, -2.31568e-25, 0, -1.28513e-25, 0, -7.49841e-25, -1.39968e-25, 0, -8.84826e-26, 0, -4.45179e-25, 
     -8.4448e-26, 0, -6.09211e-26, 0, -2.64255e-25, -5.08665e-26, 0, -4.19447e-26, 0, -1.56834e-25, -3.05925e-26, 0, -2.88794e-26, 0, -9.30667e-26, -1.83736e-26};
   
-  recomb_slope_table.insert(recomb_slope_table.end(), &recomb_slope_arr[0], &recomb_slope_arr[Num_temps*5]);
+  recomb_slope_table.insert(recomb_slope_table.end(),
+              &recomb_slope_arr[0], &recomb_slope_arr[Num_temps*5]);
   
   
   
-  float ionise_slope_arr[Num_temps*5] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  double ionise_slope_arr[Num_temps*5] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.24717e-25, 0, 7.92385e-36, 0, 0, 1.28032e-22, 0, 1.78466e-31, 0, 0, 1.08451e-20, 0, 5.96848e-28, 0, 0, 3.8765e-19, 0, 4.24655e-25, 1.6363e-40, 0, 6.84884e-18, 0, 8.59742e-23, 2.13606e-35, 0, 6.79836e-17, 0, 6.26262e-21, 2.93508e-31, 0, 4.20852e-16, 0, 1.98281e-19, 6.49401e-28, 0, 1.7698e-15, 0, 3.17844e-18,
     3.26499e-25, 0, 5.42375e-15, 0, 2.91936e-17, 4.92727e-23, 0, 1.28336e-14, 0, 1.69958e-16, 2.79341e-21, 0, 2.45855e-14, 0, 6.81269e-16, 7.12801e-20, 0, 3.96436e-14, 0, 2.01269e-15, 9.47308e-19, 0, 5.55377e-14, 0, 4.63492e-15, 7.38202e-18, 0, 6.93535e-14, 0, 8.7119e-15, 3.71591e-17, 0, 7.88041e-14, 0,
@@ -281,7 +282,8 @@ MPv10::MPv10(
     }
   }
 
-  cout << "\nAfter reading in tracers, N_species=" << N_species << ", N_elements=" << N_elem << "\n\n";  
+  cout << "\nAfter reading in tracers, N_species=" << N_species;
+  cout << ", N_elements=" << N_elem << "\n\n";  
   
   
   // ================================================================
@@ -353,8 +355,11 @@ MPv10::MPv10(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void MPv10::species_tracer_initialise(
     const std::string *tracers,  ///< List of what the tracer variables mean.
@@ -364,7 +369,8 @@ void MPv10::species_tracer_initialise(
     int el_symbol_length, ///< e.g. "H" is of length 1, "He" of length 2.
     int el_index, /// element index in N_species_by_elem, used in for loops for densities etc
     int length /// < length of tracers vector
-    ){
+    )
+{
   N_species_by_elem[el_index]++;
   y_ion_index_prim.push_back(lv_y_ion_index_offset + N_species);
   y_ion_index_local.push_back(N_species);
@@ -424,8 +430,10 @@ void MPv10::species_tracer_initialise(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void MPv10::setup_local_vectors()
@@ -435,19 +443,19 @@ void MPv10::setup_local_vectors()
   //
   nvl     = N_species +1;    // two local variables to integrate
   N_extradata = 0;
-  N_equations = N_elem;
+  N_equations = nvl;
   y_in  = N_VNew_Serial(N_equations);
   y_out = N_VNew_Serial(N_equations);
-  lv_H0   = 0;    // x(H0) is the first element in the array NOTE \Maggie{ LEGACY CODE; REMOVE LATER.}
   lv_eint = N_species;
   //cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
-  }
+}
 
 
 
 // ##################################################################
 // ##################################################################
+
 
 
 MPv10::~MPv10()
@@ -460,8 +468,11 @@ MPv10::~MPv10()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 //NOTE This is currently incorrect, but I'm not sure if it's ever called anywhere, so I'll leave it for now...
 int MPv10::Tr(const string s)
@@ -484,9 +495,9 @@ int MPv10::Tr(const string s)
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
 
 
 double MPv10::get_temperature(
@@ -500,8 +511,12 @@ double MPv10::get_temperature(
   return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,X_number_density));
 }
 
+
+
 // ##################################################################
 // ##################################################################
+
+
 
 double MPv10::get_ntot(
       double *y_ion_frac,//<y_ion_fraction (by y_ion_index_prim)
@@ -531,10 +546,9 @@ double MPv10::get_ntot(
 
 
 
-
-
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv10::convert_prim2local(
@@ -635,8 +649,10 @@ int MPv10::convert_prim2local(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv10::convert_local2prim(
@@ -791,6 +807,7 @@ int MPv10::Set_Temp(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -883,8 +900,10 @@ double MPv10::timescales(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 ///
@@ -1053,7 +1072,7 @@ int MPv10::ydot(
   //
   species_counter = 0;
   /// Start by getting the relevant temperature index:
-  if (T > T_min & T < T_max){ //effectively checking for nan values
+  if (T > T_min && T < T_max){ //effectively checking for nan values
     //cout << "temp="<<T <<", Ein=" << E_in << "\n";
   }
   else if (T > T_max){
@@ -1066,7 +1085,7 @@ int MPv10::ydot(
     //cout << "temp="<<T << ", Ein=" << E_in << "\n";
   }
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
-  float dT = T - Temp_Table[temp_index];
+  double dT = T - Temp_Table[temp_index];
  
   /*for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
@@ -1074,21 +1093,21 @@ int MPv10::ydot(
     //cout << "\n neutral_frac=" << neutral_frac << "\n";
     
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      float this_y_dot = 0;
+      double this_y_dot = 0;
       
       if (y_ip1_index_local[species_counter] != -1){ //<<< does exist a species more ionised
         /// ============== Collisional ionisation OUT of this species ======================
-        float lower_ion_rate = ionise_rate_table[y_ion_index_tables[species_counter] + 5*temp_index]; //rate at lower bound of temperature
-        float upper_ion_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index]; //contribution from upper bound of temperature
-        float ionisation_out_rate = lower_ion_rate + upper_ion_rate_contrib; //interpolated rate for exact temperature
+        double lower_ion_rate = ionise_rate_table[y_ion_index_tables[species_counter] + 5*temp_index]; //rate at lower bound of temperature
+        double upper_ion_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index]; //contribution from upper bound of temperature
+        double ionisation_out_rate = lower_ion_rate + upper_ion_rate_contrib; //interpolated rate for exact temperature
         
         /// ============== Radiative recombination IN to this species ======================
-        float lower_recomb_rate = recomb_rate_table[y_ip1_index_tables[species_counter] + 5*temp_index];
-        float upper_recomb_rate_contrib = dT * ionise_slope_table[y_ip1_index_tables[species_counter] + 5*temp_index];
-        float recombination_in_rate = lower_recomb_rate + upper_recomb_rate_contrib;
+        double lower_recomb_rate = recomb_rate_table[y_ip1_index_tables[species_counter] + 5*temp_index];
+        double upper_recomb_rate_contrib = dT * ionise_slope_table[y_ip1_index_tables[species_counter] + 5*temp_index];
+        double recombination_in_rate = lower_recomb_rate + upper_recomb_rate_contrib;
         
         /// =========  COOLING / HEATING DUE TO IONISATION / RECOMBINATION OUT OF /INTO THIS SPECIES ===========
-        float ion_pot = ionisation_potentials[ y_ion_index_tables[species_counter]];
+        double ion_pot = ionisation_potentials[ y_ion_index_tables[species_counter]];
         Edot -= ion_pot*ionisation_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
         Edot += ion_pot*recombination_in_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
        
@@ -1099,18 +1118,18 @@ int MPv10::ydot(
       }
       if (y_im1_index_local[species_counter] != -1){ //<<< if the less ionised species exists
         /// ================= Collisional ionisation INTO this species ======================
-        float lower_ion_rate = ionise_rate_table[y_im1_index_tables[species_counter] + 5*temp_index];
-        float upper_ion_rate_contrib = dT * ionise_slope_table[y_im1_index_tables[species_counter] + 5*temp_index];
-        float ionisation_in_rate = lower_ion_rate + upper_ion_rate_contrib;
+        double lower_ion_rate = ionise_rate_table[y_im1_index_tables[species_counter] + 5*temp_index];
+        double upper_ion_rate_contrib = dT * ionise_slope_table[y_im1_index_tables[species_counter] + 5*temp_index];
+        double ionisation_in_rate = lower_ion_rate + upper_ion_rate_contrib;
         
         /// ============== Radiative recombination OUT of this species ======================
-        float lower_recomb_rate = recomb_rate_table[y_ion_index_tables[species_counter] + 5*temp_index];
-        float upper_recomb_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index];
-        float recombination_out_rate = lower_recomb_rate + upper_recomb_rate_contrib;
+        double lower_recomb_rate = recomb_rate_table[y_ion_index_tables[species_counter] + 5*temp_index];
+        double upper_recomb_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index];
+        double recombination_out_rate = lower_recomb_rate + upper_recomb_rate_contrib;
 
 
         /// =========  HEATING / COOLING DUE TO IONISATION / RECOMBINATION INTO / OUT OF THIS SPECIES ===========
-        float ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
+        double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
         Edot += ion_pot*ionisation_in_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
         
         /// ============== Combine the radiative recombination OUT + collisional ionisation IN =

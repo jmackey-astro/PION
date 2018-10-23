@@ -370,10 +370,10 @@ class MPv10
   std::vector<pion_flt> ionisation_potentials; //array of ionisation potentials, in the same order as ionise_slope
   
   
-  const float T_min;
-  const float T_max;
+  const double T_min;
+  const double T_max;
   const int Num_temps; //NB this needs to be const so can initialise arrays with it. If this is >=1e4, get stack overflow errors.
-  float delta_log_temp;
+  double delta_log_temp;
   
   int pv_H1p;    ///< legacy, should ideally remove
 
