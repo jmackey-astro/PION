@@ -127,8 +127,8 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   ///
   int InterCellFlux(
         class GridBaseClass *grid,
-        const cell *, ///< Left state cell pointer
-        const cell *, ///< Right state cell pointer
+        class cell *, ///< Left state cell pointer
+        class cell *, ///< Right state cell pointer
         pion_flt *, ///< Left Primitive State Vector.
         pion_flt *, ///< Right Primitive State Vector.
         pion_flt *, ///< Flux Vector. (written to).

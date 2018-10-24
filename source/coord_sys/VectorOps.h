@@ -113,7 +113,7 @@ class BaseVectorOps {
   /// for the x-component of the divergence.  
   ///
   virtual double Divergence(
-      const cell *, ///< point for which to calculate div(B)
+      cell *, ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                     ///< Should contain 3 elements, ordered as x,y,z components.
@@ -302,7 +302,7 @@ class VectorOps_Cart : virtual public BaseVectorOps
   /// \note It assumes cartesian geometry.
   ///
   virtual double Divergence(
-      const cell *, ///< point for which to calculate div(B)
+      cell *, ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                     ///< Should contain 3 elements, ordered as x,y,z components.
@@ -474,7 +474,7 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// the relevant scale factors for each derivative.
   /// */
   virtual double Divergence(
-      const cell *, ///< point for which to calculate div(B)
+      cell *, ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                     ///< Should contain 3 elements, ordered as x,y,z components.

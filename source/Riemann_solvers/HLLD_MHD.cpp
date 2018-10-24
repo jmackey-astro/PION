@@ -288,22 +288,25 @@ void HLLD_MHD::HLLD_signal_speeds(
     const pion_flt *Pl,    ///< inputs
     const pion_flt *Pr,
     const double eq_gamma,
-    double Sl,       ///< outputs
-    double Sr
+    double &Sl,       ///< outputs
+    double &Sr
     )
 {
     //
     // compute wave speeds (m05 eq 3)
     //
-    double BX = 0.5*(Pl[eqBX]+Pr[eqBX]); // Bx is constant (Should be mean of left and right state)
 
-    double gp_l = eq_gamma * Pl[eqPG];
-    double BB_l = pow(BX,2) + pow(Pl[eqBY],2) + pow(Pl[eqBZ],2);
-    double cf_l = cfast(Pl,eq_gamma);
+    // Bx is constant (Should be mean of left and right state)
+    double BX = 0.5*(Pl[eqBX]+Pr[eqBX]);
+    //double gp_l = eq_gamma * Pl[eqPG];
+    //double BB_l = pow(BX,2) + pow(Pl[eqBY],2) + pow(Pl[eqBZ],2);
+    double cf_l = cfast_components(Pl[eqRO],Pl[eqPG],
+                                   BX,Pl[eqBY],Pl[eqBZ],eq_gamma);
     
-    double gp_r = eq_gamma * Pr[eqPG];
-    double BB_r = pow(Pr[eqBX],2) + pow(Pr[eqBY],2) + pow(Pr[eqBZ],2);
-    double cf_r = cfast(Pr,eq_gamma);
+    //double gp_r = eq_gamma * Pr[eqPG];
+    //double BB_r = pow(BX,2) + pow(Pr[eqBY],2) + pow(Pr[eqBZ],2);
+    double cf_r = cfast_components(Pr[eqRO],Pr[eqPG],
+                                   BX,Pr[eqBY],Pr[eqBZ],eq_gamma);
     
     double cf_max = max(cf_l,cf_r);
     

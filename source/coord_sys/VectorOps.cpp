@@ -249,41 +249,66 @@ void VectorOps_Cart::Gradient(
 
 
 double VectorOps_Cart::Divergence(
-        const cell *c, 
+        cell *c, 
         const int sv, 
         const int *var,
         class GridBaseClass *grid
         )
 { // get divergence of vector quantity.
   
-#ifdef TESTING
-  for (int i=0;i<2*VOnd; i++)
-    if (!grid->NextPt(c,static_cast<direction>(i)))
-      rep.error("VectorOps_Cart::Div: Some neighbour cells don't exist",i);
-#endif //TESTING
-  if (!c->isgd) {
-    //cout <<"divergence of non-grid-cell, returning 0";
-    return 0.0;
-    //rep.error("Not Grid Cell! can't get div. id:",c->id);
-  }
-
-  double divv=0;
+  cell *ngb[6];
+  double dx[3];
   double VOdx = grid->DX();
-  switch (sv) {
-   case 0: // Use vector c->P
-                divv  = grid->NextPt(c,XP)->P[var[0]] - grid->NextPt(c,XN)->P[var[0]];
-    if (VOnd>1) divv += grid->NextPt(c,YP)->P[var[1]] - grid->NextPt(c,YN)->P[var[1]];
-    if (VOnd>2) divv += grid->NextPt(c,ZP)->P[var[2]] - grid->NextPt(c,ZN)->P[var[2]];
-    break;
-   case 1: // Use Vector c-Ph
-                divv  = grid->NextPt(c,XP)->Ph[var[0]] - grid->NextPt(c,XN)->Ph[var[0]];
-    if (VOnd>1) divv += grid->NextPt(c,YP)->Ph[var[1]] - grid->NextPt(c,YN)->Ph[var[1]];
-    if (VOnd>2) divv += grid->NextPt(c,ZP)->Ph[var[2]] - grid->NextPt(c,ZN)->Ph[var[2]];
-    break;
-   default:
-    rep.error("Don't know what state vector to use for calculating divergence.",sv);
+  enum direction ndir;
+  enum direction pdir;
+
+  // Assign pointers to neighbouring cells if they exist.
+  // If not, then use the current cell and do a one-sided calc.
+  // If we are at the edge of the grid, then we don't really care
+  // what value we obtain because this is a outer boundary zone.
+  for (int v=0;v<VOnd;v++) {
+    ndir = static_cast<direction>(2*v);
+    pdir = static_cast<direction>(2*v+1);
+    ngb[ndir] = (grid->NextPt(c,ndir)) ? grid->NextPt(c,ndir) : c;
+    ngb[pdir] = (grid->NextPt(c,pdir)) ? grid->NextPt(c,pdir) : c;
+    if (ngb[ndir]==c || ngb[pdir]==c) dx[v]=VOdx;
+    else                              dx[v]=2.0*VOdx;
   }
-  divv /= 2.*VOdx;
+  //cout <<"c="<<c<<" : ";
+  //rep.printVec("ngb",ngb,2*VOnd);
+  //rep.printVec("dx",dx,VOnd);
+
+  double divv=0.0;
+  switch (sv) {
+    case 0: // Use vector c->P
+    for (int v=0;v<VOnd;v++) {
+      ndir = static_cast<direction>(2*v);
+      pdir = static_cast<direction>(2*v+1);
+      divv += (ngb[pdir]->P[var[v]] - ngb[ndir]->P[var[v]]) / dx[v];
+    }
+    break;
+
+    case 1: // Use Vector c-Ph
+    for (int v=0;v<VOnd;v++) {
+      ndir = static_cast<direction>(2*v);
+      pdir = static_cast<direction>(2*v+1);
+      divv += (ngb[pdir]->Ph[var[v]] - ngb[ndir]->Ph[var[v]]) /dx[v];
+#ifdef TESTING
+      if (!isfinite(divv)) {
+        cout <<"divv["<<v<<"] = ";
+        cout <<(ngb[pdir]->Ph[var[v]] - ngb[ndir]->Ph[var[v]]) /dx[v];
+        cout <<": dx="<<dx[v]<<" cn="<<ngb[ndir]<<", cp="<<ngb[pdir];
+        cout <<": cp-ph="<<ngb[pdir]->Ph[var[v]];
+        cout <<", cn-ph="<<ngb[ndir]->Ph[var[v]];
+        cout <<": var="<<var[v]<<"\n";
+      }
+#endif
+    }
+    break;
+
+    default:
+    rep.error("state vectorfor calculating divergence.",sv);
+  }
   return(divv);
 } // Div
 
@@ -745,7 +770,7 @@ void VectorOps_Cyl::Gradient(
 // ##################################################################
 
 double VectorOps_Cyl::Divergence(
-        const cell *c, 
+        cell *c, 
         const int sv, 
         const int *var,
         class GridBaseClass *grid
@@ -753,57 +778,69 @@ double VectorOps_Cyl::Divergence(
 {
   // get divergence of vector quantity.
 
-#ifdef TESTING
-  for (int i=0;i<2*VOnd; i++)
-    if (!grid->NextPt(c,static_cast<direction>(i)))
-      rep.error("VectorOps_Cyl::Div: Some neighbour cells don't exist",i);
-#endif //TESTING
 
   double dT=0.;
   double dR=grid->DX();
   double dZ=dR;
+  double dx[3];
   double divv=0.;
   cell *cn,*cp;
+  cell *ngb[6];
+  enum direction ndir;
+  enum direction pdir;
+  
+
+  for (int v=0;v<VOnd;v++) {
+    ndir = static_cast<direction>(2*v);
+    pdir = static_cast<direction>(2*v+1);
+    ngb[ndir] = (grid->NextPt(c,ndir)) ? grid->NextPt(c,ndir) : c;
+    ngb[pdir] = (grid->NextPt(c,pdir)) ? grid->NextPt(c,pdir) : c;
+    if (ngb[ndir]==c || ngb[pdir]==c) dx[v]=dZ;
+    else                              dx[v]=2.0*dZ;
+  }
 
   switch (sv) {
-   case 0: // Use vector c->P
+    case 0: // Use vector c->P
     // d(V_z)/dz
-    cn = grid->NextPt(c,ZNcyl); cp=grid->NextPt(c,ZPcyl);
-    divv  = (cp->P[var[0]] - cn->P[var[0]])/(2.*dZ);
+    cn = ngb[ZNcyl];
+    cp = ngb[ZPcyl];
+    divv  = (cp->P[var[0]] - cn->P[var[0]])/dx[0];
     if (VOnd>1) { // d(R* V_R)/(R*dR)
-      cn = grid->NextPt(c,RNcyl); cp=grid->NextPt(c,RPcyl);
+      cn = ngb[RNcyl];
+      cp = ngb[RPcyl];
       double rn = R_com(cn,dR);
       double rp = R_com(cp,dR);
-      //divv  += (R_com(cp,dR)*cp->P[var[1]] - R_com(cn,dR)*cn->P[var[1]])
-      //      /R_com(c,dR)/(R_com(cp,dR)-R_com(cn,dR));
       divv  += 2.0*(rp*cp->P[var[1]] - rn*cn->P[var[1]])/(rp*rp-rn*rn);
     }
     if (VOnd>2) { // d(V_theta)/(R*dtheta)
-      cn = grid->NextPt(c,TNcyl); cp=grid->NextPt(c,TPcyl);
+      cn = ngb[TNcyl];
+      cp = ngb[TPcyl];
       dT = (CI.get_dpos(cp,Tcyl) - CI.get_dpos(cn,Tcyl))*R_com(c,dR);
       divv  += (cp->P[var[2]] - cn->P[var[2]])/dT;
     }
     break;
-   case 1: // Use Vector c-Ph
+
+    case 1: // Use Vector c-Ph
     // d(V_z)/dz
-      cn = grid->NextPt(c,ZNcyl); cp=grid->NextPt(c,ZPcyl);
-      divv  = (cp->Ph[var[0]] - cn->Ph[var[0]])/(2.*dZ);
+    cn = ngb[ZNcyl];
+    cp = ngb[ZPcyl];
+    divv  = (cp->Ph[var[0]] - cn->Ph[var[0]])/dx[0];
     if (VOnd>1) { // d(R* V_R)/(R*dR)
-      cn = grid->NextPt(c,RNcyl); cp=grid->NextPt(c,RPcyl);
+      cn = ngb[RNcyl];
+      cp = ngb[RPcyl];
       double rn = R_com(cn,dR);
       double rp = R_com(cp,dR);
-      //divv  += (R_com(cp,dR)*cp->Ph[var[1]] - R_com(cn,dR)*cn->Ph[var[1]])
-      //        /R_com(c,dR)/(R_com(cp,dR)-R_com(cn,dR));
       divv  += 2.0*(rp*cp->Ph[var[1]] - rn*cn->Ph[var[1]])/(rp*rp-rn*rn);
     }
     if (VOnd>2) { // d(V_theta)/(R*dtheta)
-      cn = grid->NextPt(c,TNcyl); cp=grid->NextPt(c,TPcyl);
+      cn = ngb[TNcyl];
+      cp = ngb[TPcyl];
       dT = (CI.get_dpos(cp,Tcyl) - CI.get_dpos(cn,Tcyl))*R_com(c,dR);
       divv  += (cp->Ph[var[2]] - cn->Ph[var[2]])/dT;
     }
     break;
    default:
-    rep.error("Don't know what state vector to use for calculating divergence.",sv);
+    rep.error("CYL: state vector for calculating divergence.",sv);
   }
   return(divv);
 } // Div

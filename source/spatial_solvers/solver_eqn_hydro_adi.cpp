@@ -90,14 +90,15 @@ FV_solver_Hydro_Euler::~FV_solver_Hydro_Euler()
 
 
 int FV_solver_Hydro_Euler::inviscid_flux(
-      const cell *Cl, ///< Left state cell pointer
-      const cell *Cr, ///< Right state cell pointer
+      class cell *Cl, ///< Left state cell pointer
+      class cell *Cr, ///< Right state cell pointer
       const pion_flt *Pl,///< Left Primitive state vector.
       const pion_flt *Pr,///< Right Primitive state vector.
       pion_flt *flux,   ///< Resultant Flux state vector.
       pion_flt *pstar,  ///< State vector at interface.
       const int solve_flag,
       ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      class GridBaseClass *, ///< pointer to grid
       const double dx,  ///< cell-size dx (for LF method)
       const double g  ///< Gas constant gamma.
       )

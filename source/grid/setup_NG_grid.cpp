@@ -411,13 +411,14 @@ int setup_NG_grid::setup_boundary_structs(
       }
     } while ((c=grid->NextPt(c)) !=0);
 #ifdef TESTING
-    cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, "<<bd->data.size() <<"\n";
+    cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, ";
+    cout <<bd->data.size() <<"\n";
 #endif
     grid->BC_bd.push_back(bd);
 #ifdef TESTING
-    cout <<"BC_data: "<<;
+    cout <<"BC_data: ";
     cout << grid->BC_bd[grid->BC_bd.size()-1]->NGrecvF2C[0].size();
-    cout << <<"\n";
+    cout <<"\n";
 #endif
   }
   

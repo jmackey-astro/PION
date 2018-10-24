@@ -313,15 +313,15 @@ class FV_solver_mhd_mixedGLM_adi
   /// \f[ F(B_x) = \psi_* = \frac{1}{2}(\psi_L+\psi_R) - \frac{c_h}{2}(B_x(R)-B_X(L)) \f]
   /// 
   virtual int inviscid_flux(
-        const cell *, ///< Left state cell pointer
-        const cell *, ///< Right state cell pointer
+        class cell *, ///< Left state cell pointer
+        class cell *, ///< Right state cell pointer
         const pion_flt *, ///< Left Primitive state vector.
         const pion_flt *, ///< Right Primitive state vector.
         pion_flt *,       ///< Resultant Flux state vector.
         pion_flt *,      ///< State vector at interface.
         const int,
         ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
-        class GridBaseClass, ///< pointer to grid
+        class GridBaseClass *, ///< pointer to grid
         const double dx,  ///< cell-size dx (for LF method)
         const double    ///< Gas constant gamma.
         );
