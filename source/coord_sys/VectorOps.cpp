@@ -244,6 +244,47 @@ void VectorOps_Cart::Gradient(
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+double VectorOps_Cart::CentralDiff(
+      class GridBaseClass *grid,  ///< pointer to computational grid.
+      class cell *c, ///< pointer to cell
+      const int ax,    ///< axis along which to take difference
+      const int sv,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int ii    ///< index in state vector of variable
+      )
+{
+  cell *cn, *cp;
+  enum direction ndir = static_cast<direction>(2*ax);
+  enum direction pdir = static_cast<direction>(2*ax+1);
+
+  cn = (grid->NextPt(c,ndir)) ? grid->NextPt(c,ndir) : c;
+  cp = (grid->NextPt(c,pdir)) ? grid->NextPt(c,pdir) : c;
+
+  double ans=0.0;
+  switch (sv) {
+
+    case 0:
+    ans = (cp->P[ii]-cn->P[ii]);
+    break;
+
+    case 1:
+    ans = (cp->Ph[ii]-cn->Ph[ii]);
+    break;
+
+    default:
+    rep.error("state vector for calculating CentralDiff.",sv);
+  }
+
+  return ans;
+}
+
+
+
 // ##################################################################
 // ##################################################################
 

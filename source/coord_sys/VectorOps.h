@@ -136,6 +136,15 @@ class BaseVectorOps {
       pion_flt *      ///< Pointer to array to put curl vector.
       )=0;
 
+  /// central difference operator for a given variable.
+  virtual double CentralDiff(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< point for which to calculate curl
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int     ///< index in state vector of variable
+      )=0;
+
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
   /// 
@@ -324,6 +333,15 @@ class VectorOps_Cart : virtual public BaseVectorOps
                     ///< Should contain 3 elements, ordered as x,y,z components.
       class GridBaseClass *,  ///< pointer to computational grid.
       pion_flt *      ///< Pointer to array to put curl vector.
+      );
+
+  /// central difference operator for a given variable.
+  virtual double CentralDiff(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< pointer to cell
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int     ///< index in state vector of variable
       );
 
   ///
