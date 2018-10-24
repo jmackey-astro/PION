@@ -1053,7 +1053,7 @@ int MPv10::ydot(
 
   // Find internal energy
   double E_in      = NV_Ith_S(y_now,lv_eint);
-
+  cout << "E_in = "<< E_in << "\n";
   // Use E_in, y_ion_frac and number density to determine temperature
   double T = get_temperature(y_ion_frac, X_elem_number_density, E_in);
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
@@ -1078,22 +1078,11 @@ int MPv10::ydot(
   for (int v=0;v<N_equations;v++) yyy[v] = NV_Ith_S(y_now,v);
   rep.printVec("ynow",yyy,N_equations);
 
-
-
-  //
-  // collisional ionisation of H, with its associated cooling.
-  // scales with n_e*nH0
-  // NOTE \Maggie {again, lookup table instead of calculation}
-
-
-
-  //
   //
   //  ========================================================
   //          Get Rate of Change of Each Species
   //  ========================================================
   //
-  species_counter = 0;
   /// Start by getting the relevant temperature index:
   if (T > T_min && T < T_max){ //effectively checking for nan values
     //cout << "temp="<<T <<", Ein=" << E_in << "\n";
@@ -1110,6 +1099,7 @@ int MPv10::ydot(
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
   double dT = T - Temp_Table[temp_index];
  
+  species_counter = 0;
   for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     double neutral_frac = X_neutral_frac[elem];
@@ -1122,61 +1112,66 @@ int MPv10::ydot(
       // Also all of the rates for the species seem to be negative.
       // I'd ignore the chemical heating/cooling for now, so I set Edot to zero at the end.
       // We should be able to get sensible abundances without the heating/cooling first.
+      // **MG** Mixed up when to use the next ion up vs next ion down. Cleaned up code so it should be more obvious what's happening here.
+      
+      //y_dot(ion) += recomb_rate(ip1)*n_e*y(ip1) <<< add recombination from more ionised species to current species
+      //y_dot(ion) -= ionise_rate(ion)*n_e*y(ion) <<< subtract ionisation from current species to more ionised species
+      //y_dot(ion) -= recomb_rate(ion)*n_e*y(ion) <<< subtract recombination to less ionised species
+      //y_dot(ion) += ionise_rate(im1)*n_e*y(im1) <<< add ionisation from less ionised species to current species
       
       if (y_ip1_index_local[species_counter] != -1){ //<<< does exist a species more ionised
         /// ============== Collisional ionisation OUT of this species ======================
         double lower_ion_rate = ionise_rate_table[y_ion_index_tables[species_counter] + 5*temp_index]; //rate at lower bound of temperature
         double upper_ion_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index]; //contribution from upper bound of temperature
-        double ionisation_out_rate = lower_ion_rate + upper_ion_rate_contrib; //interpolated rate for exact temperature
+        double ionise_rate_ion = lower_ion_rate + upper_ion_rate_contrib; //interpolated rate for exact temperature
         
         /// ============== Radiative recombination IN to this species ======================
         double lower_recomb_rate = recomb_rate_table[y_ip1_index_tables[species_counter] + 5*temp_index];
         double upper_recomb_rate_contrib = dT * ionise_slope_table[y_ip1_index_tables[species_counter] + 5*temp_index];
-        double recombination_in_rate = lower_recomb_rate + upper_recomb_rate_contrib;
+        double recomb_rate_ip1 = lower_recomb_rate + upper_recomb_rate_contrib;
         
         /// =========  COOLING / HEATING DUE TO IONISATION / RECOMBINATION OUT OF /INTO THIS SPECIES ===========
         double ion_pot = ionisation_potentials[ y_ion_index_tables[species_counter]];
-        Edot -= ion_pot*ionisation_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
-        Edot += ion_pot*recombination_in_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        Edot -= ion_pot*ionise_rate_ion*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        Edot += ion_pot*recomb_rate_ip1*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
        
         /// ============== Combine the radiative recombination IN + collisional ionisation OUT =
-        this_y_dot += recombination_in_rate*NV_Ith_S(y_now, y_ip1_index_local[species_counter])*ne;
-        this_y_dot -= ionisation_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        this_y_dot += recomb_rate_ip1 * ne * NV_Ith_S(y_now, y_ip1_index_local[species_counter]) ;
+        this_y_dot -= ionise_rate_ion * ne * NV_Ith_S(y_now, y_ion_index_local[species_counter]) ;
         
       }
       if (y_im1_index_local[species_counter] != -1){ //<<< if the less ionised species exists
         /// ================= Collisional ionisation INTO this species ======================
         double lower_ion_rate = ionise_rate_table[y_im1_index_tables[species_counter] + 5*temp_index];
         double upper_ion_rate_contrib = dT * ionise_slope_table[y_im1_index_tables[species_counter] + 5*temp_index];
-        double ionisation_in_rate = lower_ion_rate + upper_ion_rate_contrib;
+        double ionise_rate_im1 = lower_ion_rate + upper_ion_rate_contrib;
         
         /// ============== Radiative recombination OUT of this species ======================
         double lower_recomb_rate = recomb_rate_table[y_ion_index_tables[species_counter] + 5*temp_index];
         double upper_recomb_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] + 5*temp_index];
-        double recombination_out_rate = lower_recomb_rate + upper_recomb_rate_contrib;
+        double recomb_rate_ion = lower_recomb_rate + upper_recomb_rate_contrib;
 
 
         /// =========  HEATING / COOLING DUE TO IONISATION / RECOMBINATION INTO / OUT OF THIS SPECIES ===========
         double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
-        Edot += ion_pot*ionisation_in_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        Edot -= ion_pot*recomb_rate_ion * NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
         
         /// ============== Combine the radiative recombination OUT + collisional ionisation IN =
         //if the less ionised species ISN'T neutral:
         if (y_im1_index_local[species_counter] !=-2){
-          this_y_dot -= recombination_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
-          Edot -= ion_pot*recombination_out_rate*NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
-        }
+          this_y_dot += ionise_rate_im1 * neutral_frac *ne;          
+          Edot += ion_pot*ionise_rate_im1 * NV_Ith_S(y_now, y_im1_index_local[species_counter])*ne;
+       }
         else{
-          this_y_dot -= recombination_out_rate*neutral_frac*ne;
-          Edot -= ion_pot*recombination_out_rate*neutral_frac*ne;
+          this_y_dot += ionise_rate_im1 * neutral_frac *ne;
+          Edot -= ion_pot* ionise_rate_im1 *neutral_frac*ne;
         }
         // **JM** HERE IS A PROBLEM!  SEE PRINTOUTS.
-        this_y_dot += ionisation_in_rate*NV_Ith_S(y_now, y_im1_index_local[species_counter])*ne;
         cout <<"vals " << species_counter <<"  "<< y_im1_index_local[species_counter];
         cout <<"  "<< NV_Ith_S(y_now, y_im1_index_local[species_counter]);
-        cout <<"  "<< ne <<"  "<< ionisation_in_rate <<"\n";
+        cout <<"  "<< ne <<"  "<< ionise_rate_im1 <<"\n";
+        this_y_dot -= recomb_rate_ion * NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
       }
-      //cout << "this_y_dot index = " << y_ion_index_local[species_counter] << "\n";
       NV_Ith_S(y_dot, y_ion_index_local[species_counter]) = this_y_dot;
       species_counter ++;
     }
@@ -1186,7 +1181,7 @@ int MPv10::ydot(
   // The Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
   //
   Edot -= cooling_rate_SD93CIE(T) *ne;
-  Edot = 0.0;
+  Edot = 1e-15;
   NV_Ith_S(y_dot,lv_eint) = Edot;
 
   double dydt[N_equations];
@@ -1194,6 +1189,5 @@ int MPv10::ydot(
   rep.printVec("ydot",dydt,N_equations);
   return 0;
 }
-
 
 
