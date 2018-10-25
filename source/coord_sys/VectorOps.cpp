@@ -283,7 +283,42 @@ double VectorOps_Cart::CentralDiff(
   return ans;
 }
 
+double VectorOps_Cart::GradZone(
+    class GridBaseClass *grid,  ///< pointer to computational grid.
+    class cell *c, ///< pointer to cell
+    const int ax,    ///< axis along which to take difference
+    const int sv,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+    const int ii    ///< index in state vector of variable
+)
+{
+    cell *cn, *cp;
+    enum direction ndir = static_cast<direction>(2*ax);
+    enum direction pdir = static_cast<direction>(2*ax+1);
+    
+    cn = (grid->NextPt(c,ndir)) ? grid->NextPt(c,ndir) : c;
+    cp = (grid->NextPt(c,pdir)) ? grid->NextPt(c,pdir) : c;
+    
+    double ans=0.0;
 
+
+    switch (sv) {
+        
+        case 1:
+        double min_v = fmin(cp->Ph[ii],cn->Ph[ii])
+    	#ifdef TESTING
+      		if (!isfinite(1/min_v)) {
+        		cout <<"ZERO PRESSURE CELLS???\n";
+      		}
+		#endif
+        ans = fabs(CentralDiff(grid,c,ax,sv,ii))/min_v;
+        break;
+        
+        default:
+        rep.error("state vector for calculating GradZone.",sv);
+    }
+    
+    return ans;
+}
 
 // ##################################################################
 // ##################################################################

@@ -12,7 +12,7 @@
 /// etc. for the different coordinate systems.
 /// 
 /// Modified:\n
-///  - 2007-08-01 File Created
+/// - 2007-08-01 File Created
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
@@ -145,6 +145,13 @@ class BaseVectorOps {
       const int     ///< index in state vector of variable
       )=0;
 
+  virtual double GradZone(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< pointer to cell
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int    ///< index in state vector of variable
+      )=0;
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
   /// 
@@ -344,6 +351,13 @@ class VectorOps_Cart : virtual public BaseVectorOps
       const int     ///< index in state vector of variable
       );
 
+  virtual double GradZone(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< pointer to cell
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int    ///< index in state vector of variable
+      );
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
   /// 

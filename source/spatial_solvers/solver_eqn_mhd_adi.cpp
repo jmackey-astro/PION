@@ -176,21 +176,34 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     PtoFlux(pstar, flux, eq_gamma);
   }
 
-  // HLLD/HLL solver, including velocity divergence check
-  // (Migone et al. 2011 )
+  // HLLD/HLL solver, including compressive motion check and 
+  // strong-gradient zones check (Migone et al. 2011 )
   else if (solve_flag==FLUX_RS_HLLD) {
     int indices[3];
     indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
+    double DivVl = Divergence(Cl,1,indices, grid);
+    double DivVr = Divergence(Cr,1,indices, grid);
+      
+    double Gradx = GradZone(grid,Cl,0,1,PG);
+    double Grady = GradZone(grid,Cl,1,1,PG);
+    double Gradz = GradZone(grid,Cl,2,1,PG);
+    double Gradl = Gradx + Grady + Gradz;
+    
+    Gradx = GradZone(grid,Cr,0,1,PG);
+    Grady = GradZone(grid,Cr,1,1,PG);
+    Gradz = GradZone(grid,Cr,2,1,PG);
+    double Gradr = Gradx + Grady + Gradz;
 
 #ifdef TESTING
-    if (!isfinite(Divergence(Cl,1,indices, grid)) ||
-        !isfinite(Divergence(Cr,1,indices, grid)) ) {
-      cout <<Divergence(Cl,1,indices, grid)<<"  ";
-      cout<<Divergence(Cr,1,indices, grid)<<"\n";
+    if (!isfinite(DivVl) ||
+        !isfinite(DivVr) ) {
+      cout << DivVl <<"  ";
+      cout << DivVr <<"\n";
     }
 #endif
-    if ((Divergence(Cl,1,indices, grid)<0) ||
-        (Divergence(Cr,1,indices, grid)<0) ){
+    if ((DivVl<0 || DivVr<0) // compressive motion check
+        && (Gradl>5 || Gradr>5) // strong-gradient zones check
+        ){
       //
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
       //
