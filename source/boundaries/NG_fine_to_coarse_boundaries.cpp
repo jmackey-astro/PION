@@ -35,7 +35,7 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   //cell *cc = child->FirstPt_All(); // child cell.
   //int cdx = 0.5*child->idx();
   int nc=1;  // number of fine cells per coarse cell
-  for (int i=0;i<par.ndim;i++) nc*=2;
+  for (int id=0;id<par.ndim;id++) nc*=2;
   int nel = b->NGrecvF2C[i].size();
   b->avg.resize(nel);
   for (int v=0;v<nel;v++) {
