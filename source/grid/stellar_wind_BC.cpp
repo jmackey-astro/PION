@@ -415,15 +415,15 @@ void stellar_wind::set_wind_cell_reference_state(
   // that it goes from y=1 at T>tp to y=1.0e-7 at T<tm, with linear
   // interpolation.  THIS IS A CRUDE APPROXIMATION!
   //
-  double tm=0.5e4, tp=0.75e4;
-  if (ntracer>0) {
-    if      (WS->Tw > tp)
-      wc->p[ftr] = 1.0;
-    else if (WS->Tw < tm)
-      wc->p[ftr] = 1.0e-7;
-    else
-      wc->p[ftr] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
-  }
+  //double tm=0.5e4, tp=0.75e4;
+  //if (ntracer>0) {
+  //  if      (WS->Tw > tp)
+  //    wc->p[ftr] = 1.0;
+  //  else if (WS->Tw < tm)
+  //    wc->p[ftr] = 1.0e-7;
+  //  else
+  //    wc->p[ftr] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
+  //}
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
