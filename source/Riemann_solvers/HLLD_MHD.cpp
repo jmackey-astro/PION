@@ -288,8 +288,8 @@ void HLLD_MHD::HLLD_signal_speeds(
     const pion_flt *Pl,    ///< inputs
     const pion_flt *Pr,
     const double eq_gamma,
-    double *Sl,       ///< outputs
-    double *Sr
+    double &Sl,       ///< outputs
+    double &Sr
     )
 {
     //

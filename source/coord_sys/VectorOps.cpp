@@ -299,17 +299,18 @@ double VectorOps_Cart::GradZone(
     cp = (grid->NextPt(c,pdir)) ? grid->NextPt(c,pdir) : c;
     
     double ans=0.0;
+    double min_v=0.0;
 
 
     switch (sv) {
         
         case 1:
-        double min_v = fmin(cp->Ph[ii],cn->Ph[ii])
-    	#ifdef TESTING
-      		if (!isfinite(1/min_v)) {
-        		cout <<"ZERO PRESSURE CELLS???\n";
-      		}
-		#endif
+        min_v = fmin(cp->Ph[ii],cn->Ph[ii]);
+#ifdef TESTING
+      	if (!isfinite(1/min_v)) {
+            cout <<"ZERO PRESSURE CELLS???\n";
+        }
+#endif
         ans = fabs(CentralDiff(grid,c,ax,sv,ii))/min_v;
         break;
         

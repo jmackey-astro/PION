@@ -44,8 +44,8 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
     const pion_flt *,    ///< inputs
     const pion_flt *,
     const double,
-    double *,       ///< outputs
-    double *
+    double &,       ///< outputs
+    double &
     );
 
    int MHD_HLL_flux_solver(
