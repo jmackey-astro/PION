@@ -15,7 +15,7 @@
 #include "tools/mem_manage.h"
 using namespace std;
 
-#define TEST_MPI_NG_F2C
+//#define TEST_MPI_NG_F2C
 // ##################################################################
 // ##################################################################
 
@@ -356,17 +356,8 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     cout <<"BC_update_FINE_TO_COARSE_RECV: found data from rank ";
     cout <<from_rank<<"\n";
 #endif
-    // assign from_rank to a b->NGrecvF2C element!!!
-    int i=0;
-    for (i=0;i<nchild;i++) {
-      if (MCMD->get_myrank() == from_rank) {
-        rep.error("F2C logic, my rank == child rank",from_rank);
-      }
-      else {
 
-
-    }
-
+    // associate data with one of the child grids:
     int irecv=-1;
     for (int i=0;i<nchild;i++) {
       if (b->NGrecvF2C_ranks[i] == from_rank) {

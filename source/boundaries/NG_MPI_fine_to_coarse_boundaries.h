@@ -39,6 +39,19 @@ class NG_MPI_fine_to_coarse_bc :
       boundary_data *  ///< boundary data
       );
 
+  /// Assigns cells to a nested grid boundary whose data are to
+  /// be overwritten by data from a finer grid.
+  int BC_assign_FINE_TO_COARSE_RECV(
+      class SimParams &,     ///< pointer to simulation parameters
+      const int,  ///< level of this grid.
+      boundary_data *  ///< boundary data
+      );
+
+  /// List of IDs for all sends, should be cleared at the beginning
+  /// of each timestep.
+  std::vector<string> NG_F2C_send_list;
+
+  public:
   /// Send data from this grid to a coarser grid (maybe on another
   /// MPI process) 
   int BC_update_FINE_TO_COARSE_SEND(
@@ -48,14 +61,6 @@ class NG_MPI_fine_to_coarse_bc :
       struct boundary_data *,
       const int,
       const int
-      );
-
-  /// Assigns cells to a nested grid boundary whose data are to
-  /// be overwritten by data from a finer grid.
-  int BC_assign_FINE_TO_COARSE_RECV(
-      class SimParams &,     ///< pointer to simulation parameters
-      const int,  ///< level of this grid.
-      boundary_data *  ///< boundary data
       );
 
   /// Receive data from a finer grid (maybe on another MPI
@@ -74,10 +79,6 @@ class NG_MPI_fine_to_coarse_bc :
   /// Delete the temporary arrays used to send data to another
   /// MPI process
   void BC_FINE_TO_COARSE_SEND_clear_sends();
-
-  /// List of IDs for all sends, should be cleared at the beginning
-  /// of each timestep.
-  std::vector<string> NG_F2C_send_list;
 
 };
 

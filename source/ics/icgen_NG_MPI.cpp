@@ -208,6 +208,33 @@ int main(int argc, char **argv)
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // update fine-to-coarse level boundaries
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TESTING
+    cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";
+    cout <<l<<"\n";
+#endif
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += SimSetup->BC_update_FINE_TO_COARSE_SEND(SimPM,
+                solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
+          err += SimSetup->BC_update_FINE_TO_COARSE_RECV(SimPM,solver,
+                      l,grid[l]->BC_bd[i],2,2);
+        }
+      }
+    }
+  }
+  SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   // if data initialised ok, maybe we need to equilibrate the 

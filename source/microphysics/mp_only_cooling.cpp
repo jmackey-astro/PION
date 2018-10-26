@@ -229,7 +229,7 @@ int mp_only_cooling::TimeUpdateMP(
       cout <<", T="<<T<<", Edot="<<Edot(p_in[RO],T)<<"\n";
     }
 
-    for (int v=0;v<nstep;v++) {
+    for (size_t v=0;v<nstep;v++) {
 
       k1 = step_dt*Edot(p_in[RO],T);
       Etemp = E0_step+0.5*k1;
@@ -249,7 +249,8 @@ int mp_only_cooling::TimeUpdateMP(
       T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
 
       if (nstep>16) {
-        cout <<"v="<<v<<", T="<<T<<", E0_step="<<E0_step<<"\n";
+        cout <<"MP_only_cooling integration: step="<<v<<", T=";
+        cout <<T<<", E0_step="<<E0_step<<"\n";
       }
     }
     

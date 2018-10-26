@@ -233,14 +233,14 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
 
     case FINE_TO_COARSE_RECV:
 #ifdef TEST_MPI_NG
-      cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
-      cout <<i<<" with type "<<b->type<<"\n";
-      cout <<"found FINE_TO_COARSE_RECV boundary to update\n";
+      //cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
+      //cout <<i<<" with type "<<b->type<<"\n";
+      //cout <<"found FINE_TO_COARSE_RECV boundary to update\n";
 #endif
       // receive these data in every case
-      err += BC_update_FINE_TO_COARSE_RECV(
-                                  par,solver,level,b,cstep,maxstep);
-      BC_FINE_TO_COARSE_SEND_clear_sends();
+      //err += BC_update_FINE_TO_COARSE_RECV(
+      //                            par,solver,level,b,cstep,maxstep);
+      //BC_FINE_TO_COARSE_SEND_clear_sends();
       break;
 
     default:
@@ -251,16 +251,16 @@ int assign_update_bcs_NG_MPI::TimeUpdateInternalBCs(
     case FINE_TO_COARSE_SEND:
       // only send data every 2nd step (OA1 update) or every full
       // step update (OA2 update).
-      if ( (par.tmOOA==1 && (par.levels[level].step%2)==0) ||
-           (par.tmOOA==2 &&  cstep==maxstep) ) {
+      //if ( (par.tmOOA==1 && (par.levels[level].step%2)==0) ||
+      //     (par.tmOOA==2 &&  cstep==maxstep) ) {
 #ifdef TEST_MPI_NG
-        cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
-        cout <<i<<" with type "<<b->type<<"\n";
-        cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
+      //  cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
+      //  cout <<i<<" with type "<<b->type<<"\n";
+      //  cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
 #endif
-        err += BC_update_FINE_TO_COARSE_SEND(
-                                  par,solver,level,b,cstep,maxstep);
-      }
+      //  err += BC_update_FINE_TO_COARSE_SEND(
+      //                            par,solver,level,b,cstep,maxstep);
+      //}
       break;
       
     }

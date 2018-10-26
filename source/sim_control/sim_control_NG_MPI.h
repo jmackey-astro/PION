@@ -80,6 +80,15 @@ class sim_control_NG_MPI :
       );
   
   ///
+  /// Second-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed and
+  /// the step to come.
+  ///
+  double advance_step_OA2(
+      const int ///< level in NG grid.
+      );
+
+  ///
   /// Takes the contents of each cell->dU[] vector and
   /// updates Ph[] the changes.  If we are on the full-step then it
   /// also updates P[] so that Ph[] is identical.
