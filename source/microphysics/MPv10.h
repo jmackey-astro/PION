@@ -354,20 +354,20 @@ class MPv10
   ///           Vectors to Store Other Ion / Element info
   /// ===========================================================================
   std::vector<int> y_ion_num_elec; ///<index matching number of electrons corresponding to each y_ion (e.g. C6+ = 6)
-  std::vector<pion_flt> X_elem_atomic_mass; /// < vector of atomic masses corresponding to X_elem_index, e.g. for ["H", "He"], X_atom_mass=[1.6738e-24, 6.6464764e-24 
-  std::vector<pion_flt> X_elem_number_density;
+  std::vector<double> X_elem_atomic_mass; /// < vector of atomic masses corresponding to X_elem_index, e.g. for ["H", "He"], X_atom_mass=[1.6738e-24, 6.6464764e-24 
+  std::vector<double> X_elem_number_density;
   std::vector<int> N_species_by_elem; ///< records # species in each element, to iterate over later.
 
   /// ===========================================================================
   ///  Variables to store table (temp, ionisation / recomb rates, etc)information
   /// ===========================================================================
-  std::vector<pion_flt> Temp_Table;
-  std::vector<pion_flt> recomb_rate_table;
-  std::vector<pion_flt> ionise_rate_table;
-  std::vector<pion_flt> recomb_slope_table;
-  std::vector<pion_flt> ionise_slope_table;
+  std::vector<double> Temp_Table;
+  std::vector< std::vector<double> > recomb_rate_table;
+  std::vector< std::vector<double> > ionise_rate_table;
+  std::vector< std::vector<double> > recomb_slope_table;
+  std::vector< std::vector<double> > ionise_slope_table;
   
-  std::vector<pion_flt> ionisation_potentials; //array of ionisation potentials, in the same order as ionise_slope
+  std::vector<double> ionisation_potentials; //array of ionisation potentials, in the same order as ionise_slope
   
   
   const double T_min;

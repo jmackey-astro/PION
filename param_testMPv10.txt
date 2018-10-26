@@ -54,7 +54,7 @@ noise -1
 ## Grid Parameters
 # Number of gridpoints in each direction
 # INT
-NGridX  16
+NGridX  32
 NGridY  1
 NGridZ  1
 # Boundaries of Simulation box:
