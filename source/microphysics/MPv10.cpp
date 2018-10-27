@@ -1092,7 +1092,7 @@ int MPv10::ydot(
   }
   else if ( T<T_min){
     T = T_min;
-  }
+  }/*
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
   double dT = T - Temp_Table[temp_index];
 
