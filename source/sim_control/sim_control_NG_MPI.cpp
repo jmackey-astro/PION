@@ -654,6 +654,7 @@ double sim_control_NG_MPI::advance_step_OA1(
   // --------------------------------------------------------
   // 5. Update grid and boundaries on level l:
   // --------------------------------------------------------
+  spatial_solver->Setdt(dt2_this);
   //  - Receive level fluxes from finer grid (FLUX)
 
   //  - clear level flux sends
@@ -662,7 +663,6 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
   cout <<"advance_step_OA1: l="<<l<<" update grid\n";
 #endif
-  spatial_solver->Setdt(dt2_this);
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
 
@@ -684,12 +684,12 @@ double sim_control_NG_MPI::advance_step_OA1(
 #endif
     err += BC_update_FINE_TO_COARSE_RECV(
                 SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA1);
-  }
 #ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" clear F2C sends\n";
+    cout <<"advance_step_OA1: l="<<l<<" clear F2C sends\n";
 #endif
-  //  - Clear F2C sends
-  BC_FINE_TO_COARSE_SEND_clear_sends();
+    //  - Clear F2C sends
+    BC_FINE_TO_COARSE_SEND_clear_sends();
+  }
 
 
   // --------------------------------------------------------
@@ -724,11 +724,12 @@ double sim_control_NG_MPI::advance_step_OA1(
   // - send level fluxes
 
   // - send F2C data
-  if (l>0) {
+  if (l>0 && SimPM.levels[l].step%2!=0) {
 #ifdef TEST_MPI_NG
     cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
     cout <<i<<" with type "<<b->type<<"\n";
     cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
+    cout <<"... step="<<SimPM.levels[l].step<<"\n";
 #endif
     err += BC_update_FINE_TO_COARSE_SEND(
               SimPM,spatial_solver,l,grid->BC_bd[f2cs],OA1,OA1);
@@ -885,12 +886,12 @@ double sim_control_NG_MPI::advance_step_OA2(
 #endif
     err += BC_update_FINE_TO_COARSE_RECV(
                 SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA2);
-  }
 #ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" clear F2C sends\n";
+    cout <<"advance_step_OA2: l="<<l<<" clear F2C sends\n";
 #endif
-  //  - Clear F2C sends
-  BC_FINE_TO_COARSE_SEND_clear_sends();
+    //  - Clear F2C sends
+    BC_FINE_TO_COARSE_SEND_clear_sends();
+  }
 
   // --------------------------------------------------------
   // 4. Calculate dU for the full step (OA2) on this level

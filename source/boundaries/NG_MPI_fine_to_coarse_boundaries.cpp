@@ -142,6 +142,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // Send data using a non-blocking MPI send
   //
   string id;
+  int comm_tag = BC_MPI_NGF2C_tag + l;
   //id <<"F2C_"<<MCMD->get_myrank()<<"_to_"<<pproc;
 #ifdef TEST_MPI_NG_F2C
   cout <<"BC_update_FINE_TO_COARSE_SEND: Sending "<<ct;
@@ -149,7 +150,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   cout <<" to parent proc "<<pproc<<"\n";
 #endif
   err += COMM->send_double_data(
-        pproc,ct,data,id,BC_MPI_NGF2C_tag);
+        pproc,ct,data,id,comm_tag);
   if (err) rep.error("Send_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG_F2C
   cout <<"BC_update_FINE_TO_COARSE_SEND: returned with id="<<id;
@@ -344,11 +345,12 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     // receive data.
     //
     string recv_id; int recv_tag=-1; int from_rank=-1;
+    int comm_tag = BC_MPI_NGF2C_tag + l+1;
     err = COMM->look_for_data_to_receive(
           &from_rank, // rank of sender (output)
           recv_id,    // identifier for receive (output).
           &recv_tag,  // comm_tag associated with data (output)
-          BC_MPI_NGF2C_tag,
+          comm_tag,
           COMM_DOUBLEDATA // type of data we want.
           );
     if (err) rep.error("look for double data failed",err);

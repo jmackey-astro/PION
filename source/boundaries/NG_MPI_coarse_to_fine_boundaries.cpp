@@ -213,9 +213,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     //
     // Send data using a non-blocking MPI send
     //
-    ostringstream tmp;
-    tmp <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib]->rank;
-    string id = tmp.str();
+    //ostringstream tmp;
+    //tmp <<"C2F_"<<MCMD->get_myrank()<<"_to_"<<b->NGsendC2F[ib]->rank;
+    string id; // = tmp.str();
     // Need to add direction to comm-tag because we might be sending
     // more than one boundary to the same process.  Also add level, 
     // because it can happen that more than one level sends the same
