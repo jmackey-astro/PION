@@ -456,7 +456,7 @@ class UniformGrid
       int *,   ///< xmax of interface region (integer units)
       int *,   ///< number of elements in interface region
       const int,     ///< number of cells per face, per dim.
-      std::vector<struct flux_interface *> & ///< list to populate
+      struct flux_update & ///< struct with list to populate
       );
 
   ///

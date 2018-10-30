@@ -211,21 +211,22 @@ int UniformGridParallel::setup_flux_recv(
       for (int d=0; d<2*G_ndim; d++) {
         int el = off+d;
         if (recv[el] == true) {
-          flux_update_recv[el].resize(nel[el]);
+          flux_update_recv[el].fi.resize(nel[el]);
         }
         else {
-          flux_update_recv[el].resize(1);
-          flux_update_recv[el][0] = 0;
+          flux_update_recv[el].fi.resize(1);
+          flux_update_recv[el].fi[0] = 0;
         }
+        flux_update_recv[el].Ncells = nc;
+        flux_update_recv[el].rank.push_back(
+                                        MCMD->child_procs[ic].rank);
         for (size_t i=0; i<nel[el]; i++) {
-          flux_update_recv[el][i] = 
-                            mem.myalloc(flux_update_recv[el][i],1);
-          fi = flux_update_recv[el][i];
-          fi->Ncells = nc;
+          flux_update_recv[el].fi[i] = 
+                          mem.myalloc(flux_update_recv[el].fi[i],1);
+          fi = flux_update_recv[el].fi[i];
           fi->c.resize(nc);
           fi->area.resize(nc);
           fi->flux = mem.myalloc(fi->flux,G_nvar);
-          fi->rank.push_back(MCMD->child_procs[ic].rank);
           for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
         }
       } // loop over dims
@@ -244,26 +245,85 @@ int UniformGridParallel::setup_flux_recv(
     // There are no children, but my grid might have a boundary in 
     // common with the l+1 level's outer boundary.
     // First try to exclude this:
-    int edge=-1;
+    int edge=-1, axis=-1;
     for (int ax=0;ax<G_ndim;ax++) {
-      if (G_ixmin[ax] == lxmax[ax]) edge=2*ax;
-      if (G_ixmax[ax] == lxmin[ax]) edge=2*ax+1;
+      if (G_ixmin[ax] == lxmax[ax]) {
+        edge=2*ax;
+        axis=ax;
+      }
+      if (G_ixmax[ax] == lxmin[ax]) {
+        edge=2*ax+1;
+        axis=ax;
+      }
     }
     if (edge<0) {
       cout <<"no edges adjacent to l+1 level\n";
       flux_update_recv.resize(2*G_ndim);
       for (int d=0; d<2*G_ndim; d++) {
-        flux_update_recv[d].resize(1);
-        flux_update_recv[d][0] = 0;
+        flux_update_recv[d].fi.resize(1);
+        flux_update_recv[d].fi[0] = 0;
       }
       break;
     }
 
-    // Now we know one edge 
-
-
-
-
+    size_t nel = 0;
+    double pos[G_ndim];
+    int ch = -1;
+    // If we get to here, then one edge borders the l+1 domain, so we
+    // see which edge it is, see how many grids on the l+1 domain are
+    // facing onto this grid, and add these faces to the list.
+    if (G_ndim==1) {
+      // this is easy, max one child grid, with one face.
+      flux_update_recv.resize(1);
+      nel = 1;
+      rep.error("Write 1D flux recv setup code",0);
+      if (edge==XN) {
+        pos[0] = G_xmin[0]-G_dx;
+      }
+      else {
+        pos[0] = G_xmax[0]+G_dx;
+      }
+      ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
+      flux_update_recv[0].rank = ch;
+      flux_update_recv[0].fi.resize(1);
+      flux_update_recv[d].fi[0] = 
+                      mem.myalloc(flux_update_recv[d].fi[0],1);
+      fi = flux_update_recv[d].fi[0];
+      fi->c.resize(nc);
+      fi->area.resize(nc);
+      fi->flux = mem.myalloc(fi->flux,G_nvar);
+      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+      add_cells_to_face(static_cast<enum direction>(edge),G_ixmin,
+                  G_ixmax,G_ng,1,flux_update_recv[0]);
+    }
+    else if (G_ndim==2) {
+      // up to 2 grids on l+1, so go through them one by one, see
+      // if they exist, and then add the cells.
+      flux_update_recv.resize(2);
+      int perp = axis+1 % G_ndim;
+      nel = G_ng[perp]/2;
+      if (edge%2==0) {
+        for (int i=0;i<G_ndim;i++) pos[i] = G_xmin[i];
+        pos[axis] -= G_dx;
+        //offset perp by 0.25/0.75, depending on which child.
+      }
+      else {
+        for (int i=0;i<G_ndim;i++) pos[i] = G_xmax[i];
+        pos[axis] += G_dx;
+      }
+      ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
+      rep.error("Write 2D flux recv setup code",0);
+    }
+    else {
+      // up to 4 grids on l+1, so go through them one by one, see if
+      // they exist, and add the cells.
+      flux_update_recv.resize(4);
+      int perp[2];
+      perp[0] = axis+1 % G_ndim;
+      perp[1] = axis+2 % G_ndim;
+      nel = G_ng[perp[0]]*G_ng[perp[1]]/4;
+      rep.error("Write 3D flux recv setup code",0);
+    }
 
   return 0;
 }
@@ -306,7 +366,7 @@ int UniformGridParallel::setup_flux_send(
     int pproc = MCMD->parent_proc;
     for (unsigned int d=0;d<ns;d++) {
       // if boundary element is not empty, send data to parent.
-      if (flux_update_send[d][0] !=0) {
+      if (flux_update_send[d].fi[0] !=0) {
         flux_update_send[d].rank.push_back(pproc);
       }
     }
@@ -317,7 +377,7 @@ int UniformGridParallel::setup_flux_send(
 
       // First negative direction along this axis
       int d = 2*ax, p1=-1, p2=-1;
-      if (flux_update_send[d][0] !=0) {
+      if (flux_update_send[d].fi[0] !=0) {
         for (int i=0;i<G_ndim;i++) pos[i] = G_xmin[i];
         pos[ax] += G_dx;
         p1 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);

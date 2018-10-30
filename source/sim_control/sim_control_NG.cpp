@@ -1033,17 +1033,17 @@ int sim_control_NG::grid_update_state_vector(
 #endif
       ax = static_cast<enum axes>(d/2);
 
-      if (fine->flux_update_send[d].size() !=
-          grid->flux_update_recv[d].size())
+      if (fine->flux_update_send[d].fi.size() !=
+          grid->flux_update_recv[d].fi.size())
         rep.error("fine and parent face arrays r different size",2);
       
-      if (grid->flux_update_recv[d][0] ==0) continue;
+      if (grid->flux_update_recv[d].fi[0] ==0) continue;
 
       for (unsigned int f=0;
-           f<grid->flux_update_recv[d].size();
+           f<grid->flux_update_recv[d].fi.size();
            f++) {
-        fc = grid->flux_update_recv[d][f];
-        ff = fine->flux_update_send[d][f];
+        fc = grid->flux_update_recv[d].fi[f];
+        ff = fine->flux_update_send[d].fi[f];
 
 #ifdef DEBUG_NG
         for (int v=0;v<SimPM.nvar;v++) {
