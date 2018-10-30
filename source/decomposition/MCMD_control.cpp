@@ -588,8 +588,10 @@ void MCMDcontrol::set_NG_hierarchy(
   // nproc==1, for which there is only one child so it is trivial.
   if (l<par.grid_nlevels-1 && nproc==1) {
     child.rank = myrank;
-    for (int v=0;v<par.ndim;v++) child.Xmin[v] = par.levels[l+1].Xmin[v];
-    for (int v=0;v<par.ndim;v++) child.Xmax[v] = par.levels[l+1].Xmax[v];
+    for (int v=0;v<par.ndim;v++)
+      child.Xmin[v] = par.levels[l+1].Xmin[v];
+    for (int v=0;v<par.ndim;v++)
+      child.Xmax[v] = par.levels[l+1].Xmax[v];
     child_procs.push_back(child);
     cout <<"v="<<0<<": only child has rank="<<child_rank<<"\n";
   }

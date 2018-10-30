@@ -622,8 +622,17 @@ NG_MPI_fine_to_coarse_boundaries.o: \
   NG_MPI_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
-assign_update_bcs_MPI.o: assign_update_bcs_NG.cpp \
+assign_update_bcs_MPI.o: assign_update_bcs_MPI.cpp \
   assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
+  MCMD_boundaries.h boundaries.h ${GLOBAL} \
+  grid_base_class.h solver_eqn_base.h MCMD_control.h 
+
+assign_update_bcs_NG_MPI.o: assign_update_bcs_NG_MPI.cpp \
+  assign_update_bcs_NG_MPI.h assign_update_bcs_MPI.h \
+  assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_MPI_fine_to_coarse_boundaries.h \
+  NG_MPI_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
   MCMD_boundaries.h boundaries.h ${GLOBAL} \
   grid_base_class.h solver_eqn_base.h MCMD_control.h 
 

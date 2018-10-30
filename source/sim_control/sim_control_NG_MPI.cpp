@@ -726,8 +726,8 @@ double sim_control_NG_MPI::advance_step_OA1(
   // - send F2C data
   if (l>0 && SimPM.levels[l].step%2!=0) {
 #ifdef TEST_MPI_NG
-    cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
-    cout <<i<<" with type "<<b->type<<"\n";
+    cout <<"LEVEL "<<l<<": update_bcs_NG_MPI: updating bc ";
+    cout <<f2cs<<" with type "<<grid->BC_bd[f2cs]->type<<"\n";
     cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
     cout <<"... step="<<SimPM.levels[l].step<<"\n";
 #endif
@@ -1026,8 +1026,8 @@ double sim_control_NG_MPI::advance_step_OA2(
   // - send F2C data
   if (l>0) {
 #ifdef TEST_MPI_NG
-    cout <<"LEVEL "<<level<<": update_bcs_NG_MPI: updating bc ";
-    cout <<i<<" with type "<<b->type<<"\n";
+    cout <<"LEVEL "<<l<<": update_bcs_NG_MPI: updating bc ";
+    cout <<f2cs<<" with type "<<grid->BC_bd[f2cs]->type<<"\n";
     cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
 #endif
     err += BC_update_FINE_TO_COARSE_SEND(

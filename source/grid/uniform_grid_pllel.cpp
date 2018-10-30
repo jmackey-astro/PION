@@ -119,19 +119,19 @@ UniformGridParallel::UniformGridParallel(
 
 int UniformGridParallel::setup_flux_recv(
       class SimParams &par, ///< simulation params (including BCs)
-      const int l           ///< level to receive from
+      const int lp1         ///< level to receive from
       )
 {
 //#ifdef DEBUG_NG
   cout <<"UniformGridParallel::setup_flux_recv() recv from level=";
-  cout <<l<<"\n";
+  cout <<lp1<<"\n";
 //#endif
+  int l = lp1-1;  // my level
 
   if (par.levels[0].MCMD.get_nproc()==1) {
     cout <<"setup_flux_recv(): nproc=1, calling serial version.\n";
-    return UniformGrid::setup_flux_recv(par,l);
+    return UniformGrid::setup_flux_recv(par,lp1);
   }
-  else return 0;
 
   //
   // Get size of interface region and number of cells.
@@ -139,89 +139,131 @@ int UniformGridParallel::setup_flux_recv(
   size_t nc  = 1; // number of cells in each interface
   int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM]; // interface
   int lxmin[MAX_DIM], lxmax[MAX_DIM]; // finer grid
-  bool recv[2*G_ndim];  // whether to get data in this direction
-  size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
-  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lp1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lp1].Xmax, lxmax);
 
-  // Modify the following so that there can be up to 2^Ndim child
-  // grids, all of which can have an external level boundary.  Should
-  // be straightforward...
+  class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  int nchild = MCMD->child_procs.size();
 
-  // define interface region of fine and coarse grids, and whether
-  // each direction is to be included or not.  Note that this allows
-  // for a fine grid that is not completely encompassed by the coarse
-  // grid.
-  for (int v=0;v<G_ndim;v++) {
-    ixmin[v] = std::max(G_ixmin[v], lxmin[v]);
-    if (G_ixmin[v] < lxmin[v]) recv[2*v] = true;
-    else                       recv[2*v] = false;
-    
-    ixmax[v] = std::min(G_ixmax[v], lxmax[v]);
-    if (G_ixmax[v] > lxmax[v]) recv[2*v+1] = true;
-    else                       recv[2*v+1] = false;
+  // Two cases: if there are children, then part or all of grid is
+  // within l+1 level.  If there are no children, then at most one
+  // face of my grid could be an outer face of the l+1 grid.
+  if (nchild >0) {
+    bool recv[nchild*2*G_ndim];  // whether to get data in this dir
+    size_t nel[nchild*2*G_ndim]; // number of interfaces in each dir
 
-    ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
-    if ( (ixmax[v]-ixmin[v]) % G_idx !=0) {
-      rep.error("interface region not divisible!",ixmax[v]-ixmin[v]);
+    for (int ic=0;ic<nchild;ic++) {
+      int off = ic*2*G_ndim;
+      CI.get_ipos_vec(MCMD->child_procs[ic].Xmin,ixmin);
+      CI.get_ipos_vec(MCMD->child_procs[ic].Xmax,ixmax);
+
+      // define interface region of fine and coarse grids, and if 
+      // each direction is to be included or not.
+      for (int ax=0;ax<G_ndim;ax++) {
+        if (lxmin[ax] == ixmin[ax]) recv[off +2*ax] = true;
+        else                        recv[off +2*ax] = false;
+        
+        if (lxmax[ax] == ixmax[ax]) recv[off +2*ax+1] = true;
+        else                        recv[off +2*ax+1] = false;
+
+        ncell[ax] = (ixmax[ax]-ixmin[ax])/G_idx;
+        if ( (ixmax[ax]-ixmin[ax]) % G_idx !=0) {
+          rep.error("interface region not divisible!",
+                    ixmax[ax]-ixmin[ax]);
+        }
+      } // all dimensions
+      for (int d=0;d<2*G_ndim;d++) nel[off +d]=0;
+    } // all child grids.
+
+    for (int ic=0;ic<nchild;ic++) {
+      int off = ic*2*G_ndim;
+      // different number of interfaces depending on dimensionality.
+      switch (G_ndim) {
+      case 1:
+        if (recv[off +XN]) nel[off +XN] = 1;
+        if (recv[off +XP]) nel[off +XP] = 1;
+        break;
+      case 2:
+        if (recv[off +XN]) nel[off +XN] = ncell[YY];
+        if (recv[off +XP]) nel[off +XP] = ncell[YY];
+        if (recv[off +YN]) nel[off +YN] = ncell[XX];
+        if (recv[off +YP]) nel[off +YP] = ncell[XX];
+        break;
+      case 3:
+        if (recv[off +XN]) nel[off +XN] = ncell[YY]*ncell[ZZ];
+        if (recv[off +XP]) nel[off +XP] = ncell[YY]*ncell[ZZ];
+        if (recv[off +YN]) nel[off +YN] = ncell[XX]*ncell[ZZ];
+        if (recv[off +YP]) nel[off +YP] = ncell[XX]*ncell[ZZ];
+        if (recv[off +ZN]) nel[off +ZN] = ncell[XX]*ncell[YY];
+        if (recv[off +ZP]) nel[off +ZP] = ncell[XX]*ncell[YY];
+        break;
+      default:
+        rep.error("bad ndim in setup_flux_recv",G_ndim);
+        break;
+      } // dims
+    } // all child grids
+
+    // initialize arrays
+    flux_update_recv.resize(nchild*2*G_ndim);
+    for (int ic=0;ic<nchild;ic++) {
+      int off = ic*2*G_ndim;
+      for (int d=0; d<2*G_ndim; d++) {
+        int el = off+d;
+        if (recv[el] == true) {
+          flux_update_recv[el].resize(nel[el]);
+        }
+        else {
+          flux_update_recv[el].resize(1);
+          flux_update_recv[el][0] = 0;
+        }
+        for (size_t i=0; i<nel[el]; i++) {
+          flux_update_recv[el][i] = 
+                            mem.myalloc(flux_update_recv[el][i],1);
+          fi = flux_update_recv[el][i];
+          fi->Ncells = nc;
+          fi->c.resize(nc);
+          fi->area.resize(nc);
+          fi->flux = mem.myalloc(fi->flux,G_nvar);
+          fi->rank.push_back(MCMD->child_procs[ic].rank);
+          for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+        }
+      } // loop over dims
+
+      // For each interface, find the cell that is off the fine grid
+      // and that includes the interface.
+      for (int d=0; d<2*G_ndim; d++) {
+        if (recv[off+d]) {
+          add_cells_to_face(static_cast<enum direction>(d),
+                    ixmin,ixmax,ncell,1,flux_update_recv[off+d]);
+        }
+      } // loop over dims.
+    }  // loop over child grids.
+  } // if there are child grids.
+  else {
+    // There are no children, but my grid might have a boundary in 
+    // common with the l+1 level's outer boundary.
+    // First try to exclude this:
+    int edge=-1;
+    for (int ax=0;ax<G_ndim;ax++) {
+      if (G_ixmin[ax] == lxmax[ax]) edge=2*ax;
+      if (G_ixmax[ax] == lxmin[ax]) edge=2*ax+1;
     }
-  }
-  for (int v=0;v<2*G_ndim;v++) nel[v]=0;
+    if (edge<0) {
+      cout <<"no edges adjacent to l+1 level\n";
+      flux_update_recv.resize(2*G_ndim);
+      for (int d=0; d<2*G_ndim; d++) {
+        flux_update_recv[d].resize(1);
+        flux_update_recv[d][0] = 0;
+      }
+      break;
+    }
 
-  // different number of interfaces depending on dimensionality.
-  switch (G_ndim) {
-  case 1:
-    if (recv[XN]) nel[XN] = 1;
-    if (recv[XP]) nel[XP] = 1;
-    break;
-  case 2:
-    if (recv[XN]) nel[XN] = ncell[YY];
-    if (recv[XP]) nel[XP] = ncell[YY];
-    if (recv[YN]) nel[YN] = ncell[XX];
-    if (recv[YP]) nel[YP] = ncell[XX];
-    break;
-  case 3:
-    if (recv[XN]) nel[XN] = ncell[YY]*ncell[ZZ];
-    if (recv[XP]) nel[XP] = ncell[YY]*ncell[ZZ];
-    if (recv[YN]) nel[YN] = ncell[XX]*ncell[ZZ];
-    if (recv[YP]) nel[YP] = ncell[XX]*ncell[ZZ];
-    if (recv[ZN]) nel[ZN] = ncell[XX]*ncell[YY];
-    if (recv[ZP]) nel[ZP] = ncell[XX]*ncell[YY];
-    break;
-  default:
-    rep.error("bad ndim in setup_flux_recv",G_ndim);
-    break;
-  }
+    // Now we know one edge 
 
-  // initialize arrays
-  flux_update_recv.resize(2*G_ndim);
-  for (int v=0; v<2*G_ndim; v++) {
-    if (recv[v] == true) {
-      flux_update_recv[v].resize(nel[v]);
-    }
-    else {
-      flux_update_recv[v].resize(1);
-      flux_update_recv[v][0] = 0;
-    }
-    for (size_t i=0; i<nel[v]; i++) {
-      flux_update_recv[v][i] = mem.myalloc(flux_update_recv[v][i],1);
-      fi = flux_update_recv[v][i];
-      fi->Ncells = nc;
-      fi->c.resize(nc);
-      fi->area.resize(nc);
-      fi->flux = mem.myalloc(fi->flux,G_nvar);
-      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
-    }
-  }
 
-  // For each interface, find the cell that is outside the fine grid
-  // and that includes the interface.
-  for (int v=0; v<2*G_ndim; v++) {
-    if (recv[v]) {
-      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,ncell,1,flux_update_recv[v]);
-    }
-  }
+
+
 
   return 0;
 }
@@ -236,7 +278,7 @@ int UniformGridParallel::setup_flux_recv(
 
 int UniformGridParallel::setup_flux_send(
       class SimParams &par, ///< simulation params (including BCs)
-      const int l           ///< level to send to
+      const int lm1         ///< level to send to
       )
 {
 //#ifdef DEBUG_NG
@@ -244,12 +286,65 @@ int UniformGridParallel::setup_flux_send(
   cout <<l<<"\n";
 //#endif
 
-  if (par.levels[0].MCMD.get_nproc()==1) {
-    cout <<"setup_flux_recv(): nproc=1, calling serial version.\n";
-    return UniformGrid::setup_flux_send(par,l);
-  }
-  else return 0;
+  int err = UniformGrid::setup_flux_send(par,lm1);
+  rep.errorTest("UniformGrid::setup_flux_send",0,err);
 
+  // Add ranks for each send, based on parent rank.
+  int l = lm1+1; // my level
+  unsigned int ns = flux_update_send.size();
+  if (ns != 2*G_ndim) rep.error("bad flux send size",ns);
+
+  if (par.levels[l].MCMD.get_nproc()==1)  {
+    for (unsigned int d=0;d<ns;d++)
+      flux_update_send[d].rank.push_back(0);
+  }
+  else {
+    // always send to parent, sometimes send to neighbour of parent
+    // if boundary between parent and neighbour sits on the edge of
+    // my level.
+    class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+    int pproc = MCMD->parent_proc;
+    for (unsigned int d=0;d<ns;d++) {
+      // if boundary element is not empty, send data to parent.
+      if (flux_update_send[d][0] !=0) {
+        flux_update_send[d].rank.push_back(pproc);
+      }
+    }
+    for (int ax=0;ax<G_ndim;ax++) {
+      // check if parent boundary is also my boundary, in which
+      // case we need to send data to parent's neighbour
+      double pos[G_ndim];
+
+      // First negative direction along this axis
+      int d = 2*ax, p1=-1, p2=-1;
+      if (flux_update_send[d][0] !=0) {
+        for (int i=0;i<G_ndim;i++) pos[i] = G_xmin[i];
+        pos[ax] += G_dx;
+        p1 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
+        pos[ax] -= 2*G_dx;
+        p2 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
+        cout <<"d="<<d<<", parent="<<pproc<<", p1="<<p1;
+        cout<<", and ngb="<<p2<<"\n";
+        if (p2!=pproc) flux_update_send[d].rank.push_back(p2);
+      }
+      // now positive direction
+      d = 2*ax+1;
+      p1=-1;
+      p2=-1;
+      if (flux_update_send[d][0] !=0) {
+        for (int i=0;i<G_ndim;i++) pos[i] = G_xmax[i];
+        pos[ax] -= G_dx;
+        p1 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
+        pos[ax] += 2*G_dx;
+        p2 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
+        cout <<"d="<<d<<", parent="<<pproc<<", p1="<<p1;
+        cout<<", and ngb="<<p2<<"\n";
+        if (p2!=pproc) flux_update_send[d].rank.push_back(p2);
+      }
+    } // loop over axes
+  } // if nproc>1
+
+  return 0;
 }
 
 

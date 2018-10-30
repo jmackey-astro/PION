@@ -51,20 +51,6 @@ class assign_update_bcs_NG_MPI :
       const int, ///< Current step number in the timestep.
       const int  ///< Maximum step number in timestep.
       );
-
-  ///
-  /// Runs through boundary cells which are grid cells and does
-  /// the appropriate time update on them.
-  ///
-  int TimeUpdateInternalBCs(
-      class SimParams &,      ///< pointer to simulation parameters
-      const int,              ///< level in grid hierarchy
-      class GridBaseClass *,  ///< pointer to grid.
-      class FV_solver_base *, ///< pointer to equations
-      const double,           ///< current simulation time
-      const int, ///< Current step number in the timestep.
-      const int  ///< Maximum step number in timestep.
-      );
 };
 
 #endif // ASSIGN_UPDATE_BCS_NG_MPI_H

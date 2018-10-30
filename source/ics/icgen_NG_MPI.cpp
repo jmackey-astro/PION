@@ -179,20 +179,32 @@ int main(int argc, char **argv)
   }
   // ----------------------------------------------------------------
 
+
   // ----------------------------------------------------------------
-  int c2f = -1;
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
-    c2f = -1;
     if (l<SimPM.grid_nlevels-1) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += SimSetup->BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                    solver, l, grid[l]->BC_bd[i], 2,2);
+        }
       }
     }
-    if (c2f>=0) {
-      err += SimSetup->BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
-                solver, l, grid[l]->BC_bd[c2f], 2,2);
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+          err += SimSetup->BC_update_COARSE_TO_FINE_RECV(SimPM,
+                    solver,l,grid[l]->BC_bd[i],SimPM.levels[l].step);
+        }
+      }
     }
+  }
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+  
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -202,7 +214,8 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }

@@ -105,6 +105,10 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
     case DMACH2:
     case BCMPI:
     case COARSE_TO_FINE:
+    case COARSE_TO_FINE_SEND:
+    case COARSE_TO_FINE_RECV:
+    case FINE_TO_COARSE_SEND:
+    case FINE_TO_COARSE_RECV:
       //
       // boundaries not affected by NG grid are updated elsewhere
       //     
