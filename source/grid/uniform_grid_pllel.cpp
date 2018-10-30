@@ -258,12 +258,10 @@ int UniformGridParallel::setup_flux_recv(
     }
     if (edge<0) {
       cout <<"no edges adjacent to l+1 level\n";
-      flux_update_recv.resize(2*G_ndim);
-      for (int d=0; d<2*G_ndim; d++) {
-        flux_update_recv[d].fi.resize(1);
-        flux_update_recv[d].fi[0] = 0;
-      }
-      break;
+      flux_update_recv.resize(1);
+      flux_update_recv[0].fi.resize(1);
+      flux_update_recv[0].fi[0] = 0;
+      return 0;
     }
 
     size_t nel = 0;
@@ -284,11 +282,11 @@ int UniformGridParallel::setup_flux_recv(
         pos[0] = G_xmax[0]+G_dx;
       }
       ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
-      flux_update_recv[0].rank = ch;
+      flux_update_recv[0].rank.push_back(ch);
       flux_update_recv[0].fi.resize(1);
-      flux_update_recv[d].fi[0] = 
-                      mem.myalloc(flux_update_recv[d].fi[0],1);
-      fi = flux_update_recv[d].fi[0];
+      flux_update_recv[0].fi[0] = 
+                      mem.myalloc(flux_update_recv[0].fi[0],1);
+      fi = flux_update_recv[0].fi[0];
       fi->c.resize(nc);
       fi->area.resize(nc);
       fi->flux = mem.myalloc(fi->flux,G_nvar);
@@ -324,6 +322,7 @@ int UniformGridParallel::setup_flux_recv(
       nel = G_ng[perp[0]]*G_ng[perp[1]]/4;
       rep.error("Write 3D flux recv setup code",0);
     }
+  } // child grids?
 
   return 0;
 }
@@ -343,7 +342,7 @@ int UniformGridParallel::setup_flux_send(
 {
 //#ifdef DEBUG_NG
   cout <<" UniformGridParallel::setup_flux_send() send to level=";
-  cout <<l<<"\n";
+  cout <<lm1<<"\n";
 //#endif
 
   int err = UniformGrid::setup_flux_send(par,lm1);
@@ -351,11 +350,11 @@ int UniformGridParallel::setup_flux_send(
 
   // Add ranks for each send, based on parent rank.
   int l = lm1+1; // my level
-  unsigned int ns = flux_update_send.size();
+  int ns = flux_update_send.size();
   if (ns != 2*G_ndim) rep.error("bad flux send size",ns);
 
   if (par.levels[l].MCMD.get_nproc()==1)  {
-    for (unsigned int d=0;d<ns;d++)
+    for (int d=0;d<ns;d++)
       flux_update_send[d].rank.push_back(0);
   }
   else {
@@ -364,7 +363,7 @@ int UniformGridParallel::setup_flux_send(
     // my level.
     class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
     int pproc = MCMD->parent_proc;
-    for (unsigned int d=0;d<ns;d++) {
+    for (int d=0;d<ns;d++) {
       // if boundary element is not empty, send data to parent.
       if (flux_update_send[d].fi[0] !=0) {
         flux_update_send[d].rank.push_back(pproc);
@@ -391,7 +390,7 @@ int UniformGridParallel::setup_flux_send(
       d = 2*ax+1;
       p1=-1;
       p2=-1;
-      if (flux_update_send[d][0] !=0) {
+      if (flux_update_send[d].fi[0] !=0) {
         for (int i=0;i<G_ndim;i++) pos[i] = G_xmax[i];
         pos[ax] -= G_dx;
         p1 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
