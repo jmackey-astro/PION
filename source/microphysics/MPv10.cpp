@@ -1092,7 +1092,7 @@ int MPv10::ydot(
   }
   else if ( T<T_min){
     T = T_min;
-  }/*
+  }
   int temp_index = int (( log10f(T) - log10f(T_min) ) / delta_log_temp );
   double dT = T - Temp_Table[temp_index];
 
@@ -1170,7 +1170,7 @@ int MPv10::ydot(
   }
   
   
-  /*
+  
   /// ============== Radiative recombination IN to this species ======================
   /// y_dot(ion) += recomb_rate(ip1)*n_e*y(ip1) <<< add recombination from more ionised species to current species
   /// ================================================================================  
@@ -1218,7 +1218,7 @@ int MPv10::ydot(
       }
     species_counter ++;
     }
-  }*/
+  }
   
   //
   // The Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
