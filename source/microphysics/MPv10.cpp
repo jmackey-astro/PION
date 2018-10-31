@@ -67,8 +67,8 @@ void MPv10::get_error_tolerances(
       )
 {
   *reltol = JM_RELTOL;
-  for (int i=0;i<N_species; i++) atol[i] = MPv10_ABSTOL; ///< species
-  atol[N_equations-1] = JM_MINERG; ///< internal energy is last element
+  atol[0] = MPv10_ABSTOL; ///< minimum neutral fraction I care about.
+  atol[1] = JM_MINERG; ///< E_int: for n=1.0, T=1.0e4, ==> E=2.07e-12, so say 1e-17?
   return;
 }
 
@@ -102,7 +102,7 @@ MPv10::MPv10(
       )
 : microphysics_base(ephys,rsrcs),
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys),
-  T_min(1.0e0), T_max(1.0e9), Num_temps(1.0e2)
+  T_min(1e0), T_max(1e9), Num_temps(1e2)
   {
   int max_num_species = 5; //number of species recorded in each table, i.e. the number of possible species recognised by the module
   
@@ -114,7 +114,7 @@ MPv10::MPv10(
                                                 24.58741, 54.41778, -1.0e99}; //energy (eV) required to raise ion from species i to species i+1
   for (int i=0; i<max_num_species; i++) ionisation_pot_arr[i]*=erg_per_eV; //convert eV to erg
   ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[5]);
-   
+
   /// ===================================================================
   ///  Initialise Temperature, Recombination (radiative + dielectronic),
   ///       Ionisation, and (recomb and ionisation) Slopes Tables
@@ -187,7 +187,6 @@ MPv10::MPv10(
       ionise_slope_table[row][col] = ionise_slope_arr[row][col];
    }
   }
-
   
   k_B = pconst.kB();  // Boltzmann constant.
   m_p = pconst.m_p(); // Proton mass.
@@ -287,7 +286,6 @@ MPv10::MPv10(
   cout << "\nAfter reading in tracers, N_species=" << N_species;
   cout << ", N_elements=" << N_elem << "\n\n";  
   
-  
   // ================================================================
   // ================================================================
 #ifdef TESTING
@@ -357,11 +355,8 @@ MPv10::MPv10(
 }
 
 
-
 // ##################################################################
 // ##################################################################
-
-
 
 void MPv10::species_tracer_initialise(
     const std::string *tracers,  ///< List of what the tracer variables mean.
@@ -371,8 +366,7 @@ void MPv10::species_tracer_initialise(
     int el_symbol_length, ///< e.g. "H" is of length 1, "He" of length 2.
     int el_index, /// element index in N_species_by_elem, used in for loops for densities etc
     int length /// < length of tracers vector
-    )
-{
+    ){
   N_species_by_elem[el_index]++;
   y_ion_index_prim.push_back(lv_y_ion_index_offset + N_species);
   y_ion_index_local.push_back(N_species);
@@ -432,10 +426,8 @@ void MPv10::species_tracer_initialise(
 }
 
 
-
 // ##################################################################
 // ##################################################################
-
 
 
 void MPv10::setup_local_vectors()
@@ -451,12 +443,14 @@ void MPv10::setup_local_vectors()
   lv_eint = N_species;
   //cout<<"!!!!!!!!!!!!!!!!!! nvl="<<nvl<<"\n";
   return;
-}
+  }
 
+  
 
 
 // ##################################################################
 // ##################################################################
+
 
 
 
@@ -978,18 +972,14 @@ double MPv10::timescales_RT(
   // timestep criterion, rather than the default of absolute change in neutral
   // fraction.
   //
-#ifdef USE_RELATIVE_NEUFRAC_DTLIMIT
-  t = min(t,DTFRAC*max(5.0e-2,NV_Ith_S(y_in, lv_H0))/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE));
-  //cout <<"using neutral fraction.\n";
-#else
-  t = min(t,DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE));
+  //LOOP OVER ALL THE IONS HERE, NOT JUST LV_H0, AND THAT SHOULD FIX YOUR SEGFAULT PROBLEM.
+  for (int v=0;v<N_equations;v++) t = min(t,DTFRAC/(fabs(NV_Ith_S(y_out, v))+TINYVALUE));
   //cout <<"limit by dx: dt="<<DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE)<<"\n";
-#endif
 
 
 #ifdef MPv10_DEBUG
   if (t<3.16e9) {
-  cout <<"MP timescales: xdot="<<NV_Ith_S(y_out, lv_H0);
+  //cout <<"MP timescales: xdot="<<NV_Ith_S(y_out, lv_H0);
   cout <<", Edot="<<NV_Ith_S(y_out, lv_eint)<<" t_x="<<t;
   }
 #endif // MPv10_DEBUG
@@ -1170,7 +1160,7 @@ int MPv10::ydot(
   }
   
   
-  
+  /*
   /// ============== Radiative recombination IN to this species ======================
   /// y_dot(ion) += recomb_rate(ip1)*n_e*y(ip1) <<< add recombination from more ionised species to current species
   /// ================================================================================  
@@ -1218,21 +1208,23 @@ int MPv10::ydot(
       }
     species_counter ++;
     }
-  }
+  }*/
   
   //
   // The Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
   //
   Edot -= cooling_rate_SD93CIE(T) *ne;
-  Edot = 1e-15;
+  //Edot = 1e-15;
   NV_Ith_S(y_dot,lv_eint) = Edot;
 
   double dydt[N_equations];
   for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
   rep.printVec("ydot",dydt,N_equations);
   
-  cout << "Not broken here?\n";
   return 0;
 }
+
+
+
 
 
