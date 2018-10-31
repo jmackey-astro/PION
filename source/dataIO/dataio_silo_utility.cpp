@@ -111,12 +111,19 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(
     cout <<"\tRead nproc="<<nproc<<"\tand numfiles="<<numfiles<<"\n";
 #endif
     //    groupsize = nproc/numfiles;
-    nproc = nproc;
+    //nproc = nproc;
   }
   DBClose(dbfile); dbfile=0; 
   
+  string::size_type pos = fname.find("_0000");
+  if (pos==string::npos) {
+    cout <<"didn't find _0000 in file, so we are reading serial file\n";
+    err = 1;
+  }
+
   *np = nproc;
   *nf = numfiles;
+  cout <<"dataio_silo_utility::SRAD_get_nproc_numfiles returning "<<err<<"\n";
   return err;
 }
 
@@ -522,6 +529,7 @@ int dataio_silo_utility::ReadData(
   // Loop over grid levels, and read data for each level.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
+    cout <<" reading data on level "<<l<<", nlevels="<<SimPM.grid_nlevels<<"\n";
     // for now read a different file for each level in the NG grid.
     // If more than one level of grid, look for level in filename:
     string::size_type p;
