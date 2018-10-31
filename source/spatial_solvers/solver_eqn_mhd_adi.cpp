@@ -183,17 +183,15 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
     double DivVl = Divergence(Cl,1,indices, grid);
     double DivVr = Divergence(Cr,1,indices, grid);
-      
-    double Gradx = GradZone(grid,Cl,0,1,PG);
-    double Grady = GradZone(grid,Cl,1,1,PG);
-    double Gradz = GradZone(grid,Cl,2,1,PG);
-    double Gradl = Gradx + Grady + Gradz;
     
-    Gradx = GradZone(grid,Cr,0,1,PG);
-    Grady = GradZone(grid,Cr,1,1,PG);
-    Gradz = GradZone(grid,Cr,2,1,PG);
-    double Gradr = Gradx + Grady + Gradz;
+    double Gradl = 0.0;
+    double Gradr = 0.0;
+    for (int i=0; i<grid->Ndim(); i++){  
+      Gradl = Gradl + GradZone(grid,Cl,i,1,PG);
+      Gradr = Gradr + GradZone(grid,Cr,i,1,PG);
+    }
 
+    if (Gradl>0.0) cout << "Left gradient: " << Gradl << " Right gradient: " << Gradr << "\n";
 #ifdef TESTING
     if (!isfinite(DivVl) ||
         !isfinite(DivVr) ) {
@@ -201,15 +199,18 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       cout << DivVr <<"\n";
     }
 #endif
-    if ((DivVl<0 || DivVr<0) // compressive motion check
-        && (Gradl>5 || Gradr>5) // strong-gradient zones check
-        ){
+    if ((DivVl<0 && Gradl>5) || (DivVr<0 && Gradr>5)){ 
+    // compressive motion & strong-gradient zones check
+    // Migone et al 2012
       //
       // HLL solver -- Miyoshi and Kusano (2005) (m05)
       //
+       ///if (DivVl<0 && Gradl>5){rep.printVec("~~~~ HLL left switch!!!! ~~~~",Cl->pos,FV_gndim);}
+       ///if (DivVr<0 && Gradr>5){rep.printVec("~~~~ HLL right switch!!!! ~~~~",Cr->pos,FV_gndim);}
       err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux);
     }
     else {
+      ///cout << "HLLD!!!!\n";
       err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
     }
   }
