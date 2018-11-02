@@ -1002,7 +1002,8 @@ void setup_fixed_grid::setup_dataio_class(
 
   case 1: // Start From ASCII Parameterfile.
     dataio = new dataio_text(par);
-    rep.error("dataio_text initialisation",dataio);
+    if (!dataio)
+      rep.error("dataio_text initialisation",dataio);
     break;
 
 #ifdef FITS

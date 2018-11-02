@@ -11,7 +11,7 @@ gridtype 1
 # Type of Equations to Solve {hd, mhd, ...}
 eqn  i-mhd
 eqnndim 3
-solver RSlinear
+solver HLLD
 nvar 8
 
 ntracer 0
@@ -72,7 +72,7 @@ Ymax 0.005
 Zmax 1.0
 
 # Data Output Path
-OutputPath ../results/
+OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType text
 # Output data to file every nth timestep. (n=0 means only at the end).
@@ -87,7 +87,9 @@ OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition {FIXED, ABSORBING, PERIODIC, ...}
-BC XNout_XPout
+BC_XN outflow
+BC_XP outflow
+#XNout_XPout
 #BC XNout_XPfix_YNout_YPout
 #BC XNout_XPout_YNout_YPout_ZNout_ZPout
 
