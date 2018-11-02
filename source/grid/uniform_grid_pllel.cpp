@@ -217,6 +217,8 @@ int UniformGridParallel::setup_flux_recv(
           flux_update_recv[el].fi.resize(1);
           flux_update_recv[el].fi[0] = 0;
         }
+        flux_update_recv[el].dir = d;
+        flux_update_recv[el].ax  = d/2;
         flux_update_recv[el].Ncells = nc;
         flux_update_recv[el].rank.push_back(
                                         MCMD->child_procs[ic].rank);
@@ -283,6 +285,8 @@ int UniformGridParallel::setup_flux_recv(
       }
       ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
       flux_update_recv[0].rank.push_back(ch);
+      flux_update_recv[0].dir = edge;
+      flux_update_recv[0].ax  = axis;
       flux_update_recv[0].fi.resize(1);
       flux_update_recv[0].fi[0] = 
                       mem.myalloc(flux_update_recv[0].fi[0],1);
@@ -299,19 +303,43 @@ int UniformGridParallel::setup_flux_recv(
       // if they exist, and then add the cells.
       flux_update_recv.resize(2);
       int perp = axis+1 % G_ndim;
-      nel = G_ng[perp]/2;
-      if (edge%2==0) {
-        for (int i=0;i<G_ndim;i++) pos[i] = G_xmin[i];
-        pos[axis] -= G_dx;
-        //offset perp by 0.25/0.75, depending on which child.
-      }
-      else {
-        for (int i=0;i<G_ndim;i++) pos[i] = G_xmax[i];
-        pos[axis] += G_dx;
-      }
-      ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
-      rep.error("Write 2D flux recv setup code",0);
-    }
+      nel = G_ng[perp]/2;  // child covers half of the grid.
+      for (int ic=0;ic<2;ic++) {
+        pos[perp] = G_xmin[perp]+0.25*G_range[perp];
+        if (edge%2==0) {
+          // negative direction
+          pos[axis] = G_xmin[axis] - G_dx; // just off grid.
+        }
+        else {
+          // positive direction
+          pos[axis] = G_xmax[axis] + G_dx; // just off grid.
+        }
+        ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
+        if (ch>=0) {
+          flux_update_recv[ic].rank.push_back(ch);
+          flux_update_recv[ic].dir = edge;
+          flux_update_recv[ic].ax  = axis;
+          flux_update_recv[ic].fi.resize(nel);
+          for (size_t i=0; i<nel; i++) {
+            flux_update_recv[ic].fi[i] = 
+                            mem.myalloc(flux_update_recv[ic].fi[i],1);
+            fi = flux_update_recv[ic].fi[i];
+            fi->c.resize(nc);
+            fi->area.resize(nc);
+            fi->flux = mem.myalloc(fi->flux,G_nvar);
+            for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+          }
+          cout <<"FLUX: adding "<<nel<<" cells to recv boundary.\n";
+          add_cells_to_face(static_cast<enum direction>(edge),G_ixmin,
+                      G_ixmax,G_ng,1,flux_update_recv[ic]);
+        }
+        else {
+          // no child here, so just create one null element
+          flux_update_recv[ic].fi.resize(1);
+          flux_update_recv[ic].fi[0] = 0;
+        }
+      } // loop over child grids (up to 2)
+    } // 2D
     else {
       // up to 4 grids on l+1, so go through them one by one, see if
       // they exist, and add the cells.
@@ -367,7 +395,7 @@ int UniformGridParallel::setup_flux_send(
       // if boundary element is not empty, send data to parent.
       if (flux_update_send[d].fi[0] !=0) {
         flux_update_send[d].rank.push_back(pproc);
-      }
+     }
     }
     for (int ax=0;ax<G_ndim;ax++) {
       // check if parent boundary is also my boundary, in which
@@ -386,6 +414,8 @@ int UniformGridParallel::setup_flux_send(
         cout<<", and ngb="<<p2<<"\n";
         if (p2!=pproc) flux_update_send[d].rank.push_back(p2);
       }
+      flux_update_send[d].dir = d;
+      flux_update_send[d].ax  = ax;
       // now positive direction
       d = 2*ax+1;
       p1=-1;
@@ -400,6 +430,8 @@ int UniformGridParallel::setup_flux_send(
         cout<<", and ngb="<<p2<<"\n";
         if (p2!=pproc) flux_update_send[d].rank.push_back(p2);
       }
+      flux_update_send[d].dir = d;
+      flux_update_send[d].ax  = ax;
     } // loop over axes
   } // if nproc>1
 

@@ -140,7 +140,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   }
   cout <<endl;
 #endif
+#ifdef TEST_MPI_NG
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+#endif
   int err=0;
   //
   // if on an odd-numbered step, then need to update the data on the
@@ -478,7 +480,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
     err = COMM->receive_double_data(
-                              from_rank, recv_tag, recv_id, n_el, buf);
+                          from_rank, recv_tag, recv_id, n_el, buf);
     if (err) rep.error("(BC_update_C2F_RECV) getdata failed",err);
 
     //

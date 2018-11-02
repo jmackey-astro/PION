@@ -59,6 +59,8 @@ struct flux_update {
   vector<struct flux_interface *> fi;
   int Ncells;    ///< number of cells contributing.
   std::vector<int> rank; ///< list of grid ranks to send to/recv from
+  int dir; ///< direction of face (outward for send)
+  int ax;  ///< axis of normal vector to face.
 };
 
 
