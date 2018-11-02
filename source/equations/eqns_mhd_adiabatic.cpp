@@ -141,7 +141,7 @@ int eqns_mhd_ideal::UtoP(
     }
     // reset all variables because a negative density will change the sign of 
     // all of the velocities!
-    p[eqRO] = BASE_RHO;
+    p[eqRO] = BASE_RHO*eq_refvec[eqRO];
     p[eqVX] *= u[eqRHO]/p[eqRO];
     p[eqVY] *= u[eqRHO]/p[eqRO];
     p[eqVZ] *= u[eqRHO]/p[eqRO];
@@ -187,7 +187,7 @@ int eqns_mhd_ideal::UtoP(
       cout <<"(eqns_mhd_ideal::UtoP) negative pressure...p="<<p[eqPG];
       cout <<", correcting, count="<<ct_pg<<"\n";
     }
-    p[eqPG] = 0.01*p[eqRO];
+    p[eqPG] = eq_refvec[eqPG]*1.0e-6;
     err += 1;
   }
 #endif // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE

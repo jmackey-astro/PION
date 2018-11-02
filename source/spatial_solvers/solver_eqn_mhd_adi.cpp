@@ -191,7 +191,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       Gradr = Gradr + GradZone(grid,Cr,i,1,PG);
     }
 
-    if (Gradl>0.0) cout << "Left gradient: " << Gradl << " Right gradient: " << Gradr << "\n";
+    //if (Gradl>0.0) cout << "Left gradient: " << Gradl << " Right gradient: " << Gradr << "\n";
 #ifdef TESTING
     if (!isfinite(DivVl) ||
         !isfinite(DivVr) ) {
