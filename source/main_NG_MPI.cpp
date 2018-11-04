@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     }
   }
 #ifndef TESTING
-  rep.kill_stdout_from_other_procs(0);
+  //rep.kill_stdout_from_other_procs(0);
 #endif
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion NG MPI v1.0 running   ----------------\n";

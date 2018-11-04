@@ -51,7 +51,7 @@ class sim_control_NG :
       int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
       int,      ///< Number of command-line arguments.
       string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
@@ -63,7 +63,7 @@ class sim_control_NG :
   /// all in a loop which runs until end-of-sim is reached.
   ///
   virtual int Time_Int(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   //---------------------------------------
@@ -72,8 +72,8 @@ class sim_control_NG :
   ///
   /// Calculates total values of conserved quantities.
   ///
-  int initial_conserved_quantities(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+  virtual int initial_conserved_quantities(
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
 #ifdef BLAST_WAVE_CHECK
@@ -82,7 +82,7 @@ class sim_control_NG :
   /// position and output to screen.
   ///
   void calculate_blastwave_radius(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///<  grid pointers.
       );
 #endif // BLAST_WAVE_CHECK
 
@@ -131,8 +131,8 @@ class sim_control_NG :
   /// Checks Total energy relative to initial value, and prints a
   /// message if not.
   ///
-  int check_energy_cons(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+  virtual int check_energy_cons(
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   

@@ -53,7 +53,7 @@ class sim_control_NG_MPI :
       int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
       int,      ///< Number of command-line arguments.
       string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
@@ -65,7 +65,7 @@ class sim_control_NG_MPI :
   /// end-of-sim is reached.
   /// 
   int Time_Int(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   protected:
@@ -134,6 +134,21 @@ class sim_control_NG_MPI :
   /// correction algorithms.  Should be cleared at the beginning
   /// of each timestep.
   std::vector<string> BC89_flux_send_list;
+
+  ///
+  /// Calculates total values of conserved quantities.
+  ///
+  virtual int initial_conserved_quantities(
+      vector<class GridBaseClass *> &  ///< grid pointers.
+      );
+
+  ///
+  /// Checks Total energy relative to initial value, and prints a
+  /// message if not.
+  ///
+  int check_energy_cons(
+      vector<class GridBaseClass *> &  ///< grid pointers.
+      );
 
 }; // sim_control_NG_MPI
 

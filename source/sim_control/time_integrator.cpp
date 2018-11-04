@@ -638,9 +638,14 @@ int time_integrator::dynamics_dU_column(
     cerr << SimPM.tmOOA <<".\n";
     return(1);
   }
+  cout <<"dynamics_dU_column: d+="<<posdir<<", d-="<<negdir;
+  cout <<", csp="<<csp<<", OOA="<<SimPM.spOOA<<"\n";
   int err = 0;
   enum axes axis = spatial_solver->GetDirection();
   double dx = grid->DX();
+#ifdef TEST_CONSERVATION 
+  double dE=0.0, dMX=0.0, dMY=0.0, dMZ=0.0, dM=0.0;
+#endif
 
   // Calculate Flux at positive (right) boundary of cell for the
   // current cell (Fr_this) and the negative neighbour (Fr_prev).
@@ -745,23 +750,31 @@ int time_integrator::dynamics_dU_column(
     double dA=spatial_solver->CellInterface(cpt,posdir,dx);
     if(csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
-       !(cpt->isgd) && npt->isgd) {
-      //cout <<"entering domain\n";
-      initMASS+= Fr_this[RHO]*dt*dA;
-      initERG += Fr_this[ERG]*dt*dA;
-      initMMX += Fr_this[MMX]*dt*dA;
-      initMMY += Fr_this[MMY]*dt*dA;
-      initMMZ += Fr_this[MMZ]*dt*dA;
+       !(cpt->isgd) && npt->isgd && !npt->isbd) {
+//#ifdef TESTING
+      if (!pconst.equalD(Fr_this[MMX],0.0) && !pconst.equalD(dA,0.0)) {
+        cout <<"entering domain: F="<<Fr_this[MMX]<<". ";
+        cout <<", dA="<<dA<<"\n";
+//        rep.printVec("pos",cpt->pos,SimPM.ndim);
+//        rep.printVec("Ph",cpt->Ph,SimPM.nvar);
+//        CI.print_cell(npt);
+//      }
+//#endif
+      dM += Fr_this[RHO]*dt*dA;
+      dE += Fr_this[ERG]*dt*dA;
+      dMX += Fr_this[MMX]*dt*dA;
+      dMY += Fr_this[MMY]*dt*dA;
+      dMZ += Fr_this[MMZ]*dt*dA;
     }
     else if (csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
-       !(npt->isgd) && cpt->isgd) {
+       !(npt->isgd) && cpt->isgd && !npt->isbd) {
       //cout <<"leaving domain\n";
-      initMASS-= Fr_this[RHO]*dt*dA;
-      initERG -= Fr_this[ERG]*dt*dA;
-      initMMX -= Fr_this[MMX]*dt*dA;
-      initMMY -= Fr_this[MMY]*dt*dA;
-      initMMZ -= Fr_this[MMZ]*dt*dA;
+      dM -= Fr_this[RHO]*dt*dA;
+      dE -= Fr_this[ERG]*dt*dA;
+      dMX -= Fr_this[MMX]*dt*dA;
+      dMY -= Fr_this[MMY]*dt*dA;
+      dMZ -= Fr_this[MMZ]*dt*dA;
     }
 #endif // TEST_CONSERVATION
     //
@@ -803,11 +816,11 @@ int time_integrator::dynamics_dU_column(
       pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
       !(npt->isgd) && cpt->isgd) {
     //cout <<"leaving domain 2\n";
-    initMASS-= Fr_this[RHO]*dt*dA;
-    initERG -= Fr_this[ERG]*dt*dA;
-    initMMX -= Fr_this[MMX]*dt*dA;
-    initMMY -= Fr_this[MMY]*dt*dA;
-    initMMZ -= Fr_this[MMZ]*dt*dA;
+    dM -= Fr_this[RHO]*dt*dA;
+    dE -= Fr_this[ERG]*dt*dA;
+    dMX -= Fr_this[MMX]*dt*dA;
+    dMY -= Fr_this[MMY]*dt*dA;
+    dMZ -= Fr_this[MMZ]*dt*dA;
   }
 #endif // TEST_CONSERVATION
 
@@ -828,6 +841,23 @@ int time_integrator::dynamics_dU_column(
   edgeL     = mem.myfree(edgeL);
   edgeR     = mem.myfree(edgeR);
   pstar     = mem.myfree(pstar);
+
+#ifdef TEST_CONSERVATION
+#ifdef PARALLEL
+  dM = COMM->global_operation_double("SUM",dM);
+  dE = COMM->global_operation_double("SUM",dE);
+  dMX = COMM->global_operation_double("SUM",dMX);
+  dMY = COMM->global_operation_double("SUM",dMY);
+  dMZ = COMM->global_operation_double("SUM",dMZ);
+  cout <<"d="<<dM<<", "<<dE<<", "<<dMX<<", "<<dMY<<"\n";
+#endif
+  initMASS += dM;
+  initERG  += dE;
+  initMMX  += dMX;
+  initMMY  += dMY;
+  initMMZ  += dMZ;
+#endif // TEST_CONSERVATION
+
   return 0;
 }
 
