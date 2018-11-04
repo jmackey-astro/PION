@@ -53,7 +53,8 @@ class setup_fixed_grid : virtual public assign_update_bcs
   /// UniformGrid class -- uniform, cartesian, finite volume grid.
   ///
   virtual int setup_grid(
-      class GridBaseClass **, ///< address of pointer to grid.
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      //class GridBaseClass **, ///< address of pointer to grid.
       class SimParams &      ///< pointer to simulation parameters
       );
 
@@ -99,7 +100,8 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *  ///< pointer to grid.
+      vector<class GridBaseClass *> &  ///< grid pointers.
+      //class GridBaseClass *  ///< pointer to grid.
       );
 
   ///
@@ -159,7 +161,8 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
-      class GridBaseClass *  ///< pointer to grid.
+      class GridBaseClass *,  ///< pointer to grid.
+      const int   ///< level
       );
 
 }; // setup_fixed_grid

@@ -1437,6 +1437,7 @@ int UniformGrid::setup_flux_send(
 
     ncell[ax] = (ixmax[ax]-ixmin[ax])/G_idx;
     nface[ax] = ncell[ax]/2;  // # face elements on coarse grid
+    cout <<"axis "<<ax<<", ncell="<<ncell[ax]<<", nface="<<nface[ax]<<"\n";
 #ifdef DEBUG_NG
     if ( (ixmax[ax]-ixmin[ax]) % 2*G_idx !=0) {
       rep.error("interface region not divisible (send)!",
@@ -1478,18 +1479,19 @@ int UniformGrid::setup_flux_send(
   flux_update_send.resize(2*G_ndim);
   for (int d=0; d<2*G_ndim; d++) {
     if (send[d] == true) {
-#ifdef DEBUG_NG
+//#ifdef DEBUG_NG
       cout <<"d="<<d<<", nel="<<nel[d]<<"\n";
-#endif
+//#endif
       flux_update_send[d].fi.resize(nel[d]);
     }
     else {
       flux_update_send[d].fi.resize(1);
       flux_update_send[d].fi[0] = 0;
     }
-#ifdef DEBUG_NG
-    cout <<"d="<<d<<", nel="<<nel[d]<<"... allocating memory for "<<nel[d]<<" elements\n";
-#endif
+//#ifdef DEBUG_NG
+    cout <<"d="<<d<<", nel="<<nel[d]<<"... allocating memory for ";
+    cout <<nel[d]<<" elements\n";
+//#endif
     flux_update_send[d].Ncells = nc;
     for (size_t i=0; i<nel[d]; i++) {
       flux_update_send[d].fi[i] = 
@@ -1506,9 +1508,9 @@ int UniformGrid::setup_flux_send(
   // and that includes the interface.
   for (int d=0; d<2*G_ndim; d++) {
     if (send[d]) {
-#ifdef DEBUG_NG
+//#ifdef DEBUG_NG
       cout <<"d="<<d<<", nel="<<nel[d]<<"... adding cells to face\n";
-#endif
+//§#endif
       add_cells_to_face(static_cast<enum direction>(d),ixmin,ixmax,
                         nface,2,flux_update_send[d]);
     }
@@ -1557,7 +1559,7 @@ int UniformGrid::add_cells_to_face(
     flux.fi[0]->c[0] = c;
     c->F = mem.myalloc(c->F,G_nvar);
     c->isbd_ref[d] = true;
-    flux.fi[0]->area[0] = CellInterface(c,OppDir(d));
+    flux.fi[0]->area[0] = CellInterface(c,OppDir(d),0);
   } // 1D
 
   else if (G_ndim==2) {
@@ -1609,7 +1611,7 @@ int UniformGrid::add_cells_to_face(
         flux.fi[i]->c[ic] = c;
         c->F = mem.myalloc(c->F,G_nvar);
         c->isbd_ref[d] = true;
-        flux.fi[i]->area[ic] = CellInterface(c,OppDir(d));
+        flux.fi[i]->area[ic] = CellInterface(c,OppDir(d),0);
 #ifdef DEBUG_NG
         cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<"\n";
 #endif
@@ -1697,29 +1699,29 @@ int UniformGrid::add_cells_to_face(
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d),0);
         }
         else {
           // need to get 4 cells onto this face.
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d),0);
           m2 = NextPt(c,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[1] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d),0);
           m2 = NextPt(c,perpdir2);
           flux.fi[i*nface[perpaxis1]+j]->c[2] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d),0);
           m2 = NextPt(m2,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[3] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d),0);
         }
         for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);
       }

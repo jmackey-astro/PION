@@ -230,7 +230,7 @@ int NG_fine_to_coarse_bc::average_cells(
 #endif
     // get conserved vars for cell in fine grid, *cellvol.
     solver->PtoU(f->Ph, u, par.gamma);
-    vol = grid->CellVolume(f);
+    vol = grid->CellVolume(f,0);
     sum_vol += vol;
     for (int v=0;v<par.nvar;v++) cd[v] += u[v]*vol;
   }

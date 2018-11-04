@@ -212,7 +212,7 @@ int sim_control_pllel::Init(
   // Now set up the grid structure.
   grid.resize(1);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  err = setup_grid(&(grid[0]),SimPM);
+  err = setup_grid(grid,SimPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   SimPM.levels[0].grid=grid[0];
@@ -262,7 +262,7 @@ int sim_control_pllel::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, grid[0]);
+  err = boundary_conditions(SimPM, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
   err = assign_boundary_data(SimPM,0, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
@@ -394,13 +394,8 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: stepping forward in time\n";
 #endif
-    err+= advance_time(0, grid[0]);
-    rep.errorTest("(TIME_INT::advance_time) error",0,err);
+    advance_time(0, grid[0]);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
-    if (err!=0) {
-      cerr<<"(TIME_INT::advance_time) err! "<<err<<"\n";
-      return(1);
-    }
 #ifdef TESTING
     cout <<"MPI time_int: finished timestep\n";
 #endif

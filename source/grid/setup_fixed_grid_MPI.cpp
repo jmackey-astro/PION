@@ -75,13 +75,15 @@ setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 
 
 int setup_fixed_grid_pllel::setup_grid(
-      class GridBaseClass **grid, ///< address of pointer to computational grid.
+      vector<class GridBaseClass *> &g,  ///< address of vector of grid pointers.
+      //class GridBaseClass **grid, ///< address of pointer to computational grid.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
 #ifdef TESTING
   cout <<"setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
+  class GridBaseClass *grid = g[0];
   class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   if (SimPM.gridType!=1) {
@@ -132,19 +134,19 @@ int setup_fixed_grid_pllel::setup_grid(
 #endif
 
   if      (SimPM.coord_sys==COORD_CRT) {
-    *grid = new UniformGridParallel (
+    grid = new UniformGridParallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
-    *grid = new uniform_grid_cyl_parallel (
+    grid = new uniform_grid_cyl_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
-    *grid = new uniform_grid_sph_parallel (
+    grid = new uniform_grid_sph_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
       SimPM.Xmin, SimPM.Xmax);
@@ -154,16 +156,16 @@ int setup_fixed_grid_pllel::setup_grid(
   }
 
 
-  if (*grid==0)
-    rep.error("(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!", *grid);
+  if (grid==0)
+    rep.error("(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!", grid);
 
 #ifdef TESTING
   cout <<"(setup_fixed_grid_pllel::setup_grid) Done. ";
-  cout <<"&grid="<<grid<<", and grid="<<*grid<<", and";//<<"\n";
-  cout <<"\t DX = "<<(*grid)->DX()<<"\n";
-  dp.grid = (*grid);
+  cout <<"grid="<<grid<<", and";
+  cout <<"\t DX = "<<(grid)->DX()<<"\n";
+  dp.grid = (grid);
 #endif
-  cout <<"DX = "<<(*grid)->DX()<<"\n";
+  cout <<"DX = "<<(grid)->DX()<<"\n";
 
   return(0);
 }
@@ -318,7 +320,8 @@ int setup_fixed_grid_pllel::setup_raytracing(
 
 int setup_fixed_grid_pllel::boundary_conditions(
       class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
+      vector<class GridBaseClass *> &grid  ///< grid pointers.
+      //class GridBaseClass *grid ///< pointer to grid.
       )
 {
   // For uniform fixed cartesian grid.
@@ -328,13 +331,13 @@ int setup_fixed_grid_pllel::boundary_conditions(
   //
   // Choose what BCs to set up based on BC strings.
   //
-  int err = setup_boundary_structs(par,grid);
+  int err = setup_boundary_structs(par,grid[0],0);
   rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
 
   //
   // Ask grid to set up data for external boundaries.
   //
-  err = grid->SetupBCs(par);
+  err = grid[0]->SetupBCs(par);
   rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
 
 #ifdef TESTING
@@ -351,8 +354,9 @@ int setup_fixed_grid_pllel::boundary_conditions(
 
 
 int setup_fixed_grid_pllel::setup_boundary_structs(
-      class SimParams &par,     ///< pointer to simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid, ///< pointer to grid.
+      const int l
       )
 {
   string fname="setup_fixed_grid_pllel::setup_boundary_structs";
@@ -362,7 +366,7 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   //
   // call serial version of setBCtypes, to set up the boundaries
   //
-  int err = setup_fixed_grid::setup_boundary_structs(par,grid);
+  int err = setup_fixed_grid::setup_boundary_structs(par,grid,l);
   if (err) {
     rep.error("sfg_pllel::setup_boundary_structs:: serial",err);
   }
@@ -427,13 +431,13 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
                               (nx[ZZ]-1)*nx[YY]*nx[XX];
         break;
        default:
-        rep.error("setup_fixed_grid_pllel::setup_boundary_structs: Bad direction",i);
+        rep.error("sfg_pllel::setup_boundary_structs: Bad direction",i);
         break;
       } // set neighbour according to direction.
 
       if ( (ppar->ngbprocs[i]<0) ||
            (ppar->ngbprocs[i]>=ppar->get_nproc()) )
-        rep.error("setup_fixed_grid_pllel::setup_boundary_structs: Bad periodic \
+        rep.error("sfg_pllel::setup_boundary_structs: Bad periodic \
                    neighbour",ppar->ngbprocs[i]);
       if (ppar->ngbprocs[i] == ppar->get_myrank()) {
         //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: only one proc in dir [i]: "<<i<<"\n";

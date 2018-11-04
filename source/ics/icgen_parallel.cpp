@@ -141,7 +141,7 @@ int main(int argc, char **argv)
   //
   grid.resize(1);
   // Now set up the grid structure.
-  err = SimSetup->setup_grid(&(grid[0]),SimPM);
+  err = SimSetup->setup_grid(grid,SimPM);
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
   
@@ -185,7 +185,7 @@ int main(int argc, char **argv)
   // should really be already set to its correct value in the initial
   // conditions file.
   //
-  SimSetup->boundary_conditions(SimPM,grid[0]);
+  SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);

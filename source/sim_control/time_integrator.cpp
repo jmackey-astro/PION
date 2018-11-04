@@ -69,7 +69,7 @@ time_integrator::~time_integrator()
 // ##################################################################
 // ##################################################################
 
-int time_integrator::advance_time(
+double time_integrator::advance_time(
       const int level,          ///< level in grid hierarchy
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -138,7 +138,7 @@ int time_integrator::advance_time(
   SimPM.last_dt = SimPM.dt;
   SimPM.timestep++;
 
-  return 0;
+  return SimPM.dt;
 }
 
 

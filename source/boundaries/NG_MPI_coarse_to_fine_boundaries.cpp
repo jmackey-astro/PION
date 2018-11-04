@@ -194,7 +194,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       cell *c = b->NGsendC2F[ib]->c[c_iter];
       for (int v=0;v<par.nvar;v++) buf[ibuf+v]= c->Ph[v];
       ibuf += par.nvar;
-      buf[ibuf] = grid->CellVolume(c);
+      buf[ibuf] = grid->CellVolume(c,0);
       ibuf++;
       for (int v=0;v<par.ndim;v++)
         buf[ibuf+v]= static_cast<double>(c->pos[v]);

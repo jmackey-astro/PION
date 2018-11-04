@@ -39,8 +39,8 @@ class setup_fixed_grid_pllel :
   /// parameters to the UniformGrid class.
   ///
   int setup_grid(
-      class GridBaseClass **, ///< address of pointer to computational grid.
-      class SimParams &  ///< pointer to simulation parameters
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &  ///< simulation parameters
       );
 
   ///
@@ -58,8 +58,8 @@ class setup_fixed_grid_pllel :
   /// boundary cells as such.
   ///
   virtual int boundary_conditions(
-      class SimParams &,  ///< pointer to simulation parameters
-      class GridBaseClass *  ///< pointer to grid.
+      class SimParams &,  ///< simulation parameters
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   protected:
@@ -75,7 +75,8 @@ class setup_fixed_grid_pllel :
   ///
   virtual int setup_boundary_structs(
       class SimParams &,  ///< reference to SimParams list.
-      class GridBaseClass *grid ///< pointer to grid.
+      class GridBaseClass *grid, ///< pointer to grid.
+      const int          ///< unused
       );
 
 }; // setup_fixed_grid_pllel

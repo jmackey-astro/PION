@@ -130,7 +130,14 @@ int UniformGridParallel::setup_flux_recv(
 
   if (par.levels[0].MCMD.get_nproc()==1) {
     cout <<"setup_flux_recv(): nproc=1, calling serial version.\n";
-    return UniformGrid::setup_flux_recv(par,lp1);
+    int err = UniformGrid::setup_flux_recv(par,lp1);
+    rep.errorTest("UniformGrid flux setup",0,err);
+    err = flux_update_recv.size();
+    for (int i=0;i<err;i++) {
+      flux_update_recv[i].rank.push_back(0);
+      flux_update_recv[i].dir = i;
+    }
+    return 0;
   }
 
   //
@@ -145,6 +152,7 @@ int UniformGridParallel::setup_flux_recv(
 
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
+  cout <<"UniformGridParallel::setup_flux_recv: "<<nchild<<" child grids\n";
 
   // Two cases: if there are children, then part or all of grid is
   // within l+1 level.  If there are no children, then at most one
@@ -222,14 +230,16 @@ int UniformGridParallel::setup_flux_recv(
         flux_update_recv[el].Ncells = nc;
         flux_update_recv[el].rank.push_back(
                                         MCMD->child_procs[ic].rank);
-        for (size_t i=0; i<nel[el]; i++) {
-          flux_update_recv[el].fi[i] = 
-                          mem.myalloc(flux_update_recv[el].fi[i],1);
-          fi = flux_update_recv[el].fi[i];
-          fi->c.resize(nc);
-          fi->area.resize(nc);
-          fi->flux = mem.myalloc(fi->flux,G_nvar);
-          for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+        if (recv[el] == true) {
+          for (size_t i=0; i<nel[el]; i++) {
+            flux_update_recv[el].fi[i] = 
+                            mem.myalloc(flux_update_recv[el].fi[i],1);
+            fi = flux_update_recv[el].fi[i];
+            fi->c.resize(nc);
+            fi->area.resize(nc);
+            fi->flux = mem.myalloc(fi->flux,G_nvar);
+            for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+          }
         }
       } // loop over dims
 
@@ -382,8 +392,10 @@ int UniformGridParallel::setup_flux_send(
   if (ns != 2*G_ndim) rep.error("bad flux send size",ns);
 
   if (par.levels[l].MCMD.get_nproc()==1)  {
-    for (int d=0;d<ns;d++)
+    for (int d=0;d<ns;d++) {
       flux_update_send[d].rank.push_back(0);
+      flux_update_send[d].dir = d;
+    }
   }
   else {
     // always send to parent, sometimes send to neighbour of parent
@@ -395,7 +407,7 @@ int UniformGridParallel::setup_flux_send(
       // if boundary element is not empty, send data to parent.
       if (flux_update_send[d].fi[0] !=0) {
         flux_update_send[d].rank.push_back(pproc);
-     }
+      }
     }
     for (int ax=0;ax<G_ndim;ax++) {
       // check if parent boundary is also my boundary, in which

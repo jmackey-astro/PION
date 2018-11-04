@@ -37,7 +37,7 @@ using namespace std;
 #ifdef PARALLEL
 
 
-#define TEST_INT
+//#define TEST_INT
 
 // ##################################################################
 // ##################################################################
@@ -457,7 +457,7 @@ int sim_control_NG_MPI::Time_Int(
     // function also updates the next level twice, by calling itself
     // for the finer level, and so on.
     //
-    advance_time(0);
+    advance_time(0,grid[0]);
     //advance_step_OA1(0);
     SimPM.simtime = SimPM.levels[0].simtime;
     COMM->barrier("step");
@@ -535,10 +535,13 @@ double sim_control_NG_MPI::advance_step_OA1(
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   double ctime = SimPM.levels[l].simtime; // current time
-  class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<(SimPM.grid_nlevels-1)) ? false : true;
+
+  err = update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime,grid->RT);
+  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
 #ifdef TEST_INT
   cout <<"advance_step_OA1: child="<<child<<"\n";
@@ -783,10 +786,13 @@ double sim_control_NG_MPI::advance_step_OA2(
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   double ctime = SimPM.levels[l].simtime; // current time
-  class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<SimPM.grid_nlevels-1) ? false : true;
+
+  err = update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime,grid->RT);
+  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
 #ifdef TEST_INT
   cout <<"advance_step_OA2: child="<<child<<"\n";
@@ -1113,6 +1119,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
   // else we have to send data to at least one other MPI process:
   class GridBaseClass *grid = SimPM.levels[l].grid;
+  class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
   int n_send = grid->flux_update_send.size();
   for (int isend=0;isend<n_send;isend++) {
     // loop over boundaries (some send to more than one process)
@@ -1125,7 +1132,6 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     else {
       cout <<"send "<<isend<<" is not null: sending data.\n";
     }
-    rep.error("ADD CALL TO SERIAL IF SEND AND RECV HAVE SAME RANK",1);
     size_t n_el = fup->fi.size();
     size_t n_data = n_el * SimPM.nvar;
     pion_flt *data = 0; // buffer for sending by MPI
@@ -1145,6 +1151,10 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
     // loop over procs on level l-1 to send to.
     for (unsigned int ii=0; ii<fup->rank.size();ii++) {
+      if (fup->rank[ii] == MCMD->get_myrank()) {
+        cout <<"ignoring BC89 for isend="<<isend<<" (to myrank).\n";
+        continue;
+      }
 #ifdef TEST_BC89FLUX
       cout <<"BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
@@ -1190,7 +1200,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
   // loop over all boundaries that we need to receive
   double ftmp[SimPM.nvar], utmp[SimPM.nvar];
   class GridBaseClass *grid = SimPM.levels[l].grid;
+  class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
   int n_bd = grid->flux_update_recv.size();
+  
   for (int irecv=0;irecv<n_bd;irecv++) {
     struct flux_update *fup = &(grid->flux_update_recv[irecv]);
     // some recvs may be null, so we skip them:
@@ -1198,10 +1210,20 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       cout <<"recv "<<irecv<<" is null, continuing...\n";
       continue;
     }
+    else if (fup->rank[0] == MCMD->get_myrank()) {
+      cout <<"calling serial BC89 for irecv="<<irecv;
+      cout <<" (same rank). dir="<<fup->dir<<"\n";
+      int d = fup->dir;
+      struct flux_update *fsend = 
+                  &(SimPM.levels[l].child->flux_update_send[d]);
+      err = recv_BC89_flux_boundary(grid,*fsend,*fup,d,
+                      static_cast<axes>(fup->ax));
+      rep.errorTest("serial BC89 call",0,err);
+      continue;
+    }
     else {
       cout <<"recv "<<irecv<<" is not null: recving data.\n";
     }
-    rep.error("ADD CALL TO SERIAL IF SEND AND RECV HAVE SAME RANK",1);
 
     // Normally we have nchild*2*ndim boundaries, so the direction
     // associated with a given "irecv" is irecv%(2*ndim).
@@ -1325,7 +1347,6 @@ int sim_control_NG_MPI::grid_update_state_vector(
     rep.errorTest("return from recv_fluxes_F2C",0,err);
   }
 
-  rep.error("ENCAPSULATE SEND/RECV BC89 SERIAL INTO FUNCTIONS!",0);
   err = time_integrator::grid_update_state_vector(dt,step,
                                                    ooa,grid);
   rep.errorTest("return from grid_update_state_vec",0,err);
