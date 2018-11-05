@@ -638,8 +638,8 @@ int time_integrator::dynamics_dU_column(
     cerr << SimPM.tmOOA <<".\n";
     return(1);
   }
-  cout <<"dynamics_dU_column: d+="<<posdir<<", d-="<<negdir;
-  cout <<", csp="<<csp<<", OOA="<<SimPM.spOOA<<"\n";
+  //cout <<"dynamics_dU_column: d+="<<posdir<<", d-="<<negdir;
+  //cout <<", csp="<<csp<<", OOA="<<SimPM.spOOA<<"\n";
   int err = 0;
   enum axes axis = spatial_solver->GetDirection();
   double dx = grid->DX();
@@ -752,9 +752,9 @@ int time_integrator::dynamics_dU_column(
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
        !(cpt->isgd) && npt->isgd && !npt->isbd) {
 //#ifdef TESTING
-      if (!pconst.equalD(Fr_this[MMX],0.0) && !pconst.equalD(dA,0.0)) {
-        cout <<"entering domain: F="<<Fr_this[MMX]<<". ";
-        cout <<", dA="<<dA<<"\n";
+//      if (!pconst.equalD(Fr_this[MMX],0.0) && !pconst.equalD(dA,0.0)) {
+//        cout <<"entering domain: F="<<Fr_this[MMX]<<". ";
+//        cout <<", dA="<<dA<<"\n";
 //        rep.printVec("pos",cpt->pos,SimPM.ndim);
 //        rep.printVec("Ph",cpt->Ph,SimPM.nvar);
 //        CI.print_cell(npt);
