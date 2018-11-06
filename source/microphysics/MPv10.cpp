@@ -276,6 +276,7 @@ MPv10::MPv10(
     //=======Hydrogen========
     else if (s[0] =='H'){
       cout << "\n\nTesting " << s << "\n";
+      cout << "i= " << i << ", s=" << s <<", H_index = " << H_index <<"\n";
       species_tracer_initialise(tracers, i, s, "H", 1, H_index, len);
       y_ip1_index_tables.push_back(-1); //doesn't exist in tables
       y_ion_index_tables.push_back(1); //index of H1+ in tables
@@ -378,7 +379,6 @@ void MPv10::species_tracer_initialise(
   ss_e >> num_elec_int; 
   /// Record the electron number and He_ion_index vector (used to identify tracer index from string)
   y_ion_num_elec.push_back(num_elec_int);
-  He_ion_index[num_elec_int-1] = lv_y_ion_index_offset + N_species;
         
   /// Define the tracer for the next ion up / down in tracers list
   stringstream ss_ip1;        
@@ -473,7 +473,7 @@ MPv10::~MPv10()
 //NOTE This is currently incorrect, but I'm not sure if it's ever called anywhere, so I'll leave it for now...
 int MPv10::Tr(const string s)
 {
-  if (s.substr(0,2)=="He"){
+  /*if (s.substr(0,2)=="He"){
     int num_elec_int; 
     stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
     int ion_index = He_ion_index[num_elec_int-1];
@@ -485,7 +485,7 @@ int MPv10::Tr(const string s)
     int ion_index = H_ion_index[num_elec_int-1];
     return ion_index;
   }
-  else { return-1;}
+  else { return-1;}*/
     
 }
 
@@ -1046,6 +1046,10 @@ int MPv10::ydot(
   // Find internal energy
   double E_in      = NV_Ith_S(y_now,lv_eint);
   cout << "E_in = "<< E_in << "\n";
+    double dydt[N_equations];
+  for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
+  rep.printVec("ydot going in",dydt,N_equations);
+
   // Use E_in, y_ion_frac and number density to determine temperature
   double T = get_temperature(y_ion_frac, X_elem_number_density, E_in);
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
@@ -1087,14 +1091,89 @@ int MPv10::ydot(
   double dT = T - Temp_Table[temp_index];
 
 
-  // **JM** Somewhere there is a problem here, because the y fraction of He+ goes negative
-      // Also all of the rates for the species seem to be negative.
-      // I'd ignore the chemical heating/cooling for now, so I set Edot to zero at the end.
-      // We should be able to get sensible abundances without the heating/cooling first.
-  
-  // **MG** There was a bug way at the top where y_im1_index_local was defined, making it out of bounds. Fixed now.
- 
+  /*
+  /// ====== Collisional ionisation INTO this species, OUT of previous species ========
+  /// this_y_dot(ion) += ionise_rate(im1)*n_e*y(im1) <<< add ionisation from less ionised species to current species
+  /// =================================================================================
+  species_counter = 0;
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
+    int N_elem_species=N_species_by_elem[elem];
+    double neutral_frac = X_neutral_frac[elem];   
+    
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+      //if the less ionised species exists in tracer list
+      if (y_im1_index_local[species_counter] != -1){ 
+        double lower_ion_rate = ionise_rate_table[y_im1_index_tables[species_counter]] [ temp_index];
+        double upper_ion_rate_contrib = dT * ionise_slope_table[ y_im1_index_tables[species_counter]] [temp_index];
+        double ionise_rate_im1 = lower_ion_rate + upper_ion_rate_contrib;
+        
+        //if the less ionised species ISN'T neutral 
+        if (y_im1_index_local[species_counter] !=-2){
+          double this_y_dot = ionise_rate_im1 *  NV_Ith_S(y_now, y_im1_index_local[species_counter]) *ne;   
+          cout << "ci in [" << species_counter << "] =" << this_y_dot <<"\n";
+          cout << "ci out [" << (species_counter-1) << "] =" << this_y_dot<<"\n";
+          NV_Ith_S(y_dot, y_ion_index_local[species_counter]) += this_y_dot;
+          NV_Ith_S(y_dot, y_im1_index_local[species_counter]) -= this_y_dot;
+          
+          /// =========  COOLING DUE TO IONISATION INTO THIS SPECIES ===========
+          double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
+          Edot -= ion_pot * this_y_dot;
+        }
+        
+        //if the less ionised species IS neutral
+        else{
+          double this_y_dot = ionise_rate_im1 * neutral_frac * ne;
+          NV_Ith_S(y_dot, y_ion_index_local[species_counter]) += this_y_dot;
+          cout << "ci in [" << species_counter  << "] =" << this_y_dot<<"\n";
 
+          /// =========  COOLING DUE TO IONISATION INTO THIS SPECIES ===========
+          double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
+          Edot -= ion_pot * this_y_dot;
+        }
+      }
+      species_counter ++;
+    }
+  }*/
+  /// ============== Radiative recombination OUT OF this species =====================
+  /// y_dot(ion) -= recomb_rate(ion)*n_e*y(ion) <<< subtract recombination to less ionised species
+  /// ================================================================================  
+  species_counter = 0;
+  for (int elem=0;elem<N_elem;elem++){//loop over every element
+    int N_elem_species=N_species_by_elem[elem];
+    
+    for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
+      //if the less ionised species exists
+      if (y_im1_index_local[species_counter] != -1){ 
+        double lower_recomb_rate = recomb_rate_table [y_ion_index_tables[species_counter] ][temp_index];
+        double upper_recomb_rate_contrib = dT * ionise_slope_table[y_ion_index_tables[species_counter] ][temp_index];
+        double recomb_rate_ion = lower_recomb_rate + upper_recomb_rate_contrib;
+
+        double this_y_dot = recomb_rate_ion * NV_Ith_S(y_now, y_ion_index_local[species_counter])*ne;
+        //Subtract this rate of change from the current species
+        NV_Ith_S(y_dot, y_ion_index_local[species_counter]) -= this_y_dot;
+        //add this rate of change to the recombination species (provided it isn't neutral)
+        /*if (y_im1_index_local[species_counter] !=-2){
+          NV_Ith_S(y_dot, y_im1_index_local[species_counter]) += this_y_dot;
+        }*/
+        cout << "y_dot [" << species_counter << "] -=" << this_y_dot <<"\n";
+        for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
+        rep.printVec("ydot",dydt,N_equations);
+        /// =========  HEATING DUE TO RECOMBINATION OUT OF THIS SPECIES ===========
+        double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
+        Edot += ion_pot * this_y_dot;
+      }
+    species_counter ++;
+    }
+  }
+  
+  
+  
+  
+  
+
+  
+ 
+  /*
   /// ================= Collisional ionisation INTO this species ======================
   /// this_y_dot(ion) += ionise_rate(im1)*n_e*y(im1) <<< add ionisation from less ionised species to current species
   /// =================================================================================
@@ -1112,7 +1191,7 @@ int MPv10::ydot(
         
         //if the less ionised species ISN'T neutral 
         if (y_im1_index_local[species_counter] !=-2){
-          double this_y_dot = ionise_rate_im1 *  NV_Ith_S(y_now, y_im1_index_local[species_counter]) *ne;          
+          double this_y_dot = ionise_rate_im1 *  NV_Ith_S(y_now, y_im1_index_local[species_counter]) *ne;   
           NV_Ith_S(y_dot, y_ion_index_local[species_counter]) += this_y_dot;
           
           /// =========  COOLING DUE TO IONISATION INTO THIS SPECIES ===========
@@ -1214,12 +1293,12 @@ int MPv10::ydot(
   // The Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
   //
   Edot -= cooling_rate_SD93CIE(T) *ne;
-  //Edot = 1e-15;
+  Edot = 1e-15;
   NV_Ith_S(y_dot,lv_eint) = Edot;
 
-  double dydt[N_equations];
+  
   for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
-  rep.printVec("ydot",dydt,N_equations);
+  rep.printVec("ydot returned ",dydt,N_equations);
   
   return 0;
 }
