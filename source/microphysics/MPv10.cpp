@@ -379,6 +379,8 @@ void MPv10::species_tracer_initialise(
   ss_e >> num_elec_int; 
   /// Record the electron number and He_ion_index vector (used to identify tracer index from string)
   y_ion_num_elec.push_back(num_elec_int);
+//   if (s
+//   He_ion_index[num_elec_int-1] = lv_y_ion_index_offset + N_species;
         
   /// Define the tracer for the next ion up / down in tracers list
   stringstream ss_ip1;        
@@ -473,19 +475,19 @@ MPv10::~MPv10()
 //NOTE This is currently incorrect, but I'm not sure if it's ever called anywhere, so I'll leave it for now...
 int MPv10::Tr(const string s)
 {
-  /*if (s.substr(0,2)=="He"){
-    int num_elec_int; 
-    stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
-    int ion_index = He_ion_index[num_elec_int-1];
-    return ion_index;
-  }
-  else if (s.substr(0,1)=="H"){
-    int num_elec_int;
-    stringstream ss; ss << s.substr(1,1); ss >> num_elec_int; //Use stringstream to convert string to int.
-    int ion_index = H_ion_index[num_elec_int-1];
-    return ion_index;
-  }
-  else { return-1;}*/
+//   if (s.substr(0,2)=="He"){
+//     int num_elec_int; 
+//     stringstream ss; ss << s.substr(2,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+//     int ion_index = He_ion_index[num_elec_int-1];
+//     return ion_index;
+//   }
+//   else if (s.substr(0,1)=="H"){
+//     int num_elec_int;
+//     stringstream ss; ss << s.substr(1,1); ss >> num_elec_int; //Use stringstream to convert string to int.
+//     int ion_index = H_ion_index[num_elec_int-1];
+//     return ion_index;
+//   }
+//   else { return-1;}
     
 }
 
@@ -588,8 +590,8 @@ int MPv10::convert_prim2local(
   //rep.printVec("local",p_local,nvl);
   //rep.printVec("prim ",p_in,nv_prim);
   
-  for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
-  for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
+  //for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
+  //for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
 
   //
   // Set x(H0) to be within the required range (not too close to zero or 1).
@@ -690,17 +692,21 @@ int MPv10::convert_local2prim(
   }
 
 
-  // NOTE \Maggie{Must come up with alternative to this for every element
-  // Set xHp to be within the required range (not too close to zero or 1).
-  //
+  // Set mass fraction tracers to be within the required range (not too close to zero or 1)
+  
   species_counter=0;
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
+    p_out[ X_mass_frac_index[ e]] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[ X_mass_frac_index[ e]])));
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      //p_out[ y_ion_index_prim[ species_counter]] = 
-      //      max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
+      p_out[ y_ion_index_prim[ species_counter]] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
       species_counter ++;
     }
+  }
+  
+  if (p_out[PG]<=0.0) {
+    cout <<"MP_Hydrogen:: correcting negative pressure.\n";
+    //p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
   }
 
   //
@@ -718,6 +724,7 @@ int MPv10::convert_local2prim(
 #endif // MPv10_DEBUG
   }
   if (T<0.99*EP->MinTemperature) {
+    cout << "Low temperature!!!\n";
     Set_Temp(p_out,EP->MinTemperature,0);
 #ifdef MPv10_DEBUG
     cout <<"MPv10::convert_local2prim() LOW  temperature encountered. ";
@@ -786,7 +793,7 @@ int MPv10::Set_Temp(
   // can just overwrite it.
   //
   if (p_pv[PG]<=0.0) {
-    //cout <<"MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
+    cout <<"MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
     p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
   }
   double P[nvl];
@@ -828,7 +835,6 @@ int MPv10::TimeUpdateMP(
       double *random_stuff  ///< Vector of extra data (column densities, etc.).
       )
 {
-  cout << "please work\n";
   int err=0;
   double P[nvl];
   err = convert_prim2local(p_in,P);
@@ -881,8 +887,8 @@ int MPv10::TimeUpdateMP(
   //
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
   err = convert_local2prim(P,p_in,p_out);
-  rep.printVec("l2p end prim ",p_out,nv_prim);
-  rep.printVec("l2p end local",P,nvl);
+  //rep.printVec("l2p end prim ",p_out,nv_prim);
+  //rep.printVec("l2p end local",P,nvl);
 
   return err;
 }
@@ -1045,10 +1051,11 @@ int MPv10::ydot(
 
   // Find internal energy
   double E_in      = NV_Ith_S(y_now,lv_eint);
-  cout << "E_in = "<< E_in << "\n";
-    double dydt[N_equations];
-  for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
-  rep.printVec("ydot going in",dydt,N_equations);
+  double dydt[N_equations];
+//   for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
+//   rep.printVec("ydot going in",dydt,N_equations);
+    //initialise ydot to zero.
+  for (int v=0;v<N_equations;v++) NV_Ith_S(y_dot, v) =0;
 
   // Use E_in, y_ion_frac and number density to determine temperature
   double T = get_temperature(y_ion_frac, X_elem_number_density, E_in);
@@ -1068,11 +1075,11 @@ int MPv10::ydot(
       species_counter ++;
     }
   }
-  rep.printVec("ynow X_neutral_frac",X_neutral_frac,N_elem);
-  rep.printVec("ynow y_ion_frac",y_ion_frac,N_species);
+  //rep.printVec("ynow X_neutral_frac",X_neutral_frac,N_elem);
+  //rep.printVec("ynow y_ion_frac",y_ion_frac,N_species);
   double yyy[N_equations];
-  for (int v=0;v<N_equations;v++) yyy[v] = NV_Ith_S(y_now,v);
-  rep.printVec("ynow",yyy,N_equations);
+  //for (int v=0;v<N_equations;v++) yyy[v] = NV_Ith_S(y_now,v);
+  //rep.printVec("ynow",yyy,N_equations);
 
   //
   //  ========================================================
@@ -1155,9 +1162,9 @@ int MPv10::ydot(
         /*if (y_im1_index_local[species_counter] !=-2){
           NV_Ith_S(y_dot, y_im1_index_local[species_counter]) += this_y_dot;
         }*/
-        cout << "y_dot [" << species_counter << "] -=" << this_y_dot <<"\n";
-        for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
-        rep.printVec("ydot",dydt,N_equations);
+//         cout << "y_dot [" << species_counter << "] -=" << this_y_dot <<"\n";
+//         for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
+//         rep.printVec("ydot",dydt,N_equations);
         /// =========  HEATING DUE TO RECOMBINATION OUT OF THIS SPECIES ===========
         double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
         Edot += ion_pot * this_y_dot;
@@ -1298,7 +1305,7 @@ int MPv10::ydot(
 
   
   for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
-  rep.printVec("ydot returned ",dydt,N_equations);
+  //rep.printVec("ydot returned ",dydt,N_equations);
   
   return 0;
 }

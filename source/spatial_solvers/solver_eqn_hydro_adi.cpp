@@ -114,7 +114,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     rep.printVec("left ",Pl,eq_nvar);
     rep.printVec("right",Pr,eq_nvar);
     rep.error("FV_solver_Hydro_Euler::calculate_flux() Density/Pressure too small",
-	      Pl[eqRO]);
+	      Pr[eqPG]);
   }
   int err=0;
 

@@ -24,7 +24,6 @@
 #ifndef CVODE_INTEGRATOR_H
 #define CVODE_INTEGRATOR_H
 
-
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 

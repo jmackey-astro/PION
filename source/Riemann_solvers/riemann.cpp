@@ -901,7 +901,7 @@ int riemann_Euler::solve_cavitation()
   /// 
   /// The condition for cavitation is that 
   /// \f[ (u_R-u_L) >= \frac{2}{\gamma -1}(c_R+c_L) \f]
-   
+  cout <<"sound speed = "<<cl<<", "<<cr<<"\n";
   if( (rs_left[eqVX]-cl)>=0. ) {
     //
     // Everything swept to the right.
