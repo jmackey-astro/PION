@@ -56,7 +56,7 @@ noise -1
 ## Grid Parameters
 # Number of gridpoints in each direction
 # INT
-NGridX  10
+NGridX  2
 NGridY  1
 NGridZ  1
 # Boundaries of Simulation box:
@@ -85,7 +85,7 @@ OPfreqTime 1.58e10  # in seconds
 
 # Start time
 StartTime 0.0e13  # 0 Myr.
-FinishTime 1e13 # should get done faster for testing#0.1 Myr
+FinishTime 1e15 # should get done faster for testing#0.1 Myr
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
@@ -133,11 +133,11 @@ UNIFORM_ambBX 0.0
 UNIFORM_ambBY 0.0
 UNIFORM_ambBZ 0.0
 UNIFORM_ambTR0 1.0   # most of ISM is H
-UNIFORM_ambTR1 1.0   # Some of ISM is He
-UNIFORM_ambTR2 0.1    # ISM is mostly neutral
-UNIFORM_ambTR3 0.1
-UNIFORM_ambTR4 0.01
-UNIFORM_ambTR5 0.0
+UNIFORM_ambTR1 0.1   # Some of ISM is He
+UNIFORM_ambTR2 0.0    # ISM is mostly neutral
+#UNIFORM_ambTR3 0.1
+#UNIFORM_ambTR4 0.01
+#UNIFORM_ambTR5 0.0
 
 
 ########################
@@ -191,7 +191,7 @@ WIND_0_vinf   300.0
 WIND_0_temp   3000.0
 WIND_0_Rstr   2.0e17  # 1e5 R_sun
 WIND_0_TR0 1.0
-WIND_0_TR1 1.0 
+WIND_0_TR1 0.1 
 WIND_0_TR2 1.0 
 #WIND_0_TR1 0.6  # The other half is He
 #WIND_0_TR2 0.39999  

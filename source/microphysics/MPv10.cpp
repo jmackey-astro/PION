@@ -506,6 +506,9 @@ double MPv10::get_temperature(
 {
   //
   // returns gas temperature according to E=nkT/(g-1), => T = E*(g-1)/(K*n)
+  /*cout << "temp=" << gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,X_number_density));
+  cout << ", ntot = " <<get_ntot(y_ion_frac,X_number_density) ;
+  cout << ", E = " << E << "\n";*/
   return gamma_minus_one*E/(k_B*get_ntot(y_ion_frac,X_number_density));
 }
 
@@ -691,7 +694,6 @@ int MPv10::convert_local2prim(
     }
   }
 
-
   // Set mass fraction tracers to be within the required range (not too close to zero or 1)
   
   species_counter=0;
@@ -704,10 +706,7 @@ int MPv10::convert_local2prim(
     }
   }
   
-  if (p_out[PG]<=0.0) {
-    cout <<"MP_Hydrogen:: correcting negative pressure.\n";
-    //p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
-  }
+  
 
   //
   // Set output pressure to be within required temperature range (use the 
@@ -715,6 +714,7 @@ int MPv10::convert_local2prim(
   //
   
   double T = get_temperature(y_ion_frac, X_elem_number_density, p_local[lv_eint]);
+  //cout <<"current temp = " << T<<"\n";
   if (T>1.01*EP->MaxTemperature) {
     Set_Temp(p_out,EP->MaxTemperature,0);
 #ifdef MPv10_DEBUG
@@ -732,7 +732,8 @@ int MPv10::convert_local2prim(
     cout <<", x="<<p_out[pv_H1p]<<"...  limiting to T="<<EP->MinTemperature<<"\n";
 #endif // MPv10_DEBUG
   }
-
+  p_out[PG] = p_local[lv_eint] *(gamma_minus_one);
+  cout << "pressure=" <<p_out[PG]<<"\n";
   //rep.printVec("local2prim local",p_local,nvl);
   //rep.printVec("local2prim prim ",p_out,nv_prim);
   return 0;
@@ -792,6 +793,7 @@ int MPv10::Set_Temp(
   // out because there is no way to set a temperature, but if p<0 we
   // can just overwrite it.
   //
+  //cout << "set temperature\n";
   if (p_pv[PG]<=0.0) {
     cout <<"MP_Hydrogen::Set_Temp() correcting negative pressure.\n";
     p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
@@ -1098,7 +1100,7 @@ int MPv10::ydot(
   double dT = T - Temp_Table[temp_index];
 
 
-  /*
+  
   /// ====== Collisional ionisation INTO this species, OUT of previous species ========
   /// this_y_dot(ion) += ionise_rate(im1)*n_e*y(im1) <<< add ionisation from less ionised species to current species
   /// =================================================================================
@@ -1117,8 +1119,6 @@ int MPv10::ydot(
         //if the less ionised species ISN'T neutral 
         if (y_im1_index_local[species_counter] !=-2){
           double this_y_dot = ionise_rate_im1 *  NV_Ith_S(y_now, y_im1_index_local[species_counter]) *ne;   
-          cout << "ci in [" << species_counter << "] =" << this_y_dot <<"\n";
-          cout << "ci out [" << (species_counter-1) << "] =" << this_y_dot<<"\n";
           NV_Ith_S(y_dot, y_ion_index_local[species_counter]) += this_y_dot;
           NV_Ith_S(y_dot, y_im1_index_local[species_counter]) -= this_y_dot;
           
@@ -1131,8 +1131,6 @@ int MPv10::ydot(
         else{
           double this_y_dot = ionise_rate_im1 * neutral_frac * ne;
           NV_Ith_S(y_dot, y_ion_index_local[species_counter]) += this_y_dot;
-          cout << "ci in [" << species_counter  << "] =" << this_y_dot<<"\n";
-
           /// =========  COOLING DUE TO IONISATION INTO THIS SPECIES ===========
           double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
           Edot -= ion_pot * this_y_dot;
@@ -1140,11 +1138,11 @@ int MPv10::ydot(
       }
       species_counter ++;
     }
-  }*/
+  }
   /// ============== Radiative recombination OUT OF this species =====================
   /// y_dot(ion) -= recomb_rate(ion)*n_e*y(ion) <<< subtract recombination to less ionised species
   /// ================================================================================  
-  species_counter = 0;
+  /*species_counter = 0;
   for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     
@@ -1166,12 +1164,12 @@ int MPv10::ydot(
 //         for (int v=0;v<N_equations;v++) dydt[v] = NV_Ith_S(y_dot,v);
 //         rep.printVec("ydot",dydt,N_equations);
         /// =========  HEATING DUE TO RECOMBINATION OUT OF THIS SPECIES ===========
-        double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
+ /*       double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
         Edot += ion_pot * this_y_dot;
       }
     species_counter ++;
     }
-  }
+  }*/
   
   
   
@@ -1300,7 +1298,7 @@ int MPv10::ydot(
   // The Wiersma et al (2009,MN393,99) (metals-only) CIE cooling curve.
   //
   Edot -= cooling_rate_SD93CIE(T) *ne;
-  Edot = 1e-15;
+  Edot = 0;
   NV_Ith_S(y_dot,lv_eint) = Edot;
 
   
