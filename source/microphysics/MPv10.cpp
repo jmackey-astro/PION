@@ -733,7 +733,7 @@ int MPv10::convert_local2prim(
 #endif // MPv10_DEBUG
   }
   p_out[PG] = p_local[lv_eint] *(gamma_minus_one);
-  cout << "pressure=" <<p_out[PG]<<"\n";
+  //cout << "pressure=" <<p_out[PG]<<"\n";
   //rep.printVec("local2prim local",p_local,nvl);
   //rep.printVec("local2prim prim ",p_out,nv_prim);
   return 0;
@@ -840,8 +840,8 @@ int MPv10::TimeUpdateMP(
   int err=0;
   double P[nvl];
   err = convert_prim2local(p_in,P);
-  rep.printVec("p2l start prim ",p_in,nv_prim);
-  rep.printVec("p2l start local",P,nvl);
+  //rep.printVec("p2l start prim ",p_in,nv_prim);
+  //rep.printVec("p2l start local",P,nvl);
   if (err) {
     rep.error("Bad input state to MPv10::TimeUpdateMP()",err);
   }
@@ -868,7 +868,7 @@ int MPv10::TimeUpdateMP(
   // Now if nothing is changing much, just to a forward Euler integration.
   //
   if (maxdelta < EULER_CUTOFF) {
-    cout <<"maxdelta="<<maxdelta<<", Doing euler integration...\n";
+    //cout <<"maxdelta="<<maxdelta<<", Doing euler integration...\n";
     for (int v=0;v<nvl;v++) {
       NV_Ith_S(y_out,v) = NV_Ith_S(y_in,v) + dt*NV_Ith_S(y_out,v);
     }
@@ -877,7 +877,7 @@ int MPv10::TimeUpdateMP(
   // Otherwise do the implicit CVODE integration
   //
   else {
-    cout <<"maxdelta="<<maxdelta<<", Doing CVODE integration...\n";
+    //cout <<"maxdelta="<<maxdelta<<", Doing CVODE integration...\n";
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
       rep.error("integration failed: MPv10::TimeUpdateMP_RTnew()",err);
@@ -1081,8 +1081,8 @@ int MPv10::ydot(
   //rep.printVec("ynow y_ion_frac",y_ion_frac,N_species);
   double yyy[N_equations];
   for (int v=0;v<N_equations;v++) yyy[v] = NV_Ith_S(y_now,v);
-  rep.printVec("ynow",yyy,N_equations);
-  cout << "T=" << T << "\n";
+  //rep.printVec("ynow",yyy,N_equations);
+  //cout << "T=" << T << "\n";
   //
   //  ========================================================
   //          Get Rate of Change of Each Species
@@ -1142,7 +1142,7 @@ int MPv10::ydot(
   /// ============== Radiative recombination OUT OF this species and INTO NEXT species =====================
   /// y_dot(ion) -= recomb_rate(ion)*n_e*y(ion) <<< subtract recombination to less ionised species
   /// ================================================================================  
-  /*species_counter = 0;
+  species_counter = 0;
   for (int elem=0;elem<N_elem;elem++){//loop over every element
     int N_elem_species=N_species_by_elem[elem];
     
@@ -1171,7 +1171,7 @@ int MPv10::ydot(
       }
     species_counter ++;
     }
-  }*/
+  }
   
   //Edot -= cooling_rate_SD93CIE(T) *ne;
   // electron impact excitation
