@@ -27,8 +27,10 @@ int assign_update_bcs_MPI::assign_boundary_data(
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
+#ifdef TEST_MPI_NG
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
-  cout <<ppar->get_myrank()<<" Setting up MPI boundaries...\n";
+  cout <<ppar->get_myrank()<<" Setting up MPI boundaries..."<<endl;
+#endif
   int err= assign_update_bcs::assign_boundary_data(par,level,grid);
 
   rep.errorTest("assign_update_bcs::assign_boundary_data",err,0);
@@ -38,7 +40,9 @@ int assign_update_bcs_MPI::assign_boundary_data(
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
     switch (grid->BC_bd[i]->itype) {
     case BCMPI:
+#ifdef TEST_MPI_BC 
       cout <<ppar->get_myrank()<<" assigning MPI boundary in dir "<<i<<"\n";
+#endif
       err += BC_assign_BCMPI(par,level,grid,grid->BC_bd[i],BC_MPItag);
       break;      
     case PERIODIC:
@@ -84,10 +88,42 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
       const int maxstep
       )
 {
+#ifdef TEST_MPI_NG
+  cout <<"update_bcs_MPI: external boundary update"<<endl;
+#endif
   struct boundary_data *b;
   int err=0;
-  for (size_t i=0;i<grid->BC_bd.size();i++) {
-    b = grid->BC_bd[i];
+  size_t i=0;
+
+  // make a map so that boundaries are updated pairwise.
+  // ix[] is the position of this process in each direction of the
+  // block of MPI processes.
+  int nb=grid->BC_bd.size();
+  int map[nb];
+  int rank = par.levels[level].MCMD.get_myrank();
+  int ix[MAX_DIM];
+  par.levels[level].MCMD.get_domain_ix(par.ndim,rank,ix);
+  // x-direction
+  for (int j=0;j<par.ndim;j++) {
+    if (ix[j]%2==0) {
+      map[2*j]   = 2*j;
+      map[2*j+1] = 2*j+1;
+    }
+    else {
+      map[2*j]   = 2*j+1;
+      map[2*j+1] = 2*j;
+    }
+  }
+  for (int j=2*par.ndim;j<nb;j++) {
+    map[j] = j;
+  }
+
+  for (i=0;i<grid->BC_bd.size();i++) {
+    b = grid->BC_bd[map[i]];
+#ifdef TEST_MPI_BC 
+    cout <<"updating bc "<<map[i]<<" with type "<<b->type<<"\n";
+    cout.flush();
+#endif
     switch (b->itype) {
       
     case PERIODIC:
@@ -128,9 +164,6 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
     case RADSHOCK:
     case RADSH2:
     case STWIND:
-    case FINE_TO_COARSE: case COARSE_TO_FINE:
-    case FINE_TO_COARSE_SEND: case FINE_TO_COARSE_RECV:
-    case COARSE_TO_FINE_SEND: case COARSE_TO_FINE_RECV:
       //
       // internal bcs updated separately
       //
@@ -141,18 +174,21 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
       break;
     }
 
-    if (i==XP || (i==YP && par.ndim>=2) || (i==ZP && par.ndim==3)) {
-      // Need to make sure all processors are updating boundaries along
-      // each axis together, so that there is no deadlock from one 
-      // process sending data in y/z-dir into a processor that is still
-      // working on x-dir.
-      //      cout <<"Barrier synching for dir="<<i<<" with 1=XP,2=YP,3=ZP.\n";
-      ostringstream tmp;
-      tmp <<"assign_update_bcs_MPI_TimeUpdateExternalBCs_"<<i;
-      COMM->barrier(tmp.str());
-      tmp.str("");
-    }
+    COMM->barrier("External BC update");
+    
+    //if (i==XP || (i==YP && par.ndim>=2) || (i==ZP && par.ndim==3)) {
+    //  // Need to make sure all processors are updating boundaries along
+    //  // each axis together, so that there is no deadlock from one 
+    //  // process sending data in y/z-dir into a processor that is still
+    //  // working on x-dir.
+    //  //      cout <<"Barrier synching for dir="<<i<<" with 1=XP,2=YP,3=ZP.\n";
+    //  ostringstream tmp;
+    //  tmp <<"assign_update_bcs_MPI_TimeUpdateExternalBCs_"<<i;
+    //  COMM->barrier(tmp.str());
+    //  tmp.str("");
+    //}
   }
+
   return 0;
 }
 

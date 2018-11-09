@@ -9,7 +9,7 @@ gridtype 1
 
 # Type of Equations to Solve {hd, mhd, ...}
 eqn  i-mhd
-solver RS_HLLD
+solver HLLD
 nvar 8
 
 ntracer 0

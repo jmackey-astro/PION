@@ -31,16 +31,30 @@ class HLLD_MHD :  virtual public eqns_mhd_ideal
   int MHD_HLLD_flux_solver(
       const pion_flt *, ///< input left state
       const pion_flt *, ///< input right state
-      const double,     ///< input gamma
-      //const pion_flt,   ///< H-correction eta-max value.
-      //pion_flt *,       ///< output pstar
+      const double,     ///< input eq_gamma
       pion_flt *        ///< output flux
       );
-
-  double *HD_lambda, *HD_UL, *HD_UR, *HD_FL, *HD_FR, 
-	 *HD_ULs, *HD_URs, *HD_FLs, *HD_FRs,
-         *HD_ULss, *HD_URss, *HD_FLss, *HD_FRss;
+    
+  double *HD_lambda, *HD_UL, *HD_UR, *HD_FL, *HD_FR,
+    *HD_ULs, *HD_URs, *HD_FLs, *HD_FRs,
+    *HD_ULss, *HD_URss, *HD_FLss, *HD_FRss;
   double HD_nvar;
+   
+   void HLLD_signal_speeds(
+    const pion_flt *,    ///< inputs
+    const pion_flt *,
+    const double,
+    double &,       ///< outputs
+    double &
+    );
+
+   int MHD_HLL_flux_solver(
+    const pion_flt *,  ///< input left state
+    const pion_flt *, ///< input right state
+    const double,    ///< input gamma
+    pion_flt *       ///< output flux
+    );
+
 };
 
 

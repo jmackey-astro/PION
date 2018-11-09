@@ -60,10 +60,18 @@ int main(int argc, char **argv)
   for (int i=0;i<argc; i++) {
     if (args[i].find("redirect=") != string::npos) {
       string outpath = (args[i].substr(9));
-      cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
-      rep.redirect(outpath); // Redirects cout and cerr to text files in the directory specified.
+      ostringstream path;
+      path << outpath <<"_"<<r<<"_";
+      outpath = path.str();
+      if (r==0) {
+        cout <<"Redirecting stdout to "<<outpath<<"info.txt"<<"\n";
+      }
+      rep.redirect(outpath); // Redirects cout and cerr to text file.
     }
   }
+#ifndef TESTING
+  rep.kill_stdout_from_other_procs(0);
+#endif
 
   class DataIOBase   *dataio=0;
   class get_sim_info *siminfo=0;
@@ -87,7 +95,9 @@ int main(int argc, char **argv)
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
+  cout <<"ICGEN setting up grid levels\n";
   SimSetup->setup_NG_grid_levels(SimPM);
+  cout <<"ICGEN: grid levels set up.\n";
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);
 
@@ -164,26 +174,79 @@ int main(int argc, char **argv)
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
+    COMM->barrier("level assign boundary data");
     rep.errorTest("icgen_NG_MPI::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
+
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    cout <<"updating external boundaries for level "<<l<<"\n";
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += SimSetup->BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                    solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+          err += SimSetup->BC_update_COARSE_TO_FINE_RECV(SimPM,
+                    solver,l,grid[l]->BC_bd[i],SimPM.levels[l].step);
+        }
+      }
+    }
+  }
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+  
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-    cout <<"updating internal boundaries for level "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   rep.errorTest("sim_init_NG: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // update fine-to-coarse level boundaries
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TESTING
+    cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";
+    cout <<l<<"\n";
+#endif
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += SimSetup->BC_update_FINE_TO_COARSE_SEND(SimPM,
+                solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
+          err += SimSetup->BC_update_FINE_TO_COARSE_RECV(SimPM,solver,
+                      l,grid[l]->BC_bd[i],2,2);
+        }
+      }
+    }
+  }
+  SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -243,7 +306,7 @@ int main(int argc, char **argv)
   err = dataio->OutputData(icfile,grid, SimPM, 0);
   if (err) rep.error("File write error",err);
   delete dataio; dataio=0;
-  cout <<icftype<<" FILE WRITTEN in";
+  cout <<icftype<<" FILE WRITTEN\n";
 
   // delete everything and return
   if (MP)   {delete MP; MP=0;}
@@ -252,7 +315,8 @@ int main(int argc, char **argv)
   if (SimSetup) {delete SimSetup; SimSetup =0;}
   
   for (unsigned int v=0; v<grid.size(); v++) {
-    delete grid[v];
+    class GridBaseClass *g = grid[v];
+    delete g;
   }
 
   //
@@ -268,6 +332,10 @@ int main(int argc, char **argv)
   }
 
   delete [] args; args=0;
+  cout << "rank: " << SimPM.levels[0].MCMD.get_myrank();
+  cout << " nproc: " << SimPM.levels[0].MCMD.get_nproc() << "\n";
+  COMM->finalise();
+  delete COMM; COMM=0;
   return err;
 }
 

@@ -156,7 +156,8 @@ void setup_fixed_grid::setup_cell_extra_data(
 
 
 int setup_fixed_grid::setup_grid(
-      class GridBaseClass **grid,
+      vector<class GridBaseClass *> &g,  ///< grid pointers.
+      //class GridBaseClass **grid,
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
@@ -166,6 +167,7 @@ int setup_fixed_grid::setup_grid(
 #ifdef TESTING
   cout <<"Init::setup_grid: &grid="<< grid<<", and grid="<<*grid<<"\n";
 #endif // TESTING
+  class GridBaseClass **grid = &(g[0]);
 
   if (SimPM.ndim <1 || SimPM.ndim>3)
     rep.error("Only know 1D,2D,3D methods!",SimPM.ndim);
@@ -819,7 +821,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
 int setup_fixed_grid::boundary_conditions(
       class SimParams &par,     ///< simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
+      vector<class GridBaseClass *> &grid  ///< grid pointers.
+      //class GridBaseClass *grid ///< pointer to grid.
       )
 {
   // For uniform fixed cartesian grid.
@@ -829,13 +832,13 @@ int setup_fixed_grid::boundary_conditions(
   //
   // Choose what BCs to set up based on BC strings.
   //
-  int err = setup_boundary_structs(par,grid);
+  int err = setup_boundary_structs(par,grid[0],0);
   rep.errorTest("sfg::boundary_conditions::sb_structs",0,err);
 
   //
   // Ask grid to set up data for external boundaries.
   //
-  err = grid->SetupBCs(par);
+  err = grid[0]->SetupBCs(par);
   rep.errorTest("sfg::boundary_conditions::SetupBCs",0,err);
 
 #ifdef TESTING
@@ -853,7 +856,8 @@ int setup_fixed_grid::boundary_conditions(
 
 int setup_fixed_grid::setup_boundary_structs(
       class SimParams &par,     ///< simulation parameters
-      class GridBaseClass *grid ///< pointer to grid.
+      class GridBaseClass *grid, ///< pointer to grid.
+      const int 
       )
 {
 #ifdef TESTING
@@ -947,7 +951,8 @@ int setup_fixed_grid::setup_boundary_structs(
     }
 
     if(!grid->BC_bd[i]->data.empty())
-      rep.error("Boundary data not empty in constructor!",grid->BC_bd[i]->data.size());
+      rep.error("Boundary data not empty in constructor!",
+                                  grid->BC_bd[i]->data.size());
     grid->BC_bd[i]->refval=0;
 #ifdef TESTING
     cout <<"\tBoundary type "<<i<<" is "<<grid->BC_bd[i]->type<<"\n";
@@ -1021,7 +1026,8 @@ void setup_fixed_grid::setup_dataio_class(
 
   case 1: // Start From ASCII Parameterfile.
     dataio = new dataio_text(par);
-    if (!dataio) rep.error("dataio_text initialisation",dataio);
+    if (!dataio)
+      rep.error("dataio_text initialisation",dataio);
     break;
 
 #ifdef FITS

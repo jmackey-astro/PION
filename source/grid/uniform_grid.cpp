@@ -286,7 +286,7 @@ UniformGrid::UniformGrid(
   for (int v=0;v<G_ndim;v++) G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
   for (int v=0;v<G_ndim;v++) G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
   
-#ifdef TESTING
+//#ifdef TESTING
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange,G_ndim);
@@ -299,7 +299,7 @@ UniformGrid::UniformGrid(
   rep.printVec("grid xmin_all ", G_xmin_all, G_ndim);
   rep.printVec("grid xmax_all ", G_xmax_all, G_ndim);
   rep.printVec("grid range_all", G_range_all,G_ndim);
-#endif
+//#endif
 
   //
   // Set integer dimensions/location of Simulation (same as grid)
@@ -357,25 +357,26 @@ UniformGrid::~UniformGrid()
 
   struct flux_interface *fi=0;
   for (unsigned int d=0; d<flux_update_recv.size(); d++) {
-    for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
-      fi = flux_update_recv[d][f];
+    for (unsigned int f=0; f<flux_update_recv[d].fi.size(); f++) {
+      fi = flux_update_recv[d].fi[f];
       if (fi) {
         fi->c.clear();
         fi->area.clear();
         fi->flux = mem.myfree(fi->flux);
-        flux_update_recv[d][f] = mem.myfree(flux_update_recv[d][f]);
+        flux_update_recv[d].fi[f] = 
+                        mem.myfree(flux_update_recv[d].fi[f]);
       }
     }
-    flux_update_recv[d].clear();
   }
   for (unsigned int d=0; d<flux_update_send.size(); d++) {
-    for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
-      fi = flux_update_send[d][f];
+    for (unsigned int f=0; f<flux_update_send[d].fi.size(); f++) {
+      fi = flux_update_send[d].fi[f];
       if (fi) {
         fi->c.clear();
         fi->area.clear();
         fi->flux = mem.myfree(fi->flux);
-        flux_update_send[d][f] = mem.myfree(flux_update_send[d][f]);
+        flux_update_send[d].fi[f] = 
+                        mem.myfree(flux_update_send[d].fi[f]);
       }
     }
     flux_update_send.clear();
@@ -1202,66 +1203,59 @@ void UniformGrid::BC_deleteBoundaryData(
     b->refval = mem.myfree(b->refval);
   }
 
+  list<cell *>::iterator i=b->data.begin();
   if (b->data.empty()) {
 #ifdef TESTING
     cout <<"BC destructor: No boundary cells to delete.\n";
 #endif
   }
   else {
-    list<cell *>::iterator i=b->data.begin();
     do {
       b->data.erase(i);
       i=b->data.begin();
     }  while(i!=b->data.end());
-
-    if (b->send_data.size()>0) {
-      i=b->send_data.begin();
-      do {
-        b->send_data.erase(i);
-        i=b->send_data.begin();
-      }  while(i!=b->send_data.end());
-    }
-
-    if (b->NG.size()>0) {
-      i=b->NG.begin();
-      do {
-        b->NG.erase(i);
-        i=b->NG.begin();
-      }  while(i!=b->NG.end());
-    }
-
-    for (unsigned int j=0; j<b->NGrecvF2C.size(); j++) {
-      i=b->NGrecvF2C[j].begin();
-      do {
-        b->NGrecvF2C[j].erase(i);
-        i=b->NGrecvF2C[j].begin();
-      }  while(i!=b->NGrecvF2C[j].end());
-    }
-    b->NGrecvF2C.clear();
-
-    for (unsigned int j=0; j<b->NGrecvC2F.size(); j++) {
-      i=b->NGrecvC2F[j].begin();
-      do {
-        b->NGrecvC2F[j].erase(i);
-        i=b->NGrecvC2F[j].begin();
-      }  while(i!=b->NGrecvC2F[j].end());
-    }
-    b->NGrecvC2F.clear();
-
-    for (unsigned int j=0; j<b->NGsendC2F.size(); j++) {
-      b->NGsendC2F[j]->c.clear();
-      b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
-    }
-    b->NGsendC2F.clear();
-
-    for (unsigned int j=0; j<b->avg.size(); j++) {
-      b->avg[j].avg_state = mem.myfree( b->avg[j].avg_state);
-      b->avg[j].c.clear();
-    }
-    b->avg.clear();
-
-
   }
+
+  if (b->send_data.size()>0) {
+    i=b->send_data.begin();
+    do {
+      b->send_data.erase(i);
+      i=b->send_data.begin();
+    }  while(i!=b->send_data.end());
+  }
+
+  for (unsigned int j=0; j<b->NGrecvF2C.size(); j++) {
+    i=b->NGrecvF2C[j].begin();
+    do {
+      b->NGrecvF2C[j].erase(i);
+      i=b->NGrecvF2C[j].begin();
+    }  while(i!=b->NGrecvF2C[j].end());
+  }
+  b->NGrecvF2C.clear();
+
+  for (unsigned int j=0; j<b->NGrecvC2F.size(); j++) {
+    i=b->NGrecvC2F[j].begin();
+    do {
+      b->NGrecvC2F[j].erase(i);
+      i=b->NGrecvC2F[j].begin();
+    }  while(i!=b->NGrecvC2F[j].end());
+  }
+  b->NGrecvC2F.clear();
+
+  for (unsigned int j=0; j<b->NGsendC2F.size(); j++) {
+    b->NGsendC2F[j]->c.clear();
+    struct c2f *t = b->NGsendC2F[j];
+    delete t;
+    //b->NGsendC2F[j] = mem.myfree( b->NGsendC2F[j]);
+  }
+  b->NGsendC2F.clear();
+
+  for (unsigned int j=0; j<b->avg.size(); j++) {
+    b->avg[j].avg_state = mem.myfree( b->avg[j].avg_state);
+    b->avg[j].c.clear();
+  }
+  b->avg.clear();
+
   return;
 }
 
@@ -1297,7 +1291,7 @@ int UniformGrid::setup_flux_recv(
       const int l           ///< level to receive from
       )
 {
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   cout <<" UniformGrid::setup_flux_recv() recv from level="<<l<<"\n";
 #endif
   //
@@ -1363,30 +1357,36 @@ int UniformGrid::setup_flux_recv(
 
   // initialize arrays
   flux_update_recv.resize(2*G_ndim);
-  for (int v=0; v<2*G_ndim; v++) {
-    if (recv[v] == true) {
-      flux_update_recv[v].resize(nel[v]);
+  for (int d=0; d<2*G_ndim; d++) {
+    if (recv[d] == true) {
+      flux_update_recv[d].fi.resize(nel[d]);
+      flux_update_recv[d].Ncells = nc;
+      for (size_t i=0; i<nel[d]; i++) {
+        flux_update_recv[d].fi[i] = 
+                        mem.myalloc(flux_update_recv[d].fi[i],1);
+        fi = flux_update_recv[d].fi[i];
+        fi->c.resize(nc);
+        fi->area.resize(nc);
+        fi->flux = mem.myalloc(fi->flux,G_nvar);
+        for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+      }
     }
     else {
-      flux_update_recv[v].resize(1);
-      flux_update_recv[v][0] = 0;
-    }
-    for (size_t i=0; i<nel[v]; i++) {
-      flux_update_recv[v][i] = mem.myalloc(flux_update_recv[v][i],1);
-      fi = flux_update_recv[v][i];
-      fi->Ncells = nc;
-      fi->c.resize(nc);
-      fi->area.resize(nc);
-      fi->flux = mem.myalloc(fi->flux,G_nvar);
-      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+      flux_update_recv[d].fi.resize(1);
+      flux_update_recv[d].fi[0] = 0;
+      flux_update_recv[d].Ncells = nc;
     }
   }
 
   // For each interface, find the cell that is outside the fine grid
   // and that includes the interface.
-  for (int v=0; v<2*G_ndim; v++) {
-    if (recv[v]) {
-      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,ncell,1,flux_update_recv[v]);
+  for (int d=0; d<2*G_ndim; d++) {
+    if (recv[d]) {
+      add_cells_to_face(static_cast<enum direction>(d),ixmin,ixmax,
+                                      ncell,1,flux_update_recv[d]);
+#ifdef TEST_BC89FLUX
+      cout <<"UG:FRECV: d="<<d<<", nel="<<nel[d]<<"\n";
+#endif
     }
   }
   return 0;
@@ -1404,7 +1404,7 @@ int UniformGrid::setup_flux_send(
       const int l           ///< level to send to
       )
 {
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   cout <<" UniformGrid::setup_flux_send() send to level="<<l<<"\n";
 #endif
   //
@@ -1418,7 +1418,7 @@ int UniformGrid::setup_flux_send(
   size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
 
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   if (this != par.levels[l].child)
     rep.error("level l is not my parent!",l);
 #endif
@@ -1430,24 +1430,37 @@ int UniformGrid::setup_flux_send(
   // each direction is to be included or not.  Note that this allows
   // for a fine grid that is not completely encompassed by the coarse
   // grid.
-  for (int v=0;v<G_ndim;v++) {
-    ixmin[v] = std::max(G_ixmin[v], lxmin[v]);
-    if (G_ixmin[v] > lxmin[v]) send[2*v] = true;
-    else                       send[2*v] = false;
+  for (int ax=0;ax<G_ndim;ax++) {
+    ixmin[ax] = std::max(G_ixmin[ax], lxmin[ax]);
+    if (G_ixmin[ax] > lxmin[ax]) send[2*ax] = true;
+    else                         send[2*ax] = false;
     
-    ixmax[v] = std::min(G_ixmax[v], lxmax[v]);
-    if (G_ixmax[v] < lxmax[v]) send[2*v+1] = true;
-    else                       send[2*v+1] = false;
+    ixmax[ax] = std::min(G_ixmax[ax], lxmax[ax]);
+    if (G_ixmax[ax] < lxmax[ax]) send[2*ax+1] = true;
+    else                         send[2*ax+1] = false;
 
-    ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
-    nface[v] = ncell[v]/2;  // number of face elements on coarse grid
-#ifdef DEBUG_NG
-    if ( (ixmax[v]-ixmin[v]) % 2*G_idx !=0) {
-      rep.error("interface region not divisible (send)!",ixmax[v]-ixmin[v]);
+    ncell[ax] = (ixmax[ax]-ixmin[ax])/G_idx;
+    nface[ax] = ncell[ax]/2;  // # face elements on coarse grid
+    cout <<"axis "<<ax<<", ncell="<<ncell[ax]<<", nface="<<nface[ax]<<"\n";
+#ifdef TEST_BC89FLUX
+    if ( (ixmax[ax]-ixmin[ax]) % 2*G_idx !=0) {
+      rep.error("interface region not divisible (send)!",
+                                      ixmax[ax]-ixmin[ax]);
     }
 #endif
   }
-  for (int v=0;v<2*G_ndim;v++) nel[v]=0;
+  for (int d=0;d<2*G_ndim;d++) nel[d]=0;
+
+  // This is really only for parallel execution: if the boundary
+  // of my grid is not at the boundary of my level, then set send
+  // to false
+  CI.get_ipos_vec(par.levels[l+1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[l+1].Xmax, lxmax);
+  for (int ax=0;ax<G_ndim;ax++) {
+    if (G_ixmin[ax] > lxmin[ax]) send[2*ax]   = false;
+    if (G_ixmax[ax] < lxmax[ax]) send[2*ax+1] = false;
+  }
+
 
   // different number of interfaces depending on dimensionality.
   switch (G_ndim) {
@@ -1479,39 +1492,44 @@ int UniformGrid::setup_flux_send(
 
   // initialize arrays
   flux_update_send.resize(2*G_ndim);
-  for (int v=0; v<2*G_ndim; v++) {
-    if (send[v] == true) {
-#ifdef DEBUG_NG
-      cout <<"d="<<v<<", nel="<<nel[v]<<"\n";
+  for (int d=0; d<2*G_ndim; d++) {
+    if (send[d] == true) {
+#ifdef TEST_BC89FLUX
+      cout <<"d="<<d<<", nel="<<nel[d]<<"\n";
 #endif
-      flux_update_send[v].resize(nel[v]);
+      flux_update_send[d].fi.resize(nel[d]);
+#ifdef TEST_BC89FLUX
+      cout <<"d="<<d<<", nel="<<nel[d]<<"... allocating memory for ";
+      cout <<nel[d]<<" elements\n";
+#endif
+      flux_update_send[d].Ncells = nc;
+      for (size_t i=0; i<nel[d]; i++) {
+        flux_update_send[d].fi[i] = 
+                        mem.myalloc(flux_update_send[d].fi[i],1);
+        fi = flux_update_send[d].fi[i];
+        fi->c.resize(nc);
+        fi->area.resize(nc);
+        fi->flux = mem.myalloc(fi->flux,G_nvar);
+        for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+      }
     }
     else {
-      flux_update_send[v].resize(1);
-      flux_update_send[v][0] = 0;
-    }
-#ifdef DEBUG_NG
-    cout <<"d="<<v<<", nel="<<nel[v]<<"... allocating memory for "<<nel[v]<<" elements\n";
-#endif
-    for (size_t i=0; i<nel[v]; i++) {
-      flux_update_send[v][i] = mem.myalloc(flux_update_send[v][i],1);
-      fi = flux_update_send[v][i];
-      fi->Ncells = nc;
-      fi->c.resize(nc);
-      fi->area.resize(nc);
-      fi->flux = mem.myalloc(fi->flux,G_nvar);
-      for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+      flux_update_send[d].fi.resize(1);
+      flux_update_send[d].fi[0] = 0;
+      flux_update_send[d].Ncells = nc;
     }
   }
 
+
   // For each interface, find the cell that is outside the fine grid
   // and that includes the interface.
-  for (int v=0; v<2*G_ndim; v++) {
-    if (send[v]) {
-#ifdef DEBUG_NG
-      cout <<"d="<<v<<", nel="<<nel[v]<<"... adding cells to face\n";
+  for (int d=0; d<2*G_ndim; d++) {
+    if (send[d]) {
+#ifdef TEST_BC89FLUX
+      cout <<"d="<<d<<", nel="<<nel[d]<<"... adding cells to face\n";
 #endif
-      add_cells_to_face(static_cast<enum direction>(v),ixmin,ixmax,nface,2,flux_update_send[v]);
+      add_cells_to_face(static_cast<enum direction>(d),ixmin,ixmax,
+                        nface,2,flux_update_send[d]);
     }
   }
 
@@ -1531,11 +1549,11 @@ int UniformGrid::add_cells_to_face(
       int *ixmax,   ///< xmax of interface region (integer units)
       int *nface,   ///< number of elements in interface region
       const int ncell,    ///< number of cells per face, per dim.
-      std::vector<struct flux_interface *> &fi ///< list to populate      
+      struct flux_update &flux ///< list to populate      
       )
 {
   
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   int a=static_cast<int>(d)/2;
   cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
   cout <<", "<<nface[a]<<", "<<ncell<<")\n";
@@ -1555,10 +1573,10 @@ int UniformGrid::add_cells_to_face(
     else if (d == XP) {
       while (c->pos[XX] < ixmax[XX]) c = NextPt(c,XP);
     }
-    fi[0]->c[0] = c;
+    flux.fi[0]->c[0] = c;
     c->F = mem.myalloc(c->F,G_nvar);
     c->isbd_ref[d] = true;
-    fi[0]->area[0] = CellInterface(c,OppDir(d));
+    flux.fi[0]->area[0] = CellInterface(c,OppDir(d),0);
   } // 1D
 
   else if (G_ndim==2) {
@@ -1598,21 +1616,21 @@ int UniformGrid::add_cells_to_face(
     }
 
     // loop over cells in interface:
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
     cout <<nface[perpaxis]<<", ";
-    cout <<fi.size()<<"\n";
+    cout <<flux.fi.size()<<"\n";
 #endif
-    if (nface[perpaxis] != static_cast<int>(fi.size()))
-      rep.error("wrong number of cells 2D interface",fi.size());
+    if (nface[perpaxis] != static_cast<int>(flux.fi.size()))
+      rep.error("wrong number of cells 2D interface",flux.fi.size());
 
     for (int i=0;i<nface[perpaxis]; i++) {
       for (int ic=0;ic<ncell;ic++) {
-        fi[i]->c[ic] = c;
+        flux.fi[i]->c[ic] = c;
         c->F = mem.myalloc(c->F,G_nvar);
         c->isbd_ref[d] = true;
-        fi[i]->area[ic] = CellInterface(c,OppDir(d));
-#ifdef DEBUG_NG
-        cout <<"area["<<ic<<"] = "<<fi[i]->area[ic]<<"\n";
+        flux.fi[i]->area[ic] = CellInterface(c,OppDir(d),0);
+#ifdef TEST_BC89FLUX
+        cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<"\n";
 #endif
         c = NextPt(c,perpdir);
       }
@@ -1688,38 +1706,39 @@ int UniformGrid::add_cells_to_face(
     }
 
     // loop over cells in interface:
-    if (nface[perpaxis1]*nface[perpaxis2] != static_cast<int>(fi.size()))
-      rep.error("wrong number of cells 3D interface",fi.size());
+    if (nface[perpaxis1]*nface[perpaxis2] !=
+        static_cast<int>(flux.fi.size()))
+      rep.error("wrong number of cells 3D interface",flux.fi.size());
     marker = c;
     for (int i=0;i<nface[perpaxis2]; i++) {
       for (int j=0;i<nface[perpaxis1]; j++) {
         if (ncell==1) {
-          fi[i*nface[perpaxis1]+j]->c[0] = c;
+          flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
           c->isbd_ref[d] = true;
-          fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d),0);
         }
         else {
           // need to get 4 cells onto this face.
-          fi[i*nface[perpaxis1]+j]->c[0] = c;
+          flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
           c->isbd_ref[d] = true;
-          fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d),0);
           m2 = NextPt(c,perpdir1);
-          fi[i*nface[perpaxis1]+j]->c[1] = m2;
+          flux.fi[i*nface[perpaxis1]+j]->c[1] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
           c->isbd_ref[d] = true;
-          fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d),0);
           m2 = NextPt(c,perpdir2);
-          fi[i*nface[perpaxis1]+j]->c[2] = m2;
+          flux.fi[i*nface[perpaxis1]+j]->c[2] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
           c->isbd_ref[d] = true;
-          fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d),0);
           m2 = NextPt(m2,perpdir1);
-          fi[i*nface[perpaxis1]+j]->c[3] = m2;
+          flux.fi[i*nface[perpaxis1]+j]->c[3] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
           c->isbd_ref[d] = true;
-          fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d));
+          flux.fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d),0);
         }
         for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);
       }
@@ -1743,7 +1762,7 @@ void UniformGrid::save_fine_fluxes(
     const double dt
     )
 {
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   cout <<"save_fine_fluxes() \n";
   cout <<"size of flux_update_send = "<<flux_update_send.size()<<"\n";
 #endif
@@ -1751,15 +1770,16 @@ void UniformGrid::save_fine_fluxes(
 
   for (unsigned int d=0; d<flux_update_send.size(); d++) {
 
-#ifdef DEBUG_NG
-    cout <<"size of flux_update_send["<<d<<"] = "<<flux_update_send[d].size()<<"\n";
+#ifdef TEST_BC89FLUX
+    cout <<"size of flux_update_send["<<d<<"] = ";
+    cout <<flux_update_send[d].fi.size()<<"\n";
 #endif
 
-    for (unsigned int f=0; f<flux_update_send[d].size(); f++) {
+    for (unsigned int f=0; f<flux_update_send[d].fi.size(); f++) {
       // these faces have 2^(ndim-1) cells.
-      fi = flux_update_send[d][f];
+      fi = flux_update_send[d].fi[f];
 
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
       cout <<"save_fine_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
 
@@ -1771,17 +1791,17 @@ void UniformGrid::save_fine_fluxes(
       if (level_step %2==0) {
         for (int v=0;v<G_nvar;v++) fi->flux[v] = 0.0;
       }
-      for (int i=0;i<fi->Ncells;i++) {
+      for (int i=0;i<flux_update_send[d].Ncells;i++) {
         if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
         cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
 #endif
         for (int v=0;v<G_nvar;v++) {
           fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
         }
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
         cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
 #endif
@@ -1802,17 +1822,18 @@ void UniformGrid::save_coarse_fluxes(
     const double dt
     )
 {
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   cout <<"save_coarse_fluxes() \n";
-  cout <<"size of flux_update_recv = "<<flux_update_recv.size()<<"\n";
+  cout <<"size of flux_update_recv = ";
+  cout <<flux_update_recv.size()<<"\n";
 #endif
   struct flux_interface *fi=0;
 
   for (unsigned int d=0; d<flux_update_recv.size(); d++) {
-    for (unsigned int f=0; f<flux_update_recv[d].size(); f++) {
+    for (unsigned int f=0; f<flux_update_recv[d].fi.size(); f++) {
       // these elements have only one cell per face.
-      fi = flux_update_recv[d][f];
-#ifdef DEBUG_NG
+      fi = flux_update_recv[d].fi[f];
+#ifdef TEST_BC89FLUX
       cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
 
@@ -1822,7 +1843,7 @@ void UniformGrid::save_coarse_fluxes(
       if (!fi->c[0]->F) rep.error("flux is not allocated!",f);
 
       // set face flux to be the negative of the intercell flux
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
       cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
       cout <<", f0="<<fi->c[0]->F[0]<<", area="<<fi->area[0]<<", dt="<<dt<<"\n";
 #endif

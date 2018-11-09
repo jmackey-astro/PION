@@ -48,7 +48,19 @@ struct flux_interface {
   std::vector<class cell *> c; ///< list of cells with faces on this interface
   std::vector<double> area;  ///< area of each face for cells c, ordered as is c
   pion_flt *flux;   ///< flux through interface.
+};
+
+///
+/// struct to hold all the interface fluxes, for ensuring 
+/// conservation between different refinement levels in
+/// a NG/AMR simulation.  (Berger & Colella, 1989).
+///
+struct flux_update {
+  vector<struct flux_interface *> fi;
   int Ncells;    ///< number of cells contributing.
+  std::vector<int> rank; ///< list of grid ranks to send to/recv from
+  int dir; ///< direction of face (outward for send)
+  int ax;  ///< axis of normal vector to face.
 };
 
 
@@ -128,12 +140,14 @@ class GridBaseClass {
   virtual size_t Ncell_all() const =0; ///< number of grid+ghost cells
 
   virtual double CellVolume(
-      const cell *
+      const cell *,     ///< Cell
+      const double      /// unused
       )=0; ///< Returns Volume of cell.
 
   virtual double CellInterface(
-      const cell *, ///< Cell
-      const direction ///< outward normal to interface.
+      const cell *,     ///< Cell
+      const direction,  ///< outward normal to interface.
+      const double      ///< unused
       )=0; ///< Returns Surface area of interface.
 
 
@@ -279,7 +293,7 @@ class GridBaseClass {
   /// to ensure that they are consistent across all levels, following
   /// Berger & Colella (1989,JCP,82,64).
   ///
-  std::vector< std::vector<struct flux_interface *> > flux_update_recv;
+  std::vector<struct flux_update> flux_update_recv;
 
   /// Array of interfaces for a coarser grid encompassing this grid.
   /// Each element contains 2^(ndim-1) cells.
@@ -293,7 +307,7 @@ class GridBaseClass {
   /// to ensure that they are consistent across all levels, following
   /// Berger & Colella (1989,JCP,82,64).
   ///
-  std::vector< std::vector<struct flux_interface *> > flux_update_send;
+  std::vector<struct flux_update> flux_update_send;
 
   class stellar_wind *Wind; ///< stellar wind boundary condition.
   class RayTracingBase *RT;   ///< pointer to raytracing class

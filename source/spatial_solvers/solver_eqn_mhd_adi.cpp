@@ -20,6 +20,9 @@
 /// - 2015.08.03 JM: Added pion_flt for double* arrays (allow floats)
 /// - 2018.04.14 JM: Moved flux solver to FV_solver
 
+// change
+#include "coord_sys/VectorOps.h"
+
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 #include "tools/reporting.h"
@@ -97,15 +100,16 @@ FV_solver_mhd_ideal_adi::~FV_solver_mhd_ideal_adi()
 
 
 int FV_solver_mhd_ideal_adi::inviscid_flux(
-      const cell *Cl, ///< Left state cell pointer
-      const cell *Cr, ///< Right state cell pointer
+      class cell *Cl, ///< Left state cell pointer
+      class cell *Cr, ///< Right state cell pointer
       const pion_flt *Pl, ///< Left Primitive vector.
       const pion_flt *Pr, ///< Right Primitive vector.
       pion_flt *flux,///< Resultant Flux vector.
       pion_flt *pstar, ///< State vector at interface.
-      const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
+      const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS 4=RoeRS, 7=HLLD)
+      class GridBaseClass *grid, ///< pointer to grid
       const double dx,  ///< cell-size dx (for LF method)
-      const double g        ///< Gas constant gamma.
+      const double eq_gamma        ///< Gas constant gamma.
       )
 {
 #ifdef TESTING
@@ -127,7 +131,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
   //
   for (int v=0;v<eq_nvar;v++) flux[v]  = 0.0;
   for (int v=0;v<eq_nvar;v++) pstar[v]  = 0.0;
-  eq_gamma = g;
+  //eq_gamma = g;
   
 
   //
@@ -172,16 +176,43 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     PtoFlux(pstar, flux, eq_gamma);
   }
 
+  // HLLD/HLL solver, including compressive motion check and 
+  // strong-gradient zones check (Migone et al. 2011 )
   else if (solve_flag==FLUX_RS_HLLD) {
-    err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
-      //const pion_flt *left,  ///< input left state
-      //const pion_flt *right, ///< input right state
-      //const double gamma,    ///< input gamma
-      ////const pion_flt etamax, ///< H-correction eta-max value.
-      ////pion_flt *out_ps,       ///< output p*
-      ////pion_flt *out_pss,       ///< output p**
-      //pion_flt *out_flux         ///< output flux
-      //)
+    int indices[3];
+    indices[0]=eqVX; indices[1]=eqVY; indices[2]=eqVZ;
+    double DivVl = Divergence(Cl,1,indices, grid);
+    double DivVr = Divergence(Cr,1,indices, grid);
+    
+    double Gradl = 0.0;
+    double Gradr = 0.0;
+    for (int i=0; i<grid->Ndim(); i++){  
+      Gradl = Gradl + GradZone(grid,Cl,i,1,PG);
+      Gradr = Gradr + GradZone(grid,Cr,i,1,PG);
+    }
+
+    //if (Gradl>0.0) cout << "Left gradient: " << Gradl << " Right gradient: " << Gradr << "\n";
+#ifdef TESTING
+    if (!isfinite(DivVl) ||
+        !isfinite(DivVr) ) {
+      cout << DivVl <<"  ";
+      cout << DivVr <<"\n";
+    }
+#endif
+    if ((DivVl<0 && Gradl>5) || (DivVr<0 && Gradr>5)){ 
+    // compressive motion & strong-gradient zones check
+    // Migone et al 2012
+      //
+      // HLL solver -- Miyoshi and Kusano (2005) (m05)
+      //
+       ///if (DivVl<0 && Gradl>5){rep.printVec("~~~~ HLL left switch!!!! ~~~~",Cl->pos,FV_gndim);}
+       ///if (DivVr<0 && Gradr>5){rep.printVec("~~~~ HLL right switch!!!! ~~~~",Cr->pos,FV_gndim);}
+      err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux);
+    }
+    else {
+      ///cout << "HLLD!!!!\n";
+      err += MHD_HLLD_flux_solver(Pl, Pr, eq_gamma, flux);
+    }
   }
 
 
@@ -199,7 +230,6 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
 
 // ##################################################################
 // ##################################################################
-
 
 
 int FV_solver_mhd_ideal_adi::AVFalle(
@@ -433,7 +463,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   // add source terms
   geometric_source(c, d, slope, ooa, dx, u1);
-  Powell_source_terms(grid, c, d, slope, u1);
+  //Powell_source_terms(grid, c, d, slope, u1);
 
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
@@ -612,15 +642,16 @@ FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 
 
 int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
-      const cell *Cl, ///< Left state cell pointer
-      const cell *Cr, ///< Right state cell pointer
+      class cell *Cl, ///< Left state cell pointer
+      class cell *Cr, ///< Right state cell pointer
       const pion_flt *Pl, ///< Left Primitive state vector.
       const pion_flt *Pr, ///< Right Primitive state vector.
       pion_flt *flux, ///< Resultant Flux state vector.
       pion_flt *pstar, ///< State vector at interface.
       const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS4=RoeRS)
+      class GridBaseClass *grid, ///< pointer to grid
       const double dx,  ///< cell-size dx (for LF method)
-      const double g ///< Gas constant gamma.
+      const double eq_gamma ///< Gas constant gamma.
       )
 {
 #ifdef TESTING
@@ -642,7 +673,6 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   //
   for (int v=0;v<eq_nvar;v++) flux[v]  = 0.0;
   for (int v=0;v<eq_nvar;v++) pstar[v]  = 0.0;
-  eq_gamma = g;
   //
   // Need temporary left and right state vectors b/c we need to change
   // the left and right state values of eqBX to the resolved state of
@@ -683,17 +713,16 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   // by calling its flux solver:
   //
   err=FV_solver_mhd_ideal_adi::inviscid_flux(Cl,Cr,left,right,
-					       flux,pstar,
-					       solve_flag,dx,eq_gamma);
+                         flux,pstar, solve_flag,grid,dx,eq_gamma);
 
 
-  ///
-  /// Now we have to add in the flux in BX and PSI, based on Dedner et
-  /// al.'s method.
-  ///
-  /// NOTE: Dedner doesn't say what to do about the energy flux, so this is a
-  /// modification to ensure consistency (Mackey & Lim, 2011).
-  /// Derigs et al. (2017/2018) have a more consistent calculation...
+  //
+  // Now we have to add in the flux in BX and PSI, based on Dedner et
+  // al.'s method.
+  //
+  // NOTE: Dedner doesn't say what to do about the energy flux, so
+  // it is modified to ensure consistency (Mackey & Lim, 2011).
+  // Derigs et al. (2017/2018) have a more consistent calculation...
   // 
   flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
   flux[eqBBX]  = psistar;
@@ -958,6 +987,7 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
 
   // this is a divergence term, not a gradient, so the radial
   // direction is different from z-direction.  d(R f)/(RdR)
+  dBdx = 0.0;
   if (d==Zcyl) {
     dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
   }
@@ -969,6 +999,9 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
     double Rm = cpos[Rcyl];
     dBdx = 2.0*(Rp*p->Ph[eqBX] - Rm*n->Ph[eqBX]) /
                 (Rp*Rp - Rm*Rm);
+  }
+  else {
+    rep.error("3D not implemented in cylindrical coords",d);
   }
 
   S[eqRHO] += 0;

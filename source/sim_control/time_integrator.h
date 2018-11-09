@@ -49,10 +49,7 @@ class time_integrator :
   /// integration function, and calls calculate_timestep, followed by
   /// either a first-order or second-order time update.
   ///
-  /// \retval 0 success
-  /// \retval 1 failure
-  ///
-  virtual int advance_time(
+  virtual double advance_time(
       const int,            ///< level in grid hierarchy
       class GridBaseClass * ///< grid pointer
       );

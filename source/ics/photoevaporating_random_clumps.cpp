@@ -294,7 +294,7 @@ int IC_photevap_random_clumps::setup_perc_fixedmass()
 
   // clump_mass is as a fraction of the ambient mass.
   class cell *cpt = gg->FirstPt();
-  double vol = gg->CellVolume(cpt);
+  double vol = gg->CellVolume(cpt,0);
   cout <<clump_mass*(ambient[RO]*vol*SimPM->Ncell)<<"\n\t\t(="<<clump_mass;
   cout <<" times ambient mass) and radial sizes of ";
   cout <<min_size<<" to "<<max_size<<" in units of y-range.\n";

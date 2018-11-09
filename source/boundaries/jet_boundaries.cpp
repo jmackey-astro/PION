@@ -10,6 +10,7 @@
 #include "tools/mem_manage.h"
 using namespace std;
 
+#define SOFTJET
 
 // ##################################################################
 // ##################################################################
@@ -105,6 +106,8 @@ int jet_bc::BC_assign_JETBC(
           //
           // jetradius is in number of cells, jr is in physical units.
           // Jet centre is along Z_cyl axis, centred on origin.
+          // Set the outer 25% of the jet radius to have a linearly
+          // decreasing velocity from Vjet to zero in that range.
           //
           temp->P[VX]  = b->refval[VX]
                           *min(1., 4.0-4.0*CI.get_dpos(temp,YY)/jr);
@@ -131,7 +134,6 @@ int jet_bc::BC_assign_JETBC(
       double dist=0.0;
       c = grid->FirstPt();
       //
-      // 3D, so we need to convert the jet radius to a real length.
       // Also, the jet will come in at the centre of the XN boundary,
       // which must be the origin.
       //
@@ -150,6 +152,8 @@ int jet_bc::BC_assign_JETBC(
               for (int v=0;v<par.nvar;v++) temp->P[v]  = b->refval[v];
               for (int v=0;v<par.nvar;v++) temp->Ph[v] = b->refval[v];
 # ifdef SOFTJET
+              // Set the outer 25% of the jet radius to have a linearly
+              // decreasing velocity from Vjet to zero in that range.
               temp->P[VX]  = b->refval[VX] *min(1., 4.0-4.0*dist/jr);
               temp->Ph[VX] = temp->P[VX];
 # endif //SOFTJET

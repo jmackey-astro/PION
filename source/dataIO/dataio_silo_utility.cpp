@@ -84,7 +84,9 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(
   //
   // open file
   //
+#ifdef TEST_SILO_IO
   cout <<"opening file: "<<fname<<"\n";
+#endif
   DBfile *dbfile = 0;
   dbfile = DBOpen(fname.c_str(), DB_UNKNOWN, DB_READ);
   if (!dbfile) rep.error("open silo file failed.",dbfile);
@@ -97,22 +99,31 @@ int dataio_silo_utility::SRAD_get_nproc_numfiles(
   err += DBReadVar(dbfile,"MPI_nproc",&nproc);
   err += DBReadVar(dbfile,"NUM_FILES",&numfiles);
   if (err) {
+#ifdef TEST_SILO_IO
     cout <<"must be serial file -- failed to find NUM_FILES and MPI_nproc\n";
     cout <<"continuing assuming serial file....\n";
+#endif
     //rep.error("error reading params from file",fname);
     nproc=1; numfiles=1; //groupsize=1;
   }
-  else {
-#ifdef TESTING
+  else { 
+#ifdef TEST_SILO_IO
     cout <<"\tRead nproc="<<nproc<<"\tand numfiles="<<numfiles<<"\n";
 #endif
     //    groupsize = nproc/numfiles;
-    nproc = nproc;
+    //nproc = nproc;
   }
   DBClose(dbfile); dbfile=0; 
   
+  string::size_type pos = fname.find("_0000");
+  if (pos==string::npos) {
+    cout <<"didn't find _0000 in file, so we are reading serial file\n";
+    err = 1;
+  }
+
   *np = nproc;
   *nf = numfiles;
+  cout <<"dataio_silo_utility::SRAD_get_nproc_numfiles returning "<<err<<"\n";
   return err;
 }
 
@@ -178,11 +189,13 @@ int dataio_silo_utility::SRAD_read_var2grid(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (silodata->datatype != silo_dtype) {
+#ifdef TEST_SILO_IO
     cout <<"\n\tSRAD_read_var2grid() quadvar has type="<<silodata->datatype;
     cout <<" but expecting type="<<silo_dtype<<"\n";
     cout <<"\t... resetting datatype for this file.\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
     cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n\n";
+#endif
     delete_data_arrays();
     silo_dtype = silodata->datatype;
     create_data_arrays(SimPM);
@@ -506,11 +519,74 @@ int dataio_silo_utility::serial_read_pllel_silodata(
 
 int dataio_silo_utility::ReadData(
       string firstfile,        ///< file to read from
-      vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &cg,  ///< grid pointers.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  class GridBaseClass *ggg = cg[0];
+  silofile=firstfile;
+
+  int err=0;
+  // Loop over grid levels, and read data for each level.
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+
+    cout <<" reading data on level "<<l<<", nlevels="<<SimPM.grid_nlevels<<"\n";
+    // for now read a different file for each level in the NG grid.
+    // If more than one level of grid, look for level in filename:
+    string::size_type p;
+    if ((p=silofile.find("_level"))==string::npos && 
+        SimPM.grid_nlevels>1) {
+      rep.error("dataio_silo_utility::ReadData() level",silofile);
+    }
+    else if (SimPM.grid_nlevels>1) {
+      ostringstream temp; temp.str("");
+      temp.width(2); temp.fill('0');
+      temp << l;
+      silofile.replace(p+6,2,temp.str());
+#ifdef TEST_SILO_IO
+      cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
+      cout <<silofile<<"\n";
+#endif
+    }
+
+    if (!cg[l])
+      rep.error("dataio_silo_utility::ReadData() null grid!",cg[l]);
+    dataio_silo::gp = cg[l];
+    mpiPM = &(SimPM.levels[l].MCMD);
+
+    //
+    // set grid properties for quadmesh: each level of the NG
+    // grid has different zone and node coordinates so we need to
+    // call this each time.
+    //
+    //err = setup_grid_properties(gp, SimPM);
+    //rep.errorTest("IO_silo_utility::ReadData() setup_grid_properties"
+    //                                                        ,0, err);
+    
+    // now call the code that works for each level:
+    err = ReadLevelData(silofile,gp,SimPM,l);
+    rep.errorTest("IO_silo_utility:: ReadLevelData",0,err);
+  }
+
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int dataio_silo_utility::ReadLevelData(
+      string firstfile,        ///< file to read from
+      class GridBaseClass *cg, ///< grid pointer.
+      class SimParams &SimPM, ///< simulation parameters
+      const int l             ///< level in grid hierarchy
+      )
+{
+
+
+  class GridBaseClass *ggg = cg;
   if (!ggg) rep.error("null pointer to computational grid!",ggg);
   int err=0;
 
@@ -547,12 +623,14 @@ int dataio_silo_utility::ReadData(
     // ((int) (nproc/numfiles))+1 for the first NX domains, and
     // (nproc/numfiles) for the remainder.  Here NX=(nproc%numfiles)
     //
+#ifdef TEST_SILO_IO
+    cout <<"READING PLLEL DATA for level "<<l<<"\n";
+#endif
     groupsize   = nproc/numfiles;
     if ((nproc%numfiles) !=0) groupsize++;
 
     //
-    // We should take it in turns reading data (is this necessary????
-    // not sure, but doing it anyway.)
+    // We should take it in turns reading data.
     // Try allowing up to 16 simultaneous reads.
     //
     int max_reads=16;
@@ -570,7 +648,8 @@ int dataio_silo_utility::ReadData(
     for (int count=0; count<nloops; count++) {
       if ( (mpiPM->get_myrank()+nloops)%nloops == count) {
         cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
-        err = parallel_read_parallel_silodata(firstfile, ggg, SimPM, numfiles, groupsize, nproc);
+        err = parallel_read_parallel_silodata(firstfile, ggg, SimPM,
+                                        numfiles, groupsize, nproc, l);
         rep.errorTest("Failed to read parallel data",0,err);
       }
       else {
@@ -633,7 +712,8 @@ int dataio_silo_utility::parallel_read_serial_silodata(
   // Get max and min quadmesh positions (integers)
   //
   int mesh_iXmin[ndim], mesh_iXmax[ndim];
-  get_quadmesh_integer_extents(dbfile, ggg, SimPM, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
+  get_quadmesh_integer_extents(dbfile, ggg, SimPM, qm_dir, qm_name,
+                                            mesh_iXmin, mesh_iXmax);
   //if (err) rep.error("Failed to get quadmesh extents!",qm_dir);
 
   //
@@ -641,7 +721,8 @@ int dataio_silo_utility::parallel_read_serial_silodata(
   // read function.
   //
   for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-    err = PP_read_var2grid(dbfile, ggg, SimPM, (*i), SimPM.Ncell, mesh_iXmin, mesh_iXmax);
+    err = PP_read_var2grid(dbfile, ggg, SimPM, (*i), SimPM.Ncell, 
+                                             mesh_iXmin, mesh_iXmax);
     if (err)
       rep.error("dataio_silo::ReadData() error reading variable",(*i));
   }
@@ -665,10 +746,11 @@ int dataio_silo_utility::parallel_read_serial_silodata(
 int dataio_silo_utility::parallel_read_parallel_silodata(
       string firstfile,        ///< file to read from
       class GridBaseClass *ggg, ///< pointer to data.
-      class SimParams &SimPM,  ///< pointer to simulation parameters
+      class SimParams &SimPM,  ///< simulation parameters
       const int numfiles, ///< number of files
       const int groupsize, ///< number of groups
-      const int nmesh    ///< number of domains in file.
+      const int nmesh,    ///< number of domains in file.
+      const int l         ///< level in grid hierarchy
       )
 {
   int err=0;
@@ -696,7 +778,8 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
     // first R files.  If R==0, then we can ignore this, since all files have
     // ng=groupsize domains
     //
-    int R = nmesh%numfiles; if (R<0) R+= numfiles;
+    int R = nmesh%numfiles;
+    if (R<0) R+= numfiles;
     int ng=0;
     if (R!=0) {
       if (ifile<R) ng=groupsize;
@@ -724,7 +807,12 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         filePM.set_myrank(ifile*groupsize +igroup);
       }
 
-      filePM.decomposeDomain(SimPM, SimPM.levels[0]);
+      filePM.decomposeDomain(SimPM, SimPM.levels[l]);
+
+      //mpiPM = &(filePM);
+      //err = setup_grid_properties(gp, SimPM);
+      //rep.errorTest("IO_silo_utility::p_r_pd() setup_grid_properties"
+      //                                                       ,0,err);
       
       //
       // set directory in file.
@@ -739,14 +827,17 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       //
       string qm_name;
       mesh_name(filePM.get_myrank(),qm_name);
-      //cout <<"got mesh name= "<<qm_name<<" in mesh dir= "<<qm_dir<<"\n";
+#ifdef TEST_SILO_IO
+      cout <<"got mesh name= "<<qm_name<<" in mesh dir= "<<qm_dir<<"\n";
+#endif
 
       //
       // Get max and min quadmesh positions (integers)
       //
       int mesh_iXmin[ndim], mesh_iXmax[ndim];
-      get_quadmesh_integer_extents(dbfile, ggg, SimPM, qm_dir, qm_name, mesh_iXmin, mesh_iXmax);
-      //if (err) rep.error("Failed to get quadmesh extents!",qm_dir);
+      get_quadmesh_integer_extents(dbfile, ggg, SimPM, qm_dir,
+                                    qm_name, mesh_iXmin, mesh_iXmax);
+      if (err) rep.error("Failed to get quadmesh extents!",qm_dir);
 
       //
       // Get max and min grid positions (integers)
@@ -768,10 +859,18 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       }
 
       if (!get_data) {
-        //cout <<"*** skipping mesh "<<qm_name<<" because not on local domain.\n";
+#ifdef TEST_SILO_IO
+        cout <<"*** skipping mesh "<<qm_name<<" because not on local domain.\n";
+#endif
       }
       else {
-        //cout <<"**** reading mesh "<<qm_name<<" because it is on local domain.\n";
+#ifdef TEST_SILO_IO
+        cout <<"**** reading mesh "<<qm_name<<" because it is on local domain.\n";
+        rep.printVec("mesh_iXmin",mesh_iXmin,ndim);
+        rep.printVec("mesh_iXmax",mesh_iXmax,ndim);
+        rep.printVec("local iXmin",localmin,ndim);
+        rep.printVec("local iXmax",localmax,ndim);
+#endif
         //
         // set variables to read: (from dataio_silo class)
         //
@@ -781,8 +880,10 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
         // now read each variable in turn from the mesh, using the
         // parallel-parallel read function
         //
-        for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-          err = PP_read_var2grid(dbfile, ggg, SimPM, (*i), filePM.LocalNcell, mesh_iXmin, mesh_iXmax);
+        for (std::vector<string>::iterator i=readvars.begin();
+                                        i!=readvars.end(); ++i) {
+          err = PP_read_var2grid(dbfile, ggg, SimPM, (*i),
+                      filePM.LocalNcell, mesh_iXmin, mesh_iXmax);
           if (err)
             rep.error("error reading variable",(*i));
         } // loop over variables.
@@ -852,11 +953,13 @@ void dataio_silo_utility::get_quadmesh_extents(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (qm->datatype != silo_dtype) {
+#ifdef TEST_SILO_IO
     cout <<"\n\tget_quadmesh_extents() quadvar has type="<<qm->datatype;
     cout <<" but expecting type="<<silo_dtype<<"\n";
     cout <<"\t... resetting datatype for this file.\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
     cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n\n";
+#endif
     delete_data_arrays();
     silo_dtype = qm->datatype;
     create_data_arrays(SimPM);
@@ -988,11 +1091,13 @@ int dataio_silo_utility::PP_read_var2grid(
   // delete data arrays, reset datatype, and re-create data arrays.
   //
   if (qv->datatype != silo_dtype) {
+#ifdef TEST_SILO_IO
     cout <<"\n\tPP_read_var2grid() quadvar has type="<<qv->datatype;
     cout <<" but expecting type="<<silo_dtype<<"\n";
     cout <<"\t... resetting datatype for this file.\n";
     cout <<"    DB_INT=16, DB_SHORT=17, DB_LONG=18, DB_FLOAT=19, ";
     cout <<"DB_DOUBLE=20, DB_CHAR=21, DB_LONG_LONG=22, DB_NOTYPE=25\n\n";
+#endif
     delete_data_arrays();
     silo_dtype = qv->datatype;
     create_data_arrays(SimPM);
@@ -1079,16 +1184,16 @@ int dataio_silo_utility::PP_read_var2grid(
   // division will always get the right answer, since all compilers
   // round down for integer division of positive numbers.
   //
-  int dx = CI.get_integer_cell_size();
+  int dx = ggg->idx();
   int qm_start[ndim];
   int qm_ix[ndim], qm_NX[ndim];
   for (int v=0;v<ndim;v++) {
     qm_start[v] = (c->pos[v]-iXmin[v])/dx;
-#ifdef TESTING
+#ifdef TEST_SILO_IO
     cout <<"\t\tv="<<v<<" start="<<qm_start[v]<<" pos=";
     cout <<c->pos[v]<< ", xmin="<<iXmin[v]<<" dims="<<qv->dims[v];
     cout <<", var = "<<variable<<"\n";
-#endif // TESTING
+#endif
     qm_ix[v] = qm_start[v];
     //
     // Get number of elements in each direction for this subdomain.
@@ -1130,6 +1235,10 @@ int dataio_silo_utility::PP_read_var2grid(
       qv_index += qm_ix[XX];
       
       while ((cx!=0) && cx->pos[XX]<iXmax[XX]) {
+#ifdef TEST_SILO_IO
+        rep.printVec("cpos",cx->pos,ndim);
+        rep.printVec("P",cx->P,SimPM.nvar);
+#endif
         //
         // Different pointers if float or double.
         //
@@ -1201,7 +1310,9 @@ int dataio_silo_utility::PP_read_var2grid(
   } // z-loop. 
 
 
-  //  cout <<"Read variable "<<variable<<"\n";
+#ifdef TEST_SILO_IO
+  cout <<"Read variable "<<variable<<", got "<<ct<<" cells\n";
+#endif
   DBFreeQuadvar(qv); //qv=0;
   data=0;
   fdata=0;

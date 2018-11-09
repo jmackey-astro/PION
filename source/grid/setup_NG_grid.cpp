@@ -135,9 +135,12 @@ void setup_NG_grid::setup_NG_grid_levels(
     
     ostringstream temp; temp<<i;
     string lv = "level "+temp.str();
-    rep.printVec(lv,SimPM.levels[i].Range,SimPM.ndim);
-    rep.printVec(lv,SimPM.levels[i].Xmin,SimPM.ndim);
-    rep.printVec(lv,SimPM.levels[i].Xmax,SimPM.ndim);
+    string t2=lv+"_Range";
+    rep.printVec(t2,SimPM.levels[i].Range,SimPM.ndim);
+    t2 = lv+"_Xmin";
+    rep.printVec(t2,SimPM.levels[i].Xmin,SimPM.ndim);
+    t2 = lv+"_Xmax";
+    rep.printVec(t2,SimPM.levels[i].Xmax,SimPM.ndim);
     cout <<"dx="<<SimPM.levels[i].dx;
     cout <<", step="<<SimPM.levels[i].step<<"\n";
   }
@@ -341,7 +344,7 @@ int setup_NG_grid::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid::setup_boundary_structs(par,grid);
+  int err = setup_fixed_grid::setup_boundary_structs(par,grid,l);
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
   //
@@ -408,13 +411,14 @@ int setup_NG_grid::setup_boundary_structs(
       }
     } while ((c=grid->NextPt(c)) !=0);
 #ifdef TESTING
-    cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, "<<bd->data.size() <<"\n";
+    cout <<"Got "<<ct<<" cells for FINE_TO_COARSE boundary, ";
+    cout <<bd->data.size() <<"\n";
 #endif
     grid->BC_bd.push_back(bd);
 #ifdef TESTING
-    cout <<"BC_data: "<<;
+    cout <<"BC_data: ";
     cout << grid->BC_bd[grid->BC_bd.size()-1]->NGrecvF2C[0].size();
-    cout << <<"\n";
+    cout <<"\n";
 #endif
   }
   

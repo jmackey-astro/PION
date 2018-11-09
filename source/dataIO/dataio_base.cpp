@@ -117,6 +117,7 @@ void DataIOBase::set_params(
     ("grid_aspect_ratio", SimPM.grid_aspect_ratio,defaspect);
   p = n002; p->critical=false;  
   params.push_back(p);
+  delete [] defaspect;
 
   double *defngcentre = new double [MAX_DIM];
   for (int v=0;v<MAX_DIM;v++) defngcentre[v]=0.0;
@@ -124,7 +125,7 @@ void DataIOBase::set_params(
     ("NG_centre",  SimPM.NG_centre,defngcentre);
   p = n003; p->critical=false;  
   params.push_back(p);
-
+  delete [] defngcentre;
 
 
   //

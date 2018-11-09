@@ -163,6 +163,7 @@ class comm_mpi : public comms_base {
       int *,    ///< rank of sender
       std::string &, ///< identifier for receive.
       int *,     ///< comm_tag associated with data.
+      const int,   ///< comm_tag requested: (PER,MPI,F2C,C2F)
       const int  ///< type of data to look for (e.g. COMM_DOUBLEDATA)
       );
 
@@ -178,14 +179,14 @@ class comm_mpi : public comms_base {
       const long int,      ///< number of cells in list
       const int,           ///< ndim
       const int,           ///< nvar
-      const int,           ///< comm_tag: what sort of comm (PER,MPI)
+      const int,           ///< comm_tag: (PER,MPI,F2C,C2F)
       const std::string &  ///< identifier for receive.
       );
 
   /// Receive array of doubles from a specific process rank. 
   int receive_double_data(
       const int,      ///< rank of process we are receiving from.
-      const int,      ///< comm_tag: what sort of comm (PER,MPI,etc.)
+      const int,      ///< comm_tag: (PER,MPI,F2C,C2F)
       const std::string &, ///< identifier for receive.
       const long int, ///< number of doubles to receive
       double *        ///< Pointer to array to write to (initialised).

@@ -180,13 +180,22 @@ int mp_only_cooling::TimeUpdateMP(
       )
 {
 
+//#ifdef TEST_INF
+  for (int v=0;v<nv_prim;v++) {
+    if (!isfinite(p_in[v])) {
+      cout <<"NAN/INF input to  mp_only_cooling::TimeUpdateMP: ";
+      cout <<" v="<<v<<", val="<<p_in[v]<<"\n";
+      return 1;
+    }
+  }
+//#endif
+
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
   // First get gas temperature, and if it outside the allowed ranges,
   // then set it to the relevant limiting min/max value.
   //
-  for (int v=0;v<nv_prim;v++)
-    p_out[v] = p_in[v];
+  for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
   double T = p_out[PG]*Mu_tot_over_kB/p_out[RO];
   if (T<MinT_allowed) {
     Set_Temp(p_out,MinT_allowed,gamma);
@@ -203,81 +212,58 @@ int mp_only_cooling::TimeUpdateMP(
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
   //
-  // Now we do a single RK4 step
+  // Now we do a few RK4 steps
   //
-  double Etemp, k1, k2, k3, k4;
+  size_t nstep=1;
+  double step_dt;
+  double Etemp, E0_step, k1, k2, k3, k4;
+  do {
+    step_dt = dt/nstep;
+    E0_step = Eint0;
+    T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
 
-  k1 = dt*Edot(p_in[RO],T);
-  Etemp = Eint0+0.5*k1;
+    if (nstep>16) {
+      cout <<"Warning: cooling nsteps="<<nstep<<"\n";
+      rep.printVec("p_in",p_in,nv_prim);
+      cout <<"E0_step="<<E0_step<<", Ein="<<Eint0;
+      cout <<", T="<<T<<", Edot="<<Edot(p_in[RO],T)<<"\n";
+    }
 
-  T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-  k2 = dt*Edot(p_in[RO],T);
-  Etemp = Eint0+0.5*k2;
-  
-  T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-  k3 = dt*Edot(p_in[RO],T);
-  Etemp = Eint0+k3;
+    for (size_t v=0;v<nstep;v++) {
 
-  T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-  k4 = dt*Edot(p_in[RO],T);
+      k1 = step_dt*Edot(p_in[RO],T);
+      Etemp = E0_step+0.5*k1;
 
-  Etemp = Eint0 +(k1 +2.0*k2 +2.0*k3 +k4)/6.0;
+      T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
+      k2 = step_dt*Edot(p_in[RO],T);
+      Etemp = E0_step+0.5*k2;
+      
+      T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
+      k3 = step_dt*Edot(p_in[RO],T);
+      Etemp = E0_step+k3;
 
-#ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  //
-  // Check that temperature is not too high or too low...
-  //
-  T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
-  if (T<0.0) {
-    cout <<"Error in mp_only_cooling::TimeUpdateMP(): Negative T="<<T<<"\n";
-    p_out[PG] = Etemp*(gamma-1);
-    Set_Temp(p_out,MinT_allowed,gamma);
-    *Tf = p_out[PG]*Mu_tot_over_kB/p_out[RO];
-    return 1;
-  }
-  else if (T<MinT_allowed) {
-    //cout <<"Error in mp_only_cooling::TimeUpdateMP(): Tiny T="<<T<<"\n";
-    p_out[PG] = Etemp*(gamma-1);
-    Set_Temp(p_out,MinT_allowed,gamma);
-    *Tf = p_out[PG]*Mu_tot_over_kB/p_out[RO];
-    return 0;
-  }
-  else if (T>MaxT_allowed) {
-    //cout <<"Error in mp_only_cooling::TimeUpdateMP(): Huge T="<<T<<"\n";
-    p_out[PG] = Etemp*(gamma-1);
-    Set_Temp(p_out,MaxT_allowed,gamma);
-    *Tf = p_out[PG]*Mu_tot_over_kB/p_out[RO];
-    return 0;
-  }
-  if (Etemp<=0.5*Eint0) {
-    cout <<"Error in mp_only_cooling::TimeUpdateMP(): Eint decreased";
-    cout <<" by more than half!\n";
-  }
-  p_out[PG] = Etemp*(gamma-1);
+      T = Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
+      k4 = step_dt*Edot(p_in[RO],T);
+
+      E0_step = E0_step +(k1 +2.0*k2 +2.0*k3 +k4)/6.0;
+      T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
+
+      if (nstep>16) {
+        cout <<"MP_only_cooling integration: step="<<v<<", T=";
+        cout <<T<<", E0_step="<<E0_step<<"\n";
+      }
+    }
+    
+    if (nstep>16) {
+      //cout <<"Warning: cooling nsteps="<<nstep<<"\n";
+      //rep.printVec("p_in",p_in,nv_prim);
+      cout <<"END: T="<<T<<", E0_step="<<E0_step<<", Ein="<<Eint0<<"\n";
+    }
+    nstep *=2;
+  } while (T<MinT_allowed || T>MaxT_allowed || !isfinite(E0_step));
+
+  p_out[PG] = E0_step*(gamma-1);
   *Tf = p_out[PG]*Mu_tot_over_kB/p_out[RO];
-
-#else // not SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-
-  if (Etemp<=0.0) {
-    cout <<"Error in mp_only_cooling::TimeUpdateMP(): neg. Eint.\n";
-    //rep.error("negative temperature",
-    //	      Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO]);
-    return 1;
-  }
-  if (Etemp<=0.5*Eint0) {
-    cout <<"Error in mp_only_cooling::TimeUpdateMP(): Eint decreased by more than half!\n";
-    //rep.error("negative temperature",
-    //	      Etemp*(gamma-1.0)*Mu_tot_over_kB/p_in[RO]);
-    //return 1;
-  }
-  //
-  // Assign output values -- change pressure and set Tf
-  //
-  for (int v=0;v<nv_prim;v++)
-    p_out[v] = p_in[v];
-  p_out[PG] = Etemp*(gamma-1);
-  *Tf = p_out[PG]*Mu_tot_over_kB/p_out[RO];
-#endif // if/not SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
   return 0;
 }

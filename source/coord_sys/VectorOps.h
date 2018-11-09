@@ -12,7 +12,7 @@
 /// etc. for the different coordinate systems.
 /// 
 /// Modified:\n
-///  - 2007-08-01 File Created
+/// - 2007-08-01 File Created
 /// - 2010-07-20 JM: changed order of accuracy variables to integers.
 /// - 2010.12.04 JM: Added constructor with only one argument.  Also
 ///   a set_dx() function.
@@ -113,7 +113,7 @@ class BaseVectorOps {
   /// for the x-component of the divergence.  
   ///
   virtual double Divergence(
-      const cell *, ///< point for which to calculate div(B)
+      cell *, ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                     ///< Should contain 3 elements, ordered as x,y,z components.
@@ -136,6 +136,22 @@ class BaseVectorOps {
       pion_flt *      ///< Pointer to array to put curl vector.
       )=0;
 
+  /// central difference operator for a given variable.
+  virtual double CentralDiff(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< point for which to calculate curl
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int     ///< index in state vector of variable
+      )=0;
+
+  virtual double GradZone(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< pointer to cell
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int    ///< index in state vector of variable
+      )=0;
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
   /// 
@@ -302,7 +318,7 @@ class VectorOps_Cart : virtual public BaseVectorOps
   /// \note It assumes cartesian geometry.
   ///
   virtual double Divergence(
-      const cell *, ///< point for which to calculate div(B)
+      cell *, ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                     ///< Should contain 3 elements, ordered as x,y,z components.
@@ -326,6 +342,22 @@ class VectorOps_Cart : virtual public BaseVectorOps
       pion_flt *      ///< Pointer to array to put curl vector.
       );
 
+  /// central difference operator for a given variable.
+  virtual double CentralDiff(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< pointer to cell
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int     ///< index in state vector of variable
+      );
+
+  virtual double GradZone(
+      class GridBaseClass *,  ///< pointer to computational grid.
+      class cell *, ///< pointer to cell
+      const int,    ///< axis along which to take difference
+      const int,    ///< Which vector to take values from (P=0,Ph=1,dU=2)
+      const int    ///< index in state vector of variable
+      );
   ///
   /// Given a state, and a slope (dP/dx), construct an edge state.
   /// 
@@ -474,7 +506,7 @@ class VectorOps_Cyl : virtual public VectorOps_Cart
   /// the relevant scale factors for each derivative.
   /// */
   virtual double Divergence(
-      const cell *, ///< point for which to calculate div(B)
+      cell *, ///< point for which to calculate div(B)
       const int,    ///< Which State Vector to take scalar from (P=0,Ph=1)
       const int *,  ///< Indices of vector quantity (in state vector) to calculate divergence of.
                     ///< Should contain 3 elements, ordered as x,y,z components.

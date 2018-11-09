@@ -25,6 +25,7 @@
 #include "defines/testing_flags.h"
 
 #include "spatial_solvers/solver_eqn_base.h"
+#include "grid/grid_base_class.h"
 #include "equations/eqns_mhd_adiabatic.h"
 #include "Riemann_solvers/riemannMHD.h"
 #include "Riemann_solvers/Roe_MHD_ConservedVar_solver.h"
@@ -61,14 +62,15 @@ class FV_solver_mhd_ideal_adi
 
   /// Calculates Flux based on a left and right state vector (primitive).
   virtual int inviscid_flux(
-      const cell *, ///< Left state cell pointer
-      const cell *, ///< Right state cell pointer
+      class cell *, ///< Left state cell pointer
+      class cell *, ///< Right state cell pointer
       const pion_flt *, ///< Left Primitive state vector.
       const pion_flt *, ///< Right Primitive state vector.
       pion_flt *,       ///< Resultant Flux state vector.
       pion_flt *,      ///< State vector at interface.
       const int, 
       ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
+      class GridBaseClass *, ///<  pointer to grid
       const double,  ///< cell-size dx (for LF method)
       const double    ///< Gas constant gamma.
       );
@@ -214,15 +216,15 @@ protected:
 
 
 ///
-/// The main solver PION uses for integrating the ideal MHD Equations,
-/// with the mixed GLM method of divergence cleaning (Dedner et al., 2002),
-/// including modifications documented in Mackey \& Lim 2011.
+/// The main solver the code uses for integrating the ideal MHD Equations (adiabatic),
+/// with the mixed GLM method of divergence cleaning (Dedner et al., 2002).
 ///
-/// This can do a few types of flux solution:
+/// This will eventually do a few types of flux solution:
 ///  - 0=Lax-Friedrichs,
 ///  - 1=Linear Riemann,
-///  - 4=Roe-Averaged approximate solver (Cargo & Galice, 1997).
-///  - 7=HLLD solver
+///  - 2=Exact Riemann,
+///  - 3=Hybrid Riemann (Linear/Exact)
+///  - 4=Roe-Averaged approximate solver.
 ///
 ///
 class FV_solver_mhd_mixedGLM_adi
@@ -311,15 +313,16 @@ class FV_solver_mhd_mixedGLM_adi
   /// \f[ F(B_x) = \psi_* = \frac{1}{2}(\psi_L+\psi_R) - \frac{c_h}{2}(B_x(R)-B_X(L)) \f]
   /// 
   virtual int inviscid_flux(
-        const cell *, ///< Left state cell pointer
-        const cell *, ///< Right state cell pointer
+        class cell *, ///< Left state cell pointer
+        class cell *, ///< Right state cell pointer
         const pion_flt *, ///< Left Primitive state vector.
         const pion_flt *, ///< Right Primitive state vector.
         pion_flt *,       ///< Resultant Flux state vector.
         pion_flt *,      ///< State vector at interface.
         const int,
         ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS,4=RoeRS)
-      const double dx,  ///< cell-size dx (for LF method)
+        class GridBaseClass *, ///< pointer to grid
+        const double dx,  ///< cell-size dx (for LF method)
         const double    ///< Gas constant gamma.
         );
 };

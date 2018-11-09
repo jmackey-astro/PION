@@ -9,10 +9,10 @@ GAMMA 1.66666666666666666667
 
 StartTime 0.0
 FinishTime 1.58e12  # 50kyr
-OutputFile BW_NGaxi2D_NR064
+OutputFile BW_NGaxi2D_NR008
 OutputPath ./
 OutputFileType silo
-OutputFrequency 128
+OutputFrequency 2
 OutputCriterion 0
 OPfreqTime 6.312e10
 
@@ -40,19 +40,19 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  64
-NGridY  32
+NGridX  8
+NGridY  4
 NGridZ  1
 
-Xmin -30.86e18
+Xmin -16.0e18
 Ymin  0.0e18
-Zmin -4.629e18
+Zmin  0.0e18
 
-Xmax  30.86e18
-Ymax  30.86e18 
-Zmax  4.629e18
+Xmax  16.0e18
+Ymax  16.0e18 
+Zmax  0.0e18
 
-grid_nlevels 4
+grid_nlevels 2
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
@@ -107,7 +107,7 @@ BWmagfieldY 0.0   # Magnetic field strength
 BWmagfieldZ 0.0   # Magnetic field strength
 
 BW_energy 1.0e51  # energy in ergs (all thermal)
-BW_nzones 4       # Radius of hot region.
+BW_nzones 2       # Radius of hot region.
 BW_blast_dens 2.34e-22  # here same as ambient density.
 
 # We can have a second ISM region, but here we ignore it by setting

@@ -129,18 +129,19 @@ class comms_base {
   virtual int wait_for_send_to_finish(std::string & ///< identifier for the send we are waiting on.
 				      )=0;
 
-  /** \brief Look for some data that is being sent to us.  Does not return
-   * until it finds some, so it is up to the programmer to prevent deadlock!
-   *
-   * When it finds some data of the type requested, it reads the comm_tag of the data,
-   * the process who is sending it, and associates an identifier string with it.
-   * This string can be used to receive the data by a subsequent function call.
-   **/
-  virtual int look_for_data_to_receive(int *,         ///< rank of sender
-				       std::string &, ///< identifier for receive.
-				       int *,         ///< comm_tag associated with data.
-				       const int      ///< type of data to look for (COMM_CELLDATA,COMM_DOUBLEDATA)
-				       )=0;
+  /// Look for some data that is being sent to us.  Does not return
+  /// until it finds some, so it is up to the programmer to prevent
+  /// deadlock!  When it finds some data of the type requested, it
+  /// reads the comm_tag of the data, the process who is sending it,
+  /// and associates an identifier string with it.  This string can
+  /// be used to receive the data by a subsequent function call.
+  virtual int look_for_data_to_receive(
+      int *,         ///< rank of sender
+      std::string &, ///< identifier for receive.
+      int *,         ///< comm_tag associated with data found.
+      const int,   ///< comm_tag requested: (PER,MPI,F2C,C2F)
+      const int    ///< type of data request (COMM_CELLDATA,COMM_DOUBLEDATA)
+      )=0;
 
   ///
   /// \brief Receive Cell data from a specific process rank. 

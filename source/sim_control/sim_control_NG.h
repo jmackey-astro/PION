@@ -51,7 +51,7 @@ class sim_control_NG :
       int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
       int,      ///< Number of command-line arguments.
       string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
@@ -63,7 +63,7 @@ class sim_control_NG :
   /// all in a loop which runs until end-of-sim is reached.
   ///
   virtual int Time_Int(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   //---------------------------------------
@@ -72,8 +72,8 @@ class sim_control_NG :
   ///
   /// Calculates total values of conserved quantities.
   ///
-  int initial_conserved_quantities(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+  virtual int initial_conserved_quantities(
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
 #ifdef BLAST_WAVE_CHECK
@@ -82,7 +82,7 @@ class sim_control_NG :
   /// position and output to screen.
   ///
   void calculate_blastwave_radius(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///<  grid pointers.
       );
 #endif // BLAST_WAVE_CHECK
 
@@ -94,22 +94,23 @@ class sim_control_NG :
   /// first-order or second-order update.
   ///
   virtual double advance_time(
-      const int ///< level in NG grid.
+      const int, ///< level in NG grid.
+      class GridBaseClass * ///< grid pointer
       );
 
   ///
-  /// First-order-accurate time integration for a single step on level l.
-  /// Returns the sum of delta-t for the timestep just completed, and the
-  /// step to come.
+  /// First-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed and
+  /// the step to come.
   ///
   virtual double advance_step_OA1(
       const int ///< level in NG grid.
       );
 
   ///
-  /// Second-order-accurate time integration for a single step on level l.
-  /// Returns the sum of delta-t for the timestep just completed, and the
-  /// step to come.
+  /// Second-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed, and
+  /// the step to come.
   ///
   virtual double advance_step_OA2(
       const int ///< level in NG grid.
@@ -130,30 +131,34 @@ class sim_control_NG :
   /// Checks Total energy relative to initial value, and prints a
   /// message if not.
   ///
-  int check_energy_cons(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+  virtual int check_energy_cons(
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
+  
   ///
-  /// This function takes the contents of each cell->dU[] vector and
-  /// updates Ph[] the changes.  If we are on the full-step then it
-  /// also updates P[] so that Ph[] is identical.
-  /// For the NG grid, it performs an additional step of
-  /// correcting the fluxes for cells that have an interface above
-  /// the boundary of a grid on the next finer level.
+  /// Receive fine-level fluxes at level boundary onto coarser parent
+  /// grid(s) for static mesh refinement.  This version is for when the
+  /// child and parent grid are on the same MPI process.
   ///
-  virtual int grid_update_state_vector(
-      const double ,  ///< dt, timestep
-      const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int,       ///< Full order of accuracy of simulation
-      class GridBaseClass * ///< grid pointer
+  virtual int recv_BC89_fluxes_F2C(
+      const int,    ///< My level in grid hierarchy.
+      const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int     ///< Full order of accuracy of simulation
+      );
+
+  /// For a given boundary, implement the BC89 flux-correction from
+  /// fine to coarse grid, so that conserved quantities are conserved
+  int recv_BC89_flux_boundary(
+      class GridBaseClass *, ///< pointer to coarse grid
+      struct flux_update &,  ///< data for fine grid
+      struct flux_update &,  ///< data for coarse grid
+      const unsigned int,    ///< direction of outward normal
+      const axes             ///< axis of normal direction.
       );
 
 }; // sim_control_NG
    
-/*************************************************************************/
-/*************************************************************************/
-/*************************************************************************/
 
 
 #endif // if not SIM_CONTROL_NG_H

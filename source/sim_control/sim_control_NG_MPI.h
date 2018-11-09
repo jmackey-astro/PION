@@ -53,7 +53,7 @@ class sim_control_NG_MPI :
       int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...).
       int,      ///< Number of command-line arguments.
       string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
@@ -65,10 +65,28 @@ class sim_control_NG_MPI :
   /// end-of-sim is reached.
   /// 
   int Time_Int(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   protected:
+
+  ///
+  /// First-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed and
+  /// the step to come.
+  ///
+  double advance_step_OA1(
+      const int ///< level in NG grid.
+      );
+  
+  ///
+  /// Second-order-accurate time integration for a step on level l.
+  /// Returns the sum of delta-t for the timestep just completed and
+  /// the step to come.
+  ///
+  double advance_step_OA2(
+      const int ///< level in NG grid.
+      );
 
   ///
   /// Takes the contents of each cell->dU[] vector and
@@ -86,6 +104,50 @@ class sim_control_NG_MPI :
       const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int,       ///< Full order of accuracy of simulation
       class GridBaseClass * ///< grid pointer
+      );
+
+  ///
+  /// Send fine-level fluxes at level boundary to coarser parent
+  /// grid(s) for static mesh refinement.
+  ///
+  int send_BC89_fluxes_F2C(
+      const int,    ///< My level in grid hierarchy.
+      const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int     ///< Full order of accuracy of simulation
+      );
+
+  ///
+  /// Receive fine-level fluxes at level boundary onto coarser parent
+  /// grid(s) for static mesh refinement.
+  ///
+  int recv_BC89_fluxes_F2C(
+      const int,    ///< My level in grid hierarchy.
+      const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int     ///< Full order of accuracy of simulation
+      );
+
+  /// clear the non-blocking MPI sends when they have been
+  /// received.
+  void clear_sends_BC89_fluxes();
+
+  /// List of IDs for MPI sends related to the BC89 Flux
+  /// correction algorithms.  Should be cleared at the beginning
+  /// of each timestep.
+  std::vector<string> BC89_flux_send_list;
+
+  ///
+  /// Calculates total values of conserved quantities.
+  ///
+  virtual int initial_conserved_quantities(
+      vector<class GridBaseClass *> &  ///< grid pointers.
+      );
+
+  ///
+  /// Checks Total energy relative to initial value, and prints a
+  /// message if not.
+  ///
+  int check_energy_cons(
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
 }; // sim_control_NG_MPI

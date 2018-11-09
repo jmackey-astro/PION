@@ -267,14 +267,16 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       //
       // Find a message that has been sent to us.
       //
-      err = COMM->look_for_data_to_receive(&from_rank, id, &comm_tag, COMM_DOUBLEDATA);
-      if (err) rep.error("Receive_RT_Boundaries() look4data returned abnormally",err);
+      err = COMM->look_for_data_to_receive(&from_rank, id, &comm_tag,
+                                          BC_RTtag,COMM_DOUBLEDATA);
+      if (err) rep.error("Receive_RT_Boundaries() look4data",err);
       if (comm_tag!=BC_RTtag) {
-        rep.error("Getting data, but not RT and waiting for RT data!",comm_tag);
+        rep.error("Getting data, but not RT",comm_tag);
       }
 
       // 
-      // Set pointer to boundary we are receiving, and note which one it is in i_recv.
+      // Set pointer to boundary we are receiving, and note which one
+      // it is in i_recv.
       //
       b=0; bool test=false; i_recv=-1;
       for (int v=0; v<n_recv; v++) {

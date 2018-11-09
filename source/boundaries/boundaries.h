@@ -17,8 +17,10 @@
 // ##################################################################
 // ##################################################################
 
-#define TEST_MPI_NG
-#define TEST_C2F
+//#define TEST_MPI_NG
+//#define TEST_C2F
+//#define TEST_MPI_NG_F2C
+//#define TEST_MPI_BC
 
 ///
 /// enum for the types of boundary condition.
@@ -74,12 +76,13 @@ enum BoundaryTypes {
 //
 // integer flags for MPI communication labels.
 //
-#define BC_ANYtag 0 ///< works for either sort of communication.
+#define BC_ANYtag 0 ///< works for any sort of communication.
 #define BC_MPItag 1 ///< Integer tag on MPI send/receive operations, to label that this communicates MPI boundary data.
 #define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
 #define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
-#define BC_MPI_NGF2C_tag 4 ///< MPI send/receive from fine to coarse grid.
-#define BC_MPI_NGC2F_tag 5 ///< MPI send/receive from coarse to fine grid.
+#define BC_MPI_NGF2C_tag 10000 ///< MPI send/receive from fine to coarse grid.
+#define BC_MPI_NGC2F_tag 1000 ///< MPI send/receive from coarse to fine grid.
+#define BC_MPI_FLUX_tag  3000   ///< Berger & Colella (1989) flux correction.
 
 
 // ##################################################################
@@ -131,29 +134,31 @@ struct boundary_data {
   /// MPI process (parallel only), on the same grid level.
   ///
   std::list<cell *> send_data;
-  ///
-  /// STL linked list for grid cells in a parent/child grid needed
-  /// for the external boundaries of a child grid (unused for uniform
-  /// grid) or the non-leaf data of a parent grid.
-  ///
-  std::list<cell*> NG;
-  pion_flt *refval;  ///< Optional reference state vector.
-
   /// vector of data to be sent to coarser level grid (MPI-NG only)
   std::vector<struct averaging> avg;
-
-  /// (MPI-NG only) vector of lists of cells, for a coarse grid that
+  /// Vector of lists of cells, for a coarse grid that
   /// receives data from a number of child grids to replace the
   /// on-grid data.  Vector length is the number of children.
+  /// - Used by serial NG code:
+  ///    - setup_NG_grid::setup_boundary_structs()
+  ///    - NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE()
+  ///    - NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
+  ///    - sim_control_NG::calculate_raytracing_column_densities()
+  /// - Used by parallel NG code:
+  ///    - NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()
+  ///    - NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV()
   std::vector<std::list<cell *> > NGrecvF2C;
+  std::vector<int> NGrecvF2C_ranks;
   /// as NGrecvF2C, but C2F
   std::vector<std::list<cell *> > NGrecvC2F;
-
   /// (MPI-NG only) list of lists of cells, for a coarse grid that
   /// sends data to a number of child grids for their external
   /// boundaries.  Vector length is the number of child boundaries
   /// to update.
   std::vector<struct c2f *> NGsendC2F;
+  pion_flt *refval;  ///< Optional reference state vector.
+
+
 };
 
 #endif // BOUNDARIES_H

@@ -9,7 +9,7 @@ GAMMA 1.66666666666666666667
 
 StartTime 0.0
 FinishTime 1.58e12  # 50kyr
-OutputFile BW_NGaxi2D_NR064
+OutputFile BW_NGaxi2D_NR016
 OutputPath ./
 OutputFileType silo
 OutputFrequency 128
@@ -40,8 +40,8 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  64
-NGridY  32
+NGridX  16
+NGridY  8
 NGridZ  1
 
 Xmin -30.86e18

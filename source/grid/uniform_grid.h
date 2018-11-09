@@ -339,12 +339,13 @@ class UniformGrid
   {return G_idx;}
 
   virtual double CellVolume(
-      const cell *c
+      const cell *c, const double
       ) {return VectorOps_Cart::CellVolume(c,G_dx);}
 
   virtual double CellInterface(
       const cell *c, ///< Cell
-      const direction dir ///< outward normal to interface.
+      const direction dir, ///< outward normal to interface.
+      const double
       ) {return VectorOps_Cart::CellInterface(c,dir,G_dx);}
 
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
@@ -456,7 +457,7 @@ class UniformGrid
       int *,   ///< xmax of interface region (integer units)
       int *,   ///< number of elements in interface region
       const int,     ///< number of cells per face, per dim.
-      std::vector<struct flux_interface *> & ///< list to populate
+      struct flux_update & ///< struct with list to populate
       );
 
   ///
@@ -765,12 +766,13 @@ class uniform_grid_cyl
               );
 
   virtual double CellVolume(
-      const cell *c
+      const cell *c, const double
       ) {return VectorOps_Cyl::CellVolume(c,G_dx);}
 
   virtual double CellInterface(
       const cell *c, ///< Cell
-      const direction dir ///< outward normal to interface.
+      const direction dir, ///< outward normal to interface.
+      const double
       ) {return VectorOps_Cyl::CellInterface(c,dir,G_dx);}
 
  protected:
@@ -917,12 +919,13 @@ class uniform_grid_sph
       );
 
   virtual double CellVolume(
-      const cell *c
+      const cell *c, const double
       ) {return VectorOps_Sph::CellVolume(c,G_dx);}
 
   virtual double CellInterface(
       const cell *c, ///< Cell
-      const direction dir ///< outward normal to interface.
+      const direction dir, ///< outward normal to interface.
+      const double
       ) {return VectorOps_Sph::CellInterface(c,dir,G_dx);}
 
  protected:

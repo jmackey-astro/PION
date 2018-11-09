@@ -127,8 +127,8 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   ///
   int InterCellFlux(
         class GridBaseClass *grid,
-        const cell *, ///< Left state cell pointer
-        const cell *, ///< Right state cell pointer
+        class cell *, ///< Left state cell pointer
+        class cell *, ///< Right state cell pointer
         pion_flt *, ///< Left Primitive State Vector.
         pion_flt *, ///< Right Primitive State Vector.
         pion_flt *, ///< Flux Vector. (written to).
@@ -142,14 +142,15 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   /// Calculates Flux based on a left and right state vector (primitive).
   ///
   virtual int inviscid_flux(
-      const cell *,  ///< Left state cell pointer
-      const cell *,  ///< Right state cell pointer
+      class cell *,  ///< Left state cell pointer
+      class cell *,  ///< Right state cell pointer
       const pion_flt *,///< Left Primitive state vector.
       const pion_flt *,///< Right Primitive state vector.
       pion_flt *,      ///< Resultant Flux state vector.
       pion_flt *,      ///< State vector at interface.
       const int, 
-      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
+      ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)      
+      class GridBaseClass *, ///<  pointer to grid
       const double,  ///< cell-size dx (for LF method)
       const double    ///< Gas constant gamma.
       ) =0;

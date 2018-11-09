@@ -252,9 +252,10 @@ int comm_files::barrier(const std::string msg)
 
 
 
-double comm_files::global_operation_double(const string s, ///< Either Max or Min
-					   const double d  ///< this process's max/min value.
-					   )
+double comm_files::global_operation_double(
+      const string s, ///< Either Max or Min
+      const double d  ///< this process's max/min value.
+      )
 {
   double local=d, global=0.0;
 
@@ -361,10 +362,6 @@ double comm_files::global_operation_double(const string s, ///< Either Max or Mi
 // ##################################################################
 
 
-// ##################################################################
-// ##################################################################
-
-
 
 void comm_files::global_op_double_array(
                       const std::string s, ///< MAX,MIN,SUM
@@ -384,13 +381,12 @@ void comm_files::global_op_double_array(
 
 
 
-
-
-int comm_files::broadcast_data(const int sender,       ///< rank of sender.
-			       const std::string type, ///< Type of data INT,DOUBLE,etc.
-			       const int n_el,         ///< number of elements
-			       void *data              ///< pointer to data.
-			       )
+int comm_files::broadcast_data(
+      const int sender,       ///< rank of sender.
+      const std::string type, ///< Type of data INT,DOUBLE,etc.
+      const int n_el,         ///< number of elements
+      void *data              ///< pointer to data.
+      )
 {
   int err=0;
   string fn="broadcast_";
@@ -475,6 +471,12 @@ int comm_files::broadcast_data(const int sender,       ///< rank of sender.
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int comm_files::send_cell_data(
@@ -584,8 +586,15 @@ int comm_files::send_cell_data(
 }
 
 
-int comm_files::wait_for_send_to_finish(string &id ///< identifier for the send we are waiting on.
-				      )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int comm_files::wait_for_send_to_finish(
+      string &id ///< identifier for the send we are waiting on.
+      )
 {
 #ifdef TESTING
   cout <<"rank: "<<myrank<<"  comm_files::wait_for_send_to_finish() starting\n";
@@ -637,11 +646,19 @@ int comm_files::wait_for_send_to_finish(string &id ///< identifier for the send 
 }
 
 
-int comm_files::look_for_data_to_receive(int *from_rank, ///< rank of sender
-					 string &id,     ///< identifier for receive.
-					 int *comm_tag,  ///< comm_tag associated with data.
-					 const int type  ///< type of data we are looking for.
-					 )
+
+// ##################################################################
+// ##################################################################
+
+
+
+int comm_files::look_for_data_to_receive(
+      int *from_rank, ///< rank of sender
+      string &id,     ///< identifier for receive.
+      int *comm_tag,  ///< comm_tag associated with data.
+      const int req_tag, ///< comm_tag requested
+      const int type  ///< type of data we are looking for.
+      )
 {
   int err=0;
 #ifdef TESTING

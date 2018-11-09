@@ -229,6 +229,26 @@ int setup_grid_NG_MPI::setup_grid(
     if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
   }
 
+//#ifdef TEST_BC89FLUX
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    for (int d=0;d<grid[l]->flux_update_send.size();d++) {
+      struct flux_update *fup = &(grid[l]->flux_update_send[d]);
+      cout <<"l="<<l<<", FUP_SEND: d="<<d<<" info: \n";
+      cout <<"\t ranks: ";
+      for (int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
+      cout <<"\n";
+      cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
+    }
+    for (int d=0;d<grid[l]->flux_update_recv.size();d++) {
+      struct flux_update *fup = &(grid[l]->flux_update_recv[d]);
+      cout <<"l="<<l<<", FUP_RECV: d="<<d<<" info: \n";
+      cout <<"\t ranks: ";
+      for (int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
+      cout <<"\n";
+      cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
+    }
+  }
+//#endif
 cout <<"------------------------------------------------------\n\n";
 
   return(0);
@@ -305,7 +325,8 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid);
+  int err = 0;
+  err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid,l);
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
 
@@ -319,7 +340,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     // receives data from a coarser level grid.
     for (int i=0; i<par.ndim; i++) {
       if (!pconst.equalD(par.levels[l-1].Xmin[i],
-                         par.levels[l].Xmin[i])) {
+                         par.levels[l].Xmin[i])   && 
+           pconst.equalD(par.levels[l].Xmin[i],
+                         grid->Xmin(static_cast<axes>(i))) ) {
 #ifdef TESTING
         cout <<"reassigning neg. bc for axis "<<i<<" to COARSE_TO_FINE\n";
 #endif
@@ -327,7 +350,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
         grid->BC_bd[2*i]->type  = "COARSE_TO_FINE_RECV";
       }
       if (!pconst.equalD(par.levels[l-1].Xmax[i],
-                         par.levels[l].Xmax[i])) {
+                         par.levels[l].Xmax[i])   && 
+           pconst.equalD(par.levels[l].Xmax[i],
+                         grid->Xmax(static_cast<axes>(i))) ) {
 #ifdef TESTING
         cout <<"reassigning pos. bc for axis "<<i<<" to COARSE_TO_FINE\n";
 #endif
@@ -335,24 +360,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
         grid->BC_bd[2*i+1]->type  = "COARSE_TO_FINE_RECV";
       }
     }
-
-    // Add internal boundary to send averaged local data
-    // to the parent grid.  Whether any data need to 
-    // be sent/received is decided later in the function
-    // assign_boundary_data().
-
-#ifdef TESTING
-    cout <<"Adding FINE_TO_COARSE_SEND boundary for level ";
-    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
-#endif
-    struct boundary_data *bd = new boundary_data;
-    bd->itype = FINE_TO_COARSE_SEND;
-    bd->type  = "FINE_TO_COARSE_SEND";
-    bd->dir = NO;
-    bd->ondir = NO;
-    bd->refval=0;
-    grid->BC_bd.push_back(bd);
-  }
+  } // if l>0 add C2F recv
 
   //
   // Now check for NG grid boundaries if this grid has a child
@@ -387,6 +395,28 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd2->refval=0;
     grid->BC_bd.push_back(bd2);
   }
+
+  if (l>0) {
+    // Add internal boundary to send averaged local data
+    // to the parent grid.  Whether any data need to 
+    // be sent/received is decided later in the function
+    // assign_boundary_data().
+    // Add it here, because we need to receive F2C data first, then
+    // delete any previous F2C send buffers, and then send any new
+    // F2C data after the old buffers are gone.
+#ifdef TESTING
+    cout <<"Adding FINE_TO_COARSE_SEND boundary for level ";
+    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
+#endif
+    struct boundary_data *bd = new boundary_data;
+    bd->itype = FINE_TO_COARSE_SEND;
+    bd->type  = "FINE_TO_COARSE_SEND";
+    bd->dir = NO;
+    bd->ondir = NO;
+    bd->refval=0;
+    grid->BC_bd.push_back(bd);
+  }
+
   
   
 #ifdef TESTING

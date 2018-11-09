@@ -217,18 +217,13 @@ void VectorOps_Sph::Gradient(
 
 
 double VectorOps_Sph::Divergence(
-        const cell *c,
+        cell *c,
         const int sv,
         const int *var,
         class GridBaseClass *grid
         )
 {
 
-#ifdef TESTING
-  for (int i=0;i<2*VOnd; i++)
-    if (!grid->NextPt(c,static_cast<direction>(i)))
-      rep.error("VectorOps_Sph::Div: Some neighbour cells don't exist",i);
-#endif //TESTING
 
   if (VOnd!=1) rep.error("Spherical coordinates only work in 1D!",VOnd);
   //
@@ -237,18 +232,18 @@ double VectorOps_Sph::Divergence(
   double divv=0.0, rn=0.0, rp=0.0;
   cell *cn,*cp;
   double dR=grid->DX();
+  cn = (grid->NextPt(c,RNsph)) ? grid->NextPt(c,RNsph) : c;
+  cp = (grid->NextPt(c,RPsph)) ? grid->NextPt(c,RPsph) : c;
   
   switch (sv) {
   case 0: // Use vector c->P
     // r^{-2}d(r^2 V_r)/dr or (2/r)V_r +d(V_r)/dr
-    cn = grid->NextPt(c,RNsph); cp=grid->NextPt(c,RPsph);
     rn = R_com(cn,dR); rp = R_com(cp,dR);
     //divv = (rp*rp*cp->P[var[0]] - rn*rn*cn->P[var[0]])*3.0/(pow(rp,3.0)-pow(rn,3.0));
     divv = 2.0*c->P[var[0]]/R_com(c,dR) +(cp->P[var[0]]-cn->P[var[0]])/(rp-rn);
     break;
   case 1: // Use Vector c-Ph
     // r^{-2}d(r^2 V_r)/dr or (2/r)V_r+dV_r/dr
-    cn = grid->NextPt(c,RNsph); cp=grid->NextPt(c,RPsph);
     rn = R_com(cn,dR); rp = R_com(cp,dR);
     //divv = (rp*rp*cp->P[var[0]] - rn*rn*cn->P[var[0]])*3.0/(pow(rp,3.0)-pow(rn,3.0));
     divv = 2.0*c->P[var[0]]/R_com(c,dR) +(cp->P[var[0]]-cn->P[var[0]])/(rp-rn);

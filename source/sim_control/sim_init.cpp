@@ -219,7 +219,7 @@ int sim_init::Init(
   // Now set up the grid structure.
   grid.resize(1);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
-  err = setup_grid(&(grid[0]),SimPM);
+  err = setup_grid(grid,SimPM);
   cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
@@ -268,7 +268,7 @@ int sim_init::Init(
   //
   // Assign boundary conditions to boundary points.
   //
-  err = boundary_conditions(SimPM, grid[0]);
+  err = boundary_conditions(SimPM, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
   err = assign_boundary_data(SimPM, 0, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
@@ -460,6 +460,7 @@ int sim_init::override_params(int narg, string *args)
       // Assign output frequency to new value. String is 'opfreq=N' with N=[0..Nmax].
       int tmp = atoi((args[i].substr(7)).c_str());
       cout <<"\tOVERRIDE PARAMS: Resetting opfreq from "<<SimPM.opfreq<<" to "<<tmp<<"\n";
+      SimPM.op_criterion = 0;
       SimPM.opfreq = tmp;
     }
     else if (args[i].find("outfile=") != string::npos) {
@@ -604,6 +605,7 @@ int sim_init::override_params(int narg, string *args)
       cout <<SimPM.opfreq_time<<" units [NOT YEARS!!!] to ";
       double c = atof((args[i].substr(12)).c_str());
       if (c<0.0 || c>1.e50) rep.error("Bad opfreq_time flag:",c);
+      SimPM.op_criterion = 1;
       SimPM.opfreq_time = c;
       cout << SimPM.opfreq_time<<" units." <<"\n";
       SimPM.next_optime = SimPM.simtime+SimPM.opfreq_time;

@@ -23,15 +23,7 @@
 class NG_MPI_coarse_to_fine_bc :
   virtual public NG_coarse_to_fine_bc
 {
-  protected:
-  
-  /// Assigns cells to lists for sending to external boundaries of
-  /// child cells.
-  virtual int BC_assign_COARSE_TO_FINE_SEND(
-      class SimParams &,     ///< pointer to simulation parameters
-      const int,  ///< level of this grid.
-      boundary_data *  ///< boundary data
-      );
+  public:
 
   /// Sends data from a coarser grid to set the external boundaries
   /// of any/all child grids.  If a child is on the same MPI process
@@ -46,14 +38,6 @@ class NG_MPI_coarse_to_fine_bc :
       const int
       );
 
-  /// Assigns data to an external boundary from coarser grid.  Sets
-  /// up the book-keeping to allow the update to happen every timestep.
-  virtual int BC_assign_COARSE_TO_FINE_RECV(
-      class SimParams &,     ///< pointer to simulation parameters
-      const int,  ///< level of this grid.
-      boundary_data *  ///< boundary data
-      );
-
   /// Updates data to an external boundary from coarser grid.
   /// Receives data if parent is on a different MPI process or, if
   /// on the same process, just grab the data from the parent grid.
@@ -63,6 +47,29 @@ class NG_MPI_coarse_to_fine_bc :
       const int, ///< level of grid in NG grid struct.
       struct boundary_data *,
       const int  ///< timestep on this (fine) grid
+      );
+
+  ///
+  /// Delete the temporary arrays used to send data to another
+  /// MPI process
+  void BC_COARSE_TO_FINE_SEND_clear_sends();
+
+  protected:
+  
+  /// Assigns cells to lists for sending to external boundaries of
+  /// child cells.
+  virtual int BC_assign_COARSE_TO_FINE_SEND(
+      class SimParams &,     ///< pointer to simulation parameters
+      const int,  ///< level of this grid.
+      boundary_data *  ///< boundary data
+      );
+
+  /// Assigns data to an external boundary from coarser grid.  Sets
+  /// up the book-keeping to allow the update to happen every timestep.
+  virtual int BC_assign_COARSE_TO_FINE_RECV(
+      class SimParams &,     ///< pointer to simulation parameters
+      const int,  ///< level of this grid.
+      boundary_data *  ///< boundary data
       );
 
   /// do what it says
@@ -100,11 +107,6 @@ class NG_MPI_coarse_to_fine_bc :
       int *ixmin,                 ///< child grid xmin (integer)
       int *ixmax                  ///< child grid xmax (integer)
       );
-
-  ///
-  /// Delete the temporary arrays used to send data to another
-  /// MPI process
-  void BC_COARSE_TO_FINE_SEND_clear_sends();
 
   /// List of IDs for all sends, should be cleared at the beginning
   /// of each timestep.

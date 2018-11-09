@@ -141,7 +141,7 @@ int eqns_mhd_ideal::UtoP(
     }
     // reset all variables because a negative density will change the sign of 
     // all of the velocities!
-    p[eqRO] = BASE_RHO;
+    p[eqRO] = BASE_RHO*eq_refvec[eqRO];
     p[eqVX] *= u[eqRHO]/p[eqRO];
     p[eqVY] *= u[eqRHO]/p[eqRO];
     p[eqVZ] *= u[eqRHO]/p[eqRO];
@@ -187,7 +187,7 @@ int eqns_mhd_ideal::UtoP(
       cout <<"(eqns_mhd_ideal::UtoP) negative pressure...p="<<p[eqPG];
       cout <<", correcting, count="<<ct_pg<<"\n";
     }
-    p[eqPG] = 0.01*p[eqRO];
+    p[eqPG] = eq_refvec[eqPG]*1.0e-6;
     err += 1;
   }
 #endif // don't SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
@@ -223,7 +223,9 @@ double eqns_mhd_ideal::cfast(
   double ch = chydro(p, gamma);
   double temp1 = ch*ch + (p[eqBX]*p[eqBX] +p[eqBY]*p[eqBY] +p[eqBZ]*p[eqBZ])/p[eqRO];
   double temp2 = 4.*ch*ch*p[eqBX]*p[eqBX]/p[eqRO];
-  if ((temp2=temp1*temp1-temp2) <MACHINEACCURACY) temp2=MACHINEACCURACY; // This is as good as the computer can get.
+  // This subtraction has to be done carefully to avoid
+  // sqrt(negative number).
+  if ((temp2=temp1*temp1-temp2) <MACHINEACCURACY) temp2=MACHINEACCURACY;
   return( sqrt( (temp1 + sqrt(temp2))/2.) );
 }
 
@@ -244,10 +246,8 @@ double eqns_mhd_ideal::cfast_components(
   double ch = sqrt(g*cfPG/cfRO);
   double temp1 = ch*ch + (cfBX*cfBX +cfBY*cfBY +cfBZ*cfBZ)/cfRO;
   double temp2 = 4.*ch*ch*cfBX*cfBX/cfRO;
-  //
-  // This subtraction has to be done carefully to avoid sqrt(-ve number).
-  // This is as good as the computer can get.
-  //
+  // This subtraction has to be done carefully to avoid
+  // sqrt(negative number).
   if ((temp2=temp1*temp1-temp2) <MACHINEACCURACY) temp2=MACHINEACCURACY;
   return( sqrt( (temp1 + sqrt(temp2))/2.) );
 }

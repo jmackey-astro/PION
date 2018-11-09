@@ -162,8 +162,8 @@ void FV_solver_base::set_div_v(
 ///
 int FV_solver_base::InterCellFlux(
         class GridBaseClass *grid,
-        const cell *Cl, ///< Left state cell pointer
-        const cell *Cr, ///< Right state cell pointer
+        class cell *Cl, ///< Left state cell pointer
+        class cell *Cr, ///< Right state cell pointer
         pion_flt *lp, ///< Left Primitive State Vector.
         pion_flt *rp, ///< Right Primitive State Vector.
         pion_flt *f, ///< Flux Vector. (written to).
@@ -186,9 +186,8 @@ int FV_solver_base::InterCellFlux(
 
   //
   // Get the flux from the flux solver:
-  // I CAN GET RID OF CL,CR,G FROM THIS.
   //
-  int err = inviscid_flux(Cl,Cr,lp, rp, f, pstar, solve_flag, dx, g);
+  int err = inviscid_flux(Cl,Cr,lp,rp,f,pstar,solve_flag,grid,dx,g);
   
 #ifdef DEBUG
   if (fabs(f[0]) > 1.0e-50) {
