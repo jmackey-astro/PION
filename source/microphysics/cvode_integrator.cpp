@@ -241,12 +241,12 @@ int cvode_solver::integrate_cvode_step(
   //
   err = CVode(cvode_mem, t_now+dt, Y_Output, &t_temp, CV_NORMAL);
   if (err == CV_SUCCESS) {
-  #ifdef CVODE_DEBUG
+#ifdef CVODE_DEBUG
     t_now = t_temp;
     cout <<"Success on first try: t="<<t_now<<", y = [";
     for (int v=0;v<n_eq-1;v++) cout << NV_Ith_S(Y_Output,v)<<", ";
     cout << NV_Ith_S(Y_Output,n_eq-1) <<"]\n";
-  #endif // CVODE_DEBUG
+#endif // CVODE_DEBUG
     return 0;
   }
 
@@ -255,7 +255,9 @@ int cvode_solver::integrate_cvode_step(
   // Run a do-while loop to get to the end of the step.  We may need to do it
   // in steps, which is why it is in a loop.
   //
+#ifdef CVODE_DEBUG
   cout <<"First try failed\n";
+#endif // CVODE_DEBUG
   t_temp = t_now;
   dt *= 0.5;
   int fail_ct=0, step_ct=0;
@@ -269,8 +271,8 @@ int cvode_solver::integrate_cvode_step(
       return 4;
     }
     //
-    // integrate one timestep, returning answer to temp array Y_Output, and new time to 
-    // temporary variable t_temp.
+    // integrate one timestep, returning answer to temp array Y_Output, 
+    // and new time to temporary variable t_temp.
     //
     err = CVode(cvode_mem, t_now+dt, Y_Output, &t_temp, CV_NORMAL);
     if (err!=CV_SUCCESS) {
