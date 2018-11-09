@@ -20,6 +20,7 @@
 //#define TEST_MPI_NG
 //#define TEST_C2F
 //#define TEST_MPI_NG_F2C
+//#define TEST_MPI_BC
 
 ///
 /// enum for the types of boundary condition.

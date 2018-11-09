@@ -211,13 +211,17 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
       boundary_data *b  ///< boundary data
       )
 {
+#ifdef TEST_MPI_NG_F2C
   cout <<"NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()";
   cout <<": starting... \n";
+#endif
   // Check if child grids exist or are on my MPI process
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  cout <<"nchild="<<nchild<<"\n";
+#ifdef TEST_MPI_NG_F2C
+  cout <<"level = "<<l<<", nchild="<<nchild<<"\n";
+#endif
   b->NGrecvF2C.resize(nchild);
   b->NGrecvF2C_ranks.resize(nchild);
   for (int i=0;i<nchild;i++) {
@@ -232,6 +236,11 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
     CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
     CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
 
+#ifdef TEST_MPI_NG_F2C
+    rep.printVec("F2C MPI: child xmin",ixmin,par.ndim);
+    rep.printVec("F2C MPI: child xmax",ixmax,par.ndim);
+#endif
+
     class GridBaseClass *grid = par.levels[l].grid;
     cell *c = grid->FirstPt();
     size_t ct=0;
@@ -241,6 +250,10 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
         if (c->pos[j]<ixmin[j] || c->pos[j]>ixmax[j]) ongrid=false;
       }
       if (ongrid) {
+        c->isbd = true;
+#ifdef TEST_MPI_NG_F2C
+        rep.printVec("cell over fine grid",c->pos,par.ndim);
+#endif
         b->NGrecvF2C[i].push_back(c);
         ct++;
       }

@@ -987,6 +987,7 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
 
   // this is a divergence term, not a gradient, so the radial
   // direction is different from z-direction.  d(R f)/(RdR)
+  dBdx = 0.0;
   if (d==Zcyl) {
     dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
   }
@@ -998,6 +999,9 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
     double Rm = cpos[Rcyl];
     dBdx = 2.0*(Rp*p->Ph[eqBX] - Rm*n->Ph[eqBX]) /
                 (Rp*Rp - Rm*Rm);
+  }
+  else {
+    rep.error("3D not implemented in cylindrical coords",d);
   }
 
   S[eqRHO] += 0;

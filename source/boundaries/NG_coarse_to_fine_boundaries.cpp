@@ -165,7 +165,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f2 = (*f_iter);
         // coarse cell properties:
         c = f1->npt;
-        c_vol = coarse->CellVolume(c);
+        c_vol = coarse->CellVolume(c,0);
         solver->SetSlope(c,XX,par.nvar,slope,OA2,coarse);
         interpolate_coarse2fine1D(
                             par,fine,solver,c->Ph,c_vol,slope,f1,f2);
@@ -189,7 +189,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         cell *f1, *f2, *f3, *f4, *c;
         c = (*f_iter)->npt;
-        c_vol = coarse->CellVolume(c);
+        c_vol = coarse->CellVolume(c,0);
         solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
         solver->SetSlope(c,XX,par.nvar,sy,OA2,coarse);
         // only do this on every second row because we update 4
@@ -322,9 +322,9 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
   // coarse and fine levels (Berger & Colella, 1989)
   // sum energy of fine cells.
   solver->PtoU(f1->Ph, f1U, par.gamma);
-  f_vol[0] = fine->CellVolume(f1);
+  f_vol[0] = fine->CellVolume(f1,0);
   solver->PtoU(f2->Ph, f2U, par.gamma);
-  f_vol[1] = fine->CellVolume(f2);
+  f_vol[1] = fine->CellVolume(f2,0);
   for (int v=0;v<par.nvar;v++) fU[v] = f1U[v]*f_vol[0] + f2U[v]*f_vol[1];
   // compare with coarse cell.
   solver->PtoU(P, cU, par.gamma);
@@ -402,10 +402,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   solver->PtoU(f2->P, f2U, par.gamma);
   solver->PtoU(f3->P, f3U, par.gamma);
   solver->PtoU(f4->P, f4U, par.gamma);
-  f_vol[0] = fine->CellVolume(f1);
-  f_vol[1] = fine->CellVolume(f2);
-  f_vol[2] = fine->CellVolume(f3);
-  f_vol[3] = fine->CellVolume(f4);
+  f_vol[0] = fine->CellVolume(f1,0);
+  f_vol[1] = fine->CellVolume(f2,0);
+  f_vol[2] = fine->CellVolume(f3,0);
+  f_vol[3] = fine->CellVolume(f4,0);
 
   for (int v=0;v<par.nvar;v++)
     fU[v] = f1U[v]*f_vol[0] + f3U[v]*f_vol[1] +

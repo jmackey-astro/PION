@@ -37,7 +37,7 @@ using namespace std;
 #ifdef PARALLEL
 
 
-#define TEST_INT
+//#define TEST_INT
 
 // ##################################################################
 // ##################################################################
@@ -457,7 +457,7 @@ int sim_control_NG_MPI::Time_Int(
     // function also updates the next level twice, by calling itself
     // for the finer level, and so on.
     //
-    advance_time(0);
+    advance_time(0,grid[0]);
     //advance_step_OA1(0);
     SimPM.simtime = SimPM.levels[0].simtime;
     COMM->barrier("step");
@@ -471,13 +471,14 @@ int sim_control_NG_MPI::Time_Int(
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-#ifdef TESTING
+//#ifdef TESTING
       cout.flush();
-#endif // TESTING
+//#endif // TESTING
     }
-    cout.flush();
     // --------------------------------------------------------------
 	
+    err += check_energy_cons(grid);
+
     //
     // check if we are at time limit yet.
     //
@@ -535,10 +536,13 @@ double sim_control_NG_MPI::advance_step_OA1(
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   double ctime = SimPM.levels[l].simtime; // current time
-  class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<(SimPM.grid_nlevels-1)) ? false : true;
+
+  err = update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime,grid->RT);
+  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
 #ifdef TEST_INT
   cout <<"advance_step_OA1: child="<<child<<"\n";
@@ -783,10 +787,13 @@ double sim_control_NG_MPI::advance_step_OA2(
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   double ctime = SimPM.levels[l].simtime; // current time
-  class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
   class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<SimPM.grid_nlevels-1) ? false : true;
+
+  err = update_evolving_RT_sources(
+            SimPM,SimPM.levels[l].simtime,grid->RT);
+  rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
 #ifdef TEST_INT
   cout <<"advance_step_OA2: child="<<child<<"\n";
@@ -1032,7 +1039,9 @@ double sim_control_NG_MPI::advance_step_OA2(
   // - send F2C data
   if (l>0 && SimPM.levels[l].step%2!=0) {
     // - send level fluxes
+#ifdef TEST_INT
     cout <<"step="<<SimPM.levels[l].step<<"\n";
+#endif
     err += send_BC89_fluxes_F2C(l,OA2,OA2);
 #ifdef TEST_INT
     cout <<"advance_step_OA2: l="<<l<<" send_BC89_fluxes_F2C()\n";
@@ -1113,19 +1122,23 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
   // else we have to send data to at least one other MPI process:
   class GridBaseClass *grid = SimPM.levels[l].grid;
+  class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
   int n_send = grid->flux_update_send.size();
   for (int isend=0;isend<n_send;isend++) {
     // loop over boundaries (some send to more than one process)
     struct flux_update *fup = &(grid->flux_update_send[isend]);
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
+#ifdef TEST_BC89FLUX
       cout <<"send "<<isend<<" is null, continuing...\n";
+#endif
       continue;
     }
     else {
+#ifdef TEST_BC89FLUX
       cout <<"send "<<isend<<" is not null: sending data.\n";
+#endif
     }
-    rep.error("ADD CALL TO SERIAL IF SEND AND RECV HAVE SAME RANK",1);
     size_t n_el = fup->fi.size();
     size_t n_data = n_el * SimPM.nvar;
     pion_flt *data = 0; // buffer for sending by MPI
@@ -1145,6 +1158,12 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
     // loop over procs on level l-1 to send to.
     for (unsigned int ii=0; ii<fup->rank.size();ii++) {
+      if (fup->rank[ii] == MCMD->get_myrank()) {
+#ifdef TEST_BC89FLUX
+        cout <<"ignoring BC89 for isend="<<isend<<" (to myrank).\n";
+#endif
+        continue;
+      }
 #ifdef TEST_BC89FLUX
       cout <<"BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
@@ -1190,18 +1209,36 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
   // loop over all boundaries that we need to receive
   double ftmp[SimPM.nvar], utmp[SimPM.nvar];
   class GridBaseClass *grid = SimPM.levels[l].grid;
+  class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
   int n_bd = grid->flux_update_recv.size();
+  
   for (int irecv=0;irecv<n_bd;irecv++) {
     struct flux_update *fup = &(grid->flux_update_recv[irecv]);
     // some recvs may be null, so we skip them:
     if (fup->fi[0]==0) {
+#ifdef TEST_BC89FLUX
       cout <<"recv "<<irecv<<" is null, continuing...\n";
+#endif
+      continue;
+    }
+    else if (fup->rank[0] == MCMD->get_myrank()) {
+#ifdef TEST_BC89FLUX
+      cout <<"calling serial BC89 for irecv="<<irecv;
+      cout <<" (same rank). dir="<<fup->dir<<"\n";
+#endif
+      int d = fup->dir;
+      struct flux_update *fsend = 
+                  &(SimPM.levels[l].child->flux_update_send[d]);
+      err = recv_BC89_flux_boundary(grid,*fsend,*fup,d,
+                      static_cast<axes>(fup->ax));
+      rep.errorTest("serial BC89 call",0,err);
       continue;
     }
     else {
+#ifdef TEST_BC89FLUX
       cout <<"recv "<<irecv<<" is not null: recving data.\n";
+#endif
     }
-    rep.error("ADD CALL TO SERIAL IF SEND AND RECV HAVE SAME RANK",1);
 
     // Normally we have nchild*2*ndim boundaries, so the direction
     // associated with a given "irecv" is irecv%(2*ndim).
@@ -1325,7 +1362,6 @@ int sim_control_NG_MPI::grid_update_state_vector(
     rep.errorTest("return from recv_fluxes_F2C",0,err);
   }
 
-  rep.error("ENCAPSULATE SEND/RECV BC89 SERIAL INTO FUNCTIONS!",0);
   err = time_integrator::grid_update_state_vector(dt,step,
                                                    ooa,grid);
   rep.errorTest("return from grid_update_state_vec",0,err);
@@ -1336,6 +1372,127 @@ int sim_control_NG_MPI::grid_update_state_vector(
 
 // ##################################################################
 // ##################################################################
+
+
+
+int sim_control_NG_MPI::initial_conserved_quantities(
+      vector<class GridBaseClass *> &grid
+      )
+{
+  // Energy, and Linear Momentum in x-direction.
+#ifdef TEST_CONSERVATION 
+  pion_flt u[SimPM.nvar];
+  //dp.ergTotChange = dp.mmxTotChange = dp.mmyTotChange = dp.mmzTotChange = 0.0;
+  //  cout <<"initERG: "<<dp.initERG<<"\n";
+  initERG = 0.;  initMMX = initMMY = initMMZ = 0.; initMASS = 0.0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    double dx = SimPM.levels[l].dx;
+    double dv = 0.0;
+    class cell *c=grid[l]->FirstPt();
+    do {
+      if (!c->isbd && c->isgd) {
+        dv = spatial_solver->CellVolume(c,dx);
+        spatial_solver->PtoU(c->P,u,SimPM.gamma);
+        initERG += u[ERG]*dv;
+        initMMX += u[MMX]*dv;
+        initMMY += u[MMY]*dv;
+        initMMZ += u[MMZ]*dv;
+        initMASS += u[RHO]*dv;
+      }
+    } while ( (c =grid[l]->NextPt(c)) !=0);
+  }
+
+  initERG = COMM->global_operation_double("SUM", initERG);
+  initMMX = COMM->global_operation_double("SUM", initMMX);
+  initMMY = COMM->global_operation_double("SUM", initMMY);
+  initMMZ = COMM->global_operation_double("SUM", initMMZ);
+  initMASS = COMM->global_operation_double("SUM", initMASS);
+
+  cout <<"(conserved quantities) ["<< initERG <<", ";
+  cout << initMMX <<", ";
+  cout << initMMY <<", ";
+  cout << initMMZ <<", ";
+  cout << initMASS <<"]\n";
+
+#endif // TEST_CONSERVATION
+  return(0);
+}
+
+
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_NG_MPI::check_energy_cons(
+      vector<class GridBaseClass *> &grid
+      )
+{
+  // Energy, and Linear Momentum in x-direction.
+#ifdef TEST_CONSERVATION 
+  pion_flt u[SimPM.nvar];
+  nowERG=0.;
+  nowMMX = 0.;
+  nowMMY = 0.;
+  nowMMZ = 0.;
+  nowMASS = 0.0;
+  double totmom=0.0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    double dx = SimPM.levels[l].dx;
+    double dv = 0.0;
+    class cell *c=grid[l]->FirstPt();
+    do {
+      if (!c->isbd && c->isgd) {
+        dv = spatial_solver->CellVolume(c,dx);
+        spatial_solver->PtoU(c->P,u,SimPM.gamma);
+        nowERG += u[ERG]*dv;
+        nowMMX += u[MMX]*dv;
+        nowMMY += u[MMY]*dv;
+        nowMMZ += u[MMZ]*dv;
+        nowMASS += u[RHO]*dv;
+        totmom += sqrt(u[MMX]*u[MMX] + u[MMY]*u[MMY] + u[MMZ]*u[MMZ])
+                   *dv;
+      }
+    } while ( (c =grid[l]->NextPt(c)) !=0);
+  }
+
+  //cout <<totmom;
+  nowERG = COMM->global_operation_double("SUM", nowERG);
+  nowMMX = COMM->global_operation_double("SUM", nowMMX);
+  nowMMY = COMM->global_operation_double("SUM", nowMMY);
+  nowMMZ = COMM->global_operation_double("SUM", nowMMZ);
+  nowMASS = COMM->global_operation_double("SUM", nowMASS);
+  totmom = COMM->global_operation_double("SUM", totmom);
+  cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
+  cout <<", nowMMX="<<nowMMX<<"\n";
+
+  cout <<"(conserved quantities) ["<< nowERG <<", ";
+  cout << nowMMX <<", ";
+  cout << nowMMY <<", ";
+  cout << nowMMZ <<", ";
+  cout << nowMASS <<"]\n";
+  cout <<"(relative error      ) [";
+  cout << (nowERG-initERG)/(initERG) <<", ";
+  cout << (nowMMX-initMMX)/(totmom) <<", ";
+  cout << (nowMMY-initMMY)/(totmom) <<", ";
+  cout << (nowMMZ-initMMZ)/(totmom) <<", ";
+  cout << (nowMASS-initMASS)/initMASS <<"]\n";
+
+#endif // TEST_CONSERVATION
+  return(0);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 
 

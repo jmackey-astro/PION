@@ -138,9 +138,10 @@ int main(int argc, char **argv)
   //
   int l=0;
   grid.resize(1);
+  SimPM.grid_nlevels=1;
   // Now set up the grid structure.
   cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
-  err = SimSetup->setup_grid(&(grid[l]),SimPM);
+  err = SimSetup->setup_grid(grid,SimPM);
   cout <<"Init: &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
   SimPM.dx = grid[0]->DX();
   if (!grid[0]) rep.error("Grid setup failed",grid[0]);
@@ -172,7 +173,7 @@ int main(int argc, char **argv)
   //
   // Set up the boundary conditions and data
   //
-  SimSetup->boundary_conditions(SimPM,grid[0]);
+  SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen Couldn't set up boundaries.",err);
   err += SimSetup->setup_raytracing(SimPM, grid[0]);
   err += SimSetup->setup_evolving_RT_sources(SimPM);

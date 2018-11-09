@@ -344,7 +344,7 @@ int setup_NG_grid::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid::setup_boundary_structs(par,grid);
+  int err = setup_fixed_grid::setup_boundary_structs(par,grid,l);
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
   //

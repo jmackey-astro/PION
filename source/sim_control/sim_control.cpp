@@ -234,8 +234,7 @@ int sim_control::Time_Int(
       spatial_solver->Setdt(SimPM.dt);
     }
     
-    err+= advance_time(0, grid[0]);
-    rep.errorTest("(TIME_INT::advance_time) error",0,err);
+    advance_time(0, grid[0]);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 
 #if ! defined (CHECK_MAGP)

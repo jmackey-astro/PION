@@ -229,6 +229,26 @@ int setup_grid_NG_MPI::setup_grid(
     if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
   }
 
+//#ifdef TEST_BC89FLUX
+  for (int l=0;l<SimPM.grid_nlevels;l++) {
+    for (int d=0;d<grid[l]->flux_update_send.size();d++) {
+      struct flux_update *fup = &(grid[l]->flux_update_send[d]);
+      cout <<"l="<<l<<", FUP_SEND: d="<<d<<" info: \n";
+      cout <<"\t ranks: ";
+      for (int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
+      cout <<"\n";
+      cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
+    }
+    for (int d=0;d<grid[l]->flux_update_recv.size();d++) {
+      struct flux_update *fup = &(grid[l]->flux_update_recv[d]);
+      cout <<"l="<<l<<", FUP_RECV: d="<<d<<" info: \n";
+      cout <<"\t ranks: ";
+      for (int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
+      cout <<"\n";
+      cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
+    }
+  }
+//#endif
 cout <<"------------------------------------------------------\n\n";
 
   return(0);
@@ -305,7 +325,8 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #endif
 
   // first call fixed grid version
-  int err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid);
+  int err = 0;
+  err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid,l);
   rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
 
 

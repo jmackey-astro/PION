@@ -27,8 +27,8 @@ int assign_update_bcs_MPI::assign_boundary_data(
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
-  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
 #ifdef TEST_MPI_NG
+  class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   cout <<ppar->get_myrank()<<" Setting up MPI boundaries..."<<endl;
 #endif
   int err= assign_update_bcs::assign_boundary_data(par,level,grid);
@@ -40,7 +40,9 @@ int assign_update_bcs_MPI::assign_boundary_data(
   for (size_t i=0; i<grid->BC_bd.size(); i++) {
     switch (grid->BC_bd[i]->itype) {
     case BCMPI:
+#ifdef TEST_MPI_BC 
       cout <<ppar->get_myrank()<<" assigning MPI boundary in dir "<<i<<"\n";
+#endif
       err += BC_assign_BCMPI(par,level,grid,grid->BC_bd[i],BC_MPItag);
       break;      
     case PERIODIC:
@@ -118,8 +120,10 @@ int assign_update_bcs_MPI::TimeUpdateExternalBCs(
 
   for (i=0;i<grid->BC_bd.size();i++) {
     b = grid->BC_bd[map[i]];
+#ifdef TEST_MPI_BC 
     cout <<"updating bc "<<map[i]<<" with type "<<b->type<<"\n";
     cout.flush();
+#endif
     switch (b->itype) {
       
     case PERIODIC:

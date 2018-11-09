@@ -47,7 +47,7 @@ class setup_NG_grid :
   /// Sets up a NG grid.
   ///
   virtual int setup_grid(
-      vector<class GridBaseClass *> &,  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &,  ///< grid pointers.
       class SimParams &      ///< pointer to simulation parameters
       );
 
@@ -57,7 +57,7 @@ class setup_NG_grid :
   ///
   virtual int setup_raytracing(
       class SimParams &,    ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
@@ -68,7 +68,7 @@ class setup_NG_grid :
   ///
   virtual int boundary_conditions(
       class SimParams &,  ///< pointer to simulation parameters
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );   
 
 

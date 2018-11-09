@@ -140,12 +140,14 @@ class GridBaseClass {
   virtual size_t Ncell_all() const =0; ///< number of grid+ghost cells
 
   virtual double CellVolume(
-      const cell *
+      const cell *,     ///< Cell
+      const double      /// unused
       )=0; ///< Returns Volume of cell.
 
   virtual double CellInterface(
-      const cell *, ///< Cell
-      const direction ///< outward normal to interface.
+      const cell *,     ///< Cell
+      const direction,  ///< outward normal to interface.
+      const double      ///< unused
       )=0; ///< Returns Surface area of interface.
 
 
