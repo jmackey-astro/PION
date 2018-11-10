@@ -18,6 +18,7 @@
 #include <vector>
 using namespace std;
 
+#define RT_TESTING
 
 // ##################################################################
 // ##################################################################
@@ -25,7 +26,7 @@ using namespace std;
 
 RT_MPI_bc::~RT_MPI_bc()
 {
-#ifdef TESTING
+#ifdef RT_TESTING
   cout <<"RT_MPI_bc destructor.\n";
 #endif
   //
@@ -334,7 +335,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       for (c=b->data.begin(); c!=b->data.end(); ++c) {
         if (count>=ct) rep.error("too many cells!!!",count-ct);
 #ifdef RT_TESTING
-        if (count<32) {
+        if (count<100) {
           cout <<"col = "<<buf[count]<<" for cell "<<count<<": cell-id="<<(*c)->id;
                 cout <<", pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY];
           if (par.ndim>2) cout<<","<<(*c)->pos[ZZ]<<"]"<<"\n";
@@ -469,13 +470,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
         if (count>=nc) rep.error("too many cells!!!",count-nc);
 
         CI.get_col(*c, src_id, tau);
-        for (short unsigned int v=0;
-             v<RS.NTau; v++) {
-          data[count] = tau[v];
-          count++;
-        }
 #ifdef RT_TESTING
-        if (count<32) {
+        if (count<100) {
           cout <<"send data ["<<i<<"]: col[0] = ";
           CI.get_col(*c,src_id,tau);
           cout << tau[0] <<" for cell ";
@@ -488,6 +484,11 @@ int RT_MPI_bc::Send_RT_Boundaries(
         //  cout <<count<<": "; rep.printVec("pos",(*c)->pos, par.ndim);
         //}
 #endif 
+        for (short unsigned int v=0;
+             v<RS.NTau; v++) {
+          data[count] = tau[v];
+          count++;
+        }
       }
 
       //
@@ -1120,7 +1121,8 @@ int RT_MPI_bc::RT_populate_recv_boundary(
       //
       b->data.push_back(*bpt);
 #ifdef RT_TESTING
-      cout <<"RT_populate_recv_boundary() cpos="<< (*bpt)->pos[0]<<"\n";
+      cout <<"RT_populate_recv_boundary() cpos= ";
+      rep.printVec("",(*bpt)->pos,MAX_DIM);
 #endif // RT_TESTING
     }
     //
@@ -1182,8 +1184,8 @@ int RT_MPI_bc::setup_RT_send_boundary(
       //
       send_b.RT_bd->data.push_back(grid->NextPt(*bpt,grid_b->ondir));
 #ifdef RT_TESTING
-      cout <<"setup_RT_send_boundary() cpos="<< (*bpt)->pos[0];
-      if (par.ndim>1) cout <<", "<<(*bpt)->pos[1]<<"\n";
+      cout <<"setup_RT_send_boundary() cpos= ";
+      rep.printVec("",(grid->NextPt(*bpt,grid_b->ondir))->pos,MAX_DIM);
 #endif // RT_TESTING
     }
     //

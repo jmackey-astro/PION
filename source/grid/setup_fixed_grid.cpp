@@ -157,7 +157,6 @@ void setup_fixed_grid::setup_cell_extra_data(
 
 int setup_fixed_grid::setup_grid(
       vector<class GridBaseClass *> &g,  ///< grid pointers.
-      //class GridBaseClass **grid,
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
@@ -165,7 +164,7 @@ int setup_fixed_grid::setup_grid(
   cout <<"--------  Setting up computational grid --------------\n";
 
 #ifdef TESTING
-  cout <<"Init::setup_grid: &grid="<< grid<<", and grid="<<*grid<<"\n";
+  cout <<"Init::setup_grid: \n";
 #endif // TESTING
   class GridBaseClass **grid = &(g[0]);
 

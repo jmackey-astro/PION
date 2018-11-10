@@ -186,7 +186,7 @@ int ICsetup_base::equilibrate_MP(
         for (int i=0;i<50;i++){
           mp->TimeUpdateMP(c->P, c->P, tint, SimPM.gamma, 0, &tt);
           //rep.printVec("Final left  vec",gg->FirstPt()->P,SimPM.nvar);
-          cout <<"t="<<tt<<"\n";
+          //cout <<"t="<<tt<<"\n";
         }
       }
     } while ((c=gg->NextPt(c)) !=0);

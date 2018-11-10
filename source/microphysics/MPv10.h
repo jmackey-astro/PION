@@ -29,6 +29,7 @@
 #include <sstream>
 #include <cstring>
 #include <iostream>
+#include <map>
 #include "microphysics_base.h"
 #include "cooling_SD93_cie.h"
 #include "hydrogen_mp.h"
@@ -42,9 +43,9 @@
 #define EULER_CUTOFF 0.05
 
 
-#define JM_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
+#define MPv10_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
 #define MPv10_ABSTOL 1.0e-15  ///< minimum neutral fraction i care about.
-#define JM_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
+#define MPv10_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
 
 
 ///
@@ -339,6 +340,7 @@ class MPv10
   
   std::vector<int> H_ion_index; ///<Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position. Used with MPv10::Tr().
   std::vector<int> He_ion_index;///""
+  std::map<string,int> tracer_list;
 
   /// ===========================================================================
   ///               Vectors to Access Adjacent Ions

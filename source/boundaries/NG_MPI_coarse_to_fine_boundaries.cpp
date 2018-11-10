@@ -674,7 +674,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
   
   // define domain of boundary region
-  int xn,xp;
+  int xn=0,xp=0;
   switch (bdata->dir) {
     case XN:
     xn = ixmin[XX]-bsize;
@@ -720,7 +720,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
   rep.printVec("ixmax",ixmax,par.ndim);
   
   // define domain of boundary region
-  int xn,xp,yn,yp;
+  int xn=0,xp=0,yn=0,yp=0;
   switch (bdata->dir) {
     case XN:
     xn = ixmin[XX]-bsize;
@@ -792,7 +792,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
   
   // define domain of boundary region
-  int xn,xp,yn,yp,zn,zp;
+  int xn=0,xp=0,yn=0,yp=0,zn=0,zp=0;
   switch (bdata->dir) {
     case XN:
     xn = ixmin[XX]-bsize;

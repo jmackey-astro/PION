@@ -76,14 +76,13 @@ setup_fixed_grid_pllel::~setup_fixed_grid_pllel()
 
 int setup_fixed_grid_pllel::setup_grid(
       vector<class GridBaseClass *> &g,  ///< address of vector of grid pointers.
-      //class GridBaseClass **grid, ///< address of pointer to computational grid.
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
 #ifdef TESTING
   cout <<"setup_fixed_grid_pllel: setting up parallel grid.\n";
 #endif
-  class GridBaseClass *grid = g[0];
+  class GridBaseClass **grid = &g[0];
   class MCMDcontrol *MCMD = &(SimPM.levels[0].MCMD);
 
   if (SimPM.gridType!=1) {
@@ -134,19 +133,19 @@ int setup_fixed_grid_pllel::setup_grid(
 #endif
 
   if      (SimPM.coord_sys==COORD_CRT) {
-    grid = new UniformGridParallel (
+    *grid = new UniformGridParallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
-    grid = new uniform_grid_cyl_parallel (
+    *grid = new uniform_grid_cyl_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
-    grid = new uniform_grid_sph_parallel (
+    *grid = new uniform_grid_sph_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
       SimPM.Xmin, SimPM.Xmax);
@@ -156,16 +155,16 @@ int setup_fixed_grid_pllel::setup_grid(
   }
 
 
-  if (grid==0)
-    rep.error("(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!", grid);
+  if (*grid==0)
+    rep.error("(setup_fixed_grid_pllel::setup_grid) Couldn't assign data!", *grid);
 
 #ifdef TESTING
   cout <<"(setup_fixed_grid_pllel::setup_grid) Done. ";
-  cout <<"grid="<<grid<<", and";
-  cout <<"\t DX = "<<(grid)->DX()<<"\n";
-  dp.grid = (grid);
+  cout <<"grid="<<*grid<<", and";
+  cout <<"\t DX = "<<(*grid)->DX()<<"\n";
+  dp.grid = (*grid);
 #endif
-  cout <<"DX = "<<(grid)->DX()<<"\n";
+  cout <<"DX = "<<(*grid)->DX()<<"\n";
 
   return(0);
 }
@@ -236,7 +235,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
     //
     // set up regular tracer if simple one not already set up.
     //
-    grid->RT = new raytracer_USC_pllel(grid,MP, SimPM.ndim, SimPM.coord_sys,
+    grid->RT = new raytracer_USC_pllel(grid,MP,&SimPM,&(SimPM.levels[0].MCMD), SimPM.ndim, SimPM.coord_sys,
                           SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
     if (!grid->RT) rep.error("init raytracer error 2",grid->RT);
   }

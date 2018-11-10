@@ -61,6 +61,8 @@ using namespace std;
 raytracer_USC_pllel::raytracer_USC_pllel(
       class GridBaseClass *ggg,     ///< Pointer to grid
       class microphysics_base *mmm,  ///< Pointer to MicroPhysics Class.
+      class SimParams *sp,     ///< simulation parameters
+      class MCMDcontrol *mcmd,   ///< domain decomposition info
       int nd,     ///< number of dimensions of grid
       int csys,   ///< coordinate system
       int nv,     ///< number of variables in state vector
@@ -72,6 +74,8 @@ raytracer_USC_pllel::raytracer_USC_pllel(
 #ifdef RT_TESTING
   cout <<"SC PARALLEL raytracer class constructor!\n";
 #endif
+  par = sp;
+  MCMD = mcmd;
   return;
 }
 
@@ -122,7 +126,7 @@ int raytracer_USC_pllel::Add_Source(
 #ifdef RT_TESTING
   cout <<"\t**** PARALLEL Add_Source: Setting up extra RT boundaries on grid.\n";
 #endif
-  int err = gridptr->Setup_RT_Boundaries(id, *src);
+  int err = Setup_RT_Boundaries(*par,*MCMD,gridptr,id, *src);
   if (err) rep.error("Failed to setup RT Boundaries",err);
 
   //
@@ -176,7 +180,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   //clk.start_timer(t2);
   //clk.start_timer(t4);
-  err += gridptr->Receive_RT_Boundaries(s_id, *RS);
+  err += Receive_RT_Boundaries(*par,*MCMD,gridptr,s_id, *RS);
   //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
   //clk.pause_timer(t2);
 
@@ -194,7 +198,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   //clk.start_timer(t2);
   //clk.start_timer(t4);
-  err += gridptr->Send_RT_Boundaries(s_id, *RS);
+  err += Send_RT_Boundaries(*par,*MCMD,gridptr,s_id, *RS);
   //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
   //wait  = clk.pause_timer(t2);
   //total = clk.pause_timer(t1);

@@ -6,6 +6,9 @@
 #include "defines/testing_flags.h"
 
 #include "grid/grid_base_class.h"
+#include "boundaries/RT_MPI_boundaries.h"
+#include "sim_params.h"
+#include "decomposition/MCMD_control.h"
 
 #include "raytracing/raytracer_base.h"
 #include "raytracing/raytracer_SC.h"
@@ -16,12 +19,14 @@
 /// Distributed Memory Raytracer, for a source which can be on grid, off grid,
 ///or at infinity in one coordinate direction.
 ///
-class raytracer_USC_pllel : public raytracer_USC {
+class raytracer_USC_pllel : public raytracer_USC, public RT_MPI_bc {
  public:
   /// Constructor
   raytracer_USC_pllel(
       class GridBaseClass *, ///< Pointer to grid
-      class microphysics_base *, ///< Pointer to MicroPhysics Class.
+      class microphysics_base *, ///< icroPhysics Class.
+      class SimParams *,     ///< simulation parameters
+      class MCMDcontrol *,   ///< domain decomposition info
       int,  ///< grid dimensionality
       int,  ///< coordinate system
       int,  ///< number of variables in state vector
@@ -82,6 +87,9 @@ class raytracer_USC_pllel : public raytracer_USC {
       const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
       double []               ///< Column densities.
       );
+
+  class SimParams *par; ///< pointer to simulation parameters
+  class MCMDcontrol *MCMD; ///< pointer to domain decomposition
 
 };
 #endif //PARALLEL

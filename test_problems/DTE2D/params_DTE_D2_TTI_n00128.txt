@@ -25,6 +25,7 @@ OutputFile    DTE_D2_TTI_n00128
 ntracer 1
 chem_code MPv7
 Tracer000 H1+
+InitIons LEAVE
 
 # Which physics to use
 EP_dynamics     1

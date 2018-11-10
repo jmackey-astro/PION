@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     }
   }
 #ifndef TESTING
-  rep.kill_stdout_from_other_procs(0);
+  //rep.kill_stdout_from_other_procs(0);
 #endif
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion v.1.0  running   ---------------------\n";

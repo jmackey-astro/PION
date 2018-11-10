@@ -116,7 +116,7 @@ endif
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
-    CXXFLAGS = -O0 -Wall -g
+    #CXXFLAGS = -O0 -Wall -g
   else
     CXXFLAGS = -O0 -Wall -g
   endif
@@ -139,7 +139,7 @@ endif
 ifeq ($(MAKE_UNAME), locallibs)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
