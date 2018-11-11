@@ -252,9 +252,9 @@ int raytracer_USC_pllel::trace_column(
                       static_cast<direction>(2*ii);
     } 
   }
+  err=0;
   enum direction d3 = gridptr->OppDir(dir);
-  enum axes ax = static_cast<axes>(static_cast<int>(d2)/2);
-  bool mpi = false, reset=false;
+  if (source->ipos[d3/2]-c->pos[d3/2]==0) d3=d2;
 
   // need to check in case we have moved from source cell
   //off the grid.
@@ -271,7 +271,7 @@ int raytracer_USC_pllel::trace_column(
 #ifdef TESTING
       dp.c = c;
 #endif
-      if (!gridptr->NextPt(c,d2) | !gridptr->NextPt(c,d3)) {
+      if (!gridptr->NextPt(c,d2) || !gridptr->NextPt(c,d3)) {
         CI.get_col(c, source->s->id, Nc);
       }
       else {
