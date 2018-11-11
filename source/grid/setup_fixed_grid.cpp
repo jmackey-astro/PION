@@ -870,6 +870,7 @@ int setup_fixed_grid::setup_boundary_structs(
 #endif
   for (int b=0;b<len;b++) {
     struct boundary_data *bd = new boundary_data;
+    if (b<2*par.ndim) bd->depth = par.Nbc;
     grid->BC_bd.push_back(bd);
   }
 

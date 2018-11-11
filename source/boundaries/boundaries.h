@@ -126,6 +126,7 @@ struct boundary_data {
   std::string type; ///< What type of boundary it is (Periodic, Absorbing, Fixed, Reflective, etc.).
   int itype;         ///< Integer flag for boundary type.
   int bloc;          ///< boundary location, e.g. x=0
+  int depth;         ///< how many cells deep the boundary is.
   bool bpos;         ///< whether boundary is in +ve direction?
   enum axes baxis;   ///< index in position vector relating to bpos.
   std::list<cell *> data; ///< STL linked list for boundary data cells.

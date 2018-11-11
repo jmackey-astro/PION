@@ -597,7 +597,7 @@ int calc_timestep::calculate_raytracing_column_densities(
   // to get Tau0, dTau, Vshell in cell->extra_data[].
   //
   for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
-#ifdef raytracer_TESTING
+#ifdef RT_TESTING
     cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
 #endif
     err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
