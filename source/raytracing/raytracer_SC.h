@@ -412,8 +412,9 @@ class raytracer_USC : public raytracer_USC_infinity {
       );
 
 
-  /// Traces a 1D column from a starting cell, in a direction, to the edge of the grid. 
-  int trace_column(
+  /// Traces a 1D column from a starting cell, in a direction,
+  /// to the edge of the grid. 
+  virtual int trace_column(
       const rad_source *,  ///< source we are tracing from.
       cell *,              ///< cell to start from.
       const enum direction ///< direction we are looking.

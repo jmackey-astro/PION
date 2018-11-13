@@ -157,7 +157,7 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
       )
 {
   int err=0;
-  //cout <<"RT: Starting Raytracing for source: "<<s_id<<"\n";
+  //cout <<"RT_MPI: Starting Raytracing for source: "<<s_id<<"\n";
 
   // Find source in list.
   struct rad_src_info *RS=0;
@@ -180,8 +180,10 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   //clk.start_timer(t2);
   //clk.start_timer(t4);
+  //cout <<"RT_MPI: receiving RT boundaries\n";
   err += Receive_RT_Boundaries(*par,*MCMD,gridptr,s_id, *RS);
-  //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
+  //cout <<"RT_MPI: received RT boundaries\n";
+ //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
   //clk.pause_timer(t2);
 
   //
@@ -189,7 +191,9 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   //clk.start_timer(t3);
   //clk.start_timer(t4);
+  //cout <<"RT_MPI: calling serial raytrace function\n";
   err += raytracer_USC::RayTrace_SingleSource(s_id, dt, g);
+  //cout <<"RT_MPI: serial raytrace done.\n";
   //cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
   //run = clk.pause_timer(t3);
 
@@ -198,7 +202,9 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //
   //clk.start_timer(t2);
   //clk.start_timer(t4);
+  //cout <<"RT_MPI: sending RT boundaries\n";
   err += Send_RT_Boundaries(*par,*MCMD,gridptr,s_id, *RS);
+  //cout <<"RT_MPI: sent RT boundaries\n";
   //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
   //wait  = clk.pause_timer(t2);
   //total = clk.pause_timer(t1);
@@ -211,6 +217,74 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   return err;
 }
 
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int raytracer_USC_pllel::trace_column(
+      const rad_source *source, ///< source we are tracing from.
+      cell *c,                  ///< cell to start from.
+      const enum direction dir  ///< direction we are looking.
+      )
+{
+  double ds=0.0, Nc[MAX_TAU];
+  for (unsigned short int iT=0; iT<source->s->NTau; iT++)
+    Nc[iT] =0.0;
+
+  int    err=0, dist=0;
+
+  // if we are at the edge of the full simulation domain, then
+  // col2cell is not set for edge cell, so we need to call
+  // get_cell_columns.  If we are at the edge of this grid but the
+  // grid is not at par.Xmin/Xmax, then we already got cols from
+  // an MPI call so don't reset.
+  // d2 is direction towards source:
+  enum direction d2 = NO;
+  for (int ii=par->ndim-1;ii>=0;ii--) {
+    if ((dist=fabs(source->ipos[ii]-c->pos[ii]))>err) {
+      err = dist;
+      d2 = (source->ipos[ii]-c->pos[ii]>0) ?
+                      static_cast<direction>(2*ii+1) : 
+                      static_cast<direction>(2*ii);
+    } 
+  }
+  err=0;
+  enum direction d3 = gridptr->OppDir(dir);
+  if (source->ipos[d3/2]-c->pos[d3/2]==0) d3=d2;
+
+  // need to check in case we have moved from source cell
+  //off the grid.
+  if ( c!=0 ) {
+#ifdef RT_TESTING
+    cout <<"RT_MPI::trace_column() running dir="<<dir<<", d2="<<d2<<".\n";
+#endif 
+
+    do {
+#ifdef RT_TESTING
+      cout <<"RT_MPI:TRACE COL: CELL= "; 
+      CI.print_cell(c);
+#endif
+#ifdef TESTING
+      dp.c = c;
+#endif
+      if (!gridptr->NextPt(c,d2) || !gridptr->NextPt(c,d3)) {
+        CI.get_col(c, source->s->id, Nc);
+      }
+      else {
+        err += get_cell_columns(source, c, Nc, &ds);
+      }
+#ifdef RT_TESTING
+      rep.printVec("***!!! NC",Nc,MAX_TAU);
+#endif
+      err += ProcessCell(c,Nc,ds,source,delt);
+    } while ( (c=gridptr->NextPt(c,dir))!=0 );
+  }
+  return err;
+}
 
 
 
@@ -432,8 +506,8 @@ void raytracer_USC_pllel::col2cell_3d(
   if (gridptr->distance(dd,dpos) < gridptr->DX()/2.) {
     cout.setf(ios_base::scientific); cout.precision(15);
     cout <<"cell with max.diff in step 1: id="<<c->id<<"\n";
-    cout <<"pnt  pos="; rep.printVec("pnt",dd,SimPM.ndim);
-    cout <<"cell pos="; rep.printVec("pos",dpos,SimPM.ndim);
+    cout <<"pnt  pos="; rep.printVec("pnt",dd,ndim);
+    cout <<"cell pos="; rep.printVec("pos",dpos,ndim);
     cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
     cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
     double w1,w2,w3,w4,mintau3d;

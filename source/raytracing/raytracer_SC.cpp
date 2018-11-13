@@ -101,6 +101,8 @@
 #include <vector>
 using namespace std;
 
+//#define RT_TESTING
+
 #define LARGE_TAU_FINISHED -10
 
 /*********************************************************************/
@@ -341,7 +343,7 @@ void raytracer_USC_infinity::add_source_to_list(
     c=gridptr->NextPt(c,dir);
   rs.sc = c;
 #ifdef RT_TESTING
-  cout <<"Add_Source() source->sc = "<<rs.sc<<"\n";
+  cout <<"Add_Source() source->sc = "<<rs.sc<<", id="<<rs.sc->id<<"\n";
 #endif
   rs.src_on_grid = false;
 
@@ -600,6 +602,7 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
   cell *c = gridptr->FirstPt();
   double Tau[MAX_TAU];
   do {
+    cout <<"cell "<<c->id<<" setting Tau to -1\n";
     //for (short unsigned int iT=0; iT<SourceList[s_id].s->NTau; iT++)
     for (short unsigned int iT=0; iT<MAX_TAU; iT++) Tau[iT]=-1.0;
     CI.set_col(c, s_id, Tau);
@@ -864,6 +867,7 @@ int raytracer_USC_infinity::ProcessCell(
           cout <<(1.0-c->Ph[source->s->opacity_var+first_tr]);
           cout <<" var="<<source->s->opacity_var+first_tr<<"\n";
         }
+        cout <<"process cell: col2cell="<<col2cell[0]<<"\n";
 #endif
         cell_col[0] *= c->Ph[RO]*
                      (1.0-c->Ph[source->s->opacity_var+first_tr]);
@@ -1218,7 +1222,7 @@ void raytracer_USC::add_source_to_list(
   // function also centres the source on either a cell-centre, or a
   // cell-vertex, depending on the ifdef.
   //
-  //  cout <<"1D: AddSource() finding source.\n";
+  cout <<"RTxxx: AddSource() finding source.\n";
   rs.sc = find_source_cell(rs.s->pos);
 
   //
@@ -1265,6 +1269,7 @@ void raytracer_USC::add_source_to_list(
   cout <<"\t\tSource id:"<<rs.s->id<<" has TauMin[id]=";
   cout <<TauMin[rs.s->id]<<"\n";
   cout <<"\tSERIAL: AddSource() all done.\n";
+  cout <<"Add_Source() source->sc = "<<rs.sc<<", id="<<rs.sc->id<<"\n";
   cout <<"--END-----raytracer_USC::AddSource()------------\n\n";
 #endif
 
@@ -1427,12 +1432,12 @@ int raytracer_USC::RayTrace_SingleSource(
   //
   // Testing, to make sure we assign column densities to all cells.
   //
-  cell *sc = gridptr->FirstPt_All();
+  cell *sc = gridptr->FirstPt();
   double tau[MAX_TAU];
   for (unsigned short int iT=0;iT<MAX_TAU;iT++) tau[iT]=-1.0;
   do {
     CI.set_col(sc, s_id, tau);
-  } while ( (sc=gridptr->NextPt_All(sc)) !=0);
+  } while ( (sc=gridptr->NextPt(sc)) !=0);
 #endif // RT_TESTING
 
   rad_source *source=0;
@@ -2013,7 +2018,8 @@ int raytracer_USC::trace_column(
 
   int    err=0;
   
-  if ( c!=0 ) // need to check in case we have moved from source cell off the grid.
+  if ( c!=0 ) {
+    // need to check in case we have moved from source cell off the grid.
 #ifdef RT_TESTING
     cout <<"raytracer_USC::trace_column() running.\n";
 #endif 
@@ -2024,6 +2030,7 @@ int raytracer_USC::trace_column(
       err += get_cell_columns(source, c, Nc, &ds);
       err += ProcessCell(c,Nc,ds,source,delt);
     } while ( (c=gridptr->NextPt(c,dir))!=0 );
+  }
   return err;
 }
 
@@ -2041,13 +2048,18 @@ int raytracer_USC::trace_plane(
       const enum direction ydir
       )
 {
+#ifdef RT_TESTING
+      cout <<"tracing 2d plane, xdir="<<xdir<<", ydir="<<ydir;
+      cout <<", cy="<<cy<<", id="<<cy->id<<"\n";
+      //CI.print_cell(cy);
+#endif 
   int err = 0;
   cell *cx = 0;
   if (cy!=0) {
     do {
 #ifdef RT_TESTING
       cout <<"new column in 2d. cy="<<cy<<", id="<<cy->id<<"\n";
-      CI.print_cell(cy);
+      //CI.print_cell(cy);
 #endif 
       cx = cy;
       err += trace_column(source,cx,xdir);
@@ -2173,7 +2185,17 @@ int raytracer_USC::cell_cols_2d(
   // if the source is within the column (i.e. within x+-dx/2) then do a 1D column.
   // NOTE: for integer cell positions, the cell size is "idx".
   //
-  if (mindiff<idx && maxdiff<10*idx) {
+  if      (mindiff<idx && maxdiff<idx) {
+#ifdef RT_TESTING
+    cout <<"At source cell, setting col2cell to zero.\n";
+#endif // RT_TESTING
+    // at source cell, so column to cell is zero.
+    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+      Nc[iT] = 0.0;
+    }
+    CI.set_col(c, src->s->id, Nc);
+  }
+  else if (mindiff<idx) {
 #ifdef RT_TESTING
     cout <<"Within the source column of cells! mindiff="<<mindiff<<"\n";
 #endif // RT_TESTING
@@ -2211,25 +2233,35 @@ int raytracer_USC::cell_cols_2d(
     for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
       Nc[iT] = std::max(Nc[iT], 0.0);
     }
+    
     //
     // Now we have the column, need to scale it by the changed
     // distance due to the different angle from source to cell
     // centre.
     //
-    double maxd = static_cast<double>(maxdiff);
-    double maxmin2 = maxd - idx;
-    //if (maxd<2.999999) rep.error("maxd should be >=3",maxd);
-    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-      Nc[iT] *= sqrt((maxd*maxd+idxo2*idxo2)/
-                     (maxmin2*maxmin2+idxo2*idxo2))*
-                     maxmin2/maxd;
+    if (maxdiff<10*idx) {
+      double maxd = static_cast<double>(maxdiff);
+      double maxmin2 = maxd - idx;
+      //if (maxd<2.999999) rep.error("maxd should be >=3",maxd);
+      for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
+        Nc[iT] *= sqrt((maxd*maxd+idxo2*idxo2)/
+                       (maxmin2*maxmin2+idxo2*idxo2))*
+                       maxmin2/maxd;
+      }
+#ifdef RT_TESTING
+      cout <<"cell_cols_2d: close, Nc="<<Nc[0]<<"\n";
+#endif
     }
+
   } // mindiff<2
   else {
     //
     // source is not in 1D column, so do the 2D averaging.
     //
     col2cell_2d(src, c, entryface, &perpface, &delta, Nc);
+#ifdef RT_TESTING
+    cout <<"cell_cols_2d: normal, Nc="<<Nc[0]<<"\n";
+#endif
   }
 
 #ifdef RT_TESTING
@@ -2238,6 +2270,7 @@ int raytracer_USC::cell_cols_2d(
     cout <<"cell id: "<<c->id<<"  and col in cell = "<<*ds<<"\n";
     cout <<"raytracer_USC::cell_cols_2d() done\n";
   }
+  //CI.print_cell(c);
 #endif
   return 0;
 }

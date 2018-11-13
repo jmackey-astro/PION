@@ -18,7 +18,7 @@
 #include <vector>
 using namespace std;
 
-#define RT_TESTING
+//#define RT_TESTING
 
 // ##################################################################
 // ##################################################################
@@ -219,7 +219,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
   if (sle<0) rep.error("source not found in RT_source_list",sle);
 #ifdef RT_TESTING
   else
-   cout <<"\tRevcv_RT_Boundaries() src="<<src_id<<": receiving data.\n";
+   cout <<"\tRecv_RT_Boundaries() src="<<src_id<<": receiving data.\n";
 #endif 
 
 //  if (RT_source_list.size()<=static_cast<unsigned int>(src_id)) {
@@ -337,7 +337,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 #ifdef RT_TESTING
         if (count<100) {
           cout <<"col = "<<buf[count]<<" for cell "<<count<<": cell-id="<<(*c)->id;
-                cout <<", pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY];
+          cout <<", pos=["<<(*c)->pos[XX]<<","<<(*c)->pos[YY];
           if (par.ndim>2) cout<<","<<(*c)->pos[ZZ]<<"]"<<"\n";
           else cout <<"]\n";
         }
@@ -351,7 +351,8 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       if (count != ct) rep.error("BIG ERROR!",count-ct);
       
       //
-      // Note that this boundary has been received, so we know if we get the same data twice.
+      // Record boundary as received, so we know if we get the
+      // same data twice.
       //
       r_done[i_recv] = true;
       buf = mem.myfree(buf);
@@ -740,14 +741,6 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   cout <<"RT_MPI_bc::setup_RT_finite_ptsrc_BD() starting.\n";
 #endif
   //
-  // NOTE THIS FUNCTION IS OLD CODE, AND PROBABLY NOT THE MOST EFFICIENT WAY OF 
-  // DOING THIS!  IN PARTICULAR, IT IS DEFINITELY NOT MODULAR IN ANY WAY, AND 
-  // IS VERY COMPLICATED, AND HAD LOTS OF BUGS -- TOOK ME A MONTH AT LEAST TO 
-  // FIX ALL OF THEM.  SO I DIDN'T WANT TO TOUCH IT WHEN UPGRADING -- I JUST 
-  // WRAPPED IT IN THIS FUNCTION.
-  //
-
-  //
   // Check that send and recv lists are empty!
   //
   if (!RT_recv_list.empty()) {
@@ -797,7 +790,8 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     else {
 #ifdef RT_TESTING
       cout <<"*** axis="<<i<<" srcpos="<<srcpos[i]<<" xmin=";
-      cout <<grid->Xmin(static_cast<axes>(i))<<" xmax="<<grid->Xmax(static_cast<axes>(i));
+      cout <<grid->Xmin(static_cast<axes>(i))<<" xmax=";
+      cout <<grid->Xmax(static_cast<axes>(i));
       cout <<" src is on local domain.\n";
 #endif
       srcdir[i] = static_cast<direction>(-1);
@@ -973,8 +967,7 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
 
   //
   // Set up receive boundaries.  First initialise all boundary_data pointers
-  // to zero, then setup faces, edges, and corners, in that order (so ngb 
-  // pointers are set up to get to corners.
+  // to zero, then setup faces.
   //
   int err=0;
   for (unsigned int i=0;i<RT_recv_list.size();i++)
@@ -1108,26 +1101,15 @@ int RT_MPI_bc::RT_populate_recv_boundary(
 
   //
   // Run through all the BC boundary points (may be 2 deep, so skip
-  // 2nd ones).  Add 1st boundary cells to the RT boundary list.
+  // 2nd ones).  Add all boundary cells to the RT boundary list.
   //
   list<cell*>::const_iterator bpt=b2->data.begin();
   do{
-    //
-    // if isedge==-1 then cell is one cell off-grid in offdir.
-    //
-    if ((*bpt)->isedge == -1) {
-      //
-      // Add to RT list.
-      //
-      b->data.push_back(*bpt);
+    b->data.push_back(*bpt);
 #ifdef RT_TESTING
-      cout <<"RT_populate_recv_boundary() cpos= ";
-      rep.printVec("",(*bpt)->pos,MAX_DIM);
+    cout <<"RT_populate_recv_boundary() cpos= ";
+    rep.printVec("",(*bpt)->pos,MAX_DIM);
 #endif // RT_TESTING
-    }
-    //
-    // Move to next cell.
-    //
     ++bpt;
   } while (bpt !=b2->data.end());
   return 0;
@@ -1174,23 +1156,17 @@ int RT_MPI_bc::setup_RT_send_boundary(
   // cell in the on-grid-direction to the send-boundary list.
   //
   list<cell*>::const_iterator bpt=grid_b->data.begin();
+  cell *target=0;
   do{
-    //
-    // if isedge==-1 then cell is one cell off-grid in offdir.
-    //
-    if ((*bpt)->isedge == -1) {
-      //
-      // Add to RT list.
-      //
-      send_b.RT_bd->data.push_back(grid->NextPt(*bpt,grid_b->ondir));
+    target = (*bpt);
+    for (int v=0;v<grid_b->depth;v++)
+      target = grid->NextPt(target,grid_b->ondir);
+
+    send_b.RT_bd->data.push_back(target);
 #ifdef RT_TESTING
-      cout <<"setup_RT_send_boundary() cpos= ";
-      rep.printVec("",(grid->NextPt(*bpt,grid_b->ondir))->pos,MAX_DIM);
+    cout <<"setup_RT_send_boundary() cpos= ";
+    rep.printVec(" ",target->pos,MAX_DIM);
 #endif // RT_TESTING
-    }
-    //
-    // Move to next cell.
-    //
     ++bpt;
   } while (bpt !=grid_b->data.end());
 
