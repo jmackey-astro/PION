@@ -383,7 +383,6 @@ double CoolingFn::CoolingRate(const double T,
      // Now the heating rate:
      //
      rate -= nH* 2.0e-26;
-     rate *= -1.0;
 #ifdef TESTING
      cout <<"KI02 cooling: T="<<T<<", n="<<nH<<", rate="<<rate<<"\n";
 #endif

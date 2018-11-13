@@ -443,7 +443,9 @@ double mp_only_cooling::Edot(
   double rate=0.0;
   switch (cooling_flag) {
     case KI02:
-    rate = CoolingRate(T,0.0,rho/Mu,0.0,0.0);
+    // this function returns rate as positive if cooling, so change
+    // sign.
+    rate = -CoolingRate(T,0.0,rho/Mu,0.0,0.0);
     break;
 
     case SD93_CIE:
