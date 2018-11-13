@@ -39,6 +39,7 @@
 #include <sstream>
 using namespace std;
 
+#define KI02 2
 #define SD93_CIE 4
 #define SD93_PLUS_HEATING 5
 #define WSS09_CIE_PLUS_HEATING 6
@@ -56,6 +57,7 @@ mp_only_cooling::mp_only_cooling(
       )
 : microphysics_base(ephys,rsrcs),
   cooling_function_SD93CIE(),
+  CoolingFn(ephys->cooling),
   Hummer94_Hrecomb(),
   nv_prim(nv)
 {
@@ -102,6 +104,7 @@ mp_only_cooling::mp_only_cooling(
   cooling_flag = EP->cooling;
 
   switch (cooling_flag) {
+  case KI02:
   case SD93_CIE:
   case SD93_PLUS_HEATING:
     setup_SD93_cie();
@@ -144,6 +147,8 @@ mp_only_cooling::mp_only_cooling(
   if (MaxT_allowed <1.0e2 || MaxT_allowed>3.0e10) MaxT_allowed=1.0e8; 
   cout <<"\t\tAllowed Temperature range: T_min="<<MinT_allowed<<"  T_max=";
   cout <<MaxT_allowed<<" (MAKE SURE THIS IS SET APPROPRIATELY!\n";
+#else
+  rep.error("Please set SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE in defines/functionality_flags.h if using cooling",123);
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
 
   return;
@@ -221,12 +226,14 @@ int mp_only_cooling::TimeUpdateMP(
     step_dt = dt/nstep;
     E0_step = Eint0;
     T = E0_step*(gamma-1.0)*Mu_tot_over_kB/p_in[RO];
+    //cout <<"starting new loop: T="<<T<<" E0="<<E0_step<<"\n";
 
     if (nstep>16) {
       cout <<"Warning: cooling nsteps="<<nstep<<"\n";
       rep.printVec("p_in",p_in,nv_prim);
       cout <<"E0_step="<<E0_step<<", Ein="<<Eint0;
       cout <<", T="<<T<<", Edot="<<Edot(p_in[RO],T)<<"\n";
+      if (nstep>256) rep.error("too many steps",nstep);
     }
 
     for (size_t v=0;v<nstep;v++) {
@@ -250,7 +257,8 @@ int mp_only_cooling::TimeUpdateMP(
 
       if (nstep>16) {
         cout <<"MP_only_cooling integration: step="<<v<<", T=";
-        cout <<T<<", E0_step="<<E0_step<<"\n";
+        cout <<T<<", E0_step="<<E0_step<<", Edot="<<k1<<", ";
+        cout <<k2<<", "<<k3<<"  "<<k4<<"\n";
       }
     }
     
@@ -259,6 +267,8 @@ int mp_only_cooling::TimeUpdateMP(
       //rep.printVec("p_in",p_in,nv_prim);
       cout <<"END: T="<<T<<", E0_step="<<E0_step<<", Ein="<<Eint0<<"\n";
     }
+    //cout <<"nstep="<<nstep<<", T="<<T<<", MinT="<<MinT_allowed;
+    //cout <<", MaxT="<<MaxT_allowed<<", E0_step="<<E0_step<<"\n";
     nstep *=2;
   } while (T<MinT_allowed || T>MaxT_allowed || !isfinite(E0_step));
 
@@ -432,6 +442,10 @@ double mp_only_cooling::Edot(
 {
   double rate=0.0;
   switch (cooling_flag) {
+    case KI02:
+    rate = CoolingRate(T,0.0,rho/Mu,0.0,0.0);
+    break;
+
     case SD93_CIE:
     rate = Edot_SD93CIE_cool(rho,T);
     break;
@@ -506,7 +520,7 @@ double mp_only_cooling::Edot_WSS09CIE_cool(
               const double T    ///< Temperature (K)
               )
 {
-  return -(rho*rho/Mu/Mu)*cooling_rate_SD93CIE(T);
+  return 2e-26*rho/Mu -(rho*rho/Mu/Mu)*cooling_rate_SD93CIE(T);
 }
 
 

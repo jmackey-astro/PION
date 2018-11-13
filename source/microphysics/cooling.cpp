@@ -361,7 +361,10 @@ double CoolingFn::CoolingRate(const double T,
   } // SD93 funtion (NEQ and CIE)
 
   else if (WhichFunction==2) {
-     if (T>MaxTemp) cout <<"Warning: very large temperature!: T="<<T<<" and MAX.T="<<MaxTemp<<"\n";
+     if (T>MaxTemp) {
+       cout <<"Warning: very large temperature!: T="<<T;
+       cout <<" and MAX.T="<<MaxTemp<<"\n";
+     }
      //
      // Koyama and Inutsuka: 2002, ApJL, 564, 97 (KI02)
      // KI02 cooling has a cooling rate propto n^2 and a heating rate propto n.
@@ -380,6 +383,10 @@ double CoolingFn::CoolingRate(const double T,
      // Now the heating rate:
      //
      rate -= nH* 2.0e-26;
+     rate *= -1.0;
+#ifdef TESTING
+     cout <<"KI02 cooling: T="<<T<<", n="<<nH<<", rate="<<rate<<"\n";
+#endif
   } // KI02 function.
 
   else if (WhichFunction==3) {

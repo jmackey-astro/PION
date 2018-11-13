@@ -29,6 +29,7 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include "microphysics/cooling.h"
 #include "microphysics/cooling_SD93_cie.h"
 #include "microphysics/microphysics_base.h"
 #include "microphysics/hydrogen_recomb_Hummer94.h"
@@ -42,7 +43,8 @@ class mp_only_cooling
  :
   virtual public microphysics_base,
   virtual public cooling_function_SD93CIE,
-  virtual public Hummer94_Hrecomb
+  virtual public Hummer94_Hrecomb,
+  virtual public CoolingFn
 {
   public :
   ///
