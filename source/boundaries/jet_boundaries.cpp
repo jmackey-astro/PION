@@ -67,9 +67,16 @@ int jet_bc::BC_assign_JETBC(
   }
 
   if (par.eqntype==EQMHD || par.eqntype==EQGLM || par.eqntype==EQFCD) {
-    b->refval[BX] = JP.jetstate[BX];
-    b->refval[BY] = JP.jetstate[BY];
-    b->refval[BZ] = JP.jetstate[BZ];
+    // jetstate[BX] is the axial field, and jetstate[BY] is the toroidal
+    // field
+    if (par.ndim==2) {
+      b->refval[BX] = JP.jetstate[BX];
+      b->refval[BY] = 0.0; // this is the divergence component, must be 0
+      b->refval[BZ] = JP.jetstate[BY];
+    }
+    else {
+      rep.error("Need to code B-field within jet for 3D",par.ndim);
+    }
     maxnv=8;
   }
 
@@ -176,9 +183,6 @@ int jet_bc::BC_assign_JETBC(
     }
 
   } // jetic==1
-  else {
-    rep.error("Only know simple jet with jetic=1",JP.jetic);
-  }
 
   return 0;
 }
