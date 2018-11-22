@@ -10,7 +10,8 @@
 #include "tools/mem_manage.h"
 using namespace std;
 
-#define SOFTJET
+//#define SOFTJET
+#define JETPROFILE
 
 // ##################################################################
 // ##################################################################
@@ -120,6 +121,30 @@ int jet_bc::BC_assign_JETBC(
                           *min(1., 4.0-4.0*CI.get_dpos(temp,YY)/jr);
           temp->Ph[VX] = temp->P[VX];
 #endif //SOFTJET
+#ifdef JETPROFILE
+          double r     = fabs(CI.get_dpos(temp,YY));
+          double rm    = 0.9*jr;
+          double B_phi = b->refval[BZ];
+          double p0    = b->refval[PG];
+          double rm_jr = rm/jr;
+          double r_jr  = r/jr;
+          double r_rm  = r/rm;
+          double pm    = p0 - pow(B_phi,2)/pow(1-rm_jr,2)*(3*(1-rm_jr)-(1-pow(rm_jr,2))+log(rm_jr));
+          if (r==rm){
+            temp->P[PG] = temp->Ph[PG] = p0; //surface gas pressure
+          }
+          if (r<rm) {
+            temp->P[BZ] = temp->Ph[BZ] = B_phi * r_rm;
+            temp->P[PG] = temp->Ph[PG] = pow(B_phi,2) * (1-pow(r_rm,2)) + pm;
+          }
+          else if (r<jr) {
+            temp->P[BZ] = temp->Ph[BZ] = B_phi*(jr-r)/(jr-rm);
+            temp->P[PG] = temp->Ph[PG] = p0 + pow(B_phi,2)/pow(1-rm_jr,2) * (3*(1-r_jr) - (1-pow(r_jr,2)) + log(r_jr));
+          }
+          else {
+            temp->P[BZ] = temp->Ph[BZ] = 0;
+          }
+#endif //JETPROFILE
           b->data.push_back(temp);
           ctot++;
           if (temp->isgd){
