@@ -308,6 +308,7 @@ class MPv10
   double m_p; ///< Mass of proton.
   double m_H; ///< Mass of hydrogen (grams).
   double m_He; ///< Mass of helium.
+  double m_C; ///< Mass of Carbon
   const int ndim; ///< Number of dimensions in grid.
   const int nv_prim; ///< Number of variables in state vector.
   const double eos_gamma; ///< EOS gamma for ideal gas.
@@ -322,7 +323,6 @@ class MPv10
 
   int nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index.
-  int lv_H0;   ///< neutral hydrogeen local variable index. 
   int lv_y_ion_index_offset; ///< gives the index at which ions first occur in primitive vector, maps to first index of local vector
   
   int N_elem;
@@ -340,6 +340,7 @@ class MPv10
   
   std::vector<int> H_ion_index; ///<Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position. Used with MPv10::Tr().
   std::vector<int> He_ion_index;///""
+  std::vector<int> C_ion_index;
   std::map<string,int> tracer_list;
 
   /// ===========================================================================
@@ -371,14 +372,85 @@ class MPv10
   
   std::vector<double> ionisation_potentials; //array of ionisation potentials, in the same order as ionise_slope
   
+  /// Assign an int to each species.
+  enum species {
+    NONE =-1, ///< For if we want to specify no ion.
+    H_0  = 0, ///< neutral hydrogen.
+    H_1p = 1, ///< ionised hydrogen.
+    He0  = 2, ///< neutral helium.
+    He1p = 3, ///< singly ionised helium.
+    He2p = 4, ///< doubly ionised helium.
+    C0  = 5, ///< Carbon
+    C1p = 6,
+    C2p = 7,
+    C3p = 8,
+    C4p = 9,
+    C5p = 10,
+    C6p = 11,
+    N0  = 12, ///< Nitrogen
+    N1p = 13,
+    N2p = 14,
+    N3p = 15,
+    N4p = 16,
+    N5p = 17,
+    N6p = 18,
+    N7p = 19,
+    O0  = 20, ///< Oxygen
+    O1p = 21,
+    O2p = 22,
+    O3p = 23,
+    O4p = 24,
+    O5p = 25,
+    O6p = 26,
+    O7p = 27,
+    O8p = 28
+  };
+
+  
+  //establishes the ion_struct structure, which contains things like ionisation potential
+  struct ion_struct {
+  std::string ion, ///< Name of ion.
+    ip1, ///< name of ion with higher ionisation stage.
+    im1, ///< name of ion with lower ionisation stage.
+    el;  ///< Name of ion's element.
+    struct ion_struct 
+      *iip1, ///< pointer to higher stage ion, if present.
+      *iim1; ///< pointer to lower stage ion, if present.
+  double ion_pot; ///< Ionisation energy of ion to next ionisation stage, in ergs.
+  int charge; ///< Charge of ion in units of the electron charge.
+  enum species i; ///< ion id number.
+  int g_stat; ///< statistical weight of this ion (H0=2,H1+=1,etc.)
+  };
+
+
+  std::map<std::string,struct ion_struct> ion_props; ///< properties of each ion.
+  struct ion_struct **ii; ///< pointer to array of ions used.
+  
+  void set_atomic_data();
+  double Coll_Ion_rate(
+       double,   ///< Precalculated Temperature.
+       const ion_struct *///< current ion.
+       );
+  double Rad_Recomb_rate(
+      double,   ///< Precalculated Temperature.
+      const struct ion_struct * ///< current ion.
+      );
+  
+  double dielec_recomb(
+      double,
+      enum species
+      );
+  double rad_recomb(
+      double,
+      enum species
+      );
+  void generate_lookup_tables();
   
   const double T_min;
   const double T_max;
   const int Num_temps; //NB this needs to be const so can initialise arrays with it. If this is >=1e4, get stack overflow errors.
   double delta_log_temp;
   
-  int pv_H1p;    ///< legacy, should ideally remove
-
   int
     N_diff_srcs, ///< No diffuse sources --> 0, otherwise --> 1
     N_ion_srcs,  ///< No ionising sources --> 0, otherwise --> 1

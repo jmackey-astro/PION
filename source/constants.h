@@ -63,6 +63,9 @@ class constants {
   ///
   inline double m_He()     {return 6.6464764e-24;}
   ///
+  /// Carbon mass
+  ///
+  inline double m_C()     {return 1.9944235e-23;}///
   /// Gravitational constant
   ///
   inline double G()       {return 6.67408e-8;}
