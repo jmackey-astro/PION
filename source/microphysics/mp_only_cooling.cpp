@@ -39,7 +39,8 @@
 #include <sstream>
 using namespace std;
 
-#define KI02 2
+#define KI02 2   ///< Koyama & Inutsuka (2002) function
+#define DMcC 3   ///< Dalgarno & McCray (1972) function
 #define SD93_CIE 4
 #define SD93_PLUS_HEATING 5
 #define WSS09_CIE_PLUS_HEATING 6
@@ -104,7 +105,7 @@ mp_only_cooling::mp_only_cooling(
   cooling_flag = EP->cooling;
 
   switch (cooling_flag) {
-  case KI02:
+  case KI02: case DMcC:
   case SD93_CIE:
   case SD93_PLUS_HEATING:
     setup_SD93_cie();
