@@ -1675,8 +1675,6 @@ void MPv10::generate_lookup_tables(){
   }
     
   //  Now, generate the slopes tables for interpolating temperatures that don't exactly fit here.
-  float recombination_slopes_table[number_of_species][ Num_temps ] = {};
-  float ionisation_slopes_table[number_of_species][ Num_temps ] = {};
   for ( int s=0; s<number_of_species; s++ ) {
     for ( int T_i=0; T_i<Num_temps-1; T_i++){ //note this is <Num_temps -1, b/c i+1
       float this_recombination_slope;
@@ -1699,7 +1697,8 @@ void MPv10::generate_lookup_tables(){
   /// Initialise ionisation potentials vector
   /// ===================================================================
   double ionisation_pot_arr[number_of_species] = {13.59844, -1.0e99,
-                                                24.58741, 54.41778, -1.0e99}; //energy (eV) required to raise ion from species i to species i+1
+                                                  24.58741, 54.41778, -1.0e99,
+                                                  11.3, 24.4, 47.9, 64.5, 392.1, 490.0, -1.0e99}; //energy (eV) required to raise ion from species i to species i+1
   for (int i=0; i<number_of_species; i++) ionisation_pot_arr[i]*=erg_per_eV; //convert eV to erg
   ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[5]);
  
