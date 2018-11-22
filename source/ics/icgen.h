@@ -212,6 +212,8 @@ class IC_jet : public ICsetup_base {
      jdens, ///< jet density.
      jpres, ///< jet pressure.
      jvel,  ///< jet velocity.
+     j_bax,  ///< jet axial B-field
+     j_btor, ///< jet toriodal B-field
      jtr0;  ///< value of colour tracer in jet
 };
    

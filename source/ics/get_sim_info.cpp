@@ -985,12 +985,11 @@ int get_sim_info::read_jet_params(
   jpar.jetstate[VY] = 0.0;
   jpar.jetstate[VZ] = 0.0;
 
-  if ( (a=rp->find_parameter("JETambBX")) !="")
+  if ( (a=rp->find_parameter("JET_Bax")) !="")
     jpar.jetstate[BX] = atof(a.c_str());
-  if ( (a=rp->find_parameter("JETambBY")) !="")
+  if ( (a=rp->find_parameter("JET_Btor")) !="")
     jpar.jetstate[BY] = atof(a.c_str());
-  if ( (a=rp->find_parameter("JETambBZ")) !="")
-    jpar.jetstate[BZ] = atof(a.c_str());
+  jpar.jetstate[BZ] = 0.0;
 
   if (s_par.eqntype == EQGLM) {
     jpar.jetstate[SI] = 0.0;

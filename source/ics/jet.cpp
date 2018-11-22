@@ -105,6 +105,22 @@ int IC_jet::setup_data(
   if (str=="") rep.error("didn't find parameter",seek);
   IC_jet::jvel  = atof(str.c_str());
 
+  //
+  // Jet Axial B-field
+  //
+  seek = "JET_Bax";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  IC_jet::j_bax  = atof(str.c_str());
+
+  //
+  // Jet Toroidal B-field
+  //
+  seek = "JET_Btor";
+  str = rp->find_parameter(seek);
+  if (str=="") rep.error("didn't find parameter",seek);
+  IC_jet::j_btor  = atof(str.c_str());
+
   //------------------------------------------------------------------
 
   //------------------------------------------------------------------

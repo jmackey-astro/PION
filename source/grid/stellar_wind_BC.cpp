@@ -403,9 +403,25 @@ void stellar_wind::set_wind_cell_reference_state(
   else
     wc->p[VZ] = 0.0;
 
-  if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
-    rep.error("Need to code B into winds model!",eqntype);
-
+  // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
+  if (eqntype==EQMHD || eqntype==EQGLM) {
+    double R=695508e5;  // R_sun in cm
+    wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
+    if (ndim>1)
+      wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
+    else
+      wc->p[BY] = 0.0;
+    if (ndim>2)
+      wc->p[BZ] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist; 
+    else
+      wc->p[BZ] = 0.0;
+  }
+    
+  //if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
+    //rep.error("Need to code B into winds model!",eqntype);
 
   // update tracers
   for (int v=0;v<ntracer;v++)

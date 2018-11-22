@@ -463,7 +463,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   // add source terms
   geometric_source(c, d, slope, ooa, dx, u1);
-  //Powell_source_terms(grid, c, d, slope, u1);
+  Powell_source_terms(grid, c, d, slope, u1);
 
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);

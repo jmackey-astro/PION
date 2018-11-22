@@ -6,7 +6,7 @@
 ########################
 ndim 2
 coordinates cylindrical
-eqn euler
+eqn euler 
 GAMMA 1.6666666666666666666
 ########################
 
