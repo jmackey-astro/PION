@@ -1625,18 +1625,18 @@ void MPv10::generate_lookup_tables(){
   Temp_Table.insert(Temp_Table.end(), &Temp_arr[0], &Temp_arr[Num_temps]);
     
   //  Now make lookup tables for the recombination rates and ionisation rates respectively.
-  const int number_of_species = 29;
+  const int number_of_species = 12;
   
   species species_list[number_of_species] = {H_0, H_1p, 
                                              He0, He1p, He2p, 
-                                             C0, C1p, C2p, C3p, C4p, C5p, C6p, 
+                                             C0, C1p, C2p, C3p, C4p, C5p, C6p}/*, 
                                              N0, N1p, N2p, N3p, N4p, N5p, N6p, N7p, 
-                                             O0, O1p, O2p, O3p, O4p, O5p, O6p, O7p, O8p};
+                                             O0, O1p, O2p, O3p, O4p, O5p, O6p, O7p, O8p};*/
   string ion_names[number_of_species] = {"H0", "H1+", 
                                          "He0", "He1+", "He2+", 
-                                         "C0", "C1+", "C2+", "C3+", "C4+", "C5+", "C6+", 
+                                         "C0", "C1+", "C2+", "C3+", "C4+", "C5+", "C6+"}/*, 
                                          "N0", "N1+", "N2+", "N3+", "N4+", "N5+", "N6+", "N7+", 
-                                         "O0", "O1+", "O2+", "O3+", "O4+", "O5+", "O6+", "O7+", "O8+"};
+                                         "O0", "O1+", "O2+", "O3+", "O4+", "O5+", "O6+", "O7+", "O8+"};*/
   
   // ======================================================================================================
   //  Resize header-defined vectors to store data
@@ -1700,7 +1700,7 @@ void MPv10::generate_lookup_tables(){
                                                   24.58741, 54.41778, -1.0e99,
                                                   11.3, 24.4, 47.9, 64.5, 392.1, 490.0, -1.0e99}; //energy (eV) required to raise ion from species i to species i+1
   for (int i=0; i<number_of_species; i++) ionisation_pot_arr[i]*=erg_per_eV; //convert eV to erg
-  ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[5]);
+  ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[number_of_species]);
  
   return;
 };
