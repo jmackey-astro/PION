@@ -7,6 +7,7 @@
 
 
 #include "boundaries/inflow_boundaries.h"
+#include "tools/mem_manage.h"
 using namespace std;
 
 
@@ -25,6 +26,9 @@ int inflow_bc::BC_assign_INFLOW(
 
   if (b->data.empty()) {
     rep.error("BC_assign_INFLOW: empty boundary data",b->itype);
+  }
+  if (!b->refval) {
+    b->refval = mem.myalloc(b->refval, par.nvar);
   }
 
   list<cell*>::iterator bpt=b->data.begin();
@@ -54,9 +58,12 @@ int inflow_bc::BC_assign_INFLOW(
     for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = temp->P[v];
     for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = temp->P[v];
     for (int v=0;v<par.nvar;v++) (*bpt)->dU[v] = 0.0;
+    //rep.printVec("Setting inflow boundary values:",temp->P,par.nvar);
     ct++;
     ++bpt;
   } while (bpt !=b->data.end());
+  
+  for (int v=0;v<par.nvar;v++) b->refval[v] = temp->P[v];
 
   if (ct != b->data.size())
     rep.error("BC_assign_INFLOW: missed some cells!",ct-b->data.size());
@@ -86,6 +93,9 @@ int inflow_bc::BC_update_INFLOW(
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
     for (int v=0;v<par.nvar;v++) (*c)->dU[v] = 0.0;
+    for (int v=0;v<par.nvar;v++) (*c)->P[v]  = b->refval[v];
+    for (int v=0;v<par.nvar;v++) (*c)->Ph[v] = b->refval[v];
+    //rep.printVec("inflow boundary values:",(*c)->P,par.nvar);
   } // all cells.
   return 0;
 }
