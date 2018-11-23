@@ -465,8 +465,8 @@ int sim_control_NG_MPI::Time_Int(
     cout <<"MPI time_int: finished timestep\n";
 #endif
 
-    if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
-         (SimPM.timestep%log_freq)==0) {
+    //if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
+    //     (SimPM.timestep%log_freq)==0) {
       cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
@@ -474,7 +474,7 @@ int sim_control_NG_MPI::Time_Int(
 //#ifdef TESTING
       cout.flush();
 //#endif // TESTING
-    }
+    //}
     // --------------------------------------------------------------
 	
     err += check_energy_cons(grid);
@@ -1109,7 +1109,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
       )
 {
   if (step != ooa) {
-    cout <<"don't send fluxes on half step\n";
+    cout <<"l="<<l<<": don't send fluxes on half step\n";
     return 1;
   }
   if (SimPM.levels[l].step%2 ==0 ) {
@@ -1136,7 +1136,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"send "<<isend<<" is not null: sending data.\n";
+      cout <<"l="<<l<<": send "<<isend<<" is not null: sending data.\n";
 #endif
     }
     size_t n_el = fup->fi.size();
@@ -1158,14 +1158,18 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
     // loop over procs on level l-1 to send to.
     for (unsigned int ii=0; ii<fup->rank.size();ii++) {
+#ifdef TEST_BC89FLUX
+      cout <<"l="<<l<<": isend="<<isend<<", send "<<ii<<" of ";
+      cout <<fup->rank.size()<<" to rank "<<fup->rank[ii]<<".\n";
+#endif
       if (fup->rank[ii] == MCMD->get_myrank()) {
 #ifdef TEST_BC89FLUX
-        cout <<"ignoring BC89 for isend="<<isend<<" (to myrank).\n";
+        cout <<"l="<<l<<": ignoring BC89 for isend="<<isend<<" (to myrank).\n";
 #endif
         continue;
       }
 #ifdef TEST_BC89FLUX
-      cout <<"BC89 FLUX: Sending "<<n_data;
+      cout <<"l="<<l<<": BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
       cout <<" to parent proc "<<fup->rank[ii]<<"\n";
 #endif
@@ -1173,7 +1177,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
             fup->rank[ii],n_data,data,id,comm_tag);
       if (err) rep.error("FLUX_F2C send_data failed.",err);
 #ifdef TEST_MPI_NG_F2C
-      cout <<"BC89 FLUX: returned with id="<<id;
+      cout <<"l="<<l<<": BC89 FLUX: returned with id="<<id;
       cout <<"\n";
 #endif
       // store ID to clear the send later
@@ -1217,14 +1221,14 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     // some recvs may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"recv "<<irecv<<" is null, continuing...\n";
+      cout <<"l="<<l<<": recv "<<irecv<<" is null, continuing...\n";
 #endif
       continue;
     }
     else if (fup->rank[0] == MCMD->get_myrank()) {
 #ifdef TEST_BC89FLUX
-      cout <<"calling serial BC89 for irecv="<<irecv;
-      cout <<" (same rank). dir="<<fup->dir<<"\n";
+      cout <<"l="<<l<<": calling serial BC89 for irecv="<<irecv;
+      cout <<" (same rank). dir="<<fup->dir<<endl;
 #endif
       int d = fup->dir;
       struct flux_update *fsend = 
@@ -1236,7 +1240,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"recv "<<irecv<<" is not null: recving data.\n";
+      cout <<"l="<<l<<": recv "<<irecv<<" is not null: recving data."<<endl;
 #endif
     }
 
@@ -1269,9 +1273,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
           COMM_DOUBLEDATA // type of data we want.
           );
     if (err) rep.error("FLUX look for double data failed",err);
-#ifdef TEST_MPI_NG_F2C
-    cout <<"BC89 FLUX: found data from rank ";
-    cout <<from_rank<<", and ID "<<recv_id<<"\n";
+#ifdef TEST_BC89FLUX
+    cout <<"l="<<l<<": BC89 FLUX: found data from rank ";
+    cout <<from_rank<<", and ID "<<recv_id<<endl;
 #endif
 
     pion_flt *buf = 0;
@@ -1281,7 +1285,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
     err = COMM->receive_double_data(
-                          from_rank, recv_tag, recv_id, n_el, buf);
+                          from_rank, recv_tag, recv_id, n_data, buf);
     if (err) rep.error("(BC_update_C2F_RECV) getdata failed",err);
 
     size_t iel=0;
@@ -1295,8 +1299,8 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
         fi->flux[v] /=  fi->area[0];
 #ifdef TEST_BC89FLUX
         if (!isfinite(buf[iel])) {
-          cout <<"element "<<ii<<" of FLUX C2F RECV: ";
-          cout <<" var "<<iel<<" is "<<buf[iel]<<"\n";
+          cout <<"l="<<l<<": element "<<ii<<" of FLUX C2F RECV: ";
+          cout <<" var "<<iel<<" is "<<buf[iel]<<endl;
           rep.error("infinite",buf[ii]);
         }
 #endif

@@ -15,6 +15,7 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
+#define TEST_BC89FLUX
 //
 // check conservation of energy and momentum
 //
