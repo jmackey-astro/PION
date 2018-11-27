@@ -17,7 +17,7 @@
 
 //#define TEST_BC89FLUX
 //#define TEST_COMMS
-#define TEST_CONSERVATION
+//#define TEST_CONSERVATION
 //#define TEST_INF
 
 //
