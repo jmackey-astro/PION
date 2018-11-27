@@ -717,15 +717,6 @@ int time_integrator::dynamics_dU_column(
     }
     if (npt->isbd_ref[posdir]) {
       for (int v=0;v<SimPM.nvar;v++) npt->F[v] = Fr_this[v];
-#ifdef DEBUG
-      if (posdir==3) {
-        rep.printVec("d=3, cpt Ph",cpt->Ph,SimPM.nvar);
-        rep.printVec("d=3, npt Ph",npt->Ph,SimPM.nvar);
-        rep.printVec("edge L",edgeL,SimPM.nvar);
-        rep.printVec("edge R",edgeR,SimPM.nvar);
-        rep.printVec("1 FLUX",Fr_this,SimPM.nvar);
-      }
-#endif
     }
 
 #ifdef TEST_INT

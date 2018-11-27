@@ -118,7 +118,7 @@ using namespace std;
 //#define GLM_ZERO_BOUNDARY ///< Set this flag to make Psi=0 on boundary cells.
 #define GLM_NEGATIVE_BOUNDARY ///< Set this flag for Psi[boundary cell]=-Psi[edge cell]
 
-
+//#define TEST_BC89FLUX
 
 // ##################################################################
 // ##################################################################
@@ -1635,18 +1635,28 @@ int UniformGrid::add_cells_to_face(
 #ifdef TEST_BC89FLUX
     cout <<nface[perpaxis]<<", ";
     cout <<flux.fi.size()<<"\n";
+    if (!c) {
+      cout <<"got lost on grid!\n";
+      rep.printVec("ixmin",ixmin,G_ndim);
+      rep.printVec("ixmax",ixmax,G_ndim);
+      rep.printVec("G_xmin",G_xmin,G_ndim);
+      rep.printVec("G_xmax",G_xmax,G_ndim);
+      rep.error("lost on grid",c);
+    }
 #endif
     if (nface[perpaxis] != static_cast<int>(flux.fi.size()))
       rep.error("wrong number of cells 2D interface",flux.fi.size());
 
     for (int i=0;i<nface[perpaxis]; i++) {
       for (int ic=0;ic<ncell;ic++) {
+        if (!c) rep.error("Cell is null in BC89 add_cells",c);
         flux.fi[i]->c[ic] = c;
         c->F = mem.myalloc(c->F,G_nvar);
         c->isbd_ref[d] = true;
         flux.fi[i]->area[ic] = CellInterface(c,OppDir(d),0);
 #ifdef TEST_BC89FLUX
-        cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<"\n";
+        cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<": adding cell: ";
+        CI.print_cell(c);
 #endif
         c = NextPt(c,perpdir);
       }

@@ -322,14 +322,15 @@ int UniformGridParallel::setup_flux_recv(
       fi->flux = mem.myalloc(fi->flux,G_nvar);
       for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
       for (int v=0;v<G_ndim;v++) ncell[v] = G_ng[v];
-      add_cells_to_face(OppDir(static_cast<enum direction>(edge)),G_ixmin,
-                  G_ixmax,ncell,1,flux_update_recv[0]);
+      // change G_ixmin,G_ixmax to min/max of neighbouring child.
+      add_cells_to_face(OppDir(static_cast<enum direction>(edge)),
+                      G_ixmin,G_ixmax,ncell,1,flux_update_recv[0]);
     }
     else if (G_ndim==2) {
       // up to 2 grids on l+1, so go through them one by one, see
       // if they exist, and then add the cells.
       flux_update_recv.resize(2);
-      int perp = axis+1 % G_ndim;
+      int perp = (axis+1+G_ndim) % G_ndim;
       nel = G_ng[perp]/2;  // child covers half of the grid.
       pos[perp] = G_xmin[perp]+0.25*G_range[perp];
       double xmin[2], xmax[2];
@@ -337,20 +338,26 @@ int UniformGridParallel::setup_flux_recv(
         // find xmin/xmax of boundary region, and rank of child
         // procs.
         xmin[perp] = G_xmin[perp] + ic*0.5*G_range[perp];
-        xmax[perp] = xmin[perp]   + 0.5*G_range[perp];
+        xmax[perp] =   xmin[perp]   + 0.5*G_range[perp];
         pos[perp] += ic*0.5*G_range[perp];
         if (edge%2==0) {
           // negative direction
           pos[axis] = G_xmin[axis] - G_dx; // just off grid.
-          xmin[axis] = G_xmin[axis] - 0.5*G_range[perp];
-          xmax[axis] =   xmin[axis] + 0.5*G_range[perp];
+          xmin[axis] = G_xmin[axis] - 0.5*G_range[axis];
+          xmax[axis] = G_xmin[axis];
         }
         else {
           // positive direction
           pos[axis] = G_xmax[axis] + G_dx; // just off grid.
           xmin[axis] = G_xmax[axis];
-          xmax[axis] =   xmin[axis] + 0.5*G_range[perp];
+          xmax[axis] = G_xmax[axis] + 0.5*G_range[axis];
         }
+#ifdef TEST_BC89FLUX
+        cout <<"ic="<<ic<<", perp="<<perp<<", ax="<<axis<<"\n";
+        rep.printVec("xmin",xmin,G_ndim);
+        rep.printVec("xmax",xmax,G_ndim);
+#endif
+        
         ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
         if (ch>=0) {
           flux_update_recv[ic].rank.push_back(ch);
@@ -372,7 +379,9 @@ int UniformGridParallel::setup_flux_recv(
           CI.get_ipos_vec(xmin,ixmin);
           CI.get_ipos_vec(xmax,ixmax);
           
-          cout <<"FLUX: adding "<<nel<<" cells to recv boundary.\n";
+#ifdef TEST_BC89FLUX
+          cout <<"FLUX: adding "<<nel<<" cells to recv boundary."<<endl;
+#endif
           add_cells_to_face(OppDir(static_cast<enum direction>(edge)),
                     ixmin,ixmax,ncell,1,flux_update_recv[ic]);
         }

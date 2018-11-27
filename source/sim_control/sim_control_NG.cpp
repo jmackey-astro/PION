@@ -25,7 +25,7 @@
 using namespace std;
 
 
-#define TEST_BC89FLUX
+//#define TEST_BC89FLUX
 
 // ##################################################################
 // ##################################################################
@@ -765,6 +765,7 @@ double sim_control_NG::advance_step_OA2(
 #ifdef TEST_INT
   cout <<"l="<<l<<" full step, grid_update_state_vector\n";
 #endif
+  spatial_solver->Setdt(dt2_this);
   if (l < SimPM.grid_nlevels-1) {
     err += recv_BC89_fluxes_F2C(l,TIMESTEP_FULL,OA2);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
