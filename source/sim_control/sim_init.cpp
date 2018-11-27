@@ -765,13 +765,15 @@ int sim_init::initial_conserved_quantities(
   initERG = 0.;  initMMX = initMMY = initMMZ = 0.; initMASS = 0.0;
   class cell *cpt=grid->FirstPt();
   do {
-    spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
-    dv = spatial_solver->CellVolume(cpt,dx);
-    initERG += u[ERG]*dv;
-    initMMX += u[MMX]*dv;
-    initMMY += u[MMY]*dv;
-    initMMZ += u[MMZ]*dv;
-    initMASS += u[RHO]*dv;
+    if (cpt->isdomain) {
+      spatial_solver->PtoU(cpt->P,u,SimPM.gamma);
+      dv = spatial_solver->CellVolume(cpt,dx);
+      initERG += u[ERG]*dv;
+      initMMX += u[MMX]*dv;
+      initMMY += u[MMY]*dv;
+      initMMZ += u[MMZ]*dv;
+      initMASS += u[RHO]*dv;
+    }
   } while ( (cpt = grid->NextPt(cpt)) !=0);
   cout <<"(sim_init::InitialconservedQuantities) ["<< initERG <<", ";
   cout << initMMX <<", ";

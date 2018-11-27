@@ -92,6 +92,12 @@ class setup_NG_grid :
       const int          ///< level of grid in NG
       );
 
+  /// set flag for cells if they are not leaf cells (i.e. if there is
+  /// a finer-level grid that covers the same volume).
+  virtual void set_leaf_cells(
+      vector<class GridBaseClass *> &,  ///< grid pointers.
+      class SimParams &  ///< pointer to simulation parameters
+      );
 
 }; // setup_NG_grid
    

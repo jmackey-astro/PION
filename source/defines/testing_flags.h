@@ -15,10 +15,9 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
-//
-// check conservation of energy and momentum
-//
-//#define TEST_CONSERVATION
+//#define TEST_BC89FLUX
+//#define TEST_COMMS
+#define TEST_CONSERVATION
 
 //
 // Various defines for testing bits of the code.

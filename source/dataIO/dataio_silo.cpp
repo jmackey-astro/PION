@@ -659,7 +659,7 @@ int dataio_silo::setup_grid_properties(
   }
 
 
-  int nopts=4;
+  int nopts=6;
   dataio_silo::GridOpts = DBMakeOptlist(nopts);
   if      (SimPM.coord_sys==COORD_CRT) silo_coordsys=DB_CARTESIAN;
   else if (SimPM.coord_sys==COORD_CYL) silo_coordsys=DB_CYLINDRICAL;
@@ -669,6 +669,18 @@ int dataio_silo::setup_grid_properties(
   DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
   DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
   DBAddOption(GridOpts,DBOPT_NSPACE,&SimPM.ndim);
+  int lo_off[ndim], hi_off[ndim];
+#ifdef WRITE_GHOST_ZONES
+  for (int i=0;i<ndim;i++) lo_off[i] = SimPM.Nbc;
+  for (int i=0;i<ndim;i++) hi_off[i] = zonedims[i]-SimPM.Nbc-1;
+#else
+  for (int i=0;i<ndim;i++) lo_off[i] = 0;
+  for (int i=0;i<ndim;i++) hi_off[i] = zonedims[i]-1;
+#endif
+  DBAddOption(GridOpts,DBOPT_LO_OFFSET,lo_off);
+  DBAddOption(GridOpts,DBOPT_HI_OFFSET,hi_off);
+
+
   // labels don't seem to display right in VisIt...
   //char s[strlength];
   //strcpy(s,"XXXX"); DBAddOption(GridOpts,DBOPT_XLABEL,s);

@@ -66,6 +66,14 @@ class sim_control_NG :
       vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
+  ///
+  /// finalise the simulation, clean up, delete data.
+  /// This function finished the simulation gracefully (hopefully!).
+  ///
+  int Finalise(
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
+  
   //---------------------------------------
   protected:
 

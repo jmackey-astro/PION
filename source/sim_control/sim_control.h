@@ -90,7 +90,7 @@ class sim_control :
   /// finalise the simulation, clean up, delete data.
   /// This function finished the simulation gracefully (hopefully!).
   ///
-  int Finalise(
+  virtual int Finalise(
       vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
       );
 

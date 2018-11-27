@@ -248,6 +248,9 @@ int setup_NG_grid::setup_grid(
     }
   }
 
+  set_leaf_cells(grid,SimPM);
+
+
   // setup arrays for fluxes into and out of fine grid, and
   // equivalent cells on coarse grid, for making the fluxes
   // consistent across levels.
@@ -260,6 +263,49 @@ cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_NG_grid::set_leaf_cells(
+      vector<class GridBaseClass *> &grid,  ///< grid pointers.
+      class SimParams &par  ///< pointer to simulation parameters
+      )
+{
+  //
+  // if there is an interface region, set a flag on the grid cells
+  // that are not leaf cells.
+  //
+  int sxmin[MAX_DIM], sxmax[MAX_DIM], lxmin[MAX_DIM], lxmax[MAX_DIM];
+  bool notleaf;
+  CI.get_ipos_vec(par.levels[0].Xmin, sxmin);
+  CI.get_ipos_vec(par.levels[0].Xmax, sxmax);
+
+  for (int l=0;l<par.grid_nlevels;l++) {
+    class cell *c = grid[l]->FirstPt_All();
+    do {
+      // if outside domain, then cell is not a leaf.
+      for (int v=0;v<par.ndim;v++) {
+        if (c->pos[v]<sxmin[v] || c->pos[v]>sxmax[v]) c->isleaf=false;
+      }
+      if (l<par.grid_nlevels-1) {
+        notleaf=true;
+        CI.get_ipos_vec(par.levels[l+1].Xmin, lxmin);
+        CI.get_ipos_vec(par.levels[l+1].Xmax, lxmax);
+        for (int v=0;v<par.ndim;v++) {
+          if (c->pos[v]>lxmax[v] || c->pos[v]<lxmin[v]) notleaf=false;
+        }
+        if (notleaf) c->isleaf=false;
+      }
+
+    } while ( (c=grid[l]->NextPt_All(c))!=0);
+  }
+  return;
+}
 
 
 

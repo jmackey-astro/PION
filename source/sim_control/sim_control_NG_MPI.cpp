@@ -465,8 +465,8 @@ int sim_control_NG_MPI::Time_Int(
     cout <<"MPI time_int: finished timestep\n";
 #endif
 
-    if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
-         (SimPM.timestep%log_freq)==0) {
+    //if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
+    //     (SimPM.timestep%log_freq)==0) {
       cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
@@ -474,7 +474,7 @@ int sim_control_NG_MPI::Time_Int(
 //#ifdef TESTING
       cout.flush();
 //#endif // TESTING
-    }
+    //}
     // --------------------------------------------------------------
 	
     err += check_energy_cons(grid);
@@ -678,9 +678,8 @@ double sim_control_NG_MPI::advance_step_OA1(
 #endif
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                               ctime+dt2_this, OA1, OA1);
-  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                              ctime+dt2_this, OA1, OA1);
-  
+
+
   //  - Recv F2C data from l+1
   if (!finest_level && f2cr>=0) {
 #ifdef TEST_INT
@@ -697,6 +696,10 @@ double sim_control_NG_MPI::advance_step_OA1(
     BC_FINE_TO_COARSE_SEND_clear_sends();
   }
 
+
+  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
+                              ctime+dt2_this, OA1, OA1);
+  
 
   // --------------------------------------------------------
   // 6. Send external boundary data to finer grid (C2F)
@@ -884,26 +887,26 @@ double sim_control_NG_MPI::advance_step_OA2(
   // - update internal and external boundaries locally
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
+  // - Receive F2C data from l+1
+  if (!finest_level && f2cr>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" receive F2C data\n";
+    cout <<"F2C Recv, l="<<l<<", f2cr="<<f2cr<<", size=";
+    cout <<grid->BC_bd.size()<<"\n";
+#endif
+    err += BC_update_FINE_TO_COARSE_RECV(
+                SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA2);
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" clear F2C sends\n";
+#endif
+    //  - Clear F2C sends
+    BC_FINE_TO_COARSE_SEND_clear_sends();
+  }
+
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
   rep.errorTest("scn::advance_step_OA2: bounday update OA2",0,err);
   
-  // - Receive F2C data from l+1
-  //if (!finest_level && f2cr>=0) {
-#ifdef TEST_INT
-  //  cout <<"advance_step_OA2: l="<<l<<" receive F2C data\n";
-  //  cout <<"F2C Recv, l="<<l<<", f2cr="<<f2cr<<", size=";
-  //  cout <<grid->BC_bd.size()<<"\n";
-#endif
-  //  err += BC_update_FINE_TO_COARSE_RECV(
-  //              SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA2);
-#ifdef TEST_INT
-  //  cout <<"advance_step_OA2: l="<<l<<" clear F2C sends\n";
-#endif
-  //  //  - Clear F2C sends
-  //  BC_FINE_TO_COARSE_SEND_clear_sends();
-  //}
-
   // --------------------------------------------------------
   // 4. Calculate dU for the full step (OA2) on this level
   // --------------------------------------------------------
@@ -988,9 +991,7 @@ double sim_control_NG_MPI::advance_step_OA2(
 #endif
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                               ctime+dt2_this, OA2, OA2);
-  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                              ctime+dt2_this, OA2, OA2);
-  
+
   //  - Recv F2C data from l+1
   if (!finest_level && f2cr>=0) {
 #ifdef TEST_INT
@@ -1006,6 +1007,10 @@ double sim_control_NG_MPI::advance_step_OA2(
     //  - Clear F2C sends
     BC_FINE_TO_COARSE_SEND_clear_sends();
   }
+
+  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
+                              ctime+dt2_this, OA2, OA2);
+  
 
   // --------------------------------------------------------
   // 8. Send/receive external boundary data to finer grid (C2F)
@@ -1037,15 +1042,17 @@ double sim_control_NG_MPI::advance_step_OA2(
   // 9. Send level fluxes and F2C data to coarser grid
   // --------------------------------------------------------
   // - send F2C data
-  if (l>0 && SimPM.levels[l].step%2!=0) {
+  if (l>0) { // && SimPM.levels[l].step%2!=0) {
     // - send level fluxes
 #ifdef TEST_INT
     cout <<"step="<<SimPM.levels[l].step<<"\n";
 #endif
-    err += send_BC89_fluxes_F2C(l,OA2,OA2);
+    if (SimPM.levels[l].step%2!=0) {
+      err += send_BC89_fluxes_F2C(l,OA2,OA2);
 #ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" send_BC89_fluxes_F2C()\n";
+      cout <<"advance_step_OA2: l="<<l<<" send_BC89_fluxes_F2C()\n";
 #endif
+    }
 
 #ifdef TEST_MPI_NG
     cout <<"LEVEL "<<l<<": update_bcs_NG_MPI: updating bc ";
@@ -1109,7 +1116,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
       )
 {
   if (step != ooa) {
-    cout <<"don't send fluxes on half step\n";
+    cout <<"l="<<l<<": don't send fluxes on half step\n";
     return 1;
   }
   if (SimPM.levels[l].step%2 ==0 ) {
@@ -1130,13 +1137,13 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"send "<<isend<<" is null, continuing...\n";
+      cout <<"send "<<isend<<" is null, continuing..."<<endl;
 #endif
       continue;
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"send "<<isend<<" is not null: sending data.\n";
+      cout <<"l="<<l<<": send "<<isend<<" is not null: sending data."<<endl;
 #endif
     }
     size_t n_el = fup->fi.size();
@@ -1158,23 +1165,27 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
     // loop over procs on level l-1 to send to.
     for (unsigned int ii=0; ii<fup->rank.size();ii++) {
+#ifdef TEST_BC89FLUX
+      cout <<"l="<<l<<": isend="<<isend<<", send "<<ii<<" of ";
+      cout <<fup->rank.size()<<" to rank "<<fup->rank[ii]<<endl;
+#endif
       if (fup->rank[ii] == MCMD->get_myrank()) {
 #ifdef TEST_BC89FLUX
-        cout <<"ignoring BC89 for isend="<<isend<<" (to myrank).\n";
+        cout <<"l="<<l<<": ignoring BC89 for isend="<<isend<<" (to myrank)."<<endl;
 #endif
         continue;
       }
 #ifdef TEST_BC89FLUX
-      cout <<"BC89 FLUX: Sending "<<n_data;
+      cout <<"l="<<l<<": BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
-      cout <<" to parent proc "<<fup->rank[ii]<<"\n";
+      cout <<" to parent proc "<<fup->rank[ii]<<endl;
 #endif
       err += COMM->send_double_data(
             fup->rank[ii],n_data,data,id,comm_tag);
       if (err) rep.error("FLUX_F2C send_data failed.",err);
-#ifdef TEST_MPI_NG_F2C
-      cout <<"BC89 FLUX: returned with id="<<id;
-      cout <<"\n";
+#ifdef TEST_BC89FLUX
+      cout <<"l="<<l<<": BC89 FLUX: returned with id="<<id;
+      cout <<endl;
 #endif
       // store ID to clear the send later
       BC89_flux_send_list.push_back(id);
@@ -1217,28 +1228,29 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     // some recvs may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"recv "<<irecv<<" is null, continuing...\n";
+      cout <<"l="<<l<<": recv "<<irecv<<" is null, continuing...\n";
 #endif
       continue;
     }
     else if (fup->rank[0] == MCMD->get_myrank()) {
 #ifdef TEST_BC89FLUX
-      cout <<"calling serial BC89 for irecv="<<irecv;
-      cout <<" (same rank). dir="<<fup->dir<<"\n";
+      cout <<"l="<<l<<": calling serial BC89 for irecv="<<irecv;
+      cout <<" (same rank). dir="<<fup->dir<<endl;
 #endif
       int d = fup->dir;
       struct flux_update *fsend = 
                   &(SimPM.levels[l].child->flux_update_send[d]);
       err = recv_BC89_flux_boundary(grid,*fsend,*fup,d,
-                      static_cast<axes>(fup->ax));
+                              static_cast<axes>(fup->ax));
       rep.errorTest("serial BC89 call",0,err);
       continue;
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"recv "<<irecv<<" is not null: recving data.\n";
+      cout <<"l="<<l<<": recv "<<irecv<<" is not null: recving data."<<endl;
 #endif
     }
+
 
     // Normally we have nchild*2*ndim boundaries, so the direction
     // associated with a given "irecv" is irecv%(2*ndim).
@@ -1246,8 +1258,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     // then there are only 2^(ndim-1) elements, one for each l+1
     // grid that is adjacent to the level l grid.
     int dir = -1;
-    if (n_bd >= 2*SimPM.ndim) dir = irecv % 2*SimPM.ndim;
-    else                      dir = irecv;
+    //if (n_bd >= 2*SimPM.ndim) dir = irecv % 2*SimPM.ndim;
+    //else                      dir = irecv;
+    dir = fup->dir;
 
     struct flux_interface *fi=0;
     size_t n_el = fup->fi.size();
@@ -1261,6 +1274,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     int recv_tag=-1;
     int from_rank=-1;
     int comm_tag = BC_MPI_FLUX_tag +100*dir +l+1;
+#ifdef TEST_BC89FLUX
+    cout <<"looking for data with tag: "<<comm_tag<<endl;
+#endif
     err = COMM->look_for_data_to_receive(
           &from_rank, // rank of sender (output)
           recv_id,    // identifier for receive (output).
@@ -1269,9 +1285,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
           COMM_DOUBLEDATA // type of data we want.
           );
     if (err) rep.error("FLUX look for double data failed",err);
-#ifdef TEST_MPI_NG_F2C
-    cout <<"BC89 FLUX: found data from rank ";
-    cout <<from_rank<<", and ID "<<recv_id<<"\n";
+#ifdef TEST_BC89FLUX
+    cout <<"l="<<l<<": BC89 FLUX: found data from rank ";
+    cout <<from_rank<<", and ID "<<recv_id<<endl;
 #endif
 
     pion_flt *buf = 0;
@@ -1281,7 +1297,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
     //
     err = COMM->receive_double_data(
-                          from_rank, recv_tag, recv_id, n_el, buf);
+                          from_rank, recv_tag, recv_id, n_data, buf);
     if (err) rep.error("(BC_update_C2F_RECV) getdata failed",err);
 
     size_t iel=0;
@@ -1295,8 +1311,8 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
         fi->flux[v] /=  fi->area[0];
 #ifdef TEST_BC89FLUX
         if (!isfinite(buf[iel])) {
-          cout <<"element "<<ii<<" of FLUX C2F RECV: ";
-          cout <<" var "<<iel<<" is "<<buf[iel]<<"\n";
+          cout <<"l="<<l<<": element "<<ii<<" of FLUX C2F RECV: ";
+          cout <<" var "<<iel<<" is "<<buf[iel]<<endl;
           rep.error("infinite",buf[ii]);
         }
 #endif
@@ -1321,7 +1337,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
 
     } // loop over elements
     
- } // loop over faces in this direction.
+  } // loop over faces in this direction.
 
       
   return 0;
@@ -1390,7 +1406,9 @@ int sim_control_NG_MPI::initial_conserved_quantities(
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd && c->isgd) {
+      if (c->isdomain && c->isleaf) {
+        //cout <<"*** LEVEL "<<l<<", cell is a leaf: "<<c->isdomain<<"  "<<c->isleaf<<": ";
+        //rep.printVec("pos",c->pos,SimPM.ndim);
         dv = spatial_solver->CellVolume(c,dx);
         spatial_solver->PtoU(c->P,u,SimPM.gamma);
         initERG += u[ERG]*dv;
@@ -1399,8 +1417,18 @@ int sim_control_NG_MPI::initial_conserved_quantities(
         initMMZ += u[MMZ]*dv;
         initMASS += u[RHO]*dv;
       }
+      else {
+        //cout <<"level "<<l<<", cell is not leaf: "<<c->isdomain<<"  "<<c->isleaf<<": ";
+        //rep.printVec("pos",c->pos,SimPM.ndim);
+      }
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
+
+  //cout <<"(local quantities) ["<< initERG <<", ";
+  //cout << initMMX <<", ";
+  //cout << initMMY <<", ";
+  //cout << initMMZ <<", ";
+  //cout << initMASS <<"]\n";
 
   initERG = COMM->global_operation_double("SUM", initERG);
   initMMX = COMM->global_operation_double("SUM", initMMX);
@@ -1446,7 +1474,7 @@ int sim_control_NG_MPI::check_energy_cons(
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd && c->isgd) {
+      if (c->isdomain && c->isleaf) {
         dv = spatial_solver->CellVolume(c,dx);
         spatial_solver->PtoU(c->P,u,SimPM.gamma);
         nowERG += u[ERG]*dv;
@@ -1460,15 +1488,20 @@ int sim_control_NG_MPI::check_energy_cons(
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
 
-  //cout <<totmom;
+  //cout <<"(local quantities) ["<< nowERG <<", ";
+  //cout << nowMMX <<", ";
+  //cout << nowMMY <<", ";
+  //cout << nowMMZ <<", ";
+  //cout << nowMASS <<"]\n";
+  
   nowERG = COMM->global_operation_double("SUM", nowERG);
   nowMMX = COMM->global_operation_double("SUM", nowMMX);
   nowMMY = COMM->global_operation_double("SUM", nowMMY);
   nowMMZ = COMM->global_operation_double("SUM", nowMMZ);
   nowMASS = COMM->global_operation_double("SUM", nowMASS);
   totmom = COMM->global_operation_double("SUM", totmom);
-  cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
-  cout <<", nowMMX="<<nowMMX<<"\n";
+  //cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
+  //cout <<", nowMMX="<<nowMMX<<"\n";
 
   cout <<"(conserved quantities) ["<< nowERG <<", ";
   cout << nowMMX <<", ";

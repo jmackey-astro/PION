@@ -58,8 +58,8 @@ mp_only_cooling::mp_only_cooling(
       )
 : microphysics_base(ephys,rsrcs),
   cooling_function_SD93CIE(),
-  CoolingFn(ephys->cooling),
   Hummer94_Hrecomb(),
+  CoolingFn(ephys->cooling),
   nv_prim(nv)
 {
 

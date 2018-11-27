@@ -717,15 +717,6 @@ int time_integrator::dynamics_dU_column(
     }
     if (npt->isbd_ref[posdir]) {
       for (int v=0;v<SimPM.nvar;v++) npt->F[v] = Fr_this[v];
-#ifdef DEBUG
-      if (posdir==3) {
-        rep.printVec("d=3, cpt Ph",cpt->Ph,SimPM.nvar);
-        rep.printVec("d=3, npt Ph",npt->Ph,SimPM.nvar);
-        rep.printVec("edge L",edgeL,SimPM.nvar);
-        rep.printVec("edge R",edgeR,SimPM.nvar);
-        rep.printVec("1 FLUX",Fr_this,SimPM.nvar);
-      }
-#endif
     }
 
 #ifdef TEST_INT
@@ -750,7 +741,7 @@ int time_integrator::dynamics_dU_column(
     double dA=spatial_solver->CellInterface(cpt,posdir,dx);
     if(csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
-       !(cpt->isgd) && npt->isgd && !npt->isbd) {
+       !(cpt->isdomain) && npt->isgd && npt->isleaf) {
 //#ifdef TESTING
 //      if (!pconst.equalD(Fr_this[MMX],0.0) && !pconst.equalD(dA,0.0)) {
 //        cout <<"entering domain: F="<<Fr_this[MMX]<<". ";
@@ -768,7 +759,7 @@ int time_integrator::dynamics_dU_column(
     }
     else if (csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
-       !(npt->isgd) && cpt->isgd && !npt->isbd) {
+       cpt->isgd && cpt->isleaf && !npt->isdomain) {
       //cout <<"leaving domain\n";
       dM -= Fr_this[RHO]*dt*dA;
       dE -= Fr_this[ERG]*dt*dA;
@@ -814,7 +805,7 @@ int time_integrator::dynamics_dU_column(
   double dA=spatial_solver->CellInterface(cpt,posdir,dx);
   if (csp==SimPM.tmOOA &&
       pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
-      !(npt->isgd) && cpt->isgd) {
+      cpt->isgd && cpt->isleaf && !npt->isdomain) {
     //cout <<"leaving domain 2\n";
     dM -= Fr_this[RHO]*dt*dA;
     dE -= Fr_this[ERG]*dt*dA;
@@ -849,7 +840,7 @@ int time_integrator::dynamics_dU_column(
   dMX = COMM->global_operation_double("SUM",dMX);
   dMY = COMM->global_operation_double("SUM",dMY);
   dMZ = COMM->global_operation_double("SUM",dMZ);
-  cout <<"d="<<dM<<", "<<dE<<", "<<dMX<<", "<<dMY<<"\n";
+  //cout <<"d="<<dM<<", "<<dE<<", "<<dMX<<", "<<dMY<<"\n";
 #endif
   initMASS += dM;
   initERG  += dE;
