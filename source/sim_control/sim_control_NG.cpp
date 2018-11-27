@@ -510,6 +510,29 @@ void sim_control_NG::calculate_blastwave_radius(
 // ##################################################################
 
 
+int sim_control_NG::Finalise(
+      vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
+      )
+{
+  int err=0;
+  cout <<"------------------------------------------------------------\n";
+  cout <<"(sim_control::Finalise) FINALISING SIMULATION."<<"\n";
+  err += check_energy_cons(grid);
+  err+= output_data(grid);
+  rep.errorTest("(FINALISE::output_data) Something went wrong",0,err);
+  cout <<"\tSimTime = "<<SimPM.simtime<<"   #timesteps = "<<SimPM.timestep<<"\n";
+#ifdef TESTING
+  cout <<"(sim_control::Finalise) DONE.\n";
+#endif
+  cout <<"------------------------------------------------------------\n";
+  return(0);
+}
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 double sim_control_NG::advance_time(
       const int l,       ///< level to advance.
