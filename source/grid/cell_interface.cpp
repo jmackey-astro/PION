@@ -539,9 +539,9 @@ void cell_interface::get_ipos_vec(
       p_out[v] = -1234567;
     else
       p_out[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
-//    cout <<"p_in[v]="<<p_in[v]<<", (p_in[v]-xmin[v])="<<(p_in[v]-xmin[v]);
-//    cout <<", (p_in[v]-xmin[v])/dxo2="<<64.0-(p_in[v]-xmin[v])/dxo2;
-//    cout <<", (1+e)*((p_in[v]-xmin[v])/dxo2)="<<64.0-int_converter*((p_in[v]-xmin[v])/dxo2) <<"\n";
+    //cout <<"p_in[v]="<<p_in[v]<<", (p_in[v]-xmin[v])="<<(p_in[v]-xmin[v]);
+    //cout <<", (p_in[v]-xmin[v])/dxo2="<<64.0-(p_in[v]-xmin[v])/dxo2;
+    //cout <<", (1+e)*((p_in[v]-xmin[v])/dxo2)="<<64.0-int_converter*((p_in[v]-xmin[v])/dxo2) <<"\n";
   }
   return;
 }

@@ -285,8 +285,29 @@ UniformGrid::UniformGrid(
   for (int v=0;v<G_ndim;v++) G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
   for (int v=0;v<G_ndim;v++) G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
   for (int v=0;v<G_ndim;v++) G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
-  
-//#ifdef TESTING
+
+  CI.get_ipos_vec(Sim_xmin, Sim_ixmin);
+  CI.get_ipos_vec(Sim_xmax, Sim_ixmax);
+  for (int v=0;v<G_ndim;v++) {
+    Sim_irange[v] = Sim_ixmax[v]-Sim_ixmin[v];
+  }
+
+  // set external boundary cells to be not part of the simulation
+  // domain if they are outside of Sim_Xmin and Sim_Xmax.
+  class cell *c = FirstPt_All();
+  bool dom=true;
+  do {
+    c->isdomain=true;
+    dom=true;
+    for (int v=0;v<G_ndim;v++) {
+      if (c->pos[v]<Sim_ixmin[v] || c->pos[v]>Sim_ixmax[v]) dom=false;
+    }
+    if (!dom) c->isdomain = false;
+    c->isleaf=true;
+  } while ( (c=NextPt_All(c))!=0);
+
+
+#ifdef TESTING
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange,G_ndim);
@@ -299,16 +320,11 @@ UniformGrid::UniformGrid(
   rep.printVec("grid xmin_all ", G_xmin_all, G_ndim);
   rep.printVec("grid xmax_all ", G_xmax_all, G_ndim);
   rep.printVec("grid range_all", G_range_all,G_ndim);
-//#endif
+  rep.printVec("Sim xmin ", Sim_xmin, G_ndim);
+  rep.printVec("Sim xmax ", Sim_xmax, G_ndim);
+  rep.printVec("Sim range", Sim_range,G_ndim);
+#endif
 
-  //
-  // Set integer dimensions/location of Simulation (same as grid)
-  //
-  CI.get_ipos_vec(Sim_xmin, Sim_ixmin);
-  CI.get_ipos_vec(Sim_xmax, Sim_ixmax);
-  for (int v=0;v<G_ndim;v++) {
-    Sim_irange[v] = Sim_ixmax[v]-Sim_ixmin[v];
-  }
 
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
   RT=0;
@@ -502,7 +518,6 @@ int UniformGrid::assign_grid_structure()
       //cout <<"    cell NOT on grid";
 #endif // TESTING
     }
-    c->isdomain=true; // assume all cells are part of the domain.
 
     ///
     /// \section Edges
@@ -1310,6 +1325,7 @@ int UniformGrid::setup_flux_recv(
   CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
   CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
 
+
   // define interface region of fine and coarse grids, and whether
   // each direction is to be included or not.  Note that this allows
   // for a fine grid that is not completely encompassed by the coarse
@@ -1795,17 +1811,26 @@ void UniformGrid::save_fine_fluxes(
         if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
 #ifdef TEST_BC89FLUX
-        cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-        cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
+        //CI.print_cell(fi->c[i]);
+        //CI.print_cell(NextPt(fi->c[i],YP));
+        //cout <<"PRE: flux="; rep.printVec("",fi->flux,G_nvar);
+        //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
+        //cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
 #endif
         for (int v=0;v<G_nvar;v++) {
           fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
         }
 #ifdef TEST_BC89FLUX
-        cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-        cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
+        rep.printVec("cell fine flux",fi->c[i]->F,G_nvar);
+        rep.printVec("cell fine Ph",fi->c[i]->Ph,G_nvar);
+        //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
+        //cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
 #endif
       }
+#ifdef TEST_BC89FLUX
+      cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: ";
+      cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
+#endif
     }
   }
   return;

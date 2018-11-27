@@ -25,6 +25,7 @@
 using namespace std;
 
 
+#define TEST_BC89FLUX
 
 // ##################################################################
 // ##################################################################
@@ -249,7 +250,7 @@ int sim_control_NG::initial_conserved_quantities(
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd && c->isgd) {
+      if (c->isdomain && c->isleaf) {
         dv = spatial_solver->CellVolume(c,dx);
         spatial_solver->PtoU(c->P,u,SimPM.gamma);
         initERG += u[ERG]*dv;
@@ -1017,7 +1018,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
   if (level==SimPM.grid_nlevels-1) {
     rep.error("finest level trying to receive data from l+1",level);
   }
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
   cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif
 
@@ -1029,7 +1030,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
   // loop over boundaries, and, for each direction that has a
   // non-zero boundary, correct the coarse fluxes.
   for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
     cout <<"Direction: "<<d<<", looping through faces.\n";
 #endif
     ax = static_cast<enum axes>(d/2);
@@ -1042,7 +1043,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
                                      grid->flux_update_recv[d],d,ax);
     }
 
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
     cout <<"Direction: "<<d<<", finished.\n";
 #endif
   } // loop over directions
@@ -1075,11 +1076,19 @@ int sim_control_NG::recv_BC89_flux_boundary(
     rep.error("fine and parent face arrays r different size",2);
   }
 
+#ifdef TEST_BC89FLUX
+  cout <<"SERIAL BC89 RECV: send-d="<<send.dir<<", recv-d=";
+  cout <<recv.dir<<endl;
+#endif
   for (unsigned int f=0; f<recv.fi.size(); f++) {
     fc = recv.fi[f];
     ff = send.fi[f];
 
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
+    cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
+    rep.printVec("fc->flux",fc->flux,SimPM.nvar);
+    cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
+    rep.printVec("ff->flux",ff->flux,SimPM.nvar);
     for (int v=0;v<SimPM.nvar;v++) {
       fc->flux[v] /= fc->area[0];
     }
@@ -1094,17 +1103,18 @@ int sim_control_NG::recv_BC89_flux_boundary(
     
     for (int v=0;v<SimPM.nvar;v++) {
       fc->flux[v] += ff->flux[v];
-#ifndef DEBUG_NG
+#ifndef TEST_BC89FLUX
       fc->flux[v] /= fc->area[0];
 #endif
     }
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
     rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
-    //if (d==3) {
-    //  rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
-    //  rep.printVec("n state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
-    //  rep.printVec("p state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
-    //}
+    rep.printVec("flux",fc->flux,SimPM.nvar);
+    if (d==3) {
+      rep.printVec("c state",fc->c[0]->Ph,SimPM.nvar);
+      rep.printVec("+ state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
+      rep.printVec("- state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
+    }
 #endif
     //
     // fc->flux is now the error in dU made for both coarse cells.
@@ -1127,12 +1137,17 @@ int sim_control_NG::recv_BC89_flux_boundary(
       spatial_solver->DivStateVectorComponent(fc->c[0], grid, ax,
                                   SimPM.nvar,fc->flux,ftmp,utmp);
     }
-#ifdef DEBUG_NG
+#ifdef TEST_BC89FLUX
     rep.printVec("**********  Error",utmp, SimPM.nvar);
 #endif
     for (int v=0;v<SimPM.nvar;v++) {
       fc->c[0]->dU[v] += utmp[v];
     }
+#ifdef TEST_BC89FLUX
+    spatial_solver->PtoU(fc->c[0]->P,utmp,SimPM.gamma);
+    rep.printVec(" U",utmp,SimPM.nvar);
+    rep.printVec("dU",fc->c[0]->dU,SimPM.nvar);
+#endif
   } // loop over interfaces.
   return 0;
 }

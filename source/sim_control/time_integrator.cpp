@@ -750,7 +750,7 @@ int time_integrator::dynamics_dU_column(
     double dA=spatial_solver->CellInterface(cpt,posdir,dx);
     if(csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
-       !(cpt->isgd) && npt->isgd && !npt->isbd) {
+       !(cpt->isdomain) && npt->isgd && npt->isleaf) {
 //#ifdef TESTING
 //      if (!pconst.equalD(Fr_this[MMX],0.0) && !pconst.equalD(dA,0.0)) {
 //        cout <<"entering domain: F="<<Fr_this[MMX]<<". ";
@@ -768,7 +768,7 @@ int time_integrator::dynamics_dU_column(
     }
     else if (csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
-       !(npt->isgd) && cpt->isgd && !npt->isbd) {
+       cpt->isgd && cpt->isleaf && !npt->isdomain) {
       //cout <<"leaving domain\n";
       dM -= Fr_this[RHO]*dt*dA;
       dE -= Fr_this[ERG]*dt*dA;
@@ -814,7 +814,7 @@ int time_integrator::dynamics_dU_column(
   double dA=spatial_solver->CellInterface(cpt,posdir,dx);
   if (csp==SimPM.tmOOA &&
       pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
-      !(npt->isgd) && cpt->isgd) {
+      cpt->isgd && cpt->isleaf && !npt->isdomain) {
     //cout <<"leaving domain 2\n";
     dM -= Fr_this[RHO]*dt*dA;
     dE -= Fr_this[ERG]*dt*dA;
@@ -849,7 +849,7 @@ int time_integrator::dynamics_dU_column(
   dMX = COMM->global_operation_double("SUM",dMX);
   dMY = COMM->global_operation_double("SUM",dMY);
   dMZ = COMM->global_operation_double("SUM",dMZ);
-  cout <<"d="<<dM<<", "<<dE<<", "<<dMX<<", "<<dMY<<"\n";
+  //cout <<"d="<<dM<<", "<<dE<<", "<<dMX<<", "<<dMY<<"\n";
 #endif
   initMASS += dM;
   initERG  += dE;

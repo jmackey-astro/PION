@@ -252,6 +252,9 @@ int UniformGridParallel::setup_flux_recv(
           flux_update_recv[el].Ncells = nc;
         }
       } // loop over dims
+      CI.get_ipos_vec(MCMD->child_procs[ic].Xmin,ixmin);
+      CI.get_ipos_vec(MCMD->child_procs[ic].Xmax,ixmax);
+
 
       // For each interface, find the cell that is off the fine grid
       // and that includes the interface.
@@ -264,7 +267,7 @@ int UniformGridParallel::setup_flux_recv(
     }  // loop over child grids.
   } // if there are child grids.
 
-  else {
+  else  {
     // There are no children, but my grid might have a boundary in 
     // common with the l+1 level's outer boundary.
     // First try to exclude this:
@@ -319,7 +322,7 @@ int UniformGridParallel::setup_flux_recv(
       fi->flux = mem.myalloc(fi->flux,G_nvar);
       for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
       for (int v=0;v<G_ndim;v++) ncell[v] = G_ng[v];
-      add_cells_to_face(static_cast<enum direction>(edge),G_ixmin,
+      add_cells_to_face(OppDir(static_cast<enum direction>(edge)),G_ixmin,
                   G_ixmax,ncell,1,flux_update_recv[0]);
     }
     else if (G_ndim==2) {
@@ -328,15 +331,25 @@ int UniformGridParallel::setup_flux_recv(
       flux_update_recv.resize(2);
       int perp = axis+1 % G_ndim;
       nel = G_ng[perp]/2;  // child covers half of the grid.
+      pos[perp] = G_xmin[perp]+0.25*G_range[perp];
+      double xmin[2], xmax[2];
       for (int ic=0;ic<2;ic++) {
-        pos[perp] = G_xmin[perp]+0.25*G_range[perp];
+        // find xmin/xmax of boundary region, and rank of child
+        // procs.
+        xmin[perp] = G_xmin[perp] + ic*0.5*G_range[perp];
+        xmax[perp] = xmin[perp]   + 0.5*G_range[perp];
+        pos[perp] += ic*0.5*G_range[perp];
         if (edge%2==0) {
           // negative direction
           pos[axis] = G_xmin[axis] - G_dx; // just off grid.
+          xmin[axis] = G_xmin[axis] - 0.5*G_range[perp];
+          xmax[axis] =   xmin[axis] + 0.5*G_range[perp];
         }
         else {
           // positive direction
           pos[axis] = G_xmax[axis] + G_dx; // just off grid.
+          xmin[axis] = G_xmax[axis];
+          xmax[axis] =   xmin[axis] + 0.5*G_range[perp];
         }
         ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
         if (ch>=0) {
@@ -356,9 +369,12 @@ int UniformGridParallel::setup_flux_recv(
             for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
           }
           for (int v=0;v<G_ndim;v++) ncell[v] = G_ng[v]/2;
+          CI.get_ipos_vec(xmin,ixmin);
+          CI.get_ipos_vec(xmax,ixmax);
+          
           cout <<"FLUX: adding "<<nel<<" cells to recv boundary.\n";
-          add_cells_to_face(static_cast<enum direction>(edge),
-                    G_ixmin,G_ixmax,ncell,1,flux_update_recv[ic]);
+          add_cells_to_face(OppDir(static_cast<enum direction>(edge)),
+                    ixmin,ixmax,ncell,1,flux_update_recv[ic]);
         }
         else {
           // no child here, so just create one null element
@@ -427,6 +443,7 @@ int UniformGridParallel::setup_flux_send(
         flux_update_send[d].rank.push_back(pproc);
       }
     }
+  
     for (int ax=0;ax<G_ndim;ax++) {
       // check if parent boundary is also my boundary, in which
       // case we need to send data to parent's neighbour

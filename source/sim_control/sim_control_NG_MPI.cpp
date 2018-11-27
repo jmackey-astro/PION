@@ -1130,13 +1130,13 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"send "<<isend<<" is null, continuing...\n";
+      cout <<"send "<<isend<<" is null, continuing..."<<endl;
 #endif
       continue;
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": send "<<isend<<" is not null: sending data.\n";
+      cout <<"l="<<l<<": send "<<isend<<" is not null: sending data."<<endl;
 #endif
     }
     size_t n_el = fup->fi.size();
@@ -1160,25 +1160,25 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     for (unsigned int ii=0; ii<fup->rank.size();ii++) {
 #ifdef TEST_BC89FLUX
       cout <<"l="<<l<<": isend="<<isend<<", send "<<ii<<" of ";
-      cout <<fup->rank.size()<<" to rank "<<fup->rank[ii]<<".\n";
+      cout <<fup->rank.size()<<" to rank "<<fup->rank[ii]<<endl;
 #endif
       if (fup->rank[ii] == MCMD->get_myrank()) {
 #ifdef TEST_BC89FLUX
-        cout <<"l="<<l<<": ignoring BC89 for isend="<<isend<<" (to myrank).\n";
+        cout <<"l="<<l<<": ignoring BC89 for isend="<<isend<<" (to myrank)."<<endl;
 #endif
         continue;
       }
 #ifdef TEST_BC89FLUX
       cout <<"l="<<l<<": BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
-      cout <<" to parent proc "<<fup->rank[ii]<<"\n";
+      cout <<" to parent proc "<<fup->rank[ii]<<endl;
 #endif
       err += COMM->send_double_data(
             fup->rank[ii],n_data,data,id,comm_tag);
       if (err) rep.error("FLUX_F2C send_data failed.",err);
-#ifdef TEST_MPI_NG_F2C
+#ifdef TEST_BC89FLUX
       cout <<"l="<<l<<": BC89 FLUX: returned with id="<<id;
-      cout <<"\n";
+      cout <<endl;
 #endif
       // store ID to clear the send later
       BC89_flux_send_list.push_back(id);
@@ -1234,7 +1234,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       struct flux_update *fsend = 
                   &(SimPM.levels[l].child->flux_update_send[d]);
       err = recv_BC89_flux_boundary(grid,*fsend,*fup,d,
-                      static_cast<axes>(fup->ax));
+                              static_cast<axes>(fup->ax));
       rep.errorTest("serial BC89 call",0,err);
       continue;
     }
@@ -1244,14 +1244,16 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
 #endif
     }
 
+
     // Normally we have nchild*2*ndim boundaries, so the direction
     // associated with a given "irecv" is irecv%(2*ndim).
     // But if only the grid boundary is in common with level l+1, 
     // then there are only 2^(ndim-1) elements, one for each l+1
     // grid that is adjacent to the level l grid.
     int dir = -1;
-    if (n_bd >= 2*SimPM.ndim) dir = irecv % 2*SimPM.ndim;
-    else                      dir = irecv;
+    //if (n_bd >= 2*SimPM.ndim) dir = irecv % 2*SimPM.ndim;
+    //else                      dir = irecv;
+    dir = fup->dir;
 
     struct flux_interface *fi=0;
     size_t n_el = fup->fi.size();
@@ -1265,6 +1267,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     int recv_tag=-1;
     int from_rank=-1;
     int comm_tag = BC_MPI_FLUX_tag +100*dir +l+1;
+#ifdef TEST_BC89FLUX
+    cout <<"looking for data with tag: "<<comm_tag<<endl;
+#endif
     err = COMM->look_for_data_to_receive(
           &from_rank, // rank of sender (output)
           recv_id,    // identifier for receive (output).
@@ -1325,7 +1330,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
 
     } // loop over elements
     
- } // loop over faces in this direction.
+  } // loop over faces in this direction.
 
       
   return 0;
@@ -1394,7 +1399,9 @@ int sim_control_NG_MPI::initial_conserved_quantities(
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd && c->isgd) {
+      if (c->isdomain && c->isleaf) {
+        //cout <<"*** LEVEL "<<l<<", cell is a leaf: "<<c->isdomain<<"  "<<c->isleaf<<": ";
+        //rep.printVec("pos",c->pos,SimPM.ndim);
         dv = spatial_solver->CellVolume(c,dx);
         spatial_solver->PtoU(c->P,u,SimPM.gamma);
         initERG += u[ERG]*dv;
@@ -1403,8 +1410,18 @@ int sim_control_NG_MPI::initial_conserved_quantities(
         initMMZ += u[MMZ]*dv;
         initMASS += u[RHO]*dv;
       }
+      else {
+        //cout <<"level "<<l<<", cell is not leaf: "<<c->isdomain<<"  "<<c->isleaf<<": ";
+        //rep.printVec("pos",c->pos,SimPM.ndim);
+      }
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
+
+  //cout <<"(local quantities) ["<< initERG <<", ";
+  //cout << initMMX <<", ";
+  //cout << initMMY <<", ";
+  //cout << initMMZ <<", ";
+  //cout << initMASS <<"]\n";
 
   initERG = COMM->global_operation_double("SUM", initERG);
   initMMX = COMM->global_operation_double("SUM", initMMX);
@@ -1450,7 +1467,7 @@ int sim_control_NG_MPI::check_energy_cons(
     double dv = 0.0;
     class cell *c=grid[l]->FirstPt();
     do {
-      if (!c->isbd && c->isgd) {
+      if (c->isdomain && c->isleaf) {
         dv = spatial_solver->CellVolume(c,dx);
         spatial_solver->PtoU(c->P,u,SimPM.gamma);
         nowERG += u[ERG]*dv;
@@ -1464,15 +1481,20 @@ int sim_control_NG_MPI::check_energy_cons(
     } while ( (c =grid[l]->NextPt(c)) !=0);
   }
 
-  //cout <<totmom;
+  //cout <<"(local quantities) ["<< nowERG <<", ";
+  //cout << nowMMX <<", ";
+  //cout << nowMMY <<", ";
+  //cout << nowMMZ <<", ";
+  //cout << nowMASS <<"]\n";
+  
   nowERG = COMM->global_operation_double("SUM", nowERG);
   nowMMX = COMM->global_operation_double("SUM", nowMMX);
   nowMMY = COMM->global_operation_double("SUM", nowMMY);
   nowMMZ = COMM->global_operation_double("SUM", nowMMZ);
   nowMASS = COMM->global_operation_double("SUM", nowMASS);
   totmom = COMM->global_operation_double("SUM", totmom);
-  cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
-  cout <<", nowMMX="<<nowMMX<<"\n";
+  //cout <<" totmom="<<totmom<<" initMMX="<<initMMX;
+  //cout <<", nowMMX="<<nowMMX<<"\n";
 
   cout <<"(conserved quantities) ["<< nowERG <<", ";
   cout << nowMMX <<", ";
