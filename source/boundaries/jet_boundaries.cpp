@@ -42,7 +42,6 @@ int jet_bc::BC_assign_JETBC(
   // Set the physical radius of jet.
   //
   double jr = JP.jetradius*grid->DX();
-  double ypos =0.0;
 #ifdef TESTING
   cout <<"jetrad="<<JP.jetradius<<" dx="<<grid->DX()<<"\n";
 #endif // TESTING
@@ -109,8 +108,7 @@ int jet_bc::BC_assign_JETBC(
       c = grid->FirstPt();
       do {
         temp=c;
-        ypos = CI.get_dpos(c,YY);
-        while ( (temp=grid->NextPt(temp,XN))!=0 && ypos<=jr) {
+        while ( (temp=grid->NextPt(temp,XN))!=0 ) {
           for (int v=0;v<par.nvar;v++) temp->P[v]  = b->refval[v];
           for (int v=0;v<par.nvar;v++) temp->Ph[v] = b->refval[v];
 #ifdef SOFTJET
@@ -129,21 +127,19 @@ int jet_bc::BC_assign_JETBC(
           double r     = fabs(CI.get_dpos(temp,YY));
           double rm    = 0.9*jr;
           double B_phi = b->refval[BZ];
-          double p0    = B_phi*B_phi*0.5; //b->refval[PG];
-          double rm_jr = rm/jr;
-          double r_jr  = r/jr;
-          double r_rm  = r/rm;
-          double pm    = p0 - pow(B_phi,2)/pow(1-rm_jr,2)*(3*(1-rm_jr)-(1-pow(rm_jr,2))+log(rm_jr));
-          if (r==rm){
-            temp->P[PG] = temp->Ph[PG] = p0; //surface gas pressure
-          }
+          double p0    = b->refval[PG];
+          double pm    = p0 - pow(B_phi,2)/pow(1-rm/jr,2)*(3*(1-rm/jr)-(1-pow(rm/jr,2))+log(rm/jr));
+          
           if (r<rm) {
-            temp->P[BZ] = temp->Ph[BZ] = B_phi * r_rm;
-            temp->P[PG] = temp->Ph[PG] = pow(B_phi,2) * (1-pow(r_rm,2)) + pm;
+            temp->P[BZ] = temp->Ph[BZ] = B_phi * r/rm;
+            temp->P[PG] = temp->Ph[PG] = pow(B_phi,2) * (1-pow(r/rm,2)) + pm;
           }
           else if (r<jr) {
             temp->P[BZ] = temp->Ph[BZ] = B_phi*(jr-r)/(jr-rm);
-            temp->P[PG] = temp->Ph[PG] = p0 - pow(B_phi,2)/pow(1-rm_jr,2) * (3*(1-r_jr) - (1-pow(r_jr,2)) + log(r_jr));
+            temp->P[PG] = temp->Ph[PG] = p0 + pow(B_phi,2)/pow(1-rm/jr,2) * (3*(1-r/jr) - (1-pow(r/jr,2)) + log(r/jr));
+          }
+	  else if (r==jr){
+            temp->P[PG] = temp->Ph[PG] = p0; //surface gas pressure
           }
           else {
             temp->P[BZ] = temp->Ph[BZ] = 0;
@@ -233,9 +229,9 @@ int jet_bc::BC_update_JETBC(
       const int
       )
 {
-  double jr = JP.jetradius*grid->DX();
 #ifdef SOFTJET
   double dist=0.0;
+  double jr = JP.jetradius*grid->DX();
 #endif //SOFTJET
 
   list<cell*>::iterator c=b->data.begin();
@@ -254,33 +250,6 @@ int jet_bc::BC_update_JETBC(
     (*c)->P[VX]  = b->refval[VX] *min(1., 4-4.0*dist/jr);
     (*c)->Ph[VX] = (*c)->P[VX];
 #endif //SOFTJET
-#ifdef JETPROFILE
-    double r     = fabs(CI.get_dpos(*c,YY));
-    double rm    = 0.9*jr;
-    double B_phi = b->refval[BZ];
-    double p0    = B_phi*B_phi*0.5; //b->refval[PG];
-    double rm_jr = rm/jr;
-    double r_jr  = r/jr;
-    double r_rm  = r/rm;
-    double pm    = p0 - pow(B_phi,2)/pow(1-rm_jr,2)*(3*(1-rm_jr)-(1-pow(rm_jr,2))+log(rm_jr));
-    if (r==rm){
-      (*c)->P[PG] = (*c)->Ph[PG] = p0; //surface gas pressure
-    }
-    if (r<rm) {
-      (*c)->P[BZ] = (*c)->Ph[BZ] = B_phi * r_rm;
-      (*c)->P[PG] = (*c)->Ph[PG] = pow(B_phi,2) * (1-pow(r_rm,2)) + pm;
-    }
-    else if (r<jr) {
-      (*c)->P[BZ] = (*c)->Ph[BZ] = B_phi*(jr-r)/(jr-rm);
-      (*c)->P[PG] = (*c)->Ph[PG] = p0 - pow(B_phi,2)/pow(1-rm_jr,2) * (3*(1-r_jr) - (1-pow(r_jr,2)) + log(r_jr));
-    }
-    else {
-      (*c)->P[BZ] = (*c)->Ph[BZ] = 0;
-    }
-    //rep.printVec("boundary P", (*c)->P, par.nvar);
-    //rep.printVec("boundary H", (*c)->Ph, par.nvar);
-#endif //JETPROFILE
-
   }    // all cells.   
   return 0;
 }
