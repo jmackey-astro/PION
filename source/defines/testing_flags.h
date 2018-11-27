@@ -18,6 +18,7 @@
 //#define TEST_BC89FLUX
 //#define TEST_COMMS
 #define TEST_CONSERVATION
+//#define TEST_INF
 
 //
 // Various defines for testing bits of the code.

@@ -236,7 +236,7 @@ void calc_timestep::timestep_checking_and_limiting(
   //
   par.dt = min(par.dt, par.finishtime-par.simtime);
   if (par.dt <= 0.0)
-    rep.error("Went past Finish time without Stopping!",par.dt);
+    rep.error("Negative timestep!",par.dt);
 
   return;
 }

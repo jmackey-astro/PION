@@ -119,6 +119,14 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   }
   int err=0;
 
+
+#ifdef TEST_INF
+  for (int v=0;v<eq_nvar;v++)
+    if (!isfinite(Pl[v])) rep.error("flux hydro Pl",v);
+  for (int v=0;v<eq_nvar;v++)
+    if (!isfinite(Pr[v])) rep.error("flux hydro Pr",v);
+#endif
+
   //
   // Set flux and pstar vector to zero.
   //
@@ -405,6 +413,12 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   for (int v=0;v<eq_nvar;v++) {
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
+#ifdef TEST_INF
+  for (int v=0;v<eq_nvar;v++)
+    if (!isfinite(Pf[v])) rep.error("NAN hydro cell update",v);
+#endif
+
+
   return err;
 }
 

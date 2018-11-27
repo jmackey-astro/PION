@@ -326,43 +326,8 @@ int sim_control_NG_MPI::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
-  // ----------------------------------------------------------------
-  // update coarse-to-fine level boundaries
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TESTING
-    cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
-    cout <<l<<"\n";
-#endif
-    if (l<SimPM.grid_nlevels-1) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
-          err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
-                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
-        }
-      }
-    }
-    if (l>0) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
-          err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
-                      l,grid[l]->BC_bd[i],SimPM.levels[l].step);
-        }
-      }
-    }
-  }
-  BC_COARSE_TO_FINE_SEND_clear_sends();
-  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
-  // ----------------------------------------------------------------
   // --------------------------------------------------------------
   // Update internal and external boundaries.
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TEST_INT
-    cout <<"updating external boundaries for level "<<l<<"\n";
-#endif
-    err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
-                  SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
-  }
-  rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
@@ -400,11 +365,49 @@ int sim_control_NG_MPI::Time_Int(
   BC_FINE_TO_COARSE_SEND_clear_sends();
   rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
   // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TEST_INT
+    cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+    err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
+                  SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // update coarse-to-fine level boundaries
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
+    cout <<l<<"\n";
+#endif
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+          err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                      l,grid[l]->BC_bd[i],SimPM.levels[l].step);
+        }
+      }
+    }
+  }
+  BC_COARSE_TO_FINE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
+
+  
   err+= output_data(grid);
   rep.errorTest("MPI_NG TIME_INT::output_data()",0,err);
 
-
-  
   while (SimPM.maxtime==false) {
     // --------------------------------------------------------------
     // Get timestep on each level
@@ -413,7 +416,7 @@ int sim_control_NG_MPI::Time_Int(
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
       cout <<"Calculate timestep, level "<<l<<", dx=";
-      cout <<SimPM.levels[l].dx<<"\n";
+      cout <<SimPM.levels[l].dx<<endl;
 #endif
       if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
 
@@ -1161,7 +1164,6 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     // Send data using a non-blocking MPI send
     //
     string id;
-    int comm_tag = BC_MPI_FLUX_tag +100*isend +l;
 
     // loop over procs on level l-1 to send to.
     for (unsigned int ii=0; ii<fup->rank.size();ii++) {
@@ -1175,6 +1177,8 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 #endif
         continue;
       }
+      int comm_tag = BC_MPI_FLUX_tag +100000*isend +10000*l;
+      comm_tag += MCMD->get_myrank();
 #ifdef TEST_BC89FLUX
       cout <<"l="<<l<<": BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
@@ -1247,7 +1251,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": recv "<<irecv<<" is not null: recving data."<<endl;
+      cout <<"l="<<l<<": recv "<<irecv<<" is not null: recving data from "<<fup->rank[0]<<endl;
 #endif
     }
 
@@ -1273,7 +1277,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     string recv_id;
     int recv_tag=-1;
     int from_rank=-1;
-    int comm_tag = BC_MPI_FLUX_tag +100*dir +l+1;
+    int comm_tag = BC_MPI_FLUX_tag +100000*dir +10000*(l+1) +fup->rank[0];
 #ifdef TEST_BC89FLUX
     cout <<"looking for data with tag: "<<comm_tag<<endl;
 #endif

@@ -1656,7 +1656,8 @@ int UniformGrid::add_cells_to_face(
         flux.fi[i]->area[ic] = CellInterface(c,OppDir(d),0);
 #ifdef TEST_BC89FLUX
         cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<": adding cell: ";
-        CI.print_cell(c);
+        rep.printVec("pos",c->pos,G_ndim);
+        //CI.print_cell(c);
 #endif
         c = NextPt(c,perpdir);
       }

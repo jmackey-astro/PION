@@ -437,6 +437,10 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
         rep.printVec("recv Prim", prim, par.nvar);
       }
 #endif
+#ifdef TEST_INF
+      for (int v=0;v<par.nvar;v++)
+        if (!isfinite(prim[v])) rep.error("NAN F2C recv",v);
+#endif
       for (int v=0;v<par.nvar;v++) c->Ph[v] = prim[v];
       if (cstep==maxstep) {
         for (int v=0;v<par.nvar;v++) c->P[v] = c->Ph[v];
