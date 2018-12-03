@@ -90,7 +90,11 @@ void eqns_mhd_ideal::PtoU(
   u[eqBBY] = p[eqBY];
   u[eqBBZ] = p[eqBZ];
   // E = p/(g-1) +rho*V^2/2 + B^2/2
-  u[eqERG] = (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])/2.) +(p[eqPG]/(gamma-1.)) +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.);
+  u[eqERG] =
+      (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])*0.5)
+     +(p[eqPG]/(gamma-1.))
+     +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.);
+
   //cout <<"gamma="<<gamma<<"\n";
   return;
 }
@@ -99,6 +103,8 @@ void eqns_mhd_ideal::PtoU(
 // ##################################################################
 // ##################################################################
 
+
+
 int eqns_mhd_ideal::UtoP(
       const pion_flt *u,
       pion_flt *p,
@@ -106,11 +112,6 @@ int eqns_mhd_ideal::UtoP(
       const double gamma
       )
 {
-#ifndef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  static long int ct_pg=0;
-#endif
-  static long int ct_rho=0;
-
   p[eqRO] = u[eqRHO];
   p[eqVX] = u[eqMMX]/u[eqRHO];
   p[eqVY] = u[eqMMY]/u[eqRHO];
@@ -122,7 +123,29 @@ int eqns_mhd_ideal::UtoP(
   p[eqBY] = u[eqBBY];
   p[eqBZ] = u[eqBBZ];
 
-  
+  int err = check_pressure(u,p,MinTemp,gamma);
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int eqns_mhd_ideal::check_pressure(
+      const pion_flt *u,
+      pion_flt *p, ///< Primitive State Vector.
+      const double MinTemp, ///< minimum temperature/pressure allowed
+      const double gamma
+      )
+{
+#ifndef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+  static long int ct_pg=0;
+#endif
+  static long int ct_rho=0;
+
   //
   // First check for negative density, and fix it if present.
   // Note this is usually fatal to a simulation, so we print out messages so
@@ -579,6 +602,9 @@ void eqns_mhd_mixedGLM::PtoU(
 //  cout <<"glm ptou\n";
   U[eqPSI] = P[eqSI];
   eqns_mhd_ideal::PtoU(P,U,gamma);
+#ifdef DERIGS
+  U[eqERG] += 0.5*U[eqPSI]*U[eqPSI];
+#endif
   return;
 }
 
@@ -587,15 +613,31 @@ void eqns_mhd_mixedGLM::PtoU(
 // ##################################################################
 
 int eqns_mhd_mixedGLM::UtoP(
-      const pion_flt *U, ///< pointer to conserved variables.
-      pion_flt *P,       ///< pointer to Primitive variables.
+      const pion_flt *u, ///< pointer to conserved variables.
+      pion_flt *p,       ///< pointer to Primitive variables.
       const double MinTemp, ///< minimum temperature/pressure allowed
       const double g   ///< Gas constant gamma.
       )
 {
   //  cout <<"glm utop\n";
-  P[eqSI]=U[eqPSI];
-  return(eqns_mhd_ideal::UtoP(U,P,MinTemp, g));
+  p[eqSI] = u[eqPSI];
+  p[eqRO] = u[eqRHO];
+  p[eqVX] = u[eqMMX]/u[eqRHO];
+  p[eqVY] = u[eqMMY]/u[eqRHO];
+  p[eqVZ] = u[eqMMZ]/u[eqRHO];
+  p[eqPG] = (g-1.0) *
+    ( u[eqERG]
+    - p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])*0.5
+#ifdef DERIGS
+    - 0.5*u[eqPSI]*u[eqPSI]
+#endif
+    - (u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])*0.5);
+  p[eqBX] = u[eqBBX];
+  p[eqBY] = u[eqBBY];
+  p[eqBZ] = u[eqBBZ];
+
+  int err = check_pressure(u,p,MinTemp,g);
+  return err;
 }
 
 

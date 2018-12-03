@@ -421,6 +421,35 @@ MPv10::~MPv10()
 
 
 
+double MPv10::get_n_elec(
+        const pion_flt *P ///< primitive state vector.
+        )
+{
+  // get electron number density from P
+  return 10.0;
+}
+      
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MPv10::get_n_ion(
+        string name, ///< ion name
+        const pion_flt *P ///< primitive state vector.
+        )
+{
+  // element number density times ion fraction from P
+  return 10.0;
+}
+      
+
+// ##################################################################
+// ##################################################################
+
+
+
 int MPv10::Tr(const string s)
 {
   if (tracer_list.find(s)==tracer_list.end())

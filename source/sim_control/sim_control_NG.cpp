@@ -289,6 +289,9 @@ int sim_control_NG::Time_Int(
   int err=0;
   SimPM.maxtime=false;
   bool first_step=true;
+  bool restart=true;
+  if (SimPM.timestep!=0) first_step=false;
+  if (SimPM.timestep==0) restart=false;
   clk.start_timer("Time_Int"); double tsf=0;
 
   // make sure all levels start at the same time.
@@ -335,7 +338,13 @@ int sim_control_NG::Time_Int(
       cout <<"Calculate timestep, level "<<l<<", dx=";
       cout <<SimPM.levels[l].dx<<"\n";
 #endif
-      if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
+      if (!restart && !first_step) {
+        SimPM.last_dt = SimPM.levels[l].last_dt;
+      }
+      else {
+        SimPM.levels[l].last_dt = SimPM.last_dt/
+                                  SimPM.levels[l].multiplier;
+      }
 
       err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
@@ -359,15 +368,15 @@ int sim_control_NG::Time_Int(
 #endif
     }
     if (first_step) {
-      // take a 10x smaller timestep for the first timestep.
+      // take a ~3x smaller timestep for the first timestep.
       for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
         //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
-        SimPM.levels[l].dt *=0.1;
+        SimPM.levels[l].dt *=0.3;
       }
       first_step=false;
     }
-
-  
+    if (restart) restart=false;
+    SimPM.last_dt = SimPM.levels[0].last_dt;
 
     //clk.start_timer("advance_time");
     //
@@ -633,6 +642,8 @@ double sim_control_NG::advance_step_OA1(
   if (l==SimPM.grid_nlevels-1) {
     SimPM.timestep ++;
   }
+  SimPM.levels[l].last_dt = SimPM.levels[l].dt;
+  if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
 
   //
   // update internal and external boundaries.
@@ -779,6 +790,8 @@ double sim_control_NG::advance_step_OA2(
   if (l==SimPM.grid_nlevels-1) {
     SimPM.timestep ++;
   }
+  SimPM.levels[l].last_dt = SimPM.levels[l].dt;
+  if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
 
   //
   // update internal and external boundaries.

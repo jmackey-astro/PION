@@ -94,7 +94,7 @@ class calc_timestep :
   virtual int calculate_raytracing_column_densities(
       class SimParams &,      ///< pointer to simulation parameters
       class GridBaseClass *,  ///< grid to trace rays on.
-      const int               ///< unused here (level of NG grid).
+      const int               ///< level of NG grid.
       );
 
   ///
@@ -131,7 +131,8 @@ class calc_timestep :
   /// can affect stability).
   ///
   void timestep_checking_and_limiting(
-      class SimParams &      ///< pointer to simulation parameters
+      class SimParams &,     ///< pointer to simulation parameters
+      const int              ///< level of NG grid.
       );
 
   // ----------------------------------------------------------------

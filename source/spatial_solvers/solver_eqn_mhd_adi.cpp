@@ -402,6 +402,12 @@ void FV_solver_mhd_ideal_adi::Powell_source_terms(
       pion_flt *S            ///< return source term 
       )
 {
+#ifdef TESTING
+  if (d != GetDirection()) {
+    cout <<GetDirection()<<"\t";
+    rep.error("bad direction in Powell_source_terms()",d);
+  }
+#endif
   // use two-sided gradient, second-order accurate in dx, to get
   // d/dx (B_x)
   pion_flt dBdx;
@@ -463,7 +469,7 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
   int err = DivStateVectorComponent(c, grid, d,eq_nvar,fn,fp,u1);
   // add source terms
   geometric_source(c, d, slope, ooa, dx, u1);
-  Powell_source_terms(grid, c, d, slope, u1);
+  //Powell_source_terms(grid, c, d, slope, u1);
 
   for (int v=0;v<eq_nvar;v++) c->dU[v] += FV_dt*u1[v];
   return(err);
@@ -577,6 +583,13 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   //
   FV_dt *= FV_cfl;
 
+#ifdef TEST_INF
+  if (!isfinite(FV_dt) || FV_dt<=0.0) {
+    cout <<"cell has invalid timestep\n";
+    CI.print_cell(c);
+    cout.flush();
+  }
+#endif
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::CellTimeStep ...returning.\n";
 #endif //FUNCTION_ID
@@ -632,6 +645,30 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
 FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 {
   return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
+        const cell *c, ///< pointer to cell
+        const double, ///< gas EOS gamma.
+        const double dx ///< Cell size dx.
+        )
+{
+#ifdef FUNCTION_ID
+  cout <<"FV_solver_mhd_mixedGLM_adi::CellTimeStep ...starting.\n";
+#endif //FUNCTION_ID
+  double dt = FV_solver_mhd_ideal_adi::CellTimeStep(c,eq_gamma,dx);
+
+  double v = max( max(fabs(c->Ph[VX]),fabs(c->Ph[VY])),
+                  fabs(c->Ph[VZ]));
+  max_speed = max(max_speed,v);
+  return dt;
 }
 
 
@@ -970,6 +1007,12 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
         pion_flt *S           ///< return source term 
         )
 {
+#ifdef TESTING
+  if (d != GetDirection()) {
+    cout <<GetDirection()<<"\t";
+    rep.error("bad direction in CYL Powell_source_terms()",d);
+  }
+#endif
   pion_flt dBdx;
   double dx=0.0;
   enum direction pos,neg;
@@ -984,6 +1027,11 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
     n = grid->NextPt(c,neg);
     dx += grid->DX();
   }
+#ifdef TESTING
+  if (p==n) {
+    rep.error("no slope possible CYL Powell_source_terms()",d);
+  }
+#endif
 
   // this is a divergence term, not a gradient, so the radial
   // direction is different from z-direction.  d(R f)/(RdR)

@@ -660,16 +660,27 @@ int dataio_silo::setup_grid_properties(
 
 
   int nopts=6;
+  int err=0;
   dataio_silo::GridOpts = DBMakeOptlist(nopts);
   if      (SimPM.coord_sys==COORD_CRT) silo_coordsys=DB_CARTESIAN;
   else if (SimPM.coord_sys==COORD_CYL) silo_coordsys=DB_CYLINDRICAL;
   else if (SimPM.coord_sys==COORD_SPH) silo_coordsys=DB_SPHERICAL;
   else rep.error("bad coord system",SimPM.coord_sys);
-  DBAddOption(GridOpts,DBOPT_COORDSYS,&silo_coordsys);
-  DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
-  DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
-  DBAddOption(GridOpts,DBOPT_NSPACE,&SimPM.ndim);
-  int lo_off[ndim], hi_off[ndim];
+  err = DBAddOption(GridOpts,DBOPT_COORDSYS,
+                    reinterpret_cast<void *>(&silo_coordsys));
+  //rep.errorTest("add coord-sys opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_DTIME,
+                    reinterpret_cast<void *>(&SimPM.simtime));
+  //rep.errorTest("add time opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_CYCLE,
+                    reinterpret_cast<void *>(&SimPM.timestep));
+  //rep.errorTest("add cycle opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_NSPACE,
+                    reinterpret_cast<void *>(&SimPM.ndim));
+  //rep.errorTest("add nspace opt silo qmesh",0,err);
+  int *lo_off=0, *hi_off=0;
+  lo_off = mem.myalloc(lo_off,ndim);
+  hi_off = mem.myalloc(hi_off,ndim);
 #ifdef WRITE_GHOST_ZONES
   for (int i=0;i<ndim;i++) lo_off[i] = SimPM.Nbc;
   for (int i=0;i<ndim;i++) hi_off[i] = zonedims[i]-SimPM.Nbc-1;
@@ -677,8 +688,13 @@ int dataio_silo::setup_grid_properties(
   for (int i=0;i<ndim;i++) lo_off[i] = 0;
   for (int i=0;i<ndim;i++) hi_off[i] = zonedims[i]-1;
 #endif
-  DBAddOption(GridOpts,DBOPT_LO_OFFSET,lo_off);
-  DBAddOption(GridOpts,DBOPT_HI_OFFSET,hi_off);
+  err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
+                    reinterpret_cast<void *>(lo_off));
+  //rep.errorTest("add lo-offset opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
+                    reinterpret_cast<void *>(hi_off));
+  //rep.errorTest("add hi-offset opt silo qmesh",0,err);
+  rep.errorTest("add GridOpts silo qmesh",0,err);
 
 
   // labels don't seem to display right in VisIt...
@@ -926,10 +942,15 @@ int dataio_silo::generate_quadmesh(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  DBClearOption(GridOpts,DBOPT_DTIME);
-  DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
-  DBClearOption(GridOpts,DBOPT_CYCLE);
-  DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
+  int err=0;
+  err = DBClearOption(GridOpts,DBOPT_DTIME);
+  //rep.errorTest("clear time opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
+  //rep.errorTest("add time opt silo qmesh",0,err);
+  err = DBClearOption(GridOpts,DBOPT_CYCLE);
+  //rep.errorTest("clear cycle opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
+  //rep.errorTest("add time opt silo qmesh",0,err);
   
   //DBClearOption(GridOpts,DBOPT_COORDSYS);
   //int csys=0;
@@ -964,7 +985,7 @@ int dataio_silo::generate_quadmesh(
   // DBPutQuadmesh requires the data to be (void **), with the actual
   // datatype in silo_dtype.  This is why node_coords is void **.
   //
-  int err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames,
+  err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames,
                           node_coords, nodedims, ndim, silo_dtype,
                           DB_COLLINEAR, GridOpts);
 

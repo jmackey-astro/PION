@@ -462,6 +462,14 @@ double FV_solver_Hydro_Euler::CellTimeStep(
   // Now scale the max. allowed timestep by the CFL number we are using (<1).
   //
   FV_dt *= FV_cfl;
+
+#ifdef TEST_INF
+  if (!isfinite(FV_dt) || FV_dt<=0.0) {
+    cout <<"cell has invalid timestep\n";
+    CI.print_cell(c);
+    cout.flush();
+  }
+#endif
   return FV_dt;
 }
 

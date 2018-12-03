@@ -176,6 +176,7 @@ class level {
   double dx;              ///< Linear side length of grid cells on this level
   double simtime;         ///< simulation time at this level.
   double dt;              ///< current timestep at this level.
+  double last_dt;         ///< previous timestep at this level.
   int NG[MAX_DIM];        ///< Number of 'real' grid zones in each direction (Total for level).
   int multiplier;         ///< 2^l, l=0=coarsest.
   class MCMDcontrol MCMD; ///< domain decomposition on this level

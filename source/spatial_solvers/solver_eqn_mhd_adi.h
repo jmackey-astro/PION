@@ -244,11 +244,37 @@ class FV_solver_mhd_mixedGLM_adi
         const int     ///< Number of tracer variables.
         );
    ~FV_solver_mhd_mixedGLM_adi();
-   
+
+  ///
+  /// Set max_speed variable (for setting c_h on cell-by-cell basis).
+  /// This is used to reset to zero at start of each step, and also
+  /// to reset local value to global value for multi-core execution.
+  ///
+  void set_max_speed(
+      const double ///< new max. speed
+      );
+
+  ///
+  /// returns max_speed for this step.
+  ///
+  double get_max_speed();
+
+  ///
+  /// Given a cell, calculate the MHD/hydrodynamic timestep.
+  /// This calculates the ideal MHD step, and also tracks the maximum
+  /// velocity on the domain.
+  ///
+  virtual double CellTimeStep(
+        const cell *, ///< pointer to cell
+        const double, ///< gas EOS gamma.
+        const double  ///< Cell size dx.
+        );
+
   ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
-  /// For the mixedGLM equations, we need to add a source term to the update of Psi.
+  /// For the mixedGLM equations, we need to add a source term to the
+  /// update of Psi and the total energy.
   ///
   virtual int CellAdvanceTime(
       class cell *c, ///< cell to update.
@@ -325,6 +351,9 @@ class FV_solver_mhd_mixedGLM_adi
         const double dx,  ///< cell-size dx (for LF method)
         const double    ///< Gas constant gamma.
         );
+
+  protected:
+  double max_speed;  ///< max. 1D velocity on the domain
 };
 
 

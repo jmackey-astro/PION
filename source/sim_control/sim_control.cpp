@@ -229,12 +229,6 @@ int sim_control::Time_Int(
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
 
-    if (SimPM.timestep==0 && JP.jetic!=0) {
-      SimPM.dt = std::min(SimPM.dt, 0.1*SimPM.CFL*grid[0]->DX()/JP.jetstate[VX]);
-      //SimPM.dt /= 100.0;
-      spatial_solver->Setdt(SimPM.dt);
-    }
-    
     advance_time(0, grid[0]);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 

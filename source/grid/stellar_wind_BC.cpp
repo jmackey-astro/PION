@@ -406,16 +406,21 @@ void stellar_wind::set_wind_cell_reference_state(
   // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
   if (eqntype==EQMHD || eqntype==EQGLM) {
     double R=695508e5;  // R_sun in cm
+    double x = grid->difference_vertex2cell(WS->dpos,c,XX);
     wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
-    if (ndim>1)
+                fabs(x)/wc->dist;
+    if (ndim>1) {
       wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
                 grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
+      wc->p[BY] = (x>0.0) ? wc->p[BY] : -1.0*wc->p[BY];
+    }
     else
       wc->p[BY] = 0.0;
-    if (ndim>2)
+    if (ndim>2) {
       wc->p[BZ] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist; 
+                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
+      wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
+    }
     else
       wc->p[BZ] = 0.0;
   }

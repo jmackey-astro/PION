@@ -232,47 +232,55 @@ class microphysics_base {
   /// state vector.
   ///
   virtual double get_recombination_rate(
-          const int,      ///< ion index in tracer array (optional).
-          const pion_flt *, ///< input state vector (primitive).
-          const double    ///< EOS gamma (optional)
-          )=0;
+      const int,      ///< ion index in tracer array (optional).
+      const pion_flt *, ///< input state vector (primitive).
+      const double    ///< EOS gamma (optional)
+      )=0;
 
   ///
   /// Get the ionisation cross section for an atom/ion at its
   /// threshold frequency.
   ///
   virtual double get_th_xsection(
-        const int  ///< integer identifier for the ion.
-        ) {return -1.0e99;}
+      const int  ///< integer identifier for the ion.
+      ) {return -1.0e99;}
 
   ///
   /// Return number density of a given element.
   ///
   virtual double get_n_el(
-        const pion_flt *, ///< primitive state vector.
-        const int       ///< integer identifier for the element.
-        ) {return -1.0e99;}
+      const pion_flt *, ///< primitive state vector.
+      const int       ///< integer identifier for the element.
+      ) {return -1.0e99;}
 
   ///
   /// Get electron number density (cm^{-3})
   ///
   virtual double get_n_elec(
-        const pion_flt * ///< primitive state vector.
-        ) {return -1.0e99;}
+      const pion_flt * ///< primitive state vector.
+      ) {return -1.0e99;}
+
+  ///
+  /// Get electron number density (cm^{-3})
+  ///
+  virtual double get_n_ion(
+      std::string, ///< ion name
+      const pion_flt * ///< primitive state vector.
+      ) {return -1.0e99;}
 
   ///
   /// Get H+ number density (cm^{-3})
   ///
   virtual double get_n_Hplus(
-        const pion_flt * ///< primitive state vector.
-        ) {return -1.0e99;}
+      const pion_flt * ///< primitive state vector.
+      ) {return -1.0e99;}
 
   ///
   /// Get neutral H number density (cm^{-3})
   ///
   virtual double get_n_Hneutral(
-        const pion_flt * ///< primitive state vector.
-        ) {return -1.0e99;}
+      const pion_flt * ///< primitive state vector.
+      ) {return -1.0e99;}
 
 
   ///

@@ -312,11 +312,12 @@ int sim_control_NG_MPI::Time_Int(
   cout <<"--- sim_control_NG_MPI:: STARTING TIME INTEGRATION. ---\n";
   cout <<"-------------------------------------------------------\n";
   int err=0;
-  int log_freq=10;
   SimPM.maxtime=false;
 
   bool first_step=true;
+  bool restart=true;
   if (SimPM.timestep!=0) first_step=false;
+  if (SimPM.timestep==0) restart=false;
 
   clk.start_timer("time_int"); double tsf=0.0;
 
@@ -418,8 +419,13 @@ int sim_control_NG_MPI::Time_Int(
       cout <<"Calculate timestep, level "<<l<<", dx=";
       cout <<SimPM.levels[l].dx<<endl;
 #endif
-      if (!first_step) SimPM.last_dt = SimPM.levels[l].dt;
-
+      if (!restart && !first_step) {
+        SimPM.last_dt = SimPM.levels[l].last_dt;
+      }
+      else {
+        SimPM.levels[l].last_dt = SimPM.last_dt/
+                                  SimPM.levels[l].multiplier;
+      }
       err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       
@@ -443,13 +449,15 @@ int sim_control_NG_MPI::Time_Int(
 #endif
     }
     if (first_step) {
-      // take a 10x smaller timestep for the first timestep.
+      // take a ~3x smaller timestep for the first timestep.
       for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
         //cout <<"level "<<l<<", orig dt="<<SimPM.levels[l].dt;
-        SimPM.levels[l].dt *=0.1;
+        SimPM.levels[l].dt *=0.3;
       }
       first_step=false;
     }
+    if (restart) restart=false;
+    SimPM.last_dt = SimPM.levels[0].last_dt;
     // --------------------------------------------------------------
     
     // --------------------------------------------------------------
@@ -468,16 +476,15 @@ int sim_control_NG_MPI::Time_Int(
     cout <<"MPI time_int: finished timestep\n";
 #endif
 
-    //if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
-    //     (SimPM.timestep%log_freq)==0) {
-      cout <<"dt="<<SimPM.dt<<"\tNew time: "<<SimPM.simtime;
-      cout <<"\t timestep: "<<SimPM.timestep;
+    if ( SimPM.levels[0].MCMD.get_myrank()==0) {
+      cout <<"dt="<<SimPM.levels[0].dt<<"\tNew time: ";
+      cout <<SimPM.simtime<<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-//#ifdef TESTING
+#ifdef TESTING
       cout.flush();
-//#endif // TESTING
-    //}
+#endif // TESTING
+    }
     // --------------------------------------------------------------
 	
     err += check_energy_cons(grid);
@@ -763,6 +770,8 @@ double sim_control_NG_MPI::advance_step_OA1(
   if (l==SimPM.grid_nlevels-1) {
     SimPM.timestep ++;
   }
+  SimPM.levels[l].last_dt = SimPM.levels[l].dt;
+  if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
 
 
 #ifdef TESTING
@@ -1078,6 +1087,8 @@ double sim_control_NG_MPI::advance_step_OA2(
   if (l==SimPM.grid_nlevels-1) {
     SimPM.timestep ++;
   }
+  SimPM.levels[l].last_dt = SimPM.levels[l].dt;
+  if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
 
 
 #ifdef TESTING

@@ -123,7 +123,7 @@ int calc_timestep::calculate_timestep(
   // won't bring us past the next output time or the end of the simulation.
   // This function operates on par.dt, resetting it to a smaller value if needed.
   //
-  timestep_checking_and_limiting(par);
+  timestep_checking_and_limiting(par,l);
 
   // sets the timestep info in the solver class.
   sp_solver->Setdt(par.dt);
@@ -199,7 +199,8 @@ double calc_timestep::calc_conduction_dt_and_Edot(
 
 
 void calc_timestep::timestep_checking_and_limiting(
-      class SimParams &par      ///< pointer to simulation parameters
+      class SimParams &par,      ///< pointer to simulation parameters
+      const int l       ///< level to advance (for NG grid)
       )
 {
   //
@@ -217,9 +218,7 @@ void calc_timestep::timestep_checking_and_limiting(
   // So that we don't increase the timestep by more than 30% over last step:
   //
 #ifdef TIMESTEP_LIMITING
-  //if (par.dt > 1.3*par.last_dt)
-  //  cout <<"limiting step from "<<par.dt<<" to "<<1.3*par.last_dt<<"\n";
-  par.dt = min(par.dt,1.3*par.last_dt);
+  par.dt = min(par.dt,1.3*par.levels[l].last_dt);
 #endif // TIMESTEP_LIMITING
 
   //
@@ -235,8 +234,11 @@ void calc_timestep::timestep_checking_and_limiting(
   // Make sure we end up exactly at finishtime:
   //
   par.dt = min(par.dt, par.finishtime-par.simtime);
-  if (par.dt <= 0.0)
+  if (par.dt <= 0.0) {
+    cout <<"dt="<<par.dt<<", finish="<<par.finishtime<<", now=";
+    cout <<par.simtime<<"\n";
     rep.error("Negative timestep!",par.dt);
+  }
 
   return;
 }
@@ -262,18 +264,6 @@ double calc_timestep::calc_dynamics_dt(
 #endif
 
   //
-  // For the first 10 timesteps, we calculate the timestep for
-  // boundary data too, because we can have some setups with rapid
-  // inflow (such as a jet), which doesn't appear on the grid
-  // immediately.
-  //
-//#ifndef RT_TEST_PROBS
-//  if (par.timestep<=10) {
-//     c = grid->FirstPt_All();
-//  }
-//#endif // not RT_TEST_PROBS
-
-  //
   // Now go through all of the cells on the local grid.
   // The CellTimeStep() function returns a value which is
   // already multiplied by the CFL coefficient.
@@ -296,23 +286,15 @@ double calc_timestep::calc_dynamics_dt(
     dt = min(dt, tempdt);
     //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
 
-    //
-    // Move to next cell.  For the first few steps, we include
-    // boundary data in this, using NextPt_All(); otherwise use the
-    // NextPt() command to only take grid cells.
-    //
-//#ifndef RT_TEST_PROBS
-//    if (par.timestep<=10) {
-//      c = grid->NextPt_All(c);
-//    }
-//    else {
-//#endif // not RT_TEST_PROBS
-      c = grid->NextPt(c);
-//#ifndef RT_TEST_PROBS
-//    }
-//#endif // not RT_TEST_PROBS
-
+    c = grid->NextPt(c);
   } while (c != 0);
+
+  // if on first step and a jet is inflowing, then set dt based on
+  // the jet properties.
+  if (par.timestep==0 && JP.jetic!=0) {
+    dt = std::min(dt, 0.1*par.CFL*grid->DX()/JP.jetstate[VX]);
+  }
+
 
   if (dt <= 0.0)
     rep.error("Got zero timestep!!!",dt);

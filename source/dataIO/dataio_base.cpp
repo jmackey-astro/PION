@@ -321,6 +321,10 @@ void DataIOBase::set_params(
     ("min_timestep", &SimPM.min_timestep, TINYVALUE);
   p = p034; p->critical=false;  
   params.push_back(p);
+  pm_double  *p035 = new pm_double  
+    ("last_dt",      &SimPM.last_dt, 0.0);
+  p = p035; p->critical=false;  
+  params.push_back(p);
 
   //
   // OUTPUT PARAMETERS
