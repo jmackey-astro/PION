@@ -388,6 +388,7 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: calculating dt\n";
 #endif
+    SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
 
