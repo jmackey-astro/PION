@@ -104,8 +104,8 @@ int jet_bc::BC_assign_JETBC(
     //
     // Axi-symmetry first -- this is relatively easy to set up.
     //
-    if (par.ndim==2 && par.coord_sys==COORD_CYL &&
-        pconst.equalD(grid->Xmin(YY),par.Xmin[YY])) {
+    if (par.ndim==2 && par.coord_sys==COORD_CYL) {
+      if (!pconst.equalD(grid->Xmin(YY),par.Xmin[YY])) return 0;
       c = grid->FirstPt();
       do {
         temp=c;
