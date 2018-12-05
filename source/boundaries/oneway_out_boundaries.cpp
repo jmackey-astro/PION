@@ -83,7 +83,9 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
   // Now run through all cells in the boundary
   //
   list<cell*>::iterator c=b->data.begin();
+  cell *gc;
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    gc = (*c)->npt;
     //
     // exactly same routine as for periodic.
     // ONEWAY_OUT: overwrite the normal velocity if it is inflow:
@@ -112,18 +114,10 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
 #endif // GLM_ZERO_BOUNDARY
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (par.eqntype==EQGLM) {
-
-      if      ((*c)->isedge == -1) {
-        (*c)->P[SI]  = -(*c)->npt->P[SI];
-        (*c)->Ph[SI] = -(*c)->npt->Ph[SI];
-      }
-      else if ((*c)->isedge == -2) {
-        (*c)->P[SI]  = -NextPt(((*c)->npt),b->ondir)->P[SI];
-        (*c)->Ph[SI] = -NextPt(((*c)->npt),b->ondir)->Ph[SI];
-      }
-      else {
-        rep.error("only know 1st/2nd order bcs",(*c)->id);
-      }
+      for (int v=(*c)->isedge+1; v<0; v++)
+        gc = grid->NextPt(gc,b->ondir);
+      (*c)->P[SI]  = -gc->P[SI];
+      (*c)->Ph[SI] = -gc->Ph[SI];
     }
 #endif // GLM_NEGATIVE_BOUNDARY
 

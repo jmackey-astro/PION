@@ -115,8 +115,6 @@
 using namespace std;
 
 
-//#define GLM_ZERO_BOUNDARY ///< Set this flag to make Psi=0 on boundary cells.
-#define GLM_NEGATIVE_BOUNDARY ///< Set this flag for Psi[boundary cell]=-Psi[edge cell]
 
 //#define TEST_BC89FLUX
 
@@ -239,10 +237,14 @@ UniformGrid::UniformGrid(
   // Now create the first cell, and then allocate data from there.
   // Safe to assume we have at least one cell...
   //
+#ifdef TESTING
   cout <<" done.\n Initialising first cell...\n";
+#endif // TESTING
   G_fpt_all = CI.new_cell();
   G_fpt_all->id = 0;
+#ifdef TESTING
   cout <<" done.\n";
+#endif // TESTING
   if(G_fpt_all==0) {
     rep.error("Couldn't assign memory to first cell in grid.",
               G_fpt_all);
@@ -251,7 +253,9 @@ UniformGrid::UniformGrid(
   //
   // assign memory for all cells, including boundary cells.
   //
+#ifdef TESTING
   cout <<"\t allocating memory for grid.\n";
+#endif // TESTING
   int err = allocate_grid_data();
   if(err!=0)
     rep.error("Error setting up grid, allocate_grid_data",err);

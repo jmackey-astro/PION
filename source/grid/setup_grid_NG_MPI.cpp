@@ -165,8 +165,10 @@ int setup_grid_NG_MPI::setup_grid(
   cout <<"(setup_grid_NG_MPI::setup_grid) Setting up grid...\n";
 #endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l]);
     cout <<", and grid="<< grid[l] <<"\n";
+#endif
     
     if (grid[l]) rep.error("Grid already set up!",grid[l]);
 
@@ -197,12 +199,12 @@ int setup_grid_NG_MPI::setup_grid(
     if (grid[l]==0)
       rep.error("(setup_grid_NG_MPI::setup_grid)", grid[l]);
 
-//#ifdef TESTING
+#ifdef TESTING
     cout <<"(setup_grid_NG_MPI::setup_grid) Done. &grid=";
     cout << &(grid[l])<<", and grid="<<grid[l]<<"\n";
     cout <<"DX = "<<(grid[l])->DX()<<"\n";
     //dp.grid = (grid[l]);
-//#endif
+#endif
   }
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
@@ -231,7 +233,7 @@ int setup_grid_NG_MPI::setup_grid(
     if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
   }
 
-//#ifdef TEST_BC89FLUX
+#ifdef TEST_BC89FLUX
   for (int l=0;l<SimPM.grid_nlevels;l++) {
     for (unsigned int d=0;d<grid[l]->flux_update_send.size();d++) {
       struct flux_update *fup = &(grid[l]->flux_update_send[d]);
@@ -250,7 +252,7 @@ int setup_grid_NG_MPI::setup_grid(
       cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
     }
   }
-//#endif
+#endif
 cout <<"------------------------------------------------------\n\n";
 
   return(0);

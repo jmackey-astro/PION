@@ -17,6 +17,9 @@
 // ##################################################################
 // ##################################################################
 
+//#define GLM_ZERO_BOUNDARY // Set this flag to make Psi=0 on boundary cells.
+#define GLM_NEGATIVE_BOUNDARY // Set this flag for Psi[boundary cell]=-Psi[edge cell]
+
 //#define TEST_MPI_NG
 //#define TEST_C2F
 //#define TEST_MPI_NG_F2C

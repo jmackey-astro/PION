@@ -124,15 +124,9 @@ int main(int argc, char **argv)
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
-  if (SimPM.EP.cooling && !SimPM.EP.chemistry) {
-    // don't need to set up the class, because it just does cooling and
-    // there is no need to equilibrate anything.
-  }
-  else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
-    cout <<"MAIN: setting up microphysics module\n";
-    SimSetup->setup_microphysics(SimPM);
-    if (!MP) rep.error("microphysics init",MP);
-  }
+  cout <<"MAIN: setting up microphysics module\n";
+  SimSetup->setup_microphysics(SimPM);
+  if (!MP) rep.error("microphysics init",MP);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -172,13 +166,24 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+#ifdef TESTING
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
+#endif
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
     COMM->barrier("level assign boundary data");
     rep.errorTest("icgen_NG_MPI::assign_boundary_data",0,err);
   }
   // ----------------------------------------------------------------
 
+
+  // ----------------------------------------------------------------
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
+                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
+  }
+  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
+  rep.errorTest("sim_init_NG: error from boundary update",0,err);
+  // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -200,7 +205,7 @@ int main(int argc, char **argv)
     }
   }
   SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
-  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  rep.errorTest("NG_MPI INIT: error from boundary update",0,err);
   // ----------------------------------------------------------------
   
   // ----------------------------------------------------------------
@@ -209,17 +214,19 @@ int main(int argc, char **argv)
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
   SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
-  rep.errorTest("sim_init_NG: error from bounday update",0,err);
+  rep.errorTest("sim_init_NG: error from boundary update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TESTING
     cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
+#endif
     err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  rep.errorTest("sim_init_NG: error from bounday update",0,err);
+  rep.errorTest("sim_init_NG: error from boundary update",0,err);
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
@@ -246,7 +253,7 @@ int main(int argc, char **argv)
     }
   }
   SimSetup->BC_FINE_TO_COARSE_SEND_clear_sends();
-  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  rep.errorTest("NG_MPI INIT: error from boundary update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
