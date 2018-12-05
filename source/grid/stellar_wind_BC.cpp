@@ -424,6 +424,9 @@ void stellar_wind::set_wind_cell_reference_state(
     else
       wc->p[BZ] = 0.0;
   }
+  if (eqntype==EQGLM) {
+    wc->p[SI] = 0.0;
+  }
     
   //if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
     //rep.error("Need to code B into winds model!",eqntype);
