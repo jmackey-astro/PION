@@ -80,18 +80,11 @@ int outflow_bc::BC_assign_OUTFLOW(
       if (par.ndim==1) {
         rep.error("Psi outflow boundary condition doesn't work for 1D!",99);
       }
-      if ((*bpt)->isedge == -1) {
-        (*bpt)->P[SI]  = -temp->P[SI];
-        (*bpt)->Ph[SI] = -temp->Ph[SI];
-      }
-      else if ((*bpt)->isedge == -2) {
-        //
-        // Get data from 2nd on-grid cell.
-        //
-        (*bpt)->P[SI]  = -grid->NextPt(temp,ondir)->P[SI];
-        (*bpt)->Ph[SI] = -grid->NextPt(temp,ondir)->Ph[SI];
-      }
-      else rep.error("only know 1st/2nd order bcs",(*bpt)->id);
+      // get to nth cell on grid.
+      for (int v=(*bpt)->isedge+1; v<0; v++)
+        temp = grid->NextPt(temp,ondir);
+      (*bpt)->P[SI]  = -temp->P[SI];
+      (*bpt)->Ph[SI] = -temp->Ph[SI];
     }
 #endif // GLM_NEGATIVE_BOUNDARY
     ct++;
@@ -151,18 +144,10 @@ int outflow_bc::BC_update_OUTFLOW(
 #endif // GLM_ZERO_BOUNDARY
 #ifdef GLM_NEGATIVE_BOUNDARY
     if (par.eqntype==EQGLM) {
-
-      if      ((*c)->isedge == -1) {
-        (*c)->P[SI]  = -gc->P[SI];
-        (*c)->Ph[SI] = -gc->Ph[SI];
-      }
-      else if ((*c)->isedge == -2) {
-        (*c)->P[SI]  = -NextPt(gc,b->ondir)->P[SI];
-        (*c)->Ph[SI] = -NextPt(gc,b->ondir)->Ph[SI];
-      }
-      else {
-        rep.error("only know 1st/2nd order bcs",(*c)->id);
-      }
+      for (int v=(*c)->isedge+1; v<0; v++)
+        gc = grid->NextPt(gc,b->ondir);
+      (*c)->P[SI]  = -gc->P[SI];
+      (*c)->Ph[SI] = -gc->Ph[SI];
     }
 #endif // GLM_NEGATIVE_BOUNDARY
 

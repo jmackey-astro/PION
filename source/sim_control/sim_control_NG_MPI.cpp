@@ -234,6 +234,33 @@ int sim_control_NG_MPI::Init(
   }
   rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
 
+  // ----------------------------------------------------------------
+  // update fine-to-coarse level boundaries
+  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
+#ifdef TESTING
+    cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";
+    cout <<l<<"\n";
+#endif
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += BC_update_FINE_TO_COARSE_SEND(SimPM,
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
+          err += BC_update_FINE_TO_COARSE_RECV(SimPM,spatial_solver,
+                      l,grid[l]->BC_bd[i],2,2);
+        }
+      }
+    }
+  }
+  BC_FINE_TO_COARSE_SEND_clear_sends();
+  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  // ----------------------------------------------------------------
 
   //
   // If testing the code, this calculates the momentum and energy
@@ -364,7 +391,7 @@ int sim_control_NG_MPI::Time_Int(
     }
   }
   BC_FINE_TO_COARSE_SEND_clear_sends();
-  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  rep.errorTest("NG_MPI time-int: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
@@ -402,7 +429,7 @@ int sim_control_NG_MPI::Time_Int(
     }
   }
   BC_COARSE_TO_FINE_SEND_clear_sends();
-  rep.errorTest("NG_MPI INIT: error from bounday update",0,err);
+  rep.errorTest("NG_MPI time-int: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
   
