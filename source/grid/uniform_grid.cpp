@@ -264,7 +264,9 @@ UniformGrid::UniformGrid(
   // assign grid structure on cells, setting positions and ngb
   // pointers.
   //
+#ifdef TESTING
   cout <<"\t assigning pointers to neighbours.\n";
+#endif // TESTING
   err += assign_grid_structure();
   if(err!=0)
     rep.error("Error setting up grid, assign_grid_structure",err);
@@ -330,7 +332,9 @@ UniformGrid::UniformGrid(
 #endif
 
 
+#ifdef TESTING
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
+#endif // TESTING
   RT=0;
 
 #ifdef TESTING
@@ -2557,8 +2561,6 @@ double uniform_grid_sph::iR_cov(const cell *c)
 #ifdef PARALLEL
   rep.error("redefine iR_cov() for parallel grid","please");
 #endif
-  //cout <<"R_com(c)="<<R_com(c)<<", ppi="<<CI.phys_per_int()<<", ixmin="<<G_ixmin[Rsph]<<"\n";
-  //cout <<"So iR_cov(c)="<<(R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]<<"\n";
   return ((R_com(c,G_dx)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]);
 }
 
@@ -2576,8 +2578,8 @@ double uniform_grid_sph::iR_cov(const cell *c)
 // physical units.
 //
 double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
-          const double *p2  ///< position 2 (physical)
-          )
+      const double *p2  ///< position 2 (physical)
+      )
 {
   return fabs(p1[Rsph]-p2[Rsph]);
 }
@@ -2596,8 +2598,8 @@ double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
 // integer units (but obviously the answer is not an integer).
 //
 double uniform_grid_sph::idistance(const int *p1, ///< position 1 (integer)
-           const int *p2  ///< position 2 (integer)
-           )
+      const int *p2  ///< position 2 (integer)
+      )
 {
   return fabs(static_cast<double>(p1[Rsph]-p2[Rsph]));
 }

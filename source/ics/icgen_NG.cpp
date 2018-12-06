@@ -116,11 +116,8 @@ int main(int argc, char **argv)
     // don't need to set up the class, because it just does cooling and
     // there is no need to equilibrate anything.
   }
-  else if (SimPM.ntracer>0 && (SimPM.EP.cooling || SimPM.EP.chemistry)) {
-    cout <<"MAIN: setting up microphysics module\n";
-    SimSetup->setup_microphysics(SimPM);
-    if (!MP) rep.error("microphysics init",MP);
-  }
+  cout <<"setting up microphysics module\n";
+  SimSetup->setup_microphysics(SimPM);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------

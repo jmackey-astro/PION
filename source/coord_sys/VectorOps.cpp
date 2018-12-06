@@ -523,10 +523,10 @@ int VectorOps_Cart::SetEdgeState(
    case OA2: // Second Order Spatial Accuracy.
     switch (d) {
      case XP: case YP: case ZP:
-      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*VOdx/2.;
+      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*VOdx*0.5;
       break; //XP
      case XN: case YN: case ZN:
-      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] - dpdx[v]*VOdx/2.;
+      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] - dpdx[v]*VOdx*0.5;
       break; //XN
      default:
       cerr<<"\t(SetEdgeState) wrong direction!\n"; 
@@ -578,11 +578,6 @@ int VectorOps_Cart::SetSlope(
       slpn[v] = (c->Ph[v] -cn->Ph[v])/dx;
       slpp[v] = (cp->Ph[v]- c->Ph[v])/dx;
       dpdx[v] = AvgFalle(slpn[v],slpp[v]);
-#ifdef FIX_TRACER_SLOPES_TO_DENSITY
-      if (v>=SimPM.ftr) {
-	dpdx[v] = 0.0;
-      }
-#endif //FIX_TRACER_SLOPES_TO_DENSITY
     }
   } // 2nd order accurate
   else {
@@ -1041,13 +1036,13 @@ int VectorOps_Cyl::SetEdgeState(
     double dR=grid->DX();
     double dZ=dR;
     switch (dir) {
-     case ZPcyl: del = dZ/2.; break;
-     case ZNcyl: del =-dZ/2.; break;
+     case ZPcyl: del = dZ*0.5; break;
+     case ZNcyl: del =-dZ*0.5; break;
      case RPcyl:
-      del = CI.get_dpos(c,Rcyl)+dR/2. - R_com(c,dR);
+      del = CI.get_dpos(c,Rcyl) +dR*0.5 - R_com(c,dR);
       break;
      case RNcyl:
-      del = CI.get_dpos(c,Rcyl)-dR/2.  - R_com(c,dR);
+      del = CI.get_dpos(c,Rcyl) -dR*0.5  - R_com(c,dR);
       break;
      case TPcyl:
        del = R_com(c,dR)*(CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI.get_dpos(c,Tcyl));
@@ -1061,7 +1056,7 @@ int VectorOps_Cyl::SetEdgeState(
     
     for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*del;
   } // OA2
-  else rep.error("Bad order of accuracy in SetEdgeState -- only know 1st and 2nd order space",OA);
+  else rep.error("SetEdgeState OOA -- only 1st and 2nd order",OA);
   
   return(0);
 } // SetEdgeState
@@ -1097,9 +1092,9 @@ int VectorOps_Cyl::SetSlope(
      default: rep.error("Bad direction in SetSlope",d);
     }
     cp = grid->NextPt(c,dp); cn=grid->NextPt(c,dn);
-#ifdef TESTING
+//#ifdef TESTING
     if (cp==0 || cn==0) rep.error("No left or right cell in SetSlope",cp);
-#endif //TESTING
+//#endif //TESTING
     switch (d) {
      case Zcyl: 
       for (int v=0;v<nv;v++) {
@@ -1129,23 +1124,16 @@ int VectorOps_Cyl::SetSlope(
       break;
      case Tcyl: // Need extra scale factor in denominator to get R*dtheta
       for (int v=0;v<nv;v++) {
-	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c,dR)/(CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
-	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c,dR)/(CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
+	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c,dR)/
+                  (CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
+	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c,dR)/
+                  (CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
       break;
      default:
       rep.error("Bad axis in SetSlope",d);
     } // calculate slope in direction d.
-#ifdef FIX_TRACER_SLOPES_TO_DENSITY
-    if (SimPM.ntracer>0) {
-      for (int v=SimPM.ftr; v<nv; v++) {
-	//if (!pconst.equalD(dpdx[v],0.0)) 
-        //  cout <<"setting dpdx["<<v<<"] from "<<dpdx[v]<<" to zero.\n";
-	dpdx[v] =0.0;
-      }
-    }
-#endif //FIX_TRACER_SLOPES_TO_DENSITY
   } // 2nd order accurate
   else {
     cerr <<"Error: Only know how to do 1st or 2nd order slope calculation.\n";
@@ -1189,7 +1177,7 @@ int VectorOps_Cyl::DivStateVectorComponent(
   if (d==Zcyl) for (int v=0;v<nv;v++) dudt[v] = (fn[v]-fp[v])/dZ;
   
   else if (d==Rcyl) {
-    double rp = CI.get_dpos(c,Rcyl)+dR/2.; double rn=rp-dR;
+    double rp = CI.get_dpos(c,Rcyl)+dR*0.5; double rn=rp-dR;
     for (int v=0;v<nv;v++)
       dudt[v] = 2.0*(rn*fn[v]-rp*fp[v])/(rp*rp-rn*rn);
   }

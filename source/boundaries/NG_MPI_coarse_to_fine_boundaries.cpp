@@ -356,7 +356,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           continue;
         }
         else
-          rep.error("error in 3d logic C2FR_setup",c->pos[YY]-row_y);
+          rep.error("error in 2d logic C2FR_setup",c->pos[YY]-row_y);
       } // loop over cells
     } // if 2D
 

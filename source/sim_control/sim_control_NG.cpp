@@ -630,7 +630,7 @@ double sim_control_NG::advance_step_OA1(
   // First correct fluxes
   //
   if (l < SimPM.grid_nlevels-1) {
-    err += recv_BC89_fluxes_F2C(l,OA1,OA1);
+    err += recv_BC89_fluxes_F2C(l,SimPM.levels[l].dt,OA1,OA1);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
@@ -778,7 +778,7 @@ double sim_control_NG::advance_step_OA2(
 #endif
   spatial_solver->Setdt(dt2_this);
   if (l < SimPM.grid_nlevels-1) {
-    err += recv_BC89_fluxes_F2C(l,TIMESTEP_FULL,OA2);
+    err += recv_BC89_fluxes_F2C(l,dt_now,TIMESTEP_FULL,OA2);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
   err += grid_update_state_vector(dt_now,TIMESTEP_FULL,OA2, grid);
@@ -1044,6 +1044,7 @@ int sim_control_NG::check_energy_cons(
 
 int sim_control_NG::recv_BC89_fluxes_F2C(
       const int level,      ///< My level in grid hierarchy.
+      const double dt,  ///< timestep
       const int step,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa     ///< Full order of accuracy of simulation
       )
@@ -1076,7 +1077,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
       continue;
     }
     else {
-      err += recv_BC89_flux_boundary(grid,fine->flux_update_send[d],
+      err += recv_BC89_flux_boundary(grid,dt,fine->flux_update_send[d],
                                      grid->flux_update_recv[d],d,ax);
     }
 
@@ -1096,6 +1097,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
 
 int sim_control_NG::recv_BC89_flux_boundary(
       class GridBaseClass *grid, ///< pointer to coarse grid
+      const double dt,  ///< timestep
       struct flux_update &send, ///< data for fine grid
       struct flux_update &recv, ///< data for coarse grid
       const unsigned int d,   ///< direction of outward normal
@@ -1176,7 +1178,9 @@ int sim_control_NG::recv_BC89_flux_boundary(
     }
 #ifdef TEST_BC89FLUX
     rep.printVec("**********  Error",utmp, SimPM.nvar);
+    cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0]<<", "<<utmp[0]<<"\n";
 #endif
+
     for (int v=0;v<SimPM.nvar;v++) {
       fc->c[0]->dU[v] += utmp[v];
     }

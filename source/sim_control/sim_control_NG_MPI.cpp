@@ -1246,6 +1246,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 
 int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       const int l,      ///< My level in grid hierarchy.
+      const double dt,  ///< timestep
       const int step,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int ooa     ///< Full order of accuracy of simulation
       )
@@ -1261,6 +1262,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
 
   // loop over all boundaries that we need to receive
   double ftmp[SimPM.nvar], utmp[SimPM.nvar];
+  for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
   class GridBaseClass *grid = SimPM.levels[l].grid;
   class MCMDcontrol *MCMD = &(SimPM.levels[l].MCMD);
   int n_bd = grid->flux_update_recv.size();
@@ -1282,7 +1284,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       int d = fup->dir;
       struct flux_update *fsend = 
                   &(SimPM.levels[l].child->flux_update_send[d]);
-      err = recv_BC89_flux_boundary(grid,*fsend,*fup,d,
+      err = recv_BC89_flux_boundary(grid,dt,*fsend,*fup,d,
                               static_cast<axes>(fup->ax));
       rep.errorTest("serial BC89 call",0,err);
       continue;
@@ -1307,8 +1309,8 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     struct flux_interface *fi=0;
     size_t n_el = fup->fi.size();
     size_t n_data = n_el * SimPM.nvar;
-    pion_flt *data = 0; // buffer for sending by MPI
-    data = mem.myalloc(data,n_data);
+    pion_flt *buf = 0;
+    buf = mem.myalloc(buf,n_data);
 
     // receive data: comm_tag ensures that we select the data
     // relating to this value of "irecv".
@@ -1332,15 +1334,13 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     cout <<from_rank<<", and ID "<<recv_id<<endl;
 #endif
 
-    pion_flt *buf = 0;
-    buf = mem.myalloc(buf,n_data);
     //
-    // Receive data into buffer.  Data stored for each coarse cell:
-    // Ph[nv],cellvol,cellpos[nd],slopeX[nv],slopeY[nv],slopeZ[nv]
+    // Receive data into buffer.  Data stored for each fine cell:
+    // flux[nv]
     //
     err = COMM->receive_double_data(
                           from_rank, recv_tag, recv_id, n_data, buf);
-    if (err) rep.error("(BC_update_C2F_RECV) getdata failed",err);
+    if (err) rep.error("(flux BC89) getdata failed",err);
 
     size_t iel=0;
     for (size_t ii=0;ii<n_el;ii++) {
@@ -1349,8 +1349,6 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       for (int v=0;v<SimPM.nvar;v++) {
         // make flux[v] be the difference of coarse and fine.
         fi->flux[v] += buf[iel];
-        // divide by face area so that it is a flux.
-        fi->flux[v] /=  fi->area[0];
 #ifdef TEST_BC89FLUX
         if (!isfinite(buf[iel])) {
           cout <<"l="<<l<<": element "<<ii<<" of FLUX C2F RECV: ";
@@ -1360,6 +1358,8 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
 #endif
         iel++;
       }
+      // divide by face area so that it is a flux.
+      for (int v=0;v<SimPM.nvar;v++) fi->flux[v] /=  fi->area[0];
       // re-calculate dU based on error in flux.
       if (fup->dir%2 ==0) {
         spatial_solver->DivStateVectorComponent(fi->c[0], grid,
@@ -1371,6 +1371,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       }
 #ifdef TEST_BC89FLUX
       rep.printVec("**********  Error",utmp, SimPM.nvar);
+      int q=SimPM.nvar-1;
+      cout <<"Flux colour: "<<fi->flux[q]<<": "<<fi->c[0]->dU[q];
+      cout <<", "<<utmp[q]<<"\n";
 #endif
       // correct dU so that coarse level is consistent with fine.
       for (int v=0;v<SimPM.nvar;v++) {
@@ -1378,10 +1381,11 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       }
 
     } // loop over elements
-    
+    if (iel !=n_data) rep.error("ndata",iel-n_data);
+    buf = mem.myfree(buf);
   } // loop over faces in this direction.
 
-      
+    
   return 0;
 }
 
@@ -1416,7 +1420,7 @@ int sim_control_NG_MPI::grid_update_state_vector(
 #ifdef DEBUG_NG
     cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif
-    err = recv_BC89_fluxes_F2C(level,step,ooa);
+    err = recv_BC89_fluxes_F2C(level,dt,step,ooa);
     rep.errorTest("return from recv_fluxes_F2C",0,err);
   }
 

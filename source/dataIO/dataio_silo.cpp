@@ -683,18 +683,20 @@ int dataio_silo::setup_grid_properties(
   hi_off = mem.myalloc(hi_off,ndim);
 #ifdef WRITE_GHOST_ZONES
   for (int i=0;i<ndim;i++) lo_off[i] = SimPM.Nbc;
-  for (int i=0;i<ndim;i++) hi_off[i] = zonedims[i]-SimPM.Nbc-1;
+  for (int i=0;i<ndim;i++) hi_off[i] = SimPM.Nbc;
 #else
   for (int i=0;i<ndim;i++) lo_off[i] = 0;
-  for (int i=0;i<ndim;i++) hi_off[i] = zonedims[i]-1;
+  for (int i=0;i<ndim;i++) hi_off[i] = 0;
 #endif
   err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
                     reinterpret_cast<void *>(lo_off));
-  //rep.errorTest("add lo-offset opt silo qmesh",0,err);
+  rep.errorTest("add lo-offset opt silo qmesh",0,err);
   err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
                     reinterpret_cast<void *>(hi_off));
-  //rep.errorTest("add hi-offset opt silo qmesh",0,err);
+  rep.errorTest("add hi-offset opt silo qmesh",0,err);
   rep.errorTest("add GridOpts silo qmesh",0,err);
+  //rep.printVec("lo-off",lo_off,ndim);
+  //rep.printVec("hi-off",hi_off,ndim);
 
 
   // labels don't seem to display right in VisIt...
@@ -975,12 +977,19 @@ int dataio_silo::generate_quadmesh(
   for (int i=0;i<ndim;i++) {
     strcpy(coordnames[i],s[i].c_str());
   }
-  //cout <<"coords: "; for (int i=0;i<ndim;i++) cout << coordnames[i]<<"  "; cout <<"\n";
 
-  //  cout <<"dbfile: "<<dbfile<<"\ttemp:"<<temp<<"\tcoordnames:"<<coordnames<<"\n";
-  //  cout <<"nodecoords:"<<node_coords<<"\tnodedims:"<<nodedims<<"\tndim:"<<ndim<<"\n";
-  //  cout <<"gridopts:"<<GridOpts<<"\n";
-
+#ifdef TESTING
+  for (int i=0;i<ndim;i++) {
+    cout <<"coords: ";
+    cout << coordnames[i]<<"  ";
+    cout << node_coords[i] <<"  "<<nodedims[i];
+    cout <<"\n";
+  }
+  cout <<"dbfile: "<<dbfile<<"\tcoordnames:"<<coordnames<<"\n";
+  cout <<"nodecoords:"<<node_coords<<"\tnodedims:"<<nodedims<<"\tndim:"<<ndim<<"\n";
+  cout <<"gridopts:"<<GridOpts<<"\n";
+#endif
+  
   //
   // DBPutQuadmesh requires the data to be (void **), with the actual
   // datatype in silo_dtype.  This is why node_coords is void **.

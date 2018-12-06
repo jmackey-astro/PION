@@ -798,6 +798,13 @@ int time_integrator::dynamics_dU_column(
           SimPM.artviscosity, SimPM.gamma, dx);
   err += spatial_solver->dU_Cell(
           grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
+  // record flux entering and leaving domain
+  if (cpt->isbd_ref[negdir]) {
+    for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_this[v];
+  }
+  if (npt->isbd_ref[posdir]) {
+    for (int v=0;v<SimPM.nvar;v++) npt->F[v] = Fr_this[v];
+  }
 
 #ifdef TEST_CONSERVATION 
   // Track energy, momentum entering/leaving domain, if outside

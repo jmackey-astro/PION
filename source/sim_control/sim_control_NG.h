@@ -151,6 +151,7 @@ class sim_control_NG :
   ///
   virtual int recv_BC89_fluxes_F2C(
       const int,    ///< My level in grid hierarchy.
+      const double,  ///< timestep
       const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int     ///< Full order of accuracy of simulation
       );
@@ -159,6 +160,7 @@ class sim_control_NG :
   /// fine to coarse grid, so that conserved quantities are conserved
   int recv_BC89_flux_boundary(
       class GridBaseClass *, ///< pointer to coarse grid
+      const double,  ///< timestep
       struct flux_update &,  ///< data for fine grid
       struct flux_update &,  ///< data for coarse grid
       const unsigned int,    ///< direction of outward normal

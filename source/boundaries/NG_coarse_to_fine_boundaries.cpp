@@ -174,8 +174,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
     else if (par.ndim == 2) {
 #ifdef TEST_C2F
-        cout <<"interpolating coarse to fine 2d: ncells=";
-        cout << b->data.size()<<"\n";
+      cout <<"interpolating coarse to fine 2d: ncells=";
+      cout << b->data.size()<<"\n";
 #endif
       pion_flt sx[par.nvar], sy[par.nvar], c_vol=0;
 
@@ -443,6 +443,10 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v];
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
+
+  //int d=par.nvar-1;
+  //cout <<"interpolate_coarse2fine2D: "<<P[d]<<": "<<f1->P[d]<<", ";
+  //cout <<f2->P[d]<<", "<<f3->P[d]<<", "<<f4->P[d]<<"\n";
 
 #ifdef DEBUG_NG
   for (int v=0;v<par.nvar;v++) {

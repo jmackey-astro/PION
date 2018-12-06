@@ -126,7 +126,6 @@ int main(int argc, char **argv)
 
   cout <<"MAIN: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
-  if (!MP) rep.error("microphysics init",MP);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------

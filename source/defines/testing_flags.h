@@ -15,19 +15,17 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
-//#define TEST_BC89FLUX
-//#define TEST_COMMS
-//#define TEST_CONSERVATION
-//#define TEST_INF
+//#define TEST_BC89FLUX        // debugging info for BC89 flux correction
+//#define TEST_COMMS           // debugging info for MPI
+//#define TEST_CONSERVATION    // test mass/mom/energy conservation
+//#define TEST_INF             // test for infinity/nan
 
 //
-// Various defines for testing bits of the code.
+// Various defines for testing bits of the code (lots of sdtout!).
 //
 //#define TESTING ///< Comment this out if not testing the code.
 
-//
 // displays debugging information for time integration.
-//
 //#define TEST_INT
 
 // This counts the energy loss/gain in microphysics (SLOW!!!)

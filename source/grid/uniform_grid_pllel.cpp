@@ -464,6 +464,7 @@ int UniformGridParallel::setup_flux_send(
         for (int i=0;i<G_ndim;i++) pos[i] = G_xmin[i] + G_dx;
         //pos[ax] += G_dx;
         p1 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
+        if (p1!=pproc) rep.error("BC89 finding parents 1",p1-pproc);
         pos[ax] -= 2*G_dx;
         p2 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
 #ifdef TEST_BC89FLUX
@@ -488,6 +489,7 @@ int UniformGridParallel::setup_flux_send(
         //pos[ax] -= G_dx;
         rep.printVec("p1 pos",pos,G_ndim);
         p1 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);
+        if (p1!=pproc) rep.error("BC89 finding parents 2",p1-pproc);
         pos[ax] += 2*G_dx;
         rep.printVec("p2 pos",pos,G_ndim);
         p2 = par.levels[lm1].MCMD.get_grid_rank(par,pos,lm1);

@@ -426,7 +426,7 @@ void FV_solver_mhd_ideal_adi::Powell_source_terms(
   }
   dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
   
-  S[eqRHO] += 0;
+  S[eqRHO] += 0.0;
   S[eqMMX] += -dBdx * c->Ph[eqBX];
   S[eqMMY] += -dBdx * c->Ph[eqBY];
   S[eqMMZ] += -dBdx * c->Ph[eqBZ];
