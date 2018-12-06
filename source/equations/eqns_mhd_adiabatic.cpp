@@ -569,7 +569,11 @@ void eqns_mhd_mixedGLM::GLMsetPsiSpeed(
 
   //  cout <<"calculating GLM_chyp!\n";
   GLM_chyp = cfl*delx/delt; /// hyperbolic wavespeed is equal to max. allowed value for given CFL no.
+#ifdef DERIGS
+  GLM_cr = 0.18; 
+#else
   GLM_cr = 4.0*delx; // This works well for general use.
+#endif
   //GLM_cr *=20.5; // This is for when getting negative pressure near outflow boundaries.
   //GLM_cr = 0.3*delx;
   

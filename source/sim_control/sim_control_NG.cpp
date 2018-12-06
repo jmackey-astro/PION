@@ -833,7 +833,7 @@ int sim_control_NG::calculate_raytracing_column_densities(
   //
   if (l != par.grid_nlevels-1) {
 #ifdef RT_TESTING
-    cout <<"level "<<l<<", nlevels = "<<par.grid_nlevels<<"\n";
+    cout <<"RayTracing: level "<<l<<", nlevels = "<<par.grid_nlevels<<"\n";
 #endif
     struct boundary_data *b=0;
     for (size_t i=0;i<grid->BC_bd.size();i++) {
@@ -842,6 +842,9 @@ int sim_control_NG::calculate_raytracing_column_densities(
 #endif
       if (grid->BC_bd[i]->itype == FINE_TO_COARSE) {
         b = grid->BC_bd[i];
+#ifdef RT_TESTING
+        cout <<"i="<<i<<", "<<grid->BC_bd[i]->type<<": found F2C BC\n";
+#endif
       }
     }
     if (!b) rep.error("didn't find coarse to fine boundary: RT",b);
@@ -850,8 +853,7 @@ int sim_control_NG::calculate_raytracing_column_densities(
     double Tau1[MAX_TAU], Tau2[MAX_TAU], Tau3[MAX_TAU],
            Tau4[MAX_TAU], tmp[MAX_TAU];
     class cell *c, *f1, *f2, *f3, *f4;
-    list<class cell*>::iterator c_iter=b->data.begin();
-    list<class cell*>::iterator f_iter=b->NGrecvF2C[0].begin();
+    list<class cell*>::iterator c_iter=b->NGrecvF2C[0].begin();
     struct rad_src_info *s;
     double cpos[MAX_DIM];
     double diffx,diffy;
@@ -859,11 +861,11 @@ int sim_control_NG::calculate_raytracing_column_densities(
 
     if (par.ndim == 1) {
       // loop through coarse cells in boundary list
-      for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
+      for (size_t i_el = 0; i_el<b->NGrecvF2C[0].size(); i_el++) {
         c = (*c_iter);
         CI.get_dpos(c,cpos);
-        f1 = (*f_iter);
-        f2 = fine->NextPt(f1,XP);
+        f1 = b->avg[i_el].c[0];
+        f2 = b->avg[i_el].c[1];
 
         for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
           s = &(par.RS.sources[isrc]);
@@ -885,20 +887,24 @@ int sim_control_NG::calculate_raytracing_column_densities(
           }
           CI.set_cell_col(c, s->id, Tau1);
         }
-        ++f_iter;
+        ++c_iter;
       } // loop over cells.
     } // if 1D
 
     else if (par.ndim == 2) {
-      for (c_iter=b->data.begin(); c_iter!=b->data.end(); ++c_iter) {
+#ifdef RT_TESTING
+      cout <<"2D F2C RT Routine: data size="<<b->data.size()<<"\n";
+#endif
+      for (size_t i_el = 0; i_el<b->NGrecvF2C[0].size(); i_el++) {
         c = (*c_iter);
         CI.get_dpos(c,cpos);
-        f1 = (*f_iter);
-        f2 = fine->NextPt(f1,XP);
-        f3 = fine->NextPt(f1,YP);
-        f4 = fine->NextPt(f3,XP);
+        f1 = b->avg[i_el].c[0];
+        f2 = b->avg[i_el].c[1];
+        f3 = b->avg[i_el].c[2];
+        f4 = b->avg[i_el].c[3];
 #ifdef RT_TESTING
-        cout <<"f: ["<<f1->pos[XX]<<","<<f1->pos[YY]<<"], c: ["<<c->pos[XX]<<","<<c->pos[YY]<<"] : ";
+        cout <<"f: ["<<f1->pos[XX]<<","<<f1->pos[YY]<<"], c: [";
+        cout <<c->pos[XX]<<","<<c->pos[YY]<<"] : ";
 #endif
         for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
           s = &(par.RS.sources[isrc]);
@@ -951,10 +957,10 @@ int sim_control_NG::calculate_raytracing_column_densities(
           }
           CI.set_cell_col(c, s->id, tmp);
 #ifdef RT_TESTING
-          cout <<"  dtc="<<*tmp;
+          cout <<"  dtc="<<*tmp <<"\n";
 #endif
         }
-        ++f_iter;
+        ++c_iter;
       } // loop over cells.
     } // if 2D
 

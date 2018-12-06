@@ -23,6 +23,7 @@ OutputFile    DTE_NG_D2_TTI_n00128
 ntracer 1
 chem_code MPv7
 Tracer000 H1+
+InitIons LEAVE
 
 # Which physics to use
 EP_dynamics     1
@@ -62,17 +63,17 @@ grid_nlevels 4
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-grid_nest_centre_XX 0.0e18
-grid_nest_centre_YY 0.0e18
-grid_nest_centre_ZZ 0.0e18
+grid_centre_XX 0.0e18
+grid_centre_YY 0.0e18
+grid_centre_ZZ 0.0e18
 
 # Data Output Path
 OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 1
-OutputCriterion 1    # output per n-years=1, per step=0
+OutputFrequency 128
+OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 
 # Start time
@@ -163,6 +164,7 @@ RT_EVO_FILE_0    NOFILE
 # stellar wind sources #
 ########################
 WIND_NSRC 0
+N_JET 0
 
 ########################
 # Reference Vector     #
