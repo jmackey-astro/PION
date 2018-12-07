@@ -129,6 +129,7 @@ class FV_solver_mhd_ideal_adi
         const double, ///< Min Temperature allowed on grid.
         const double  ///< Cell timestep dt.
         );
+
   ///
   /// Given a cell, calculate the MHD/hydrodynamic timestep.
   ///
@@ -137,6 +138,7 @@ class FV_solver_mhd_ideal_adi
         const double, ///< gas EOS gamma.
         const double  ///< Cell size dx.
         );
+
   ///
   /// This calls the original version and then adds conversion of tracer variables.
   /// 
@@ -190,6 +192,8 @@ class FV_solver_mhd_ideal_adi
         );
 
 protected:
+  double max_speed;  ///< max. fast magnetosonic speed on the domain.
+
   ///
   /// Falle, Komissarov & Joarder (1998,MNRAS,297,265) Artificial
   /// Viscosity Calculation (one-dimensional).
@@ -246,20 +250,6 @@ class FV_solver_mhd_mixedGLM_adi
    ~FV_solver_mhd_mixedGLM_adi();
 
   ///
-  /// Set max_speed variable (for setting c_h on cell-by-cell basis).
-  /// This is used to reset to zero at start of each step, and also
-  /// to reset local value to global value for multi-core execution.
-  ///
-  void set_max_speed(
-      const double ///< new max. speed
-      );
-
-  ///
-  /// returns max_speed for this step.
-  ///
-  double get_max_speed();
-
-  ///
   /// Given a cell, calculate the MHD/hydrodynamic timestep.
   /// This calculates the ideal MHD step, and also tracks the maximum
   /// velocity on the domain.
@@ -288,37 +278,12 @@ class FV_solver_mhd_mixedGLM_adi
       );
 
   ///
-  /// This calls the original version and then adds conversion of tracer variables.
-  /// 
-  /// For purely passive tracers, the primitive variable is just a number,
-  /// such as the 'colour' of the gas, or where it started out.  The 
-  /// conserved variable is the mass density of this.
-  ///
-  virtual void PtoU(
-      const pion_flt *, ///< pointer to Primitive variables.
-      pion_flt *,       ///< pointer to conserved variables.
-      const double    ///< Gas constant gamma.
-      );
-  ///
-  /// This calls the original version and then adds conversion of tracer variables.
-  /// 
-  /// For purely passive tracers, the primitive variable is just a number,
-  /// such as the 'colour' of the gas, or where it started out.  The 
-  /// conserved variable is the mass density of this.
-  ///
-  virtual int UtoP(
-      const pion_flt *, ///< pointer to conserved variables.
-      pion_flt *, ///< pointer to Primitive variables.
-      const double, ///< Min Temperature allowed on grid.
-      const double    ///< Gas constant gamma.
-      );
-
-  ///
   /// This sets the values of GLM_chyp and GLM_cr based on the timestep.
   ///
-  virtual void GotTimestep(
-      const double,  ///< timestep dt.
-      const double ///< grid cell size dx.
+  virtual void Set_GLM_Speeds(
+      const double, ///< timestep dt.
+      const double, ///< grid cell size dx.
+      const double  ///< GLM damping coefficient c_r
       );
 
   ///
@@ -352,8 +317,43 @@ class FV_solver_mhd_mixedGLM_adi
         const double    ///< Gas constant gamma.
         );
 
-  protected:
-  double max_speed;  ///< max. 1D velocity on the domain
+  ///
+  /// Same as ideal MHD version except that total energy contains
+  /// contribution from psi, and includes psi conversion.
+  ///
+  virtual void PtoU(
+        const pion_flt *, ///< pointer to Primitive variables.
+        pion_flt *,       ///< pointer to conserved variables.
+        const double    ///< Gas constant gamma.
+        );
+
+  ///
+  /// Same as ideal MHD version except that total energy contains
+  /// contribution from psi.
+  /// includes psi conversion.
+  ///
+  virtual int UtoP(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< Min Temperature allowed on grid.
+      const double    ///< Gas constant gamma.
+      );
+
+#ifdef DERIGS
+  ///
+  /// Set max_speed variable for setting GLM hyperbolic wavespeed.
+  /// This is used to reset to zero at start of each step, and also
+  /// to reset local value to global value for multi-core execution.
+  ///
+  void set_max_speed(
+      const double c ///< new max. speed
+      ) {max_speed = c; return;}
+
+  ///
+  /// returns max_speed for this step.
+  ///
+  double get_max_speed() {return max_speed;}
+#endif
 };
 
 

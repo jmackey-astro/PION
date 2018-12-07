@@ -65,7 +65,7 @@ class BaseFVSolver : virtual public BaseEqn, virtual public BaseVectorOps
    ~BaseFVSolver() {} ///< Destructor.
 
   /// \brief Calculates GLM wave-speed -- only used by GLM-MHD equations. 
-  virtual void GotTimestep(
+  virtual void Set_GLM_Speeds(
       const double delt ///< Current timestep value.
       ) =0;
 
@@ -211,7 +211,7 @@ class LF_FVSolver : public BaseFVSolver
 		       ) {gamma = g; return;}
 
   /// \brief Does nothing until re-implemented. 
-  virtual void GotTimestep(const double delt ///< Current timestep value.
+  virtual void Set_GLM_Speeds(const double delt ///< Current timestep value.
 		      ) {return;}
 
   /// \brief sets current timestep. 
@@ -513,7 +513,7 @@ class glmMHD_RS : virtual public RS_FVSolver,
   /// The pressure gradient is passed in as a parameter.  Sets GLM speed.  Note that the
   /// solver variable delt is not set by this function; call Setdt(delt) instead.
   /// 
-  virtual void GotTimestep(const double ///< timestep dt.
+  virtual void Set_GLM_Speeds(const double ///< timestep dt.
 			    );
 
   /// \brief Updates previous FV cell-update by adding in source term from GLM method.

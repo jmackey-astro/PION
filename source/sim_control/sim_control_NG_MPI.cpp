@@ -441,6 +441,10 @@ int sim_control_NG_MPI::Time_Int(
     // Get timestep on each level
     int scale = 1;
     double mindt = 1.0e99;
+    
+#ifdef DERIGS
+    spatial_solver->set_max_speed(0.0);
+#endif
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
       cout <<"Calculate timestep, level "<<l<<", dx=";
@@ -485,6 +489,26 @@ int sim_control_NG_MPI::Time_Int(
     }
     if (restart) restart=false;
     SimPM.last_dt = SimPM.levels[0].last_dt;
+    rep.errorTest("TIME_INT::calc_timestep()",0,err);
+    
+    //
+    // If using MHD with GLM divB cleaning, the following sets the
+    // hyperbolic wavespeed.  If not, it does nothing.  By setting it
+    // here and using t_dyn, we ensure that the hyperbolic wavespeed is
+    // equal to the maximum signal speed on the grid, and not an
+    // artificially larger speed associated with a shortened timestep.
+    //
+#ifdef DERIGS
+    double ch = spatial_solver->get_max_speed();
+    ch = COMM->global_operation_double("MAX",ch);
+    spatial_solver->set_max_speed(ch);
+    double cr=0.0;
+    for (int d=0;d<SimPM.ndim;d++)
+      cr += 1.0/(SimPM.levels[0].Range[d]*SimPM.levels[0].Range[d]);
+    cr = M_PI*sqrt(cr);
+    spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
+                                   SimPM.levels[0].dx, cr);
+#endif
     // --------------------------------------------------------------
     
     // --------------------------------------------------------------

@@ -109,6 +109,7 @@ int calc_timestep::calculate_timestep(
   par.dt = min(par.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
+#ifndef DERIGS
   //
   // If using MHD with GLM divB cleaning, the following sets the
   // hyperbolic wavespeed.  If not, it does nothing.  By setting it
@@ -116,7 +117,12 @@ int calc_timestep::calculate_timestep(
   // equal to the maximum signal speed on the grid, and not an
   // artificially larger speed associated with a shortened timestep.
   //
-  sp_solver->GotTimestep(t_dyn,grid->DX());
+  double cr=0.0;
+  //for (int d=0;d<par.ndim;d++) cr += 1.0/(par.Range[d]*par.Range[d]);
+  //cr = M_PI*sqrt(cr);
+  cr = 0.25/par.levels[0].dx; // this is the old value.
+  sp_solver->Set_GLM_Speeds(t_dyn,grid->DX(),cr);
+#endif
 
   //
   // Check that the timestep doesn't increase too much between steps, and that it 

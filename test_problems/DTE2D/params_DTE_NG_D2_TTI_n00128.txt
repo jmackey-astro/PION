@@ -44,7 +44,7 @@ EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
 # Add noise at level of f% to Data? (f<=0 means no).
-noise -1
+noise 0.1
 
 ## Grid Parameters
 NGridX  128

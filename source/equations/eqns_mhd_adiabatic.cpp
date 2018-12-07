@@ -313,10 +313,10 @@ void eqns_mhd_ideal::PUtoFlux(
       pion_flt *f
       )
 {
-  /** \section Equations
-   * The equations for the flux are in Falle, Komissarov, Joarder, 1998, MNRAS,297,265.
-   * Equation (2).
-   * */
+  /// \section Equations
+  /// The equations for the flux are in Falle, Komissarov, Joarder,
+  /// (1998,MNRAS,297,265) Equation (2).
+  ///
   double pm = (u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.; // Magnetic pressure.
   f[eqRHO] = u[eqMMX];
   f[eqMMX] = u[eqMMX]*p[eqVX] +p[eqPG] +pm -u[eqBBX]*u[eqBBX];
@@ -556,40 +556,12 @@ eqns_mhd_mixedGLM::~eqns_mhd_mixedGLM()
 // ##################################################################
 
 void eqns_mhd_mixedGLM::GLMsetPsiSpeed(
-      const double cfl,
-      const double delx,
-      const double delt
+      const double ch,
+      const double crel
       )
 {
-  ///
-  /// \section chyp Hyperbolic Wave Speed
-  /// See the Code Algorithms page \ref algorithms for details of my
-  /// implementation.
-  ///
-
-  //  cout <<"calculating GLM_chyp!\n";
-  GLM_chyp = cfl*delx/delt; /// hyperbolic wavespeed is equal to max. allowed value for given CFL no.
-#ifdef DERIGS
-  GLM_cr = 0.18; 
-#else
-  GLM_cr = 4.0*delx; // This works well for general use.
-#endif
-  //GLM_cr *=20.5; // This is for when getting negative pressure near outflow boundaries.
-  //GLM_cr = 0.3*delx;
-  
-  //
-  // The following method is from Dedner's thesis (eq.8.22, p.121), and is 
-  // larger than using 4dx for the advection problem (i get 14.051 for divBpeak
-  // problem, as oppose to 4 for what I have above).
-  //
-  //  GLM_cr=0.;
-  //  for (int i=0;i<SimPM.ndim;i++)
-  //    GLM_cr += 4./(SimPM.Xmax[i]-SimPM.Xmin[i])/(SimPM.Xmax[i]-SimPM.Xmin[i]);
-  //  GLM_cr = 1./M_PI/sqrt(GLM_cr);
-
-
-  //  cout <<"GLM_cr="<<GLM_cr<<"\n";
-  //  cout <<"GLM_chyp = "<<GLM_chyp<<" and cfl*dx/dt="<<cfl*delx/delt<<"\n";
+  GLM_chyp = ch; // hyperbolic wavespeed is equal to max. fast speed
+  GLM_cr = crel;   // crel = 1/(cp^2/ch) has units of 1/length.
   return;
 }
 			    
@@ -653,12 +625,16 @@ void eqns_mhd_mixedGLM::GLMsource(
       const double delt ///< timestep
       )
 {
-  //cout <<"\tglmsource: exp factor="<<-delt*GLM_chyp/GLM_cr<<"\n";
-  *psivar *= exp(-delt*GLM_chyp/GLM_cr);
+  //cout <<"cr="<<GLM_cr<<", ch="<<GLM_chyp<<", dt="<<delt;
+  //cout<<"\tglmsource: exp factor="<<-delt*GLM_chyp*GLM_cr<<"\n";
+  *psivar *= exp(-delt*GLM_chyp*GLM_cr);
   return;
 }
 
 
 // ##################################################################
 // ##################################################################
+
+
+
 

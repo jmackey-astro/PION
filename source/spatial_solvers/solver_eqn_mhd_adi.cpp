@@ -64,7 +64,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
   cout <<"::FV_solver_mhd_ideal_adi() constructor.\n";
   //cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
 #endif
-
+  max_speed=0.0;
   negPGct = negROct = 0;
   return;
 }
@@ -560,6 +560,7 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   // the max wavespeed.
   //
   enum axes newdir;
+  double cf=0.0;
   if (FV_gndim==1) temp += cfast(c->P,eq_gamma);
   else { // We may have to rotate the state vector to find the fastest fast speed.
     newdir = XX;
@@ -572,15 +573,18 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
     if (newdir !=XX) {
       for (int v=0;v<eq_nvar;v++) u1[v] = c->P[v];
       rotate(u1,XX,newdir);
-      temp += cfast(u1, eq_gamma);
+      cf = cfast(u1, eq_gamma);
+      temp += cf;
     }
-    else temp += cfast(c->P, eq_gamma);
+    else {
+      cf += cfast(c->P, eq_gamma);
+      temp += cf;
+    }
   }
-  FV_dt = dx/temp;
 
-  //
-  // Now scale the max. allowed timestep by the CFL number we are using (<1).
-  //
+  max_speed = max(max_speed,cf);
+
+  FV_dt = dx/temp;
   FV_dt *= FV_cfl;
 
 #ifdef TEST_INF
@@ -664,10 +668,6 @@ double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
   cout <<"FV_solver_mhd_mixedGLM_adi::CellTimeStep ...starting.\n";
 #endif //FUNCTION_ID
   double dt = FV_solver_mhd_ideal_adi::CellTimeStep(c,eq_gamma,dx);
-
-  double v = max( max(fabs(c->Ph[VX]),fabs(c->Ph[VY])),
-                  fabs(c->Ph[VZ]));
-  max_speed = max(max_speed,v);
   return dt;
 }
 
@@ -738,11 +738,17 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   /// 
   /// Bx(*) is then used for both the left and right state to calculate
   /// the flux.
-  /// 
-  double psistar = 0.5*(left[eqSI]+right[eqSI]
+  ///
+  double psistar=0.0, bxstar=0.0;
+#ifdef DERIGS
+  psistar = 0.5*(left[eqSI]+right[eqSI]);
+  bxstar  = 0.5*(left[eqBX]+right[eqBX]);
+#else
+  psistar = 0.5*(left[eqSI]+right[eqSI]
 			-GLM_chyp*(right[eqBX]-left[eqBX]));
-  double bxstar  = 0.5*(left[eqBX]+right[eqBX]
+  bxstar  = 0.5*(left[eqBX]+right[eqBX]
 			-(right[eqSI]-left[eqSI])/GLM_chyp);
+#endif
   left[eqBX] = right[eqBX] = bxstar;
 
   //
@@ -761,9 +767,17 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   // it is modified to ensure consistency (Mackey & Lim, 2011).
   // Derigs et al. (2017/2018) have a more consistent calculation...
   // 
-  flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
-  flux[eqBBX]  = psistar;
+#ifdef DERIGS
+  flux[eqERG] += 2.0*GLM_chyp*bxstar*psistar -
+      GLM_chyp*0.5*(left[eqSI]*leftp[eqBX]+right[eqSI]*right[eqBX]);
+  flux[eqBBX]  = GLM_chyp*psistar;
+  flux[eqPSI]  = GLM_chyp*bxstar;
+#else
   flux[eqERG] += bxstar*psistar;
+  flux[eqBBX]  = psistar;
+  flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
+#endif
+
   return err;
 }
 
@@ -862,20 +876,25 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
 
 
 
-void FV_solver_mhd_mixedGLM_adi::GotTimestep(
-        const double delt, ///< timestep dt.
-        const double delx ///< cell size dx.
-	)
+void FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds(
+      const double delt, ///< timestep dt.
+      const double delx, ///< cell size dx.
+      const double cr    ///< GLM damping coefficient c_r
+      )
 {
 #ifdef FUNCTION_ID
-  cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep ...starting.\n";
+  cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...starting.\n";
 #endif //FUNCTION_ID
 
-  //     cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep() setting wave speeds.\n";
-  GLMsetPsiSpeed(FV_cfl,delx,delt);
+  //     cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds() setting wave speeds.\n";
+#ifndef DERIGS
+  GLMsetPsiSpeed(FV_cfl*delx/delt,cr);
+#else
+  GLMsetPsiSpeed(max_speed, cr);
+#endif
 
 #ifdef FUNCTION_ID
-  cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep ...returning.\n";
+  cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...returning.\n";
 #endif //FUNCTION_ID
 }
 

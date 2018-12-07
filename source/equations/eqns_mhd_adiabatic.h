@@ -200,14 +200,12 @@ class eqns_mhd_mixedGLM : virtual public eqns_mhd_ideal
   eqns_mhd_mixedGLM(int);
   ~eqns_mhd_mixedGLM();
   /// \brief Sets the hyperbolic wavespeed ch for the Psi variable. 
-  /// 
-  /// \f[ c_{\mbox{hyp}} = \mbox{CFL} (dx/dt) \;.\f]
-  /// From Dedner, below eq.41.
+  /// This is set to the maximum magnetosonic speed on the grid.
   ///
-  void GLMsetPsiSpeed(const double, ///< CFL coefficient.
-		       const double, ///< dx, the cell size
-		       const double  ///< dt, the timestep.
-		       );
+  void GLMsetPsiSpeed(
+      const double, ///< c_h, the hyperbolic speed
+      const double ///< c_r, the damping coefficient
+      );
    
   /// \brief Converts from primitive to conserved variables. 
   /// 

@@ -64,10 +64,27 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   ~FV_solver_base(); ///< Destructor.
 
   /// \brief Calculates GLM wave-speed -- only used by GLM-MHD equations. 
-  virtual void GotTimestep(
+  virtual void Set_GLM_Speeds(
       const double, ///< Current timestep value.
-      const double ///< grid cell size dx.
+      const double, ///< grid cell size dx.
+      const double  ///< GLM damping coefficient c_r
       ) {return;}
+
+#ifdef DERIGS
+  ///
+  /// Set max_speed variable for setting GLM hyperbolic wavespeed.
+  /// This is used to reset to zero at start of each step, and also
+  /// to reset local value to global value for multi-core execution.
+  ///
+  void set_max_speed(
+      const double c ///< new max. speed
+      ) {return;}
+
+  ///
+  /// returns max_speed for this step.
+  ///
+  double get_max_speed() {return 0.0;}
+#endif
 
   /// \brief sets current timestep value in the solver class. 
   virtual void Setdt(
