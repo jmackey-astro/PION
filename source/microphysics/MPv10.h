@@ -324,6 +324,8 @@ class MPv10
   double m_H; ///< Mass of hydrogen (grams).
   double m_He; ///< Mass of helium.
   double m_C; ///< Mass of Carbon
+  double m_N; ///< Mass of Nitrogen
+  double m_O; ///< Mass of Oxygen
   const int ndim; ///< Number of dimensions in grid.
   const int nv_prim; ///< Number of variables in state vector.
   const double eos_gamma; ///< EOS gamma for ideal gas.
@@ -356,6 +358,8 @@ class MPv10
   std::vector<int> H_ion_index; ///<Locates position of ion with N+1 electrons missing, e.g. H_ion_index[0] -> H+ position. Used with MPv10::Tr().
   std::vector<int> He_ion_index;///""
   std::vector<int> C_ion_index;
+  std::vector<int> N_ion_index;
+  std::vector<int> O_ion_index;
   std::map<string,int> tracer_list;
 
   /// ===========================================================================

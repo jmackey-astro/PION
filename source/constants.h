@@ -66,6 +66,14 @@ class constants {
   /// Carbon mass
   ///
   inline double m_C()     {return 1.9944235e-23;}///
+  ///
+  /// Nitrogen mass
+  ///
+  inline double m_N()     {return 2.3258671e-23;}///
+  ///
+  /// Oxygen mass
+  ///
+  inline double m_O()     {return 2.6566962e-23;}///
   /// Gravitational constant
   ///
   inline double G()       {return 6.67408e-8;}

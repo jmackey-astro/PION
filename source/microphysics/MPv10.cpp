@@ -113,6 +113,8 @@ MPv10::MPv10(
   m_H = pconst.m_H(); // Hydrogen mass.
   m_He = pconst.m_He(); // Helium mass.
   m_C = pconst.m_C(); //Carbon mass
+  m_N = pconst.m_N(); //Nitrogen mass
+  m_O = pconst.m_O(); //Oxygen mass
 
   generate_lookup_tables();
 
@@ -140,7 +142,7 @@ MPv10::MPv10(
   string s; //pv_H1p=-1;
   
   N_elem = 0; N_species=0;
-  int H_index; int He_index; int C_index;// used to update N_species_by_elem
+  int H_index; int He_index; int C_index; int N_index; int O_index;// used to update N_species_by_elem
  
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
@@ -177,6 +179,20 @@ MPv10::MPv10(
         X_elem_atomic_mass.push_back(m_C);
         X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
         C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); //initialise the length of C_ion_index
+      }
+      //=======Nitrogen======
+      else if (s[2]=='N'){
+        N_index = N_elem;
+        X_elem_atomic_mass.push_back(m_N);
+        X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
+        N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); //initialise the length of C_ion_index
+      }
+      //=======Oxygen======
+      else if (s[2]=='O'){
+        O_index = N_elem;
+        X_elem_atomic_mass.push_back(m_O);
+        X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
+        O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); //initialise the length of C_ion_index
       }
       N_elem++;
     } 
@@ -253,6 +269,93 @@ MPv10::MPv10(
         y_ip1_index_tables.push_back(-1); //doesn't exist
         y_ion_index_tables.push_back(11); //index of C6+
         y_im1_index_tables.push_back(10);
+      }
+    }
+    else if (s[0] =='N'){
+      cout << "\n\nTesting " << s << "\n";
+      cout << "i= " << i << ", s=" << s <<", N_index = " << N_index <<"\n";
+      species_tracer_initialise(tracers, i, s, "N", 1, N_index, len);
+      cout << "Nitrogen tracer initialised";
+      if (s[1]=='1'){
+        y_ip1_index_tables.push_back(14); //index of N2+ in tables
+        y_ion_index_tables.push_back(13);  //index of N1+ in tables
+        y_im1_index_tables.push_back(12); //index of N0 in tables
+      }
+      else if (s[1]=='2'){
+        y_ip1_index_tables.push_back(15); //index of N3+
+        y_ion_index_tables.push_back(14); //index of N2+
+        y_im1_index_tables.push_back(13); //index of N1+
+      }
+      else if (s[1]=='3'){
+        y_ip1_index_tables.push_back(16); //index of C4+
+        y_ion_index_tables.push_back(15); //index of C3+
+        y_im1_index_tables.push_back(14); //index of C2+
+      }
+      else if (s[1]=='4'){
+        y_ip1_index_tables.push_back(17);
+        y_ion_index_tables.push_back(16); //index of C4+
+        y_im1_index_tables.push_back(15); 
+      }
+      else if (s[1]=='5'){
+        y_ip1_index_tables.push_back(18); 
+        y_ion_index_tables.push_back(17); //index of C5+
+        y_im1_index_tables.push_back(16);
+      }
+      else if (s[1]=='6'){
+        y_ip1_index_tables.push_back(19); //doesn't exist
+        y_ion_index_tables.push_back(18); //index of C6+
+        y_im1_index_tables.push_back(17);
+      }
+      else if (s[1]=='7'){
+        y_ip1_index_tables.push_back(-1); //doesn't exist
+        y_ion_index_tables.push_back(19); //index of C6+
+        y_im1_index_tables.push_back(18);
+      }
+    }
+    else if (s[0] =='O'){
+      cout << "\n\nTesting " << s << "\n";
+      cout << "i= " << i << ", s=" << s <<", O_index = " << O_index <<"\n";
+      species_tracer_initialise(tracers, i, s, "O", 1, O_index, len);
+      cout << "Oxygen tracer initialised";
+      if (s[1]=='1'){
+        y_ip1_index_tables.push_back(22); //index of N2+ in tables
+        y_ion_index_tables.push_back(21);  //index of N1+ in tables
+        y_im1_index_tables.push_back(20); //index of N0 in tables
+      }
+      else if (s[1]=='2'){
+        y_ip1_index_tables.push_back(23); //index of N3+
+        y_ion_index_tables.push_back(22); //index of N2+
+        y_im1_index_tables.push_back(21); //index of N1+
+      }
+      else if (s[1]=='3'){
+        y_ip1_index_tables.push_back(24); //index of C4+
+        y_ion_index_tables.push_back(23); //index of C3+
+        y_im1_index_tables.push_back(22); //index of C2+
+      }
+      else if (s[1]=='4'){
+        y_ip1_index_tables.push_back(25);
+        y_ion_index_tables.push_back(24); //index of C4+
+        y_im1_index_tables.push_back(23); 
+      }
+      else if (s[1]=='5'){
+        y_ip1_index_tables.push_back(26); 
+        y_ion_index_tables.push_back(25); //index of C5+
+        y_im1_index_tables.push_back(24);
+      }
+      else if (s[1]=='6'){
+        y_ip1_index_tables.push_back(27); //doesn't exist
+        y_ion_index_tables.push_back(26); //index of C6+
+        y_im1_index_tables.push_back(25);
+      }
+      else if (s[1]=='7'){
+        y_ip1_index_tables.push_back(28); //doesn't exist
+        y_ion_index_tables.push_back(27); //index of C6+
+        y_im1_index_tables.push_back(26);
+      }
+      else if (s[1]=='8'){
+        y_ip1_index_tables.push_back(-1); //doesn't exist
+        y_ion_index_tables.push_back(28); //index of C6+
+        y_im1_index_tables.push_back(27);
       }
     }
   }
@@ -1134,7 +1237,7 @@ int MPv10::ydot(
         /// =========  HEATING DUE TO RECOMBINATION OUT OF THIS SPECIES ===========
         double ion_pot = ionisation_potentials[ y_im1_index_tables[species_counter]];
         //
-        Edot -= (3/2) * T * k_B * this_y_dot *X_elem_number_density[elem];
+        Edot -= (3./2.) * T * k_B * this_y_dot *X_elem_number_density[elem];
      
       }
     species_counter ++;
@@ -1654,18 +1757,18 @@ void MPv10::generate_lookup_tables(){
   Temp_Table.insert(Temp_Table.end(), &Temp_arr[0], &Temp_arr[Num_temps]);
     
   //  Now make lookup tables for the recombination rates and ionisation rates respectively.
-  const int number_of_species = 12;
+  const int number_of_species = 29;
   
   species species_list[number_of_species] = {H_0, H_1p, 
                                              He0, He1p, He2p, 
-                                             C0, C1p, C2p, C3p, C4p, C5p, C6p};/*, 
+                                             C0, C1p, C2p, C3p, C4p, C5p, C6p, 
                                              N0, N1p, N2p, N3p, N4p, N5p, N6p, N7p, 
-                                             O0, O1p, O2p, O3p, O4p, O5p, O6p, O7p, O8p};*/
+                                             O0, O1p, O2p, O3p, O4p, O5p, O6p, O7p, O8p};
   string ion_names[number_of_species] = {"H0", "H1+", 
                                          "He0", "He1+", "He2+", 
-                                         "C0", "C1+", "C2+", "C3+", "C4+", "C5+", "C6+"};/*, 
+                                         "C0", "C1+", "C2+", "C3+", "C4+", "C5+", "C6+", 
                                          "N0", "N1+", "N2+", "N3+", "N4+", "N5+", "N6+", "N7+", 
-                                         "O0", "O1+", "O2+", "O3+", "O4+", "O5+", "O6+", "O7+", "O8+"};*/
+                                         "O0", "O1+", "O2+", "O3+", "O4+", "O5+", "O6+", "O7+", "O8+"};
   
   // ======================================================================================================
   //  Resize header-defined vectors to store data
@@ -1727,7 +1830,9 @@ void MPv10::generate_lookup_tables(){
   /// ===================================================================
   double ionisation_pot_arr[number_of_species] = {13.59844, -1.0e99,
                                                   24.58741, 54.41778, -1.0e99,
-                                                  11.3, 24.4, 47.9, 64.5, 392.1, 490.0, -1.0e99}; //energy (eV) required to raise ion from species i to species i+1
+                                                  11.3, 24.4, 47.9, 64.5, 392.1, 490.0, -1.0e99,
+                                                  14.5, 29.6, 47.5, 77.5, 97.9, 552.1, 667.0, -1.e99,
+                                                  13.6, 35.1, 54.9, 77.4, 113.9, 138.1, 739.3, 871.4, 1.e99}; //energy (eV) required to raise ion from species i to species i+1
   for (int i=0; i<number_of_species; i++) ionisation_pot_arr[i]*=erg_per_eV; //convert eV to erg
   ionisation_potentials.insert(ionisation_potentials.end(), &ionisation_pot_arr[0], &ionisation_pot_arr[number_of_species]);
  
