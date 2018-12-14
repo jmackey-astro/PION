@@ -137,12 +137,11 @@ MPv10::MPv10(
   cout <<ntracer<<" variables in state vec.\n";
   
   int len = ntracer;
-  int ftr = nv_prim -ntracer; // first tracer variable.
+  ftr = nv_prim -ntracer; // first tracer variable.
     
   string s; //pv_H1p=-1;
   
   N_elem = 0; N_species=0;
-  int H_index; int He_index; int C_index; int N_index; int O_index;// used to update N_species_by_elem
  
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
@@ -161,38 +160,33 @@ MPv10::MPv10(
       
       //=======Helium========
       if (s.substr(2,2)=="He"){
-        He_index = N_elem;
+        element_list["He"] = N_elem;
         X_elem_atomic_mass.push_back(m_He);
         X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-        He_ion_index.push_back(0); He_ion_index.push_back(0); //initialise the length of H_ion_index
       }
       //=======Hydrogen======
       else if (s[2]=='H'){
-        H_index = N_elem;
+        element_list["H"]= N_elem;
         X_elem_atomic_mass.push_back(m_H);
         X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-        H_ion_index.push_back(0); //initialise the length of H_ion_index
-      }
+     }
       //=======Carbon======
       else if (s[2]=='C'){
-        C_index = N_elem;
+        element_list["C"] = N_elem;
         X_elem_atomic_mass.push_back(m_C);
         X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-        C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); C_ion_index.push_back(0); //initialise the length of C_ion_index
       }
       //=======Nitrogen======
       else if (s[2]=='N'){
-        N_index = N_elem;
+        element_list["N"] = N_elem;
         X_elem_atomic_mass.push_back(m_N);
         X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-        N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); N_ion_index.push_back(0); //initialise the length of C_ion_index
-      }
+       }
       //=======Oxygen======
       else if (s[2]=='O'){
-        O_index = N_elem;
+        element_list["O"] = N_elem;
         X_elem_atomic_mass.push_back(m_O);
         X_elem_number_density.push_back(0); //just to initialise the length of X_elem_number_density
-        O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); O_ion_index.push_back(0); //initialise the length of C_ion_index
       }
       N_elem++;
     } 
@@ -205,14 +199,14 @@ MPv10::MPv10(
   // ================================================================
   //
   
-  lv_y_ion_index_offset = ftr + N_elem; // gives the index at which ions first occur in primitive vector, maps to first index of local vector
+  //lv_y_ion_index_offset = ftr + N_elem; // gives the index at which ions first occur in primitive vector, maps to first index of local vector
 
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
     //=======Helium========
     if (s.substr(0,2)=="He"){
       cout << "\n\nTesting " << s << "\n";
-      species_tracer_initialise(tracers, i, s, "He", 2, He_index, len);
+      species_tracer_initialise(tracers, i, s, "He", 2, element_list["He"], len);
       if (s[2]=='1'){
         cout << s <<"\n";
         y_ip1_index_tables.push_back(4); //index of He2+ in tables
@@ -228,8 +222,8 @@ MPv10::MPv10(
     //=======Hydrogen========
     else if (s[0] =='H'){
       cout << "\n\nTesting " << s << "\n";
-      cout << "i= " << i << ", s=" << s <<", H_index = " << H_index <<"\n";
-      species_tracer_initialise(tracers, i, s, "H", 1, H_index, len);
+      cout << "i= " << i << ", s=" << s <<", H_index = " << element_list["H"] <<"\n";
+      species_tracer_initialise(tracers, i, s, "H", 1, element_list["H"], len);
       y_ip1_index_tables.push_back(-1); //doesn't exist in tables
       y_ion_index_tables.push_back(1); //index of H1+ in tables
       y_im1_index_tables.push_back(0); //index of H0 in tables
@@ -237,8 +231,8 @@ MPv10::MPv10(
     //=======Carbon========
     else if (s[0] =='C'){
       cout << "\n\nTesting " << s << "\n";
-      cout << "i= " << i << ", s=" << s <<", C_index = " << C_index <<"\n";
-      species_tracer_initialise(tracers, i, s, "C", 1, C_index, len);
+      cout << "i= " << i << ", s=" << s <<", C_index = " << element_list["C"] <<"\n";
+      species_tracer_initialise(tracers, i, s, "C", 1, element_list["C"], len);
       cout << "Carbon tracer initialised";
       if (s[1]=='1'){
         y_ip1_index_tables.push_back(7); //index of C2+ in tables
@@ -273,8 +267,8 @@ MPv10::MPv10(
     }
     else if (s[0] =='N'){
       cout << "\n\nTesting " << s << "\n";
-      cout << "i= " << i << ", s=" << s <<", N_index = " << N_index <<"\n";
-      species_tracer_initialise(tracers, i, s, "N", 1, N_index, len);
+      cout << "i= " << i << ", s=" << s <<", N_index = " << element_list["N"] <<"\n";
+      species_tracer_initialise(tracers, i, s, "N", 1, element_list["N"], len);
       cout << "Nitrogen tracer initialised";
       if (s[1]=='1'){
         y_ip1_index_tables.push_back(14); //index of N2+ in tables
@@ -314,8 +308,8 @@ MPv10::MPv10(
     }
     else if (s[0] =='O'){
       cout << "\n\nTesting " << s << "\n";
-      cout << "i= " << i << ", s=" << s <<", O_index = " << O_index <<"\n";
-      species_tracer_initialise(tracers, i, s, "O", 1, O_index, len);
+      cout << "i= " << i << ", s=" << s <<", O_index = " << element_list["O"] <<"\n";
+      species_tracer_initialise(tracers, i, s, "O", 1, element_list["O"], len);
       cout << "Oxygen tracer initialised";
       if (s[1]=='1'){
         y_ip1_index_tables.push_back(22); //index of N2+ in tables
@@ -421,7 +415,7 @@ void MPv10::species_tracer_initialise(
     int length /// < length of tracers vector
     ){
   N_species_by_elem[el_index]++;
-  y_ion_index_prim.push_back(lv_y_ion_index_offset + N_species);
+  y_ion_index_prim.push_back(ftr + N_elem + N_species);//lv_y_ion_index_offset + N_species);
   y_ion_index_local.push_back(N_species);
      
   /// Use stringstream to convert electron number string to int.
@@ -431,9 +425,7 @@ void MPv10::species_tracer_initialise(
   ss_e >> num_elec_int; 
   /// Record the electron number and He_ion_index vector (used to identify tracer index from string)
   y_ion_num_elec.push_back(num_elec_int);
-//   if (s
-//   He_ion_index[num_elec_int-1] = lv_y_ion_index_offset + N_species;
-        
+  
   /// Define the tracer for the next ion up / down in tracers list
   stringstream ss_ip1;        
   stringstream ss_im1;
@@ -529,6 +521,24 @@ double MPv10::get_n_elec(
         )
 {
   // get electron number density from P
+  int species_counter=0;
+  double ne;
+  for (int elem=0;elem<N_elem;elem++) {//loop over every element
+    int N_elem_species=N_species_by_elem[elem];
+    double X_elem_density = P[ftr + elem];
+    
+    for (int s=0;s<N_elem_species;s++) {//loop over every species in THIS element
+      double y_ion_frac = P[ftr + N_elem + species_counter];
+      
+      //add to ne based on the number of electrons liberated to obtain this ion
+      pion_flt number_density = X_elem_density*y_ion_frac;
+      
+      int num_elec = y_ion_num_elec[species_counter];
+      
+      ne += num_elec*number_density;
+      species_counter ++;
+    }
+  }
   return 10.0;
 }
       
@@ -543,8 +553,27 @@ double MPv10::get_n_ion(
         const pion_flt *P ///< primitive state vector.
         )
 {
-  // element number density times ion fraction from P
-  return 10.0;
+  if ( Tr(name) == -1)
+    return -1;
+  else{
+    //index of ION in primitive vector
+    int ion_frac_index = Tr(name);
+    
+    //get index of element number density X_ELEM in primitive vector
+    int elem_index;
+    if (name.substr(0,2)=="He") { 
+      elem_index = element_list["He"];
+    }
+    else{
+      elem_index = element_list[name.substr(0,1)];
+    }
+    
+    // element number density times ion fraction from P
+    double elem_number_density = P[ftr+elem_index];
+    double ion_fraction = P[ion_frac_index];
+    
+    return elem_number_density * ion_fraction;
+  }
 }
       
 
@@ -660,15 +689,7 @@ int MPv10::convert_prim2local(
       species_counter ++;
     }
   }
-  //rep.printVec("local",p_local,nvl);
-  //rep.printVec("prim ",p_in,nv_prim);
-  
-  //for (int v=0;v<nvl;++v) cout << "p_local[ " << v << "] = " << p_local[v]<<"\n";
-  //for (int v=0;v<N_elem+N_species;++v) cout << "p_prim[ " << v+lv_y_ion_index_offset-N_elem << "] = " << p_in[v+lv_y_ion_index_offset-N_elem]<<"\n";
 
-  //
-  // Set x(H0) to be within the required range (not too close to zero or 1).
-  //
   species_counter=0;
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
