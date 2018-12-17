@@ -68,33 +68,40 @@ class constants {
   /// Helium mass (CIAWW online table)
   ///
   inline double m_He()     {return 6.6464768e-24;}
+
   ///
   /// Carbon mass (CIAWW online table)
+  /// 0.5*(12.0096 + 12.0116) uamu
   ///
-  inline double m_C()     {return 1.994374e-23;}///
+  inline double m_C()     {return 1.994374e-23;}
+
   ///
-  /// Nitrogen mass
+  /// Nitrogen mass 0.5*(14.00643 + 14.00728) uamu
+  /// (CIAWW online table)
   ///
-  inline double m_N()     {return 2.3258671e-23;}///
+  inline double m_N()     {return 2.325892e-23;}
+
   ///
-  /// Oxygen mass
+  /// Oxygen mass (CIAWW online table)
+  /// 0.5*(15.99903 + 15.99977) uamu
   ///
-  inline double m_O()     {return 2.6566962e-23;}///
-  /// Gravitational constant
+  inline double m_O()     {return 2.6567628e-23;}
+
+  /// Gravitational constant (CODATA 2014)
   ///
   inline double G()       {return 6.67408e-8;}
   ///
-  /// Ionization potential of H
+  /// Ionization potential of H (eV)
   ///
-  inline double Eth_H()   {return 13.59844*eV();}
+  inline double Eth_H()   {return 2.178710264e-11;}
   ///
   /// Ionization potential of H, in Hertz.
   ///
-  inline double NuTh_H()  {return 3.288e15;}
+  inline double NuTh_H()  {return 3.28808819e+15;}
   //
-  // Unit conversion
+  // Unit conversion 
   //
-  inline double K_per_eV(){return 1.1604519e4;}
+  inline double K_per_eV(){return 1.16045221e4;}
   inline double year()    {return 3.1558150e7;}
   //
   // Astronomy
