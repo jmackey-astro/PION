@@ -822,11 +822,12 @@ int raytracer_USC_infinity::ProcessCell(
 
   if (!c->isdomain) {
     // if cell is not in the domain, set its column to be zero,
-#ifdef RT_TESTING
+//#ifdef RT_TESTING
     cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", "<<c->pos[YY]<<"]\n";
-#endif
+//#endif
     cell_col[0] = 0.0;
     col2cell[0] += cell_col[0];
+    cout <<" col = "<<cell_col[0] <<", col = "<< col2cell[0]<<"\n";
     CI.set_cell_col(c, source->s->id, cell_col);
     CI.set_col     (c, source->s->id, col2cell);
   }

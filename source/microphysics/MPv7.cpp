@@ -68,7 +68,7 @@ MPv7::MPv7(
   // Get the mean mass per H atom from the He and Z mass fractions.
   //
   double X = 1.0-EP->Helium_MassFrac;
-  mean_mass_per_H = m_p/X; // this is mass per H nucleon.
+  mean_mass_per_H = pconst.m_H()/X; // this is mass per H nucleon.
   //
   // Number of ionised particles per ionised H nucleon.
   // (assume He is inert, so no photons can ionise it).

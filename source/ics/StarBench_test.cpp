@@ -583,56 +583,55 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
   // ----------------------------------------------------------------
   else if (ptype==2 || ptype==3) {
     //
-    // Overwrite data, with curved shock.
+    // Overwrite data, with curved shock and IF.
     //
     double lambda = SimPM->Range[YY];
-    if      (ptype==2) lambda *= 0.25;  // 4 wavelengths on the domain
+    if      (ptype==2) lambda /= 13.0;  // 13 wavelengths on the domain
     else if (ptype==3) lambda *= 1.00;  // just one wavelength
 
     double A = 0.0;
-    if      (ptype==2) A = lambda / 8.0;  // 1/32 of the y-domain, 1/8 of l.
+    if      (ptype==2) A = lambda *13.0/640.0; // 1/640th of the y-domain, 1/10th of shell thickness
     else if (ptype==3) A = lambda /128.0;  // 1/128 of l and the y-domain (1 cell at r1)
     else               A = 0.0;
     double deflection=0.0;
     c=ggg->FirstPt();
     do {
       CI.get_dpos(c,pos);
-      deflection = A*sin(2.0*M_PI*(pos[YY]+0.5*SimPM->Range[YY])/lambda);
-      //if (pos[XX]<= IF_pos+deflection) {
-      // This makes the IF smooth, but the SF is still distorted.
-      if (pos[XX]<= IF_pos) {
-        //
-        // Set to downstream properties, ionized.
-        //
-        c->P[RO] = d_dn;
-        c->P[PG] = 1.0e-10;
-        c->P[VX] = -v_dn;
-        c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0;
-        MP->Set_Temp(c->P, SimPM->EP.MaxTemperature, SimPM->gamma);
+      double dxo2 = 0.5 * ggg->DX();
+      double dxo4 = 0.25 * ggg->DX();
+      //
+      // make a 4x4 subgrid of positions.  For each sub-cell, see if
+      // it is upstream, in the shell, or downstream.  Set the state
+      // vector according to the volume fractions of each.
+      //
+      int nsub = 4;
+      double vfrac = 1.0;
+      // vol-frac of subcell
+      for (int i=0;i<SimPM->ndim;i++) vfrac /= nsub;
+
+      double f_up=0.0, f_sh=0.0, f_dn=0.0, psub[SimPM->ndim];
+      //cout <<"dx="<<ggg->DX()<<", ";
+      //rep.printVec("pos",pos,SimPM->ndim);
+      for (int iy=0;iy<nsub;iy++) {
+        for (int ix=0;ix<nsub;ix++) {
+          psub[XX] = pos[XX]-dxo2 + dxo4*(ix+0.5);
+          psub[YY] = pos[YY]-dxo2 + dxo4*(iy+0.5);
+          //rep.printVec("psub",psub,SimPM->ndim);
+          
+          deflection = A*sin(2.0*M_PI*(psub[YY]+0.5*SimPM->Range[YY])/lambda);
+          if      (psub[XX]<= IF_pos   +deflection) f_dn += vfrac;
+          else if (psub[XX]<= shock_pos+deflection) f_sh += vfrac;
+          else                                      f_up += vfrac;
+        }
       }
-      else if (pos[XX]<= shock_pos+deflection) {
-        //
-        // Shell properties, neutral.
-        //
-        c->P[RO] = d_sh;
-        c->P[PG] = 1.0e-10;
-        c->P[VX] = -v_sh;
-        c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
-        MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
-      }
-      else {
-        //
-        // Upstream unshocked properties, neutral.
-        //
-        c->P[RO] = d_up;
-        c->P[PG] = 1.0e-10;
-        c->P[VX] = -v_up;
-        c->P[VY] = c->P[VZ] = 0.0;
-        for (int v=0; v<SimPM->ntracer; v++) c->P[SimPM->ftr+v] = 1.0e-12;
-        MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
-      }
+      //cout <<"f_dn="<<f_dn<<", f_sh="<<f_sh<<", f_up="<<f_up<<"\n";
+
+      c->P[RO] =  d_dn*f_dn + d_sh*f_sh + d_up*f_up;
+      c->P[PG] = 1.0e-10; // set later in Set_Temp
+      c->P[VX] = -v_dn*f_dn - v_sh*f_sh - v_up*f_up;
+      for (int v=0; v<SimPM->ntracer; v++)
+        c->P[SimPM->ftr+v] = 1.0*f_dn + 1.0e-12*(f_sh+f_up);
+      MP->Set_Temp(c->P, SimPM->EP.MinTemperature, SimPM->gamma);
 
     } while ( (c=ggg->NextPt(c)) !=0);
   } //  ptype==2 || 3
@@ -725,7 +724,7 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
   do {
     //CI.get_dpos(c,pos);
 
-    c->P[RO] = 44.0*pconst.m_p();      // Pure H with n=44/cm3.
+    c->P[RO] = 44.0*pconst.m_H();      // Pure H with n=44/cm3.
     c->P[PG] = 44.0*pconst.kB()*10.0; // 10K neutral gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM->ntracer; v++)
@@ -735,7 +734,7 @@ int IC_StarBench_Tests::setup_StarBench_IFI(
 
   if (id==3) {
     double lambda = 0.125*SimPM->Range[YY];
-    double A = 0.75 *sqrt(pconst.kB()*1.0e4/pconst.m_p());
+    double A = 0.75 *sqrt(pconst.kB()*1.0e4/pconst.m_H());
     double x0 = SimPM->Xmin[XX] +0.12*SimPM->Range[XX];
     double sig= 0.05*SimPM->Range[XX];
     c=ggg->FirstPt();
@@ -773,7 +772,7 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
   do {
     //CI.get_dpos(c,pos);
 
-    c->P[RO] = 50.0*pconst.m_p();      // From the test document.
+    c->P[RO] = 50.0*pconst.m_H();      // From the test document.
     c->P[PG] = 50.0*pconst.kB()*1000.0; // Just pick some temperature...
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM->ntracer; v++)
@@ -787,11 +786,11 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     cout <<"\t\tAdding uniform-density cloud.\n";
     //
     // add a uniform density cloud with radius 1pc, centred
-    // at x=1.94 pc, y=z=0.  rho_cloud=1000*m_p
+    // at x=1.94 pc, y=z=0.  rho_cloud=1000*m_H
     //
     double radius = 3.086e18;
     double dist=0.0;
-    double rho_cl = 1000.0*pconst.m_p();
+    double rho_cl = 1000.0*pconst.m_H();
     double cl_centre[SimPM->ndim];
     cl_centre[XX] = 1.92*3.086e18;
     for (int v=1;v<SimPM->ndim;v++) cl_centre[v]=0.0;
@@ -809,10 +808,10 @@ int IC_StarBench_Tests::setup_StarBench_IrrCl(
     cout <<"\t\tAdding cutoff-isothermal-sphere cloud.\n";
     //
     // Add a cutoff isothermal sphere cloud with central density of
-    // rho_cloud=1000*m_p, and core radius r_c=0.5pc.
+    // rho_cloud=1000*m_H, and core radius r_c=0.5pc.
     //
     double r_core = 0.5*3.086e18;
-    double rho_cl = 1000.0*pconst.m_p();
+    double rho_cl = 1000.0*pconst.m_H();
     double rho_cell=0.0;
     double cl_centre[SimPM->ndim];
     cl_centre[XX] = 1.92*3.086e18;
@@ -863,8 +862,8 @@ int IC_StarBench_Tests::setup_StarBench_TremblinCooling(
     //
     // set general ISM density, pressure, and ion fraction.
     //
-    c->P[RO] = density*pconst.m_p();      // Pure H with n=0.5/cm3.
-    c->P[PG] = 2.0*c->P[RO]*pconst.kB()*1.0e4/pconst.m_p(); // 10000K ionised gas (pure H).
+    c->P[RO] = density*pconst.m_H();      // Pure H with n=0.5/cm3.
+    c->P[PG] = 2.0*c->P[RO]*pconst.kB()*1.0e4/pconst.m_H(); // 10000K ionised gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM->ntracer; v++)
       c->P[SimPM->ftr+v] = 1.0; // fully ionised
@@ -914,7 +913,7 @@ int IC_StarBench_Tests::setup_StarBench_Cone(
     CI.get_dpos(c,pos);
     theta = atan2(pos[Rcyl],pos[Zcyl]);
 
-    c->P[RO] = 1.0e4*pconst.m_p(); // Pure H with n=10^4/cm3.
+    c->P[RO] = 1.0e4*pconst.m_H(); // Pure H with n=10^4/cm3.
     c->P[PG] = 1.518e-10; // 100K neutral gas (pure H).
     c->P[VX] = c->P[VY] = c->P[VZ] = 0.0;
     for (int v=0; v<SimPM->ntracer; v++)

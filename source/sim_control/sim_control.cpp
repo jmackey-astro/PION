@@ -225,7 +225,7 @@ int sim_control::Time_Int(
 
     //clk.start_timer("advance_time");
     // step forward by dt.
-
+    SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
 
