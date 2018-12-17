@@ -100,6 +100,7 @@ int reflecting_bc::BC_assign_REFLECTING(
       (*bpt)->dU[v] = 0.0;
     (*bpt)->npt = temp;
     //CI.print_cell((*bpt));
+    (*bpt)->isdomain=false;
     ++bpt;
     ct++;
   } while (bpt !=b->data.end());

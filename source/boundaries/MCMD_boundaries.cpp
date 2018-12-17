@@ -100,6 +100,7 @@ int MCMD_bc::BC_select_data2send(
   cell *temp =0;
   do {
     temp = *c;
+    //CI.print_cell(temp);
     for (int v=0;v<par.Nbc;v++) temp = grid->NextPt(temp,b->ondir);
     (*l).push_back(temp);
     count++;

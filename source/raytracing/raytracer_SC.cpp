@@ -337,10 +337,12 @@ void raytracer_USC_infinity::add_source_to_list(
 
   //
   // now go from first point on grid in direction dir until we get to the edge.
-  // This is rs.sc.
+  // Then go back one cell.  This is rs.sc.
   //
-  while (gridptr->NextPt(c,dir) && gridptr->NextPt(c,dir)->isgd)
+  while (gridptr->NextPt(c,dir))
     c=gridptr->NextPt(c,dir);
+  c = gridptr->NextPt(c,gridptr->OppDir(dir));
+
   rs.sc = c;
 #ifdef RT_TESTING
   cout <<"Add_Source() source->sc = "<<rs.sc<<", id="<<rs.sc->id<<"\n";
@@ -650,7 +652,11 @@ int raytracer_USC_infinity::trace_parallel_rays(
   // make sure source cell is at the edge of the grid, in direction dir.
   if (gridptr->NextPt(c,dir)!=0 && gridptr->NextPt(c,dir)->isgd)
     rep.error("source cell not set up right",source->s->id);
-
+#ifdef RT_TESTING
+  cout <<"raytracer_USC_infinity::trace_parallel_rays() start_cell: ";
+  CI.print_cell(c);
+#endif
+  
   enum direction oppdir=gridptr->OppDir(dir);
   //
   // Now start at each cell on this boundary, and go in a column in oppdir.
@@ -729,7 +735,7 @@ int raytracer_USC_infinity::trace_column_parallel(
     if (c->Ph[PG]<0.0 || !isfinite(c->Ph[PG]))
       rep.error("ProcessCell() gives negative energy!",c->Ph[PG]);
 
-  } while ( (c=gridptr->NextPt(c,dir))!=0 && c->isgd );
+  } while ( (c=gridptr->NextPt(c,dir))!=0);
 
   return err;
 }
@@ -822,12 +828,13 @@ int raytracer_USC_infinity::ProcessCell(
 
   if (!c->isdomain) {
     // if cell is not in the domain, set its column to be zero,
-//#ifdef RT_TESTING
-    cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", "<<c->pos[YY]<<"]\n";
-//#endif
+#ifdef RT_TESTING
+    cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", "<<c->pos[YY]<<"] : ";
+    double dpos[ndim]; CI.get_dpos(c,dpos); rep.printVec("pos",dpos,ndim);
+#endif
     cell_col[0] = 0.0;
-    col2cell[0] += cell_col[0];
-    cout <<" col = "<<cell_col[0] <<", col = "<< col2cell[0]<<"\n";
+    col2cell[0]  = 0.0; //+= cell_col[0];
+    //cout <<" col = "<<cell_col[0] <<", col = "<< col2cell[0]<<"\n";
     CI.set_cell_col(c, source->s->id, cell_col);
     CI.set_col     (c, source->s->id, col2cell);
   }

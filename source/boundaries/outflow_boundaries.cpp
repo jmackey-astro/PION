@@ -64,6 +64,7 @@ int outflow_bc::BC_assign_OUTFLOW(
     for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = temp->P[v];
     (*bpt)->npt = temp;
     //CI.print_cell((*bpt));
+    (*bpt)->isdomain=false;
 
     //
     // The GLM boundary is somewhat different, because 

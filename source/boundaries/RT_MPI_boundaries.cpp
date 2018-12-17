@@ -1100,8 +1100,7 @@ int RT_MPI_bc::RT_populate_recv_boundary(
 #endif // RT_TESTING
 
   //
-  // Run through all the BC boundary points (may be 2 deep, so skip
-  // 2nd ones).  Add all boundary cells to the RT boundary list.
+  // Add all boundary cells to the RT boundary list.
   //
   list<cell*>::const_iterator bpt=b2->data.begin();
   do{
@@ -1151,8 +1150,7 @@ int RT_MPI_bc::setup_RT_send_boundary(
   send_b.RT_bd = mem.myalloc(send_b.RT_bd,1);
   
   //
-  // Now get every cell in the grid boundary for which isedge==-1,
-  // indicating that it is one cell off-grid, and add the neighbour
+  // Now get every cell in the grid boundary, and add the 'Nbc'th
   // cell in the on-grid-direction to the send-boundary list.
   //
   list<cell*>::const_iterator bpt=grid_b->data.begin();

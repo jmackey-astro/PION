@@ -354,7 +354,7 @@ int sim_control_pllel::Time_Int(
   cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   cout <<"-------------------------------------------------------\n";
   int err=0;
-  int log_freq=1;
+  int log_freq=10;
   SimPM.maxtime=false;
   clk.start_timer("time_int"); double tsf=0.0;
   while (SimPM.maxtime==false) {

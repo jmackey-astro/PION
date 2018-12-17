@@ -58,6 +58,8 @@ int inflow_bc::BC_assign_INFLOW(
     for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = temp->P[v];
     for (int v=0;v<par.nvar;v++) (*bpt)->Ph[v] = temp->P[v];
     for (int v=0;v<par.nvar;v++) (*bpt)->dU[v] = 0.0;
+
+    (*bpt)->isdomain=false;
     //rep.printVec("Setting inflow boundary values:",temp->P,par.nvar);
     ct++;
     ++bpt;

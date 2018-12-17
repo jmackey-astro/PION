@@ -585,6 +585,7 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     //
     // Overwrite data, with curved shock and IF.
     //
+    if (ptype==2) shock_pos = IF_pos + SimPM->Range[YY]/32.0;
     double lambda = SimPM->Range[YY];
     if      (ptype==2) lambda /= 13.0;  // 13 wavelengths on the domain
     else if (ptype==3) lambda *= 1.00;  // just one wavelength
