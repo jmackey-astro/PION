@@ -587,13 +587,19 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     //
     if (ptype==2) shock_pos = IF_pos + SimPM->Range[YY]/32.0;
     double lambda = SimPM->Range[YY];
-    if      (ptype==2) lambda /= 13.0;  // 13 wavelengths on the domain
-    else if (ptype==3) lambda *= 1.00;  // just one wavelength
-
     double A = 0.0;
-    if      (ptype==2) A = lambda *13.0/640.0; // 1/640th of the y-domain, 1/10th of shell thickness
-    else if (ptype==3) A = lambda /128.0;  // 1/128 of l and the y-domain (1 cell at r1)
-    else               A = 0.0;
+    if      (ptype==2) {
+      lambda /= 13.0;  // 13 wavelengths on the domain
+      A = SimPM->Range[YY]/640.0; // 1/640th of the y-domain
+    }
+    else if (ptype==3) {
+      lambda *= 1.00;  // just one wavelength
+      A = lambda /128.0;  // 1/128 of l and the y-domain (1 cell at r1)
+    }
+    else {
+      lambda *= 1.00;  // just one wavelength
+      A = 0.0;
+    }
     double deflection=0.0;
     c=ggg->FirstPt();
     do {
