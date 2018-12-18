@@ -9,7 +9,7 @@ coordinates cylindrical
 
 # Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver 3
+solver 4
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
@@ -63,9 +63,9 @@ grid_nlevels 4
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-grid_centre_XX 0.0e18
-grid_centre_YY 0.0e18
-grid_centre_ZZ 0.0e18
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
 
 # Data Output Path
 OutputPath ./

@@ -2,36 +2,19 @@
 # 
 # 2014.06.30 JM: D-type-early test, in 2D.
 
-## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 2
 coordinates cylindrical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
 solver 4
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
 ics PhotoEvap_radial
-
-# IC filename
-ICfilename IC_DTE_D2_TTI_n00064
-# Output FileName Base
-OutputFile    DTE_D2_TTI_n00064
-
+OutputFile    DTE_D2Full_TTI_n00512
 
 # Number and type of tracers.
 ntracer 1
 chem_code MPv7
 Tracer000 H1+
-
 InitIons LEAVE
-Tracer0 0.0
-Tracer1 0.0
-Tracer2 0.0
-Tracer3 0.0
-Tracer4 0.0
 
 # Which physics to use
 EP_dynamics     1
@@ -57,17 +40,25 @@ noise -1
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  64
-NGridY  64
-NGridZ  64
+NGridX  512
+NGridY  256
+NGridZ  128
 # Boundaries of Simulation box:
-Xmin  0.0
+Xmin -3.874e18
 Ymin  0.0
 Zmin  0.0
 # Max values of x,y,z
 Xmax   3.874e18
 Ymax   3.874e18
 Zmax   3.874e18
+# Nested grid
+grid_nlevels 1
+grid_aspect_ratio_XX 2
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
 
 # Data Output Path
 OutputPath ./
@@ -86,7 +77,7 @@ OrderOfAccSpace 2
 OrderOfAccTime  2
 
 # Type of Boundary Condition
-BC_XN reflecting
+BC_XN outflow
 BC_XP outflow
 BC_YN reflecting
 BC_YP outflow
@@ -166,6 +157,7 @@ RT_EVO_FILE_0    NOFILE
 # stellar wind sources #
 ########################
 WIND_NSRC 0
+N_JET 0
 
 ########################
 # Reference Vector     #

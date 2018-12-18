@@ -45,89 +45,35 @@ export CXX=mpicxx
 #NCORES=1
 #export CXX=g++
 
-################### --- FIONN at ICHEC.IE ---######################
+
+################### --- KAY at ICHEC.IE ---######################
 # Options for fionn.ichec.ie
 ######################################################################
-case $HOST in
-  fionn[0-9])
-    echo "Compiling on FIONN/ICHEC"
-    source /usr/share/modules/init/bash
-    module purge
-    module load dev intel
-    MAKE_UNAME=FIONN
+case $HOSTNAME in
+  login[0-9].novalocal)
+    echo "Compiling on KAY/ICHEC"
+    source /usr/share/Modules/init/bash
+    #module purge
+    module load intel
+    module list
+    MAKE_UNAME=KAY
+    NCORES=8
+    export CC=mpiicc
+    export CXX=mpiicpc
     # -DINTEL means the code uses the intel math headers instead of gnu.
     #export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
     export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DINTEL"
     export PION_OPTIMISE=HIGH
-    NCORES=8
     #export PION_OPTIMISE=LOW
     #NCORES=1
-    export CC=mpiicc
-    export CXX=mpiicpc
     PION_PATH=`pwd`
     PION_PATH=${PION_PATH}/../extra_libraries/lib
     export LD_LIBRARY_PATH=${PION_PATH}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH:-}
     echo $LD_LIBRARY_PATH
-    echo "***** COMPILING WITH FIONN: COMPILERS ARE $CC $CXX "  
+    echo "***** COMPILING WITH KAY: COMPILERS ARE $CC $CXX "  
     ;;
 esac
-################### --- FIONN at ICHEC.IE ---######################
-
-#################################
-### TEST FOR PHALANX ICC/ICPC ###
-#################################
-if [ "${HOST}" = 'phalanx.star.ucl.ac.uk' ]; then
-  source /opt/intel/Compiler/11.1/073/bin/ifortvars.sh intel64
-  source /opt/intel/Compiler/11.1/073/bin/iccvars.sh intel64
-  export SGIMPT=/opt/sgi/mpt/mpt-1.26
-  export PATH=$SGIMPT/bin:/opt/sgi/perfcatcher/bin:$PATH
-  export LD_LIBRARY_PATH=$SGIMPT/lib:$LD_LIBRARY_PATH
-  # -DINTEL means the code uses the intel math headers instead of gnu.
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-  export PION_OPTIMISE=HIGH
-  export CXX=icpc
-  echo "***** COMPILING WITH PHALANX: COMPILERS ARE $CC $CXX "  
-  MAKE_UNAME=phalanx
-  NCORES=8
-fi
-#################################
-
-#################################
-### TEST FOR dougal ICC/ICPC ###
-#################################
-if [ "${HOST}" = 'dougal.hpc.phys.ucl.ac.uk' ]; then
-  source /opt/intel/Compiler/11.1/046/bin/ifortvars.sh intel64
-  source /opt/intel/Compiler/11.1/046/bin/iccvars.sh intel64
-  export PATH=/usr/lib64/mpich2/lib:$PATH
-  export LD_LIBRARY_PATH=/usr/lib64/mpich2/lib:$LD_LIBRARY_PATH
-  
-  # -DINTEL means the code uses the intel math headers instead of gnu.
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-  export PION_OPTIMISE=HIGH
-  export CXX=icpc
-  echo "***** COMPILING WITH ${HOST}: COMPILER IS $CXX "  
-  MAKE_UNAME=dougal
-  NCORES=8
-fi
-#################################
-
-#######################
-### TEST FOR JUROPA ###
-#######################
-case $HOST in
-  jj[0-9][0-9]l[0-9][0-9])
-    echo "Compiling on JUROPA"
-    module purge
-    module load intel/12.1.4 parastation/mpi2-intel-5.0.26-1 sundials/2.5.0
-    MAKE_UNAME=JUROPA
-    NCORES=8
-    # -DINTEL means the code uses the intel math headers instead of gnu.
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export PION_OPTIMISE=HIGH
-    export CXX=mpicxx
-  ;;
-esac
-#######################
+################### --- KAY at ICHEC.IE ---######################
 
 
 #################################

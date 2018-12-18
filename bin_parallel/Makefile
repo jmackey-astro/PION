@@ -149,10 +149,10 @@ ifeq ($(MAKE_UNAME), locallibs)
 endif
 ################### --- local libs WORKSTATION ---######################
 
-################### --- FIONN at ICHEC.IE ---######################
-# Options for fionn.ichec.ie
+################### --- KAY at ICHEC.IE ---######################
+# Options for kay.ichec.ie
 ######################################################################
-ifeq ($(MAKE_UNAME), FIONN)
+ifeq ($(MAKE_UNAME), KAY)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
@@ -176,7 +176,7 @@ ifeq ($(MAKE_UNAME), FIONN)
   LDFLAGS += -lm
 
 endif
-################### --- FIONN at ICHEC.IE ---######################
+################### --- KAY at ICHEC.IE ---######################
 
 
 ######################## -- JUROPA -- ################################

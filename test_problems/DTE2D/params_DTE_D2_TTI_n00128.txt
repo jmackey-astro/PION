@@ -9,7 +9,7 @@ coordinates cylindrical
 
 # Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver 3
+solver 4
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
