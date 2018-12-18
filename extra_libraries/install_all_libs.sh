@@ -22,77 +22,10 @@ SHARED=YES
 
 export WGET='wget'
 
-#################################
-### TEST FOR Dougal ICC/ICPC ###
-#################################
-if [ "${HOST}" = 'dougal.hpc.phys.ucl.ac.uk' ]; then
-    source /opt/intel/Compiler/11.1/046/bin/ifortvars.sh intel64
-    source /opt/intel/Compiler/11.1/046/bin/iccvars.sh intel64
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    echo "***** COMPILING ON ${HOST}: COMPILERS ARE $CC $CXX "  
-    MAKE_UNAME=dougal
-    NCORES=8
-fi
-#################################
 
-#################################
-### TEST FOR PHALANX ICC/ICPC ###
-#################################
-if [ "${HOST}" = 'phalanx.star.ucl.ac.uk' ]; then
-    source /opt/intel/Compiler/11.1/073/bin/ifortvars.sh intel64
-    source /opt/intel/Compiler/11.1/073/bin/iccvars.sh intel64
-    export SGIMPT=/opt/sgi/mpt/mpt-1.26
-    export PATH=$SGIMPT/bin:/opt/sgi/perfcatcher/bin:$PATH
-    export LD_LIBRARY_PATH=$SGIMPT/lib:$LD_LIBRARY_PATH
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    echo "***** COMPILING WITH PHALANX: COMPILERS ARE $CC $CXX "  
-    MAKE_UNAME=phalanx
-    NCORES=8
-fi
-#################################
-
-#######################
-### TEST FOR JUROPA ###
-#######################
-case $HOST in
-  jj[0-9][0-9]l[0-9][0-9])
-    echo "Compiling on JUROPA"
-    module purge
-    #module load mkl/10.2.2.025 intel/11.1.059 sundials/2.4.0 parastation/mpi2-intel-5.0.25-2
-    module load mkl/10.2.5.035 intel/11.1.072 parastation/mpi2-intel-5.0.26-1
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    MAKE_UNAME=JUROPA
-    NCORES=8
-    SHARED=NO
-    ;;
-esac
-#######################
-
-#######################
-### TEST FOR JUROPATEST ###
-#######################
-MACHINE=$(cat /etc/FZJ/systemname)
-if test "${MACHINE}" = "juropatest"; then
-    echo "Compiling on JUROPATEST"
-    module purge
-    module load intel-para
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    MAKE_UNAME=JUROPA
-    NCORES=8
-fi
-#######################
-
-#######################
-## TEST FOR SuperMUC ##
-#######################
+##############################
+## TEST FOR SuperMUC (2016) ##
+##############################
 case $HOST in
   login[0-9][0-9])
     echo "Compiling on SuperMUC"
@@ -105,9 +38,9 @@ case $HOST in
 esac
 #######################
 
-###################################
-### TEST FOR DIRAC-2-COMPLEXITY ###
-###################################
+##########################################
+### TEST FOR DIRAC-2-COMPLEXITY (2015) ###
+##########################################
 case $HOSTNAME in
   dirac[0-9][0-9])
     echo "Compiling on DIRAC-Complexity"
@@ -123,38 +56,21 @@ case $HOSTNAME in
 esac
 #######################
 
-#######################
-### TEST FOR JUDGE ###
-#######################
-case $HOST in
-  judgel[0-9])
-    echo "Compiling on JUDGE"
-    module purge
-    module load intel/11.1.072 mkl/10.2.5.035 parastation/intel
-    MAKE_UNAME=JUDGE
-    NCORES=8
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-  ;;
-esac
-#######################
 
-#######################
-### TEST FOR FIONN  ###
-#######################
-case $HOST in
-  fionn[0-9])
-    echo "Compiling on FIONN/ICHEC"
-    source /usr/share/modules/init/bash
-    module purge
-    module load dev intel
-    module load dev cmake/intel/latest
-    #module load dev cmake/intel/3.0.2
-    module load python py/intel
-    module load python numpy
-    #module list
-    MAKE_UNAME=FIONN
+##############################
+### TEST FOR KAY.ICHEC.IE  ###
+##############################
+case $HOSTNAME in
+  login[0-9].novalocal)
+    echo "Compiling on KAY/ICHEC"
+    source /usr/share/Modules/init/bash
+    #module purge
+    module load intel
+    module load dev cmake3
+    #module load python py/intel
+    #module load python numpy
+    module list
+    MAKE_UNAME=KAY
     NCORES=8
     export CC=icc
     export CXX=icpc
@@ -230,7 +146,16 @@ echo "***Path = $BASE_PATH ***"
 cd $SRC_DIR
 make clean
 #
-if [ "$SHARED" == "NO" ]
+if [ "$MAKE_UNAME" == "KAY" ]
+then
+  echo " ****** KAY.ICHEC.IE no shared libs, no python ****** "
+  ./configure --prefix=${BASE_PATH} \
+ --disable-browser \
+ --disable-fortran \
+ --disable-silex \
+ --disable-shared \
+ --disable-pythonmodule
+elif [ "$SHARED" == "NO" ]
 then
   echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
   ./configure --prefix=${BASE_PATH} \
@@ -340,60 +265,60 @@ echo "********************************"
 echo "*** FINISHED! ***"
 echo "********************************"
 
-###################################
-###########   CFITSIO    ##########
-###################################
-#echo "*******************************"
-#echo "*** INSTALLING FITS LIBRARY ***"
-#echo "*******************************"
 ##################################
-## Change these for new versions:
-#FILE=cfitsio3390.tar.gz
-#SRC_DIR=cfitsio
-#REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
+##########   CFITSIO    ##########
 ##################################
-#
-#if [ -e $FILE ]; then
-#	echo "*** File exists, no need to download ***"
-#else 
-#	echo "***** File does not exist ******"
-#	echo "*******************************"
-#	echo "*** DOWNLOADING FITS LIBRARY ***"
-#	echo "*******************************"
-#        if [ $MAKE_UNAME == "osx" ]; then
-#          curl  $REMOTE_URL -o $FILE
-#        else
-#          $WGET --no-check-certificate $REMOTE_URL -O $FILE
-#        fi
-#        # check it downloaded.
-#        if [ ! -f $FILE ]; then
-#          echo "File not found! : $FILE"
-#          echo "Download of Silo Library Failed... quitting"
-#          exit
-#        fi
-#fi
-#echo "*******************************"
-#echo "*** EXTRACTING FITS LIBRARY ***"
-#echo "*******************************"
-#tar zxf $FILE
-#echo "*******************************"
-#echo "*** RUNNING CONFIGURE ***"
-#echo "*******************************"
-#BASE_PATH=`pwd`
-#echo "***Path = $BASE_PATH ***"
-#cd $SRC_DIR
-#make clean
-#./configure --prefix=${BASE_PATH}
-#echo "*******************************"
-#echo "*** RUNNING MAKE ***"
-#echo "*******************************"
-#make -j$NCORES
-#echo "*******************************"
-#echo "*** INSTALLING CFITSIO ***"
-#echo "*******************************"
-#make install
-#echo "*******************************"
-#echo "*** FINISHED! ***"
-#echo "*******************************"
-#cd $CURDIR
+echo "*******************************"
+echo "*** INSTALLING FITS LIBRARY ***"
+echo "*******************************"
+#################################
+# Change these for new versions:
+FILE=cfitsio3390.tar.gz
+SRC_DIR=cfitsio
+REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
+#################################
+
+if [ -e $FILE ]; then
+	echo "*** File exists, no need to download ***"
+else 
+  echo "***** File does not exist ******"
+  echo "*******************************"
+  echo "*** DOWNLOADING FITS LIBRARY ***"
+  echo "*******************************"
+  if [ $MAKE_UNAME == "osx" ]; then
+    curl  $REMOTE_URL -o $FILE
+  else
+    $WGET --no-check-certificate $REMOTE_URL -O $FILE
+  fi
+  # check it downloaded.
+  if [ ! -f $FILE ]; then
+    echo "File not found! : $FILE"
+    echo "Download of Silo Library Failed... quitting"
+    exit
+  fi
+fi
+echo "*******************************"
+echo "*** EXTRACTING FITS LIBRARY ***"
+echo "*******************************"
+tar zxf $FILE
+echo "*******************************"
+echo "*** RUNNING CONFIGURE ***"
+echo "*******************************"
+BASE_PATH=`pwd`
+echo "***Path = $BASE_PATH ***"
+cd $SRC_DIR
+make clean
+./configure --prefix=${BASE_PATH}
+echo "*******************************"
+echo "*** RUNNING MAKE ***"
+echo "*******************************"
+make -j$NCORES
+echo "*******************************"
+echo "*** INSTALLING CFITSIO ***"
+echo "*******************************"
+make install
+echo "*******************************"
+echo "*** FINISHED! ***"
+echo "*******************************"
+cd $CURDIR
 

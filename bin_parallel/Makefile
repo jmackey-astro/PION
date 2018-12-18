@@ -118,10 +118,10 @@ ifeq ($(MAKE_UNAME), standard)
 endif
 ################### --- STANDARD WORKSTATION ---######################
 
-################### --- FIONN at ICHEC.IE ---######################
+################### --- KAY at ICHEC.IE ---######################
 # Options for fionn.ichec.ie
 ######################################################################
-ifeq ($(MAKE_UNAME), FIONN)
+ifeq ($(MAKE_UNAME), KAY)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
   else
@@ -145,7 +145,7 @@ ifeq ($(MAKE_UNAME), FIONN)
   LDFLAGS += -lm
 
 endif
-################### --- FIONN at ICHEC.IE ---######################
+################### --- KAY at ICHEC.IE ---######################
 
 
 ######################## -- JUROPA -- ################################
@@ -345,7 +345,8 @@ OBJECTS = reporting.o mem_manage.o command_line_interface.o \
 	dataio.o readparams.o dataio_silo.o \
         dataio_fits.o utility_fits_class.o dataio_fits_MPI.o \
         file_status.o                                                          \
-	dataio_silo_MPI.o dataio_silo_utility.o sim_control_MPI.o uniform_grid_pllel.o                \
+	dataio_silo_MPI.o dataio_silo_utility.o 		\
+	sim_control_MPI.o uniform_grid_pllel.o                \
 	raytracer_SC_pllel.o raytracer_SC.o                                    \
         raytracer_base.o  \
 	comm_mpi.o comm_files.o                                                \
