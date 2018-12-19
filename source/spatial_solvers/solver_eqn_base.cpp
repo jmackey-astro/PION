@@ -68,6 +68,7 @@ using namespace std;
 // ##################################################################
 
 
+
 FV_solver_base::FV_solver_base(
       const int nv, ///< number of variables in state vector.
       const int nd, ///< number of space dimensions in grid.
@@ -100,9 +101,9 @@ FV_solver_base::~FV_solver_base()
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
 
 
 int FV_solver_base::get_LaxFriedrichs_flux(
@@ -139,6 +140,13 @@ int FV_solver_base::get_LaxFriedrichs_flux(
   return 0;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void FV_solver_base::set_div_v(
       class cell *c,
       class GridBaseClass *grid
@@ -167,8 +175,8 @@ int FV_solver_base::InterCellFlux(
         pion_flt *lp, ///< Left Primitive State Vector.
         pion_flt *rp, ///< Right Primitive State Vector.
         pion_flt *f, ///< Flux Vector. (written to).
-        const int solve_flag,    ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS)
-        const int av_flag,    ///< Viscosity Flag (0=none,1=Falle's,2=Lapidus(broken),etc.)
+        const int solve_flag, ///< Solve Type (0-7)
+        const int av_flag,    ///< Viscosity Flag (0=none,1=Falle's,3=H-correction)
         const double g, ///< gas EOS gamma.
         const double dx ///< Cell size dx.
         )
@@ -306,15 +314,34 @@ void FV_solver_base::set_interface_tracer_flux(
   // Calculate tracer flux here -- if mass flux is positive then
   // contact is at x>0 and we advect the left state tracer across
   // the boundary.  Otherwise we advect the right state to the left.
-  // 
+  //
+  // N.B. Without introducing minimum density and velocity scales, it
+  // is impossible to avoid introducing some asymmetry here.
+#ifdef TEST_SYMMETRY
   if (FV_ntr>0) {
-    if (flux[eqRHO]>=0.0)
+    if (flux[eqRHO]>1.0e-28)
       for (int t=0;t<FV_ntr;t++)
 	flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
-    else 
+    else if (flux[eqRHO]<-1.0e-28)
       for (int t=0;t<FV_ntr;t++)
 	flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
+    else 
+      for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
+
   }
+#else
+  if (FV_ntr>0) {
+    if (flux[eqRHO]>0.0)
+      for (int t=0;t<FV_ntr;t++)
+	flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
+    else if (flux[eqRHO]<0.0)
+      for (int t=0;t<FV_ntr;t++)
+	flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
+    else 
+      for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
+
+  }
+#endif
 
 #ifdef FUNCTION_ID
   cout <<"FV_solver_base::set_interface_tracer_flux ...returning.\n";

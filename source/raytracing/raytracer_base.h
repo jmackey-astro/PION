@@ -22,22 +22,11 @@
 
 
 
-#ifndef CELL_CENTRED_SRC
-#ifndef NON_CELL_CENTRED_SRC
-#error "MUST define one of CELL_CENTRED_SRC and NON_CELL_CENTRED_SRC in global.h"
-#endif
-#endif
-
-#ifdef CELL_CENTRED_SRC
-#error "CELL_CENTRED_SRC has not been used for a LONG time and may be buggy."
-#error "USE AT YOUR OWN RISK.  DELETE THIS ERROR IN source/raytracing/raytracer_SC.h"
-#endif
 
 #define NO_SOURCE_CELL_GEOMETRY ///< this stops the code changing tau in the
                       ///< source cell for different angles (makes no difference)
 
-#define INTERPOLATE_METHOD 0 /// 0=C2Ray mintau=0.7, 1=Geometric,
-        /// 2=Geometric in exp(-tau), 3=quadratic/exp(-tau) !!!ONLY C2-RAY IS ANY GOOD!!!
+#define INTERPOLATE_METHOD 0 /// 0=C2Ray mintau=0.7
 
 
 

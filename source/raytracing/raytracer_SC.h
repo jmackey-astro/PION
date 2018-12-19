@@ -321,17 +321,10 @@ class raytracer_USC : public raytracer_USC_infinity {
   /// linearly.  So if we have 10 sources, and add another source,
   /// it's id with be 10.
   /// 
-  /// ifdef CELL_CENTRED_SRC
-  /// Currently if the source is on the grid, it will move it to the centre of
-  /// the nearest cell to it.  This makes the algorithm simpler, but it would
-  /// be advantageous to relax this requirement, for e.g. axisymmetric runs
-  /// with an on-axis source.
-  ///
-  /// ifdef NON_CELL_CENTRED_SRC
-  /// This ifdef moves a source to the nearest cell VERTEX if it is not there
+  /// It moves a source to the nearest cell VERTEX if it is not there
   /// already.  This works for axisymmetric grids, improves parallel scaling
   /// for a small number of cores, and seems to be more accurate for Cartesian
-  /// grids, so it is recommended to always set this!
+  /// grids.
   ///
   virtual int Add_Source(
       struct rad_src_info * ///< ptr to source info.

@@ -32,6 +32,8 @@ int periodic_bc::BC_assign_PERIODIC(
   list<cell*>::iterator bpt=b->data.begin();
   cell *temp; unsigned int ct=0;
   do{
+    // boundary cells are part of the domain, so set isdomain
+    (*bpt)->isdomain=true;
     //
     // Go across the grid NG[baxis] cells, so that we map onto the
     // cell on the other side of the grid.

@@ -1275,6 +1275,7 @@ void raytracer_USC::add_source_to_list(
   cout <<TauMin[rs.s->id]<<"\n";
   cout <<"\tSERIAL: AddSource() all done.\n";
   cout <<"Add_Source() source->sc = "<<rs.sc<<", id="<<rs.sc->id<<"\n";
+  CI.print_cell(rs.sc);
   cout <<"--END-----raytracer_USC::AddSource()------------\n\n";
 #endif
 
@@ -1293,8 +1294,12 @@ void raytracer_USC::set_TauMin_for_source(
       )
 {
   //
-  // Now set TauMin for this source.  I'm hardcoding it for now, but it
-  // can be made a command-line parameter later.
+  // THIS CODE IS A MESS!  NEED A FUNCTION IN THE MICROPHYSICS CLASS
+  // THAT TAKES AN INPUT PRIMITIVE STATE VECTOR AND A SOURCE AND THE
+  // PATH LENGTH, AND RETURNS DELTA-TAU FOR EACH ENERGY RANGE.
+  // THEN RAYTRACING CAN GO BACK TO HAVING TauMin=0.7 AS A CONSTANT.
+  //
+  // Now set TauMin for this source.
   //
   if (TauMin.size() <= static_cast<unsigned int>(rs.s->id)) {
     rep.error("Source id is larger than Nsources!",rs.s->id-TauMin.size());
@@ -1312,12 +1317,8 @@ void raytracer_USC::set_TauMin_for_source(
            (rs.s->opacity_src==RT_OPACITY_MINUS) &&
            (rs.s->effect==RT_EFFECT_PION_MONO) ) {
     // Photoionisation, sigma=6.3e-18, Tau=sigma*NH*(1-x)
-    // --------------------------------------------------------------
-    // <!-HACK-!> 2013.03.21 JM: Trying to get WN08 Starbench 2D test
-    //            working correctly.
-    // --------------------------------------------------------------
-    TauMin[rs.s->id] = 6.1e-7;
-    //TauMin[rs.id] = 2.6e-7;
+    //TauMin[rs.s->id] = 6.1e-7;
+    TauMin[rs.s->id] = 1.86e-7;
     // --------------------------------------------------------------
   }
   else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
@@ -1327,11 +1328,12 @@ void raytracer_USC::set_TauMin_for_source(
     // This value seem to give best results for multifrequency sources, tested
     // for Teff of both 30000 and 39750K.
 #ifdef PUREHYDROGEN
-    //
+    // Iliev et al. (2009) test problems (Cosmology Code Comparison
+    // Project).
     // Teff=1e5K means mean-photon-erg=29.62eV. This means cross section is
-    // ~6.1e-19 cm2. mu=1.67e-24g.
+    // ~6.1e-19 cm2. mu=1.6738e-24g.
     // So TauMin=0.7 means SigmaMin=0.7*mu/sigma=1.92e-6.
-    // For some reason 3e-6 seems to be better.
+    // 3.0e-6 seems to work better though.
     //
     TauMin[rs.s->id] = 3.0e-6;
 #else
@@ -1339,6 +1341,8 @@ void raytracer_USC::set_TauMin_for_source(
     //TauMin[rs.id] = 6.0e-7; // original value
     TauMin[rs.s->id] = 7.0e-7;
 #endif
+    TauMin[rs.s->id] = 1.86e-7;
+
   }
   else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
            (rs.s->effect==RT_EFFECT_UV_HEATING) ) {
@@ -1502,6 +1506,8 @@ int raytracer_USC::RayTrace_SingleSource(
   set_startcells(source->sc,startcell,src_off_grid);
 #ifdef RT_TESTING
   if (sc!=temp) rep.error("set_startcells() changed sc!",sc); // testing only
+  cout <<"start cells!: \n";
+  for (int v=0;v<ndirs;v++) CI.print_cell(startcell[v]);
 #endif // RT_TESTING
 
   // Loop over all lines/quads/octs.
@@ -1849,11 +1855,7 @@ cell * raytracer_USC::find_source_cell(
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
 
-    //
-    // First move the source to:
-    //  -     CELL_CENTRED_SRC: move to a cell centre.
-    //  - NON_CELL_CENTRED_SRC: move to a cell vertex.
-    //
+    // First move the source to a cell vertex.
     centre_source_on_cell(pos,a);
 
 #ifdef RT_TESTING
@@ -2247,7 +2249,6 @@ int raytracer_USC::cell_cols_2d(
     if (maxdiff<10*idx) {
       double maxd = static_cast<double>(maxdiff);
       double maxmin2 = maxd - idx;
-      //if (maxd<2.999999) rep.error("maxd should be >=3",maxd);
       for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
         Nc[iT] *= sqrt((maxd*maxd+idxo2*idxo2)/
                        (maxmin2*maxmin2+idxo2*idxo2))*

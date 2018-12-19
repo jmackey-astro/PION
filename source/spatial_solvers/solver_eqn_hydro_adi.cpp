@@ -107,6 +107,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
   cout <<"FV_solver_Hydro_Euler::inviscid_flux ...starting.\n";
 #endif //FUNCTION_ID
 
+#ifdef TEST_INF
   //
   // Check input density and pressure are 'reasonably large'
   //
@@ -117,15 +118,14 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     rep.error("FV_solver_Hydro_Euler::calculate_flux() Density/Pressure too small",
 	      Pr[eqPG]);
   }
-  int err=0;
 
-
-#ifdef TEST_INF
   for (int v=0;v<eq_nvar;v++)
     if (!isfinite(Pl[v])) rep.error("flux hydro Pl",v);
   for (int v=0;v<eq_nvar;v++)
     if (!isfinite(Pr[v])) rep.error("flux hydro Pr",v);
 #endif
+
+  int err=0;
 
   //
   // Set flux and pstar vector to zero.
@@ -140,11 +140,7 @@ int FV_solver_Hydro_Euler::inviscid_flux(
 
   //
   // Choose which Solver to use.  Each of these must set the values of
-  // the flux[] and pstar[] arrays.  I've commented out the calls to
-  // set_interface_tracer_flux(Pl,Pr,flux) b/c this is called by the
-  // solver which calls this function, after applying any requested
-  // viscous corrections.  So it is redundant work to calculate it
-  // now.
+  // the flux[] and pstar[] arrays.
   //
   if      (solve_flag==FLUX_LF) {
     //
@@ -161,7 +157,6 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     // Roe-average state in 'pstar'.
     //
     err += FVS_flux(Pl,Pr, flux, pstar, eq_gamma);
-    //set_interface_tracer_flux(Pl,Pr,flux);
   }
 
   else if (solve_flag==FLUX_RSlinear ||
@@ -172,7 +167,6 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     //
     err += JMs_riemann_solve(Pl,Pr,pstar,solve_flag,eq_gamma);
     PtoFlux(pstar, flux, eq_gamma);
-    //set_interface_tracer_flux(Pl,Pr,flux);
   }
 
   else if (solve_flag==FLUX_RSroe) {
@@ -182,7 +176,6 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     //
     err += Roe_flux_solver_symmetric(
             Pl,Pr,eq_gamma, HC_etamax, pstar,flux);
-    //set_interface_tracer_flux(Pl,Pr,flux);
   }
 
   else if (solve_flag==FLUX_RSroe_pv) {
@@ -194,7 +187,6 @@ int FV_solver_Hydro_Euler::inviscid_flux(
     // Convert pstar to a flux:
     //
     PtoFlux(pstar, flux, eq_gamma);
-    //set_interface_tracer_flux(Pl,Pr,flux);
   }
 
   else {
@@ -270,7 +262,8 @@ void FV_solver_Hydro_Euler::UtoFlux(
       )
 {
   eqns_Euler::UtoFlux(u,f,g);
-  for (int t=0;t<FV_ntr;t++) f[eqTR[t]] = u[eqTR[t]]*f[eqRHO]/u[eqRHO];
+  for (int t=0;t<FV_ntr;t++)
+    f[eqTR[t]] = u[eqTR[t]]*f[eqRHO]/u[eqRHO];
   return;
 }
 

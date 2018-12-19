@@ -7,9 +7,9 @@
 /// 
 /// This declares classes of functions which act on a grid of cells, but which depend
 /// on the coordinate system being used (for example the non-local vector
-/// differential operators grad, div, and curl).  The base class is pure
-/// virtual, and the derived classes have names VectorOps_Cart, VectorOps_Cyl,
-/// etc. for the different coordinate systems.
+/// differential operators grad, div, and curl).  The base class is 
+/// incomplete, and the derived classes have names VectorOps_Cart,
+/// VectorOps_Cyl, etc. for the different coordinate systems.
 /// 
 /// Modified:\n
 /// - 2007-08-01 File Created
@@ -27,9 +27,6 @@
 #ifndef VECTOROPS_H
 #define VECTOROPS_H
 
-//
-// These tells code what to compile and what to leave out.
-//
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
@@ -37,28 +34,9 @@
 #include "grid/cell_interface.h"
 #include "constants.h"
 
-//
-// This sets tracers to have zero slope across cell.  This reduces
-// the probability of discretisation/integration errors producing
-// tracer values outside the allowed ranges (e.g. [0,1]), but is
-// more diffusive for ion fractions (because their gradients tend to
-// have opposite sign to density gradients) so it is not recommended.
-//
-//#define FIX_TRACER_SLOPES_TO_DENSITY
-
-
-//
-// This flag causes slopes in tracer variables to be calculated with
-// the conserved variable rho*tr(i), rather than the primitive
-// variable.  (only implemented for spherical coordinates).
-// It proved less stable and more diffusive than primitive-variable
-// slopes so it is not recommended to use it.
-//
-//#define TRACER_SLOPES_CONSERVED_VARS
-
 ///
 /// Class to hold vector differential operations which depend on 
-/// the coordinate system.  This is a virtual base class.
+/// the coordinate system.
 ///
 class BaseVectorOps {
   public:

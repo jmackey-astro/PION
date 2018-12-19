@@ -804,8 +804,10 @@ double VectorOps_Cyl::max_grad_abs(
 } // max_grad_abs
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void VectorOps_Cyl::Gradient(
@@ -858,8 +860,11 @@ void VectorOps_Cyl::Gradient(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double VectorOps_Cyl::Divergence(
         cell *c, 
@@ -938,8 +943,11 @@ double VectorOps_Cyl::Divergence(
 } // Div
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void VectorOps_Cyl::Curl(
         const cell *c, 
@@ -1013,8 +1021,10 @@ void VectorOps_Cyl::Curl(
 }// VecCurl
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Cyl::SetEdgeState(
@@ -1062,8 +1072,10 @@ int VectorOps_Cyl::SetEdgeState(
 } // SetEdgeState
   
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Cyl::SetSlope(
@@ -1143,8 +1155,10 @@ int VectorOps_Cyl::SetSlope(
 } // SetSlope
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Cyl::DivStateVectorComponent(
@@ -1157,14 +1171,6 @@ int VectorOps_Cyl::DivStateVectorComponent(
         pion_flt *dudt      ///< Vector to assign divergence component to.
         )
 {
-  //enum direction dp;
-  //switch (d) {
-  // case Zcyl: dp=ZPcyl; break;
-  // case Rcyl: dp=RPcyl; break;
-  // case Tcyl: dp=TPcyl; break;
-  // default: rep.error("Bad direction in DivStateVectorComponent",d);
-  //}
-
   /** \section Sign
    * Note that this function returns the negative of the i-th component of 
    * the divergence.  This is b/c it is used in the finite volume time update

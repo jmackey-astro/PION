@@ -324,7 +324,7 @@ int time_integrator::calc_RT_microphysics_dU(
   // so if we try to call this with old code then it should return with 
   // a non-zero error code.
   //
-  cell *c = grid->FirstPt();
+  cell *c = grid->FirstPt_All();
   pion_flt p[SimPM.nvar]; // temporary state vector for output state.
   pion_flt ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
 
@@ -397,7 +397,7 @@ int time_integrator::calc_RT_microphysics_dU(
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
 
     } // if not boundary data.
-  } while ( (c=grid->NextPt(c)) !=0);
+  } while ( (c=grid->NextPt_All(c)) !=0);
   //    cout <<"calc_microphysics_dU() Updating MicroPhysics Done!\n";
   return err;
 } // RT microphysics update.
@@ -421,7 +421,7 @@ int time_integrator::calc_noRT_microphysics_dU(
   // No radiation sources and no diffuse radiation optical depths,
   // so call a simple microphysics update.
   //
-  cell *c = grid->FirstPt();
+  cell *c = grid->FirstPt_All();
   pion_flt p[SimPM.nvar]; // temporary state vector for output state.
   pion_flt ui[SimPM.nvar], uf[SimPM.nvar]; // conserved variable states.
   double tt=0.; // temperature returned at end of microphysics step.
@@ -457,7 +457,7 @@ int time_integrator::calc_noRT_microphysics_dU(
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
 
     } // if not boundary data.
-  } while ( (c=grid->NextPt(c)) !=0);
+  } while ( (c=grid->NextPt_All(c)) !=0);
   //    cout <<"calc_noRT_microphysics_dU() Updating MicroPhysics Done!\n";
   return err;
 } 
@@ -703,6 +703,10 @@ int time_integrator::dynamics_dU_column(
                                 slope_cpt, edgeL, csp, grid);
     err += spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt,
                                 csp, grid);
+#ifdef ZERO_SLOPE_TRACERS
+    // not recommended.
+    for (int v=SimPM.ftr;v<SimPM.nvar;v++) slope_npt[v]=0.0;
+#endif
     err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar,
                                 slope_npt, edgeR, csp, grid);
     err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL,
@@ -733,7 +737,7 @@ int time_integrator::dynamics_dU_column(
         rep.error("nans!!!",2);
       }
     }
-#endif //TESTING
+#endif
 
 #ifdef TEST_CONSERVATION 
     // Track energy, momentum entering/leaving domain, if outside
@@ -742,15 +746,6 @@ int time_integrator::dynamics_dU_column(
     if(csp==SimPM.tmOOA &&
        pconst.equalD(grid->Xmin(axis),SimPM.Xmin[axis]) &&
        !(cpt->isdomain) && npt->isgd && npt->isleaf) {
-//#ifdef TESTING
-//      if (!pconst.equalD(Fr_this[MMX],0.0) && !pconst.equalD(dA,0.0)) {
-//        cout <<"entering domain: F="<<Fr_this[MMX]<<". ";
-//        cout <<", dA="<<dA<<"\n";
-//        rep.printVec("pos",cpt->pos,SimPM.ndim);
-//        rep.printVec("Ph",cpt->Ph,SimPM.nvar);
-//        CI.print_cell(npt);
-//      }
-//#endif
       dM += Fr_this[RHO]*dt*dA;
       dE += Fr_this[ERG]*dt*dA;
       dMX += Fr_this[MMX]*dt*dA;
@@ -813,7 +808,6 @@ int time_integrator::dynamics_dU_column(
   if (csp==SimPM.tmOOA &&
       pconst.equalD(grid->Xmax(axis),SimPM.Xmax[axis]) &&
       cpt->isgd && cpt->isleaf && !npt->isdomain) {
-    //cout <<"leaving domain 2\n";
     dM -= Fr_this[RHO]*dt*dA;
     dE -= Fr_this[ERG]*dt*dA;
     dMX -= Fr_this[MMX]*dt*dA;

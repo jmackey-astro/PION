@@ -19,6 +19,7 @@
 //#define TEST_COMMS           // debugging info for MPI
 //#define TEST_CONSERVATION    // test mass/mom/energy conservation
 //#define TEST_INF             // test for infinity/nan
+//#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
 
 //
 // Various defines for testing bits of the code (lots of sdtout!).

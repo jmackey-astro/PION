@@ -84,7 +84,7 @@ BC_YP outflow
 BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.0001
+GAMMA 1.01
 
 # CFL coefficient 0<cfl<1
 CFL 0.1

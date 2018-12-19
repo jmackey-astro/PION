@@ -88,13 +88,13 @@ int Riemann_FVS_Euler::FVS_flux(
       const double    ///< Gas constant gamma (unused)
       )
 {
-#ifdef TESTING
+#ifdef TEST_INF
   //
   // Check that inputs make sense!
   //
   for (int v=0;v<rs_nvar;v++) {
     if (!isfinite(pl[v]) || !isfinite(pr[v])) {
-      cout <<"NAN's detected!!!\n";
+      cout <<"NAN's detected FVS flux solver\n";
       rep.printVec("left ",pl,rs_nvar);
       rep.printVec("right",pr,rs_nvar);
       return 1;
@@ -124,11 +124,9 @@ int Riemann_FVS_Euler::FVS_flux(
     for (int v=0;v<rs_nvar;v++) fpos[v]=0.0;
   }
   else if (Ml > 1.0) {
-    // Call the eqns_Euler version to avoid calculating tracer fluxes here.
     pion_flt utemp[rs_nvar];
     eqns_Euler::PtoU(pl,utemp,eq_gamma);
     eqns_Euler::PUtoFlux(pl,utemp,fpos);
-    //PtoFlux(pl,fpos,eq_gamma);
   }
   else {
     f1 = 0.25*pl[eqRO]*cl*(1.0+Ml)*(1.0+Ml);
@@ -139,8 +137,6 @@ int Riemann_FVS_Euler::FVS_flux(
     fpos[eqMMZ] = f1*pl[eqVZ];
     fpos[eqERG] = f1*(f2*f2*0.5/(eq_gamma*eq_gamma-1.0) 
 		      +0.5*(pl[eqVY]*pl[eqVY]+pl[eqVZ]*pl[eqVZ]));
-    //for (int t=SimPM.ftr;t<eq_nvar;t++)
-    //  fpos[t] = pl[t]*fpos[eqRHO];
   }
 
   //
@@ -167,8 +163,6 @@ int Riemann_FVS_Euler::FVS_flux(
     fneg[eqMMZ] = f1*pr[eqVZ];
     fneg[eqERG] = f1*(f2*f2*0.5/(eq_gamma*eq_gamma-1) 
 		      +0.5*(pr[eqVY]*pr[eqVY]+pr[eqVZ]*pr[eqVZ]));
-    //for (int t=SimPM.ftr;t<eq_nvar;t++)
-    //  fneg[t] = pr[t]*fneg[eqRHO];
   }
 
   //
@@ -182,7 +176,7 @@ int Riemann_FVS_Euler::FVS_flux(
   //
   Roe_average_state(pl,pr,eq_gamma,pstar);
 
-#ifdef TESTING
+#ifdef TEST_INF
   //
   // Make sure the answer is finite
   //
