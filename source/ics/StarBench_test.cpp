@@ -586,14 +586,15 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     // Overwrite data, with curved shock and IF.
     //
     if (ptype==2) shock_pos = IF_pos + SimPM->Range[YY]/32.0;
-    double lambda = SimPM->Range[YY];
+    double lambda=0.0, l2=0.0;
     double A = 0.0;
     if      (ptype==2) {
-      lambda /= 13.0;  // 13 wavelengths on the domain
+      lambda = SimPM->Range[YY]/13.0;  // 13 wavelengths on the domain
+      l2 = SimPM->Range[YY]/59.0;
       A = SimPM->Range[YY]/640.0; // 1/640th of the y-domain
     }
     else if (ptype==3) {
-      lambda *= 1.00;  // just one wavelength
+      lambda = SimPM->Range[YY];  // just one wavelength
       A = lambda /128.0;  // 1/128 of l and the y-domain (1 cell at r1)
     }
     else {
@@ -625,7 +626,16 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
           psub[YY] = pos[YY]-dxo2 + dxo4*(iy+0.5);
           //rep.printVec("psub",psub,SimPM->ndim);
           
-          deflection = A*sin(2.0*M_PI*(psub[YY]+0.5*SimPM->Range[YY])/lambda);
+          if      (ptype==2) {
+            deflection = 
+              A*sin(2.0*M_PI*13.0*(psub[YY]/SimPM->Range[YY]+0.5));
+            deflection += 
+              A*sin(2.0*M_PI*59.0*(psub[YY]/SimPM->Range[YY]+0.5));
+          }
+          else {
+            deflection = A*sin(2.0*M_PI*(psub[YY]+0.5*SimPM->Range[YY])/lambda);
+          }
+
           if      (psub[XX]<= IF_pos   +deflection) f_dn += vfrac;
           else if (psub[XX]<= shock_pos+deflection) f_sh += vfrac;
           else                                      f_up += vfrac;
