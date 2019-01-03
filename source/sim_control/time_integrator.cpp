@@ -704,7 +704,8 @@ int time_integrator::dynamics_dU_column(
     err += spatial_solver->SetSlope(npt, axis, SimPM.nvar, slope_npt,
                                 csp, grid);
 #ifdef ZERO_SLOPE_TRACERS
-    // not recommended.
+    // not recommended b/c it is diffusive, but it does make the code
+    // more symmetric.
     for (int v=SimPM.ftr;v<SimPM.nvar;v++) slope_npt[v]=0.0;
 #endif
     err += spatial_solver->SetEdgeState(npt, negdir, SimPM.nvar,

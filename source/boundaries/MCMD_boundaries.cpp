@@ -35,6 +35,7 @@ int MCMD_bc::BC_assign_BCMPI(
   list<cell*>::iterator c=b->data.begin();
   do {
     (*c)->isdomain=true;
+    c++;
   } while (c!=b->data.end());
 
 #ifdef TEST_COMMS
@@ -49,21 +50,6 @@ int MCMD_bc::BC_assign_BCMPI(
 #ifdef TEST_COMMS
   cout <<"BC_assign_BCMPI: got "<<ncell<<" cells in send_data\n";
 #endif
-
-  //
-  // This is the same as the update function, except that we want
-  // to set P[] and Ph[] vectors to the same values, so we set cstep
-  // equal to maxstep.
-  //
-#ifdef TEST_COMMS
-  cout <<"*******************************************\n";
-  cout <<"BC_assign_BCMPI: starting\n";
-#endif 
-  //err = BC_update_BCMPI(par,level,grid,b,2,2,comm_tag);
-#ifdef TEST_COMMS
-  cout <<"BC_assign_BCMPI: finished\n";
-  cout <<"*******************************************\n";
-#endif 
   return err;
 }
 

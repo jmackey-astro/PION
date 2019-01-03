@@ -46,7 +46,7 @@
 #include <sstream>
 using namespace std;
 
-
+//#define TEST_SILO_IO
 
 
 /********************************************************/
@@ -565,6 +565,10 @@ int dataio_silo_utility::ReadData(
     // now call the code that works for each level:
     err = ReadLevelData(silofile,gp,SimPM,l);
     rep.errorTest("IO_silo_utility:: ReadLevelData",0,err);
+#ifdef TEST_SILO_IO
+    cout <<"Finished reading data on level "<<l<<" of ";
+    cout <<SimPM.grid_nlevels<<"\n";
+#endif
   }
 
   return err;
@@ -645,6 +649,11 @@ int dataio_silo_utility::ReadLevelData(
     }
 
     clk.start_timer("readdata"); double tsf=0;
+#ifdef TEST_SILO_IO
+    cout <<"READING PLLEL DATA: "<<mpiPM->get_myrank()<<"  ";
+    cout <<mpiPM->get_nproc()<<"  "<< numfiles <<" "<< groupsize;
+    cout <<" "<< l <<"\n";
+#endif
     for (int count=0; count<nloops; count++) {
       if ( (mpiPM->get_myrank()+nloops)%nloops == count) {
         cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
@@ -662,7 +671,9 @@ int dataio_silo_utility::ReadLevelData(
     clk.stop_timer("readdata");
 
   }
-  //  cout <<"read data successfully.\n";
+#ifdef TEST_SILO_IO
+  cout <<"read data successfully.\n";
+#endif
   return 0;
 }
 
@@ -1236,8 +1247,8 @@ int dataio_silo_utility::PP_read_var2grid(
       
       while ((cx!=0) && cx->pos[XX]<iXmax[XX]) {
 #ifdef TEST_SILO_IO
-        rep.printVec("cpos",cx->pos,ndim);
-        rep.printVec("P",cx->P,SimPM.nvar);
+        //rep.printVec("cpos",cx->pos,ndim);
+        //rep.printVec("P",cx->P,SimPM.nvar);
 #endif
         //
         // Different pointers if float or double.
