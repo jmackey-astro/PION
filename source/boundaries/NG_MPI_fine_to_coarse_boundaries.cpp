@@ -119,7 +119,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   size_t ct=0;
   for (v=0;v<nel;v++) {
     for (int j=0;j<par.nvar;j++) cd[j]=0.0;
-    average_cells(par,solver,grid,nc,b->avg[v].c,cd);
+    average_cells(par,solver,grid,nc,b->avg[v].c, b->avg[v].cpos,cd);
     for (int i=0;i<par.ndim;i++) data[ct+i] = b->avg[v].cpos[i];
     ct += par.ndim;
     for (int i=0;i<par.nvar;i++) data[ct+i] = cd[i];

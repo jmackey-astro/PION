@@ -5,7 +5,7 @@
 ndim 2
 coordinates cylindrical
 eqn  euler
-solver 4
+solver 6
 
 ics PhotoEvap_radial
 OutputFile    DTE_D2Full_TTI_n01024
@@ -84,10 +84,10 @@ BC_YP outflow
 BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.0001
+GAMMA 1.01
 
 # CFL coefficient 0<cfl<1
-CFL 0.1
+CFL 0.2
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.15

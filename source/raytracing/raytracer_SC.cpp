@@ -1518,7 +1518,8 @@ int raytracer_USC::RayTrace_SingleSource(
   for (int oct=0; oct<ndirs; oct++) {
     enum direction dirs[ndim];
     cell *c = startcell[oct];
-    //    cout <<"oct "<<oct<<" and startcell = "<<c<<" dirs: "<<dir1[oct]<<" "<<dir2[oct]<<" "<<dir3[oct]<<"\n";
+    //    cout <<"oct "<<oct<<" and startcell = "<<c<<" dirs: ";
+    //    cout <<dir1[oct]<<" "<<dir2[oct]<<" "<<dir3[oct]<<"\n";
     //
     // now, if c!=0, then we have cell(s) in the octant, so trace the octant.
     //
@@ -2213,7 +2214,7 @@ int raytracer_USC::cell_cols_2d(
     for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
       Nc[iT] = 0.0;
     }
-    CI.set_col(c, src->s->id, Nc);
+    //CI.set_col(c, src->s->id, Nc);
   }
   else if (mindiff<idx) {
 #ifdef RT_TESTING

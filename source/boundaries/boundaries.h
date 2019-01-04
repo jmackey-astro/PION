@@ -96,7 +96,7 @@ enum BoundaryTypes {
 /// be averaged to be sent to a coarser grid.
 struct averaging {
   std::vector<cell *> c; ///< list of cells to be averaged
-  pion_flt cpos[MAX_DIM];
+  pion_flt cpos[MAX_DIM]; ///< position of cell-centre of coarse cell
   pion_flt *avg_state;
 };
 
