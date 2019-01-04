@@ -20,6 +20,7 @@
 //#define TEST_CONSERVATION    // test mass/mom/energy conservation
 //#define TEST_INF             // test for infinity/nan
 //#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
+//#define RT_TESTING ///< Enable this for debugging info on raytracing.
 
 //
 // Various defines for testing bits of the code (lots of sdtout!).
@@ -38,7 +39,6 @@
 //
 //#define FUNCTION_ID
 
-//#define RT_TESTING ///< Enable this for debugging info on raytracing.
 
 //#define RSTESTING ///< If testing the Riemann Solvers.
 
