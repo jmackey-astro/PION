@@ -128,11 +128,13 @@ UniformGrid::UniformGrid(
     int nv,
     int eqt,
     int Nbc,       ///< Number of boundary cells to use.
-    double *g_xn,
-    double *g_xp,
+    double *g_xn,  // this grid xmin
+    double *g_xp,  // this grid xmax
     int *g_nc,
-    double *sim_xn,
-    double *sim_xp
+    double *lev_xn, // level xmin
+    double *lev_xp, // level xmax
+    double *sim_xn, // sim xmin
+    double *sim_xp  // sim xmax
     )
   : 
   VectorOps_Cart(nd),
@@ -185,6 +187,12 @@ UniformGrid::UniformGrid(
   Sim_ixmax  = mem.myalloc(Sim_ixmax, G_ndim);
   Sim_irange = mem.myalloc(Sim_irange,G_ndim);
 
+  L_xmin   = mem.myalloc(L_xmin,  G_ndim);
+  L_xmax   = mem.myalloc(L_xmax,  G_ndim);
+  L_range  = mem.myalloc(L_range, G_ndim);
+  L_ixmin  = mem.myalloc(L_ixmin, G_ndim);
+  L_ixmax  = mem.myalloc(L_ixmax, G_ndim);
+  L_irange = mem.myalloc(L_irange,G_ndim);
 
   //
   // Assign values to grid dimensions and set the cell-size
@@ -216,6 +224,11 @@ UniformGrid::UniformGrid(
     Sim_xmin[i] = sim_xn[i];
     Sim_xmax[i] = sim_xp[i];
     Sim_range[i] = sim_xp[i]-sim_xn[i];
+
+    L_xmin[i] = lev_xn[i];
+    L_xmax[i] = lev_xp[i];
+    L_range[i] = lev_xp[i]-lev_xn[i];
+
   }
 
 #ifdef TESTING
@@ -229,9 +242,12 @@ UniformGrid::UniformGrid(
   set_cell_size();
 
   // grid dimensions including boundary data
-  for (int v=0;v<G_ndim;v++) G_xmin_all[v] = G_xmin[v] - BC_nbc*G_dx;
-  for (int v=0;v<G_ndim;v++) G_xmax_all[v] = G_xmax[v] + BC_nbc*G_dx;
-  for (int v=0;v<G_ndim;v++) G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
+  for (int v=0;v<G_ndim;v++)
+    G_xmin_all[v] = G_xmin[v] - BC_nbc*G_dx;
+  for (int v=0;v<G_ndim;v++)
+    G_xmax_all[v] = G_xmax[v] + BC_nbc*G_dx;
+  for (int v=0;v<G_ndim;v++)
+    G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
 
   //
   // Now create the first cell, and then allocate data from there.
@@ -286,16 +302,25 @@ UniformGrid::UniformGrid(
   //
   CI.get_ipos_vec(G_xmin, G_ixmin );
   CI.get_ipos_vec(G_xmax, G_ixmax );
-  for (int v=0;v<G_ndim;v++) G_irange[v] = G_ixmax[v]-G_ixmin[v];
+  for (int v=0;v<G_ndim;v++)
+    G_irange[v] = G_ixmax[v]-G_ixmin[v];
   G_idx = G_irange[XX]/G_ng[XX];
-  for (int v=0;v<G_ndim;v++) G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
-  for (int v=0;v<G_ndim;v++) G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
-  for (int v=0;v<G_ndim;v++) G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
+  for (int v=0;v<G_ndim;v++)
+    G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
+  for (int v=0;v<G_ndim;v++)
+    G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
+  for (int v=0;v<G_ndim;v++)
+    G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
 
   CI.get_ipos_vec(Sim_xmin, Sim_ixmin);
   CI.get_ipos_vec(Sim_xmax, Sim_ixmax);
   for (int v=0;v<G_ndim;v++) {
     Sim_irange[v] = Sim_ixmax[v]-Sim_ixmin[v];
+  }
+  CI.get_ipos_vec(L_xmin, L_ixmin);
+  CI.get_ipos_vec(L_xmax, L_ixmax);
+  for (int v=0;v<G_ndim;v++) {
+    L_irange[v] = L_ixmax[v]-L_ixmin[v];
   }
 
   // set external boundary cells to be not part of the simulation
@@ -2153,12 +2178,14 @@ uniform_grid_cyl::uniform_grid_cyl(
     double *g_xn,   ///< array of minimum values of x,y,z for this grid.
     double *g_xp,   ///< array of maximum values of x,y,z for this grid.
     int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *lev_xn, // level xmin
+    double *lev_xp, // level xmax
     double *sim_xn, ///< array of min. x/y/z for full simulation.
     double *sim_xp  ///< array of max. x/y/z for full simulation.
     )
   : 
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,lev_xn,lev_xp,sim_xn,sim_xp),
   VectorOps_Cyl(nd)
 {
 #ifdef TESTING
@@ -2507,12 +2534,14 @@ uniform_grid_sph::uniform_grid_sph(
     double *g_xn,   ///< array of minimum values of x,y,z for this grid.
     double *g_xp,   ///< array of maximum values of x,y,z for this grid.
     int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *lev_xn, // level xmin
+    double *lev_xp, // level xmax
     double *sim_xn, ///< array of min. x/y/z for full simulation.
     double *sim_xp  ///< array of max. x/y/z for full simulation.
     )
   : 
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,lev_xn,lev_xp,sim_xn,sim_xp),
   VectorOps_Cyl(nd),
   VectorOps_Sph(nd)
 {

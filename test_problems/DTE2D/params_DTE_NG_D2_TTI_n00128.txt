@@ -72,7 +72,7 @@ OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 128
+OutputFrequency 256
 OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 

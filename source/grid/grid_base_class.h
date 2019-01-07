@@ -198,6 +198,13 @@ class GridBaseClass {
   /// Returns Simulation x,y,z range in code units.
   virtual double SIM_Range(enum axes) const =0;
 
+  /// Returns level x,y,z lower bounds in code units.
+  virtual double  level_Xmin(enum axes) const =0;
+  /// Returns level x,y,z upper bounds in code units.
+  virtual double  level_Xmax(enum axes) const =0;
+  /// Returns lelel x,y,z range in code units.
+  virtual double level_Range(enum axes) const =0;
+
   /// Returns x/y/z lower boundary of grid in integer coords.
   virtual int  iXmin(enum axes) const =0;
   /// Returns x/y/z upper boundary of grid in integer coords.
@@ -222,6 +229,14 @@ class GridBaseClass {
   virtual int  SIM_iXmax(enum axes) const =0;
   /// Returns Simulation x,y,z range in cell integer coords
   virtual int SIM_iRange(enum axes) const =0;
+
+  /// Returns level x,y,z lower bounds in integer coords.
+  virtual int  level_iXmin(enum axes) const =0;
+  /// Returns level x,y,z upper bounds in integer coords.
+  virtual int  level_iXmax(enum axes) const =0;
+  /// Returns lelel x,y,z range in integer coords.
+  virtual int level_iRange(enum axes) const =0;
+  
   // ---------- QUERY BASIC GRID PROPERTIES -------------------------
 
   // ----------- SETUP AND UPDATE BOUNDARY DATA ---------------------

@@ -32,20 +32,6 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   if (b->NGrecvF2C[i].empty())
     rep.error("BC_assign_FINE_TO_COARSE: empty boundary data",
                                                         b->itype);
-  //cell *cc = child->FirstPt_All(); // child cell.
-  //int cdx = 0.5*child->idx();
-  int nc=1;  // number of fine cells per coarse cell
-  for (int id=0;id<par.ndim;id++) nc*=2;
-  int nel = b->NGrecvF2C[i].size();
-  b->avg.resize(nel);
-  for (int v=0;v<nel;v++) {
-    b->avg[v].c.resize(nc);
-    b->avg[v].avg_state = mem.myalloc(b->avg[v].avg_state,
-                                                par.nvar);
-  }
-
-  // add each cell in the child grid to the "avg" vector:
-  add_cells_to_avg(par.ndim,child,nel,b->avg);
 
   //
   // If we are doing raytracing, then also send the column densities
@@ -58,9 +44,25 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
     s = &(par.RS.sources[isrc]);
     F2C_tauoff[isrc] = F2C_Nxd;
     F2C_Nxd += 2*s->NTau; // Need col2cell and cell_col for each Tau.
+#ifdef TEST_MPI_NG
     cout <<"F2C_BC: RT Source "<<isrc<<": adding "<<2*s->NTau;
     cout <<" cols, running total = "<<F2C_Nxd<<"\n";
+#endif
   }
+
+  int nc=1;  // number of fine cells per coarse cell
+  for (int id=0;id<par.ndim;id++) nc*=2;
+  int nel = b->NGrecvF2C[i].size();
+  b->avg.resize(nel);
+  for (int v=0;v<nel;v++) {
+    b->avg[v].c.resize(nc);
+    b->avg[v].avg_state = mem.myalloc(b->avg[v].avg_state,
+                                            par.nvar+F2C_Nxd);
+  }
+
+  // add each cell in the child grid to the "avg" vector:
+  add_cells_to_avg(par.ndim,child,nel,b->avg);
+
 
   return 0;
 }
@@ -114,12 +116,12 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
     for (int i=ndim;i<MAX_DIM;i++)
       ipos[i] = 0.0;
     CI.get_dpos_vec(ipos,avg[v].cpos);
-//#ifdef TEST_MPI_NG
+#ifdef TEST_MPI_NG
     //for (unsigned int i=0;i<avg[0].c.size();i++) {
-    //  rep.printVec("cellpos",avg[v].c[0]->pos,ndim);
-    //rep.printVec("cellpos",avg[v].cpos,ndim);
+      //rep.printVec("cellpos",avg[v].c[0]->pos,ndim);
+      //rep.printVec("cellpos",avg[v].cpos,ndim);
     //}
-//#endif
+#endif
     // get to next cell.
     f = grid->NextPt(f);
     ix++;
@@ -354,30 +356,31 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
       diffy = s->pos[YY] - cpos[YY];
 #ifdef RT_TESTING
       cout <<"diffxy = "<<diffx<<"  "<<diffy<<"\n";
-      cout <<"t1="<<*Tau1<<", t2="<<*Tau2<<", t3="<<*Tau3<<", t4="<<*Tau4;
+      cout <<"t1="<<*Tau1<<", t2="<<*Tau2<<", t3=";
+      cout <<*Tau3<<", t4="<<*Tau4;
 #endif
       // column from source through cell depends on
       // which direction is to the source
       if      (diffx>0 && fabs(diffx)>=fabs(diffy)) {
-        // Source in Q1 coming from dir XP
+        // Source in Q1 coming from dir XP (-45 < theta < 45 deg)
         for (int v=0; v<s->NTau; v++) {
           tmp[v] = 0.5*(Tau1[v]+Tau3[v]);
         }
       }
       else if (diffy>0 && fabs(diffx)<fabs(diffy)) {
-        // source in Q2, coming from dir YP
+        // source in Q2, coming from dir YP (45 < theta < 135 deg)
         for (int v=0; v<s->NTau; v++) {
           tmp[v] = 0.5*(Tau1[v]+Tau2[v]);
         }
       }
       else if (diffx<0 && fabs(diffx)>=fabs(diffy)) {
-        // source in Q3, coming from XN
+        // source in Q3, coming from XN (135 < theta < 225 deg)
         for (int v=0; v<s->NTau; v++) {
           tmp[v] = 0.5*(Tau2[v]+Tau4[v]);
         }
       }
       else {
-        // source in Q4, coming from YN
+        // source in Q4, coming from YN (225 < theta < 315 deg)
         for (int v=0; v<s->NTau; v++) {
           tmp[v] = 0.5*(Tau3[v]+Tau4[v]);
         }

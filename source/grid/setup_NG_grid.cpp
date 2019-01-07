@@ -207,17 +207,23 @@ int setup_NG_grid::setup_grid(
       grid[l] = new UniformGrid (
               SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
               SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
-              SimPM.levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+              SimPM.levels[l].NG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
+              SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_CYL)
       grid[l] = new uniform_grid_cyl (
               SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
               SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
-              SimPM.levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+              SimPM.levels[l].NG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
+              SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_SPH)
       grid[l] = new uniform_grid_sph (
               SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
               SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
-              SimPM.levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+              SimPM.levels[l].NG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
+              SimPM.Xmin, SimPM.Xmax);
     else 
       rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 

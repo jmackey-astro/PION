@@ -361,8 +361,8 @@ void raytracer_USC_infinity::add_source_to_list(
 
 
 void raytracer_USC_infinity::set_Vshell_for_source(
-              struct rad_source *this_src
-              )
+      struct rad_source *this_src
+      )
 {
   //
   // Now we need to set Vshell in every grid point for this source. 
@@ -370,9 +370,9 @@ void raytracer_USC_infinity::set_Vshell_for_source(
   // cell.  Then call RayTrace_Column_Density() where Vshell is set, and then 
   // change the opacity flag back to its original value.
   //
-#ifdef RT_TESTING
+//#ifdef RT_TESTING
   cout <<"\t\tSetting Vshell for source.\n";
-#endif
+//#endif
 
   int temp = this_src->s->opacity_src;
   int upd  = this_src->s->update;
@@ -380,7 +380,8 @@ void raytracer_USC_infinity::set_Vshell_for_source(
   this_src->s->update      = RT_UPDATE_EXPLICIT;
 
   int err = RayTrace_Column_Density(this_src->s->id,1.0,1.0);
-  if (err) rep.error("raytracer_USC_infinity::RayTrace_Column_Density() error on setting Vshell",err);
+  if (err)
+    rep.error("raytracer_USC_infinity::RayTrace_Column_Density() Vshell",err);
 
   this_src->s->opacity_src = temp; // revert opacity type
   this_src->s->update      = upd;  // revert update type.
@@ -562,7 +563,8 @@ int raytracer_USC_infinity::RayTrace_Column_Density(
       )
 {
 #ifdef RT_TESTING
-  cout <<"raytracer_USC_infinity::RayTrace_Column_Density() calling RayTrace_SingleSource().\n";
+  cout <<"raytracer_USC_infinity::RayTrace_Column_Density()";
+  cout <<" calling RayTrace_SingleSource().\n";
 #endif // RT_TESTING
 
   struct rad_source *source=0;
@@ -1216,7 +1218,9 @@ void raytracer_USC::add_source_to_list(
   rs.data.Vshell   = 0.0;
   rs.data.dS       = 0.0;
   rs.data.NTau     = rs.s->NTau;
+#ifdef RT_TESTING
   cout <<"***** NTAU = "<<rs.s->NTau<<"\n";
+#endif
   for (unsigned short int iT=0; iT<rs.s->NTau; iT++) {
     rs.data.DelCol[iT] = 0.0;
     rs.data.Column[iT] = 0.0;
@@ -1227,7 +1231,9 @@ void raytracer_USC::add_source_to_list(
   // source is not on grid, find edge cell closest to it.  This
   // function also centres the source on a cell-vertex.
   //
+#ifdef RT_TESTING
   cout <<"RTxxx: AddSource() finding source.\n";
+#endif
   rs.sc = find_source_cell(rs.s->pos);
 
   //

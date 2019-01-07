@@ -16,7 +16,8 @@ solver 6
 ics PhotoEvap_radial
 
 # Output FileName Base
-OutputFile    DTE_NG_D2_TTI_n00032
+OutputFile    DTE_NG_D2_TTI_n00512
+
 
 # Number and type of tracers.
 ntracer 1
@@ -43,12 +44,12 @@ EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
 # Add noise at level of f% to Data? (f<=0 means no).
-noise -1
+noise 0.1
 
 ## Grid Parameters
-NGridX  32
-NGridY  32
-NGridZ  32
+NGridX  512
+NGridY  512
+NGridZ  512
 # Boundaries of Simulation box:
 Xmin  0.0
 Ymin  0.0
@@ -71,7 +72,7 @@ OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 128
+OutputFrequency 1024
 OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 
