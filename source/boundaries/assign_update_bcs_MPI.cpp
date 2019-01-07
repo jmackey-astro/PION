@@ -68,6 +68,10 @@ int assign_update_bcs_MPI::assign_boundary_data(
     }
 
   }
+#ifdef TEST_MPI_BC 
+  cout <<ppar->get_myrank()<<": finished assigning boundaries\n";
+#endif
+
   return(err);
 }
 

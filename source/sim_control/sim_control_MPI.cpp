@@ -126,9 +126,9 @@ int sim_control_pllel::Init(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"(sim_control_pllel::init) Initialising grid: infile = "<<infile<<"\n";
-//#endif
+#endif
   int err=0;
 
   //
@@ -211,9 +211,9 @@ int sim_control_pllel::Init(
   
   // Now set up the grid structure.
   grid.resize(1);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  //cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   err = setup_grid(grid,SimPM);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  //cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   SimPM.levels[0].grid=grid[0];
   rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
@@ -237,6 +237,7 @@ int sim_control_pllel::Init(
   //
   err = dataio->ReadData(infile, grid, SimPM);
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
+  //  cout <<"Read data finished\n";
 
   //
   // Set Ph[] = P[], and then implement the boundary conditions.
@@ -262,22 +263,29 @@ int sim_control_pllel::Init(
   //
   // Assign boundary conditions to boundary points.
   //
+  //  cout <<"starting BC setup\n";
   err = boundary_conditions(SimPM, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+
+  //  cout <<"assigning BC data\n";
   err = assign_boundary_data(SimPM,0, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
   // Setup Raytracing on each grid, if needed.
   //
+  //  cout <<"Setting up raytracing\n";
   err += setup_raytracing(SimPM, grid[0]);
+  //  cout <<"Setting up RT sources\n";
   err += setup_evolving_RT_sources(SimPM);
+  //  cout <<"Updating evolving RT sources\n";
   err += update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
   //
   // If testing the code, this calculates the momentum and energy on the domain.
   //
+  //  cout <<"initial conserved quantities\n";
   initial_conserved_quantities(grid[0]);
 
   err += TimeUpdateInternalBCs(SimPM,0,grid[0], spatial_solver,

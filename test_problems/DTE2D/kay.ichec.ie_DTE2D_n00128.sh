@@ -15,7 +15,8 @@ opdir=/ichec/work/dias01/jmackey/DTE2D
 
 mpirun -np 16 ../../icgen_parallel params_DTE_D2Full_TTI_n00128.txt silo
 mpirun -np 16 ../../pion_parallel DTE_D2Full_TTI_n00128_0000.00000000.silo \
-  outfile=${opdir}/DTE_D2Full_TTI_n00128 redirect=${opdir}/log_DTE_D2Full_TTI_n00128
+  outfile=${opdir}/DTE_D2Full_TTI_n00128_s4 \
+  redirect=${opdir}/log_DTE_D2Full_TTI_n00128_s4 solver=4
 
 # NOTES:
 # Submit job using:

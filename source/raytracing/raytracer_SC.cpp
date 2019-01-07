@@ -612,7 +612,8 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
 #endif // RT_TESTING
 
   struct rad_source *source=0;
-  for (vector<rad_source>::iterator i=SourceList.begin(); i!=SourceList.end(); ++i) {
+  for (vector<rad_source>::iterator i=SourceList.begin();
+                                    i!=SourceList.end(); ++i) {
     if ( (*i).s->id==s_id ) source=&(*i);
   }
   if (!source)
@@ -1224,8 +1225,7 @@ void raytracer_USC::add_source_to_list(
   //
   // now find the source cell so we can set up a pointer to it.  If
   // source is not on grid, find edge cell closest to it.  This
-  // function also centres the source on either a cell-centre, or a
-  // cell-vertex, depending on the ifdef.
+  // function also centres the source on a cell-vertex.
   //
   cout <<"RTxxx: AddSource() finding source.\n";
   rs.sc = find_source_cell(rs.s->pos);
@@ -1450,13 +1450,17 @@ int raytracer_USC::RayTrace_SingleSource(
 #endif // RT_TESTING
 
   rad_source *source=0;
-  for (vector<rad_source>::iterator i=SourceList.begin(); i!=SourceList.end(); ++i) {
+  for (vector<rad_source>::iterator i=SourceList.begin();
+                                    i!=SourceList.end(); ++i) {
     if ( (*i).s->id==s_id ) {
       source=&(*i);
       current_src = &(*i);
     }
   }
-  if (!source) {cerr <<"Couldn't find source "<<s_id<<" in source list.\n"; return 1;}
+  if (!source) {
+    cerr <<"Couldn't find source "<<s_id<<" in source list.\n";
+    return 1;
+  }
   //  cout <<"found source. moving to it.\n";
 
 #ifdef RT_TESTING
@@ -1854,6 +1858,7 @@ cell * raytracer_USC::find_source_cell(
   for (int i=0;i<ndim;i++) {
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
+    enum direction negdir = gridptr->OppDir(posdir);
 
     // First move the source to a cell vertex.
     centre_source_on_cell(pos,a);
@@ -1863,13 +1868,20 @@ cell * raytracer_USC::find_source_cell(
 #endif
     if      (pos[a]<gridptr->Xmin_all(a) ||
              pconst.equalD(pos[a],gridptr->Xmin_all(a))) {
+      // If source is off grid in negative direction, then set
+      // source cell to be the 2nd last boundary cell in this dir.
+      // (The last boundary cell has no neigbour in at least one
+      // direction, so that would give a wrong Tau in 2D/3D).
 #ifdef RT_TESTING
       cout <<"don't need to do anything as we are already at";
       cout <<" most negative cell in this axis.\n";
 #endif
+      sc=gridptr->NextPt(sc,posdir);
     }
     else if (pos[a]>gridptr->Xmax_all(a) ||
              pconst.equalD(pos[a],gridptr->Xmax_all(a))) {
+      // If source is off grid in positive direction, then set
+      // source cell to be the 2nd last boundary cell in this dir.
 #ifdef RT_TESTING
       cout <<"source off/at the positive end of grid, so go to";
       cout <<" last cell.\n";
@@ -1878,6 +1890,7 @@ cell * raytracer_USC::find_source_cell(
       while (gridptr->NextPt(sc,posdir)!=0) {
 	sc=gridptr->NextPt(sc,posdir);
       }
+      sc=gridptr->NextPt(sc,negdir);
     }
     else {
 #ifdef RT_TESTING
