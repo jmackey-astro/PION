@@ -1618,6 +1618,18 @@ double MPv10::Rad_Recomb_rate(
     a1=6.556e-10; a2=0.7567; a3=6.523e1; a4=2.446e7;// a5=; a6=;
     r = a1/(sqrt(temperature/a3)*exp((1.-a2)*log(1.+sqrt(temperature/a3))+(1.+a2)*log(1.+sqrt(temperature/a4))));
   }  
+  // recombination for Nitrogen (from Raga, deColle, et al., 2007, A&A, 465, 879).
+  else if (ci->i == N1p) {
+    a1= 1.5e-12; a2=0.693; a3=0.0031; a4=2.9e5; a5=0.6; a6=1.6e5;
+    r = a1*exp(-a2*log(temperature/1.e4)) 
+      +a3*exp(-1.5*log(temperature) -a4/temperature)*(1.+a5*exp(-a6/temperature));
+  }
+  else if (ci->i == N2p) {
+    a1= 4.4e-12; a2=0.675; a3=0.0075; a4=2.6e5; a5=0.7; a6=4.5e5;
+    r = a1*exp(-a2*log(temperature/1.e4)) 
+      +a3*exp(-1.5*log(temperature) -a4/temperature)*(1.+a5*exp(-a6/temperature));
+  }
+
   else {
     return 0.0;
   }
