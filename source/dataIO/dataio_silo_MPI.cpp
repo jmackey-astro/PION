@@ -242,11 +242,16 @@ int dataio_silo_pllel::ReadData(
   silofile=infile;
 
   //
-  // choose my directory name:
+  // choose my directory name (this function hardcoded for reading
+  // only level 0 of grid!)
   //
-  string mydir; temp.str("");
-  temp << "rank_"; temp.width(4); temp << mpiPM->get_myrank() << "_domain_";
-  temp.width(4); temp<<myrank_ingroup; mydir = temp.str(); temp.str("");
+  string mydir;
+  set_dir_in_file(mydir, mpiPM->get_myrank(), myrank_ingroup, 0);
+  if (SimPM.grid_nlevels>0)
+    rep.error("dataio silo MPI levels",SimPM.grid_nlevels);
+  //temp.str("");
+  //temp << "level_"; temp.width(4); temp << mpiPM->get_myrank() << "_domain_";
+  //temp.width(4); temp<<myrank_ingroup; mydir = temp.str(); temp.str("");
   
   *db_ptr=0;
   err = COMM->silo_pllel_wait_for_file(file_id, silofile, mydir, db_ptr);
@@ -454,6 +459,13 @@ int dataio_silo_pllel::SaveLevelData(
   if (!gp)
     rep.error("dataio_silo_pllel::SaveLevelData() null grid!",gp);
 
+  int level=0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    if (gp==SimPM.levels[l].grid) level=l;
+    //cout <<"saving level "<<level<<"\n";
+  }
+
+
 #ifdef TEST_SILO_IO
   cout <<"\n----dataio_silo_pllel::SaveLevelData() Writing data to ";
   cout <<"filebase: "<<outfilebase<<"\n";
@@ -517,14 +529,15 @@ int dataio_silo_pllel::SaveLevelData(
   // Choose directory within silo file.
   //
   string mydir;
+  set_dir_in_file(mydir, mpiPM->get_myrank(), myrank_ingroup, level);
   ostringstream temp; temp.fill('0'); temp.str("");
-  temp << "rank_";
-  temp.width(4);
-  temp << mpiPM->get_myrank() << "_domain_";
-  temp.width(4);
-  temp << myrank_ingroup;
-  mydir = temp.str();
-  temp.str("");
+  //temp << "level_";
+  //temp.width(4);
+  //temp << lev << "_domain_";
+  //temp.width(4);
+  //temp << myrank_ingroup;
+  //mydir = temp.str();
+  //temp.str("");
   if (mydir.size()+1>=strlength)
     rep.error("string too large",mydir);
 
@@ -573,10 +586,8 @@ int dataio_silo_pllel::SaveLevelData(
 #ifdef TEST_SILO_IO
   cout <<"----dataio_silo_pllel::SaveLevelData() generating quadmesh\n";
 #endif
-  temp.str(""); temp <<"unigrid";
-  temp.width(4);
-  temp<<mpiPM->get_myrank();
-  string meshname=temp.str();
+  string meshname;
+  mesh_name(mpiPM->get_myrank(),meshname);
   err = generate_quadmesh(*db_ptr, meshname, SimPM);
   if (err)
     rep.error("dataio_silo_pllel::SaveLevelData() quadmesh",err);
@@ -717,6 +728,7 @@ int dataio_silo_pllel::SaveLevelData(
     for (int i=0;i<nmesh;i++) {
       meshtypes[i] = csys;
       temp.str("");
+      string tfn;
       if (groups[i] != group_rank) {
 	//
 	// the root processor's group file doesn't need to be in the path,
@@ -724,13 +736,18 @@ int dataio_silo_pllel::SaveLevelData(
 	//
 	//temp << fname <<"_"; temp.width(4); temp <<groups[i]<<".";
 	//temp.width(6); temp <<SimPM.timestep<<".silo:";
-	string temp_filename;
-	choose_pllel_filename(fname, groups[i], file_counter, temp_filename);
-	temp << temp_filename.c_str() <<":";
+	choose_pllel_filename(fname, groups[i], file_counter, tfn);
+	temp << tfn.c_str() <<":";
       }
-      temp << "/rank_"; temp.width(4); temp << i << "_domain_";
-      temp.width(4); temp<<ranks[i];
-      temp <<"/unigrid"; temp.width(4); temp<<i;
+      tfn.clear();
+      set_dir_in_file(tfn, i, ranks[i], level);
+      //temp << "/level_"; temp.width(4); temp << lev << "_domain_";
+      //temp.width(4); temp<<ranks[i];
+      temp << tfn.c_str();
+      tfn.clear();
+      mesh_name(i,tfn);
+      temp << "/" << tfn.c_str();
+      //temp <<"/unigrid"; temp.width(4); temp<<i;
       if (temp.str().length() >strlength-1)
 	rep.error("directory name too long!!!",temp.str().length());
       strcpy(mm_names[i],temp.str().c_str());
@@ -755,15 +772,15 @@ int dataio_silo_pllel::SaveLevelData(
     pp.set_nproc(mpiPM->get_nproc());
     for (int v=0; v<nmesh; v++) {
       pp.set_myrank(v);
-      pp.decomposeDomain(SimPM,SimPM.levels[0]);
+      pp.decomposeDomain(SimPM,SimPM.levels[level]);
       zonecounts[v] = pp.LocalNcell;
       externalzones[v] = 0; // set to 1 if domain has zones outside multimesh.
-      for (int i=0; i<ndim;i++) {
-	//extents[ext_size*v+2*i  ] = pp.LocalXmin[i];
-	//extents[ext_size*v+2*i+1] = pp.LocalXmax[i];
-	extents[ext_size*v+i     ] = gp->SIM_Xmin(static_cast<axes>(i));
-	extents[ext_size*v+ndim+i] = gp->SIM_Xmax(static_cast<axes>(i));
-      }
+      for (int i=0; i<ndim;i++)
+	extents[ext_size*v+i  ] = pp.LocalXmin[i];
+      for (int i=0; i<ndim;i++)
+	extents[ext_size*v+ndim+i] = pp.LocalXmax[i];
+	//extents[ext_size*v+i     ] = gp->Xmin(static_cast<axes>(i));
+	//extents[ext_size*v+ndim+i] = gp->Xmax(static_cast<axes>(i));
     } // loop over meshes
     DBAddOption(mm_opts,DBOPT_EXTENTS_SIZE,&ext_size);
     DBAddOption(mm_opts,DBOPT_EXTENTS,extents);
@@ -790,6 +807,7 @@ int dataio_silo_pllel::SaveLevelData(
       for (int ii=0;ii<nmesh;ii++) {
 	meshtypes[ii] = DB_QUADVAR;
 	temp.str("");
+	string tfn;
 	if (groups[ii] != group_rank) {
 	  //
 	  // the root processor's group file doesn't need to be in the path,
@@ -797,12 +815,15 @@ int dataio_silo_pllel::SaveLevelData(
 	  //
 	  //temp << fname <<"_"; temp.width(4); temp <<groups[ii]<<".";
 	  //temp.width(6); temp <<SimPM.timestep<<".silo:";
-	  string temp_filename;
-	  choose_pllel_filename(fname, groups[ii], file_counter, temp_filename);
-	  temp << temp_filename.c_str() <<":";
+	  choose_pllel_filename(fname, groups[ii], file_counter, tfn);
+	  temp << tfn.c_str() <<":";
 	}
-	temp << "/rank_"; temp.width(4); temp << ii << "_domain_";
-	temp.width(4); temp<<ranks[ii]; temp <<"/"<<vname;
+        tfn.clear();
+        set_dir_in_file(tfn, ii, ranks[ii], level);
+	//temp << "/level_"; temp.width(4); temp << lev << "_domain_";
+	//temp.width(4); temp<<ranks[ii];
+        temp << tfn.c_str();
+        temp <<"/"<<vname;
 	if (temp.str().length() >strlength)
 	  rep.error("multivar name too long!!!",temp.str().length());
 	strcpy(mm_names[ii],temp.str().c_str());
@@ -1182,6 +1203,12 @@ int dataio_silo_pllel::write_multimeshadj(
   class MCMDcontrol pp;
   int nmesh = mpiPM->get_nproc();
   pp.set_nproc(mpiPM->get_nproc());
+
+  int level=0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    if (gp==SimPM.levels[l].grid) level=l;
+    //cout <<"saving level "<<level<<"\n";
+  }
   
   int meshtypes[nmesh], Nngb[nmesh], Sk[nmesh];
   for (int v=0;v<nmesh;v++) {
@@ -1202,7 +1229,7 @@ int dataio_silo_pllel::write_multimeshadj(
   std::vector<int> ngb_list;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM,SimPM.levels[0]);
+    pp.decomposeDomain(SimPM,SimPM.levels[level]);
     //
     // Get list of abutting domains.
     //
@@ -1261,7 +1288,7 @@ int dataio_silo_pllel::write_multimeshadj(
   //long int ct=0;
   for (int v=0;v<nmesh;v++) {
     pp.set_myrank(v);
-    pp.decomposeDomain(SimPM, SimPM.levels[0]);
+    pp.decomposeDomain(SimPM, SimPM.levels[level]);
     long int off1 = Sk[v]; // this should be the same as ct (maybe don't need ct then!)
 
     //
@@ -1412,8 +1439,10 @@ int dataio_silo_pllel::write_multimeshadj(
   //
   // write the multimeshadj
   // 
-  err = DBPutMultimeshadj(dbfile, mma_name.c_str(), nmesh, meshtypes, Nngb, ngb, back, nnodes, nodelist, 0, 0, mma_opts);
-  if (err) rep.error("dataio_silo_pllel::OutputData() error writing multimesh info",err);
+  err = DBPutMultimeshadj(dbfile, mma_name.c_str(), nmesh, meshtypes,
+                  Nngb, ngb, back, nnodes, nodelist, 0, 0, mma_opts);
+  if (err)
+    rep.error("dataio_silo_pllel::OutputData() multimesh info",err);
   
   DBClearOptlist(mma_opts);
   DBFreeOptlist(mma_opts);
@@ -1747,6 +1776,49 @@ int dataio_silo_pllel::write_MRGtree(
 // ##################################################################
 // ##################################################################
 
+
+
+void dataio_silo_pllel::set_dir_in_file(
+        std::string &mydir,  ///< directory name.
+        const int my_rank,       ///< myrank (global).
+        const int my_group_rank,  ///< myrank in group.
+        const int level      ///< level in grid heirarchy
+        )
+{
+  ostringstream temp; temp.fill('0');
+  temp.str("");
+  temp << "/rank_";   temp.width(4); temp << my_rank;
+  //temp << "_l"; temp.width(2); temp << level;
+  temp << "_domain_"; temp.width(4); temp << my_group_rank;
+  mydir = temp.str(); temp.str("");
+  //cout <<"\t\tdomain: "<<mydir<<"\n";
+  return;
+}  
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+void dataio_silo_pllel::mesh_name(
+      const int rank, ///< rank
+      string &mesh_name
+      )
+{
+  //
+  // Get mesh_name from rank
+  //
+  ostringstream temp; temp.str(""); temp.fill('0');
+  temp<<"unigrid"; temp.width(4); temp<<rank;
+  mesh_name = temp.str();
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 #endif // if SILO

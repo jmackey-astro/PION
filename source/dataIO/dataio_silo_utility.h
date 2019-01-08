@@ -134,23 +134,6 @@ class dataio_silo_utility : public dataio_silo_pllel  {
       const int       ///< file number
       );
 
-  ///
-  /// get the name of a mesh, currently "unigridXXXX" where XXXX=rank
-  ///
-  void mesh_name(
-      const int, ///< rank
-      string &   ///< mesh name returned in this string.
-      );
-
-  ///
-  /// Given myrank and mygroup, create directory string where data is
-  /// held.  This is determined as rank_[global_rank]_domain_[rank_within_group]
-  ///
-  void set_dir_in_file(
-      std::string &,  ///< directory name.
-      const int,       ///< myrank (global).
-      const int        ///< myrank in group.
-      );
 
   ///
   /// Get Xmin[],Xmax[] for a quadmesh, and return them.

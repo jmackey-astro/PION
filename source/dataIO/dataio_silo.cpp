@@ -688,12 +688,12 @@ int dataio_silo::setup_grid_properties(
   for (int i=0;i<ndim;i++) lo_off[i] = 0;
   for (int i=0;i<ndim;i++) hi_off[i] = 0;
 #endif
-  err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
-                    reinterpret_cast<void *>(lo_off));
-  rep.errorTest("add lo-offset opt silo qmesh",0,err);
-  err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
-                    reinterpret_cast<void *>(hi_off));
-  rep.errorTest("add hi-offset opt silo qmesh",0,err);
+  //err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
+  //                  reinterpret_cast<void *>(lo_off));
+  //rep.errorTest("add lo-offset opt silo qmesh",0,err);
+  //err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
+  //                  reinterpret_cast<void *>(hi_off));
+  //rep.errorTest("add hi-offset opt silo qmesh",0,err);
   rep.errorTest("add GridOpts silo qmesh",0,err);
   //rep.printVec("lo-off",lo_off,ndim);
   //rep.printVec("hi-off",hi_off,ndim);
