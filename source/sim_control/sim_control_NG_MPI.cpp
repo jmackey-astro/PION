@@ -365,7 +365,9 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
 
-    calculate_raytracing_column_densities(SimPM,grid[l],l);
+    if (SimPM.RS.Nsources>0 && SimPM.EP.raytracing) {
+      calculate_raytracing_column_densities(SimPM,grid[l],l);
+    }
     
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {

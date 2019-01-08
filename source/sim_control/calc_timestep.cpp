@@ -351,7 +351,7 @@ double calc_timestep::calc_microphysics_dt(
     //
     // need column densities, so do raytracing, and then get dt.
     //
-    //cout <<"calc_timestep, getting column densities rt="<<raytracer<<".\n";
+    //cout <<"calc_timestep, getting column densities rt="<<par.RS.Nsources<<".\n";
     int err = calculate_raytracing_column_densities(par,grid,l);
     if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
     dt = get_mp_timescales_with_radiation(par,grid);
