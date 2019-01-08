@@ -8,7 +8,7 @@ eqn  euler
 solver 6
 
 ics PhotoEvap_radial
-OutputFile    DTE_D2Full_TTI_n00256
+OutputFile    DTE_D2Full_TTI_n00064
 
 # Number and type of tracers.
 ntracer 1
@@ -40,8 +40,8 @@ noise -1
 ## Grid Parameters
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  256
-NGridY  128
+NGridX  64
+NGridY  32
 NGridZ  128
 # Boundaries of Simulation box:
 Xmin -3.874e18

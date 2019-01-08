@@ -34,6 +34,23 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
   int pproc = par.levels[l].MCMD.parent_proc;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 
+  //
+  // If we are doing raytracing, then also send the column densities
+  // from fine to coarse grids.  Here we set up the number of them.
+  //
+  struct rad_src_info *s;
+  F2C_Nxd = 0;
+  F2C_tauoff.resize(par.RS.Nsources);
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+    s = &(par.RS.sources[isrc]);
+    F2C_tauoff[isrc] = F2C_Nxd;
+    F2C_Nxd += 2*s->NTau; // Need col2cell and cell_col for each Tau.
+#ifdef TEST_MPI_NG_F2C
+    cout <<"F2C_MPI_BC: RT Source "<<isrc<<": adding "<<2*s->NTau;
+    cout <<" cols, running total = "<<F2C_Nxd<<"\n";
+#endif
+  }
+
   // If so, do nothing because the parent grid will call the 
   // serial NG setup function, which just grabs the data from 
   // this grid.
@@ -56,7 +73,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_SEND(
     for (int v=0;v<nel;v++) {
       b->avg[v].c.resize(nc);
       b->avg[v].avg_state = mem.myalloc(b->avg[v].avg_state,
-                                                  par.nvar);
+                                                par.nvar+F2C_Nxd);
     }
     // add cells from this grid to the avg vectors.
     add_cells_to_avg(par.ndim,grid,nel,b->avg);
@@ -107,22 +124,31 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   int nc = b->avg[0].c.size();
   int nel = b->avg.size();
 
-  // data to send will be ordered as position,conserved-var
-  // for each averaged cell.
+  // data to send will be ordered as position,conserved-var,X-data
+  // for each averaged cell.  Position only needed for testing.
   pion_flt *data = 0;
-  data = mem.myalloc(data,nel*(par.nvar+par.ndim));
+#ifdef TEST_MPI_NG_F2C
+  data = mem.myalloc(data,nel*(par.nvar+F2C_Nxd+par.ndim));
+#else
+  data = mem.myalloc(data,nel*(par.nvar+F2C_Nxd));
+#endif
+
 
   // loop through avg vector and add cells and positions to
   // data array.
   int v=0;
-  double cd[par.nvar];
+  int nv = par.nvar + F2C_Nxd; // conserved vector and optical depths
+  double cd[nv];
   size_t ct=0;
   for (v=0;v<nel;v++) {
-    for (int j=0;j<par.nvar;j++) cd[j]=0.0;
-    average_cells(par,solver,grid,nc,b->avg[v].c,cd);
+    for (int j=0;j<nv;j++) cd[j]=0.0;
+    average_cells(par,solver,grid,nc,b->avg[v].c, b->avg[v].cpos,cd);
+#ifdef TEST_MPI_NG_F2C
     for (int i=0;i<par.ndim;i++) data[ct+i] = b->avg[v].cpos[i];
     ct += par.ndim;
-    for (int i=0;i<par.nvar;i++) data[ct+i] = cd[i];
+#endif
+    for (int i=0;i<nv;i++) data[ct+i] = cd[i];
+    ct += nv;
 
 #ifdef TEST_MPI_NG_F2C
     if (fabs(b->avg[v].c[0]->Ph[VY])>1.0e6 ||
@@ -134,8 +160,6 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
       cout <<"SEND AVG VY = "<< cd[MMY]/cd[RHO]<<"\n";
     }
 #endif
-
-    ct += par.nvar;
   } // go to next avg element.
 
   //
@@ -215,6 +239,7 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   cout <<"NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()";
   cout <<": starting... \n";
 #endif
+  
   // Check if child grids exist or are on my MPI process
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
@@ -399,7 +424,13 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
 
     // receive the data
     size_t nel = b->NGrecvF2C[irecv].size();
-    size_t ct = nel*(par.nvar+par.ndim);
+
+#ifdef TEST_MPI_NG_F2C
+    size_t ct = nel*(par.nvar+F2C_Nxd+par.ndim);
+#else
+    size_t ct = nel*(par.nvar+F2C_Nxd);
+#endif
+
     pion_flt *buf = mem.myalloc(buf,ct);
 #ifdef TEST_MPI_NG_F2C
     cout <<"BC_update_FINE_TO_COARSE_RECV: get "<<nel<<" cells.\n";
@@ -427,25 +458,34 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       CI.get_dpos(c,pos);
       rep.printVec("cell pos", pos, par.ndim);
       rep.printVec("recv pos", &(buf[i_el]), par.ndim);
-#endif
       i_el += par.ndim;
+#endif
       solver->UtoP(&(buf[i_el]),prim,
                    par.EP.MinTemperature,par.gamma);
-#ifdef TEST_MPI_NG_F2C
-      if (fabs(c->Ph[VY])>1.0e6 || fabs(prim[VY])>1.0e6) {
-        rep.printVec("cell Prim", c->Ph, par.nvar);
-        rep.printVec("recv Prim", prim, par.nvar);
-      }
-#endif
+      i_el += par.nvar;
+
 #ifdef TEST_INF
       for (int v=0;v<par.nvar;v++)
         if (!isfinite(prim[v])) rep.error("NAN F2C recv",v);
 #endif
+
       for (int v=0;v<par.nvar;v++) c->Ph[v] = prim[v];
       if (cstep==maxstep) {
         for (int v=0;v<par.nvar;v++) c->P[v] = c->Ph[v];
       }
-      i_el += par.nvar;
+
+      // set coarse cell optical depths for any radiation sources by
+      // taking values received (see get_F2C_Tau() for ordering)
+      struct rad_src_info *s;
+      int off;
+      for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+        s = &(par.RS.sources[isrc]);
+        off = i_el + F2C_tauoff[isrc];
+        CI.set_col(c, s->id, &(buf[off]));
+        CI.set_cell_col(c, s->id, &(buf[off+s->NTau]));
+      }
+      i_el += F2C_Nxd;
+
     } // loop over cells
 
 #ifdef TEST_MPI_NG_F2C

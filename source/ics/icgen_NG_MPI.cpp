@@ -119,6 +119,7 @@ int main(int argc, char **argv)
   string ics = rp->find_parameter(seek);
   setup_ics_type(ics,&ic);
   ic->set_SimPM(&SimPM);
+  ic->set_MCMD_pointer(&(SimPM.levels[0].MCMD));
 
   err = SimSetup->set_equations(SimPM);
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);

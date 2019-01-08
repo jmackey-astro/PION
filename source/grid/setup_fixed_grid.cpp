@@ -213,15 +213,18 @@ int setup_fixed_grid::setup_grid(
   if      (SimPM.coord_sys==COORD_CRT)
     *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype,
                              SimPM.Nbc, SimPM.Xmin, SimPM.Xmax,
-                             SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+                             SimPM.NG, SimPM.Xmin, SimPM.Xmax,
+                             SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_CYL)
     *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar,
                       SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
-                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax,
+                              SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_SPH)
     *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar,
                       SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
-                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax,
+                              SimPM.Xmin, SimPM.Xmax);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 

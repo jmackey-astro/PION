@@ -178,6 +178,7 @@ int setup_grid_NG_MPI::setup_grid(
               SimPM.levels[l].MCMD.LocalXmin,
               SimPM.levels[l].MCMD.LocalXmax,
               SimPM.levels[l].MCMD.LocalNG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
               SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_CYL)
       grid[l] = new uniform_grid_cyl_parallel (
@@ -185,6 +186,7 @@ int setup_grid_NG_MPI::setup_grid(
               SimPM.levels[l].MCMD.LocalXmin,
               SimPM.levels[l].MCMD.LocalXmax,
               SimPM.levels[l].MCMD.LocalNG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
               SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_SPH)
       grid[l] = new uniform_grid_sph_parallel (
@@ -192,6 +194,7 @@ int setup_grid_NG_MPI::setup_grid(
               SimPM.levels[l].MCMD.LocalXmin,
               SimPM.levels[l].MCMD.LocalXmax,
               SimPM.levels[l].MCMD.LocalNG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
               SimPM.Xmin, SimPM.Xmax);
     else 
       rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);

@@ -101,8 +101,8 @@ int raytracer_USC_pllel::Add_Source(
 {
   cout <<"\n--BEGIN-----raytracer_USC_pllel::AddSource()------------\n";
   //
-  // First call serial version.  This finds the source, and centres it
-  // on a cell if needed.
+  // First call serial version.  This finds the source, and centres
+  // it on a cell vertex if needed.
   //
 #ifdef RT_TESTING
   cout <<"\t**** PARALLEL Add_Source: calling serial version.\n";
@@ -115,16 +115,16 @@ int raytracer_USC_pllel::Add_Source(
   }
   int id=SourceList.back().s->id;
 #ifdef RT_TESTING
-  cout <<"\t**** PARALLEL Add_Source: serial version returned with id="<<id<<"\n";
+  cout <<"\t**** PARALLEL Add_Source: serial fn ret id="<<id<<"\n";
 #endif
   
   //
-  // Now tell the parallel grid to decide which boundaries it needs to 
-  // receive data from before processing this source, and which it needs
-  // to send data to after processing.
+  // Now tell the parallel grid to decide which boundaries it needs 
+  // to receive data from before processing this source, and which it
+  // needs to send data to after processing.
   //
 #ifdef RT_TESTING
-  cout <<"\t**** PARALLEL Add_Source: Setting up extra RT boundaries on grid.\n";
+  cout <<"\t**** PARALLEL Add_Source: Setup extra RT boundaries.\n";
 #endif
   int err = Setup_RT_Boundaries(*par,*MCMD,gridptr,id, *src);
   if (err) rep.error("Failed to setup RT Boundaries",err);
@@ -132,6 +132,9 @@ int raytracer_USC_pllel::Add_Source(
   //
   // Set Vshell for every cell on the grid.
   //
+#ifdef RT_TESTING
+  cout <<"\t**** PARALLEL: setting Vshell for source.\n";
+#endif
   set_Vshell_for_source(&SourceList.back());
 
 #ifdef RT_TESTING
@@ -157,7 +160,9 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
       )
 {
   int err=0;
-  //cout <<"RT_MPI: Starting Raytracing for source: "<<s_id<<"\n";
+#ifdef RT_TESTING
+  cout <<"RT_MPI: Starting Raytracing for source: "<<s_id<<"\n";
+#endif
 
   // Find source in list.
   struct rad_src_info *RS=0;
@@ -227,340 +232,6 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   //}
 
   return err;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-int raytracer_USC_pllel::trace_column(
-      const rad_source *source, ///< source we are tracing from.
-      cell *c,                  ///< cell to start from.
-      const enum direction dir  ///< direction we are looking.
-      )
-{
-  double ds=0.0, Nc[MAX_TAU];
-  for (unsigned short int iT=0; iT<source->s->NTau; iT++)
-    Nc[iT] =0.0;
-
-  int    err=0, dist=0;
-
-  // if we are at the edge of the full simulation domain, then
-  // col2cell is not set for edge cell, so we need to call
-  // get_cell_columns.  If we are at the edge of this grid but the
-  // grid is not at par.Xmin/Xmax, then we already got cols from
-  // an MPI call so don't reset.
-  // d2 is direction towards source:
-  enum direction d2 = NO;
-  for (int ii=par->ndim-1;ii>=0;ii--) {
-    if ((dist=fabs(source->ipos[ii]-c->pos[ii]))>err) {
-      err = dist;
-      d2 = (source->ipos[ii]-c->pos[ii]>0) ?
-                      static_cast<direction>(2*ii+1) : 
-                      static_cast<direction>(2*ii);
-    } 
-  }
-  err=0;
-  enum direction d3 = gridptr->OppDir(dir);
-  if (source->ipos[d3/2]-c->pos[d3/2]==0) d3=d2;
-
-  // need to check in case we have moved from source cell
-  //off the grid.
-  if ( c!=0 ) {
-#ifdef RT_TESTING
-    cout <<"RT_MPI::trace_column() running dir="<<dir<<", d2="<<d2<<".\n";
-#endif 
-
-    do {
-#ifdef RT_TESTING
-      cout <<"RT_MPI:TRACE COL: CELL= "; 
-      CI.print_cell(c);
-#endif
-#ifdef TESTING
-      dp.c = c;
-#endif
-      if (!gridptr->NextPt(c,d2) || !gridptr->NextPt(c,d3)) {
-        CI.get_col(c, source->s->id, Nc);
-      }
-      else {
-        err += get_cell_columns(source, c, Nc, &ds);
-      }
-#ifdef RT_TESTING
-      rep.printVec("***!!! NC",Nc,MAX_TAU);
-#endif
-      err += ProcessCell(c,Nc,ds,source,delt);
-    } while ( (c=gridptr->NextPt(c,dir))!=0 );
-  }
-  return err;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void raytracer_USC_pllel::col2cell_2d(
-      const rad_source *src,          ///< source we are working on.
-      const cell *c,                  ///< cell to get column to.
-      const enum direction entryface, ///< face ray enters cell through.
-      const enum direction *perpdir,  ///< array of perp directions towards source (only 1 el in 2D)
-      const double *delta,            ///< array of tan(theta) (1 el in 2D) (angle in [0,45]deg)
-      double *Nc                      ///< Column densities.
-      )
-{
-  //
-  // Get column densities of the two cells closer to the source.
-  // If there are no cells, we have zero column to the source.
-  // It is assumed that internal boundaries have cells with appropriately updated
-  // column data already set up in the boundaries where they need to be.
-  //
-  double col1[MAX_TAU], col2[MAX_TAU];
-  
-  cell *c1 = gridptr->NextPt(c,  entryface);
-  if (!c1) {
-    for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-      col1[iT] = col2[iT] = 0.0;
-  }
-  else {
-    cell *c2 = gridptr->NextPt(c1, (*perpdir) );
-    if (!c2) {
-      CI.get_col(c1, src->s->id, col1);
-      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-        col2[iT] = 0.0;
-    }
-    else {
-      CI.get_col(c1, src->s->id, col1);
-      CI.get_col(c2, src->s->id, col2);
-    }
-  }
-
-  //
-  //  INTERPOLATION SCHEMES -- BASICALLY ALL WERE CRAP EXCEPT C2RAY...
-  // The column-density variables are normalised differently for each source,
-  // now handled by TauMin[s->id].  For C2Ray it is Tau, and for the New udpate
-  // it is the mass density integrated along the line of sight (weighted by e.g. 1-x).
-  //
-  //  0: C2Ray inverse Tau with minTau=0.7: (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
-  //
-  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-    Nc[iT] = interpolate_2D(src->s->id, *delta, col1[iT], col2[iT]);
-  }
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-void raytracer_USC_pllel::col2cell_3d(
-      const rad_source *src,            ///< source we are working on
-      const cell *c,                  ///< cell to get column to.
-      const enum direction entryface, ///< face ray enters cell through.
-      const enum direction *perpdir,  ///< array of perp directions towards source (2 els in 3d)
-      const double *dx,               ///< array of tan(theta) (angle in [0,45]deg)
-      double *Nc                      ///< Column densities.
-      )
-{
-  //
-  // Algorithm is the same as that describe in Mellema et al.,2006, NewA, 11,374,
-  // appendix A.  Good for 3D cartesian geometry.
-
-  //
-  // First get column densities/opacities of the two cells closer to the source.
-  // If there are no cells, we have zero column/opacity to the source.
-  // It is assumed that internal boundaries have cells with appropriately updated
-  // column data already set up in the boundaries where they need to be.
-  //
-#ifdef RT_TESTING
-  //if (mpiPM.myrank==60 && c->id==31) {
-  //cout <<"3D ShortChars:: entrydir = "<<entryface<<" and perps = ["<<perpdir[0]<<", "<<perpdir[1]<<"]\n";
-  //}
-#endif
-  cell *c1=0, *c2=0, *c3=0, *c4=0;
-  double col1[MAX_TAU], col2[MAX_TAU], col3[MAX_TAU], col4[MAX_TAU];
-
-  c1 = gridptr->NextPt(c,  entryface);
-  if (!c1) {
-    for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-      col1[iT] = col2[iT] = col3[iT] = col4[iT] = 0.0;
-    }
-  }
-  else {
-    CI.get_col(c1,src->s->id, col1);
-
-    c2 = gridptr->NextPt(c1,  perpdir[0]);
-    if (!c2) {
-      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-        col2[iT] = 0.0;
-    }
-    else {
-      CI.get_col(c2,src->s->id, col2);
-      
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-      if (c2==s->sc && s->src_on_grid ) {
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col2[iT] *= sqrt(2.0);
-      }
-#endif // CELL_CENTRED_SRC
-#endif
-    }
-    
-    c3 = gridptr->NextPt(c1,  perpdir[1]);
-    if (!c3) {
-      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-        col3[iT] = 0.0;
-    }
-    else {
-      CI.get_col(c3, src->s->id, col3);
-
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-      if (c3==s->sc && s->src_on_grid ) {
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col3[iT] *= sqrt(2.);
-      }
-#endif // CELL_CENTRED_SRC
-#endif
-    }
-    
-    if (c2 && c3) {
-      c4 = gridptr->NextPt(c2, perpdir[1]);
-      if (!c4) {
-	//
-	// This can happen if beside a boundary that isn't sent/received with MPI, so 
-	// the cells are not connected to each other, but the columns in the boundary
-	// are zero in this case, so we can set it to zero here.
-	//
-#ifdef RT_TESTING
-	//cout <<"...corner cell doesn't exist...\n";
-	//CI.print_cell(c);
-	//CI.print_cell(c1);
-	//CI.print_cell(c2);
-	//CI.print_cell(c3);
-	//  else cout <<"cell c3 doesn't exist either\n.";
-	//rep.error("lost on grid -- corner cell doesn't exist",c4);
-#endif
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col4[iT] = 0.0;
-	//cout <<"...............................\n";
-#ifdef RT_TESTING
-	//	if (mpiPM.myrank==60) {
-	//  cout <<"RT_BD corner cell doesn't exist... cells c,c1,c2,c3\n";
-	// CI.print_cell(c);
-	//  CI.print_cell(c1);
-	//  CI.print_cell(c2);
-	//  if (c3) CI.print_cell(c3);
-	//  else cout <<"cell c3 doesn't exist either\n.";
-	//}
-#endif
-      }
-      else {
-        CI.get_col(c4, src->s->id, col4);
-
-#ifndef NO_SOURCE_CELL_GEOMETRY
-#ifdef CELL_CENTRED_SRC
-	if (c4==s->sc && s->src_on_grid ) {
-        for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-          col4[iT] *= sqrt(3.0);
-        }
-#endif // CELL_CENTRED_SRC
-#endif // NO_SOURCE_CELL_GEOMETRY
-#ifdef RT_TESTING
-	//if (c4->id==-500 && mpiPM.myrank==191)
-	//  cout <<"RT_BD corner cell found! col="<<col4<<"\n";
-#endif
-      }
-    }
-    else {
-      for (short unsigned int iT=0; iT<src->s->NTau; iT++)
-        col4[iT] = 0.0;
-    }
-  }
-  //  cout <<"3D ShortChars:: col1="<<col1<<" col2="<<col2<<" col3="<<col3<<" col4="<<col4;
-  //  cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
-
-#ifdef RT_TESTING
-  //cout <<"3D ShortChars:: cols for cell id="<<c->id<<"\n";
-  if (!pconst.equalD(dx[0],0.0) && !pconst.equalD(dx[1],0.0) &&
-      (col1[0]<0.0 || col2[0]<0.0 || col3[0]<0.0 || col4[0]<0.0)) {
-    cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
-    cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
-    CI.print_cell(c);
-    CI.print_cell(c1);
-    CI.print_cell(c2);
-    CI.print_cell(c3);
-    CI.print_cell(c4);
-    //if (col1<0.0) {cout <<"col1="<<col1<<", setting to zero.\n"; col1=0.0;}
-    //if (col2<0.0) {cout <<"col2="<<col2<<", setting to zero.\n"; col2=0.0;}
-    //if (col3<0.0) {cout <<"col3="<<col3<<", setting to zero.\n"; col3=0.0;}
-    //if (col4<0.0) {cout <<"col4="<<col4<<", setting to zero.\n"; col4=0.0;}
-  }
-  //new max, cell posn=Vector pos : [1.54412e+17, 2.49265e+18, 2.44853e+18 ]
-  //2.20588e+16, 1.30147e+18, 1.03676e+18
-  double dd[3] = {1.54412e+17, 2.49265e+18, 2.44853e+18};
-  //
-  // geometry: This should be to centre--of--volume of cell for
-  // non-cartesian geometries!  But it's testing--only code, so it
-  // doesn't matter.
-  //
-  double dpos[3]; CI.get_dpos(c,dpos);
-  if (gridptr->distance(dd,dpos) < gridptr->DX()/2.) {
-    cout.setf(ios_base::scientific); cout.precision(15);
-    cout <<"cell with max.diff in step 1: id="<<c->id<<"\n";
-    cout <<"pnt  pos="; rep.printVec("pnt",dd,ndim);
-    cout <<"cell pos="; rep.printVec("pos",dpos,ndim);
-    cout <<"3D ShortChars:: col1="<<col1[0]<<" col2="<<col2[0]<<" col3="<<col3[0]<<" col4="<<col4[0];
-    cout <<"\t dx = ["<<dx[0]<<", "<<dx[1]<<"]"<<"\n";
-    double w1,w2,w3,w4,mintau3d;
-    mintau3d=0.7;
-    w1 = (1.-dx[0])*(1.-dx[1])/max(mintau3d,col1[0]);
-    w2 =     dx[0] *(1.-dx[1])/max(mintau3d,col2[0]);
-    w3 = (1.-dx[0])*    dx[1] /max(mintau3d,col3[0]);
-    w4 =     dx[0] *    dx[1] /max(mintau3d,col4[0]);
-    mintau3d = (w1+w2+w3+w4);
-    w1/=mintau3d; w2/=mintau3d; w3/=mintau3d; w4/=mintau3d;
-    cout <<"col2cell = ";
-    cout<<w1*col1[0] + w2*col2[0] + w3*col3[0] + w4*col4[0]<<"\n";
-    cout.precision(6); cout.setf(ios_base::fixed);
-  }
-#endif
-
-#ifdef RT_TESTING
-  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-    if (col1[iT]<0.0) {cout <<"col1="<<col1[iT]<<", setting to zero.\n"; col1[iT]=0.0;}
-    if (col2[iT]<0.0 && !pconst.equalD(dx[0],0.0))
-      {cout <<"col2="<<col2[iT]<<", setting to zero.\n"; col2[iT]=0.0;}
-    //else if (col2<0.) cout <<"dx[0]="<<dx[0]<<"\n";
-    if (col3[iT]<0.0 && !pconst.equalD(dx[1],0.0))
-      {cout <<"col3="<<col3[iT]<<", setting to zero.\n"; col3[iT]=0.0;}
-    //else if (col3<0.) cout <<"dx[1]="<<dx[1]<<"\n";
-    if (col4[iT]<0.0 && !pconst.equalD(dx[0],0.0)  && !pconst.equalD(dx[1],0.0))
-      {cout <<"col4="<<col4[iT]<<", setting to zero.\n"; col4[iT]=0.0;}
-    //else if (col4<0.) cout <<"dx[0]="<<dx[0]<<"\tdx[1]="<<dx[1]<<"\n";
-  }
-#endif
-
-
-  //
-  //  0: C2Ray inverse Tau with minTau=0.7: (see Mellema et al.,2006, NewA, 11,374, eq.A.5)
-  //
-  for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
-    Nc[iT] = interpolate_3D(src->s->id, dx[0], dx[1], 
-                            col1[iT], col2[iT], col3[iT], col4[iT]);
-  }
-  return;
-
 }
 
 

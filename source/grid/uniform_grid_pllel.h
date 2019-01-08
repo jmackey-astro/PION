@@ -57,6 +57,8 @@ class UniformGridParallel
       double *,    ///< local xmin
       double *,    ///< local xmax
       int *,       ///< local number of grid zones
+      double *, ///< array of min. x/y/z for level.
+      double *, ///< array of max. x/y/z for level.
       double *, ///< array of min. x/y/z for full simulation.
       double *  ///< array of max. x/y/z for full simulation.
       );
@@ -65,30 +67,6 @@ class UniformGridParallel
   /// Deletes the grid.
   /// 
   ~UniformGridParallel() {return;}
-
-  /// Returns Simulation xyz lower bounds (code units)
-  virtual double SIM_Xmin(enum axes a) const
-  {return(Sim_xmin[a] );}
-
-  /// Returns Simulation xyz upper bounds (code units)
-  virtual double SIM_Xmax(enum axes a) const
-  {return(Sim_xmax[a] );}
-
-  /// Returns Simulation range (code units)
-  virtual double SIM_Range(enum axes a) const
-  {return(Sim_range[a]);}
-
-  /// Returns Simulation xyz lower bounds (integer units, 1cell=2units)
-  virtual int  Sim_iXmin(enum axes a) const
-  {return(Sim_ixmin[a] );}
-
-  /// Returns Simulation xyz upper bounds (integer units, 1cell=2units)
-  virtual int  Sim_iXmax(enum axes a) const
-  {return(Sim_ixmax[a] );}
-
-  /// Returns Simulation xyz range (integer units, 1cell=2units)
-  virtual int Sim_iRange(enum axes a) const
-  {return(Sim_irange[a]);}
 
   ///
   /// Setup the flux struct flux_update_recv with list of interfaces
@@ -147,6 +125,8 @@ class uniform_grid_cyl_parallel
       double *, ///< array of minimum values of x,y,z.
       double *, ///< array of maximum values of x,y,z.
       int *, ///< array of number of cells in x,y,z directions.
+      double *, ///< array of min. x/y/z for level.
+      double *, ///< array of max. x/y/z for level.
       double *, ///< array of min. x/y/z for full simulation.
       double *  ///< array of max. x/y/z for full simulation.
       );
@@ -191,6 +171,8 @@ class uniform_grid_sph_parallel
       double *, ///< array of minimum values of x,y,z.
       double *, ///< array of maximum values of x,y,z.
       int *, ///< array of number of cells in x,y,z directions.
+      double *, ///< array of min. x/y/z for level.
+      double *, ///< array of max. x/y/z for level.
       double *, ///< array of min. x/y/z for full simulation.
       double *  ///< array of max. x/y/z for full simulation.
       );

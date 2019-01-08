@@ -9,7 +9,7 @@ coordinates cylindrical
 
 # Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver 4
+solver 6
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
@@ -72,7 +72,7 @@ OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 128
+OutputFrequency 256
 OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 
@@ -91,10 +91,10 @@ BC_YP outflow
 BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.0001
+GAMMA 1.01
 
 # CFL coefficient 0<cfl<1
-CFL 0.1
+CFL 0.2
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.15

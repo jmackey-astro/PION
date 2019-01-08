@@ -136,18 +136,21 @@ int setup_fixed_grid_pllel::setup_grid(
     *grid = new UniformGridParallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
     *grid = new uniform_grid_cyl_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
     *grid = new uniform_grid_sph_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax,
       SimPM.Xmin, SimPM.Xmax);
   }
   else {
