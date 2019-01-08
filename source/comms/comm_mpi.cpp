@@ -564,6 +564,7 @@ int comm_mpi::look_for_data_to_receive(
   // int MPI_Probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
   //
   //int err = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &(ri->status));
+  //cout <<" max_tag = "<<MPI_TAG_UB<<"<< max_int="<<INT_MAX<<endl;
   int err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, MPI_COMM_WORLD, &(ri->status));
   if (err) rep.error("mpi probe failed",err);
   

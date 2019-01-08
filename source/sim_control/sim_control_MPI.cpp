@@ -428,6 +428,7 @@ int sim_control_pllel::Time_Int(
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 #ifdef TESTING
     cout <<"MPI time_int: finished timestep\n";
+    log_freq=1;
 #endif
 
     if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&

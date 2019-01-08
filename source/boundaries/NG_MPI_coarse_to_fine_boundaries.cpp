@@ -222,8 +222,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // more than one boundary to the same process.  Also add level, 
     // because it can happen that more than one level sends the same
     // boundary to the same proc.
-    // So the tag is 1000 + 100*dir + level+1.
-    // This is unique as long as level<99.
+    // So the tag is BC_MPI_NGC2F_tag + 100*dir + level+1.
+    //
     int comm_tag = BC_MPI_NGC2F_tag+100*b->NGsendC2F[ib]->dir +l+1;
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;

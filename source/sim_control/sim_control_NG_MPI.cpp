@@ -1265,6 +1265,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 #endif
         continue;
       }
+      // unique as long as isend<30, l<10, rank<10000.
       int comm_tag = BC_MPI_FLUX_tag +100000*isend +10000*l;
       comm_tag += MCMD->get_myrank();
 #ifdef TEST_BC89FLUX
@@ -1367,6 +1368,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     string recv_id;
     int recv_tag=-1;
     int from_rank=-1;
+    // unique as long as isend<30, l<10, rank<10000.
     int comm_tag = BC_MPI_FLUX_tag +100000*dir +10000*(l+1) +fup->rank[0];
 #ifdef TEST_BC89FLUX
     cout <<"looking for data with tag: "<<comm_tag<<endl;

@@ -1,8 +1,8 @@
 #!/bin/sh 
 
 #SBATCH --time=04:00:00
-# N.B. Kay has 20 processors per node, so 64-core job needs 4 nodes, etc.
-#SBATCH --nodes=7
+# N.B. Kay has 40 processors per node, so 64-core job needs 2 nodes, etc.
+#SBATCH --nodes=4
 #SBATCH -A dias01
 #SBATCH -p ProdQ
 #SBATCH --mail-type=ALL
