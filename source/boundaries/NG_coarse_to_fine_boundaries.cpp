@@ -193,15 +193,16 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
            fine->NextPt((*f_iter),YP)->npt != c) {
         //cout <<"skipping column\n";
         ncells=0;
-        break;
       }
-      // get list of four fine cells.
-      fcl.push_back(*f_iter); f1 = (*f_iter);
-      f_iter++;
-      fcl.push_back(*f_iter); f2 = (*f_iter);
-      fcl.push_back(fine->NextPt(f1,YP));
-      fcl.push_back(fine->NextPt(f2,YP));
-      ncells=4;
+      else {
+        // get list of four fine cells.
+        fcl.push_back(*f_iter); f1 = (*f_iter);
+        f_iter++;
+        fcl.push_back(*f_iter); f2 = (*f_iter);
+        fcl.push_back(fine->NextPt(f1,YP));
+        fcl.push_back(fine->NextPt(f2,YP));
+        ncells=4;
+      }
     }
     else {
       rep.error("C2F RT 3D not implemented",par.ndim);
@@ -211,7 +212,6 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       continue; // must be on odd-numbered column
     }
 
-    //rep.printVec("f0 pos",fcl[0]->pos,2);
     //rep.printVec("f1 pos",fcl[1]->pos,2);
     //rep.printVec("f2 pos",fcl[2]->pos,2);
     //rep.printVec("f3 pos",fcl[3]->pos,2);
@@ -672,6 +672,11 @@ void NG_coarse_to_fine_bc::get_C2F_Tau(
         // f1,f3 have Tau same as coarse cell, and f0,f2 have Tau
         // reduced by dTau/2
         // All 4 cells have dTau reduced by a factor of 2.
+        //cout <<"in Q3: pos = ";
+        //rep.printVec("cpos",cpos,par.ndim);
+        //rep.printVec("Tau",Tau,s->NTau);
+        //rep.printVec("dTau",dTau,s->NTau);
+
         for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
         CI.set_col(f1, s->id, Tau);
         CI.set_cell_col(f1, s->id, dTau);
@@ -682,6 +687,15 @@ void NG_coarse_to_fine_bc::get_C2F_Tau(
         CI.set_cell_col(f0, s->id, dTau);
         CI.set_col(f2, s->id, Tau);
         CI.set_cell_col(f2, s->id, dTau);
+        
+        //double fpos[MAX_DIM]; CI.get_dpos(f0,fpos);
+        //if (fpos[YY]<-1.9e18) {
+        //  rep.printVec("fpos",fpos,par.ndim);
+        //  CI.print_cell(f0);
+        //  CI.print_cell(f1);
+        //  CI.print_cell(f2);
+        //  CI.print_cell(f3);
+        //}
       }
       else {
         // source in Q4, coming from YN (225 < theta < 315 deg)
