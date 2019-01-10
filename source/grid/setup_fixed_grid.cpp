@@ -507,12 +507,23 @@ int setup_fixed_grid::setup_raytracing(
   }
 
   //
-  // Now add the sources to the tracer.  Note that both the implicit and explicit
-  // integrators can still only handle a single ionising source, so we do a check
-  // for this and bug out if there is more than one.
+  // Now add the sources to the tracer.  Note that both the implicit
+  // and explicit integrators can still only handle a single ionising
+  // source, so we do a check for this and bug out if there is more
+  // than one.
   //
   int ion_count=0, uv_count=0, dif_count=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+    
+    // see if source is on the domain or not.  Set flag accordingly.
+    SimPM.RS.sources[isrc].ongrid = true;
+    for (int d=0;d<SimPM.ndim;d++) {
+      if (SimPM.RS.sources[isrc].pos[d]<SimPM.levels[0].Xmin[d] ||
+          SimPM.RS.sources[isrc].pos[d]>SimPM.levels[0].Xmax[d])
+        SimPM.RS.sources[isrc].ongrid = false;
+    }
+
+    // source types
     if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) {
       //
       // single sources have a flux (if at infinity) or a luminosity (if point

@@ -331,16 +331,15 @@ void raytracer_USC_infinity::add_source_to_list(
   //
   if (coord_sys==COORD_CYL) {
     if (dir!=ZNcyl && dir!=ZPcyl && dir!=RPcyl) {
-      rep.error("Cylindrical coords, but source not at infinity in z-dir",dir);
+      rep.error("Cylindrical coords, src at R<0!",dir);
     }
   }
 
   //
-  // now go from first point on grid in direction dir until we get to the edge.
-  // Then go back one cell.  This is rs.sc.
+  // now go from first point on grid in direction dir until we get 
+  // to the edge.  Then go back one cell.  This is rs.sc.
   //
-  while (gridptr->NextPt(c,dir))
-    c=gridptr->NextPt(c,dir);
+  while (gridptr->NextPt(c,dir)) c=gridptr->NextPt(c,dir);
   c = gridptr->NextPt(c,gridptr->OppDir(dir));
 
   rs.sc = c;
@@ -607,7 +606,8 @@ int raytracer_USC_infinity::RayTrace_SingleSource(
   double Tau[MAX_TAU];
   do {
     cout <<"cell "<<c->id<<" setting Tau to -1\n";
-    //for (short unsigned int iT=0; iT<SourceList[s_id].s->NTau; iT++)
+    //for (short unsigned int iT=0;
+    //     iT<SourceList[s_id].s->NTau; iT++)
     for (short unsigned int iT=0; iT<MAX_TAU; iT++) Tau[iT]=-1.0;
     CI.set_col(c, s_id, Tau);
   } while ( (c=gridptr->NextPt(c)) !=0);
@@ -656,7 +656,8 @@ int raytracer_USC_infinity::trace_parallel_rays(
   if (gridptr->NextPt(c,dir)!=0 && gridptr->NextPt(c,dir)->isgd)
     rep.error("source cell not set up right",source->s->id);
 #ifdef RT_TESTING
-  cout <<"raytracer_USC_infinity::trace_parallel_rays() start_cell: ";
+  cout <<"raytracer_USC_infinity::trace_parallel_rays()";
+  cout <<": start_cell: ";
   CI.print_cell(c);
 #endif
   
@@ -832,8 +833,11 @@ int raytracer_USC_infinity::ProcessCell(
   if (!c->isdomain) {
     // if cell is not in the domain, set its column to be zero,
 #ifdef RT_TESTING
-    cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", "<<c->pos[YY]<<"] : ";
-    double dpos[ndim]; CI.get_dpos(c,dpos); rep.printVec("pos",dpos,ndim);
+    cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", ";
+    cout <<c->pos[YY]<<"] : ";
+    double dpos[ndim];
+    CI.get_dpos(c,dpos);
+    rep.printVec("pos",dpos,ndim);
 #endif
     cell_col[0] = 0.0;
     col2cell[0]  = 0.0; //+= cell_col[0];

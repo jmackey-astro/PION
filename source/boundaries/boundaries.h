@@ -148,7 +148,7 @@ struct boundary_data {
   ///    - setup_NG_grid::setup_boundary_structs()
   ///    - NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE()
   ///    - NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
-  ///    - sim_control_NG::calculate_raytracing_column_densities()
+  ///    - sim_control_NG::do_ongrid_raytracing()
   /// - Used by parallel NG code:
   ///    - NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()
   ///    - NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV()

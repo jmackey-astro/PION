@@ -127,6 +127,13 @@ void DataIOBase::set_params(
   params.push_back(p);
   delete [] defngcentre;
 
+  int *defngrefine = new int [MAX_DIM];
+  for (int v=0;v<MAX_DIM;v++) defngrefine[v]=0;
+  pm_idimarr *n004 = new pm_idimarr 
+    ("NG_refine",  SimPM.NG_refine,defngrefine);
+  p = n004; p->critical=false;  
+  params.push_back(p);
+  delete [] defngrefine;
 
   //
   // Boundary conditions

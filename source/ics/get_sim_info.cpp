@@ -311,6 +311,18 @@ int get_sim_info::read_gridparams(
   if (str=="")  SimPM.NG_centre[ZZ] = 0.0;
   else          SimPM.NG_centre[ZZ] =  atof(str.c_str());
 
+  seek="NG_refine_XX"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.NG_refine[XX] = 1;
+  else          SimPM.NG_refine[XX] = atoi(str.c_str());
+
+  seek="NG_refine_YY"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.NG_refine[YY] = 1;
+  else          SimPM.NG_refine[YY] = atoi(str.c_str());
+
+  seek="NG_refine_ZZ"; str=rp->find_parameter(seek);
+  if (str=="")  SimPM.NG_refine[ZZ] = 1;
+  else          SimPM.NG_refine[ZZ] = atoi(str.c_str());
+
 
   // output info
   str = rp->find_parameter("OutputPath");

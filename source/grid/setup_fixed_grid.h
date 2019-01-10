@@ -116,7 +116,6 @@ class setup_fixed_grid : virtual public assign_update_bcs
   ///
   class FV_solver_base * get_solver_ptr() {return spatial_solver;}
 
-
   //---------------------------------------
   protected:
   //---------------------------------------

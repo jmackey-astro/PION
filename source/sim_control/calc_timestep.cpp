@@ -250,8 +250,10 @@ void calc_timestep::timestep_checking_and_limiting(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double calc_timestep::calc_dynamics_dt(
@@ -312,8 +314,10 @@ double calc_timestep::calc_dynamics_dt(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double calc_timestep::calc_microphysics_dt(
@@ -352,8 +356,7 @@ double calc_timestep::calc_microphysics_dt(
     // need column densities, so do raytracing, and then get dt.
     //
     //cout <<"calc_timestep, getting column densities rt="<<par.RS.Nsources<<".\n";
-    int err = calculate_raytracing_column_densities(par,grid,l);
-    if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
+    //int err = do_ongrid_raytracing(par,grid,l);
     dt = get_mp_timescales_with_radiation(par,grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_with_radiation() returned error",dt);
@@ -510,9 +513,10 @@ double calc_timestep::get_mp_timescales_with_radiation(
     dp.c = c;
 #endif
     //
-    // Check if cell is boundary data or not (can only be an internal boundary, such as
-    // a stellar wind, since we are looping over cells which are grid data).  If it is
-    // boundary data then we skip it.
+    // Check if cell is boundary data (can only be an internal
+    // boundary, such as a stellar wind, since we are looping over
+    // cells which are grid data).  If it is boundary data then we
+    // skip it.
     //
     if (c->isbd) {
 #ifdef TESTING
@@ -524,20 +528,32 @@ double calc_timestep::get_mp_timescales_with_radiation(
       // Get column densities and Vshell in struct for each source.
       //
       for (int v=0; v<FVI_nheat; v++) {
-        FVI_heating_srcs[v].Vshell  = CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].dS      = CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
-        CI.get_cell_col(c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].DelCol);
-        CI.get_col(     c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].Column);
-        for (short unsigned int iC=0; iC<FVI_heating_srcs[v].NTau; iC++)
-          FVI_heating_srcs[v].Column[iC] -= FVI_heating_srcs[v].DelCol[iC];
+        FVI_heating_srcs[v].Vshell  = 
+                    CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
+        FVI_heating_srcs[v].dS      =
+                    CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
+        CI.get_cell_col(c, FVI_heating_srcs[v].id,
+                            FVI_heating_srcs[v].DelCol);
+        CI.get_col(     c, FVI_heating_srcs[v].id,
+                            FVI_heating_srcs[v].Column);
+        for (short unsigned int iC=0;
+             iC<FVI_heating_srcs[v].NTau; iC++)
+          FVI_heating_srcs[v].Column[iC] -=
+                                  FVI_heating_srcs[v].DelCol[iC];
       }
       for (int v=0; v<FVI_nion; v++) {
-        FVI_ionising_srcs[v].Vshell = CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].dS     = CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
-        CI.get_cell_col(c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].DelCol);
-        CI.get_col(     c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);
-        for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
-          FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
+        FVI_ionising_srcs[v].Vshell = 
+                    CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
+        FVI_ionising_srcs[v].dS     =
+                    CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
+        CI.get_cell_col(c, FVI_ionising_srcs[v].id,
+                           FVI_ionising_srcs[v].DelCol);
+        CI.get_col(     c, FVI_ionising_srcs[v].id,
+                           FVI_ionising_srcs[v].Column);
+        for (short unsigned int iC=0;
+             iC<FVI_ionising_srcs[v].NTau; iC++)
+          FVI_ionising_srcs[v].Column[iC] -=
+                                  FVI_ionising_srcs[v].DelCol[iC];
       }
       //
       // We assume we want to limit by all relevant timescales.
@@ -563,38 +579,6 @@ double calc_timestep::get_mp_timescales_with_radiation(
   } while ( (c =grid->NextPt(c)) !=0);
 
   return dt;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int calc_timestep::calculate_raytracing_column_densities(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *grid,       ///< Computational grid.
-      const int
-      )
-{
-  int err=0;
-  if (!grid->RT) rep.error("calculate_raytracing_column_densities() no RT",0);
-  //
-  // If we have raytracing, we call the ray-tracing routines 
-  // to get Tau0, dTau, Vshell in cell->extra_data[].
-  //
-  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
-#ifdef RT_TESTING
-    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
-#endif
-    err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
-    if (err) {
-      cout <<"isrc="<<isrc<<"\t"; 
-      rep.error("calc_raytracing_col_dens step in returned error",err);
-    } // if error
-  } // loop over sources
-  return err;
 }
 
 

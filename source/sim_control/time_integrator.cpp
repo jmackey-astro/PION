@@ -167,9 +167,12 @@ int time_integrator::first_order_update(
   // the timestep.
   //
   if (!FVI_need_column_densities_4dt && grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid,0);
+#ifdef RT_TESTING
+    cout <<" 1st order step doing RT \n";
+#endif
+    err += RT_all_sources(SimPM,grid,0);
     if (err) 
-      rep.error("first_order_update: error from first calc_rt_cols()",err);
+      rep.error("first_order_update: first calc_rt_cols()",err);
   }
 
   //
@@ -188,7 +191,7 @@ int time_integrator::first_order_update(
   //
   err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,ooa, grid);
   if (err) 
-    rep.error("first_order_update: error from state-vec update",err);
+    rep.error("first_order_update: state-vec update",err);
 
   return 0;
 }
@@ -209,21 +212,14 @@ int time_integrator::second_order_update(
   // NB Only used for uniform grid.  update for NG grid is in
   // sim_control_NG.cpp
   int err=0;
-  //
   // Set dt for equations class
-  // MULTITHREADING RISK!
-  //
   spatial_solver->Setdt(dt);
 
   //
   // Raytracing, to get column densities for microphysics update.
   //
-  if (grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid,0);
-    if (err) {
-      rep.error("second_order_update: error from first calc_rt_cols()",err);
-    }
-  }
+  err += RT_all_sources(SimPM,grid,0);
+  rep.errorTest("second_order_update: RT",0,err);
 
   //
   // Calculate updates for each physics module
@@ -241,7 +237,7 @@ int time_integrator::second_order_update(
   //
   err += grid_update_state_vector(  dt, TIMESTEP_FULL, ooa, grid);
   if (err) 
-    rep.error("second_order_update: error from state-vec update",err);
+    rep.error("second_order_update: state-vec update",err);
 
   return 0;
 }

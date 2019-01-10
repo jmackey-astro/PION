@@ -32,10 +32,27 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   if (b->data.empty())
     rep.error("BC_assign_COARSE_TO_FINE: empty boundary data",
                                                         b->itype);
+
+  //
+  // If we are doing raytracing, then also send the column densities
+  // from coarse to fine grids.  Here we set up the number of them.
+  //
+  struct rad_src_info *s;
+  C2F_Nxd = 0;
+  C2F_tauoff.resize(par.RS.Nsources);
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+    s = &(par.RS.sources[isrc]);
+    C2F_tauoff[isrc] = C2F_Nxd;
+    C2F_Nxd += 2*s->NTau; // Need col2cell and cell_col for each Tau.
+#ifdef TEST_MPI_NG
+    cout <<"C2F_BC: RT Source "<<isrc<<": adding "<<2*s->NTau;
+    cout <<" cols, running total = "<<C2F_Nxd<<"\n";
+#endif
+  }
+
   list<cell*>::iterator bpt=b->data.begin();
   int gidx = grid->idx();
   cell *pc = parent->FirstPt_All(); // parent cell.
-
   double distance =  0.0;
   bool loop;
   
@@ -79,6 +96,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       const int step
       )
 {
+  if (level==0) return 0;
 #ifdef TEST_C2F
     cout <<"C2F: updating boundary data from coarse grid to level ";
     cout <<level<<"\n";
@@ -91,7 +109,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   // to use very old Fortran code to accomplish this, and the code is
   // almost impenetrable.  AMRVAC uses linear/bilinear/trilinear
   // interpolation with renormalisation to conserve mass/P/E.
-  // I'm doing what AMRVAC does, I think.
+  // PION is doing what AMRVAC does, I think.
+  //
 
   // pointers to coarse and fine grids:
   class GridBaseClass *coarse = par.levels[level].parent;
@@ -104,6 +123,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   list<cell*>::iterator f_iter=b->data.begin();
   cell *f, *c;
 
+  // ----------------------------------------------------------------
   //
   // if on an odd-numbered step, then need to update the data on the
   // coarse grid to half way through a coarse step.  Assume dU has
@@ -135,7 +155,74 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 #endif
     }
   }
+  // ----------------------------------------------------------------
   
+  // ----------------------------------------------------------------
+  // save coarse cell fluxes into array, and then interpolate onto
+  // fine cells.
+  for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+    cell *f1=0, *f2=0;
+    struct rad_src_info *s;
+    int off = 0, ncells=0;
+    pion_flt Tau[MAX_TAU], T[C2F_Nxd], cpos[MAX_DIM];
+    std::vector<cell *> fcl;
+    c = (*f_iter)->npt;
+    CI.get_dpos(c,cpos);
+
+    // save Tau and dTau for each source in array T.
+    for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+      s = &(par.RS.sources[isrc]);
+      off = C2F_tauoff[isrc];
+      CI.get_col(c, s->id, Tau);
+      for (int iT=0; iT<s->NTau; iT++) T[off+iT] = Tau[iT];
+      off += s->NTau;
+      CI.get_cell_col(c, s->id, Tau);
+      for (int iT=0; iT<s->NTau; iT++) T[off+iT] = Tau[iT];
+    }
+    //rep.printVec("T coarse",T,C2F_Nxd);
+    
+    // add fine cells to list.
+    if      (par.ndim == 1) {
+      fcl.push_back(*f_iter);
+      f_iter++;
+      fcl.push_back(*f_iter);
+      ncells=2;
+    }
+    else if (par.ndim == 2) {
+      if (!fine->NextPt((*f_iter),YP) ||
+           fine->NextPt((*f_iter),YP)->npt != c) {
+        //cout <<"skipping column\n";
+        ncells=0;
+        break;
+      }
+      // get list of four fine cells.
+      fcl.push_back(*f_iter); f1 = (*f_iter);
+      f_iter++;
+      fcl.push_back(*f_iter); f2 = (*f_iter);
+      fcl.push_back(fine->NextPt(f1,YP));
+      fcl.push_back(fine->NextPt(f2,YP));
+      ncells=4;
+    }
+    else {
+      rep.error("C2F RT 3D not implemented",par.ndim);
+    }
+    if (ncells==0) {
+      //cout <<"ncells=0: skipping column\n";
+      continue; // must be on odd-numbered column
+    }
+
+    //rep.printVec("f0 pos",fcl[0]->pos,2);
+    //rep.printVec("f1 pos",fcl[1]->pos,2);
+    //rep.printVec("f2 pos",fcl[2]->pos,2);
+    //rep.printVec("f3 pos",fcl[3]->pos,2);
+    //rep.printVec("c  pos",cpos,2);
+
+    // This function assigns interpolated Tau,dTau to fine cells.
+    get_C2F_Tau(par,fcl,cpos,T);
+  } // loop over cells and assign optical depths
+  // ----------------------------------------------------------------
+
+  // ----------------------------------------------------------------
   // if spatial order of accuracy is 1, then we have piecewise
   // constant data, so there is no interpolation to be done.
   if (par.spOOA == OA1) {
@@ -149,7 +236,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       // ----- constant data -----
     }
   }
+  // ----------------------------------------------------------------
 
+  // ----------------------------------------------------------------
   else if (par.spOOA == OA2) {
     //
     // Dimensions is sufficiently different that we have an if/else
@@ -239,6 +328,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
     } // 3D
   } // 2nd-order accuracy
+  // ----------------------------------------------------------------
 
   return 0;
 }
@@ -461,6 +551,173 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
 
 // ##################################################################
 // ##################################################################
+
+
+
+void NG_coarse_to_fine_bc::get_C2F_Tau(
+      class SimParams &par,   ///< pointer to simulation parameters
+      std::vector<cell *> &c, ///< list of cells
+      const pion_flt *cpos,   ///< centre of coarse cell.
+      double *T               ///< coarse-cell optical depths
+      )
+{
+  // data needed for getting coarse cell Taus onto coarse grid.
+  double Tau[MAX_TAU], dTau[MAX_TAU];
+  class cell *f0, *f1, *f2, *f3;
+  struct rad_src_info *s;
+  double diffx,diffy;
+
+  if (par.ndim == 1) {
+    f0 = c[0];
+    f1 = c[1];
+
+    for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+      s = &(par.RS.sources[isrc]);
+      for (int iT=0; iT<s->NTau; iT++)
+        Tau[iT] = T[C2F_tauoff[isrc]+iT];
+      for (int iT=0; iT<s->NTau; iT++)
+        dTau[iT] = T[C2F_tauoff[isrc]+s->NTau+iT];
+      // column from source through cell depends on
+      // which direction is to the source
+      if (s->pos[XX] > cpos[XX]) {
+        // f0 has same column as coarse, f1 has 0.5*dTau subtracted.
+        // Both cells have dTau divided by 2.
+        for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
+        CI.set_col(f0, s->id, Tau);
+        CI.set_cell_col(f0, s->id, dTau);
+        for (int iT=0; iT<s->NTau; iT++) Tau[iT] -= dTau[iT];
+        CI.set_col(f1, s->id, Tau);
+        CI.set_cell_col(f1, s->id, dTau);
+      }
+      else {
+        // Other way around.  Now f0 is closer to source, so we
+        // subtract 0.5*dTau from it.
+        for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
+        CI.set_col(f1, s->id, Tau);
+        CI.set_cell_col(f1, s->id, dTau);
+        for (int iT=0; iT<s->NTau; iT++) Tau[iT] -= dTau[iT];
+        CI.set_col(f0, s->id, Tau);
+        CI.set_cell_col(f0, s->id, dTau);
+      }
+    } // loop over sources
+  } // if 1D
+
+  else if (par.ndim == 2) {
+#ifdef RT_TESTING
+    cout <<"2D C2F RT Routine\n";
+#endif
+    f0 = c[0];
+    f1 = c[1];
+    f2 = c[2];
+    f3 = c[3];
+#ifdef RT_TESTING
+    cout <<"f: ["<<f0->pos[XX]<<","<<f0->pos[YY]<<"], c: [";
+    cout <<cpos[XX]<<","<<cpos[YY]<<"] : ";
+#endif
+    for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+      s = &(par.RS.sources[isrc]);
+      for (int iT=0; iT<s->NTau; iT++)
+        Tau[iT] = T[C2F_tauoff[isrc]+iT];
+      for (int iT=0; iT<s->NTau; iT++)
+        dTau[iT] = T[C2F_tauoff[isrc]+s->NTau+iT];
+      diffx = s->pos[XX] - cpos[XX];
+      diffy = s->pos[YY] - cpos[YY];
+#ifdef RT_TESTING
+      cout <<"diffxy = "<<diffx<<"  "<<diffy<<"\n";
+      cout <<"t1="<<*Tau1<<", t2="<<*Tau2<<", t3=";
+      cout <<*Tau3<<", t4="<<*Tau4;
+#endif
+      // column from source through cell depends on
+      // which direction is to the source.
+      //
+      /// We assume we are in the far-field limit, so that the
+      /// rays through the coarse and 4 fine cells are essentially
+      /// parallel to each other, and the ray segments throug the 
+      /// fine cells have the same length.
+      //
+      if      (diffx>0 && fabs(diffx)>=fabs(diffy)) {
+        // Source in Q1 coming from dir XP (-45 < theta < 45 deg)
+        // f2,f0 have Tau same as coarse cell, and f1,f3 have Tau
+        // reduced by dTau/2
+        // All 4 cells have dTau reduced by a factor of 2.
+        for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
+        CI.set_col(f0, s->id, Tau);
+        CI.set_cell_col(f0, s->id, dTau);
+        CI.set_col(f2, s->id, Tau);
+        CI.set_cell_col(f2, s->id, dTau);
+        for (int iT=0; iT<s->NTau; iT++) Tau[iT] -= dTau[iT];
+        CI.set_col(f1, s->id, Tau);
+        CI.set_cell_col(f1, s->id, dTau);
+        CI.set_col(f3, s->id, Tau);
+        CI.set_cell_col(f3, s->id, dTau);
+      }
+      else if (diffy>0 && fabs(diffx)<fabs(diffy)) {
+        // source in Q2, coming from dir YP (45 < theta < 135 deg)
+        // f0,f1 have Tau same as coarse cell, and f2,f3 have Tau
+        // reduced by dTau/2
+        // All 4 cells have dTau reduced by a factor of 2.
+        for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
+        CI.set_col(f0, s->id, Tau);
+        CI.set_cell_col(f0, s->id, dTau);
+        CI.set_col(f1, s->id, Tau);
+        CI.set_cell_col(f1, s->id, dTau);
+        for (int iT=0; iT<s->NTau; iT++) Tau[iT] -= dTau[iT];
+        CI.set_col(f2, s->id, Tau);
+        CI.set_cell_col(f2, s->id, dTau);
+        CI.set_col(f3, s->id, Tau);
+        CI.set_cell_col(f3, s->id, dTau);
+      }
+      else if (diffx<0 && fabs(diffx)>=fabs(diffy)) {
+        // source in Q3, coming from XN (135 < theta < 225 deg)
+        // f1,f3 have Tau same as coarse cell, and f0,f2 have Tau
+        // reduced by dTau/2
+        // All 4 cells have dTau reduced by a factor of 2.
+        for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
+        CI.set_col(f1, s->id, Tau);
+        CI.set_cell_col(f1, s->id, dTau);
+        CI.set_col(f3, s->id, Tau);
+        CI.set_cell_col(f3, s->id, dTau);
+        for (int iT=0; iT<s->NTau; iT++) Tau[iT] -= dTau[iT];
+        CI.set_col(f0, s->id, Tau);
+        CI.set_cell_col(f0, s->id, dTau);
+        CI.set_col(f2, s->id, Tau);
+        CI.set_cell_col(f2, s->id, dTau);
+      }
+      else {
+        // source in Q4, coming from YN (225 < theta < 315 deg)
+        // f2,f3 have Tau same as coarse cell, and f0,f1 have Tau
+        // reduced by dTau/2
+        // All 4 cells have dTau reduced by a factor of 2.
+        for (int iT=0; iT<s->NTau; iT++) dTau[iT] *= 0.5;
+        CI.set_col(f2, s->id, Tau);
+        CI.set_cell_col(f2, s->id, dTau);
+        CI.set_col(f3, s->id, Tau);
+        CI.set_cell_col(f3, s->id, dTau);
+        for (int iT=0; iT<s->NTau; iT++) Tau[iT] -= dTau[iT];
+        CI.set_col(f0, s->id, Tau);
+        CI.set_cell_col(f0, s->id, dTau);
+        CI.set_col(f1, s->id, Tau);
+        CI.set_cell_col(f1, s->id, dTau);
+      }
+#ifdef RT_TESTING
+      cout <<"  tc="<<*tmp;
+#endif
+    } // loop over sources.
+  } // if 2D
+
+  else {
+    rep.error("3D C2F RT not implemented in NG grid",par.ndim);
+  } // if 3D
+} // if there is a finer level
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 
 
 

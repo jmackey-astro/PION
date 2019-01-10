@@ -55,6 +55,8 @@ SimParams::SimParams()
   for (int i=0;i<MAX_DIM;i++) {
     NG[i] = -1;
     Range[i] = Xmin[i] = Xmax[i] = -1.e99;
+    NG_centre[i] = 0.0;
+    NG_refine[i] = 0;
   }
   grid_nlevels = 1;
   levels.resize(1);

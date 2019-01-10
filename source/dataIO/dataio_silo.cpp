@@ -293,7 +293,7 @@ int dataio_silo::OutputData(
     int numfiles=1, nproc=1;
     err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
     err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
-    err += DBWrite(*db_ptr,"grid_level",  &l,    dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"grid_level",  &l,        dim1,1,DB_INT);
     err = write_simulation_parameters(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() writing header",err);
@@ -400,12 +400,12 @@ int dataio_silo::ReadData(
       temp.width(2); temp.fill('0');
       temp << l;
       silofile.replace(p+6,2,temp.str());
-      cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
+      //cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
       cout <<silofile<<"\n";
     }
 
     if (!cg[l])
-      rep.error("dataio_silo::ReadData() null pointer to grid!",cg[l]);
+      rep.error("dataio_silo::ReadData() null grid",cg[l]);
     dataio_silo::gp = cg[l];
     
     *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
@@ -510,6 +510,31 @@ int dataio_silo::setup_grid_properties(
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null pointer!",
               grid);
+
+  // first delete arrays, if allocated
+  if (nodedims) {
+    nodedims = mem.myfree(nodedims);
+    zonedims = mem.myfree(zonedims);
+    if (silo_dtype == DB_FLOAT) {
+      mem.myfree(reinterpret_cast<float *>(nodex));
+      mem.myfree(reinterpret_cast<float *>(nodey));
+      mem.myfree(reinterpret_cast<float *>(nodez));
+      mem.myfree(reinterpret_cast<float **>(node_coords));
+    }
+    if (silo_dtype == DB_DOUBLE) {
+      mem.myfree(reinterpret_cast<double *>(nodex));
+      mem.myfree(reinterpret_cast<double *>(nodey));
+      mem.myfree(reinterpret_cast<double *>(nodez));
+      mem.myfree(reinterpret_cast<double **>(node_coords));
+    }
+    nodex    = 0;
+    nodey    = 0;
+    nodez    = 0;
+    node_coords = 0;
+  }
+  delete_data_arrays();
+  create_data_arrays(SimPM);
+  
   double dx=grid->DX();
 
   dataio_silo::ndim = SimPM.ndim;
@@ -526,14 +551,15 @@ int dataio_silo::setup_grid_properties(
   // We setup arrays with locations of nodes in coordinate directions.
   //
 #ifdef WRITE_GHOST_ZONES
-  int nx = SimPM.NG[XX] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
-  int ny = SimPM.NG[YY] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
-  int nz = SimPM.NG[ZZ] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int nx = grid->NG(XX) +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int ny = grid->NG(YY) +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int nz = grid->NG(ZZ) +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
 #else
-  int nx = SimPM.NG[XX]+1; // for N cells, have N+1 nodes.
-  int ny = SimPM.NG[YY]+1; // for N cells, have N+1 nodes.
-  int nz = SimPM.NG[ZZ]+1; // for N cells, have N+1 nodes.
+  int nx = grid->NG(XX)+1; // for N cells, have N+1 nodes.
+  int ny = grid->NG(YY)+1; // for N cells, have N+1 nodes.
+  int nz = grid->NG(ZZ)+1; // for N cells, have N+1 nodes.
 #endif
+  //cout <<"N = "<<nx<<", "<< ny <<", "<< nz <<"\n";
 
   if (silo_dtype==DB_FLOAT) {
     //
@@ -627,6 +653,7 @@ int dataio_silo::setup_grid_properties(
 #ifdef WRITE_GHOST_ZONES
         posy[i] = static_cast<double>(grid->Xmin(YY) -SimPM.Nbc*dx +i*dx);
 #else
+        //cout <<"iy = "<<i<<", ny = "<<ny<<"\n";
         posy[i] = static_cast<double>(grid->Xmin(YY)+i*dx);
 #endif
       }
@@ -688,13 +715,13 @@ int dataio_silo::setup_grid_properties(
   for (int i=0;i<ndim;i++) lo_off[i] = 0;
   for (int i=0;i<ndim;i++) hi_off[i] = 0;
 #endif
-  //err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
-  //                  reinterpret_cast<void *>(lo_off));
-  //rep.errorTest("add lo-offset opt silo qmesh",0,err);
-  //err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
-  //                  reinterpret_cast<void *>(hi_off));
-  //rep.errorTest("add hi-offset opt silo qmesh",0,err);
-  rep.errorTest("add GridOpts silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
+                    reinterpret_cast<void *>(lo_off));
+  rep.errorTest("add lo-offset opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
+                    reinterpret_cast<void *>(hi_off));
+  rep.errorTest("add hi-offset opt silo qmesh",0,err);
+  //rep.errorTest("add GridOpts silo qmesh",0,err);
   //rep.printVec("lo-off",lo_off,ndim);
   //rep.printVec("hi-off",hi_off,ndim);
 

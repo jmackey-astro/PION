@@ -156,6 +156,48 @@ class sim_control_NG :
       const axes             ///< axis of normal direction.
       );
 
+  ///
+  /// Run through all radiation sources and calculate column
+  /// densities through each grid for each one.  This exchanges data
+  /// between grid levels so that the rays traverse all levels.
+  ///
+  virtual int RT_all_sources_levels(
+      class SimParams &  ///< simulation parameters
+      );
+
+  ///
+  /// Run through all radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  //virtual int RT_all_sources(
+  //    class SimParams &,      ///< simulation parameters
+  //    class GridBaseClass *,  ///< grid to trace rays on.
+  //    const int               ///< level of NG grid.
+  //    );
+
+  ///
+  /// Run through all on-grid radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  virtual int do_ongrid_raytracing(
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
+      );
+
+  ///
+  /// Run through all off-grid radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  virtual int do_offgrid_raytracing(
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
+      );
+
 }; // sim_control_NG
    
 

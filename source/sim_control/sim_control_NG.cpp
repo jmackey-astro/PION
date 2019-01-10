@@ -203,15 +203,6 @@ int sim_control_NG::Init(
   dataio->SetSolver(spatial_solver);
   if (textio) textio->SetSolver(spatial_solver);
 
-#ifdef SERIAL
-  if (SimPM.timestep==0) {
-    cout << "(INIT) Writing initial data.\n";
-    err=output_data(grid);
-    if (err)
-      rep.error("Failed to write file!","path does not exist?");
-  }
-  cout <<"-------------------------------------------------------\n";
-#endif // SERIAL
   
 #ifdef TESTING
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -300,31 +291,19 @@ int sim_control_NG::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
-  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-    calculate_raytracing_column_densities(SimPM,grid[l],l);
+  // Do raytracing on all levels, and update internal and external
+  // boundaries to populate the column densities correctly.
+  // Even if there is not RT, this updates the boundaries.
+  err = RT_all_sources_levels(SimPM);
+  rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
+  if (SimPM.timestep==0) {
+    cout << "(step=0) Writing initial data.\n";
+    err=output_data(grid);
+    rep.errorTest("Failed to write file... path?",0,err);
   }
 
-  // --------------------------------------------------------------
-  // Update RT sources and boundaries.
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TEST_INT
-    cout <<"updating external boundaries for level "<<l<<"\n";
-#endif
-    err += TimeUpdateExternalBCs(SimPM, l, grid[l],
-            spatial_solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  }
-  rep.errorTest("sim_control_NG: external bounday update",0,err);
-  // --------------------------------------------------------------
-  // --------------------------------------------------------------
-  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-#ifdef TEST_INT
-    cout <<"updating internal boundaries for level "<<l<<"\n";
-#endif
-    err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
-                            SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
-  }
-  rep.errorTest("sim_control_NG: internal boundary update",0,err);
-  // --------------------------------------------------------------
+  
+  cout <<"-------------------------------------------------------\n";
 
   while (SimPM.maxtime==false) {
 
@@ -340,6 +319,8 @@ int sim_control_NG::Time_Int(
 #ifdef DERIGS
     spatial_solver->set_max_speed(0.0);
 #endif
+    err = RT_all_sources_levels(SimPM);
+    rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
     
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
@@ -625,14 +606,14 @@ double sim_control_NG::advance_step_OA1(
   }
   dt2_this = SimPM.levels[l].dt;
 
-  // now calculate dU, the change in conserved variables on this grid,
+  // now calculate dU, change in conserved variables on this grid,
   // for this step.
   spatial_solver->Setdt(SimPM.levels[l].dt);
   // May need to do raytracing, if not already completed for getting
   // the timestep.
-  if (grid->RT && (!FVI_need_column_densities_4dt ||
-    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
-    err += calculate_raytracing_column_densities(SimPM,grid,l);
+  if (!FVI_need_column_densities_4dt ||
+    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) ) {
+    err += RT_all_sources(SimPM,grid,l);
     rep.errorTest("scn::advance_step_OA1: calc_rt_cols()",0,err);
   }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
@@ -728,9 +709,9 @@ double sim_control_NG::advance_step_OA2(
   double ctime = SimPM.levels[l].simtime; // current time
   spatial_solver->Setdt(dt_now);
   // May need to do raytracing
-  if (grid->RT && (!FVI_need_column_densities_4dt ||
-    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
-    err += calculate_raytracing_column_densities(SimPM,grid,l);
+  if (!FVI_need_column_densities_4dt ||
+    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) ) {
+    err += RT_all_sources(SimPM,grid,l);
     rep.errorTest("scn::advance_step_OA2: calc_rt_cols()",0,err);
   }
 
@@ -768,10 +749,8 @@ double sim_control_NG::advance_step_OA2(
   //
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
-  if (grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid,l);
-    rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
-  }
+  err += RT_all_sources(SimPM,grid,l);
+  rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
 #ifdef TEST_INT
   cout <<"l="<<l<<" full step, start calc_microphysics_dU\n";
 #endif
@@ -903,6 +882,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
       const int ooa     ///< Full order of accuracy of simulation
       )
 {
+  //return 0;
   if (step != ooa) {
     cout <<"don't receive fluxes on half step\n";
     return 1;
@@ -931,8 +911,9 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
       continue;
     }
     else {
-      err += recv_BC89_flux_boundary(grid,dt,fine->flux_update_send[d],
-                                     grid->flux_update_recv[d],d,ax);
+      err += recv_BC89_flux_boundary(grid, dt,
+                      fine->flux_update_send[d],
+                      grid->flux_update_recv[d], d, ax);
     }
 
 #ifdef TEST_BC89FLUX
@@ -958,6 +939,7 @@ int sim_control_NG::recv_BC89_flux_boundary(
       const axes ax ///< axis of normal direction.
       )
 { 
+  //return 0;
   struct flux_interface *fc=0;
   struct flux_interface *ff=0;
   double ftmp[SimPM.nvar],utmp[SimPM.nvar];
@@ -1054,7 +1036,141 @@ int sim_control_NG::recv_BC89_flux_boundary(
 
 
 
+int sim_control_NG::do_ongrid_raytracing(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid, ///< Computational grid.
+      const int l                ///< level in NG
+      )
+{
+  if (!grid->RT) return 0;
+  int err=0;
+  //
+  // If we have raytracing, we call the ray-tracing routines 
+  // to get Tau0, dTau, Vshell in cell->extra_data[].
+  //
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+    if (!SimPM.RS.sources[isrc].ongrid) continue;
+#ifdef RT_TESTING
+    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
+#endif
+    err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
+    if (err) {
+      cout <<"isrc="<<isrc<<"\t"; 
+      rep.error("ongrid RT: RT return",err);
+    } // if error
+  } // loop over sources
+  return err;
+}
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_NG::do_offgrid_raytracing(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,       ///< Computational grid.
+      const int
+      )
+{
+  if (!grid->RT) return 0;
+  int err=0;
+  //
+  // If we have raytracing, we call the ray-tracing routines 
+  // to get Tau0, dTau, Vshell in cell->extra_data[].
+  //
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+    if (SimPM.RS.sources[isrc].ongrid) {
+      //cout <<"skipping source "<<isrc<<" b/c ongrid\n";
+      continue;
+    }
+#ifdef RT_TESTING
+    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
+#endif
+  err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
+    if (err) {
+      cout <<"isrc="<<isrc<<"\t"; 
+      rep.error("offgrid RT: RT return",err);
+    } // if error
+  } // loop over sources
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int sim_control_NG::RT_all_sources_levels(
+      class SimParams &par  ///< simulation parameters
+      )
+{
+  /// Do this in 3 passes: 1st we go from coarse to fine, tracing the
+  /// off-grid sources.  This gets 1/2 of those rays right.
+  /// Then go from fine to coarse, tracing all sources and 
+  /// updating column densities as we go.
+  /// Finally go from coarse to fine again, updating boundary data.
+  int err=0;
+  class GridBaseClass *grid = 0;
+
+  // --------------------------------------------------------------
+  // Update off-grid sources and external boundaries.
+  for (int l=0; l<par.grid_nlevels; l++) {
+#ifdef TEST_INT
+    cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
+    grid = par.levels[l].grid;
+    err = TimeUpdateExternalBCs(par, l, grid,
+              spatial_solver, par.simtime,par.tmOOA,par.tmOOA);
+    rep.errorTest("NG RT_all_sources_levels: pass 1 BC-ext",0,err);
+    err = do_offgrid_raytracing(par,grid,l);
+    rep.errorTest("NG RT_all_sources_levels: pass 1 RT",0,err);
+  }
+  // --------------------------------------------------------------
+
+  // --------------------------------------------------------------
+  // update internal boundaries and then all sources (fine first)
+  for (int l=par.grid_nlevels-1; l>=0; l--) {
+#ifdef TEST_INT
+    cout <<"updating internal boundaries for level "<<l<<"\n";
+#endif
+    grid = par.levels[l].grid;
+    // F2C gets data from child grid onto this grid.
+    err = TimeUpdateInternalBCs(par, l, grid, spatial_solver,
+                            par.simtime,par.tmOOA,par.tmOOA);
+    rep.errorTest("NG RT_all_sources_levels: pass 2 BC-int",0,err);
+    err = do_ongrid_raytracing(par,grid,l);
+    err = do_offgrid_raytracing(par,grid,l);
+    rep.errorTest("NG RT_all_sources_levels: pass 2 RT",0,err);
+  }
+  rep.errorTest("sim_control_NG: internal boundary update",0,err);
+  // --------------------------------------------------------------
+  
+  // --------------------------------------------------------------
+  // Update external boundaries.
+  for (int l=0; l<par.grid_nlevels; l++) {
+#ifdef TEST_INT
+    cout <<"Pass 3: external boundaries for level "<<l<<"\n";
+#endif
+    grid = par.levels[l].grid;
+    // C2F gets data from parent grid onto this grid.
+    err = TimeUpdateExternalBCs(par, l, grid,
+              spatial_solver, par.simtime,par.tmOOA,par.tmOOA);
+    rep.errorTest("NG RT_all_sources_levels: pass 3 BC-ext",0,err);
+  }
+  // --------------------------------------------------------------
+
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 

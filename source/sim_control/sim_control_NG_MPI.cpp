@@ -366,7 +366,7 @@ int sim_control_NG_MPI::Time_Int(
     }
 
     if (SimPM.RS.Nsources>0 && SimPM.EP.raytracing) {
-      calculate_raytracing_column_densities(SimPM,grid[l],l);
+      do_ongrid_raytracing(SimPM,grid[l],l);
     }
     
     if (l>0) {
@@ -689,7 +689,7 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" raytracing\n";
 #endif
-    err += calculate_raytracing_column_densities(SimPM,grid,l);
+    err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()",0,err);
   }
 #ifdef TEST_INT
@@ -946,7 +946,7 @@ double sim_control_NG_MPI::advance_step_OA2(
 #ifdef TEST_INT
     cout <<"advance_step_OA2: l="<<l<<" raytracing\n";
 #endif
-    err += calculate_raytracing_column_densities(SimPM,grid,l);
+    err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("NG-MPI::advance_step_OA2: calc_rt_cols()",0,err);
   }
 #ifdef TEST_INT
@@ -1003,7 +1003,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
   if (grid->RT) {
-    err += calculate_raytracing_column_densities(SimPM,grid,l);
+    err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
 #ifdef TEST_INT

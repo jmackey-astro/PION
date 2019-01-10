@@ -193,6 +193,8 @@ int NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
   list<cell*>::iterator c_iter=b->NGrecvF2C[i].begin();
   cell *c;
   class GridBaseClass *fine   = par.levels[level].child;
+  if (!fine) return 0; // if there is no child
+
   // averaged data contains primitive vector plus column densities.
   int nv = par.nvar + F2C_Nxd;
   double cd[nv];
@@ -411,7 +413,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
   } // if 2D
 
   else {
-    rep.error("3D RT not implemented yet in NG grid",par.ndim);
+    rep.error("3D F2C RT not implemented in NG grid",par.ndim);
   } // if 3D
 } // if there is a finer level
 

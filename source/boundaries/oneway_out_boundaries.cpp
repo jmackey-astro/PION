@@ -85,6 +85,7 @@ int oneway_out_bc::BC_update_ONEWAY_OUT(
   list<cell*>::iterator c=b->data.begin();
   cell *gc;
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    (*c)->isdomain = false;
     gc = (*c)->npt;
     //
     // exactly same routine as for periodic.

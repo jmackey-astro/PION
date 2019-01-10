@@ -52,6 +52,7 @@ int double_Mach_ref_bc::BC_assign_DMACH(
   unsigned int ct=0;
   double bpos = 0.0;
   do {
+    (*bpt)->isdomain=false;
     //
     // This is the boundary position:
     //

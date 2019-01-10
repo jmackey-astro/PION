@@ -99,9 +99,16 @@ void setup_NG_grid::setup_NG_grid_levels(
   for (int i=0;i<SimPM.grid_nlevels;i++) {
     SimPM.levels[i].parent=0;
     SimPM.levels[i].child=0;
-    for (int v=0;v<MAX_DIM;v++)
-      SimPM.levels[i].NG[v] = SimPM.NG[v];
-    SimPM.levels[i].Ncell = SimPM.Ncell;
+    // Refine only along directions specified (NG_refine[dir]=1)
+    // Otherwise need to double number of cells in each refined level
+    SimPM.levels[i].Ncell = 1;
+    for (int v=0;v<MAX_DIM;v++) {
+      if (SimPM.NG_refine[v]==1)
+        SimPM.levels[i].NG[v] = SimPM.NG[v];
+      else
+        SimPM.levels[i].NG[v] = SimPM.NG[v]*pow(2,i);
+      SimPM.levels[i].Ncell *= SimPM.levels[i].NG[v];
+    }
     if (i==0) {
       for (int v=0;v<MAX_DIM;v++)
         SimPM.levels[i].Range[v] = SimPM.Range[v];
@@ -112,12 +119,20 @@ void setup_NG_grid::setup_NG_grid_levels(
       SimPM.levels[i].dx = SimPM.Range[XX]/SimPM.NG[XX];
     }
     else {
-      for (int v=0;v<MAX_DIM;v++) 
-        SimPM.levels[i].Range[v] = 0.5*SimPM.levels[i-1].Range[v];
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.levels[i].Xmin[v] = 0.5*(SimPM.levels[i-1].Xmin[v]+SimPM.NG_centre[v]);
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.levels[i].Xmax[v] = 0.5*(SimPM.levels[i-1].Xmax[v]+SimPM.NG_centre[v]);
+      for (int v=0;v<MAX_DIM;v++) {
+        if (SimPM.NG_refine[v]==1) {
+          SimPM.levels[i].Range[v] = 0.5*SimPM.levels[i-1].Range[v];
+          SimPM.levels[i].Xmin[v]  =
+                  0.5*(SimPM.levels[i-1].Xmin[v]+SimPM.NG_centre[v]);
+          SimPM.levels[i].Xmax[v]  =
+                  0.5*(SimPM.levels[i-1].Xmax[v]+SimPM.NG_centre[v]);
+        }
+        else {
+          SimPM.levels[i].Range[v] = SimPM.levels[i-1].Range[v];
+          SimPM.levels[i].Xmin[v]  = SimPM.levels[i-1].Xmin[v];
+          SimPM.levels[i].Xmax[v]  = SimPM.levels[i-1].Xmax[v];
+        }
+      }
       SimPM.levels[i].dx = 0.5*SimPM.levels[i-1].dx;
     }
     SimPM.levels[i].simtime = SimPM.simtime;

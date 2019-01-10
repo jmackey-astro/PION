@@ -231,6 +231,7 @@ class SimParams {
   int grid_nlevels;
   int grid_aspect_ratio[MAX_DIM];
   double NG_centre[MAX_DIM];
+  int NG_refine[MAX_DIM];
   std::vector<class level> levels;
 
   // Boundary cell data.

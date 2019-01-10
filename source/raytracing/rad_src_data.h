@@ -33,6 +33,7 @@ struct rad_src_info {
   int type; ///< src type: either RT_SRC_DIFFUSE or RT_SRC_SINGLE.
   int update; ///< how the source is updated: RT_UPDATE_IMPLICIT=1, RT_UPDATE_EXPLICIT=2
   int at_infinity; ///< set to true if source is at infinity.
+  int ongrid; ///< true if source is within the simulation domain.
   ///
   /// "effect" is what the source does, and this defines many of its
   /// properties implicitly.  Options are:

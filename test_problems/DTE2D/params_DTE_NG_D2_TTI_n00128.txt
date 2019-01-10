@@ -66,6 +66,9 @@ grid_aspect_ratio_ZZ 1
 NG_centre_XX 0.0e18
 NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 
 # Data Output Path
 OutputPath ./

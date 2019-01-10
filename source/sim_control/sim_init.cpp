@@ -791,4 +791,36 @@ int sim_init::initial_conserved_quantities(
 
 
 
+int sim_init::RT_all_sources(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *grid,       ///< Computational grid.
+      const int
+      )
+{
+  int err=0;
+  if (!grid->RT) return 0;
+  //
+  // If we have raytracing, we call the ray-tracing routines 
+  // to get Tau0, dTau, Vshell in cell->extra_data[].
+  //
+  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+#ifdef RT_TESTING
+    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
+#endif
+    err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
+    if (err) {
+      cout <<"isrc="<<isrc<<"\t"; 
+      rep.error("calc_raytracing_col_dens step in returned error",err);
+    } // if error
+  } // loop over sources
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 

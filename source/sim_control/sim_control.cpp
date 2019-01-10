@@ -210,6 +210,11 @@ int sim_control::Time_Int(
   SimPM.maxtime=false;
   clk.start_timer("Time_Int"); double tsf=0;
   class MCMDcontrol ppar; // unused for serial code.
+  err = RT_all_sources(SimPM,grid[0],0);
+  rep.errorTest("TIME_INT:: initial RT()",0,err);
+  err+= output_data(grid);
+  rep.errorTest("TIME_INT:: initial save",0,err);
+
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
@@ -218,10 +223,12 @@ int sim_control::Time_Int(
     calculate_blastwave_radius(grid[0]);
 #endif
     //
-    // Update RT sources.
+    // Update RT sources and do raytracing.
     //
     err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
     rep.errorTest("TIME_INT::update_RT_sources()",0,err);
+    err = RT_all_sources(SimPM,grid[0],0);
+    rep.errorTest("TIME_INT:: loop RT()",0,err);
 
     //clk.start_timer("advance_time");
     // step forward by dt.
