@@ -145,7 +145,22 @@ double VectorOps_Cart::CellVolume(
       const double dR
       )
 {
-  return dR*dR*dR;
+  double dV=0.0;
+  switch (VOnd) {
+    case 1:
+    dV = dR;
+    break;
+    case 2:
+    dV = dR*dR;
+    break;
+    case 3:
+    dV = dR*dR*dR;
+    break;
+    default:
+    rep.error("bad ndim in CellVolume (cart)",VOnd);
+    break;
+  }
+  return dV;
 }
 
 
@@ -161,7 +176,22 @@ double VectorOps_Cart::CellInterface(
       const double dR ///< cell diameter
       )
 {
-  return dR*dR;
+  double dA=0.0;
+  switch (VOnd) {
+    case 1:
+    dA = 1.0;
+    break;
+    case 2:
+    dA = dR;
+    break;
+    case 3:
+    dA = dR*dR;
+    break;
+    default:
+    rep.error("bad ndim in CellInterface (cart)",VOnd);
+    break;
+  }
+  return dA;
 }
 
 

@@ -275,7 +275,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
         if (c->pos[j]<ixmin[j] || c->pos[j]>ixmax[j]) ongrid=false;
       }
       if (ongrid) {
-        c->isbd = true;
+        //c->isbd = true;
+        //c->isleaf = false;
 #ifdef TEST_MPI_NG_F2C
         rep.printVec("cell over fine grid",c->pos,par.ndim);
 #endif

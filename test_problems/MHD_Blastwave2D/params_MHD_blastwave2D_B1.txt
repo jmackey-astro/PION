@@ -47,7 +47,7 @@ BC_YN periodic
 BC_YP periodic
 BC_Ninternal 0
 
-grid_nlevels 1
+grid_nlevels 2
 grid_aspect_ratio_XX 2
 grid_aspect_ratio_YY 2
 grid_aspect_ratio_ZZ 2
@@ -57,8 +57,8 @@ NG_centre_ZZ 0.0
 
 # Number of gridpoints in each direction (note cells must be cubic!)
 # INT
-NGridX  200
-NGridY  300
+NGridX  128
+NGridY  192
 NGridZ  200
 # Boundaries of Simulation box:
 Xmin -0.5

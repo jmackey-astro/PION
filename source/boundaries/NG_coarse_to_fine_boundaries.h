@@ -45,6 +45,7 @@ class NG_coarse_to_fine_bc {
   virtual void bilinear_interp(
       class SimParams &,      ///< pointer to simulation parameters
       const int *,  ///< coarse level cell integer position
+      const int,  ///< quad of fine cell (0=--, 1=+-, 2=-+, 3=++)
       cell *,  ///< fine level cell
       const double *,  ///< prim. vec. at corner of coarse cell
       const double *,  ///< prim. vec. at corner of coarse cell

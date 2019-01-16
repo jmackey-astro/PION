@@ -77,7 +77,6 @@ int jetreflect_bc::BC_assign_JETREFLECT(
   unsigned int ct=0;
 
   do{
-    (*bpt)->isdomain=true;
     temp = (*bpt);
     for (int v=0; v>(*bpt)->isedge; v--) {
       temp = grid->NextPt(temp,ondir);

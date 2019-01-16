@@ -102,7 +102,6 @@ int reflecting_bc::BC_assign_REFLECTING(
     //CI.print_cell((*bpt));
     // reflecting boundary is a conformal mapping of the domain, so
     // isdomain should be true.
-    (*bpt)->isdomain=true;
     ++bpt;
     ct++;
   } while (bpt !=b->data.end());

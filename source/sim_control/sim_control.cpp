@@ -210,6 +210,8 @@ int sim_control::Time_Int(
   SimPM.maxtime=false;
   clk.start_timer("Time_Int"); double tsf=0;
   class MCMDcontrol ppar; // unused for serial code.
+  err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
+  rep.errorTest("TIME_INT:: initial RT src update()",0,err);
   err = RT_all_sources(SimPM,grid[0],0);
   rep.errorTest("TIME_INT:: initial RT()",0,err);
   err+= output_data(grid);

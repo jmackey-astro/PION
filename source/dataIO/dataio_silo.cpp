@@ -711,6 +711,8 @@ int dataio_silo::setup_grid_properties(
 #ifdef WRITE_GHOST_ZONES
   for (int i=0;i<ndim;i++) lo_off[i] = SimPM.Nbc;
   for (int i=0;i<ndim;i++) hi_off[i] = SimPM.Nbc;
+  for (int i=0;i<ndim;i++) lo_off[i] = 0;
+  for (int i=0;i<ndim;i++) hi_off[i] = 0;
 #else
   for (int i=0;i<ndim;i++) lo_off[i] = 0;
   for (int i=0;i<ndim;i++) hi_off[i] = 0;

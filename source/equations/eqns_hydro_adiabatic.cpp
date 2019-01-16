@@ -136,15 +136,15 @@ int eqns_Euler::UtoP(
   // that we know this is what has happened (for the first 1000 instances).
   //
   if (p[eqRO] <=0.0) {
+    rep.printVec("u",u,eq_nvar);
+    rep.printVec("p",p,eq_nvar);
+#ifdef TESTING
+    //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
+#endif
     rep.error("Negative density (eqns_Euler::UtoP)",p[eqRO]);
     if (ct_rho<1000) {
       ct_rho ++;
       cout <<"(eqns_Euler::UtoP) negative density!\n";
-    //  rep.printVec("u",u,eq_nvar);
-    //  rep.printVec("p",p,eq_nvar);
-#ifdef TESTING
-    //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
-#endif
     }
     // reset all variables because a negative density will change the sign of 
     // all of the velocities!

@@ -961,7 +961,12 @@ int MPv3::TimeUpdateMP_RTnew(
   else {
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
-      rep.error("integration failed: MPv3::TimeUpdateMP_RTnew()",err);
+      rep.printVec("Plocal",P,nvl);
+      rep.printVec("Pprim ",p_in,nv_prim);
+      for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
+      rep.printVec("Pfinal",P,nvl);
+      cout <<"ds="<<mpv_delta_S<<", vs="<<mpv_Vshell<<", tao0="<<mpv_Tau0<<", dtau="<<mpv_dTau0<<"\n";
+      rep.error("integration failed again: MPv3::TimeUpdateMP_RTnew()",err);
     }
   }
 

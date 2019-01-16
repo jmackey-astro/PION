@@ -34,7 +34,6 @@ int MCMD_bc::BC_assign_BCMPI(
   // set isdomain to true because these data are part of the domain.
   list<cell*>::iterator c=b->data.begin();
   do {
-    (*c)->isdomain=true;
     c++;
   } while (c!=b->data.end());
 

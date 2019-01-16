@@ -319,8 +319,8 @@ int sim_control_NG::Time_Int(
 #ifdef DERIGS
     spatial_solver->set_max_speed(0.0);
 #endif
-    err = RT_all_sources_levels(SimPM);
-    rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
+    //err = RT_all_sources_levels(SimPM);
+    //rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
     
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
@@ -613,7 +613,7 @@ double sim_control_NG::advance_step_OA1(
   // the timestep.
   if (!FVI_need_column_densities_4dt ||
     (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) ) {
-    err += RT_all_sources(SimPM,grid,l);
+    err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_step_OA1: calc_rt_cols()",0,err);
   }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
@@ -711,7 +711,7 @@ double sim_control_NG::advance_step_OA2(
   // May need to do raytracing
   if (!FVI_need_column_densities_4dt ||
     (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) ) {
-    err += RT_all_sources(SimPM,grid,l);
+    err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_step_OA2: calc_rt_cols()",0,err);
   }
 
@@ -749,7 +749,7 @@ double sim_control_NG::advance_step_OA2(
   //
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
-  err += RT_all_sources(SimPM,grid,l);
+  err += do_ongrid_raytracing(SimPM,grid,l);
   rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
 #ifdef TEST_INT
   cout <<"l="<<l<<" full step, start calc_microphysics_dU\n";

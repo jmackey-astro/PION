@@ -63,7 +63,7 @@ class NG_fine_to_coarse_bc {
       class SimParams &,    ///< pointer to simulation parameters
       const int,            ///< number of fine-level cells
       std::vector<cell *> &, ///< list of cells
-      const pion_flt *,  ///< centre of coarse cell.
+      const int *,  ///< centre of coarse cell.
       double *              ///< [OUTPUT] pointer to optical depths
       );
 

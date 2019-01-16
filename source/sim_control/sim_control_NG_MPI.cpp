@@ -356,6 +356,7 @@ int sim_control_NG_MPI::Time_Int(
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 
+    cout <<"raytracing level "<<l<<"\n";
     if (l<SimPM.grid_nlevels-1) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {

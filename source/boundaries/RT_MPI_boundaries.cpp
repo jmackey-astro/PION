@@ -346,6 +346,12 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 #endif  
         for (short unsigned int v=0; v<RS.NTau; v++) {
           tau[v] = buf[count];
+          if (tau[v]<0.0) {
+            rep.printVec("RECV neg tau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+
+          }
           count++;
         }
         CI.set_col(*c, src_id, tau);
@@ -487,9 +493,13 @@ int RT_MPI_bc::Send_RT_Boundaries(
           else cout <<"]\n";
         }
 #endif 
-        for (short unsigned int v=0;
-             v<RS.NTau; v++) {
+        for (short unsigned int v=0; v<RS.NTau; v++) {
           data[count] = tau[v];
+          if (tau[v]<0.0) {
+            rep.printVec("SEND neg tau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
           count++;
         }
       }

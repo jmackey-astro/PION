@@ -813,226 +813,191 @@ int raytracer_USC_infinity::ProcessCell(
   //   otherwise TauMin is not dimensionless, and it is confusing
   //   to use it.
   //
-  int err=0;
-
   double cell_col[MAX_TAU];
-  //
-  // ds is physical path length of ray through cell centre from
-  // entry to exit.
-  //
   for (unsigned short int iT=0; iT<source->s->NTau; iT++)
     cell_col[iT] = ds;
-
   double temp=0.0;
   short unsigned int ix=0;
 #ifdef RT_TESTING
-  //cout <<"\tsrc "<<source->s->id<<": Updating cell id="<<c->id;
-  //cout <<" with opacity-only step.  N[0]="<<col2cell[0]<<"\n";
+  cout <<"\tsrc "<<source->s->id<<": Updating cell id="<<c->id;
+  cout <<" with opacity-only step.  N[0]="<<col2cell[0]<<"\n";
 #endif // RT_TESTING
 
+  // set vshell in cell (setting up)
+  if (source->s->opacity_src == RT_OPACITY_VSHELL) {
+    //cout <<"set vshell\n";
+    set_Vshell_in_cell(c, ds, source);
+    cell_col[0] = ds;
+    col2cell[0] += cell_col[0];
+    //CI.set_cell_col(c, source->s->id, cell_col);
+    //CI.set_col     (c, source->s->id, col2cell);
+    return 0;
+  }
+
+  // 2 special cases: cell is not part of domain, so nothing is set,
+  // or else cell is not a leaf, in which case col2cell is received
+  // from finer grid.
   if (!c->isdomain) {
     // if cell is not in the domain, set its column to be zero,
 #ifdef RT_TESTING
-    cout <<"off domain: "<<c->id<<", ["<<c->pos[XX]<<", ";
-    cout <<c->pos[YY]<<"] : ";
-    double dpos[ndim];
-    CI.get_dpos(c,dpos);
-    rep.printVec("pos",dpos,ndim);
+    cout <<"off domain: "<<c->id<<", "; double dpos[ndim];
+    CI.get_dpos(c,dpos); rep.printVec("pos",dpos,ndim);
 #endif
     cell_col[0] = 0.0;
-    col2cell[0]  = 0.0; //+= cell_col[0];
-    //cout <<" col = "<<cell_col[0] <<", col = "<< col2cell[0]<<"\n";
     CI.set_cell_col(c, source->s->id, cell_col);
+    col2cell[0]  = 0.0;
     CI.set_col     (c, source->s->id, col2cell);
+    return 0;
   }
-  else if (!c->isleaf && c->isgd && c->isdomain) {
-    // cell is internal boundary, but not stellar-wind.  This can
-    // only be for NG grid, where we get finer-level data onto
-    // this coarser grid.  In that case we ignore the cell here,
-    // assuming that the NG grid has populated the column
-    // density already.
-    //
+
+  if (!c->isleaf && !c->isbd) {
 #ifdef RT_TESTING
     cout <<"NG grid cell: "<<c->id <<" isdomain="<<c->isdomain;
 #endif
     CI.get_col(c,source->s->id, col2cell);
-    CI.get_cell_col(c, source->s->id, cell_col);
+    //if (!c->isbd) CI.get_cell_col(c,source->s->id, cell_col);
 #ifdef RT_TESTING
-    cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<"\n";
+    cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<"  ";
+    rep.printVec("pos",c->pos,ndim);
 #endif
+  }
+
+  // set cell_col based on opacity flag.  cell_col[]=ds from above,
+  // so multiply it by the cell-values here.
+  switch (source->s->opacity_src) {
+
+  case RT_OPACITY_MINUS:
+    // generic flag for integrating rho*(1-y_i)*ds
+    cell_col[0] = ds*c->Ph[RO]*
+                 (1.0-c->Ph[source->s->opacity_var+first_tr]);
+    break;
+
+  case RT_OPACITY_TOTAL:
+    cell_col[0] = ds*c->Ph[RO];
+    break;
+
+  case RT_OPACITY_TRACER:
+    // this is a generic flag for integrating rho*y_i*ds
+    cell_col[0] = ds*c->Ph[RO]*
+                   c->Ph[source->s->opacity_var+first_tr];
+    break;
+
+  case RT_OPACITY_HALPHA:
+    //
+    // This calculate the H-alpha intensity along a line-of-sight, assuming
+    // a constant source function within a cell, and a grey opacity which
+    // scales with the total gas density dtau=n(H)*5.0e-22*ds.
+    // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
+    // Then I(out) = S +exp(-dtau)*(I(in)-S)
+    //
+    cell_col[0] = 0.22*(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())
+              *1.1*c->Ph[source->s->opacity_var+first_tr]
+                  *c->Ph[source->s->opacity_var+first_tr]
+              *pow(MP->Temperature(c->Ph,gamma),-0.9);
+    // now set cell_col[0] to be I(out)
+    cell_col[0] = cell_col[0]+
+        exp(-(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())*5.0e-22*ds)
+        *(col2cell[0]-cell_col[0]);
+    break;
+
+
+  case RT_OPACITY_RR:
+    // Get the radiative recombination rate *Vshell, for the
+    // photoionisation equilibrium assumption (with caseB).
+    // We assume the cell is fully ionised, so we set the
+    // first tracer value to 1.0 in c->Ph[] when we call the rate
+    // function, and reset it afterwards.
+    // HARDCODED ASSUMPTION THAT 1ST TRACER IS ION FRACTION.
+    temp = c->Ph[first_tr];
+    c->Ph[first_tr] = 1.0;
+    cell_col[0] = CI.get_cell_Vshell(c,source->s->id)/
+                source->s->strength*
+                MP->get_recombination_rate(0, c->Ph,gamma);
+    c->Ph[first_tr] = temp;
+    break;
+
+  case RT_OPACITY_HHE:
+    //
+    // Here we have four column densities to set.
+    // dTaui[i] = n[i]*sigma[i]*ds
+    // n[i] = rho*X_i/m_i
+    // 
+    // Here 0 = H0,  1 = He0,  2 = He+,  3 = Dust
+    // Element/Ion constants are defined in constants.h
+    //
+    // ---------- H0 -----------
+    ix = source->s->opacity_var+first_tr;
+    cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
+                  MP->get_th_xsection(ION_H_N)*c->Ph[ix];
+    // ---------- He0 -----------
+    ix++;
+    cell_col[1] = ds*MP->get_n_el(c->Ph, EL_HE)*
+                  MP->get_th_xsection(ION_HE_N)*c->Ph[ix];
+    // ---------- He+ -----------
+    ix++;
+    cell_col[2] = ds*MP->get_n_el(c->Ph, EL_HE)*
+                  MP->get_th_xsection(ION_HE_P)*c->Ph[ix];
+    // ---------- DUST -----------
+    cell_col[3] = ds*MP->get_n_el(c->Ph, EL_H)*
+                  MP->get_th_xsection(ION_DUST);
+    break;
+
+  default:
+    rep.error("RT-ProcessCell opacity?",source->s->opacity_src);
+    break;
+  }
+  CI.set_cell_col(c, source->s->id, cell_col);
+
+
+  if (source->s->opacity_src == RT_OPACITY_HALPHA) {
+    // set col2cell[0] to be I(out)-I(in)
+    col2cell[0] = cell_col[0]-col2cell[0];
   }
   else {
-    //
-    // Set column from source to far side of current cell, and column
-    // through cell.  Most source types only have one value of Tau
-    // per source, so we only set the zeroth value.  HHe-MFQ sources
-    // have four values of Tau.
-    //
-    switch (source->s->opacity_src) {
+    for (unsigned short int iT=0; iT<source->s->NTau; iT++)
+      col2cell[iT] += cell_col[iT];
+  }
 
-      case RT_OPACITY_MINUS:
-        // this is a generic flag for integrating rho*(1-y_i)*ds
-#ifdef RT_TESTING
-        if (c->Ph[source->s->opacity_var+first_tr]>0.01) {
-          cout <<"RT::ProcessCell:  ds="<<ds<<", rho="<<c->Ph[RO];
-          cout <<", (1-x)=";
-          cout <<(1.0-c->Ph[source->s->opacity_var+first_tr]);
-          cout <<" var="<<source->s->opacity_var+first_tr<<"\n";
-        }
-        cout <<"process cell: col2cell="<<col2cell[0]<<"\n";
-#endif
-        cell_col[0] *= c->Ph[RO]*
-                     (1.0-c->Ph[source->s->opacity_var+first_tr]);
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_TOTAL:
-        cell_col[0] *= c->Ph[RO];
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_TRACER:
-        // this is a generic flag for integrating rho*y_i*ds
-        cell_col[0] *= c->Ph[RO]*
-                       c->Ph[source->s->opacity_var+first_tr];
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_VSHELL:
-        //
-        // this is only applied in the AddSource() function to set Vshell in 
-        // each grid cell at the start of the simulation.
-        //
-        set_Vshell_in_cell(c, ds, source);
-        cell_col[0] = ds;
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        break;
-
-      case RT_OPACITY_HALPHA:
-        //
-        // This calculate the H-alpha intensity along a line-of-sight, assuming
-        // a constant source function within a cell, and a grey opacity which
-        // scales with the total gas density dtau=n(H)*5.0e-22*ds.
-        // S=0.22*n(e)*n(H+)/n(H)/T^0.9.  Use cell_col for source function S.
-        // Then I(out) = S +exp(-dtau)*(I(in)-S)
-        //
-        cell_col[0] = 0.22*(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())
-                  *1.1*c->Ph[source->s->opacity_var+first_tr]
-                      *c->Ph[source->s->opacity_var+first_tr]
-                  *pow(MP->Temperature(c->Ph,gamma),-0.9);
-        //cell_col = 0.55*(c->Ph[RO]*mpptr->get_X_H()/*pconst.m_p())
-        //          *1.1*c->Ph[source->s->opacity_var+first_tr]
-        //              *c->Ph[source->s->opacity_var+first_tr]
-        //          *pow(MP->Temperature(c->Ph,gamma),-1.0);
-
-        //
-        // now set cell_col[0] to be I(out)
-        //
-        cell_col[0] = cell_col[0]+
-            exp(-(c->Ph[RO]*mpptr->get_X_H()/pconst.m_p())*5.0e-22*ds)
-            *(col2cell[0]-cell_col[0]);
-        //
-        // set col2cell[0] to be I(out)-I(in)
-        //
-        col2cell[0] = cell_col[0]-col2cell[0];
-        CI.set_cell_col(c, source->s->id, col2cell);
-        CI.set_col     (c, source->s->id, cell_col);
-        break;
-
-      case RT_OPACITY_RR:
-        //
-        // Get the radiative recombination rate *Vshell, for the 
-        // photoionisation equilibrium assumption (with caseB).
-        // For sources at infinity Vshell is ds.  In this case we
-        // have to assume the cell is fully ionised, so we set the
-        // first tracer value to 1.0 in c->Ph[] when we call the rate
-        // function, and reset it afterwards.
-        //
-        temp = c->Ph[first_tr];
-        c->Ph[first_tr] = 1.0;
-        cell_col[0] = CI.get_cell_Vshell(c,source->s->id)/
-                    source->s->strength*
-                    MP->get_recombination_rate(0, c->Ph,gamma);
-        col2cell[0] += cell_col[0];
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-        c->Ph[first_tr] = temp;
-        break;
-
-      case RT_OPACITY_HHE:
-        //
-        // Here we have four column densities to set.
-        // dTaui[i] = n[i]*sigma[i]*ds
-        // n[i] = rho*X_i/m_i
-        // 
-        // Here 0 = H0,  1 = He0,  2 = He+,  3 = Dust
-        // Element/Ion constants are defined in constants.h
-        //
-        // ---------- H0 -----------
-        ix = source->s->opacity_var+first_tr;
-        cell_col[0] = ds*MP->get_n_el(c->Ph, EL_H)*
-                      MP->get_th_xsection(ION_H_N)*c->Ph[ix];
-        col2cell[0] += cell_col[0];
-        //if (c->id==2) {
-        //  cout <<"H: ix="<<ix;
-        //  cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
-        //  cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
-        //  cout <<", yn = "<<c->Ph[ix];
-        //  cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
-        //}
-#ifdef MP9_TESTING
-        cout <<"H: ix="<<ix;
-        cout <<", n="<<MP->get_n_el(c->Ph, EL_H);
-        cout <<", sigma="<< MP->get_th_xsection(ION_H_N);
-        cout <<", yn = "<<c->Ph[ix];
-        cout <<", tau= "<<cell_col[ION_H_N]<<"\n";
-#endif  // MP9_TESTING
-
-        // ---------- He0 -----------
-        ix++;
-        cell_col[1] = ds*MP->get_n_el(c->Ph, EL_HE)*
-                      MP->get_th_xsection(ION_HE_N)*c->Ph[ix];
-        col2cell[1] += cell_col[1];
-#ifdef MP9_TESTING
-        cout <<"  He: ix="<<ix;
-        cout <<", n="<<MP->get_n_el(c->Ph, EL_HE);
-        cout <<", sigma="<< MP->get_th_xsection(ION_HE_N);
-        cout <<", yn = "<<c->Ph[ix];
-        cout <<", tau= "<<cell_col[ION_HE_N]<<"\n";
-#endif  // MP9_TESTING
-
-        // ---------- He+ -----------
-        ix++;
-        cell_col[2] = ds*MP->get_n_el(c->Ph, EL_HE)*
-                      MP->get_th_xsection(ION_HE_P)*c->Ph[ix];
-        col2cell[2] += cell_col[2];
-
-        // ---------- DUST -----------
-        cell_col[3] = ds*MP->get_n_el(c->Ph, EL_H)*
-                      MP->get_th_xsection(ION_DUST);
-        col2cell[3] += cell_col[3];
-        
-        CI.set_cell_col(c, source->s->id, cell_col);
-        CI.set_col     (c, source->s->id, col2cell);
-
-
-      break;
-
-      default:
-        rep.error("RT_USC_infinity::ProcessCell What sort of \
-                   opacity?",source->s->opacity_src);
-          break;
+  if (source->s->opacity_src != RT_OPACITY_VSHELL) {
+    if (col2cell[0]>1.0) {
+      cout <<"NG grid cell: "<<c->id <<" isleaf="<<c->isleaf;
+      cout <<" isdom="<<c->isdomain;
+      cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<" ";
+      rep.printVec("pos",c->pos,ndim);
+      CI.print_cell(c);
+      rep.error("Vshell?!",col2cell[0]);
     }
   }
-  return err;
+
+
+  // only set col2cell if cell is a leaf (otherwise got from finer
+  // grid)
+  if (c->isleaf || c->isbd) CI.set_col(c, source->s->id, col2cell);
+  else {
+    CI.get_col(c,source->s->id, col2cell);
+    if (col2cell[0]<cell_col[0]) {
+      //cout <<"NG grid cell: "<<c->id <<" isleaf="<<c->isleaf;
+      //cout <<" isdom="<<c->isdomain;
+      //cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<" ";
+      //rep.printVec("pos",c->pos,ndim);
+      //CI.print_cell(c);
+      //rep.error("negative col2cell",col2cell[0]-cell_col[0]);
+      for (unsigned short int iT=0; iT<source->s->NTau; iT++)
+        col2cell[iT] = cell_col[iT];
+      CI.set_col(c, source->s->id, col2cell);
+    }
+  }
+
+#ifdef RT_TESTING
+    cout <<"NG grid cell: "<<c->id <<" isdomain="<<c->isdomain;
+    cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<"  ";
+    CI.get_col(c,source->s->id, col2cell);
+    CI.get_cell_col(c,source->s->id, cell_col);
+    cout <<", c2c="<<*col2cell<<", cc="<<*cell_col<<"  ";
+    rep.printVec("pos",c->pos,ndim);
+#endif
+  
+  return 0;
 }
 
 

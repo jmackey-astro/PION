@@ -277,7 +277,9 @@ int NG_fine_to_coarse_bc::average_cells(
   //
   // If doing RT, we also want to update column densities here.
   //
-  get_F2C_TauAvg(par, ncells, c, cpos, &(cd[par.nvar]) );
+  int pos[MAX_DIM];
+  CI.get_ipos_vec(cpos,pos);
+  get_F2C_TauAvg(par, ncells, c, pos, &(cd[par.nvar]) );
 
   return 0;
 }
@@ -290,19 +292,20 @@ int NG_fine_to_coarse_bc::average_cells(
 
 
 void NG_fine_to_coarse_bc::get_F2C_TauAvg(
-      class SimParams &par,   ///< pointer to simulation parameters
-      const int ncells,       ///< number of fine-level cells
-      std::vector<cell *> &c, ///< list of cells
-      const pion_flt *cpos,  ///< centre of coarse cell.
-      double *T              ///< [OUTPUT] pointer to optical depths
+      class SimParams &par,   // pointer to simulation parameters
+      const int ncells,       // number of fine-level cells
+      std::vector<cell *> &c, // list of cells
+      const int *cpos,  // centre of coarse cell (integer coords)
+      double *T              // [OUTPUT] pointer to optical depths
       )
 {
   // data needed for getting fine cell Taus onto coarse grid.
   double Tau1[MAX_TAU], Tau2[MAX_TAU], Tau3[MAX_TAU],
-         Tau4[MAX_TAU], tmp[MAX_TAU];
+         Tau4[MAX_TAU], Tavg[MAX_TAU], dTavg[MAX_TAU];
   class cell *f1, *f2, *f3, *f4;
   struct rad_src_info *s;
-  double diffx,diffy;
+  int diffx,diffy;
+  int spos[MAX_DIM];
 
   if (par.ndim == 1) {
     f1 = c[0];
@@ -310,15 +313,16 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
 
     for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
       s = &(par.RS.sources[isrc]);
+      CI.get_ipos_vec(s->pos,spos);
       CI.get_col(f1, s->id, Tau1);
       CI.get_col(f2, s->id, Tau2);
       // column from source through cell depends on
       // which direction is to the source
-      if (s->pos[XX] > cpos[XX]) {
-        for (int iT=0; iT<s->NTau; iT++) tmp[iT] = Tau1[iT];
+      if (spos[XX] > cpos[XX]) {
+        for (int iT=0; iT<s->NTau; iT++) Tavg[iT] = Tau1[iT];
       }
       else {
-        for (int iT=0; iT<s->NTau; iT++) tmp[iT] = Tau2[iT];
+        for (int iT=0; iT<s->NTau; iT++) Tavg[iT] = Tau2[iT];
       }
       // column through cell is sum of two fine cells.
       CI.get_cell_col(f1, s->id, Tau1);
@@ -326,11 +330,11 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
       for (int v=0; v<s->NTau; v++) {
         Tau1[v] += Tau2[v];
       }
-      // tmp[] is col2cell for coarse cell for this source.
+      // Tavg[] is col2cell for coarse cell for this source.
       // Tau1[] is cell_col for this source.
       // Copy them into array T.
       for (int iT=0; iT<s->NTau; iT++)
-        T[F2C_tauoff[isrc]+iT] = tmp[iT];
+        T[F2C_tauoff[isrc]+iT] = Tavg[iT];
       for (int iT=0; iT<s->NTau; iT++)
         T[F2C_tauoff[isrc]+s->NTau+iT] = Tau1[iT];
     }
@@ -350,66 +354,121 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
 #endif
     for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
       s = &(par.RS.sources[isrc]);
+      CI.get_ipos_vec(s->pos,spos);
+      //rep.printVec("spos",spos,2);
+      //rep.printVec("cpos",cpos,2);
       CI.get_col(f1, s->id, Tau1);
       CI.get_col(f2, s->id, Tau2);
       CI.get_col(f3, s->id, Tau3);
       CI.get_col(f4, s->id, Tau4);
-      diffx = s->pos[XX] - cpos[XX];
-      diffy = s->pos[YY] - cpos[YY];
+      diffx = spos[XX] - cpos[XX];
+      diffy = spos[YY] - cpos[YY];
 #ifdef RT_TESTING
-      cout <<"diffxy = "<<diffx<<"  "<<diffy<<"\n";
+      cout <<"diffxy = "<<diffx<<"  "<<diffy<<": ";
       cout <<"t1="<<*Tau1<<", t2="<<*Tau2<<", t3=";
       cout <<*Tau3<<", t4="<<*Tau4;
 #endif
       // column from source through cell depends on
       // which direction is to the source
-      if      (diffx>0 && fabs(diffx)>=fabs(diffy)) {
-        // Source in Q1 coming from dir XP (-45 < theta < 45 deg)
-        for (int v=0; v<s->NTau; v++) {
-          tmp[v] = 0.5*(Tau1[v]+Tau3[v]);
-        }
+      if      (diffx>0 && diffx==diffy) {
+        // src at 45 deg, take Tau 1.
+        for (int v=0; v<s->NTau; v++) Tavg[v] = Tau1[v];
+        // dtau = dtau1 + dtau4
+        CI.get_cell_col(f1, s->id, Tau1);
+        CI.get_cell_col(f4, s->id, Tau4);
+        for (int v=0; v<s->NTau; v++) dTavg[v] = Tau1[v]+Tau4[v];
       }
-      else if (diffy>0 && fabs(diffx)<fabs(diffy)) {
-        // source in Q2, coming from dir YP (45 < theta < 135 deg)
-        for (int v=0; v<s->NTau; v++) {
-          tmp[v] = 0.5*(Tau1[v]+Tau2[v]);
-        }
+      else if (diffx>0 && diffx==-diffy) {
+        // src at -45 deg, take Tau 3.
+        for (int v=0; v<s->NTau; v++) Tavg[v] = Tau3[v];
+        // dtau = dtau2 + dtau3
+        CI.get_cell_col(f2, s->id, Tau2);
+        CI.get_cell_col(f3, s->id, Tau3);
+        for (int v=0; v<s->NTau; v++) dTavg[v] = Tau2[v]+Tau3[v];
       }
-      else if (diffx<0 && fabs(diffx)>=fabs(diffy)) {
-        // source in Q3, coming from XN (135 < theta < 225 deg)
-        for (int v=0; v<s->NTau; v++) {
-          tmp[v] = 0.5*(Tau2[v]+Tau4[v]);
-        }
+      else if (diffx<0 && diffx==diffy) {
+        // src at 225 deg, take Tau 4.
+        for (int v=0; v<s->NTau; v++) Tavg[v] = Tau4[v];
+        // dtau = dtau1 + dtau4
+        CI.get_cell_col(f1, s->id, Tau1);
+        CI.get_cell_col(f4, s->id, Tau4);
+        for (int v=0; v<s->NTau; v++) dTavg[v] = Tau1[v]+Tau4[v];
+      }
+      else if (diffx<0 && diffx==-diffy) {
+        // src at 135 deg, take Tau 2.
+        for (int v=0; v<s->NTau; v++) Tavg[v] = Tau2[v];
+        // dtau = dtau2 + dtau3
+        CI.get_cell_col(f2, s->id, Tau2);
+        CI.get_cell_col(f3, s->id, Tau3);
+        for (int v=0; v<s->NTau; v++) dTavg[v] = Tau2[v]+Tau3[v];
       }
       else {
-        // source in Q4, coming from YN (225 < theta < 315 deg)
+        // not at 45deg to grid, so do simpler averaging.
+        if (diffx>0 && fabs(diffx)>=fabs(diffy)) {
+          // Source in Q1 coming from dir XP (-45 < theta < 45 deg)
+          for (int v=0; v<s->NTau; v++) {
+            Tavg[v] = 0.5*(Tau1[v]+Tau3[v]);
+          }
+        }
+        else if (diffy>0 && fabs(diffx)<fabs(diffy)) {
+          // source in Q2, coming from dir YP (45 < theta < 135 deg)
+          for (int v=0; v<s->NTau; v++) {
+            Tavg[v] = 0.5*(Tau1[v]+Tau2[v]);
+          }
+        }
+        else if (diffx<0 && fabs(diffx)>=fabs(diffy)) {
+          // source in Q3, coming from XN (135 < theta < 225 deg)
+          for (int v=0; v<s->NTau; v++) {
+            Tavg[v] = 0.5*(Tau2[v]+Tau4[v]);
+          }
+        }
+        else {
+          // source in Q4, coming from YN (225 < theta < 315 deg)
+          for (int v=0; v<s->NTau; v++) {
+            Tavg[v] = 0.5*(Tau3[v]+Tau4[v]);
+          }
+        }
+#ifdef RT_TESTING
+        cout <<"  tc="<<*Tavg;
+#endif
+        // column through cell is sum of 4 fine cells divided by 2.
+        // this is a fairly crude approx, and so it is checked in the
+        // next code block.
+        CI.get_cell_col(f1, s->id, Tau1);
+        CI.get_cell_col(f2, s->id, Tau2);
+        CI.get_cell_col(f3, s->id, Tau3);
+        CI.get_cell_col(f4, s->id, Tau4);
         for (int v=0; v<s->NTau; v++) {
-          tmp[v] = 0.5*(Tau3[v]+Tau4[v]);
+          dTavg[v] = 0.5*(Tau1[v] + Tau2[v] + Tau3[v] + Tau4[v]);
         }
       }
-#ifdef RT_TESTING
-      cout <<"  tc="<<*tmp;
-#endif
-      // column through cell is sum of 4 fine cells divided by 2.
-      CI.get_cell_col(f1, s->id, Tau1);
-      CI.get_cell_col(f2, s->id, Tau2);
-      CI.get_cell_col(f3, s->id, Tau3);
-      CI.get_cell_col(f4, s->id, Tau4);
-      for (int v=0; v<s->NTau; v++) {
-        Tau1[v] = 0.5*(Tau1[v] + Tau2[v] + Tau3[v] + Tau4[v]);
+
+      // fix dTau if dTau>Tau
+      if (dTavg[0]>Tavg[0]*ONE_PLUS_EPS) {
+        //cout <<"dTau is bigger than Tau: "<<dTavg[0]<<"  "<<Tavg[0];
+        //cout <<"  "<<diffx<<"  "<<diffy;
+        //cout <<"  "<<*Tau1<<"  "<<*Tau2<<"  "<<*Tau3<<"  "<<*Tau4<<"\n";
+        //CI.print_cell(f1);
+        //CI.print_cell(f2);
+        //CI.print_cell(f3);
+        //CI.print_cell(f4);
+        //rep.error("interpolation",99);
+        for (int iT=0; iT<s->NTau; iT++) dTavg[iT] = 0.99*Tavg[iT];
       }
-      // tmp[] is col2cell for coarse cell for this source.
-      // Tau1[] is cell_col for this source.
+        
+      // Tavg[] is col2cell for coarse cell for this source.
+      // dTavg[] is cell_col for this source.
       // Copy them into array T.
       for (int iT=0; iT<s->NTau; iT++)
-        T[F2C_tauoff[isrc]+iT] = tmp[iT];
+        T[F2C_tauoff[isrc]+iT] = Tavg[iT];
       for (int iT=0; iT<s->NTau; iT++)
-        T[F2C_tauoff[isrc]+s->NTau+iT] = Tau1[iT];
+        T[F2C_tauoff[isrc]+s->NTau+iT] = dTavg[iT];
+
 #ifdef RT_TESTING
       cout <<"  dtc="<<*Tau1 <<"\n";
 #endif
     }
-//    rep.printVec("*** T ***",T,F2C_Nxd);
+    //rep.printVec("*** T ***",T,F2C_Nxd);
   } // if 2D
 
   else {

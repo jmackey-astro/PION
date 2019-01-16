@@ -82,6 +82,7 @@ int calc_timestep::calculate_timestep(
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
   t_mp  = calc_microphysics_dt(par,grid,l);
+  //cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
 #ifdef TESTING
   if (t_mp<t_dyn)
@@ -120,7 +121,8 @@ int calc_timestep::calculate_timestep(
   double cr=0.0;
   //for (int d=0;d<par.ndim;d++) cr += 1.0/(par.Range[d]*par.Range[d]);
   //cr = M_PI*sqrt(cr);
-  cr = 0.25/par.levels[0].dx; // this is the old value.
+  if (par.grid_nlevels==1) cr = 0.25/par.dx;
+  else cr = 0.25/par.levels[0].dx; // this is the old value.
   sp_solver->Set_GLM_Speeds(t_dyn,grid->DX(),cr);
 #endif
 
@@ -356,7 +358,7 @@ double calc_timestep::calc_microphysics_dt(
     // need column densities, so do raytracing, and then get dt.
     //
     //cout <<"calc_timestep, getting column densities rt="<<par.RS.Nsources<<".\n";
-    //int err = do_ongrid_raytracing(par,grid,l);
+    //int err = RT_all_sources(par,grid,l);
     dt = get_mp_timescales_with_radiation(par,grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_with_radiation() returned error",dt);
@@ -481,8 +483,10 @@ double calc_timestep::get_mp_timescales_no_radiation(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double calc_timestep::get_mp_timescales_with_radiation(
@@ -518,7 +522,7 @@ double calc_timestep::get_mp_timescales_with_radiation(
     // cells which are grid data).  If it is boundary data then we
     // skip it.
     //
-    if (c->isbd) {
+    if (c->isbd || !c->isleaf) {
 #ifdef TESTING
       cout <<"skipping cell "<<c->id<<" in get_mp_timescales_with_radiation() c->isbd.\n";
 #endif
@@ -554,6 +558,15 @@ double calc_timestep::get_mp_timescales_with_radiation(
              iC<FVI_ionising_srcs[v].NTau; iC++)
           FVI_ionising_srcs[v].Column[iC] -=
                                   FVI_ionising_srcs[v].DelCol[iC];
+        if (FVI_ionising_srcs[v].Column[0]<0.0) {
+#ifdef RT_TESTING
+          cout <<"dx="<<grid->DX()<<"  ";
+          CI.print_cell(c);
+          rep.error("time_int:calc_RT_microphysics_dU tau<0",1);
+#endif
+          for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
+            FVI_ionising_srcs[v].Column[iC] = max(0.0,FVI_ionising_srcs[v].Column[iC]);
+        }
       }
       //
       // We assume we want to limit by all relevant timescales.
@@ -572,8 +585,8 @@ double calc_timestep::get_mp_timescales_with_radiation(
         rep.printVec("Ph",c->Ph,par.nvar);
         rep.error("Negative timestep from microphysics with RT!",tempdt);
       }
-      //if (tempdt<dt)
-      //  cout <<"c->id="<<c->id<<"\tdt="<<tempdt<<"\n";
+      //cout <<"c->id="<<c->id<<"\tdt="<<tempdt<<"  ";
+      //rep.printVec("Ph",c->Ph,par.nvar);
       dt = min(dt, tempdt);
     } // if not boundary data.
   } while ( (c =grid->NextPt(c)) !=0);

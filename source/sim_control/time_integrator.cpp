@@ -354,6 +354,16 @@ int time_integrator::calc_RT_microphysics_dU(
         CI.get_col(     c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);
         for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
           FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
+        if (FVI_ionising_srcs[v].Column[0]<0.0) {
+#ifdef RT_TESTING
+          cout <<"dx="<<grid->DX()<<"  ";
+          CI.print_cell(c);
+          rep.error("time_int:calc_RT_microphysics_dU tau<0",1);
+#endif
+          for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
+            FVI_ionising_srcs[v].Column[iC] = max(0.0,FVI_ionising_srcs[v].Column[iC]);
+        }
+
       }
       //
       // 4th and 5th args are for ionising sources.

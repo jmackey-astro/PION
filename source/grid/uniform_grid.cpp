@@ -334,7 +334,7 @@ UniformGrid::UniformGrid(
       if (c->pos[v]<Sim_ixmin[v] || c->pos[v]>Sim_ixmax[v]) dom=false;
     }
     if (!dom) c->isdomain = false;
-    c->isleaf=true;
+    c->isleaf=true; // assume all cells are leaves unless changed.
   } while ( (c=NextPt_All(c))!=0);
 
 

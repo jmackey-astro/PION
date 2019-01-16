@@ -362,6 +362,10 @@ int sim_control_pllel::Time_Int(
   cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   cout <<"-------------------------------------------------------\n";
   int err=0;
+  err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
+  rep.errorTest("TIME_INT:: initial RT src update()",0,err);
+  err = RT_all_sources(SimPM,grid[0],0);
+  rep.errorTest("TIME_INT:: initial RT()",0,err);
   int log_freq=10;
   SimPM.maxtime=false;
   clk.start_timer("time_int"); double tsf=0.0;
@@ -371,10 +375,9 @@ int sim_control_pllel::Time_Int(
     //
     err = update_evolving_RT_sources(SimPM,SimPM.simtime,
                                                     grid[0]->RT);
-    if (err) {
-      cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
-      return err;
-    }
+    rep.errorTest("TIME_INT::update_RT_sources()",0,err);
+    err = RT_all_sources(SimPM,grid[0],0);
+    rep.errorTest("TIME_INT:: loop RT()",0,err);
     
     //
     // Update boundary data.
@@ -515,18 +518,22 @@ int sim_control_pllel::calculate_timestep(
   //
   //par.dt = t_dyn;
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
-  //cout <<"proc "<<SimPM.levels[0].MCMD.get_myrank();
+  //cout <<"l="<<l<<", proc "<<SimPM.levels[0].MCMD.get_myrank();
   //cout<<":\t my t_dyn="<<par.dt<<" and global t_dyn="<<t_dyn<<"\n";
   //par.dt = t_mp;
   t_mp = COMM->global_operation_double("MIN", t_mp);
-  //cout <<"proc "<<SimPM.levels[0].MCMDM.get_myrank();
+  //cout <<"l="<<l<<", proc "<<SimPM.levels[0].MCMD.get_myrank();
   //cout<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
+  //cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
-  par.dt = min(t_dyn,t_mp);
 
+#ifdef TESTING
   // Write step-limiting info every tenth timestep.
   if (t_mp<t_dyn && (par.timestep%10)==0)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
+#endif
+
+  par.dt = min(t_dyn,t_mp);
 
 #ifdef THERMAL_CONDUCTION
   //
@@ -557,7 +564,8 @@ int sim_control_pllel::calculate_timestep(
   //for (int d=0;d<par.ndim;d++)
   //  cr += 1.0/(par.Range[d]*par.Range[d]);
   //cr = M_PI*sqrt(cr);
-  cr = 0.25/par.levels[0].dx;
+  if (par.grid_nlevels==1) cr = 0.25/par.dx;
+  else cr = 0.25/par.levels[0].dx;
   spatial_solver->Set_GLM_Speeds(t_dyn,grid->DX(), cr);
 #endif
   
