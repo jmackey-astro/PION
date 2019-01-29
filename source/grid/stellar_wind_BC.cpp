@@ -903,7 +903,7 @@ int stellar_wind_evolution::add_evolving_source(
   temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
   temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
   temp->tfinish= t[Npt-1]  *pconst.year(); // now in seconds (already scaled)
-  temp->update_freq = update_freq*pconst.year()/t_scalefactor; // now in seconds
+  temp->update_freq = update_freq/t_scalefactor; // in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
   cout <<"\t\t tstart="<<temp->tstart;

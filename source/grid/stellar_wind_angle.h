@@ -63,6 +63,10 @@ class stellar_wind_angle
   /// Add a wind source, returns source id (count from zero).
   /// Note the temperature is in Kelvin if we have a pure neutral atomic
   /// hydrogen gas, otherwise it will be modified accordingly.
+  /// - Note the v_crit should be input from the evolution file or
+  ///   pre-calculated, and does not have to be consistent with v_esc.
+  ///   The reason for this is that for rotating stars these
+  ///   quantities are averaged over the surface (or surface layers!)
   ///
   virtual int add_rotating_source(
       const double *, ///< position (cm from grid origin)
@@ -71,6 +75,7 @@ class stellar_wind_angle
       const double,   ///< Mdot (g/s)
       const double,   ///< Vesc (cm/s)
       const double,   ///< Vrot (cm/s)
+      const double,   ///< Vcrit (cm/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Radius where T=Twind (to get gas pressure)
       const pion_flt *  ///< Tracer values of wind (if any)
@@ -198,6 +203,7 @@ class stellar_wind_angle
   vector<double> Mdot_evo;
   vector<double> vrot_evo;
   vector<double> vesc_evo;
+  vector<double> vcrit_evo;
 
   protected:
 
