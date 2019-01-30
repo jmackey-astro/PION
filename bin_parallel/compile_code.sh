@@ -50,7 +50,7 @@ export CXX=mpicxx
 # Options for fionn.ichec.ie
 ######################################################################
 case $HOSTNAME in
-  login[0-9].novalocal)
+  login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
     source /usr/share/Modules/init/bash
     #module purge
