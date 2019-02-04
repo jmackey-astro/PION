@@ -585,14 +585,14 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     //
     // Overwrite data, with curved shock and IF.
     //
-    if (ptype==2) shock_pos = IF_pos + SimPM->Range[YY]/32.0;
     double lambda=0.0;
     double A = 0.0;
     double phs=0.0;
     if      (ptype==2) {
+      shock_pos = IF_pos + SimPM->Range[YY]/64.0;
       lambda = SimPM->Range[YY]/13.0;  // 13 wavelengths on the domain
-      A = SimPM->Range[YY]/640.0; // 1/640th of the y-domain
-      phs = 6.0; // offset of waves.
+      A = SimPM->Range[YY]/1280.0; // 1/640th of the y-domain
+      phs = 6.0; // offset of waves, in units of 05*dx
     }
     else if (ptype==3) {
       lambda = SimPM->Range[YY];  // just one wavelength
@@ -632,6 +632,10 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
               A*sin(2.0*M_PI*(13.0*((psub[YY]-phs*dxo2)/SimPM->Range[YY]+0.5)));
             deflection += 
               A*sin(2.0*M_PI*(59.0*((psub[YY]-phs*dxo2)/SimPM->Range[YY]+0.5)));
+            deflection += 
+              A*sin(2.0*M_PI*(131.0*((psub[YY]-phs*dxo2)/SimPM->Range[YY]+0.5)));
+             deflection += 
+              A*sin(2.0*M_PI*(199.0*((psub[YY]-phs*dxo2)/SimPM->Range[YY]+0.5)));
           }
           else {
             deflection = A*sin(2.0*M_PI*(psub[YY]+0.5*SimPM->Range[YY])/lambda);
