@@ -356,7 +356,9 @@ int sim_control_NG_MPI::Time_Int(
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 
+#ifdef TEST_INT
     cout <<"raytracing level "<<l<<"\n";
+#endif
     if (l<SimPM.grid_nlevels-1) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
@@ -386,10 +388,13 @@ int sim_control_NG_MPI::Time_Int(
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
-    cout <<"updating internal boundaries for level "<<l<<"\n";
+    cout <<"updating internal boundaries for level "<<l<<"... ";
 #endif
     err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
                   SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+#ifdef TEST_INT
+    cout <<"... done \n";
+#endif
   }
   rep.errorTest("sim_control_NG_MPI: internal boundary",0,err);
   // --------------------------------------------------------------
@@ -398,7 +403,6 @@ int sim_control_NG_MPI::Time_Int(
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TESTING
     cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";
-    cout <<l<<"\n";
 #endif
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
@@ -417,7 +421,13 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
   }
+#ifdef TESTING
+  cout <<"NG_MPI updated F2C boundaries for all levels.\n";
+#endif
   BC_FINE_TO_COARSE_SEND_clear_sends();
+#ifdef TESTING
+  cout <<"NG_MPI F2C cleared all sends.\n";
+#endif
   rep.errorTest("NG_MPI time-int: error from bounday update",0,err);
   // ----------------------------------------------------------------
 

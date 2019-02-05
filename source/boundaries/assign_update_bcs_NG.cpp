@@ -82,6 +82,7 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
       const int maxstep
       )
 {
+  //cout <<"assign_update_bcs_NG::TimeUpdateInternalBCs() running.\n";
   struct boundary_data *b;
   int err = 0;
   size_t i=0;
@@ -129,6 +130,7 @@ int assign_update_bcs_NG::TimeUpdateInternalBCs(
 #ifdef TEST_NEST
   cout <<"updated NG-grid serial internal BCs\n";
 #endif
+  //cout <<"assign_update_bcs_NG::TimeUpdateInternalBCs() returns.\n";
   return 0;
 }
   
