@@ -62,6 +62,8 @@ using namespace std;
 #ifdef PARALLEL
 
 
+//#define TEST_BC89FLUX
+
 
 //-------------------------------------------------------------
 //------------------- CARTESIAN GRID START --------------------

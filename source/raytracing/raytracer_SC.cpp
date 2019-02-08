@@ -835,8 +835,8 @@ int raytracer_USC_infinity::ProcessCell(
   }
 
   // 2 special cases: cell is not part of domain, so nothing is set,
-  // or else cell is not a leaf, in which case col2cell is received
-  // from finer grid.
+  // or else cell is not a leaf, in which case col2cell/cell_col are
+  // received from finer grid.
   if (!c->isdomain) {
     // if cell is not in the domain, set its column to be zero,
 #ifdef RT_TESTING
@@ -850,18 +850,37 @@ int raytracer_USC_infinity::ProcessCell(
     return 0;
   }
 
-  if (!c->isleaf && !c->isbd) {
+  // if cell is not a leaf, then cell optical depths have already
+  // been set and we can just return.
+  // Just check that the interpolated d-Tau is less than Tau (which
+  // is the sum of d-Tau and the optical depth from source to cell).
+  //
+  if (!c->isleaf) {
+    CI.get_col(c,source->s->id, col2cell);
+    CI.get_cell_col(c,source->s->id, cell_col);
 #ifdef RT_TESTING
     cout <<"NG grid cell: "<<c->id <<" isdomain="<<c->isdomain;
-#endif
-    CI.get_col(c,source->s->id, col2cell);
-    //if (!c->isbd) CI.get_cell_col(c,source->s->id, cell_col);
-#ifdef RT_TESTING
     cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<"  ";
     rep.printVec("pos",c->pos,ndim);
 #endif
+    if (col2cell[0]<cell_col[0]) {
+      //cout <<"NG grid cell: "<<c->id <<" isleaf="<<c->isleaf;
+      //cout <<" isdom="<<c->isdomain;
+      //cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<" ";
+      //rep.printVec("pos",c->pos,ndim);
+      //cout <<"\n";
+      //CI.print_cell(c);
+      //rep.error("negative col2cell",col2cell[0]-cell_col[0]);
+      for (unsigned short int iT=0; iT<source->s->NTau; iT++)
+        col2cell[iT] = cell_col[iT];
+      CI.set_col(c, source->s->id, col2cell);
+    }
+    return 0;
   }
 
+  // Now cell is a leaf (or boundary data), so we have to set the
+  // optical depth to and through the cell.
+  //
   // set cell_col based on opacity flag.  cell_col[]=ds from above,
   // so multiply it by the cell-values here.
   switch (source->s->opacity_src) {
@@ -957,44 +976,15 @@ int raytracer_USC_infinity::ProcessCell(
     for (unsigned short int iT=0; iT<source->s->NTau; iT++)
       col2cell[iT] += cell_col[iT];
   }
-
-  if (source->s->opacity_src != RT_OPACITY_VSHELL) {
-    if (col2cell[0]>1.0) {
-      cout <<"NG grid cell: "<<c->id <<" isleaf="<<c->isleaf;
-      cout <<" isdom="<<c->isdomain;
-      cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<" ";
-      rep.printVec("pos",c->pos,ndim);
-      CI.print_cell(c);
-      rep.error("Vshell?!",col2cell[0]);
-    }
-  }
-
-
-  // only set col2cell if cell is a leaf (otherwise got from finer
-  // grid)
-  if (c->isleaf || c->isbd) CI.set_col(c, source->s->id, col2cell);
-  else {
-    CI.get_col(c,source->s->id, col2cell);
-    if (col2cell[0]<cell_col[0]) {
-      //cout <<"NG grid cell: "<<c->id <<" isleaf="<<c->isleaf;
-      //cout <<" isdom="<<c->isdomain;
-      //cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<" ";
-      //rep.printVec("pos",c->pos,ndim);
-      //CI.print_cell(c);
-      //rep.error("negative col2cell",col2cell[0]-cell_col[0]);
-      for (unsigned short int iT=0; iT<source->s->NTau; iT++)
-        col2cell[iT] = cell_col[iT];
-      CI.set_col(c, source->s->id, col2cell);
-    }
-  }
+  CI.set_col(c, source->s->id, col2cell);
 
 #ifdef RT_TESTING
-    cout <<"NG grid cell: "<<c->id <<" isdomain="<<c->isdomain;
-    cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<"  ";
-    CI.get_col(c,source->s->id, col2cell);
-    CI.get_cell_col(c,source->s->id, cell_col);
-    cout <<", c2c="<<*col2cell<<", cc="<<*cell_col<<"  ";
-    rep.printVec("pos",c->pos,ndim);
+  cout <<"NG grid cell: "<<c->id <<" isdomain="<<c->isdomain;
+  cout <<", col2cell="<<*col2cell<<", cell_col="<<*cell_col<<"  ";
+  CI.get_col(c,source->s->id, col2cell);
+  CI.get_cell_col(c,source->s->id, cell_col);
+  cout <<", c2c="<<*col2cell<<", cc="<<*cell_col<<"  ";
+  rep.printVec("pos",c->pos,ndim);
 #endif
   
   return 0;
@@ -1464,18 +1454,23 @@ int raytracer_USC::RayTrace_SingleSource(
   }
   int err=0;
 
-  // check if the source is at infinity, and if so, call parallel_rays routine.
+  // check if the source is at infinity and, if so, call
+  // parallel_rays routine.
   int ct=0;
   for (int i=0;i<ndim;i++) if (src_at_infty[i]!=NO) ct++;
   if (ct) {
-    if (ct>1) rep.error("Don't know how to do source at infinity not parallel to axis!",ct);
+    if (ct>1)
+      rep.error("source at infinity not parallel to axis!",ct);
     enum direction dir=NO;
-    for (int i=0;i<ndim;i++) if (src_at_infty[i]!=NO) dir = src_at_infty[i];
+    for (int i=0;i<ndim;i++)
+      if (src_at_infty[i]!=NO)
+        dir = src_at_infty[i];
     err += trace_parallel_rays(source, dir);
     return err;
   }
   
-  // source is not at infinity, so set list of start cells for each quadrant.
+  // source is not at infinity, so set list of start cells for each
+  // quadrant.
   int ndirs=1; for (int i=0;i<ndim;i++) ndirs*=2;
   cell *startcell[ndirs];
   for (int v=0;v<ndirs;v++) startcell[v]=0;
@@ -1506,9 +1501,12 @@ int raytracer_USC::RayTrace_SingleSource(
       // octant directions are always away from source.
       for (int i=0;i<ndim;i++) SrcDir[i] = gridptr->OppDir(dirs[i]);
 
-      if      (ndim==3) err += trace_octant(source, c, dirs[XX], dirs[YY], dirs[ZZ]);
-      else if (ndim==2) err += trace_plane (source, c, dirs[XX], dirs[YY]);
-      else if (ndim==1) err += trace_column(source, c, dirs[XX]);
+      if      (ndim==3)
+        err += trace_octant(source, c, dirs[XX], dirs[YY], dirs[ZZ]);
+      else if (ndim==2)
+        err += trace_plane (source, c, dirs[XX], dirs[YY]);
+      else if (ndim==1)
+        err += trace_column(source, c, dirs[XX]);
       else rep.error("bad ndim in RayTrace_SingleSource()",ndim);
     }
 
@@ -1830,7 +1828,7 @@ cell * raytracer_USC::find_source_cell(
 #ifdef RT_TESTING
   cout <<"find source cell N-Dim algorithm. ndim="<<ndim<<"\n";
 #endif
-  cell *sc=gridptr->FirstPt_All();
+  cell *sc=gridptr->FirstPt();
   for (int i=0;i<ndim;i++) {
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
@@ -1842,31 +1840,27 @@ cell * raytracer_USC::find_source_cell(
 #ifdef RT_TESTING
     cout <<"have centred source on vertex, move on grid to it.\n";
 #endif
-    if      (pos[a]<gridptr->Xmin_all(a) ||
-             pconst.equalD(pos[a],gridptr->Xmin_all(a))) {
+    if      (pos[a]<gridptr->Xmin(a) ||
+             pconst.equalD(pos[a],gridptr->Xmin(a))) {
       // If source is off grid in negative direction, then set
-      // source cell to be the 2nd last boundary cell in this dir.
-      // (The last boundary cell has no neigbour in at least one
-      // direction, so that would give a wrong Tau in 2D/3D).
+      // source cell to be the 1st grid cell in this dir.
 #ifdef RT_TESTING
       cout <<"don't need to do anything as we are already at";
       cout <<" most negative cell in this axis.\n";
 #endif
-      sc=gridptr->NextPt(sc,posdir);
     }
-    else if (pos[a]>gridptr->Xmax_all(a) ||
-             pconst.equalD(pos[a],gridptr->Xmax_all(a))) {
+    else if (pos[a]>gridptr->Xmax(a) ||
+             pconst.equalD(pos[a],gridptr->Xmax(a))) {
       // If source is off grid in positive direction, then set
-      // source cell to be the 2nd last boundary cell in this dir.
+      // source cell to be the last grid cell in this dir.
 #ifdef RT_TESTING
       cout <<"source off/at the positive end of grid, so go to";
       cout <<" last cell.\n";
 #endif
       // source off the positive end of grid, so go to last cell.
-      while (gridptr->NextPt(sc,posdir)!=0) {
+      while (gridptr->NextPt(sc,posdir)->isgd) {
 	sc=gridptr->NextPt(sc,posdir);
       }
-      sc=gridptr->NextPt(sc,negdir);
     }
     else {
 #ifdef RT_TESTING

@@ -36,13 +36,13 @@ using namespace std;
 #include "constants.h"
 
 #include "sim_params.h"
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"
 #include "grid/uniform_grid.h"
 
-#include "MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
+#include "decomposition/MCMD_control.h"
+#include "grid/setup_fixed_grid_MPI.h"
 
 
 // ##################################################################
@@ -62,11 +62,13 @@ int main(int argc, char **argv)
   //
   // Also initialise the MCMD class with myrank and nproc.
   //
-  class MCMDcontrol MCMD;
   int r=-1, np=-1;
   COMM->get_rank_nproc(&r,&np);
-  MCMD.set_myrank(r);
-  MCMD.set_nproc(np);
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(r);
+  SimPM.levels[0].MCMD.set_nproc(np);
 
   //
   // Get an input file and an output file.
@@ -91,7 +93,8 @@ int main(int argc, char **argv)
   if (optype<0 || optype>2)
     rep.error("Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2)",optype);
   cout <<"fdir="<<fdir<<"\tsdir="<<sdir<<endl;
-  cout <<"first file: "<<firstfile<<"\tsecond file: "<<secondfile<<"\toutput file: "<<outfilebase<<"\n";
+  cout <<"first file: "<<firstfile<<"\tsecond file: ";
+  cout <<secondfile<<"\toutput file: "<<outfilebase<<"\n";
 
   //string rts("msg_"); rts += outfilebase;
   //rep.redirect(rts);
@@ -99,7 +102,7 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(dtype2,&MCMD);
+  class dataio_silo_utility dataio(SimPM,dtype2,&(SimPM.levels[0].MCMD));
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -155,23 +158,38 @@ int main(int argc, char **argv)
   //
   ostringstream oo;
   oo.str(""); oo<<fdir<<"/"<<*ff; firstfile =oo.str();
-  err = dataio.ReadHeader(firstfile);
+  err = dataio.ReadHeader(firstfile,SimPM);
   if (err) rep.error("Didn't read header",err);
+
+  SimPM.grid_nlevels = 1;
+  SimPM.levels[0].parent=0;
+  SimPM.levels[0].child=0;
+  SimPM.levels[0].Ncell = SimPM.Ncell;
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+  SimPM.levels[0].simtime = SimPM.simtime;
+  SimPM.levels[0].dt = 0.0;
+  SimPM.levels[0].multiplier = 1;
 
   //
   // get a setup_grid class, and use it to set up the grid!
   //
   class setup_fixed_grid *SimSetup =0;
   SimSetup = new setup_fixed_grid_pllel();
-  class GridBaseClass *grid = 0;
-  err  = MCMD.decomposeDomain();
+  vector<class GridBaseClass *> g;
+  err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
   if (err) rep.error("main: failed to decompose domain!",err);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,&MCMD);
+  g.resize(1);
+  SimSetup->setup_grid(g,SimPM);
+  class GridBaseClass *grid = g[0];
   if (!grid) rep.error("Grid setup failed",grid);
-
+  SimPM.dx = grid->DX();
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
 
@@ -199,7 +217,7 @@ int main(int argc, char **argv)
     //
     // Setup output silo I/O classes.
     //
-    class dataio_silo firstio("DOUBLE");
+    class dataio_silo firstio(SimPM,"DOUBLE");
     
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
@@ -207,16 +225,28 @@ int main(int argc, char **argv)
     //
     // Read in first code header so i know how to setup grid.
     //
-    err = dataio.ReadHeader(firstfile);
+    err = dataio.ReadHeader(firstfile,SimPM);
     if (err) rep.error("Didn't read header",err);
-  
+    SimPM.grid_nlevels = 1;
+    SimPM.levels[0].parent=0;
+    SimPM.levels[0].child=0;
+    SimPM.levels[0].Ncell = SimPM.Ncell;
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
+    SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+    SimPM.levels[0].simtime = SimPM.simtime;
+    SimPM.levels[0].dt = 0.0;
+    SimPM.levels[0].multiplier = 1;
+    
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
 
     //
     // Read data (this reader can read serial or parallel data).
     //
-    err = dataio.parallel_read_any_data(firstfile, grid);
+    err = dataio.ReadData(firstfile, g, SimPM);
     rep.errorTest("(silocompare) Failed to read firstfile",0,err);
 
     // ----------------------------------------------------------------
@@ -227,8 +257,7 @@ int main(int argc, char **argv)
     //
     cell *c = grid->FirstPt();
     do {
-      for (int v=0; v<SimPM.nvar; v++)
-	c->Ph[v] = c->P[v];
+      for (int v=0; v<SimPM.nvar; v++) c->Ph[v] = c->P[v];
     } while ( (c=grid->NextPt(c))!=0);
 
     cout <<"FINISHED reading first file: "<<firstfile<<endl;
@@ -240,7 +269,7 @@ int main(int argc, char **argv)
     //
     // Read data (this reader can read serial or parallel data).
     //
-    err = dataio.parallel_read_any_data(secondfile, grid);
+    err = dataio.ReadData(secondfile, g, SimPM);
     rep.errorTest("(silocompare) Failed to read secondfile",0,err);
 
     cout <<"FINISHED reading second file: "<<secondfile<<endl;
@@ -377,7 +406,7 @@ int main(int argc, char **argv)
       cout <<"Rel. diffs for each variable follow: i, fabs(diff)/fabs(sum)\n";
       for (int v=0;v<SimPM.nvar;v++) cout <<v<<"\t"<<reldiff[v]<<endl;
       cout <<"\n\n";
-      firstio.OutputData(outfile, grid, fff);
+      firstio.OutputData(outfile, g, SimPM, fff);
       break;
     case 2:
       oo.str(""); oo <<outfilebase<<"_"<<r<<".txt"; outfile=oo.str(); oo.str("");

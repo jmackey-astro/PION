@@ -407,25 +407,29 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg(
         if (diffx>0 && fabs(diffx)>=fabs(diffy)) {
           // Source in Q1 coming from dir XP (-45 < theta < 45 deg)
           for (int v=0; v<s->NTau; v++) {
-            Tavg[v] = 0.5*(Tau1[v]+Tau3[v]);
+            //Tavg[v] = 0.5*(Tau1[v]+Tau3[v]);
+            Tavg[v] = std::max(Tau1[v],Tau3[v]);
           }
         }
         else if (diffy>0 && fabs(diffx)<fabs(diffy)) {
           // source in Q2, coming from dir YP (45 < theta < 135 deg)
           for (int v=0; v<s->NTau; v++) {
-            Tavg[v] = 0.5*(Tau1[v]+Tau2[v]);
+            //Tavg[v] = 0.5*(Tau1[v]+Tau2[v]);
+            Tavg[v] = std::max(Tau1[v],Tau2[v]);
           }
         }
         else if (diffx<0 && fabs(diffx)>=fabs(diffy)) {
           // source in Q3, coming from XN (135 < theta < 225 deg)
           for (int v=0; v<s->NTau; v++) {
-            Tavg[v] = 0.5*(Tau2[v]+Tau4[v]);
+            //Tavg[v] = 0.5*(Tau2[v]+Tau4[v]);
+            Tavg[v] = std::max(Tau2[v],Tau4[v]);
           }
         }
         else {
           // source in Q4, coming from YN (225 < theta < 315 deg)
           for (int v=0; v<s->NTau; v++) {
-            Tavg[v] = 0.5*(Tau3[v]+Tau4[v]);
+            //Tavg[v] = 0.5*(Tau3[v]+Tau4[v]);
+            Tavg[v] = std::max(Tau3[v],Tau4[v]);
           }
         }
 #ifdef RT_TESTING

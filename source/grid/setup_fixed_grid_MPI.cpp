@@ -365,7 +365,7 @@ int setup_fixed_grid_pllel::boundary_conditions(
 int setup_fixed_grid_pllel::setup_boundary_structs(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      const int l
+      const int l ///< level
       )
 {
   string fname="setup_fixed_grid_pllel::setup_boundary_structs";
@@ -390,12 +390,12 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   // Loop through boundaries, and if local boundary is not sim boundary,
   // set it to be a parallel boundary.
   for (i=0; i<par.ndim; i++) {
-    if (!pconst.equalD(grid->Xmin(static_cast<axes>(i)), par.Xmin[i])) {
+    if (!pconst.equalD(grid->Xmin(static_cast<axes>(i)), par.levels[l].Xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
       grid->BC_bd[2*i]->itype=BCMPI;
       grid->BC_bd[2*i]->type="BCMPI";
     }
-    if (!pconst.equalD(grid->Xmax(static_cast<axes>(i)), par.Xmax[i])) {
+    if (!pconst.equalD(grid->Xmax(static_cast<axes>(i)), par.levels[l].Xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
       grid->BC_bd[2*i+1]->itype=BCMPI;
       grid->BC_bd[2*i+1]->type="BCMPI";

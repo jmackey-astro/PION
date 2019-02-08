@@ -1336,11 +1336,11 @@ void UniformGrid::BC_deleteBoundaryData()
 
 int UniformGrid::setup_flux_recv(
       class SimParams &par, ///< simulation params (including BCs)
-      const int l           ///< level to receive from
+      const int lp1           ///< level to receive from
       )
 {
 #ifdef TEST_BC89FLUX
-  cout <<" UniformGrid::setup_flux_recv() recv from level="<<l<<"\n";
+  cout <<" UniformGrid::setup_flux_recv() recv from level="<<lp1<<"\n";
 #endif
   //
   // Get size of interface region and number of cells.
@@ -1352,11 +1352,11 @@ int UniformGrid::setup_flux_recv(
   size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
 
-  if (this != par.levels[l].parent)
-    rep.error("level l is not my child!",l);
+  if (this != par.levels[lp1].parent)
+    rep.error("level l is not my child!",lp1);
 
-  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lp1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lp1].Xmax, lxmax);
 
 
   // define interface region of fine and coarse grids, and whether
@@ -1409,6 +1409,8 @@ int UniformGrid::setup_flux_recv(
   for (int d=0; d<2*G_ndim; d++) {
     if (recv[d] == true) {
       flux_update_recv[d].fi.resize(nel[d]);
+      flux_update_recv[d].dir = d;
+      flux_update_recv[d].ax  = d/2;
       flux_update_recv[d].Ncells = nc;
       for (size_t i=0; i<nel[d]; i++) {
         flux_update_recv[d].fi[i] = 
@@ -1423,6 +1425,8 @@ int UniformGrid::setup_flux_recv(
     else {
       flux_update_recv[d].fi.resize(1);
       flux_update_recv[d].fi[0] = 0;
+      flux_update_recv[d].dir = d;
+      flux_update_recv[d].ax  = d/2;
       flux_update_recv[d].Ncells = nc;
     }
   }
@@ -1450,11 +1454,11 @@ int UniformGrid::setup_flux_recv(
 
 int UniformGrid::setup_flux_send(
       class SimParams &par, ///< simulation params (including BCs)
-      const int l           ///< level to send to
+      const int lm1           ///< level to send to
       )
 {
 #ifdef TEST_BC89FLUX
-  cout <<" UniformGrid::setup_flux_send() send to level="<<l<<"\n";
+  cout <<" UniformGrid::setup_flux_send() send to level="<<lm1<<"\n";
 #endif
   //
   // Get size of interface region and number of cells.
@@ -1468,12 +1472,12 @@ int UniformGrid::setup_flux_send(
   struct flux_interface *fi = 0;
 
 #ifdef TEST_BC89FLUX
-  if (this != par.levels[l].child)
-    rep.error("level l is not my parent!",l);
+  if (this != par.levels[lm1].child)
+    rep.error("level l is not my parent!",lm1);
 #endif
 
-  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lm1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lm1].Xmax, lxmax);
 
   // define interface region of fine and coarse grids, and whether
   // each direction is to be included or not.  Note that this allows
@@ -1503,8 +1507,8 @@ int UniformGrid::setup_flux_send(
   // This is really only for parallel execution: if the boundary
   // of my grid is not at the boundary of my level, then set send
   // to false
-  CI.get_ipos_vec(par.levels[l+1].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l+1].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lm1+1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lm1+1].Xmax, lxmax);
   for (int ax=0;ax<G_ndim;ax++) {
     if (G_ixmin[ax] > lxmin[ax]) send[2*ax]   = false;
     if (G_ixmax[ax] < lxmax[ax]) send[2*ax+1] = false;
@@ -1542,6 +1546,9 @@ int UniformGrid::setup_flux_send(
   // initialize arrays
   flux_update_send.resize(2*G_ndim);
   for (int d=0; d<2*G_ndim; d++) {
+    flux_update_send[d].dir = d;
+    flux_update_send[d].ax  = d/2;
+
     if (send[d] == true) {
 #ifdef TEST_BC89FLUX
       cout <<"d="<<d<<", nel="<<nel[d]<<"\n";

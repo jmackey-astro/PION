@@ -177,7 +177,7 @@ void reporting::kill_stdout_from_other_procs(
   //
   myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
-  if (myrank!=0) {
+  if (myrank!=core) {
     //saved_buffer_cout = cout.rdbuf(); // <-- save
     //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
     std::cout.setstate(std::ios::failbit) ;

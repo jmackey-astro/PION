@@ -44,7 +44,7 @@ EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 # Smooth Data by n cells? (n<=0 means no).
 smooth -1
 # Add noise at level of f% to Data? (f<=0 means no).
-noise 0.1
+noise -1
 
 ## Grid Parameters
 NGridX  128
@@ -59,7 +59,7 @@ Xmax   3.874e18
 Ymax   3.874e18
 Zmax   3.874e18
 # Nested grid
-grid_nlevels 4
+grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
@@ -133,7 +133,7 @@ PEC_radialslope 0.0  # Clump is core/envelope with this powerlaw env.
 PEC_core_radius 100.0  # units of yrange, only used if radialslope != 0
 
 PEC_ambRO 5.21e-21  # nH~3120.0 per c.c.
-PEC_ambPG 4.305e-9  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
+PEC_ambPG 4.305e-11  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
 PEC_ambVX  0.0e5
 PEC_ambVY  0.0e5
 PEC_ambVZ  0.0e5

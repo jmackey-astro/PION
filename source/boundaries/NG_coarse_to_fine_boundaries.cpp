@@ -11,6 +11,7 @@
 using namespace std;
 
 //#define TEST_C2F
+//#define C2F_TAU
 
 // ##################################################################
 // ##################################################################
@@ -37,6 +38,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   // If we are doing raytracing, then also send the column densities
   // from coarse to fine grids.  Here we set up the number of them.
   //
+#ifdef C2F_TAU
   struct rad_src_info *s;
   C2F_Nxd = 0;
   C2F_tauoff.resize(par.RS.Nsources);
@@ -49,6 +51,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     cout <<" cols, running total = "<<C2F_Nxd<<"\n";
 #endif
   }
+#endif // C2F_TAU
 
   list<cell*>::iterator bpt=b->data.begin();
   int gidx = grid->idx();
@@ -145,6 +148,14 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       solver->PtoU(c->P, U, par.gamma);
       for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
       solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
+      if (c->Ph[par.nvar-1]<0.9e-12) {
+        cout <<"LEVEL "<<level<<": y(H+)<min: ";
+        rep.printVec("P",c->P,par.nvar);
+        rep.printVec("dU",c->dU,par.nvar);
+        solver->PtoU(c->P, U, par.gamma);
+        rep.printVec("U",U,par.nvar);
+        CI.print_cell(c);
+      }
 #ifdef TEST_C2F
       for (int v=0;v<par.nvar;v++) {
         if (!isfinite(c->Ph[v])) {
@@ -157,8 +168,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   }
   // ----------------------------------------------------------------
   
+#ifdef C2F_TAU
   // ----------------------------------------------------------------
-  if (1==0) { // DISABLE C2F OPTICAL DEPTHS!  NOT WORKING FOR OFF-GRID SOURCES!
   // save coarse cell optical depths onto fine cells (Experimental!)
   for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
     cell *f1=0, *f2=0;
@@ -221,8 +232,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     // This function assigns interpolated Tau,dTau to fine cells.
     get_C2F_Tau(par,fcl,cpos,T);
   } // loop over cells and assign optical depths
-  }
   // ----------------------------------------------------------------
+#endif // C2F_TAU
 
   // ----------------------------------------------------------------
   // if spatial order of accuracy is 1, then we have piecewise

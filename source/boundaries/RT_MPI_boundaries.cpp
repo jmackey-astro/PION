@@ -287,10 +287,12 @@ int RT_MPI_bc::Receive_RT_Boundaries(
           b=i_src->RT_recv_list[v].RT_bd;
           i_recv = v;
           if (!test) test=true;
-          else rep.error("Got two boundaries with same fromrank!!!",from_rank);
+          else
+            rep.error("2 boundaries from same rank!!!",from_rank);
         }
       }
-      if (!b) rep.error("No Receive Boundary corresponding to data from this proc!",from_rank);
+      if (!b)
+        rep.error("No Receive Boundary for this proc!",from_rank);
       if (r_dirs[i_recv] != i_src->RT_recv_list[i_recv].dir) {
         rep.error("direction mismatch",i_recv); // this is paranoid checking!
       }
@@ -301,7 +303,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      ct = b->data.size()*RS.NTau;
+      ct = b->data.size()*2*RS.NTau;
       if (ct<1) {
         cerr <<"data size = "<< b->data.size();
         cerr <<", NTau = "<<RS.NTau<<"\n";
@@ -350,11 +352,20 @@ int RT_MPI_bc::Receive_RT_Boundaries(
             rep.printVec("RECV neg tau cell",(*c)->pos,par.ndim);
             cout <<"tau="<<tau[v]<<" ";
             CI.print_cell(*c);
-
           }
           count++;
         }
         CI.set_col(*c, src_id, tau);
+        for (short unsigned int v=0; v<RS.NTau; v++) {
+          tau[v] = buf[count];
+          if (tau[v]<0.0) {
+            rep.printVec("RECV neg dtau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
+          count++;
+        }
+        CI.set_cell_col(*c, src_id, tau);
       }
       if (count != ct) rep.error("BIG ERROR!",count-ct);
       
@@ -468,7 +479,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      int nc = b->data.size()*RS.NTau;
+      int nc = b->data.size()*2*RS.NTau;
       data = mem.myalloc(data, nc);
 
       //
@@ -497,6 +508,17 @@ int RT_MPI_bc::Send_RT_Boundaries(
           data[count] = tau[v];
           if (tau[v]<0.0) {
             rep.printVec("SEND neg tau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
+          count++;
+        }
+
+        CI.get_cell_col(*c, src_id, tau);
+        for (short unsigned int v=0; v<RS.NTau; v++) {
+          data[count] = tau[v];
+          if (tau[v]<0.0) {
+            rep.printVec("SEND neg dtau cell",(*c)->pos,par.ndim);
             cout <<"tau="<<tau[v]<<" ";
             CI.print_cell(*c);
           }

@@ -15,6 +15,9 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
+//#define SKIP_C2F_BC
+//#define SKIP_F2C_BC
+//#define SKIP_BC89_FLUX
 //#define TEST_BC89FLUX        // debugging info for BC89 flux correction
 //#define TEST_COMMS           // debugging info for MPI
 //#define TEST_CONSERVATION    // test mass/mom/energy conservation

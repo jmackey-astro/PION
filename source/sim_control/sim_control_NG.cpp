@@ -903,7 +903,7 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
   // non-zero boundary, correct the coarse fluxes.
   for (unsigned int d=0; d<grid->flux_update_recv.size(); d++) {
 #ifdef TEST_BC89FLUX
-    cout <<"Direction: "<<d<<", looping through faces.\n";
+    cout <<"flux update: "<<d<<", looping through faces.\n";
 #endif
     ax = static_cast<enum axes>(d/2);
 
@@ -911,6 +911,9 @@ int sim_control_NG::recv_BC89_fluxes_F2C(
       continue;
     }
     else {
+#ifdef TEST_BC89FLUX
+      cout <<"flux update: "<<d<<", receiving.\n";
+#endif
       err += recv_BC89_flux_boundary(grid, dt,
                       fine->flux_update_send[d],
                       grid->flux_update_recv[d], d, ax);
@@ -939,7 +942,6 @@ int sim_control_NG::recv_BC89_flux_boundary(
       const axes ax ///< axis of normal direction.
       )
 { 
-  //return 0;
   struct flux_interface *fc=0;
   struct flux_interface *ff=0;
   double ftmp[SimPM.nvar],utmp[SimPM.nvar];
@@ -953,7 +955,7 @@ int sim_control_NG::recv_BC89_flux_boundary(
 
 #ifdef TEST_BC89FLUX
   cout <<"SERIAL BC89 RECV: send-d="<<send.dir<<", recv-d=";
-  cout <<recv.dir<<endl;
+  cout <<recv.dir<<", d="<<d<<", ax="<<ax<<endl;
 #endif
   for (unsigned int f=0; f<recv.fi.size(); f++) {
     fc = recv.fi[f];
@@ -976,12 +978,8 @@ int sim_control_NG::recv_BC89_flux_boundary(
     rep.printVec("ff->flux",ff->flux,SimPM.nvar);
 #endif
     
-    for (int v=0;v<SimPM.nvar;v++) {
-      fc->flux[v] += ff->flux[v];
-#ifndef TEST_BC89FLUX
-      fc->flux[v] /= fc->area[0];
-#endif
-    }
+    for (int v=0;v<SimPM.nvar;v++) fc->flux[v] += ff->flux[v];
+
 #ifdef TEST_BC89FLUX
     rep.printVec("     dU          ",fc->c[0]->dU,SimPM.nvar);
     rep.printVec("flux",fc->flux,SimPM.nvar);
@@ -990,6 +988,13 @@ int sim_control_NG::recv_BC89_flux_boundary(
       rep.printVec("+ state",grid->NextPt(fc->c[0],YP)->Ph,SimPM.nvar);
       rep.printVec("- state",grid->NextPt(fc->c[0],YN)->Ph,SimPM.nvar);
     }
+#endif
+
+    for (int v=0;v<SimPM.nvar;v++) fc->flux[v] /= fc->area[0];
+    for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
+    
+#ifdef TEST_BC89FLUX
+    for (int v=0;v<SimPM.nvar;v++) fc->flux[v] *= fc->area[0];
 #endif
     //
     // fc->flux is now the error in dU made for both coarse cells.
@@ -1017,9 +1022,8 @@ int sim_control_NG::recv_BC89_flux_boundary(
     cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0]<<", "<<utmp[0]<<"\n";
 #endif
 
-    for (int v=0;v<SimPM.nvar;v++) {
-      fc->c[0]->dU[v] += utmp[v];
-    }
+    for (int v=0;v<SimPM.nvar;v++) fc->c[0]->dU[v] += utmp[v];
+
 #ifdef TEST_BC89FLUX
     spatial_solver->PtoU(fc->c[0]->P,utmp,SimPM.gamma);
     rep.printVec(" U",utmp,SimPM.nvar);

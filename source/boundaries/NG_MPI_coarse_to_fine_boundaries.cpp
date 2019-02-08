@@ -26,16 +26,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 {
 
   class GridBaseClass *grid = par.levels[l].grid;
-  //int gidx = grid->idx();
-
   // see how many child grids I have
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  //b->NGsendC2F.reserve(nchild);
-  //if (b->NGsendC2F.size() !=0) {
-  //  rep.error("NGsendC2F init",b->NGsendC2F.size());
-  //}
-  //b->NGsendC2F.clear();
 
 #ifdef TEST_MPI_NG
   if (nchild==0) {
@@ -186,6 +179,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     else rep.error("bad spOOA in MPI C2F",par.spOOA);
     pion_flt *buf = new pion_flt [n_el];
     double slope[par.nvar];
+    double cpos[par.ndim];
 
     // loop over cells, add Ph[], cell-vol, slopes to send buffer
     size_t ibuf=0;
@@ -196,8 +190,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       ibuf += par.nvar;
       buf[ibuf] = grid->CellVolume(c,0);
       ibuf++;
+      CI.get_dpos(c,cpos);
       for (int v=0;v<par.ndim;v++)
-        buf[ibuf+v]= static_cast<double>(c->pos[v]);
+        buf[ibuf+v]= cpos[v];
       ibuf += par.ndim;
 
       if (par.spOOA == OA2) {
