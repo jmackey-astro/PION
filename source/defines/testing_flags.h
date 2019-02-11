@@ -20,7 +20,7 @@
 //#define SKIP_BC89_FLUX
 //#define TEST_BC89FLUX        // debugging info for BC89 flux correction
 //#define TEST_COMMS           // debugging info for MPI
-#define TEST_CONSERVATION    // test mass/mom/energy conservation
+//#define TEST_CONSERVATION    // test mass/mom/energy conservation
 //#define TEST_INF             // test for infinity/nan
 //#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
 //#define RT_TESTING ///< Enable this for debugging info on raytracing.
