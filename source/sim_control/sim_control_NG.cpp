@@ -591,56 +591,59 @@ double sim_control_NG::advance_step_OA1(
   class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
 
+
   err = update_evolving_RT_sources(
             SimPM,SimPM.levels[l].simtime,grid->RT);
   rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
+
+  // --------------------------------------------------------
+  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
+                          SimPM.levels[l].simtime, OA1, OA1);
+  // --------------------------------------------------------
+  
+  // --------------------------------------------------------
   // take the first finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
     dt2_fine = advance_step_OA1(l+1);
-    
-    // timestep for this level is equal to two steps of finer level,
-    // where we take the sum of the fine step just taken and the next
-    // step (not yet taken).
-    SimPM.levels[l].dt = dt2_fine;
   }
   dt2_this = SimPM.levels[l].dt;
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   // now calculate dU, change in conserved variables on this grid,
   // for this step.
   spatial_solver->Setdt(SimPM.levels[l].dt);
-  // May need to do raytracing, if not already completed for getting
-  // the timestep.
-  if (!FVI_need_column_densities_4dt ||
-    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) ) {
-    err += do_ongrid_raytracing(SimPM,grid,l);
-    rep.errorTest("scn::advance_step_OA1: calc_rt_cols()",0,err);
-  }
   err += calc_microphysics_dU(SimPM.levels[l].dt, grid);
-  err += calc_dynamics_dU(SimPM.levels[l].dt,TIMESTEP_FIRST_PART,
-                                                            grid);
+  err += calc_dynamics_dU(SimPM.levels[l].dt, OA1, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,
-                                        TIMESTEP_FIRST_PART, grid);
+  err += calc_thermal_conduction_dU(SimPM.levels[l].dt,OA1, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA1: calc_x_dU",0,err);
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   // take the second finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
     dt2_fine = advance_step_OA1(l+1);
   }
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   // First correct fluxes
   //
+  spatial_solver->Setdt(SimPM.levels[l].dt);
   if (l < SimPM.grid_nlevels-1) {
     err += recv_BC89_fluxes_F2C(l,SimPM.levels[l].dt,OA1,OA1);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   // increment time and timestep for this level
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
   SimPM.levels[l].step ++;
@@ -649,14 +652,22 @@ double sim_control_NG::advance_step_OA1(
   }
   SimPM.levels[l].last_dt = SimPM.levels[l].dt;
   if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
+  // --------------------------------------------------------
 
-  //
-  // update internal and external boundaries.
-  //
+  // --------------------------------------------------------
+  // update internal boundaries.
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
-                                      SimPM.simtime, OA1, OA1);
-  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                                      SimPM.simtime, OA1, OA1);
+                            SimPM.levels[l].simtime, OA1, OA1);
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // Do raytracing for next step, to send with F2C BCs.
+  // --------------------------------------------------------
+  if (grid->RT) {
+    err += do_ongrid_raytracing(SimPM,grid,l);
+    rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()",0,err);
+  }
+  // --------------------------------------------------------
 
 #ifdef TESTING
   cout <<"advance_step_OA1, level="<<l<<", returning. t=";
@@ -688,91 +699,74 @@ double sim_control_NG::advance_step_OA2(
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
+  double ctime = SimPM.levels[l].simtime; // current time
   class GridBaseClass *grid = SimPM.levels[l].grid;
+
   err = update_evolving_RT_sources(
             SimPM,SimPM.levels[l].simtime,grid->RT);
   rep.errorTest("NG TIME_INT::update_RT_sources error",0,err);
 
+
+  // --------------------------------------------------------
+  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
+                                      ctime, OA2, OA2);
+  // --------------------------------------------------------
+ 
+  // --------------------------------------------------------
   // take the first finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
     dt2_fine = advance_step_OA2(l+1);
-    
-    // timestep for this level is equal to two steps of finer level,
-    // where we take the sum of the fine step just taken and the next
-    // step (not yet taken).
-    SimPM.levels[l].dt = dt2_fine;
   }
   dt2_this = SimPM.levels[l].dt;
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   // Predictor step: use 0.5*dt to get to time-centred state
   double dt_now = dt2_this*0.5;             // half of the timestep
-  double ctime = SimPM.levels[l].simtime; // current time
   spatial_solver->Setdt(dt_now);
-  // May need to do raytracing
-  if (!FVI_need_column_densities_4dt ||
-    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) ) {
-    err += do_ongrid_raytracing(SimPM,grid,l);
-    rep.errorTest("scn::advance_step_OA2: calc_rt_cols()",0,err);
-  }
-
-  //
-  // now calculate dU, the change in conserved variables on this grid
-  // for the half step of the 2nd order step.
-  //
-#ifdef TEST_INT
-  cout <<"l="<<l<<" half step, start calc_microphysics_dU\n";
-#endif
   err += calc_microphysics_dU(dt_now, grid);
-#ifdef TEST_INT
-  cout <<"l="<<l<<" half step, start calc_dynamics_dU\n";
-#endif
-  err += calc_dynamics_dU(dt_now,TIMESTEP_FIRST_PART, grid);
+  err += calc_dynamics_dU(dt_now,OA1, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt_now,TIMESTEP_FIRST_PART, grid);
+  err += calc_thermal_conduction_dU(dt_now,OA1, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA1",0,err);
-#ifdef TEST_INT
-  cout <<"l="<<l<<" half step, grid_update_state_vector\n";
-#endif
-  err += grid_update_state_vector(dt_now,
-                                    TIMESTEP_FIRST_PART,OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: state-vec update OA1",0,err);  
+
+  err += grid_update_state_vector(dt_now, OA1,OA2, grid);
+  rep.errorTest("scn::advance_step_OA2: update OA1",0,err);  
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
   // Update boundary data.
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
   rep.errorTest("scn::advance_step_OA2: bounday update OA1",0,err);
+  // --------------------------------------------------------
 
-  //
+  // --------------------------------------------------------
   // Now calculate dU for the full step (OA2)
   //
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
   err += do_ongrid_raytracing(SimPM,grid,l);
   rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
-#ifdef TEST_INT
-  cout <<"l="<<l<<" full step, start calc_microphysics_dU\n";
-#endif
   err += calc_microphysics_dU(dt_now, grid);
-#ifdef TEST_INT
-  cout <<"l="<<l<<" full step, start calc_dynamics_dU\n";
-#endif
-  err += calc_dynamics_dU(dt_now, TIMESTEP_FULL, grid);
+  err += calc_dynamics_dU(dt_now, OA2, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt_now,TIMESTEP_FULL, grid);
+  err += calc_thermal_conduction_dU(dt_now,OA2, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   // take the second finer grid step, if there is a finer grid.
-#ifdef TEST_INT
-  cout <<"l="<<l<<" full step, call 2nd l+1 update\n";
-#endif
   if (l<SimPM.grid_nlevels-1) {
     dt2_fine = advance_step_OA2(l+1);
   }
+  // --------------------------------------------------------
 
-  //
+  // --------------------------------------------------------
   // Now update Ph[i] to new values (and P[i] also if full step).
   // First correct fluxes
   //
@@ -781,12 +775,14 @@ double sim_control_NG::advance_step_OA2(
 #endif
   spatial_solver->Setdt(dt2_this);
   if (l < SimPM.grid_nlevels-1) {
-    err += recv_BC89_fluxes_F2C(l,dt_now,TIMESTEP_FULL,OA2);
+    err += recv_BC89_fluxes_F2C(l,dt_now,OA2,OA2);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
-  err += grid_update_state_vector(dt_now,TIMESTEP_FULL,OA2, grid);
-  rep.errorTest("scn::advance_step_OA2: state-vec update OA2",0,err);  
+  err += grid_update_state_vector(dt_now,OA2,OA2, grid);
+  rep.errorTest("scn::advance_step_OA2: update OA2",0,err);  
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
   // increment time and timestep for this level
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
   SimPM.levels[l].step ++;
@@ -795,15 +791,21 @@ double sim_control_NG::advance_step_OA2(
   }
   SimPM.levels[l].last_dt = SimPM.levels[l].dt;
   if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
+  // --------------------------------------------------------
 
-  //
-  // update internal and external boundaries.
+  // --------------------------------------------------------
+  // update internal boundaries.
   //
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                                 SimPM.levels[l].simtime, OA2, OA2);
-  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                                SimPM.levels[l].simtime, OA2, OA2);
+  // --------------------------------------------------------
 
+  // --------------------------------------------------------
+  // Do raytracing for next step, to send with F2C BCs.
+  // --------------------------------------------------------
+  err += do_ongrid_raytracing(SimPM,grid,l);
+  rep.errorTest("NG-MPI::advance_step_OA2: raytracing()",0,err);
+  // --------------------------------------------------------
 
 #ifdef TEST_INT
   cout <<"advance_step_OA2, level="<<l<<", returning. t=";
@@ -878,7 +880,7 @@ int sim_control_NG::check_energy_cons(
 int sim_control_NG::recv_BC89_fluxes_F2C(
       const int level,      ///< My level in grid hierarchy.
       const double dt,  ///< timestep
-      const int step,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int step,   ///< OA2 or OA1
       const int ooa     ///< Full order of accuracy of simulation
       )
 {

@@ -497,7 +497,7 @@ int sim_control_pllel::Time_Int(
 
 
 int sim_control_pllel::calculate_timestep(
-      class SimParams &par,      ///< pointer to simulation parameters
+      class SimParams &par,      ///< simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
       class FV_solver_base *sp_solver, ///< solver/equations class
       const int l       ///< level to advance (for NG grid)
@@ -511,10 +511,7 @@ int sim_control_pllel::calculate_timestep(
   t_mp  = calc_microphysics_dt(par,grid,l);
   
   //
-  // Now get global min over all grids for dynamics and microphysics timesteps.
-  // We only need both if we are doing Dedner et al. 2002, mixed-GLM divergence
-  // cleaning of the magnetic field, since there the dynamical dt is an important
-  // quantity (see next block of code).
+  // Get global min over all grids on this level.
   //
   //par.dt = t_dyn;
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
@@ -537,16 +534,17 @@ int sim_control_pllel::calculate_timestep(
 
 #ifdef THERMAL_CONDUCTION
   //
-  // In order to calculate the timestep limit imposed by thermal conduction,
-  // we need to actually calcuate the multidimensional energy fluxes
-  // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
-  // by the actual dt later (since at this stage we don't know dt).  This
+  // Calculate the timestep limit imposed by thermal conduction,
+  // and calcuate the multidimensional energy fluxes
+  // associated with it.  Store Edot in c->dU[ERG], to be multiplied
+  // by dt later (since at this stage we don't know dt).  This
   // later multiplication is done in eqn->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
   t_cond = COMM->global_operation_double("MIN", t_cond);
   if (t_cond<par.dt) {
-    cout <<"PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c="<<t_cond<<", t_m="<<t_mp;
+    cout <<"PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c=";
+    cout <<t_cond<<", t_m="<<t_mp;
     cout <<", t_dyn="<<t_dyn<<"\n";
   }
   par.dt = min(par.dt, t_cond);
@@ -584,10 +582,8 @@ int sim_control_pllel::calculate_timestep(
   
 #ifdef TESTING
   //
-  // Check (sanity) that if my processor has modified dt to get to either
-  // an output time or finishtime, then all processors have done this too!
-  // This is really paranoid testing, and involves communication, so only 
-  // do it when testing.
+  // Check that if my processor has modified dt to get to either
+  // an output time or finishtime, then all procs have done this too!
   //
   t_dyn=par.dt;
   t_mp = COMM->global_operation_double("MIN", t_dyn);

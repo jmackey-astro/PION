@@ -140,6 +140,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   if (step%2 != 0) {
 #ifdef TEST_C2F
     cout <<"C2F: odd step, interpolating coarse data in time.\n";
+    int ct=0;
 #endif
     double U[par.nvar];
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
@@ -148,15 +149,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       solver->PtoU(c->P, U, par.gamma);
       for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
       solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
-      if (c->Ph[par.nvar-1]<0.9e-12) {
-        cout <<"LEVEL "<<level<<": y(H+)<min: ";
-        rep.printVec("P",c->P,par.nvar);
-        rep.printVec("dU",c->dU,par.nvar);
-        solver->PtoU(c->P, U, par.gamma);
-        rep.printVec("U",U,par.nvar);
-        CI.print_cell(c);
-      }
 #ifdef TEST_C2F
+      ct++;
+      //cout <<"updated cell "<<ct<<" of "<<b->data.size()<<"\n";
       for (int v=0;v<par.nvar;v++) {
         if (!isfinite(c->Ph[v])) {
           rep.printVec("NAN c->P ",c->P,par.nvar);
@@ -294,6 +289,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         c_vol = coarse->CellVolume(c,0);
         solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
         solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        //for (int v=0;v<par.nvar;v++) sx[v] = 0.0;
+        //for (int v=0;v<par.nvar;v++) sy[v] = 0.0;
         // only do this on every second row because we update 4
         // cells at a time.
         if (!fine->NextPt((*f_iter),YP) ||
@@ -313,17 +310,17 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f4 = fine->NextPt(f2,YP);
         
 #ifdef TEST_C2F
-        rep.printVec("f1 pos",f1->pos,2);
-        rep.printVec("f2 pos",f2->pos,2);
-        rep.printVec("f3 pos",f3->pos,2);
-        rep.printVec("f4 pos",f4->pos,2);
-        rep.printVec("c  pos",c->pos,2);
+        //rep.printVec("f1 pos",f1->pos,2);
+        //rep.printVec("f2 pos",f2->pos,2);
+        //rep.printVec("f3 pos",f3->pos,2);
+        //rep.printVec("f4 pos",f4->pos,2);
+        //rep.printVec("c  pos",c->pos,2);
 #endif
 
 #ifdef TEST_C2F
-        cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
-        cout <<", f1="<<f1->id<<", f2="<<f2->id;
-        cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+        //cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
+        //cout <<", f1="<<f1->id<<", f2="<<f2->id;
+        //cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
         //CI.print_cell(c);
         //CI.print_cell(f1);
         //CI.print_cell(f2);
@@ -334,9 +331,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
               par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
         
 #ifdef TEST_C2F
-        cout <<"AFTER interpolating coarse to fine 2d: coarse="<<c->id;
-        cout <<", f1="<<f1->id<<", f2="<<f2->id;
-        cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+        //cout <<"AFTER interpolating coarse to fine 2d: coarse="<<c->id;
+        //cout <<", f1="<<f1->id<<", f2="<<f2->id;
+        //cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
         //CI.print_cell(c);
         //CI.print_cell(f1);
         //CI.print_cell(f2);
