@@ -498,11 +498,18 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
   double dxo2 = 0.5*fine->DX(); // dx
   double f_vol[4];
+  //double f_psi[4];
   //
   // Need to do bilinear interpolation, 4 cells at a time.
   // use slopes in each direction to get corner values for the
   // coarse cell.
   //
+  //if (par.eqntype == EQGLM) {
+  //  f_psi[0] = f1->P[SI];
+  //  f_psi[1] = f2->P[SI];
+  //  f_psi[2] = f3->P[SI];
+  //  f_psi[3] = f4->P[SI];
+  //}
   for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
   for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
   for (int v=0;v<par.nvar;v++) f1U[v] = P[v] -sx[v] -sy[v];
@@ -564,6 +571,13 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v];
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
+
+  //if (par.eqntype == EQGLM) {
+  //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
+  //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
+  //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
+  //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
+  //}
 
   //int d=par.nvar-1;
   //cout <<"interpolate_coarse2fine2D: "<<P[d]<<": "<<f1->P[d]<<", ";

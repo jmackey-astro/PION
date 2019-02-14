@@ -234,7 +234,10 @@ int mp_only_cooling::TimeUpdateMP(
       rep.printVec("p_in",p_in,nv_prim);
       cout <<"E0_step="<<E0_step<<", Ein="<<Eint0;
       cout <<", T="<<T<<", Edot="<<Edot(p_in[RO],T)<<"\n";
-      if (nstep>256) rep.error("too many steps",nstep);
+      if (nstep>256) {
+        cout.flush();
+        rep.error("too many steps",nstep);
+      }
     }
 
     for (size_t v=0;v<nstep;v++) {
