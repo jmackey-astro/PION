@@ -555,7 +555,9 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // ******************************************************************************
   //
   wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-  wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit), WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-eos_gamma);
+  wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
+                        WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
+                        1.0-eos_gamma);
   wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
 
 
@@ -623,8 +625,10 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       Tmin*wc->p[RO]*pconst.kB()*0.78625/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
 #ifdef TESTING
   cout << "\n";
+  rep.printVec("wc->p",wc->p,nvar);
 #endif
 
   return;
@@ -948,7 +952,7 @@ void stellar_wind_angle::update_source(
   interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
   interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
   interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
-    interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
+  interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
   interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
   //
   // Assign new values to wd->ws (the wind source struct), converting
