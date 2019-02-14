@@ -401,6 +401,25 @@ int time_integrator::calc_RT_microphysics_dU(
       spatial_solver->PtoU(c->P,ui,SimPM.gamma);
       spatial_solver->PtoU(p,   uf,SimPM.gamma);
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
+#ifdef TEST_INF
+      for (int v=0;v<SimPM.nvar;v++) {
+        if (!isfinite(c->P[v]) || !isfinite(p[v])  ||
+            !isfinite(c->dU[v])) {
+          cout <<"NAN/INF in calc_RT_microphysics_dU() ";
+          for (int s=0; s<FVI_nion; s++) {
+            for (short unsigned int iC=0; iC<FVI_ionising_srcs[s].NTau; iC++) {
+              cout <<"ion: Tau = "<<FVI_ionising_srcs[s].Column[iC];
+              cout <<", dTau = "<<FVI_ionising_srcs[s].DelCol[iC] <<"\n";;
+            }
+          }
+          rep.printVec("Pin ",c->P,SimPM.nvar);
+          rep.printVec("Pout",p,   SimPM.nvar);
+          rep.printVec("dU",c->dU,SimPM.nvar);
+          CI.print_cell(c);
+          rep.error("NAN/INF in calc_RT_microphysics_dU()",v);
+        }
+      }
+#endif
 
     } // if not boundary data.
   } while ( (c=grid->NextPt_All(c)) !=0);

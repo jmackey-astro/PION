@@ -378,9 +378,15 @@ void raytracer_USC_infinity::set_Vshell_for_source(
   this_src->s->opacity_src = RT_OPACITY_VSHELL;
   this_src->s->update      = RT_UPDATE_EXPLICIT;
 
-  int err = RayTrace_Column_Density(this_src->s->id,1.0,1.0);
-  if (err)
-    rep.error("raytracer_USC_infinity::RayTrace_Column_Density() Vshell",err);
+  
+  double ds=0.0, Nc[MAX_TAU];
+  int err=0;
+  cell *c = gridptr->FirstPt_All();
+  do {
+    err += cell_cols_1d(this_src, c, XN, Nc, &ds);
+    err += ProcessCell(c,Nc,ds,this_src,0.0);
+    rep.errorTest("rt_inf:Vshell",err,0);
+  } while ((c=gridptr->NextPt_All(c))!=0);
 
   this_src->s->opacity_src = temp; // revert opacity type
   this_src->s->update      = upd;  // revert update type.
@@ -760,6 +766,16 @@ int raytracer_USC_infinity::cell_cols_1d(
       )
 {
   if (!c) rep.error("cell_cols_1d() null cell",c);
+  //
+  // column through cell is very easy in 1D with uniform grid.
+  // (ds is back in physical units now!)
+  //
+  *ds = gridptr->DX();
+
+  if (src->s->opacity_src == RT_OPACITY_VSHELL) {
+    return 0;
+  }
+
 
   if (c==src->sc && !src->s->at_infinity && src->src_on_grid) {
     //
@@ -785,11 +801,6 @@ int raytracer_USC_infinity::cell_cols_1d(
     }
   }
 
-  //
-  // column through cell is very easy in 1D with uniform grid.
-  // (ds is back in physical units now!)
-  //
-  *ds = gridptr->DX();
   return 0;
 }
 
@@ -1389,6 +1400,48 @@ void raytracer_USC::Print_SourceList()
 // ##################################################################
 
 
+void raytracer_USC::set_Vshell_for_source(
+      struct rad_source *this_src
+      )
+{
+  //
+  // Now we need to set Vshell in every grid point for this source. 
+  // Change opacity flag to 'Vshell' so ProcessCell() will just set Vshell in each 
+  // cell.
+  //
+//#ifdef RT_TESTING
+  cout <<"\t\tSetting Vshell for source (finite src distance).\n";
+//#endif
+
+  int temp = this_src->s->opacity_src;
+  int upd  = this_src->s->update;
+  this_src->s->opacity_src = RT_OPACITY_VSHELL;
+  this_src->s->update      = RT_UPDATE_EXPLICIT;
+
+  //int err = RayTrace_Column_Density(this_src->s->id,1.0,1.0);
+  //if (err)
+  //  rep.error("raytracer_USC_infinity::RayTrace_Column_Density() Vshell",err);
+  
+  double ds=0.0, Nc[MAX_TAU];
+  int err=0;
+  cell *c = gridptr->FirstPt_All();
+  do {
+    err += get_cell_columns(this_src, c, Nc, &ds);
+    err += ProcessCell(c,Nc,ds,this_src,0.0);
+    rep.errorTest("rt_finite:Vshell",err,0);
+  } while ((c=gridptr->NextPt_All(c))!=0);
+
+  this_src->s->opacity_src = temp; // revert opacity type
+  this_src->s->update      = upd;  // revert update type.
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 int raytracer_USC::RayTrace_SingleSource(
       const int s_id,  ///< Source id
       const double dt, ///< Timestep
@@ -1572,7 +1625,8 @@ void raytracer_USC::set_startcells(
       if      (i==Q1) { // XP,YP quadrant.
 	if (src_off_grid[XX]==XP || src_off_grid[YY]==YP) in_my_quad = false;
 	else in_my_quad = true;
-	if (in_my_quad) startcell[i] = c; else startcell[i]=0;
+	if (in_my_quad) startcell[i] = c;
+        else startcell[i]=0;
 	// cout <<"in Q1, ? bool = "<<in_my_quad<<" ";
         // cout<<src_off_grid[YY]<<" "<<src_off_grid[XX]<<"\n";
       }
@@ -1832,7 +1886,7 @@ cell * raytracer_USC::find_source_cell(
   for (int i=0;i<ndim;i++) {
     enum axes           a = static_cast<axes>     (i);
     enum direction posdir = static_cast<direction>(2*static_cast<int>(a)+1);
-    enum direction negdir = gridptr->OppDir(posdir);
+    //enum direction negdir = gridptr->OppDir(posdir);
 
     // First move the source to a cell vertex.
     centre_source_on_cell(pos,a);
@@ -2171,6 +2225,10 @@ int raytracer_USC::cell_cols_2d(
   double idxo2 = 0.5*idx;
   //double dist = sqrt(static_cast<double>(diffx*diffx+diffy*diffy));
   
+  if (src->s->opacity_src == RT_OPACITY_VSHELL) {
+    return 0;
+  }
+
   //
   // if the source is within the column (i.e. within x+-dx/2) then do a 1D column.
   // NOTE: for integer cell positions, the cell size is "idx".
@@ -2485,6 +2543,9 @@ void raytracer_USC::col2cell_2d(
       double *Nc ///< Column densities.
       )
 {
+#ifdef TEST_INF
+  if (!c) rep.error("col2cell_2d for non-existent cell!",c);
+#endif
   double col1[MAX_TAU], col2[MAX_TAU];
   cell *c1 = gridptr->NextPt(c,  entryface);
   if (!c1) {

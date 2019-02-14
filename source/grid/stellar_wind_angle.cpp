@@ -630,6 +630,14 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   cout << "\n";
   rep.printVec("wc->p",wc->p,nvar);
 #endif
+#ifdef TEST_INF
+  for (int v=0;v<nvar;v++) {
+    if (!isfinite(wc->p[v])) {
+      cerr<<"NAN in wind source "<<v<<" "<<wc->p[v]<<"\n";
+      rep.error("NAN in wind source",wc->p[v]);
+    }
+  }
+#endif
 
   return;
 }

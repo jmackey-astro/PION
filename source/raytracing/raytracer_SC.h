@@ -267,12 +267,12 @@ class raytracer_USC_infinity : public RayTracingBase {
       );
 
   ///
-  /// Set Vshell in all cells for the current source (See Mellema et al. 2006,
-  /// NewAst.).  This function works for serial, parallel, and sources at
-  /// infinity.  Vshell is used for the photon-conserving photoionisation rate
-  /// calculation.
+  /// Set Vshell in all cells for the current source (See Mellema et
+  /// al. 2006,NewAst.).  This function works for sources at 
+  /// infinity.  Vshell is used for the photon-conserving 
+  /// photoionisation rate calculation.
   ///
-  void set_Vshell_for_source(
+  virtual void set_Vshell_for_source(
       struct rad_source *
       );
 
@@ -339,6 +339,15 @@ class raytracer_USC : public raytracer_USC_infinity {
       const double  ///< eos gamma.
       );
 
+  ///
+  /// Set Vshell in all cells for the current source (See Mellema et al. 2006,
+  /// NewAst.).  This function works for serial and  parallel.
+  /// Vshell is used for the photon-conserving photoionisation rate
+  /// calculation.
+  ///
+  void set_Vshell_for_source(
+      struct rad_source *
+      );
 
   ///\brief Prints list of sources with id, location, strength. 
   void Print_SourceList();
