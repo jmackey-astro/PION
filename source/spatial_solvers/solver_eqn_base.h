@@ -84,6 +84,17 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   /// returns max_speed for this step.
   ///
   double get_max_speed() {return 0.0;}
+
+  /// calculate Powell and GLM source terms for multi-D MHD
+  virtual int MHDsource(
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,   ///< pointer to cell of left state
+      class cell *,   ///< pointer to cell of right state
+      pion_flt *,     ///< left edge state
+      pion_flt *,     ///< right edge state
+      enum direction, ///< positive direction normal to interface
+      const double    ///< timestep dt
+      ) {return 0;}
 #endif
 
   /// \brief sets current timestep value in the solver class. 
