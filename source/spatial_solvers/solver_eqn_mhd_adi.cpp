@@ -741,6 +741,12 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   ///
   double psistar=0.0, bxstar=0.0;
 #ifdef DERIGS
+  // set Psi to zero in left and right states, so that Riemann solvers
+  // don't get confused (because otherwise it will contribute to the
+  // total energy.
+  double psiL = left[eqSI], psi_R = right[eqSI];
+  left[eqSI]=0.0;
+  right[eqSI]=0.0;
   psistar = 0.5*(left[eqSI]+right[eqSI]);
   bxstar  = 0.5*(left[eqBX]+right[eqBX]);
 #else
@@ -768,10 +774,15 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   // Derigs et al. (2017/2018) have a more consistent calculation...
   // 
 #ifdef DERIGS
+  // see Derigs et al. (2018) eq. 4.45: 3 terms f6*, f9*, last term.
+  // energy (ERG) is f5, Bx (BBX) is f6, PSI is f9.
   flux[eqERG] += 2.0*GLM_chyp*bxstar*psistar -
       GLM_chyp*0.5*(left[eqSI]*leftp[eqBX]+right[eqSI]*right[eqBX]);
+  // Derigs et al. (2018) eq. 4.43 f6* and f9*
   flux[eqBBX]  = GLM_chyp*psistar;
   flux[eqPSI]  = GLM_chyp*bxstar;
+  left[eqSI]  = psiL;
+  right[eqSI] = psiR;
 #else
   flux[eqERG] += bxstar*psistar;
   flux[eqBBX]  = psistar;
