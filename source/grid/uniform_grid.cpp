@@ -1435,6 +1435,10 @@ int UniformGrid::setup_flux_recv(
   // and that includes the interface.
   for (int d=0; d<2*G_ndim; d++) {
     if (recv[d]) {
+#ifdef TEST_BC89FLUX
+      cout <<"UG:FRECV: d="<<d<<", nel="<<nel[d]<<"... starting";
+      cout <<"; l+1="<<lp1<<", l="<<lp1-1<<"\n";
+#endif
       add_cells_to_face(static_cast<enum direction>(d),ixmin,ixmax,
                                       ncell,1,flux_update_recv[d]);
 #ifdef TEST_BC89FLUX
@@ -1582,7 +1586,7 @@ int UniformGrid::setup_flux_send(
   for (int d=0; d<2*G_ndim; d++) {
     if (send[d]) {
 #ifdef TEST_BC89FLUX
-      cout <<"d="<<d<<", nel="<<nel[d]<<"... adding cells to face\n";
+      cout <<"FLUX_SEND: d="<<d<<", nel="<<nel[d]<<"... adding cells to face\n";
 #endif
       add_cells_to_face(static_cast<enum direction>(d),ixmin,ixmax,
                         nface,2,flux_update_send[d]);
@@ -1612,7 +1616,10 @@ int UniformGrid::add_cells_to_face(
 #ifdef TEST_BC89FLUX
   int a=static_cast<int>(d)/2;
   cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
-  cout <<", "<<nface[a]<<", "<<ncell<<")\n";
+  cout <<", "<<nface[a]<<", "<<ncell<<"), list-size="<<flux.fi.size()<<"\n";
+  rep.printVec("ixmin",ixmin,G_ndim);
+  rep.printVec("ixmax",ixmax,G_ndim);
+  rep.printVec("nface",nface,G_ndim);
 #endif
   
   cell *c = FirstPt_All();
@@ -1708,11 +1715,8 @@ int UniformGrid::add_cells_to_face(
     cell *marker = c, *m2=c;
     enum direction perpdir1 = XP, perpdir2 = XP;
     enum axes perpaxis1 = XX, perpaxis2 = XX;
-
-    //
     // get to first cell at interface, most negative position in all
     // directions.
-    //
     switch (d) {
     case XN:
       while (c->pos[XX] < ixmin[XX]-G_idx) c = NextPt(c,XP);
@@ -1725,7 +1729,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case XP:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
       perpdir1 = YP;
       perpdir2 = ZP;
@@ -1734,7 +1738,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case YN:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]-G_idx) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]-G_idx) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
       perpdir1 = XP;
       perpdir2 = ZP;
@@ -1743,7 +1747,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case YP:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
       perpdir1 = XP;
       perpdir2 = ZP;
@@ -1752,7 +1756,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case ZN:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]-G_idx) c = NextPt(c,ZP);
       perpdir1 = XP;
       perpdir2 = YP;
@@ -1761,7 +1765,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case ZP:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,XP);
+      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
       perpdir1 = XP;
       perpdir2 = YP;
@@ -1772,40 +1776,65 @@ int UniformGrid::add_cells_to_face(
       rep.error("bad direction in add_cells_to_face 3D",d);
     }
 
+#ifdef TEST_BC89FLUX
+    cout <<"perpdir1="<<perpdir1<<", perpdir2="<<perpdir2;
+    cout <<", perpaxis1="<<perpaxis1<<", perpaxis2="<<perpaxis2<<"\n";
+#endif
+
     // loop over cells in interface:
     if (nface[perpaxis1]*nface[perpaxis2] !=
         static_cast<int>(flux.fi.size()))
       rep.error("wrong number of cells 3D interface",flux.fi.size());
     marker = c;
     for (int i=0;i<nface[perpaxis2]; i++) {
-      for (int j=0;i<nface[perpaxis1]; j++) {
+      for (int j=0;j<nface[perpaxis1]; j++) {
+#ifdef TEST_BC89FLUX
+        cout <<"i="<<i<<", j="<<j<<", id="<<i*nface[perpaxis1]+j;
+        cout <<", fisize="<<flux.fi.size()<<"\n";
+        CI.print_cell(c); cout.flush();
+#endif
         if (ncell==1) {
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
+          for (int v=0;v<G_nvar;v++) c->F[v]=0.0;
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d),0);
+          flux.fi[i*nface[perpaxis1]+j]->area[0] = 
+                                        CellInterface(c,OppDir(d),0);
         }
         else {
           // need to get 4 cells onto this face.
+
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F = mem.myalloc(c->F,G_nvar);
+          for (int v=0;v<G_nvar;v++) c->F[v]=0.0;
           c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[0] = CellInterface(c,OppDir(d),0);
+          flux.fi[i*nface[perpaxis1]+j]->area[0] = 
+                                        CellInterface(c,OppDir(d),0);
+
           m2 = NextPt(c,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[1] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
-          c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[1] = CellInterface(m2,OppDir(d),0);
+          for (int v=0;v<G_nvar;v++) m2->F[v]=0.0;
+          m2->isbd_ref[d] = true;
+          flux.fi[i*nface[perpaxis1]+j]->area[1] = 
+                                        CellInterface(m2,OppDir(d),0);
+
           m2 = NextPt(c,perpdir2);
           flux.fi[i*nface[perpaxis1]+j]->c[2] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
-          c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[2] = CellInterface(m2,OppDir(d),0);
+          for (int v=0;v<G_nvar;v++) m2->F[v]=0.0;
+          m2->isbd_ref[d] = true;
+          flux.fi[i*nface[perpaxis1]+j]->area[2] = 
+                                        CellInterface(m2,OppDir(d),0);
+
           m2 = NextPt(m2,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[3] = m2;
           m2->F = mem.myalloc(m2->F,G_nvar);
-          c->isbd_ref[d] = true;
-          flux.fi[i*nface[perpaxis1]+j]->area[3] = CellInterface(m2,OppDir(d),0);
+          for (int v=0;v<G_nvar;v++) m2->F[v]=0.0;
+          m2->isbd_ref[d] = true;
+          flux.fi[i*nface[perpaxis1]+j]->area[3] = 
+                                        CellInterface(m2,OppDir(d),0);
+
         }
         for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);
       }
