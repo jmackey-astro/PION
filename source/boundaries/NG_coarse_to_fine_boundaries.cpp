@@ -71,6 +71,8 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
         pc =  parent->FirstPt_All();
         loop = true;
       }
+      else if (!pc)
+        rep.error("C2F boundaries setup",distance);
       distance = grid->idistance(pc->pos, (*bpt)->pos);
     }
     if (!pc)
@@ -295,11 +297,21 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         // cells at a time.
         if (!fine->NextPt((*f_iter),YP) ||
              fine->NextPt((*f_iter),YP)->npt != c) {
-          //if (level==3) cout <<"skipping for f_iter id="<<(*f_iter)->id<<" c="<<c->id<<"\n";
+#ifdef TEST_C2F
+          if (level==3) {
+            cout <<"skipping for f_iter id=";
+            cout <<(*f_iter)->id<<" c="<<c->id<<"\n";
+          }
+#endif
           continue;
         }
         else {
-          //if (level==3) cout <<"NOT skipping for f_iter id="<<(*f_iter)->id<<" c="<<c->id<<"\n";
+#ifdef TEST_C2F
+          if (level==3) {
+            cout <<"NOT skipping for f_iter id="<<(*f_iter)->id;
+            cout <<" c="<<c->id<<"\n";
+          }
+#endif
         }
 
         // get list of four fine cells.
@@ -348,7 +360,46 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       //
       // Need to do trilinear interpolation on 8 fine cells.
       //
-      rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
+#ifdef TEST_C2F
+      cout <<"interpolating coarse to fine 2d: ncells=";
+      cout << b->data.size()<<"\n";
+#endif
+      pion_flt sx[par.nvar], sy[par.nvar], sz[par.nvar], c_vol=0;
+      cell *fch[8]; // fine-level cells (children)
+      cell *c;      // coarse-level cell.
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        c = (*f_iter)->npt;
+        c_vol = coarse->CellVolume(c,0);
+        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        solver->SetSlope(c,ZZ,par.nvar,sz,OA2,coarse);
+
+        // only do this on every second row because we update 4
+        // cells at a time.  Also skip odd z-planes.
+        if (!fine->NextPt((*f_iter),YP) ||
+             fine->NextPt((*f_iter),YP)->npt != c) {
+          continue;
+        }
+        if (!fine->NextPt((*f_iter),ZP) ||
+             fine->NextPt((*f_iter),ZP)->npt != c) {
+          continue;
+        }
+
+        // get list of 8 fine cells.
+        fch[0] = (*f_iter);
+        f_iter++;
+        fch[1] = (*f_iter);
+        fch[2] = fine->NextPt(fch[0],YP);
+        fch[3] = fine->NextPt(fch[1],YP);
+        fch[4] = fine->NextPt(fch[0],ZP);
+        fch[5] = fine->NextPt(fch[1],ZP);
+        fch[6] = fine->NextPt(fch[2],ZP);
+        fch[7] = fine->NextPt(fch[3],ZP);
+
+        interpolate_coarse2fine3D(
+              par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,sz,fch);
+
+      } // loop over fine cells
     } // 3D
   } // 2nd-order accuracy
   // ----------------------------------------------------------------
