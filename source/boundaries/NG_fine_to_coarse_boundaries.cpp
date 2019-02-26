@@ -121,8 +121,8 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
       //rep.printVec("cellpos",avg[v].c[0]->pos,ndim);
       //rep.printVec("cellpos",avg[v].cpos,ndim);
     //}
-#endif
     rep.printVec("fine cell pos",f->pos,ndim);
+#endif
     // get to next cell.
     f = grid->NextPt(f);
     ix++;
