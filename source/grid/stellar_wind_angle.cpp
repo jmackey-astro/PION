@@ -589,7 +589,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 
   // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
   if (eqntype==EQMHD || eqntype==EQGLM) {
-    double R=695508e5;  // R_sun in cm
+    double R=6.95508e10;  // R_sun in cm
     double x = grid->difference_vertex2cell(WS->dpos,c,XX);
     wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
                 fabs(x)/wc->dist;
@@ -606,7 +606,16 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
     }
     else
+#define TOROIDAL_FIELD
+#ifdef TOROIDAL_FIELD
+      // Here set up a 100 G toroidal field, scaled by sin(theta) so
+      // that it goes to zero at the poles.
+      wc->p[BZ] = (100.0/sqrt(4.0*M_PI)) *    // 100 G
+                  (10.0*R/wc->dist)      *    // at 10 solar radii
+                  (fabs(x)/wc->dist);         // times sin(theta)
+#else
       wc->p[BZ] = 0.0;
+#endif
   }
   if (eqntype==EQGLM) {
     wc->p[SI] = 0.0;
