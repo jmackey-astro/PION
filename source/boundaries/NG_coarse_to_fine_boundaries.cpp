@@ -396,6 +396,12 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         fch[6] = fine->NextPt(fch[2],ZP);
         fch[7] = fine->NextPt(fch[3],ZP);
 
+//#ifdef TEST_C2F
+        for (int v=0;v<8;v++) {
+          if (fch[v]==0) rep.error("fine-cell list",v);
+        }
+//#endif
+
         interpolate_coarse2fine3D(
               par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,sz,fch);
 
@@ -522,6 +528,190 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
 
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *fine,    ///< pointer to fine grid
+      class FV_solver_base *solver, ///< pointer to equations
+      const pion_flt *P,    ///< state vector of coarse cell.
+      const int *cpos,      ///< position of coarse cell.
+      const pion_flt c_vol, ///< volume of coarse cell.
+      pion_flt *sx,   ///< dP/dx in coarse cell.
+      pion_flt *sy,   ///< dP/dy in coarse cell.
+      pion_flt *sz,   ///< dP/dz in coarse cell.
+      cell **fch ///< pointer to array of 8 fine cells
+      )
+{
+  double **fU=0, Utot[par.nvar], cU[par.nvar];
+  fU = mem.myalloc(fU,8);
+  for (int i=0;i<8;i++) fU[i] = mem.myalloc(fU[i],par.nvar);
+  double dxo2 = 0.5*fine->DX(); // dx
+  double f_vol[8];
+  int idx = 2*fine->idx(); // idx of coarse cell
+  //double f_psi[4];
+  //
+  // Need to do trilinear interpolation, 4 cells at a time.
+  // use slopes in each direction to get cell-centred values in each
+  // of the fine cells.
+  // These positions are half-way to the coarse cell-corners.
+  //
+  //if (par.eqntype == EQGLM) {
+  //  f_psi[0] = f1->P[SI];
+  //  f_psi[1] = f2->P[SI];
+  //  f_psi[2] = f3->P[SI];
+  //  f_psi[3] = f4->P[SI];
+  //}
+  for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse cell corner
+  for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2;
+  for (int v=0;v<par.nvar;v++) sz[v] *= 2.0*dxo2;
+  for (int v=0;v<par.nvar;v++) fU[0][v] = P[v] -sx[v] -sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[1][v] = P[v] +sx[v] -sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[2][v] = P[v] -sx[v] +sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[3][v] = P[v] +sx[v] +sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[4][v] = P[v] -sx[v] -sy[v] +sz[v];
+  for (int v=0;v<par.nvar;v++) fU[5][v] = P[v] +sx[v] -sy[v] +sz[v];
+  for (int v=0;v<par.nvar;v++) fU[6][v] = P[v] -sx[v] +sy[v] +sz[v];
+  for (int v=0;v<par.nvar;v++) fU[7][v] = P[v] +sx[v] +sy[v] +sz[v];
+
+  // interpolate all 8 cells using the 8 corner states.
+  for (int i=0;i<8;i++) trilinear_interp(par,cpos,idx,fch[i],fU);
+
+  // Need to check mass/momentum/energy conservation between
+  // coarse and fine levels.  Re-use fU[][] array for this
+  //
+  for (int i=0;i<8;i++) solver->PtoU(fch[i]->P, fU[i], par.gamma);
+  for (int i=0;i<8;i++) f_vol[i] = fine->CellVolume(fch[i],0);
+
+  
+  for (int v=0;v<par.nvar;v++) Utot[v] = 0.0;
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) Utot[v] += fU[i][v]*f_vol[i];
+  }
+  // compare with coarse cell.
+  solver->PtoU(P, cU, par.gamma);
+  for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
+
+#ifdef DEBUG_NG
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) {
+      if (!isfinite(fU[i][v])) {
+        cout <<"error in 3D C2F interpolation: i="<<i<<"v="<<v<<"\n";
+        rep.printVec("Unscaled fine",fU[i],par.nvar);
+      }
+    }
+  }
+#endif
+
+  // scale fine conserved vec by adding the difference between
+  // conserved quantities on the fine and coarse grids.
+  for (int v=0;v<par.nvar;v++) cU[v] = 0.25*(cU[v] - Utot[v])/c_vol;
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) fU[i][v] += cU[v];
+  }
+  
+  // put scaled conserved variable vectors back into fine cells
+  for (int i=0;i<8;i++) {
+    solver->UtoP(fU[i], fch[i]->Ph, par.EP.MinTemperature,par.gamma);
+    for (int v=0;v<par.nvar;v++) fch[i]->P[v] = fch[i]->Ph[v];
+  }
+
+  //if (par.eqntype == EQGLM) {
+  //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
+  //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
+  //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
+  //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
+  //}
+
+
+#ifdef DEBUG_NG
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) {
+      if (!isfinite(fU[i][v])) {
+        cout <<"error in 3D C2F interpolation: i="<<i<<"v="<<v<<"\n";
+        rep.error("C2F fine cell not finite",fU[i],par.nvar);
+      }
+    }
+  }
+#endif
+
+  for (int i=0;i<8;i++) fU[i] = mem.myfree(fU[i]);
+  mem.myfree(fU);
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void NG_coarse_to_fine_bc::trilinear_interp(
+      class SimParams &par, ///< simulation parameters
+      const int *cpos,   ///< coarse level cell integer position
+      const int idx,    ///< coarse level cell diameter (integer units)
+      cell *f,          ///< fine level cell
+      double **P   ///< prim. vecs. at corners of coarse cell
+      )
+{
+  //
+  // Calculate delta x, delta y and delta z terms for trilinear interpolation
+  //
+  double dx = static_cast<double>(f->pos[XX] - cpos[XX])/
+                                static_cast<double>(idx);
+  double dy = static_cast<double>(f->pos[YY] - cpos[YY])/
+                                static_cast<double>(idx);
+  double dz = static_cast<double>(f->pos[ZZ] - cpos[ZZ])/
+                                static_cast<double>(idx);
+  
+  //
+  // Calculate f000, f001 etc. terms for coefficients
+  //
+  double *f000 = P[0]; // f(x0, y0, z0)
+  double *f100 = P[1]; // f(x1, y0, z0)
+  double *f010 = P[2]; // f(x0, y1, z0)
+  double *f110 = P[3]; // f(x1, y1, z0)
+  double *f001 = P[4]; // f(x0, y0, z1)
+  double *f101 = P[5]; // f(x1, y0, z1)
+  double *f011 = P[6]; // f(x0, y1, z1)
+  double *f111 = P[7]; // f(x1, y1, z1)
+
+  //
+  // Calculate c coefficients for trilinear interpolation
+  //
+  double c[8][par.nvar];
+  for (int v=0;v<par.nvar;v++) c[0][v] = f000[v];
+  for (int v=0;v<par.nvar;v++) c[1][v] = f100[v] - f000[v];
+  for (int v=0;v<par.nvar;v++) c[2][v] = f010[v] - f000[v];
+  for (int v=0;v<par.nvar;v++) c[3][v] = f001[v] - f000[v];
+  for (int v=0;v<par.nvar;v++) c[4][v] = f110[v] - f010[v] - 
+                                          f100[v] + f000[v];
+  for (int v=0;v<par.nvar;v++) c[5][v] = f011[v] - f001[v] - 
+                                          f010[v] + f000[v];
+  for (int v=0;v<par.nvar;v++) c[6][v] = f101[v] - f001[v] - 
+                                          f100[v] + f000[v];
+  for (int v=0;v<par.nvar;v++) c[7][v] = f111[v] - f011[v] - 
+      f101[v] - f110[v] + f100[v] + f001[v] + f010[v] - f000[v];
+  
+
+  for (int v=0;v<par.nvar;v++)
+    f->P[v] = c[0][v] + c[1][v]*dx + c[2][v]*dy + c[3][v]*dz +
+              c[4][v]*dx*dy + c[5][v]*dy*dz + c[6][v]*dz*dx +
+              c[7][v]*dx*dy*dz;
+  for (int v=0;v<par.nvar;v++) f->Ph[v] = f->P[v];
+  for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
+
+  return;
+}
+
 
 
 
