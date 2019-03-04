@@ -1479,9 +1479,9 @@ int raytracer_USC::RayTrace_SingleSource(
     cerr <<"Couldn't find source "<<s_id<<" in source list.\n";
     return 1;
   }
-  //  cout <<"found source. moving to it.\n";
 
 #ifdef RT_TESTING
+  cout <<"found source. moving to it.\n";
   sc=source->sc;
 #endif // RT_TESTING
 
@@ -1524,6 +1524,9 @@ int raytracer_USC::RayTrace_SingleSource(
   
   // source is not at infinity, so set list of start cells for each
   // quadrant.
+#ifdef RT_TESTING
+  cout <<"Source not at infinity, tracing...\n";
+#endif // RT_TESTING
   int ndirs=1; for (int i=0;i<ndim;i++) ndirs*=2;
   cell *startcell[ndirs];
   for (int v=0;v<ndirs;v++) startcell[v]=0;
@@ -1541,8 +1544,10 @@ int raytracer_USC::RayTrace_SingleSource(
   for (int oct=0; oct<ndirs; oct++) {
     enum direction dirs[ndim];
     cell *c = startcell[oct];
-    //    cout <<"oct "<<oct<<" and startcell = "<<c<<" dirs: ";
-    //    cout <<dir1[oct]<<" "<<dir2[oct]<<" "<<dir3[oct]<<"\n";
+#ifdef RT_TESTING
+    cout <<"oct "<<oct<<" and startcell = "<<c<<" dirs: ";
+    cout <<dir1[oct]<<" "<<dir2[oct]<<" "<<dir3[oct]<<"\n";
+#endif // RT_TESTING
     //
     // now, if c!=0, then we have cell(s) in the octant, so trace the octant.
     //
@@ -2131,10 +2136,12 @@ int raytracer_USC::trace_octant(
   cell *cy = 0;
   if (cz!=0) {
     do {
-      //      cout <<"new plane in 3d.\n";
+#ifdef RT_TESTING
+      cout <<"Trace-Octant: new plane in 3d.\n";
+#endif 
       cy = cz;
       err += trace_plane(source,cy,xdir,ydir);
-    } while (gridptr->NextPt(cz,zdir)!=0);
+    } while ((cz=gridptr->NextPt(cz,zdir))!=0);
   }
   return err;
 }
@@ -2373,6 +2380,9 @@ int raytracer_USC::cell_cols_3d(
   double idx = gridptr->idx(); // cell size in integer units.
   double idxo2 = 0.5*idx;
 
+  if (src->s->opacity_src == RT_OPACITY_VSHELL) {
+    return 0;
+  }
 
 
 #ifdef RT_TESTING
@@ -2592,7 +2602,15 @@ void raytracer_USC::col2cell_3d(
 {
   // Algorithm is the same as that describe in Mellema et al.,2006, 
   // NewA, 11,374, appendix A.  Good for 3D cartesian geometry.
-  //  cout <<"3D ShortChars:: entrydir = "<<entryface<<" and perps = ["<<perpdirs[0]<<", "<<perpdirs[1]<<"]\n";
+
+#ifdef RT_TESTING
+  cout <<"3D ShortChars:: entrydir = "<<entryface;
+  cout <<" and perps = ["<<perpdir[0]<<", "<<perpdir[1]<<"]\n";
+#endif
+#ifdef TEST_INF
+  if (!c) rep.error("col2cell_3d for non-existent cell!",c);
+#endif
+  
   cell *c1=0, *c2=0, *c3=0, *c4=0;
   double col1[MAX_TAU], col2[MAX_TAU], col3[MAX_TAU], col4[MAX_TAU];
 

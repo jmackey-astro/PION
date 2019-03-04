@@ -568,9 +568,11 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   //  f_psi[2] = f3->P[SI];
   //  f_psi[3] = f4->P[SI];
   //}
-  for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse cell corner
-  for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2;
-  for (int v=0;v<par.nvar;v++) sz[v] *= 2.0*dxo2;
+
+  for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // centres of fine cell
+  for (int v=0;v<par.nvar;v++) sy[v] *= dxo2;
+  for (int v=0;v<par.nvar;v++) sz[v] *= dxo2;
+
   for (int v=0;v<par.nvar;v++) fU[0][v] = P[v] -sx[v] -sy[v] -sz[v];
   for (int v=0;v<par.nvar;v++) fU[1][v] = P[v] +sx[v] -sy[v] -sz[v];
   for (int v=0;v<par.nvar;v++) fU[2][v] = P[v] -sx[v] +sy[v] -sz[v];
@@ -580,8 +582,9 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int v=0;v<par.nvar;v++) fU[6][v] = P[v] -sx[v] +sy[v] +sz[v];
   for (int v=0;v<par.nvar;v++) fU[7][v] = P[v] +sx[v] +sy[v] +sz[v];
 
-  // interpolate all 8 cells using the 8 corner states.
-  for (int i=0;i<8;i++) trilinear_interp(par,cpos,idx,fch[i],fU);
+  for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->P[v] = fU[i][v];
+  for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->Ph[v] = fch[i]->P[v];
+
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels.  Re-use fU[][] array for this
@@ -654,72 +657,6 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
 
 
 
-void NG_coarse_to_fine_bc::trilinear_interp(
-      class SimParams &par, ///< simulation parameters
-      const int *cpos,   ///< coarse level cell integer position
-      const int idx,    ///< coarse level cell diameter (integer units)
-      cell *f,          ///< fine level cell
-      double **P   ///< prim. vecs. at corners of coarse cell
-      )
-{
-  //
-  // Calculate delta x, delta y and delta z terms for trilinear interpolation
-  //
-  double dx = static_cast<double>(f->pos[XX] - cpos[XX])/
-                                static_cast<double>(idx);
-  double dy = static_cast<double>(f->pos[YY] - cpos[YY])/
-                                static_cast<double>(idx);
-  double dz = static_cast<double>(f->pos[ZZ] - cpos[ZZ])/
-                                static_cast<double>(idx);
-  
-  //
-  // Calculate f000, f001 etc. terms for coefficients
-  //
-  double *f000 = P[0]; // f(x0, y0, z0)
-  double *f100 = P[1]; // f(x1, y0, z0)
-  double *f010 = P[2]; // f(x0, y1, z0)
-  double *f110 = P[3]; // f(x1, y1, z0)
-  double *f001 = P[4]; // f(x0, y0, z1)
-  double *f101 = P[5]; // f(x1, y0, z1)
-  double *f011 = P[6]; // f(x0, y1, z1)
-  double *f111 = P[7]; // f(x1, y1, z1)
-
-  //
-  // Calculate c coefficients for trilinear interpolation
-  //
-  double c[8][par.nvar];
-  for (int v=0;v<par.nvar;v++) c[0][v] = f000[v];
-  for (int v=0;v<par.nvar;v++) c[1][v] = f100[v] - f000[v];
-  for (int v=0;v<par.nvar;v++) c[2][v] = f010[v] - f000[v];
-  for (int v=0;v<par.nvar;v++) c[3][v] = f001[v] - f000[v];
-  for (int v=0;v<par.nvar;v++) c[4][v] = f110[v] - f010[v] - 
-                                          f100[v] + f000[v];
-  for (int v=0;v<par.nvar;v++) c[5][v] = f011[v] - f001[v] - 
-                                          f010[v] + f000[v];
-  for (int v=0;v<par.nvar;v++) c[6][v] = f101[v] - f001[v] - 
-                                          f100[v] + f000[v];
-  for (int v=0;v<par.nvar;v++) c[7][v] = f111[v] - f011[v] - 
-      f101[v] - f110[v] + f100[v] + f001[v] + f010[v] - f000[v];
-  
-
-  for (int v=0;v<par.nvar;v++)
-    f->P[v] = c[0][v] + c[1][v]*dx + c[2][v]*dy + c[3][v]*dz +
-              c[4][v]*dx*dy + c[5][v]*dy*dz + c[6][v]*dz*dx +
-              c[7][v]*dx*dy*dz;
-  for (int v=0;v<par.nvar;v++) f->Ph[v] = f->P[v];
-  for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-
-  return;
-}
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -751,18 +688,27 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   //  f_psi[2] = f3->P[SI];
   //  f_psi[3] = f4->P[SI];
   //}
+#define INTERP2D
+#ifdef INTERP2D
+  for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // fine (dx/2)
+  for (int v=0;v<par.nvar;v++) sy[v] *= dxo2; // fine (dx/2)
+  for (int v=0;v<par.nvar;v++) f1->P[v] = P[v] -sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f2->P[v] = P[v] +sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f3->P[v] = P[v] -sx[v] +sy[v];
+  for (int v=0;v<par.nvar;v++) f4->P[v] = P[v] +sx[v] +sy[v];
+#else
   for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
   for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
   for (int v=0;v<par.nvar;v++) f1U[v] = P[v] -sx[v] -sy[v];
   for (int v=0;v<par.nvar;v++) f2U[v] = P[v] +sx[v] -sy[v];
   for (int v=0;v<par.nvar;v++) f3U[v] = P[v] -sx[v] +sy[v];
   for (int v=0;v<par.nvar;v++) f4U[v] = P[v] +sx[v] +sy[v];
-
   // interpolate all four cells using the 4 corner states.
   bilinear_interp(par, cpos, 0, f1, f1U, f2U, f3U, f4U);
   bilinear_interp(par, cpos, 1, f2, f1U, f2U, f3U, f4U);
   bilinear_interp(par, cpos, 2, f3, f1U, f2U, f3U, f4U);
   bilinear_interp(par, cpos, 3, f4, f1U, f2U, f3U, f4U);
+#endif
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels

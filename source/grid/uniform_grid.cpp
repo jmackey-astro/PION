@@ -1498,8 +1498,8 @@ int UniformGrid::setup_flux_send(
 
     ncell[ax] = (ixmax[ax]-ixmin[ax])/G_idx;
     nface[ax] = ncell[ax]/2;  // # face elements on coarse grid
-    cout <<"axis "<<ax<<", ncell="<<ncell[ax]<<", nface="<<nface[ax]<<"\n";
 #ifdef TEST_BC89FLUX
+    cout <<"axis "<<ax<<", ncell="<<ncell[ax]<<", nface="<<nface[ax]<<"\n";
     if ( (ixmax[ax]-ixmin[ax]) % 2*G_idx !=0) {
       rep.error("interface region not divisible (send)!",
                                       ixmax[ax]-ixmin[ax]);
@@ -1728,7 +1728,7 @@ int UniformGrid::add_cells_to_face(
       perpaxis2 = ZZ;
       break;
     case XP:
-      while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
+      while (c->pos[XX] < ixmax[XX]) c = NextPt(c,XP);
       while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
       perpdir1 = YP;
@@ -1747,7 +1747,7 @@ int UniformGrid::add_cells_to_face(
       break;
     case YP:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
-      while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
+      while (c->pos[YY] < ixmax[YY]) c = NextPt(c,YP);
       while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
       perpdir1 = XP;
       perpdir2 = ZP;
@@ -1766,7 +1766,7 @@ int UniformGrid::add_cells_to_face(
     case ZP:
       while (c->pos[XX] < ixmin[XX]) c = NextPt(c,XP);
       while (c->pos[YY] < ixmin[YY]) c = NextPt(c,YP);
-      while (c->pos[ZZ] < ixmin[ZZ]) c = NextPt(c,ZP);
+      while (c->pos[ZZ] < ixmax[ZZ]) c = NextPt(c,ZP);
       perpdir1 = XP;
       perpdir2 = YP;
       perpaxis1 = XX;
@@ -1791,7 +1791,7 @@ int UniformGrid::add_cells_to_face(
 #ifdef TEST_BC89FLUX
         cout <<"i="<<i<<", j="<<j<<", id="<<i*nface[perpaxis1]+j;
         cout <<", fisize="<<flux.fi.size()<<"\n";
-        CI.print_cell(c); cout.flush();
+        //CI.print_cell(c); cout.flush();
 #endif
         if (ncell==1) {
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
@@ -1810,6 +1810,10 @@ int UniformGrid::add_cells_to_face(
           c->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[0] = 
                                         CellInterface(c,OppDir(d),0);
+#ifdef TEST_BC89FLUX
+          cout <<"c1="<<c->id<<" ";
+          rep.printVec("pos",c->pos,G_ndim);
+#endif
 
           m2 = NextPt(c,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[1] = m2;
@@ -1818,6 +1822,10 @@ int UniformGrid::add_cells_to_face(
           m2->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[1] = 
                                         CellInterface(m2,OppDir(d),0);
+#ifdef TEST_BC89FLUX
+          cout <<"c2="<<m2->id<<" ";
+          rep.printVec("pos",m2->pos,G_ndim);
+#endif
 
           m2 = NextPt(c,perpdir2);
           flux.fi[i*nface[perpaxis1]+j]->c[2] = m2;
@@ -1826,6 +1834,10 @@ int UniformGrid::add_cells_to_face(
           m2->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[2] = 
                                         CellInterface(m2,OppDir(d),0);
+#ifdef TEST_BC89FLUX
+          cout <<"c3="<<m2->id<<" ";
+          rep.printVec("pos",m2->pos,G_ndim);
+#endif
 
           m2 = NextPt(m2,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[3] = m2;
@@ -1834,6 +1846,10 @@ int UniformGrid::add_cells_to_face(
           m2->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[3] = 
                                         CellInterface(m2,OppDir(d),0);
+#ifdef TEST_BC89FLUX
+          cout <<"c4="<<m2->id<<" ";
+          rep.printVec("pos",m2->pos,G_ndim);
+#endif
 
         }
         for (int ic=0;ic<ncell;ic++) c = NextPt(c,perpdir1);

@@ -291,11 +291,13 @@ int sim_control_NG::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
+  cout <<"raytracing all levels...\n";
   // Do raytracing on all levels, and update internal and external
   // boundaries to populate the column densities correctly.
   // Even if there is not RT, this updates the boundaries.
   err = RT_all_sources_levels(SimPM);
   rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
+  cout <<"raytracing all levels... finished\n";
   if (SimPM.timestep==0) {
     cout << "(step=0) Writing initial data.\n";
     err=output_data(grid);
@@ -958,6 +960,7 @@ int sim_control_NG::recv_BC89_flux_boundary(
 #ifdef TEST_BC89FLUX
   cout <<"SERIAL BC89 RECV: send-d="<<send.dir<<", recv-d=";
   cout <<recv.dir<<", d="<<d<<", ax="<<ax<<endl;
+  cout <<"\t\t Receive "<<recv.fi.size()<<" fluxes\n";
 #endif
   for (unsigned int f=0; f<recv.fi.size(); f++) {
     fc = recv.fi[f];
@@ -978,6 +981,8 @@ int sim_control_NG::recv_BC89_flux_boundary(
     rep.printVec("fc->flux",fc->flux,SimPM.nvar);
     cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
     rep.printVec("ff->flux",ff->flux,SimPM.nvar);
+    cout <<"fc->area[0]="<<fc->area[0];
+    cout <<" ff->area[0]="<<ff->area[0]<<"\n";
 #endif
     
     for (int v=0;v<SimPM.nvar;v++) fc->flux[v] += ff->flux[v];
@@ -1021,7 +1026,8 @@ int sim_control_NG::recv_BC89_flux_boundary(
     }
 #ifdef TEST_BC89FLUX
     rep.printVec("**********  Error",utmp, SimPM.nvar);
-    cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0]<<", "<<utmp[0]<<"\n";
+    cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0];
+    cout <<", "<<utmp[0]<<"\n";
 #endif
 
     for (int v=0;v<SimPM.nvar;v++) fc->c[0]->dU[v] += utmp[v];
@@ -1125,17 +1131,17 @@ int sim_control_NG::RT_all_sources_levels(
 
   // --------------------------------------------------------------
   // Update off-grid sources and external boundaries.
-  for (int l=0; l<par.grid_nlevels; l++) {
+  //for (int l=0; l<par.grid_nlevels; l++) {
 #ifdef TEST_INT
-    cout <<"updating external boundaries for level "<<l<<"\n";
+    //cout <<"updating external boundaries for level "<<l<<"\n";
 #endif
-    grid = par.levels[l].grid;
-    err = TimeUpdateExternalBCs(par, l, grid,
-              spatial_solver, par.simtime,par.tmOOA,par.tmOOA);
-    rep.errorTest("NG RT_all_sources_levels: pass 1 BC-ext",0,err);
-    err = do_offgrid_raytracing(par,grid,l);
-    rep.errorTest("NG RT_all_sources_levels: pass 1 RT",0,err);
-  }
+    //grid = par.levels[l].grid;
+    //err = TimeUpdateExternalBCs(par, l, grid,
+    //          spatial_solver, par.simtime,par.tmOOA,par.tmOOA);
+    //rep.errorTest("NG RT_all_sources_levels: pass 1 BC-ext",0,err);
+    //err = do_offgrid_raytracing(par,grid,l);
+    //rep.errorTest("NG RT_all_sources_levels: pass 1 RT",0,err);
+  //}
   // --------------------------------------------------------------
 
   // --------------------------------------------------------------
@@ -1149,9 +1155,15 @@ int sim_control_NG::RT_all_sources_levels(
     err = TimeUpdateInternalBCs(par, l, grid, spatial_solver,
                             par.simtime,par.tmOOA,par.tmOOA);
     rep.errorTest("NG RT_all_sources_levels: pass 2 BC-int",0,err);
+#ifdef TEST_INT
+    cout <<"doing raytracing for level "<<l<<"\n";
+#endif
     err = do_ongrid_raytracing(par,grid,l);
-    err = do_offgrid_raytracing(par,grid,l);
+    //err = do_offgrid_raytracing(par,grid,l);
     rep.errorTest("NG RT_all_sources_levels: pass 2 RT",0,err);
+#ifdef TEST_INT
+    cout <<"moving on to next level.\n";
+#endif
   }
   rep.errorTest("sim_control_NG: internal boundary update",0,err);
   // --------------------------------------------------------------

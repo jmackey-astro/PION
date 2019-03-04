@@ -95,15 +95,6 @@ class NG_coarse_to_fine_bc {
       cell ** ///< pointers to 8 fine cells  (XN,YN)
       );
   
-  /// bilinear interpolation from a cell on the coarse grid to four
-  /// cells on the fine grid (to the cell centres).
-  virtual void trilinear_interp(
-      class SimParams &,      ///< pointer to simulation parameters
-      const int *,  ///< coarse level cell integer position
-      const int,    ///< coarse level cell diameter (integer units)
-      cell *,  ///< fine level cell
-      double **  ///< prim. vecs. at corners of coarse cell
-      );
 
   /// For a coarse-grid cell with given position and optical depths,
   /// assign optical depths to a list of fine-grid child-cells, using

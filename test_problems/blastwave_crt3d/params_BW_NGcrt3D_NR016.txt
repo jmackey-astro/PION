@@ -38,9 +38,9 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  8
-NGridY  4
-NGridZ  8
+NGridX  32
+NGridY  16
+NGridZ  32
 
 Xmin -30.86e18
 Ymin   0.00e18
@@ -50,13 +50,16 @@ Xmax  30.86e18
 Ymax  30.86e18 
 Zmax  30.86e18
 
-grid_nlevels 2
+grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
 NG_centre_XX 0.0e18
 NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 
 solver 4
 OrderOfAccSpace 2

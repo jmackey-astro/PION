@@ -584,15 +584,7 @@ int time_integrator::set_dynamics_dU(
 
   //
   // Loop over all directions, and in each direction, calculate fluxes
-  // in all columns of cells in that direction (it does work!).
-  // This function depends on cells being labelled as on-grid or as
-  // boundary cells, and also on dynamics_dU_column returning 0 on successful
-  // completion, and -1 if the column ends up at the last cell in the domain.
-  // Any other return value will signal an error in this function, stopping the code.
-  //
-  // 2011.04.29 JM: changed logic here so we check for cells which are not grid
-  // cells.  Checking for boundary data is not correct, since we can have 
-  // internal boundaries which are also grid data.
+  // in all columns of cells in that direction.
   //
   for (int i=0;i<SimPM.ndim;i++) {
     spatial_solver->SetDirection(axis[i]);

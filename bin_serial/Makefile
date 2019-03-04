@@ -116,7 +116,7 @@ endif
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
-    CXXFLAGS = -O0 -Wall -g
+    #CXXFLAGS = -O0 -Wall -g
   else
     CXXFLAGS = -O0 -Wall -g
   endif

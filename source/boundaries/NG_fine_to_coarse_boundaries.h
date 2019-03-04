@@ -67,6 +67,39 @@ class NG_fine_to_coarse_bc {
       double *              ///< [OUTPUT] pointer to optical depths
       );
 
+  /// Get optical depths for radiation sources from list of cells,
+  /// and take appropriate combination of them for the coarse cell.
+  ///
+  void get_F2C_TauAvg_1D(
+      class SimParams &,    ///< pointer to simulation parameters
+      const int,            ///< number of fine-level cells
+      std::vector<cell *> &, ///< list of cells
+      const int *,  ///< centre of coarse cell.
+      double *              ///< [OUTPUT] pointer to optical depths
+      );
+
+  /// Get optical depths for radiation sources from list of cells,
+  /// and take appropriate combination of them for the coarse cell.
+  ///
+  void get_F2C_TauAvg_2D(
+      class SimParams &,    ///< pointer to simulation parameters
+      const int,            ///< number of fine-level cells
+      std::vector<cell *> &, ///< list of cells
+      const int *,  ///< centre of coarse cell.
+      double *              ///< [OUTPUT] pointer to optical depths
+      );
+
+  /// Get optical depths for radiation sources from list of cells,
+  /// and take appropriate combination of them for the coarse cell.
+  ///
+  void get_F2C_TauAvg_3D(
+      class SimParams &,    ///< pointer to simulation parameters
+      const int,            ///< number of fine-level cells
+      std::vector<cell *> &, ///< list of cells
+      const int *,  ///< centre of coarse cell.
+      double *              ///< [OUTPUT] pointer to optical depths
+      );
+
   ///
   /// on a child grid, add all cells on the grid to the "avg" struct
   /// associated with a fine-to-coarse boundary.
