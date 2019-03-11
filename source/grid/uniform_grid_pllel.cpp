@@ -396,17 +396,116 @@ int UniformGridParallel::setup_flux_recv(
         }
       } // loop over child grids (up to 2)
     } // 2D
+
     else {
       // up to 4 grids on l+1, so go through them one by one, see if
       // they exist, and add the cells.
       flux_update_recv.resize(4);
       int perp[2];
-      perp[0] = axis+1 % G_ndim;
-      perp[1] = axis+2 % G_ndim;
+      perp[0] = (axis+1+G_ndim) % G_ndim;
+      perp[1] = (axis+2+G_ndim) % G_ndim;
       nel = G_ng[perp[0]]*G_ng[perp[1]]/4;
-      for (int v=0;v<G_ndim;v++) ncell[v] = G_ng[v]/2;
-      rep.error("Write 3D flux recv setup code",0);
-    }
+      //pos[perp[0]] = G_xmin[perp[0]]+0.25*G_range[perp[0]];
+      //pos[perp[1]] = G_xmin[perp[1]]+0.25*G_range[perp[1]];
+      
+      double xmin[2], xmax[2];
+      for (int ic=0;ic<4;ic++) {
+        // find xmin/xmax of boundary region, for each of the four
+        // potential child grids.
+        // First the in-plane directions:
+        switch (ic) {
+          case 0: // (-,-)
+          for (int d=0;d<2;d++) {
+            xmin[perp[d]] = G_xmin[perp[d]];
+            xmax[perp[d]] =   xmin[perp[d]] + 0.5 *G_range[perp[d]];
+            pos[perp[d]]  = G_xmin[perp[d]] + 0.25*G_range[perp[d]];
+          }
+          break;
+
+          case 1: // (+,-)
+          xmin[perp[0]] = G_xmin[perp[0]] + 0.5*G_range[perp[0]];
+          xmin[perp[1]] = G_xmin[perp[1]];
+          for (int d=0;d<2;d++) {
+            xmax[perp[d]] = xmin[perp[d]] + 0.5*G_range[perp[d]];
+          }
+          pos[perp[0]] = G_xmin[perp[0]]+0.75*G_range[perp[0]];
+          pos[perp[1]] = G_xmin[perp[1]]+0.25*G_range[perp[1]];
+          break;
+
+          case 2: // (-,+)
+          xmin[perp[0]] = G_xmin[perp[0]];
+          xmin[perp[1]] = G_xmin[perp[1]] + 0.5*G_range[perp[1]];
+          for (int d=0;d<2;d++) {
+            xmax[perp[d]] = xmin[perp[d]] + 0.5*G_range[perp[d]];
+          }
+          pos[perp[0]] = G_xmin[perp[0]]+0.75*G_range[perp[0]];
+          pos[perp[1]] = G_xmin[perp[1]]+0.25*G_range[perp[1]];
+          break;
+
+          case 3: // (+,+)
+          for (int d=0;d<2;d++) {
+            xmin[perp[d]] = G_xmin[perp[d]] + 0.5 *G_range[perp[d]];
+            xmax[perp[d]] =   xmin[perp[d]] + 0.5 *G_range[perp[d]];
+            pos[perp[d]]  = G_xmin[perp[d]] + 0.75*G_range[perp[d]];
+          }
+          break;
+
+          default:
+          rep.error("loopy error",ic);
+        }
+        // Then the normal direction
+        if (edge%2==0) {
+          pos[axis] = G_xmin[axis] - G_dx; // just off grid.
+          xmin[axis] = G_xmin[axis] - 0.5*G_range[axis];
+          xmax[axis] = G_xmin[axis];
+        }
+        else {
+          // positive direction
+          pos[axis] = G_xmax[axis] + G_dx; // just off grid.
+          xmin[axis] = G_xmax[axis];
+          xmax[axis] = G_xmax[axis] + 0.5*G_range[axis];
+        }
+#ifdef TEST_BC89FLUX
+        cout <<"ic="<<ic<<", perp=["<<perp[0]<<","<<perp[1]<<"] ";
+        cout <<"ax="<<axis<<"\n";
+        rep.printVec("xmin",xmin,G_ndim);
+        rep.printVec("xmax",xmax,G_ndim);
+#endif
+
+        ch = par.levels[l+1].MCMD.get_grid_rank(par,pos,l+1);
+        if (ch>=0) {
+          flux_update_recv[ic].rank.push_back(ch);
+          // dir is the outward normal of the grid edge at level l+1
+          flux_update_recv[ic].dir = 
+                          OppDir(static_cast<enum direction>(edge));
+          flux_update_recv[ic].ax  = axis;
+          flux_update_recv[ic].fi.resize(nel);
+          for (size_t i=0; i<nel; i++) {
+            flux_update_recv[ic].fi[i] = 
+                          mem.myalloc(flux_update_recv[ic].fi[i],1);
+            fi = flux_update_recv[ic].fi[i];
+            fi->c.resize(nc);
+            fi->area.resize(nc);
+            fi->flux = mem.myalloc(fi->flux,G_nvar);
+            for (int v=0;v<G_nvar;v++) fi->flux[v]=0.0;
+          }
+          for (int v=0;v<G_ndim;v++) ncell[v] = G_ng[v]/2;
+          CI.get_ipos_vec(xmin,ixmin);
+          CI.get_ipos_vec(xmax,ixmax);
+          
+#ifdef TEST_BC89FLUX
+          cout <<"FLUX: adding "<<nel<<" cells to recv boundary."<<endl;
+#endif
+          add_cells_to_face(OppDir(static_cast<enum direction>(edge)),
+                    ixmin,ixmax,ncell,1,flux_update_recv[ic]);
+        }
+        else {
+          // no child here, so just create one null element
+          flux_update_recv[ic].fi.resize(1);
+          flux_update_recv[ic].fi[0] = 0;
+        }
+      } // loop over child grids (up to 4)
+    } // 3D
   } // child grids?
 
   return 0;

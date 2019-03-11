@@ -420,57 +420,6 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
 
 
 
-void NG_coarse_to_fine_bc::bilinear_interp(
-      class SimParams &par,      ///< pointer to simulation parameters
-      const int *cpos,  ///< coarse level cell integer position
-      const int quad,   ///< quadrant of the fine cell.
-      cell *f,  ///< fine level cell
-      const double *P00,  ///< prim. vec. at XN,YN corner of cell
-      const double *P10,  ///< prim. vec. at XP,YN corner of cell
-      const double *P01,  ///< prim. vec. at YP,XN corner of cell
-      const double *P11   ///< prim. vec. at XP,YP corner of cell
-      )
-{
-  //if ( (f->pos[XX] < cpos[XX]) && (f->pos[YY] < cpos[YY]) ) {
-  if ( quad==0 ) {
-    // 1/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
-  }
-  //else if ( (f->pos[XX] > cpos[XX]) && (f->pos[YY] < cpos[YY]) ) {
-  else if ( quad==1 ) {
-    // 3/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
-  }
-  //else if ( (f->pos[XX] < cpos[XX]) && (f->pos[YY] > cpos[YY]) ) {
-  else if ( quad==2 ) {
-    // 1/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
-  }
-  //else {
-  else if ( quad==3 ) {
-    // 3/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
-  }
-  else {
-    rep.error("bad quad in bilinear interp",quad);
-  }
-  for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-  for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
       class SimParams &par,         ///< simulation parameters
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -688,27 +637,12 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   //  f_psi[2] = f3->P[SI];
   //  f_psi[3] = f4->P[SI];
   //}
-#define INTERP2D
-#ifdef INTERP2D
   for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // fine (dx/2)
   for (int v=0;v<par.nvar;v++) sy[v] *= dxo2; // fine (dx/2)
   for (int v=0;v<par.nvar;v++) f1->P[v] = P[v] -sx[v] -sy[v];
   for (int v=0;v<par.nvar;v++) f2->P[v] = P[v] +sx[v] -sy[v];
   for (int v=0;v<par.nvar;v++) f3->P[v] = P[v] -sx[v] +sy[v];
   for (int v=0;v<par.nvar;v++) f4->P[v] = P[v] +sx[v] +sy[v];
-#else
-  for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) f1U[v] = P[v] -sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f2U[v] = P[v] +sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f3U[v] = P[v] -sx[v] +sy[v];
-  for (int v=0;v<par.nvar;v++) f4U[v] = P[v] +sx[v] +sy[v];
-  // interpolate all four cells using the 4 corner states.
-  bilinear_interp(par, cpos, 0, f1, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, cpos, 1, f2, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, cpos, 2, f3, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, cpos, 3, f4, f1U, f2U, f3U, f4U);
-#endif
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels

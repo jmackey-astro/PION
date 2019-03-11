@@ -58,7 +58,7 @@ Xmax   3.874e18
 Ymax   3.874e18
 Zmax   3.874e18
 # Nested grid
-grid_nlevels 2
+grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1

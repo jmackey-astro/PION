@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     }
   }
 #ifndef TESTING
-  rep.kill_stdout_from_other_procs(0);
+  //rep.kill_stdout_from_other_procs(0);
 #endif
 
   class DataIOBase   *dataio=0;
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
-  cout <<"MAIN: setting up microphysics module\n";
+  cout <<"ICGEN: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
   // ----------------------------------------------------------------
 
@@ -159,16 +159,18 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
+  cout <<"ICGEN: Setting up boundaries\n";
   SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
+  cout <<"ICGEN: Setting up raytracing\n";
   err += SimSetup->setup_raytracing(SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-#ifdef TESTING
+//#ifdef TESTING
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
-#endif
+//#endif
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
     COMM->barrier("level assign boundary data");
     rep.errorTest("icgen_NG_MPI::assign_boundary_data",0,err);
