@@ -186,8 +186,8 @@ class eqns_base {
   enum axes eq_dir; ///< Which axis we are looking along XX,YY,ZZ.
   enum direction eq_posdir; ///< positive direction along current axis.
   enum direction eq_negdir; ///< negative direction along current axis.
-  enum primitive eqRO,   eqPG; ///< Here so tracer variables can be advected by generic functions.
-  enum conserved eqRHO, eqERG; ///< Here so tracer variables can be advected by generic functions.
+  enum primitive eqRO,   eqPG, eqSI; ///< Here so tracer variables can be advected by generic functions.
+  enum conserved eqRHO, eqERG, eqPSI; ///< Here so tracer variables can be advected by generic functions.
   enum primitive eqVX, eqVY, eqVZ, eqBX, eqBY, eqBZ;
   enum conserved eqMMX, eqMMY, eqMMZ, eqBBX, eqBBY, eqBBZ;
   double eq_gamma;  ///< Gas equation of state gamma.
