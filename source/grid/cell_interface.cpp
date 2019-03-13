@@ -539,9 +539,9 @@ void cell_interface::get_ipos_vec(
       p_out[v] = -1234567;
     else
       p_out[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
-//    cout <<"p_in[v]="<<p_in[v]<<", (p_in[v]-xmin[v])="<<(p_in[v]-xmin[v]);
-//    cout <<", (p_in[v]-xmin[v])/dxo2="<<64.0-(p_in[v]-xmin[v])/dxo2;
-//    cout <<", (1+e)*((p_in[v]-xmin[v])/dxo2)="<<64.0-int_converter*((p_in[v]-xmin[v])/dxo2) <<"\n";
+    //cout <<"p_in[v]="<<p_in[v]<<", (p_in[v]-xmin[v])="<<(p_in[v]-xmin[v]);
+    //cout <<", (p_in[v]-xmin[v])/dxo2="<<64.0-(p_in[v]-xmin[v])/dxo2;
+    //cout <<", (1+e)*((p_in[v]-xmin[v])/dxo2)="<<64.0-int_converter*((p_in[v]-xmin[v])/dxo2) <<"\n";
   }
   return;
 }
@@ -630,7 +630,8 @@ void cell_interface::print_cell(const cell *c)
   cout <<"cell:\t id = "<<c->id<<"\n";
   cout <<"\tcell pointer= "<<c<<"\n";
   cout <<"\tisedge:"<<c->isedge<<"\tisbd:"<<c->isbd<<"\tisgd:"<<c->isgd<<"\n";
-  cout <<"\tisdomain:"<<c->isdomain<<"\n";
+  cout <<"\tisdomain:"<<c->isdomain;
+  cout <<"\tisleaf:"<<c->isleaf<<"\n";
   cout<<"\tnpt: "<<c->npt;
   if (c->npt!=0) cout <<"\tnpt[id]: "<<c->npt->id<<"\n";
   else cout <<"\tnpt is not addressed (last point?).\n";

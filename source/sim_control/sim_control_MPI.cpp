@@ -126,9 +126,9 @@ int sim_control_pllel::Init(
       vector<class GridBaseClass *> &grid  ///< address of vector of grid pointers.
       )
 {
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"(sim_control_pllel::init) Initialising grid: infile = "<<infile<<"\n";
-//#endif
+#endif
   int err=0;
 
   //
@@ -211,9 +211,9 @@ int sim_control_pllel::Init(
   
   // Now set up the grid structure.
   grid.resize(1);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  //cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   err = setup_grid(grid,SimPM);
-  cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
+  //cout <<"Init:  &grid="<< &(grid[0])<<", and grid="<< grid[0] <<"\n";
   SimPM.dx = grid[0]->DX();
   SimPM.levels[0].grid=grid[0];
   rep.errorTest("(INIT::setup_grid) err!=0 Something went wrong",0,err);
@@ -237,6 +237,7 @@ int sim_control_pllel::Init(
   //
   err = dataio->ReadData(infile, grid, SimPM);
   rep.errorTest("(INIT::assign_initial_data) err!=0 Something went wrong",0,err);
+  //  cout <<"Read data finished\n";
 
   //
   // Set Ph[] = P[], and then implement the boundary conditions.
@@ -262,22 +263,29 @@ int sim_control_pllel::Init(
   //
   // Assign boundary conditions to boundary points.
   //
+  //  cout <<"starting BC setup\n";
   err = boundary_conditions(SimPM, grid);
   rep.errorTest("(INIT::boundary_conditions) err!=0",0,err);
+
+  //  cout <<"assigning BC data\n";
   err = assign_boundary_data(SimPM,0, grid[0]);
   rep.errorTest("(INIT::assign_boundary_data) err!=0",0,err);
 
   //
   // Setup Raytracing on each grid, if needed.
   //
+  //  cout <<"Setting up raytracing\n";
   err += setup_raytracing(SimPM, grid[0]);
+  //  cout <<"Setting up RT sources\n";
   err += setup_evolving_RT_sources(SimPM);
+  //  cout <<"Updating evolving RT sources\n";
   err += update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
   //
   // If testing the code, this calculates the momentum and energy on the domain.
   //
+  //  cout <<"initial conserved quantities\n";
   initial_conserved_quantities(grid[0]);
 
   err += TimeUpdateInternalBCs(SimPM,0,grid[0], spatial_solver,
@@ -354,7 +362,11 @@ int sim_control_pllel::Time_Int(
   cout <<"(sim_control_pllel::time_int) STARTING TIME INTEGRATION."<<"\n";
   cout <<"-------------------------------------------------------\n";
   int err=0;
-  int log_freq=1;
+  err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
+  rep.errorTest("TIME_INT:: initial RT src update()",0,err);
+  err = RT_all_sources(SimPM,grid[0],0);
+  rep.errorTest("TIME_INT:: initial RT()",0,err);
+  int log_freq=10;
   SimPM.maxtime=false;
   clk.start_timer("time_int"); double tsf=0.0;
   while (SimPM.maxtime==false) {
@@ -363,10 +375,9 @@ int sim_control_pllel::Time_Int(
     //
     err = update_evolving_RT_sources(SimPM,SimPM.simtime,
                                                     grid[0]->RT);
-    if (err) {
-      cerr <<"(TIME_INT::update_evolving_RT_sources()) error!\n";
-      return err;
-    }
+    rep.errorTest("TIME_INT::update_RT_sources()",0,err);
+    err = RT_all_sources(SimPM,grid[0],0);
+    rep.errorTest("TIME_INT:: loop RT()",0,err);
     
     //
     // Update boundary data.
@@ -388,14 +399,30 @@ int sim_control_pllel::Time_Int(
 #ifdef TESTING
     cout <<"MPI time_int: calculating dt\n";
 #endif
+#ifdef DERIGS
+    spatial_solver->set_max_speed(0.0);
+#endif
+    SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
+    //
+    // If using MHD with GLM divB cleaning, the following sets the
+    // hyperbolic wavespeed.  If not, it does nothing.  By setting it
+    // here and using t_dyn, we ensure that the hyperbolic wavespeed is
+    // equal to the maximum signal speed on the grid, and not an
+    // artificially larger speed associated with a shortened timestep.
+    //
+#ifdef DERIGS
+    double ch = spatial_solver->get_max_speed();
+    ch = COMM->global_operation_double("MAX",ch);
+    double cr=0.0;
+    for (int d=0;d<SimPM.ndim;d++)
+      cr += 1.0/(SimPM.Range[d]*SimPM.Range[d]);
+    cr = M_PI*sqrt(cr);
+    spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
+                                   SimPM.levels[0].dx, cr);
+#endif
 
-    if (SimPM.timestep==0 && JP.jetic!=0) {
-      //cout <<SimPM.dt <<", "<<0.1*SimPM.CFL*grid[0]->DX()/JP.jetstate[VX]<<"\n";
-      SimPM.dt = std::min(SimPM.dt, 0.1*SimPM.CFL*grid[0]->DX()/JP.jetstate[VX]);
-      spatial_solver->Setdt(SimPM.dt);
-    }
 
 #ifdef TESTING
     cout <<"MPI time_int: stepping forward in time\n";
@@ -404,6 +431,7 @@ int sim_control_pllel::Time_Int(
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 #ifdef TESTING
     cout <<"MPI time_int: finished timestep\n";
+    log_freq=1;
 #endif
 
     if ( (SimPM.levels[0].MCMD.get_myrank()==0) &&
@@ -412,9 +440,9 @@ int sim_control_pllel::Time_Int(
       cout <<"\t timestep: "<<SimPM.timestep;
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime so far = "<<tsf<<" secs."<<"\n";
-//#ifdef TESTING
+#ifdef TESTING
       cout.flush();
-//#endif // TESTING
+#endif // TESTING
     }
 	
     //
@@ -469,7 +497,7 @@ int sim_control_pllel::Time_Int(
 
 
 int sim_control_pllel::calculate_timestep(
-      class SimParams &par,      ///< pointer to simulation parameters
+      class SimParams &par,      ///< simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
       class FV_solver_base *sp_solver, ///< solver/equations class
       const int l       ///< level to advance (for NG grid)
@@ -483,43 +511,46 @@ int sim_control_pllel::calculate_timestep(
   t_mp  = calc_microphysics_dt(par,grid,l);
   
   //
-  // Now get global min over all grids for dynamics and microphysics timesteps.
-  // We only need both if we are doing Dedner et al. 2002, mixed-GLM divergence
-  // cleaning of the magnetic field, since there the dynamical dt is an important
-  // quantity (see next block of code).
+  // Get global min over all grids on this level.
   //
   //par.dt = t_dyn;
   t_dyn = COMM->global_operation_double("MIN", t_dyn);
-  //cout <<"proc "<<SimPM.levels[0].MCMD.get_myrank();
+  //cout <<"l="<<l<<", proc "<<SimPM.levels[0].MCMD.get_myrank();
   //cout<<":\t my t_dyn="<<par.dt<<" and global t_dyn="<<t_dyn<<"\n";
   //par.dt = t_mp;
   t_mp = COMM->global_operation_double("MIN", t_mp);
-  //cout <<"proc "<<SimPM.levels[0].MCMDM.get_myrank();
+  //cout <<"l="<<l<<", proc "<<SimPM.levels[0].MCMD.get_myrank();
   //cout<<":\t my t_mp ="<<par.dt<<" and global t_mp ="<<t_mp<<"\n";
+  //cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
-  par.dt = min(t_dyn,t_mp);
 
+#ifdef TESTING
   // Write step-limiting info every tenth timestep.
   if (t_mp<t_dyn && (par.timestep%10)==0)
     cout <<"Limiting timestep by MP: mp_t="<<t_mp<<"\thydro_t="<<t_dyn<<"\n";
+#endif
+
+  par.dt = min(t_dyn,t_mp);
 
 #ifdef THERMAL_CONDUCTION
   //
-  // In order to calculate the timestep limit imposed by thermal conduction,
-  // we need to actually calcuate the multidimensional energy fluxes
-  // associated with it.  So we store Edot in c->dU[ERG], to be multiplied
-  // by the actual dt later (since at this stage we don't know dt).  This
+  // Calculate the timestep limit imposed by thermal conduction,
+  // and calcuate the multidimensional energy fluxes
+  // associated with it.  Store Edot in c->dU[ERG], to be multiplied
+  // by dt later (since at this stage we don't know dt).  This
   // later multiplication is done in eqn->preprocess_data()
   //
   double t_cond = calc_conduction_dt_and_Edot();
   t_cond = COMM->global_operation_double("MIN", t_cond);
   if (t_cond<par.dt) {
-    cout <<"PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c="<<t_cond<<", t_m="<<t_mp;
+    cout <<"PARALLEL CONDUCTION IS LIMITING TIMESTEP: t_c=";
+    cout <<t_cond<<", t_m="<<t_mp;
     cout <<", t_dyn="<<t_dyn<<"\n";
   }
   par.dt = min(par.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
+#ifndef DERIGS
   //
   // If using MHD with GLM divB cleaning, the following sets the
   // hyperbolic wavespeed.  If not, it does nothing.  By setting it
@@ -527,15 +558,22 @@ int sim_control_pllel::calculate_timestep(
   // equal to the maximum signal speed on the grid, and not an
   // artificially larger speed associated with a shortened timestep.
   //
-  sp_solver->GotTimestep(t_dyn,grid->DX());
-
+  double cr=0.0;
+  //for (int d=0;d<par.ndim;d++)
+  //  cr += 1.0/(par.Range[d]*par.Range[d]);
+  //cr = M_PI*sqrt(cr);
+  if (par.grid_nlevels==1) cr = 0.25/par.dx;
+  else cr = 0.25/par.levels[0].dx;
+  spatial_solver->Set_GLM_Speeds(t_dyn,grid->DX(), cr);
+#endif
+  
   //
   // Check that the timestep doesn't increase too much between step,
   // and that it  won't bring us past the next output time or the end
   // of the simulation. This function operates on SimPM.dt, resetting
   // it to a smaller value if needed.
   //
-  timestep_checking_and_limiting(par);
+  timestep_checking_and_limiting(par,l);
   
   //
   // Tell the solver class what the resulting timestep is.
@@ -544,10 +582,8 @@ int sim_control_pllel::calculate_timestep(
   
 #ifdef TESTING
   //
-  // Check (sanity) that if my processor has modified dt to get to either
-  // an output time or finishtime, then all processors have done this too!
-  // This is really paranoid testing, and involves communication, so only 
-  // do it when testing.
+  // Check that if my processor has modified dt to get to either
+  // an output time or finishtime, then all procs have done this too!
   //
   t_dyn=par.dt;
   t_mp = COMM->global_operation_double("MIN", t_dyn);

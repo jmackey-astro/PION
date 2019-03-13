@@ -56,7 +56,7 @@ class sim_init : virtual public setup_fixed_grid
       int,      ///< Type of File (1=ASCII, 2=FITS, 5=Silo, ...)
       int,      ///< Number of command-line arguments.
       string *, ///< Pointer to array of command-line arguments.
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
@@ -105,23 +105,33 @@ class sim_init : virtual public setup_fixed_grid
       );
 
   ///
-  /// Output the data to file if required.
+  /// Save simulation snapshot to file if required.
   ///
   /// This checks if I want to output data in this timestep, then
   /// checks what format to write in, and calls the appropriate 
   /// function to write the data.
   ///
   virtual int output_data(
-      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
   ///
   /// Calculates total values of conserved quantities.
   ///
   int initial_conserved_quantities(
-      class GridBaseClass *  ///< address of vector of grid pointers.
+      class GridBaseClass *  ///< grid pointers.
       );
 
+  ///
+  /// Run through all radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  virtual int RT_all_sources(
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
+      );
 
 };
 

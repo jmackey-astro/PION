@@ -108,6 +108,7 @@ class cell {
   bool isbd;   ///< True if cell is boundary data, false if not.
   bool isgd;   ///< True if cell is grid data, false if not.
   bool isdomain; ///< True if cell is part of the domain.
+  bool isleaf; ///< True if no more refined cell is at this position.
   /// True if needed for ensuring flux consistency between different
   /// refinement levels.  Array of length 2*MAX_DIM
   bool *isbd_ref;

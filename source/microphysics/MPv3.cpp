@@ -835,6 +835,15 @@ double MPv3::Temperature(
     //cout <<"MPv3::Temperature() negative rho="<<pv[RO]<<" or p="<<pv[PG]<<"\n";
     return -1.0e99;
   }
+#ifdef TEST_INF
+  for (int v=0;v<nv_prim;v++) {
+    if (!isfinite(pv[v])) {
+      cout <<"NAN in MPv3::Temperature(): "<<v<<" "<<pv[v]<<"\n";
+      rep.printVec("prim vec",pv,nv_prim);
+      return -1.0e99;
+    }
+  }
+#endif
   //
   // generate vector of (nH,y(H0),Eint), and get Temperature from it.
   //
@@ -961,7 +970,12 @@ int MPv3::TimeUpdateMP_RTnew(
   else {
     err = integrate_cvode_step(y_in, 0, 0.0, dt, y_out);
     if (err) {
-      rep.error("integration failed: MPv3::TimeUpdateMP_RTnew()",err);
+      rep.printVec("Plocal",P,nvl);
+      rep.printVec("Pprim ",p_in,nv_prim);
+      for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
+      rep.printVec("Pfinal",P,nvl);
+      cout <<"ds="<<mpv_delta_S<<", vs="<<mpv_Vshell<<", tao0="<<mpv_Tau0<<", dtau="<<mpv_dTau0<<"\n";
+      rep.error("integration failed again: MPv3::TimeUpdateMP_RTnew()",err);
     }
   }
 
@@ -970,6 +984,19 @@ int MPv3::TimeUpdateMP_RTnew(
   //
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
   err = convert_local2prim(P,p_in,p_out);
+#ifdef TEST_INF
+  for (int v=0;v<nv_prim;v++) {
+    if (!isfinite(p_in[v]) || !isfinite(p_out[v])) {
+      cout <<"NAN in MPv3 update: "<<v<<"\n";
+      rep.printVec("Pin ",p_in,nv_prim);
+      rep.printVec("Pout",p_out,nv_prim);
+      rep.printVec("Ploc ",P,nvl);
+      //rep.error("NAN in MPv3",P[2]);
+      return 1;
+    }
+  }
+#endif
+
   return err;
 }
 
@@ -1370,7 +1397,6 @@ int MPv3::ydot(
   //
   double T = get_temperature(mpv_nH, E_in, x_in);
 
-
   double temp1=0.0, temp2=0.0;
   double oneminusx_dot=0.0; // oneminusx_dot is in units of 1/s
   double Edot=0.0;
@@ -1395,6 +1421,16 @@ int MPv3::ydot(
   Edot -= temp2*ne*OneMinusX;
   //cout <<"CI-CR="<< temp2*ne*OneMinusX<<"\n";
 
+#ifdef TEST_INF
+  if (!isfinite(mpv_nH) || !isfinite(mpv_delta_S) ||
+      !isfinite(mpv_Tau0) || !isfinite(mpv_Vshell) ||
+      !isfinite(E_in) || !isfinite(OneMinusX)) {
+    cout <<"NAN in ydot: "<< mpv_nH <<"  "<< mpv_delta_S;
+    cout <<"  "<<  mpv_Tau0 <<"  "<<  mpv_Vshell <<"  ";
+    cout << E_in <<"  "<< OneMinusX <<"\n";
+  }
+#endif
+  
   //
   // photo-ionisation of H: photoionisation rate uses equation 18 in Mellema et
   // al. 2006 (C2-ray paper), noting that their Gamma is the rate per neutral
@@ -1626,6 +1662,21 @@ int MPv3::ydot(
 
   NV_Ith_S(y_dot,lv_H0)   = oneminusx_dot;
   NV_Ith_S(y_dot,lv_eint) = Edot;
+
+  #ifdef TEST_INF
+  if (!isfinite(Edot) || !isfinite(oneminusx_dot)) {
+    cout <<"NAN returns from ydot: "<< oneminusx_dot;
+    cout <<"  "<< Edot <<" T="<<T<<"\n";
+    cout <<"ydot INPUTS: "<< mpv_nH <<"  "<< mpv_delta_S;
+    cout <<"  "<<  mpv_Tau0 <<"  "<<  mpv_Vshell <<"  ";
+    cout << E_in <<"  "<< OneMinusX <<"\n";
+
+  }
+  if (mpv_Vshell<1.0e45) {
+    cout <<"ydot dodgy Vshell INPUTS: "<< mpv_nH <<"  "<<mpv_delta_S;
+    cout <<"  "<<  mpv_Tau0 <<"  "<<  mpv_Vshell <<"\n";
+  }
+#endif
   return 0;
 }
 

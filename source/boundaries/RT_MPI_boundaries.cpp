@@ -43,7 +43,8 @@ RT_MPI_bc::~RT_MPI_bc()
         //
         // If a pre-existing boundary, just delete the list.
         //
-        if (n==dir_XN || n==dir_XP || n==dir_YN || n==dir_YP || n==dir_ZN || n==dir_ZP) {
+        if (n==dir_XN || n==dir_XP || n==dir_YN || n==dir_YP ||
+            n==dir_ZN || n==dir_ZP) {
           //cout <<"\tNot deleting standard boundary data for dir: "<<n<<"\n";
           if      (!b) {
             //cout <<"\t    Zero boundary data pointer for dir: "<<n<<"\n";
@@ -142,10 +143,11 @@ int RT_MPI_bc::Setup_RT_Boundaries(
   this_src_comms.RT_send_list.clear();
   
   //
-  // Now we call the appropriate function, depending on what type of source it is
-  // The only two relevant types of source, as far as boundary communication is
-  // concerned, are sources at infinity and those at a finite position, because the
-  // boundary communication differs between them.
+  // Now we call the appropriate function, depending on what type of
+  // source it is.  The only two relevant types of source, as far as
+  // boundary communication is concerned, are sources at infinity
+  // and those at a finite position, because the boundary
+  // communication differs between them.
   //
   int err=0;
   if (!RS.at_infinity) {
@@ -285,10 +287,12 @@ int RT_MPI_bc::Receive_RT_Boundaries(
           b=i_src->RT_recv_list[v].RT_bd;
           i_recv = v;
           if (!test) test=true;
-          else rep.error("Got two boundaries with same fromrank!!!",from_rank);
+          else
+            rep.error("2 boundaries from same rank!!!",from_rank);
         }
       }
-      if (!b) rep.error("No Receive Boundary corresponding to data from this proc!",from_rank);
+      if (!b)
+        rep.error("No Receive Boundary for this proc!",from_rank);
       if (r_dirs[i_recv] != i_src->RT_recv_list[i_recv].dir) {
         rep.error("direction mismatch",i_recv); // this is paranoid checking!
       }
@@ -299,7 +303,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      ct = b->data.size()*RS.NTau;
+      ct = b->data.size()*2*RS.NTau;
       if (ct<1) {
         cerr <<"data size = "<< b->data.size();
         cerr <<", NTau = "<<RS.NTau<<"\n";
@@ -344,9 +348,24 @@ int RT_MPI_bc::Receive_RT_Boundaries(
 #endif  
         for (short unsigned int v=0; v<RS.NTau; v++) {
           tau[v] = buf[count];
+          if (tau[v]<0.0) {
+            rep.printVec("RECV neg tau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
           count++;
         }
         CI.set_col(*c, src_id, tau);
+        for (short unsigned int v=0; v<RS.NTau; v++) {
+          tau[v] = buf[count];
+          if (tau[v]<0.0) {
+            rep.printVec("RECV neg dtau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
+          count++;
+        }
+        CI.set_cell_col(*c, src_id, tau);
       }
       if (count != ct) rep.error("BIG ERROR!",count-ct);
       
@@ -394,7 +413,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
   int sle=-1; // source list element.
   if (RT_source_list.empty()) {
 #ifdef RT_TESTING
-   cout <<"\tSend_RT_Boundaries() src="<<src_id<<": no procs to send to.\n";
+   cout <<"\tSend_RT_Boundaries() src="<<src_id;
+   cout<<": no procs to send to.\n";
 #endif 
    return 0;
   }
@@ -426,7 +446,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
   int n_send = i_src->RT_send_list.size();
   if (n_send==0) {
 #ifdef RT_TESTING
-    cout <<"RT_MPI_bc::Send_RT_Boundaries() nothing to send... returning.\n";
+    cout <<"RT_MPI_bc::Send_RT_Boundaries() nothing to send...";
+    cout <<"  returning.\n";
 #endif 
   }
   else {
@@ -434,7 +455,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
     // Allocate memory for send buffers.
     //
 #ifdef RT_TESTING
-    cout <<"\tSend_RT_Boundaries() src="<<src_id<<": Allocating "<<n_send<<" data buffers.\n";
+    cout <<"\tSend_RT_Boundaries() src="<<src_id;
+    cout <<": Allocating "<<n_send<<" data buffers.\n";
 #endif 
     double *data=0;
     std::string *id=0;
@@ -449,14 +471,15 @@ int RT_MPI_bc::Send_RT_Boundaries(
 
 #ifdef RT_TESTING
       cout <<"\tSend_RT_Boundaries() src="<<src_id;
-      cout <<": Sending boundary in dir "<<i_src->RT_send_list[i].dir<<"\n";
+      cout <<": Sending boundary in dir ";
+      cout <<i_src->RT_send_list[i].dir<<"\n";
 #endif 
       //
       // How many cell column densities to send:
       // For sources with more than one optical depth, we need to
       // account for this.
       //
-      int nc = b->data.size()*RS.NTau;
+      int nc = b->data.size()*2*RS.NTau;
       data = mem.myalloc(data, nc);
 
       //
@@ -480,14 +503,25 @@ int RT_MPI_bc::Send_RT_Boundaries(
           if (par.ndim>2)cout<<","<<(*c)->pos[ZZ]<<"]\n";
           else cout <<"]\n";
         }
-        //if (count<32) {
-        //  cout <<"send data ["<<i<<"]: col = "<<(*c)->col<<" for cell ";
-        //  cout <<count<<": "; rep.printVec("pos",(*c)->pos, par.ndim);
-        //}
 #endif 
-        for (short unsigned int v=0;
-             v<RS.NTau; v++) {
+        for (short unsigned int v=0; v<RS.NTau; v++) {
           data[count] = tau[v];
+          if (tau[v]<0.0) {
+            rep.printVec("SEND neg tau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
+          count++;
+        }
+
+        CI.get_cell_col(*c, src_id, tau);
+        for (short unsigned int v=0; v<RS.NTau; v++) {
+          data[count] = tau[v];
+          if (tau[v]<0.0) {
+            rep.printVec("SEND neg dtau cell",(*c)->pos,par.ndim);
+            cout <<"tau="<<tau[v]<<" ";
+            CI.print_cell(*c);
+          }
           count++;
         }
       }
@@ -521,7 +555,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
     // Loop over all sends, and wait until they complete!
     //
 #ifdef RT_TESTING
-    cout <<"\tSend_RT_Boundaries() src="<<src_id<<": Waiting for sends to complete.\n";
+    cout <<"\tSend_RT_Boundaries() src="<<src_id;
+    cout <<": Waiting for sends to complete.\n";
 #endif 
     for (int i=0; i<n_send; i++) {
       err += COMM->wait_for_send_to_finish(id[i]);
@@ -539,7 +574,8 @@ int RT_MPI_bc::Send_RT_Boundaries(
   // know the algorithm is sound.
   //
 #ifdef RT_TESTING
-  cout <<"\tSend_RT_Boundaries() src="<<src_id<<": Waiting for all procs to finish.\n";
+  cout <<"\tSend_RT_Boundaries() src="<<src_id;
+  cout <<": Waiting for all procs to finish.\n";
 #endif
   COMM->barrier("Send_RT_Boundaries_finished");
   return err;
@@ -776,14 +812,16 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     if      (i_srcpos[i]<grid->iXmin(static_cast<axes>(i))) {
 #ifdef RT_TESTING
       cout <<"*** axis="<<i<<" srcpos="<<srcpos[i]<<" xmin=";
-      cout <<grid->Xmin(static_cast<axes>(i))<<" src is off grid in neg.dir.\n";
+      cout <<grid->Xmin(static_cast<axes>(i));
+      cout <<" src is off grid in neg.dir.\n";
 #endif
       srcdir[i] = static_cast<direction>(2*i);
     }
     else if (i_srcpos[i]>grid->iXmax(static_cast<axes>(i)))  {
 #ifdef RT_TESTING
       cout <<"*** axis="<<i<<" srcpos="<<srcpos[i]<<" xmax=";
-      cout <<grid->Xmax(static_cast<axes>(i))<<" src is off grid in pos.dir.\n";
+      cout <<grid->Xmax(static_cast<axes>(i));
+      cout <<" src is off grid in pos.dir.\n";
 #endif
       srcdir[i] = static_cast<direction>(2*i+1);
     }
@@ -802,21 +840,29 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   // Choose processors I need to receive data from and send data to.
   //
   int nx[par.ndim];
-  for (int i=0;i<par.ndim;i++)
-    nx[i] =static_cast<int>(ONE_PLUS_EPS*grid->SIM_Range(static_cast<axes>(i))/grid->Range(static_cast<axes>(i)));
+  for (int i=0;i<par.ndim;i++) {
+    nx[i] = static_cast<int>( ONE_PLUS_EPS *
+      grid->level_Range(static_cast<axes>(i))
+      / grid->Range(static_cast<axes>(i)) );
+  }
 
   //
-  // First see if direction of source off grid has a neigbour processor and
-  // if the opposite direction has a neighbour processor.
+  // First see if direction of source off grid has a neigbour
+  // processor andif the opposite direction has a neighbour
+  // processor.
   //
   // recv procs:
   bool recv_proc_exists[par.ndim];
   for (int i=0;i<par.ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);
-    if      ((srcdir[i]==negdir) && (!pconst.equalD(grid->Xmin(static_cast<axes>(i)),grid->SIM_Xmin(static_cast<axes>(i)))))
+    if      ( (srcdir[i]==negdir) &&
+      (!pconst.equalD(grid->Xmin(static_cast<axes>(i)),
+                grid->level_Xmin(static_cast<axes>(i)) )) )
       recv_proc_exists[i]=true;
-    else if ((srcdir[i]==posdir) && (!pconst.equalD(grid->Xmax(static_cast<axes>(i)),grid->SIM_Xmax(static_cast<axes>(i)))))
+    else if ((srcdir[i]==posdir) && 
+             (!pconst.equalD(grid->Xmax(static_cast<axes>(i)),
+                       grid->level_Xmax(static_cast<axes>(i)))))
       recv_proc_exists[i]=true;
     else
       recv_proc_exists[i]=false;
@@ -841,17 +887,19 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
     enum direction negdir=static_cast<direction>(2*i);
     if ( (i_srcpos[i]>grid->iXmin(static_cast<axes>(i))) && 
          (!pconst.equalD(grid->Xmin(static_cast<axes>(i)),
-                        grid->SIM_Xmin(static_cast<axes>(i))) ) )
+                        grid->level_Xmin(static_cast<axes>(i))) ) )
       send_proc_exists[negdir] = true;
     else 
-      send_proc_exists[negdir] = false; // either doesn't exist, or we don't need it.
+      send_proc_exists[negdir] = false;
+      // either doesn't exist, or we don't need it.
 
     if ( (i_srcpos[i]<grid->iXmax(static_cast<axes>(i))) &&
          (!pconst.equalD(grid->Xmax(static_cast<axes>(i)),
-                         grid->SIM_Xmax(static_cast<axes>(i))) ) )
+                         grid->level_Xmax(static_cast<axes>(i))) ) )
       send_proc_exists[posdir] = true;
     else 
-      send_proc_exists[posdir] = false; // either doesn't exist, or we don't need it.
+      send_proc_exists[posdir] = false;
+      // either doesn't exist, or we don't need it.
   }
 #ifdef RT_TESTING
   rep.printVec("send_proc_exists",send_proc_exists,2*par.ndim);
@@ -1100,8 +1148,7 @@ int RT_MPI_bc::RT_populate_recv_boundary(
 #endif // RT_TESTING
 
   //
-  // Run through all the BC boundary points (may be 2 deep, so skip
-  // 2nd ones).  Add all boundary cells to the RT boundary list.
+  // Add all boundary cells to the RT boundary list.
   //
   list<cell*>::const_iterator bpt=b2->data.begin();
   do{
@@ -1151,8 +1198,7 @@ int RT_MPI_bc::setup_RT_send_boundary(
   send_b.RT_bd = mem.myalloc(send_b.RT_bd,1);
   
   //
-  // Now get every cell in the grid boundary for which isedge==-1,
-  // indicating that it is one cell off-grid, and add the neighbour
+  // Now get every cell in the grid boundary, and add the 'Nbc'th
   // cell in the on-grid-direction to the send-boundary list.
   //
   list<cell*>::const_iterator bpt=grid_b->data.begin();

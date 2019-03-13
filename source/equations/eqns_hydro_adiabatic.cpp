@@ -98,7 +98,9 @@ void eqns_Euler::PtoU(
   u[eqMMY] = p[eqRO]*p[eqVY];
   u[eqMMZ] = p[eqRO]*p[eqVZ];
   // Third E = p/(g-1) +rho*V^2/2
-  u[eqERG] = p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])/2.0 +p[eqPG]/(gamma-1.);
+  u[eqERG] = 
+      p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])*0.5
+    + p[eqPG]/(gamma-1.);
   return;
 }
 
@@ -134,14 +136,15 @@ int eqns_Euler::UtoP(
   // that we know this is what has happened (for the first 1000 instances).
   //
   if (p[eqRO] <=0.0) {
-    if (ct_rho<1000) {
-      ct_rho ++;
-      cout <<"(eqns_Euler::UtoP) negative density!\n";
-    //  rep.printVec("u",u,eq_nvar);
-    //  rep.printVec("p",p,eq_nvar);
+    rep.printVec("u",u,eq_nvar);
+    rep.printVec("p",p,eq_nvar);
 #ifdef TESTING
     //  cout <<"NEG.DENS.CELL:";CI.print_cell(dp.c);
 #endif
+    rep.error("Negative density (eqns_Euler::UtoP)",p[eqRO]);
+    if (ct_rho<1000) {
+      ct_rho ++;
+      cout <<"(eqns_Euler::UtoP) negative density!\n";
     }
     // reset all variables because a negative density will change the sign of 
     // all of the velocities!
@@ -249,10 +252,12 @@ int eqns_Euler::HydroWave(
   // First set the appropriate prewave sound speed.
   double c0;
   c0 = sqrt(gamma*prewave[eqPG]/prewave[eqRO]);
-  // Variable from the solver are gamma, prewave (points to *left/ *right), pstar
+  // Variable from the solver are gamma, prewave
+  // (points to *left/ *right), pstar
   if (pratio<1) { // Rarefaction
     // We have |u*-u_0| = 2c_0/(g-1) *(1- (p* /p_0)^((g-1)/2g) )
-    // In order to disentangle the sign ambiguity we need to know if it is a left of right wave
+    // In order to disentangle the sign ambiguity we need to know if
+    // it is a left of right wave
     *u = 2.*c0/(gamma-1.)*(1 - exp((gamma-1.)/2./gamma*log(pratio)));
     if (lr == XN) // Left moving rarefaction has u*-u0 >0
       *u = prewave[eqVX] + (*u);
@@ -260,9 +265,12 @@ int eqns_Euler::HydroWave(
       *u = prewave[eqVX] - (*u);
   }
   else if (pratio>1) { // Shock
-    // Here we have |u*-u0| = c0/sqrt(g(g-1)/2) *(pr-1)/sqrt(1+(g+1)/(g-1)pr)
-    // In order to disentangle the sign ambiguity we need to know if it is a left of right wave
-    *u = c0 *(pratio-1.) /sqrt(gamma*(gamma-1.)/2. *(1.+pratio*(gamma+1.)/(gamma-1.)));
+    // Here we have
+    // |u*-u0| = c0/sqrt(g(g-1)/2) *(pr-1)/sqrt(1+(g+1)/(g-1)pr)
+    // In order to disentangle the sign ambiguity we need to know if
+    // it is a left of right wave
+    *u = c0 *(pratio-1.) /sqrt(gamma*(gamma-1.)/2.
+                               *(1.+pratio*(gamma+1.)/(gamma-1.)));
     if (lr == XN) // Left moving shock has u*-u0 <0
       *u = prewave[eqVX] - (*u);
     else               // Right moving has u*-u0 >0
@@ -297,18 +305,27 @@ int eqns_Euler::HydroWaveFull(
     return(1);
   }
   // All that is left to do is solve for the density.
-  // We don't care if it's left or right moving, b/c rho only depends on P, and both are scalar.
-  if (pratio<1) // Here we can use the fact that rarefactions are adiabatic (p/rho^gamma conserved).
+  // We don't care if it's left or right moving, b/c rho only depends
+  // on P, and both are scalar.
+  if (pratio<1) {
+    // Here we can use the fact that rarefactions are adiabatic
+    // (p/rho^gamma conserved).
     *rho = prewave[eqRO] *exp(log(pratio)/gamma);
-  else if (pratio>1) // Here we use the shock jump conditions from Hirsch p.206 (vol.2).
-    *rho = prewave[eqRO] *(1+pratio*(gamma+1)/(gamma-1.)) /((gamma+1.)/(gamma-1.) +pratio);
+  }
+  else if (pratio>1) {
+    // Use the shock jump conditions from Hirsch p.206 (vol.2).
+    *rho = prewave[eqRO] *(1+pratio*(gamma+1)/(gamma-1.)) /
+                          ((gamma+1.)/(gamma-1.) +pratio);
+  }
   else *rho = prewave[eqRO]; // There is no wave.
   return(0);
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void eqns_Euler::PUtoFlux(
@@ -328,8 +345,10 @@ void eqns_Euler::PUtoFlux(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void eqns_Euler::UtoFlux(
@@ -338,7 +357,9 @@ void eqns_Euler::UtoFlux(
       const double gamma
       )
 {
-  double pg = (gamma-1.) *(u[eqERG] -(u[eqMMX]*u[eqMMX] +u[eqMMY]*u[eqMMY] +u[eqMMZ]*u[eqMMZ])/(2.*u[eqRHO]));
+  double pg = (gamma-1.) *(u[eqERG] -
+        (u[eqMMX]*u[eqMMX] +u[eqMMY]*u[eqMMY] +u[eqMMZ]*u[eqMMZ])*0.5
+                                                          /u[eqRHO]);
   f[eqRHO] = u[eqMMX];
   f[eqMMX] = u[eqMMX]*u[eqMMX]/u[eqRHO] + pg;
   f[eqMMY] = u[eqMMX]*u[eqMMY]/u[eqRHO];
@@ -353,6 +374,7 @@ void eqns_Euler::UtoFlux(
 // ##################################################################
 
 
+
 ///  Returns Enthalpy (per unit mass), given primitive variable vector. 
 double eqns_Euler::Enthalpy(
       const pion_flt *p, ///< Primitive State Vector.
@@ -360,12 +382,15 @@ double eqns_Euler::Enthalpy(
       )
 {
   //cout <<"Enthalpy!\n";
-  return (0.5*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ]) +g*p[eqPG]/(g-1.0)/p[eqRO]);
+  return (0.5*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])
+          +g*p[eqPG]/(g-1.0)/p[eqRO]);
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 ///  Returns Internal Energy (per unit mass, so 'Temperature'), given primitive variable vector. 
@@ -378,8 +403,10 @@ double eqns_Euler::eint(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 ///  Returns Total Energy (per unit volume), given primitive variable vector. 
@@ -388,14 +415,19 @@ double eqns_Euler::Etot(
       const double g   ///< gas EOS gamma.
       ) 
 {
-  return p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])/2. +p[eqPG]/(g-1.);
+  return p[eqRO]*
+          (p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])*0.5
+          +p[eqPG]/(g-1.);
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
-///  Returns Total Pressure (per unit Volume), given primitive variable vector. 
+
+
+///  Returns Total Pressure (per unit Volume) 
 double eqns_Euler::Ptot(
       const pion_flt *p, ///< Primitive State Vector.
       const double    ///< gas EOS gamma.
@@ -405,10 +437,12 @@ double eqns_Euler::Ptot(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
-///  Given a pressure ratio and initial density, calculate adiabatic final density.
+/// Given a pressure ratio and initial density, calculate
+/// final density assuming adiabatic expansion/contraction.
 double eqns_Euler::AdiabaticRho(
       const double pr, ///< New to Old pressure ratio
       const double ri, ///< Old Density
@@ -419,8 +453,11 @@ double eqns_Euler::AdiabaticRho(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void eqns_Euler::SetAvgState(
       const pion_flt *ms,  ///< Mean Prim. var. state vector
@@ -437,6 +474,7 @@ void eqns_Euler::SetAvgState(
 
   return;
 }
+
 
 
 // ##################################################################

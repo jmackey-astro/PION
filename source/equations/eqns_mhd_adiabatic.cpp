@@ -90,7 +90,11 @@ void eqns_mhd_ideal::PtoU(
   u[eqBBY] = p[eqBY];
   u[eqBBZ] = p[eqBZ];
   // E = p/(g-1) +rho*V^2/2 + B^2/2
-  u[eqERG] = (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])/2.) +(p[eqPG]/(gamma-1.)) +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.);
+  u[eqERG] =
+      (p[eqRO]*(p[eqVX]*p[eqVX]+p[eqVY]*p[eqVY]+p[eqVZ]*p[eqVZ])*0.5)
+     +(p[eqPG]/(gamma-1.))
+     +((u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.);
+
   //cout <<"gamma="<<gamma<<"\n";
   return;
 }
@@ -99,6 +103,8 @@ void eqns_mhd_ideal::PtoU(
 // ##################################################################
 // ##################################################################
 
+
+
 int eqns_mhd_ideal::UtoP(
       const pion_flt *u,
       pion_flt *p,
@@ -106,11 +112,6 @@ int eqns_mhd_ideal::UtoP(
       const double gamma
       )
 {
-#ifndef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
-  static long int ct_pg=0;
-#endif
-  static long int ct_rho=0;
-
   p[eqRO] = u[eqRHO];
   p[eqVX] = u[eqMMX]/u[eqRHO];
   p[eqVY] = u[eqMMY]/u[eqRHO];
@@ -122,7 +123,29 @@ int eqns_mhd_ideal::UtoP(
   p[eqBY] = u[eqBBY];
   p[eqBZ] = u[eqBBZ];
 
-  
+  int err = check_pressure(u,p,MinTemp,gamma);
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int eqns_mhd_ideal::check_pressure(
+      const pion_flt *u,
+      pion_flt *p, ///< Primitive State Vector.
+      const double MinTemp, ///< minimum temperature/pressure allowed
+      const double gamma
+      )
+{
+#ifndef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+  static long int ct_pg=0;
+#endif
+  static long int ct_rho=0;
+
   //
   // First check for negative density, and fix it if present.
   // Note this is usually fatal to a simulation, so we print out messages so
@@ -290,10 +313,10 @@ void eqns_mhd_ideal::PUtoFlux(
       pion_flt *f
       )
 {
-  /** \section Equations
-   * The equations for the flux are in Falle, Komissarov, Joarder, 1998, MNRAS,297,265.
-   * Equation (2).
-   * */
+  /// \section Equations
+  /// The equations for the flux are in Falle, Komissarov, Joarder,
+  /// (1998,MNRAS,297,265) Equation (2).
+  ///
   double pm = (u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])/2.; // Magnetic pressure.
   f[eqRHO] = u[eqMMX];
   f[eqMMX] = u[eqMMX]*p[eqVX] +p[eqPG] +pm -u[eqBBX]*u[eqBBX];
@@ -533,36 +556,12 @@ eqns_mhd_mixedGLM::~eqns_mhd_mixedGLM()
 // ##################################################################
 
 void eqns_mhd_mixedGLM::GLMsetPsiSpeed(
-      const double cfl,
-      const double delx,
-      const double delt
+      const double ch,
+      const double crel
       )
 {
-  ///
-  /// \section chyp Hyperbolic Wave Speed
-  /// See the Code Algorithms page \ref algorithms for details of my
-  /// implementation.
-  ///
-
-  //  cout <<"calculating GLM_chyp!\n";
-  GLM_chyp = cfl*delx/delt; /// hyperbolic wavespeed is equal to max. allowed value for given CFL no.
-  GLM_cr = 4.0*delx; // This works well for general use.
-  //GLM_cr *=20.5; // This is for when getting negative pressure near outflow boundaries.
-  //GLM_cr = 0.3*delx;
-  
-  //
-  // The following method is from Dedner's thesis (eq.8.22, p.121), and is 
-  // larger than using 4dx for the advection problem (i get 14.051 for divBpeak
-  // problem, as oppose to 4 for what I have above).
-  //
-  //  GLM_cr=0.;
-  //  for (int i=0;i<SimPM.ndim;i++)
-  //    GLM_cr += 4./(SimPM.Xmax[i]-SimPM.Xmin[i])/(SimPM.Xmax[i]-SimPM.Xmin[i]);
-  //  GLM_cr = 1./M_PI/sqrt(GLM_cr);
-
-
-  //  cout <<"GLM_cr="<<GLM_cr<<"\n";
-  //  cout <<"GLM_chyp = "<<GLM_chyp<<" and cfl*dx/dt="<<cfl*delx/delt<<"\n";
+  GLM_chyp = ch; // hyperbolic wavespeed is equal to max. fast speed
+  GLM_cr = crel;   // crel = 1/(cp^2/ch) has units of 1/length.
   return;
 }
 			    
@@ -579,6 +578,9 @@ void eqns_mhd_mixedGLM::PtoU(
 //  cout <<"glm ptou\n";
   U[eqPSI] = P[eqSI];
   eqns_mhd_ideal::PtoU(P,U,gamma);
+#ifdef DERIGS
+  U[eqERG] += 0.5*U[eqPSI]*U[eqPSI];
+#endif
   return;
 }
 
@@ -587,15 +589,31 @@ void eqns_mhd_mixedGLM::PtoU(
 // ##################################################################
 
 int eqns_mhd_mixedGLM::UtoP(
-      const pion_flt *U, ///< pointer to conserved variables.
-      pion_flt *P,       ///< pointer to Primitive variables.
+      const pion_flt *u, ///< pointer to conserved variables.
+      pion_flt *p,       ///< pointer to Primitive variables.
       const double MinTemp, ///< minimum temperature/pressure allowed
       const double g   ///< Gas constant gamma.
       )
 {
   //  cout <<"glm utop\n";
-  P[eqSI]=U[eqPSI];
-  return(eqns_mhd_ideal::UtoP(U,P,MinTemp, g));
+  p[eqSI] = u[eqPSI];
+  p[eqRO] = u[eqRHO];
+  p[eqVX] = u[eqMMX]/u[eqRHO];
+  p[eqVY] = u[eqMMY]/u[eqRHO];
+  p[eqVZ] = u[eqMMZ]/u[eqRHO];
+  p[eqPG] = (g-1.0) *
+    ( u[eqERG]
+    - p[eqRO]*(p[eqVX]*p[eqVX] +p[eqVY]*p[eqVY] +p[eqVZ]*p[eqVZ])*0.5
+#ifdef DERIGS
+    - 0.5*u[eqPSI]*u[eqPSI]
+#endif
+    - (u[eqBBX]*u[eqBBX] +u[eqBBY]*u[eqBBY] +u[eqBBZ]*u[eqBBZ])*0.5);
+  p[eqBX] = u[eqBBX];
+  p[eqBY] = u[eqBBY];
+  p[eqBZ] = u[eqBBZ];
+
+  int err = check_pressure(u,p,MinTemp,g);
+  return err;
 }
 
 
@@ -607,12 +625,16 @@ void eqns_mhd_mixedGLM::GLMsource(
       const double delt ///< timestep
       )
 {
-  //cout <<"\tglmsource: exp factor="<<-delt*GLM_chyp/GLM_cr<<"\n";
-  *psivar *= exp(-delt*GLM_chyp/GLM_cr);
+  //cout <<"cr="<<GLM_cr<<", ch="<<GLM_chyp<<", dt="<<delt;
+  //cout<<"\tglmsource: exp factor="<<-delt*GLM_chyp*GLM_cr<<"\n";
+  *psivar *= exp(-delt*GLM_chyp*GLM_cr);
   return;
 }
 
 
 // ##################################################################
 // ##################################################################
+
+
+
 

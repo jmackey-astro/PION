@@ -17,6 +17,9 @@
 // ##################################################################
 // ##################################################################
 
+//#define GLM_ZERO_BOUNDARY // Set this flag to make Psi=0 on boundary cells.
+#define GLM_NEGATIVE_BOUNDARY // Set this flag for Psi[boundary cell]=-Psi[edge cell]
+
 //#define TEST_MPI_NG
 //#define TEST_C2F
 //#define TEST_MPI_NG_F2C
@@ -80,9 +83,10 @@ enum BoundaryTypes {
 #define BC_MPItag 1 ///< Integer tag on MPI send/receive operations, to label that this communicates MPI boundary data.
 #define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
 #define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
-#define BC_MPI_NGF2C_tag 10000 ///< MPI send/receive from fine to coarse grid.
-#define BC_MPI_NGC2F_tag 1000 ///< MPI send/receive from coarse to fine grid.
-#define BC_MPI_FLUX_tag  3000   ///< Berger & Colella (1989) flux correction.
+#define BC_MPI_NGF2C_tag 1000000 ///< MPI send/receive from fine to coarse grid.
+#define BC_MPI_NGC2F_tag 2000000 ///< MPI send/receive from coarse to fine grid.
+// this gives a unique identifier as long as n_levels<10, nproc<10000.
+#define BC_MPI_FLUX_tag  3000000 ///< Berger & Colella (1989) flux correction.
 
 
 // ##################################################################
@@ -93,7 +97,7 @@ enum BoundaryTypes {
 /// be averaged to be sent to a coarser grid.
 struct averaging {
   std::vector<cell *> c; ///< list of cells to be averaged
-  pion_flt cpos[MAX_DIM];
+  pion_flt cpos[MAX_DIM]; ///< position of cell-centre of coarse cell
   pion_flt *avg_state;
 };
 
@@ -144,7 +148,7 @@ struct boundary_data {
   ///    - setup_NG_grid::setup_boundary_structs()
   ///    - NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE()
   ///    - NG_fine_to_coarse_bc::BC_update_FINE_TO_COARSE(
-  ///    - sim_control_NG::calculate_raytracing_column_densities()
+  ///    - sim_control_NG::do_ongrid_raytracing()
   /// - Used by parallel NG code:
   ///    - NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV()
   ///    - NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV()

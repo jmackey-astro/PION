@@ -97,24 +97,10 @@
 
 //#define ISOTHERMAL_SOLVERS_ENABLED
 
-//#define LAPIDUS_VISCOSITY_ENABLED
-//#define TEST_LAPIDUS
-
 // -------------------------------------------------------------------
 // Flags which should be removed/changed because the code is working
 // and tested.
 // -------------------------------------------------------------------
 
-//
-// Must define either CELL_CENTRED_SRC or NON_CELL_CENTRED_SRC
-//
-// This enables code for ray-tracing point sources where the src is
-//  at a cell centre.
-//
-//#define CELL_CENTRED_SRC 
-//
-// This enables code for non-cell-centred sources 
-//
-#define NON_CELL_CENTRED_SRC
 
 #endif //FUNCTIONALITY_FLAGS_H

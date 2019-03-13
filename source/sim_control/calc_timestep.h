@@ -86,16 +86,6 @@ class calc_timestep :
       class GridBaseClass *
       );
 
-  ///
-  /// Run through all diffuse and direct radiation sources and calculate column
-  /// densities through the grid for each one.  Tau, DTau, and Vshell are stored
-  /// in extra_data[i] for each cell.
-  ///
-  virtual int calculate_raytracing_column_densities(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< grid to trace rays on.
-      const int               ///< unused here (level of NG grid).
-      );
 
   ///
   /// Calculate the dynamics timestep, based on the Courant condition that
@@ -131,7 +121,8 @@ class calc_timestep :
   /// can affect stability).
   ///
   void timestep_checking_and_limiting(
-      class SimParams &      ///< pointer to simulation parameters
+      class SimParams &,     ///< pointer to simulation parameters
+      const int              ///< level of NG grid.
       );
 
   // ----------------------------------------------------------------

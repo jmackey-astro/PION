@@ -165,8 +165,10 @@ int setup_grid_NG_MPI::setup_grid(
   cout <<"(setup_grid_NG_MPI::setup_grid) Setting up grid...\n";
 #endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
     cout <<"Init: level="<< l <<",  &grid="<< &(grid[l]);
     cout <<", and grid="<< grid[l] <<"\n";
+#endif
     
     if (grid[l]) rep.error("Grid already set up!",grid[l]);
 
@@ -176,6 +178,7 @@ int setup_grid_NG_MPI::setup_grid(
               SimPM.levels[l].MCMD.LocalXmin,
               SimPM.levels[l].MCMD.LocalXmax,
               SimPM.levels[l].MCMD.LocalNG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
               SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_CYL)
       grid[l] = new uniform_grid_cyl_parallel (
@@ -183,6 +186,7 @@ int setup_grid_NG_MPI::setup_grid(
               SimPM.levels[l].MCMD.LocalXmin,
               SimPM.levels[l].MCMD.LocalXmax,
               SimPM.levels[l].MCMD.LocalNG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
               SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_SPH)
       grid[l] = new uniform_grid_sph_parallel (
@@ -190,6 +194,7 @@ int setup_grid_NG_MPI::setup_grid(
               SimPM.levels[l].MCMD.LocalXmin,
               SimPM.levels[l].MCMD.LocalXmax,
               SimPM.levels[l].MCMD.LocalNG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
               SimPM.Xmin, SimPM.Xmax);
     else 
       rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
@@ -197,12 +202,12 @@ int setup_grid_NG_MPI::setup_grid(
     if (grid[l]==0)
       rep.error("(setup_grid_NG_MPI::setup_grid)", grid[l]);
 
-//#ifdef TESTING
+#ifdef TESTING
     cout <<"(setup_grid_NG_MPI::setup_grid) Done. &grid=";
     cout << &(grid[l])<<", and grid="<<grid[l]<<"\n";
     cout <<"DX = "<<(grid[l])->DX()<<"\n";
     //dp.grid = (grid[l]);
-//#endif
+#endif
   }
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
@@ -221,6 +226,8 @@ int setup_grid_NG_MPI::setup_grid(
     }
   }
 
+  set_leaf_cells(grid,SimPM);
+  
   // setup arrays for fluxes into and out of fine grid, and
   // equivalent cells on coarse grid, for making the fluxes
   // consistent across levels.
@@ -229,26 +236,26 @@ int setup_grid_NG_MPI::setup_grid(
     if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
   }
 
-//#ifdef TEST_BC89FLUX
+#ifdef TEST_BC89FLUX
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    for (int d=0;d<grid[l]->flux_update_send.size();d++) {
+    for (unsigned int d=0;d<grid[l]->flux_update_send.size();d++) {
       struct flux_update *fup = &(grid[l]->flux_update_send[d]);
       cout <<"l="<<l<<", FUP_SEND: d="<<d<<" info: \n";
       cout <<"\t ranks: ";
-      for (int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
+      for (unsigned int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
       cout <<"\n";
       cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
     }
-    for (int d=0;d<grid[l]->flux_update_recv.size();d++) {
+    for (unsigned int d=0;d<grid[l]->flux_update_recv.size();d++) {
       struct flux_update *fup = &(grid[l]->flux_update_recv[d]);
       cout <<"l="<<l<<", FUP_RECV: d="<<d<<" info: \n";
       cout <<"\t ranks: ";
-      for (int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
+      for (unsigned int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
       cout <<"\n";
       cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
     }
   }
-//#endif
+#endif
 cout <<"------------------------------------------------------\n\n";
 
   return(0);
@@ -335,6 +342,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   // Now check for NG grid boundaries if this grid has a parent
   // grid (i.e. if l > 0).
   //
+#ifdef SKIP_C2F_BC
+  if (1==0) {
+#endif
   if (l>0) {
     // replace external boundary conditions with one that
     // receives data from a coarser level grid.
@@ -361,6 +371,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       }
     }
   } // if l>0 add C2F recv
+#ifdef SKIP_C2F_BC
+  }
+#endif
 
   //
   // Now check for NG grid boundaries if this grid has a child
@@ -371,6 +384,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   // assign_boundary_data().
   //
   if (l < par.grid_nlevels-1) {
+#ifdef SKIP_F2C_BC
+    if (1==0) {
+#endif
 #ifdef TESTING
     cout <<"Adding FINE_TO_COARSE_RECV boundary for level ";
     cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
@@ -382,7 +398,13 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd->ondir = NO;
     bd->refval=0;
     grid->BC_bd.push_back(bd);
+#ifdef SKIP_F2C_BC
+    }
+#endif
 
+#ifdef SKIP_C2F_BC
+    if (1==0) {
+#endif
 #ifdef TESTING
     cout <<"Adding COARSE_TO_FINE_SEND boundary for level ";
     cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
@@ -394,8 +416,14 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd2->ondir = NO;
     bd2->refval=0;
     grid->BC_bd.push_back(bd2);
+#ifdef SKIP_C2F_BC
+    }
+#endif
   }
 
+#ifdef SKIP_F2C_BC
+  if (1==0) {
+#endif
   if (l>0) {
     // Add internal boundary to send averaged local data
     // to the parent grid.  Whether any data need to 
@@ -416,12 +444,19 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd->refval=0;
     grid->BC_bd.push_back(bd);
   }
+#ifdef SKIP_F2C_BC
+  }
+#endif
+
 
   
   
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"BC structs set up.\n";
-#endif
+  for (unsigned int v=0; v<grid->BC_bd.size(); v++) {
+    cout<<"i="<<v<<", BC type= "<<grid->BC_bd[v]->type<<"\n";
+  }
+//#endif
   return 0;
 }
 

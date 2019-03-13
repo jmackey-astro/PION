@@ -389,7 +389,7 @@ double stellar_wind_angle::fn_delta(
 
 // Terminal wind velocity function
 double stellar_wind_angle::fn_v_inf(
-	double omega, // Omega (v_rot/v_esc)
+	double omega, // Omega (v_rot/v_crit)
 	double v_esc, // Escape velocity (cm/s)
 	double theta, // Co-latitude angle (radians)
 	double Teff // Teff (K)
@@ -526,7 +526,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // 3D geometry: either 3D-cartesian, 2D-axisymmetry, or 1D-spherical.
   //
   wc->p[RO] = fn_density_interp(
-          std::min(0.9999,pconst.sqrt2()*WS->v_rot/WS->v_esc),
+          std::min(0.9999,WS->v_rot/WS->vcrit),
           WS->v_esc, WS->Mdot, wc->dist, wc->theta, WS->Tw);
 #ifdef TESTING
   if (!isfinite(wc->p[RO]) || pconst.equalD(wc->p[RO],0.0)) {
@@ -555,7 +555,9 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // ******************************************************************************
   //
   wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-  wc->p[PG] *= pow_fast(fn_density_interp(pconst.sqrt2()*WS->v_rot/WS->v_esc, WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-eos_gamma);
+  wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
+                        WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
+                        1.0-eos_gamma);
   wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
 
 
@@ -565,7 +567,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // grid functions.
   //
   // calculate terminal wind velocity
-  double Vinf = fn_v_inf(pconst.sqrt2()*WS->v_rot/WS->v_esc,
+  double Vinf = fn_v_inf(std::min(0.9999,WS->v_rot/WS->vcrit),
                          WS->v_esc, wc->theta, WS->Tw);
 
   cell *c = wc->c;
@@ -585,8 +587,33 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   else
     wc->p[VZ] = 0.0;
 
-  if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
-    rep.error("Need to code B into winds model!",eqntype);
+  // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
+  if (eqntype==EQMHD || eqntype==EQGLM) {
+    double R=695508e5;  // R_sun in cm
+    double x = grid->difference_vertex2cell(WS->dpos,c,XX);
+    wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                fabs(x)/wc->dist;
+    if (ndim>1) {
+      wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
+      wc->p[BY] = (x>0.0) ? wc->p[BY] : -1.0*wc->p[BY];
+    }
+    else
+      wc->p[BY] = 0.0;
+    if (ndim>2) {
+      wc->p[BZ] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
+      wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
+    }
+    else
+      wc->p[BZ] = 0.0;
+  }
+  if (eqntype==EQGLM) {
+    wc->p[SI] = 0.0;
+  }
+  
+  //if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
+  //  rep.error("Need to code B into winds model!",eqntype);
 
 
   // update tracers
@@ -623,8 +650,18 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       Tmin*wc->p[RO]*pconst.kB()*0.78625/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
 #ifdef TESTING
   cout << "\n";
+  rep.printVec("wc->p",wc->p,nvar);
+#endif
+#ifdef TEST_INF
+  for (int v=0;v<nvar;v++) {
+    if (!isfinite(wc->p[v])) {
+      cerr<<"NAN in wind source "<<v<<" "<<wc->p[v]<<"\n";
+      rep.error("NAN in wind source",wc->p[v]);
+    }
+  }
 #endif
 
   return;
@@ -662,7 +699,7 @@ int stellar_wind_angle::add_evolving_source(
 
   //
   // Read in stellar evolution data
-  // Format: time	M	L	Teff	Mdot	vrot
+  // Format: time	M	L	Teff	Mdot	vrot   vcrit
   //
   FILE *wf = 0;
   wf = fopen(infile.c_str(), "r");
@@ -678,8 +715,9 @@ int stellar_wind_angle::add_evolving_source(
   //printf("%s",line);
 
   // Temp. variables for column values
-  double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
-  while (fscanf(wf, "   %lE   %lE %lE %lE %lE %lE", &t1, &t2, &t3, &t4, &t5, &t6) != EOF){
+  double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
+  while (fscanf(wf, "   %lE   %lE %lE %lE %lE %lE %lE",
+                      &t1, &t2, &t3, &t4, &t5, &t6, &t7) != EOF){
     //cout.precision(16);
     //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
     // Set vector value
@@ -688,6 +726,7 @@ int stellar_wind_angle::add_evolving_source(
     L_evo.push_back(t3);
     Teff_evo.push_back(t4);
     vrot_evo.push_back(t6);
+    vcrit_evo.push_back(t7);
 
     // Stellar radius
     t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow_fast(t4, 4.0)));
@@ -772,7 +811,7 @@ int stellar_wind_angle::add_evolving_source(
   // properties.  We set it to be active if the current time is
   // within update_freq of tstart.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0;
+  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
@@ -785,6 +824,7 @@ int stellar_wind_angle::add_evolving_source(
     interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
     interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
     interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
+    interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
     interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
 #ifdef TESTING
     cout <<"Source is Active\n";
@@ -801,7 +841,7 @@ int stellar_wind_angle::add_evolving_source(
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(pos,rad,type,mdot, vesc, vrot,Twind,rstar,trv);
+  add_rotating_source(pos,rad,type,mdot, vesc, vrot, vcrit,Twind,rstar,trv);
   temp->ws = wlist.back();
 
   //
@@ -830,6 +870,7 @@ int stellar_wind_angle::add_rotating_source(
       const double mdot,   ///< Mdot (g/s)
       const double vesc,   ///< Vesc (cm/s)
       const double vrot,   ///< Vrot (cm/s)
+      const double vcrit,   ///< Vcrit (cm/s)
       const double Twind,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double Rstar,   ///< Radius where T=Twind (to get gas pressure)
       const pion_flt *trv  ///< Tracer values of wind (if any)
@@ -863,6 +904,7 @@ int stellar_wind_angle::add_rotating_source(
   ws->v_esc = vesc;
   ws->Vinf  = vesc;
   ws->v_rot = vrot;
+  ws->vcrit = vcrit;
 
   ws->Tw    = Twind;
   ws->Rstar = Rstar;
@@ -929,7 +971,7 @@ void stellar_wind_angle::update_source(
   }
 
   if (t_now < wd->tstart) {
-    rep.error("Requested updating source, but it hasn't switched on yet!",wd->tstart-t_now);
+    rep.error("Requested updating inactive source",wd->tstart-t_now);
   }
 
   wd->t_next_update = t_now; // (We update every timestep now)
@@ -938,11 +980,12 @@ void stellar_wind_angle::update_source(
   //
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0;
+  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
   interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now, Twind);
   interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
   interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
   interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
+  interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
   interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
   //
   // Assign new values to wd->ws (the wind source struct), converting
@@ -952,8 +995,17 @@ void stellar_wind_angle::update_source(
   wd->ws->v_esc = vesc;  // this is in cm/s already.
   wd->ws->Vinf = vesc;  // this is in cm/s already.
   wd->ws->v_rot = vrot;  // this is in cm/s already.
+  wd->ws->vcrit = vcrit;
   wd->ws->Tw   = Twind; // This is in K.
   wd->ws->Rstar = rstar;
+
+//  cout <<"updating wind: gidx="<<grid->idx()<<", t="<<t_now;
+//  cout <<"  mdot="<<mdot;
+//  cout <<"  vinf="<<vesc;
+//  cout <<"  vrot="<<vrot;
+//  cout <<"  vcrit="<<vcrit;
+//  cout <<"  T="<<Twind;
+//  cout <<"  R="<<rstar<<"\n";
 
   //
   // Now re-assign state vector of each wind-boundary-cell with

@@ -145,7 +145,22 @@ double VectorOps_Cart::CellVolume(
       const double dR
       )
 {
-  return dR*dR*dR;
+  double dV=0.0;
+  switch (VOnd) {
+    case 1:
+    dV = dR;
+    break;
+    case 2:
+    dV = dR*dR;
+    break;
+    case 3:
+    dV = dR*dR*dR;
+    break;
+    default:
+    rep.error("bad ndim in CellVolume (cart)",VOnd);
+    break;
+  }
+  return dV;
 }
 
 
@@ -161,7 +176,22 @@ double VectorOps_Cart::CellInterface(
       const double dR ///< cell diameter
       )
 {
-  return dR*dR;
+  double dA=0.0;
+  switch (VOnd) {
+    case 1:
+    dA = 1.0;
+    break;
+    case 2:
+    dA = dR;
+    break;
+    case 3:
+    dA = dR*dR;
+    break;
+    default:
+    rep.error("bad ndim in CellInterface (cart)",VOnd);
+    break;
+  }
+  return dA;
 }
 
 
@@ -523,10 +553,10 @@ int VectorOps_Cart::SetEdgeState(
    case OA2: // Second Order Spatial Accuracy.
     switch (d) {
      case XP: case YP: case ZP:
-      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*VOdx/2.;
+      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*VOdx*0.5;
       break; //XP
      case XN: case YN: case ZN:
-      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] - dpdx[v]*VOdx/2.;
+      for (int v=0;v<nv;v++) edge[v] = c->Ph[v] - dpdx[v]*VOdx*0.5;
       break; //XN
      default:
       cerr<<"\t(SetEdgeState) wrong direction!\n"; 
@@ -578,11 +608,6 @@ int VectorOps_Cart::SetSlope(
       slpn[v] = (c->Ph[v] -cn->Ph[v])/dx;
       slpp[v] = (cp->Ph[v]- c->Ph[v])/dx;
       dpdx[v] = AvgFalle(slpn[v],slpp[v]);
-#ifdef FIX_TRACER_SLOPES_TO_DENSITY
-      if (v>=SimPM.ftr) {
-	dpdx[v] = 0.0;
-      }
-#endif //FIX_TRACER_SLOPES_TO_DENSITY
     }
   } // 2nd order accurate
   else {
@@ -809,8 +834,10 @@ double VectorOps_Cyl::max_grad_abs(
 } // max_grad_abs
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void VectorOps_Cyl::Gradient(
@@ -863,8 +890,11 @@ void VectorOps_Cyl::Gradient(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double VectorOps_Cyl::Divergence(
         cell *c, 
@@ -943,8 +973,11 @@ double VectorOps_Cyl::Divergence(
 } // Div
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 void VectorOps_Cyl::Curl(
         const cell *c, 
@@ -1018,8 +1051,10 @@ void VectorOps_Cyl::Curl(
 }// VecCurl
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Cyl::SetEdgeState(
@@ -1041,13 +1076,13 @@ int VectorOps_Cyl::SetEdgeState(
     double dR=grid->DX();
     double dZ=dR;
     switch (dir) {
-     case ZPcyl: del = dZ/2.; break;
-     case ZNcyl: del =-dZ/2.; break;
+     case ZPcyl: del = dZ*0.5; break;
+     case ZNcyl: del =-dZ*0.5; break;
      case RPcyl:
-      del = CI.get_dpos(c,Rcyl)+dR/2. - R_com(c,dR);
+      del = CI.get_dpos(c,Rcyl) +dR*0.5 - R_com(c,dR);
       break;
      case RNcyl:
-      del = CI.get_dpos(c,Rcyl)-dR/2.  - R_com(c,dR);
+      del = CI.get_dpos(c,Rcyl) -dR*0.5  - R_com(c,dR);
       break;
      case TPcyl:
        del = R_com(c,dR)*(CI.get_dpos(grid->NextPt(c,TPcyl),Tcyl) - CI.get_dpos(c,Tcyl));
@@ -1061,14 +1096,16 @@ int VectorOps_Cyl::SetEdgeState(
     
     for (int v=0;v<nv;v++) edge[v] = c->Ph[v] + dpdx[v]*del;
   } // OA2
-  else rep.error("Bad order of accuracy in SetEdgeState -- only know 1st and 2nd order space",OA);
+  else rep.error("SetEdgeState OOA -- only 1st and 2nd order",OA);
   
   return(0);
 } // SetEdgeState
   
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Cyl::SetSlope(
@@ -1097,9 +1134,9 @@ int VectorOps_Cyl::SetSlope(
      default: rep.error("Bad direction in SetSlope",d);
     }
     cp = grid->NextPt(c,dp); cn=grid->NextPt(c,dn);
-#ifdef TESTING
+//#ifdef TESTING
     if (cp==0 || cn==0) rep.error("No left or right cell in SetSlope",cp);
-#endif //TESTING
+//#endif //TESTING
     switch (d) {
      case Zcyl: 
       for (int v=0;v<nv;v++) {
@@ -1129,23 +1166,16 @@ int VectorOps_Cyl::SetSlope(
       break;
      case Tcyl: // Need extra scale factor in denominator to get R*dtheta
       for (int v=0;v<nv;v++) {
-	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c,dR)/(CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
-	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c,dR)/(CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
+	slpn[v] = (c->Ph[v] -cn->Ph[v])/ R_com(c,dR)/
+                  (CI.get_dpos(c,Tcyl)  - CI.get_dpos(cn,Tcyl));
+	slpp[v] = (cp->Ph[v]- c->Ph[v])/ R_com(c,dR)/
+                  (CI.get_dpos(cp,Tcyl) - CI.get_dpos(c,Tcyl));
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
       break;
      default:
       rep.error("Bad axis in SetSlope",d);
     } // calculate slope in direction d.
-#ifdef FIX_TRACER_SLOPES_TO_DENSITY
-    if (SimPM.ntracer>0) {
-      for (int v=SimPM.ftr; v<nv; v++) {
-	//if (!pconst.equalD(dpdx[v],0.0)) 
-        //  cout <<"setting dpdx["<<v<<"] from "<<dpdx[v]<<" to zero.\n";
-	dpdx[v] =0.0;
-      }
-    }
-#endif //FIX_TRACER_SLOPES_TO_DENSITY
   } // 2nd order accurate
   else {
     cerr <<"Error: Only know how to do 1st or 2nd order slope calculation.\n";
@@ -1155,8 +1185,10 @@ int VectorOps_Cyl::SetSlope(
 } // SetSlope
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int VectorOps_Cyl::DivStateVectorComponent(
@@ -1169,14 +1201,6 @@ int VectorOps_Cyl::DivStateVectorComponent(
         pion_flt *dudt      ///< Vector to assign divergence component to.
         )
 {
-  //enum direction dp;
-  //switch (d) {
-  // case Zcyl: dp=ZPcyl; break;
-  // case Rcyl: dp=RPcyl; break;
-  // case Tcyl: dp=TPcyl; break;
-  // default: rep.error("Bad direction in DivStateVectorComponent",d);
-  //}
-
   /** \section Sign
    * Note that this function returns the negative of the i-th component of 
    * the divergence.  This is b/c it is used in the finite volume time update
@@ -1189,7 +1213,7 @@ int VectorOps_Cyl::DivStateVectorComponent(
   if (d==Zcyl) for (int v=0;v<nv;v++) dudt[v] = (fn[v]-fp[v])/dZ;
   
   else if (d==Rcyl) {
-    double rp = CI.get_dpos(c,Rcyl)+dR/2.; double rn=rp-dR;
+    double rp = CI.get_dpos(c,Rcyl)+dR*0.5; double rn=rp-dR;
     for (int v=0;v<nv;v++)
       dudt[v] = 2.0*(rn*fn[v]-rp*fp[v])/(rp*rp-rn*rn);
   }

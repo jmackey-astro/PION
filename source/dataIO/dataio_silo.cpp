@@ -293,7 +293,12 @@ int dataio_silo::OutputData(
     int numfiles=1, nproc=1;
     err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
     err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
-    err += DBWrite(*db_ptr,"grid_level",  &l,    dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"grid_level",  &l,        dim1,1,DB_INT);
+    dim1[0]=3;
+    err += DBWrite(*db_ptr,"level_xmin",  &(SimPM.levels[l].Xmin),
+                                                  dim1,1,DB_DOUBLE);
+    err += DBWrite(*db_ptr,"level_xmax",  &(SimPM.levels[l].Xmax),
+                                                  dim1,1,DB_DOUBLE);
     err = write_simulation_parameters(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() writing header",err);
@@ -400,12 +405,12 @@ int dataio_silo::ReadData(
       temp.width(2); temp.fill('0');
       temp << l;
       silofile.replace(p+6,2,temp.str());
-      cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
+      //cout <<"p="<<p<<"  string="<<temp.str()<<", silofile=";
       cout <<silofile<<"\n";
     }
 
     if (!cg[l])
-      rep.error("dataio_silo::ReadData() null pointer to grid!",cg[l]);
+      rep.error("dataio_silo::ReadData() null grid",cg[l]);
     dataio_silo::gp = cg[l];
     
     *db_ptr = DBOpen(silofile.c_str(), DB_UNKNOWN, DB_READ);
@@ -510,6 +515,31 @@ int dataio_silo::setup_grid_properties(
   if (!grid)
     rep.error("dataio_silo::setup_grid_properties() null pointer!",
               grid);
+
+  // first delete arrays, if allocated
+  if (nodedims) {
+    nodedims = mem.myfree(nodedims);
+    zonedims = mem.myfree(zonedims);
+    if (silo_dtype == DB_FLOAT) {
+      mem.myfree(reinterpret_cast<float *>(nodex));
+      mem.myfree(reinterpret_cast<float *>(nodey));
+      mem.myfree(reinterpret_cast<float *>(nodez));
+      mem.myfree(reinterpret_cast<float **>(node_coords));
+    }
+    if (silo_dtype == DB_DOUBLE) {
+      mem.myfree(reinterpret_cast<double *>(nodex));
+      mem.myfree(reinterpret_cast<double *>(nodey));
+      mem.myfree(reinterpret_cast<double *>(nodez));
+      mem.myfree(reinterpret_cast<double **>(node_coords));
+    }
+    nodex    = 0;
+    nodey    = 0;
+    nodez    = 0;
+    node_coords = 0;
+  }
+  delete_data_arrays();
+  create_data_arrays(SimPM);
+  
   double dx=grid->DX();
 
   dataio_silo::ndim = SimPM.ndim;
@@ -526,14 +556,15 @@ int dataio_silo::setup_grid_properties(
   // We setup arrays with locations of nodes in coordinate directions.
   //
 #ifdef WRITE_GHOST_ZONES
-  int nx = SimPM.NG[XX] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
-  int ny = SimPM.NG[YY] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
-  int nz = SimPM.NG[ZZ] +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int nx = grid->NG(XX) +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int ny = grid->NG(YY) +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
+  int nz = grid->NG(ZZ) +2*SimPM.Nbc +1; // for N cells, have N+1 nodes.
 #else
-  int nx = SimPM.NG[XX]+1; // for N cells, have N+1 nodes.
-  int ny = SimPM.NG[YY]+1; // for N cells, have N+1 nodes.
-  int nz = SimPM.NG[ZZ]+1; // for N cells, have N+1 nodes.
+  int nx = grid->NG(XX)+1; // for N cells, have N+1 nodes.
+  int ny = grid->NG(YY)+1; // for N cells, have N+1 nodes.
+  int nz = grid->NG(ZZ)+1; // for N cells, have N+1 nodes.
 #endif
+  //cout <<"N = "<<nx<<", "<< ny <<", "<< nz <<"\n";
 
   if (silo_dtype==DB_FLOAT) {
     //
@@ -627,6 +658,7 @@ int dataio_silo::setup_grid_properties(
 #ifdef WRITE_GHOST_ZONES
         posy[i] = static_cast<double>(grid->Xmin(YY) -SimPM.Nbc*dx +i*dx);
 #else
+        //cout <<"iy = "<<i<<", ny = "<<ny<<"\n";
         posy[i] = static_cast<double>(grid->Xmin(YY)+i*dx);
 #endif
       }
@@ -659,16 +691,48 @@ int dataio_silo::setup_grid_properties(
   }
 
 
-  int nopts=4;
+  int nopts=6;
+  int err=0;
   dataio_silo::GridOpts = DBMakeOptlist(nopts);
   if      (SimPM.coord_sys==COORD_CRT) silo_coordsys=DB_CARTESIAN;
   else if (SimPM.coord_sys==COORD_CYL) silo_coordsys=DB_CYLINDRICAL;
   else if (SimPM.coord_sys==COORD_SPH) silo_coordsys=DB_SPHERICAL;
   else rep.error("bad coord system",SimPM.coord_sys);
-  DBAddOption(GridOpts,DBOPT_COORDSYS,&silo_coordsys);
-  DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
-  DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
-  DBAddOption(GridOpts,DBOPT_NSPACE,&SimPM.ndim);
+  err = DBAddOption(GridOpts,DBOPT_COORDSYS,
+                    reinterpret_cast<void *>(&silo_coordsys));
+  //rep.errorTest("add coord-sys opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_DTIME,
+                    reinterpret_cast<void *>(&SimPM.simtime));
+  //rep.errorTest("add time opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_CYCLE,
+                    reinterpret_cast<void *>(&SimPM.timestep));
+  //rep.errorTest("add cycle opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_NSPACE,
+                    reinterpret_cast<void *>(&SimPM.ndim));
+  //rep.errorTest("add nspace opt silo qmesh",0,err);
+  int *lo_off=0, *hi_off=0;
+  lo_off = mem.myalloc(lo_off,ndim);
+  hi_off = mem.myalloc(hi_off,ndim);
+#ifdef WRITE_GHOST_ZONES
+  for (int i=0;i<ndim;i++) lo_off[i] = SimPM.Nbc;
+  for (int i=0;i<ndim;i++) hi_off[i] = SimPM.Nbc;
+  for (int i=0;i<ndim;i++) lo_off[i] = 0;
+  for (int i=0;i<ndim;i++) hi_off[i] = 0;
+#else
+  for (int i=0;i<ndim;i++) lo_off[i] = 0;
+  for (int i=0;i<ndim;i++) hi_off[i] = 0;
+#endif
+  err = DBAddOption(GridOpts,DBOPT_LO_OFFSET,
+                    reinterpret_cast<void *>(lo_off));
+  rep.errorTest("add lo-offset opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_HI_OFFSET,
+                    reinterpret_cast<void *>(hi_off));
+  rep.errorTest("add hi-offset opt silo qmesh",0,err);
+  //rep.errorTest("add GridOpts silo qmesh",0,err);
+  //rep.printVec("lo-off",lo_off,ndim);
+  //rep.printVec("hi-off",hi_off,ndim);
+
+
   // labels don't seem to display right in VisIt...
   //char s[strlength];
   //strcpy(s,"XXXX"); DBAddOption(GridOpts,DBOPT_XLABEL,s);
@@ -914,10 +978,15 @@ int dataio_silo::generate_quadmesh(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
-  DBClearOption(GridOpts,DBOPT_DTIME);
-  DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
-  DBClearOption(GridOpts,DBOPT_CYCLE);
-  DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
+  int err=0;
+  err = DBClearOption(GridOpts,DBOPT_DTIME);
+  //rep.errorTest("clear time opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_DTIME,&SimPM.simtime);
+  //rep.errorTest("add time opt silo qmesh",0,err);
+  err = DBClearOption(GridOpts,DBOPT_CYCLE);
+  //rep.errorTest("clear cycle opt silo qmesh",0,err);
+  err = DBAddOption(GridOpts,DBOPT_CYCLE,&SimPM.timestep);
+  //rep.errorTest("add time opt silo qmesh",0,err);
   
   //DBClearOption(GridOpts,DBOPT_COORDSYS);
   //int csys=0;
@@ -942,17 +1011,24 @@ int dataio_silo::generate_quadmesh(
   for (int i=0;i<ndim;i++) {
     strcpy(coordnames[i],s[i].c_str());
   }
-  //cout <<"coords: "; for (int i=0;i<ndim;i++) cout << coordnames[i]<<"  "; cout <<"\n";
 
-  //  cout <<"dbfile: "<<dbfile<<"\ttemp:"<<temp<<"\tcoordnames:"<<coordnames<<"\n";
-  //  cout <<"nodecoords:"<<node_coords<<"\tnodedims:"<<nodedims<<"\tndim:"<<ndim<<"\n";
-  //  cout <<"gridopts:"<<GridOpts<<"\n";
-
+#ifdef TESTING
+  for (int i=0;i<ndim;i++) {
+    cout <<"coords: ";
+    cout << coordnames[i]<<"  ";
+    cout << node_coords[i] <<"  "<<nodedims[i];
+    cout <<"\n";
+  }
+  cout <<"dbfile: "<<dbfile<<"\tcoordnames:"<<coordnames<<"\n";
+  cout <<"nodecoords:"<<node_coords<<"\tnodedims:"<<nodedims<<"\tndim:"<<ndim<<"\n";
+  cout <<"gridopts:"<<GridOpts<<"\n";
+#endif
+  
   //
   // DBPutQuadmesh requires the data to be (void **), with the actual
   // datatype in silo_dtype.  This is why node_coords is void **.
   //
-  int err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames,
+  err = DBPutQuadmesh(dbfile, meshname.c_str(), coordnames,
                           node_coords, nodedims, ndim, silo_dtype,
                           DB_COLLINEAR, GridOpts);
 

@@ -210,6 +210,13 @@ int sim_control::Time_Int(
   SimPM.maxtime=false;
   clk.start_timer("Time_Int"); double tsf=0;
   class MCMDcontrol ppar; // unused for serial code.
+  err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
+  rep.errorTest("TIME_INT:: initial RT src update()",0,err);
+  err = RT_all_sources(SimPM,grid[0],0);
+  rep.errorTest("TIME_INT:: initial RT()",0,err);
+  err+= output_data(grid);
+  rep.errorTest("TIME_INT:: initial save",0,err);
+
   while (SimPM.maxtime==false) {
 
 #if defined (CHECK_MAGP)
@@ -218,23 +225,19 @@ int sim_control::Time_Int(
     calculate_blastwave_radius(grid[0]);
 #endif
     //
-    // Update RT sources.
+    // Update RT sources and do raytracing.
     //
     err = update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
     rep.errorTest("TIME_INT::update_RT_sources()",0,err);
+    err = RT_all_sources(SimPM,grid[0],0);
+    rep.errorTest("TIME_INT:: loop RT()",0,err);
 
     //clk.start_timer("advance_time");
     // step forward by dt.
-
+    SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
     rep.errorTest("TIME_INT::calc_timestep()",0,err);
 
-    if (SimPM.timestep==0 && JP.jetic!=0) {
-      SimPM.dt = std::min(SimPM.dt, 0.1*SimPM.CFL*grid[0]->DX()/JP.jetstate[VX]);
-      //SimPM.dt /= 100.0;
-      spatial_solver->Setdt(SimPM.dt);
-    }
-    
     advance_time(0, grid[0]);
     //cout <<"advance_time took "<<clk.stop_timer("advance_time")<<" secs.\n";
 

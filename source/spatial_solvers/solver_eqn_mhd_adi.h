@@ -90,6 +90,21 @@ class FV_solver_mhd_ideal_adi
         const double  ///< cell TimeStep, dt.
         );
 
+  
+  ///
+  /// calculate Powell and GLM source terms for multi-D MHD
+  ///
+  virtual int MHDsource(
+                        class GridBaseClass *,  ///< pointer to grid.
+                        class cell *,   ///< pointer to cell of left state
+                        class cell *,   ///< pointer to cell of right state
+                        pion_flt *,     ///< left edge state
+                        pion_flt *,     ///< right edge state
+                        const axes,            ///< Which axis we are looking along.
+                        enum direction, ///< positive direction normal to interface
+                        enum direction, ///< negative direction normal to interface
+                        const double    ///< timestep dt
+  );
 
   ///
   /// Powell source terms including divB
@@ -129,6 +144,7 @@ class FV_solver_mhd_ideal_adi
         const double, ///< Min Temperature allowed on grid.
         const double  ///< Cell timestep dt.
         );
+
   ///
   /// Given a cell, calculate the MHD/hydrodynamic timestep.
   ///
@@ -137,6 +153,7 @@ class FV_solver_mhd_ideal_adi
         const double, ///< gas EOS gamma.
         const double  ///< Cell size dx.
         );
+
   ///
   /// This calls the original version and then adds conversion of tracer variables.
   /// 
@@ -190,6 +207,8 @@ class FV_solver_mhd_ideal_adi
         );
 
 protected:
+  double max_speed;  ///< max. fast magnetosonic speed on the domain.
+
   ///
   /// Falle, Komissarov & Joarder (1998,MNRAS,297,265) Artificial
   /// Viscosity Calculation (one-dimensional).
@@ -244,11 +263,23 @@ class FV_solver_mhd_mixedGLM_adi
         const int     ///< Number of tracer variables.
         );
    ~FV_solver_mhd_mixedGLM_adi();
-   
+
+  ///
+  /// Given a cell, calculate the MHD/hydrodynamic timestep.
+  /// This calculates the ideal MHD step, and also tracks the maximum
+  /// velocity on the domain.
+  ///
+  virtual double CellTimeStep(
+        const cell *, ///< pointer to cell
+        const double, ///< gas EOS gamma.
+        const double  ///< Cell size dx.
+        );
+
   ///
   /// General Finite volume scheme for updating a cell's
   /// primitive state vector, for homogeneous equations.
-  /// For the mixedGLM equations, we need to add a source term to the update of Psi.
+  /// For the mixedGLM equations, we need to add a source term to the
+  /// update of Psi and the total energy.
   ///
   virtual int CellAdvanceTime(
       class cell *c, ///< cell to update.
@@ -262,37 +293,12 @@ class FV_solver_mhd_mixedGLM_adi
       );
 
   ///
-  /// This calls the original version and then adds conversion of tracer variables.
-  /// 
-  /// For purely passive tracers, the primitive variable is just a number,
-  /// such as the 'colour' of the gas, or where it started out.  The 
-  /// conserved variable is the mass density of this.
-  ///
-  virtual void PtoU(
-      const pion_flt *, ///< pointer to Primitive variables.
-      pion_flt *,       ///< pointer to conserved variables.
-      const double    ///< Gas constant gamma.
-      );
-  ///
-  /// This calls the original version and then adds conversion of tracer variables.
-  /// 
-  /// For purely passive tracers, the primitive variable is just a number,
-  /// such as the 'colour' of the gas, or where it started out.  The 
-  /// conserved variable is the mass density of this.
-  ///
-  virtual int UtoP(
-      const pion_flt *, ///< pointer to conserved variables.
-      pion_flt *, ///< pointer to Primitive variables.
-      const double, ///< Min Temperature allowed on grid.
-      const double    ///< Gas constant gamma.
-      );
-
-  ///
   /// This sets the values of GLM_chyp and GLM_cr based on the timestep.
   ///
-  virtual void GotTimestep(
-      const double,  ///< timestep dt.
-      const double ///< grid cell size dx.
+  virtual void Set_GLM_Speeds(
+      const double, ///< timestep dt.
+      const double, ///< grid cell size dx.
+      const double  ///< GLM damping coefficient c_r
       );
 
   ///
@@ -325,6 +331,57 @@ class FV_solver_mhd_mixedGLM_adi
         const double dx,  ///< cell-size dx (for LF method)
         const double    ///< Gas constant gamma.
         );
+
+  
+  virtual int MHDsource(
+                        class GridBaseClass *,  ///< pointer to grid.
+                        class cell *,   ///< pointer to cell of left state
+                        class cell *,   ///< pointer to cell of right state
+                        pion_flt *,     ///< left edge state
+                        pion_flt *,     ///< right edge state
+                        const axes,            ///< Which axis we are looking along.
+                        enum direction, ///< positive direction normal to interface
+                        enum direction, ///< negative direction normal to interface
+                        const double    ///< timestep dt
+  );
+  
+  ///
+  /// Same as ideal MHD version except that total energy contains
+  /// contribution from psi, and includes psi conversion.
+  ///
+  virtual void PtoU(
+        const pion_flt *, ///< pointer to Primitive variables.
+        pion_flt *,       ///< pointer to conserved variables.
+        const double    ///< Gas constant gamma.
+        );
+
+  ///
+  /// Same as ideal MHD version except that total energy contains
+  /// contribution from psi.
+  /// includes psi conversion.
+  ///
+  virtual int UtoP(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< pointer to Primitive variables.
+      const double, ///< Min Temperature allowed on grid.
+      const double    ///< Gas constant gamma.
+      );
+
+#ifdef DERIGS
+  ///
+  /// Set max_speed variable for setting GLM hyperbolic wavespeed.
+  /// This is used to reset to zero at start of each step, and also
+  /// to reset local value to global value for multi-core execution.
+  ///
+  void set_max_speed(
+      const double c ///< new max. speed
+      ) {max_speed = c; return;}
+
+  ///
+  /// returns max_speed for this step.
+  ///
+  double get_max_speed() {return max_speed;}
+#endif
 };
 
 

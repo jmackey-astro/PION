@@ -136,18 +136,21 @@ int setup_fixed_grid_pllel::setup_grid(
     *grid = new UniformGridParallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_CYL) {
     *grid = new uniform_grid_cyl_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax,
       SimPM.Xmin, SimPM.Xmax);
   }
   else if (SimPM.coord_sys==COORD_SPH) {
     *grid = new uniform_grid_sph_parallel (
       SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
       MCMD->LocalXmin, MCMD->LocalXmax, MCMD->LocalNG,
+      SimPM.Xmin, SimPM.Xmax,
       SimPM.Xmin, SimPM.Xmax);
   }
   else {
@@ -241,12 +244,19 @@ int setup_fixed_grid_pllel::setup_raytracing(
   }
 
   //
-  // Now add the sources to the tracer.  Note that both the implicit and explicit
-  // integrators can still only handle a single ionising source, so we do a check
-  // for this and bug out if there is more than one.
+  // Now add the sources to the raytracer.
   //
   int ion_count=0, uv_count=0, dif_count=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+
+    // see if source is on the domain or not.  Set flag accordingly.
+    SimPM.RS.sources[isrc].ongrid = true;
+    for (int d=0;d<SimPM.ndim;d++) {
+      if (SimPM.RS.sources[isrc].pos[d]<SimPM.levels[0].Xmin[d] ||
+          SimPM.RS.sources[isrc].pos[d]>SimPM.levels[0].Xmax[d])
+        SimPM.RS.sources[isrc].ongrid = false;
+    }
+    
     if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) {
       //
       // single sources have a flux (if at infinity) or a luminosity (if point
@@ -355,7 +365,7 @@ int setup_fixed_grid_pllel::boundary_conditions(
 int setup_fixed_grid_pllel::setup_boundary_structs(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *grid, ///< pointer to grid.
-      const int l
+      const int l ///< level
       )
 {
   string fname="setup_fixed_grid_pllel::setup_boundary_structs";
@@ -380,12 +390,12 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
   // Loop through boundaries, and if local boundary is not sim boundary,
   // set it to be a parallel boundary.
   for (i=0; i<par.ndim; i++) {
-    if (!pconst.equalD(grid->Xmin(static_cast<axes>(i)), par.Xmin[i])) {
+    if (!pconst.equalD(grid->Xmin(static_cast<axes>(i)), par.levels[l].Xmin[i])) {
       // local xmin is not Sim xmin, so it's an mpi boundary
       grid->BC_bd[2*i]->itype=BCMPI;
       grid->BC_bd[2*i]->type="BCMPI";
     }
-    if (!pconst.equalD(grid->Xmax(static_cast<axes>(i)), par.Xmax[i])) {
+    if (!pconst.equalD(grid->Xmax(static_cast<axes>(i)), par.levels[l].Xmax[i])) {
       // local xmax is not Sim xmin, so it's an mpi boundary
       grid->BC_bd[2*i+1]->itype=BCMPI;
       grid->BC_bd[2*i+1]->type="BCMPI";

@@ -30,6 +30,13 @@ int MCMD_bc::BC_assign_BCMPI(
   // boundary_data struct.
   //
   int err = 0;
+
+  // set isdomain to true because these data are part of the domain.
+  list<cell*>::iterator c=b->data.begin();
+  do {
+    c++;
+  } while (c!=b->data.end());
+
 #ifdef TEST_COMMS
   cout <<"*******************************************\n";
   cout <<"BC_assign_BCMPI: sending data in dir: "<<b->dir<<"\n";
@@ -42,21 +49,6 @@ int MCMD_bc::BC_assign_BCMPI(
 #ifdef TEST_COMMS
   cout <<"BC_assign_BCMPI: got "<<ncell<<" cells in send_data\n";
 #endif
-
-  //
-  // This is the same as the update function, except that we want
-  // to set P[] and Ph[] vectors to the same values, so we set cstep
-  // equal to maxstep.
-  //
-#ifdef TEST_COMMS
-  cout <<"*******************************************\n";
-  cout <<"BC_assign_BCMPI: starting\n";
-#endif 
-  //err = BC_update_BCMPI(par,level,grid,b,2,2,comm_tag);
-#ifdef TEST_COMMS
-  cout <<"BC_assign_BCMPI: finished\n";
-  cout <<"*******************************************\n";
-#endif 
   return err;
 }
 
@@ -100,6 +92,7 @@ int MCMD_bc::BC_select_data2send(
   cell *temp =0;
   do {
     temp = *c;
+    //CI.print_cell(temp);
     for (int v=0;v<par.Nbc;v++) temp = grid->NextPt(temp,b->ondir);
     (*l).push_back(temp);
     count++;
@@ -135,6 +128,7 @@ int MCMD_bc::BC_update_BCMPI(
 {
 #ifdef TEST_COMMS
   cout <<"*******************************************\n";
+  cout <<par.levels[level].MCMD.get_myrank()<<": ";
   cout <<"BC_update_BCMPI: sending data in dir: "<<b->dir;
   cout <<": sending "<<b->send_data.size();
   cout <<" cells.  Boundary data contains "<<b->data.size();

@@ -46,7 +46,7 @@
 #include <sstream>
 using namespace std;
 
-
+//#define TEST_SILO_IO
 
 
 /********************************************************/
@@ -362,27 +362,6 @@ void dataio_silo_utility::set_pllel_filename(
 
 
 
-void dataio_silo_utility::set_dir_in_file(
-        std::string &mydir,  ///< directory name.
-        const int my_rank,       ///< myrank (global).
-        const int my_group_rank  ///< myrank in group.
-        )
-{
-  ostringstream temp; temp.fill('0');
-  temp.str(""); temp << "/rank_"; temp.width(4); temp << my_rank << "_domain_";
-  temp.width(4); temp << my_group_rank;
-  mydir = temp.str(); temp.str("");
-  //cout <<"\t\tdomain: "<<mydir<<"\n";
-  return;
-}  
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
 int dataio_silo_utility::serial_read_any_data(
       string firstfile,        ///< file to read from
       class SimParams &SimPM,  ///< pointer to simulation parameters
@@ -451,6 +430,12 @@ int dataio_silo_utility::serial_read_pllel_silodata(
 {
   int err=0;
 
+  int level=0;
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    if (ggg==SimPM.levels[l].grid) level=l;
+    //cout <<"saving level "<<level<<"\n";
+  }
+
   //
   // First loop over all files:
   //
@@ -475,13 +460,13 @@ int dataio_silo_utility::serial_read_pllel_silodata(
       // choose myrank, and decompose domain accordingly.
       //
       filePM->set_myrank(ifile*groupsize +igroup);
-      filePM->decomposeDomain(SimPM, SimPM.levels[0]);
+      filePM->decomposeDomain(SimPM, SimPM.levels[level]);
       
       //
       // set directory in file.
       //
       string mydir;
-      set_dir_in_file(mydir, filePM->get_myrank(), igroup);
+      set_dir_in_file(mydir, filePM->get_myrank(), igroup, level);
       DBSetDir(dbfile, mydir.c_str());
       
       //
@@ -492,8 +477,10 @@ int dataio_silo_utility::serial_read_pllel_silodata(
       //
       // now read each variable in turn from the mesh
       //
-      for (std::vector<string>::iterator i=readvars.begin(); i!=readvars.end(); ++i) {
-        err = SRAD_read_var2grid(dbfile, ggg, (*i), filePM->LocalNcell, SimPM,filePM);
+      for (std::vector<string>::iterator i=readvars.begin();
+                                      i!=readvars.end(); ++i) {
+        err = SRAD_read_var2grid(dbfile, ggg, (*i),
+                              filePM->LocalNcell, SimPM,filePM);
         if (err)
           rep.error("error reading variable",(*i));
       }
@@ -529,7 +516,8 @@ int dataio_silo_utility::ReadData(
   // Loop over grid levels, and read data for each level.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 
-    cout <<" reading data on level "<<l<<", nlevels="<<SimPM.grid_nlevels<<"\n";
+    cout <<" reading data on level "<<l<<", nlevels=";
+    cout <<SimPM.grid_nlevels<<"\n";
     // for now read a different file for each level in the NG grid.
     // If more than one level of grid, look for level in filename:
     string::size_type p;
@@ -565,6 +553,10 @@ int dataio_silo_utility::ReadData(
     // now call the code that works for each level:
     err = ReadLevelData(silofile,gp,SimPM,l);
     rep.errorTest("IO_silo_utility:: ReadLevelData",0,err);
+#ifdef TEST_SILO_IO
+    cout <<"Finished reading data on level "<<l<<" of ";
+    cout <<SimPM.grid_nlevels<<"\n";
+#endif
   }
 
   return err;
@@ -645,6 +637,11 @@ int dataio_silo_utility::ReadLevelData(
     }
 
     clk.start_timer("readdata"); double tsf=0;
+#ifdef TEST_SILO_IO
+    cout <<"READING PLLEL DATA: "<<mpiPM->get_myrank()<<"  ";
+    cout <<mpiPM->get_nproc()<<"  "<< numfiles <<" "<< groupsize;
+    cout <<" "<< l <<"\n";
+#endif
     for (int count=0; count<nloops; count++) {
       if ( (mpiPM->get_myrank()+nloops)%nloops == count) {
         cout <<"!READING DATA!!... myrank="<<mpiPM->get_myrank()<<"  i="<<count;
@@ -662,7 +659,9 @@ int dataio_silo_utility::ReadLevelData(
     clk.stop_timer("readdata");
 
   }
-  //  cout <<"read data successfully.\n";
+#ifdef TEST_SILO_IO
+  cout <<"read data successfully.\n";
+#endif
   return 0;
 }
 
@@ -818,7 +817,7 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       // set directory in file.
       //
       string qm_dir;
-      set_dir_in_file(qm_dir, filePM.get_myrank(), igroup);
+      set_dir_in_file(qm_dir, filePM.get_myrank(), igroup, l);
       DBSetDir(dbfile, qm_dir.c_str());
       
       //
@@ -828,7 +827,8 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
       string qm_name;
       mesh_name(filePM.get_myrank(),qm_name);
 #ifdef TEST_SILO_IO
-      cout <<"got mesh name= "<<qm_name<<" in mesh dir= "<<qm_dir<<"\n";
+      cout <<"got mesh name= "<<qm_name<<" in mesh dir= ";
+      cout <<qm_dir<<"\n";
 #endif
 
       //
@@ -903,26 +903,6 @@ int dataio_silo_utility::parallel_read_parallel_silodata(
 // ##################################################################
 // ##################################################################
 
-
-
-void dataio_silo_utility::mesh_name(
-      const int rank, ///< rank
-      string &mesh_name
-      )
-{
-  //
-  // Get mesh_name from rank
-  //
-  ostringstream temp; temp.str(""); temp.fill('0');
-  temp<<"unigrid"; temp.width(4); temp<<rank;
-  mesh_name = temp.str();
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
 
 
 
@@ -1236,8 +1216,8 @@ int dataio_silo_utility::PP_read_var2grid(
       
       while ((cx!=0) && cx->pos[XX]<iXmax[XX]) {
 #ifdef TEST_SILO_IO
-        rep.printVec("cpos",cx->pos,ndim);
-        rep.printVec("P",cx->P,SimPM.nvar);
+        //rep.printVec("cpos",cx->pos,ndim);
+        //rep.printVec("P",cx->P,SimPM.nvar);
 #endif
         //
         // Different pointers if float or double.

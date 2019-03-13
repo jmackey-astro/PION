@@ -99,9 +99,16 @@ void setup_NG_grid::setup_NG_grid_levels(
   for (int i=0;i<SimPM.grid_nlevels;i++) {
     SimPM.levels[i].parent=0;
     SimPM.levels[i].child=0;
-    for (int v=0;v<MAX_DIM;v++)
-      SimPM.levels[i].NG[v] = SimPM.NG[v];
-    SimPM.levels[i].Ncell = SimPM.Ncell;
+    // Refine only along directions specified (NG_refine[dir]=1)
+    // Otherwise need to double number of cells in each refined level
+    SimPM.levels[i].Ncell = 1;
+    for (int v=0;v<MAX_DIM;v++) {
+      if (SimPM.NG_refine[v]==1)
+        SimPM.levels[i].NG[v] = SimPM.NG[v];
+      else
+        SimPM.levels[i].NG[v] = SimPM.NG[v]*pow(2,i);
+      SimPM.levels[i].Ncell *= SimPM.levels[i].NG[v];
+    }
     if (i==0) {
       for (int v=0;v<MAX_DIM;v++)
         SimPM.levels[i].Range[v] = SimPM.Range[v];
@@ -112,12 +119,20 @@ void setup_NG_grid::setup_NG_grid_levels(
       SimPM.levels[i].dx = SimPM.Range[XX]/SimPM.NG[XX];
     }
     else {
-      for (int v=0;v<MAX_DIM;v++) 
-        SimPM.levels[i].Range[v] = 0.5*SimPM.levels[i-1].Range[v];
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.levels[i].Xmin[v] = 0.5*(SimPM.levels[i-1].Xmin[v]+SimPM.NG_centre[v]);
-      for (int v=0;v<MAX_DIM;v++)
-        SimPM.levels[i].Xmax[v] = 0.5*(SimPM.levels[i-1].Xmax[v]+SimPM.NG_centre[v]);
+      for (int v=0;v<MAX_DIM;v++) {
+        if (SimPM.NG_refine[v]==1) {
+          SimPM.levels[i].Range[v] = 0.5*SimPM.levels[i-1].Range[v];
+          SimPM.levels[i].Xmin[v]  =
+                  0.5*(SimPM.levels[i-1].Xmin[v]+SimPM.NG_centre[v]);
+          SimPM.levels[i].Xmax[v]  =
+                  0.5*(SimPM.levels[i-1].Xmax[v]+SimPM.NG_centre[v]);
+        }
+        else {
+          SimPM.levels[i].Range[v] = SimPM.levels[i-1].Range[v];
+          SimPM.levels[i].Xmin[v]  = SimPM.levels[i-1].Xmin[v];
+          SimPM.levels[i].Xmax[v]  = SimPM.levels[i-1].Xmax[v];
+        }
+      }
       SimPM.levels[i].dx = 0.5*SimPM.levels[i-1].dx;
     }
     SimPM.levels[i].simtime = SimPM.simtime;
@@ -207,17 +222,23 @@ int setup_NG_grid::setup_grid(
       grid[l] = new UniformGrid (
               SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
               SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
-              SimPM.levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+              SimPM.levels[l].NG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
+              SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_CYL)
       grid[l] = new uniform_grid_cyl (
               SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
               SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
-              SimPM.levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+              SimPM.levels[l].NG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
+              SimPM.Xmin, SimPM.Xmax);
     else if (SimPM.coord_sys==COORD_SPH)
       grid[l] = new uniform_grid_sph (
               SimPM.ndim, SimPM.nvar, SimPM.eqntype, SimPM.Nbc,
               SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
-              SimPM.levels[l].NG, SimPM.Xmin, SimPM.Xmax);
+              SimPM.levels[l].NG,
+              SimPM.levels[l].Xmin, SimPM.levels[l].Xmax,
+              SimPM.Xmin, SimPM.Xmax);
     else 
       rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
@@ -248,6 +269,9 @@ int setup_NG_grid::setup_grid(
     }
   }
 
+  set_leaf_cells(grid,SimPM);
+
+
   // setup arrays for fluxes into and out of fine grid, and
   // equivalent cells on coarse grid, for making the fluxes
   // consistent across levels.
@@ -260,6 +284,49 @@ cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void setup_NG_grid::set_leaf_cells(
+      vector<class GridBaseClass *> &grid,  ///< grid pointers.
+      class SimParams &par  ///< pointer to simulation parameters
+      )
+{
+  //
+  // if there is an interface region, set a flag on the grid cells
+  // that are not leaf cells.
+  //
+  int sxmin[MAX_DIM], sxmax[MAX_DIM], lxmin[MAX_DIM], lxmax[MAX_DIM];
+  bool notleaf;
+  CI.get_ipos_vec(par.levels[0].Xmin, sxmin);
+  CI.get_ipos_vec(par.levels[0].Xmax, sxmax);
+
+  for (int l=0;l<par.grid_nlevels;l++) {
+    class cell *c = grid[l]->FirstPt_All();
+    do {
+      // if outside domain, then cell is not a leaf.
+      for (int v=0;v<par.ndim;v++) {
+        if (c->pos[v]<sxmin[v] || c->pos[v]>sxmax[v]) c->isleaf=false;
+      }
+      if (l<par.grid_nlevels-1) {
+        notleaf=true;
+        CI.get_ipos_vec(par.levels[l+1].Xmin, lxmin);
+        CI.get_ipos_vec(par.levels[l+1].Xmax, lxmax);
+        for (int v=0;v<par.ndim;v++) {
+          if (c->pos[v]>lxmax[v] || c->pos[v]<lxmin[v]) notleaf=false;
+        }
+        if (notleaf) c->isleaf=false;
+      }
+
+    } while ( (c=grid[l]->NextPt_All(c))!=0);
+  }
+  return;
+}
 
 
 

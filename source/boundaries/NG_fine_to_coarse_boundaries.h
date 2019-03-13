@@ -52,7 +52,19 @@ class NG_fine_to_coarse_bc {
       class GridBaseClass *, ///< fine-level grid
       const int,      ///< number of fine-level cells
       std::vector<cell *> &, ///< list of cells
+      const pion_flt *,  ///< centre of coarse cell.
       pion_flt *      ///< [OUTPUT] averaged data (conserved var).
+      );
+
+  /// Get optical depths for radiation sources from list of cells,
+  /// and take appropriate combination of them for the coarse cell.
+  ///
+  void get_F2C_TauAvg(
+      class SimParams &,    ///< pointer to simulation parameters
+      const int,            ///< number of fine-level cells
+      std::vector<cell *> &, ///< list of cells
+      const int *,  ///< centre of coarse cell.
+      double *              ///< [OUTPUT] pointer to optical depths
       );
 
   ///
@@ -65,6 +77,9 @@ class NG_fine_to_coarse_bc {
       int ,                   ///< number of coarse cells
       std::vector<struct averaging> & ///< avg list
       );
+
+  int F2C_Nxd; ///< number of extra data variables to send.
+  vector<int> F2C_tauoff; ///< offsets of optical depths from 0.
 
 };
 

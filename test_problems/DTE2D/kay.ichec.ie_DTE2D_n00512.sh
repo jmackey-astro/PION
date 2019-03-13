@@ -1,0 +1,27 @@
+#!/bin/sh 
+
+#SBATCH --time=00:20:00
+# N.B. Kay has 40 processors per node, so 64-core job needs 2 nodes, etc.
+#SBATCH --nodes=1
+#SBATCH -A dias01
+#SBATCH -p DevQ
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=jmackey@cp.dias.ie
+
+module load intel
+
+mkdir -p /ichec/work/dias01/jmackey/DTE2D
+opdir=/ichec/work/dias01/jmackey/DTE2D
+
+mpirun -np 16 ../../icgen_parallel params_DTE_D2Full_TTI_n00512.txt silo
+mpirun -np 32 ../../pion_parallel DTE_D2Full_TTI_n00512_0000.00000000.silo \
+  outfile=${opdir}/DTE_D2Full_TTI_n00512_s4 \
+  redirect=${opdir}/log_DTE_D2Full_TTI_n00512_s4
+
+# NOTES:
+# Submit job using:
+#    sbatch kay.ichec.ie_DTE2D_n00512.sh
+# Query the queue using:
+#    squeue --account=dias01
+# 
+

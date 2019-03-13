@@ -32,12 +32,14 @@ int periodic_bc::BC_assign_PERIODIC(
   list<cell*>::iterator bpt=b->data.begin();
   cell *temp; unsigned int ct=0;
   do{
+    // boundary cells are part of the domain, so set isdomain
+    (*bpt)->isdomain=true;
     //
     // Go across the grid NG[baxis] cells, so that we map onto the
     // cell on the other side of the grid.
     //
     temp=(*bpt);
-    for (int v=0; v<par.NG[b->baxis]; v++) {
+    for (int v=0; v<grid->NG(b->baxis); v++) {
       temp=grid->NextPt(temp,ondir);
     }
     for (int v=0;v<par.nvar;v++) (*bpt)->P[v]  = temp->P[v];
@@ -65,15 +67,19 @@ int periodic_bc::BC_assign_PERIODIC(
 
 int periodic_bc::BC_update_PERIODIC(
       class SimParams &par,      ///< pointer to simulation parameters
-      const int,          ///< level in grid hierarchy
+      const int l,          ///< level in grid hierarchy
       class GridBaseClass *grid,  ///< pointer to grid.
       struct boundary_data *b,
       const int cstep,
       const int maxstep
       )
 {
+  //cout <<"updating "<<b->data.size()<<" cells for periodic on level "<<l<<"\n";
   list<cell*>::iterator c=b->data.begin();
   for (c=b->data.begin(); c!=b->data.end(); ++c) {
+    //cout <<"cell and npt: ";
+    //rep.printVec("cell",(*c)->pos,par.ndim);
+    //rep.printVec("npt",(*c)->npt->pos,par.ndim);
     for (int v=0;v<par.nvar;v++) (*c)->Ph[v] = (*c)->npt->Ph[v];
     for (int v=0;v<par.nvar;v++) (*c)->dU[v] = 0.;
     if (cstep==maxstep) {

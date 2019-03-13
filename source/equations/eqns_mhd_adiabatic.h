@@ -174,6 +174,17 @@ class eqns_mhd_ideal : virtual public eqns_base {
     );
 
   protected:
+
+  /// Check primitive vector for negative pressure, and correct it
+  /// if needed.  Also check for negative density.  Returns non-zero
+  /// if negative pressure/density was found.
+  int check_pressure(
+      const pion_flt *, ///< pointer to conserved variables.
+      pion_flt *, ///< Primitive State Vector.
+      const double, ///< minimum temperature/pressure allowed
+      const double
+      );
+  
 };
 
 
@@ -181,6 +192,7 @@ class eqns_mhd_ideal : virtual public eqns_base {
 /// 
 /// \section References
 /// Dedner et al., 2002, J.C.P., 175, 645.
+/// Derigs et al., 2018, JCP,364,420 (10.1016/j.jcp.2018.03.002)
 ///
 class eqns_mhd_mixedGLM : virtual public eqns_mhd_ideal
 {
@@ -188,14 +200,12 @@ class eqns_mhd_mixedGLM : virtual public eqns_mhd_ideal
   eqns_mhd_mixedGLM(int);
   ~eqns_mhd_mixedGLM();
   /// \brief Sets the hyperbolic wavespeed ch for the Psi variable. 
-  /// 
-  /// \f[ c_{\mbox{hyp}} = \mbox{CFL} (dx/dt) \;.\f]
-  /// From Dedner, below eq.41.
+  /// This is set to the maximum magnetosonic speed on the grid.
   ///
-  void GLMsetPsiSpeed(const double, ///< CFL coefficient.
-		       const double, ///< dx, the cell size
-		       const double  ///< dt, the timestep.
-		       );
+  void GLMsetPsiSpeed(
+      const double, ///< c_h, the hyperbolic speed
+      const double ///< c_r, the damping coefficient
+      );
    
   /// \brief Converts from primitive to conserved variables. 
   /// 
@@ -234,6 +244,8 @@ class eqns_mhd_mixedGLM : virtual public eqns_mhd_ideal
       const double ///< timestep
       );
 
+  // *** Need: Etot(), PUtoFlux(), UtoFlux() functions
+  // *** Set c_r = 0.18.
   protected:
   enum primitive eqSI;
   enum conserved eqPSI;

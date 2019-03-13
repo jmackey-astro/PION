@@ -171,10 +171,16 @@ class UniformGrid
   double *Sim_range; ///< Size of full domain in x,y,z-direction.
   double *Sim_xmin;  ///< Min value of x,y,z in full domain.
   double *Sim_xmax;  ///< Max value of x,y,z in full domain.
-  int *Sim_irange; ///< Size of full domain in x,y,z-direction (integer coordinates).
-  int *Sim_ixmin;  ///< Min value of x,y,z in full domain (integer coordinates).
-  int *Sim_ixmax;  ///< Max value of x,y,z in full domain (integer coordinates).
+  int *Sim_irange; ///< Size of full domain: int coords
+  int *Sim_ixmin;  ///< Min value of x,y,z in full domain: int coords
+  int *Sim_ixmax;  ///< Max value of x,y,z in full domain: int coords
 
+  double *L_range; ///< Size of level domain in x,y,z-direction.
+  double *L_xmin;  ///< Min value of x,y,z in level domain.
+  double *L_xmax;  ///< Max value of x,y,z in level domain.
+  int *L_irange; ///< Size of level domain: int coords
+  int *L_ixmin;  ///< Min value of x,y,z in level domain: int coords
+  int *L_ixmax;  ///< Max value of x,y,z in level domain: int coords
 
   ///
   /// Set cell dimensions based on grid properties.
@@ -218,6 +224,8 @@ class UniformGrid
     double *, ///< array of minimum values of x,y,z for this grid.
     double *, ///< array of maximum values of x,y,z for this grid.
     int *,    ///< array of number of cells in x,y,z directions.
+    double *, ///< array of min. x/y/z for level.
+    double *, ///< array of max. x/y/z for level.
     double *, ///< array of min. x/y/z for full simulation.
     double *  ///< array of max. x/y/z for full simulation.
     );
@@ -274,15 +282,27 @@ class UniformGrid
 
   /// Returns Simulation xyz lower bounds (code units)
   virtual double SIM_Xmin(enum axes a) const
-  {return(G_xmin[a] );}
+  {return(Sim_xmin[a] );}
 
   /// Returns Simulation xyz upper bounds (code units)
   virtual double SIM_Xmax(enum axes a) const
-  {return(G_xmax[a] );}
+  {return(Sim_xmax[a] );}
 
   /// Returns Simulation range (code units)
   virtual double SIM_Range(enum axes a) const
-  {return(G_range[a]);}
+  {return(Sim_range[a]);}
+
+  /// Returns Level xyz lower bounds (code units)
+  virtual double level_Xmin(enum axes a) const
+  {return(L_xmin[a] );}
+
+  /// Returns Level xyz upper bounds (code units)
+  virtual double level_Xmax(enum axes a) const
+  {return(L_xmax[a] );}
+
+  /// Returns Level range (code units)
+  virtual double level_Range(enum axes a) const
+  {return(L_range[a]);}
 
 
   /// Returns x/y/z min of grid in integer coords.
@@ -324,15 +344,27 @@ class UniformGrid
 
   /// Returns Simulation x,y,z lower bounds in cell integer coords
   virtual int  SIM_iXmin(enum axes a) const
-  {return(G_ixmin[a] );}
+  {return(Sim_ixmin[a] );}
 
   /// Returns Simulation x,y,z upper bounds in cell integer coords
   virtual int  SIM_iXmax(enum axes a) const
-  {return(G_ixmax[a] );}
+  {return(Sim_ixmax[a] );}
 
   /// Returns Simulation x,y,z range in cell integer coords
   virtual int SIM_iRange(enum axes a) const
-  {return(G_irange[a]);}
+  {return(Sim_irange[a]);}
+
+  /// Returns Level x,y,z lower bounds in cell integer coords
+  virtual int  level_iXmin(enum axes a) const
+  {return(L_ixmin[a] );}
+
+  /// Returns Level x,y,z upper bounds in cell integer coords
+  virtual int  level_iXmax(enum axes a) const
+  {return(L_ixmax[a] );}
+
+  /// Returns Level x,y,z range in cell integer coords
+  virtual int level_iRange(enum axes a) const
+  {return(L_irange[a]);}
 
   /// Return cell size in integer units
   int idx() const
@@ -662,6 +694,8 @@ class uniform_grid_cyl
     double *, ///< array of minimum values of x,y,z for this grid.
     double *, ///< array of maximum values of x,y,z for this grid.
     int *,    ///< array of number of cells in x,y,z directions.
+    double *, ///< array of min. x/y/z for level.
+    double *, ///< array of max. x/y/z for level.
     double *, ///< array of min. x/y/z for full simulation.
     double *  ///< array of max. x/y/z for full simulation.
     );
@@ -813,6 +847,8 @@ class uniform_grid_sph
     double *, ///< array of minimum values of x,y,z for this grid.
     double *, ///< array of maximum values of x,y,z for this grid.
     int *,    ///< array of number of cells in x,y,z directions.
+    double *, ///< array of min. x/y/z for level.
+    double *, ///< array of max. x/y/z for level.
     double *, ///< array of min. x/y/z for full simulation.
     double *  ///< array of max. x/y/z for full simulation.
     );

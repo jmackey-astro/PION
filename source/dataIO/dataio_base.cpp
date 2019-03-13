@@ -127,6 +127,13 @@ void DataIOBase::set_params(
   params.push_back(p);
   delete [] defngcentre;
 
+  int *defngrefine = new int [MAX_DIM];
+  for (int v=0;v<MAX_DIM;v++) defngrefine[v]=0;
+  pm_idimarr *n004 = new pm_idimarr 
+    ("NG_refine",  SimPM.NG_refine,defngrefine);
+  p = n004; p->critical=false;  
+  params.push_back(p);
+  delete [] defngrefine;
 
   //
   // Boundary conditions
@@ -320,6 +327,10 @@ void DataIOBase::set_params(
   pm_double  *p034 = new pm_double  
     ("min_timestep", &SimPM.min_timestep, TINYVALUE);
   p = p034; p->critical=false;  
+  params.push_back(p);
+  pm_double  *p035 = new pm_double  
+    ("last_dt",      &SimPM.last_dt, 0.0);
+  p = p035; p->critical=false;  
   params.push_back(p);
 
   //

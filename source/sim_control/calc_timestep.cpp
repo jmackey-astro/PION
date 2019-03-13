@@ -82,6 +82,7 @@ int calc_timestep::calculate_timestep(
   double t_dyn=0.0, t_mp=0.0;
   t_dyn = calc_dynamics_dt(par,grid,sp_solver);
   t_mp  = calc_microphysics_dt(par,grid,l);
+  //cout <<"l="<<l<<", \t t_dyn="<<t_dyn<<"and t_mp ="<<t_mp<<"\n";
 
 #ifdef TESTING
   if (t_mp<t_dyn)
@@ -109,6 +110,7 @@ int calc_timestep::calculate_timestep(
   par.dt = min(par.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
+#ifndef DERIGS
   //
   // If using MHD with GLM divB cleaning, the following sets the
   // hyperbolic wavespeed.  If not, it does nothing.  By setting it
@@ -116,14 +118,20 @@ int calc_timestep::calculate_timestep(
   // equal to the maximum signal speed on the grid, and not an
   // artificially larger speed associated with a shortened timestep.
   //
-  sp_solver->GotTimestep(t_dyn,grid->DX());
+  double cr=0.0;
+  //for (int d=0;d<par.ndim;d++) cr += 1.0/(par.Range[d]*par.Range[d]);
+  //cr = M_PI*sqrt(cr);
+  if (par.grid_nlevels==1) cr = 0.25/par.dx;
+  else cr = 0.25/par.levels[0].dx; // this is the old value.
+  sp_solver->Set_GLM_Speeds(t_dyn,grid->DX(),cr);
+#endif
 
   //
   // Check that the timestep doesn't increase too much between steps, and that it 
   // won't bring us past the next output time or the end of the simulation.
   // This function operates on par.dt, resetting it to a smaller value if needed.
   //
-  timestep_checking_and_limiting(par);
+  timestep_checking_and_limiting(par,l);
 
   // sets the timestep info in the solver class.
   sp_solver->Setdt(par.dt);
@@ -199,7 +207,8 @@ double calc_timestep::calc_conduction_dt_and_Edot(
 
 
 void calc_timestep::timestep_checking_and_limiting(
-      class SimParams &par      ///< pointer to simulation parameters
+      class SimParams &par,      ///< pointer to simulation parameters
+      const int l       ///< level to advance (for NG grid)
       )
 {
   //
@@ -217,9 +226,7 @@ void calc_timestep::timestep_checking_and_limiting(
   // So that we don't increase the timestep by more than 30% over last step:
   //
 #ifdef TIMESTEP_LIMITING
-  //if (par.dt > 1.3*par.last_dt)
-  //  cout <<"limiting step from "<<par.dt<<" to "<<1.3*par.last_dt<<"\n";
-  par.dt = min(par.dt,1.3*par.last_dt);
+  par.dt = min(par.dt,1.3*par.levels[l].last_dt);
 #endif // TIMESTEP_LIMITING
 
   //
@@ -235,15 +242,20 @@ void calc_timestep::timestep_checking_and_limiting(
   // Make sure we end up exactly at finishtime:
   //
   par.dt = min(par.dt, par.finishtime-par.simtime);
-  if (par.dt <= 0.0)
-    rep.error("Went past Finish time without Stopping!",par.dt);
+  if (par.dt <= 0.0) {
+    cout <<"dt="<<par.dt<<", finish="<<par.finishtime<<", now=";
+    cout <<par.simtime<<"\n";
+    rep.error("Negative timestep!",par.dt);
+  }
 
   return;
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double calc_timestep::calc_dynamics_dt(
@@ -260,18 +272,6 @@ double calc_timestep::calc_dynamics_dt(
 #ifdef TESTING
   dp.c = c;
 #endif
-
-  //
-  // For the first 10 timesteps, we calculate the timestep for
-  // boundary data too, because we can have some setups with rapid
-  // inflow (such as a jet), which doesn't appear on the grid
-  // immediately.
-  //
-//#ifndef RT_TEST_PROBS
-//  if (par.timestep<=10) {
-//     c = grid->FirstPt_All();
-//  }
-//#endif // not RT_TEST_PROBS
 
   //
   // Now go through all of the cells on the local grid.
@@ -296,23 +296,15 @@ double calc_timestep::calc_dynamics_dt(
     dt = min(dt, tempdt);
     //cout <<"(get_min_timestep) i ="<<i<<"  min-dt="<<mindt<<"\n";
 
-    //
-    // Move to next cell.  For the first few steps, we include
-    // boundary data in this, using NextPt_All(); otherwise use the
-    // NextPt() command to only take grid cells.
-    //
-//#ifndef RT_TEST_PROBS
-//    if (par.timestep<=10) {
-//      c = grid->NextPt_All(c);
-//    }
-//    else {
-//#endif // not RT_TEST_PROBS
-      c = grid->NextPt(c);
-//#ifndef RT_TEST_PROBS
-//    }
-//#endif // not RT_TEST_PROBS
-
+    c = grid->NextPt(c);
   } while (c != 0);
+
+  // if on first step and a jet is inflowing, then set dt based on
+  // the jet properties.
+  if (par.timestep==0 && JP.jetic!=0) {
+    dt = std::min(dt, 0.1*par.CFL*grid->DX()/JP.jetstate[VX]);
+  }
+
 
   if (dt <= 0.0)
     rep.error("Got zero timestep!!!",dt);
@@ -324,8 +316,10 @@ double calc_timestep::calc_dynamics_dt(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double calc_timestep::calc_microphysics_dt(
@@ -363,9 +357,8 @@ double calc_timestep::calc_microphysics_dt(
     //
     // need column densities, so do raytracing, and then get dt.
     //
-    //cout <<"calc_timestep, getting column densities rt="<<raytracer<<".\n";
-    int err = calculate_raytracing_column_densities(par,grid,l);
-    if (err) rep.error("calc_MP_dt: bad return value from calc_rt_cols()",err);
+    //cout <<"calc_timestep, getting column densities rt="<<par.RS.Nsources<<".\n";
+    //int err = RT_all_sources(par,grid,l);
     dt = get_mp_timescales_with_radiation(par,grid);
     if (dt<=0.0)
       rep.error("get_mp_timescales_with_radiation() returned error",dt);
@@ -490,8 +483,10 @@ double calc_timestep::get_mp_timescales_no_radiation(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 double calc_timestep::get_mp_timescales_with_radiation(
@@ -522,11 +517,12 @@ double calc_timestep::get_mp_timescales_with_radiation(
     dp.c = c;
 #endif
     //
-    // Check if cell is boundary data or not (can only be an internal boundary, such as
-    // a stellar wind, since we are looping over cells which are grid data).  If it is
-    // boundary data then we skip it.
+    // Check if cell is boundary data (can only be an internal
+    // boundary, such as a stellar wind, since we are looping over
+    // cells which are grid data).  If it is boundary data then we
+    // skip it.
     //
-    if (c->isbd) {
+    if (c->isbd || !c->isleaf) {
 #ifdef TESTING
       cout <<"skipping cell "<<c->id<<" in get_mp_timescales_with_radiation() c->isbd.\n";
 #endif
@@ -536,20 +532,41 @@ double calc_timestep::get_mp_timescales_with_radiation(
       // Get column densities and Vshell in struct for each source.
       //
       for (int v=0; v<FVI_nheat; v++) {
-        FVI_heating_srcs[v].Vshell  = CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
-        FVI_heating_srcs[v].dS      = CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
-        CI.get_cell_col(c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].DelCol);
-        CI.get_col(     c, FVI_heating_srcs[v].id, FVI_heating_srcs[v].Column);
-        for (short unsigned int iC=0; iC<FVI_heating_srcs[v].NTau; iC++)
-          FVI_heating_srcs[v].Column[iC] -= FVI_heating_srcs[v].DelCol[iC];
+        FVI_heating_srcs[v].Vshell  = 
+                    CI.get_cell_Vshell(c, FVI_heating_srcs[v].id);
+        FVI_heating_srcs[v].dS      =
+                    CI.get_cell_deltaS(c, FVI_heating_srcs[v].id);
+        CI.get_cell_col(c, FVI_heating_srcs[v].id,
+                            FVI_heating_srcs[v].DelCol);
+        CI.get_col(     c, FVI_heating_srcs[v].id,
+                            FVI_heating_srcs[v].Column);
+        for (short unsigned int iC=0;
+             iC<FVI_heating_srcs[v].NTau; iC++)
+          FVI_heating_srcs[v].Column[iC] -=
+                                  FVI_heating_srcs[v].DelCol[iC];
       }
       for (int v=0; v<FVI_nion; v++) {
-        FVI_ionising_srcs[v].Vshell = CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
-        FVI_ionising_srcs[v].dS     = CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
-        CI.get_cell_col(c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].DelCol);
-        CI.get_col(     c, FVI_ionising_srcs[v].id, FVI_ionising_srcs[v].Column);
-        for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
-          FVI_ionising_srcs[v].Column[iC] -= FVI_ionising_srcs[v].DelCol[iC];
+        FVI_ionising_srcs[v].Vshell = 
+                    CI.get_cell_Vshell(c, FVI_ionising_srcs[v].id);
+        FVI_ionising_srcs[v].dS     =
+                    CI.get_cell_deltaS(c, FVI_ionising_srcs[v].id);
+        CI.get_cell_col(c, FVI_ionising_srcs[v].id,
+                           FVI_ionising_srcs[v].DelCol);
+        CI.get_col(     c, FVI_ionising_srcs[v].id,
+                           FVI_ionising_srcs[v].Column);
+        for (short unsigned int iC=0;
+             iC<FVI_ionising_srcs[v].NTau; iC++)
+          FVI_ionising_srcs[v].Column[iC] -=
+                                  FVI_ionising_srcs[v].DelCol[iC];
+        if (FVI_ionising_srcs[v].Column[0]<0.0) {
+#ifdef RT_TESTING
+          cout <<"dx="<<grid->DX()<<"  ";
+          CI.print_cell(c);
+          rep.error("time_int:calc_RT_microphysics_dU tau<0",1);
+#endif
+          for (short unsigned int iC=0; iC<FVI_ionising_srcs[v].NTau; iC++)
+            FVI_ionising_srcs[v].Column[iC] = max(0.0,FVI_ionising_srcs[v].Column[iC]);
+        }
       }
       //
       // We assume we want to limit by all relevant timescales.
@@ -568,45 +585,13 @@ double calc_timestep::get_mp_timescales_with_radiation(
         rep.printVec("Ph",c->Ph,par.nvar);
         rep.error("Negative timestep from microphysics with RT!",tempdt);
       }
-      //if (tempdt<dt)
-      //  cout <<"c->id="<<c->id<<"\tdt="<<tempdt<<"\n";
+      //cout <<"c->id="<<c->id<<"\tdt="<<tempdt<<"  ";
+      //rep.printVec("Ph",c->Ph,par.nvar);
       dt = min(dt, tempdt);
     } // if not boundary data.
   } while ( (c =grid->NextPt(c)) !=0);
 
   return dt;
-}
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int calc_timestep::calculate_raytracing_column_densities(
-      class SimParams &par,      ///< pointer to simulation parameters
-      class GridBaseClass *grid,       ///< Computational grid.
-      const int
-      )
-{
-  int err=0;
-  if (!grid->RT) rep.error("calculate_raytracing_column_densities() no RT",0);
-  //
-  // If we have raytracing, we call the ray-tracing routines 
-  // to get Tau0, dTau, Vshell in cell->extra_data[].
-  //
-  for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
-#ifdef RT_TESTING
-    cout <<"calc_raytracing_col_dens: SRC-ID: "<<isrc<<"\n";
-#endif
-    err += grid->RT->RayTrace_Column_Density(isrc, 0.0, par.gamma);
-    if (err) {
-      cout <<"isrc="<<isrc<<"\t"; 
-      rep.error("calc_raytracing_col_dens step in returned error",err);
-    } // if error
-  } // loop over sources
-  return err;
 }
 
 

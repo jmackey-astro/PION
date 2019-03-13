@@ -122,6 +122,7 @@ class sim_control_NG_MPI :
   ///
   int recv_BC89_fluxes_F2C(
       const int,    ///< My level in grid hierarchy.
+      const double ,  ///< dt, timestep
       const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int     ///< Full order of accuracy of simulation
       );

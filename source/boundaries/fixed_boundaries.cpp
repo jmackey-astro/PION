@@ -45,6 +45,7 @@ int fixed_bc::BC_assign_FIXED(
   cout <<"Finding first on-grid cell, size="<<b->data.size()<<".\n";
 #endif
   do {
+    (*bpt)->isdomain=false;
     temp = (*bpt);
     CI.print_cell(temp);
     for (int v=0; v>(*bpt)->isedge; v--) {

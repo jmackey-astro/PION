@@ -15,19 +15,24 @@
 #ifndef TESTING_FLAGS_H
 #define TESTING_FLAGS_H
 
-//
-// check conservation of energy and momentum
-//
-//#define TEST_CONSERVATION
 
+#define REPORT_RANK0  // only reports stdout from rank 0.
+//#define SKIP_C2F_BC
+//#define SKIP_F2C_BC
+//#define SKIP_BC89_FLUX
+//#define TEST_BC89FLUX        // debugging info for BC89 flux correction
+//#define TEST_COMMS           // debugging info for MPI
+//#define TEST_CONSERVATION    // test mass/mom/energy conservation
+//#define TEST_INF             // test for infinity/nan
+//#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
+//#define RT_TESTING ///< Enable this for debugging info on raytracing.
+#define DERIGS
 //
-// Various defines for testing bits of the code.
+// Various defines for testing bits of the code (lots of sdtout!).
 //
 //#define TESTING ///< Comment this out if not testing the code.
 
-//
 // displays debugging information for time integration.
-//
 //#define TEST_INT
 
 // This counts the energy loss/gain in microphysics (SLOW!!!)
@@ -39,7 +44,6 @@
 //
 //#define FUNCTION_ID
 
-//#define RT_TESTING ///< Enable this for debugging info on raytracing.
 
 //#define RSTESTING ///< If testing the Riemann Solvers.
 

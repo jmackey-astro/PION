@@ -28,6 +28,11 @@
 #include <mathimf.h> // Header file from Intel Compiler
 #endif
 
+///
+/// Physical constants are from CODATA 2014, converted to CGS.
+/// http://dx.doi.org/10.5281/zenodo.22826
+/// Masses of elements from http://www.ciaaw.org/atomic-weights.htm
+///
 class constants {
   public:
   constants();
@@ -43,43 +48,61 @@ class constants {
   // Physics
   //
   inline double c()       {return 2.99792458e+10;}
-  inline double kB()      {return 1.3806488e-16;}
+  inline double kB()      {return 1.38064852e-16;}
   inline double h()       {return 6.62606957e-27;}
-  inline double StefanBoltzmannConst() {return 5.670373e-5;}
-  ///
-  /// proton mass
-  ///
-  inline double m_p()     {return 1.672621898e-24;}
+  inline double StefanBoltzmannConst() {return 5.670367e-5;}
+  inline double eV()      {return 1.6021766208e-12;}
   ///
   /// Unified atomic mass unit.
   ///
   inline double uamu()    {return 1.660539040e-24;}
   ///
-  /// Hydrogen mass
+  /// proton mass (CODATA 2014)
+  ///
+  inline double m_p()     {return 1.672621898e-24;}
+  ///
+  /// Hydrogen mass (IUPAC value is 1.0080+/-0.0002 * uamu).
   ///
   inline double m_H()     {return 1.6738e-24;}
   ///
-  /// Helium mass
+  /// Helium mass (CIAWW online table)
   ///
-  inline double m_He()     {return 6.6464764e-24;}
+  inline double m_He()     {return 6.6464768e-24;}
+
   ///
-  /// Gravitational constant
+  /// Carbon mass (CIAWW online table)
+  /// 0.5*(12.0096 + 12.0116) uamu
+  ///
+  inline double m_C()     {return 1.994374e-23;}
+
+  ///
+  /// Nitrogen mass 0.5*(14.00643 + 14.00728) uamu
+  /// (CIAWW online table)
+  ///
+  inline double m_N()     {return 2.325892e-23;}
+
+  ///
+  /// Oxygen mass (CIAWW online table)
+  /// 0.5*(15.99903 + 15.99977) uamu
+  ///
+  inline double m_O()     {return 2.6567628e-23;}
+
+  /// Gravitational constant (CODATA 2014)
   ///
   inline double G()       {return 6.67408e-8;}
   ///
-  /// Ionization potential of H
+  /// Ionization potential of H (eV)
   ///
-  inline double Eth_H()   {return 13.59844*eV();}
+  inline double Eth_H()   {return 2.178710264e-11;}
   ///
   /// Ionization potential of H, in Hertz.
   ///
-  inline double NuTh_H()  {return 3.288e15;}
+  inline double NuTh_H()  {return 3.28808819e+15;}
   //
-  // Unit conversion
+  // Unit conversion 
   //
-  inline double K_per_eV(){return 1.1604519e4;}
+  inline double K_per_eV(){return 1.16045221e4;}
   inline double year()    {return 3.1558150e7;}
-  inline double eV()      {return 1.602176565e-12;}
   //
   // Astronomy
   //

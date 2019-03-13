@@ -213,15 +213,18 @@ int setup_fixed_grid::setup_grid(
   if      (SimPM.coord_sys==COORD_CRT)
     *grid = new UniformGrid (SimPM.ndim, SimPM.nvar, SimPM.eqntype,
                              SimPM.Nbc, SimPM.Xmin, SimPM.Xmax,
-                             SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+                             SimPM.NG, SimPM.Xmin, SimPM.Xmax,
+                             SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_CYL)
     *grid = new uniform_grid_cyl (SimPM.ndim, SimPM.nvar,
                       SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
-                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax,
+                              SimPM.Xmin, SimPM.Xmax);
   else if (SimPM.coord_sys==COORD_SPH)
     *grid = new uniform_grid_sph (SimPM.ndim, SimPM.nvar,
                       SimPM.eqntype, SimPM.Nbc, SimPM.Xmin,
-                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax);
+                      SimPM.Xmax, SimPM.NG, SimPM.Xmin, SimPM.Xmax,
+                              SimPM.Xmin, SimPM.Xmax);
   else 
     rep.error("Bad Geometry in setup_grid()",SimPM.coord_sys);
 
@@ -504,12 +507,23 @@ int setup_fixed_grid::setup_raytracing(
   }
 
   //
-  // Now add the sources to the tracer.  Note that both the implicit and explicit
-  // integrators can still only handle a single ionising source, so we do a check
-  // for this and bug out if there is more than one.
+  // Now add the sources to the tracer.  Note that both the implicit
+  // and explicit integrators can still only handle a single ionising
+  // source, so we do a check for this and bug out if there is more
+  // than one.
   //
   int ion_count=0, uv_count=0, dif_count=0;
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
+    
+    // see if source is on the domain or not.  Set flag accordingly.
+    SimPM.RS.sources[isrc].ongrid = true;
+    for (int d=0;d<SimPM.ndim;d++) {
+      if (SimPM.RS.sources[isrc].pos[d]<SimPM.levels[0].Xmin[d] ||
+          SimPM.RS.sources[isrc].pos[d]>SimPM.levels[0].Xmax[d])
+        SimPM.RS.sources[isrc].ongrid = false;
+    }
+
+    // source types
     if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE) {
       //
       // single sources have a flux (if at infinity) or a luminosity (if point

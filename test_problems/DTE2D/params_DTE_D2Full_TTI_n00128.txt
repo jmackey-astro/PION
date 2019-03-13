@@ -2,22 +2,13 @@
 # 
 # 2014.06.30 JM: D-type-early test, in 2D.
 
-## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 2
 coordinates cylindrical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver 3
+solver 6
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
 ics PhotoEvap_radial
-
-# Output FileName Base
 OutputFile    DTE_D2Full_TTI_n00128
-
 
 # Number and type of tracers.
 ntracer 1
@@ -60,6 +51,14 @@ Zmin  0.0
 Xmax   3.874e18
 Ymax   3.874e18
 Zmax   3.874e18
+# Nested grid
+grid_nlevels 1
+grid_aspect_ratio_XX 2
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
 
 # Data Output Path
 OutputPath ./
@@ -85,10 +84,10 @@ BC_YP outflow
 BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.0001
+GAMMA 1.01
 
 # CFL coefficient 0<cfl<1
-CFL 0.1
+CFL 0.2
 # Artificial Viscosity 0=None, 1=Falle's linear viscosity.
 ArtificialViscosity 1
 EtaViscosity 0.15
@@ -158,6 +157,7 @@ RT_EVO_FILE_0    NOFILE
 # stellar wind sources #
 ########################
 WIND_NSRC 0
+N_JET 0
 
 ########################
 # Reference Vector     #

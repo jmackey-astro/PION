@@ -134,7 +134,7 @@ command-line options by typing "./pion_serial" with no arguments.
 
 A typical simulation run is as follows:
 $ ./icgen_serial params_test_winds.txt silo
-$ ./pion_serial wind_test1.00000000.silo 5 1 op_criterion=1 \
+$ ./pion_serial wind_test1.00000000.silo op_criterion=1 \
  opfreq_time=1.58e10 cooling=0 redirect=test1 \
  outfile=/path/to/results/wind_test1 cfl=0.1
 
@@ -144,17 +144,15 @@ tells it to write a silo file (rather than fits).
 for main serial, the arguments refer to:
 REQUIRED ARGUMENTS:
 (1) wind_test1.00000000.silo   initial conditions filename (set by user!).
-(2) 5			       That the IC file is silo format(fits=2)
-(3) 1 			       That I'm using a uniform grid (always!)
 OPTIONAL ARGUMENTS:
-(4) op_criterion=1 	       output every n-time units (not n-steps)
-(5) opfreq_time=1.58e10	       output frequency (in code seconds)
-(6) cooling=0		       no cooling
-(7) redirect=test1	       redirect stdout to file ./test1info.txt
-(8) outfile=/path/to/results/wind_test1
+(2) op_criterion=1 	       output every n-time units (not n-steps)
+(3) opfreq_time=1.58e10	       output frequency (in code seconds)
+(4) cooling=0		       no cooling
+(5) redirect=test1	       redirect stdout to file ./test1info.txt
+(6) outfile=/path/to/results/wind_test1
 			       output file name with path (will be
 			       appended with step number)
-(9) cfl=0.1		       Courant number (<1 in 1D, <0.5 2D, <0.35
+(7) cfl=0.1		       Courant number (<1 in 1D, <0.5 2D, <0.35
     			       in 3D) and less with cooling etc.
 
 ---------------------
@@ -177,21 +175,6 @@ section for "Parameters specific to a given problem"; these are the
 physical properties of what you want to put into the simulation:
 ambient medium density, dense clumps with some radius, shocks, etc.
 
-The main way things fail for me is that I set the boundary conditions
-string incorrectly.  "icgen_serial" doesn't check that it is correct
-(it should, and will eventually).  There should be exactly two entries
-for each dimension, and possibly "internal" extra boundaries.  If you
-are running in 3D with only 4 boundaries the initial condition
-generator will run, but pion_serial will bug out when it tries to
-setup the grid.  [There is a request in the bitbucket issue tracker
-to fix this, because it is really annoying].
-
-The "BC" string is a sequence of 6-character boundary specifiers.  The
-first two characters give the direction: XN=x-negative, XP=x-positive,
-same for YN,YP,ZN,ZP, and IN=internal/special boundary.
-The next three characters give the type of boundary: inflow, outflow,
-fixed, one-way-outflow, periodic, reflecting.
-
 "coordinates" = 
 cylindrical (z,R) (2d only),
 cartesian (x,y,z) (1d,2d,3d),
@@ -206,12 +189,12 @@ calculation.  For the Euler equations (no magnetic fields) you can use
 any of 1-6.  I recommend 3, 4 or 6. (1 is bad, 2 is slow, 6 is pretty
 good).
 1=approximate linear Riemann solver
-2=exact Riemann solver (slow!)
-3=hybrid approximate/exact Riemann solver
+2=exact Riemann solver (slow!) (HD only)
+3=hybrid approximate/exact Riemann solver (HD only)
 4=Roe conserved variable Riemann solver
 5=Roe primitive variable Riemann solver (may have problems!)
-6=van Leer's flux vector splitting
-
+6=van Leer's flux vector splitting (HD only)
+7=HLLD (MHD only)
 
 -----------------------------
 ---- RUNNING IN PARALLEL ----
@@ -246,7 +229,7 @@ mv WIND_Md1em6_v250_noI_adv*.silo ${sim_dir}/
 # Run the sims for a short time:
 #
 mpirun -np 4 ./pion_parallel \
- ${sim_dir}/WIND_Md1em6_v250_noI_adv000_0000.00000000.silo 5 1 \
+ ${sim_dir}/WIND_Md1em6_v250_noI_adv000_0000.00000000.silo \
  outfile=${sim_dir}/WIND_Md1em6_v250_noI_adv000 \
  redirect=${sim_dir}/log_WIND_Md1em6_v250_noI_adv000 \
  finishtime=3.16e11 opfreq_time=1.58e10

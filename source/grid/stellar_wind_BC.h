@@ -87,6 +87,7 @@ struct wind_source {
     Vinf,   ///< terminal wind velocity (cm/s)
     v_rot,  ///< stellar rotational velocity (cm/s)
     v_esc,  ///< wind escape velocity (cm/s)
+    vcrit, ///< critical rotation velocity (cm/s)
     Tw,     ///< wind temperature (K)
     Rstar;  ///< distance from source at which T=Tw (cm) 
   pion_flt
@@ -168,6 +169,7 @@ class stellar_wind {
       const double,   ///< Mdot (g/s)
       const double,   ///< Vesc (cm/s)
       const double,   ///< Vrot (cm/s)
+      const double,   ///< Vcrit (cm/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Radius where T=Twind (to get gas pressure)
       const pion_flt *  ///< Tracer values of wind (if any)

@@ -27,6 +27,7 @@
 class file_status {
  public:
   virtual ~file_status() {}
+
    /** \brief returns true if a file exists, and false if not. */
    bool file_exists(std::string ///< filename.
 		    );

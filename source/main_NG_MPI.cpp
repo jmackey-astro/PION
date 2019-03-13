@@ -83,8 +83,8 @@ int main(int argc, char **argv)
       rep.redirect(outpath);
     }
   }
-#ifndef TESTING
-  //rep.kill_stdout_from_other_procs(0);
+#ifdef REPORT_RANK0
+  rep.kill_stdout_from_other_procs(0);
 #endif
   cout <<"-------------------------------------------------------\n";
   cout <<"---------   pion NG MPI v1.0 running   ----------------\n";

@@ -1,5 +1,5 @@
 ///
-/// \file eqns_base.cc
+/// \file eqns_base.cpp
 /// \author Jonathan Mackey
 /// Some functions in the base class for equations which are common to all solvers.
 ///
@@ -71,6 +71,7 @@ eqns_base::eqns_base(const int n ///< Number of Variables in State Vector
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -81,6 +82,7 @@ eqns_base::~eqns_base()
   eq_refvec = mem.myfree(eq_refvec);
   return;
 }
+
 
 
 // ##################################################################
@@ -130,6 +132,7 @@ void eqns_base::SetDirection(const enum axes d)
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -139,6 +142,7 @@ enum axes eqns_base::GetDirection()
 {
   return eq_dir;
 }
+
 
 
 // ##################################################################
@@ -194,6 +198,7 @@ void eqns_base::rotate(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -216,6 +221,7 @@ void eqns_base::rotateXY(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
@@ -224,11 +230,20 @@ void eqns_base::rotateXY(
 void eqns_base::PtoFlux(
       const pion_flt *p,
       pion_flt *f,
-      const double gamma)
+      const double gamma
+      )
 {
    pion_flt u[eq_nvar];
    PtoU(p, u, gamma);
    PUtoFlux(p,u,f);
    return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 

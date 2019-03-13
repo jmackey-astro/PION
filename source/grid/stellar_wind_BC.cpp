@@ -406,18 +406,26 @@ void stellar_wind::set_wind_cell_reference_state(
   // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
   if (eqntype==EQMHD || eqntype==EQGLM) {
     double R=695508e5;  // R_sun in cm
+    double x = grid->difference_vertex2cell(WS->dpos,c,XX);
     wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
-    if (ndim>1)
+                fabs(x)/wc->dist;
+    if (ndim>1) {
       wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
                 grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
+      wc->p[BY] = (x>0.0) ? wc->p[BY] : -1.0*wc->p[BY];
+    }
     else
       wc->p[BY] = 0.0;
-    if (ndim>2)
+    if (ndim>2) {
       wc->p[BZ] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist; 
+                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
+      wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
+    }
     else
       wc->p[BZ] = 0.0;
+  }
+  if (eqntype==EQGLM) {
+    wc->p[SI] = 0.0;
   }
     
   //if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
@@ -895,7 +903,7 @@ int stellar_wind_evolution::add_evolving_source(
   temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
   temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
   temp->tfinish= t[Npt-1]  *pconst.year(); // now in seconds (already scaled)
-  temp->update_freq = update_freq*pconst.year()/t_scalefactor; // now in seconds
+  temp->update_freq = update_freq/t_scalefactor; // in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
   cout <<"\t\t tstart="<<temp->tstart;

@@ -66,6 +66,14 @@ class sim_control_NG :
       vector<class GridBaseClass *> &  ///< grid pointers.
       );
 
+  ///
+  /// finalise the simulation, clean up, delete data.
+  /// This function finished the simulation gracefully (hopefully!).
+  ///
+  int Finalise(
+      vector<class GridBaseClass *> &  ///< address of vector of grid pointers.
+      );
+  
   //---------------------------------------
   protected:
 
@@ -117,17 +125,6 @@ class sim_control_NG :
       );
 
   ///
-  /// Run through all diffuse and direct radiation sources and calculate column
-  /// densities through the grid for each one.  Tau, DTau, and Vshell are stored
-  /// in extra_data[i] for each cell.
-  ///
-  int calculate_raytracing_column_densities(
-      class SimParams &,      ///< pointer to simulation parameters
-      class GridBaseClass *,  ///< grid to trace rays on.
-      const int               ///< level of NG grid.
-      );
-
-  ///
   /// Checks Total energy relative to initial value, and prints a
   /// message if not.
   ///
@@ -143,6 +140,7 @@ class sim_control_NG :
   ///
   virtual int recv_BC89_fluxes_F2C(
       const int,    ///< My level in grid hierarchy.
+      const double,  ///< timestep
       const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int     ///< Full order of accuracy of simulation
       );
@@ -151,10 +149,53 @@ class sim_control_NG :
   /// fine to coarse grid, so that conserved quantities are conserved
   int recv_BC89_flux_boundary(
       class GridBaseClass *, ///< pointer to coarse grid
+      const double,  ///< timestep
       struct flux_update &,  ///< data for fine grid
       struct flux_update &,  ///< data for coarse grid
       const unsigned int,    ///< direction of outward normal
       const axes             ///< axis of normal direction.
+      );
+
+  ///
+  /// Run through all radiation sources and calculate column
+  /// densities through each grid for each one.  This exchanges data
+  /// between grid levels so that the rays traverse all levels.
+  ///
+  virtual int RT_all_sources_levels(
+      class SimParams &  ///< simulation parameters
+      );
+
+  ///
+  /// Run through all radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  //virtual int RT_all_sources(
+  //    class SimParams &,      ///< simulation parameters
+  //    class GridBaseClass *,  ///< grid to trace rays on.
+  //    const int               ///< level of NG grid.
+  //    );
+
+  ///
+  /// Run through all on-grid radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  virtual int do_ongrid_raytracing(
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
+      );
+
+  ///
+  /// Run through all off-grid radiation sources and calculate column
+  /// densities through the grid for each one.  Tau, DTau, and Vshell
+  /// are stored in extra_data[i] for each cell.
+  ///
+  virtual int do_offgrid_raytracing(
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< grid to trace rays on.
+      const int               ///< level of NG grid.
       );
 
 }; // sim_control_NG

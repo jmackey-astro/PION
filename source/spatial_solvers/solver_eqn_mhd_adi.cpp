@@ -64,7 +64,7 @@ FV_solver_mhd_ideal_adi::FV_solver_mhd_ideal_adi(
   cout <<"::FV_solver_mhd_ideal_adi() constructor.\n";
   //cout <<"::FV_solver_mhd_ideal_adi() gamma = "<<eq_gamma<<"\n";
 #endif
-
+  max_speed=0.0;
   negPGct = negROct = 0;
   return;
 }
@@ -402,6 +402,12 @@ void FV_solver_mhd_ideal_adi::Powell_source_terms(
       pion_flt *S            ///< return source term 
       )
 {
+#ifdef TESTING
+  if (d != GetDirection()) {
+    cout <<GetDirection()<<"\t";
+    rep.error("bad direction in Powell_source_terms()",d);
+  }
+#endif
   // use two-sided gradient, second-order accurate in dx, to get
   // d/dx (B_x)
   pion_flt dBdx;
@@ -420,7 +426,7 @@ void FV_solver_mhd_ideal_adi::Powell_source_terms(
   }
   dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
   
-  S[eqRHO] += 0;
+  S[eqRHO] += 0.0;
   S[eqMMX] += -dBdx * c->Ph[eqBX];
   S[eqMMY] += -dBdx * c->Ph[eqBY];
   S[eqMMZ] += -dBdx * c->Ph[eqBZ];
@@ -475,11 +481,78 @@ int FV_solver_mhd_ideal_adi::dU_Cell(
 // ##################################################################
 
 
+///
+/// calculate Powell source terms for multi-D MHD
+///
+#ifdef DERIGS
+int FV_solver_mhd_ideal_adi::MHDsource(
+                      class GridBaseClass *grid,  ///< pointer to grid.
+                      class cell *Cl,   ///< pointer to cell of left state
+                      class cell *Cr,   ///< pointer to cell of right state
+                      pion_flt *Pl,     ///< left edge state
+                      pion_flt *Pr,     ///< right edge state
+                      const axes d,            ///< Which axis we are looking along.
+                      enum direction pos, ///< positive direction normal to interface
+                      enum direction neg, ///< negative direction normal to interface
+                      const double dt    ///< timestep dt
+                      )
+{
+
+  pos = static_cast<direction>(static_cast<int>(d)*2+1);
+  neg = static_cast<direction>(static_cast<int>(d)*2);
+  cell *p=Cr, *n=Cl;
+  double dx=0.0;
+  if (grid->NextPt(Cr,pos)) {
+    p   = grid->NextPt(Cr,pos);
+    dx += grid->DX();
+  }
+  if (grid->NextPt(Cl,neg)) {
+    n   = grid->NextPt(Cl,neg);
+    dx += grid->DX();
+  }
+  double dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
+  
+  pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
+  double uB_l = Pl[eqBX]*Pl[eqVX] + Pl[eqBY]*Pl[eqVY] + Pl[eqBZ]*Pl[eqVX];
+  double uB_r = Pr[eqBX]*Pr[eqVX] + Pr[eqBY]*Pr[eqVY] + Pr[eqBZ]*Pr[eqVX];
+  
+  Powell_l[eqRHO] = Powell_l[eqPSI] = 0;
+  Powell_l[eqMMX] = Pl[eqBX];
+  Powell_l[eqMMY] = Pl[eqBY];
+  Powell_l[eqMMZ] = Pl[eqBZ];
+  Powell_l[eqERG] = uB_l;
+  Powell_l[eqBBX] = Pl[eqVX];
+  Powell_l[eqBBY] = Pl[eqVY];
+  Powell_l[eqBBZ] = Pl[eqVZ];
+  
+  Powell_r[eqRHO] = Powell_r[eqPSI] = 0;
+  Powell_r[eqMMX] = Pr[eqBX];
+  Powell_r[eqMMY] = Pr[eqBY];
+  Powell_r[eqMMZ] = Pr[eqBZ];
+  Powell_r[eqERG] = uB_r;
+  Powell_r[eqBBX] = Pr[eqVX];
+  Powell_r[eqBBY] = Pr[eqVY];
+  Powell_r[eqBBZ] = Pr[eqVZ];
+
+  
+  
+  
+  for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] += 0.5*dt*dBdx*Powell_l[v];
+    Cr->dU[v] += 0.5*dt*dBdx*Powell_r[v];
+  }
+    return 0;
+}
+#endif
+
+
 
 ///
 /// General Finite volume scheme for updating a cell's
 /// primitive state vector, for homogeneous equations.
 ///
+
+
 int FV_solver_mhd_ideal_adi::CellAdvanceTime(
       class cell *c, // cell to update.
       const pion_flt *Pin, // Initial State Vector.
@@ -554,6 +627,7 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
   // the max wavespeed.
   //
   enum axes newdir;
+  double cf=0.0;
   if (FV_gndim==1) temp += cfast(c->P,eq_gamma);
   else { // We may have to rotate the state vector to find the fastest fast speed.
     newdir = XX;
@@ -566,17 +640,27 @@ double FV_solver_mhd_ideal_adi::CellTimeStep(
     if (newdir !=XX) {
       for (int v=0;v<eq_nvar;v++) u1[v] = c->P[v];
       rotate(u1,XX,newdir);
-      temp += cfast(u1, eq_gamma);
+      cf = cfast(u1, eq_gamma);
+      temp += cf;
     }
-    else temp += cfast(c->P, eq_gamma);
+    else {
+      cf += cfast(c->P, eq_gamma);
+      temp += cf;
+    }
   }
-  FV_dt = dx/temp;
 
-  //
-  // Now scale the max. allowed timestep by the CFL number we are using (<1).
-  //
+  max_speed = max(max_speed,cf);
+
+  FV_dt = dx/temp;
   FV_dt *= FV_cfl;
 
+#ifdef TEST_INF
+  if (!isfinite(FV_dt) || FV_dt<=0.0) {
+    cout <<"cell has invalid timestep\n";
+    CI.print_cell(c);
+    cout.flush();
+  }
+#endif
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_ideal_adi::CellTimeStep ...returning.\n";
 #endif //FUNCTION_ID
@@ -632,6 +716,26 @@ FV_solver_mhd_mixedGLM_adi::FV_solver_mhd_mixedGLM_adi(
 FV_solver_mhd_mixedGLM_adi::~FV_solver_mhd_mixedGLM_adi()
 {
   return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double FV_solver_mhd_mixedGLM_adi::CellTimeStep(
+        const cell *c, ///< pointer to cell
+        const double, ///< gas EOS gamma.
+        const double dx ///< Cell size dx.
+        )
+{
+#ifdef FUNCTION_ID
+  cout <<"FV_solver_mhd_mixedGLM_adi::CellTimeStep ...starting.\n";
+#endif //FUNCTION_ID
+  double dt = FV_solver_mhd_ideal_adi::CellTimeStep(c,eq_gamma,dx);
+  return dt;
 }
 
 
@@ -701,11 +805,23 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   /// 
   /// Bx(*) is then used for both the left and right state to calculate
   /// the flux.
-  /// 
-  double psistar = 0.5*(left[eqSI]+right[eqSI]
+  ///
+  double psistar=0.0, bxstar=0.0;
+#ifdef DERIGS
+  // set Psi to zero in left and right states, so that Riemann solvers
+  // don't get confused (because otherwise it will contribute to the
+  // total energy.
+  double psi_L = left[eqSI], psi_R = right[eqSI];
+  left[eqSI]=0.0;
+  right[eqSI]=0.0;
+  psistar = 0.5*(left[eqSI]+right[eqSI]);
+  bxstar  = 0.5*(left[eqBX]+right[eqBX]);
+#else
+  psistar = 0.5*(left[eqSI]+right[eqSI]
 			-GLM_chyp*(right[eqBX]-left[eqBX]));
-  double bxstar  = 0.5*(left[eqBX]+right[eqBX]
+  bxstar  = 0.5*(left[eqBX]+right[eqBX]
 			-(right[eqSI]-left[eqSI])/GLM_chyp);
+#endif
   left[eqBX] = right[eqBX] = bxstar;
 
   //
@@ -724,13 +840,82 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   // it is modified to ensure consistency (Mackey & Lim, 2011).
   // Derigs et al. (2017/2018) have a more consistent calculation...
   // 
-  flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
-  flux[eqBBX]  = psistar;
+#ifdef DERIGS
+  // see Derigs et al. (2018) eq. 4.45: 3 terms f6*, f9*, last term.
+  // energy (ERG) is f5, Bx (BBX) is f6, PSI is f9.
+  flux[eqERG] += 2.0*GLM_chyp*bxstar*psistar -
+      GLM_chyp*0.5*(left[eqSI]*left[eqBX]+right[eqSI]*right[eqBX]);
+  // Derigs et al. (2018) eq. 4.43 f6* and f9*
+  flux[eqBBX]  = GLM_chyp*psistar;
+  flux[eqPSI]  = GLM_chyp*bxstar;
+  left[eqSI]  = psi_L;
+  right[eqSI] = psi_R;
+#else
   flux[eqERG] += bxstar*psistar;
+  flux[eqBBX]  = psistar;
+  flux[eqPSI]  = GLM_chyp*GLM_chyp*bxstar;
+#endif
+
   return err;
 }
 
-
+///
+/// calculate GLM source terms for multi-D MHD and add to Powell source
+///
+#ifdef DERIGS
+int FV_solver_mhd_mixedGLM_adi::MHDsource(
+            class GridBaseClass *grid,  ///< pointer to grid.
+            class cell *Cl,   ///< pointer to cell of left state
+            class cell *Cr,   ///< pointer to cell of right state
+            pion_flt *Pl,     ///< left edge state
+            pion_flt *Pr,     ///< right edge state
+            const axes d,            ///< Which axis we are looking along.
+            enum direction pos, ///< positive direction normal to interface
+            enum direction neg, ///< negative direction normal to interface
+            const double dt    ///< timestep dt
+)
+{
+  
+  pos = static_cast<direction>(static_cast<int>(d)*2+1);
+  neg = static_cast<direction>(static_cast<int>(d)*2);
+  cell *p=Cr, *n=Cl;
+  double dx=0.0;
+  if (grid->NextPt(Cr,pos)) {
+    p   = grid->NextPt(Cr,pos);
+    dx += grid->DX();
+  }
+  if (grid->NextPt(Cl,neg)) {
+    n   = grid->NextPt(Cl,neg);
+    dx += grid->DX();
+  }
+  
+  FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
+  double psi_brac = Pr[eqSI] - Pl[eqSI];
+  
+  pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
+  double upsi_l = (Pl[eqVX] + Pl[eqVY] + Pl[eqVX])*Pl[eqSI];
+  double upsi_r = (Pr[eqVX] + Pr[eqVY] + Pr[eqVX])*Pr[eqSI];
+  
+  psi_l[eqRHO] = psi_l[eqMMX] = psi_l[eqMMY] = psi_l[eqMMZ] = 0;
+  psi_l[eqERG] = upsi_l;
+  psi_l[eqBBX] = psi_l[eqBBY] = psi_l[eqBBZ] = 0;
+  psi_l[eqPSI] = Pl[eqVX];
+  
+  psi_r[eqRHO] = psi_r[eqMMX] = psi_r[eqMMY] = psi_r[eqMMZ] = 0;
+  psi_r[eqERG] = upsi_r;
+  psi_r[eqBBX] = psi_r[eqBBY] = psi_r[eqBBZ] = 0;
+  psi_r[eqPSI] = Pr[eqVX];
+  
+  for (int v=0;v<eq_nvar;v++) {
+    Cl->dU[v] += 0.5*psi_brac*psi_l[v]/dx;
+    Cr->dU[v] += 0.5*psi_brac*psi_r[v]/dx;
+  }
+  
+  
+  return 0;
+  
+}
+#endif
 
 // ##################################################################
 // ##################################################################
@@ -825,20 +1010,25 @@ int FV_solver_mhd_mixedGLM_adi::UtoP(
 
 
 
-void FV_solver_mhd_mixedGLM_adi::GotTimestep(
-        const double delt, ///< timestep dt.
-        const double delx ///< cell size dx.
-	)
+void FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds(
+      const double delt, ///< timestep dt.
+      const double delx, ///< cell size dx.
+      const double cr    ///< GLM damping coefficient c_r
+      )
 {
 #ifdef FUNCTION_ID
-  cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep ...starting.\n";
+  cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...starting.\n";
 #endif //FUNCTION_ID
 
-  //     cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep() setting wave speeds.\n";
-  GLMsetPsiSpeed(FV_cfl,delx,delt);
+  //     cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds() setting wave speeds.\n";
+#ifndef DERIGS
+  GLMsetPsiSpeed(FV_cfl*delx/delt,cr);
+#else
+  GLMsetPsiSpeed(max_speed, cr);
+#endif
 
 #ifdef FUNCTION_ID
-  cout <<"FV_solver_mhd_mixedGLM_adi::GotTimestep ...returning.\n";
+  cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...returning.\n";
 #endif //FUNCTION_ID
 }
 
@@ -970,6 +1160,12 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
         pion_flt *S           ///< return source term 
         )
 {
+#ifdef TESTING
+  if (d != GetDirection()) {
+    cout <<GetDirection()<<"\t";
+    rep.error("bad direction in CYL Powell_source_terms()",d);
+  }
+#endif
   pion_flt dBdx;
   double dx=0.0;
   enum direction pos,neg;
@@ -984,6 +1180,11 @@ void cyl_FV_solver_mhd_ideal_adi::Powell_source_terms(
     n = grid->NextPt(c,neg);
     dx += grid->DX();
   }
+#ifdef TESTING
+  if (p==n) {
+    rep.error("no slope possible CYL Powell_source_terms()",d);
+  }
+#endif
 
   // this is a divergence term, not a gradient, so the radial
   // direction is different from z-direction.  d(R f)/(RdR)

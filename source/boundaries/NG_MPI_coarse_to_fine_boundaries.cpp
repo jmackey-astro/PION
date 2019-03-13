@@ -12,6 +12,7 @@
 using namespace std;
 
 //#define TEST_C2F
+//#define TEST_MPI_NG
 
 // ##################################################################
 // ##################################################################
@@ -26,16 +27,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 {
 
   class GridBaseClass *grid = par.levels[l].grid;
-  //int gidx = grid->idx();
-
   // see how many child grids I have
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  //b->NGsendC2F.reserve(nchild);
-  //if (b->NGsendC2F.size() !=0) {
-  //  rep.error("NGsendC2F init",b->NGsendC2F.size());
-  //}
-  //b->NGsendC2F.clear();
 
 #ifdef TEST_MPI_NG
   if (nchild==0) {
@@ -79,7 +73,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
                             par.levels[l+1].Xmin[d]))        &&
              (MCMD->child_procs[i].Xmin[d] > 
               par.levels[l].Xmin[d]*ONE_PLUS_EPS) ) {
+#ifdef TEST_MPI_NG
           cout <<"C2F_SEND: child "<<i<<", dim "<<d<<" NEG DIR\n";
+#endif
           struct c2f *bdata = new struct c2f;
           bdata->rank = MCMD->child_procs[i].rank;
           bdata->dir  = 2*d;
@@ -88,8 +84,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
           b->NGsendC2F.push_back(bdata);
+#ifdef TEST_MPI_NG
           cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
           cout <<b->NGsendC2F.size()-1<<"\n";
+#endif
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
@@ -97,7 +95,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
                                 par.levels[l+1].Xmax[d]))    &&
                  (MCMD->child_procs[i].Xmax[d] < 
                   par.levels[l].Xmax[d]*ONE_MINUS_EPS) ) {
+#ifdef TEST_MPI_NG
           cout <<"C2F_SEND: child "<<i<<", dim "<<d<<" POS DIR\n";
+#endif
           struct c2f *bdata = new struct c2f;
           bdata->rank = MCMD->child_procs[i].rank;
           bdata->dir  = 2*d+1;
@@ -106,8 +106,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
           b->NGsendC2F.push_back(bdata);
+#ifdef TEST_MPI_NG
           cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
           cout <<b->NGsendC2F.size()-1<<"\n";
+#endif
         }
       } // loop over dimensions
     } // if child is not on my process
@@ -173,6 +175,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     } // loop over send boundaries
   } // if not at a full step update
 
+#ifdef TEST_C2F
+  cout <<"C2F SEND: "<<l<<" num send="<<b->NGsendC2F.size()<<"\n";
+#endif
+  
   // loop over send boundaries, pack and send the data.
   for (unsigned int ib=0; ib<b->NGsendC2F.size(); ib++) {
     //
@@ -180,12 +186,20 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // if 2nd order accuracy, also a slope vector for each dimension
     //
     size_t n_cell = b->NGsendC2F[ib]->c.size();
+
+#ifdef TEST_MPI_NG
+    cout <<"C2F SEND: "<<MCMD->get_myrank()<<", sending ";
+    cout << n_cell<<" elements to process: ";
+    cout <<b->NGsendC2F[ib]->rank<<"\n";
+#endif
+
     size_t n_el = 0;
     if      (par.spOOA == OA1) n_el = n_cell*(par.nvar+1+par.ndim);
     else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1+par.ndim);
     else rep.error("bad spOOA in MPI C2F",par.spOOA);
     pion_flt *buf = new pion_flt [n_el];
     double slope[par.nvar];
+    double cpos[par.ndim];
 
     // loop over cells, add Ph[], cell-vol, slopes to send buffer
     size_t ibuf=0;
@@ -196,8 +210,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       ibuf += par.nvar;
       buf[ibuf] = grid->CellVolume(c,0);
       ibuf++;
+      CI.get_dpos(c,cpos);
       for (int v=0;v<par.ndim;v++)
-        buf[ibuf+v]= static_cast<double>(c->pos[v]);
+        buf[ibuf+v]= cpos[v];
       ibuf += par.ndim;
 
       if (par.spOOA == OA2) {
@@ -222,8 +237,8 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // more than one boundary to the same process.  Also add level, 
     // because it can happen that more than one level sends the same
     // boundary to the same proc.
-    // So the tag is 1000 + 100*dir + level+1.
-    // This is unique as long as level<99.
+    // So the tag is BC_MPI_NGC2F_tag + 100*dir + level+1.
+    //
     int comm_tag = BC_MPI_NGC2F_tag+100*b->NGsendC2F[ib]->dir +l+1;
 #ifdef TEST_MPI_NG
     cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
@@ -356,7 +371,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           continue;
         }
         else
-          rep.error("error in 3d logic C2FR_setup",c->pos[YY]-row_y);
+          rep.error("error in 2d logic C2FR_setup",c->pos[YY]-row_y);
       } // loop over cells
     } // if 2D
 

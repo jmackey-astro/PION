@@ -45,6 +45,7 @@ class NG_coarse_to_fine_bc {
   virtual void bilinear_interp(
       class SimParams &,      ///< pointer to simulation parameters
       const int *,  ///< coarse level cell integer position
+      const int,  ///< quad of fine cell (0=--, 1=+-, 2=-+, 3=++)
       cell *,  ///< fine level cell
       const double *,  ///< prim. vec. at corner of coarse cell
       const double *,  ///< prim. vec. at corner of coarse cell
@@ -66,7 +67,7 @@ class NG_coarse_to_fine_bc {
 
   /// interpolate data from one coarse cell onto 4 fine cells in 2D
   virtual void interpolate_coarse2fine2D(
-      class SimParams &,      ///< pointer to simulation parameters
+      class SimParams &,      ///< simulation parameters
       class GridBaseClass *,  ///< pointer to fine grid
       class FV_solver_base *, ///< pointer to equations
       const pion_flt *,     ///< state vector of coarse cell.
@@ -79,6 +80,19 @@ class NG_coarse_to_fine_bc {
       cell *, ///< pointer to third fine cell  (XN,YP)
       cell *  ///< pointer to fourth fine cell (XP,YP)
       );
+  
+  /// For a coarse-grid cell with given position and optical depths,
+  /// assign optical depths to a list of fine-grid child-cells, using
+  /// the relative position of the source and coarse cell.
+  void get_C2F_Tau(
+      class SimParams &,      ///< simulation parameters
+      std::vector<cell *> &,  ///< list of cells
+      const pion_flt *,       ///< centre of coarse cell.
+      pion_flt *T               ///< coarse-cell optical depths
+      );
+
+  int C2F_Nxd; ///< number of extra data variables to send.
+  vector<int> C2F_tauoff; ///< offsets of optical depths from 0.
 
 };
 

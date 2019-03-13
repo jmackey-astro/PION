@@ -115,10 +115,8 @@
 using namespace std;
 
 
-//#define GLM_ZERO_BOUNDARY ///< Set this flag to make Psi=0 on boundary cells.
-#define GLM_NEGATIVE_BOUNDARY ///< Set this flag for Psi[boundary cell]=-Psi[edge cell]
 
-
+//#define TEST_BC89FLUX
 
 // ##################################################################
 // ##################################################################
@@ -130,11 +128,13 @@ UniformGrid::UniformGrid(
     int nv,
     int eqt,
     int Nbc,       ///< Number of boundary cells to use.
-    double *g_xn,
-    double *g_xp,
+    double *g_xn,  // this grid xmin
+    double *g_xp,  // this grid xmax
     int *g_nc,
-    double *sim_xn,
-    double *sim_xp
+    double *lev_xn, // level xmin
+    double *lev_xp, // level xmax
+    double *sim_xn, // sim xmin
+    double *sim_xp  // sim xmax
     )
   : 
   VectorOps_Cart(nd),
@@ -187,6 +187,12 @@ UniformGrid::UniformGrid(
   Sim_ixmax  = mem.myalloc(Sim_ixmax, G_ndim);
   Sim_irange = mem.myalloc(Sim_irange,G_ndim);
 
+  L_xmin   = mem.myalloc(L_xmin,  G_ndim);
+  L_xmax   = mem.myalloc(L_xmax,  G_ndim);
+  L_range  = mem.myalloc(L_range, G_ndim);
+  L_ixmin  = mem.myalloc(L_ixmin, G_ndim);
+  L_ixmax  = mem.myalloc(L_ixmax, G_ndim);
+  L_irange = mem.myalloc(L_irange,G_ndim);
 
   //
   // Assign values to grid dimensions and set the cell-size
@@ -218,6 +224,11 @@ UniformGrid::UniformGrid(
     Sim_xmin[i] = sim_xn[i];
     Sim_xmax[i] = sim_xp[i];
     Sim_range[i] = sim_xp[i]-sim_xn[i];
+
+    L_xmin[i] = lev_xn[i];
+    L_xmax[i] = lev_xp[i];
+    L_range[i] = lev_xp[i]-lev_xn[i];
+
   }
 
 #ifdef TESTING
@@ -231,18 +242,25 @@ UniformGrid::UniformGrid(
   set_cell_size();
 
   // grid dimensions including boundary data
-  for (int v=0;v<G_ndim;v++) G_xmin_all[v] = G_xmin[v] - BC_nbc*G_dx;
-  for (int v=0;v<G_ndim;v++) G_xmax_all[v] = G_xmax[v] + BC_nbc*G_dx;
-  for (int v=0;v<G_ndim;v++) G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
+  for (int v=0;v<G_ndim;v++)
+    G_xmin_all[v] = G_xmin[v] - BC_nbc*G_dx;
+  for (int v=0;v<G_ndim;v++)
+    G_xmax_all[v] = G_xmax[v] + BC_nbc*G_dx;
+  for (int v=0;v<G_ndim;v++)
+    G_range_all[v] = G_xmax_all[v] - G_xmin_all[v];
 
   //
   // Now create the first cell, and then allocate data from there.
   // Safe to assume we have at least one cell...
   //
+#ifdef TESTING
   cout <<" done.\n Initialising first cell...\n";
+#endif // TESTING
   G_fpt_all = CI.new_cell();
   G_fpt_all->id = 0;
+#ifdef TESTING
   cout <<" done.\n";
+#endif // TESTING
   if(G_fpt_all==0) {
     rep.error("Couldn't assign memory to first cell in grid.",
               G_fpt_all);
@@ -251,7 +269,9 @@ UniformGrid::UniformGrid(
   //
   // assign memory for all cells, including boundary cells.
   //
+#ifdef TESTING
   cout <<"\t allocating memory for grid.\n";
+#endif // TESTING
   int err = allocate_grid_data();
   if(err!=0)
     rep.error("Error setting up grid, allocate_grid_data",err);
@@ -260,7 +280,9 @@ UniformGrid::UniformGrid(
   // assign grid structure on cells, setting positions and ngb
   // pointers.
   //
+#ifdef TESTING
   cout <<"\t assigning pointers to neighbours.\n";
+#endif // TESTING
   err += assign_grid_structure();
   if(err!=0)
     rep.error("Error setting up grid, assign_grid_structure",err);
@@ -280,13 +302,43 @@ UniformGrid::UniformGrid(
   //
   CI.get_ipos_vec(G_xmin, G_ixmin );
   CI.get_ipos_vec(G_xmax, G_ixmax );
-  for (int v=0;v<G_ndim;v++) G_irange[v] = G_ixmax[v]-G_ixmin[v];
+  for (int v=0;v<G_ndim;v++)
+    G_irange[v] = G_ixmax[v]-G_ixmin[v];
   G_idx = G_irange[XX]/G_ng[XX];
-  for (int v=0;v<G_ndim;v++) G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
-  for (int v=0;v<G_ndim;v++) G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
-  for (int v=0;v<G_ndim;v++) G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
-  
-//#ifdef TESTING
+  for (int v=0;v<G_ndim;v++)
+    G_ixmin_all[v] = G_ixmin[v] - BC_nbc*G_idx;
+  for (int v=0;v<G_ndim;v++)
+    G_ixmax_all[v] = G_ixmax[v] + BC_nbc*G_idx;
+  for (int v=0;v<G_ndim;v++)
+    G_irange_all[v] = G_ixmax_all[v] - G_ixmin_all[v];
+
+  CI.get_ipos_vec(Sim_xmin, Sim_ixmin);
+  CI.get_ipos_vec(Sim_xmax, Sim_ixmax);
+  for (int v=0;v<G_ndim;v++) {
+    Sim_irange[v] = Sim_ixmax[v]-Sim_ixmin[v];
+  }
+  CI.get_ipos_vec(L_xmin, L_ixmin);
+  CI.get_ipos_vec(L_xmax, L_ixmax);
+  for (int v=0;v<G_ndim;v++) {
+    L_irange[v] = L_ixmax[v]-L_ixmin[v];
+  }
+
+  // set external boundary cells to be not part of the simulation
+  // domain if they are outside of Sim_Xmin and Sim_Xmax.
+  class cell *c = FirstPt_All();
+  bool dom=true;
+  do {
+    c->isdomain=true;
+    dom=true;
+    for (int v=0;v<G_ndim;v++) {
+      if (c->pos[v]<Sim_ixmin[v] || c->pos[v]>Sim_ixmax[v]) dom=false;
+    }
+    if (!dom) c->isdomain = false;
+    c->isleaf=true; // assume all cells are leaves unless changed.
+  } while ( (c=NextPt_All(c))!=0);
+
+
+#ifdef TESTING
   rep.printVec("grid ixmin ", G_ixmin, G_ndim);
   rep.printVec("grid ixmax ", G_ixmax, G_ndim);
   rep.printVec("grid irange", G_irange,G_ndim);
@@ -299,18 +351,15 @@ UniformGrid::UniformGrid(
   rep.printVec("grid xmin_all ", G_xmin_all, G_ndim);
   rep.printVec("grid xmax_all ", G_xmax_all, G_ndim);
   rep.printVec("grid range_all", G_range_all,G_ndim);
-//#endif
+  rep.printVec("Sim xmin ", Sim_xmin, G_ndim);
+  rep.printVec("Sim xmax ", Sim_xmax, G_ndim);
+  rep.printVec("Sim range", Sim_range,G_ndim);
+#endif
 
-  //
-  // Set integer dimensions/location of Simulation (same as grid)
-  //
-  CI.get_ipos_vec(Sim_xmin, Sim_ixmin);
-  CI.get_ipos_vec(Sim_xmax, Sim_ixmax);
-  for (int v=0;v<G_ndim;v++) {
-    Sim_irange[v] = Sim_ixmax[v]-Sim_ixmin[v];
-  }
 
+#ifdef TESTING
   cout <<"Cartesian grid: dr="<<G_dx<<"\n";
+#endif // TESTING
   RT=0;
 
 #ifdef TESTING
@@ -502,7 +551,6 @@ int UniformGrid::assign_grid_structure()
       //cout <<"    cell NOT on grid";
 #endif // TESTING
     }
-    c->isdomain=true; // assume all cells are part of the domain.
 
     ///
     /// \section Edges
@@ -1288,11 +1336,11 @@ void UniformGrid::BC_deleteBoundaryData()
 
 int UniformGrid::setup_flux_recv(
       class SimParams &par, ///< simulation params (including BCs)
-      const int l           ///< level to receive from
+      const int lp1           ///< level to receive from
       )
 {
 #ifdef TEST_BC89FLUX
-  cout <<" UniformGrid::setup_flux_recv() recv from level="<<l<<"\n";
+  cout <<" UniformGrid::setup_flux_recv() recv from level="<<lp1<<"\n";
 #endif
   //
   // Get size of interface region and number of cells.
@@ -1304,11 +1352,12 @@ int UniformGrid::setup_flux_recv(
   size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
 
-  if (this != par.levels[l].parent)
-    rep.error("level l is not my child!",l);
+  if (this != par.levels[lp1].parent)
+    rep.error("level l is not my child!",lp1);
 
-  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lp1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lp1].Xmax, lxmax);
+
 
   // define interface region of fine and coarse grids, and whether
   // each direction is to be included or not.  Note that this allows
@@ -1360,6 +1409,8 @@ int UniformGrid::setup_flux_recv(
   for (int d=0; d<2*G_ndim; d++) {
     if (recv[d] == true) {
       flux_update_recv[d].fi.resize(nel[d]);
+      flux_update_recv[d].dir = d;
+      flux_update_recv[d].ax  = d/2;
       flux_update_recv[d].Ncells = nc;
       for (size_t i=0; i<nel[d]; i++) {
         flux_update_recv[d].fi[i] = 
@@ -1374,6 +1425,8 @@ int UniformGrid::setup_flux_recv(
     else {
       flux_update_recv[d].fi.resize(1);
       flux_update_recv[d].fi[0] = 0;
+      flux_update_recv[d].dir = d;
+      flux_update_recv[d].ax  = d/2;
       flux_update_recv[d].Ncells = nc;
     }
   }
@@ -1401,11 +1454,11 @@ int UniformGrid::setup_flux_recv(
 
 int UniformGrid::setup_flux_send(
       class SimParams &par, ///< simulation params (including BCs)
-      const int l           ///< level to send to
+      const int lm1           ///< level to send to
       )
 {
 #ifdef TEST_BC89FLUX
-  cout <<" UniformGrid::setup_flux_send() send to level="<<l<<"\n";
+  cout <<" UniformGrid::setup_flux_send() send to level="<<lm1<<"\n";
 #endif
   //
   // Get size of interface region and number of cells.
@@ -1419,12 +1472,12 @@ int UniformGrid::setup_flux_send(
   struct flux_interface *fi = 0;
 
 #ifdef TEST_BC89FLUX
-  if (this != par.levels[l].child)
-    rep.error("level l is not my parent!",l);
+  if (this != par.levels[lm1].child)
+    rep.error("level l is not my parent!",lm1);
 #endif
 
-  CI.get_ipos_vec(par.levels[l].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lm1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lm1].Xmax, lxmax);
 
   // define interface region of fine and coarse grids, and whether
   // each direction is to be included or not.  Note that this allows
@@ -1454,8 +1507,8 @@ int UniformGrid::setup_flux_send(
   // This is really only for parallel execution: if the boundary
   // of my grid is not at the boundary of my level, then set send
   // to false
-  CI.get_ipos_vec(par.levels[l+1].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[l+1].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lm1+1].Xmin, lxmin);
+  CI.get_ipos_vec(par.levels[lm1+1].Xmax, lxmax);
   for (int ax=0;ax<G_ndim;ax++) {
     if (G_ixmin[ax] > lxmin[ax]) send[2*ax]   = false;
     if (G_ixmax[ax] < lxmax[ax]) send[2*ax+1] = false;
@@ -1493,6 +1546,9 @@ int UniformGrid::setup_flux_send(
   // initialize arrays
   flux_update_send.resize(2*G_ndim);
   for (int d=0; d<2*G_ndim; d++) {
+    flux_update_send[d].dir = d;
+    flux_update_send[d].ax  = d/2;
+
     if (send[d] == true) {
 #ifdef TEST_BC89FLUX
       cout <<"d="<<d<<", nel="<<nel[d]<<"\n";
@@ -1619,18 +1675,29 @@ int UniformGrid::add_cells_to_face(
 #ifdef TEST_BC89FLUX
     cout <<nface[perpaxis]<<", ";
     cout <<flux.fi.size()<<"\n";
+    if (!c) {
+      cout <<"got lost on grid!\n";
+      rep.printVec("ixmin",ixmin,G_ndim);
+      rep.printVec("ixmax",ixmax,G_ndim);
+      rep.printVec("G_xmin",G_xmin,G_ndim);
+      rep.printVec("G_xmax",G_xmax,G_ndim);
+      rep.error("lost on grid",c);
+    }
 #endif
     if (nface[perpaxis] != static_cast<int>(flux.fi.size()))
       rep.error("wrong number of cells 2D interface",flux.fi.size());
 
     for (int i=0;i<nface[perpaxis]; i++) {
       for (int ic=0;ic<ncell;ic++) {
+        if (!c) rep.error("Cell is null in BC89 add_cells",c);
         flux.fi[i]->c[ic] = c;
         c->F = mem.myalloc(c->F,G_nvar);
         c->isbd_ref[d] = true;
         flux.fi[i]->area[ic] = CellInterface(c,OppDir(d),0);
 #ifdef TEST_BC89FLUX
-        cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<"\n";
+        cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<": adding cell: ";
+        rep.printVec("pos",c->pos,G_ndim);
+        //CI.print_cell(c);
 #endif
         c = NextPt(c,perpdir);
       }
@@ -1795,17 +1862,26 @@ void UniformGrid::save_fine_fluxes(
         if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
 #ifdef TEST_BC89FLUX
-        cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-        cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
+        //CI.print_cell(fi->c[i]);
+        //CI.print_cell(NextPt(fi->c[i],YP));
+        //cout <<"PRE: flux="; rep.printVec("",fi->flux,G_nvar);
+        //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
+        //cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
 #endif
         for (int v=0;v<G_nvar;v++) {
           fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
         }
 #ifdef TEST_BC89FLUX
-        cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-        cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
+        rep.printVec("cell fine flux",fi->c[i]->F,G_nvar);
+        rep.printVec("cell fine Ph",fi->c[i]->Ph,G_nvar);
+        //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
+        //cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
 #endif
       }
+#ifdef TEST_BC89FLUX
+      cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: ";
+      cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
+#endif
     }
   }
   return;
@@ -2109,12 +2185,14 @@ uniform_grid_cyl::uniform_grid_cyl(
     double *g_xn,   ///< array of minimum values of x,y,z for this grid.
     double *g_xp,   ///< array of maximum values of x,y,z for this grid.
     int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *lev_xn, // level xmin
+    double *lev_xp, // level xmax
     double *sim_xn, ///< array of min. x/y/z for full simulation.
     double *sim_xp  ///< array of max. x/y/z for full simulation.
     )
   : 
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,lev_xn,lev_xp,sim_xn,sim_xp),
   VectorOps_Cyl(nd)
 {
 #ifdef TESTING
@@ -2463,12 +2541,14 @@ uniform_grid_sph::uniform_grid_sph(
     double *g_xn,   ///< array of minimum values of x,y,z for this grid.
     double *g_xp,   ///< array of maximum values of x,y,z for this grid.
     int *g_nc,      ///< array of number of cells in x,y,z directions.
+    double *lev_xn, // level xmin
+    double *lev_xp, // level xmax
     double *sim_xn, ///< array of min. x/y/z for full simulation.
     double *sim_xp  ///< array of max. x/y/z for full simulation.
     )
   : 
   VectorOps_Cart(nd),
-  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,sim_xn,sim_xp),
+  UniformGrid(nd,nv,eqt,Nbc,g_xn,g_xp,g_nc,lev_xn,lev_xp,sim_xn,sim_xp),
   VectorOps_Cyl(nd),
   VectorOps_Sph(nd)
 {
@@ -2517,8 +2597,6 @@ double uniform_grid_sph::iR_cov(const cell *c)
 #ifdef PARALLEL
   rep.error("redefine iR_cov() for parallel grid","please");
 #endif
-  //cout <<"R_com(c)="<<R_com(c)<<", ppi="<<CI.phys_per_int()<<", ixmin="<<G_ixmin[Rsph]<<"\n";
-  //cout <<"So iR_cov(c)="<<(R_com(c)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]<<"\n";
   return ((R_com(c,G_dx)-G_xmin[Rsph])/CI.phys_per_int() +G_ixmin[Rsph]);
 }
 
@@ -2536,8 +2614,8 @@ double uniform_grid_sph::iR_cov(const cell *c)
 // physical units.
 //
 double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
-          const double *p2  ///< position 2 (physical)
-          )
+      const double *p2  ///< position 2 (physical)
+      )
 {
   return fabs(p1[Rsph]-p2[Rsph]);
 }
@@ -2556,8 +2634,8 @@ double uniform_grid_sph::distance(const double *p1, ///< position 1 (physical)
 // integer units (but obviously the answer is not an integer).
 //
 double uniform_grid_sph::idistance(const int *p1, ///< position 1 (integer)
-           const int *p2  ///< position 2 (integer)
-           )
+      const int *p2  ///< position 2 (integer)
+      )
 {
   return fabs(static_cast<double>(p1[Rsph]-p2[Rsph]));
 }

@@ -61,41 +61,6 @@ class raytracer_USC_pllel : public raytracer_USC, public RT_MPI_bc {
 
 
   protected:
-  /// Traces a 1D column from a starting cell, in a direction,
-  /// to the edge of the grid. 
-  int trace_column(
-      const rad_source *,  ///< source we are tracing from.
-      cell *,              ///< cell to start from.
-      const enum direction ///< direction we are looking.
-      );
-
-
-  ///
-  /// Short Characteristic Method of getting column density to cell. 
-  /// The parallel version assumes boundary cells exist, so doesn't check that we
-  /// are on the grid.
-  ///
-  virtual void col2cell_2d(
-      const rad_source *,     ///< source we are working on.
-      const cell *,           ///< cell to get column to.
-      const enum direction,   ///< face ray enters cell through.
-      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-      const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-      double []               ///< Column densities.
-      );
-
-  ///\brief Short Characteristic Method of getting column density to cell.
-  ///The parallel version assumes boundary cells exist, so doesn't check that we
-  ///are on the grid.
-  ///
-  virtual void col2cell_3d(
-      const rad_source *,     ///< source we are working on.
-      const cell *,           ///< cell to get column to.
-      const enum direction,   ///< face ray enters cell through.
-      const enum direction *, ///< perp direction(s) towards source. (1 el array in 2d)
-      const double *,         ///< fabs tan theta (angle(s) between 0 and 45deg) (1 el array in 2d)
-      double []               ///< Column densities.
-      );
 
   class SimParams *par; ///< pointer to simulation parameters
   class MCMDcontrol *MCMD; ///< pointer to domain decomposition
