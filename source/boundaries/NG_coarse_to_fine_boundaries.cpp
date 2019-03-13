@@ -396,11 +396,11 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         fch[6] = fine->NextPt(fch[2],ZP);
         fch[7] = fine->NextPt(fch[3],ZP);
 
-//#ifdef TEST_C2F
+#ifdef TEST_C2F
         for (int v=0;v<8;v++) {
           if (fch[v]==0) rep.error("fine-cell list",v);
         }
-//#endif
+#endif
 
         interpolate_coarse2fine3D(
               par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,sz,fch);

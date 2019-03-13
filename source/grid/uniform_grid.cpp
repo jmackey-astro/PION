@@ -1500,6 +1500,7 @@ int UniformGrid::setup_flux_send(
     nface[ax] = ncell[ax]/2;  // # face elements on coarse grid
 #ifdef TEST_BC89FLUX
     cout <<"axis "<<ax<<", ncell="<<ncell[ax]<<", nface="<<nface[ax]<<"\n";
+    cout <<"\tixmin="<<ixmin[ax]<<", ixmax="<<ixmax<<"\n";
     if ( (ixmax[ax]-ixmin[ax]) % 2*G_idx !=0) {
       rep.error("interface region not divisible (send)!",
                                       ixmax[ax]-ixmin[ax]);
@@ -1621,7 +1622,7 @@ int UniformGrid::add_cells_to_face(
   rep.printVec("ixmax",ixmax,G_ndim);
   rep.printVec("nface",nface,G_ndim);
 #endif
-  
+ 
   cell *c = FirstPt_All();
 
   //

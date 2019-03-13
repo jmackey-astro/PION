@@ -61,6 +61,9 @@ int NG_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE(
   }
 
   // add each cell in the child grid to the "avg" vector:
+#ifdef TEST_MPI_NG
+  cout <<"F2C_SERIAL: adding cells to avg struct. nel="<<nel<<"\n";
+#endif
   add_cells_to_avg(par.ndim,child,nel,b->avg);
 
 
@@ -117,11 +120,11 @@ void NG_fine_to_coarse_bc::add_cells_to_avg(
       ipos[i] = 0.0;
     CI.get_dpos_vec(ipos,avg[v].cpos);
 #ifdef TEST_MPI_NG
-    //for (unsigned int i=0;i<avg[0].c.size();i++) {
-      //rep.printVec("cellpos",avg[v].c[0]->pos,ndim);
-      //rep.printVec("cellpos",avg[v].cpos,ndim);
-    //}
-    rep.printVec("fine cell pos",f->pos,ndim);
+    rep.printVec("~AVG cellpos",ipos,ndim);
+    for (unsigned int i=0;i<avg[0].c.size();i++) {
+      rep.printVec("cellpos",avg[v].c[i]->pos,ndim);
+    }
+    //rep.printVec("fine cell pos",f->pos,ndim);
 #endif
     // get to next cell.
     f = grid->NextPt(f);

@@ -258,6 +258,9 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 
   // loop over children:
   for (int i=0;i<nchild;i++) {
+#ifdef TEST_MPI_NG_F2C
+    cout <<"child = "<<i<<", processing.\n";
+#endif
 
     // get dimensions of child grid from struct
     int ixmin[MAX_DIM], ixmax[MAX_DIM];

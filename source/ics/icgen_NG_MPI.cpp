@@ -159,18 +159,22 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
+#ifdef TESTING
   cout <<"ICGEN: Setting up boundaries\n";
+#endif
   SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
+#ifdef TESTING
   cout <<"ICGEN: Setting up raytracing\n";
+#endif
   err += SimSetup->setup_raytracing(SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-//#ifdef TESTING
+#ifdef TESTING
     cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
-//#endif
+#endif
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
     COMM->barrier("level assign boundary data");
     rep.errorTest("icgen_NG_MPI::assign_boundary_data",0,err);
@@ -230,6 +234,7 @@ int main(int argc, char **argv)
   }
   rep.errorTest("sim_init_NG: error from boundary update",0,err);
   // ----------------------------------------------------------------
+
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
@@ -275,7 +280,9 @@ int main(int argc, char **argv)
       rep.error("setting chemical states to equilibrium failed",err);
 
     SimPM.EP.update_erg = uerg;
+#ifdef TESTING
     cout <<"MAIN: finished equilibrating the chemical species.\n";
+#endif
   }
   // ----------------------------------------------------------------
 

@@ -561,7 +561,7 @@ int IC_blastwave::setup_cyl_bw()
   double Pin    = 3.0*bw_energy*(gam-1.0)/(4.0*M_PI*pow(bw_rad,3.0));
 
   // Set up the inside_sphere class, with 100 subpoints per cell.
-  class inside_sphere stest(centre,bw_rad,SimPM->dx,100,ndim);
+  class inside_sphere stest(centre,bw_rad,gg->DX(),100,ndim);
   double vfrac;
 
   // Data.
@@ -634,7 +634,7 @@ int IC_blastwave::setup_cart_bw()
   int nsub=0;
   if (ndim==2) nsub=100;
   else         nsub=32;
-  class inside_sphere stest(centre,bw_rad,SimPM->dx,nsub,ndim);
+  class inside_sphere stest(centre,bw_rad,gg->DX(),nsub,ndim);
   double vfrac;
 
   // Data.

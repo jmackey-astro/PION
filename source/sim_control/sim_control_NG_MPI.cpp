@@ -1198,7 +1198,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"send "<<isend<<" is null, continuing..."<<endl;
+      cout <<"BC89_FLUX send "<<isend<<" is null, continuing..."<<endl;
 #endif
       continue;
     }
@@ -1317,7 +1317,8 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": recv "<<irecv<<" is not null: recving data from "<<fup->rank[0]<<endl;
+      cout <<"l="<<l<<": recv "<<irecv<<" is not null: ";
+      cout <<"recving data from "<<fup->rank[0]<<endl;
 #endif
     }
 
