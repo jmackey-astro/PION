@@ -498,25 +498,18 @@ int FV_solver_mhd_ideal_adi::MHDsource(
                       )
 {
 
-  pos = static_cast<direction>(static_cast<int>(d)*2+1);
-  neg = static_cast<direction>(static_cast<int>(d)*2);
-  cell *p=Cr, *n=Cl;
-  double dx=0.0;
-  if (grid->NextPt(Cr,pos)) {
-    p   = grid->NextPt(Cr,pos);
-    dx += grid->DX();
-  }
-  if (grid->NextPt(Cl,neg)) {
-    n   = grid->NextPt(Cl,neg);
-    dx += grid->DX();
-  }
-  double dBdx = (p->Ph[eqBX] - n->Ph[eqBX])/dx;
+  double dx = 2*grid->DX();
+  double dBdx = (Cr->Ph[eqBX] - Cl->Ph[eqBX])/dx;
   
   pion_flt Powell_l[eq_nvar], Powell_r[eq_nvar];
+  for (int v=0;v<eq_nvar;v++){
+    Powell_l[v] = Powell_r[v]  = 0.0;
+  }
+  
   double uB_l = Pl[eqBX]*Pl[eqVX] + Pl[eqBY]*Pl[eqVY] + Pl[eqBZ]*Pl[eqVX];
   double uB_r = Pr[eqBX]*Pr[eqVX] + Pr[eqBY]*Pr[eqVY] + Pr[eqBZ]*Pr[eqVX];
   
-  Powell_l[eqRHO] = Powell_l[eqPSI] = 0;
+  //Powell_l[eqRHO] = Powell_l[eqPSI] = 0;
   Powell_l[eqMMX] = Pl[eqBX];
   Powell_l[eqMMY] = Pl[eqBY];
   Powell_l[eqMMZ] = Pl[eqBZ];
@@ -525,7 +518,7 @@ int FV_solver_mhd_ideal_adi::MHDsource(
   Powell_l[eqBBY] = Pl[eqVY];
   Powell_l[eqBBZ] = Pl[eqVZ];
   
-  Powell_r[eqRHO] = Powell_r[eqPSI] = 0;
+  //Powell_r[eqRHO] = Powell_r[eqPSI] = 0;
   Powell_r[eqMMX] = Pr[eqBX];
   Powell_r[eqMMY] = Pr[eqBY];
   Powell_r[eqMMZ] = Pr[eqBZ];
@@ -876,34 +869,25 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
 )
 {
   
-  pos = static_cast<direction>(static_cast<int>(d)*2+1);
-  neg = static_cast<direction>(static_cast<int>(d)*2);
-  cell *p=Cr, *n=Cl;
-  double dx=0.0;
-  if (grid->NextPt(Cr,pos)) {
-    p   = grid->NextPt(Cr,pos);
-    dx += grid->DX();
-  }
-  if (grid->NextPt(Cl,neg)) {
-    n   = grid->NextPt(Cl,neg);
-    dx += grid->DX();
-  }
+   double dx = 2*grid->DX();
   
   FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
   double psi_brac = Pr[eqSI] - Pl[eqSI];
   
   pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
-  double upsi_l = (Pl[eqVX] + Pl[eqVY] + Pl[eqVX])*Pl[eqSI];
-  double upsi_r = (Pr[eqVX] + Pr[eqVY] + Pr[eqVX])*Pr[eqSI];
+  for (int v=0;v<eq_nvar;v++){
+    psi_l[v] = psi_r[v]  = 0.0;
+  }
   
-  psi_l[eqRHO] = psi_l[eqMMX] = psi_l[eqMMY] = psi_l[eqMMZ] = 0;
-  psi_l[eqERG] = upsi_l;
-  psi_l[eqBBX] = psi_l[eqBBY] = psi_l[eqBBZ] = 0;
+  
+  //psi_l[eqRHO] = psi_l[eqMMX] = psi_l[eqMMY] = psi_l[eqMMZ] = 0;
+  psi_l[eqERG] = Pl[eqVX] * Pl[eqSI];
+  //psi_l[eqBBX] = psi_l[eqBBY] = psi_l[eqBBZ] = 0;
   psi_l[eqPSI] = Pl[eqVX];
   
-  psi_r[eqRHO] = psi_r[eqMMX] = psi_r[eqMMY] = psi_r[eqMMZ] = 0;
-  psi_r[eqERG] = upsi_r;
-  psi_r[eqBBX] = psi_r[eqBBY] = psi_r[eqBBZ] = 0;
+  //psi_r[eqRHO] = psi_r[eqMMX] = psi_r[eqMMY] = psi_r[eqMMZ] = 0;
+  psi_r[eqERG] = Pr[eqVX] * Pr[eqSI];
+  //psi_r[eqBBX] = psi_r[eqBBY] = psi_r[eqBBZ] = 0;
   psi_r[eqPSI] = Pr[eqVX];
   
   for (int v=0;v<eq_nvar;v++) {
