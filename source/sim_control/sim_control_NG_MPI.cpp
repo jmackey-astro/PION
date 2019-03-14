@@ -1407,7 +1407,6 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
 #endif
       // correct dU so that coarse level is consistent with fine.
       for (int v=0;v<SimPM.nvar;v++) fi->c[0]->dU[v] += utmp[v];
-      cout <<"something wrong in BC89 flux for >8 MPI processes!\n";
 
     } // loop over elements
     if (iel !=n_data) rep.error("ndata",iel-n_data);
