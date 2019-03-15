@@ -362,13 +362,17 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
             cout <<" at "<<delta[tile]<<"\n";
 #endif
             pos[ax] = xn[ax];
-            pos[pp[0]] = xn[pp[0]] + txmax[pp[0]];
-            pos[pp[1]] = xn[pp[1]] + tymax[pp[1]];
+            pos[pp[0]] = xn[pp[0]] + txmax[tile];
+            pos[pp[1]] = xn[pp[1]] + tymax[tile];
             CI.get_ipos_vec(pos,ixmax);
             pos[ax] = xn[ax] - 0.5*rr[ax];
-            pos[pp[0]] = xn[pp[0]] + txmin[pp[0]];
-            pos[pp[1]] = xn[pp[1]] + tymin[pp[1]];
+            pos[pp[0]] = xn[pp[0]] + txmin[tile];
+            pos[pp[1]] = xn[pp[1]] + tymin[tile];
             CI.get_ipos_vec(pos,ixmin);
+#ifdef TEST_C2F
+            rep.printVec("ixmin",ixmin,par.ndim);
+            rep.printVec("ixmax",ixmax,par.ndim);
+#endif
 
             struct c2f *bdata = new struct c2f;
             bdata->rank = proc;
@@ -405,12 +409,12 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
             cout <<" at "<<delta[tile]<<"\n";
 #endif
             pos[ax] = xp[ax] + 0.5*rr[ax];
-            pos[pp[0]] = xn[pp[0]] + txmax[pp[0]];
-            pos[pp[1]] = xn[pp[1]] + tymax[pp[1]];
+            pos[pp[0]] = xn[pp[0]] + txmax[tile];
+            pos[pp[1]] = xn[pp[1]] + tymax[tile];
             CI.get_ipos_vec(pos,ixmax);
             pos[ax] = xp[ax];
-            pos[pp[0]] = xn[pp[0]] + txmin[pp[0]];
-            pos[pp[1]] = xn[pp[1]] + tymin[pp[1]];
+            pos[pp[0]] = xn[pp[0]] + txmin[tile];
+            pos[pp[1]] = xn[pp[1]] + tymin[tile];
             CI.get_ipos_vec(pos,ixmin);
 
             struct c2f *bdata = new struct c2f;
@@ -433,13 +437,6 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
     } // loop over axes
     // 3D
   }
-
-
-
-
-
-
-
   return 0;
 }
 
