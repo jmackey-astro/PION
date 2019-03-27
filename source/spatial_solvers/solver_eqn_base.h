@@ -76,14 +76,14 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   /// This is used to reset to zero at start of each step, and also
   /// to reset local value to global value for multi-core execution.
   ///
-  void set_max_speed(
+  virtual void set_max_speed(
       const double c ///< new max. speed
       ) {return;}
 
   ///
   /// returns max_speed for this step.
   ///
-  double get_max_speed() {return 0.0;}
+  virtual double get_max_speed() {return 0.0;}
 
   /// calculate Powell and GLM source terms for multi-D MHD
   virtual int MHDsource(
@@ -92,7 +92,9 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       class cell *,   ///< pointer to cell of right state
       pion_flt *,     ///< left edge state
       pion_flt *,     ///< right edge state
+      const axes,     ///< Which axis we are looking along.
       enum direction, ///< positive direction normal to interface
+      enum direction, ///< negative direction normal to interface
       const double    ///< timestep dt
       ) {return 0;}
 #endif

@@ -91,20 +91,22 @@ class FV_solver_mhd_ideal_adi
         );
 
   
+#ifdef DERIGS
   ///
   /// calculate Powell and GLM source terms for multi-D MHD
   ///
   virtual int MHDsource(
-                        class GridBaseClass *,  ///< pointer to grid.
-                        class cell *,   ///< pointer to cell of left state
-                        class cell *,   ///< pointer to cell of right state
-                        pion_flt *,     ///< left edge state
-                        pion_flt *,     ///< right edge state
-                        const axes,            ///< Which axis we are looking along.
-                        enum direction, ///< positive direction normal to interface
-                        enum direction, ///< negative direction normal to interface
-                        const double    ///< timestep dt
-  );
+      class GridBaseClass *,  ///< pointer to grid.
+      class cell *,   ///< pointer to cell of left state
+      class cell *,   ///< pointer to cell of right state
+      pion_flt *,     ///< left edge state
+      pion_flt *,     ///< right edge state
+      const axes,     ///< Which axis we are looking along.
+      enum direction, ///< positive direction normal to interface
+      enum direction, ///< negative direction normal to interface
+      const double    ///< timestep dt
+      );
+#endif
 
   ///
   /// Powell source terms including divB
@@ -333,17 +335,19 @@ class FV_solver_mhd_mixedGLM_adi
         );
 
   
+#ifdef DERIGS
   virtual int MHDsource(
-                        class GridBaseClass *,  ///< pointer to grid.
-                        class cell *,   ///< pointer to cell of left state
-                        class cell *,   ///< pointer to cell of right state
-                        pion_flt *,     ///< left edge state
-                        pion_flt *,     ///< right edge state
-                        const axes,            ///< Which axis we are looking along.
-                        enum direction, ///< positive direction normal to interface
-                        enum direction, ///< negative direction normal to interface
-                        const double    ///< timestep dt
-  );
+        class GridBaseClass *,  ///< pointer to grid.
+        class cell *,   ///< pointer to cell of left state
+        class cell *,   ///< pointer to cell of right state
+        pion_flt *,     ///< left edge state
+        pion_flt *,     ///< right edge state
+        const axes,            ///< Which axis we are looking along.
+        enum direction, ///< positive direction normal to interface
+        enum direction, ///< negative direction normal to interface
+        const double    ///< timestep dt
+        );
+#endif
   
   ///
   /// Same as ideal MHD version except that total energy contains
@@ -375,7 +379,12 @@ class FV_solver_mhd_mixedGLM_adi
   ///
   void set_max_speed(
       const double c ///< new max. speed
-      ) {max_speed = c; return;}
+      )
+  {
+    max_speed = c;
+    //cout <<"solver-MHD max-speed="<<max_speed<<"\n";
+    return;
+  }    
 
   ///
   /// returns max_speed for this step.

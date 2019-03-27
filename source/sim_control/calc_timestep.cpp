@@ -124,6 +124,9 @@ int calc_timestep::calculate_timestep(
   if (par.grid_nlevels==1) cr = 0.25/par.dx;
   else cr = 0.25/par.levels[0].dx; // this is the old value.
   sp_solver->Set_GLM_Speeds(t_dyn,grid->DX(),cr);
+#else
+  double ch = par.CFL * grid->DX()/t_dyn;
+  sp_solver->set_max_speed(ch);
 #endif
 
   //

@@ -534,7 +534,7 @@ int FV_solver_mhd_ideal_adi::MHDsource(
     Cl->dU[v] += 0.5*dt*dBdx*Powell_l[v];
     Cr->dU[v] += 0.5*dt*dBdx*Powell_r[v];
   }
-    return 0;
+  return 0;
 }
 #endif
 
@@ -857,21 +857,21 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 ///
 #ifdef DERIGS
 int FV_solver_mhd_mixedGLM_adi::MHDsource(
-            class GridBaseClass *grid,  ///< pointer to grid.
-            class cell *Cl,   ///< pointer to cell of left state
-            class cell *Cr,   ///< pointer to cell of right state
-            pion_flt *Pl,     ///< left edge state
-            pion_flt *Pr,     ///< right edge state
-            const axes d,            ///< Which axis we are looking along.
-            enum direction pos, ///< positive direction normal to interface
-            enum direction neg, ///< negative direction normal to interface
-            const double dt    ///< timestep dt
-)
+      class GridBaseClass *grid,  ///< pointer to grid.
+      class cell *Cl,   ///< pointer to cell of left state
+      class cell *Cr,   ///< pointer to cell of right state
+      pion_flt *Pl,     ///< left edge state
+      pion_flt *Pr,     ///< right edge state
+      const axes d,            ///< Which axis we are looking along.
+      enum direction pos, ///< positive direction normal to interface
+      enum direction neg, ///< negative direction normal to interface
+      const double dt    ///< timestep dt
+      )
 {
   
-   double dx = 2*grid->DX();
+  double dx = 2.0*grid->DX();
   
-  FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
+  //FV_solver_mhd_ideal_adi::MHDsource(grid,Cl,Cr,Pl,Pr,d,pos,neg,dt);
   double psi_brac = Pr[eqSI] - Pl[eqSI];
   
   pion_flt psi_l[eq_nvar], psi_r[eq_nvar];
@@ -890,9 +890,10 @@ int FV_solver_mhd_mixedGLM_adi::MHDsource(
   //psi_r[eqBBX] = psi_r[eqBBY] = psi_r[eqBBZ] = 0;
   psi_r[eqPSI] = Pr[eqVX];
   
+  //cout <<"dt="<<dt<<", dx="<<dx<<"\n";
   for (int v=0;v<eq_nvar;v++) {
-    Cl->dU[v] += 0.5*psi_brac*psi_l[v]/dx;
-    Cr->dU[v] += 0.5*psi_brac*psi_r[v]/dx;
+    Cl->dU[v] += dt*psi_brac*psi_r[v]/dx;
+    Cr->dU[v] += dt*psi_brac*psi_l[v]/dx;
   }
   
   

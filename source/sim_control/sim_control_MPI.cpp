@@ -565,6 +565,10 @@ int sim_control_pllel::calculate_timestep(
   if (par.grid_nlevels==1) cr = 0.25/par.dx;
   else cr = 0.25/par.levels[0].dx;
   spatial_solver->Set_GLM_Speeds(t_dyn,grid->DX(), cr);
+#else
+  double ch = par.CFL * grid->DX()/t_dyn;
+  sp_solver->set_max_speed(ch);
+  cout <<"timestep: max-speed="<<ch<<"\n";
 #endif
   
   //

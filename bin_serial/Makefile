@@ -127,8 +127,8 @@ ifeq ($(MAKE_UNAME), standard)
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
-  #LDFLAGS += -lsiloh5
-  LDFLAGS += -lsilo
+  LDFLAGS += -lsiloh5
+  #LDFLAGS += -lsilo
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ######################################################################

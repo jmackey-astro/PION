@@ -731,7 +731,7 @@ int time_integrator::dynamics_dU_column(
                                 edgeR, Fr_this, SimPM.solverType,
                                 SimPM.artviscosity, SimPM.gamma, dx);
 #ifdef DERIGS
-    err += spatial_solver->MHDsource(grid,cpt,npt,edgeL,edgeR,posdir,dt);
+    err += spatial_solver->MHDsource(grid,cpt,npt,edgeL,edgeR,axis,posdir,negdir,dt);
 #endif
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this,
                                 slope_cpt, csp, dx, dt);
