@@ -11,6 +11,7 @@
 using namespace std;
 
 //#define TEST_C2F
+//#define C2F_TAU
 
 // ##################################################################
 // ##################################################################
@@ -37,6 +38,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   // If we are doing raytracing, then also send the column densities
   // from coarse to fine grids.  Here we set up the number of them.
   //
+#ifdef C2F_TAU
   struct rad_src_info *s;
   C2F_Nxd = 0;
   C2F_tauoff.resize(par.RS.Nsources);
@@ -49,6 +51,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     cout <<" cols, running total = "<<C2F_Nxd<<"\n";
 #endif
   }
+#endif // C2F_TAU
 
   list<cell*>::iterator bpt=b->data.begin();
   int gidx = grid->idx();
@@ -68,6 +71,8 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
         pc =  parent->FirstPt_All();
         loop = true;
       }
+      else if (!pc)
+        rep.error("C2F boundaries setup",distance);
       distance = grid->idistance(pc->pos, (*bpt)->pos);
     }
     if (!pc)
@@ -137,6 +142,7 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   if (step%2 != 0) {
 #ifdef TEST_C2F
     cout <<"C2F: odd step, interpolating coarse data in time.\n";
+    int ct=0;
 #endif
     double U[par.nvar];
     for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
@@ -146,6 +152,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
       solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
 #ifdef TEST_C2F
+      ct++;
+      //cout <<"updated cell "<<ct<<" of "<<b->data.size()<<"\n";
       for (int v=0;v<par.nvar;v++) {
         if (!isfinite(c->Ph[v])) {
           rep.printVec("NAN c->P ",c->P,par.nvar);
@@ -157,8 +165,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
   }
   // ----------------------------------------------------------------
   
+#ifdef C2F_TAU
   // ----------------------------------------------------------------
-  if (1==0) { // DISABLE C2F OPTICAL DEPTHS!  NOT WORKING FOR OFF-GRID SOURCES!
   // save coarse cell optical depths onto fine cells (Experimental!)
   for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
     cell *f1=0, *f2=0;
@@ -221,8 +229,8 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
     // This function assigns interpolated Tau,dTau to fine cells.
     get_C2F_Tau(par,fcl,cpos,T);
   } // loop over cells and assign optical depths
-  }
   // ----------------------------------------------------------------
+#endif // C2F_TAU
 
   // ----------------------------------------------------------------
   // if spatial order of accuracy is 1, then we have piecewise
@@ -283,15 +291,27 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         c_vol = coarse->CellVolume(c,0);
         solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
         solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        //for (int v=0;v<par.nvar;v++) sx[v] = 0.0;
+        //for (int v=0;v<par.nvar;v++) sy[v] = 0.0;
         // only do this on every second row because we update 4
         // cells at a time.
         if (!fine->NextPt((*f_iter),YP) ||
              fine->NextPt((*f_iter),YP)->npt != c) {
-          //if (level==3) cout <<"skipping for f_iter id="<<(*f_iter)->id<<" c="<<c->id<<"\n";
+#ifdef TEST_C2F
+          if (level==3) {
+            cout <<"skipping for f_iter id=";
+            cout <<(*f_iter)->id<<" c="<<c->id<<"\n";
+          }
+#endif
           continue;
         }
         else {
-          //if (level==3) cout <<"NOT skipping for f_iter id="<<(*f_iter)->id<<" c="<<c->id<<"\n";
+#ifdef TEST_C2F
+          if (level==3) {
+            cout <<"NOT skipping for f_iter id="<<(*f_iter)->id;
+            cout <<" c="<<c->id<<"\n";
+          }
+#endif
         }
 
         // get list of four fine cells.
@@ -302,17 +322,17 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         f4 = fine->NextPt(f2,YP);
         
 #ifdef TEST_C2F
-        rep.printVec("f1 pos",f1->pos,2);
-        rep.printVec("f2 pos",f2->pos,2);
-        rep.printVec("f3 pos",f3->pos,2);
-        rep.printVec("f4 pos",f4->pos,2);
-        rep.printVec("c  pos",c->pos,2);
+        //rep.printVec("f1 pos",f1->pos,2);
+        //rep.printVec("f2 pos",f2->pos,2);
+        //rep.printVec("f3 pos",f3->pos,2);
+        //rep.printVec("f4 pos",f4->pos,2);
+        //rep.printVec("c  pos",c->pos,2);
 #endif
 
 #ifdef TEST_C2F
-        cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
-        cout <<", f1="<<f1->id<<", f2="<<f2->id;
-        cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+        //cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
+        //cout <<", f1="<<f1->id<<", f2="<<f2->id;
+        //cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
         //CI.print_cell(c);
         //CI.print_cell(f1);
         //CI.print_cell(f2);
@@ -323,9 +343,9 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
               par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,f1,f2,f3,f4);
         
 #ifdef TEST_C2F
-        cout <<"AFTER interpolating coarse to fine 2d: coarse="<<c->id;
-        cout <<", f1="<<f1->id<<", f2="<<f2->id;
-        cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
+        //cout <<"AFTER interpolating coarse to fine 2d: coarse="<<c->id;
+        //cout <<", f1="<<f1->id<<", f2="<<f2->id;
+        //cout <<", f3="<<f3->id<<", f4="<<f4->id<<"\n";
         //CI.print_cell(c);
         //CI.print_cell(f1);
         //CI.print_cell(f2);
@@ -340,63 +360,57 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
       //
       // Need to do trilinear interpolation on 8 fine cells.
       //
-      rep.error("3D coarse-to-fine interpolation at 2nd order!",3);
+#ifdef TEST_C2F
+      cout <<"interpolating coarse to fine 2d: ncells=";
+      cout << b->data.size()<<"\n";
+#endif
+      pion_flt sx[par.nvar], sy[par.nvar], sz[par.nvar], c_vol=0;
+      cell *fch[8]; // fine-level cells (children)
+      cell *c;      // coarse-level cell.
+      for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
+        c = (*f_iter)->npt;
+        c_vol = coarse->CellVolume(c,0);
+        solver->SetSlope(c,XX,par.nvar,sx,OA2,coarse);
+        solver->SetSlope(c,YY,par.nvar,sy,OA2,coarse);
+        solver->SetSlope(c,ZZ,par.nvar,sz,OA2,coarse);
+
+        // only do this on every second row because we update 4
+        // cells at a time.  Also skip odd z-planes.
+        if (!fine->NextPt((*f_iter),YP) ||
+             fine->NextPt((*f_iter),YP)->npt != c) {
+          continue;
+        }
+        if (!fine->NextPt((*f_iter),ZP) ||
+             fine->NextPt((*f_iter),ZP)->npt != c) {
+          continue;
+        }
+
+        // get list of 8 fine cells.
+        fch[0] = (*f_iter);
+        f_iter++;
+        fch[1] = (*f_iter);
+        fch[2] = fine->NextPt(fch[0],YP);
+        fch[3] = fine->NextPt(fch[1],YP);
+        fch[4] = fine->NextPt(fch[0],ZP);
+        fch[5] = fine->NextPt(fch[1],ZP);
+        fch[6] = fine->NextPt(fch[2],ZP);
+        fch[7] = fine->NextPt(fch[3],ZP);
+
+#ifdef TEST_C2F
+        for (int v=0;v<8;v++) {
+          if (fch[v]==0) rep.error("fine-cell list",v);
+        }
+#endif
+
+        interpolate_coarse2fine3D(
+              par,fine,solver,c->Ph,c->pos,c_vol,sx,sy,sz,fch);
+
+      } // loop over fine cells
     } // 3D
   } // 2nd-order accuracy
   // ----------------------------------------------------------------
 
   return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-void NG_coarse_to_fine_bc::bilinear_interp(
-      class SimParams &par,      ///< pointer to simulation parameters
-      const int *cpos,  ///< coarse level cell integer position
-      const int quad,   ///< quadrant of the fine cell.
-      cell *f,  ///< fine level cell
-      const double *P00,  ///< prim. vec. at XN,YN corner of cell
-      const double *P10,  ///< prim. vec. at XP,YN corner of cell
-      const double *P01,  ///< prim. vec. at YP,XN corner of cell
-      const double *P11   ///< prim. vec. at XP,YP corner of cell
-      )
-{
-  //if ( (f->pos[XX] < cpos[XX]) && (f->pos[YY] < cpos[YY]) ) {
-  if ( quad==0 ) {
-    // 1/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (9.0*P00[v] + 3.0*P10[v] + 3.0*P01[v] +     P11[v]);
-  }
-  //else if ( (f->pos[XX] > cpos[XX]) && (f->pos[YY] < cpos[YY]) ) {
-  else if ( quad==1 ) {
-    // 3/4,1/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (3.0*P00[v] + 9.0*P10[v] +     P01[v] + 3.0*P11[v]);
-  }
-  //else if ( (f->pos[XX] < cpos[XX]) && (f->pos[YY] > cpos[YY]) ) {
-  else if ( quad==2 ) {
-    // 1/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (3.0*P00[v] +     P10[v] + 9.0*P01[v] + 3.0*P11[v]);
-  }
-  //else {
-  else if ( quad==3 ) {
-    // 3/4,3/4
-    for (int v=0;v<par.nvar;v++) f->Ph[v] = 1.0/16.0 *
-                  (    P00[v] + 3.0*P10[v] + 3.0*P01[v] + 9.0*P11[v]);
-  }
-  else {
-    rep.error("bad quad in bilinear interp",quad);
-  }
-  for (int v=0;v<par.nvar;v++) f->P[v] = f->Ph[v];
-  for (int v=0;v<par.nvar;v++) f->dU[v] = 0.0;
-
-  return;
 }
 
 
@@ -471,6 +485,127 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine1D(
 
 
 
+void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
+      class SimParams &par,      ///< pointer to simulation parameters
+      class GridBaseClass *fine,    ///< pointer to fine grid
+      class FV_solver_base *solver, ///< pointer to equations
+      const pion_flt *P,    ///< state vector of coarse cell.
+      const int *cpos,      ///< position of coarse cell.
+      const pion_flt c_vol, ///< volume of coarse cell.
+      pion_flt *sx,   ///< dP/dx in coarse cell.
+      pion_flt *sy,   ///< dP/dy in coarse cell.
+      pion_flt *sz,   ///< dP/dz in coarse cell.
+      cell **fch ///< pointer to array of 8 fine cells
+      )
+{
+  double **fU=0, Utot[par.nvar], cU[par.nvar];
+  fU = mem.myalloc(fU,8);
+  for (int i=0;i<8;i++) fU[i] = mem.myalloc(fU[i],par.nvar);
+  double dxo2 = 0.5*fine->DX(); // dx
+  double f_vol[8];
+  int idx = 2*fine->idx(); // idx of coarse cell
+  //double f_psi[4];
+  //
+  // Need to do trilinear interpolation, 4 cells at a time.
+  // use slopes in each direction to get cell-centred values in each
+  // of the fine cells.
+  // These positions are half-way to the coarse cell-corners.
+  //
+  //if (par.eqntype == EQGLM) {
+  //  f_psi[0] = f1->P[SI];
+  //  f_psi[1] = f2->P[SI];
+  //  f_psi[2] = f3->P[SI];
+  //  f_psi[3] = f4->P[SI];
+  //}
+
+  for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // centres of fine cell
+  for (int v=0;v<par.nvar;v++) sy[v] *= dxo2;
+  for (int v=0;v<par.nvar;v++) sz[v] *= dxo2;
+
+  for (int v=0;v<par.nvar;v++) fU[0][v] = P[v] -sx[v] -sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[1][v] = P[v] +sx[v] -sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[2][v] = P[v] -sx[v] +sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[3][v] = P[v] +sx[v] +sy[v] -sz[v];
+  for (int v=0;v<par.nvar;v++) fU[4][v] = P[v] -sx[v] -sy[v] +sz[v];
+  for (int v=0;v<par.nvar;v++) fU[5][v] = P[v] +sx[v] -sy[v] +sz[v];
+  for (int v=0;v<par.nvar;v++) fU[6][v] = P[v] -sx[v] +sy[v] +sz[v];
+  for (int v=0;v<par.nvar;v++) fU[7][v] = P[v] +sx[v] +sy[v] +sz[v];
+
+  for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->P[v] = fU[i][v];
+  for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->Ph[v] = fch[i]->P[v];
+
+
+  // Need to check mass/momentum/energy conservation between
+  // coarse and fine levels.  Re-use fU[][] array for this
+  //
+  for (int i=0;i<8;i++) solver->PtoU(fch[i]->P, fU[i], par.gamma);
+  for (int i=0;i<8;i++) f_vol[i] = fine->CellVolume(fch[i],0);
+
+  
+  for (int v=0;v<par.nvar;v++) Utot[v] = 0.0;
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) Utot[v] += fU[i][v]*f_vol[i];
+  }
+  // compare with coarse cell.
+  solver->PtoU(P, cU, par.gamma);
+  for (int v=0;v<par.nvar;v++) cU[v] *= c_vol;
+
+#ifdef DEBUG_NG
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) {
+      if (!isfinite(fU[i][v])) {
+        cout <<"error in 3D C2F interpolation: i="<<i<<"v="<<v<<"\n";
+        rep.printVec("Unscaled fine",fU[i],par.nvar);
+      }
+    }
+  }
+#endif
+
+  // scale fine conserved vec by adding the difference between
+  // conserved quantities on the fine and coarse grids.
+  for (int v=0;v<par.nvar;v++) cU[v] = 0.25*(cU[v] - Utot[v])/c_vol;
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) fU[i][v] += cU[v];
+  }
+  
+  // put scaled conserved variable vectors back into fine cells
+  for (int i=0;i<8;i++) {
+    solver->UtoP(fU[i], fch[i]->Ph, par.EP.MinTemperature,par.gamma);
+    for (int v=0;v<par.nvar;v++) fch[i]->P[v] = fch[i]->Ph[v];
+  }
+
+  //if (par.eqntype == EQGLM) {
+  //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
+  //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
+  //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
+  //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
+  //}
+
+
+#ifdef DEBUG_NG
+  for (int i=0;i<8;i++) {
+    for (int v=0;v<par.nvar;v++) {
+      if (!isfinite(fU[i][v])) {
+        cout <<"error in 3D C2F interpolation: i="<<i<<"v="<<v<<"\n";
+        rep.error("C2F fine cell not finite",fU[i],par.nvar);
+      }
+    }
+  }
+#endif
+
+  for (int i=0;i<8;i++) fU[i] = mem.myfree(fU[i]);
+  mem.myfree(fU);
+
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
       class SimParams &par,      ///< pointer to simulation parameters
       class GridBaseClass *fine,    ///< pointer to fine grid
@@ -490,23 +625,24 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   double f3U[par.nvar], f4U[par.nvar], cU[par.nvar];
   double dxo2 = 0.5*fine->DX(); // dx
   double f_vol[4];
+  //double f_psi[4];
   //
   // Need to do bilinear interpolation, 4 cells at a time.
   // use slopes in each direction to get corner values for the
   // coarse cell.
   //
-  for (int v=0;v<par.nvar;v++) sx[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) sy[v] *= 2.0*dxo2; // coarse dx/2 = fine 2*(dx/2)
-  for (int v=0;v<par.nvar;v++) f1U[v] = P[v] -sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f2U[v] = P[v] +sx[v] -sy[v];
-  for (int v=0;v<par.nvar;v++) f3U[v] = P[v] -sx[v] +sy[v];
-  for (int v=0;v<par.nvar;v++) f4U[v] = P[v] +sx[v] +sy[v];
-
-  // interpolate all four cells using the 4 corner states.
-  bilinear_interp(par, cpos, 0, f1, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, cpos, 1, f2, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, cpos, 2, f3, f1U, f2U, f3U, f4U);
-  bilinear_interp(par, cpos, 3, f4, f1U, f2U, f3U, f4U);
+  //if (par.eqntype == EQGLM) {
+  //  f_psi[0] = f1->P[SI];
+  //  f_psi[1] = f2->P[SI];
+  //  f_psi[2] = f3->P[SI];
+  //  f_psi[3] = f4->P[SI];
+  //}
+  for (int v=0;v<par.nvar;v++) sx[v] *= dxo2; // fine (dx/2)
+  for (int v=0;v<par.nvar;v++) sy[v] *= dxo2; // fine (dx/2)
+  for (int v=0;v<par.nvar;v++) f1->P[v] = P[v] -sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f2->P[v] = P[v] +sx[v] -sy[v];
+  for (int v=0;v<par.nvar;v++) f3->P[v] = P[v] -sx[v] +sy[v];
+  for (int v=0;v<par.nvar;v++) f4->P[v] = P[v] +sx[v] +sy[v];
 
   // Need to check mass/momentum/energy conservation between
   // coarse and fine levels
@@ -556,6 +692,13 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v];
   solver->UtoP(f4U,f4->Ph, par.EP.MinTemperature, par.gamma);
   for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v];
+
+  //if (par.eqntype == EQGLM) {
+  //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
+  //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
+  //  f3->P[SI] = f3->Ph[SI] = P[SI]; //0.0; // f_psi[2];
+  //  f4->P[SI] = f4->Ph[SI] = P[SI]; //0.0; // f_psi[3];
+  //}
 
   //int d=par.nvar-1;
   //cout <<"interpolate_coarse2fine2D: "<<P[d]<<": "<<f1->P[d]<<", ";

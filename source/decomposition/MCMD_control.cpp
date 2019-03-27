@@ -564,9 +564,9 @@ void MCMDcontrol::set_NG_hierarchy(
   int child_rank=-1;
   bool ongrid=false;
   child_procs.resize(0);
-  double px[8] = {0.24,0.75,0.24,0.75,0.24,0.75,0.24,0.75};
-  double py[8] = {0.24,0.24,0.75,0.75,0.24,0.24,0.75,0.75};
-  double pz[8] = {0.24,0.24,0.24,0.24,0.75,0.75,0.75,0.75};
+  double px[8] = {0.25,0.75,0.25,0.75,0.25,0.75,0.25,0.75};
+  double py[8] = {0.25,0.25,0.75,0.75,0.25,0.25,0.75,0.75};
+  double pz[8] = {0.25,0.25,0.25,0.25,0.75,0.75,0.75,0.75};
   double xn[8] = {0.0,0.5,0.0,0.5,0.0,0.5,0.0,0.5};
   double yn[8] = {0.0,0.0,0.5,0.5,0.0,0.0,0.5,0.5};
   double zn[8] = {0.0,0.0,0.0,0.0,0.5,0.5,0.5,0.5};
@@ -579,7 +579,7 @@ void MCMDcontrol::set_NG_hierarchy(
       centre[i] = 0.5*(LocalXmin[i]+LocalXmax[i]);
     // get rank of parent grid in each direction.
     parent_proc = get_grid_rank(par, centre,l-1);
-    cout <<"level "<<l<<", parent process is "<<parent_proc<<"\n";
+    //cout <<"level "<<l<<", parent process is "<<parent_proc<<"\n";
   }
 
   // set rank of child grids, if they exist.
@@ -593,7 +593,7 @@ void MCMDcontrol::set_NG_hierarchy(
     for (int v=0;v<par.ndim;v++)
       child.Xmax[v] = par.levels[l+1].Xmax[v];
     child_procs.push_back(child);
-    cout <<"v="<<0<<": only child has rank="<<child_rank<<"\n";
+    //cout <<"v="<<0<<": only child has rank="<<child_rank<<"\n";
   }
   else if (l<par.grid_nlevels-1) {
 
@@ -645,7 +645,7 @@ void MCMDcontrol::set_NG_hierarchy(
           child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
           child.Xmax[ZZ] = 0.0;
           child_procs.push_back(child);
-          cout <<"v="<<v<<": child rank="<<child_rank<<"\n";
+          //cout <<"v="<<v<<": child rank="<<child_rank<<"\n";
         }
       }
 
@@ -653,29 +653,110 @@ void MCMDcontrol::set_NG_hierarchy(
 
     else {
       // 3D
+      // first check if my domain is equal to the full level domain
+      // in any direction.
+      bool full_dom[3] = {false,false,false};
+      for (int d=0;d<par.ndim;d++)
+        if (pconst.equalD(LocalXmin[d], par.levels[l].Xmin[d]) &&
+            pconst.equalD(LocalXmax[d], par.levels[l].Xmax[d]) )
+          full_dom[d]=true;
 
-      for (int v=0;v<8;v++) {
-        // centre[] is centre of this child grid.
-        centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
-        centre[YY] = LocalXmin[YY] + py[v]*LocalRange[YY];
-        centre[ZZ] = LocalXmin[ZZ] + pz[v]*LocalRange[ZZ];
+      int nchild = 1;
+      for (int d=0;d<par.ndim;d++) if (!full_dom[d]) nchild*=2;
 
-        // check if child grid exists, and get its rank.
-        ongrid=true;
-        child_rank = get_grid_rank(par, centre,l+1);
-        if (child_rank<0) ongrid=false;
+      if (nchild==8) {
+        // this is the standard case, where we can set up an oct-tree
+        // decomposition.
+        for (int v=0;v<8;v++) {
+          // centre[] is centre of this child grid.
+          centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
+          centre[YY] = LocalXmin[YY] + py[v]*LocalRange[YY];
+          centre[ZZ] = LocalXmin[ZZ] + pz[v]*LocalRange[ZZ];
+          //cout <<"v="<<v<<", "; rep.printVec("centre",centre,3);
 
-        if (ongrid) {
-          child.rank = child_rank;
-          child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
-          child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
-          child.Xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
-          child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
-          child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
-          child.Xmax[ZZ] = child.Xmin[ZZ] + 0.5*LocalRange[ZZ];
-          child_procs.push_back(child);
+          // check if child grid exists, and get its rank.
+          ongrid=true;
+          child_rank = get_grid_rank(par, centre,l+1);
+          if (child_rank<0) ongrid=false;
+          //cout <<"v="<<v<<", rank="<<child_rank<<"\n";
+
+          if (ongrid) {
+            child.rank = child_rank;
+            child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+            child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+            child.Xmin[ZZ] = LocalXmin[ZZ] +zn[v]*LocalRange[ZZ];
+            child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
+            child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
+            child.Xmax[ZZ] = child.Xmin[ZZ] + 0.5*LocalRange[ZZ];
+            child_procs.push_back(child);
+            //rep.printVec("Child Xmin",child.Xmin,3);
+            //rep.printVec("Child Xmax",child.Xmax,3);
+          }
         }
-      }
+      } // if nchild==8
+
+      else if (nchild==4) {
+        // only decomposed in the x and y directions.
+        for (int v=0;v<4;v++) {
+          // centre[] is centre of this child grid.
+          centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
+          centre[YY] = LocalXmin[YY] + py[v]*LocalRange[YY];
+          centre[ZZ] =  par.levels[l+1].Xmin[ZZ] + 0.25*LocalRange[ZZ];
+          //cout <<"v="<<v<<", "; rep.printVec("centre",centre,3);
+
+          // check if child grid exists, and get its rank.
+          ongrid=true;
+          child_rank = get_grid_rank(par, centre,l+1);
+          if (child_rank<0) ongrid=false;
+          //cout <<"v="<<v<<", rank="<<child_rank<<"\n";
+
+          if (ongrid) {
+            child.rank = child_rank;
+            child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+            child.Xmin[YY] = LocalXmin[YY] +yn[v]*LocalRange[YY];
+            child.Xmin[ZZ] = par.levels[l+1].Xmin[ZZ];
+            child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
+            child.Xmax[YY] = child.Xmin[YY] + 0.5*LocalRange[YY];
+            child.Xmax[ZZ] = par.levels[l+1].Xmax[ZZ];
+            child_procs.push_back(child);
+            //rep.printVec("Child Xmin",child.Xmin,3);
+            //rep.printVec("Child Xmax",child.Xmax,3);
+          }
+        }
+      } // if nchild==4
+
+      else if (nchild==2) {
+        // only decomposed in the x direction.
+        for (int v=0;v<2;v++) {
+          // centre[] is centre of this child grid.
+          centre[XX] = LocalXmin[XX] + px[v]*LocalRange[XX];
+          centre[YY] = par.levels[l+1].Xmin[YY] + 0.25*LocalRange[YY];
+          centre[ZZ] = par.levels[l+1].Xmin[ZZ] + 0.25*LocalRange[ZZ];
+          //cout <<"v="<<v<<", "; rep.printVec("centre",centre,3);
+
+          // check if child grid exists, and get its rank.
+          ongrid=true;
+          child_rank = get_grid_rank(par, centre,l+1);
+          if (child_rank<0) ongrid=false;
+          //cout <<"v="<<v<<", rank="<<child_rank<<"\n";
+
+          if (ongrid) {
+            child.rank = child_rank;
+            child.Xmin[XX] = LocalXmin[XX] +xn[v]*LocalRange[XX];
+            child.Xmin[YY] = par.levels[l+1].Xmin[YY];
+            child.Xmin[ZZ] = par.levels[l+1].Xmin[ZZ];
+            child.Xmax[XX] = child.Xmin[XX] + 0.5*LocalRange[XX];
+            child.Xmax[YY] = par.levels[l+1].Xmax[YY];
+            child.Xmax[ZZ] = par.levels[l+1].Xmax[ZZ];
+            child_procs.push_back(child);
+            //rep.printVec("Child Xmin",child.Xmin,3);
+            //rep.printVec("Child Xmax",child.Xmax,3);
+          }
+        }
+      } // if nchild==2
+      else rep.error("only one proc?",nchild);
+
+
 
     } // if 3D
   } // if not on finest level grid (set children)

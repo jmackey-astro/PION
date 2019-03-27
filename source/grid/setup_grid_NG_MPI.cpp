@@ -342,6 +342,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   // Now check for NG grid boundaries if this grid has a parent
   // grid (i.e. if l > 0).
   //
+#ifdef SKIP_C2F_BC
+  if (1==0) {
+#endif
   if (l>0) {
     // replace external boundary conditions with one that
     // receives data from a coarser level grid.
@@ -368,6 +371,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
       }
     }
   } // if l>0 add C2F recv
+#ifdef SKIP_C2F_BC
+  }
+#endif
 
   //
   // Now check for NG grid boundaries if this grid has a child
@@ -378,6 +384,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   // assign_boundary_data().
   //
   if (l < par.grid_nlevels-1) {
+#ifdef SKIP_F2C_BC
+    if (1==0) {
+#endif
 #ifdef TESTING
     cout <<"Adding FINE_TO_COARSE_RECV boundary for level ";
     cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
@@ -389,7 +398,13 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd->ondir = NO;
     bd->refval=0;
     grid->BC_bd.push_back(bd);
+#ifdef SKIP_F2C_BC
+    }
+#endif
 
+#ifdef SKIP_C2F_BC
+    if (1==0) {
+#endif
 #ifdef TESTING
     cout <<"Adding COARSE_TO_FINE_SEND boundary for level ";
     cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
@@ -401,8 +416,14 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd2->ondir = NO;
     bd2->refval=0;
     grid->BC_bd.push_back(bd2);
+#ifdef SKIP_C2F_BC
+    }
+#endif
   }
 
+#ifdef SKIP_F2C_BC
+  if (1==0) {
+#endif
   if (l>0) {
     // Add internal boundary to send averaged local data
     // to the parent grid.  Whether any data need to 
@@ -423,12 +444,19 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     bd->refval=0;
     grid->BC_bd.push_back(bd);
   }
+#ifdef SKIP_F2C_BC
+  }
+#endif
+
 
   
   
-#ifdef TESTING
+//#ifdef TESTING
   cout <<"BC structs set up.\n";
-#endif
+  for (unsigned int v=0; v<grid->BC_bd.size(); v++) {
+    cout<<"i="<<v<<", BC type= "<<grid->BC_bd[v]->type<<"\n";
+  }
+//#endif
   return 0;
 }
 

@@ -40,19 +40,6 @@ class NG_coarse_to_fine_bc {
       const int  ///< current step for fine grid (odd or even).
       );
 
-  /// bilinear interpolation from a cell on the coarse grid to four
-  /// cells on the fine grid (to the cell centres).
-  virtual void bilinear_interp(
-      class SimParams &,      ///< pointer to simulation parameters
-      const int *,  ///< coarse level cell integer position
-      const int,  ///< quad of fine cell (0=--, 1=+-, 2=-+, 3=++)
-      cell *,  ///< fine level cell
-      const double *,  ///< prim. vec. at corner of coarse cell
-      const double *,  ///< prim. vec. at corner of coarse cell
-      const double *,  ///< prim. vec. at corner of coarse cell
-      const double *   ///< prim. vec. at corner of coarse cell
-      );
-
   /// interpolate data from one coarse cell onto 2 fine cells in 1D
   virtual void interpolate_coarse2fine1D(
       class SimParams &,      ///< simulation parameters
@@ -81,6 +68,21 @@ class NG_coarse_to_fine_bc {
       cell *  ///< pointer to fourth fine cell (XP,YP)
       );
   
+  /// interpolate data from one coarse cell onto 8 fine cells in 3D
+  virtual void interpolate_coarse2fine3D(
+      class SimParams &,      ///< simulation parameters
+      class GridBaseClass *,  ///< pointer to fine grid
+      class FV_solver_base *, ///< pointer to equations
+      const pion_flt *,     ///< state vector of coarse cell.
+      const int *,          ///< position of coarse cell.
+      const pion_flt ,      ///< volume of coarse cell.
+      pion_flt *,           ///< dP/dx in coarse cell.
+      pion_flt *,           ///< dP/dy in coarse cell.
+      pion_flt *,           ///< dP/dz in coarse cell.
+      cell ** ///< pointers to 8 fine cells  (XN,YN)
+      );
+  
+
   /// For a coarse-grid cell with given position and optical depths,
   /// assign optical depths to a list of fine-grid child-cells, using
   /// the relative position of the source and coarse cell.

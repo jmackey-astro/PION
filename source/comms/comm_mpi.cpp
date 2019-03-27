@@ -301,8 +301,10 @@ int comm_mpi::send_cell_data(
     cerr <<myrank<<"\t Nothing to send to rank: "<<to_rank<<" !!!\n";
     return 1;
   }
-  if (to_rank<0 || to_rank>nproc)
+  if (to_rank<0 || to_rank>nproc) {
+    cerr <<"nc="<<nc<<"  ndim="<<ndim<<"  nvar="<<nvar<<"  id="<<id<<"  tag="<<comm_tag<<"\n";
     rep.error("to_rank is out of bounds",to_rank);
+  }
 
   list<cell *>::iterator c=l->begin();
   int err=0;

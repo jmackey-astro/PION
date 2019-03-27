@@ -12,6 +12,7 @@
 using namespace std;
 
 //#define TEST_C2F
+//#define TEST_MPI_NG
 
 // ##################################################################
 // ##################################################################
@@ -26,22 +27,23 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 {
 
   class GridBaseClass *grid = par.levels[l].grid;
-  //int gidx = grid->idx();
-
   // see how many child grids I have
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
-  //b->NGsendC2F.reserve(nchild);
-  //if (b->NGsendC2F.size() !=0) {
-  //  rep.error("NGsendC2F init",b->NGsendC2F.size());
-  //}
-  //b->NGsendC2F.clear();
 
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
   if (nchild==0) {
     cout <<"COARSE_TO_FINE_SEND: no children.\n";
   }
 #endif
+
+  // Two cases:
+  // (1) if level l+1 has a boundary within my domain, then
+  // send data to child grids.
+  // (2) if level l+1 has a boundary coincident with my boundary,
+  // then I need to send data if none of the l+1 domain intersects
+  // my grid.  Otherwise another process can do it.
+
 
   // loop over child grids
   for (int i=0;i<nchild;i++) {
@@ -49,7 +51,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
     if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
       // if child is on my process, do nothing because child grid
       // can grab the data directly.
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
       cout <<"C2F_SEND: child "<<i<<", ";
       cout <<"my rank ("<<MCMD->get_myrank()<<") == child rank (";
       cout <<MCMD->child_procs[i].rank<<"), no need to set up ";
@@ -61,9 +63,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
       // we need to send.  One list for each external boundary that
       // we need to update.  Only external boundaries of the whole
       // domain are included.
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
       cout <<"C2F_SEND: child "<<i<<", ";
-      cout <<"my rank != child rank, running parallel ";
+      cout <<"my rank != child rank ("<<MCMD->get_myrank();
+      cout <<", "<<MCMD->child_procs[i].rank <<") running parallel ";
       cout <<"COARSE_TO_FINE_SEND\n";
 #endif
       // get dimensions of child grid from struct
@@ -78,8 +81,14 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
         if ( (pconst.equalD(MCMD->child_procs[i].Xmin[d],
                             par.levels[l+1].Xmin[d]))        &&
              (MCMD->child_procs[i].Xmin[d] > 
-              par.levels[l].Xmin[d]*ONE_PLUS_EPS) ) {
+              par.levels[l].Xmin[d]*ONE_PLUS_EPS)    &&
+             (!pconst.equalD(MCMD->child_procs[i].Xmin[d],
+              grid->Xmin(static_cast<axes>(d))) ) ) {
+#ifdef TEST_C2F
           cout <<"C2F_SEND: child "<<i<<", dim "<<d<<" NEG DIR\n";
+          rep.printVec("localxmin",MCMD->LocalXmin,3);
+          rep.printVec("Childxmin",MCMD->child_procs[i].Xmin,3);
+#endif
           struct c2f *bdata = new struct c2f;
           bdata->rank = MCMD->child_procs[i].rank;
           bdata->dir  = 2*d;
@@ -88,16 +97,22 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
           b->NGsendC2F.push_back(bdata);
+#ifdef TEST_C2F
           cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
           cout <<b->NGsendC2F.size()-1<<"\n";
+#endif
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
         else if ((pconst.equalD(MCMD->child_procs[i].Xmax[d],
                                 par.levels[l+1].Xmax[d]))    &&
                  (MCMD->child_procs[i].Xmax[d] < 
-                  par.levels[l].Xmax[d]*ONE_MINUS_EPS) ) {
+                  par.levels[l].Xmax[d]*ONE_MINUS_EPS)    &&
+                 (!pconst.equalD(MCMD->child_procs[i].Xmax[d],
+                  grid->Xmax(static_cast<axes>(d)))) ) {
+#ifdef TEST_C2F
           cout <<"C2F_SEND: child "<<i<<", dim "<<d<<" POS DIR\n";
+#endif
           struct c2f *bdata = new struct c2f;
           bdata->rank = MCMD->child_procs[i].rank;
           bdata->dir  = 2*d+1;
@@ -106,12 +121,322 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
           // find cells along this boundary.
           add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
           b->NGsendC2F.push_back(bdata);
+#ifdef TEST_C2F
           cout <<"added "<<bdata->c.size()<<" cells to C2F send el ";
           cout <<b->NGsendC2F.size()-1<<"\n";
+#endif
         }
       } // loop over dimensions
     } // if child is not on my process
   } // loop over child grids
+
+  // We've now dealt with C2F boundaries that are within my domain,
+  // so we have to also consider boundaries coincident with my
+  // domain boundary.
+  double xn[par.ndim], xp[par.ndim], rr[par.ndim];
+  for (int d=0;d<par.ndim;d++)
+    xn[d] = grid->Xmin(static_cast<axes>(d));
+  for (int d=0;d<par.ndim;d++)
+    xp[d] = grid->Xmax(static_cast<axes>(d));
+  for (int d=0;d<par.ndim;d++)
+    rr[d] = grid->Range(static_cast<axes>(d));
+  double dx=grid->DX();
+  int myxmin[par.ndim], myxmax[par.ndim];
+  int lvxmin[par.ndim], lvxmax[par.ndim];
+  CI.get_ipos_vec(xn,myxmin);
+  CI.get_ipos_vec(xp,myxmax);
+  CI.get_ipos_vec(par.levels[l+1].Xmin,lvxmin);
+  CI.get_ipos_vec(par.levels[l+1].Xmax,lvxmax);
+
+
+#ifdef TEST_C2F
+  rep.printVec("myxmin",myxmin,par.ndim);
+  rep.printVec("myxmax",myxmax,par.ndim);
+  rep.printVec("lvxmin",lvxmin,par.ndim);
+  rep.printVec("lvxmax",lvxmax,par.ndim);
+  rep.printVec("xn",xn,par.ndim);
+  rep.printVec("xp",xp,par.ndim);
+  rep.printVec("rr",rr,par.ndim);
+#endif
+
+  if      (par.ndim==1) {
+    rep.error("Write code for C2F send for 1D",par.ndim);
+  }
+
+  else if (par.ndim==2) {
+    for (int ax=0;ax<par.ndim;ax++) {
+#ifdef TEST_C2F
+      cout <<"C2F SEND: axis="<<ax<<"\n";
+#endif
+      int pp = (ax+1+par.ndim) % par.ndim;
+      double pos[par.ndim];
+      int ixmin[par.ndim], ixmax[par.ndim];
+      int proc=-1;
+
+      // check if my negative-pointing boundary is a level boundary:
+      if (myxmin[ax] == lvxmax[ax]) {
+        // may have to send data to up to 2 other l+1 grids.
+        // First the one with most neg. position in perp. dir.
+        pos[ax] = xn[ax] - dx;
+        pos[pp] = xn[pp] + 0.25*rr[pp];
+#ifdef TEST_C2F
+        rep.printVec("pos for l+1 grid mymin",pos,par.ndim);
+#endif
+        proc = MCMD->get_grid_rank(par,pos,l+1);
+        if (proc>=0 && proc != MCMD->get_myrank()) {
+#ifdef TEST_C2F
+          cout <<" -ve direction has grid on proc "<<proc<<" at 0.25\n";
+#endif
+          pos[ax] = xn[ax];
+          pos[pp] = xn[pp] + 0.5*rr[pp];
+          CI.get_ipos_vec(pos,ixmax);
+          pos[ax] = xn[ax] - 0.5*rr[ax];
+          pos[pp] = xn[pp];
+          CI.get_ipos_vec(pos,ixmin);
+
+          struct c2f *bdata = new struct c2f;
+          bdata->rank = proc;
+          bdata->dir  = 2*ax +1; // outward normal of child is +ve
+          bdata->c.clear();
+          add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+          b->NGsendC2F.push_back(bdata);
+          proc = -1;
+        }
+        else {
+#ifdef TEST_C2F
+          cout <<" -ve direction has no grid at 0.25, or myrank (";
+          cout <<MCMD->get_myrank()<<") == proc ("<<proc<<")\n";
+#endif
+        }
+
+        // Now the one with most pos. position in perp. dir.
+        pos[ax] = xn[ax] - dx;
+        pos[pp] = xn[pp] + 0.75*rr[pp];
+#ifdef TEST_C2F
+        rep.printVec("pos for l+1 grid mymin",pos,par.ndim);
+#endif
+        proc = MCMD->get_grid_rank(par,pos,l+1);
+        if (proc>=0 && proc != MCMD->get_myrank()) {
+#ifdef TEST_C2F
+          cout <<" -ve direction has grid on proc "<<proc<<" at 0.75\n";
+#endif
+          pos[ax] = xn[ax];
+          pos[pp] = xp[pp];
+          CI.get_ipos_vec(pos,ixmax);
+          pos[ax] = xn[ax] - 0.5*rr[ax];
+          pos[pp] = xp[pp] - 0.5*rr[pp];
+          CI.get_ipos_vec(pos,ixmin);
+
+          struct c2f *bdata = new struct c2f;
+          bdata->rank = proc;
+          bdata->dir  = 2*ax +1; // outward normal of child is +ve
+          bdata->c.clear();
+          add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+          b->NGsendC2F.push_back(bdata);
+          proc = -1;
+        }
+        else {
+#ifdef TEST_C2F
+          cout <<" -ve direction has no grid at 0.75, or myrank (";
+          cout <<MCMD->get_myrank()<<") == proc ("<<proc<<")\n";
+#endif
+        }
+      }
+
+      // check if my positive-pointing boundary is a level boundary:
+      if (myxmax[ax] == lvxmin[ax]) {
+        // may have to send data to up to 2 other l+1 grids.
+        // First the one with most neg. position in perp. dir.
+        pos[ax] = xp[ax] + dx;
+        pos[pp] = xn[pp] + 0.25*rr[pp];
+#ifdef TEST_C2F
+        rep.printVec("pos for l+1 grid mymax",pos,par.ndim);
+#endif
+        proc = MCMD->get_grid_rank(par,pos,l+1);
+        if (proc>=0 && proc != MCMD->get_myrank()) {
+#ifdef TEST_C2F
+          cout <<" +ve direction has grid on proc "<<proc<<" at 0.25\n";
+#endif
+          pos[ax] = xp[ax] + 0.5*rr[ax];
+          pos[pp] = xn[pp] + 0.5*rr[pp];
+          CI.get_ipos_vec(pos,ixmax);
+          pos[ax] = xp[ax];
+          pos[pp] = xn[pp];
+          CI.get_ipos_vec(pos,ixmin);
+
+          struct c2f *bdata = new struct c2f;
+          bdata->rank = proc;
+          bdata->dir  = 2*ax; // outward normal of child is -ve
+          bdata->c.clear();
+          add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+          b->NGsendC2F.push_back(bdata);
+          proc = -1;
+        }
+        else {
+#ifdef TEST_C2F
+          cout <<" +ve direction has no grid at 0.25, or myrank (";
+          cout <<MCMD->get_myrank()<<") == proc ("<<proc<<")\n";
+#endif
+        }
+
+        // Now the one with most pos. position in perp. dir.
+        pos[ax] = xp[ax] + dx;
+        pos[pp] = xn[pp] + 0.75*rr[pp];
+#ifdef TEST_C2F
+        rep.printVec("pos for l+1 grid mymax",pos,par.ndim);
+#endif
+        proc = MCMD->get_grid_rank(par,pos,l+1);
+        if (proc>=0 && proc != MCMD->get_myrank()) {
+#ifdef TEST_C2F
+          cout <<" +ve direction has grid on proc "<<proc<<" at 0.75\n";
+#endif
+          pos[ax] = xp[ax] + 0.5*rr[ax];
+          pos[pp] = xp[pp];
+          CI.get_ipos_vec(pos,ixmax);
+          pos[ax] = xp[ax];
+          pos[pp] = xp[pp] - 0.5*rr[pp];
+          CI.get_ipos_vec(pos,ixmin);
+
+          struct c2f *bdata = new struct c2f;
+          bdata->rank = proc;
+          bdata->dir  = 2*ax; // outward normal of child is -ve
+          bdata->c.clear();
+          rep.printVec("ixmin",ixmin,par.ndim);
+          rep.printVec("ixmax",ixmax,par.ndim);
+          add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+          b->NGsendC2F.push_back(bdata);
+          proc = -1;
+        }
+        else {
+#ifdef TEST_C2F
+          cout <<" +ve direction has no grid at 0.75, or myrank (";
+          cout <<MCMD->get_myrank()<<") == proc ("<<proc<<")\n";
+#endif
+        }
+      } // if xmax is a level min
+    } // loop over axes
+  } // if 2D
+  
+  else {
+    // 3D case.
+    for (int ax=0;ax<par.ndim;ax++) {
+#ifdef TEST_C2F
+      cout <<"C2F SEND 3D: axis="<<ax<<"\n";
+#endif
+      int pp[2];
+      pp[0] = (ax+1+par.ndim) % par.ndim;
+      pp[1] = (ax+2+par.ndim) % par.ndim;
+      double pos[par.ndim];
+      int ixmin[par.ndim], ixmax[par.ndim];
+      int proc=-1;
+      // offsets for each of the 4 tiles:
+      double deltax[4] = {0.25*rr[pp[0]], 0.75*rr[pp[0]],
+                          0.25*rr[pp[0]], 0.75*rr[pp[0]]};
+      double deltay[4] = {0.25*rr[pp[1]], 0.25*rr[pp[1]],
+                          0.75*rr[pp[1]], 0.75*rr[pp[1]]};
+      string delta[4] = {"-,-", "+,-", "-,+", "+,+"};
+      double txmin[4] = {0.0, 0.5, 0.0, 0.5};
+      double txmax[4] = {0.5, 1.0, 0.5, 1.0};
+      double tymin[4] = {0.0, 0.0, 0.5, 0.5};
+      double tymax[4] = {0.5, 0.5, 1.0, 1.0};
+      for (int v=0;v<4;v++) txmin[v] *= rr[pp[0]];
+      for (int v=0;v<4;v++) txmax[v] *= rr[pp[0]];
+      for (int v=0;v<4;v++) tymin[v] *= rr[pp[1]];
+      for (int v=0;v<4;v++) tymax[v] *= rr[pp[1]];
+
+      // check if my negative-pointing boundary is a level boundary:
+      if (myxmin[ax] == lvxmax[ax]) {
+        // may have to send data to up to 4 other l+1 grids.
+        // First the one with most neg. position in perp. dir.
+        for (int tile=0;tile<4;tile++) {
+          pos[ax] = xn[ax] - dx;
+          pos[pp[0]] = xn[pp[0]] + deltax[tile];
+          pos[pp[1]] = xn[pp[1]] + deltay[tile];
+#ifdef TEST_C2F
+          rep.printVec("pos for l+1 grid mymin",pos,par.ndim);
+#endif
+          proc = MCMD->get_grid_rank(par,pos,l+1);
+          if (proc>=0 && proc != MCMD->get_myrank()) {
+#ifdef TEST_C2F
+            cout <<" -ve direction has grid on proc "<<proc;
+            cout <<" at "<<delta[tile]<<"\n";
+#endif
+            pos[ax] = xn[ax];
+            pos[pp[0]] = xn[pp[0]] + txmax[tile];
+            pos[pp[1]] = xn[pp[1]] + tymax[tile];
+            CI.get_ipos_vec(pos,ixmax);
+            pos[ax] = xn[ax] - 0.5*rr[ax];
+            pos[pp[0]] = xn[pp[0]] + txmin[tile];
+            pos[pp[1]] = xn[pp[1]] + tymin[tile];
+            CI.get_ipos_vec(pos,ixmin);
+#ifdef TEST_C2F
+            rep.printVec("ixmin",ixmin,par.ndim);
+            rep.printVec("ixmax",ixmax,par.ndim);
+#endif
+
+            struct c2f *bdata = new struct c2f;
+            bdata->rank = proc;
+            bdata->dir  = 2*ax +1; // outward normal of child is +ve
+            bdata->c.clear();
+            add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+            b->NGsendC2F.push_back(bdata);
+            proc = -1;
+          }
+          else {
+#ifdef TEST_C2F
+            cout <<" -ve direction has no grid at "<<delta[tile];
+            cout <<", or myrank (";
+            cout <<MCMD->get_myrank()<<") == proc ("<<proc<<")\n";
+#endif
+          }
+        }
+      }
+      // check if my positive-pointing boundary is a level boundary:
+      else if (myxmax[ax] == lvxmin[ax]) {
+        // may have to send data to up to 4 other l+1 grids.
+        // First the one with most neg. position in perp. dir.
+        for (int tile=0;tile<4;tile++) {
+          pos[ax] = xp[ax] + dx;
+          pos[pp[0]] = xn[pp[0]] + deltax[tile];
+          pos[pp[1]] = xn[pp[1]] + deltay[tile];
+#ifdef TEST_C2F
+          rep.printVec("pos for l+1 grid mymin",pos,par.ndim);
+#endif
+          proc = MCMD->get_grid_rank(par,pos,l+1);
+          if (proc>=0 && proc != MCMD->get_myrank()) {
+#ifdef TEST_C2F
+            cout <<" +ve direction has grid on proc "<<proc;
+            cout <<" at "<<delta[tile]<<"\n";
+#endif
+            pos[ax] = xp[ax] + 0.5*rr[ax];
+            pos[pp[0]] = xn[pp[0]] + txmax[tile];
+            pos[pp[1]] = xn[pp[1]] + tymax[tile];
+            CI.get_ipos_vec(pos,ixmax);
+            pos[ax] = xp[ax];
+            pos[pp[0]] = xn[pp[0]] + txmin[tile];
+            pos[pp[1]] = xn[pp[1]] + tymin[tile];
+            CI.get_ipos_vec(pos,ixmin);
+
+            struct c2f *bdata = new struct c2f;
+            bdata->rank = proc;
+            bdata->dir  = 2*ax; // outward normal of child is -ve
+            bdata->c.clear();
+            add_cells_to_C2F_send_list(par,grid,bdata,ixmin,ixmax);
+            b->NGsendC2F.push_back(bdata);
+            proc = -1;
+          }
+          else {
+#ifdef TEST_C2F
+            cout <<" +ve direction has no grid at "<<delta[tile];
+            cout <<", or myrank (";
+            cout <<MCMD->get_myrank()<<") == proc ("<<proc<<")\n";
+#endif
+          }
+        } // loop over tiles
+      } // if grid xmax == level l+1 xmin
+    } // loop over axes
+    // 3D
+  }
   return 0;
 }
 
@@ -140,7 +465,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   }
   cout <<endl;
 #endif
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
 #endif
   int err=0;
@@ -173,6 +498,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     } // loop over send boundaries
   } // if not at a full step update
 
+#ifdef TEST_C2F
+  cout <<"C2F SEND: "<<l<<" num send="<<b->NGsendC2F.size()<<"\n";
+#endif
+  
   // loop over send boundaries, pack and send the data.
   for (unsigned int ib=0; ib<b->NGsendC2F.size(); ib++) {
     //
@@ -180,12 +509,21 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // if 2nd order accuracy, also a slope vector for each dimension
     //
     size_t n_cell = b->NGsendC2F[ib]->c.size();
+
+#ifdef TEST_C2F
+    cout <<"C2F SEND: "<<MCMD->get_myrank()<<", sending ";
+    cout << n_cell<<" elements to process: ";
+    cout <<b->NGsendC2F[ib]->rank<<"\n";
+    cout.flush();
+#endif
+
     size_t n_el = 0;
     if      (par.spOOA == OA1) n_el = n_cell*(par.nvar+1+par.ndim);
-    else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1+par.ndim);
+    else if (par.spOOA == OA2) n_el = n_cell*((1+par.ndim)*par.nvar+1+par.ndim);
     else rep.error("bad spOOA in MPI C2F",par.spOOA);
     pion_flt *buf = new pion_flt [n_el];
     double slope[par.nvar];
+    double cpos[par.ndim];
 
     // loop over cells, add Ph[], cell-vol, slopes to send buffer
     size_t ibuf=0;
@@ -196,8 +534,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       ibuf += par.nvar;
       buf[ibuf] = grid->CellVolume(c,0);
       ibuf++;
+      CI.get_dpos(c,cpos);
       for (int v=0;v<par.ndim;v++)
-        buf[ibuf+v]= static_cast<double>(c->pos[v]);
+        buf[ibuf+v]= cpos[v];
       ibuf += par.ndim;
 
       if (par.spOOA == OA2) {
@@ -225,7 +564,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     // So the tag is BC_MPI_NGC2F_tag + 100*dir + level+1.
     //
     int comm_tag = BC_MPI_NGC2F_tag+100*b->NGsendC2F[ib]->dir +l+1;
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
     cout <<" doubles from proc "<<MCMD->get_myrank();
     cout <<" to child proc "<<b->NGsendC2F[ib]->rank<<"\n";
@@ -233,7 +572,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     err += COMM->send_double_data(b->NGsendC2F[ib]->rank,n_el,buf,
                                   id,comm_tag);
     if (err) rep.error("Send_C2F send_data failed.",err);
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"BC_update_COARSE_TO_FINE_SEND: returned with id="<<id;
     cout <<"\n";
 #endif
@@ -254,14 +593,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
 void NG_MPI_coarse_to_fine_bc::BC_COARSE_TO_FINE_SEND_clear_sends()
 {
   for (unsigned int ib=0; ib<NG_C2F_send_list.size(); ib++) {
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"C2F_send: clearing send # "<<ib+1<<" of ";
     cout <<NG_C2F_send_list.size()<<", id=";
     cout <<NG_C2F_send_list[ib]<<"...";
     cout.flush();
 #endif
     COMM->wait_for_send_to_finish(NG_C2F_send_list[ib]);
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<" ... done!\n";
     cout.flush();
 #endif
@@ -291,9 +630,37 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   class GridBaseClass *grid = par.levels[l].grid;
   int pproc = MCMD->parent_proc;
+  class MCMDcontrol *parent = &(par.levels[l-1].MCMD);
 
-  if (MCMD->get_myrank() == pproc) {
-#ifdef TEST_MPI_NG
+  // Need to decide which MPI process to get the data from.
+  // It is the immediate parent, or a neighbour of the parent.
+  //list<cell*>::iterator f_iter=b->data.begin();
+  //cell *c = (*f_iter);
+  double pos[par.ndim];
+  for (int d=0;d<par.ndim;d++)
+    pos[d]=MCMD->LocalXmin[d] + 0.5*MCMD->LocalRange[d];
+  switch(b->dir) {
+    case XN: pos[XX] = MCMD->LocalXmin[XX] - grid->DX(); break;
+    case XP: pos[XX] = MCMD->LocalXmax[XX] + grid->DX(); break;
+    case YN: pos[YY] = MCMD->LocalXmin[YY] - grid->DX(); break;
+    case YP: pos[YY] = MCMD->LocalXmax[YY] + grid->DX(); break;
+    case ZN: pos[ZZ] = MCMD->LocalXmin[ZZ] - grid->DX(); break;
+    case ZP: pos[ZZ] = MCMD->LocalXmax[ZZ] + grid->DX(); break;
+    default:
+    rep.error("bad direction",b->dir);
+  }
+#ifdef TEST_C2F
+  cout <<"C2F_RECV: dir="<<b->dir<<" parent="<<pproc;
+#endif
+  pproc = MCMD->get_grid_rank(par,pos,l-1);
+#ifdef TEST_C2F
+  cout <<" process with this boundary data = "<<pproc<<endl;
+#endif
+  b->NGrecvC2F_parent = pproc;
+
+
+  if (MCMD->get_myrank() == b->NGrecvC2F_parent) {
+#ifdef TEST_C2F
     cout <<"my rank == parent rank, setting up serial ";
     cout <<"COARSE_TO_FINE_RECV\n";
 #endif
@@ -302,11 +669,11 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     rep.errorTest("serial C2F BC setup",0,err);
   }
   else {
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"my rank != parent rank, so will need MPI for ";
     cout <<"COARSE_TO_FINE_RECV";
     cout <<"me="<<MCMD->get_myrank();
-    cout <<", parent="<<pproc<<"\n";
+    cout <<", parent="<<b->NGrecvC2F_parent<<"\n";
 #endif
 
     //
@@ -369,16 +736,28 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
       int idx = grid->idx();
       for (f_iter=b->data.begin(); f_iter!=b->data.end(); ++f_iter) {
         c = (*f_iter);
+
+        //rep.printVec("FINE cell pos",c->pos,3);
+        //cout <<"row_y="<<row_y<<", row_z="<<row_z<<"\n";
+
         if (c->pos[ZZ]-row_z == 2*idx) {
           // move to next plane of cells
+          //cout <<"moving to next plane\n";
           row_z = c->pos[ZZ];
         }
         if (c->pos[YY]-row_y == 2*idx) {
           // move to next row of cells in z-plane
+          //cout <<"moving to next row\n";
           row_y = c->pos[YY];
         }
+        if (row_y > c->pos[YY]) {
+          //cout <<"resetting row_y for next plane.\n";
+          row_y = c->pos[YY];
+        }
+
         if (c->pos[YY] == row_y && c->pos[ZZ] == row_z) {
           // on same row of cells so continue adding cells
+          //cout <<"adding cells\n";
           f_iter++;
           temp = (*f_iter);
           b->NGrecvC2F[ic].push_back(c);
@@ -386,16 +765,26 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
           b->NGrecvC2F[ic].push_back(grid->NextPt(c,YP));
           b->NGrecvC2F[ic].push_back(grid->NextPt(temp,YP));
           c = grid->NextPt(c,ZP);
-          temp = grid->NextPt(temp,YP);
+          temp = grid->NextPt(temp,ZP);
           b->NGrecvC2F[ic].push_back(c);
           b->NGrecvC2F[ic].push_back(temp);
           b->NGrecvC2F[ic].push_back(grid->NextPt(c,YP));
           b->NGrecvC2F[ic].push_back(grid->NextPt(temp,YP));
+
+          //int v=0;
+          //for (list<cell*>::iterator l_iter=b->NGrecvC2F[ic].begin();
+          //    l_iter!=b->NGrecvC2F[ic].end(); ++l_iter) {
+          //  cout <<"i="<<v<<", c="<<(*l_iter)->id<<"  ";
+          //  v++;
+          //}
+          //cout <<"\n";
+          
           ic++;
         }
         else if (c->pos[YY]-row_y == idx ||
                  c->pos[ZZ]-row_z == idx) {
-          // odd-numbered row/plane, already dealt with.
+          // odd-numbered row/plane, already added cells.
+          //cout <<"odd numbered row/plane.\n";
           continue;
         }
         else
@@ -429,11 +818,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 #endif
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int pproc = MCMD->parent_proc;
   class GridBaseClass *grid   = par.levels[l].grid;
 
-  if (MCMD->get_myrank() == pproc) {
-#ifdef TEST_MPI_NG
+  if (MCMD->get_myrank() == b->NGrecvC2F_parent) {
+#ifdef TEST_C2F
     cout <<"my rank == parent rank, calling serial ";
     cout <<"COARSE_TO_FINE\n";
 #endif
@@ -441,11 +829,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
                                               par,solver,l,b,step);
   }
   else {
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"my rank != parent rank, so updating ";
     cout <<"COARSE_TO_FINE_RECV";
     cout <<"me="<<MCMD->get_myrank();
-    cout <<", parent="<<pproc<<"\n";
+    cout <<", parent="<<b->NGrecvC2F_parent<<"\n";
 #endif
 
     //
@@ -456,7 +844,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     err = COMM->look_for_data_to_receive(&from_rank, recv_id,
                         &recv_tag,comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed",err);
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"BC_update_COARSE_TO_FINE_RECV: found data from rank ";
     cout <<from_rank<<", with tag "<< recv_tag<<" and id ";
     cout <<recv_id<<".  Looked for comm_tag="<<comm_tag<<"\n";
@@ -467,11 +855,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     for (int idim=0;idim<par.ndim;idim++) n_cell /=2;
     size_t n_el = 0;
     if      (par.spOOA == OA1) n_el = n_cell*(par.nvar +1+par.ndim);
-    else if (par.spOOA == OA2) n_el = n_cell*(3*par.nvar+1+par.ndim);
+    else if (par.spOOA == OA2) n_el = n_cell*((1+par.ndim)*par.nvar+1+par.ndim);
     else rep.error("bad spOOA in MPI C2F",par.spOOA);
     pion_flt *buf = 0;
     buf = mem.myalloc(buf,n_el);
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
     cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<n_cell;
     cout <<" cells, and "<<n_el<<" doubles.\n";
 #endif 
@@ -493,7 +881,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       // same state as the coarse one.
       double Ph[par.nvar];
       double cpos[par.ndim];
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
       double off[par.ndim];
 #endif
       //double c_vol=0.0;
@@ -511,7 +899,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         for (f_iter=b->NGrecvC2F[ic].begin();
               f_iter!=b->NGrecvC2F[ic].end(); ++f_iter) {
           c = (*f_iter);
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
           //for (int v=0;v<par.ndim;v++) off[v] = cpos[v]- c->pos[v];
           //cout <<"ic="<<ic<<", cell is "<<c<<"  ";
           //rep.printVec("offset is:",off,par.ndim);
@@ -584,7 +972,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
         double cpos[par.ndim], c_vol=0.0;
         int ipos[par.ndim];
         double sx[par.nvar], sy[par.nvar], sz[par.nvar];
-        cell *f[8];
+        cell *fch[8];
         for (unsigned int ic=0; ic<b->NGrecvC2F.size(); ic++) {
           // read data for this coarse cell into arrays
           for (int v=0;v<par.nvar;v++) Ph[v] = buf[ibuf+v];
@@ -601,13 +989,12 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           ibuf += par.nvar;
           list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
           for (int v=0;v<8;v++) {
-            f[v] = *f_iter;
+            fch[v] = *f_iter;
             f_iter++;
           }
           CI.get_ipos_vec(cpos,ipos);
-          interpolate_coarse2fine2D(
-                  par,grid,solver,Ph,ipos,c_vol,sx,sy,f[0],f[1],f[2],f[3]);
-          rep.error("write 3D interpolation routine C2F",par.ndim);
+          interpolate_coarse2fine3D(
+                  par,grid,solver,Ph,ipos,c_vol,sx,sy,sz,fch);
         } // loop over coarse cells
       }   // if 3D  
     } // if 2nd order accurate 
@@ -617,7 +1004,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     buf=0;
   } // if parent proc is different to my proc.
 
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
   cout <<"NG_MPI_C2F_bc::BC_update_COARSE_TO_FINE_RECV() done\n";
   cout.flush();
 #endif
@@ -645,13 +1032,27 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list(
   // In ZN,ZP direction we also add edge data
   //
   // easier to have a function for different grid dimensions.
-  if (par.ndim==1)
+#ifdef TEST_C2F
+  cout <<"Adding cells to C2F Send list: ";
+#endif
+  if (par.ndim==1) {
+#ifdef TEST_C2F
+    cout <<"1D \n";
+#endif
     add_cells_to_C2F_send_list_1D(par,grid,bdata,ixmin,ixmax);
-  else if (par.ndim==2)
+  }
+  else if (par.ndim==2) {
+#ifdef TEST_C2F
+    cout <<"2D \n";
+#endif
     add_cells_to_C2F_send_list_2D(par,grid,bdata,ixmin,ixmax);
-  else
+  }
+  else {
+#ifdef TEST_C2F
+    cout <<"3D \n";
+#endif
     add_cells_to_C2F_send_list_3D(par,grid,bdata,ixmin,ixmax);
-
+  }
   return;
 }
 
@@ -670,7 +1071,6 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
       int *ixmax                  ///< child grid xmax (integer)
       )
 {
-  cell *c = grid->FirstPt();
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
   
   // define domain of boundary region
@@ -690,10 +1090,11 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_1D(
     rep.error("bad direction in 1D C2F",bdata->dir);
   }
 
+  cell *c = grid->FirstPt_All();
   do {
     if (c->pos[XX]>xn && c->pos[XX]<xp)
       bdata->c.push_back(c);
-  } while ((c=grid->NextPt(c)) !=0);
+  } while ((c=grid->NextPt_All(c)) !=0);
 
   return;
 }
@@ -714,10 +1115,10 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       )
 {
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
-  cout <<"bsize="<<bsize<<", and idx="<<grid->idx()<<", Nbc=";
-  cout <<par.Nbc<<"\n";
-  rep.printVec("ixmin",ixmin,par.ndim);
-  rep.printVec("ixmax",ixmax,par.ndim);
+  //cout <<"bsize="<<bsize<<", and idx="<<grid->idx()<<", Nbc=";
+  //cout <<par.Nbc<<"\n";
+  //rep.printVec("ixmin",ixmin,par.ndim);
+  //rep.printVec("ixmax",ixmax,par.ndim);
   
   // define domain of boundary region
   int xn=0,xp=0,yn=0,yp=0;
@@ -755,7 +1156,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
     rep.error("bad direction in 2D C2F",bdata->dir);
   }
 
-  cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
+  //cout <<"boundary: x in ["<<xn<<","<<xp<<"], y in["<<yn<<","<<yp<<"]\n";
   size_t ct=0;
   cell *c = grid->FirstPt_All();
   do {
@@ -766,7 +1167,7 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_2D(
       ct++;
     }
   } while ((c=grid->NextPt_All(c)) !=0);
-#ifdef TEST_MPI_NG
+#ifdef TEST_C2F
   cout <<"add_cells_to_C2F_send_list_2D: added "<<ct<<" cells.\n";
 #endif
 
@@ -788,7 +1189,11 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
       int *ixmax                  ///< child grid xmax (integer)
       )
 {
-  cell *c = grid->FirstPt();
+#ifdef TEST_C2F
+  rep.printVec("C2F Setup Send: ixmin",ixmin,3);
+  rep.printVec("C2F Setup Send: ixmax",ixmax,3);
+#endif
+  
   int bsize = grid->idx()*par.Nbc/2; // idx is >=2, Nbc is >=1.
   
   // define domain of boundary region
@@ -852,12 +1257,27 @@ void NG_MPI_coarse_to_fine_bc::add_cells_to_C2F_send_list_3D(
     rep.error("bad direction in 3D C2F",bdata->dir);
   }
 
+#ifdef TEST_C2F
+  cout <<"xn="<<xn<<", xp="<<xp<<"\n";
+  cout <<"yn="<<yn<<", yp="<<yp<<"\n";
+  cout <<"zn="<<zn<<", zp="<<zp<<"\n";
+#endif
+
+  int ct=0;
+  cell *c = grid->FirstPt_All();
   do {
-    if (c->pos[XX]>xn && c->pos[XX]<xp &&
-        c->pos[YY]>yn && c->pos[YY]<yp &&
-        c->pos[ZZ]>zn && c->pos[ZZ]<zp)
+    if ((c->pos[XX]>xn && c->pos[XX]<xp) &&
+        (c->pos[YY]>yn && c->pos[YY]<yp) &&
+        (c->pos[ZZ]>zn && c->pos[ZZ]<zp)) {
       bdata->c.push_back(c);
-  } while ((c=grid->NextPt(c)) !=0);
+      //rep.printVec("c",c->pos,3);
+      //cout <<"adding cell "<<ct<<" to list.\n";
+      ct++;
+    }
+  } while ((c=grid->NextPt_All(c)) !=0);
+#ifdef TEST_C2F
+  cout <<"Added "<<ct<<" cells to c2f list\n";
+#endif
 
   return;
 }

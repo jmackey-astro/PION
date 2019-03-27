@@ -128,6 +128,7 @@ int MCMD_bc::BC_update_BCMPI(
 {
 #ifdef TEST_COMMS
   cout <<"*******************************************\n";
+  cout <<par.levels[level].MCMD.get_myrank()<<": ";
   cout <<"BC_update_BCMPI: sending data in dir: "<<b->dir;
   cout <<": sending "<<b->send_data.size();
   cout <<" cells.  Boundary data contains "<<b->data.size();

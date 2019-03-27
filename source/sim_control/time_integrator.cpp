@@ -401,6 +401,25 @@ int time_integrator::calc_RT_microphysics_dU(
       spatial_solver->PtoU(c->P,ui,SimPM.gamma);
       spatial_solver->PtoU(p,   uf,SimPM.gamma);
       for (int v=0;v<SimPM.nvar;v++) c->dU[v] += uf[v]-ui[v];
+#ifdef TEST_INF
+      for (int v=0;v<SimPM.nvar;v++) {
+        if (!isfinite(c->P[v]) || !isfinite(p[v])  ||
+            !isfinite(c->dU[v])) {
+          cout <<"NAN/INF in calc_RT_microphysics_dU() ";
+          for (int s=0; s<FVI_nion; s++) {
+            for (short unsigned int iC=0; iC<FVI_ionising_srcs[s].NTau; iC++) {
+              cout <<"ion: Tau = "<<FVI_ionising_srcs[s].Column[iC];
+              cout <<", dTau = "<<FVI_ionising_srcs[s].DelCol[iC] <<"\n";;
+            }
+          }
+          rep.printVec("Pin ",c->P,SimPM.nvar);
+          rep.printVec("Pout",p,   SimPM.nvar);
+          rep.printVec("dU",c->dU,SimPM.nvar);
+          CI.print_cell(c);
+          rep.error("NAN/INF in calc_RT_microphysics_dU()",v);
+        }
+      }
+#endif
 
     } // if not boundary data.
   } while ( (c=grid->NextPt_All(c)) !=0);
@@ -565,15 +584,7 @@ int time_integrator::set_dynamics_dU(
 
   //
   // Loop over all directions, and in each direction, calculate fluxes
-  // in all columns of cells in that direction (it does work!).
-  // This function depends on cells being labelled as on-grid or as
-  // boundary cells, and also on dynamics_dU_column returning 0 on successful
-  // completion, and -1 if the column ends up at the last cell in the domain.
-  // Any other return value will signal an error in this function, stopping the code.
-  //
-  // 2011.04.29 JM: changed logic here so we check for cells which are not grid
-  // cells.  Checking for boundary data is not correct, since we can have 
-  // internal boundaries which are also grid data.
+  // in all columns of cells in that direction.
   //
   for (int i=0;i<SimPM.ndim;i++) {
     spatial_solver->SetDirection(axis[i]);
@@ -719,6 +730,9 @@ int time_integrator::dynamics_dU_column(
     err += spatial_solver->InterCellFlux(grid, cpt, npt, edgeL,
                                 edgeR, Fr_this, SimPM.solverType,
                                 SimPM.artviscosity, SimPM.gamma, dx);
+#ifdef DERIGS
+    err += spatial_solver->MHDsource(grid,cpt,npt,edgeL,edgeR,posdir,dt);
+#endif
     err += spatial_solver->dU_Cell(grid, cpt, axis, Fr_prev, Fr_this,
                                 slope_cpt, csp, dx, dt);
 

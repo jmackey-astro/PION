@@ -112,19 +112,12 @@ void sim_init::print_command_line_options(
   for (int v=0;v<argc;v++)
     cout <<"  "<<argv[v];
   cout <<"\n      ************************         \n";
-  cout << argv[0] <<": must call with at least 3 arguments...\n";
-  cout <<" <main> <icfile> <typeoffile> <solver-type> [optional args]\n";
+  cout << argv[0] <<": must call with at least 1 argument...\n";
+  cout <<" <main> <icfile> [optional args]\n";
   cout <<"Parameters:\n";
   cout <<"<icfile> \n";
   cout <<"\tCan be an ASCII parameter-file for 1D and 2D shocktubes.\n";
-  cout <<"\tOtherwise should be an initial-condition file or restart-file\n";
-  cout <<"\tin FITS or Silo format.\n";
-  cout <<"<typeoffile> \n";
-  cout <<"\tInteger flag to tell me what type of file I am starting from.\n";
-  cout <<"\tCan be one of [1=text paramfile, 2=FITS, 5=Silo file].\n";
-  cout <<"<solvetype> \n";
-  cout <<"\tInteger =1 for uniform finite-volume, no other options.\n";
-
+  cout <<"\tOtherwise should be a restart-file in FITS or Silo format.\n";
   cout <<"\n";
   cout <<"[optional args] are in the format <name>=<value> with no spaces.\n\n";
 
@@ -642,6 +635,14 @@ int sim_init::override_params(int narg, string *args)
       cout << SimPM.checkpoint_freq <<"\n";
     }
 
+    else if (args[i].find("max_T=") != string::npos) {
+      cout <<"\tOVERRIDE PARAMS: resetting MaxTemperature from ";
+      cout <<SimPM.EP.MaxTemperature<<" K to ";
+      double c = atof((args[i].substr(6)).c_str());
+      if (c<0.0 || c>1.e50) rep.error("Bad Max_T flag:",c);
+      SimPM.EP.MaxTemperature = c;
+      cout << SimPM.EP.MaxTemperature<<" K." <<"\n";
+    }
 
     else rep.error("Don't recognise this optional argument, please fix.",args[i]);
   }

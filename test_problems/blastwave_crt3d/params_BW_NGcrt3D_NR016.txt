@@ -2,21 +2,19 @@
 # tuned for photoevaporation problem with random clumps
 
 ics BlastWave
-ndim 2
-coordinates cylindrical
+ndim 3
+coordinates cartesian
 eqn euler
 GAMMA 1.66666666666666666667
 
 StartTime 0.0
-FinishTime 1.58e12  # 50kyr
-OutputFile BW_NGaxi2D_NR128
+FinishTime 1.578e12  # 50kyr
+OutputFile BW_NGcrt3D_NR016
 OutputPath ./
 OutputFileType silo
 OutputFrequency 128
 OutputCriterion 0
 OPfreqTime 6.312e10
-
-
 
 ntracer 0
 chem_code None
@@ -40,19 +38,19 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  128
-NGridY  64
-NGridZ  1
+NGridX  32
+NGridY  16
+NGridZ  32
 
 Xmin -30.86e18
-Ymin  0.0e18
-Zmin -4.629e18
+Ymin   0.00e18
+Zmin -30.86e18
 
 Xmax  30.86e18
 Ymax  30.86e18 
-Zmax  4.629e18
+Zmax  30.86e18
 
-grid_nlevels 4
+grid_nlevels 3
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
@@ -74,6 +72,8 @@ BC_XN outflow
 BC_XP outflow
 BC_YN reflecting
 BC_YP outflow
+BC_ZN outflow
+BC_ZP outflow
 BC_Ninternal 0
 
 units 

@@ -112,7 +112,9 @@ int reporting::redirect(const string &path)
   myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
   //cout <<"myrank="<<myrank<<"\n";
+#ifdef REPORT_RANK0
   if (myrank==0) {
+#endif
     //cout <<"(reporting::redirect): O/P goes to text files in ";
     //cout <<path<<"\n";
     //cout <<"Note: not redirecting error messages, and suppressing ";
@@ -127,7 +129,9 @@ int reporting::redirect(const string &path)
     saved_buffer_cout = cout.rdbuf();
     cout.rdbuf( infomsg.rdbuf() );
     cout.setf(ios_base::scientific); cout.precision(7);
+#ifdef REPORT_RANK0
   }
+#endif
 #else
   //
   // for testing we want all processors to have their own log file.
@@ -177,7 +181,7 @@ void reporting::kill_stdout_from_other_procs(
   //
   myrank = -1, nproc = -1;
   COMM->get_rank_nproc(&myrank, &nproc);
-  if (myrank!=0) {
+  if (myrank!=core) {
     //saved_buffer_cout = cout.rdbuf(); // <-- save
     //cout.rdbuf (nullstream.rdbuf());  // <-- redirect
     std::cout.setstate(std::ios::failbit) ;

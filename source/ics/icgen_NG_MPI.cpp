@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     }
   }
 #ifndef TESTING
-  rep.kill_stdout_from_other_procs(0);
+  //rep.kill_stdout_from_other_procs(0);
 #endif
 
   class DataIOBase   *dataio=0;
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
-  cout <<"MAIN: setting up microphysics module\n";
+  cout <<"ICGEN: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
   // ----------------------------------------------------------------
 
@@ -159,9 +159,15 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
+#ifdef TESTING
+  cout <<"ICGEN: Setting up boundaries\n";
+#endif
   SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
+#ifdef TESTING
+  cout <<"ICGEN: Setting up raytracing\n";
+#endif
   err += SimSetup->setup_raytracing(SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
@@ -228,6 +234,7 @@ int main(int argc, char **argv)
   }
   rep.errorTest("sim_init_NG: error from boundary update",0,err);
   // ----------------------------------------------------------------
+
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
@@ -273,7 +280,9 @@ int main(int argc, char **argv)
       rep.error("setting chemical states to equilibrium failed",err);
 
     SimPM.EP.update_erg = uerg;
+#ifdef TESTING
     cout <<"MAIN: finished equilibrating the chemical species.\n";
+#endif
   }
   // ----------------------------------------------------------------
 

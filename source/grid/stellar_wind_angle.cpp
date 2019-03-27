@@ -555,7 +555,9 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   // ******************************************************************************
   //
   wc->p[PG] = WS->Tw*pconst.kB()/pconst.m_p(); // taking mu = 1
-  wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit), WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw), 1.0-eos_gamma);
+  wc->p[PG] *= pow_fast(fn_density_interp(std::min(0.9999,WS->v_rot/WS->vcrit),
+                        WS->v_esc, WS->Mdot, WS->Rstar, wc->theta, WS->Tw),
+                        1.0-eos_gamma);
   wc->p[PG] *= pow_fast(wc->p[RO], eos_gamma);
 
 
@@ -585,8 +587,42 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   else
     wc->p[VZ] = 0.0;
 
-  if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
-    rep.error("Need to code B into winds model!",eqntype);
+  // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
+  if (eqntype==EQMHD || eqntype==EQGLM) {
+    double R=6.95508e10;  // R_sun in cm
+    double x = grid->difference_vertex2cell(WS->dpos,c,XX);
+    wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                fabs(x)/wc->dist;
+    if (ndim>1) {
+      wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
+      wc->p[BY] = (x>0.0) ? wc->p[BY] : -1.0*wc->p[BY];
+    }
+    else
+      wc->p[BY] = 0.0;
+    if (ndim>2) {
+      wc->p[BZ] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
+                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
+      wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
+    }
+    else
+#define TOROIDAL_FIELD
+#ifdef TOROIDAL_FIELD
+      // Here set up a 100 G toroidal field, scaled by sin(theta) so
+      // that it goes to zero at the poles.
+      wc->p[BZ] = (100.0/sqrt(4.0*M_PI)) *    // 100 G
+                  (10.0*R/wc->dist)      *    // at 10 solar radii
+                  (fabs(x)/wc->dist);         // times sin(theta)
+#else
+      wc->p[BZ] = 0.0;
+#endif
+  }
+  if (eqntype==EQGLM) {
+    wc->p[SI] = 0.0;
+  }
+  
+  //if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
+  //  rep.error("Need to code B into winds model!",eqntype);
 
 
   // update tracers
@@ -623,8 +659,18 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       Tmin*wc->p[RO]*pconst.kB()*0.78625/pconst.m_p());
   }
 #endif // SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
+
 #ifdef TESTING
   cout << "\n";
+  rep.printVec("wc->p",wc->p,nvar);
+#endif
+#ifdef TEST_INF
+  for (int v=0;v<nvar;v++) {
+    if (!isfinite(wc->p[v])) {
+      cerr<<"NAN in wind source "<<v<<" "<<wc->p[v]<<"\n";
+      rep.error("NAN in wind source",wc->p[v]);
+    }
+  }
 #endif
 
   return;
@@ -948,7 +994,7 @@ void stellar_wind_angle::update_source(
   interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
   interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
   interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
-    interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
+  interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
   interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
   //
   // Assign new values to wd->ws (the wind source struct), converting

@@ -658,6 +658,12 @@ int dataio_silo_pllel::SaveLevelData(
     int nproc = mpiPM->get_nproc();
     err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
     err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
+    err += DBWrite(*db_ptr,"grid_level",  &level,    dim1,1,DB_INT);
+    dim1[0]=3;
+    err += DBWrite(*db_ptr,"level_xmin",&(SimPM.levels[level].Xmin),
+                                                  dim1,1,DB_DOUBLE);
+    err += DBWrite(*db_ptr,"level_xmax",&(SimPM.levels[level].Xmax),
+                                                  dim1,1,DB_DOUBLE);
     //    err = write_header(*db_ptr);
     err = write_simulation_parameters(SimPM);
     if (err)

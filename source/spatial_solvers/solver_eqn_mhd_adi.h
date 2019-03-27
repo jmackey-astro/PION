@@ -90,6 +90,21 @@ class FV_solver_mhd_ideal_adi
         const double  ///< cell TimeStep, dt.
         );
 
+  
+  ///
+  /// calculate Powell and GLM source terms for multi-D MHD
+  ///
+  virtual int MHDsource(
+                        class GridBaseClass *,  ///< pointer to grid.
+                        class cell *,   ///< pointer to cell of left state
+                        class cell *,   ///< pointer to cell of right state
+                        pion_flt *,     ///< left edge state
+                        pion_flt *,     ///< right edge state
+                        const axes,            ///< Which axis we are looking along.
+                        enum direction, ///< positive direction normal to interface
+                        enum direction, ///< negative direction normal to interface
+                        const double    ///< timestep dt
+  );
 
   ///
   /// Powell source terms including divB
@@ -317,6 +332,19 @@ class FV_solver_mhd_mixedGLM_adi
         const double    ///< Gas constant gamma.
         );
 
+  
+  virtual int MHDsource(
+                        class GridBaseClass *,  ///< pointer to grid.
+                        class cell *,   ///< pointer to cell of left state
+                        class cell *,   ///< pointer to cell of right state
+                        pion_flt *,     ///< left edge state
+                        pion_flt *,     ///< right edge state
+                        const axes,            ///< Which axis we are looking along.
+                        enum direction, ///< positive direction normal to interface
+                        enum direction, ///< negative direction normal to interface
+                        const double    ///< timestep dt
+  );
+  
   ///
   /// Same as ideal MHD version except that total energy contains
   /// contribution from psi, and includes psi conversion.

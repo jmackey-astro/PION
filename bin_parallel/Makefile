@@ -504,6 +504,8 @@ constants.o: constants.cpp ${GLOBAL}
 sim_params.o: sim_params.cpp ${GLOBAL}
 
 main_NG_MPI.o: main_NG_MPI.cpp sim_control.h ${GLOBAL} comms.h
+mainMPI.o: mainMPI.cpp sim_control.h ${GLOBAL} comms.h
+
 
 icgen_NG_MPI.o: icgen_NG_MPI.cpp icgen.h get_sim_info.h \
   icgen_base.h grid_base_class.h \
@@ -548,6 +550,20 @@ setup_fixed_grid_MPI.o: setup_fixed_grid_MPI.cpp setup_fixed_grid_MPI.h \
   RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
   solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp
 
+setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
+  setup_fixed_grid_MPI.h setup_fixed_grid.h setup_NG_grid.h \
+  ${GLOBAL} uniform_grid_pllel.h \
+  grid_base_class.h uniform_grid.h assign_update_bcs.h \
+  periodic_boundaries_MPI.h assign_update_bcs_MPI.h \
+  RT_MPI_boundaries.h VectorOps.h solver_eqn_base.h  eqns_base.h \
+  solver_eqn_hydro_adi.h solver_eqn_hydro_adi.cpp \
+  assign_update_bcs_NG_MPI.h assign_update_bcs_MPI.h \
+  assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
+  NG_MPI_fine_to_coarse_boundaries.h \
+  NG_MPI_coarse_to_fine_boundaries.h \
+  NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
+  MCMD_boundaries.h boundaries.h \
+  grid_base_class.h solver_eqn_base.h MCMD_control.h
 
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
     uniform_grid.h ${GLOBAL} \
@@ -592,6 +608,12 @@ double_Mach_ref_boundaries.o: double_Mach_ref_boundaries.cpp \
 stellar_wind_boundaries.o: stellar_wind_boundaries.cpp \
   stellar_wind_boundaries.h boundaries.h ${GLOBAL} \
   grid_base_class.h stellar_wind_BC.h
+
+stellar_wind_angle.o: stellar_wind_angle.cpp stellar_wind_angle.h \
+  ${GLOBAL} cell_interface.h grid_base_class.h 
+
+stellar_wind_BC.o: stellar_wind_BC.cpp stellar_wind_BC.h \
+  ${GLOBAL} cell_interface.h grid_base_class.h
 
 assign_update_bcs.o: assign_update_bcs.cpp assign_update_bcs.h \
   periodic_boundaries.h outflow_boundaries.h \
@@ -824,7 +846,7 @@ mpv9_HHe.o: mpv9_HHe.cpp mpv9_HHe.h microphysics_base.h \
 ########################
 # Data I/O
 ########################
-file_status.o: file_status.cpp file_status.h
+file_status.o: file_status.cpp file_status.h ${GLOBAL}
 
 parameter_defs.o:  parameter_defs.cpp parameter_defs.h ${GLOBAL} \
     solver_eqn_base.h readparams.h \

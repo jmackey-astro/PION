@@ -294,6 +294,11 @@ int dataio_silo::OutputData(
     err += DBWrite(*db_ptr,"NUM_FILES",   &numfiles, dim1,1,DB_INT);
     err += DBWrite(*db_ptr,"MPI_nproc",   &nproc,    dim1,1,DB_INT);
     err += DBWrite(*db_ptr,"grid_level",  &l,        dim1,1,DB_INT);
+    dim1[0]=3;
+    err += DBWrite(*db_ptr,"level_xmin",  &(SimPM.levels[l].Xmin),
+                                                  dim1,1,DB_DOUBLE);
+    err += DBWrite(*db_ptr,"level_xmax",  &(SimPM.levels[l].Xmax),
+                                                  dim1,1,DB_DOUBLE);
     err = write_simulation_parameters(SimPM);
     if (err)
       rep.error("dataio_silo::OutputData() writing header",err);

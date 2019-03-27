@@ -166,7 +166,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // Send data using a non-blocking MPI send
   //
   string id;
-  int comm_tag = BC_MPI_NGF2C_tag + l;
+  int comm_tag = BC_MPI_NGF2C_tag +100*MCMD->get_myrank()+ l;
   //id <<"F2C_"<<MCMD->get_myrank()<<"_to_"<<pproc;
 #ifdef TEST_MPI_NG_F2C
   cout <<"BC_update_FINE_TO_COARSE_SEND: Sending "<<ct;
@@ -210,13 +210,16 @@ void NG_MPI_fine_to_coarse_bc::BC_FINE_TO_COARSE_SEND_clear_sends()
     cout <<NG_F2C_send_list[i]<<"...";
     cout.flush();
 #endif
+    //cout <<"waiting for send : "<<NG_F2C_send_list[i]<<"\n";
     COMM->wait_for_send_to_finish(NG_F2C_send_list[i]);
 #ifdef TEST_MPI_NG_F2C
     cout <<" ... done!\n";
     cout.flush();
 #endif
+    //cout <<"cleared F2C send "<<i<<"\n";
   }
   NG_F2C_send_list.clear();
+  //cout <<"clear F2C sends returning\n";
   return;
 }
 
@@ -255,6 +258,9 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 
   // loop over children:
   for (int i=0;i<nchild;i++) {
+#ifdef TEST_MPI_NG_F2C
+    cout <<"child = "<<i<<", processing.\n";
+#endif
 
     // get dimensions of child grid from struct
     int ixmin[MAX_DIM], ixmax[MAX_DIM];
@@ -362,139 +368,122 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       rep.errorTest("BC_update_FINE_TO_COARSE_RECV serial",0,err);
       count++;
     }
+
     else {
 #ifdef TEST_MPI_NG_F2C
-      cout <<"my rank != child rank, will update in next loop.\n";
+      cout <<"my rank != child rank\n";
+      cout <<"F2C_RECV: child "<<count<<", receiving via MPI...\n";
+      cout <<"my rank != child rank, running parallel ";
+      cout <<"FINE_TO_COARSE_RECV\n";
 #endif
-    }
-  }
-
-  //
-  // Go through the list of cells for each child (b->NGrecvF2C[i])
-  // that is on another MPI process, get the data and update cells.
-  //
-  while (count<nchild) {
+      //
+      // receive data.
+      //
+      string recv_id; int recv_tag=-1; int from_rank=-1;
+      int comm_tag = BC_MPI_NGF2C_tag + 100*MCMD->child_procs[i].rank
+                                    + l+1;
+      err = COMM->look_for_data_to_receive(
+            &from_rank, // rank of sender (output)
+            recv_id,    // identifier for receive (output).
+            &recv_tag,  // comm_tag associated with data (output)
+            comm_tag,
+            COMM_DOUBLEDATA // type of data we want.
+            );
+      if (err) rep.error("look for double data failed",err);
 #ifdef TEST_MPI_NG_F2C
-    cout <<"F2C_RECV: child "<<count<<", receiving via MPI...\n";
-    cout <<"my rank != child rank, running parallel ";
-    cout <<"FINE_TO_COARSE_RECV\n";
+      cout <<"BC_update_FINE_TO_COARSE_RECV: found data from rank ";
+      cout <<from_rank<<"\n";
 #endif
     
-    //
-    // receive data.
-    //
-    string recv_id; int recv_tag=-1; int from_rank=-1;
-    int comm_tag = BC_MPI_NGF2C_tag + l+1;
-    err = COMM->look_for_data_to_receive(
-          &from_rank, // rank of sender (output)
-          recv_id,    // identifier for receive (output).
-          &recv_tag,  // comm_tag associated with data (output)
-          comm_tag,
-          COMM_DOUBLEDATA // type of data we want.
-          );
-    if (err) rep.error("look for double data failed",err);
-#ifdef TEST_MPI_NG_F2C
-    cout <<"BC_update_FINE_TO_COARSE_RECV: found data from rank ";
-    cout <<from_rank<<"\n";
-#endif
-
-    // associate data with one of the child grids:
-    int irecv=-1;
-    for (int i=0;i<nchild;i++) {
+      // check association of data with the child grid:
       if (b->NGrecvF2C_ranks[i] == from_rank) {
 #ifdef TEST_MPI_NG_F2C
         cout <<"getting data from rank "<<from_rank;
         cout <<" associated with child grid "<<i<<"\n";
 #endif
-        irecv = i;
-        break;
-      }
-      else if (MCMD->get_myrank() == from_rank) {
-        rep.error("Got same data again",from_rank);
       }
       else {
-        continue;
+        rep.error("data from wrong child",from_rank);
       }
-    }
-    if (irecv<0)
-      rep.error("receiving data, but don't know why",irecv);
 #ifdef TEST_MPI_NG_F2C
-    cout <<"Found data to receive from "<<from_rank;
-    cout <<" associated with child grid "<<irecv<<"\n";
+      cout <<"Found data to receive from "<<from_rank;
+      cout <<" associated with child grid "<<i<<"\n";
 #endif
 
-    // receive the data
-    size_t nel = b->NGrecvF2C[irecv].size();
+      // receive the data
+      size_t nel = b->NGrecvF2C[i].size();
 
 #ifdef TEST_MPI_NG_F2C
-    size_t ct = nel*(par.nvar+F2C_Nxd+par.ndim);
+      size_t ct = nel*(par.nvar+F2C_Nxd+par.ndim);
 #else
-    size_t ct = nel*(par.nvar+F2C_Nxd);
+      size_t ct = nel*(par.nvar+F2C_Nxd);
 #endif
 
-    pion_flt *buf = mem.myalloc(buf,ct);
+      pion_flt *buf = mem.myalloc(buf,ct);
 #ifdef TEST_MPI_NG_F2C
-    cout <<"BC_update_FINE_TO_COARSE_RECV: get "<<nel<<" cells.\n";
+      cout <<"BC_update_FINE_TO_COARSE_RECV: get "<<nel<<" cells.\n";
 #endif
-    //
-    // Receive data into buffer.
-    //
-    err = COMM->receive_double_data(from_rank, recv_tag, recv_id,
-                                    ct, buf);
-    if (err) rep.error("(BC_update_F2C_RECV) getdata failed",err);
+      //
+      // Receive data into buffer.
+      //
+      err = COMM->receive_double_data(from_rank, recv_tag, recv_id,
+                                      ct, buf);
+      if (err) rep.error("(BC_update_F2C_RECV) getdata failed",err);
 
-    // Go through list of cells in child i, and put the received
-    // data onto these cells.
-    list<cell*>::iterator c_iter=b->NGrecvF2C[irecv].begin();
-    cell *c=0;
+      // Go through list of cells in child i, and put the received
+      // data onto these cells.
+      list<cell*>::iterator c_iter=b->NGrecvF2C[i].begin();
+      cell *c=0;
 #ifdef TEST_MPI_NG_F2C
-    pion_flt pos[MAX_DIM];
+      pion_flt pos[MAX_DIM];
 #endif
-    pion_flt prim[par.nvar];
-    size_t i_el=0;
-    for (c_iter=b->NGrecvF2C[irecv].begin();
-         c_iter!=b->NGrecvF2C[irecv].end(); ++c_iter) {
-      c = (*c_iter);
+      pion_flt prim[par.nvar];
+      size_t i_el=0;
+      for (c_iter=b->NGrecvF2C[i].begin();
+           c_iter!=b->NGrecvF2C[i].end(); ++c_iter) {
+        c = (*c_iter);
 #ifdef TEST_MPI_NG_F2C
-      CI.get_dpos(c,pos);
-      rep.printVec("cell pos", pos, par.ndim);
-      rep.printVec("recv pos", &(buf[i_el]), par.ndim);
-      i_el += par.ndim;
+        CI.get_dpos(c,pos);
+        rep.printVec("cell pos", pos, par.ndim);
+        rep.printVec("recv pos", &(buf[i_el]), par.ndim);
+        i_el += par.ndim;
 #endif
-      solver->UtoP(&(buf[i_el]),prim,
-                   par.EP.MinTemperature,par.gamma);
-      i_el += par.nvar;
+        solver->UtoP(&(buf[i_el]),prim,
+                     par.EP.MinTemperature,par.gamma);
+        i_el += par.nvar;
 
 #ifdef TEST_INF
-      for (int v=0;v<par.nvar;v++)
-        if (!isfinite(prim[v])) rep.error("NAN F2C recv",v);
+        for (int v=0;v<par.nvar;v++)
+          if (!isfinite(prim[v])) rep.error("NAN F2C recv",v);
 #endif
 
-      for (int v=0;v<par.nvar;v++) c->Ph[v] = prim[v];
-      if (cstep==maxstep) {
-        for (int v=0;v<par.nvar;v++) c->P[v] = c->Ph[v];
-      }
+        for (int v=0;v<par.nvar;v++) c->Ph[v] = prim[v];
+        if (cstep==maxstep) {
+          for (int v=0;v<par.nvar;v++) c->P[v] = c->Ph[v];
+        }
 
-      // set coarse cell optical depths for any radiation sources by
-      // taking values received (see get_F2C_Tau() for ordering)
-      struct rad_src_info *s;
-      int off;
-      for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
-        s = &(par.RS.sources[isrc]);
-        off = i_el + F2C_tauoff[isrc];
-        CI.set_col(c, s->id, &(buf[off]));
-        CI.set_cell_col(c, s->id, &(buf[off+s->NTau]));
-      }
-      i_el += F2C_Nxd;
+        // set coarse cell optical depths for any radiation sources by
+        // taking values received (see get_F2C_Tau() for ordering)
+        struct rad_src_info *s;
+        int off;
+        for (int isrc=0; isrc<par.RS.Nsources; isrc++) {
+          s = &(par.RS.sources[isrc]);
+          off = i_el + F2C_tauoff[isrc];
+          CI.set_col(c, s->id, &(buf[off]));
+          CI.set_cell_col(c, s->id, &(buf[off+s->NTau]));
+        }
+        i_el += F2C_Nxd;
 
-    } // loop over cells
+      } // loop over cells
 
 #ifdef TEST_MPI_NG_F2C
-    cout <<"(BC_update_F2C_RECV) i_el="<<i_el<<" of "<<ct;
-    cout <<" total elements.\n";
+      cout <<"(BC_update_F2C_RECV) i_el="<<i_el<<" of "<<ct;
+      cout <<" total elements.\n";
 #endif
-    buf = mem.myfree(buf);
-    count++;
+      buf = mem.myfree(buf);
+      count++;
+
+    } // else child is not on my proc
   } // loop until we got through all child grids.
 
   return 0;

@@ -156,6 +156,7 @@ struct boundary_data {
   std::vector<int> NGrecvF2C_ranks;
   /// as NGrecvF2C, but C2F
   std::vector<std::list<cell *> > NGrecvC2F;
+  int NGrecvC2F_parent; ///< process containing coarse level data.
   /// (MPI-NG only) list of lists of cells, for a coarse grid that
   /// sends data to a number of child grids for their external
   /// boundaries.  Vector length is the number of child boundaries

@@ -36,7 +36,9 @@ using namespace std;
 
 #ifdef PARALLEL
 
+#define BC89_FULLSTEP
 
+//#define TEST_BC89FLUX        // debugging info for BC89 flux correction
 //#define TEST_INT
 
 // ##################################################################
@@ -354,42 +356,19 @@ int sim_control_NG_MPI::Time_Int(
     SimPM.levels[l].simtime = SimPM.simtime;
   }
 
-  for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-
-    cout <<"raytracing level "<<l<<"\n";
-    if (l<SimPM.grid_nlevels-1) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
-          err += BC_update_FINE_TO_COARSE_RECV(SimPM,spatial_solver,
-                      l,grid[l]->BC_bd[i],2,2);
-        }
-      }
-    }
-
-    if (SimPM.RS.Nsources>0 && SimPM.EP.raytracing) {
-      do_ongrid_raytracing(SimPM,grid[l],l);
-    }
-    
-    if (l>0) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
-          err += BC_update_FINE_TO_COARSE_SEND(SimPM,
-                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
-        }
-      }
-    }
-  }
-  BC_FINE_TO_COARSE_SEND_clear_sends();
 
   // --------------------------------------------------------------
   // Update internal and external boundaries.
 
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
-    cout <<"updating internal boundaries for level "<<l<<"\n";
+    cout <<"updating internal boundaries for level "<<l<<"... ";
 #endif
     err += TimeUpdateInternalBCs(SimPM, l, grid[l], spatial_solver,
                   SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+#ifdef TEST_INT
+    cout <<"... done \n";
+#endif
   }
   rep.errorTest("sim_control_NG_MPI: internal boundary",0,err);
   // --------------------------------------------------------------
@@ -398,16 +377,7 @@ int sim_control_NG_MPI::Time_Int(
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TESTING
     cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";
-    cout <<l<<"\n";
 #endif
-    if (l>0) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
-          err += BC_update_FINE_TO_COARSE_SEND(SimPM,
-                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
-        }
-      }
-    }
     if (l<SimPM.grid_nlevels-1) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
@@ -416,21 +386,28 @@ int sim_control_NG_MPI::Time_Int(
         }
       }
     }
+
+    do_ongrid_raytracing(SimPM,grid[l],l);
+        
+    if (l>0) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
+          err += BC_update_FINE_TO_COARSE_SEND(SimPM,
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
   }
+#ifdef TESTING
+  cout <<"NG_MPI updated F2C boundaries for all levels.\n";
+#endif
   BC_FINE_TO_COARSE_SEND_clear_sends();
+#ifdef TESTING
+  cout <<"NG_MPI F2C cleared all sends.\n";
+#endif
   rep.errorTest("NG_MPI time-int: error from bounday update",0,err);
   // ----------------------------------------------------------------
 
-  // ----------------------------------------------------------------
-  for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TEST_INT
-    cout <<"updating external boundaries for level "<<l<<"\n";
-#endif
-    err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
-                  SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
-  }
-  rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
-  // ----------------------------------------------------------------
   // ----------------------------------------------------------------
   // update coarse-to-fine level boundaries
   for (int l=0; l<SimPM.grid_nlevels; l++) {
@@ -438,14 +415,9 @@ int sim_control_NG_MPI::Time_Int(
     cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
     cout <<l<<"\n";
 #endif
-    if (l<SimPM.grid_nlevels-1) {
-      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
-        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
-          err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
-                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
-        }
-      }
-    }
+#ifdef TEST_INT
+    cout <<"updating external boundaries for level "<<l<<"\n";
+#endif
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -454,6 +426,20 @@ int sim_control_NG_MPI::Time_Int(
         }
       }
     }
+
+    err += TimeUpdateExternalBCs(SimPM, l, grid[l], spatial_solver,
+                  SimPM.levels[l].simtime,SimPM.tmOOA,SimPM.tmOOA);
+    rep.errorTest("sim_control_NG_MPI: external boundary",0,err);
+
+    if (l<SimPM.grid_nlevels-1) {
+      for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+        if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
+          err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid[l],
+                spatial_solver, l, grid[l]->BC_bd[i], 2,2);
+        }
+      }
+    }
+
   }
   BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("NG_MPI time-int: error from bounday update",0,err);
@@ -472,11 +458,13 @@ int sim_control_NG_MPI::Time_Int(
 #ifdef DERIGS
     spatial_solver->set_max_speed(0.0);
 #endif
+
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TEST_INT
       cout <<"Calculate timestep, level "<<l<<", dx=";
       cout <<SimPM.levels[l].dx<<endl;
 #endif
+      
       if (!restart && !first_step) {
         SimPM.last_dt = SimPM.levels[l].last_dt;
       }
@@ -547,7 +535,6 @@ int sim_control_NG_MPI::Time_Int(
     // for the finer level, and so on.
     //
     advance_time(0,grid[0]);
-    //advance_step_OA1(0);
     SimPM.simtime = SimPM.levels[0].simtime;
     COMM->barrier("step");
 #ifdef TESTING
@@ -623,7 +610,6 @@ double sim_control_NG_MPI::advance_step_OA1(
   int err=0;
   double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
-  double ctime = SimPM.levels[l].simtime; // current time
   class GridBaseClass *grid = SimPM.levels[l].grid;
   class GridBaseClass *child = SimPM.levels[l].child;
   bool finest_level = (l<(SimPM.grid_nlevels-1)) ? false : true;
@@ -637,6 +623,7 @@ double sim_control_NG_MPI::advance_step_OA1(
   cout <<"finest_level="<<finest_level<<", l="<<l<<", max="<<SimPM.grid_nlevels<<"\n";
 #endif
 
+  // --------------------------------------------------------
   // 0. See if there are coarse-to-fine boundary data to send
   int c2f = -1, f2cs=-1, f2cr=-1;
   if (!finest_level) {
@@ -661,187 +648,130 @@ double sim_control_NG_MPI::advance_step_OA1(
   cout <<"advance_step_OA1: l="<<l<<" c2f = "<<c2f;
   cout <<", f2c send="<<f2cs<<", f2c recv="<<f2cr<<"\n";
 #endif
-
   // --------------------------------------------------------
-  // 1. advance finer-level by one step, if it exists
-  // --------------------------------------------------------
-  if (!finest_level) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" first fine step\n";
-#endif
-    dt2_fine = advance_step_OA1(l+1);
-    
-    // timestep for this level is equal to two steps of finer level,
-    // where we take the sum of the fine step just taken and the next
-    // step (not yet taken).
-    SimPM.levels[l].dt = dt2_fine;
-  }
-  dt2_this = SimPM.levels[l].dt;
-#ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" dt="<<dt2_this<<"\n";
-#endif
-
-  // --------------------------------------------------------
-  // 2. Calculate dU for this level (1st order)
-  // --------------------------------------------------------
-  spatial_solver->Setdt(dt2_this);
-  if (grid->RT && (!FVI_need_column_densities_4dt ||
-    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" raytracing\n";
-#endif
-    err += do_ongrid_raytracing(SimPM,grid,l);
-    rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()",0,err);
-  }
-#ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" microphysics\n";
-#endif
-  err += calc_microphysics_dU(dt2_this, grid);
-#ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" dynamics\n";
-#endif
-  err += calc_dynamics_dU(dt2_this,TIMESTEP_FIRST_PART, grid);
-#ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt2_this,TIMESTEP_FIRST_PART,grid);
-#endif // THERMAL_CONDUCTION
-  rep.errorTest("NG-MPI scn::advance_step_OA1: calc_x_dU",0,err);
 
 
   // --------------------------------------------------------
-  // 3. Send external boundary data to finer grid (C2F)
-  //    The (1,2) tells it that we are only half way
-  //    through the coarse-level step.
-  //    Then Receive the data on level l+1
-  //    Finally clear the C2F sends.
-  // --------------------------------------------------------
-  if (c2f>=0) {
+  // 0. Coarse to fine recv:
 #ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" C2F SEND\n";
+  cout <<"advance_step_OA1: l="<<l<<" recv C2F BCs\n";
 #endif
-    // send C2F data from l
-    err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
-                                         l, grid->BC_bd[c2f], 1,2);
-    // receive C2F data to l+1
-    for (size_t i=0;i<child->BC_bd.size();i++) {
-      if (child->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
-        err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
-                    l+1,child->BC_bd[i],SimPM.levels[l+1].step);
-      }
+  for (size_t i=0;i<grid->BC_bd.size();i++) {
+    if (grid->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+      err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                  l,grid->BC_bd[i],SimPM.levels[l].step);
     }
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" C2F CLEAR SEND\n";
-#endif
-    // clear sends.
-    BC_COARSE_TO_FINE_SEND_clear_sends();
   }
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" C2F CLEAR SEND\n";
+#endif
+  BC_COARSE_TO_FINE_SEND_clear_sends();
+  // --------------------------------------------------------
 
   // --------------------------------------------------------
-  // 4. Take another step on finer grid
-  // --------------------------------------------------------
-  if (!finest_level) {
+  // 1. Update external boundary conditions on level l
+  // We have received interpolated data from the coarser level grid
+  // already from the advance_step_OA1() for level l-1, if it exists.
 #ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" second fine step\n";
+  cout <<"advance_step_OA1: l="<<l<<" update external BCs\n";
 #endif
-    dt2_fine = advance_step_OA1(l+1);
-  }
-
-  // --------------------------------------------------------
-  // 5. Update grid and boundaries on level l:
-  // --------------------------------------------------------
-  spatial_solver->Setdt(dt2_this);
-  //  - Receive level fluxes from finer grid (FLUX)
-  //  - update grid on level l to new time
-#ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" update grid\n";
-#endif
-  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
-  rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
-
-  //  - clear level flux sends
-  clear_sends_BC89_fluxes();
-
-  //  - update boundary conditions on level l
-#ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" update BCs\n";
-#endif
-  err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
-                              ctime+dt2_this, OA1, OA1);
-
-
-  //  - Recv F2C data from l+1
-  if (!finest_level && f2cr>=0) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" receive F2C data\n";
-    cout <<"F2C Recv, l="<<l<<", f2cr="<<f2cr<<", size=";
-    cout <<grid->BC_bd.size()<<"\n";
-#endif
-    err += BC_update_FINE_TO_COARSE_RECV(
-                SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA1);
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" clear F2C sends\n";
-#endif
-    //  - Clear F2C sends
-    BC_FINE_TO_COARSE_SEND_clear_sends();
-  }
-
-
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                              ctime+dt2_this, OA1, OA1);
+                              SimPM.levels[l].simtime, OA1, OA1);
+  // --------------------------------------------------------
   
 
   // --------------------------------------------------------
-  // 6. Send external boundary data to finer grid (C2F)
-  //    The (2,2) tells it that we are all the way through
-  //    the coarse-level step.
+  // 2. Send/receive external boundary data to finer grid (C2F)
+  //    The (2,2) tells it that we are on a full step at the
+  //    coarse-level.
   // --------------------------------------------------------
   if (c2f>=0) {
 #ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" C2F SEND\n";
+    cout <<"advance_step_OA1: l="<<l<<" C2F send\n";
 #endif
     err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
                                          l, grid->BC_bd[c2f], 2,2);
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" update l+1 C2F BCs\n";
-#endif
-    for (size_t i=0;i<child->BC_bd.size();i++) {
-      if (child->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
-        err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
-                    l+1,child->BC_bd[i],SimPM.levels[l+1].step);
-      }
-    }
-#ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" C2F CLEAR SEND\n";
-#endif
-    BC_COARSE_TO_FINE_SEND_clear_sends();
   }
+  // --------------------------------------------------------
+
+  
+  // --------------------------------------------------------
+  // 3. advance finer-level by one step, if it exists
+  // --------------------------------------------------------
+  if (!finest_level) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" advance l+1 step 1\n";
+#endif
+    dt2_fine = advance_step_OA1(l+1);
+  }
+  dt2_this = SimPM.levels[l].dt;
+  // --------------------------------------------------------
+
 
   // --------------------------------------------------------
-  // 7. Send level fluxes and F2C data to coarser grid
+  // 4. Calculate dU for this level (1st order)
   // --------------------------------------------------------
-  if (l>0 && SimPM.levels[l].step%2!=0) {
-    // - send level fluxes
-    err += send_BC89_fluxes_F2C(l,OA1,OA1);
 #ifdef TEST_INT
-    cout <<"advance_step_OA1: l="<<l<<" send_BC89_fluxes_F2C()\n";
+  cout <<"advance_step_OA1: l="<<l<<" calc DU\n";
 #endif
+  spatial_solver->Setdt(dt2_this);
+  err += calc_microphysics_dU(dt2_this,     grid);
+  err += calc_dynamics_dU(    dt2_this,OA1, grid);
+#ifdef THERMAL_CONDUCTION
+  err += calc_thermal_conduction_dU(dt2_this,OA1,grid);
+#endif // THERMAL_CONDUCTION
+  rep.errorTest("NG-MPI scn::advance_step_OA1: calc_x_dU",0,err);
+  // --------------------------------------------------------
 
-    // - send F2C data
-#ifdef TEST_MPI_NG
-    cout <<"LEVEL "<<l<<": update_bcs_NG_MPI: updating bc ";
-    cout <<f2cs<<" with type "<<grid->BC_bd[f2cs]->type<<"\n";
-    cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
-    cout <<"... step="<<SimPM.levels[l].step<<"\n";
+
+  // --------------------------------------------------------
+  // 5. Send external boundary data to finer grid (C2F)
+  //    The (1,2) tells it that we are only half way
+  //    through the coarse-level step.
+  //    Then Receive the data on level l+1 and clear the C2F sends.
+  // --------------------------------------------------------
+  if (c2f>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" C2F Send\n";
 #endif
-    err += BC_update_FINE_TO_COARSE_SEND(
-              SimPM,spatial_solver,l,grid->BC_bd[f2cs],OA1,OA1);
+    err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
+                                         l, grid->BC_bd[c2f], 1,2);
   }
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // 6. Take another step on finer grid
+  // --------------------------------------------------------
+  if (!finest_level) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" advance l+1 step 2\n";
+#endif
+    dt2_fine = advance_step_OA1(l+1);
+  }
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // 7. Update grid and boundaries on level l:
+  //  - Receive level fluxes from finer grid (BC89)
+  //  - update grid on level l to new time
+  // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" update state vec\n";
+#endif
+  spatial_solver->Setdt(dt2_this);
+  err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
+  rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
+#ifndef SKIP_BC89_FLUX
+  clear_sends_BC89_fluxes();
+#endif
+  // --------------------------------------------------------
 
 
   // --------------------------------------------------------
   // 8. increment time and timestep for this level
   // --------------------------------------------------------
 #ifdef TEST_INT
-  cout <<"advance_step_OA1: l="<<l<<" advancing time and return\n";
+  cout <<"advance_step_OA1: l="<<l<<" \n";
 #endif
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
   SimPM.levels[l].step ++;
@@ -850,7 +780,60 @@ double sim_control_NG_MPI::advance_step_OA1(
   }
   SimPM.levels[l].last_dt = SimPM.levels[l].dt;
   if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
+  // --------------------------------------------------------
 
+
+  // --------------------------------------------------------
+  // 9. update internal boundary conditions on level l
+  // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA1: l="<<l<<" update internal BCS\n";
+#endif
+  err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
+                              SimPM.levels[l].simtime, OA1, OA1);
+  //  - Recv F2C data from l+1
+  if (!finest_level && f2cr>=0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" F2C Receive\n";
+#endif
+    err += BC_update_FINE_TO_COARSE_RECV(
+                SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA1);
+
+    BC_FINE_TO_COARSE_SEND_clear_sends();
+  }
+  // --------------------------------------------------------
+
+
+  // --------------------------------------------------------
+  // 10. Do raytracing for next step, to send with F2C BCs.
+  // --------------------------------------------------------
+  if (grid->RT) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" RT at end of step\n";
+#endif
+    err += do_ongrid_raytracing(SimPM,grid,l);
+    rep.errorTest("NG-MPI::advance_step_OA1: calc_rt_cols()",0,err);
+  }
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // 11. Send level fluxes and F2C data to coarser grid
+  // --------------------------------------------------------
+  if (l>0 && SimPM.levels[l].step%2==0) {
+    // - send level fluxes
+#ifndef SKIP_BC89_FLUX
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" \n";
+#endif
+    err += send_BC89_fluxes_F2C(l,OA1,OA1);
+#endif
+#ifdef TEST_INT
+    cout <<"advance_step_OA1: l="<<l<<" F2C SEND at tend of step\n";
+#endif
+    err += BC_update_FINE_TO_COARSE_SEND(
+              SimPM,spatial_solver,l,grid->BC_bd[f2cs],OA1,OA1);
+  }
+  // --------------------------------------------------------
 
 #ifdef TESTING
   cout <<"NG-MPI advance_step_OA1, level="<<l<<", returning. t=";
@@ -858,6 +841,7 @@ double sim_control_NG_MPI::advance_step_OA1(
   cout <<", next dt="<<SimPM.levels[l].dt<<" next time=";
   cout << SimPM.levels[l].simtime + SimPM.levels[l].dt <<"\n";
 #endif
+
   return dt2_this + SimPM.levels[l].dt;
 }
 
@@ -892,6 +876,7 @@ double sim_control_NG_MPI::advance_step_OA2(
   cout <<"advance_step_OA2: child="<<child<<"\n";
 #endif
 
+  // --------------------------------------------------------
   // 0. See if there are coarse-to-fine boundary data to send
   int c2f = -1, f2cs=-1, f2cr=-1;
   if (!finest_level) {
@@ -914,145 +899,154 @@ double sim_control_NG_MPI::advance_step_OA2(
 #ifdef TEST_INT
   cout <<"advance_step_OA2: l="<<l<<" c2f = "<<c2f<<"\n";
 #endif
-
-
+  // --------------------------------------------------------
 
   // --------------------------------------------------------
-  // 1. advance finer-level by one step, if it exists
+  // 0. Coarse to fine recv:
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" recv C2F BCs\n";
+#endif
+  for (size_t i=0;i<grid->BC_bd.size();i++) {
+    if (grid->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
+      err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
+                  l,grid->BC_bd[i],SimPM.levels[l].step);
+    }
+  }
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" C2F CLEAR SEND\n";
+#endif
+  BC_COARSE_TO_FINE_SEND_clear_sends();
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // 1. Update external boundary conditions on level l
+  // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" update external BCs\n";
+#endif
+  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
+                                ctime, OA2, OA2);
+  // --------------------------------------------------------
+  
+
+  // --------------------------------------------------------
+  // 2. Send/receive external boundary data to finer grid (C2F)
+  //    The (2,2) tells it that we are on a full step at the
+  //    coarse-level.
+  // --------------------------------------------------------
+  if (c2f>=0) { // && SimPM.levels[l].step%2==0) {
+#ifdef TEST_INT
+    cout <<"advance_step_OA2: l="<<l<<" C2F SEND\n";
+#endif
+    err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
+                                         l, grid->BC_bd[c2f], 2,2);
+  }
+
+  
+  // --------------------------------------------------------
+  // 3. advance finer-level by one step, if it exists
   // --------------------------------------------------------
   if (!finest_level) {
 #ifdef TEST_INT
     cout <<"advance_step_OA2: l="<<l<<" first fine step\n";
 #endif
     dt2_fine = advance_step_OA2(l+1);
-    
-    // timestep for this level is equal to two steps of finer level,
-    // where we take the sum of the fine step just taken and the next
-    // step (not yet taken).
-    SimPM.levels[l].dt = dt2_fine;
   }
   dt2_this = SimPM.levels[l].dt;
 #ifdef TEST_INT
   cout <<"advance_step_OA2: l="<<l<<" dt="<<dt2_this<<"\n";
 #endif
+  // --------------------------------------------------------
+
 
   // --------------------------------------------------------
-  // 2. Calculate dU for this level (1st order)
+  // 4. Calculate dU for this level (1st order predictor step)
+  //    and advance to time-centred state at 0.5*dt
   // --------------------------------------------------------
-  // Predictor step: use 0.5*dt to get to time-centred state
-  double dt_now = dt2_this*0.5;             // half of the timestep
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" calc DU half step\n";
+#endif
+  double dt_now = dt2_this*0.5;       // half of the timestep
   spatial_solver->Setdt(dt_now);
-  if (grid->RT && (!FVI_need_column_densities_4dt ||
-    (SimPM.levels[l].step%SimPM.levels[l].multiplier !=0) )) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" raytracing\n";
-#endif
-    err += do_ongrid_raytracing(SimPM,grid,l);
-    rep.errorTest("NG-MPI::advance_step_OA2: calc_rt_cols()",0,err);
-  }
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" microphysics\n";
-#endif
-  err += calc_microphysics_dU(dt_now, grid);
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" dynamics\n";
-#endif
-  err += calc_dynamics_dU(dt_now,TIMESTEP_FIRST_PART, grid);
+  err += calc_microphysics_dU(dt_now,      grid);
+  err += calc_dynamics_dU(    dt_now, OA1, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt_now,TIMESTEP_FIRST_PART,grid);
+  err += calc_thermal_conduction_dU(dt_now,OA1,grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("NG-MPI scn::advance_step_OA2: calc_x_dU",0,err);
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" 1/2 step, grid_update\n";
-#endif
 
-  // --------------------------------------------------------
-  // 3. Update grid and boundary data on this level at 1/2 step
-  // --------------------------------------------------------
   // update state vector Ph to half-step values
-  err += grid_update_state_vector(dt_now,
-                                    TIMESTEP_FIRST_PART,OA2, grid);
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" update cell half step\n";
+#endif
+  err += grid_update_state_vector(dt_now, OA1,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update OA2",0,err);
+  // --------------------------------------------------------
 
-  // - update internal and external boundaries locally
+
+  // --------------------------------------------------------
+  // 5. Update grid and boundary data on this level at 1/2 step
+  // - update internal and F2C boundaries
+  // - update external boundaries
+  // - don't update C2F (b/c it is 1/4 step on l-1 level)
+  // --------------------------------------------------------
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
-  // - Receive F2C data from l+1
+
   if (!finest_level && f2cr>=0) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" receive F2C data\n";
-    cout <<"F2C Recv, l="<<l<<", f2cr="<<f2cr<<", size=";
-    cout <<grid->BC_bd.size()<<"\n";
-#endif
     err += BC_update_FINE_TO_COARSE_RECV(
                 SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA1,OA2);
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" clear F2C sends\n";
-#endif
-    //  - Clear F2C sends
+
     BC_FINE_TO_COARSE_SEND_clear_sends();
   }
 
   err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
   rep.errorTest("scn::advance_step_OA2: bounday update OA2",0,err);
+  // --------------------------------------------------------
+
+  // --------------------------------------------------------
+  // 7. Send/receive external boundary data to finer grid (C2F)
+  //    The (1,2) tells it that we are half-way through
+  //    the coarse-level step.
+  // --------------------------------------------------------
+  //if (c2f>=0) {
+  //  err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
+  //                               l, grid->BC_bd[c2f], 2,2);
+  //}
+  // --------------------------------------------------------
   
   // --------------------------------------------------------
-  // 4. Calculate dU for the full step (OA2) on this level
+  // 6. Calculate dU for the full step (OA2) on this level
   // --------------------------------------------------------
-  //
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
   if (grid->RT) {
     err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l;
-  cout <<" full step, start calc_microphysics_dU\n";
-#endif
   err += calc_microphysics_dU(dt_now, grid);
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l;
-  cout <<" full step, start calc_dynamics_dU\n";
-#endif
-  err += calc_dynamics_dU(dt_now, TIMESTEP_FULL, grid);
+  err += calc_dynamics_dU(dt_now, OA2, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt_now,TIMESTEP_FULL, grid);
+  err += calc_thermal_conduction_dU(dt_now,OA2, grid);
 #endif // THERMAL_CONDUCTION
   rep.errorTest("scn::advance_step_OA2: calc_x_dU OA2",0,err);
+  // --------------------------------------------------------
 
   // --------------------------------------------------------
-  // 5. Send/receive external boundary data to finer grid (C2F)
+  // 7. Send/receive external boundary data to finer grid (C2F)
   //    The (1,2) tells it that we are half-way through
   //    the coarse-level step.
-  // NB: This doesn't have corrected fluxes, so there is a
-  //     possible inconsistency here.  Need to make sure that
-  //     it doesn't cause conservation issues...
   // --------------------------------------------------------
   if (c2f>=0) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" C2F SEND\n";
-#endif
     err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
                                          l, grid->BC_bd[c2f], 1,2);
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" update l+1 C2F BCs\n";
-#endif
-    for (size_t i=0;i<child->BC_bd.size();i++) {
-      if (child->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
-        err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
-                    l+1,child->BC_bd[i],SimPM.levels[l+1].step);
-      }
-    }
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" C2F CLEAR SEND\n";
-#endif
-    BC_COARSE_TO_FINE_SEND_clear_sends();
   }
+  // --------------------------------------------------------
+
 
   // --------------------------------------------------------
-  // 6. Take another step on finer grid
+  // 8. Take another step on finer grid
   // --------------------------------------------------------
   if (!finest_level) {
 #ifdef TEST_INT
@@ -1060,106 +1054,26 @@ double sim_control_NG_MPI::advance_step_OA2(
 #endif
     dt2_fine = advance_step_OA2(l+1);
   }
+  // --------------------------------------------------------
+
 
   // --------------------------------------------------------
-  // 7. Update local grid to new time values
-  // --------------------------------------------------------
-  spatial_solver->Setdt(dt2_this);
+  // 9. Update local grid to new time values
   //  - Receive level fluxes from finer grid (FLUX)
   //  - update grid on level l to new time
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" update grid\n";
-#endif
+  // --------------------------------------------------------
+  spatial_solver->Setdt(dt_now);
   err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);
-  //  - clear level flux sends
+#ifndef SKIP_BC89_FLUX
   clear_sends_BC89_fluxes();
-
-  //  - update boundary conditions on level l
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" update BCs\n";
 #endif
-  err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
-                              ctime+dt2_this, OA2, OA2);
-
-  //  - Recv F2C data from l+1
-  if (!finest_level && f2cr>=0) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" receive F2C data\n";
-    cout <<"F2C Recv, l="<<l<<", f2cr="<<f2cr<<", size=";
-    cout <<grid->BC_bd.size()<<"\n";
-#endif
-    err += BC_update_FINE_TO_COARSE_RECV(
-                SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA2,OA2);
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" clear F2C sends\n";
-#endif
-    //  - Clear F2C sends
-    BC_FINE_TO_COARSE_SEND_clear_sends();
-  }
-
-  err += TimeUpdateExternalBCs(SimPM, l, grid, spatial_solver,
-                              ctime+dt2_this, OA2, OA2);
-  
-
   // --------------------------------------------------------
-  // 8. Send/receive external boundary data to finer grid (C2F)
-  //    The (2,2) tells it that we are all the way through
-  //    the coarse-level step.
-  // --------------------------------------------------------
-  if (c2f>=0) {
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" C2F SEND\n";
-#endif
-    err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
-                                         l, grid->BC_bd[c2f], 2,2);
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" update l+1 C2F BCs\n";
-#endif
-    for (size_t i=0;i<child->BC_bd.size();i++) {
-      if (child->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
-        err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
-                    l+1,child->BC_bd[i],SimPM.levels[l+1].step);
-      }
-    }
-#ifdef TEST_INT
-    cout <<"advance_step_OA2: l="<<l<<" C2F CLEAR SEND\n";
-#endif
-    BC_COARSE_TO_FINE_SEND_clear_sends();
-  }
-
-  // --------------------------------------------------------
-  // 9. Send level fluxes and F2C data to coarser grid
-  // --------------------------------------------------------
-  // - send F2C data
-  if (l>0) { // && SimPM.levels[l].step%2!=0) {
-    // - send level fluxes
-#ifdef TEST_INT
-    cout <<"step="<<SimPM.levels[l].step<<"\n";
-#endif
-    if (SimPM.levels[l].step%2!=0) {
-      err += send_BC89_fluxes_F2C(l,OA2,OA2);
-#ifdef TEST_INT
-      cout <<"advance_step_OA2: l="<<l<<" send_BC89_fluxes_F2C()\n";
-#endif
-    }
-
-#ifdef TEST_MPI_NG
-    cout <<"LEVEL "<<l<<": update_bcs_NG_MPI: updating bc ";
-    cout <<f2cs<<" with type "<<grid->BC_bd[f2cs]->type<<"\n";
-    cout <<"found FINE_TO_COARSE_SEND boundary to update\n";
-#endif
-    err += BC_update_FINE_TO_COARSE_SEND(
-              SimPM,spatial_solver,l,grid->BC_bd[f2cs],OA2,OA2);
-  }
 
 
   // --------------------------------------------------------
-  // 14. increment time and timestep for this level
+  // 10. increment time and timestep for this level
   // --------------------------------------------------------
-#ifdef TEST_INT
-  cout <<"advance_step_OA2: l="<<l<<" advancing time and return\n";
-#endif
   SimPM.levels[l].simtime += SimPM.levels[l].dt;
   SimPM.levels[l].step ++;
   if (l==SimPM.grid_nlevels-1) {
@@ -1167,6 +1081,56 @@ double sim_control_NG_MPI::advance_step_OA2(
   }
   SimPM.levels[l].last_dt = SimPM.levels[l].dt;
   if (l==0) SimPM.last_dt = SimPM.levels[l].dt;
+  // --------------------------------------------------------
+
+
+  // --------------------------------------------------------
+  // 11. update internal boundary conditions on level l
+  // --------------------------------------------------------
+  err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
+                              ctime+dt_now, OA2, OA2);
+  //  - Recv F2C data from l+1
+  if (!finest_level && f2cr>=0) {
+    err += BC_update_FINE_TO_COARSE_RECV(
+                SimPM,spatial_solver,l,grid->BC_bd[f2cr],OA2,OA2);
+    //  - Clear F2C sends
+    BC_FINE_TO_COARSE_SEND_clear_sends();
+  }
+
+  // --------------------------------------------------------
+  // 12. Do raytracing for next step, to send with F2C BCs.
+  // --------------------------------------------------------
+  if (grid->RT) {
+    err += do_ongrid_raytracing(SimPM,grid,l);
+    rep.errorTest("NG-MPI::advance_step_OA2: raytracing()",0,err);
+  }
+  // --------------------------------------------------------
+
+
+  // --------------------------------------------------------
+  // 13. Send level fluxes and F2C data to coarser grid
+  // --------------------------------------------------------
+  if (l>0) {
+#ifdef TEST_INT
+    cout <<"step="<<SimPM.levels[l].step<<"\n";
+#endif
+
+#ifdef BC89_FULLSTEP
+    if (SimPM.levels[l].step%2==0) {
+#endif
+      // only send level fluxes every 2nd step (coarse grid is only
+      // updated at the full-step, not at the half-step).
+#ifndef SKIP_BC89_FLUX
+      err += send_BC89_fluxes_F2C(l,OA2,OA2);
+#endif
+#ifdef BC89_FULLSTEP
+    }
+#endif
+
+    err += BC_update_FINE_TO_COARSE_SEND(
+              SimPM,spatial_solver,l,grid->BC_bd[f2cs],OA2,OA2);
+  }
+  // --------------------------------------------------------
 
 
 #ifdef TESTING
@@ -1203,17 +1167,22 @@ void sim_control_NG_MPI::clear_sends_BC89_fluxes()
 
 int sim_control_NG_MPI::send_BC89_fluxes_F2C(
       const int l,      ///< My level in grid hierarchy.
-      const int step,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int step,   ///< OA1 or OA2
       const int ooa     ///< Full order of accuracy of simulation
       )
 {
+#ifdef SKIP_BC89_FLUX
+  return 0;
+#endif
   if (step != ooa) {
     cout <<"l="<<l<<": don't send fluxes on half step\n";
     return 1;
   }
-  if (SimPM.levels[l].step%2 ==0 ) {
+#ifdef BC89_FULLSTEP
+  if (SimPM.levels[l].step%2 !=0 ) {
     rep.error("Don't call BC89 Flux-SEND on odd steps",1);
   }
+#endif
   if (l==0) {
     rep.error("Coarsest level trying to send flux data",l);
   }
@@ -1229,7 +1198,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"send "<<isend<<" is null, continuing..."<<endl;
+      cout <<"BC89_FLUX send "<<isend<<" is null, continuing..."<<endl;
 #endif
       continue;
     }
@@ -1299,14 +1268,19 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       const int l,      ///< My level in grid hierarchy.
       const double dt,  ///< timestep
-      const int step,   ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int step,   ///< OA1 or OA2 
       const int ooa     ///< Full order of accuracy of simulation
       )
 {
+#ifdef SKIP_BC89_FLUX
+  return 0;
+#endif
+#ifdef BC89_FULLSTEP
   if (step != ooa) {
     cout <<"don't receive fluxes on half step\n";
     return 1;
   }
+#endif
   if (l==SimPM.grid_nlevels-1) {
     rep.error("finest level trying to receive data from l+1",l);
   }
@@ -1343,7 +1317,8 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": recv "<<irecv<<" is not null: recving data from "<<fup->rank[0]<<endl;
+      cout <<"l="<<l<<": recv "<<irecv<<" is not null: ";
+      cout <<"recving data from "<<fup->rank[0]<<endl;
 #endif
     }
 
@@ -1401,7 +1376,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       // construct error in flux:
       for (int v=0;v<SimPM.nvar;v++) {
         // make flux[v] be the difference of coarse and fine.
-        fi->flux[v] += buf[iel];
+        fi->flux[v] += buf[iel+v];
 #ifdef TEST_BC89FLUX
         if (!isfinite(buf[iel])) {
           cout <<"l="<<l<<": element "<<ii<<" of FLUX C2F RECV: ";
@@ -1409,10 +1384,12 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
           rep.error("infinite",buf[ii]);
         }
 #endif
-        iel++;
       }
+      iel += SimPM.nvar;
+
       // divide by face area so that it is a flux.
       for (int v=0;v<SimPM.nvar;v++) fi->flux[v] /=  fi->area[0];
+      for (int v=0;v<SimPM.nvar;v++) ftmp[v]=0.0;
       // re-calculate dU based on error in flux.
       if (fup->dir%2 ==0) {
         spatial_solver->DivStateVectorComponent(fi->c[0], grid,
@@ -1429,9 +1406,7 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
       cout <<", "<<utmp[q]<<"\n";
 #endif
       // correct dU so that coarse level is consistent with fine.
-      for (int v=0;v<SimPM.nvar;v++) {
-        fi->c[0]->dU[v] += utmp[v];
-      }
+      for (int v=0;v<SimPM.nvar;v++) fi->c[0]->dU[v] += utmp[v];
 
     } // loop over elements
     if (iel !=n_data) rep.error("ndata",iel-n_data);
@@ -1469,12 +1444,18 @@ int sim_control_NG_MPI::grid_update_state_vector(
   // fluxes.  Subtract the flux difference from the cells adjacent to
   // the face.
   //
-  if (step==ooa && level < SimPM.grid_nlevels-1) {
+  if (
+#ifdef BC89_FULLSTEP
+      step==ooa && 
+#endif
+      level < SimPM.grid_nlevels-1) {
 #ifdef DEBUG_NG
     cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif
+#ifndef SKIP_BC89_FLUX
     err = recv_BC89_fluxes_F2C(level,dt,step,ooa);
     rep.errorTest("return from recv_fluxes_F2C",0,err);
+#endif
   }
 
   err = time_integrator::grid_update_state_vector(dt,step,

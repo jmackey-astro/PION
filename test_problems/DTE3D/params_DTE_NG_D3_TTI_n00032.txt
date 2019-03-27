@@ -4,20 +4,19 @@
 
 ## Basic Properties
 # Dimensionality of Grid {1,2,3}
-ndim 2
-coordinates cylindrical
+ndim 3
+coordinates cartesian
 
 # Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
-solver 6
+solver 3
 
 # Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
 # MHDShockCloud ShockTube...}
 ics PhotoEvap_radial
 
 # Output FileName Base
-OutputFile    DTE_NG_D2_TTI_n00128
-
+OutputFile    DTE_NG_D3_TTI_n00032
 
 # Number and type of tracers.
 ntracer 1
@@ -47,9 +46,9 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  128
-NGridY  128
-NGridZ  128
+NGridX  32
+NGridY  32
+NGridZ  32
 # Boundaries of Simulation box:
 Xmin  0.0
 Ymin  0.0
@@ -75,7 +74,7 @@ OutputPath ./
 # Output File Type = {text,fits,ftab,both,...}
 OutputFileType silo
 # Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 256
+OutputFrequency 128
 OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 
@@ -91,6 +90,8 @@ BC_XN reflecting
 BC_XP outflow
 BC_YN reflecting
 BC_YP outflow
+BC_ZN reflecting
+BC_ZP outflow
 BC_Ninternal 0
 
 # ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
@@ -133,7 +134,7 @@ PEC_radialslope 0.0  # Clump is core/envelope with this powerlaw env.
 PEC_core_radius 100.0  # units of yrange, only used if radialslope != 0
 
 PEC_ambRO 5.21e-21  # nH~3120.0 per c.c.
-PEC_ambPG 4.305e-11  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
+PEC_ambPG 4.305e-9  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
 PEC_ambVX  0.0e5
 PEC_ambVY  0.0e5
 PEC_ambVZ  0.0e5

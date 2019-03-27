@@ -127,7 +127,8 @@ ifeq ($(MAKE_UNAME), standard)
   LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5
+  #LDFLAGS += -lsiloh5
+  LDFLAGS += -lsilo
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ######################################################################
@@ -153,7 +154,8 @@ ifeq ($(MAKE_UNAME), locallibs)
   # All libraries are in this path:
   # Libraries for fits, silo, cvode
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5
+  #LDFLAGS += -lsiloh5
+  LDFLAGS += -lsilo
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- local libs WORKSTATION ---######################
@@ -324,7 +326,8 @@ ifeq ($(MAKE_UNAME), OSX)
   LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5
+  #LDFLAGS += -lsiloh5
+  LDFLAGS += -lsilo
   LDFLAGS += -lm  
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
 

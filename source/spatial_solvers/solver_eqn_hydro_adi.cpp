@@ -407,8 +407,14 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
 #ifdef TEST_INF
-  for (int v=0;v<eq_nvar;v++)
-    if (!isfinite(Pf[v])) rep.error("NAN hydro cell update",v);
+  for (int v=0;v<eq_nvar;v++) {
+    if (!isfinite(Pf[v])) {
+      cout <<"NAN/INF in FV_solver_Hydro_Euler::CellAdvanceTime";
+      cout <<": var="<<v<<", val="<<Pf[v]<<"\n";
+      CI.print_cell(c);
+      rep.error("NAN hydro cell update",v);
+    }
+  }
 #endif
 
 

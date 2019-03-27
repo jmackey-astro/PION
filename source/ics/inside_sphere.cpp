@@ -8,6 +8,7 @@
 
 #include "constants.h"
 #include "inside_sphere.h"
+//#include "tools/reporting.h"
 
 
 // ##################################################################
@@ -79,15 +80,17 @@ double inside_sphere::volumeFraction(cell *cpt)
     
   // Test what this is
   if (dist > sr) {
-    //    cout<<"cell is outside circle. ";printVec("pos",cpt->x,2);
+    //cout<<"cell is outside circle. ";
+    //rep.printVec("pos",cpos,ndim);
     return(0.);
   }
   else if (dist+diag < sr) {
-    //    cout<<"cell is definitely completely inside circle. ";printVec("pos",cpt->x,2);
+    //cout<<"cell is definitely completely inside circle. ";
+    //rep.printVec("pos",cpos,ndim);
     return(1.);
   }
   
-  //  cout <<"Cell may cross circle... checking\n";
+  //cout <<"Cell may cross circle... checking... ";
   double dv = 1.;
   double vol=1.;
   for (int v=0;v<ndim;v++) {
@@ -110,13 +113,13 @@ double inside_sphere::volumeFraction(cell *cpt)
     if (ndim>2) pos[ZZ] = startpt[ZZ] + ((i/nint/nint)%nint)*dx;
     if (distance(pos,spos,ndim) <=sr) {
       frac +=dv;
-      //      cout <<"distance = "<<distance(pos,spos,ndim)<<"  ";
+      //cout <<"distance = "<<distance(pos,spos,ndim)<<"  ";
     }
-    //    printVec("pos",pos,ndim);
+    //rep.printVec("pos",pos,ndim);
 
   }
   frac /= vol;
-  //  cout <<"\t VOL FRAC: "<<frac<<endl;
+  //cout <<"\t VOL FRAC: "<<frac<<endl;
   return(frac);
 }
 

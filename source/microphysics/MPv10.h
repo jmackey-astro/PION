@@ -44,7 +44,7 @@
 
 
 #define MPv10_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
-#define MPv10_ABSTOL 1.0e-15  ///< minimum neutral fraction i care about.
+#define MPv10_ABSTOL 1.0e-12  ///< minimum neutral fraction i care about.
 #define MPv10_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
 
 
