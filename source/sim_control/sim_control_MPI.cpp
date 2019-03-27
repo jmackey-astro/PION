@@ -400,7 +400,7 @@ int sim_control_pllel::Time_Int(
     cout <<"MPI time_int: calculating dt\n";
 #endif
 #ifdef DERIGS
-    spatial_solver->set_max_speed(0.0);
+    //spatial_solver->set_max_speed(0.0);
 #endif
     SimPM.levels[0].last_dt = SimPM.last_dt;
     err += calculate_timestep(SimPM, grid[0],spatial_solver,0);
@@ -413,14 +413,14 @@ int sim_control_pllel::Time_Int(
     // artificially larger speed associated with a shortened timestep.
     //
 #ifdef DERIGS
-    double ch = spatial_solver->get_max_speed();
-    ch = COMM->global_operation_double("MAX",ch);
-    double cr=0.0;
-    for (int d=0;d<SimPM.ndim;d++)
-      cr += 1.0/(SimPM.Range[d]*SimPM.Range[d]);
-    cr = M_PI*sqrt(cr);
-    spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
-                                   SimPM.levels[0].dx, cr);
+    //double ch = spatial_solver->get_max_speed();
+    //ch = COMM->global_operation_double("MAX",ch);
+    //double cr=0.0;
+    //for (int d=0;d<SimPM.ndim;d++)
+    //  cr += 1.0/(SimPM.Range[d]*SimPM.Range[d]);
+    //cr = M_PI*sqrt(cr);
+    //spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
+    //                               SimPM.levels[0].dx, cr);
 #endif
 
 
@@ -550,7 +550,7 @@ int sim_control_pllel::calculate_timestep(
   par.dt = min(par.dt, t_cond);
 #endif // THERMAL CONDUCTION
 
-#ifndef DERIGS
+//#ifndef DERIGS
   //
   // If using MHD with GLM divB cleaning, the following sets the
   // hyperbolic wavespeed.  If not, it does nothing.  By setting it
@@ -565,11 +565,11 @@ int sim_control_pllel::calculate_timestep(
   if (par.grid_nlevels==1) cr = 0.25/par.dx;
   else cr = 0.25/par.levels[0].dx;
   spatial_solver->Set_GLM_Speeds(t_dyn,grid->DX(), cr);
-#else
-  double ch = par.CFL * grid->DX()/t_dyn;
-  sp_solver->set_max_speed(ch);
-  cout <<"timestep: max-speed="<<ch<<"\n";
-#endif
+//#else
+  //double ch = par.CFL * grid->DX()/t_dyn;
+  //sp_solver->set_max_speed(ch);
+  //cout <<"timestep: max-speed="<<ch<<"\n";
+//#endif
   
   //
   // Check that the timestep doesn't increase too much between step,

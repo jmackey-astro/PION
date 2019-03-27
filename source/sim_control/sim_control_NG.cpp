@@ -319,7 +319,7 @@ int sim_control_NG::Time_Int(
     int scale = 1;
     double mindt = 1.0e99;
 #ifdef DERIGS
-    spatial_solver->set_max_speed(0.0);
+    //spatial_solver->set_max_speed(0.0);
 #endif
     //err = RT_all_sources_levels(SimPM);
     //rep.errorTest("sim_control_NG: RT_all_sources_levels",0,err);
@@ -377,12 +377,12 @@ int sim_control_NG::Time_Int(
     // artificially larger speed associated with a shortened timestep.
     //
 #ifdef DERIGS
-    double cr=0.0;
-    for (int d=0;d<SimPM.ndim;d++)
-      cr += 1.0/(SimPM.levels[0].Range[d]*SimPM.levels[0].Range[d]);
-    cr = M_PI*sqrt(cr);
-    spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
-                                   SimPM.levels[0].dx, cr);
+    //double cr=0.0;
+    //for (int d=0;d<SimPM.ndim;d++)
+    //  cr += 1.0/(SimPM.levels[0].Range[d]*SimPM.levels[0].Range[d]);
+    //cr = M_PI*sqrt(cr);
+    //spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
+    //                               SimPM.levels[0].dx, cr);
 #endif
 
     //clk.start_timer("advance_time");

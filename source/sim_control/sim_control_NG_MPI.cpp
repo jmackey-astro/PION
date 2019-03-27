@@ -456,7 +456,7 @@ int sim_control_NG_MPI::Time_Int(
     double mindt = 1.0e99;
     
 #ifdef DERIGS
-    spatial_solver->set_max_speed(0.0);
+    //spatial_solver->set_max_speed(0.0);
 #endif
 
     for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
@@ -472,9 +472,13 @@ int sim_control_NG_MPI::Time_Int(
         SimPM.levels[l].last_dt = SimPM.last_dt/
                                   SimPM.levels[l].multiplier;
       }
-      cout <<"max-speed="<<spatial_solver->get_max_speed()<<"\n";
+#ifdef DERIGS
+      //cout <<"max-speed before timestep calc ="<<spatial_solver->get_max_speed()<<"\n";
+#endif
       err += calculate_timestep(SimPM, grid[l],spatial_solver,l);
-      cout <<"max-speed="<<spatial_solver->get_max_speed()<<"\n";
+#ifdef DERIGS
+      //cout <<"max-speed after timestep calc ="<<spatial_solver->get_max_speed()<<"\n";
+#endif
       rep.errorTest("TIME_INT::calc_timestep()",0,err);
       
       mindt = std::min(mindt, SimPM.dt/scale);
@@ -513,16 +517,16 @@ int sim_control_NG_MPI::Time_Int(
     // hyperbolic wavespeed.  If not, it does nothing.
     //
 #ifdef DERIGS
-    double ch = spatial_solver->get_max_speed();
+    //double ch = spatial_solver->get_max_speed();
     //ch = COMM->global_operation_double("MAX",ch);
     //spatial_solver->set_max_speed(ch);
-    cout <<"max-speed="<<ch<<"\n";
-    double cr=0.0;
-    for (int d=0;d<SimPM.ndim;d++)
-      cr += 1.0/(SimPM.levels[0].Range[d]*SimPM.levels[0].Range[d]);
-    cr = M_PI*sqrt(cr);
-    spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
-                                   SimPM.levels[0].dx, cr);
+    //cout <<"max-speed="<<ch<<"\n";
+    //double cr=0.0;
+    //for (int d=0;d<SimPM.ndim;d++)
+    //  cr += 1.0/(SimPM.levels[0].Range[d]*SimPM.levels[0].Range[d]);
+    //cr = M_PI*sqrt(cr);
+    //spatial_solver->Set_GLM_Speeds(SimPM.levels[0].dt,
+    //                               SimPM.levels[0].dx, cr);
 #endif
     // --------------------------------------------------------------
     

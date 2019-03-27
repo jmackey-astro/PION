@@ -531,8 +531,8 @@ int FV_solver_mhd_ideal_adi::MHDsource(
   
   
   for (int v=0;v<eq_nvar;v++) {
-    Cl->dU[v] += 0.5*dt*dBdx*Powell_l[v];
-    Cr->dU[v] += 0.5*dt*dBdx*Powell_r[v];
+    Cl->dU[v] += dt*dBdx*Powell_l[v];
+    Cr->dU[v] += dt*dBdx*Powell_r[v];
   }
   return 0;
 }
@@ -805,6 +805,7 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
   // don't get confused (because otherwise it will contribute to the
   // total energy.
   double psi_L = left[eqSI], psi_R = right[eqSI];
+  double bxl = left[eqBX], bxr = right[eqBX];
   left[eqSI]=0.0;
   right[eqSI]=0.0;
   psistar = 0.5*(left[eqSI]+right[eqSI]);
@@ -836,8 +837,8 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 #ifdef DERIGS
   // see Derigs et al. (2018) eq. 4.45: 3 terms f6*, f9*, last term.
   // energy (ERG) is f5, Bx (BBX) is f6, PSI is f9.
-  flux[eqERG] += 2.0*GLM_chyp*bxstar*psistar -
-      GLM_chyp*0.5*(left[eqSI]*left[eqBX]+right[eqSI]*right[eqBX]);
+  flux[eqERG] += 2.0*GLM_chyp*bxstar*psistar; 
+                 - GLM_chyp*0.5*(psi_L*bxl + psi_R*bxr);
   // Derigs et al. (2018) eq. 4.43 f6* and f9*
   flux[eqBBX]  = GLM_chyp*psistar;
   flux[eqPSI]  = GLM_chyp*bxstar;
@@ -851,6 +852,14 @@ int FV_solver_mhd_mixedGLM_adi::inviscid_flux(
 
   return err;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 ///
 /// calculate GLM source terms for multi-D MHD and add to Powell source
@@ -1006,11 +1015,11 @@ void FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds(
 #endif //FUNCTION_ID
 
   //     cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds() setting wave speeds.\n";
-#ifndef DERIGS
+//#ifndef DERIGS
   GLMsetPsiSpeed(FV_cfl*delx/delt,cr);
-#else
-  GLMsetPsiSpeed(max_speed, cr);
-#endif
+//#else
+//  GLMsetPsiSpeed(max_speed, cr);
+//#endif
 
 #ifdef FUNCTION_ID
   cout <<"FV_solver_mhd_mixedGLM_adi::Set_GLM_Speeds ...returning.\n";
