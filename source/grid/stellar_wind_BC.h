@@ -286,6 +286,13 @@ class stellar_wind {
       const double ///< EOS gamma
       );
 
+  //
+  // Eldridge et al. (2006, MN, 367, 186).
+  // v_inf = sqrt(beta)*v_esc
+  //
+  double beta(const double); ///< Teff
+
+
   std::vector<struct wind_source *> wlist; ///< list of sources.
   int nsrc;   ///< number of sources (size of wlist vector)
 };
@@ -300,10 +307,17 @@ class stellar_wind {
 ///
 struct evolving_wind_data {
   int Npt;
-  double *t;
-  double *mdot;
-  double *vinf;
-  double *Teff;
+  vector<double> time_evo;
+  vector<double> M_evo;
+  vector<double> L_evo;
+  vector<double> R_evo;
+  vector<double> Teff_evo;
+  vector<double> Mdot_evo;
+  vector<double> vinf_evo;
+  //double *t;
+  //double *mdot;
+  //double *vinf;
+  //double *Teff;
   struct wind_source *ws;
   bool is_active; ///< Set to false initially, then to true once its time has come.
   double offset, ///< sim-time minus spline-time.

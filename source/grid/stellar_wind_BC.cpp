@@ -661,6 +661,62 @@ void stellar_wind::get_src_type(
 
 
 
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double stellar_wind::beta(const double Teff)
+{
+  //
+  // Eldridge et al. (2006, MN, 367, 186).
+  // Beta = Zeta^2
+  //
+  double beta;
+  double rsg=0.125; // Eldridge value
+  //double rsg=0.04;  // Mackey+2012 Betelgeuse value
+
+  if (Teff <= 3600.0)
+    beta = rsg;
+  else if (Teff >= 22000.0)
+    beta = 2.6;
+  else {
+    //
+    // Linear interpolation for beta from Eldridge et al. Table 1.
+    //
+    double b0, b1, T0, T1;
+    if      (Teff<6000.0) {
+      T0 = 3600.0; b0 = rsg;
+      T1 = 6000.0; b1 = 0.5;
+    }
+    else if (Teff <8000.0) {
+      T0 = 6000.0; b0 = 0.5;
+      T1 = 8000.0; b1 = 0.7;
+    }
+    else if (Teff <10000.0) {
+      T0 = 8000.0; b0 = 0.7;
+      T1 = 10000.0; b1 = 1.3;
+    }
+    else if (Teff <20000.0) {
+      T0 = 10000.0; b0=1.3;
+      T1 = 20000.0; b1=1.3;
+    }
+    else {
+      T0 = 20000.0; b0 = 1.3;
+      T1 = 22000.0; b1 = 2.6;
+    }
+    beta = b0 + (Teff-T0)*(b1-b0)/(T1-T0);
+  }
+
+  return beta;
+};
+
+
+
+
 // ##################################################################
 // ##################################################################
 
@@ -710,10 +766,6 @@ stellar_wind_evolution::~stellar_wind_evolution()
   struct evolving_wind_data *wd=0;
   while (wdata_evol.size() >0) {
     wd = wdata_evol.back();
-    if (wd->t) wd->t = mem.myfree(wd->t);
-    if (wd->mdot) wd->mdot  = mem.myfree(wd->mdot);
-    if (wd->vinf) wd->vinf  = mem.myfree(wd->vinf);
-    if (wd->Teff) wd->Teff  = mem.myfree(wd->Teff);
     wdata_evol.pop_back();
     wd = mem.myfree(wd);
   }
@@ -748,10 +800,6 @@ int stellar_wind_evolution::add_source(
   // First set all the stuff we don't need for a constant wind.
   //
   temp->Npt = 0;
-  temp->t = 0;
-  temp->mdot  = 0;
-  temp->vinf  = 0;
-  temp->Teff  = 0;
   temp->offset = 0.0;
   temp->tstart = sim_start -1.0e10; // so it has already started.
   temp->tfinish= 2.0*sim_finish;    // so it keeps going to end of sim.
@@ -804,95 +852,93 @@ int stellar_wind_evolution::add_evolving_source(
   cout <<"\t\tsw-evo: adding source from file "<<infile<<"\n";
 #endif
 
-  ifstream wf;
-  wf.open(infile.c_str());
-  if (!wf.is_open()) {cerr<<"Error opening file.\n";return 1;}
-
-  string line;
-  getline(wf, line);
-  while (line.empty() == true || line.substr(0,1) == "#") {
-    getline(wf, line);
-  }
   //
-  // Now first non-comment line should tell me Npt
+  // Wind source struct, to be added to class vector wdata_evol
   //
-  istringstream iss2(line);
-  string junk;
-  int Npt=0;
-  iss2 >> junk >> Npt;
+  struct evolving_wind_data *temp=0;
+  temp = mem.myalloc(temp,1);
+  //temp->Npt = Npt;
+  //temp->t = 0;
+  //temp->mdot = 0;
+  //temp->vinf = 0;
+  //temp->Teff = 0;
 
+  //
+  // Read in stellar evolution data
+  // Format: time	M	L	Teff	Mdot	vrot   vcrit
+  //
+  FILE *wf = 0;
+  wf = fopen(infile.c_str(), "r");
+  if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
+  // Skip first two lines
+  char line[512];
+  char *rval=0;
+  rval = fgets(line,512,wf);
+  if (!rval) rep.error("stwind_angle: failed to get line 1",line);
+  //printf("%s",line);
+  rval = fgets(line,512,wf);
+  if (!rval) rep.error("stwind_angle: failed to get line 2",line);
+  //printf("%s",line);
+
+  // Temp. variables for column values
+  double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
+  while (fscanf(wf, "   %lE   %lE %lE %lE %lE %lE %lE",
+                      &t1, &t2, &t3, &t4, &t5, &t6, &t7) != EOF){
+    //cout.precision(16);
 #ifdef TESTING
-  cout <<"\t\tgetting Npt:: "<<junk<<": "<<Npt<<"\n";
+    cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  ";
+    cout << t5 <<"  "<< t6 <<"\n";
 #endif
+    // Set vector value
+    temp->time_evo.push_back(t1);
+    temp->M_evo.push_back(t2);
+    temp->L_evo.push_back(t3);
+    temp->Teff_evo.push_back(t4);
 
-  if (!isfinite(Npt) || Npt<2) {
-    rep.error("Bad Npt in stellar_wind_evolution",Npt);
-  }
-  //
-  // From here on in we read in Npt lines, and assign the values to
-  // arrays, which we now need to set up.  We need time[], vinf[],
-  // vinf2[], mdot[], mdot2[], Teff, Teff2[].
-  //
-  double *t=0, *vi=0, *md=0, *Tf=0;
-  t   = mem.myalloc(t  , Npt);
-  vi  = mem.myalloc(vi , Npt);
-  md  = mem.myalloc(md , Npt);
-  Tf  = mem.myalloc(Tf , Npt);
-  int i=0; // iterator for which element of arrays we are at.
+    // Stellar radius
+    t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*
+                                                pow_fast(t4, 4.0)));
+    temp->R_evo.push_back(t6);
+    
+    // Hydrogen mass fraction (should make this a sim parameter?) 
+    double H_X = 0.7;
 
-  while (!wf.eof()) {
-    getline(wf, line);
-    istringstream iss(line);
-    if (!line.empty()) {
-      //cout <<"line["<<i<<"]: "<<line<<"\n";
-      //cout <<"iss ["<<i<<"]: "<<iss.str()<<"\n";
-      // File format:
-      // Time/yr log10(L/Lsun) log10(Teff/K) log10(Mdot/Msun/yr) log10(vinf/cm/s)
-      //
-      if (i>= Npt) {
-        cout <<"ERROR: line: "<<line<<"\n";
-        rep.error("Too many lines in file for given Npt", Npt);
-      }
-      iss >> t[i] >> junk >> Tf[i] >> md[i] >> vi[i];
-      //double temp;
-      //iss >> temp; cout <<"j="<<temp<<"\n";
-      //cout <<iss.str()<<"\n";
-      //cout <<t[i] <<"  "<< junk <<"  "<< Tf[i] <<"  "<< md[i] <<"  "<< vi[i]<<"\n";
-      i++;
-    }
+    // Eddington luminosity (taking the opacity as the electron
+    // scattering cross section)
+    double L_edd = (4.0*pconst.pi()*pconst.c()*pconst.G()*t2)/
+                                                    (0.2*(1 + H_X));
+
+    // Escape velocity
+    temp->vinf_evo.push_back(sqrt(beta(t4)) 
+                        *sqrt(2.0*pconst.G()*t2*(1 - t3/L_edd)/t6));
+
+    
+    // Mdot: 
+    temp->Mdot_evo.push_back(t5);
   }
-  if (i!=Npt) {
-    rep.error("Too few lines in file!",Npt-i);
-  }
+  fclose(wf);
+
+  // Column length
+  size_t Npt = temp->time_evo.size();
+  temp->Npt = Npt;
 
   //
   // Next we set up the interpolation, first modifying the
   // time array using the time-offset so that it has the same zero
   // offset as the simulation time.
   //
-  for (i=0; i<Npt; i++) {
+  for (size_t i=0; i<Npt; i++) {
     //
-    // times in the file are measured in years, so offset should be
+    // times in the file are measured in seconds, so offset should be
     // in years.
     //
-    t[i] += time_offset;
+    temp->time_evo[i] += time_offset;
     // scale times by scale factor.
-    t[i] /= t_scalefactor;
+    temp->time_evo[i] /= t_scalefactor;
+    //cout <<"t="<<temp->time_evo[i]<<"\n";
   }
 
-  //
-  // Some properties of the wind source are specific to this module,
-  // such as the number of points in
-  // the array, and the timings (offset, update frequency).  
-  // They are stored in local data.
-  //
-  struct evolving_wind_data *temp=0;
-  temp = mem.myalloc(temp,1);
-  temp->Npt = Npt;
-  temp->t = t;  // in years
-  temp->mdot  = md;
-  temp->vinf  = vi;
-  temp->Teff  = Tf;
+
   //
   // Offset is not used in the code past here.  It's just here for I/O b/c a
   // restart will need to read the data-file again.
@@ -900,9 +946,9 @@ int stellar_wind_evolution::add_evolving_source(
   // years, but everything else is in seconds.  Note that the global SWP struct
   // still has times in years though.
   //
-  temp->offset = time_offset*pconst.year()/t_scalefactor; // now in seconds
-  temp->tstart = t[0]       *pconst.year(); // now in seconds (already scaled)
-  temp->tfinish= t[Npt-1]  *pconst.year(); // now in seconds (already scaled)
+  temp->offset = time_offset/t_scalefactor;    // in seconds
+  temp->tstart = temp->time_evo[0];            // in seconds (already scaled)
+  temp->tfinish= temp->time_evo[Npt-1];        // in seconds (already scaled)
   temp->update_freq = update_freq/t_scalefactor; // in seconds
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
@@ -917,7 +963,7 @@ int stellar_wind_evolution::add_evolving_source(
   // properties.  We set it to be active if the current time is
   // within update_freq of tstart.
   //
-  double mdot=0.0, vinf=0.0, Twind=0.0;
+  double mdot=0.0, vinf=0.0, Twind=0.0, rstar=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
@@ -926,11 +972,15 @@ int stellar_wind_evolution::add_evolving_source(
     // Get the current values for mdot, vinf, Teff, and setup a wind
     // source using the constant-wind function.
     //
-    interpolate.root_find_linear(t, Tf, Npt, t_now/pconst.year(), &Twind);
-    interpolate.root_find_linear(t, md, Npt, t_now/pconst.year(), &mdot);
-    interpolate.root_find_linear(t, vi, Npt, t_now/pconst.year(), &vinf);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->Teff_evo, t_now, Twind);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->Mdot_evo, t_now, mdot);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->vinf_evo, t_now, vinf);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->R_evo, t_now, rstar);
 #ifdef TESTING
     cout <<"Source is Active\n";
+    cout <<"T = "<<Twind<<",  mdot="<<mdot<<",  vinf="<<vinf;
+    cout <<",  rstar="<<rstar<<"\n";
+    cout.flush();
 #endif
   }
   else {
@@ -940,13 +990,8 @@ int stellar_wind_evolution::add_evolving_source(
     temp->is_active = false;
     mdot=-100.0; vinf=-100.0; Twind=-100.0;
   }
-  //
-  // Need to convert units.  add_source expects mdot in msun/yr,
-  // vinf in km/s, and Twind in K.
-  //
-  mdot = exp(pconst.ln10()*mdot);
-  vinf = exp(pconst.ln10()*vinf) /1.0e5;
-  Twind = exp(pconst.ln10()*Twind);
+
+
   //
   // Now add source using constant wind version.
   //
@@ -1001,17 +1046,25 @@ void stellar_wind_evolution::update_source(
   //
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
-  double mdot=0.0, vinf=0.0, Twind=0.0;
-  interpolate.root_find_linear(wd->t, wd->Teff, wd->Npt, t_now/pconst.year(), &Twind);
-  interpolate.root_find_linear(wd->t, wd->mdot, wd->Npt, t_now/pconst.year(), &mdot);
-  interpolate.root_find_linear(wd->t, wd->vinf, wd->Npt, t_now/pconst.year(), &vinf);
+  double mdot=0.0, vinf=0.0, Twind=0.0, rstar=0.0;
+  interpolate.root_find_linear_vec(wd->time_evo, wd->Teff_evo, t_now, Twind);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->Mdot_evo, t_now, mdot);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->vinf_evo, t_now, vinf);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->R_evo, t_now, rstar);
   //
-  // Assign new values to wd->ws (the wind source struct), converting
-  // from log10 to actual values, and also unit conversions to cgs.
+  // Assign new values to wd->ws (the wind source struct), all in CGS
+  // because the arrays are in CGS.
   //
-  wd->ws->Mdot = exp(pconst.ln10()*mdot) *pconst.Msun()/pconst.year();  // this was log10(msun/yr)
-  wd->ws->Vinf = exp(pconst.ln10()*vinf);  // this is in log10(cm/s) already.
-  wd->ws->Tw   = exp(pconst.ln10()*Twind); // This is in log10(K).
+#ifdef TESTING
+  cout <<"updating wind: old [Mdot,Vinf,Tstar,Rstar] = [";
+  cout <<wd->ws->Mdot<<", "<<wd->ws->Vinf<<", "<<wd->ws->Tw<<", "<<wd->ws->Rstar<<"]\n";
+  cout <<"               new [Mdot,Vinf,Tstar,Rstar] = [";
+  cout <<mdot<<", "<<vinf<<", "<<Twind<<", "<<rstar<<"]\n";
+#endif
+  wd->ws->Mdot = mdot;  // already cgs.
+  wd->ws->Vinf = vinf;  // this is in cm/s already.
+  wd->ws->Tw   = Twind; // This is in K.
+  wd->ws->Rstar = rstar;
 
   //
   // Now re-assign state vector of each wind-boundary-cell with

@@ -125,7 +125,7 @@ endif
 ################### --- STANDARD WORKSTATION ---######################
 
 ######################################################################
-# Options for a workstation with locally installled libraries.
+# Options for a workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), locallibs)
   ifeq ($(PION_OPTIMISE), HIGH)

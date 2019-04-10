@@ -679,9 +679,9 @@ int setup_fixed_grid::setup_evolving_RT_sources(
         //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
         double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
-        //istar->Log_L[iline] -= 2.0*beta;
+        istar->Log_L[iline] -= 2.0*beta;
         // HACK!!! THIS REDUCES FLUX BY LESS THAN IT SHOULD...
-        istar->Log_L[iline] -= 0.4*beta;
+        //istar->Log_L[iline] -= 0.4*beta;
         //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
       }
 
@@ -778,8 +778,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
     // If L or T change by more than 1% then update them; otherwise
     // leave as they are.
-    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.01 ||
-         fabs(Tnow-istar->Tnow)/istar->Tnow >0.01 ) {
+    if ( fabs(Lnow-istar->Lnow)/istar->Lnow >0.001 ||
+         fabs(Tnow-istar->Tnow)/istar->Tnow >0.001 ) {
       cout <<"update_evolving_RT_sources() NOW: t="<<istar->t_now;
       cout <<"\tL="<< Lnow;
       cout <<"\tT="<< Tnow;

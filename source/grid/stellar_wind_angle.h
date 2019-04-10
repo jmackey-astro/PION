@@ -127,11 +127,6 @@ class stellar_wind_angle
 	);
   
   private:
-  //
-  // Eldridge et al. (2006, MN, 367, 186).
-  // v_inf = sqrt(beta)*v_esc
-  //
-  double beta(const double); ///< Teff
   
   //
   // Simpson's rule integration of function f

@@ -222,58 +222,10 @@ void stellar_wind_angle::setup_tables()
 }
 
 
-// ##################################################################
-// ##################################################################
-
-
-double stellar_wind_angle::beta(const double Teff)
-{
-  //
-  // Eldridge et al. (2006, MN, 367, 186).
-  // Beta = Zeta^2
-  //
-  double beta;
-  double rsg=0.125; // Eldridge value
-  //double rsg=0.04;  // Mackey+2012 Betelgeuse value
-
-  if (Teff <= 3600.0)
-    beta = rsg;
-  else if (Teff >= 22000.0)
-    beta = 2.6;
-  else {
-    //
-    // Linear interpolation for beta from Eldridge et al. Table 1.
-    //
-    double b0, b1, T0, T1;
-    if      (Teff<6000.0) {
-      T0 = 3600.0; b0 = rsg;
-      T1 = 6000.0; b1 = 0.5;
-    }
-    else if (Teff <8000.0) {
-      T0 = 6000.0; b0 = 0.5;
-      T1 = 8000.0; b1 = 0.7;
-    }
-    else if (Teff <10000.0) {
-      T0 = 8000.0; b0 = 0.7;
-      T1 = 10000.0; b1 = 1.3;
-    }
-    else if (Teff <20000.0) {
-      T0 = 10000.0; b0=1.3;
-      T1 = 20000.0; b1=1.3;
-    }
-    else {
-      T0 = 20000.0; b0 = 1.3;
-      T1 = 22000.0; b1 = 2.6;
-    }
-    beta = b0 + (Teff-T0)*(b1-b0)/(T1-T0);
-  }
-
-  return beta;
-};
-
 
 // ##################################################################
 // ##################################################################
+
 
 
 // Integrand for integral in delta function
@@ -287,8 +239,10 @@ double stellar_wind_angle::integrand(
 } 
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // Simpson's rule integration scheme
@@ -791,10 +745,6 @@ int stellar_wind_angle::add_evolving_source(
   struct evolving_wind_data *temp=0;
   temp = mem.myalloc(temp,1);
   temp->Npt = Npt;
-  temp->t = 0;
-  temp->mdot = 0;
-  temp->vinf = 0;
-  temp->Teff = 0;
 
   //
   // Offset is not used in the code past here.  It's just here for I/O b/c a
