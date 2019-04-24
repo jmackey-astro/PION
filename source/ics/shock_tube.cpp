@@ -91,6 +91,9 @@ int IC_shocktube::setup_data(
   if (!preshock || !postshock) rep.error("malloc pre/post shock vecs",preshock);
   for (int v=0;v<SimPM->nvar;v++) preshock[v] = postshock[v] = 0.0;
   
+  cout <<"Note that shocktube B-field values are in units where ";
+  cout <<"magnetic pressure is 0.5*B^2, i.e. no sqrt(4pi).\n";
+
   IC_shocktube::shockpos = 0.0; // initial value
 
   // set pre-/post- shock and cloud states.

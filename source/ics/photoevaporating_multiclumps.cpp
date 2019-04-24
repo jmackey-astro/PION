@@ -241,6 +241,13 @@ int IC_photevap_multi_clumps::get_ambient_params(
     if (str!="") amb->ambient[BZ] = atof(str.c_str());
     else         amb->ambient[BZ] = -1.0e99;
 
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    amb->ambient[BX] /= sqrt(4.0*M_PI);
+    amb->ambient[BY] /= sqrt(4.0*M_PI);
+    amb->ambient[BZ] /= sqrt(4.0*M_PI);
+#endif
+
     if (SimPM->eqntype==EQGLM) amb->ambient[SI] = 0.;
   } // if mhd vars
 
@@ -386,6 +393,13 @@ int IC_photevap_multi_clumps::get_alternate_ambient_params(
     str = rparams->find_parameter(seek);
     if (str!="") amb->ambient[BZ] = atof(str.c_str());
     else         amb->ambient[BZ] = -1.0e99;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    amb->ambient[BX] /= sqrt(4.0*M_PI);
+    amb->ambient[BY] /= sqrt(4.0*M_PI);
+    amb->ambient[BZ] /= sqrt(4.0*M_PI);
+#endif
 
     if (SimPM->eqntype==EQGLM) amb->ambient[SI] = 0.;
   } // if mhd vars

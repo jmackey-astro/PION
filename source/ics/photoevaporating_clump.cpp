@@ -80,9 +80,10 @@ IC_photoevaporatingclump::~IC_photoevaporatingclump()
 
 
 
-int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to parameter list.
-					 class GridBaseClass *ggg ///< pointer to grid
-					 )
+int IC_photoevaporatingclump::setup_data(
+      class ReadParams *rrp, ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -144,8 +145,10 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
   // B-field ratio
   seek = "PECBratio";
   str = rp->find_parameter(seek);
-  if (str=="") IC_photoevaporatingclump::Bratio = 1.0; // default to constant initial field
-  else         IC_photoevaporatingclump::Bratio = atof(str.c_str());
+  if (str=="")
+    IC_photoevaporatingclump::Bratio = 1.0; // default to constant initial field
+  else
+    IC_photoevaporatingclump::Bratio = atof(str.c_str());
 
   // ambient medium state vector
   string v;
@@ -213,6 +216,13 @@ int IC_photoevaporatingclump::setup_data(class ReadParams *rrp, ///< pointer to 
     str = rp->find_parameter(seek);
     if (str!="") IC_photoevaporatingclump::ambient[BZ] = atof(str.c_str());
     else         IC_photoevaporatingclump::ambient[BZ] = -1.0e99;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    ambient[BX] /= sqrt(4.0*M_PI);
+    ambient[BY] /= sqrt(4.0*M_PI);
+    ambient[BZ] /= sqrt(4.0*M_PI);
+#endif
 
     if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars

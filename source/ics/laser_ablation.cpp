@@ -113,6 +113,13 @@ int IC_laser_ablation::setup_data(class ReadParams *rrp,    ///< pointer to para
   if (str=="") IC_laser_ablation::BT0 = 0.0;
   IC_laser_ablation::BT0 = atof(str.c_str());
 
+#ifdef NEW_B_NORM
+  // convert from CGS to internal units (no factors of 4pi)
+  BX0 /= sqrt(4.0*M_PI);
+  BT0 /= sqrt(4.0*M_PI);
+#endif
+
+
   IC_laser_ablation::gam = SimPM->gamma;
 
 

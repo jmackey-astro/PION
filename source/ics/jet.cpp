@@ -121,6 +121,13 @@ int IC_jet::setup_data(
   if (str=="") rep.error("didn't find parameter",seek);
   IC_jet::j_btor  = atof(str.c_str());
 
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    j_btor /= sqrt(4.0*M_PI);
+    j_bax /= sqrt(4.0*M_PI);
+#endif
+
+
   //------------------------------------------------------------------
 
   //------------------------------------------------------------------
@@ -193,6 +200,13 @@ int IC_jet::setup_data(
     str = rp->find_parameter(seek);
     if (str!="") IC_jet::ambient[BZ] = atof(str.c_str());
     else         IC_jet::ambient[BZ] = -1.0e99;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    ambient[BX] /= sqrt(4.0*M_PI);
+    ambient[BY] /= sqrt(4.0*M_PI);
+    ambient[BZ] /= sqrt(4.0*M_PI);
+#endif
 
     if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars

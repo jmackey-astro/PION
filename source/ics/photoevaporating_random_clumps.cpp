@@ -55,9 +55,10 @@ IC_photevap_random_clumps::~IC_photevap_random_clumps()
 // ##################################################################
 
 
-int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to parameter list.
-					 class GridBaseClass *ggg ///< pointer to grid
-					 )
+int IC_photevap_random_clumps::setup_data(
+      class ReadParams *rrp, ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -190,6 +191,13 @@ int IC_photevap_random_clumps::setup_data(class ReadParams *rrp, ///< pointer to
     str = rp->find_parameter(seek);
     if (str!="") IC_photevap_random_clumps::ambient[BZ] = atof(str.c_str());
     else         IC_photevap_random_clumps::ambient[BZ] = -1.0e99;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    ambient[BX] /= sqrt(4.0*M_PI);
+    ambient[BY] /= sqrt(4.0*M_PI);
+    ambient[BZ] /= sqrt(4.0*M_PI);
+#endif
 
     if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars

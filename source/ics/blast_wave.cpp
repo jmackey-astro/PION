@@ -113,6 +113,13 @@ int IC_blastwave::setup_data(
   if (str=="") IC_blastwave::bw_BZ = 0.0; // could have no field.
   else         IC_blastwave::bw_BZ = atof(str.c_str());
 
+#ifdef NEW_B_NORM
+  // convert from CGS to internal units (no factors of 4pi)
+  bw_BX /= sqrt(4.0*M_PI);
+  bw_BY /= sqrt(4.0*M_PI);
+  bw_BZ /= sqrt(4.0*M_PI);
+#endif
+
   // tracer variables
   BW_tr=mem.myalloc(BW_tr,SimPM->ntracer);
   ostringstream temp;
@@ -296,6 +303,13 @@ void IC_blastwave::get_amb2_params()
     str = rp->find_parameter(seek);
     if (str!="") ambient[BZ] = atof(str.c_str());
     else         ambient[BZ] = -1.0e99;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    ambient[BX] /= sqrt(4.0*M_PI);
+    ambient[BY] /= sqrt(4.0*M_PI);
+    ambient[BZ] /= sqrt(4.0*M_PI);
+#endif
 
     if (SimPM->eqntype==EQGLM) ambient[SI] = 0.;
   } // if mhd vars

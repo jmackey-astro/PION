@@ -974,8 +974,8 @@ int get_sim_info::read_units()
 // ##################################################################
 
 int get_sim_info::read_jet_params(
-      class SimParams &s_par,  ///< pointer to simulation paramters.
-      class JetParams &jpar   ///< pointer to jet parameters class.
+      class SimParams &s_par, ///< simulation paramters.
+      class JetParams &jpar   ///< jet parameters class.
       )
 {
   string a;
@@ -1002,6 +1002,12 @@ int get_sim_info::read_jet_params(
   if ( (a=rp->find_parameter("JET_Btor")) !="")
     jpar.jetstate[BY] = atof(a.c_str());
   jpar.jetstate[BZ] = 0.0;
+#ifdef NEW_B_NORM
+  // convert from CGS to internal units (no factors of 4pi)
+  jpar.jetstate[BX] /= sqrt(4.0*M_PI);
+  jpar.jetstate[BY] /= sqrt(4.0*M_PI);
+  jpar.jetstate[BZ] /= sqrt(4.0*M_PI);
+#endif
 
   if (s_par.eqntype == EQGLM) {
     jpar.jetstate[SI] = 0.0;

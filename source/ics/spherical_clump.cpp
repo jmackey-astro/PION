@@ -24,9 +24,10 @@
 IC_spherical_clump::IC_spherical_clump() {}
 IC_spherical_clump::~IC_spherical_clump() {}
 
-int IC_spherical_clump::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			     class GridBaseClass *ggg ///< pointer to grid
-			     )
+int IC_spherical_clump::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -100,6 +101,13 @@ int IC_spherical_clump::setup_data(class ReadParams *rrp,    ///< pointer to par
   str = rp->find_parameter(seek);
   if (str=="") IC_spherical_clump::SC_BZ = 0.0; // could have no field.
   else         IC_spherical_clump::SC_BZ = atof(str.c_str());
+
+#ifdef NEW_B_NORM
+  // convert from CGS to internal units (no factors of 4pi)
+  SC_BX /= sqrt(4.0*M_PI);
+  SC_BY /= sqrt(4.0*M_PI);
+  SC_BZ /= sqrt(4.0*M_PI);
+#endif
 
   IC_spherical_clump::gam = SimPM->gamma;
 

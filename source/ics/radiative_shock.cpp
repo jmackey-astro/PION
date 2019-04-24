@@ -55,9 +55,10 @@ IC_radiative_shock::~IC_radiative_shock()
 
 
 
-int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-				   class GridBaseClass *ggg ///< pointer to grid
-				   )
+int IC_radiative_shock::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -99,6 +100,10 @@ int IC_radiative_shock::setup_data(class ReadParams *rrp,    ///< pointer to par
   str = rp->find_parameter(seek);
   if (str=="") IC_radiative_shock::B0 = 0.0;
   IC_radiative_shock::B0 = atof(str.c_str());
+#ifdef NEW_B_NORM
+  // convert from CGS to internal units (no factors of 4pi)
+  B0 /= sqrt(4.0*M_PI);
+#endif
 
   IC_radiative_shock::gam = SimPM->gamma;
 

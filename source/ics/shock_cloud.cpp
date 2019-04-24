@@ -34,9 +34,10 @@ IC_shock_cloud::~IC_shock_cloud()
   return;
 }
 
-int IC_shock_cloud::setup_data(class ReadParams *rrp,    ///< pointer to parameter list.
-			     class GridBaseClass *ggg ///< pointer to grid
-			     )
+int IC_shock_cloud::setup_data(
+      class ReadParams *rrp,    ///< pointer to parameter list.
+      class GridBaseClass *ggg ///< pointer to grid
+      )
 {
   int err=0;
 
@@ -214,6 +215,16 @@ int IC_shock_cloud::setup_data(class ReadParams *rrp,    ///< pointer to paramet
     str = rp->find_parameter(seek);
     if (str!="") IC_shock_cloud::postshock[BZ] = atof(str.c_str());
     else         IC_shock_cloud::postshock[BZ] = -1.0e99;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    preshock[BX] /= sqrt(4.0*M_PI);
+    preshock[BY] /= sqrt(4.0*M_PI);
+    preshock[BZ] /= sqrt(4.0*M_PI);
+    postshock[BX] /= sqrt(4.0*M_PI);
+    postshock[BY] /= sqrt(4.0*M_PI);
+    postshock[BZ] /= sqrt(4.0*M_PI);
+#endif
 
     if (SimPM->eqntype==EQGLM) preshock[SI] = postshock[SI] = 0.;
   } // if mhd vars

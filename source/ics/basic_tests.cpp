@@ -202,6 +202,13 @@ int IC_basic_tests::setup_uniformgrid(
 
     if (SimPM->eqntype==EQGLM)
       Amb[SI] = 0.0;
+
+#ifdef NEW_B_NORM
+    // convert from CGS to internal units (no factors of 4pi)
+    Amb[BX] /= sqrt(4.0*M_PI);
+    Amb[BY] /= sqrt(4.0*M_PI);
+    Amb[BZ] /= sqrt(4.0*M_PI);
+#endif
   }
 
   // tracer variables
