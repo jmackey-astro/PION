@@ -90,6 +90,28 @@ void setup_NG_grid::setup_NG_grid_levels(
       class SimParams &SimPM  ///< pointer to simulation parameters
       )
 {
+  // first make sure that NG_centre[] is oriented such that an
+  // oct-tree structure works.  Centre should be xmin + i/4 of the
+  // full domain, where i is in [0,4]
+  for (int d=0;d<SimPM.ndim;d++) {
+    double f = 4.0*(SimPM.NG_centre[d]-SimPM.Xmin[d])/SimPM.Range[d];
+    //cout <<"d="<<d<<", f = "<<f<<", ";
+    f = fmod(f,1.0);
+    //cout <<" remainder ="<<f<<"\n";
+    if (!pconst.equalD(f,0.0)) {
+      cout <<"setup_NG_grid_levels:  axis="<<d<<", resetting ";
+      cout <<"NG_centre to i/4 of the domain.\n";
+      cout <<"current NG_centre="<<SimPM.NG_centre[d];
+      if (f>0.5) {
+        SimPM.NG_centre[d] += (1.0-f)*SimPM.Range[d]/4.0;
+      }
+      else {
+        SimPM.NG_centre[d] -= f*SimPM.Range[d]/4.0;
+      }
+      cout <<" reset to "<<SimPM.NG_centre[d]<<"\n";
+    }
+  }
+
   //
   // populate "levels" struct in SimPM based on NG grid parameters.
   //
