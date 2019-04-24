@@ -727,14 +727,16 @@ int DataIOFits::put_variable_into_data_array(
   
   // Choose variable to write to, based on name string.
   int v = 0;
+  bool B=false; // set to true if a B-field variable, so we can
+                // scale correctly to Gauss.
   if      (name=="GasDens") v=static_cast<int>(RO);
   else if (name=="GasPres") v=static_cast<int>(PG);
   else if (name=="GasVX")   v=static_cast<int>(VX);
   else if (name=="GasVY")   v=static_cast<int>(VY);
   else if (name=="GasVZ")   v=static_cast<int>(VZ);
-  else if (name=="Bx")      v=static_cast<int>(BX);
-  else if (name=="By")      v=static_cast<int>(BY);
-  else if (name=="Bz")      v=static_cast<int>(BZ);
+  else if (name=="Bx")      {v=static_cast<int>(BX); B=true;}
+  else if (name=="By")      {v=static_cast<int>(BY); B=true;}
+  else if (name=="Bz")      {v=static_cast<int>(BZ); B=true;}
   else if (name=="psi")     v=static_cast<int>(SI);
   else if (name=="TR0")     {v=SimPM.ftr; /*cout <<"first tracer, v="<<v<<"\n";*/ }
   else if (name=="TR1")     v=SimPM.ftr+1;
@@ -748,18 +750,25 @@ int DataIOFits::put_variable_into_data_array(
   else rep.error("Bad variable index in fits write routine",name);
 
   long int ct=0;
+  double norm = sqrt(4.0*M_PI);
   cell *c = gp->FirstPt();
   if (v>=0) {
-    do {(*data)[ct] = c->P[v]; ct++;} while ( (c=gp->NextPt(c))!=0 );
+    do {
+      (*data)[ct] = c->P[v];
+#ifdef NEW_B_NORM
+      // re-scale B-field to Gauss by multiplying by sqrt(4pi)
+      if (B) (*data)[ct] *= norm;
+#endif
+      ct++;
+    }
+    while ( (c=gp->NextPt(c))!=0 );
   }
   else if (v==-1) { // internal energy (or temperature if we have microphysics)
     do {
       if (MP) {
 	(*data)[ct] = MP->Temperature(c->P,SimPM.gamma);
-	//cout <<"temp="<<(*data)[ct]<<"\n";
       }
       else    (*data)[ct] = eqn->eint(c->P,SimPM.gamma);
-//      cout <<"(*data) ["<<ct<<"] = "<<(*data)[ct] <<"\n";
       ct++;
     } while ( (c=gp->NextPt(c))!=0 );
   }
@@ -770,7 +779,13 @@ int DataIOFits::put_variable_into_data_array(
     vars[0] = static_cast<int>(BX);
     vars[1] = static_cast<int>(BY);
     vars[2] = static_cast<int>(BZ);
-    do {(*data)[ct] = eqn->Divergence(c,0,vars, gp); ct++;}
+    do {
+      (*data)[ct] = eqn->Divergence(c,0,vars, gp); 
+#ifdef NEW_B_NORM
+      // re-scale B-field to Gauss by multiplying by sqrt(4pi)
+      (*data)[ct] *= norm;
+#endif
+      ct++;}
     while ( (c=gp->NextPt(c))!=0 );
     vars = mem.myfree(vars);
   }
@@ -830,14 +845,16 @@ int DataIOFits::read_fits_image(
 
   // Choose variable to read to, based on name string, whose hdu is the currently open hdu.
   int v = 0;
+  bool B=false; // set to true if a B-field variable, so we can
+                // scale correctly to Gauss.
   if      (name=="GasDens") v=static_cast<int>(RO);
   else if (name=="GasPres") v=static_cast<int>(PG);
   else if (name=="GasVX")   v=static_cast<int>(VX);
   else if (name=="GasVY")   v=static_cast<int>(VY);
   else if (name=="GasVZ")   v=static_cast<int>(VZ);
-  else if (name=="Bx")      v=static_cast<int>(BX);
-  else if (name=="By")      v=static_cast<int>(BY);
-  else if (name=="Bz")      v=static_cast<int>(BZ);
+  else if (name=="Bx")      {v=static_cast<int>(BX); B=true;}
+  else if (name=="By")      {v=static_cast<int>(BY); B=true;}
+  else if (name=="Bz")      {v=static_cast<int>(BZ); B=true;}
   else if (name=="psi")     v=static_cast<int>(SI);
   else if (name=="TR0")     {v=SimPM.ftr; /*cout <<"first tracer, v="<<v<<"\n";*/ }
   else if (name=="TR1")     v=SimPM.ftr+1;
@@ -852,9 +869,15 @@ int DataIOFits::read_fits_image(
      
   // assign data to grid points, to the variable determined above.
   double nulval = -1.e99;
-  long int ct=0; cell *c = gp->FirstPt(); 
+  long int ct=0;
+  cell *c = gp->FirstPt(); 
+  double norm = 1.0/sqrt(4.0*M_PI);
   do {
     c->P[v] = data[ct];
+#ifdef NEW_B_NORM
+    // rescale B field to code units
+    if (B) c->P[v] *= norm;
+#endif
     if (pconst.equalD(data[ct],nulval)) {
       cout <<"(dataio::read data: ERROR: var="<<v<<" and data="<<data[ct]<<"\n";
       rep.error("Read null value from file! pixel count follows",ct);
@@ -862,7 +885,7 @@ int DataIOFits::read_fits_image(
     ct++;
   } while ( (c=gp->NextPt(c))!=0 );
   if (ct!=ntot) rep.error("Counting cells in read_fits_image()",ct-ntot);
-  
+
   data = mem.myfree(data);
 
   return 0;

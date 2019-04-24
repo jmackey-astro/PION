@@ -507,13 +507,22 @@ int dataio_text::output_ascii_data(
 
   // Go through every point, output one line per point.
   class cell *cpt=gp->FirstPt(); do {
-     if(CI.get_dpos(cpt,0)<gp->SIM_Xmin(XX)+dx) outf <<"\n"; // put in a blank line for gnuplot
-     // First positions.
-     outf << CI.get_dpos(cpt,0) << "  ";
-     if (SimPM.ndim>1) outf << CI.get_dpos(cpt,1) << "  ";
-     if (SimPM.ndim>2) outf << CI.get_dpos(cpt,2) << "\t";
-     // Next all primitive variables.
-     for (int v=0;v<SimPM.nvar;v++) outf <<cpt->P[v]<<"  ";
+    if(CI.get_dpos(cpt,0)<gp->SIM_Xmin(XX)+dx) outf <<"\n"; // put in a blank line for gnuplot
+    // First positions.
+    outf << CI.get_dpos(cpt,0) << "  ";
+    if (SimPM.ndim>1) outf << CI.get_dpos(cpt,1) << "  ";
+    if (SimPM.ndim>2) outf << CI.get_dpos(cpt,2) << "\t";
+    
+    // Next all primitive variables.
+#ifdef NEW_B_NORM
+    double norm = sqrt(4.0*M_PI);
+    for (int v=0;v<SimPM.nvar;v++) {
+      if (v==BX || v==BY || v==BZ) outf <<cpt->P[v]*norm<<"  ";
+      else outf <<cpt->P[v]<<"  ";
+    }
+#else
+    for (int v=0;v<SimPM.nvar;v++) outf <<cpt->P[v]<<"  ";
+#endif
 
       // internal energy/ temperature.
     if      (MP) outf << MP->Temperature(cpt->P,SimPM.gamma);

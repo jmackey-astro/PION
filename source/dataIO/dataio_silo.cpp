@@ -1234,14 +1234,16 @@ int dataio_silo::get_scalar_data_array(
       )
 {
   int v=999;
+  bool B=false;
+  double norm = sqrt(4.0*M_PI);
   if      (variable=="Density")         {v=static_cast<int>(RO);}
   else if (variable=="Pressure")        {v=static_cast<int>(PG);}
   else if (variable=="VelocityX")       {v=static_cast<int>(VX);}
   else if (variable=="VelocityY")       {v=static_cast<int>(VY);}
   else if (variable=="VelocityZ")       {v=static_cast<int>(VZ);}
-  else if (variable=="MagneticFieldX")  {v=static_cast<int>(BX);}
-  else if (variable=="MagneticFieldY")  {v=static_cast<int>(BY);}
-  else if (variable=="MagneticFieldZ")  {v=static_cast<int>(BZ);}
+  else if (variable=="MagneticFieldX")  {v=static_cast<int>(BX); B=true;}
+  else if (variable=="MagneticFieldY")  {v=static_cast<int>(BY); B=true;}
+  else if (variable=="MagneticFieldZ")  {v=static_cast<int>(BZ); B=true;}
   else if (variable=="glmPSI")     {v=static_cast<int>(SI);}
   //
   // Now loop over up to MAX_NVAR tracers...
@@ -1324,6 +1326,10 @@ int dataio_silo::get_scalar_data_array(
     if (silo_dtype==DB_FLOAT) {
       do {
         farr[ct] = static_cast<float>(c->P[v]);
+#ifdef NEW_B_NORM
+        // scale values from code units to CGS.
+        if (B) farr[ct] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1335,6 +1341,11 @@ int dataio_silo::get_scalar_data_array(
     else {
       do {
         darr[ct] = static_cast<double>(c->P[v]);
+#ifdef NEW_B_NORM
+        // scale values from code units to CGS.
+        //if (v==BX) cout <<"val="<<darr[ct]<<", norm="<<norm<<"\n"; 
+        if (B) darr[ct] *= norm;
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1407,6 +1418,10 @@ int dataio_silo::get_scalar_data_array(
     if (silo_dtype==DB_FLOAT) {
       do {
         farr[ct] = static_cast<float>(eqn->Divergence(c,0,vars, gp));
+#ifdef NEW_B_NORM
+        // scale values from code units to CGS.
+        if (B) farr[ct] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1418,6 +1433,10 @@ int dataio_silo::get_scalar_data_array(
     else {
       do {
         darr[ct] = static_cast<double>(eqn->Divergence(c,0,vars, gp));
+#ifdef NEW_B_NORM
+        // scale values from code units to CGS.
+        if (B) darr[ct] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1438,6 +1457,10 @@ int dataio_silo::get_scalar_data_array(
       do {
         eqn->Curl(c,0,vars, gp, crl);
         farr[ct] = static_cast<float>(crl[2]);
+#ifdef NEW_B_NORM
+        // scale values from code units to CGS.
+        if (B) farr[ct] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1450,6 +1473,10 @@ int dataio_silo::get_scalar_data_array(
       do {
         eqn->Curl(c,0,vars, gp, crl);
         darr[ct] = static_cast<double>(crl[2]);
+#ifdef NEW_B_NORM
+        // scale values from code units to CGS.
+        if (B) darr[ct] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1928,16 +1955,10 @@ int dataio_silo::read_variable2grid(
     // choose elements of primitive variables for Velocity or B-Field
     //
     int v1,v2,v3;
-    if (variable=="Velocity") {
-      v1=VX;
-      v2=VY;
-      v3=VZ;
-    }
-    else {
-      v1=BX;
-      v2=BY;
-      v3=BZ;
-    }
+    bool B=false;
+    double norm = 1.0/sqrt(4.0*M_PI);
+    if (variable=="Velocity") { v1=VX; v2=VY; v3=VZ; }
+    else                      { v1=BX; v2=BY; v3=BZ; B=true; }
     //    cout <<"name: "<<silodata->name<<"\tnels="<<silodata->nels<<"\n";
     //    cout <<"ndims: "<<silodata->ndims<<"\tnvals: "<<silodata->nvals<<"\n";
     //cout <<"reading variable "<<variable<<" into element "<<v1<<" of state vec.\n";
@@ -1953,6 +1974,14 @@ int dataio_silo::read_variable2grid(
         c->P[v1] = fdata[0][ct];
         c->P[v2] = fdata[1][ct];
         c->P[v3] = fdata[2][ct];
+#ifdef NEW_B_NORM
+        if (B) {
+          // scale values from CGS to code units.
+          c->P[v1] *= norm; 
+          c->P[v2] *= norm; 
+          c->P[v3] *= norm; 
+        }
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -1966,8 +1995,18 @@ int dataio_silo::read_variable2grid(
         c->P[v1] = ddata[0][ct];
         c->P[v2] = ddata[1][ct];
         c->P[v3] = ddata[2][ct];
+#ifdef NEW_B_NORM
+        if (B) {
+          // scale values from CGS to code units.
+          c->P[v1] *= norm; 
+          c->P[v2] *= norm; 
+          c->P[v3] *= norm; 
+        }
+#endif
         ct++;
       }
+
+
 #ifdef WRITE_GHOST_ZONES
       while ( (c=gp->NextPt_All(c))!=0 );
 #else
@@ -1982,14 +2021,16 @@ int dataio_silo::read_variable2grid(
   //
   else {
     int v1=0;
+    bool B=false;
+    double norm = 1.0/sqrt(4.0*M_PI);
     if      (variable=="Density")         v1=RO;
     else if (variable=="Pressure")        v1=PG;
     else if (variable=="VelocityX")       v1=VX;
     else if (variable=="VelocityY")       v1=VY;
     else if (variable=="VelocityZ")       v1=VZ;
-    else if (variable=="MagneticFieldX")  v1=BX;
-    else if (variable=="MagneticFieldY")  v1=BY;
-    else if (variable=="MagneticFieldZ")  v1=BZ;
+    else if (variable=="MagneticFieldX")  {v1=BX; B=true;}
+    else if (variable=="MagneticFieldY")  {v1=BY; B=true;}
+    else if (variable=="MagneticFieldZ")  {v1=BZ; B=true;}
     else if (variable=="glmPSI")          v1=SI;
     //
     // Now loop over up to MAX_NVAR tracers...
@@ -2013,6 +2054,10 @@ int dataio_silo::read_variable2grid(
     if (silo_dtype==DB_FLOAT) {
       do {
         c->P[v1] = fdata[0][ct];
+#ifdef NEW_B_NORM
+        // scale values from CGS to code units.
+        if (B) c->P[v1] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES
@@ -2024,6 +2069,10 @@ int dataio_silo::read_variable2grid(
     else {
       do {
         c->P[v1] = ddata[0][ct];
+#ifdef NEW_B_NORM
+        // scale values from CGS to code units.
+        if (B) c->P[v1] *= norm; 
+#endif
         ct++;
       }
 #ifdef WRITE_GHOST_ZONES

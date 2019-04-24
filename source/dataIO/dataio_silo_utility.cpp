@@ -218,8 +218,10 @@ int dataio_silo_utility::SRAD_read_var2grid(
 
   if (variable=="Velocity" || variable=="MagneticField") {
     int v1,v2,v3;
+    bool B=false;
+    double norm = 1.0/sqrt(4.0*M_PI);
     if (variable=="Velocity") {v1=VX;v2=VY;v3=VZ;}
-    else                      {v1=BX;v2=BY;v3=BZ;}
+    else                      {v1=BX;v2=BY;v3=BZ; B=true;}
     //    cout <<"name: "<<silodata->name<<"\tnels="<<silodata->nels<<"\n";
     //    cout <<"ndims: "<<silodata->ndims<<"\tnvals: "<<silodata->nvals<<"\n";
     //cout <<"reading variable "<<variable<<" into element "<<v1<<" of state vec.\n";
@@ -239,7 +241,15 @@ int dataio_silo_utility::SRAD_read_var2grid(
           c->P[v3] = ddata[2][ct];
           ct++;
         }
-        ct++;
+
+#ifdef NEW_B_NORM
+        if (B) {
+          // scale values from CGS to code units.
+          c->P[v1] *= norm; 
+          c->P[v2] *= norm; 
+          c->P[v3] *= norm; 
+        }
+#endif
       }
     } while ( (c=ggg->NextPt(c))!=0 );
     if (ct != npt) rep.error("wrong number of points read for vector variable",ct-npt);
@@ -247,14 +257,15 @@ int dataio_silo_utility::SRAD_read_var2grid(
 
   else {
     int v1=0;
+    bool B=false;
     if      (variable=="Density")         v1=RO;
     else if (variable=="Pressure")        v1=PG;
     else if (variable=="VelocityX")       v1=VX;
     else if (variable=="VelocityY")       v1=VY;
     else if (variable=="VelocityZ")       v1=VZ;
-    else if (variable=="MagneticFieldX")  v1=BX;
-    else if (variable=="MagneticFieldY")  v1=BY;
-    else if (variable=="MagneticFieldZ")  v1=BZ;
+    else if (variable=="MagneticFieldX")  {v1=BX; B=true;}
+    else if (variable=="MagneticFieldY")  {v1=BY; B=true;}
+    else if (variable=="MagneticFieldZ")  {v1=BZ; B=true;}
     else if (variable=="glmPSI")          v1=SI;
     //
     // Now loop over up to MAX_NVAR tracers...
@@ -269,8 +280,6 @@ int dataio_silo_utility::SRAD_read_var2grid(
     else rep.error("what var to read???",variable);
     //cout <<"reading variable "<<variable<<" into element "<<v1<<" of state vec.\n";
 
-    //
-    // FASTER WAY: SCANS ONLY NEEDED CELLS.
     //
     // First get to start cell in local domain:
     //
@@ -288,6 +297,7 @@ int dataio_silo_utility::SRAD_read_var2grid(
       *cx=start,
       *cy=start,
       *cz=start;
+    double norm = 1.0/sqrt(4.0*M_PI);
     if (SimPM.ndim<3) filePM->LocalNG[ZZ]=1;
     if (SimPM.ndim<2) filePM->LocalNG[YY]=1;
     for (int k=0; k<filePM->LocalNG[ZZ]; k++) {
@@ -303,6 +313,10 @@ int dataio_silo_utility::SRAD_read_var2grid(
           else {
             cx->P[v1] = ddata[0][ct];
           }
+#ifdef NEW_B_NORM
+          // scale values from CGS to code units.
+          if (B) cx->P[v1] *= norm; 
+#endif
           ct++;
           cx = ggg->NextPt(cx,posdir[XX]);
         }
@@ -1107,10 +1121,10 @@ int dataio_silo_utility::PP_read_var2grid(
   // data
   //
   int v1=-1, v2=-1, v3=-1;
-
+  bool B=false;
   if (variable=="Velocity" || variable=="MagneticField") {
     if (variable=="Velocity") {v1=VX;v2=VY;v3=VZ;}
-    else                      {v1=BX;v2=BY;v3=BZ;}
+    else                      {v1=BX;v2=BY;v3=BZ; B=true;}
   }
   else {
     if      (variable=="Density")         v1=RO;
@@ -1118,9 +1132,9 @@ int dataio_silo_utility::PP_read_var2grid(
     else if (variable=="VelocityX")       v1=VX;
     else if (variable=="VelocityY")       v1=VY;
     else if (variable=="VelocityZ")       v1=VZ;
-    else if (variable=="MagneticFieldX")  v1=BX;
-    else if (variable=="MagneticFieldY")  v1=BY;
-    else if (variable=="MagneticFieldZ")  v1=BZ;
+    else if (variable=="MagneticFieldX")  {v1=BX; B=true;}
+    else if (variable=="MagneticFieldY")  {v1=BY; B=true;}
+    else if (variable=="MagneticFieldZ")  {v1=BZ; B=true;}
     else if (variable=="glmPSI")          v1=SI;
     //
     // Now loop over up to MAX_NVAR tracers...
@@ -1191,6 +1205,7 @@ int dataio_silo_utility::PP_read_var2grid(
     *cz=c;
   long int ct=0;
   long int qv_index=0;
+  double norm = 1.0/sqrt(4.0*M_PI);
 
   while (cz!=0) {
     //
@@ -1232,6 +1247,16 @@ int dataio_silo_utility::PP_read_var2grid(
           if (v2>0) cx->P[v2] = ddata[1][qv_index];
           if (v3>0) cx->P[v3] = ddata[2][qv_index];
         }
+#ifdef NEW_B_NORM
+        //if (v1==BX) cout <<"val="<<cx->P[v1]<<", norm="<<norm<<"\n"; 
+        if (B) {
+          //cout <<"read B: "<<c->P[v1]<<", norm="<<norm<<"\n";
+          // scale values from CGS to code units.
+          c->P[v1] *= norm; 
+          if (v2>0) c->P[v2] *= norm; 
+          if (v2>0) c->P[v3] *= norm; 
+        }
+#endif
         //cx->P[v1] = data[0][qv_index];
         //if (v2>0) cx->P[v2] = data[1][qv_index];
         //if (v3>0) cx->P[v3] = data[2][qv_index];

@@ -38,6 +38,8 @@
 //
 //#define HACK_WARNING
 
+// this flag enables input B-fields in CGS units (Gauss)
+#define NEW_B_NORM
 
 //
 // These flags disable microphysics modules

@@ -64,11 +64,12 @@ utility_fitsio::utility_fitsio()
 
 
 
-int utility_fitsio::create_fits_image(fitsfile *ff,
-				      const string name,
-				      const int ndim,
-				      const int *npt
-				      )
+int utility_fitsio::create_fits_image(
+      fitsfile *ff,
+      const string name,
+      const int ndim,
+      const int *npt
+      )
 {
   string fname="utility_fitsio::create_fits_image";
   int status=0;
@@ -92,16 +93,17 @@ int utility_fitsio::create_fits_image(fitsfile *ff,
 // ##################################################################
 
 
-int utility_fitsio::write_fits_image(fitsfile *ff,
-				     const string,  /// This is the name of the ext, but it's not used at the mo.
-				     const double *localxmin,
-				     const double *globalxmin,
-				     const double pix_size,
-				     const int ndim,
-				     const int *npt,
-				     long int ntot,
-				     double *data
-				     )
+int utility_fitsio::write_fits_image(
+      fitsfile *ff,
+      const string,  /// This is the name of the ext, but it's not used at the mo.
+      const double *localxmin,
+      const double *globalxmin,
+      const double pix_size,
+      const int ndim,
+      const int *npt,
+      long int ntot,
+      double *data
+      )
 {
   int status=0;
   long int *fpix=0, *lpix=0;

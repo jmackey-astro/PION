@@ -138,6 +138,7 @@ int sim_control_NG_MPI::Init(
   // Set Ph[] = P[], and then implement the boundary conditions.
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     cell *c = grid[l]->FirstPt();
+    //rep.printVec("First Point",c->P,SimPM.nvar);
     do {
       for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
     } while ((c=grid[l]->NextPt(c))!=0);

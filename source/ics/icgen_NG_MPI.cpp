@@ -139,6 +139,7 @@ int main(int argc, char **argv)
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     // Set Ph=P in every cell.
     cell *c = grid[l]->FirstPt();
+    //rep.printVec("First Point",c->P,SimPM.nvar);
     do {
       for(int v=0;v<SimPM.nvar;v++) c->Ph[v]=c->P[v];
     } while ((c=grid[l]->NextPt(c))!=0);
