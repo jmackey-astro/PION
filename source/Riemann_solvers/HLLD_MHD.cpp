@@ -38,10 +38,12 @@ HLLD_MHD::HLLD_MHD(
       )
  :  eqns_base(nv), eqns_mhd_ideal(nv)
 {
+#ifdef TESTING
   cout <<"(HLLD_MHD::HLLD_MHD) Initialising HLL Multi-State Solver Class.\n";
   if(eq_nvar<8){
     rep.error("#elements!=8, QUIT.",eq_nvar);
   }
+#endif
   //do I need those?
   //HD_nvar  = 7;
   //eq_gamma = g;
@@ -67,7 +69,9 @@ HLLD_MHD::HLLD_MHD(
   HD_FRss = mem.myalloc(HD_FRss, eq_nvar); 
   
 
+#ifdef TESTING
   cout << "(HLLD_MHD::HLLD_MHD) All set.\n";
+#endif
   return;
 }
 
@@ -80,7 +84,9 @@ HLLD_MHD::HLLD_MHD(
 HLLD_MHD::~HLLD_MHD()
 {
 
+#ifdef TESTING
   cout << "(riemann_MHD::riemann_MHD) Commencing Destruction." << "\n";
+#endif
 
   HD_lambda = mem.myfree(HD_lambda); // wave speeds (one entropy, two Alfvén)
 
@@ -102,7 +108,9 @@ HLLD_MHD::~HLLD_MHD()
   HD_FLss = mem.myfree(HD_FLss);     // F**
   HD_FRss = mem.myfree(HD_FRss); 
 
+#ifdef TESTING
   cout << "(riemann_MHD::riemann_MHD) Mission Accomplished." << "\n";
+#endif
   return;
 }
 
@@ -143,7 +151,7 @@ int HLLD_MHD::MHD_HLLD_flux_solver(
   double tp_l  = Ptot(Pl, eq_gamma);
   double temp = sr_vr  * Pr[eqRO]  - sl_vl * Pl[eqRO];
   // test
-  if(temp==0){cout<<"Found 0 line 146\n";}
+  //if(temp==0){cout<<"Found 0 line 146\n";}
 
 
   HD_lambda[2] = (sr_vr * HD_UR[eqMMX] - sl_vl * HD_UL[eqMMX] - tp_r + tp_l)/temp; // S_m (m05 eq 38)

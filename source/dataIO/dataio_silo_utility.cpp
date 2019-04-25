@@ -315,7 +315,11 @@ int dataio_silo_utility::SRAD_read_var2grid(
           }
 #ifdef NEW_B_NORM
           // scale values from CGS to code units.
-          if (B) cx->P[v1] *= norm; 
+          if (B) {
+            //cout <<"SRAD_read_var2grid: scaling B var "<<v1;
+            //cout <<" by "<<norm<<"\n";
+            cx->P[v1] *= norm; 
+          }
 #endif
           ct++;
           cx = ggg->NextPt(cx,posdir[XX]);
@@ -1250,11 +1254,11 @@ int dataio_silo_utility::PP_read_var2grid(
 #ifdef NEW_B_NORM
         //if (v1==BX) cout <<"val="<<cx->P[v1]<<", norm="<<norm<<"\n"; 
         if (B) {
-          //cout <<"read B: "<<c->P[v1]<<", norm="<<norm<<"\n";
-          // scale values from CGS to code units.
-          c->P[v1] *= norm; 
-          if (v2>0) c->P[v2] *= norm; 
-          if (v2>0) c->P[v3] *= norm; 
+          //cout <<"PP_read_var2grid: scaling B var "<<v1;
+          //cout <<" val="<< cx->P[v1]<<" by "<<norm<<"\n";
+          cx->P[v1] *= norm; 
+          if (v2>0) cx->P[v2] *= norm; 
+          if (v2>0) cx->P[v3] *= norm; 
         }
 #endif
         //cx->P[v1] = data[0][qv_index];
