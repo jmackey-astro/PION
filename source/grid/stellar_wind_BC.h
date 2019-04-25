@@ -19,8 +19,9 @@
 /// - 2015.01.10 JM: New include statements for new file structure.
 /// - 2015.07.16 JM: added pion_flt datatype (double or float).
 /// - 2015.10.19 JM: Fixed wind-tracer to always use pion_flt.
-/// - 2017.07.21 RK: Removed Vinf as argument for wind_source, added v_rot and v_esc. Created
-///					 stellar_wind_angle class for angle-dependent BSG winds.
+/// - 2017.07.21 RK: Removed Vinf as argument for wind_source, added
+///    v_rot and v_esc. Created stellar_wind_angle class for
+///    angle-dependent BSG winds.
 
 
 #ifndef STELLAR_WIND_BC_H
@@ -79,7 +80,8 @@ struct wind_source {
   int
     id,    ///< id of source.
     ncell, ///< number of cells in the artificially fixed region.
-    type;  ///< type of wind source (0=constant,1=evolving,2=lat-dep.).
+    type,  ///< type of wind source (0=constant,1=evolving,2=lat-dep.).
+    Hplus; ///< index of H+ tracer variable, if present.
   double
     dpos[MAX_DIM], ///< physical position of source
     radius, ///< radius of fixed region (in cm).

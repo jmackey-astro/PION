@@ -292,11 +292,11 @@ class SimParams {
 // *******************************************************************
 ///
 /// Conversion factors between code units and physical units.  Currently
-/// not used, as the code can handle physical units without much trouble.
+/// not used, as the code can handle cgs units without much trouble.
 ///
 class Units {
   public:
-   std::string unitsys; ///< Name of System of Units: code,mks,cgs,esu,etc.
+   std::string unitsys; ///< Name of System of Units: MKS, CGS
    std::string density, ///< Reference Density Units.
      length,       ///< Reference Length Units.
      velocity,     ///< Reference Velocity Units.

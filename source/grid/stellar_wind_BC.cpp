@@ -186,6 +186,13 @@ int stellar_wind::add_source(
   if (!ws->wcells.empty())
     rep.error("wind_source: wcells not empty!",ws->wcells.size());
 
+  // if using microphysics, find H+ tracer variable, if it exists.
+  int hplus=-1;
+  if (MP) {
+    hplus = MP->Tr("H1+");
+  }
+  ws->Hplus = hplus;
+
   //
   // Make sure the source position is compatible with the geometry:
   //
@@ -195,9 +202,6 @@ int stellar_wind::add_source(
                 ws->dpos[Rsph]);
   }
   if (coordsys==COORD_CYL && ndim==2) {
-    //
-    // Axisymmetry
-    //
     if (!pconst.equalD(ws->dpos[Rcyl],0.0))
       rep.error("Axisymmetry but source not at R=0!",ws->dpos[Rcyl]);
   }
@@ -435,19 +439,19 @@ void stellar_wind::set_wind_cell_reference_state(
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
   //
-  // Assume the first tracer variable is the H+ ion fraction, and set it so
-  // that it goes from y=1 at T>tp to y=1.0e-7 at T<tm, with linear
-  // interpolation.  THIS IS A CRUDE APPROXIMATION!
+  // Set the H+ ion fraction so that it goes from y=1 at T>tp to
+  // y=1.0e-7 at T<tm, with linear interpolation.  THIS IS A CRUDE
+  // APPROXIMATION!
   //
-  //double tm=0.5e4, tp=0.75e4;
-  //if (ntracer>0) {
-  //  if      (WS->Tw > tp)
-  //    wc->p[ftr] = 1.0;
-  //  else if (WS->Tw < tm)
-  //    wc->p[ftr] = 1.0e-7;
-  //  else
-  //    wc->p[ftr] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
-  //}
+  double tm=0.7e4, tp=1.0e4;
+  if (WS->Hplus >= 0) {
+    if      (WS->Tw > tp)
+      wc->p[WS->Hplus] = 1.0;
+    else if (WS->Tw < tm)
+      wc->p[WS->Hplus] = 1.0e-7;
+    else
+      wc->p[WS->Hplus] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
+  }
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
