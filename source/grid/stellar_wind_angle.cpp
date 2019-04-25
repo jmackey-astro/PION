@@ -560,7 +560,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
       wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
     }
     else
-#define TOROIDAL_FIELD
+//#define TOROIDAL_FIELD
 #ifdef TOROIDAL_FIELD
       // Here set up a 100 G toroidal field, scaled by sin(theta) so
       // that it goes to zero at the poles.
@@ -583,18 +583,18 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
   //
-  // Assume the first tracer variable is the H+ ion fraction, and set it so
-  // that it goes from y=1 at T>tp to y=1.0e-7 at T<tm, with linear
-  // interpolation.  THIS IS A CRUDE APPROXIMATION!
+  // Set the H+ ion fraction so that it goes from y=1 at T>tp to
+  // y=1.0e-7 at T<tm, with linear interpolation.  THIS IS A CRUDE
+  // APPROXIMATION!
   //
-  double tm=0.5e4, tp=0.75e4;
-  if (ntracer>0) {
+  double tm=0.7e4, tp=1.0e4;
+  if (WS->Hplus >= 0) {
     if      (WS->Tw > tp)
-      wc->p[ftr] = 1.0;
+      wc->p[WS->Hplus] = 1.0;
     else if (WS->Tw < tm)
-      wc->p[ftr] = 1.0e-7;
+      wc->p[WS->Hplus] = 1.0e-7;
     else
-      wc->p[ftr] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
+      wc->p[WS->Hplus] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
   }
 
 
@@ -874,7 +874,13 @@ int stellar_wind_angle::add_rotating_source(
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
-    
+  // if using microphysics, find H+ tracer variable, if it exists.
+  int hplus=-1;
+  if (MP) {
+    hplus = MP->Tr("H1+");
+  }
+  ws->Hplus = hplus;
+
   ws->cells_added = false;
   if (!ws->wcells.empty())
     rep.error("wind_source: wcells not empty!",ws->wcells.size());

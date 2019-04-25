@@ -181,17 +181,16 @@ int stellar_wind::add_source(
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
-    
-  ws->cells_added = false;
-  if (!ws->wcells.empty())
-    rep.error("wind_source: wcells not empty!",ws->wcells.size());
-
   // if using microphysics, find H+ tracer variable, if it exists.
   int hplus=-1;
   if (MP) {
     hplus = MP->Tr("H1+");
   }
   ws->Hplus = hplus;
+
+  ws->cells_added = false;
+  if (!ws->wcells.empty())
+    rep.error("wind_source: wcells not empty!",ws->wcells.size());
 
   //
   // Make sure the source position is compatible with the geometry:
