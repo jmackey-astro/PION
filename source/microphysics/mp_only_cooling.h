@@ -129,7 +129,7 @@ class mp_only_cooling
   ///
   virtual int Tr(
         const string ///< name of tracer we are looking for.
-        ) {return DONT_CALL_ME;}
+        ) {return -1;}
 
   ///
   /// Sets the pressure in p-vec to be such that temperature is what

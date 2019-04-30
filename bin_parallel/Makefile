@@ -105,7 +105,7 @@ GLOBAL = functionality_flags.h testing_flags.h reporting.h \
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
