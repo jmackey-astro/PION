@@ -286,8 +286,10 @@ double  stellar_wind_angle::integrate_Simpson(
 } 
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // Phi' function
@@ -302,8 +304,10 @@ double stellar_wind_angle::fn_phi(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // Alpha function
@@ -321,8 +325,10 @@ double stellar_wind_angle::fn_alpha(
 } // the cotan term will diverge here if theta = 0.0
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // Delta function
@@ -337,8 +343,10 @@ double stellar_wind_angle::fn_delta(
 } // 230 points determined to give sufficient accuracy
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // Terminal wind velocity function
@@ -356,8 +364,10 @@ double stellar_wind_angle::fn_v_inf(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 // Analytic wind density function
@@ -380,6 +390,7 @@ double stellar_wind_angle::fn_density(
 
 // ##################################################################
 // ##################################################################
+
 
 
 // Interpolated wind density function
@@ -455,8 +466,10 @@ double stellar_wind_angle::fn_density_interp(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 void stellar_wind_angle::set_wind_cell_reference_state(
@@ -545,11 +558,12 @@ void stellar_wind_angle::set_wind_cell_reference_state(
   if (eqntype==EQMHD || eqntype==EQGLM) {
     double R=6.95508e10;  // R_sun in cm
     double x = grid->difference_vertex2cell(WS->dpos,c,XX);
+    double y = grid->difference_vertex2cell(WS->dpos,c,YY);
     wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
                 fabs(x)/wc->dist;
     if (ndim>1) {
       wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
+                                                      y/wc->dist;
       wc->p[BY] = (x>0.0) ? wc->p[BY] : -1.0*wc->p[BY];
     }
     else
@@ -559,17 +573,23 @@ void stellar_wind_angle::set_wind_cell_reference_state(
                 grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
       wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
     }
-    else
+    else {
 //#define TOROIDAL_FIELD
 #ifdef TOROIDAL_FIELD
-      // Here set up a 100 G toroidal field, scaled by sin(theta) so
-      // that it goes to zero at the poles.
-      wc->p[BZ] = (100.0/sqrt(4.0*M_PI)) *    // 100 G
-                  (10.0*R/wc->dist)      *    // at 10 solar radii
-                  (fabs(x)/wc->dist);         // times sin(theta)
+      // Here set up a 1 G toroidal field at 10 Rsun, scaled by
+      // sin(theta) so that it goes to zero at the poles, and by
+      // Omega so that it is negligible for slowly rotating stars,
+      // and by 1/r so that it decreases correctly with distance.
+      // NB: this is not going to be correct in 3D, because we
+      //     must have B parallel to V.
+      wc->p[BZ] = (1.0/sqrt(4.0*M_PI)) *    // 1 G
+                  (10.0*R/wc->dist)    *    // at 10 solar radii
+                  (fabs(y)/wc->dist)   *    // times sin(theta)
+                  std::min(0.9999,WS->v_rot/WS->vcrit); // times omega
 #else
       wc->p[BZ] = 0.0;
 #endif
+    }
   }
   if (eqntype==EQGLM) {
     wc->p[SI] = 0.0;
@@ -874,6 +894,7 @@ int stellar_wind_angle::add_rotating_source(
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
+  
   // if using microphysics, find H+ tracer variable, if it exists.
   int hplus=-1;
   if (MP) {
