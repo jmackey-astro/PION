@@ -236,6 +236,10 @@ int mp_only_cooling::TimeUpdateMP(
       cout <<", T="<<T<<", Edot="<<Edot(p_in[RO],T)<<"\n";
       if (nstep>256) {
         cout.flush();
+        cerr <<" Input density="<<p_in[RO]<<", pressure="<<p_in[PG];
+        cerr <<", v = ["<<p_in[VX]<<", "<<p_in[VY]<<", "<<p_in[VZ];
+        cerr <<"] ... T="<<T<<"\n";
+        cerr.flush();
         rep.error("too many steps",nstep);
       }
     }

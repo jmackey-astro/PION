@@ -57,27 +57,23 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
   int gidx = grid->idx();
   cell *pc = parent->FirstPt_All(); // parent cell.
   double distance =  0.0;
-  bool loop;
   
+  // Match parent cells with child grid boundary cells.
   do{
-    loop = false;
-    distance = grid->idistance(pc->pos, (*bpt)->pos);
-    // Find parent cell that covers this boundary cell.  It should be
-    // G_idx/2 away from the boundary cell in each direction.
-    //rep.printVec("bpt pos",(*bpt)->pos,G_ndim);
-    while (distance > gidx && pc!=0) {
-      pc = parent->NextPt_All(pc);
-      if (!pc && !loop) { // hack: if get to the end, then go back...
-        pc =  parent->FirstPt_All();
-        loop = true;
-      }
-      else if (!pc)
-        rep.error("C2F boundaries setup",distance);
-      distance = grid->idistance(pc->pos, (*bpt)->pos);
+    pc = parent->FirstPt_All();
+
+    for (int d=0;d<par.ndim;d++) {
+      // Find parent cell that covers this boundary cell.  It should be
+      // G_idx/2 away from the boundary cell in each direction.
+      rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
+      enum axes ax = static_cast<axes>(d);
+      enum direction pos = static_cast<direction>(2*d+1);
+      while (fabs(distance = grid->idifference_cell2cell((*bpt),pc,ax)) > gidx)
+        pc = parent->NextPt(pc,pos);
+      if (!pc) rep.error("C2F boundaries setup",distance);
     }
-    if (!pc)
-      rep.error("BC_assign_COARSE_TO_FINE() left parent grid",0);
-    
+    cout <<"found parent: ";
+    rep.printVec("pc->pos",pc->pos,par.ndim);
     // set boundary cell's 'npt' pointer to point to the parent cell.
     (*bpt)->npt = pc;
     ++bpt;
@@ -503,7 +499,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
   for (int i=0;i<8;i++) fU[i] = mem.myalloc(fU[i],par.nvar);
   double dxo2 = 0.5*fine->DX(); // dx
   double f_vol[8];
-  int idx = 2*fine->idx(); // idx of coarse cell
+  //int idx = 2*fine->idx(); // idx of coarse cell
   //double f_psi[4];
   //
   // Need to do trilinear interpolation, 4 cells at a time.
