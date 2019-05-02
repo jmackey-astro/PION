@@ -62,9 +62,12 @@ grid_nlevels 2
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
-grid_nest_centre_XX 0.0e18
-grid_nest_centre_YY 0.0e18
-grid_nest_centre_ZZ 0.0e18
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 ########################
 
 
@@ -154,6 +157,9 @@ WIND_0_t_offset   0.0000    # in (unscaled) years
 WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0
+WIND_0_xi 0.0
+
+N_JET 0
 
 ########################
 # Reference Vector.

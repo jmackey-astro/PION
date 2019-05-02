@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     }
   }
 #ifndef TESTING
-  //rep.kill_stdout_from_other_procs(0);
+  rep.kill_stdout_from_other_procs(0);
 #endif
 
   class DataIOBase   *dataio=0;
