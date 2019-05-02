@@ -65,15 +65,19 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
     for (int d=0;d<par.ndim;d++) {
       // Find parent cell that covers this boundary cell.  It should be
       // G_idx/2 away from the boundary cell in each direction.
+#ifdef TEST_MPI_NG
       rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
+#endif
       enum axes ax = static_cast<axes>(d);
       enum direction pos = static_cast<direction>(2*d+1);
       while (fabs(distance = grid->idifference_cell2cell((*bpt),pc,ax)) > gidx)
         pc = parent->NextPt(pc,pos);
       if (!pc) rep.error("C2F boundaries setup",distance);
     }
+#ifdef TEST_MPI_NG
     cout <<"found parent: ";
     rep.printVec("pc->pos",pc->pos,par.ndim);
+#endif
     // set boundary cell's 'npt' pointer to point to the parent cell.
     (*bpt)->npt = pc;
     ++bpt;
