@@ -549,7 +549,8 @@ int sim_control_NG_MPI::Time_Int(
     if ( SimPM.levels[0].MCMD.get_myrank()==0) {
       cout <<"level N dt="<<SimPM.levels[SimPM.grid_nlevels-1].dt<<"\tNew time: ";
       cout <<SimPM.simtime<<"\t steps: "<<SimPM.timestep;
-      cout <<"l0 steps="<<SimPM.timestep/pow(2,SimPM.grid_nlevels-1);
+      cout <<",\tl0 steps="<<SimPM.timestep/
+                      static_cast<int>(pow(2,SimPM.grid_nlevels-1));
       tsf=clk.time_so_far("time_int");
       cout <<"\t runtime = "<<tsf<<" secs."<<"\n";
 #ifdef TESTING
