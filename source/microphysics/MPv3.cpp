@@ -1091,7 +1091,12 @@ double MPv3::timescales_RT(
   //cout <<"using neutral fraction.\n";
 #else
   t = min(t,DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE));
-  //cout <<"limit by dx: dt="<<DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE)<<"\n";
+  //if (t<1.0e8) {
+  //  cout <<"limit by dx: dt=";
+  //  cout <<DTFRAC/(fabs(NV_Ith_S(y_out, lv_H0))+TINYVALUE)<<"\t";
+  //  cout <<"... lvH0 = "<<NV_Ith_S(y_in, lv_H0)<<"... ydot = "<<NV_Ith_S(y_out, lv_H0)<<" \n";
+  //  rep.printVec("p_in",p_in,nv_prim);
+  //}
 #endif
 
 
@@ -1489,6 +1494,7 @@ int MPv3::ydot(
   // radiative recombination of H+
   //
   oneminusx_dot += Hii_rad_recomb_rate(T) *x_in*ne;
+  //cout <<", RR = "<<Hii_rad_recomb_rate(T) *x_in*ne;
   //
   // Total H+ cooling: recombination plus free-free
   //
