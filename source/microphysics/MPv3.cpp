@@ -643,8 +643,8 @@ int MPv3::set_multifreq_source_properties(
   //
   Emax = 24.59*1.602e-12;
 #else
-  //Emax = 54.41778*1.602e-12;  // assume nothing doubly-ionized He.
-  Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
+  Emax = 54.41778*1.602e-12;  // assume nothing doubly-ionized He.
+  //Emax = 100.0*1.602e-12;  // This is better for cosmology RT tests.
 #endif // HE_INERT
   //
   // Call the function in hydrogen_photoion.

@@ -673,6 +673,10 @@ int setup_fixed_grid::setup_evolving_RT_sources(
       // (1998,ApJ,501,192), compared them to the ionising photon luminosity
       // of a BB with the same radius and Teff, and got the following scaling
       // factor, using file conversion.py in code_misc/testing/planck_fn/
+      // The radius is fitted vs. ionizing photon luminosity, the scaling
+      // is then applied to the luminosity of the star.
+      // PROBABLY NOT A GOOD IDEA TO DO THIS HERE -- BETTER TO DO IT
+      // WHEN CALCULATING THE FLUX IN THE LYMAN CONTINUUM...
       //
       if (istar->Log_T[iline]<4.53121387658 &&
           SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
@@ -680,7 +684,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
         double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
         istar->Log_L[iline] -= 2.0*beta;
-        // HACK!!! THIS REDUCES FLUX BY LESS THAN IT SHOULD...
+        // NEXT LINE IS A HACK!!! REDUCES FLUX BY LESS THAN IT SHOULD...
         //istar->Log_L[iline] -= 0.4*beta;
         //cout <<", new L = "<<exp(pconst.ln10()*istar->Log_L[i])<<"\n";
       }
@@ -797,7 +801,7 @@ int setup_fixed_grid::update_evolving_RT_sources(
       rs->Rstar    = istar->Rnow;
       rs->Tstar    = istar->Tnow;
       
-      // This is a horrible hack, fix it to something sensible
+      // This is a hack, fix it to something sensible
       if (rs->effect == RT_EFFECT_UV_HEATING) {
         rs->strength = 1.0e48*(rs->strength/1.989e38)*
                                             exp(-1e4/rs->Tstar);

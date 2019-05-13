@@ -507,9 +507,12 @@ int RT_MPI_bc::Send_RT_Boundaries(
         for (short unsigned int v=0; v<RS.NTau; v++) {
           data[count] = tau[v];
           if (tau[v]<0.0) {
+#ifdef RT_TESTING
             rep.printVec("SEND neg tau cell",(*c)->pos,par.ndim);
             cout <<"tau="<<tau[v]<<" ";
             CI.print_cell(*c);
+#endif 
+            tau[v]=0.0;
           }
           count++;
         }
@@ -518,9 +521,14 @@ int RT_MPI_bc::Send_RT_Boundaries(
         for (short unsigned int v=0; v<RS.NTau; v++) {
           data[count] = tau[v];
           if (tau[v]<0.0) {
+            // Occurs if ionization fraction is slightly >1,
+            // because of discretisation or roundoff errors.
+#ifdef RT_TESTING
             rep.printVec("SEND neg dtau cell",(*c)->pos,par.ndim);
             cout <<"tau="<<tau[v]<<" ";
             CI.print_cell(*c);
+#endif 
+            tau[v]=0.0;
           }
           count++;
         }
