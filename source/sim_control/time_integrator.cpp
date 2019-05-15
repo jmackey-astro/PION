@@ -925,6 +925,14 @@ int time_integrator::grid_update_state_vector(
     if (err) err=0;
 #endif // TESTING
     
+    if (MP) {
+      double T=0.0;
+      if ((T=MP->Temperature(c->Ph,SimPM.gamma)) > SimPM.EP.MaxTemperature) {
+        cout <<"warning, temperature too large: "<<T<<"\n";
+        MP->Set_Temp(c->Ph,SimPM.EP.MaxTemperature,SimPM.gamma);
+      }
+    }
+    
     //
     // If the current step is the full update, then also set
     // the updated base-state-vector to updated value.

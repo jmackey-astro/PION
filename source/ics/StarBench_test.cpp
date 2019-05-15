@@ -591,8 +591,8 @@ int IC_StarBench_Tests::setup_StarBench_planarIF(
     if      (ptype==2) {
       shock_pos = IF_pos + SimPM->Range[YY]/64.0;
       lambda = SimPM->Range[YY]/13.0;  // 13 wavelengths on the domain
-      A = SimPM->Range[YY]/1280.0; // 1/640th of the y-domain
-      phs = 6.0; // offset of waves, in units of 05*dx
+      A = SimPM->Range[YY]/1280.0; // 1/1280th of the y-domain
+      phs = 6.0; // offset of waves, in units of 0.5*dx
     }
     else if (ptype==3) {
       lambda = SimPM->Range[YY];  // just one wavelength
