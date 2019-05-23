@@ -449,8 +449,10 @@ int setup_fixed_grid_pllel::setup_boundary_structs(
         rep.error("sfg_pllel::setup_boundary_structs: Bad periodic \
                    neighbour",ppar->ngbprocs[i]);
       if (ppar->ngbprocs[i] == ppar->get_myrank()) {
-        //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: only one proc in dir [i]: "<<i<<"\n";
-        //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: periodic on single proc, so setting ngb to -999.\n";
+        //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: ";
+        //  cout <<"only one proc in dir [i]: "<<i<<"\n";
+        //  cout <<"setup_fixed_grid_pllel::setup_boundary_structs: ";
+        //  cout <<"periodic on single proc, so setting ngb to -999.\n";
         ppar->ngbprocs[i] = -999;
       }
     } // if periodic  

@@ -333,8 +333,11 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 
   // first call fixed grid version
   int err = 0;
-  err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid,l);
-  rep.errorTest("sng::setup_boundary_structs fixed grid",0,err);
+#ifdef TESTING
+  cout <<"setting up serial boundary structs\n";
+#endif
+  err = setup_fixed_grid::setup_boundary_structs(par,grid,l);
+  rep.errorTest("png::setup_boundary_structs fixed grid",0,err);
 
 
 
@@ -346,6 +349,9 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   if (1==0) {
 #endif
   if (l>0) {
+#ifdef TESTING
+    cout <<"replacing external BCs with C2F as needed\n";
+#endif
     // replace external boundary conditions with one that
     // receives data from a coarser level grid.
     for (int i=0; i<par.ndim; i++) {
@@ -389,7 +395,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #endif
 #ifdef TESTING
     cout <<"Adding FINE_TO_COARSE_RECV boundary for level ";
-    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
+    cout <<l<<", current # boundaries: "<<grid->BC_bd.size() <<"\n";
 #endif
     struct boundary_data *bd = new boundary_data;
     bd->itype = FINE_TO_COARSE_RECV;
@@ -407,7 +413,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
 #endif
 #ifdef TESTING
     cout <<"Adding COARSE_TO_FINE_SEND boundary for level ";
-    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
+    cout <<l<<", current # boundaries: "<<grid->BC_bd.size() <<"\n";
 #endif
     struct boundary_data *bd2 = new boundary_data;
     bd2->itype = COARSE_TO_FINE_SEND;
@@ -434,7 +440,7 @@ int setup_grid_NG_MPI::setup_boundary_structs(
     // F2C data after the old buffers are gone.
 #ifdef TESTING
     cout <<"Adding FINE_TO_COARSE_SEND boundary for level ";
-    cout <<l<<", current # boundaries: "<<bd->data.size() <<"\n";
+    cout <<l<<", current # boundaries: "<<grid->BC_bd.size() <<"\n";
 #endif
     struct boundary_data *bd = new boundary_data;
     bd->itype = FINE_TO_COARSE_SEND;
@@ -448,15 +454,27 @@ int setup_grid_NG_MPI::setup_boundary_structs(
   }
 #endif
 
+#ifdef TESTING
+  cout <<"BC structs set up.\n";
+  for (unsigned int v=0; v<grid->BC_bd.size(); v++) {
+    cout<<"i="<<v<<", BC type= "<<grid->BC_bd[v]->type;
+    cout <<", BC itype= "<<grid->BC_bd[v]->itype<<"\n";
+  }
+#endif
 
+#ifdef TESTING
+  cout <<"calling pll fixed grid setup function.\n";
+#endif
+  err = setup_fixed_grid_pllel::setup_boundary_structs(par,grid,l);
+  rep.errorTest("png::setup_boundary_structs pll fixed grid",0,err);
   
   
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"BC structs set up.\n";
   for (unsigned int v=0; v<grid->BC_bd.size(); v++) {
     cout<<"i="<<v<<", BC type= "<<grid->BC_bd[v]->type<<"\n";
   }
-//#endif
+#endif
   return 0;
 }
 
