@@ -94,7 +94,7 @@ class cell {
   pion_flt *dU;  ///< Update vector to be added to U when we do the time update.
   /// Flux vector for use in NG grids to ensure consistency between
   /// fluxes at different levels in the hierarchy of grids.
-  pion_flt *F;
+  std::vector<pion_flt *> F;
  private:
   double *extra_data; ///< General purpose data (Tau in ray-tracing, eta for H-correction)
  public:

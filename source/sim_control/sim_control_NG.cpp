@@ -588,7 +588,7 @@ double sim_control_NG::advance_step_OA1(
   cout <<"advance_step_OA1, level="<<l<<", starting.\n";
 #endif
   int err=0;
-  double dt2_fine=0.0; // timestep for two finer level steps.
+  //double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   class MCMDcontrol ppar; // unused for serial code.
   class GridBaseClass *grid = SimPM.levels[l].grid;
@@ -607,7 +607,8 @@ double sim_control_NG::advance_step_OA1(
   // --------------------------------------------------------
   // take the first finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
-    dt2_fine = advance_step_OA1(l+1);
+    //dt2_fine = advance_step_OA1(l+1);
+    advance_step_OA1(l+1);
   }
   dt2_this = SimPM.levels[l].dt;
   // --------------------------------------------------------
@@ -627,7 +628,8 @@ double sim_control_NG::advance_step_OA1(
   // --------------------------------------------------------
   // take the second finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
-    dt2_fine = advance_step_OA1(l+1);
+    //dt2_fine = advance_step_OA1(l+1);
+    advance_step_OA1(l+1);
   }
   // --------------------------------------------------------
 
@@ -699,7 +701,7 @@ double sim_control_NG::advance_step_OA2(
   cout <<SimPM.levels[l].step<<"\n";
 #endif
   int err=0;
-  double dt2_fine=0.0; // timestep for two finer level steps.
+  //double dt2_fine=0.0; // timestep for two finer level steps.
   double dt2_this=0.0; // two timesteps for this level.
   double ctime = SimPM.levels[l].simtime; // current time
   class GridBaseClass *grid = SimPM.levels[l].grid;
@@ -717,7 +719,8 @@ double sim_control_NG::advance_step_OA2(
   // --------------------------------------------------------
   // take the first finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
-    dt2_fine = advance_step_OA2(l+1);
+    //dt2_fine = advance_step_OA2(l+1);
+    advance_step_OA2(l+1);
   }
   dt2_this = SimPM.levels[l].dt;
   // --------------------------------------------------------
@@ -764,7 +767,8 @@ double sim_control_NG::advance_step_OA2(
   // --------------------------------------------------------
   // take the second finer grid step, if there is a finer grid.
   if (l<SimPM.grid_nlevels-1) {
-    dt2_fine = advance_step_OA2(l+1);
+    //dt2_fine = advance_step_OA2(l+1);
+    advance_step_OA2(l+1);
   }
   // --------------------------------------------------------
 

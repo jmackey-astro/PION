@@ -372,7 +372,8 @@ cell * cell_interface::new_cell()
     c->dU  = mem.myalloc(c->dU, nvar);
     for (int v=0;v<nvar;v++) c->Ph[v] = c->dU[v] = 0.0;
   }
-  c->F = 0;
+  c->F.resize(ndim);
+  for (int i=0;i<ndim;i++) c->F[i] = 0;
 
   //cout <<"Nxd="<<N_extra_data<<"\n";
   if (N_extra_data>=1) {
@@ -399,7 +400,10 @@ void cell_interface::delete_cell(cell *c)
   c->dU = mem.myfree(c->dU);
   c->ngb = mem.myfree(c->ngb);
   c->isbd_ref = mem.myfree(c->isbd_ref);
-  if (c->F) c->F = mem.myfree(c->F);
+  
+  for (int i=0;i<ndim;i++) {
+    if (c->F[i]) c->F[i] = mem.myfree(c->F[i]);
+  }
 
   if (N_extra_data>=1)
     c->extra_data = mem.myfree(c->extra_data);
@@ -424,7 +428,8 @@ void cell_interface::set_pos(
   // Set position integer according to Xmin+i*DX/2=x
   //
   for (int v=0;v<ndim;v++) {
-    c->pos[v] = static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
+    c->pos[v] =
+      static_cast<int>(int_converter*((p_in[v]-xmin[v])/dxo2));
   }
 #ifdef DEBUG
   rep.printVec("int-pos from double",c->pos,ndim);
@@ -603,7 +608,10 @@ void cell_interface::copy_cell(
   for (int v=0;v<nvar;v++) c2->P[v]  = c1->P[v];
   for (int v=0;v<nvar;v++) c2->Ph[v] = c1->Ph[v];
   for (int v=0;v<nvar;v++) c2->dU[v] = c1->dU[v];
-  if (c1->F) for (int v=0;v<nvar;v++) c2->F[v] = c1->F[v];
+  for (int i=0;i<ndim;i++) {
+    if (c1->F[i])
+      for (int v=0;v<nvar;v++) c2->F[i][v] = c1->F[i][v];
+  }
   for (int i=0;i<2*ndim;i++) c2->ngb[i]=c1->ngb[i];
   for (short unsigned int v=0;v<N_extra_data;v++)
     c2->extra_data[v] = c1->extra_data[v];
@@ -651,8 +659,11 @@ void cell_interface::print_cell(const cell *c)
     cout <<"\t"; rep.printVec("Ph[] ",c->Ph,nvar);
     cout <<"\t"; rep.printVec("dU[] ",c->dU,nvar);
   }
-  if (c->F) {
-    cout <<"\t"; rep.printVec("F[] ",c->F,nvar);
+  for (int i=0;i<ndim;i++) {
+    if (c->F[i]) {
+      cout <<"\t i="<<i<<", ";
+      rep.printVec("F[i] ",c->F[i],nvar);
+    }
   }
   cout <<"\t"; rep.printVec("ngb[]",c->ngb,2*ndim);
   cout <<"\t"; rep.printVec("isbd_ref[]",c->isbd_ref,2*ndim);

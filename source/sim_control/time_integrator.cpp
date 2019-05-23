@@ -738,10 +738,10 @@ int time_integrator::dynamics_dU_column(
 
     // record flux entering and leaving domain
     if (cpt->isbd_ref[negdir]) {
-      for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_this[v];
+      for (int v=0;v<SimPM.nvar;v++) cpt->F[axis][v] = Fr_this[v];
     }
     if (npt->isbd_ref[posdir]) {
-      for (int v=0;v<SimPM.nvar;v++) npt->F[v] = Fr_this[v];
+      for (int v=0;v<SimPM.nvar;v++) npt->F[axis][v] = Fr_this[v];
     }
 
 #ifdef TEST_INT
@@ -816,10 +816,10 @@ int time_integrator::dynamics_dU_column(
           grid, cpt, axis, Fr_prev, Fr_this, slope_cpt, csp, dx, dt);
   // record flux entering and leaving domain
   if (cpt->isbd_ref[negdir]) {
-    for (int v=0;v<SimPM.nvar;v++) cpt->F[v] = Fr_this[v];
+    for (int v=0;v<SimPM.nvar;v++) cpt->F[axis][v] = Fr_this[v];
   }
   if (npt->isbd_ref[posdir]) {
-    for (int v=0;v<SimPM.nvar;v++) npt->F[v] = Fr_this[v];
+    for (int v=0;v<SimPM.nvar;v++) npt->F[axis][v] = Fr_this[v];
   }
 
 #ifdef TEST_CONSERVATION 

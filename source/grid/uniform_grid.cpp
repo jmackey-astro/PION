@@ -1613,9 +1613,9 @@ int UniformGrid::add_cells_to_face(
       struct flux_update &flux ///< list to populate      
       )
 {
+  int a=static_cast<int>(d)/2;
   
 #ifdef TEST_BC89FLUX
-  int a=static_cast<int>(d)/2;
   cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
   cout <<", "<<nface[a]<<", "<<ncell<<"), list-size="<<flux.fi.size()<<"\n";
   rep.printVec("ixmin",ixmin,G_ndim);
@@ -1628,7 +1628,7 @@ int UniformGrid::add_cells_to_face(
   //
   // Split code for different dimensionality of grid:
   // For all dimensions, every cell on the face needs to have an
-  // extra Flux vector allocated, c->F, to store it.
+  // extra Flux vector allocated, c->F[a], to store it.
   //
   if (G_ndim==1) {
     if (d == XN) {
@@ -1638,7 +1638,7 @@ int UniformGrid::add_cells_to_face(
       while (c->pos[XX] < ixmax[XX]) c = NextPt(c,XP);
     }
     flux.fi[0]->c[0] = c;
-    c->F = mem.myalloc(c->F,G_nvar);
+    c->F[a] = mem.myalloc(c->F[a],G_nvar);
     c->isbd_ref[d] = true;
     flux.fi[0]->area[0] = CellInterface(c,OppDir(d),0);
   } // 1D
@@ -1699,7 +1699,7 @@ int UniformGrid::add_cells_to_face(
       for (int ic=0;ic<ncell;ic++) {
         if (!c) rep.error("Cell is null in BC89 add_cells",c);
         flux.fi[i]->c[ic] = c;
-        c->F = mem.myalloc(c->F,G_nvar);
+        c->F[a] = mem.myalloc(c->F[a],G_nvar);
         c->isbd_ref[d] = true;
         flux.fi[i]->area[ic] = CellInterface(c,OppDir(d),0);
 #ifdef TEST_BC89FLUX
@@ -1796,8 +1796,8 @@ int UniformGrid::add_cells_to_face(
 #endif
         if (ncell==1) {
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
-          c->F = mem.myalloc(c->F,G_nvar);
-          for (int v=0;v<G_nvar;v++) c->F[v]=0.0;
+          c->F[a] = mem.myalloc(c->F[a],G_nvar);
+          for (int v=0;v<G_nvar;v++) c->F[a][v]=0.0;
           c->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[0] = 
                                         CellInterface(c,OppDir(d),0);
@@ -1806,8 +1806,8 @@ int UniformGrid::add_cells_to_face(
           // need to get 4 cells onto this face.
 
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
-          c->F = mem.myalloc(c->F,G_nvar);
-          for (int v=0;v<G_nvar;v++) c->F[v]=0.0;
+          c->F[a] = mem.myalloc(c->F[a],G_nvar);
+          for (int v=0;v<G_nvar;v++) c->F[a][v]=0.0;
           c->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[0] = 
                                         CellInterface(c,OppDir(d),0);
@@ -1818,8 +1818,8 @@ int UniformGrid::add_cells_to_face(
 
           m2 = NextPt(c,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[1] = m2;
-          m2->F = mem.myalloc(m2->F,G_nvar);
-          for (int v=0;v<G_nvar;v++) m2->F[v]=0.0;
+          m2->F[a] = mem.myalloc(m2->F[a],G_nvar);
+          for (int v=0;v<G_nvar;v++) m2->F[a][v]=0.0;
           m2->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[1] = 
                                         CellInterface(m2,OppDir(d),0);
@@ -1830,8 +1830,8 @@ int UniformGrid::add_cells_to_face(
 
           m2 = NextPt(c,perpdir2);
           flux.fi[i*nface[perpaxis1]+j]->c[2] = m2;
-          m2->F = mem.myalloc(m2->F,G_nvar);
-          for (int v=0;v<G_nvar;v++) m2->F[v]=0.0;
+          m2->F[a] = mem.myalloc(m2->F[a],G_nvar);
+          for (int v=0;v<G_nvar;v++) m2->F[a][v]=0.0;
           m2->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[2] = 
                                         CellInterface(m2,OppDir(d),0);
@@ -1842,8 +1842,8 @@ int UniformGrid::add_cells_to_face(
 
           m2 = NextPt(m2,perpdir1);
           flux.fi[i*nface[perpaxis1]+j]->c[3] = m2;
-          m2->F = mem.myalloc(m2->F,G_nvar);
-          for (int v=0;v<G_nvar;v++) m2->F[v]=0.0;
+          m2->F[a] = mem.myalloc(m2->F[a],G_nvar);
+          for (int v=0;v<G_nvar;v++) m2->F[a][v]=0.0;
           m2->isbd_ref[d] = true;
           flux.fi[i*nface[perpaxis1]+j]->area[3] = 
                                         CellInterface(m2,OppDir(d),0);
@@ -1890,6 +1890,7 @@ void UniformGrid::save_fine_fluxes(
 
     for (unsigned int f=0; f<flux_update_send[d].fi.size(); f++) {
       // these faces have 2^(ndim-1) cells.
+      int a = flux_update_send[d].ax; // normal axis to face
       fi = flux_update_send[d].fi[f];
 
 #ifdef TEST_BC89FLUX
@@ -1905,20 +1906,20 @@ void UniformGrid::save_fine_fluxes(
         for (int v=0;v<G_nvar;v++) fi->flux[v] = 0.0;
       }
       for (int i=0;i<flux_update_send[d].Ncells;i++) {
-        if (!fi->c[i]->F) rep.error("flux is not allocated!",f);
+        if (!fi->c[i]->F[a]) rep.error("flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
 #ifdef TEST_BC89FLUX
         //CI.print_cell(fi->c[i]);
         //CI.print_cell(NextPt(fi->c[i],YP));
         //cout <<"PRE: flux="; rep.printVec("",fi->flux,G_nvar);
         //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
-        //cout <<", f0="<<fi->c[i]->F[0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
+        //cout <<", f0="<<fi->c[i]->F[a][0]<<", area="<<fi->area[i]<<", dt="<<dt<<"\n";
 #endif
         for (int v=0;v<G_nvar;v++) {
-          fi->flux[v] += fi->c[i]->F[v]*fi->area[i]*dt;
+          fi->flux[v] += fi->c[i]->F[a][v]*fi->area[i]*dt;
         }
 #ifdef TEST_BC89FLUX
-        rep.printVec("cell fine flux",fi->c[i]->F,G_nvar);
+        rep.printVec("cell fine flux",fi->c[i]->F[a],G_nvar);
         rep.printVec("cell fine Ph",fi->c[i]->Ph,G_nvar);
         //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         //cout <<", flux="; rep.printVec("",fi->flux,G_nvar);
@@ -1952,6 +1953,7 @@ void UniformGrid::save_coarse_fluxes(
   struct flux_interface *fi=0;
 
   for (unsigned int d=0; d<flux_update_recv.size(); d++) {
+    int a = flux_update_recv[d].ax; // normal axis to face
     for (unsigned int f=0; f<flux_update_recv[d].fi.size(); f++) {
       // these elements have only one cell per face.
       fi = flux_update_recv[d].fi[f];
@@ -1962,15 +1964,16 @@ void UniformGrid::save_coarse_fluxes(
       // if first element is null then list is empty.
       if (fi==0 && f==0) continue;
       else if (fi==0) rep.error("save_fine_fluxes fi=0",d);
-      if (!fi->c[0]->F) rep.error("flux is not allocated!",f);
+      if (!fi->c[0]->F[a]) rep.error("flux is not allocated!",f);
 
       // set face flux to be the negative of the intercell flux
 #ifdef TEST_BC89FLUX
       cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
-      cout <<", f0="<<fi->c[0]->F[0]<<", area="<<fi->area[0]<<", dt="<<dt<<"\n";
+      cout <<", f0="<<fi->c[0]->F[a][0]<<", area="<<fi->area[0];
+      cout <<", dt="<<dt<<"\n";
 #endif
       for (int v=0;v<G_nvar;v++) {
-        fi->flux[v] = -fi->c[0]->F[v]*fi->area[0]*dt;
+        fi->flux[v] = -fi->c[0]->F[a][v]*fi->area[0]*dt;
       }
     }
   }

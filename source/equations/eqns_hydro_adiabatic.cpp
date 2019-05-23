@@ -340,7 +340,6 @@ void eqns_Euler::PUtoFlux(
   f[eqMMZ] = u[eqMMX]*p[eqVZ];
   // Energy Flux u(E+p) = u (rho*u^2/2 +g*p/(g-1)) for ideal gas
   f[eqERG] = p[eqVX]*(u[eqERG]+p[eqPG]);
-  //      cout <<"Fluxes: "<<c->F[0]<<"  "<<c->F[1]<<"  "<<c->F[2]<<"\n";
   return;
 }
 

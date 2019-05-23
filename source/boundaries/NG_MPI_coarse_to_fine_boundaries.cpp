@@ -630,7 +630,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   class GridBaseClass *grid = par.levels[l].grid;
   int pproc = MCMD->parent_proc;
-  class MCMDcontrol *parent = &(par.levels[l-1].MCMD);
+  //class MCMDcontrol *parent = &(par.levels[l-1].MCMD);
 
   // Need to decide which MPI process to get the data from.
   // It is the immediate parent, or a neighbour of the parent.
