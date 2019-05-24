@@ -1887,10 +1887,10 @@ void UniformGrid::save_fine_fluxes(
     cout <<"size of flux_update_send["<<d<<"] = ";
     cout <<flux_update_send[d].fi.size()<<"\n";
 #endif
+    int a = flux_update_send[d].ax; // normal axis to face
 
     for (unsigned int f=0; f<flux_update_send[d].fi.size(); f++) {
       // these faces have 2^(ndim-1) cells.
-      int a = flux_update_send[d].ax; // normal axis to face
       fi = flux_update_send[d].fi[f];
 
 #ifdef TEST_BC89FLUX
