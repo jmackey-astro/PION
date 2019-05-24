@@ -277,6 +277,10 @@ int mp_only_cooling::TimeUpdateMP(
     }
     //cout <<"nstep="<<nstep<<", T="<<T<<", MinT="<<MinT_allowed;
     //cout <<", MaxT="<<MaxT_allowed<<", E0_step="<<E0_step<<"\n";
+    if (T>MaxT_allowed && isfinite(T)) {
+      E0_step *= MaxT_allowed/T;
+      T = MaxT_allowed;
+    }
     nstep *=2;
   } while (T<MinT_allowed || T>MaxT_allowed || !isfinite(E0_step));
 
