@@ -15,12 +15,12 @@ OrderOfAccTime  2
 
 ics PhotoEvap_radial
 
-OutputFile    DTE_NG_D2_TTI_n00128
+OutputFile    DTE_NG_D2_TTI_n00064
 OutputPath ./
 OutputFileType silo
 StartTime 0.0
 FinishTime 3.7872e+12  # 0.12 Myr in seconds
-OutputFrequency 256
+OutputFrequency 128
 OutputCriterion 0    # output per n-years=1, per step=0
 OPfreqTime 7.89e10   # 2.5 kyr
 
@@ -48,9 +48,9 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  128
-NGridY  128
-NGridZ  128
+NGridX  64
+NGridY  64
+NGridZ  64
 
 Xmin  0.0
 Ymin  0.0

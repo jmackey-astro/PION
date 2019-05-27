@@ -2,30 +2,33 @@
 # 
 # 2014.06.30 JM: D-type-early test, in 2D.
 
-## Basic Properties
-# Dimensionality of Grid {1,2,3}
 ndim 2
 coordinates cylindrical
-
-# Type of Equations to Solve {hd, mhd, glm-mhd, ...}
 eqn  euler
 solver 6
+GAMMA 1.001
+CFL 0.2
+ArtificialViscosity 1
+EtaViscosity 0.15
+OrderOfAccSpace 2
+OrderOfAccTime  2
 
-# Which ICs to set up {Uniform, AdvectionHD, BlastWave, ShockCloud,
-# MHDShockCloud ShockTube...}
 ics PhotoEvap_radial
 
-# Output FileName Base
-OutputFile    DTE_NG_D2_TTI_n00256
+OutputFile    DTE_NG_D2_TTI_n00128
+OutputPath ./
+OutputFileType silo
+StartTime 0.0
+FinishTime 3.7872e+12  # 0.12 Myr in seconds
+OutputFrequency 512
+OutputCriterion 0    # output per n-years=1, per step=0
+OPfreqTime 7.89e10   # 2.5 kyr
 
 
-# Number and type of tracers.
 ntracer 1
 chem_code MPv7
 Tracer000 H1+
 InitIons LEAVE
-
-# Which physics to use
 EP_dynamics     1
 EP_raytracing   1
 EP_phot_ionisation   1
@@ -41,47 +44,35 @@ EP_Hydrogen_MassFrac 1.0
 EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
 EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
 
-# Smooth Data by n cells? (n<=0 means no).
 smooth -1
-# Add noise at level of f% to Data? (f<=0 means no).
 noise 0.1
 
 ## Grid Parameters
 NGridX  256
 NGridY  256
 NGridZ  256
-# Boundaries of Simulation box:
+
 Xmin  0.0
 Ymin  0.0
 Zmin  0.0
-# Max values of x,y,z
+
 Xmax   3.874e18
 Ymax   3.874e18
 Zmax   3.874e18
-# Nested grid
-grid_nlevels 4
+
+grid_nlevels 3
+
 grid_aspect_ratio_XX 1
 grid_aspect_ratio_YY 1
 grid_aspect_ratio_ZZ 1
+
 NG_centre_XX 0.0e18
 NG_centre_YY 0.0e18
 NG_centre_ZZ 0.0e18
 
-# Data Output Path
-OutputPath ./
-# Output File Type = {text,fits,ftab,both,...}
-OutputFileType silo
-# Output data to file every nth timestep. (n=0 means only at the end).
-OutputFrequency 512
-OutputCriterion 0    # output per n-years=1, per step=0
-OPfreqTime 7.89e10   # 2.5 kyr
-
-# Start time
-StartTime 0.0
-FinishTime 3.7872e+12  # 0.12 Myr in seconds
-# Order of Accuracy (1=1st order; 2=2nd order)
-OrderOfAccSpace 2
-OrderOfAccTime  2
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 
 # Type of Boundary Condition
 BC_XN reflecting
@@ -89,15 +80,6 @@ BC_XP outflow
 BC_YN reflecting
 BC_YP outflow
 BC_Ninternal 0
-
-# ideal gas adiabatic index, gamma {1.6666666666666666, 1.4, 2.0} limits (1,2]
-GAMMA 1.01
-
-# CFL coefficient 0<cfl<1
-CFL 0.2
-# Artificial Viscosity 0=None, 1=Falle's linear viscosity.
-ArtificialViscosity 1
-EtaViscosity 0.15
 
 # Code Units
 # Reference systems of units are MKS (i.e. SI), CGS, others?
@@ -130,7 +112,7 @@ PEC_radialslope 0.0  # Clump is core/envelope with this powerlaw env.
 PEC_core_radius 100.0  # units of yrange, only used if radialslope != 0
 
 PEC_ambRO 5.21e-21  # nH~3120.0 per c.c.
-PEC_ambPG 4.305e-9  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
+PEC_ambPG 4.305e-11  # set so T_cl=100 (for mu=m_p per hydrogen nucleon).
 PEC_ambVX  0.0e5
 PEC_ambVY  0.0e5
 PEC_ambVZ  0.0e5
