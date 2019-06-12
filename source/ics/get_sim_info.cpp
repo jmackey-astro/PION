@@ -141,6 +141,8 @@ int get_sim_info::read_gridparams(
     SimPM.solverType = 6;
   else if (str=="HLLD"    || str=="hlld"    || str=="7")
     SimPM.solverType = 7;
+  else if (str=="HLL"    || str=="hll"    || str=="8")
+    SimPM.solverType = 8;
   else 
     rep.error("what kind of solver is this???",str);
 

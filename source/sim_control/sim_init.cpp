@@ -156,7 +156,8 @@ void sim_init::print_command_line_options(
   cout <<"\t\t 5 = Roe Primitive Variables flux solver : EULER ONLY";
   cout  <<" (e.g. Stone, Gardiner et al. 2008)\n";
   cout <<"\t\t 6 = Flux vector splitting : EULER ONLY (van Leer, 1982) \n";
-  cout <<"\t\t 7 = HLLD solver : MHD only (REF) \n";
+  cout <<"\t\t 7 = HLLD solver : MHD only () \n";
+  cout <<"\t\t 8 = HLL  solver : MHD only () \n";
 
   cout <<"\t timestep_limit=N:\n";
   cout <<"\t\t 0 = only dynamical Courant condition.\n";
@@ -577,10 +578,10 @@ int sim_init::override_params(int narg, string *args)
     
     else if (args[i].find("solver=") != string::npos) {
       cout <<"\tOVERRIDE PARAMS: resetting solver: ";
-      cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS:";
+      cout <<"0=LF,1=RSlin,2=RSexact,3=RShybrid,4=RSroe,5=RSroePV,6=FVS,7=HLLD,8=HLL:";
       int c = atoi((args[i].substr(7)).c_str());
-      if (c<0 || c>7 )
-  rep.error("Bad solver flag (only 0,1,2,3,4,5,6 allowed",c);
+      if (c<0 || c>8 )
+  rep.error("Bad solver flag (only 0,1,2,3,4,5,6,7,8 allowed",c);
       cout <<" solver from "<<SimPM.solverType;
       SimPM.solverType = c;
       cout <<" to "<<SimPM.solverType<<"\n";

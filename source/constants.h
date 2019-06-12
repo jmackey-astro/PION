@@ -233,6 +233,7 @@ extern class constants pconst;
 #define FLUX_RSroe_pv 5
 #define FLUX_FVS      6
 #define FLUX_RS_HLLD  7
+#define FLUX_RS_HLL   8
 
 
 //--------------------------------------------------------

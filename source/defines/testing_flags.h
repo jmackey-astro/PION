@@ -17,6 +17,7 @@
 
 
 #define REPORT_RANK0  // only reports stdout from rank 0.
+
 //#define SKIP_C2F_BC
 //#define SKIP_F2C_BC
 //#define SKIP_BC89_FLUX
@@ -27,8 +28,9 @@
 //#define TEST_SYMMETRY // dangerous for real simulations (assumes units for rho,v)
 //#define RT_TESTING ///< Enable this for debugging info on raytracing.
 //#define DERIGS
+
 //
-// Various defines for testing bits of the code (lots of sdtout!).
+// Various defines for testing bits of the code (lots of sdtout).
 //
 //#define TESTING ///< Comment this out if not testing the code.
 

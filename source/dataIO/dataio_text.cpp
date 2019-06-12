@@ -208,7 +208,9 @@ int dataio_text::get_parameters(
   else if (ts=="RSroe"   ) {SimPM.solverType = FLUX_RSroe;}
   else if (ts=="RSroe_pv") {SimPM.solverType = FLUX_RSroe_pv;}
   else if (ts=="RS_FVS"  ) {SimPM.solverType = FLUX_FVS;}
-   else rep.error("No solver specified!",ts);
+  else if (ts=="RS_HLLD" ) {SimPM.solverType = FLUX_RS_HLLD;}
+  else if (ts=="RS_HLL"  ) {SimPM.solverType = FLUX_RS_HLL;}
+  else rep.error("No solver specified!",ts);
   
   /** \section eqnndim
    * If I ever use a set of equations that doesn't have 3D vectors like velocity and 

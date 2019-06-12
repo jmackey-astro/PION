@@ -106,7 +106,7 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
       const pion_flt *Pr, ///< Right Primitive vector.
       pion_flt *flux,///< Resultant Flux vector.
       pion_flt *pstar, ///< State vector at interface.
-      const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS 4=RoeRS, 7=HLLD)
+      const int solve_flag, ///< Solve Type (0=Lax-Friedrichs,1=LinearRS,2=ExactRS,3=HybridRS 4=RoeRS, 7=HLLD, 8=HLL)
       class GridBaseClass *grid, ///< pointer to grid
       const double dx,  ///< cell-size dx (for LF method)
       const double eq_gamma        ///< Gas constant gamma.
@@ -215,6 +215,10 @@ int FV_solver_mhd_ideal_adi::inviscid_flux(
     }
   }
 
+  // HLL solver, very diffusive 2 wave solver (Migone et al. 2011 )
+  else if (solve_flag==FLUX_RS_HLL) {
+    err += MHD_HLL_flux_solver(Pl, Pr, eq_gamma, flux);
+  }
 
   else {
     rep.error("what sort of flux solver do you mean???",solve_flag);

@@ -209,9 +209,10 @@ int FV_solver_base::InterCellFlux(
   //
   // Post-calculate anthing needed for the viscosity: calls the FKJ98
   // viscosity function which acts after the flux has been calculated
-  // Doesn't work for HLLD because pstar is not calculated.
+  // Doesn't work for HLLD because pstar is not calculated, nor for
+  // HLL because it is so diffusive that it is not required.
   //
-  if (solve_flag != FLUX_RS_HLLD) {
+  if (solve_flag != FLUX_RS_HLLD && solve_flag != FLUX_RS_HLL) {
     post_calc_viscous_terms(Cl,Cr,lp,rp,pstar,f,av_flag);
   }
 
