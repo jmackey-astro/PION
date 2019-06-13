@@ -699,8 +699,9 @@ int stellar_wind_angle::add_evolving_source(
 
   // Temp. variables for column values
   double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
-  while (fscanf(wf, "   %lE   %lE %lE %lE %lE %lE %lE",
-                      &t1, &t2, &t3, &t4, &t5, &t6, &t7) != EOF){
+  while ((rval = fgets(line,512,wf))  != 0) {
+    sscanf(line, "   %lE   %lE %lE %lE %lE %lE %lE",
+                      &t1, &t2, &t3, &t4, &t5, &t6, &t7);
     //cout.precision(16);
     //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
     // Set vector value
