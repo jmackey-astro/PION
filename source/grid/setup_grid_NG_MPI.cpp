@@ -280,10 +280,12 @@ int setup_grid_NG_MPI::setup_raytracing(
     rep.errorTest("setup_grid_NG_MPI::setup_raytracing()",0,err);
   }
   
+  cout <<"NG-MPI setting up evolving RT sources from setup_raytracing.\n";
   err += setup_evolving_RT_sources(SimPM);
   rep.errorTest("setup_grid_NG_MPI::setup_evolving_RT_sources()",0,err);
   
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+    cout <<"NG-MPI l="<<l<<": updating evolving RT sources from setup_raytracing.\n";
     err += update_evolving_RT_sources(SimPM,SimPM.levels[l].simtime,grid[l]->RT);
     rep.errorTest("setup_grid_NG_MPI::update_evolving_RT_sources()",0,err);
   }

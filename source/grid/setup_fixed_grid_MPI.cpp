@@ -238,8 +238,9 @@ int setup_fixed_grid_pllel::setup_raytracing(
     //
     // set up regular tracer if simple one not already set up.
     //
-    grid->RT = new raytracer_USC_pllel(grid,MP,&SimPM,&(SimPM.levels[0].MCMD), SimPM.ndim, SimPM.coord_sys,
-                          SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
+    grid->RT = new raytracer_USC_pllel(
+          grid,MP,&SimPM,&(SimPM.levels[0].MCMD), SimPM.ndim,
+          SimPM.coord_sys, SimPM.nvar, SimPM.ftr, SimPM.RS.Nsources);
     if (!grid->RT) rep.error("init raytracer error 2",grid->RT);
   }
 

@@ -137,6 +137,7 @@ int sim_control_NG::Init(
   // ----------------------------------------------------------------
   err += setup_raytracing(SimPM, grid);
   rep.errorTest("Failed to setup raytracer",0,err);
+  //  cout <<"Setting up RT sources\n";
 
   // ----------------------------------------------------------------
   for (int l=0;l<SimPM.grid_nlevels;l++) {

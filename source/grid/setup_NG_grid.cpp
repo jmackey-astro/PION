@@ -369,10 +369,12 @@ int setup_NG_grid::setup_raytracing(
     rep.errorTest("setup_NG_grid::setup_raytracing()",0,err);
   }
   
+  cout <<"NG setting up evolving RT sources from setup_raytracing.\n";
   err += setup_evolving_RT_sources(SimPM);
   rep.errorTest("setup_NG_grid::setup_evolving_RT_sources()",0,err);
   
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+    cout <<"NG l="<<l<<": updating evolving RT sources from setup_raytracing.\n";
     err += update_evolving_RT_sources(SimPM,SimPM.levels[l].simtime, 
                                                         grid[l]->RT);
     rep.errorTest("setup_NG_grid::update_RT_sources()",0,err);

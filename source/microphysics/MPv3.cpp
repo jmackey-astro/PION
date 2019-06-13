@@ -616,6 +616,7 @@ int MPv3::set_multifreq_source_properties(
       const struct rad_src_info *rsi
       )
 {
+  //cout <<"MPv3: updating radiation source properties\n";
   //
   // Some sanity checks:
   // - make sure source is multi-freq and ionising

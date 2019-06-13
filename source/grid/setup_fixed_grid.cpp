@@ -654,10 +654,12 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     //printf("%s",line);
     // Temporary variables for column values
     // Columns are time, M, L, Teff, Mdot, vrot
-    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0;
+    double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
     size_t iline=0;
-    while (fscanf(infile, "   %lE   %lE %lE %lE %lE %lE",
-                          &t1, &t2, &t3, &t4, &t5, &t6) != EOF ) {
+    while ( (rval = fgets(line,512,infile))  != 0 ) {
+      //printf("rval= %s\n",rval);
+      sscanf(line, "   %lE   %lE %lE %lE %lE %lE %lE",
+                          &t1, &t2, &t3, &t4, &t5, &t6, &t7);
       //cout.precision(16);
       //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
       //cout <<t1 <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
@@ -696,6 +698,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
                 (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow(t4, 4.0)));
       istar->Log_R.push_back( log10(t6/pconst.Rsun() ));
       iline ++;
+      //cout <<istar->Log_L.back()<<"\n";
     }
     fclose(infile);
 
@@ -788,7 +791,8 @@ int setup_fixed_grid::update_evolving_RT_sources(
       cout <<"\tL="<< Lnow;
       cout <<"\tT="<< Tnow;
       cout <<"\tR="<< Rnow;
-      cout <<"\tV="<< Vnow <<"\n";
+      //cout <<"\tV="<< Vnow;
+      cout <<"\n";
       istar->Lnow = Lnow;
       istar->Tnow = Tnow;
       istar->Rnow = Rnow;
@@ -810,10 +814,14 @@ int setup_fixed_grid::update_evolving_RT_sources(
 
       RT->update_RT_source_properties(rs);
       if (rs->effect==RT_EFFECT_PION_MULTI) {
+        //cout <<"updating source properties in MP\n";
         err += MP->set_multifreq_source_properties(rs);
         if (err) rep.error("update_evolving_RT_sources()",rs->id);
       }
       updated=true;
+    }
+    else {
+      //cout <<"not updating source: L="<<istar->Lnow<<", T="<<istar->Tnow<<"\n";
     }
 
   }

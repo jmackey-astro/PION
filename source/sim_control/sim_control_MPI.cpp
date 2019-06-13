@@ -276,9 +276,9 @@ int sim_control_pllel::Init(
   //
   //  cout <<"Setting up raytracing\n";
   err += setup_raytracing(SimPM, grid[0]);
-  //  cout <<"Setting up RT sources\n";
+  cout <<"Setting up RT sources\n";
   err += setup_evolving_RT_sources(SimPM);
-  //  cout <<"Updating evolving RT sources\n";
+  cout <<"Updating evolving RT sources\n";
   err += update_evolving_RT_sources(SimPM,SimPM.simtime,grid[0]->RT);
   rep.errorTest("Failed to setup raytracer and/or microphysics",0,err);
 
