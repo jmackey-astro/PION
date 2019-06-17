@@ -167,7 +167,7 @@ void sim_init::print_command_line_options(
   cout <<"\t\t 4 = dyn +recomb (NO cool, NO ion)\n";
 
   cout <<"\n*********** PARALLEL CODE ONLY *************\n";
-  cout <<"\t maxwalltime=D : change the max. runtime to D in seconds.\n";
+  cout <<"\t maxwalltime=D : change the max. runtime to D in hours.\n";
   cout <<"\n";
   cout <<"\n*********** NESTED GRID CODE ONLY *************\n";
   cout <<"\t nlevels=N     : modify number of levels in NG grid.";

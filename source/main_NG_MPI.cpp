@@ -90,6 +90,26 @@ int main(int argc, char **argv)
   cout <<"---------   pion NG MPI v1.0 running   ----------------\n";
   cout <<"-------------------------------------------------------\n";
 
+  //
+  // Reset max. walltime to run the simulation for, if needed.
+  // Input should be in hours.
+  //
+  for (int i=0;i<argc; i++) {
+    if (args[i].find("maxwalltime=") != string::npos) {
+      double tmp = atof((args[i].substr(12)).c_str());
+      if (isnan(tmp) || isinf(tmp) || tmp<0.0)
+	rep.error("Don't recognise max walltime as a valid runtime!",tmp);
+
+      sim_control->set_max_walltime(tmp*3600.0);
+
+      if (myrank==0) {
+        cout <<"\tResetting MAXWALLTIME to ";
+        cout <<sim_control->get_max_walltime()<<" seconds, or ";
+        cout <<sim_control->get_max_walltime()/3600.0<<" hours.\n";
+      }
+    }
+  }
+  
   // Set what type of file to open: 1=parameterfile, 2/5=restartfile.
   int ft;
   if      (args[1].find(".silo") != string::npos) {
