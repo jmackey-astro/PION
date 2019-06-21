@@ -346,27 +346,31 @@ int RT_MPI_bc::Receive_RT_Boundaries(
           else cout <<"]\n";
         }
 #endif  
+        // get column to and through cell.
         for (short unsigned int v=0; v<RS.NTau; v++) {
-          tau[v] = buf[count];
-          if (tau[v]<0.0) {
+          tau[v] = std::max(buf[count],0.0);
+          if (buf[count]<-SMALLVALUE) {
             rep.printVec("RECV neg tau cell",(*c)->pos,par.ndim);
-            cout <<"tau="<<tau[v]<<" ";
+            cout <<"tau="<<buf[count]<<" ... correcting to zero, ";
             CI.print_cell(*c);
           }
           count++;
         }
         CI.set_col(*c, src_id, tau);
+        
+        // get column through cell.
         for (short unsigned int v=0; v<RS.NTau; v++) {
-          tau[v] = buf[count];
-          if (tau[v]<0.0) {
+          tau[v] = std::max(buf[count],0.0);
+          if (buf[count]<-SMALLVALUE) {
             rep.printVec("RECV neg dtau cell",(*c)->pos,par.ndim);
-            cout <<"tau="<<tau[v]<<" ";
+            cout <<"tau="<<buf[count]<<" ... correcting to zero, ";
             CI.print_cell(*c);
           }
           count++;
         }
         CI.set_cell_col(*c, src_id, tau);
-      }
+
+      } // loop over boundary cells.
       if (count != ct) rep.error("BIG ERROR!",count-ct);
       
       //
@@ -493,7 +497,6 @@ int RT_MPI_bc::Send_RT_Boundaries(
       for (c=b->data.begin(); c!=b->data.end(); ++c) {
         if (count>=nc) rep.error("too many cells!!!",count-nc);
 
-        CI.get_col(*c, src_id, tau);
 #ifdef RT_TESTING
         if (count<100) {
           cout <<"send data ["<<i<<"]: col[0] = ";
@@ -504,23 +507,24 @@ int RT_MPI_bc::Send_RT_Boundaries(
           else cout <<"]\n";
         }
 #endif 
+        // column to and through cell.
+        CI.get_col(*c, src_id, tau);
         for (short unsigned int v=0; v<RS.NTau; v++) {
-          data[count] = tau[v];
-          if (tau[v]<0.0) {
-#ifdef RT_TESTING
+          data[count] = std::max(tau[v],0.0);
+          if (tau[v]<-SMALLVALUE) {
             rep.printVec("SEND neg tau cell",(*c)->pos,par.ndim);
             cout <<"tau="<<tau[v]<<" ";
             CI.print_cell(*c);
-#endif 
-            tau[v]=0.0;
+            //tau[v]=0.0;
           }
           count++;
         }
 
+        // column through cell.
         CI.get_cell_col(*c, src_id, tau);
         for (short unsigned int v=0; v<RS.NTau; v++) {
-          data[count] = tau[v];
-          if (tau[v]<0.0) {
+          data[count] = std::max(tau[v],0.0);
+          if (tau[v]<-SMALLVALUE) {
             // Occurs if ionization fraction is slightly >1,
             // because of discretisation or roundoff errors.
 #ifdef RT_TESTING
@@ -528,7 +532,7 @@ int RT_MPI_bc::Send_RT_Boundaries(
             cout <<"tau="<<tau[v]<<" ";
             CI.print_cell(*c);
 #endif 
-            tau[v]=0.0;
+            //tau[v]=0.0;
           }
           count++;
         }
