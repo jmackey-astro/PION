@@ -1,0 +1,113 @@
+# parameter file for 2D hydro shock tube (#1 from Toro's book on Riemann Solvers)
+
+ndim 2
+coordinates cylindrical
+eqn  euler
+solver 3
+CFL 0.5
+ArtificialViscosity 1
+EtaViscosity 0.15
+OrderOfAccSpace 2
+OrderOfAccTime  2
+
+ntracer 0
+chem_code NONE
+EP_dynamics 1
+EP_raytracing   0
+EP_phot_ionisation   0
+EP_cooling      0
+EP_chemistry    0
+EP_coll_ionisation   0
+EP_rad_recombination 0
+EP_update_erg 0
+EP_MP_timestep_limit 0
+EP_Min_Temperature 0.0
+EP_Max_Temperature 1.0e+99
+EP_Hydrogen_MassFrac 1.0
+EP_Helium_MassFrac 0.0  # Pure Hydrogen gas.
+EP_Metal_MassFrac  0.0  # If this is >0.5, then neutral H is molecular
+
+
+ics ShockTube
+GAMMA 1.4
+STnumber 1
+STshockpos 0.5
+STangleXY 0
+STangleXZ 0
+
+OutputFile        ToroNG1
+OutputPath        ./
+OutputFileType    silo
+OutputCriterion 0
+OutputFrequency   64
+OPfreqTime 0.0
+StartTime 0.0
+FinishTime 0.2
+
+
+smooth -1
+noise -1.0
+
+NGridX  128
+NGridY  128
+NGridZ  1
+# Boundaries of Simulation box:
+Xmin -0.3
+Ymin 0.0
+Zmin 0.0
+# Max values of x,y,z
+Xmax 0.9
+Ymax 1.2
+Zmax 0.9
+
+grid_nlevels          3
+grid_aspect_ratio_XX  1
+grid_aspect_ratio_YY  1
+grid_aspect_ratio_ZZ  1
+NG_centre_XX          0.3
+NG_centre_YY          0.0e18
+NG_centre_ZZ          0.0e18
+NG_refine_XX          1
+NG_refine_YY          1
+NG_refine_ZZ          1
+
+
+
+BC_XN outflow
+BC_XP outflow
+BC_YN reflecting
+BC_YP reflecting
+BC_Ninternal  0
+
+WIND_NSRC 0
+N_JET 0
+RT_Nsources 0
+
+
+
+# Code Units
+units 
+rhoval 1.0  
+velval 1.0 
+lenval 1.0 
+magval 1.0 
+
+
+refvec0 1.0
+refvec1 1.0
+refvec2 1.0
+refvec3 1.0
+refvec4 1.0
+refvec5 1.0
+refvec6 1.0
+refvec7 1.0
+refvec8 1.0
+refvec9 1.0
+refvec10 1.0
+refvec11 1.0
+refvec12 1.0
+refvec13 1.0
+refvec14 1.0
+refvec15 1.0
+
+
