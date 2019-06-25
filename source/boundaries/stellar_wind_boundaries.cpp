@@ -114,7 +114,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   // Run through sources and add sources.
   //
   for (int isw=0; isw<Ns; isw++) {
-    cout <<"\tUniGrid::BC_assign_STWIND: Adding source "<<isw<<"\n";
+    cout <<"\tBC_assign_STWIND: Adding source "<<isw<<"\n";
     if (SWP.params[isw]->type==WINDTYPE_CONSTANT) {
       //
       // This is for spherically symmetric winds that are constant
@@ -159,7 +159,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   // loop over sources, adding cells to boundary data list in order.
   //
   for (int id=0;id<Ns;id++) {
-    cout <<"\tUniGrid::BC_assign_STWIND: Adding cells to source ";
+    cout <<"\tBC_assign_STWIND: Adding cells to source ";
     cout <<id<<"\n";
     BC_assign_STWIND_add_cells2src(par,grid, id);
   }
@@ -216,7 +216,7 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   err += grid->Wind->set_num_cells(id,ncell);
 
 //#ifdef TESTING
-  cout <<"setup_fixed_grid: Added "<<ncell;
+  cout <<"BC_assign_STWIND_add_cells2src: Added "<<ncell;
   cout <<" cells to wind boundary for WS "<<id<<"\n";
 //#endif
   return err;

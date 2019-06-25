@@ -645,6 +645,23 @@ int sim_init::override_params(int narg, string *args)
       cout << SimPM.EP.MaxTemperature<<" K." <<"\n";
     }
 
+    else if (args[i].find("wind_radius") != string::npos) {
+      if (SWP.Nsources <1) {
+        rep.error("reset wind radius without a source",SWP.Nsources);
+      }
+      int src = atoi((args[i].substr(12)).c_str());
+      if (src<0 || src>9 || !isfinite(src))
+        rep.error("expect format wind_radius_0=1.2e17",src);
+
+      cout <<"\tOVERRIDE PARAMS: resetting radius of wind src "<<src;
+      cout <<" from ";
+      cout <<SWP.params[src]->radius<<" cm to ";
+      double c = atof((args[i].substr(14)).c_str());
+      if (c<0.0 || c>1.e50) rep.error("Bad radius flag:",c);
+      SWP.params[src]->radius = c;
+      cout << SWP.params[src]->radius<<" cm." <<"\n";
+    }
+
     else rep.error("Don't recognise this optional argument, please fix.",args[i]);
   }
   cout <<"------------------------------------------------------\n\n";
