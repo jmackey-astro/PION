@@ -176,14 +176,14 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   }
 
 
-  //string t1="totalRT", t2="waitingRT", t3="doingRT"; //, t4="tempRT";
-  //double total=0.0, wait=0.0, run=0.0;
+  string t1="totalRT", t2="waitingRT", t3="doingRT"; //, t4="tempRT";
+  double total=0.0, wait=0.0, run=0.0;
 
-  //clk.start_timer(t1);
+  clk.start_timer(t1);
   //
   // First Receive RT boundaries from processors nearer source.
   //
-  //clk.start_timer(t2);
+  clk.start_timer(t2);
   //clk.start_timer(t4);
 #ifdef RT_TESTING
   cout <<"RT_MPI: receiving RT boundaries\n";
@@ -193,12 +193,12 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   cout <<"RT_MPI: received RT boundaries\n";
 #endif
   //cout <<"RT: waiting to receive for "<<clk.stop_timer(t4)<<" secs.\n";
-  //clk.pause_timer(t2);
+  clk.pause_timer(t2);
 
   //
   // Now we have the boundary conditions, so call the serial Raytracer.
   //
-  //clk.start_timer(t3);
+  clk.start_timer(t3);
   //clk.start_timer(t4);
 #ifdef RT_TESTING
   cout <<"RT_MPI: calling serial raytrace function\n";
@@ -208,12 +208,12 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   cout <<"RT_MPI: serial raytrace done.\n";
 #endif
   //cout <<"RT: Tracing over domain took "<<clk.stop_timer(t4)<<" secs.\n";
-  //run = clk.pause_timer(t3);
+  run = clk.pause_timer(t3);
 
   //
   // Finally, send the new column densities to processors further from source.
   //
-  //clk.start_timer(t2);
+  clk.start_timer(t2);
   //clk.start_timer(t4);
 #ifdef RT_TESTING
   cout <<"RT_MPI: sending RT boundaries\n";
@@ -223,8 +223,8 @@ int raytracer_USC_pllel::RayTrace_SingleSource(
   cout <<"RT_MPI: sent RT boundaries\n";
 #endif
   //cout <<"RT: Sending boundaries/Waiting for "<<clk.stop_timer(t4)<<" secs.\n";
-  //wait  = clk.pause_timer(t2);
-  //total = clk.pause_timer(t1);
+  wait  = clk.pause_timer(t2);
+  total = clk.pause_timer(t1);
 
   //if ( (SimPM.timestep%1024==0) && s_id==0) {
   //  cout <<"RT: step:"<<SimPM.timestep<<" Total RT time="<<total;
