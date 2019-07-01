@@ -61,12 +61,12 @@ esac
 ### TEST FOR KAY.ICHEC.IE  ###
 ##############################
 case $HOSTNAME in
-  login[0-9].novalocal)
+  login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
     source /usr/share/Modules/init/bash
     #module purge
     module load intel
-    module load dev cmake3
+    module load cmake3
     #module load python py/intel
     #module load python numpy
     module list
