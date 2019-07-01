@@ -126,6 +126,11 @@ else
           curl  $REMOTE_URL -o $FILE
         else
           $WGET --no-check-certificate $REMOTE_URL -O $FILE
+          if [ $? != 0 ]; then
+            echo ** failed to download with wget, trying curl instead **
+            rm $FILE
+            curl $REMOTE_URL -o $FILE
+          fi
         fi
         # check it downloaded.
         if [ ! -f $FILE ]; then
