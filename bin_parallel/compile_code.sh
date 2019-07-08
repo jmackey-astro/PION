@@ -28,8 +28,8 @@
 # "standard" which is a standard linux system, assumed to have 8 cores (for
 # compiling code only, not running).
 #
-MAKE_UNAME=standard
-#MAKE_UNAME=locallibs
+#MAKE_UNAME=standard
+MAKE_UNAME=locallibs
 NCORES=8
 #
 # Production code options:

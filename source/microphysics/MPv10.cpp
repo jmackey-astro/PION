@@ -708,6 +708,14 @@ int MPv10::convert_prim2local(
         cout <<", resetting to [0,1]\n";
       }
 #endif
+
+			// Introducing sense checks -- make sure value is positive, less than 1
+				if ( p_local[y_ion_index_local[species_counter]] < (-2 * MPv10_ABSTOL) ) {
+					cout << "Mass fraction goes negative here for species "<< s ;
+				}
+				else if ( p_local[y_ion_index_local[species_counter]] > (1 - MPv10_ABSTOL)) {
+					cout << "Mass fraction too large for species " << s;
+				};
       //p_local[y_ion_index_local[species_counter]] =
       //      max(Min_NeutralFrac, min(Max_NeutralFrac,
       //                               p_local[y_ion_index_local[species_counter]]));
@@ -791,8 +799,19 @@ int MPv10::convert_local2prim(
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
     p_out[ X_mass_frac_index[ e]] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[ X_mass_frac_index[ e]])));
+
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
-      p_out[ y_ion_index_prim[ species_counter]] = max(Min_NeutralFrac, min(Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
+
+			// Introducing sense checks -- make sure value is positive, less than 1
+			if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) < (-2 * MPv10_ABSTOL) ) {
+				cout << "Mass fraction goes negative here for species "<< s ;
+			}
+
+			else if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) > (1 - MPv10_ABSTOL) * static_cast<double>(p_out[ X_mass_frac_index[ e]]) ) {
+				cout << "Mass fraction too large for species " << s;
+			}
+
+      p_out[ y_ion_index_prim[ species_counter]] = max(Min_NeutralFrac, min(static_cast<double>(p_out[ X_mass_frac_index[ e]])*Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
       species_counter ++;
     }
   }
