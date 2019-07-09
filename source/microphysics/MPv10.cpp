@@ -710,11 +710,11 @@ int MPv10::convert_prim2local(
 #endif
 
 			// Introducing sense checks -- make sure value is positive, less than 1
-				if ( p_local[y_ion_index_local[species_counter]] < (-2 * MPv10_ABSTOL) ) {
+				if ( p_local[y_ion_index_local[species_counter]] < (-2.0 * MPv10_ABSTOL) ) {
 					cout << "Mass fraction goes negative here for species "<< s ;
 				}
-				else if ( p_local[y_ion_index_local[species_counter]] > (1 - MPv10_ABSTOL)) {
-					cout << "Mass fraction too large for species " << s;
+				else if ( p_local[y_ion_index_local[species_counter]] > (1.0 + MPv10_ABSTOL)) {
+					cout << "Local mass fraction too large for species " << s <<" : X = " << p_local[y_ion_index_local[species_counter]] << "\n";
 				};
       //p_local[y_ion_index_local[species_counter]] =
       //      max(Min_NeutralFrac, min(Max_NeutralFrac,
@@ -804,11 +804,11 @@ int MPv10::convert_local2prim(
 
 			// Introducing sense checks -- make sure value is positive, less than 1
 			if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) < (-2 * MPv10_ABSTOL) ) {
-				cout << "Mass fraction goes negative here for species "<< s ;
+				cout << "mass fraction goes negative here for species "<< s << "\n";
 			}
 
-			else if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) > (1 - MPv10_ABSTOL) * static_cast<double>(p_out[ X_mass_frac_index[ e]]) ) {
-				cout << "Mass fraction too large for species " << s;
+			else if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) > (1 + MPv10_ABSTOL) * static_cast<double>(p_out[ X_mass_frac_index[ e]]) ) {
+				cout << "Mass fraction too large for species " << s << ": X = " << p_out[ y_ion_index_prim[ species_counter]] << "\n";
 			}
 
       p_out[ y_ion_index_prim[ species_counter]] = max(Min_NeutralFrac, min(static_cast<double>(p_out[ X_mass_frac_index[ e]])*Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
