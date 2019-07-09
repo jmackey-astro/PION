@@ -437,20 +437,6 @@ void stellar_wind::set_wind_cell_reference_state(
   // update tracers
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
-  //
-  // Set the H+ ion fraction so that it goes from y=1 at T>tp to
-  // y=1.0e-7 at T<tm, with linear interpolation.  THIS IS A CRUDE
-  // APPROXIMATION!
-  //
-  double tm=0.7e4, tp=1.0e4;
-  if (WS->Hplus >= 0) {
-    if      (WS->Tw > tp)
-      wc->p[WS->Hplus] = 1.0;
-    else if (WS->Tw < tm)
-      wc->p[WS->Hplus] = 1.0e-7;
-    else
-      wc->p[WS->Hplus] = std::max((WS->Tw-tm)/(tp-tm),1.0e-7);
-  }
 
 #ifdef SET_NEGATIVE_PRESSURE_TO_FIXED_TEMPERATURE
   //
