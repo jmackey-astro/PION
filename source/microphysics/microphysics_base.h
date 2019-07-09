@@ -237,6 +237,16 @@ class microphysics_base {
       const double    ///< EOS gamma (optional)
       )=0;
 
+	
+	/// 
+	/// Updates the corrector vector
+	/// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
+	/// Used for modifying tracer fluxes.
+	virtual void sCMA(
+			std::vector<double>, ///< input corrector vector
+			const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
+			) {return;}//const std::vector
+
   ///
   /// Get the ionisation cross section for an atom/ion at its
   /// threshold frequency.

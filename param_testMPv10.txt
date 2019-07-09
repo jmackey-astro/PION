@@ -137,7 +137,7 @@ UNIFORM_ambVZ 0.0
 UNIFORM_ambBX 0.0
 UNIFORM_ambBY 0.0
 UNIFORM_ambBZ 0.0
-UNIFORM_ambTR0 0.8   # most of ISM is H
+UNIFORM_ambTR0 0.7   # most of ISM is H
 UNIFORM_ambTR1 0.25   # Some of ISM is He
 UNIFORM_ambTR2 0.05    # small amount of ISM is N
 UNIFORM_ambTR3 0.1

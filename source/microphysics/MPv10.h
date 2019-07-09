@@ -305,6 +305,16 @@ class MPv10
   ///
   virtual void setup_local_vectors();
 
+
+	/// 
+	/// Updates the corrector vector
+	/// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
+	/// Used for modifying tracer fluxes.
+	///
+	virtual void sCMA(
+			std::vector<double>, ///< input corrector vector
+			const pion_flt *); ///< input primitive vector from grid cell (length nv_prim)
+
   //
   // ********* STUFF FROM THE mp_v2_aifa CLASS **********
   //
@@ -347,7 +357,9 @@ class MPv10
   int N_eqns; ///< := n species
   int N_cons_eqns; /// < := n_elem + 1, due to E_int.
   
-  
+	///	Vector to store initial corrector values (used to modify flux according to sCMA)
+	std::vector<double> corrector;
+  std::vector<double> init_corrector;
   /// ===========================================================================
   ///               Vectors to Access Primitive / Local vectors
   /// ===========================================================================

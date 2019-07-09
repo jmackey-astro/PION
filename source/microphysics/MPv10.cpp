@@ -142,6 +142,13 @@ MPv10::MPv10(
   string s; //pv_H1p=-1;
   
   N_elem = 0; N_species=0;
+	
+	// Set up corrector vector for fluxes, all entries = 1, i.e. unmodified
+	
+	// Use init_corrector so we don't need to re-initialise corrector every time
+	vector<double> temp_vec(nv_prim, 0);
+	init_corrector = temp_vec; //use temp vector so we can define in microphysics base class
+	for (int i=0;i<ftr;i++) init_corrector[i] = 1 ;
  
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
@@ -765,8 +772,6 @@ int MPv10::convert_prim2local(
 // ##################################################################
 // ##################################################################
 
-
-
 int MPv10::convert_local2prim(
       const double *p_local,
       const pion_flt *p_in, ///< input primitive vector from grid cell (length nv_prim)
@@ -1127,6 +1132,48 @@ double MPv10::timescales_RT(
 // ##################################################################
 // ##################################################################
 
+void MPv10::sCMA(
+			std::vector<double> corrector, ///< input corrector vector
+			const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
+{
+	//	Re-initialise corrector every step
+	corrector = init_corrector; // use init_corrector to reduce calculations
+ 	double e_correction = 0;
+
+	  //loop over every species and get the sum
+  int species_counter=0;
+	
+	// Calculate all-element correction
+  for (int e=0;e<N_elem;e++){//loop over every element
+    int N_elem_species=N_species_by_elem[e];
+		e_correction += p_in[ X_mass_frac_index[e]];
+	}
+
+	species_counter = 0;
+	// apply all-element correction, calculate species correction, apply species correction
+	for (int e=0;e<N_elem;e++){//loop over every element
+    int N_elem_species=N_species_by_elem[e];  
+		corrector[ X_mass_frac_index[e]] = e_correction;   // correct THIS element
+		// Calculate all-species-pr-element correction, if needed, i.e.
+		double s_correction = 0;
+		
+		for (int s=0;s<N_elem_species;s++){
+			cout << "s= " << s << ", e = " << e << "\n";
+			s_correction += p_in[ y_ion_index_prim[species_counter]];
+			species_counter ++;
+		}
+		
+		if ( s_correction > ((p_in[ X_mass_frac_index[e]] * e_correction) - Min_NeutralFrac)) {
+			int inner_species_counter = (species_counter - N_elem_species);
+			for (int s=0;s<N_elem_species;s++){
+				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
+			}
+  	}
+	}
+};
+
+
+
 
 
 int MPv10::ydot(
@@ -1142,7 +1189,6 @@ int MPv10::ydot(
   //        Also determine neutral fraction for later
   //  ========================================================
   //
-  
   double ne=0;
   double y_ion_frac[N_species];
   double X_neutral_frac[N_elem];

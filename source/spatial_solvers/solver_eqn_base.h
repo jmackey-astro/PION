@@ -357,8 +357,12 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
       pion_flt *        ///< Flux vector.
       );
 
+	///	Vector for corrector values (used to modify flux according to sCMA)
+  std::vector<double> corrector;
+
 };
 
+	
 
 
 #endif //SOLVER_EQN_BASE_H
