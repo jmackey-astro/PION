@@ -308,8 +308,10 @@ void FV_solver_base::set_interface_tracer_flux(
       pion_flt *flux
       )
 {
-	cout << "FV_ntr = " << FV_ntr << "\n";
-	//cout << "start = " << eqTR[0] << "\n";
+	int len_prim = FV_ntr + eqTR[0];
+  vector<double> temp_vec(len_prim, 1);
+	corrector = temp_vec;
+	
 #ifdef FUNCTION_ID
   cout <<"FV_solver_base::set_interface_tracer_flux ...starting.\n";
 #endif //FUNCTION_ID
@@ -334,12 +336,16 @@ void FV_solver_base::set_interface_tracer_flux(
   }
 #else
   if (FV_ntr>0) {
-    if (flux[eqRHO]>0.0)
+    if (flux[eqRHO]>0.0) {
+			MP->sCMA(corrector, left);
       for (int t=0;t<FV_ntr;t++)
-				flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
-    else if (flux[eqRHO]<0.0)
+				flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO] *corrector[eqTR[t]];
+		}
+    else if (flux[eqRHO]<0.0) {
+			MP->sCMA(corrector, right);
       for (int t=0;t<FV_ntr;t++)
-				flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
+				flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO] *corrector[eqTR[t]];
+		}
     else 
       for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
 

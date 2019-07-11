@@ -375,6 +375,8 @@ class MPv10
   std::map<string,int> tracer_list;
   std::map<string,int> element_list;
 
+	int print_flag;
+
   /// ===========================================================================
   ///               Vectors to Access Adjacent Ions
   /// ===========================================================================

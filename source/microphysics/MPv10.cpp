@@ -28,6 +28,7 @@
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
+#include <iomanip>
 
 
 // ##################################################################
@@ -146,9 +147,9 @@ MPv10::MPv10(
 	// Set up corrector vector for fluxes, all entries = 1, i.e. unmodified
 	
 	// Use init_corrector so we don't need to re-initialise corrector every time
-	vector<double> temp_vec(nv_prim, 0);
+	vector<double> temp_vec(nv_prim, 0.0);
 	init_corrector = temp_vec; //use temp vector so we can define in microphysics base class
-	for (int i=0;i<ftr;i++) init_corrector[i] = 1 ;
+	for (int i=0;i<ftr;i++) init_corrector[i] = 1.0 ;
  
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
@@ -718,14 +719,11 @@ int MPv10::convert_prim2local(
 
 			// Introducing sense checks -- make sure value is positive, less than 1
 				if ( p_local[y_ion_index_local[species_counter]] < (-2.0 * MPv10_ABSTOL) ) {
-					cout << "Mass fraction goes negative here for species "<< s ;
+					cout << "Mass fraction goes negative here for species "<< s << ": X = " << p_local[y_ion_index_local[species_counter]] << "\n";
 				}
 				else if ( p_local[y_ion_index_local[species_counter]] > (1.0 + MPv10_ABSTOL)) {
 					cout << "Local mass fraction too large for species " << s <<" : X = " << p_local[y_ion_index_local[species_counter]] << "\n";
 				};
-      //p_local[y_ion_index_local[species_counter]] =
-      //      max(Min_NeutralFrac, min(Max_NeutralFrac,
-      //                               p_local[y_ion_index_local[species_counter]]));
       species_counter ++;
     }
   }
@@ -809,11 +807,18 @@ int MPv10::convert_local2prim(
 
 			// Introducing sense checks -- make sure value is positive, less than 1
 			if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) < (-2 * MPv10_ABSTOL) ) {
-				cout << "mass fraction goes negative here for species "<< s << "\n";
+				cout << "mass fraction goes negative here. \n [";
+				for (int v=0; v<nv_prim;v++) {cout << p_out[v] << ", ";}
+				cout << "] \n";
+				print_flag = 1;
 			}
 
 			else if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) > (1 + MPv10_ABSTOL) * static_cast<double>(p_out[ X_mass_frac_index[ e]]) ) {
 				cout << "Mass fraction too large for species " << s << ": X = " << p_out[ y_ion_index_prim[ species_counter]] << "\n";
+				cout << "Prim vector: \n [";
+				for (int v=0; v<nv_prim;v++) {cout << p_out[v] << ", ";}
+				cout << "] \n";
+				print_flag = 1;
 			}
 
       p_out[ y_ion_index_prim[ species_counter]] = max(Min_NeutralFrac, min(static_cast<double>(p_out[ X_mass_frac_index[ e]])*Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
@@ -1138,7 +1143,7 @@ void MPv10::sCMA(
 {
 	//	Re-initialise corrector every step
 	corrector = init_corrector; // use init_corrector to reduce calculations
- 	double e_correction = 0;
+ 	double total_mass_frac = 0;
 
 	  //loop over every species and get the sum
   int species_counter=0;
@@ -1146,24 +1151,30 @@ void MPv10::sCMA(
 	// Calculate all-element correction
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
-		e_correction += p_in[ X_mass_frac_index[e]];
+		total_mass_frac += p_in[ X_mass_frac_index[e]];
 	}
-
+	//if ( (e_correction > 1.0 + MPv10_ABSTOL) or (e_correction < 1.0 - MPv10_ABSTOL)){cout << "correction = " << e_correction << " \n";}
+	 std::cout << std::fixed << std::setprecision(10);
+	double e_correction = 1 / total_mass_frac;
 	species_counter = 0;
 	// apply all-element correction, calculate species correction, apply species correction
 	for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];  
 		corrector[ X_mass_frac_index[e]] = e_correction;   // correct THIS element
 		// Calculate all-species-pr-element correction, if needed, i.e.
-		double s_correction = 0;
+		double s_frac = 0;
 		
 		for (int s=0;s<N_elem_species;s++){
-			cout << "s= " << s << ", e = " << e << "\n";
-			s_correction += p_in[ y_ion_index_prim[species_counter]];
+			s_frac += p_in[ y_ion_index_prim[species_counter]];
 			species_counter ++;
 		}
 		
-		if ( s_correction > ((p_in[ X_mass_frac_index[e]] * e_correction) - Min_NeutralFrac)) {
+		if ( s_frac > ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac)) {
+			double s_correction = ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac) / s_frac;
+			if (print_flag == 1) {
+			cout << "sum(X) = " << total_mass_frac << "\n";
+			cout << "s_correction = " << s_correction << ", sum(Y) = " << s_frac << ", X = " << p_in[ X_mass_frac_index[e]]* e_correction << " \n";}
+			//cout << "Species correction = " << s_correction << "\n";
 			int inner_species_counter = (species_counter - N_elem_species);
 			for (int s=0;s<N_elem_species;s++){
 				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
