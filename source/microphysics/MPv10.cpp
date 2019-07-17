@@ -881,6 +881,8 @@ double MPv10::Temperature(
   // generate vector of (nH,y(H0),Eint), and get Temperature from it.
   //
   double P[nvl];
+
+	cout << "\n Temperature calling convert_prim2local\n";
   convert_prim2local(pv,P);
   
   pion_flt y_ion_frac[N_species];
@@ -919,6 +921,8 @@ int MPv10::Set_Temp(
     p_pv[PG] = 1.0e-12;  // Need p>0 for prim-to-local conversion.
   }
   double P[nvl];
+
+	cout << "\nSet_Temp calling convert_prim2local\n";
   int err = convert_prim2local(p_pv,P);
   
   //Determine y_ion_frac from the primitive vector
@@ -959,6 +963,8 @@ int MPv10::TimeUpdateMP(
 {
   int err=0;
   double P[nvl];
+
+	cout << "\n TimeUpdateMP calling convert_prim2local\n";
   err = convert_prim2local(p_in,P);
   /*rep.printVec("p2l start prim ",p_in,nv_prim);
   cout <<"\n";
@@ -1011,6 +1017,18 @@ int MPv10::TimeUpdateMP(
   //
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
   err = convert_local2prim(P,p_in,p_out);
+
+
+	vector<double> temp_vec(nv_prim, 1);
+	corrector = temp_vec;
+	int print_flag = 0;
+	MP->sCMA(corrector, p_out);
+
+  for (int t=0;t<nv_prim;t++)
+		if (corrector[t] != 1.0) {cout << "CORRECT cooling; correction = " << corrector[t] << "\n"; 
+		rep.printVec("input state", p_in, nv_prim); 
+		rep.printVec("output state", p_out, nv_prim);}
+
   //rep.printVec("l2p end prim ",p_out,nv_prim);
   //rep.printVec("l2p end local",P,nvl);
 
@@ -1073,6 +1091,8 @@ double MPv10::timescales_RT(
   // First convert to local variables.
   //
   double P[nvl];
+
+	cout << "\n timescales_RT calling convert_prim2local \n";
   err = convert_prim2local(p_in,P);
   if (err) {
     rep.error("Bad input state to MPv10::timescales_RT()",err);
@@ -1171,10 +1191,9 @@ void MPv10::sCMA(
 		
 		if ( s_frac > ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac)) {
 			double s_correction = ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac) / s_frac;
-			if (print_flag == 1) {
-			cout << "sum(X) = " << total_mass_frac << "\n";
-			cout << "s_correction = " << s_correction << ", sum(Y) = " << s_frac << ", X = " << p_in[ X_mass_frac_index[e]]* e_correction << " \n";}
-			//cout << "Species correction = " << s_correction << "\n";
+			/*cout << "sum(X) = " << total_mass_frac << "\n";
+			cout << "s_correction = " << s_correction << ", sum(Y) = " << s_frac << ", X = " << p_in[ X_mass_frac_index[e]]* e_correction << " \n";
+			*/
 			int inner_species_counter = (species_counter - N_elem_species);
 			for (int s=0;s<N_elem_species;s++){
 				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
@@ -1183,7 +1202,49 @@ void MPv10::sCMA(
 	}
 };
 
+/*
+void MPv10::sCMA(
+			std::vector<double> corrector, ///< input corrector vector
+			const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
+{
+	//	Re-initialise corrector every step
+	corrector = init_corrector; // use init_corrector to reduce calculations
+ 	double total_mass_frac = 0;
 
+	  //loop over every species and get the sum
+  int species_counter=0;
+	
+	// Calculate all-element correction
+  for (int e=0;e<N_elem;e++){//loop over every element
+    int N_elem_species=N_species_by_elem[e];
+		total_mass_frac += p_in[ X_mass_frac_index[e]];
+	}
+	//if ( (e_correction > 1.0 + MPv10_ABSTOL) or (e_correction < 1.0 - MPv10_ABSTOL)){cout << "correction = " << e_correction << " \n";}
+	 std::cout << std::fixed << std::setprecision(10);
+	double e_correction = 1 / total_mass_frac;
+	species_counter = 0;
+	// apply all-element correction, calculate species correction, apply species correction
+	for (int e=0;e<N_elem;e++){//loop over every element
+    int N_elem_species=N_species_by_elem[e];  
+		corrector[ X_mass_frac_index[e]] = e_correction;   // correct THIS element
+		// Calculate all-species-pr-element correction, if needed, i.e.
+		double s_frac = 0;
+		
+		for (int s=0;s<N_elem_species;s++){
+			s_frac += p_in[ y_ion_index_prim[species_counter]];
+			species_counter ++;
+		}
+		
+		if ( s_frac > ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac)) {
+			double s_correction = ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac) / s_frac;
+			int inner_species_counter = (species_counter - N_elem_species);
+			for (int s=0;s<N_elem_species;s++){
+				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
+			}
+  	}
+	}
+};
+*/
 
 
 
@@ -1307,6 +1368,16 @@ int MPv10::ydot(
       species_counter ++;
     }
   }
+	
+	vector<double> temp_vec(nv_prim, 1);
+	corrector = temp_vec;
+	int print_flag = 0;
+
+	//MP->sCMA(corrector, y_now);
+
+  for (int t=0;t<nv_prim;t++)
+		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT cooling; correction = " << corrector[t] << "\n"; print_flag = 1;}
+
   /// ============== Radiative recombination OUT OF this species and INTO NEXT species =====================
   /// y_dot(ion) -= recomb_rate(ion)*n_e*y(ion) <<< subtract recombination to less ionised species
   /// ================================================================================  
@@ -1341,6 +1412,11 @@ int MPv10::ydot(
     }
   }
   
+	//MP->sCMA(corrector, );
+
+  for (int t=0;t<nv_prim;t++)
+		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT recombination; correction = " << corrector[t] << "\n"; print_flag = 1;}
+
   //Edot -= cooling_rate_SD93CIE(T) *ne;
   // electron impact excitation
   //Edot = 0;
@@ -1352,6 +1428,19 @@ int MPv10::ydot(
   
   return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

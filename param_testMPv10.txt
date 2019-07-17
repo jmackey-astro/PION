@@ -61,7 +61,7 @@ noise -1
 ## Grid Parameters
 # Number of gridpoints in each direction
 # INT
-NGridX  128
+NGridX  256
 NGridY  1
 NGridZ  1
 # Boundaries of Simulation box:
@@ -69,7 +69,7 @@ Xmin   2.0e+17
 Ymin   0.000000e18
 Zmin   0.000000e18
 # Max values of x,y,z
-Xmax   18.0e17
+Xmax   18.0e18
 Ymax   0.000000e18
 Zmax   0.000000e18
 # Nested grid
@@ -84,13 +84,13 @@ NG_centre_ZZ 0.0e18
 
 OutputPath ./
 OutputFileType silo
-OutputFrequency 128
+OutputFrequency 256
 OutputCriterion 1    # output per n-seconds=1, per n-steps=0
 OPfreqTime 5e10  # in seconds
 
 # Start time
 StartTime 0.0e13  # 0 Myr.
-FinishTime 1e12 # should get done faster for testing#0.1 Myr
+FinishTime 5e13 # should get done faster for testing#0.1 Myr
 # Order of Accuracy (1=1st order; 2=2nd order)
 OrderOfAccSpace 2
 OrderOfAccTime  2
@@ -205,7 +205,7 @@ WIND_0_Rstr   2.0e17  # 1e5 R_sun
 WIND_0_TR0 0.6
 WIND_0_TR1 0.35
 WIND_0_TR2 0.05 
-WIND_0_TR3 0.00001
+WIND_0_TR3 0.5
 WIND_0_TR4 0.00001
 WIND_0_TR5 0.00001
 WIND_0_TR6 0.01

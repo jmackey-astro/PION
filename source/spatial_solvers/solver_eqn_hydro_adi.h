@@ -278,6 +278,9 @@ class sph_FV_solver_Hydro_Euler
       const double,     ///< cell length dx.
       pion_flt *  ///< update vector to add source term to [OUTPUT]
       );
+
+	///	Vector for corrector values (used to modify flux according to sCMA)
+  std::vector<double> corrector;
 };
 
 #endif // SOLVER_EQN_HYDRO_ADI_H

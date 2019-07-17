@@ -376,11 +376,32 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
       const double  // Cell timestep dt.
       )
 {
-  pion_flt u1[eq_nvar];
-  //
+	//
   // First convert from Primitive to Conserved Variables
   //
-  PtoU(Pin,u1, eq_gamma);
+  pion_flt u1[eq_nvar];
+	pion_flt Pintermediate[eq_nvar];
+
+  vector<double> temp_vec(eq_nvar, 1);
+	corrector = temp_vec;
+	int print_flag = 0;
+
+	MP->sCMA(corrector, Pin);
+
+  for (int t=0;t<eq_nvar;t++)
+		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT Advance_cell_time; correction = " << corrector[t] << "\n"; print_flag = 1;}
+
+	if (print_flag == 1){
+		cout << "Correction in CellAdvanceTime \n\n Prim vector = [";
+		for (int t=0;t<eq_nvar;t++){
+			cout << Pin[t] << ", ";
+			Pintermediate[t] =  Pin[t] * corrector[t];}
+		cout << "] \n";
+    PtoU(Pin,u1, eq_gamma);
+		}
+	else{
+		PtoU(Pin, u1, eq_gamma);
+		}
 
   //
   // Now add dU[] to U[], and change back to primitive variables.
