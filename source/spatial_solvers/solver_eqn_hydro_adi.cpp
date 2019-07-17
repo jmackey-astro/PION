@@ -438,6 +438,12 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   }
 #endif
 
+	MP->sCMA(corrector, Pf);
+
+  for (int t=0;t<eq_nvar;t++)
+		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT Advance_cell_time final; correction = " << corrector[t] << "\n"; print_flag = 1;}
+
+
 
   return err;
 }

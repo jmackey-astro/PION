@@ -882,7 +882,7 @@ double MPv10::Temperature(
   //
   double P[nvl];
 
-	cout << "\n Temperature calling convert_prim2local\n";
+	//cout << "\n Temperature calling convert_prim2local\n";
   convert_prim2local(pv,P);
   
   pion_flt y_ion_frac[N_species];
@@ -922,7 +922,7 @@ int MPv10::Set_Temp(
   }
   double P[nvl];
 
-	cout << "\nSet_Temp calling convert_prim2local\n";
+	//cout << "\nSet_Temp calling convert_prim2local\n";
   int err = convert_prim2local(p_pv,P);
   
   //Determine y_ion_frac from the primitive vector
@@ -964,7 +964,7 @@ int MPv10::TimeUpdateMP(
   int err=0;
   double P[nvl];
 
-	cout << "\n TimeUpdateMP calling convert_prim2local\n";
+	//cout << "\n TimeUpdateMP calling convert_prim2local\n";
   err = convert_prim2local(p_in,P);
   /*rep.printVec("p2l start prim ",p_in,nv_prim);
   cout <<"\n";
@@ -1092,7 +1092,7 @@ double MPv10::timescales_RT(
   //
   double P[nvl];
 
-	cout << "\n timescales_RT calling convert_prim2local \n";
+	//cout << "\n timescales_RT calling convert_prim2local \n";
   err = convert_prim2local(p_in,P);
   if (err) {
     rep.error("Bad input state to MPv10::timescales_RT()",err);
