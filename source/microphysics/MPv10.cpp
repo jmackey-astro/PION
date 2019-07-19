@@ -25,6 +25,7 @@
 // ================================================================
 
 
+// See if errors are linearly proportional to CFL number
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -146,11 +147,10 @@ MPv10::MPv10(
 	
 	// Set up corrector vector for fluxes, all entries = 1, i.e. unmodified
 	
-	// Use init_corrector so we don't need to re-initialise corrector every time
-	vector<double> temp_vec(nv_prim, 0.0);
-	init_corrector = temp_vec; //use temp vector so we can define in microphysics base class
-	for (int i=0;i<ftr;i++) init_corrector[i] = 1.0 ;
- 
+	/*pion_flt temp_vec[nv_prim] = {1};
+	corrector = temp_vec;*/
+	for (int i=0;i<nv_prim;i++) corrector[i] = 1;
+
   for (int i=0;i<len;i++) {
     s = tracers[i]; // Get 'i'th tracer variable.
     
@@ -658,10 +658,13 @@ double MPv10::get_ntot(
 // ##################################################################
 
 
+// Apply the correction in prim2local
+// Apply correction in prim2local; hopefully no errors in local2prim
 
 int MPv10::convert_prim2local(
       const pion_flt *p_in, ///< primitive vector from grid cell (length nv_prim)
-      double *p_local
+      double *p_local,
+			int function_flag /// < flag to say which function called this function
       )
 {
   //
@@ -699,6 +702,7 @@ int MPv10::convert_prim2local(
   }
 
   species_counter=0;
+	int alter_flag = 0;
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
@@ -719,14 +723,23 @@ int MPv10::convert_prim2local(
 
 			// Introducing sense checks -- make sure value is positive, less than 1
 				if ( p_local[y_ion_index_local[species_counter]] < (-2.0 * MPv10_ABSTOL) ) {
-					cout << "Mass fraction goes negative here for species "<< s << ": X = " << p_local[y_ion_index_local[species_counter]] << "\n";
+					cout << "convert_prim2local: " << function_flag << "Mass frac negative for species "<< s << ": X = " << p_local[y_ion_index_local[species_counter]] << "\n";
+					alter_flag = 1;
 				}
 				else if ( p_local[y_ion_index_local[species_counter]] > (1.0 + MPv10_ABSTOL)) {
-					cout << "Local mass fraction too large for species " << s <<" : X = " << p_local[y_ion_index_local[species_counter]] << "\n";
+					cout << "convert_prim2local: " << function_flag << "Mass frac too large for species " << s <<" : X = " << p_local[y_ion_index_local[species_counter]] << "\n";
+					alter_flag = 1;
 				};
       species_counter ++;
     }
   }
+
+	if (alter_flag == 1){
+		sCMA(corrector, p_in);
+		for (int t=0;t<nv_prim;t++){
+			//cout << "correction = " << corrector[t] << "\n";
+			p_local[t] = p_local[t]*corrector[t];}
+	}
 
   //
   // Check for negative pressure (note this shouldn't happen, so we output a
@@ -773,7 +786,8 @@ int MPv10::convert_prim2local(
 int MPv10::convert_local2prim(
       const double *p_local,
       const pion_flt *p_in, ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *p_out       ///< updated primitive vector for grid cell (length nv_prim)
+      pion_flt *p_out,       ///< updated primitive vector for grid cell (length nv_prim)
+			int function_flag /// < flag to say which function called this function 
       )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
@@ -807,14 +821,14 @@ int MPv10::convert_local2prim(
 
 			// Introducing sense checks -- make sure value is positive, less than 1
 			if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) < (-2 * MPv10_ABSTOL) ) {
-				cout << "mass fraction goes negative here. \n [";
+				cout << "convert_local2prim: " << function_flag << " mass fraction goes negative here. \n [";
 				for (int v=0; v<nv_prim;v++) {cout << p_out[v] << ", ";}
 				cout << "] \n";
 				print_flag = 1;
 			}
 
 			else if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) > (1 + MPv10_ABSTOL) * static_cast<double>(p_out[ X_mass_frac_index[ e]]) ) {
-				cout << "Mass fraction too large for species " << s << ": X = " << p_out[ y_ion_index_prim[ species_counter]] << "\n";
+				cout << "convert_local2prim: " << function_flag << " mass frac too large for species " << s << ": X = " << p_out[ y_ion_index_prim[ species_counter]] << "\n";
 				cout << "Prim vector: \n [";
 				for (int v=0; v<nv_prim;v++) {cout << p_out[v] << ", ";}
 				cout << "] \n";
@@ -882,8 +896,7 @@ double MPv10::Temperature(
   //
   double P[nvl];
 
-	//cout << "\n Temperature calling convert_prim2local\n";
-  convert_prim2local(pv,P);
+  convert_prim2local(pv,P, 4);
   
   pion_flt y_ion_frac[N_species];
   int species_counter=0;
@@ -922,8 +935,7 @@ int MPv10::Set_Temp(
   }
   double P[nvl];
 
-	//cout << "\nSet_Temp calling convert_prim2local\n";
-  int err = convert_prim2local(p_pv,P);
+  int err = convert_prim2local(p_pv,P, 1);
   
   //Determine y_ion_frac from the primitive vector
   pion_flt y_ion_frac[N_species];
@@ -941,7 +953,7 @@ int MPv10::Set_Temp(
   P[lv_eint] = get_ntot(y_ion_frac,X_elem_number_density)*k_B*T/(gamma_minus_one);
   
   //Call convert_local2prim with the new local vector; this will generate a new temperature value;
-  err += convert_local2prim(P, p_pv, p_pv);
+  err += convert_local2prim(P, p_pv, p_pv, 1);
   return err;
 }
 
@@ -964,8 +976,7 @@ int MPv10::TimeUpdateMP(
   int err=0;
   double P[nvl];
 
-	//cout << "\n TimeUpdateMP calling convert_prim2local\n";
-  err = convert_prim2local(p_in,P);
+  err = convert_prim2local(p_in,P, 2);
   /*rep.printVec("p2l start prim ",p_in,nv_prim);
   cout <<"\n";
   rep.printVec("p2l start local",P,nvl);
@@ -1016,18 +1027,8 @@ int MPv10::TimeUpdateMP(
   // Now put the result into p_out[] and return.
   //
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
-  err = convert_local2prim(P,p_in,p_out);
+  err = convert_local2prim(P,p_in,p_out, 2);
 
-
-	vector<double> temp_vec(nv_prim, 1);
-	corrector = temp_vec;
-	int print_flag = 0;
-	MP->sCMA(corrector, p_out);
-
-  for (int t=0;t<nv_prim;t++)
-		if (corrector[t] != 1.0) {cout << "CORRECT cooling; correction = " << corrector[t] << "\n"; 
-		rep.printVec("input state", p_in, nv_prim); 
-		rep.printVec("output state", p_out, nv_prim);}
 
   //rep.printVec("l2p end prim ",p_out,nv_prim);
   //rep.printVec("l2p end local",P,nvl);
@@ -1093,7 +1094,7 @@ double MPv10::timescales_RT(
   double P[nvl];
 
 	//cout << "\n timescales_RT calling convert_prim2local \n";
-  err = convert_prim2local(p_in,P);
+  err = convert_prim2local(p_in,P,3);
   if (err) {
     rep.error("Bad input state to MPv10::timescales_RT()",err);
   }
@@ -1158,13 +1159,14 @@ double MPv10::timescales_RT(
 // ##################################################################
 
 void MPv10::sCMA(
-			std::vector<double> corrector, ///< input corrector vector
+			pion_flt *corrector, ///< input corrector vector
 			const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
 {
 	//	Re-initialise corrector every step
-	corrector = init_corrector; // use init_corrector to reduce calculations
+	for (int i=0;i<nv_prim;i++) corrector[i] = 1;
+	int print_flagg = 0;
  	double total_mass_frac = 0;
-
+	
 	  //loop over every species and get the sum
   int species_counter=0;
 	
@@ -1190,61 +1192,24 @@ void MPv10::sCMA(
 		}
 		
 		if ( s_frac > ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac)) {
+			print_flagg = 1;
 			double s_correction = ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac) / s_frac;
-			/*cout << "sum(X) = " << total_mass_frac << "\n";
-			cout << "s_correction = " << s_correction << ", sum(Y) = " << s_frac << ", X = " << p_in[ X_mass_frac_index[e]]* e_correction << " \n";
-			*/
+			//cout << "sum(X) = " << total_mass_frac << "\n";
+			//cout << "s_correction = " << s_correction << ", sum(Y) = " << s_frac << ", X = " << p_in[ X_mass_frac_index[e]]* e_correction << " \n";
+			
 			int inner_species_counter = (species_counter - N_elem_species);
 			for (int s=0;s<N_elem_species;s++){
 				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
 			}
   	}
 	}
-};
-
-/*
-void MPv10::sCMA(
-			std::vector<double> corrector, ///< input corrector vector
-			const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
-{
-	//	Re-initialise corrector every step
-	corrector = init_corrector; // use init_corrector to reduce calculations
- 	double total_mass_frac = 0;
-
-	  //loop over every species and get the sum
-  int species_counter=0;
 	
-	// Calculate all-element correction
-  for (int e=0;e<N_elem;e++){//loop over every element
-    int N_elem_species=N_species_by_elem[e];
-		total_mass_frac += p_in[ X_mass_frac_index[e]];
-	}
-	//if ( (e_correction > 1.0 + MPv10_ABSTOL) or (e_correction < 1.0 - MPv10_ABSTOL)){cout << "correction = " << e_correction << " \n";}
-	 std::cout << std::fixed << std::setprecision(10);
-	double e_correction = 1 / total_mass_frac;
-	species_counter = 0;
-	// apply all-element correction, calculate species correction, apply species correction
-	for (int e=0;e<N_elem;e++){//loop over every element
-    int N_elem_species=N_species_by_elem[e];  
-		corrector[ X_mass_frac_index[e]] = e_correction;   // correct THIS element
-		// Calculate all-species-pr-element correction, if needed, i.e.
-		double s_frac = 0;
-		
-		for (int s=0;s<N_elem_species;s++){
-			s_frac += p_in[ y_ion_index_prim[species_counter]];
-			species_counter ++;
-		}
-		
-		if ( s_frac > ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac)) {
-			double s_correction = ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac) / s_frac;
-			int inner_species_counter = (species_counter - N_elem_species);
-			for (int s=0;s<N_elem_species;s++){
-				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
-			}
-  	}
-	}
+	/*if (print_flagg == 1){
+		cout << "\n";
+	  for (int i=0; i<nv_prim; i++) 
+		{cout << corrector[i] << "\n";}
+	};*/
 };
-*/
 
 
 
@@ -1369,14 +1334,6 @@ int MPv10::ydot(
     }
   }
 	
-	vector<double> temp_vec(nv_prim, 1);
-	corrector = temp_vec;
-	int print_flag = 0;
-
-	//MP->sCMA(corrector, y_now);
-
-  for (int t=0;t<nv_prim;t++)
-		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT cooling; correction = " << corrector[t] << "\n"; print_flag = 1;}
 
   /// ============== Radiative recombination OUT OF this species and INTO NEXT species =====================
   /// y_dot(ion) -= recomb_rate(ion)*n_e*y(ion) <<< subtract recombination to less ionised species
@@ -1412,11 +1369,6 @@ int MPv10::ydot(
     }
   }
   
-	//MP->sCMA(corrector, );
-
-  for (int t=0;t<nv_prim;t++)
-		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT recombination; correction = " << corrector[t] << "\n"; print_flag = 1;}
-
   //Edot -= cooling_rate_SD93CIE(T) *ne;
   // electron impact excitation
   //Edot = 0;

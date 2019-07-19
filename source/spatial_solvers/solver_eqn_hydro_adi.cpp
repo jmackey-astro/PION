@@ -386,7 +386,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 	corrector = temp_vec;
 	int print_flag = 0;
 
-	MP->sCMA(corrector, Pin);
+	//MP->sCMA(corrector, Pin);
 
   for (int t=0;t<eq_nvar;t++)
 		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT Advance_cell_time; correction = " << corrector[t] << "\n"; print_flag = 1;}
@@ -409,11 +409,12 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   //
   for (int v=0;v<eq_nvar;v++) {
     u1[v] += dU[v];   // Update conserved variables
+		// CHECK IF SPECIES ARE EXCEEDING ELEMENT
     //dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
   int err;
   if((err=UtoP(u1,Pf, MinTemp, eq_gamma))!=0) {
-#ifdef TESTING
+//#ifdef TESTING
     cout<<"(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained";
     cout<<" (maybe about negative pressure...) fixing\n";
     rep.printVec("pin",Pin,eq_nvar);
@@ -422,7 +423,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     PtoU(Pin,u1, eq_gamma);
     rep.printVec("Uin",u1, eq_nvar);
     rep.printVec("Pf ",Pf, eq_nvar);
-#endif
+//#endif
   }
   for (int v=0;v<eq_nvar;v++) {
     dU[v] = 0.;       // Reset the dU array for the next timestep.
@@ -438,7 +439,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   }
 #endif
 
-	MP->sCMA(corrector, Pf);
+	//MP->sCMA(corrector, Pf);
 
   for (int t=0;t<eq_nvar;t++)
 		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT Advance_cell_time final; correction = " << corrector[t] << "\n"; print_flag = 1;}

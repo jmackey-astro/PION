@@ -243,7 +243,7 @@ class microphysics_base {
 	/// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
 	/// Used for modifying tracer fluxes.
 	virtual void sCMA(
-			std::vector<double>, ///< input corrector vector
+			pion_flt *, ///< input corrector vector
 			const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
 			) {return;}//const std::vector
 

@@ -268,7 +268,8 @@ class MPv10
   ///
   virtual int convert_prim2local(
       const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
-      double *        ///< local vector [x(H0),E](n+1).
+      double *,    ///< local vector [x(H0),E](n+1).
+			int /// flags the function
       );
 
   ///
@@ -278,7 +279,8 @@ class MPv10
   virtual int convert_local2prim(
       const double *, ///< local (updated) vector [x(H0),E](n+1).
       const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *       ///< updated primitive vector for grid cell (length nv_prim)
+      pion_flt *  ,     ///< updated primitive vector for grid cell (length nv_prim)
+			int /// flags the function
       );
 
   ///
@@ -312,7 +314,7 @@ class MPv10
 	/// Used for modifying tracer fluxes.
 	///
 	virtual void sCMA(
-			std::vector<double>, ///< input corrector vector
+			pion_flt *, ///< input corrector vector
 			const pion_flt *); ///< input primitive vector from grid cell (length nv_prim)
 
   //
@@ -358,8 +360,7 @@ class MPv10
   int N_cons_eqns; /// < := n_elem + 1, due to E_int.
   
 	///	Vector to store initial corrector values (used to modify flux according to sCMA)
-	std::vector<double> corrector;
-  std::vector<double> init_corrector;
+	pion_flt corrector[100] = {1};
   /// ===========================================================================
   ///               Vectors to Access Primitive / Local vectors
   /// ===========================================================================
