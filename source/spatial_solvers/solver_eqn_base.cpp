@@ -332,6 +332,12 @@ void FV_solver_base::set_interface_tracer_flux(
   }
 #else
   if (FV_ntr>0) {
+#ifdef TEST_INF
+    if (!isfinite(flux[eqRHO])) {
+      cout <<"FV_solver_base::set_interface_tracer_flux: ";
+      rep.printVec("inf flux",flux,eq_nvar);
+    }
+#endif
     if (flux[eqRHO]>0.0)
       for (int t=0;t<FV_ntr;t++)
 	flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
