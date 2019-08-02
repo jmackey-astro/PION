@@ -165,7 +165,9 @@ class dataio_silo :public DataIOBase {
      *data0,     ///< array for grid data to write to the mesh.
      *data1,     ///< array for grid data to write to the mesh.
      *data2,     ///< array for grid data to write to the mesh.
+     *mask,      ///< array for mask for nested grid.
      **vec_data; ///< array of pointers to data for vector data.
+
   ///
   /// Ndim array of coordinates of nodes of uniform grid (zone corners!).
   ///
@@ -235,6 +237,15 @@ class dataio_silo :public DataIOBase {
   /// deallocate memory for arrays used to write data to files.*/
   ///
   void delete_data_arrays();
+
+  ///
+  /// Get Scalar variable into integer array ready to write to file.
+  ///
+  int get_int_scalar_data_array(
+      string, ///< variable name to get.
+      class SimParams &,  ///< pointer to simulation parameters
+      void * ///< array to write to
+      );
 
   ///
   /// Get Scalar variable into array ready to write to file.

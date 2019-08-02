@@ -1125,6 +1125,13 @@ void dataio_silo_pllel::create_data_arrays(
     }
   }
 
+  // set up array for mask variable for nested grid.
+  if (!mask) {
+    int *m = 0;
+    m = mem.myalloc(m,mpiPM->LocalNcell);
+    mask = reinterpret_cast<void *>(m);
+  }
+
   //
   // If we are only writing scalar data, we don't need data1,data2,vec_data
   // so by setting vec_length=0 they don't get initialised.
