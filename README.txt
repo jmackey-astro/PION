@@ -30,6 +30,8 @@ libsundials-serial-dev libsundials-serial
 libsiloh5-0 libsilo-bin libsilo-dev
 libcfitsio-dev libcfitsio-bin
 
+Because of a recent silo update, you must copy the silo_exports.h file directly into usr/include/, and give the file appropriate permissions (I use 777 so I don't have to think about it) using chmod. You can get silo_exports.h by running extra_libraries, as below, and it should be in the silo library.
+
 On other systems you may have to compile Silo, Sundials, and Cfitsio
 from source.  Here is how:
 - cd to "./extra_libraries"

@@ -232,20 +232,26 @@ class microphysics_base {
   /// state vector.
   ///
   virtual double get_recombination_rate(
-      const int,      ///< ion index in tracer array (optional).
+      const int,        ///< ion index in tracer array (optional).
       const pion_flt *, ///< input state vector (primitive).
-      const double    ///< EOS gamma (optional)
+      const double      ///< EOS gamma (optional)
       )=0;
 
 	
-	/// 
-	/// Updates the corrector vector
-	/// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
-	/// Used for modifying tracer fluxes.
-	virtual void sCMA(
-			pion_flt *, ///< input corrector vector
-			const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
-			) {return;}//const std::vector
+  /// 
+  /// Updates the corrector vector
+  /// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
+  /// Used for modifying tracer fluxes.
+  virtual void sCMA(
+      pion_flt *,      ///< input corrector vector
+      const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
+      ) {return;}
+
+virtual void get_dtau(
+      const pion_flt,   ///< ds, thickness of the cell
+      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *        ///< output dtau vector
+      ) {return;}
 
   ///
   /// Get the ionisation cross section for an atom/ion at its
@@ -298,6 +304,7 @@ class microphysics_base {
   ///
   virtual inline double get_X_H()
     {return 0.7154;}
+
 
 protected:
   /// Struct with flags for which extra physics we are (not) doing.

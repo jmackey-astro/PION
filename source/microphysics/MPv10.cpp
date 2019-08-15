@@ -1,6 +1,6 @@
 ///
 /// \file MPv10.cpp
-/// \author Maggie Goulden
+/// \author Maggie Celeste Goulden
 /// \date 2018.10
 ///
 /// Description:
@@ -23,9 +23,6 @@
 // ----------------------------------------------------------------
 // ================================================================
 // ================================================================
-
-
-// See if errors are linearly proportional to CFL number
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -104,7 +101,7 @@ MPv10::MPv10(
       )
 : microphysics_base(ephys,rsrcs),
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys),
-  T_min(1e0), T_max(1e9), Num_temps(100)
+  T_min(1e0), T_max(1e9), Num_temps(100), photo_xsections()//photo_xsections(&Emin[0],&Emax[0],Nbins)
   {
   /// ===================================================================
   ///  Initialise Temperature, Recombination (radiative + dielectronic),
@@ -161,6 +158,7 @@ MPv10::MPv10(
     //          (i) Identify elements present in tracer list
     //          (ii) Record X_mass_frac_index vector, N_elem,
     //               X_elem_atomic_mass, X_elem_number_density
+    //          (iii) Record xsection arrays generated in photo_xsections
     // ================================================================
     if (s[0]=='X'){
       X_mass_frac_index.push_back(ftr + N_elem); ///<record primitive vector index of each element
@@ -422,6 +420,10 @@ void MPv10::species_tracer_initialise(
     int el_index, /// element index in N_species_by_elem, used in for loops for densities etc
     int length /// < length of tracers vector
     ){
+  double *xsections = parameters[s].xsections;
+  int len = get_nbins();
+  y_ion_xsections.push_back( std::vector<double>(xsections,xsections+len) );
+  
   N_species_by_elem[el_index]++;
   y_ion_index_prim.push_back(ftr + N_elem + N_species);//lv_y_ion_index_offset + N_species);
   y_ion_index_local.push_back(N_species);
@@ -478,6 +480,8 @@ void MPv10::species_tracer_initialise(
   
   return;
 }
+
+
 
 
 // ##################################################################
@@ -657,10 +661,6 @@ double MPv10::get_ntot(
 // ##################################################################
 // ##################################################################
 
-
-// Apply the correction in prim2local
-// Apply correction in prim2local; hopefully no errors in local2prim
-
 int MPv10::convert_prim2local(
       const pion_flt *p_in, ///< primitive vector from grid cell (length nv_prim)
       double *p_local,
@@ -676,6 +676,7 @@ int MPv10::convert_prim2local(
     double n_X = p_in[RO]*( p_in[ X_mass_frac_index[i]] / X_elem_atomic_mass[i]);
     X_elem_number_density[i] = n_X;
   }
+  
   //rep.printSTLVec("n_x",X_elem_number_density);
   //
   // ==============================================================
@@ -719,21 +720,20 @@ int MPv10::convert_prim2local(
         cout <<"x(H0)="<<p_local[y_ion_index_local[species_counter]];
         cout <<", resetting to [0,1]\n";
       }
+      cout << "function_flag = " << function_flag << "\n";
 #endif
 
 			// Introducing sense checks -- make sure value is positive, less than 1
 				if ( p_local[y_ion_index_local[species_counter]] < (-2.0 * MPv10_ABSTOL) ) {
-					cout << "convert_prim2local: " << function_flag << "Mass frac negative for species "<< s << ": X = " << p_local[y_ion_index_local[species_counter]] << "\n";
 					alter_flag = 1;
 				}
 				else if ( p_local[y_ion_index_local[species_counter]] > (1.0 + MPv10_ABSTOL)) {
-					cout << "convert_prim2local: " << function_flag << "Mass frac too large for species " << s <<" : X = " << p_local[y_ion_index_local[species_counter]] << "\n";
 					alter_flag = 1;
 				};
       species_counter ++;
     }
   }
-
+	
 	if (alter_flag == 1){
 		sCMA(corrector, p_in);
 		for (int t=0;t<nv_prim;t++){
@@ -819,6 +819,7 @@ int MPv10::convert_local2prim(
 
     for (int s=0;s<N_elem_species;s++){//loop over every species in THIS element
 
+      #ifdef MPv10_DEBUG
 			// Introducing sense checks -- make sure value is positive, less than 1
 			if ( static_cast<double>(p_out[ y_ion_index_prim[ species_counter]]) < (-2 * MPv10_ABSTOL) ) {
 				cout << "convert_local2prim: " << function_flag << " mass fraction goes negative here. \n [";
@@ -834,6 +835,7 @@ int MPv10::convert_local2prim(
 				cout << "] \n";
 				print_flag = 1;
 			}
+			#endif
 
       p_out[ y_ion_index_prim[ species_counter]] = max(Min_NeutralFrac, min(static_cast<double>(p_out[ X_mass_frac_index[ e]])*Max_NeutralFrac, static_cast<double>(p_out[ y_ion_index_prim[ species_counter]])));
       species_counter ++;
@@ -1087,6 +1089,14 @@ double MPv10::timescales_RT(
       const double   ///< EOS gamma.
       )
 {
+  
+  /*
+   * DTAU TESTING
+  double dtau[get_nbins()] = {0};
+  get_dtau(1e10, p_in, dtau);
+  cout << "dtau = " << dtau[5] << "\n";*/
+  
+  
   int err=0;
   //
   // First convert to local variables.
@@ -1159,24 +1169,22 @@ double MPv10::timescales_RT(
 // ##################################################################
 
 void MPv10::sCMA(
-			pion_flt *corrector, ///< input corrector vector
-			const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
+    pion_flt *corrector, ///< input corrector vector
+		const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
 {
 	//	Re-initialise corrector every step
 	for (int i=0;i<nv_prim;i++) corrector[i] = 1;
 	int print_flagg = 0;
  	double total_mass_frac = 0;
 	
-	  //loop over every species and get the sum
+  //loop over every species and get the sum
   int species_counter=0;
 	
 	// Calculate all-element correction
   for (int e=0;e<N_elem;e++){//loop over every element
     int N_elem_species=N_species_by_elem[e];
-		total_mass_frac += p_in[ X_mass_frac_index[e]];
+    total_mass_frac += p_in[ X_mass_frac_index[e]];
 	}
-	//if ( (e_correction > 1.0 + MPv10_ABSTOL) or (e_correction < 1.0 - MPv10_ABSTOL)){cout << "correction = " << e_correction << " \n";}
-	 std::cout << std::fixed << std::setprecision(10);
 	double e_correction = 1 / total_mass_frac;
 	species_counter = 0;
 	// apply all-element correction, calculate species correction, apply species correction
@@ -1194,24 +1202,47 @@ void MPv10::sCMA(
 		if ( s_frac > ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac)) {
 			print_flagg = 1;
 			double s_correction = ((p_in[ X_mass_frac_index[e]]* e_correction)  - Min_NeutralFrac) / s_frac;
-			//cout << "sum(X) = " << total_mass_frac << "\n";
-			//cout << "s_correction = " << s_correction << ", sum(Y) = " << s_frac << ", X = " << p_in[ X_mass_frac_index[e]]* e_correction << " \n";
-			
 			int inner_species_counter = (species_counter - N_elem_species);
 			for (int s=0;s<N_elem_species;s++){
 				corrector[ y_ion_index_prim[inner_species_counter]] = s_correction;
 			}
   	}
 	}
-	
-	/*if (print_flagg == 1){
-		cout << "\n";
-	  for (int i=0; i<nv_prim; i++) 
-		{cout << corrector[i] << "\n";}
-	};*/
 };
 
 
+
+// ##################################################################
+// ##################################################################
+
+void MPv10::get_dtau(
+        const pion_flt ds,    ///< ds, thickness of the cell
+        const pion_flt *p_in, ///< input primitive vector from grid cell (length nv_prim)
+        pion_flt *dtau_vec	  ///< output dtau vector
+        )
+{   
+  for (int bin=0; bin<get_nbins(); bin++){
+    double dtau = 0; // sum dtau across all species within this bin
+    int species_counter=0;
+    
+    for (int e=0;e<N_elem;e++){//loop over every element
+      int N_elem_species=N_species_by_elem[e];
+      
+      for (int s=0;s<N_elem_species;s++){//loop over every species
+        double n_s = p_in[RO]*( p_in[ y_ion_index_prim[species_counter]] / X_elem_atomic_mass[e]);
+        double xsec = y_ion_xsections[species_counter][bin];
+        dtau += n_s*xsec*ds;
+        species_counter ++;
+      }
+    }
+    dtau_vec[bin] = dtau;
+  }
+};
+
+
+  
+  
+// ##################################################################
 
 int MPv10::ydot(
       double,               ///< current time (UNUSED)
@@ -1237,7 +1268,6 @@ int MPv10::ydot(
     for (int s=0;s<N_elem_species;s++) {//loop over every species in THIS element
       //add to y_ion_frac
       y_ion_frac[species_counter] = NV_Ith_S(y_now,y_ion_index_local[species_counter]);
-      
       //add to ne based on the number of electrons liberated to obtain this ion
       pion_flt number_density = X_elem_number_density[elem]*y_ion_frac[species_counter];
       int num_elec = y_ion_num_elec[species_counter];

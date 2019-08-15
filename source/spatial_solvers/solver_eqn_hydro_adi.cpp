@@ -365,6 +365,8 @@ int FV_solver_Hydro_Euler::dU_Cell(
 /// General Finite volume scheme for updating a cell's
 /// primitive state vector, for homogeneous equations.
 ///
+
+/// 	COUNT INSTANCES OF CORRECTION HERE WITH / WITHOUT CORRECTOR 
 int FV_solver_Hydro_Euler::CellAdvanceTime(
       class cell *c,
       const pion_flt *Pin, // Initial State Vector.
@@ -382,22 +384,23 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   pion_flt u1[eq_nvar];
 	pion_flt Pintermediate[eq_nvar];
 
-  vector<double> temp_vec(eq_nvar, 1);
-	corrector = temp_vec;
-	int print_flag = 0;
+  pion_flt corrector[100] = {1};
+  int correct_flag = 0;
 
-	//MP->sCMA(corrector, Pin);
+	MP->sCMA(corrector, Pin);
 
   for (int t=0;t<eq_nvar;t++)
-		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT Advance_cell_time; correction = " << corrector[t] << "\n"; print_flag = 1;}
+		if (corrector[t] < (1 - 1e-12) or corrector[t] > (1 + 1e-12)) {correct_flag = 1;}
 
-	if (print_flag == 1){
-		cout << "Correction in CellAdvanceTime \n\n Prim vector = [";
+	if (correct_flag == 1){
 		for (int t=0;t<eq_nvar;t++){
-			cout << Pin[t] << ", ";
-			Pintermediate[t] =  Pin[t] * corrector[t];}
-		cout << "] \n";
+			Pintermediate[t] =  Pin[t]* corrector[t];}
     PtoU(Pin,u1, eq_gamma);
+		/*rep.printVec("pin before correction",Pin,eq_nvar);
+		rep.printVec("u1 uncorrected ",u1, eq_nvar);*/
+		PtoU(Pintermediate, u1, eq_gamma);
+		/*rep.printVec("pin after correction",Pintermediate,eq_nvar);
+		rep.printVec("u1 corrected ",u1, eq_nvar);*/
 		}
 	else{
 		PtoU(Pin, u1, eq_gamma);
@@ -438,14 +441,23 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     }
   }
 #endif
-
-	//MP->sCMA(corrector, Pf);
+	int final_correct_flag = 0;
+	MP->sCMA(corrector, Pf);
 
   for (int t=0;t<eq_nvar;t++)
-		if (corrector[t] < (1 - 1e-12)) {cout << "CORRECT Advance_cell_time final; correction = " << corrector[t] << "\n"; print_flag = 1;}
+		if (corrector[t] < (1 - 1e-12) or corrector[t] > (1 + 1e-12)) {final_correct_flag=1;}
 
+	if (final_correct_flag == 1){
+		for (int t=0;t<eq_nvar;t++){
+			Pf[t] =  Pf[t]* corrector[t];}
+		}
+		//cout << "CORRECT Advance_cell_time final\n";}
 
-
+	if (correct_flag == 1 and final_correct_flag == 1){
+		//cout << "Corrected BOTH input and output\n";}
+		for (int t=0;t<eq_nvar;t++){
+			Pf[t] =  Pf[t]* corrector[t];}
+	}
   return err;
 }
 

@@ -37,6 +37,7 @@ class constants {
   public:
   constants();
   ~constants();
+
   //
   // Mathematics
   //

@@ -368,7 +368,7 @@ CXXFLAGS += $(OPT) $(PION_OPTIONS)
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
  microphysics_base.o mp_only_cooling.o \
- MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o
+ MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
 
 ifneq (,$(findstring LEGACY_CODE,$(PION_OPTIONS)))
   OBJ_CHEM +=  MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
@@ -815,13 +815,16 @@ MPv2.o: MPv2.cpp MPv2.h ${GLOBAL} hydrogen_mp.h \
 
 cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 
+photo_xsections.o: photo_xsections.cpp photo_xsections.h
+
 MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h
+  microphysics_base.h 
 
 MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h
+  microphysics_base.h \
+  photo_xsections.h
 
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \

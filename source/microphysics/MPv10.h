@@ -37,13 +37,15 @@
 #include "hydrogen_photoion.h"
 #include "cvode_integrator.h"
 
+#include "photo_xsections.h"
+
 /// this is the max change in x or E which is integrated with Euler integration.
 /// A larger change will be integrated with backward-differencing and Newton
 /// iteration, which is more accurate, stable, but expensive.
 #define EULER_CUTOFF 0.05
 
 
-#define MPv10_RELTOL 1.0e-4   ///< relative-error tolerance (actual error can be larger).
+#define MPv10_RELTOL 1.0e-10   ///< relative-error tolerance (actual error can be larger).
 #define MPv10_ABSTOL 1.0e-12  ///< minimum neutral fraction i care about.
 #define MPv10_MINERG 1.0e-17  ///< Minimum internal energy density I care about.
 
@@ -57,7 +59,8 @@ class MPv10
   public Hydrogen_chem,
   public cooling_function_SD93CIE,
   public microphysics_base,
-  public cvode_solver
+  public cvode_solver,
+  public photo_xsections
 {
   public:
   ///
@@ -308,7 +311,7 @@ class MPv10
   virtual void setup_local_vectors();
 
 
-	/// 
+  /// 
 	/// Updates the corrector vector
 	/// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
 	/// Used for modifying tracer fluxes.
@@ -317,6 +320,20 @@ class MPv10
 			pion_flt *, ///< input corrector vector
 			const pion_flt *); ///< input primitive vector from grid cell (length nv_prim)
 
+  
+  
+  ///
+  /// Calculates the change in optical depth over the cell
+  /// for use in the Raytracing module
+  ///
+  
+  virtual void get_dtau(
+      const pion_flt,   ///< ds, thickness of the cell
+      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *	      ///< output dtau vector
+      );
+    
+    
   //
   // ********* STUFF FROM THE mp_v2_aifa CLASS **********
   //
@@ -367,6 +384,8 @@ class MPv10
   std::vector<int> X_mass_frac_index; /// < primitive vector indices, used to trace X_H etc, like pv_Hp. 
   std::vector<int> y_ion_index_prim; ///<index matching y_ion mass fraction in prim vector, analogous to pv_Hp before.
   std::vector<int> y_ion_index_local; ///<index matching y_ion fraction in local vector.
+  std::vector<std::vector<double>> y_ion_xsections; ///<index matching photo_ion xsection to ion in local vector
+  
   
   int H_ion_index; ///index of X_elem in primitive
   int He_ion_index;
@@ -551,9 +570,9 @@ class MPv10
     mpv_NIdot,  ///< photon luminosity of monochromatic ionising source (ionising photons/s).
     mpv_delta_S;///< path length through current cell.
 
-    
-  
-  
+  /*double Emax[15] = {13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3, 667.0*1e-3};//bin edges correspond to ionisation energies
+  double Emin[15] = {11.3*1e-3, 13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3};
+  int Nbins = 15;*/
 };
 
 #endif // MPv10_H
