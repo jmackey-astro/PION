@@ -227,8 +227,8 @@ int FV_solver_Hydro_Euler::UtoP(
       const double g
       )
 {
+  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/u[eqRHO];
   int err=eqns_Euler::UtoP(u,p,MinTemp,g);
-  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/p[eqRO];
   return err;
 }
 

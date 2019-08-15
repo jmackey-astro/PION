@@ -347,11 +347,8 @@ int FV_solver_mhd_ideal_adi::UtoP(
       const double g
       )
 {
+  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/u[eqRHO];
   int err=eqns_mhd_ideal::UtoP(u,p,MinTemp,g);
-  // we use u[eqRO] because if there was a negative density, then usually
-  // the tracer sign will follow, and this way we get a positive primitive
-  // variable tracer back.
-  for (int t=0;t<FV_ntr;t++) p[eqTR[t]] = u[eqTR[t]]/u[eqRO];
   return err;
 }
 
