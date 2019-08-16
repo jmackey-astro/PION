@@ -78,7 +78,7 @@ using namespace std;
 #include "constants.h"
 #include "sim_params.h"
 
-#include "dataIO/dataio.h"
+#include "dataIO/dataio_base.h"
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"
 
@@ -87,8 +87,8 @@ using namespace std;
 #include "sim_projection.h"
 #include "image_io.h"
 
-#include "MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
+#include "decomposition/MCMD_control.h"
+#include "grid/setup_grid_NG_MPI.h"
 
 
 #include "raytracing/raytracer_SC.h"
@@ -130,7 +130,8 @@ void reset_domain(class MCMDcontrol *MCMD)
   }
   rep.printVec("New Xmin",SimPM.Xmin,SimPM.ndim);
   rep.printVec("New Xmax",SimPM.Xmax,SimPM.ndim);
-  MCMD->decomposeDomain(SimPM);
+  SimPM.grid_nlevels = 1;
+  MCMD->decomposeDomain(SimPM,SimPM.levels[0]);
   return;
 }
 #endif
@@ -172,11 +173,14 @@ int main(int argc, char **argv)
   //
   // Also initialise the MCMD class with myrank and nproc.
   //
-  class MCMDcontrol MCMD;
   int myrank=-1, nproc=-1;
   COMM->get_rank_nproc(&myrank,&nproc);
-  MCMD.set_myrank(myrank);
-  MCMD.set_nproc(nproc);
+  cout <<"Projection3D: myrank="<<myrank<<", nproc="<<nproc<<"\n";
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
 
 
   //*******************************************************************
@@ -212,6 +216,23 @@ int main(int argc, char **argv)
     cout <<"smoooth-val:  float for the velocity by which to smooth, if constant broadening (FWHM)\n";
     rep.error("Bad number of args",argc);
   }
+
+
+  cout <<"argv[0] = command = "<< argv[0] <<"\n";
+  cout <<"argv[1] = input path = "<< argv[1] <<"\n";
+  cout <<"argv[2] = input file = "<< argv[2] <<"\n";
+  cout <<"argv[3] = image file = "<< argv[3] <<"\n";
+  cout <<"argv[4] = image filetype = "<< argv[4] <<"  (3=vtk)\n";
+  cout <<"argv[5] = multi_opfiles = "<< argv[5] <<"\n";
+  cout <<"argv[6] = Normal dir = "<< argv[6] <<"\n";
+  cout <<"argv[7] = Perpendicular dir = "<< argv[7] <<"\n";
+  cout <<"argv[8] = Angle to normal = "<< argv[8] <<"\n";
+  cout <<"argv[9] = what-to-integrate = "<< argv[9] <<"\n";
+  cout <<"argv[10] = skip = "<< argv[10] <<"\n";
+/*
+  cout <<"argv[] =  = "<< argv[] <<"\n";
+*/
+
   string input_path = argv[1];
   string input_file = argv[2];
   string outfile    = argv[3];
@@ -332,11 +353,11 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Getting List of Files to read ---------\n";
   
-  class SimParams SimPM;
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM, "DOUBLE",&MCMD);
+  class dataio_silo_utility 
+                      dataio(SimPM,"DOUBLE",&(SimPM.levels[0].MCMD));
 
   //
   // Get list of files to read:
@@ -391,7 +412,7 @@ int main(int argc, char **argv)
   // MODIFYING XMIN/XMAX SO THAT I ONLY READ IN A SUBDOMAIN OF THE FULL GRID
   //
 #ifdef RESET_DOMAIN
-  reset_domain(&MCMD);
+  reset_domain(&(SimPM.levels[0].MCMD));
 #endif
   //
   // ------------------------------------------------------------------------
@@ -404,9 +425,13 @@ int main(int argc, char **argv)
   // Get axis corresponding to perpdir, and decompose only along
   // this axis.
   //
+  class setup_grid_NG_MPI *SimSetup =0;
+  SimSetup = new setup_grid_NG_MPI();
+  SimPM.grid_nlevels = 1;
+  SimSetup->setup_NG_grid_levels(SimPM);
   enum axes perpaxis = static_cast<axes>(static_cast<int>(perpdir)/2);
   cout <<"*** perpendicular axis = "<<perpaxis<<"\n";
-  MCMD.decomposeDomain(perpaxis,SimPM);
+  SimPM.levels[0].MCMD.decomposeDomain(perpaxis,SimPM,SimPM.levels[0]);
   if (err) rep.error("main: failed to decompose domain!",err);
   //
   // May need to setup extra data in each cell for ray-tracing optical
@@ -418,16 +443,13 @@ int main(int argc, char **argv)
   // *****************************************************
   reset_radiation_sources(SimPM);
 
-  //
-  // get a setup_grid class, and use it to set up the grid.
-  //
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid_pllel();
-  class GridBaseClass *grid = 0;
+  vector<class GridBaseClass *> G;
+  G.resize(1);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid, SimPM, &MCMD);
+  SimSetup->setup_grid(G, SimPM);
+  class GridBaseClass *grid = G[0];
   if (!grid) rep.error("Grid setup failed",grid);
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<"\n";
 
@@ -696,11 +718,14 @@ int main(int argc, char **argv)
     //
     err = dataio.ReadHeader(infile, SimPM);
 #ifdef RESET_DOMAIN
-    reset_domain(&MCMD);
+    reset_domain(&(SimPM.levels[0].MCMD));
 #endif
     if (err) rep.error("Didn't read header",err);
-    if ( (err=MCMD.decomposeDomain(perpaxis, SimPM)) !=0) 
+    SimPM.grid_nlevels = 1;
+    if ( (err=SimPM.levels[0].MCMD.decomposeDomain(
+                            perpaxis, SimPM,SimPM.levels[0])) !=0) { 
       rep.error("Couldn't Decompose Domain!",err);
+    }
 
     cout <<"############ SIMULATION TIME: "<<SimPM.simtime/3.156e7;
     cout <<" yrs for step="<<ifile<<"   ############\n";
@@ -709,7 +734,7 @@ int main(int argc, char **argv)
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(infile, SimPM, grid);
+    err = dataio.ReadData(infile, G, SimPM);
     rep.errorTest("(main) Failed to read data",0,err);
     
     //cell *tt = grid->FirstPt_All();
@@ -787,6 +812,9 @@ int main(int argc, char **argv)
     double tot_mass = 0.0;
     struct pixel *px;
     int w2i=-1;
+    cell *c = grid->FirstPt();
+    // For Cartesian 3D grid, all cell faces have the same area:
+    double cell_area = grid->CellInterface(c,XP,0.0);
 
     for (int outputs=0;outputs<n_images;outputs++) {
 #ifdef TESTING
@@ -833,16 +861,18 @@ int main(int argc, char **argv)
         //buf = mem.myalloc(buf,ct);
         //
         // loop over all the other processes to get data from them,
-        // but not neccessarily in order.
+        // in any order.
         //
         for (int irank=1; irank<nproc; irank++) {
           string recv_id;
           int recv_tag=-1;
           int from_rank=-1;
+          int comm_tag = irank;
           err = COMM->look_for_data_to_receive(
                        &from_rank, ///< rank of sender
                        recv_id,    ///< identifier for receive.
                        &recv_tag,  ///< comm_tag associated with data.
+                       BC_RTtag,
                        COMM_DOUBLEDATA ///< type of data we want.
                        );
           if (err) rep.error("look for cell data failed",err);
@@ -852,12 +882,7 @@ int main(int argc, char **argv)
           //
           //cout <<"receiving from "<<from_rank<<"  "<<recv_id<<"  "<<recv_tag<<"\n";
           err = COMM->receive_double_data(
-                  from_rank, ///< rank of process we are receiving from.
-                  recv_tag,  ///< comm_tag: what sort of comm we are looking for (PER,MPI,etc.)
-                  recv_id, ///< identifier for receive, for any book-keeping that might be needed.
-                  ct, ///< number of doubles to receive
-                  &(im[ct*from_rank])
-                  //buf ///< Pointer to array to write to (must be already initialised).
+                  from_rank, recv_tag, recv_id, ct, &(im[ct*from_rank])
                   );
           if (err) {
             cout <<from_rank <<"\t"<< recv_tag <<"\t"<< recv_id;
@@ -920,7 +945,7 @@ int main(int argc, char **argv)
     //
     // Now see if we got all the mass in the simulation domain:
     //  
-    tot_mass *= grid->DA();
+    tot_mass *= cell_area;
     //cout <<"\t\tANGLE, TOTAL MASS FROM PROJECTION, SUMMATION: "<<angle<<"\t"<<tot_mass;
     //tot_mass=0;
     //  //double posIMG[3], posSIM[3];
@@ -1247,7 +1272,6 @@ int main(int argc, char **argv)
     delete grid; grid=0;
   }
   if (MP)     {delete MP; MP=0;}
-  if (RT)     {delete RT; RT=0;}
 
   COMM->finalise();
   delete COMM; COMM=0;

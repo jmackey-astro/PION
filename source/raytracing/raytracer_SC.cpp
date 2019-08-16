@@ -2576,8 +2576,7 @@ void raytracer_USC::col2cell_2d(
   }
   
   //
-  // INTERPOLATION SCHEMES -- BASICALLY ALL WERE CRAP EXCEPT C2RAY...
-  // 
+  // INTERPOLATION SCHEMES -- C2RAY
   //
   for (short unsigned int iT=0; iT<src->s->NTau; iT++) {
     Nc[iT] = interpolate_2D(src->s->id, *delta, col1[iT], col2[iT]);

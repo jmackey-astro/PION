@@ -302,6 +302,35 @@ class MPv3
   virtual inline double get_X_H()
     {return EP->H_MassFrac;}
 
+  ///
+  /// Get electron number density (cm^{-3})
+  ///
+  virtual double get_n_elec(
+      const pion_flt * ///< primitive state vector.
+      );
+
+  ///
+  /// Get electron number density (cm^{-3})
+  ///
+  virtual double get_n_ion(
+      std::string, ///< ion name
+      const pion_flt * ///< primitive state vector.
+      );
+
+  ///
+  /// Get H+ number density (cm^{-3})
+  ///
+  virtual double get_n_Hplus(
+      const pion_flt * ///< primitive state vector.
+      );
+
+  ///
+  /// Get neutral H number density (cm^{-3})
+  ///
+  virtual double get_n_Hneutral(
+      const pion_flt * ///< primitive state vector.
+      );
+  
   protected:
   ///
   /// convert state vector from grid cell into local microphysics vector.

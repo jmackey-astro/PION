@@ -695,8 +695,81 @@ double MPv3::get_ntot(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
+
+double MPv3::get_n_elec(
+      const pion_flt *pv ///< primitive state vector.
+      )
+{
+  double P[nvl];
+  convert_prim2local(pv,P);
+  //cout <<"nH="<<mpv_nH<<" y(H+)="<<(1.0-P[lv_H0]);
+  //cout <<", scale="<<JM_NELEC<<"\n";
+  return mpv_nH * (1.0-P[lv_H0]) * JM_NELEC;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MPv3::get_n_Hplus(
+      const pion_flt *pv ///< primitive state vector.
+      )
+{
+  double P[nvl];
+  convert_prim2local(pv,P);
+  return mpv_nH * (1.0-P[lv_H0]);
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MPv3::get_n_ion(
+      std::string ion, ///< ion name
+      const pion_flt *pv ///< primitive state vector.
+      )
+{
+  if (ion!="H1+") {
+    cout <<"Bad ion! "<<ion<<"\n";
+    return -1.0e99;
+  }
+  double P[nvl];
+  convert_prim2local(pv,P);
+  return mpv_nH * (1.0-P[lv_H0]) * JM_NION;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double MPv3::get_n_Hneutral(
+      const pion_flt *pv ///< primitive state vector.
+      )
+{
+  double P[nvl];
+  convert_prim2local(pv,P);
+  return mpv_nH * P[lv_H0];
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int MPv3::convert_prim2local(

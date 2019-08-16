@@ -1249,7 +1249,7 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 #endif
         continue;
       }
-      // unique as long as isend<30, l<10, rank<10000.
+      // unique as long as isend<30, l<10, rank<1000.
       int comm_tag = BC_MPI_FLUX_tag +100000*isend +10000*l;
       comm_tag += MCMD->get_myrank();
 #ifdef TEST_BC89FLUX

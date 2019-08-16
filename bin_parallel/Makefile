@@ -461,7 +461,7 @@ OBJECTS_NG_PION = main_NG_MPI.o $(OBJ_NG_SIM) $(OBJ_SIM) \
 
 OBJECTS_NG_ICGEN = icgen_NG_MPI.o get_sim_info.o $(OBJ_GEN) \
   $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
-  $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS)  $(OBJ_NG_BCS)
+  $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS) $(OBJ_NG_BCS)
 
 
 #####################################################
