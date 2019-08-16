@@ -166,7 +166,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_SEND(
   // Send data using a non-blocking MPI send
   //
   string id;
-  int comm_tag = BC_MPI_NGF2C_tag +10*MCMD->get_myrank()+ l;
+  int comm_tag = BC_MPI_NGF2C_tag + l;
   //id <<"F2C_"<<MCMD->get_myrank()<<"_to_"<<pproc;
 #ifdef TEST_MPI_NG_F2C
   cout <<"BC_update_FINE_TO_COARSE_SEND: Sending "<<ct;
@@ -379,9 +379,10 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       //
       // receive data.
       //
-      string recv_id; int recv_tag=-1; int from_rank=-1;
-      int comm_tag = BC_MPI_NGF2C_tag + 10*MCMD->child_procs[i].rank
-                                    + l+1;
+      string recv_id;
+      int recv_tag=-1;
+      int from_rank=MCMD->child_procs[i].rank;
+      int comm_tag = BC_MPI_NGF2C_tag + l+1;
       err = COMM->look_for_data_to_receive(
             &from_rank, // rank of sender (output)
             recv_id,    // identifier for receive (output).

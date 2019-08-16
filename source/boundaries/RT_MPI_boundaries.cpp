@@ -270,6 +270,7 @@ int RT_MPI_bc::Receive_RT_Boundaries(
       //
       // Find a message that has been sent to us.
       //
+      from_rank=-1;
       err = COMM->look_for_data_to_receive(&from_rank, id, &comm_tag,
                                           BC_RTtag,COMM_DOUBLEDATA);
       if (err) rep.error("Receive_RT_Boundaries() look4data",err);

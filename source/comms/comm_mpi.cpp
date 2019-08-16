@@ -567,12 +567,26 @@ int comm_mpi::look_for_data_to_receive(
   //
   //int err = MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &(ri->status));
   //cout <<" max_tag = "<<MPI_TAG_UB<<"<< max_int="<<INT_MAX<<endl;
-  int err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, MPI_COMM_WORLD, &(ri->status));
+
+  // from_rank is set to <0 if we want any source, otherwise we want
+  // data from a specific rank.
+  int err = 0;
+  if (*from_rank >=0 ) {
+    err = MPI_Probe(*from_rank, comm_tag, MPI_COMM_WORLD, &(ri->status));
+  }
+  else {
+    err = MPI_Probe(MPI_ANY_SOURCE, comm_tag, MPI_COMM_WORLD, &(ri->status));
+  }
   if (err) rep.error("mpi probe failed",err);
+  if (*from_rank >=0 && *from_rank != ri->status.MPI_SOURCE) {
+    rep.error("looking for specific rank but got different",
+                                      ri->status.MPI_SOURCE);
+  }
   
 #ifdef TEST_COMMS
   cout <<"rank: "<<myrank;
-  cout <<"  comm_mpi::look_for_data_to_receive() found data, parsing...\n";
+  cout <<"  comm_mpi::look_for_data_to_receive() found data from ";
+  cout <<"rank "<<*from_rank<<", parsing...\n";
   cout.flush();
 #endif //TEST_COMMS
 
