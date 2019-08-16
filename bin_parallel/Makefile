@@ -155,6 +155,7 @@ endif
 ifeq ($(MAKE_UNAME), KAY)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3
+    #CXXFLAGS = -O2 -g -shared-intel
   else
     CXXFLAGS = -O0 -Wall -g
     # -wd981 -wd383
