@@ -441,12 +441,13 @@ int setup_fixed_grid::setup_microphysics(
   // We can only have one of these, so safe to just loop through...
   //
   int err=0;
+  double data[MAX_TAU]; // temp var not used
   for (int isrc=0; isrc<SimPM.RS.Nsources; isrc++) {
     if (SimPM.RS.sources[isrc].type==RT_SRC_SINGLE &&
-        SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI &&
+        SimPM.RS.sources[isrc].effect==RT_EFFECT_MFION &&
         MP!=0
         ) {
-      err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc]);
+      err = MP->set_multifreq_source_properties(&SimPM.RS.sources[isrc],data);
     }
   }
   if (err) rep.error("Setting multifreq source properties",err);
@@ -532,7 +533,7 @@ int setup_fixed_grid::setup_raytracing(
       cout <<"Adding IONISING or UV single-source with id: ";
       cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
       if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
-          SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI)
+          SimPM.RS.sources[isrc].effect==RT_EFFECT_MFION)
         ion_count++;
       else 
         uv_count++;
@@ -681,7 +682,7 @@ int setup_fixed_grid::setup_evolving_RT_sources(
       // WHEN CALCULATING THE FLUX IN THE LYMAN CONTINUUM...
       //
       if (istar->Log_T[iline]<4.53121387658 &&
-          SimPM.RS.sources[isrc].effect == RT_EFFECT_PION_MULTI) {
+          SimPM.RS.sources[isrc].effect == RT_EFFECT_MFION) {
         //cout <<"L(BB) ="<<exp(pconst.ln10()*istar->Log_L[i])<<", T=";
         //cout <<exp(pconst.ln10()*istar->Log_T[i])<<", scale-factor=";
         double beta = -4.65513741*istar->Log_T[iline] + 21.09342323;
@@ -813,11 +814,6 @@ int setup_fixed_grid::update_evolving_RT_sources(
       }
 
       RT->update_RT_source_properties(rs);
-      if (rs->effect==RT_EFFECT_PION_MULTI) {
-        //cout <<"updating source properties in MP\n";
-        err += MP->set_multifreq_source_properties(rs);
-        if (err) rep.error("update_evolving_RT_sources()",rs->id);
-      }
       updated=true;
     }
     else {

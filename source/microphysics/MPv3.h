@@ -184,7 +184,7 @@ class MPv3
       const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,      ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data> &,
+      std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       pion_flt *,       ///< Destination Vector for updated values
                      ///< (can be same as first Vector.
@@ -268,7 +268,8 @@ class MPv3
   /// Set the properties of a multifrequency ionising radiation source.
   ///
   int set_multifreq_source_properties(
-      const struct rad_src_info *
+      const struct rad_src_info *, ///< source data
+      double *  ///< O/P source strength in different energy bins.
       );
 
   ///
@@ -445,7 +446,7 @@ class MPv3
   int
     N_diff_srcs, ///< No diffuse sources --> 0, otherwise --> 1
     N_ion_srcs,  ///< No ionising sources --> 0, otherwise --> 1
-    ion_src_type; ///< Either RT_EFFECT_PION_MULTI or RT_EFFECT_PION_MONO.
+    ion_src_type; ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
 
   //---------------------------------------------------------------------------
   //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW -------------------

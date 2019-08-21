@@ -374,7 +374,7 @@ int time_integrator::calc_RT_microphysics_dU(
 
 //#define NO_COOLING_ON_AXIS
 #ifdef NO_COOLING_ON_AXIS
-      //cout <<"hello\n";
+      cout <<"hello\n";
 //#error "Fix HACK in time_integrator.cpp"
       if (SimPM.coord_sys==COORD_CYL && 
           //!grid->NextPt(c,YN)->isgd &&

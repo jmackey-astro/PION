@@ -96,8 +96,6 @@ class MPv10
       );
 
   ///
-  /// The NON-RT MICROPHYSICS update function.
-  ///
   /// A primitive vector is input, and lots of optional extra data in
   /// the last argument, and the ion fraction(s) and internal energy
   /// are updated by the requested timestep.  Results are saved to
@@ -114,7 +112,7 @@ class MPv10
       );
 
   ///
-  /// UNUSED FUNCTION!!
+  /// UNUSED FUNCTION
   ///
   int TimeUpdate_RTsinglesrc(
       const pion_flt *, ///< Primitive Vector to be updated.
@@ -130,23 +128,29 @@ class MPv10
   {cout <<"MPv10::TimeUpdate_RTsinglesrc() not implemented\n";return 1;}
 
   ///
-  /// Not used for this class, so far
+  /// Update microphysics including photoionization and photoheating
   ///
   virtual int TimeUpdateMP_RTnew(
       const pion_flt *, ///< Primitive Vector to be updated.
-      const int,      ///< Number of UV heating sources.
-      const std::vector<struct rt_source_data> &,
-      ///< list of UV-heating column densities and source properties.
-      const int,      ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data> &,
+      const int,                                  ///< unused
+      const std::vector<struct rt_source_data> &, ///< unused
+      const int,                                  ///< unused
+      std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       pion_flt *,       ///< Destination Vector for updated values
       const double,   ///< Time Step to advance by.
       const double,   ///< EOS gamma.
-      const int, ///< Switch for what type of integration to use.
+      const int,                                  ///< unused
       double *    ///< any returned data (final temperature?).
-      )
-  {cout <<"MPv10::TimeUpdateMP_RTnew() not implemented\n";return 1;}
+      );
+
+  ///
+  /// Set the properties of a multifrequency ionising radiation source.
+  ///
+  int set_multifreq_source_properties(
+      const struct rad_src_info *, ///< source data
+      double *  ///< O/P source strength in different energy bins.
+      );
 
   ///
   /// Returns the gas temperature.  This is only needed for data output, so
@@ -508,7 +512,7 @@ class MPv10
   int
     N_diff_srcs, ///< No diffuse sources --> 0, otherwise --> 1
     N_ion_srcs,  ///< No ionising sources --> 0, otherwise --> 1
-    ion_src_type; ///< Either RT_EFFECT_PION_MULTI or RT_EFFECT_PION_MONO.
+    ion_src_type; ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
 
   //---------------------------------------------------------------------------
   //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW -------------------
@@ -574,7 +578,8 @@ class MPv10
   //
   double
     mpv_nH;     ///< total hydrogen number density at current cell.
-  std::vector<struct rt_source_data> rt_data; ///<data on radiation sources.
+  int N_rad_src; ///< number of radiation sources to include.
+  std::vector<struct rt_source_data> rt_data; ///< data on radiation sources.
 
   /*double Emax[15] = {13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3, 667.0*1e-3};//bin edges correspond to ionisation energies
   double Emin[15] = {11.3*1e-3, 13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3};

@@ -189,10 +189,10 @@ class raytracer_USC_infinity : public RayTracingBase {
   int N_uvh_srcs;
 
   /// cell/source data on IONISING srcs.
-  std::vector<struct rt_source_data> ION_data;
+  std::vector<struct rt_source_data *> ION_data;
 
   /// cell/source data on UV-HEATING srcs.
-  std::vector<struct rt_source_data> UVH_data;
+  std::vector<struct rt_source_data *> UVH_data;
 
   /// List of sources, with id, position, strength.
   std::vector<rad_source> SourceList;
@@ -203,7 +203,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// newly added source.
   ///
   void update_local_variables_for_new_source(
-        const struct rad_source ///< newly added source
+        struct rad_source ///< newly added source
         );
 
 

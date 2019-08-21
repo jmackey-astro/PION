@@ -196,8 +196,8 @@ void mp_rates_ExpH_ImpMetals::set_gamma_and_srcs(
       cout <<"mp_rates_ExpH_ImpMetals::set_gamma_and_srcs: Nisrc="<<ion<<", got="<<got<<": ";
       cout <<" found mono-p-ion src id="<<isrc<<" with NIdot="<<NIdot<<"\n";
     }
-    else if (RS->sources[isrc].effect==RT_EFFECT_PION_MULTI) {
-      ion_src_type = RT_EFFECT_PION_MULTI;
+    else if (RS->sources[isrc].effect==RT_EFFECT_MFION) {
+      ion_src_type = RT_EFFECT_MFION;
       NIdot = RS->sources[isrc].strength;
       //cout <<"Please code for multi-frequency photoionisation!\n";
       //rep.error("multifreq not implemented","mp_rates_ExpH_ImpMetals::set_gamma_and_srcs");
@@ -400,7 +400,7 @@ int mp_rates_ExpH_ImpMetals::dYdt(
   //
   if (ion) {
     switch (ion_src_type) {
-      case RT_EFFECT_PION_MULTI:
+      case RT_EFFECT_MFION:
       //
       // Rather than divide the discretised rate by n(H0) and then multiply by (1-x) to
       // get xdot, we simply divide by n(H) since this is more numerically stable.  To
@@ -734,7 +734,7 @@ MPv2::MPv2(
         ) diff++;
     if (RS->sources[isrc].type==RT_SRC_SINGLE &&
         (RS->sources[isrc].effect==RT_EFFECT_PION_MONO ||
-         RS->sources[isrc].effect==RT_EFFECT_PION_MULTI))  ion ++;
+         RS->sources[isrc].effect==RT_EFFECT_MFION))  ion ++;
   }
   cout <<"\t\tMPv2:: found "<<diff<<" diffuse and "<<ion<<" ionising sources.\n";
   MPR.set_gamma_and_srcs(gamma,diff,ion);
@@ -808,7 +808,7 @@ MPv2::MPv2(
     //
     for (int isrc=0; isrc<RS->Nsources; isrc++) {
       if (RS->sources[isrc].type==RT_SRC_SINGLE) {
-        if (RS->sources[isrc].effect==RT_EFFECT_PION_MULTI) {
+        if (RS->sources[isrc].effect==RT_EFFECT_MFION) {
           int err=set_multifreq_source_properties(&RS->sources[isrc]);
           if (err)
             rep.error("multifreq photoionisation setup failed in MPv2 const.",err);
@@ -917,7 +917,7 @@ int MPv2::set_multifreq_source_properties(
   // - make sure source is multi-freq and ionising
   // - make sure Rstar and Tstar are positive and finite
   //
-  if (rsi->effect!=RT_EFFECT_PION_MULTI)
+  if (rsi->effect!=RT_EFFECT_MFION)
     rep.error("Source is not multi-frequency!", rsi->id);
   if (rsi->Rstar<0 || !isfinite(rsi->Rstar))
     rep.error("Source has bad Rstar parameter", rsi->Rstar);

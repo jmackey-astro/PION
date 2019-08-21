@@ -511,7 +511,7 @@ setup_NG_grid.o: setup_NG_grid.cpp setup_NG_grid.h \
   NG_fine_to_coarse_boundaries.h boundaries.h
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
-  ${GLOBAL} uniform_grid.h grid_base_class.h
+  ${GLOBAL} uniform_grid.h grid_base_class.h rad_src_data.h
 
 
 #####################

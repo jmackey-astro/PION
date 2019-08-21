@@ -39,7 +39,7 @@ struct rad_src_info {
   /// properties implicitly.  Options are:
   /// - RT_EFFECT_UV_HEATING,
   /// - RT_EFFECT_PION_MONO,
-  /// - RT_EFFECT_PION_MULTI,
+  /// - RT_EFFECT_MFION,
   /// - RT_EFFECT_PHOTODISS, (UNUSED)
   /// - RT_EFFECT_PION_EQM, (UNUSED--for photoionisation equilibrium)
   /// - RT_EFFECT_HHE_MFQ  (NOT YET IMPLEMENTED)
@@ -82,19 +82,19 @@ struct rad_sources {
 // ##################################################################
 
 
-#define MAX_TAU 4
+#define MAX_TAU 20
 ///
 /// Radiation Source data struct, used for passing info to microphysics classes.
 ///
 struct rt_source_data {
-  int id;   ///< source id.
-  int type; ///< diffuse-radiation or a real source.
-  double strength; ///< Luminosity (or flux if source at infinity).
   double Vshell;   ///< Shell volume for discrete photo-ionisation/-heating rates.
   double dS;       ///< Path length through cell.
-  short unsigned int NTau; ///< Number of LOS quantities traced for the source.
+  double strength[MAX_TAU]; ///< Luminosity (or flux if source at infinity).
   double Column[MAX_TAU];  ///< integral of quantities along LOS to near edge of cell.
   double DelCol[MAX_TAU];  ///< integral of quantities along LOS through cell.
+  int id;   ///< source id.
+  int type; ///< diffuse-radiation or a real source.
+  short unsigned int NTau; ///< Number of LOS quantities traced for the source.
 };
 
 

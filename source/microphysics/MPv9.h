@@ -380,7 +380,7 @@ class MPv10
   int
     N_diff_srcs, ///< No diffuse sources --> 0, otherwise --> 1
     N_ion_srcs,  ///< No ionising sources --> 0, otherwise --> 1
-    ion_src_type; ///< Either RT_EFFECT_PION_MULTI or RT_EFFECT_PION_MONO.
+    ion_src_type; ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
 
   //---------------------------------------------------------------------------
   //-------------- FUNCTIONS DERIVED FROM BASE CLASS FOLLOW -------------------

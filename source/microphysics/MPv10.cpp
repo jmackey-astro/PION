@@ -402,14 +402,63 @@ MPv10::MPv10(
   // ================================================================
   // ================================================================
 
+  // ----------------------------------------------------------------
+  // Set flags for whether we have radiation sources.
+  // ----------------------------------------------------------------
+  for (int isrc=0; isrc<RS->Nsources; isrc++) {
+    if (RS->sources[isrc].type==RT_SRC_SINGLE &&
+        RS->sources[isrc].effect==RT_EFFECT_MFION) {
+      N_rad_src++;
+      rt_data.resize(N_rad_src);
+      int err=set_multifreq_source_properties(&RS->sources[isrc],
+                                      rt_data[N_rad_src-1].strength);
+      if (err)
+        rep.error("multifreq photoionisation setup MPv10",err);
+    }
+  }
+  cout <<"\t\tMPv10: got "<<N_rad_src<<" radiation sources.\n";
+  // ----------------------------------------------------------------
+  
   cout <<"MPv10: Constructor finished and returning.\n";
   cout <<"---------------------------------------------------------------------\n\n";
   return;
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
+
+int MPv10::set_multifreq_source_properties(
+      const struct rad_src_info *rsi, ///< source data
+      double *str  ///< O/P source luminosity per energy bin (erg/s/bin).
+      )
+{
+  if (rsi->effect!=RT_EFFECT_MFION)
+    rep.error("Wrong source type for id",rsi->id);
+
+  // TODO:
+  // Now we need to figure out how to get the luminosity of the star
+  // in each frequency bin, in erg/s/bin.
+  // * rsi->strength gives the luminosity of the star in erg/s
+  // * rsi->Tstar    gives the effective temperature of the star.
+  // If the star were a blackbody, then this would be enough to
+  // calculate the luminosity in each bin, if we have the bin ranges
+  // set (which we do).  Unfortunately a BB is a bad approximation.
+  // Maybe it is the best we can do for now.
+  //
+  // We want to add the luminosity in each bin to the array "str".
+  return 1;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 void MPv10::species_tracer_initialise(
     const std::string *tracers,  ///< List of what the tracer variables mean.
@@ -488,6 +537,7 @@ void MPv10::species_tracer_initialise(
 // ##################################################################
 
 
+
 void MPv10::setup_local_vectors()
 {
   //
@@ -505,10 +555,8 @@ void MPv10::setup_local_vectors()
 
   
 
-
 // ##################################################################
 // ##################################################################
-
 
 
 
@@ -554,6 +602,7 @@ double MPv10::get_n_elec(
   return 10.0;
 }
       
+
 
 // ##################################################################
 // ##################################################################
@@ -660,6 +709,8 @@ double MPv10::get_ntot(
 
 // ##################################################################
 // ##################################################################
+
+
 
 int MPv10::convert_prim2local(
       const pion_flt *p_in, ///< primitive vector from grid cell (length nv_prim)
@@ -978,6 +1029,36 @@ int MPv10::TimeUpdateMP(
       double *random_stuff  ///< Vector of extra data (column densities, etc.).
       )
 {
+  //
+  // Call the new update function, but with zero radiation sources.
+  //
+  std::vector<struct rt_source_data> temp;
+  int err = TimeUpdateMP_RTnew(p_in, 0, temp, 0, temp, p_out, dt, 0, 0, random_stuff);
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+  
+int MPv10::TimeUpdateMP_RTnew(
+      const pion_flt *p_in, ///< Primitive Vector to be updated.
+      const int,                                  ///< unused.
+      const std::vector<struct rt_source_data> &, ///< unused.
+      const int,                                  ///< unused.
+      std::vector<struct rt_source_data> &ion_src,
+        ///< list of ionising src column densities and source properties.
+      pion_flt *p_out,  ///< Destination Vector for updated values
+                        ///< (can be same as first Vector.
+      const double dt,  ///< Time Step to advance by.
+      const double,     ///< EOS gamma.
+      const int, ///< Switch (unused)
+      double *random_stuff ///< final temperature (debugging).
+      )
+{
   int err=0;
   double P[nvl];
 
@@ -989,6 +1070,9 @@ int MPv10::TimeUpdateMP(
   if (err) {
     rep.error("Bad input state to MPv10::TimeUpdateMP()",err);
   }
+  setup_radiation_source_parameters(p_in, P, ion_src);
+
+
   // Populates CVODE vector with initial conditions (input)
   for (int v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
 
@@ -1034,6 +1118,18 @@ int MPv10::TimeUpdateMP(
   for (int v=0;v<nvl;v++) P[v] = NV_Ith_S(y_out,v);
   err = convert_local2prim(P,p_in,p_out, 2);
 
+#ifdef TEST_INF
+  for (int v=0;v<nv_prim;v++) {
+    if (!isfinite(p_in[v]) || !isfinite(p_out[v])) {
+      cout <<"NAN in MPv3 update: "<<v<<"\n";
+      rep.printVec("Pin ",p_in,nv_prim);
+      rep.printVec("Pout",p_out,nv_prim);
+      rep.printVec("Ploc ",P,nvl);
+      //rep.error("NAN in MPv3",P[2]);
+      return 1;
+    }
+  }
+#endif
 
   //rep.printVec("l2p end prim ",p_out,nv_prim);
   //rep.printVec("l2p end local",P,nvl);
@@ -1167,9 +1263,10 @@ double MPv10::timescales_RT(
 
 
 
+// ##################################################################
+// ##################################################################
 
-// ##################################################################
-// ##################################################################
+
 
 void MPv10::sCMA(
     pion_flt *corrector, ///< input corrector vector
@@ -1228,14 +1325,27 @@ void MPv10::setup_radiation_source_parameters(
       ///< list of ionising src column densities and source properties.
       )
 {
-  //
-  // For each source we need:
-  // - Vshell and delta_S, the volume of equivalent spherical shell, 
-  //   and path length through cell.
-  // - Tau[] and dTau[] arrays
-  // 
   for (unsigned int v=0; v<ion_src.size(); v++)
-                                            rt_data[v] = ion_src[v];
+    rt_data[v] = ion_src[v];
+
+//struct rt_source_data {
+//  double Vshell;   ///< Shell volume for discrete photo-ionisation/-heating rates.
+//  double dS;       ///< Path length through cell.
+//  double strength[MAX_TAU]; ///< Luminosity (or flux if source at infinity).
+//  double Column[MAX_TAU];  ///< integral of quantities along LOS to near edge of cell.
+//  double DelCol[MAX_TAU];  ///< integral of quantities along LOS through cell.
+//  int id;   ///< source id.
+//  int type; ///< diffuse-radiation or a real source.
+//  short unsigned int NTau; ///< Number of LOS quantities traced for the source.
+//};
+  
+  // we want to use these data in ydot to loop over each radiation
+  // source, and calculate the ionization rate (using the photon-
+  // conserving formula) for each species.
+  // - Strength = erg/s/bin luminosity of source.
+  // - Column = Tau to edge of cell
+  // - DelCol = dTau through cell (we'll re-calculate this in ydot)
+  // - Vshell and dS are obvious from Mellema et al. paper.
 
   return;
 }

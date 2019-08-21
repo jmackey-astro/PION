@@ -137,7 +137,7 @@ class microphysics_base {
       const std::vector<struct rt_source_data> &,
       ///< list of UV-heating column densities and source properties.
       const int,      ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data> &,
+      std::vector<struct rt_source_data> &,
       ///< list of ionising src column densities and source properties.
       pion_flt *,       ///< Destination Vector for updated values
       ///< (can be same as first Vector.
@@ -206,8 +206,9 @@ class microphysics_base {
   /// Set the properties of a multifrequency ionising radiation source.
   ///
   virtual int set_multifreq_source_properties(
-                const struct rad_src_info *
-                ) {return -999;}
+      const struct rad_src_info *, ///< source data
+      double *  ///< source strength in different energy bins.
+      ) {return -999;}
 
   ///
   /// Get the total cooling rate.  This is for postprocessing the

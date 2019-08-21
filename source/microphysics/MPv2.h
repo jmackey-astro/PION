@@ -194,7 +194,7 @@ class mp_rates_ExpH_ImpMetals
     n_xd, ///< number of variables in extra-data void pointer for cvodes (zero here).
     diff, ///< No diffuse sources --> 0, otherwise --> 1
     ion,  ///< No ionising sources --> 0, otherwise --> 1
-    ion_src_type; ///< Either RT_EFFECT_PION_MULTI or RT_EFFECT_PION_MONO.
+    ion_src_type; ///< Either RT_EFFECT_MFION or RT_EFFECT_PION_MONO.
 
 };
 

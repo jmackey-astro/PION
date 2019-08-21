@@ -354,11 +354,10 @@ enum direction{
 //
 #define RT_EFFECT_UV_HEATING 1   ///< UV heating source.
 #define RT_EFFECT_PION_MONO  2   ///< monochromatic photoion source.
-#define RT_EFFECT_PION_MULTI 3   ///< multifrequency photoion source.
+#define RT_EFFECT_MFION      3   ///< multifrequency photoion source.
 #define RT_EFFECT_PHOTODISS  4   ///< photodissociation of molecules.
 #define RT_EFFECT_PION_EQM   5   ///< Assume photoion. equilibrium.
 #define RT_EFFECT_HHE_MFQ    9   ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
-#define RT_EFFECT_MFION     10   ///< multi-frequency ionization of many species.
 
 //
 // Source of opacity

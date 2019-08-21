@@ -266,7 +266,7 @@ int setup_fixed_grid_pllel::setup_raytracing(
       cout <<"Adding IONISING or UV single-source with id: ";
       cout << grid->RT->Add_Source(&(SimPM.RS.sources[isrc])) <<"\n";
       if (SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MONO ||
-          SimPM.RS.sources[isrc].effect==RT_EFFECT_PION_MULTI)
+          SimPM.RS.sources[isrc].effect==RT_EFFECT_MFION)
         ion_count++;
       else 
         uv_count++;

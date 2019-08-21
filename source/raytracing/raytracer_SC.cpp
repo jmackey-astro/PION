@@ -253,7 +253,7 @@ void raytracer_USC_infinity::add_source_to_list(
   //
   rs.data.id       = rs.s->id;
   rs.data.type     = rs.s->type;
-  rs.data.strength = rs.s->strength;
+  rs.data.strength[0] = rs.s->strength;
   rs.data.Vshell   = 0.0;
   rs.data.dS       = 0.0;
   rs.data.NTau     = rs.s->NTau;
@@ -400,7 +400,7 @@ void raytracer_USC_infinity::set_Vshell_for_source(
 
 
 void raytracer_USC_infinity::update_local_variables_for_new_source(
-      const struct rad_source rs_new
+      struct rad_source rs_new
       )
 {
   //
@@ -410,11 +410,11 @@ void raytracer_USC_infinity::update_local_variables_for_new_source(
   //
   if (rs_new.s->effect==RT_EFFECT_UV_HEATING) {
     N_uvh_srcs++;
-    UVH_data.push_back(rs_new.data);
+    UVH_data.push_back(&(rs_new.data));
   }
   else {
     N_ion_srcs++;
-    ION_data.push_back(rs_new.data);
+    ION_data.push_back(&(rs_new.data));
   }
 
   if (rs_new.s->update==RT_UPDATE_IMPLICIT)
@@ -444,11 +444,8 @@ void raytracer_USC_infinity::update_RT_source_properties(
                                     i!=SourceList.end(); ++i)
     if ( (*i).s->id==rs->id ) src=&(*i);
   if (!src) {
-    rep.error("update_RT_source_properties() Couldn't find source in source list.",rs->id);
+    rep.error("update_RT_source_properties() Couldn't find source",rs->id);
   }
-  //if (src->s->effect != RT_EFFECT_PION_MULTI) {
-  //  rep.error("update_RT_source_properties() Don't know how to update source type for this id",src->s->id);
-  //}
   //
   // copy parameters.
   //
@@ -457,6 +454,9 @@ void raytracer_USC_infinity::update_RT_source_properties(
   src->s->strength = rs->strength;
   src->s->Rstar = rs->Rstar;
   src->s->Tstar = rs->Tstar;
+
+  src->data.strength[0] = rs->strength;
+
   //src->s->id = rs->id;
   //src->s->type = rs->type;
   //src->s->update = rs->update;
@@ -467,6 +467,13 @@ void raytracer_USC_infinity::update_RT_source_properties(
   //src->s->opacity_var = rs->opacity_var;
   //src->s->EvoFile = rs->EvoFile;
 
+  int err=0;
+  if (src->s->effect==RT_EFFECT_MFION) {
+    //cout <<"updating source properties in MP\n";
+    err += MP->set_multifreq_source_properties(src->s,
+                                               src->data.strength);
+    if (err) rep.error("update_evolving_RT_sources()",rs->id);
+  }
     
   return;
 }
@@ -491,7 +498,7 @@ int raytracer_USC_infinity::populate_ionising_src_list(
   }
 #endif // RT_TESTING
 
-  for (int v=0; v<N_ion_srcs; v++) ion_list[v] = ION_data[v];
+  for (int v=0; v<N_ion_srcs; v++) ion_list[v] = *(ION_data[v]);
 
   return 0;
 }
@@ -515,7 +522,7 @@ int raytracer_USC_infinity::populate_UVheating_src_list(
   }
 #endif // RT_TESTING
 
-  for (int v=0; v<N_uvh_srcs; v++) uvh_list[v] = UVH_data[v];
+  for (int v=0; v<N_uvh_srcs; v++) uvh_list[v] = *(UVH_data[v]);
 
   return 0;
 }
@@ -1187,7 +1194,7 @@ void raytracer_USC::add_source_to_list(
   //
   rs.data.id       = rs.s->id;
   rs.data.type     = rs.s->type;
-  rs.data.strength = rs.s->strength;
+  rs.data.strength[0] = rs.s->strength;
   rs.data.Vshell   = 0.0;
   rs.data.dS       = 0.0;
   rs.data.NTau     = rs.s->NTau;
@@ -1302,7 +1309,7 @@ void raytracer_USC::set_TauMin_for_source(
   }
   else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
            (rs.s->opacity_src==RT_OPACITY_MINUS) &&
-           (rs.s->effect==RT_EFFECT_PION_MULTI)) {
+           (rs.s->effect==RT_EFFECT_MFION)) {
     // Photoionisation, sigma=6.3e-18, Tau=sigma*NH*(1-x)
     // This value seem to give best results for multifrequency sources, tested
     // for Teff of both 30000 and 39750K.

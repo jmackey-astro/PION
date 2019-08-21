@@ -153,7 +153,7 @@ int MPv6::ydot(
             Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
 
     switch (ion_src_type) {
-      case RT_EFFECT_PION_MULTI:
+      case RT_EFFECT_MFION:
       //
       // Rather than divide the discretised rate by n(H0) and then multiply by (1-x) to
       // get oneminusx_dot, we simply divide by n(H) since this is more numerically stable.  To

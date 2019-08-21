@@ -370,7 +370,7 @@ MPv3::MPv3(
     // point source with monochromatic or multi-frequency ionising photons.
     if (RS->sources[isrc].type==RT_SRC_SINGLE &&
         (RS->sources[isrc].effect==RT_EFFECT_PION_MONO ||
-         RS->sources[isrc].effect==RT_EFFECT_PION_MULTI)) {
+         RS->sources[isrc].effect==RT_EFFECT_MFION)) {
       N_ion_srcs++;
       //
       // Set the source type and Luminosity for the ionising source:
@@ -379,7 +379,7 @@ MPv3::MPv3(
       if (RS->sources[isrc].effect==RT_EFFECT_PION_MONO)
         ion_src_type=RT_EFFECT_PION_MONO;
       else
-        ion_src_type=RT_EFFECT_PION_MULTI;
+        ion_src_type=RT_EFFECT_MFION;
     }
   }
   cout <<"\t\tMPv3: got "<<N_diff_srcs<<" diffuse and ";
@@ -409,10 +409,11 @@ MPv3::MPv3(
     //
     for (int isrc=0; isrc<RS->Nsources; isrc++) {
       if (  (RS->sources[isrc].type  ==RT_SRC_SINGLE) &&
-            (RS->sources[isrc].effect==RT_EFFECT_PION_MULTI) ) {
-          int err=set_multifreq_source_properties(&RS->sources[isrc]);
-          if (err)
-            rep.error("multifreq photoionisation setup failed in MPv3 const.",err);
+            (RS->sources[isrc].effect==RT_EFFECT_MFION) ) {
+        int err=set_multifreq_source_properties(&RS->sources[isrc],
+                                                &mpv_NIdot);
+        if (err)
+          rep.error("multifreq photoionisation setup failed in MPv3 const.",err);
       }
     }
   }
@@ -590,8 +591,10 @@ MPv3::~MPv3()
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv3::Tr(const string s)
@@ -605,15 +608,15 @@ int MPv3::Tr(const string s)
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
-//
-// Set the properties of a multifrequency ionising radiation source.
-//
+
 int MPv3::set_multifreq_source_properties(
-      const struct rad_src_info *rsi
+      const struct rad_src_info *rsi, ///< source data
+      double *str  ///< O/P source strength in different energy bins.
       )
 {
   //cout <<"MPv3: updating radiation source properties\n";
@@ -622,7 +625,7 @@ int MPv3::set_multifreq_source_properties(
   // - make sure source is multi-freq and ionising
   // - make sure Rstar and Tstar are positive and finite
   //
-  if (rsi->effect!=RT_EFFECT_PION_MULTI)
+  if (rsi->effect!=RT_EFFECT_MFION)
     rep.error("Source is not multi-frequency!", rsi->id);
   if (rsi->Rstar<0 || !isfinite(rsi->Rstar))
     rep.error("Source has bad Rstar parameter", rsi->Rstar);
@@ -655,8 +658,8 @@ int MPv3::set_multifreq_source_properties(
               rsi->Rstar*6.96e10,
               rsi->strength,
               mincol,  maxcol, Emax,  Nsub, Nspl);
-
-
+  
+  *str = rsi->strength; // this doesn't do much.
   return 0;
 }
 
@@ -977,7 +980,7 @@ void MPv3::get_dtau(
   double yh0=0.0;
   switch (s->s->effect) {
     case RT_EFFECT_PION_MONO:
-    case RT_EFFECT_PION_MULTI:
+    case RT_EFFECT_MFION:
     yh0 = max(Min_NeutralFrac, 
                    min(Max_NeutralFrac, 1.0-p_in[pv_Hp]));
     *dtau = p_in[RO] * yh0 / mean_mass_per_H *
@@ -1021,8 +1024,10 @@ int MPv3::TimeUpdateMP(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv3::TimeUpdateMP_RTnew(
@@ -1031,7 +1036,7 @@ int MPv3::TimeUpdateMP_RTnew(
       const std::vector<struct rt_source_data> &heat_src,
         ///< list of UV-heating column densities and source properties.
       const int N_ion,    ///< number of ionising radiation sources.
-      const std::vector<struct rt_source_data> &ion_src,
+      std::vector<struct rt_source_data> &ion_src,
         ///< list of ionising src column densities and source properties.
       pion_flt *p_out,  ///< Destination Vector for updated values
                       ///< (can be same as first Vector.
@@ -1053,15 +1058,6 @@ int MPv3::TimeUpdateMP_RTnew(
     rep.error("Bad input state to MPv3::TimeUpdateMP_RTnew()",err);
   }
   setup_radiation_source_parameters(p_in, P, N_heat, heat_src, N_ion, ion_src);
-
-  //
-  // update radiation source properties, if needed (re-calculate
-  // multi-frequency photoionisation rates if the source properties
-  // have changed).
-  // TODO: CODE THIS SOMEWHERE!! BUT MAYBE put this somewhere else -- 
-  //       update the source properties when they change,
-  //       and through a different interface function!!
-  //
 
   for (int v=0;v<nvl;v++) NV_Ith_S(y_in,v) = P[v];
   //
@@ -1430,10 +1426,10 @@ void MPv3::setup_radiation_source_parameters(
 
     for (int v=0; v<N_heat; v++) {
       if (heat_src[v].type == RT_SRC_DIFFUSE) {
-        temp = heat_src[v].strength *diff_angle[i_diff];
+        temp = heat_src[v].strength[0] *diff_angle[i_diff];
 #ifdef MPV3_DEBUG
         cout <<"setup_rad_src_params:\tdiffuse src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
-        cout <<", strength="<<heat_src[v].strength<<", angle="<<diff_angle[i_diff];
+        cout <<", strength="<<heat_src[v].strength[0]<<", angle="<<diff_angle[i_diff];
         cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
 #endif // MPV3_DEBUG
         mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column[0]);
@@ -1449,11 +1445,11 @@ void MPv3::setup_radiation_source_parameters(
         // This source must be a point source of UV heating. In this case the strength is 
         // the photon luminosity, so flux = L*ds*exp(-1.9Av)/mpv_Vshell
         //
-        //cout <<"heat_src[v].strength "<<heat_src[v].strength;
-        temp = heat_src[v].strength*mpv_delta_S/heat_src[v].Vshell;
+        //cout <<"heat_src[v].strength "<<heat_src[v].strength[0];
+        temp = heat_src[v].strength[0]*mpv_delta_S/heat_src[v].Vshell;
 #ifdef MPV3_DEBUG
         cout <<"setup_rad_src_params:\tpoint   src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
-        cout <<", strength="<<heat_src[v].strength<<", ds="<<mpv_delta_S;
+        cout <<", strength="<<heat_src[v].strength[0]<<", ds="<<mpv_delta_S;
         cout <<", mpv_Vshell="<<heat_src[v].Vshell;
         cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
 #endif // MPV3_DEBUG
@@ -1568,7 +1564,7 @@ int MPv3::ydot(
             Hi_monochromatic_photo_ion_xsection(JUST_IONISED);
 
     switch (ion_src_type) {
-      case RT_EFFECT_PION_MULTI:
+      case RT_EFFECT_MFION:
       //
       // Rather than divide the discretised rate by n(H0) and then multiply by
       // (1-x) to get oneminusx_dot, we simply divide by n(H) since this is
