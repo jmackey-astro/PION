@@ -107,6 +107,7 @@ dataio_silo::dataio_silo(
   node_coords=0;
   nodex=nodey=nodez=0;
   data0=data1=data2=0;
+  mask=0;
   vec_data=0;
 
   //
@@ -888,6 +889,12 @@ int dataio_silo::setup_write_variables(
     }
   } //tracers
 
+  if (SimPM.grid_nlevels>1) {
+    string s = "NG_Mask";
+    varnames.push_back(s);
+  }
+
+
 #ifdef TESTING
   cout <<"list of vars: ";
   for (unsigned int i=0; i<varnames.size(); i++)
@@ -1077,6 +1084,17 @@ void dataio_silo::create_data_arrays(
     }
   }
 
+  // set up array for mask variable for nested grid.
+  if (!mask) {
+    int *m = 0;
+#ifdef WRITE_GHOST_ZONES
+    m = mem.myalloc(m,gp->Ncell_all());
+#else
+    m = mem.myalloc(m,gp->Ncell());
+#endif
+    mask = reinterpret_cast<void *>(m);
+  }
+
   //
   // If we are only writing scalar data, we don't need data1,data2,vec_data
   // so by setting vec_length=0 they don't get initialised.
@@ -1176,10 +1194,12 @@ void dataio_silo::delete_data_arrays()
     mem.myfree(reinterpret_cast<double *>(data2));
     mem.myfree(reinterpret_cast<double **>(vec_data));
   }
+  mem.myfree(reinterpret_cast<int *>(mask));
   data0    = 0;
   data1    = 0;
   data2    = 0;
   vec_data = 0;
+  mask     = 0;
   return;
 }
 
@@ -1209,6 +1229,14 @@ int dataio_silo::write_variable2mesh(
     if (err) rep.error("failed to write vector data for var.",variable);
   } // vector variable
 
+  else if (variable=="NG_Mask") {
+    // array is an int, so need different functions
+    err = get_int_scalar_data_array(variable, SimPM,  mask);
+    if (err) rep.error("failed to get scalar data for var.",variable);
+    err = write_scalar2mesh(dbfile, meshname, variable, mask);
+    if (err) rep.error("failed to write scalar data for var.",variable);
+  }
+
   else {
     // scalar variable, already have array, so just get data and write it.
     err = get_scalar_data_array(variable, SimPM,  data0);
@@ -1217,6 +1245,43 @@ int dataio_silo::write_variable2mesh(
     if (err) rep.error("failed to write scalar data for var.",variable);
   } // scalar variable
   
+  return 0;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int dataio_silo::get_int_scalar_data_array(
+      string variable, ///< variable name to get.
+      class SimParams &SimPM,  ///< pointer to simulation parameters
+      void *data_array     ///< array to write to.
+      )
+{
+  if (variable=="NG_Mask") {
+    // save a mask: 0 if cell is not a leaf, 1 if it is.
+    int *m =  reinterpret_cast<int *>(data_array);
+#ifdef WRITE_GHOST_ZONES
+    cell *c = gp->FirstPt_All();
+#else
+    cell *c = gp->FirstPt();
+#endif
+    long int ct=0;
+    do {
+      m[ct] = (c->isleaf) ? 1 : 0;
+      ct++;
+    }
+#ifdef WRITE_GHOST_ZONES
+    while ( (c=gp->NextPt_All(c))!=0 );
+#else
+    while ( (c=gp->NextPt(c))!=0 );
+#endif
+  }
+  else rep.error("what INT variable?",variable);
+
   return 0;
 }
 
@@ -1687,20 +1752,31 @@ int dataio_silo::get_vector_data_array(
 
 
 
-int dataio_silo::write_scalar2mesh(DBfile *dbfile,  ///< silo file pointer.
-				   string meshname, ///< mesh name
-				   string variable, ///< variable name
-				   void *data     ///< pointer to data array.
-				   )
+int dataio_silo::write_scalar2mesh(
+      DBfile *dbfile,  ///< silo file pointer.
+      string meshname, ///< mesh name
+      string variable, ///< variable name
+      void *data     ///< pointer to data array.
+      )
 {
   //cout <<"writing variable "<<variable<<" to mesh.\n";
   //
   // data has to be passed to the function as void ** in recent
   // versions of silo.  Datatype is specified with silo_dtype.
   //
-  int err = DBPutQuadvar1(dbfile, variable.c_str(), meshname.c_str(),
+  int err = 0;
+  if (variable=="NG_Mask") {
+    // int variable
+    err = DBPutQuadvar1(dbfile, variable.c_str(), meshname.c_str(),
+                          data, zonedims, ndim, 0,0, DB_INT,
+                          DB_ZONECENT, 0);
+  }
+  else {
+    // double/float
+    err = DBPutQuadvar1(dbfile, variable.c_str(), meshname.c_str(),
                           data, zonedims, ndim, 0,0, silo_dtype,
                           DB_ZONECENT, 0);
+  }
   return err;
 }
 

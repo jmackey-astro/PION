@@ -28,8 +28,8 @@
 # "standard" which is a standard linux system, assumed to have 8 cores (for
 # compiling code only, not running).
 #
-#MAKE_UNAME=standard
-MAKE_UNAME=locallibs
+MAKE_UNAME=standard
+#MAKE_UNAME=locallibs
 NCORES=8
 #
 # Production code options:
@@ -47,14 +47,18 @@ export CXX=mpicxx
 
 
 ################### --- KAY at ICHEC.IE ---######################
-# Options for fionn.ichec.ie
+# Options for kay.ichec.ie
 ######################################################################
 case $HOSTNAME in
   login[0-9].kay.ichec.ie)
     echo "Compiling on KAY/ICHEC"
+    #echo $PATH
+    #echo $INCLUDE
     source /usr/share/Modules/init/bash
     #module purge
-    module load intel
+    #echo $PATH
+    #module load intel
+    module load intel/2019u3
     module list
     MAKE_UNAME=KAY
     NCORES=8
@@ -69,8 +73,10 @@ case $HOSTNAME in
     PION_PATH=`pwd`
     PION_PATH=${PION_PATH}/../extra_libraries/lib
     export LD_LIBRARY_PATH=${PION_PATH}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH:-}
-    echo $LD_LIBRARY_PATH
+    #echo $LD_LIBRARY_PATH
     echo "***** COMPILING WITH KAY: COMPILERS ARE $CC $CXX "  
+    #echo $PATH
+    #echo $INCLUDE
     ;;
 esac
 ################### --- KAY at ICHEC.IE ---######################

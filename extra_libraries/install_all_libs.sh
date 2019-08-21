@@ -65,8 +65,8 @@ case $HOSTNAME in
     echo "Compiling on KAY/ICHEC"
     source /usr/share/Modules/init/bash
     #module purge
-    module load intel
-    module load cmake3
+    module load intel/2019u3
+    #module load cmake3/3.12.3
     #module load python py/intel
     #module load python numpy
     module list
@@ -101,234 +101,245 @@ export NCORES
 echo "COMPILING WITH MACHINE: ${MAKE_UNAME}. Compilers: CC=$CC FC=$FC CXX=$CXX"
 CURDIR=`pwd`
 
+COMPILE_SILO=yes
+COMPILE_SUNDIALS=yes
+COMPILE_FITS=yes
+
 ##################################
 ##########     SILO     ##########
 ##################################
-echo "********************************"
-echo "*** INSTALLING SILO LIBRARY ****"
-echo "********************************"
+if [ "$COMPILE_SILO" == "yes" ]
+then
+
+  echo "********************************"
+  echo "*** INSTALLING SILO LIBRARY ****"
+  echo "********************************"
 #################################
 # Change these for new versions:
-FILE=silo-4.10.2-bsd.tar.gz
-SRC_DIR=silo-4.10.2-bsd
-REMOTE_URL=https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
+  FILE=silo-4.10.2-bsd.tar.gz
+  SRC_DIR=silo-4.10.2-bsd
+  REMOTE_URL=https://wci.llnl.gov/content/assets/docs/simulation/computer-codes/silo/silo-4.10.2/silo-4.10.2-bsd.tar.gz
 #################################
 
 
-if [ -e $FILE ]; then
-	echo "*** File exists, no need to download ***"
-else 
-	echo "***** File does not exist ******"
-	echo "********************************"
-	echo "*** DOWNLOADING SILO LIBRARY ***"
-	echo "********************************"
-        if [ $MAKE_UNAME == "osx" ]; then
-          curl  $REMOTE_URL -o $FILE
-        else
-          $WGET --no-check-certificate $REMOTE_URL -O $FILE
-          if [ $? != 0 ]; then
-            echo ** failed to download with wget, trying curl instead **
-            rm $FILE
-            curl $REMOTE_URL -o $FILE
+  if [ -e $FILE ]; then
+          echo "*** File exists, no need to download ***"
+  else 
+          echo "***** File does not exist ******"
+          echo "********************************"
+          echo "*** DOWNLOADING SILO LIBRARY ***"
+          echo "********************************"
+          if [ $MAKE_UNAME == "osx" ]; then
+            curl  $REMOTE_URL -o $FILE
+          else
+            $WGET --no-check-certificate $REMOTE_URL -O $FILE
+            if [ $? != 0 ]; then
+              echo ** failed to download with wget, trying curl instead **
+              rm $FILE
+              curl $REMOTE_URL -o $FILE
+            fi
           fi
-        fi
-        # check it downloaded.
-        if [ ! -f $FILE ]; then
-          echo "File not found! : $FILE"
-          echo "Download of Silo Library Failed... quitting"
-          exit
-        fi
-fi 
+          # check it downloaded.
+          if [ ! -f $FILE ]; then
+            echo "File not found! : $FILE"
+            echo "Download of Silo Library Failed... quitting"
+            exit
+          fi
+  fi 
 #echo "********************************"
 #echo "*** EXTRACTING SILO LIBRARY ***"
 #echo "********************************"
-tar zxf $FILE
+  tar zxf $FILE
 #echo "********************************"
 #echo "*** RUNNING CONFIGURE ***"
 #echo "********************************"
-BASE_PATH=`pwd`
-echo "***Path = $BASE_PATH ***"
-cd $SRC_DIR
-make clean
+  BASE_PATH=`pwd`
+  echo "***Path = $BASE_PATH ***"
+  cd $SRC_DIR
+  make clean
 #
-if [ "$MAKE_UNAME" == "KAY" ]
-then
-  echo " ****** KAY.ICHEC.IE no shared libs, no python ****** "
-  ./configure --prefix=${BASE_PATH} \
- --disable-browser \
- --disable-fortran \
- --disable-silex \
- --disable-shared \
- --disable-pythonmodule
-elif [ "$SHARED" == "NO" ]
-then
-  echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
-  ./configure --prefix=${BASE_PATH} \
- --disable-browser \
- --disable-fortran \
- --disable-silex \
- --disable-shared \
- --enable-pythonmodule
-else
-  echo " ****** COMPILING SHARED LIBRARIES ****** "
-  ./configure --prefix=${BASE_PATH} \
- --disable-fortran \
- --disable-silex \
- --enable-pythonmodule \
- --with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial
+  if [ "$MAKE_UNAME" == "KAY" ]
+  then
+    echo " ****** KAY.ICHEC.IE no shared libs, no python ****** "
+    ./configure --prefix=${BASE_PATH} \
+   --disable-browser \
+   --disable-fortran \
+   --disable-silex \
+   --disable-shared \
+   --disable-pythonmodule
+  elif [ "$SHARED" == "NO" ]
+  then
+    echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
+    ./configure --prefix=${BASE_PATH} \
+   --disable-browser \
+   --disable-fortran \
+   --disable-silex \
+   --disable-shared \
+   --enable-pythonmodule
+  else
+    echo " ****** COMPILING SHARED LIBRARIES ****** "
+    ./configure --prefix=${BASE_PATH} \
+   --disable-fortran \
+   --disable-silex \
+   --enable-pythonmodule \
+   --with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial
+  fi
+
+  echo "********************************"
+  echo "*** RUNNING MAKE ***"
+  echo "********************************"
+  make -j$NCORES
+  echo "********************************"
+  echo "*** INSTALLING SILO LIBRARY ***"
+  echo "********************************"
+  make install
+  cd $CURDIR
+  echo "********************************"
+  echo "*** FINISHED! ***"
+  echo "********************************"
 fi
 
-echo "********************************"
-echo "*** RUNNING MAKE ***"
-echo "********************************"
-make -j$NCORES
-echo "********************************"
-echo "*** INSTALLING SILO LIBRARY ***"
-echo "********************************"
-make install
-cd $CURDIR
-echo "********************************"
-echo "*** FINISHED! ***"
-echo "********************************"
 
 ##################################
 ##########   SUNDIALS   ##########
 ##################################
-#if [ "$MAKE_UNAME" == "osx" ]
-#  exit
-#fi
-
-
+if [ "$COMPILE_SUNDIALS" == "yes" ]
+then
 #################################
 # Change these for new versions:
-FILE=sundials-2.6.2.tar.gz
-SRC_DIR=sundials-2.6.2
-BLD_DIR=sundials_build
-REMOTE_URL=https://computation.llnl.gov/projects/sundials/download/sundials-2.6.2.tar.gz
-echo "********************************"
-echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
-echo "********************************"
+  FILE=sundials-2.6.2.tar.gz
+  SRC_DIR=sundials-2.6.2
+  BLD_DIR=sundials_build
+  REMOTE_URL=https://computation.llnl.gov/projects/sundials/download/sundials-2.6.2.tar.gz
+  echo "********************************"
+  echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
+  echo "********************************"
 #################################
-if [ -e $FILE ]; then
-	echo "*** File downloaded, moving on... ***"
-else 
-	echo "***** File does not exist ******"
-	echo "********************************"
-	echo "*** Automatic download of ${FILE}"
-        echo "from ${REMOTE_URL}"
-        if [ $MAKE_UNAME == "osx" ]; then
-          curl  $REMOTE_URL -o $FILE
-        else
-          $WGET --no-check-certificate $REMOTE_URL -O $FILE
-        fi
-        # check it downloaded.
-        if [ ! -f $FILE ]; then
-          echo "File not found! : $FILE"
-          echo "Download of Silo Library Failed... quitting"
-          exit
-        fi
-        echo "***  Downloaded."
-	echo "********************************"
-fi 
-export CFLAGS='-O3'
-echo "***********************************"
-echo "*** EXTRACTING SUNDIALS LIBRARY ***"
-echo "***********************************"
-tar zxvf $FILE
-echo "***********************************"
-echo "*** RUNNING CMAKE CONFIG ***"
-echo "***********************************"
-BASE_PATH=`pwd`
-echo "Path = $BASE_PATH"
-mkdir -p $BLD_DIR
-cd $BLD_DIR
-echo "Running CMAKE"
-if [ "$SHARED" == "NO" ]
-then
-  echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
-  cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
- -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
- -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
- -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
- -DBUILD_CVODE=ON -DBUILD_SHARED_LIBS=OFF \
- ${BASE_PATH}/${SRC_DIR}
-else
-  echo " ****** COMPILING SHARED LIBRARIES ****** "
-  cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
- -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
- -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
- -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
- -DBUILD_CVODE=ON \
- ${BASE_PATH}/${SRC_DIR}
+  if [ -e $FILE ]; then
+    echo "*** File downloaded, moving on... ***"
+  else 
+    echo "***** File does not exist ******"
+    echo "********************************"
+    echo "*** Automatic download of ${FILE}"
+    echo "from ${REMOTE_URL}"
+    if [ $MAKE_UNAME == "osx" ]; then
+      curl  $REMOTE_URL -o $FILE
+    else
+      $WGET --no-check-certificate $REMOTE_URL -O $FILE
+    fi
+    # check it downloaded.
+    if [ ! -f $FILE ]; then
+      echo "File not found! : $FILE"
+      echo "Download of Silo Library Failed... quitting"
+      exit
+    fi
+    echo "***  Downloaded."
+    echo "********************************"
+  fi 
+  export CFLAGS='-O3'
+  echo "***********************************"
+  echo "*** EXTRACTING SUNDIALS LIBRARY ***"
+  echo "***********************************"
+  tar zxvf $FILE
+  echo "***********************************"
+  echo "*** RUNNING CMAKE CONFIG ***"
+  echo "***********************************"
+  BASE_PATH=`pwd`
+  echo "Path = $BASE_PATH"
+  mkdir -p $BLD_DIR
+  cd $BLD_DIR
+  echo "Running CMAKE"
+  if [ "$SHARED" == "NO" ]
+  then
+    echo " ****** NOT COMPILING SHARED LIBRARIES ****** "
+    cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
+   -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
+   -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
+   -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
+   -DBUILD_CVODE=ON -DBUILD_SHARED_LIBS=OFF \
+   ${BASE_PATH}/${SRC_DIR}
+  else
+    echo " ****** COMPILING SHARED LIBRARIES ****** "
+    cmake -DCMAKE_INSTALL_PREFIX=${BASE_PATH} \
+   -DEXAMPLES_INSTALL_PATH=${BASE_PATH} -DEXAMPLES_INSTALL=OFF \
+   -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
+   -DBUILD_KINSOL=OFF -DBUILD_CVODES=OFF \
+   -DBUILD_CVODE=ON \
+   ${BASE_PATH}/${SRC_DIR}
+  fi
+  echo "********************************"
+  echo "*** RUNNING MAKE ***"
+  echo "********************************"
+  make -j$NCORES
+  make -j$NCORES install
+  echo "*********************************"
+  echo "*** INSTALLED CVODE LIBRARY ***"
+  echo "*********************************"
+  cd $CURDIR
+  rm -rf $BLD_DIR
+  echo "********************************"
+  echo "*** FINISHED! ***"
+  echo "********************************"
 fi
-echo "********************************"
-echo "*** RUNNING MAKE ***"
-echo "********************************"
-make -j$NCORES
-make -j$NCORES install
-echo "*********************************"
-echo "*** INSTALLED CVODE LIBRARY ***"
-echo "*********************************"
-cd $CURDIR
-rm -rf $BLD_DIR
-echo "********************************"
-echo "*** FINISHED! ***"
-echo "********************************"
 
 ##################################
 ##########   CFITSIO    ##########
 ##################################
-echo "*******************************"
-echo "*** INSTALLING FITS LIBRARY ***"
-echo "*******************************"
+if [ "$COMPILE_FITS" == "yes" ]
+then
+  echo "*******************************"
+  echo "*** INSTALLING FITS LIBRARY ***"
+  echo "*******************************"
 #################################
 # Change these for new versions:
-FILE=cfitsio3390.tar.gz
-SRC_DIR=cfitsio
-REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
+  FILE=cfitsio3390.tar.gz
+  SRC_DIR=cfitsio
+  REMOTE_URL=https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/cfitsio3390.tar.gz
 #################################
 
-if [ -e $FILE ]; then
-	echo "*** File exists, no need to download ***"
-else 
-  echo "***** File does not exist ******"
-  echo "*******************************"
-  echo "*** DOWNLOADING FITS LIBRARY ***"
-  echo "*******************************"
-  if [ $MAKE_UNAME == "osx" ]; then
-    curl  $REMOTE_URL -o $FILE
-  else
-    $WGET --no-check-certificate $REMOTE_URL -O $FILE
+  if [ -e $FILE ]; then
+          echo "*** File exists, no need to download ***"
+  else 
+    echo "***** File does not exist ******"
+    echo "*******************************"
+    echo "*** DOWNLOADING FITS LIBRARY ***"
+    echo "*******************************"
+    if [ $MAKE_UNAME == "osx" ]; then
+      curl  $REMOTE_URL -o $FILE
+    else
+      $WGET --no-check-certificate $REMOTE_URL -O $FILE
+    fi
+    # check it downloaded.
+    if [ ! -f $FILE ]; then
+      echo "File not found! : $FILE"
+      echo "Download of Silo Library Failed... quitting"
+      exit
+    fi
   fi
-  # check it downloaded.
-  if [ ! -f $FILE ]; then
-    echo "File not found! : $FILE"
-    echo "Download of Silo Library Failed... quitting"
-    exit
-  fi
+  echo "*******************************"
+  echo "*** EXTRACTING FITS LIBRARY ***"
+  echo "*******************************"
+  tar zxf $FILE
+  echo "*******************************"
+  echo "*** RUNNING CONFIGURE ***"
+  echo "*******************************"
+  BASE_PATH=`pwd`
+  echo "***Path = $BASE_PATH ***"
+  cd $SRC_DIR
+  make clean
+  ./configure --prefix=${BASE_PATH}
+  echo "*******************************"
+  echo "*** RUNNING MAKE ***"
+  echo "*******************************"
+  make -j$NCORES
+  echo "*******************************"
+  echo "*** INSTALLING CFITSIO ***"
+  echo "*******************************"
+  make install
+  echo "*******************************"
+  echo "*** FINISHED! ***"
+  echo "*******************************"
 fi
-echo "*******************************"
-echo "*** EXTRACTING FITS LIBRARY ***"
-echo "*******************************"
-tar zxf $FILE
-echo "*******************************"
-echo "*** RUNNING CONFIGURE ***"
-echo "*******************************"
-BASE_PATH=`pwd`
-echo "***Path = $BASE_PATH ***"
-cd $SRC_DIR
-make clean
-./configure --prefix=${BASE_PATH}
-echo "*******************************"
-echo "*** RUNNING MAKE ***"
-echo "*******************************"
-make -j$NCORES
-echo "*******************************"
-echo "*** INSTALLING CFITSIO ***"
-echo "*******************************"
-make install
-echo "*******************************"
-echo "*** FINISHED! ***"
-echo "*******************************"
+
 cd $CURDIR
 

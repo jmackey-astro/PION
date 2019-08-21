@@ -130,11 +130,11 @@ int FV_solver_base::get_LaxFriedrichs_flux(
   if (FV_ntr>0) {
     if (f[eqRHO]>=0.) {
       for (int t=0;t<FV_ntr;t++)
-	f[eqTR[t]] = l[eqTR[t]]*f[eqRHO];
+  f[eqTR[t]] = l[eqTR[t]]*f[eqRHO];
     }
     else {
       for (int t=0;t<FV_ntr;t++)
-	f[eqTR[t]] = r[eqTR[t]]*f[eqRHO];
+  f[eqTR[t]] = r[eqTR[t]]*f[eqRHO];
     }
   }
   return 0;
@@ -308,9 +308,9 @@ void FV_solver_base::set_interface_tracer_flux(
       pion_flt *flux
       )
 {
-	int len_prim = FV_ntr + eqTR[0];
+  int len_prim = FV_ntr + eqTR[0];
   pion_flt corrector[100] = {1};
-	
+  
 #ifdef FUNCTION_ID
   cout <<"FV_solver_base::set_interface_tracer_flux ...starting.\n";
 #endif //FUNCTION_ID
@@ -325,28 +325,35 @@ void FV_solver_base::set_interface_tracer_flux(
   if (FV_ntr>0) {
     if (flux[eqRHO]>1.0e-28)
       for (int t=0;t<FV_ntr;t++)
-	flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
+  flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
     else if (flux[eqRHO]<-1.0e-28)
       for (int t=0;t<FV_ntr;t++)
-	flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
+  flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
     else 
       for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
 
   }
 #else
   if (FV_ntr>0) {
+#ifdef TEST_INF
+    if (!isfinite(flux[eqRHO])) {
+      cout <<"FV_solver_base::set_interface_tracer_flux: ";
+      rep.printVec("inf flux",flux,eq_nvar);
+    }
+#endif
+
     if (flux[eqRHO]>0.0) {
-			MP->sCMA(corrector, left);
+      MP->sCMA(corrector, left);
       for (int t=0;t<FV_ntr;t++)
-				{flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];}
-				/*if (corrector[eqTR[t]] > 1.0 + 1e-12 or corrector[eqTR[t]] < -2*1e-12 ) 
-					{ cout << "flux correction: " << corrector[eqTR[t]] << "\n";}}*/
-		}
+        {flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];}
+        /*if (corrector[eqTR[t]] > 1.0 + 1e-12 or corrector[eqTR[t]] < -2*1e-12 ) 
+          { cout << "flux correction: " << corrector[eqTR[t]] << "\n";}}*/
+    }
     else if (flux[eqRHO]<0.0) {
-			MP->sCMA(corrector, right);
+      MP->sCMA(corrector, right);
       for (int t=0;t<FV_ntr;t++)
-				flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];
-		} else 
+        flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO]*corrector[eqTR[t]];
+    } else 
       for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
 
   }
@@ -482,77 +489,77 @@ int FV_solver_base::calc_Hcorrection(
       xcolumns_finished = false;
       do {
 
-	// --------------------------------------------------------
-	// Calculate the H-correction coefficients for this column:
-	// Start at the outermost boundary cell, and go to the end.
-	// We need all interfaces between and including the
-	// grid-boundary interface.
-	// --------------------------------------------------------
+  // --------------------------------------------------------
+  // Calculate the H-correction coefficients for this column:
+  // Start at the outermost boundary cell, and go to the end.
+  // We need all interfaces between and including the
+  // grid-boundary interface.
+  // --------------------------------------------------------
 
-	//
-	// Set three cell pointers (2nd order slopes have a 3-point
-	// stencil).
-	//
-	cell *cpt = start;
-	cell *npt  = grid->NextPt(cpt,posdirs[idim]);
-	cell *n2pt = grid->NextPt(npt,posdirs[idim]);
-	if (npt==0 || n2pt==0)
-	  rep.error("Couldn't find two real cells in column",0);
+  //
+  // Set three cell pointers (2nd order slopes have a 3-point
+  // stencil).
+  //
+  cell *cpt = start;
+  cell *npt  = grid->NextPt(cpt,posdirs[idim]);
+  cell *n2pt = grid->NextPt(npt,posdirs[idim]);
+  if (npt==0 || n2pt==0)
+    rep.error("Couldn't find two real cells in column",0);
 
-	// 
-	// Need to get slopes and edge states if 2nd order (csp==OA2).
-	//
-	for (int v=0;v<SimPM.nvar;v++) { 
-	  slope_cpt[v] = 0.;
-	  edgeL[v]     = 0.;
-	} // slope_npt[] and edgeR[] get initialised in next loop.
-	
-	// --------------------------------------------------------
-	// Run through column, calculating slopes, edge-states, and
-	// eta[] values as we go.
-	// --------------------------------------------------------
-	do {
-	  err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
-	  err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
-	  err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
-	  set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
-	  //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
+  // 
+  // Need to get slopes and edge states if 2nd order (csp==OA2).
+  //
+  for (int v=0;v<SimPM.nvar;v++) { 
+    slope_cpt[v] = 0.;
+    edgeL[v]     = 0.;
+  } // slope_npt[] and edgeR[] get initialised in next loop.
+  
+  // --------------------------------------------------------
+  // Run through column, calculating slopes, edge-states, and
+  // eta[] values as we go.
+  // --------------------------------------------------------
+  do {
+    err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+    err += SetSlope(npt, axis[idim], SimPM.nvar, slope_npt, csp, grid);
+    err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+    set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+    //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
 
-	  //
-	  // Set npt slope to cpt slope, set n2pt to npt, npt to cpt.
-	  // Move to next cell.
-	  //
-	  cpt = npt;
+    //
+    // Set npt slope to cpt slope, set n2pt to npt, npt to cpt.
+    // Move to next cell.
+    //
+    cpt = npt;
           npt = n2pt;
-	  temp = slope_cpt;
-	  slope_cpt = slope_npt;
-	  slope_npt = temp;
-	}  while ( (n2pt=grid->NextPt(n2pt,posdirs[idim])) !=0);
+    temp = slope_cpt;
+    slope_cpt = slope_npt;
+    slope_npt = temp;
+  }  while ( (n2pt=grid->NextPt(n2pt,posdirs[idim])) !=0);
 
-	//
-	// If 1st order, cpt is still a grid cell (2nd order we are done)
-	//
-	err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
-	for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
-	err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
-	set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
-	//cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
-	
-	// --------------------------------------------------------
-	// Finished H-correction calculation for the column.
-	// --------------------------------------------------------
+  //
+  // If 1st order, cpt is still a grid cell (2nd order we are done)
+  //
+  err += SetEdgeState(cpt, posdirs[idim], SimPM.nvar, slope_cpt, edgeL, csp, grid);
+  for (int v=0;v<SimPM.nvar;v++) slope_npt[v] = 0.; // last cell must be 1st order.
+  err += SetEdgeState(npt, negdirs[idim], SimPM.nvar, slope_npt, edgeR, csp, grid);
+  set_Hcorrection(cpt, axis[idim], edgeL, edgeR, SimPM.gamma);
+  //cout <<" Hcorr["<<axis[idim]<<"] = "<<CI.get_Hcorr(cpt,axis[idim])<<"\n";
+  
+  // --------------------------------------------------------
+  // Finished H-correction calculation for the column.
+  // --------------------------------------------------------
 
-	//
-	// Get next x-column, or if it doesn't exist set a flag to
-	// indicate that we are finished.
-	//
-	if (SimPM.ndim==1) xcolumns_finished = true;
-	else {
-	  start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
-	  if (!start) xcolumns_finished = true;
-	}
+  //
+  // Get next x-column, or if it doesn't exist set a flag to
+  // indicate that we are finished.
+  //
+  if (SimPM.ndim==1) xcolumns_finished = true;
+  else {
+    start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
+    if (!start) xcolumns_finished = true;
+  }
       } while (!xcolumns_finished);
-	
+  
       //
       // Get next z-plane, or if it doesn't exist set a flag to
       // indicate that we are finished.  Reset marker to the first
@@ -560,9 +567,9 @@ int FV_solver_base::calc_Hcorrection(
       //
       if (SimPM.ndim<=2) zplanes_finished = true;
       else {
-	start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
-	marker = start;
-	if (!start) zplanes_finished = true;
+  start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
+  marker = start;
+  if (!start) zplanes_finished = true;
       }
     } while (!zplanes_finished);
 
@@ -599,7 +606,7 @@ void FV_solver_base::set_Hcorrection(
   // Sanders, Morano, Druguet, (1998, JCP, 145, 511)  eq. 10
   //
   double eta = 0.5*(fabs(edgeR[eqVX]-edgeL[eqVX]) + 
-		    fabs(maxspeed(edgeR,g)-maxspeed(edgeL,g)) );
+        fabs(maxspeed(edgeR,g)-maxspeed(edgeL,g)) );
 
   CI.set_Hcorr(c,axis,eta);
   return;
@@ -755,28 +762,28 @@ int FV_solver_base::set_thermal_conduction_Edot(
       //
       xcolumns_finished = false;
       do {
-	// --------------------------------------------------------
-	// Calculate the Heat fluxes coefficients for this column:
-	// Start at the outermost boundary cell, and go to the end.
-	// We need all interfaces between and including the
-	// grid-boundary interface.
-	// --------------------------------------------------------
-	cell *cpt = start;
-	while (grid->NextPt(cpt,negdirs[idim])) {
-	  cpt = grid->NextPt(cpt,negdirs[idim]);
-	}	
-	cell *npt  = grid->NextPt(cpt,posdirs[idim]);
-	if (npt==0)
-	  rep.error("Couldn't find two cells in column",0);
+        // --------------------------------------------------------
+        // Calculate the Heat fluxes coefficients for this column:
+        // Start at the outermost boundary cell, and go to the end.
+        // We need all interfaces between and including the
+        // grid-boundary interface.
+        // --------------------------------------------------------
+        cell *cpt = start;
+        while (grid->NextPt(cpt,negdirs[idim])) {
+          cpt = grid->NextPt(cpt,negdirs[idim]);
+        } 
+        cell *npt  = grid->NextPt(cpt,posdirs[idim]);
+        if (npt==0)
+          rep.error("Couldn't find two cells in column",0);
 
-        q_neg = 0.0; // no flux coming in from non-existent boundary data.
-        q_pos = 0.0;
+              q_neg = 0.0; // no flux coming in from non-existent boundary data.
+              q_pos = 0.0;
 
-	//
-	// Run through column, calculating slopes, edge-states, and
-	// eta[] values as we go.
-	//
-	do {
+        //
+        // Run through column, calculating slopes, edge-states, and
+        // eta[] values as we go.
+        //
+        do {
           //
           // Check if we have boundary data, b/c we need to set T for these cells.
           //
@@ -846,29 +853,29 @@ int FV_solver_base::set_thermal_conduction_Edot(
           }
           //cout <<"\tQc="<<Qclassical<<", Qs="<<Qsaturated<<", Q="<<q_pos<<", Edot="<<cpt->dU[ERG]<<"\n";
 
- 	  //
-	  // Set npt to cpt, set current q_pos to q_neg for next cell.
-	  // Move to next cell.
-	  //
+          //
+          // Set npt to cpt, set current q_pos to q_neg for next cell.
+          // Move to next cell.
+          //
           q_neg = q_pos;
-	  cpt = npt;
-	}  while ( (npt=grid->NextPt(npt,posdirs[idim])) !=0);
+          cpt = npt;
+        }  while ( (npt=grid->NextPt(npt,posdirs[idim])) !=0);
 
-	// --------------------------------------------------------
-	// Finished Heat conduction calculation for the column.
-	// --------------------------------------------------------
+        // --------------------------------------------------------
+        // Finished Heat conduction calculation for the column.
+        // --------------------------------------------------------
 
-	//
-	// Get next x-column, or if it doesn't exist set a flag to
-	// indicate that we are finished.
-	//
-	if (SimPM.ndim==1) xcolumns_finished = true;
-	else {
-	  start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
-	  if (!start || !start->isgd) xcolumns_finished = true;
-	}
+        //
+        // Get next x-column, or if it doesn't exist set a flag to
+        // indicate that we are finished.
+        //
+        if (SimPM.ndim==1) xcolumns_finished = true;
+        else {
+          start = grid->NextPt(start,posdirs[(idim+1)%SimPM.ndim]);
+          if (!start || !start->isgd) xcolumns_finished = true;
+        }
       } while (!xcolumns_finished);
-	
+        
       //
       // Get next z-plane, or if it doesn't exist set a flag to
       // indicate that we are finished.  Reset marker to the first
@@ -876,9 +883,9 @@ int FV_solver_base::set_thermal_conduction_Edot(
       //
       if (SimPM.ndim<=2) zplanes_finished = true;
       else {
-	start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
-	marker = start;
-	if (!start || !start->isgd) zplanes_finished = true;
+        start = grid->NextPt(marker,posdirs[(idim+2)%SimPM.ndim]);
+        marker = start;
+        if (!start || !start->isgd) zplanes_finished = true;
       }
     } while (!zplanes_finished);
 

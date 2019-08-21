@@ -336,6 +336,7 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_1D(
   struct rad_src_info *s;
   //int diffx,diffy;
   int spos[MAX_DIM];
+  for (int iT=0; iT<MAX_TAU; iT++) Tavg[iT] = 0.0;
 
   f1 = c[0];
   f2 = c[1];
@@ -393,6 +394,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_2D(
   struct rad_src_info *s;
   int diffx,diffy;
   int spos[MAX_DIM];
+  for (int iT=0; iT<MAX_TAU; iT++) Tavg[iT] = 0.0;
+  for (int iT=0; iT<MAX_TAU; iT++) dTavg[iT] = 0.0;
 
 #ifdef RT_TESTING
   cout <<"2D F2C RT Routine\n";
@@ -549,6 +552,8 @@ void NG_fine_to_coarse_bc::get_F2C_TauAvg_3D(
   struct rad_src_info *s;
   //int diffx,diffy,diffz;
   int spos[MAX_DIM];
+  for (int iT=0; iT<MAX_TAU; iT++) Tavg[iT] = 0.0;
+  for (int iT=0; iT<MAX_TAU; iT++) dTavg[iT] = 0.0;
 
 #ifdef RT_TESTING
   cout <<"3D F2C RT Routine\n";

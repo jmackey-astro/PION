@@ -153,6 +153,9 @@ int eqns_mhd_ideal::check_pressure(
   //
   int err=0;
   if (p[eqRO] <=0.0) {
+    rep.printVec("u",u,eq_nvar);
+    rep.printVec("p",p,eq_nvar);
+    rep.error("Negative Density! Bugging out",p[eqRO]);
     if (ct_rho<1000) {
       ct_rho ++;
       cout <<"(eqns_mhd_ideal::UtoP) negative density!  ";

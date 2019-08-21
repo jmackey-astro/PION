@@ -428,9 +428,11 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     rep.printVec("Pf ",Pf, eq_nvar);
 //#endif
   }
+
   for (int v=0;v<eq_nvar;v++) {
     dU[v] = 0.;       // Reset the dU array for the next timestep.
   }
+
 #ifdef TEST_INF
   for (int v=0;v<eq_nvar;v++) {
     if (!isfinite(Pf[v])) {

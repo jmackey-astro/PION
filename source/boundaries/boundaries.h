@@ -83,10 +83,10 @@ enum BoundaryTypes {
 #define BC_MPItag 1 ///< Integer tag on MPI send/receive operations, to label that this communicates MPI boundary data.
 #define BC_PERtag 2 ///< Integer tag to say it is for periodic BC.
 #define BC_RTtag  3 ///< Integer tag to say we are transferring a radiative transfer column density tag.
-#define BC_MPI_NGF2C_tag 1000000 ///< MPI send/receive from fine to coarse grid.
-#define BC_MPI_NGC2F_tag 2000000 ///< MPI send/receive from coarse to fine grid.
+#define BC_MPI_NGF2C_tag 10     ///< MPI send/receive from fine to coarse grid.
+#define BC_MPI_NGC2F_tag 1000   ///< MPI send/receive from coarse to fine grid.
 // this gives a unique identifier as long as n_levels<10, nproc<10000.
-#define BC_MPI_FLUX_tag  3000000 ///< Berger & Colella (1989) flux correction.
+#define BC_MPI_FLUX_tag  10000  ///< Berger & Colella (1989) flux correction.
 
 
 // ##################################################################

@@ -40,7 +40,7 @@ MCMDcontrol::MCMDcontrol()
 
   ReadSingleFile  =true; ///< If the ICs are in a single file, set this to true.
   WriteSingleFile =false; ///< If all processes to write to one file, set this
-  WriteFullImage  =false; ///< If multiple fits files, but each one is the full domain size, set this.
+  WriteFullImage  =false; ///< If multiple fits files, each is the full domain size.
 }
 
 // ##################################################################
@@ -59,8 +59,8 @@ MCMDcontrol::~MCMDcontrol() {
 
 
 int MCMDcontrol::decomposeDomain(
-      class SimParams &SimPM,  ///< pointer to simulation parameters
-      class level &level     ///< pointer to domain parameters for NG grid level
+      class SimParams &SimPM,  ///< simulation parameters
+      class level &level     ///< parameters for NG grid level
       )
 {
 #ifdef TESTING
@@ -111,7 +111,7 @@ int MCMDcontrol::decomposeDomain(
       // --- Check if we are doing raytracing with a source at infinity. ---
       if (SimPM.EP.raytracing && SimPM.RS.Nsources>0) {
         //
-	// check if we have only one source at infinity, b/c then we decompose to keep
+	// if one source at infinity, b/c then we decompose to keep
 	// rays on one processor all the time.
         //
         bool at_infinity=true;

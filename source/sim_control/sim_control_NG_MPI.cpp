@@ -376,10 +376,10 @@ int sim_control_NG_MPI::Time_Int(
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-#ifdef TESTING
-    cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";
-#endif
     if (l<SimPM.grid_nlevels-1) {
+#ifdef TEST_INT
+      cout <<"NG_MPI Receiving F2C boundaries for level "<<l<<"\n";
+#endif
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_RECV) {
           err += BC_update_FINE_TO_COARSE_RECV(SimPM,spatial_solver,
@@ -388,9 +388,15 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
 
+#ifdef TEST_INT
+    cout <<"NG_MPI raytracing level "<<l<<"\n";
+#endif
     do_ongrid_raytracing(SimPM,grid[l],l);
         
     if (l>0) {
+#ifdef TEST_INT
+      cout <<"NG_MPI Sending F2C boundaries for level "<<l<<"\n";
+#endif
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == FINE_TO_COARSE_SEND) {
           err += BC_update_FINE_TO_COARSE_SEND(SimPM,
@@ -399,11 +405,11 @@ int sim_control_NG_MPI::Time_Int(
       }
     }
   }
-#ifdef TESTING
+#ifdef TEST_INT
   cout <<"NG_MPI updated F2C boundaries for all levels.\n";
 #endif
   BC_FINE_TO_COARSE_SEND_clear_sends();
-#ifdef TESTING
+#ifdef TEST_INT
   cout <<"NG_MPI F2C cleared all sends.\n";
 #endif
   rep.errorTest("NG_MPI time-int: error from bounday update",0,err);
@@ -412,7 +418,7 @@ int sim_control_NG_MPI::Time_Int(
   // ----------------------------------------------------------------
   // update coarse-to-fine level boundaries
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-#ifdef TESTING
+#ifdef TEST_INT
     cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
     cout <<l<<"\n";
 #endif
@@ -1243,9 +1249,8 @@ int sim_control_NG_MPI::send_BC89_fluxes_F2C(
 #endif
         continue;
       }
-      // unique as long as isend<30, l<10, rank<10000.
-      int comm_tag = BC_MPI_FLUX_tag +100000*isend +10000*l;
-      comm_tag += MCMD->get_myrank();
+      // unique as long as isend<30, l<100.
+      int comm_tag = BC_MPI_FLUX_tag +100*isend +l;
 #ifdef TEST_BC89FLUX
       cout <<"l="<<l<<": BC89 FLUX: Sending "<<n_data;
       cout <<" doubles from proc "<<MCMD->get_myrank();
@@ -1351,9 +1356,9 @@ int sim_control_NG_MPI::recv_BC89_fluxes_F2C(
     // relating to this value of "irecv".
     string recv_id;
     int recv_tag=-1;
-    int from_rank=-1;
+    int from_rank=fup->rank[0];
     // unique as long as isend<30, l<10, rank<10000.
-    int comm_tag = BC_MPI_FLUX_tag +100000*dir +10000*(l+1) +fup->rank[0];
+    int comm_tag = BC_MPI_FLUX_tag +100*dir +(l+1);
 #ifdef TEST_BC89FLUX
     cout <<"looking for data with tag: "<<comm_tag<<endl;
 #endif
