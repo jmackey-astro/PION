@@ -168,24 +168,10 @@ RT_src_type_0    1  # 1=single src, 2=diffuse-radiation.
 RT_at_infty_0    0  # 0=no, 1=yes.
 RT_update___0    2  # 1=C2Ray update, 2=New update.
 RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
-RT_Tau_src__0    2  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
+RT_Opacity__0    10 # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i), 10=multi-ion
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in state vector)
 RT_EVO_FILE_0    NOFILE
-
-# UV heating associated with emission from central star.
-RT_position_1_0  0.0e18
-RT_position_1_1  0.0e18
-RT_position_1_2  0.0e18
-RT_strength_1    4.0e50 # 2X the ionision photon luminosity
-RT_Rstar____1    0.0  # Radius of star in solar radii.
-RT_Tstar____1    0.0  # Stellar effective temperature.
-RT_src_type_1    1  # 1=single src, 2=diffuse-radiation.
-RT_at_infty_1    0  # 0=no, 1=yes.
-RT_update___1    2  # 1=C2Ray update, 2=New update.
-RT_effect___1    1  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
-RT_Tau_src__1    1  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
-RT_Tau_var__1    0  # opacity variably y_i (this is its index in state vector)
-RT_EVO_FILE_1    NOFILE
+RT_Nbins____0    15
 
 
 

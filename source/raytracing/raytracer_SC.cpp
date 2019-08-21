@@ -895,6 +895,9 @@ int raytracer_USC_infinity::ProcessCell(
   // set cell_col based on opacity flag.  cell_col[]=ds from above,
   // so multiply it by the cell-values here.
   switch (source->s->opacity_src) {
+  case RT_OPACITY_MP:
+    MP->get_dtau(source, ds, c->Ph, cell_col);
+    break;
 
   case RT_OPACITY_MINUS:
     // generic flag for integrating rho*(1-y_i)*ds

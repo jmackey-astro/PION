@@ -32,7 +32,7 @@ using namespace std;
 
 // ##################################################################
 // ##################################################################
-//TODO: ASK JONATHAN WHY IT'S LIMITED TO 0.03KEV, IF IT STILL APPLIES TO OUR PHOTONS (DON'T THINK SO...)
+//TODO: ASK JONATHAN WHY IT'S LIMITED TO 0.03KEV, IF IT STILL APPLIES TO OUR PHOTONS (DON'T THINK SO...)   **NO! that was for X-rays**
 
 ///
 /// constructor: inputs are Emin, Emax, nbins.

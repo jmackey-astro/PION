@@ -656,13 +656,14 @@ int get_sim_info::read_radsources(
       rs_temp.EvoFile = "NOFILE";
     }
 
-    //
-    // Set NTau based on source.effect.
-    //
-    if (rs_temp.effect==RT_EFFECT_HHE_MFQ)
-      rs_temp.NTau = 4;
-    else
+    temp2.str(""); temp2 << "RT_Nbins____" << i;
+    if ( (a=rp->find_parameter(temp2.str())) !="")
+      rs_temp.NTau = atoi(a.c_str());
+    else {
+      cerr <<"*** no NTau in parameter file: " <<temp2.str();
+      cerr <<"... using 1.\n";
       rs_temp.NTau = 1;
+    }
 
     //
     // Add source i to SimPM.RS list.

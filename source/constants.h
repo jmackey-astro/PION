@@ -357,7 +357,8 @@ enum direction{
 #define RT_EFFECT_PION_MULTI 3   ///< multifrequency photoion source.
 #define RT_EFFECT_PHOTODISS  4   ///< photodissociation of molecules.
 #define RT_EFFECT_PION_EQM   5   ///< Assume photoion. equilibrium.
-#define RT_EFFECT_HHE_MFQ    9   ///< Frank&Mellema H+He p-ion scheme
+#define RT_EFFECT_HHE_MFQ    9   ///< Frank&Mellema H+He p-ion scheme (not fully implemented)
+#define RT_EFFECT_MFION     10   ///< multi-frequency ionization of many species.
 
 //
 // Source of opacity
@@ -370,6 +371,7 @@ enum direction{
 #define RT_OPACITY_NII_FL 6 ///< Used only for analysis to calculate projected [NII] forbidden line emission.
 #define RT_OPACITY_RR     7 ///< Recombination rate (for ph-ion.eqm.)
 #define RT_OPACITY_HHE    9 ///< H0,He0,He+,Dust.
+#define RT_OPACITY_MP     10 ///< Get opacity from microphysics.
 // *******************************************************************
 // **************  Constants for Radiative Trasnfer   ****************
 // *******************************************************************

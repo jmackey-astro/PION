@@ -254,9 +254,10 @@ class microphysics_base {
   /// vector.
   ///
   virtual void get_dtau(
-      const pion_flt,   ///< ds, thickness of the cell
-      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *        ///< output dtau vector
+      const rad_source *, ///< pointer to radiation source struct
+      const pion_flt,     ///< ds, thickness of the cell
+      const pion_flt *,   ///< input primitive vector from cell
+      pion_flt *          ///< output dtau vector
       ) {return;}
 
   ///

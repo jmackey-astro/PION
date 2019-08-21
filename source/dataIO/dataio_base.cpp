@@ -672,16 +672,6 @@ int DataIOBase::read_simulation_parameters(
     //
     for (int i=0; i<SimPM.RS.Nsources; i++) {
       SimPM.RS.sources.at(i).id = i;
-      //
-      // Set NTau based on source.effect.
-      //
-      if (SimPM.RS.sources.at(i).effect==RT_EFFECT_HHE_MFQ)
-        SimPM.RS.sources.at(i).NTau = 4;
-      else
-        SimPM.RS.sources.at(i).NTau = 1;
-      //
-      // Check for sensible values:
-      //
       if (SimPM.RS.sources.at(i).type <0) {
         rep.error("Failed to get source type for source id",i);
       }
@@ -700,6 +690,9 @@ int DataIOBase::read_simulation_parameters(
       }
       if (SimPM.RS.sources.at(i).opacity_var+SimPM.ftr >=SimPM.nvar) {
         rep.error("Opacity var for source is off end of array (ftr offset!)",i);
+      }
+      if (SimPM.RS.sources.at(i).NTau <1) {
+        rep.error("Failed to set source NTau for source id",i);
       }
     }
 
@@ -1155,12 +1148,13 @@ void DataIOBase::set_rt_src_params(
     ostringstream temp4; temp4.str(""); temp4 << "RT_src_type_" <<n;
     ostringstream temp5; temp5.str(""); temp5 << "RT_at_infty_" <<n;
     ostringstream temp6; temp6.str(""); temp6 << "RT_update___" <<n;
-    ostringstream temp7; temp7.str(""); temp7 << "RT_Tau_src__" <<n;
+    ostringstream temp7; temp7.str(""); temp7 << "RT_Opactiy__" <<n;
     ostringstream temp8; temp8.str(""); temp8 << "RT_Tau_var__" <<n;
     ostringstream temp9; temp9.str(""); temp9 << "RT_effect___" <<n;
     ostringstream tmp10; tmp10.str(""); tmp10 << "RT_Rstar____" <<n;
     ostringstream tmp11; tmp11.str(""); tmp11 << "RT_Tstar____" <<n;
     ostringstream tmp12; tmp12.str(""); tmp12 << "RT_EVO_FILE_" <<n;
+    ostringstream tmp13; tmp13.str(""); tmp13 << "RT_Nbins____" <<n;
 
 //ADD SOURCE_EFFECT VARIABLE!
     pm_ddimarr *rtpos = new pm_ddimarr (temp2.str(), (SimPM.RS.sources[n].pos));
@@ -1188,6 +1182,9 @@ void DataIOBase::set_rt_src_params(
     pm_string  *rtEvo = new pm_string  (tmp12.str(), &(SimPM.RS.sources[n].EvoFile), "NOFILE");
     rtEvo->critical=false;
     rt_src.push_back(rtEvo);
+    pm_int     *rtNBn = new pm_int     (tmp13.str(), &(SimPM.RS.sources[n].NTau),1);
+    rtNBn->critical=false;
+    rt_src.push_back(rtNBn);
   }
   have_setup_rt_src=true;
   return;

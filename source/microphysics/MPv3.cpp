@@ -893,17 +893,33 @@ int MPv3::Set_Temp(
 
 
 void MPv3::get_dtau(
+      const rad_source *s, ///< pointer to radiation source struct
       const pion_flt ds,   ///< ds, thickness of the cell
       const pion_flt *p_in, ///< input primitive vector
       pion_flt *dtau        ///< output dtau vector
       )
 {
-  // dTau for MPv3 is n(H0)*sigma(H0)*ds at 13.6eV.
-  double yh0 = max(Min_NeutralFrac, 
+  // dTau for MPv3 is n(H0)*sigma(H0)*ds at 13.6eV for the ionizing
+  // source, and n(H)*sigma(dust)*ds in UV for UV heating source.
+  double yh0=0.0;
+  switch (s->s->effect) {
+    case RT_EFFECT_PION_MONO:
+    case RT_EFFECT_PION_MULTI:
+    yh0 = max(Min_NeutralFrac, 
                    min(Max_NeutralFrac, 1.0-p_in[pv_Hp]));
-  dtau[0] = p_in[RO] * yH0 / mean_mass_per_H *
+    *dtau = p_in[RO] * yh0 / mean_mass_per_H *
             Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * ds;
-  dtau[1] = p_in[RO] * 5.348e-22 * METALLICITY/mean_mass_per_H * ds;
+    break;
+
+    case RT_EFFECT_UV_HEATING:
+    *dtau = p_in[RO] * 5.348e-22 * METALLICITY/mean_mass_per_H * ds;
+    break;
+
+    default:
+    cout <<"id="<<s->s->id<<", effect="<<s->s->effect<<"\n";
+    rep.error("Bad source effect in MPv3::get_dtau()",s->s->effect);
+    break;
+  }
   return;
 }
 

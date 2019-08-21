@@ -557,18 +557,24 @@ class MPv10
   //-------------- END OF FUNCTIONS DERIVED FROM BASE CLASS -------------------
   //---------------------------------------------------------------------------
 
+  ///
+  /// For each cell, ydot() needs to know the local radiation field.  This function
+  /// takes all of the input radiation sources and calculates what ydot() needs to
+  /// know for both heating and ionisation sources.
+  ///
+  void setup_radiation_source_parameters(
+      const pion_flt *, ///< primitive input state vector.
+      double *,  ///< local input state vector (x_in,E_int)
+      std::vector<struct rt_source_data> &
+      ///< list of ionising src column densities and source properties.
+      );
+
   //
   // Constant data in the cell, received from cell data.
   //
   double
-    mpv_nH,     ///< total hydrogen number density at current cell.
-    mpv_Vshell, ///< geometric factor in point source flux calculation (\sim 4\pi R^2 dR).
-    mpv_Tau0,   ///< Optical depth of neutral hydrogen to front edge of cell at 13.6eV
-    mpv_dTau0,  ///< Optical depth of neutral hydrogen through cell (=nH*dS*(1-x)*sigma) at 13.6eV.
-    mpv_G0_UV,  ///< UV heating flux, including attenuation, F*exp(-1.9Av).
-    mpv_G0_IR,  ///< Heating due to UV flux re-radiated in IR and re-absorbed, F*exp(-0.05Av).
-    mpv_NIdot,  ///< photon luminosity of monochromatic ionising source (ionising photons/s).
-    mpv_delta_S;///< path length through current cell.
+    mpv_nH;     ///< total hydrogen number density at current cell.
+  std::vector<struct rt_source_data> rt_data; ///<data on radiation sources.
 
   /*double Emax[15] = {13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3, 667.0*1e-3};//bin edges correspond to ionisation energies
   double Emin[15] = {11.3*1e-3, 13.6*1e-3, 14.5*1e-3, 24.4*1e-3, 24.58741*1e-3, 29.6*1e-3, 47.5*1e-3, 47.9*1e-3, 54.41778*1e-3, 64.5*1e-3, 77.5*1e-3, 97.9*1e-3, 392.1*1e-3, 490.0*1e-3, 552.1*1e-3};
