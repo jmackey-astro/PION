@@ -287,6 +287,17 @@ class MPv3
       );
 
   ///
+  /// Get optical depth for a range of frequencies based on the 
+  /// local abundances of elements and species in the input primitive
+  /// vector.
+  ///
+  virtual void get_dtau(
+      const pion_flt,   ///< ds, thickness of the cell
+      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *        ///< output dtau vector
+      );
+  
+  ///
   /// Get the total recombination rate for an ion, given the input
   /// state vector.
   ///

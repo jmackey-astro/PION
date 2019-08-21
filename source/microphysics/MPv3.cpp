@@ -700,7 +700,7 @@ double MPv3::get_ntot(
 
 
 int MPv3::convert_prim2local(
-      const pion_flt *p_in, ///< primitive vector from grid cell (length nv_prim)
+      const pion_flt *p_in, ///< primitive vector (length nv_prim)
       double *p_local
       )
 {
@@ -770,8 +770,8 @@ int MPv3::convert_prim2local(
 
 int MPv3::convert_local2prim(
       const double *p_local,
-      const pion_flt *p_in, ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *p_out       ///< updated primitive vector for grid cell (length nv_prim)
+      const pion_flt *p_in, ///< input primitive vector 
+      pion_flt *p_out       ///< updated primitive vector
       )
 {
   for (int v=0;v<nv_prim;v++) p_out[v] = p_in[v];
@@ -821,8 +821,11 @@ int MPv3::convert_local2prim(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
 
 double MPv3::Temperature(
       const pion_flt *pv, ///< primitive vector
@@ -854,8 +857,10 @@ double MPv3::Temperature(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int MPv3::Set_Temp(
@@ -881,8 +886,32 @@ int MPv3::Set_Temp(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
+
+
+void MPv3::get_dtau(
+      const pion_flt ds,   ///< ds, thickness of the cell
+      const pion_flt *p_in, ///< input primitive vector
+      pion_flt *dtau        ///< output dtau vector
+      )
+{
+  // dTau for MPv3 is n(H0)*sigma(H0)*ds at 13.6eV.
+  double yh0 = max(Min_NeutralFrac, 
+                   min(Max_NeutralFrac, 1.0-p_in[pv_Hp]));
+  dtau[0] = p_in[RO] * yH0 / mean_mass_per_H *
+            Hi_monochromatic_photo_ion_xsection(JUST_IONISED) * ds;
+  dtau[1] = p_in[RO] * 5.348e-22 * METALLICITY/mean_mass_per_H * ds;
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 int MPv3::TimeUpdateMP(

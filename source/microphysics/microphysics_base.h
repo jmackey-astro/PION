@@ -240,14 +240,20 @@ class microphysics_base {
 	
   /// 
   /// Updates the corrector vector
-  /// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
+  /// according to sCMA (simple Consistent Multi-fluid Advection, 
+  /// Plewa + Muller, 1999).
   /// Used for modifying tracer fluxes.
   virtual void sCMA(
       pion_flt *,      ///< input corrector vector
       const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
       ) {return;}
 
-virtual void get_dtau(
+  ///
+  /// Get optical depth for a range of frequencies based on the 
+  /// local abundances of elements and species in the input primitive
+  /// vector.
+  ///
+  virtual void get_dtau(
       const pion_flt,   ///< ds, thickness of the cell
       const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
       pion_flt *        ///< output dtau vector
