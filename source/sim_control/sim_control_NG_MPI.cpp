@@ -1004,6 +1004,9 @@ double sim_control_NG_MPI::advance_step_OA2(
   // - update external boundaries
   // - don't update C2F (b/c it is 1/4 step on l-1 level)
   // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" update boundaries\n";
+#endif
   err += TimeUpdateInternalBCs(SimPM, l, grid, spatial_solver,
                                     ctime+dt_now, OA1, OA2);
 
@@ -1020,25 +1023,20 @@ double sim_control_NG_MPI::advance_step_OA2(
   // --------------------------------------------------------
 
   // --------------------------------------------------------
-  // 7. Send/receive external boundary data to finer grid (C2F)
-  //    The (1,2) tells it that we are half-way through
-  //    the coarse-level step.
-  // --------------------------------------------------------
-  //if (c2f>=0) {
-  //  err += BC_update_COARSE_TO_FINE_SEND(SimPM,grid,spatial_solver,
-  //                               l, grid->BC_bd[c2f], 2,2);
-  //}
-  // --------------------------------------------------------
-  
-  // --------------------------------------------------------
   // 6. Calculate dU for the full step (OA2) on this level
   // --------------------------------------------------------
   dt_now = dt2_this;  // full step
   spatial_solver->Setdt(dt_now);
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" raytracing\n";
+#endif
   if (grid->RT) {
     err += do_ongrid_raytracing(SimPM,grid,l);
     rep.errorTest("scn::advance_time: calc_rt_cols() OA2",0,err);
   }
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" full step calc dU\n";
+#endif
   err += calc_microphysics_dU(dt_now, grid);
   err += calc_dynamics_dU(dt_now, OA2, grid);
 #ifdef THERMAL_CONDUCTION
@@ -1076,6 +1074,9 @@ double sim_control_NG_MPI::advance_step_OA2(
   //  - Receive level fluxes from finer grid (FLUX)
   //  - update grid on level l to new time
   // --------------------------------------------------------
+#ifdef TEST_INT
+  cout <<"advance_step_OA2: l="<<l<<" full step update\n";
+#endif
   spatial_solver->Setdt(dt_now);
   err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);

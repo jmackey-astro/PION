@@ -203,7 +203,7 @@ class raytracer_USC_infinity : public RayTracingBase {
   /// newly added source.
   ///
   void update_local_variables_for_new_source(
-        struct rad_source ///< newly added source
+        struct rad_source * ///< newly added source
         );
 
 

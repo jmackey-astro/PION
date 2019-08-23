@@ -168,6 +168,8 @@ raytracer_USC_infinity::~raytracer_USC_infinity()
     //    cout <<(*i).pos[0]<<"\n";
     //if ((*i).pos !=0) (*i).pos  = mem.myfree((*i).pos);
     //if ((*i).ipos!=0) (*i).ipos = mem.myfree((*i).ipos);
+    struct rad_source *s = &(*i);
+    s = mem.myfree(s);
   }
   SourceList.clear();
   gridptr=0;
@@ -222,56 +224,56 @@ void raytracer_USC_infinity::add_source_to_list(
       struct rad_src_info *src ///< source info.
       )
 {
-  rad_source rs;
+  rad_source *rs = new rad_source;
   
   //
   // Set pointer in rad_source to *src.  This sets the position, id,
   // and all the parameters necessary to set up the source.
   //
-  rs.s = src;
+  rs->s = src;
 
-  //rs.pos=0; rs.ipos=0;
-  //rs.pos  = mem.myalloc(rs.pos, ndim);
-  //rs.ipos = mem.myalloc(rs.ipos,ndim);
-  //for (int i=0; i<ndim; i++) rs.pos[i] = src->position[i];
-  for (int i=0; i<ndim; i++) rs.ipos[i] = -100; // ipos not needed here.
+  //rs->pos=0; rs->ipos=0;
+  //rs->pos  = mem.myalloc(rs->pos, ndim);
+  //rs->ipos = mem.myalloc(rs->ipos,ndim);
+  //for (int i=0; i<ndim; i++) rs->pos[i] = src->position[i];
+  for (int i=0; i<ndim; i++) rs->ipos[i] = -100; // ipos not needed here.
 
-  //rs.id          = src->id;
-  //rs.strength    = src->strength;
-  //rs.type        = src->type;
-  //rs.at_infinity = (src->at_infinity>0) ? true : false;
-  //if (!rs.at_infinity) {
+  //rs->id          = src->id;
+  //rs->strength    = src->strength;
+  //rs->type        = src->type;
+  //rs->at_infinity = (src->at_infinity>0) ? true : false;
+  //if (!rs->at_infinity) {
   //  rep.error("Source is not at infinity",src->id);
   //}
-  //rs.effect      = src->effect;
-  //rs.opacity_src = src->opacity_src;
-  //rs.opacity_var = src->opacity_var;
-  //rs.update      = src->update;
+  //rs->effect      = src->effect;
+  //rs->opacity_src = src->opacity_src;
+  //rs->opacity_var = src->opacity_var;
+  //rs->update      = src->update;
 
   //
   // Set the source-dependent parts of the rt_source_data struct.
   //
-  rs.data.id       = rs.s->id;
-  rs.data.type     = rs.s->type;
-  rs.data.strength[0] = rs.s->strength;
-  rs.data.Vshell   = 0.0;
-  rs.data.dS       = 0.0;
-  rs.data.NTau     = rs.s->NTau;
+  rs->data.id       = rs->s->id;
+  rs->data.type     = rs->s->type;
+  rs->data.strength[0] = rs->s->strength;
+  rs->data.Vshell   = 0.0;
+  rs->data.dS       = 0.0;
+  rs->data.NTau     = rs->s->NTau;
   for (unsigned short int iT=0; iT<src->NTau; iT++) {
-    rs.data.DelCol[iT]   = 0.0;
-    rs.data.Column[iT]   = 0.0;
+    rs->data.DelCol[iT]   = 0.0;
+    rs->data.Column[iT]   = 0.0;
   }
   
   //
   // Check that opacity_var is not running off the end of the state vector.
   //
-  if (rs.s->opacity_var+first_tr >nvar-1) {
-    cout <<"opacity_var="<<rs.s->opacity_var<<" and ftr="<<first_tr;
+  if (rs->s->opacity_var+first_tr >nvar-1) {
+    cout <<"opacity_var="<<rs->s->opacity_var<<" and ftr="<<first_tr;
     cout <<", but state-vec has only "<<nvar;
     cout <<" elements.  The opacity";
     cout <<" var will run off then end of the state vector array.\n";
     cout <<"OPACITY_VAR IS OFFSET - 1ST TRACER HAS OPACITY_VAR=0.\n";
-    rep.error("Bad opacity var for source",rs.s->id);
+    rep.error("Bad opacity var for source",rs->s->id);
   }
 
   //
@@ -286,36 +288,36 @@ void raytracer_USC_infinity::add_source_to_list(
   //
   enum direction dir=NO;
   for (int i=0;i<ndim;i++) {
-    if (rs.s->pos[i] <= gridptr->Xmin(static_cast<axes>(i)) ||
-	rs.s->pos[i] >= gridptr->Xmax(static_cast<axes>(i))) {
-      if      (rs.s->pos[i] < -1.e99) {
+    if (rs->s->pos[i] <= gridptr->Xmin(static_cast<axes>(i)) ||
+	rs->s->pos[i] >= gridptr->Xmax(static_cast<axes>(i))) {
+      if      (rs->s->pos[i] < -1.e99) {
         dir=static_cast<direction>(2*i);
-        rs.ipos[i] = -10000;
+        rs->ipos[i] = -10000;
       }
-      else if (rs.s->pos[i] >  1.e99) {
+      else if (rs->s->pos[i] >  1.e99) {
         dir=static_cast<direction>(2*i+1);
-        rs.ipos[i] = 10000;
+        rs->ipos[i] = 10000;
       }
       else {
 #ifdef RT_TESTING
 	cout <<"Source off grid, but not at infinity!";
-        cout <<" pos="<<rs.s->pos[i];
+        cout <<" pos="<<rs->s->pos[i];
         cout <<", resetting to centre\n";
 #endif
-	rs.s->pos[i] = 0.5*(gridptr->Xmin(static_cast<axes>(i))+
+	rs->s->pos[i] = 0.5*(gridptr->Xmin(static_cast<axes>(i))+
                             gridptr->Xmax(static_cast<axes>(i)));
       }
     }
     else {
       double centre = 0.5*(gridptr->Xmin(static_cast<axes>(i))+
                            gridptr->Xmax(static_cast<axes>(i)));
-      if (!pconst.equalD(centre,rs.s->pos[i])) {
+      if (!pconst.equalD(centre,rs->s->pos[i])) {
 #ifdef RT_TESTING
 	cout <<"source not at infinity, or at centre of grid in dir";
         cout <<" "<<i<<", resetting to centre.\n";
-	cout <<"old pos: "<<rs.s->pos[i]<<"  centre: "<<centre<<"\n";
+	cout <<"old pos: "<<rs->s->pos[i]<<"  centre: "<<centre<<"\n";
 #endif
-	rs.s->pos[i] = centre;
+	rs->s->pos[i] = centre;
       }
     }
   }
@@ -342,13 +344,13 @@ void raytracer_USC_infinity::add_source_to_list(
   while (gridptr->NextPt(c,dir)) c=gridptr->NextPt(c,dir);
   c = gridptr->NextPt(c,gridptr->OppDir(dir));
 
-  rs.sc = c;
+  rs->sc = c;
 #ifdef RT_TESTING
-  cout <<"Add_Source() source->sc = "<<rs.sc<<", id="<<rs.sc->id<<"\n";
+  cout <<"Add_Source() source->sc = "<<rs->sc<<", id="<<rs->sc->id<<"\n";
 #endif
-  rs.src_on_grid = false;
+  rs->src_on_grid = false;
 
-  SourceList.push_back(rs);
+  SourceList.push_back(*rs);
   update_local_variables_for_new_source(rs);
   return;
 }
@@ -400,7 +402,7 @@ void raytracer_USC_infinity::set_Vshell_for_source(
 
 
 void raytracer_USC_infinity::update_local_variables_for_new_source(
-      struct rad_source rs_new
+      struct rad_source *rs_new
       )
 {
   //
@@ -408,16 +410,16 @@ void raytracer_USC_infinity::update_local_variables_for_new_source(
   // - Increment either the number of ionising or uv-heating sources.
   // - Check if we are doing an implicit raytracing/integration.
   //
-  if (rs_new.s->effect==RT_EFFECT_UV_HEATING) {
+  if (rs_new->s->effect==RT_EFFECT_UV_HEATING) {
     N_uvh_srcs++;
-    UVH_data.push_back(&(rs_new.data));
+    UVH_data.push_back(&(rs_new->data));
   }
   else {
     N_ion_srcs++;
-    ION_data.push_back(&(rs_new.data));
+    ION_data.push_back(&(rs_new->data));
   }
 
-  if (rs_new.s->update==RT_UPDATE_IMPLICIT)
+  if (rs_new->s->update==RT_UPDATE_IMPLICIT)
     type_of_RT_int=RT_UPDATE_IMPLICIT;
 
   return;
@@ -479,8 +481,10 @@ void raytracer_USC_infinity::update_RT_source_properties(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int raytracer_USC_infinity::populate_ionising_src_list(
@@ -498,7 +502,20 @@ int raytracer_USC_infinity::populate_ionising_src_list(
   }
 #endif // RT_TESTING
 
-  for (int v=0; v<N_ion_srcs; v++) ion_list[v] = *(ION_data[v]);
+  for (int v=0; v<N_ion_srcs; v++) {
+    //cout <<"v="<<v<<", NSrc = "<<N_ion_srcs<<"\n";
+    ion_list[v].Vshell = ION_data[v]->Vshell;
+    ion_list[v].dS = ION_data[v]->dS;
+    for (int i=0;i<ION_data[v]->NTau;i++)
+      ion_list[v].strength[i] = ION_data[v]->strength[i];
+    for (int i=0;i<ION_data[v]->NTau;i++)
+      ion_list[v].Column[i] = ION_data[v]->Column[i];
+    for (int i=0;i<ION_data[v]->NTau;i++)
+      ion_list[v].DelCol[i] = ION_data[v]->DelCol[i];
+    ion_list[v].id = ION_data[v]->id;
+    ion_list[v].type = ION_data[v]->type;
+    ion_list[v].NTau = ION_data[v]->NTau;
+  }
 
   return 0;
 }
@@ -522,8 +539,23 @@ int raytracer_USC_infinity::populate_UVheating_src_list(
   }
 #endif // RT_TESTING
 
-  for (int v=0; v<N_uvh_srcs; v++) uvh_list[v] = *(UVH_data[v]);
+  //for (int v=0; v<N_uvh_srcs; v++) uvh_list[v] = *(UVH_data[v]);
 
+  for (int v=0; v<N_uvh_srcs; v++) {
+    //cout <<"v="<<v<<", NSrc = "<<N_uvh_srcs<<"\n";
+    uvh_list[v].Vshell = UVH_data[v]->Vshell;
+    uvh_list[v].dS = UVH_data[v]->dS;
+    for (int i=0;i<UVH_data[v]->NTau;i++)
+      uvh_list[v].strength[i] = UVH_data[v]->strength[i];
+    for (int i=0;i<UVH_data[v]->NTau;i++)
+      uvh_list[v].Column[i] = UVH_data[v]->Column[i];
+    for (int i=0;i<UVH_data[v]->NTau;i++)
+      uvh_list[v].DelCol[i] = UVH_data[v]->DelCol[i];
+    uvh_list[v].id = UVH_data[v]->id;
+    uvh_list[v].type = UVH_data[v]->type;
+    uvh_list[v].NTau = UVH_data[v]->NTau;
+  }
+  
   return 0;
 }
 
@@ -1176,34 +1208,34 @@ void raytracer_USC::add_source_to_list(
   //
   // Create a new radiation source struct.
   //
-  rad_source rs;
+  rad_source *rs = new rad_source;
 
   //
   // Set pointer in rad_source to *src.  This sets the position, id,
   // and all the parameters necessary to set up the source.
   //
-  rs.s = src;
+  rs->s = src;
 
 #ifdef RT_TESTING
-  cout <<"\t\t"; rep.printVec("Input Source Position",rs.s->pos,ndim);
+  cout <<"\t\t"; rep.printVec("Input Source Position",rs->s->pos,ndim);
 #endif
 
 
   //
   // Set the source-dependent parts of the rt_source_data struct.
   //
-  rs.data.id       = rs.s->id;
-  rs.data.type     = rs.s->type;
-  rs.data.strength[0] = rs.s->strength;
-  rs.data.Vshell   = 0.0;
-  rs.data.dS       = 0.0;
-  rs.data.NTau     = rs.s->NTau;
+  rs->data.id       = rs->s->id;
+  rs->data.type     = rs->s->type;
+  rs->data.strength[0] = rs->s->strength;
+  rs->data.Vshell   = 0.0;
+  rs->data.dS       = 0.0;
+  rs->data.NTau     = rs->s->NTau;
 #ifdef RT_TESTING
-  cout <<"***** NTAU = "<<rs.s->NTau<<"\n";
+  cout <<"***** NTAU = "<<rs->s->NTau<<"\n";
 #endif
-  for (unsigned short int iT=0; iT<rs.s->NTau; iT++) {
-    rs.data.DelCol[iT] = 0.0;
-    rs.data.Column[iT] = 0.0;
+  for (unsigned short int iT=0; iT<rs->s->NTau; iT++) {
+    rs->data.DelCol[iT] = 0.0;
+    rs->data.Column[iT] = 0.0;
   }
 
   //
@@ -1214,22 +1246,22 @@ void raytracer_USC::add_source_to_list(
 #ifdef RT_TESTING
   cout <<"RTxxx: AddSource() finding source.\n";
 #endif
-  rs.sc = find_source_cell(rs.s->pos);
+  rs->sc = find_source_cell(rs->s->pos);
 
   //
   // now we have set the source's position, get the integer position.
   //
-  CI.get_ipos_vec(rs.s->pos,rs.ipos);
+  CI.get_ipos_vec(rs->s->pos,rs->ipos);
 #ifdef RT_TESTING
-  cout <<"\t\t"; rep.printVec("Assigned source ipos",rs.ipos,ndim);
-  cout <<"\t\t"; rep.printVec("Assigned source dpos",rs.s->pos,ndim);
-  cout <<"\tSERIAL: AddSource() source->sc = "<<rs.sc<<"\n";
+  cout <<"\t\t"; rep.printVec("Assigned source ipos",rs->ipos,ndim);
+  cout <<"\t\t"; rep.printVec("Assigned source dpos",rs->s->pos,ndim);
+  cout <<"\tSERIAL: AddSource() source->sc = "<<rs->sc<<"\n";
 #endif
 
   //
   // Now determine if source is on grid or not.
   //
-  rs.src_on_grid = true;
+  rs->src_on_grid = true;
   //
   // For non-cell-centred source, if it is at a cell corner then I
   // assume the source cell is the one with the source at its most
@@ -1237,31 +1269,31 @@ void raytracer_USC::add_source_to_list(
   // if it is on the boundary.
   //
   for (int i=0; i<ndim; i++) {
-    if (rs.ipos[i]<=gridptr->iXmin_all(static_cast<axes>(i)))
-      rs.src_on_grid=false;
-    if (rs.ipos[i]>=gridptr->iXmax_all(static_cast<axes>(i)))
-      rs.src_on_grid=false;
+    if (rs->ipos[i]<=gridptr->iXmin_all(static_cast<axes>(i)))
+      rs->src_on_grid=false;
+    if (rs->ipos[i]>=gridptr->iXmax_all(static_cast<axes>(i)))
+      rs->src_on_grid=false;
   }
   //
   // ipos can be overloaded if source is at infinity, so extra check:
   //
-  if (rs.s->at_infinity) rs.src_on_grid=false;
+  if (rs->s->at_infinity) rs->src_on_grid=false;
 
   //
   // nearly all done, so now add the source to the list, update local
   // source lists, set TauMin for this source, and return its id.
   //
-  SourceList.push_back(rs);
+  SourceList.push_back(*rs);
   update_local_variables_for_new_source(rs);
-  set_TauMin_for_source(rs);
+  set_TauMin_for_source(*rs);
 
 #ifdef RT_TESTING
-  if (TauMin[rs.s->id]<0) rep.error("Duhhh",TauMin[rs.s->id]);
-  cout <<"\t\tSource id:"<<rs.s->id<<" has TauMin[id]=";
-  cout <<TauMin[rs.s->id]<<"\n";
+  if (TauMin[rs->s->id]<0) rep.error("Duhhh",TauMin[rs->s->id]);
+  cout <<"\t\tSource id:"<<rs->s->id<<" has TauMin[id]=";
+  cout <<TauMin[rs->s->id]<<"\n";
   cout <<"\tSERIAL: AddSource() all done.\n";
-  cout <<"Add_Source() source->sc = "<<rs.sc<<", id="<<rs.sc->id<<"\n";
-  CI.print_cell(rs.sc);
+  cout <<"Add_Source() source->sc = "<<rs->sc<<", id="<<rs->sc->id<<"\n";
+  CI.print_cell(rs->sc);
   cout <<"--END-----raytracer_USC::AddSource()------------\n\n";
 #endif
 
@@ -1280,91 +1312,13 @@ void raytracer_USC::set_TauMin_for_source(
       )
 {
   //
-  // THIS CODE IS A MESS!  NEED A FUNCTION IN THE MICROPHYSICS CLASS
-  // THAT TAKES AN INPUT PRIMITIVE STATE VECTOR AND A SOURCE AND THE
-  // PATH LENGTH, AND RETURNS DELTA-TAU FOR EACH ENERGY RANGE.
-  // THEN RAYTRACING CAN GO BACK TO HAVING TauMin=0.7 AS A CONSTANT.
-  //
-  // Now set TauMin for this source.
+  // Seems that TauMin=0.7 is best in 2D, but =0.6 is better in 3D.
   //
   if (TauMin.size() <= static_cast<unsigned int>(rs.s->id)) {
     rep.error("Source id is larger than Nsources!",rs.s->id-TauMin.size());
   }
-  TauMin[rs.s->id]=-1.0;
-
-  if      ((rs.s->update==RT_UPDATE_EXPLICIT) &&
-           (rs.s->opacity_src==RT_OPACITY_TOTAL) &&
-           (rs.s->effect==RT_EFFECT_UV_HEATING)) {
-    // This is for the UV heating, sigma=5e-22, Tau=1.9Av=1.9*1.086*NH*sigma
-    //cout <<"UV heating source, TauMIN=0.0016\n";
-    TauMin[rs.s->id] = 1.6e-3;
-  }
-  else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
-           (rs.s->opacity_src==RT_OPACITY_MINUS) &&
-           (rs.s->effect==RT_EFFECT_PION_MONO) ) {
-    // Photoionisation, sigma=6.3e-18, Tau=sigma*NH*(1-x)
-    //TauMin[rs.s->id] = 6.1e-7;
-    TauMin[rs.s->id] = 1.86e-7;
-    // --------------------------------------------------------------
-  }
-  else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
-           (rs.s->opacity_src==RT_OPACITY_MINUS) &&
-           (rs.s->effect==RT_EFFECT_MFION)) {
-    // Photoionisation, sigma=6.3e-18, Tau=sigma*NH*(1-x)
-    // This value seem to give best results for multifrequency sources, tested
-    // for Teff of both 30000 and 39750K.
-#ifdef PUREHYDROGEN
-    // Iliev et al. (2009) test problems (Cosmology Code Comparison
-    // Project).
-    // Teff=1e5K means mean-photon-erg=29.62eV. This means cross section is
-    // ~6.1e-19 cm2. mu=1.6738e-24g.
-    // So TauMin=0.7 means SigmaMin=0.7*mu/sigma=1.92e-6.
-    // 3.0e-6 seems to work better though.
-    //
-    TauMin[rs.s->id] = 3.0e-6;
-#else
-    // 35kK, mu=2.338e-24g, gives about 5.9e-7
-    //TauMin[rs.id] = 6.0e-7; // original value
-    TauMin[rs.s->id] = 7.0e-7;
-#endif
-    TauMin[rs.s->id] = 1.86e-7;
-
-  }
-  else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
-           (rs.s->effect==RT_EFFECT_UV_HEATING) ) {
-    // This is for Harpreet's column densities (value used is unimportant).
-    rep.warning("Special case opacity for Harpreet's project!",
-                rs.s->id,rs.s->id);
-    TauMin[rs.s->id] = 5.0e-7;
-  }
-  else if ((rs.s->update==RT_UPDATE_EXPLICIT) &&
-           (rs.s->effect==RT_EFFECT_PION_EQM) ) {
-    //
-    // This is for photoionisation equilibrium; the variable is the
-    // fractional attenuation per cell.  So tau=0.7 corresponds to a
-    // value of (1-exp(-0.7))=0.5034
-    //
-    TauMin[rs.s->id] = 0.5034;
-  }
-
-  else if (rs.s->effect==RT_EFFECT_HHE_MFQ) {
-    //
-    // This class uses actual optical depths (I'm going to change
-    // everything so that it is default from now on).  Experiments
-    // showed that TauMin=0.7 is the best compromise in terms of
-    // photon conservation and shadowing and spherical HII regions.
-    //
-    TauMin[rs.s->id] = 0.7;
-  }
-
-
-  else rep.error("Unhandled case setting TauMin",rs.s->id);
-
-  //
-  // Seems that TauMin=0.7 is best in 2D, but =0.6 is better in 3D.
-  //
+  TauMin[rs.s->id] = 0.7;
   if (ndim==3) TauMin[rs.s->id] *= 6.0/7.0;
-
   return;
 }
 
