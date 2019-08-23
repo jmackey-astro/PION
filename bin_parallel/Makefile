@@ -365,6 +365,7 @@ endif
 
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
+	sim_control_MPI.o uniform_grid_pllel.o                \
 
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \

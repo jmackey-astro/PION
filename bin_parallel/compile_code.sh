@@ -78,7 +78,6 @@ case $HOSTNAME in
     #echo $PATH
     #echo $INCLUDE
     ;;
-esac
 ################### --- KAY at ICHEC.IE ---######################
 
 
@@ -137,23 +136,6 @@ case $HOSTNAME in
 esac
 #######################
 
-#######################
-### TEST FOR JUDGE ###
-#######################
-case $HOST in
-  judgel[0-9])
-    echo "Compiling on JUDGE"
-    module purge
-    module load intel/11.1.072 mkl/10.2.5.035 parastation/intel
-    MAKE_UNAME=JUDGE
-    NCORES=8
-    # -DINTEL means the code uses the intel math headers instead of gnu.
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export PION_OPTIMISE=HIGH
-    export CXX=mpicxx
-  ;;
-esac
-#######################
 
 #####################################################################
 # For testing/debugging, we need to add -DTESTING to the compile   ##
