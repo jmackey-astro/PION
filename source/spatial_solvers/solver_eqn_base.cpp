@@ -308,8 +308,8 @@ void FV_solver_base::set_interface_tracer_flux(
       pion_flt *flux
       )
 {
-  int len_prim = FV_ntr + eqTR[0];
-  pion_flt corrector[100] = {1};
+  pion_flt corrector[eq_nvar];
+  for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
   
 #ifdef FUNCTION_ID
   cout <<"FV_solver_base::set_interface_tracer_flux ...starting.\n";
