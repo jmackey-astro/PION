@@ -78,6 +78,7 @@ case $HOSTNAME in
     #echo $PATH
     #echo $INCLUDE
     ;;
+esac
 ################### --- KAY at ICHEC.IE ---######################
 
 

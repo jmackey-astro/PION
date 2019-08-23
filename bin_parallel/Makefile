@@ -365,8 +365,6 @@ endif
 
 CXXFLAGS += $(OPT) $(PION_OPTIONS)
 
-	sim_control_MPI.o uniform_grid_pllel.o                \
-
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
  microphysics_base.o mp_only_cooling.o \
@@ -817,7 +815,7 @@ MPv2.o: MPv2.cpp MPv2.h ${GLOBAL} hydrogen_mp.h \
 
 cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 
-photo_xsections.o: photo_xsections.cpp photo_xsections.h
+photo_xsections.o: photo_xsections.cpp photo_xsections.h ${GLOBAL}
 
 MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
@@ -825,8 +823,7 @@ MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
 
 MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h \
-  photo_xsections.h
+  microphysics_base.h photo_xsections.h
 
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
