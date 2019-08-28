@@ -988,7 +988,9 @@ void MPv3::get_dtau(
     break;
 
     case RT_EFFECT_UV_HEATING:
+    //cout <<"uv heating: "<< s->s->id <<"  ";
     *dtau = p_in[RO] * 5.348e-22 * METALLICITY/mean_mass_per_H * ds;
+    //cout << *dtau <<"\n";
     break;
 
     default:
@@ -1391,14 +1393,15 @@ void MPv3::setup_radiation_source_parameters(
   // If the point source is ionising, we need N(H0), dN(H0).  The 
   // luminosity is already set in the MP class constructor by a call to
   // Setup_photoionisation_rate_table(Tstar,Rstar,etc).
-  // Most H-ionising photons can't ionise He, so best that it doesn't contribute to the opacity.
-  // BUT KEEP IN MIND THIS IS AN APPROXIMATION!
-  // Column and DelCol are rho*ds*(1-x), and we want nH*ds*(1-x), so divide by mu_H
+  // Most H-ionising photons can't ionise He, so best that it doesn't
+  // contribute to the opacity.
+  // Column and DelCol are Tau and delta-Tau, to the cell and through
+  // the cell, respectively.
   //
   //
   if (N_ion>0) {
-    mpv_Tau0  = ion_src[0].Column[0]*Hi_monochromatic_photo_ion_xsection(JUST_IONISED)/mean_mass_per_H;
-    mpv_dTau0 = ion_src[0].DelCol[0]*Hi_monochromatic_photo_ion_xsection(JUST_IONISED)/mean_mass_per_H;
+    mpv_Tau0  = ion_src[0].Column[0];
+    mpv_dTau0 = ion_src[0].DelCol[0];
   }
   else {
     mpv_Tau0  = 0.0;
@@ -1409,20 +1412,23 @@ void MPv3::setup_radiation_source_parameters(
 
   //-------------------- mpv_G0_UV and mpv_G0_IR -----------------------
   //
-  // Hard-coded to assume UV radiation opacity comes from dust with sigma=5e-22 cm2,
-  // and that the input is \int \rho ds, integrated to the front edge of the cell.
-  // Diffuse radiation strength is an intensity (i.e. per solid angle), so the total flux
-  // going into the solver will be roughly: sum(I(Omega)*delta-Omega)exp(-1.9Av).
-  // This comes from Henney et al. (2009) eq. A3
-  // TODO: Check value of 1.9 for extinction, and the cross section of 5e-22
+  // Hard-coded to assume UV radiation opacity comes from dust with 
+  // sigma=5e-22 cm2, and that the input is \int \rho ds, integrated
+  // to the front edge of the cell. Diffuse radiation strength is an
+  // intensity (i.e. per solid angle), so the total flux going into
+  // the solver will be roughly: sum(I(Omega)*delta-Omega)exp(-1.9Av)
+  // This comes from Henney et al. (2009) eq. A3.
+  // 
+  // Column = Av to cell from source, DelCol is delta-Av through cell
+  // TODO: Check value of 1.9 for extinction.
   //
   mpv_G0_UV = 0.0;
   mpv_G0_IR = 0.0;
   if (N_heat>0) {
     double temp=0.0;
     int i_diff=0;
-    double Av_UV = 1.9*1.086*5.0e-22*METALLICITY/mean_mass_per_H;
-    double Av_IR = Av_UV*0.05/1.9;
+    double Av_UV = 1.90;
+    double Av_IR = 0.05;
 
     for (int v=0; v<N_heat; v++) {
       if (heat_src[v].type == RT_SRC_DIFFUSE) {
@@ -1442,23 +1448,27 @@ void MPv3::setup_radiation_source_parameters(
       }
       else {
         //
-        // This source must be a point source of UV heating. In this case the strength is 
+        // This source must be a point source of UV heating.
+        // In this case the strength is 
         // the photon luminosity, so flux = L*ds*exp(-1.9Av)/mpv_Vshell
         //
         //cout <<"heat_src[v].strength "<<heat_src[v].strength[0];
         temp = heat_src[v].strength[0]*mpv_delta_S/heat_src[v].Vshell;
 #ifdef MPV3_DEBUG
-        cout <<"setup_rad_src_params:\tpoint   src: id="<<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
+        cout <<"setup_rad_src_params:\tpoint   src: id=";
+        cout <<heat_src[v].id<<" 1.9Av="<<Av_UV*heat_src[v].Column[0];
         cout <<", strength="<<heat_src[v].strength[0]<<", ds="<<mpv_delta_S;
         cout <<", mpv_Vshell="<<heat_src[v].Vshell;
-        cout <<": attenuated flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
+        cout <<": attenuated flux=";
+        cout <<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
 #endif // MPV3_DEBUG
         mpv_G0_UV += temp*exp(-Av_UV*heat_src[v].Column[0]);
         mpv_G0_IR += temp*exp(-Av_IR*heat_src[v].Column[0]);
 #ifdef MPV3_DEBUG
         cout <<"UV_ptsc_flux="<<temp*exp(-Av_UV*heat_src[v].Column[0])<<"\n";
         cout <<"UV_ptsc_flux="<<temp*exp(-Av_UV*heat_src[v].Column[0]);
-        cout <<" Col="<<heat_src[v].Column[0]<<" Av="<<Av_UV*heat_src[v].Column[0]/1.9<<"\n";
+        cout <<" Col="<<heat_src[v].Column[0]<<" Av=";
+        cout <<Av_UV*heat_src[v].Column[0]/1.9<<"\n";
 #endif // MPV3_DEBUG
       }
     } // loop over heating sources.

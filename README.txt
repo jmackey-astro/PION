@@ -2,6 +2,8 @@ Author: Jonathan Mackey
 Version: 1.0
 Date: 2017.09.14
 
+### This is out of date... needs updating ###
+
 -------------------------------
 --- IMPORTANT INFORMATION   ---
 -------------------------------

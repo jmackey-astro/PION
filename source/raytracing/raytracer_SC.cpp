@@ -858,11 +858,6 @@ int raytracer_USC_infinity::ProcessCell(
       const double dt          ///< Timestep
       )
 {
-  //
-  // TODO: Switch this to actually use optical depths, because
-  //   otherwise TauMin is not dimensionless, and it is confusing
-  //   to use it.
-  //
   double cell_col[MAX_TAU];
   for (unsigned short int iT=0; iT<source->s->NTau; iT++)
     cell_col[iT] = ds;
@@ -934,6 +929,7 @@ int raytracer_USC_infinity::ProcessCell(
   // set cell_col based on opacity flag.  cell_col[]=ds from above,
   // so multiply it by the cell-values here.
   switch (source->s->opacity_src) {
+
   case RT_OPACITY_MP:
     MP->get_dtau(source, ds, c->Ph, cell_col);
     break;
