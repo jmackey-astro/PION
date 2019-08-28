@@ -381,14 +381,14 @@ class MPv10
   int N_cons_eqns; /// < := n_elem + 1, due to E_int.
   
 	///	Vector to store initial corrector values (used to modify flux according to sCMA)
-	pion_flt corrector[100] = {1};
+	pion_flt corrector[100];
   /// ===========================================================================
   ///               Vectors to Access Primitive / Local vectors
   /// ===========================================================================
   std::vector<int> X_mass_frac_index; /// < primitive vector indices, used to trace X_H etc, like pv_Hp. 
   std::vector<int> y_ion_index_prim; ///<index matching y_ion mass fraction in prim vector, analogous to pv_Hp before.
   std::vector<int> y_ion_index_local; ///<index matching y_ion fraction in local vector.
-  std::vector<std::vector<double>> y_ion_xsections; ///<index matching photo_ion xsection to ion in local vector
+  std::vector<std::vector<double> > y_ion_xsections; ///<index matching photo_ion xsection to ion in local vector
   
   
   int H_ion_index; ///index of X_elem in primitive

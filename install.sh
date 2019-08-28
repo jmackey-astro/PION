@@ -18,11 +18,11 @@ cd ${BASE_DIR}/bin_parallel
 bash ./clean.sh
 bash ./compile_code.sh
 
-echo "COMPILING SERIAL CODE"
-cd ${BASE_DIR}/bin_serial
-bash ./clean.sh
-bash ./compile_code.sh
-echo "FINISHED COMPILING CODE"
+#echo "COMPILING SERIAL CODE"
+#cd ${BASE_DIR}/bin_serial
+#bash ./clean.sh
+#bash ./compile_code.sh
+#echo "FINISHED COMPILING CODE"
 
 cd ${BASE_DIR}
 echo "Serial and parallel executables should be in current directory:"
