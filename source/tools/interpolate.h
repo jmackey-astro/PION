@@ -15,6 +15,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
+#include "gsl/gsl_interp.h"
+#include "gsl/gsl_spline.h"
 #include <vector>
 using namespace std;
 
@@ -29,7 +31,7 @@ class interpolate_arrays {
 
   ///
   /// Sets up Cubic Spline interpolation
-  /// (from Martin White's Code)
+  /// Use GSL interpolation routines
   ///
   void spline(
     const double *, ///< Array of x values.
@@ -37,17 +39,17 @@ class interpolate_arrays {
     const int ,     ///< Length of arrays.
     double ,  ///< First Derivative of interpolating function at x[1] (unit offset array) (>1.e30 for natural spline)
     double ,  ///< First Derivative of interpolating function at x[n] (unit offset array) (>1.e30 for natural spline)
-    double *  ///< Empty array to store d2y/dx2 in.
+    int &  ///< reference id for this spline interpolation
     );
 
   ///
   /// Performs cubic spline interpolation to get y(x)
-  /// (from Martin White's Code) 
+  /// Use GSL interpolation routines
   ///
   void splint(
     const double *, ///< Array of x values.
     const double *, ///< Array of y values.
-    const double *, ///< Array of d2y/dx2 values.
+    const int ,  ///< reference id for this spline interpolation
     const int ,     ///< nspl
     const double ,  ///< x we are searching for.
     double *  ///< pointer to result.
@@ -55,7 +57,7 @@ class interpolate_arrays {
 
   ///
   /// spline function for C++ STL vectors.
-  ///
+  /// Use GSL interpolation routines
   void spline_vec(
     const std::vector<double> &,
     const std::vector<double> &,
@@ -67,7 +69,7 @@ class interpolate_arrays {
 
   ///
   /// splint function for C++ STL vectors.
-  ///
+  /// Use GSL interpolation routines
   void splint_vec(
     const std::vector<double> &,
     const std::vector<double> &,
@@ -140,8 +142,11 @@ class interpolate_arrays {
     const vector<vector<vector<double> > > &,  ///< Array of function values f(x,y,z)
     const vector<size_t> &,  ///< Array sizes
     const vector<double> &   ///< (x,y,z) we want f for
-);
+    );
 
+  protected:
+
+  std::vector<gsl_interp *> slist;  ///< list of spline interpolations.
 };
 
 

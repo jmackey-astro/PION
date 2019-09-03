@@ -38,7 +38,8 @@ using namespace std;
 CoolingFn::CoolingFn(int flag)
 {
   kB = pconst.kB();
-  Temp=0; Lamb=0; Lam2=0;
+  Temp=0; Lamb=0; 
+  int id=0;
 
   string fname="CoolingFn::CoolingFn";
   cout <<"\t\tCooling Function Constructor."<<"\n";
@@ -46,12 +47,11 @@ CoolingFn::CoolingFn(int flag)
     WhichFunction = 1;
     cout <<"\t\tFlag = "<<flag<<" corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) cooling function\n";
     cout <<"\t\tfrom file pk6ff75.neq from http://www.mso.anu.edu.au/~ralph/data/cool/\n";
-    Temp=0; Lamb=0; Lam2=0;
+    Temp=0; Lamb=0; 
     Nspl = 69;
 
     Temp = mem.myalloc(Temp,Nspl);
     Lamb = mem.myalloc(Lamb,Nspl);
-    Lam2 = mem.myalloc(Lam2,Nspl);
 
     double temp1[69] = {7.500,7.445,7.396,7.347,7.297,7.246,7.195,7.143,7.091,
 	7.039,6.987,6.934,6.882,6.829,6.776,6.723,6.670,6.617,6.563,6.510,
@@ -92,13 +92,13 @@ CoolingFn::CoolingFn(int flag)
     // boundary conditions for extrapolation beyond the range of the data.  It is 
     // dangerous to go beyond the range, but this boundary condition means that
     // extrapolation has a chance of being reasonable.
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
   } // SD93 function (NEQ)
 
 
   else if (flag==2) {
     WhichFunction = 2;
-    Temp=0; Lamb=0; Lam2=0;
+    Temp=0; Lamb=0;;
     cout <<"\t\tFlag = "<<flag<<" corresponding to Koyami & Inutsuka (2002, ApJL, 564, L97) cooling function\n";
     cout <<"\t\tThis is a double exponential fitting function, using their equations 4 and 5.\n";
     cout <<"\t\tN.B. The KI02 equation had two typos: (1.148e5 instead of 1.184e5, and 14 instead of 1.4e-2)\n";
@@ -112,13 +112,12 @@ CoolingFn::CoolingFn(int flag)
 
   else if (flag==3) {
     WhichFunction = 3;
-    Temp=0; Lamb=0; Lam2=0;
+    Temp=0; Lamb=0;
     cout <<"\t\tFlag = "<<flag<<" corresponding to Dalgarno & McCray (1972, ARAA, 10,375) cooling function\n";
     Nspl = 31;
 
     Temp = mem.myalloc(Temp,Nspl);
     Lamb = mem.myalloc(Lamb,Nspl);
-    Lam2 = mem.myalloc(Lam2,Nspl);
 
     double temp1[31] = {1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 
 			2.2, 2.4, 2.6, 2.8, 3.0,
@@ -152,7 +151,7 @@ CoolingFn::CoolingFn(int flag)
   // boundary conditions for extrapolation beyond the range of the data.  It is 
   // dangerous to go beyond the range, but this boundary condition means that
   // extrapolation has a chance of being reasonable.
-  interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+  interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
   rep.error("Dalgarno and McCray cooling function is not usably coded -- get a better function",999);
   } // DMcC72 function
   
@@ -160,12 +159,11 @@ CoolingFn::CoolingFn(int flag)
     WhichFunction = 4;
     cout <<"\t\tFlag = "<<flag<<" corresponding to Sutherland & Dopita (1993, ApJS, 88, 253) CIE cooling function\n";
     cout <<"\t\tfrom file m-00.cie from http://www.mso.anu.edu.au/~ralph/data/cool/\n";
-    Temp=0; Lamb=0; Lam2=0;
+    Temp=0; Lamb=0;
     Nspl = 91;
 
     Temp = mem.myalloc(Temp,Nspl);
     Lamb = mem.myalloc(Lamb,Nspl);
-    Lam2 = mem.myalloc(Lam2,Nspl);
 
     double temp1[91] = {4.00,4.05,4.10,4.15,4.20,4.25,4.30,4.35,4.40,4.45,4.50,
 			4.55,4.60,4.65,4.70,4.75,4.80,4.85,4.90,4.95,5.00,
@@ -199,7 +197,7 @@ CoolingFn::CoolingFn(int flag)
     MinSlope = (temp2[1]-temp2[0])/(temp1[1]-temp1[0]);
     cout <<"\t\tMinSlope (logarithmic) = "<<MinSlope<<"\n";
 #endif
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
   } // SD93 function (CIE)
     
 
@@ -212,7 +210,7 @@ CoolingFn::CoolingFn(int flag)
     cout <<"\t\t I use 7.5e-19*exp(-118348/T)/(1+sqrt(T/1.e5))*n_e*n_H0 as the c.ex. cooling rate...\n";
     MinTemp=0.000001; MaxTemp=1.e8;
     WhichFunction = 5;
-    Temp=0; Lamb=0; Lam2=0;
+    Temp=0; Lamb=0;
   } // c2ray
 
   else if (flag==6 || flag==7 || flag==8 || flag==9 || flag==10) {
@@ -241,12 +239,11 @@ CoolingFn::CoolingFn(int flag)
     if (flag==15) cout <<"\t\tflag=="<<flag<<": Plus Exponential Cooling in neutral gas (TOY MODEL t_c=1e4yrs)\n";
     if (flag==16) cout <<"\t\tflag=="<<flag<<": Plus Henney et al (2009) cooling terms.\n";
     WhichFunction = flag;
-    Temp=0; Lamb=0; Lam2=0;
+    Temp=0; Lamb=0;
     Nspl = 91;
 
     Temp = mem.myalloc(Temp,Nspl);
     Lamb = mem.myalloc(Lamb,Nspl);
-    Lam2 = mem.myalloc(Lam2,Nspl);
 
     double temp1[91] = {4.00,4.05,4.10,4.15,4.20,4.25,4.30,4.35,4.40,4.45,4.50,
 			4.55,4.60,4.65,4.70,4.75,4.80,4.85,4.90,4.95,5.00,
@@ -274,11 +271,12 @@ CoolingFn::CoolingFn(int flag)
     MaxTemp = Temp[Nspl-1];
     MinSlope = (temp2[1]-temp2[0])/(temp1[1]-temp1[0]);
     cout <<"\t\tMinSlope (logarithmic) = "<<MinSlope<<"\n";
-    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, Lam2);
+    interpolate.spline(Temp, Lamb, Nspl, 1.e99, 1.e99, id);
   } // SD93-CIE-ForbiddenLine
 
   else rep.error("Bad flag in CoolingFn Constructor",flag);
   
+  CoolingFn::spline_id = id;
 
 #ifdef COOL_TESTING
   ofstream outf("coolingcurve.txt");
@@ -307,18 +305,18 @@ CoolingFn::~CoolingFn()
 {
   if (Temp) Temp = mem.myfree(Temp);
   if (Lamb) Lamb = mem.myfree(Lamb);
-  if (Lam2) Lam2 = mem.myfree(Lam2);
 }
 
 //
 // Returns Cooling rate in erg/cm3/s i.e. volumetric rate of energy loss.
 //
-double CoolingFn::CoolingRate(const double T,
-			      const double xHp,
-			      const double nH,
-			      const double FUV_flux,
-			      const double FUV_extinction
-			      )
+double CoolingFn::CoolingRate(
+      const double T,
+      const double xHp,
+      const double nH,
+      const double FUV_flux,
+      const double FUV_extinction
+      )
 {
   if (xHp>1.0 || T<=0.0 || isnan(T) || isinf(T)) {
     //cout <<"input ion fraction >1 in CoolingRate()... x="<<xHp<<"\n";
@@ -337,7 +335,7 @@ double CoolingFn::CoolingRate(const double T,
       CI.print_cell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T<=0.) rate = 0.0;
     else if (T<MinTemp) {
@@ -352,7 +350,7 @@ double CoolingFn::CoolingRate(const double T,
 #endif
     }
     else {
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, T, &rate);
     }
     //
     // Multiply by n_e.n_i
@@ -396,7 +394,7 @@ double CoolingFn::CoolingRate(const double T,
       CI.print_cell(dp.c);
 #endif
       cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, log10(MaxTemp), &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, log10(MaxTemp), &rate);
       rate = exp(log(10.0)*rate);
     }
     else if (T<=0.) rate = 0.0;
@@ -411,7 +409,7 @@ double CoolingFn::CoolingRate(const double T,
 #endif
     }
     else {
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, log10(T), &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, log10(T), &rate);
       rate = exp(log(10.0)*rate);
     }
     //
@@ -493,7 +491,7 @@ double CoolingFn::CoolingRate(const double T,
       //CI.print_cell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T<=0.) rate = 0.0;
     else if (T<MinTemp) {
@@ -501,7 +499,7 @@ double CoolingFn::CoolingRate(const double T,
       rate = max(1.e-50, Lamb[0]*exp(25.0*(log(T)-log(MinTemp))));
     }
     else {
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, T, &rate);
     }
     if (T<2.0e4) rate += xHp*2.0e-24*T/8000.0; //exp(2.0*log(T/8000.0));
 
@@ -539,7 +537,7 @@ double CoolingFn::CoolingRate(const double T,
       //CI.print_cell(dp.c);
 #endif
       //cout <<"Returning Lambda(MaxTemp) = Lambda("<<MaxTemp<<")\n";
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, MaxTemp, &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, MaxTemp, &rate);
     }
     else if (T<=0.) rate = 0.0;
     else if (T<MinTemp) {
@@ -547,7 +545,7 @@ double CoolingFn::CoolingRate(const double T,
       rate = max(1.e-50, Lamb[0]*exp(25.0*(log(T)-log(MinTemp))));
     }
     else {
-      interpolate.splint(Temp, Lamb, Lam2, Nspl, T, &rate);
+      interpolate.splint(Temp, Lamb, spline_id, Nspl, T, &rate);
     }
 
     //
