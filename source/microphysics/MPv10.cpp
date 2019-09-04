@@ -444,6 +444,7 @@ int MPv10::set_multifreq_source_properties(
   // in each frequency bin, in erg/s/bin.
   // * rsi->strength gives the luminosity of the star in erg/s
   // * rsi->Tstar    gives the effective temperature of the star.
+  // * rsi->Rstar    gives the Radius of the star.
   // If the star were a blackbody, then this would be enough to
   // calculate the luminosity in each bin, if we have the bin ranges
   // set (which we do).  Unfortunately a BB is a bad approximation.

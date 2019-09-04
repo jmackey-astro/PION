@@ -56,6 +56,7 @@ class CoolingFn {
    double *Lam2;      ///< Second derivative of the Cooling Rate for Cubic Spline Interpolation.
    int Nspl; ///< Number of points to use for the spline/splint data functions.
    double kB; ///< boltzmann constant.
+   int spline_id; ///< id to call when looking up spline.
 };
 
 #endif // COOLING_H

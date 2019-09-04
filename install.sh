@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# INSTALL CODE
+# INSTALL PION
 # Author: Jonathan Mackey
 # Date: 2011-2016
 
