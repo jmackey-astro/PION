@@ -38,25 +38,6 @@ case $HOST in
 esac
 #######################
 
-##########################################
-### TEST FOR DIRAC-2-COMPLEXITY (2015) ###
-##########################################
-case $HOSTNAME in
-  dirac[0-9][0-9])
-    echo "Compiling on DIRAC-Complexity"
-    module list
-    module load intel/compilers/13.0.0 intel/impi/4.1.0 intel/mkl/11.0.0 cfitsio
-    MAKE_UNAME=DIRAC
-    NCORES=8
-    # -DINTEL means the code uses the intel math headers instead of gnu.
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-  ;;
-esac
-#######################
-
-
 ##############################
 ### TEST FOR KAY.ICHEC.IE  ###
 ##############################
@@ -65,7 +46,7 @@ case $HOSTNAME in
     echo "Compiling on KAY/ICHEC"
     source /usr/share/Modules/init/bash
     #module purge
-    module load intel/2019u3
+    module load intel/2018u4
     #module load cmake3/3.12.3
     #module load python py/intel
     #module load python numpy

@@ -58,7 +58,8 @@ case $HOSTNAME in
     #module purge
     #echo $PATH
     #module load intel
-    module load intel/2019u3
+    module load intel/2018u4
+    module load gsl/intel/2.5
     module list
     MAKE_UNAME=KAY
     NCORES=8

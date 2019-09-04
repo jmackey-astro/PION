@@ -119,6 +119,7 @@ ifeq ($(MAKE_UNAME), standard)
   # Libraries for fits, silo
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
   # libs for CVODES
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
@@ -145,6 +146,7 @@ ifeq ($(MAKE_UNAME), locallibs)
   # Libraries for fits, silo, cvode
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- local libs WORKSTATION ---######################
@@ -174,55 +176,11 @@ ifeq ($(MAKE_UNAME), KAY)
   LDFLAGS += -lsilo 
   #LDFLAGS += -lcfitsio
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lgsl -lgslcblas
   LDFLAGS += -lm
 
 endif
 ################### --- KAY at ICHEC.IE ---######################
-
-
-######################## -- JUROPA -- ################################
-# Options for the Juelich Supercomputer JUROPA.  Intel Compilers!
-######################################################################
-ifeq ($(MAKE_UNAME), JUROPA)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-  else
-    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
-  endif
-  # -wd981 disables a warning about order of evaluation of operands:
-  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
-  #  and also http://software.intel.com/en-us/articles/cdiag981/
-  # -wd383 also diasables a warning about passing a temporary object to a function.
-  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-  #CXXFLAGS += -fp-stack-check -fstack-security-check
-
-  MYLIB = ../extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS  += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-endif
-##################### -- JUROPA -- ###################################
-
-
-
-######################## -- JUDGE -- ################################
-# Options for the Juelich Supercomputer JUDGE.  Intel Compilers!
-#####################################################################
-ifeq ($(MAKE_UNAME), JUDGE)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-  else
-    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
-  endif
-  MYLIB = ../extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS  += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-endif
-##################### -- JUDGE -- ###################################
-
 
 
 ######################## -- SuperMUC -- ##############################
@@ -254,53 +212,6 @@ ifeq ($(MAKE_UNAME), SUPERMUC)
 endif
 ##################### -- SuperMUC -- #################################
 
-
-
-
-######################################################################
-########## OPTIONS FOR PHALANX ICC/ICPC ##############################
-######################################################################
-ifeq ($(MAKE_UNAME), phalanx)
-  # Special include for phalanx mpi libs:
-  INC = -I/opt/sgi/mpt/mpt-1.26/include
-  LDFLAGS += -lmpi
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-  else
-    CXXFLAGS = -Wall -g
-  endif
-  MYLIB = ../extra_libraries
-  INC = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
-  LDFLAGS += -lm
-endif
-#################### --- PHALANX --- #################################
-
-######################################################################
-########## OPTIONS FOR dougal ICC/ICPC ##############################
-######################################################################
-ifeq ($(MAKE_UNAME), dougal)
-  # Special include for dougal mpi libs:
-  INC = -I/usr/include/mpich2-x86_64
-  LDFLAGS += -L/usr/lib64/mpich2/lib -lmpich -lmpichcxx -lopa  -lpthread   -lrt 
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-  else
-    CXXFLAGS = -Wall -g
-  endif
-  MYLIB = ../extra_libraries
-  INC += -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib
-  LDFLAGS += -Wl,--rpath -Wl,/usr/lib64/mpich2/lib 
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  LDFLAGS += -lm
-endif
-#################### --- DOUGAL --- #################################
-
 ###########################################
 # Specific Options for OSX
 ###########################################
@@ -321,41 +232,13 @@ ifeq ($(MAKE_UNAME), OSX)
   LDFLAGS += -L/opt/local/lib
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5 
+  LDFLAGS += -lgsl
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   #LDFLAGS += -Wl,-no_compact_unwind
 
 endif
 #################### --- OS X Darwin --- #############################
 
-
-######################################################################
-#################### -- DIRAC-COMPLEXITY -- ##########################
-# Options for the DIRAC-II Supercomputer Complexity. Intel Compilers!
-######################################################################
-ifeq ($(MAKE_UNAME), DIRAC)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-  else
-#    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
-    CXXFLAGS = -O0 -Wall -g
-  endif
-
-  # -wd981 disables a warning about order of evaluation of operands:
-  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
-  #  and also http://software.intel.com/en-us/articles/cdiag981/
-  # -wd383 also diasables a warning about passing a temporary object to a function.
-  CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-  #CXXFLAGS += -fp-stack-check -fstack-security-check
-
-  MYLIB = ../extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  LDFLAGS += -lm
-
-endif
-################## -- DIRAC-COMPLEXITY -- ############################
 
 
 
