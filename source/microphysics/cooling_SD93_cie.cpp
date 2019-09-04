@@ -46,22 +46,40 @@
 
 using namespace std;
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 cooling_function_SD93CIE::cooling_function_SD93CIE()
 :
   Nspl(91)
 {
   Tarray = 0;
   Larray = 0;
-  L2array= 0;
   have_set_cooling = false;
+  spline_id=-1;
+  
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 cooling_function_SD93CIE::~cooling_function_SD93CIE()
 {
   Tarray  = mem.myfree(Tarray);
   Larray  = mem.myfree(Larray);
-  L2array = mem.myfree(L2array);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Set up the spline interpolation arrays, for solar metallicity curve.
@@ -77,7 +95,6 @@ void cooling_function_SD93CIE::setup_SD93_cie()
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
-  L2array = mem.myalloc(L2array,Nspl);
   
   double t1[91] = 
     {1.000000e+04, 1.122018e+04, 1.258925e+04, 1.412538e+04,
@@ -147,7 +164,7 @@ void cooling_function_SD93CIE::setup_SD93_cie()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
   cout <<"\t\t----------------------------------------------------\n";
@@ -167,6 +184,12 @@ void cooling_function_SD93CIE::setup_SD93_cie()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // Set up the spline interpolation arrays, for Metals--only curve.
 //
@@ -182,7 +205,6 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
-  L2array = mem.myalloc(L2array,Nspl);
   
   double t1[91] = 
     {1.000000e+04, 1.122018e+04, 1.258925e+04, 1.412538e+04, \
@@ -255,7 +277,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
 #ifdef TESTING
@@ -275,6 +297,12 @@ void cooling_function_SD93CIE::setup_SD93_cie_OnlyMetals()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 //
 // Set up the spline interpolation arrays, for metal-free curve.
 //
@@ -289,7 +317,6 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
-  L2array = mem.myalloc(L2array,Nspl);
   
   double t1[91] =
     {1.000000e+04, 1.122018e+04, 1.258925e+04, 1.412538e+04, \
@@ -361,7 +388,7 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
   cout <<"\t\t----------------------------------------------------\n";
@@ -380,6 +407,12 @@ void cooling_function_SD93CIE::setup_SD93_cie_MetalFree()
 #endif //TESTING
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Sets up spline interpolation for metals-only cooling from
@@ -400,7 +433,6 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
-  L2array = mem.myalloc(L2array,Nspl);
   
   double t1[91] = {
     2.00000000e+00, 2.07757611e+00, 2.15515223e+00, 2.23272834e+00, 2.31030446e+00, \
@@ -462,7 +494,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
 #ifdef TESTING
@@ -481,6 +513,12 @@ void cooling_function_SD93CIE::setup_WSS09_CIE_OnlyMetals()
   cout <<"\t\t----------------------------------------------------\n";
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 //
 // Sets up spline interpolation for total cooling from
@@ -501,7 +539,6 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
 
   Tarray  = mem.myalloc(Tarray, Nspl);
   Larray  = mem.myalloc(Larray, Nspl);
-  L2array = mem.myalloc(L2array,Nspl);
   
   double t1[91] = {
     3.01443653e+00, 3.08074113e+00, 3.14704572e+00, 3.21335032e+00, 3.27965492e+00, \
@@ -563,7 +600,7 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
 
   cout << "\t\t min-slope="<<MinSlope<<" max-slope="<<MaxSlope<<"\n";
 
-  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, L2array);
+  interpolate.spline(Tarray, Larray, Nspl, 1.e99, 1.e99, spline_id);
 
   have_set_cooling = true;
 #ifdef TESTING
@@ -582,6 +619,12 @@ void cooling_function_SD93CIE::setup_WSS09_CIE()
   cout <<"\t\t----------------------------------------------------\n";
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 
@@ -623,9 +666,15 @@ double cooling_function_SD93CIE::cooling_rate_SD93CIE(double T
     rate = Larray[0] +MinSlope*(T-MinTemp);
   }
   else {
-    interpolate.splint(Tarray, Larray, L2array, Nspl, T, &rate);
+    interpolate.splint(Tarray, Larray, spline_id, Nspl, T, &rate);
   }
 
   return exp(pconst.ln10()*rate);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 

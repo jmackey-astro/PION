@@ -12,6 +12,7 @@
 /// - 2011.05.10 JM: Output cooling rates only if myrank==0 for parallel (so processes
 ///    don't fight over the file and slow down the code (by a lot!)).
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2019.09.04 JM: changed spline interpolation class
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -28,6 +29,12 @@
 using namespace std;
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 Hummer94_Hrecomb::Hummer94_Hrecomb()
 : kB(1.381e-16)
 {
@@ -35,16 +42,16 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
   // Use Hummer (1994) recombination rates and recombination energy loss rates.  These
   // are given as tables, so we need to fit cubic splines to the data.
   //
-  hr_t=hr_alpha=hr_alpha2=hr_beta=hr_beta2=0;
+  hr_t = hr_alpha = hr_beta = hr_btot = 0;
   hr_Nspl = 31;
+  hr_alpha_id = -1;
+  hr_beta_id  = -1;
+  hr_btot_id  = -1;
 
   hr_t      = mem.myalloc(hr_t      , hr_Nspl);
   hr_alpha  = mem.myalloc(hr_alpha  , hr_Nspl);
-  hr_alpha2 = mem.myalloc(hr_alpha2 , hr_Nspl);
   hr_beta   = mem.myalloc(hr_beta   , hr_Nspl);
-  hr_beta2  = mem.myalloc(hr_beta2  , hr_Nspl);
   hr_btot   = mem.myalloc(hr_btot   , hr_Nspl);
-  hr_btot2  = mem.myalloc(hr_btot2  , hr_Nspl);
 
   double caseb[31] = {9.283e-11, 8.823e-11, 8.361e-11, 7.898e-11, 7.435e-11,
 		      6.973e-11, 6.512e-11, 6.054e-11, 5.599e-11, 5.147e-11,
@@ -76,13 +83,10 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
     hr_alpha[i] = caseb[i]/sqrt(hr_t[i]);
     hr_beta[i]  = coolb[i]/sqrt(hr_t[i]);
     hr_btot[i]  = CoolTot[i]/sqrt(hr_t[i]);
-    hr_alpha2[i]= 0.0;
-    hr_beta2[i] = 0.0;
-    hr_btot2[i]  = 0.0;
   }
-  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha2);
-  interpolate.spline(hr_t, hr_beta,  hr_Nspl, 1.e99, 1.e99, hr_beta2 );
-  interpolate.spline(hr_t, hr_btot,  hr_Nspl, 1.e99, 1.e99, hr_btot2 );
+  interpolate.spline(hr_t, hr_alpha, hr_Nspl, 1.e99, 1.e99, hr_alpha_id);
+  interpolate.spline(hr_t, hr_beta,  hr_Nspl, 1.e99, 1.e99, hr_beta_id );
+  interpolate.spline(hr_t, hr_btot,  hr_Nspl, 1.e99, 1.e99, hr_btot_id );
 
   MinTemp = hr_t[0];
   MaxTemp = hr_t[hr_Nspl-1];
@@ -136,20 +140,31 @@ Hummer94_Hrecomb::Hummer94_Hrecomb()
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 Hummer94_Hrecomb::~Hummer94_Hrecomb()
 {
   hr_t      = mem.myfree(hr_t);
   hr_alpha  = mem.myfree(hr_alpha);
-  hr_alpha2 = mem.myfree(hr_alpha2);
   hr_beta   = mem.myfree(hr_beta);
-  hr_beta2  = mem.myfree(hr_beta2);
   hr_btot   = mem.myfree(hr_btot);
-  hr_btot2  = mem.myfree(hr_btot2);
   return;
 }
 
 
-double Hummer94_Hrecomb::Hii_rad_recomb_rate(const double T)
+// ##################################################################
+// ##################################################################
+
+
+
+
+double Hummer94_Hrecomb::Hii_rad_recomb_rate(
+      const double T
+      )
 {
 #ifdef RT_TEST_PROBS
   return 2.59e-13; // set to const so can compare to analytic result
@@ -176,13 +191,21 @@ double Hummer94_Hrecomb::Hii_rad_recomb_rate(const double T)
     rate = hr_alpha[0] *pow(T/MinTemp, MinSlope_alpha);
   }
   else {
-    interpolate.splint(hr_t, hr_alpha, hr_alpha2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_alpha, hr_alpha_id, hr_Nspl, T, &rate);
   }
 
   return rate;
 }
 
-double Hummer94_Hrecomb::Hii_rad_recomb_cooling(const double T)
+
+// ##################################################################
+// ##################################################################
+
+
+
+double Hummer94_Hrecomb::Hii_rad_recomb_cooling(
+      const double T
+      )
 {
   ///
   /// This is the Case B energy loss rate in erg*cm^3/s. Fitting function from
@@ -209,13 +232,21 @@ double Hummer94_Hrecomb::Hii_rad_recomb_cooling(const double T)
     rate = hr_beta[0] *pow(T/MinTemp, MinSlope_beta);
   }
   else {
-    interpolate.splint(hr_t, hr_beta, hr_beta2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_beta, hr_beta_id, hr_Nspl, T, &rate);
   }
 
   return rate*kB*T;
 }
 
-double Hummer94_Hrecomb::Hii_total_cooling(const double T)
+
+// ##################################################################
+// ##################################################################
+
+
+
+double Hummer94_Hrecomb::Hii_total_cooling(
+      const double T
+      )
 {
   ///
   /// This is the total energy loss rate in erg*cm^3/s (Case B + Free-free).
@@ -242,11 +273,17 @@ double Hummer94_Hrecomb::Hii_total_cooling(const double T)
     rate = hr_btot[0] *pow(T/MinTemp, MinSlope_btot);
   }
   else {
-    interpolate.splint(hr_t, hr_btot, hr_btot2, hr_Nspl, T, &rate);
+    interpolate.splint(hr_t, hr_btot, hr_btot_id, hr_Nspl, T, &rate);
   }
   //cout <<"TOTAL COOLING: T="<<T<<" rate="<<rate<<" kB="<<kB<<" T="<<T<<"\n";
   return rate*kB*T;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 #ifdef TEST_HUMMER94_COOLING_FUNCTION
 #include "cooling_SD93_cie.h"
@@ -268,3 +305,10 @@ int main()
   return 0;
 }
 #endif // TEST_HUMMER94_COOLING_FUNCTION
+
+
+// ##################################################################
+// ##################################################################
+
+
+

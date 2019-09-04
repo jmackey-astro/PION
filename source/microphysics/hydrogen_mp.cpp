@@ -28,28 +28,48 @@
 using namespace std;
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 Hydrogen_chem::Hydrogen_chem()
  : Hummer94_Hrecomb(), hydrogen_photoion()
 {
   //cout <<"Setting up Hydrogen_chem().\n";
 
-  cx_T = cx_rate = cx_rate2 = 0;
+  cx_T = cx_rate = 0;
   cx_Nspl = 26;
+  cx_spline_id = -1;
   cx_T     = mem.myalloc(cx_T     , cx_Nspl);
   cx_rate  = mem.myalloc(cx_rate  , cx_Nspl);
-  cx_rate2 = mem.myalloc(cx_rate2 , cx_Nspl);
   setup_Hi_coll_excitation_rate();
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 Hydrogen_chem::~Hydrogen_chem()
 {
   cout <<"Deleting Hydrogen_chem() class.\n";
   cx_T     = mem.myfree(cx_T);
   cx_rate  = mem.myfree(cx_rate);
-  cx_rate2 = mem.myfree(cx_rate2);
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 void Hydrogen_chem::setup_Hi_coll_excitation_rate()
 {
@@ -81,7 +101,7 @@ void Hydrogen_chem::setup_Hi_coll_excitation_rate()
     cx_T[i] = log10(T[i]);
     cx_rate[i] = log10(R[i]);
   }
-  interpolate.spline(cx_T, cx_rate, cx_Nspl, 1.e99, 1.e99, cx_rate2);
+  interpolate.spline(cx_T, cx_rate, cx_Nspl, 1.e99, 1.e99, cx_spline_id);
   //
   // Logarithmic slopes at either end of the domain.
   //
@@ -96,6 +116,13 @@ void Hydrogen_chem::setup_Hi_coll_excitation_rate()
   // --------------------------------------------------------------------
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 double Hydrogen_chem::Hi_coll_excitation_cooling_rate(double T)
 {
@@ -116,11 +143,15 @@ double Hydrogen_chem::Hi_coll_excitation_cooling_rate(double T)
     rate = cx_rate[cx_Nspl-1] + cx_MaxSlope*(T - cx_maxT);
   }
   else {
-    interpolate.splint(cx_T, cx_rate, cx_rate2, cx_Nspl, T, &rate);
+    interpolate.splint(cx_T, cx_rate, cx_spline_id, cx_Nspl, T, &rate);
   }
   return exp(2.302585093*rate);
 }
 
+
+
+// ##################################################################
+// ##################################################################
 
 
 
@@ -145,6 +176,13 @@ double Hydrogen_chem::Hi_coll_ion_rate(double T)
   }
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 double Hydrogen_chem::Hi_coll_ion_cooling_rate(double T)
 {
   //
@@ -154,6 +192,13 @@ double Hydrogen_chem::Hi_coll_ion_cooling_rate(double T)
   T=1.578e5/T;
   return 6.34e-19*exp(0.39*log(T)-T)/(0.232+T);
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 void Hydrogen_chem::Hi_coll_ion_rates(double T, double *cir, double *cicr)
 {
@@ -169,6 +214,13 @@ void Hydrogen_chem::Hi_coll_ion_rates(double T, double *cir, double *cicr)
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 double Hydrogen_chem::Hi_monochromatic_photo_ion_heating(const double E)
 {
   //
@@ -177,5 +229,12 @@ double Hydrogen_chem::Hi_monochromatic_photo_ion_heating(const double E)
   //
   return (E - 2.18e-11);
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 

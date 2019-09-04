@@ -27,6 +27,9 @@
 ///    cross section and Blackbody spectrum effects on results.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
 /// - 2015.01.15 JM: Added new include statements for new PION version.
+/// - 2019.09.04 JM: removed vector interpolation because not clear wehre
+///    code comes from.
+
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -39,7 +42,7 @@
 #endif // TESTING
 
 //#define HACK_MODIFY_BB ///< scale the high energy BB emission
-#define HACK_CROSS_SECTION ///< use osterbrock photoionisation x-section.
+#define OSTERBROCK_XSEC ///< use osterbrock photoionisation x-section.
 
 #include "microphysics/hydrogen_photoion.h"
 
@@ -47,61 +50,61 @@ using namespace std;
 
 #define LOGTEN 2.302585093
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 hydrogen_photoion::hydrogen_photoion()
 {
-#ifdef USE_VECTORS
-#else 
   PI_Tau   = 0;
   PIrate   = 0;
-  PIrt2    = 0;
   PIheat   = 0;
-  PIht2    = 0;
   LTPIrate = 0;
-  LTPIrt2  = 0;
   LTPIheat = 0;
-  LTPIht2  = 0;
-#endif
+  PIrt_id  = 0;
+  PIht_id  = 0;
+  LTPIrt_id = 0;
+  LTPIht_id = 0;
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 hydrogen_photoion::~hydrogen_photoion()
 {
-#ifdef USE_VECTORS
-  PI_Tau_vec.clear();
-  PIrate_vec.clear();
-  PIrt2_vec.clear();
-  PIheat_vec.clear();
-  PIht2_vec.clear();
-
-  LTPIrate_vec.clear();
-  LTPIrt2_vec.clear();
-  LTPIheat_vec.clear();
-  LTPIht2_vec.clear();
-#else
   if (PI_Tau) {
     PI_Tau   = mem.myfree(PI_Tau);
     PIrate   = mem.myfree(PIrate);
-    PIrt2    = mem.myfree(PIrt2);
     PIheat   = mem.myfree(PIheat);
-    PIht2    = mem.myfree(PIht2);
     LTPIrate = mem.myfree(LTPIrate);
-    LTPIrt2  = mem.myfree(LTPIrt2);
     LTPIheat = mem.myfree(LTPIheat);
-    LTPIht2  = mem.myfree(LTPIht2);
   }
-#endif
   
   return;
 }
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 // discretised multifrequency photoionisation rate
 double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
-                const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
-                const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
-                const double nH,  ///< Local number density of H (per cm3).
-                const double ds,   ///< path length through cell.
-                const double Vshell  ///< Shell volume (cm3).
-                )
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
+      const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
+      const double nH,  ///< Local number density of H (per cm3).
+      const double ds,   ///< path length through cell.
+      const double Vshell  ///< Shell volume (cm3).
+      )
 {
   //
   // C2Ray paper (Mellema et al. 2006,NewA,11,374).  equation 6.
@@ -119,11 +122,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
     // splint returns value to be multiplied by dNH0/(n(H0)*Vshell)
     //
     ans = max(MinTau, min(MaxTau, Tau0));
-#ifdef USE_VECTORS
-    splint_vec(PI_Tau_vec, LTPIrate_vec, LTPIrt2_vec, PI_Nspl, log10(ans), &ans);
-#else 
-    interpolate.splint(PI_Tau, LTPIrate, LTPIrt2, PI_Nspl, log10(ans), &ans);
-#endif
+    interpolate.splint(PI_Tau, LTPIrate, LTPIrt_id, PI_Nspl, log10(ans), &ans);
     ans = exp(LOGTEN*ans)*dTau0/(Hi_monochromatic_photo_ion_xsection(JUST_IONISED)*nH*Vshell);
     //cout <<"PIR="<<ans<<", non-discretised="<<
     //      Hi_multifreq_photoionisation_rate(NH0,     nH,Vshell) -
@@ -146,14 +145,21 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoion_rate(
   return ans;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 // discretised multifrequency photoionisation rate
 double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
-                const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
-                const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
-                const double nH,  ///< Local number density of H (per cm3).
-                const double ds,   ///< path length through cell.
-                const double Vshell  ///< Shell volume (cm3).
-                )
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
+      const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
+      const double nH,  ///< Local number density of H (per cm3).
+      const double ds,   ///< path length through cell.
+      const double Vshell  ///< Shell volume (cm3).
+      )
 {
   //
   // see Hi_discrete_multifreq_photoion_rate() for details.
@@ -166,11 +172,7 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
     // splint returns value to be multiplied by dNH0/(n(H0)*Vshell)
     //
     dtau = max(MinTau, min(MaxTau, Tau0));
-#ifdef USE_VECTORS
-    splint_vec(PI_Tau_vec, LTPIheat_vec, LTPIht2_vec, PI_Nspl, log10(dtau), &ans);
-#else 
-    interpolate.splint(PI_Tau, LTPIheat, LTPIht2, PI_Nspl, log10(dtau), &ans);
-#endif
+    interpolate.splint(PI_Tau, LTPIheat, LTPIht_id, PI_Nspl, log10(dtau), &ans);
     ans = exp(LOGTEN*ans)*dTau0/(Hi_monochromatic_photo_ion_xsection(JUST_IONISED)*nH*Vshell);
     //      Hi_multifreq_photoionisation_heating_rate(NH0,     nH,Vshell) -
     //      Hi_multifreq_photoionisation_heating_rate(NH0+dNH0,nH,Vshell)<<"\n";
@@ -188,8 +190,11 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
 
 
 
+// ##################################################################
+// ##################################################################
 
-//
+
+
 // Get multifrequency photoionisation rate for a given column density of H0, local
 // number density of H0, and Shell volume ~4.Pi.[(R+)^3-(R-)^3]/3
 // PHYSICALLY THIS IS KIND OF MEANINGLESS, BECAUSE THERE IS NO POINT IN THE
@@ -197,10 +202,10 @@ double hydrogen_photoion::Hi_discrete_multifreq_photoheating_rate(
 // IS REALLY A NUMERICAL CONVENIENCE.
 //
 double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
-                const double Tau0, ///< Optical depth of H0 (at 13.6eV).
-                const double nH0, ///< Local number density of H0 (per cm3).
-                const double Vshell  ///< Shell volume (cm3).
-                )
+      const double Tau0, ///< Optical depth of H0 (at 13.6eV).
+      const double nH0, ///< Local number density of H0 (per cm3).
+      const double Vshell  ///< Shell volume (cm3).
+      )
 {
   double ans = 0.0;
   //
@@ -211,14 +216,17 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
   //
   ans = max(MinTau, min(MaxTau, Tau0));
   //ans = Tau0;
-#ifdef USE_VECTORS
-  splint_vec(PI_Tau_vec, PIrate_vec, PIrt2_vec, PI_Nspl, log10(ans), &ans);
-#else 
-  interpolate.splint(PI_Tau, PIrate, PIrt2, PI_Nspl, log10(ans), &ans);
-#endif
+  interpolate.splint(PI_Tau, PIrate, PIrt_id, PI_Nspl, log10(ans), &ans);
   ans = exp(LOGTEN*ans)/(nH0*Vshell);
   return ans;
 }
+
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 //
@@ -226,10 +234,10 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_rate(
 // of H0, local number density of H0, and Shell volume ~4.Pi.[(R+)^3-(R-)^3]/3
 //
 double hydrogen_photoion::Hi_multifreq_photoionisation_heating_rate(
-                const double Tau0, ///< Optical depth of H0 (at 13.6eV).
-                const double nH0,  ///< Local number density of H0 (per cm3).
-                const double Vshell  ///< Shell volume (cm3).
-                )
+      const double Tau0, ///< Optical depth of H0 (at 13.6eV).
+      const double nH0,  ///< Local number density of H0 (per cm3).
+      const double Vshell  ///< Shell volume (cm3).
+      )
 {
   double ans = 0.0;
   //
@@ -239,21 +247,26 @@ double hydrogen_photoion::Hi_multifreq_photoionisation_heating_rate(
   // gives a negligible photoionisation rate for any Vshell value.
   //
   ans = max(MinTau, min(MaxTau, Tau0));
-#ifdef USE_VECTORS
-  splint_vec(PI_Tau_vec, PIheat_vec, PIht2_vec, PI_Nspl, log10(ans), &ans);
-#else 
-  interpolate.splint(PI_Tau, PIheat, PIht2, PI_Nspl, log10(ans), &ans);
-#endif
+  interpolate.splint(PI_Tau, PIheat, PIht_id, PI_Nspl, log10(ans), &ans);
   ans = exp(LOGTEN*ans)/(nH0*Vshell);
   return ans;
 }
 
 
-double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection_fractional(const double E)
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection_fractional(
+      const double E
+      )
 {
   //
   // Sutherland & Dopita (2003,Textbook,eq.5.32) give this formula.
-  // HACK_CROSS_SECTION replaces this with Osterbrock's (1989) eq. 2.31.
+  // OSTERBROCK_XSEC replaces this with Osterbrock's (1989) eq. 2.31.
   //
   // N.B. 'E' is assumed to be in cgs units (ergs).
   // This function returns the ratio of the cross-section at energy E to the
@@ -265,7 +278,7 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection_fractional(const d
 #ifdef RT_TEST_PROBS
     return 1.0;
 #else
-#ifdef HACK_CROSS_SECTION
+#ifdef OSTERBROCK_XSEC
     return 1.34*exp(-2.99*log(E/2.1788e-11)) -0.34*exp(-3.99*log(E/2.1788e-11));
 #else
     return exp(-3.5*log(E/2.18e-11));
@@ -274,7 +287,16 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection_fractional(const d
   }
 }
 
-double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection(const double E)
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection(
+      const double E
+      )
 {
   //
   // Sutherland & Dopita (2003,Textbook,eq.5.32) give this formula, which I 
@@ -288,7 +310,7 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection(const double E)
 #ifdef RT_TEST_PROBS
     return 6.3042e-18;
 #else
-#ifdef HACK_CROSS_SECTION
+#ifdef OSTERBROCK_XSEC
     return 6.3042e-18*(1.34*exp(-2.99*log(E/2.1788e-11)) -0.34*exp(-3.99*log(E/2.1788e-11)));
 #else
     return 6.3042e-18*exp(-3.5*log(E/2.18e-11));
@@ -297,15 +319,22 @@ double hydrogen_photoion::Hi_monochromatic_photo_ion_xsection(const double E)
   }
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double hydrogen_photoion::Hi_discrete_mono_photoion_rate(
-                const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
-                const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
-                const double nH,   ///< Local number density of H (per cm3).
-                const double Ndot, ///< ionising photon luminosity of source
-                const double E,    ///< Energy of photons (erg)
-                const double ds,   ///< path length through cell.
-                const double Vshell  ///< Shell volume (cm3).
-                )
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV) to front edge of cell.
+      const double dTau0, ///< Optical depth of H0 (at 13.6eV) through cell.
+      const double nH,   ///< Local number density of H (per cm3).
+      const double Ndot, ///< ionising photon luminosity of source
+      const double E,    ///< Energy of photons (erg)
+      const double ds,   ///< path length through cell.
+      const double Vshell  ///< Shell volume (cm3).
+      )
 {
   //
   // C2Ray paper (Mellema et al. 2006,NewA,11,374).  equation 6.
@@ -335,16 +364,21 @@ double hydrogen_photoion::Hi_discrete_mono_photoion_rate(
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
 void hydrogen_photoion::Setup_photoionisation_rate_table(
-                  const double Tstar, ///< BB temperature (K)
-                  const double Rstar, ///< Radius of star (cm)
-                  const double Lstar, ///< Stellar luminosity (erg/s) (overrides Rstar!).
-                  const double Tau0min, ///< Min Optical depth of H0 (at 13.6eV)
-                  const double Tau0max, ///< Max Optical depth of H0 (at 13.6eV)
-                  const double Emax,  ///< Max energy to integrate to.
-                  const int Nsub,     ///< Number of sub-points in integration.
-                  const int Nspl      ///< Number of spline points.
-                  )
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Lstar, ///< Stellar luminosity (erg/s) (overrides Rstar!).
+      const double Tau0min, ///< Min Optical depth of H0 (at 13.6eV)
+      const double Tau0max, ///< Max Optical depth of H0 (at 13.6eV)
+      const double Emax,  ///< Max energy to integrate to.
+      const int Nsub,     ///< Number of sub-points in integration.
+      const int Nspl      ///< Number of spline points.
+      )
 {
   MinTau=Tau0min;
   MaxTau=Tau0max;
@@ -381,52 +415,18 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   
   PI_Nspl = Nspl;
 
-#ifdef USE_VECTORS
-  PI_Tau_vec.clear();
-  PIrate_vec.clear();
-  PIrt2_vec.clear();
-  PIheat_vec.clear();
-  PIht2_vec.clear();
-
-  PI_Tau_vec.resize(Nspl);
-  PIrate_vec.resize(Nspl);
-  PIrt2_vec.resize(Nspl);
-  PIheat_vec.resize(Nspl);
-  PIht2_vec.resize(Nspl);
-
-  // LOW-DTAU APPROX INTEGRAL ---------------
-  LTPIrate_vec.clear();
-  LTPIrt2_vec.clear();
-  LTPIheat_vec.clear();
-  LTPIht2_vec.clear();
-
-  LTPIrate_vec.resize(Nspl);
-  LTPIrt2_vec.resize(Nspl);
-  LTPIheat_vec.resize(Nspl);
-  LTPIht2_vec.resize(Nspl);
-  // ----------------------------------------
-#else 
   if (PI_Tau) {
     PI_Tau   = mem.myfree(PI_Tau);
     PIrate   = mem.myfree(PIrate);
-    PIrt2    = mem.myfree(PIrt2);
     PIheat   = mem.myfree(PIheat);
-    PIht2    = mem.myfree(PIht2);
     LTPIrate = mem.myfree(LTPIrate);
-    LTPIrt2  = mem.myfree(LTPIrt2);
     LTPIheat = mem.myfree(LTPIheat);
-    LTPIht2  = mem.myfree(LTPIht2);
   }
   PI_Tau   = mem.myalloc(PI_Tau,  Nspl);
   PIrate   = mem.myalloc(PIrate,  Nspl);
-  PIrt2    = mem.myalloc(PIrt2,  Nspl);
   PIheat   = mem.myalloc(PIheat,  Nspl);
-  PIht2    = mem.myalloc(PIht2,  Nspl);
   LTPIrate = mem.myalloc(LTPIrate,Nspl);
-  LTPIrt2  = mem.myalloc(LTPIrt2,Nspl);
   LTPIheat = mem.myalloc(LTPIheat,Nspl);
-  LTPIht2  = mem.myalloc(LTPIht2,Nspl);
-#endif
   //
   // Calculate log10 of photoionisation and photoheating rates for Nspl
   // logarithmically spaced values of Tau0.
@@ -436,41 +436,18 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   double hh = (lTmax-lTmin)/(Nspl-1);
   double Tau0;
   for (int v=0; v<Nspl; v++) {
-#ifdef USE_VECTORS
-    PI_Tau_vec[v] = lTmin +v*hh;
-    Tau0 = exp(LOGTEN*PI_Tau_vec[v]);
-    //cout <<"\t-- T*="<<Tstar<<", R*="<<Rstar<<", Tau0="<<Tau0<<", Emax="<<Emax<<", Nsub="<<Nsub<<"\n";
-    PIrate_vec[v] = log10(photoion_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
-    PIheat_vec[v] = log10(photoheating_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
-    PIrt2_vec[v] = 0.0;
-    PIht2_vec[v] = 0.0;
-    //
-    // LOW-DTAU APPROX INTEGRAL ---------------
-    //
-    LTPIrate_vec[v] = log10(PI_LowTau_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
-    LTPIheat_vec[v] = log10(PH_LowTau_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
-    LTPIrt2_vec[v] = 0.0;
-    LTPIht2_vec[v] = 0.0;
-    // ----------------------------------------
-    //cout <<"Tau0="<<Tau0<<", pir="<<exp(LOGTEN*PIrate_vec[v])<<", phr="<<exp(LOGTEN*PIheat_vec[v])<<"\n";
-#else 
     PI_Tau[v] = lTmin +v*hh;
     Tau0 = exp(LOGTEN*PI_Tau[v]);
     //cout <<"\t-- T*="<<Tstar<<", R*="<<Rstar<<", Tau0="<<Tau0<<", Emax="<<Emax<<", Nsub="<<Nsub<<"\n";
     PIrate[v] = log10(photoion_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
     PIheat[v] = log10(photoheating_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
-    PIrt2[v] = 0.0;
-    PIht2[v] = 0.0;
     //
     // LOW-DTAU APPROX INTEGRAL ---------------
     //
     LTPIrate[v] = log10(PI_LowTau_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
     LTPIheat[v] = log10(PH_LowTau_rate_source_integral(Tstar,Rstar,Tau0,Emax,Nsub));
-    LTPIrt2[v] = 0.0;
-    LTPIht2[v] = 0.0;
     // ----------------------------------------
     //cout <<"Tau0="<<Tau0<<", pir="<<exp(LOGTEN*PIrate[v])<<", phr="<<exp(LOGTEN*PIheat[v])<<"\n";
-#endif
   }
 
   //
@@ -480,115 +457,30 @@ void hydrogen_photoion::Setup_photoionisation_rate_table(
   // A small value (<1.0e30) indicates that this is the actual value of the first
   // derivative at the boundary values (4th is lower limit, 5th is upper limit).
   //
-#ifdef USE_VECTORS
-  spline_vec(PI_Tau_vec, PIrate_vec, PI_Nspl, 1.e99, 1.e99, PIrt2_vec);
-  spline_vec(PI_Tau_vec, PIheat_vec, PI_Nspl, 1.e99, 1.e99, PIht2_vec);
-#else 
-  interpolate.spline(PI_Tau, PIrate, PI_Nspl, 1.e99, 1.e99, PIrt2);
-  interpolate.spline(PI_Tau, PIheat, PI_Nspl, 1.e99, 1.e99, PIht2);
-#endif
+  interpolate.spline(PI_Tau, PIrate, PI_Nspl, 1.e99, 1.e99, PIrt_id);
+  interpolate.spline(PI_Tau, PIheat, PI_Nspl, 1.e99, 1.e99, PIht_id);
 
   // LOW-DTAU APPROX INTEGRAL ---------------
-#ifdef USE_VECTORS
-  spline_vec(PI_Tau_vec, LTPIrate_vec, PI_Nspl, 1.e99, 1.e99, LTPIrt2_vec);
-  spline_vec(PI_Tau_vec, LTPIheat_vec, PI_Nspl, 1.e99, 1.e99, LTPIht2_vec);
-#else 
-  interpolate.spline(PI_Tau, LTPIrate, PI_Nspl, 1.e99, 1.e99, LTPIrt2);
-  interpolate.spline(PI_Tau, LTPIheat, PI_Nspl, 1.e99, 1.e99, LTPIht2);
-#endif
+  interpolate.spline(PI_Tau, LTPIrate, PI_Nspl, 1.e99, 1.e99, LTPIrt_id);
+  interpolate.spline(PI_Tau, LTPIheat, PI_Nspl, 1.e99, 1.e99, LTPIht_id);
   // ----------------------------------------
 
   return;
 }
 
-#ifdef USE_VECTORS
-void hydrogen_photoion::spline_vec(const std::vector<double> &x,
-                           const std::vector<double> &y,
-                           const int n,
-                           double yp1,
-                           double ypn,
-                           std::vector<double> &y2
-                           )
-{
-  int i,k;
-  double p,qn,sig,un;
-  double *u = new double [n];
-  
-  //
-  // Large values in the 4th,5th args tell it to use natural boundary conditions,
-  // which means set the second derivative to zero at the endpoints.
-  // A small value (<1.0e30) indicates that this is the actual value of the first
-  // derivative at the boundary values (4th is lower limit, 5th is upper limit).
-  //
 
-  if (yp1 > 0.99e30)
-    y2[0]=u[0]=0.0;
-  else {
-    y2[0] = -0.5;
-    u[0]  = (3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
-  }
-  //cout <<"x[0]="<<x[0]<<" y[0]="<<y[0]<<" y2[0]="<<y2[0]<<"\n";
-  for (i=1;i<n-1;i++) {
-    sig=(x[i]-x[i-1])/(x[i+1]-x[i-1]);
-    p=sig*y2[i-1]+2.0;
-    y2[i]=(sig-1.0)/p;
-    u[i]=(y[i+1]-y[i])/(x[i+1]-x[i]) - (y[i]-y[i-1])/(x[i]-x[i-1]);
-    u[i]=(6.0*u[i]/(x[i+1]-x[i-1])-sig*u[i-1])/p;
-    //cout <<"x[i]="<<x[i]<<" y[i]="<<y[i]<<" y2[i]="<<y2[i]<<"\n";
-  }
-  if (ypn > 0.99e30)
-    qn=un=0.0;
-  else {
-    qn=0.5;
-    un=(3.0/(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
-    //cout <<"constant gradient\n";
-  }
-  y2[n-1]=(un-qn*u[n-2])/(qn*y2[n-2]+1.0);
-  for (k=n-2;k>=0;k--)
-    y2[k]=y2[k]*y2[k+1]+u[k];
 
-  //rep.printVec("y2",y2,50);
-  delete [] u;
-  return;
-}
+// ##################################################################
+// ##################################################################
 
-void hydrogen_photoion::splint_vec(const std::vector<double> &xa,
-                           const std::vector<double> &ya,
-                           const std::vector<double> &y2a,
-                           const int n,
-                           const double x,
-                           double *y
-                           )
-{
-  int klo,khi,k;
-  double h,b,a;
 
-  klo=0;
-  khi=n-1;
-  while (khi-klo > 1) {
-  k=(khi+klo) >> 1;
-  if (xa[k] > x) khi=k;
-  else klo=k;
-  }
-  //cout <<"khi="<<khi<<" klo="<<klo;
-  //cout <<"\t\txhi="<<xa[khi]<<" xlo="<<xa[klo];
-  //cout <<"\t\tyhi="<<ya[khi]<<" ylo="<<ya[klo];
-  //cout <<"\t\ty2hi="<<y2a[khi]<<" y2lo="<<y2a[klo]<<"\n";
-  h=xa[khi]-xa[klo];
-  if (h < 1.0e-150) { rep.error("Bad xa input to routine splint",h); }
-  a=(xa[khi]-x)/h;
-  b=(x-xa[klo])/h;
-  *y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6.0;
-  return;
-}
-#endif
 
 double hydrogen_photoion::photoion_rate_source_integrand(
-              const double E,     ///< ergs.
-              const double Tstar, ///< BB temperature (K)
-              const double Rstar, ///< Radius of star (cm)
-              const double Tau0   ///< Optical depth of H0 (at 13.6eV)
-              )
+      const double E,     ///< ergs.
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0   ///< Optical depth of H0 (at 13.6eV)
+      )
 {
   if (E<2.18e-11) return 0.0;
 
@@ -616,23 +508,37 @@ double hydrogen_photoion::photoion_rate_source_integrand(
   return ans;
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double hydrogen_photoion::photoheating_rate_source_integrand(
-              const double E,     ///< ergs.
-              const double Tstar, ///< BB temperature (K)
-              const double Rstar, ///< Radius of star (cm)
-              const double Tau0   ///< Optical depth of H0 (at 13.6eV)
-              )
+      const double E,     ///< ergs.
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0   ///< Optical depth of H0 (at 13.6eV)
+      )
 {
   return photoion_rate_source_integrand(E,Tstar,Rstar,Tau0)*(E-2.18e-11);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double hydrogen_photoion::photoion_rate_source_integral(
-                  const double Tstar, ///< BB temperature (K)
-                  const double Rstar, ///< Radius of star (cm)
-                  const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
-                  const double Emax,  ///< Max energy to integrate to (ergs).
-                  const int Nsub      ///< Number of sub-points in integration.
-                  )
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
+      const double Emax,  ///< Max energy to integrate to (ergs).
+      const int Nsub      ///< Number of sub-points in integration.
+      )
 {
   double Api = 0.0;
 
@@ -680,14 +586,21 @@ double hydrogen_photoion::photoion_rate_source_integral(
   }
   return Api;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
  
 double hydrogen_photoion::photoheating_rate_source_integral(
-                  const double Tstar, ///< BB temperature (K)
-                  const double Rstar, ///< Radius of star (cm)
-                  const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
-                  const double Emax,  ///< Max energy to integrate to.
-                  const int Nsub      ///< Number of sub-points in integration.
-                  )
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
+      const double Emax,  ///< Max energy to integrate to.
+      const int Nsub      ///< Number of sub-points in integration.
+      )
 {
   double Hpi = 0.0;
 
@@ -735,6 +648,13 @@ double hydrogen_photoion::photoheating_rate_source_integral(
   }
   return Hpi;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
  
 //////////////////////////////////////////
 // APPROXIMATE LOW-DTAU FUNCTIONS       //
@@ -742,32 +662,46 @@ double hydrogen_photoion::photoheating_rate_source_integral(
 
 
 double hydrogen_photoion::PI_LowTau_rate_source_integrand(
-              const double E,     ///< ergs.
-              const double Tstar, ///< BB temperature (K)
-              const double Rstar, ///< Radius of star (cm)
-              const double Tau0   ///< Optical depth of H0 (at 13.6eV)
-              )
+      const double E,     ///< ergs.
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0   ///< Optical depth of H0 (at 13.6eV)
+      )
 {
   return photoion_rate_source_integrand(E,Tstar,Rstar,Tau0)*Hi_monochromatic_photo_ion_xsection(E);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double hydrogen_photoion::PH_LowTau_rate_source_integrand(
-              const double E,     ///< ergs.
-              const double Tstar, ///< BB temperature (K)
-              const double Rstar, ///< Radius of star (cm)
-              const double Tau0   ///< Optical depth of H0 (at 13.6eV)
-              )
+      const double E,     ///< ergs.
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0   ///< Optical depth of H0 (at 13.6eV)
+      )
 {
   return PI_LowTau_rate_source_integrand(E,Tstar,Rstar,Tau0)*(E-2.18e-11);
 }
 
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 double hydrogen_photoion::PI_LowTau_rate_source_integral(
-                  const double Tstar, ///< BB temperature (K)
-                  const double Rstar, ///< Radius of star (cm)
-                  const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
-                  const double Emax,  ///< Max energy to integrate to (ergs).
-                  const int Nsub      ///< Number of sub-points in integration.
-                  )
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
+      const double Emax,  ///< Max energy to integrate to (ergs).
+      const int Nsub      ///< Number of sub-points in integration.
+      )
 {
   double Api = 0.0;
 
@@ -815,14 +749,21 @@ double hydrogen_photoion::PI_LowTau_rate_source_integral(
   }
   return Api;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
  
 double hydrogen_photoion::PH_LowTau_rate_source_integral(
-                  const double Tstar, ///< BB temperature (K)
-                  const double Rstar, ///< Radius of star (cm)
-                  const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
-                  const double Emax,  ///< Max energy to integrate to.
-                  const int Nsub      ///< Number of sub-points in integration.
-                  )
+      const double Tstar, ///< BB temperature (K)
+      const double Rstar, ///< Radius of star (cm)
+      const double Tau0,  ///< Optical depth of H0 (at 13.6eV)
+      const double Emax,  ///< Max energy to integrate to.
+      const int Nsub      ///< Number of sub-points in integration.
+      )
 {
   double Hpi = 0.0;
 
@@ -871,6 +812,13 @@ double hydrogen_photoion::PH_LowTau_rate_source_integral(
   return Hpi;
 }
  
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 
 

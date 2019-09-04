@@ -65,6 +65,13 @@ using namespace std;
 
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+
+
 MPv0::MPv0(
       const int nv,
       const int ntracer,
@@ -305,6 +312,13 @@ MPv0::MPv0(
   return;  
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 void MPv0::copy_ion_struct(const ion_struct src, ion_struct *dest)
 {
   rep.error("unused function. test me!",-99);
@@ -317,6 +331,13 @@ void MPv0::copy_ion_struct(const ion_struct src, ion_struct *dest)
   dest->i       = src.i;
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 void MPv0::copy_element_struct(const struct element_struct src, struct element_struct *dest)
 {
@@ -342,6 +363,13 @@ void MPv0::copy_element_struct(const struct element_struct src, struct element_s
   return;
 }
 
+
+// ##################################################################
+// ##################################################################
+
+
+
+
 void MPv0::show_ion_struct(const ion_struct *i)
 {
   cout <<"\t\tion: "<<i->ion<<"\tel: "<<i->el<<" index:"<<i->index<<" pv_index:"<<i->pv_index;
@@ -350,6 +378,13 @@ void MPv0::show_ion_struct(const ion_struct *i)
   cout <<"\t\t\tiip1: "<<i->iip1<<"  iim1: "<<i->iim1<<"\n";
   return;
 }
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 MPv0::~MPv0()
 {

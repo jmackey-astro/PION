@@ -93,7 +93,7 @@ class cooling_function_SD93CIE
   const int Nspl;   ///< number of tabulated values in spline table.
   double *Tarray;   ///< array for tabulated temperatures.
   double *Larray;   ///< Array for tabulated cooling rates.
-  double *L2array;  ///< extra array for spline interpolation.
+  int spline_id;    ///< id of spline in interpolation class.
 
   double MaxTemp;  ///< Max. tabulated temperature.
   double MinTemp;  ///< Min. tabulated temperature.

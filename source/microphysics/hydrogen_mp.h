@@ -98,11 +98,11 @@ class Hydrogen_chem : public Hummer94_Hrecomb, public hydrogen_photoion
   ///
   void setup_Hi_coll_excitation_rate();
 
-  int cx_Nspl;  ///< number of elements in the spline fit for collisional excitation.
+  int cx_Nspl;  ///< n_elements in spline fit for coll. ex.
+  int cx_spline_id; ///< id of spline in interpolation class
   double
     *cx_T, ///< list of log10(T) values for collisional excitation.
-    *cx_rate, ///< list of log10(Rate) values for collisional excitation.
-    *cx_rate2; ///< Extra array for spline fit for collisional excitation.
+    *cx_rate; ///< list of log10(Rate) values for collisional excitation.
   double
     cx_MinSlope, ///< logarithmic slope for extrapolation of collisional excitation table.
     cx_MaxSlope, ///< logarithmic slope for extrapolation of collisional excitation table.

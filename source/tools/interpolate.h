@@ -56,30 +56,6 @@ class interpolate_arrays {
     );
 
   ///
-  /// spline function for C++ STL vectors.
-  /// Use GSL interpolation routines
-  void spline_vec(
-    const std::vector<double> &,
-    const std::vector<double> &,
-    const int ,
-    double ,
-    double ,
-    std::vector<double> &
-    );
-
-  ///
-  /// splint function for C++ STL vectors.
-  /// Use GSL interpolation routines
-  void splint_vec(
-    const std::vector<double> &,
-    const std::vector<double> &,
-    const std::vector<double> &,
-    const int,
-    const double,
-    double &
-    );
-
-  ///
   /// Given a vector of x-values, and corresponding y-values, and an input
   /// x value, find the corresponding y-value by bisection and then linear
   /// interopolation.
@@ -146,7 +122,7 @@ class interpolate_arrays {
 
   protected:
 
-  std::vector<gsl_interp *> slist;  ///< list of spline interpolations.
+  std::vector<gsl_spline *> slist;  ///< list of spline interpolations.
 };
 
 

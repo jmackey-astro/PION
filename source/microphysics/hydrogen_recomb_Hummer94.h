@@ -7,6 +7,7 @@
 /// Modifications:
 /// - 2011.03.04 JM: Wrote class.
 /// - 2011.03.14 JM: Renamed file.
+/// - 2019.09.04 JM: changed spline interpolation class
 ///
 
 #ifndef HUMMER94_HRECOMB_H
@@ -60,11 +61,11 @@ class Hummer94_Hrecomb
   double 
     *hr_t,      ///< array for Temperature values.
     *hr_alpha,  ///< array for recomb rate.
-    *hr_alpha2, ///< array for recomb rate.
+ //   *hr_alpha2, ///< array for recomb rate.
     *hr_beta,   ///< array for energy loss rate.
-    *hr_beta2,  ///< array for energy loss rate.
-    *hr_btot,   ///< array for total energy loss rate.
-    *hr_btot2;  ///< array for total energy loss rate.
+ //   *hr_beta2,  ///< array for energy loss rate.
+    *hr_btot;   ///< array for total energy loss rate.
+ //   *hr_btot2;  ///< array for total energy loss rate.
   double MinTemp; ///< Minimum gas temperature which can be fit with spline.
   double MaxTemp; ///< Maximum gas temperature which can be fit with spline.
   double
@@ -74,6 +75,7 @@ class Hummer94_Hrecomb
     MaxSlope_beta,  ///< Logarithmic slope for extrapolating spline fit.
     MinSlope_btot,  ///< Logarithmic slope for extrapolating spline fit.
     MaxSlope_btot;  ///< Logarithmic slope for extrapolating spline fit.
+  int hr_alpha_id, hr_beta_id, hr_btot_id; ///< id for interpolation class.
 };
 
 

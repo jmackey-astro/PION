@@ -507,6 +507,10 @@ int dataio_text::output_ascii_data(
   int vars[3]; vars[0] = static_cast<int>(BX);
   vars[1] = static_cast<int>(BY); vars[2] = static_cast<int>(BZ);
 
+  bool mhd = false;
+  if (SimPM.eqntype==EQMHD || SimPM.eqntype==EQGLM || SimPM.eqntype==EQFCD) 
+    mhd = true;
+
   // Go through every point, output one line per point.
   class cell *cpt=gp->FirstPt(); do {
     if(CI.get_dpos(cpt,0)<gp->SIM_Xmin(XX)+dx) outf <<"\n"; // put in a blank line for gnuplot
@@ -517,10 +521,15 @@ int dataio_text::output_ascii_data(
     
     // Next all primitive variables.
 #ifdef NEW_B_NORM
-    double norm = sqrt(4.0*M_PI);
-    for (int v=0;v<SimPM.nvar;v++) {
-      if (v==BX || v==BY || v==BZ) outf <<cpt->P[v]*norm<<"  ";
-      else outf <<cpt->P[v]<<"  ";
+    if (mhd) {
+      double norm = sqrt(4.0*M_PI);
+      for (int v=0;v<SimPM.nvar;v++) {
+        if (v==BX || v==BY || v==BZ) outf <<cpt->P[v]*norm<<"  ";
+        else outf <<cpt->P[v]<<"  ";
+      }
+    }
+    else {
+      for (int v=0;v<SimPM.nvar;v++) outf <<cpt->P[v]<<"  ";
     }
 #else
     for (int v=0;v<SimPM.nvar;v++) outf <<cpt->P[v]<<"  ";

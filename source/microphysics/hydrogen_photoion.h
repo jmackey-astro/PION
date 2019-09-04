@@ -21,6 +21,8 @@
 /// - 2011.10.08 JM: Added switch to use interpolate.spline/splint instead of the local
 ///    STL vector one, because the vector functions are slower by about 2.5%.
 /// - 2014.03.27 JM: fixed bug in discrete monochromatic PI rate.
+/// - 2019.09.04 JM: removed vector interpolation because not clear wehre
+///    code comes from.
 ///
 #ifndef HYDROGEN_PHOTOION
 #define HYDROGEN_PHOTOION
@@ -30,10 +32,8 @@
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
 
-//#define USE_VECTORS  // This uses STL vectors for spline interpolation.  It's 2.5% slower.
 #define JUST_IONISED 2.178721e-11 ///< This is (1.0+5e-7) times the ionisation energy of H
 
-#include <vector>
 
 ///
 /// This class calculates 
@@ -249,49 +249,11 @@ class hydrogen_photoion
               );
   //private:
   int PI_Nspl; ///< number of elements in spline integral.
-  double MinTau, ///< smallest optical depth in spline interpolation (must be tau<<1)
-         MaxTau; ///< Largest optical depth in spline interpolation (must be tau>>1)
-#ifdef USE_VECTORS
-  ///
-  /// Vectors for the spline interpolation of the photoionisation and 
-  /// photoheating rates as a function of neutral hydrogen optical depth.
-  /// Note these values do not include the (n(H0)*Vshell) term in the 
-  /// denominator.
-  ///
-  std::vector<double> PI_Tau_vec, PIrate_vec, PIheat_vec, PIrt2_vec, PIht2_vec;
-  ///
-  /// Vectors for the low-dtau approximate intetgral (with sigma(E) in integrand).
-  ///
-  std::vector<double> LTPIrate_vec, LTPIheat_vec, LTPIrt2_vec, LTPIht2_vec;
-
-  ///
-  /// NR92 spline function for C++ STL vectors.
-  ///
-  void spline_vec(
-                  const std::vector<double> &,
-                  const std::vector<double> &,
-                  const int ,
-                  double ,
-                  double ,
-                  std::vector<double> &
-                  );
-
-  ///
-  /// NR92 splint function for C++ STL vectors.
-  ///
-  void splint_vec(
-                  const std::vector<double> &,
-                  const std::vector<double> &,
-                  const std::vector<double> &,
-                  const int,
-                  const double,
-                  double *
-                  );
-#else
-  double *PI_Tau, *PIrate, *PIheat, *PIrt2, *PIht2;
-  double *LTPIrate, *LTPIheat, *LTPIrt2, *LTPIht2;
-#endif
-
+  double MinTau, ///< Smallest optical depth in spline int (must be tau<<1)
+         MaxTau; ///< Largest optical depth in spline int (must be tau>>1)
+  double *PI_Tau, *PIrate, *PIheat;
+  double *LTPIrate, *LTPIheat;
+  int PIrt_id, PIht_id, LTPIrt_id, LTPIht_id; ///< ID in interpolation class.
 };
 
 #endif // HYDROGEN_PHOTOION
