@@ -71,7 +71,7 @@ class FV_solver_Hydro_Euler :
       );
 
   ~FV_solver_Hydro_Euler();
-	long int counter = 1;
+  long int counter;
 
   ///
   /// This calls the equations version and then adds conversion of tracer variables.

@@ -32,6 +32,25 @@
 #include <stdlib.h>
 using namespace std;
 
+
+
+/// Struct for storing parameter data:
+  struct params_struct {
+  int Z, N; // atomic number, number of electrons
+  double E_th; 
+  double E_max;
+  double E_0;
+  double sigma_0;
+  double y_a;
+  double P;
+  double y_w;
+  double y_0;
+  double y_1;
+  double *xsections;
+  };
+
+
+
 ///
 /// x-ray microphysics class.
 /// This class uses keV as energy/frequency units, and CGS units for
@@ -126,34 +145,12 @@ class photo_xsections
   double get_Ne_primary_photoion_rate(
     double *   ///< input fluxes for each bin (already attenuated)
     );
-  
-  /// Struct for storing parameter data:
-  struct params_struct {
-  int Z, N; // atomic number, number of electrons
-  double E_th; 
-  double E_max;
-  double E_0;
-  double sigma_0;
-  double y_a;
-  double P;
-  double y_w;
-  double y_0;
-  double y_1;
-  double *xsections;
-  };
+
   //78
-  /// list of ions in the order they appear in VF96. Note this is photoionisation rate INTOOO these ions.
-  string ions[78] = {"H1+", "He1+","He2+", "Li1+","Li2+","Li3+", "Be1+","Be2+","Be3+","Be4+",
-                    "B1+","B2+","B3+","B4+","B5+", "C1+","C2+","C3+","C4+","C5+","C6+",
-                    "N1+","N2+","N3+","N4+","N5+","N6+","N7+", 
-                    "O1+","O2+","O3+","O4+","O5+","O6+","O7+","O8+",
-                    "F1+","F2+","F3+","F4+","F5+","F6+","F7+","F8+","F9+",
-                    "Ne1+","Ne2+","Ne3+","Ne4+","Ne5+","Ne6+","Ne7+","Ne8+","Ne9+","Ne10+",
-                    "Na1+","Na2+","Na3+","Na4+","Na5+","Na6+","Na7+","Na8+","Na9+","Na10+","Na11+",
-                    "Mg1+","Mg2+","Mg3+","Mg4+","Mg5+","Mg6+","Mg7+","Mg8+","Mg9+","Mg10+","Mg11+","Mg12s+"
-                    
-};
-  int n_ions = 78;
+  /// list of ions in the order they appear in VF96.
+  /// Note this is photoionisation rate INTOOO these ions.
+  string *ions;
+  int n_ions; ///< number of ions in list.
   /// Map for parameters by ion name
   std::map<string, params_struct> parameters;
 

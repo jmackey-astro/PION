@@ -67,6 +67,7 @@ FV_solver_Hydro_Euler::FV_solver_Hydro_Euler(
   cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() constructor.\n";
   cout <<"FV_solver_Hydro_Euler::FV_solver_Hydro_Euler() gamma = "<<eq_gamma<<"\n";
 #endif
+  counter = 1;
   return;
 }
 

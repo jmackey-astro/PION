@@ -21,6 +21,8 @@
 #include <map>
 #include <stdlib.h>
 
+#include "tools/mem_manage.h"
+
 using namespace std;
 
 #ifndef INTEL
@@ -32,8 +34,6 @@ using namespace std;
 
 // ##################################################################
 // ##################################################################
-//TODO: ASK JONATHAN WHY IT'S LIMITED TO 0.03KEV, IF IT STILL APPLIES TO OUR PHOTONS (DON'T THINK SO...)   **NO! that was for X-rays**
-
 ///
 /// constructor: inputs are Emin, Emax, nbins.
 /// Emin must be >= 0.03 keV  
@@ -58,6 +58,23 @@ photo_xsections::photo_xsections(
     const int    nbins   ///< nbins*/
     )
 {
+  // initialise ions list.
+  n_ions = 78;
+  ions = mem.myalloc(ions,78);
+  // list of ions in the order they appear in VF96.  Note this is
+  // photoionisation rate INTOOO these ions.
+  string temp_ion[78] = 
+    {"H1+", "He1+","He2+", "Li1+","Li2+","Li3+", "Be1+","Be2+","Be3+","Be4+",
+     "B1+","B2+","B3+","B4+","B5+", "C1+","C2+","C3+","C4+","C5+","C6+",
+     "N1+","N2+","N3+","N4+","N5+","N6+","N7+", 
+     "O1+","O2+","O3+","O4+","O5+","O6+","O7+","O8+",
+     "F1+","F2+","F3+","F4+","F5+","F6+","F7+","F8+","F9+",
+     "Ne1+","Ne2+","Ne3+","Ne4+","Ne5+","Ne6+","Ne7+","Ne8+","Ne9+","Ne10+",
+     "Na1+","Na2+","Na3+","Na4+","Na5+","Na6+","Na7+","Na8+","Na9+","Na10+","Na11+",
+     "Mg1+","Mg2+","Mg3+","Mg4+","Mg5+","Mg6+","Mg7+","Mg8+","Mg9+","Mg10+","Mg11+","Mg12s+"
+    };
+  for (int v=0;v<n_ions;v++) ions[v] = temp_ion[v];
+
   double emax[12] = {11.2, 13.6, 16.3, 21.56, 24.6, 29.6, 35.12, 40.96, 47.89, 54.4, 64.5, 77.0};//bin edges correspond to ionisation energies
   double emin[12] = {7.64, 11.2, 13.6, 16.3, 21.56, 24.6, 29.6, 35.12, 40.96, 47.89, 54.4, 64.5};
   int nbins = 12;
