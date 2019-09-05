@@ -91,20 +91,6 @@ Similarly, we could specify the domain-size multiplier in going from one level t
 This requires setting up a data structure for each MPI process (all identical), and the process then finds its own location on each level, and finds which sub-domain on each level that it is responsible for.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Setting up a nested grid in \pion{}}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The simulation control class sets up a fixed grid, using the SimParams and MCMDcontrol data classes for the grid size and decomposition, the CellInterface class for calculating cell properties, and a finite volume solver class for calculating fluxes in and out of cells.
-Some key parameters:
-\begin{itemize}
-\item Xmin, Xmax, Range, dx in SimPM and mpiPM.
-\item dx, xmin in the cell interface.
-\item The raytracer is attached to a grid, so I need one RT class for each grid.
-\end{itemize}
-The simplest way to deal with these is to set up new SimPM, mpiPM, CI classes for each level, although it would be better to split off the data that is level-independent into a global class, and make a new class for the level-dependent data.
-
-I added a new struct called levels to SimPM, and it will contain the global grid dimensions for each level.
-
 \bibliographystyle{apj_mod.bst}
 \bibliography{refs}
 \end{document}
