@@ -776,6 +776,17 @@ int DataIOBase::read_simulation_parameters(
       ++iter;
       //cout<<nm<<"\n";
 
+      nm.str(""); nm << "WIND_"<<isw<<"_Vrot";
+      if ( (*iter)->name.compare( nm.str() ) !=0)
+        rep.error("Stellar wind parameters not ordered as expected!",
+      (*iter)->name);
+      //(*iter)->set_ptr(static_cast<void *>(&Vinf));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Vinf));
+      err = read_header_param(*iter);
+      if (err) rep.error("Error reading parameter",(*iter)->name);
+      ++iter;
+      //cout<<nm<<"\n";
+
       nm.str(""); nm << "WIND_"<<isw<<"_Tw__";
       if ( (*iter)->name.compare( nm.str() ) !=0)
         rep.error("Stellar wind parameters not ordered as expected!",
@@ -793,6 +804,17 @@ int DataIOBase::read_simulation_parameters(
       (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Rstar));
       (*iter)->set_ptr(static_cast<void *>(&wind->Rstar));
+      err = read_header_param(*iter);
+      if (err) rep.error("Error reading parameter",(*iter)->name);
+      ++iter;
+      //cout<<nm<<"\n";
+
+      nm.str(""); nm << "WIND_"<<isw<<"_Bstr";
+      if ( (*iter)->name.compare( nm.str() ) !=0)
+        rep.error("Stellar wind parameters not ordered as expected!",
+      (*iter)->name);
+      //(*iter)->set_ptr(static_cast<void *>(&Rstar));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Bstar));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter",(*iter)->name);
       ++iter;
@@ -1007,44 +1029,59 @@ void DataIOBase::set_windsrc_params()
   // Loop over sources and add strength+position for each
   //
   for (int n=0; n<SWP.Nsources; n++) {
-    ostringstream temp1; temp1.str(""); temp1 << "WIND_"<<n<<"_posn";
-    ostringstream temp2; temp2.str(""); temp2 << "WIND_"<<n<<"_rad_";
-    ostringstream temp3; temp3.str(""); temp3 << "WIND_"<<n<<"_Mdot";
-    ostringstream temp4; temp4.str(""); temp4 << "WIND_"<<n<<"_Vinf";
-    ostringstream temp5; temp5.str(""); temp5 << "WIND_"<<n<<"_Tw__";
-    ostringstream temp8; temp8.str(""); temp8 << "WIND_"<<n<<"_Rstr";
-    ostringstream temp6; temp6.str(""); temp6 << "WIND_"<<n<<"_type";
-    ostringstream temp7; temp7.str(""); temp7 << "WIND_"<<n<<"_trcr";
+    ostringstream temp01; temp01.str(""); temp01 << "WIND_"<<n<<"_posn";
+    ostringstream temp02; temp02.str(""); temp02 << "WIND_"<<n<<"_rad_";
+    ostringstream temp03; temp03.str(""); temp03 << "WIND_"<<n<<"_Mdot";
+    ostringstream temp04; temp04.str(""); temp04 << "WIND_"<<n<<"_Vinf";
+    ostringstream temp09; temp09.str(""); temp09 << "WIND_"<<n<<"_Vrot";
+    ostringstream temp05; temp05.str(""); temp05 << "WIND_"<<n<<"_Tw__";
+    ostringstream temp08; temp08.str(""); temp08 << "WIND_"<<n<<"_Rstr";
+    ostringstream temp16; temp16.str(""); temp16 << "WIND_"<<n<<"_Bstr";
+    ostringstream temp06; temp06.str(""); temp06 << "WIND_"<<n<<"_type";
+    ostringstream temp07; temp07.str(""); temp07 << "WIND_"<<n<<"_trcr";
     //
     // New stuff for evolving winds:
     //
     ostringstream temp11; temp11.str(""); temp11<< "WIND_"<<n<<"_evofile";
     ostringstream temp13; temp13.str(""); temp13<< "WIND_"<<n<<"_enhance_mdot";
     ostringstream temp14; temp14.str(""); temp14<< "WIND_"<<n<<"_xi";
-    ostringstream temp9;  temp9.str("");  temp9 << "WIND_"<<n<<"_t_offset";
+    ostringstream temp15; temp15.str(""); temp15<< "WIND_"<<n<<"_t_offset";
     ostringstream temp10; temp10.str(""); temp10<< "WIND_"<<n<<"_updatefreq";
     ostringstream temp12; temp12.str(""); temp12<< "WIND_"<<n<<"_t_scalefac";
 
     
-    pm_ddimarr *w001 = new pm_ddimarr (temp1.str()); // position of source (cm)
+    pm_ddimarr *w001 = new pm_ddimarr (temp01.str()); // position of source (cm)
     windsrc.push_back(w001);
-    pm_double  *w002 = new pm_double  (temp2.str()); // radius of wind BC (cm)
+
+    pm_double  *w002 = new pm_double  (temp02.str()); // radius of wind BC (cm)
     windsrc.push_back(w002);
-    pm_double  *w003 = new pm_double  (temp3.str()); // Mdot (Msun/yr)
+
+    pm_double  *w003 = new pm_double  (temp03.str()); // Mdot (Msun/yr)
     windsrc.push_back(w003);
-    pm_double  *w004 = new pm_double  (temp4.str()); // v_inf (km/s)
+
+    pm_double  *w004 = new pm_double  (temp04.str()); // v_inf (km/s)
     windsrc.push_back(w004);
-    pm_double  *w005 = new pm_double  (temp5.str()); // Twind (K)
+
+    pm_double  *w009 = new pm_double  (temp09.str()); // v_rot (km/s)
+    w009->critical=false;
+    windsrc.push_back(w009);
+
+    pm_double  *w005 = new pm_double  (temp05.str()); // Twind (K)
     windsrc.push_back(w005);
-    pm_double  *w008 = new pm_double  (temp8.str()); // radius at which T=Twind (cm)
+
+    pm_double  *w008 = new pm_double  (temp08.str()); // radius of star (cm)
     windsrc.push_back(w008);
-    pm_int     *w006 = new pm_int     (temp6.str()); // wind type flag
+
+    pm_double  *w016 = new pm_double  (temp16.str()); // B-field of star (G)
+    w016->critical=false;
+    windsrc.push_back(w016);
+
+    pm_int     *w006 = new pm_int     (temp06.str()); // wind type flag
     windsrc.push_back(w006);
-    pm_dvararr *w007 = new pm_dvararr (temp7.str()); // tracers
+
+    pm_dvararr *w007 = new pm_dvararr (temp07.str()); // tracers
     windsrc.push_back(w007);
-    //
-    // New stuff for evolving winds:
-    //
+
     // wind-evolution file.
     pm_string  *w011 = new pm_string  (temp11.str());
     w011->critical=false;
@@ -1061,19 +1098,22 @@ void DataIOBase::set_windsrc_params()
     windsrc.push_back(w014);
 
     // time offset
-    pm_double  *w009 = new pm_double  (temp9.str());
+    pm_double  *w015 = new pm_double  (temp15.str());
     double dv=0.0;
-    w009->critical=false; w009->set_default_val(static_cast<void *>(&dv));
-    windsrc.push_back(w009);
+    w015->critical=false;
+    w015->set_default_val(static_cast<void *>(&dv));
+    windsrc.push_back(w015);
 
     // update frequency (in years)
     pm_double  *w010 = new pm_double  (temp10.str());
-    w010->critical=false; dv=1000.0; w010->set_default_val(static_cast<void *>(&dv));
+    w010->critical=false; dv=1000.0;
+    w010->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w010);
 
     // scale factor (default must be 1, parameter must not be critical).
     pm_double  *w012 = new pm_double  (temp12.str());
-    w012->critical=false; dv=1.0; w012->set_default_val(static_cast<void *>(&dv));
+    w012->critical=false; dv=1.0;
+    w012->set_default_val(static_cast<void *>(&dv));
     windsrc.push_back(w012);
   }
   have_setup_windsrc=true;
@@ -1410,7 +1450,7 @@ int DataIOBase::write_simulation_parameters(
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(SWP.params[isw]->dpos));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_rad_";
@@ -1419,7 +1459,7 @@ int DataIOBase::write_simulation_parameters(
       }
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->radius));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_Mdot";
@@ -1430,7 +1470,7 @@ int DataIOBase::write_simulation_parameters(
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Mdot));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_Vinf";
@@ -1441,7 +1481,18 @@ int DataIOBase::write_simulation_parameters(
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vinf));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
+      ++iter;
+
+      nm.str(""); nm << "WIND_"<<isw<<"_Vrot";
+      if ( (*iter)->name.compare( nm.str() ) !=0) {
+        rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
+      }
+      //SW.get_src_Vinf(isw,xd); 
+      //(*iter)->set_ptr(static_cast<void *>(xd));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Vrot));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_Tw__";
@@ -1452,7 +1503,7 @@ int DataIOBase::write_simulation_parameters(
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Tstar));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_Rstr";
@@ -1463,7 +1514,18 @@ int DataIOBase::write_simulation_parameters(
       //(*iter)->set_ptr(static_cast<void *>(xd));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Rstar));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
+      ++iter;
+
+      nm.str(""); nm << "WIND_"<<isw<<"_Bstr";
+      if ( (*iter)->name.compare( nm.str() ) !=0) {
+        rep.error("Stellar wind parameters not ordered as expected!",(*iter)->name);
+      }
+      //SW.get_src_Rstar(isw,xd); 
+      //(*iter)->set_ptr(static_cast<void *>(xd));
+      (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->Bstar));
+      err = write_header_param(*iter);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_type";
@@ -1474,7 +1536,7 @@ int DataIOBase::write_simulation_parameters(
       //(*iter)->set_ptr(static_cast<void *>(xi));
       (*iter)->set_ptr(static_cast<void *>(&SWP.params[isw]->type));
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing WIND parameter",(*iter)->name);
       ++iter;
 
       nm.str(""); nm << "WIND_"<<isw<<"_trcr";
@@ -1486,7 +1548,7 @@ int DataIOBase::write_simulation_parameters(
         SWP.params[isw]->tr[v]=0.0;
       }
       err = write_header_param(*iter);
-      if (err) rep.error("Error writing RT parameter",(*iter)->name);
+      if (err) rep.error("Error writing wIND parameter",(*iter)->name);
       ++iter;
       //
       // New stuff for evolving winds: data-file, time-offset, update-frequency.
@@ -1561,6 +1623,7 @@ int DataIOBase::write_simulation_parameters(
 
 // ##################################################################
 // ##################################################################
+
 
 
 int DataIOBase::check_header_parameters(

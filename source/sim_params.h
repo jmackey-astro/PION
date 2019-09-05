@@ -120,6 +120,7 @@ struct star {
 
 
 // *******************************************************************
+// *******************************************************************
 ///
 /// This struct contains global data for a stellar wind source (for
 /// reading and writing to file).  The grid setup functions should
@@ -131,12 +132,11 @@ struct stellarwind_params {
   double dpos[MAX_DIM]; ///< position of source (physical coords).
   double Mdot;  ///< mass loss rate in solar masses per year.
   double Vinf;  ///< wind terminal velocity in km/s.
-  double Rstar; ///< radius at which to set pressure based on Tstar.
+  double Vrot;  ///< wind rotational velocity in km/s.
+  double Rstar; ///< Radius of star (cm).
+  double Bstar; ///< Surface split-monopole magnetic field strength (G)
   double Tstar; ///< stellar temperature (sets pressure at r=Rstar).
-  pion_flt tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
   double radius; ///< Radius of boundary region (cm).
-  std::string evolving_wind_file; ///< name of file containing evolving wind data.
-  int enhance_mdot;     ///< 0=no, 1=yes, for rapidly rotating stars.
   double time_offset;   ///< time offset between wind-data-file and sim-time (YEARS!).
   double update_freq;   ///< how often to update wind-data from file info (YEARS!).
   /// Evolution of wind happens this factor faster than normal (for factor>1)
@@ -147,6 +147,9 @@ struct stellarwind_params {
   /// (1-Omega*sin(theta))^xi.  Default is xi = -0.43.
   /// See e.g. Langer, Garcia-Segura & Mac Low (1999,ApJ,520,L49).
   double xi;
+  pion_flt tr[MAX_NVAR]; ///< tracer values in wind at Rstar.
+  std::string evolving_wind_file; ///< name of file containing evolving wind data.
+  int enhance_mdot;     ///< 0=no, 1=yes, for rapidly rotating stars.
 };
 
 struct stellarwind_list {

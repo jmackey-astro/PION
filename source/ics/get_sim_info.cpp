@@ -708,8 +708,8 @@ int get_sim_info::read_wind_sources(
     string a;
     ostringstream temp;
     double
-      Mdot=0.0, posn[MAX_DIM], Vinf=0.0, Tw=0.0, Rstar=0.0,
-      trcr[MAX_NVAR], xi=0.0, rad=0.0;
+      Mdot=0.0, posn[MAX_DIM], Vinf=0.0, Vrot=0.0, Tw=0.0,
+      Rstar=0.0, Bstar=0.0, trcr[MAX_NVAR], xi=0.0, rad=0.0;
     int type=0;
     //
     // new stuff for evolving winds:
@@ -747,6 +747,11 @@ int get_sim_info::read_wind_sources(
       Vinf=atof(a.c_str());
     else rep.error("param not found in pfile",temp.str());
 
+    temp.str(""); temp<<"WIND_"<<i<<"_vrot";
+    if ( (a=rp->find_parameter(temp.str())) !="")
+      Vrot=atof(a.c_str());
+    else rep.error("param not found in pfile",temp.str());
+
     temp.str(""); temp<<"WIND_"<<i<<"_temp";
     if ( (a=rp->find_parameter(temp.str())) !="")
       Tw=atof(a.c_str());
@@ -755,6 +760,11 @@ int get_sim_info::read_wind_sources(
     temp.str(""); temp<<"WIND_"<<i<<"_Rstr";
     if ( (a=rp->find_parameter(temp.str())) !="")
       Rstar=atof(a.c_str());
+    else rep.error("param not found in pfile",temp.str());
+
+    temp.str(""); temp<<"WIND_"<<i<<"_Bsrf";
+    if ( (a=rp->find_parameter(temp.str())) !="")
+      Bstar=atof(a.c_str());
     else rep.error("param not found in pfile",temp.str());
 
     for (int v=0;v<SimPM.ntracer;v++) {
@@ -813,8 +823,10 @@ int get_sim_info::read_wind_sources(
     wind->radius = rad;
     wind->Mdot   = Mdot;
     wind->Vinf   = Vinf;
+    wind->Vrot   = Vrot;
     wind->Tstar  = Tw;
     wind->Rstar  = Rstar;
+    wind->Bstar  = Bstar;
     wind->type   = type;
     for (int v=0; v<MAX_NVAR; v++) {
       wind->tr[v] = trcr[v];

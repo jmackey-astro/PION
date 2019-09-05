@@ -89,9 +89,10 @@ struct wind_source {
     Vinf,   ///< terminal wind velocity (cm/s)
     v_rot,  ///< stellar rotational velocity (cm/s)
     v_esc,  ///< wind escape velocity (cm/s)
-    vcrit, ///< critical rotation velocity (cm/s)
+    vcrit,  ///< critical rotation velocity (cm/s)
     Tw,     ///< wind temperature (K)
-    Rstar;  ///< distance from source at which T=Tw (cm) 
+    Rstar,  ///< radius of star (cm)
+    Bstar;  ///< magnetic field strength of split monopole at Rstar (G)
   pion_flt
     *tracers; ///< tracer values of wind.
   bool
@@ -137,7 +138,8 @@ class stellar_wind {
       const double,   ///< Mdot (Msun/yr)
       const double,   ///< Vinf (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double,   ///< Stellar Radius (to get gas pressure)
+      const double,   ///< Stellar Radius
+      const double,   ///< Surface B field (G)
       const pion_flt *  ///< Tracer values of wind (if any)
       );
 
@@ -146,16 +148,16 @@ class stellar_wind {
   ///
   virtual int add_evolving_source(
       const double *, ///< position (cgs units).
-      const double,   ///< radius (cgs units).
+      const double,   ///< radius of boundary region (cgs units).
       const int,      ///< type (1=evolving,2=lat-dep.).
-      const double,   ///< Radius at which to get gas pressure from Teff
+      const double,   ///< radius of star
       const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
       const double,   ///< time offset = [t(sim)-t(wind_file)]
       const double,   ///< current time.
       const double,   ///< frequency with which to update wind properties.
-      const double    ///< scale factor for time (t(sim)=[t(evo_file)-offset]/scalefactor
+      const double    ///< time scale factor (t(sim)=[t(evo_file)-offset]/scalefactor
       )
   {rep.error("Don't call add_evolving_source from here.",99);return 99;}
 
@@ -166,7 +168,7 @@ class stellar_wind {
   ///
   virtual int add_rotating_source(
       const double *, ///< position (cm from grid origin)
-      const double,   ///< radius (cm)
+      const double,   ///< radius of boundary region (cm)
       const int,      ///< type (2=lat-dep.)
       const double,   ///< Mdot (g/s)
       const double,   ///< Vesc (cm/s)
