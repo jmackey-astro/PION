@@ -137,8 +137,10 @@ int stellar_wind::add_source(
       const int    type, ///< type (0=constant, only option here)
       const double mdot, ///< Mdot (Msun/yr)
       const double vinf, ///< Vinf (km/s)
-      const double temp, ///< Wind Temperature (K) (actually p_g.m_p/(rho.k_b))
-      const double Rstar, ///< Radius at which T=T* (cm).
+      const double vrot, ///< Vrot (km/s)
+      const double temp, ///< Wind Temperature (K)
+      const double Rstar, ///< Radius of star (cm).
+      const double Bstar, ///< Surface Magnetic field of star (cm).
       const pion_flt *trv  ///< Tracer values of wind (if any)
       )
 {
@@ -171,9 +173,11 @@ int stellar_wind::add_source(
   //
   ws->Mdot  = mdot *pconst.Msun()/pconst.year();
   ws->Vinf  = vinf *1.0e5;
+  ws->Vrot  = vrot *1.0e5;
 
   ws->Tw    = temp;
   ws->Rstar = Rstar;
+  ws->Bstar = Bstar;
 
   ws->tracers=0;
   ws->tracers = mem.myalloc(ws->tracers,ntracer);
@@ -406,7 +410,12 @@ void stellar_wind::set_wind_cell_reference_state(
   else
     wc->p[VZ] = 0.0;
 
+  // Add rotational component to the velocity in 2D/3D.
+  // TODO: for general J vector, what is rotational component.
+
+
   // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
+  // TODO: make this consistent with rotational component of velocity
   if (eqntype==EQMHD || eqntype==EQGLM) {
     double R=695508e5;  // R_sun in cm
     double x = grid->difference_vertex2cell(WS->dpos,c,XX);
