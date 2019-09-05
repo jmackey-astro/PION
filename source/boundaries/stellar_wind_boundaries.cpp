@@ -66,13 +66,13 @@ int stellar_wind_bc::BC_assign_STWIND(
   // stellar_wind_evolution is derived from stellar_wind, and 
   // stellar_wind_angle is derived from stellar_wind_evolution.
   //
-  int err=0;
+  int err=0, wtype=0;
   int Ns = SWP.Nsources;
   for (int isw=0; isw<Ns; isw++) {
-    if (SWP.params[isw]->type ==WINDTYPE_EVOLVING) err=1;
+    if (SWP.params[isw]->type ==WINDTYPE_EVOLVING) wtype=1;
   }
   for (int isw=0; isw<Ns; isw++) {
-    if (SWP.params[isw]->type ==WINDTYPE_ANGLE) err=2;
+    if (SWP.params[isw]->type ==WINDTYPE_ANGLE) wtype=2;
   }
 
   //
@@ -90,18 +90,18 @@ int stellar_wind_bc::BC_assign_STWIND(
 
   if (Ns>0) {
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
-    if      (err==0) {
+    if      (wtype==0) {
       grid->Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer,
             par.ftr, par.coord_sys, par.eqntype,
             par.EP.MinTemperature);
     }
-    else if (err==1) {
+    else if (wtype==1) {
       grid->Wind = new stellar_wind_evolution(par.ndim, par.nvar,
             par.ntracer, par.ftr, par.coord_sys, par.eqntype,
             par.EP.MinTemperature, par.starttime, par.finishtime);
       err=0;
     }
-    else if (err==2) {
+    else if (wtype==2) {
       cout <<"Setting up stellar_wind_angle class\n";
       grid->Wind = new stellar_wind_angle(par.ndim, par.nvar,
             par.ntracer, par.ftr, par.coord_sys, par.eqntype,
@@ -126,8 +126,10 @@ int stellar_wind_bc::BC_assign_STWIND(
         SWP.params[isw]->type,
         SWP.params[isw]->Mdot,
         SWP.params[isw]->Vinf,
+        SWP.params[isw]->Vrot,
         SWP.params[isw]->Tstar,
         SWP.params[isw]->Rstar,
+        SWP.params[isw]->Bstar,
         SWP.params[isw]->tr
         );
     }
