@@ -1,8 +1,5 @@
-This document is the licence to use the astrophysics simulation code
-"PhotoIonization Of Nebulae (PION).  Usage of this software implies acceptance
-of the licence.  You do not have to explicity write to me to accept the
-licence.  If you do not agree to this licence you are not permitted to use
-PION.
+This document is the licence to use the astrophysics simulation code PION.
+Usage of this software implies acceptance of the licence.
 
 Copyright (c) 2006-2017 by Jonathan Mackey and co-authors.
 
