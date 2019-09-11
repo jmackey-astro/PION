@@ -49,7 +49,6 @@ class stellar_wind_angle
       const double *, ///< position (physical units).
       const double,   ///< radius (physical units).
       const int,      ///< type (must be WINDTYPE_ANGLE).
-      const double,   ///< Radius at which to get gas pressure from Teff
       const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
@@ -77,7 +76,8 @@ class stellar_wind_angle
       const double,   ///< Vrot (cm/s)
       const double,   ///< Vcrit (cm/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double,   ///< Radius where T=Twind (to get gas pressure)
+      const double,   ///< Radius of star (cm)
+      const double,   ///< Surface B-field (Gauss)
       const pion_flt *  ///< Tracer values of wind (if any)
       );
 

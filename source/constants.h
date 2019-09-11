@@ -44,6 +44,7 @@ class constants {
   inline double ln10()    {return 2.3025850929940459;}
   inline double pi()      {return 3.14159265358979324;}
   inline double halfpi()  {return 0.5*pi();}
+  inline double root4pi() {return 3.5449077018110318;}
   inline double sqrt2()   {return 1.4142135623730950;}
   //
   // Physics

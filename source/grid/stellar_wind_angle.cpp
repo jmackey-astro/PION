@@ -555,6 +555,7 @@ void stellar_wind_angle::set_wind_cell_reference_state(
     wc->p[VZ] = 0.0;
 
   // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
+  // TODO: figure out how to set this!
   if (eqntype==EQMHD || eqntype==EQGLM) {
     double R=6.95508e10;  // R_sun in cm
     double x = grid->difference_vertex2cell(WS->dpos,c,XX);
@@ -651,23 +652,24 @@ void stellar_wind_angle::set_wind_cell_reference_state(
 }
 
 
+
 // ##################################################################
 // ##################################################################
+
 
 
 int stellar_wind_angle::add_evolving_source(
-  const double *pos,        ///< position (physical units).
-  const double  rad,        ///< radius (physical units).
-  const int    type,        ///< type (must be WINDTYPE_ANGLE).
-  const double Rstar,       ///< Radius at which to get gas pressure from Teff
-  const pion_flt *trv,        ///< Any (constant) wind tracer values.
-  const string infile,      ///< file name to read data from.
-  const int enhance,   ///< enhance mdot based on rotation (0=no,1=yes).
-  const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
-  const double t_now,       ///< current simulation time, to see if src is active.
-  const double update_freq, ///< frequency with which to update wind properties (seconds).
-  const double t_scalefactor ///< wind evolves this factor times faster than normal
-  )
+      const double *pos,        ///< position (physical units).
+      const double  rad,        ///< radius (physical units).
+      const int    type,        ///< type (must be WINDTYPE_ANGLE).
+      const pion_flt *trv,        ///< Any (constant) wind tracer values.
+      const string infile,      ///< file name to read data from.
+      const int enhance,   ///< enhance mdot based on rotation (0=no,1=yes).
+      const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
+      const double t_now,       ///< current sim time, to see if src is active.
+      const double update_freq, ///< frequency to update wind properties (seconds).
+      const double t_scalefactor ///< wind evolves this factor times faster than normal
+      )
 {
   if (type != WINDTYPE_ANGLE) {
     rep.error("Bad wind type for evolving stellar wind (rotating star)!",type);
@@ -818,10 +820,14 @@ int stellar_wind_angle::add_evolving_source(
     mdot=-100.0; vesc=-100.0; vrot=-100.0; Twind=-100.0;
   }
 
+  // Set B-field of star
+  // TODO: figure out how to set this!
+  double Bstar=0.0;
+
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(pos,rad,type,mdot, vesc, vrot, vcrit,Twind,rstar,trv);
+  add_rotating_source(pos,rad,type,mdot, vesc, vrot, vcrit,Twind,rstar,Bstar,trv);
   temp->ws = wlist.back();
 
   //
@@ -852,7 +858,8 @@ int stellar_wind_angle::add_rotating_source(
       const double vrot,   ///< Vrot (cm/s)
       const double vcrit,   ///< Vcrit (cm/s)
       const double Twind,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double Rstar,   ///< Radius where T=Twind (to get gas pressure)
+      const double Rstar,   ///< radius of star (cm)
+      const double Bstar, ///< Surface Magnetic field of star (Gauss).
       const pion_flt *trv  ///< Tracer values of wind (if any)
       )
 {
@@ -888,6 +895,7 @@ int stellar_wind_angle::add_rotating_source(
 
   ws->Tw    = Twind;
   ws->Rstar = Rstar;
+  ws->Bstar = Bstar;
 
   ws->tracers=0;
   ws->tracers = mem.myalloc(ws->tracers,ntracer);
@@ -933,18 +941,18 @@ int stellar_wind_angle::add_rotating_source(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
 
 
 void stellar_wind_angle::update_source(
-        class GridBaseClass *grid,
-        struct evolving_wind_data *wd,
-        const double t_now,
-        const double eos_gamma
-
-        )
+      class GridBaseClass *grid,
+      struct evolving_wind_data *wd,
+      const double t_now,
+      const double eos_gamma
+      )
 {
   //
   // We have a source that needs updating.  If it is not active, and
@@ -986,14 +994,8 @@ void stellar_wind_angle::update_source(
   wd->ws->Tw   = Twind; // This is in K.
   wd->ws->Rstar = rstar;
 
-//  cout <<"updating wind: gidx="<<grid->idx()<<", t="<<t_now;
-//  cout <<"  mdot="<<mdot;
-//  cout <<"  vinf="<<vesc;
-//  cout <<"  vrot="<<vrot;
-//  cout <<"  vcrit="<<vcrit;
-//  cout <<"  T="<<Twind;
-//  cout <<"  R="<<rstar<<"\n";
-
+  // TODO: figure out how to update B-field
+  
   //
   // Now re-assign state vector of each wind-boundary-cell with
   // updated values.
@@ -1009,5 +1011,11 @@ void stellar_wind_angle::update_source(
   //
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
 
 

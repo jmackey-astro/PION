@@ -140,7 +140,7 @@ int stellar_wind::add_source(
       const double vrot, ///< Vrot (km/s)
       const double temp, ///< Wind Temperature (K)
       const double Rstar, ///< Radius of star (cm).
-      const double Bstar, ///< Surface Magnetic field of star (cm).
+      const double Bstar, ///< Surface Magnetic field of star (Gauss).
       const pion_flt *trv  ///< Tracer values of wind (if any)
       )
 {
@@ -173,8 +173,9 @@ int stellar_wind::add_source(
   //
   ws->Mdot  = mdot *pconst.Msun()/pconst.year();
   ws->Vinf  = vinf *1.0e5;
-  ws->Vrot  = vrot *1.0e5;
+  ws->v_rot  = vrot *1.0e5;
 
+  // temperature, radius and surface B-field already in CGS
   ws->Tw    = temp;
   ws->Rstar = Rstar;
   ws->Bstar = Bstar;
@@ -777,15 +778,17 @@ stellar_wind_evolution::~stellar_wind_evolution()
 
 
 int stellar_wind_evolution::add_source(
-        const double *pos, ///< position (physical units)
-        const double  rad, ///< radius (physical units)
-        const int    type, ///< type (0=fixed in time,1=slow switch on)
-        const double mdot, ///< Mdot (Msun/yr)
-        const double vinf, ///< Vinf (km/s)
-        const double Twnd, ///< Wind Temperature (actually p_g.m_p/(rho.k_b))
-        const double Rstar, ///< Stellar radius (for T*-->gas pres.).
-        const pion_flt *trv  ///< Tracer values of wind (if any)
-        )
+      const double *pos, ///< position (physical units)
+      const double  rad, ///< radius (physical units)
+      const int    type, ///< type (0=fixed in time,1=slow switch on)
+      const double mdot, ///< Mdot (Msun/yr)
+      const double vinf, ///< Vinf (km/s)
+      const double vrot, ///< Vrot (km/s)
+      const double Twnd, ///< Wind Temperature (K)
+      const double Rstar, ///< Stellar radius.
+      const double Bstar, ///< Surface Magnetic field of star (Gauss).
+      const pion_flt *trv  ///< Tracer values of wind (if any)
+      )
 {
   //
   // This function sets up an evolving_wind_data struct to hold the 
@@ -803,7 +806,7 @@ int stellar_wind_evolution::add_source(
   temp->tfinish= 2.0*sim_finish;    // so it keeps going to end of sim.
   temp->update_freq = 1.0e99;             // so it never updates.
   temp->t_next_update = 1.0e99;           // so it never updates.
-  
+    
   //
   // Set source to be active
   //
@@ -811,7 +814,7 @@ int stellar_wind_evolution::add_source(
   //
   // Now add source using constant wind version.
   //
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twnd,Rstar,trv);
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twnd,Rstar,Bstar,trv);
   temp->ws = wlist.back();
   wdata_evol.push_back(temp);
 
@@ -829,7 +832,6 @@ int stellar_wind_evolution::add_evolving_source(
   const double *pos,        ///< position (physical units).
   const double  rad,        ///< radius (physical units).
   const int    type,        ///< type (must be 3, for variable wind).
-  const double Rstar,       ///< Radius at which to get gas pressure from Teff
   const pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
   const int ,   ///< enhance mdot based on rotation (0=no,1=yes).
@@ -990,11 +992,14 @@ int stellar_wind_evolution::add_evolving_source(
     mdot=-100.0; vinf=-100.0; Twind=-100.0;
   }
 
+  // Set B-field of star
+  // TODO: figure out how to set this!
+  double Bstar=0.0;
 
   //
   // Now add source using constant wind version.
   //
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twind,Rstar,trv);
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twind,rstar,Bstar,trv);
   temp->ws = wlist.back();
 
   //
@@ -1065,6 +1070,8 @@ void stellar_wind_evolution::update_source(
   wd->ws->Tw   = Twind; // This is in K.
   wd->ws->Rstar = rstar;
 
+  // TODO: figure out how to update B-field
+  
   //
   // Now re-assign state vector of each wind-boundary-cell with
   // updated values.

@@ -130,6 +130,7 @@ class stellar_wind {
   /// Add a wind source, returns source id (count from zero).
   /// Note the temperature is in Kelvin if we have a pure neutral atomic
   /// hydrogen gas, otherwise it will be modified accordingly.
+  /// This is for a spherically symmetric wind.
   ///
   int add_source(
       const double *, ///< position (cgs units)
@@ -137,8 +138,9 @@ class stellar_wind {
       const int,      ///< type (0=constant,1=evolving,2=lat-dep.)
       const double,   ///< Mdot (Msun/yr)
       const double,   ///< Vinf (km/s)
-      const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double,   ///< Stellar Radius
+      const double,   ///< Vrot (km/s)
+      const double,   ///< Wind Temperature at surface
+      const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
       const pion_flt *  ///< Tracer values of wind (if any)
       );
@@ -150,7 +152,6 @@ class stellar_wind {
       const double *, ///< position (cgs units).
       const double,   ///< radius of boundary region (cgs units).
       const int,      ///< type (1=evolving,2=lat-dep.).
-      const double,   ///< radius of star
       const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
@@ -174,8 +175,9 @@ class stellar_wind {
       const double,   ///< Vesc (cm/s)
       const double,   ///< Vrot (cm/s)
       const double,   ///< Vcrit (cm/s)
-      const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double,   ///< Radius where T=Twind (to get gas pressure)
+      const double,   ///< Wind Temperature at surface
+      const double,   ///< Stellar Radius (cm)
+      const double,   ///< Surface B field (G)
       const pion_flt *  ///< Tracer values of wind (if any)
       )
   {rep.error("Don't call add_rotating_source from here.",99);return 99;}
@@ -376,8 +378,10 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const int,      ///< type (0=fixed,1=gradual-switch-on)
       const double,   ///< Mdot (Msun/yr)
       const double,   ///< Vinf (km/s)
+      const double,   ///< Vrot (km/s)
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Stellar Radius (to get gas pressure)
+      const double,   ///< Surface B field (G)
       const pion_flt *  ///< Tracer values of wind (if any)
       );
 
