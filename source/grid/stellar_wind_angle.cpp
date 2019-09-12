@@ -538,68 +538,118 @@ void stellar_wind_angle::set_wind_cell_reference_state(
                          WS->v_esc, wc->theta, WS->Tw);
 
   cell *c = wc->c;
+  double x,y,z,xf,yf; //,nr;
+  switch (ndim) {
+  case 1:
+    x = grid->difference_vertex2cell(WS->dpos,c,XX);
+    y = 0.0;
+    z = 0.0;
+    break;
+  case 2:
+    x = grid->difference_vertex2cell(WS->dpos,c,XX);
+    y = grid->difference_vertex2cell(WS->dpos,c,YY);
+    z = 0.0;
+    break;
+  case 3:
+    x = grid->difference_vertex2cell(WS->dpos,c,XX);
+    y = grid->difference_vertex2cell(WS->dpos,c,YY);
+    z = grid->difference_vertex2cell(WS->dpos,c,ZZ);
+    break;
+  default:
+    rep.error("bad ndim in set_wind_cell_reference_state",ndim);
+    break;
+  }
 
-  // Velocity x component
-  wc->p[VX] = Vinf*grid->difference_vertex2cell(WS->dpos,c,XX)/wc->dist;
-
-  // Velocity y component (if 2D or 3D)
-  if (ndim>1)
-    wc->p[VY] = Vinf*grid->difference_vertex2cell(WS->dpos,c,YY)/wc->dist;
-  else
+  // Velocities: cell-average values, i.e. values at the
+  // centre-of-volume.  Same as for non-latitude-dependent wind, but
+  // with Vinf that varies with latitude, calculated above.
+  //
+  // TODO: for general J vector, what is rotational component.
+  // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
+  //       symmetry axis.  Otherwise 2D with rotation won't work.
+  switch (ndim) {
+  case 1:
+    wc->p[VX] = Vinf * x / wc->dist;
     wc->p[VY] = 0.0;
-
-  // Velocity z component (if 3D)
-  if (ndim>2)
-    wc->p[VZ] = Vinf*grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
-  else
     wc->p[VZ] = 0.0;
+    break;
 
-  // Add in statement for magnetic field of the stellar wind (B=100G, R=10Ro)....
-  // TODO: figure out how to set this!
+  case 2:
+    wc->p[VX] = Vinf * x / wc->dist;
+    wc->p[VY] = Vinf * y / wc->dist;
+    wc->p[VZ] = 0.0;
+    break;
+
+  case 3:
+    wc->p[VX] = Vinf * x / wc->dist;
+    wc->p[VY] = Vinf * y / wc->dist;
+    wc->p[VZ] = Vinf * z / wc->dist;
+
+    // add non-radial component to x/y-dir from rotation.
+    // J is hardcoded to be parallel to z-axis
+    xf = -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist,2);
+    yf =  WS->v_rot * WS->Rstar * x / pow_fast(wc->dist,2);
+    wc->p[VX] += xf;
+    wc->p[VY] += yf;
+    xf /= Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
+    yf /= Vinf * y / wc->dist;
+    //nr = WS->v_rot * WS->Rstar / (wc->dist * Vinf);
+    break;
+
+  default:
+    rep.error("bad ndim in set_wind_cell_reference_state",ndim);
+    break;
+  }
+
+  // Magnetic field: cell-average values, i.e. values at the
+  // centre-of-volume.
+  // Use a split monopole plus a rotational term adding toroidal
+  // component.
+  // TODO: for general J vector, what is rotational component.
+  // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
+  //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
-    double R=6.95508e10;  // R_sun in cm
-    double x = grid->difference_vertex2cell(WS->dpos,c,XX);
-    double y = grid->difference_vertex2cell(WS->dpos,c,YY);
-    wc->p[BX] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                fabs(x)/wc->dist;
-    if (ndim>1) {
-      wc->p[BY] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                                                      y/wc->dist;
-      wc->p[BY] = (x>0.0) ? wc->p[BY] : -1.0*wc->p[BY];
-    }
-    else
-      wc->p[BY] = 0.0;
-    if (ndim>2) {
-      wc->p[BZ] = (100.0/sqrt(4.0*M_PI))*pow(10.0*R/wc->dist,2)*
-                grid->difference_vertex2cell(WS->dpos,c,ZZ)/wc->dist;
-      wc->p[BZ] = (x>0.0) ? wc->p[BZ] : -1.0*wc->p[BZ];
-    }
-    else {
-//#define TOROIDAL_FIELD
-#ifdef TOROIDAL_FIELD
-      // Here set up a 1 G toroidal field at 10 Rsun, scaled by
-      // sin(theta) so that it goes to zero at the poles, and by
-      // Omega so that it is negligible for slowly rotating stars,
-      // and by 1/r so that it decreases correctly with distance.
-      // NB: this is not going to be correct in 3D, because we
-      //     must have B parallel to V.
-      wc->p[BZ] = (1.0/sqrt(4.0*M_PI)) *    // 1 G
-                  (10.0*R/wc->dist)    *    // at 10 solar radii
-                  (fabs(y)/wc->dist)   *    // times sin(theta)
-                  std::min(0.9999,WS->v_rot/WS->vcrit); // times omega
-#else
+    switch (ndim) {
+    case 1:
+      rep.error("1D spherical but MHD?",ndim);
+      break;
+    case 2:
+      // split monopole
+      wc->p[BX] = (WS->Bstar/sqrt(4.0*M_PI)) * 
+              pow(WS->Rstar/wc->dist,2) * fabs(x)/wc->dist;
+      wc->p[BY] = (WS->Bstar/sqrt(4.0*M_PI)) *
+              pow(WS->Rstar/wc->dist,2) / wc->dist;
+      wc->p[BY] = (x>0.0) ? y * wc->p[BY] : -y * wc->p[BY];
       wc->p[BZ] = 0.0;
-#endif
+      break;
+
+    case 3:
+      // split monopole along z-axis, parallel to J
+      wc->p[BX] = (WS->Bstar/sqrt(4.0*M_PI)) *
+              pow(WS->Rstar/wc->dist,2) /wc->dist;
+      wc->p[BX] = (z>0.0) ? x * wc->p[BX] : -x * wc->p[BX];
+
+      wc->p[BY] = (WS->Bstar/sqrt(4.0*M_PI)) *
+              pow(WS->Rstar/wc->dist,2) / wc->dist;
+      wc->p[BY] = (z>0.0) ? y * wc->p[BY] : -y * wc->p[BY];
+
+      wc->p[BZ] = (WS->Bstar/sqrt(4.0*M_PI)) *
+              pow(WS->Rstar/wc->dist,2) * fabs(z) / wc->dist;
+
+      // toroidal component in x-y plane from rotation
+      wc->p[BX] *= (1.0 + xf);
+      wc->p[BY] *= (1.0 + yf);
+      break;
+
+    default:
+      rep.error("bad ndim in set_wind_cell_reference_state",ndim);
+      break;
     }
   }
   if (eqntype==EQGLM) {
     wc->p[SI] = 0.0;
   }
   
-  //if (eqntype!=EQEUL && eqntype!=EQEUL_EINT)
-  //  rep.error("Need to code B into winds model!",eqntype);
-
-
   // update tracers
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
@@ -682,82 +732,6 @@ int stellar_wind_angle::add_evolving_source(
   cout <<"\t\tsw-evo: adding source from file "<<infile<<"\n";
 #endif
 
-  //
-  // Read in stellar evolution data
-  // Format: time	M	L	Teff	Mdot	vrot   vcrit
-  //
-  FILE *wf = 0;
-  wf = fopen(infile.c_str(), "r");
-  if (!wf) rep.error("can't open wind file, stellar_wind_angle",wf);
-  // Skip first two lines
-  char line[512];
-  char *rval=0;
-  rval = fgets(line,512,wf);
-  if (!rval) rep.error("stwind_angle: failed to get line 1",line);
-  //printf("%s",line);
-  rval = fgets(line,512,wf);
-  if (!rval) rep.error("stwind_angle: failed to get line 2",line);
-  //printf("%s",line);
-
-  // Temp. variables for column values
-  double t1=0.0, t2=0.0, t3=0.0, t4=0.0, t5=0.0, t6=0.0, t7=0.0;
-  while ((rval = fgets(line,512,wf))  != 0) {
-    sscanf(line, "   %lE   %lE %lE %lE %lE %lE %lE",
-                      &t1, &t2, &t3, &t4, &t5, &t6, &t7);
-    //cout.precision(16);
-    //cout <<t1 <<"  "<<t2  <<"  "<< t3  <<"  "<< t4 <<"  "<< t5 <<"  "<< t6 <<"\n";
-    // Set vector value
-    time_evo.push_back(t1);
-    M_evo.push_back(t2);
-    L_evo.push_back(t3);
-    Teff_evo.push_back(t4);
-    vrot_evo.push_back(t6);
-    vcrit_evo.push_back(t7);
-
-    // Stellar radius
-    t6 = sqrt( t3/ (4.0*pconst.pi()*pconst.StefanBoltzmannConst()*pow_fast(t4, 4.0)));
-    R_evo.push_back(t6);
-    
-    // Hydrogen mass fraction (should make this a sim parameter?) 
-    double H_X = 0.7;
-
-    // Eddington luminosity (taking the opacity as the electron scattering cross section)
-    double L_edd = (4.0*pconst.pi()*pconst.c()*pconst.G()*t2)/(0.2*(1 + H_X));
-
-    // Escape velocity
-    vesc_evo.push_back(sqrt(2.0*pconst.G()*t2*(1 - t3/L_edd)/t6));
-    //cout <<t6<<"  "<<t4<<"  "<<t3<<"  "<<sqrt(2.0*pconst.G()*t2/t6)<<"\n";
-    //rep.error("test",2);
-    
-    // Mdot: enhance by (1-omega)^(-c_beta) if enhance flag is set.
-    if (enhance) {
-      //cout <<"mdot enhanced! "<<t1<<"  " <<t5*pow_fast(std::max(0.01,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta)<<"\n";
-      Mdot_evo.push_back(t5*pow_fast(std::max(0.01,1 - pconst.sqrt2()*vrot_evo.back()/vesc_evo.back()), c_beta));
-    }
-    else {
-      //cout <<"Mdot not enhanced! "<<t1<<"  " <<t5<<"\n";
-      Mdot_evo.push_back(t5);
-    }
-  }
-  fclose(wf);
-
-  // Column length
-  size_t Npt = time_evo.size();
-
-  //
-  // Next we set up the interpolation, first modifying the
-  // time array using the time-offset so that it has the same zero
-  // offset as the simulation time.
-  //
-  for (size_t i=0; i<Npt; i++) {
-    //
-    // times in the file are measured in seconds, so offset should be
-    // in years.
-    //
-    time_evo[i] += time_offset;
-    // scale times by scale factor.
-    time_evo[i] /= t_scalefactor;
-  }
 
   //
   // Some properties of the wind source are specific to this module,
@@ -767,19 +741,18 @@ int stellar_wind_angle::add_evolving_source(
   //
   struct evolving_wind_data *temp=0;
   temp = mem.myalloc(temp,1);
-  temp->Npt = Npt;
+  int err = read_evolution_file(infile,temp);
+  if (err) rep.error("couldn't read wind evolution file",infile);
 
-  //
-  // Offset is not used in the code past here.  It's just here for I/O b/c a
-  // restart will need to read the data-file again.
-  // We reset all variables to be in seconds here.  So the interpolation uses
-  // years, but everything else is in seconds.  Note that the global SWP struct
-  // still has times in years though.
-  //
-  temp->offset = time_offset/t_scalefactor; // now in seconds
-  temp->tstart = time_evo[0];            // in seconds (already scaled)
-  temp->tfinish= time_evo[Npt-1];        // in seconds (already scaled)
-  temp->update_freq = update_freq/t_scalefactor; // in seconds
+  // assign data for v_esc from v_crit.
+  for (int i=0; i<temp->Npt; i++)
+    temp->vesc_evo.push_back(temp->vcrt_evo[i]*pconst.sqrt2());
+
+  // set offsets and scaling for evolutionary time (all in seconds)
+  temp->offset = time_offset/t_scalefactor;
+  temp->tstart = temp->time_evo[0];    
+  temp->tfinish= temp->time_evo[temp->Npt-1];
+  temp->update_freq = update_freq/t_scalefactor;
   temp->t_next_update = max(temp->tstart,t_now);
 #ifdef TESTING
   cout <<"\t\t tstart="<<temp->tstart;
@@ -788,26 +761,30 @@ int stellar_wind_angle::add_evolving_source(
 #endif
 
   //
-  // We need to decide if the wind src is active yet.  If it is, then
-  // we also set up a constant wind source for updating its
-  // properties.  We set it to be active if the current time is
-  // within update_freq of tstart.
+  // Optional time offset between simulation time and evolutionary
+  // time.  Also optional scaling.
   //
-  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
+  for (size_t i=0; i<temp->Npt; i++) {
+    temp->time_evo[i] += time_offset;
+    temp->time_evo[i] /= t_scalefactor;
+    //cout <<"t="<<temp->time_evo[i]<<"\n";
+  }
+  //
+  // Decide if the wind src is active yet.  If it is, then
+  // set up a constant wind source for updating its properties.
+  //
+  double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrt=0.0;
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
     temp->is_active = true;
-    //
-    // Get the current values for mdot, vinf, Teff, and setup a wind
-    // source using the constant-wind function.
-    //
-    interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now, Twind);
-    interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
-    interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
-    interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
-    interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
-    interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
+    // Get the current values for wind properties.
+    interpolate.root_find_linear_vec(temp->time_evo, temp->Teff_evo, t_now, Twind);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->Mdot_evo, t_now, mdot);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->vesc_evo, t_now, vesc);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->vrot_evo, t_now, vrot);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->vcrt_evo,t_now, vcrt);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->R_evo, t_now, rstar);
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -821,25 +798,19 @@ int stellar_wind_angle::add_evolving_source(
   }
 
   // Set B-field of star
-  // TODO: figure out how to set this!
-  double Bstar=0.0;
+  // TODO: Decide how to set this better!  For now pick B=10G at
+  //       radius 10 R_sun, and scale with R^-2 for constant flux.
+  //
+  double Bstar= 1.0e-5*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   //
   // Now add source using rotating star version.
   //
-  add_rotating_source(pos,rad,type,mdot, vesc, vrot, vcrit,Twind,rstar,Bstar,trv);
+  add_rotating_source(pos,rad,type,mdot, vesc, vrot, vcrt,Twind,
+                      rstar,Bstar,trv);
   temp->ws = wlist.back();
 
-  //
-  // So now we have all of the properties of the wind source in the
-  // struct evolving_wind_data 'temp', and we have added it to the
-  // list of constant wind sources, wlist[].  We can now add temp to
-  // the list of evolving wind sources and return (so that wlist[i]
-  // and wdata_evol[i] point to the same source).
-  //
   wdata_evol.push_back(temp);
-  //NSRC_TOTAL++;
-
   return 0;
 }
 
@@ -847,6 +818,7 @@ int stellar_wind_angle::add_evolving_source(
 
 // ##################################################################
 // ##################################################################
+
 
 
 int stellar_wind_angle::add_rotating_source(
@@ -976,25 +948,26 @@ void stellar_wind_angle::update_source(
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
   double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
-  interpolate.root_find_linear_vec(time_evo, Teff_evo, t_now, Twind);
-  interpolate.root_find_linear_vec(time_evo, Mdot_evo, t_now, mdot);
-  interpolate.root_find_linear_vec(time_evo, vesc_evo, t_now, vesc);
-  interpolate.root_find_linear_vec(time_evo, vrot_evo, t_now, vrot);
-  interpolate.root_find_linear_vec(time_evo, vcrit_evo,t_now, vcrit);
-  interpolate.root_find_linear_vec(time_evo, R_evo, t_now, rstar);
-  //
-  // Assign new values to wd->ws (the wind source struct), converting
-  // from log10 to actual values, and also unit conversions to cgs.
-  //
-  wd->ws->Mdot = mdot;  // already cgs.
-  wd->ws->v_esc = vesc;  // this is in cm/s already.
-  wd->ws->Vinf = vesc;  // this is in cm/s already.
-  wd->ws->v_rot = vrot;  // this is in cm/s already.
+  interpolate.root_find_linear_vec(wd->time_evo, wd->Teff_evo, t_now, Twind);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->Mdot_evo, t_now, mdot);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->vesc_evo, t_now, vesc);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->vrot_evo, t_now, vrot);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->vcrt_evo,t_now, vcrit);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->R_evo, t_now, rstar);
+  // all in cgs units already.
+  wd->ws->Mdot = mdot;
+  wd->ws->v_esc = vesc;
+  wd->ws->Vinf = vesc;
+  wd->ws->v_rot = vrot;
   wd->ws->vcrit = vcrit;
-  wd->ws->Tw   = Twind; // This is in K.
+  wd->ws->Tw   = Twind;
   wd->ws->Rstar = rstar;
 
-  // TODO: figure out how to update B-field
+  // Set B-field of star
+  // TODO: Decide how to set this better!  For now pick B=10G at
+  //       radius 10 R_sun, and scale with R^-2 for constant flux.
+  //
+  wd->ws->Bstar= 1.0e-5*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   //
   // Now re-assign state vector of each wind-boundary-cell with
@@ -1004,11 +977,6 @@ void stellar_wind_angle::update_source(
     set_wind_cell_reference_state(grid,wd->ws->wcells[i],wd->ws,eos_gamma);
   }
 
-  //
-  // Now the source is updated, and the reference states are all set
-  // for the new values, and the next update time has been set.  So
-  // we can return.
-  //
   return;
 }
 

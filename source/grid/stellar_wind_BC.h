@@ -320,6 +320,9 @@ struct evolving_wind_data {
   vector<double> Teff_evo;
   vector<double> Mdot_evo;
   vector<double> vinf_evo;
+  vector<double> vrot_evo;
+  vector<double> vcrt_evo;
+  vector<double> vesc_evo;
   //double *t;
   //double *mdot;
   //double *vinf;
@@ -424,6 +427,17 @@ class stellar_wind_evolution : virtual public stellar_wind {
   protected:
   const double sim_start;  ///< start time of simulation.
   const double sim_finish; ///< finish time of simulation.
+
+  ///
+  /// Read data from evolution file for evolving stellar wind
+  /// All columns must be in CGS units already.
+  /// All columns must be present, but may not be used depending
+  /// on the type of wind source.
+  int read_evolution_file(
+    const string,      ///< file name to read data from.
+    struct evolving_wind_data *   ///< where to put the data
+    );
+
 
   ///
   /// If it is time to update the wind properties then this function does it, 

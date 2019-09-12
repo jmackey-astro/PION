@@ -715,12 +715,6 @@ int setup_fixed_grid::setup_evolving_RT_sources(
     istar->Lnow = istar->Tnow = istar->Rnow = istar->Vnow = 0.0;
   }
   
-  //
-  // Finshed setting up the source.  Now we need to update the
-  // source properties and send the changes to the RT class.  Need
-  // time in secs, L,T,V in cgs and R in Rsun.
-  //
-  //err = update_evolving_RT_sources(SimPM,RT);
   return 0;
 }
 

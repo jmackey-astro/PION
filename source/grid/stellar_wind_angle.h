@@ -163,16 +163,16 @@ class stellar_wind_angle
   double integrand(
     double, ///< theta
     double,  ///< omega
-	const double ///< Teff
+    const double ///< Teff
     );
   
   //
   // Delta function
   //
   double fn_delta(
-	double, ///< omega
-	double ///< Teff (K)
-	);
+    double, ///< omega
+    double ///< Teff (K)
+    );
 
   double c_gamma; ///< exponent in velocity formula
   double c_xi;    ///< exponent in density formula
@@ -190,15 +190,15 @@ class stellar_wind_angle
   vector<vector<double> > delta_vec;          ///< delta table
   vector<vector<vector<double> > > alpha_vec; ///< alpha table
   
-  vector<double> time_evo;
-  vector<double> M_evo;
-  vector<double> L_evo;
-  vector<double> R_evo;
-  vector<double> Teff_evo;
-  vector<double> Mdot_evo;
-  vector<double> vrot_evo;
-  vector<double> vesc_evo;
-  vector<double> vcrit_evo;
+  //vector<double> time_evo;
+  //vector<double> M_evo;
+  //vector<double> L_evo;
+  //vector<double> R_evo;
+  //vector<double> Teff_evo;
+  //vector<double> Mdot_evo;
+  //vector<double> vrot_evo;
+  //vector<double> vesc_evo;
+  //vector<double> vcrit_evo;
 
   protected:
 
