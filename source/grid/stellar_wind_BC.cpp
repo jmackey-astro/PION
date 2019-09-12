@@ -392,7 +392,7 @@ void stellar_wind::set_wind_cell_reference_state(
   }
 
   cell *c = wc->c;
-  double x,y,z,xf,yf,nr;
+  double x,y,z,xf,yf; //,nr;
   switch (ndim) {
   case 1:
     x = grid->difference_vertex2cell(WS->dpos,c,XX);
@@ -445,7 +445,7 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[VY] += yf;
     xf /= WS->Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
     yf /= WS->Vinf * y / wc->dist;
-    nr = WS->v_rot * WS->Rstar / (wc->dist * WS->Vinf);
+    //nr = WS->v_rot * WS->Rstar / (wc->dist * WS->Vinf);
     break;
 
   default:
