@@ -144,7 +144,6 @@ int stellar_wind_bc::BC_assign_STWIND(
         SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
         SWP.params[isw]->type,
-        SWP.params[isw]->Rstar,
         SWP.params[isw]->tr,
         SWP.params[isw]->evolving_wind_file,
         SWP.params[isw]->enhance_mdot,

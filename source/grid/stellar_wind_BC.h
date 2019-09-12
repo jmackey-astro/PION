@@ -139,7 +139,7 @@ class stellar_wind {
       const double,   ///< Mdot (Msun/yr)
       const double,   ///< Vinf (km/s)
       const double,   ///< Vrot (km/s)
-      const double,   ///< Wind Temperature at surface
+      const double,   ///< Surface Temperature (K)
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
       const pion_flt *  ///< Tracer values of wind (if any)
@@ -379,8 +379,8 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< Mdot (Msun/yr)
       const double,   ///< Vinf (km/s)
       const double,   ///< Vrot (km/s)
-      const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
-      const double,   ///< Stellar Radius (to get gas pressure)
+      const double,   ///< Surface Temperature (K)
+      const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
       const pion_flt *  ///< Tracer values of wind (if any)
       );
@@ -394,7 +394,6 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double *, ///< position (physical units).
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).
-      const double,   ///< Radius at which to get gas pressure from Teff
       const pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).

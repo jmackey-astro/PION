@@ -672,7 +672,10 @@ double stellar_wind::beta(const double Teff)
 {
   //
   // Eldridge et al. (2006, MN, 367, 186).
-  // Beta = Zeta^2
+  // Their eq. 2 has a typo, because the hot star values from Vink+
+  // (2001) are for v_inf/v_esc, not for (v_inf/v_esc)^2.
+  // So the beta value scales the escape velocity itself, not the
+  // square.
   //
   double beta;
   double rsg=0.125; // Eldridge value
@@ -814,7 +817,7 @@ int stellar_wind_evolution::add_source(
   //
   // Now add source using constant wind version.
   //
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twnd,Rstar,Bstar,trv);
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twnd,Rstar,Bstar,trv);
   temp->ws = wlist.back();
   wdata_evol.push_back(temp);
 
@@ -910,7 +913,7 @@ int stellar_wind_evolution::add_evolving_source(
                                                     (0.2*(1 + H_X));
 
     // Escape velocity
-    temp->vinf_evo.push_back(sqrt(beta(t4)) 
+    temp->vinf_evo.push_back(beta(t4) 
                         *sqrt(2.0*pconst.G()*t2*(1 - t3/L_edd)/t6));
 
     
@@ -993,13 +996,15 @@ int stellar_wind_evolution::add_evolving_source(
   }
 
   // Set B-field of star
-  // TODO: figure out how to set this!
-  double Bstar=0.0;
+  // TODO: Decide how to set this better!  For now pick B=10G at
+  //       radius 10 R_sun, and scale with R^2 for constant flux.
+  //
+  double Bstar= 1.0e-5*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   //
   // Now add source using constant wind version.
   //
-  stellar_wind::add_source(pos,rad,type,mdot,vinf,Twind,rstar,Bstar,trv);
+  stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twind,rstar,Bstar,trv);
   temp->ws = wlist.back();
 
   //
@@ -1070,7 +1075,11 @@ void stellar_wind_evolution::update_source(
   wd->ws->Tw   = Twind; // This is in K.
   wd->ws->Rstar = rstar;
 
-  // TODO: figure out how to update B-field
+  // Set B-field of star
+  // TODO: Decide how to set this better!  For now pick B=10G at
+  //       radius 10 R_sun, and scale with R^2 for constant flux.
+  //
+  wd->ws->Bstar= 1.0e-5*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   //
   // Now re-assign state vector of each wind-boundary-cell with

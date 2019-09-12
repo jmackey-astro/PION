@@ -299,7 +299,7 @@ double stellar_wind_angle::fn_phi(
 	double Teff // Teff (K)
 	)
 {
-  double ans = (omega/(22.0*pconst.sqrt2()*sqrt(beta(Teff)))) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
+  double ans = (omega/(22.0*pconst.sqrt2()*beta(Teff))) * sin(theta) * pow_fast(1.0 - omega*sin(theta), -c_gamma);
   return std::min(ans,0.5*pconst.pi()*ONE_MINUS_EPS);
 }
 
@@ -360,7 +360,7 @@ double stellar_wind_angle::fn_v_inf(
 
   omega = std::min(omega,0.999);
   return std::max(0.5e5,
-    sqrt(beta(Teff)) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma));
+    beta(Teff) * v_esc * pow_fast(1.0 - omega*sin(theta), c_gamma));
 }
 
 
