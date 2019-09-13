@@ -445,6 +445,7 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[VY] += yf;
     xf /= WS->Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
     yf /= WS->Vinf * y / wc->dist;
+    //cout <<"xf= "<<xf<<" , yf= "<<yf<<" , vrot= "<<WS->v_rot<<", vinf="<<WS->Vinf<<"\n";
     //nr = WS->v_rot * WS->Rstar / (wc->dist * WS->Vinf);
     break;
 
@@ -489,7 +490,8 @@ void stellar_wind::set_wind_cell_reference_state(
       wc->p[BZ] = (WS->Bstar/sqrt(4.0*M_PI)) *
               pow(WS->Rstar/wc->dist,2) * fabs(z) / wc->dist;
 
-      // toroidal component in x-y plane from rotation
+      // toroidal component in x-y plane from rotation, such that
+      // v is parallel to B
       wc->p[BX] *= (1.0 + xf);
       wc->p[BY] *= (1.0 + yf);
       break;
@@ -1052,7 +1054,7 @@ int stellar_wind_evolution::add_evolving_source(
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
   //
-  double Bstar= 1.0e-5*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  double Bstar= 10.0*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
 
   // Now add source using constant wind version.
   stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twind,rstar,Bstar,trv);
@@ -1120,7 +1122,7 @@ void stellar_wind_evolution::update_source(
   // TODO: Decide how to set this better!  For now pick B=10G at
   //       radius 10 R_sun, and scale with R^-2 for constant flux.
   //
-  wd->ws->Bstar= 1.0e-5*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
+  wd->ws->Bstar= 10.0*pow_fast(10.0*pconst.Rsun()/rstar,2.0);
   
   //
   // Now re-assign state vector of each wind-boundary-cell with

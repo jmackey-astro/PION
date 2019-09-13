@@ -781,11 +781,11 @@ int DataIOBase::read_simulation_parameters(
         rep.error("Stellar wind parameters not ordered as expected!",
       (*iter)->name);
       //(*iter)->set_ptr(static_cast<void *>(&Vinf));
-      (*iter)->set_ptr(static_cast<void *>(&wind->Vinf));
+      (*iter)->set_ptr(static_cast<void *>(&wind->Vrot));
       err = read_header_param(*iter);
       if (err) rep.error("Error reading parameter",(*iter)->name);
       ++iter;
-      //cout<<nm<<"\n";
+      //cout<<nm.str()<<" = "<<wind->Vrot<<"\n";
 
       nm.str(""); nm << "WIND_"<<isw<<"_Tw__";
       if ( (*iter)->name.compare( nm.str() ) !=0)
