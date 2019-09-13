@@ -6,12 +6,12 @@
 ########################
 ndim 3
 coordinates cartesian
-eqn euler
+eqn glm-mhd
 GAMMA 1.6666666666666667
 ########################
 
 ########################
-solver 6
+solver 8
 OrderOfAccSpace 2
 OrderOfAccTime  2
 CFL 0.3
@@ -35,7 +35,7 @@ EP_rad_recombination 0
 EP_update_erg 1
 EP_MP_timestep_limit 1 
 EP_Min_Temperature 5.0e3
-EP_Max_Temperature 1.0e8
+EP_Max_Temperature 1.0e10
 EP_Hydrogen_MassFrac 0.714  # n(He)/n(H)=1/10
 EP_Helium_MassFrac 0.286    # n(He)/n(H)=1/10
 EP_Metal_MassFrac  0.0142   # solar metallicity
@@ -49,13 +49,13 @@ NGridY  128
 NGridZ  128
 
 # Boundaries of Simulation box:
-Xmin   0.000e18
-Ymin   0.000e18
-Zmin   0.000e18
+Xmin  -5.93920e+13
+Ymin  -5.93920e+13
+Zmin  -5.93920e+13
 # Max values of x,y,z
-Xmax   3.160064e18
-Ymax   3.160064e18
-Zmax   3.160064e18
+Xmax   5.93920e+13
+Ymax   5.93920e+13
+Zmax   5.93920e+13
 
 # Nested grid
 grid_nlevels 2
@@ -73,10 +73,10 @@ NG_refine_ZZ 1
 
 ########################
 StartTime  0.000e11
-FinishTime 3.156e11
+FinishTime 3.156e10
 
 OutputPath ./
-OutputFile fastwind3d_n0128_l2
+OutputFile fastwind3drot_n0128l2
 OutputFileType silo
 OutputCriterion 0
 OutputFrequency 256
@@ -84,11 +84,11 @@ OPfreqTime 1.578e10
 ########################
 
 ########################
-BC_XN reflecting
+BC_XN one-way-outflow
 BC_XP one-way-outflow
-BC_YN reflecting
+BC_YN one-way-outflow
 BC_YP one-way-outflow
-BC_ZN reflecting
+BC_ZN one-way-outflow
 BC_ZP one-way-outflow
 BC_Ninternal 1
 BC_INTERNAL_000 stellar-wind
@@ -112,12 +112,12 @@ UNIFORM_core_centre_XX 1.1e200
 UNIFORM_core_centre_YY 1.1e200
 UNIFORM_core_centre_ZZ 1.1e200
 
-UNIFORM_ambRO 2.124229813e-24
-UNIFORM_ambPG 2.209037632e-12
+UNIFORM_ambRO 2.124229813e-20
+UNIFORM_ambPG 2.209037632e-08
 UNIFORM_ambVX 0.0
 UNIFORM_ambVY 0.0
 UNIFORM_ambVZ 0.0
-UNIFORM_ambBX 0.0
+UNIFORM_ambBX 1.0e-4
 UNIFORM_ambBY 0.0
 UNIFORM_ambBZ 0.0
 UNIFORM_ambTR0 0.0
@@ -145,14 +145,14 @@ WIND_NSRC 1
 WIND_0_pos0  0.0e18
 WIND_0_pos1  0.0e18
 WIND_0_pos2  0.0e18
-WIND_0_radius 1.543e17  # about 12 cells for 128^2 and 2 levels
+WIND_0_radius 6.96e12  # about 15 cells for 128^2 and 2 levels
 WIND_0_type   0
 WIND_0_mdot   1.0e-7
-WIND_0_vinf   1500.0
-WIND_0_vrot   0.0
+WIND_0_vinf   200.0
+WIND_0_vrot   200.0
 WIND_0_temp   3.0e4
-WIND_0_Rstr   6.96e11
-WIND_0_Bsrf   10.0
+WIND_0_Rstr   6.96e12
+WIND_0_Bsrf   0.1
 WIND_0_TR0    1.0
 WIND_0_evofile NOFILE
 WIND_0_t_offset   0.0000    # in (unscaled) years
