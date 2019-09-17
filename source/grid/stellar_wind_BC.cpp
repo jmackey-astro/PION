@@ -441,8 +441,9 @@ void stellar_wind::set_wind_cell_reference_state(
     // J is hardcoded to be parallel to z-axis
     xf = -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist,2);
     yf =  WS->v_rot * WS->Rstar * x / pow_fast(wc->dist,2);
-    wc->p[VX] += xf;
-    wc->p[VY] += yf;
+    // HACK: switch off rotation component of velocity.
+    //wc->p[VX] += xf;
+    //wc->p[VY] += yf;
     xf /= WS->Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
     yf /= WS->Vinf * y / wc->dist;
     //cout <<"xf= "<<xf<<" , yf= "<<yf<<" , vrot= "<<WS->v_rot<<", vinf="<<WS->Vinf<<"\n";
@@ -492,8 +493,8 @@ void stellar_wind::set_wind_cell_reference_state(
 
       // toroidal component in x-y plane from rotation, such that
       // v is parallel to B
-      wc->p[BX] *= (1.0 + xf);
-      wc->p[BY] *= (1.0 + yf);
+      wc->p[BX] *= (1.0 - xf);
+      wc->p[BY] *= (1.0 - yf);
       break;
 
     default:

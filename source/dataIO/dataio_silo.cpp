@@ -1272,6 +1272,7 @@ int dataio_silo::get_int_scalar_data_array(
     long int ct=0;
     do {
       m[ct] = (c->isleaf) ? 1 : 0;
+      if (!c->isdomain) m[ct] = 0;
       ct++;
     }
 #ifdef WRITE_GHOST_ZONES
