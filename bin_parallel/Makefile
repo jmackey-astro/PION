@@ -152,6 +152,27 @@ endif
 ################### --- local libs WORKSTATION ---######################
 
 ######################################################################
+# Options for a debian 9 (stretch) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian9)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  INC  = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### ---  DEBIAN 9 (STRETCH)  ---######################
+######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu18)

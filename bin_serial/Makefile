@@ -180,7 +180,6 @@ ifeq ($(MAKE_UNAME), debian9)
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  #LDFLAGS += -lsilo
   LDFLAGS += -lgsl
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
