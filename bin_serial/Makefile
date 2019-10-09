@@ -111,8 +111,8 @@ endif
 
 
 ######################################################################
-# Options for a "standard" workstation, assumed to be like debian linux
-# System CVODE (Sundials), Silo, and cfitsio libraries should be installed.
+# Options for a "standard" workstation, a fallback in case the OS was
+# not detected by compile_code.sh.
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
@@ -121,7 +121,6 @@ ifeq ($(MAKE_UNAME), standard)
   else
     CXXFLAGS = -O0 -Wall -g
   endif
-
   INC = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS +=  -lm
@@ -152,7 +151,7 @@ ifeq ($(MAKE_UNAME), locallibs)
   INC += -I${SRCDIR}
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
-  LDFLAGS += /usr/lib/x86_64-linux-gnu/
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu/
   LDFLAGS += -lm
   # All libraries are in this path:
   # Libraries for fits, silo, cvode
@@ -163,6 +162,55 @@ ifeq ($(MAKE_UNAME), locallibs)
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- local libs WORKSTATION ---######################
+
+######################################################################
+# Options for a debian 9 workstation, using system libraries
+######################################################################
+ifeq ($(MAKE_UNAME), debian9)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+    #CXXFLAGS = -O0 -Wall -g
+  else
+    CXXFLAGS = -O0 -Wall -g
+  endif
+  INC = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS +=  -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  #LDFLAGS += -lsilo
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+######################################################################
+
+######################################################################
+# Options for an Ubuntu 18 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu18)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- Ubuntu 18 WORKSTATION ---######################
+
 
 ######################################################################
 ####  OS X

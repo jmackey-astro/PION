@@ -19,24 +19,53 @@ export CC=gcc
 export CXX=g++
 export FC=gfortran
 SHARED=YES
+HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
 
 export WGET='wget'
 
+#################################
+## First try debian-based linux #
+#################################
+id=`lsb_release -s -i`
+ver=`lsb_release -s -r`
+code=`lsb_release -s -c`
+nc=`nproc --all`
 
-##############################
-## TEST FOR SuperMUC (2016) ##
-##############################
-case $HOST in
-  login[0-9][0-9])
-    echo "Compiling on SuperMUC"
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    MAKE_UNAME=SUPERMUC
-    NCORES=8
-    ;;
-esac
-#######################
+if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
+  echo "Detected Ubuntu 18.04: compiling extra libraries"
+  MAKE_UNAME=ubuntu18
+  export CXX=g++
+  export CC=gcc
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIMISE=HIGH
+  NCORES=$nc
+  export CC=gcc
+  export CXX=g++
+  export FC=gfortran
+  SHARED=YES
+  HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
+
+elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
+  echo "Detected Debian 9 (stretch), use system libs for SILO, FITS, GSL, SUNDIALS!"
+  echo "No need to compile extra libraries"
+  echo "run  apt install libcfitsio-bin libcfitsio-dev libsilo-dev libsilo-bin python-silo libsundials-dev openmpi-bin openmpi-common curl libhdf5-serial-dev git libgsl-dev"
+  echo "Then cd to serial/parallel binary directory and run  bash compile_code.sh"
+  exit
+
+elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
+  echo "Detected Debian 10 (buster), WHAT TO DO?"
+  MAKE_UNAME=debian10
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIMISE=HIGH
+  #export PION_OPTIMISE=LOW
+  #NCORES=1
+  export CXX=g++
+  NCORES=$nc
+
+else
+  echo "Failed to find a known version of Linux: checking for other OS types."
+fi
+#################################
 
 ##############################
 ### TEST FOR KAY.ICHEC.IE  ###
@@ -163,7 +192,7 @@ then
    --disable-fortran \
    --disable-silex \
    --enable-pythonmodule \
-   --with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial
+   --with-hdf5=$HDF5_LIBS
   fi
 
   echo "********************************"
