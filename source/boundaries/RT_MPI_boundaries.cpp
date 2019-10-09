@@ -865,7 +865,8 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   // processor.
   //
   // recv procs:
-  bool recv_proc_exists[par.ndim];
+  bool recv_proc_exists[MAX_DIM];
+  for (int i=0;i<MAX_DIM;i++) recv_proc_exists[i]=false;
   for (int i=0;i<par.ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);
@@ -894,7 +895,8 @@ int RT_MPI_bc::setup_RT_finite_ptsrc_BD(
   // So we only send data to a neighbour if no part of it is in a
   // source plane.
   //
-  bool send_proc_exists[2*par.ndim];
+  bool send_proc_exists[2*MAX_DIM];
+  for (int i=0;i<2*MAX_DIM;i++) send_proc_exists[i]=false;
   for (int i=0;i<par.ndim;i++) {
     enum direction posdir=static_cast<direction>(2*i+1);
     enum direction negdir=static_cast<direction>(2*i);

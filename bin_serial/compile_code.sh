@@ -47,12 +47,12 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   MAKE_UNAME=ubuntu18
   export CXX=g++
   export CC=gcc
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE2"
   export PION_OPTIMISE=HIGH
   NCORES=$nc
 elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
   echo "Detected Debian 9 (stretch), using system libs for SILO, FITS, GSL, SUNDIALS"
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE2"
   export PION_OPTIMISE=HIGH
   #export PION_OPTIMISE=LOW
   #NCORES=1
@@ -61,7 +61,7 @@ elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
   MAKE_UNAME=debian9
 elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
   echo "Detected Debian 10 (buster), using system libs for SILO, FITS, GSL, SUNDIALS"
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE2"
   export PION_OPTIMISE=HIGH
   #export PION_OPTIMISE=LOW
   #NCORES=1
@@ -79,7 +79,7 @@ fi
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE2"
   export CXX=g++
   export CC=gcc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
@@ -100,7 +100,7 @@ case $HOST in
     export FC=if90
     MAKE_UNAME=SUPERMUC
     NCORES=8
-    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL"
+    export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DINTEL -DCVODE2"
     export PION_OPTIMISE=HIGH
   ;;
 esac

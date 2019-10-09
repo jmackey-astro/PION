@@ -45,19 +45,55 @@ export CXX=mpicxx
 #NCORES=1
 #export CXX=g++
 
+#################################
+## First try debian-based linux #
+#################################
+id=`lsb_release -s -i`
+ver=`lsb_release -s -r`
+code=`lsb_release -s -c`
+nc=`nproc --all`
+
+if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
+  echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
+  MAKE_UNAME=ubuntu18
+  export CXX=mpicxx
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
+  export PION_OPTIMISE=HIGH
+  NCORES=$nc
+elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
+  echo "Detected Debian 9 (stretch), using system libs for SILO, FITS, GSL, SUNDIALS"
+  MAKE_UNAME=debian9
+  export CXX=mpicxx
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
+  export PION_OPTIMISE=HIGH
+  #export PION_OPTIMISE=LOW
+  #NCORES=1
+  NCORES=$nc
+elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
+  echo "Detected Debian 10 (buster), using system libs for SILO, FITS, GSL, SUNDIALS"
+  MAKE_UNAME=debian10
+  export CXX=mpicxx
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
+  echo "SET CVODE VERSION!!!!"
+  export PION_OPTIMISE=HIGH
+  #export PION_OPTIMISE=LOW
+  #NCORES=1
+  NCORES=$nc
+  exit
+else
+  echo "Failed to find a known version of Linux: checking for other OS types."
+  MAKE_UNAME=standard
+fi
+#################################
+
 
 ################### --- KAY at ICHEC.IE ---######################
 # Options for kay.ichec.ie
 ######################################################################
 case $HOSTNAME in
   login[0-9].kay.ichec.ie)
-    echo "Compiling on KAY/ICHEC"
-    #echo $PATH
-    #echo $INCLUDE
+    echo "Compiling on KAY/ICHEC: USING SELF-COMPILED LIBRARIES"
     source /usr/share/Modules/init/bash
-    #module purge
-    #echo $PATH
-    #module load intel
     module load intel/2018u4
     module load gsl/intel/2.5
     module list
@@ -66,18 +102,14 @@ case $HOSTNAME in
     export CC=mpiicc
     export CXX=mpiicpc
     # -DINTEL means the code uses the intel math headers instead of gnu.
-    #export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DINTEL"
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DINTEL -DCVODE2"
     export PION_OPTIMISE=HIGH
     #export PION_OPTIMISE=LOW
     #NCORES=1
     PION_PATH=`pwd`
     PION_PATH=${PION_PATH}/../extra_libraries/lib
     export LD_LIBRARY_PATH=${PION_PATH}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH:-}
-    #echo $LD_LIBRARY_PATH
     echo "***** COMPILING WITH KAY: COMPILERS ARE $CC $CXX "  
-    #echo $PATH
-    #echo $INCLUDE
     ;;
 esac
 ################### --- KAY at ICHEC.IE ---######################
@@ -88,13 +120,13 @@ esac
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-#  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS"
-#  export PION_OPTIMISE=HIGH
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
+  export PION_OPTIMISE=HIGH
   export CXX=mpicxx
   export CC=mpicc
   echo "***** COMPILING WITH OS-X: host ${HOST}: COMPILERS ARE $CC $CXX "  
   MAKE_UNAME=OSX
-  #NCORES=1
+  NCORES=`sysctl -n hw.ncpu`
   path=`pwd`
 fi
 #################################
@@ -104,14 +136,14 @@ fi
 #########################
 case $HOST in
   login[0-9][0-9])
-    echo "Compiling on SuperMUC"
+    echo "Compiling on SuperMUC: WARNING THIS CONFIG IS >4 YEARS OLD"
     echo "MKL LIBS: $MKL_SHLIB"
     export CC=mpicc
     export CXX=mpiCC
     export FC=mpif90
     MAKE_UNAME=SUPERMUC
     NCORES=8
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL -DCVODE2"
     export PION_OPTIMISE=HIGH
   ;;
 esac
@@ -122,7 +154,7 @@ esac
 ###################################
 case $HOSTNAME in
   dirac[0-9][0-9])
-    echo "Compiling on DIRAC-Complexity"
+    echo "Compiling on DIRAC-Complexity: WARNING THIS CONFIG IS >4 YEARS OLD"
     #module list
     module load intel/compilers/13.0.0 intel/mkl/11.0.0 intel/impi/4.1.0
     module list
@@ -131,7 +163,7 @@ case $HOSTNAME in
     # -DINTEL means the code uses the intel math headers instead of gnu.
     #export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL -DTESTING"
     #export PION_OPTIMISE=LOW
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL"
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DINTEL -DCVODE2"
     export PION_OPTIMISE=HIGH
     export CXX=mpiicpc
   ;;
