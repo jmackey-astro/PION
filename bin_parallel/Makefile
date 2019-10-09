@@ -172,6 +172,7 @@ ifeq ($(MAKE_UNAME), debian9)
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ################### ---  DEBIAN 9 (STRETCH)  ---######################
+
 ######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
@@ -195,7 +196,7 @@ ifeq ($(MAKE_UNAME), ubuntu18)
   LDFLAGS += -lgsl -lgslcblas
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
-################### --- STANDARD WORKSTATION ---######################
+################### --- UBUNTU 18 ---######################
 
 ################### --- KAY at ICHEC.IE ---######################
 # Options for kay.ichec.ie
