@@ -1,3 +1,3 @@
 #!/bin/bash
-rm -f *.o ../pion_parallel ../icgen_parallel
+rm -f *.o ../pion*parallel ../icgen*parallel
 
