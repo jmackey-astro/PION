@@ -271,7 +271,7 @@ MPv3::MPv3(
       struct rad_sources *rsrcs,   ///< radiation sources.
       const double g  ///< EOS Gamma
       )
-: microphysics_base(ephys,rsrcs),
+: microphysics_base(nv, ntracer, tracers, ephys,rsrcs),
   ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
 {
   cout <<"\n---------------------------------------------------------------------\n";

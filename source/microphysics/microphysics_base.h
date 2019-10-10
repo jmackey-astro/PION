@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include "grid/cell_interface.h"
 #include "raytracing/rad_src_data.h"
 //#define MP_DEBUG
@@ -55,6 +56,9 @@ class microphysics_base {
   /// Constructor sets up parameters used by derived classes.
   ///
   microphysics_base(
+      const int,   ///< Total number of variables in state vector
+      const int,   ///< Number of tracer variables in state vector
+      const std::string *,  ///< List of tracer variable names.
       struct which_physics *, ///< which physics to calculate.
       struct rad_sources *    ///< radiation sources.
       );
@@ -319,7 +323,10 @@ protected:
   struct which_physics *EP;
   /// Struct with list of radiation sources
   struct rad_sources *RS;
-
+  /// map tracer names to state-vec index
+  std::map<std::string,int> tr_map;
+  /// map element names to state-vec index
+  std::map<std::string,int> el_map;
 };
 
 ///

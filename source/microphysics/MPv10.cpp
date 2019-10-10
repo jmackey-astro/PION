@@ -1274,7 +1274,7 @@ void MPv10::sCMA(
     const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
 {
   //  Re-initialise corrector every step
-  for (int i=0;i<nv_prim;i++) corrector[i] = 1;
+  for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;
   int print_flagg = 0;
   double total_mass_frac = 0;
   
@@ -1286,7 +1286,7 @@ void MPv10::sCMA(
     int N_elem_species=N_species_by_elem[e];
     total_mass_frac += p_in[ X_mass_frac_index[e]];
   }
-  double e_correction = 1 / total_mass_frac;
+  double e_correction = 1.0 / total_mass_frac;
   species_counter = 0;
   // apply all-element correction, calculate species correction, apply species correction
   for (int e=0;e<N_elem;e++)  {  //loop over every element
