@@ -93,14 +93,14 @@ MPv10::MPv10(
       const int nd,   ///< grid dimensions
       const int csys,   ///< Coordinate System flag
       const int nv,   ///< Total number of variables in state vector
-      const int ntracer,  ///< Number of tracer variables in state vector.
+      const int ntr,  ///< Number of tracer variables in state vector.
       const std::string *tracers,  ///< List of what the tracer variables mean.
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs,   ///< radiation sources.
       const double g  ///< EOS Gamma
       )
-: microphysics_base(ephys,rsrcs),
-  ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys),
+: microphysics_base(nv,ntr,tracers,ephys,rsrcs),
+  ndim(nd), eos_gamma(g), coord_sys(csys),
   T_min(1e0), T_max(1e9), Num_temps(100), photo_xsections()//photo_xsections(&Emin[0],&Emax[0],Nbins)
   {
   /// ===================================================================

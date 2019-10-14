@@ -674,14 +674,14 @@ MPv2::MPv2(
       const int nd,   ///< grid dimensions
       const int csys,   ///< Coordinate System flag
       const int nv,              ///< Total number of variables in state vector
-      const int ntracer,         ///< Number of tracer variables in state vector.
+      const int ntr,         ///< Number of tracer variables in state vector.
       const std::string *tracers,  ///< List of what the tracer variables mean.
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs,   ///< radiation sources.
       const double g  ///< EOS Gamma
       )
-: microphysics_base(ephys,rsrcs),
-  ndim(nd), nv_prim(nv), eos_gamma(g), coord_sys(csys)
+: microphysics_base(nv, ntr, tracers, ephys,rsrcs),
+  ndim(nd), eos_gamma(g), coord_sys(csys)
 {
   cout <<"MPv2: new microphysics class.\n";
 

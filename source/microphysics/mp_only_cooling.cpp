@@ -53,10 +53,12 @@ using namespace std;
 
 mp_only_cooling::mp_only_cooling(
       const int nv,
+      const int ntr,  ///< Number of tracer variables in state vector
+      const std::string *tr,  ///< List of tracer variable names.
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
-: microphysics_base(ephys,rsrcs),
+: microphysics_base(nv,ntr,tr,ephys,rsrcs),
   cooling_function_SD93CIE(),
   Hummer94_Hrecomb(),
   CoolingFn(ephys->cooling),

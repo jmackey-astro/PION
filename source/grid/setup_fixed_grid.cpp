@@ -265,7 +265,7 @@ int setup_fixed_grid::setup_microphysics(
     cout <<"\t******* Requested cooling but no chemistry... setting";
     cout <<" up mp_only_cooling() class, with timestep-limiting.\n";
     SimPM.EP.MP_timestep_limit = 1;
-    MP = new mp_only_cooling(SimPM.nvar, &(SimPM.EP), &(SimPM.RS));
+    MP = new mp_only_cooling(SimPM.nvar, SimPM.ntracer, SimPM.tracers, &(SimPM.EP), &(SimPM.RS));
     if (!MP) rep.error("mp_only_cooling() init",MP);
   }
   else if (SimPM.EP.chemistry) {

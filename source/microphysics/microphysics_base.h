@@ -247,11 +247,12 @@ class microphysics_base {
   /// Updates the corrector vector
   /// according to sCMA (simple Consistent Multi-fluid Advection, 
   /// Plewa + Muller, 1999).
-  /// Used for modifying tracer fluxes.
+  /// Used for modifying tracer fluxes, normalising state vec.
+  ///
   virtual void sCMA(
       pion_flt *,      ///< input corrector vector
       const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
-      ) {return;}
+      );
 
   ///
   /// Get optical depth for a range of frequencies based on the 
@@ -327,6 +328,11 @@ protected:
   std::map<std::string,int> tr_map;
   /// map element names to state-vec index
   std::map<std::string,int> el_map;
+  std::vector<int> el_index;  ///< indices of elements
+  int n_el; ///< number of element tracers
+
+  int nv_prim; ///< number of vars in state vec
+  int ntracer; ///< number of tracer variables
 };
 
 ///

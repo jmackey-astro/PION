@@ -47,14 +47,14 @@ MPv5::MPv5(
       const int nd,   ///< grid dimensions
       const int csys,   ///< Coordinate System flag
       const int nv,             ///< Total number of variables in state vector
-      const int ntracer,        ///< Number of tracer variables in state vector.
+      const int ntr,        ///< Number of tracer variables in state vector.
       const std::string *tracers, ///< List of what the tracer variables mean.
       struct which_physics *ephys,  ///< extra physics stuff.
       struct rad_sources *rsrcs,   ///< radiation sources.
       const double g  ///< EOS Gamma
       )
   :
-  MPv3(nd,csys,nv,ntracer,tracers,ephys,rsrcs,g)
+  MPv3(nd,csys,nv,ntr,tracers,ephys,rsrcs,g)
 {
 #ifdef TESTING
   cout <<"MPv5 constructor setting up.\n";

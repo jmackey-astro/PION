@@ -515,10 +515,9 @@ class MPv2
   double mean_mass_per_H; ///< mean mass per hydrogen nucleon, should be about 2.34e-24;
 
   const int ndim; ///< Number of dimensions in grid.
-  const int nv_prim; ///< Number of variables in state vector.
   const double eos_gamma; ///< EOS gamma for ideal gas.
   const int coord_sys; ///< Coordinate System flag
-  int       nvl;     ///< number of variables in local state vector.
+  int nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index. 
   int lv_Hp;   ///< ionised hydrogeen local variable index.
   int pv_Hp;   ///< index for element of Primitive vector that holds ionisation pot.

@@ -268,7 +268,7 @@ class MPv0 : public microphysics_base, public Integrator_Base {
   private:
   /// \brief convert state vector from grid cell into local microphysics vector.
   int convert_prim2local(
-      const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
+      const pion_flt *, ///< primitive vector (nv_prim)
       double *,       ///< local vector (length nvl)
       const double    ///< eos gamma.
       );
@@ -276,8 +276,8 @@ class MPv0 : public microphysics_base, public Integrator_Base {
   /// \brief convert local microphysics vector into state vector for grid cell.
   int convert_local2prim(
       const double *, ///< local vector (length nvl)
-      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *,       ///< updated primitive vector for grid cell (length nv_prim)
+      const pion_flt *, ///< input primitive vector(length nv_prim)
+      pion_flt *,       ///< updated primitive vector(length nv_prim)
       const double    ///< eos gamma.
       );
 
@@ -348,7 +348,6 @@ class MPv0 : public microphysics_base, public Integrator_Base {
   class CoolingFn      *cool; ///< Pointer to generic cooling function.
   struct which_physics ep; ///< struct with flags for which extra physics we are or aren't doing.
 
-  const int nv_prim; ///< Number of variables in state vector.
   int       nvl;     ///< number of variables in local state vector.
   std::map<string,int> pvar; ///< List of tracer variables in primitive vector matched to their index.
   std::map<string,int> lvar; ///< List of variables in local state vector (only microphysics vars).

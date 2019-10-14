@@ -74,16 +74,15 @@ using namespace std;
 
 MPv0::MPv0(
       const int nv,
-      const int ntracer,
+      const int ntr,
       const std::string chem_code,  ///< type of chemistry we are running.
       const std::string *tracers,  ///< List of what the tracer variables mean.
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
-: microphysics_base(ephys,rsrcs),
+: microphysics_base(nv, ntr, tracers, ephys,rsrcs),
   kB(pconst.kB()),
-  m_p(pconst.m_p()),
-  nv_prim(nv)
+  m_p(pconst.m_p())
 {
   cout <<"\t\tMPv0 constructor.\n";
   cout <<"WARNING: THIS CODE HAS NEVER BEEN USED IN PUBLICATIONS.\n";
@@ -116,11 +115,11 @@ MPv0::MPv0(
   //  cout <<"\t\tCooling Function set up.\n";
 
   // Set up tracer variables.
-    cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last "<<ntracer<<" variables in state vec.\n";
-  int ftr = nv_prim -ntracer; // first tracer variable.
+    cout <<"\t\tSetting up Tracer Variables.  Assuming tracers are last "<<ntr<<" variables in state vec.\n";
+  int ftr = nv_prim -ntr; // first tracer variable.
   string s;
 
-  int len = ntracer;
+  int len = ntr;
 
   MPv0::lvar["n_h" ] = 0; // 1st element of local vector is hydrogen number density.
   MPv0::lvar["Eint"] = 1; // Second element of local state vector is internal energy/vol.

@@ -20,6 +20,7 @@ microphysics_base::microphysics_base(
       struct which_physics *ephys, ///< which physics to calculate.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
+ : nv_prim(nv), ntracer(ntr)
 {
 #ifdef TESTING
   cout <<"microphysics_base:: setting up EP and RS: ";
@@ -34,11 +35,14 @@ microphysics_base::microphysics_base(
 
   // set up a map of tracer names to indices in state vec.
   int offset = nv-ntr;
+  n_el = 0;
   for (int i=0;i<ntr;i++) {
     tr_map[tr[i]] = i+offset;
     // second map just for elements.
     if (tr[i].substr(0,2) == "X_") {
       el_map[tr[i]] = i+offset;
+      el_index.push_back(i+offset);
+      n_el++;
     }
   }
   //for (int v=0;v<nels;v++}
@@ -51,5 +55,43 @@ microphysics_base::microphysics_base(
   
   return;
 }
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+void microphysics_base::sCMA(
+    pion_flt *corrector, ///< input corrector vector
+    const pion_flt *p_in ///< input primitive vector (nv_prim)
+    )
+{
+  //  Re-initialise corrector every step
+  for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;
+  int print_flagg = 0;
+  double corr = 0;
+  
+  // sum over all elements and add up mass fraction.
+  for (int v=0;v<n_el;v++) {
+    corr += p_in[el_index[v]];
+  }
+  corr = 1.0 / corr; // correction factor.
+  // set correction factor for elements.
+  for (int v=0;v<n_el;v++) {
+    corrector[el_index[v]] = corr;
+  }
+  
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
 
 

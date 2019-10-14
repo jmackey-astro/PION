@@ -52,6 +52,8 @@ class mp_only_cooling
   ///
   mp_only_cooling(
       const int, ///< length of prim. state vec.
+      const int,   ///< Number of tracer variables in state vector
+      const std::string *,  ///< List of tracer variable names.
       struct which_physics *, ///< pointer to extra physics flags.
       struct rad_sources *    ///< radiation sources.
       );

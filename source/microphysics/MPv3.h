@@ -427,7 +427,6 @@ class MPv3
   double k_B; ///<  Boltzmanns constant.
   double m_p; ///< Mass of proton.
   const int ndim; ///< Number of dimensions in grid.
-  const int nv_prim; ///< Number of variables in state vector.
   const double eos_gamma; ///< EOS gamma for ideal gas.
   const int coord_sys; ///< Coordinate System flag
   double gamma_minus_one; ///< as named.
@@ -438,7 +437,7 @@ class MPv3
   double JM_NION;  ///< Number of ions per ionised H atom.
   double METALLICITY; ///< Metallicity of gas, in units of solar.
 
-  int       nvl;     ///< number of variables in local state vector.
+  int nvl;     ///< number of variables in local state vector.
   int lv_eint; ///< internal energy local variable index. 
   int lv_H0;   ///< neutral hydrogeen local variable index.
   int pv_Hp;   ///< index for element of Primitive vector that holds ionisation pot.

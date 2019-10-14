@@ -274,9 +274,9 @@ class MPv10
   /// convert state vector from grid cell into local microphysics vector.
   ///
   virtual int convert_prim2local(
-      const pion_flt *, ///< primitive vector from grid cell (length nv_prim)
+      const pion_flt *, ///< primitive vector (nv_prim)
       double *,    ///< local vector [x(H0),E](n+1).
-			int /// flags the function
+      int /// flags the function
       );
 
   ///
@@ -285,9 +285,9 @@ class MPv10
   ///
   virtual int convert_local2prim(
       const double *, ///< local (updated) vector [x(H0),E](n+1).
-      const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
-      pion_flt *  ,     ///< updated primitive vector for grid cell (length nv_prim)
-			int /// flags the function
+      const pion_flt *, ///< input primitive vector (nv_prim)
+      pion_flt *  ,     ///< updated primitive vector (nv_prim)
+      int /// flags the function
       );
 
   ///
@@ -316,13 +316,14 @@ class MPv10
 
 
   /// 
-	/// Updates the corrector vector
-	/// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
-	/// Used for modifying tracer fluxes.
-	///
-	virtual void sCMA(
-			pion_flt *, ///< input corrector vector
-			const pion_flt *); ///< input primitive vector from grid cell (length nv_prim)
+  /// Updates the corrector vector
+  /// according to sCMA (simple Consistent Multi-fluid Advection, Plewa + Muller, 1999).
+  /// Used for modifying tracer fluxes.
+  ///
+  virtual void sCMA(
+      pion_flt *, ///< input corrector vector
+      const pion_flt * ///< input primitive vector (nv_prim)
+      );
 
   
   
@@ -330,7 +331,6 @@ class MPv10
   /// Calculates the change in optical depth over the cell
   /// for use in the Raytracing module
   ///
-  
   virtual void get_dtau(
       const pion_flt,   ///< ds, thickness of the cell
       const pion_flt *, ///< input primitive vector from grid cell (length nv_prim)
@@ -360,7 +360,6 @@ class MPv10
   double m_N; ///< Mass of Nitrogen
   double m_O; ///< Mass of Oxygen
   const int ndim; ///< Number of dimensions in grid.
-  const int nv_prim; ///< Number of variables in state vector.
   const double eos_gamma; ///< EOS gamma for ideal gas.
   const int coord_sys; ///< Coordinate System flag
   double gamma_minus_one; ///< as named.

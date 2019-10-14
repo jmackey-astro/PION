@@ -42,7 +42,7 @@ using namespace std;
 
 //TODO: DELETE MAIN() ONCE YOU'VE ASKED JONATHAN WHERE THIS FUNCTION IS ACTUALLY CALLED FROM...
 /*int main()
-{/*double emax[15] = {13.59844, 14.5, 24.4, 24.58741, 29.6, 47.5, 47.9, 54.41778, 64.5, 77.5, 97.9, 392.1, 490.0, 552.1, 667.0};//bin edges correspond to ionisation energies
+{double emax[15] = {13.59844, 14.5, 24.4, 24.58741, 29.6, 47.5, 47.9, 54.41778, 64.5, 77.5, 97.9, 392.1, 490.0, 552.1, 667.0};//bin edges correspond to ionisation energies
   double emin[15] = {11.3, 13.59844, 14.5, 24.4, 24.58741, 29.6, 47.5, 47.9, 54.41778, 64.5, 77.5, 97.9, 392.1, 490.0, 552.1};
   //convert to kev:
   for (int i=0; i<15; i++){

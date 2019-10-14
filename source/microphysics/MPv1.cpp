@@ -87,19 +87,18 @@ using namespace std;
 
 MP_Hydrogen::MP_Hydrogen(
       const int nv,
-      const int ntracer,
+      const int ntr,
       const std::string *tracers,
       struct which_physics *ephys, ///< pointer to extra physics flags.
       struct rad_sources *rsrcs    ///< radiation sources.
       )
-: microphysics_base(ephys,rsrcs),
+: microphysics_base(nv,ntr,tracers,ephys,rsrcs),
   kB(pconst.kB()),
 #ifdef RT_TEST_PROBS
   m_p(2.338e-24), // this is for comparison to Krumholz,stone,gardiner(2007)
 #else
-  m_p(pconst.m_p()),
+  m_p(pconst.m_p())
 #endif
-  nv_prim(nv)
 {
   cout <<"Welcome to MP_Hydrogen: an easier place to work than MicroPhysics!\n";
 

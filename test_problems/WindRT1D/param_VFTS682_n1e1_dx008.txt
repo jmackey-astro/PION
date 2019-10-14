@@ -180,8 +180,10 @@ WIND_0_radius 0.0987e18  # 0.016pc # 2 cells
 WIND_0_type   0
 WIND_0_mdot   4.0e-5
 WIND_0_vinf   2600.0
+WIND_0_vrot   0.0
 WIND_0_temp   52200.0
-WIND_0_Rstr   6.96e15  # 1e5 R_sun
+WIND_0_Rstr   2.1e12 # ~30 R_sun
+WIND_0_Bstr   0.0
 WIND_0_TR0 1.0
 WIND_0_TR1 1.0
 WIND_0_TR2 0.0
