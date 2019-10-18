@@ -92,19 +92,19 @@ int stellar_wind_bc::BC_assign_STWIND(
     cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (wtype==0) {
       grid->Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer,
-            par.ftr, par.coord_sys, par.eqntype,
+            par.ftr, par.tracers, par.coord_sys, par.eqntype,
             par.EP.MinTemperature);
     }
     else if (wtype==1) {
       grid->Wind = new stellar_wind_evolution(par.ndim, par.nvar,
-            par.ntracer, par.ftr, par.coord_sys, par.eqntype,
+            par.ntracer, par.ftr, par.tracers, par.coord_sys, par.eqntype,
             par.EP.MinTemperature, par.starttime, par.finishtime);
       err=0;
     }
     else if (wtype==2) {
       cout <<"Setting up stellar_wind_angle class\n";
       grid->Wind = new stellar_wind_angle(par.ndim, par.nvar,
-            par.ntracer, par.ftr, par.coord_sys, par.eqntype,
+            par.ntracer, par.ftr, par.tracers, par.coord_sys, par.eqntype,
             par.EP.MinTemperature, par.starttime, par.finishtime,
             xi);
     }

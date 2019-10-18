@@ -143,7 +143,7 @@ class stellar_wind {
       const double,   ///< Surface Temperature (K)
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
-      const pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt *  ///< Tracer values of wind (if any)
       );
 
   ///
@@ -153,7 +153,7 @@ class stellar_wind {
       const double *, ///< position (cgs units).
       const double,   ///< radius of boundary region (cgs units).
       const int,      ///< type (1=evolving,2=lat-dep.).
-      const pion_flt *, ///< Any (constant) wind tracer values.
+      pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
       const double,   ///< time offset = [t(sim)-t(wind_file)]
@@ -179,7 +179,7 @@ class stellar_wind {
       const double,   ///< Wind Temperature at surface
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
-      const pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt *  ///< Tracer values of wind (if any)
       )
   {rep.error("Don't call add_rotating_source from here.",99);return 99;}
 
@@ -337,7 +337,7 @@ struct evolving_wind_data {
   //double *vinf;
   //double *Teff;
   struct wind_source *ws;
-  int i_XH, i_He, i_C, i_N, i_O, i_Z, i_D;
+  int i_XH, i_XHe, i_XC, i_XN, i_XO, i_XZ, i_XD;
   bool is_active; ///< Set to false initially, then to true once its time has come.
   double offset, ///< sim-time minus spline-time.
     tstart,  ///< When source switches on, in sim-time units.
@@ -396,7 +396,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double,   ///< Surface Temperature (K)
       const double,   ///< Stellar Radius (cm)
       const double,   ///< Surface B field (G)
-      const pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt *  ///< Tracer values of wind (if any)
       );
 
   ///
@@ -408,7 +408,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const double *, ///< position (physical units).
       const double,   ///< radius (physical units).
       const int,      ///< type (must be 3, for variable wind).
-      const pion_flt *, ///< Any (constant) wind tracer values.
+      pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
       const double,   ///< time offset = [t(sim)-t(wind_file)]

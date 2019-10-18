@@ -39,6 +39,7 @@ stellar_wind_angle::stellar_wind_angle(
       const int nv, ///< nvar
       const int nt, ///< ntracer
       const int ft, ///< ftr
+      const std::string *tr,  ///< List of tracer variable names.
       const int cs, ///< coord_sys
       const int eq, ///< eqn_type
       const double mt, ///< Minimum temperature allowed on grid
@@ -46,8 +47,8 @@ stellar_wind_angle::stellar_wind_angle(
       const double sf, ///< Simulation finish time.
       const double xi  ///< exponent of wind equatorial enhancement
       )
-: stellar_wind(nd,nv,nt,ft,cs,eq,mt),
-  stellar_wind_evolution(nd,nv,nt,ft,cs,eq,mt,ss,sf)
+: stellar_wind(nd,nv,nt,ft,tr,cs,eq,mt),
+  stellar_wind_evolution(nd,nv,nt,ft,tr,cs,eq,mt,ss,sf)
 
 {
   // Constants for wind functions
@@ -713,7 +714,7 @@ int stellar_wind_angle::add_evolving_source(
       const double *pos,        ///< position (physical units).
       const double  rad,        ///< radius (physical units).
       const int    type,        ///< type (must be WINDTYPE_ANGLE).
-      const pion_flt *trv,        ///< Any (constant) wind tracer values.
+      pion_flt *trv,        ///< Any (constant) wind tracer values.
       const string infile,      ///< file name to read data from.
       const int enhance,   ///< enhance mdot based on rotation (0=no,1=yes).
       const double time_offset, ///< time offset = [t(sim)-t(wind_file)] (seconds)
@@ -775,6 +776,8 @@ int stellar_wind_angle::add_evolving_source(
   // set up a constant wind source for updating its properties.
   //
   double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrt=0.0;
+  double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
+
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
@@ -786,6 +789,16 @@ int stellar_wind_angle::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->vrot_evo, t_now, vrot);
     interpolate.root_find_linear_vec(temp->time_evo, temp->vcrt_evo,t_now, vcrt);
     interpolate.root_find_linear_vec(temp->time_evo, temp->R_evo, t_now, rstar);
+
+    // get tracer values for elements.
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_H_evo, t_now, xh);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_He_evo, t_now, xhe);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_C_evo, t_now, xc);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_N_evo, t_now, xn);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_O_evo, t_now, xo);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
+
 #ifdef TESTING
     cout <<"Source is Active\n";
 #endif
@@ -797,6 +810,15 @@ int stellar_wind_angle::add_evolving_source(
     temp->is_active = false;
     mdot=-100.0; vesc=-100.0; vrot=-100.0; Twind=-100.0;
   }
+
+  // set tracer values for elements
+  if (temp->i_XH>=0)  trv[temp->i_XH] = xh;
+  if (temp->i_XHe>=0) trv[temp->i_XHe]= xhe;
+  if (temp->i_XC>=0)  trv[temp->i_XC] = xc;
+  if (temp->i_XN>=0)  trv[temp->i_XN] = xn;
+  if (temp->i_XO>=0)  trv[temp->i_XO] = xo;
+  if (temp->i_XZ>=0)  trv[temp->i_XZ] = xz;
+  if (temp->i_XD>=0)  trv[temp->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
@@ -833,7 +855,7 @@ int stellar_wind_angle::add_rotating_source(
       const double Twind,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double Rstar,   ///< radius of star (cm)
       const double Bstar, ///< Surface Magnetic field of star (Gauss).
-      const pion_flt *trv  ///< Tracer values of wind (if any)
+      pion_flt *trv  ///< Tracer values of wind (if any)
       )
 {
   struct wind_source *ws = 0;
@@ -949,12 +971,15 @@ void stellar_wind_angle::update_source(
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
   double mdot=0.0, vesc=0.0, Twind=0.0, vrot=0.0, rstar=0.0, vcrit=0.0;
+  double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
+
   interpolate.root_find_linear_vec(wd->time_evo, wd->Teff_evo, t_now, Twind);
   interpolate.root_find_linear_vec(wd->time_evo, wd->Mdot_evo, t_now, mdot);
   interpolate.root_find_linear_vec(wd->time_evo, wd->vesc_evo, t_now, vesc);
   interpolate.root_find_linear_vec(wd->time_evo, wd->vrot_evo, t_now, vrot);
   interpolate.root_find_linear_vec(wd->time_evo, wd->vcrt_evo,t_now, vcrit);
   interpolate.root_find_linear_vec(wd->time_evo, wd->R_evo, t_now, rstar);
+
   // all in cgs units already.
   wd->ws->Mdot = mdot;
   wd->ws->v_esc = vesc;
@@ -963,6 +988,23 @@ void stellar_wind_angle::update_source(
   wd->ws->vcrit = vcrit;
   wd->ws->Tw   = Twind;
   wd->ws->Rstar = rstar;
+
+  // get tracer values for elements.
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_H_evo, t_now, xh);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_He_evo, t_now, xhe);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_C_evo, t_now, xc);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_N_evo, t_now, xn);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_O_evo, t_now, xo);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_Z_evo, t_now, xz);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_D_evo, t_now, xd);
+
+  wd->ws->tracers[wd->i_XH] = xh;
+  wd->ws->tracers[wd->i_XHe]= xhe;
+  wd->ws->tracers[wd->i_XC] = xc;
+  wd->ws->tracers[wd->i_XN] = xn;
+  wd->ws->tracers[wd->i_XO] = xo;
+  wd->ws->tracers[wd->i_XZ] = xz;
+  wd->ws->tracers[wd->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at

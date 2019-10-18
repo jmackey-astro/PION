@@ -27,6 +27,7 @@ class stellar_wind_angle
       const int, ///< nvar
       const int, ///< ntracer
       const int, ///< ftr
+      const std::string *,  ///< List of tracer variable names.
       const int, ///< coord_sys
       const int, ///< eqn_type
       const double, ///< minimum temperature allowed
@@ -49,7 +50,7 @@ class stellar_wind_angle
       const double *, ///< position (physical units).
       const double,   ///< radius (physical units).
       const int,      ///< type (must be WINDTYPE_ANGLE).
-      const pion_flt *, ///< Any (constant) wind tracer values.
+      pion_flt *, ///< Any (constant) wind tracer values.
       const string,   ///< file name to read data from.
       const int,      ///< enhance mdot based on rotation (0=no,1=yes).
       const double,   ///< time offset = [t(sim)-t(wind_file)]
@@ -78,7 +79,7 @@ class stellar_wind_angle
       const double,   ///< Wind Temperature (p_g.m_p/(rho.k_b))
       const double,   ///< Radius of star (cm)
       const double,   ///< Surface B-field (Gauss)
-      const pion_flt *  ///< Tracer values of wind (if any)
+      pion_flt *  ///< Tracer values of wind (if any)
       );
 
   // Function to replace pow(a, b) - exp(b*log(a)) is twice as fast

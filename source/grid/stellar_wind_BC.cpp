@@ -145,7 +145,7 @@ int stellar_wind::add_source(
       const double temp, ///< Wind Temperature (K)
       const double Rstar, ///< Radius of star (cm).
       const double Bstar, ///< Surface Magnetic field of star (Gauss).
-      const pion_flt *trv  ///< Tracer values of wind (if any)
+      pion_flt *trv  ///< Tracer values of wind (if any)
       )
 {
   struct wind_source *ws = 0;
@@ -155,7 +155,7 @@ int stellar_wind::add_source(
   ws->type = type;
   switch (type) {
   case WINDTYPE_CONSTANT: case WINDTYPE_EVOLVING:
-    cout <<"\tAdding constant wind source as id="<<ws->id<<"\n";
+    cout <<"\tAdding wind source as id="<<ws->id<<"\n";
     break;
   default:
     rep.error("What type of source is this?  add a new type?",type);
@@ -511,7 +511,7 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[SI] = 0.0;
   }
     
-  // update tracers
+  // update tracers: should be set already.
   for (int v=0;v<ntracer;v++)
     wc->p[ftr+v] = WS->tracers[v];
 
@@ -858,7 +858,7 @@ int stellar_wind_evolution::add_source(
       const double Twnd, ///< Wind Temperature (K)
       const double Rstar, ///< Stellar radius.
       const double Bstar, ///< Surface Magnetic field of star (Gauss).
-      const pion_flt *trv  ///< Tracer values of wind (if any)
+      pion_flt *trv  ///< Tracer values of wind (if any)
       )
 {
   //
@@ -1009,7 +1009,7 @@ int stellar_wind_evolution::add_evolving_source(
   const double *pos,        ///< position (physical units).
   const double  rad,        ///< radius (physical units).
   const int    type,        ///< type (must be 3, for variable wind).
-  const pion_flt *trv,        ///< Any (constant) wind tracer values.
+  pion_flt *trv,        ///< Any (constant) wind tracer values.
   const string infile,      ///< file name to read data from.
   const int ,   ///< enhance mdot based on rotation (0=no,1=yes).
   const double time_offset, ///< time offset = [t(sim)-t(wind_file)] in years
@@ -1067,6 +1067,8 @@ int stellar_wind_evolution::add_evolving_source(
   // set up a constant wind source for updating its properties.
   //
   double mdot=0.0, vinf=0.0, vrot=0.0, Twind=0.0, rstar=0.0;
+  double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
+
   if ( ((t_now+temp->update_freq)>temp->tstart ||
         pconst.equalD(temp->tstart, t_now))
        && t_now<temp->tfinish) {
@@ -1080,6 +1082,16 @@ int stellar_wind_evolution::add_evolving_source(
     interpolate.root_find_linear_vec(temp->time_evo, temp->vinf_evo, t_now, vinf);
     interpolate.root_find_linear_vec(temp->time_evo, temp->vrot_evo, t_now, vrot);
     interpolate.root_find_linear_vec(temp->time_evo, temp->R_evo,    t_now, rstar);
+
+    // get tracer values for elements.
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_H_evo, t_now, xh);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_He_evo, t_now, xhe);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_C_evo, t_now, xc);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_N_evo, t_now, xn);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_O_evo, t_now, xo);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_Z_evo, t_now, xz);
+    interpolate.root_find_linear_vec(temp->time_evo, temp->X_D_evo, t_now, xd);
+
 #ifdef TESTING
     cout <<"Source is Active\n";
     cout <<"T = "<<Twind<<",  mdot="<<mdot<<",  vinf="<<vinf;
@@ -1094,6 +1106,15 @@ int stellar_wind_evolution::add_evolving_source(
     temp->is_active = false;
     mdot=-100.0; vinf=-100.0; Twind=-100.0;
   }
+
+  // set tracer values for elements
+  if (temp->i_XH>=0)  trv[temp->i_XH] = xh;
+  if (temp->i_XHe>=0) trv[temp->i_XHe]= xhe;
+  if (temp->i_XC>=0)  trv[temp->i_XC] = xc;
+  if (temp->i_XN>=0)  trv[temp->i_XN] = xn;
+  if (temp->i_XO>=0)  trv[temp->i_XO] = xo;
+  if (temp->i_XZ>=0)  trv[temp->i_XZ] = xz;
+  if (temp->i_XD>=0)  trv[temp->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
@@ -1142,26 +1163,36 @@ void stellar_wind_evolution::update_source(
   // Now we update Mdot, Vinf, Teff by linear interpolation.
   //
   double mdot=0.0, vinf=0.0, vrot=0.0, Twind=0.0, rstar=0.0;
+  double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
+
   interpolate.root_find_linear_vec(wd->time_evo, wd->Teff_evo, t_now, Twind);
   interpolate.root_find_linear_vec(wd->time_evo, wd->Mdot_evo, t_now, mdot);
   interpolate.root_find_linear_vec(wd->time_evo, wd->vrot_evo, t_now, vrot);
   interpolate.root_find_linear_vec(wd->time_evo, wd->vinf_evo, t_now, vinf);
   interpolate.root_find_linear_vec(wd->time_evo, wd->R_evo, t_now, rstar);
-  //
-  // Assign new values to wd->ws (the wind source struct), all in CGS
-  // because the arrays are in CGS.
-  //
-#ifdef TESTING
-  cout <<"updating wind: old [Mdot,Vinf,Tstar,Rstar] = [";
-  cout <<wd->ws->Mdot<<", "<<wd->ws->Vinf<<", "<<wd->ws->Tw<<", "<<wd->ws->Rstar<<"]\n";
-  cout <<"               new [Mdot,Vinf,Tstar,Rstar] = [";
-  cout <<mdot<<", "<<vinf<<", "<<Twind<<", "<<rstar<<"]\n";
-#endif
+
   wd->ws->Mdot = mdot;  // already cgs.
   wd->ws->Vinf = vinf;  // this is in cm/s already.
   wd->ws->v_rot = vrot;  // this is in cm/s already.
   wd->ws->Tw   = Twind; // This is in K.
   wd->ws->Rstar = rstar;
+
+  // get tracer values for elements.
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_H_evo, t_now, xh);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_He_evo, t_now, xhe);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_C_evo, t_now, xc);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_N_evo, t_now, xn);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_O_evo, t_now, xo);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_Z_evo, t_now, xz);
+  interpolate.root_find_linear_vec(wd->time_evo, wd->X_D_evo, t_now, xd);
+
+  wd->ws->tracers[wd->i_XH] = xh;
+  wd->ws->tracers[wd->i_XHe]= xhe;
+  wd->ws->tracers[wd->i_XC] = xc;
+  wd->ws->tracers[wd->i_XN] = xn;
+  wd->ws->tracers[wd->i_XO] = xo;
+  wd->ws->tracers[wd->i_XZ] = xz;
+  wd->ws->tracers[wd->i_XD] = xd;
 
   // Set B-field of star
   // TODO: Decide how to set this better!  For now pick B=10G at
