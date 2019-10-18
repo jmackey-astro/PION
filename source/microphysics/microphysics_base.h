@@ -158,7 +158,7 @@ class microphysics_base {
   /// \retval int<0 failure: string doesn't correspond to any tracer.
   /// 
   virtual int Tr(const std::string ///< name of tracer we are looking for.
-		  )=0;
+		  );
 
   /// Sets the pressure in p-vec to be such that temperature is
   /// what you want it to be. 

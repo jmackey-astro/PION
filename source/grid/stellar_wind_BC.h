@@ -119,6 +119,7 @@ class stellar_wind {
       const int, ///< nvar
       const int, ///< ntracer
       const int, ///< ftr
+      const std::string *,  ///< List of tracer variable names.
       const int, ///< coord_sys
       const int,  ///< eqn_type
       const double ///< minimum temperature allowed
@@ -276,6 +277,7 @@ class stellar_wind {
   const int ndim;     ///< number of dimensions on grid
   const int nvar;     ///< number of variables in state vec.
   const int ntracer;  ///< number of tracer variables in state vec.
+  std::vector<std::string> tracers;
   const int ftr;      ///< first tracer index in state vec.
   const int coordsys; ///< identifier of coordinate system
   const int eqntype;  ///< Type of equations to solve
@@ -323,11 +325,19 @@ struct evolving_wind_data {
   vector<double> vrot_evo;
   vector<double> vcrt_evo;
   vector<double> vesc_evo;
+  vector<double> X_H_evo;
+  vector<double> X_He_evo;
+  vector<double> X_C_evo;
+  vector<double> X_N_evo;
+  vector<double> X_O_evo;
+  vector<double> X_Z_evo;
+  vector<double> X_D_evo;
   //double *t;
   //double *mdot;
   //double *vinf;
   //double *Teff;
   struct wind_source *ws;
+  int i_XH, i_He, i_C, i_N, i_O, i_Z, i_D;
   bool is_active; ///< Set to false initially, then to true once its time has come.
   double offset, ///< sim-time minus spline-time.
     tstart,  ///< When source switches on, in sim-time units.
@@ -359,6 +369,7 @@ class stellar_wind_evolution : virtual public stellar_wind {
       const int, ///< nvar
       const int, ///< ntracer
       const int, ///< ftr
+      const std::string *,  ///< List of tracer variable names.
       const int, ///< coord_sys
       const int,  ///< eqn_type
       const double, ///< minimum temperature allowed

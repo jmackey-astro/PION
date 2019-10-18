@@ -13,6 +13,12 @@ using namespace std;
 class microphysics_base *MP=0;
 
 
+
+// ##################################################################
+// ##################################################################
+
+
+
 microphysics_base::microphysics_base(
       const int nv,   ///< Total number of variables in state vector
       const int ntr,  ///< Number of tracer variables in state vector
@@ -92,6 +98,20 @@ void microphysics_base::sCMA(
 // ##################################################################
 
 
+
+int microphysics_base::Tr(const string s)
+{
+  if (tr_map.find(s)==tr_map.end())
+    return -1;
+  else
+    return tr_map[s]; 
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
 
 
 

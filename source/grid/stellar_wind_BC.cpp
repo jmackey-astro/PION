@@ -73,6 +73,7 @@ stellar_wind::stellar_wind(
       const int nv, ///< nvar
       const int nt, ///< ntracer
       const int ft, ///< ftr
+      const std::string *tr,  ///< List of tracer variable names.
       const int cs, ///< coord_sys
       const int eq, ///< eqn_type
       const double mt ///< Minimum temperature allowed on grid
@@ -80,7 +81,10 @@ stellar_wind::stellar_wind(
 : ndim(nd), nvar(nv), ntracer(nt), ftr(ft), coordsys(cs), eqntype(eq), Tmin(mt)
 {
   nsrc=0;
+
+  for (int v=0;v<nt;v++) tracers.push_back(tr[v]);
 }
+
 
 
 // ##################################################################
@@ -186,6 +190,7 @@ int stellar_wind::add_source(
     ws->tracers[v] = trv[v];
     cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
+
   // if using microphysics, find H+ tracer variable, if it exists.
   int hplus=-1;
   if (MP) {
@@ -795,13 +800,14 @@ stellar_wind_evolution::stellar_wind_evolution(
       const int nv, ///< nvar
       const int nt, ///< ntracer
       const int ft, ///< ftr
+      const std::string *tr,  ///< List of tracer variable names.
       const int cs, ///< coord_sys
       const int eq, ///< eqn_type
       const double mt, ///< Minimum temperature allowed on grid
       const double ss, ///< Simulation start time.
       const double sf  ///< Simulation finish time.
       )
-: stellar_wind(nd,nv,nt,ft,cs,eq,mt), sim_start(ss), sim_finish(sf)
+: stellar_wind(nd,nv,nt,ft,tr,cs,eq,mt), sim_start(ss), sim_finish(sf)
 {
 #ifdef TESTING
   cout <<"Stellar wind with time evolution, constructor.\n";
@@ -872,10 +878,39 @@ int stellar_wind_evolution::add_source(
   temp->update_freq = 1.0e99;             // so it never updates.
   temp->t_next_update = 1.0e99;           // so it never updates.
     
+
+  temp->i_XH  = -1;
+  temp->i_XHe = -1;
+  temp->i_XC  = -1;
+  temp->i_XN  = -1;
+  temp->i_XO  = -1;
+  temp->i_XZ  = -1;
+  temp->i_XD  = -1;
+
   //
   // Set source to be active
   //
   temp->is_active = true;
+
+  // Check for elements if using microphysics
+  if (MP) {
+    for (int v=0; v<ntracer;v++) {
+      if      (tracers[v] == "X_H")  temp->i_XH  = v;
+      else if (tracers[v] == "X_He") temp->i_XHe = v;
+      else if (tracers[v] == "X_C")  temp->i_XC = v;
+      else if (tracers[v] == "X_N")  temp->i_XN = v;
+      else if (tracers[v] == "X_O")  temp->i_XO = v;
+      else if (tracers[v] == "X_Z")  temp->i_XZ = v;
+      else if (tracers[v] == "X_D")  temp->i_XD = v;
+      else {}
+    }
+  }
+
+    
+    
+
+
+
   //
   // Now add source using constant wind version.
   //
@@ -900,7 +935,7 @@ int stellar_wind_evolution::read_evolution_file(
 
   //
   // Read in stellar evolution data
-  // Format: time	M	L	Teff	Mdot	vrot   vcrit
+  // Format: time M L Teff Mdot vrot vcrit vinf X_H X_He X_C X_N X_O X_Z X_D
   //
   FILE *wf = 0;
   wf = fopen(infile.c_str(), "r");
@@ -920,9 +955,11 @@ int stellar_wind_evolution::read_evolution_file(
   // Everthing must be in CGS units already.
   double time=0.0, mass=0.0, lumi=0.0, teff=0.0, radi=0.0, mdot=0.0,
     vrot=0.0, vcrt=0.0, vinf=0.0;
+  double xh=0.0, xhe=0.0, xc=0.0, xn=0.0, xo=0.0, xz=0.0, xd=0.0;
   while ((rval = fgets(line,512,wf))  != 0) {
-    sscanf(line, "   %lE   %lE %lE %lE %lE %lE %lE %lE",
-            &time, &mass, &lumi, &teff, &mdot, &vrot, &vcrt, &vinf);
+    sscanf(line, "   %lE   %lE %lE %lE %lE %lE %lE %lE %lE %lE %lE %lE %lE %lE %lE",
+            &time, &mass, &lumi, &teff, &mdot, &vrot, &vcrt, &vinf,
+            &xh, &xhe, &xc, &xn, &xo, &xz, &xd);
     //cout.precision(16);
 #ifdef TESTING
     cout <<time <<"  "<<mass  <<"  "<< lumi<<"  "<< teff <<"  ";
@@ -943,6 +980,13 @@ int stellar_wind_evolution::read_evolution_file(
     data->vrot_evo.push_back(vrot);
     data->vcrt_evo.push_back(vcrt);
     data->vinf_evo.push_back(vinf);
+    data->X_H_evo.push_back(xh);
+    data->X_He_evo.push_back(xhe);
+    data->X_C_evo.push_back(xc);
+    data->X_N_evo.push_back(xn);
+    data->X_O_evo.push_back(xo);
+    data->X_Z_evo.push_back(xz);
+    data->X_D_evo.push_back(xd);
   }
   fclose(wf);
 
