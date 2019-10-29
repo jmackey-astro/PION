@@ -877,43 +877,16 @@ int stellar_wind_evolution::add_source(
   temp->tfinish= 2.0*sim_finish;    // so it keeps going to end of sim.
   temp->update_freq = 1.0e99;             // so it never updates.
   temp->t_next_update = 1.0e99;           // so it never updates.
-    
-
-  temp->i_XH  = -1;
-  temp->i_XHe = -1;
-  temp->i_XC  = -1;
-  temp->i_XN  = -1;
-  temp->i_XO  = -1;
-  temp->i_XZ  = -1;
-  temp->i_XD  = -1;
 
   //
   // Set source to be active
   //
   temp->is_active = true;
 
-  // Check for elements if using microphysics
-  if (MP) {
-    for (int v=0; v<ntracer;v++) {
-      if      (tracers[v] == "X_H")  temp->i_XH  = v;
-      else if (tracers[v] == "X_He") temp->i_XHe = v;
-      else if (tracers[v] == "X_C")  temp->i_XC = v;
-      else if (tracers[v] == "X_N")  temp->i_XN = v;
-      else if (tracers[v] == "X_O")  temp->i_XO = v;
-      else if (tracers[v] == "X_Z")  temp->i_XZ = v;
-      else if (tracers[v] == "X_D")  temp->i_XD = v;
-      else {}
-    }
-  }
+  // find indices of elements and dust in tracers list.
+  set_element_indices(temp);
 
-    
-    
-
-
-
-  //
   // Now add source using constant wind version.
-  //
   stellar_wind::add_source(pos,rad,type,mdot,vinf,vrot,Twnd,Rstar,Bstar,trv);
   temp->ws = wlist.back();
   wdata_evol.push_back(temp);
@@ -927,10 +900,43 @@ int stellar_wind_evolution::add_source(
 // ##################################################################
 
 
+
+void stellar_wind_evolution::set_element_indices(
+      struct evolving_wind_data *ewd
+      )
+{
+  ewd->i_XH  = -1;
+  ewd->i_XHe = -1;
+  ewd->i_XC  = -1;
+  ewd->i_XN  = -1;
+  ewd->i_XO  = -1;
+  ewd->i_XZ  = -1;
+  ewd->i_XD  = -1;
+
+  // Check for elements if using microphysics
+  if (MP) {
+    for (int v=0; v<ntracer;v++) {
+      if      (tracers[v] == "X_H")  ewd->i_XH  = v;
+      else if (tracers[v] == "X_He") ewd->i_XHe = v;
+      else if (tracers[v] == "X_C")  ewd->i_XC = v;
+      else if (tracers[v] == "X_N")  ewd->i_XN = v;
+      else if (tracers[v] == "X_O")  ewd->i_XO = v;
+      else if (tracers[v] == "X_Z")  ewd->i_XZ = v;
+      else if (tracers[v] == "X_D")  ewd->i_XD = v;
+    }
+  }
+  return;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
 int stellar_wind_evolution::read_evolution_file(
-    const string infile,      ///< file name to read data from.
-    struct evolving_wind_data *data   ///< where to put the data
-    )
+      const string infile,      ///< file name to read data from.
+      struct evolving_wind_data *data   ///< where to put the data
+      )
 {
 
   //
@@ -1108,6 +1114,7 @@ int stellar_wind_evolution::add_evolving_source(
   }
 
   // set tracer values for elements
+  set_element_indices(temp);
   if (temp->i_XH>=0)  trv[temp->i_XH] = xh;
   if (temp->i_XHe>=0) trv[temp->i_XHe]= xhe;
   if (temp->i_XC>=0)  trv[temp->i_XC] = xc;

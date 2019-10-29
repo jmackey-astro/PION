@@ -449,6 +449,11 @@ class stellar_wind_evolution : virtual public stellar_wind {
     struct evolving_wind_data *   ///< where to put the data
     );
 
+  /// Look through list of tracers and find elements and map them to 
+  /// tracer indices.
+  void set_element_indices(
+      struct evolving_wind_data * ///< pointer to evolving wind data
+      );
 
   ///
   /// If it is time to update the wind properties then this function does it, 

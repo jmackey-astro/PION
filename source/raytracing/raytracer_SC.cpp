@@ -820,7 +820,7 @@ int raytracer_USC_infinity::cell_cols_1d(
     //
     // Cell is source cell (can happen for 1D spherical grids)
     //
-    cout <<"source cell!source cell!source cell!source cell!\n";
+    //cout <<"source cell!source cell!source cell!source cell!\n";
     for (unsigned short int iT=0; iT<src->s->NTau; iT++) {
       Nc[iT] = 0.0;
     }
