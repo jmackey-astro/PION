@@ -51,12 +51,14 @@ microphysics_base::microphysics_base(
       n_el++;
     }
   }
-  //for (int v=0;v<nels;v++}
-  for (auto elem : el_map) {
-    cout << "Elements Map: " << elem.first << " " << elem.second << "\n";
+
+  //for (auto elem : el_map) { // c++11 only (not working with intel compiler 2018r4)
+  for (std::map<std::string,int>::iterator it=el_map.begin(); it!=el_map.end(); ++it) {
+    cout << "Elements Map: " << it->first << " " << it->second << "\n";
   }
-  for (auto elem : tr_map) {
-    cout << "Tracers Map: " << elem.first << " " << elem.second << "\n";
+  //for (auto elem : tr_map) { // c++11 only (not working with intel compiler 2018r4)
+  for (std::map<std::string,int>::iterator it=tr_map.begin(); it!=tr_map.end(); ++it) {
+    cout << "Tracers Map: " << it->first << " " << it->second << "\n";
   }
   
   return;
