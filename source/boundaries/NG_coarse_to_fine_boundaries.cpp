@@ -563,7 +563,7 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
 
   // scale fine conserved vec by adding the difference between
   // conserved quantities on the fine and coarse grids.
-  for (int v=0;v<par.nvar;v++) cU[v] = 0.25*(cU[v] - Utot[v])/c_vol;
+  for (int v=0;v<par.nvar;v++) cU[v] = 0.125*(cU[v] - Utot[v])/c_vol;
   for (int i=0;i<8;i++) {
     for (int v=0;v<par.nvar;v++) fU[i][v] += cU[v];
   }
