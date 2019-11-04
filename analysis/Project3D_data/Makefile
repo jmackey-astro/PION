@@ -68,10 +68,11 @@ OPTION += -D$(IOMODE)
 OPTION += -DSILO
 OPTION += -DFITS
 
-#MAKE_UNAME=JUROPA
-MAKE_UNAME=standard
+#MAKE_UNAME=standard
+MAKE_UNAME=ubuntu18
 #MAKE_UNAME=OSX
 #MAKE_UNAME=SUPERMUC
+#MAKE_UNAME=JUROPA
 
 # All machines and options need readline and maths
 LDFLAGS = -lreadline
@@ -108,40 +109,40 @@ ifeq ($(MAKE_UNAME), standard)
   LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
 endif
 
-######################## -- JUROPA -- ################################
-# Options for the Juelich Supercomputer JUROPA.  Intel Compilers!
 ######################################################################
-ifeq ($(MAKE_UNAME), JUROPA)
-  # intel math-header
-  OPTION += -DINTEL
-
+# Options for an Ubuntu 18 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu18)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
   ifeq ($(IOMODE), USE_FILE_COMMS)
-    CXX = icc
+    CXX = g++
   endif
   ifeq ($(IOMODE), USE_MPI)
-    CXX = mpic++
+    CXX = mpicxx
   endif
-  CXXFLAGS = -O3
-  #CXXFLAGS = -O0 -Wall -g -wd981 -wd383
-  # -wd981 disables a warning about order of evaluation of operands:
-  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
-  #  and also http://software.intel.com/en-us/articles/cdiag981/
-  # -wd383 also diasables a warning about passing a temporary object to a function.
-  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-  #CXXFLAGS += -fp-stack-check -fstack-security-check
 
-  MYLIB = ../../extra_libraries
+  MYLIB = $(CODEDIR)/extra_libraries
   INC  = -I${MYLIB}/include
-  LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
-  LDFLAGS += -lreadline
-
+  INC += -I${srcdir}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
-##################### -- JUROPA -- ###################################
-
-
+################### --- UBUNTU 18 ---######################
 
 ###########################################
-# Specific Options for OSX 
+# Options for OSX 
 ###########################################
 ifeq ($(MAKE_UNAME), OSX)
   ifeq ($(IOMODE), USE_FILE_COMMS)
@@ -214,7 +215,7 @@ CXXFLAGS += $(OPTION)
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
   hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
   microphysics_base.o mp_only_cooling.o \
-  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o
+  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
 
 OBJ_GEN = reporting.o mem_manage.o command_line_interface.o \
   timer.o interpolate.o constants.o sim_params.o \
@@ -596,6 +597,8 @@ MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
 MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
   microphysics_base.h
+
+photo_xsections.o: photo_xsections.cpp photo_xsections.h ${GLOBAL}
 
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
