@@ -42,17 +42,45 @@
 //
 // Header files with a description of contents used
 //
-#include <cvode/cvode.h>             // prototypes for CVODE fcts. and consts.
-#include <nvector/nvector_serial.h>  // serial N_Vector types, fcts., and macros
+
+#if defined CVODE2
+
+#include <cvode/cvode.h>             // prototypes for CVODE
+#include <nvector/nvector_serial.h>  // serial N_Vector types
+
+#define CVMatrix DlsMat
 
 #ifdef LAPACK
 // LAPACK SOLVER
-#include <cvode/cvode_lapack.h>      /* prototype for CVLapackDense */
+#include <cvode/cvode_lapack.h> 
 #else
 // NON-LAPACK SOLVER
 #include <cvode/cvode_dense.h>       // prototype for CVDense
-#include <sundials/sundials_dense.h> // definitions DlsMat DENSE_ELEM
+#include <sundials/sundials_dense.h> // definitions CVMatrix DENSE_ELEM
 #endif
+
+#elif defined CVODE3
+#include <cvode/cvode.h>             // prototypes for CVODE
+#include <nvector/nvector_serial.h>  // serial N_Vector types
+
+#include <sunmatrix/sunmatrix_dense.h> 
+#include <cvode/cvode_direct.h>
+#include <sundials/sundials_types.h>
+
+#define CVMatrix SUNMatrix
+
+#ifdef LAPACK
+// LAPACK SOLVER
+#include <sunlinsol/sunlinsol_lapackdense.h>
+#else
+// NON-LAPACK SOLVER
+#include <sunlinsol/sunlinsol_dense.h> 
+#endif
+
+#else
+#error "only know cvode 2 and 3 so far"
+#endif
+
 
 
 //
@@ -67,11 +95,13 @@ int Ydot_for_cvode(
           );
 
 int Jacobian_for_cvode(
+#if defined CVODE2
           long int, ///< N (not sure what this is for! Must be internal)
+#endif
           double,   ///< time, t
           N_Vector, ///< y
           N_Vector, ///< ydot
-          DlsMat,   ///< Jacobian matrix
+          CVMatrix,   ///< Jacobian matrix
           void *,   ///< extra user-data vector, P, for evaluating ydot(y,t,p)
           N_Vector, ///< temp vector, must be for internal use
           N_Vector, ///< temp vector, must be for internal use
@@ -95,7 +125,7 @@ class cvode_solver {
           double, ///< time, t
           N_Vector, ///< y
           N_Vector, ///< ydot
-          DlsMat,   ///< Jacobian matrix
+          CVMatrix,   ///< Jacobian matrix
           void *,   ///< extra user-data vector, P, for evaluating ydot(y,t,p)
           N_Vector, ///< temp vector, must be for internal use
           N_Vector, ///< temp vector, must be for internal use
@@ -116,7 +146,7 @@ class cvode_solver {
   int setup_cvode_solver_without_Jacobian();
 
   ///
-  /// This takes a step dt, returning a non-zero error code if the error fails.
+  /// Takes a step dt, returning a non-zero error code if fails.
   ///
   int integrate_cvode_step(
               N_Vector, ///< input vector (may be overwritten during integration!)
@@ -128,6 +158,12 @@ class cvode_solver {
 
   private:
   N_Vector abstol; ///< vector of absolute error tolerances for y-elements.
+#ifndef CVODE2
+  N_Vector vsetup;
+  CVMatrix msetup;
+  SUNLinearSolver LS;
+#endif
+
   void *cvode_mem; ///< pointer to memory allocation for the solver.
   int n_eq; ///< number of equations to solve.
   int n_xd; ///< number of elements in user-data array.
@@ -141,41 +177,44 @@ class cvode_solver {
   /// calculate dy/dt for the vector of y-values (NOT IMPLEMENTED HERE).
   ///
   virtual int ydot(
-          double,         ///< current time (probably not needed for rate equations)
-          const N_Vector, ///< current Y-value
-          N_Vector,       ///< vector for Y-dot values
-          const double *  ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          )=0;
+      double,         ///< current time
+      const N_Vector, ///< current Y-value
+      N_Vector,       ///< vector for Y-dot values
+      const double *  ///< extra user-data vector, P
+      )=0;
 
   ///
   /// Calculate the Jacobian matrix d(dy_i/dt)/dy_j for a vector of y-values.
   /// (NOT IMPLEMENTED HERE).
   ///
   virtual int Jacobian(
-          int,            ///< N (not sure what this is for! Must be internal)
-          double,         ///< time, t
-          const N_Vector, ///< current Y-value
-          const N_Vector, ///< vector for Y-dot values
-          const double *, ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-          DlsMat          ///< Jacobian matrix
-          )=0;
+#if defined CVODE2
+      int,            ///< N (not sure what this is for!)
+#endif
+      double,         ///< time, t
+      const N_Vector, ///< current Y-value
+      const N_Vector, ///< vector for Y-dot values
+      const double *, ///< extra user-data vector, P
+      CVMatrix          ///< Jacobian matrix
+      )=0;
 
   ///
   /// Get the number of extra parameters and the number of equations.
   /// (NOT IMPLEMENTED HERE).
   ///
-  virtual void get_problem_size(int *, ///< number of equations
-                        int *  ///< number of parameters in user_data vector.
-                        )=0;
+  virtual void get_problem_size(
+      int *, ///< number of equations
+      int *  ///< number of parameters in user_data vector.
+      )=0;
 
   protected:
   ///
   /// set the relative and absolute error tolerances
   ///
   virtual void get_error_tolerances(
-          double *, ///< relative error tolerance (single value)
-          double []  ///< absolute error tolerance (array)
-          )=0;
+      double *, ///< relative error tolerance (single value)
+      double []  ///< absolute error tolerance (array)
+      )=0;
 
   //---------------------------------------------------------------------------
   //------------ END OF STUFF TO BE DEFINED IN DERVIED CLASS ------------------

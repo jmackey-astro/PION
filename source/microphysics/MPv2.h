@@ -228,7 +228,7 @@ extern class mp_rates_ExpH_ImpMetals MPR;
 #include <cvodes/cvodes.h>           // prototypes for CVODE fcts. and consts.
 #include <nvector/nvector_serial.h>  // serial N_Vector types, fcts., and macros
 #include <cvodes/cvodes_dense.h>     // prototype for CVDense
-#include <sundials/sundials_dense.h> // definitions DlsMat DENSE_ELEM
+#include <sundials/sundials_dense.h> // definitions CVMatrix DENSE_ELEM
 #include <sundials/sundials_types.h> // definition of type realtype
 #include <cstdio>
 #include <cmath>

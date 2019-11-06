@@ -56,7 +56,13 @@ cvode_solver::cvode_solver()
 
 cvode_solver::~cvode_solver()
 {
+#if defined CVODE2
   N_VDestroy_Serial(abstol);
+#elif defined CVODE3
+  N_VDestroy(abstol);
+#else 
+#error "CV versions"
+#endif
   CVodeFree(&cvode_mem);
 }
   
@@ -73,7 +79,13 @@ int cvode_solver::setup_cvode_solver()
     cout <<">>>---- Warning! Setting up CVODES solver twice! will delete";
     cout <<" and re-init. ----<<<\n";
     if (abstol) {
+#if defined CVODE2
       N_VDestroy_Serial(abstol);
+#elif defined CVODE3
+      N_VDestroy(abstol);
+#else 
+#error "CV versions"
+#endif
     }
     if (cvode_mem) {
       CVodeFree(&cvode_mem);
@@ -88,7 +100,13 @@ int cvode_solver::setup_cvode_solver()
   //
   // Set the Jacobian routine to Jac (user-supplied)
   //
+#if defined CVODE2
   err = CVDlsSetDenseJacFn(cvode_mem, Jacobian_for_cvode);
+#elif defined CVODE3
+  err = CVDlsSetJacFn(cvode_mem, Jacobian_for_cvode);
+#else 
+#error "CV versions"
+#endif
   if (err != CVDLS_SUCCESS) {
     cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
     return 6;
@@ -179,9 +197,10 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
     return 4;
   }
 
-  //
+
+#if defined CVODE2
+
   // Call CVDense to specify the CVDENSE dense linear solver
-  //
 #ifdef LAPACK
   err = CVLapackDense(cvode_mem, n_eq);
 #else
@@ -191,6 +210,21 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
     cerr <<"setup_cvode_solver() CVDense(): err="<<err<<"\n";
     return 5;
   }
+
+#elif defined CVODE3
+
+  msetup = SUNDenseMatrix(n_eq, n_eq);
+  vsetup = N_VNew_Serial(n_eq);
+  LS = SUNDenseLinearSolver(vsetup, msetup);
+  err = CVDlsSetLinearSolver(cvode_mem, LS, msetup);
+  if (err != CV_SUCCESS) {
+    cerr <<"setup_cvode_solver() CVDlsSetLinearSolver(): err="<<err<<"\n";
+    return 5;
+  }
+
+#else 
+#error "CV versions"
+#endif
 
   // Should be all done now, so return.
   have_setup_cvodes=true;
@@ -377,11 +411,13 @@ int Ydot_for_cvode(
 
 
 int Jacobian_for_cvode(
-          long int N,    ///< N (not sure what this is for! Must be internal)
+#if defined CVODE2
+          long int N,    ///< N (not sure what this is for!)
+#endif
           double t,      ///< time, t
           N_Vector y,    ///< y
           N_Vector yd,   ///< ydot
-          DlsMat J,      ///< Jacobian matrix
+          CVMatrix J,      ///< Jacobian matrix
           void *data,    ///< extra user-data pointer to the solver class
           N_Vector tmp1, ///< temp vector, must be for internal use
           N_Vector tmp2, ///< temp vector, must be for internal use
@@ -390,11 +426,15 @@ int Jacobian_for_cvode(
 {
   //
   // Now call class member function to get the Jacobian.
-  // This is stored in J as a 'DlsMat' stuct, so we don't
+  // This is stored in J as a 'CVMatrix' stuct, so we don't
   // to post-process anything afterwards.
   //
   class cvode_solver *S = static_cast<cvode_solver *>(data);
+#if defined CVODE2
   return S->Jacobian(N, t, y, yd, 0, J);
+#else
+  return S->Jacobian(t, y, yd, 0, J);
+#endif
 }
 
 

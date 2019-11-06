@@ -400,12 +400,14 @@ class MPv10
   /// Calculate the Jacobian matrix d(dy_i/dt)/dy_j for a vector of y-values.
   ///
   virtual int Jacobian(
-      int,            ///< N (not sure what this is for! Must be internal)
+#if defined CVODE2
+      int,            ///< N (not sure what this is for!)
+#endif
       double,         ///< time, t
       const N_Vector, ///< current Y-value
       const N_Vector, ///< vector for Y-dot values
       const double *, ///< extra user-data vector, P, for evaluating ydot(y,t,p)
-      DlsMat          ///< Jacobian matrix
+      CVMatrix          ///< Jacobian matrix
       ) {cout <<"Jacobian not implemented in MPv10!\n"; return 1;}
 
   ///

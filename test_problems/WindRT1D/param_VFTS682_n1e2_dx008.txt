@@ -44,6 +44,16 @@ Xmax   25.329888e18
 Ymax   0.000000e18
 Zmax   0.000000e18
 
+grid_nlevels 1
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 
 OutputPath ./
 OutputFileType text
@@ -117,6 +127,7 @@ RT_update___0    2  # 1=C2Ray update, 2=New update.
 RT_effect___0    3  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__0    10  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
 RT_Tau_var__0    0  # opacity variably y_i (this is its index in state vector)
+RT_Nbins____0    1
 RT_EVO_FILE_0    NOFILE
 
 # UV heating associated with emission from central star.
@@ -132,6 +143,7 @@ RT_update___1    2  # 1=C2Ray update, 2=New update.
 RT_effect___1    1  # 1=UV heating, 2=mono-photoionisation, 3=multi-photoion
 RT_Tau_src__1    10  # 1=total column, 2=nH*(1-y_i), 3=nH*(y_i)
 RT_Tau_var__1    0  # opacity variably y_i (this is its index in state vector)
+RT_Nbins____1    1
 RT_EVO_FILE_1    NOFILE
 
 
@@ -147,8 +159,10 @@ WIND_0_radius 0.0987e18  # 0.016pc # 2 cells
 WIND_0_type   0
 WIND_0_mdot   4.0e-5
 WIND_0_vinf   2600.0
+WIND_0_vrot   0.0
 WIND_0_temp   52200.0
-WIND_0_Rstr   6.96e14  # 10000 R_sun
+WIND_0_Rstr   2.5e12  # ~30 R_sun
+WIND_0_Bsrf   0.0
 WIND_0_TR0    1.0
 WIND_0_TR1    1.0
 WIND_0_TR2    0.0
@@ -159,7 +173,9 @@ WIND_0_t_offset   0.0000    # in (unscaled) years
 WIND_0_t_scalefac 1.0  # Accelerates evolution by this factor (for MS phase).
 WIND_0_updatefreq 1.0   # in (unscaled) years
 WIND_0_enhance_mdot 0.0
+WIND_0_xi     0.0
 
+N_JET 0
 
 refvec0 1.0e-24  # ~1 particles /cc
 refvec1 1.0e-13  # T ~ 10^3K

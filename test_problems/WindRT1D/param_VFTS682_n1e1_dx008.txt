@@ -64,6 +64,16 @@ Xmax   25.329888e18
 Ymax   0.000000e18
 Zmax   0.000000e18
 
+grid_nlevels 1
+grid_aspect_ratio_XX 1
+grid_aspect_ratio_YY 1
+grid_aspect_ratio_ZZ 1
+NG_centre_XX 0.0e18
+NG_centre_YY 0.0e18
+NG_centre_ZZ 0.0e18
+NG_refine_XX 1
+NG_refine_YY 1
+NG_refine_ZZ 1
 
 # Data Output Path
 OutputPath ./

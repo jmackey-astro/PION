@@ -61,12 +61,12 @@ elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
   MAKE_UNAME=debian9
 elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
   echo "Detected Debian 10 (buster), using system libs for SILO, FITS, GSL, SUNDIALS"
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE2"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE3"
   export PION_OPTIMISE=HIGH
   #export PION_OPTIMISE=LOW
+  NCORES=$nc
   #NCORES=1
   export CXX=g++
-  NCORES=$nc
   MAKE_UNAME=debian10
 else
   echo "Failed to find a known version of Linux: checking for other OS types."

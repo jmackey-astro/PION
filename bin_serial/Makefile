@@ -186,6 +186,28 @@ endif
 ######################################################################
 
 ######################################################################
+# Options for a debian 10 workstation, using system libraries
+######################################################################
+ifeq ($(MAKE_UNAME), debian10)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3
+    #CXXFLAGS = -O0 -Wall -g
+  else
+    CXXFLAGS = -O0 -Wall -g
+  endif
+  INC = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS +=  -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+######################################################################
+
+######################################################################
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu18)
