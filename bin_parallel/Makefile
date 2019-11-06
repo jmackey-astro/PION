@@ -164,12 +164,20 @@ ifeq ($(MAKE_UNAME), debian9)
   INC  = -I/usr/include
   INC += -I${SRCDIR}
   LDFLAGS += -lm
-  LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  LDFLAGS += -lgsl
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -L/usr/lib
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+
+  # For sundials 3/4/5 if needed
+  #MYLIB = $(CURDIR)/../extra_libraries
+  #INC  += -I${MYLIB}/include
+  #LDFLAGS += -L${MYLIB}/lib
+  #LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib
+  #LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
 endif
 ################### ---  DEBIAN 9 (STRETCH)  ---######################
 

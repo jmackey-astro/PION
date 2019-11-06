@@ -59,7 +59,7 @@
 #include <sundials/sundials_dense.h> // definitions CVMatrix DENSE_ELEM
 #endif
 
-#elif defined CVODE3
+#elif defined CVODE3 || defined CVODE4 || defined CVODE5
 #include <cvode/cvode.h>             // prototypes for CVODE
 #include <nvector/nvector_serial.h>  // serial N_Vector types
 
@@ -78,7 +78,7 @@
 #endif
 
 #else
-#error "only know cvode 2 and 3 so far"
+#error "must define a CVODE version"
 #endif
 
 

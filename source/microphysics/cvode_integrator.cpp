@@ -58,10 +58,8 @@ cvode_solver::~cvode_solver()
 {
 #if defined CVODE2
   N_VDestroy_Serial(abstol);
-#elif defined CVODE3
+#else
   N_VDestroy(abstol);
-#else 
-#error "CV versions"
 #endif
   CVodeFree(&cvode_mem);
 }
@@ -81,10 +79,8 @@ int cvode_solver::setup_cvode_solver()
     if (abstol) {
 #if defined CVODE2
       N_VDestroy_Serial(abstol);
-#elif defined CVODE3
+#else
       N_VDestroy(abstol);
-#else 
-#error "CV versions"
 #endif
     }
     if (cvode_mem) {
@@ -102,15 +98,23 @@ int cvode_solver::setup_cvode_solver()
   //
 #if defined CVODE2
   err = CVDlsSetDenseJacFn(cvode_mem, Jacobian_for_cvode);
-#elif defined CVODE3
-  err = CVDlsSetJacFn(cvode_mem, Jacobian_for_cvode);
-#else 
-#error "CV versions"
-#endif
   if (err != CVDLS_SUCCESS) {
     cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
     return 6;
   }
+#elif defined CVODE3
+  err = CVDlsSetJacFn(cvode_mem, Jacobian_for_cvode);
+  if (err != CVDLS_SUCCESS) {
+    cerr <<"setup_cvode_solver() CVDlsSetDenseJacFn: err="<<err<<"\n";
+    return 6;
+  }
+#else
+  err = CVodeSetJacFn(cvode_mem, Jacobian_for_cvode);
+  if (err != CV_SUCCESS) {
+    cerr <<"setup_cvode_solver() CVDlsSetJacFn: err="<<err<<"\n";
+    return 6;
+  }
+#endif
   // All done now, so return.
   have_setup_cvodes=true;
   return 0;
@@ -161,7 +165,11 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   // Call CVodeCreate to create the solver memory and specify the 
   // Backward Differentiation Formula and the use of a Newton iteration.
   //
+#if defined(CVODE2) || defined(CVODE3)
   cvode_mem = CVodeCreate(CV_BDF, CV_NEWTON);
+#else
+  cvode_mem = CVodeCreate(CV_BDF);
+#endif
   if (!cvode_mem) {
     cerr <<"setup_cvode_solver() error: cvode_mem="<<cvode_mem<<"\n";
     return 2;
@@ -198,7 +206,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
   }
 
 
-#if defined CVODE2
+#if defined(CVODE2)
 
   // Call CVDense to specify the CVDENSE dense linear solver
 #ifdef LAPACK
@@ -211,7 +219,7 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
     return 5;
   }
 
-#elif defined CVODE3
+#elif defined(CVODE3)
 
   msetup = SUNDenseMatrix(n_eq, n_eq);
   vsetup = N_VNew_Serial(n_eq);
@@ -222,8 +230,18 @@ int cvode_solver::setup_cvode_solver_without_Jacobian()
     return 5;
   }
 
-#else 
-#error "CV versions"
+#else
+
+  msetup = SUNDenseMatrix(n_eq, n_eq);
+  vsetup = N_VNew_Serial(n_eq);
+  LS = SUNLinSol_Dense(vsetup, msetup);
+  err = CVodeSetLinearSolver(cvode_mem, LS, msetup);
+  if (err != CV_SUCCESS) {
+    cerr <<"setup_cvode_solver() CVDlsSetLinearSolver(): err="<<err<<"\n";
+    return 5;
+  }
+
+
 #endif
 
   // Should be all done now, so return.
