@@ -205,13 +205,13 @@ ifeq ($(MAKE_UNAME), debian10)
   endif
   INC = -I/usr/include
   INC += -I${SRCDIR}
-  LDFLAGS +=  -lm
-  LDFLAGS += -L/usr/lib
+  LDFLAGS += -lm
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  LDFLAGS += -lgsl
-  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 endif
 ######################################################################
 

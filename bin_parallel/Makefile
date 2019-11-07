@@ -100,7 +100,6 @@ GLOBAL = functionality_flags.h testing_flags.h reporting.h \
 ######################################################################
 # Options for a "standard" workstation.
 # Need libsilo-dev libcfitsio-dev libsundials-serial-dev installed
-# on debian/ubuntu systems.
 ######################################################################
 ifeq ($(MAKE_UNAME), standard)
   ifeq ($(PION_OPTIMISE), HIGH)
@@ -177,6 +176,29 @@ ifeq ($(MAKE_UNAME), debian9)
   #LDFLAGS += -L${MYLIB}/lib
   #LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib
   #LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+
+endif
+################### ---  DEBIAN 9 (STRETCH)  ---######################
+
+######################################################################
+# Options for a debian 10 (buster) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian9)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  INC  = -I/usr/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
 
 endif
 ################### ---  DEBIAN 9 (STRETCH)  ---######################

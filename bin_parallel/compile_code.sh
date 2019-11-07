@@ -74,12 +74,10 @@ elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
   MAKE_UNAME=debian10
   export CXX=mpicxx
   export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE3"
-  echo "SET CVODE VERSION!!!!"
   export PION_OPTIMISE=HIGH
   #export PION_OPTIMISE=LOW
   #NCORES=1
   NCORES=$nc
-  exit
 else
   echo "Failed to find a known version of Linux: checking for other OS types."
   MAKE_UNAME=standard

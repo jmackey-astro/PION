@@ -21,6 +21,10 @@ export FC=gfortran
 SHARED=YES
 HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
 
+COMPILE_SILO=yes
+COMPILE_SUNDIALS=yes
+COMPILE_FITS=yes
+
 export WGET='wget'
 
 #################################
@@ -44,6 +48,10 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   export FC=gfortran
   SHARED=YES
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
+  COMPILE_SILO=yes
+  COMPILE_SUNDIALS=no
+  COMPILE_FITS=no
+
 
 elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
   echo "Detected Debian 9 (stretch), use system libs for SILO, FITS, GSL, SUNDIALS!"
@@ -53,14 +61,11 @@ elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
   exit
 
 elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
-  echo "Detected Debian 10 (buster), WHAT TO DO?"
-  MAKE_UNAME=debian10
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
-  export PION_OPTIMISE=HIGH
-  #export PION_OPTIMISE=LOW
-  #NCORES=1
-  export CXX=g++
-  NCORES=$nc
+  echo "Detected Debian 10 (buster), use system libs for SILO, FITS, GSL, SUNDIALS!"
+  echo "No need to compile extra libraries"
+  echo "run  apt install libcfitsio-bin libcfitsio-dev libsilo-dev libsilo-bin python-silo libsundials-dev openmpi-bin openmpi-common curl libhdf5-serial-dev git libgsl-dev"
+  echo "Then cd to serial/parallel binary directory and run  bash compile_code.sh"
+  exit
 
 else
   echo "Failed to find a known version of Linux: checking for other OS types."
@@ -110,10 +115,6 @@ export MAKE_UNAME
 export NCORES
 echo "COMPILING WITH MACHINE: ${MAKE_UNAME}. Compilers: CC=$CC FC=$FC CXX=$CXX"
 CURDIR=`pwd`
-
-COMPILE_SILO=yes
-COMPILE_SUNDIALS=yes
-COMPILE_FITS=yes
 
 ##################################
 ##########     SILO     ##########
