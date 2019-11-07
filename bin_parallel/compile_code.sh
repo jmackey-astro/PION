@@ -120,7 +120,7 @@ esac
 #################################
 DDD=`uname -a | grep "Darwin"`
 if [ ! -z "$DDD" ]; then
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
   export PION_OPTIMISE=HIGH
   export CXX=mpicxx
   export CC=mpicc
