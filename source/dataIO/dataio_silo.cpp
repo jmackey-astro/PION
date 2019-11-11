@@ -1888,8 +1888,15 @@ int dataio_silo::read_header_param(class pm_base *p)
   }
 
   if (err) {
-    cout <<"\t"<<p->name<<":  ERROR READING VAR!\n";
+    if (!p->critical) {
+      p->set_to_default();
+      err = 0;
+    }
+    else {
+      cout <<"\t"<<p->name<<":  ERROR READING VAR!\n";
+    }
   }
+
   // else {
   //   cout <<"\t"<<p->name<<":  "; p->show_val(); cout <<"\n";
   // }

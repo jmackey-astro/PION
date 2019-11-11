@@ -42,45 +42,30 @@
 #include "constants.h"
 #include "sim_params.h"
 
-#include "MCMD_control.h"
-#include "setup_fixed_grid_MPI.h"
-
-#include "dataIO/dataio_silo_utility.h"
+#include "decomposition/MCMD_control.h"
+#include "grid/setup_fixed_grid_MPI.h"
 #include "grid/uniform_grid.h"
+#include "grid/setup_grid_NG_MPI.h"
+
+#include "dataIO/dataio_base.h"
+#include "dataIO/dataio_silo.h"
+#include "dataIO/dataio_silo_utility.h"
 #include "dataIO/dataio_fits.h"
 
 #include "microphysics/microphysics_base.h"
-
-#ifndef EXCLUDE_MPV1
-#include "microphysics/microphysics.h"
-#endif 
-
-#ifndef EXCLUDE_HD_MODULE
-#include "microphysics/microphysics_lowZ.h"
-#endif 
-
 #include "microphysics/mp_only_cooling.h"
-
-#ifndef EXCLUDE_MPV2
-#ifdef MP_V2_AIFA
-#include "microphysics/mp_v2_aifa.h"
-#endif
-#endif 
-
 #ifndef EXCLUDE_MPV3
-#include "microphysics/mp_explicit_H.h"
+#include "microphysics/MPv3.h"
 #endif
-
 #ifndef EXCLUDE_MPV4
-#include "microphysics/mp_implicit_H.h"
+#include "microphysics/MPv4.h"
 #endif 
+#include "microphysics/MPv5.h"
+#include "microphysics/MPv6.h"
+#include "microphysics/MPv7.h"
+
 
 #include "raytracing/raytracer_SC.h"
-
-
-#include "microphysics/mpv5_molecular.h"
-#include "microphysics/mpv6_PureH.h"
-#include "microphysics/mpv7_TwoTempIso.h"
 
 #include <iostream>
 #include <sstream>
@@ -98,7 +83,10 @@ using namespace std;
 /// Reset the radiation sources in the header to correspond to projected
 /// quantities and not the sources used for the simulation.
 ///
-void reset_radiation_sources(struct rad_sources *);
+void reset_radiation_sources(
+      class SimParams &, ///< pointer to simulation parameters
+      struct rad_sources *
+      );
 
 
 
@@ -111,22 +99,20 @@ void reset_radiation_sources(struct rad_sources *);
 /// Resize the domain, so we only read in and write out part of it.
 ///
 void reset_domain(
-  const double *xmin,
-  const double *xmax,
-  const int ndim,
-  class MCMDcontrol &MCMD     ///< address of MCMD controller class.
-  )
+      const double *xmin,
+      const double *xmax,
+      const int ndim,
+      class SimParams &SimPM ///< simulation parameters
+      )
 {
-
   rep.printVec("Old Xmin",SimPM.Xmin, ndim);
   rep.printVec("Old Xmax",SimPM.Xmax, ndim);
-
   SimPM.Ncell=1;
 
   for (int v=0; v<ndim; v++) {
     SimPM.Xmin[v]  = xmin[v];
     SimPM.Xmax[v]  = xmax[v];
-    SimPM.NG[v]    = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
+    SimPM.NG[v] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
     SimPM.Ncell *= SimPM.NG[v];
     SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
   }
@@ -134,7 +120,7 @@ void reset_domain(
   rep.printVec("New Xmin",SimPM.Xmin, ndim);
   rep.printVec("New Xmax",SimPM.Xmax, ndim);
 
-  MCMD.decomposeDomain();
+  SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
   return;
 }
 
@@ -156,15 +142,15 @@ int main(int argc, char **argv)
   // Get nproc from command-line (number of fits files for each
   // snapshot)
   //
-  class MCMDcontrol MCMD;
   int myrank=-1, nproc=-1;
   COMM->get_rank_nproc(&myrank,&nproc);
-  MCMD.set_myrank(myrank);
-  MCMD.set_nproc(nproc);
+  class SimParams SimPM;
+  SimPM.levels.clear();
+  SimPM.levels.resize(1);
+  SimPM.levels[0].MCMD.set_myrank(myrank);
+  SimPM.levels[0].MCMD.set_nproc(nproc);
   if (nproc>1)
     rep.error("This is serial code",nproc);
-
-  //MP=0; RT=0; grid=0;
 
   //
   // Get input files and an output file.
@@ -181,7 +167,7 @@ int main(int argc, char **argv)
     cout <<"input file:  base filename of sequence of files including _0000 if parallel.\n";
     cout <<"output path: directory to write output files to.\n";
     cout <<"output file: filename for output FITS file(s).\n";
-    cout <<"[Nskip]:     Only convert every Nskip file.\n";
+    cout <<"[Nskip]:     skip files each iteration.\n";
     cout <<"xmin/xmax:   optional parameters to resize the domain.\n";
     rep.error("Bad number of args",argc);
   }
@@ -203,7 +189,7 @@ int main(int argc, char **argv)
   //
   // Only convert every Nskip file
   //
-  size_t Nskip = 1;
+  size_t Nskip = 0;
   if (argc>5) {
     Nskip = static_cast<size_t>(atoi(argv[5]));
   }
@@ -234,7 +220,7 @@ int main(int argc, char **argv)
   // Redirect output to a text file if you want to:
   //
   ostringstream redir; redir.str("");
-  redir<<op_path<<"/msg_"<<outfile<<"_rank"<<MCMD.get_myrank()<<"_";
+  redir<<op_path<<"/msg_"<<outfile<<"_rank"<<SimPM.levels[0].MCMD.get_myrank()<<"_";
   //rep.redirect(redir.str());
 
   //*******************************************************************
@@ -246,8 +232,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class and fits-writer class.
   //
-  class dataio_silo_utility dataio ("DOUBLE", &MCMD);
-  class DataIOFits writer;
+  class dataio_silo_utility dataio (SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
+  class DataIOFits writer (SimPM);
 
   //
   // Get list of files to read:
@@ -290,7 +276,7 @@ int main(int argc, char **argv)
   ostringstream temp; temp <<input_path<<"/"<<*ff;
   string first_file = temp.str();
   temp.str("");
-  err = dataio.ReadHeader(first_file);
+  err = dataio.ReadHeader(first_file, SimPM);
   if (err) rep.error("Didn't read header",err);
 
   //
@@ -316,7 +302,7 @@ int main(int argc, char **argv)
   //
   // Now reset domain.
   //
-  reset_domain(xmin,xmax,SimPM.ndim,MCMD);
+  reset_domain(xmin,xmax,SimPM.ndim,SimPM);
 
   //
   // write simulation xmin/xmax and radiation source position to a
@@ -361,26 +347,30 @@ int main(int argc, char **argv)
   // Now delete all radiation "sources" from SimPM.RS, to avoid allocating
   // memory for column densities in the cell-data.
   // *****************************************************
-  reset_radiation_sources(&(SimPM.RS));
+  reset_radiation_sources(SimPM, &(SimPM.RS));
 
   for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
-    cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", MCMD.LocalXmin="<<MCMD.LocalXmin[v]<<", xmin="<<xmin[v]<<"\n";
-    cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", MCMD.LocalXmax="<<MCMD.LocalXmax[v]<<", xmax="<<xmax[v]<<"\n";
+    cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", MCMD.LocalXmin="<<SimPM.levels[0].MCMD.LocalXmin[v]<<", xmin="<<xmin[v]<<"\n";
+    cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", MCMD.LocalXmax="<<SimPM.levels[0].MCMD.LocalXmax[v]<<", xmax="<<xmax[v]<<"\n";
   }
   cout.flush();
 
   //
   // get a setup_grid class, and use it to set up the grid!
   //
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid_pllel();
-  class GridBaseClass *grid = 0;
-  err  = MCMD.decomposeDomain();
+  class setup_grid_NG_MPI *SimSetup =0;
+  SimSetup = new setup_grid_NG_MPI();
+  SimPM.grid_nlevels = 1;
+  SimSetup->setup_NG_grid_levels(SimPM);
+  err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
   if (err) rep.error("main: failed to decompose domain!",err);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
-  SimSetup->setup_grid(&grid,&MCMD);
+  vector<class GridBaseClass *> G;
+  G.resize(1);
+  SimSetup->setup_grid(G, SimPM);
+  class GridBaseClass *grid = G[0];
   if (!grid) rep.error("Grid setup failed",grid);
 
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<endl;
@@ -390,7 +380,7 @@ int main(int argc, char **argv)
   //
   // Now setup microphysics and raytracing classes
   //
-  err += SimSetup->setup_microphysics();
+  err += SimSetup->setup_microphysics(SimPM);
   //err += setup_raytracing();
   if (err) rep.error("Setup of microphysics and raytracing",err);
 
@@ -408,7 +398,8 @@ int main(int argc, char **argv)
   // loop over all files:
   //*******************************************************************
 
-  for (ifile=0; ifile<nfiles; ifile += Nskip) {
+  for (ifile=0; ifile<nfiles; ifile++) {
+    ifile += Nskip;
     cout <<"------ Starting Next Loop: ifile="<<ifile<<", time so far=";
     cout <<clk.time_so_far("analyse_data")<<" ----\n";
     //cout <<"-------------------------------------------------------\n";
@@ -430,33 +421,35 @@ int main(int argc, char **argv)
     //
     // delete any current radiation sources
     //
-    reset_radiation_sources(&(SimPM.RS));
+    reset_radiation_sources(SimPM, &(SimPM.RS));
 
     //
     // Read header to get timestep info.
     //
-    err = dataio.ReadHeader(infile);
+    err = dataio.ReadHeader(infile, SimPM);
     if (err) rep.error("Didn't read header",err);
 
     // *****************************************************
     // Delete radiation sources again
     // *****************************************************
-    reset_radiation_sources(&(SimPM.RS));
+    reset_radiation_sources(SimPM, &(SimPM.RS));
     //cout.flush();
     //
     // Now reset domain.
     //
-    reset_domain(xmin,xmax,SimPM.ndim,MCMD);
+    reset_domain(xmin,xmax,SimPM.ndim,SimPM);
     //
     // Read data (this reader can read serial or parallel data.
     //
-    err = dataio.parallel_read_any_data(infile, grid);
+    SimPM.grid_nlevels = 1;
+    SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
+    err = dataio.ReadData(infile, G, SimPM);
     rep.errorTest("(main) Failed to read data",0,err);
     
 #ifdef TESTING
     for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
-      cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", MCMD.LocalXmin="<<MCMD.LocalXmin[v]<<", xmin="<<xmin[v]<<", grid->SIM_Xmin="<<grid->SIM_iXmin(static_cast<axes>(v))<<"\n";
-      cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", MCMD.LocalXmax="<<MCMD.LocalXmax[v]<<", xmax="<<xmax[v]<<", grid->SIM_Xmax="<<grid->SIM_iXmax(static_cast<axes>(v))<<"\n";
+      cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", MCMD.LocalXmin="<<SimPM.levels[0].MCMD.LocalXmin[v]<<", xmin="<<xmin[v]<<", grid->SIM_Xmin="<<grid->SIM_iXmin(static_cast<axes>(v))<<"\n";
+      cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", MCMD.LocalXmax="<<SimPM.levels[0].MCMD.LocalXmax[v]<<", xmax="<<xmax[v]<<", grid->SIM_Xmax="<<grid->SIM_iXmax(static_cast<axes>(v))<<"\n";
     }
     cout.flush();
 #endif // TESTING
@@ -544,7 +537,7 @@ int main(int argc, char **argv)
 
     temp.str("");
     temp <<op_path<<"/"<<outfile;
-    writer.OutputData(temp.str(), grid, SimPM.timestep);
+    writer.OutputData(temp.str(), G, SimPM, SimPM.timestep);
     cout <<"--------------- Finished Writing Data  ----------------\n";
 
   } // Loop over all files.    
@@ -561,7 +554,6 @@ int main(int argc, char **argv)
     delete grid; grid=0;
   }
   if (MP)     {delete MP; MP=0;}
-  if (RT)     {delete RT; RT=0;}
 
   COMM->finalise();
   delete COMM; COMM=0;
@@ -584,7 +576,10 @@ int main(int argc, char **argv)
 /// Reset the radiation sources in the header to correspond to projected
 /// quantities and not the sources used for the simulation.
 ///
-void reset_radiation_sources(struct rad_sources *rs)
+void reset_radiation_sources(
+      class SimParams &SimPM, ///< pointer to simulation parameters
+      struct rad_sources *rs
+      )
 {
   //
   // struct rad_sources {

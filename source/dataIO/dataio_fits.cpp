@@ -148,7 +148,6 @@ int DataIOFits::OutputData(
       string outfilebase,          ///< base filename
       vector<class GridBaseClass *> &cg,  ///< address of vector of grid pointers.
       class SimParams &SimPM, ///< pointer to simulation parameters
-//      class MCMDcontrol  *mpiPM,   ///< pointer to multi-core params
       const long int file_counter  ///< number to stamp file with (e.g. timestep)
       )
 {
@@ -383,7 +382,7 @@ int DataIOFits::WriteHeader(
   //
   file_ptr=ff;
   err = write_simulation_parameters(SimPM);
-  if (err) rep.error("DataIOFits::OutputData() couldn't write fits header",err);
+  if (err) rep.error("DataIOFits::WriteHeader() couldn't write fits header",err);
   ff=file_ptr;
 
   //

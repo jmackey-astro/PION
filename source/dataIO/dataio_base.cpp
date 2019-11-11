@@ -1188,7 +1188,7 @@ void DataIOBase::set_rt_src_params(
     ostringstream temp4; temp4.str(""); temp4 << "RT_src_type_" <<n;
     ostringstream temp5; temp5.str(""); temp5 << "RT_at_infty_" <<n;
     ostringstream temp6; temp6.str(""); temp6 << "RT_update___" <<n;
-    ostringstream temp7; temp7.str(""); temp7 << "RT_Opactiy__" <<n;
+    ostringstream temp7; temp7.str(""); temp7 << "RT_Opacity__" <<n;
     ostringstream temp8; temp8.str(""); temp8 << "RT_Tau_var__" <<n;
     ostringstream temp9; temp9.str(""); temp9 << "RT_effect___" <<n;
     ostringstream tmp10; tmp10.str(""); tmp10 << "RT_Rstar____" <<n;
@@ -1197,6 +1197,7 @@ void DataIOBase::set_rt_src_params(
     ostringstream tmp13; tmp13.str(""); tmp13 << "RT_Nbins____" <<n;
 
 //ADD SOURCE_EFFECT VARIABLE!
+    cout <<"Adding Source Effect Variables\n";
     pm_ddimarr *rtpos = new pm_ddimarr (temp2.str(), (SimPM.RS.sources[n].pos));
     rt_src.push_back(rtpos);
     pm_double  *rtstr = new pm_double  (temp3.str(), &(SimPM.RS.sources[n].strength));

@@ -201,6 +201,7 @@ pm_dvararr::pm_dvararr(const string s, pion_flt *p)
 pm_int::pm_int(const string s, int *p, const int def)
 {
   type=MY_INT; name.assign(s); ptr=p; defval = def;
+  //cout <<"PM_INT: "<<s<<".. "<<ptr<<".. "<<defval<<"\n";
 }
 pm_double::pm_double(const string s, double *p, const double def)
 {

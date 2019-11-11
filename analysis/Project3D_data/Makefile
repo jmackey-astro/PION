@@ -46,7 +46,6 @@ ${srcdir}/raytracing:\
 ${srcdir}/contrib:\
 ${srcdir}/tools:\
 ${srcdir}/decomposition:\
-${srcdir}/NG_grid:\
 ${srcdir}/Riemann_solvers:\
 ${srcdir}/spatial_solvers:\
 ${srcdir}/boundaries
@@ -79,36 +78,6 @@ MAKE_UNAME=ubuntu18
 LDFLAGS = -lreadline
 LDFLAGS += -lm  
 
-###########################################
-# Options for standard workstation (e.g. Ubuntu 10.04 64 bit)
-# make sure cfitsio and silo are compiled in ../extra_libraries/
-###########################################
-ifeq ($(MAKE_UNAME), standard)
-
-  ifeq ($(IOMODE), USE_FILE_COMMS)
-    CXX = g++
-  endif
-  ifeq ($(IOMODE), USE_MPI)
-    CXX = mpicxx
-  endif
-  #CXXFLAGS = -O3
-  CXXFLAGS  = -O0 -Wall
-  CXXFLAGS += -pg -g
-  CXXFLAGS += -Wno-unused-function
-  #OPTION += -DTESTING
-
-
-  MYLIB = ${CODEDIR}/extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I${srcdir}
-  # All libraries are in this path:
-  LDFLAGS += -L${MYLIB}/lib
-  # Libraries for fits, silo
-  LDFLAGS += -lcfitsio
-  LDFLAGS += -lsilo
-  # libs for CVODES
-  LDFLAGS +=-Wl,--rpath -Wl,${MYLIB}/lib -lsundials_cvode -lsundials_nvecserial
-endif
 
 ######################################################################
 # Options for a debian 9 (stretch) workstation with system libs
@@ -127,6 +96,7 @@ ifeq ($(MAKE_UNAME), debian9)
     CXX = mpicxx
   endif
 
+  OPTION += -DCVODE2
   INC  = -I/usr/include
   INC += -I${srcdir}
   LDFLAGS += -lm
@@ -157,6 +127,7 @@ ifeq ($(MAKE_UNAME), ubuntu18)
     CXX = mpicxx
   endif
 
+  OPTION += -DCVODE5
   MYLIB = $(CODEDIR)/extra_libraries
   INC  = -I${MYLIB}/include
   INC += -I${srcdir}
