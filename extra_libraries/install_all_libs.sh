@@ -49,7 +49,7 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   SHARED=YES
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
   COMPILE_SILO=yes
-  COMPILE_SUNDIALS=no
+  COMPILE_SUNDIALS=yes
   COMPILE_FITS=no
 
 

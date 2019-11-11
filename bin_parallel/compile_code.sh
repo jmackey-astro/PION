@@ -57,7 +57,7 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
   MAKE_UNAME=ubuntu18
   export CXX=mpicxx
-  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE2"
+  export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DFITS -DCVODE5"
   export PION_OPTIMISE=HIGH
   NCORES=$nc
 elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then

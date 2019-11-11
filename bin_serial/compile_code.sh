@@ -47,7 +47,7 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   MAKE_UNAME=ubuntu18
   export CXX=g++
   export CC=gcc
-  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE2"
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
   export PION_OPTIMISE=HIGH
   NCORES=$nc
 elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then

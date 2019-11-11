@@ -55,6 +55,7 @@ OPT += -DSILO
 CXXFLAGS = $(OPT)
 
 MAKE_UNAME=standard
+MAKE_UNAME=ubuntu18
 
 #####################################################################
 # Options for a "standard" workstation.
@@ -79,6 +80,66 @@ ifeq ($(MAKE_UNAME), standard)
 endif
 ################### --- STANDARD WORKSTATION ---######################
 
+######################################################################
+# Options for a debian 9 (stretch) workstation with system libs
+######################################################################
+ifeq ($(MAKE_UNAME), debian9)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  INC  = -I/usr/include
+  INC += -I${srcdir}
+  LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl
+  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+endif
+################### ---  DEBIAN 9 (STRETCH)  ---######################
+
+######################################################################
+# Options for an Ubuntu 18 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu18)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  MYLIB = $(CODEDIR)/extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${srcdir}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 18 ---######################
 
 ###########################################
 # Options for OS X 

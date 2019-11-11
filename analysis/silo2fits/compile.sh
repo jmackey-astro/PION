@@ -16,23 +16,6 @@ echo "Compiling with option: $MAKE_UNAME"
 
 MAKE_UNAME=$MAKE_UNAME make -f Makefile -j4
 
-
-#####################################################################
-## fix some linking problem with OSX (this is new... 2016.05.25)
-#####################################################################
-echo "$MAKE_UNAME"
-#if [ "$MAKE_UNAME" = "OSX" ]; then
-#  echo "Fixing links"
-#  path=`pwd`
-#  install_name_tool -change libsundials_cvode.1.dylib      \
-#   ${path}/../../extra_libraries/lib/libsundials_cvode.1.dylib       \
-#   SILO2FITS
-#  install_name_tool -change libsundials_nvecserial.0.dylib \
-#   ${path}/../../extra_libraries/lib/libsundials_nvecserial.0.dylib \
-#   SILO2FITS 
-#fi
-#####################################################################
-
 exit
 
 
