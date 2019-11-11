@@ -69,6 +69,21 @@ class DataIOFits_pllel : public DataIOFits {
       );
 
   ///
+  /// This writes the header and data for the simulation parameters, for
+  /// a given level in the nested-grid structure.
+  /// 
+  /// If the solver pointer is not null, it also writes some derived
+  /// variables such as Temperature, Div(B), etc.
+  ///
+  int SaveLevelData(
+      const string,       ///< File-base to write to
+      const int,      ///< level in nested grid to write.
+      class GridBaseClass *,  ///< grid pointer.
+      class SimParams &,  ///< simulation parameters
+      const long int      ///< timestep
+      );
+
+  ///
   /// This reads the fits images in turn, and puts the data into
   /// the grid points, assuming the grid has been set up with paramters
   /// from the fits header, which should be read first.

@@ -127,11 +127,56 @@ int DataIOFits_pllel::OutputData(
       const long int file_counter ///< number to stamp file with (e.g. timestep)
       )
 {
-  string fname="DataIOFits_pllel::OutputData";
+  int err=0;
+  // loop over grid refinement levels, save one file per level
+  for (int l=0; l<SimPM.grid_nlevels; l++) {
+    cout <<"SAVING DATA FOR LEVEL "<<l<<" IN FITS FORMAT\n";
+    if (!cg[l])
+      rep.error("dataio_silo::OutputData() null pointer!",
+                cg[l]);
+    DataIOFits_pllel::gp = cg[l];
+    mpiPM = &(SimPM.levels[l].MCMD);
 
-  if (!cg[0])
-    rep.error("DataIOFits_pllel::OutputData() null pointer to grid!",cg[0]);
-  DataIOFits_pllel::gp = cg[0];
+    // write a different file for each level in the NG grid.
+    string fbase;
+    if (SimPM.grid_nlevels>1) {
+      ostringstream temp;
+      temp << outfilebase << "_level";
+      temp.width(2); temp.fill('0');
+      temp << l;
+      fbase=temp.str();
+    }
+    else {
+      fbase = outfilebase;
+    }
+
+    err = SaveLevelData(fbase,l,cg[l],SimPM,file_counter);
+    rep.errorTest("saveleveldata",0,err);
+  }
+  return err;
+}
+
+
+
+// ##################################################################
+// ##################################################################
+
+
+
+int DataIOFits_pllel::SaveLevelData(
+      string outfilebase,         ///< base filename
+      const int l,              ///< level to save
+      class GridBaseClass *cg,    ///< address of vector of grid pointers.
+      class SimParams &SimPM,     ///< pointer to simulation parameters
+      const long int file_counter ///< number to stamp file with (e.g. timestep)
+      )
+{
+  string fname="DataIOFits_pllel::SaveLevelData";
+  mpiPM = &(SimPM.levels[l].MCMD);
+
+  if (!cg)
+    rep.error("DataIOFits_pllel::OutputData() null pointer to grid!",cg);
+  DataIOFits_pllel::gp = cg;
 
   if (DataIOFits_pllel::eqn==0) {
     //cout <<"WARNING: DataIOFits_pllel::OutputData() Set up Equations pointer before outputting data!\n";
@@ -251,6 +296,31 @@ int DataIOFits_pllel::OutputData(
     err = write_simulation_parameters(SimPM);
     if (err) rep.error("DataIOFits_pllel::OutputData() couldn't write fits header",err);
     ff=file_ptr;
+
+    //err = fits_open_file(&ff, outfile.c_str(), READWRITE, &status);
+    //if(status) {fits_report_error(stderr,status); return(err);}
+    int num=-1; fits_get_hdu_num(ff, &num);
+    if (num !=1) ffmahd(ff,1,0,&status);
+    if (status) {
+      fits_report_error(stderr,status);
+      rep.error("NG can't find fits header",status);
+    }
+    char key[128]; int lev = l;
+    strcpy(key,"grid_level");
+    err += fits_update_key(ff, TINT,    key, &lev, 0, &status);
+    strcpy(key,"level_xmin0");
+    err += fits_update_key(file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmin[0]), 0, &status);
+    strcpy(key,"level_xmin1");
+    err += fits_update_key(file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmin[1]), 0, &status);
+    strcpy(key,"level_xmin2");
+    err += fits_update_key(file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmin[2]), 0, &status);
+    strcpy(key,"level_xmax0");
+    err += fits_update_key(file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmax[0]), 0, &status);
+    strcpy(key,"level_xmax1");
+    err += fits_update_key(file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmax[1]), 0, &status);
+    strcpy(key,"level_xmax2");
+    err += fits_update_key(file_ptr, TDOUBLE, key, &(SimPM.levels[l].Xmax[2]), 0, &status);
+
     // --------------------------------------------------------
     
 
@@ -262,12 +332,16 @@ int DataIOFits_pllel::OutputData(
       if (mpiPM->WriteFullImage) { // write full image, with only local part being non-zero.
 	err += create_fits_image(ff,extname[i],SimPM.ndim, SimPM.NG);
 	err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
-	err += write_fits_image(ff,extname[i], mpiPM->LocalXmin, SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell, data);
+	err += write_fits_image(ff,extname[i], mpiPM->LocalXmin,
+                SimPM.levels[l].Xmin, SimPM.levels[l].dx, SimPM.ndim,
+                mpiPM->LocalNG, mpiPM->LocalNcell, data);
       }
       else { // Write only part of image that is on local grid.
 	err += create_fits_image(ff,extname[i], SimPM.ndim, mpiPM->LocalNG);
 	err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
-	err += write_fits_image(ff,extname[i], mpiPM->LocalXmin, mpiPM->LocalXmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG, mpiPM->LocalNcell, data);
+	err += write_fits_image(ff,extname[i], mpiPM->LocalXmin,
+                mpiPM->LocalXmin, SimPM.levels[l].dx, SimPM.ndim,
+                mpiPM->LocalNG, mpiPM->LocalNcell, data);
       }
     }
     if (err) rep.error("DataIOFits_pllel::OutputData() Image Writing went bad",err);
@@ -319,7 +393,9 @@ int DataIOFits_pllel::OutputData(
 	err += create_fits_image(ff,extname[i], SimPM.ndim, SimPM.NG);
 	double *data=0;
 	err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
-	err += write_fits_image(ff,extname[i],mpiPM->LocalXmin,SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG,mpiPM->LocalNcell, data);
+	err += write_fits_image(ff,extname[i],mpiPM->LocalXmin,
+                SimPM.levels[l].Xmin, SimPM.levels[l].dx, SimPM.ndim,
+                mpiPM->LocalNG, mpiPM->LocalNcell, data);
 	data = mem.myfree(data);
       }
       if (err) rep.error("DataIOFits_pllel::OutputData() SingleFile Image Writing went bad",err);
@@ -345,7 +421,9 @@ int DataIOFits_pllel::OutputData(
       // write my portion of image.
       double *data=0;
       err += put_variable_into_data_array(SimPM, extname[i], mpiPM->LocalNcell, &data);
-      err += write_fits_image(ff,extname[i],mpiPM->LocalXmin,SimPM.Xmin, gp->DX(), SimPM.ndim, mpiPM->LocalNG,mpiPM->LocalNcell, data);
+      err += write_fits_image(ff,extname[i],mpiPM->LocalXmin, 
+              SimPM.levels[l].Xmin, SimPM.levels[l].dx, SimPM.ndim,
+              mpiPM->LocalNG, mpiPM->LocalNcell, data);
 	data = mem.myfree(data);
     }
     if (err) rep.error("DataIOFits_pllel::OutputData() SingleFile: Error writing image",err);

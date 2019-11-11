@@ -51,6 +51,7 @@
 #include "dataIO/dataio_silo.h"
 #include "dataIO/dataio_silo_utility.h"
 #include "dataIO/dataio_fits.h"
+#include "dataIO/dataio_fits_MPI.h"
 
 #include "microphysics/microphysics_base.h"
 #include "microphysics/mp_only_cooling.h"
@@ -72,58 +73,6 @@
 #include <silo.h>
 #include <fitsio.h>
 using namespace std;
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-///
-/// Reset the radiation sources in the header to correspond to projected
-/// quantities and not the sources used for the simulation.
-///
-void reset_radiation_sources(
-      class SimParams &, ///< pointer to simulation parameters
-      struct rad_sources *
-      );
-
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-///
-/// Resize the domain, so we only read in and write out part of it.
-///
-void reset_domain(
-      const double *xmin,
-      const double *xmax,
-      const int ndim,
-      class SimParams &SimPM ///< simulation parameters
-      )
-{
-  rep.printVec("Old Xmin",SimPM.Xmin, ndim);
-  rep.printVec("Old Xmax",SimPM.Xmax, ndim);
-  SimPM.Ncell=1;
-
-  for (int v=0; v<ndim; v++) {
-    SimPM.Xmin[v]  = xmin[v];
-    SimPM.Xmax[v]  = xmax[v];
-    SimPM.NG[v] = static_cast<int>(ONE_PLUS_EPS*SimPM.NG[v]*(SimPM.Xmax[v]-SimPM.Xmin[v])/SimPM.Range[v]);
-    SimPM.Ncell *= SimPM.NG[v];
-    SimPM.Range[v] = SimPM.Xmax[v] - SimPM.Xmin[v];
-  }
-
-  rep.printVec("New Xmin",SimPM.Xmin, ndim);
-  rep.printVec("New Xmax",SimPM.Xmax, ndim);
-
-  SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
-  return;
-}
-
 
 
 // ##################################################################
@@ -195,32 +144,10 @@ int main(int argc, char **argv)
   }
 
   //
-  // see about xmin/xmax resetting domain.
-  //
-  double xmin[MAX_DIM], xmax[MAX_DIM], old_xmin[MAX_DIM], old_xmax[MAX_DIM];
-  size_t reset=0;
-  if (argc>6)  {xmin[XX] = atof(argv[6]); reset+=1;}
-  else          xmin[XX]=0.0;
-  if (argc>7)  {xmax[XX] = atof(argv[7]); reset+=1;}
-  else          xmax[XX]=0.0;
-
-  if (argc>8)  {xmin[YY] = atof(argv[8]); reset+=1;}
-  else          xmin[YY]=0.0;
-  if (argc>9)  {xmax[YY] = atof(argv[9]); reset+=1;}
-  else          xmax[YY]=0.0;
-
-  if (argc>10)  {xmin[ZZ] = atof(argv[10]); reset+=1;}
-  else          xmin[ZZ]=0.0;
-  if (argc>11) {xmax[ZZ] = atof(argv[11]); reset+=1;}
-  else          xmax[ZZ]=0.0;
-
-
-
-  //
   // Redirect output to a text file if you want to:
   //
   ostringstream redir; redir.str("");
-  redir<<op_path<<"/msg_"<<outfile<<"_rank"<<SimPM.levels[0].MCMD.get_myrank()<<"_";
+  redir<<op_path<<"/msg_"<<outfile<<"_rank"<<myrank<<"_";
   //rep.redirect(redir.str());
 
   //*******************************************************************
@@ -233,7 +160,7 @@ int main(int argc, char **argv)
   // set up dataio_utility class and fits-writer class.
   //
   class dataio_silo_utility dataio (SimPM, "DOUBLE", &(SimPM.levels[0].MCMD));
-  class DataIOFits writer (SimPM);
+  class DataIOFits_pllel writer (SimPM, &(SimPM.levels[0].MCMD));
 
   //
   // Get list of files to read:
@@ -279,30 +206,6 @@ int main(int argc, char **argv)
   err = dataio.ReadHeader(first_file, SimPM);
   if (err) rep.error("Didn't read header",err);
 
-  //
-  // reset the domain if we need to.
-  //
-  int dir=0;
-  if      (reset==0) dir=0;
-  else if (reset==2) dir=1;
-  else if (reset==4) dir=2;
-  else if (reset==6) dir=3;
-  else rep.error("Bad number of args in resetting domain",reset);
-  //
-  // Save old simulation extents for all directions, for checking
-  // later.
-  //
-  for (size_t i=0;i<static_cast<size_t>(SimPM.ndim);i++) old_xmin[i]=SimPM.Xmin[i];
-  for (size_t i=0;i<static_cast<size_t>(SimPM.ndim);i++) old_xmax[i]=SimPM.Xmax[i];
-  //
-  // leave domains that are not reset as the original extents:
-  //
-  for (int i=dir;i<SimPM.ndim;i++) xmin[i]=SimPM.Xmin[i];
-  for (int i=dir;i<SimPM.ndim;i++) xmax[i]=SimPM.Xmax[i];
-  //
-  // Now reset domain.
-  //
-  reset_domain(xmin,xmax,SimPM.ndim,SimPM);
 
   //
   // write simulation xmin/xmax and radiation source position to a
@@ -343,16 +246,6 @@ int main(int argc, char **argv)
   }
   outf.close();
 
-  // *****************************************************
-  // Now delete all radiation "sources" from SimPM.RS, to avoid allocating
-  // memory for column densities in the cell-data.
-  // *****************************************************
-  reset_radiation_sources(SimPM, &(SimPM.RS));
-
-  for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
-    cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", MCMD.LocalXmin="<<SimPM.levels[0].MCMD.LocalXmin[v]<<", xmin="<<xmin[v]<<"\n";
-    cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", MCMD.LocalXmax="<<SimPM.levels[0].MCMD.LocalXmax[v]<<", xmax="<<xmax[v]<<"\n";
-  }
   cout.flush();
 
   //
@@ -360,29 +253,24 @@ int main(int argc, char **argv)
   //
   class setup_grid_NG_MPI *SimSetup =0;
   SimSetup = new setup_grid_NG_MPI();
-  SimPM.grid_nlevels = 1;
   SimSetup->setup_NG_grid_levels(SimPM);
-  err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
-  if (err) rep.error("main: failed to decompose domain!",err);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
   vector<class GridBaseClass *> G;
-  G.resize(1);
+  G.resize(SimPM.grid_nlevels);
   SimSetup->setup_grid(G, SimPM);
   class GridBaseClass *grid = G[0];
   if (!grid) rep.error("Grid setup failed",grid);
-
+  SimPM.dx = grid->DX();
   cout <<"\t\tg="<<grid<<"\tDX = "<<grid->DX()<<endl;
 
-
-
   //
-  // Now setup microphysics and raytracing classes
+  // setup microphysics class
   //
   err += SimSetup->setup_microphysics(SimPM);
   //err += setup_raytracing();
-  if (err) rep.error("Setup of microphysics and raytracing",err);
+  if (err) rep.error("Setup of microphysics",err);
 
   cout <<"--------------- Finished Setting up Grid --------------\n";
   cout <<"-------------------------------------------------------\n";
@@ -418,119 +306,15 @@ int main(int argc, char **argv)
     temp.str("");
     for (size_t skip=0; skip<Nskip; skip++) ff++;
 
-    //
-    // delete any current radiation sources
-    //
-    reset_radiation_sources(SimPM, &(SimPM.RS));
-
-    //
     // Read header to get timestep info.
-    //
     err = dataio.ReadHeader(infile, SimPM);
     if (err) rep.error("Didn't read header",err);
-
-    // *****************************************************
-    // Delete radiation sources again
-    // *****************************************************
-    reset_radiation_sources(SimPM, &(SimPM.RS));
     //cout.flush();
-    //
-    // Now reset domain.
-    //
-    reset_domain(xmin,xmax,SimPM.ndim,SimPM);
-    //
-    // Read data (this reader can read serial or parallel data.
-    //
-    SimPM.grid_nlevels = 1;
-    SimPM.levels[0].MCMD.decomposeDomain(SimPM,SimPM.levels[0]);
+
+    // read data onto grid.
     err = dataio.ReadData(infile, G, SimPM);
     rep.errorTest("(main) Failed to read data",0,err);
     
-#ifdef TESTING
-    for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
-      cout <<"old_xmin="<<old_xmin[v]<<", SimPM.Xmin="<<SimPM.Xmin[v]<<", MCMD.LocalXmin="<<SimPM.levels[0].MCMD.LocalXmin[v]<<", xmin="<<xmin[v]<<", grid->SIM_Xmin="<<grid->SIM_iXmin(static_cast<axes>(v))<<"\n";
-      cout <<"old_xmax="<<old_xmax[v]<<", SimPM.Xmax="<<SimPM.Xmax[v]<<", MCMD.LocalXmax="<<SimPM.levels[0].MCMD.LocalXmax[v]<<", xmax="<<xmax[v]<<", grid->SIM_Xmax="<<grid->SIM_iXmax(static_cast<axes>(v))<<"\n";
-    }
-    cout.flush();
-#endif // TESTING
-
-    //
-    // If domain is bigger than original, then add more data.
-    //
-    cell *c=grid->FirstPt();
-    for (size_t v=0; v<static_cast<size_t>(SimPM.ndim); v++) {
-      double vals[SimPM.nvar];
-      //
-      // First check for extensions in the negative direction:
-      //
-      if ((old_xmin[v]-xmin[v]) < -0.5*grid->DX()) {
-        cout <<"dimension "<<v<<" has enarged domain in -ve dir.\n";
-        rep.printVec("old",old_xmin,SimPM.ndim);
-        rep.printVec("new",xmin,SimPM.ndim);
-        cout <<(old_xmin[v]-xmin[v]) << "  "<<-0.5*grid->DX()<<"\n";
-        //
-        // Navigate to first point on the original grid.
-        //
-        for (size_t d=0; d<static_cast<size_t>(SimPM.ndim); d++) {
-          enum direction negdd=static_cast<direction>(2*d);
-          enum direction posdd=grid->OppDir(negdd);
-          while (CI.get_dpos(c,d) < old_xmin[d])
-            c=grid->NextPt(c,posdd);
-        }
-        //
-        // Copy the state vector
-        //
-        for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
-          vals[d] = c->P[d];
-        }
-        //
-        // Write all new cells with this state vector.
-        //
-        c=grid->FirstPt();
-        do {
-          if (CI.get_dpos(c,v) < old_xmin[v]) {
-            for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
-              c->P[d] = vals[d];
-            }
-          }
-        } while ((c=grid->NextPt(c))!=0);
-      } // if extension in negative direction
-      //
-      // Then extensions in the positive direction:
-      //
-      if ((xmax[v]-old_xmax[v]) > 0.5*grid->DX()) {
-        cout <<"dimension "<<v<<" has enarged domain in +ve dir.\n";
-        //
-        // Navigate to last point on the old grid in this dir
-        //
-        c=grid->LastPt();
-        for (size_t d=0; d<static_cast<size_t>(SimPM.ndim); d++) {
-          enum direction negdd=static_cast<direction>(2*d);
-          enum direction posdd=grid->OppDir(negdd);
-          while ( CI.get_dpos(c,d) > old_xmax[d]) {
-            c=grid->NextPt(c,negdd);
-          }
-        }
-        //
-        // Copy the state vector
-        //
-        for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
-          vals[d] = c->P[d];
-        }
-        //
-        // Write all new cells with this state vector.
-        //
-        c=grid->FirstPt();
-        do {
-          if (CI.get_dpos(c,v) > old_xmax[v]) {
-            for (size_t d=0; d<static_cast<size_t>(SimPM.nvar); d++) {
-              c->P[d] = vals[d];
-            }
-          }
-        } while ((c=grid->NextPt(c))!=0);
-      } // if extension in positive direction 
-    }  // loop over directions.
-
     cout <<"--------------- Finished Reading Data  ----------------\n";
     cout <<"-------------------------------------------------------\n";
     cout <<"--------------- Starting Writing Data  ----------------\n";
@@ -565,42 +349,6 @@ int main(int argc, char **argv)
 // **************** END MAIN MAIN MAIN MAIN ********************
 // *************************************************************
 // -------------------------------------------------------------
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-///
-/// Reset the radiation sources in the header to correspond to projected
-/// quantities and not the sources used for the simulation.
-///
-void reset_radiation_sources(
-      class SimParams &SimPM, ///< pointer to simulation parameters
-      struct rad_sources *rs
-      )
-{
-  //
-  // struct rad_sources {
-  //   int Nsources;
-  //   std::vector<struct rad_src_info> sources;
-  // };
-  //
-
-  //
-  // delete any current sources
-  //
-  if (rs->Nsources!=0) {
-    rs->sources.clear();
-    rs->Nsources=0;
-  }
-  SimPM.EP.raytracing=0;
-
-  return;
-}
-
-
 
 
 
