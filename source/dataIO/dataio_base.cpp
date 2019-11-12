@@ -1189,6 +1189,10 @@ void DataIOBase::set_rt_src_params(
     ostringstream temp5; temp5.str(""); temp5 << "RT_at_infty_" <<n;
     ostringstream temp6; temp6.str(""); temp6 << "RT_update___" <<n;
     ostringstream temp7; temp7.str(""); temp7 << "RT_Opacity__" <<n;
+    // -------------------------------------------------------------
+    // include this because of typo in old version: Remove later.
+    ostringstream tmp17; tmp17.str(""); tmp17 << "RT_Opactiy__" <<n;
+    // -------------------------------------------------------------
     ostringstream temp8; temp8.str(""); temp8 << "RT_Tau_var__" <<n;
     ostringstream temp9; temp9.str(""); temp9 << "RT_effect___" <<n;
     ostringstream tmp10; tmp10.str(""); tmp10 << "RT_Rstar____" <<n;
@@ -1209,7 +1213,14 @@ void DataIOBase::set_rt_src_params(
     pm_int     *rtupd = new pm_int     (temp6.str(), &(SimPM.RS.sources[n].update));
     rt_src.push_back(rtupd);
     pm_int     *rttsc = new pm_int     (temp7.str(), &(SimPM.RS.sources[n].opacity_src));
+    rttsc->critical=false;
     rt_src.push_back(rttsc);
+    // -------------------------------------------------------------
+    // include this because of typo in old version: Remove later.
+    pm_int     *rtts2 = new pm_int     (tmp17.str(), &(SimPM.RS.sources[n].opacity_src));
+    rtts2->critical=false;
+    rt_src.push_back(rtts2);
+    // -------------------------------------------------------------
     pm_int     *rttvr = new pm_int     (temp8.str(), &(SimPM.RS.sources[n].opacity_var));
     rt_src.push_back(rttvr);
     pm_int     *rteff = new pm_int     (temp9.str(), &(SimPM.RS.sources[n].effect));

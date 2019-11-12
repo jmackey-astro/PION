@@ -250,8 +250,8 @@ class microphysics_base {
   /// Used for modifying tracer fluxes, normalising state vec.
   ///
   virtual void sCMA(
-      pion_flt *,      ///< input corrector vector
-      const pion_flt * ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *, ///< input corrector vector
+      const pion_flt *  ///< input primitive vector from grid cell
       );
 
   ///
@@ -329,6 +329,7 @@ protected:
   /// map element names to state-vec index
   std::map<std::string,int> el_map;
   std::vector<int> el_index;  ///< indices of elements
+  std::vector<int> tr_index;  ///< indices of tracers
   int n_el; ///< number of element tracers
 
   int nv_prim; ///< number of vars in state vec

@@ -4,6 +4,7 @@
 
 
 #include "microphysics_base.h"
+#include "tools/reporting.h"
 #include <iostream>
 using namespace std;
 
@@ -44,6 +45,7 @@ microphysics_base::microphysics_base(
   n_el = 0;
   for (int i=0;i<ntr;i++) {
     tr_map[tr[i]] = i+offset;
+    tr_index.push_back(i+offset);
     // second map just for elements.
     if (tr[i].substr(0,2) == "X_") {
       el_map[tr[i]] = i+offset;
@@ -76,20 +78,56 @@ void microphysics_base::sCMA(
     const pion_flt *p_in ///< input primitive vector (nv_prim)
     )
 {
-  //  Re-initialise corrector every step
-  for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;
+#ifdef DEBUG_SCMA
   int print_flagg = 0;
-  double corr = 0;
+#endif // DEBUG_SCMA
+  double corr = 0.0, val=0.0, ptemp[nv_prim];
+  for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;
+  for (int i=0;i<nv_prim;i++) ptemp[i] = 1.0;
   
-  // sum over all elements and add up mass fraction.
-  for (int v=0;v<n_el;v++) {
-    corr += p_in[el_index[v]];
+  // enforce all tracers to be within [0,1]
+  for (int v=0; v<ntracer; v++) {
+    ptemp[tr_index[v]] = min(1.0,max(0.0, p_in[tr_index[v]]));
   }
-  corr = 1.0 / corr; // correction factor.
-  // set correction factor for elements.
+
+  // sum over all elements and add up mass fraction, correcting
+  // state vector to be within allowed limits for mass fraction.
+  for (int v=0;v<n_el;v++) {
+    corr += ptemp[el_index[v]];
+  }
+  corr = 1.0 / corr; // correction factor for elements
+
+  // set multiplier to ensure that corrected tracer value
+  // is within [0,1] for all tracers (not just elements)
+  for (int v=0; v<ntracer; v++) {
+    val = ptemp[tr_index[v]]/p_in[tr_index[v]];
+    ptemp[tr_index[v]] = (isfinite(val)) ? val : 0.0;
+  }
+
+  // set correction factor for elements so all add up to 1.
   for (int v=0;v<n_el;v++) {
     corrector[el_index[v]] = corr;
   }
+  
+  // set correction factor for all tracers to ensure within bounds.
+#ifdef DEBUG_SCMA
+  val=0.0;
+#endif // DEBUG_SCMA
+  for (int v=0;v<ntracer;v++) {
+    corrector[tr_index[v]] = ptemp[tr_index[v]];
+#ifdef DEBUG_SCMA
+    val = max(val, fabs(corrector[tr_index[v]]));
+#endif // DEBUG_SCMA
+  }
+  
+#ifdef DEBUG_SCMA
+  if (fabs(val-1.0)>1.0e-1) {
+    cout <<"------------  sCMA  ---------------\n";
+    rep.printVec("p_in     : ", p_in, nv_prim);
+    rep.printVec("ptemp    : ", ptemp, nv_prim);
+    rep.printVec("Corrector: ", corrector, nv_prim);
+  }
+#endif // DEBUG_SCMA
   
   return;
 }

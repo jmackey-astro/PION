@@ -78,26 +78,26 @@ int IC_basic_tests::setup_data(
 
   if (ics=="") rep.error("didn't get any ics to set up.",ics);
   else if (ics=="Uniform" || ics=="uniform") {
-    cout <<"\t\tSetting up Uniform ICs.\n";
+    //cout <<"\t\tSetting up Uniform ICs.\n";
     err += setup_uniformgrid(rrp,ggg);
   }
   else if (ics=="AdvectSineWave") {
-    cout <<"\t\tSetting up HD/MHD advection of clump with SINE WAVE variation in VY.\n";
+    //cout <<"\t\tSetting up HD/MHD advection of clump with SINE WAVE variation in VY.\n";
     err += setup_sinewave_velocity();
   }
   else if (ics=="Advection") {
-     cout <<"\t\tSetting up HD/MHD advection of overdense clump.\n";
+     //cout <<"\t\tSetting up HD/MHD advection of overdense clump.\n";
      if(ndim!=2 && ndim!=3) rep.error("only know 2d/3d advected grids",ndim);
      err += setup_advection();
   }
   else if (ics=="DivBPeak") {
-    cout <<"\t\tSetting up divB peak problem.\n";
+    //cout <<"\t\tSetting up divB peak problem.\n";
     err += setup_divBpeak();
   }
   else if (ics=="FieldLoop" ||
 	   ics=="FieldLoopVz" ||
 	   ics=="FieldLoopStatic") {
-    cout <<"\t\tSetting up Advection of Magnetic Field Loop problem.\n";
+    //cout <<"\t\tSetting up Advection of Magnetic Field Loop problem.\n";
     //
     // We pass in the z-velocity to the fieldloop problem:
     //
@@ -106,19 +106,19 @@ int IC_basic_tests::setup_data(
     else                         err += setup_FieldLoop(-1.0);
   }
   else if (ics=="OrszagTang") {
-    cout <<"\t\tSetting up Orszag-Tang test problem.\n";
+    //cout <<"\t\tSetting up Orszag-Tang test problem.\n";
     err += setup_OrszagTang();
   }
   else if (ics=="DoubleMachRef") {
-    cout <<"\t\tSetting up Double Mach Reflection test problem.\n";
+    //cout <<"\t\tSetting up Double Mach Reflection test problem.\n";
     err += setup_DoubleMachRef();
   }
   else if (ics=="KelvinHelmholz") {
-    cout <<"\t\tSetting up Kelvin-Helmholz Instability problems.\n";
+    //cout <<"\t\tSetting up Kelvin-Helmholz Instability problems.\n";
     err += setup_KelvinHelmholz();
   }
   else if (ics=="KelvinHelmholzStone") {
-    cout <<"\t\tSetting up Stone's Kelvin-Helmholz Instability problem.\n";
+    //cout <<"\t\tSetting up Stone's Kelvin-Helmholz Instability problem.\n";
     err += setup_KelvinHelmholz_Stone();
   }
   else rep.error("Don't know what Initial Condition is!",ics);
@@ -278,7 +278,7 @@ int IC_basic_tests::setup_uniformgrid(
   if (use_core && pconst.equalD(radial_slope, 0.0)) use_core=false;
 
 
-  cout <<"\t\tAssigning values to data.\n";
+  //cout <<"\t\tAssigning values to data.\n";
   class cell *cpt = ggg->FirstPt();
   double distance, dpos[MAX_DIM];
   do {
@@ -303,7 +303,7 @@ int IC_basic_tests::setup_uniformgrid(
   //  cpt = ggg->FirstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;}
   // while  ( (cpt=ggg->NextPt(cpt))!=NULL);
-  cout <<"\t\tGot through data successfully.\n";
+  //cout <<"\t\tGot through data successfully.\n";
   return(0);
 }
 
@@ -349,7 +349,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   double vx = 1.0; //sin(thetaXZ)*cos(thetaXY);
   double vy = 1.0; //sin(thetaXZ)*sin(thetaXY);
   double vz = 1.0; //cos(thetaXZ);
-  cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
+  //cout <<"\t\tvx,vy,vz = "<<vx<<", "<<vy<<", "<<vz<<endl;
   double pout; pout=1.0;
   double rhoin,rhoout; rhoin=10.0; rhoout=1.0;
   
@@ -368,7 +368,7 @@ int IC_basic_tests::setup_sinewave_velocity()
   double vfrac;
 
   // data
-  cout <<"\t\tAssigning primitive vectors.\n";
+  //cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
   do {
      // Set values of primitive variables.
@@ -391,7 +391,7 @@ int IC_basic_tests::setup_sinewave_velocity()
        //       cout <<"Setting cell "<<cpt->id<<" to internal value.\n";
      }
   } while ( (cpt=gg->NextPt(cpt))!=NULL);
-  cout <<"\t\tGot through data successfully.\n";
+  //cout <<"\t\tGot through data successfully.\n";
   // Data done.
   
   return 0;
@@ -417,9 +417,9 @@ int IC_basic_tests::setup_advection()
   double thetaXZ = M_PI/180.* atof(str.c_str());
 
 
-  cout <<"Using angle to X-Y grid of "<<thetaXY<<" radians, X-Z of "<<thetaXZ<<" radians.\n";
-  cout <<"The X-Z angle is from the z-axis to the vector. (polar angle)\n";
-  cout <<"The X-Y angle is from the x-axis to the projection of vector onto xy plane (azimuthal angle)\n";
+  //cout <<"Using angle to X-Y grid of "<<thetaXY<<" radians, X-Z of "<<thetaXZ<<" radians.\n";
+  //cout <<"The X-Z angle is from the z-axis to the vector. (polar angle)\n";
+  //cout <<"The X-Y angle is from the x-axis to the projection of vector onto xy plane (azimuthal angle)\n";
 
 
   int ndim=gg->Ndim(); //int nvar=gg->Nvar();
@@ -454,7 +454,7 @@ int IC_basic_tests::setup_advection()
   double vfrac;
 
   // data
-  cout <<"\t\tAssigning primitive vectors.\n";
+  //cout <<"\t\tAssigning primitive vectors.\n";
   class cell *cpt = gg->FirstPt();
   do {
      // Set values of primitive variables.
@@ -476,7 +476,7 @@ int IC_basic_tests::setup_advection()
   } while ( (cpt=gg->NextPt(cpt))!=NULL);
   //  cpt = firstPt();
   //  do {cout <<"cpt.rho = "<<cpt->P[RO]<<endl;} while  ( (cpt=nextPt(cpt))!=NULL);
-  cout <<"\t\tGot through data successfully.\n";
+  //cout <<"\t\tGot through data successfully.\n";
   // Data done.
   
   return(0);
@@ -521,7 +521,7 @@ int IC_basic_tests::setup_divBpeak()
   }
   class cell *c = gg->FirstPt(); double r2=0;
   double dpos[MAX_DIM]; CI.get_dpos(c,dpos);
-  rep.printVec("position of first cell",dpos,ndim);
+  //rep.printVec("position of first cell",dpos,ndim);
   do {
     CI.get_dpos(c,dpos);
     for (int v=0;v<nvar;v++) c->P[v] = s[v];
@@ -567,7 +567,7 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   //SimPM->BC_XP = "periodic";
   //SimPM->BC_YN = "periodic";
   //SimPM->BC_YP = "periodic";
-  cout <<"\tMake sure x=[-1,1] and y=[-0.5,0.5]\n";
+  //cout <<"\tMake sure x=[-1,1] and y=[-0.5,0.5]\n";
   
   double A_max=0.001; // Peak in vector potential.
   double 
@@ -581,12 +581,12 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
   double dpos[ndim];
 
   if (vz<0) {
-    cout <<"\tWARNING - negative vz received, so setting up static problem!\n";
+    //cout <<"\tWARNING - negative vz received, so setting up static problem!\n";
     vel=0.0;
     vz =0.0;
   }
 
-  cout <<"Assigning primitive vectors.\n";
+  //cout <<"Assigning primitive vectors.\n";
   class cell *c = gg->FirstPt();
   do {
     c->P[RO] = rho; c->P[PG] = p_g;
@@ -628,7 +628,7 @@ int IC_basic_tests::setup_FieldLoop(double vz ///< Z-velocity of fluid
     }
     c->Ph[BX]=c->Ph[BY]=0.0;
   } while ( (c=gg->NextPt(c))!=0);
-  cout <<"Got through data successfully.\n";
+  //cout <<"Got through data successfully.\n";
   // Data done.
 
   //
@@ -698,7 +698,7 @@ int IC_basic_tests::setup_OrszagTang()
   SimPM->gamma = 5./3.; // just to make sure.
   double p0 = otvbeta/2.; // constant pressure.
   double d0 = SimPM->gamma*otvmach*otvmach*p0; // constant density.
-  cout <<"Assigning primitive vectors.\n";
+  //cout <<"Assigning primitive vectors.\n";
   double dpos[ndim];
   class cell *c = gg->FirstPt();
   do {
@@ -716,7 +716,7 @@ int IC_basic_tests::setup_OrszagTang()
       c->P[SimPM->ftr+i] = 1.;
     }
   } while ( (c=gg->NextPt(c))!=0);
-  cout <<"Got through data successfully.\n";
+  //cout <<"Got through data successfully.\n";
   // Data done.
   return(0);
 }
@@ -758,16 +758,16 @@ int IC_basic_tests::setup_DoubleMachRef()
   //SimPM->BC_YP = "DMR";
   //SimPM->BC_Nint = 1;
   SimPM->gamma=1.4;
-  cout <<"*NB*: Assuming grid dimensions are {[0,4],[0,1]}; if not things may/will go wrong!\n";
+  //cout <<"*NB*: Assuming grid dimensions are {[0,4],[0,1]}; if not things may/will go wrong!\n";
   
   dmrtheta *= M_PI/180.0;
   
   // override mach no and theta:
   dmrmach = 10.0;
   dmrtheta= M_PI/3.0;
-  cout <<"Override: hardwired to mach no. = "<<dmrmach;
-  cout <<" and angle "<<dmrtheta*180./M_PI<<" degrees to x-axis.\n";
-  cout <<"If this is a problem, fix the boundary conditions in the code.!\n";
+  //cout <<"Override: hardwired to mach no. = "<<dmrmach;
+  //cout <<" and angle "<<dmrtheta*180./M_PI<<" degrees to x-axis.\n";
+  //cout <<"If this is a problem, fix the boundary conditions in the code.!\n";
     
   
   double x0 = 1./6.; // initial location of shock.
@@ -780,7 +780,7 @@ int IC_basic_tests::setup_DoubleMachRef()
   double vx1 = vx0 + sin(dmrtheta)*(pg1/pg0 - 1.)*sqrt(SimPM->gamma*pg0/ro0)/SimPM->gamma/dmrmach;
   double vy1 = vy0 - cos(dmrtheta)*(pg1/pg0 - 1.)*sqrt(SimPM->gamma*pg0/ro0)/SimPM->gamma/dmrmach;
   double vz1 = vz0;
-  cout <<"postshock state: ro="<<ro1<<", pg="<<pg1<<", vx="<<vx1<<", vy="<<vy1<<endl;
+  //cout <<"postshock state: ro="<<ro1<<", pg="<<pg1<<", vx="<<vx1<<", vy="<<vy1<<endl;
   
   double xs = 0.0;
   class cell *c = gg->FirstPt();
@@ -795,7 +795,7 @@ int IC_basic_tests::setup_DoubleMachRef()
       c->P[RO] = ro0; c->P[PG] = pg0; c->P[VX] = vx0; c->P[VY] = vy0; c->P[VZ] = vz0;
     }
   } while ( (c=gg->NextPt(c))!=0);
-  cout <<"Got through data successfully.\n";
+  //cout <<"Got through data successfully.\n";
   // Data done.
   
   return(0);
@@ -854,7 +854,7 @@ int IC_basic_tests::setup_KelvinHelmholz_Stone()
     c->P[VX] += noise_amp*(static_cast<double>(rand())/RAND_MAX -0.5);
     c->P[VY] += noise_amp*(static_cast<double>(rand())/RAND_MAX -0.5);
   } while ( (c=gg->NextPt(c))!=0);
-  cout <<"Got through data successfully.\n";
+  //cout <<"Got through data successfully.\n";
   // Data done.
 
   return err;
@@ -904,7 +904,7 @@ int IC_basic_tests::setup_KelvinHelmholz()
                              *exp(-(dpos[YY]*dpos[YY])/4.0/a/a);
     c->P[VZ] = 0.0;
   } while ( (c=gg->NextPt(c))!=0);
-  cout <<"Got through data successfully.\n";
+  //cout <<"Got through data successfully.\n";
   // Data done.
 
   return err;

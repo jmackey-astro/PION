@@ -236,7 +236,7 @@ int setup_NG_grid::setup_grid(
   cout <<"(setup_NG_grid::setup_grid) Setting up grid...\n";
 #endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    cout <<"Init: level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
+    //cout <<"level="<< l <<",  &grid="<< &(grid[l])<<", and grid="<< grid[l] <<"\n";
     
     if (grid[l]) rep.error("Grid already set up!",grid[l]);
 
@@ -302,7 +302,7 @@ int setup_NG_grid::setup_grid(
     if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
   }
 
-cout <<"------------------------------------------------------\n\n";
+//cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()
@@ -364,17 +364,17 @@ int setup_NG_grid::setup_raytracing(
 {
   int err = 0;
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    cout <<"setting up raytracing for grid level "<<l<<"\n";
+    //cout <<"setting up raytracing for grid level "<<l<<"\n";
     err += setup_fixed_grid::setup_raytracing(SimPM,grid[l]);
     rep.errorTest("setup_NG_grid::setup_raytracing()",0,err);
   }
   
-  cout <<"NG setting up evolving RT sources from setup_raytracing.\n";
+  //cout <<"NG setting up evolving RT sources from setup_raytracing.\n";
   err += setup_evolving_RT_sources(SimPM);
   rep.errorTest("setup_NG_grid::setup_evolving_RT_sources()",0,err);
   
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    cout <<"NG l="<<l<<": updating evolving RT sources from setup_raytracing.\n";
+    //cout <<"NG l="<<l<<": updating evolving RT sources from setup_raytracing.\n";
     err += update_evolving_RT_sources(SimPM,SimPM.levels[l].simtime, 
                                                         grid[l]->RT);
     rep.errorTest("setup_NG_grid::update_RT_sources()",0,err);
@@ -400,7 +400,7 @@ int setup_NG_grid::boundary_conditions(
 #endif
   int err = 0;
   for (int l=0;l<par.grid_nlevels;l++) {
-    cout <<"level "<<l<<", setting up boundaries\n";
+    //cout <<"level "<<l<<", setting up boundaries\n";
 
     //
     // Choose what BCs to set up based on BC strings.

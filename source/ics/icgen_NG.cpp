@@ -116,7 +116,7 @@ int main(int argc, char **argv)
     // don't need to set up the class, because it just does cooling and
     // there is no need to equilibrate anything.
   }
-  cout <<"setting up microphysics module\n";
+  //cout <<"setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
   // ----------------------------------------------------------------
 
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
+    //cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
     rep.errorTest("icgen_NG::assign_boundary_data",0,err);
   }
@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   for (int l=0; l<SimPM.grid_nlevels; l++) {
-    cout <<"updating external boundaries for level "<<l<<"\n";
+    //cout <<"updating external boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], 
                   solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
-    cout <<"updating internal boundaries for level "<<l<<"\n";
+    //cout <<"updating internal boundaries for level "<<l<<"\n";
     err += SimSetup->TimeUpdateInternalBCs(SimPM,l,grid[l], 
                   solver, SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
   // chemistry...
   //
   if (SimPM.ntracer>0 && (SimPM.EP.chemistry)) {
-    cout <<"MAIN: equilibrating the chemical species.\n";
+    //cout <<"MAIN: equilibrating the chemical species.\n";
     if (!MP) rep.error("microphysics init",MP);
 
     // first avoid cooling the gas in getting to equilbrium, by
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
       rep.error("setting chemical states to equilibrium failed",err);
 
     SimPM.EP.update_erg = uerg;
-    cout <<"MAIN: finished equilibrating the chemical species.\n";
+    //cout <<"MAIN: finished equilibrating the chemical species.\n";
   }
   // ----------------------------------------------------------------
 

@@ -155,7 +155,7 @@ int stellar_wind::add_source(
   ws->type = type;
   switch (type) {
   case WINDTYPE_CONSTANT: case WINDTYPE_EVOLVING:
-    cout <<"\tAdding wind source as id="<<ws->id<<"\n";
+    //cout <<"\tAdding wind source as id="<<ws->id<<"\n";
     break;
   default:
     rep.error("What type of source is this?  add a new type?",type);
@@ -164,7 +164,7 @@ int stellar_wind::add_source(
 
   for (int v=0;v<ndim;v++)
     ws->dpos[v] = pos[v];
-  rep.printVec("ws->dpos",ws->dpos,ndim);
+  //rep.printVec("ws->dpos",ws->dpos,ndim);
 
   for (int v=ndim;v<MAX_DIM;v++)
     ws->dpos[v] = VERY_LARGE_VALUE;
@@ -188,7 +188,7 @@ int stellar_wind::add_source(
   ws->tracers = mem.myalloc(ws->tracers,ntracer);
   for (int v=0;v<ntracer; v++) {
     ws->tracers[v] = trv[v];
-    cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
+    //cout <<"ws->tracers[v] = "<<ws->tracers[v]<<"\n";
   }
 
   // if using microphysics, find H+ tracer variable, if it exists.
@@ -952,7 +952,8 @@ int stellar_wind_evolution::read_evolution_file(
   char *rval=0;
   rval = fgets(line,512,wf);
   if (!rval) rep.error("stwind_angle: failed to get line 1",line);
-  printf("Star Calculation Source: %s",line);
+  //printf("Star Calculation Source: %s",line);
+  cout <<"Star Calculation Source: "<<string(line)<<"\n";
   rval = fgets(line,512,wf);
   if (!rval) rep.error("stwind_angle: failed to get line 2",line);
   //printf("%s",line);

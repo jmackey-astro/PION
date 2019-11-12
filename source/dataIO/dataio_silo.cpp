@@ -1848,43 +1848,43 @@ int dataio_silo::read_header_param(class pm_base *p)
   if      (i==MY_INT) {
     int x;
     err += DBReadVar(*db_ptr, p->name.c_str(), &x);
-    p->assign_val(&x);
+    if (!err) p->assign_val(&x);
   }
   else if (i==MY_DOUBLE) {
     double x;
     err += DBReadVar(*db_ptr, p->name.c_str(), &x);
-    p->assign_val(&x);
+    if (!err) p->assign_val(&x);
   }
   else if (i==MY_FLOAT) {
     float x;
     err += DBReadVar(*db_ptr, p->name.c_str(), &x);
-    p->assign_val(&x);
+    if (!err) p->assign_val(&x);
   }
   else if (i==MY_LONG) {
     long int x;
     err += DBReadVar(*db_ptr, p->name.c_str(), &x);
-    p->assign_val(&x);
+    if (!err) p->assign_val(&x);
   }
   else if (i==MY_STRING) {
     char x[strlength];
     err += DBReadVar(*db_ptr, p->name.c_str(), x);
     string temp(x);
-    p->assign_val(&temp);
+    if (!err) p->assign_val(&temp);
   }
   else if (i==MY_DDIMARR) {
     double x[MAX_DIM];
     err += DBReadVar(*db_ptr, p->name.c_str(), x);
-    p->assign_val(x);
+    if (!err) p->assign_val(x);
   }
   else if (i==MY_IDIMARR) {
     int x[MAX_DIM];
     err += DBReadVar(*db_ptr, p->name.c_str(), x);
-    p->assign_val(x);
+    if (!err) p->assign_val(x);
   }
   else if (i==MY_DVARARR) {
     double x[MAX_NVAR];
     err += DBReadVar(*db_ptr, p->name.c_str(), x);
-    p->assign_val(x);
+    if (!err) p->assign_val(x);
   }
 
   if (err) {

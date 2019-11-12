@@ -220,7 +220,7 @@ CoolingFn::CoolingFn(int flag)
   } // c2ray
 
   else if (flag==6 || flag==7 || flag==8 || flag==9 || flag==10) {
-    cout <<"\t\tPower law cooling function";
+    //cout <<"\t\tPower law cooling function";
     MinTemp=0.000001; MaxTemp=1.e8;
     WhichFunction = flag;
 
@@ -232,8 +232,8 @@ CoolingFn::CoolingFn(int flag)
     case 10: MinSlope=10.0; break;
     default: rep.error("bad cooling flag",WhichFunction);
     }
-    cout <<" with log slope="<<MinSlope<<"\n\t\t and pivot at 8000K";
-    cout <<" with rate 1e-24 at 8000K.\n";
+    //cout <<" with log slope="<<MinSlope<<"\n\t\t and pivot at 8000K";
+    //cout <<" with rate 1e-24 at 8000K.\n";
   }
   
   else if (flag==11 || flag==12 || flag==13 || flag==14 || flag==15 || flag==16) {

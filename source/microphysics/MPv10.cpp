@@ -1270,8 +1270,9 @@ double MPv10::timescales_RT(
 
 
 void MPv10::sCMA(
-    pion_flt *corrector, ///< input corrector vector
-    const pion_flt *p_in) ///< input primitive vector from grid cell (length nv_prim)
+      pion_flt *corrector, ///< input corrector vector
+      const pion_flt *p_in ///< input primitive vector from grid cell
+      )
 {
   //  Re-initialise corrector every step
   for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;

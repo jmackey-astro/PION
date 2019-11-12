@@ -89,7 +89,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   }
 
   if (Ns>0) {
-    cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
+    //cout <<"\n----------- SETTING UP STELLAR WIND CLASS ----------\n";
     if      (wtype==0) {
       grid->Wind = new stellar_wind(par.ndim, par.nvar, par.ntracer,
             par.ftr, par.tracers, par.coord_sys, par.eqntype,
@@ -102,7 +102,7 @@ int stellar_wind_bc::BC_assign_STWIND(
       err=0;
     }
     else if (wtype==2) {
-      cout <<"Setting up stellar_wind_angle class\n";
+      //cout <<"Setting up stellar_wind_angle class\n";
       grid->Wind = new stellar_wind_angle(par.ndim, par.nvar,
             par.ntracer, par.ftr, par.tracers, par.coord_sys, par.eqntype,
             par.EP.MinTemperature, par.starttime, par.finishtime,
@@ -114,7 +114,7 @@ int stellar_wind_bc::BC_assign_STWIND(
   // Run through sources and add sources.
   //
   for (int isw=0; isw<Ns; isw++) {
-    cout <<"\tBC_assign_STWIND: Adding source "<<isw<<"\n";
+    //cout <<"\tBC_assign_STWIND: Adding source "<<isw<<"\n";
     if (SWP.params[isw]->type==WINDTYPE_CONSTANT) {
       //
       // This is for spherically symmetric winds that are constant
@@ -138,8 +138,8 @@ int stellar_wind_bc::BC_assign_STWIND(
       // This works for spherically symmetric winds and for
       // latitude-dependent winds that evolve over time.
       //
-      cout <<"Adding source "<<isw<<" with filename ";
-      cout <<SWP.params[isw]->evolving_wind_file<<"\n";
+      //cout <<"Adding source "<<isw<<" with filename ";
+      //cout <<SWP.params[isw]->evolving_wind_file<<"\n";
       err = grid->Wind->add_evolving_source(
         SWP.params[isw]->dpos,
         SWP.params[isw]->radius,
@@ -160,8 +160,8 @@ int stellar_wind_bc::BC_assign_STWIND(
   // loop over sources, adding cells to boundary data list in order.
   //
   for (int id=0;id<Ns;id++) {
-    cout <<"\tBC_assign_STWIND: Adding cells to source ";
-    cout <<id<<"\n";
+    //cout <<"\tBC_assign_STWIND: Adding cells to source ";
+    //cout <<id<<"\n";
     BC_assign_STWIND_add_cells2src(par,grid, id);
   }
   //
@@ -169,8 +169,8 @@ int stellar_wind_bc::BC_assign_STWIND(
   // cells with their boundary values.
   //
   //err += BC_update_STWIND(par.simtime, b,0,0);
-  cout <<"\tFinished setting up wind parameters\n";
-  cout <<"------ DONE SETTING UP STELLAR WIND CLASS ----------\n\n";
+  //cout <<"\tFinished setting up wind parameters\n";
+  //cout <<"------ DONE SETTING UP STELLAR WIND CLASS ----------\n\n";
   return err;
 }
 
@@ -216,10 +216,10 @@ int stellar_wind_bc::BC_assign_STWIND_add_cells2src(
   
   err += grid->Wind->set_num_cells(id,ncell);
 
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"BC_assign_STWIND_add_cells2src: Added "<<ncell;
   cout <<" cells to wind boundary for WS "<<id<<"\n";
-//#endif
+#endif
   return err;
 }
 

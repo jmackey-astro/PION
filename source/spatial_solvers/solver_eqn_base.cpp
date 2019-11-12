@@ -325,10 +325,10 @@ void FV_solver_base::set_interface_tracer_flux(
   if (FV_ntr>0) {
     if (flux[eqRHO]>1.0e-28)
       for (int t=0;t<FV_ntr;t++)
-  flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
+        flux[eqTR[t]] =  left[eqTR[t]]*flux[eqRHO];
     else if (flux[eqRHO]<-1.0e-28)
       for (int t=0;t<FV_ntr;t++)
-  flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
+        flux[eqTR[t]] = right[eqTR[t]]*flux[eqRHO];
     else 
       for (int t=0;t<FV_ntr;t++) flux[eqTR[t]] = 0.0;
 
