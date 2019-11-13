@@ -250,6 +250,7 @@ ifeq ($(MAKE_UNAME), KAY)
   INC  = -I${MYLIB}/include
   INC += -I${SRCDIR}
   LDFLAGS += -Wl,-L${MYLIB}/lib
+  LDFLAGS += -Wl,-L${MYLIB}/lib64
   LDFLAGS += -lsilo 
   #LDFLAGS += -lcfitsio
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial

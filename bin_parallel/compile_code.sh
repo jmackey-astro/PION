@@ -100,7 +100,7 @@ case $HOSTNAME in
     export CC=mpiicc
     export CXX=mpiicpc
     # -DINTEL means the code uses the intel math headers instead of gnu.
-    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DINTEL -DCVODE2"
+    export PION_OPTIONS="-DPARALLEL -DUSE_MPI -DSILO -DINTEL -DCVODE5"
     export PION_OPTIMISE=HIGH
     #export PION_OPTIMISE=LOW
     #NCORES=1

@@ -64,6 +64,7 @@ case $HOSTNAME in
     echo "Compiling on KAY/ICHEC"
     source /usr/share/Modules/init/bash
     #module purge
+    module load cmake3
     module load intel/2018u4
     #module load cmake3/3.12.3
     #module load python py/intel
