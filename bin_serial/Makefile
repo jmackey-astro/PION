@@ -240,6 +240,31 @@ ifeq ($(MAKE_UNAME), ubuntu18)
 endif
 ################### --- Ubuntu 18 WORKSTATION ---######################
 
+######################################################################
+# Options for an Ubuntu 16 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu16)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+
+  MYLIB = $(CURDIR)/../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- Ubuntu 16 WORKSTATION ---######################
+
 
 ######################################################################
 ####  OS X

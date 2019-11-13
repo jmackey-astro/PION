@@ -36,7 +36,7 @@ code=`lsb_release -s -c`
 nc=`nproc --all`
 
 if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
-  echo "Detected Ubuntu 18.04: compiling extra libraries"
+  echo "Detected Ubuntu 18.04 (bionic): compiling extra libraries"
   MAKE_UNAME=ubuntu18
   export CXX=g++
   export CC=gcc
@@ -52,6 +52,22 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   COMPILE_SUNDIALS=yes
   COMPILE_FITS=no
 
+elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
+  echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
+  MAKE_UNAME=ubuntu16
+  export CXX=g++
+  export CC=gcc
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS"
+  export PION_OPTIMISE=HIGH
+  NCORES=$nc
+  export CC=gcc
+  export CXX=g++
+  export FC=gfortran
+  SHARED=YES
+  HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
+  COMPILE_SILO=yes
+  COMPILE_SUNDIALS=yes
+  COMPILE_FITS=yes
 
 elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
   echo "Detected Debian 9 (stretch), use system libs for SILO, FITS, GSL, SUNDIALS!"

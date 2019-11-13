@@ -43,8 +43,16 @@ code=`lsb_release -s -c`
 nc=`nproc --all`
 
 if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
-  echo "Detected Ubuntu 18.04: Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
+  echo "Detected Ubuntu 18.04 (bionic): Note system Silo library has a bug, you must install yourself using the script in PION/extra_libraries"
   MAKE_UNAME=ubuntu18
+  export CXX=g++
+  export CC=gcc
+  export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
+  export PION_OPTIMISE=HIGH
+  NCORES=$nc
+elif [  "$id" == "Ubuntu" ] && [ "$ver" == "16.04" ]; then
+  echo "Detected Ubuntu 16.04 (xenial): compiling extra libraries"
+  MAKE_UNAME=ubuntu16
   export CXX=g++
   export CC=gcc
   export PION_OPTIONS="-DSERIAL -DSILO -DFITS -DCVODE5"
