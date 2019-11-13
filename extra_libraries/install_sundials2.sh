@@ -1,13 +1,6 @@
 #!/bin/bash
 #
-# - 2012.02.22 JM/HD: Added options for compiling on UCL-dougal
-# - 2012.09.11 JM: Added options for SuperMUC
-# - 2013.02.07 JM: Updated for new library versions (all).
-# - 2014.04.14 JM: Added section for JUDGE at JSC.
-# - 2015.01.14 JM: Section for Juropatest system at JSC.
-# - 2016.04.29 JM: updated for sundials 2.6.2 and cfitsio 3390.
-# - 2016.05.04 JM: Added FIONN to list of machines.
-# - 2016.05.25 JM: Added support for OSX (use curl to download).
+# - 2019.11.13 JM: modified v2 compilation for v3.
 
 mkdir include
 mkdir bin
@@ -58,30 +51,6 @@ else
 fi
 #################################
 
-##############################
-### TEST FOR KAY.ICHEC.IE  ###
-##############################
-case $HOSTNAME in
-  login[0-9].kay.ichec.ie)
-    echo "Compiling on KAY/ICHEC"
-    source /usr/share/Modules/init/bash
-    #module purge
-    module load cmake3
-    module load intel/2018u4
-    #module load cmake3/3.12.3
-    #module load python py/intel
-    #module load python numpy
-    module list
-    MAKE_UNAME=KAY
-    NCORES=8
-    export CC=icc
-    export CXX=icpc
-    export FC=ifort
-    SHARED=NO
-    ;;
-esac
-#######################
-
 #################################
 ### TEST FOR OS X (DARWIN)    ###
 #################################
@@ -113,10 +82,10 @@ if [ "$COMPILE_SUNDIALS" == "yes" ]
 then
 #################################
 # Change these for new versions:
-  FILE=sundials-5.0.0.tar.gz
-  SRC_DIR=sundials-5.0.0
+  FILE=sundials-2.7.0.tar.gz
+  SRC_DIR=sundials-2.7.0
   BLD_DIR=sundials_build
-  REMOTE_URL=https://computing.llnl.gov/projects/sundials/download/sundials-5.0.0.tar.gz
+  REMOTE_URL=https://computing.llnl.gov/projects/sundials/download/sundials-2.7.0.tar.gz
   echo "********************************"
   echo "*** INSTALLING SUNDIALS/CVODE LIBRARY FILE=${FILE}****"
   echo "********************************"
@@ -129,7 +98,8 @@ then
     echo "*** Automatic download of ${FILE}"
     echo "from ${REMOTE_URL}"
     if [ $MAKE_UNAME == "osx" ]; then
-      curl  $REMOTE_URL -o $FILE
+      echo "curl $REMOTE_URL --output $FILE"
+      curl  $REMOTE_URL --output $FILE
     else
       $WGET --no-check-certificate $REMOTE_URL -O $FILE
     fi

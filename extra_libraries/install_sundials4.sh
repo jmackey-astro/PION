@@ -46,10 +46,12 @@ if [ "$id" == "Ubuntu" ] && [ "$ver" == "18.04" ]; then
   HDF5_LIBS="/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial"
 
 elif [ "$id" == "Debian" ] && [ "$code" == "stretch" ]; then
-  echo "Detected Debian 9 (stretch)"
+  echo "Detected Debian 9 (stretch) - use system libs"
+  exit
 
 elif [ "$id" == "Debian" ] && [ "$code" == "buster" ]; then
-  echo "Detected Debian 10 (buster)"
+  echo "Detected Debian 10 (buster) - use system libs"
+  exit
 
 else
   echo "Failed to find a known version of Linux: checking for other OS types."
