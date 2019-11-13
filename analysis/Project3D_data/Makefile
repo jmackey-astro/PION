@@ -67,15 +67,20 @@ OPTION += -D$(IOMODE)
 OPTION += -DSILO
 OPTION += -DFITS
 
+PION_OPTIMISE=HIGH
+
 #MAKE_UNAME=standard
-MAKE_UNAME=ubuntu18
+#MAKE_UNAME=ubuntu18
+MAKE_UNAME=ubuntu16
 #MAKE_UNAME=debian9
 #MAKE_UNAME=OSX
 #MAKE_UNAME=SUPERMUC
 #MAKE_UNAME=JUROPA
 
 # All machines and options need readline and maths
-LDFLAGS = -lreadline
+ifeq ($(PION_OPTIMISE), LOW)
+  LDFLAGS = -lreadline
+endif
 LDFLAGS += -lm  
 
 
@@ -141,6 +146,39 @@ ifeq ($(MAKE_UNAME), ubuntu18)
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- UBUNTU 18 ---######################
+
+######################################################################
+# Options for an Ubuntu 16 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu16)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  OPTION += -DCVODE5
+  MYLIB = $(CODEDIR)/extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${srcdir}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 16 ---######################
 
 ###########################################
 # Options for OSX 
