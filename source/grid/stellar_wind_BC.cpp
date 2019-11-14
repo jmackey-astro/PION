@@ -396,8 +396,10 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[PG]*= exp((gamma)*log(wc->p[RO]));
   }
 
+  // Velocities and magnetic fields: get coordinates relative to star
+  // for calculating sin/cos angles in theta and phi.
   cell *c = wc->c;
-  double x,y,z,xf,yf; //,nr;
+  double x,y,z;
   switch (ndim) {
   case 1:
     x = grid->difference_vertex2cell(WS->dpos,c,XX);
@@ -443,16 +445,9 @@ void stellar_wind::set_wind_cell_reference_state(
     wc->p[VZ] = WS->Vinf * z / wc->dist;
 
     // add non-radial component to x/y-dir from rotation.
-    // J is hardcoded to be parallel to z-axis
-    xf = -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist,2);
-    yf =  WS->v_rot * WS->Rstar * x / pow_fast(wc->dist,2);
-    // HACK: switch off rotation component of velocity.
-    //wc->p[VX] += xf;
-    //wc->p[VY] += yf;
-    xf /= WS->Vinf * x / wc->dist; // fraction of x-vel in non-radial dir.
-    yf /= WS->Vinf * y / wc->dist;
-    //cout <<"xf= "<<xf<<" , yf= "<<yf<<" , vrot= "<<WS->v_rot<<", vinf="<<WS->Vinf<<"\n";
-    //nr = WS->v_rot * WS->Rstar / (wc->dist * WS->Vinf);
+    // J is hardcoded to be parallel to positive z-axis
+    wc->p[VX] += -WS->v_rot * WS->Rstar * y / pow_fast(wc->dist,2);
+    wc->p[VY] +=  WS->v_rot * WS->Rstar * x / pow_fast(wc->dist,2);
     break;
 
   default:
@@ -469,37 +464,43 @@ void stellar_wind::set_wind_cell_reference_state(
   // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
   //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
+    double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
+    double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii
+    double D_2 = D_s*D_s;                // 1/d^2 in stellar radii
+    // this multiplies the toroidal component:
+    double beta_B_sint = (WS->v_rot /  WS->Vinf) * B_s * D_s;
+
     switch (ndim) {
     case 1:
       rep.error("1D spherical but MHD?",ndim);
       break;
     case 2:
       // split monopole
-      wc->p[BX] = (WS->Bstar/sqrt(4.0*M_PI)) * 
-              pow(WS->Rstar/wc->dist,2) * fabs(x)/wc->dist;
-      wc->p[BY] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) / wc->dist;
+      wc->p[BX] = B_s * D_2 * fabs(x)/wc->dist;
+      wc->p[BY] = B_s * D_2 / wc->dist;
       wc->p[BY] = (x>0.0) ? y * wc->p[BY] : -y * wc->p[BY];
-      wc->p[BZ] = 0.0;
+      // toroidal component
+      beta_B_sint = beta_B_sint * y / wc->dist;
+      wc->p[BZ] = (x>0.0) ? -beta_B_sint : beta_B_sint;
       break;
 
     case 3:
       // split monopole along z-axis, parallel to J
-      wc->p[BX] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) /wc->dist;
+      wc->p[BX] = B_s * D_2 / wc->dist;
       wc->p[BX] = (z>0.0) ? x * wc->p[BX] : -x * wc->p[BX];
 
-      wc->p[BY] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) / wc->dist;
+      wc->p[BY] = B_s * D_2 / wc->dist;
       wc->p[BY] = (z>0.0) ? y * wc->p[BY] : -y * wc->p[BY];
 
-      wc->p[BZ] = (WS->Bstar/sqrt(4.0*M_PI)) *
-              pow(WS->Rstar/wc->dist,2) * fabs(z) / wc->dist;
+      wc->p[BZ] = B_s * D_2 * fabs(z) / wc->dist;
 
       // toroidal component in x-y plane from rotation, such that
-      // v is parallel to B
-      wc->p[BX] *= (1.0 - xf);
-      wc->p[BY] *= (1.0 - yf);
+      // we have a Parker spiral, inward winding for z<0 and 
+      // outwards for z>0.
+      beta_B_sint *= sqrt(x*x+y*y)/wc->dist;
+      beta_B_sint = (z>0.0) ? -beta_B_sint : beta_B_sint;
+      wc->p[BX] += - beta_B_sint * y / wc->dist;
+      wc->p[BY] +=   beta_B_sint * x / wc->dist;
       break;
 
     default:
