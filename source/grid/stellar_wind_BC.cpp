@@ -464,6 +464,7 @@ void stellar_wind::set_wind_cell_reference_state(
   // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
   //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
+    double t=0.0;
     double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
     double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii
     double D_2 = D_s*D_s;                // 1/d^2 in stellar radii
@@ -499,6 +500,13 @@ void stellar_wind::set_wind_cell_reference_state(
       // outwards for z>0.
       beta_B_sint *= sqrt(x*x+y*y)/wc->dist;
       beta_B_sint = (z>0.0) ? -beta_B_sint : beta_B_sint;
+
+      // modulate strength near the equator by linearly reducing 
+      // torodial component for |theta|<1 degree from equator
+      // See Pogorelov et al (2006,ApJ,644,1299).
+      t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
+      if (t < 2.0) beta_B_sint *= 0.5*t;
+
       wc->p[BX] += - beta_B_sint * y / wc->dist;
       wc->p[BY] +=   beta_B_sint * x / wc->dist;
       break;

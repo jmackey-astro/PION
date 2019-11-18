@@ -7,11 +7,11 @@
 # the boundary region.
 # The star is moving with 20 km/s relative to the interstellar medium
 # and it is assumed that the star photoionizes its surroundings.
-../../icgen_NG_parallel params_Ostar3D_n0128l3.txt silo
+mpirun -np 4 ../../icgen_NG_parallel params_Ostar3D_n0128l3.txt silo
 
 # run PION with 8 MPI processes using 8 cores, loading the Ostar3D
 # initial conditions snapshot, and saving snapshots every 32
 # timesteps into the current working directory.
-mpirun -np 8 ../../pion_NG_parallel Ostar3D_n0128l3_level00_0000.00000000.silo opfreq=32
+mpirun -np 4 ../../pion_NG_parallel Ostar3D_n0128l3_level00_0000.00000000.silo opfreq=256
 
 
