@@ -503,9 +503,10 @@ void stellar_wind::set_wind_cell_reference_state(
 
       // modulate strength near the equator by linearly reducing 
       // torodial component for |theta|<1 degree from equator
-      // See Pogorelov et al (2006,ApJ,644,1299).
-      t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
-      if (t < 2.0) beta_B_sint *= 0.5*t;
+      // See Pogorelov et al (2006,ApJ,644,1299).  This is for
+      // testing the code.
+      //t = fabs(z)/wc->dist * 180.0 / M_PI; // angle in degrees.
+      //if (t < 2.0) beta_B_sint *= 0.5*t;
 
       wc->p[BX] += - beta_B_sint * y / wc->dist;
       wc->p[BY] +=   beta_B_sint * x / wc->dist;
