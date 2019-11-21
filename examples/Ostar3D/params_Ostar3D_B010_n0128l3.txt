@@ -72,7 +72,7 @@ NG_refine_ZZ 1
 
 ########################
 StartTime  0.000e11
-FinishTime 3.156e12
+FinishTime 7.0e10
 
 OutputPath ./
 OutputFile Ostar3D_B010_n0128l3
