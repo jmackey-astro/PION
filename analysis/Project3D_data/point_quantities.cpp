@@ -401,15 +401,7 @@ double point_quantities::get_point_RotationMeasure(
 
 ///
 /// Get the absorption and emission coefficients for H-alpha
-/// recombination radiation, according to Hummer94 and Henney et al.
-/// (2005)'s generic formulae.
-/// 
-/// I found emissivities according to Storey & Hummer
-/// (1995,MNRAS,272,41), and they drop linearly with temperature.
-/// Not sure why that is, but it is for Ha,Hb,Hg, etc.
-///
-/// UPDATE: Replaced with a fit to Ostebrock (1989)'s tables, which
-/// seem to be more reliable.
+/// recombination radiation, with a fit to Ostebrock (1989)'s tables.
 ///
 void point_quantities::get_point_Halpha_params(
       const struct point_4cellavg *pt, ///< point in question.
