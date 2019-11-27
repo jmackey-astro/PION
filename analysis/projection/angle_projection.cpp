@@ -350,7 +350,7 @@ void add_cell_emission_to_ray(
   double n_Hp = MP->get_n_Hplus(P);
   double n_H0 = MP->get_n_Hneutral(P);
   double T = MP->Temperature(P,SimPM.gamma);
-  cout <<n_e<<", "<< n_H0 <<", "<< n_Hp <<", "<< T <<"\n";
+  //cout <<n_e<<", "<< n_H0 <<", "<< n_Hp <<", "<< T <<"\n";
   if (!isfinite(T)) {
     rep.error("bugging out, T is infinite",T);
   }

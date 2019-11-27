@@ -294,6 +294,7 @@ int get_emission_absorption_data(
   double n_e=0.0, n_Hp=0.0, n_H0=0.0, T=0.0;
   double n_N1p;
   double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
+  double per_angle = 1.0/(4.0*pconst.pi()*pconst.sqasec_per_sr());
 
 
   // loop over all cells in column and set cell-centre quantities
@@ -312,15 +313,15 @@ int get_emission_absorption_data(
     ems[PROJ_D    ][i] = c->P[RO];
     ems[PROJ_NtD  ][i] = n_H0;
     ems[PROJ_InD  ][i] = n_Hp;
-    ems[PROJ_EM   ][i] = n_e * n_e; 
-    ems[PROJ_X00p1][i] = n_e * n_Hp * xr[0];
-    ems[PROJ_X00p2][i] = n_e * n_Hp * xr[1];
-    ems[PROJ_X00p3][i] = n_e * n_Hp * xr[2];
-    ems[PROJ_X00p5][i] = n_e * n_Hp * xr[3];
-    ems[PROJ_X01p0][i] = n_e * n_Hp * xr[4];
-    ems[PROJ_X02p0][i] = n_e * n_Hp * xr[5];
-    ems[PROJ_X05p0][i] = n_e * n_Hp * xr[6];
-    ems[PROJ_X10p0][i] = n_e * n_Hp * xr[7];
+    ems[PROJ_EM   ][i] = n_e * n_e / pconst.parsec(); 
+    ems[PROJ_X00p1][i] = n_e * n_Hp * xr[0] * per_angle;
+    ems[PROJ_X00p2][i] = n_e * n_Hp * xr[1] * per_angle;
+    ems[PROJ_X00p3][i] = n_e * n_Hp * xr[2] * per_angle;
+    ems[PROJ_X00p5][i] = n_e * n_Hp * xr[3] * per_angle;
+    ems[PROJ_X01p0][i] = n_e * n_Hp * xr[4] * per_angle;
+    ems[PROJ_X02p0][i] = n_e * n_Hp * xr[5] * per_angle;
+    ems[PROJ_X05p0][i] = n_e * n_Hp * xr[6] * per_angle;
+    ems[PROJ_X10p0][i] = n_e * n_Hp * xr[7] * per_angle;
     ems[PROJ_HA   ][i] = n_e * n_Hp * XR.Halpha_emissivity(T);
     ems[PROJ_NII  ][i] = n_e * n_N1p * XR.NII6584_emissivity(T);
 
@@ -605,21 +606,4 @@ double calc_projectionRT_column(
 
 // ##################################################################
 // ##################################################################
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-// ##################################################################
-// ##################################################################
-
-
 

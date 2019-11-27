@@ -184,12 +184,12 @@ int image_io::write_image_to_file(
   for (int v=0;v<im_dim;v++) min[v]=0.0;
   ostringstream ofn;
 
-//#ifdef TESTING
+#ifdef TESTING
   cout <<"saving data: "<<f<<", type="<<op_filetype;
   cout <<".  image = "<<num_pix<<"  "<<im_dim<<"  "<<npix[0]<<"  "<<npix[1];
   cout <<"  "<<name<<"  "<<xmin[0]<<"  "<<xmin[1]<<"  "<<dx[0]<<"  "<<dx[1];
   cout <<"  "<<time<<"  "<<cycle<<"\n";
-//#endif
+#endif
 
   switch (op_filetype) {
 

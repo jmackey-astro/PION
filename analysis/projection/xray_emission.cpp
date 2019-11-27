@@ -39,6 +39,7 @@ Xray_emission::Xray_emission()
     cerr <<"Failed to setup xray tables correctly: "<<err<<"\n";
     exit(err);
   }
+  NE=8;
   return;
 }
 
@@ -207,7 +208,7 @@ void Xray_emission::get_xray_emissivity(
   // extrapolate linearly
   //
   if (lt<LT[0]) {
-    for (size_t v=0; v<4; v++) res[v] = 0.0;
+    for (size_t v=0; v<NE; v++) res[v] = 0.0;
   }
   else if (lt>LT[XNel-1]) {
     cout << "extrapolate, T="<<T<<" : ";

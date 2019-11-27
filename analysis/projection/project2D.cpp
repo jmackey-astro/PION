@@ -379,6 +379,7 @@ int main(int argc, char **argv)
     err = dataio.ReadHeader(infile,SimPM);
     rep.errorTest("(main) Didn't read header",0,err);
     SimPM.grid_nlevels = 1;
+    cout <<"!! time = "<<SimPM.simtime<<", step="<<SimPM.timestep<<"\n";
 
     //
     // Read data (this reader can read serial or parallel data.
@@ -444,12 +445,13 @@ int main(int argc, char **argv)
     double im_dx[2] = {grid->DX()*sin(angle), grid->DX()};    
     //cout <<"saving image 0 of "<<n_images<<"\n";
     for (int outputs=0;outputs<n_images;outputs++) {
-      cout <<"saving image "<<outputs<<" of "<<n_images<<"\n";
+      //cout <<"saving image "<<outputs<<" of "<<n_images<<"\n";
+      //cout <<"@@ time = "<<SimPM.simtime<<", step="<<SimPM.timestep<<"\n";
       err = imio.write_image_to_file(filehandle, op_filetype,
                                     img_array[outputs], num_pix,
                                     2, npix, im_name[outputs],
                                     Xmin, im_dx, 
-                              SimPM.levels[0].simtime, SimPM.levels[0].step
+                              SimPM.simtime, SimPM.timestep
                                     );
       if (err) rep.error("Failed to write image to file",err);
     }

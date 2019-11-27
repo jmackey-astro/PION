@@ -51,6 +51,7 @@ class Xray_emission {
 
   private:
   size_t XNel;  ///< Number of rows in table.
+  size_t NE;    ///< number of energies to calculate.
 
   double 
     *LT,  ///< log temperature
