@@ -305,7 +305,8 @@ int get_emission_absorption_data(
     n_e = MP->get_n_elec(c->P);
     n_Hp = MP->get_n_Hplus(c->P);
     n_H0 = MP->get_n_Hneutral(c->P);
-    T = MP->Temperature(c->P,SimPM.gamma);
+    //T = MP->Temperature(c->P,SimPM.gamma);
+    T = data[DATA_T][i];
     XR.get_xray_emissivity(T,xr);
     if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", c->P);
     else                    n_N1p = fNp * n_Hp;

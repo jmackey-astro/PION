@@ -212,6 +212,7 @@ void get_entry_exit_points(
   // R coordinate of entry point is unique for given z.
   entry[Rcyl] = get_R_from_Z(pos, entry[Zcyl], angle);
   exit[Rcyl]  = get_R_from_Z(pos, exit[Zcyl], angle);
+  //cout <<"1st R: "<< entry[Rcyl] <<"  "<< exit[Rcyl]<<"  "<<cpos[Rcyl] <<"  "<< pos[Rcyl]  <<endl;
   if (pconst.equalD(exit[Rcyl],entry[Rcyl]) && pconst.equalD(pos[Zcyl],cpos[Zcyl])) {
     // maybe at start cell, or else at steep angle, so try and see
     // if there is another cell at RN/RP that is on the ray.
@@ -224,13 +225,20 @@ void get_entry_exit_points(
   // the cell, then bug out (set outputs to impossible values)
   //
   double midpt = get_R_from_Z(pos, cpos[Zcyl], angle);
+#ifdef DEBUG
+  cout <<"pos="<<pos[Zcyl]<<", cpos="<<cpos[Zcyl]<<"\n";
+#endif
   double mn = (cpos[Rcyl] - dxo2)*ONE_MINUS_EPS;
   double mx = (cpos[Rcyl] + dxo2)*ONE_PLUS_EPS;
 #ifdef DEBUG
-  cout <<entry[Rcyl] <<"  "<< exit[Rcyl] <<"  "<< midpt <<"  "<< mn  <<"  "<< mx <<endl;
+  cout<<"Check reasonable: " <<entry[Rcyl] <<"  "<< exit[Rcyl];
+  cout <<"  "<< midpt <<"  "<< mn  <<"  "<< mx <<endl;
 #endif
   if ((entry[Rcyl]<mn && exit[Rcyl]<mn && midpt<mn) ||
       (entry[Rcyl]>mx && exit[Rcyl]>mx && midpt>mx)) {
+#ifdef DEBUG
+    cout <<"impossible values\n";
+#endif
     *next = 0;
     entry[Rcyl] = 1.0e99; exit[Rcyl] = 1.0e99;
     entry[Zcyl] = 1.0e99; exit[Zcyl] = 1.0e99;
@@ -299,7 +307,6 @@ void get_entry_exit_points(
     *next = grid->NextPt(*next,ZNcyl);
   }
 
-
   // If the flag was set, then we must treat cells specially:
   // inward  flag, force exit to be in RN direction
   // outward flag, force entry to be in RP direction
@@ -316,6 +323,7 @@ void get_entry_exit_points(
         *next = grid->NextPt(ray,RPcyl);
       }
     }
+    return;
   }
 
   if (!(*next)  ||  (*next)->isbd  || !(*next)->isgd) *next=0;
@@ -350,6 +358,7 @@ void add_cell_emission_to_ray(
   double n_Hp = MP->get_n_Hplus(P);
   double n_H0 = MP->get_n_Hneutral(P);
   double T = MP->Temperature(P,SimPM.gamma);
+  double per_angle = 1.0/(4.0*pconst.pi()*pconst.sqasec_per_sr());
   //cout <<n_e<<", "<< n_H0 <<", "<< n_Hp <<", "<< T <<"\n";
   if (!isfinite(T)) {
     rep.error("bugging out, T is infinite",T);
@@ -362,14 +371,14 @@ void add_cell_emission_to_ray(
   ans[PROJ_EM]  += integral * n_e * n_e;
 
   XR.get_xray_emissivity(T,xr);
-  ans[PROJ_X00p1] += integral * n_e * n_Hp * xr[0];
-  ans[PROJ_X00p2] += integral * n_e * n_Hp * xr[1];
-  ans[PROJ_X00p3] += integral * n_e * n_Hp * xr[2];
-  ans[PROJ_X00p5] += integral * n_e * n_Hp * xr[3];
-  ans[PROJ_X01p0] += integral * n_e * n_Hp * xr[4];
-  ans[PROJ_X02p0] += integral * n_e * n_Hp * xr[5];
-  ans[PROJ_X05p0] += integral * n_e * n_Hp * xr[6];
-  ans[PROJ_X10p0] += integral * n_e * n_Hp * xr[7];
+  ans[PROJ_X00p1] += integral * n_e * n_Hp * xr[0] * per_angle;
+  ans[PROJ_X00p2] += integral * n_e * n_Hp * xr[1] * per_angle;
+  ans[PROJ_X00p3] += integral * n_e * n_Hp * xr[2] * per_angle;
+  ans[PROJ_X00p5] += integral * n_e * n_Hp * xr[3] * per_angle;
+  ans[PROJ_X01p0] += integral * n_e * n_Hp * xr[4] * per_angle;
+  ans[PROJ_X02p0] += integral * n_e * n_Hp * xr[5] * per_angle;
+  ans[PROJ_X05p0] += integral * n_e * n_Hp * xr[6] * per_angle;
+  ans[PROJ_X10p0] += integral * n_e * n_Hp * xr[7] * per_angle;
 
   ans[PROJ_HA]  += integral * n_e * n_Hp * XR.Halpha_emissivity(T);
   double n_N1p;
@@ -391,6 +400,7 @@ void add_cell_emission_to_ray(
 //
 // Integrate all the lines of sight for data on the grid.
 //
+//#define DEBUG
 int generate_angle_image(
     class SimParams &SimPM,    ///< simulation parameters
     class GridBaseClass *grid, ///< computational grid
@@ -427,8 +437,7 @@ int generate_angle_image(
     double integral = 0.0;
 
 #ifdef DEBUG
-    ttsf=clk.time_so_far("total");
-    cout <<"column = "<<i<<"/"<<npix[0]<<",\t total runtime="<<ttsf<<"\n";
+    cout <<"column = "<<i<<"/"<<npix[0]<<",\n";
 //      cout.flush();
 #endif
     
@@ -441,7 +450,7 @@ int generate_angle_image(
 #ifdef DEBUG
 //        double temp[3];
       cout <<"Pixel: ["<<i<<", "<<j<<"] of ["<<npix[0]<<","<<npix[1]<<"]   ";
-//        rep.printVec("pos",pos,2);
+      rep.printVec("pos",pos,2);
 //        cout.flush();
 #endif
     
@@ -451,6 +460,7 @@ int generate_angle_image(
       CI.get_dpos(ray,startpos);
 #ifdef DEBUG
       cout <<"ray="<<ray<<endl;
+      rep.printVec("starting cell",startpos,2);
 #endif
 
       // if pixel is on the grid, then find the cell that this
@@ -480,6 +490,7 @@ int generate_angle_image(
       //
       // See if we have an incoming ray.  If so, then integrate it.
       //
+      bool at_source=false;
       if (pos[Zcyl] < SimPM.Xmax[Zcyl]-dx) {
 #ifdef DEBUG
         cout <<"incoming ray starting"<<endl;
@@ -492,7 +503,7 @@ int generate_angle_image(
                                 entry, exit, &next_cell);
         if (entry[Rcyl]>1.0e90) {
 #ifdef DEBUG
-          cout <<"  INCOMING RAY ERROR  "<<endl;
+          cout <<"INCOMING RAY ERROR: doesn't intersect grid, skipping"<<endl;
 #endif
         }
         else {
@@ -526,7 +537,15 @@ int generate_angle_image(
             //
             ray = next_cell;
             ncell++;
-          } while ((ray) && (ray->isgd) && !pconst.equalD(CI.get_dpos(ray,Zcyl),pos[Zcyl]));
+            if (pix_on_grid){
+              if (ray==c) at_source=true;
+              else        at_source=false;
+            }
+            else {
+              if (!(ray) || !(ray->isgd) || pconst.equalD(CI.get_dpos(ray,Zcyl),pos[Zcyl])) at_source=true;
+              else at_source=false;
+            }
+          } while (!at_source);
 #ifdef DEBUG
           cout <<"incoming ray finished"<<endl;
 #endif
@@ -539,6 +558,7 @@ int generate_angle_image(
       if (pix_on_grid) {
 #ifdef DEBUG
         cout <<"pix on grid starting: ray="<<ray<<endl;
+        double temp[2];
         CI.get_dpos(ray,temp);
         rep.printVec("cell pos on ray",temp,2);
 #endif
@@ -559,9 +579,15 @@ int generate_angle_image(
         ray = next_cell;
         ncell++;
 #ifdef DEBUG
-        cout <<"pix on grid finishing: ray="<<ray<<endl;
-        CI.get_dpos(ray,temp);
-        rep.printVec("cell pos on ray",temp,2);
+        cout <<"pix on grid finishing: ray=";
+        if (ray) {
+          cout <<ray<<endl;
+          CI.get_dpos(ray,temp);
+          rep.printVec("cell pos on ray",temp,2);
+        }
+        else {
+          cout <<"0, doesn't exist!\n";
+        }
 #endif
       }
 #ifdef DEBUG
@@ -571,9 +597,11 @@ int generate_angle_image(
       //
       // See if we have an outgoing ray.  If so, then integrate it.
       //
-      if (pos[Zcyl] > SimPM.Xmin[Zcyl]+dx) {
+      if (pos[Zcyl] > SimPM.Xmin[Zcyl]+dx && ray!=0) {
 #ifdef DEBUG
         cout <<"outgoing ray starting, ncell="<<ncell<<endl;
+        cout <<"pos[Zcyl] = "<< pos[Zcyl]<<", Xmin="<<SimPM.Xmin[Zcyl];
+        cout <<", Xmin+dx="<<SimPM.Xmin[Zcyl]+dx<<endl;
 #endif
         // We have an outgoing ray.  Trace ray until we get to the
         // edge of the grid.

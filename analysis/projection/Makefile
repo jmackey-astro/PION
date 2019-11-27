@@ -89,11 +89,8 @@ LDFLAGS += -lm
 # Options for a debian 9 (stretch) workstation with system libs
 ######################################################################
 ifeq ($(MAKE_UNAME), debian9)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
   
   ifeq ($(IOMODE), USE_FILE_COMMS)
     CXX = g++
@@ -119,12 +116,8 @@ endif
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu18)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
   
   ifeq ($(IOMODE), USE_FILE_COMMS)
     CXX = g++
@@ -152,12 +145,8 @@ endif
 # Options for an Ubuntu 16 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu16)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
   
   ifeq ($(IOMODE), USE_FILE_COMMS)
     CXX = g++
