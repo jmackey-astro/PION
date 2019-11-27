@@ -26,11 +26,260 @@ using namespace std;
 #include "projection_constants.h"
 
 
+// ##################################################################
+// ##################################################################
+
+
+
+int generate_perpendicular_image(
+    class SimParams &SimPM,    ///< simulation parameters
+    class GridBaseClass *grid, ///< computational grid
+    class Xray_emission &XR,   ///< pointer to class.
+    int npix[],       ///< Number of pixels in each direction
+    size_t num_pix,     ///< total number of pixels
+    double **img_array ///< pointer to the image arrays.
+    )
+{
+  //
+  // zero the image arrays.
+  //
+  for (size_t im=0; im< static_cast<size_t>(NIMG); im++)
+    for (size_t ip=0; ip<num_pix; ip++)
+      img_array[im][ip] = 0.0;
+
+
+  //
+  // Loop over grid... Each z,R corresponds to a pixel.
+  // Outer loop runs over z.
+  //
+  cell *cz = grid->FirstPt();
+  int iz=0;
+  int err=0;
+
+#ifdef PROJ_OMP
+#pragma omp parallel for private(ttsf)
+#endif
+  for (iz=0; iz<npix[0]; iz++) {
+    //cout <<"#+#+#+#+#+# New column, iz="<<iz<<"\n";
+    err = calculate_column(SimPM,cz,XR,grid,iz,npix[1],NIMG,npix,grid->DX(),img_array);
+    rep.errorTest("calculate_column",0,err);
+    cz=grid->NextPt(cz,ZPcyl);
+  }
+
+#ifdef TESTING
+  cout <<" - -- - waiting for "<<iz<<" threads to finish.\n";
+  cout.flush();
+#endif
+#ifdef TESTING
+  cout <<" - -- - All threads are finished.\n";
+  cout.flush();
+#endif
+
+  //
+  // Multiply X-ray intensity by 4*PI*(206165)^2*(3.086e18)^2 to
+  // get units of luminosity per sq. parsec (erg/s/pc^2), so that
+  // we can compare to Townsley et al. papers.
+  // Otherwise it is erg/cm^2/s/sq.arcsec.
+  //
+  //for (size_t ipix=0; ipix<num_pix; ipix++) {
+  //  img_array[PROJ_X01][ipix] *= 5.09e48;
+  //  img_array[PROJ_X05][ipix] *= 5.09e48;
+  //  img_array[PROJ_X10][ipix] *= 5.09e48;
+  //  img_array[PROJ_X50][ipix] *= 5.09e48;
+  //}
+
+  return 0;
+}
+
+
 
 // ##################################################################
 // ##################################################################
+
+
+
+//
+// calculate projection for a column of cells in the R-direction
+//
+int calculate_column(
+    class SimParams &SimPM,    ///< simulation parameters
+    class cell *cz,    ///< current cell at start of column.
+    class Xray_emission &XR,   ///< Xray emission class.
+    class GridBaseClass *grid, ///< pointer to grid.
+    int iz,            ///< counter of number of columns completed.
+    int N_R,           ///< Number of cells in radial direction
+    int n_images,      ///< Number of images.
+    int *npix,         ///< Number of pixels 
+    double delr,       ///< Cell diameter
+    double **img_array  ///< image array.
+    )
+{
+  //
+  // Allocate memory for 
+  // columns of emission/absorption data for all output variables.
+  //
+  int err=0;
+  double **ems_data=0;
+  double **abs_data=0;
+  double **raw_data=0;
+  ems_data = mem.myalloc(ems_data,n_images);
+  for (int im=0; im<n_images; im++) {
+    ems_data[im] = mem.myalloc(ems_data[im], N_R);
+    for (int v=0; v<N_R; v++) ems_data[im][v] = 0.0;
+  }
+  abs_data = mem.myalloc(abs_data,n_images);
+  for (int im=0; im<n_images; im++) {
+    abs_data[im] = mem.myalloc(abs_data[im], N_R);
+    for (int v=0; v<N_R; v++) abs_data[im][v] = 0.0;
+  }
+#define NVAR 7
+  raw_data = mem.myalloc(raw_data,NVAR);
+  for (int im=0; im<NVAR; im++) {
+    raw_data[im] = mem.myalloc(raw_data[im], N_R);
+    for (int v=0; v<N_R; v++) raw_data[im][v] = 0.0;
+  }
+
+  // check for H+ tracer and Wind tracer
+  size_t iHp=0, iWf=0;
+  if (!MP) iHp = iWf = 0;
+  else {
+    int tr = MP->Tr("H1+");
+    if ( tr==DONT_CALL_ME || tr<0  || !isfinite(tr) ) {
+#ifdef TESTING
+     cout <<"No H+ tracer variable, assuming all gas is ionized\n";
+#endif
+      iHp = 0;
+    }
+    else {
+      iHp = tr;
+    }
+    tr = MP->Tr("WIND");
+    if ( tr==DONT_CALL_ME || tr<0  || !isfinite(tr) ) {
+#ifdef TESTING
+      cout <<"No WIND tracer variable, assuming all gas is ISM\n";
+#endif
+      iWf = 0;
+    }
+    else {
+      iWf = tr;
+    }
+  }
+
+  // Starting cell.
+  cell *cy = cz;
+  int iy=0;
+  double cpos[MAX_DIM];
+
+  //cout <<"\t\t assigning data from column to arrays.\n";
+  do {
+    CI.get_dpos(cy,cpos);
+    raw_data[DATA_R][iy]   = cpos[Rcyl];
+    raw_data[DATA_D][iy]   = cy->P[RO];
+    raw_data[DATA_P][iy]   = cy->P[PG];
+    raw_data[DATA_V][iy]   = cy->P[VY];
+    //
+    // If there is no H+ tracer, assume all gas is ionized.
+    //
+    if (iHp>0) {
+      raw_data[DATA_TR0][iy] = cy->P[iHp];
+    }
+    else {
+      raw_data[DATA_TR0][iy] = 1.0;
+    }
+    //
+    // If there is no Wind colour tracer, assume there is no wind.
+    //
+    if (iWf>0) {
+      raw_data[DATA_TR1][iy] = cy->P[iWf];
+    }
+    else {
+      raw_data[DATA_TR1][iy] = 0.0;
+    }
+    //
+    // Get Temperature from microphysics, or set it to sound speed.
+    //
+    if (MP) raw_data[DATA_T][iy] = MP->Temperature(cy->P,SimPM.gamma);
+    else    raw_data[DATA_T][iy] = sqrt(SimPM.gamma*cy->P[PG]/cy->P[RO]);
+    // increment iy
+    iy++;
+  } while ((cy = grid->NextPt(cy,RPcyl))!=0 && cy->isgd);
+  if (iy!=N_R)
+    rep.error("Bad logic for radial grid size",iy-N_R);
+
+  //
+  // Now for this radial column of data, we set the value for
+  // each output variable at the cell centre, including both an
+  // emission and an absorption coefficient for some variables.
+  //
+  //cout <<"\t\t getting emission/absorption data.\n";
+  err += get_emission_absorption_data(SimPM, grid, cz, raw_data, n_images,
+                                      N_R, XR, ems_data, abs_data);
+
+  //
+  // Now go back to start of column in R, and for each pixel,
+  // calculate the integral along a line of sight with impact
+  // parameter b=R_i, for each variable.
+  //
+  double b = 0;
+
+  for (int ivar=0; ivar<n_images; ivar++) {
+    //cout <<"\t\t Calculating image im="<<ivar<<", name="<<im_name[ivar]<<"\n";
+    for (int ipix=0; ipix<N_R; ipix++) {
+      b = raw_data[DATA_R][ipix];
+      if (ivar<N_SCALAR) {
+#ifdef TESTING
+        cout <<"ivar="<<ivar<<", ipix = "<<ipix;
+        cout <<": itotal="<<npix[Zcyl]*ipix +iz<<", numpix="<<npix[0]*npix[1]<<"\n";
+#endif
+        img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projection_column(
+              raw_data[DATA_R],
+              ems_data[ivar], abs_data[ivar],
+              N_R, b, delr);
+      }
+      else {
+#ifdef ABSORPTION
+        img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projectionRT_column(
+              raw_data[DATA_R],
+              ems_data[ivar], abs_data[ivar],
+              N_R, b, delr);
+#else
+        img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projection_column(
+              raw_data[DATA_R],
+              ems_data[ivar], abs_data[ivar],
+              N_R, b, delr);
+#endif
+      }
+    }
+  }
+
+  //
+  // free memory.
+  //
+  for (int v=0;v<n_images;v++) {
+    ems_data[v] = mem.myfree(ems_data[v]);
+    abs_data[v] = mem.myfree(abs_data[v]);
+  }
+  ems_data  = mem.myfree(ems_data);
+  abs_data  = mem.myfree(abs_data);
+  for (int v=0;v<NVAR;v++) {
+    raw_data[v] = mem.myfree(raw_data[v]);
+  }
+  raw_data  = mem.myfree(raw_data);
+
+  return err;
+}
+
+
+
+
+// ##################################################################
+// ##################################################################
+
+
 
 int get_emission_absorption_data(
+    class SimParams &SimPM,    ///< simulation parameters
+    class GridBaseClass *grid,  ///< pointer to grid.
     class cell *cz,           ///< cell at start of column.
     double const* const* data, ///< raw data to get variable from
     const int n_img,    ///< number of images to write
@@ -53,17 +302,17 @@ int get_emission_absorption_data(
 
     // calculate data for each cell:
     n_e = MP->get_n_elec(c->P);
-    double n_Hp = MP->get_n_Hplus(c->P);
-    double n_H0 = MP->get_n_Hneutral(c->P);
-    double T = MP->Temperature(c->P,SimPM.gamma);
+    n_Hp = MP->get_n_Hplus(c->P);
+    n_H0 = MP->get_n_Hneutral(c->P);
+    T = MP->Temperature(c->P,SimPM.gamma);
     XR.get_xray_emissivity(T,xr);
-    if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", P);
+    if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", c->P);
     else                    n_N1p = fNp * n_Hp;
 
     ems[PROJ_D    ][i] = c->P[RO];
     ems[PROJ_NtD  ][i] = n_H0;
     ems[PROJ_InD  ][i] = n_Hp;
-    ems[PROJ_EM   ][i]  = n_e * n_e; 
+    ems[PROJ_EM   ][i] = n_e * n_e; 
     ems[PROJ_X00p1][i] = n_e * n_Hp * xr[0];
     ems[PROJ_X00p2][i] = n_e * n_Hp * xr[1];
     ems[PROJ_X00p3][i] = n_e * n_Hp * xr[2];
@@ -79,31 +328,29 @@ int get_emission_absorption_data(
   }
 
   // 2nd loop over all cells in column to set slope/abs quantities
-  cell *c = cz;
+  c = cz;
+  double dr=0.0;
   for (size_t i=0; i<Nr; i++) {
 
     // calculate data for each cell:
-    n_e = MP->get_n_elec(c->P);
-    double n_Hp = MP->get_n_Hplus(c->P);
-    double n_H0 = MP->get_n_Hneutral(c->P);
-    double T = MP->Temperature(c->P,SimPM.gamma);
-    XR.get_xray_emissivity(T,xr);
-    if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", P);
-    else                    n_N1p = fNp * n_Hp;
+    //n_e = MP->get_n_elec(c->P);
+    n_Hp = MP->get_n_Hplus(c->P);
+    n_H0 = MP->get_n_Hneutral(c->P);
 
     if (i<Nr-1) {
-      abs[PROJ_D    ][i] = (ems[PROJ_D    ][i+1]-ems[PROJ_D    ][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_NtD  ][i] = (ems[PROJ_NtD  ][i+1]-ems[PROJ_NtD  ][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_InD  ][i] = (ems[PROJ_InD  ][i+1]-ems[PROJ_InD  ][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_EM   ][i] = (ems[PROJ_EM   ][i+1]-ems[PROJ_EM   ][i]) /(data[DATA_R][i+1]-data[DATA_R][i]); 
-      abs[PROJ_X00p1][i] = (ems[PROJ_X00p1][i+1]-ems[PROJ_X00p1][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X00p2][i] = (ems[PROJ_X00p2][i+1]-ems[PROJ_X00p2][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X00p3][i] = (ems[PROJ_X00p3][i+1]-ems[PROJ_X00p3][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X00p5][i] = (ems[PROJ_X00p5][i+1]-ems[PROJ_X00p5][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X01p0][i] = (ems[PROJ_X01p0][i+1]-ems[PROJ_X01p0][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X02p0][i] = (ems[PROJ_X02p0][i+1]-ems[PROJ_X02p0][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X05p0][i] = (ems[PROJ_X05p0][i+1]-ems[PROJ_X05p0][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
-      abs[PROJ_X10p0][i] = (ems[PROJ_X10p0][i+1]-ems[PROJ_X10p0][i]) /(data[DATA_R][i+1]-data[DATA_R][i]);
+      dr = data[DATA_R][i+1]-data[DATA_R][i];
+      abs[PROJ_D    ][i] = (ems[PROJ_D    ][i+1]-ems[PROJ_D    ][i]) /dr;
+      abs[PROJ_NtD  ][i] = (ems[PROJ_NtD  ][i+1]-ems[PROJ_NtD  ][i]) /dr;
+      abs[PROJ_InD  ][i] = (ems[PROJ_InD  ][i+1]-ems[PROJ_InD  ][i]) /dr;
+      abs[PROJ_EM   ][i] = (ems[PROJ_EM   ][i+1]-ems[PROJ_EM   ][i]) /dr; 
+      abs[PROJ_X00p1][i] = (ems[PROJ_X00p1][i+1]-ems[PROJ_X00p1][i]) /dr;
+      abs[PROJ_X00p2][i] = (ems[PROJ_X00p2][i+1]-ems[PROJ_X00p2][i]) /dr;
+      abs[PROJ_X00p3][i] = (ems[PROJ_X00p3][i+1]-ems[PROJ_X00p3][i]) /dr;
+      abs[PROJ_X00p5][i] = (ems[PROJ_X00p5][i+1]-ems[PROJ_X00p5][i]) /dr;
+      abs[PROJ_X01p0][i] = (ems[PROJ_X01p0][i+1]-ems[PROJ_X01p0][i]) /dr;
+      abs[PROJ_X02p0][i] = (ems[PROJ_X02p0][i+1]-ems[PROJ_X02p0][i]) /dr;
+      abs[PROJ_X05p0][i] = (ems[PROJ_X05p0][i+1]-ems[PROJ_X05p0][i]) /dr;
+      abs[PROJ_X10p0][i] = (ems[PROJ_X10p0][i+1]-ems[PROJ_X10p0][i]) /dr;
 #ifdef ABSORPTION
       abs[PROJ_HA   ][i] = 5.0e-22 * (n_Hp+n_H0);
       abs[PROJ_NII  ][i] = 5.0e-22 * (n_Hp+n_H0);
@@ -147,7 +394,7 @@ int get_emission_absorption_data(
 // ##################################################################
 
 
-double calc_projection(
+double calc_projection_column(
       const double *r, ///< radius array
       const double *v, ///< array of values at each radius
       const double *s, ///< array of slopes at each radius
@@ -161,7 +408,7 @@ double calc_projection(
   //
   double grid_max = r[Nr-1]+0.5*dr;
   if (b > grid_max) {
-    cout <<"calc_projection: Bad B value, b="<<b<<"\n";
+    cout <<"calc_projection_column: Bad B value, b="<<b<<"\n";
     return 0.0;
   }
 
@@ -239,7 +486,7 @@ double calc_projection(
 
 
 
-double calc_projectionRT(
+double calc_projectionRT_column(
       const double *r, ///< radius array
       const double *ve, ///< array of emission values at each radius.
       const double *va, ///< array of absorption values at each radius.
@@ -253,7 +500,7 @@ double calc_projectionRT(
   //
   double grid_max = r[Nr-1]+0.5*dr;
   if (b > grid_max) {
-    cout <<"calc_projectionRT: Bad B value, b="<<b<<"\n";
+    cout <<"calc_projectionRT_column: Bad B value, b="<<b<<"\n";
     return 0.0;
   }
 
@@ -355,156 +602,6 @@ double calc_projectionRT(
 }
 
 
-// ##################################################################
-// ##################################################################
-
-
-
-
-///
-/// calculate projection for a column of cells in the R-direction
-///
-void calculate_column(
-    class cell *cz,    ///< current cell at start of column.
-    class Xray_emission &XR,   ///< Xray emission class.
-    class GridBaseClass *grid, ///< pointer to grid.
-    int iz,            ///< counter of number of columns completed.
-    int N_R,           ///< Number of cells in radial direction
-    int n_images,      ///< Number of images.
-    int *npix,         ///< Number of pixels 
-    double delr,       ///< Cell diameter
-    size_t iHp,        // H+ fraction is 1st tracer.
-    size_t iWf,        // Wind fraction is 2nd tracer.
-    double **img_array  ///< image array.
-    )
-{
-  //
-  // Allocate memory for 
-  // columns of emission/absorption data for all output variables.
-  //
-  int err=0;
-  double **ems_data=0;
-  double **abs_data=0;
-  double **raw_data=0;
-  ems_data = mem.myalloc(ems_data,n_images);
-  for (int im=0; im<n_images; im++) {
-    ems_data[im] = mem.myalloc(ems_data[im], N_R);
-    for (int v=0; v<N_R; v++) ems_data[im][v] = 0.0;
-  }
-  abs_data = mem.myalloc(abs_data,n_images);
-  for (int im=0; im<n_images; im++) {
-    abs_data[im] = mem.myalloc(abs_data[im], N_R);
-    for (int v=0; v<N_R; v++) abs_data[im][v] = 0.0;
-  }
-#define NVAR 7
-  raw_data = mem.myalloc(raw_data,NVAR);
-  for (int im=0; im<NVAR; im++) {
-    raw_data[im] = mem.myalloc(raw_data[im], N_R);
-    for (int v=0; v<N_R; v++) raw_data[im][v] = 0.0;
-  }
-
-  // Starting cell.
-  cell *cy = cz;
-      int iy=0;
-      double cpos[MAX_DIM];
-
-      //cout <<"\t\t assigning data from column to arrays.\n";
-      do {
-        CI.get_dpos(cy,cpos);
-        raw_data[DATA_R][iy]   = cpos[Rcyl];
-        raw_data[DATA_D][iy]   = cy->P[RO];
-        raw_data[DATA_P][iy]   = cy->P[PG];
-        raw_data[DATA_V][iy]   = cy->P[VY];
-        //
-        // If there is no H+ tracer, assume all gas is ionized.
-        //
-        if (iHp>0) {
-          raw_data[DATA_TR0][iy] = cy->P[iHp];
-        }
-        else {
-          raw_data[DATA_TR0][iy] = 1.0;
-        }
-        //
-        // If there is no Wind colour tracer, assume there is no wind.
-        //
-        if (iWf>0) {
-          raw_data[DATA_TR1][iy] = cy->P[iWf];
-        }
-        else {
-          raw_data[DATA_TR1][iy] = 0.0;
-        }
-        //
-        // Get Temperature from microphysics.
-        //
-        raw_data[DATA_T][iy]   = MP->Temperature(cy->P,SimPM.gamma);
-        // increment iy
-        iy++;
-      } while ((cy = grid->NextPt(cy,RPcyl))!=0 && cy->isgd);
-      if (iy!=N_R)
-        rep.error("Bad logic for radial grid size",iy-N_R);
-
-      //
-      // Now for this radial column of data, we set the value for
-      // each output variable at the cell centre, including both an
-      // emission and an absorption coefficient for some variables.
-      //
-      //cout <<"\t\t getting emission/absorption data.\n";
-      err += get_emission_absorption_data(cz, raw_data, n_images, N_R, (*(XR)), ems_data, abs_data);
-
-      //
-      // Now go back to start of column in R, and for each pixel,
-      // calculate the integral along a line of sight with impact
-      // parameter b=R_i, for each variable.
-      //
-      double b = 0;
-
-      for (int ivar=0; ivar<n_images; ivar++) {
-        //cout <<"\t\t Calculating image im="<<ivar<<", name="<<im_name[ivar]<<"\n";
-        for (int ipix=0; ipix<N_R; ipix++) {
-          b = raw_data[DATA_R][ipix];
-          if (ivar<N_SCALAR) {
-            img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projection(
-                  raw_data[DATA_R],
-                  ems_data[ivar], abs_data[ivar],
-                  N_R, b, delr);
-          }
-          else {
-#ifdef ABSORPTION
-            img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projectionRT(
-                  raw_data[DATA_R],
-                  ems_data[ivar], abs_data[ivar],
-                  N_R, b, delr);
-#else
-            img_array[ivar][npix[Zcyl]*ipix +iz] = calc_projection(
-                  raw_data[DATA_R],
-                  ems_data[ivar], abs_data[ivar],
-                  N_R, b, delr);
-#endif
-          }
-        }
-      }
-  
-  //
-  // free memory.
-  //
-  for (int v=0;v<n_images;v++) {
-    ems_data[v] = mem.myfree(ems_data[v]);
-    abs_data[v] = mem.myfree(abs_data[v]);
-  }
-  ems_data  = mem.myfree(ems_data);
-  abs_data  = mem.myfree(abs_data);
-  for (int v=0;v<NVAR;v++) {
-    raw_data[v] = mem.myfree(raw_data[v]);
-  }
-  raw_data  = mem.myfree(raw_data);
-  delete ta; ta=0;
-
-  if (err) rep.error("Threaded calculate_column error",err);
-  return;
-}
-
-
-
 
 // ##################################################################
 // ##################################################################
@@ -523,336 +620,6 @@ void calculate_column(
 
 // ##################################################################
 // ##################################################################
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-//
-// Add emission (or whatever projected quantity is) from current cell
-// assuming data within the cell is constant, and that the geometric
-// part of the integral is pre-calculated in "integral" variable.
-// So the integral reduces to the sum:
-//   SUM_{cells} integral * emissivity(P)
-//
-void add_cell_emission_to_ray(
-      class SimParams &SimPM,      ///< simulation parameters
-      double integral, ///< the path-length/geometry part of the integral
-      double *P,       ///< State vector of cell (primitive vars)
-      class Xray_emission &XR, ///< pointer to class for getting X-ray em
-      vector<double> &ans
-      )
-{
-
-  double xr[8];
-  for (int v=0;v<8;v++) xr[v] = 0.0;
-  double n_e = MP->get_n_elec(P);
-  double n_Hp = MP->get_n_Hplus(P);
-  double n_H0 = MP->get_n_Hneutral(P);
-  double T = MP->Temperature(P,SimPM.gamma);
-  cout <<n_e<<", "<< n_H0 <<", "<< n_Hp <<", "<< T <<"\n";
-  if (!isfinite(T)) {
-    rep.error("bugging out, T is infinite",T);
-  }
-
-  ans[PROJ_D]   += integral * P[RO];
-
-  ans[PROJ_NtD] += integral * n_H0;
-  ans[PROJ_InD] += integral * n_Hp;
-  ans[PROJ_EM]  += integral * n_e * n_e;
-
-  XR.get_xray_emissivity(T,xr);
-  ans[PROJ_X00p1] += integral * n_e * n_Hp * xr[0];
-  ans[PROJ_X00p2] += integral * n_e * n_Hp * xr[1];
-  ans[PROJ_X00p3] += integral * n_e * n_Hp * xr[2];
-  ans[PROJ_X00p5] += integral * n_e * n_Hp * xr[3];
-  ans[PROJ_X01p0] += integral * n_e * n_Hp * xr[4];
-  ans[PROJ_X02p0] += integral * n_e * n_Hp * xr[5];
-  ans[PROJ_X05p0] += integral * n_e * n_Hp * xr[6];
-  ans[PROJ_X10p0] += integral * n_e * n_Hp * xr[7];
-
-  ans[PROJ_HA]  += integral * n_e * n_Hp * XR.Halpha_emissivity(T);
-  double n_N1p;
-  double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
-  if (MP->Tr("N1p") > 0)  n_N1p = MP->get_n_ion("N1p", P);
-  else                    n_N1p = fNp * n_Hp;
-  ans[PROJ_NII] += integral * n_e * n_N1p * XR.NII6584_emissivity(T);
-
-  return;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-//
-// Integrate all the lines of sight for data on the grid.
-//
-int generate_perp_image(
-    class SimParams &SimPM,    ///< simulation parameters
-    class GridBaseClass *grid, ///< computational grid
-    class Xray_emission &XR,   ///< pointer to class.
-    double angle,        ///< angle between LOS and symmetry axis [1,89]
-    int npix[],       ///< Number of pixels in each direction
-    size_t num_pix,     ///< total number of pixels
-    int n_extra,       ///< number of extra pixels w.r.t. cells.
-    double **img_array ///< pointer to the image arrays.
-    )
-{
-
-  double dx = grid->DX();
-
-  //
-  // Loop over all pixels
-  //
-#ifdef PROJ_OMP
-#pragma omp parallel for private(ttsf)
-#endif
-  for (int i=0; i<npix[0]; i++) {
-    //
-    // Loop over pixels... Each z,R corresponds to a pixel.
-    // Outer loop runs over z.  The pixel grid is a superset of the
-    // computational grid, but each pixel should have a ray that 
-    // crosses at least one grid cell.  Each pixel is the size of a
-    // grid cell, but they get narrower in the Z-direction as the
-    // viewing angle deviates from 90 degrees.
-    //
-    size_t ipix=0;
-    double pos[2], startpos[2];
-    vector<double> entry(2), exit(2);
-    double invst = 1.0/sin(angle);
-    double integral = 0.0;
-
-#ifdef DEBUG
-    ttsf=clk.time_so_far("total");
-    cout <<"column = "<<i<<"/"<<npix[0]<<",\t total runtime="<<ttsf<<"\n";
-//      cout.flush();
-#endif
-    
-    //
-    // Loop over all pixels in column (R direction, for given Z)
-    //
-    for (int j=0; j<npix[1]; j++) {
-      int ncell = 0;
-      pixel_centre(SimPM.Xmin, dx, n_extra, i, j, pos);
-#ifdef DEBUG
-//        double temp[3];
-      cout <<"Pixel: ["<<i<<", "<<j<<"] of ["<<npix[0]<<","<<npix[1]<<"]   ";
-//        rep.printVec("pos",pos,2);
-//        cout.flush();
-#endif
-    
-      cell *c = grid->FirstPt();
-      cell *ray = get_start_of_ray(grid, pos, angle);
-      cell *next_cell = 0;
-      CI.get_dpos(ray,startpos);
-#ifdef DEBUG
-      cout <<"ray="<<ray<<endl;
-#endif
-
-      // if pixel is on the grid, then find the cell that this
-      // corresponds to.  Important to know this because then the ray
-      // has a turning point at this cell.  If not then we only have
-      // one half of the ray (incoming or outgoing).
-      //
-      bool pix_on_grid = false;
-      c = 0;
-      if (pos[Zcyl] < SimPM.Xmax[Zcyl] && pos[Zcyl] > SimPM.Xmin[Zcyl]) {
-        pix_on_grid = true;
-        c = grid->FirstPt();
-        while (!pconst.equalD( pos[Zcyl], CI.get_dpos(c,Zcyl) ) )
-          c = grid->NextPt(c,ZPcyl);
-        while (!pconst.equalD( pos[Rcyl], CI.get_dpos(c,Rcyl) ) )
-          c = grid->NextPt(c,RPcyl);
-      }
-#ifdef DEBUG
-      cout <<"pix on grid? c="<<c<<endl;
-#endif
-      
-      // set up array for answer
-      vector<double> ans(NIMG);
-      for (size_t v=0;v<NIMG;v++) ans[v] = 0.0;
-      int inout;  // to show whether on inward/outward trajectory.
-
-      //
-      // See if we have an incoming ray.  If so, then integrate it.
-      //
-      if (pos[Zcyl] < SimPM.Xmax[Zcyl]-dx) {
-#ifdef DEBUG
-        cout <<"incoming ray starting"<<endl;
-#endif
-        // We have an incoming ray.  Trace ray until we get to pos[]
-        // or the edge of the grid.
-        inout=1;  // to show that we are on the inward trajectory.
-        // first check that the ray passes through cell *ray:
-        get_entry_exit_points(grid, pos, angle, inout, ray,
-                                entry, exit, &next_cell);
-        if (entry[Rcyl]>1.0e90) {
-#ifdef DEBUG
-          cout <<"  INCOMING RAY ERROR  "<<endl;
-#endif
-        }
-        else {
-
-          do {
-            //
-            // Get entry and exit points of ray, and pointer to next cell.
-            //
-            get_entry_exit_points(grid, pos, angle, inout, ray,
-                                  entry, exit, &next_cell);
-
-            //
-            // Integrate through cell along path (constant gas density)
-            // int(k.dl) = int(k/sin(theta) R.dR/sqrt(R^2-y^2))
-            //           = (k/sin(theta)).[sqrt(R+^2-y^2)-sqrt(R-^2-y^2)]
-            //
-            integral = invst*abs(
-                sqrt(entry[Rcyl]*entry[Rcyl]-pos[Rcyl]*pos[Rcyl]) -
-                sqrt(exit[Rcyl] *exit[Rcyl] -pos[Rcyl]*pos[Rcyl]) );
-            // For each emission variable, add to ans[] vector
-            add_cell_emission_to_ray(SimPM,integral,ray->P,XR,ans);
-            if (ans[PROJ_NtD] <0.0) {
-              rep.printVec("Ray state vec",ray->P, SimPM.nvar);
-              cout <<"ray  "<<ray<<",  next_cell="<<next_cell<<"\n";
-              cout <<ray->isgd<<", "<<ray->isbd<<"\n";
-              rep.error("error",99);
-            }
-
-            //
-            // move to next cell.
-            //
-            ray = next_cell;
-            ncell++;
-          } while ((ray) && (ray->isgd) && !pconst.equalD(CI.get_dpos(ray,Zcyl),pos[Zcyl]));
-#ifdef DEBUG
-          cout <<"incoming ray finished"<<endl;
-#endif
-        }
-      }
-
-      //
-      // Now the turning point cell, if it exists.
-      //
-      if (pix_on_grid) {
-#ifdef DEBUG
-        cout <<"pix on grid starting: ray="<<ray<<endl;
-        CI.get_dpos(ray,temp);
-        rep.printVec("cell pos on ray",temp,2);
-#endif
-        //
-        // The pixel/cell itself is a special case because we only go
-        // to the cell-centre and back out again, and because the 
-        // slope of the path changes sign.
-        //
-        inout=0;
-        //rep.error("got to cell",1);
-        get_entry_exit_points(grid, pos, angle, inout, ray,
-                              entry, exit, &next_cell);
-        // Path length is twice the inward part.
-        integral = invst * 2.0 *
-                    sqrt(entry[Rcyl]*entry[Rcyl]-pos[Rcyl]*pos[Rcyl]);
-        // For each emission variable, add to ans[] vector
-        add_cell_emission_to_ray(SimPM,integral,ray->P,XR,ans);
-        ray = next_cell;
-        ncell++;
-#ifdef DEBUG
-        cout <<"pix on grid finishing: ray="<<ray<<endl;
-        CI.get_dpos(ray,temp);
-        rep.printVec("cell pos on ray",temp,2);
-#endif
-      }
-#ifdef DEBUG
-      else cout<<"  PIXEL NOT ON GRID  ";
-#endif
-
-      //
-      // See if we have an outgoing ray.  If so, then integrate it.
-      //
-      if (pos[Zcyl] > SimPM.Xmin[Zcyl]+dx) {
-#ifdef DEBUG
-        cout <<"outgoing ray starting, ncell="<<ncell<<endl;
-#endif
-        // We have an outgoing ray.  Trace ray until we get to the
-        // edge of the grid.
-        inout=-1;
-        // first check that the ray passes through cell *ray:
-        get_entry_exit_points(grid, pos, angle, inout, ray,
-                                entry, exit, &next_cell);
-        if (entry[Rcyl]>1.0e90) {
-#ifdef DEBUG
-          cout <<"  OUTGOING RAY ERROR  "<<endl;
-          cout <<" ray="<<ray<<", next_cell="<<next_cell<<" pos=";
-          rep.printVec("",pos,2);
-          rep.error("rays",1);
-#endif
-        }
-        else{
-#ifdef DEBUG
-          cout <<"entering loop for outgoing ray, ncell="<<ncell<<endl;
-#endif
-          do {
-            //
-            // Get entry and exit points of ray, and pointer to next cell.
-            //
-#ifdef DEBUG
-            cout <<"getting entry/exit points of ray, ncell="<<ncell<<"\n";
-#endif
-            get_entry_exit_points(grid, pos, angle, inout, ray,
-                                  entry, exit, &next_cell);
-#ifdef DEBUG
-            cout <<"entry/exit next_cell="<<next_cell<<"\n";
-#endif
-            //
-            // Integrate through cell along path (constant gas density)
-            // int(k.dl) = int(k/sin(theta) R.dR/sqrt(R^2-y^2))
-            //           = (k/sin(theta)).[sqrt(R+^2-y^2)-sqrt(R-^2-y^2)]
-            //
-            integral = invst*abs(
-                sqrt(entry[Rcyl]*entry[Rcyl]-pos[Rcyl]*pos[Rcyl]) -
-                sqrt(exit[Rcyl] *exit[Rcyl] -pos[Rcyl]*pos[Rcyl]) );
-            // For each emission variable, add to ans[] vector
-            add_cell_emission_to_ray(SimPM,integral,ray->P,XR,ans);
-            //
-            // move to next cell.
-            //
-            ray = next_cell;
-            ncell++;
-          } while (ray!=0 && ray->isgd);
-#ifdef DEBUG
-          cout <<"outgoing ray finishing"<<endl;
-#endif
-        }
-      }
-
-      // Now we've traced the ray for pixel [i,j], so tidy up and
-      // move on to the next pixel
-      
-      // convert emission measure to units cm^{-6}.pc
-      ans[PROJ_EM] /= pconst.parsec();
-      //
-      // save results into pixel ipix
-      //
-      ipix = npix[0]*j+i;
-      for (size_t v=0;v<NIMG;v++) img_array[v][ipix] = ans[v];
-#ifdef DEBUG
-      rep.printSTLVec("ans",ans);
-      cout <<"i,j="<<i<<", "<<j<<" ... Ray crossed "<<ncell<<" cells."<<endl;
-#endif
-    }
-  }
-  return 0;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
 
 
 

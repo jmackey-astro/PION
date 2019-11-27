@@ -45,7 +45,7 @@ using namespace std;
 #include "microphysics/MPv10.h"
 
 #include "projection_constants.h"
-//#include "perp_projection.h"
+#include "perp_projection.h"
 #include "angle_projection.h"
 #include "xray_emission.h"
 
@@ -55,20 +55,20 @@ using namespace std;
 
 
 void setup_image_array(
-    double **img_array, ///< pointer to be initialised.
+    double ***img_array, ///< pointer to be initialised.
     size_t Ncell,     ///< total number of grid cells
     int NG[],         ///< number of Grid Cells in each direction
     int n_extra,      ///< number of extra pixels in z-direction
     int npix[],       ///< OUTPUT: Number of pixels in each direction
-    size_t numpix     ///< OUTPUT: total number of pixels
+    size_t &numpix     ///< OUTPUT: total number of pixels
     )
 {
   npix[0] = NG[Zcyl] + 2*n_extra;
   npix[1] = NG[Rcyl];
   numpix  = npix[0] * npix[1];
-  img_array = mem.myalloc(img_array,NIMG);
+  *img_array = mem.myalloc(*img_array,NIMG);
   for (int v=0;v<NIMG;v++) {
-    img_array[v] = mem.myalloc(img_array[v],
+    (*img_array)[v] = mem.myalloc((*img_array)[v],
             static_cast<long int>(numpix));
   }
   return;
@@ -141,6 +141,7 @@ int main(int argc, char **argv)
     cerr <<"bad angle: "<<angle<<", must be in range (0,180)\n";
     exit(1);
   }
+  int angle_int = static_cast<int>(angle*ONE_PLUS_EPS);
   angle *= M_PI/180.0;
 
   //
@@ -301,20 +302,20 @@ int main(int argc, char **argv)
   // ionised density, emission measure, ...
   // 
   double **img_array=0;
-  int n_images=0;
+  int n_images=NIMG;
   size_t num_pix=0;
   int npix[2] = {0,0};
   double dx = grid->DX();
   
   int n_extra = 0;
-  if (angle!=90) {
+  if (angle_int!=90) {
     // size of image array must be larger than grid in Z-direction,
     // because we want to get glancing rays on both ends of the grid.
     // This means adding SimPM.Xmax[Rcyl]/tan(angle) to each end of the
     // grid.
     n_extra = static_cast<int>(fabs(SimPM.levels[0].Xmax[Rcyl]/tan(angle)/dx));
   }
-  setup_image_array(img_array, SimPM.Ncell, SimPM.NG, n_extra, npix, num_pix);
+  setup_image_array(&img_array, SimPM.Ncell, SimPM.NG, n_extra, npix, num_pix);
   
   //
   // array of image names for output files.
@@ -322,20 +323,20 @@ int main(int argc, char **argv)
   string im_name[NIMG];
   for (size_t im=0; im<NIMG; im++) {
     switch (im) {
-      case PROJ_D:   im_name[im] = "AA_SurfaceMass"; break;
-      case PROJ_NtD: im_name[im] = "AA_ProjNeutralDens"; break;
-      case PROJ_InD: im_name[im] = "AA_ProjIonisedDens"; break;
-      case PROJ_EM:  im_name[im] = "AA_EmissionMeasure"; break;
-      case PROJ_X00p1: im_name[im] = "AA_XRAY_g0p1keV"; break;
-      case PROJ_X00p2: im_name[im] = "AA_XRAY_g0p2keV"; break;
-      case PROJ_X00p3: im_name[im] = "AA_XRAY_g0p3keV"; break;
-      case PROJ_X00p5: im_name[im] = "AA_XRAY_g0p5keV"; break;
-      case PROJ_X01p0: im_name[im] = "AA_XRAY_g1p0keV"; break;
-      case PROJ_X02p0: im_name[im] = "AA_XRAY_g2p0keV"; break;
-      case PROJ_X05p0: im_name[im] = "AA_XRAY_g5p0keV"; break;
-      case PROJ_X10p0: im_name[im] = "AA_XRAY_g10p0keV"; break;
-      case PROJ_HA:  im_name[im] = "AA_Halpha"; break;
-      case PROJ_NII: im_name[im] = "AA_NII_ll6584"; break;
+      case PROJ_D:   im_name[im] = "Proj2D_SurfaceMass"; break;
+      case PROJ_NtD: im_name[im] = "Proj2D_NeutralDens"; break;
+      case PROJ_InD: im_name[im] = "Proj2D_IonisedDens"; break;
+      case PROJ_EM:  im_name[im] = "Proj2D_EmissionMeasure"; break;
+      case PROJ_X00p1: im_name[im] = "Proj2D_XRAY_g00p1keV"; break;
+      case PROJ_X00p2: im_name[im] = "Proj2D_XRAY_g00p2keV"; break;
+      case PROJ_X00p3: im_name[im] = "Proj2D_XRAY_g00p3keV"; break;
+      case PROJ_X00p5: im_name[im] = "Proj2D_XRAY_g00p5keV"; break;
+      case PROJ_X01p0: im_name[im] = "Proj2D_XRAY_g01p0keV"; break;
+      case PROJ_X02p0: im_name[im] = "Proj2D_XRAY_g02p0keV"; break;
+      case PROJ_X05p0: im_name[im] = "Proj2D_XRAY_g05p0keV"; break;
+      case PROJ_X10p0: im_name[im] = "Proj2D_XRAY_g10p0keV"; break;
+      case PROJ_HA:  im_name[im] = "Proj2D_Halpha"; break;
+      case PROJ_NII: im_name[im] = "Proj2D_NII_ll6584"; break;
       default: rep.error("Bad image count",im); break;
     }
   }
@@ -407,9 +408,10 @@ int main(int argc, char **argv)
         
     rep.printVec("Xmin", SimPM.Xmin, 2);
     rep.printVec("Xmax", SimPM.Xmax, 2);
+    cout <<"Angle w.r.t. symmetry axis="<<angle_int<<" degrees\n";
 
-    if (angle==90) {
-      err += generate_perpendicular_image();
+    if (angle_int==90) {
+      err += generate_perpendicular_image(SimPM,grid,XR,npix,num_pix,img_array);
     }
     else {
       err += generate_angle_image(SimPM,grid,XR,angle,npix,num_pix,n_extra,img_array);
@@ -419,9 +421,9 @@ int main(int argc, char **argv)
     cout <<"\tFinished loop "<<ifile<<": loop time = "<<tsf;
     ttsf=clk.time_so_far("total");
     cout <<",\t total runtime="<<ttsf<<"\n";
-    //cout <<"--------------- Finished Analysing this step ----------\n";
-    //cout <<"-------------------------------------------------------\n";
-    //cout <<"--------------- Writing image and getting next Im-file \n";
+    cout <<"--------------- Finished Analysing this step ----------\n";
+    cout <<"-------------------------------------------------------\n";
+    cout <<"--------------- Writing image and getting next Im-file \n";
 
     //
     // **********************
@@ -440,12 +442,14 @@ int main(int argc, char **argv)
     Xmin[Zcyl] = pos[Zcyl]*sin(angle);
     Xmin[Rcyl] = grid->SIM_Xmin(Rcyl);
     double im_dx[2] = {grid->DX()*sin(angle), grid->DX()};    
+    //cout <<"saving image 0 of "<<n_images<<"\n";
     for (int outputs=0;outputs<n_images;outputs++) {
+      cout <<"saving image "<<outputs<<" of "<<n_images<<"\n";
       err = imio.write_image_to_file(filehandle, op_filetype,
                                     img_array[outputs], num_pix,
                                     2, npix, im_name[outputs],
                                     Xmin, im_dx, 
-                                    SimPM.simtime, SimPM.timestep
+                              SimPM.levels[0].simtime, SimPM.levels[0].step
                                     );
       if (err) rep.error("Failed to write image to file",err);
     }

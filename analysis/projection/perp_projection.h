@@ -20,10 +20,29 @@
 #include "xray_emission.h"
 #include <vector>
 
+
+///
+/// Integrate all the lines of sight for data on the grid, for
+/// projection perpendicular to the line-of-sight.
+///
+int generate_perpendicular_image(
+    class SimParams &,      ///< simulation parameters
+    class GridBaseClass *,  ///< computational grid
+    class Xray_emission &,  ///< pointer to class.
+    int [],   ///< Number of pixels in each direction
+    size_t,   ///< total number of pixels
+    double ** ///< pointer to the image arrays.
+    );
+
+
 ///
 /// calculate projection for a column of cells in the R-direction
+/// This is a driver function that calls calc_projection_column()
+/// and calc_projectionRT_column() after setting up data arrays and
+/// calling get_emission_absorption_data().
 ///
-void calculate_column(
+int calculate_column(
+    class SimParams &,    ///< simulation parameters
     class cell *,           ///< cell at start of column.
     class Xray_emission &,  ///< Xray emission class.
     class GridBaseClass *,  ///< pointer to grid.
@@ -32,31 +51,13 @@ void calculate_column(
     int,      ///< Number of images.
     int *,    ///< Number of pixels 
     double,   ///< Cell diameter
-    size_t,   ///< H+ fraction is 1st tracer.
-    size_t,   ///< Wind fraction is 2nd tracer.
     double ** ///< image array.
     );
 
 ///
-/// From the simulation data arrays, calculate various emission
-/// quantities.  Operates on a column of data in the R-direction.
+/// Project scalar quantities onto plane of the sky.
 ///
-int get_emission_absorption_data(
-    class cell *,           ///< cell at start of column.
-    double const* const*, ///< raw data to get variable from
-    const int,    ///< number of images to write
-    const size_t, ///< Number of radial data elements
-    class Xray_emission &,  ///< pointer to X-ray emission class.
-    double **,    ///< array for emission[img][rad] data.
-    double **     ///< array for absorption[img][rad] data.
-    );
-
-
-
-//
-// Project scalar quantities onto plane of the sky.
-//
-double calc_projection(
+double calc_projection_column(
       const double *, ///< radius array
       const double *, ///< array of emission vals at each radius
       const double *, ///< array of absorption vals at each radius
@@ -65,10 +66,10 @@ double calc_projection(
       const double    ///< spacing of points in radius
       );
 
-//
-// Project quantities with emission and absorption onto sky.
-//
-double calc_projectionRT(
+///
+/// Project quantities with emission and absorption onto sky.
+///
+double calc_projectionRT_column(
       const double *, ///< radius array.
       const double *, ///< array of emission vals at each radius
       const double *, ///< array of absorption vals at each radius
@@ -77,6 +78,21 @@ double calc_projectionRT(
       const double    ///< spacing of points in radius.
       );
 
+///
+/// From the simulation data arrays, calculate various emission
+/// quantities.  Operates on a column of data in the R-direction.
+///
+int get_emission_absorption_data(
+    class SimParams &,    ///< simulation parameters
+    class GridBaseClass *,  ///< pointer to grid.
+    class cell *,           ///< cell at start of column.
+    double const* const*, ///< raw data to get variable from
+    const int,    ///< number of images to write
+    const size_t, ///< Number of radial data elements
+    class Xray_emission &,  ///< pointer to X-ray emission class.
+    double **,    ///< array for emission[img][rad] data.
+    double **     ///< array for absorption[img][rad] data.
+    );
 
 ///
 /// Add emission (or whatever projected quantity is) from current cell
@@ -91,19 +107,6 @@ void add_cell_emission_to_ray(
     double *,         ///< State vector of cell (primitive vars)
     class Xray_emission &, ///< class for getting emission
     vector<double> &  ///< resulting array of emissivities.
-    );
-
-//
-// Integrate all the lines of sight for data on the grid.
-//
-int generate_perpendicular_image(
-    class SimParams &,      ///< simulation parameters
-    class GridBaseClass *,  ///< computational grid
-    class Xray_emission &,  ///< pointer to class.
-    double,     ///< angle between LOS and symmetry axis [1,89]
-    int [],   ///< Number of pixels in each direction
-    size_t,   ///< total number of pixels
-    double ** ///< pointer to the image arrays.
     );
 
 

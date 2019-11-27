@@ -29,11 +29,12 @@ using namespace std;
 // -------------------------------------------------------------
 
 
-string image_io::get_output_filename(const string outfile,    ///< outfile base
-				     const int multi_opfiles, ///< multi_opfiles: 0=single file, 1=multiple files.
-				     const int op_filetype,   ///< op_filetype: 0=textfile, 1=fitsfile
-				     const int ifile          ///< integer count of file number to put in name.
-				     )
+string image_io::get_output_filename(
+    const string outfile,    ///< outfile base
+    const int multi_opfiles, ///< multi_opfiles: 0=single file, 1=multiple files.
+    const int op_filetype,   ///< op_filetype: 0=textfile, 1=fitsfile
+    const int ifile          ///< integer count of file number to put in name.
+    )
 {
   ostringstream temp;
   temp.str(""); temp << outfile;
@@ -57,10 +58,10 @@ string image_io::get_output_filename(const string outfile,    ///< outfile base
 
 
 int image_io::open_image_file(
-        const string this_outfile, ///< this_outfile
-        const int op_filetype,     ///< op_filetype: 0=textfile, 1=fits,3=vtk
-        string *f                  ///< file handle
-        )
+    const string this_outfile, ///< this_outfile
+    const int op_filetype,     ///< op_filetype: 0=textfile, 1=fits,3=vtk
+    string *f                  ///< file handle
+    )
 {
   (*f).clear();
   *f = filehandle;
@@ -162,17 +163,17 @@ int image_io::close_image_file(const string f)
 
 
 int image_io::write_image_to_file(
-        const string f,      ///< file handle
-        const int op_filetype, ///< text,fits,vtk
-        double *im,          ///< image array
-        const int num_pix,   ///< number of pixels: image.num_pixels
-        const int im_dim,    ///< dimension of image [0,1,2]: image.dim
-        const int *npix,     ///< array of npix in each dimension: image.npix
-        const string name,   ///< Name of image, e.g. TotMass (8 char max. for fits).
-        const double *xmin,  ///< array with minimum dimensions of image.
-        const double *dx,    ///< array with pixel size in each dimension.
-        const double time,   ///< simulation time (optional)
-        const long int cycle ///< simulation timestep (optional)
+    const string f,      ///< file handle
+    const int op_filetype, ///< text,fits,vtk
+    double *im,          ///< image array
+    const int num_pix,   ///< number of pixels: image.num_pixels
+    const int im_dim,    ///< dimension of image [0,1,2]: image.dim
+    const int *npix,     ///< array of npix in each dimension: image.npix
+    const string name,   ///< Name of image, e.g. TotMass (8 char max. for fits).
+    const double *xmin,  ///< array with minimum dimensions of image.
+    const double *dx,    ///< array with pixel size in each dimension.
+    const double time,   ///< simulation time (optional)
+    const long int cycle ///< simulation timestep (optional)
         )
 {
   //
@@ -182,6 +183,13 @@ int image_io::write_image_to_file(
   double min[im_dim];
   for (int v=0;v<im_dim;v++) min[v]=0.0;
   ostringstream ofn;
+
+//#ifdef TESTING
+  cout <<"saving data: "<<f<<", type="<<op_filetype;
+  cout <<".  image = "<<num_pix<<"  "<<im_dim<<"  "<<npix[0]<<"  "<<npix[1];
+  cout <<"  "<<name<<"  "<<xmin[0]<<"  "<<xmin[1]<<"  "<<dx[0]<<"  "<<dx[1];
+  cout <<"  "<<time<<"  "<<cycle<<"\n";
+//#endif
 
   switch (op_filetype) {
 

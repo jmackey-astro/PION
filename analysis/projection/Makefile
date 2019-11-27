@@ -299,13 +299,13 @@ OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
 
 OBJECTS = $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_CRD) \
   $(OBJ_BCS)  $(OBJ_NG_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) \
-  xray_emission.o angle_projection.o image_io.o project2D.o
+  xray_emission.o angle_projection.o image_io.o project2D.o perp_projection.o
 
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-project2D: $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o project2D $(LDFLAGS)
+projection2D: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection2D $(LDFLAGS)
 
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###
@@ -729,4 +729,4 @@ angle_projection.o: angle_projection.cpp angle_projection.h xray_emission.h ${GL
 perp_projection.o: perp_projection.cpp perp_projection.h xray_emission.h ${GLOBAL} projection_constants.h
 
 clean:
-	rm -f *.o project2D
+	rm -f *.o projection2D
