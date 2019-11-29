@@ -31,7 +31,7 @@
 /// - 2018.01.25 JM: test that cells are on-grid before adding them
 ///    as neighbours (new now that boundary cells are always created)
 //
-// File to analyse a sequence of files from a photo-evaporating random clumps
+// File to analyse a sequence of files from a 3D
 // simulation.  First we get the directory listing, then for each file we load
 // it onto the grid, run some analysis on it, output results to a file, and
 // continue to the next file.
@@ -42,17 +42,15 @@
 // case it is very easy; or else at an angle to the grid, in which case we
 // need to do a lot more work.
 //
-// Run with e.g.: 
-// ./sim_projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_std_0000 M110std_vprof_const 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 1
-// ./sim_projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_std_0000 M110std_vprof_const 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 1
-// ./sim_projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_c15_0000 vprof_c15 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 [1/2]
-// ./sim_projection /mnt/local/jm/mysims/multi3d_v3/ R3d_n192_M110_std_0000 vprof_std 1 1 YP ZP 40 2 64 -8.0e5 8.0e5 [1/2]
-// ./sim_projection /mnt/projects/astrophysics/jmackey/EagleNebula/multi3d_v2/ R3dnew_n192_M9_0000.0 test2 1 1 YP ZP 40 2 20 -10.0e5 10.0e5
-//
 
 
 
 #include "sim_projection.h"
+
+// these files are in ../projection.
+#include "../projection/xray_emission.h"
+#include "../projection/projection_constants.h"
+using namespace std;
 
 
 
@@ -1069,7 +1067,7 @@ void image::calculate_pixel(
   double hh=px->int_pts.dx_phys;
   double ans=0.0;
   
-  if       (what_to_integrate==I_DENSITY) {
+  if       (what_to_integrate==I_D) {
     ans += get_point_density(&(px->int_pts.p[0]));
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
@@ -1082,7 +1080,7 @@ void image::calculate_pixel(
     im[px->ipix] = ans;
   }
   
-  else if (what_to_integrate==I_NEUTRAL_NH) {
+  else if (what_to_integrate==I_NtD) {
     ans += get_point_neutralH_numberdensity(&(px->int_pts.p[0]));
     for (int v=1; v<(npt-1); v++) {
       wt = 6-wt;
@@ -1094,6 +1092,20 @@ void image::calculate_pixel(
     *tot_mass += ans;
     im[px->ipix] = ans;
   }
+
+  else if (what_to_integrate==I_InD) {
+    ans += get_point_ionizedH_numberdensity(&(px->int_pts.p[0]));
+    for (int v=1; v<(npt-1); v++) {
+      wt = 6-wt;
+      ans += wt *get_point_ionizedH_numberdensity(&(px->int_pts.p[v]));
+    }
+    ans += get_point_ionizedH_numberdensity(&(px->int_pts.p[npt-1]));
+    ans *= hh/3.0;
+
+    *tot_mass += ans;
+    im[px->ipix] = ans;
+  }
+
   else if (what_to_integrate==I_EM) {
     //
     // Emission Measure:
@@ -1132,7 +1144,7 @@ void image::calculate_pixel(
 	   what_to_integrate==I_B_STOKESU ||
 	   what_to_integrate==I_BXabs     ||
 	   what_to_integrate==I_BYabs     ||
-	   what_to_integrate==I_RM          ) {
+	   what_to_integrate==I_ROTNMEASURE          ) {
     int bx=0,by=0,bz=0;			       
     if      (sa[XX]==XX) bx=BX;
     else if (sa[XX]==YY) bx=BY;
@@ -1195,7 +1207,7 @@ void image::calculate_pixel(
       *tot_mass += ans;
       im[px->ipix] = ans;
     }
-    else if (what_to_integrate==I_RM) {
+    else if (what_to_integrate==I_ROTNMEASURE) {
       //
       // Rotation Measure:
       // Point quantity needs to be multiplied by dl in parsecs and
@@ -1319,7 +1331,6 @@ void image::calculate_pixel(
     //cout <<"using element "<<vz<<" for LOS, and "<<vx<<" for x-component; theta="<<angle<<" deg.\n";
     
     //
-    // Should make this be dynamic:
     // Velocities are in km/s
     //
     int Nbins = vps->npix[2];
@@ -1408,7 +1419,7 @@ void image::calculate_pixel(
     *tot_mass = 0.0;
   }
   
-  else if (what_to_integrate==I_EMISSION) {
+  else if (what_to_integrate==I_HA) {
     //
     // Set up class for calculating points.
     // None of the parameters mean anything for calculating emission;
@@ -1435,7 +1446,7 @@ void image::calculate_pixel(
        }
     }
     im[px->ipix] = ans; ///1.0e80;
-  } // I_EMISSION
+  } // I_HA
   
   else if (what_to_integrate==I_NII6584) {
     //
@@ -1467,40 +1478,45 @@ void image::calculate_pixel(
     im[px->ipix] = ans; ///1.0e80;
   } // I_NII6584
 
-  else if (what_to_integrate==I_X01) {
+  else if (what_to_integrate==I_X00p1) {
     integrate_xray_emission(px,SimPM.ftr,0,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
   }
 
-  else if (what_to_integrate==I_X02) {
+  else if (what_to_integrate==I_X00p2) {
     integrate_xray_emission(px,SimPM.ftr,1,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  } // I_X02
+  } // I_X00p2
 
-  else if (what_to_integrate==I_X05) {
+  else if (what_to_integrate==I_X00p3) {
     integrate_xray_emission(px,SimPM.ftr,2,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  } // I_X05
+  } // I_X00p3
 
-  else if (what_to_integrate==I_X10) {
+  else if (what_to_integrate==I_X00p5) {
     integrate_xray_emission(px,SimPM.ftr,3,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  } // I_X10
+  } // I_X00p5
 
-  else if (what_to_integrate==I_X20) {
+  else if (what_to_integrate==I_X01p0) {
     integrate_xray_emission(px,SimPM.ftr,4,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  } // I_X20
+  } // I_X01p0
 
-  else if (what_to_integrate==I_X50) {
+  else if (what_to_integrate==I_X02p0) {
     integrate_xray_emission(px,SimPM.ftr,5,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  } // I_X50
+  } // I_X02p0
 
-  else if (what_to_integrate==I_X100) {
+  else if (what_to_integrate==I_X05p0) {
     integrate_xray_emission(px,SimPM.ftr,6,SimPM.gamma,*tot_mass,ans);
     im[px->ipix] = ans;
-  } // I_X100
+  } // I_X05p0
+
+  else if (what_to_integrate==I_X10p0) {
+    integrate_xray_emission(px,SimPM.ftr,7,SimPM.gamma,*tot_mass,ans);
+    im[px->ipix] = ans;
+  } // I_X10p0
   
   else {
     rep.error("don't know what to integrate!",what_to_integrate);

@@ -19,27 +19,6 @@
 #ifndef SIM_PROJECTION_H
 #define SIM_PROJECTION_H
 
-#define I_DENSITY    0
-#define I_NEUTRAL_NH 1
-#define I_VEL_LOS    2
-#define I_VX         3
-#define I_EMISSION   4
-#define I_B_STOKESQ  5
-#define I_B_STOKESU  6
-#define I_ALL_SCALARS 7
-#define I_BXabs       8
-#define I_BYabs       9
-#define I_NII6584    10
-#define I_RM         11   ///< Rotation Measure
-#define I_BREMS20CM  12   ///< 20cm Bremsstrahlung
-#define I_EM         13   ///< Emission measure (projected n_e^2)
-#define I_X01        14   ///< X-ray emission >0.1 keV
-#define I_X02        15   ///< X-ray emission >0.2 keV
-#define I_X05        16   ///< X-ray emission >0.5 keV
-#define I_X10        17   ///< X-ray emission >1.0 keV
-#define I_X20        18   ///< X-ray emission >2.0 keV
-#define I_X50        19   ///< X-ray emission >5.0 keV
-#define I_X100        20   ///< X-ray emission >10.0 keV
 
 #include "defines/functionality_flags.h"
 #include "defines/testing_flags.h"
@@ -54,25 +33,6 @@
 #include "grid/grid_base_class.h"
 #include "microphysics/microphysics_base.h"
 
-#ifdef THREADS
-#include "tools/threads_AJL/msvc_constants.h"
-#if defined(_DEBUG) &&  defined(_MSC_VER) &&  defined(MSVC_DEBUG_NEW_TRACE_ON)
-  #define CRTDBG_MAP_ALLOC
-  #include <stdlib.h> 
-  #include <crtdbg.h> 
-  #define new new(_NORMAL_BLOCK,__FILE__,__LINE__)
-#endif
-#include "tools/threads_AJL/reefa_constants.h"
-#include "tools/threads_AJL/logmessages.h"
-#include "tools/threads_AJL/threadpool/threadpool.h"
-//
-// Global threading variables.
-//
-//threadpool_t     tp; // main threadpool
-extern threadpool_t     tp; // main threadpool
-//int monsecs_gl=0;    // seconds since the start of the month
-
-#endif //THREADS
 
 #include "point_quantities.h"
 

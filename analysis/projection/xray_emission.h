@@ -49,6 +49,13 @@ class Xray_emission {
        const double ///< Temperature (K)
        );
 
+  /// Return the Bremsstrahlung emissivity in MJy*cm^6/ster/cm at 20cm.
+  /// Multiply by n(e) * n(N+) to get volume emissivity.
+  double Brems20cm_emissivity(
+       const double ///< Temperature (K)
+       );
+
+
   private:
   size_t XNel;  ///< Number of rows in table.
   size_t NE;    ///< number of energies to calculate.

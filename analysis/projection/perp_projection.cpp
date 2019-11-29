@@ -37,6 +37,7 @@ int generate_perpendicular_image(
     class Xray_emission &XR,   ///< pointer to class.
     int npix[],       ///< Number of pixels in each direction
     size_t num_pix,     ///< total number of pixels
+    size_t NIMG,      ///< number of images to make
     double **img_array ///< pointer to the image arrays.
     )
 {
@@ -226,7 +227,7 @@ int calculate_column(
     //cout <<"\t\t Calculating image im="<<ivar<<", name="<<im_name[ivar]<<"\n";
     for (int ipix=0; ipix<N_R; ipix++) {
       b = raw_data[DATA_R][ipix];
-      if (ivar<N_SCALAR) {
+      if (ivar<N_HD_SCALAR) {
 #ifdef TESTING
         cout <<"ivar="<<ivar<<", ipix = "<<ipix;
         cout <<": itotal="<<npix[Zcyl]*ipix +iz<<", numpix="<<npix[0]*npix[1]<<"\n";
@@ -324,7 +325,8 @@ int get_emission_absorption_data(
     ems[PROJ_X05p0][i] = n_e * n_Hp * xr[6] * per_angle;
     ems[PROJ_X10p0][i] = n_e * n_Hp * xr[7] * per_angle;
     ems[PROJ_HA   ][i] = n_e * n_Hp * XR.Halpha_emissivity(T);
-    ems[PROJ_NII  ][i] = n_e * n_N1p * XR.NII6584_emissivity(T);
+    ems[PROJ_NII  ][i] = n_e * n_N1p* XR.NII6584_emissivity(T);
+    ems[PROJ_BREMS20CM][i]= n_e * n_Hp * XR.Brems20cm_emissivity(T);
 
     c = grid->NextPt(c,RPcyl);
   }
@@ -360,6 +362,7 @@ int get_emission_absorption_data(
       abs[PROJ_HA   ][i] = 0.0;
       abs[PROJ_NII  ][i] = 0.0;
 #endif
+      abs[PROJ_BREMS20CM][i] = (ems[PROJ_BREMS20CM][i+1]-ems[PROJ_BREMS20CM][i]) /dr;
     }
     else {
       // last point, use backwards differencing.
@@ -382,6 +385,7 @@ int get_emission_absorption_data(
       abs[PROJ_HA   ][i] = 0.0;
       abs[PROJ_NII  ][i] = 0.0;
 #endif
+      abs[PROJ_BREMS20CM][i] = abs[PROJ_BREMS20CM][i-1];
     }
 
     c = grid->NextPt(c,RPcyl);

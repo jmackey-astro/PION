@@ -56,6 +56,7 @@ using namespace std;
 
 void setup_image_array(
     double ***img_array, ///< pointer to be initialised.
+    size_t NIMG,      ///< number of images to make
     size_t Ncell,     ///< total number of grid cells
     int NG[],         ///< number of Grid Cells in each direction
     int n_extra,      ///< number of extra pixels in z-direction
@@ -302,7 +303,7 @@ int main(int argc, char **argv)
   // ionised density, emission measure, ...
   // 
   double **img_array=0;
-  int n_images=NIMG;
+  int n_images=N_HD_SCALAR;
   size_t num_pix=0;
   int npix[2] = {0,0};
   double dx = grid->DX();
@@ -315,28 +316,29 @@ int main(int argc, char **argv)
     // grid.
     n_extra = static_cast<int>(fabs(SimPM.levels[0].Xmax[Rcyl]/tan(angle)/dx));
   }
-  setup_image_array(&img_array, SimPM.Ncell, SimPM.NG, n_extra, npix, num_pix);
+  setup_image_array(&img_array, n_images, SimPM.Ncell, SimPM.NG, n_extra, npix, num_pix);
   
   //
   // array of image names for output files.
   //
-  string im_name[NIMG];
-  for (size_t im=0; im<NIMG; im++) {
+  string im_name[n_images];
+  for (size_t im=0; im<n_images; im++) {
     switch (im) {
-      case PROJ_D:   im_name[im] = "Proj2D_SurfaceMass"; break;
-      case PROJ_NtD: im_name[im] = "Proj2D_NeutralDens"; break;
-      case PROJ_InD: im_name[im] = "Proj2D_IonisedDens"; break;
-      case PROJ_EM:  im_name[im] = "Proj2D_EmissionMeasure"; break;
-      case PROJ_X00p1: im_name[im] = "Proj2D_XRAY_g00p1keV"; break;
-      case PROJ_X00p2: im_name[im] = "Proj2D_XRAY_g00p2keV"; break;
-      case PROJ_X00p3: im_name[im] = "Proj2D_XRAY_g00p3keV"; break;
-      case PROJ_X00p5: im_name[im] = "Proj2D_XRAY_g00p5keV"; break;
-      case PROJ_X01p0: im_name[im] = "Proj2D_XRAY_g01p0keV"; break;
-      case PROJ_X02p0: im_name[im] = "Proj2D_XRAY_g02p0keV"; break;
-      case PROJ_X05p0: im_name[im] = "Proj2D_XRAY_g05p0keV"; break;
-      case PROJ_X10p0: im_name[im] = "Proj2D_XRAY_g10p0keV"; break;
-      case PROJ_HA:  im_name[im] = "Proj2D_Halpha"; break;
-      case PROJ_NII: im_name[im] = "Proj2D_NII_ll6584"; break;
+      case PROJ_D:   im_name[im] = "Proj_SurfaceMass"; break;
+      case PROJ_NtD: im_name[im] = "Proj_NeutralDens"; break;
+      case PROJ_InD: im_name[im] = "Proj_IonizedDens"; break;
+      case PROJ_EM:  im_name[im] = "Proj_EmissionMeasure"; break;
+      case PROJ_X00p1: im_name[im] = "Proj_XRAY_g00p1keV"; break;
+      case PROJ_X00p2: im_name[im] = "Proj_XRAY_g00p2keV"; break;
+      case PROJ_X00p3: im_name[im] = "Proj_XRAY_g00p3keV"; break;
+      case PROJ_X00p5: im_name[im] = "Proj_XRAY_g00p5keV"; break;
+      case PROJ_X01p0: im_name[im] = "Proj_XRAY_g01p0keV"; break;
+      case PROJ_X02p0: im_name[im] = "Proj_XRAY_g02p0keV"; break;
+      case PROJ_X05p0: im_name[im] = "Proj_XRAY_g05p0keV"; break;
+      case PROJ_X10p0: im_name[im] = "Proj_XRAY_g10p0keV"; break;
+      case PROJ_HA:  im_name[im] = "Proj_Halpha"; break;
+      case PROJ_NII: im_name[im] = "Proj_NII_ll6584"; break;
+      case PROJ_BREMS20CM: im_name[im] = "Proj_BREMS20CM"; break;
       default: rep.error("Bad image count",im); break;
     }
   }
@@ -412,10 +414,10 @@ int main(int argc, char **argv)
     cout <<"Angle w.r.t. symmetry axis="<<angle_int<<" degrees\n";
 
     if (angle_int==90) {
-      err += generate_perpendicular_image(SimPM,grid,XR,npix,num_pix,img_array);
+      err += generate_perpendicular_image(SimPM,grid,XR,npix,num_pix,n_images,img_array);
     }
     else {
-      err += generate_angle_image(SimPM,grid,XR,angle,npix,num_pix,n_extra,img_array);
+      err += generate_angle_image(SimPM,grid,XR,angle,npix,num_pix,n_extra,n_images,img_array);
     }
 
     tsf= clk.stop_timer("analysis");

@@ -31,6 +31,7 @@ int generate_perpendicular_image(
     class Xray_emission &,  ///< pointer to class.
     int [],   ///< Number of pixels in each direction
     size_t,   ///< total number of pixels
+    size_t,      ///< number of images to make
     double ** ///< pointer to the image arrays.
     );
 
