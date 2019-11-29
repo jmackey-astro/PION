@@ -95,9 +95,9 @@ int main(int argc, char **argv)
   if (err) rep.error("Read Grid Params Error",err);
   delete siminfo; siminfo=0;
 
-  cout <<"ICGEN setting up grid levels\n";
+  //cout <<"ICGEN_NG_MPI setting up grid levels\n";
   SimSetup->setup_NG_grid_levels(SimPM);
-  cout <<"ICGEN: grid levels set up.\n";
+  cout <<"ICGEN_NG_MPI: grid levels set up.\n";
   vector<class GridBaseClass *> grid;
   grid.resize(SimPM.grid_nlevels);
 
@@ -125,13 +125,15 @@ int main(int argc, char **argv)
   rep.errorTest("(icgen::set_equations) err!=0 Fix me!",0,err);
   class FV_solver_base *solver = SimSetup->get_solver_ptr();
 
-  cout <<"ICGEN: setting up microphysics module\n";
+  cout <<"ICGEN_NG_MPI: setting up microphysics module\n";
   SimSetup->setup_microphysics(SimPM);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
   // call "setup" to set up the data on the computational grid.
+  cout <<"ICGEN_NG_MPI: putting data on grids\n";
   for (int l=0;l<SimPM.grid_nlevels;l++) {
+    //cout <<"ICGEN_NG_MPI: putting data on grids\n";
     err += ic->setup_data(rp,grid[l]);
     if (err) rep.error("Initial conditions setup failed.",err);
   }
@@ -160,21 +162,21 @@ int main(int argc, char **argv)
   // should be already set to its correct value in the initial
   // conditions file.
   //
-#ifdef TESTING
-  cout <<"ICGEN: Setting up boundaries\n";
-#endif
+//#ifdef TESTING
+  cout <<"ICGEN_NG_MPI: Setting up boundaries\n";
+//#endif
   SimSetup->boundary_conditions(SimPM,grid);
   if (err) rep.error("icgen: Couldn't set up boundaries.",err);
 
-#ifdef TESTING
-  cout <<"ICGEN: Setting up raytracing\n";
-#endif
+//#ifdef TESTING
+  cout <<"ICGEN_NG_MPI: Setting up raytracing\n";
+//#endif
   err += SimSetup->setup_raytracing(SimPM,grid);
   if (err) rep.error("icgen: Failed to setup raytracer",err);
 
   for (int l=0;l<SimPM.grid_nlevels;l++) {
 #ifdef TESTING
-    cout <<"icgen_NG: assigning boundary data for level "<<l<<"\n";
+    cout <<"icgen_NG_MPI: assigning boundary data for level "<<l<<"\n";
 #endif
     err = SimSetup->assign_boundary_data(SimPM,l,grid[l]);
     COMM->barrier("level assign boundary data");
@@ -184,16 +186,29 @@ int main(int argc, char **argv)
 
 
   // ----------------------------------------------------------------
+//#ifdef TESTING
+  cout <<"icgen_NG_MPI: updating boundary data\n";
+//#endif
+#ifdef TESTING
+  cout <<"icgen_NG_MPI: updating external boundaries\n";
+#endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("sim_init_NG: error from boundary update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
+#ifdef TESTING
+  cout <<"icgen_NG_MPI: updating C2F boundaries\n";
+#endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
+#ifdef TESTING
+    cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
+    cout <<"@@@@@@@@@@@@  UPDATING C2F BOUNDARIES FOR LEVEL ";
+    cout <<l<<"\n";
+#endif
     if (l<SimPM.grid_nlevels-1) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_SEND) {
@@ -202,6 +217,7 @@ int main(int argc, char **argv)
         }
       }
     }
+    //cout <<"icgen_NG_MPI: updating C2F boundaries, sent, now recv\n";
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
@@ -210,21 +226,29 @@ int main(int argc, char **argv)
         }
       }
     }
+    //cout <<"icgen_NG_MPI: updating C2F boundaries: done with level\n";
   }
+  //cout <<"icgen_NG_MPI: updating C2F boundaries done\n";
   SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("NG_MPI INIT: error from boundary update",0,err);
   // ----------------------------------------------------------------
   
   // ----------------------------------------------------------------
+#ifdef TESTING
+  cout <<"icgen_NG_MPI: updating external boundaries\n";
+#endif
   for (int l=0; l<SimPM.grid_nlevels; l++) {
     err += SimSetup->TimeUpdateExternalBCs(SimPM,l,grid[l], solver,
                             SimPM.simtime,SimPM.tmOOA,SimPM.tmOOA);
   }
-  SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
+  //SimSetup->BC_COARSE_TO_FINE_SEND_clear_sends();
   rep.errorTest("sim_init_NG: error from boundary update",0,err);
   // ----------------------------------------------------------------
 
   // ----------------------------------------------------------------
+#ifdef TESTING
+  cout <<"icgen_NG_MPI: updating internal boundaries\n";
+#endif
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TESTING
     cout <<"@@@@@@@@@@@@  UPDATING INTERNAL BOUNDARIES FOR LEVEL ";
@@ -238,6 +262,9 @@ int main(int argc, char **argv)
 
   // ----------------------------------------------------------------
   // update fine-to-coarse level boundaries
+#ifdef TESTING
+  cout <<"icgen_NG_MPI: updating F2C boundaries\n";
+#endif
   for (int l=SimPM.grid_nlevels-1; l>=0; l--) {
 #ifdef TESTING
     cout <<"NG_MPI updating F2C boundaries for level "<<l<<"\n";

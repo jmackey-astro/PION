@@ -71,7 +71,7 @@ microphysics_base::microphysics_base(
 // ##################################################################
 // ##################################################################
 
-
+//#define DEBUG_SCMA
 
 void microphysics_base::sCMA(
     pion_flt *corrector, ///< input corrector vector
@@ -101,7 +101,10 @@ void microphysics_base::sCMA(
   // is within [0,1] for all tracers (not just elements)
   for (int v=0; v<ntracer; v++) {
     val = ptemp[tr_index[v]]/p_in[tr_index[v]];
-    ptemp[tr_index[v]] = (isfinite(val)) ? val : 0.0;
+    // if val is not finite, then p_in[v]=0, and we don't need to
+    // correct so we set ptemp[v]=1.0;
+    ptemp[tr_index[v]] = (isfinite(val)) ? val : 1.0;
+    //ptemp[tr_index[v]] = (isfinite(val)) ? val : 0.0;
   }
 
   // set correction factor for elements so all add up to 1.
@@ -114,7 +117,7 @@ void microphysics_base::sCMA(
   val=0.0;
 #endif // DEBUG_SCMA
   for (int v=0;v<ntracer;v++) {
-    corrector[tr_index[v]] = ptemp[tr_index[v]];
+    corrector[tr_index[v]] *= ptemp[tr_index[v]];
 #ifdef DEBUG_SCMA
     val = max(val, fabs(corrector[tr_index[v]]));
 #endif // DEBUG_SCMA
