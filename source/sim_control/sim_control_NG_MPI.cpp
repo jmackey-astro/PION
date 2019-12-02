@@ -174,7 +174,7 @@ int sim_control_NG_MPI::Init(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TESTING
     cout <<"NG_MPI updating external boundaries for level "<<l<<"\n";
-    cout <<"@@@@@@@@@@@@  UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
+    cout <<"UPDATING EXTERNAL BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
 #endif
     err += TimeUpdateExternalBCs(SimPM,l,grid[l], spatial_solver,
@@ -187,7 +187,7 @@ int sim_control_NG_MPI::Init(
   for (int l=0; l<SimPM.grid_nlevels; l++) {
 #ifdef TESTING
     cout <<"NG_MPI updating C2F boundaries for level "<<l<<"\n";
-    cout <<"@@@@@@@@@@@@  UPDATING C2F BOUNDARIES FOR LEVEL ";
+    cout <<"UPDATING C2F BOUNDARIES FOR LEVEL ";
     cout <<l<<"\n";
 #endif
     if (l<SimPM.grid_nlevels-1) {
