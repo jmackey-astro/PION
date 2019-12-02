@@ -971,6 +971,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
       else {
         double Ph[par.nvar];
         double cpos[par.ndim], c_vol=0.0;
+#ifdef TEST_C2F
+        double cpos2[par.ndim];
+#endif
         int ipos[par.ndim];
         double sx[par.nvar], sy[par.nvar], sz[par.nvar];
         cell *fch[8];
@@ -988,9 +991,18 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           ibuf += par.nvar;
           for (int v=0;v<par.nvar;v++) sz[v] = buf[ibuf+v];
           ibuf += par.nvar;
+#ifdef TEST_C2F
+          for (int v=0;v<par.ndim;v++) cpos2[v] = cpos[v]/3.086e18;
+          rep.printVec("*********** cpos",cpos2,par.ndim);
+#endif
           list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
           for (int v=0;v<8;v++) {
             fch[v] = *f_iter;
+#ifdef TEST_C2F
+            CI.get_dpos_vec(fch[v]->pos, cpos2);
+            for (int v=0;v<par.ndim;v++) cpos2[v] /= 3.086e18;
+            rep.printVec("fpos", cpos2, par.ndim);
+#endif
             f_iter++;
           }
           CI.get_ipos_vec(cpos,ipos);
