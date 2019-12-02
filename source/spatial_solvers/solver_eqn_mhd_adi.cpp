@@ -541,10 +541,9 @@ int FV_solver_mhd_ideal_adi::MHDsource(
 
 
 
-///
-/// General Finite volume scheme for updating a cell's
-/// primitive state vector, for homogeneous equations.
-///
+// ##################################################################
+// ##################################################################
+
 
 
 int FV_solver_mhd_ideal_adi::CellAdvanceTime(
@@ -559,25 +558,34 @@ int FV_solver_mhd_ideal_adi::CellAdvanceTime(
       )
 {
   pion_flt u1[eq_nvar], u2[eq_nvar];
+  pion_flt Pintermediate[eq_nvar];
+  pion_flt corrector[eq_nvar];
+  //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
+  MP->sCMA(corrector, Pin);
+  for (int t=0;t<eq_nvar;t++)
+    Pintermediate[t] =  Pin[t]* corrector[t];
+  PtoU(Pintermediate, u1, eq_gamma);
   //
   // First convert from Primitive to Conserved Variables
   //
   PtoU(Pin,u1, eq_gamma);
 
-  //
   // Now add dU[] to U[], and change back to primitive variables.
-  // This can give negative pressures, so check for that and fix it if needed.
-  //
-  for (int v=0;v<eq_nvar;v++) {
-    u1[v] += dU[v];   // Update conserved variables
-    dU[v] = 0.;       // Reset the dU array for the next timestep.
-  }
+  // This can give negative pressures, so check for that and fix it
+  // if needed.
+  for (int v=0;v<eq_nvar;v++) u1[v] += dU[v];
   if(UtoP(u1,Pf,MinTemp, eq_gamma)!=0) {
     cout<<"(FV_solver_mhd_ideal_adi::CellAdvanceTime) UtoP complained (maybe about negative pressure...) fixing\n";
     PtoU(Pf, u2, eq_gamma);
     *dE += (u2[ERG]-u1[ERG]);
     UtoP(u2,Pf,MinTemp, eq_gamma);
   }
+
+  // Reset the dU array for the next timestep.
+  for (int v=0;v<eq_nvar;v++) dU[v] = 0.;
+  //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
+  MP->sCMA(corrector, Pf);
+  for (int t=0;t<eq_nvar;t++) Pf[t] =  Pf[t]* corrector[t];
 
   return 0;
 }

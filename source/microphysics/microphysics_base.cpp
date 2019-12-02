@@ -83,8 +83,6 @@ void microphysics_base::sCMA(
 #endif // DEBUG_SCMA
   double corr = 0.0, val=0.0, ptemp[nv_prim];
   for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;
-  for (int i=0;i<nv_prim;i++) ptemp[i] = 1.0;
-  
   // enforce all tracers to be within [0,1]
   for (int v=0; v<ntracer; v++) {
     ptemp[tr_index[v]] = min(1.0,max(0.0, p_in[tr_index[v]]));
@@ -98,30 +96,20 @@ void microphysics_base::sCMA(
   corr = 1.0 / corr; // correction factor for elements
 
   // set multiplier to ensure that corrected tracer value
-  // is within [0,1] for all tracers (not just elements)
+  // is within [0,1] for all tracers, if current value is out of
+  // range
   for (int v=0; v<ntracer; v++) {
     val = ptemp[tr_index[v]]/p_in[tr_index[v]];
-    // if val is not finite, then p_in[v]=0, and we don't need to
-    // correct so we set ptemp[v]=1.0;
-    ptemp[tr_index[v]] = (isfinite(val)) ? val : 1.0;
-    //ptemp[tr_index[v]] = (isfinite(val)) ? val : 0.0;
+    // if p_in[v] is out of range, then set corrector to fix this
+    corrector[tr_index[v]] = (p_in[tr_index[v]]<0.0) ? 0.0 : 1.0;
+    corrector[tr_index[v]] = (p_in[tr_index[v]]>1.0) ? 1.0/p_in[tr_index[v]] : 1.0;
   }
 
-  // set correction factor for elements so all add up to 1.
+  // renormalise element values to sum to 1.
   for (int v=0;v<n_el;v++) {
-    corrector[el_index[v]] = corr;
+    corrector[el_index[v]] *= corr;
   }
   
-  // set correction factor for all tracers to ensure within bounds.
-#ifdef DEBUG_SCMA
-  val=0.0;
-#endif // DEBUG_SCMA
-  for (int v=0;v<ntracer;v++) {
-    corrector[tr_index[v]] *= ptemp[tr_index[v]];
-#ifdef DEBUG_SCMA
-    val = max(val, fabs(corrector[tr_index[v]]));
-#endif // DEBUG_SCMA
-  }
   
 #ifdef DEBUG_SCMA
   if (fabs(val-1.0)>1.0e-1) {
