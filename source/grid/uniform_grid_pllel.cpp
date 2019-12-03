@@ -153,13 +153,13 @@ int UniformGridParallel::setup_flux_recv(
   //
   size_t nc  = 1; // number of cells in each interface
   int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM]; // interface region
-  int lxmin[MAX_DIM], lxmax[MAX_DIM]; // finer grid
-  int dxmin[MAX_DIM], dxmax[MAX_DIM]; // full domain
+  int f_lxmin[MAX_DIM], f_lxmax[MAX_DIM]; // finer grid
+  int d_xmin[MAX_DIM], d_xmax[MAX_DIM]; // full domain
   struct flux_interface *fi = 0;
-  CI.get_ipos_vec(par.levels[lp1].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[lp1].Xmax, lxmax);
-  CI.get_ipos_vec(par.levels[0].Xmin, dxmin);
-  CI.get_ipos_vec(par.levels[0].Xmax, dxmax);
+  CI.get_ipos_vec(par.levels[lp1].Xmin, f_lxmin);
+  CI.get_ipos_vec(par.levels[lp1].Xmax, f_lxmax);
+  CI.get_ipos_vec(par.levels[0].Xmin, d_xmin);
+  CI.get_ipos_vec(par.levels[0].Xmax, d_xmax);
 
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
@@ -182,13 +182,13 @@ int UniformGridParallel::setup_flux_recv(
       // define interface region of fine and coarse grids, and if 
       // each direction is to be included or not.
       for (int ax=0;ax<G_ndim;ax++) {
-        if (lxmin[ax] == ixmin[ax] &&
-            lxmin[ax] != dxmin[ax]) recv[off +2*ax] = true;
-        else                        recv[off +2*ax] = false;
+        if (f_lxmin[ax] == ixmin[ax] &&
+            f_lxmin[ax] != d_xmin[ax]) recv[off +2*ax] = true;
+        else                           recv[off +2*ax] = false;
         
-        if (lxmax[ax] == ixmax[ax] &&
-            lxmax[ax] != dxmax[ax]) recv[off +2*ax+1] = true;
-        else                        recv[off +2*ax+1] = false;
+        if (f_lxmax[ax] == ixmax[ax] &&
+            f_lxmax[ax] != d_xmax[ax]) recv[off +2*ax+1] = true;
+        else                           recv[off +2*ax+1] = false;
 
         ncell[ax] = (ixmax[ax]-ixmin[ax])/G_idx;
         if ( (ixmax[ax]-ixmin[ax]) % G_idx !=0) {
@@ -294,11 +294,11 @@ int UniformGridParallel::setup_flux_recv(
 #endif
     int edge=-1, axis=-1;
     for (int ax=0;ax<G_ndim;ax++) {
-      if (G_ixmin[ax] == lxmax[ax]) {
+      if (G_ixmin[ax] == f_lxmax[ax]) {
         edge=2*ax;
         axis=ax;
       }
-      if (G_ixmax[ax] == lxmin[ax]) {
+      if (G_ixmax[ax] == f_lxmin[ax]) {
         edge=2*ax+1;
         axis=ax;
       }

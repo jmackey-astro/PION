@@ -1336,7 +1336,7 @@ void UniformGrid::BC_deleteBoundaryData()
 
 int UniformGrid::setup_flux_recv(
       class SimParams &par, ///< simulation params (including BCs)
-      const int lp1           ///< level to receive from
+      const int lp1         ///< level to receive from
       )
 {
 #ifdef TEST_BC89FLUX
@@ -1347,7 +1347,7 @@ int UniformGrid::setup_flux_recv(
   //
   size_t nc  = 1; // number of cells in each interface
   int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM]; // interface
-  int lxmin[MAX_DIM], lxmax[MAX_DIM]; // finer grid
+  int f_lxmin[MAX_DIM], f_lxmax[MAX_DIM]; // finer grid
   bool recv[2*G_ndim];  // whether to get data in this direction
   size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
@@ -1355,8 +1355,8 @@ int UniformGrid::setup_flux_recv(
   if (this != par.levels[lp1].parent)
     rep.error("level l is not my child!",lp1);
 
-  CI.get_ipos_vec(par.levels[lp1].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[lp1].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lp1].Xmin, f_lxmin);
+  CI.get_ipos_vec(par.levels[lp1].Xmax, f_lxmax);
 
 
   // define interface region of fine and coarse grids, and whether
@@ -1364,13 +1364,13 @@ int UniformGrid::setup_flux_recv(
   // for a fine grid that is not completely encompassed by the coarse
   // grid.
   for (int v=0;v<G_ndim;v++) {
-    ixmin[v] = std::max(G_ixmin[v], lxmin[v]);
-    if (G_ixmin[v] < lxmin[v]) recv[2*v] = true;
-    else                       recv[2*v] = false;
+    ixmin[v] = std::max(G_ixmin[v], f_lxmin[v]);
+    if (G_ixmin[v] < f_lxmin[v]) recv[2*v] = true;
+    else                         recv[2*v] = false;
     
-    ixmax[v] = std::min(G_ixmax[v], lxmax[v]);
-    if (G_ixmax[v] > lxmax[v]) recv[2*v+1] = true;
-    else                       recv[2*v+1] = false;
+    ixmax[v] = std::min(G_ixmax[v], f_lxmax[v]);
+    if (G_ixmax[v] > f_lxmax[v]) recv[2*v+1] = true;
+    else                         recv[2*v+1] = false;
 
     ncell[v] = (ixmax[v]-ixmin[v])/G_idx;
     if ( (ixmax[v]-ixmin[v]) % G_idx !=0) {
@@ -1458,7 +1458,7 @@ int UniformGrid::setup_flux_recv(
 
 int UniformGrid::setup_flux_send(
       class SimParams &par, ///< simulation params (including BCs)
-      const int lm1           ///< level to send to
+      const int lm1         ///< level to send to
       )
 {
 #ifdef TEST_BC89FLUX
@@ -1470,7 +1470,7 @@ int UniformGrid::setup_flux_send(
   size_t nc  = 1; // number of cells in each interface
   int ixmin[MAX_DIM], ixmax[MAX_DIM],
            ncell[MAX_DIM], nface[MAX_DIM]; // interface
-  int lxmin[MAX_DIM], lxmax[MAX_DIM]; // coarser grid
+  int c_lxmin[MAX_DIM], c_lxmax[MAX_DIM]; // coarser grid
   bool send[2*G_ndim];  // whether to send data in this direction
   size_t nel[2*G_ndim]; // number of interfaces in each direction
   struct flux_interface *fi = 0;
@@ -1480,21 +1480,21 @@ int UniformGrid::setup_flux_send(
     rep.error("level l is not my parent!",lm1);
 #endif
 
-  CI.get_ipos_vec(par.levels[lm1].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[lm1].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lm1].Xmin, c_lxmin);
+  CI.get_ipos_vec(par.levels[lm1].Xmax, c_lxmax);
 
   // define interface region of fine and coarse grids, and whether
   // each direction is to be included or not.  Note that this allows
   // for a fine grid that is not completely encompassed by the coarse
   // grid.
   for (int ax=0;ax<G_ndim;ax++) {
-    ixmin[ax] = std::max(G_ixmin[ax], lxmin[ax]);
-    if (G_ixmin[ax] > lxmin[ax]) send[2*ax] = true;
-    else                         send[2*ax] = false;
+    ixmin[ax] = std::max(G_ixmin[ax], c_lxmin[ax]);
+    if (G_ixmin[ax] > c_lxmin[ax]) send[2*ax] = true;
+    else                           send[2*ax] = false;
     
-    ixmax[ax] = std::min(G_ixmax[ax], lxmax[ax]);
-    if (G_ixmax[ax] < lxmax[ax]) send[2*ax+1] = true;
-    else                         send[2*ax+1] = false;
+    ixmax[ax] = std::min(G_ixmax[ax], c_lxmax[ax]);
+    if (G_ixmax[ax] < c_lxmax[ax]) send[2*ax+1] = true;
+    else                           send[2*ax+1] = false;
 
     ncell[ax] = (ixmax[ax]-ixmin[ax])/G_idx;
     nface[ax] = ncell[ax]/2;  // # face elements on coarse grid
@@ -1509,14 +1509,14 @@ int UniformGrid::setup_flux_send(
   }
   for (int d=0;d<2*G_ndim;d++) nel[d]=0;
 
-  // This is really only for parallel execution: if the boundary
+  // This is only for parallel execution: if the boundary
   // of my grid is not at the boundary of my level, then set send
   // to false
-  CI.get_ipos_vec(par.levels[lm1+1].Xmin, lxmin);
-  CI.get_ipos_vec(par.levels[lm1+1].Xmax, lxmax);
+  CI.get_ipos_vec(par.levels[lm1+1].Xmin, c_lxmin);
+  CI.get_ipos_vec(par.levels[lm1+1].Xmax, c_lxmax);
   for (int ax=0;ax<G_ndim;ax++) {
-    if (G_ixmin[ax] > lxmin[ax]) send[2*ax]   = false;
-    if (G_ixmax[ax] < lxmax[ax]) send[2*ax+1] = false;
+    if (G_ixmin[ax] > c_lxmin[ax]) send[2*ax]   = false;
+    if (G_ixmax[ax] < c_lxmax[ax]) send[2*ax+1] = false;
   }
 
 
@@ -1778,7 +1778,7 @@ int UniformGrid::add_cells_to_face(
     }
 
 #ifdef TEST_BC89FLUX
-    cout <<"perpdir1="<<perpdir1<<", perpdir2="<<perpdir2;
+    cout <<"d="<<d<<", perpdir1="<<perpdir1<<", perpdir2="<<perpdir2;
     cout <<", perpaxis1="<<perpaxis1<<", perpaxis2="<<perpaxis2<<"\n";
 #endif
 
@@ -1789,12 +1789,12 @@ int UniformGrid::add_cells_to_face(
     marker = c;
     for (int i=0;i<nface[perpaxis2]; i++) {
       for (int j=0;j<nface[perpaxis1]; j++) {
-#ifdef TEST_BC89FLUX
-        cout <<"i="<<i<<", j="<<j<<", id="<<i*nface[perpaxis1]+j;
-        cout <<", fisize="<<flux.fi.size()<<"\n";
-        //CI.print_cell(c); cout.flush();
-#endif
         if (ncell==1) {
+#ifdef TEST_BC89FLUX
+          cout <<"i="<<i<<", j="<<j<<", id="<<i*nface[perpaxis1]+j;
+          cout <<", fisize="<<flux.fi.size()<<"\n";
+          CI.print_cell(c); cout.flush();
+#endif
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F[a] = mem.myalloc(c->F[a],G_nvar);
           for (int v=0;v<G_nvar;v++) c->F[a][v]=0.0;
@@ -1906,7 +1906,7 @@ void UniformGrid::save_fine_fluxes(
         for (int v=0;v<G_nvar;v++) fi->flux[v] = 0.0;
       }
       for (int i=0;i<flux_update_send[d].Ncells;i++) {
-        if (!fi->c[i]->F[a]) rep.error("flux is not allocated!",f);
+        if (!fi->c[i]->F[a]) rep.error("fine flux is not allocated!",f);
         // Add cell flux to the full flux for this face over 2 steps.
 #ifdef TEST_BC89FLUX
         //CI.print_cell(fi->c[i]);
@@ -1964,7 +1964,7 @@ void UniformGrid::save_coarse_fluxes(
       // if first element is null then list is empty.
       if (fi==0 && f==0) continue;
       else if (fi==0) rep.error("save_fine_fluxes fi=0",d);
-      if (!fi->c[0]->F[a]) rep.error("flux is not allocated!",f);
+      if (!fi->c[0]->F[a]) rep.error("coarse flux is not allocated!",f);
 
       // set face flux to be the negative of the intercell flux
 #ifdef TEST_BC89FLUX
