@@ -39,30 +39,6 @@
 #include <vector>
 
 
-///
-/// Struct for adding up the flux crossing a grid-boundary interface,
-/// for ensuring conservation between different refinement levels in
-/// a NG/AMR simulation.
-///
-struct flux_interface {
-  std::vector<class cell *> c; ///< list of cells with faces on this interface
-  std::vector<double> area;  ///< area of each face for cells c, ordered as is c
-  pion_flt *flux;   ///< flux through interface.
-};
-
-///
-/// struct to hold all the interface fluxes, for ensuring 
-/// conservation between different refinement levels in
-/// a NG/AMR simulation.  (Berger & Colella, 1989).
-///
-struct flux_update {
-  vector<struct flux_interface *> fi;
-  int Ncells;    ///< number of cells contributing.
-  std::vector<int> rank; ///< list of grid ranks to send to/recv from
-  int dir; ///< direction of face (outward for send)
-  int ax;  ///< axis of normal vector to face.
-};
-
 
 ///
 /// Abstract Base Class to define interface for the Grid data and
@@ -247,82 +223,10 @@ class GridBaseClass {
       class SimParams &  ///< List of simulation params (including BCs)
       )=0;
 
-  ///
-  /// Setup the flux struct flux_update_recv with list of interfaces
-  /// that need to be updated with fluxes from a finer level grid.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual int setup_flux_recv(
-      class SimParams &,  ///< simulation params (including BCs)
-      const int           ///< level to receive from
-      )=0;
-
-  ///
-  /// Setup the flux struct flux_update_send with list of interfaces
-  /// that need to be sent to a coarser level grid.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual int setup_flux_send(
-      class SimParams &,  ///< simulation params (including BCs)
-      const int           ///< level to send to
-      )=0;
-
-  ///
-  /// Add fluxes from boundary cells to grid structures.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual void save_fine_fluxes(
-      const int,   ///< step number for this grid level
-      const double ///< dt for this grid level
-      )=0;
-
-  ///
-  /// Add fluxes from internal cells to grid structures, for cells
-  /// that sit above a grid boundary at a finer level.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual void save_coarse_fluxes(
-      const double ///< dt for this grid level
-      )=0;
 
   /// array of all boundaries.
   std::vector<struct boundary_data *> BC_bd;
 
-  /// array of interfaces for a finer grid within this grid.
-  /// Each element contains a single cell that needs to be updated.
-  ///
-  /// The list has each direction as an element of the outer array
-  /// index, and each interface in that direction as the inner index.
-  /// Note that it is not a matix because each direction doesn't
-  /// necessarily have any elements.
-  ///
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  std::vector<struct flux_update> flux_update_recv;
-
-  /// Array of interfaces for a coarser grid encompassing this grid.
-  /// Each element contains 2^(ndim-1) cells.
-  ///
-  /// The list has each direction as an element of the outer array
-  /// index, and each interface in that direction as the inner index.
-  /// Note that it is not a matix because each direction doesn't
-  /// necessarily have any elements.
-  ///
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  std::vector<struct flux_update> flux_update_send;
 
   class stellar_wind *Wind; ///< stellar wind boundary condition.
   class RayTracingBase *RT;   ///< pointer to raytracing class

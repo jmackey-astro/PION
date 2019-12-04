@@ -452,74 +452,6 @@ class UniformGrid
       class SimParams &  ///< List of simulation params (including BCs)
       );
 
-  ///
-  /// Setup the flux struct flux_update_recv with list of interfaces
-  /// that need to be updated with fluxes from a finer level grid.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual int setup_flux_recv(
-      class SimParams &,  ///< simulation params (including BCs)
-      const int           ///< level to receive from
-      );
-
-  ///
-  /// Setup the flux struct flux_update_send with list of interfaces
-  /// that need to be sent to a coarser level grid.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual int setup_flux_send(
-      class SimParams &,  ///< simulation params (including BCs)
-      const int           ///< level to receive from
-      );
-
-  ///
-  /// Add cells to the flux_update_recv and flux_update_send lists,
-  /// for keeping track of flux entering/leaving a grid on one level.
-  /// This is book-keeping for NG/AMR to ensure fluxes are
-  /// consistent across all levels, following Berger & Colella
-  /// (1989,JCP,82,64).
-  /// 
-  int add_cells_to_face(
-      enum direction,  ///< which direction we're facing
-      int *,   ///< xmin of interface region (integer units)
-      int *,   ///< xmax of interface region (integer units)
-      int *,   ///< number of elements in interface region
-      const int,     ///< number of cells per face, per dim.
-      struct flux_update & ///< struct with list to populate
-      );
-
-  ///
-  /// Add fluxes from boundary cells to grid structures, for cells
-  /// at the grid boundary, to be sent to the coarser level grid.
-  /// Assumes that fluxes have already been calculated and saved in
-  /// array "F" of all relevant cells.
-  ///  
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual void save_fine_fluxes(
-      const int,   ///< step number for this grid level
-      const double ///< dt for this grid level
-      );
-
-  ///
-  /// Add fluxes from internal cells to grid structures, for cells
-  /// that sit above a grid boundary at a finer level.
-  /// Assumes that fluxes have already been calculated and saved in
-  /// array "F" of all relevant cells.
-  ///
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).
-  ///
-  virtual void save_coarse_fluxes(
-      const double ///< dt for this grid level
-      );
 
   ///
   /// prints all the cells in the given boundary data pointer.
@@ -535,31 +467,6 @@ class UniformGrid
   /// Destructor for a boundary data struct.
   ///
   void BC_deleteBoundaryData(boundary_data *);
-
-  ///
-  /// Setup lists of processors to receive data from and send data to, 
-  /// and setup extra boundaries at corners.
-  ///
-  virtual int Setup_RT_Boundaries(
-      const int,  ///< source id
-      struct rad_src_info &
-      ) {cerr<<"DONT CALL ME 1!\n"; return 0;}
-
-  ///
-  /// Receive all optical depths for boundaries closer to source.
-  ///
-  virtual int Receive_RT_Boundaries(
-      const int, ///< source id
-      struct rad_src_info &
-      ) {cerr<<"DONT CALL ME 2!\n"; return 0;}
-
-  ///
-  /// Send all optical depths for boundaries to domains further from source.
-  ///
-  virtual int Send_RT_Boundaries(
-      const int, ///< source id
-      struct rad_src_info &
-      ) {cerr<<"DONT CALL ME 3!\n"; return 0;}
 
   ///
   /// Calculate distance between two points, where the two position

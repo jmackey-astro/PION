@@ -464,7 +464,7 @@ void stellar_wind::set_wind_cell_reference_state(
   // TODO: Add axi-symmetric BC so that VZ,BZ not reflected at 
   //       symmetry axis.  Otherwise 2D with rotation won't work.
   if (eqntype==EQMHD || eqntype==EQGLM) {
-    double t=0.0;
+    //double t=0.0;
     double B_s = WS->Bstar/sqrt(4.0*M_PI); // code units for B_surf
     double D_s = WS->Rstar/wc->dist;     // 1/d in stellar radii
     double D_2 = D_s*D_s;                // 1/d^2 in stellar radii
@@ -1058,7 +1058,7 @@ int stellar_wind_evolution::add_evolving_source(
   // Optional time offset between simulation time and evolutionary
   // time.  Also optional scaling.
   //
-  for (size_t i=0; i<temp->Npt; i++) {
+  for (int i=0; i<temp->Npt; i++) {
     temp->time_evo[i] += time_offset;
     temp->time_evo[i] /= t_scalefactor;
     //cout <<"t="<<temp->time_evo[i]<<"\n";

@@ -251,17 +251,14 @@ class FV_solver_base : virtual public eqns_base, virtual public BaseVectorOps
   /// update vector to ensure that the B-field remains divergence free
   /// (not really working), and the Pdiv(V) term in the internal--
   /// energy solver for the Euler equations.
-  ///
-  /// This base implementation saves the fluxes at grid boundaries
-  /// for simulations with multiple refinement levels, so that fluxes
-  /// can be made consistent between levels.
+  /// Base implementation does nothing.
   ///
   virtual int PostProcess_dU(
       const double,  ///< current timestep, dt.
       const int,     ///< TIMESTEP_FIRST_PART orTIMESTEP_FULL
       class SimParams &, ///< pointer to simulation parameters
       class GridBaseClass *  ///< pointer to computational grid.
-      );
+      ) {return 0;}
 
  protected:
   const int FV_gndim;  ///< number of spatial directions in grid.

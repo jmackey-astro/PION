@@ -231,32 +231,12 @@ int setup_grid_NG_MPI::setup_grid(
   // setup arrays for fluxes into and out of fine grid, and
   // equivalent cells on coarse grid, for making the fluxes
   // consistent across levels.
+  setup_flux_vectors(SimPM.grid_nlevels);
   for (int l=0;l<SimPM.grid_nlevels;l++) {
-    if (l!=0) grid[l]->setup_flux_send(SimPM,l-1);
-    if (l!=SimPM.grid_nlevels-1) grid[l]->setup_flux_recv(SimPM,l+1);
+    if (l!=0) setup_flux_send(SimPM,grid[l],l-1);
+    if (l!=SimPM.grid_nlevels-1) setup_flux_recv(SimPM,grid[l],l+1);
   }
-
-#ifdef TEST_BC89FLUX
-  for (int l=0;l<SimPM.grid_nlevels;l++) {
-    for (unsigned int d=0;d<grid[l]->flux_update_send.size();d++) {
-      struct flux_update *fup = &(grid[l]->flux_update_send[d]);
-      cout <<"l="<<l<<", FUP_SEND: d="<<d<<" info: \n";
-      cout <<"\t ranks: ";
-      for (unsigned int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
-      cout <<"\n";
-      cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
-    }
-    for (unsigned int d=0;d<grid[l]->flux_update_recv.size();d++) {
-      struct flux_update *fup = &(grid[l]->flux_update_recv[d]);
-      cout <<"l="<<l<<", FUP_RECV: d="<<d<<" info: \n";
-      cout <<"\t ranks: ";
-      for (unsigned int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
-      cout <<"\n";
-      cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
-    }
-  }
-#endif
-cout <<"------------------------------------------------------\n\n";
+  cout <<"------------------------------------------------------\n\n";
 
   return(0);
 } // setup_grid()
@@ -297,7 +277,6 @@ int setup_grid_NG_MPI::setup_raytracing(
   }
   return 0;
 }
-
 
 
 
@@ -520,6 +499,5 @@ void setup_grid_NG_MPI::setup_dataio_class(
 
 // ##################################################################
 // ##################################################################
-
 
 
