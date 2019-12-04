@@ -104,7 +104,7 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
-        else if ((pconst.equalD(MCMD->child_procs[i].Xmax[d],
+        if ((pconst.equalD(MCMD->child_procs[i].Xmax[d],
                                 par.levels[l+1].Xmax[d]))    &&
                  (MCMD->child_procs[i].Xmax[d] < 
                   par.levels[l].Xmax[d]*ONE_MINUS_EPS)    &&
@@ -458,11 +458,12 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       )
 {
 #ifdef TEST_C2F
-  cout <<"MPI C2F SEND: starting... ";
+  cout <<"MPI C2F SEND: starting from level "<<l<<" to level "<<l+1<<"... ";
   if (b->NGsendC2F.size()==0) {
     cout <<"empty send list, so just returning now.\n";
     return 0;
   }
+  else cout <<" send-list size = "<<b->NGsendC2F.size();
   cout <<endl;
 #endif
 #ifdef TEST_C2F
@@ -814,7 +815,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 {
 #ifdef TEST_C2F
   cout <<"C2F_MPI: receiving boundary data to level ";
-  cout <<l<<"\n";
+  cout <<l<<", updating boundary dir = "<<b->dir<<"\n";
 #endif
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);

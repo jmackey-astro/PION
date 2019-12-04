@@ -7,7 +7,8 @@
 ///
 /// Modifications:
 ///
-/// - 2018-01-11 SG: Added in more energy bands (0.2, 2, 10 keV)
+/// - 2018-01-11 SG: Added in more energy bands (0.2, 2, 10 keV).
+/// - 2019-02-05 SG: Added in 0.3keV band.
 
 
 #ifndef XRAY_EMISSION_H
@@ -23,7 +24,7 @@ class Xray_emission {
 
   ~Xray_emission()
   {
-    free_xray_tables_priv(&LT, &L1, &L2, &L3, &L4, &L5, &L6, &L7);
+    free_xray_tables_priv(&LT, &L1, &L2, &L3, &L4, &L5, &L6, &L7, &L8);
   }
 
   ///
@@ -36,9 +37,28 @@ class Xray_emission {
         double *  ///< Results.
         );
 
+  /// Return the H-alpha emissivity in erg.cm^3/s/sq.arcsec.
+  /// should be multiplied by n(e) * n(H+) to get the volume emissivity
+  double Halpha_emissivity(
+       const double ///< Temperature (K)
+       );
+
+  /// Return the [NII]6584AA emissivity in erg.cm^3/s/sq.arcsec.
+  /// should be multiplied by n(e) * n(N+) to get the volume emissivity
+  double NII6584_emissivity(
+       const double ///< Temperature (K)
+       );
+
+  /// Return the Bremsstrahlung emissivity in MJy*cm^6/ster/cm at 20cm.
+  /// Multiply by n(e) * n(N+) to get volume emissivity.
+  double Brems20cm_emissivity(
+       const double ///< Temperature (K)
+       );
+
 
   private:
   size_t XNel;  ///< Number of rows in table.
+  size_t NE;    ///< number of energies to calculate.
 
   double 
     *LT,  ///< log temperature
@@ -48,7 +68,8 @@ class Xray_emission {
     *L4,  ///< log emissivity in band 4
     *L5,  ///< log emissivity in band 5
     *L6,  ///< log emissivity in band 6
-    *L7;  ///< log emissivity in band 7
+    *L7,  ///< log emissivity in band 7
+    *L8;  ///< log emissivity in band 8
 
   ///
   /// Function to set up the X-ray emissivity tables, from XSPEC
@@ -58,6 +79,7 @@ class Xray_emission {
       double **, ///< Log(T) array
       double **, ///< Log(L>0.1keV) array
       double **, ///< Log(L>0.2keV) array
+      double **, ///< Log(L>0.3keV) array
       double **, ///< Log(L>0.5keV) array
       double **, ///< Log(L>1.0keV) array
       double **, ///< Log(L>2.0keV) array
@@ -72,6 +94,7 @@ class Xray_emission {
       double **, ///< Log(T) array
       double **, ///< Log(L>0.1keV) array
       double **, ///< Log(L>0.2keV) array
+      double **, ///< Log(L>0.3keV) array
       double **, ///< Log(L>0.5keV) array
       double **, ///< Log(L>1.0keV) array
       double **, ///< Log(L>2.0keV) array

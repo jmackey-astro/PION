@@ -18,7 +18,7 @@
 #ifndef POINT_QUANTITIES_H
 #define POINT_QUANTITIES_H
 
-#include "xray_emission.h"
+#include "../projection/xray_emission.h"
 
 ///
 /// integration point along line of sight of a pixel.  This point 

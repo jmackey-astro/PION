@@ -221,7 +221,7 @@ endif
 ifeq ($(MAKE_UNAME), ubuntu18)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
+    CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -353,7 +353,7 @@ OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
 
 OBJ_NG_BCS = assign_update_bcs_NG.o     \
           NG_coarse_to_fine_boundaries.o \
-          NG_fine_to_coarse_boundaries.o
+          NG_fine_to_coarse_boundaries.o NG_BC89flux.o
 
 
 ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
@@ -469,7 +469,7 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
 setup_NG_grid.o: setup_NG_grid.cpp setup_NG_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
   assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
-  NG_fine_to_coarse_boundaries.h boundaries.h
+  NG_fine_to_coarse_boundaries.h boundaries.h NG_BC89flux.h
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h raytracer_base.h \
   ${GLOBAL} uniform_grid.h grid_base_class.h rad_src_data.h
@@ -533,6 +533,8 @@ NG_fine_to_coarse_boundaries.o: NG_fine_to_coarse_boundaries.h \
   NG_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
   boundaries.h ${GLOBAL} grid_base_class.h
 
+NG_BC89flux.o: NG_BC89flux.cpp NG_BC89flux.h ${GLOBAL} \
+  grid_base_class.h uniform_grid.h
 
 #####################
 # CONTROL CLASSES   #
@@ -559,7 +561,7 @@ sim_control_NG.o : sim_control_NG.cpp sim_control_NG.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h assign_update_bcs_NG.h \
   NG_coarse_to_fine_boundaries.h \
-  NG_fine_to_coarse_boundaries.h boundaries.h
+  NG_fine_to_coarse_boundaries.h boundaries.h NG_BC89flux.h
 
 #####################
 # EQUATIONS CLASSES #

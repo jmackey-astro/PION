@@ -27,7 +27,7 @@ int assign_update_bcs_MPI::assign_boundary_data(
       class GridBaseClass *grid ///< pointer to grid.
       )
 {
-#ifdef TEST_MPI_NG
+#ifdef TEST_MPI_BC
   class MCMDcontrol *ppar = &(par.levels[level].MCMD);
   cout <<ppar->get_myrank()<<" Setting up MPI boundaries..."<<endl;
 #endif

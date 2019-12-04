@@ -85,7 +85,6 @@ using namespace std;
 #include "grid/uniform_grid.h"
 
 #include "sim_projection.h"
-#include "image_io.h"
 
 #include "decomposition/MCMD_control.h"
 #include "grid/setup_grid_NG_MPI.h"
@@ -93,14 +92,12 @@ using namespace std;
 
 #include "raytracing/raytracer_SC.h"
 
-#include "xray_emission.h"
-// ----------- MICROPHYSICS --------------
+// these files are in ../projection.
+#include "../projection/image_io.h"
+#include "../projection/xray_emission.h"
+#include "../projection/projection_constants.h"
 
 
-
-
-
-// ----------- MICROPHYSICS --------------
 ///
 /// Reset the radiation sources in the header to correspond to projected
 /// quantities and not the sources used for the simulation.
@@ -140,28 +137,6 @@ void reset_domain(class MCMDcontrol *MCMD)
 // ------------------------------------------------------------------------
 //
 
-
-#define IMG_DENSITY     0
-#define IMG_NEUTRAL_NH  1
-#define IMG_HALPHA      2
-#define IMG_NII6584     3
-#define IMG_EMNMEASURE  4
-#define IMG_BREMS20CM   5
-#define IMG_X001        6
-#define IMG_X002        7
-#define IMG_X005        8
-#define IMG_X010        9
-#define IMG_X020        10
-#define IMG_X050        11
-#define IMG_X100        12
-#define IMG_B_STOKESQ   13
-#define IMG_B_STOKESU   14
-#define IMG_BXabs       15
-#define IMG_BYabs       16
-#define IMG_ROTNMEASURE 17
-
-#define N_SCALARS       18
-#define N_HD_SCALARS    13
 
 int main(int argc, char **argv)
 {
@@ -311,7 +286,7 @@ int main(int argc, char **argv)
   int angle = th;
 
   th = atoi(argv[9]);
-  if (th<0 || th>9 || isnan(th) || isinf(th))
+  if (th<0 || isnan(th) || isinf(th))
     rep.error("Input what-to-integrate is not in [0,1,2,3,4,7,8,9]",th);
   int what_to_integrate=th;
   // 0=density, 1=neutral density, 2=LOS velocity, 3=VX, 4=emission,
@@ -373,6 +348,7 @@ int main(int argc, char **argv)
     if ((*s).find(".silo")==string::npos) {
       cout <<"removing file "<<*s<<" from list.\n";
       files.erase(s);
+      s=files.begin();
     }
     else {
       cout <<"files: "<<*s<<endl;
@@ -543,9 +519,7 @@ int main(int argc, char **argv)
   //
   // im is a pointer to one of im1/2/3/4/5
   // 
-  double *im=0, *im1=0, *im2=0, *im3=0, *im4=0, *im5=0, *im6=0,
-         *im7=0, *im8=0, *im9=0, *im10=0, *im11=0, *im12=0, *im13=0, *im14=0, *im15=0, 
-         *im16=0, *im17=0, *im18=0;
+  double *im=0, *im1=0, *im2=0;
   long int nels = num_pixels*Nbins; // Nbins=1 unless we want V_los or V_x
 
   //
@@ -569,14 +543,15 @@ int main(int argc, char **argv)
 #endif // SUBTRACT_MEAN
 
   switch (what_to_integrate) {
-  case I_DENSITY:
-  case I_NEUTRAL_NH:
-  case I_EMISSION:
+  case I_D:
+  case I_NtD:
+  case I_HA:
     //
     // Only need one image:
     //
     n_images = 1;
-    im1 = mem.myalloc(im1,nels);
+    img_array = mem.myalloc(img_array,n_images);
+    img_array[0] = mem.myalloc(img_array[0],nels);
     what2int  = mem.myalloc(what2int ,n_images);
     img_array = mem.myalloc(img_array,n_images);
     what2int[0] = what_to_integrate;
@@ -595,70 +570,36 @@ int main(int argc, char **argv)
 
   case I_ALL_SCALARS:
     if (SIMeqns==1) 
-      n_images = N_HD_SCALARS; // No B-field components (dens, NH0, HA, NII, EM, 20cm, xray)
+      n_images = N_HD_SCALAR; // No B-field components (dens, NH0, HA, NII, EM, 20cm, xray)
     else
-      n_images = N_SCALARS; // Project Stokes Q,U and BX,BT, RM
-    im1 = mem.myalloc(im1,nels);
-    im2 = mem.myalloc(im2,nels);
-    im3 = mem.myalloc(im3,nels);
-    im4 = mem.myalloc(im4,nels);
-    im5 = mem.myalloc(im5,nels);
-    im6 = mem.myalloc(im6,nels);
-    im7 = mem.myalloc(im7,nels);
-    im8 = mem.myalloc(im8,nels);
-    im9 = mem.myalloc(im9,nels);
-    im10 = mem.myalloc(im10,nels);
-    im11 = mem.myalloc(im11,nels);
-    im12 = mem.myalloc(im12,nels);
-    im13 = mem.myalloc(im13,nels);
-    if (SIMeqns==2) { 
-      im14 = mem.myalloc(im14,nels);
-      im15 = mem.myalloc(im15,nels);
-      im16 = mem.myalloc(im16,nels);
-      im17 = mem.myalloc(im17,nels);
-      im18 = mem.myalloc(im18,nels);
-    }
-    what2int  = mem.myalloc(what2int ,n_images);
+      n_images = N_MHD_SCALAR; // Project Stokes Q,U and BX,BT, RM
+    
     img_array = mem.myalloc(img_array,n_images);
-    what2int[IMG_DENSITY] = I_DENSITY;
-    what2int[IMG_NEUTRAL_NH] = I_NEUTRAL_NH;
-    what2int[IMG_HALPHA] = I_EMISSION;
-    what2int[IMG_NII6584] = I_NII6584;
-    what2int[IMG_EMNMEASURE] = I_EM;
-    what2int[IMG_BREMS20CM] = I_BREMS20CM;
-    what2int[IMG_X001] = I_X01;
-    what2int[IMG_X002] = I_X02;
-    what2int[IMG_X005] = I_X05;
-    what2int[IMG_X010] = I_X10;
-    what2int[IMG_X020] = I_X20;
-    what2int[IMG_X050] = I_X50;
-    what2int[IMG_X100] = I_X100;
+    for (int v=0;v<n_images;v++)
+      img_array[v] = mem.myalloc(img_array[v],nels);
+
+    what2int  = mem.myalloc(what2int ,n_images);
+    what2int[PROJ_D] = I_D;
+    what2int[PROJ_NtD] = I_NtD;
+    what2int[PROJ_InD] = I_InD;
+    what2int[PROJ_HA] = I_HA;
+    what2int[PROJ_NII] = I_NII6584;
+    what2int[PROJ_EM] = I_EM;
+    what2int[PROJ_BREMS20CM] = I_BREMS20CM;
+    what2int[PROJ_X00p1] = I_X00p1;
+    what2int[PROJ_X00p2] = I_X00p2;
+    what2int[PROJ_X00p3] = I_X00p3;
+    what2int[PROJ_X00p5] = I_X00p5;
+    what2int[PROJ_X01p0] = I_X00p1;
+    what2int[PROJ_X02p0] = I_X00p2;
+    what2int[PROJ_X05p0] = I_X00p5;
+    what2int[PROJ_X10p0] = I_X01p0;
     if (SIMeqns==2) { 
-      what2int[IMG_B_STOKESQ] = I_B_STOKESQ;
-      what2int[IMG_B_STOKESU] = I_B_STOKESU;
-      what2int[IMG_BXabs] = I_BXabs;
-      what2int[IMG_BYabs] = I_BYabs;
-      what2int[IMG_ROTNMEASURE]= I_RM;
-    }
-    img_array[IMG_DENSITY] = im1;
-    img_array[IMG_NEUTRAL_NH] = im2;
-    img_array[IMG_HALPHA] = im3;
-    img_array[IMG_NII6584] = im4;
-    img_array[IMG_EMNMEASURE] = im5;
-    img_array[IMG_BREMS20CM] = im6;
-    img_array[IMG_X001] = im7;
-    img_array[IMG_X002] = im8;
-    img_array[IMG_X005] = im9;
-    img_array[IMG_X010] = im10;
-    img_array[IMG_X020] = im11;
-    img_array[IMG_X050] = im12;
-    img_array[IMG_X100] = im13;
-    if (SIMeqns==2) { 
-      img_array[IMG_B_STOKESQ] = im14;
-      img_array[IMG_B_STOKESU] = im15;
-      img_array[IMG_BXabs] = im16;
-      img_array[IMG_BYabs] = im17;
-      img_array[IMG_ROTNMEASURE] = im18;
+      what2int[PROJ_B_STOKESQ] = I_B_STOKESQ;
+      what2int[PROJ_B_STOKESU] = I_B_STOKESU;
+      what2int[PROJ_BXabs] = I_BXabs;
+      what2int[PROJ_BYabs] = I_BYabs;
+      what2int[PROJ_ROTNMEASURE]= I_ROTNMEASURE;
     }
 #ifdef SUBTRACT_MEAN
     //
@@ -767,9 +708,9 @@ int main(int argc, char **argv)
     // Initialize image arrays to zero
     //
     switch (what_to_integrate) {
-    case I_DENSITY:
-    case I_NEUTRAL_NH:
-    case I_EMISSION:
+    case I_D:
+    case I_NtD:
+    case I_HA:
       //
       // Only need one image:
       //
@@ -782,32 +723,14 @@ int main(int argc, char **argv)
       break;
 
     case I_ALL_SCALARS:
-      for (int v=0;v<nels; v++) im1[v] = 0.0;
-      for (int v=0;v<nels; v++) im2[v] = 0.0;
-      for (int v=0;v<nels; v++) im3[v] = 0.0;
-      for (int v=0;v<nels; v++) im4[v] = 0.0;
-      for (int v=0;v<nels; v++) im5[v] = 0.0;
-      for (int v=0;v<nels; v++) im6[v] = 0.0;
-      for (int v=0;v<nels; v++) im7[v] = 0.0;
-      for (int v=0;v<nels; v++) im8[v] = 0.0;
-      for (int v=0;v<nels; v++) im9[v] = 0.0;
-      for (int v=0;v<nels; v++) im10[v] = 0.0;
-      for (int v=0;v<nels; v++) im11[v] = 0.0;
-      for (int v=0;v<nels; v++) im12[v] = 0.0;
-      for (int v=0;v<nels; v++) im13[v] = 0.0;
-      if (SIMeqns==2) { 
-        for (int v=0;v<nels; v++) im14[v] = 0.0;
-        for (int v=0;v<nels; v++) im15[v] = 0.0;
-        for (int v=0;v<nels; v++) im16[v] = 0.0;
-        for (int v=0;v<nels; v++) im17[v] = 0.0;
-        for (int v=0;v<nels; v++) im18[v] = 0.0;
+      for (int j=0;j<n_images;j++) {
+        for (int v=0;v<nels; v++) img_array[j][v] = 0.0;
       }
       break;
 
     default:
       rep.error("bad what-to-integrate integer...",what_to_integrate);
     }
-
 
     double tot_mass = 0.0;
     struct pixel *px;
@@ -929,15 +852,15 @@ int main(int argc, char **argv)
     // Replace projected |Bx|,|By| (images 6,7) with values calculated
     // from the Stokes Q and U values in images 4,5.
     //
-    if (n_images==N_SCALARS) {
+    if (n_images==N_MHD_SCALAR) {
       double norm;
       for (int ix=0;ix<num_pixels;ix++) {
-        norm = sqrt(img_array[IMG_B_STOKESQ][ix]*img_array[IMG_B_STOKESQ][ix]+
-                    img_array[IMG_B_STOKESU][ix]*img_array[IMG_B_STOKESU][ix]);
-        img_array[IMG_BXabs][ix] =
-          norm*cos(0.5*atan2(img_array[IMG_B_STOKESU][ix],img_array[IMG_B_STOKESQ][ix]));
-        img_array[IMG_BYabs][ix] =
-          norm*sin(0.5*atan2(img_array[IMG_B_STOKESU][ix],img_array[IMG_B_STOKESQ][ix]));
+        norm = sqrt(img_array[PROJ_B_STOKESQ][ix]*img_array[PROJ_B_STOKESQ][ix]+
+                    img_array[PROJ_B_STOKESU][ix]*img_array[PROJ_B_STOKESU][ix]);
+        img_array[PROJ_BXabs][ix] =
+          norm*cos(0.5*atan2(img_array[PROJ_B_STOKESU][ix],img_array[PROJ_B_STOKESQ][ix]));
+        img_array[PROJ_BYabs][ix] =
+          norm*sin(0.5*atan2(img_array[PROJ_B_STOKESU][ix],img_array[PROJ_B_STOKESQ][ix]));
       }
     }
     // ***************************************************************
@@ -974,8 +897,8 @@ int main(int argc, char **argv)
     //
     if (myrank==0) {
       switch (what_to_integrate) {
-      case I_DENSITY:
-      case I_NEUTRAL_NH:
+      case I_D:
+      case I_NtD:
         //
         // Here we just do the first (and only) image.
         //
@@ -991,7 +914,7 @@ int main(int argc, char **argv)
         if (ifile==0) {
           for (int ix=0; ix<rank0_npix[0]; ix++) {
             mean_array[IMG_DENSITY][ix] = img_array[IMG_DENSITY][rank0_npix[0]*(rank0_npix[1]-1)+ix];
-            mean_array[IMG_NEUTRAL_NH][ix] = img_array[IMG_NEUTRAL_NH][rank0_npix[0]*(rank0_npix[1]-1)+ix];
+            mean_array[IMG_NtD][ix] = img_array[IMG_NtD][rank0_npix[0]*(rank0_npix[1]-1)+ix];
           }
           //rep.printVec("rho",mean_array[0],npix[0]);
           //rep.printVec("NH ",mean_array[1],npix[0]);
@@ -1008,7 +931,7 @@ int main(int argc, char **argv)
             //  cout<<"  "<<mean_array[0][ix]<<"\n";
             //}
             img_array[IMG_DENSITY][rank0_npix[0]*iy+ix] -= mean_array[IMG_DENSITY][ix];
-            img_array[IMG_NEUTRAL_NH][rank0_npix[0]*iy+ix] -= mean_array[IMG_NEUTRAL_NH][ix];
+            img_array[IMG_NtD][rank0_npix[0]*iy+ix] -= mean_array[IMG_NtD][ix];
             //img_array[0][npix[0]*iy+ix] -= img_array[0][npix[0]*(npix[1]-1)+ix];
             //img_array[1][npix[0]*iy+ix] -= img_array[1][npix[0]*(npix[1]-1)+ix];
           }
@@ -1094,12 +1017,12 @@ int main(int argc, char **argv)
       ostringstream t; t.fill('0');
       
       switch (what_to_integrate) {
-      case I_DENSITY:
-        t<<"Proj_Dens";
+      case I_D:
+        t<<"Proj_SurfaceMass";
         im_name[0]=t.str();
         break;
-      case I_NEUTRAL_NH:
-        t<<"Proj_NH";
+      case I_NtD:
+        t<<"Proj_NeutralDens";
         im_name[0]=t.str();
         break;
       case I_VEL_LOS:
@@ -1110,50 +1033,38 @@ int main(int argc, char **argv)
         t<<"Proj_VX";
         im_name[0]=t.str();
         break;
-      case I_EMISSION:
+      case I_HA:
         t<<"Proj_Halpha";
         im_name[0]=t.str();
         break;
       case I_ALL_SCALARS:
-        t<<"AA_Dens";
-        im_name[IMG_DENSITY]=t.str(); t.str("");
-        t<<"AA_NH";
-        im_name[IMG_NEUTRAL_NH]=t.str(); t.str("");
-        t<<"AA_Halpha";
-        im_name[IMG_HALPHA]=t.str(); t.str("");
-        t<<"AA_NII6584";
-        im_name[IMG_NII6584]=t.str(); t.str("");
-        t<<"AA_EM";
-        im_name[IMG_EMNMEASURE]=t.str(); t.str("");
-        t<<"AA_BREMS20CM";
-        im_name[IMG_BREMS20CM]=t.str(); t.str("");
-        t<<"AA_XRAY_g0p1keV";
-        im_name[6]=t.str(); t.str("");
-        t<<"AA_XRAY_g0p2keV";
-        im_name[7]=t.str(); t.str("");
-        t<<"AA_XRAY_g0p5keV";
-        im_name[8]=t.str(); t.str("");
-        t<<"AA_XRAY_g1p0keV";
-        im_name[9]=t.str(); t.str("");
-        t<<"AA_XRAY_g2p0keV";
-        im_name[10]=t.str(); t.str("");
-        t<<"AA_XRAY_g5p0keV";
-        im_name[11]=t.str(); t.str("");
-        t<<"AA_XRAY_g10p0keV";
-        im_name[12]=t.str(); t.str("");
-        if (SIMeqns==2) { 
-          t<<"Proj_b_q";
-          im_name[13]=t.str(); t.str("");
-          t<<"Proj_b_u";
-          im_name[14]=t.str(); t.str("");
-          t<<"Proj_bxabs";
-          im_name[15]=t.str(); t.str("");
-          t<<"Proj_byabs";
-          im_name[16]=t.str(); t.str("");
-          t<<"Proj_RM";
-          im_name[17]=t.str(); t.str("");
+        for (size_t im=0; im<n_images; im++) {
+          switch (im) {
+            case PROJ_D:   im_name[im] = "Proj_SurfaceMass"; break;
+            case PROJ_NtD: im_name[im] = "Proj_NeutralDens"; break;
+            case PROJ_InD: im_name[im] = "Proj_IonizedDens"; break;
+            case PROJ_EM:  im_name[im] = "Proj_EmissionMeasure"; break;
+            case PROJ_X00p1: im_name[im] = "Proj_XRAY_g00p1keV"; break;
+            case PROJ_X00p2: im_name[im] = "Proj_XRAY_g00p2keV"; break;
+            case PROJ_X00p3: im_name[im] = "Proj_XRAY_g00p3keV"; break;
+            case PROJ_X00p5: im_name[im] = "Proj_XRAY_g00p5keV"; break;
+            case PROJ_X01p0: im_name[im] = "Proj_XRAY_g01p0keV"; break;
+            case PROJ_X02p0: im_name[im] = "Proj_XRAY_g02p0keV"; break;
+            case PROJ_X05p0: im_name[im] = "Proj_XRAY_g05p0keV"; break;
+            case PROJ_X10p0: im_name[im] = "Proj_XRAY_g10p0keV"; break;
+            case PROJ_HA:   im_name[im] = "Proj_Halpha"; break;
+            case PROJ_NII:  im_name[im] = "Proj_NII_ll6584"; break;
+            case PROJ_BREMS20CM: im_name[im] = "Proj_BREMS20CM"; break;
+            case PROJ_B_STOKESQ: im_name[im] = "Proj_B_STOKESQ"; break;
+            case PROJ_B_STOKESU: im_name[im] = "Proj_B_STOKESU"; break;
+            case PROJ_BXabs:     im_name[im] = "Proj_BXabs"; break;
+            case PROJ_BYabs:     im_name[im] = "Proj_BYabs"; break;
+            case PROJ_ROTNMEASURE: im_name[im] = "Proj_ROTNMEASURE"; break;
+            default: rep.error("Bad image count",im); break;
+          }
         }
         break;
+
       default:
         rep.error("bad what-to-integrate integer...",what_to_integrate);
       }
@@ -1165,7 +1076,7 @@ int main(int argc, char **argv)
         im  = img_array[outputs];
 
         switch (what_to_integrate) {
-        case I_DENSITY: case I_NEUTRAL_NH: case I_EMISSION: case I_ALL_SCALARS:
+        case I_D: case I_NtD: case I_HA: case I_ALL_SCALARS:
           err = imio.write_image_to_file(filehandle, op_filetype, im,
                                         rank0_num_pixels, 2, rank0_npix,
                                         im_name[outputs],
@@ -1237,24 +1148,11 @@ int main(int argc, char **argv)
   cout <<"-------------------------------------------------------\n";
   cout <<"--------------- Clearing up and Exiting ---------------\n";
 
+  if (im) im = mem.myfree(im);
   im1 = mem.myfree(im1);
   im2 = mem.myfree(im2);
-  im3 = mem.myfree(im3);
-  im4 = mem.myfree(im4);
-  im5 = mem.myfree(im5);
-  im6 = mem.myfree(im6);
-  im7 = mem.myfree(im7);
-  im8 = mem.myfree(im8);
-  im9 = mem.myfree(im9);
-  im10= mem.myfree(im10);
-  im11= mem.myfree(im11);
-  im12 = mem.myfree(im11);
-  im13 = mem.myfree(im12);
-  im14 = mem.myfree(im13);
-  im15 = mem.myfree(im14);
-  im16 = mem.myfree(im15);
-  im17= mem.myfree(im16);
-  im18= mem.myfree(im17);
+  for (int v=0;v<n_images;v++)
+    img_array[v] = mem.myfree(img_array[v]);
   img_array=mem.myfree(img_array);
   what2int=mem.myfree(what2int);
 #ifdef SUBTRACT_MEAN

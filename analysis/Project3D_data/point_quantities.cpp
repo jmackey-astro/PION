@@ -28,9 +28,8 @@
 #include "microphysics/microphysics_base.h"
 
 #include "point_quantities.h"
-
-#include "xray_emission.h"
-
+#include "../projection/xray_emission.h"
+#include "../projection/projection_constants.h"
 using namespace std;
 
 
@@ -401,15 +400,7 @@ double point_quantities::get_point_RotationMeasure(
 
 ///
 /// Get the absorption and emission coefficients for H-alpha
-/// recombination radiation, according to Hummer94 and Henney et al.
-/// (2005)'s generic formulae.
-/// 
-/// I found emissivities according to Storey & Hummer
-/// (1995,MNRAS,272,41), and they drop linearly with temperature.
-/// Not sure why that is, but it is for Ha,Hb,Hg, etc.
-///
-/// UPDATE: Replaced with a fit to Ostebrock (1989)'s tables, which
-/// seem to be more reliable.
+/// recombination radiation, with a fit to Ostebrock (1989)'s tables.
 ///
 void point_quantities::get_point_Halpha_params(
       const struct point_4cellavg *pt, ///< point in question.
@@ -448,9 +439,7 @@ void point_quantities::get_point_Halpha_params(
     *j = 0.0;
   }
   else {
-    *j = 2.63e-33*ni*ne*exp(-0.9*log(T));
-    // OLD VALUES *j = 2.056e-14*ni*ni/T;
-    // Emissivity scales more steeply than recombination rate
+    *j = ni * ne * Halpha_emissivity(T); // from Xray class
   }
   return;
 }
@@ -504,7 +493,10 @@ void point_quantities::get_point_NII6584_params(
     *j = 0.0;
   }
   else {
-    *j = 9.03e-34*ni*ne*exp(-2.1855e4/T)/sqrt(T);
+    //double n_N1p;
+    //double fNp = 7.08e-5; // ISM abundance of Nitrogen, by number.
+    //n_N1p = fNp * ni;
+    *j = 7.08e-5 * ni * ne * NII6584_emissivity(T);
   }
   return;
 }
@@ -553,11 +545,9 @@ double point_quantities::get_point_Bremsstrahlung20cm(
   //
   // Bilinear interpolation with pre-calculated weights and
   // neighbouring cells.
-  // The point value is j = 4.44e-21 (MJy/sr/cm) n_e n_i/sqrt(T)
+  // The point value is j = 4.44e-21 n_e n_i *sqrt(T) (MJy/sr/cm) 
   // This gets multiplied at the end by the path length through each
   // element of the integral (hh).
-  //
-  // assume n_e = n_i = rho*X_H*y(H+)/m_p
   //
   double val=0.0;
   for (int v=0;v<4;v++) {
@@ -568,13 +558,10 @@ double point_quantities::get_point_Bremsstrahlung20cm(
       val += pt->wt[v]
               * MP->get_n_elec(pt->ngb[v]->P)
               * MP->get_n_Hplus(pt->ngb[v]->P)
-              * sqrt(MP->Temperature(pt->ngb[v]->P,gamma));
+              * Brems20cm_emissivity(MP->Temperature(pt->ngb[v]->P,gamma));
     }
   }
-  //
-  // multiply by constant to get emissivity in MJy/sr/cm
-  //
-  return val*4.44e-21;
+  return val;
 };
 
 
@@ -591,15 +578,16 @@ void point_quantities::get_point_Xray_params(
         const int index, ///< which X-ray emissivity to use (index in array).
         const double gamma,   ///< EOS gamma
         double *alpha,   ///< absorption coefficient (/cm)
-        double *j
+        double *j        ///< emission coefficient (erg. cm^3/s/cm)
         )
 {
   // Need the electron number density and temperature.
-  double xr[7], T, ne;
+  double xr[8], T, ne, ni;
+  double per_angle = 1.0/(4.0*pconst.pi()*pconst.sqasec_per_sr());
   T  = get_point_temperature(pt,gamma);
   ne = get_point_electron_numberdensity(pt);
-  // Assume n_e=n_p (i.e. ignore electrons from Helium).
-  get_xray_emissivity(T,xr);
+  ni = get_point_ionizedH_numberdensity(pt);
+  get_xray_emissivity(T,xr); // volume emissivity per e- per H+
  
   if (T<1.0) {
     // can get zero temperature if point is off-grid.
@@ -608,7 +596,7 @@ void point_quantities::get_point_Xray_params(
   }
   else {
     // prefactor converts to intensity in erg/cm2/s/square-arcsec
-    *j = 1.870e-12 * xr[index] * ne * ne;
+    *j = xr[index] * ne * ni * per_angle;
     *alpha = 0.0;
   }
   return;

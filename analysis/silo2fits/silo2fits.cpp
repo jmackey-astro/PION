@@ -176,6 +176,7 @@ int main(int argc, char **argv)
     if ((*s).find(".silo")==string::npos) {
       cout <<"removing file "<<*s<<" from list.\n";
       files.erase(s);
+      s=files.begin();
     }
     else {
       cout <<"files: "<<*s<<endl;

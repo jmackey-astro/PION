@@ -1,91 +1,17 @@
-# Makefile for the Hydro/MHD Code "pion", parallel version.
-# Author: Jonathan Mackey
+# Makefile for projecting 2D axisymmetric data onto the plane of the
+# sky, Jonathan Mackey
 #
-# - 2009.12.18 JM: updated epona libs.
-# - 2009.02.03 JM: updated stokes debug compile flags.
-# - 2010.04.21 JM: added section for furfur (32GB RAM, 8 cores)
-# - 2010.06.24 JM: added section for aibn214 (2GB RAM, 2 cores)
-# - 2010.07.28 JM: added section for klaipedaX (64GB RAM, 16 cores)
-# - 2010-09-22 JM: Added Riemann_FVS_hydro files.
-# - 2010-10-11 JM: Added 'standard' workstation; added stellar_wind_BC file.
-# - 2010.10.13 JM: Added MPv9 object file
-# - 2010.10.13 JM: moved executables to ../exe/
-# - 2010.11.09 JM: Added options for Phalanx at UCL
-# - 2010.11.15 JM: Added cell_interface.o file.
-# - 2010.12.22 JM: Added new files for solvers.
-# - 2010.12.27 JM: added extra source files. Added GLOBAL
-#                  variable for list of global header files.
-# - 2010.12.28 JM: Added internal-energy integrating solver files.
-# - 2011.01.10 JM: Added options for JUROPA at JSC Juelich.
-# - 2011.01.17 JM: Added new microphysics stuff
-# - 2011.02.17 JM: Added new raytracer_shielding.o object (with path).
-# - 2011.03.22 JM: Added Harpreet's module files
-# - 2011.04.12 JM: Added Hummer-recomb microphysics file.
-# - 2011.04.22 JM: Added new MP interface, with CVODES library support.
-#                  Simplified lib-paths.
-# - 2011.05.12 JM: updated phalanx library paths
-# - 2011.10.24 JM: updated RT and MP (removed shielding file, added MP files).
-# - 2011.11.14 JM: Got rid of MAKE_UNAME Stuff (moved to compile_code.sh)
-#                  Deleted some old machines from the list of computers.
-# - 2011.12.20 JM: Merged code and icgenerator makefiles and moved most of the
-#     logic to compile_code.sh.  Re-named to just "Makefile", and removed most
-#     of the machine-specific options.
-# - 2012.02.08 JM: Added new IC class for Harpreet's module.
-# - 2012.02.22 JM/HD: Added section for compile options for dougal at UCL.
-# - 2012.02.22 JM/HD: Added section for dougal at UCL compile options.
-# - 2012.07.15 JM: some new vpath entries and changed file names.
-# - 2012.09.11 JM: Added options for SuperMUC
-# - 2013.01.10 JM: Changed name of exe to pion_parallel
-# - 2013.01.14 JM: Added section for DIRAC/Complexity (it works now).
-# - 2013.01.17 JM: Got rid of readline/ncurses from link line in
-#    production version of pion.
-# - 2013.02.27 JM: Added extensions for contributed code.
-#    Added file_status.o/cpp object file. Added NEW_METALLICITY flag.
-# - 2013.08.19 JM: Changed filenames for Harpreet's module.
-# - 2014.04.14 JM: Section for Judge at JSC.
-# - 2015.01.26-28 JM: Edited for new filenames and code structure.
-# - 2016.03.14 JM: renamed .cc files to .cpp
-# - 2016.05.04 JM: Added FIONN to list of machines
-# - 2016.08.29 JM: removed *Eint solvers.
-# - 2017-07-29 JM: updated for latitude-dependent winds.
-# - 2017-08-03 JM: updated standard workstation to use system libs.
-# - 2018-[07-09] JM: added static mesh-refinement
-###
-
-############################
-### BASIC INFO AND PATHS ###
-############################
+# 2012.01.09 JM Modified from pllel_analyse_data
+# 2012.01.10 JM Debugged code and modified makefile a little.
+# 2012.11.23 JM: Updated to use new code branch.
+# 2019.11.26 JM: merge perpendicular and angled code.
 
 SHELL = /bin/sh
 .SUFFIXES:
 .SUFFIXES: .cc .o
+.SUFFIXES: .cxx .o
 .SUFFIXES: .cpp .o
-bindir = ..
-SRCDIR=${CURDIR}/../source
-VPATH = \
-../source:\
-../source/ics:\
-../source/Riemann_solvers:\
-../source/defines:\
-../source/microphysics:\
-../source/raytracing:\
-../source/grid:\
-../source/dataIO:\
-../source/comms:\
-../source/coord_sys:\
-../source/equations:\
-../source/spatial_solvers:\
-../source/sim_control:\
-../source/time_integrators:\
-../source/contrib:\
-../source/tools:\
-../source/decomposition:\
-../source/NG_grid:\
-../source/boundaries
-
-
-GLOBAL = functionality_flags.h testing_flags.h reporting.h \
-         sim_params.h sim_constants.h constants.h rad_src_data.h
+srcdir = .
 
 #######################
 ## COMPILATION RULES ##
@@ -94,112 +20,95 @@ GLOBAL = functionality_flags.h testing_flags.h reporting.h \
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
 .cpp.o:
 	$(CXX) $(CXXFLAGS) $(INC) -c $<
+.cxx.o:
+	$(CXX) $(CXXFLAGS) $(INC) -c $<
 #######################
 
 
-######################################################################
-# Options for a "standard" workstation.
-# Need libsilo-dev libcfitsio-dev libsundials-serial-dev installed
-######################################################################
-ifeq ($(MAKE_UNAME), standard)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
+####### PATHS TO SOURCES #######
+PION=${CURDIR}/../..
+srcdir=${PION}/source
+bindir=.
 
-  INC  = -I/usr/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -lm
-  # All libraries are in this path:
-  LDFLAGS += -L/usr/lib
-  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-  # Libraries for fits, silo
-  LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5
-  LDFLAGS += -lgsl
-  # libs for CVODES
-  LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
+VPATH = \
+${srcdir}:\
+${srcdir}/ics:\
+${srcdir}/Riemann_solvers:\
+${srcdir}/defines:\
+${srcdir}/microphysics:\
+${srcdir}/raytracing:\
+${srcdir}/grid:\
+${srcdir}/dataIO:\
+${srcdir}/comms:\
+${srcdir}/coord_sys:\
+${srcdir}/equations:\
+${srcdir}/flux_calc:\
+${srcdir}/spatial_solvers:\
+${srcdir}/time_integrators:\
+${srcdir}/contrib\
+${srcdir}/tools\
+${srcdir}/decomposition:\
+${srcdir}/Riemann_solvers:\
+${srcdir}/spatial_solvers:\
+${srcdir}/boundaries
+
+GLOBAL = functionality_flags.h testing_flags.h testing_flags.h reporting.h \
+         sim_params.h sim_constants.h constants.h rad_src_data.h
+
+####### PATHS TO SOURCES #######
+
+
+# --------------------
+# Compile-time options
+# --------------------
+# Tell it that we're using MPI
+OPTION  = -DPARALLEL
+#IOMODE=USE_FILE_COMMS
+IOMODE=USE_MPI
+OPTION += -D$(IOMODE)
+# if using Silo
+OPTION += -DSILO
+OPTION += -DFITS
+
+
+# This variable includes a #define for ABSORPTION, if requested
+OPTION += ${ABS}
+OPTION += ${NII}
+MT=""
+#MT=USE_THREADS
+ifeq ($(MT), USE_THREADS)
+  LDFLAGS += -fopenmp
+  OPTION += -DPROJ_OMP
 endif
-################### --- STANDARD WORKSTATION ---######################
 
-######################################################################
-# Options for a workstation with locally installed libraries.
-######################################################################
-ifeq ($(MAKE_UNAME), locallibs)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
-
-  MYLIB = $(CURDIR)/../extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -L${MYLIB}/lib
-  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
-  LDFLAGS += -lm
-  # All libraries are in this path:
-  # Libraries for fits, silo, cvode
-  LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5
-  LDFLAGS += -lgsl
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-endif
-################### --- local libs WORKSTATION ---######################
+# All machines and options need readline and maths
+LDFLAGS  = -lreadline
+LDFLAGS += -lm
 
 ######################################################################
 # Options for a debian 9 (stretch) workstation with system libs
 ######################################################################
 ifeq ($(MAKE_UNAME), debian9)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
   endif
 
+  OPTION += -DCVODE2
   INC  = -I/usr/include
-  INC += -I${SRCDIR}
+  INC += -I${srcdir}
   LDFLAGS += -lm
+  LDFLAGS += -L/usr/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
   LDFLAGS += -lcfitsio
   LDFLAGS += -lsiloh5
-  LDFLAGS += -lgsl -lgslcblas
-  LDFLAGS += -L/usr/lib
+  LDFLAGS += -lgsl
   LDFLAGS +=-Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
-
-  # For sundials 3/4/5 if needed
-  #MYLIB = $(CURDIR)/../extra_libraries
-  #INC  += -I${MYLIB}/include
-  #LDFLAGS += -L${MYLIB}/lib
-  #LDFLAGS += -Wl,--rpath -Wl,${MYLIB}/lib
-  #LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-
-endif
-################### ---  DEBIAN 9 (STRETCH)  ---######################
-
-######################################################################
-# Options for a debian 10 (buster) workstation with system libs
-######################################################################
-ifeq ($(MAKE_UNAME), debian9)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
-
-  INC  = -I/usr/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -lm
-  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
-  LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5
-  LDFLAGS += -lgsl -lgslcblas
-  LDFLAGS += -L/usr/lib
-  LDFLAGS += -Wl,--rpath -Wl,/usr/lib -lsundials_cvode -lsundials_nvecserial
-
 endif
 ################### ---  DEBIAN 9 (STRETCH)  ---######################
 
@@ -207,16 +116,20 @@ endif
 # Options for an Ubuntu 18 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu18)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
   endif
 
-  MYLIB = $(CURDIR)/../extra_libraries
+  OPTION += -DCVODE5
+  MYLIB = $(PION)/extra_libraries
   INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
+  INC += -I${srcdir}
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
@@ -232,16 +145,20 @@ endif
 # Options for an Ubuntu 16 workstation with locally installed libraries.
 ######################################################################
 ifeq ($(MAKE_UNAME), ubuntu16)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
+  CXXFLAGS = -O3 -Wno-unused-function
+  #CXXFLAGS = -Wall -g -Wno-unused-function
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
   endif
 
-  MYLIB = $(CURDIR)/../extra_libraries
+  OPTION += -DCVODE5
+  MYLIB = $(PION)/extra_libraries
   INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
+  INC += -I${srcdir}
   LDFLAGS += -L${MYLIB}/lib
   LDFLAGS += -Wl,-rpath,${MYLIB}/lib
   LDFLAGS += -L/usr/lib/x86_64-linux-gnu
@@ -253,232 +170,135 @@ ifeq ($(MAKE_UNAME), ubuntu16)
 endif
 ################### --- UBUNTU 16 ---######################
 
-################### --- KAY at ICHEC.IE ---######################
-# Options for kay.ichec.ie
-######################################################################
-ifeq ($(MAKE_UNAME), KAY)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-    #CXXFLAGS = -O2 -g -shared-intel
-  else
-    CXXFLAGS = -O0 -Wall -g
-    # -wd981 -wd383
+###########################################
+# Options for OSX 
+###########################################
+ifeq ($(MAKE_UNAME), OSX)
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX = g++
   endif
-  # -wd981 disables a warning about order of evaluation of operands:
-  #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
-  #  and also http://software.intel.com/en-us/articles/cdiag981/
-  # -wd383 also diasables a warning about passing a temporary object to a function.
-  #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
-  #CXXFLAGS += -fp-stack-check -fstack-security-check
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpicxx
+  endif
 
-  MYLIB = $(CURDIR)/../extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -Wl,-L${MYLIB}/lib
-  LDFLAGS += -Wl,-L${MYLIB}/lib64
-  LDFLAGS += -lsilo 
-  #LDFLAGS += -lcfitsio
+#CXXFLAGS = -O3
+  CXXFLAGS = -O0
+#CXXFLAGS += -Wall
+  CXXFLAGS += -g    # enable debugging with gdb
+
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC += -I$(MYLIB)/include
+  INC += -I/opt/local/include
+  INC += -I${srcdir}
+
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -L/opt/local/lib
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5 
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  LDFLAGS += -lgsl -lgslcblas
-  LDFLAGS += -lm
 
 endif
-################### --- KAY at ICHEC.IE ---######################
-
+#############################################
 
 ######################## -- SuperMUC -- ##############################
 # Options for the LRZ Supercomputer SuperMUC.  Intel Compilers!
 ######################################################################
 ifeq ($(MAKE_UNAME), SUPERMUC)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3
-  else
-    CXXFLAGS = -O0 -Wall -g -wd981 -wd383
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+  CXX=icc
   endif
+  ifeq ($(IOMODE), USE_MPI)
+  CXX = mpiCC
+  endif
+  CXXFLAGS = -O3 -Wall
+  #CXXFLAGS += -g #-wd981 -wd383
+  #CXXFLAGE = -O1 -Wall
+  CXXFLAGS += -DINTEL
+  #CXXFLAGS += -DTESTING
+
   # -wd981 disables a warning about order of evaluation of operands:
   #  see http://software.intel.com/en-us/forums/showthread.php?t=62309
   #  and also http://software.intel.com/en-us/articles/cdiag981/
   # -wd383 also diasables a warning about passing a temporary object to a function.
   #CXXFLAGS += -DMPICH_IGNORE_CXX_SEEK
   #CXXFLAGS += -fp-stack-check -fstack-security-check
-
-  MYLIB = $(CURDIR)/../extra_libraries
+  MYLIB = ${PION}/extra_libraries
   INC  = -I${MYLIB}/include
-  INC += -I${SRCDIR}
+  INC += -I${srcdir}
   INC += -I/usr/local/sundials/2.4.0/include
   INC += ${MKL_INC} ${MPI_INC}
   LDFLAGS += -L${MYLIB}/lib -lcfitsio -lsilo 
   LDFLAGS += -L/usr/local/sundials/2.4.0/lib
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
   LDFLAGS += ${MKL_SHLIB} ${MPI_CXX_LIB}
-
+  LDFLAGS += -lreadline
 endif
 ##################### -- SuperMUC -- #################################
-
-###########################################
-# Specific Options for OSX
-###########################################
-ifeq ($(MAKE_UNAME), OSX)
-  ifeq ($(PION_OPTIMISE), HIGH)
-    CXXFLAGS = -O3 -Wno-unused-function
-    #CXXFLAGS = -Wall -g -Wno-unused-function
-  else
-    CXXFLAGS = -Wall -g -Wno-unused-function
-  endif
-
-  MYLIB = $(CURDIR)/../extra_libraries
-  INC  = -I${MYLIB}/include
-  INC += -I/opt/local/include
-  INC += -I${SRCDIR}
-  LDFLAGS += -lm  
-  LDFLAGS += -L${MYLIB}/lib
-  LDFLAGS += -L/opt/local/lib
-  LDFLAGS += -lcfitsio
-  LDFLAGS += -lsiloh5 
-  LDFLAGS += -lgsl
-  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
-  #LDFLAGS += -Wl,-no_compact_unwind
-
-endif
-#################### --- OS X Darwin --- #############################
-
-
 
 
 #####################################################
 ##### LIST OF OBJECT FILES, DIRECTIVES FOR MAKE #####
 #####################################################
 
-CXXFLAGS += $(OPT) $(PION_OPTIONS)
+CXXFLAGS += $(OPTION)
 
 OBJ_CHEM=integrator.o cvode_integrator.o cooling.o cooling_SD93_cie.o \
- hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
- microphysics_base.o mp_only_cooling.o \
- MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
-
-ifneq (,$(findstring LEGACY_CODE,$(PION_OPTIONS)))
-  OBJ_CHEM +=  MPv0.o MPv1.o MPv2.o MPv4.o MPv8.o
-endif
-
-ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
-  OBJ_CHEM +=  MPv9.o HD_MetalFree_integrator.o HD_MetalFree_equations.o
-endif
-
-ifneq (,$(findstring CODE_EXT_HHE,$(PION_OPTIONS)))
-  OBJ_CHEM += HHe_photoion.o mpv9_HHe.o
-endif
+  hydrogen_mp.o hydrogen_photoion.o hydrogen_recomb_Hummer94.o \
+  microphysics_base.o mp_only_cooling.o \
+  MPv3.o MPv5.o MPv6.o MPv7.o MPv10.o photo_xsections.o
 
 OBJ_GEN = reporting.o mem_manage.o command_line_interface.o \
-          timer.o interpolate.o constants.o sim_params.o \
-          comm_mpi.o comm_files.o
+  timer.o interpolate.o constants.o sim_params.o \
+  comm_mpi.o comm_files.o
 
 OBJ_IO =  parameter_defs.o file_status.o readparams.o \
-          dataio_silo.o dataio_fits.o utility_fits_class.o \
-          dataio_base.o dataio_text.o dataio_fits_MPI.o \
-          dataio_silo_MPI.o dataio_silo_utility.o
+  dataio_silo.o dataio_fits.o utility_fits_class.o \
+  dataio_base.o dataio_text.o dataio_fits_MPI.o \
+  dataio_silo_MPI.o dataio_silo_utility.o
 
 OBJ_GRID =  cell_interface.o uniform_grid.o setup_fixed_grid.o \
-            stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o \
-            raytracer_SC.o setup_fixed_grid_MPI.o \
-            uniform_grid_pllel.o raytracer_SC_pllel.o
+  stellar_wind_BC.o stellar_wind_angle.o MCMD_control.o \
+  raytracer_SC.o setup_fixed_grid_MPI.o \
+  uniform_grid_pllel.o raytracer_SC_pllel.o \
+  setup_grid_NG_MPI.o setup_NG_grid.o
+
+OBJ_CRD = VectorOps.o VectorOps_spherical.o 
+
+OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
+  outflow_boundaries.o inflow_boundaries.o \
+  reflecting_boundaries.o oneway_out_boundaries.o \
+  fixed_boundaries.o jet_boundaries.o \
+  jetreflect_boundaries.o double_Mach_ref_boundaries.o \
+  stellar_wind_boundaries.o MCMD_boundaries.o \
+  periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
+  RT_MPI_boundaries.o
+
+OBJ_NG_BCS = assign_update_bcs_NG_MPI.o assign_update_bcs_NG.o \
+  NG_coarse_to_fine_boundaries.o \
+  NG_fine_to_coarse_boundaries.o \
+  NG_MPI_coarse_to_fine_boundaries.o \
+  NG_MPI_fine_to_coarse_boundaries.o \
 
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 
 OBJ_SOLVE = riemannMHD.o HLLD_MHD.o Roe_MHD_ConservedVar_solver.o \
-            riemann.o findroot.o Riemann_FVS_hydro.o \
-            Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
-            solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
+  riemann.o findroot.o Riemann_FVS_hydro.o \
+  Roe_Hydro_ConservedVar_solver.o Roe_Hydro_PrimitiveVar_solver.o \
+  solver_eqn_base.o solver_eqn_hydro_adi.o solver_eqn_mhd_adi.o
 
-OBJ_CRD = VectorOps.o VectorOps_spherical.o 
-
-OBJ_ICS = shock_tube.o radiative_shock.o blast_wave.o basic_tests.o \
-          shock_cloud.o jet.o laser_ablation.o spherical_clump.o \
-          photoevaporating_clump.o photoevaporating_random_clumps.o \
-          photoevaporating_multiclumps.o inside_sphere.o \
-          icgen_base.o
-
-OBJ_BCS = assign_update_bcs.o periodic_boundaries.o \
-          outflow_boundaries.o inflow_boundaries.o \
-          reflecting_boundaries.o oneway_out_boundaries.o \
-          fixed_boundaries.o jet_boundaries.o \
-          jetreflect_boundaries.o double_Mach_ref_boundaries.o \
-          stellar_wind_boundaries.o MCMD_boundaries.o \
-          periodic_boundaries_MPI.o assign_update_bcs_MPI.o \
-          RT_MPI_boundaries.o
-
-OBJ_NG_BCS = assign_update_bcs_NG_MPI.o   assign_update_bcs_NG.o   \
-          NG_coarse_to_fine_boundaries.o \
-          NG_fine_to_coarse_boundaries.o \
-          NG_MPI_coarse_to_fine_boundaries.o \
-          NG_MPI_fine_to_coarse_boundaries.o  NG_BC89flux.o \
-          NG_MPI_BC89flux.o
-
-
-ifneq (,$(findstring CODE_EXT_SBII,$(PION_OPTIONS)))
-  OBJ_ICS += StarBench_test.o
-endif
-
-ifneq (,$(findstring BBTURBULENCE_CODE_EXT,$(PION_OPTIONS)))
-  OBJ_ICS += read_BBurkhart_data.o
-endif
-
-ifneq (,$(findstring HARPREETS_CODE_EXT,$(PION_OPTIONS)))
-  OBJ_ICS += HD_2D_ShockCloud.o  # HD_3D_ShockCloud.o
-endif
-
-OBJ_SIM = sim_control.o sim_control_MPI.o time_integrator.o \
-  calc_timestep.o sim_init.o
-
-OBJ_NG_SIM = sim_control_NG.o sim_control_NG_MPI.o \
-  setup_grid_NG_MPI.o setup_NG_grid.o
-  
-OBJ_NG_ICS = setup_grid_NG_MPI.o setup_NG_grid.o
-
-OBJECTS_PION = mainMPI.o $(OBJ_SIM) $(OBJ_CHEM) $(OBJ_GEN) \
-  $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) $(OBJ_SOLVE) $(OBJ_CRD) \
-  $(OBJ_BCS)
-
-OBJECTS_ICGEN = icgen_parallel.o get_sim_info.o $(OBJ_GEN) \
-  $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
-  $(OBJ_CRD) $(OBJ_BCS) $(OBJ_SOLVE)
-
-OBJECTS_NG_PION = main_NG_MPI.o $(OBJ_NG_SIM) $(OBJ_SIM) \
-  $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_EQNS) \
-  $(OBJ_SOLVE) $(OBJ_CRD) $(OBJ_BCS) $(OBJ_NG_BCS)
-
-OBJECTS_NG_ICGEN = icgen_NG_MPI.o get_sim_info.o $(OBJ_GEN) \
-  $(OBJ_GRID) $(OBJ_IO) $(OBJ_CHEM) $(OBJ_ICS) $(OBJ_EQNS) \
-  $(OBJ_CRD) $(OBJ_NG_ICS) $(OBJ_SOLVE) $(OBJ_BCS) $(OBJ_NG_BCS)
-
-
-#####################################################
-##### END OF LIST OF OBJECT FILES               #####
-#####################################################
-
+OBJECTS = $(OBJ_CHEM) $(OBJ_GEN) $(OBJ_IO) $(OBJ_GRID) $(OBJ_CRD) \
+  $(OBJ_BCS)  $(OBJ_NG_BCS) $(OBJ_EQNS) $(OBJ_SOLVE) \
+  xray_emission.o angle_projection.o image_io.o project2D.o perp_projection.o
 
 ##########################
 ### -- EXECTUTABLES -- ###
 ##########################
-all: ${bindir}/pion_parallel ${bindir}/icgen_parallel
-uni: ${bindir}/pion_parallel ${bindir}/icgen_parallel
-NG:  ${bindir}/pion_NG_parallel ${bindir}/icgen_NG_parallel
+projection2D: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS) -o projection2D $(LDFLAGS)
 
-${bindir}/pion_parallel: $(OBJECTS_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_PION) -o ${bindir}/pion_parallel $(LDFLAGS)
-
-${bindir}/icgen_parallel: $(OBJECTS_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_ICGEN) -o ${bindir}/icgen_parallel $(LDFLAGS)
-
-${bindir}/pion_NG_parallel : $(OBJECTS_NG_PION)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_PION) -o ${bindir}/pion_NG_parallel $(LDFLAGS)
-
-${bindir}/icgen_NG_parallel: $(OBJECTS_NG_ICGEN)
-	$(CXX) $(CXXFLAGS) $(INC) $(OBJECTS_NG_ICGEN) -o ${bindir}/icgen_NG_parallel $(LDFLAGS)
-
-clean:
-	rm -f *.o ${bindir}/pion_parallel ${bindir}/icgen_parallel
-
-
+####################################
+### DEPENDENCIES OF SOURCE FILES ###
+####################################
 ####################################
 ### DEPENDENCIES OF SOURCE FILES ###
 ####################################
@@ -522,7 +342,7 @@ setup_fixed_grid.o: setup_fixed_grid.cpp setup_fixed_grid.h ${GLOBAL} \
 setup_NG_grid.o: setup_NG_grid.cpp setup_NG_grid.h \
   setup_fixed_grid.h ${GLOBAL} grid_base_class.h uniform_grid.h \
   assign_update_bcs.h assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
-  NG_fine_to_coarse_boundaries.h NG_BC89flux.h
+  NG_fine_to_coarse_boundaries.h 
 
 raytracer_SC.o: raytracer_SC.cpp raytracer_SC.h ${GLOBAL} \
     uniform_grid.h raytracer_base.h
@@ -550,8 +370,7 @@ setup_grid_NG_MPI.o: setup_grid_NG_MPI.cpp setup_grid_NG_MPI.h \
   NG_MPI_coarse_to_fine_boundaries.h \
   NG_fine_to_coarse_boundaries.h periodic_boundaries_MPI.h \
   MCMD_boundaries.h boundaries.h \
-  grid_base_class.h solver_eqn_base.h MCMD_control.h \
-  NG_BC89flux.h NG_MPI_BC89flux.h
+  grid_base_class.h solver_eqn_base.h MCMD_control.h
 
 uniform_grid_pllel.o: uniform_grid_pllel.cpp uniform_grid_pllel.h \
     uniform_grid.h ${GLOBAL} \
@@ -657,15 +476,7 @@ MCMD_boundaries.o: MCMD_boundaries.cpp \
 RT_MPI_boundaries.o: RT_MPI_boundaries.cpp RT_MPI_boundaries.h \
   boundaries.h ${GLOBAL} \
   grid_base_class.h MCMD_control.h
-
-NG_BC89flux.o: NG_BC89flux.cpp NG_BC89flux.h ${GLOBAL} \
-  grid_base_class.h uniform_grid.h solver_eqn_base.h
-
-NG_MPI_BC89flux.o: NG_MPI_BC89flux.cpp NG_MPI_BC89flux.h \
-  NG_BC89flux.h ${GLOBAL} solver_eqn_base.h \
-  grid_base_class.h uniform_grid.h
-
-
+  
 #####################
 # CONTROL CLASSES   #
 #####################
@@ -699,7 +510,7 @@ sim_control_NG.o : sim_control_NG.cpp sim_control_NG.h \
   sim_control.h calc_timestep.h setup_fixed_grid.h ${GLOBAL} \
   solver_eqn_base.h grid_base_class.h VectorOps.h \
   assign_update_bcs.h assign_update_bcs_NG.h NG_coarse_to_fine_boundaries.h \
-  NG_fine_to_coarse_boundaries.h NG_BC89flux.h
+  NG_fine_to_coarse_boundaries.h 
 
 sim_control_MPI.o: sim_control_MPI.cpp sim_control_MPI.h \
   sim_control.h MCMD_control.h ${GLOBAL} comms.h \
@@ -715,8 +526,7 @@ sim_control_NG_MPI.o: sim_control_NG_MPI.cpp sim_control_NG_MPI.h \
   VectorOps.h  assign_update_bcs.h assign_update_bcs_NG.h \
   NG_coarse_to_fine_boundaries.h assign_update_bcs_NG_MPI.h \
   NG_fine_to_coarse_boundaries.h NG_MPI_coarse_to_fine_boundaries.h \
-  NG_MPI_fine_to_coarse_boundaries.h \
-  NG_BC89flux.h NG_MPI_BC89flux.h
+  NG_MPI_fine_to_coarse_boundaries.h 
 
 
 #####################
@@ -812,15 +622,15 @@ MPv2.o: MPv2.cpp MPv2.h ${GLOBAL} hydrogen_mp.h \
 
 cvode_integrator.o: cvode_integrator.cpp cvode_integrator.h ${GLOBAL}
 
-photo_xsections.o: photo_xsections.cpp photo_xsections.h ${GLOBAL}
-
 MPv3.o: MPv3.cpp MPv3.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h 
+  microphysics_base.h
 
 MPv10.o: MPv10.cpp MPv10.h ${GLOBAL} hydrogen_mp.h \
   hydrogen_recomb_Hummer94.h hydrogen_photoion.h cooling_SD93_cie.h \
-  microphysics_base.h photo_xsections.h
+  microphysics_base.h
+
+photo_xsections.o: photo_xsections.cpp photo_xsections.h ${GLOBAL}
 
 MPv4.o: MPv4.cpp MPv4.h MPv3.h \
   ${GLOBAL} hydrogen_mp.h hydrogen_recomb_Hummer94.h hydrogen_photoion.h \
@@ -896,60 +706,16 @@ comm_mpi.o: comm_mpi.cpp comm_mpi.h comms.h ${GLOBAL}
 comm_files.o: comm_files.cpp comm_files.h comms.h ${GLOBAL}
 
 
-##############################
-##### IC GENERATOR FILES #####
-##############################
 
-icgen_parallel.o: icgen_parallel.cpp icgen_base.h icgen.h \
-  ${GLOBAL} get_sim_info.h dataio_base.h \
-  setup_fixed_grid_MPI.h setup_fixed_grid.h \
-  uniform_grid_pllel.h grid_base_class.h uniform_grid.h
+###############################
+# Stuff Specific to this code #
+###############################
+project2D.o: project2D.cpp angle_projection.h xray_emission.h image_io.h ${GLOBAL} projection_constants.h
+image_io.o: image_io.cpp image_io.h dataIO/dataio_base.h \
+    dataIO/dataio_fits.h ${GLOBAL} projection_constants.h
+xray_emission.o: xray_emission.cpp xray_emission.h ${GLOBAL} interpolate.h projection_constants.h
+angle_projection.o: angle_projection.cpp angle_projection.h xray_emission.h ${GLOBAL} projection_constants.h
+perp_projection.o: perp_projection.cpp perp_projection.h xray_emission.h ${GLOBAL} projection_constants.h
 
-
-icgen_base.o: icgen_base.cpp icgen_base.h ${GLOBAL}
-
-get_sim_info.o: get_sim_info.h get_sim_info.cpp ${GLOBAL} readparams.h stellar_wind_BC.h
-
-inside_sphere.o: inside_sphere.cpp inside_sphere.h ${GLOBAL}
-
-########################
-
-shock_tube.o: shock_tube.cpp icgen_base.h icgen.h ${GLOBAL}
-
-radiative_shock.o: radiative_shock.cpp icgen_base.h icgen.h ${GLOBAL}
-
-blast_wave.o:      blast_wave.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
-
-photoevaporating_clump.o:  photoevaporating_clump.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
-
-basic_tests.o: basic_tests.cpp icgen_base.h icgen.h ${GLOBAL}
-
-photoevaporating_random_clumps.o: photoevaporating_random_clumps.cpp icgen_base.h icgen.h ${GLOBAL}
-
-shock_cloud.o: shock_cloud.cpp icgen_base.h icgen.h ${GLOBAL} inside_sphere.h
-
-photoevaporating_multiclumps.o: photoevaporating_multiclumps.cpp icgen_base.h icgen.h ${GLOBAL}
-
-laser_ablation.o:   laser_ablation.cpp icgen_base.h icgen.h ${GLOBAL}
-
-jet.o:		    jet.cpp icgen_base.h icgen.h ${GLOBAL}
-
-spherical_clump.o: spherical_clump.cpp icgen_base.h icgen.h ${GLOBAL}
-
-StarBench_test.o: StarBench_test.cpp icgen_base.h icgen.h ${GLOBAL}
-
-#######################
-
-###############################################
-## Contributed and/or project-specific code. ##
-###############################################
-read_BBurkhart_data.o:  read_BBurkhart_data.cpp icgen_base.h icgen.h ${GLOBAL} dataio_fits.h dataio_base.h
-
-HD_2D_ShockCloud.o:     HD_2D_ShockCloud.cpp icgen.h ${GLOBAL}
-HD_3D_ShockCloud.o:     HD_3D_ShockCloud.cpp icgen.h ${GLOBAL}
-HD_MetalFree_equations.o:  HD_MetalFree_equations.cpp HD_MetalFree.h ${GLOBAL}
-HD_MetalFree_integrator.o: HD_MetalFree_integrator.cpp HD_MetalFree.h ${GLOBAL}
-
-###############################################
-###############################################
-
+clean:
+	rm -f *.o projection2D
