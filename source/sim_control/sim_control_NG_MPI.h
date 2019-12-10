@@ -107,36 +107,6 @@ class sim_control_NG_MPI :
       );
 
   ///
-  /// Send fine-level fluxes at level boundary to coarser parent
-  /// grid(s) for static mesh refinement.
-  ///
-  int send_BC89_fluxes_F2C(
-      const int,    ///< My level in grid hierarchy.
-      const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int     ///< Full order of accuracy of simulation
-      );
-
-  ///
-  /// Receive fine-level fluxes at level boundary onto coarser parent
-  /// grid(s) for static mesh refinement.
-  ///
-  int recv_BC89_fluxes_F2C(
-      const int,    ///< My level in grid hierarchy.
-      const double ,  ///< dt, timestep
-      const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int     ///< Full order of accuracy of simulation
-      );
-
-  /// clear the non-blocking MPI sends when they have been
-  /// received.
-  void clear_sends_BC89_fluxes();
-
-  /// List of IDs for MPI sends related to the BC89 Flux
-  /// correction algorithms.  Should be cleared at the beginning
-  /// of each timestep.
-  std::vector<string> BC89_flux_send_list;
-
-  ///
   /// Calculates total values of conserved quantities.
   ///
   virtual int initial_conserved_quantities(

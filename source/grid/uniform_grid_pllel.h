@@ -68,36 +68,14 @@ class UniformGridParallel
   /// 
   ~UniformGridParallel() {return;}
 
-  ///
-  /// Setup the flux struct flux_update_recv with list of interfaces
-  /// that need to be updated with fluxes from a finer level grid.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).  This is an MPI-parallelised
-  /// version which can deal with grids not on this process.
-  ///
-  int setup_flux_recv(
-      class SimParams &,  ///< simulation params (including BCs)
-      const int           ///< level to receive from
-      );
-
-  ///
-  /// Setup the flux struct flux_update_send with list of interfaces
-  /// that need to be sent to a coarser level grid.
-  /// These fluxes are used to correct the fluxes on the coarse grid,
-  /// to ensure that they are consistent across all levels, following
-  /// Berger & Colella (1989,JCP,82,64).  This is an MPI-parallelised
-  /// version which can deal with grids not on this process.
-  ///
-  int setup_flux_send(
-      class SimParams &,  ///< simulation params (including BCs)
-      const int           ///< level to receive from
-      );
-
-
   protected:
 
 };
+
+
+// ##################################################################
+// ##################################################################
+
 
 ///
 /// Uniform Grid in cylindrical coordinates, for parallel simulations
@@ -145,6 +123,11 @@ class uniform_grid_cyl_parallel
   virtual double iR_cov(const cell *);
 };
 
+
+// ##################################################################
+// ##################################################################
+
+
 ///
 /// Uniform Grid in spherical coordinates, for parallel simulations
 /// (i.e. each parallel grid is a part of the overall simulation
@@ -190,6 +173,11 @@ class uniform_grid_sph_parallel
   ///
   virtual double iR_cov(const cell *);
 };
+
+
+// ##################################################################
+// ##################################################################
+
 
 
 #endif // PARALLEL
