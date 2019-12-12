@@ -21,7 +21,7 @@
 #define GLM_NEGATIVE_BOUNDARY // Set this flag for Psi[boundary cell]=-Psi[edge cell]
 
 //#define TEST_MPI_NG
-//#define TEST_C2F
+#define TEST_C2F
 //#define TEST_MPI_NG_F2C
 //#define TEST_MPI_BC
 
