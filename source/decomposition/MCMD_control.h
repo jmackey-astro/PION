@@ -142,6 +142,8 @@ class MCMDcontrol {
   /// set number of MPI processes
   void set_nproc(const int n)  {nproc=n; return;}
 
+  /// get data on parent grid, if it exists
+  void get_parent_grid_info(struct cgrid *cg) {cg = &pgrid;return;}
 
  protected:
   int nproc;  ///< Number of processors.
@@ -155,6 +157,20 @@ class MCMDcontrol {
 
   ///< list of abutting domains.
   std::vector<int> full_ngb_list;
+
+  /// data for the parent grid (xmin,xmax,etc)
+  struct cgrid  pgrid;
+
+  /// data for neigbouring grids of parent process, if NG and l>0
+  /// Up to 6 in 3D, 4 in 2D, 2 in 1D 
+  std::vector<struct cgrid>  pgrid_ngb;
+
+  /// list of level l+1 grids that share an external face with, but 
+  /// don't intersect with, my grid on level l.  The outer index of
+  /// the 2D array is the outward normal direction of the grid face,
+  /// and the inner one is the list of grids (up to 2**(ND-1)).
+  std::vector< std::vector<struct cgrid> >  cgrid_ngb;
+
 
   ///
   /// Called by decomposeDomain() to set neighbouring processor ids.

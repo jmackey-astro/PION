@@ -69,6 +69,7 @@ class NG_MPI_BC89flux : virtual public NG_BC89flux {
   /// grid(s) for static mesh refinement.
   ///
   int send_BC89_fluxes_F2C(
+      class SimParams &,  ///< simulation params (including BCs)
       const int,    ///< My level in grid hierarchy.
       const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int     ///< Full order of accuracy of simulation
@@ -79,8 +80,9 @@ class NG_MPI_BC89flux : virtual public NG_BC89flux {
   /// grid(s) for static mesh refinement.
   ///
   int recv_BC89_fluxes_F2C(
+      class FV_solver_base *, ///< spatial solver, for gradients
+      class SimParams &,  ///< simulation params (including BCs)
       const int,    ///< My level in grid hierarchy.
-      const double ,  ///< dt, timestep
       const int,    ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
       const int     ///< Full order of accuracy of simulation
       );
