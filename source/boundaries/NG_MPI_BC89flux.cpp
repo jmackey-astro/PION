@@ -45,8 +45,6 @@ int NG_MPI_BC89flux::setup_flux_recv(
   cout <<lp1<<"\n";
 #endif
   int l = lp1-1;  // my level
-  int idx = grid->idx();
-  double cg_dx = grid->DX();
   size_t nc  = 1; // number of cells in each interface
   int ixmin[MAX_DIM], ixmax[MAX_DIM], ncell[MAX_DIM]; // interface region
   int f_lxmin[MAX_DIM], f_lxmax[MAX_DIM]; // finer grid
@@ -55,8 +53,13 @@ int NG_MPI_BC89flux::setup_flux_recv(
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int nchild = MCMD->child_procs.size();
 
-  int cg_ixmin[MAX_DIM], cg_ixmax[MAX_DIM]; // coarser grid
-  int cg_ng[MAX_DIM], cg_range[MAX_DIM];
+  // coarse grid quantities
+  int cg_ixmin[MAX_DIM], cg_ixmax[MAX_DIM];
+  int cg_ng[MAX_DIM];
+  //int cg_irange[MAX_DIM];
+  double cg_xmin[MAX_DIM], cg_xmax[MAX_DIM], cg_range[MAX_DIM];
+  int idx = grid->idx();
+  double cg_dx = grid->DX();
 
   // if only one MPI process, then no send/recv necessary and we
   // call the serial version:
@@ -75,7 +78,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
   }
 
   //
-  // Get size of interface region and number of cells.
+  // Domain sizes on different levels, and local grid properties
   //
   CI.get_ipos_vec(par.levels[lp1].Xmin, f_lxmin);
   CI.get_ipos_vec(par.levels[lp1].Xmax, f_lxmax);
@@ -87,12 +90,21 @@ int NG_MPI_BC89flux::setup_flux_recv(
     cg_ixmax[v] = grid->iXmax(static_cast<axes>(v));
   for (int v=0;v<par.ndim;v++)
     cg_ng[v] = grid->NG(static_cast<axes>(v));
-  for (int v=0;v<par.ndim;v++)
-    cg_range[v] = grid->Range(static_cast<axes>(v));
+  //for (int v=0;v<par.ndim;v++)
+  //  cg_irange[v] = grid->iRange(static_cast<axes>(v));
 
 #ifdef TEST_BC89FLUX
   cout <<"NG_MPI_BC89flux::setup_flux_recv: "<<nchild<<" child grids\n";
 #endif
+
+  // *** NEW CODE ***
+  // test if finer level is (1) within my domain and (2) has the same
+  // boundary as my grid boundary.
+  //bool within_dom[2*par.ndim];
+  //bool share_edge[2*par.ndim];
+  //for (int v=0;v<2*par.ndim;v++) {
+  // *** NEW CODE ***
+
 
   // Two cases: if there are children, then part or all of grid is
   // within l+1 level.  If there are no children, then at most one
@@ -109,13 +121,19 @@ int NG_MPI_BC89flux::setup_flux_recv(
       // define interface region of fine and coarse grids, and if 
       // each direction is to be included or not.
       for (int ax=0;ax<par.ndim;ax++) {
-        if (f_lxmin[ax] == ixmin[ax] &&
-            f_lxmin[ax] != d_xmin[ax]) recv[off +2*ax] = true;
+        if      (f_lxmin[ax] == ixmin[ax] &&
+                 f_lxmin[ax] != d_xmin[ax] &&
+                 ixmin[ax] == cg_ixmin[ax]) recv[off +2*ax] = false;
+        else if (f_lxmin[ax] == ixmin[ax] &&
+                 f_lxmin[ax] != d_xmin[ax]) recv[off +2*ax] = true;
         else                           recv[off +2*ax] = false;
         
-        if (f_lxmax[ax] == ixmax[ax] &&
-            f_lxmax[ax] != d_xmax[ax]) recv[off +2*ax+1] = true;
-        else                           recv[off +2*ax+1] = false;
+        if      (f_lxmax[ax] == ixmax[ax] &&
+                 f_lxmax[ax] != d_xmax[ax] &&
+                 ixmax[ax] == cg_ixmax[ax]) recv[off +2*ax+1] = false;
+        else if (f_lxmax[ax] == ixmax[ax] &&
+                 f_lxmax[ax] != d_xmax[ax]) recv[off +2*ax+1] = true;
+        else                                recv[off +2*ax+1] = false;
 
         ncell[ax] = (ixmax[ax]-ixmin[ax])/idx;
         if ( (ixmax[ax]-ixmin[ax]) % idx !=0) {
@@ -214,7 +232,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
   else  {
     // There are no children, but my grid might have a boundary in 
-    // common with the l+1 level's outer boundary.
+    // common with the l+1 level's outer boundary.  There is at most
+    // one of these.
     // First try to exclude this:
 #ifdef TEST_BC89FLUX
     cout <<"pllel setup_flux_recv(): checking for external faces\n";
@@ -240,22 +259,30 @@ int NG_MPI_BC89flux::setup_flux_recv(
       return 0;
     }
 
-    size_t nel = 0;
-    double pos[par.ndim];
-    int ch = -1;
     // If we get to here, then one edge borders the l+1 domain, so we
     // see which edge it is, see how many grids on the l+1 domain are
     // facing onto this grid, and add these faces to the list.
+    size_t nel = 0;
+    double pos[par.ndim];
+    int ch = -1;
+    // set up grid xmin/xmax values.
+    for (int v=0;v<par.ndim;v++)
+      cg_xmin[v] = grid->Xmin(static_cast<axes>(v));
+    for (int v=0;v<par.ndim;v++)
+      cg_xmax[v] = grid->Xmax(static_cast<axes>(v));
+    for (int v=0;v<par.ndim;v++)
+      cg_range[v] = grid->Range(static_cast<axes>(v));
+
     if (par.ndim==1) {
       // this is easy, max one child grid, with one face.
       flux_update_recv[l].resize(1);
       nel = 1;
       rep.error("Write 1D flux recv setup code",0);
       if (edge==XN) {
-        pos[0] = G_xmin[0]-cg_dx;
+        pos[0] = cg_xmin[0]-cg_dx;
       }
       else {
-        pos[0] = G_xmax[0]+cg_dx;
+        pos[0] = cg_xmax[0]+cg_dx;
       }
       ch = MCMD->get_grid_rank(par,pos,l+1);
       flux_update_recv[l][0].rank.push_back(ch);
@@ -283,25 +310,25 @@ int NG_MPI_BC89flux::setup_flux_recv(
       flux_update_recv[l].resize(2);
       int perp = (axis+1+par.ndim) % par.ndim;
       nel = cg_ng[perp]/2;  // child covers half of the grid.
-      pos[perp] = G_xmin[perp]+0.25*cg_range[perp];
+      pos[perp] = cg_xmin[perp]+0.25*cg_range[perp];
       double xmin[2], xmax[2];
       for (int ic=0;ic<2;ic++) {
         // find xmin/xmax of boundary region, and rank of child
         // procs.
-        xmin[perp] = G_xmin[perp] + ic*0.5*cg_range[perp];
+        xmin[perp] = cg_xmin[perp] + ic*0.5*cg_range[perp];
         xmax[perp] =   xmin[perp]   + 0.5*cg_range[perp];
         pos[perp] += ic*0.5*cg_range[perp];
         if (edge%2==0) {
           // negative direction
-          pos[axis] = G_xmin[axis] - cg_dx; // just off grid.
-          xmin[axis] = G_xmin[axis] - 0.5*cg_range[axis];
-          xmax[axis] = G_xmin[axis];
+          pos[axis] = cg_xmin[axis] - cg_dx; // just off grid.
+          xmin[axis] = cg_xmin[axis] - 0.5*cg_range[axis];
+          xmax[axis] = cg_xmin[axis];
         }
         else {
           // positive direction
-          pos[axis] = G_xmax[axis] + cg_dx; // just off grid.
-          xmin[axis] = G_xmax[axis];
-          xmax[axis] = G_xmax[axis] + 0.5*cg_range[axis];
+          pos[axis] = cg_xmax[axis] + cg_dx; // just off grid.
+          xmin[axis] = cg_xmax[axis];
+          xmax[axis] = cg_xmax[axis] + 0.5*cg_range[axis];
         }
 #ifdef TEST_BC89FLUX
         cout <<"ic="<<ic<<", perp="<<perp<<", ax="<<axis<<"\n";
@@ -333,7 +360,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
 #ifdef TEST_BC89FLUX
           cout <<"FLUX: adding "<<nel<<" cells to recv boundary."<<endl;
 #endif
-          add_cells_to_face(grid->OppDir(static_cast<enum direction>(edge)),
+          add_cells_to_face(par,grid,grid->OppDir(static_cast<enum direction>(edge)),
                     ixmin,ixmax,ncell,1,flux_update_recv[l][ic]);
         }
         else {
@@ -352,8 +379,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
       perp[0] = (axis+1+par.ndim) % par.ndim;
       perp[1] = (axis+2+par.ndim) % par.ndim;
       nel = cg_ng[perp[0]]*cg_ng[perp[1]]/4;
-      //pos[perp[0]] = G_xmin[perp[0]]+0.25*cg_range[perp[0]];
-      //pos[perp[1]] = G_xmin[perp[1]]+0.25*cg_range[perp[1]];
+      //pos[perp[0]] = cg_xmin[perp[0]]+0.25*cg_range[perp[0]];
+      //pos[perp[1]] = cg_xmin[perp[1]]+0.25*cg_range[perp[1]];
       
       double xmin[3], xmax[3];
       for (int ic=0;ic<4;ic++) {
@@ -363,54 +390,55 @@ int NG_MPI_BC89flux::setup_flux_recv(
         switch (ic) {
           case 0: // (-,-)
           for (int d=0;d<2;d++) {
-            xmin[perp[d]] = G_xmin[perp[d]];
+            xmin[perp[d]] = cg_xmin[perp[d]];
             xmax[perp[d]] =   xmin[perp[d]] + 0.5 *cg_range[perp[d]];
-            pos[perp[d]]  = G_xmin[perp[d]] + 0.25*cg_range[perp[d]];
+            pos[perp[d]]  = cg_xmin[perp[d]] + 0.25*cg_range[perp[d]];
           }
           break;
 
           case 1: // (+,-)
-          xmin[perp[0]] = G_xmin[perp[0]] + 0.5*cg_range[perp[0]];
-          xmin[perp[1]] = G_xmin[perp[1]];
+          xmin[perp[0]] = cg_xmin[perp[0]] + 0.5*cg_range[perp[0]];
+          xmin[perp[1]] = cg_xmin[perp[1]];
           for (int d=0;d<2;d++) {
             xmax[perp[d]] = xmin[perp[d]] + 0.5*cg_range[perp[d]];
           }
-          pos[perp[0]] = G_xmin[perp[0]]+0.75*cg_range[perp[0]];
-          pos[perp[1]] = G_xmin[perp[1]]+0.25*cg_range[perp[1]];
+          pos[perp[0]] = cg_xmin[perp[0]]+0.75*cg_range[perp[0]];
+          pos[perp[1]] = cg_xmin[perp[1]]+0.25*cg_range[perp[1]];
           break;
 
           case 2: // (-,+)
-          xmin[perp[0]] = G_xmin[perp[0]];
-          xmin[perp[1]] = G_xmin[perp[1]] + 0.5*cg_range[perp[1]];
+          xmin[perp[0]] = cg_xmin[perp[0]];
+          xmin[perp[1]] = cg_xmin[perp[1]] + 0.5*cg_range[perp[1]];
           for (int d=0;d<2;d++) {
             xmax[perp[d]] = xmin[perp[d]] + 0.5*cg_range[perp[d]];
           }
-          pos[perp[0]] = G_xmin[perp[0]]+0.25*cg_range[perp[0]];
-          pos[perp[1]] = G_xmin[perp[1]]+0.75*cg_range[perp[1]];
+          pos[perp[0]] = cg_xmin[perp[0]]+0.25*cg_range[perp[0]];
+          pos[perp[1]] = cg_xmin[perp[1]]+0.75*cg_range[perp[1]];
           break;
 
           case 3: // (+,+)
           for (int d=0;d<2;d++) {
-            xmin[perp[d]] = G_xmin[perp[d]] + 0.5 *cg_range[perp[d]];
+            xmin[perp[d]] = cg_xmin[perp[d]] + 0.5 *cg_range[perp[d]];
             xmax[perp[d]] =   xmin[perp[d]] + 0.5 *cg_range[perp[d]];
-            pos[perp[d]]  = G_xmin[perp[d]] + 0.75*cg_range[perp[d]];
+            pos[perp[d]]  = cg_xmin[perp[d]] + 0.75*cg_range[perp[d]];
           }
           break;
 
           default:
           rep.error("loopy error",ic);
         }
-        // Then the normal direction
+        // set position in normal direction.
         if (edge%2==0) {
-          pos[axis] = G_xmin[axis] - cg_dx; // just off grid.
-          xmin[axis] = G_xmin[axis] - 0.5*cg_range[axis];
-          xmax[axis] = G_xmin[axis];
+          // negative direction (at my x-min) (l+1 outward normal is +ve)
+          pos[axis] = cg_xmin[axis] - cg_dx; // just off grid.
+          xmin[axis] = cg_xmin[axis] - 0.5*cg_range[axis];
+          xmax[axis] = cg_xmin[axis];
         }
         else {
-          // positive direction
-          pos[axis] = G_xmax[axis] + cg_dx; // just off grid.
-          xmin[axis] = G_xmax[axis];
-          xmax[axis] = G_xmax[axis] + 0.5*cg_range[axis];
+          // positive direction (at my x-max) (l+1 outward normal is -ve)
+          pos[axis] = cg_xmax[axis] + cg_dx; // just off grid.
+          xmin[axis] = cg_xmax[axis];
+          xmax[axis] = cg_xmax[axis] + 0.5*cg_range[axis];
         }
 #ifdef TEST_BC89FLUX
         cout <<"ic="<<ic<<", perp=["<<perp[0]<<","<<perp[1]<<"] ";
@@ -447,7 +475,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
 #ifdef TEST_BC89FLUX
           cout <<"ic="<<ic<<"FLUX: adding "<<nel<<" cells to recv boundary."<<endl;
 #endif
-          add_cells_to_face(grid->OppDir(static_cast<enum direction>(edge)),
+          add_cells_to_face(par,grid,grid->OppDir(static_cast<enum direction>(edge)),
                     ixmin,ixmax,ncell,1,flux_update_recv[l][ic]);
         }
         else {
@@ -493,6 +521,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
 int NG_MPI_BC89flux::setup_flux_send(
       class SimParams &par, ///< simulation params (including BCs)
+      class GridBaseClass *grid,  // pointer to finer grid.
       const int lm1         ///< level to send to
       )
 {
@@ -501,11 +530,18 @@ int NG_MPI_BC89flux::setup_flux_send(
   cout <<lm1<<" from MY LEVEL l="<<lm1+1<<"\n";
 #endif
 
-  int err = UniformGrid::setup_flux_send(par,lm1);
-  rep.errorTest("UniformGrid::setup_flux_send",0,err);
+  int err = NG_BC89flux::setup_flux_send(par,grid,lm1);
+  rep.errorTest("NG_BC89flux::setup_flux_send",0,err);
 
   // Add ranks for each send, based on parent rank.
   int l = lm1+1; // my level
+  double cg_dx = grid->DX();
+  double cg_xmin[MAX_DIM], cg_xmax[MAX_DIM];
+  for (int v=0;v<par.ndim;v++)
+    cg_xmin[v] = grid->Xmin(static_cast<axes>(v));
+  for (int v=0;v<par.ndim;v++)
+    cg_xmax[v] = grid->Xmax(static_cast<axes>(v));
+
   int ns = flux_update_send[l].size();
   if (ns != 2*par.ndim) rep.error("bad flux send size",ns);
 
@@ -516,17 +552,17 @@ int NG_MPI_BC89flux::setup_flux_send(
     }
   }
   else {
-    // always send to parent, sometimes send to neighbour of parent
+    // Usually send to parent, sometimes send to neighbour of parent
     // if boundary between parent and neighbour sits on the edge of
     // my level.
     class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
     int pproc = MCMD->parent_proc;
-    for (int d=0;d<ns;d++) {
-      // if boundary element is not empty, send data to parent.
-      if (flux_update_send[l][d].fi[0] !=0) {
-        flux_update_send[l][d].rank.push_back(pproc);
-      }
-    }
+    //for (int d=0;d<ns;d++) {
+    //  // if boundary element is not empty, send data to parent.
+    //  if (flux_update_send[l][d].fi[0] !=0) {
+    //    flux_update_send[l][d].rank.push_back(pproc);
+    //  }
+    //}
   
     for (int ax=0;ax<par.ndim;ax++) {
       // check if parent boundary is also my boundary, in which
@@ -536,7 +572,7 @@ int NG_MPI_BC89flux::setup_flux_send(
       // First negative direction along this axis
       int d = 2*ax, p1=-1, p2=-1;
       if (flux_update_send[l][d].fi[0] !=0) {
-        for (int i=0;i<par.ndim;i++) pos[i] = G_xmin[i] + cg_dx;
+        for (int i=0;i<par.ndim;i++) pos[i] = cg_xmin[i] + cg_dx;
         //pos[ax] += cg_dx;
         p1 = MCMD->get_grid_rank(par,pos,lm1);
         if (p1!=pproc) rep.error("BC89 finding parents 1",p1-pproc);
@@ -548,9 +584,15 @@ int NG_MPI_BC89flux::setup_flux_send(
 #endif
         if (p2!=pproc) {
 #ifdef TEST_BC89FLUX
-          cout <<"Adding 2nd parent to dir="<<d<<", "<<p2<<"\n";
+          cout <<"Adding ngb of parent to dir="<<d<<", "<<p2<<"\n";
 #endif
           flux_update_send[l][d].rank.push_back(p2);
+        }
+        else {
+#ifdef TEST_BC89FLUX
+          cout <<"Adding direct parent to dir="<<d<<", "<<p2<<"\n";
+#endif
+          flux_update_send[l][d].rank.push_back(p1);
         }
       }
       flux_update_send[l][d].dir = d;
@@ -561,13 +603,17 @@ int NG_MPI_BC89flux::setup_flux_send(
       p1=-1;
       p2=-1;
       if (flux_update_send[l][d].fi[0] !=0) {
-        for (int i=0;i<par.ndim;i++) pos[i] = G_xmax[i] - cg_dx;
+        for (int i=0;i<par.ndim;i++) pos[i] = cg_xmax[i] - cg_dx;
         //pos[ax] -= cg_dx;
+#ifdef TEST_BC89FLUX
         rep.printVec("p1 pos",pos,par.ndim);
+#endif
         p1 = MCMD->get_grid_rank(par,pos,lm1);
         if (p1!=pproc) rep.error("BC89 finding parents 2",p1-pproc);
         pos[ax] += 2*cg_dx;
+#ifdef TEST_BC89FLUX
         rep.printVec("p2 pos",pos,par.ndim);
+#endif
         p2 = MCMD->get_grid_rank(par,pos,lm1);
 #ifdef TEST_BC89FLUX
         cout <<"ax="<<ax<<", d="<<d<<", parent="<<pproc<<", p1="<<p1;
@@ -578,6 +624,12 @@ int NG_MPI_BC89flux::setup_flux_send(
           cout <<"Adding 2nd parent to dir="<<d<<", "<<p2<<endl;
 #endif
           flux_update_send[l][d].rank.push_back(p2);
+        }
+        else {
+#ifdef TEST_BC89FLUX
+          cout <<"Adding direct parent to dir="<<d<<", "<<p2<<"\n";
+#endif
+          flux_update_send[l][d].rank.push_back(p1);
         }
       }
       flux_update_send[l][d].dir = d;
@@ -612,6 +664,7 @@ void NG_MPI_BC89flux::clear_sends_BC89_fluxes()
 
 
 int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
+      class SimParams &par, ///< simulation params (including BCs)
       const int l,      ///< My level in grid hierarchy.
       const int step,   ///< OA1 or OA2
       const int ooa     ///< Full order of accuracy of simulation
@@ -637,10 +690,10 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   // else we have to send data to at least one other MPI process:
   class GridBaseClass *grid = par.levels[l].grid;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int n_send = grid->flux_update_send[l].size();
+  int n_send = flux_update_send[l].size();
   for (int isend=0;isend<n_send;isend++) {
     // loop over boundaries (some send to more than one process)
-    struct flux_update *fup = &(grid->flux_update_send[l][isend]);
+    struct flux_update *fup = &(flux_update_send[l][isend]);
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
@@ -711,8 +764,9 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
 
 
 int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
+      class FV_solver_base *spatial_solver, ///< solver, for gradients
+      class SimParams &par, ///< simulation params (including BCs)
       const int l,      ///< My level in grid hierarchy.
-      const double dt,  ///< timestep
       const int step,   ///< OA1 or OA2 
       const int ooa     ///< Full order of accuracy of simulation
       )
@@ -736,10 +790,11 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
   for (int v=0;v<par.nvar;v++) ftmp[v]=0.0;
   class GridBaseClass *grid = par.levels[l].grid;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int n_bd = grid->flux_update_recv[l].size();
+  int n_bd = flux_update_recv[l].size();
+  double dt = par.levels[l].dt;
   
   for (int irecv=0;irecv<n_bd;irecv++) {
-    struct flux_update *fup = &(grid->flux_update_recv[l][irecv]);
+    struct flux_update *fup = &(flux_update_recv[l][irecv]);
     // some recvs may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
@@ -754,8 +809,8 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
 #endif
       int d = fup->dir;
       struct flux_update *fsend = &(flux_update_send[l+1][d]);
-      err = recv_BC89_flux_boundary(grid,dt,*fsend,*fup,d,
-                              static_cast<axes>(fup->ax));
+      err = recv_BC89_flux_boundary(spatial_solver, par, grid,dt,
+                *fsend,*fup,d, static_cast<axes>(fup->ax));
       rep.errorTest("serial BC89 call",0,err);
       continue;
     }

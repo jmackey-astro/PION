@@ -839,7 +839,7 @@ double sim_control_NG_MPI::advance_step_OA1(
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" \n";
 #endif
-    err += send_BC89_fluxes_F2C(l,OA1,OA1);
+    err += send_BC89_fluxes_F2C(SimPM,l,OA1,OA1);
 #endif
 #ifdef TEST_INT
     cout <<"advance_step_OA1: l="<<l<<" F2C SEND at tend of step\n";
@@ -1136,7 +1136,7 @@ double sim_control_NG_MPI::advance_step_OA2(
       // only send level fluxes every 2nd step (coarse grid is only
       // updated at the full-step, not at the half-step).
 #ifndef SKIP_BC89_FLUX
-      err += send_BC89_fluxes_F2C(l,OA2,OA2);
+      err += send_BC89_fluxes_F2C(SimPM,l,OA2,OA2);
 #endif
 #ifdef BC89_FULLSTEP
     }
@@ -1193,7 +1193,7 @@ int sim_control_NG_MPI::grid_update_state_vector(
     cout <<"level "<<level<<": correcting fluxes from finer grid\n";
 #endif
 #ifndef SKIP_BC89_FLUX
-    err = recv_BC89_fluxes_F2C(level,dt,step,ooa);
+    err = recv_BC89_fluxes_F2C(spatial_solver, SimPM, level,step,ooa);
     rep.errorTest("return from recv_fluxes_F2C",0,err);
 #endif
   }
