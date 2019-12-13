@@ -246,14 +246,16 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
   // Check if child grids exist or are on my MPI process
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int nchild = MCMD->child_procs.size();
+  vector<struct cgrid>  cg;
+  MCMD->get_child_grid_info(cg);
+  int nchild = cg.size();
 #ifdef TEST_MPI_NG_F2C
   cout <<"level = "<<l<<", nchild="<<nchild<<"\n";
 #endif
   b->NGrecvF2C.resize(nchild);
   b->NGrecvF2C_ranks.resize(nchild);
   for (int i=0;i<nchild;i++) {
-    b->NGrecvF2C_ranks[i] = MCMD->child_procs[i].rank;
+    b->NGrecvF2C_ranks[i] = cg[i].rank;
   }
 
   // loop over children:
@@ -264,8 +266,8 @@ int NG_MPI_fine_to_coarse_bc::BC_assign_FINE_TO_COARSE_RECV(
 
     // get dimensions of child grid from struct
     int ixmin[MAX_DIM], ixmax[MAX_DIM];
-    CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
-    CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
+    CI.get_ipos_vec(cg[i].Xmin, ixmin);
+    CI.get_ipos_vec(cg[i].Xmax, ixmax);
 
 #ifdef TEST_MPI_NG_F2C
     rep.printVec("F2C MPI: child xmin",ixmin,par.ndim);
@@ -346,7 +348,11 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
   // Check if child grids exist or are on my MPI process
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
+  vector<struct cgrid>  cg;
+  MCMD->get_child_grid_info(cg);
   int nchild =  b->NGrecvF2C.size();
+  if (static_cast<int>(cg.size()) != nchild)
+    rep.error("BC_update_FINE_TO_COARSE_RECV: bad size",nchild-cg.size());
   int count = 0;
 
   // loop over children twice, once for child grids that are on my
@@ -356,7 +362,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
     cout <<"F2C_RECV: child "<<i<<", receiving...\n";
 #endif
 
-    if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
+    if (MCMD->get_myrank() == cg[i].rank) {
       // If child is on my grid call serial version and grab data
       // directly from the child grid.
 #ifdef TEST_MPI_NG_F2C
@@ -381,7 +387,7 @@ int NG_MPI_fine_to_coarse_bc::BC_update_FINE_TO_COARSE_RECV(
       //
       string recv_id;
       int recv_tag=-1;
-      int from_rank=MCMD->child_procs[i].rank;
+      int from_rank=cg[i].rank;
       int comm_tag = BC_MPI_NGF2C_tag + l+1;
       err = COMM->look_for_data_to_receive(
             &from_rank, // rank of sender (output)

@@ -861,7 +861,6 @@ double sim_control_NG_MPI::advance_step_OA1(
 
 
 
-
 // ##################################################################
 // ##################################################################
 
@@ -871,6 +870,9 @@ double sim_control_NG_MPI::advance_step_OA2(
       const int l  ///< level to advance.
       )
 {
+  // *** debugging info ***
+  cout.flush();
+  // *** debugging info ***
 #ifdef TEST_INT
   cout <<"NG-MPI advance_step_OA2, level="<<l<<", starting.\n";
 #endif

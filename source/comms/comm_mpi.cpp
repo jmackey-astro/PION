@@ -551,14 +551,14 @@ int comm_mpi::look_for_data_to_receive(
   cout <<" for comm_tag: "<<comm_tag<<"\n";
   cout.flush();
 
-  list<sent_info *>::iterator i;
-  struct sent_info *si=0;
-  int el=0;
-  for (i=sent_list.begin(); i!=sent_list.end(); ++i) {
-    si = (*i); el++;
-    cout <<"SENT LIST: el="<<el<<", id = "<<si->id<<"\n";
-    cout.flush();
-  }
+  //list<sent_info *>::iterator i;
+  //struct sent_info *si=0;
+  //int el=0;
+  //for (i=sent_list.begin(); i!=sent_list.end(); ++i) {
+  //  si = (*i); el++;
+  //  cout <<"SENT LIST: el="<<el<<", id = "<<si->id<<"\n";
+  //  cout.flush();
+  //}
 #endif //TEST_COMMS
   //
   // First Look for Data, and wait till we find some.

@@ -397,7 +397,7 @@ int NG_BC89flux::add_cells_to_face(
       int *ixmin,   ///< xmin of interface region (integer units)
       int *ixmax,   ///< xmax of interface region (integer units)
       int *nface,   ///< number of elements in interface region
-      const int ncell,    ///< number of cells per face, per dim.
+      const int ncell,    ///< number of cells per face.
       struct flux_update &flux ///< list to populate      
       )
 {
@@ -480,8 +480,17 @@ int NG_BC89flux::add_cells_to_face(
       rep.error("lost on grid",c);
     }
 #endif
-    if (nface[perpaxis] != static_cast<int>(flux.fi.size()))
+    if (nface[perpaxis] != static_cast<int>(flux.fi.size())) {
+      cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
+      cout <<", "<<nface[a]<<", "<<ncell<<"), list-size="<<flux.fi.size()<<"\n";
+      rep.printVec("ixmin",ixmin,par.ndim);
+      rep.printVec("ixmax",ixmax,par.ndim);
+      rep.printVec("nface",nface,par.ndim);
+      cout <<"ERROR: nface[perpaxis]="<<nface[perpaxis]<<", and ";
+      cout <<"flux struct size is "<<flux.fi.size()<<"\n";
+      cout.flush();
       rep.error("wrong number of cells 2D interface",flux.fi.size());
+    }
 
     for (int i=0;i<nface[perpaxis]; i++) {
       for (int ic=0;ic<ncell;ic++) {
@@ -572,8 +581,18 @@ int NG_BC89flux::add_cells_to_face(
 
     // loop over cells in interface:
     if (nface[perpaxis1]*nface[perpaxis2] !=
-        static_cast<int>(flux.fi.size()))
+        static_cast<int>(flux.fi.size())) {
+      cout <<"add_cells_to_face("<<d<<", "<<ixmin[a]<<", "<<ixmax[a];
+      cout <<", "<<nface[a]<<", "<<ncell<<"), list-size="<<flux.fi.size()<<"\n";
+      rep.printVec("ixmin",ixmin,par.ndim);
+      rep.printVec("ixmax",ixmax,par.ndim);
+      rep.printVec("nface",nface,par.ndim);
+      cout <<"ERROR: nfaces="<<nface[perpaxis1]*nface[perpaxis2]<<", and ";
+      cout <<"flux struct size is "<<flux.fi.size()<<"\n";
+      cout.flush();
       rep.error("wrong number of cells 3D interface",flux.fi.size());
+    }
+      
     marker = c;
     for (int i=0;i<nface[perpaxis2]; i++) {
       for (int j=0;j<nface[perpaxis1]; j++) {

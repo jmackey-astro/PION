@@ -17,6 +17,7 @@
 #include "defines/testing_flags.h"
 #include "sim_constants.h"
 #include "constants.h"
+#include <iostream>
 #include <vector>
 
 
@@ -70,8 +71,6 @@ class MCMDcontrol {
   int *ngbprocs;  ///< list with processor rank of neighbours in each direction.
 
   int parent_proc; ///< process of the parent grid, if NG and l>0
-  /// a process can have up to 2**NDIM child grids.
-  std::vector<struct cgrid> child_procs;
 
   bool ReadSingleFile; ///< If the ICs are in a single file, set this to true.
   bool WriteSingleFile; ///< If you want all the processors to write to one file, set this (BUGGY!)
@@ -143,7 +142,25 @@ class MCMDcontrol {
   void set_nproc(const int n)  {nproc=n; return;}
 
   /// get data on parent grid, if it exists
-  void get_parent_grid_info(struct cgrid *cg) {cg = &pgrid;return;}
+  void get_parent_grid_info(
+      struct cgrid *cg
+      );
+  
+  /// get data on neighbouring grids to parent grid, if they exist
+  void get_parent_ngb_grid_info(
+      std::vector<struct cgrid>  &pgngb
+      );
+
+  /// get data on child grids, if they exist
+  void get_child_grid_info(
+      std::vector<struct cgrid>  &cg
+      );
+
+  /// get data on neighbouring grids on level l+1, if they exist.
+  void get_level_lp1_ngb_info(
+      std::vector< std::vector<struct cgrid> >  &cgngb
+      );
+
 
  protected:
   int nproc;  ///< Number of processors.
@@ -171,6 +188,8 @@ class MCMDcontrol {
   /// and the inner one is the list of grids (up to 2**(ND-1)).
   std::vector< std::vector<struct cgrid> >  cgrid_ngb;
 
+  /// a process can have up to 2**NDIM child grids.
+  std::vector<struct cgrid> child_procs;
 
   ///
   /// Called by decomposeDomain() to set neighbouring processor ids.

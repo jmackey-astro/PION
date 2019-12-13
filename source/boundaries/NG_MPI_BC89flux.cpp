@@ -51,15 +51,13 @@ int NG_MPI_BC89flux::setup_flux_recv(
   int d_xmin[MAX_DIM], d_xmax[MAX_DIM]; // full domain
   struct flux_interface *fi = 0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int nchild = MCMD->child_procs.size();
+  vector<struct cgrid>  cg;
+  MCMD->get_child_grid_info(cg);
+  int nchild = cg.size();
 
   // coarse grid quantities
   int cg_ixmin[MAX_DIM], cg_ixmax[MAX_DIM];
-  int cg_ng[MAX_DIM];
-  //int cg_irange[MAX_DIM];
-  double cg_xmin[MAX_DIM], cg_xmax[MAX_DIM], cg_range[MAX_DIM];
   int idx = grid->idx();
-  double cg_dx = grid->DX();
 
   // if only one MPI process, then no send/recv necessary and we
   // call the serial version:
@@ -88,23 +86,10 @@ int NG_MPI_BC89flux::setup_flux_recv(
     cg_ixmin[v] = grid->iXmin(static_cast<axes>(v));
   for (int v=0;v<par.ndim;v++)
     cg_ixmax[v] = grid->iXmax(static_cast<axes>(v));
-  for (int v=0;v<par.ndim;v++)
-    cg_ng[v] = grid->NG(static_cast<axes>(v));
-  //for (int v=0;v<par.ndim;v++)
-  //  cg_irange[v] = grid->iRange(static_cast<axes>(v));
 
 #ifdef TEST_BC89FLUX
   cout <<"NG_MPI_BC89flux::setup_flux_recv: "<<nchild<<" child grids\n";
 #endif
-
-  // *** NEW CODE ***
-  // test if finer level is (1) within my domain and (2) has the same
-  // boundary as my grid boundary.
-  //bool within_dom[2*par.ndim];
-  //bool share_edge[2*par.ndim];
-  //for (int v=0;v<2*par.ndim;v++) {
-  // *** NEW CODE ***
-
 
   // Two cases: if there are children, then part or all of grid is
   // within l+1 level.  If there are no children, then at most one
@@ -115,8 +100,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
     for (int ic=0;ic<nchild;ic++) {
       int off = ic*2*par.ndim;
-      CI.get_ipos_vec(MCMD->child_procs[ic].Xmin,ixmin);
-      CI.get_ipos_vec(MCMD->child_procs[ic].Xmax,ixmax);
+      CI.get_ipos_vec(cg[ic].Xmin,ixmin);
+      CI.get_ipos_vec(cg[ic].Xmax,ixmax);
 
       // define interface region of fine and coarse grids, and if 
       // each direction is to be included or not.
@@ -193,7 +178,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
           flux_update_recv[l][el].ax  = d/2;
           flux_update_recv[l][el].Ncells = nc;
           flux_update_recv[l][el].rank.push_back(
-                                          MCMD->child_procs[ic].rank);
+                                          cg[ic].rank);
           for (size_t i=0; i<nel[el]; i++) {
             flux_update_recv[l][el].fi[i] = 
                           mem.myalloc(flux_update_recv[l][el].fi[i],1);
@@ -212,8 +197,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
           flux_update_recv[l][el].Ncells = nc;
         }
       } // loop over dims
-      CI.get_ipos_vec(MCMD->child_procs[ic].Xmin,ixmin);
-      CI.get_ipos_vec(MCMD->child_procs[ic].Xmax,ixmax);
+      CI.get_ipos_vec(cg[ic].Xmin,ixmin);
+      CI.get_ipos_vec(cg[ic].Xmax,ixmax);
 
 
       // For each interface, find the cell that is off the fine grid
@@ -221,7 +206,7 @@ int NG_MPI_BC89flux::setup_flux_recv(
       for (int d=0; d<2*par.ndim; d++) {
         if (recv[off+d]) {
 #ifdef TEST_BC89FLUX
-          cout <<"parallel setup_flux_recv(): adding cells.\n";
+          cout <<"parallel setup_flux_recv(): adding cells for child grids.\n";
 #endif
           add_cells_to_face(par,grid,static_cast<enum direction>(d),
                     ixmin,ixmax,ncell,1,flux_update_recv[l][off+d]);
@@ -233,116 +218,86 @@ int NG_MPI_BC89flux::setup_flux_recv(
   else  {
     // There are no children, but my grid might have a boundary in 
     // common with the l+1 level's outer boundary.  There is at most
-    // one of these.
-    // First try to exclude this:
-#ifdef TEST_BC89FLUX
-    cout <<"pllel setup_flux_recv(): checking for external faces\n";
-#endif
-    int edge=-1, axis=-1;
-    for (int ax=0;ax<par.ndim;ax++) {
-      if (cg_ixmin[ax] == f_lxmax[ax]) {
-        edge=2*ax;
-        axis=ax;
-      }
-      if (cg_ixmax[ax] == f_lxmin[ax]) {
-        edge=2*ax+1;
-        axis=ax;
-      }
+    // one of these.  Use MCMD functions to test this.
+    int edge=-1, axis=-1, perp[2];
+    size_t nsub=0;
+    size_t nel = 0;
+    std::vector< std::vector<struct cgrid> > cgngb;
+
+    MCMD->get_level_lp1_ngb_info(cgngb);
+    if (cgngb.size() != static_cast<size_t>(2*par.ndim)) {
+      rep.error("l+1 neigbouring grids vector not set up right",
+                                                  cgngb.size());
     }
-    if (edge<0) {
-#ifdef TEST_BC89FLUX
-      cout <<"no edges adjacent to l+1 level\n";
-#endif
+    
+    // try to find a direction (there is at most one).  If we find
+    // one then populate flux_update_recv[d] with values.
+    for (int d=0;d<2*par.ndim;d++) {
+      // default is that there are no neighbours:
       flux_update_recv[l].resize(1);
       flux_update_recv[l][0].fi.resize(1);
       flux_update_recv[l][0].fi[0] = 0;
-      return 0;
-    }
 
-    // If we get to here, then one edge borders the l+1 domain, so we
-    // see which edge it is, see how many grids on the l+1 domain are
-    // facing onto this grid, and add these faces to the list.
-    size_t nel = 0;
-    double pos[par.ndim];
-    int ch = -1;
-    // set up grid xmin/xmax values.
-    for (int v=0;v<par.ndim;v++)
-      cg_xmin[v] = grid->Xmin(static_cast<axes>(v));
-    for (int v=0;v<par.ndim;v++)
-      cg_xmax[v] = grid->Xmax(static_cast<axes>(v));
-    for (int v=0;v<par.ndim;v++)
-      cg_range[v] = grid->Range(static_cast<axes>(v));
+      nsub = cgngb[d].size();
+      if (nsub>0) {
+        flux_update_recv[l].resize(nsub);
+        edge = d;
+        axis = d/2;
+        perp[0] = (axis+1)%par.ndim;
+        perp[1] = (axis+2)%par.ndim;
 
-    if (par.ndim==1) {
-      // this is easy, max one child grid, with one face.
-      flux_update_recv[l].resize(1);
-      nel = 1;
-      rep.error("Write 1D flux recv setup code",0);
-      if (edge==XN) {
-        pos[0] = cg_xmin[0]-cg_dx;
-      }
-      else {
-        pos[0] = cg_xmax[0]+cg_dx;
-      }
-      ch = MCMD->get_grid_rank(par,pos,l+1);
-      flux_update_recv[l][0].rank.push_back(ch);
-      // dir is the outward normal of the grid edge at level l+1
-      flux_update_recv[l][0].dir = 
-                        grid->OppDir(static_cast<enum direction>(edge));
-      flux_update_recv[l][0].ax  = axis;
-      flux_update_recv[l][0].fi.resize(1);
-      flux_update_recv[l][0].fi[0] = 
-                      mem.myalloc(flux_update_recv[l][0].fi[0],1);
-      fi = flux_update_recv[l][0].fi[0];
-      fi->c.resize(nc);
-      fi->area.resize(nc);
-      fi->flux = mem.myalloc(fi->flux,par.nvar);
-      for (int v=0;v<par.nvar;v++) fi->flux[v]=0.0;
-      for (int v=0;v<par.ndim;v++) ncell[v] = cg_ng[v];
-      // change cg_ixmin,cg_ixmax to min/max of neighbouring child.
-      add_cells_to_face(par,grid,
-                      grid->OppDir(static_cast<enum direction>(edge)),
-                      cg_ixmin,cg_ixmax,ncell,1,flux_update_recv[l][0]);
-    }
-    else if (par.ndim==2) {
-      // up to 2 grids on l+1, so go through them one by one, see
-      // if they exist, and then add the cells.
-      flux_update_recv[l].resize(2);
-      int perp = (axis+1+par.ndim) % par.ndim;
-      nel = cg_ng[perp]/2;  // child covers half of the grid.
-      pos[perp] = cg_xmin[perp]+0.25*cg_range[perp];
-      double xmin[2], xmax[2];
-      for (int ic=0;ic<2;ic++) {
-        // find xmin/xmax of boundary region, and rank of child
-        // procs.
-        xmin[perp] = cg_xmin[perp] + ic*0.5*cg_range[perp];
-        xmax[perp] =   xmin[perp]   + 0.5*cg_range[perp];
-        pos[perp] += ic*0.5*cg_range[perp];
-        if (edge%2==0) {
-          // negative direction
-          pos[axis] = cg_xmin[axis] - cg_dx; // just off grid.
-          xmin[axis] = cg_xmin[axis] - 0.5*cg_range[axis];
-          xmax[axis] = cg_xmin[axis];
-        }
-        else {
-          // positive direction
-          pos[axis] = cg_xmax[axis] + cg_dx; // just off grid.
-          xmin[axis] = cg_xmax[axis];
-          xmax[axis] = cg_xmax[axis] + 0.5*cg_range[axis];
-        }
-#ifdef TEST_BC89FLUX
-        cout <<"ic="<<ic<<", perp="<<perp<<", ax="<<axis<<"\n";
-        rep.printVec("xmin",xmin,par.ndim);
-        rep.printVec("xmax",xmax,par.ndim);
-#endif
-        
-        ch = MCMD->get_grid_rank(par,pos,l+1);
-        if (ch>=0) {
-          flux_update_recv[l][ic].rank.push_back(ch);
-          // dir is the outward normal of the grid edge at level l+1
+        for (size_t ic=0;ic<nsub;ic++) {
+          for (int i=0;i<MAX_DIM;i++) ncell[i]=0;
+
+          flux_update_recv[l][ic].rank.push_back(cgngb[d][ic].rank);
           flux_update_recv[l][ic].dir = 
-                          grid->OppDir(static_cast<enum direction>(edge));
+                    grid->OppDir(static_cast<enum direction>(edge));
           flux_update_recv[l][ic].ax  = axis;
+
+          // figure out how many cells in the interface region:
+          // "nel" is the number of cells in the interface region on
+          // the coarse grid.
+          CI.get_ipos_vec(cgngb[d][ic].Xmin,ixmin); // l+1 grid
+          CI.get_ipos_vec(cgngb[d][ic].Xmax,ixmax); // l+1 grid
+
+          switch (par.ndim) {
+
+           case 1:
+            nel = 1;
+            ncell[axis] = 1;
+            break;
+
+           case 2:
+            ixmin[perp[0]] = std::max(ixmin[perp[0]], cg_ixmin[perp[0]]);
+            ixmax[perp[0]] = std::min(ixmax[perp[0]], cg_ixmax[perp[0]]);
+            ncell[axis   ] = 1;
+            ncell[perp[0]] = (ixmax[perp[0]]-ixmin[perp[0]])/idx;
+            nel = ncell[perp[0]];
+#ifdef TEST_BC89FLUX
+            cout <<"BC89 recv 2D from l+1 ngb: xmax="<<ixmax[perp[0]];
+            cout <<", xmin="<<ixmin[perp[0]]<<", nel="<<nel<<"\n";
+#endif
+            break;
+
+           case 3:
+            ixmin[perp[0]] = std::max(ixmin[perp[0]], cg_ixmin[perp[0]]);
+            ixmax[perp[0]] = std::min(ixmax[perp[0]], cg_ixmax[perp[0]]);
+            ixmin[perp[1]] = std::max(ixmin[perp[1]], cg_ixmin[perp[1]]);
+            ixmax[perp[1]] = std::min(ixmax[perp[1]], cg_ixmax[perp[1]]);
+            ncell[axis   ] = 1;
+            ncell[perp[0]] = (ixmax[perp[0]]-ixmin[perp[0]])/idx;
+            ncell[perp[1]] = (ixmax[perp[1]]-ixmin[perp[1]])/idx;
+            nel=1;
+            for (int p=0;p<2;p++)
+              nel *= ncell[perp[p]];
+#ifdef TEST_BC89FLUX
+            cout <<"BC89 recv 3D from l+1 ngb: nel="<<nel<<"\n";
+            rep.printVec("interface xmin",ixmin,3);
+            rep.printVec("interface xmax",ixmax,3);
+#endif
+            break;
+          }
+
           flux_update_recv[l][ic].fi.resize(nel);
           for (size_t i=0; i<nel; i++) {
             flux_update_recv[l][ic].fi[i] = 
@@ -352,139 +307,17 @@ int NG_MPI_BC89flux::setup_flux_recv(
             fi->area.resize(nc);
             fi->flux = mem.myalloc(fi->flux,par.nvar);
             for (int v=0;v<par.nvar;v++) fi->flux[v]=0.0;
-          }
-          for (int v=0;v<par.ndim;v++) ncell[v] = cg_ng[v]/2;
-          CI.get_ipos_vec(xmin,ixmin);
-          CI.get_ipos_vec(xmax,ixmax);
-          
+          }          
 #ifdef TEST_BC89FLUX
-          cout <<"FLUX: adding "<<nel<<" cells to recv boundary."<<endl;
+          cout <<"ic="<<ic<<"parallel setup_flux_recv(): ";
+          cout <<"adding cells for l+1 neigbouring grids.\n";
 #endif
           add_cells_to_face(par,grid,grid->OppDir(static_cast<enum direction>(edge)),
                     ixmin,ixmax,ncell,1,flux_update_recv[l][ic]);
-        }
-        else {
-          // no child here, so just create one null element
-          flux_update_recv[l][ic].fi.resize(1);
-          flux_update_recv[l][ic].fi[0] = 0;
-        }
-      } // loop over child grids (up to 2)
-    } // 2D
 
-    else {
-      // up to 4 grids on l+1, so go through them one by one, see if
-      // they exist, and add the cells.
-      flux_update_recv[l].resize(4);
-      int perp[2];
-      perp[0] = (axis+1+par.ndim) % par.ndim;
-      perp[1] = (axis+2+par.ndim) % par.ndim;
-      nel = cg_ng[perp[0]]*cg_ng[perp[1]]/4;
-      //pos[perp[0]] = cg_xmin[perp[0]]+0.25*cg_range[perp[0]];
-      //pos[perp[1]] = cg_xmin[perp[1]]+0.25*cg_range[perp[1]];
-      
-      double xmin[3], xmax[3];
-      for (int ic=0;ic<4;ic++) {
-        // find xmin/xmax of boundary region, for each of the four
-        // potential child grids.
-        // First the in-plane directions:
-        switch (ic) {
-          case 0: // (-,-)
-          for (int d=0;d<2;d++) {
-            xmin[perp[d]] = cg_xmin[perp[d]];
-            xmax[perp[d]] =   xmin[perp[d]] + 0.5 *cg_range[perp[d]];
-            pos[perp[d]]  = cg_xmin[perp[d]] + 0.25*cg_range[perp[d]];
-          }
-          break;
-
-          case 1: // (+,-)
-          xmin[perp[0]] = cg_xmin[perp[0]] + 0.5*cg_range[perp[0]];
-          xmin[perp[1]] = cg_xmin[perp[1]];
-          for (int d=0;d<2;d++) {
-            xmax[perp[d]] = xmin[perp[d]] + 0.5*cg_range[perp[d]];
-          }
-          pos[perp[0]] = cg_xmin[perp[0]]+0.75*cg_range[perp[0]];
-          pos[perp[1]] = cg_xmin[perp[1]]+0.25*cg_range[perp[1]];
-          break;
-
-          case 2: // (-,+)
-          xmin[perp[0]] = cg_xmin[perp[0]];
-          xmin[perp[1]] = cg_xmin[perp[1]] + 0.5*cg_range[perp[1]];
-          for (int d=0;d<2;d++) {
-            xmax[perp[d]] = xmin[perp[d]] + 0.5*cg_range[perp[d]];
-          }
-          pos[perp[0]] = cg_xmin[perp[0]]+0.25*cg_range[perp[0]];
-          pos[perp[1]] = cg_xmin[perp[1]]+0.75*cg_range[perp[1]];
-          break;
-
-          case 3: // (+,+)
-          for (int d=0;d<2;d++) {
-            xmin[perp[d]] = cg_xmin[perp[d]] + 0.5 *cg_range[perp[d]];
-            xmax[perp[d]] =   xmin[perp[d]] + 0.5 *cg_range[perp[d]];
-            pos[perp[d]]  = cg_xmin[perp[d]] + 0.75*cg_range[perp[d]];
-          }
-          break;
-
-          default:
-          rep.error("loopy error",ic);
-        }
-        // set position in normal direction.
-        if (edge%2==0) {
-          // negative direction (at my x-min) (l+1 outward normal is +ve)
-          pos[axis] = cg_xmin[axis] - cg_dx; // just off grid.
-          xmin[axis] = cg_xmin[axis] - 0.5*cg_range[axis];
-          xmax[axis] = cg_xmin[axis];
-        }
-        else {
-          // positive direction (at my x-max) (l+1 outward normal is -ve)
-          pos[axis] = cg_xmax[axis] + cg_dx; // just off grid.
-          xmin[axis] = cg_xmax[axis];
-          xmax[axis] = cg_xmax[axis] + 0.5*cg_range[axis];
-        }
-#ifdef TEST_BC89FLUX
-        cout <<"ic="<<ic<<", perp=["<<perp[0]<<","<<perp[1]<<"] ";
-        cout <<"ax="<<axis<<"\n";
-        rep.printVec("xmin",xmin,par.ndim);
-        rep.printVec("xmax",xmax,par.ndim);
-        rep.printVec(" pos", pos,par.ndim);
-#endif
-
-        ch = MCMD->get_grid_rank(par,pos,l+1);
-        if (ch>=0) {
-#ifdef TEST_BC89FLUX
-          cout <<"ic="<<ic<<": from rank "<<ch<<"...\n";
-#endif
-          flux_update_recv[l][ic].rank.push_back(ch);
-          // dir is the outward normal of the grid edge at level l+1
-          flux_update_recv[l][ic].dir = 
-                          grid->OppDir(static_cast<enum direction>(edge));
-          flux_update_recv[l][ic].ax  = axis;
-          flux_update_recv[l][ic].fi.resize(nel);
-          for (size_t i=0; i<nel; i++) {
-            flux_update_recv[l][ic].fi[i] = 
-                          mem.myalloc(flux_update_recv[l][ic].fi[i],1);
-            fi = flux_update_recv[l][ic].fi[i];
-            fi->c.resize(nc);
-            fi->area.resize(nc);
-            fi->flux = mem.myalloc(fi->flux,par.nvar);
-            for (int v=0;v<par.nvar;v++) fi->flux[v]=0.0;
-          }
-          for (int v=0;v<par.ndim;v++) ncell[v] = cg_ng[v]/2;
-          CI.get_ipos_vec(xmin,ixmin);
-          CI.get_ipos_vec(xmax,ixmax);
-          
-#ifdef TEST_BC89FLUX
-          cout <<"ic="<<ic<<"FLUX: adding "<<nel<<" cells to recv boundary."<<endl;
-#endif
-          add_cells_to_face(par,grid,grid->OppDir(static_cast<enum direction>(edge)),
-                    ixmin,ixmax,ncell,1,flux_update_recv[l][ic]);
-        }
-        else {
-          // no child here, so just create one null element
-          flux_update_recv[l][ic].fi.resize(1);
-          flux_update_recv[l][ic].fi[0] = 0;
-        }
-      } // loop over child grids (up to 4)
-    } // 3D
+        } // loop over sub-domains in direction d
+      } // if sub-domains exist
+    } // loop over directions
   } // child grids?
 
 #ifdef TEST_BC89FLUX
@@ -513,7 +346,6 @@ int NG_MPI_BC89flux::setup_flux_recv(
 
 
 
-
 // ##################################################################
 // ##################################################################
 
@@ -535,13 +367,13 @@ int NG_MPI_BC89flux::setup_flux_send(
 
   // Add ranks for each send, based on parent rank.
   int l = lm1+1; // my level
-  double cg_dx = grid->DX();
-  double cg_xmin[MAX_DIM], cg_xmax[MAX_DIM];
+  int fg_ixmin[MAX_DIM], fg_ixmax[MAX_DIM];
   for (int v=0;v<par.ndim;v++)
-    cg_xmin[v] = grid->Xmin(static_cast<axes>(v));
+    fg_ixmin[v] = grid->iXmin(static_cast<axes>(v));
   for (int v=0;v<par.ndim;v++)
-    cg_xmax[v] = grid->Xmax(static_cast<axes>(v));
-
+    fg_ixmax[v] = grid->iXmax(static_cast<axes>(v));
+  
+  // Size of flux_update_send[] is ALWAYS 2*ndim
   int ns = flux_update_send[l].size();
   if (ns != 2*par.ndim) rep.error("bad flux send size",ns);
 
@@ -556,84 +388,71 @@ int NG_MPI_BC89flux::setup_flux_send(
     // if boundary between parent and neighbour sits on the edge of
     // my level.
     class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-    int pproc = MCMD->parent_proc;
-    //for (int d=0;d<ns;d++) {
-    //  // if boundary element is not empty, send data to parent.
-    //  if (flux_update_send[l][d].fi[0] !=0) {
-    //    flux_update_send[l][d].rank.push_back(pproc);
-    //  }
-    //}
-  
+
+    // get data on parent grid, and neighbours of parent grid.
+    struct cgrid pg;
+    std::vector<struct cgrid>  pgngb;
+    MCMD->get_parent_grid_info(&pg);
+    MCMD->get_parent_ngb_grid_info(pgngb);
+    int pg_ixmin[MAX_DIM], pg_ixmax[MAX_DIM];
+    CI.get_ipos_vec(pg.Xmin,pg_ixmin);
+    CI.get_ipos_vec(pg.Xmax,pg_ixmax);
+
     for (int ax=0;ax<par.ndim;ax++) {
-      // check if parent boundary is also my boundary, in which
-      // case we need to send data to parent's neighbour
-      double pos[par.ndim];
-
-      // First negative direction along this axis
-      int d = 2*ax, p1=-1, p2=-1;
+#ifdef TEST_BC89FLUX
+      cout <<"axis="<<ax<<endl;
+#endif
+      int d=-1, pp=-1;
+      // negative direction
+      d = 2*ax;
       if (flux_update_send[l][d].fi[0] !=0) {
-        for (int i=0;i<par.ndim;i++) pos[i] = cg_xmin[i] + cg_dx;
-        //pos[ax] += cg_dx;
-        p1 = MCMD->get_grid_rank(par,pos,lm1);
-        if (p1!=pproc) rep.error("BC89 finding parents 1",p1-pproc);
-        pos[ax] -= 2*cg_dx;
-        p2 = MCMD->get_grid_rank(par,pos,lm1);
+        // if cells outside interface are not on parent, then send to
+        // neighbour of parent.
+        if (fg_ixmin[ax] == pg_ixmin[ax]) {
+          pp = pgngb[d].rank;
 #ifdef TEST_BC89FLUX
-        cout <<"ax="<<ax<<", d="<<d<<", parent="<<pproc<<", p1="<<p1;
-        cout<<", and ngb="<<p2<<"\n";
+          cout <<"negative direction, ngb of parent "<<pp<<endl;
 #endif
-        if (p2!=pproc) {
-#ifdef TEST_BC89FLUX
-          cout <<"Adding ngb of parent to dir="<<d<<", "<<p2<<"\n";
-#endif
-          flux_update_send[l][d].rank.push_back(p2);
         }
+        // else it is parent.
         else {
+          pp = pg.rank;
 #ifdef TEST_BC89FLUX
-          cout <<"Adding direct parent to dir="<<d<<", "<<p2<<"\n";
+          cout <<"negative direction, send to parent "<<pp<<endl;
 #endif
-          flux_update_send[l][d].rank.push_back(p1);
         }
+        flux_update_send[l][d].dir = d;
+        flux_update_send[l][d].ax  = ax;
+        flux_update_send[l][d].rank.push_back(pp);
+#ifdef TEST_BC89FLUX
+        cout <<"axis="<<ax<<", d="<<d<<", send rank = "<<pp<<endl;
+#endif
       }
-      flux_update_send[l][d].dir = d;
-      flux_update_send[l][d].ax  = ax;
-
-      // now positive direction
+      // positive direction
       d = 2*ax+1;
-      p1=-1;
-      p2=-1;
       if (flux_update_send[l][d].fi[0] !=0) {
-        for (int i=0;i<par.ndim;i++) pos[i] = cg_xmax[i] - cg_dx;
-        //pos[ax] -= cg_dx;
+        // if cells outside interface are not on parent, then send to
+        // neighbour of parent.
+        if (fg_ixmax[ax] == pg_ixmax[ax]) {
+          pp = pgngb[d].rank;
 #ifdef TEST_BC89FLUX
-        rep.printVec("p1 pos",pos,par.ndim);
+          cout <<"positive direction, ngb of parent "<<pp<<endl;
 #endif
-        p1 = MCMD->get_grid_rank(par,pos,lm1);
-        if (p1!=pproc) rep.error("BC89 finding parents 2",p1-pproc);
-        pos[ax] += 2*cg_dx;
-#ifdef TEST_BC89FLUX
-        rep.printVec("p2 pos",pos,par.ndim);
-#endif
-        p2 = MCMD->get_grid_rank(par,pos,lm1);
-#ifdef TEST_BC89FLUX
-        cout <<"ax="<<ax<<", d="<<d<<", parent="<<pproc<<", p1="<<p1;
-        cout<<", and p2="<<p2<<endl;
-#endif
-        if (p2!=pproc) {
-#ifdef TEST_BC89FLUX
-          cout <<"Adding 2nd parent to dir="<<d<<", "<<p2<<endl;
-#endif
-          flux_update_send[l][d].rank.push_back(p2);
         }
+        // else it is parent.
         else {
+          pp = pg.rank;
 #ifdef TEST_BC89FLUX
-          cout <<"Adding direct parent to dir="<<d<<", "<<p2<<"\n";
+          cout <<"positive direction, send to parent "<<pp<<endl;
 #endif
-          flux_update_send[l][d].rank.push_back(p1);
         }
+        flux_update_send[l][d].dir = d;
+        flux_update_send[l][d].ax  = ax;
+        flux_update_send[l][d].rank.push_back(pp);
+#ifdef TEST_BC89FLUX
+        cout <<"axis="<<ax<<", d="<<d<<", send rank = "<<pp<<endl;
+#endif
       }
-      flux_update_send[l][d].dir = d;
-      flux_update_send[l][d].ax  = ax;
     } // loop over axes
   } // if nproc>1
 
@@ -688,7 +507,6 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
   int err=0;
 
   // else we have to send data to at least one other MPI process:
-  class GridBaseClass *grid = par.levels[l].grid;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
   int n_send = flux_update_send[l].size();
   for (int isend=0;isend<n_send;isend++) {

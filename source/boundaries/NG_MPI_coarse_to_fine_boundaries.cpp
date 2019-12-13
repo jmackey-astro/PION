@@ -29,11 +29,16 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   class GridBaseClass *grid = par.levels[l].grid;
   // see how many child grids I have
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-  int nchild = MCMD->child_procs.size();
+  vector<struct cgrid>  cg;
+  MCMD->get_child_grid_info(cg);
+  int nchild = cg.size();
 
 #ifdef TEST_C2F
   if (nchild==0) {
     cout <<"COARSE_TO_FINE_SEND: no children.\n";
+  }
+  else {
+    cout <<"COARSE_TO_FINE_SEND: "<<nchild<<" child grids.\n";
   }
 #endif
 
@@ -48,13 +53,13 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // loop over child grids
   for (int i=0;i<nchild;i++) {
 
-    if (MCMD->get_myrank() == MCMD->child_procs[i].rank) {
+    if (MCMD->get_myrank() == cg[i].rank) {
       // if child is on my process, do nothing because child grid
       // can grab the data directly.
 #ifdef TEST_C2F
       cout <<"C2F_SEND: child "<<i<<", ";
       cout <<"my rank ("<<MCMD->get_myrank()<<") == child rank (";
-      cout <<MCMD->child_procs[i].rank<<"), no need to set up ";
+      cout <<cg[i].rank<<"), no need to set up ";
       cout <<"COARSE_TO_FINE_SEND\n";
 #endif
     }
@@ -66,31 +71,31 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
 #ifdef TEST_C2F
       cout <<"C2F_SEND: child "<<i<<", ";
       cout <<"my rank != child rank ("<<MCMD->get_myrank();
-      cout <<", "<<MCMD->child_procs[i].rank <<") running parallel ";
+      cout <<", "<<cg[i].rank <<") running parallel ";
       cout <<"COARSE_TO_FINE_SEND\n";
 #endif
       // get dimensions of child grid from struct
       int ixmin[MAX_DIM], ixmax[MAX_DIM];
-      CI.get_ipos_vec(MCMD->child_procs[i].Xmin, ixmin);
-      CI.get_ipos_vec(MCMD->child_procs[i].Xmax, ixmax);
+      CI.get_ipos_vec(cg[i].Xmin, ixmin);
+      CI.get_ipos_vec(cg[i].Xmax, ixmax);
 
       // loop over dimensions
       for (int d=0;d<par.ndim;d++) {
         // if child xmin == its level xmin, but > my level xmin,
         // then we need to send data, so set up a list.
-        if ( (pconst.equalD(MCMD->child_procs[i].Xmin[d],
+        if ( (pconst.equalD(cg[i].Xmin[d],
                             par.levels[l+1].Xmin[d]))        &&
-             (MCMD->child_procs[i].Xmin[d] > 
+             (cg[i].Xmin[d] > 
               par.levels[l].Xmin[d]*ONE_PLUS_EPS)    &&
-             (!pconst.equalD(MCMD->child_procs[i].Xmin[d],
+             (!pconst.equalD(cg[i].Xmin[d],
               grid->Xmin(static_cast<axes>(d))) ) ) {
 #ifdef TEST_C2F
           cout <<"C2F_SEND: child "<<i<<", dim "<<d<<" NEG DIR\n";
           rep.printVec("localxmin",MCMD->LocalXmin,3);
-          rep.printVec("Childxmin",MCMD->child_procs[i].Xmin,3);
+          rep.printVec("Childxmin",cg[i].Xmin,3);
 #endif
           struct c2f *bdata = new struct c2f;
-          bdata->rank = MCMD->child_procs[i].rank;
+          bdata->rank = cg[i].rank;
           bdata->dir  = 2*d;
           bdata->c.clear();
 
@@ -104,17 +109,14 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
         }
         // if child xmax == its level xmax, but < my level xmax,
         // then we need to send data, so set up a list.
-        if ((pconst.equalD(MCMD->child_procs[i].Xmax[d],
-                                par.levels[l+1].Xmax[d]))    &&
-                 (MCMD->child_procs[i].Xmax[d] < 
-                  par.levels[l].Xmax[d]*ONE_MINUS_EPS)    &&
-                 (!pconst.equalD(MCMD->child_procs[i].Xmax[d],
-                  grid->Xmax(static_cast<axes>(d)))) ) {
+        if ((pconst.equalD(cg[i].Xmax[d], par.levels[l+1].Xmax[d]))    &&
+            (cg[i].Xmax[d] < par.levels[l].Xmax[d]*ONE_MINUS_EPS)    &&
+            (!pconst.equalD(cg[i].Xmax[d], grid->Xmax(static_cast<axes>(d)))) ) {
 #ifdef TEST_C2F
           cout <<"C2F_SEND: child "<<i<<", dim "<<d<<" POS DIR\n";
 #endif
           struct c2f *bdata = new struct c2f;
-          bdata->rank = MCMD->child_procs[i].rank;
+          bdata->rank = cg[i].rank;
           bdata->dir  = 2*d+1;
           bdata->c.clear();
 
@@ -133,6 +135,9 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_SEND(
   // We've now dealt with C2F boundaries that are within my domain,
   // so we have to also consider boundaries coincident with my
   // domain boundary.
+
+  // TODO: I CAN COMPLETELY RE-WRITE THIS USING THE NEW MCMD STRUCTS
+
   double xn[par.ndim], xp[par.ndim], rr[par.ndim];
   for (int d=0;d<par.ndim;d++)
     xn[d] = grid->Xmin(static_cast<axes>(d));
@@ -566,16 +571,16 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     //
     int comm_tag = BC_MPI_NGC2F_tag+100*b->NGsendC2F[ib]->dir +l+1;
 #ifdef TEST_C2F
-    cout <<"BC_update_COARSE_TO_FINE_SEND: Sending "<<n_el;
+    cout <<"BC_update_COARSE_TO_FINE_SEND: l="<<l<<", Sending "<<n_el;
     cout <<" doubles from proc "<<MCMD->get_myrank();
-    cout <<" to child proc "<<b->NGsendC2F[ib]->rank<<"\n";
+    cout <<" to child proc "<<b->NGsendC2F[ib]->rank<<endl;
 #endif
     err += COMM->send_double_data(b->NGsendC2F[ib]->rank,n_el,buf,
                                   id,comm_tag);
     if (err) rep.error("Send_C2F send_data failed.",err);
 #ifdef TEST_C2F
     cout <<"BC_update_COARSE_TO_FINE_SEND: returned with id="<<id;
-    cout <<"\n";
+    cout <<endl;
 #endif
     // store ID to clear the send later (and delete the MPI temp data)
     NG_C2F_send_list.push_back(id);
@@ -992,16 +997,16 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           for (int v=0;v<par.nvar;v++) sz[v] = buf[ibuf+v];
           ibuf += par.nvar;
 #ifdef TEST_C2F
-          for (int v=0;v<par.ndim;v++) cpos2[v] = cpos[v]/3.086e18;
-          rep.printVec("*********** cpos",cpos2,par.ndim);
+          //for (int v=0;v<par.ndim;v++) cpos2[v] = cpos[v]/3.086e18;
+          //rep.printVec("*********** cpos",cpos2,par.ndim);
 #endif
           list<cell*>::iterator f_iter=b->NGrecvC2F[ic].begin();
           for (int v=0;v<8;v++) {
             fch[v] = *f_iter;
 #ifdef TEST_C2F
-            CI.get_dpos_vec(fch[v]->pos, cpos2);
-            for (int v=0;v<par.ndim;v++) cpos2[v] /= 3.086e18;
-            rep.printVec("fpos", cpos2, par.ndim);
+            //CI.get_dpos_vec(fch[v]->pos, cpos2);
+            //for (int v=0;v<par.ndim;v++) cpos2[v] /= 3.086e18;
+            //rep.printVec("fpos", cpos2, par.ndim);
 #endif
             f_iter++;
           }

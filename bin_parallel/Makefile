@@ -625,12 +625,12 @@ NG_fine_to_coarse_boundaries.o: NG_fine_to_coarse_boundaries.h \
 NG_MPI_coarse_to_fine_boundaries.o: \
   NG_MPI_coarse_to_fine_boundaries.h NG_coarse_to_fine_boundaries.h \
   NG_MPI_coarse_to_fine_boundaries.cpp solver_eqn_base.h \
-  boundaries.h ${GLOBAL} grid_base_class.h
+  boundaries.h ${GLOBAL} grid_base_class.h MCMD_control.h
 
 NG_MPI_fine_to_coarse_boundaries.o: \
   NG_MPI_fine_to_coarse_boundaries.h NG_fine_to_coarse_boundaries.h \
   NG_MPI_fine_to_coarse_boundaries.cpp solver_eqn_base.h \
-  boundaries.h ${GLOBAL} grid_base_class.h
+  boundaries.h ${GLOBAL} grid_base_class.h MCMD_control.h
 
 assign_update_bcs_MPI.o: assign_update_bcs_MPI.cpp \
   assign_update_bcs_MPI.h periodic_boundaries_MPI.h \
@@ -663,7 +663,7 @@ NG_BC89flux.o: NG_BC89flux.cpp NG_BC89flux.h ${GLOBAL} \
 
 NG_MPI_BC89flux.o: NG_MPI_BC89flux.cpp NG_MPI_BC89flux.h \
   NG_BC89flux.h ${GLOBAL} solver_eqn_base.h \
-  grid_base_class.h uniform_grid.h
+  grid_base_class.h uniform_grid.h MCMD_control.h
 
 
 #####################
