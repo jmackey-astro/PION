@@ -232,12 +232,11 @@ int NG_MPI_BC89flux::setup_flux_recv(
     
     // try to find a direction (there is at most one).  If we find
     // one then populate flux_update_recv[d] with values.
+    // default is that there are no neighbours:
+    flux_update_recv[l].resize(1);
+    flux_update_recv[l][0].fi.resize(1);
+    flux_update_recv[l][0].fi[0] = 0;
     for (int d=0;d<2*par.ndim;d++) {
-      // default is that there are no neighbours:
-      flux_update_recv[l].resize(1);
-      flux_update_recv[l][0].fi.resize(1);
-      flux_update_recv[l][0].fi[0] = 0;
-
       nsub = cgngb[d].size();
       if (nsub>0) {
         flux_update_recv[l].resize(nsub);
@@ -330,8 +329,8 @@ int NG_MPI_BC89flux::setup_flux_recv(
       cout <<"\n";
       cout <<"\t nel = "<<fup->fi.size()<<" dir="<<fup->dir<<", ax="<<fup->ax<<"\n";
     }
-    for (unsigned int d=0;d<flux_update_recv[l][l].size();d++) {
-      struct flux_update *fup = &(flux_update_recv[l][l][d]);
+    for (unsigned int d=0;d<flux_update_recv[l].size();d++) {
+      struct flux_update *fup = &(flux_update_recv[l][d]);
       cout <<"l="<<l<<", FUP_RECV: d="<<d<<" info: \n";
       cout <<"\t ranks: ";
       for (unsigned int r=0;r<fup->rank.size();r++) cout <<fup->rank[r]<<"  ";
@@ -469,6 +468,10 @@ int NG_MPI_BC89flux::setup_flux_send(
 void NG_MPI_BC89flux::clear_sends_BC89_fluxes()
 {
   for (unsigned int ib=0; ib<BC89_flux_send_list.size(); ib++) {
+#ifdef TEST_BC89FLUX
+    cout <<"clear_sends_BC89_fluxes: waiting for send "<<ib;
+    cout <<" of "<<BC89_flux_send_list.size()<<endl;
+#endif
     COMM->wait_for_send_to_finish(BC89_flux_send_list[ib]);
   }
   BC89_flux_send_list.clear();
@@ -515,13 +518,15 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     // some sends may be null, so we skip them:
     if (fup->fi[0]==0) {
 #ifdef TEST_BC89FLUX
-      cout <<"BC89_FLUX send "<<isend<<" is null, continuing..."<<endl;
+      cout <<"l="<<l<<": BC89_FLUX send "<<isend<<" of "<<n_send;
+      cout <<" is null, continuing..."<<endl;
 #endif
       continue;
     }
     else {
 #ifdef TEST_BC89FLUX
-      cout <<"l="<<l<<": send "<<isend<<" is not null: sending data."<<endl;
+      cout <<"l="<<l<<": BC89_FLUX send "<<isend;
+      cout <<" is not null: sending data."<<endl;
 #endif
     }
     size_t n_el = fup->fi.size();
@@ -571,6 +576,9 @@ int NG_MPI_BC89flux::send_BC89_fluxes_F2C(
     } // loop over ranks
     data = mem.myfree(data);
   } // loop over send boundaries.
+#ifdef TEST_BC89FLUX
+  cout <<"BC89 MPI flux send finished"<<endl;
+#endif
   return 0;
 }
 
@@ -717,10 +725,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
           static_cast<axes>(fup->ax), par.nvar,fi->flux,ftmp,utmp);
       }
 #ifdef TEST_BC89FLUX
-      rep.printVec("**********  Error",utmp, par.nvar);
-      int q=par.nvar-1;
-      cout <<"Flux colour: "<<fi->flux[q]<<": "<<fi->c[0]->dU[q];
-      cout <<", "<<utmp[q]<<"\n";
+      //rep.printVec("**********  Error",utmp, par.nvar);
+      //int q=par.nvar-1;
+      //cout <<"Flux colour: "<<fi->flux[q]<<": "<<fi->c[0]->dU[q];
+      //cout <<", "<<utmp[q]<<"\n";
 #endif
       // correct dU so that coarse level is consistent with fine.
       for (int v=0;v<par.nvar;v++) fi->c[0]->dU[v] += utmp[v];
@@ -728,9 +736,17 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     } // loop over elements
     if (iel !=n_data) rep.error("ndata",iel-n_data);
     buf = mem.myfree(buf);
-  } // loop over faces in this direction.
+#ifdef TEST_BC89FLUX
+    cout <<"l="<<l<<": BC89 FLUX: finished with recv ID ";
+    cout <<recv_id<<endl;
+#endif
 
-    
+  } // loop over faces in this direction.
+  
+#ifdef TEST_BC89FLUX
+  cout <<"l="<<l<<": BC89 FLUX: finished with recv"<<endl;
+#endif
+  
   return 0;
 }
 

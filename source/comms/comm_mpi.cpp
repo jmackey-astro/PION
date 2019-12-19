@@ -508,7 +508,9 @@ int comm_mpi::wait_for_send_to_finish(
 
 
 #ifdef TEST_COMMS
-  //cout <<"rank: "<<myrank<<"  comm_mpi::wait_for_send_to_finish() returning\n";
+  cout <<"rank: "<<myrank;
+  cout <<"  comm_mpi::wait_for_send_to_finish() returning";
+  cout <<endl;
 #endif //TEST_COMMS
   return 0;
 }

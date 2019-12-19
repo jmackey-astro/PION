@@ -691,9 +691,9 @@ void MCMDcontrol::set_NG_hierarchy(
             child_rank = get_grid_rank(par, centre,l+1);
 #ifdef TEST_BC89FLUX
     // *** debugging info ***
-            cout <<"child_rank = "<<child_rank<<", pos=";
-            rep.printVec("",centre,par.ndim);
-            cout.flush();
+            //cout <<"child_rank = "<<child_rank<<", pos=";
+            //rep.printVec("",centre,par.ndim);
+            //cout.flush();
     // *** debugging info ***
 #endif
             if (child_rank>=0) children.push_back(child_rank);

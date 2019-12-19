@@ -80,8 +80,9 @@ void microphysics_base::sCMA(
 {
 #ifdef DEBUG_SCMA
   int print_flagg = 0;
+  double val=0.0;
 #endif // DEBUG_SCMA
-  double corr = 0.0, val=0.0, ptemp[nv_prim];
+  double corr = 0.0, ptemp[nv_prim];
   for (int i=0;i<nv_prim;i++) corrector[i] = 1.0;
   // enforce all tracers to be within [0,1]
   for (int v=0; v<ntracer; v++) {
@@ -99,7 +100,9 @@ void microphysics_base::sCMA(
   // is within [0,1] for all tracers, if current value is out of
   // range
   for (int v=0; v<ntracer; v++) {
+#ifdef DEBUG_SCMA
     val = ptemp[tr_index[v]]/p_in[tr_index[v]];
+#endif // DEBUG_SCMA
     // if p_in[v] is out of range, then set corrector to fix this
     corrector[tr_index[v]] = (p_in[tr_index[v]]<0.0) ? 0.0 : 1.0;
     corrector[tr_index[v]] = (p_in[tr_index[v]]>1.0) ? 1.0/p_in[tr_index[v]] : 1.0;

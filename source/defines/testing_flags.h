@@ -16,7 +16,7 @@
 #define TESTING_FLAGS_H
 
 
-//#define REPORT_RANK0  // only reports stdout from rank 0.
+#define REPORT_RANK0  // only reports stdout from rank 0.
 
 //#define SKIP_C2F_BC
 //#define SKIP_F2C_BC

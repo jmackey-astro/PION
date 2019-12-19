@@ -500,8 +500,8 @@ int NG_BC89flux::add_cells_to_face(
         c->isbd_ref[d] = true;
         flux.fi[i]->area[ic] = grid->CellInterface(c,grid->OppDir(d),0);
 #ifdef TEST_BC89FLUX
-        cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<": adding cell: ";
-        rep.printVec("pos",c->pos,par.ndim);
+        //cout <<"area["<<ic<<"] = "<<flux.fi[i]->area[ic]<<": adding cell: ";
+        //rep.printVec("pos",c->pos,par.ndim);
         //CI.print_cell(c);
 #endif
         c = grid->NextPt(c,perpdir);
@@ -598,9 +598,9 @@ int NG_BC89flux::add_cells_to_face(
       for (int j=0;j<nface[perpaxis1]; j++) {
         if (ncell==1) {
 #ifdef TEST_BC89FLUX
-          cout <<"i="<<i<<", j="<<j<<", id="<<i*nface[perpaxis1]+j;
-          cout <<", fisize="<<flux.fi.size()<<"\n";
-          CI.print_cell(c); cout.flush();
+          //cout <<"i="<<i<<", j="<<j<<", id="<<i*nface[perpaxis1]+j;
+          //cout <<", fisize="<<flux.fi.size()<<"\n";
+          //CI.print_cell(c); cout.flush();
 #endif
           flux.fi[i*nface[perpaxis1]+j]->c[0] = c;
           c->F[a] = mem.myalloc(c->F[a],par.nvar);
@@ -619,8 +619,8 @@ int NG_BC89flux::add_cells_to_face(
           flux.fi[i*nface[perpaxis1]+j]->area[0] = 
                         grid->CellInterface(c,grid->OppDir(d),0);
 #ifdef TEST_BC89FLUX
-          cout <<"c1="<<c->id<<" ";
-          rep.printVec("pos",c->pos,par.ndim);
+          //cout <<"c1="<<c->id<<" ";
+          //rep.printVec("pos",c->pos,par.ndim);
 #endif
 
           m2 = grid->NextPt(c,perpdir1);
@@ -631,8 +631,8 @@ int NG_BC89flux::add_cells_to_face(
           flux.fi[i*nface[perpaxis1]+j]->area[1] = 
                         grid->CellInterface(m2,grid->OppDir(d),0);
 #ifdef TEST_BC89FLUX
-          cout <<"c2="<<m2->id<<" ";
-          rep.printVec("pos",m2->pos,par.ndim);
+          //cout <<"c2="<<m2->id<<" ";
+          //rep.printVec("pos",m2->pos,par.ndim);
 #endif
 
           m2 = grid->NextPt(c,perpdir2);
@@ -643,8 +643,8 @@ int NG_BC89flux::add_cells_to_face(
           flux.fi[i*nface[perpaxis1]+j]->area[2] = 
                         grid->CellInterface(m2,grid->OppDir(d),0);
 #ifdef TEST_BC89FLUX
-          cout <<"c3="<<m2->id<<" ";
-          rep.printVec("pos",m2->pos,par.ndim);
+          //cout <<"c3="<<m2->id<<" ";
+          //rep.printVec("pos",m2->pos,par.ndim);
 #endif
 
           m2 = grid->NextPt(m2,perpdir1);
@@ -655,8 +655,8 @@ int NG_BC89flux::add_cells_to_face(
           flux.fi[i*nface[perpaxis1]+j]->area[3] = 
                         grid->CellInterface(m2,grid->OppDir(d),0);
 #ifdef TEST_BC89FLUX
-          cout <<"c4="<<m2->id<<" ";
-          rep.printVec("pos",m2->pos,par.ndim);
+          //cout <<"c4="<<m2->id<<" ";
+          //rep.printVec("pos",m2->pos,par.ndim);
 #endif
 
         }
@@ -703,7 +703,7 @@ void NG_BC89flux::save_fine_fluxes(
       fi = flux_update_send[l][d].fi[f];
 
 #ifdef TEST_BC89FLUX
-      cout <<"save_fine_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
+      //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
 
       if (fi==0 && f==0) continue;
@@ -728,8 +728,8 @@ void NG_BC89flux::save_fine_fluxes(
           fi->flux[v] += fi->c[i]->F[a][v]*fi->area[i]*dt;
         }
 #ifdef TEST_BC89FLUX
-        rep.printVec("cell fine flux",fi->c[i]->F[a],par.nvar);
-        rep.printVec("cell fine Ph",fi->c[i]->Ph,par.nvar);
+        //rep.printVec("cell fine flux",fi->c[i]->F[a],par.nvar);
+        //rep.printVec("cell fine Ph",fi->c[i]->Ph,par.nvar);
         //cout <<"save_fine_fluxes["<<d<<"]["<<f<<"]: i="<<i;
         //cout <<", flux="; rep.printVec("",fi->flux,par.nvar);
 #endif
@@ -769,7 +769,7 @@ void NG_BC89flux::save_coarse_fluxes(
       // these elements have only one cell per face.
       fi = flux_update_recv[l][d].fi[f];
 #ifdef TEST_BC89FLUX
-      cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
+      //cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"] = "<<fi<<"\n";
 #endif
 
       // if first element is null then list is empty.
@@ -779,9 +779,9 @@ void NG_BC89flux::save_coarse_fluxes(
 
       // set face flux to be the negative of the intercell flux
 #ifdef TEST_BC89FLUX
-      cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
-      cout <<", f0="<<fi->c[0]->F[a][0]<<", area="<<fi->area[0];
-      cout <<", dt="<<dt<<"\n";
+      //cout <<"save_coarse_fluxes["<<d<<"]["<<f<<"]: i="<<0;
+      //cout <<", f0="<<fi->c[0]->F[a][0]<<", area="<<fi->area[0];
+      //cout <<", dt="<<dt<<"\n";
 #endif
       for (int v=0;v<par.nvar;v++) {
         fi->flux[v] = -fi->c[0]->F[a][v]*fi->area[0]*dt;
@@ -888,7 +888,7 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     ff = send.fi[f];
 
 #ifdef TEST_BC89FLUX
-    cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
+/*    cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
     rep.printVec("fc->flux",fc->flux,par.nvar);
     cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
     rep.printVec("ff->flux",ff->flux,par.nvar);
@@ -904,25 +904,27 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     rep.printVec("ff->flux",ff->flux,par.nvar);
     cout <<"fc->area[0]="<<fc->area[0];
     cout <<" ff->area[0]="<<ff->area[0]<<"\n";
+    */
 #endif
     
     for (int v=0;v<par.nvar;v++) fc->flux[v] += ff->flux[v];
 
 #ifdef TEST_BC89FLUX
-    rep.printVec("     dU          ",fc->c[0]->dU,par.nvar);
+/*    rep.printVec("     dU          ",fc->c[0]->dU,par.nvar);
     rep.printVec("flux",fc->flux,par.nvar);
     if (d==3) {
       rep.printVec("c state",fc->c[0]->Ph,par.nvar);
       rep.printVec("+ state",grid->NextPt(fc->c[0],YP)->Ph,par.nvar);
       rep.printVec("- state",grid->NextPt(fc->c[0],YN)->Ph,par.nvar);
     }
+    */
 #endif
 
     for (int v=0;v<par.nvar;v++) fc->flux[v] /= fc->area[0];
     for (int v=0;v<par.nvar;v++) ftmp[v]=0.0;
     
 #ifdef TEST_BC89FLUX
-    for (int v=0;v<par.nvar;v++) fc->flux[v] *= fc->area[0];
+    //for (int v=0;v<par.nvar;v++) fc->flux[v] *= fc->area[0];
 #endif
     //
     // fc->flux is now the error in dU made for both coarse cells.
@@ -946,17 +948,17 @@ int NG_BC89flux::recv_BC89_flux_boundary(
                                   par.nvar,fc->flux,ftmp,utmp);
     }
 #ifdef TEST_BC89FLUX
-    rep.printVec("**********  Error",utmp, par.nvar);
-    cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0];
-    cout <<", "<<utmp[0]<<"\n";
+    //rep.printVec("**********  Error",utmp, par.nvar);
+    //cout <<"Flux rho: "<<fc->flux[0]<<": "<<fc->c[0]->dU[0];
+    //cout <<", "<<utmp[0]<<"\n";
 #endif
 
     for (int v=0;v<par.nvar;v++) fc->c[0]->dU[v] += utmp[v];
 
 #ifdef TEST_BC89FLUX
-    spatial_solver->PtoU(fc->c[0]->P,utmp,par.gamma);
-    rep.printVec(" U",utmp,par.nvar);
-    rep.printVec("dU",fc->c[0]->dU,par.nvar);
+    //spatial_solver->PtoU(fc->c[0]->P,utmp,par.gamma);
+    //rep.printVec(" U",utmp,par.nvar);
+    //rep.printVec("dU",fc->c[0]->dU,par.nvar);
 #endif
   } // loop over interfaces.
   return 0;

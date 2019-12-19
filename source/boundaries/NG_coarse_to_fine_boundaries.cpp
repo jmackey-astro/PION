@@ -75,9 +75,9 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       if (!pc) rep.error("C2F boundaries setup",distance);
     }
 #ifdef TEST_C2F
-    rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
-    cout <<"found parent: ";
-    rep.printVec("pc->pos",pc->pos,par.ndim);
+    //rep.printVec("bpt pos",(*bpt)->pos,par.ndim);
+    //cout <<"found parent: ";
+    //rep.printVec("pc->pos",pc->pos,par.ndim);
 #endif
     // set boundary cell's 'npt' pointer to point to the parent cell.
     (*bpt)->npt = pc;

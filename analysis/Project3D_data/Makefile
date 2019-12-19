@@ -287,6 +287,8 @@ OBJ_NG_BCS = assign_update_bcs_NG_MPI.o assign_update_bcs_NG.o \
   NG_fine_to_coarse_boundaries.o \
   NG_MPI_coarse_to_fine_boundaries.o \
   NG_MPI_fine_to_coarse_boundaries.o \
+  NG_BC89flux.o \
+  NG_MPI_BC89flux.o
 
 OBJ_EQNS =  eqns_base.o eqns_hydro_adiabatic.o eqns_mhd_adiabatic.o 
 

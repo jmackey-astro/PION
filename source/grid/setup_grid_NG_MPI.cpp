@@ -214,10 +214,12 @@ int setup_grid_NG_MPI::setup_grid(
     SimPM.levels[l].grid = grid[l];
     if (l==0) {
       SimPM.levels[l].parent = 0;
-      SimPM.levels[l].child  = grid[l+1];
+      if (SimPM.grid_nlevels>1)
+        SimPM.levels[l].child  = grid[l+1];
     }
     else if (l==SimPM.grid_nlevels-1) {
-      SimPM.levels[l].parent = grid[l-1];
+      if (SimPM.grid_nlevels>1)
+        SimPM.levels[l].parent = grid[l-1];
       SimPM.levels[l].child  = 0;
     }
     else {

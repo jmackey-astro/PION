@@ -42,7 +42,7 @@ using namespace std;
 #include "grid/uniform_grid.h"
 
 #include "decomposition/MCMD_control.h"
-#include "grid/setup_fixed_grid_MPI.h"
+#include "grid/setup_grid_NG_MPI.h"
 
 
 // ##################################################################
@@ -73,23 +73,22 @@ int main(int argc, char **argv)
   //
   // Get an input file and an output file.
   //
-  if (argc!=9) {
+  if (argc!=8) {
     cerr << "Error: must call as follows...\n";
-    cerr << "silocompare: <silocompare> <first-dir> <comp-dir> <first-file> <flt/dbl> <comp-file> <flt/dbl> <outfile> <fabs/plus-minus/L1/L2>\n";
+    cerr << "silocompare: <silocompare> <first-dir> <first-file>  <comp-dir> <comp-file> <level> <outfile> <fabs/plus-minus/L1/L2>\n";
     cerr << "\t 0: Diff image is relative error for rho/p_g (abs.val)\n";
     cerr << "\t 1: Diff image is relative error for rho/p_g (+/-)\n";
     cerr << "\t 2: Just calculate L1+L2 error, no difference image.\n";
     cerr << "<flt/dbl>: FLOAT or DOUBLE for whether you think the file is float or double precision.\n";
     rep.error("Bad number of args",argc);
   }
-  string fdir = argv[1];
-  string sdir = argv[2];
-  string firstfile   =argv[3];
-  string dtype1(argv[4]);
-  string secondfile  =argv[5];
-  string dtype2(argv[6]);
-  string outfilebase =argv[7]; string outfile;
-  int optype=atoi(argv[8]);
+  string fdir       = argv[1];
+  string firstfile  = argv[2];
+  string sdir       = argv[3];
+  string secondfile = argv[4];
+  int lev = atoi(argv[5]);
+  string outfilebase =argv[6]; string outfile;
+  int optype=atoi(argv[7]);
   if (optype<0 || optype>2)
     rep.error("Please set optype to 0 (abs val.) or 1 (+- val.) or 2 (L1/L2)",optype);
   cout <<"fdir="<<fdir<<"\tsdir="<<sdir<<endl;
@@ -102,7 +101,8 @@ int main(int argc, char **argv)
   //
   // set up dataio_utility class
   //
-  class dataio_silo_utility dataio(SimPM,dtype2,&(SimPM.levels[0].MCMD));
+  string dtype="DOUBLE";
+  class dataio_silo_utility dataio(SimPM,dtype,&(SimPM.levels[0].MCMD));
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
@@ -121,6 +121,7 @@ int main(int argc, char **argv)
     if ((*s).find(".silo")==string::npos) {
       cout <<"removing file "<<*s<<" from list.\n";
       ffiles.erase(s);
+      s=ffiles.begin();
     }
     else {
       cout <<"files: "<<*s<<endl;
@@ -131,6 +132,7 @@ int main(int argc, char **argv)
     if ((*s).find(".silo")==string::npos) {
       cout <<"removing file "<<*s<<" from list.\n";
       sfiles.erase(s);
+      s=sfiles.begin();
     }
     else {
       cout <<"files: "<<*s<<endl;
@@ -161,30 +163,34 @@ int main(int argc, char **argv)
   err = dataio.ReadHeader(firstfile,SimPM);
   if (err) rep.error("Didn't read header",err);
 
+  if (lev>=SimPM.grid_nlevels) rep.error("Level doesn't exist",lev);
+  class setup_grid_NG_MPI *SimSetup =0;
+  SimSetup = new setup_grid_NG_MPI();
+  SimSetup->setup_NG_grid_levels(SimPM);
+
+  // assign global grid dimensions to level dimensions.
   SimPM.grid_nlevels = 1;
   SimPM.levels[0].parent=0;
   SimPM.levels[0].child=0;
   SimPM.levels[0].Ncell = SimPM.Ncell;
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
-  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-  SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v]   = SimPM.levels[lev].NG[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v]= SimPM.levels[lev].Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.levels[lev].Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.levels[lev].Xmax[v];
+  SimPM.levels[0].dx = SimPM.levels[0].Range[XX]/SimPM.levels[0].NG[XX];
   SimPM.levels[0].simtime = SimPM.simtime;
   SimPM.levels[0].dt = 0.0;
   SimPM.levels[0].multiplier = 1;
+  for (int v=0;v<MAX_DIM;v++) SimPM.Range[v]= SimPM.levels[lev].Range[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.Xmin[v] = SimPM.levels[lev].Xmin[v];
+  for (int v=0;v<MAX_DIM;v++) SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
+  SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
+  SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
 
-  //
-  // get a setup_grid class, and use it to set up the grid!
-  //
-  class setup_fixed_grid *SimSetup =0;
-  SimSetup = new setup_fixed_grid_pllel();
-  vector<class GridBaseClass *> g;
-  err  = SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
-  if (err) rep.error("main: failed to decompose domain!",err);
   //
   // Now we have read in parameters from the file, so set up a grid.
   //
+  vector<class GridBaseClass *> g;
   g.resize(1);
   SimSetup->setup_grid(g,SimPM);
   class GridBaseClass *grid = g[0];
@@ -231,15 +237,19 @@ int main(int argc, char **argv)
     SimPM.levels[0].parent=0;
     SimPM.levels[0].child=0;
     SimPM.levels[0].Ncell = SimPM.Ncell;
-    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v] = SimPM.NG[v];
-    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v] = SimPM.Range[v];
-    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.Xmin[v];
-    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.Xmax[v];
-    SimPM.levels[0].dx = SimPM.Range[XX]/SimPM.NG[XX];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].NG[v]   = SimPM.levels[lev].NG[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Range[v]= SimPM.levels[lev].Range[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmin[v] = SimPM.levels[lev].Xmin[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.levels[0].Xmax[v] = SimPM.levels[lev].Xmax[v];
+    SimPM.levels[0].dx = SimPM.levels[0].Range[XX]/SimPM.levels[0].NG[XX];
     SimPM.levels[0].simtime = SimPM.simtime;
     SimPM.levels[0].dt = 0.0;
     SimPM.levels[0].multiplier = 1;
-    
+    for (int v=0;v<MAX_DIM;v++) SimPM.Range[v]= SimPM.levels[lev].Range[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.Xmin[v] = SimPM.levels[lev].Xmin[v];
+    for (int v=0;v<MAX_DIM;v++) SimPM.Xmax[v] = SimPM.levels[lev].Xmax[v];
+    SimPM.dx = SimPM.Range[XX]/SimPM.NG[XX];
+    SimPM.levels[0].MCMD.decomposeDomain(SimPM, SimPM.levels[0]);
     // ----------------------------------------------------------------
     // ----------------------------------------------------------------
 
