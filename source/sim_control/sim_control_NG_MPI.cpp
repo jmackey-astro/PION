@@ -772,6 +772,10 @@ double sim_control_NG_MPI::advance_step_OA1(
   cout <<"advance_step_OA1: l="<<l<<" update state vec\n";
 #endif
   spatial_solver->Setdt(dt2_this);
+  if (l < SimPM.grid_nlevels-1) {
+    err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA1,OA1);
+    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
+  }
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
 #ifndef SKIP_BC89_FLUX
@@ -1080,6 +1084,10 @@ double sim_control_NG_MPI::advance_step_OA2(
   cout <<"advance_step_OA2: l="<<l<<" full step update"<<endl;
 #endif
   spatial_solver->Setdt(dt_now);
+  if (l < SimPM.grid_nlevels-1) {
+    err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA2,OA2);
+    rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
+  }
   err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);
 #ifndef SKIP_BC89_FLUX
@@ -1181,59 +1189,6 @@ double sim_control_NG_MPI::advance_step_OA2(
   cout << SimPM.levels[l].simtime + SimPM.levels[l].dt <<endl;
 #endif
   return dt2_this + SimPM.levels[l].dt;
-}
-
-
-
-// ##################################################################
-// ##################################################################
-
-
-
-
-int sim_control_NG_MPI::grid_update_state_vector(
-      const double dt,  ///< timestep
-      const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int ooa,   ///< Full order of accuracy of simulation
-      class GridBaseClass *grid ///< Computational grid.
-      )
-{
-  // get current level of grid in hierarchy.
-  int level=0;
-  int err=0;
-  for (int v=0;v<SimPM.grid_nlevels;v++) {
-    if (grid == SimPM.levels[v].grid) level = v;
-  }
-
-  //
-  // loop through the faces, and compare the fine with coarse level
-  // fluxes.  Subtract the flux difference from the cells adjacent to
-  // the face.
-  //
-  if (
-#ifdef BC89_FULLSTEP
-      step==ooa && 
-#endif
-      level < SimPM.grid_nlevels-1) {
-#ifdef DEBUG_NG
-    cout <<"level "<<level<<": correcting fluxes from finer grid\n";
-#endif
-#ifndef SKIP_BC89_FLUX
-    err = recv_BC89_fluxes_F2C(spatial_solver, SimPM, level,step,ooa);
-    rep.errorTest("return from recv_fluxes_F2C",0,err);
-#endif
-#ifdef TEST_INT
-    cout <<"back in grid_update_state_vector from BC89 flux recv"<<endl;
-#endif
-  }
-
-  err = time_integrator::grid_update_state_vector(dt,step,
-                                                   ooa,grid);
-  rep.errorTest("return from grid_update_state_vec",0,err);
-#ifdef TEST_INT
-  cout <<"finished grid_update call"<<endl;
-#endif
-  return err;
 }
 
 

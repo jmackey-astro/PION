@@ -768,17 +768,29 @@ void MCMDcontrol::set_NG_hierarchy(
       cgrid_ngb[XP].push_back(child);
     }
     else if (par.ndim==2) {
+#ifdef TEST_BC89FLUX
+    // *** debugging info ***
+      cout <<"2D: getting ranks for l+1 grids that share a face with my grid.\n";
+      cout.flush();
+    // *** debugging info ***
+#endif
       for (int i=0;i<par.ndim;i++) {
         int nd = 2*i;
         int pd = 2*i+1;
         pdir[0] = i+1%par.ndim;
+#ifdef TEST_BC89FLUX
+      // *** debugging info ***
+        cout <<"2D: axis = "<<i<<", perp dir = "<<pdir[0]<<"\n";
+        cout.flush();
+      // *** debugging info ***
+#endif
         // negative direction
         children.clear();
         centre[i] = LocalXmin[i] -dx;
         for (int p=0;p<4;p++) {
           centre[pdir[0]] = LocalXmin[pdir[0]] + 0.25*p*LocalRange[pdir[0]];
           child_rank = get_grid_rank(par, centre,l+1);
-          if (child_rank>0) children.push_back(child_rank);
+          if (child_rank>=0) children.push_back(child_rank);
         }
         sort(children.begin(),children.end());
         children.erase( unique( children.begin(), children.end() ), children.end() );
@@ -792,7 +804,7 @@ void MCMDcontrol::set_NG_hierarchy(
         for (int p=0;p<4;p++) {
           centre[pdir[0]] = LocalXmin[pdir[0]] + 0.25*p*LocalRange[pdir[0]];
           child_rank = get_grid_rank(par, centre,l+1);
-          if (child_rank>0) children.push_back(child_rank);
+          if (child_rank>=0) children.push_back(child_rank);
         }
         sort(children.begin(),children.end());
         children.erase( unique( children.begin(), children.end() ), children.end() );

@@ -888,10 +888,11 @@ int NG_BC89flux::recv_BC89_flux_boundary(
     ff = send.fi[f];
 
 #ifdef TEST_BC89FLUX
-/*    cout <<"f="<<f<<":  grid="<<fc<<", flux =  ";
+    cout <<"f="<<f<<":coarse="<<fc<<", flux =  ";
     rep.printVec("fc->flux",fc->flux,par.nvar);
     cout <<"f="<<f<<":  fine="<<ff<<", flux =  ";
     rep.printVec("ff->flux",ff->flux,par.nvar);
+    /*
     for (int v=0;v<par.nvar;v++) {
       fc->flux[v] /= fc->area[0];
     }

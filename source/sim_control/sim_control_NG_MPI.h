@@ -89,24 +89,6 @@ class sim_control_NG_MPI :
       );
 
   ///
-  /// Takes the contents of each cell->dU[] vector and
-  /// updates Ph[] the changes.  If we are on the full-step then it
-  /// also updates P[] so that Ph[] is identical.
-  ///
-  /// For the NG grid, it performs an additional step of
-  /// correcting the fluxes for cells that have an interface above
-  /// the boundary of a grid on the next finer level.  This version
-  /// of the function is for MPI-parallelised code, where parent and
-  /// child grids can be on different MPI processes.
-  ///
-  int grid_update_state_vector(
-      const double ,  ///< dt, timestep
-      const int,      ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
-      const int,       ///< Full order of accuracy of simulation
-      class GridBaseClass * ///< grid pointer
-      );
-
-  ///
   /// Calculates total values of conserved quantities.
   ///
   virtual int initial_conserved_quantities(

@@ -87,9 +87,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
   for (int v=0;v<par.ndim;v++)
     cg_ixmax[v] = grid->iXmax(static_cast<axes>(v));
 
-#ifdef TEST_BC89FLUX
+//#ifdef TEST_BC89FLUX
   cout <<"NG_MPI_BC89flux::setup_flux_recv: "<<nchild<<" child grids\n";
-#endif
+//#endif
 
   // Two cases: if there are children, then part or all of grid is
   // within l+1 level.  If there are no children, then at most one
@@ -160,10 +160,10 @@ int NG_MPI_BC89flux::setup_flux_recv(
     // initialize arrays
     flux_update_recv[l].resize(nchild*2*par.ndim);
     for (int ic=0;ic<nchild;ic++) {
-#ifdef TEST_BC89FLUX
+//#ifdef TEST_BC89FLUX
       cout <<"NG_MPI_BC89flux::setup_flux_recv: ";
       cout <<ic<<" has "<< 2*par.ndim <<"boundaries,\n";
-#endif
+//#endif
       int off = ic*2*par.ndim;
       for (int d=0; d<2*par.ndim; d++) {
         int el = off+d;
@@ -216,6 +216,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
   } // if there are child grids.
 
   else  {
+//#ifdef TEST_BC89FLUX
+    cout <<"parallel setup_flux_recv(): no child grids, looking for neighbours.\n";
+//#endif
     // There are no children, but my grid might have a boundary in 
     // common with the l+1 level's outer boundary.  There is at most
     // one of these.  Use MCMD functions to test this.
@@ -238,6 +241,9 @@ int NG_MPI_BC89flux::setup_flux_recv(
     flux_update_recv[l][0].fi[0] = 0;
     for (int d=0;d<2*par.ndim;d++) {
       nsub = cgngb[d].size();
+#ifdef TEST_BC89FLUX
+      cout <<"pllel setup_flux_recv(): dir="<<d<<", nsub="<<nsub<<"\n";
+#endif
       if (nsub>0) {
         flux_update_recv[l].resize(nsub);
         edge = d;
@@ -399,7 +405,7 @@ int NG_MPI_BC89flux::setup_flux_send(
 
     for (int ax=0;ax<par.ndim;ax++) {
 #ifdef TEST_BC89FLUX
-      cout <<"axis="<<ax<<endl;
+      cout <<"setup_flux_send: axis="<<ax<<endl;
 #endif
       int d=-1, pp=-1;
       // negative direction
@@ -410,7 +416,7 @@ int NG_MPI_BC89flux::setup_flux_send(
         if (fg_ixmin[ax] == pg_ixmin[ax]) {
           pp = pgngb[d].rank;
 #ifdef TEST_BC89FLUX
-          cout <<"negative direction, ngb of parent "<<pp<<endl;
+          cout <<"setup_flux_send: negative direction, ngb of parent "<<pp<<endl;
 #endif
         }
         // else it is parent.
@@ -424,7 +430,7 @@ int NG_MPI_BC89flux::setup_flux_send(
         flux_update_send[l][d].ax  = ax;
         flux_update_send[l][d].rank.push_back(pp);
 #ifdef TEST_BC89FLUX
-        cout <<"axis="<<ax<<", d="<<d<<", send rank = "<<pp<<endl;
+        cout <<"setup_flux_send: axis="<<ax<<", d="<<d<<", send rank = "<<pp<<endl;
 #endif
       }
       // positive direction
@@ -435,14 +441,14 @@ int NG_MPI_BC89flux::setup_flux_send(
         if (fg_ixmax[ax] == pg_ixmax[ax]) {
           pp = pgngb[d].rank;
 #ifdef TEST_BC89FLUX
-          cout <<"positive direction, ngb of parent "<<pp<<endl;
+          cout <<"setup_flux_send: positive direction, ngb of parent "<<pp<<endl;
 #endif
         }
         // else it is parent.
         else {
           pp = pg.rank;
 #ifdef TEST_BC89FLUX
-          cout <<"positive direction, send to parent "<<pp<<endl;
+          cout <<"setup_flux_send: positive direction, send to parent "<<pp<<endl;
 #endif
         }
         flux_update_send[l][d].dir = d;
@@ -698,6 +704,13 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
     size_t iel=0;
     for (size_t ii=0;ii<n_el;ii++) {
       fi = fup->fi[ii];
+#ifdef TEST_BC89FLUX
+      cout <<"f="<<ii<<":coarse="<<fi<<", flux =  ";
+      rep.printVec("fc->flux",fi->flux,par.nvar);
+      cout <<"f="<<ii<<":  fine="<<fi<<", flux =  ";
+      rep.printVec("ff->flux",&(buf[iel]),par.nvar);
+#endif
+      
       // construct error in flux:
       for (int v=0;v<par.nvar;v++) {
         // make flux[v] be the difference of coarse and fine.
@@ -725,10 +738,10 @@ int NG_MPI_BC89flux::recv_BC89_fluxes_F2C(
           static_cast<axes>(fup->ax), par.nvar,fi->flux,ftmp,utmp);
       }
 #ifdef TEST_BC89FLUX
-      //rep.printVec("**********  Error",utmp, par.nvar);
-      //int q=par.nvar-1;
-      //cout <<"Flux colour: "<<fi->flux[q]<<": "<<fi->c[0]->dU[q];
-      //cout <<", "<<utmp[q]<<"\n";
+      rep.printVec("**********  Error",utmp, par.nvar);
+      int q=1;
+      cout <<"Flux Energy: "<<fi->flux[q]<<": "<<fi->c[0]->dU[q];
+      cout <<", "<<utmp[q]<<"\n";
 #endif
       // correct dU so that coarse level is consistent with fine.
       for (int v=0;v<par.nvar;v++) fi->c[0]->dU[v] += utmp[v];
