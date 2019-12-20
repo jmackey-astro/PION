@@ -1,60 +1,8 @@
 # Makefile for 'pion',
 # Author: Jonathan Mackey
 #
-# - 2010.06.24 JM: added section for aibn214 (2GB RAM, 2 cores)
-# - 2010.07.21 JM: fixed aibn214 section to use system HDF5
-# - 2010.07.29 JM: changed aibn214 for new computer aibn129 (8GB,4core,64-bit)
-# - 2010-09-22 JM: Added Riemann_FVS_hydro files.
-# - 2010-10-01 JM: Added spherical vector-ops file.
-# - 2010-10-05 JM: Added stellar_wind_BC object file.
-# - 2010-10-11 JM: Added 'standard' workstation
-# - 2010.10.13 JM: Added MPv9 object file
-# - 2010.10.13 JM: moved executables to ../exe/
-# - 2010.11.09 JM: Added options for Phalanx
-# - 2010.11.15 JM: Added cell_interface.o file.
-# - 2010.12.22 JM: Added new files for solvers.
-# - 2010.12.27 JM: added extra source files. Added GLOBAL
-#                  variable for list of global header files.
-# - 2010.12.28 JM: Added internal-energy integrating solver files.
-# - 2011.01.11 JM: Added options for JUROPA at JSC Juelich.
-# - 2011.01.17 JM: Added new microphysics stuff
-# - 2011.02.17 JM: Added new raytracer_shielding.o object (with path).
-# - 2011.03.17 JM: Added Harpreet's module files
-# - 2011.04.12 JM: Added Hummer-recomb microphysics file.
-# - 2011.04.14 JM: Added new MP interface, with CVODES library support.
-#                  Simplified lib-paths.
-# - 2011.05.12 JM: updated phalanx library paths
-# - 2011.06.20 JM: updated iMac libraries to work on my MBP.
-# - 2011.10.13 JM: added new microphysics files.
-# - 2011.11.14 JM: Got rid of MAKE_UNAME Stuff (moved to compile_code.sh)
-#                  Deleted some old machines from the list of computers.
-# - 2011.12.20 JM: Merged code and icgenerator makefiles and moved most of the
-#     logic to compile_code.sh.  Re-named to just "Makefile", and removed most
-#     of the machine-specific options.
-# - 2012.02.08 JM: Added new IC class for Harpreet's module.
-# - 2012.02.22 JM/HD: Added section for dougal at UCL compile options.
-# - 2012.07.15 JM: some new vpath entries and changed file names.
-# - 2012.09.11 JM: Added options for SuperMUC
-# - 2013.01.10 JM: Changed name of exe to pion_serial.
-#                  Added StarBench test problems class to icgen.
-# - 2013.01.17 JM: Got rid of readline/ncurses from link line in
-#    production version of pion.
-# - 2013.02.15 JM: Added NEW_METALLICITY flag for testing (with new
-#    source files).
-# - 2013.02.19 JM: Added file_status.o/cpp object file.
-# - 2013.02.27 JM: Added extensions for contributed code.
-# - 2013.08.19 JM: Changed filenames for Harpreet's module.
-# - 2014.04.14 JM: Added options for JUDGE at JSC.
-# - 2015.01.08 JM: Added tools/reporting.h.cpp and tools/mem_manage.h
-# - 2015.01.12 JM: Added command_line_interface.h.cpp.
-# - 2016.02.12 JM: renamed .cc files to .cpp
-# - 2016.05.04 JM: Added FIONN to list of machines
-# - 2016.08.29 JM: removed *Eint solvers.
-# - 2017-07-29 JM: updated for latitude-dependent winds.
-# - 2017-08-03 JM: updated standard workstation to use system libs.
-# - 2018-[05-09] JM: added static mesh-refinement
-# - 2019-09-04 JM: removed lots of directives for obselete systems.
-#
+# 2011-2020
+
 ############################
 ### BASIC INFO AND PATHS ###
 ############################
@@ -221,7 +169,7 @@ endif
 ifeq ($(MAKE_UNAME), ubuntu18)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif

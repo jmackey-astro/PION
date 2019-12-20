@@ -209,7 +209,7 @@ endif
 ifeq ($(MAKE_UNAME), ubuntu18)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif

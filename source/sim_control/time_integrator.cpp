@@ -615,10 +615,10 @@ int time_integrator::set_dynamics_dU(
     for (int ax2=0; ax2<grid->NG_All(x2); ax2++) {
       for (int ax1=0; ax1<grid->NG_All(x1); ax1++) {
 #ifdef TEST_INT
-        cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i;
-        cout<<", cpt="<<cpt<<":  ";
+        //cout <<"ax1="<<ax1<<", ax2="<<ax2<<", i="<<i;
+        //cout<<", cpt="<<cpt<<":  ";
         //CI.print_cell(cpt);
-        cout <<"\n";
+        //cout <<"\n";
 #endif
         return_value = dynamics_dU_column(cpt,posdirs[i],negdirs[i], dt,
                                         space_ooa, grid);
@@ -687,7 +687,7 @@ int time_integrator::dynamics_dU_column(
   cell *npt  = grid->NextPt(cpt,posdir);
   cell *n2pt = grid->NextPt(npt,posdir);
 #ifdef TEST_INT
-  cout <<"Column: "<<cpt<<", "<<npt<<", "<<n2pt<<"\n";
+  //cout <<"Column: "<<cpt<<", "<<npt<<", "<<n2pt<<"\n";
 #endif
   if (npt==0 || n2pt==0) rep.error("Couldn't find two real cells in column",0);
   
@@ -711,8 +711,8 @@ int time_integrator::dynamics_dU_column(
     dp.c = cpt;
 #endif
 #ifdef TEST_INT
-    cout<<"First Cell:"; CI.print_cell(cpt);
-    cout<<"Next Cell: "; CI.print_cell(npt);
+    //cout<<"First Cell:"; CI.print_cell(cpt);
+    //cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
     // Get the flux from left and right states, adding artificial
     // viscosity if needed.

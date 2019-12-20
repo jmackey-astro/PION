@@ -359,10 +359,12 @@ int FV_solver_Hydro_Euler::dU_Cell(
 }
 
 
+
 // ##################################################################
 // ##################################################################
 
-///   COUNT INSTANCES OF CORRECTION HERE WITH / WITHOUT CORRECTOR 
+
+
 int FV_solver_Hydro_Euler::CellAdvanceTime(
       class cell *c,
       const pion_flt *Pin, // Initial State Vector.
@@ -381,10 +383,15 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   pion_flt Pintermediate[eq_nvar];
   pion_flt corrector[eq_nvar];
   //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
-  MP->sCMA(corrector, Pin);
-  for (int t=0;t<eq_nvar;t++)
-    Pintermediate[t] =  Pin[t]* corrector[t];
-  PtoU(Pintermediate, u1, eq_gamma);
+  if (MP) {
+    MP->sCMA(corrector, Pin);
+    for (int t=0;t<eq_nvar;t++)
+      Pintermediate[t] =  Pin[t]* corrector[t];
+    PtoU(Pintermediate, u1, eq_gamma);
+  }
+  else {
+    PtoU(Pin, u1, eq_gamma);
+  }
 
   //
   // Now add dU[] to U[], and change back to primitive variables.
@@ -395,7 +402,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
   }
   int err;
   if((err=UtoP(u1,Pf, MinTemp, eq_gamma))!=0) {
-//#ifdef TESTING
+#ifdef TESTING
     cout<<"(FV_solver_Hydro_Euler::CellAdvanceTime) UtoP complained";
     cout<<" (maybe about negative pressure...) fixing\n";
     rep.printVec("pin",Pin,eq_nvar);
@@ -404,7 +411,7 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
     PtoU(Pin,u1, eq_gamma);
     rep.printVec("Uin",u1, eq_nvar);
     rep.printVec("Pf ",Pf, eq_nvar);
-//#endif
+#endif
   }
 
   // Reset the dU array for the next timestep.
@@ -422,8 +429,10 @@ int FV_solver_Hydro_Euler::CellAdvanceTime(
 #endif
   //int final_correct_flag = 0;
   //for (int v=0;v<eq_nvar;v++) corrector[v]=1.0;
-  MP->sCMA(corrector, Pf);
-  for (int t=0;t<eq_nvar;t++) Pf[t] =  Pf[t]* corrector[t];
+  if (MP) {
+    MP->sCMA(corrector, Pf);
+    for (int t=0;t<eq_nvar;t++) Pf[t] =  Pf[t]* corrector[t];
+  }
 
   return err;
 }

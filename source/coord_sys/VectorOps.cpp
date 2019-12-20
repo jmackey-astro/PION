@@ -1134,9 +1134,7 @@ int VectorOps_Cyl::SetSlope(
      default: rep.error("Bad direction in SetSlope",d);
     }
     cp = grid->NextPt(c,dp); cn=grid->NextPt(c,dn);
-//#ifdef TESTING
     if (cp==0 || cn==0) rep.error("No left or right cell in SetSlope",cp);
-//#endif //TESTING
     switch (d) {
      case Zcyl: 
       for (int v=0;v<nv;v++) {
@@ -1144,12 +1142,12 @@ int VectorOps_Cyl::SetSlope(
 	slpp[v] = (cp->Ph[v]- c->Ph[v])/dZ;
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
-#ifdef TESTING
+#ifdef DEBUG3
       rep.printVec("Z slpn",slpn,nv);
       rep.printVec("Z slpp",slpp,nv);
       rep.printVec("Z dpdx",dpdx,nv);
       cout <<"R_com(c) = "<<R_com(c,dR)<<" vodz="<<dR<<"\n";
-#endif //TESTING
+#endif
       break;
      case Rcyl:
       for (int v=0;v<nv;v++) {
@@ -1157,12 +1155,12 @@ int VectorOps_Cyl::SetSlope(
 	slpp[v] = (cp->Ph[v]- c->Ph[v])/ (R_com(cp,dR)- R_com(c,dR) );
 	dpdx[v] = AvgFalle(slpn[v],slpp[v]);
       }
-#ifdef TESTING
+#ifdef DEBUG3
       rep.printVec("R slpn",slpn,nv);
       rep.printVec("R slpp",slpp,nv);
       rep.printVec("R dpdx",dpdx,nv);
       cout <<"R_com(c) = "<<R_com(c,dR)<<"\n";
-#endif //TESTING
+#endif
       break;
      case Tcyl: // Need extra scale factor in denominator to get R*dtheta
       for (int v=0;v<nv;v++) {

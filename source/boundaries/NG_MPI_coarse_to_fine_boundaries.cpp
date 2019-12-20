@@ -449,8 +449,10 @@ int NG_MPI_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE_RECV(
     CI.get_ipos_vec(pgngb[b->dir].Xmin,cg_ixmin);
     CI.get_ipos_vec(pgngb[b->dir].Xmax,cg_ixmax);
     b->NGrecvC2F_parent = pgngb[b->dir].rank;
+#ifdef TEST_C2F
     cout <<"C2F MPI Recv, recv from rank"<<b->NGrecvC2F_parent;
     cout <<", in outward normal direction "<<b->dir<<"\n";
+#endif
   }
   else {
     b->NGrecvC2F_parent = pg.rank;
