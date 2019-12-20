@@ -9,7 +9,7 @@ GAMMA 1.66666666666666666667
 
 StartTime 0.0
 FinishTime 1.578e12  # 50kyr
-OutputFile BW_NGcrt3D_NR016
+OutputFile BW_NGcrt3D_NR032
 OutputPath ./
 OutputFileType silo
 OutputFrequency 128
@@ -38,9 +38,9 @@ smooth -1
 noise -1
 
 ## Grid Parameters
-NGridX  16
-NGridY  16
-NGridZ  16
+NGridX  32
+NGridY  32
+NGridZ  32
 
 Xmin -30.86e18
 Ymin -30.86e18
