@@ -321,6 +321,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
       if (par.spOOA == OA2) {
         for (int idim=0;idim<par.ndim; idim++) {
           enum axes a = static_cast<axes>(idim);
+          //cout <<"BC_update_COARSE_TO_FINE_SEND: el="<<c_iter;
+          //cout <<" idim="<<idim<<" calling setslope on cell ";
+          //cout <<c->id<<", isbd="<<c->isbd<<", isgd="<<c->isgd<<"\n";
           solver->SetSlope(c,a,par.nvar,slope,OA2,grid);
           for (int v=0;v<par.nvar;v++) buf[ibuf+v]= slope[v];
           ibuf += par.nvar;
@@ -614,7 +617,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
 {
 #ifdef TEST_C2F
   cout <<"C2F_MPI: receiving boundary data to level ";
-  cout <<l<<", updating boundary dir = "<<b->dir<<"\n";
+  cout <<l<<", updating boundary dir = "<<b->dir<<endl;
 #endif
   int err=0;
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
@@ -623,7 +626,7 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   if (MCMD->get_myrank() == b->NGrecvC2F_parent) {
 #ifdef TEST_C2F
     cout <<"my rank == parent rank, calling serial ";
-    cout <<"COARSE_TO_FINE\n";
+    cout <<"COARSE_TO_FINE"<<endl;
 #endif
     NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
                                               par,solver,l,b,step);
@@ -631,9 +634,9 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
   else {
 #ifdef TEST_C2F
     cout <<"my rank != parent rank, so updating ";
-    cout <<"COARSE_TO_FINE_RECV";
+    cout <<"COARSE_TO_FINE_RECV: ";
     cout <<"me="<<MCMD->get_myrank();
-    cout <<", parent="<<b->NGrecvC2F_parent<<"\n";
+    cout <<", parent="<<b->NGrecvC2F_parent<<endl;
 #endif
 
     //
@@ -641,13 +644,17 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     //
     string recv_id; int recv_tag=-1; int from_rank=-1;
     int comm_tag = BC_MPI_NGC2F_tag+100*b->dir +l;
+#ifdef TEST_C2F
+    cout <<"BC_update_COARSE_TO_FINE_RECV: looking for data with tag";
+    cout <<comm_tag<<endl;
+#endif 
     err = COMM->look_for_data_to_receive(&from_rank, recv_id,
                         &recv_tag,comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed",err);
 #ifdef TEST_C2F
     cout <<"BC_update_COARSE_TO_FINE_RECV: found data from rank ";
     cout <<from_rank<<", with tag "<< recv_tag<<" and id ";
-    cout <<recv_id<<".  Looked for comm_tag="<<comm_tag<<"\n";
+    cout <<recv_id<<".  Looked for comm_tag="<<comm_tag<<endl;
 #endif 
 
     // receive the data: nel is the number of coarse grid cells

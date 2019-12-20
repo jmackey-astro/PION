@@ -711,8 +711,8 @@ int time_integrator::dynamics_dU_column(
     dp.c = cpt;
 #endif
 #ifdef TEST_INT
-    //cout<<"First Cell:"; CI.print_cell(cpt);
-    //cout<<"Next Cell: "; CI.print_cell(npt);
+    cout<<"First Cell:"; CI.print_cell(cpt);
+    cout<<"Next Cell: "; CI.print_cell(npt);
 #endif
     // Get the flux from left and right states, adding artificial
     // viscosity if needed.

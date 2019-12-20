@@ -769,20 +769,16 @@ void MCMDcontrol::set_NG_hierarchy(
     }
     else if (par.ndim==2) {
 #ifdef TEST_BC89FLUX
-    // *** debugging info ***
       cout <<"2D: getting ranks for l+1 grids that share a face with my grid.\n";
       cout.flush();
-    // *** debugging info ***
 #endif
       for (int i=0;i<par.ndim;i++) {
         int nd = 2*i;
         int pd = 2*i+1;
-        pdir[0] = i+1%par.ndim;
+        pdir[0] = (i+1)%par.ndim;
 #ifdef TEST_BC89FLUX
-      // *** debugging info ***
         cout <<"2D: axis = "<<i<<", perp dir = "<<pdir[0]<<"\n";
         cout.flush();
-      // *** debugging info ***
 #endif
         // negative direction
         children.clear();
@@ -796,6 +792,9 @@ void MCMDcontrol::set_NG_hierarchy(
         children.erase( unique( children.begin(), children.end() ), children.end() );
         for (size_t v=0;v<children.size();v++) {
           child.rank = children[v];
+#ifdef TEST_BC89FLUX
+          cout <<" found neighbour on l+1 (neg-dir) with rank "<<child.rank<<endl;
+#endif
           cgrid_ngb[nd].push_back(child);
         }
         // positive direction
@@ -810,6 +809,9 @@ void MCMDcontrol::set_NG_hierarchy(
         children.erase( unique( children.begin(), children.end() ), children.end() );
         for (size_t v=0;v<children.size();v++) {
           child.rank = children[v];
+#ifdef TEST_BC89FLUX
+          cout <<" found neighbour on l+1 (pos-dir) with rank "<<child.rank<<endl;
+#endif
           cgrid_ngb[pd].push_back(child);
         }
       } // dims

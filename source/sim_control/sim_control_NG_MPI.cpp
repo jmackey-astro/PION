@@ -198,6 +198,9 @@ int sim_control_NG_MPI::Init(
     }
     if (l>0) {
       for (size_t i=0;i<grid[l]->BC_bd.size();i++) {
+#ifdef TESTING
+        cout <<"Init: l="<<l<<", C2F recv i="<<i<<", type="<<grid[l]->BC_bd[i]->type<<endl;
+#endif
         if (grid[l]->BC_bd[i]->itype == COARSE_TO_FINE_RECV) {
           err += BC_update_COARSE_TO_FINE_RECV(SimPM,spatial_solver,
                       l,grid[l]->BC_bd[i],SimPM.levels[l].step);
