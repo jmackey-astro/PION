@@ -498,6 +498,14 @@ int RT_MPI_bc::Send_RT_Boundaries(
       for (c=b->data.begin(); c!=b->data.end(); ++c) {
         if (count>=nc) rep.error("too many cells!!!",count-nc);
 
+        // HACK
+        //cell *p=*c;
+        //if (p->pos[XX]==66 && p->pos[YY]==126) {
+        //  cout <<"RT MPI BC SEND: idx="<<grid->idx()<<": ";
+        //  CI.print_cell(p);
+        //}
+        // HACK
+
 #ifdef RT_TESTING
         if (count<100) {
           cout <<"send data ["<<i<<"]: col[0] = ";
@@ -1103,7 +1111,7 @@ int RT_MPI_bc::setup_RT_recv_boundary(
 
   switch (b.dir) {
     //
-    // First do the faces, which already have boundaries set up, so we only need
+    // Each face at a time, already have boundaries set up, so need
     // to connect the boundary cells to each other laterally.
     //
   case dir_XN:

@@ -775,10 +775,12 @@ double sim_control_NG_MPI::advance_step_OA1(
   cout <<"advance_step_OA1: l="<<l<<" update state vec\n";
 #endif
   spatial_solver->Setdt(dt2_this);
+#ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels-1) {
     err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA1,OA1);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
+#endif
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
 #ifndef SKIP_BC89_FLUX
@@ -900,6 +902,8 @@ double sim_control_NG_MPI::advance_step_OA2(
   int c2f = -1, f2cs=-1, f2cr=-1;
   if (!finest_level) {
     for (size_t i=0;i<grid->BC_bd.size();i++) {
+      //cout <<"i="<<i<<", BD type = "<<grid->BC_bd[i]->type<<"\n";
+      // there's only one C2F boundary
       if (grid->BC_bd[i]->itype == COARSE_TO_FINE_SEND) c2f=i;
     }
     // F2C data to receive
@@ -1085,10 +1089,12 @@ double sim_control_NG_MPI::advance_step_OA2(
   cout <<"advance_step_OA2: l="<<l<<" full step update"<<endl;
 #endif
   spatial_solver->Setdt(dt_now);
+#ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels-1) {
     err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA2,OA2);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
+#endif
   err += grid_update_state_vector(SimPM.levels[l].dt,OA2,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: state-vec update",0,err);
 #ifndef SKIP_BC89_FLUX

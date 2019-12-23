@@ -818,17 +818,21 @@ int comm_mpi::receive_cell_data(
     //cout.flush();
 #endif //TEST_COMMS
     if(err) rep.error("Unpack",err);
+
     // For a given boundary data iterator, put data into cells
     if (c==l->end()) rep.error("Got too many cells!",i);
     for (int v=0; v<nvar; v++) (*c)->Ph[v] = p[v];
     //
-    // This position checking doesn't work for periodic boundaries!
+    // This position checking doesn't work for periodic boundaries
     //
+    //rep.printVec("ipos",ipos,ndim);
+    //rep.printVec("cpos",cpos,ndim);
     //for (int v=0; v<ndim; v++)       
     //  if (ipos[v]!=cpos[v]) {
     //    cout <<"*** Position x["<<v<<"] for received cell "<<i;
     //    cout <<": got x="<<ipos[v]<<" expected x="<<cpos[v];
     //    cout <<"; distance="<<ipos[v]-cpos[v]<<"\n";
+    //    rep.error("positions do not match",ipos[v]);
     //  }
 #ifdef TEST_COMMS
     //rep.printVec("\trecvd",ipos,ndim);

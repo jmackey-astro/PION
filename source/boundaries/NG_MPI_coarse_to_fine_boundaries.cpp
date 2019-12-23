@@ -244,10 +244,11 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
   else cout <<" send-list size = "<<b->NGsendC2F.size();
   cout <<endl;
 #endif
-#ifdef TEST_C2F
+//#ifdef TEST_C2F
   class MCMDcontrol *MCMD = &(par.levels[l].MCMD);
-#endif
+//#endif
   int err=0;
+
   //
   // if on an odd-numbered step, then need to update the data on the
   // coarse grid to half way through a coarse step.  Assume dU has
@@ -265,14 +266,14 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
         solver->PtoU(c->P, U, par.gamma);
         for (int v=0;v<par.nvar;v++) U[v] += 0.5*c->dU[v];
         solver->UtoP(U,c->Ph, par.EP.MinTemperature, par.gamma);
-#ifdef TEST_INF
+//#ifdef TEST_INF
         for (int v=0;v<par.nvar;v++) {
           if (!isfinite(c->Ph[v])) {
             rep.printVec("NAN c->P ",c->P,par.nvar);
             rep.printVec("NAN c->Ph",c->Ph,par.nvar);
           }
         }
-#endif
+//#endif
       } // loop over cells in boundary
     } // loop over send boundaries
   } // if not at a full step update
@@ -289,12 +290,28 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
     //
     size_t n_cell = b->NGsendC2F[ib]->c.size();
 
-#ifdef TEST_C2F
+    // HACK
+    bool check=false;
+    if (MCMD->get_myrank()==4 && b->NGsendC2F[ib]->rank==5) {
+      check=true;
+      cout <<"l="<<l<<", C2F SEND from 5 to 4"<<endl;
+      int x[par.ndim];
+      for (int i=0;i<par.ndim;i++) x[i] = grid->iXmax(static_cast<axes>(i));
+      rep.printVec("ixmax grid",x,par.ndim);
+      for (int i=0;i<par.ndim;i++) x[i] = grid->iXmin(static_cast<axes>(i));
+      rep.printVec("ixmin grid",x,par.ndim);
+    }
+    // HACK
+
+
+//#ifdef TEST_C2F
+    if (check) {
     cout <<"C2F SEND: "<<MCMD->get_myrank()<<", sending ";
     cout << n_cell<<" elements to process: ";
     cout <<b->NGsendC2F[ib]->rank<<"\n";
     cout.flush();
-#endif
+    }
+//#endif
 
     size_t n_el = 0;
     if      (par.spOOA == OA1) n_el = n_cell*(par.nvar+1+par.ndim);
@@ -329,6 +346,35 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_SEND(
           ibuf += par.nvar;
         } // idim
       } // if 2nd order
+
+      // HACK
+      if (check && l==1 && c->pos[XX]>50) {
+        rep.printVec("cell pos",c->pos,par.ndim);
+        rep.printVec("Ph",c->Ph,par.nvar);
+        rep.printVec("dU",c->dU,par.nvar);
+        rep.printVec(" P",c->P,par.nvar);
+        rep.printVec("sx",&buf[ibuf-2*par.nvar],par.nvar);
+        rep.printVec("sy",slope,par.nvar);
+        double col=0.0;
+        //CI.get_col(c,0,&col);
+        //cout <<"col2cell = "<<col;
+        //CI.get_cell_col(c,0,&col);
+        //cout <<", cell-col = "<<col<<endl;
+        if (c->pos[XX]==66 && c->pos[YY]==130) { 
+          cell *np = grid->NextPt(c,YN);
+          rep.printVec("NP cell pos",np->pos,par.ndim);
+          rep.printVec("NP Ph",np->Ph,par.nvar);
+          rep.printVec("NP dU",np->dU,par.nvar);
+          rep.printVec("NP P",np->P,par.nvar);
+          double col=0.0;
+          //CI.get_col(np,0,&col);
+          //cout <<"NP col2cell = "<<col;
+          //CI.get_cell_col(np,0,&col);
+          //cout <<", cell-col = "<<col<<endl;
+        }
+      }
+      // HACK
+
     } // loop over cells for this send boundary
 
     if (ibuf != n_el) rep.error("C2F MPI SEND counting",ibuf);
@@ -639,22 +685,39 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     cout <<", parent="<<b->NGrecvC2F_parent<<endl;
 #endif
 
+    // HACK
+    bool check=false;
+    if (MCMD->get_myrank()==5 && b->NGrecvC2F_parent==4) {
+      check=true;
+      cout <<"l="<<l<<", C2F RECV from 4 to 5"<<endl;
+      int x[par.ndim];
+      for (int i=0;i<par.ndim;i++) x[i] = grid->iXmax(static_cast<axes>(i));
+      rep.printVec("ixmax grid",x,par.ndim);
+      for (int i=0;i<par.ndim;i++) x[i] = grid->iXmin(static_cast<axes>(i));
+      rep.printVec("ixmin grid",x,par.ndim);
+    }
+    // HACK
+
     //
     // receive data.
     //
     string recv_id; int recv_tag=-1; int from_rank=-1;
     int comm_tag = BC_MPI_NGC2F_tag+100*b->dir +l;
 #ifdef TEST_C2F
+    if (check) {
     cout <<"BC_update_COARSE_TO_FINE_RECV: looking for data with tag";
     cout <<comm_tag<<endl;
+    }
 #endif 
     err = COMM->look_for_data_to_receive(&from_rank, recv_id,
                         &recv_tag,comm_tag, COMM_DOUBLEDATA);
     if (err) rep.error("look for double data failed",err);
 #ifdef TEST_C2F
+    if (check) {
     cout <<"BC_update_COARSE_TO_FINE_RECV: found data from rank ";
     cout <<from_rank<<", with tag "<< recv_tag<<" and id ";
     cout <<recv_id<<".  Looked for comm_tag="<<comm_tag<<endl;
+    }
 #endif 
 
     // receive the data: nel is the number of coarse grid cells
@@ -667,8 +730,10 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
     pion_flt *buf = 0;
     buf = mem.myalloc(buf,n_el);
 #ifdef TEST_C2F
+    if (check) {
     cout <<"BC_update_COARSE_TO_FINE_RECV: get "<<n_cell;
     cout <<" cells, and "<<n_el<<" doubles.\n";
+    }
 #endif 
     //
     // Receive data into buffer.  Data stored for each coarse cell:
@@ -770,6 +835,36 @@ int NG_MPI_coarse_to_fine_bc::BC_update_COARSE_TO_FINE_RECV(
           //rep.printVec("cpos",cpos,par.ndim);
           //rep.printVec("Ph",Ph,par.nvar);
           CI.get_ipos_vec(cpos,ipos);
+
+          // HACK
+          if (check && l==2) {
+            rep.printVec("f1 pos",f[0]->pos,par.ndim);
+            rep.printVec("f2 pos",f[1]->pos,par.ndim);
+            rep.printVec("f3 pos",f[2]->pos,par.ndim);
+            rep.printVec("f4 pos",f[3]->pos,par.ndim);
+            rep.printVec("c  pos",ipos,par.ndim);
+            //if (ipos[XX]>50) {
+              rep.printVec("Ph",Ph,par.nvar);
+              rep.printVec("sx",sx,par.nvar);
+              rep.printVec("sy",sy,par.nvar);
+              double col=0.0;
+              //CI.get_col(f[0],0,&col);
+              //cout <<"f[0] : col2cell = "<<col;
+              //CI.get_cell_col(f[0],0,&col);
+              //cout <<", cell-col = "<<col<<endl;
+              rep.printVec(" f[0]->dU",f[0]->dU,par.nvar);
+              rep.printVec(" f[0]->P", f[0]->P,par.nvar);
+            //}
+            if (f[0]->pos[XX]==21  && f[0]->pos[YY]==129) {
+              //CI.get_col(grid->NextPt(f[0],YN),0,&col);
+              //cout <<"YN --> f[0] : col2cell = "<<col;
+              //CI.get_cell_col(grid->NextPt(f[0],YN),0,&col);
+              //cout <<", cell-col = "<<col<<endl;
+            }
+
+          }
+          // HACK
+
           interpolate_coarse2fine2D(par,grid,solver,
                         Ph,ipos,c_vol,sx,sy,f[0],f[1],f[2],f[3]);
         } // loop over coarse cells

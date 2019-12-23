@@ -642,10 +642,12 @@ double sim_control_NG::advance_step_OA1(
   // First correct fluxes
   //
   spatial_solver->Setdt(SimPM.levels[l].dt);
+#ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels-1) {
     err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA1,OA1);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
+#endif
   err += grid_update_state_vector(SimPM.levels[l].dt,OA1,OA1, grid);
   rep.errorTest("scn::advance_step_OA1: state-vec update",0,err);
   // --------------------------------------------------------
@@ -786,10 +788,12 @@ double sim_control_NG::advance_step_OA2(
   cout <<"l="<<l<<" full step, grid_update_state_vector\n";
 #endif
   spatial_solver->Setdt(dt2_this);
+#ifndef SKIP_BC89_FLUX
   if (l < SimPM.grid_nlevels-1) {
     err += recv_BC89_fluxes_F2C(spatial_solver,SimPM,l,OA2,OA2);
     rep.errorTest("scn::advance_step_OA1: recv_BC89_flux",0,err);
   }
+#endif
   err += grid_update_state_vector(dt_now,OA2,OA2, grid);
   rep.errorTest("scn::advance_step_OA2: update OA2",0,err);  
   // --------------------------------------------------------

@@ -682,6 +682,9 @@ void NG_BC89flux::save_fine_fluxes(
     const int l ///< level
     )
 {
+#ifdef SKIP_BC89_FLUX
+  return;
+#endif
 #ifdef TEST_BC89FLUX
   cout <<"save_fine_fluxes() \n";
   cout <<"size of flux_update_send = "<<flux_update_send[l].size()<<"\n";
@@ -755,6 +758,9 @@ void NG_BC89flux::save_coarse_fluxes(
     const int l ///< level
     )
 {
+#ifdef SKIP_BC89_FLUX
+  return;
+#endif
 #ifdef TEST_BC89FLUX
   cout <<"save_coarse_fluxes() \n";
   cout <<"size of flux_update_recv = ";
@@ -805,7 +811,9 @@ int NG_BC89flux::recv_BC89_fluxes_F2C(
       const int ooa     ///< Full order of accuracy of simulation
       )
 {
-  //return 0;
+#ifdef SKIP_BC89_FLUX
+  return 0;
+#endif
   if (step != ooa) {
     cout <<"don't receive fluxes on half step\n";
     return 1;
@@ -867,6 +875,9 @@ int NG_BC89flux::recv_BC89_flux_boundary(
       const axes ax ///< axis of normal direction.
       )
 { 
+#ifdef SKIP_BC89_FLUX
+  return 0;
+#endif
   struct flux_interface *fc=0;
   struct flux_interface *ff=0;
   double ftmp[par.nvar],utmp[par.nvar];

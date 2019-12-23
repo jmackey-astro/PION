@@ -70,7 +70,7 @@ int NG_coarse_to_fine_bc::BC_assign_COARSE_TO_FINE(
       // G_idx/2 away from the boundary cell in each direction.
       enum axes ax = static_cast<axes>(d);
       enum direction pos = static_cast<direction>(2*d+1);
-      while (fabs(distance = grid->idifference_cell2cell((*bpt),pc,ax)) > gidx)
+      while (fabs(distance = grid->idifference_cell2cell((*bpt),pc,ax)) > 0.75*gidx)
         pc = parent->NextPt(pc,pos);
       if (!pc) rep.error("C2F boundaries setup",distance);
     }
@@ -329,6 +329,19 @@ int NG_coarse_to_fine_bc::BC_update_COARSE_TO_FINE(
         //rep.printVec("f4 pos",f4->pos,2);
         //rep.printVec("c  pos",c->pos,2);
 #endif
+        if (level==2 && c->pos[YY]<150) {
+          rep.printVec("f1 pos",f1->pos,2);
+          rep.printVec("f2 pos",f2->pos,2);
+          rep.printVec("f3 pos",f3->pos,2);
+          rep.printVec("f4 pos",f4->pos,2);
+          rep.printVec("c  pos",c->pos,2);
+          rep.printVec("Ph",c->Ph,par.nvar);
+          double col=0.0;
+          //CI.get_col(f1,0,&col);
+          //cout <<"f1 : col2cell = "<<col;
+          //CI.get_cell_col(f1,0,&col);
+          //cout <<", cell-col = "<<col<<endl;
+        }
 
 #ifdef TEST_C2F
         //cout <<"BEFORE interpolating coarse to fine 2d: coarse="<<c->id;
@@ -576,6 +589,8 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine3D(
     for (int v=0;v<par.nvar;v++) fch[i]->P[v] = fch[i]->Ph[v];
   }
 
+  for (int i=0;i<8;i++) for (int v=0;v<par.nvar;v++) fch[i]->dU[v]=0.0;
+
   //if (par.eqntype == EQGLM) {
   //  f1->P[SI] = f1->Ph[SI] = P[SI]; // f_psi[0];
   //  f2->P[SI] = f2->Ph[SI] = P[SI]; //0.0; // f_psi[1];
@@ -705,6 +720,18 @@ void NG_coarse_to_fine_bc::interpolate_coarse2fine2D(
   //int d=par.nvar-1;
   //cout <<"interpolate_coarse2fine2D: "<<P[d]<<": "<<f1->P[d]<<", ";
   //cout <<f2->P[d]<<", "<<f3->P[d]<<", "<<f4->P[d]<<"\n";
+  
+  // HACK: get rid of slopes:
+  for (int v=0;v<par.nvar;v++) f1->P[v] = f1->Ph[v] = P[v];
+  for (int v=0;v<par.nvar;v++) f2->P[v] = f2->Ph[v] = P[v];
+  for (int v=0;v<par.nvar;v++) f3->P[v] = f3->Ph[v] = P[v];
+  for (int v=0;v<par.nvar;v++) f4->P[v] = f4->Ph[v] = P[v];
+  // HACK 
+
+  for (int v=0;v<par.nvar;v++) f1->dU[v] = 0.0;
+  for (int v=0;v<par.nvar;v++) f2->dU[v] = 0.0;
+  for (int v=0;v<par.nvar;v++) f3->dU[v] = 0.0;
+  for (int v=0;v<par.nvar;v++) f4->dU[v] = 0.0;
 
 #ifdef DEBUG_NG
   for (int v=0;v<par.nvar;v++) {

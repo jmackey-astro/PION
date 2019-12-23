@@ -179,9 +179,9 @@ int time_integrator::first_order_update(
   // Calculate updates for each physics module
   //
   err += calc_microphysics_dU(dt, grid);
-  err += calc_dynamics_dU(dt,TIMESTEP_FIRST_PART, grid);
+  err += calc_dynamics_dU(dt,OA1, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt,TIMESTEP_FIRST_PART, grid);
+  err += calc_thermal_conduction_dU(dt,OA1, grid);
 #endif // THERMAL_CONDUCTION
   if (err) 
     rep.error("first_order_update: error from calc_*_dU",err);
@@ -189,7 +189,7 @@ int time_integrator::first_order_update(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-  err += grid_update_state_vector(dt,TIMESTEP_FIRST_PART,ooa, grid);
+  err += grid_update_state_vector(dt,OA1,ooa, grid);
   if (err) 
     rep.error("first_order_update: state-vec update",err);
 
@@ -225,9 +225,9 @@ int time_integrator::second_order_update(
   // Calculate updates for each physics module
   //
   err += calc_microphysics_dU(      dt,      grid);
-  err += calc_dynamics_dU(          dt, TIMESTEP_FULL, grid);
+  err += calc_dynamics_dU(          dt, OA2, grid);
 #ifdef THERMAL_CONDUCTION
-  err += calc_thermal_conduction_dU(dt, TIMESTEP_FULL, grid);
+  err += calc_thermal_conduction_dU(dt, OA2, grid);
 #endif // THERMAL_CONDUCTION
   if (err) 
     rep.error("second_order_update: error from calc_*_dU",err);
@@ -235,7 +235,7 @@ int time_integrator::second_order_update(
   //
   // Now update Ph[i] to new values (and P[i] also if full step).
   //
-  err += grid_update_state_vector(  dt, TIMESTEP_FULL, ooa, grid);
+  err += grid_update_state_vector(  dt, OA2, ooa, grid);
   if (err) 
     rep.error("second_order_update: state-vec update",err);
 
@@ -496,7 +496,7 @@ int time_integrator::calc_noRT_microphysics_dU(
   
 int time_integrator::calc_dynamics_dU(
       const double dt, ///< timestep to integrate
-      const int step, ///< whether TIMESTEP_FIRST_PART or TIMESTEP_FULL.
+      const int step, ///< whether OA1 or OA2.
       class GridBaseClass *grid ///< Computational grid.
       )
 {
@@ -508,9 +508,9 @@ int time_integrator::calc_dynamics_dU(
   int err=0;
 
 #ifdef TESTING
-  if (step==TIMESTEP_FIRST_PART)
+  if (step==OA1)
     cout <<"*****Updating dynamics: OA1\n";
-  else if (step==TIMESTEP_FULL)
+  else if (step==OA2)
     cout <<"*****Updating dynamics: OA2\n";
   else rep.error("Bad ooa",step);
 #endif //TESTING
@@ -566,7 +566,7 @@ int time_integrator::set_dynamics_dU(
   axis[0] = XX; axis[1] = YY; axis[2] = ZZ;
 
   int space_ooa;
-  if (step == TIMESTEP_FIRST_PART)
+  if (step == OA1)
     space_ooa=OA1;
   else
     space_ooa=OA2;
@@ -882,7 +882,7 @@ int time_integrator::dynamics_dU_column(
   
 int time_integrator::grid_update_state_vector(
       const double dt,  ///< timestep
-      const int step, ///< TIMESTEP_FULL or TIMESTEP_FIRST_PART
+      const int step, ///< OA1 or OA2
       const int ooa,   ///< Full order of accuracy of simulation
       class GridBaseClass *grid ///< Computational grid.
       )
@@ -905,7 +905,7 @@ int time_integrator::grid_update_state_vector(
     dp.c = c;
 #endif
     if (!c->isdomain) {
-      // skip cell if is has been cut out of the domain.
+      // skip cell if it has been cut out of the domain.
       for (int v=0;v<SimPM.nvar;v++) c->dU[v]=0.0;
     }
     else {
