@@ -38,7 +38,7 @@ OPT += -DSILO
 
 #MAKE_UNAME=JUROPA
 #MAKE_UNAME=standard
-MAKE_UNAME=ubuntu18
+#MAKE_UNAME=ubuntu18
 #MAKE_UNAME=aibn129
 #MAKE_UNAME=epona
 #MAKE_UNAME=stokes
@@ -83,7 +83,7 @@ endif
 ifeq ($(MAKE_UNAME), ubuntu18)
   ifeq ($(PION_OPTIMISE), HIGH)
     CXXFLAGS = -O3 -Wno-unused-function
-    CXXFLAGS = -Wall -g -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
   else
     CXXFLAGS = -Wall -g -Wno-unused-function
   endif
@@ -109,6 +109,39 @@ ifeq ($(MAKE_UNAME), ubuntu18)
   LDFLAGS += -lsundials_cvode -lsundials_nvecserial
 endif
 ################### --- UBUNTU 18 ---######################
+
+######################################################################
+# Options for an Ubuntu 16 workstation with locally installed libraries.
+######################################################################
+ifeq ($(MAKE_UNAME), ubuntu16)
+  ifeq ($(PION_OPTIMISE), HIGH)
+    CXXFLAGS = -O3 -Wno-unused-function
+    #CXXFLAGS = -Wall -g -Wno-unused-function
+  else
+    CXXFLAGS = -Wall -g -Wno-unused-function
+  endif
+  
+  ifeq ($(IOMODE), USE_FILE_COMMS)
+    CXX = g++
+  endif
+  ifeq ($(IOMODE), USE_MPI)
+    CXX = mpicxx
+  endif
+
+  OPT += -DCVODE5
+  MYLIB = $(CURDIR)/../../extra_libraries
+  INC  = -I${MYLIB}/include
+  INC += -I${SRCDIR}
+  LDFLAGS += -L${MYLIB}/lib
+  LDFLAGS += -Wl,-rpath,${MYLIB}/lib
+  LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+  LDFLAGS += -lm
+  LDFLAGS += -lcfitsio
+  LDFLAGS += -lsiloh5
+  LDFLAGS += -lgsl -lgslcblas
+  LDFLAGS += -lsundials_cvode -lsundials_nvecserial
+endif
+################### --- UBUNTU 16 ---######################
 
 ###########################################
 # Specific Options for OS-X

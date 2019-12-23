@@ -95,8 +95,8 @@ int main(int argc, char **argv)
   cout <<"first file: "<<firstfile<<"\tsecond file: ";
   cout <<secondfile<<"\toutput file: "<<outfilebase<<"\n";
 
-  //string rts("msg_"); rts += outfilebase;
-  //rep.redirect(rts);
+  string rts("msg_"); rts += outfilebase;
+  rep.redirect(rts);
 
   //
   // set up dataio_utility class
