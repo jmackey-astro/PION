@@ -208,7 +208,7 @@ class NG_BC89flux {
   ///
   /// These fluxes are used to correct the fluxes on the coarse grid.
   ///
-  std::vector< std::vector< struct flux_update>> flux_update_send;
+  std::vector< std::vector< struct flux_update> > flux_update_send;
 };
 
 #endif // NG_BC89FLUX_H
